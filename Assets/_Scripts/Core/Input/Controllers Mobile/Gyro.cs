@@ -7,18 +7,22 @@ namespace Amoebius.Core.Input
         //[System.Serializable]
         public Transform gyroTransform;
 
+        Quaternion displacementQ = Quaternion.identity;
+
         private bool useGryo = true;
 
         public SpaceCraftControl2Axis control2Axis;
-        
+
+
+
 
         // Start is called before the first frame update
         void Start()
         {
-            
+
             if (SystemInfo.supportsGyroscope)
             {
-                
+
                 UnityEngine.Input.gyro.enabled = true;
             }
         }
@@ -29,7 +33,8 @@ namespace Amoebius.Core.Input
             if (SystemInfo.supportsGyroscope && useGryo)
             {
                 //updates GameObjects rotation from input devices gyroscope
-                gyroTransform.rotation = GyroToUnity(UnityEngine.Input.gyro.attitude);
+                gyroTransform.rotation = GyroToUnity(UnityEngine.Input.gyro.attitude * Quaternion.Inverse(displacementQ));
+                
             }
         }
 
@@ -43,6 +48,11 @@ namespace Amoebius.Core.Input
         {
             //TODO check if isLocalPlayer in multiplayer
             useGryo = Utils.Flip(useGryo);
+        }
+
+        public void SetGyroHome()
+        {
+            displacementQ = UnityEngine.Input.gyro.attitude;
         }
     }
 }
