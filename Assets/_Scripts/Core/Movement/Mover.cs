@@ -5,15 +5,20 @@ using UnityEngine;
 /// <summary>
 /// Use to move a GameObject in the forward direction
 /// </summary>
-public class Mover : MonoBehaviour
+
+namespace StarWriter.Movement
 {
-    [SerializeField]
-    private float speed = 5f;
-
-
-    // Update is called once per frame
-    void Update()
+    public class Mover : MonoBehaviour
     {
-        transform.position += speed * Time.deltaTime * transform.forward;
+        [SerializeField]
+        private float speed = 5f;
+
+
+        // Update is called once per frame
+        void Update()
+        {
+            transform.position += speed * Time.deltaTime * transform.forward;
+        }
     }
 }
+
