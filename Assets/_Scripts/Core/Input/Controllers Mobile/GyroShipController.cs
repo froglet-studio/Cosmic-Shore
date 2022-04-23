@@ -1,68 +1,74 @@
-﻿using System;
 using UnityEngine;
+using UnityEngine.UI;
 
-namespace Amoebius.Core.Input
+namespace StarWriter.Core.Input
 {
-    [RequireComponent(typeof(SpaceCraftController))]
-    public class SpaceCraftControl2Axis : MonoBehaviour
+    public class GyroShipController : MonoBehaviour
     {
+        //[System.Serializable]
+        public Transform gyroTransform;
+        public Transform shipTransform;
+
+        public SpaceCraftController craft;
+
+        Quaternion displacementQ = Quaternion.identity;
+
         // these max angles are only used on mobile, due to the way pitch and roll input are handled
         public float maxRollAngle = 80;
         public float maxPitchAngle = 80;
 
-        private float roll = 0f;
+        private float roll = 0f; 
         private float pitch = 0f;
 
         bool airBrakes = false;
 
-        // reference to the spacecraft that we're controlling
-        private SpaceCraftController craft;
-        private Gyro gyro;
 
 
-        private void Awake()
+        // Start is called before the first frame update
+        void Start()
         {
-            // Set up the reference to the aeroplane controller.
-            craft = GetComponent<SpaceCraftController>();
-            gyro = GetComponent<Gyro>();
+
+            if (SystemInfo.supportsGyroscope)
+            {
+
+                UnityEngine.Input.gyro.enabled = true;
+            }
         }
 
+        // Update is called once per frame
+        void Update()
+        {
+            if (SystemInfo.supportsGyroscope)
+            {
+                //updates GameObjects rotation from input devices gyroscope
+                gyroTransform.rotation = GyroToUnity(UnityEngine.Input.gyro.attitude * Quaternion.Inverse(displacementQ));
+
+            }
+        }
 
         private void FixedUpdate()
         {
-            #region Keyboard Input
-            if (!SystemInfo.supportsGyroscope)
-            {
-                // Read input for the pitch, yaw, roll and throttle of the spacecraft.
-                roll = UnityEngine.Input.GetAxis("Horizontal"); 
-                pitch = UnityEngine.Input.GetAxis("Vertical");
-                
-                UnityEngine.Input.gyro.enabled = false;
-            }
-            #endregion
 
             airBrakes = UnityEngine.Input.GetButton("Fire1");
 
             // auto throttle up, or down if braking.
             float throttle = airBrakes ? -1 : 1;
 
-            #region Gyroscope Input
+            
             if (SystemInfo.supportsGyroscope)
             {
-                Quaternion gyroRotation = gyro.gyroTransform.rotation;
-
-                Debug.Log(gyroRotation); //Testing Only
+                Quaternion gyroRotation = gyroTransform.rotation;
 
                 roll = gyroRotation.eulerAngles.y;
                 pitch = gyroRotation.eulerAngles.x;
-             
+
 
                 // Read input for the pitch, yaw, roll and throttle of the spacecraft.
                 AdjustInputForMobileControls(ref roll, ref pitch, ref throttle);
 
                 UnityEngine.Input.gyro.enabled = true;
             }
-            #endregion
+           
 
             // Pass the input to the spacecraft
             craft.Move(roll, pitch, 0, throttle, airBrakes);
@@ -87,7 +93,19 @@ namespace Amoebius.Core.Input
             // similarly, the throttle axis input is considered to be the desired absolute value, not a relative change to current throttle.
             float intendedThrottle = throttle * 0.5f + 0.5f;
             throttle = Mathf.Clamp(intendedThrottle - craft.Throttle, -1, 1);
+            Debug.Log("We have mobile inputs working!");
         }
 
+
+        //Coverts Android and Mobile Device Quaterion into Unity Quaterion  TODO: Test
+        private Quaternion GyroToUnity(Quaternion q)
+        {
+            return new Quaternion(q.x, q.y, -q.z, -q.w);
+        }
+
+        public void SetGyroHome()
+        {
+            displacementQ = UnityEngine.Input.gyro.attitude;
+        }
     }
 }

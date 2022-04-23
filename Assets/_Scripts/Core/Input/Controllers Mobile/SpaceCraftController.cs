@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System;
 using UnityEngine;
 
-namespace Amoebius.Core.Input
+namespace StarWriter.Core.Input
 {
     [RequireComponent(typeof(Rigidbody))]
     public class SpaceCraftController : MonoBehaviour

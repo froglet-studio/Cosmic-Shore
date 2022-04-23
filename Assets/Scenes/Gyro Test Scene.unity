@@ -334,8 +334,8 @@ MonoBehaviour:
   m_VerticalDamping: 0.5
   m_ScreenX: 0.5
   m_ScreenY: 0.5
-  m_DeadZoneWidth: 0
-  m_DeadZoneHeight: 0
+  m_DeadZoneWidth: 0.2
+  m_DeadZoneHeight: 0.2
   m_SoftZoneWidth: 0.8
   m_SoftZoneHeight: 0.8
   m_BiasX: 0
@@ -887,7 +887,7 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 1556773150}
+      - m_Target: {fileID: 0}
         m_TargetAssemblyTypeName: Amoebius.Core.Input.Gyro, Assembly-CSharp
         m_MethodName: SetGyroHome
         m_Mode: 1
@@ -1160,7 +1160,7 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 1556773150}
+      - m_Target: {fileID: 0}
         m_TargetAssemblyTypeName: Amoebius.Core.Input.Gyro, Assembly-CSharp
         m_MethodName: SetGyroHome
         m_Mode: 1
@@ -1673,7 +1673,9 @@ GameObject:
   - component: {fileID: 1556773154}
   - component: {fileID: 1556773153}
   - component: {fileID: 1556773151}
-  - component: {fileID: 1556773150}
+  - component: {fileID: 1556773159}
+  - component: {fileID: 1556773158}
+  - component: {fileID: 1556773157}
   m_Layer: 0
   m_Name: ' Ship Gyro Contolled'
   m_TagString: Untagged
@@ -1681,19 +1683,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1556773150
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1556773149}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7653e6e1b67751b4cb584eaaeb61c59d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  gyroTransform: {fileID: 1556773156}
 --- !u!114 &1556773151
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1786,6 +1775,65 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 4
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1556773157
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1556773149}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ac5b2ad77b8a2454e81ef48f41374bfe, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_MaxEnginePower: 15
+  m_Lift: 0
+  m_ZeroLiftSpeed: 0
+  m_RollEffect: 0.1
+  m_PitchEffect: 0.1
+  m_YawEffect: 0
+  m_BankedTurnEffect: 0
+  m_AerodynamicEffect: 2
+  m_AutoTurnPitch: 0
+  m_AutoRollLevel: 0
+  m_AutoPitchLevel: 0
+  m_AirBrakesEffect: 10
+  m_ThrottleChangeSpeed: 0.3
+  m_DragIncreaseFactor: 0.001
+--- !u!114 &1556773158
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1556773149}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4b03e7163961e2c4b9d04056b4fcb40e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  gyroTransform: {fileID: 1556773156}
+  shipTransform: {fileID: 1556773156}
+  craft: {fileID: 1556773157}
+  maxRollAngle: 80
+  maxPitchAngle: 80
+--- !u!54 &1556773159
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1556773149}
+  serializedVersion: 2
+  m_Mass: 1
+  m_Drag: 2
+  m_AngularDrag: 0.05
+  m_UseGravity: 0
+  m_IsKinematic: 0
+  m_Interpolate: 0
+  m_Constraints: 0
+  m_CollisionDetection: 0
 --- !u!1 &1829578212
 GameObject:
   m_ObjectHideFlags: 0
