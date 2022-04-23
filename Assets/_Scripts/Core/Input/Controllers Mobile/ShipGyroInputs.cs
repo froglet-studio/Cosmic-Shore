@@ -3,13 +3,13 @@ using UnityEngine.UI;
 
 namespace StarWriter.Core.Input
 {
-    public class GyroShipController : MonoBehaviour
+    public class ShipGyroInputs : MonoBehaviour
     {
         //[System.Serializable]
         public Transform gyroTransform;
         public Transform shipTransform;
 
-        public SpaceCraftController craft;
+        public ShipController controller;
 
         Quaternion displacementQ = Quaternion.identity;
 
@@ -59,8 +59,8 @@ namespace StarWriter.Core.Input
             {
                 Quaternion gyroRotation = gyroTransform.rotation;
 
-                roll = gyroRotation.eulerAngles.y;
-                pitch = gyroRotation.eulerAngles.x;
+                roll = 0;// gyroRotation.eulerAngles.y;
+                pitch = 0;// gyroRotation.eulerAngles.x;
 
 
                 // Read input for the pitch, yaw, roll and throttle of the spacecraft.
@@ -71,7 +71,7 @@ namespace StarWriter.Core.Input
            
 
             // Pass the input to the spacecraft
-            craft.Move(roll, pitch, 0, throttle, airBrakes);
+            controller.Move(roll, pitch, 0, throttle, airBrakes);
         }
 
 
@@ -87,12 +87,12 @@ namespace StarWriter.Core.Input
 
             float intendedRollAngle = roll * maxRollAngle * Mathf.Deg2Rad;
             float intendedPitchAngle = pitch * maxPitchAngle * Mathf.Deg2Rad;
-            roll = Mathf.Clamp((intendedRollAngle - craft.RollAngle), -1, 1);
-            pitch = Mathf.Clamp((intendedPitchAngle - craft.PitchAngle), -1, 1);
+            roll = Mathf.Clamp((intendedRollAngle - controller.RollAngle), -1, 1);
+            pitch = Mathf.Clamp((intendedPitchAngle - controller.PitchAngle), -1, 1);
 
             // similarly, the throttle axis input is considered to be the desired absolute value, not a relative change to current throttle.
             float intendedThrottle = throttle * 0.5f + 0.5f;
-            throttle = Mathf.Clamp(intendedThrottle - craft.Throttle, -1, 1);
+            throttle = Mathf.Clamp(intendedThrottle - controller.Throttle, -1, 1);
             Debug.Log("We have mobile inputs working!");
         }
 
