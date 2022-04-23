@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using UnityEngine.UI;
 
 namespace Amoebius.Core.Input
 {
@@ -11,7 +12,6 @@ namespace Amoebius.Core.Input
 
         private bool useGryo = true;
 
-        public SpaceCraftControl2Axis control2Axis;
 
 
 
