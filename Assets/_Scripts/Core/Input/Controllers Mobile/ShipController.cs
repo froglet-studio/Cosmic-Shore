@@ -42,7 +42,7 @@ namespace StarWriter.Core.Input
         private bool m_Immobilized = false;   // used for making the plane uncontrollable, i.e. if it has been hit or crashed.
         private float m_BankedTurnAmount;
         private Rigidbody m_Rigidbody;
-        WheelCollider[] m_WheelColliders;
+        //WheelCollider[] m_WheelColliders;
 
 
         private void Start()
@@ -89,7 +89,7 @@ namespace StarWriter.Core.Input
 
             CalculateTorque();
 
-            CalculateAltitude();
+            //CalculateAltitude();
         }
 
 
@@ -245,14 +245,14 @@ namespace StarWriter.Core.Input
         }
 
 
-        private void CalculateAltitude()
-        {
-            // Altitude calculations - we raycast downwards from the aeroplane
-            // starting a safe distance below the plane to avoid colliding with any of the plane's own colliders
-            var ray = new Ray(transform.position - Vector3.up * 10, -Vector3.up);
-            RaycastHit hit;
-            Altitude = Physics.Raycast(ray, out hit) ? hit.distance + 10 : transform.position.y;
-        }
+        //private void CalculateAltitude()
+        //{
+        //    // Altitude calculations - we raycast downwards from the aeroplane
+        //    // starting a safe distance below the plane to avoid colliding with any of the plane's own colliders
+        //    var ray = new Ray(transform.position - Vector3.up * 10, -Vector3.up);
+        //    RaycastHit hit;
+        //    Altitude = Physics.Raycast(ray, out hit) ? hit.distance + 10 : transform.position.y;
+        //}
 
 
         // Immobilize can be called from other objects, for example if this plane is hit by a weapon and should become uncontrollable
