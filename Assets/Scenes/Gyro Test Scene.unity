@@ -304,10 +304,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fa7155796051b734daa718462081dc5f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_BindingMode: 1
+  m_BindingMode: 3
   m_FollowOffset: {x: 0, y: 0, z: -10}
   m_XDamping: 1
-  m_YDamping: 1
+  m_YDamping: 0
   m_ZDamping: 1
   m_AngularDampingMode: 0
   m_PitchDamping: 0
@@ -1676,8 +1676,9 @@ GameObject:
   - component: {fileID: 1556773159}
   - component: {fileID: 1556773158}
   - component: {fileID: 1556773157}
+  - component: {fileID: 1556773160}
   m_Layer: 0
-  m_Name: ' Ship Gyro Contolled'
+  m_Name: ' Test Ship Mobile'
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1813,9 +1814,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4b03e7163961e2c4b9d04056b4fcb40e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  gyroTransform: {fileID: 1556773156}
   shipTransform: {fileID: 1556773156}
-  craft: {fileID: 1556773157}
+  controller: {fileID: 1556773157}
   maxRollAngle: 80
   maxPitchAngle: 80
 --- !u!54 &1556773159
@@ -1834,6 +1834,22 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 0
   m_CollisionDetection: 0
+--- !u!114 &1556773160
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1556773149}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 321397507782f1f4b98f8e7ab2447823, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  trail: {fileID: 1181642283032439018, guid: c703d201e74208944a3794563283aa47, type: 3}
+  head: {fileID: 1556773156}
+  offset: 1
+  offsetVector: {x: 0, y: 0, z: 0}
 --- !u!1 &1829578212
 GameObject:
   m_ObjectHideFlags: 0

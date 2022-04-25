@@ -1,12 +1,11 @@
 using UnityEngine;
-using UnityEngine.UI;
 
 namespace StarWriter.Core.Input
 {
     public class ShipGyroInputs : MonoBehaviour
     {
         //[System.Serializable]
-        public Transform gyroTransform;
+        private Transform gyroTransform;
         public Transform shipTransform;
 
         public ShipController controller;
@@ -43,6 +42,8 @@ namespace StarWriter.Core.Input
                 //updates GameObjects rotation from input devices gyroscope
                 gyroTransform.rotation = GyroToUnity(UnityEngine.Input.gyro.attitude * Quaternion.Inverse(displacementQ));
 
+                
+
             }
         }
 
@@ -59,8 +60,11 @@ namespace StarWriter.Core.Input
             {
                 Quaternion gyroRotation = gyroTransform.rotation;
 
-                roll = 0;// gyroRotation.eulerAngles.y;
-                pitch = 0;// gyroRotation.eulerAngles.x;
+                //roll = gyroRotation.eulerAngles.z;
+                //pitch = gyroRotation.eulerAngles.x;
+                roll = UnityEngine.Input.gyro.rotationRate.y;
+                pitch = UnityEngine.Input.gyro.rotationRate.x;
+                
 
 
                 // Read input for the pitch, yaw, roll and throttle of the spacecraft.
