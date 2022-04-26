@@ -4,7 +4,8 @@ namespace StarWriter.Core.Input
 {
     public class ShipGyroInputs : MonoBehaviour
     {
-        //[System.Serializable]
+        [SerializeField]
+        
         private Transform gyroTransform;
         public Transform shipTransform;
 
@@ -29,7 +30,7 @@ namespace StarWriter.Core.Input
 
             if (SystemInfo.supportsGyroscope)
             {
-
+                
                 UnityEngine.Input.gyro.enabled = true;
             }
         }
@@ -42,7 +43,9 @@ namespace StarWriter.Core.Input
                 //updates GameObjects rotation from input devices gyroscope
                 gyroTransform.rotation = GyroToUnity(UnityEngine.Input.gyro.attitude * Quaternion.Inverse(displacementQ));
 
-                
+                var gravity = UnityEngine.Input.gyro.gravity;
+                var north = UnityEngine.Input.compass.magneticHeading;
+
 
             }
         }
@@ -53,17 +56,18 @@ namespace StarWriter.Core.Input
             airBrakes = UnityEngine.Input.GetButton("Fire1");
 
             // auto throttle up, or down if braking.
-            float throttle = airBrakes ? -1 : 1;
+            float throttle = 1;// airBrakes ? -1 : 1;
 
             
             if (SystemInfo.supportsGyroscope)
             {
                 Quaternion gyroRotation = gyroTransform.rotation;
+                shipTransform.rotation = gyroRotation;
 
-                //roll = gyroRotation.eulerAngles.z;
-                //pitch = gyroRotation.eulerAngles.x;
-                roll = UnityEngine.Input.gyro.rotationRate.y;
-                pitch = UnityEngine.Input.gyro.rotationRate.x;
+                roll = gyroRotation.eulerAngles.z;
+                pitch = gyroRotation.eulerAngles.x;
+                //roll = UnityEngine.Input.gyro.rotationRate.y;
+                //pitch = UnityEngine.Input.gyro.rotationRate.x;
                 
 
 
@@ -75,7 +79,7 @@ namespace StarWriter.Core.Input
            
 
             // Pass the input to the spacecraft
-            controller.Move(roll, pitch, 0, throttle, airBrakes);
+            controller.Move(0, 0, 0, throttle, airBrakes);
         }
 
 
@@ -104,7 +108,7 @@ namespace StarWriter.Core.Input
         //Coverts Android and Mobile Device Quaterion into Unity Quaterion  TODO: Test
         private Quaternion GyroToUnity(Quaternion q)
         {
-            return new Quaternion(q.x, q.y, -q.z, -q.w);
+            return new Quaternion(q.x, -q.z, q.y, q.w);
         }
 
         public void SetGyroHome()
