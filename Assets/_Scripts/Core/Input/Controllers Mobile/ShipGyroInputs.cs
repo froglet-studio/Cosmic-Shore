@@ -43,7 +43,9 @@ namespace StarWriter.Core.Input
                 //updates GameObjects rotation from input devices gyroscope
                 gyroTransform.rotation = GyroToUnity(UnityEngine.Input.gyro.attitude * Quaternion.Inverse(displacementQ));
 
-                
+                var gravity = UnityEngine.Input.gyro.gravity;
+                var north = UnityEngine.Input.compass.magneticHeading;
+
 
             }
         }
@@ -106,13 +108,12 @@ namespace StarWriter.Core.Input
         //Coverts Android and Mobile Device Quaterion into Unity Quaterion  TODO: Test
         private Quaternion GyroToUnity(Quaternion q)
         {
-            return new Quaternion(q.x, q.y, q.z, q.w);
+            return new Quaternion(q.x, -q.z, q.y, q.w);
         }
 
         public void SetGyroHome()
         {
             displacementQ = UnityEngine.Input.gyro.attitude;
-            Debug.Log("reset the gyro");
         }
     }
 }
