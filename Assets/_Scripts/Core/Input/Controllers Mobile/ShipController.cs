@@ -75,7 +75,7 @@ namespace StarWriter.Core.Input
 
             CalculateRollAndPitchAngles();
 
-            AutoLevel();
+            //AutoLevel();
 
             CalculateForwardSpeed();
 
@@ -83,7 +83,7 @@ namespace StarWriter.Core.Input
 
             CalculateDrag();
 
-            CaluclateAerodynamicEffect();
+            CalculateAerodynamicEffect();
 
             CalculateLinearForces();
 
@@ -124,24 +124,24 @@ namespace StarWriter.Core.Input
         }
 
 
-        private void AutoLevel()
-        {
-            // The banked turn amount (between -1 and 1) is the sine of the roll angle.
-            // this is an amount applied to elevator input if the user is only using the banking controls,
-            // because that's what people expect to happen in games!
-            m_BankedTurnAmount = Mathf.Sin(RollAngle);
-            // auto level roll, if there's no roll input:
-            if (RollInput == 0f)
-            {
-                RollInput = -RollAngle * m_AutoRollLevel;
-            }
-            // auto correct pitch, if no pitch input (but also apply the banked turn amount)
-            if (PitchInput == 0f)
-            {
-                PitchInput = -PitchAngle * m_AutoPitchLevel;
-                PitchInput -= Mathf.Abs(m_BankedTurnAmount * m_BankedTurnAmount * m_AutoTurnPitch);
-            }
-        }
+        //private void AutoLevel()
+        //{
+        //    // The banked turn amount (between -1 and 1) is the sine of the roll angle.
+        //    // this is an amount applied to elevator input if the user is only using the banking controls,
+        //    // because that's what people expect to happen in games!
+        //    m_BankedTurnAmount = Mathf.Sin(RollAngle);
+        //    // auto level roll, if there's no roll input:
+        //    if (RollInput == 0f)
+        //    {
+        //        RollInput = -RollAngle * m_AutoRollLevel;
+        //    }
+        //    // auto correct pitch, if no pitch input (but also apply the banked turn amount)
+        //    if (PitchInput == 0f)
+        //    {
+        //        PitchInput = -PitchAngle * m_AutoPitchLevel;
+        //        PitchInput -= Mathf.Abs(m_BankedTurnAmount * m_BankedTurnAmount * m_AutoTurnPitch);
+        //    }
+        //}
 
 
         private void CalculateForwardSpeed()
@@ -164,7 +164,7 @@ namespace StarWriter.Core.Input
             Throttle = Mathf.Clamp01(Throttle + ThrottleInput * Time.deltaTime * m_ThrottleChangeSpeed);
 
             // current engine power is just:
-            EnginePower = Throttle * m_MaxEnginePower;
+            EnginePower = m_MaxEnginePower;// Throttle * m_MaxEnginePower;
         }
 
 
@@ -179,7 +179,7 @@ namespace StarWriter.Core.Input
         }
 
 
-        private void CaluclateAerodynamicEffect()
+        private void CalculateAerodynamicEffect()
         {
             // "Aerodynamic" calculations. This is a very simple approximation of the effect that a plane
             // will naturally try to align itself in the direction that it's facing when moving at speed.
@@ -213,14 +213,14 @@ namespace StarWriter.Core.Input
             // Add the engine power in the forward direction
             forces += EnginePower * transform.forward;
             // The direction that the lift force is applied is at right angles to the plane's velocity (usually, this is 'up'!)
-            var liftDirection = Vector3.Cross(m_Rigidbody.velocity, transform.right).normalized;
-            // The amount of lift drops off as the plane increases speed - in reality this occurs as the pilot retracts the flaps
-            // shortly after takeoff, giving the plane less drag, but less lift. Because we don't simulate flaps, this is
-            // a simple way of doing it automatically:
-            var zeroLiftFactor = Mathf.InverseLerp(m_ZeroLiftSpeed, 0, ForwardSpeed);
-            // Calculate and add the lift power
-            var liftPower = ForwardSpeed * ForwardSpeed * m_Lift * zeroLiftFactor * m_AeroFactor;
-            forces += liftPower * liftDirection;
+            //var liftDirection = Vector3.Cross(m_Rigidbody.velocity, transform.right).normalized;
+            //// The amount of lift drops off as the plane increases speed - in reality this occurs as the pilot retracts the flaps
+            //// shortly after takeoff, giving the plane less drag, but less lift. Because we don't simulate flaps, this is
+            //// a simple way of doing it automatically:
+            //var zeroLiftFactor = Mathf.InverseLerp(m_ZeroLiftSpeed, 0, ForwardSpeed);
+            //// Calculate and add the lift power
+            //var liftPower = ForwardSpeed * ForwardSpeed * m_Lift * zeroLiftFactor * m_AeroFactor;
+            //forces += liftPower * liftDirection;
             // Apply the calculated forces to the the Rigidbody
             m_Rigidbody.AddForce(forces);
         }
@@ -255,17 +255,17 @@ namespace StarWriter.Core.Input
         //}
 
 
-        // Immobilize can be called from other objects, for example if this plane is hit by a weapon and should become uncontrollable
-        public void Immobilize()
-        {
-            m_Immobilized = true;
-        }
+        //// Immobilize can be called from other objects, for example if this plane is hit by a weapon and should become uncontrollable
+        //public void Immobilize()
+        //{
+        //    m_Immobilized = true;
+        //}
 
 
-        // Reset is called via the ObjectResetter script, if present.
-        public void Reset()
-        {
-            m_Immobilized = false;
-        }
+        //// Reset is called via the ObjectResetter script, if present.
+        //public void Reset()
+        //{
+        //    m_Immobilized = false;
+        //}
     }
 }
