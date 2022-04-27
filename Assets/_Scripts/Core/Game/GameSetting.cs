@@ -1,35 +1,46 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using Amoebius.Core.Input;
 
 
-public class GameSetting : MonoBehaviour
+namespace StarWriter.Core
 {
-    private float masterVolume = 1; //TODO 
+    public class GameSetting : MonoBehaviour
+{
+    //floats
+    private float masterVolume = 0.5f; //TODO 
+    private float currentVolume;
+    //bools
+    private bool isMuted = false;
 
-    private bool gyroStatus = true;  //Use for UI toggle value
-
-
+    private void Start()
+    {
+        currentVolume = masterVolume;
+    }
 
 
     public void ChangeMasterVolume(float amount)
     {
-        masterVolume += amount;
-        masterVolume = Mathf.Clamp(masterVolume, 0, 1);
+            if (!isMuted)
+            {
+                masterVolume += amount;
+                masterVolume = Mathf.Clamp(masterVolume, 0, 1);
+            }
+        
     }
 
-    public void Mute()
+    public void ToggleMusic()
     {
-        masterVolume = 0;
-    }
+        if (currentVolume < 0)
+        {
+            currentVolume = 0;
+                isMuted = !isMuted;
 
-    public void ChangeGyroscopeEnabledStatus()
-    {
-        Gyro gyro = FindObjectOfType<Player>().GetComponent<Gyro>();
-        gyroStatus = !gyroStatus;
-        gyro.FlipUseGyro();
-    }
+        }
 
-    
+    }
 }
+}
+
+
+
