@@ -25,23 +25,31 @@ namespace StarWriter.Core.Input
 
         private float roll = 0f;
         private float pitch = 0f;
+        private Gyroscope gyro;
+        private Compass compass;
 
         bool airBrakes = false;
         Quaternion displacementQ;
 
+        private void Awake()
+        {
+            if (SystemInfo.supportsGyroscope)
+            {
+                gyro = UnityEngine.Input.gyro;
+                compass = UnityEngine.Input.compass;
+            }
+        }
 
         // Start is called before the first frame update
         void Start()
         {
-
             if (SystemInfo.supportsGyroscope)
             {
-
-                UnityEngine.Input.gyro.enabled = true;
+                gyro.enabled = true;
                 Screen.sleepTimeout = SleepTimeout.NeverSleep;
                 outputVector = gameObject.GetComponent<LineRenderer>();
                 displacementQ = new Quaternion(0,0,0, -1);
-                //displacementQ = Quaternion.AngleAxis(UnityEngine.Input.gyro.attitude.eulerAngles.y, Vector3.up);
+                //displacementQ = Quaternion.AngleAxis(gyro.attitude.eulerAngles.y, Vector3.up);
             }
         }
 
@@ -52,30 +60,26 @@ namespace StarWriter.Core.Input
             {
                 //updates GameObjects rotation from input devices gyroscope
                 
-                gyroTransform.rotation = GyroToUnity(UnityEngine.Input.gyro.attitude)
+                gyroTransform.rotation = GyroToUnity(gyro.attitude)
                                        * GyroToUnity(Quaternion.Inverse(displacementQ));
 
-                var gravity = UnityEngine.Input.gyro.gravity;
-                var north = UnityEngine.Input.compass.magneticHeading;
-
+                var gravity = gyro.gravity;
+                var north = compass.magneticHeading;
 
                 //display the gravity vector
                 var points = new Vector3[2];
                 points[0] = new Vector3(0, 0, 0);
                 points[1] = gravity;
                 outputVector.SetPositions(points);
-               
             }
         }
 
         private void FixedUpdate()
         {
-
             airBrakes = UnityEngine.Input.GetButton("Fire1");
 
             // auto throttle up, or down if braking.
             float throttle = 1;// airBrakes ? -1 : 1;
-
 
             if (SystemInfo.supportsGyroscope)
             {
@@ -84,22 +88,18 @@ namespace StarWriter.Core.Input
 
                 roll = gyroRotation.eulerAngles.z;
                 pitch = gyroRotation.eulerAngles.x;
-                //roll = UnityEngine.Input.gyro.rotationRate.y;
-                //pitch = UnityEngine.Input.gyro.rotationRate.x;
-
-
+                //roll = gyro.rotationRate.y;
+                //pitch = gyro.rotationRate.x;
 
                 // Read input for the pitch, yaw, roll and throttle of the spacecraft.
                 AdjustInputForMobileControls(ref roll, ref pitch, ref throttle);
 
-                UnityEngine.Input.gyro.enabled = true;
+                gyro.enabled = true;
             }
-
 
             // Pass the input to the spacecraft
             controller.Move(0, 0, 0, throttle, airBrakes);
         }
-
 
         private void AdjustInputForMobileControls(ref float roll, ref float pitch, ref float throttle)
         {
@@ -122,7 +122,6 @@ namespace StarWriter.Core.Input
             Debug.Log("We have mobile inputs working!");
         }
 
-
         //Coverts Android and Mobile Device Quaterion into Unity Quaterion  TODO: Test
         private Quaternion GyroToUnity(Quaternion q)
         {
@@ -132,11 +131,7 @@ namespace StarWriter.Core.Input
         public void SetGyroHome()
         {
             UnityEngine.Input.compass.enabled = true;
-            //displacementQ = GyroToUnity(UnityEngine.Input.gyro.attitude
-            displacementQ = new Quaternion(0,
-                                           .61F, 
-                                           .78F, 
-                                           0);
+            displacementQ = UnityEngine.Input.gyro.attitude;
             outputText.text = displacementQ.x.ToString() + " , "
                             + displacementQ.y.ToString() + " , "
                             + displacementQ.z.ToString() + " , "
