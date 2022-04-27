@@ -1,5 +1,6 @@
 using UnityEngine;
 using TMPro;
+using Cinemachine;
 
 namespace StarWriter.Core.Input
 {
@@ -8,6 +9,20 @@ namespace StarWriter.Core.Input
         [SerializeField]
 
         private Transform gyroTransform;
+
+        [SerializeField]
+
+        private Transform lookAtTransform;
+
+        [SerializeField]
+        float lookAtOffset = 50;
+
+        [SerializeField]
+        CinemachineVirtualCameraBase cam1;
+
+        [SerializeField]
+        CinemachineVirtualCameraBase cam2;
+
         public Transform shipTransform;
 
         [SerializeField]
@@ -88,11 +103,12 @@ namespace StarWriter.Core.Input
 
             // auto throttle up, or down if braking.
             float throttle = 1;// airBrakes ? -1 : 1;
-
+            lookAtTransform.position = shipTransform.position + (shipTransform.forward * lookAtOffset);
             if (SystemInfo.supportsGyroscope)
             {
                 Quaternion gyroRotation = gyroTransform.rotation;
                 shipTransform.rotation = gyroRotation;
+                
 
                 for (int i = 0; i < UnityEngine.Input.touches.Length; i++) 
                 {
@@ -112,7 +128,13 @@ namespace StarWriter.Core.Input
                             }
                             if (UnityEngine.Input.touches[i].position.x > Screen.currentResolution.width / 2)
                             {
-                                airBrakes = UnityEngine.Input.GetButton("Fire1");
+                                //airBrakes = UnityEngine.Input.GetButton("Fire1");
+                                if (UnityEngine.Input.touches[i].phase == TouchPhase.Began)
+                                {
+                                    if (cam2.m_Priority <= cam1.m_Priority) { cam2.m_Priority++;}
+                                    else { cam2.m_Priority-=2; }
+                                }
+                                
                             }
                             break;
                         case 1:
