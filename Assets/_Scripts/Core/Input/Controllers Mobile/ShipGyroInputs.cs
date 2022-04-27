@@ -82,7 +82,7 @@ namespace StarWriter.Core.Input
 
         private void FixedUpdate()
         {
-            airBrakes = UnityEngine.Input.GetButton("Fire1");
+            //airBrakes = UnityEngine.Input.GetButton("Fire1");
 
             // auto throttle up, or down if braking.
             float throttle = 1;// airBrakes ? -1 : 1;
@@ -111,18 +111,19 @@ namespace StarWriter.Core.Input
                     }
                     if (UnityEngine.Input.touches[i].position.x > Screen.currentResolution.width / 2)
                     {
-                        //pitch
-                        displacementQ = Quaternion.AngleAxis(
-                                            Vector2.Dot(UnityEngine.Input.touches[i].deltaPosition * touchScaler,
-                                                        Vector2.up)
-                                           , shipTransform.right)
-                                        * displacementQ;
-                        //roll
-                        displacementQ = Quaternion.AngleAxis(
-                                            Vector2.Dot(UnityEngine.Input.touches[i].deltaPosition * touchScaler,
-                                                        Vector2.right)
-                                           , shipTransform.up)
-                                        * displacementQ;
+                        ////pitch
+                        //displacementQ = Quaternion.AngleAxis(
+                        //                    Vector2.Dot(UnityEngine.Input.touches[i].deltaPosition * touchScaler,
+                        //                                Vector2.up)
+                        //                   , shipTransform.right)
+                        //                * displacementQ;
+                        ////roll
+                        //displacementQ = Quaternion.AngleAxis(
+                        //                    Vector2.Dot(UnityEngine.Input.touches[i].deltaPosition * touchScaler,
+                        //                                Vector2.right)
+                        //                   , shipTransform.up)
+                        //                * displacementQ;
+                        airBrakes = UnityEngine.Input.GetButton("Fire1");
                     }
 
                 }
