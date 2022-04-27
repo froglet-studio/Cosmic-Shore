@@ -6,8 +6,10 @@ namespace StarWriter.Movement
 {
     public class RotateObject : MonoBehaviour
     {
-        public float speed = 2;
-        public Vector3 rotationDirection = Vector3.right;
+        [SerializeField]
+        private float speed = 2;
+        [SerializeField]
+        private Vector3 rotationDirection = Vector3.right;
 
         // Update is called once per frame
         void Update()
