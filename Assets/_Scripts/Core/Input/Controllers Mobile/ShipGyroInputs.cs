@@ -15,6 +15,8 @@ namespace StarWriter.Core.Input
         //[SerializeField]
         LineRenderer outputVector;
 
+        float touchScaler = .1f;
+
         public ShipController controller;
 
         //Quaternion displacementQ = Quaternion.identity;
@@ -27,6 +29,7 @@ namespace StarWriter.Core.Input
         private float pitch = 0f;
         private Gyroscope gyro;
         private Compass compass;
+        private Quaternion empericalCorrection;
 
         bool airBrakes = false;
         Quaternion displacementQ;
@@ -37,6 +40,7 @@ namespace StarWriter.Core.Input
             {
                 gyro = UnityEngine.Input.gyro;
                 compass = UnityEngine.Input.compass;
+                empericalCorrection = Quaternion.Inverse(new Quaternion(0, .65f, .75f, 0)); //TODO: move to derivedCoorection
             }
         }
 
@@ -45,6 +49,7 @@ namespace StarWriter.Core.Input
         {
             if (SystemInfo.supportsGyroscope)
             {
+                empericalCorrection = GyroToUnity(empericalCorrection);
                 gyro.enabled = true;
                 Screen.sleepTimeout = SleepTimeout.NeverSleep;
                 outputVector = gameObject.GetComponent<LineRenderer>();
@@ -59,9 +64,10 @@ namespace StarWriter.Core.Input
             if (SystemInfo.supportsGyroscope)
             {
                 //updates GameObjects rotation from input devices gyroscope
-                
-                gyroTransform.rotation = GyroToUnity(gyro.attitude)
-                                       * GyroToUnity(Quaternion.Inverse(displacementQ));
+
+                gyroTransform.rotation = displacementQ * GyroToUnity(gyro.attitude)
+                                       * empericalCorrection;
+                                     
 
                 var gravity = gyro.gravity;
                 var north = compass.magneticHeading;
@@ -86,8 +92,42 @@ namespace StarWriter.Core.Input
                 Quaternion gyroRotation = gyroTransform.rotation;
                 shipTransform.rotation = gyroRotation;
 
-                roll = gyroRotation.eulerAngles.z;
-                pitch = gyroRotation.eulerAngles.x;
+                for (int i = 0; i < UnityEngine.Input.touches.Length; i++) 
+                {
+                    if (UnityEngine.Input.touches[i].position.x < Screen.currentResolution.width / 2)
+                    {
+                        //pitch
+                        displacementQ = Quaternion.AngleAxis(
+                                            Vector2.Dot(UnityEngine.Input.touches[i].deltaPosition*touchScaler, 
+                                                        Vector2.up)
+                                           ,shipTransform.right)
+                                        *displacementQ;
+                        //roll
+                        displacementQ = Quaternion.AngleAxis(
+                                            Vector2.Dot(UnityEngine.Input.touches[i].deltaPosition * touchScaler,
+                                                        -Vector2.right)
+                                           , shipTransform.forward)
+                                        * displacementQ;
+                    }
+                    if (UnityEngine.Input.touches[i].position.x > Screen.currentResolution.width / 2)
+                    {
+                        //pitch
+                        displacementQ = Quaternion.AngleAxis(
+                                            Vector2.Dot(UnityEngine.Input.touches[i].deltaPosition * touchScaler,
+                                                        Vector2.up)
+                                           , shipTransform.right)
+                                        * displacementQ;
+                        //roll
+                        displacementQ = Quaternion.AngleAxis(
+                                            Vector2.Dot(UnityEngine.Input.touches[i].deltaPosition * touchScaler,
+                                                        Vector2.right)
+                                           , shipTransform.up)
+                                        * displacementQ;
+                    }
+
+                }
+                //roll = gyroRotation.eulerAngles.z;
+                //pitch = gyroRotation.eulerAngles.x;
                 //roll = gyro.rotationRate.y;
                 //pitch = gyro.rotationRate.x;
 
@@ -98,7 +138,7 @@ namespace StarWriter.Core.Input
             }
 
             // Pass the input to the spacecraft
-            controller.Move(0, 0, 0, throttle, airBrakes);
+            controller.Move(0, 0, 0, throttle, airBrakes);  //currently passing static values for simple forward movement
         }
 
         private void AdjustInputForMobileControls(ref float roll, ref float pitch, ref float throttle)
@@ -131,8 +171,8 @@ namespace StarWriter.Core.Input
         public void SetGyroHome()
         {
             compass.enabled = true;
-            //displacementQ = gyro.attitude;
-            displacementQ = new Quaternion(.05f,.64f,.76f,.02f);
+            displacementQ = Quaternion.AngleAxis(5, shipTransform.up)*displacementQ;
+            //displacementQ = new Quaternion(0,.65f,.75f,0);
 
             outputText.text = displacementQ.x.ToString() + " , "
                             + displacementQ.y.ToString() + " , "
