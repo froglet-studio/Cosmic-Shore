@@ -17,6 +17,8 @@ namespace StarWriter.Core.Input
 
         float touchScaler = .1f;
 
+        public int controlScheme = 0;
+
         public ShipController controller;
 
         //Quaternion displacementQ = Quaternion.identity;
@@ -94,37 +96,73 @@ namespace StarWriter.Core.Input
 
                 for (int i = 0; i < UnityEngine.Input.touches.Length; i++) 
                 {
-                    if (UnityEngine.Input.touches[i].position.x < Screen.currentResolution.width / 2)
+                    switch (controlScheme)
                     {
-                        //pitch
-                        displacementQ = Quaternion.AngleAxis(
-                                            Vector2.Dot(UnityEngine.Input.touches[i].deltaPosition*touchScaler, 
-                                                        Vector2.up)
-                                           ,shipTransform.right)
-                                        *displacementQ;
-                        //roll
-                        displacementQ = Quaternion.AngleAxis(
-                                            Vector2.Dot(UnityEngine.Input.touches[i].deltaPosition * touchScaler,
-                                                        -Vector2.right)
-                                           , shipTransform.forward)
-                                        * displacementQ;
+                        case 0:
+                            if (UnityEngine.Input.touches[i].position.x < Screen.currentResolution.width / 2)
+                            {
+                                //pitch
+                                displacementQ = Quaternion.AngleAxis(UnityEngine.Input.touches[i].deltaPosition.y * touchScaler
+                                                                    , shipTransform.right)
+                                                * displacementQ;
+                                //roll
+                                displacementQ = Quaternion.AngleAxis(UnityEngine.Input.touches[i].deltaPosition.x * -touchScaler
+                                                                    , shipTransform.forward)
+                                                * displacementQ;
+                            }
+                            if (UnityEngine.Input.touches[i].position.x > Screen.currentResolution.width / 2)
+                            {
+                                airBrakes = UnityEngine.Input.GetButton("Fire1");
+                            }
+                            break;
+                        case 1:
+                            if (UnityEngine.Input.touches[i].position.x < Screen.currentResolution.width / 2)
+                            {
+                                //pitch
+                                displacementQ = Quaternion.AngleAxis(UnityEngine.Input.touches[i].deltaPosition.y * touchScaler
+                                                                    , shipTransform.right)
+                                                * displacementQ;
+                                //roll
+                                displacementQ = Quaternion.AngleAxis(UnityEngine.Input.touches[i].deltaPosition.x * -touchScaler
+                                                                    , shipTransform.forward)
+                                                * displacementQ;
+                            }
+                            if (UnityEngine.Input.touches[i].position.x > Screen.currentResolution.width / 2)
+                            {
+                                //pitch
+                                displacementQ = Quaternion.AngleAxis(UnityEngine.Input.touches[i].deltaPosition.y * touchScaler
+                                                                    , shipTransform.right)
+                                                * displacementQ;
+                                //yaw
+                                displacementQ = Quaternion.AngleAxis(UnityEngine.Input.touches[i].deltaPosition.x * touchScaler
+                                                                    , shipTransform.up)
+                                                * displacementQ;
+                            }
+                            break;
+                        //case 3:
+                        //    var yl = 0f;
+                        //    var yr = 0f;
+
+                        //    if (UnityEngine.Input.touches[i].position.x < Screen.currentResolution.width / 2)
+                        //    {
+                        //        yl = UnityEngine.Input.touches[i].position.y;
+
+                        //    }
+                        //    if (UnityEngine.Input.touches[i].position.x > Screen.currentResolution.width / 2)
+                        //    {
+                        //        yr = UnityEngine.Input.touches[i].position.y;
+                        //    }
+                        //    //pitch
+                        //    displacementQ = Quaternion.AngleAxis(((yl+yr)/2- Screen.currentResolution.height/2)
+                        //                                            , shipTransform.right)
+                        //    //roll
+                        //                        * displacementQ;
+                        //    displacementQ = Quaternion.AngleAxis((yl - yr)*100
+                        //                                            , shipTransform.forward)
+                        //                        * displacementQ;
+                        //    break;
                     }
-                    if (UnityEngine.Input.touches[i].position.x > Screen.currentResolution.width / 2)
-                    {
-                        ////pitch
-                        //displacementQ = Quaternion.AngleAxis(
-                        //                    Vector2.Dot(UnityEngine.Input.touches[i].deltaPosition * touchScaler,
-                        //                                Vector2.up)
-                        //                   , shipTransform.right)
-                        //                * displacementQ;
-                        ////roll
-                        //displacementQ = Quaternion.AngleAxis(
-                        //                    Vector2.Dot(UnityEngine.Input.touches[i].deltaPosition * touchScaler,
-                        //                                Vector2.right)
-                        //                   , shipTransform.up)
-                        //                * displacementQ;
-                        airBrakes = UnityEngine.Input.GetButton("Fire1");
-                    }
+                    
 
                 }
                 //roll = gyroRotation.eulerAngles.z;
@@ -169,16 +207,18 @@ namespace StarWriter.Core.Input
             return new Quaternion(q.x, -q.z, q.y, q.w);
         }
 
-        public void SetGyroHome()
+        public void ChangeControls()
         {
-            compass.enabled = true;
-            displacementQ = Quaternion.AngleAxis(5, shipTransform.up)*displacementQ;
-            //displacementQ = new Quaternion(0,.65f,.75f,0);
+            controlScheme = (controlScheme + 1) % 2;
+            //compass.enabled = true;
+            //displacementQ = Quaternion.AngleAxis(5, shipTransform.up)*displacementQ;
+            ////displacementQ = new Quaternion(0,.65f,.75f,0);
 
-            outputText.text = displacementQ.x.ToString() + " , "
-                            + displacementQ.y.ToString() + " , "
-                            + displacementQ.z.ToString() + " , "
-                            + displacementQ.w.ToString();
+            //outputText.text = displacementQ.x.ToString() + " , "
+            //                + displacementQ.y.ToString() + " , "
+            //                + displacementQ.z.ToString() + " , "
+            //                + displacementQ.w.ToString();
+
         }
     }
 }
