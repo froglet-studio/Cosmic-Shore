@@ -12,8 +12,6 @@ namespace StarWriter.Core.Input
 
         [SerializeField]
         TextMeshProUGUI outputText;
-        //[SerializeField]
-        LineRenderer outputVector;
 
         float touchScaler = .1f;
 
@@ -30,8 +28,7 @@ namespace StarWriter.Core.Input
         private float roll = 0f;
         private float pitch = 0f;
         private Gyroscope gyro;
-        private Compass compass;
-        private Quaternion empericalCorrection;
+        private Quaternion empiricalCorrection;
 
         bool airBrakes = false;
         Quaternion displacementQ;
@@ -41,8 +38,7 @@ namespace StarWriter.Core.Input
             if (SystemInfo.supportsGyroscope)
             {
                 gyro = UnityEngine.Input.gyro;
-                compass = UnityEngine.Input.compass;
-                empericalCorrection = Quaternion.Inverse(new Quaternion(0, .65f, .75f, 0)); //TODO: move to derivedCoorection
+                empiricalCorrection = Quaternion.Inverse(new Quaternion(0, .65f, .75f, 0)); //TODO: move to derivedCoorection
             }
         }
 
@@ -51,7 +47,7 @@ namespace StarWriter.Core.Input
         {
             if (SystemInfo.supportsGyroscope)
             {
-                empericalCorrection = GyroToUnity(empericalCorrection);
+                empiricalCorrection = GyroToUnity(empiricalCorrection);
                 gyro.enabled = true;
                 Screen.sleepTimeout = SleepTimeout.NeverSleep;
                 outputVector = gameObject.GetComponent<LineRenderer>();
@@ -67,18 +63,7 @@ namespace StarWriter.Core.Input
             {
                 //updates GameObjects rotation from input devices gyroscope
 
-                gyroTransform.rotation = displacementQ * GyroToUnity(gyro.attitude)
-                                       * empericalCorrection;
-                                     
-
-                var gravity = gyro.gravity;
-                var north = compass.magneticHeading;
-
-                //display the gravity vector
-                var points = new Vector3[2];
-                points[0] = new Vector3(0, 0, 0);
-                points[1] = gravity;
-                outputVector.SetPositions(points);
+                gyroTransform.rotation = displacementQ * GyroToUnity(gyro.attitude) * empiricalCorrection;
             }
         }
 
@@ -210,15 +195,6 @@ namespace StarWriter.Core.Input
         public void ChangeControls()
         {
             controlScheme = (controlScheme + 1) % 2;
-            //compass.enabled = true;
-            //displacementQ = Quaternion.AngleAxis(5, shipTransform.up)*displacementQ;
-            ////displacementQ = new Quaternion(0,.65f,.75f,0);
-
-            //outputText.text = displacementQ.x.ToString() + " , "
-            //                + displacementQ.y.ToString() + " , "
-            //                + displacementQ.z.ToString() + " , "
-            //                + displacementQ.w.ToString();
-
         }
     }
 }
