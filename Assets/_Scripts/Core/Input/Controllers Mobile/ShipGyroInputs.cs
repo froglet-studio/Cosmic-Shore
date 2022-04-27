@@ -130,8 +130,10 @@ namespace StarWriter.Core.Input
 
         public void SetGyroHome()
         {
-            UnityEngine.Input.compass.enabled = true;
-            displacementQ = UnityEngine.Input.gyro.attitude;
+            compass.enabled = true;
+            //displacementQ = gyro.attitude;
+            displacementQ = new Quaternion(.05f,.64f,.76f,.02f);
+
             outputText.text = displacementQ.x.ToString() + " , "
                             + displacementQ.y.ToString() + " , "
                             + displacementQ.z.ToString() + " , "
