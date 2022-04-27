@@ -1,5 +1,5 @@
 {
-    "m_SelectedDeviceId": "",
+    "m_SelectedDeviceId": "25d5c7d87d1c7ece",
     "m_SelectedPackage": {
         "deviceId": "",
         "name": "",
@@ -7,7 +7,20 @@
         "exited": false
     },
     "m_SelectedPriority": 0,
-    "m_KnownPackagesForSerialization": [],
+    "m_KnownPackagesForSerialization": [
+        {
+            "deviceId": "25d5c7d87d1c7ece",
+            "name": "com.Slack",
+            "processId": 17810,
+            "exited": false
+        },
+        {
+            "deviceId": "25d5c7d87d1c7ece",
+            "name": "com.Froglet.Studios.AmoebiusMoblieFroglet",
+            "processId": 17787,
+            "exited": false
+        }
+    ],
     "m_Tags": {
         "m_Entries": [
             {

@@ -39,7 +39,6 @@ namespace StarWriter.Core.Input
 
                 UnityEngine.Input.gyro.enabled = true;
                 Screen.sleepTimeout = SleepTimeout.NeverSleep;
-                outputText = gameObject.GetComponent<TextMeshProUGUI>();
                 outputVector = gameObject.GetComponent<LineRenderer>();
                 displacementQ = new Quaternion(0,0,0, -1);
                 //displacementQ = Quaternion.AngleAxis(UnityEngine.Input.gyro.attitude.eulerAngles.y, Vector3.up);
@@ -53,7 +52,8 @@ namespace StarWriter.Core.Input
             {
                 //updates GameObjects rotation from input devices gyroscope
                 
-                gyroTransform.rotation = GyroToUnity(UnityEngine.Input.gyro.attitude) * GyroToUnity(Quaternion.Inverse(displacementQ));
+                gyroTransform.rotation = GyroToUnity(UnityEngine.Input.gyro.attitude)
+                                       * GyroToUnity(Quaternion.Inverse(displacementQ));
 
                 var gravity = UnityEngine.Input.gyro.gravity;
                 var north = UnityEngine.Input.compass.magneticHeading;
@@ -132,7 +132,11 @@ namespace StarWriter.Core.Input
         public void SetGyroHome()
         {
             UnityEngine.Input.compass.enabled = true;
-            displacementQ = UnityEngine.Input.gyro.attitude;
+            //displacementQ = GyroToUnity(UnityEngine.Input.gyro.attitude
+            displacementQ = new Quaternion(0,
+                                           .61F, 
+                                           .78F, 
+                                           0);
             outputText.text = displacementQ.x.ToString() + " , "
                             + displacementQ.y.ToString() + " , "
                             + displacementQ.z.ToString() + " , "

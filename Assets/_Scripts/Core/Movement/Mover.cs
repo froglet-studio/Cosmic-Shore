@@ -21,7 +21,6 @@ namespace StarWriter.Movement
             {
                 transform.position += speed * UnityEngine.Input.gyro.userAcceleration;
             }
-            
         }
     }
 }
