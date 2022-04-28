@@ -12,15 +12,19 @@ namespace StarWriter.Core.Audio
     public class AudioManager : SingletonPersistant<AudioManager>
     {
         #region Fields
+        [SerializeField]
         private AudioSource musicSource1;
+        [SerializeField]
         private AudioSource musicSource2;
+        [SerializeField]
         private AudioSource sfxSource;
 
         private bool firstMusicSourceIsPlaying;
         #endregion
 
-        private void Start()
+        private void Awake()
         {
+            base.Awake();
             //Create AudioSources and save them as references
             musicSource1 = this.gameObject.AddComponent<AudioSource>();
             musicSource2 = this.gameObject.AddComponent<AudioSource>();
