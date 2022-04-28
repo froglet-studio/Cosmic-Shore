@@ -1892,7 +1892,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ac5b2ad77b8a2454e81ef48f41374bfe, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_MaxEnginePower: 25
+  m_MaxEnginePower: 35
   m_Lift: 0
   m_ZeroLiftSpeed: 0
   m_RollEffect: 0.01

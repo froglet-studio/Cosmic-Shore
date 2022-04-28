@@ -31,7 +31,7 @@ namespace StarWriter.Core.Input
         [SerializeField]
         TextMeshProUGUI outputText;
 
-        float touchScaler = .1f;
+        float touchScaler = .005f;
 
         public ShipController controller;
 
@@ -70,11 +70,6 @@ namespace StarWriter.Core.Input
                 //updates GameObjects rotation from input devices gyroscope
                 gyroTransform.rotation = displacementQ * GyroToUnity(gyro.attitude) * empiricalCorrection;
             }
-        }
-
-        private void FixedUpdate()
-        {
-
             float throttle = 1;
             lookAtTransform.position = shipTransform.position + (shipTransform.forward * lookAtOffset);
             if (SystemInfo.supportsGyroscope)
@@ -86,10 +81,10 @@ namespace StarWriter.Core.Input
                 var yr = 0f;
                 var xl = 0f;
                 var xr = 0f;
-                
+
                 if (UnityEngine.Input.touches.Length == 2)
                 {
-                    if (UnityEngine.Input.touches[0].position.x < UnityEngine.Input.touches[1].position.x)
+                    if (UnityEngine.Input.touches[0].position.x <= UnityEngine.Input.touches[1].position.x)
                     {
                         yl = UnityEngine.Input.touches[0].position.y;
                         xl = UnityEngine.Input.touches[0].position.x;
@@ -104,28 +99,26 @@ namespace StarWriter.Core.Input
                         yr = UnityEngine.Input.touches[0].position.y;
                         xr = UnityEngine.Input.touches[0].position.x;
                     }
-                                
-                                
-                        //pitch
-                        displacementQ = Quaternion.AngleAxis((((yl + yr) / 2) - (Screen.currentResolution.height / 2)) * .003f
-                                        , shipTransform.right) * displacementQ;
-                        //roll
-                        displacementQ = Quaternion.AngleAxis((yr - yl) * .003f
-                                        , shipTransform.forward) * displacementQ;
 
-                        //yaw
-                        displacementQ = Quaternion.AngleAxis((((xl + xr) / 2) - (Screen.currentResolution.width / 2)) * .003f
-                                        , shipTransform.up) * displacementQ;
 
-                        
-                                
-                } 
-    
+                    //pitch
+                    displacementQ = Quaternion.AngleAxis((((yl + yr) / 2) - (Screen.currentResolution.height / 2)) * touchScaler
+                                    , shipTransform.right) * displacementQ;
+                    //roll
+                    displacementQ = Quaternion.AngleAxis((yr - yl) * touchScaler
+                                    , shipTransform.forward) * displacementQ;
+
+                    //yaw
+                    displacementQ = Quaternion.AngleAxis((((xl + xr) / 2) - (Screen.currentResolution.width / 2)) * touchScaler
+                                    , shipTransform.up) * displacementQ;
+                }
+
             }
 
             // Pass the input to the spacecraft
             controller.Move(0, 0, 0, throttle, false);  //currently passing static values for simple forward movement
         }
+
 
         //Coverts Android and Mobile Device Quaterion into Unity Quaterion  TODO: Test
         private Quaternion GyroToUnity(Quaternion q)
