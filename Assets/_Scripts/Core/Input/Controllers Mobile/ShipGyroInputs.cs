@@ -65,7 +65,6 @@ namespace StarWriter.Core.Input
                 empiricalCorrection = GyroToUnity(empiricalCorrection);
                 gyro.enabled = true;
                 Screen.sleepTimeout = SleepTimeout.NeverSleep;
-                //outputVector = gameObject.GetComponent<LineRenderer>();
                 displacementQ = new Quaternion(0,0,0, -1);
                 //displacementQ = Quaternion.AngleAxis(gyro.attitude.eulerAngles.y, Vector3.up);
             }
