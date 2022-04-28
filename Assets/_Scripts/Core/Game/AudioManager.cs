@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Audio;
+using StarWriter.Core;
 
 /// <summary>
 /// Simple Audio Manager by JVZ upgrade to AudioMaster if needed 
@@ -20,19 +21,34 @@ namespace StarWriter.Core.Audio
         private AudioSource sfxSource;
 
         private bool firstMusicSourceIsPlaying;
+        private bool isMuted = false;
+
+        private GameSetting gameSetting;
         #endregion
 
-        private void Awake()
+        private void Start()
         {
-            base.Awake();
             //Create AudioSources and save them as references
             musicSource1 = this.gameObject.AddComponent<AudioSource>();
             musicSource2 = this.gameObject.AddComponent<AudioSource>();
             sfxSource = this.gameObject.AddComponent<AudioSource>();
+            isMuted = gameSetting.IsMuted;
 
             //Loop the music tracks
             musicSource1.loop = true;
             musicSource2.loop = true;
+        }
+
+        private void FixedUpdate()
+        {
+            if (isMuted)
+            {
+                SetMusicVolume(1f);
+            }
+            if (!isMuted)
+            {
+                SetMusicVolume(0f);
+            }
         }
 
         public void PlayMusicClip(AudioClip audioClip)
@@ -116,6 +132,11 @@ namespace StarWriter.Core.Audio
         public void SetSFXVolume(float volume)
         {
             sfxSource.volume = volume;
+        }
+
+        public void ToggleMute()
+        {
+            isMuted = !isMuted;
         }
 
     }
