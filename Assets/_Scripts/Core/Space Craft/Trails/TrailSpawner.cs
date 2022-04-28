@@ -16,10 +16,10 @@ public class TrailSpawner : MonoBehaviour
     {
         while (true)
         {
+            yield return new WaitForSeconds(.1f);
             trail.transform.position = head.transform.position - Vector3.Scale(head.transform.forward,offsetVector);
             trail.transform.rotation = head.transform.rotation;
             Instantiate<GameObject>(trail);
-            yield return new WaitForSeconds(.1f);
         }
     }
 
