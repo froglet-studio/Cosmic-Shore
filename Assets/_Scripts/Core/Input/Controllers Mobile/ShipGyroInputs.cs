@@ -15,7 +15,7 @@ namespace StarWriter.Core.Input
         private Transform lookAtTransform;
 
         [SerializeField]
-        float lookAtOffset = 50;
+        float lookAtOffset = 200;
 
         [SerializeField]
         CinemachineVirtualCameraBase cam1;
@@ -87,39 +87,39 @@ namespace StarWriter.Core.Input
                 var xl = 0f;
                 var xr = 0f;
                 
-                            if (UnityEngine.Input.touches.Length == 2)
-                            {
-                                if (UnityEngine.Input.touches[0].position.x < UnityEngine.Input.touches[1].position.x)
-                                {
-                                    yl = UnityEngine.Input.touches[0].position.y;
-                                    xl = UnityEngine.Input.touches[0].position.x;
-                                    yr = UnityEngine.Input.touches[1].position.y;
-                                    xr = UnityEngine.Input.touches[1].position.x;
+                if (UnityEngine.Input.touches.Length == 2)
+                {
+                    if (UnityEngine.Input.touches[0].position.x < UnityEngine.Input.touches[1].position.x)
+                    {
+                        yl = UnityEngine.Input.touches[0].position.y;
+                        xl = UnityEngine.Input.touches[0].position.x;
+                        yr = UnityEngine.Input.touches[1].position.y;
+                        xr = UnityEngine.Input.touches[1].position.x;
 
-                                }
-                                else
-                                {
-                                    yl = UnityEngine.Input.touches[1].position.y;
-                                    xl = UnityEngine.Input.touches[1].position.x;
-                                    yr = UnityEngine.Input.touches[0].position.y;
-                                    xr = UnityEngine.Input.touches[0].position.x;
-                                }
+                    }
+                    else
+                    {
+                        yl = UnityEngine.Input.touches[1].position.y;
+                        xl = UnityEngine.Input.touches[1].position.x;
+                        yr = UnityEngine.Input.touches[0].position.y;
+                        xr = UnityEngine.Input.touches[0].position.x;
+                    }
                                 
                                 
-                                    //pitch
-                                    displacementQ = Quaternion.AngleAxis((((yl + yr) / 2) - (Screen.currentResolution.height / 2)) * .003f
-                                                   , shipTransform.right) * displacementQ;
-                                    //roll
-                                    displacementQ = Quaternion.AngleAxis((yr - yl) * .003f
-                                                   , shipTransform.forward) * displacementQ;
+                        //pitch
+                        displacementQ = Quaternion.AngleAxis((((yl + yr) / 2) - (Screen.currentResolution.height / 2)) * .003f
+                                        , shipTransform.right) * displacementQ;
+                        //roll
+                        displacementQ = Quaternion.AngleAxis((yr - yl) * .003f
+                                        , shipTransform.forward) * displacementQ;
 
-                                    //yaw
-                                    displacementQ = Quaternion.AngleAxis((((xl + xr) / 2) - (Screen.currentResolution.width / 2)) * .003f
-                                                   , shipTransform.up) * displacementQ;
+                        //yaw
+                        displacementQ = Quaternion.AngleAxis((((xl + xr) / 2) - (Screen.currentResolution.width / 2)) * .003f
+                                        , shipTransform.up) * displacementQ;
 
                         
                                 
-                            } 
+                } 
     
             }
 
