@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-[CreateAssetMenu(fileName = "Ship", menuName ="SO/Ship")]
+[CreateAssetMenu(fileName = "NewShip", menuName ="Create SO/Ship")]
 public class SO_Ship_Base : ScriptableObject
 {
     [SerializeField]
