@@ -11,18 +11,6 @@ public class MainMenu : MonoBehaviour
 {
     public GameObject Game_Settings_Panel;
 
-    // Start is called before the first frame update
-    void Start()
-    {
-        
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
-
     public void OnPressButtonStartGame()
     {
         SceneManager.LoadScene(1);
