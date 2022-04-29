@@ -529,7 +529,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1012622454481399128}
   m_Layer: 0
-  m_Name: Spacecraft_Model
+  m_Name: Spaceship_Model
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -701,7 +701,6 @@ MonoBehaviour:
   cam2: {fileID: 841585368629623878}
   shipTransform: {fileID: 351566850077663006}
   outputText: {fileID: 6058925366206520194}
-  controller: {fileID: 7697921296212747144}
 --- !u!114 &7697921296212747144
 MonoBehaviour:
   m_ObjectHideFlags: 0
