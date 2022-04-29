@@ -6,8 +6,8 @@ public class TrailSpawner : MonoBehaviour
 {
     public GameObject trail;
     public Transform head;
-    public float offset = 0.0f;
-    public Vector3 offsetVector;
+    public float offset = 1.5f;
+    
 
     bool hasTail = true;
     private IEnumerator trailCoroutine;
@@ -17,7 +17,7 @@ public class TrailSpawner : MonoBehaviour
         while (true)
         {
             yield return new WaitForSeconds(.1f);
-            trail.transform.position = head.transform.position - Vector3.Scale(head.transform.forward,offsetVector);
+            trail.transform.position = head.transform.position - head.transform.forward*offset;
             trail.transform.rotation = head.transform.rotation;
             Instantiate<GameObject>(trail);
         }
@@ -27,7 +27,7 @@ public class TrailSpawner : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        offsetVector = new Vector3(offset, offset, offset);
+        
         if(trailCoroutine != null)
         {
             StopCoroutine(trailCoroutine);
@@ -37,24 +37,24 @@ public class TrailSpawner : MonoBehaviour
 
     }
 
-    // Update is called once per frame
-    void Update()
-    {
+    //// Update is called once per frame
+    //void Update()
+    //{
         
-        if (Input.GetKeyDown(KeyCode.Space))
-        {
-            if (hasTail)
-            {
-                StopCoroutine(trailCoroutine);
-                hasTail = false;
-            }
-            else if (!hasTail)
-            {
-                StartCoroutine(trailCoroutine);
-                hasTail = true;
-            }
+    //    if (Input.GetKeyDown(KeyCode.Space))
+    //    {
+    //        if (hasTail)
+    //        {
+    //            StopCoroutine(trailCoroutine);
+    //            hasTail = false;
+    //        }
+    //        else if (!hasTail)
+    //        {
+    //            StartCoroutine(trailCoroutine);
+    //            hasTail = true;
+    //        }
             
-        }
+    //    }
         
-    }
+    //}
 }
