@@ -14,10 +14,10 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/UI Designs/MainMenu Design 1.unity
     guid: 102d08d71236a7342a94518fff75949c
-  - enabled: 0
+  - enabled: 1
     path: Assets/Scenes/Gyro Test Scene.unity
     guid: 5e8d9932a4d84a1488c2dad96c8135dd
-  - enabled: 1
+  - enabled: 0
     path: Assets/Scenes/Game.unity
     guid: e79897aa556b6a0409f3c0cfb218adae
   m_configObjects:
