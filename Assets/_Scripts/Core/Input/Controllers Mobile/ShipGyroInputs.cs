@@ -102,7 +102,7 @@ namespace StarWriter.Core.Input
 
 
                     //pitch
-                    displacementQ = Quaternion.AngleAxis((((yl + yr) / 2) - (Screen.currentResolution.height / 2)) * touchScaler
+                    displacementQ = Quaternion.AngleAxis((((yl + yr) / 2) - (Screen.currentResolution.height / 2)) * -touchScaler
                                     , shipTransform.right) * displacementQ;
                     //roll
                     displacementQ = Quaternion.AngleAxis((yr - yl) * touchScaler
