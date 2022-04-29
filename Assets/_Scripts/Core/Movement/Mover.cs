@@ -17,6 +17,7 @@ namespace StarWriter.Movement
         // Update is called once per frame
         void Update()
         {
+            //Player Gyro
             if (UnityEngine.Input.gyro.userAcceleration.magnitude > 2 && Vector3.Dot(UnityEngine.Input.gyro.userAcceleration,transform.forward)>.5)
             {
                 transform.position += speed * UnityEngine.Input.gyro.userAcceleration;
