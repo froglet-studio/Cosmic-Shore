@@ -7,7 +7,7 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: New Material
+  m_Name: Pill material broken
   m_Shader: {fileID: 4800000, guid: 8d2bb70cbf9db8d4da26e15b26e74248, type: 3}
   m_ValidKeywords:
   - _EMISSION
@@ -112,12 +112,12 @@ Material:
     - _UVSec: 0
     - _ZWrite: 0
     m_Colors:
-    - _BaseColor: {r: 0.32549015, g: 0.70980394, b: 0.97647065, a: 0.40392157}
-    - _Color: {r: 0.32549012, g: 0.70980394, b: 0.97647065, a: 0.40392157}
-    - _EmissionColor: {r: 0.5840786, g: 0.03189604, b: 0.9911022, a: 1}
+    - _BaseColor: {r: 0.2643289, g: 0.5594047, b: 0.764151, a: 0.69411767}
+    - _Color: {r: 0.26432887, g: 0.5594047, b: 0.764151, a: 0.69411767}
+    - _EmissionColor: {r: 0.07096237, g: 0.17426346, b: 0.24528301, a: 0.40392157}
     - _SpecColor: {r: 1, g: 1, b: 1, a: 0.791}
   m_BuildTextureStacks: []
---- !u!114 &7228982072468609116
+--- !u!114 &7761762818342649718
 MonoBehaviour:
   m_ObjectHideFlags: 11
   m_CorrespondingSourceObject: {fileID: 0}

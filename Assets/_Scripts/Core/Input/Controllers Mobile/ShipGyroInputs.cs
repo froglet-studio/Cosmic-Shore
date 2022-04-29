@@ -33,7 +33,7 @@ namespace StarWriter.Core.Input
 
         float touchScaler = .005f;
 
-        public ShipController controller;
+        //public ShipController controller;
 
         private Gyroscope gyro;
         private Quaternion empiricalCorrection;
@@ -71,12 +71,12 @@ namespace StarWriter.Core.Input
 
                 gyroTransform.rotation = displacementQ * GyroToUnity(gyro.attitude) * empiricalCorrection;
             }
-            float throttle = 1;
+            float throttle = .3f;
             lookAtTransform.position = shipTransform.position + (shipTransform.forward * lookAtOffset);
             if (SystemInfo.supportsGyroscope)
             {
                 Quaternion gyroRotation = gyroTransform.rotation;
-                shipTransform.rotation = gyroRotation;
+                shipTransform.rotation = Quaternion.Lerp(gyroRotation, shipTransform.rotation, .9f); //lerp is dampening the jitter from gyro sensitivity
 
                 var yl = 0f;
                 var yr = 0f;
@@ -112,12 +112,14 @@ namespace StarWriter.Core.Input
                     //yaw
                     displacementQ = Quaternion.AngleAxis((((xl + xr) / 2) - (Screen.currentResolution.width / 2)) * touchScaler
                                     , shipTransform.up) * displacementQ;
+                    //throttle
+                    throttle = (xr - xl) * touchScaler*.1f;
                 }
 
             }
 
-            // Pass the input to the spacecraft
-            controller.Move(0, 0, 0, throttle, false);  //currently passing static values for simple forward movement
+            //Move ship forward
+            shipTransform.position += shipTransform.forward * throttle;
         }
 
 
