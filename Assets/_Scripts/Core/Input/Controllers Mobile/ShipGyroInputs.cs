@@ -68,6 +68,7 @@ namespace StarWriter.Core.Input
             if (SystemInfo.supportsGyroscope)
             {
                 //updates GameObjects rotation from input devices gyroscope
+
                 gyroTransform.rotation = displacementQ * GyroToUnity(gyro.attitude) * empiricalCorrection;
             }
             float throttle = 1;
