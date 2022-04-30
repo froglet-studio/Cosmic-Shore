@@ -76,7 +76,7 @@ namespace StarWriter.Core.Input
             if (SystemInfo.supportsGyroscope)
             {
                 Quaternion gyroRotation = gyroTransform.rotation;
-                shipTransform.rotation = Quaternion.Lerp(gyroRotation, shipTransform.rotation, .9f); //lerp is dampening the jitter from gyro sensitivity
+                shipTransform.rotation = Quaternion.Lerp(gyroRotation, shipTransform.rotation, .8f); //lerp is dampening the jitter from gyro sensitivity
 
                 var yl = 0f;
                 var yr = 0f;
@@ -113,7 +113,7 @@ namespace StarWriter.Core.Input
                     displacementQ = Quaternion.AngleAxis((((xl + xr) / 2) - (Screen.currentResolution.width / 2)) * touchScaler
                                     , shipTransform.up) * displacementQ;
                     //throttle
-                    throttle = (xr - xl) * touchScaler*.1f;
+                    throttle = (xr - xl) * touchScaler*.15f-.2f;
                 }
 
             }

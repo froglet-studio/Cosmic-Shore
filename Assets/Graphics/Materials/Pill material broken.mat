@@ -102,7 +102,7 @@ Material:
     - _QueueOffset: 0
     - _ReceiveShadows: 1
     - _Shininess: 0
-    - _Smoothness: 0.791
+    - _Smoothness: 1
     - _SmoothnessSource: 0
     - _SmoothnessTextureChannel: 0
     - _SpecSource: 0
@@ -114,8 +114,8 @@ Material:
     m_Colors:
     - _BaseColor: {r: 0.2643289, g: 0.5594047, b: 0.764151, a: 0.69411767}
     - _Color: {r: 0.26432887, g: 0.5594047, b: 0.764151, a: 0.69411767}
-    - _EmissionColor: {r: 0.03529412, g: 0.08627451, b: 0.12352941, a: 0.40392157}
-    - _SpecColor: {r: 1, g: 1, b: 1, a: 0.791}
+    - _EmissionColor: {r: 0.03137255, g: 0.08627451, b: 0.1254902, a: 0.40392157}
+    - _SpecColor: {r: 1, g: 1, b: 1, a: 1}
   m_BuildTextureStacks: []
 --- !u!114 &7761762818342649718
 MonoBehaviour:

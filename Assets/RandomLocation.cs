@@ -26,7 +26,7 @@ public class RandomLocation : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        brokenSphere.transform.position = transform.position + shipTransform.forward*2;
+        brokenSphere.transform.position = transform.position;
         brokenSphere.transform.up = shipTransform.up;
         Instantiate<GameObject>(brokenSphere);
         transform.position = Random.insideUnitSphere * sphereRadius;
