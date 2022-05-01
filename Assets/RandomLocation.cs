@@ -34,7 +34,7 @@ public class RandomLocation : MonoBehaviour
     private void OnTriggerEnter(Collider other)
     {
         brokenSphere.transform.position = transform.position;
-        brokenSphere.transform.localEulerAngles = shipTransform.localEulerAngles;
+        brokenSphere.transform.localEulerAngles = transform.localEulerAngles;
         //brokenSphere.transform.forward = transform.forward;
         //brokenSphere.transform.right = transform.right;
         //brokenSphere.transform.up = transform.up;

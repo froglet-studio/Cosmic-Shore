@@ -218,7 +218,7 @@ MonoBehaviour:
   m_HorizontalAlignment: 1
   m_VerticalAlignment: 256
   m_textAlignment: 65535
-  m_characterSpacing: 0
+  m_characterSpacing: 6.23
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
@@ -778,7 +778,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 948a1051f33c87c4193f4eb223573b67, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  brokenSphere: {fileID: 8575668603598085987, guid: 0c80d1c3255737c42bc1d485c462419d,
+  brokenSphere: {fileID: 2556762211055109170, guid: 49b23c34db7391a4e99bf10bd446e519,
     type: 3}
   shipTransform: {fileID: 1556773156}
   outputText: {fileID: 57034285}
