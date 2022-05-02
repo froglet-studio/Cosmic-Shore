@@ -244,7 +244,7 @@ GameObject:
   - component: {fileID: 5591589985742792518}
   m_Layer: 0
   m_Name: Player
-  m_TagString: Untagged
+  m_TagString: Player
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -652,6 +652,11 @@ PrefabInstance:
       propertyPath: m_Name
       value: Amoebius MANTA RAY
       objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: f2920c5f25a3ef648bcb3b5ee86cb2c1,
+        type: 3}
+      propertyPath: m_TagString
+      value: Player_Ship
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: f2920c5f25a3ef648bcb3b5ee86cb2c1, type: 3}
 --- !u!4 &351566850077663006 stripped
@@ -1012,12 +1017,12 @@ PrefabInstance:
     - target: {fileID: 4585484394571728269, guid: 807f09cbc0bfb7d4c9847823fc7bab58,
         type: 3}
       propertyPath: m_LocalRotation.y
-      value: -0.03607787
+      value: -0.0360779
       objectReference: {fileID: 0}
     - target: {fileID: 4585484394571728269, guid: 807f09cbc0bfb7d4c9847823fc7bab58,
         type: 3}
       propertyPath: m_LocalRotation.z
-      value: 0.007995782
+      value: 0.007995789
       objectReference: {fileID: 0}
     - target: {fileID: 4585484394571728270, guid: 807f09cbc0bfb7d4c9847823fc7bab58,
         type: 3}
