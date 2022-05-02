@@ -11,8 +11,11 @@ namespace StarWriter.Core
         #region Audio Settings
         [SerializeField]
         private bool isMuted = false;
+        [SerializeField]
+        private bool tutorialEnabled = true;
 
         public bool IsMuted { get => isMuted; }
+        public bool TutorialEnabled { get => tutorialEnabled; set => tutorialEnabled = value; }
         #endregion
 
         private void Start()

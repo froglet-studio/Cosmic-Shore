@@ -37,6 +37,7 @@ namespace StarWriter.Core.Audio
             //Loop the music tracks
             musicSource1.loop = true;
             musicSource2.loop = true;
+            PlayMusicClip(musicSource2.clip);
         }
 
         private void FixedUpdate()
