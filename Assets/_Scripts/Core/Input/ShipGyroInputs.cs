@@ -10,12 +10,6 @@ namespace StarWriter.Core.Input
 
         private Transform gyroTransform;
 
-        [SerializeField]
-
-        private Transform lookAtTransform;
-
-        [SerializeField]
-        float lookAtOffset = 200;
 
         [SerializeField]
         CinemachineVirtualCameraBase cam1;
@@ -72,7 +66,6 @@ namespace StarWriter.Core.Input
                 gyroTransform.rotation = displacementQ * GyroToUnity(gyro.attitude) * empiricalCorrection;
             }
             float throttle = .3f;
-            lookAtTransform.position = shipTransform.position + (shipTransform.forward * lookAtOffset);
             if (SystemInfo.supportsGyroscope)
             {
                 Quaternion gyroRotation = gyroTransform.rotation;

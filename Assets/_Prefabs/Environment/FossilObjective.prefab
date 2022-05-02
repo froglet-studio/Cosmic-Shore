@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 2556762211055109174}
   - component: {fileID: 2556762211055109175}
   m_Layer: 0
-  m_Name: Sphere
+  m_Name: FossilObjective
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
