@@ -713,7 +713,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1032300561}
   m_Layer: 0
-  m_Name: SFX 1
+  m_Name: SFX Collision 1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
