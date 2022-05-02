@@ -1,4 +1,4 @@
-﻿namespace Mobius.Core
+﻿namespace StarWriter.Core
 {
     public interface IAction
     {

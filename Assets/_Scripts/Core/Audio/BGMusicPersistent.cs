@@ -11,7 +11,10 @@ public class BGMusicPersistent : MonoBehaviour
     private static BGMusicPersistent instance = null;
     public static BGMusicPersistent Instance { get { return instance; } }
 
-    private AudioSource bgMusicSource;
+    [SerializeField]
+    private AudioSource bgMusicSource1;
+    [SerializeField]
+    private AudioSource bgMusicSource2;
 
     private bool isMuted = false;
 
@@ -32,18 +35,19 @@ public class BGMusicPersistent : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        bgMusicSource = this.gameObject.AddComponent<AudioSource>();
+        bgMusicSource1 = this.gameObject.AddComponent<AudioSource>();
+        bgMusicSource2 = this.gameObject.AddComponent<AudioSource>();
     }
-
-    public void PlayMusicClip()
+    
+    public void PlayMusicClip(AudioSource audioSource)
     {
-        bgMusicSource.volume = 1;
-        bgMusicSource.Play();
+        audioSource.volume = 1;
+        audioSource.Play();
     }
 
-    public void ToggleMute()
+    public void ToggleMute(AudioSource audioSource)
     {
         isMuted = !isMuted;
-        bgMusicSource.mute = isMuted;        
+        audioSource.mute = isMuted;        
     }
 }
