@@ -23,6 +23,12 @@ namespace StarWriter.Core.Input
         public Transform shipTransform;
 
         [SerializeField]
+        Transform LeftWing;
+
+        [SerializeField]
+        Transform RightWing;
+
+        [SerializeField]
         TextMeshProUGUI outputText;
 
         float touchScaler = .005f;
@@ -32,6 +38,9 @@ namespace StarWriter.Core.Input
         private Gyroscope gyro;
         private Quaternion empiricalCorrection;
 
+        private float throttle;
+        float defaultThrottle = .3f;
+        
  
         Quaternion displacementQ;
 
@@ -47,6 +56,7 @@ namespace StarWriter.Core.Input
         // Start is called before the first frame update
         void Start()
         {
+            float throttle = defaultThrottle;
             if (SystemInfo.supportsGyroscope)
             {
                 empiricalCorrection = GyroToUnity(empiricalCorrection);
@@ -65,7 +75,7 @@ namespace StarWriter.Core.Input
 
                 gyroTransform.rotation = displacementQ * GyroToUnity(gyro.attitude) * empiricalCorrection;
             }
-            float throttle = .3f;
+            throttle = Mathf.Lerp(throttle,defaultThrottle,.1f);
             if (SystemInfo.supportsGyroscope)
             {
                 Quaternion gyroRotation = gyroTransform.rotation;
@@ -113,6 +123,11 @@ namespace StarWriter.Core.Input
 
             //Move ship forward
             shipTransform.position += shipTransform.forward * throttle;
+
+            //Move wings
+            LeftWing.localRotation = Quaternion.Euler(0, 0, -(throttle-defaultThrottle)*50);
+            RightWing.localRotation = Quaternion.Euler(0,0, (throttle - defaultThrottle) * 50);
+            
         }
 
 

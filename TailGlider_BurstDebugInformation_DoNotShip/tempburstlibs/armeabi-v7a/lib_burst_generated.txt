@@ -157,12 +157,12 @@ Library: lib_burst_generated
 --root-assembly=C:\Users\gradi\source\repos\Star-Writer\Temp\StagingArea\Data\Managed\Unity.Mathematics.dll
 --root-assembly=C:\Users\gradi\source\repos\Star-Writer\Temp\StagingArea\Data\Managed\Unity.InputSystem.dll
 --root-assembly=C:\Users\gradi\source\repos\Star-Writer\Temp\StagingArea\Data\Managed\Unity.RenderPipelines.Universal.Runtime.dll
---root-assembly=C:\Users\gradi\source\repos\Star-Writer\Temp\StagingArea\Data\Managed\Assembly-CSharp.dll
 --root-assembly=C:\Users\gradi\source\repos\Star-Writer\Temp\StagingArea\Data\Managed\Unity.Burst.dll
 --root-assembly=C:\Users\gradi\source\repos\Star-Writer\Temp\StagingArea\Data\Managed\Unity.TextMeshPro.dll
 --root-assembly=C:\Users\gradi\source\repos\Star-Writer\Temp\StagingArea\Data\Managed\Cinemachine.dll
 --root-assembly=C:\Users\gradi\source\repos\Star-Writer\Temp\StagingArea\Data\Managed\Unity.Timeline.dll
 --root-assembly=C:\Users\gradi\source\repos\Star-Writer\Temp\StagingArea\Data\Managed\Unity.RenderPipeline.Universal.ShaderLibrary.dll
+--root-assembly=C:\Users\gradi\source\repos\Star-Writer\Temp\StagingArea\Data\Managed\Assembly-CSharp.dll
 --root-assembly=C:\Users\gradi\source\repos\Star-Writer\Temp\StagingArea\Data\Managed\Unity.Notifications.Android.dll
 --root-assembly=C:\Users\gradi\source\repos\Star-Writer\Temp\StagingArea\Data\Managed\Unity.AdaptivePerformance.Samsung.Android.dll
 --root-assembly=C:\Users\gradi\source\repos\Star-Writer\Temp\StagingArea\Data\Managed\Unity.Profiling.Core.dll
