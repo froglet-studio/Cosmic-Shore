@@ -35,9 +35,9 @@ public class RandomLocation : MonoBehaviour
     {
         brokenSphere.transform.position = transform.position;
         brokenSphere.transform.localEulerAngles = transform.localEulerAngles;
-        //brokenSphere.transform.forward = transform.forward;
-        //brokenSphere.transform.right = transform.right;
-        //brokenSphere.transform.up = transform.up;
+        //spentMutonPrefab.transform.forward = transform.forward;
+        //spentMutonPrefab.transform.right = transform.right;
+        //spentMutonPrefab.transform.up = transform.up;
         Instantiate<GameObject>(brokenSphere);
         transform.position = Random.insideUnitSphere * sphereRadius;
         score++;
