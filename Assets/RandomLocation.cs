@@ -11,9 +11,6 @@ public class RandomLocation : MonoBehaviour
     GameObject brokenSphere;
 
     [SerializeField]
-    Transform shipTransform;
-
-    [SerializeField]
     TextMeshProUGUI outputText;
 
     int score = 0;
@@ -35,9 +32,6 @@ public class RandomLocation : MonoBehaviour
     {
         brokenSphere.transform.position = transform.position;
         brokenSphere.transform.localEulerAngles = transform.localEulerAngles;
-        //spentMutonPrefab.transform.forward = transform.forward;
-        //spentMutonPrefab.transform.right = transform.right;
-        //spentMutonPrefab.transform.up = transform.up;
         Instantiate<GameObject>(brokenSphere);
         transform.position = Random.insideUnitSphere * sphereRadius;
         score++;
