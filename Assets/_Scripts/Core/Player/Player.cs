@@ -4,92 +4,73 @@ using System.Collections.Generic;
 using UnityEngine;
 
 [System.Serializable]
-public class Player : MonoBehaviour, ICollidable, IDamagable
+public class Player : MonoBehaviour//,ICollidable, IDamagable
 {
-    private string playerName = default;
+    //private string playerName = default;
     [SerializeField]
-    private string playerUUID = "admin";
-    [SerializeField]
-    private float maxIntesity = 100f;
-    [SerializeField]
-    private float currentIntesity;
+    private string playerUUID;
+    //[SerializeField]
+    //private float maxIntesity = 100f;
+    //[SerializeField]
+    //private float currentIntesity;
 
 
-    public string PlayerName { get => playerName; set => playerName = value; }
+    //public string PlayerName { get => playerName; set => playerName = value; }
    
     public string PlayerUUID { get => playerUUID; set => playerUUID = value; }
 
-    public float CurrentIntesity { get => currentIntesity; set => currentIntesity = value; }
+    //public float CurrentIntesity { get => currentIntesity; set => currentIntesity = value; }
 
-    private void OnEnable()
-    {
-        Trail.OnTrailCollision += GainIntesity;
-        MutonPopUp.OnMutonPopUpCollision += GainIntesity;
-    }
+    //private void OnEnable()
+    //{
+    //    Trail.OnTrailCollision += GainIntesity;
+    //    MutonPopUp.OnMutonPopUpCollision += GainIntesity;
+    //}
 
-    private void OnDisable()
-    {
-        Trail.OnTrailCollision -= LoseIntesity;
-        MutonPopUp.OnMutonPopUpCollision -= LoseIntesity;
-    }
+    //private void OnDisable()
+    //{
+    //    Trail.OnTrailCollision -= GainIntesity;
+    //    MutonPopUp.OnMutonPopUpCollision -= GainIntesity;
+    //}
 
 
 
     // Start is called before the first frame update
     void Start()
     {
-        CurrentIntesity = maxIntesity;
+        //CurrentIntesity = maxIntesity;
     }
 
-    private void ChangePlayerName(string name)
-    {
-        playerName = name;
-    }
+    //private void ChangePlayerName(string name)
+    //{
+    //    playerName = name;
+    //}
 
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
+    
 
-    public void Collide()
-    {
-        TakeDamage(1f);
-    }
+    //public void Collide(Collider other)
+    //{
+    //    //TakeDamage(1f);
+    //}
 
-    public void TakeDamage(float amount)
-    {
-        Debug.Log("You have taken " + amount + " damage.");
-    }
+    //public void TakeDamage(float amount)
+    //{
+    //    Debug.Log("You have taken " + amount + " damage.");
+    //}
 
-    public void Respawn(Vector3 point)
-    {
-        //TODO get ship ref
-        //TODO Get Respawn point for a list of available points
-        //TODO return the ship to a respawn point
-        //TODO Set rotation
+    //public void Respawn(Vector3 point)
+    //{
+    //    //TODO get ship ref
+    //    //TODO Get Respawn point for a list of available points
+    //    //TODO return the ship to a respawn point
+    //    //TODO Set rotation
 
-    }
+    //}
 
-    private void LoseIntesity(float amount, string uuid)
-    {
-        CurrentIntesity -= amount;
-        if (CurrentIntesity <= 0)
-        {
-            CurrentIntesity = 0;
-            //TODO loss conditional met
 
-        }
-    }
-
-    private void GainIntesity(float amount, string uuid)
-    {
-        CurrentIntesity += amount;
-        if (CurrentIntesity >= 100)
-        {
-            CurrentIntesity = 100;
-
-        }
-    }
+    //private void GainIntesity(float amount, string uuid)
+    //{
+    //    CurrentIntesity += amount;
+    //}
 
 }
