@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0.0037152108, g: 0.010948347, b: 0.01847047, a: 1}
+  m_IndirectSpecularColor: {r: 0.00035158964, g: 0.0010360907, b: 0.0017479089, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -182,6 +182,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7fcb218adb3f54348a9de015bd773527, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  tutorialPanel: {fileID: 0}
+  isTutorialEnabled: 1
+  hasCompletedTutorial: 0
 --- !u!1 &108831375
 GameObject:
   m_ObjectHideFlags: 0
@@ -870,7 +873,7 @@ GameObject:
   - component: {fileID: 1143855768}
   - component: {fileID: 1143855769}
   m_Layer: 0
-  m_Name: BG Music
+  m_Name: Audio_Manager
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1445,6 +1448,26 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 1867118901}
     m_Modifications:
+    - target: {fileID: 2723023136654811723, guid: 7b41307a62a8b6f4499e38f52d12adcb,
+        type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2723023136654811723, guid: 7b41307a62a8b6f4499e38f52d12adcb,
+        type: 3}
+      propertyPath: m_AnchorMin.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2723023136654811723, guid: 7b41307a62a8b6f4499e38f52d12adcb,
+        type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 1480
+      objectReference: {fileID: 0}
+    - target: {fileID: 2723023136654811723, guid: 7b41307a62a8b6f4499e38f52d12adcb,
+        type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: -1204.6667
+      objectReference: {fileID: 0}
     - target: {fileID: 6044787630438630450, guid: 7b41307a62a8b6f4499e38f52d12adcb,
         type: 3}
       propertyPath: m_Pivot.x
@@ -1555,6 +1578,11 @@ PrefabInstance:
       propertyPath: m_Name
       value: Options_Menu_Panel
       objectReference: {fileID: 0}
+    - target: {fileID: 6044787630438630451, guid: 7b41307a62a8b6f4499e38f52d12adcb,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 6044787630438630454, guid: 7b41307a62a8b6f4499e38f52d12adcb,
         type: 3}
       propertyPath: Main_Menu_Panel
@@ -1565,6 +1593,56 @@ PrefabInstance:
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
       objectReference: {fileID: 1396375862}
+    - target: {fileID: 6044787630642287485, guid: 7b41307a62a8b6f4499e38f52d12adcb,
+        type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6044787630642287485, guid: 7b41307a62a8b6f4499e38f52d12adcb,
+        type: 3}
+      propertyPath: m_AnchorMin.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6044787630642287485, guid: 7b41307a62a8b6f4499e38f52d12adcb,
+        type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 1480
+      objectReference: {fileID: 0}
+    - target: {fileID: 6044787630642287485, guid: 7b41307a62a8b6f4499e38f52d12adcb,
+        type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: -734
+      objectReference: {fileID: 0}
+    - target: {fileID: 6044787631106046621, guid: 7b41307a62a8b6f4499e38f52d12adcb,
+        type: 3}
+      propertyPath: m_AnchorMax.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6044787631106046621, guid: 7b41307a62a8b6f4499e38f52d12adcb,
+        type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6044787631106046621, guid: 7b41307a62a8b6f4499e38f52d12adcb,
+        type: 3}
+      propertyPath: m_AnchorMin.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6044787631106046621, guid: 7b41307a62a8b6f4499e38f52d12adcb,
+        type: 3}
+      propertyPath: m_AnchorMin.y
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6044787631106046621, guid: 7b41307a62a8b6f4499e38f52d12adcb,
+        type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 1480
+      objectReference: {fileID: 0}
+    - target: {fileID: 6044787631106046621, guid: 7b41307a62a8b6f4499e38f52d12adcb,
+        type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: -249.33334
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 7b41307a62a8b6f4499e38f52d12adcb, type: 3}
 --- !u!1001 &6250432394074557955

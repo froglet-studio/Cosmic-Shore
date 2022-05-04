@@ -7,7 +7,8 @@ public class Trail : MonoBehaviour, ICollidable
     [SerializeField]
     public float intensityAmountloss = -3f;
 
-    public static event Action<float, string> OnTrailCollision;
+    public delegate void TrailCollision(float amount, string uuid);
+    public static event TrailCollision OnTrailCollision;
 
     // Start is called before the first frame update
     void Start()

@@ -10,9 +10,10 @@ public class MutonPopUp : MonoBehaviour, ICollidable
     GameObject spentMutonPrefab;
 
     [SerializeField]
-    public float intensityAmountloss = 10f;
+    public float intensityAmount = 10f;
 
-    public static event Action<float, string> OnMutonPopUpCollision;
+    public delegate void PopUpCollision(float amount, string uuid);
+    public static event PopUpCollision OnMutonPopUpCollision;
 
 
     private void OnTriggerEnter(Collider other)
@@ -21,7 +22,7 @@ public class MutonPopUp : MonoBehaviour, ICollidable
         spentMutonPrefab.transform.localEulerAngles = transform.localEulerAngles;        
         Instantiate<GameObject>(spentMutonPrefab);
         transform.position = UnityEngine.Random.insideUnitSphere * sphereRadius;
-        OnMutonPopUpCollision(intensityAmountloss, other.gameObject.GetComponent<Player>().PlayerUUID);
+        OnMutonPopUpCollision(intensityAmount, other.gameObject.GetComponent<Player>().PlayerUUID);
         //TODO Decay brokenSphere and clean up
         //Collide();
     }
@@ -29,7 +30,7 @@ public class MutonPopUp : MonoBehaviour, ICollidable
     public void Collide()
     {
         //TODO play SFX sound
-        Destroy(this);
+        //Destroy(this);
         //TODO Respawn
     }
 }

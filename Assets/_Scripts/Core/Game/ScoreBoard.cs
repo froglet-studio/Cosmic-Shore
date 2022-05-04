@@ -12,11 +12,13 @@ using System;
 public class ScoreBoard : MonoBehaviour
 {
     [SerializeField]
+    private float score = 0f;
+    [SerializeField]
     private float maxIntesity = 100f;
     [SerializeField]
     private float currentIntesity;
 
-    public TextMeshProUGUI text;
+    public TextMeshProUGUI scoreText;
 
     private void OnEnable()
     {
@@ -52,6 +54,8 @@ public class ScoreBoard : MonoBehaviour
         currentIntesity += amount;
         if (currentIntesity >= 100)
         {
+            float excessIntesity = currentIntesity - 100f;
+            AddExcessIntesityToScore(excessIntesity);
             currentIntesity = 100;
 
         }
@@ -61,6 +65,14 @@ public class ScoreBoard : MonoBehaviour
     private void UpdateCurrentIntesity(float amount, string uuid)
     {
         currentIntesity = amount;
-        text.text = amount.ToString();
+        
     }
+
+    private void AddExcessIntesityToScore(float amount)
+    {
+        score += amount;
+        scoreText.text = score.ToString();
+    }
+
+    
 }

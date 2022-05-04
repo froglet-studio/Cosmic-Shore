@@ -108,7 +108,7 @@ public class TutorialManager : MonoBehaviour
     {
         hasCompletedTutorial = true;
         gameManager.HasCompletedTutorial = hasCompletedTutorial;
-        Destroy(this);
+        Destroy(this); 
     }
 
     public void ActivatePanel(string panelToBeActivated)

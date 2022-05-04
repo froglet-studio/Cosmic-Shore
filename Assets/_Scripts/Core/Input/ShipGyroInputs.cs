@@ -6,11 +6,11 @@ namespace StarWriter.Core.Input
 {
     public class ShipGyroInputs : MonoBehaviour
     {
-        [SerializeField]
 
-        private Transform gyroTransform;
+        public delegate void OnRoll();
+        public static event OnRoll onRoll;
 
-
+        #region Camera 
         [SerializeField]
         CinemachineVirtualCameraBase cam1;
 
@@ -19,6 +19,10 @@ namespace StarWriter.Core.Input
 
         int activePriority = 10;
         int inactivePriority = 1;
+        #endregion
+        #region Ship
+        [SerializeField]
+        private Transform gyroTransform;
 
         public Transform shipTransform;
 
@@ -30,13 +34,9 @@ namespace StarWriter.Core.Input
 
         [SerializeField]
         Transform RightWing;
-
-        [SerializeField]
-        TextMeshProUGUI outputText;
+        #endregion
 
         float touchScaler = .005f;
-
-        //public ShipController controller;
 
         private Gyroscope gyro;
         private Quaternion empiricalCorrection;
@@ -73,6 +73,7 @@ namespace StarWriter.Core.Input
         // Update is called once per frame
         void Update()
         {
+            
             if (SystemInfo.supportsGyroscope)
             {
                 //updates GameObjects rotation from input devices gyroscope
@@ -109,46 +110,21 @@ namespace StarWriter.Core.Input
                     yr = UnityEngine.Input.touches[0].position.y;
                     xr = UnityEngine.Input.touches[0].position.x;
                 }
+                
+
+                Pitch(yl, yr);
+                Roll(yl, yr);
+                Yaw(xl, xr);
+                Throttle(xl, xr);
 
 
-                //pitch
-                displacementQ = Quaternion.AngleAxis((((yl + yr) / 2) - (Screen.currentResolution.height / 2)) * -touchScaler
-                                , shipTransform.right) * displacementQ;
-                //roll
-                displacementQ = Quaternion.AngleAxis((yr - yl) * touchScaler
-                                , shipTransform.forward) * displacementQ;
-
-                //yaw
-                displacementQ = Quaternion.AngleAxis((((xl + xr) / 2) - (Screen.currentResolution.width / 2)) * touchScaler
-                                , shipTransform.up) * displacementQ;
-
-                //throttle
-                throttle = Mathf.Lerp(throttle, (xr - xl) * touchScaler*.17f-.2f,.2f);
-
-      
                 ///delete once model is zeroed
                 //LeftWing.localPosition += Vector3.down;
                 //RightWing.localPosition += Vector3.down;
                 //Fusilage.localPosition += Vector3.down*4f;
 
-                ///ship animations
-                LeftWing.localRotation = Quaternion.Lerp(LeftWing.localRotation, Quaternion.Euler(
-                                                            (((yl + yr) - (Screen.currentResolution.height)) + (yr - yl)) * .02f,
-                                                            0,
-                                                            -(throttle - defaultThrottle) * 50
-                                                                + ((xl + xr) - (Screen.currentResolution.width)) * .025f), lerpAmount);
+                PerformShipAnimations(yl, yr, xl, xr);
 
-                RightWing.localRotation = Quaternion.Lerp(RightWing.localRotation, Quaternion.Euler(
-                                                            ((yl + yr) - (Screen.currentResolution.height) - (yr - yl))  * .02f,
-                                                            0,
-                                                            (throttle - defaultThrottle) * 50
-                                                                + (((xl + xr)) - (Screen.currentResolution.width)) * .025f),lerpAmount);
-
-                Fusilage.localRotation = Quaternion.Lerp(Fusilage.localRotation, Quaternion.Euler(
-                                                            ((yl + yr) - (Screen.currentResolution.height))*.02f,
-                                                            0,
-                                                            (((xl + xr)) - (Screen.currentResolution.width)) * .01f),lerpAmount);
-                
                 ///delete once zeroed
                 //LeftWing.localPosition +=  Vector3.up;
                 //RightWing.localPosition += Vector3.up;
@@ -170,6 +146,54 @@ namespace StarWriter.Core.Input
             
             //Quaternion.AngleAxis()
             
+        }
+
+        private void PerformShipAnimations(float yl, float yr, float xl, float xr)
+        {
+            ///ship animations
+            LeftWing.localRotation = Quaternion.Lerp(LeftWing.localRotation, Quaternion.Euler(
+                                                        (((yl + yr) - (Screen.currentResolution.height)) + (yr - yl)) * .02f,
+                                                        0,
+                                                        -(throttle - defaultThrottle) * 50
+                                                            + ((xl + xr) - (Screen.currentResolution.width)) * .025f), lerpAmount);
+
+            RightWing.localRotation = Quaternion.Lerp(RightWing.localRotation, Quaternion.Euler(
+                                                        ((yl + yr) - (Screen.currentResolution.height) - (yr - yl)) * .02f,
+                                                        0,
+                                                        (throttle - defaultThrottle) * 50
+                                                            + (((xl + xr)) - (Screen.currentResolution.width)) * .025f), lerpAmount);
+
+            Fusilage.localRotation = Quaternion.Lerp(Fusilage.localRotation, Quaternion.Euler(
+                                                        ((yl + yr) - (Screen.currentResolution.height)) * .02f,
+                                                        0,
+                                                        (((xl + xr)) - (Screen.currentResolution.width)) * .01f), lerpAmount);
+        }
+
+        private void Throttle(float xl, float xr)
+        {
+            //throttle
+            throttle = Mathf.Lerp(throttle, (xr - xl) * touchScaler * .17f - .2f, .2f);
+        }
+
+        private void Yaw(float xl, float xr)
+        {
+            //yaw
+            displacementQ = Quaternion.AngleAxis((((xl + xr) / 2) - (Screen.currentResolution.width / 2)) * touchScaler
+                            , shipTransform.up) * displacementQ;
+        }
+
+        private void Roll(float yl, float yr)
+        {
+            //roll
+            displacementQ = Quaternion.AngleAxis((yr - yl) * touchScaler
+                            , shipTransform.forward) * displacementQ;
+        }
+
+        private void Pitch(float yl, float yr)
+        {
+            //pitch
+            displacementQ = Quaternion.AngleAxis((((yl + yr) / 2) - (Screen.currentResolution.height / 2)) * -touchScaler
+                            , shipTransform.right) * displacementQ;
         }
 
 
