@@ -48,6 +48,14 @@ namespace StarWriter.Core
             gameSettings.TutorialEnabled = isTutorialEnabled = !isTutorialEnabled;
             tutorialPanel.SetActive(isTutorialEnabled);
         }
+        public void ActivatePanel(string panelToBeActivated)
+        {
+            //Login_UI_Panel.SetActive(panelToBeActivated.Equals(Login_UI_Panel.name));
+            //Game_Options_UI_Panel.SetActive(panelToBeActivated.Equals(Game_Options_UI_Panel.name));
+            //Player_Options_UI_Panel.SetActive(panelToBeActivated.Equals(Player_Options_UI_Panel.name));
+            //Main_Menu_UI_Panel.SetActive(panelToBeActivated.Equals(Main_Menu_UI_Panel.name));
+            //Multiplayer_Lobby_UI_Panel.SetActive(panelToBeActivated.Equals(Multiplayer_Lobby_UI_Panel.name));
+        }
     }
 }
 

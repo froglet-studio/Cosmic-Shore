@@ -122,36 +122,30 @@ namespace StarWriter.Core.Input
                                 , shipTransform.up) * displacementQ;
 
                 //throttle
-                throttle = Mathf.Lerp(throttle, (xr - xl) * touchScaler *.17f-.2f,.2f);
+                throttle = Mathf.Lerp(throttle, (xr - xl) * touchScaler*.2f-.15f,.2f);
 
       
-                ///delete once model is zeroed
-                //LeftWing.localPosition += Vector3.down;
-                //RightWing.localPosition += Vector3.down;
-                //Fusilage.localPosition += Vector3.down*4f;
-
                 ///ship animations
                 LeftWing.localRotation = Quaternion.Lerp(LeftWing.localRotation, Quaternion.Euler(
-                                                            (((yl + yr) - (Screen.currentResolution.height)) + (yr - yl)) * .02f,
+                                                            (((yl + yr) - (Screen.currentResolution.height)) + (yr - yl)) * .025f,
                                                             0,
                                                             -(throttle - defaultThrottle) * 50
                                                                 + ((xl + xr) - (Screen.currentResolution.width)) * .025f), lerpAmount);
 
                 RightWing.localRotation = Quaternion.Lerp(RightWing.localRotation, Quaternion.Euler(
-                                                            ((yl + yr) - (Screen.currentResolution.height) - (yr - yl))  * .02f,
+                                                            ((yl + yr) - (Screen.currentResolution.height) - (yr - yl))  * .025f,
                                                             0,
                                                             (throttle - defaultThrottle) * 50
                                                                 + (((xl + xr)) - (Screen.currentResolution.width)) * .025f), lerpAmount);
 
                 Fusilage.localRotation = Quaternion.Lerp(Fusilage.localRotation, Quaternion.Euler(
-                                                            ((yl + yr) - (Screen.currentResolution.height)) * .02f,
+                                                            ((yl + yr) - (Screen.currentResolution.height))*.018f,//fusilage scales by half so it lags the wings
                                                             0,
-                                                            (((xl + xr)) - (Screen.currentResolution.width)) * .01f), lerpAmount);
+                                                            (((xl + xr)) - (Screen.currentResolution.width)) * .018f),lerpAmount);
+
+
                 
-                ///delete once zeroed
-                //LeftWing.localPosition +=  Vector3.up;
-                //RightWing.localPosition += Vector3.up;
-                //Fusilage.localPosition += Vector3.up;
+                
             }
             else
             {
