@@ -100,7 +100,6 @@ namespace StarWriter.Core.Input
                     xl = UnityEngine.Input.touches[0].position.x;
                     yr = UnityEngine.Input.touches[1].position.y;
                     xr = UnityEngine.Input.touches[1].position.x;
-
                 }
                 else
                 {
@@ -123,7 +122,7 @@ namespace StarWriter.Core.Input
                                 , shipTransform.up) * displacementQ;
 
                 //throttle
-                throttle = Mathf.Lerp(throttle, (xr - xl) * touchScaler*.17f-.2f,.2f);
+                throttle = Mathf.Lerp(throttle, (xr - xl) * touchScaler *.17f-.2f,.2f);
 
       
                 ///delete once model is zeroed
@@ -142,12 +141,12 @@ namespace StarWriter.Core.Input
                                                             ((yl + yr) - (Screen.currentResolution.height) - (yr - yl))  * .02f,
                                                             0,
                                                             (throttle - defaultThrottle) * 50
-                                                                + (((xl + xr)) - (Screen.currentResolution.width)) * .025f),lerpAmount);
+                                                                + (((xl + xr)) - (Screen.currentResolution.width)) * .025f), lerpAmount);
 
                 Fusilage.localRotation = Quaternion.Lerp(Fusilage.localRotation, Quaternion.Euler(
-                                                            ((yl + yr) - (Screen.currentResolution.height))*.02f,
+                                                            ((yl + yr) - (Screen.currentResolution.height)) * .02f,
                                                             0,
-                                                            (((xl + xr)) - (Screen.currentResolution.width)) * .01f),lerpAmount);
+                                                            (((xl + xr)) - (Screen.currentResolution.width)) * .01f), lerpAmount);
                 
                 ///delete once zeroed
                 //LeftWing.localPosition +=  Vector3.up;
