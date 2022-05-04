@@ -100,10 +100,11 @@ namespace StarWriter.Core.Input
                 
             }
             
-            foreach (Touch touch in UnityEngine.Input.touches)  { if (touch.tapCount == 2) { ChangeCamera(); } }
+            
 
             if (UnityEngine.Input.touches.Length == 2)
             {
+                if (UnityEngine.Input.touches[0].tapCount == 2 && UnityEngine.Input.touches[1].tapCount ==2) { ChangeCamera(); } 
                 var yl = 0f;
                 var yr = 0f;
                 var xl = 0f;
