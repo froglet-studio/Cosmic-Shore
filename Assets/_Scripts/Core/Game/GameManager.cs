@@ -26,7 +26,6 @@ namespace StarWriter.Core
         // Start is called before the first frame update
         void Start()
         {
-            
            isTutorialEnabled = gameSettings.TutorialEnabled;
            tutorialPanel.SetActive(isTutorialEnabled);
         }
@@ -35,12 +34,11 @@ namespace StarWriter.Core
         void Update()
         {
             if (!isTutorialEnabled) { return; }
-            if (isTutorialEnabled)
+            if (isTutorialEnabled && tutorialPanel != null)
             {
                 tutorialPanel.SetActive(isTutorialEnabled);
             }
         }
-
 
         // Toggles the Tutorial Panel on/off 
         public void OnClickTutorialToggleButton()
