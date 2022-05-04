@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 2556762211055109174}
   - component: {fileID: 2556762211055109175}
   m_Layer: 0
-  m_Name: FossilObjective
+  m_Name: FossilMuton
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -26,7 +26,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2556762211055109170}
   m_LocalRotation: {x: 0.38184297, y: 0.2557214, z: -0.7272574, w: 0.5098031}
-  m_LocalPosition: {x: 1.8268569, y: 2.2040417, z: 28.171665}
+  m_LocalPosition: {x: 53.80268, y: -26.104525, z: 27.209011}
   m_LocalScale: {x: 10, y: 10, z: 10}
   m_ConstrainProportionsScale: 0
   m_Children: []
