@@ -6,9 +6,20 @@ namespace StarWriter.Core.Input
 {
     public class ShipGyroInputs : MonoBehaviour
     {
+        public delegate void OnPitch();
+        public static event OnPitch onPitch;
 
         public delegate void OnRoll();
-        public static event OnRoll onRoll;
+        public static event OnRoll onRollEvent;
+
+        public delegate void OnYaw();
+        public static event OnYaw onYawEvent;
+
+        public delegate void OnThrottle();
+        public static event OnThrottle onThrottleEvent;
+
+        public delegate void OnGyro();
+        public static event OnGyro onGyroEvent;
 
         #region Camera 
         [SerializeField]

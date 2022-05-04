@@ -17,6 +17,8 @@ public class TutorialManager : MonoBehaviour
     [SerializeField]
     public GameObject LearnGyroPanel;
 
+    public List<TutorialStage> tutorialStages;
+
     private bool hasLearnedPitch = false;
     private bool hasLearnedYaw = false;
     private bool hasLearnedRoll = false;
