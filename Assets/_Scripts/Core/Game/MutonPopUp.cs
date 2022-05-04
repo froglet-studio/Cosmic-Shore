@@ -5,7 +5,8 @@ using Random = UnityEngine.Random;
 
 public class MutonPopUp : MonoBehaviour//, ICollidable
 {
-    float sphereRadius = 100;
+
+    public float sphereRadius = 100;
     [SerializeField]
     GameObject aiShip;
 

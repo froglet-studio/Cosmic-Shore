@@ -708,6 +708,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5a8f286a585edf943935c4316edeb2b6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  sphereRadius: 100
   aiShip: {fileID: 0}
   spentMutonPrefab: {fileID: 2556762211055109170, guid: 49b23c34db7391a4e99bf10bd446e519,
     type: 3}
@@ -1630,6 +1631,8 @@ MonoBehaviour:
   offset: 0
   tailPeriod: 0.1
   lifeTime: 3
+  waitTime: 0.5
+  useRandom: 1
 --- !u!114 &1556773161
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1853,6 +1856,8 @@ MonoBehaviour:
   offset: 0
   tailPeriod: 0.1
   lifeTime: 3
+  waitTime: 0.1
+  useRandom: 1
 --- !u!54 &1892142154
 Rigidbody:
   m_ObjectHideFlags: 0

@@ -17,7 +17,7 @@ public class Trail : MonoBehaviour, ICollidable
     private MeshRenderer meshRenderer;
     private Collider blockCollider;
 
-    private float waitTime = .6f;
+    public float waitTime = .6f;
     public float lifeTime = 20;
 
     // Start is called before the first frame update
