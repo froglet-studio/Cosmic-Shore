@@ -27,9 +27,9 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5776304996075792891}
-  m_LocalRotation: {x: -0.8565867, y: 0.4497528, z: -0.21864787, w: -0.12718011}
-  m_LocalPosition: {x: 37.45385, y: -1.369225, z: 45.49862}
-  m_LocalScale: {x: 38, y: 1.328426, z: 1.1963246}
+  m_LocalRotation: {x: 0.1600507, y: -0.82798165, z: -0.13830028, w: -0.5193296}
+  m_LocalPosition: {x: 2.891521, y: -13.187965, z: -98.9274}
+  m_LocalScale: {x: 14, y: 1.2235725, z: 1.1378376}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
@@ -113,4 +113,4 @@ MonoBehaviour:
   intensityChange: -3
   FossilBlock: {fileID: 5776304996075792891, guid: bd8a259abee95ec4895562e6bb8aae76,
     type: 3}
-  lifeTime: 5
+  lifeTime: 9
