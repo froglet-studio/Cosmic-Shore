@@ -101,7 +101,6 @@ namespace StarWriter.Core.Input
                     xl = UnityEngine.Input.touches[0].position.x;
                     yr = UnityEngine.Input.touches[1].position.y;
                     xr = UnityEngine.Input.touches[1].position.x;
-
                 }
                 else
                 {
