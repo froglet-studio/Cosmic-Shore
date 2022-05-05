@@ -2033,10 +2033,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   sphereRadius: 15
-  aiShip: {fileID: 378015796163850476}
   spentMutonPrefab: {fileID: 2556762211055109170, guid: 49b23c34db7391a4e99bf10bd446e519,
     type: 3}
-  displacement: {x: 0, y: 0, z: 0}
   intensityAmount: 10
   lifeTimeIncrease: 3
 --- !u!4 &3946812103285931583

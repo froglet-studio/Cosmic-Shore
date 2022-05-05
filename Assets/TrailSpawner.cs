@@ -22,16 +22,18 @@ public class TrailSpawner : MonoBehaviour
     {
         while (true)
         {
+            
             yield return new WaitForSeconds(tailPeriod);
-            trail.transform.position = head.transform.position - head.transform.forward*offset;
-            trail.transform.rotation = head.transform.rotation;
-            trail.transform.localScale = new Vector3(randomScale.x,randomScale.y,randomScale.z);
+            var Block = Instantiate<GameObject>(trail);
+            Block.transform.position = head.transform.position - head.transform.forward*offset;
+            Block.transform.rotation = head.transform.rotation;
+            Block.transform.localScale = new Vector3(randomScale.x,randomScale.y,randomScale.z);
 
             Trail trailScript = trail.GetComponent<Trail>();
             trailScript.lifeTime = lifeTime;
             trailScript.waitTime = waitTime;
 
-            Instantiate<GameObject>(trail);
+            Instantiate<GameObject>(Block);
         }
     }
 
