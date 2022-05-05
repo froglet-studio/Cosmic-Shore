@@ -17,6 +17,8 @@ public class TutorialManager : MonoBehaviour
     [SerializeField]
     public GameObject LearnGyroPanel;
 
+    public List<TutorialStage> tutorialStages;
+
     private bool hasLearnedPitch = false;
     private bool hasLearnedYaw = false;
     private bool hasLearnedRoll = false;
@@ -108,7 +110,7 @@ public class TutorialManager : MonoBehaviour
     {
         hasCompletedTutorial = true;
         gameManager.HasCompletedTutorial = hasCompletedTutorial;
-        Destroy(this);
+        Destroy(this); 
     }
 
     public void ActivatePanel(string panelToBeActivated)

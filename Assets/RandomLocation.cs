@@ -24,7 +24,7 @@ public class RandomLocation : MonoBehaviour
     void Start()
     {
         transform.position = Random.insideUnitSphere * sphereRadius;
-        outputText.text = "Score: " + score.ToString();
+        //outputText.text = "Score: " + score.ToString();
     }
     
     private void OnTriggerEnter(Collider other)

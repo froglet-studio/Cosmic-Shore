@@ -11,23 +11,37 @@ using System;
 
 public class ScoreBoard : MonoBehaviour
 {
-    [SerializeField]
-    private float maxIntesity = 100f;
-    [SerializeField]
-    private float currentIntesity;
 
-    public TextMeshProUGUI text;
+    //Player
+    [SerializeField]
+    float maxIntesity = 100f;
+    [SerializeField]
+    float currentIntesity;
+    [SerializeField]
+    float countDownRate;
+    [SerializeField]
+    float score = 0f;
+    
+    
+
+    //AI   
+    [SerializeField]
+    float aiScore = 0f;
+    [SerializeField]
+    float currentAiIntesity;
+
+    public TextMeshProUGUI scoreText;
 
     private void OnEnable()
     {
-        Trail.OnTrailCollision += GainIntesity;
-        MutonPopUp.OnMutonPopUpCollision += GainIntesity;
+        Trail.OnTrailCollision += ChangeIntesity;
+        MutonPopUp.OnMutonPopUpCollision += ChangeIntesity;
     }
 
     private void OnDisable()
     {
-        Trail.OnTrailCollision -= LoseIntesity;
-        MutonPopUp.OnMutonPopUpCollision -= LoseIntesity;
+        Trail.OnTrailCollision -= ChangeIntesity;
+        MutonPopUp.OnMutonPopUpCollision -= ChangeIntesity;
     }
 
 
@@ -35,32 +49,97 @@ public class ScoreBoard : MonoBehaviour
     void Start()
     {
         currentIntesity = maxIntesity;
+        currentAiIntesity = maxIntesity;
+        StartCoroutine(CountDownCoroutine());
     }
 
-    private void LoseIntesity(float amount, string uuid)
+    IEnumerator CountDownCoroutine()
     {
-        currentIntesity -= amount;
-        if (currentIntesity <= 0)
+        while (currentIntesity != 0)
         {
-            currentIntesity = 0;
+            yield return new WaitForSeconds(1);
+            ChangeIntesity(countDownRate, "admin");
+            ChangeIntesity(countDownRate, "ai");
         }
-        UpdateCurrentIntesity(currentIntesity, uuid);
+        
     }
-
-    private void GainIntesity(float amount, string uuid)
+   
+    private void ChangeIntesity(float amount, string uuid)
     {
-        currentIntesity += amount;
-        if (currentIntesity >= 100)
+        
+        if (uuid == "admin")
         {
-            currentIntesity = 100;
+            if (currentIntesity != 0) { currentIntesity += amount; }
+            if (currentIntesity > 100)
+            {
+                float excessIntesity = currentIntesity - 100f;
+                AddExcessIntesityToScore(excessIntesity, "admin");
+                currentIntesity = 100;
+            }
+            if (currentIntesity <= 0)
+            {
+                scoreText.text = "you dead" + System.Environment.NewLine +
+                                 "Final Score: " + score.ToString() + System.Environment.NewLine +
+                                 "Bob's Score: " + aiScore.ToString();
+                currentIntesity = 0;
+            }
+            if (currentIntesity != 0) { UpdateCurrentIntesity(currentIntesity, uuid); }
 
         }
-        UpdateCurrentIntesity(currentIntesity, uuid);
+        if (uuid == "ai" && currentIntesity != 0)
+        {
+            currentAiIntesity += amount;
+            if (currentAiIntesity >= 100)
+            {
+                currentAiIntesity += amount;
+                float excessIntesity = currentAiIntesity - 100f;
+                AddExcessIntesityToScore(excessIntesity, "ai");
+                currentAiIntesity = 100;
+            }
+            if (currentAiIntesity <= 0)
+            {
+                currentAiIntesity = 0;
+            }
+            UpdateCurrentIntesity(currentAiIntesity, uuid);
+        } 
+        
+        
     }
 
     private void UpdateCurrentIntesity(float amount, string uuid)
     {
-        currentIntesity = amount;
-        text.text = amount.ToString();
+        if (uuid == "admin") { currentIntesity = amount; }
+        if (uuid == "ai") { currentAiIntesity = amount; }    
+        scoreText.text = "Intensity: " + currentIntesity.ToString() + System.Environment.NewLine
+                      + "Your Score: " + score.ToString() + System.Environment.NewLine
+                      + "Bob's Int: " + currentAiIntesity.ToString() + System.Environment.NewLine
+                      + "Bob's Score: " + aiScore.ToString();
     }
+
+    private void AddExcessIntesityToScore(float amount, string uuid)
+    {
+        if (uuid == "admin") { score += amount; }
+        if (uuid == "ai") { aiScore += amount; }
+        
+    }
+
+    private void OnDestroy()
+    {
+        PlayerPrefs.SetFloat("Score", score);
+        if(PlayerPrefs.GetFloat("High Score") <= 0)
+        {
+            PlayerPrefs.SetFloat("High Score", score);
+        }
+        
+        if (PlayerPrefs.GetFloat("High Score") >= 0)
+        {
+            float highScore = PlayerPrefs.GetFloat("High Score");
+            if(highScore >= score) { return; }
+
+            PlayerPrefs.SetFloat("High Score", highScore);
+        }
+
+            
+    }
+
 }
