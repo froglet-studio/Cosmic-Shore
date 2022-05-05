@@ -7,6 +7,9 @@ using System;
 
 public class TutorialManager : MonoBehaviour
 {
+    [SerializeField]
+    TutorialPlayerController playerController;
+
     public List<GameObject> tutorialPanels;
 
     public List<TutorialStage> tutorialStages; //SO Assests
@@ -31,15 +34,23 @@ public class TutorialManager : MonoBehaviour
         tutorialStages[0].Begin();
     }
 
-    private void InitializeTutorialTests()
+    private void InitializeTutorialTests() //Adding Test Names and setting bools false
     {
         TutorialTests.Add(tutorialStages[0].StageName, false);
         TutorialTests.Add(tutorialStages[1].StageName, false);
+        TutorialTests.Add(tutorialStages[2].StageName, false);
+        TutorialTests.Add(tutorialStages[3].StageName, false);
+        TutorialTests.Add(tutorialStages[4].StageName, false);
+        TutorialTests.Add(tutorialStages[5].StageName, false);
+        TutorialTests.Add(tutorialStages[6].StageName, false);
+        TutorialTests.Add(tutorialStages[7].StageName, false);
+        TutorialTests.Add(tutorialStages[8].StageName, false);
+
     }
 
     private void Update()
     {
-        if(index >= tutorialStages.Count || PlayerPrefs.GetInt("Skip Tutorial") == 1)
+        if(index >= tutorialStages.Count -1 || PlayerPrefs.GetInt("Skip Tutorial") == 1)
         {
             if (TutorialTests.ContainsValue(!false))
             {
@@ -48,6 +59,7 @@ public class TutorialManager : MonoBehaviour
         }
         if (tutorialStages[index].IsStarted)
         {
+            playerController.controlLevels[tutorialStages[0].StageName] = true;        
             CheckCurrentTestPassed();
         }
     }
@@ -62,6 +74,12 @@ public class TutorialManager : MonoBehaviour
             index++;
             tutorialStages[index].Begin();           
         } 
+    }
+
+    public void StartGyroTest()
+    {
+        //TODO figure out how to prove gyro has been used
+
     }
     
     

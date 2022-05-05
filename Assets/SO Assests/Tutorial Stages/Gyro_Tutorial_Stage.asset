@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 51eba18f268491244bd49ae4539af60a, type: 3}
   m_Name: Gyro_Tutorial_Stage
   m_EditorClassIdentifier: 
-  stageName: Learn Gryo
+  stageName: Gryo
   isStarted: 0
   hasCompleted: 0
   uiPanel: {fileID: 0}

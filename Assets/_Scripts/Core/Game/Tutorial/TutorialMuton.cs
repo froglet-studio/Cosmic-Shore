@@ -5,27 +5,48 @@ using UnityEngine;
 
 public class TutorialMuton : MonoBehaviour
 {
+    [SerializeField]
     TutorialManager tutorialManager;
+
+    [SerializeField]
+    private GameObject player;
 
     public string stageName;
 
-    public List<Vector3> spawnPoints;
+    public List<Vector3> spawnPointsOffset;
 
-    int index = 0;
+    public int index = 0;
+
+    private int gyroIndex;
 
     // Start is called before the first frame update
     void Start()
     {
-        transform.position = spawnPoints[index];
+        transform.position = player.transform.forward + spawnPointsOffset[index];
+        stageName = tutorialManager.tutorialStages[index].StageName;
+        gyroIndex = spawnPointsOffset.Count - 1; // final stage testing gyro does not involve hitting a test Muton
     }
 
 
-    private void OnCollisionEnter(Collision collision)
+    private void OnTriggerEnter(Collider other)
     {
         stageName = tutorialManager.tutorialStages[index].StageName;
-        tutorialManager.TutorialTests.Remove(stageName);
-        tutorialManager.TutorialTests.Add(stageName, true);
-        index++;
-        transform.position = spawnPoints[index];
+        tutorialManager.TutorialTests[stageName] = true;
+        //tutorialManager.TutorialTests.Remove(stageName);
+        // tutorialManager.TutorialTests.Add(stageName, true);
+        if(index < spawnPointsOffset.Count - 1)
+        {
+            
+            if(stageName == tutorialManager.tutorialStages[gyroIndex].StageName)
+            {
+                tutorialManager.StartGyroTest();
+                gameObject.SetActive(false); //Turn off Muton to test Gyro
+            }
+            else
+            {
+                index++;
+                transform.position = player.transform.forward + spawnPointsOffset[index];
+            }           
+        }       
     }
 }
