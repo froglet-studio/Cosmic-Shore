@@ -14,6 +14,9 @@ public class MutonPopUp : MonoBehaviour//, ICollidable
     GameObject spentMutonPrefab;
 
     [SerializeField]
+    Vector3 displacement = Vector3.zero;
+
+    [SerializeField]
     public float intensityAmount = 10f;
 
     public float lifeTimeIncrease = 20;
@@ -24,7 +27,7 @@ public class MutonPopUp : MonoBehaviour//, ICollidable
 
     void Start()
     {
-        transform.position = Random.insideUnitSphere * sphereRadius;
+        transform.position = Random.insideUnitSphere * sphereRadius + displacement;
     }
 
 

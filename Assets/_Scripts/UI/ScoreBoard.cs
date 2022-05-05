@@ -14,109 +14,111 @@ public class ScoreBoard : MonoBehaviour
 
     //Player
     [SerializeField]
-    float maxIntesity = 100f;
+    float maxIntensity = 100f;
     [SerializeField]
     float currentIntesity;
     [SerializeField]
     float countDownRate;
     [SerializeField]
     float score = 0f;
-    
+    [SerializeField]
+    float currentIntensity;
+
     
 
     //AI   
     [SerializeField]
     float aiScore = 0f;
     [SerializeField]
-    float currentAiIntesity;
+    float currentAiIntensity;
 
     public TextMeshProUGUI scoreText;
 
     private void OnEnable()
     {
-        Trail.OnTrailCollision += ChangeIntesity;
-        MutonPopUp.OnMutonPopUpCollision += ChangeIntesity;
+        Trail.OnTrailCollision += ChangeIntensity;
+        MutonPopUp.OnMutonPopUpCollision += ChangeIntensity;
     }
 
     private void OnDisable()
     {
-        Trail.OnTrailCollision -= ChangeIntesity;
-        MutonPopUp.OnMutonPopUpCollision -= ChangeIntesity;
+        Trail.OnTrailCollision -= ChangeIntensity;
+        MutonPopUp.OnMutonPopUpCollision -= ChangeIntensity;
     }
 
 
     // Start is called before the first frame update
     void Start()
     {
-        currentIntesity = maxIntesity;
-        currentAiIntesity = maxIntesity;
+        currentIntensity = maxIntensity;
+        currentAiIntensity = maxIntensity;
         StartCoroutine(CountDownCoroutine());
     }
 
     IEnumerator CountDownCoroutine()
     {
-        while (currentIntesity != 0)
+        while (currentIntensity != 0)
         {
             yield return new WaitForSeconds(1);
-            ChangeIntesity(countDownRate, "admin");
-            ChangeIntesity(countDownRate, "ai");
+            ChangeIntensity(countDownRate, "admin");
+            ChangeIntensity(countDownRate, "ai");
         }
         
     }
    
-    private void ChangeIntesity(float amount, string uuid)
+    private void ChangeIntensity(float amount, string uuid)
     {
         
         if (uuid == "admin")
         {
-            if (currentIntesity != 0) { currentIntesity += amount; }
-            if (currentIntesity > 100)
+            if (currentIntensity != 0) { currentIntensity += amount; }
+            if (currentIntensity > 100)
             {
-                float excessIntesity = currentIntesity - 100f;
-                AddExcessIntesityToScore(excessIntesity, "admin");
-                currentIntesity = 100;
+                float excessIntesity = currentIntensity - 100f;
+                AddExcessIntensityToScore(excessIntesity, "admin");
+                currentIntensity = 100;
             }
-            if (currentIntesity <= 0)
+            if (currentIntensity <= 0)
             {
                 scoreText.text = "you dead" + System.Environment.NewLine +
                                  "Final Score: " + score.ToString() + System.Environment.NewLine +
                                  "Bob's Score: " + aiScore.ToString();
-                currentIntesity = 0;
+                currentIntensity = 0;
             }
-            if (currentIntesity != 0) { UpdateCurrentIntesity(currentIntesity, uuid); }
+            if (currentIntensity != 0) { UpdateCurrentIntensity(currentIntensity, uuid); }
 
         }
-        if (uuid == "ai" && currentIntesity != 0)
+        if (uuid == "ai" && currentIntensity != 0)
         {
-            currentAiIntesity += amount;
-            if (currentAiIntesity >= 100)
+            currentAiIntensity += amount;
+            if (currentAiIntensity >= 100)
             {
-                currentAiIntesity += amount;
-                float excessIntesity = currentAiIntesity - 100f;
-                AddExcessIntesityToScore(excessIntesity, "ai");
-                currentAiIntesity = 100;
+                currentAiIntensity += amount;
+                float excessIntesity = currentAiIntensity - 100f;
+                AddExcessIntensityToScore(excessIntesity, "ai");
+                currentAiIntensity = 100;
             }
-            if (currentAiIntesity <= 0)
+            if (currentAiIntensity <= 0)
             {
-                currentAiIntesity = 0;
+                currentAiIntensity = 0;
             }
-            UpdateCurrentIntesity(currentAiIntesity, uuid);
+            UpdateCurrentIntensity(currentAiIntensity, uuid);
         } 
         
         
     }
 
-    private void UpdateCurrentIntesity(float amount, string uuid)
+    private void UpdateCurrentIntensity(float amount, string uuid)
     {
-        if (uuid == "admin") { currentIntesity = amount; }
-        if (uuid == "ai") { currentAiIntesity = amount; }    
-        scoreText.text = "Intensity: " + currentIntesity.ToString() + System.Environment.NewLine
+        if (uuid == "admin") { currentIntensity = amount; }
+        if (uuid == "ai") { currentAiIntensity = amount; }    
+        scoreText.text = "Intensity: " + currentIntensity.ToString() + System.Environment.NewLine
                       + "Your Score: " + score.ToString() + System.Environment.NewLine
-                      + "Bob's Int: " + currentAiIntesity.ToString() + System.Environment.NewLine
+                      + "Bob's Int: " + currentAiIntensity.ToString() + System.Environment.NewLine
                       + "Bob's Score: " + aiScore.ToString();
     }
 
-    private void AddExcessIntesityToScore(float amount, string uuid)
+    private void AddExcessIntensityToScore(float amount, string uuid)
     {
         if (uuid == "admin") { score += amount; }
         if (uuid == "ai") { aiScore += amount; }

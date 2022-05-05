@@ -103,8 +103,8 @@ namespace StarWriter.Core.Input
 
                 
             }
-            
-            
+
+            //UnityEngine.Input.acceleration
 
             if (UnityEngine.Input.touches.Length == 2)
             {
