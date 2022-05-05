@@ -15,8 +15,10 @@ namespace StarWriter.Core
     {
         [SerializeField]
         private GameObject tutorialPanel;
+        
         [SerializeField]
         private bool isTutorialEnabled = true;
+
         [SerializeField]
         private bool hasCompletedTutorial = false;
 

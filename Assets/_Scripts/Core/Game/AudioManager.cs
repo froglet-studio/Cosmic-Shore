@@ -28,13 +28,13 @@ namespace StarWriter.Core.Audio
 
         private void Start()
         {
-            //Create AudioSources and save them as references
+            // Create AudioSources and save them as references
             musicSource1 = this.gameObject.AddComponent<AudioSource>();
             musicSource2 = this.gameObject.AddComponent<AudioSource>();
             sfxSource = this.gameObject.AddComponent<AudioSource>();
             isMuted = gameSetting.IsMuted;
 
-            //Loop the music tracks
+            // Loop the music tracks
             musicSource1.loop = true;
             musicSource2.loop = true;
             PlayMusicClip(musicSource2.clip);
@@ -59,6 +59,7 @@ namespace StarWriter.Core.Audio
             activeAudioSource.volume = 1;
             activeAudioSource.Play();
         }
+
         public void PlayMusicClipWithFade(AudioClip audioClip, float transitionTime = 1.0f)
         {
             AudioSource activeAudioSource = (firstMusicSourceIsPlaying ? musicSource1 : musicSource2);
@@ -67,30 +68,29 @@ namespace StarWriter.Core.Audio
 
         IEnumerator UpdateMusicWithFade(AudioSource activeAudioSource, AudioClip newAudioClip, float transitionTime)
         {
-            //Make sure source is active and playing
+            // Make sure source is active and playing
             if (!activeAudioSource.isPlaying)
                 activeAudioSource.Play();
 
             float t = 0.0f;
             for (t = 0; t < transitionTime; t += Time.deltaTime)
             {
-                //fade out original clip volume
+                // Fade out original clip volume
                 activeAudioSource.volume = (1 - t / transitionTime);
                 yield return null;
             }
             activeAudioSource.Stop();
 
-            activeAudioSource.clip = newAudioClip; //change AudioClip
+            activeAudioSource.clip = newAudioClip; // Change AudioClip
             activeAudioSource.Play();
             for (t = 0; t < transitionTime; t += Time.deltaTime)
             {
-                //fade in new clip volume
+                // Fade in new clip volume
                 activeAudioSource.volume = (t / transitionTime);
                 yield return null;
             }
-
-
         }
+
         public void PlayMusicClipWithCrossFade(AudioClip newAudioClip, float transitionTime = 1.0f)
         {
             //Determine the active audio source
@@ -103,6 +103,7 @@ namespace StarWriter.Core.Audio
             //Set the new audio source
             newAudioSource.clip = newAudioClip;
             newAudioSource.Play();
+            
             //crossfade music
             StartCoroutine(UpdateMusicWithCrossFade(activeAudioSource, newAudioSource, transitionTime));
         }
@@ -139,7 +140,6 @@ namespace StarWriter.Core.Audio
         {
             isMuted = !isMuted;
         }
-
     }
 }
 

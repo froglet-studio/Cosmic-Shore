@@ -1839,6 +1839,21 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: -1204.6667
       objectReference: {fileID: 0}
+    - target: {fileID: 2666517084494823025, guid: 7b41307a62a8b6f4499e38f52d12adcb,
+        type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
+      value: 
+      objectReference: {fileID: 1396375862}
+    - target: {fileID: 2666517084494823025, guid: 7b41307a62a8b6f4499e38f52d12adcb,
+        type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
+      value: OnPressButtonQuit
+      objectReference: {fileID: 0}
+    - target: {fileID: 2666517084494823025, guid: 7b41307a62a8b6f4499e38f52d12adcb,
+        type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
+      value: StarWriter.Core.UI.MainMenu, Assembly-CSharp
+      objectReference: {fileID: 0}
     - target: {fileID: 6044787630438630450, guid: 7b41307a62a8b6f4499e38f52d12adcb,
         type: 3}
       propertyPath: m_Pivot.x

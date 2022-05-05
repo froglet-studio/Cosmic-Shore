@@ -24,6 +24,12 @@ namespace StarWriter.Core.UI
             Game_Settings_Panel.SetActive(true);
             gameObject.SetActive(false);
         }
+
+        public void OnPressButtonQuit()
+        {
+            Debug.Log("Quit Button Pressed");
+            Application.Quit();
+        }
     }
 }
 

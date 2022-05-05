@@ -32,6 +32,11 @@ namespace StarWriter.Core.NPC.Control
         // Update is called once per frame
         void Update()
         {
+            if (PauseSystem.GetIsPaused())
+            {
+                return;
+            }
+
             distance = Vector3.Distance(target.transform.position, transform.position);
 
             if (distance >= maxChaseDistance)
