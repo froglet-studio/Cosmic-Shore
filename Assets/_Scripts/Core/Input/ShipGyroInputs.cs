@@ -185,27 +185,27 @@ namespace StarWriter.Core.Input
         private void Throttle(float xl, float xr)
         {
             //throttle
-            throttle = Mathf.Lerp(throttle, (xr - xl) * touchScaler * .17f - .2f, .2f);
+            throttle = Mathf.Lerp(throttle, (xr - xl) * touchScaler * .18f - .15f, .2f);
         }
 
         private void Yaw(float xl, float xr)
         {
             //yaw
-            displacementQ = Quaternion.AngleAxis((((xl + xr) / 2) - (Screen.currentResolution.width / 2)) * touchScaler
+            displacementQ = Quaternion.AngleAxis((((xl + xr) / 2) - (Screen.currentResolution.width / 2)) * touchScaler * (throttle+.5f)
                             , shipTransform.up) * displacementQ;
         }
 
         private void Roll(float yl, float yr)
         {
             //roll
-            displacementQ = Quaternion.AngleAxis((yr - yl) * touchScaler
+            displacementQ = Quaternion.AngleAxis((yr - yl) * touchScaler * throttle
                             , shipTransform.forward) * displacementQ;
         }
 
         private void Pitch(float yl, float yr)
         {
             //pitch
-            displacementQ = Quaternion.AngleAxis((((yl + yr) / 2) - (Screen.currentResolution.height / 2)) * -touchScaler
+            displacementQ = Quaternion.AngleAxis((((yl + yr) / 2) - (Screen.currentResolution.height / 2)) * -touchScaler * throttle
                             , shipTransform.right) * displacementQ;
         }
 
