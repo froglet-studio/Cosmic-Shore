@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using Amoebius.Utility.Singleton;
 using StarWriter.Core.Audio;
 using System;
@@ -14,8 +15,10 @@ namespace StarWriter.Core
     {
         [SerializeField]
         private GameObject tutorialPanel;
+        
         [SerializeField]
         private bool isTutorialEnabled = true;
+
         [SerializeField]
         private bool hasCompletedTutorial = false;
 
@@ -53,6 +56,14 @@ namespace StarWriter.Core
             //Player_Options_UI_Panel.SetActive(panelToBeActivated.Equals(Player_Options_UI_Panel.name));
             //Main_Menu_UI_Panel.SetActive(panelToBeActivated.Equals(Main_Menu_UI_Panel.name));
             //Multiplayer_Lobby_UI_Panel.SetActive(panelToBeActivated.Equals(Multiplayer_Lobby_UI_Panel.name));
+        }
+        public void OnReplayButtonPressed()
+        {
+            SceneManager.LoadScene(1);
+        }
+        public void OnQuitButtonPressed()
+        {
+            Application.Quit();
         }
     }
 }

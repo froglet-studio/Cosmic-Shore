@@ -13,16 +13,19 @@ public class RandomLocation : MonoBehaviour
     [SerializeField]
     TextMeshProUGUI outputText;
 
+    [SerializeField]
+    IntensityBar IntensityBar;
+
+    [SerializeField]
+    float MutonIntensityBoost = .1f;
+
     int score = 0;
 
-    // Start is called before the first frame update
     void Start()
     {
         transform.position = Random.insideUnitSphere * sphereRadius;
         //outputText.text = "Score: " + score.ToString();
     }
-
-  
     
     private void OnTriggerEnter(Collider other)
     {
@@ -30,6 +33,7 @@ public class RandomLocation : MonoBehaviour
         brokenSphere.transform.localEulerAngles = transform.localEulerAngles;
         Instantiate<GameObject>(brokenSphere);
         transform.position = Random.insideUnitSphere * sphereRadius;
+        IntensityBar.IncreaseIntensity(MutonIntensityBoost);
         score++;
         outputText.text = "Score: " + score.ToString();
     }

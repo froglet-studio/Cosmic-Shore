@@ -12,17 +12,21 @@ using System;
 public class ScoreBoard : MonoBehaviour
 {
 
+    //Player
     [SerializeField]
     float maxIntensity = 100f;
     [SerializeField]
+    float currentIntesity;
+    [SerializeField]
     float countDownRate;
-
     [SerializeField]
     float score = 0f;
     [SerializeField]
     float currentIntensity;
 
     
+
+    //AI   
     [SerializeField]
     float aiScore = 0f;
     [SerializeField]
@@ -119,6 +123,25 @@ public class ScoreBoard : MonoBehaviour
         if (uuid == "admin") { score += amount; }
         if (uuid == "ai") { aiScore += amount; }
         
+    }
+
+    private void OnDestroy()
+    {
+        PlayerPrefs.SetFloat("Score", score);
+        if(PlayerPrefs.GetFloat("High Score") <= 0)
+        {
+            PlayerPrefs.SetFloat("High Score", score);
+        }
+        
+        if (PlayerPrefs.GetFloat("High Score") >= 0)
+        {
+            float highScore = PlayerPrefs.GetFloat("High Score");
+            if(highScore >= score) { return; }
+
+            PlayerPrefs.SetFloat("High Score", highScore);
+        }
+
+            
     }
 
 }

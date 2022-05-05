@@ -84,7 +84,11 @@ namespace StarWriter.Core.Input
         // Update is called once per frame
         void Update()
         {
-            
+            if (PauseSystem.GetIsPaused())
+            {
+                return;
+            }
+
             if (SystemInfo.supportsGyroscope)
             {
                 //updates GameObjects rotation from input devices gyroscope

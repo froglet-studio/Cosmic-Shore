@@ -4,19 +4,8 @@ using UnityEngine;
 
 public class OptionsMenu : MonoBehaviour
 {
-    public GameObject Main_Menu_Panel;
-
-    // Start is called before the first frame update
-    void Start()
-    {
-        
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
+    [SerializeField]
+    private GameObject Main_Menu_Panel;
 
     public void OnPressButtonReturnToMain()
     {
