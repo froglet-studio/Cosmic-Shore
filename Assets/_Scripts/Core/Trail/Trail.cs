@@ -48,14 +48,22 @@ public class Trail : MonoBehaviour, ICollidable
 
     public void Collide(Collider other)
     {
-        //TODO play SFX sound, break apart or float away
-        OnTrailCollision(intensityChange, other.gameObject.GetComponent<Player>().PlayerUUID);
-        FossilBlock.transform.localScale = transform.localScale;
-        FossilBlock.transform.position = transform.position;
-        FossilBlock.transform.localEulerAngles = transform.localEulerAngles;
+        if (IsPlayer(other.gameObject))
+        {
+            //TODO play SFX sound, break apart or float away
+            OnTrailCollision(intensityChange, other.gameObject.GetComponent<Player>().PlayerUUID);
+            FossilBlock.transform.localScale = transform.localScale;
+            FossilBlock.transform.position = transform.position;
+            FossilBlock.transform.localEulerAngles = transform.localEulerAngles;
 
-        Instantiate<GameObject>(FossilBlock);
-        Destroy(this.gameObject);
+            Instantiate<GameObject>(FossilBlock);
+            Destroy(this.gameObject);
+        }
+    }
 
+    // TODO: Use tags to identify player instead
+    private bool IsPlayer(GameObject go)
+    {
+        return go.GetComponent<Player>() != null;
     }
 }
