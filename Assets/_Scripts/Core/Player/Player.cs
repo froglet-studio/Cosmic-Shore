@@ -10,16 +10,16 @@ public class Player : MonoBehaviour//,ICollidable, IDamagable
     [SerializeField]
     private string playerUUID;
     //[SerializeField]
-    //private float maxIntesity = 100f;
+    //private float maxIntensity = 100f;
     //[SerializeField]
-    //private float currentIntesity;
+    //private float currentIntensity;
 
 
     //public string PlayerName { get => playerName; set => playerName = value; }
    
     public string PlayerUUID { get => playerUUID; set => playerUUID = value; }
 
-    //public float CurrentIntesity { get => currentIntesity; set => currentIntesity = value; }
+    //public float CurrentIntesity { get => currentIntensity; set => currentIntensity = value; }
 
     //private void OnEnable()
     //{
@@ -38,7 +38,7 @@ public class Player : MonoBehaviour//,ICollidable, IDamagable
     // Start is called before the first frame update
     void Start()
     {
-        //CurrentIntesity = maxIntesity;
+        //CurrentIntesity = maxIntensity;
     }
 
     //private void ChangePlayerName(string name)
