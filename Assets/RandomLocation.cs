@@ -24,17 +24,16 @@ public class RandomLocation : MonoBehaviour
     void Start()
     {
         transform.position = Random.insideUnitSphere * sphereRadius;
-        //outputText.text = "Score: " + score.ToString();
     }
     
     private void OnTriggerEnter(Collider other)
     {
-        brokenSphere.transform.position = transform.position;
-        brokenSphere.transform.localEulerAngles = transform.localEulerAngles;
-        Instantiate<GameObject>(brokenSphere);
+        var spherePop = Instantiate<GameObject>(brokenSphere);
+        spherePop.transform.position = transform.position;
+        spherePop.transform.localEulerAngles = transform.localEulerAngles;
         transform.position = Random.insideUnitSphere * sphereRadius;
-        IntensityBar.IncreaseIntensity(MutonIntensityBoost);
+        IntensityBar.IncreaseIntensity(MutonIntensityBoost); // TODO: use events instead
         score++;
-        outputText.text = "Score: " + score.ToString();
+        outputText.text = score.ToString("D3");
     }
 }
