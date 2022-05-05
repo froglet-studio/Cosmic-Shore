@@ -31,10 +31,8 @@ namespace StarWriter.Core.Input
         int activePriority = 10;
         int inactivePriority = 1;
         #endregion
-        #region Ship
-        [SerializeField]
-        private Transform gyroTransform;
 
+        #region Ship
         public Transform shipTransform;
 
         [SerializeField]
@@ -56,7 +54,6 @@ namespace StarWriter.Core.Input
         float defaultThrottle = .3f;
         float lerpAmount = .2f;
         
- 
         Quaternion displacementQ;
 
         private void Awake()
@@ -92,16 +89,10 @@ namespace StarWriter.Core.Input
             if (SystemInfo.supportsGyroscope)
             {
                 //updates GameObjects rotation from input devices gyroscope
-
-                gyroTransform.rotation = displacementQ * GyroToUnity(gyro.attitude) * empiricalCorrection;
-            }
-
-            if (SystemInfo.supportsGyroscope)
-            {
-                Quaternion gyroRotation = gyroTransform.rotation;
-                shipTransform.rotation = Quaternion.Lerp(shipTransform.rotation, gyroRotation, lerpAmount);
-
-                
+                shipTransform.rotation = Quaternion.Lerp(
+                                                shipTransform.rotation, 
+                                                displacementQ * GyroToUnity(gyro.attitude) * empiricalCorrection, 
+                                                lerpAmount);
             }
 
             //change the camera if you flip you phone
@@ -191,8 +182,9 @@ namespace StarWriter.Core.Input
         private void Yaw(float xl, float xr)
         {
             //yaw
-            displacementQ = Quaternion.AngleAxis((((xl + xr) / 2) - (Screen.currentResolution.width / 2)) * touchScaler * (throttle+.5f)
-                            , shipTransform.up) * displacementQ;
+            displacementQ = Quaternion.AngleAxis(
+                                    (((xl + xr) / 2) - (Screen.currentResolution.width / 2)) * touchScaler * (throttle+.5f), 
+                                    shipTransform.up) * displacementQ;
         }
 
         private void Roll(float yl, float yr)
@@ -215,21 +207,5 @@ namespace StarWriter.Core.Input
         {
             return new Quaternion(q.x, -q.z, q.y, q.w);
         }
-
-        //public void ChangeCamera()
-        //{
-
-        //    if (cam2.Priority == activePriority)
-        //    {
-        //        cam1.Priority = activePriority;
-        //        cam2.Priority = inactivePriority;
-        //    }
-        //    else
-        //    {
-        //        cam2.Priority = activePriority;
-        //        cam1.Priority = inactivePriority;
-        //    }
-        //}   
-        
-}
+    }
 }
