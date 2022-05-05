@@ -34,10 +34,10 @@ namespace StarWriter.Core.Input
             throttle = Mathf.Lerp(throttle, defaultThrottle, .1f);
             shipTransform.localRotation = Quaternion.Lerp(shipTransform.localRotation,
                                                          Quaternion.LookRotation(Random.insideUnitSphere, shipTransform.up),
-                                                         lerpAmount*.2f);
+                                                         Random.Range(0,.1f));
             shipTransform.localRotation = Quaternion.Lerp(shipTransform.localRotation,
                                                          Quaternion.LookRotation(muton.position - shipTransform.position, shipTransform.up),
-                                                         lerpAmount);
+                                                         lerpAmount * Random.Range(0, .1f));
 
 
             //Move ship forward

@@ -12,9 +12,9 @@ GameObject:
   - component: {fileID: 1981306459138289011}
   - component: {fileID: 7076137217386601628}
   - component: {fileID: 6724784892155022458}
-  - component: {fileID: 4563009547826722997}
+  - component: {fileID: 2248590667047079810}
   m_Layer: 0
-  m_Name: AiBlock
+  m_Name: AiBlockMainMenu
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -27,9 +27,9 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5776304996075792891}
-  m_LocalRotation: {x: 0.06889677, y: 0.20510548, z: 0.29194793, w: 0.9316391}
-  m_LocalPosition: {x: 9.526254, y: -21.052082, z: 173.04332}
-  m_LocalScale: {x: 31, y: 2.4105842, z: 0.82409114}
+  m_LocalRotation: {x: 0.18625437, y: -0.9054787, z: 0.31474948, w: 0.21529159}
+  m_LocalPosition: {x: -29.756514, y: -15.47186, z: 76.52862}
+  m_LocalScale: {x: 3, y: 0.03, z: 0.3}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
@@ -63,7 +63,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: f37ed6505d04ef74097cc2c31bbfaa4c, type: 2}
+  - {fileID: 2100000, guid: 9f6e8a1d7a169d34abd18c2c986a95b8, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -98,7 +98,7 @@ BoxCollider:
   serializedVersion: 2
   m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
---- !u!114 &4563009547826722997
+--- !u!114 &2248590667047079810
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -107,11 +107,11 @@ MonoBehaviour:
   m_GameObject: {fileID: 5776304996075792891}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f366d272ab4f79e419d678fc6ca23512, type: 3}
+  m_Script: {fileID: 11500000, guid: 0061db9e4c1348140bb3f9158242434c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   intensityChange: -3
   FossilBlock: {fileID: 5776304996075792891, guid: bd8a259abee95ec4895562e6bb8aae76,
     type: 3}
-  waitTime: 0.1
-  lifeTime: 3
+  waitTime: 0.01
+  lifeTime: 12

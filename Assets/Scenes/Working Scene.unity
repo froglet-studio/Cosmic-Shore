@@ -153,12 +153,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 13774721baf9e184ba0f3357c7964c4c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  maxIntesity: 100
+  maxIntensity: 100
   countDownRate: -1
   score: 0
-  currentIntesity: 100
+  currentIntensity: 0
   aiScore: 2
-  currentAiIntesity: 100
+  currentAiIntensity: 0
   scoreText: {fileID: 57034285}
 --- !u!4 &14205129
 Transform:
@@ -709,9 +709,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   sphereRadius: 100
-  aiShip: {fileID: 0}
+  aiShip: {fileID: 1892142149}
   spentMutonPrefab: {fileID: 2556762211055109170, guid: 49b23c34db7391a4e99bf10bd446e519,
     type: 3}
+  displacement: {x: 0, y: 0, z: 0}
   intensityAmount: 10
   lifeTimeIncrease: 3
 --- !u!1 &477729223
