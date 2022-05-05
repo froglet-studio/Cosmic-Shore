@@ -11,6 +11,9 @@ public class MainMenuTrailSpawner : MonoBehaviour
     public float lifeTime = 20;
     public float waitTime = .5f;
 
+    [SerializeField]
+    GameObject TailContainer;
+
     public bool useRandom = true;
 
     Vector3 randomScale;
@@ -23,15 +26,18 @@ public class MainMenuTrailSpawner : MonoBehaviour
         while (true)
         {
             yield return new WaitForSeconds(tailPeriod);
-            trail.transform.position = head.transform.position - head.transform.forward*offset;
-            trail.transform.rotation = head.transform.rotation;
-            trail.transform.localScale = new Vector3(randomScale.x,randomScale.y,randomScale.z);
+            var trailCopy = Instantiate<GameObject>(trail);
 
-            MainMenuTrail trailScript = trail.GetComponent<MainMenuTrail>();
+            trailCopy.transform.position = head.transform.position - head.transform.forward*offset;
+            trailCopy.transform.rotation = head.transform.rotation;
+            trailCopy.transform.localScale = new Vector3(randomScale.x,randomScale.y,randomScale.z);
+
+            MainMenuTrail trailScript = trailCopy.GetComponent<MainMenuTrail>();
             trailScript.lifeTime = lifeTime;
             trailScript.waitTime = waitTime;
 
-            Instantiate<GameObject>(trail);
+
+            trailCopy.transform.parent = TailContainer.transform;
         }
     }
 

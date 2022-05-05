@@ -7,14 +7,12 @@ public class MainMenuMutonPopUp : MonoBehaviour
 {
 
     public float sphereRadius = 100;
-    [SerializeField]
-    GameObject aiShip;
 
     [SerializeField]
     GameObject spentMutonPrefab;
 
     [SerializeField]
-    Vector3 displacement = Vector3.zero;
+    GameObject MutonContainer;
 
     [SerializeField]
     public float intensityAmount = 10f;
@@ -23,6 +21,7 @@ public class MainMenuMutonPopUp : MonoBehaviour
 
     void Start()
     {
+        
         //transform.position = Random.insideUnitSphere * sphereRadius + displacement;
     }
 
@@ -36,17 +35,30 @@ public class MainMenuMutonPopUp : MonoBehaviour
 
     public void Collide(Collider other)
     {
-        spentMutonPrefab.transform.position = transform.position;
-        spentMutonPrefab.transform.localEulerAngles = transform.localEulerAngles;
-        Instantiate<GameObject>(spentMutonPrefab);
-        transform.position = UnityEngine.Random.onUnitSphere * sphereRadius;
+        
 
-        //reset ship
-        StarWriter.Core.Input.AiShipController controllerScript = other.GetComponent<StarWriter.Core.Input.AiShipController>();
-        controllerScript.lerpAmount = .2f;
+        //check if a ship
+        if (other.GetComponent<StarWriter.Core.Input.AiShipController>() != null)
+        {
+            //create new muton
+            var spentMuton = Instantiate<GameObject>(spentMutonPrefab);
+            spentMuton.transform.position = transform.position;
+            spentMuton.transform.localEulerAngles = transform.localEulerAngles;
+            spentMuton.transform.parent = MutonContainer.transform;
 
-        //grow tail
-        MainMenuTrailSpawner trailScript = other.GetComponent<MainMenuTrailSpawner>();
-        trailScript.lifeTime += lifeTimeIncrease;
+            //move old muton
+            transform.position = UnityEngine.Random.onUnitSphere * sphereRadius;
+
+            //reset ship aggression
+            StarWriter.Core.Input.AiShipController controllerScript = other.GetComponent<StarWriter.Core.Input.AiShipController>();
+            controllerScript.lerpAmount = .2f;
+
+            //grow tail
+            MainMenuTrailSpawner trailScript = other.GetComponent<MainMenuTrailSpawner>();
+            trailScript.lifeTime += lifeTimeIncrease;
+        }
+        
+
+
     }
 }
