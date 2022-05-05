@@ -6,7 +6,7 @@ public class TrailSpawner : MonoBehaviour
 {
     public GameObject trail;
     public Transform head;
-    public float offset = 1.5f;
+    public float offset = 0f;
     public float tailPeriod = .1f;
     public float lifeTime = 20;
     public float waitTime = .5f;

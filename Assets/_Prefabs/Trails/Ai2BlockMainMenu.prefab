@@ -14,7 +14,7 @@ GameObject:
   - component: {fileID: 6724784892155022458}
   - component: {fileID: 2248590667047079810}
   m_Layer: 0
-  m_Name: AiBlockMainMenu
+  m_Name: Ai2BlockMainMenu
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -27,8 +27,8 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5776304996075792891}
-  m_LocalRotation: {x: 0.09237348, y: 0.48767123, z: -0.8645189, w: -0.07906386}
-  m_LocalPosition: {x: 5.4171906, y: -4.3952723, z: -2.4520488}
+  m_LocalRotation: {x: -0.4652579, y: -0.6949637, z: -0.3889476, w: -0.3863682}
+  m_LocalPosition: {x: -10.802796, y: 54.583626, z: -14.946241}
   m_LocalScale: {x: 3, y: 0.03, z: 0.3}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -63,7 +63,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 24d1046d2e9e95847b3c492a5e45b388, type: 2}
+  - {fileID: 2100000, guid: 6a9bda8b03d768b49af63226292fa2c6, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -114,4 +114,4 @@ MonoBehaviour:
   FossilBlock: {fileID: 5776304996075792891, guid: bd8a259abee95ec4895562e6bb8aae76,
     type: 3}
   waitTime: 0.01
-  lifeTime: 63
+  lifeTime: 57

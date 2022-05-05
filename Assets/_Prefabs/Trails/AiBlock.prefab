@@ -27,9 +27,9 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5776304996075792891}
-  m_LocalRotation: {x: 0.06889677, y: 0.20510548, z: 0.29194793, w: 0.9316391}
-  m_LocalPosition: {x: 9.526254, y: -21.052082, z: 173.04332}
-  m_LocalScale: {x: 31, y: 2.4105842, z: 0.82409114}
+  m_LocalRotation: {x: 0.057877686, y: 0.778487, z: -0.08598603, w: 0.61904323}
+  m_LocalPosition: {x: 298.9229, y: -46.730576, z: 377.09433}
+  m_LocalScale: {x: 21, y: 1.2849283, z: 0.6974485}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
@@ -63,7 +63,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: f37ed6505d04ef74097cc2c31bbfaa4c, type: 2}
+  - {fileID: 2100000, guid: 6a9bda8b03d768b49af63226292fa2c6, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -113,5 +113,5 @@ MonoBehaviour:
   intensityChange: -3
   FossilBlock: {fileID: 5776304996075792891, guid: bd8a259abee95ec4895562e6bb8aae76,
     type: 3}
-  waitTime: 0.1
-  lifeTime: 3
+  waitTime: 0.5
+  lifeTime: 20

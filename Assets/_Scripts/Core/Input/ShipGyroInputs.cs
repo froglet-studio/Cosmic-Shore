@@ -104,11 +104,22 @@ namespace StarWriter.Core.Input
                 
             }
 
-            //UnityEngine.Input.acceleration
+            //change the camera if you flip you phone
+            if (UnityEngine.Input.acceleration.y > 0) 
+            {
+                cam1.Priority = activePriority;
+                cam2.Priority = inactivePriority;
+            }
+            else
+            {
+                cam2.Priority = activePriority;
+                cam1.Priority = inactivePriority;
+            }
+
 
             if (UnityEngine.Input.touches.Length == 2)
             {
-                if (UnityEngine.Input.touches[0].tapCount == 2 && UnityEngine.Input.touches[1].tapCount ==2) { ChangeCamera(); } 
+                 
                 var yl = 0f;
                 var yr = 0f;
                 var xl = 0f;
@@ -134,18 +145,8 @@ namespace StarWriter.Core.Input
                 Yaw(xl, xr);
                 Throttle(xl, xr);
 
-
-                ///delete once model is zeroed
-                //LeftWing.localPosition += Vector3.down;
-                //RightWing.localPosition += Vector3.down;
-                //Fusilage.localPosition += Vector3.down*4f;
-
                 PerformShipAnimations(yl, yr, xl, xr);
 
-                ///delete once zeroed
-                //LeftWing.localPosition +=  Vector3.up;
-                //RightWing.localPosition += Vector3.up;
-                //Fusilage.localPosition += Vector3.up;
             }
             else
             {
@@ -158,32 +159,27 @@ namespace StarWriter.Core.Input
             //Move ship forward
             shipTransform.position += shipTransform.forward * throttle;
 
-            
-
-            
-            //Quaternion.AngleAxis()
-            
         }
 
         private void PerformShipAnimations(float yl, float yr, float xl, float xr)
         {
             ///ship animations
             LeftWing.localRotation = Quaternion.Lerp(LeftWing.localRotation, Quaternion.Euler(
-                                                        (((yl + yr) - (Screen.currentResolution.height)) + (yr - yl)) * .02f,
+                                                        ((-(yl + yr) + (Screen.currentResolution.height)) + (yr - yl)) * .02f,
                                                         0,
                                                         -(throttle - defaultThrottle) * 50
-                                                            + ((xl + xr) - (Screen.currentResolution.width)) * .025f), lerpAmount);
+                                                            - ((xl + xr) - (Screen.currentResolution.width)) * .025f), lerpAmount);
 
             RightWing.localRotation = Quaternion.Lerp(RightWing.localRotation, Quaternion.Euler(
-                                                        ((yl + yr) - (Screen.currentResolution.height) - (yr - yl)) * .02f,
+                                                        (-(yl + yr) + (Screen.currentResolution.height) - (yr - yl)) * .02f,
                                                         0,
                                                         (throttle - defaultThrottle) * 50
-                                                            + (((xl + xr)) - (Screen.currentResolution.width)) * .025f), lerpAmount);
+                                                            - (((xl + xr)) - (Screen.currentResolution.width)) * .025f), lerpAmount);
 
             Fusilage.localRotation = Quaternion.Lerp(Fusilage.localRotation, Quaternion.Euler(
-                                                        ((yl + yr) - (Screen.currentResolution.height)) * .02f,
-                                                        0,
-                                                        (((xl + xr)) - (Screen.currentResolution.width)) * .01f), lerpAmount);
+                                                        (-(yl + yr) + (Screen.currentResolution.height)) * .02f,
+                                                        (yr - yl)*.02f,
+                                                        ((-(xl + xr)) + (Screen.currentResolution.width)) * .01f), lerpAmount);
         }
 
         private void Throttle(float xl, float xr)
@@ -220,20 +216,20 @@ namespace StarWriter.Core.Input
             return new Quaternion(q.x, -q.z, q.y, q.w);
         }
 
-        public void ChangeCamera()
-        {
+        //public void ChangeCamera()
+        //{
 
-            if (cam2.Priority == activePriority)
-            {
-                cam1.Priority = activePriority;
-                cam2.Priority = inactivePriority;
-            }
-            else
-            {
-                cam2.Priority = activePriority;
-                cam1.Priority = inactivePriority;
-            }
-        }   
+        //    if (cam2.Priority == activePriority)
+        //    {
+        //        cam1.Priority = activePriority;
+        //        cam2.Priority = inactivePriority;
+        //    }
+        //    else
+        //    {
+        //        cam2.Priority = activePriority;
+        //        cam1.Priority = inactivePriority;
+        //    }
+        //}   
         
 }
 }

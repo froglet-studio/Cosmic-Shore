@@ -12,14 +12,12 @@ namespace StarWriter.Core.Input
 
         public float defaultThrottle = .6f;
         public float lerpAmount = .035f;
+        public float lerpIncrease = .001f;
 
         public Transform shipTransform;
         [SerializeField]
         public Transform muton;
-
-
-        Quaternion displacementQ;
-
+        Vector3 distance;
 
         // Start is called before the first frame update
         void Start()
@@ -30,15 +28,15 @@ namespace StarWriter.Core.Input
         // Update is called once per frame
         void Update()
         {
-
+            distance = muton.position - shipTransform.position;
             throttle = Mathf.Lerp(throttle, defaultThrottle, .1f);
+            //shipTransform.localRotation = Quaternion.Lerp(shipTransform.localRotation,
+            //                                             Quaternion.LookRotation(Random.insideUnitSphere, shipTransform.up),
+            //                                             Random.Range(0, lerpAmount*.2f));
             shipTransform.localRotation = Quaternion.Lerp(shipTransform.localRotation,
-                                                         Quaternion.LookRotation(Random.insideUnitSphere, shipTransform.up),
-                                                         Random.Range(0,.1f));
-            shipTransform.localRotation = Quaternion.Lerp(shipTransform.localRotation,
-                                                         Quaternion.LookRotation(muton.position - shipTransform.position, shipTransform.up),
-                                                         lerpAmount * Random.Range(0, .1f));
-
+                                                         Quaternion.LookRotation(distance, shipTransform.up),
+                                                         lerpAmount/distance.magnitude);
+            lerpAmount += lerpIncrease;
 
             //Move ship forward
             shipTransform.position += shipTransform.forward * throttle;

@@ -11,12 +11,13 @@ namespace StarWriter.Movement
         [SerializeField]
         private Vector3 rotationDirection = Vector3.up;
 
+
         // Update is called once per frame
         void Update()
         {
             float speedT = speed * Time.deltaTime;
             transform.Rotate(rotationDirection.x * speedT, rotationDirection.y * speedT, rotationDirection.z * speedT);
-            //transform.position = Quaternion.Euler(rotationDirection.x * speedT, rotationDirection.y * speedT, rotationDirection.z * speedT) * transform.position;
+            transform.position = Quaternion.Euler(rotationDirection.x * speedT, rotationDirection.y * speedT, rotationDirection.z * speedT) * transform.position;
         }
     }
 }
