@@ -58,7 +58,7 @@ public class MutonPopUp : MonoBehaviour//, ICollidable
         //move the muton
         transform.position = UnityEngine.Random.insideUnitSphere * sphereRadius;
         transform.SetPositionAndRotation(UnityEngine.Random.insideUnitSphere * sphereRadius, UnityEngine.Random.rotation);
-        OnMutonPopUpCollision(intensityAmount, other.gameObject.GetComponent<Player>().PlayerUUID);
+        OnMutonPopUpCollision(intensityAmount, other.GetComponentInParent<Transform>().GetComponentInParent<Player>().PlayerUUID);
 
         //update intensity bar and score
         IntensityBar.IncreaseIntensity(MutonIntensityBoost); // TODO: use events instead

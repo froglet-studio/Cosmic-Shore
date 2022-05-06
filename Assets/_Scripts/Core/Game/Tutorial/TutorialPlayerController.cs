@@ -15,7 +15,7 @@ public class TutorialPlayerController : MonoBehaviour
         controlLevels.Add("Yaw Right", false);
         controlLevels.Add("Roll Left", false);
         controlLevels.Add("Roll Right", false);
-        controlLevels.Add("Speed Up", false);
+        controlLevels.Add("speed Up", false);
         controlLevels.Add("Slow Down", false);
         controlLevels.Add("Gyro", false);
 
@@ -54,7 +54,7 @@ public class TutorialPlayerController : MonoBehaviour
         {
             RollRight();
         }
-        if (controlLevels["Speed Up"] == true)
+        if (controlLevels["speed Up"] == true)
         {
             SpeedUp();
         }
