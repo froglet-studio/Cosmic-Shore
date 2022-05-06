@@ -132,7 +132,6 @@ namespace StarWriter.Core.Input
                     leftTouch = UnityEngine.Input.touches[1].position;
                     rightTouch = UnityEngine.Input.touches[0].position;
                 }
-
                 Pitch(leftTouch.y, rightTouch.y);
                 Roll(leftTouch.y, rightTouch.y);
                 Yaw(leftTouch.x, rightTouch.x);
@@ -142,9 +141,9 @@ namespace StarWriter.Core.Input
             else
             {
                 throttle = Mathf.Lerp(throttle, defaultThrottle, .1f);
-                LeftWing.localRotation = Quaternion.Lerp(LeftWing.localRotation, Quaternion.Euler(0, 0, 0), .1f); // TODO: should these all use Quaternion.Identity?
-                RightWing.localRotation = Quaternion.Lerp(RightWing.localRotation, Quaternion.Euler(0, 0, 0), .1f);
-                Fusilage.localRotation = Quaternion.Lerp(Fusilage.localRotation, Quaternion.Euler(0, 0, 0), .1f);
+                LeftWing.localRotation = Quaternion.Lerp(LeftWing.localRotation, Quaternion.identity, .1f);
+                RightWing.localRotation = Quaternion.Lerp(RightWing.localRotation, Quaternion.identity, .1f);
+                Fusilage.localRotation = Quaternion.Lerp(Fusilage.localRotation, Quaternion.identity, .1f);
             }
 
             // Move ship forward
@@ -186,29 +185,29 @@ namespace StarWriter.Core.Input
             if (throttle > OnThrottleEventThreshold)
                 OnThrottleEvent?.Invoke();
         }
-
-        private void Yaw(float xl, float xr)
+        
+        private void Yaw(float xl, float xr)  // These need to not use *= ... remember quaternions are not commutative
         {
-            displacementQ *= Quaternion.AngleAxis(
+            displacementQ = Quaternion.AngleAxis(
                                 (((xl + xr) / 2) - (Screen.currentResolution.width / 2)) * touchScaler * (throttle+.5f), 
-                                shipTransform.up);
+                                shipTransform.up) * displacementQ;
         }
 
         private void Roll(float yl, float yr)
         {
-            displacementQ *= Quaternion.AngleAxis(
+            displacementQ = Quaternion.AngleAxis(
                                 (yr - yl) * touchScaler * throttle, 
-                                shipTransform.forward);
+                                shipTransform.forward) * displacementQ;
         }
 
         private void Pitch(float yl, float yr)
         {
-            displacementQ *= Quaternion.AngleAxis(
+            displacementQ = Quaternion.AngleAxis(
                                 (((yl + yr) / 2) - (Screen.currentResolution.height / 2)) * -touchScaler * throttle, 
-                                shipTransform.right);
+                                shipTransform.right) * displacementQ;
         }
 
-        //Coverts Android and Mobile Device Quaterion into Unity Quaterion  TODO: Test
+        //Converts Android Quaterions into Unity Quaterions
         private Quaternion GyroToUnity(Quaternion q)
         {
             return new Quaternion(q.x, -q.z, q.y, q.w);
