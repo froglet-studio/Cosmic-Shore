@@ -14,15 +14,18 @@ public class Trail : MonoBehaviour, ICollidable
     public delegate void TrailCollision(float amount, string uuid);
     public static event TrailCollision OnTrailCollision;
 
-    private GameObject container;
+    private static GameObject container;
     private MeshRenderer meshRenderer;
     private Collider blockCollider;
 
     // Start is called before the first frame update
     void Start()
     {
-        container = new GameObject();
-        container.name = "FossilBlockContainer";
+        if (container == null)
+        {
+            container = new GameObject();
+            container.name = "FossilBlockContainer";
+        }
 
         meshRenderer = GetComponent<MeshRenderer>();
         meshRenderer.enabled = false;

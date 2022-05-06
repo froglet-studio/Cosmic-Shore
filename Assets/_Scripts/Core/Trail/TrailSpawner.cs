@@ -12,7 +12,7 @@ public class TrailSpawner : MonoBehaviour
     public bool useRandom = true;
 
     private Vector3 scale;
-    private GameObject TrailContainer;
+    private static GameObject TrailContainer;
     private IEnumerator trailCoroutine;
 
     IEnumerator SpawnTrailCoroutine()
@@ -36,7 +36,11 @@ public class TrailSpawner : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        TrailContainer = new GameObject();
+        if (TrailContainer == null)
+        {
+            TrailContainer = new GameObject();
+            TrailContainer.name = "TrailContainer";
+        }
 
         if (useRandom == true)
         {

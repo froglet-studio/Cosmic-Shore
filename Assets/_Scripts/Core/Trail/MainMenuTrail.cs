@@ -6,7 +6,7 @@ public class MainMenuTrail : MonoBehaviour, ICollidable
     [SerializeField]
     GameObject FossilBlock;
 
-    private GameObject container;
+    private static GameObject container;
     private MeshRenderer meshRenderer;
     private Collider blockCollider;
 
@@ -16,8 +16,11 @@ public class MainMenuTrail : MonoBehaviour, ICollidable
     // Start is called before the first frame update
     void Start()
     {
-        container = new GameObject();
-        container.name = "FossilBlockContainer";
+        if (container == null)
+        {
+            container = new GameObject();
+            container.name = "FossilBlockContainer";
+        }
 
         meshRenderer = GetComponent<MeshRenderer>();
         meshRenderer.enabled = false;
@@ -46,7 +49,7 @@ public class MainMenuTrail : MonoBehaviour, ICollidable
     public void Collide(Collider other)
     {
         //TODO play SFX sound, break apart or float away
-        var fossilBlock = Instantiate<GameObject>(FossilBlock);
+        var fossilBlock = Instantiate(FossilBlock);
         fossilBlock.transform.localScale = transform.localScale;
         fossilBlock.transform.position = transform.position;
         fossilBlock.transform.localEulerAngles = transform.localEulerAngles;
