@@ -1,17 +1,12 @@
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
-using StarWriter.Core;
-using System;
 
 /// <summary>
 /// Keeps track of Intesity to determine a win or lose condition
 /// </summary>
-
 public class ScoreBoard : MonoBehaviour
 {
-
     //Player
     [SerializeField]
     float maxIntensity = 100f;
@@ -24,8 +19,6 @@ public class ScoreBoard : MonoBehaviour
     [SerializeField]
     float currentIntensity;
 
-    
-
     //AI   
     [SerializeField]
     float aiScore = 0f;
@@ -34,20 +27,6 @@ public class ScoreBoard : MonoBehaviour
 
     public TextMeshProUGUI scoreText;
 
-    private void OnEnable()
-    {
-        Trail.OnTrailCollision += ChangeIntensity;
-        MutonPopUp.OnMutonPopUpCollision += ChangeIntensity;
-    }
-
-    private void OnDisable()
-    {
-        Trail.OnTrailCollision -= ChangeIntensity;
-        MutonPopUp.OnMutonPopUpCollision -= ChangeIntensity;
-    }
-
-
-    // Start is called before the first frame update
     void Start()
     {
         currentIntensity = maxIntensity;
@@ -63,7 +42,6 @@ public class ScoreBoard : MonoBehaviour
             ChangeIntensity(countDownRate, "admin");
             ChangeIntensity(countDownRate, "ai");
         }
-        
     }
    
     private void ChangeIntensity(float amount, string uuid)
@@ -104,8 +82,6 @@ public class ScoreBoard : MonoBehaviour
             }
             UpdateCurrentIntensity(currentAiIntensity, uuid);
         } 
-        
-        
     }
 
     private void UpdateCurrentIntensity(float amount, string uuid)
@@ -122,26 +98,24 @@ public class ScoreBoard : MonoBehaviour
     {
         if (uuid == "admin") { score += amount; }
         if (uuid == "ai") { aiScore += amount; }
-        
     }
 
     private void OnDestroy()
     {
         PlayerPrefs.SetFloat("Score", score);
-        if(PlayerPrefs.GetFloat("High Score") <= 0)
-        {
+        if (PlayerPrefs.GetFloat("High Score") < score)
             PlayerPrefs.SetFloat("High Score", score);
-        }
-        
-        if (PlayerPrefs.GetFloat("High Score") >= 0)
-        {
-            float highScore = PlayerPrefs.GetFloat("High Score");
-            if(highScore >= score) { return; }
-
-            PlayerPrefs.SetFloat("High Score", highScore);
-        }
-
-            
     }
 
+    private void OnEnable()
+    {
+        Trail.OnTrailCollision += ChangeIntensity;
+        MutonPopUp.OnMutonPopUpCollision += ChangeIntensity;
+    }
+
+    private void OnDisable()
+    {
+        Trail.OnTrailCollision -= ChangeIntensity;
+        MutonPopUp.OnMutonPopUpCollision -= ChangeIntensity;
+    }
 }

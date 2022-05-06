@@ -1,19 +1,12 @@
-using System;
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class MainMenuTrail : MonoBehaviour, ICollidable
 {
     [SerializeField]
-    public float intensityChange = -3f;
-
-    //public delegate void TrailCollision(float amount, string uuid);
-    //public static event TrailCollision OnTrailCollision;
-
-    [SerializeField]
     GameObject FossilBlock;
 
+    private GameObject container;
     private MeshRenderer meshRenderer;
     private Collider blockCollider;
 
@@ -23,8 +16,12 @@ public class MainMenuTrail : MonoBehaviour, ICollidable
     // Start is called before the first frame update
     void Start()
     {
+        container = new GameObject();
+        container.name = "FossilBlockContainer";
+
         meshRenderer = GetComponent<MeshRenderer>();
         meshRenderer.enabled = false;
+
         blockCollider = GetComponent<Collider>();
         blockCollider.enabled = false;
 
@@ -36,9 +33,9 @@ public class MainMenuTrail : MonoBehaviour, ICollidable
         yield return new WaitForSeconds(waitTime);
         meshRenderer.enabled = true;
         blockCollider.enabled = true;
+
         yield return new WaitForSeconds(lifeTime);
-        meshRenderer.enabled = false;
-        blockCollider.enabled = false;
+        Destroy(gameObject);
     }
 
     private void OnTriggerEnter(Collider other)
@@ -49,13 +46,12 @@ public class MainMenuTrail : MonoBehaviour, ICollidable
     public void Collide(Collider other)
     {
         //TODO play SFX sound, break apart or float away
-        //OnTrailCollision(intensityChange, other.gameObject.GetComponent<Player>().PlayerUUID);
-        FossilBlock.transform.localScale = transform.localScale;
-        FossilBlock.transform.position = transform.position;
-        FossilBlock.transform.localEulerAngles = transform.localEulerAngles;
+        var fossilBlock = Instantiate<GameObject>(FossilBlock);
+        fossilBlock.transform.localScale = transform.localScale;
+        fossilBlock.transform.position = transform.position;
+        fossilBlock.transform.localEulerAngles = transform.localEulerAngles;
+        fossilBlock.transform.parent = container.transform;
 
-        Instantiate<GameObject>(FossilBlock);
-        Destroy(this.gameObject);
-
+        Destroy(gameObject);
     }
 }
