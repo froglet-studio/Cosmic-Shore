@@ -6,20 +6,22 @@ namespace StarWriter.Core.Input
 {
     public class ShipGyroInputs : MonoBehaviour
     {
+        /*
         public delegate void OnPitch();
-        public static event OnPitch onPitch;
+        public static event OnPitch OnPitch;
 
         public delegate void OnRoll();
-        public static event OnRoll onRollEvent;
+        public static event OnRoll OnRollEvent;
 
         public delegate void OnYaw();
-        public static event OnYaw onYawEvent;
-
-        public delegate void OnThrottle();
-        public static event OnThrottle onThrottleEvent;
+        public static event OnYaw OnYawEvent;
 
         public delegate void OnGyro();
-        public static event OnGyro onGyroEvent;
+        public static event OnGyro OnGyroEvent;
+        */
+
+        public delegate void OnThrottle();
+        public static event OnThrottle OnThrottleEvent;
 
         #region Camera 
         [SerializeField]
@@ -28,12 +30,13 @@ namespace StarWriter.Core.Input
         [SerializeField]
         CinemachineVirtualCameraBase cam2;
 
-        int activePriority = 10;
-        int inactivePriority = 1;
+        readonly int activePriority = 10;
+        readonly int inactivePriority = 1;
         #endregion
 
         #region Ship
-        public Transform shipTransform;
+        [SerializeField] 
+        Transform shipTransform;
 
         [SerializeField]
         Transform Fusilage;
@@ -45,51 +48,42 @@ namespace StarWriter.Core.Input
         Transform RightWing;
         #endregion
 
-        #region UI
         [SerializeField]
-        RectTransform UITransform;
-        #endregion
+        float Speed = 0;
 
-
-        
-
-        private Gyroscope gyro;
-        private Quaternion empiricalCorrection;
+        [SerializeField]
+        float OnThrottleEventThreshold = 1;
 
         private float throttle;
-        float defaultThrottle = .3f;
-
-        float lerpAmount = .2f;
-        float MinRotate = 2;
-        float touchScaler = .004f;
-
-        Quaternion displacementQ;
+        private readonly float defaultThrottle = .3f;
+        private readonly float lerpAmount = .2f;
+        private readonly float touchScaler = .005f;
+        private Gyroscope gyro;
+        private Quaternion empiricalCorrection;
 
         private void Awake()
         {
             if (SystemInfo.supportsGyroscope)
             {
                 gyro = UnityEngine.Input.gyro;
-                empiricalCorrection = Quaternion.Inverse(new Quaternion(0, .65f, .75f, 0)); //TODO: move to derivedCoorection
+                empiricalCorrection = Quaternion.Inverse(new Quaternion(0, .65f, .75f, 0)); // TODO: move to derivedCoorection
             }
         }
 
-        // Start is called before the first frame update
         void Start()
         {
-            float throttle = defaultThrottle;
             if (SystemInfo.supportsGyroscope)
             {
                 empiricalCorrection = GyroToUnity(empiricalCorrection);
                 gyro.enabled = true;
                 Screen.sleepTimeout = SleepTimeout.NeverSleep;
-                displacementQ = new Quaternion(0,0,0, -1);
+                displacementQ = new Quaternion(0, 0, 0, -1);
             }
         }
 
-        // Update is called once per frame
         void Update()
         {
+            // TODO: remove this check once movement is based on time.deltaTime
             if (PauseSystem.GetIsPaused())
             {
                 return;
@@ -97,11 +91,11 @@ namespace StarWriter.Core.Input
 
             if (SystemInfo.supportsGyroscope)
             {
-                //updates GameObjects rotation from input devices gyroscope
+                // Updates GameObjects rotation from input device's gyroscope
                 shipTransform.rotation = Quaternion.Lerp(
-                                                shipTransform.rotation, 
-                                                displacementQ * GyroToUnity(gyro.attitude) * empiricalCorrection, 
-                                                lerpAmount);
+                                            shipTransform.rotation, 
+                                            displacementQ * GyroToUnity(gyro.attitude) * empiricalCorrection, 
+                                            lerpAmount);
             }
 
             //change the camera if you flip you phone
@@ -118,100 +112,95 @@ namespace StarWriter.Core.Input
                 cam1.Priority = inactivePriority;    
             }
 
-
             if (UnityEngine.Input.touches.Length == 2)
             {
-                 
-                var yl = 0f;
-                var yr = 0f;
-                var xl = 0f;
-                var xr = 0f;
+                Vector2 leftTouch, rightTouch;
+
                 if (UnityEngine.Input.touches[0].position.x <= UnityEngine.Input.touches[1].position.x)
                 {
-                    yl = UnityEngine.Input.touches[0].position.y;
-                    xl = UnityEngine.Input.touches[0].position.x;
-                    yr = UnityEngine.Input.touches[1].position.y;
-                    xr = UnityEngine.Input.touches[1].position.x;
+                    leftTouch = UnityEngine.Input.touches[0].position;
+                    rightTouch = UnityEngine.Input.touches[1].position;
                 }
                 else
                 {
-                    yl = UnityEngine.Input.touches[1].position.y;
-                    xl = UnityEngine.Input.touches[1].position.x;
-                    yr = UnityEngine.Input.touches[0].position.y;
-                    xr = UnityEngine.Input.touches[0].position.x;
+                    leftTouch = UnityEngine.Input.touches[1].position;
+                    rightTouch = UnityEngine.Input.touches[0].position;
                 }
-                
 
-                Pitch(yl, yr);
-                Roll(yl, yr);
-                Yaw(xl, xr);
-                Throttle(xl, xr);
-
-                PerformShipAnimations(yl, yr, xl, xr);
-
+                Pitch(leftTouch.y, rightTouch.y);
+                Roll(leftTouch.y, rightTouch.y);
+                Yaw(leftTouch.x, rightTouch.x);
+                Throttle(leftTouch.x, rightTouch.x);
+                PerformShipAnimations(leftTouch.y, rightTouch.y, leftTouch.x, rightTouch.x);
             }
             else
             {
                 throttle = Mathf.Lerp(throttle, defaultThrottle, .1f);
-                LeftWing.localRotation = Quaternion.Lerp(LeftWing.localRotation, Quaternion.Euler(0, 0, 0), .1f);
+                LeftWing.localRotation = Quaternion.Lerp(LeftWing.localRotation, Quaternion.Euler(0, 0, 0), .1f); // TODO: should these all use Quaternion.Identity?
                 RightWing.localRotation = Quaternion.Lerp(RightWing.localRotation, Quaternion.Euler(0, 0, 0), .1f);
-                Fusilage.localRotation = Quaternion.Lerp(Fusilage.localRotation,Quaternion.Euler(0, 0, 0),.1f);
+                Fusilage.localRotation = Quaternion.Lerp(Fusilage.localRotation, Quaternion.Euler(0, 0, 0), .1f);
             }
 
-            //Move ship forward
-            shipTransform.position += shipTransform.forward * throttle;
-
+            // Move ship forward
+            shipTransform.position += Speed * throttle * Time.deltaTime * shipTransform.forward;
         }
 
         private void PerformShipAnimations(float yl, float yr, float xl, float xr)
         {
-            ///ship animations
-            LeftWing.localRotation = Quaternion.Lerp(LeftWing.localRotation, Quaternion.Euler(
-                                                        ((-(yl + yr) + (Screen.currentResolution.height)) + (yr - yl)) * .02f,
-                                                        0,
-                                                        -(throttle - defaultThrottle) * 50
-                                                            - ((xl + xr) - (Screen.currentResolution.width)) * .025f), lerpAmount);
+            // Ship animations
+            LeftWing.localRotation = Quaternion.Lerp(
+                                        LeftWing.localRotation, 
+                                        Quaternion.Euler(
+                                            (-(yl + yr) + (Screen.currentResolution.height) + (yr - yl)) * .02f,
+                                            0,
+                                            -(throttle - defaultThrottle) * 50 - ((xl + xr) - (Screen.currentResolution.width)) * .025f), 
+                                        lerpAmount);
 
-            RightWing.localRotation = Quaternion.Lerp(RightWing.localRotation, Quaternion.Euler(
-                                                        (-(yl + yr) + (Screen.currentResolution.height) - (yr - yl)) * .02f,
-                                                        0,
-                                                        (throttle - defaultThrottle) * 50
-                                                            - (((xl + xr)) - (Screen.currentResolution.width)) * .025f), lerpAmount);
+            RightWing.localRotation = Quaternion.Lerp(
+                                        RightWing.localRotation, 
+                                        Quaternion.Euler(
+                                            (-(yl + yr) + Screen.currentResolution.height - (yr - yl)) * .02f,
+                                            0,
+                                            (throttle - defaultThrottle) * 50 - ((xl + xr) - Screen.currentResolution.width) * .025f), 
+                                        lerpAmount);
 
-            Fusilage.localRotation = Quaternion.Lerp(Fusilage.localRotation, Quaternion.Euler(
-                                                        (-(yl + yr) + (Screen.currentResolution.height)) * .02f,
-                                                        (yr - yl)*.02f,
-                                                        ((-(xl + xr)) + (Screen.currentResolution.width)) * .01f), lerpAmount);
+            Fusilage.localRotation = Quaternion.Lerp(
+                                        Fusilage.localRotation, 
+                                        Quaternion.Euler(
+                                            (-(yl + yr) + Screen.currentResolution.height) * .02f,
+                                            (yr - yl)*.02f,
+                                            (-(xl + xr) + Screen.currentResolution.width) * .01f),
+                                        lerpAmount);
         }
 
         private void Throttle(float xl, float xr)
         {
-            //throttle
             throttle = Mathf.Lerp(throttle, (xr - xl) * touchScaler * .18f - .15f, .2f);
+
+            if (throttle > OnThrottleEventThreshold)
+                OnThrottleEvent?.Invoke();
         }
 
         private void Yaw(float xl, float xr)
         {
-            //yaw
-            displacementQ = Quaternion.AngleAxis(
-                                    (((xl + xr) / 2) - (Screen.currentResolution.width / 2)) * touchScaler * (throttle + MinRotate), 
-                                    shipTransform.up) * displacementQ;
+            displacementQ *= Quaternion.AngleAxis(
+                                (((xl + xr) / 2) - (Screen.currentResolution.width / 2)) * touchScaler * (throttle+.5f), 
+                                shipTransform.up);
         }
 
         private void Roll(float yl, float yr)
         {
-            //roll
-            displacementQ = Quaternion.AngleAxis((yr - yl) * touchScaler * (throttle + MinRotate)
-                            , shipTransform.forward) * displacementQ;
+            displacementQ *= Quaternion.AngleAxis(
+                                (yr - yl) * touchScaler * throttle, 
+                                shipTransform.forward);
         }
 
         private void Pitch(float yl, float yr)
         {
-            //pitch
-            displacementQ = Quaternion.AngleAxis((((yl + yr) / 2) - (Screen.currentResolution.height / 2)) * -touchScaler * (throttle + MinRotate)
-                            , shipTransform.right) * displacementQ;
+            displacementQ *= Quaternion.AngleAxis(
+                                (((yl + yr) / 2) - (Screen.currentResolution.height / 2)) * -touchScaler * throttle, 
+                                shipTransform.right);
         }
-
 
         //Coverts Android and Mobile Device Quaterion into Unity Quaterion  TODO: Test
         private Quaternion GyroToUnity(Quaternion q)
