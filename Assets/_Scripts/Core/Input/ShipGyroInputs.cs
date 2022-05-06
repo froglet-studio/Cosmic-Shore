@@ -45,15 +45,24 @@ namespace StarWriter.Core.Input
         Transform RightWing;
         #endregion
 
-        float touchScaler = .005f;
+        #region UI
+        [SerializeField]
+        RectTransform UITransform;
+        #endregion
+
+
+        
 
         private Gyroscope gyro;
         private Quaternion empiricalCorrection;
 
         private float throttle;
         float defaultThrottle = .3f;
+
         float lerpAmount = .2f;
-        
+        float MinRotate = 2;
+        float touchScaler = .004f;
+
         Quaternion displacementQ;
 
         private void Awake()
@@ -98,13 +107,15 @@ namespace StarWriter.Core.Input
             //change the camera if you flip you phone
             if (UnityEngine.Input.acceleration.y > 0) 
             {
+                if (cam2.Priority == activePriority) { UITransform.Rotate(0, 0, 180); }
                 cam1.Priority = activePriority;
                 cam2.Priority = inactivePriority;
             }
             else
             {
+                if (cam1.Priority == activePriority) { UITransform.Rotate(0, 0, 180); }
                 cam2.Priority = activePriority;
-                cam1.Priority = inactivePriority;
+                cam1.Priority = inactivePriority;    
             }
 
 
@@ -183,21 +194,21 @@ namespace StarWriter.Core.Input
         {
             //yaw
             displacementQ = Quaternion.AngleAxis(
-                                    (((xl + xr) / 2) - (Screen.currentResolution.width / 2)) * touchScaler * (throttle+.5f), 
+                                    (((xl + xr) / 2) - (Screen.currentResolution.width / 2)) * touchScaler * (throttle + MinRotate), 
                                     shipTransform.up) * displacementQ;
         }
 
         private void Roll(float yl, float yr)
         {
             //roll
-            displacementQ = Quaternion.AngleAxis((yr - yl) * touchScaler * throttle
+            displacementQ = Quaternion.AngleAxis((yr - yl) * touchScaler * (throttle + MinRotate)
                             , shipTransform.forward) * displacementQ;
         }
 
         private void Pitch(float yl, float yr)
         {
             //pitch
-            displacementQ = Quaternion.AngleAxis((((yl + yr) / 2) - (Screen.currentResolution.height / 2)) * -touchScaler * throttle
+            displacementQ = Quaternion.AngleAxis((((yl + yr) / 2) - (Screen.currentResolution.height / 2)) * -touchScaler * (throttle + MinRotate)
                             , shipTransform.right) * displacementQ;
         }
 
