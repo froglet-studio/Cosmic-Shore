@@ -54,7 +54,7 @@ public class Trail : MonoBehaviour, ICollidable
         {
             //TODO play SFX sound, break apart or float away
             OnTrailCollision?.Invoke(intensityChange, other.gameObject.GetComponent<Player>().PlayerUUID);
-            var fossilBlock = Instantiate<GameObject>(FossilBlock);
+            var fossilBlock = Instantiate(FossilBlock);
             fossilBlock.transform.localScale = transform.localScale;
             fossilBlock.transform.position = transform.position;
             fossilBlock.transform.localEulerAngles = transform.localEulerAngles;

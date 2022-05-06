@@ -21,11 +21,8 @@ public class MainMenuMutonPopUp : MonoBehaviour
 
     void Start()
     {
-        
         //transform.position = Random.insideUnitSphere * sphereRadius + displacement;
     }
-
-
 
     private void OnTriggerEnter(Collider other)
     {
@@ -35,8 +32,6 @@ public class MainMenuMutonPopUp : MonoBehaviour
 
     public void Collide(Collider other)
     {
-        
-
         //check if a ship
         if (other.GetComponent<StarWriter.Core.Input.AiShipController>() != null)
         {
@@ -57,8 +52,5 @@ public class MainMenuMutonPopUp : MonoBehaviour
             MainMenuTrailSpawner trailScript = other.GetComponent<MainMenuTrailSpawner>();
             trailScript.lifeTime += lifeTimeIncrease;
         }
-        
-
-
     }
 }
