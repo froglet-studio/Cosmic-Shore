@@ -1,12 +1,11 @@
-using System;
-using System.Collections.Generic;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
 public class MutonPopUp : MonoBehaviour//, ICollidable
 {
+    [SerializeField]
+    float sphereRadius = 100;
 
-    public float sphereRadius = 100;
     [SerializeField]
     GameObject aiShip;
 
@@ -17,10 +16,10 @@ public class MutonPopUp : MonoBehaviour//, ICollidable
     Vector3 displacement = Vector3.zero;
 
     [SerializeField]
-    public float intensityAmount = 10f;
+    float intensityAmount = 10f;
 
-    public float lifeTimeIncrease = 20;
-
+    [SerializeField]
+    float lifeTimeIncrease = 20;
 
     public delegate void PopUpCollision(float amount, string uuid);
     public static event PopUpCollision OnMutonPopUpCollision;
@@ -30,8 +29,6 @@ public class MutonPopUp : MonoBehaviour//, ICollidable
         transform.position = Random.insideUnitSphere * sphereRadius + displacement;
     }
 
-
-
     private void OnTriggerEnter(Collider other)
     {
         //TODO Decay brokenSphere and clean up
@@ -40,17 +37,18 @@ public class MutonPopUp : MonoBehaviour//, ICollidable
 
     public void Collide(Collider other)
     {
-        spentMutonPrefab.transform.position = transform.position;
-        spentMutonPrefab.transform.localEulerAngles = transform.localEulerAngles;
-        Instantiate<GameObject>(spentMutonPrefab);
+        var spentMuton = Instantiate<GameObject>(spentMutonPrefab);
+        spentMuton.transform.position = transform.position;
+        spentMuton.transform.localEulerAngles = transform.localEulerAngles;
+        
         transform.position = UnityEngine.Random.insideUnitSphere * sphereRadius;
         OnMutonPopUpCollision(intensityAmount, other.gameObject.GetComponent<Player>().PlayerUUID);
 
-        //grow tail
+        // Grow tail
         TrailSpawner trailScript = other.GetComponent<TrailSpawner>();
         trailScript.lifeTime += lifeTimeIncrease;
 
-        //make ai harder
+        // Make ai harder
         if (other.gameObject.GetComponent<Player>().PlayerUUID == "admin")
         {
             StarWriter.Core.Input.AiShipController aiControllerScript = aiShip.GetComponent<StarWriter.Core.Input.AiShipController>();
@@ -58,10 +56,7 @@ public class MutonPopUp : MonoBehaviour//, ICollidable
             aiControllerScript.defaultThrottle += .05f;
         }
         
-
-        //GameObject  
         //TODO play SFX sound
-        //Destroy(this);
         //TODO Respawn
     }
 }
