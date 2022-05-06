@@ -60,7 +60,6 @@ namespace StarWriter.Core.Input
         private readonly float touchScaler = .005f;
         private Gyroscope gyro;
         private Quaternion empiricalCorrection;
-        private Quaternion displacementQ;
 
         private void Awake()
         {
@@ -99,8 +98,19 @@ namespace StarWriter.Core.Input
                                             lerpAmount);
             }
 
-            cam1.Priority = UnityEngine.Input.acceleration.y > 0 ? activePriority : inactivePriority;
-            cam2.Priority = UnityEngine.Input.acceleration.y > 0 ? inactivePriority: activePriority;
+            //change the camera if you flip you phone
+            if (UnityEngine.Input.acceleration.y > 0) 
+            {
+                if (cam2.Priority == activePriority) { UITransform.Rotate(0, 0, 180); }
+                cam1.Priority = activePriority;
+                cam2.Priority = inactivePriority;
+            }
+            else
+            {
+                if (cam1.Priority == activePriority) { UITransform.Rotate(0, 0, 180); }
+                cam2.Priority = activePriority;
+                cam1.Priority = inactivePriority;    
+            }
 
             if (UnityEngine.Input.touches.Length == 2)
             {

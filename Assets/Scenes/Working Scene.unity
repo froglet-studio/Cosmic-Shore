@@ -1554,7 +1554,7 @@ RectTransform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 893616186}
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 0.06, y: 0.06, z: 1}
   m_ConstrainProportionsScale: 0
@@ -2203,6 +2203,7 @@ MonoBehaviour:
   Fusilage: {fileID: 8631596354212526578}
   LeftWing: {fileID: 3145700090026864792}
   RightWing: {fileID: 6413447646132700981}
+  UITransform: {fileID: 893616187}
 --- !u!54 &1556773159
 Rigidbody:
   m_ObjectHideFlags: 0
