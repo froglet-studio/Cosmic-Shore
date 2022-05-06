@@ -48,6 +48,11 @@ namespace StarWriter.Core.Input
         Transform RightWing;
         #endregion
 
+        #region UI
+        [SerializeField]
+        RectTransform UITransform;
+        #endregion
+
         [SerializeField]
         float Speed = 0;
 
@@ -60,6 +65,7 @@ namespace StarWriter.Core.Input
         private readonly float touchScaler = .005f;
         private Gyroscope gyro;
         private Quaternion empiricalCorrection;
+        private Quaternion displacementQ;
 
         private void Awake()
         {
