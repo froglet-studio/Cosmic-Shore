@@ -2918,7 +2918,7 @@ MonoBehaviour:
     ModeOverride: 0
     LensShift: {x: 0, y: 0}
     GateFit: 2
-    m_SensorSize: {x: 2.0555556, y: 1}
+    m_SensorSize: {x: 2.2103379, y: 1}
   m_Transitions:
     m_BlendHint: 0
     m_InheritPosition: 0
@@ -4792,10 +4792,10 @@ GameObject:
   - component: {fileID: 2059123761}
   - component: {fileID: 2059123760}
   - component: {fileID: 2059123759}
-  - component: {fileID: 2059123758}
-  - component: {fileID: 2059123763}
   - component: {fileID: 2059123764}
+  - component: {fileID: 2059123763}
   - component: {fileID: 2059123765}
+  - component: {fileID: 2059123766}
   m_Layer: 0
   m_Name: Tutorial Player
   m_TagString: Untagged
@@ -4803,20 +4803,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &2059123758
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2059123757}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4b01121848768df4c8933282c41a5fde, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  speed: 5
-  direction: {x: 0, y: 0, z: 1}
 --- !u!65 &2059123759
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -4936,6 +4922,30 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ef3c3595153401b4eb424594af75eacf, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  inputController: {fileID: 0}
+--- !u!114 &2059123766
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2059123757}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4b03e7163961e2c4b9d04056b4fcb40e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  CloseCam: {fileID: 0}
+  FarCam: {fileID: 0}
+  shipTransform: {fileID: 0}
+  Fusilage: {fileID: 0}
+  LeftWing: {fileID: 0}
+  RightWing: {fileID: 0}
+  UITransform: {fileID: 0}
+  rotationSpeed: 3
+  rotationThrottleScaler: 3
+  speed: 0
+  OnThrottleEventThreshold: 1
 --- !u!1 &2071146611
 GameObject:
   m_ObjectHideFlags: 0

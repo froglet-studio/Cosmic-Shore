@@ -83,9 +83,13 @@ namespace StarWriter.Core.Input
         public enum ControlScheme
         {
             All,
-            Pitch
+            Pitch,
+            Roll,
+            Yaw,
+            Throttle,
+            Gyro
         }
-        private readonly ControlScheme controlScheme;
+        public ControlScheme flightControlScheme;
 
 
         private void Awake()
@@ -153,7 +157,7 @@ namespace StarWriter.Core.Input
                     leftTouch = UnityEngine.Input.touches[1].position;
                     rightTouch = UnityEngine.Input.touches[0].position;
                 }
-                switch (controlScheme)
+                switch (flightControlScheme)
                 {
                     case ControlScheme.All:
                         Pitch(leftTouch.y, rightTouch.y);
@@ -164,7 +168,20 @@ namespace StarWriter.Core.Input
                     case ControlScheme.Pitch:
                         Pitch(leftTouch.y, rightTouch.y);
                         break;
-                        
+                    case ControlScheme.Roll:
+                        Roll(leftTouch.y, rightTouch.y);
+                        break;
+                    case ControlScheme.Yaw:
+                        Yaw(leftTouch.x, rightTouch.x);
+                        break;
+                    case ControlScheme.Throttle:
+                        Throttle(leftTouch.x, rightTouch.x);
+                        break;
+                    case ControlScheme.Gyro:
+
+                        //TODO add in gyro only
+                        Throttle(leftTouch.x, rightTouch.x);
+                        break;
                 }
                 PerformShipAnimations(leftTouch.y, rightTouch.y, leftTouch.x, rightTouch.x);
             }
