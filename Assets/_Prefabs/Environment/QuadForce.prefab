@@ -63,7 +63,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: c34edb7ebd1752d4e88d701083a099e8, type: 2}
+  - {fileID: 2100000, guid: 61f2a7bf6ee227043ba2ce50e7af3916, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -346,7 +346,6 @@ GameObject:
   - component: {fileID: 1365048593575977339}
   - component: {fileID: 6940957765091224858}
   - component: {fileID: 1922350757772804099}
-  - component: {fileID: 5773224137978747077}
   m_Layer: 0
   m_Name: PyramidTri
   m_TagString: Untagged
@@ -445,19 +444,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 89d18bf1872354d8a84e751f5c2cccda, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!114 &5773224137978747077
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5348997426238566770}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3db9d08d0a0c22542b73229e06cc8785, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  MutonMaterial: {fileID: 0}
 --- !u!1 &8852909812368273299
 GameObject:
   m_ObjectHideFlags: 0

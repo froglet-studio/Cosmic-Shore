@@ -2448,6 +2448,99 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1054542787}
   m_CullTransparentMesh: 1
+--- !u!1001 &1159508444
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    m_TransformParent: {fileID: 2059123762}
+    m_Modifications:
+    - target: {fileID: 4716017970644135970, guid: 606ba06447749684bb3281b73224bfc1,
+        type: 3}
+      propertyPath: m_Name
+      value: Manta
+      objectReference: {fileID: 0}
+    - target: {fileID: 5348440134447164056, guid: 606ba06447749684bb3281b73224bfc1,
+        type: 3}
+      propertyPath: m_RootOrder
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5348440134447164056, guid: 606ba06447749684bb3281b73224bfc1,
+        type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5348440134447164056, guid: 606ba06447749684bb3281b73224bfc1,
+        type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5348440134447164056, guid: 606ba06447749684bb3281b73224bfc1,
+        type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5348440134447164056, guid: 606ba06447749684bb3281b73224bfc1,
+        type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.7071068
+      objectReference: {fileID: 0}
+    - target: {fileID: 5348440134447164056, guid: 606ba06447749684bb3281b73224bfc1,
+        type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0.7071068
+      objectReference: {fileID: 0}
+    - target: {fileID: 5348440134447164056, guid: 606ba06447749684bb3281b73224bfc1,
+        type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5348440134447164056, guid: 606ba06447749684bb3281b73224bfc1,
+        type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5348440134447164056, guid: 606ba06447749684bb3281b73224bfc1,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 90
+      objectReference: {fileID: 0}
+    - target: {fileID: 5348440134447164056, guid: 606ba06447749684bb3281b73224bfc1,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5348440134447164056, guid: 606ba06447749684bb3281b73224bfc1,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 606ba06447749684bb3281b73224bfc1, type: 3}
+--- !u!4 &1159508445 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 5348440134447164056, guid: 606ba06447749684bb3281b73224bfc1,
+    type: 3}
+  m_PrefabInstance: {fileID: 1159508444}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &1159508446 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 2815954423485896576, guid: 606ba06447749684bb3281b73224bfc1,
+    type: 3}
+  m_PrefabInstance: {fileID: 1159508444}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &1159508447 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 6175181207172030509, guid: 606ba06447749684bb3281b73224bfc1,
+    type: 3}
+  m_PrefabInstance: {fileID: 1159508444}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &1159508448 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 710711265931815239, guid: 606ba06447749684bb3281b73224bfc1,
+    type: 3}
+  m_PrefabInstance: {fileID: 1159508444}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1182015486
 GameObject:
   m_ObjectHideFlags: 0
@@ -2918,7 +3011,7 @@ MonoBehaviour:
     ModeOverride: 0
     LensShift: {x: 0, y: 0}
     GateFit: 2
-    m_SensorSize: {x: 2.0555556, y: 1}
+    m_SensorSize: {x: 2.2103379, y: 1}
   m_Transitions:
     m_BlendHint: 0
     m_InheritPosition: 0
@@ -4792,10 +4885,10 @@ GameObject:
   - component: {fileID: 2059123761}
   - component: {fileID: 2059123760}
   - component: {fileID: 2059123759}
-  - component: {fileID: 2059123758}
-  - component: {fileID: 2059123763}
   - component: {fileID: 2059123764}
+  - component: {fileID: 2059123763}
   - component: {fileID: 2059123765}
+  - component: {fileID: 2059123766}
   m_Layer: 0
   m_Name: Tutorial Player
   m_TagString: Untagged
@@ -4803,20 +4896,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &2059123758
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2059123757}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4b01121848768df4c8933282c41a5fde, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  speed: 5
-  direction: {x: 0, y: 0, z: 1}
 --- !u!65 &2059123759
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -4891,7 +4970,8 @@ Transform:
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children: []
+  m_Children:
+  - {fileID: 1159508445}
   m_Father: {fileID: 0}
   m_RootOrder: 5
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -4936,6 +5016,31 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ef3c3595153401b4eb424594af75eacf, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  inputController: {fileID: 2059123766}
+--- !u!114 &2059123766
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2059123757}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7cea29e61e8102348a12e19071d7d02b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  CloseCam: {fileID: 1304064068}
+  FarCam: {fileID: 1304064068}
+  shipTransform: {fileID: 1159508445}
+  Fusilage: {fileID: 1159508448}
+  LeftWing: {fileID: 1159508447}
+  RightWing: {fileID: 1159508446}
+  UITransform: {fileID: 1412703298}
+  rotationSpeed: 3
+  rotationThrottleScaler: 3
+  speed: 0
+  OnThrottleEventThreshold: 1
+  flightControlScheme: 0
 --- !u!1 &2071146611
 GameObject:
   m_ObjectHideFlags: 0

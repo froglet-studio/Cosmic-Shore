@@ -7,16 +7,18 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: TruncatedOctahedronMaterial
-  m_Shader: {fileID: -6465566751694194690, guid: b359d515c1304ec4fba16ecbae0b85b7,
+  m_Name: VelocityMaterial
+  m_Shader: {fileID: -6465566751694194690, guid: a3e8b27f03b506241a7d49d2bdb2d6b6,
     type: 3}
-  m_ValidKeywords: []
+  m_ValidKeywords:
+  - _SURFACE_TYPE_TRANSPARENT
   m_InvalidKeywords: []
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
   m_CustomRenderQueue: 3000
-  stringTagMap: {}
+  stringTagMap:
+    RenderType: Transparent
   disabledShaderPasses: []
   m_SavedProperties:
     serializedVersion: 3
@@ -86,11 +88,11 @@ Material:
     - _CastShadows: 1
     - _ClearCoatMask: 0
     - _ClearCoatSmoothness: 0
-    - _Cull: 2
+    - _Cull: 0
     - _Cutoff: 0.5
     - _DetailAlbedoMapScale: 1
     - _DetailNormalMapScale: 1
-    - _DstBlend: 0
+    - _DstBlend: 10
     - _EnvironmentReflections: 1
     - _GlossMapScale: 0
     - _Glossiness: 0
@@ -104,21 +106,27 @@ Material:
     - _Smoothness: 0.5
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1
-    - _SrcBlend: 1
-    - _Surface: 0
+    - _SrcBlend: 5
+    - _Surface: 1
     - _WorkflowMode: 1
     - _ZTest: 4
     - _ZWrite: 1
-    - _ZWriteControl: 0
+    - _ZWriteControl: 1
     - _add_cos: 0
+    - _angle: 0
     - _multiply: 0
-    - _opacity: 0.61814743
+    - _opacity: 0.8743316
     - _scale: 0
+    - _seedx: 0.8
+    - _seedy: 0.1
     m_Colors:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
     - _SpecColor: {r: 0.19999996, g: 0.19999996, b: 0.19999996, a: 1}
+    - _add_vector: {r: 0, g: 0, b: 9, a: 0}
+    - _tangent: {r: 1.51, g: -2.92, b: 1.83, a: 0}
+    - _velocity: {r: 1.5, g: 0, b: 0, a: 0}
   m_BuildTextureStacks: []
 --- !u!114 &2422392668265197798
 MonoBehaviour:
