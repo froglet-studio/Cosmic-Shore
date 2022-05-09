@@ -4,7 +4,7 @@ using Cinemachine;
 
 namespace StarWriter.Core.Input
 {
-    public class ShipGyroInputs : MonoBehaviour
+    public class InputController : MonoBehaviour
     {
         /*
         public delegate void OnPitch();
@@ -59,6 +59,8 @@ namespace StarWriter.Core.Input
         [SerializeField]
         float rotationThrottleScaler = 3;
 
+        
+
         [SerializeField]
         float speed = 0;
 
@@ -68,10 +70,16 @@ namespace StarWriter.Core.Input
         private float throttle;
         private readonly float defaultThrottle = .3f;
         private readonly float lerpAmount = .2f;
+
         private readonly float touchScaler = .005f;
+
+        private readonly float yawAnimationScale = .04f;
+        private readonly float throttleAnimationScale = 80;
+
         private Gyroscope gyro;
         private Quaternion empiricalCorrection;
         private Quaternion displacementQ;
+
 
         private void Awake()
         {
@@ -158,21 +166,21 @@ namespace StarWriter.Core.Input
 
         private void PerformShipAnimations(float yl, float yr, float xl, float xr)
         {
-            // Ship animations
+            // Ship animations TODO: figure out how to leverage a single definition for pitch, etc. that captures the gyro in the animations.
             LeftWing.localRotation = Quaternion.Lerp(
                                         LeftWing.localRotation, 
                                         Quaternion.Euler(
-                                            (-(yl + yr) + (Screen.currentResolution.height) + (yr - yl)) * .02f,
+                                            (-(yl + yr) + (Screen.currentResolution.height) + (yr - yl)) * .02f, //tilt based on pitch and roll
                                             0,
-                                            -(throttle - defaultThrottle) * 50 - ((xl + xr) - (Screen.currentResolution.width)) * .025f), 
+                                            -(throttle - defaultThrottle) * throttleAnimationScale - ((xl + xr) - (Screen.currentResolution.width)) * yawAnimationScale), //sweep back based on throttle and yaw
                                         lerpAmount);
 
             RightWing.localRotation = Quaternion.Lerp(
                                         RightWing.localRotation, 
                                         Quaternion.Euler(
-                                            (-(yl + yr) + Screen.currentResolution.height - (yr - yl)) * .02f,
+                                            (-(yl + yr) + Screen.currentResolution.height - (yr - yl)) * .02f, 
                                             0,
-                                            (throttle - defaultThrottle) * 50 - ((xl + xr) - Screen.currentResolution.width) * .025f), 
+                                            (throttle - defaultThrottle) * throttleAnimationScale - ((xl + xr) - Screen.currentResolution.width) * yawAnimationScale), 
                                         lerpAmount);
 
             Fusilage.localRotation = Quaternion.Lerp(

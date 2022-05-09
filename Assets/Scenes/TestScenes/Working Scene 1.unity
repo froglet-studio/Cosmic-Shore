@@ -1071,9 +1071,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   sphereRadius: 100
   aiShip: {fileID: 1892142149}
-  spentMutonPrefab: {fileID: 8491596592871572304, guid: d40645bbc10e0c84fae2bed0be9fd646,
+  spentMutonPrefab: {fileID: 8491596592871572304, guid: f39596c98ed9d644a834f2fa27ec90ca,
     type: 3}
-  displacement: {x: 0, y: 0, z: 0}
   intensityAmount: 10
   IntensityBar: {fileID: 130306401}
   MutonIntensityBoost: 1
@@ -1581,7 +1580,7 @@ RectTransform:
   m_GameObject: {fileID: 893616186}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 0.06, y: 0.06, z: 1}
+  m_LocalScale: {x: 0.06, y: 0.04, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 620024972}
@@ -1593,7 +1592,7 @@ RectTransform:
   m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: 0, y: -145}
   m_SizeDelta: {x: 2160, y: -30}
-  m_Pivot: {x: 0.5, y: 0.5}
+  m_Pivot: {x: 0.5, y: 0.38}
 --- !u!114 &893616188
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2819,7 +2818,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   defaultThrottle: 0.65
-  lerpAmount: 0.035
+  lerpAmount: 0.63
   lerpIncrease: 0.001
   shipTransform: {fileID: 1892142157}
   muton: {fileID: 430359312}

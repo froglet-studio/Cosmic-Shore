@@ -1,6 +1,7 @@
 using UnityEngine;
 using Random = UnityEngine.Random;
 using TMPro;
+using System.Collections.Generic;
 
 public class MutonPopUp : MonoBehaviour//, ICollidable
 {
@@ -12,9 +13,6 @@ public class MutonPopUp : MonoBehaviour//, ICollidable
 
     [SerializeField]
     GameObject spentMutonPrefab;
-
-    [SerializeField]
-    Vector3 displacement = Vector3.zero;
 
     [SerializeField]
     float intensityAmount = 10f;
@@ -32,6 +30,18 @@ public class MutonPopUp : MonoBehaviour//, ICollidable
     [SerializeField]
     TextMeshProUGUI outputText;
 
+    [SerializeField]
+    GameObject Muton;
+
+    [SerializeField]
+    Material material;
+
+    Material tempMaterial;
+
+    private List<Material> materials; 
+
+    //private List<Coroutine> impactRoutines;
+
     int score = 0;
 
     public delegate void PopUpCollision(float amount, string uuid);
@@ -39,7 +49,7 @@ public class MutonPopUp : MonoBehaviour//, ICollidable
 
     void Start()
     {
-        transform.position = Random.insideUnitSphere * sphereRadius + displacement;
+        transform.position = Random.insideUnitSphere * sphereRadius;
     }
 
     private void OnTriggerEnter(Collider other)
@@ -54,9 +64,17 @@ public class MutonPopUp : MonoBehaviour//, ICollidable
         var spentMuton = Instantiate<GameObject>(spentMutonPrefab);
         spentMuton.transform.position = transform.position;
         spentMuton.transform.localEulerAngles = transform.localEulerAngles;
+        tempMaterial = new Material(material);
+        //tempMaterial.CopyPropertiesFromMaterial(material);
+        //materials.Add(tempMaterial);
+        spentMuton.GetComponent<Renderer>().material = tempMaterial;
+
+        //impactRoutines.Add();
+        
+        StartCoroutine(spentMuton.GetComponent<Impact>().ImpactCoroutine(spentMuton.transform.rotation*other.transform.forward, tempMaterial));
 
         //move the muton
-        transform.position = UnityEngine.Random.insideUnitSphere * sphereRadius;
+        StartCoroutine(Muton.GetComponent<FadeIn>().FadeInCoroutine());
         transform.SetPositionAndRotation(UnityEngine.Random.insideUnitSphere * sphereRadius, UnityEngine.Random.rotation);
         OnMutonPopUpCollision(intensityAmount, other.GetComponentInParent<Transform>().GetComponentInParent<Player>().PlayerUUID);
 
