@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 5222650486365209692}
   - component: {fileID: 1981306459138289011}
   - component: {fileID: 7076137217386601628}
+  - component: {fileID: 4692726231534246356}
   m_Layer: 0
   m_Name: FossilBlock
   m_TagString: Untagged
@@ -83,3 +84,17 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &4692726231534246356
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5776304996075792891}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e85b63351f599b5449919a2a77b885c9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  minMagnitude: 0.07
+  scaleRate: 0.98

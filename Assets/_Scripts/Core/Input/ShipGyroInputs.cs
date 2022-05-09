@@ -25,10 +25,10 @@ namespace StarWriter.Core.Input
 
         #region Camera 
         [SerializeField]
-        CinemachineVirtualCameraBase cam1;
+        CinemachineVirtualCameraBase CloseCam;
 
         [SerializeField]
-        CinemachineVirtualCameraBase cam2;
+        CinemachineVirtualCameraBase FarCam;
 
         readonly int activePriority = 10;
         readonly int inactivePriority = 1;
@@ -54,7 +54,13 @@ namespace StarWriter.Core.Input
         #endregion
 
         [SerializeField]
-        float Speed = 0;
+        float rotationSpeed = 3;
+
+        [SerializeField]
+        float rotationThrottleScaler = 3;
+
+        [SerializeField]
+        float speed = 0;
 
         [SerializeField]
         float OnThrottleEventThreshold = 1;
@@ -105,17 +111,17 @@ namespace StarWriter.Core.Input
             }
 
             //change the camera if you flip you phone
-            if (UnityEngine.Input.acceleration.y > 0) 
+            if (UnityEngine.Input.acceleration.y > 0)
             {
-                if (cam2.Priority == activePriority) { UITransform.Rotate(0, 0, 180); }
-                cam1.Priority = activePriority;
-                cam2.Priority = inactivePriority;
+                UITransform.rotation = Quaternion.Euler(0,0,180);
+                CloseCam.Priority = activePriority;
+                FarCam.Priority = inactivePriority;
             }
             else
             {
-                if (cam1.Priority == activePriority) { UITransform.Rotate(0, 0, 180); }
-                cam2.Priority = activePriority;
-                cam1.Priority = inactivePriority;    
+                UITransform.rotation = Quaternion.identity;
+                FarCam.Priority = activePriority;
+                CloseCam.Priority = inactivePriority;
             }
 
             if (UnityEngine.Input.touches.Length == 2)
@@ -147,7 +153,7 @@ namespace StarWriter.Core.Input
             }
 
             // Move ship forward
-            shipTransform.position += Speed * throttle * Time.deltaTime * shipTransform.forward;
+            shipTransform.position += speed * throttle * Time.deltaTime * shipTransform.forward;
         }
 
         private void PerformShipAnimations(float yl, float yr, float xl, float xr)
@@ -189,21 +195,21 @@ namespace StarWriter.Core.Input
         private void Yaw(float xl, float xr)  // These need to not use *= ... remember quaternions are not commutative
         {
             displacementQ = Quaternion.AngleAxis(
-                                (((xl + xr) / 2) - (Screen.currentResolution.width / 2)) * touchScaler * (throttle+.5f), 
+                                (((xl + xr) / 2) - (Screen.currentResolution.width / 2)) * touchScaler * (throttle*rotationThrottleScaler+rotationSpeed), 
                                 shipTransform.up) * displacementQ;
         }
 
         private void Roll(float yl, float yr)
         {
             displacementQ = Quaternion.AngleAxis(
-                                (yr - yl) * touchScaler * throttle, 
+                                (yr - yl) * touchScaler, 
                                 shipTransform.forward) * displacementQ;
         }
 
         private void Pitch(float yl, float yr)
         {
             displacementQ = Quaternion.AngleAxis(
-                                (((yl + yr) / 2) - (Screen.currentResolution.height / 2)) * -touchScaler * throttle, 
+                                (((yl + yr) / 2) - (Screen.currentResolution.height / 2)) * -touchScaler * (throttle * rotationThrottleScaler + rotationSpeed), 
                                 shipTransform.right) * displacementQ;
         }
 

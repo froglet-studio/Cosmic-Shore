@@ -18,10 +18,10 @@ public class ScaleDown : MonoBehaviour
 
     IEnumerator shrinkCoroutine()
     {
-        yield return new WaitForSeconds(1);
+        yield return new WaitForSeconds(.3f);
         while (transform.localScale.magnitude > minMagnitude)
         {
-            yield return new WaitForSeconds(.2f);
+            yield return new WaitForSeconds(.05f);
             transform.localScale *= scaleRate;
         }
             
