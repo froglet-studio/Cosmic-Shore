@@ -87,6 +87,7 @@ public class TutorialManager : MonoBehaviour
     public void CompleteTutorial()
     {
         hasCompletedTutorial = true;
+        GameSetting setting = GameSetting.Instance;
         SceneManager.LoadScene(0);
     }
 }

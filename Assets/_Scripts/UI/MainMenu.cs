@@ -11,7 +11,7 @@ namespace StarWriter.Core.UI
     /// </summary>
     public class MainMenu : MonoBehaviour
     {
-        public GameObject Game_Settings_Panel;
+        public GameObject Game_Options_Panel;
 
         public void OnPressButtonStartGame()
         {
@@ -21,15 +21,11 @@ namespace StarWriter.Core.UI
         public void OnPressButtonOptions()
         {
             Debug.Log("Game Options Pressed");
-            Game_Settings_Panel.SetActive(true);
+            Game_Options_Panel.SetActive(true);
             gameObject.SetActive(false);
         }
 
-        public void OnPressButtonQuit()
-        {
-            Debug.Log("Quit Button Pressed");
-            Application.Quit();
-        }
+        
     }
 }
 
