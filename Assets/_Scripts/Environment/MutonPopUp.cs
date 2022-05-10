@@ -86,6 +86,7 @@ public class MutonPopUp : MonoBehaviour//, ICollidable
         {
             StartCoroutine(spentMuton.GetComponent<Impact>().ImpactCoroutine(
                 ship.transform.forward * ship.GetComponent<InputController>().speed, tempMaterial, "Player"));
+            HapticController.PlayMutonCollisionHaptics();
         }
         else
         {

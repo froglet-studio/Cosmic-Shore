@@ -19,6 +19,8 @@ public class ScoreBoard : MonoBehaviour
     [SerializeField]
     float currentIntensity;
 
+    public GameObject intensityMeter;
+
     //AI   
     [SerializeField]
     float aiScore = 0f;
@@ -105,6 +107,7 @@ public class ScoreBoard : MonoBehaviour
         PlayerPrefs.SetFloat("Score", score);
         if (PlayerPrefs.GetFloat("High Score") < score)
             PlayerPrefs.SetFloat("High Score", score);
+        intensityMeter.SetActive(false);
     }
 
     private void OnEnable()
