@@ -2187,7 +2187,7 @@ MonoBehaviour:
   MutonContainer: {fileID: 1416682014}
   intensityAmount: 10
   lifeTimeIncrease: 3
-  Muton: {fileID: 8491596593335364973}
+  Muton: {fileID: 0}
 --- !u!23 &3911685734390589897
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -2928,7 +2928,6 @@ GameObject:
   - component: {fileID: 6581790613235502289}
   - component: {fileID: 8408881653482516347}
   - component: {fileID: 5253399709328005891}
-  - component: {fileID: 8491596593335364974}
   m_Layer: 0
   m_Name: TrucatedOctahedron
   m_TagString: Untagged
@@ -2936,19 +2935,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &8491596593335364974
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8491596593335364973}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 318b4eb62a2693f4e98368eb975997cd, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  MutonMaterial: {fileID: 2100000, guid: c34edb7ebd1752d4e88d701083a099e8, type: 2}
 --- !u!33 &8780530414483007675
 MeshFilter:
   m_ObjectHideFlags: 0
