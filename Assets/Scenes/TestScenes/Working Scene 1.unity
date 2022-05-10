@@ -1079,6 +1079,7 @@ MonoBehaviour:
   lifeTimeIncrease: 3
   outputText: {fileID: 620024973}
   Muton: {fileID: 7244393970774794917}
+  material: {fileID: 2100000, guid: fd25dd816aa220f42959e76857142a39, type: 2}
 --- !u!1 &477729223
 GameObject:
   m_ObjectHideFlags: 0

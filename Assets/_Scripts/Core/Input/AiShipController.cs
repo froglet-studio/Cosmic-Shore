@@ -19,6 +19,8 @@ namespace StarWriter.Core.Input
         public Transform muton;
         Vector3 distance;
 
+        public float speed;
+
         // Start is called before the first frame update
         void Start()
         {
@@ -39,8 +41,8 @@ namespace StarWriter.Core.Input
             lerpAmount += lerpIncrease;
 
             //Move ship forward
-            shipTransform.position += shipTransform.forward * throttle;
-
+            shipTransform.position += shipTransform.forward *Time.deltaTime* throttle;
+            speed = throttle;
         }
 
     }
