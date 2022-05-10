@@ -59,10 +59,10 @@ namespace StarWriter.Core.Input
         [SerializeField]
         float rotationThrottleScaler = 3;
 
-        
+        public float speed;
 
         [SerializeField]
-        float speed = 0;
+        float throttleScaler = 20;
 
         [SerializeField]
         float OnThrottleEventThreshold = 1;
@@ -74,7 +74,7 @@ namespace StarWriter.Core.Input
         private readonly float touchScaler = .005f;
 
         private readonly float yawAnimationScale = .04f;
-        private readonly float throttleAnimationScale = 80;
+        private readonly float throttleAnimationScale = 50;
 
         private Gyroscope gyro;
         private Quaternion empiricalCorrection;
@@ -161,7 +161,8 @@ namespace StarWriter.Core.Input
             }
 
             // Move ship forward
-            shipTransform.position += speed * throttle * Time.deltaTime * shipTransform.forward;
+            shipTransform.position += throttleScaler * throttle * Time.deltaTime * shipTransform.forward;
+            speed = throttleScaler * throttle;
         }
 
         private void PerformShipAnimations(float yl, float yr, float xl, float xr)

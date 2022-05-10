@@ -2,6 +2,8 @@ using UnityEngine;
 using Random = UnityEngine.Random;
 using TMPro;
 using System.Collections.Generic;
+using System.Collections;
+using StarWriter.Core.Input;
 
 public class MutonPopUp : MonoBehaviour//, ICollidable
 {
@@ -38,64 +40,102 @@ public class MutonPopUp : MonoBehaviour//, ICollidable
 
     Material tempMaterial;
 
-    private List<Material> materials; 
-
-    //private List<Coroutine> impactRoutines;
-
     int score = 0;
+
+   
+
+    List<Collider> collisions;
 
     public delegate void PopUpCollision(float amount, string uuid);
     public static event PopUpCollision OnMutonPopUpCollision;
 
     void Start()
     {
-        transform.position = Random.insideUnitSphere * sphereRadius;
+        collisions = new List<Collider>();
+        //transform.position = Random.insideUnitSphere * sphereRadius;
     }
 
-    private void OnTriggerEnter(Collider other)
+    //private void OnTriggerEnter(Collider other)
+    void OnCollisionEnter(Collision collision)
     {
-        //TODO Decay brokenSphere and clean up
-        Collide(other);
+
+        //Collide(other);
+        collisions.Add(collision.collider);
+        
+    }
+
+    private void Update()
+    {
+        if (collisions.Count > 0)
+        {
+            Collide(collisions[0]);
+            collisions.Clear();
+        }
     }
 
     public void Collide(Collider other)
     {
-        //make some dandruff
+        
+        
+        GameObject ship;
+        ship = other.transform.parent.parent.gameObject;
+        //make an exploding muton
         var spentMuton = Instantiate<GameObject>(spentMutonPrefab);
         spentMuton.transform.position = transform.position;
         spentMuton.transform.localEulerAngles = transform.localEulerAngles;
         tempMaterial = new Material(material);
-        //tempMaterial.CopyPropertiesFromMaterial(material);
-        //materials.Add(tempMaterial);
         spentMuton.GetComponent<Renderer>().material = tempMaterial;
+        //spentMuton.GetComponent<Renderer>().bounds.Expand(1000); doesn't work
 
-        //impactRoutines.Add();
-        
-        StartCoroutine(spentMuton.GetComponent<Impact>().ImpactCoroutine(spentMuton.transform.rotation*other.transform.forward, tempMaterial));
+
+
+
+        //animate it
+        if (ship == GameObject.FindWithTag("Player"))
+        {
+            StartCoroutine(spentMuton.GetComponent<Impact>().ImpactCoroutine(
+                Quaternion.Inverse(spentMuton.transform.rotation) * ship.transform.forward *
+                ship.GetComponent<InputController>().speed, tempMaterial, "Player"));
+        }
+
+        //if (ship == GameObject.FindWithTag("red"))
+        //{
+        //    StartCoroutine(spentMuton.GetComponent<Impact>().ImpactCoroutine(
+        //        Quaternion.Inverse(spentMuton.transform.rotation) * ship.transform.forward *
+        //        ship.GetComponent<AiShipController>().speed, tempMaterial, "red"));
+        //}
+        else
+        {
+            StartCoroutine(spentMuton.GetComponent<Impact>().ImpactCoroutine(
+                Quaternion.Inverse(spentMuton.transform.rotation) * ship.transform.forward *
+                ship.GetComponent<AiShipController>().speed, tempMaterial, "blue"));
+        }
 
         //move the muton
         StartCoroutine(Muton.GetComponent<FadeIn>().FadeInCoroutine());
         transform.SetPositionAndRotation(UnityEngine.Random.insideUnitSphere * sphereRadius, UnityEngine.Random.rotation);
-        OnMutonPopUpCollision(intensityAmount, other.GetComponentInParent<Transform>().GetComponentInParent<Player>().PlayerUUID);
 
         //update intensity bar and score
+        //OnMutonPopUpCollision(intensityAmount, other.GetComponentInParent<Transform>().GetComponentInParent<Player>().PlayerUUID);
+
         IntensityBar.IncreaseIntensity(MutonIntensityBoost); // TODO: use events instead
         score++;
         outputText.text = score.ToString("D3");
 
-        // Grow tail
-        TrailSpawner trailScript = other.GetComponent<TrailSpawner>();
-        trailScript.lifeTime += lifeTimeIncrease;
+        //// Grow tail
+        //TrailSpawner trailScript = other.GetComponentInParent<Transform>().GetComponent<TrailSpawner>();
+        //trailScript.lifeTime += lifeTimeIncrease;
 
         // Make ai harder
-        if (other.gameObject.GetComponent<Player>().PlayerUUID == "admin")
-        {
-            StarWriter.Core.Input.AiShipController aiControllerScript = aiShip.GetComponent<StarWriter.Core.Input.AiShipController>();
-            aiControllerScript.lerpAmount += .001f;
-            aiControllerScript.defaultThrottle += .01f;
-        }
-        
+        //if (other.gameObject.GetComponent<Player>().PlayerUUID == "admin")
+        //{
+        //    StarWriter.Core.Input.AiShipController aiControllerScript = aiShip.GetComponent<StarWriter.Core.Input.AiShipController>();
+        //    aiControllerScript.lerpAmount += .001f;
+        //    aiControllerScript.defaultThrottle += .01f;
+        //}
+
         //TODO play SFX sound
         //TODO Respawn
+
     }
 }
