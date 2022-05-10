@@ -42,8 +42,6 @@ public class MutonPopUp : MonoBehaviour//, ICollidable
 
     int score = 0;
 
-   
-
     List<Collider> collisions;
 
     public delegate void PopUpCollision(float amount, string uuid);
@@ -52,16 +50,11 @@ public class MutonPopUp : MonoBehaviour//, ICollidable
     void Start()
     {
         collisions = new List<Collider>();
-        //transform.position = Random.insideUnitSphere * sphereRadius;
     }
 
-    //private void OnTriggerEnter(Collider other)
     void OnCollisionEnter(Collision collision)
     {
-
-        //Collide(other);
         collisions.Add(collision.collider);
-        
     }
 
     private void Update()
@@ -88,27 +81,24 @@ public class MutonPopUp : MonoBehaviour//, ICollidable
         //spentMuton.GetComponent<Renderer>().bounds.Expand(1000); doesn't work
 
 
-
-
         //animate it
         if (ship == GameObject.FindWithTag("Player"))
         {
             StartCoroutine(spentMuton.GetComponent<Impact>().ImpactCoroutine(
-                Quaternion.Inverse(spentMuton.transform.rotation) * ship.transform.forward *
-                ship.GetComponent<InputController>().speed, tempMaterial, "Player"));
+                ship.transform.forward * ship.GetComponent<InputController>().speed, tempMaterial, "Player"));
         }
-
-        //if (ship == GameObject.FindWithTag("red"))
-        //{
-        //    StartCoroutine(spentMuton.GetComponent<Impact>().ImpactCoroutine(
-        //        Quaternion.Inverse(spentMuton.transform.rotation) * ship.transform.forward *
-        //        ship.GetComponent<AiShipController>().speed, tempMaterial, "red"));
-        //}
         else
         {
-            StartCoroutine(spentMuton.GetComponent<Impact>().ImpactCoroutine(
-                Quaternion.Inverse(spentMuton.transform.rotation) * ship.transform.forward *
-                ship.GetComponent<AiShipController>().speed, tempMaterial, "blue"));
+            if (ship == GameObject.FindWithTag("red"))
+            {
+                StartCoroutine(spentMuton.GetComponent<Impact>().ImpactCoroutine(
+                    ship.transform.forward * ship.GetComponent<AiShipController>().speed, tempMaterial, "red"));
+            }
+            else
+            {
+                StartCoroutine(spentMuton.GetComponent<Impact>().ImpactCoroutine(
+                     ship.transform.forward * ship.GetComponent<AiShipController>().speed, tempMaterial, "blue"));
+            }
         }
 
         //move the muton

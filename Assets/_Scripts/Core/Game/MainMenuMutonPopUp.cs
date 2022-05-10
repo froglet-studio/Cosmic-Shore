@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using Random = UnityEngine.Random;
+using StarWriter.Core.Input;
 
 public class MainMenuMutonPopUp : MonoBehaviour
 {
@@ -22,38 +23,78 @@ public class MainMenuMutonPopUp : MonoBehaviour
     [SerializeField]
     GameObject Muton;
 
+    List<Collider> collisions;
+
+    [SerializeField]
+    Material material;
+
+    Material tempMaterial;
+
     void Start()
     {
-        //transform.position = Random.insideUnitSphere * sphereRadius + displacement;
+        collisions = new List<Collider>();
     }
 
-    private void OnTriggerEnter(Collider other)
+    void OnCollisionEnter(Collision collision)
     {
-        //TODO Decay brokenSphere and clean up
-        Collide(other);
+        collisions.Add(collision.collider);
+    }
+
+    private void Update()
+    {
+        if (collisions.Count > 0)
+        {
+            Collide(collisions[0]);
+            collisions.Clear();
+        }
     }
 
     public void Collide(Collider other)
     {
         //check if a ship
-        if (other.GetComponent<StarWriter.Core.Input.AiShipController>() != null)
+        if (other.transform.parent.parent.GetComponent<StarWriter.Core.Input.AiShipController>() != null)
         {
-            //create new muton
+            GameObject ship;
+            ship = other.transform.parent.parent.gameObject;
+            //make an exploding muton
             var spentMuton = Instantiate<GameObject>(spentMutonPrefab);
             spentMuton.transform.position = transform.position;
             spentMuton.transform.localEulerAngles = transform.localEulerAngles;
-            spentMuton.transform.parent = MutonContainer.transform;
+            tempMaterial = new Material(material);
+            spentMuton.GetComponent<Renderer>().material = tempMaterial;
+            //spentMuton.GetComponent<Renderer>().bounds.Expand(1000); doesn't work
+
+
+            //animate it
+            if (ship == GameObject.FindWithTag("Player"))
+            {
+                StartCoroutine(spentMuton.GetComponent<Impact>().ImpactCoroutine(
+                    ship.transform.forward * ship.GetComponent<InputController>().speed, tempMaterial, "Player"));
+            }
+            else
+            {
+                if (ship == GameObject.FindWithTag("red"))
+                {
+                    StartCoroutine(spentMuton.GetComponent<Impact>().ImpactCoroutine(
+                        ship.transform.forward * ship.GetComponent<AiShipController>().speed, tempMaterial, "red"));
+                }
+                else
+                {
+                    StartCoroutine(spentMuton.GetComponent<Impact>().ImpactCoroutine(
+                         ship.transform.forward * ship.GetComponent<AiShipController>().speed, tempMaterial, "blue"));
+                }
+            }
 
             //move old muton
             StartCoroutine(Muton.GetComponent<FadeIn>().FadeInCoroutine());
             transform.SetPositionAndRotation(UnityEngine.Random.onUnitSphere * sphereRadius, UnityEngine.Random.rotation); //use "on sphere" to avoid the logo
 
             //reset ship aggression
-            StarWriter.Core.Input.AiShipController controllerScript = other.GetComponent<StarWriter.Core.Input.AiShipController>();
+            StarWriter.Core.Input.AiShipController controllerScript = ship.GetComponent<StarWriter.Core.Input.AiShipController>();
             controllerScript.lerpAmount = .2f;
 
             //grow tail
-            MainMenuTrailSpawner trailScript = other.GetComponent<MainMenuTrailSpawner>();
+            MainMenuTrailSpawner trailScript = ship.GetComponent<MainMenuTrailSpawner>();
             trailScript.lifeTime += lifeTimeIncrease;
         }
     }

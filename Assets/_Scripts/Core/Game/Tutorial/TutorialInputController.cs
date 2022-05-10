@@ -36,10 +36,10 @@ namespace StarWriter.Core.Input
         Transform RightWing;
         #endregion
 
-        #region UI
-        [SerializeField]
-        RectTransform IntensityBar;
-        #endregion
+        //#region UI
+        //[SerializeField]
+        //RectTransform IntensityBar;
+        //#endregion
 
         [SerializeField]
         float rotationSpeed = 3;
@@ -120,13 +120,13 @@ namespace StarWriter.Core.Input
             //change the camera if you flip you phone
             if (UnityEngine.Input.acceleration.y > 0)
             {
-                IntensityBar.rotation = Quaternion.Euler(0,0,180);
+               // IntensityBar.rotation = Quaternion.Euler(0,0,180);
                 CloseCam.Priority = activePriority;
                 FarCam.Priority = inactivePriority;
             }
             else
             {
-                IntensityBar.rotation = Quaternion.identity;
+               // IntensityBar.rotation = Quaternion.identity;
                 FarCam.Priority = activePriority;
                 CloseCam.Priority = inactivePriority;
             }
