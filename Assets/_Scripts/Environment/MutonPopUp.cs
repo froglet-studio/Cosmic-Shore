@@ -96,6 +96,7 @@ public class MutonPopUp : MonoBehaviour//, ICollidable
             StartCoroutine(spentMuton.GetComponent<Impact>().ImpactCoroutine(
                 Quaternion.Inverse(spentMuton.transform.rotation) * ship.transform.forward *
                 ship.GetComponent<InputController>().speed, tempMaterial, "Player"));
+            HapticController.PlayMutonCollisionHaptics();
         }
 
         //if (ship == GameObject.FindWithTag("red"))
