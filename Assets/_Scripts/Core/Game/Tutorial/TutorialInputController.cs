@@ -6,19 +6,7 @@ namespace StarWriter.Core.Input
 {
     public class TutorialInputController : MonoBehaviour
     {
-        /*
-        public delegate void OnPitch();
-        public static event OnPitch OnPitch;
-
-        public delegate void OnRoll();
-        public static event OnRoll OnRollEvent;
-
-        public delegate void OnYaw();
-        public static event OnYaw OnYawEvent;
-
-        public delegate void OnGyro();
-        public static event OnGyro OnGyroEvent;
-        */
+       
 
         public delegate void OnThrottle();
         public static event OnThrottle OnThrottleEvent;
@@ -50,7 +38,7 @@ namespace StarWriter.Core.Input
 
         #region UI
         [SerializeField]
-        RectTransform UITransform;
+        RectTransform IntensityBar;
         #endregion
 
         [SerializeField]
@@ -62,7 +50,7 @@ namespace StarWriter.Core.Input
         
 
         [SerializeField]
-        float speed = 0;
+        float speed = 20;
 
         [SerializeField]
         float OnThrottleEventThreshold = 1;
@@ -132,13 +120,13 @@ namespace StarWriter.Core.Input
             //change the camera if you flip you phone
             if (UnityEngine.Input.acceleration.y > 0)
             {
-                UITransform.rotation = Quaternion.Euler(0,0,180);
+                IntensityBar.rotation = Quaternion.Euler(0,0,180);
                 CloseCam.Priority = activePriority;
                 FarCam.Priority = inactivePriority;
             }
             else
             {
-                UITransform.rotation = Quaternion.identity;
+                IntensityBar.rotation = Quaternion.identity;
                 FarCam.Priority = activePriority;
                 CloseCam.Priority = inactivePriority;
             }
@@ -157,6 +145,10 @@ namespace StarWriter.Core.Input
                     leftTouch = UnityEngine.Input.touches[1].position;
                     rightTouch = UnityEngine.Input.touches[0].position;
                 }
+               /* Pitch(leftTouch.y, rightTouch.y);
+                Roll(leftTouch.y, rightTouch.y);
+                Yaw(leftTouch.x, rightTouch.x);
+                Throttle(leftTouch.x, rightTouch.x);*/
                 switch (flightControlScheme)
                 {
                     case ControlScheme.All:
@@ -167,6 +159,8 @@ namespace StarWriter.Core.Input
                         break;
                     case ControlScheme.Pitch:
                         Pitch(leftTouch.y, rightTouch.y);
+                        Throttle(leftTouch.x, rightTouch.x);
+                        
                         break;
                     case ControlScheme.Roll:
                         Roll(leftTouch.y, rightTouch.y);

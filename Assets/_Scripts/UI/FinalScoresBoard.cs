@@ -13,18 +13,12 @@ namespace StarWriter.Core
         private GameManager gameManager;
 
 
-        // Start is called before the first frame update
+
         void Start()
         {
             gameManager = GameManager.Instance;
             scoreText.text = PlayerPrefs.GetFloat("Score").ToString();
             highScoreText.text = PlayerPrefs.GetFloat("High Score").ToString();
-        }
-
-        // Update is called once per frame
-        void Update()
-        {
-
         }
 
         public void OnQuitButtonPressed()

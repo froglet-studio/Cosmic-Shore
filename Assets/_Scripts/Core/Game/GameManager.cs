@@ -13,9 +13,7 @@ namespace StarWriter.Core
     [RequireComponent(typeof(GameSetting))]
     public class GameManager : SingletonPersistent<GameManager>
     {
-        [SerializeField]
-        private GameObject tutorialPanel;
-        
+               
         [SerializeField]
         private bool isTutorialEnabled = true;
 
@@ -29,15 +27,11 @@ namespace StarWriter.Core
         // Start is called before the first frame update
         void Start()
         {
-           if(PlayerPrefs.GetInt("Skip Tutorial") == 0) // 0 false and 1 true
+           if(PlayerPrefs.GetInt("tutorialEnabled") == 0) // 0 false and 1 true
             {
                 isTutorialEnabled = false;
             }
-            else
-            { 
-                tutorialPanel.SetActive(isTutorialEnabled); 
-            }
-           
+                      
         }
 
         // Update is called once per frame
@@ -53,11 +47,11 @@ namespace StarWriter.Core
             gameSettings.TutorialEnabled = isTutorialEnabled = !isTutorialEnabled;
             if(isTutorialEnabled == true)
             {
-                PlayerPrefs.SetInt("Skip Tutorial", 1);
+                PlayerPrefs.SetInt("tutorialEnabled", 1);
             }
             if (isTutorialEnabled == false)
             {
-                PlayerPrefs.SetInt("Skip Tutorial", 0);
+                PlayerPrefs.SetInt("tutorialEnabled", 0);
             }
 
         }

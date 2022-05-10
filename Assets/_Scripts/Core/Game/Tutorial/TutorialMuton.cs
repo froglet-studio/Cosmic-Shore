@@ -27,20 +27,23 @@ public class TutorialMuton : MonoBehaviour
         gyroIndex = spawnPointsOffset.Count - 1; // final stage testing gyro does not involve hitting a test Muton
     }
 
+    private void FixedUpdate()
+    {
+        
+    }
+
 
     private void OnTriggerEnter(Collider other)
     {
         stageName = tutorialManager.tutorialStages[index].StageName;
         tutorialManager.TutorialTests[stageName] = true;
-        //tutorialManager.TutorialTests.Remove(stageName);
-        // tutorialManager.TutorialTests.Add(stageName, true);
         if(index < spawnPointsOffset.Count - 1)
         {
             
             if(stageName == tutorialManager.tutorialStages[gyroIndex].StageName)
             {
                 tutorialManager.StartGyroTest();
-                gameObject.SetActive(false); //Turn off Muton to test Gyro
+                gameObject.SetActive(false);
             }
             else
             {
