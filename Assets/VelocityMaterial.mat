@@ -11,6 +11,7 @@ Material:
   m_Shader: {fileID: -6465566751694194690, guid: a3e8b27f03b506241a7d49d2bdb2d6b6,
     type: 3}
   m_ValidKeywords:
+  - _ALPHATEST_ON
   - _SURFACE_TYPE_TRANSPARENT
   m_InvalidKeywords: []
   m_LightmapFlags: 4
@@ -82,7 +83,7 @@ Material:
     m_Ints: []
     m_Floats:
     - _Add_sin: 0
-    - _AlphaClip: 0
+    - _AlphaClip: 1
     - _Blend: 0
     - _BumpScale: 1
     - _CastShadows: 1
@@ -115,7 +116,9 @@ Material:
     - _add_cos: 0
     - _angle: 0
     - _multiply: 0
-    - _opacity: 0.8743316
+    - _opacity: 1
+    - _player: 0
+    - _red: 0
     - _scale: 0
     - _seedx: 0.8
     - _seedy: 0.1
@@ -126,7 +129,7 @@ Material:
     - _SpecColor: {r: 0.19999996, g: 0.19999996, b: 0.19999996, a: 1}
     - _add_vector: {r: 0, g: 0, b: 9, a: 0}
     - _tangent: {r: 1.51, g: -2.92, b: 1.83, a: 0}
-    - _velocity: {r: 1.5, g: 0, b: 0, a: 0}
+    - _velocity: {r: 0, g: 0, b: 0, a: 0}
   m_BuildTextureStacks: []
 --- !u!114 &2422392668265197798
 MonoBehaviour:

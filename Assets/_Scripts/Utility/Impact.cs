@@ -4,31 +4,27 @@ using UnityEngine;
 
 public class Impact : MonoBehaviour
 {
-    [SerializeField]
-    Material MutonMaterial;
 
-    
-    //public Vector3 velocity = new Vector3(1,0,0);
-    //public float magnitude = 5;
-
-
-    // Start is called before the first frame update
-    void Start()
+    public IEnumerator ImpactCoroutine(Vector3 velocity, Material material,string ID)
     {
-        //StartCoroutine(ImpactCoroutine(velocity,));
-    }
+        var velocityScale = 4f;
+        float timeStamp = 0;
 
-    public IEnumerator ImpactCoroutine(Vector3 velocity, Material material)
-    {
-        var velocityScale = .01f;
-        while (velocityScale <= 1)
+        //if (ID == "Player") { material.SetFloat("_player", 1); }
+        //if (ID == "red") { material.SetFloat("_player", 0); material.SetFloat("_red", 1); }
+        //else { material.SetFloat("_player", 0); material.SetFloat("_red", 0); }
+
+        while (timeStamp <= 1)
+
         {
             yield return new WaitForSeconds(.001f);
-            velocityScale *= 1.015f;
-            material.SetVector("_velocity", velocityScale*velocity);
-            material.SetFloat("_opacity", 1-velocityScale);
+            timeStamp += .001f;
+            material.SetVector("_velocity", velocityScale*timeStamp*velocity);
+            material.SetFloat("_opacity", (1-timeStamp));
+            
         }
-        
+        Destroy(material);
+        Destroy(transform.gameObject);
 
     }
 }
