@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
+using UnityEngine.SceneManagement;
 
 namespace StarWriter.Core
 {
@@ -9,6 +10,8 @@ namespace StarWriter.Core
     {
         public TextMeshProUGUI scoreText;
         public TextMeshProUGUI highScoreText;
+        public GameObject replayButton;
+        public GameObject intensityMeter;
 
         private GameManager gameManager;
 
@@ -17,18 +20,23 @@ namespace StarWriter.Core
         void Start()
         {
             gameManager = GameManager.Instance;
-            scoreText.text = PlayerPrefs.GetFloat("Score").ToString();
-            highScoreText.text = PlayerPrefs.GetFloat("High Score").ToString();
+            scoreText.text = "Score: " + PlayerPrefs.GetFloat("Score").ToString();
+            highScoreText.text = "High Score: " + PlayerPrefs.GetFloat("High Score").ToString();
         }
 
-        public void OnQuitButtonPressed()
+
+        public void OnEndCameraPositionReached()
         {
-            gameManager.OnQuitButtonPressed();
+            scoreText.gameObject.SetActive(true);
+            highScoreText.gameObject.SetActive(true);
+            replayButton.SetActive(true);
+            intensityMeter.SetActive(false);
+
         }
 
         public void OnReplayGameButtonPressed()
         {
-            gameManager.OnReplayButtonPressed();
+            SceneManager.LoadScene(2);
         }
     }
 }
