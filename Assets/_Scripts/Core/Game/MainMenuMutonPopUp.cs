@@ -19,6 +19,9 @@ public class MainMenuMutonPopUp : MonoBehaviour
 
     public float lifeTimeIncrease = 20;
 
+    [SerializeField]
+    GameObject Muton;
+
     void Start()
     {
         //transform.position = Random.insideUnitSphere * sphereRadius + displacement;
@@ -42,7 +45,8 @@ public class MainMenuMutonPopUp : MonoBehaviour
             spentMuton.transform.parent = MutonContainer.transform;
 
             //move old muton
-            transform.position = UnityEngine.Random.onUnitSphere * sphereRadius;
+            StartCoroutine(Muton.GetComponent<FadeIn>().FadeInCoroutine());
+            transform.SetPositionAndRotation(UnityEngine.Random.onUnitSphere * sphereRadius, UnityEngine.Random.rotation); //use "on sphere" to avoid the logo
 
             //reset ship aggression
             StarWriter.Core.Input.AiShipController controllerScript = other.GetComponent<StarWriter.Core.Input.AiShipController>();

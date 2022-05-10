@@ -62,10 +62,25 @@ namespace StarWriter.Core
 
         }
 
+       
+       
+
+        public void OnReturnToMainMenuButtonPressed()
+        {
+            Debug.Log("Exiting Game");
+            SceneManager.LoadScene(0);
+        }
+
         public void OnReplayButtonPressed()
         {
             SceneManager.LoadScene(1);
         }
+
+        public void TogglePauseGame()
+        {
+            PauseSystem.TogglePauseGame();
+        }
+
         public void OnQuitButtonPressed()
         {
             Application.Quit();
