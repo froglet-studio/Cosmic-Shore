@@ -479,6 +479,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   playerUUID: ai2
+  playerSO: {fileID: 0}
 --- !u!114 &709728278
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1068,7 +1069,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 961d59d9b69fd4f4db30229de0f202bf, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Game_Options_Panel: {fileID: 0}
+  Game_Options_Panel: {fileID: 2017681450}
 --- !u!114 &1867118898
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1380,6 +1381,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   playerUUID: ai
+  playerSO: {fileID: 0}
 --- !u!1 &595065266491999095
 GameObject:
   m_ObjectHideFlags: 0
