@@ -17,17 +17,13 @@ public class Impact : MonoBehaviour
             else { material.SetFloat("_player", 0); material.SetFloat("_red", 0); }
         }
         
-
         while (timeStamp <= 1)
-
         {
             yield return new WaitForSeconds(.001f);
             timeStamp += .001f;
             material.SetVector("_velocity", velocityScale*timeStamp*velocity);
             material.SetFloat("_opacity", (1-timeStamp));
             transform.position += (velocityScale * timeStamp * velocity);
-
-
         }
         Destroy(material);
         Destroy(transform.gameObject);

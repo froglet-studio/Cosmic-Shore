@@ -23,7 +23,7 @@ public class MainMenuMutonPopUp : MonoBehaviour
     [SerializeField]
     GameObject Muton;
 
-    List<Collider> collisions;
+    List<Collision> collisions;
 
     [SerializeField]
     Material material;
@@ -32,12 +32,12 @@ public class MainMenuMutonPopUp : MonoBehaviour
 
     void Start()
     {
-        collisions = new List<Collider>();
+        collisions = new List<Collision>();
     }
 
     void OnCollisionEnter(Collision collision)
     {
-        collisions.Add(collision.collider);
+        collisions.Add(collision);
     }
 
     private void Update()
@@ -49,8 +49,9 @@ public class MainMenuMutonPopUp : MonoBehaviour
         }
     }
 
-    public void Collide(Collider other)
+    public void Collide(Collision collision)
     {
+        var other = collision.collider;
         //check if a ship
         if (other.transform.parent.parent.GetComponent<StarWriter.Core.Input.AiShipController>() != null)
         {
@@ -62,9 +63,7 @@ public class MainMenuMutonPopUp : MonoBehaviour
             spentMuton.transform.localEulerAngles = transform.localEulerAngles;
             tempMaterial = new Material(material);
             spentMuton.GetComponent<Renderer>().material = tempMaterial;
-            //spentMuton.GetComponent<Renderer>().bounds.Expand(1000); doesn't work
-
-
+            
             //animate it
             if (ship == GameObject.FindWithTag("Player"))
             {
@@ -76,12 +75,12 @@ public class MainMenuMutonPopUp : MonoBehaviour
                 if (ship == GameObject.FindWithTag("red"))
                 {
                     StartCoroutine(spentMuton.GetComponent<Impact>().ImpactCoroutine(
-                        ship.transform.forward * ship.GetComponent<AiShipController>().speed, tempMaterial, "red"));
+                        ship.transform.forward * ship.GetComponent<AiShipController>().speed/10, tempMaterial, "red"));
                 }
                 else
                 {
                     StartCoroutine(spentMuton.GetComponent<Impact>().ImpactCoroutine(
-                         ship.transform.forward * ship.GetComponent<AiShipController>().speed, tempMaterial, "blue"));
+                         ship.transform.forward * ship.GetComponent<AiShipController>().speed/10, tempMaterial, "blue"));
                 }
             }
 

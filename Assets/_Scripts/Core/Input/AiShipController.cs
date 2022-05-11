@@ -42,7 +42,7 @@ namespace StarWriter.Core.Input
 
             //Move ship forward
             shipTransform.position += shipTransform.forward *Time.deltaTime* throttle;
-            speed = throttle/3f;
+            speed = throttle;
         }
 
     }
