@@ -1,67 +1,53 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class IntensityBar : MonoBehaviour
 {
-    [Tooltip("Initial intensity level from 0-1")]
-    [SerializeField]
-    [Range(0,1)]
-    float InitialIntensity = 1;
-
     [Tooltip("Handle onto the Mask element for occluding the intensity fill gradient to show partial fill levels")]
     [SerializeField]
     RectTransform IntensityMask;
 
-    [Tooltip("Percentage Per Second from 0-1")]
+    [Tooltip("Current intensity level from 0-1")]
     [SerializeField]
     [Range(0, 1)]
-    float IntensityDecayRate = .03f;
-
-    float Intensity;
-    float IntensityDecay;
+    float Intensity = 1f;
+    
     float MaxMaskWidth;
+
+    RectTransform maskTransform;
+
+    private void OnEnable()
+    {
+        IntensitySystem.onIntensityChange += ChangeIntensity;
+    }                                       
+
+    private void OnDisable()
+    {
+        IntensitySystem.onIntensityChange -= ChangeIntensity;
+    }
 
     private void Start()
     {
-        Intensity = InitialIntensity;
-        IntensityDecay = IntensityDecayRate;
         MaxMaskWidth = GetComponent<RectTransform>().rect.width; // GetRect
     }
 
-    // Handle decay and updating intensity bar UI
-    void Update()
+    // Handles updating intensity bar UI
+    void LateUpdate()
     {
-        Intensity = Mathf.Clamp(Intensity - (IntensityDecay * Time.deltaTime), 0, 1);
         IntensityMask.sizeDelta = new Vector2((1 - Intensity) * MaxMaskWidth, IntensityMask.rect.height);
+      
     }
 
     /// <summary>
-    /// Set intensity level
-    /// </summary>
-    /// <param name="intensity">intensity percentage expressed from 0-1</param>
-    public void SetIntensity(float intensity)
-    {
-        Intensity = Mathf.Clamp(intensity, 0, 1);
-    }
-
-    /// <summary>
-    /// Increase intensity by amount
+    /// Updates intensity on changes in Intensity System
     /// </summary>
     /// <param name="amount">Amount to increase intensity expressed from 0-1</param>
-    public void IncreaseIntensity(float amount)
+    private void ChangeIntensity(string uuid, float currentIntensity)
     {
-        Intensity += amount;
-        Intensity = Mathf.Clamp(Intensity, 0, 1);
-    }
-
-    /// <summary>
-    /// Decrease intensity by amount
-    /// </summary>
-    /// <param name="amount">Amount to decrease intensity expressed from 0-1</param>
-    public void DecreaseIntensity(float amount)
-    {
-        Intensity -= amount;
-        Intensity = Mathf.Clamp(Intensity, 0, 1);
+        Intensity = currentIntensity;
+        
+        
     }
 }

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
 using UnityEngine.SceneManagement;
+using Cinemachine;
 
 namespace StarWriter.Core
 {
@@ -11,15 +12,20 @@ namespace StarWriter.Core
         public TextMeshProUGUI scoreText;
         public TextMeshProUGUI highScoreText;
         public GameObject replayButton;
+
+        public CinemachineVirtualCamera endSceneCamera;
+        public Transform finalCameraTransform;
         
-
-
-
-
         void Start()
         {           
             scoreText.text = "Score: " + PlayerPrefs.GetFloat("Score").ToString();
             highScoreText.text = "High Score: " + PlayerPrefs.GetFloat("High Score").ToString();
+        }
+
+        private void FixedUpdate()
+        {
+            /*float distance = end
+            if*/
         }
 
 

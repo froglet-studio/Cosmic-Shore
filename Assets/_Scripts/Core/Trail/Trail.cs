@@ -11,7 +11,7 @@ public class Trail : MonoBehaviour, ICollidable
 
     public float waitTime = .6f;
     public float lifeTime = 20;
-    public delegate void TrailCollision(float amount, string uuid);
+    public delegate void TrailCollision(string uuid, float amount);
     public static event TrailCollision OnTrailCollision;
 
     private static GameObject container;
@@ -56,7 +56,7 @@ public class Trail : MonoBehaviour, ICollidable
         if (IsPlayer(other.gameObject))
         {
             //TODO play SFX sound, break apart or float away
-            OnTrailCollision?.Invoke(intensityChange, other.GetComponentInParent<Transform>().GetComponentInParent<Player>().PlayerUUID);
+            OnTrailCollision?.Invoke(other.GetComponentInParent<Transform>().GetComponentInParent<Player>().PlayerUUID, intensityChange);
             var fossilBlock = Instantiate(FossilBlock);
             fossilBlock.transform.localScale = transform.localScale;
             fossilBlock.transform.position = transform.position;

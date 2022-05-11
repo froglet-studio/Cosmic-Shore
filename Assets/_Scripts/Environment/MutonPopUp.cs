@@ -5,56 +5,61 @@ using System.Collections.Generic;
 using System.Collections;
 using StarWriter.Core.Input;
 
-public class MutonPopUp : MonoBehaviour//, ICollidable
+public class MutonPopUp : MonoBehaviour
 {
+    #region Events
+    public delegate void PopUpCollision(string uuid, float amount);
+    public static event PopUpCollision OnMutonPopUpCollision;
+
+    public delegate void OnCollisionIncreaseScore(string uuid, int amount);
+    public static event OnCollisionIncreaseScore AddToScore;
+    #endregion
+    #region Floats
+    [SerializeField]
+    float intensityAmount = 0.07f;
+    /*[SerializeField]
+    float MutonBrightnessIntensityBoost = .1f; */
     [SerializeField]
     float sphereRadius = 100;
+    [SerializeField]
+    float trailLifeTimeIncrease = 20;
+
+    #endregion
 
     [SerializeField]
-    GameObject aiShip;
+    int scoreBonus = 5;
 
     [SerializeField]
-    GameObject spentMutonPrefab;
+    GameObject aiShip;  //why does the Muton need ref to the aiShip
 
+    #region Referenced in Inspector
     [SerializeField]
-    float intensityAmount = 10f;
-
-    [SerializeField]
-    IntensityBar IntensityBar;
-
-    [SerializeField]
-    float MutonIntensityBoost = .1f;
-
-
-    [SerializeField]
-    float lifeTimeIncrease = 20;
-
-    [SerializeField]
-    TextMeshProUGUI outputText;
-
+    GameObject spentMutonPrefab;  
     [SerializeField]
     GameObject Muton;
-
     [SerializeField]
     Material material;
-
     Material tempMaterial;
+    #endregion
 
-    int score = 0;
 
     List<Collider> collisions;
 
-    public delegate void PopUpCollision(float amount, string uuid);
-    public static event PopUpCollision OnMutonPopUpCollision;
+    
 
     void Start()
     {
         collisions = new List<Collider>();
+        //transform.position = Random.insideUnitSphere * sphereRadius;
     }
 
+    //private void OnTriggerEnter(Collider other)
     void OnCollisionEnter(Collision collision)
     {
+
+        //Collide(other);
         collisions.Add(collision.collider);
+        
     }
 
     private void Update()
@@ -81,25 +86,28 @@ public class MutonPopUp : MonoBehaviour//, ICollidable
         //spentMuton.GetComponent<Renderer>().bounds.Expand(1000); doesn't work
 
 
+
+
         //animate it
         if (ship == GameObject.FindWithTag("Player"))
         {
             StartCoroutine(spentMuton.GetComponent<Impact>().ImpactCoroutine(
-                ship.transform.forward * ship.GetComponent<InputController>().speed, tempMaterial, "Player"));
+                Quaternion.Inverse(spentMuton.transform.rotation) * ship.transform.forward *
+                ship.GetComponent<InputController>().speed, tempMaterial, "Player"));
             HapticController.PlayMutonCollisionHaptics();
         }
+
+        //if (ship == GameObject.FindWithTag("red"))
+        //{
+        //    StartCoroutine(spentMuton.GetComponent<Impact>().ImpactCoroutine(
+        //        Quaternion.Inverse(spentMuton.transform.rotation) * ship.transform.forward *
+        //        ship.GetComponent<AiShipController>().speed, tempMaterial, "red"));
+        //}
         else
         {
-            if (ship == GameObject.FindWithTag("red"))
-            {
-                StartCoroutine(spentMuton.GetComponent<Impact>().ImpactCoroutine(
-                    ship.transform.forward * ship.GetComponent<AiShipController>().speed, tempMaterial, "red"));
-            }
-            else
-            {
-                StartCoroutine(spentMuton.GetComponent<Impact>().ImpactCoroutine(
-                     ship.transform.forward * ship.GetComponent<AiShipController>().speed, tempMaterial, "blue"));
-            }
+            StartCoroutine(spentMuton.GetComponent<Impact>().ImpactCoroutine(
+                Quaternion.Inverse(spentMuton.transform.rotation) * ship.transform.forward *
+                ship.GetComponent<AiShipController>().speed, tempMaterial, "blue"));
         }
 
         //move the muton
@@ -107,11 +115,8 @@ public class MutonPopUp : MonoBehaviour//, ICollidable
         transform.SetPositionAndRotation(UnityEngine.Random.insideUnitSphere * sphereRadius, UnityEngine.Random.rotation);
 
         //update intensity bar and score
-        //OnMutonPopUpCollision(intensityAmount, other.GetComponentInParent<Transform>().GetComponentInParent<Player>().PlayerUUID);
-
-        IntensityBar.IncreaseIntensity(MutonIntensityBoost); // TODO: use events instead
-        score++;
-        outputText.text = score.ToString("D3");
+        OnMutonPopUpCollision(ship.GetComponent<Player>().PlayerUUID, intensityAmount); // excess Intensity flows into score
+        if(AddToScore != null) { AddToScore(ship.GetComponent<Player>().PlayerUUID, scoreBonus); }
 
         //// Grow tail
         //TrailSpawner trailScript = other.GetComponentInParent<Transform>().GetComponent<TrailSpawner>();

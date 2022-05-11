@@ -2,17 +2,13 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class SO_Character_Base : MonoBehaviour
+public class SO_Character_Base : ScriptableObject
 {
-    // Start is called before the first frame update
-    void Start()
-    {
-        
-    }
+    [SerializeField]
+    private string characterName;
+    [SerializeField]
+    private string uniqueUserID;
 
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
+    public string CharacterName { get => characterName; set => characterName = value; }
+    public string UniqueUserID { get => uniqueUserID; set => uniqueUserID = value; }
 }

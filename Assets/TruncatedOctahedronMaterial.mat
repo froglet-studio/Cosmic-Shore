@@ -113,7 +113,7 @@ Material:
     - _ZWriteControl: 0
     - _add_cos: 0
     - _multiply: 0
-    - _opacity: 0.012317555
+    - _opacity: 1.0103488
     - _scale: 0
     m_Colors:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
