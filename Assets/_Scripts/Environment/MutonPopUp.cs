@@ -7,8 +7,7 @@ using StarWriter.Core.Input;
 
 public class MutonPopUp : MonoBehaviour//, ICollidable
 {
-    [SerializeField]
-    float sphereRadius = 100;
+    
 
     [SerializeField]
     GameObject aiShip;
@@ -18,16 +17,18 @@ public class MutonPopUp : MonoBehaviour//, ICollidable
 
     [SerializeField]
     float intensityAmount = 10f;
+    [SerializeField]
+    float MutonIntensityBoost = .1f;
+    [SerializeField]
+    float scoreBonus = 10f;
+    [SerializeField]
+    float sphereRadius = 100;
+    [SerializeField]
+    float lifeTimeIncrease = 20;
 
     [SerializeField]
     IntensityBar IntensityBar;
-
-    [SerializeField]
-    float MutonIntensityBoost = .1f;
-
-
-    [SerializeField]
-    float lifeTimeIncrease = 20;
+ 
 
     [SerializeField]
     TextMeshProUGUI outputText;
@@ -39,15 +40,15 @@ public class MutonPopUp : MonoBehaviour//, ICollidable
     Material material;
 
     Material tempMaterial;
-
-    int score = 0;
-
    
 
     List<Collider> collisions;
 
-    public delegate void PopUpCollision(float amount, string uuid);
+    public delegate void PopUpCollision(string uuid,float amount);
     public static event PopUpCollision OnMutonPopUpCollision;
+
+    public delegate void OnCollisionIncreaseScore(string uuid, float amount);
+    public static event OnCollisionIncreaseScore AddToScore;
 
     void Start()
     {
@@ -117,11 +118,8 @@ public class MutonPopUp : MonoBehaviour//, ICollidable
         transform.SetPositionAndRotation(UnityEngine.Random.insideUnitSphere * sphereRadius, UnityEngine.Random.rotation);
 
         //update intensity bar and score
-        //OnMutonPopUpCollision(intensityAmount, other.GetComponentInParent<Transform>().GetComponentInParent<Player>().PlayerUUID);
-
-        IntensityBar.IncreaseIntensity(MutonIntensityBoost); // TODO: use events instead
-        score++;
-        outputText.text = score.ToString("D3");
+        OnMutonPopUpCollision(ship.GetComponent<Player>().PlayerUUID, intensityAmount); // excess Intensity flows into score
+        if(AddToScore != null) { AddToScore(ship.GetComponent<Player>().PlayerUUID, scoreBonus); }
 
         //// Grow tail
         //TrailSpawner trailScript = other.GetComponentInParent<Transform>().GetComponent<TrailSpawner>();

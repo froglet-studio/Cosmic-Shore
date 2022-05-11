@@ -22,6 +22,16 @@ public class IntensityBar : MonoBehaviour
     float IntensityDecay;
     float MaxMaskWidth;
 
+    private void OnEnable()
+    {
+        IntensitySystem.onIntensityChange += ChangeIntensity;
+    }                                       
+
+    private void OnDisable()
+    {
+        IntensitySystem.onIntensityChange -= ChangeIntensity;
+    }
+
     private void Start()
     {
         Intensity = InitialIntensity;
@@ -40,7 +50,7 @@ public class IntensityBar : MonoBehaviour
     /// Set intensity level
     /// </summary>
     /// <param name="intensity">intensity percentage expressed from 0-1</param>
-    public void SetIntensity(float intensity)
+    public void SetIntensity(string uuid, float intensity)
     {
         Intensity = Mathf.Clamp(intensity, 0, 1);
     }
@@ -49,19 +59,9 @@ public class IntensityBar : MonoBehaviour
     /// Increase intensity by amount
     /// </summary>
     /// <param name="amount">Amount to increase intensity expressed from 0-1</param>
-    public void IncreaseIntensity(float amount)
+    public void ChangeIntensity(string uuid, float amount)
     {
         Intensity += amount;
-        Intensity = Mathf.Clamp(Intensity, 0, 1);
-    }
-
-    /// <summary>
-    /// Decrease intensity by amount
-    /// </summary>
-    /// <param name="amount">Amount to decrease intensity expressed from 0-1</param>
-    public void DecreaseIntensity(float amount)
-    {
-        Intensity -= amount;
         Intensity = Mathf.Clamp(Intensity, 0, 1);
     }
 }
