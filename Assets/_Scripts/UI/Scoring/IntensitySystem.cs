@@ -6,31 +6,32 @@ using System;
 
 public class IntensitySystem : MonoBehaviour
 {
-
-    public delegate void OnInensityOverflow(string uuid, float amount);
+    #region Events
+    public delegate void OnInensityOverflow(string uuid, int amount);
     public static event OnInensityOverflow onPlayerIntensityOverflow;
 
-    public delegate void OnIntensityChangeEvent(string uuid, float amout);
+    public delegate void OnIntensityChangeEvent(string uuid, float intensity);
     public static event OnIntensityChangeEvent onIntensityChange;
-   
-
-    //Player
+    #endregion
+    #region Floats
+    [Tooltip("Initial and Max intensity level from 0-1")]
     [SerializeField]
-    float maxIntensity = 100f;
+    [Range(0, 1)]
+    float maxIntensity = 1f;
+    [Tooltip("Current intensity level from 0-1")]
     [SerializeField]
+    [Range(0, 1)]
     float currentIntensity;
+    
     [SerializeField]
-    string uuidOfPlayer = "admin";
-
+    float rateOfIntesityChange = -0.02f;
+    
+    #endregion
 
     [SerializeField]
-    float rateOfIntesityChange = -1f;
+    string uuidOfPlayer = "";
 
-    //public TextMeshProUGUI intensityText;
-
-    //public GameObject intensityMeter;
-
-   
+    public float CurrentIntensity { get => currentIntensity; }
 
     private void OnEnable()
     {
@@ -50,25 +51,26 @@ public class IntensitySystem : MonoBehaviour
         StartCoroutine(CountDownCoroutine());
     }
 
-    IEnumerator CountDownCoroutine()
+    IEnumerator CountDownCoroutine() // intensity
     {
         while (currentIntensity != 0)
         {
             yield return new WaitForSeconds(1);
-            ChangeIntensity(uuidOfPlayer, rateOfIntesityChange);
+            ChangeIntensity("admin", rateOfIntesityChange); //Only effects current player
 
         }
     }
     
 
     private void ChangeIntensity(string uuid, float amount)
-    { 
+    {
+        uuidOfPlayer = uuid;  //Recieves uuid of from Collision Events
         if (currentIntensity != 0) { currentIntensity += amount; }
-        if (currentIntensity > 100)
+        if (currentIntensity > 1f)
         {
-            float excessIntesity = currentIntensity - 100f;
+            int excessIntesity = (int)(currentIntensity - 1f);
             AddExcessIntensityToScore(uuidOfPlayer, excessIntesity);  //Sending excess to Score Manager
-            currentIntensity = 100;
+            currentIntensity = 1;
         }
         if (currentIntensity <= 0)
         {
@@ -82,12 +84,12 @@ public class IntensitySystem : MonoBehaviour
         
     }
 
-    private void AddExcessIntensityToScore(string uuidOfPlayer, float excessIntesity)
+    private void AddExcessIntensityToScore(string uuidOfPlayer, int excessIntesity)
     {
         if(onPlayerIntensityOverflow != null) { onPlayerIntensityOverflow(uuidOfPlayer, excessIntesity); }
     }
 
-    private void UpdateIntensityBar(string uuidOfPlayer, float amount)
+    private void UpdateIntensityBar(string uuidOfPlayer, float currentIntensity)
     {
         if(onIntensityChange != null) { onIntensityChange(uuidOfPlayer, currentIntensity); }
     }

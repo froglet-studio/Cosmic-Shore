@@ -5,50 +5,47 @@ using System.Collections.Generic;
 using System.Collections;
 using StarWriter.Core.Input;
 
-public class MutonPopUp : MonoBehaviour//, ICollidable
+public class MutonPopUp : MonoBehaviour
 {
-    
+    #region Events
+    public delegate void PopUpCollision(string uuid, float amount);
+    public static event PopUpCollision OnMutonPopUpCollision;
 
+    public delegate void OnCollisionIncreaseScore(string uuid, int amount);
+    public static event OnCollisionIncreaseScore AddToScore;
+    #endregion
+    #region Floats
     [SerializeField]
-    GameObject aiShip;
-
-    [SerializeField]
-    GameObject spentMutonPrefab;
-
-    [SerializeField]
-    float intensityAmount = 10f;
-    [SerializeField]
-    float MutonIntensityBoost = .1f;
-    [SerializeField]
-    float scoreBonus = 10f;
+    float intensityAmount = 0.07f;
+    /*[SerializeField]
+    float MutonBrightnessIntensityBoost = .1f; */
     [SerializeField]
     float sphereRadius = 100;
     [SerializeField]
-    float lifeTimeIncrease = 20;
+    float trailLifeTimeIncrease = 20;
+
+    #endregion
 
     [SerializeField]
-    IntensityBar IntensityBar;
- 
+    int scoreBonus = 5;
 
     [SerializeField]
-    TextMeshProUGUI outputText;
+    GameObject aiShip;  //why does the Muton need ref to the aiShip
 
+    #region Referenced in Inspector
+    [SerializeField]
+    GameObject spentMutonPrefab;  
     [SerializeField]
     GameObject Muton;
-
     [SerializeField]
     Material material;
-
     Material tempMaterial;
-   
+    #endregion
+
 
     List<Collider> collisions;
 
-    public delegate void PopUpCollision(string uuid,float amount);
-    public static event PopUpCollision OnMutonPopUpCollision;
-
-    public delegate void OnCollisionIncreaseScore(string uuid, float amount);
-    public static event OnCollisionIncreaseScore AddToScore;
+    
 
     void Start()
     {

@@ -2,17 +2,26 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
+using System;
 
 public class ScoringManager : MonoBehaviour
 {
     [SerializeField]
-    float score = 0f;
+    int score = 0;
 
     public TextMeshProUGUI scoreText;
 
     private void OnEnable()
     {
         IntensitySystem.onPlayerIntensityOverflow += AddExcessIntensityToScore;
+        MutonPopUp.AddToScore += AddMutonBous;
+    }
+
+    private void AddMutonBous(string uuid, int amount)
+    {
+        if (uuid == "admin") { score += amount; }
+
+        UpdateScoreBoard(score);
     }
 
     private void OnDisable()
@@ -20,16 +29,16 @@ public class ScoringManager : MonoBehaviour
         IntensitySystem.onPlayerIntensityOverflow -= AddExcessIntensityToScore;
     }
 
-    public void AddExcessIntensityToScore(string uuid, float amount) // TODO Needs to be private... put events on mutons and trails to handle
+    public void AddExcessIntensityToScore(string uuid, int amount) // TODO Needs to be private... put events on mutons and trails to handle
     {
         if (uuid == "admin") { score += amount; }
 
         UpdateScoreBoard(score);
     }
-    public void UpdateScoreBoard(float value)
+    public void UpdateScoreBoard(int value)
     {
-        scoreText.text = "Score: " + value.ToString();
 
+        scoreText.text = value.ToString("D3");
     }
 
     private void OnDestroy()
