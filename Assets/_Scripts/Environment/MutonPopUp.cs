@@ -17,8 +17,6 @@ public class MutonPopUp : MonoBehaviour
     #region Floats
     [SerializeField]
     float intensityAmount = 0.07f;
-    /*[SerializeField]
-    float MutonBrightnessIntensityBoost = .1f; */
     [SerializeField]
     float sphereRadius = 100;
     [SerializeField]
@@ -39,10 +37,12 @@ public class MutonPopUp : MonoBehaviour
     GameObject Muton;
     [SerializeField]
     Material material;
-    Material tempMaterial;
+    [SerializeField]
+    float lifeTimeIncrease;
+
     #endregion
 
-
+    Material tempMaterial;
     List<Collider> collisions;
 
     
@@ -50,16 +50,13 @@ public class MutonPopUp : MonoBehaviour
     void Start()
     {
         collisions = new List<Collider>();
-        //transform.position = Random.insideUnitSphere * sphereRadius;
+     
     }
 
-    //private void OnTriggerEnter(Collider other)
+
     void OnCollisionEnter(Collision collision)
     {
-
-        //Collide(other);
         collisions.Add(collision.collider);
-        
     }
 
     private void Update()
@@ -71,10 +68,9 @@ public class MutonPopUp : MonoBehaviour
         }
     }
 
-    public void Collide(Collider other)
+    private void Collide(Collider other)
     {
-        
-        
+
         GameObject ship;
         ship = other.transform.parent.parent.gameObject;
         //make an exploding muton
@@ -88,39 +84,46 @@ public class MutonPopUp : MonoBehaviour
 
 
 
-        //animate it
+        
         if (ship == GameObject.FindWithTag("Player"))
         {
+            //muton animation and haptics
             StartCoroutine(spentMuton.GetComponent<Impact>().ImpactCoroutine(
-                Quaternion.Inverse(spentMuton.transform.rotation) * ship.transform.forward *
-                ship.GetComponent<InputController>().speed, tempMaterial, "Player"));
+                ship.transform.forward * ship.GetComponent<InputController>().speed, tempMaterial, "Player"));
             HapticController.PlayMutonCollisionHaptics();
+            //update intensity bar and score
+            OnMutonPopUpCollision(ship.GetComponent<Player>().PlayerUUID, intensityAmount); // excess Intensity flows into score
+            if (AddToScore != null) { AddToScore(ship.GetComponent<Player>().PlayerUUID, scoreBonus); }
         }
-
-        //if (ship == GameObject.FindWithTag("red"))
-        //{
-        //    StartCoroutine(spentMuton.GetComponent<Impact>().ImpactCoroutine(
-        //        Quaternion.Inverse(spentMuton.transform.rotation) * ship.transform.forward *
-        //        ship.GetComponent<AiShipController>().speed, tempMaterial, "red"));
-        //}
+        //animate when ai hit
         else
         {
-            StartCoroutine(spentMuton.GetComponent<Impact>().ImpactCoroutine(
-                Quaternion.Inverse(spentMuton.transform.rotation) * ship.transform.forward *
-                ship.GetComponent<AiShipController>().speed, tempMaterial, "blue"));
+            if (ship == GameObject.FindWithTag("red"))
+            {
+                StartCoroutine(spentMuton.GetComponent<Impact>().ImpactCoroutine(
+                    ship.transform.forward * ship.GetComponent<AiShipController>().speed, tempMaterial, "red"));
+                //reset ship aggression
+                AiShipController controllerScript = ship.GetComponent<AiShipController>();
+                controllerScript.lerpAmount = .2f;
+            }
+            else
+            {
+                StartCoroutine(spentMuton.GetComponent<Impact>().ImpactCoroutine(
+                     ship.transform.forward * ship.GetComponent<AiShipController>().speed, tempMaterial, "blue"));
+                //reset ship aggression
+                AiShipController controllerScript = ship.GetComponent<AiShipController>();
+                controllerScript.lerpAmount = .2f;
+            }
         }
 
         //move the muton
         StartCoroutine(Muton.GetComponent<FadeIn>().FadeInCoroutine());
         transform.SetPositionAndRotation(UnityEngine.Random.insideUnitSphere * sphereRadius, UnityEngine.Random.rotation);
 
-        //update intensity bar and score
-        OnMutonPopUpCollision(ship.GetComponent<Player>().PlayerUUID, intensityAmount); // excess Intensity flows into score
-        if(AddToScore != null) { AddToScore(ship.GetComponent<Player>().PlayerUUID, scoreBonus); }
 
-        //// Grow tail
-        //TrailSpawner trailScript = other.GetComponentInParent<Transform>().GetComponent<TrailSpawner>();
-        //trailScript.lifeTime += lifeTimeIncrease;
+        // Grow tail
+        TrailSpawner trailScript = ship.GetComponent<TrailSpawner>();
+        trailScript.lifeTime += lifeTimeIncrease;
 
         // Make ai harder
         //if (other.gameObject.GetComponent<Player>().PlayerUUID == "admin")

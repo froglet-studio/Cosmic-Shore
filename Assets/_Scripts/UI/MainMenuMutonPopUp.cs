@@ -49,7 +49,7 @@ public class MainMenuMutonPopUp : MonoBehaviour
         }
     }
 
-    public void Collide(Collision collision)
+    private void Collide(Collision collision)
     {
         var other = collision.collider;
         //check if a ship

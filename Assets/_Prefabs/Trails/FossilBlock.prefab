@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 5222650486365209692}
   - component: {fileID: 1981306459138289011}
   - component: {fileID: 7076137217386601628}
-  - component: {fileID: 4692726231534246356}
+  - component: {fileID: 8796858733488306809}
   m_Layer: 0
   m_Name: FossilBlock
   m_TagString: Untagged
@@ -28,7 +28,7 @@ Transform:
   m_GameObject: {fileID: 5776304996075792891}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 15, y: 1.2540785, z: 1.5226954}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
@@ -62,7 +62,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: c2ee6b1f6832d64489a90f6562972e5f, type: 2}
+  - {fileID: 2100000, guid: 5140ec1c42866e849927f442d5965f7f, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -84,7 +84,7 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!114 &4692726231534246356
+--- !u!114 &8796858733488306809
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -93,8 +93,6 @@ MonoBehaviour:
   m_GameObject: {fileID: 5776304996075792891}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e85b63351f599b5449919a2a77b885c9, type: 3}
+  m_Script: {fileID: 11500000, guid: 40bd8a87d69ca1c4b84b230d021000a3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  minMagnitude: 0.07
-  scaleRate: 0.98
