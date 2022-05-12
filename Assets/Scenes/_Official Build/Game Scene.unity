@@ -3611,6 +3611,11 @@ PrefabInstance:
       propertyPath: m_Name
       value: PostProcessing
       objectReference: {fileID: 0}
+    - target: {fileID: 8350600879602490808, guid: 7fec532a729a8b648a8de2399d1b918a,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 8350600879602490814, guid: 7fec532a729a8b648a8de2399d1b918a,
         type: 3}
       propertyPath: m_RootOrder

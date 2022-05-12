@@ -1351,7 +1351,7 @@ MonoBehaviour:
   m_UiScaleMode: 1
   m_ReferencePixelsPerUnit: 100
   m_ScaleFactor: 1
-  m_ReferenceResolution: {x: 600, y: 800}
+  m_ReferenceResolution: {x: 800, y: 600}
   m_ScreenMatchMode: 0
   m_MatchWidthOrHeight: 0
   m_PhysicalUnit: 3
@@ -1985,33 +1985,13 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 6250432392537397585, guid: d5b85bce09be12a43b377c137830a634,
         type: 3}
-      propertyPath: m_SizeDelta.x
-      value: 60
-      objectReference: {fileID: 0}
-    - target: {fileID: 6250432392537397585, guid: d5b85bce09be12a43b377c137830a634,
-        type: 3}
-      propertyPath: m_SizeDelta.y
-      value: 60
-      objectReference: {fileID: 0}
-    - target: {fileID: 6250432392537397585, guid: d5b85bce09be12a43b377c137830a634,
-        type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 30
+      value: 50
       objectReference: {fileID: 0}
     - target: {fileID: 6250432392537397585, guid: d5b85bce09be12a43b377c137830a634,
         type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: -30
-      objectReference: {fileID: 0}
-    - target: {fileID: 6250432393070475225, guid: d5b85bce09be12a43b377c137830a634,
-        type: 3}
-      propertyPath: m_AnchoredPosition.y
-      value: -56.6
-      objectReference: {fileID: 0}
-    - target: {fileID: 6250432393070475231, guid: d5b85bce09be12a43b377c137830a634,
-        type: 3}
-      propertyPath: m_Color.a
-      value: 0
+      value: -50
       objectReference: {fileID: 0}
     - target: {fileID: 6250432393284652849, guid: d5b85bce09be12a43b377c137830a634,
         type: 3}
@@ -2128,11 +2108,6 @@ PrefabInstance:
       propertyPath: Game_Options_Panel
       value: 
       objectReference: {fileID: 2017681450}
-    - target: {fileID: 6250432393981458488, guid: d5b85bce09be12a43b377c137830a634,
-        type: 3}
-      propertyPath: m_SizeDelta.x
-      value: 600
-      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: d5b85bce09be12a43b377c137830a634, type: 3}
 --- !u!4 &6439937992809815164

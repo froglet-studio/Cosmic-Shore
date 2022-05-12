@@ -35,7 +35,7 @@ public class TutorialMuton : MonoBehaviour
     private void OnCollisionEnter(Collision collision)
     {
         collisions.Add(collision);
-        collisions.Clear();
+        
     }
 
     private void Update()
