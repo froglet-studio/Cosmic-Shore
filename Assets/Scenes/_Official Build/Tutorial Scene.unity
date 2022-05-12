@@ -5522,17 +5522,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7cea29e61e8102348a12e19071d7d02b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  flightControlScheme: 1
   CloseCam: {fileID: 1036711703}
   FarCam: {fileID: 1036711702}
   shipTransform: {fileID: 2059123762}
   Fusilage: {fileID: 2094245283}
   LeftWing: {fileID: 2094245282}
   RightWing: {fileID: 2094245281}
+  UITransform: {fileID: 1934494467}
   rotationSpeed: 3
   rotationThrottleScaler: 3
   speed: 20
+  throttleScaler: 20
   OnThrottleEventThreshold: 1
-  flightControlScheme: 1
+  gyroEnabled: 1
 --- !u!1 &2071146611
 GameObject:
   m_ObjectHideFlags: 0
