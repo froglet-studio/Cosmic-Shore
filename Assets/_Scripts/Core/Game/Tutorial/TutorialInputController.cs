@@ -6,21 +6,31 @@ namespace StarWriter.Core.Input
 {
     public class TutorialInputController : MonoBehaviour
     {
-        /*
-        public delegate void OnPitch();
-        public static event OnPitch OnPitch;
+            public enum ControlScheme
+            {
+                All,
+                Pitch,
+                Roll,
+                Yaw,
+                Throttle,
+                Gyro
+            }
+            public ControlScheme flightControlScheme;
+            /*
+            public delegate void OnPitch();
+            public static event OnPitch OnPitch;
 
-        public delegate void OnRoll();
-        public static event OnRoll OnRollEvent;
+            public delegate void OnRoll();
+            public static event OnRoll OnRollEvent;
 
-        public delegate void OnYaw();
-        public static event OnYaw OnYawEvent;
+            public delegate void OnYaw();
+            public static event OnYaw OnYawEvent;
 
-        public delegate void OnGyro();
-        public static event OnGyro OnGyroEvent;
-        */
+            public delegate void OnGyro();
+            public static event OnGyro OnGyroEvent;
+            */
 
-        public delegate void OnThrottle();
+            public delegate void OnThrottle();
         public static event OnThrottle OnThrottleEvent;
 
         #region Camera 
@@ -35,7 +45,7 @@ namespace StarWriter.Core.Input
         #endregion
 
         #region Ship
-        [SerializeField] 
+        [SerializeField]
         Transform shipTransform;
 
         [SerializeField]
@@ -59,10 +69,10 @@ namespace StarWriter.Core.Input
         [SerializeField]
         float rotationThrottleScaler = 3;
 
-        
+        public float speed;
 
         [SerializeField]
-        float speed = 0;
+        float throttleScaler = 20;
 
         [SerializeField]
         float OnThrottleEventThreshold = 1;
@@ -74,22 +84,13 @@ namespace StarWriter.Core.Input
         private readonly float touchScaler = .005f;
 
         private readonly float yawAnimationScale = .04f;
-        private readonly float throttleAnimationScale = 80;
+        private readonly float throttleAnimationScale = 50;
 
         private Gyroscope gyro;
         private Quaternion empiricalCorrection;
         private Quaternion displacementQ;
 
-        public enum ControlScheme
-        {
-            All,
-            Pitch,
-            Roll,
-            Yaw,
-            Throttle,
-            Gyro
-        }
-        public ControlScheme flightControlScheme;
+        public bool gyroEnabled = true;
 
 
         private void Awake()
@@ -120,27 +121,29 @@ namespace StarWriter.Core.Input
                 return;
             }
 
-            if (SystemInfo.supportsGyroscope)
+            if (SystemInfo.supportsGyroscope && gyroEnabled == true)
             {
                 // Updates GameObjects rotation from input device's gyroscope
                 shipTransform.rotation = Quaternion.Lerp(
-                                            shipTransform.rotation, 
-                                            displacementQ * GyroToUnity(gyro.attitude) * empiricalCorrection, 
+                                            shipTransform.rotation,
+                                            displacementQ * GyroToUnity(gyro.attitude) * empiricalCorrection,
                                             lerpAmount);
             }
 
             //change the camera if you flip you phone
-            if (UnityEngine.Input.acceleration.y > 0)
+            if (UnityEngine.Input.acceleration.y < 0)
             {
-                UITransform.rotation = Quaternion.Euler(0,0,180);
+                UITransform.rotation = Quaternion.identity;
                 CloseCam.Priority = activePriority;
                 FarCam.Priority = inactivePriority;
+                gameObject.GetComponent<TrailSpawner>().waitTime = .7f;
             }
             else
             {
-                UITransform.rotation = Quaternion.identity;
+                UITransform.rotation = Quaternion.Euler(0, 0, 180);
                 FarCam.Priority = activePriority;
                 CloseCam.Priority = inactivePriority;
+                gameObject.GetComponent<TrailSpawner>().waitTime = .1f;
             }
 
             if (UnityEngine.Input.touches.Length == 2)
@@ -157,35 +160,43 @@ namespace StarWriter.Core.Input
                     leftTouch = UnityEngine.Input.touches[1].position;
                     rightTouch = UnityEngine.Input.touches[0].position;
                 }
-                switch (flightControlScheme)
-                {
-                    case ControlScheme.All:
-                        Pitch(leftTouch.y, rightTouch.y);
-                        Roll(leftTouch.y, rightTouch.y);
-                        Yaw(leftTouch.x, rightTouch.x);
-                        Throttle(leftTouch.x, rightTouch.x);
-                        break;
-                    case ControlScheme.Pitch:
-                        Pitch(leftTouch.y, rightTouch.y);
-                        break;
-                    case ControlScheme.Roll:
-                        Roll(leftTouch.y, rightTouch.y);
-                        break;
-                    case ControlScheme.Yaw:
-                        Yaw(leftTouch.x, rightTouch.x);
-                        break;
-                    case ControlScheme.Throttle:
-                        Throttle(leftTouch.x, rightTouch.x);
-                        break;
-                    case ControlScheme.Gyro:
-
-                        //TODO add in gyro only
-                        Throttle(leftTouch.x, rightTouch.x);
-                        break;
-                }
+                Pitch(leftTouch.y, rightTouch.y);
+                Roll(leftTouch.y, rightTouch.y);
+                Yaw(leftTouch.x, rightTouch.x);
+                Throttle(leftTouch.x, rightTouch.x);
                 PerformShipAnimations(leftTouch.y, rightTouch.y, leftTouch.x, rightTouch.x);
-            }
-            else
+                    
+                    switch (flightControlScheme)
+                    {
+                        case ControlScheme.All:
+                            Pitch(leftTouch.y, rightTouch.y);
+                            Roll(leftTouch.y, rightTouch.y);
+                            Yaw(leftTouch.x, rightTouch.x);
+                            Throttle(leftTouch.x, rightTouch.x);
+                            break;
+                        case ControlScheme.Pitch:
+                            Pitch(leftTouch.y, rightTouch.y);
+                            Throttle(leftTouch.x, rightTouch.x);
+
+                            break;
+                        case ControlScheme.Roll:
+                            Roll(leftTouch.y, rightTouch.y);
+                            break;
+                        case ControlScheme.Yaw:
+                            Yaw(leftTouch.x, rightTouch.x);
+                            break;
+                        case ControlScheme.Throttle:
+                            Throttle(leftTouch.x, rightTouch.x);
+                            break;
+                        case ControlScheme.Gyro:
+
+                            //TODO add in gyro only
+                            Throttle(leftTouch.x, rightTouch.x);
+                            break;
+                    }
+
+                }
+                else
             {
                 throttle = Mathf.Lerp(throttle, defaultThrottle, .1f);
                 LeftWing.localRotation = Quaternion.Lerp(LeftWing.localRotation, Quaternion.identity, .1f);
@@ -194,14 +205,15 @@ namespace StarWriter.Core.Input
             }
 
             // Move ship forward
-            shipTransform.position += speed * throttle * Time.deltaTime * shipTransform.forward;
+            shipTransform.position += throttleScaler * throttle * Time.deltaTime * shipTransform.forward;
+            speed = throttleScaler * throttle;
         }
 
         private void PerformShipAnimations(float yl, float yr, float xl, float xr)
         {
             // Ship animations TODO: figure out how to leverage a single definition for pitch, etc. that captures the gyro in the animations.
             LeftWing.localRotation = Quaternion.Lerp(
-                                        LeftWing.localRotation, 
+                                        LeftWing.localRotation,
                                         Quaternion.Euler(
                                             (-(yl + yr) + (Screen.currentResolution.height) + (yr - yl)) * .02f, //tilt based on pitch and roll
                                             0,
@@ -209,18 +221,18 @@ namespace StarWriter.Core.Input
                                         lerpAmount);
 
             RightWing.localRotation = Quaternion.Lerp(
-                                        RightWing.localRotation, 
+                                        RightWing.localRotation,
                                         Quaternion.Euler(
-                                            (-(yl + yr) + Screen.currentResolution.height - (yr - yl)) * .02f, 
+                                            (-(yl + yr) + Screen.currentResolution.height - (yr - yl)) * .02f,
                                             0,
-                                            (throttle - defaultThrottle) * throttleAnimationScale - ((xl + xr) - Screen.currentResolution.width) * yawAnimationScale), 
+                                            (throttle - defaultThrottle) * throttleAnimationScale - ((xl + xr) - Screen.currentResolution.width) * yawAnimationScale),
                                         lerpAmount);
 
             Fusilage.localRotation = Quaternion.Lerp(
-                                        Fusilage.localRotation, 
+                                        Fusilage.localRotation,
                                         Quaternion.Euler(
                                             (-(yl + yr) + Screen.currentResolution.height) * .02f,
-                                            (yr - yl)*.02f,
+                                            (yr - yl) * .02f,
                                             (-(xl + xr) + Screen.currentResolution.width) * .01f),
                                         lerpAmount);
         }
@@ -232,25 +244,25 @@ namespace StarWriter.Core.Input
             if (throttle > OnThrottleEventThreshold)
                 OnThrottleEvent?.Invoke();
         }
-        
+
         private void Yaw(float xl, float xr)  // These need to not use *= ... remember quaternions are not commutative
         {
             displacementQ = Quaternion.AngleAxis(
-                                (((xl + xr) / 2) - (Screen.currentResolution.width / 2)) * touchScaler * (throttle*rotationThrottleScaler+rotationSpeed), 
+                                (((xl + xr) / 2) - (Screen.currentResolution.width / 2)) * touchScaler * (throttle * rotationThrottleScaler + rotationSpeed),
                                 shipTransform.up) * displacementQ;
         }
 
         private void Roll(float yl, float yr)
         {
             displacementQ = Quaternion.AngleAxis(
-                                (yr - yl) * touchScaler, 
+                                (yr - yl) * touchScaler,
                                 shipTransform.forward) * displacementQ;
         }
 
         private void Pitch(float yl, float yr)
         {
             displacementQ = Quaternion.AngleAxis(
-                                (((yl + yr) / 2) - (Screen.currentResolution.height / 2)) * -touchScaler * (throttle * rotationThrottleScaler + rotationSpeed), 
+                                (((yl + yr) / 2) - (Screen.currentResolution.height / 2)) * -touchScaler * (throttle * rotationThrottleScaler + rotationSpeed),
                                 shipTransform.right) * displacementQ;
         }
 

@@ -8,41 +8,20 @@ public class Player : MonoBehaviour
 {
     [SerializeField]
     private string playerUUID;
+
+    [SerializeField]
+    SO_Character_Base playerSO;
    
-    public string PlayerUUID { get => playerUUID; set => playerUUID = value; }
+    public string PlayerUUID { get => playerUUID; } 
 
-    //public float CurrentIntesity { get => currentIntensity; set => currentIntensity = value; }
+    
 
-    //private void OnEnable()
-    //{
-    //    Trail.OnTrailCollision += GainIntesity;
-    //    MutonPopUp.OnMutonPopUpCollision += GainIntesity;
-    //}
+    
 
-    //private void OnDisable()
-    //{
-    //    Trail.OnTrailCollision -= GainIntesity;
-    //    MutonPopUp.OnMutonPopUpCollision -= GainIntesity;
-    //}
-
-    // Start is called before the first frame update
     void Start()
     {
-        // CurrentIntesity = maxIntensity;
+        playerUUID = playerSO.UniqueUserID;
     }
 
-    //private void ChangePlayerName(string name)
-    //{
-    //    playerName = name;
-    //}
-
-    //public void Collide(Collider other)
-    //{
-    //    TakeDamage(1f);
-    //}
-
-    //private void GainIntesity(float amount, string uuid)
-    //{
-    //    CurrentIntesity += amount;
-    //}
+    
 }

@@ -1,5 +1,7 @@
 using System.Collections;
 using UnityEngine;
+using System.Collections.Generic;
+using StarWriter.Core.Input;
 
 public class Trail : MonoBehaviour, ICollidable
 {
@@ -9,18 +11,26 @@ public class Trail : MonoBehaviour, ICollidable
     [SerializeField]
     GameObject FossilBlock;
 
+    [SerializeField]
+    Material material;
+    Material tempMaterial;
+
     public float waitTime = .6f;
     public float lifeTime = 20;
-    public delegate void TrailCollision(float amount, string uuid);
+    public delegate void TrailCollision(string uuid, float amount);
     public static event TrailCollision OnTrailCollision;
 
     private static GameObject container;
     private MeshRenderer meshRenderer;
     private Collider blockCollider;
 
+    List<Collider> collisions;
+
     // Start is called before the first frame update
     void Start()
     {
+        collisions = new List<Collider>();
+
         if (container == null)
         {
             container = new GameObject();
@@ -46,30 +56,72 @@ public class Trail : MonoBehaviour, ICollidable
         blockCollider.enabled = false;
     }
 
-    private void OnTriggerEnter(Collider other)
+    void OnTriggerEnter(Collider other)
+    //void OnCollisionEnter(Collision collision)
     {
+
         Collide(other);
+        //collisions.Add(collision.collider);
+
     }
+
+    //private void Update()
+    //{
+    //    if (collisions.Count > 0)
+    //    {
+    //        Collide(collisions[0]);
+    //        collisions.Clear();
+    //    }
+    //}
+
 
     public void Collide(Collider other)
     {
         if (IsPlayer(other.gameObject))
         {
-            //TODO play SFX sound, break apart or float away
-            OnTrailCollision?.Invoke(intensityChange, other.GetComponentInParent<Transform>().GetComponentInParent<Player>().PlayerUUID);
+            //TODO play SFX sound,
+            //OnTrailCollision?.Invoke(other.GetComponentInParent<Transform>().GetComponentInParent<Player>().PlayerUUID, intensityChange);
+            GameObject ship;
+            ship = other.transform.parent.parent.gameObject;
             var fossilBlock = Instantiate(FossilBlock);
             fossilBlock.transform.localScale = transform.localScale;
             fossilBlock.transform.position = transform.position;
             fossilBlock.transform.localEulerAngles = transform.localEulerAngles;
             fossilBlock.transform.parent = container.transform;
+            tempMaterial = new Material(material);
+            fossilBlock.GetComponent<Renderer>().material = tempMaterial;
 
-            Destroy(this.gameObject);
+            if (ship == GameObject.FindWithTag("Player"))
+            {
+                //muton animation and haptics
+                StartCoroutine(fossilBlock.GetComponent<BlockImpact>().ImpactCoroutine(
+                    ship.transform.forward * ship.GetComponent<InputController>().speed, tempMaterial, "Player"));
+                HapticController.PlayBlockCollisionHaptics();
+                //update intensity bar and score
+                OnTrailCollision(ship.GetComponent<Player>().PlayerUUID, intensityChange); 
+            }
+            //animate when ai hit
+            else
+            {
+                if (ship == GameObject.FindWithTag("red"))
+                {
+                    StartCoroutine(fossilBlock.GetComponent<BlockImpact>().ImpactCoroutine(
+                        ship.transform.forward * ship.GetComponent<AiShipController>().speed, tempMaterial, "red"));
+
+                }
+                else
+                {
+                    StartCoroutine(fossilBlock.GetComponent<BlockImpact>().ImpactCoroutine(
+                         ship.transform.forward * ship.GetComponent<AiShipController>().speed, tempMaterial, "blue"));
+                }
+            }
+            Destroy(gameObject);
         }
     }
 
     // TODO: Use tags to identify player instead
     private bool IsPlayer(GameObject go)
     {
-        return go.GetComponent<Player>() != null;
+        return go.transform.parent.parent.GetComponent<Player>() != null;
     }
 }
