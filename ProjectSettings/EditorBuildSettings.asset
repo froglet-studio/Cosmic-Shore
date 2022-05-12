@@ -5,15 +5,18 @@ EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Scenes:
-  - enabled: 1
+  - enabled: 0
     path: Assets/Scenes/_Official Build/MainMenu Design 1.unity
     guid: 102d08d71236a7342a94518fff75949c
-  - enabled: 1
+  - enabled: 0
     path: Assets/Scenes/_Official Build/Tutorial Scene.unity
     guid: 85d73583f4ccfc1478efa92a6712ce67
-  - enabled: 1
+  - enabled: 0
     path: Assets/Scenes/_Official Build/Game Scene.unity
     guid: 5e8d9932a4d84a1488c2dad96c8135dd
+  - enabled: 1
+    path: Assets/Scenes/Johns Test Area/John Test Scene 1.unity
+    guid: 031967047d815ee4a93ed73981859712
   m_configObjects:
     com.unity.adaptiveperformance.loader_settings: {fileID: 11400000, guid: 274754c57f99f5144be86c9d1014705b,
       type: 2}
