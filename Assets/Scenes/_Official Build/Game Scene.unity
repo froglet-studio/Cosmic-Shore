@@ -1483,7 +1483,7 @@ MonoBehaviour:
   offset: 0
   trailPeriod: 0.8
   lifeTime: 20
-  waitTime: 0.5
+  waitTime: 0.1
   useRandom: 0
 --- !u!114 &487984176
 MonoBehaviour:
@@ -2755,7 +2755,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   trail: {fileID: 5776304996075792891, guid: 69a4d7cef045acb4d91231253340d8bc, type: 3}
   offset: 0
-  trailPeriod: -0.4
+  trailPeriod: -0.8
   lifeTime: 20
   waitTime: 0.5
   useRandom: 0
@@ -3106,7 +3106,7 @@ MonoBehaviour:
   offset: 0
   trailPeriod: 0.37
   lifeTime: 20
-  waitTime: 0.5
+  waitTime: 0.1
   useRandom: 0
 --- !u!1 &1898590042
 GameObject:
