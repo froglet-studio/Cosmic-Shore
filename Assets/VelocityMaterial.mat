@@ -11,7 +11,6 @@ Material:
   m_Shader: {fileID: -6465566751694194690, guid: a3e8b27f03b506241a7d49d2bdb2d6b6,
     type: 3}
   m_ValidKeywords:
-  - _ALPHATEST_ON
   - _SURFACE_TYPE_TRANSPARENT
   m_InvalidKeywords: []
   m_LightmapFlags: 4
@@ -20,7 +19,8 @@ Material:
   m_CustomRenderQueue: 3000
   stringTagMap:
     RenderType: Transparent
-  disabledShaderPasses: []
+  disabledShaderPasses:
+  - SHADOWCASTER
   m_SavedProperties:
     serializedVersion: 3
     m_TexEnvs:
@@ -83,10 +83,10 @@ Material:
     m_Ints: []
     m_Floats:
     - _Add_sin: 0
-    - _AlphaClip: 1
+    - _AlphaClip: 0
     - _Blend: 0
     - _BumpScale: 1
-    - _CastShadows: 1
+    - _CastShadows: 0
     - _ClearCoatMask: 0
     - _ClearCoatSmoothness: 0
     - _Cull: 0

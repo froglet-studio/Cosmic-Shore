@@ -23,7 +23,7 @@ public class FadeIn : MonoBehaviour
         while (effect <= 1)
         {
             yield return new WaitForSeconds(.001f);
-            effect *= 1.015f;
+            effect += 0.04f;
             MutonMaterial.SetFloat("_opacity", effect);
         }
 
