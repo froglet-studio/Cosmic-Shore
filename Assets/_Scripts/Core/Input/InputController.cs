@@ -80,6 +80,8 @@ namespace StarWriter.Core.Input
         private Quaternion empiricalCorrection;
         private Quaternion displacementQ;
 
+        public bool gyroEnabled = true;
+
 
         private void Awake()
         {
@@ -109,7 +111,7 @@ namespace StarWriter.Core.Input
                 return;
             }
 
-            if (SystemInfo.supportsGyroscope)
+            if (SystemInfo.supportsGyroscope && gyroEnabled==true)
             {
                 // Updates GameObjects rotation from input device's gyroscope
                 shipTransform.rotation = Quaternion.Lerp(
@@ -119,17 +121,19 @@ namespace StarWriter.Core.Input
             }
 
             //change the camera if you flip you phone
-            if (UnityEngine.Input.acceleration.y > 0)
+            if (UnityEngine.Input.acceleration.y < 0)
             {
-                UITransform.rotation = Quaternion.Euler(0,0,180);
+                UITransform.rotation = Quaternion.identity;
                 CloseCam.Priority = activePriority;
                 FarCam.Priority = inactivePriority;
+                gameObject.GetComponent<TrailSpawner>().waitTime = .7f;
             }
             else
             {
-                UITransform.rotation = Quaternion.identity;
+                UITransform.rotation = Quaternion.Euler(0, 0, 180);
                 FarCam.Priority = activePriority;
                 CloseCam.Priority = inactivePriority;
+                gameObject.GetComponent<TrailSpawner>().waitTime = .1f;
             }
 
             if (UnityEngine.Input.touches.Length == 2)
