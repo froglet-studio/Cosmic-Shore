@@ -20,6 +20,9 @@ namespace StarWriter.Core
         [SerializeField]
         private bool hasCompletedTutorial = false;
 
+        [SerializeField]
+        private bool isGyroEnabled = true;
+
         private GameSetting gameSettings;
 
         public bool HasCompletedTutorial { get => hasCompletedTutorial; set => hasCompletedTutorial = value; }
@@ -47,17 +50,29 @@ namespace StarWriter.Core
             gameSettings.TutorialEnabled = isTutorialEnabled = !isTutorialEnabled;
             if(isTutorialEnabled == true)
             {
-                PlayerPrefs.SetInt("tutorialEnabled", 1);
+                PlayerPrefs.SetInt("tutorialEnabled", 1);  //tutorial enabled
             }
             if (isTutorialEnabled == false)
             {
-                PlayerPrefs.SetInt("tutorialEnabled", 0);
+                PlayerPrefs.SetInt("tutorialEnabled", 0);  //tutorial disabled
             }
-
         }
 
-       
-       
+        public void OnClickGyroToggleButton()
+        {
+            gameSettings.GyroEnabled = isGyroEnabled= !isGyroEnabled;
+            if (isGyroEnabled == true)
+            {
+                PlayerPrefs.SetInt("gyroEnabled", 1); //gyro enabled
+            }
+            if (isTutorialEnabled == false)
+            {
+                PlayerPrefs.SetInt("gyroEnabled", 0);  //gyro disabled
+            }
+        }
+
+
+
 
         public void OnReturnToMainMenuButtonPressed()
         {
@@ -68,6 +83,11 @@ namespace StarWriter.Core
         public void OnReplayButtonPressed()
         {
             SceneManager.LoadScene(1);
+        }
+
+        public void OnResumeButtonPressed()
+        {
+            TogglePauseGame();
         }
 
         public void TogglePauseGame()

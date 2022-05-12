@@ -8,8 +8,11 @@ using StarWriter.Core;
 /// Simple Audio Manager by JVZ upgrade to AudioMaster if needed 
 /// </summary>
 
+
 namespace StarWriter.Core.Audio
 {
+    [DefaultExecutionOrder(0)]
+    [RequireComponent(typeof(GameSetting))]
     public class AudioManager : SingletonPersistant<AudioManager>
     {
         #region Fields

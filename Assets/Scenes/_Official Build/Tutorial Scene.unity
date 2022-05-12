@@ -5397,7 +5397,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2059123757}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4b01121848768df4c8933282c41a5fde, type: 3}
   m_Name: 
@@ -5495,6 +5495,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   playerUUID: admin
+  playerSO: {fileID: 11400000, guid: 0261c50928a2b8e4f833e2f25f6f6669, type: 2}
 --- !u!54 &2059123764
 Rigidbody:
   m_ObjectHideFlags: 0
