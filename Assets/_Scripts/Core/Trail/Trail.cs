@@ -57,22 +57,9 @@ public class Trail : MonoBehaviour, ICollidable
     }
 
     void OnTriggerEnter(Collider other)
-    //void OnCollisionEnter(Collision collision)
     {
-
         Collide(other);
-        //collisions.Add(collision.collider);
-
     }
-
-    //private void Update()
-    //{
-    //    if (collisions.Count > 0)
-    //    {
-    //        Collide(collisions[0]);
-    //        collisions.Clear();
-    //    }
-    //}
 
 
     public void Collide(Collider other)
@@ -93,12 +80,12 @@ public class Trail : MonoBehaviour, ICollidable
 
             if (ship == GameObject.FindWithTag("Player"))
             {
-                //muton animation and haptics
+                //trail animation and haptics
                 StartCoroutine(fossilBlock.GetComponent<BlockImpact>().ImpactCoroutine(
                     ship.transform.forward * ship.GetComponent<InputController>().speed, tempMaterial, "Player"));
                 HapticController.PlayBlockCollisionHaptics();
                 //update intensity bar and score
-                OnTrailCollision(ship.GetComponent<Player>().PlayerUUID, intensityChange); 
+                OnTrailCollision?.Invoke(ship.GetComponent<Player>().PlayerUUID, intensityChange); 
             }
             //animate when ai hit
             else
