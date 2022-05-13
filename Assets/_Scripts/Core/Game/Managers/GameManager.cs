@@ -44,11 +44,13 @@ namespace StarWriter.Core
             
         }
 
-        // Toggles the Tutorial Panel on/off 
         public void OnClickTutorialToggleButton()
         {
+            // Set gameSettings Tutorial status
             gameSettings.TutorialEnabled = isTutorialEnabled = !isTutorialEnabled;
-            if(isTutorialEnabled == true)
+
+            // Set PlayerPrefs Tutorial status
+            if (isTutorialEnabled == true)
             {
                 PlayerPrefs.SetInt("tutorialEnabled", 1);  //tutorial enabled
             }
@@ -60,7 +62,10 @@ namespace StarWriter.Core
 
         public void OnClickGyroToggleButton()
         {
+            // Set gameSettings Gyro status
             gameSettings.GyroEnabled = isGyroEnabled= !isGyroEnabled;
+
+            // Set PlayerPrefs Gyro status
             if (isGyroEnabled == true)
             {
                 PlayerPrefs.SetInt("gyroEnabled", 1); //gyro enabled
@@ -76,7 +81,6 @@ namespace StarWriter.Core
 
         public void OnReturnToMainMenuButtonPressed()
         {
-            Debug.Log("Exiting Game");
             SceneManager.LoadScene(0);
         }
 

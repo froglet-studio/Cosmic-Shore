@@ -1,7 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using Amoebius.Utility.Singleton;
 using UnityEngine;
-using UnityEngine.Audio;
 using StarWriter.Core;
 
 /// <summary>
@@ -13,7 +13,7 @@ namespace StarWriter.Core.Audio
 {
     [DefaultExecutionOrder(0)]
     [RequireComponent(typeof(GameSetting))]
-    public class AudioManager : SingletonPersistant<AudioManager>
+    public class AudioManager : SingletonPersistent<AudioManager>
     {
         #region Fields
         [SerializeField]
@@ -40,7 +40,7 @@ namespace StarWriter.Core.Audio
             // Loop the music tracks
             musicSource1.loop = true;
             musicSource2.loop = true;
-            PlayMusicClip(musicSource2.clip);
+            PlayMusicClip(musicSource1.clip);
         }
 
         private void FixedUpdate()

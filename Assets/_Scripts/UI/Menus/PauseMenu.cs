@@ -43,15 +43,21 @@ namespace StarWriter.UI
         void Start()
         {
             gameManager = GameManager.Instance;
+
+            // Set Music status
             if(PlayerPrefs.GetInt("isMuted") == 0){ isMuted = false; }
             if(PlayerPrefs.GetInt("isMuted") == 1) { isMuted = true; }
-            if (PlayerPrefs.GetInt("gyroEnabled") == 0) { gyroEnabled = false; }
-            if (PlayerPrefs.GetInt("gyroEnabled") == 1) { gyroEnabled = true; }
 
+            // Set Music toggle sprite movement info
             musicOnPosition = musicToogleSprite.transform.position;
             musicOffPosition = musicToogleSprite.transform.position + offset;
             mRB2 = musicToogleSprite.GetComponent<Rigidbody2D>();
 
+            // Set Gyro status
+            if (PlayerPrefs.GetInt("gyroEnabled") == 0) { gyroEnabled = false; }
+            if (PlayerPrefs.GetInt("gyroEnabled") == 1) { gyroEnabled = true; }
+
+            // Set Gyro toggle sprite movement info
             gyroOnPosition = gyroToogleSprite.transform.position;
             gyroOffPosition = gyroToogleSprite.transform.position + offset;
             gyroRB2 = gyroToogleSprite.GetComponent<Rigidbody2D>();
