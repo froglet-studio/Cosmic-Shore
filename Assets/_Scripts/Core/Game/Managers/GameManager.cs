@@ -10,51 +10,42 @@ using UnityEngine.UI;
 namespace StarWriter.Core
 {
     [DefaultExecutionOrder(0)]
-    [RequireComponent(typeof(GameSetting))]
     public class GameManager : SingletonPersistent<GameManager>
     {
                
         [SerializeField]
-        private bool isTutorialEnabled = true;
-
-        [SerializeField]
-        private bool hasCompletedTutorial = false;
+        private bool skipTutorial = false;
 
         [SerializeField]
         private bool isGyroEnabled = true;
 
         private GameSetting gameSettings;
 
-        public bool HasCompletedTutorial { get => hasCompletedTutorial; set => hasCompletedTutorial = value; }
+       
 
         // Start is called before the first frame update
         void Start()
         {
-           if(PlayerPrefs.GetInt("tutorialEnabled") == 0) // 0 false and 1 true
+            gameSettings = GameSetting.Instance;
+
+           if(PlayerPrefs.GetInt("Skip Tutorial") == 1) // 0 false and 1 true
             {
-                isTutorialEnabled = false;
+                skipTutorial = true;
             }
                       
-        }
-
-        // Update is called once per frame
-        void Update()
-        {
-            if (!isTutorialEnabled) { return; }
-            
         }
 
         public void OnClickTutorialToggleButton()
         {
             // Set gameSettings Tutorial status
-            gameSettings.TutorialEnabled = isTutorialEnabled = !isTutorialEnabled;
+            gameSettings.TutorialEnabled = !gameSettings.TutorialEnabled;
 
             // Set PlayerPrefs Tutorial status
-            if (isTutorialEnabled == true)
+            if (gameSettings.TutorialEnabled == true)
             {
                 PlayerPrefs.SetInt("tutorialEnabled", 1);  //tutorial enabled
             }
-            if (isTutorialEnabled == false)
+            if (gameSettings.TutorialEnabled == false)
             {
                 PlayerPrefs.SetInt("tutorialEnabled", 0);  //tutorial disabled
             }
@@ -70,26 +61,26 @@ namespace StarWriter.Core
             {
                 PlayerPrefs.SetInt("gyroEnabled", 1); //gyro enabled
             }
-            if (isTutorialEnabled == false)
+            if (!isGyroEnabled == false)
             {
                 PlayerPrefs.SetInt("gyroEnabled", 0);  //gyro disabled
             }
         }
 
-
-
-
-        public void OnReturnToMainMenuButtonPressed()
+        public void OnClickPlayButton()
         {
-            SceneManager.LoadScene(0);
+            if (!skipTutorial)
+            {
+                SceneManager.LoadScene(1);
+            }
+            else
+            {
+                SceneManager.LoadScene(2);
+            }
+            
         }
 
-        public void OnReplayButtonPressed()
-        {
-            SceneManager.LoadScene(1);
-        }
-
-        public void OnResumeButtonPressed()
+        public void OnClickResumeButton()
         {
             TogglePauseGame();
         }
@@ -99,10 +90,6 @@ namespace StarWriter.Core
             PauseSystem.TogglePauseGame();
         }
 
-        public void OnQuitButtonPressed()
-        {
-            Application.Quit();
-        }
     }
 }
 

@@ -138,7 +138,6 @@ GameObject:
   m_Component:
   - component: {fileID: 3902679333267616924}
   - component: {fileID: 3902679333267616925}
-  - component: {fileID: 3902679333267616926}
   m_Layer: 0
   m_Name: Audio_Manager
   m_TagString: Untagged
@@ -179,21 +178,6 @@ MonoBehaviour:
   musicSource1: {fileID: 3902679334675721752}
   musicSource2: {fileID: 3902679332891413421}
   sfxSource: {fileID: 3902679332891413421}
---- !u!114 &3902679333267616926
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3902679333267616913}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c84cc795715b8664aa69c3c613612a4f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  isMuted: 0
-  tutorialEnabled: 1
-  gyroEnabled: 1
 --- !u!1 &3902679334179489300
 GameObject:
   m_ObjectHideFlags: 0
