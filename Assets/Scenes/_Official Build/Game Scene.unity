@@ -861,32 +861,14 @@ GameObject:
   - component: {fileID: 487984178}
   - component: {fileID: 487984177}
   - component: {fileID: 487984176}
-  - component: {fileID: 487984175}
+  - component: {fileID: 487984180}
   m_Layer: 0
-  m_Name: ai red
-  m_TagString: red
+  m_Name: ai blue
+  m_TagString: blue
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &487984175
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 487984174}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 909fb5cbbca8c4549b5a9df56d837e55, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  trail: {fileID: 5776304996075792891, guid: 67423358d7ae45d41a0422877a7e7de9, type: 3}
-  offset: 0
-  trailPeriod: 0.9
-  lifeTime: 20
-  waitTime: 0.1
-  useRandom: 0
 --- !u!114 &487984176
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -918,7 +900,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   playerUUID: ai
-  playerSO: {fileID: 11400000, guid: 9d0e2fcb63deda84a9b294b4f585717f, type: 2}
+  playerSO: {fileID: 11400000, guid: 8fc08d34109b0884b9c23412e966dca5, type: 2}
 --- !u!33 &487984178
 MeshFilter:
   m_ObjectHideFlags: 0
@@ -943,6 +925,24 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 6
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &487984180
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 487984174}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 909fb5cbbca8c4549b5a9df56d837e55, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  trail: {fileID: 5776304996075792891, guid: 6b9a0a1cfa64ed94b92cd8fe8e4fb1ee, type: 3}
+  offset: 0
+  trailPeriod: 0.5
+  lifeTime: 20
+  waitTime: 0.1
+  useRandom: 0
 --- !u!114 &620024973 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 7295673199472848813, guid: 1b900a12070a83a40931c2e99bb9308e,
@@ -2175,8 +2175,8 @@ GameObject:
   - component: {fileID: 1892142158}
   - component: {fileID: 1892142159}
   m_Layer: 0
-  m_Name: ai blue
-  m_TagString: blue
+  m_Name: ai red
+  m_TagString: red
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -2194,7 +2194,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   playerUUID: ai
-  playerSO: {fileID: 11400000, guid: 8fc08d34109b0884b9c23412e966dca5, type: 2}
+  playerSO: {fileID: 11400000, guid: 9d0e2fcb63deda84a9b294b4f585717f, type: 2}
 --- !u!33 &1892142156
 MeshFilter:
   m_ObjectHideFlags: 0
@@ -2249,9 +2249,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 909fb5cbbca8c4549b5a9df56d837e55, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  trail: {fileID: 5776304996075792891, guid: 6b9a0a1cfa64ed94b92cd8fe8e4fb1ee, type: 3}
+  trail: {fileID: 5776304996075792891, guid: 67423358d7ae45d41a0422877a7e7de9, type: 3}
   offset: 0
-  trailPeriod: 0.5
+  trailPeriod: 0.9
   lifeTime: 20
   waitTime: 0.1
   useRandom: 0
