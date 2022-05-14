@@ -1990,11 +1990,7 @@ MonoBehaviour:
   LeftWing: {fileID: 3145700090026864792}
   RightWing: {fileID: 6413447646132700981}
   UITransform: {fileID: 893616187}
-  rotationSpeed: 1.3
-  rotationThrottleScaler: 1.04
   speed: 0
-  throttleScaler: 50
-  OnThrottleEventThreshold: 1
   gyroEnabled: 1
 --- !u!114 &1556773161
 MonoBehaviour:
@@ -2611,11 +2607,6 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 2346576036425758005, guid: a089e5ab0159cc54aa784d6ebf15d2e4,
-        type: 3}
-      propertyPath: MutonMaterial
-      value: 
-      objectReference: {fileID: 2100000, guid: fd25dd816aa220f42959e76857142a39, type: 2}
     - target: {fileID: 2448508127246415652, guid: a089e5ab0159cc54aa784d6ebf15d2e4,
         type: 3}
       propertyPath: m_Name

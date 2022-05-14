@@ -96,4 +96,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 318b4eb62a2693f4e98368eb975997cd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  MutonMaterial: {fileID: 2100000, guid: c34edb7ebd1752d4e88d701083a099e8, type: 2}
+  MutonMaterial: {fileID: 2100000, guid: fd25dd816aa220f42959e76857142a39, type: 2}

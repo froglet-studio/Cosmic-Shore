@@ -53,29 +53,21 @@ namespace StarWriter.Core.Input
         RectTransform UITransform;
         #endregion
 
-        [SerializeField]
-        float rotationSpeed = 3;
-
-        [SerializeField]
-        float rotationThrottleScaler = 3;
-
         public float speed;
 
-        [SerializeField]
-        float throttleScaler = 20;
+        private readonly float defaultThrottle = 3f;
+        private readonly float rotationThrottleScaler = 3;
+        private readonly float throttleScaler = 50;
 
-        [SerializeField]
-        float OnThrottleEventThreshold = 1;
+        private readonly float OnThrottleEventThreshold = 1;
 
-        private float throttle;
-        private readonly float defaultThrottle = .3f;
         private readonly float lerpAmount = .2f;
+        private readonly float smallLerpAmount = .1f;
 
-        private readonly float rotationScaler = .075f;
+        private readonly float rotationScaler = 130f;
         
-
-        private readonly float yawAnimationScale = .04f;
-        private readonly float throttleAnimationScale = 50;
+        private readonly float animationScaler = 25f;
+        private readonly float yawAnimationScaler = 80f;
 
         private Gyroscope gyro;
         private Quaternion empiricalCorrection;
@@ -123,19 +115,20 @@ namespace StarWriter.Core.Input
             }
 
             //change the camera if you flip you phone
-            if (UnityEngine.Input.acceleration.y < 0)
-            {
-                UITransform.rotation = Quaternion.identity;
-                CloseCam.Priority = activePriority;
-                FarCam.Priority = inactivePriority;
-                gameObject.GetComponent<TrailSpawner>().waitTime = 1f;
-            }
-            else
+            if (UnityEngine.Input.acceleration.y > 0)
             {
                 UITransform.rotation = Quaternion.Euler(0, 0, 180);
                 FarCam.Priority = activePriority;
                 CloseCam.Priority = inactivePriority;
-                gameObject.GetComponent<TrailSpawner>().waitTime = .1f;
+                gameObject.GetComponent<TrailSpawner>().waitTime = .2f;
+                
+            }
+            else
+            {
+                UITransform.rotation = Quaternion.identity;
+                CloseCam.Priority = activePriority;
+                FarCam.Priority = inactivePriority;
+                gameObject.GetComponent<TrailSpawner>().waitTime = 1.3f;
             }
 
             if (UnityEngine.Input.touches.Length == 2)
@@ -152,79 +145,86 @@ namespace StarWriter.Core.Input
                     leftTouch = UnityEngine.Input.touches[1].position;
                     rightTouch = UnityEngine.Input.touches[0].position;
                 }
-                Pitch(leftTouch.y, rightTouch.y);
-                Roll(leftTouch.y, rightTouch.y);
-                Yaw(leftTouch.x, rightTouch.x);
-                Throttle(leftTouch.x, rightTouch.x);
-                PerformShipAnimations(leftTouch.y, rightTouch.y, leftTouch.x, rightTouch.x);
+                //reparameterize
+                float Xsum = ((rightTouch.x + leftTouch.x) / (Screen.currentResolution.width) - 1);
+                float Ysum = ((rightTouch.y + leftTouch.y) / (Screen.currentResolution.height) - 1);
+                float Xdiff = (rightTouch.x - leftTouch.x) / (Screen.currentResolution.width);
+                float Ydiff = (rightTouch.y - leftTouch.y) / (Screen.currentResolution.width);
+
+                Pitch(Ysum);
+                Roll(Ydiff);
+                Yaw(Xsum);
+                Throttle(Xdiff);
+                PerformShipAnimations(Xsum, Ysum, Xdiff, Ydiff);
             }
             else
             {
-                throttle = Mathf.Lerp(throttle, defaultThrottle, .1f);
-                LeftWing.localRotation = Quaternion.Lerp(LeftWing.localRotation, Quaternion.identity, .1f);
-                RightWing.localRotation = Quaternion.Lerp(RightWing.localRotation, Quaternion.identity, .1f);
-                Fusilage.localRotation = Quaternion.Lerp(Fusilage.localRotation, Quaternion.identity, .1f);
+                speed = Mathf.Lerp(speed, defaultThrottle, smallLerpAmount);
+                LeftWing.localRotation = Quaternion.Lerp(LeftWing.localRotation, Quaternion.identity, smallLerpAmount);
+                RightWing.localRotation = Quaternion.Lerp(RightWing.localRotation, Quaternion.identity, smallLerpAmount);
+                Fusilage.localRotation = Quaternion.Lerp(Fusilage.localRotation, Quaternion.identity, smallLerpAmount);
             }
 
             // Move ship forward
-            shipTransform.position += throttleScaler * throttle * Time.deltaTime * shipTransform.forward;
-            speed = throttleScaler * throttle;
+            shipTransform.position += speed * Time.deltaTime * shipTransform.forward;
+            
         }
 
-        private void PerformShipAnimations(float yl, float yr, float xl, float xr)
+        private void PerformShipAnimations(float Xsum, float Ysum, float Xdiff, float Ydiff)
         {
             // Ship animations TODO: figure out how to leverage a single definition for pitch, etc. that captures the gyro in the animations.
             LeftWing.localRotation = Quaternion.Lerp(
                                         LeftWing.localRotation, 
                                         Quaternion.Euler(
-                                            (-(yl + yr) + (Screen.currentResolution.height) + (yr - yl)) * .02f, //tilt based on pitch and roll
+                                            (Ydiff - Ysum) * animationScaler, //tilt based on pitch and roll
                                             0,
-                                            -(throttle - defaultThrottle) * throttleAnimationScale - ((xl + xr) - (Screen.currentResolution.width)) * yawAnimationScale), //sweep back based on throttle and yaw
+                                            -(Xdiff + Xsum) * yawAnimationScaler), //sweep back based on throttle and yaw
                                         lerpAmount);
 
             RightWing.localRotation = Quaternion.Lerp(
                                         RightWing.localRotation, 
                                         Quaternion.Euler(
-                                            (-(yl + yr) + Screen.currentResolution.height - (yr - yl)) * .02f, 
+                                            -(Ysum + Ydiff) * animationScaler, 
                                             0,
-                                            (throttle - defaultThrottle) * throttleAnimationScale - ((xl + xr) - Screen.currentResolution.width) * yawAnimationScale), 
+                                            (Xdiff - Xsum) * yawAnimationScaler), 
                                         lerpAmount);
 
             Fusilage.localRotation = Quaternion.Lerp(
                                         Fusilage.localRotation, 
                                         Quaternion.Euler(
-                                            (-(yl + yr) + Screen.currentResolution.height) * .02f,
-                                            (yr - yl)*.02f,
-                                            (-(xl + xr) + Screen.currentResolution.width) * .01f),
+                                            -Ysum * animationScaler,
+                                            Ydiff* animationScaler,
+                                            -Xsum * animationScaler),
                                         lerpAmount);
         }
 
-        private void Throttle(float xl, float xr)
+        private void Throttle(float Xdiff)
         {
-            throttle = Mathf.Lerp(throttle, (xr - xl) * .0009f - .15f, .2f);
+            speed = Mathf.Lerp(speed, Xdiff * throttleScaler + defaultThrottle, lerpAmount);
 
-            if (throttle > OnThrottleEventThreshold)
+            if (speed > OnThrottleEventThreshold)
                 OnThrottleEvent?.Invoke();
         }
         
-        private void Yaw(float xl, float xr)  // These need to not use *= ... remember quaternions are not commutative
+        private void Yaw(float Xsum)  // These need to not use *= ... remember quaternions are not commutative
         {
             displacementQ = Quaternion.AngleAxis(
-                                (((xl + xr) / 2) - (Screen.currentResolution.width / 2)) * rotationScaler * Time.deltaTime * (throttle*rotationThrottleScaler+rotationSpeed), 
+                                Xsum * (speed * rotationThrottleScaler + rotationScaler) *
+                                    (Screen.currentResolution.width/Screen.currentResolution.height) * Time.deltaTime, 
                                 shipTransform.up) * displacementQ;
         }
 
-        private void Roll(float yl, float yr)
+        private void Roll(float Ydiff)
         {
             displacementQ = Quaternion.AngleAxis(
-                                (yr - yl) * rotationScaler * Time.deltaTime,
+                                Ydiff * (speed * rotationThrottleScaler + rotationScaler) * Time.deltaTime,
                                 shipTransform.forward) * displacementQ;
         }
 
-        private void Pitch(float yl, float yr)
+        private void Pitch(float Ysum)
         {
             displacementQ = Quaternion.AngleAxis(
-                                (((yl + yr) / 2) - (Screen.currentResolution.height / 2)) * -rotationScaler * Time.deltaTime * (throttle * rotationThrottleScaler + rotationSpeed), 
+                                Ysum * -(speed * rotationThrottleScaler + rotationScaler) * Time.deltaTime, 
                                 shipTransform.right) * displacementQ;
         }
 
