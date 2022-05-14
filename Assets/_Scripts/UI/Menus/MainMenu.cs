@@ -13,9 +13,9 @@ namespace StarWriter.Core.UI
     {
         public GameObject Game_Options_Panel;
 
-        public void OnPressButtonStartGame()
+        public void OnClickPlayGame()
         {
-            SceneManager.LoadScene(1);
+            GameManager.Instance.OnClickPlayButton();
         }
 
         public void OnPressButtonOptions()

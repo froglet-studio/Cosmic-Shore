@@ -98,19 +98,19 @@ namespace StarWriter.UI
             gyroEnabled = !currentStatus;
         }
 
-        public void OnTutorialButtonPressed()
+        public void OnTutorialButton()
         {
             gameManager.OnClickTutorialToggleButton();
         }
 
-        public void OnRestartButtonPressed()
+        public void OnClickRestartButton()
         {
-            gameManager.OnReplayButtonPressed();
+            gameManager.OnClickPlayButton();
         }
 
-        public void OnResumeButtonPressed()
+        public void OnClickResumeButton()
         {
-            gameManager.OnResumeButtonPressed();
+            gameManager.OnClickResumeButton();
             transform.GetComponentInParent<GameMenu>().UnpauseGame();
         }
 

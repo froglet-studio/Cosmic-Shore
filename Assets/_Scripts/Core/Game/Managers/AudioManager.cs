@@ -12,7 +12,6 @@ using StarWriter.Core;
 namespace StarWriter.Core.Audio
 {
     [DefaultExecutionOrder(0)]
-    [RequireComponent(typeof(GameSetting))]
     public class AudioManager : SingletonPersistent<AudioManager>
     {
         #region Fields
@@ -26,16 +25,25 @@ namespace StarWriter.Core.Audio
         private bool firstMusicSourceIsPlaying;
         private bool isMuted = false;
 
-        private GameSetting gameSetting;
+     
         #endregion
 
         private void Start()
         {
+         
             // Create AudioSources and save them as references
             musicSource1 = this.gameObject.AddComponent<AudioSource>();
             musicSource2 = this.gameObject.AddComponent<AudioSource>();
             sfxSource = this.gameObject.AddComponent<AudioSource>();
-            isMuted = gameSetting.IsMuted;
+            
+            if(PlayerPrefs.GetInt("isMuted") == 0)
+            {
+                isMuted = false;
+            }
+            else
+            {
+                isMuted = true;
+            }
 
             // Loop the music tracks
             musicSource1.loop = true;

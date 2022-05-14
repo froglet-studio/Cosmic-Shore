@@ -14,7 +14,6 @@ namespace StarWriter.Core
         public GameObject replayButton;
 
         public CinemachineVirtualCamera endSceneCamera;
-        public Transform finalCameraTransform;
         
         void Start()
         {           
