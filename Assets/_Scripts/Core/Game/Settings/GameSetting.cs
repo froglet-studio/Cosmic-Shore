@@ -49,6 +49,17 @@ namespace StarWriter.Core
             
         }
 
+        public void ToggleGyro()
+        {
+            gyroEnabled = !gyroEnabled;
+            if (gyroEnabled)
+            {
+                PlayerPrefs.SetInt("gyroEnabled", 1);
+            }
+            else { PlayerPrefs.SetInt("gyroEnabled", 0); }
+
+        }
+
     }
 }
 

@@ -55,11 +55,11 @@ namespace StarWriter.Core.Audio
         {
             if (isMuted)
             {
-                SetMusicVolume(1f);
+                SetMusicVolume(0f);
             }
             if (!isMuted)
             {
-                SetMusicVolume(0f);
+                SetMusicVolume(1f);
             }
         }
 
@@ -149,7 +149,18 @@ namespace StarWriter.Core.Audio
 
         public void ToggleMute()
         {
-            isMuted = !isMuted;
+            // Set gameSettings Gyro status
+            GameSetting.Instance.IsMuted = isMuted = !isMuted;
+
+            // Set PlayerPrefs Gyro status
+            if (isMuted == true)
+            {
+                PlayerPrefs.SetInt("gyroEnabled", 1); //gyro enabled
+            }
+            if (!isMuted == false)
+            {
+                PlayerPrefs.SetInt("gyroEnabled", 0);  //gyro disabled
+            }
         }
     }
 }

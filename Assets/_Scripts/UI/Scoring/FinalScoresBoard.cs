@@ -21,13 +21,6 @@ namespace StarWriter.Core
             highScoreText.text = "High Score: " + PlayerPrefs.GetFloat("High Score").ToString();
         }
 
-        private void FixedUpdate()
-        {
-            /*float distance = end
-            if*/
-        }
-
-
         public void OnEndCameraPositionReached()
         {
             scoreText.gameObject.SetActive(true);

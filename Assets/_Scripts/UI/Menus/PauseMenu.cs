@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using StarWriter.Core;
+using StarWriter.Core.Audio;
 
 
 namespace StarWriter.UI
@@ -32,8 +33,6 @@ namespace StarWriter.UI
         Vector3 gyroOffPosition = new Vector3();
         Rigidbody2D gyroRB2;
 #endregion
-
-        float xSpeed = 10f;
 
         
 
@@ -86,10 +85,21 @@ namespace StarWriter.UI
 
         public void OnMusicToggle(bool currentStatus)
         {
-            StarWriter.Core.Audio.AudioManager audioManager = Core.Audio.AudioManager.Instance;
-            audioManager.ToggleMute();
-            isMuted = !currentStatus;
+            Debug.Log("Music currentStatus is " + currentStatus);
             
+            AudioManager.Instance.ToggleMute();
+            isMuted = !currentStatus;
+            if (!isMuted)
+            {
+                MoveToggle(mRB2, musicOnPosition);
+                Debug.Log("Music is ON");
+            }
+            else if (!isMuted)
+            {
+                MoveToggle(mRB2, musicOffPosition);
+                Debug.Log("Music is OFF");
+            }
+
         }
 
         public void OnGyroToggle(bool currentStatus)
@@ -112,6 +122,12 @@ namespace StarWriter.UI
         {
             gameManager.OnClickResumeButton();
             transform.GetComponentInParent<GameMenu>().UnpauseGame();
+        }
+
+        // Moves Toggle to the other position
+        public void MoveToggle(Rigidbody2D rigidbody2, Vector3 position)
+        {
+            rigidbody2.transform.Translate(position);
         }
 
     }
