@@ -14,7 +14,7 @@ GameObject:
   - component: {fileID: 6724784892155022458}
   - component: {fileID: 2248590667047079810}
   m_Layer: 0
-  m_Name: Ai2BlockMainMenu
+  m_Name: MenuBlueBlock
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -63,7 +63,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 6a9bda8b03d768b49af63226292fa2c6, type: 2}
+  - {fileID: 2100000, guid: 052ad6cedfeeddc4fb21fcb46fc2606e, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -110,8 +110,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0061db9e4c1348140bb3f9158242434c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  intensityChange: -3
   FossilBlock: {fileID: 5776304996075792891, guid: bd8a259abee95ec4895562e6bb8aae76,
     type: 3}
   waitTime: 0.01
-  lifeTime: 57
+  lifeTime: 39
