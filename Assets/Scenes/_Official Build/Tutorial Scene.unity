@@ -660,7 +660,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &242367203
 RectTransform:
   m_ObjectHideFlags: 0
@@ -5599,8 +5599,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9ca79d17578366e4f9cd2b19173ecab8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  playerName: 
   playerUUID: admin
   playerSO: {fileID: 11400000, guid: 0261c50928a2b8e4f833e2f25f6f6669, type: 2}
+  playerColor: {r: 0, g: 0, b: 0, a: 1}
+  playerShipPrefab: {fileID: 0}
+  playerTrailPrefab: {fileID: 0}
 --- !u!114 &2059123765
 MonoBehaviour:
   m_ObjectHideFlags: 0
