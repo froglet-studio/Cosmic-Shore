@@ -55,7 +55,7 @@ namespace StarWriter.Core.Input
 
         public float speed;
 
-        private readonly float defaultThrottle = 3f;
+        private readonly float defaultThrottle = 5f;
         private readonly float rotationThrottleScaler = 3;
         private readonly float throttleScaler = 50;
 
@@ -120,7 +120,7 @@ namespace StarWriter.Core.Input
                 UITransform.rotation = Quaternion.Euler(0, 0, 180);
                 FarCam.Priority = activePriority;
                 CloseCam.Priority = inactivePriority;
-                gameObject.GetComponent<TrailSpawner>().waitTime = .2f;
+                gameObject.GetComponent<TrailSpawner>().waitTime = .3f;
                 
             }
             else
@@ -128,7 +128,7 @@ namespace StarWriter.Core.Input
                 UITransform.rotation = Quaternion.identity;
                 CloseCam.Priority = activePriority;
                 FarCam.Priority = inactivePriority;
-                gameObject.GetComponent<TrailSpawner>().waitTime = 1.3f;
+                gameObject.GetComponent<TrailSpawner>().waitTime = 1.5f;
             }
 
             if (UnityEngine.Input.touches.Length == 2)
