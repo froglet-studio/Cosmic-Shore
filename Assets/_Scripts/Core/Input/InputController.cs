@@ -146,16 +146,16 @@ namespace StarWriter.Core.Input
                     rightTouch = UnityEngine.Input.touches[0].position;
                 }
                 //reparameterize
-                float Xsum = ((rightTouch.x + leftTouch.x) / (Screen.currentResolution.width) - 1);
-                float Ysum = ((rightTouch.y + leftTouch.y) / (Screen.currentResolution.height) - 1);
-                float Xdiff = (rightTouch.x - leftTouch.x) / (Screen.currentResolution.width);
-                float Ydiff = (rightTouch.y - leftTouch.y) / (Screen.currentResolution.width);
+                float xSum = ((rightTouch.x + leftTouch.x) / (Screen.currentResolution.width) - 1);
+                float ySum = ((rightTouch.y + leftTouch.y) / (Screen.currentResolution.height) - 1);
+                float xDiff = (rightTouch.x - leftTouch.x) / (Screen.currentResolution.width);
+                float yDiff = (rightTouch.y - leftTouch.y) / (Screen.currentResolution.width);
 
-                Pitch(Ysum);
-                Roll(Ydiff);
-                Yaw(Xsum);
-                Throttle(Xdiff);
-                PerformShipAnimations(Xsum, Ysum, Xdiff, Ydiff);
+                Pitch(ySum);
+                Roll(yDiff);
+                Yaw(xSum);
+                Throttle(xDiff);
+                PerformShipAnimations(xSum, ySum, xDiff, yDiff);
             }
             else
             {
