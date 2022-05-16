@@ -293,6 +293,12 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7181345258414065864, guid: 087d2222a78ded24894cb53861ff6be4,
         type: 3}
+      propertyPath: m_fontAsset
+      value: 
+      objectReference: {fileID: 11400000, guid: 6d2d5c22ddc93f746aabf70e9b312708,
+        type: 2}
+    - target: {fileID: 7181345258414065864, guid: 087d2222a78ded24894cb53861ff6be4,
+        type: 3}
       propertyPath: m_fontColor.a
       value: 0.8509804
       objectReference: {fileID: 0}
@@ -311,11 +317,33 @@ PrefabInstance:
       propertyPath: m_fontColor.r
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 7181345258414065864, guid: 087d2222a78ded24894cb53861ff6be4,
+        type: 3}
+      propertyPath: m_sharedMaterial
+      value: 
+      objectReference: {fileID: -20343575871940500, guid: 6d2d5c22ddc93f746aabf70e9b312708,
+        type: 2}
     - target: {fileID: 7181345258414065864, guid: 087d2222a78ded24894cb53861ff6be4,
         type: 3}
       propertyPath: m_fontColor32.rgba
       value: 3657433087
       objectReference: {fileID: 0}
+    - target: {fileID: 7181345258414065871, guid: 087d2222a78ded24894cb53861ff6be4,
+        type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 136.08
+      objectReference: {fileID: 0}
+    - target: {fileID: 7181345258505005036, guid: 087d2222a78ded24894cb53861ff6be4,
+        type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 179.9
+      objectReference: {fileID: 0}
+    - target: {fileID: 7181345258505005037, guid: 087d2222a78ded24894cb53861ff6be4,
+        type: 3}
+      propertyPath: m_fontAsset
+      value: 
+      objectReference: {fileID: 11400000, guid: 6d2d5c22ddc93f746aabf70e9b312708,
+        type: 2}
     - target: {fileID: 7181345258505005037, guid: 087d2222a78ded24894cb53861ff6be4,
         type: 3}
       propertyPath: m_fontColor.a
@@ -336,6 +364,12 @@ PrefabInstance:
       propertyPath: m_fontColor.r
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 7181345258505005037, guid: 087d2222a78ded24894cb53861ff6be4,
+        type: 3}
+      propertyPath: m_sharedMaterial
+      value: 
+      objectReference: {fileID: -20343575871940500, guid: 6d2d5c22ddc93f746aabf70e9b312708,
+        type: 2}
     - target: {fileID: 7181345258505005037, guid: 087d2222a78ded24894cb53861ff6be4,
         type: 3}
       propertyPath: m_fontColor32.rgba
@@ -1734,7 +1768,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 477729228}
         m_TargetAssemblyTypeName: GameMenu, Assembly-CSharp
-        m_MethodName: OnClickUnpauseGame
+        m_MethodName: OnClickPauseGame
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
