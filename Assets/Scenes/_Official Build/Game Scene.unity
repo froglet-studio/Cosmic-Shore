@@ -293,6 +293,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7181345258414065864, guid: 087d2222a78ded24894cb53861ff6be4,
         type: 3}
+      propertyPath: m_text
+      value: 'SCORE: 0'
+      objectReference: {fileID: 0}
+    - target: {fileID: 7181345258414065864, guid: 087d2222a78ded24894cb53861ff6be4,
+        type: 3}
       propertyPath: m_fontAsset
       value: 
       objectReference: {fileID: 11400000, guid: 6d2d5c22ddc93f746aabf70e9b312708,
@@ -327,16 +332,31 @@ PrefabInstance:
         type: 3}
       propertyPath: m_fontColor32.rgba
       value: 3657433087
+      objectReference: {fileID: 0}
+    - target: {fileID: 7181345258414065864, guid: 087d2222a78ded24894cb53861ff6be4,
+        type: 3}
+      propertyPath: m_VerticalAlignment
+      value: 256
+      objectReference: {fileID: 0}
+    - target: {fileID: 7181345258414065864, guid: 087d2222a78ded24894cb53861ff6be4,
+        type: 3}
+      propertyPath: m_HorizontalAlignment
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 7181345258414065871, guid: 087d2222a78ded24894cb53861ff6be4,
         type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 136.08
+      value: 205
       objectReference: {fileID: 0}
     - target: {fileID: 7181345258505005036, guid: 087d2222a78ded24894cb53861ff6be4,
         type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 179.9
+      value: 205
+      objectReference: {fileID: 0}
+    - target: {fileID: 7181345258505005037, guid: 087d2222a78ded24894cb53861ff6be4,
+        type: 3}
+      propertyPath: m_text
+      value: 'HIGH SCORE: 0'
       objectReference: {fileID: 0}
     - target: {fileID: 7181345258505005037, guid: 087d2222a78ded24894cb53861ff6be4,
         type: 3}
@@ -374,6 +394,16 @@ PrefabInstance:
         type: 3}
       propertyPath: m_fontColor32.rgba
       value: 3657433087
+      objectReference: {fileID: 0}
+    - target: {fileID: 7181345258505005037, guid: 087d2222a78ded24894cb53861ff6be4,
+        type: 3}
+      propertyPath: m_VerticalAlignment
+      value: 256
+      objectReference: {fileID: 0}
+    - target: {fileID: 7181345258505005037, guid: 087d2222a78ded24894cb53861ff6be4,
+        type: 3}
+      propertyPath: m_HorizontalAlignment
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 087d2222a78ded24894cb53861ff6be4, type: 3}
@@ -1720,7 +1750,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
   m_AnchoredPosition: {x: 50, y: -50}
-  m_SizeDelta: {x: 60.16, y: 60.2}
+  m_SizeDelta: {x: 60, y: 60}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1125522469
 MonoBehaviour:
@@ -1800,7 +1830,7 @@ MonoBehaviour:
       m_Calls: []
   m_Sprite: {fileID: 21300000, guid: 315ef6b6d562b1b409d8ecd84b3e3da1, type: 3}
   m_Type: 0
-  m_PreserveAspect: 0
+  m_PreserveAspect: 1
   m_FillCenter: 1
   m_FillMethod: 4
   m_FillAmount: 1

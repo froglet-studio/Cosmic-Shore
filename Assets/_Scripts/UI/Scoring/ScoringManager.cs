@@ -46,6 +46,7 @@ public class ScoringManager : MonoBehaviour
 
     private void GameOver()
     {
+        PlayerPrefs.SetFloat("Score", score);
         //Compares Score to High Score and saves the highest value
         if (PlayerPrefs.GetFloat("High Score") < score)
             PlayerPrefs.SetFloat("High Score", score);
