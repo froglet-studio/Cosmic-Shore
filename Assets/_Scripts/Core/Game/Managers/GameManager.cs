@@ -26,6 +26,7 @@ namespace StarWriter.Core
         // Start is called before the first frame update
         void Start()
         {
+            PlayerPrefs.SetInt("Skip Tutorial", 1);
             gameSettings = GameSetting.Instance;
 
            if(PlayerPrefs.GetInt("Skip Tutorial") == 1) // 0 false and 1 true

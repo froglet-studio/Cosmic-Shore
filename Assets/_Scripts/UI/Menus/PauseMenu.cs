@@ -121,7 +121,7 @@ namespace StarWriter.UI
         public void OnClickResumeButton()
         {
             gameManager.OnClickResumeButton();
-            transform.GetComponentInParent<GameMenu>().UnpauseGame();
+            transform.GetComponentInParent<GameMenu>().OnClickUnpauseGame();
         }
 
         // Moves Toggle to the other position
