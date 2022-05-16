@@ -14,3 +14,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   characterName: John
   uniqueUserID: admin
+  characterColor: {r: 0.261463, g: 0.9056604, b: 0.046137344, a: 0}
+  shipPrefab: {fileID: 11400000, guid: 8fe04b504d11c60499aa5b0e6217a602, type: 2}
+  trailPrefab: {fileID: 11400000, guid: 01bddce10ea01d146beada014e761a53, type: 2}
