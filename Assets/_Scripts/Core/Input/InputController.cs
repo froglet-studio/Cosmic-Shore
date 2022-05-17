@@ -83,13 +83,11 @@ namespace StarWriter.Core.Input
         private void OnEnable()
         {
             IntensitySystem.gameOver += OnGameOver;
-            GameManager.onPlayGame += SetFarCameraActive;
         }
 
         private void OnDisable()
         {
             IntensitySystem.gameOver -= OnGameOver;
-            GameManager.onPlayGame -= SetFarCameraActive;
         }
 
         void Start()
@@ -246,10 +244,6 @@ namespace StarWriter.Core.Input
             return new Quaternion(q.x, -q.z, q.y, q.w);
         }
 
-        private void SetFarCameraActive()
-        {
-            cameraManager.SetFarCameraActive();
-        }
         private void OnGameOver()
         {
             isCameraDisabled = true; //Disables Cameras in Input Controller Update 

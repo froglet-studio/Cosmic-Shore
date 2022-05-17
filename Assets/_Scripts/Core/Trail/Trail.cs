@@ -2,6 +2,8 @@ using System.Collections;
 using UnityEngine;
 using System.Collections.Generic;
 using StarWriter.Core.Input;
+using System.Linq;
+
 
 public class Trail : MonoBehaviour, ICollidable
 {
@@ -35,6 +37,7 @@ public class Trail : MonoBehaviour, ICollidable
         {
             container = new GameObject();
             container.name = "FossilBlockContainer";
+            DontDestroyOnLoad(container);
         }
 
         meshRenderer = GetComponent<MeshRenderer>();
@@ -78,7 +81,10 @@ public class Trail : MonoBehaviour, ICollidable
             tempMaterial = new Material(material);
             fossilBlock.GetComponent<Renderer>().material = tempMaterial;
 
-            if (ship == GameObject.FindWithTag("Player"))
+           
+            Debug.Log("tagplayer" + GameObject.FindGameObjectsWithTag("Player").Count());
+
+            if (GameObject.FindGameObjectsWithTag("Player").Contains(ship))
             {
                 //trail animation and haptics
                 StartCoroutine(fossilBlock.GetComponent<BlockImpact>().ImpactCoroutine(

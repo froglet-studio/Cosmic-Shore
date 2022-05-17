@@ -31,7 +31,10 @@ namespace StarWriter.Core
 
         public void OnReplayGameButtonPressed()
         {
-            SceneManager.LoadScene(2);
+            Scene scene = SceneManager.GetActiveScene();
+            SceneManager.LoadScene(scene.name);
+            Debug.Log("play again");
+            //SceneManager.LoadScene(2);
         }
     }
 }

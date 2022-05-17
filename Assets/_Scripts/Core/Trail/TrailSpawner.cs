@@ -13,9 +13,32 @@ public class TrailSpawner : MonoBehaviour
     public float waitTime = .5f;
     public bool useRandom = true;
 
-    //private Vector3 scale;
+    [SerializeField]
     private static GameObject TrailContainer;
     private IEnumerator trailCoroutine;
+
+    // Start is called before the first frame update
+    void Start()
+    {
+        if (TrailContainer == null)
+        {
+            TrailContainer = new GameObject();
+            TrailContainer.name = "TrailContainer";
+            DontDestroyOnLoad(TrailContainer);
+        }
+
+        //if (useRandom == true)
+        //{
+        //    scale = new Vector3(Random.Range(3, 50), Random.Range(.5f, 4), Random.Range(.5f, 2));
+        //}
+        //else 
+        //{ 
+        //    scale = new Vector3(3,.03f,.3f);
+        //}
+
+        trailCoroutine = SpawnTrailCoroutine();
+        StartCoroutine(trailCoroutine);
+    }
 
     IEnumerator SpawnTrailCoroutine()
     {
@@ -32,27 +55,5 @@ public class TrailSpawner : MonoBehaviour
             trailScript.lifeTime = lifeTime;
             trailScript.waitTime = waitTime;
         }
-    }
-
-    // Start is called before the first frame update
-    void Start()
-    {
-        if (TrailContainer == null)
-        {
-            TrailContainer = new GameObject();
-            TrailContainer.name = "TrailContainer";
-        }
-
-        //if (useRandom == true)
-        //{
-        //    scale = new Vector3(Random.Range(3, 50), Random.Range(.5f, 4), Random.Range(.5f, 2));
-        //}
-        //else 
-        //{ 
-        //    scale = new Vector3(3,.03f,.3f);
-        //}
-
-        trailCoroutine = SpawnTrailCoroutine();
-        StartCoroutine(trailCoroutine);
     }
 }

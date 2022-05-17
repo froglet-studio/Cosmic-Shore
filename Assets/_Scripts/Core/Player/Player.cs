@@ -5,7 +5,7 @@ using UnityEngine;
 using StarWriter.Core;
 
 [System.Serializable]
-public class Player : SingletonPersistant<Player>
+public class Player : MonoBehaviour
 {
     [SerializeField]
     private string playerName;
