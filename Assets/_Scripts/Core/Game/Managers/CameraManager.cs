@@ -7,11 +7,11 @@ using System;
 public class CameraManager : SingletonPersistant<CameraManager>
 {
     [SerializeField]
-    public CinemachineVirtualCamera closeCamera;
+    private CinemachineVirtualCameraBase closeCamera;
     [SerializeField]
-    public CinemachineVirtualCamera farCamera;
+    private CinemachineVirtualCameraBase farCamera;
     [SerializeField]
-    public CinemachineVirtualCamera endCamera;
+    private CinemachineVirtualCameraBase endCamera;
 
     [SerializeField]
     private Transform endCameraFollowTarget;

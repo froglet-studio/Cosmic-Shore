@@ -77,6 +77,7 @@ namespace StarWriter.Core.Input
 
 
         public bool gyroEnabled = true;
+        private bool isCameraDisabled = false;
 
 
         private void Awake()
@@ -88,9 +89,20 @@ namespace StarWriter.Core.Input
             }
         }
 
+        private void OnEnable()
+        {
+            IntensitySystem.gameOver += OnGameOver;
+        }
+
+        private void OnDisable()
+        {
+            IntensitySystem.gameOver += OnGameOver;
+        }
+
         void Start()
         {
             cameraManager = CameraManager.Instance;
+
             if (SystemInfo.supportsGyroscope)
             {
                 empiricalCorrection = GyroToUnity(empiricalCorrection);
@@ -121,18 +133,19 @@ namespace StarWriter.Core.Input
             if (UnityEngine.Input.acceleration.y > 0)
             {
                 UITransform.rotation = Quaternion.Euler(0, 0, 180);
-                cameraManager.SetFarCameraActive();
-                //FarCam.Priority = activePriority;
-                //CloseCam.Priority = inactivePriority;
+                if (!isCameraDisabled) { cameraManager.SetFarCameraActive(); }
+                
                 gameObject.GetComponent<TrailSpawner>().waitTime = .3f;
                 
             }
             else
             {
                 UITransform.rotation = Quaternion.identity;
-                cameraManager.SetCloseCameraActive();
-               /* CloseCam.Priority = activePriority;
-                FarCam.Priority = inactivePriority;*/
+                if (!isCameraDisabled)
+                {
+                    cameraManager.SetCloseCameraActive();
+                }
+               
                 gameObject.GetComponent<TrailSpawner>().waitTime = 1.5f;
             }
 
@@ -238,6 +251,10 @@ namespace StarWriter.Core.Input
         {
             return new Quaternion(q.x, -q.z, q.y, q.w);
         }
-    }
+        private void OnGameOver()
+        {
+            isCameraDisabled = true; //Disables Cameras in Input Controller Update
+        }
+    }    
 }
 
