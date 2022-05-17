@@ -3,9 +3,12 @@ using System.Collections.Generic;
 using UnityEngine;
 using Cinemachine;
 using System;
+using StarWriter.Core;
 
 public class CameraManager : SingletonPersistant<CameraManager>
 {
+    [SerializeField]
+    private CinemachineVirtualCameraBase mainMenuCamera;
     [SerializeField]
     private CinemachineVirtualCameraBase closeCamera;
     [SerializeField]
@@ -24,28 +27,42 @@ public class CameraManager : SingletonPersistant<CameraManager>
     private void OnEnable()
     {
         IntensitySystem.gameOver += ZoomEndCameraToScores;
+        GameManager.onPlayGame += SetFarCameraActive;
     }
 
     private void OnDisable()
     {
         IntensitySystem.gameOver -= ZoomEndCameraToScores;
+        GameManager.onPlayGame -= SetFarCameraActive;
     }
 
     // Start is called before the first frame update
     void Start()
     {
-        farCamera.Priority = activePriority;
+        OnMainMenu();
+    }
+    private void OnMainMenu()
+    {
+        SetMainMenuCameraActive();
     }
 
     private void ZoomEndCameraToScores()
     {
+        mainMenuCamera.Priority = inactivePriority;
         endCamera.Priority = activePriority;
         farCamera.Priority = inactivePriority;
         closeCamera.Priority = inactivePriority;
     }
-
+    public void SetMainMenuCameraActive()
+    {
+        mainMenuCamera.Priority = activePriority;
+        farCamera.Priority = inactivePriority;
+        closeCamera.Priority = inactivePriority;
+        endCamera.Priority = inactivePriority;
+    }
     public void SetFarCameraActive()
     {
+        mainMenuCamera.Priority = inactivePriority;
         farCamera.Priority = activePriority;
         closeCamera.Priority = inactivePriority;
         endCamera.Priority = inactivePriority;
@@ -53,6 +70,7 @@ public class CameraManager : SingletonPersistant<CameraManager>
 
     public void SetCloseCameraActive()
     {
+        mainMenuCamera.Priority = inactivePriority;
         closeCamera.Priority = activePriority;
         farCamera.Priority = inactivePriority;
         endCamera.Priority = inactivePriority;

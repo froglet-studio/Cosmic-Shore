@@ -1,6 +1,4 @@
 using UnityEngine;
-using TMPro;
-using Cinemachine;
 
 namespace StarWriter.Core.Input
 {
@@ -26,14 +24,7 @@ namespace StarWriter.Core.Input
         #region Camera 
 
         CameraManager cameraManager;
-       /* [SerializeField]
-        CinemachineVirtualCameraBase CloseCam;
-
-        [SerializeField]
-        CinemachineVirtualCameraBase FarCam;*/
-
-        //readonly int activePriority = 10;
-        //readonly int inactivePriority = 1;
+       
         #endregion
 
         #region Ship
@@ -92,11 +83,13 @@ namespace StarWriter.Core.Input
         private void OnEnable()
         {
             IntensitySystem.gameOver += OnGameOver;
+            GameManager.onPlayGame += SetFarCameraActive;
         }
 
         private void OnDisable()
         {
             IntensitySystem.gameOver -= OnGameOver;
+            GameManager.onPlayGame -= SetFarCameraActive;
         }
 
         void Start()
@@ -251,6 +244,11 @@ namespace StarWriter.Core.Input
         private Quaternion GyroToUnity(Quaternion q)
         {
             return new Quaternion(q.x, -q.z, q.y, q.w);
+        }
+
+        private void SetFarCameraActive()
+        {
+            cameraManager.SetFarCameraActive();
         }
         private void OnGameOver()
         {

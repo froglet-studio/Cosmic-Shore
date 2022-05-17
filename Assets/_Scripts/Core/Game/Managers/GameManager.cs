@@ -19,7 +19,12 @@ namespace StarWriter.Core
         [SerializeField]
         private bool isGyroEnabled = true;
 
+        CameraManager cameraManager;
+
         private GameSetting gameSettings;
+
+        public delegate void OnPlayGameEvent();
+        public static event OnPlayGameEvent onPlayGame;
 
        
 
@@ -28,6 +33,7 @@ namespace StarWriter.Core
         {
             PlayerPrefs.SetInt("Skip Tutorial", 1);
             gameSettings = GameSetting.Instance;
+            cameraManager = CameraManager.Instance;
 
            if(PlayerPrefs.GetInt("Skip Tutorial") == 1) // 0 false and 1 true
             {
@@ -52,6 +58,7 @@ namespace StarWriter.Core
             }
         }
 
+
         public void OnClickGyroToggleButton()
         {
             // Set gameSettings Gyro status
@@ -70,6 +77,7 @@ namespace StarWriter.Core
 
         public void OnClickPlayButton()
         {
+            
             if (!skipTutorial)
             {
                 SceneManager.LoadScene(1);
@@ -78,7 +86,7 @@ namespace StarWriter.Core
             {
                 SceneManager.LoadScene(2);
             }
-            
+            onPlayGame?.Invoke();
         }
 
         public void OnClickResumeButton()
