@@ -16,6 +16,8 @@ public class CameraManager : SingletonPersistant<CameraManager>
     [SerializeField]
     private CinemachineVirtualCameraBase endCamera;
 
+    
+    private Transform playerFollowTarget;
     [SerializeField]
     private Transform endCameraFollowTarget;
     [SerializeField]
@@ -27,23 +29,34 @@ public class CameraManager : SingletonPersistant<CameraManager>
     private void OnEnable()
     {
         IntensitySystem.gameOver += ZoomEndCameraToScores;
-        GameManager.onPlayGame += SetFarCameraActive;
+        GameManager.onPlayGame += OnPlayGame;
     }
 
     private void OnDisable()
     {
         IntensitySystem.gameOver -= ZoomEndCameraToScores;
-        GameManager.onPlayGame -= SetFarCameraActive;
+        GameManager.onPlayGame -= OnPlayGame;
     }
 
     // Start is called before the first frame update
     void Start()
     {
         OnMainMenu();
+        playerFollowTarget = endCameraLookAtTarget; // just so not null
+        closeCamera.LookAt = farCamera.LookAt = playerFollowTarget;
+        closeCamera.Follow = farCamera.Follow = playerFollowTarget;
     }
     private void OnMainMenu()
     {
         SetMainMenuCameraActive();
+    }
+
+    private void OnPlayGame()
+    {
+        playerFollowTarget = GameObject.FindGameObjectWithTag("Player").transform;
+        closeCamera.LookAt = farCamera.LookAt = playerFollowTarget;
+        closeCamera.Follow = farCamera.Follow = playerFollowTarget;
+        SetFarCameraActive();
     }
 
     private void ZoomEndCameraToScores()

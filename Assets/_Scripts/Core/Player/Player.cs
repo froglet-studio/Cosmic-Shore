@@ -2,9 +2,10 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using StarWriter.Core;
 
 [System.Serializable]
-public class Player : MonoBehaviour
+public class Player : SingletonPersistant<Player>
 {
     [SerializeField]
     private string playerName;
@@ -31,13 +32,26 @@ public class Player : MonoBehaviour
     public Color PlayerColor { get => playerColor; }
     public SO_Ship_Base PlayerShipPrefab { get => playerShipPrefab; }
     public SO_Trail_Base PlayerTrailPrefab { get => playerTrailPrefab; }
+
+    GameManager gameManager;
     
 
     void Start()
     {
         InitializePlayer();
-        Debug.Log("Player " + playerName + " fired up and ready to go!");
+        if(playerUUID == "admin")
+        {
+            PlayerLoaded();
+        }
+        
 
+    }
+
+    void PlayerLoaded()
+    {
+        Debug.Log("Player " + playerName + " fired up and ready to go!");
+        gameManager = GameManager.Instance;
+        gameManager.WaitOnPlayerLoading();
     }
 
     //Sets Player Fields from the assigned Scriptable Object 

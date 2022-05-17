@@ -86,7 +86,7 @@ namespace StarWriter.Core
             {
                 SceneManager.LoadScene(2);
             }
-            onPlayGame?.Invoke();
+            
         }
 
         public void OnClickResumeButton()
@@ -97,6 +97,14 @@ namespace StarWriter.Core
         public void TogglePauseGame()
         {
             PauseSystem.TogglePauseGame();
+        }
+
+        public void WaitOnPlayerLoading()
+        {
+            Debug.Log("Here!");
+            Debug.Log("On before Invoke");
+            onPlayGame?.Invoke();
+            Debug.Log("On after Invoke");
         }
 
     }
