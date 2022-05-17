@@ -96,12 +96,13 @@ namespace StarWriter.Core.Input
 
         private void OnDisable()
         {
-            IntensitySystem.gameOver += OnGameOver;
+            IntensitySystem.gameOver -= OnGameOver;
         }
 
         void Start()
         {
             cameraManager = CameraManager.Instance;
+            isCameraDisabled = false;
 
             if (SystemInfo.supportsGyroscope)
             {
@@ -253,7 +254,7 @@ namespace StarWriter.Core.Input
         }
         private void OnGameOver()
         {
-            isCameraDisabled = true; //Disables Cameras in Input Controller Update
+            isCameraDisabled = true; //Disables Cameras in Input Controller Update 
         }
     }    
 }

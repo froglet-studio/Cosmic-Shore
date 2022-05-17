@@ -28,13 +28,13 @@ public class CameraManager : SingletonPersistant<CameraManager>
 
     private void OnDisable()
     {
-        IntensitySystem.gameOver += ZoomEndCameraToScores;
+        IntensitySystem.gameOver -= ZoomEndCameraToScores;
     }
 
     // Start is called before the first frame update
     void Start()
     {
-        
+        farCamera.Priority = activePriority;
     }
 
     private void ZoomEndCameraToScores()
