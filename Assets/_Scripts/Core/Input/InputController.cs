@@ -24,14 +24,16 @@ namespace StarWriter.Core.Input
         public static event OnThrottle OnThrottleEvent;
 
         #region Camera 
-        [SerializeField]
+
+        CameraManager cameraManager;
+       /* [SerializeField]
         CinemachineVirtualCameraBase CloseCam;
 
         [SerializeField]
-        CinemachineVirtualCameraBase FarCam;
+        CinemachineVirtualCameraBase FarCam;*/
 
-        readonly int activePriority = 10;
-        readonly int inactivePriority = 1;
+        //readonly int activePriority = 10;
+        //readonly int inactivePriority = 1;
         #endregion
 
         #region Ship
@@ -88,6 +90,7 @@ namespace StarWriter.Core.Input
 
         void Start()
         {
+            cameraManager = CameraManager.Instance;
             if (SystemInfo.supportsGyroscope)
             {
                 empiricalCorrection = GyroToUnity(empiricalCorrection);
@@ -118,16 +121,18 @@ namespace StarWriter.Core.Input
             if (UnityEngine.Input.acceleration.y > 0)
             {
                 UITransform.rotation = Quaternion.Euler(0, 0, 180);
-                FarCam.Priority = activePriority;
-                CloseCam.Priority = inactivePriority;
+                cameraManager.SetFarCameraActive();
+                //FarCam.Priority = activePriority;
+                //CloseCam.Priority = inactivePriority;
                 gameObject.GetComponent<TrailSpawner>().waitTime = .3f;
                 
             }
             else
             {
                 UITransform.rotation = Quaternion.identity;
-                CloseCam.Priority = activePriority;
-                FarCam.Priority = inactivePriority;
+                cameraManager.SetCloseCameraActive();
+               /* CloseCam.Priority = activePriority;
+                FarCam.Priority = inactivePriority;*/
                 gameObject.GetComponent<TrailSpawner>().waitTime = 1.5f;
             }
 
