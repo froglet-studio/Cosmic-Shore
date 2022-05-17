@@ -12,6 +12,10 @@ public class IntensitySystem : MonoBehaviour
 
     public delegate void OnIntensityChangeEvent(string uuid, float intensity);
     public static event OnIntensityChangeEvent onIntensityChange;
+
+    public delegate void OnGameOverEvent();
+    public static event OnGameOverEvent gameOver;
+    
     #endregion
     #region Floats
     [Tooltip("Initial and Max intensity level from 0-1")]
@@ -75,6 +79,7 @@ public class IntensitySystem : MonoBehaviour
         if (currentIntensity <= 0)
         {
             currentIntensity = 0;
+            GameOver();
         }
         if (currentIntensity != 0) 
         { 
@@ -98,6 +103,11 @@ public class IntensitySystem : MonoBehaviour
     {
         if (uuid == "admin") { currentIntensity = amount; }
        
+    }
+
+    private void GameOver()
+    {
+        gameOver?.Invoke();
     }
 
     private void OnDestroy()

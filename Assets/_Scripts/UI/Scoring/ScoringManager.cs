@@ -14,19 +14,15 @@ public class ScoringManager : MonoBehaviour
     private void OnEnable()
     {
         IntensitySystem.onPlayerIntensityOverflow += AddExcessIntensityToScore;
+        IntensitySystem.gameOver += GameOver;
         MutonPopUp.AddToScore += AddMutonBous;
-    }
-
-    private void AddMutonBous(string uuid, int amount)
-    {
-        if (uuid == "admin") { score += amount; }
-
-        UpdateScoreBoard(score);
     }
 
     private void OnDisable()
     {
         IntensitySystem.onPlayerIntensityOverflow -= AddExcessIntensityToScore;
+        IntensitySystem.gameOver -= GameOver;
+        MutonPopUp.AddToScore -= AddMutonBous;
     }
 
     public void AddExcessIntensityToScore(string uuid, int amount) // TODO Needs to be private... put events on mutons and trails to handle
@@ -41,11 +37,18 @@ public class ScoringManager : MonoBehaviour
         scoreText.text = value.ToString("D3");
     }
 
-    private void OnDestroy()
+    private void AddMutonBous(string uuid, int amount)
     {
+        if (uuid == "admin") { score += amount; }
+
+        UpdateScoreBoard(score);
+    }
+
+    private void GameOver()
+    {
+        PlayerPrefs.SetFloat("Score", score);
         //Compares Score to High Score and saves the highest value
         if (PlayerPrefs.GetFloat("High Score") < score)
             PlayerPrefs.SetFloat("High Score", score);
-  
     }
 }

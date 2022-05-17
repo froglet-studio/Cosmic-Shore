@@ -13,7 +13,16 @@ public class GameMenu : MonoBehaviour
     GameObject finalScorePanel;
     [SerializeField]
     GameObject pauseButton;
-    
+
+    private void OnEnable()
+    {
+        IntensitySystem.gameOver += GameOver;
+    }
+
+    private void OnDisable()
+    {
+        IntensitySystem.gameOver -= GameOver;
+    }
 
     public void ExitGame()
     {
@@ -21,7 +30,7 @@ public class GameMenu : MonoBehaviour
         SceneManager.LoadScene(0);
     }
 
-    public void PauseGame()
+    public void OnClickPauseGame()
     {
         intensityMeterPanel.SetActive(false);
         finalScorePanel.SetActive(false);
@@ -30,7 +39,7 @@ public class GameMenu : MonoBehaviour
         PauseSystem.TogglePauseGame();
     }
 
-    public void UnpauseGame()
+    public void OnClickUnpauseGame()
     {
 
         intensityMeterPanel.SetActive(true);
@@ -46,5 +55,10 @@ public class GameMenu : MonoBehaviour
         finalScorePanel.SetActive(true);
         pauseButton.SetActive(false);
         pauseMenuPanel.SetActive(false);
+    }
+
+    private void GameOver()
+    {
+        OnFinalScoreScene();
     }
 }

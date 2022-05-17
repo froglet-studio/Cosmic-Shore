@@ -14,20 +14,12 @@ namespace StarWriter.Core
         public GameObject replayButton;
 
         public CinemachineVirtualCamera endSceneCamera;
-        public Transform finalCameraTransform;
         
         void Start()
         {           
             scoreText.text = "Score: " + PlayerPrefs.GetFloat("Score").ToString();
             highScoreText.text = "High Score: " + PlayerPrefs.GetFloat("High Score").ToString();
         }
-
-        private void FixedUpdate()
-        {
-            /*float distance = end
-            if*/
-        }
-
 
         public void OnEndCameraPositionReached()
         {

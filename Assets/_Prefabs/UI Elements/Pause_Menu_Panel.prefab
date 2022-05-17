@@ -144,6 +144,7 @@ GameObject:
   - component: {fileID: 8035663728358167118}
   - component: {fileID: 8035663728358167152}
   - component: {fileID: 8035663728358167153}
+  - component: {fileID: 4773743936505571282}
   m_Layer: 5
   m_Name: Checkmark
   m_TagString: Untagged
@@ -209,6 +210,27 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!50 &4773743936505571282
+Rigidbody2D:
+  serializedVersion: 4
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8035663728358167119}
+  m_BodyType: 0
+  m_Simulated: 1
+  m_UseFullKinematicContacts: 0
+  m_UseAutoMass: 0
+  m_Mass: 1
+  m_LinearDrag: 0
+  m_AngularDrag: 0.05
+  m_GravityScale: 1
+  m_Material: {fileID: 0}
+  m_Interpolate: 0
+  m_SleepingMode: 1
+  m_CollisionDetection: 0
+  m_Constraints: 0
 --- !u!1 &8035663728438461831
 GameObject:
   m_ObjectHideFlags: 0
@@ -220,6 +242,7 @@ GameObject:
   - component: {fileID: 8035663728438461830}
   - component: {fileID: 8035663728438461832}
   - component: {fileID: 8035663728438461833}
+  - component: {fileID: 6728055789171022463}
   m_Layer: 5
   m_Name: Checkmark
   m_TagString: Untagged
@@ -285,6 +308,27 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!50 &6728055789171022463
+Rigidbody2D:
+  serializedVersion: 4
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8035663728438461831}
+  m_BodyType: 0
+  m_Simulated: 1
+  m_UseFullKinematicContacts: 0
+  m_UseAutoMass: 0
+  m_Mass: 1
+  m_LinearDrag: 0
+  m_AngularDrag: 0.05
+  m_GravityScale: 1
+  m_Material: {fileID: 0}
+  m_Interpolate: 0
+  m_SleepingMode: 1
+  m_CollisionDetection: 0
+  m_Constraints: 0
 --- !u!1 &8035663728439701798
 GameObject:
   m_ObjectHideFlags: 0
@@ -503,7 +547,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   musicToogleSprite: {fileID: 21300000, guid: bef6783c30fcba043964050e0c281781, type: 3}
+  musicSpriteOffset: {x: 0, y: 0, z: 0}
   gyroToogleSprite: {fileID: 21300000, guid: bef6783c30fcba043964050e0c281781, type: 3}
+  gyroSpriteOffset: {x: 0, y: 0, z: 0}
 --- !u!1 &8035663729450608538
 GameObject:
   m_ObjectHideFlags: 0

@@ -81,7 +81,7 @@ namespace StarWriter.Core.Input
         private readonly float defaultThrottle = .3f;
         private readonly float lerpAmount = .2f;
 
-        private readonly float touchScaler = .005f;
+        private readonly float rotationScaler = .075f;
 
         private readonly float yawAnimationScale = .04f;
         private readonly float throttleAnimationScale = 50;
@@ -239,7 +239,7 @@ namespace StarWriter.Core.Input
 
         private void Throttle(float xl, float xr)
         {
-            throttle = Mathf.Lerp(throttle, (xr - xl) * touchScaler * .18f - .15f, .2f);
+            throttle = Mathf.Lerp(throttle, (xr - xl) * .0009f - .15f, .2f);
 
             if (throttle > OnThrottleEventThreshold)
                 OnThrottleEvent?.Invoke();
@@ -248,21 +248,21 @@ namespace StarWriter.Core.Input
         private void Yaw(float xl, float xr)  // These need to not use *= ... remember quaternions are not commutative
         {
             displacementQ = Quaternion.AngleAxis(
-                                (((xl + xr) / 2) - (Screen.currentResolution.width / 2)) * touchScaler * (throttle * rotationThrottleScaler + rotationSpeed),
+                                (((xl + xr) / 2) - (Screen.currentResolution.width / 2)) * rotationScaler * Time.deltaTime * (throttle * rotationThrottleScaler + rotationSpeed),
                                 shipTransform.up) * displacementQ;
         }
 
         private void Roll(float yl, float yr)
         {
             displacementQ = Quaternion.AngleAxis(
-                                (yr - yl) * touchScaler,
+                                (yr - yl) * rotationScaler * Time.deltaTime,
                                 shipTransform.forward) * displacementQ;
         }
 
         private void Pitch(float yl, float yr)
         {
             displacementQ = Quaternion.AngleAxis(
-                                (((yl + yr) / 2) - (Screen.currentResolution.height / 2)) * -touchScaler * (throttle * rotationThrottleScaler + rotationSpeed),
+                                (((yl + yr) / 2) - (Screen.currentResolution.height / 2)) * -rotationScaler * Time.deltaTime * (throttle * rotationThrottleScaler + rotationSpeed),
                                 shipTransform.right) * displacementQ;
         }
 

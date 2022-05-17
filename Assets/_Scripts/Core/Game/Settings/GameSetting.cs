@@ -1,11 +1,12 @@
 using System.Collections;
 using System.Collections.Generic;
+using Amoebius.Utility.Singleton;
 using UnityEngine;
 
 
 namespace StarWriter.Core
 {
-    public class GameSetting : SingletonPersistant<GameSetting>
+    public class GameSetting : SingletonPersistent<GameSetting>
     {
 
         #region Settings
@@ -14,10 +15,13 @@ namespace StarWriter.Core
         [SerializeField]
         private bool tutorialEnabled = true;
         [SerializeField]
+        private bool hasCompletedTutorial = false;
+        [SerializeField]
         private bool gyroEnabled = true;
 
         public bool IsMuted { get => isMuted; set => isMuted = value; }
         public bool TutorialEnabled { get => tutorialEnabled; set => tutorialEnabled = value; }
+        public bool HasCompletedTutorial { get => hasCompletedTutorial; set => hasCompletedTutorial = value; }
         public bool GyroEnabled { get => gyroEnabled; set => gyroEnabled = value; }
         #endregion
 
@@ -43,6 +47,17 @@ namespace StarWriter.Core
             }
             else { PlayerPrefs.SetInt("isMuted", 0);  }
             
+        }
+
+        public void ToggleGyro()
+        {
+            gyroEnabled = !gyroEnabled;
+            if (gyroEnabled)
+            {
+                PlayerPrefs.SetInt("gyroEnabled", 1);
+            }
+            else { PlayerPrefs.SetInt("gyroEnabled", 0); }
+
         }
 
     }
