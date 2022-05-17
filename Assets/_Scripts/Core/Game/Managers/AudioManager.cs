@@ -11,6 +11,8 @@ using StarWriter.Core;
 
 namespace StarWriter.Core.Audio
 {
+    
+
     [DefaultExecutionOrder(0)]
     public class AudioManager : SingletonPersistent<AudioManager>
     {
@@ -21,12 +23,16 @@ namespace StarWriter.Core.Audio
         private AudioSource musicSource2;
         [SerializeField]
         private AudioSource sfxSource;
+        [SerializeField]
+        float volume;
 
         private bool firstMusicSourceIsPlaying;
         private bool isMuted = false;
 
      
         #endregion
+
+
 
         private void Start()
         {
@@ -59,7 +65,7 @@ namespace StarWriter.Core.Audio
             }
             if (!isMuted)
             {
-                SetMusicVolume(1f);
+                SetMusicVolume(volume);
             }
         }
 
@@ -67,7 +73,7 @@ namespace StarWriter.Core.Audio
         {
             AudioSource activeAudioSource = (firstMusicSourceIsPlaying ? musicSource1 : musicSource2);
             activeAudioSource.clip = audioClip;
-            activeAudioSource.volume = 1;
+            activeAudioSource.volume = volume;
             activeAudioSource.Play();
         }
 
@@ -87,7 +93,7 @@ namespace StarWriter.Core.Audio
             for (t = 0; t < transitionTime; t += Time.deltaTime)
             {
                 // Fade out original clip volume
-                activeAudioSource.volume = (1 - t / transitionTime);
+                activeAudioSource.volume = (volume - t / transitionTime);
                 yield return null;
             }
             activeAudioSource.Stop();
@@ -123,8 +129,8 @@ namespace StarWriter.Core.Audio
         {
             for (float t = 0; t < transitionTime; t += Time.deltaTime)
             {
-                originalSource.volume = (1 - t / transitionTime);
-                newSource.volume = (t / transitionTime);
+                originalSource.volume = (volume - t / transitionTime);
+                newSource.volume = volume*(t / transitionTime);
                 yield return null;
             }
             originalSource.Stop();
