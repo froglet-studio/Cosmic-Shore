@@ -11,7 +11,9 @@ public class TrailSpawner : MonoBehaviour
     public float trailPeriod = .1f;
     public float lifeTime = 20;
     public float waitTime = .5f;            // Time until the trail block appears - camera dependent
+    public float startDelay = 2;
     public bool useRandom = true;
+
 
     [SerializeField]
     private static GameObject TrailContainer;
@@ -43,6 +45,7 @@ public class TrailSpawner : MonoBehaviour
 
     IEnumerator SpawnTrailCoroutine()
     {
+        yield return new WaitForSeconds(startDelay);
         while (true)
         {
             yield return new WaitForSeconds(trailPeriod);

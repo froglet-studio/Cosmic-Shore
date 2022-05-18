@@ -426,7 +426,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 3902679334405631492}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 0}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 22f4a173a9895134f820927606b9708b, type: 3}
   m_Name: 
@@ -1363,6 +1363,11 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 3902679332891413421, guid: f044b6ad282929f4d9ca817c0e5a305a,
+        type: 3}
+      propertyPath: m_Volume
+      value: 0.047
+      objectReference: {fileID: 0}
     - target: {fileID: 3902679333267616913, guid: f044b6ad282929f4d9ca817c0e5a305a,
         type: 3}
       propertyPath: m_Name
@@ -1423,6 +1428,11 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 3902679333267616925, guid: f044b6ad282929f4d9ca817c0e5a305a,
+        type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 3902679334675721752, guid: f044b6ad282929f4d9ca817c0e5a305a,
         type: 3}
       propertyPath: Loop
@@ -1431,7 +1441,7 @@ PrefabInstance:
     - target: {fileID: 3902679334675721752, guid: f044b6ad282929f4d9ca817c0e5a305a,
         type: 3}
       propertyPath: m_Volume
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 3902679334675721759, guid: f044b6ad282929f4d9ca817c0e5a305a,
         type: 3}
