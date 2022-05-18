@@ -20,20 +20,19 @@ namespace StarWriter.Core
 
         void Start()
         {
-            PlayerPrefs.SetInt("Skip Tutorial", 1);
+            //PlayerPrefs.SetInt("Skip Tutorial", 1);
             gameSettings = GameSetting.Instance;
 
             if (PlayerPrefs.GetInt("Skip Tutorial") == 1) // 0 false and 1 true
             {
                 skipTutorial = true;
             }
+            else { skipTutorial = false; }
         }
 
         public void OnClickTutorialToggleButton()
         {
-            // Set gameSettings Tutorial status
-            gameSettings.TutorialEnabled = !gameSettings.TutorialEnabled;
-
+            //SceneManager.LoadScene(1);  can we just load the scene and keep it simple?
             // Set PlayerPrefs Tutorial status
             if (gameSettings.TutorialEnabled == true)
             {
@@ -43,6 +42,9 @@ namespace StarWriter.Core
             {
                 PlayerPrefs.SetInt("tutorialEnabled", 0);  //tutorial disabled
             }
+            // Set gameSettings Tutorial status
+            gameSettings.TutorialEnabled = !gameSettings.TutorialEnabled;
+
         }
 
         public void OnClickGyroToggleButton()
