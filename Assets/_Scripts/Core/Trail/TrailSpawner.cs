@@ -6,11 +6,10 @@ public class TrailSpawner : MonoBehaviour
     [SerializeField]
     GameObject trail;
 
-
     public float offset = 0f;
     public float trailPeriod = .1f;
     public float lifeTime = 20;
-    public float waitTime = .5f;
+    public float waitTime = .5f;            // Time until the trail block appears - camera dependent
     public bool useRandom = true;
 
     [SerializeField]
@@ -26,15 +25,6 @@ public class TrailSpawner : MonoBehaviour
             TrailContainer.name = "TrailContainer";
             DontDestroyOnLoad(TrailContainer);
         }
-
-        //if (useRandom == true)
-        //{
-        //    scale = new Vector3(Random.Range(3, 50), Random.Range(.5f, 4), Random.Range(.5f, 2));
-        //}
-        //else 
-        //{ 
-        //    scale = new Vector3(3,.03f,.3f);
-        //}
 
         trailCoroutine = SpawnTrailCoroutine();
         StartCoroutine(trailCoroutine);

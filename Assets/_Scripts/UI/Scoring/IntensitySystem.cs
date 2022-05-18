@@ -1,7 +1,5 @@
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
-using TMPro;
 using System;
 
 public class IntensitySystem : MonoBehaviour
@@ -61,10 +59,8 @@ public class IntensitySystem : MonoBehaviour
         {
             yield return new WaitForSeconds(1);
             ChangeIntensity("admin", rateOfIntesityChange); //Only effects current player
-
         }
     }
-    
 
     private void ChangeIntensity(string uuid, float amount)
     {
@@ -86,34 +82,25 @@ public class IntensitySystem : MonoBehaviour
             UpdateCurrentIntensity(uuidOfPlayer, currentIntensity);
             UpdateIntensityBar(uuid, currentIntensity);
         }
-        
     }
 
     private void AddExcessIntensityToScore(string uuidOfPlayer, int excessIntesity)
     {
-        if(onPlayerIntensityOverflow != null) { onPlayerIntensityOverflow(uuidOfPlayer, excessIntesity); }
+        if (onPlayerIntensityOverflow != null) { onPlayerIntensityOverflow(uuidOfPlayer, excessIntesity); }
     }
 
     private void UpdateIntensityBar(string uuidOfPlayer, float currentIntensity)
     {
-        if(onIntensityChange != null) { onIntensityChange(uuidOfPlayer, currentIntensity); }
+        if (onIntensityChange != null) { onIntensityChange(uuidOfPlayer, currentIntensity); }
     }
 
     private void UpdateCurrentIntensity(string uuid, float amount)
     {
         if (uuid == "admin") { currentIntensity = amount; }
-       
     }
 
     private void GameOver()
     {
         gameOver?.Invoke();
     }
-
-    private void OnDestroy()
-    {
-        //intensityMeter.SetActive(false);
-    }
-
-    
 }

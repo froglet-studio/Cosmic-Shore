@@ -1,55 +1,41 @@
 ﻿using System.Collections;
-using System.Collections.Generic;
 using Amoebius.Utility.Singleton;
 using UnityEngine;
-using StarWriter.Core;
 
+// TODO: does not currently work
 /// <summary>
 /// Simple Audio Manager by JVZ upgrade to AudioMaster if needed 
 /// </summary>
-
-
 namespace StarWriter.Core.Audio
 {
-    
-
     [DefaultExecutionOrder(0)]
     public class AudioManager : SingletonPersistent<AudioManager>
     {
         #region Fields
         [SerializeField]
         private AudioSource musicSource1;
+        
         [SerializeField]
         private AudioSource musicSource2;
+        
         [SerializeField]
         private AudioSource sfxSource;
+
         [SerializeField]
         float volume;
 
         private bool firstMusicSourceIsPlaying;
         private bool isMuted = false;
-
-     
         #endregion
-
-
 
         private void Start()
         {
-         
             // Create AudioSources and save them as references
             musicSource1 = this.gameObject.AddComponent<AudioSource>();
             musicSource2 = this.gameObject.AddComponent<AudioSource>();
             sfxSource = this.gameObject.AddComponent<AudioSource>();
-            
-            if(PlayerPrefs.GetInt("isMuted") == 0)
-            {
-                isMuted = false;
-            }
-            else
-            {
-                isMuted = true;
-            }
+
+            isMuted = PlayerPrefs.GetInt("isMuted") == 1;
 
             // Loop the music tracks
             musicSource1.loop = true;
@@ -89,7 +75,7 @@ namespace StarWriter.Core.Audio
             if (!activeAudioSource.isPlaying)
                 activeAudioSource.Play();
 
-            float t = 0.0f;
+            float t;
             for (t = 0; t < transitionTime; t += Time.deltaTime)
             {
                 // Fade out original clip volume
@@ -155,17 +141,16 @@ namespace StarWriter.Core.Audio
 
         public void ToggleMute()
         {
-            // Set gameSettings Gyro status
             GameSetting.Instance.IsMuted = isMuted = !isMuted;
 
             // Set PlayerPrefs Gyro status
-            if (isMuted == true)
+            if (isMuted)
             {
-                PlayerPrefs.SetInt("gyroEnabled", 1); //gyro enabled
+                PlayerPrefs.SetInt("isMuted", 1);
             }
-            if (!isMuted == false)
+            else
             {
-                PlayerPrefs.SetInt("gyroEnabled", 0);  //gyro disabled
+                PlayerPrefs.SetInt("isMuted", 0);
             }
         }
     }

@@ -1,28 +1,28 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using Cinemachine;
-using System;
 using StarWriter.Core;
 
 public class CameraManager : SingletonPersistant<CameraManager>
 {
     [SerializeField]
     private CinemachineVirtualCameraBase mainMenuCamera;
+    
     [SerializeField]
     private CinemachineVirtualCameraBase closeCamera;
+    
     [SerializeField]
     private CinemachineVirtualCameraBase farCamera;
+    
     [SerializeField]
     private CinemachineVirtualCameraBase endCamera;
-
     
-    private Transform playerFollowTarget;
     [SerializeField]
     private Transform endCameraFollowTarget;
+    
     [SerializeField]
     private Transform endCameraLookAtTarget;
 
+    private Transform playerFollowTarget;
     readonly int activePriority = 10;
     readonly int inactivePriority = 1;
 
@@ -38,11 +38,10 @@ public class CameraManager : SingletonPersistant<CameraManager>
         GameManager.onPlayGame -= OnPlayGame;
     }
 
-    // Start is called before the first frame update
     void Start()
     {
         OnMainMenu();
-        playerFollowTarget = endCameraLookAtTarget; // just so not null
+        playerFollowTarget = endCameraLookAtTarget; // just so not null -- TODO: probably a better way to do whatever this is protecting against
         closeCamera.LookAt = farCamera.LookAt = playerFollowTarget;
         closeCamera.Follow = farCamera.Follow = playerFollowTarget;
     }
@@ -61,32 +60,29 @@ public class CameraManager : SingletonPersistant<CameraManager>
 
     private void ZoomEndCameraToScores()
     {
-        mainMenuCamera.Priority = inactivePriority;
-        endCamera.Priority = activePriority;
-        farCamera.Priority = inactivePriority;
-        closeCamera.Priority = inactivePriority;
+        SetActiveCamera(endCamera);
     }
     public void SetMainMenuCameraActive()
     {
-        mainMenuCamera.Priority = activePriority;
-        farCamera.Priority = inactivePriority;
-        closeCamera.Priority = inactivePriority;
-        endCamera.Priority = inactivePriority;
+        SetActiveCamera(mainMenuCamera);
     }
     public void SetFarCameraActive()
     {
-        mainMenuCamera.Priority = inactivePriority;
-        farCamera.Priority = activePriority;
-        closeCamera.Priority = inactivePriority;
-        endCamera.Priority = inactivePriority;
+        SetActiveCamera(farCamera);
     }
 
     public void SetCloseCameraActive()
     {
-        mainMenuCamera.Priority = inactivePriority;
-        closeCamera.Priority = activePriority;
-        farCamera.Priority = inactivePriority;
-        endCamera.Priority = inactivePriority;
+        SetActiveCamera(closeCamera);
     }
 
+    private void SetActiveCamera(CinemachineVirtualCameraBase activeCamera)
+    {
+        mainMenuCamera.Priority = inactivePriority;
+        closeCamera.Priority = inactivePriority;
+        farCamera.Priority = inactivePriority;
+        endCamera.Priority = inactivePriority;
+
+        activeCamera.Priority = activePriority;
+    }
 }

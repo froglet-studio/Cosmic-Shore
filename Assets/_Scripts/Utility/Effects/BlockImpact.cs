@@ -1,23 +1,25 @@
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class BlockImpact : MonoBehaviour
 {
-
     public IEnumerator ImpactCoroutine(Vector3 velocity, Material material,string ID)
     {
         var velocityScale = 5f;
         float timeStamp = 0;
 
-        if (ID == "Player") { material.SetFloat("_playerHit", 1); }
+        if (ID == "Player") { 
+            material.SetFloat("_playerHit", 1); 
+        }
         else
         {
             if (ID == "red") 
             {   
                 material.SetFloat("_playerHit", 0); material.SetFloat("_redHit", 1);
             }
-            else { material.SetFloat("_playerHit", 0); material.SetFloat("_redHit", 0); }
+            else { 
+                material.SetFloat("_playerHit", 0); material.SetFloat("_redHit", 0); 
+            }
         }
         
         while (timeStamp <= 1)
@@ -30,6 +32,5 @@ public class BlockImpact : MonoBehaviour
         }
         Destroy(material);
         Destroy(transform.gameObject);
-
     }
 }

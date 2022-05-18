@@ -1,5 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
 using UnityEngine.SceneManagement;
@@ -26,7 +24,6 @@ namespace StarWriter.Core
             scoreText.gameObject.SetActive(true);
             highScoreText.gameObject.SetActive(true);
             replayButton.SetActive(true);
-
         }
 
         public void OnReplayGameButtonPressed()
@@ -34,7 +31,6 @@ namespace StarWriter.Core
             Scene scene = SceneManager.GetActiveScene();
             SceneManager.LoadScene(scene.name);
             Debug.Log("play again");
-            //SceneManager.LoadScene(2);
         }
     }
 }
