@@ -347,7 +347,7 @@ MonoBehaviour:
   Fusilage: {fileID: 2126671201345994155}
   LeftWing: {fileID: 4750495543154980033}
   RightWing: {fileID: 3696267483056767852}
-  UITransform: {fileID: 0}
+  UITransform: {fileID: 1808549530}
   speed: 0
   gyroEnabled: 1
 --- !u!114 &7659183800259804528
@@ -385,6 +385,7 @@ MonoBehaviour:
   trailPeriod: -0.8
   lifeTime: 20
   waitTime: 0.5
+  startDelay: 2
   useRandom: 0
 --- !u!1001 &1448690919
 PrefabInstance:
@@ -832,7 +833,7 @@ PrefabInstance:
     - target: {fileID: 8035663729132098927, guid: 58dbda2a7cc479e4091d2abacbfd4d94,
         type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 8035663729450608540, guid: 58dbda2a7cc479e4091d2abacbfd4d94,
         type: 3}
@@ -902,6 +903,11 @@ PrefabInstance:
       objectReference: {fileID: 8035663730227516212}
     - target: {fileID: 8213062502050597137, guid: 58dbda2a7cc479e4091d2abacbfd4d94,
         type: 3}
+      propertyPath: musicOnPosition.x
+      value: 32
+      objectReference: {fileID: 0}
+    - target: {fileID: 8213062502050597137, guid: 58dbda2a7cc479e4091d2abacbfd4d94,
+        type: 3}
       propertyPath: musicToogleSprite
       value: 
       objectReference: {fileID: 8035663729811309820}
@@ -912,10 +918,22 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8213062502050597137, guid: 58dbda2a7cc479e4091d2abacbfd4d94,
         type: 3}
+      propertyPath: musicOffPosition.x
+      value: 55.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 8213062502050597137, guid: 58dbda2a7cc479e4091d2abacbfd4d94,
+        type: 3}
+      propertyPath: musicRectTransform
+      value: 
+      objectReference: {fileID: 8035663729811309821}
+    - target: {fileID: 8213062502050597137, guid: 58dbda2a7cc479e4091d2abacbfd4d94,
+        type: 3}
       propertyPath: musicSpriteOffset.x
       value: 10
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 6728055789171022463, guid: 58dbda2a7cc479e4091d2abacbfd4d94, type: 3}
+    - {fileID: 4773743936505571282, guid: 58dbda2a7cc479e4091d2abacbfd4d94, type: 3}
   m_SourcePrefab: {fileID: 100100000, guid: 58dbda2a7cc479e4091d2abacbfd4d94, type: 3}
 --- !u!1 &8035663729387164692 stripped
 GameObject:
@@ -932,6 +950,12 @@ RectTransform:
 --- !u!1 &8035663729811309820 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 8035663728438461831, guid: 58dbda2a7cc479e4091d2abacbfd4d94,
+    type: 3}
+  m_PrefabInstance: {fileID: 1911816571}
+  m_PrefabAsset: {fileID: 0}
+--- !u!224 &8035663729811309821 stripped
+RectTransform:
+  m_CorrespondingSourceObject: {fileID: 8035663728438461830, guid: 58dbda2a7cc479e4091d2abacbfd4d94,
     type: 3}
   m_PrefabInstance: {fileID: 1911816571}
   m_PrefabAsset: {fileID: 0}

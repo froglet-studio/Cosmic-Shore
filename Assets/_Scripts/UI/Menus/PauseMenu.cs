@@ -14,15 +14,13 @@ namespace StarWriter.UI
 
         #region Music Fields
         [SerializeField]
-        GameObject musicToogleSprite;
-        [SerializeField]
-        RectTransform musicRectTransform;
-        [SerializeField]
-        Vector2 musicSpriteOffset = new Vector2(100,0);
         bool isMuted = false;
-        Vector2 musicOnPosition; // = new Vector3();
-        Vector2 musicOffPosition; // = new Vector3();
-        Rigidbody2D mRB2;
+        [SerializeField]
+        RectTransform musicRectTransform;        
+        [SerializeField]
+        Vector2 musicOnPosition; 
+        [SerializeField]
+        Vector2 musicOffPosition; 
         #endregion
 
         #region Gyro Fields
@@ -35,7 +33,7 @@ namespace StarWriter.UI
         Vector3 gyroOffPosition = new Vector3();
         Rigidbody2D gyroRB2;
 
-        float HorizontalSpeed = 2;
+        float HorizontalSpeed = 4;
         #endregion
 
 
@@ -53,9 +51,9 @@ namespace StarWriter.UI
             if(PlayerPrefs.GetInt("isMuted") == 1) { isMuted = true; }
 
             // Set Music toggle sprite movement info
-            musicOnPosition = musicToogleSprite.transform.position;
-            musicOffPosition = musicToogleSprite.transform.position + offset;
-            mRB2 = musicToogleSprite.GetComponent<Rigidbody2D>();
+            //musicOnPosition = musicToogleSprite.transform.position;
+            //musicOffPosition = musicToogleSprite.transform.position + offset;
+            //mRB2 = musicToogleSprite.GetComponent<Rigidbody2D>();
 
             // Set Gyro status
             if (PlayerPrefs.GetInt("gyroEnabled") == 0) { gyroEnabled = false; }
@@ -72,11 +70,11 @@ namespace StarWriter.UI
         {
             if (isMuted)
             {
-                mRB2.MovePosition(musicOffPosition);
+                ToggleSprite(musicRectTransform, musicOffPosition, musicOnPosition);
             }
             else
             {
-                mRB2.MovePosition(musicOnPosition);
+                ToggleSprite(musicRectTransform, musicOnPosition, musicOffPosition);
             }
             if (gyroEnabled)
             {
@@ -88,6 +86,10 @@ namespace StarWriter.UI
             }
         }
 
+        public void OnClickMusicToggle()
+        {
+            OnMusicToggle(isMuted);
+        }
         public void OnMusicToggle(bool currentStatus)
         {
             Debug.Log("Music currentStatus is " + currentStatus);
@@ -96,13 +98,12 @@ namespace StarWriter.UI
             isMuted = !currentStatus;
             if (!isMuted)
             {
-                //MoveToggle(mRB2, musicOnPosition);
-                ToggleSprite(musicRectTransform,musicOffPosition,musicOnPosition);
+                
                 Debug.Log("Music is ON");
             }
             else if (!isMuted)
             {
-                ToggleSprite(musicRectTransform, musicOnPosition, musicOffPosition);
+                
                 Debug.Log("Music is OFF");
             }
 
