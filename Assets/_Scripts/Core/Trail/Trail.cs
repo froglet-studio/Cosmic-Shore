@@ -92,10 +92,11 @@ public class Trail : MonoBehaviour, ICollidable
             // Do Impact Stuff
             var ship = other.transform.parent.parent.gameObject;
             var blockImpact = fossilBlock.GetComponent<BlockImpact>();
-            var impactVector = ship.transform.forward * ship.GetComponent<AiShipController>().speed;
+            
             if (GameObject.FindGameObjectsWithTag("Player").Contains(ship))
             {
                 // Player Hit
+                var impactVector = ship.transform.forward * ship.GetComponent<InputController>().speed;
                 StartCoroutine(blockImpact.ImpactCoroutine(impactVector, tempMaterial, "Player"));
                 OnTrailCollision?.Invoke(ship.GetComponent<Player>().PlayerUUID, intensityChange);
                 HapticController.PlayBlockCollisionHaptics();
@@ -103,6 +104,7 @@ public class Trail : MonoBehaviour, ICollidable
             else
             {
                 // AI Hit
+                var impactVector = ship.transform.forward * ship.GetComponent<AiShipController>().speed;
                 if (ship == GameObject.FindWithTag("red"))
                 {
                     StartCoroutine(blockImpact.ImpactCoroutine(impactVector, tempMaterial, "red"));
