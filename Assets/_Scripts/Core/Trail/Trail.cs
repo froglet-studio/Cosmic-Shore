@@ -3,6 +3,7 @@ using UnityEngine;
 using StarWriter.Core.Input;
 using System.Linq;
 using UnityEngine.SceneManagement;
+using StarWriter.Core;
 
 public class Trail : MonoBehaviour, ICollidable
 {
@@ -25,7 +26,7 @@ public class Trail : MonoBehaviour, ICollidable
     private MeshRenderer meshRenderer;
     private Collider blockCollider;
 
-    public static void ResetTrailContainer(Scene scene, LoadSceneMode mode)
+    public static void ResetTrailContainer()
     {
         for (var i=0; i<container.transform.childCount; i++)
         {
@@ -40,7 +41,7 @@ public class Trail : MonoBehaviour, ICollidable
         {
             container = new GameObject();
             container.name = "FossilBlockContainer";
-            SceneManager.sceneLoaded += ResetTrailContainer;
+            GameManager.onPlayGame += ResetTrailContainer;
             DontDestroyOnLoad(container);   // TODO: this is probably not awesome ¯\_(ツ)_/¯
         }
 

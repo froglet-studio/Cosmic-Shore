@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using StarWriter.Core;
+using System.Collections;
 using UnityEngine;
 
 public class TrailSpawner : MonoBehaviour
@@ -16,6 +17,15 @@ public class TrailSpawner : MonoBehaviour
     private static GameObject TrailContainer;
     private IEnumerator trailCoroutine;
 
+    public static void ResetTrailContainer()
+    {
+        for (var i = 0; i < TrailContainer.transform.childCount; i++)
+        {
+            var child = TrailContainer.transform.GetChild(i).gameObject;
+            Destroy(child);
+        }
+    }
+
     // Start is called before the first frame update
     void Start()
     {
@@ -23,6 +33,7 @@ public class TrailSpawner : MonoBehaviour
         {
             TrailContainer = new GameObject();
             TrailContainer.name = "TrailContainer";
+            GameManager.onPlayGame += ResetTrailContainer;
             DontDestroyOnLoad(TrailContainer);
         }
 
