@@ -29,7 +29,7 @@ public class Trail : MonoBehaviour, ICollidable
     {
         for (var i=0; i<container.transform.childCount; i++)
         {
-            var child = container.transform.GetChild(i);
+            var child = container.transform.GetChild(i).gameObject;
             Destroy(child);
         }
     }
