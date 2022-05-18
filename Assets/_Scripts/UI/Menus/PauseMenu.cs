@@ -18,7 +18,7 @@ namespace StarWriter.UI
         [SerializeField]
         RectTransform musicRectTransform;
         [SerializeField]
-        Vector2 musicSpriteOffset = new Vector2(100,0);
+        Vector2 musicSpriteOffset;
         bool isMuted = false;
         Vector2 musicOnPosition; // = new Vector3();
         Vector2 musicOffPosition; // = new Vector3();
@@ -34,9 +34,9 @@ namespace StarWriter.UI
         Vector3 gyroOnPosition = new Vector3();
         Vector3 gyroOffPosition = new Vector3();
         Rigidbody2D gyroRB2;
-
-        float HorizontalSpeed = 2;
         #endregion
+        float HorizontalSpeed = 2;
+        
 
 
 
@@ -100,7 +100,7 @@ namespace StarWriter.UI
                 ToggleSprite(musicRectTransform,musicOffPosition,musicOnPosition);
                 Debug.Log("Music is ON");
             }
-            else if (!isMuted)
+            else //if (!isMuted)
             {
                 ToggleSprite(musicRectTransform, musicOnPosition, musicOffPosition);
                 Debug.Log("Music is OFF");
