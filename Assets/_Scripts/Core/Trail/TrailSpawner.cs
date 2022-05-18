@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using StarWriter.Core;
+using System.Collections;
 using UnityEngine;
 
 public class TrailSpawner : MonoBehaviour
@@ -6,19 +7,45 @@ public class TrailSpawner : MonoBehaviour
     [SerializeField]
     GameObject trail;
 
-
     public float offset = 0f;
     public float trailPeriod = .1f;
     public float lifeTime = 20;
-    public float waitTime = .5f;
+    public float waitTime = .5f;            // Time until the trail block appears - camera dependent
+    public float startDelay = 2;
     public bool useRandom = true;
 
-    //private Vector3 scale;
+
+    [SerializeField]
     private static GameObject TrailContainer;
     private IEnumerator trailCoroutine;
 
+    public static void ResetTrailContainer()
+    {
+        for (var i = 0; i < TrailContainer.transform.childCount; i++)
+        {
+            var child = TrailContainer.transform.GetChild(i).gameObject;
+            Destroy(child);
+        }
+    }
+
+    // Start is called before the first frame update
+    void Start()
+    {
+        if (TrailContainer == null)
+        {
+            TrailContainer = new GameObject();
+            TrailContainer.name = "TrailContainer";
+            GameManager.onPlayGame += ResetTrailContainer;
+            DontDestroyOnLoad(TrailContainer);
+        }
+
+        trailCoroutine = SpawnTrailCoroutine();
+        StartCoroutine(trailCoroutine);
+    }
+
     IEnumerator SpawnTrailCoroutine()
     {
+        yield return new WaitForSeconds(startDelay);
         while (true)
         {
             yield return new WaitForSeconds(trailPeriod);
@@ -32,27 +59,5 @@ public class TrailSpawner : MonoBehaviour
             trailScript.lifeTime = lifeTime;
             trailScript.waitTime = waitTime;
         }
-    }
-
-    // Start is called before the first frame update
-    void Start()
-    {
-        if (TrailContainer == null)
-        {
-            TrailContainer = new GameObject();
-            TrailContainer.name = "TrailContainer";
-        }
-
-        //if (useRandom == true)
-        //{
-        //    scale = new Vector3(Random.Range(3, 50), Random.Range(.5f, 4), Random.Range(.5f, 2));
-        //}
-        //else 
-        //{ 
-        //    scale = new Vector3(3,.03f,.3f);
-        //}
-
-        trailCoroutine = SpawnTrailCoroutine();
-        StartCoroutine(trailCoroutine);
     }
 }

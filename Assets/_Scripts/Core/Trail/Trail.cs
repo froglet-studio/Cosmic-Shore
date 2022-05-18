@@ -1,7 +1,9 @@
-using System.Collections;
+﻿using System.Collections;
 using UnityEngine;
-using System.Collections.Generic;
 using StarWriter.Core.Input;
+using System.Linq;
+using UnityEngine.SceneManagement;
+using StarWriter.Core;
 
 public class Trail : MonoBehaviour, ICollidable
 {
@@ -24,17 +26,23 @@ public class Trail : MonoBehaviour, ICollidable
     private MeshRenderer meshRenderer;
     private Collider blockCollider;
 
-    List<Collider> collisions;
+    public static void ResetTrailContainer()
+    {
+        for (var i=0; i<container.transform.childCount; i++)
+        {
+            var child = container.transform.GetChild(i).gameObject;
+            Destroy(child);
+        }
+    }
 
-    // Start is called before the first frame update
     void Start()
     {
-        collisions = new List<Collider>();
-
         if (container == null)
         {
             container = new GameObject();
             container.name = "FossilBlockContainer";
+            GameManager.onPlayGame += ResetTrailContainer;
+            DontDestroyOnLoad(container);   // TODO: this is probably not awesome ¯\_(ツ)_/¯
         }
 
         meshRenderer = GetComponent<MeshRenderer>();
@@ -51,6 +59,9 @@ public class Trail : MonoBehaviour, ICollidable
         yield return new WaitForSeconds(waitTime);
         meshRenderer.enabled = true;
         blockCollider.enabled = true;
+
+        // TODO: use a queue of trail blocks instead of a expiration time
+        // Using expiration timer will create variable length tails depending on clock speed
         yield return new WaitForSeconds(lifeTime);
         meshRenderer.enabled = false;
         blockCollider.enabled = false;
@@ -61,45 +72,47 @@ public class Trail : MonoBehaviour, ICollidable
         Collide(other);
     }
 
-
     public void Collide(Collider other)
     {
         if (IsPlayer(other.gameObject))
         {
-            //TODO play SFX sound,
-            //OnTrailCollision?.Invoke(other.GetComponentInParent<Transform>().GetComponentInParent<Player>().PlayerUUID, intensityChange);
-            GameObject ship;
-            ship = other.transform.parent.parent.gameObject;
+            Debug.Log("tagplayer" + GameObject.FindGameObjectsWithTag("Player").Count());
+            
+            // Play SFX sound
+            // TODO
+
+            // Create Fossil
+            tempMaterial = new Material(material);
             var fossilBlock = Instantiate(FossilBlock);
             fossilBlock.transform.localScale = transform.localScale;
             fossilBlock.transform.position = transform.position;
             fossilBlock.transform.localEulerAngles = transform.localEulerAngles;
             fossilBlock.transform.parent = container.transform;
-            tempMaterial = new Material(material);
             fossilBlock.GetComponent<Renderer>().material = tempMaterial;
 
-            if (ship == GameObject.FindWithTag("Player"))
+            // Do Impact Stuff
+            var ship = other.transform.parent.parent.gameObject;
+            var blockImpact = fossilBlock.GetComponent<BlockImpact>();
+            
+            if (GameObject.FindGameObjectsWithTag("Player").Contains(ship))
             {
-                //trail animation and haptics
-                StartCoroutine(fossilBlock.GetComponent<BlockImpact>().ImpactCoroutine(
-                    ship.transform.forward * ship.GetComponent<InputController>().speed, tempMaterial, "Player"));
+                // Player Hit
+                var impactVector = ship.transform.forward * ship.GetComponent<InputController>().speed;
+                StartCoroutine(blockImpact.ImpactCoroutine(impactVector, tempMaterial, "Player"));
+                OnTrailCollision?.Invoke(ship.GetComponent<Player>().PlayerUUID, intensityChange);
                 HapticController.PlayBlockCollisionHaptics();
-                //update intensity bar and score
-                OnTrailCollision?.Invoke(ship.GetComponent<Player>().PlayerUUID, intensityChange); 
             }
-            //animate when ai hit
             else
             {
+                // AI Hit
+                var impactVector = ship.transform.forward * ship.GetComponent<AiShipController>().speed;
                 if (ship == GameObject.FindWithTag("red"))
                 {
-                    StartCoroutine(fossilBlock.GetComponent<BlockImpact>().ImpactCoroutine(
-                        ship.transform.forward * ship.GetComponent<AiShipController>().speed, tempMaterial, "red"));
-
+                    StartCoroutine(blockImpact.ImpactCoroutine(impactVector, tempMaterial, "red"));
                 }
                 else
                 {
-                    StartCoroutine(fossilBlock.GetComponent<BlockImpact>().ImpactCoroutine(
-                         ship.transform.forward * ship.GetComponent<AiShipController>().speed, tempMaterial, "blue"));
+                    StartCoroutine(blockImpact.ImpactCoroutine(impactVector, tempMaterial, "blue"));
                 }
             }
             Destroy(gameObject);

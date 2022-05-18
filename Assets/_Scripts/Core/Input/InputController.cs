@@ -4,27 +4,8 @@ namespace StarWriter.Core.Input
 {
     public class InputController : MonoBehaviour
     {
-        /*
-        public delegate void OnPitch();
-        public static event OnPitch OnPitch;
-
-        public delegate void OnRoll();
-        public static event OnRoll OnRollEvent;
-
-        public delegate void OnYaw();
-        public static event OnYaw OnYawEvent;
-
-        public delegate void OnGyro();
-        public static event OnGyro OnGyroEvent;
-        */
-
-        public delegate void OnThrottle();
-        public static event OnThrottle OnThrottleEvent;
-
         #region Camera 
-
         CameraManager cameraManager;
-       
         #endregion
 
         #region Ship
@@ -83,13 +64,11 @@ namespace StarWriter.Core.Input
         private void OnEnable()
         {
             IntensitySystem.gameOver += OnGameOver;
-            GameManager.onPlayGame += SetFarCameraActive;
         }
 
         private void OnDisable()
         {
             IntensitySystem.gameOver -= OnGameOver;
-            GameManager.onPlayGame -= SetFarCameraActive;
         }
 
         void Start()
@@ -108,9 +87,9 @@ namespace StarWriter.Core.Input
 
         void Update()
         {
-            // TODO: remove this check once movement is based on time.deltaTime
             if (PauseSystem.GetIsPaused())
             {
+                // TODO: remove this check and verify pause still works
                 return;
             }
 
@@ -126,20 +105,21 @@ namespace StarWriter.Core.Input
             //change the camera if you flip you phone
             if (UnityEngine.Input.acceleration.y > 0)
             {
+                if (!isCameraDisabled) { 
+                    cameraManager.SetFarCameraActive(); 
+                }
+                
                 UITransform.rotation = Quaternion.Euler(0, 0, 180);
-                if (!isCameraDisabled) { cameraManager.SetFarCameraActive(); }
-                
                 gameObject.GetComponent<TrailSpawner>().waitTime = .3f;
-                
             }
             else
             {
-                UITransform.rotation = Quaternion.identity;
                 if (!isCameraDisabled)
                 {
                     cameraManager.SetCloseCameraActive();
                 }
-               
+
+                UITransform.rotation = Quaternion.identity;
                 gameObject.GetComponent<TrailSpawner>().waitTime = 1.5f;
             }
 
@@ -157,7 +137,8 @@ namespace StarWriter.Core.Input
                     leftTouch = UnityEngine.Input.touches[1].position;
                     rightTouch = UnityEngine.Input.touches[0].position;
                 }
-                //reparameterize
+
+                // reparameterize
                 float xSum = ((rightTouch.x + leftTouch.x) / (Screen.currentResolution.width) - 1);
                 float ySum = ((rightTouch.y + leftTouch.y) / (Screen.currentResolution.height) - 1);
                 float xDiff = (rightTouch.x - leftTouch.x) / (Screen.currentResolution.width);
@@ -213,9 +194,6 @@ namespace StarWriter.Core.Input
         private void Throttle(float Xdiff)
         {
             speed = Mathf.Lerp(speed, Xdiff * throttleScaler + defaultThrottle, lerpAmount);
-
-            if (speed > OnThrottleEventThreshold)
-                OnThrottleEvent?.Invoke();
         }
         
         private void Yaw(float Xsum)  // These need to not use *= ... remember quaternions are not commutative
@@ -246,10 +224,6 @@ namespace StarWriter.Core.Input
             return new Quaternion(q.x, -q.z, q.y, q.w);
         }
 
-        private void SetFarCameraActive()
-        {
-            cameraManager.SetFarCameraActive();
-        }
         private void OnGameOver()
         {
             isCameraDisabled = true; //Disables Cameras in Input Controller Update 

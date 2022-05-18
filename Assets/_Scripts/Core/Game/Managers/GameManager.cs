@@ -1,45 +1,32 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using Amoebius.Utility.Singleton;
-using StarWriter.Core.Audio;
-using System;
-using UnityEngine.UI;
 
 namespace StarWriter.Core
 {
     [DefaultExecutionOrder(0)]
     public class GameManager : SingletonPersistent<GameManager>
-    {
-               
+    {          
         [SerializeField]
         private bool skipTutorial = false;
 
         [SerializeField]
         private bool isGyroEnabled = true;
 
-        CameraManager cameraManager;
-
         private GameSetting gameSettings;
 
         public delegate void OnPlayGameEvent();
         public static event OnPlayGameEvent onPlayGame;
 
-       
-
-        // Start is called before the first frame update
         void Start()
         {
             PlayerPrefs.SetInt("Skip Tutorial", 1);
             gameSettings = GameSetting.Instance;
-            cameraManager = CameraManager.Instance;
 
-           if(PlayerPrefs.GetInt("Skip Tutorial") == 1) // 0 false and 1 true
+            if (PlayerPrefs.GetInt("Skip Tutorial") == 1) // 0 false and 1 true
             {
                 skipTutorial = true;
             }
-                      
         }
 
         public void OnClickTutorialToggleButton()
@@ -52,24 +39,23 @@ namespace StarWriter.Core
             {
                 PlayerPrefs.SetInt("tutorialEnabled", 1);  //tutorial enabled
             }
-            if (gameSettings.TutorialEnabled == false)
+            else
             {
                 PlayerPrefs.SetInt("tutorialEnabled", 0);  //tutorial disabled
             }
         }
 
-
         public void OnClickGyroToggleButton()
         {
             // Set gameSettings Gyro status
-            gameSettings.GyroEnabled = isGyroEnabled= !isGyroEnabled;
+            gameSettings.GyroEnabled = isGyroEnabled = !isGyroEnabled;
 
             // Set PlayerPrefs Gyro status
             if (isGyroEnabled == true)
             {
                 PlayerPrefs.SetInt("gyroEnabled", 1); //gyro enabled
             }
-            if (!isGyroEnabled == false)
+            else
             {
                 PlayerPrefs.SetInt("gyroEnabled", 0);  //gyro disabled
             }
@@ -77,16 +63,14 @@ namespace StarWriter.Core
 
         public void OnClickPlayButton()
         {
-            
-            if (!skipTutorial)
-            {
-                SceneManager.LoadScene(1);
-            }
-            else
+            if (skipTutorial)
             {
                 SceneManager.LoadScene(2);
             }
-            
+            else
+            {
+                SceneManager.LoadScene(1);
+            }
         }
 
         public void OnClickResumeButton()
@@ -101,12 +85,9 @@ namespace StarWriter.Core
 
         public void WaitOnPlayerLoading()
         {
-            Debug.Log("Here!");
-            Debug.Log("On before Invoke");
+            Debug.Log("WaitOnPlayerLoading");
             onPlayGame?.Invoke();
-            Debug.Log("On after Invoke");
         }
-
     }
 }
 
