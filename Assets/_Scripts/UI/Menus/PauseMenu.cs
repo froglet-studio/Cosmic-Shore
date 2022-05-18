@@ -16,10 +16,12 @@ namespace StarWriter.UI
         [SerializeField]
         GameObject musicToogleSprite;
         [SerializeField]
-        Vector3 musicSpriteOffset;
+        RectTransform musicRectTransform;
+        [SerializeField]
+        Vector2 musicSpriteOffset = new Vector2(100,0);
         bool isMuted = false;
-        Vector3 musicOnPosition = new Vector3();
-        Vector3 musicOffPosition = new Vector3();
+        Vector2 musicOnPosition; // = new Vector3();
+        Vector2 musicOffPosition; // = new Vector3();
         Rigidbody2D mRB2;
         #endregion
 
@@ -32,9 +34,11 @@ namespace StarWriter.UI
         Vector3 gyroOnPosition = new Vector3();
         Vector3 gyroOffPosition = new Vector3();
         Rigidbody2D gyroRB2;
-#endregion
 
-        
+        float HorizontalSpeed = 2;
+        #endregion
+
+
 
         Vector3 offset = new Vector3(10,0,0);
 
@@ -42,6 +46,7 @@ namespace StarWriter.UI
         void Start()
         {
             gameManager = GameManager.Instance;
+            
 
             // Set Music status
             if(PlayerPrefs.GetInt("isMuted") == 0){ isMuted = false; }
@@ -91,12 +96,13 @@ namespace StarWriter.UI
             isMuted = !currentStatus;
             if (!isMuted)
             {
-                MoveToggle(mRB2, musicOnPosition);
+                //MoveToggle(mRB2, musicOnPosition);
+                ToggleSprite(musicRectTransform,musicOffPosition,musicOnPosition);
                 Debug.Log("Music is ON");
             }
             else if (!isMuted)
             {
-                MoveToggle(mRB2, musicOffPosition);
+                ToggleSprite(musicRectTransform, musicOnPosition, musicOffPosition);
                 Debug.Log("Music is OFF");
             }
 
@@ -124,10 +130,16 @@ namespace StarWriter.UI
             transform.GetComponentInParent<GameMenu>().OnClickUnpauseGame();
         }
 
-        // Moves Toggle to the other position
-        public void MoveToggle(Rigidbody2D rigidbody2, Vector3 position)
+        public void ToggleSprite(RectTransform rectTrans, Vector2 startPos, Vector2 endPos)
         {
-            rigidbody2.transform.Translate(position);
+            Vector2 position = rectTrans.anchoredPosition;
+
+            position.x += HorizontalSpeed * Time.deltaTime;
+
+            if (position.x > startPos.x)
+                position.x = endPos.x;
+
+            rectTrans.anchoredPosition = position;
         }
 
     }
