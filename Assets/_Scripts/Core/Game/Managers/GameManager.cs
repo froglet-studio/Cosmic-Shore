@@ -18,6 +18,9 @@ namespace StarWriter.Core
         public delegate void OnPlayGameEvent();
         public static event OnPlayGameEvent onPlayGame;
 
+        public delegate void OnToggleGyroEvent(bool status);
+        public static event OnToggleGyroEvent onToggleGyro;
+
         void Start()
         {
             //PlayerPrefs.SetInt("Skip Tutorial", 1);
@@ -47,15 +50,18 @@ namespace StarWriter.Core
 
         }
 
+
         public void OnClickGyroToggleButton()
         {
             // Set gameSettings Gyro status
             gameSettings.GyroEnabled = isGyroEnabled = !isGyroEnabled;
+            onToggleGyro(isGyroEnabled);
 
             // Set PlayerPrefs Gyro status
             if (isGyroEnabled == true)
             {
                 PlayerPrefs.SetInt("gyroEnabled", 1); //gyro enabled
+
             }
             else
             {
