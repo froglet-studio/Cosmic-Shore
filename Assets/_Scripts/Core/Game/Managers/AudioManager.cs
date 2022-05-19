@@ -8,7 +8,7 @@ using UnityEngine;
 /// </summary>
 namespace StarWriter.Core.Audio
 {
-    [DefaultExecutionOrder(0)]
+    [DefaultExecutionOrder(-1)]
     public class AudioManager : SingletonPersistent<AudioManager>
     {
         #region Fields
@@ -17,39 +17,46 @@ namespace StarWriter.Core.Audio
         
         [SerializeField]
         private AudioSource musicSource2;
-        
+
+        public GameObject musicGO1;
+        public GameObject musicGO2;
+        public GameObject sfxGO3;
+
         [SerializeField]
         private AudioSource sfxSource;
 
         [SerializeField]
-        float volume;
+        float volume = 1f;
 
-        private bool firstMusicSourceIsPlaying;
+        private bool firstMusicSourceIsPlaying = true;
         private bool isMuted = false;
         #endregion
 
         private void Start()
         {
             // Create AudioSources and save them as references
-            musicSource1 = this.gameObject.AddComponent<AudioSource>();
-            musicSource2 = this.gameObject.AddComponent<AudioSource>();
-            sfxSource = this.gameObject.AddComponent<AudioSource>();
-
-            isMuted = PlayerPrefs.GetInt("isMuted") == 1;
-
+            musicSource1 = musicGO1.GetComponent<AudioSource>();
+            musicSource2 = musicGO2.GetComponent<AudioSource>();
+            sfxSource = sfxGO3.GetComponent<AudioSource>();
+            
             // Loop the music tracks
             musicSource1.loop = true;
             musicSource2.loop = true;
-            PlayMusicClip(musicSource1.clip);
+
+            //if(PlayerPrefs.GetInt("isMuted") != 1) { isMuted = false; } SetMasterAudioVolume 
+            //PlayMusic
+            //PlayMusicClip(musicSource1.clip);
+            musicSource1.Play();
+            sfxSource.Play();
         }
 
         private void FixedUpdate()
         {
-            if (isMuted)
+            if (isMuted) //Mutes
             {
                 SetMusicVolume(0f);
             }
-            if (!isMuted)
+            else if (!isMuted) //UnMutes
             {
                 SetMusicVolume(volume);
             }
@@ -129,6 +136,12 @@ namespace StarWriter.Core.Audio
         {
             sfxSource.PlayOneShot(audioClip, volume);
         }
+        public void SetMasterAudioVolume(float volume)
+        {
+            musicSource1.volume = volume;
+            musicSource2.volume = volume;
+            sfxSource.volume = volume;
+        }
         public void SetMusicVolume(float volume)
         {
             musicSource1.volume = volume;
@@ -139,18 +152,21 @@ namespace StarWriter.Core.Audio
             sfxSource.volume = volume;
         }
 
+        // Toggles all game sound status
         public void ToggleMute()
         {
             GameSetting.Instance.IsMuted = isMuted = !isMuted;
 
-            // Set PlayerPrefs Gyro status
+            // Set PlayerPrefs isMuted bool status
             if (isMuted)
             {
-                PlayerPrefs.SetInt("isMuted", 1);
+                PlayerPrefs.SetInt("isMuted", 1); //true
+                SetMasterAudioVolume(0);
             }
             else
             {
-                PlayerPrefs.SetInt("isMuted", 0);
+                PlayerPrefs.SetInt("isMuted", 0);  //false
+                SetMasterAudioVolume(volume);
             }
         }
     }
