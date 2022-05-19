@@ -1,8 +1,10 @@
 using UnityEngine;
 using TMPro;
 using UnityEngine.SceneManagement;
-using Cinemachine;
 
+/// <summary>
+/// Controls the final and high score display panel
+/// </summary>
 namespace StarWriter.Core
 {
     public class FinalScoresBoard : MonoBehaviour
@@ -10,23 +12,25 @@ namespace StarWriter.Core
         public TextMeshProUGUI scoreText;
         public TextMeshProUGUI highScoreText;
         public GameObject replayButton;
-
-        public CinemachineVirtualCamera endSceneCamera;
         
         void Start()
-        {           
+        {
+            DisplayScores();
+        }
+
+        public void DisplayScores()
+        {
+            // check that all score text and buttons are enabled
+            scoreText.gameObject.SetActive(true);
+            highScoreText.gameObject.SetActive(true);
+            replayButton.SetActive(true);
+
+            // Set final and high score
             scoreText.text = "Score: " + PlayerPrefs.GetFloat("Score").ToString();
             highScoreText.text = "High Score: " + PlayerPrefs.GetFloat("High Score").ToString();
         }
 
-        public void OnEndCameraPositionReached()
-        {
-            scoreText.gameObject.SetActive(true);
-            highScoreText.gameObject.SetActive(true);
-            replayButton.SetActive(true);
-        }
-
-        public void OnReplayGameButtonPressed()
+        public void OnClickReplayGameButtonPressed()
         {
             Scene scene = SceneManager.GetActiveScene();
             SceneManager.LoadScene(scene.name);

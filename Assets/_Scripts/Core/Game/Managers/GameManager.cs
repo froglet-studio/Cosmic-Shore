@@ -33,10 +33,13 @@ namespace StarWriter.Core
             else { skipTutorial = false; }
         }
 
+        /// <summary>
+        /// Toggles the Tutorial On/Off
+        /// </summary>
         public void OnClickTutorialToggleButton()
         {
             SceneManager.LoadScene(1);
-            if (PauseSystem.GetIsPaused()) { TogglePauseGame(); };
+            if (PauseSystem.GetIsPaused()) { PauseGame(); };
             // Set gameSettings Tutorial status
             gameSettings.TutorialEnabled = !gameSettings.TutorialEnabled;
             //Set PlayerPrefs Tutorial status
@@ -52,7 +55,9 @@ namespace StarWriter.Core
 
         }
 
-
+        /// <summary>
+        /// Toggles the Gyro On/Off
+        /// </summary>
         public void OnClickGyroToggleButton()
         {
             // Set gameSettings Gyro status
@@ -70,7 +75,9 @@ namespace StarWriter.Core
                 PlayerPrefs.SetInt("gyroEnabled", 0);  //gyro disabled
             }
         }
-
+        /// <summary>
+        /// Starts Tutorial or Game bases on skipTutorial status
+        /// </summary>
         public void OnClickPlayButton()
         {
             if (skipTutorial)
@@ -82,13 +89,17 @@ namespace StarWriter.Core
                 SceneManager.LoadScene(1);
             }
         }
-
-        public void OnClickResumeButton()
+        /// <summary>
+        /// UnPauses game play
+        /// </summary>
+        public void UnPauseGame()
         {
-            if (PauseSystem.GetIsPaused()) { TogglePauseGame(); }
+            if (PauseSystem.GetIsPaused()) { PauseGame(); }
         }
-
-        public void TogglePauseGame()
+        /// <summary>
+        /// Pauses game play
+        /// </summary>
+        public void PauseGame()
         {
             PauseSystem.TogglePauseGame();
         }

@@ -1,10 +1,10 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UI;
 using StarWriter.Core;
 using StarWriter.Core.Audio;
 
+/// <summary>
+/// Displays and controls toggles and buttons on the Pause Menu Panel
+/// </summary>
 
 namespace StarWriter.UI
 {
@@ -20,30 +20,40 @@ namespace StarWriter.UI
             audioManager = AudioManager.Instance;
 
         }
-
+        /// <summary>
+        /// Toggles the Master Volume On/Off
+        /// </summary>
         public void OnToggleMusic()
         {
             audioManager.ToggleMute();
         }
-
+        /// <summary>
+        /// Toggles the Gyroscope On/Off
+        /// </summary>
         public void OnToggleGyro()
         {
             gameManager.OnClickGyroToggleButton();
         }
-
-        public void OnTutorialButton()
+        /// <summary>
+        /// Calls the Tutorial Scene to be loaded
+        /// </summary>
+        public void OnClickTutorialButton()
         {
             gameManager.OnClickTutorialToggleButton();
         }
-
+        /// <summary>
+        /// Restarts the Game Scene
+        /// </summary>
         public void OnClickRestartButton()
         {
             gameManager.OnClickPlayButton();
         }
-
+        /// <summary>
+        /// UnPauses the game 
+        /// </summary>
         public void OnClickResumeButton()
         {
-            gameManager.OnClickResumeButton();
+            gameManager.UnPauseGame();
             transform.GetComponentInParent<GameMenu>().OnClickUnpauseGame();
         }
 

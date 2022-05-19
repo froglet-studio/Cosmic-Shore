@@ -24,12 +24,9 @@ public class GameMenu : MonoBehaviour
         IntensitySystem.gameOver -= GameOver;
     }
 
-    public void ExitGame()
-    {
-        Debug.Log("Exit Game");
-        SceneManager.LoadScene(0);
-    }
-
+    /// <summary>
+    /// Pauses the game and enables the Pause Menu
+    /// </summary>
     public void OnClickPauseGame()
     {
         intensityMeterPanel.SetActive(false);
@@ -38,7 +35,9 @@ public class GameMenu : MonoBehaviour
         pauseMenuPanel.SetActive(true);
         PauseSystem.TogglePauseGame();
     }
-
+    /// <summary>
+    /// PauseMenu calls this method to enable panels
+    /// </summary>
     public void OnClickUnpauseGame()
     {
 
@@ -46,18 +45,23 @@ public class GameMenu : MonoBehaviour
         finalScorePanel.SetActive(false);
         pauseButton.SetActive(true);
         pauseMenuPanel.SetActive(false);
+        //WARNING INFO: PauseSystem is called on the GameManager and not here
     }
-
-    public void OnFinalScoreScene()
+    /// <summary>
+    /// Calls the Final and High Score Panel
+    /// </summary>
+    public void DisplayFinalScorePanel()
     {
         intensityMeterPanel.SetActive(false);
         finalScorePanel.SetActive(true);
         pauseButton.SetActive(false);
         pauseMenuPanel.SetActive(false);
     }
-
+    /// <summary>
+    /// Called on Game Over Event
+    /// </summary>
     private void GameOver()
     {
-        OnFinalScoreScene();
+        DisplayFinalScorePanel();
     }
 }
