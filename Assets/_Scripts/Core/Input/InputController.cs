@@ -24,7 +24,10 @@ namespace StarWriter.Core.Input
 
         #region UI
         [SerializeField]
-        RectTransform UITransform;
+        RectTransform IntensityRectTransform;
+
+        [SerializeField]
+        RectTransform FinalRectTransform;
         #endregion
 
         public float speed;
@@ -32,14 +35,13 @@ namespace StarWriter.Core.Input
         private readonly float defaultThrottle = 5f;
         private readonly float rotationThrottleScaler = 3;
         private readonly float throttleScaler = 50;
+        private readonly float rotationScaler = 130f;
 
         private readonly float OnThrottleEventThreshold = 1;
 
         private readonly float lerpAmount = .2f;
         private readonly float smallLerpAmount = .1f;
 
-        private readonly float rotationScaler = 130f;
-        
         private readonly float animationScaler = 25f;
         private readonly float yawAnimationScaler = 80f;
 
@@ -76,7 +78,7 @@ namespace StarWriter.Core.Input
         void Start()
         {
             cameraManager = CameraManager.Instance;
-            isCameraDisabled = false;
+            //isCameraDisabled = false;
 
             if (SystemInfo.supportsGyroscope)
             {
@@ -95,74 +97,16 @@ namespace StarWriter.Core.Input
                 return;
             }
 
-            if (SystemInfo.supportsGyroscope && isGyroEnabled==true)
-            {
-                // Updates GameObjects rotation from input device's gyroscope
-                shipTransform.rotation = Quaternion.Lerp(
-                                            shipTransform.rotation, 
-                                            displacementQ * GyroToUnity(gyro.attitude) * empiricalCorrection, 
-                                            lerpAmount);
-            }
+            //change the camera if you flip your phone
+            CameraFlip();
 
-            //change the camera if you flip you phone
-            if (UnityEngine.Input.acceleration.y > 0)
-            {
-                if (!isCameraDisabled) { 
-                    cameraManager.SetFarCameraActive(); 
-                }
-                
-                UITransform.rotation = Quaternion.Euler(0, 0, 180);
-                gameObject.GetComponent<TrailSpawner>().waitTime = .3f;
-            }
-            else
-            {
-                if (!isCameraDisabled)
-                {
-                    cameraManager.SetCloseCameraActive();
-                }
+            //convert two finger touch into values for displacement, speed, and ship animations
+            RecieveTouchInput();
 
-                UITransform.rotation = Quaternion.identity;
-                gameObject.GetComponent<TrailSpawner>().waitTime = 1.5f;
-            }
-
-            if (UnityEngine.Input.touches.Length == 2)
-            {
-                Vector2 leftTouch, rightTouch;
-
-                if (UnityEngine.Input.touches[0].position.x <= UnityEngine.Input.touches[1].position.x)
-                {
-                    leftTouch = UnityEngine.Input.touches[0].position;
-                    rightTouch = UnityEngine.Input.touches[1].position;
-                }
-                else
-                {
-                    leftTouch = UnityEngine.Input.touches[1].position;
-                    rightTouch = UnityEngine.Input.touches[0].position;
-                }
-
-                // reparameterize
-                float xSum = ((rightTouch.x + leftTouch.x) / (Screen.currentResolution.width) - 1);
-                float ySum = ((rightTouch.y + leftTouch.y) / (Screen.currentResolution.height) - 1);
-                float xDiff = (rightTouch.x - leftTouch.x) / (Screen.currentResolution.width);
-                float yDiff = (rightTouch.y - leftTouch.y) / (Screen.currentResolution.width);
-
-                Pitch(ySum);
-                Roll(yDiff);
-                Yaw(xSum);
-                Throttle(xDiff);
-                PerformShipAnimations(xSum, ySum, xDiff, yDiff);
-            }
-            else
-            {
-                speed = Mathf.Lerp(speed, defaultThrottle, smallLerpAmount);
-                LeftWing.localRotation = Quaternion.Lerp(LeftWing.localRotation, Quaternion.identity, smallLerpAmount);
-                RightWing.localRotation = Quaternion.Lerp(RightWing.localRotation, Quaternion.identity, smallLerpAmount);
-                Fusilage.localRotation = Quaternion.Lerp(Fusilage.localRotation, Quaternion.identity, smallLerpAmount);
-            }
+            RotateShip();
 
             // Move ship forward
-            shipTransform.position += speed * Time.deltaTime * shipTransform.forward;
-            
+            shipTransform.position += speed * Time.deltaTime * shipTransform.forward; 
         }
 
         private void PerformShipAnimations(float Xsum, float Ysum, float Xdiff, float Ydiff)
@@ -191,6 +135,91 @@ namespace StarWriter.Core.Input
                                             Ydiff* animationScaler,
                                             -Xsum * animationScaler),
                                         lerpAmount);
+        }
+
+        private void RotateShip()
+        {
+
+            if (SystemInfo.supportsGyroscope && isGyroEnabled == true)
+            {
+                // Updates GameObjects rotation from input device's gyroscope
+                shipTransform.rotation = Quaternion.Lerp(
+                                            shipTransform.rotation,
+                                            displacementQ * GyroToUnity(gyro.attitude) * empiricalCorrection,
+                                            lerpAmount);
+            }
+            else
+            {
+                shipTransform.rotation = Quaternion.Lerp(
+                                            shipTransform.rotation,
+                                            displacementQ,
+                                            lerpAmount);
+            }
+        }
+
+        private void CameraFlip()
+        {
+            if (UnityEngine.Input.acceleration.y > 0)
+            {
+                if (!isCameraDisabled)
+                {
+                    cameraManager.SetFarCameraActive();
+                }
+
+                IntensityRectTransform.rotation = Quaternion.Euler(0, 0, 180);
+                FinalRectTransform.rotation = Quaternion.Euler(0, 0, 180);
+                gameObject.GetComponent<TrailSpawner>().waitTime = .3f;
+            }
+            else
+            {
+                if (!isCameraDisabled)
+                {
+                    cameraManager.SetCloseCameraActive();
+                }
+
+                IntensityRectTransform.rotation = Quaternion.identity;
+                FinalRectTransform.rotation = Quaternion.identity;
+                gameObject.GetComponent<TrailSpawner>().waitTime = 1.5f;
+            }
+        }
+
+        private void RecieveTouchInput()
+        {
+            if (UnityEngine.Input.touches.Length == 2)
+            {
+                Vector2 leftTouch, rightTouch;
+
+                if (UnityEngine.Input.touches[0].position.x <= UnityEngine.Input.touches[1].position.x)
+                {
+                    leftTouch = UnityEngine.Input.touches[0].position;
+                    rightTouch = UnityEngine.Input.touches[1].position;
+                }
+                else
+                {
+                    leftTouch = UnityEngine.Input.touches[1].position;
+                    rightTouch = UnityEngine.Input.touches[0].position;
+                }
+
+                // reparameterize
+                float xSum = ((rightTouch.x + leftTouch.x) / (Screen.currentResolution.width) - 1);
+                float ySum = ((rightTouch.y + leftTouch.y) / (Screen.currentResolution.height) - 1);
+                float xDiff = (rightTouch.x - leftTouch.x) / (Screen.currentResolution.width);
+                float yDiff = (rightTouch.y - leftTouch.y) / (Screen.currentResolution.width);
+
+                Pitch(ySum);
+                Roll(yDiff);
+                Yaw(xSum);
+                Throttle(xDiff);
+                PerformShipAnimations(xSum, ySum, xDiff, yDiff);
+
+            }
+            else
+            {
+                speed = Mathf.Lerp(speed, defaultThrottle, smallLerpAmount);
+                LeftWing.localRotation = Quaternion.Lerp(LeftWing.localRotation, Quaternion.identity, smallLerpAmount);
+                RightWing.localRotation = Quaternion.Lerp(RightWing.localRotation, Quaternion.identity, smallLerpAmount);
+                Fusilage.localRotation = Quaternion.Lerp(Fusilage.localRotation, Quaternion.identity, smallLerpAmount);
+            }
         }
 
         private void Throttle(float Xdiff)
@@ -228,7 +257,7 @@ namespace StarWriter.Core.Input
 
         private void OnGameOver()
         {
-            isCameraDisabled = true; //Disables Cameras in Input Controller Update 
+            isCameraDisabled = true; //Disables Cameras in Input Controller Update TODO: switch "disabled" to "enabled"
         }
 
         private void OnToggleGyro(bool status)

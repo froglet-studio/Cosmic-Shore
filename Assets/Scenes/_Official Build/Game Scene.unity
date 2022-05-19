@@ -626,7 +626,7 @@ Camera:
     height: 1
   near clip plane: 0.3
   far clip plane: 1000
-  field of view: 120
+  field of view: 60
   orthographic: 0
   orthographic size: 5
   m_Depth: -1
@@ -651,8 +651,8 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1252136493}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: -4}
+  m_LocalRotation: {x: 0.017683921, y: 0.98228323, z: -0.12780754, w: 0.13591231}
+  m_LocalPosition: {x: -7.650175, y: 7.4383693, z: 27.107334}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1060,6 +1060,16 @@ PrefabInstance:
       propertyPath: UITransform
       value: 
       objectReference: {fileID: 893616187}
+    - target: {fileID: 7659183800259804543, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: FinalRectTransform
+      value: 
+      objectReference: {fileID: 1803291716}
+    - target: {fileID: 7659183800259804543, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: IntensityRectTransform
+      value: 
+      objectReference: {fileID: 893616187}
     - target: {fileID: 8035663728448263663, guid: c8544725eea141847982b286866c858d,
         type: 3}
       propertyPath: graphic
@@ -1198,6 +1208,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b60804daa69172f468c76a40afdaaa28, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!224 &1803291716 stripped
+RectTransform:
+  m_CorrespondingSourceObject: {fileID: 7181345258476456346, guid: c8544725eea141847982b286866c858d,
+    type: 3}
+  m_PrefabInstance: {fileID: 1586480801}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1829578212
 GameObject:
   m_ObjectHideFlags: 0

@@ -35,8 +35,10 @@ namespace StarWriter.Core
 
         public void OnClickTutorialToggleButton()
         {
-            //SceneManager.LoadScene(1);  can we just load the scene and keep it simple?
-            // Set PlayerPrefs Tutorial status
+            SceneManager.LoadScene(1);
+            // Set gameSettings Tutorial status
+            gameSettings.TutorialEnabled = !gameSettings.TutorialEnabled;
+            //Set PlayerPrefs Tutorial status
             if (gameSettings.TutorialEnabled == true)
             {
                 PlayerPrefs.SetInt("tutorialEnabled", 1);  //tutorial enabled
@@ -45,8 +47,7 @@ namespace StarWriter.Core
             {
                 PlayerPrefs.SetInt("tutorialEnabled", 0);  //tutorial disabled
             }
-            // Set gameSettings Tutorial status
-            gameSettings.TutorialEnabled = !gameSettings.TutorialEnabled;
+            
 
         }
 
