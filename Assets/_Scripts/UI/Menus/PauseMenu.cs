@@ -11,12 +11,19 @@ namespace StarWriter.UI
     public class PauseMenu : MonoBehaviour
     {
         GameManager gameManager;
+        AudioManager audioManager;
 
         // Start is called before the first frame update
         void Start()
         {
             gameManager = GameManager.Instance;
+            audioManager = AudioManager.Instance;
 
+        }
+
+        public void OnToggleMusic()
+        {
+            audioManager.ToggleMute();
         }
 
         public void OnTutorialButton()

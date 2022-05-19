@@ -1075,6 +1075,11 @@ PrefabInstance:
       propertyPath: graphic
       value: 
       objectReference: {fileID: 0}
+    - target: {fileID: 8035663729810452563, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: onValueChanged.m_PersistentCalls.m_Calls.Array.size
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 8213062502326110314, guid: c8544725eea141847982b286866c858d,
         type: 3}
       propertyPath: musicRectTransform
