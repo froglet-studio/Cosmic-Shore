@@ -79,14 +79,15 @@ namespace StarWriter.Core
         /// </summary>
         public void OnClickPlayButton()
         {
-            if (hasSkippedTutorial)
-            {
-                SceneManager.LoadScene(2);
-            }
-            else
-            {
-                SceneManager.LoadScene(1);
-            }
+            SceneManager.LoadScene(2);
+            //if (hasSkippedTutorial)
+            //{
+            //    SceneManager.LoadScene(2);
+            //}
+            //else
+            //{
+            //    SceneManager.LoadScene(1);
+            //}
         }
         /// <summary>
         /// UnPauses game play
