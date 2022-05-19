@@ -48,7 +48,7 @@ namespace StarWriter.Core.Input
         private Quaternion displacementQ;
 
 
-        public bool gyroEnabled = true;
+        private bool isGyroEnabled = true;
         private bool isCameraDisabled = false;
 
 
@@ -64,11 +64,13 @@ namespace StarWriter.Core.Input
         private void OnEnable()
         {
             IntensitySystem.gameOver += OnGameOver;
+            GameManager.onToggleGyro += OnToggleGyro;
         }
 
         private void OnDisable()
         {
             IntensitySystem.gameOver -= OnGameOver;
+            GameManager.onToggleGyro -= OnToggleGyro;
         }
 
         void Start()
@@ -93,7 +95,7 @@ namespace StarWriter.Core.Input
                 return;
             }
 
-            if (SystemInfo.supportsGyroscope && gyroEnabled==true)
+            if (SystemInfo.supportsGyroscope && isGyroEnabled==true)
             {
                 // Updates GameObjects rotation from input device's gyroscope
                 shipTransform.rotation = Quaternion.Lerp(
@@ -227,6 +229,11 @@ namespace StarWriter.Core.Input
         private void OnGameOver()
         {
             isCameraDisabled = true; //Disables Cameras in Input Controller Update 
+        }
+
+        private void OnToggleGyro(bool status)
+        {
+            isGyroEnabled = status;
         }
     }    
 }
