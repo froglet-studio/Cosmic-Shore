@@ -36,6 +36,7 @@ namespace StarWriter.Core
         public void OnClickTutorialToggleButton()
         {
             SceneManager.LoadScene(1);
+            if (PauseSystem.GetIsPaused()) { TogglePauseGame(); };
             // Set gameSettings Tutorial status
             gameSettings.TutorialEnabled = !gameSettings.TutorialEnabled;
             //Set PlayerPrefs Tutorial status
@@ -84,7 +85,7 @@ namespace StarWriter.Core
 
         public void OnClickResumeButton()
         {
-            TogglePauseGame();
+            if (PauseSystem.GetIsPaused()) { TogglePauseGame(); }
         }
 
         public void TogglePauseGame()
