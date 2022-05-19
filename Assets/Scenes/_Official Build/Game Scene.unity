@@ -1065,6 +1065,36 @@ PrefabInstance:
       propertyPath: graphic
       value: 
       objectReference: {fileID: 0}
+    - target: {fileID: 8035663728448263663, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: onValueChanged.m_PersistentCalls.m_Calls.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8035663728448263663, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: onValueChanged.m_PersistentCalls.m_Calls.Array.data[0].m_Mode
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8035663728448263663, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: onValueChanged.m_PersistentCalls.m_Calls.Array.data[0].m_Target
+      value: 
+      objectReference: {fileID: 1663880875}
+    - target: {fileID: 8035663728448263663, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: onValueChanged.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
+      value: OnToggleGyro
+      objectReference: {fileID: 0}
+    - target: {fileID: 8035663728448263663, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: onValueChanged.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
+      value: StarWriter.UI.PauseMenu, Assembly-CSharp
+      objectReference: {fileID: 0}
+    - target: {fileID: 8035663728448263663, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: onValueChanged.m_PersistentCalls.m_Calls.Array.data[0].m_Arguments.m_ObjectArgumentAssemblyTypeName
+      value: UnityEngine.Object, UnityEngine
+      objectReference: {fileID: 0}
     - target: {fileID: 8035663729387164692, guid: c8544725eea141847982b286866c858d,
         type: 3}
       propertyPath: m_IsActive
@@ -1078,7 +1108,32 @@ PrefabInstance:
     - target: {fileID: 8035663729810452563, guid: c8544725eea141847982b286866c858d,
         type: 3}
       propertyPath: onValueChanged.m_PersistentCalls.m_Calls.Array.size
-      value: 0
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8035663729810452563, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: onValueChanged.m_PersistentCalls.m_Calls.Array.data[0].m_Mode
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8035663729810452563, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: onValueChanged.m_PersistentCalls.m_Calls.Array.data[0].m_Target
+      value: 
+      objectReference: {fileID: 1663880875}
+    - target: {fileID: 8035663729810452563, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: onValueChanged.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
+      value: OnToggleMusic
+      objectReference: {fileID: 0}
+    - target: {fileID: 8035663729810452563, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: onValueChanged.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
+      value: StarWriter.UI.PauseMenu, Assembly-CSharp
+      objectReference: {fileID: 0}
+    - target: {fileID: 8035663729810452563, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: onValueChanged.m_PersistentCalls.m_Calls.Array.data[0].m_Arguments.m_ObjectArgumentAssemblyTypeName
+      value: UnityEngine.Object, UnityEngine
       objectReference: {fileID: 0}
     - target: {fileID: 8213062502326110314, guid: c8544725eea141847982b286866c858d,
         type: 3}
@@ -1131,6 +1186,18 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   handleRectTransform: {fileID: 844287709}
+--- !u!114 &1663880875 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 8213062502326110314, guid: c8544725eea141847982b286866c858d,
+    type: 3}
+  m_PrefabInstance: {fileID: 1586480801}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b60804daa69172f468c76a40afdaaa28, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &1829578212
 GameObject:
   m_ObjectHideFlags: 0

@@ -26,6 +26,11 @@ namespace StarWriter.UI
             audioManager.ToggleMute();
         }
 
+        public void OnToggleGyro()
+        {
+            gameManager.OnClickGyroToggleButton();
+        }
+
         public void OnTutorialButton()
         {
             gameManager.OnClickTutorialToggleButton();
