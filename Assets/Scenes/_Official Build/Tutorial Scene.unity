@@ -5741,7 +5741,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4b03e7163961e2c4b9d04056b4fcb40e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  shipTransform: {fileID: 2094245280}
+  shipTransform: {fileID: 2059123762}
   Fusilage: {fileID: 2094245283}
   LeftWing: {fileID: 2094245282}
   RightWing: {fileID: 2094245281}
