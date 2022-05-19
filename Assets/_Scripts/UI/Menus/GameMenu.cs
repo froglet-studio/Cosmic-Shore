@@ -46,7 +46,6 @@ public class GameMenu : MonoBehaviour
         finalScorePanel.SetActive(false);
         pauseButton.SetActive(true);
         pauseMenuPanel.SetActive(false);
-        PauseSystem.TogglePauseGame();
     }
 
     public void OnFinalScoreScene()
