@@ -44,10 +44,9 @@ namespace StarWriter.Core.Audio
             musicSource2.loop = true;
 
             //if(PlayerPrefs.GetInt("isMuted") != 1) { isMuted = false; } SetMasterAudioVolume 
-            //PlayMusic
-            //PlayMusicClip(musicSource1.clip);
+            
             musicSource1.Play();
-            sfxSource.Play();
+            
         }
 
         private void FixedUpdate()

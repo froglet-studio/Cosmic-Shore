@@ -161,6 +161,12 @@ Transform:
     type: 3}
   m_PrefabInstance: {fileID: 1564738380}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &703854702 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 3902679334675721759, guid: f044b6ad282929f4d9ca817c0e5a305a,
+    type: 3}
+  m_PrefabInstance: {fileID: 3902679334405631492}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &709728275
 GameObject:
   m_ObjectHideFlags: 0
@@ -277,6 +283,12 @@ Transform:
   m_Father: {fileID: 1243749158}
   m_RootOrder: 3
   m_LocalEulerAnglesHint: {x: 0, y: -23.83, z: 0}
+--- !u!1 &717033088 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 3902679332891413420, guid: f044b6ad282929f4d9ca817c0e5a305a,
+    type: 3}
+  m_PrefabInstance: {fileID: 3902679334405631492}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &780832097 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 79573243827369841, guid: 7b41307a62a8b6f4499e38f52d12adcb,
@@ -1758,9 +1770,24 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3902679333267616925, guid: f044b6ad282929f4d9ca817c0e5a305a,
         type: 3}
+      propertyPath: sfxGO3
+      value: 
+      objectReference: {fileID: 1073924403}
+    - target: {fileID: 3902679333267616925, guid: f044b6ad282929f4d9ca817c0e5a305a,
+        type: 3}
       propertyPath: volume
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 3902679333267616925, guid: f044b6ad282929f4d9ca817c0e5a305a,
+        type: 3}
+      propertyPath: musicGO1
+      value: 
+      objectReference: {fileID: 703854702}
+    - target: {fileID: 3902679333267616925, guid: f044b6ad282929f4d9ca817c0e5a305a,
+        type: 3}
+      propertyPath: musicGO2
+      value: 
+      objectReference: {fileID: 717033088}
     - target: {fileID: 3902679333267616925, guid: f044b6ad282929f4d9ca817c0e5a305a,
         type: 3}
       propertyPath: m_Enabled
