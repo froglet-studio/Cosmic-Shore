@@ -1070,6 +1070,11 @@ PrefabInstance:
       propertyPath: IntensityRectTransform
       value: 
       objectReference: {fileID: 893616187}
+    - target: {fileID: 8035663728123421218, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
+      value: OnClickTutorialButton
+      objectReference: {fileID: 0}
     - target: {fileID: 8035663728448263663, guid: c8544725eea141847982b286866c858d,
         type: 3}
       propertyPath: graphic

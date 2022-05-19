@@ -9,7 +9,7 @@ public class TutorialPlayerController : MonoBehaviour
     public Dictionary<string, bool> controlLevels = new Dictionary<string,bool>();
 
     [SerializeField]
-    private TutorialInputController inputController;
+    private InputController inputController;
 
     private void InitializeControlLevels() //Adding Test Names and setting bools false
     {
@@ -19,7 +19,7 @@ public class TutorialPlayerController : MonoBehaviour
         controlLevels.Add("Yaw Right", false);
         controlLevels.Add("Roll Left", false);
         controlLevels.Add("Roll Right", false);
-        controlLevels.Add("throttleScaler Up", false);
+        controlLevels.Add("Speed Up", false); 
         controlLevels.Add("Slow Down", false);
         controlLevels.Add("Gyro", false);
 
@@ -37,98 +37,92 @@ public class TutorialPlayerController : MonoBehaviour
     {
         if (controlLevels["Pitch Up"] == true)
         {
-            PitchUp();
+            EnablePitch();
         }
         if (controlLevels["Pitch Down"] == true)
         {
-            PitchDown();
+            EnablePitch();
         }
         if (controlLevels["Yaw Left"] == true)
         {
-            YawLeft();
+            EnableYaw();
         }
         if (controlLevels["Yaw Right"] == true)
         {
-            YawRight();
+            EnableYaw();
         }
         if (controlLevels["Roll Left"] == true)
         {
-            RollLeft();
+            EnableRoll();
         }
         if (controlLevels["Roll Right"] == true)
         {
-            RollRight();
+            EnableRoll();
         }
-        if (controlLevels["throttleScaler Up"] == true)
+        if (controlLevels["Speed Up"] == true)
         {
-            SpeedUp();
+            EnableThrottle();
         }
         if (controlLevels["Slow Down"] == true)
         {
-            SlowDown();
+            EnableThrottle();
         }
         if (controlLevels["Gyro"] == true)
         {
-            Gyro();
+            EnableGyro();
         }
     }
-    public void PitchUp()
+    public void EnablePitch()
     {
         Debug.Log("pitch up");
-        inputController.flightControlScheme = TutorialInputController.ControlScheme.Pitch;
+        inputController.IsPitchEnabled = true;
+
+        inputController.IsYawEnabled = false;
+        inputController.IsRollEnabled = false;
+        inputController.IsThrottleEnabledl = true;
+        inputController.IsGyroEnabled = false;
     }
-    private void PitchDown()
-    {
-        Debug.Log("pitch down");
-        inputController.flightControlScheme = TutorialInputController.ControlScheme.Pitch;
-    }
-    private void YawLeft()
+    private void EnableYaw()
     {
         Debug.Log("yaw left");
-        inputController.flightControlScheme = TutorialInputController.ControlScheme.Yaw;
-    }
-    private void YawRight()
-    {
-        Debug.Log("yaw right");
-        inputController.flightControlScheme = TutorialInputController.ControlScheme.Yaw;
+        inputController.IsYawEnabled = true;
+
+        inputController.IsPitchEnabled = false;
+        inputController.IsRollEnabled = false;
+        inputController.IsThrottleEnabledl = true;
+        inputController.IsGyroEnabled = false;
     }
 
-    private void RollLeft()
+    private void EnableRoll()
     {
         Debug.Log("roll left");
-        inputController.flightControlScheme = TutorialInputController.ControlScheme.Roll;
-    }
-    private void RollRight()
-    {
-        Debug.Log("roll right");
-        inputController.flightControlScheme = TutorialInputController.ControlScheme.Roll;
-    }
+        inputController.IsRollEnabled = true;
 
-    private void SpeedUp()
+        inputController.IsPitchEnabled = false;
+        inputController.IsYawEnabled = false;
+        inputController.IsThrottleEnabledl = true;
+        inputController.IsGyroEnabled = false;
+        }
+
+    private void EnableThrottle()
     {
         Debug.Log("speed up");
-        inputController.flightControlScheme = TutorialInputController.ControlScheme.Throttle;
+        inputController.IsThrottleEnabledl = true;
+
+        inputController.IsPitchEnabled = false;
+        inputController.IsYawEnabled = false;
+        inputController.IsRollEnabled = false;
+        inputController.IsGyroEnabled = false;
     }
-    private void SlowDown()
-    {
-        Debug.Log("Slow Down");
-        inputController.flightControlScheme = TutorialInputController.ControlScheme.Throttle;
-    }
-    private void Gyro()
+    
+    private void EnableGyro()
     {
         Debug.Log("gyro");
-        inputController.flightControlScheme = TutorialInputController.ControlScheme.Gyro;
-    }
+        inputController.IsGyroEnabled = true;
 
-    
-
-    
-
-    
-
-    
-
-    
-
-    
+        inputController.IsPitchEnabled = false;
+        inputController.IsYawEnabled = false;
+        inputController.IsRollEnabled = false;
+        inputController.IsThrottleEnabledl = false;
+    }   
 }

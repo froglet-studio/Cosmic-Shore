@@ -2875,30 +2875,6 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 9507afe9f7c8f3f4688cb95f2bdd255e, type: 3}
---- !u!114 &1036711702 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 2096018005004671430, guid: 9507afe9f7c8f3f4688cb95f2bdd255e,
-    type: 3}
-  m_PrefabInstance: {fileID: 1036711701}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 45e653bab7fb20e499bda25e1b646fea, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
---- !u!114 &1036711703 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 2096018004173018908, guid: 9507afe9f7c8f3f4688cb95f2bdd255e,
-    type: 3}
-  m_PrefabInstance: {fileID: 1036711701}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 45e653bab7fb20e499bda25e1b646fea, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1 &1050695277
 GameObject:
   m_ObjectHideFlags: 0
@@ -5671,7 +5647,7 @@ GameObject:
   - component: {fileID: 2059123763}
   - component: {fileID: 2059123765}
   - component: {fileID: 2059123766}
-  - component: {fileID: 2059123768}
+  - component: {fileID: 2059123767}
   m_Layer: 0
   m_Name: Tutorial Player
   m_TagString: Player
@@ -5719,8 +5695,8 @@ MonoBehaviour:
   playerUUID: admin
   playerSO: {fileID: 11400000, guid: 0261c50928a2b8e4f833e2f25f6f6669, type: 2}
   playerColor: {r: 0, g: 0, b: 0, a: 1}
-  playerShipPrefab: {fileID: 0}
-  playerTrailPrefab: {fileID: 0}
+  playerShipPrefab: {fileID: 11400000, guid: 8fe04b504d11c60499aa5b0e6217a602, type: 2}
+  playerTrailPrefab: {fileID: 11400000, guid: 01bddce10ea01d146beada014e761a53, type: 2}
 --- !u!114 &2059123765
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5733,7 +5709,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ef3c3595153401b4eb424594af75eacf, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  inputController: {fileID: 2059123768}
+  inputController: {fileID: 2059123767}
 --- !u!114 &2059123766
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5753,7 +5729,7 @@ MonoBehaviour:
   waitTime: 0.5
   startDelay: 2
   useRandom: 1
---- !u!114 &2059123768
+--- !u!114 &2059123767
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -5762,23 +5738,16 @@ MonoBehaviour:
   m_GameObject: {fileID: 2059123757}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7cea29e61e8102348a12e19071d7d02b, type: 3}
+  m_Script: {fileID: 11500000, guid: 4b03e7163961e2c4b9d04056b4fcb40e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  flightControlScheme: 1
-  CloseCam: {fileID: 1036711703}
-  FarCam: {fileID: 1036711702}
-  shipTransform: {fileID: 2059123762}
+  shipTransform: {fileID: 2094245280}
   Fusilage: {fileID: 2094245283}
   LeftWing: {fileID: 2094245282}
   RightWing: {fileID: 2094245281}
-  UITransform: {fileID: 1934494467}
-  rotationSpeed: 1.3
-  rotationThrottleScaler: 1.04
+  IntensityRectTransform: {fileID: 1934494467}
+  FinalRectTransform: {fileID: 0}
   speed: 0
-  throttleScaler: 50
-  OnThrottleEventThreshold: 1
-  gyroEnabled: 1
 --- !u!1001 &2062872047
 PrefabInstance:
   m_ObjectHideFlags: 0

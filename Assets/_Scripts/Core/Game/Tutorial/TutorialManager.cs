@@ -52,7 +52,7 @@ public class TutorialManager : MonoBehaviour
     {
         if(index >= tutorialStages.Count -1 || PlayerPrefs.GetInt("Skip Tutorial") == 1)
         {
-            if (TutorialTests.ContainsValue(!false))
+            if (TutorialTests.ContainsValue(true))
             {
                 CompleteTutorial();
             }

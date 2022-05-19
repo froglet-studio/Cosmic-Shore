@@ -8,7 +8,7 @@ namespace StarWriter.Core
     public class GameManager : SingletonPersistent<GameManager>
     {          
         [SerializeField]
-        private bool skipTutorial = false;
+        private bool hasSkippedTutorial = false;
 
         [SerializeField]
         private bool isGyroEnabled = true;
@@ -23,14 +23,14 @@ namespace StarWriter.Core
 
         void Start()
         {
-            //PlayerPrefs.SetInt("Skip Tutorial", 1);
+            PlayerPrefs.SetInt("Skip Tutorial", 0);
             gameSettings = GameSetting.Instance;
 
             if (PlayerPrefs.GetInt("Skip Tutorial") == 1) // 0 false and 1 true
             {
-                skipTutorial = true;
+                hasSkippedTutorial = true;
             }
-            else { skipTutorial = false; }
+            else { hasSkippedTutorial = false; }
         }
 
         /// <summary>
@@ -38,8 +38,7 @@ namespace StarWriter.Core
         /// </summary>
         public void OnClickTutorialToggleButton()
         {
-            SceneManager.LoadScene(1);
-            if (PauseSystem.GetIsPaused()) { PauseGame(); };
+            
             // Set gameSettings Tutorial status
             gameSettings.TutorialEnabled = !gameSettings.TutorialEnabled;
             //Set PlayerPrefs Tutorial status
@@ -51,8 +50,8 @@ namespace StarWriter.Core
             {
                 PlayerPrefs.SetInt("tutorialEnabled", 0);  //tutorial disabled
             }
-            
-
+            UnPauseGame();
+            SceneManager.LoadScene(1);
         }
 
         /// <summary>
@@ -76,11 +75,11 @@ namespace StarWriter.Core
             }
         }
         /// <summary>
-        /// Starts Tutorial or Game bases on skipTutorial status
+        /// Starts Tutorial or Game bases on hasSkippedTutorial status
         /// </summary>
         public void OnClickPlayButton()
         {
-            if (skipTutorial)
+            if (hasSkippedTutorial)
             {
                 SceneManager.LoadScene(2);
             }
@@ -94,12 +93,12 @@ namespace StarWriter.Core
         /// </summary>
         public void UnPauseGame()
         {
-            if (PauseSystem.GetIsPaused()) { PauseGame(); }
+            if (PauseSystem.GetIsPaused()) { TogglePauseGame(); }
         }
         /// <summary>
         /// Pauses game play
         /// </summary>
-        public void PauseGame()
+        public void TogglePauseGame()
         {
             PauseSystem.TogglePauseGame();
         }
