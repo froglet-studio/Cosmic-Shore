@@ -3,10 +3,11 @@ using UnityEngine;
 
 public class Impact : MonoBehaviour
 {
+    public float positionScale;
     public IEnumerator ImpactCoroutine(Vector3 velocity, Material material,string ID)
     {
-        var velocityScale = 5f;
-        float timeStamp = 0;
+        var velocityScale = .05f;
+        Vector3 distance = Vector3.zero;
 
         if (ID == "Player") { 
             material.SetFloat("_player", 1);
@@ -21,13 +22,14 @@ public class Impact : MonoBehaviour
             }
         }
         
-        while (timeStamp <= 1)
+        while (distance.magnitude <= 1000)
         {
-            yield return new WaitForSeconds(.001f);
-            timeStamp += .001f;
-            material.SetVector("_velocity", velocityScale*timeStamp*velocity);
-            material.SetFloat("_opacity", (1-timeStamp));
-            transform.position += (velocityScale * timeStamp * velocity);
+            yield return new WaitForSeconds(.01f);
+            //timeStamp += .001f;
+            distance += velocityScale * Time.deltaTime * velocity;
+            material.SetVector("_velocity", distance);
+            material.SetFloat("_opacity", (1000- distance.magnitude)/1000);
+            transform.position += positionScale*distance;
         }
         Destroy(material);
         Destroy(transform.gameObject);
