@@ -69,6 +69,15 @@ namespace StarWriter.Core.Audio
             activeAudioSource.Play();
         }
 
+        //public void PlayNextMusicClip()
+        //{
+        //    if(musicSource1)
+        //    AudioSource activeAudioSource = (firstMusicSourceIsPlaying ? musicSource1 : musicSource2);
+        //    activeAudioSource.clip = audioClip;
+        //    activeAudioSource.volume = volume;
+        //    activeAudioSource.Play();
+        //}
+
         public void PlayMusicClipWithFade(AudioClip audioClip, float transitionTime = 1.0f)
         {
             AudioSource activeAudioSource = (firstMusicSourceIsPlaying ? musicSource1 : musicSource2);

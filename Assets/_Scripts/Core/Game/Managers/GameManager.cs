@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using Amoebius.Utility.Singleton;
+using StarWriter.Core.Audio;
 
 namespace StarWriter.Core
 {
@@ -13,6 +14,7 @@ namespace StarWriter.Core
         [SerializeField]
         private bool isGyroEnabled = true;
 
+        private AudioManager audioManager;
         private GameSetting gameSettings;
 
         public delegate void OnPlayGameEvent();
@@ -25,6 +27,7 @@ namespace StarWriter.Core
         {
             PlayerPrefs.SetInt("Skip Tutorial", 0);
             gameSettings = GameSetting.Instance;
+            audioManager = AudioManager.Instance;
 
             if (PlayerPrefs.GetInt("Skip Tutorial") == 1) // 0 false and 1 true
             {
@@ -52,6 +55,15 @@ namespace StarWriter.Core
             }
             UnPauseGame();
             SceneManager.LoadScene(1);
+        }
+        public void TurnGyroON()
+        {
+            onToggleGyro(true);
+        }
+
+        public void TurnGyroOFF()
+        {
+            onToggleGyro(false);
         }
 
         /// <summary>
@@ -88,6 +100,11 @@ namespace StarWriter.Core
             //{
             //    SceneManager.LoadScene(1);
             //}
+        }
+        public void RestartGame()
+        {
+            SceneManager.LoadScene(2);
+            //audioManager.
         }
         /// <summary>
         /// UnPauses game play

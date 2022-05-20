@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using StarWriter.Core.Input;
+using StarWriter.Core;
 
 public class TutorialPlayerController : MonoBehaviour
 {
@@ -10,6 +11,9 @@ public class TutorialPlayerController : MonoBehaviour
 
     [SerializeField]
     private InputController inputController;
+
+    GameManager gameManager;
+    
 
     private void InitializeControlLevels() //Adding Test Names and setting bools false
     {
@@ -28,6 +32,7 @@ public class TutorialPlayerController : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        gameManager = GameManager.Instance;
         InitializeControlLevels();
         controlLevels["Pitch Up"] = true;
     }
@@ -80,7 +85,7 @@ public class TutorialPlayerController : MonoBehaviour
         inputController.IsYawEnabled = false;
         inputController.IsRollEnabled = false;
         inputController.IsThrottleEnabledl = true;
-        inputController.IsGyroEnabled = false;
+        gameManager.TurnGyroOFF();
     }
     private void EnableYaw()
     {
@@ -90,7 +95,7 @@ public class TutorialPlayerController : MonoBehaviour
         inputController.IsPitchEnabled = false;
         inputController.IsRollEnabled = false;
         inputController.IsThrottleEnabledl = true;
-        inputController.IsGyroEnabled = false;
+        gameManager.TurnGyroOFF();
     }
 
     private void EnableRoll()
@@ -101,8 +106,8 @@ public class TutorialPlayerController : MonoBehaviour
         inputController.IsPitchEnabled = false;
         inputController.IsYawEnabled = false;
         inputController.IsThrottleEnabledl = true;
-        inputController.IsGyroEnabled = false;
-        }
+        gameManager.TurnGyroOFF();
+    }
 
     private void EnableThrottle()
     {
@@ -112,13 +117,13 @@ public class TutorialPlayerController : MonoBehaviour
         inputController.IsPitchEnabled = false;
         inputController.IsYawEnabled = false;
         inputController.IsRollEnabled = false;
-        inputController.IsGyroEnabled = false;
+        gameManager.TurnGyroOFF();
     }
     
     private void EnableGyro()
     {
         Debug.Log("gyro");
-        inputController.IsGyroEnabled = true;
+        gameManager.TurnGyroON();
 
         inputController.IsPitchEnabled = false;
         inputController.IsYawEnabled = false;

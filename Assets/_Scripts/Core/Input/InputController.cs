@@ -63,7 +63,7 @@ namespace StarWriter.Core.Input
         public bool IsYawEnabled { get => isYawEnabled; set => isYawEnabled = value; }
         public bool IsRollEnabled { get => isRollEnabled; set => isRollEnabled = value; }
         public bool IsThrottleEnabledl { get => isThrottleEnabledl; set => isThrottleEnabledl = value; }
-        public bool IsGyroEnabled { get => isGyroEnabled; set => isGyroEnabled = value; }
+        public bool IsGyroEnabled { get => isGyroEnabled;  } //GameManager controls the gyro status
 
         private void Awake()
         {
@@ -272,6 +272,10 @@ namespace StarWriter.Core.Input
             isCameraDisabled = true; //Disables Cameras in Input Controller Update TODO: switch "disabled" to "enabled"
         }
 
+        /// <summary>
+        /// Gets gyros updated current status from GameManager.onToggleGyro Event
+        /// </summary>
+        /// <param name="status"></param>bool
         private void OnToggleGyro(bool status)
         {
             isGyroEnabled = status;
