@@ -83,7 +83,7 @@ namespace StarWriter.Core.Audio
         public void PlayNextMusicClip()
         {
             Debug.Log("Called play next song");
-            PlayMusicClip(musicSource2.clip);
+            firstMusicSourceIsPlaying = !firstMusicSourceIsPlaying;
         }
 
         public void PlayMusicClipWithFade(AudioClip audioClip, float transitionTime = 1.0f)
