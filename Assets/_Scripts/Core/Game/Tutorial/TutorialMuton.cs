@@ -24,7 +24,7 @@ public class TutorialMuton : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        transform.position = player.transform.forward + spawnPointsOffset[index];
+        MoveMuton();
         stageName = tutorialManager.tutorialStages[index].StageName;
         gyroIndex = spawnPointsOffset.Count - 1; // final stage testing gyro does not involve hitting a test Muton
         collisions = new List<Collision>();
@@ -62,8 +62,16 @@ public class TutorialMuton : MonoBehaviour
             else
             {
                 index++;
-                transform.position = player.transform.forward + spawnPointsOffset[index];
+                MoveMuton();
             }           
         }       
+    }
+    void MoveMuton()
+    {
+        //transform.position = player.transform.forward + spawnPointsOffset[index];
+        transform.position = player.transform.position +
+                             player.transform.right * spawnPointsOffset[index].x +
+                             player.transform.up * spawnPointsOffset[index].y +
+                             player.transform.forward * spawnPointsOffset[index].z;
     }
 }
