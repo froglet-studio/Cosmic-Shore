@@ -339,8 +339,8 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 51578550}
-  m_LocalRotation: {x: 0.2162276, y: -0.036077872, z: 0.007995782, w: 0.97564346}
-  m_LocalPosition: {x: 6.0815415, y: 12.74107, z: -13.744774}
+  m_LocalRotation: {x: 0.017683921, y: 0.98228323, z: -0.12780754, w: 0.13591231}
+  m_LocalPosition: {x: -7.650175, y: 7.4383693, z: 27.107334}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -6249,15 +6249,15 @@ MonoBehaviour:
   player: {fileID: 2059123757}
   stageName: 
   spawnPointsOffset:
-  - {x: 0, y: 3, z: 10}
-  - {x: 0, y: -3, z: 10}
-  - {x: -3, y: 0, z: 10}
-  - {x: 3, y: 0, z: 10}
-  - {x: -3, y: 0, z: 10}
-  - {x: 3, y: 0, z: 10}
-  - {x: 0, y: 0, z: 10}
-  - {x: 0, y: 0, z: 10}
-  - {x: 0, y: 0, z: 10}
+  - {x: 0, y: 30, z: 100}
+  - {x: 0, y: -30, z: 100}
+  - {x: -30, y: 0, z: 100}
+  - {x: 30, y: 0, z: 100}
+  - {x: -30, y: 0, z: 100}
+  - {x: 30, y: 0, z: 100}
+  - {x: 0, y: 0, z: 100}
+  - {x: 0, y: 0, z: 100}
+  - {x: 0, y: 0, z: 100}
   index: 0
 --- !u!135 &1050581609840963706
 SphereCollider:
