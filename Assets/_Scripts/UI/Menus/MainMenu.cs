@@ -1,8 +1,5 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine.UI;
-using UnityEngine;
-using UnityEngine.SceneManagement;
+﻿using UnityEngine;
+
 
 namespace StarWriter.Core.UI
 {
@@ -25,9 +22,8 @@ namespace StarWriter.Core.UI
             gameManager.OnClickPlayButton();
         }
 
-        public void OnPressButtonOptions()
+        public void OnClickOptionsMenuButton()
         {
-            Debug.Log("Game Options Pressed");
             Game_Options_Panel.SetActive(true);
             gameObject.SetActive(false);
         }

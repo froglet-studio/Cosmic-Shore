@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 686115705867826741}
   - component: {fileID: 686115705867826746}
   - component: {fileID: 686115705867826747}
+  - component: {fileID: -8719635960920862240}
   m_Layer: 5
   m_Name: Pause Button
   m_TagString: Untagged
@@ -121,9 +122,9 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 0}
-        m_TargetAssemblyTypeName: GameMenu, Assembly-CSharp
-        m_MethodName: OnClickPauseGame
+      - m_Target: {fileID: -8719635960920862240}
+        m_TargetAssemblyTypeName: StarWriter.Core.UI.PauseButton, Assembly-CSharp
+        m_MethodName: OnClickPauseButton
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -133,3 +134,15 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
+--- !u!114 &-8719635960920862240
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 686115705867826745}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0bbfefad7143a8149945acc002a80f55, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 

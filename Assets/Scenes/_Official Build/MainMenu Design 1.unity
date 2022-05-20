@@ -2083,6 +2083,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 6250432392537397584, guid: d5b85bce09be12a43b377c137830a634,
         type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
+      value: OnClickOptionsMenuButton
+      objectReference: {fileID: 0}
+    - target: {fileID: 6250432392537397584, guid: d5b85bce09be12a43b377c137830a634,
+        type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
       value: StarWriter.Core.UI.MainMenu, Assembly-CSharp
       objectReference: {fileID: 0}
