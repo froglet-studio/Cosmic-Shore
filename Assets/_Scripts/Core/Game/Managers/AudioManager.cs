@@ -1,4 +1,5 @@
 ﻿using System.Collections;
+using System.Collections.Generic;
 using Amoebius.Utility.Singleton;
 using UnityEngine;
 
@@ -17,6 +18,10 @@ namespace StarWriter.Core.Audio
         
         [SerializeField]
         private AudioSource musicSource2;
+
+        List<AudioSource> AudioSources = new List<AudioSource>();
+        
+        private float audioIndex = 0;
 
         public GameObject musicGO1;
         public GameObject musicGO2;
@@ -38,14 +43,20 @@ namespace StarWriter.Core.Audio
             musicSource1 = musicGO1.GetComponent<AudioSource>();
             musicSource2 = musicGO2.GetComponent<AudioSource>();
             sfxSource = sfxGO3.GetComponent<AudioSource>();
-            
+
+            AudioSources.Add(musicSource1);
+            AudioSources.Add(musicSource2);
+
             // Loop the music tracks
             musicSource1.loop = true;
             musicSource2.loop = true;
 
             //if(PlayerPrefs.GetInt("isMuted") != 1) { isMuted = false; } SetMasterAudioVolume 
-            
-            musicSource1.Play();
+
+            //musicSource1.Play();
+            PlayMusicClip(musicSource1.clip);
+
+           
             
         }
 
@@ -69,14 +80,11 @@ namespace StarWriter.Core.Audio
             activeAudioSource.Play();
         }
 
-        //public void PlayNextMusicClip()
-        //{
-        //    if(musicSource1)
-        //    AudioSource activeAudioSource = (firstMusicSourceIsPlaying ? musicSource1 : musicSource2);
-        //    activeAudioSource.clip = audioClip;
-        //    activeAudioSource.volume = volume;
-        //    activeAudioSource.Play();
-        //}
+        public void PlayNextMusicClip()
+        {
+            Debug.Log("Called play next song");
+            PlayMusicClip
+        }
 
         public void PlayMusicClipWithFade(AudioClip audioClip, float transitionTime = 1.0f)
         {

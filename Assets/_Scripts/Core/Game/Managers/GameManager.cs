@@ -91,6 +91,7 @@ namespace StarWriter.Core
         /// </summary>
         public void OnClickPlayButton()
         {
+            UnPauseGame();
             SceneManager.LoadScene(2);
             //if (hasSkippedTutorial)
             //{
@@ -103,8 +104,9 @@ namespace StarWriter.Core
         }
         public void RestartGame()
         {
+            UnPauseGame();
+            audioManager.PlayNextMusicClip();
             SceneManager.LoadScene(2);
-            //audioManager.
         }
         /// <summary>
         /// UnPauses game play
