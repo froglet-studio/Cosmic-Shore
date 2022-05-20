@@ -81,40 +81,40 @@ public class Trail : MonoBehaviour, ICollidable
             // Play SFX sound
             // TODO
 
-            // Create Fossil
-            tempMaterial = new Material(material);
-            var fossilBlock = Instantiate(FossilBlock);
-            fossilBlock.transform.localScale = transform.localScale;
-            fossilBlock.transform.position = transform.position;
-            fossilBlock.transform.localEulerAngles = transform.localEulerAngles;
-            fossilBlock.transform.parent = container.transform;
-            fossilBlock.GetComponent<Renderer>().material = tempMaterial;
+            //// Create Fossil
+            //tempMaterial = new Material(material);
+            //var fossilBlock = Instantiate(FossilBlock);
+            //fossilBlock.transform.localScale = transform.localScale;
+            //fossilBlock.transform.position = transform.position;
+            //fossilBlock.transform.localEulerAngles = transform.localEulerAngles;
+            //fossilBlock.transform.parent = container.transform;
+            //fossilBlock.GetComponent<Renderer>().material = tempMaterial;
 
-            // Do Impact Stuff
+            //// Do Impact Stuff
             var ship = other.transform.parent.parent.gameObject;
-            var blockImpact = fossilBlock.GetComponent<BlockImpact>();
+            //var blockImpact = fossilBlock.GetComponent<BlockImpact>();
             
             if (GameObject.FindGameObjectsWithTag("Player").Contains(ship))
             {
-                // Player Hit
-                var impactVector = ship.transform.forward * ship.GetComponent<InputController>().speed;
-                StartCoroutine(blockImpact.ImpactCoroutine(impactVector, tempMaterial, "Player"));
+                //// Player Hit
+                //var impactVector = ship.transform.forward * ship.GetComponent<InputController>().speed;
+                //StartCoroutine(blockImpact.ImpactCoroutine(impactVector, tempMaterial, "Player"));
                 OnTrailCollision?.Invoke(ship.GetComponent<Player>().PlayerUUID, intensityChange);
                 HapticController.PlayBlockCollisionHaptics();
             }
-            else
-            {
-                // AI Hit
-                var impactVector = ship.transform.forward * ship.GetComponent<AiShipController>().speed;
-                if (ship == GameObject.FindWithTag("red"))
-                {
-                    StartCoroutine(blockImpact.ImpactCoroutine(impactVector, tempMaterial, "red"));
-                }
-                else
-                {
-                    StartCoroutine(blockImpact.ImpactCoroutine(impactVector, tempMaterial, "blue"));
-                }
-            }
+            //else
+            //{
+            //    // AI Hit
+            //    var impactVector = ship.transform.forward * ship.GetComponent<AiShipController>().speed;
+            //    if (ship == GameObject.FindWithTag("red"))
+            //    {
+            //        StartCoroutine(blockImpact.ImpactCoroutine(impactVector, tempMaterial, "red"));
+            //    }
+            //    else
+            //    {
+            //        StartCoroutine(blockImpact.ImpactCoroutine(impactVector, tempMaterial, "blue"));
+            //    }
+            //}
             Destroy(gameObject);
         }
     }

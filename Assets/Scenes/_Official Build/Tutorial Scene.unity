@@ -4163,17 +4163,17 @@ PrefabInstance:
     - target: {fileID: -8679921383154817045, guid: 2e3f614ebac88ff458f0cb11fe0dded3,
         type: 3}
       propertyPath: m_LocalScale.x
-      value: 7000
+      value: 70000
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 2e3f614ebac88ff458f0cb11fe0dded3,
         type: 3}
       propertyPath: m_LocalScale.y
-      value: 7000
+      value: 70000
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 2e3f614ebac88ff458f0cb11fe0dded3,
         type: 3}
       propertyPath: m_LocalScale.z
-      value: 80000
+      value: 800000
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 2e3f614ebac88ff458f0cb11fe0dded3,
         type: 3}
@@ -5882,6 +5882,7 @@ MonoBehaviour:
   RightWing: {fileID: 2094245281}
   IntensityRectTransform: {fileID: 1934494467}
   FinalRectTransform: {fileID: 1412703298}
+  PauseRectTransform: {fileID: 1412703298}
   speed: 10
 --- !u!1001 &2062872047
 PrefabInstance:
@@ -6773,15 +6774,15 @@ MonoBehaviour:
   player: {fileID: 2059123757}
   stageName: 
   spawnPointsOffset:
-  - {x: 0, y: 30, z: 100}
-  - {x: 0, y: -30, z: 100}
-  - {x: -30, y: 0, z: 100}
-  - {x: 30, y: 0, z: 100}
-  - {x: -30, y: 0, z: 100}
-  - {x: 30, y: 0, z: 100}
-  - {x: 0, y: 0, z: 100}
-  - {x: 0, y: 0, z: 100}
-  - {x: 0, y: 0, z: 100}
+  - {x: 0, y: 60, z: 110}
+  - {x: 0, y: -60, z: 110}
+  - {x: -60, y: 0, z: 110}
+  - {x: 60, y: 0, z: 110}
+  - {x: -60, y: 0, z: 110}
+  - {x: 60, y: 0, z: 110}
+  - {x: 0, y: 0, z: 350}
+  - {x: 0, y: 0, z: 200}
+  - {x: 0, y: 0, z: 110}
   index: 0
 --- !u!135 &1050581609840963706
 SphereCollider:

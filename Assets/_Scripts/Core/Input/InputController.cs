@@ -28,6 +28,9 @@ namespace StarWriter.Core.Input
 
         [SerializeField]
         RectTransform FinalRectTransform;
+
+        [SerializeField]
+        RectTransform PauseRectTransform;
         #endregion
 
         public float speed;
@@ -178,6 +181,7 @@ namespace StarWriter.Core.Input
                 }
 
                 IntensityRectTransform.rotation = Quaternion.Euler(0, 0, 180);
+                PauseRectTransform.rotation = Quaternion.Euler(0, 0, 180);
                 FinalRectTransform.rotation = Quaternion.Euler(0, 0, 180);
                 gameObject.GetComponent<TrailSpawner>().waitTime = .3f;
             }
@@ -189,6 +193,7 @@ namespace StarWriter.Core.Input
                 }
 
                 IntensityRectTransform.rotation = Quaternion.identity;
+                PauseRectTransform.rotation = Quaternion.identity;
                 FinalRectTransform.rotation = Quaternion.identity;
                 gameObject.GetComponent<TrailSpawner>().waitTime = 1.5f;
             }
