@@ -447,12 +447,6 @@ MonoBehaviour:
   waitTime: 0.1
   startDelay: 2
   useRandom: 0
---- !u!224 &675731974 stripped
-RectTransform:
-  m_CorrespondingSourceObject: {fileID: 477729227, guid: c8544725eea141847982b286866c858d,
-    type: 3}
-  m_PrefabInstance: {fileID: 1586480801}
-  m_PrefabAsset: {fileID: 0}
 --- !u!224 &844287709 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 8035663729811309821, guid: c8544725eea141847982b286866c858d,
@@ -1111,12 +1105,17 @@ PrefabInstance:
         type: 3}
       propertyPath: FinalRectTransform
       value: 
-      objectReference: {fileID: 1237652514}
+      objectReference: {fileID: 1675222500}
+    - target: {fileID: 7659183800259804543, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: PauseRectTransform
+      value: 
+      objectReference: {fileID: 1663880876}
     - target: {fileID: 7659183800259804543, guid: c8544725eea141847982b286866c858d,
         type: 3}
       propertyPath: IntensityRectTransform
       value: 
-      objectReference: {fileID: 675731974}
+      objectReference: {fileID: 893616187}
     - target: {fileID: 8035663728123421218, guid: c8544725eea141847982b286866c858d,
         type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
@@ -1260,6 +1259,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b60804daa69172f468c76a40afdaaa28, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!224 &1663880876 stripped
+RectTransform:
+  m_CorrespondingSourceObject: {fileID: 8035663729387164693, guid: c8544725eea141847982b286866c858d,
+    type: 3}
+  m_PrefabInstance: {fileID: 1586480801}
+  m_PrefabAsset: {fileID: 0}
+--- !u!224 &1675222500 stripped
+RectTransform:
+  m_CorrespondingSourceObject: {fileID: 7181345258476456346, guid: c8544725eea141847982b286866c858d,
+    type: 3}
+  m_PrefabInstance: {fileID: 1586480801}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1829578212
 GameObject:
   m_ObjectHideFlags: 0
