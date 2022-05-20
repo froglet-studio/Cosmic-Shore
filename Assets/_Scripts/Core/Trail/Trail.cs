@@ -102,19 +102,19 @@ public class Trail : MonoBehaviour, ICollidable
                 OnTrailCollision?.Invoke(ship.GetComponent<Player>().PlayerUUID, intensityChange);
                 HapticController.PlayBlockCollisionHaptics();
             }
-            else
-            {
-                // AI Hit
-                var impactVector = ship.transform.forward * ship.GetComponent<AiShipController>().speed;
-                if (ship == GameObject.FindWithTag("red"))
-                {
-                    StartCoroutine(blockImpact.ImpactCoroutine(impactVector, tempMaterial, "red"));
-                }
-                else
-                {
-                    StartCoroutine(blockImpact.ImpactCoroutine(impactVector, tempMaterial, "blue"));
-                }
-            }
+            //else
+            //{
+            //    // AI Hit
+            //    var impactVector = ship.transform.forward * ship.GetComponent<AiShipController>().speed;
+            //    if (ship == GameObject.FindWithTag("red"))
+            //    {
+            //        StartCoroutine(blockImpact.ImpactCoroutine(impactVector, tempMaterial, "red"));
+            //    }
+            //    else
+            //    {
+            //        StartCoroutine(blockImpact.ImpactCoroutine(impactVector, tempMaterial, "blue"));
+            //    }
+            //}
             Destroy(gameObject);
         }
     }

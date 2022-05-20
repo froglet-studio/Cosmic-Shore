@@ -447,6 +447,12 @@ MonoBehaviour:
   waitTime: 0.1
   startDelay: 2
   useRandom: 0
+--- !u!224 &675731974 stripped
+RectTransform:
+  m_CorrespondingSourceObject: {fileID: 477729227, guid: c8544725eea141847982b286866c858d,
+    type: 3}
+  m_PrefabInstance: {fileID: 1586480801}
+  m_PrefabAsset: {fileID: 0}
 --- !u!224 &844287709 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 8035663729811309821, guid: c8544725eea141847982b286866c858d,
@@ -573,6 +579,42 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 126
   m_CollisionDetection: 0
+--- !u!1 &1237652513
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1237652514}
+  m_Layer: 0
+  m_Name: GameObject
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &1237652514
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1237652513}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: -1.9520186}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 6
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: -1.1465155, y: -0.7644328}
+  m_SizeDelta: {x: 100, y: 100}
+  m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &1252136493
 GameObject:
   m_ObjectHideFlags: 0
@@ -1069,12 +1111,12 @@ PrefabInstance:
         type: 3}
       propertyPath: FinalRectTransform
       value: 
-      objectReference: {fileID: 1803291716}
+      objectReference: {fileID: 1237652514}
     - target: {fileID: 7659183800259804543, guid: c8544725eea141847982b286866c858d,
         type: 3}
       propertyPath: IntensityRectTransform
       value: 
-      objectReference: {fileID: 893616187}
+      objectReference: {fileID: 675731974}
     - target: {fileID: 8035663728123421218, guid: c8544725eea141847982b286866c858d,
         type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
@@ -1218,12 +1260,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b60804daa69172f468c76a40afdaaa28, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!224 &1803291716 stripped
-RectTransform:
-  m_CorrespondingSourceObject: {fileID: 7181345258476456346, guid: c8544725eea141847982b286866c858d,
-    type: 3}
-  m_PrefabInstance: {fileID: 1586480801}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1829578212
 GameObject:
   m_ObjectHideFlags: 0
