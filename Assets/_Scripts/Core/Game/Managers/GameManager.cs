@@ -115,6 +115,11 @@ namespace StarWriter.Core
         {
             if (PauseSystem.GetIsPaused()) { TogglePauseGame(); }
         }
+
+        public void PauseGame()
+        {
+            if (!PauseSystem.GetIsPaused()) { TogglePauseGame(); }
+        }
         /// <summary>
         /// Pauses game play
         /// </summary>

@@ -117,7 +117,7 @@ Material:
     - _angle: 0
     - _multiply: 0
     - _muton: 0
-    - _opacity: 0.16999999
+    - _opacity: 1.0100001
     - _player: 0
     - _red: 0
     - _scale: 0
