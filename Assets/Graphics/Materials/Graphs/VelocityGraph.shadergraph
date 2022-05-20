@@ -246,20 +246,6 @@
         {
             "m_OutputSlot": {
                 "m_Node": {
-                    "m_Id": "0019e2f55f9c499fa765be7e0e8a0d40"
-                },
-                "m_SlotId": 2
-            },
-            "m_InputSlot": {
-                "m_Node": {
-                    "m_Id": "e3fbcba8bc324e0da37133f96ffe531f"
-                },
-                "m_SlotId": 3
-            }
-        },
-        {
-            "m_OutputSlot": {
-                "m_Node": {
                     "m_Id": "052cd977e3c74491b4beb214fa8e7921"
                 },
                 "m_SlotId": 0
@@ -745,6 +731,20 @@
                     "m_Id": "669324c264dc45f6aaf6b01bb3af2ed8"
                 },
                 "m_SlotId": 0
+            }
+        },
+        {
+            "m_OutputSlot": {
+                "m_Node": {
+                    "m_Id": "775296de87e345c6ba27e030373a07ac"
+                },
+                "m_SlotId": 3
+            },
+            "m_InputSlot": {
+                "m_Node": {
+                    "m_Id": "e3fbcba8bc324e0da37133f96ffe531f"
+                },
+                "m_SlotId": 3
             }
         },
         {
@@ -2343,8 +2343,8 @@
     "m_Color": {
         "color": {
             "r": 0.0,
-            "g": 0.020698165521025659,
-            "b": 0.9883373379707336,
+            "g": 0.0009803922148421407,
+            "b": 0.0313725508749485,
             "a": 1.0
         },
         "mode": 1
@@ -3477,8 +3477,8 @@
     "m_Color": {
         "color": {
             "r": 0.0,
-            "g": 0.02731139212846756,
-            "b": 1.3041188716888428,
+            "g": 0.0010668514296412469,
+            "b": 0.040753722190856937,
             "a": 0.9411764740943909
         },
         "mode": 1
@@ -4376,9 +4376,9 @@
         "m_Expanded": true,
         "m_Position": {
             "serializedVersion": "2",
-            "x": -2080.0,
-            "y": -165.33331298828126,
-            "width": 209.33349609375,
+            "x": -2188.0,
+            "y": -160.00001525878907,
+            "width": 209.3333740234375,
             "height": 327.9999694824219
         }
     },
@@ -5278,7 +5278,7 @@
     "m_Hidden": false,
     "m_ShaderOutputName": "Power",
     "m_StageCapability": 3,
-    "m_Value": 1.0,
+    "m_Value": 2.509999990463257,
     "m_DefaultValue": 1.0,
     "m_Labels": []
 }
