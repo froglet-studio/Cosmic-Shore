@@ -19,15 +19,15 @@ namespace StarWriter.UI
 
         private void OnEnable()
         {
-            GameSetting.OnChangeGyroStatus += SyncGyroStatus;
+            GameSetting.OnChangeAudioMuteStatus += SyncMusicStatus;
         }
 
         private void OnDisable()
         {
-            GameSetting.OnChangeGyroStatus -= SyncGyroStatus;
+            GameSetting.OnChangeAudioMuteStatus -= SyncMusicStatus;
         }
 
-        private void SyncGyroStatus(bool status)
+        private void SyncMusicStatus(bool status)
         {
             isMuted = status;
             switchToggle.Toggled(isMuted);
