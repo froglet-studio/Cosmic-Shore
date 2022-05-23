@@ -1,6 +1,7 @@
 using UnityEngine;
 using StarWriter.Core;
 using StarWriter.Core.Audio;
+using UnityEngine.UI;
 
 /// <summary>
 /// Displays and controls toggles and buttons on the Pause Menu Panel
@@ -12,6 +13,8 @@ namespace StarWriter.UI
     {
         GameManager gameManager;
         AudioManager audioManager;
+
+        public Button pauseButton;
 
         // Start is called before the first frame update
         void Start()
@@ -51,10 +54,16 @@ namespace StarWriter.UI
         /// <summary>
         /// UnPauses the game 
         /// </summary>
-        public void OnClickResumeButton()
+        public void OnClickResumeGameButton()
         {
             gameManager.UnPauseGame();
-            transform.GetComponentInParent<GameMenu>().OnClickUnpauseGame();
+            transform.GetComponent<GameMenu>().OnClickUnpauseGame();
+        }
+        public void OnClickResumeTutorialButton()
+        {
+            gameManager.UnPauseGame();
+            pauseButton.gameObject.SetActive(true);
+            gameObject.SetActive(false);
         }
 
 
