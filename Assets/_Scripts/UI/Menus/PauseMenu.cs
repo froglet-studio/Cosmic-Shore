@@ -12,7 +12,7 @@ namespace StarWriter.UI
     public class PauseMenu : MonoBehaviour
     {
         GameManager gameManager;
-        AudioManager audioManager;
+        GameSetting gameSetting;  
 
         public Button pauseButton;
 
@@ -20,7 +20,7 @@ namespace StarWriter.UI
         void Start()
         {
             gameManager = GameManager.Instance;
-            audioManager = AudioManager.Instance;
+            gameSetting = GameSetting.Instance;
 
         }
         /// <summary>
@@ -28,14 +28,14 @@ namespace StarWriter.UI
         /// </summary>
         public void OnToggleMusic()
         {
-            audioManager.ToggleMute();
+            gameSetting.ChangeAudioMuteStatus();
         }
         /// <summary>
         /// Toggles the Gyroscope On/Off
         /// </summary>
         public void OnToggleGyro()
         {
-            gameManager.OnClickGyroToggleButton();
+            gameSetting.ChangeGyroStatus();
         }
         /// <summary>
         /// Calls the Tutorial Scene to be loaded

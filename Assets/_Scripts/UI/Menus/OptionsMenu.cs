@@ -9,7 +9,6 @@ public class OptionsMenu : MonoBehaviour
 
     public void OnPressButtonReturnToMain()
     {
-        Debug.Log("Game Settings Pressed");
         Main_Menu_Panel.SetActive(true);
         gameObject.SetActive(false);
     }

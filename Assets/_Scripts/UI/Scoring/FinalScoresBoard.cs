@@ -12,9 +12,12 @@ namespace StarWriter.Core
         public TextMeshProUGUI scoreText;
         public TextMeshProUGUI highScoreText;
         public GameObject replayButton;
+
+        GameManager gameManager;
         
         void Start()
         {
+            gameManager = GameManager.Instance;
             DisplayScores();
         }
 
@@ -32,9 +35,7 @@ namespace StarWriter.Core
 
         public void OnClickReplayGameButtonPressed()
         {
-            Scene scene = SceneManager.GetActiveScene();
-            SceneManager.LoadScene(scene.name);
-            Debug.Log("play again");
+            gameManager.RestartGame();
         }
     }
 }

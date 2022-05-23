@@ -11,17 +11,11 @@ namespace StarWriter.Core
         [SerializeField]
         private bool hasSkippedTutorial = false;
 
-        [SerializeField]
-        private bool isGyroEnabled = true;
-
         private AudioManager audioManager;
         private GameSetting gameSettings;
 
         public delegate void OnPlayGameEvent();
         public static event OnPlayGameEvent onPlayGame;
-
-        public delegate void OnToggleGyroEvent(bool status);
-        public static event OnToggleGyroEvent onToggleGyro;
 
         void Start()
         {
@@ -43,28 +37,20 @@ namespace StarWriter.Core
         {
             
             // Set gameSettings Tutorial status
-            gameSettings.TutorialEnabled = !gameSettings.TutorialEnabled;
+            gameSettings.IsTutorialEnabled = !gameSettings.IsTutorialEnabled;
             //Set PlayerPrefs Tutorial status
-            if (gameSettings.TutorialEnabled == true)
+            if (gameSettings.IsTutorialEnabled == true)
             {
-                PlayerPrefs.SetInt("tutorialEnabled", 1);  //tutorial enabled
+                PlayerPrefs.SetInt("isTutorialEnabled", 1);  //tutorial enabled
             }
             else
             {
-                PlayerPrefs.SetInt("tutorialEnabled", 0);  //tutorial disabled
+                PlayerPrefs.SetInt("isTutorialEnabled", 0);  //tutorial disabled
             }
             UnPauseGame();
             SceneManager.LoadScene(1);
         }
-        public void TurnGyroON()
-        {
-            onToggleGyro(true);
-        }
-
-        public void TurnGyroOFF()
-        {
-            onToggleGyro(false);
-        }
+        
 
         /// <summary>
         /// Toggles the Gyro On/Off
@@ -72,20 +58,9 @@ namespace StarWriter.Core
         public void OnClickGyroToggleButton()
         {
             // Set gameSettings Gyro status
-            gameSettings.GyroEnabled = isGyroEnabled = !isGyroEnabled;
-            onToggleGyro(isGyroEnabled);
-
-            // Set PlayerPrefs Gyro status
-            if (isGyroEnabled == true)
-            {
-                PlayerPrefs.SetInt("gyroEnabled", 1); //gyro enabled
-
-            }
-            else
-            {
-                PlayerPrefs.SetInt("gyroEnabled", 0);  //gyro disabled
-            }
+            gameSettings.ChangeGyroStatus();
         }
+
         /// <summary>
         /// Starts Tutorial or Game bases on hasSkippedTutorial status
         /// </summary>
@@ -121,7 +96,7 @@ namespace StarWriter.Core
             if (!PauseSystem.GetIsPaused()) { TogglePauseGame(); }
         }
         /// <summary>
-        /// Pauses game play
+        /// Toggles the Pause System
         /// </summary>
         public void TogglePauseGame()
         {
@@ -130,7 +105,6 @@ namespace StarWriter.Core
 
         public void WaitOnPlayerLoading()
         {
-            Debug.Log("WaitOnPlayerLoading");
             onPlayGame?.Invoke();
         }
     }

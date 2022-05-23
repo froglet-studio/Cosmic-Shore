@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using Amoebius.Utility.Singleton;
 using UnityEngine;
@@ -54,22 +55,42 @@ namespace StarWriter.Core.Audio
             //if(PlayerPrefs.GetInt("isMuted") != 1) { isMuted = false; } SetMasterAudioVolume 
 
             //musicSource1.Play();
-            PlayMusicClip(musicSource1.clip);
+            PlayMusicClip(musicSource1.clip);    
+        }
 
-           
-            
+        private void OnEnable()
+        {
+            GameSetting.OnChangeAudioMuteStatus += ChangeMuteStatus;
+        }
+
+        private void OnDisable()
+        {
+            GameSetting.OnChangeAudioMuteStatus -= ChangeMuteStatus;
+        }
+
+        private void ChangeMuteStatus(bool status)
+        {
+            isMuted = status;
+            if (isMuted)
+            {
+                SetMasterAudioVolume(0);
+            }
+            else
+            {
+                SetMasterAudioVolume(volume);
+            }
         }
 
         private void FixedUpdate()
         {
-            if (isMuted) //Mutes
-            {
-                SetMusicVolume(0f);
-            }
-            else if (!isMuted) //UnMutes
-            {
-                SetMusicVolume(volume);
-            }
+            //if (isMuted) //Mutes
+            //{
+            //    SetMusicVolume(0f);
+            //}
+            //else if (!isMuted) //UnMutes
+            //{
+            //    SetMusicVolume(volume);
+            //}
         }
 
         public void PlayMusicClip(AudioClip audioClip)
@@ -168,23 +189,7 @@ namespace StarWriter.Core.Audio
             sfxSource.volume = volume;
         }
 
-        // Toggles all game sound status
-        public void ToggleMute()
-        {
-            GameSetting.Instance.IsMuted = isMuted = !isMuted;
-
-            // Set PlayerPrefs isMuted bool status
-            if (isMuted)
-            {
-                PlayerPrefs.SetInt("isMuted", 1); //true
-                SetMasterAudioVolume(0);
-            }
-            else
-            {
-                PlayerPrefs.SetInt("isMuted", 0);  //false
-                SetMasterAudioVolume(volume);
-            }
-        }
+      
     }
 }
 
