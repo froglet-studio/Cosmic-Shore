@@ -68,7 +68,6 @@ public class TutorialMuton : MonoBehaviour
     }
     void MoveMuton()
     {
-        //transform.position = player.transform.forward + spawnPointsOffset[index];
         transform.position = player.transform.position +
                              player.transform.right * spawnPointsOffset[index].x +
                              player.transform.up * spawnPointsOffset[index].y +
