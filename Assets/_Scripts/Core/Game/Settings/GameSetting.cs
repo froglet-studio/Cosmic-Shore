@@ -31,18 +31,30 @@ namespace StarWriter.Core
         public bool IsGyroEnabled { get => isGyroEnabled; set => isGyroEnabled = value; }
         #endregion
 
+        private bool isFirstTimePlaying = false;
+
+        private void Awake()
+        {
+            PlayerPrefs.SetInt("Skip Tutorial", 0);
+        }
+
         private void Start()
         {
-            if(PlayerPrefs.GetInt("isMuted") == 1)
+            
+            if(isFirstTimePlaying == false)
             {
-                isMuted = true;
+                if (PlayerPrefs.GetInt("isMuted") == 1)
+                {
+                    isMuted = true;
+                }
+                else { isMuted = false; }
+                if (PlayerPrefs.GetInt("isTutorialEnabled") == 1)
+                {
+                    isTutorialEnabled = true;
+                }
+                else { isTutorialEnabled = false; }
             }
-            else { isMuted = false; }
-            if (PlayerPrefs.GetInt("isTutorialEnabled") == 1)
-            {
-                isTutorialEnabled = true;
-            }
-            else { isTutorialEnabled = false; }
+            
         }
 
         public void ChangeAudioMuteStatus()

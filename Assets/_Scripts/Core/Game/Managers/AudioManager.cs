@@ -52,9 +52,6 @@ namespace StarWriter.Core.Audio
             musicSource1.loop = true;
             musicSource2.loop = true;
 
-            //if(PlayerPrefs.GetInt("isMuted") != 1) { isMuted = false; } SetMasterAudioVolume 
-
-            //musicSource1.Play();
             PlayMusicClip(musicSource1.clip);    
         }
 
@@ -101,10 +98,16 @@ namespace StarWriter.Core.Audio
             activeAudioSource.Play();
         }
 
-        public void PlayNextMusicClip()
+        public AudioClip ToggleMusicPlaylist()
         {
             Debug.Log("Called play next song");
             firstMusicSourceIsPlaying = !firstMusicSourceIsPlaying;
+            if (firstMusicSourceIsPlaying)
+            {
+                return musicSource2.clip;
+            }
+            else { return musicSource1.clip;  }
+                
         }
 
         public void PlayMusicClipWithFade(AudioClip audioClip, float transitionTime = 1.0f)

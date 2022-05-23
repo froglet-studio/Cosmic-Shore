@@ -14,7 +14,8 @@ namespace StarWriter.UI
             GameSetting gameSettings = GameSetting.Instance;
             isGyroEnabled = gameSettings.IsGyroEnabled;
 
-            switchToggle = GetComponent<SwitchToggle>();                           
+            switchToggle = GetComponent<SwitchToggle>();
+            SyncGyroStatus(isGyroEnabled);
         }
 
         private void OnEnable()
@@ -30,7 +31,7 @@ namespace StarWriter.UI
         private void SyncGyroStatus(bool status)
         {
             isGyroEnabled = status;
-            switchToggle.Toggled(isGyroEnabled);
+            switchToggle.SetToggleValue(isGyroEnabled);
         }
     }
 

@@ -19,7 +19,7 @@ namespace StarWriter.Core
 
         void Start()
         {
-            PlayerPrefs.SetInt("Skip Tutorial", 0);
+            
             gameSettings = GameSetting.Instance;
             audioManager = AudioManager.Instance;
 
@@ -80,12 +80,9 @@ namespace StarWriter.Core
         public void RestartGame()
         {
             UnPauseGame();
-            audioManager.PlayNextMusicClip();
+            //audioManager.PlayMusicClip(audioManager.ToggleMusicPlaylist());
             SceneManager.LoadScene(2);
         }
-        /// <summary>
-        /// UnPauses game play
-        /// </summary>
         public void UnPauseGame()
         {
             if (PauseSystem.GetIsPaused()) { TogglePauseGame(); }
@@ -95,6 +92,9 @@ namespace StarWriter.Core
         {
             if (!PauseSystem.GetIsPaused()) { TogglePauseGame(); }
         }
+        /// <summary>
+        /// UnPauses game play
+        /// </summary>
         /// <summary>
         /// Toggles the Pause System
         /// </summary>
