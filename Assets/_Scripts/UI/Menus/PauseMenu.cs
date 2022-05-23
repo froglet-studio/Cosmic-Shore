@@ -1,6 +1,7 @@
 using UnityEngine;
 using StarWriter.Core;
 using StarWriter.Core.Audio;
+using UnityEngine.UI;
 
 /// <summary>
 /// Displays and controls toggles and buttons on the Pause Menu Panel
@@ -11,13 +12,15 @@ namespace StarWriter.UI
     public class PauseMenu : MonoBehaviour
     {
         GameManager gameManager;
-        AudioManager audioManager;
+        GameSetting gameSetting;  
+
+        public Button pauseButton;
 
         // Start is called before the first frame update
         void Start()
         {
             gameManager = GameManager.Instance;
-            audioManager = AudioManager.Instance;
+            gameSetting = GameSetting.Instance;
 
         }
         /// <summary>
@@ -25,14 +28,14 @@ namespace StarWriter.UI
         /// </summary>
         public void OnToggleMusic()
         {
-            audioManager.ToggleMute();
+            gameSetting.ChangeAudioMuteStatus();
         }
         /// <summary>
         /// Toggles the Gyroscope On/Off
         /// </summary>
         public void OnToggleGyro()
         {
-            gameManager.OnClickGyroToggleButton();
+            gameSetting.ChangeGyroStatus();
         }
         /// <summary>
         /// Calls the Tutorial Scene to be loaded
@@ -51,10 +54,16 @@ namespace StarWriter.UI
         /// <summary>
         /// UnPauses the game 
         /// </summary>
-        public void OnClickResumeButton()
+        public void OnClickResumeGameButton()
         {
             gameManager.UnPauseGame();
-            transform.GetComponentInParent<GameMenu>().OnClickUnpauseGame();
+            transform.GetComponent<GameMenu>().OnClickUnpauseGame();
+        }
+        public void OnClickResumeTutorialButton()
+        {
+            gameManager.UnPauseGame();
+            pauseButton.gameObject.SetActive(true);
+            gameObject.SetActive(false);
         }
 
 

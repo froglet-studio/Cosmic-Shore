@@ -308,6 +308,19 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   handleRectTransform: {fileID: 1262661686}
+--- !u!114 &780832103
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 780832097}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a5e2b4a5636ced244b83d06f18788020, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  switchToggle: {fileID: 780832100}
 --- !u!1 &989920293
 GameObject:
   m_ObjectHideFlags: 0
@@ -480,6 +493,19 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   handleRectTransform: {fileID: 1329881673}
+--- !u!114 &1005419148
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1005419142}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 58120bc698869fc468d99116533786d4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  switchToggle: {fileID: 1005419145}
 --- !u!1 &1073924403 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 3902679334179489300, guid: f044b6ad282929f4d9ca817c0e5a305a,
@@ -582,18 +608,6 @@ AudioSource:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
---- !u!114 &1143855769 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 3902679333267616925, guid: f044b6ad282929f4d9ca817c0e5a305a,
-    type: 3}
-  m_PrefabInstance: {fileID: 3902679334405631492}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 22f4a173a9895134f820927606b9708b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!4 &1205685956 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 4853709196820857187, guid: ba70c0f3eb077d44b8a538982d02dadc,
@@ -955,6 +969,18 @@ Transform:
     type: 3}
   m_PrefabInstance: {fileID: 1564738380}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &1726446934 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 7876322935933696371, guid: bd0ed2313b0c31841835230bedeaa90d,
+    type: 3}
+  m_PrefabInstance: {fileID: 6205945644082756535}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c84cc795715b8664aa69c3c613612a4f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &1867118896
 GameObject:
   m_ObjectHideFlags: 0
@@ -1577,7 +1603,7 @@ PrefabInstance:
         type: 3}
       propertyPath: onValueChanged.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
-      objectReference: {fileID: 1143855769}
+      objectReference: {fileID: 1726446934}
     - target: {fileID: 2905640492595912166, guid: 7b41307a62a8b6f4499e38f52d12adcb,
         type: 3}
       propertyPath: onValueChanged.m_PersistentCalls.m_Calls.Array.data[1].m_Target
@@ -1591,7 +1617,7 @@ PrefabInstance:
     - target: {fileID: 2905640492595912166, guid: 7b41307a62a8b6f4499e38f52d12adcb,
         type: 3}
       propertyPath: onValueChanged.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
-      value: ToggleMute
+      value: ChangeAudioMuteStatus
       objectReference: {fileID: 0}
     - target: {fileID: 2905640492595912166, guid: 7b41307a62a8b6f4499e38f52d12adcb,
         type: 3}
@@ -1601,7 +1627,7 @@ PrefabInstance:
     - target: {fileID: 2905640492595912166, guid: 7b41307a62a8b6f4499e38f52d12adcb,
         type: 3}
       propertyPath: onValueChanged.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
-      value: StarWriter.Core.Audio.AudioManager, Assembly-CSharp
+      value: StarWriter.Core.GameSetting, Assembly-CSharp
       objectReference: {fileID: 0}
     - target: {fileID: 2905640492595912166, guid: 7b41307a62a8b6f4499e38f52d12adcb,
         type: 3}
