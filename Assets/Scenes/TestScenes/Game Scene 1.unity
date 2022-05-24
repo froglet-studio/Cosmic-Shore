@@ -1247,13 +1247,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   intensityAmount: 0.7
   sphereRadius: 100
-  trailLifeTimeIncrease: 20
   scoreBonus: 5
-  aiShip: {fileID: 1892142149}
   spentMutonPrefab: {fileID: 8491596592871572304, guid: f39596c98ed9d644a834f2fa27ec90ca,
     type: 3}
   Muton: {fileID: 7244393970774794917}
   material: {fileID: 2100000, guid: fd25dd816aa220f42959e76857142a39, type: 2}
+  lifeTimeIncrease: 0
 --- !u!54 &430359315
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -1369,7 +1368,7 @@ RectTransform:
   - {fileID: 95831511}
   - {fileID: 900861119}
   m_Father: {fileID: 0}
-  m_RootOrder: 3
+  m_RootOrder: 9
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
@@ -1388,6 +1387,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fc9985f1de22b3c4f963a6a97bf6fd05, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  intensityMeterPanel: {fileID: 0}
+  pauseMenuPanel: {fileID: 0}
+  finalScorePanel: {fileID: 0}
+  pauseButton: {fileID: 0}
 --- !u!114 &477729229
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1614,11 +1617,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   trail: {fileID: 5776304996075792891, guid: 67423358d7ae45d41a0422877a7e7de9, type: 3}
-  head: {fileID: 487984179}
   offset: 0
   trailPeriod: 0.1
   lifeTime: 20
   waitTime: 0.5
+  startDelay: 2
   useRandom: 1
 --- !u!114 &487984176
 MonoBehaviour:
@@ -1650,8 +1653,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9ca79d17578366e4f9cd2b19173ecab8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  playerName: 
   playerUUID: ai
   playerSO: {fileID: 11400000, guid: 9d0e2fcb63deda84a9b294b4f585717f, type: 2}
+  playerColor: {r: 0, g: 0, b: 0, a: 1}
+  playerShipPrefab: {fileID: 0}
+  playerTrailPrefab: {fileID: 0}
 --- !u!33 &487984178
 MeshFilter:
   m_ObjectHideFlags: 0
@@ -1675,7 +1682,7 @@ Transform:
   - {fileID: 74279670}
   - {fileID: 106090240}
   m_Father: {fileID: 0}
-  m_RootOrder: 6
+  m_RootOrder: 4
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!54 &487984180
 Rigidbody:
@@ -2313,7 +2320,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 0
+  m_RootOrder: 7
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &1252136497
 MonoBehaviour:
@@ -2585,7 +2592,7 @@ Transform:
   - {fileID: 991348141}
   - {fileID: 1689916365}
   m_Father: {fileID: 0}
-  m_RootOrder: 4
+  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1385611786
 GameObject:
@@ -3019,7 +3026,7 @@ Transform:
   m_Children:
   - {fileID: 3759409409641773613}
   m_Father: {fileID: 0}
-  m_RootOrder: 5
+  m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &1556773158
 MonoBehaviour:
@@ -3033,19 +3040,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4b03e7163961e2c4b9d04056b4fcb40e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  CloseCam: {fileID: 997337168}
-  FarCam: {fileID: 165422730}
   shipTransform: {fileID: 1556773156}
   Fusilage: {fileID: 8631596354212526578}
   LeftWing: {fileID: 3145700090026864792}
   RightWing: {fileID: 6413447646132700981}
-  UITransform: {fileID: 893616187}
-  rotationSpeed: 1.3
-  rotationThrottleScaler: 1.04
+  IntensityRectTransform: {fileID: 0}
+  FinalRectTransform: {fileID: 0}
+  PauseRectTransform: {fileID: 0}
   speed: 0
-  throttleScaler: 50
-  OnThrottleEventThreshold: 1
-  gyroEnabled: 1
 --- !u!54 &1556773159
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -3074,8 +3076,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9ca79d17578366e4f9cd2b19173ecab8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  playerName: 
   playerUUID: admin
   playerSO: {fileID: 11400000, guid: 0261c50928a2b8e4f833e2f25f6f6669, type: 2}
+  playerColor: {r: 0, g: 0, b: 0, a: 1}
+  playerShipPrefab: {fileID: 0}
+  playerTrailPrefab: {fileID: 0}
 --- !u!114 &1556773162
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3089,11 +3095,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   trail: {fileID: 5776304996075792891, guid: 69a4d7cef045acb4d91231253340d8bc, type: 3}
-  head: {fileID: 1556773156}
   offset: 0
   trailPeriod: 0.1
   lifeTime: 20
   waitTime: 0.5
+  startDelay: 2
   useRandom: 1
 --- !u!1 &1689916364
 GameObject:
@@ -3252,7 +3258,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 2
+  m_RootOrder: 5
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &1829578216
 MonoBehaviour:
@@ -3412,8 +3418,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9ca79d17578366e4f9cd2b19173ecab8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  playerName: 
   playerUUID: ai
   playerSO: {fileID: 11400000, guid: 8fc08d34109b0884b9c23412e966dca5, type: 2}
+  playerColor: {r: 0, g: 0, b: 0, a: 1}
+  playerShipPrefab: {fileID: 0}
+  playerTrailPrefab: {fileID: 0}
 --- !u!33 &1892142156
 MeshFilter:
   m_ObjectHideFlags: 0
@@ -3437,7 +3447,7 @@ Transform:
   - {fileID: 5348440135470691581}
   - {fileID: 543450652605290995}
   m_Father: {fileID: 0}
-  m_RootOrder: 7
+  m_RootOrder: 6
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &1892142158
 MonoBehaviour:
@@ -3470,11 +3480,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   trail: {fileID: 5776304996075792891, guid: 6b9a0a1cfa64ed94b92cd8fe8e4fb1ee, type: 3}
-  head: {fileID: 1892142157}
   offset: 0
   trailPeriod: 0.1
   lifeTime: 20
   waitTime: 0.5
+  startDelay: 2
   useRandom: 1
 --- !u!54 &1892142160
 Rigidbody:
@@ -3846,7 +3856,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 9
+  m_RootOrder: 8
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2020047494
 GameObject:
@@ -4464,7 +4474,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: fd25dd816aa220f42959e76857142a39, type: 2}
+  - {fileID: 2100000, guid: 383f21e8586fd7243a19e1d0f26110d0, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
