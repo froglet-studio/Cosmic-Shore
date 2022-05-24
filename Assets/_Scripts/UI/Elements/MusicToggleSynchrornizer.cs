@@ -1,38 +1,38 @@
 using UnityEngine;
 using StarWriter.Core;
-using System;
+using UnityEngine.UI;
 
 namespace StarWriter.UI
 {
     public class MusicToggleSynchrornizer : MonoBehaviour
     {
-        private bool isMuted = false;
-        public SwitchToggle switchToggle;
+        private bool isMuted;
 
-        void Start()
+        [SerializeField]
+        private Toggle toggle;
+
+        private void Awake()
         {
-            GameSetting gameSettings = GameSetting.Instance;
-            isMuted = gameSettings.IsMuted;
+            toggle = GetComponent<Toggle>();
 
-            switchToggle = GetComponent<SwitchToggle>();
-            SyncMusicStatus(isMuted);
-        }
-
-        private void OnEnable()
-        {
-            GameSetting.OnChangeAudioMuteStatus += SyncMusicStatus;
-        }
-
-        private void OnDisable()
-        {
-            GameSetting.OnChangeAudioMuteStatus -= SyncMusicStatus;
-        }
-
-        private void SyncMusicStatus(bool status)
-        {
-            isMuted = status;
-            switchToggle.SetToggleValue(isMuted);
+            if (PlayerPrefs.HasKey("isMuted"))
+            {
+                if (PlayerPrefs.GetInt("isMuted") == 0)
+                {
+                    isMuted = false;
+                }
+                else
+                {
+                    isMuted = true;
+                }
+                toggle.isOn = isMuted;
+            }
+            else //if PlayerPrefs is null for some reason
+            {
+                PlayerPrefs.SetInt("isMuted", 0);
+                toggle.isOn = isMuted = false;
+                PlayerPrefs.Save();
+            }
         }
     }
-
 }

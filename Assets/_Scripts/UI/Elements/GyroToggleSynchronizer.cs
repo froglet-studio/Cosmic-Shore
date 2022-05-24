@@ -1,39 +1,39 @@
 using UnityEngine;
 using StarWriter.Core;
-using System;
+using UnityEngine.UI;
 
 namespace StarWriter.UI
 {
     public class GyroToggleSynchronizer : MonoBehaviour
     {
-        private bool isGyroEnabled = true;
-        public SwitchToggle switchToggle;
-  
-        void Start()
-        {
-            GameSetting gameSettings = GameSetting.Instance;
-            isGyroEnabled = gameSettings.IsGyroEnabled;
+        private bool isGyroEnabled;
 
-            switchToggle = GetComponent<SwitchToggle>();
-            SyncGyroStatus(isGyroEnabled);
-        }
+        [SerializeField]
+        private Toggle toggle;
 
-        private void OnEnable()
+        private void Awake()
         {
-            GameSetting.OnChangeGyroStatus += SyncGyroStatus;
-        }
+            toggle = GetComponent<Toggle>();
 
-        private void OnDisable()
-        {
-            GameSetting.OnChangeGyroStatus -= SyncGyroStatus;
-        }
-
-        private void SyncGyroStatus(bool status)
-        {
-            isGyroEnabled = status;
-            switchToggle.SetToggleValue(isGyroEnabled);
+            if (PlayerPrefs.HasKey("isMuted"))
+            {
+                if (PlayerPrefs.GetInt("isMuted") == 0)
+                {
+                    isGyroEnabled = false;
+                }
+                else
+                {
+                    isGyroEnabled = true;
+                }
+                toggle.isOn = isGyroEnabled;
+            }
+            else
+            {
+                PlayerPrefs.SetInt("isMuted", 0);
+                toggle.isOn = isGyroEnabled = false;
+                PlayerPrefs.Save();
+            }
         }
     }
-
 }
 

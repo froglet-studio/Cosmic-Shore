@@ -22,7 +22,7 @@ namespace StarWriter.Core.Audio
 
         List<AudioSource> AudioSources = new List<AudioSource>();
         
-        private float audioIndex = 0;
+        private float index = 0;
 
         public GameObject musicGO1;
         public GameObject musicGO2;
@@ -76,19 +76,7 @@ namespace StarWriter.Core.Audio
             {
                 SetMasterAudioVolume(volume);
             }
-        }
-
-        private void FixedUpdate()
-        {
-            //if (isMuted) //Mutes
-            //{
-            //    SetMusicVolume(0f);
-            //}
-            //else if (!isMuted) //UnMutes
-            //{
-            //    SetMusicVolume(volume);
-            //}
-        }
+        } 
 
         public void PlayMusicClip(AudioClip audioClip)
         {

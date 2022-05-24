@@ -31,17 +31,26 @@ namespace StarWriter.Core
         public bool IsGyroEnabled { get => isGyroEnabled; set => isGyroEnabled = value; }
         #endregion
 
-        private bool isFirstTimePlaying = false;
-
-        private void Awake()
+        public override void Awake()
         {
-            PlayerPrefs.SetInt("Skip Tutorial", 0);
-        }
+            base.Awake();
+            //First Time Playing
+            if (!PlayerPrefs.HasKey("isInitialPlay"))
+            {
+                //Initialize PlayerPrefs
+                PlayerPrefs.SetInt("isInitialPlay", 0);  //set to false after first time
+                PlayerPrefs.SetInt("isTutorialEnabled", 1);
+                PlayerPrefs.SetInt("isMuted", 0);  // music always on first time playing
+                PlayerPrefs.SetInt("isGyroEnabled", 1);
+                PlayerPrefs.Save();
 
-        private void Start()
-        {
-            
-            if(isFirstTimePlaying == false)
+                //Initialize Bools
+                isTutorialEnabled = true;
+                isMuted = false;
+                isGyroEnabled = true;
+            }
+            //Not the First Time Playing
+            else
             {
                 if (PlayerPrefs.GetInt("isMuted") == 1)
                 {
@@ -53,8 +62,13 @@ namespace StarWriter.Core
                     isTutorialEnabled = true;
                 }
                 else { isTutorialEnabled = false; }
+                if (PlayerPrefs.GetInt("isGyroEnabled") == 1)
+                {
+                    isGyroEnabled = true;
+                }
+                else { isGyroEnabled = false; }
+                PlayerPrefs.Save();
             }
-            
         }
 
         public void ChangeAudioMuteStatus()
@@ -65,7 +79,8 @@ namespace StarWriter.Core
                 PlayerPrefs.SetInt("isMuted", 1);
             }
             else { PlayerPrefs.SetInt("isMuted", 0); }
-            OnChangeAudioMuteStatus(isMuted);            
+            PlayerPrefs.Save();
+            OnChangeAudioMuteStatus(isMuted);   //Event to toggle AudioManager isMuted         
         }
 
         public void ChangeGyroStatus()
@@ -76,7 +91,7 @@ namespace StarWriter.Core
                 PlayerPrefs.SetInt("isGyroEnabled", 1);
             }
             else { PlayerPrefs.SetInt("isGyroEnabled", 0); }
-            OnChangeGyroStatus(isGyroEnabled);
+            OnChangeGyroStatus(isGyroEnabled);  //Event to toggle InputController isGryoEnabled
         }
 
         public void TurnGyroOFF()
