@@ -27,6 +27,13 @@ public class SwitchToggle : MonoBehaviour
         handleRectTransform.localPosition += sign * handlePosition;
     }
 
+    public void SetToggleValue(bool status)
+    {
+        toggle.onValueChanged.RemoveListener(Toggled);
+        toggle.isOn = status;
+        toggle.onValueChanged.AddListener(Toggled);
+    }
+
     private void OnDestroy()
     {
         toggle.onValueChanged.RemoveListener(Toggled);

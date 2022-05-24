@@ -6,7 +6,7 @@ namespace StarWriter.UI
 {
     public class MusicToggleSynchrornizer : MonoBehaviour
     {
-        private bool isMuted = true;
+        private bool isMuted = false;
         public SwitchToggle switchToggle;
 
         void Start()
@@ -15,6 +15,7 @@ namespace StarWriter.UI
             isMuted = gameSettings.IsMuted;
 
             switchToggle = GetComponent<SwitchToggle>();
+            SyncMusicStatus(isMuted);
         }
 
         private void OnEnable()
@@ -30,7 +31,7 @@ namespace StarWriter.UI
         private void SyncMusicStatus(bool status)
         {
             isMuted = status;
-            switchToggle.Toggled(isMuted);
+            switchToggle.SetToggleValue(isMuted);
         }
     }
 
