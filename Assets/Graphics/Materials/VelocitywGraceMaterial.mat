@@ -134,5 +134,5 @@ Material:
     - _SpecColor: {r: 0.19999996, g: 0.19999996, b: 0.19999996, a: 1}
     - _playerColor1: {r: 0.49019608, g: 0, b: 0.6386895, a: 0}
     - _playerColor2: {r: 0.22745098, g: 0.63529414, b: 0.8, a: 0}
-    - _velocity: {r: 0.01, g: 0, b: 0, a: 0}
+    - _velocity: {r: 3.1, g: 0, b: 0, a: 0}
   m_BuildTextureStacks: []
