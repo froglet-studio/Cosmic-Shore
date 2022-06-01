@@ -158,6 +158,12 @@ Transform:
   m_Father: {fileID: 487984179}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 90, y: 0, z: 0}
+--- !u!4 &177732148 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 3696267483056767852, guid: c8544725eea141847982b286866c858d,
+    type: 3}
+  m_PrefabInstance: {fileID: 1586480801}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &341343159
 GameObject:
   m_ObjectHideFlags: 0
@@ -447,9 +453,21 @@ MonoBehaviour:
   waitTime: 0.1
   startDelay: 2
   useRandom: 0
+--- !u!4 &491843069 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 2126671201345994155, guid: c8544725eea141847982b286866c858d,
+    type: 3}
+  m_PrefabInstance: {fileID: 1586480801}
+  m_PrefabAsset: {fileID: 0}
 --- !u!224 &844287709 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 8035663729811309821, guid: c8544725eea141847982b286866c858d,
+    type: 3}
+  m_PrefabInstance: {fileID: 1586480801}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &876520474 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 4750495543154980033, guid: c8544725eea141847982b286866c858d,
     type: 3}
   m_PrefabInstance: {fileID: 1586480801}
   m_PrefabAsset: {fileID: 0}
@@ -1207,6 +1225,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7659183800259804543, guid: c8544725eea141847982b286866c858d,
         type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7659183800259804543, guid: c8544725eea141847982b286866c858d,
+        type: 3}
       propertyPath: UITransform
       value: 
       objectReference: {fileID: 893616187}
@@ -1399,6 +1422,38 @@ RectTransform:
     type: 3}
   m_PrefabInstance: {fileID: 1586480801}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &1755114871 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 7659183800259804484, guid: c8544725eea141847982b286866c858d,
+    type: 3}
+  m_PrefabInstance: {fileID: 1586480801}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &1755114876 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 7659183800259804541, guid: c8544725eea141847982b286866c858d,
+    type: 3}
+  m_PrefabInstance: {fileID: 1586480801}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1755114877
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1755114871}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a5235ba14db32154bb03471d8fdc5c74, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  shipTransform: {fileID: 1755114876}
+  Fusilage: {fileID: 491843069}
+  LeftWing: {fileID: 876520474}
+  RightWing: {fileID: 177732148}
+  IntensityRectTransform: {fileID: 893616187}
+  FinalRectTransform: {fileID: 1675222500}
+  PauseRectTransform: {fileID: 1663880876}
+  speed: 0
 --- !u!1 &1829578212
 GameObject:
   m_ObjectHideFlags: 0
