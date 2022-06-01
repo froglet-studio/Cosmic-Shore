@@ -14,7 +14,7 @@ GameObject:
   - component: {fileID: 6724784892155022458}
   - component: {fileID: 4563009547826722997}
   m_Layer: 0
-  m_Name: RedBlock_Grace
+  m_Name: blockOld
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -29,7 +29,7 @@ Transform:
   m_GameObject: {fileID: 5776304996075792891}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 30, y: 0.4, z: 3}
+  m_LocalScale: {x: 3.7, y: 3.7, z: 0.3}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
@@ -63,7 +63,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 6a9bda8b03d768b49af63226292fa2c6, type: 2}
+  - {fileID: 2100000, guid: 5140ec1c42866e849927f442d5965f7f, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -113,6 +113,6 @@ MonoBehaviour:
   intensityChange: -3
   FossilBlock: {fileID: 5776304996075792891, guid: bd8a259abee95ec4895562e6bb8aae76,
     type: 3}
-  material: {fileID: 2100000, guid: 6a9bda8b03d768b49af63226292fa2c6, type: 2}
-  waitTime: 0.1
+  material: {fileID: 2100000, guid: 5140ec1c42866e849927f442d5965f7f, type: 2}
+  waitTime: 0.5
   lifeTime: 20

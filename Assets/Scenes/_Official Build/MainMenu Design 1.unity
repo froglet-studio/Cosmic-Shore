@@ -1878,7 +1878,7 @@ MonoBehaviour:
   lifeTimeIncrease: 3
   sphereRadius: 15
   Muton: {fileID: 8491596593335364973}
-  material: {fileID: 2100000, guid: fd25dd816aa220f42959e76857142a39, type: 2}
+  material: {fileID: 2100000, guid: 383f21e8586fd7243a19e1d0f26110d0, type: 2}
 --- !u!1001 &3902679334405631492
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1969,7 +1969,7 @@ PrefabInstance:
     - target: {fileID: 3902679333267616925, guid: f044b6ad282929f4d9ca817c0e5a305a,
         type: 3}
       propertyPath: volume
-      value: 1
+      value: 0.1
       objectReference: {fileID: 0}
     - target: {fileID: 3902679333267616925, guid: f044b6ad282929f4d9ca817c0e5a305a,
         type: 3}
@@ -2125,7 +2125,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: fd25dd816aa220f42959e76857142a39, type: 2}
+  - {fileID: 2100000, guid: 383f21e8586fd7243a19e1d0f26110d0, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -2826,7 +2826,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 318b4eb62a2693f4e98368eb975997cd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  MutonMaterial: {fileID: 2100000, guid: fd25dd816aa220f42959e76857142a39, type: 2}
+  MutonMaterial: {fileID: 2100000, guid: 383f21e8586fd7243a19e1d0f26110d0, type: 2}
 --- !u!1 &9107254497214813130
 GameObject:
   m_ObjectHideFlags: 0

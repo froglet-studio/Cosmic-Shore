@@ -1,6 +1,8 @@
 ﻿using StarWriter.Core;
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
+
 
 public class TrailSpawner : MonoBehaviour
 {
@@ -9,7 +11,10 @@ public class TrailSpawner : MonoBehaviour
 
     public float offset = 0f;
     public float trailPeriod = .1f;
-    public float lifeTime = 20;
+
+    public float trailLength = 20;
+    //public float trailLength = 20;
+
     public float waitTime = .5f;            // Time until the trail block appears - camera dependent
     public float startDelay = 2;
     public bool useRandom = true;
@@ -19,9 +24,11 @@ public class TrailSpawner : MonoBehaviour
     private static GameObject TrailContainer;
     private IEnumerator trailCoroutine;
 
+    private readonly Queue<GameObject> trailList = new();
+
     public static void ResetTrailContainer()
     {
-        for (var i = 0; i < TrailContainer.transform.childCount; i++)
+        for (var i = TrailContainer.transform.childCount-1; i >= 0; i--)
         {
             var child = TrailContainer.transform.GetChild(i).gameObject;
             Destroy(child);
@@ -38,6 +45,8 @@ public class TrailSpawner : MonoBehaviour
             GameManager.onPlayGame += ResetTrailContainer;
             DontDestroyOnLoad(TrailContainer);
         }
+
+
 
         trailCoroutine = SpawnTrailCoroutine();
         StartCoroutine(trailCoroutine);
@@ -56,8 +65,15 @@ public class TrailSpawner : MonoBehaviour
             Block.transform.parent = TrailContainer.transform;
 
             Trail trailScript = trail.GetComponent<Trail>();
-            trailScript.lifeTime = lifeTime;
             trailScript.waitTime = waitTime;
+
+            
+            trailList.Enqueue(Block);
+            if (trailList.Count > trailLength/trailPeriod)
+            {
+                Destroy(trailList.Dequeue()); 
+            }
+
         }
     }
 }

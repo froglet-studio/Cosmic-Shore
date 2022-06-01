@@ -116,6 +116,6 @@ public class MutonPopUp : MonoBehaviour
 
         // Grow tail
         TrailSpawner trailScript = ship.GetComponent<TrailSpawner>();
-        trailScript.lifeTime += lifeTimeIncrease;
+        trailScript.trailLength += lifeTimeIncrease;
     }
 }
