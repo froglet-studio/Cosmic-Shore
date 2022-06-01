@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0.0024646767, g: 0.0024546946, b: 0.0027580063, a: 1}
+  m_IndirectSpecularColor: {r: 0.0024987834, g: 0.0024273675, b: 0.003003574, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -320,7 +320,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a5e2b4a5636ced244b83d06f18788020, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  switchToggle: {fileID: 780832100}
+  toggle: {fileID: 0}
 --- !u!1 &989920293
 GameObject:
   m_ObjectHideFlags: 0
@@ -505,7 +505,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 58120bc698869fc468d99116533786d4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  switchToggle: {fileID: 1005419145}
+  toggle: {fileID: 0}
 --- !u!1 &1073924403 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 3902679334179489300, guid: f044b6ad282929f4d9ca817c0e5a305a,
@@ -1269,6 +1269,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Name
       value: Swinging Sign
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: 71e6a251b935e444388d131f80231eed,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 71e6a251b935e444388d131f80231eed, type: 3}
