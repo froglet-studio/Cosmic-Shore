@@ -167,7 +167,7 @@ namespace StarWriter.Core.Audio
         {
             AudioClip audioClip = AudioSources[audioSourcesKey].clip;
             Debug.Log("SFX Muton Playing");
-            sfxSource.PlayOneShot(audioClip);
+            sfxSource.PlayOneShot(audioClip,volume);
             Debug.Log("SFX Muton Played");
         }
         public void PlaySFXClip(AudioClip audioClip)

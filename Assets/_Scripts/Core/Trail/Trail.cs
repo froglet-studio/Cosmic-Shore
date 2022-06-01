@@ -18,7 +18,6 @@ public class Trail : MonoBehaviour, ICollidable
     Material tempMaterial;
 
     public float waitTime = .6f;
-    public float lifeTime = 20;
     public delegate void TrailCollision(string uuid, float amount);
     public static event TrailCollision OnTrailCollision;
 
@@ -59,12 +58,6 @@ public class Trail : MonoBehaviour, ICollidable
         yield return new WaitForSeconds(waitTime);
         meshRenderer.enabled = true;
         blockCollider.enabled = true;
-
-        // TODO: use a queue of trail blocks instead of a expiration time
-        // Using expiration timer will create variable length tails depending on clock speed
-        yield return new WaitForSeconds(lifeTime);
-        meshRenderer.enabled = false;
-        blockCollider.enabled = false;
     }
 
     void OnTriggerEnter(Collider other)

@@ -347,9 +347,10 @@ MonoBehaviour:
   Fusilage: {fileID: 2126671201345994155}
   LeftWing: {fileID: 4750495543154980033}
   RightWing: {fileID: 3696267483056767852}
-  UITransform: {fileID: 1808549530}
+  IntensityRectTransform: {fileID: 0}
+  FinalRectTransform: {fileID: 0}
+  PauseRectTransform: {fileID: 0}
   speed: 0
-  gyroEnabled: 1
 --- !u!114 &7659183800259804528
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -380,10 +381,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 909fb5cbbca8c4549b5a9df56d837e55, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  trail: {fileID: 5776304996075792891, guid: 69a4d7cef045acb4d91231253340d8bc, type: 3}
+  trail: {fileID: 5776304996075792891, guid: 5790c8c1f457a754baecca51ef90c82e, type: 3}
   offset: 0
-  trailPeriod: -0.8
-  lifeTime: 20
+  trailPeriod: 0.04
+  trailLength: 20
   waitTime: 0.5
   startDelay: 2
   useRandom: 0

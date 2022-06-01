@@ -7,8 +7,8 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: VelocityBlockMaterial
-  m_Shader: {fileID: -6465566751694194690, guid: 1a91fda6b609b5144b172b029f90e0d1,
+  m_Name: GreenBlockMaterial
+  m_Shader: {fileID: -6465566751694194690, guid: bf8c159f627e64b439094797bff88611,
     type: 3}
   m_ValidKeywords: []
   m_InvalidKeywords: []
