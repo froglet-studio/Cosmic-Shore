@@ -58,7 +58,7 @@ namespace StarWriter.Core
         public void OnClickGyroToggleButton()
         {
             // Set gameSettings Gyro status
-            gameSettings.ChangeGyroStatus();
+            gameSettings.ChangeGyroEnabledStatus();
         }
 
         /// <summary>

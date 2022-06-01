@@ -6,33 +6,32 @@ namespace StarWriter.UI
 {
     public class MusicToggleSynchrornizer : MonoBehaviour
     {
-        private bool isMuted;
-
         [SerializeField]
+        private RectTransform handleRectTransform;
         private Toggle toggle;
+
+        private Vector3 handleDisplacement = new Vector3(20, 0, 0);
 
         private void Awake()
         {
             toggle = GetComponent<Toggle>();
+            toggle.onValueChanged.AddListener(Toggled);
+        }
 
-            if (PlayerPrefs.HasKey("isMuted"))
-            {
-                if (PlayerPrefs.GetInt("isMuted") == 0)
-                {
-                    isMuted = false;
-                }
-                else
-                {
-                    isMuted = true;
-                }
-                toggle.isOn = isMuted;
-            }
-            else //if PlayerPrefs is null for some reason
-            {
-                PlayerPrefs.SetInt("isMuted", 0);
-                toggle.isOn = isMuted = false;
-                PlayerPrefs.Save();
-            }
+        private void Start()
+        {
+            toggle.SetIsOnWithoutNotify(PlayerPrefs.GetInt("isAudioEnabled") == 1);
+        }
+
+        public void Toggled(bool status)
+        {
+            int sign = status ? 1 : -1;
+            handleRectTransform.localPosition += sign * handleDisplacement;
+        }
+
+        private void OnDestroy()
+        {
+            toggle.onValueChanged.RemoveListener(Toggled);
         }
     }
 }

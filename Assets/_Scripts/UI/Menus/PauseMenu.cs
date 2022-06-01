@@ -28,14 +28,14 @@ namespace StarWriter.UI
         /// </summary>
         public void OnToggleMusic()
         {
-            gameSetting.ChangeAudioMuteStatus();
+            gameSetting.ChangeAudioEnabledStatus();
         }
         /// <summary>
         /// Toggles the Gyroscope On/Off
         /// </summary>
         public void OnToggleGyro()
         {
-            gameSetting.ChangeGyroStatus();
+            gameSetting.ChangeGyroEnabledStatus();
         }
         /// <summary>
         /// Calls the Tutorial Scene to be loaded

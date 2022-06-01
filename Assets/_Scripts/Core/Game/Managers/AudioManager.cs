@@ -33,7 +33,7 @@ namespace StarWriter.Core.Audio
         float volume = 1f;
 
         private bool firstMusicSourceIsPlaying = true;
-        private bool isMuted = false;
+        private bool isAudioEnabled = true;
         #endregion
 
         private void Start()
@@ -56,18 +56,18 @@ namespace StarWriter.Core.Audio
 
         private void OnEnable()
         {
-            GameSetting.OnChangeAudioMuteStatus += ChangeMuteStatus;
+            GameSetting.OnChangeAudioEnabledStatus += ChangeAudioEnabledStatus;
         }
 
         private void OnDisable()
         {
-            GameSetting.OnChangeAudioMuteStatus -= ChangeMuteStatus;
+            GameSetting.OnChangeAudioEnabledStatus -= ChangeAudioEnabledStatus;
         }
 
-        private void ChangeMuteStatus(bool status)
+        private void ChangeAudioEnabledStatus(bool status)
         {
-            isMuted = status;
-            if (isMuted)
+            isAudioEnabled = status;
+            if (isAudioEnabled)
             {
                 SetMasterAudioVolume(0);
             }

@@ -10,7 +10,7 @@ public class SwitchToggle : MonoBehaviour
 
     private Toggle toggle;
 
-    private Vector3 handlePosition = new Vector3(20,0,0);
+    private Vector3 handleDisplacement = new Vector3(20,0,0);
     
     
     void Awake()
@@ -21,18 +21,9 @@ public class SwitchToggle : MonoBehaviour
 
     public void Toggled(bool status)
     {
-        int sign;
-
-        sign = status ? -1 : 1;
-        handleRectTransform.localPosition += sign * handlePosition;
+        int sign = status ? 1 : -1;
+        handleRectTransform.localPosition += sign * handleDisplacement;
     }
-
-    //public void SetToggleValueIgnoringListener(bool status)
-    //{
-    //    toggle.onValueChanged.RemoveListener(Toggled);
-    //    toggle.isOn = status;
-    //    toggle.onValueChanged.AddListener(Toggled);
-    //}
 
     private void OnDestroy()
     {

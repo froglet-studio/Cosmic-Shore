@@ -1089,7 +1089,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1808549531, guid: c8544725eea141847982b286866c858d, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 3002236442565086969, guid: c8544725eea141847982b286866c858d,
         type: 3}
@@ -1249,7 +1249,7 @@ PrefabInstance:
     - target: {fileID: 8035663728448263663, guid: c8544725eea141847982b286866c858d,
         type: 3}
       propertyPath: onValueChanged.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
-      value: OnToggleMusic
+      value: OnToggleGyro
       objectReference: {fileID: 0}
     - target: {fileID: 8035663728448263663, guid: c8544725eea141847982b286866c858d,
         type: 3}
@@ -1331,32 +1331,6 @@ GameObject:
     type: 3}
   m_PrefabInstance: {fileID: 1586480801}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &1586480805
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1586480803}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f17e82262f7fe2f4ba2f966b7996dc3b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  handleRectTransform: {fileID: 1586480802}
---- !u!114 &1586480806
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1586480804}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f17e82262f7fe2f4ba2f966b7996dc3b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  handleRectTransform: {fileID: 844287709}
 --- !u!114 &1586480807
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1369,7 +1343,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 58120bc698869fc468d99116533786d4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  switchToggle: {fileID: 1586480805}
+  handleRectTransform: {fileID: 1586480802}
 --- !u!114 &1586480808
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1382,7 +1356,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a5e2b4a5636ced244b83d06f18788020, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  switchToggle: {fileID: 1586480806}
+  handleRectTransform: {fileID: 844287709}
 --- !u!224 &1663880876 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 8035663729387164693, guid: c8544725eea141847982b286866c858d,
