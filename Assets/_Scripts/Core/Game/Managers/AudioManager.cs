@@ -20,9 +20,7 @@ namespace StarWriter.Core.Audio
         [SerializeField]
         private AudioSource musicSource2;
 
-        List<AudioSource> AudioSources = new List<AudioSource>();
-        
-        private float index = 0;
+        Dictionary<string, AudioSource> AudioSources = new Dictionary<string, AudioSource>();
 
         public GameObject musicGO1;
         public GameObject musicGO2;
@@ -35,7 +33,7 @@ namespace StarWriter.Core.Audio
         float volume = 1f;
 
         private bool firstMusicSourceIsPlaying = true;
-        private bool isMuted = false;
+        private bool isAudioEnabled = true;
         #endregion
 
         private void Start()
@@ -45,8 +43,9 @@ namespace StarWriter.Core.Audio
             musicSource2 = musicGO2.GetComponent<AudioSource>();
             sfxSource = sfxGO3.GetComponent<AudioSource>();
 
-            AudioSources.Add(musicSource1);
-            AudioSources.Add(musicSource2);
+            AudioSources.Add("Background Music 1", musicSource1);
+            AudioSources.Add("Background Music 2", musicSource2);
+            AudioSources.Add("Muton SFX 1", sfxSource);
 
             // Loop the music tracks
             musicSource1.loop = true;
@@ -57,18 +56,18 @@ namespace StarWriter.Core.Audio
 
         private void OnEnable()
         {
-            GameSetting.OnChangeAudioMuteStatus += ChangeMuteStatus;
+            GameSetting.OnChangeAudioEnabledStatus += ChangeAudioEnabledStatus;
         }
 
         private void OnDisable()
         {
-            GameSetting.OnChangeAudioMuteStatus -= ChangeMuteStatus;
+            GameSetting.OnChangeAudioEnabledStatus -= ChangeAudioEnabledStatus;
         }
 
-        private void ChangeMuteStatus(bool status)
+        private void ChangeAudioEnabledStatus(bool status)
         {
-            isMuted = status;
-            if (isMuted)
+            isAudioEnabled = status;
+            if (isAudioEnabled)
             {
                 SetMasterAudioVolume(0);
             }
@@ -76,8 +75,15 @@ namespace StarWriter.Core.Audio
             {
                 SetMasterAudioVolume(volume);
             }
-        } 
-
+        }
+        public void PlayMusicClip(string audioSourcesKey)
+        {
+            AudioSource activeAudioSource = AudioSources[audioSourcesKey];
+            activeAudioSource = (firstMusicSourceIsPlaying ? musicSource1 : musicSource2);
+            activeAudioSource.clip = AudioSources[audioSourcesKey].clip;
+            activeAudioSource.volume = volume;
+            activeAudioSource.Play();
+        }
         public void PlayMusicClip(AudioClip audioClip)
         {
             AudioSource activeAudioSource = (firstMusicSourceIsPlaying ? musicSource1 : musicSource2);
@@ -155,6 +161,14 @@ namespace StarWriter.Core.Audio
                 yield return null;
             }
             originalSource.Stop();
+        }
+
+        public void PlaySFXClip(string audioSourcesKey)
+        {
+            AudioClip audioClip = AudioSources[audioSourcesKey].clip;
+            Debug.Log("SFX Muton Playing");
+            sfxSource.PlayOneShot(audioClip,volume);
+            Debug.Log("SFX Muton Played");
         }
         public void PlaySFXClip(AudioClip audioClip)
         {

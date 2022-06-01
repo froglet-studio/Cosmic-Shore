@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 using StarWriter.Core.Input;
+using StarWriter.Core.Audio;
 
 public class MutonPopUp : MonoBehaviour
 {
@@ -78,6 +79,8 @@ public class MutonPopUp : MonoBehaviour
             StartCoroutine(spentMuton.GetComponent<Impact>().ImpactCoroutine(
                 ship.transform.forward * ship.GetComponent<InputController>().speed, tempMaterial, "Player"));
             HapticController.PlayMutonCollisionHaptics();
+            AudioManager.Instance.PlaySFXClip("Muton SFX 1");
+
             //update intensity bar and score
             OnMutonPopUpCollision(ship.GetComponent<Player>().PlayerUUID, intensityAmount); // excess Intensity flows into score
             if (AddToScore != null) { AddToScore(ship.GetComponent<Player>().PlayerUUID, scoreBonus); }
@@ -113,6 +116,6 @@ public class MutonPopUp : MonoBehaviour
 
         // Grow tail
         TrailSpawner trailScript = ship.GetComponent<TrailSpawner>();
-        trailScript.lifeTime += lifeTimeIncrease;
+        trailScript.trailLength += lifeTimeIncrease;
     }
 }

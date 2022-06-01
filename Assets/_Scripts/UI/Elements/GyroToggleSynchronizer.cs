@@ -6,33 +6,30 @@ namespace StarWriter.UI
 {
     public class GyroToggleSynchronizer : MonoBehaviour
     {
-        private bool isGyroEnabled;
-
         [SerializeField]
+        private RectTransform handleRectTransform;
         private Toggle toggle;
+
+        private Vector3 handleDisplacement = new Vector3(20, 0, 0);
 
         private void Awake()
         {
             toggle = GetComponent<Toggle>();
+            toggle.onValueChanged.AddListener(Toggled);
+        }
+        private void Start()
+        {
+            toggle.SetIsOnWithoutNotify(PlayerPrefs.GetInt("isGyroEnabled") == 1);
+        }
+        public void Toggled(bool status)
+        {
+            int sign = status ? 1 : -1;
+            handleRectTransform.localPosition += sign * handleDisplacement;
+        }
 
-            if (PlayerPrefs.HasKey("isMuted"))
-            {
-                if (PlayerPrefs.GetInt("isMuted") == 0)
-                {
-                    isGyroEnabled = false;
-                }
-                else
-                {
-                    isGyroEnabled = true;
-                }
-                toggle.isOn = isGyroEnabled;
-            }
-            else
-            {
-                PlayerPrefs.SetInt("isMuted", 0);
-                toggle.isOn = isGyroEnabled = false;
-                PlayerPrefs.Save();
-            }
+        private void OnDestroy()
+        {
+            toggle.onValueChanged.RemoveListener(Toggled);
         }
     }
 }

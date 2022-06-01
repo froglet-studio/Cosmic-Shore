@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace StarWriter.Core.Input
 {
-    public class InputController : MonoBehaviour
+    public class InputController1 : MonoBehaviour
     {
         #region Camera 
         CameraManager cameraManager;
@@ -246,10 +246,14 @@ namespace StarWriter.Core.Input
         
         private void Yaw(float Xsum)  // These need to not use *= ... remember quaternions are not commutative
         {
-            displacementQ = Quaternion.AngleAxis(
+            //displacementQ = Quaternion.AngleAxis(
+            //                    Xsum * (speed * rotationThrottleScaler + rotationScaler) *
+            //                        (Screen.currentResolution.width/Screen.currentResolution.height) * Time.deltaTime, 
+            //                    shipTransform.up) * displacementQ;
+            transform.position = Quaternion.AngleAxis(
                                 Xsum * (speed * rotationThrottleScaler + rotationScaler) *
-                                    (Screen.currentResolution.width/Screen.currentResolution.height) * Time.deltaTime, 
-                                shipTransform.up) * displacementQ;
+                                    (Screen.currentResolution.width / Screen.currentResolution.height) * Time.deltaTime,
+                                shipTransform.up) * transform.position;
         }
 
         private void Roll(float Ydiff)

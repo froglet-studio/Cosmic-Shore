@@ -1,8 +1,9 @@
 using UnityEngine;
 using Cinemachine;
 using StarWriter.Core;
+using Amoebius.Utility.Singleton;
 
-public class CameraManager : SingletonPersistant<CameraManager>
+public class CameraManager : SingletonPersistent<CameraManager>
 {
     [SerializeField]
     private CinemachineVirtualCameraBase mainMenuCamera;
