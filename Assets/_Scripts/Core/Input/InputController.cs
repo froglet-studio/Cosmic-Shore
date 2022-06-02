@@ -51,6 +51,7 @@ namespace StarWriter.Core.Input
         private Gyroscope gyro;
         private Quaternion empiricalCorrection;
         private Quaternion displacementQ;
+        private Quaternion inverseInitialRotation;
 
 
         
@@ -99,7 +100,9 @@ namespace StarWriter.Core.Input
                 empiricalCorrection = GyroToUnity(empiricalCorrection);
                 gyro.enabled = true;
                 Screen.sleepTimeout = SleepTimeout.NeverSleep;
-                displacementQ = new Quaternion(0, 0, 0, -1);
+                displacementQ = shipTransform.rotation;
+                //inverseInitialRotation = Quaternion.Inverse(GyroToUnity(gyro.attitude));
+
             }
         }
 
