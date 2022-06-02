@@ -57,7 +57,7 @@ namespace StarWriter.UI
         public void OnClickResumeGameButton()
         {
             gameManager.UnPauseGame();
-            transform.GetComponent<GameMenu>().OnClickUnpauseGame();
+            transform.parent.GetComponent<GameMenu>().OnClickUnpauseGame();
         }
         public void OnClickResumeTutorialButton()
         {
