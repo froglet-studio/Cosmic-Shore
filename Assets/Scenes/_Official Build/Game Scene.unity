@@ -346,7 +346,7 @@ MonoBehaviour:
   spentMutonPrefab: {fileID: 8491596592871572304, guid: f39596c98ed9d644a834f2fa27ec90ca,
     type: 3}
   Muton: {fileID: 7244393970774794917}
-  material: {fileID: 2100000, guid: fd25dd816aa220f42959e76857142a39, type: 2}
+  material: {fileID: 2100000, guid: 383f21e8586fd7243a19e1d0f26110d0, type: 2}
   lifeTimeIncrease: 3
 --- !u!1 &487984174
 GameObject:
@@ -440,7 +440,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 909fb5cbbca8c4549b5a9df56d837e55, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  trail: {fileID: 5776304996075792891, guid: 6b9a0a1cfa64ed94b92cd8fe8e4fb1ee, type: 3}
+  trail: {fileID: 5776304996075792891, guid: 053064d82123e8b49bfb29870b5c0715, type: 3}
   offset: 0
   trailPeriod: 0.5
   trailLength: 20
@@ -1563,11 +1563,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 909fb5cbbca8c4549b5a9df56d837e55, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  trail: {fileID: 5776304996075792891, guid: 67423358d7ae45d41a0422877a7e7de9, type: 3}
+  trail: {fileID: 5776304996075792891, guid: 4e280247faa1d154fa25d1e92df405dc, type: 3}
   offset: 0
   trailPeriod: 0.9
   trailLength: 20
-  waitTime: 0.1
+  waitTime: 0.3
   startDelay: 2
   useRandom: 0
 --- !u!4 &1898590044 stripped
@@ -1932,6 +1932,16 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 2073129193669181770, guid: a089e5ab0159cc54aa784d6ebf15d2e4,
+        type: 3}
+      propertyPath: m_Materials.Array.data[0]
+      value: 
+      objectReference: {fileID: 2100000, guid: 383f21e8586fd7243a19e1d0f26110d0, type: 2}
+    - target: {fileID: 2346576036425758005, guid: a089e5ab0159cc54aa784d6ebf15d2e4,
+        type: 3}
+      propertyPath: MutonMaterial
+      value: 
+      objectReference: {fileID: 2100000, guid: 383f21e8586fd7243a19e1d0f26110d0, type: 2}
     - target: {fileID: 2448508127246415652, guid: a089e5ab0159cc54aa784d6ebf15d2e4,
         type: 3}
       propertyPath: m_Name
