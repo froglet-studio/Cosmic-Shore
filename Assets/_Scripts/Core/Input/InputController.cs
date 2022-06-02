@@ -40,8 +40,6 @@ namespace StarWriter.Core.Input
         private readonly float throttleScaler = 50;
         private readonly float rotationScaler = 130f;
 
-        private readonly float OnThrottleEventThreshold = 1;
-
         private readonly float lerpAmount = .2f;
         private readonly float smallLerpAmount = .1f;
 
@@ -95,8 +93,13 @@ namespace StarWriter.Core.Input
             cameraManager = CameraManager.Instance;
             //isCameraDisabled = false;
 
+            Debug.Log($"InputController.Start - SystemInfo.supportsGyroscope: {SystemInfo.supportsGyroscope}");
+
             if (SystemInfo.supportsGyroscope)
             {
+                Debug.Log($"InputController.Start - isGyroEnabled 1: {isGyroEnabled}");
+                isGyroEnabled = PlayerPrefs.GetInt(GameSetting.PlayerPrefKeys.isGyroEnabled.ToString()) == 1;
+                Debug.Log($"InputController.Start - isGyroEnabled 2: {isGyroEnabled}");
                 empiricalCorrection = GyroToUnity(empiricalCorrection);
                 gyro.enabled = true;
                 Screen.sleepTimeout = SleepTimeout.NeverSleep;
@@ -156,8 +159,8 @@ namespace StarWriter.Core.Input
 
         private void RotateShip()
         {
-
-            if (SystemInfo.supportsGyroscope && isGyroEnabled == true)
+            Debug.Log($"InputController.RotateShip - isGyroEnabled: {isGyroEnabled}");
+            if (SystemInfo.supportsGyroscope && isGyroEnabled)
             {
                 // Updates GameObjects rotation from input device's gyroscope
                 shipTransform.rotation = Quaternion.Lerp(
@@ -286,6 +289,7 @@ namespace StarWriter.Core.Input
         /// <param name="status"></param>bool
         private void OnToggleGyro(bool status)
         {
+            Debug.Log($"InputController.OnToggleGyro - status: {status}");
             isGyroEnabled = status;
         }
     }    
