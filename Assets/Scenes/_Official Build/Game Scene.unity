@@ -447,12 +447,6 @@ MonoBehaviour:
   waitTime: 0.1
   startDelay: 2
   useRandom: 0
---- !u!224 &844287709 stripped
-RectTransform:
-  m_CorrespondingSourceObject: {fileID: 8035663729811309821, guid: c8544725eea141847982b286866c858d,
-    type: 3}
-  m_PrefabInstance: {fileID: 1586480801}
-  m_PrefabAsset: {fileID: 0}
 --- !u!224 &893616187 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 1808549530, guid: c8544725eea141847982b286866c858d,
@@ -1091,15 +1085,70 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 2792548709035304050, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: onValueChanged.m_PersistentCalls.m_Calls.Array.data[0].m_Target
+      value: 
+      objectReference: {fileID: 2073808014}
+    - target: {fileID: 2792548709035304050, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: onValueChanged.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
+      value: OnToggleMusic
+      objectReference: {fileID: 0}
+    - target: {fileID: 2792548709035304050, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: onValueChanged.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
+      value: StarWriter.UI.PauseMenu, Assembly-CSharp
+      objectReference: {fileID: 0}
     - target: {fileID: 3002236442565086969, guid: c8544725eea141847982b286866c858d,
         type: 3}
       propertyPath: m_Materials.Array.data[0]
       value: 
       objectReference: {fileID: 2100000, guid: c739bccc290901b4cac760f82c02cbcd, type: 2}
+    - target: {fileID: 3075814880513954162, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3075814880513954162, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3075814880513954162, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3075814880513954162, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 172.2
+      objectReference: {fileID: 0}
+    - target: {fileID: 3075814880513954162, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 76
+      objectReference: {fileID: 0}
     - target: {fileID: 3650988091826286380, guid: c8544725eea141847982b286866c858d,
         type: 3}
       propertyPath: m_Layer
       value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 3883746113377199844, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: onValueChanged.m_PersistentCalls.m_Calls.Array.data[0].m_Target
+      value: 
+      objectReference: {fileID: 2073808014}
+    - target: {fileID: 3883746113377199844, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: onValueChanged.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
+      value: OnToggleGyro
+      objectReference: {fileID: 0}
+    - target: {fileID: 3883746113377199844, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: onValueChanged.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
+      value: StarWriter.UI.PauseMenu, Assembly-CSharp
       objectReference: {fileID: 0}
     - target: {fileID: 4170679601087706518, guid: c8544725eea141847982b286866c858d,
         type: 3}
@@ -1130,6 +1179,16 @@ PrefabInstance:
         type: 3}
       propertyPath: m_ConstrainProportionsScale
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6186308383376323836, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 21.610046
+      objectReference: {fileID: 0}
+    - target: {fileID: 6186308383376323836, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 75.6
       objectReference: {fileID: 0}
     - target: {fileID: 7181345258476456347, guid: c8544725eea141847982b286866c858d,
         type: 3}
@@ -1310,53 +1369,9 @@ PrefabInstance:
         type: 3}
       propertyPath: musicRectTransform
       value: 
-      objectReference: {fileID: 844287709}
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: c8544725eea141847982b286866c858d, type: 3}
---- !u!224 &1586480802 stripped
-RectTransform:
-  m_CorrespondingSourceObject: {fileID: 8035663730227516213, guid: c8544725eea141847982b286866c858d,
-    type: 3}
-  m_PrefabInstance: {fileID: 1586480801}
-  m_PrefabAsset: {fileID: 0}
---- !u!1 &1586480803 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 8035663728448263657, guid: c8544725eea141847982b286866c858d,
-    type: 3}
-  m_PrefabInstance: {fileID: 1586480801}
-  m_PrefabAsset: {fileID: 0}
---- !u!1 &1586480804 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 8035663729810452573, guid: c8544725eea141847982b286866c858d,
-    type: 3}
-  m_PrefabInstance: {fileID: 1586480801}
-  m_PrefabAsset: {fileID: 0}
---- !u!114 &1586480807
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1586480803}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 58120bc698869fc468d99116533786d4, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  handleRectTransform: {fileID: 1586480802}
---- !u!114 &1586480808
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1586480804}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a5e2b4a5636ced244b83d06f18788020, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  handleRectTransform: {fileID: 844287709}
 --- !u!224 &1663880876 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 8035663729387164693, guid: c8544725eea141847982b286866c858d,

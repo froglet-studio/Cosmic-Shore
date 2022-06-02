@@ -30,10 +30,14 @@ namespace StarWriter.Core.Audio
         private AudioSource sfxSource;
 
         [SerializeField]
-        float volume = 1f;
+        float volume = .1f;
+
+        float Volume { get { return isAudioEnabled ? volume : 0; } set { } }
+
 
         private bool firstMusicSourceIsPlaying = true;
         private bool isAudioEnabled = true;
+        private string AudioEnabledPlayerPrefKey = "isAudioEnabled";
         #endregion
 
         private void Start()
@@ -51,6 +55,11 @@ namespace StarWriter.Core.Audio
             musicSource1.loop = true;
             musicSource2.loop = true;
 
+            // Initialize volume
+            isAudioEnabled = PlayerPrefs.GetInt(AudioEnabledPlayerPrefKey) == 1;
+            ChangeAudioEnabledStatus(isAudioEnabled);
+            Debug.Log($"AudioManager.Start - isAudioEnabled: {isAudioEnabled}");
+
             PlayMusicClip(musicSource1.clip);    
         }
 
@@ -67,13 +76,14 @@ namespace StarWriter.Core.Audio
         private void ChangeAudioEnabledStatus(bool status)
         {
             isAudioEnabled = status;
+            Debug.Log($"AudioManager.Start - isAudioEnabled: {isAudioEnabled}");
             if (isAudioEnabled)
             {
-                SetMasterAudioVolume(0);
+                SetMasterAudioVolume(volume);
             }
             else
             {
-                SetMasterAudioVolume(volume);
+                SetMasterAudioVolume(0);
             }
         }
         public void PlayMusicClip(string audioSourcesKey)
@@ -81,14 +91,14 @@ namespace StarWriter.Core.Audio
             AudioSource activeAudioSource = AudioSources[audioSourcesKey];
             activeAudioSource = (firstMusicSourceIsPlaying ? musicSource1 : musicSource2);
             activeAudioSource.clip = AudioSources[audioSourcesKey].clip;
-            activeAudioSource.volume = volume;
+            activeAudioSource.volume = Volume;
             activeAudioSource.Play();
         }
         public void PlayMusicClip(AudioClip audioClip)
         {
             AudioSource activeAudioSource = (firstMusicSourceIsPlaying ? musicSource1 : musicSource2);
             activeAudioSource.clip = audioClip;
-            activeAudioSource.volume = volume;
+            activeAudioSource.volume = Volume;
             activeAudioSource.Play();
         }
 
@@ -120,7 +130,7 @@ namespace StarWriter.Core.Audio
             for (t = 0; t < transitionTime; t += Time.deltaTime)
             {
                 // Fade out original clip volume
-                activeAudioSource.volume = (volume - t / transitionTime);
+                activeAudioSource.volume = (Volume - t / transitionTime);
                 yield return null;
             }
             activeAudioSource.Stop();
@@ -156,8 +166,8 @@ namespace StarWriter.Core.Audio
         {
             for (float t = 0; t < transitionTime; t += Time.deltaTime)
             {
-                originalSource.volume = (volume - t / transitionTime);
-                newSource.volume = volume*(t / transitionTime);
+                originalSource.volume = (Volume - t / transitionTime);
+                newSource.volume = Volume * (t / transitionTime);
                 yield return null;
             }
             originalSource.Stop();
@@ -167,22 +177,23 @@ namespace StarWriter.Core.Audio
         {
             AudioClip audioClip = AudioSources[audioSourcesKey].clip;
             Debug.Log("SFX Muton Playing");
-            sfxSource.PlayOneShot(audioClip,volume);
+            sfxSource.PlayOneShot(audioClip, Volume);
             Debug.Log("SFX Muton Played");
         }
         public void PlaySFXClip(AudioClip audioClip)
         {
             sfxSource.PlayOneShot(audioClip);
         }
+
+        // TODO: can we get eyes on this method? Should it be passed a value for volume, or just use the value from the local variable
         public void PlaySFXClip(AudioClip audioClip, float volume)
         {
             sfxSource.PlayOneShot(audioClip, volume);
         }
         public void SetMasterAudioVolume(float volume)
         {
-            musicSource1.volume = volume;
-            musicSource2.volume = volume;
-            sfxSource.volume = volume;
+            SetMusicVolume(volume);
+            SetSFXVolume(volume);
         }
         public void SetMusicVolume(float volume)
         {
@@ -193,8 +204,6 @@ namespace StarWriter.Core.Audio
         {
             sfxSource.volume = volume;
         }
-
-      
     }
 }
 
