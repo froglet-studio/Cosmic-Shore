@@ -15,12 +15,13 @@ namespace StarWriter.UI
         private void Awake()
         {
             toggle = GetComponent<Toggle>();
-            toggle.onValueChanged.AddListener(Toggled);
+            
         }
 
         private void Start()
         {
             toggle.SetIsOnWithoutNotify(PlayerPrefs.GetInt("isAudioEnabled") == 1);
+            toggle.onValueChanged.AddListener(Toggled);
         }
 
         public void Toggled(bool status)
