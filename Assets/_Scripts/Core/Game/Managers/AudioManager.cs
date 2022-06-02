@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using Amoebius.Utility.Singleton;
 using UnityEngine;
@@ -33,7 +32,6 @@ namespace StarWriter.Core.Audio
         float volume = .1f;
 
         float Volume { get { return isAudioEnabled ? volume : 0; } set { } }
-
 
         private bool firstMusicSourceIsPlaying = true;
         private bool isAudioEnabled = true;

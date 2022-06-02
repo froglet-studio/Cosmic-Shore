@@ -1,3 +1,4 @@
+using StarWriter.Core;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -8,15 +9,13 @@ namespace StarWriter.UI
         [SerializeField]
         private RectTransform handleRectTransform;
         [SerializeField]
-        private string PlayerPrefKey;
+        private GameSetting.PlayerPrefKeys PlayerPrefKey;
         [SerializeField]
         private Vector3 HandleOnPosition;
         [SerializeField]
         private Vector3 HandleOffPosition;
 
         private Toggle toggle;
-
-        private Vector3 handleDisplacement = new Vector3(20, 0, 0);
 
         private void Awake()
         {
@@ -26,14 +25,13 @@ namespace StarWriter.UI
 
         private void Start()
         {
-            toggle.SetIsOnWithoutNotify(PlayerPrefs.GetInt(PlayerPrefKey) == 1);
-            Toggled(PlayerPrefs.GetInt(PlayerPrefKey) == 1);
+            toggle.SetIsOnWithoutNotify(PlayerPrefs.GetInt(PlayerPrefKey.ToString()) == 1);
+            Toggled(PlayerPrefs.GetInt(PlayerPrefKey.ToString()) == 1);
         }
 
         public void Toggled(bool status)
         {
             Debug.Log($"ToggleSynchronizer.Toggled - {name} - status: {status}");
-            int sign = status ? 1 : -1;
             handleRectTransform.localPosition = status ? HandleOnPosition : HandleOffPosition;
         }
 
