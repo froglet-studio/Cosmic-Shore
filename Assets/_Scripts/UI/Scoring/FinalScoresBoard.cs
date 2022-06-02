@@ -50,21 +50,18 @@ namespace StarWriter.Core
 
             scoreHundredsPlace.sprite = NumIcons[hundreds];
             scoreTensPlace.sprite = NumIcons[tens];
-            scoreOnesPlace.sprite = NumIcons[ones];
-            Debug.Log(hundreds + tens + ones);
-
+            scoreOnesPlace.sprite = NumIcons[ones];       
         }
 
         public void DisplayHighScoreWithSprites()
         {
-            int hundreds = currentScore / 100;
-            int tens = (currentScore % 100) / 10;
-            int ones = (currentScore % 10);
+            int hundreds = highScore / 100;
+            int tens = (highScore % 100) / 10;
+            int ones = (highScore % 10);
 
             scoreHundredsPlace.sprite = NumIcons[hundreds];
             scoreTensPlace.sprite = NumIcons[tens];
             scoreOnesPlace.sprite = NumIcons[ones];
-            Debug.Log(hundreds + tens + ones);
         }
 
         public void OnClickReplayGameButtonPressed()
