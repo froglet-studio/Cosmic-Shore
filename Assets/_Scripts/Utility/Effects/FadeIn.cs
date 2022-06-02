@@ -1,5 +1,4 @@
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class FadeIn : MonoBehaviour
@@ -7,11 +6,12 @@ public class FadeIn : MonoBehaviour
     [SerializeField]
     Material MutonMaterial;
 
-
+    [SerializeField]
     private float effect = .01f;
 
+    [SerializeField]
+    private float fadeInRate = 0.04f;
 
-    // Start is called before the first frame update
     void Start()
     {
         StartCoroutine(FadeInCoroutine());
@@ -22,10 +22,9 @@ public class FadeIn : MonoBehaviour
         effect = .01f;
         while (effect <= 1)
         {
-            yield return new WaitForSeconds(.001f);
-            effect += 0.04f;
+            yield return null;
+            effect += fadeInRate;
             MutonMaterial.SetFloat("_opacity", effect);
         }
-
     }
 }
