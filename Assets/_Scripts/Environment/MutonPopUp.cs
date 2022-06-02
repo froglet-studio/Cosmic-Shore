@@ -81,8 +81,8 @@ public class MutonPopUp : MonoBehaviour
             HapticController.PlayMutonCollisionHaptics();
             AudioManager.Instance.PlaySFXClip("Muton SFX 1");
 
-            //update intensity bar and score
-            OnMutonPopUpCollision(ship.GetComponent<Player>().PlayerUUID, intensityAmount); // excess Intensity flows into score
+            //update intensity bar and currentScore
+            OnMutonPopUpCollision(ship.GetComponent<Player>().PlayerUUID, intensityAmount); // excess Intensity flows into currentScore
             if (AddToScore != null) { AddToScore(ship.GetComponent<Player>().PlayerUUID, scoreBonus); }
         }
         else
