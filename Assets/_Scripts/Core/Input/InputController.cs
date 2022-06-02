@@ -104,7 +104,7 @@ namespace StarWriter.Core.Input
                 gyro.enabled = true;
                 Screen.sleepTimeout = SleepTimeout.NeverSleep;
                 displacementQ = shipTransform.rotation;
-                //inverseInitialRotation = Quaternion.Inverse(GyroToUnity(gyro.attitude));
+                inverseInitialRotation = Quaternion.Inverse(GyroToUnity(gyro.attitude)*empiricalCorrection);
 
             }
         }
@@ -165,7 +165,7 @@ namespace StarWriter.Core.Input
                 // Updates GameObjects rotation from input device's gyroscope
                 shipTransform.rotation = Quaternion.Lerp(
                                             shipTransform.rotation,
-                                            displacementQ * GyroToUnity(gyro.attitude) * empiricalCorrection,
+                                            displacementQ * inverseInitialRotation * GyroToUnity(gyro.attitude) * empiricalCorrection,
                                             lerpAmount);
             }
             else
@@ -290,6 +290,7 @@ namespace StarWriter.Core.Input
         private void OnToggleGyro(bool status)
         {
             Debug.Log($"InputController.OnToggleGyro - status: {status}");
+            if (status) { inverseInitialRotation = Quaternion.Inverse(GyroToUnity(gyro.attitude) * empiricalCorrection); }
             isGyroEnabled = status;
         }
     }    
