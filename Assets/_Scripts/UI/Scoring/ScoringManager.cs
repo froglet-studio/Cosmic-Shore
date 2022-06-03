@@ -34,7 +34,7 @@ public class ScoringManager : MonoBehaviour
     public void UpdateScoreBoard(int value)
     {
 
-        scoreText.text = value.ToString("D3");
+        scoreText.text = value.ToString("D3"); // score text located on the intensity bar
     }
 
     private void AddMutonBous(string uuid, int amount)
@@ -49,6 +49,9 @@ public class ScoringManager : MonoBehaviour
         PlayerPrefs.SetInt("Score", score);
         //Compares Score to High Score and saves the highest value
         if (PlayerPrefs.GetInt("High Score") < score)
+        {
             PlayerPrefs.SetInt("High Score", score);
+        }
+        PlayerPrefs.Save();   
     }
 }

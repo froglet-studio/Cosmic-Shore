@@ -1258,7 +1258,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1808549531, guid: c8544725eea141847982b286866c858d, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 219984524643107619, guid: c8544725eea141847982b286866c858d,
         type: 3}
@@ -1380,6 +1380,16 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 1141877204586091210, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: m_Name
+      value: HundredsImageHS
+      objectReference: {fileID: 0}
+    - target: {fileID: 1814760007880178713, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: m_PreserveAspect
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 2276387646839665187, guid: c8544725eea141847982b286866c858d,
         type: 3}
       propertyPath: m_AnchorMax.y
@@ -1419,6 +1429,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_AnchoredPosition.y
       value: 28
+      objectReference: {fileID: 0}
+    - target: {fileID: 2650233817363755877, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: m_Name
+      value: OnesImageHS
       objectReference: {fileID: 0}
     - target: {fileID: 2792548709035304050, guid: c8544725eea141847982b286866c858d,
         type: 3}
@@ -1464,6 +1479,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_AnchoredPosition.y
       value: 76
+      objectReference: {fileID: 0}
+    - target: {fileID: 3286600167623522302, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: m_Name
+      value: HundredsImageCS
       objectReference: {fileID: 0}
     - target: {fileID: 3367440860402590350, guid: c8544725eea141847982b286866c858d,
         type: 3}
@@ -1615,6 +1635,16 @@ PrefabInstance:
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Arguments.m_ObjectArgumentAssemblyTypeName
       value: UnityEngine.Object, UnityEngine
       objectReference: {fileID: 0}
+    - target: {fileID: 4855411246422746849, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: m_Name
+      value: TensImageCS
+      objectReference: {fileID: 0}
+    - target: {fileID: 5617200775392982281, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: m_Name
+      value: TensImageHS
+      objectReference: {fileID: 0}
     - target: {fileID: 6156691959985598266, guid: c8544725eea141847982b286866c858d,
         type: 3}
       propertyPath: m_AnchorMax.x
@@ -1654,6 +1684,31 @@ PrefabInstance:
         type: 3}
       propertyPath: m_AnchoredPosition.y
       value: 75.6
+      objectReference: {fileID: 0}
+    - target: {fileID: 7129726410216718825, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: m_Name
+      value: OnesImageCS
+      objectReference: {fileID: 0}
+    - target: {fileID: 7169916022805082782, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: m_SizeDelta.x
+      value: 46.3
+      objectReference: {fileID: 0}
+    - target: {fileID: 7169916022805082782, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: m_SizeDelta.y
+      value: 19.7
+      objectReference: {fileID: 0}
+    - target: {fileID: 7169916022805082782, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7169916022805082782, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: -17.59
       objectReference: {fileID: 0}
     - target: {fileID: 7181345258476456347, guid: c8544725eea141847982b286866c858d,
         type: 3}
@@ -2124,7 +2179,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &1946763055
 RectTransform:
   m_ObjectHideFlags: 0

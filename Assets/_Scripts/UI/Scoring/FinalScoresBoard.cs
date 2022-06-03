@@ -59,9 +59,9 @@ namespace StarWriter.Core
             int tens = (highScore % 100) / 10;
             int ones = (highScore % 10);
 
-            scoreHundredsPlace.sprite = NumIcons[hundreds];
-            scoreTensPlace.sprite = NumIcons[tens];
-            scoreOnesPlace.sprite = NumIcons[ones];
+            highScoreHundredsPlace.sprite = NumIcons[hundreds];
+            highScoreTensPlace.sprite = NumIcons[tens];
+            hignScoreOnesPlace.sprite = NumIcons[ones];
         }
 
         public void OnClickReplayGameButtonPressed()

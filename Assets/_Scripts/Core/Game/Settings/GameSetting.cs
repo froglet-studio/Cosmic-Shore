@@ -16,7 +16,7 @@ namespace StarWriter.Core
             isInitialPlay,
             isTutorialEnabled,
             isAudioEnabled,
-            isGyroEnabled
+            isGyroEnabled,
         }
 
         #region Settings
