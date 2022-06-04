@@ -84,7 +84,7 @@ public class TutorialPlayerController : MonoBehaviour
 
         inputController.IsYawEnabled = false;
         inputController.IsRollEnabled = false;
-        inputController.IsThrottleEnabledl = true;
+        inputController.IsThrottleEnabled = true;
         gameSettings.TurnGyroOFF();
     }
     private void EnableYaw()
@@ -94,7 +94,7 @@ public class TutorialPlayerController : MonoBehaviour
 
         inputController.IsPitchEnabled = false;
         inputController.IsRollEnabled = false;
-        inputController.IsThrottleEnabledl = true;
+        inputController.IsThrottleEnabled = true;
         gameSettings.TurnGyroOFF();
     }
 
@@ -105,14 +105,14 @@ public class TutorialPlayerController : MonoBehaviour
 
         inputController.IsPitchEnabled = false;
         inputController.IsYawEnabled = false;
-        inputController.IsThrottleEnabledl = true;
+        inputController.IsThrottleEnabled = true;
         gameSettings.TurnGyroOFF();
     }
 
     private void EnableThrottle()
     {
         Debug.Log("speed up");
-        inputController.IsThrottleEnabledl = true;
+        inputController.IsThrottleEnabled = true;
 
         inputController.IsPitchEnabled = false;
         inputController.IsYawEnabled = false;
@@ -128,6 +128,6 @@ public class TutorialPlayerController : MonoBehaviour
         inputController.IsPitchEnabled = false;
         inputController.IsYawEnabled = false;
         inputController.IsRollEnabled = false;
-        inputController.IsThrottleEnabledl = false;
+        inputController.IsThrottleEnabled = false;
     }   
 }

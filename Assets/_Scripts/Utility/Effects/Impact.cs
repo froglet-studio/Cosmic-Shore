@@ -6,7 +6,7 @@ public class Impact : MonoBehaviour
     public float positionScale;
     public IEnumerator ImpactCoroutine(Vector3 velocity, Material material,string ID)
     {
-        var velocityScale = .05f;
+        var velocityScale = .07f/positionScale;
         Vector3 distance = Vector3.zero;
 
         if (ID == "Player") { 

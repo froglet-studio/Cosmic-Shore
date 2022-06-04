@@ -58,13 +58,13 @@ namespace StarWriter.Core.Input
         private bool isPitchEnabled = true;
         private bool isYawEnabled = true;
         private bool isRollEnabled = true;
-        private bool isThrottleEnabledl = true;
+        private bool isThrottleEnabled = true;
         private bool isGyroEnabled = true;
 
         public bool IsPitchEnabled { get => isPitchEnabled; set => isPitchEnabled = value; }
         public bool IsYawEnabled { get => isYawEnabled; set => isYawEnabled = value; }
         public bool IsRollEnabled { get => isRollEnabled; set => isRollEnabled = value; }
-        public bool IsThrottleEnabledl { get => isThrottleEnabledl; set => isThrottleEnabledl = value; }
+        public bool IsThrottleEnabled { get => isThrottleEnabled; set => isThrottleEnabled = value; }
         public bool IsGyroEnabled { get => isGyroEnabled;  } //GameManager controls the gyro status
 
         private void Awake()
@@ -228,11 +228,16 @@ namespace StarWriter.Core.Input
                 float xDiff = (rightTouch.x - leftTouch.x) / (Screen.currentResolution.width);
                 float yDiff = (rightTouch.y - leftTouch.y) / (Screen.currentResolution.width);
 
-                if (isPitchEnabled) { Pitch(ySum); }
-                if (isRollEnabled) { Roll(yDiff); }
-                if(isYawEnabled) { Yaw(xSum); }
-                if (isThrottleEnabledl) { Throttle(xDiff); }
-                              
+                //if (isPitchEnabled) { Pitch(ySum); }    // this block was causing a bug where the ship movement is disabled untill the gyro is toggled
+                //if (isRollEnabled) { Roll(yDiff); }
+                //if (isYawEnabled) { Yaw(xSum); }
+                //if (isThrottleEnabled) { Throttle(xDiff); }
+
+                Pitch(ySum);  //replaces the commented out block above
+                Roll(yDiff); 
+                Yaw(xSum); 
+                Throttle(xDiff); 
+
                 PerformShipAnimations(xSum, ySum, xDiff, yDiff);
 
             }
