@@ -1,4 +1,4 @@
-using System.Collections;
+ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -8,6 +8,10 @@ public class TutorialStage : ScriptableObject
     [SerializeField]
     private string stageName;
     [SerializeField]
+    private string dialogue;
+    [SerializeField]
+    private float dialogueDisplayTime;
+    [SerializeField]
     private bool isStarted;
     [SerializeField]
     private bool hasCompleted;
@@ -15,9 +19,12 @@ public class TutorialStage : ScriptableObject
     private GameObject uiPanel;
 
     public string StageName { get => stageName; set => stageName = value; }
+    public string Dialogue { get => dialogue; set => dialogue = value; }
+    public float DialogueDisplayTime { get => dialogueDisplayTime; set => dialogueDisplayTime = value; }
     public bool IsStarted { get => isStarted; set => isStarted = value; }
     public bool HasCompleted { get => hasCompleted; set => hasCompleted = value; }
     public GameObject UiPanel { get => uiPanel; set => uiPanel = value; }
+    
 
     public void Begin()
     {
