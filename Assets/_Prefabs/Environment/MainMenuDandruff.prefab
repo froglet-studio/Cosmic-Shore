@@ -11,7 +11,6 @@ GameObject:
   - component: {fileID: 6581790613644763884}
   - component: {fileID: 8408881654079357254}
   - component: {fileID: 5253399708865279294}
-  - component: {fileID: -8943124352231259118}
   - component: {fileID: 8702212862623139131}
   m_Layer: 0
   m_Name: MainMenuDandruff
@@ -85,20 +84,6 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!114 &-8943124352231259118
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8491596592871572304}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e85b63351f599b5449919a2a77b885c9, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  minMagnitude: 0.3
-  scaleRate: 0.97
 --- !u!114 &8702212862623139131
 MonoBehaviour:
   m_ObjectHideFlags: 0
