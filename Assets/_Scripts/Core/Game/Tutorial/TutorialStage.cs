@@ -20,6 +20,8 @@ public class TutorialStage : ScriptableObject
     [SerializeField]
     private bool hasActiveMuton;
     [SerializeField]
+    private bool hasFuelBar;
+    [SerializeField]
     private bool hasCompleted;
     [SerializeField]
     private GameObject uiPanel;
@@ -31,6 +33,7 @@ public class TutorialStage : ScriptableObject
     public bool HasAnotherAttempt { get => hasAnotherAttempt; set => hasAnotherAttempt = value; }
     public bool HasMuton { get => hasMuton; set => hasMuton = value; }
     public bool HasActiveMuton { get => hasActiveMuton; set => hasActiveMuton = value; }
+    public bool HasFuelBar { get => hasFuelBar; set => hasFuelBar = value; }
     public bool HasCompleted { get => hasCompleted; set => hasCompleted = value; }
     public GameObject UiPanel { get => uiPanel; set => uiPanel = value; }
    

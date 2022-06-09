@@ -65,6 +65,7 @@ public class TutorialMuton : MonoBehaviour
         {
             if(distance >= (Vector3.Distance(player.transform.position, transform.position)))
             {
+                //if(tutorialManager.tutorialStages[tutorialStageIndex].)
                 MoveMuton();
             }
         }

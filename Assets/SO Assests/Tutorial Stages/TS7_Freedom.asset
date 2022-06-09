@@ -14,7 +14,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   stageName: Freedom
   lineOne: {fileID: 11400000, guid: c7b6004b65b9d6644b122c60ef776fd9, type: 2}
-  lineOneDisplayTime: 3
-  isStarted: 0
-  hasCompleted: 0
+  lineOneDisplayTime: 4
+  isStarted: 1
+  hasAnotherAttempt: 0
+  hasMuton: 0
+  hasActiveMuton: 0
+  hasCompleted: 1
   uiPanel: {fileID: 0}

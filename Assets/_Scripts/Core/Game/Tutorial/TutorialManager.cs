@@ -10,9 +10,6 @@ using StarWriter.Utility.Singleton;
 
 public class TutorialManager : Singleton<TutorialManager>
 {
-    //[SerializeField]
-    //TutorialPlayerController playerController;
-
     public List<GameObject> tutorialPanels;
 
     public List<TutorialStage> tutorialStages; //SO Assests
@@ -101,8 +98,9 @@ public class TutorialManager : Singleton<TutorialManager>
     public void CheckCurrentTutorialStagePassed()
     {
         if (!tutorialStages[index].HasMuton)  //no muton = dialolue times out to control stage
-        { 
-            if (index == 3)
+        {
+            if (isTextBoxActive) { return; }
+            else if (index == 3)
             {
                 dialogueText.text = retryLine003;
                 StartCoroutine(DelayFadeOfTextBox(dialogueFailReadTime));
@@ -118,6 +116,8 @@ public class TutorialManager : Singleton<TutorialManager>
         }
         else  //requires muton to hit to close stage
         {
+            if (tutorialStages[index].HasActiveMuton) { return; }
+
             TutorialTests.TryGetValue(tutorialStages[index].StageName, out bool value);
             if (value == true)
             {
@@ -139,9 +139,7 @@ public class TutorialManager : Singleton<TutorialManager>
                     {
                         IncrementToNextStage();
                     }
-
                 }
-
             }
             if (tutorialStages[index].HasAnotherAttempt)
             {

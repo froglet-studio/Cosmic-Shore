@@ -14,7 +14,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   stageName: Gyro
   lineOne: {fileID: 11400000, guid: 41bc421986b7e4b4bbad35e271292407, type: 2}
-  lineOneDisplayTime: 3
-  isStarted: 0
-  hasCompleted: 0
+  lineOneDisplayTime: 4
+  isStarted: 1
+  hasAnotherAttempt: 0
+  hasMuton: 0
+  hasActiveMuton: 0
+  hasCompleted: 1
   uiPanel: {fileID: 0}

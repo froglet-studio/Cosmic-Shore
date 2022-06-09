@@ -14,10 +14,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   stageName: Learn_Pitch
   lineOne: {fileID: 11400000, guid: cdce6d4cfd96e7f40bcc274e2fae63bc, type: 2}
-  lineOneDisplayTime: 3
-  isStarted: 0
+  lineOneDisplayTime: 4
+  isStarted: 1
   hasAnotherAttempt: 0
   hasMuton: 1
-  hasActiveMuton: 0
-  hasCompleted: 0
+  hasActiveMuton: 1
+  hasCompleted: 1
   uiPanel: {fileID: 0}

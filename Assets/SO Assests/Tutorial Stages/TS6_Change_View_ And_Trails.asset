@@ -14,7 +14,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   stageName: Change_View_And_Trails_Panel
   lineOne: {fileID: 11400000, guid: 618333bc67da91541970ec5455ff0125, type: 2}
-  lineOneDisplayTime: 3
-  isStarted: 0
-  hasCompleted: 0
+  lineOneDisplayTime: 4
+  isStarted: 1
+  hasAnotherAttempt: 0
+  hasMuton: 0
+  hasActiveMuton: 0
+  hasCompleted: 1
   uiPanel: {fileID: 0}
