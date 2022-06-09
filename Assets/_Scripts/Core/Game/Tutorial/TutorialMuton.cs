@@ -16,7 +16,7 @@ public class TutorialMuton : MonoBehaviour
 
     private int tutorialStageIndex = 0;
 
-    private float distance = 5f;
+    private float distance = 10f;
 
     private string stageName;
 
@@ -71,11 +71,12 @@ public class TutorialMuton : MonoBehaviour
     }
     void Collide(Collider other)
     {     
-            stageName = tutorialManager.tutorialStages[tutorialStageIndex].StageName;
-            tutorialManager.TutorialTests[stageName] = true;
+        stageName = tutorialManager.tutorialStages[tutorialStageIndex].StageName;
+        tutorialManager.TutorialTests[stageName] = true;
+        tutorialManager.tutorialStages[tutorialStageIndex].HasActiveMuton = false;
 
-            gameObject.SetActive(false);
-            tutorialManager.tutorialStages[tutorialStageIndex].HasActiveMuton = false;
+        gameObject.SetActive(false);
+            
     }
     void MoveMuton()
     {

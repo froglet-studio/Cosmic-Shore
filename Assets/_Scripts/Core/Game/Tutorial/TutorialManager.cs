@@ -29,10 +29,11 @@ public class TutorialManager : Singleton<TutorialManager>
     private string retryLine003 = "Woah there partner.I saved your skin there but if that were a real flight you’d be toast.Now try again.";
     private string failLine003 = "I did mention danger, right? ...How about we keep moving.";
     private string failLine004 = "Always look for mutons, blah, blah, blah, lets move on...";
+
     [SerializeField]
     private int index = 0;
 
-    public bool hasCompletedTutorial = false;
+    //public bool hasCompletedTutorial = false;
     public bool isTextBoxActive = false;
 
     public int Index { get => index; private set => index = value; }
@@ -43,6 +44,8 @@ public class TutorialManager : Singleton<TutorialManager>
     // Start is called before the first frame update
     void Start()
     {
+        OnTutorialIndexChange?.Invoke(index); //initialize all tutorial classes indexes
+
         InitializeTutorialStages();
         InitializeTutorialTests();
         
@@ -59,8 +62,8 @@ public class TutorialManager : Singleton<TutorialManager>
         //Ref panels in scene to the SO Assest and clear bools
         foreach (TutorialStage stage in tutorialStages)
         {
-            tutorialStages[index].UiPanel = tutorialPanels[index];
-            tutorialStages[index].IsStarted = tutorialStages[index].HasCompleted = false;
+            tutorialStages[idx].UiPanel = tutorialPanels[idx];
+            tutorialStages[idx].IsStarted = tutorialStages[idx].HasCompleted = false;
             idx++;
         }
     }
@@ -79,37 +82,39 @@ public class TutorialManager : Singleton<TutorialManager>
 
     private void Update()
     {
-        if(index >= tutorialStages.Count || PlayerPrefs.GetInt("Skip Tutorial") == 1)
+        if(index >= tutorialStages.Count)
         {
             if (TutorialTests.ContainsValue(true))
             {
                 CompleteTutorial();
-            }
-        }
-        if (tutorialStages[index].IsStarted)
+            }    
+        }  
+        else if (tutorialStages[index].IsStarted)
         {
             //playerController.controlLevels[tutorialStages[0].StageName] = true;        
-            CheckCurrentTestPassed();
+            CheckCurrentTutorialStagePassed();
         }
     }
     /// <summary>
     /// Checks for tutorial stage completion and begins the next
     /// </summary>
-    public void CheckCurrentTestPassed()
+    public void CheckCurrentTutorialStagePassed()
     {
-        if (!tutorialStages[index].HasMuton)  //no muton = dialolue timeout fade controlled stage
+        if (!tutorialStages[index].HasMuton)  //no muton = dialolue times out to control stage
         { 
             if (index == 3)
             {
                 dialogueText.text = retryLine003;
                 StartCoroutine(DelayFadeOfTextBox(dialogueFailReadTime));
+                IncrementToNextStage();
             }
-            else       
+            else if(!isTextBoxActive)     
             {
                 dialogueText.text = tutorialStages[index].LineOne.ToString();
                 StartCoroutine(DelayFadeOfTextBox(tutorialStages[index].LineOneDisplayTime));
+                IncrementToNextStage();
             }
-            IncrementToNextStage();          
+                      
         }
         else  //requires muton to hit to close stage
         {
@@ -156,7 +161,6 @@ public class TutorialManager : Singleton<TutorialManager>
         isTextBoxActive = true;
         yield return new WaitForSeconds(time);
         dialogueText.enabled = false;
-        //dialogueBox
         isTextBoxActive = false;
     }
     /// <summary>
@@ -165,14 +169,15 @@ public class TutorialManager : Singleton<TutorialManager>
     private void IncrementToNextStage()
     {
         StopAllCoroutines();
-        tutorialStages[index].End();
+        tutorialStages[index].End();  //End last stage
 
         Debug.Log("Passed tutorial test " + tutorialStages[index].StageName);
 
         index++;
-        OnTutorialIndexChange?.Invoke(index);
         if (index >= tutorialStages.Count) { return; }
-        tutorialStages[index].Begin();
+        OnTutorialIndexChange?.Invoke(index); //Increment tutorial index
+
+        tutorialStages[index].Begin(); //Begin next stage
         UpdateDialogueTextBox();
     }
     /// <summary>
@@ -191,8 +196,9 @@ public class TutorialManager : Singleton<TutorialManager>
     /// </summary>
     public void CompleteTutorial()
     {
-        hasCompletedTutorial = true;
+        //hasCompletedTutorial = true;
         GameSetting setting = GameSetting.Instance;
+        setting.TutorialHasBeenCompleted = true;
         SceneManager.LoadScene(0);
     }
 }
