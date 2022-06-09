@@ -4,11 +4,14 @@ using UnityEngine;
 using StarWriter.Core;
 using UnityEngine.SceneManagement;
 using System;
+using TMPro;
+using UnityEngine.UI;
+using StarWriter.Utility.Singleton;
 
-public class TutorialManager : MonoBehaviour
+public class TutorialManager : Singleton<TutorialManager>
 {
-    [SerializeField]
-    TutorialPlayerController playerController;
+    //[SerializeField]
+    //TutorialPlayerController playerController;
 
     public List<GameObject> tutorialPanels;
 
@@ -16,41 +19,67 @@ public class TutorialManager : MonoBehaviour
 
     public Dictionary<string, bool> TutorialTests = new Dictionary<string, bool>();
 
-    public bool hasCompletedTutorial = false;
+    [SerializeField]
+    private TextMeshProUGUI dialogueText;
+    public Sprite dialogueBox; 
 
+    private float dialogueReadTime = 3f;
+    private float dialogueFailReadTime = 2f;
+
+    private string retryLine003 = "Woah there partner.I saved your skin there but if that were a real flight you’d be toast.Now try again.";
+    private string failLine003 = "I did mention danger, right? ...How about we keep moving.";
+    private string failLine004 = "Always look for mutons, blah, blah, blah, lets move on...";
+    [SerializeField]
     private int index = 0;
+
+    public bool hasCompletedTutorial = false;
+    public bool isTextBoxActive = false;
+
+    public int Index { get => index; private set => index = value; }
+
+    public delegate void OnTutorialIndexChangeEvent(int idx);
+    public event OnTutorialIndexChangeEvent OnTutorialIndexChange;
 
     // Start is called before the first frame update
     void Start()
     {
+        InitializeTutorialStages();
+        InitializeTutorialTests();
+        
+        tutorialStages[index].Begin();
+        UpdateDialogueTextBox();
+        
+    }
+    /// <summary>
+    /// Adds Panels to tutorialStages and sets IsStarted and IsCompleted to false
+    /// </summary>
+    private void InitializeTutorialStages()
+    {
+        int idx = 0;
         //Ref panels in scene to the SO Assest and clear bools
-        foreach (TutorialStage stage in tutorialStages){
+        foreach (TutorialStage stage in tutorialStages)
+        {
             tutorialStages[index].UiPanel = tutorialPanels[index];
             tutorialStages[index].IsStarted = tutorialStages[index].HasCompleted = false;
-            index++;
+            idx++;
         }
-        InitializeTutorialTests();
-        index = 0;
-        tutorialStages[0].Begin();
     }
-
-    private void InitializeTutorialTests() //Adding Test Names and setting bools false
+    /// <summary>
+    /// Adds tutorial stages names to dictionary TutorialTest and sets all bools false
+    /// </summary>
+    private void InitializeTutorialTests() 
     {
-        TutorialTests.Add(tutorialStages[0].StageName, false);
-        TutorialTests.Add(tutorialStages[1].StageName, false);
-        TutorialTests.Add(tutorialStages[2].StageName, false);
-        TutorialTests.Add(tutorialStages[3].StageName, false);
-        TutorialTests.Add(tutorialStages[4].StageName, false);
-        TutorialTests.Add(tutorialStages[5].StageName, false);
-        TutorialTests.Add(tutorialStages[6].StageName, false);
-        TutorialTests.Add(tutorialStages[7].StageName, false);
-        TutorialTests.Add(tutorialStages[8].StageName, false);
-
+        int idx = 0;
+        foreach(TutorialStage stage in tutorialStages)
+        {
+            TutorialTests.Add(tutorialStages[idx].StageName, false);
+            idx++;
+        }
     }
 
     private void Update()
     {
-        if(index >= tutorialStages.Count -1 || PlayerPrefs.GetInt("Skip Tutorial") == 1)
+        if(index >= tutorialStages.Count || PlayerPrefs.GetInt("Skip Tutorial") == 1)
         {
             if (TutorialTests.ContainsValue(true))
             {
@@ -59,31 +88,82 @@ public class TutorialManager : MonoBehaviour
         }
         if (tutorialStages[index].IsStarted)
         {
-            playerController.controlLevels[tutorialStages[0].StageName] = true;        
+            //playerController.controlLevels[tutorialStages[0].StageName] = true;        
             CheckCurrentTestPassed();
         }
     }
-
+    /// <summary>
+    /// Checks for tutorial stage completion and begins the next
+    /// </summary>
     public void CheckCurrentTestPassed()
     {
         TutorialTests.TryGetValue(tutorialStages[index].StageName, out bool value);
         if (value == true)
         {
-            tutorialStages[index].End();
-            Debug.Log("Passed tutorial test " + tutorialStages[index].StageName);
-            index++;
-            tutorialStages[index].Begin();           
+            if (!tutorialStages[index].HasAnotherAttempt)
+            {
+                if(index == 3)
+                {
+                    dialogueText.text = failLine003;
+                }
+                if(index == 4)
+                {
+                    dialogueText.text = failLine004;
+                }                
+                StartCoroutine(DelayFadeOfTextBox(dialogueFailReadTime));
+                
+                if (!isTextBoxActive) //coroutine timer is finished
+                {
+                    StopAllCoroutines();
+                    tutorialStages[index].End();
+                    Debug.Log("Passed tutorial test " + tutorialStages[index].StageName);
+                    index++; //increments on muton hit
+                    OnTutorialIndexChange?.Invoke(index);
+                    if (index >= tutorialStages.Count) { return; }
+
+                    tutorialStages[index].Begin();
+                    UpdateDialogueTextBox();
+                }
+                
+            }
+            else
+            {
+                tutorialStages[index].RetryOnce();
+                 
+                if(index == 3)
+                {
+                    dialogueText.text = retryLine003;
+                    StartCoroutine(DelayFadeOfTextBox(dialogueFailReadTime));
+                }
+
+                index++;
+                OnTutorialIndexChange?.Invoke(index);
+            }
+            
         } 
     }
 
-    public void StartGyroTest()
+    IEnumerator DelayFadeOfTextBox(float time)
     {
-        //TODO figure out how to prove gyro has been used
-
+        isTextBoxActive = true;
+        yield return new WaitForSeconds(time);
+        dialogueText.enabled = false;
+        //dialogueBox
+        isTextBoxActive = false;
     }
     
-    
-    //Tells GameSettings and GameManager that Tutorial has been completed
+
+    private void UpdateDialogueTextBox()
+    {
+        dialogueText.enabled = true;
+        dialogueText.text = tutorialStages[index].LineOne.Text;
+        dialogueReadTime = tutorialStages[index].LineOneDisplayTime;
+        StartCoroutine(DelayFadeOfTextBox(dialogueReadTime));
+    }
+
+    /// <summary>
+    /// Tells GameSettings and GameManager that Tutorial has been completed
+    /// </summary>
     public void CompleteTutorial()
     {
         hasCompletedTutorial = true;

@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,26 +12,40 @@ public class TutorialMuton : MonoBehaviour
     [SerializeField]
     private GameObject player;
 
-    public string stageName;
-
     public List<Vector3> spawnPointsOffset;
 
-    public int index = 0;
+    private int tutorialStageIndex = 0;
 
-    private int gyroIndex;
+    private float distance = 5f;
+
+    private string stageName;
 
     List<Collision> collisions;
+
+    private void OnEnable()
+    {
+        TutorialManager.Instance.OnTutorialIndexChange += OnIndexChange;
+    }
+
+    private void OnDisable()
+    {
+        TutorialManager.Instance.OnTutorialIndexChange += OnIndexChange;
+    }
+
+    private void OnIndexChange(int idx)
+    {
+        tutorialStageIndex = idx;
+    }
 
     // Start is called before the first frame update
     void Start()
     {
+        //tutorialManager = TutorialManager.Instance;
         MoveMuton();
-        stageName = tutorialManager.tutorialStages[index].StageName;
-        gyroIndex = spawnPointsOffset.Count - 1; // final stage testing gyro does not involve hitting a test Muton
+        tutorialStageIndex = tutorialManager.Index;
         collisions = new List<Collision>();
-    }
-
-   
+        tutorialManager.tutorialStages[tutorialStageIndex].HasActiveMuton = true;
+    }  
 
     private void OnCollisionEnter(Collision collision)
     {
@@ -45,32 +60,29 @@ public class TutorialMuton : MonoBehaviour
             Collide(collisions[0].collider);
             collisions.Clear();
         }
-    }
 
-    void Collide(Collider other)
-    {
-        stageName = tutorialManager.tutorialStages[index].StageName;
-        tutorialManager.TutorialTests[stageName] = true;
-        if (index < spawnPointsOffset.Count - 1)
+        if (!tutorialManager.tutorialStages[tutorialStageIndex].HasAnotherAttempt)
         {
-            
-            if (stageName == tutorialManager.tutorialStages[gyroIndex].StageName)
+            if(distance >= (Vector3.Distance(player.transform.position, transform.position)))
             {
-                tutorialManager.StartGyroTest();
-                gameObject.SetActive(false);
-            }
-            else
-            {
-                index++;
                 MoveMuton();
-            }           
-        }       
+            }
+        }
+    }
+    void Collide(Collider other)
+    {     
+            stageName = tutorialManager.tutorialStages[tutorialStageIndex].StageName;
+            tutorialManager.TutorialTests[stageName] = true;
+
+            gameObject.SetActive(false);
+            tutorialManager.tutorialStages[tutorialStageIndex].HasActiveMuton = false;
     }
     void MoveMuton()
     {
+
         transform.position = player.transform.position +
-                             player.transform.right * spawnPointsOffset[index].x +
-                             player.transform.up * spawnPointsOffset[index].y +
-                             player.transform.forward * spawnPointsOffset[index].z;
+                             player.transform.right * spawnPointsOffset[tutorialStageIndex].x +
+                             player.transform.up * spawnPointsOffset[tutorialStageIndex].y +
+                             player.transform.forward * spawnPointsOffset[tutorialStageIndex].z;
     }
 }

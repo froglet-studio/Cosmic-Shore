@@ -7,127 +7,150 @@ using StarWriter.Core;
 
 public class TutorialPlayerController : MonoBehaviour
 {
-    public Dictionary<string, bool> controlLevels = new Dictionary<string,bool>();
+
+   // public Dictionary<string, bool> controlLevels = new Dictionary<string,bool>();
 
     [SerializeField]
     private InputController inputController;
 
-    GameSetting gameSettings;
-    
+    //GameSetting gameSettings;
 
-    private void InitializeControlLevels() //Adding Test Names and setting bools false
+    private int tutorialIndex = 0;
+
+    private void OnEnable()
     {
-        controlLevels.Add("Pitch Up", false);
-        controlLevels.Add("Pitch Down", false);
-        controlLevels.Add("Yaw Left", false);
-        controlLevels.Add("Yaw Right", false);
-        controlLevels.Add("Roll Left", false);
-        controlLevels.Add("Roll Right", false);
-        controlLevels.Add("Speed Up", false); 
-        controlLevels.Add("Slow Down", false);
-        controlLevels.Add("Gyro", false);
-
+        TutorialManager.Instance.OnTutorialIndexChange += OnIndexChange;
     }
+
+    private void OnDisable()
+    {
+        TutorialManager.Instance.OnTutorialIndexChange += OnIndexChange;
+    }
+
+    private void OnIndexChange(int idx)
+    {
+        tutorialIndex = idx;
+    }
+
+
+    //private void InitializeControlLevels() //Adding Test Names and setting bools false
+    //{
+    //    controlLevels.Add("Pitch Up", false);
+    //    controlLevels.Add("Pitch Down", false);
+    //    controlLevels.Add("Yaw Left", false);
+    //    controlLevels.Add("Yaw Right", false);
+    //    controlLevels.Add("Roll Left", false);
+    //    controlLevels.Add("Roll Right", false);
+    //    controlLevels.Add("Speed Up", false); 
+    //    controlLevels.Add("Slow Down", false);
+    //    controlLevels.Add("Gyro", false);
+
+    //}
 
     // Start is called before the first frame update
     void Start()
     {
-        gameSettings = GameSetting.Instance;
-        InitializeControlLevels();
-        controlLevels["Pitch Up"] = true;
+        //gameSettings = GameSetting.Instance;
+        //InitializeControlLevels();
+        //controlLevels["Pitch Up"] = true;
     }
 
     // Update is called once per frame
     void Update()
     {
-        if (controlLevels["Pitch Up"] == true)
-        {
-            EnablePitch();
-        }
-        if (controlLevels["Pitch Down"] == true)
-        {
-            EnablePitch();
-        }
-        if (controlLevels["Yaw Left"] == true)
-        {
-            EnableYaw();
-        }
-        if (controlLevels["Yaw Right"] == true)
-        {
-            EnableYaw();
-        }
-        if (controlLevels["Roll Left"] == true)
-        {
-            EnableRoll();
-        }
-        if (controlLevels["Roll Right"] == true)
-        {
-            EnableRoll();
-        }
-        if (controlLevels["Speed Up"] == true)
-        {
-            EnableThrottle();
-        }
-        if (controlLevels["Slow Down"] == true)
-        {
-            EnableThrottle();
-        }
-        if (controlLevels["Gyro"] == true)
-        {
-            EnableGyro();
-        }
+        //TODO 
+        //if(tutorialIndex == 0)
+        //{
+            // change control pattern to rely on TutorialManagers index
+        //}
+        //if (controlLevels["Pitch Up"] == true)
+        //{
+        //    EnablePitch();
+        //}
+        //if (controlLevels["Pitch Down"] == true)
+        //{
+        //    EnablePitch();
+        //}
+        //if (controlLevels["Yaw Left"] == true)
+        //{
+        //    EnableYaw();
+        //}
+        //if (controlLevels["Yaw Right"] == true)
+        //{
+        //    EnableYaw();
+        //}
+        //if (controlLevels["Roll Left"] == true)
+        //{
+        //    EnableRoll();
+        //}
+        //if (controlLevels["Roll Right"] == true)
+        //{
+        //    EnableRoll();
+        //}
+        //if (controlLevels["Speed Up"] == true)
+        //{
+        //    EnableThrottle();
+        //}
+        //if (controlLevels["Slow Down"] == true)
+        //{
+        //    EnableThrottle();
+        //}
+        //if (controlLevels["Gyro"] == true)
+        //{
+        //    EnableGyro();
+        //}
     }
-    public void EnablePitch()
-    {
-        Debug.Log("pitch up");
-        inputController.IsPitchEnabled = true;
+    //public void EnablePitch()
+    //{
+    //    Debug.Log("pitch up");
+    //    inputController.IsPitchEnabled = true;
 
-        inputController.IsYawEnabled = false;
-        inputController.IsRollEnabled = false;
-        inputController.IsThrottleEnabled = true;
-        gameSettings.TurnGyroOFF();
-    }
-    private void EnableYaw()
-    {
-        Debug.Log("yaw left");
-        inputController.IsYawEnabled = true;
+    //    inputController.IsYawEnabled = false;
+    //    inputController.IsRollEnabled = false;
+    //    inputController.IsThrottleEnabled = true;
+    //    gameSettings.TurnGyroOFF();
+    //}
+    //private void EnableYaw()
+    //{
+    //    Debug.Log("yaw left");
+    //    inputController.IsYawEnabled = true;
 
-        inputController.IsPitchEnabled = false;
-        inputController.IsRollEnabled = false;
-        inputController.IsThrottleEnabled = true;
-        gameSettings.TurnGyroOFF();
-    }
+    //    inputController.IsPitchEnabled = false;
+    //    inputController.IsRollEnabled = false;
+    //    inputController.IsThrottleEnabled = true;
+    //    gameSettings.TurnGyroOFF();
+    //}
 
-    private void EnableRoll()
-    {
-        Debug.Log("roll left");
-        inputController.IsRollEnabled = true;
+    //private void EnableRoll()
+    //{
+    //    Debug.Log("roll left");
+    //    inputController.IsRollEnabled = true;
 
-        inputController.IsPitchEnabled = false;
-        inputController.IsYawEnabled = false;
-        inputController.IsThrottleEnabled = true;
-        gameSettings.TurnGyroOFF();
-    }
+    //    inputController.IsPitchEnabled = false;
+    //    inputController.IsYawEnabled = false;
+    //    inputController.IsThrottleEnabled = true;
+    //    gameSettings.TurnGyroOFF();
+    //}
 
-    private void EnableThrottle()
-    {
-        Debug.Log("speed up");
-        inputController.IsThrottleEnabled = true;
+    //private void EnableThrottle()
+    //{
+    //    Debug.Log("speed up");
+    //    inputController.IsThrottleEnabled = true;
 
-        inputController.IsPitchEnabled = false;
-        inputController.IsYawEnabled = false;
-        inputController.IsRollEnabled = false;
-        gameSettings.TurnGyroOFF();
-    }
+    //    inputController.IsPitchEnabled = false;
+    //    inputController.IsYawEnabled = false;
+    //    inputController.IsRollEnabled = false;
+    //    gameSettings.TurnGyroOFF();
+    //}
     
-    private void EnableGyro()
-    {
-        Debug.Log("gyro");
-        gameSettings.TurnGyroON();
+    //private void EnableGyro()
+    //{
+    //    Debug.Log("gyro");
+    //    gameSettings.TurnGyroON();
 
-        inputController.IsPitchEnabled = false;
-        inputController.IsYawEnabled = false;
-        inputController.IsRollEnabled = false;
-        inputController.IsThrottleEnabled = false;
-    }   
+    //    inputController.IsPitchEnabled = false;
+    //    inputController.IsYawEnabled = false;
+    //    inputController.IsRollEnabled = false;
+    //    inputController.IsThrottleEnabled = false;
+    //}   
 }
