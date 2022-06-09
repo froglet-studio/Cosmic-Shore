@@ -97,50 +97,58 @@ public class TutorialManager : Singleton<TutorialManager>
     /// </summary>
     public void CheckCurrentTestPassed()
     {
-        TutorialTests.TryGetValue(tutorialStages[index].StageName, out bool value);
-        if (value == true)
-        {
-            if (!tutorialStages[index].HasAnotherAttempt)
+        if (!tutorialStages[index].HasMuton)  //no muton = dialolue timeout fade controlled stage
+        { 
+            if (index == 3)
             {
-                if(index == 3)
-                {
-                    dialogueText.text = failLine003;
-                }
-                if(index == 4)
-                {
-                    dialogueText.text = failLine004;
-                }                
+                dialogueText.text = retryLine003;
                 StartCoroutine(DelayFadeOfTextBox(dialogueFailReadTime));
-                
-                if (!isTextBoxActive) //coroutine timer is finished
+            }
+            else       
+            {
+                dialogueText.text = tutorialStages[index].LineOne.ToString();
+                StartCoroutine(DelayFadeOfTextBox(tutorialStages[index].LineOneDisplayTime));
+            }
+            IncrementToNextStage();          
+        }
+        else  //requires muton to hit to close stage
+        {
+            TutorialTests.TryGetValue(tutorialStages[index].StageName, out bool value);
+            if (value == true)
+            {
+                if (!tutorialStages[index].HasAnotherAttempt)
                 {
-                    StopAllCoroutines();
-                    tutorialStages[index].End();
-                    Debug.Log("Passed tutorial test " + tutorialStages[index].StageName);
-                    index++; //increments on muton hit
-                    OnTutorialIndexChange?.Invoke(index);
-                    if (index >= tutorialStages.Count) { return; }
+                    if (index == 3)
+                    {
+                        dialogueText.text = failLine003;
+                        StartCoroutine(DelayFadeOfTextBox(dialogueFailReadTime));
+                    }
+                    else if (index == 4)
+                    {
+                        dialogueText.text = failLine004;
+                        StartCoroutine(DelayFadeOfTextBox(dialogueFailReadTime));
+                    }
+                    
 
-                    tutorialStages[index].Begin();
-                    UpdateDialogueTextBox();
+                    if (!isTextBoxActive) //coroutine timer is finished
+                    {
+                        IncrementToNextStage();
+                    }
+
                 }
-                
+
+            }
+            if (tutorialStages[index].HasAnotherAttempt)
+            {
+                tutorialStages[index].RetryOnce();
+                return;
             }
             else
             {
-                tutorialStages[index].RetryOnce();
-                 
-                if(index == 3)
-                {
-                    dialogueText.text = retryLine003;
-                    StartCoroutine(DelayFadeOfTextBox(dialogueFailReadTime));
-                }
-
-                index++;
-                OnTutorialIndexChange?.Invoke(index);
+                IncrementToNextStage();
             }
-            
-        } 
+        }
+        
     }
 
     IEnumerator DelayFadeOfTextBox(float time)
@@ -151,8 +159,25 @@ public class TutorialManager : Singleton<TutorialManager>
         //dialogueBox
         isTextBoxActive = false;
     }
-    
+    /// <summary>
+    /// Ends one Tutorial Stage and starts the next
+    /// </summary>
+    private void IncrementToNextStage()
+    {
+        StopAllCoroutines();
+        tutorialStages[index].End();
 
+        Debug.Log("Passed tutorial test " + tutorialStages[index].StageName);
+
+        index++;
+        OnTutorialIndexChange?.Invoke(index);
+        if (index >= tutorialStages.Count) { return; }
+        tutorialStages[index].Begin();
+        UpdateDialogueTextBox();
+    }
+    /// <summary>
+    /// Updates the text in the Dialogue Text Box
+    /// </summary>
     private void UpdateDialogueTextBox()
     {
         dialogueText.enabled = true;
