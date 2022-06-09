@@ -46,6 +46,8 @@ namespace StarWriter.Core.Input
         private readonly float animationScaler = 25f;
         private readonly float yawAnimationScaler = 80f;
 
+        private readonly float cameraFlipThreshold = .1f;
+
         private Gyroscope gyro;
         private Quaternion empiricalCorrection;
         private Quaternion displacementQ;
@@ -179,6 +181,7 @@ namespace StarWriter.Core.Input
 
         private void CameraFlip()
         {
+            if (Mathf.Abs(UnityEngine.Input.acceleration.y) < cameraFlipThreshold) return;
             if (UnityEngine.Input.acceleration.y > 0)
             {
                 if (!isCameraDisabled)
