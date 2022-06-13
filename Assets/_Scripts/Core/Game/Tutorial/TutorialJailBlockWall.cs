@@ -1,12 +1,10 @@
-using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
-namespace StarWriter.Core.Tutorial 
+namespace StarWriter.Core.Tutorial
 {
-    public class TutorialMuton : MonoBehaviour
+    public class TutorialJailBlockWall : MonoBehaviour
     {
         [SerializeField]
         TutorialManager tutorialManager;
@@ -14,7 +12,7 @@ namespace StarWriter.Core.Tutorial
         [SerializeField]
         private GameObject player;
 
-        public List<Vector3> spawnPointsOffset;
+        public Vector3 spawnPointOffset;
 
         private int tutorialStageIndex = 0;
 
@@ -43,10 +41,9 @@ namespace StarWriter.Core.Tutorial
         void Start()
         {
             //tutorialManager = TutorialManager.Instance;
-            MoveMuton();
+            MoveJailBlockWall();
             tutorialStageIndex = tutorialManager.Index;
             collisions = new List<Collision>();
-            tutorialManager.tutorialStages[tutorialStageIndex].HasActiveMuton = true;
         }
 
         private void OnCollisionEnter(Collision collision)
@@ -68,28 +65,31 @@ namespace StarWriter.Core.Tutorial
                 if (distance >= (Vector3.Distance(player.transform.position, transform.position)))
                 {
                     //if(tutorialManager.tutorialStages[tutorialStageIndex].)
-                    MoveMuton();
+                    MoveJailBlockWall();
                 }
             }
         }
+        /// <summary>
+        /// Collision occurs only by passing thru the bars opening
+        /// </summary>
+        /// <param name="other"></param>
         void Collide(Collider other)
         {
             stageName = tutorialManager.tutorialStages[tutorialStageIndex].StageName;
             tutorialManager.TutorialTests[stageName] = true;
-            tutorialManager.tutorialStages[tutorialStageIndex].HasActiveMuton = false;
 
             gameObject.SetActive(false);
 
         }
-        void MoveMuton()
+        void MoveJailBlockWall()
         {
 
             transform.position = player.transform.position +
-                                 player.transform.right * spawnPointsOffset[tutorialStageIndex].x +
-                                 player.transform.up * spawnPointsOffset[tutorialStageIndex].y +
-                                 player.transform.forward * spawnPointsOffset[tutorialStageIndex].z;
+                                 player.transform.right * spawnPointOffset.x +
+                                 player.transform.up * spawnPointOffset.y +
+                                 player.transform.forward * spawnPointOffset.z;
         }
     }
 }
-
+                
 

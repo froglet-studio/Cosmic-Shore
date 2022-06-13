@@ -2,87 +2,91 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class TutorialSpawner : MonoBehaviour
+namespace StarWriter.Core.Tutorial
 {
-    
-    // objects
-    [SerializeField]
-    private GameObject muton;
-    [SerializeField]
-    private GameObject jailBlockWall;
-    [SerializeField]
-    private GameObject fuelBar;
-    //[SerializeField]
-    //private GameObject trail;
-
-
-    // tutorial refs
-    [SerializeField]
-    private TutorialManager tutorialManager;
-
-    [SerializeField]
-    private int index;
-
-    private void Start()
+    public class TutorialSpawner : MonoBehaviour
     {
-        TutorialManager.Instance.OnTutorialIndexChange += OnIndexChange;
-        jailBlockWall.SetActive(false);
-        muton.SetActive(false);
-    }
 
-    private void OnDisable()
-    {
-        TutorialManager.Instance.OnTutorialIndexChange += OnIndexChange;
-    }
+        // objects
+        [SerializeField]
+        private GameObject muton;
+        [SerializeField]
+        private GameObject jailBlockWall;
+        [SerializeField]
+        private GameObject fuelBar;
+        [SerializeField]
+        private GameObject tutorialPlayer;
 
-    private void OnIndexChange(int idx)
-    {
-        index = idx;
-        SetUpScene();
-    }
 
-    // Update is called once per frame
-    void Update()
-    {
-        if (muton.activeInHierarchy) { return; } // TODO cage or other stuff
+        // tutorial refs
+        [SerializeField]
+        private TutorialManager tutorialManager;
 
-        if (tutorialManager.tutorialStages[index].HasAnotherAttempt || !tutorialManager.tutorialStages[index].HasActiveMuton)
+        [SerializeField]
+        private int index;
+
+        private void Start()
         {
-            muton.SetActive(true);
-            tutorialManager.tutorialStages[index].HasActiveMuton = true;
-        }       
-    }
-
-    private void SetUpScene()
-    {
-        if (tutorialManager.tutorialStages[index].HasMuton)
-        {
-            muton.SetActive(true);
-            tutorialManager.tutorialStages[index].HasActiveMuton = true;
-        }
-        else
-        {
+            TutorialManager.Instance.OnTutorialIndexChange += OnIndexChange;
+            jailBlockWall.SetActive(false);
             muton.SetActive(false);
         }
-        if (index == 3 || index == 5)
+
+        private void OnDisable()
         {
-            jailBlockWall.SetActive(true);
+            TutorialManager.Instance.OnTutorialIndexChange -= OnIndexChange;
         }
-        else
+
+        private void OnIndexChange(int idx)
         {
-            jailBlockWall.SetActive(false);
+            index = idx;
+            SetUpScene();
         }
-        if(index >= 6)
+
+        // Update is called once per frame
+        void Update()
         {
-            //turn on player trails
+            if (muton.activeInHierarchy) { return; } // TODO cage or other stuff
+
+            if (tutorialManager.tutorialStages[index].HasAnotherAttempt || !tutorialManager.tutorialStages[index].HasActiveMuton)
+            {
+                muton.SetActive(true);
+                tutorialManager.tutorialStages[index].HasActiveMuton = true;
+            }
         }
-        if(tutorialManager.tutorialStages[index].HasFuelBar)
+
+        private void SetUpScene()
         {
-            fuelBar.SetActive(false);
-        }
-        else
-        {
-            fuelBar.SetActive(true);
+            if (tutorialManager.tutorialStages[index].HasMuton)
+            {
+                muton.SetActive(true);
+                tutorialManager.tutorialStages[index].HasActiveMuton = true;
+            }
+            else
+            {
+                muton.SetActive(false);
+            }
+            if (index == 3 || index == 5) // only tutorial panels 3 and 5 invole passing thru the wall
+            {
+                jailBlockWall.SetActive(true);
+            }
+            else
+            {
+                jailBlockWall.SetActive(false);
+            }
+            if (index >= 6) // tutorial panel 6-9 have trails
+            {
+                tutorialPlayer.GetComponent<TrailSpawner>().enabled = true;
+            }
+            if (tutorialManager.tutorialStages[index].HasFuelBar)
+            {
+                fuelBar.SetActive(false);
+            }
+            else
+            {
+                fuelBar.SetActive(true);
+            }
         }
     }
 }
+

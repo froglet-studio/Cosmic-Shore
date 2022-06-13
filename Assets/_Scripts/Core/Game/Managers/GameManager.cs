@@ -83,6 +83,10 @@ namespace StarWriter.Core
             //audioManager.PlayMusicClip(audioManager.ToggleMusicPlaylist());
             SceneManager.LoadScene(2);
         }
+        public void ReturnToLobby()
+        {
+            SceneManager.LoadScene(0);
+        }
         public void UnPauseGame()
         {
             if (PauseSystem.GetIsPaused()) { TogglePauseGame(); }
