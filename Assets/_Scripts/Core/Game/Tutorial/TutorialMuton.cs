@@ -42,13 +42,15 @@ namespace StarWriter.Core.Tutorial
         // Start is called before the first frame update
         void Start()
         {
-            //tutorialManager = TutorialManager.Instance;
             MoveMuton();
             tutorialStageIndex = tutorialManager.Index;
             collisions = new List<Collision>();
             tutorialManager.tutorialStages[tutorialStageIndex].HasActiveMuton = true;
         }
-
+        /// <summary>
+        /// Generate a list of Box Collider Collision so the specific ones can be identified for use
+        /// </summary>
+        /// <param name="collision"></param>
         private void OnCollisionEnter(Collision collision)
         {
             collisions.Add(collision);
@@ -72,6 +74,10 @@ namespace StarWriter.Core.Tutorial
                 }
             }
         }
+        /// <summary>
+        /// Handles Tutorial Muton collision logic
+        /// </summary>
+        /// <param name="other"></param>
         void Collide(Collider other)
         {
             stageName = tutorialManager.tutorialStages[tutorialStageIndex].StageName;
@@ -81,6 +87,9 @@ namespace StarWriter.Core.Tutorial
             gameObject.SetActive(false);
 
         }
+        /// <summary>
+        /// Moves the Muton to an offset in front of the Tutorial Player
+        /// </summary>
         void MoveMuton()
         {
 
