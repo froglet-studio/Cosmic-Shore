@@ -4146,7 +4146,7 @@ MonoBehaviour:
   muton: {fileID: 1050581609840963683}
   jailBlockWall: {fileID: 1307922059}
   fuelBar: {fileID: 172455317}
-  tutorialPlayer: {fileID: 0}
+  tutorialPlayer: {fileID: 2059123757}
   tutorialManager: {fileID: 1958437949}
   index: 0
 --- !u!1 &2059123757
@@ -5110,8 +5110,8 @@ MonoBehaviour:
   player: {fileID: 2059123757}
   spawnPointsOffset:
   - {x: 0, y: 0, z: 0}
-  - {x: 0, y: 50, z: 20}
-  - {x: -50, y: 0, z: 20}
+  - {x: 0, y: 20, z: 100}
+  - {x: -20, y: 0, z: 100}
   - {x: 0, y: 0, z: 0}
   - {x: 0, y: 0, z: 0}
   - {x: 0, y: 0, z: 0}
