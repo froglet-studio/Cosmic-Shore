@@ -1173,6 +1173,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 686115705867826747, guid: e26bb2a0488dc0146b569780efe87c80,
         type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Arguments.m_BoolArgument
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 686115705867826747, guid: e26bb2a0488dc0146b569780efe87c80,
+        type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[1].m_Arguments.m_BoolArgument
       value: 0
       objectReference: {fileID: 0}
@@ -1195,7 +1200,7 @@ MonoBehaviour:
     type: 3}
   m_PrefabInstance: {fileID: 449010204}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
+  m_GameObject: {fileID: 1088514652}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0bbfefad7143a8149945acc002a80f55, type: 3}
@@ -2116,6 +2121,12 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 9507afe9f7c8f3f4688cb95f2bdd255e, type: 3}
+--- !u!1 &1088514652 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 686115705867826745, guid: e26bb2a0488dc0146b569780efe87c80,
+    type: 3}
+  m_PrefabInstance: {fileID: 449010204}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1090266252
 GameObject:
   m_ObjectHideFlags: 0
@@ -2581,6 +2592,7 @@ GameObject:
   - component: {fileID: 1412703297}
   - component: {fileID: 1412703296}
   - component: {fileID: 1412703295}
+  - component: {fileID: 1412703299}
   m_Layer: 5
   m_Name: Tutorial Canvas
   m_TagString: Untagged
@@ -2683,6 +2695,22 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0, y: 0}
+--- !u!114 &1412703299
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1412703294}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fc9985f1de22b3c4f963a6a97bf6fd05, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  intensityMeterPanel: {fileID: 172455317}
+  pauseMenuPanel: {fileID: 1216430030}
+  finalScorePanel: {fileID: 0}
+  pauseButton: {fileID: 1088514652}
 --- !u!1 &1439087932
 GameObject:
   m_ObjectHideFlags: 0
@@ -4479,7 +4507,7 @@ PrefabInstance:
     - target: {fileID: 8035663729450608540, guid: 58dbda2a7cc479e4091d2abacbfd4d94,
         type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
-      value: OnClickResumeButton
+      value: OnClickResumeGameButton
       objectReference: {fileID: 0}
     - target: {fileID: 8035663729801712788, guid: 58dbda2a7cc479e4091d2abacbfd4d94,
         type: 3}
