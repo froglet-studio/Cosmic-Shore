@@ -7,10 +7,14 @@ namespace StarWriter.Core
     public class TutorialMenu : MonoBehaviour
     {
         GameManager gameManager;
+
+        [SerializeField]
+        public GameObject tutorialPlayer;
     
         void Start()
         {
             gameManager = GameManager.Instance;
+            tutorialPlayer.SetActive(false);
         }
 
         public void OnClickMainMenu()

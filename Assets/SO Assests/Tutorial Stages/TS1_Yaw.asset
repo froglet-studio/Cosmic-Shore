@@ -14,10 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   stageName: Yaw
   lineOne: {fileID: 11400000, guid: 80a14bbdf80960340bb2c4032dea4415, type: 2}
-  lineOneDisplayTime: 4
+  lineOneDisplayTime: 6
   isStarted: 1
   hasAnotherAttempt: 0
   hasMuton: 1
   hasActiveMuton: 1
-  hasCompleted: 1
+  hasFuelBar: 0
+  hasTrails: 0
+  hasCompleted: 0
   uiPanel: {fileID: 0}

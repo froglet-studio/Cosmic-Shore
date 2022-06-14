@@ -14,10 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   stageName: Transition to Game
   lineOne: {fileID: 11400000, guid: 53dd0c3f0c0b75641986caef575a736e, type: 2}
-  lineOneDisplayTime: 4
-  isStarted: 1
+  lineOneDisplayTime: 5
+  isStarted: 0
   hasAnotherAttempt: 0
   hasMuton: 0
   hasActiveMuton: 0
-  hasCompleted: 1
+  hasFuelBar: 0
+  hasTrails: 0
+  hasCompleted: 0
   uiPanel: {fileID: 0}
