@@ -46,8 +46,9 @@ namespace StarWriter.Core.Tutorial
         // Update is called once per frame
         void Update()
         {
-            if (muton.activeInHierarchy) { return; } // TODO cage or other stuff
-
+            if (muton.activeInHierarchy) { return; }
+            
+            // If muton i
             if (tutorialManager.tutorialStages[index].HasAnotherAttempt || !tutorialManager.tutorialStages[index].HasActiveMuton)
             {
                 muton.SetActive(true);

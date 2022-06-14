@@ -14,10 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   stageName: 
   lineOne: {fileID: 11400000, guid: 21b05a3e73d7b36439620a3d26e34505, type: 2}
-  lineOneDisplayTime: 4
-  isStarted: 1
+  lineOneDisplayTime: 6
+  isStarted: 0
   hasAnotherAttempt: 1
   hasMuton: 1
   hasActiveMuton: 1
-  hasCompleted: 1
+  hasFuelBar: 0
+  hasTrails: 0
+  hasCompleted: 0
   uiPanel: {fileID: 0}
