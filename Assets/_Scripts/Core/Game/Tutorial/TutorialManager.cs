@@ -1,202 +1,254 @@
+using StarWriter.Utility.Singleton;
 using System.Collections;
 using System.Collections.Generic;
-using UnityEngine;
-using StarWriter.Core;
-using UnityEngine.SceneManagement;
-using System;
 using TMPro;
-using UnityEngine.UI;
-using StarWriter.Utility.Singleton;
+using UnityEngine;
+using UnityEngine.SceneManagement;
 
-public class TutorialManager : Singleton<TutorialManager>
+namespace StarWriter.Core.Tutorial
 {
-    public List<GameObject> tutorialPanels;
-
-    public List<TutorialStage> tutorialStages; //SO Assests
-
-    public Dictionary<string, bool> TutorialTests = new Dictionary<string, bool>();
-
-    [SerializeField]
-    private TextMeshProUGUI dialogueText;
-    public Sprite dialogueBox; 
-
-    private float dialogueReadTime = 3f;
-    private float dialogueFailReadTime = 2f;
-
-    private string retryLine003 = "Woah there partner.I saved your skin there but if that were a real flight you’d be toast.Now try again.";
-    private string failLine003 = "I did mention danger, right? ...How about we keep moving.";
-    private string failLine004 = "Always look for mutons, blah, blah, blah, lets move on...";
-
-    [SerializeField]
-    private int index = 0;
-
-    //public bool hasCompletedTutorial = false;
-    public bool isTextBoxActive = false;
-
-    public int Index { get => index; private set => index = value; }
-
-    public delegate void OnTutorialIndexChangeEvent(int idx);
-    public event OnTutorialIndexChangeEvent OnTutorialIndexChange;
-
-    // Start is called before the first frame update
-    void Start()
+    public class TutorialManager : Singleton<TutorialManager>
     {
-        OnTutorialIndexChange?.Invoke(index); //initialize all tutorial classes indexes
+        public List<GameObject> tutorialPanels;
 
-        InitializeTutorialStages();
-        InitializeTutorialTests();
-        
-        tutorialStages[index].Begin();
-        UpdateDialogueTextBox();
-        
-    }
-    /// <summary>
-    /// Adds Panels to tutorialStages and sets IsStarted and IsCompleted to false
-    /// </summary>
-    private void InitializeTutorialStages()
-    {
-        int idx = 0;
-        //Ref panels in scene to the SO Assest and clear bools
-        foreach (TutorialStage stage in tutorialStages)
+        public List<TutorialStage> tutorialStages; // SO Assests
+
+        [SerializeField]
+        TutorialMuton muton;
+
+        [SerializeField]
+        TutorialJailBlockWall jailBlockWall;
+
+        [SerializeField]
+        private IntensityBar intensityBar;
+
+        [SerializeField]
+        private GameObject player;
+
+        [SerializeField]
+        private IntensitySystem intensitySystem;
+
+        [SerializeField]
+        private TextMeshProUGUI dialogueText;
+        public Sprite dialogueBox;
+
+        private TrailSpawner trailSpawner;
+        private int index = 0;
+
+        private void OnEnable()
         {
-            tutorialStages[idx].UiPanel = tutorialPanels[idx];
-            tutorialStages[idx].IsStarted = tutorialStages[idx].HasCompleted = false;
-            idx++;
+            IntensitySystem.zeroIntensity += IntensityBarDrained;
+            TutorialMuton.onMutonCollision += MutonCollision;
+            TutorialJailBlockWall.onJailBlockCollision += JailBlockCollision;
         }
-    }
-    /// <summary>
-    /// Adds tutorial stages names to dictionary TutorialTest and sets all bools false
-    /// </summary>
-    private void InitializeTutorialTests() 
-    {
-        int idx = 0;
-        foreach(TutorialStage stage in tutorialStages)
-        {
-            TutorialTests.Add(tutorialStages[idx].StageName, false);
-            idx++;
-        }
-    }
 
-    private void Update()
-    {
-        if(index >= tutorialStages.Count)
+        private void OnDisable()
         {
-            if (TutorialTests.ContainsValue(true))
-            {
-                CompleteTutorial();
-            }    
-        }  
-        else if (tutorialStages[index].IsStarted)
-        {
-            //playerController.controlLevels[tutorialStages[0].StageName] = true;        
-            CheckCurrentTutorialStagePassed();
+            IntensitySystem.zeroIntensity -= IntensityBarDrained;
+            TutorialMuton.onMutonCollision -= MutonCollision;
+            TutorialJailBlockWall.onJailBlockCollision -= JailBlockCollision;
         }
-    }
-    /// <summary>
-    /// Checks for tutorial stage completion and begins the next
-    /// </summary>
-    public void CheckCurrentTutorialStagePassed()
-    {
-        if (!tutorialStages[index].HasMuton)  //no muton = dialolue times out to control stage
-        {
-            if (isTextBoxActive) { return; }
-            else if (index == 3)
-            {
-                dialogueText.text = retryLine003;
-                StartCoroutine(DelayFadeOfTextBox(dialogueFailReadTime));
-                IncrementToNextStage();
-            }
-            else if(!isTextBoxActive)     
-            {
-                dialogueText.text = tutorialStages[index].LineOne.ToString();
-                StartCoroutine(DelayFadeOfTextBox(tutorialStages[index].LineOneDisplayTime));
-                IncrementToNextStage();
-            }
-                      
-        }
-        else  //requires muton to hit to close stage
-        {
-            if (tutorialStages[index].HasActiveMuton) { return; }
 
-            TutorialTests.TryGetValue(tutorialStages[index].StageName, out bool value);
-            if (value == true)
+        void Start()
+        {
+            trailSpawner = player.GetComponent<TrailSpawner>();
+
+            // Disable stuff to start
+            muton.gameObject.SetActive(false);
+            jailBlockWall.gameObject.SetActive(false);
+            intensityBar.gameObject.SetActive(false);
+            intensitySystem.enabled = false;
+            trailSpawner.enabled = false;
+
+            //intensityBar.
+
+            InitializeTutorialStages();
+
+            BeginStage();
+        }
+
+        IEnumerator EndStageTimerCoroutine(float duration)
+        {
+            yield return new WaitForSeconds(duration);
+            EndStage();
+        }
+
+        private void BeginStage(float delay = 0)
+        {
+            StopAllCoroutines();
+            StartCoroutine(BeginStageCoroutine(delay));
+        }
+
+        // Optionally wait for delay (if previous level fail text is displayed)
+        // Setup stage elements
+        // Start Timeout Timer
+        // Begin Stage
+        // Show prompt
+        IEnumerator BeginStageCoroutine(float delay)
+        {
+            yield return new WaitForSeconds(delay);
+
+            TutorialStage stage = tutorialStages[index];
+            
+            muton.gameObject.SetActive(stage.HasMuton);
+            jailBlockWall.gameObject.SetActive(stage.UsesJailBlockWall);
+            intensityBar.gameObject.SetActive(stage.UsesFuelBar);
+            intensitySystem.enabled = stage.UsesFuelBar;
+            trailSpawner.enabled = stage.UsesTrails;
+
+            if (stage.HasMuton)
+                muton.MoveMuton(player.transform, stage.MutonSpawnOffset);
+
+            if (stage.UsesJailBlockWall)
+                jailBlockWall.MoveJailBlockWall(player.transform, stage.JailBlockSpawnOffset);
+
+            if (stage.PlayTime > 0)
+                StartCoroutine(EndStageTimerCoroutine(stage.PlayTime));
+
+            if (stage.UsesFuelBar)
+                IntensitySystem.ResetIntensity();
+
+            stage.Begin();
+            UpdateDialogueTextBox();
+        }
+
+        // Decrement Retry Counter
+        // Show Retry Text
+        // If out of retries, end stage
+        // Else Reset Stage Components
+        private void RetryStage()
+        {
+            TutorialStage stage = tutorialStages[index];
+            stage.Retry();
+
+            Debug.Log($"TutorialManager.RetryStage - Index: {index}, Has Remaining Attempts: {stage.HasRemainingAttempts}");
+
+            if (stage.HasRemainingAttempts)
             {
-                if (!tutorialStages[index].HasAnotherAttempt)
+                if (stage.RetryLine != null)
                 {
-                    if (index == 3)
-                    {
-                        dialogueText.text = failLine003;
-                        StartCoroutine(DelayFadeOfTextBox(dialogueFailReadTime));
-                    }
-                    else if (index == 4)
-                    {
-                        dialogueText.text = failLine004;
-                        StartCoroutine(DelayFadeOfTextBox(dialogueFailReadTime));
-                    }
-                    
-
-                    if (!isTextBoxActive) //coroutine timer is finished
-                    {
-                        IncrementToNextStage();
-                    }
+                    // Show Retry
+                    dialogueText.text = stage.RetryLine.Text;
+                    StartCoroutine(DelayFadeOfTextBox(stage.RetryLineDisplayTime));
                 }
-            }
-            if (tutorialStages[index].HasAnotherAttempt)
-            {
-                tutorialStages[index].RetryOnce();
-                return;
+                stage.Retry();
             }
             else
             {
-                IncrementToNextStage();
+                EndStage(false);
             }
         }
-        
-    }
 
-    IEnumerator DelayFadeOfTextBox(float time)
-    {
-        isTextBoxActive = true;
-        yield return new WaitForSeconds(time);
-        dialogueText.enabled = false;
-        isTextBoxActive = false;
-    }
-    /// <summary>
-    /// Ends one Tutorial Stage and starts the next
-    /// </summary>
-    private void IncrementToNextStage()
-    {
-        StopAllCoroutines();
-        tutorialStages[index].End();  //End last stage
+        // End current stage
+        // Increment Index
+        // If not success show failure text ... and wait for it to time out before going to the next one
+        // If was last stage, complete tutorial
+        // Else Begin next stage
+        private void EndStage(bool success = true)
+        {
+            Debug.Log($"TutorialManager.EndStage - Index: {index}, Success: {success}");
 
-        Debug.Log("Passed tutorial test " + tutorialStages[index].StageName);
+            TutorialStage stage = tutorialStages[index++];
+            stage.End();
 
-        index++;
-        if (index >= tutorialStages.Count) { return; }
-        OnTutorialIndexChange?.Invoke(index); //Increment tutorial index
+            if (index >= tutorialStages.Count)
+            {
+                CompleteTutorial();
+            }
+            else
+            {
+                // If we succeeded, or the stage doesn't have a failure prompt, immediately go to the next stage
+                // Otherwise, show the error prompt first
+                if (success || stage.FailureLine == null)
+                {
+                    BeginStage();
+                }
+                else
+                {
+                    // Show Failure prompt
+                    dialogueText.text = stage.FailureLine.Text;
+                    StartCoroutine(DelayFadeOfTextBox(stage.FailLineDisplayTime));
+                    BeginStage(stage.FailLineDisplayTime);
+                }
+            }
+        }
 
-        tutorialStages[index].Begin(); //Begin next stage
-        UpdateDialogueTextBox();
-    }
-    /// <summary>
-    /// Updates the text in the Dialogue Text Box
-    /// </summary>
-    private void UpdateDialogueTextBox()
-    {
-        dialogueText.enabled = true;
-        dialogueText.text = tutorialStages[index].LineOne.Text;
-        dialogueReadTime = tutorialStages[index].LineOneDisplayTime;
-        StartCoroutine(DelayFadeOfTextBox(dialogueReadTime));
-    }
+        /// <summary>
+        /// Adds Panels to tutorialStages
+        /// </summary>
+        private void InitializeTutorialStages()
+        {
+            int idx = 0;
+            foreach (TutorialStage stage in tutorialStages)
+            {
+                tutorialStages[idx].UiPanel = tutorialPanels[idx];
+                idx++;
+            }
+        }
 
-    /// <summary>
-    /// Tells GameSettings and GameManager that Tutorial has been completed
-    /// </summary>
-    public void CompleteTutorial()
-    {
-        //hasCompletedTutorial = true;
-        GameSetting setting = GameSetting.Instance;
-        setting.TutorialHasBeenCompleted = true;
-        SceneManager.LoadScene(0);
+        private void Update()
+        {   
+            var stage = tutorialStages[index];
+            
+            // Reset Muton if it's too far away
+            if (stage.HasMuton)
+            {
+                // TODO: problem here if respawn distance is too low, it will just keep moving the muton further away
+                //if (stage.RespawnDistance >= (Vector3.Distance(player.transform.position, muton.transform.position)))
+                //{
+                //    muton.MoveMuton(player.transform, stage.MutonSpawnOffset);
+                //}
+            }
+
+            // Reset Jail Block if it's too far away
+            if (stage.UsesJailBlockWall)
+            {
+                if (stage.RespawnDistance >= Vector3.Distance(player.transform.position, jailBlockWall.transform.position))
+                {
+                    jailBlockWall.MoveJailBlockWall(player.transform, stage.JailBlockSpawnOffset);
+                }
+            }
+        }
+
+        IEnumerator DelayFadeOfTextBox(float time)
+        {
+            yield return new WaitForSeconds(time);
+            dialogueText.enabled = false;
+        }
+
+        /// <summary>
+        /// Updates the text in the Dialogue Text Box
+        /// </summary>
+        private void UpdateDialogueTextBox()
+        {
+            dialogueText.enabled = true;
+            dialogueText.text = tutorialStages[index].PromptLine.Text;
+            StartCoroutine(DelayFadeOfTextBox(tutorialStages[index].PromptLineDisplayTime));
+        }
+
+        /// <summary>
+        /// Tells GameSettings and GameManager that Tutorial has been completed
+        /// </summary>
+        public void CompleteTutorial()
+        {
+            GameSetting.Instance.TutorialHasBeenCompleted = true;
+            SceneManager.LoadScene(0);
+        }
+
+        public void JailBlockCollision()
+        {
+            RetryStage();
+        }
+
+        private void IntensityBarDrained()
+        {
+            IntensitySystem.ResetIntensity();
+            RetryStage();
+        }
+
+        public void MutonCollision()
+        {
+            EndStage();
+        }
     }
 }

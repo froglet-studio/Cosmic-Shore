@@ -13,13 +13,20 @@ MonoBehaviour:
   m_Name: TS8_Return_To_Main_Menu_Dialogue
   m_EditorClassIdentifier: 
   stageName: Return to Main Menu
-  lineOne: {fileID: 11400000, guid: 5e2eb0c100b91fd40bc87c7038effc12, type: 2}
-  lineOneDisplayTime: 10
-  isStarted: 0
-  hasAnotherAttempt: 0
+  mutonSpawnOffset: {x: 0, y: 0, z: 20}
+  jailBlockSpawnOffset: {x: 0, y: 0, z: 20}
+  respawnDistance: 10
+  playTime: 6
+  maxAttempts: 2
   hasMuton: 0
-  hasActiveMuton: 0
-  hasFuelBar: 0
-  hasTrails: 0
-  hasCompleted: 0
-  uiPanel: {fileID: 0}
+  usesFuelBar: 0
+  usesTrails: 0
+  usesJailBlockWall: 0
+  lineOne: {fileID: 11400000, guid: 5e2eb0c100b91fd40bc87c7038effc12, type: 2}
+  promptNarrationLine: {fileID: 11400000, guid: 5e2eb0c100b91fd40bc87c7038effc12,
+    type: 2}
+  retryNarrationLine: {fileID: 0}
+  failureNarrationLine: {fileID: 0}
+  lineOneDisplayTime: 10
+  retryLineDisplayTime: 0
+  failLineDisplayTime: 0

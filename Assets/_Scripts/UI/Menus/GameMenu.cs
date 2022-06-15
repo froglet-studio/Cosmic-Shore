@@ -16,12 +16,12 @@ public class GameMenu : MonoBehaviour
 
     private void OnEnable()
     {
-        IntensitySystem.gameOver += GameOver;
+        IntensitySystem.zeroIntensity += GameOver;
     }
 
     private void OnDisable()
     {
-        IntensitySystem.gameOver -= GameOver;
+        IntensitySystem.zeroIntensity -= GameOver;
     }
 
     /// <summary>

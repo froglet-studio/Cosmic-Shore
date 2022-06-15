@@ -14,14 +14,14 @@ public class ScoringManager : MonoBehaviour
     private void OnEnable()
     {
         IntensitySystem.onPlayerIntensityOverflow += AddExcessIntensityToScore;
-        IntensitySystem.gameOver += GameOver;
+        IntensitySystem.zeroIntensity += GameOver;
         MutonPopUp.AddToScore += AddMutonBous;
     }
 
     private void OnDisable()
     {
         IntensitySystem.onPlayerIntensityOverflow -= AddExcessIntensityToScore;
-        IntensitySystem.gameOver -= GameOver;
+        IntensitySystem.zeroIntensity -= GameOver;
         MutonPopUp.AddToScore -= AddMutonBous;
     }
 

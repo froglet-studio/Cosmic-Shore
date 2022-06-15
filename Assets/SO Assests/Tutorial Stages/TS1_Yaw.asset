@@ -13,13 +13,18 @@ MonoBehaviour:
   m_Name: TS1_Yaw
   m_EditorClassIdentifier: 
   stageName: Yaw
+  spawnPointOffset: {x: 0, y: 0, z: 40}
   lineOne: {fileID: 11400000, guid: 80a14bbdf80960340bb2c4032dea4415, type: 2}
+  promptNarrationLine: {fileID: 11400000, guid: 80a14bbdf80960340bb2c4032dea4415,
+    type: 2}
+  retryNarrationLine: {fileID: 0}
+  failureNarrationLine: {fileID: 0}
   lineOneDisplayTime: 6
-  isStarted: 1
-  hasAnotherAttempt: 0
+  retryLineDisplayTime: 0
+  failLineDisplayTime: 0
+  maxAttempts: 2
   hasMuton: 1
-  hasActiveMuton: 1
-  hasFuelBar: 0
-  hasTrails: 0
-  hasCompleted: 0
-  uiPanel: {fileID: 0}
+  usesFuelBar: 0
+  usesTrails: 0
+  usesJailBlockWall: 0
+  respawnDistance: 10

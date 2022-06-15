@@ -13,13 +13,19 @@ MonoBehaviour:
   m_Name: TS2_Ptich
   m_EditorClassIdentifier: 
   stageName: Learn_Pitch
+  spawnPointOffset: {x: 0, y: 0, z: 40}
   lineOne: {fileID: 11400000, guid: cdce6d4cfd96e7f40bcc274e2fae63bc, type: 2}
+  promptNarrationLine: {fileID: 11400000, guid: cdce6d4cfd96e7f40bcc274e2fae63bc,
+    type: 2}
+  retryNarrationLine: {fileID: 0}
+  failureNarrationLine: {fileID: 0}
   lineOneDisplayTime: 6
-  isStarted: 0
-  hasAnotherAttempt: 0
+  retryLineDisplayTime: 0
+  failLineDisplayTime: 0
+  maxAttempts: 2
   hasMuton: 1
-  hasActiveMuton: 1
-  hasFuelBar: 0
-  hasTrails: 0
-  hasCompleted: 0
-  uiPanel: {fileID: 0}
+  usesFuelBar: 0
+  usesTrails: 0
+  usesJailBlockWall: 0
+  respawnDistance: 10
+  playTime: 0

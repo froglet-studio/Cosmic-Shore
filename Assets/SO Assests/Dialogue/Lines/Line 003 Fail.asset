@@ -10,8 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 9221bc1f8006022428ee8aef792966fc, type: 3}
-  m_Name: Line 001
+  m_Name: Line 003 Fail
   m_EditorClassIdentifier: 
   speaker: {fileID: 11400000, guid: 153560b85d8a07a4eaa76b39fd0f60c4, type: 2}
-  text: "Next step is yaw. \n\nSlide both fingers left or right and see if you can
-    get another muton\r."
+  text: I did mention danger, right? ... How about we keep moving.

@@ -1,52 +1,21 @@
-using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
 namespace StarWriter.Core.Tutorial 
 {
     public class TutorialMuton : MonoBehaviour
     {
-        [SerializeField]
-        TutorialManager tutorialManager;
-
-        [SerializeField]
-        private GameObject player;
-
-        public List<Vector3> spawnPointsOffset;
-
-        private int tutorialStageIndex = 0;
-
-        private float distance = 10f;
-
-        private string stageName;
-
         List<Collision> collisions;
 
-        private void OnEnable()
-        {
-            TutorialManager.Instance.OnTutorialIndexChange += OnIndexChange;
-        }
-
-        private void OnDisable()
-        {
-            TutorialManager.Instance.OnTutorialIndexChange -= OnIndexChange;
-        }
-
-        private void OnIndexChange(int idx)
-        {
-            tutorialStageIndex = idx;
-        }
+        public delegate void OnTutorialMutonCollisionEvent();
+        public static event OnTutorialMutonCollisionEvent onMutonCollision;
 
         // Start is called before the first frame update
         void Start()
         {
-            MoveMuton();
-            tutorialStageIndex = tutorialManager.Index;
             collisions = new List<Collision>();
-            tutorialManager.tutorialStages[tutorialStageIndex].HasActiveMuton = true;
         }
+
         /// <summary>
         /// Generate a list of Box Collider Collision so the specific ones can be identified for use
         /// </summary>
@@ -54,7 +23,6 @@ namespace StarWriter.Core.Tutorial
         private void OnCollisionEnter(Collision collision)
         {
             collisions.Add(collision);
-
         }
 
         private void Update()
@@ -64,39 +32,26 @@ namespace StarWriter.Core.Tutorial
                 Collide(collisions[0].collider);
                 collisions.Clear();
             }
-
-            if (!tutorialManager.tutorialStages[tutorialStageIndex].HasAnotherAttempt)
-            {
-                if (distance >= (Vector3.Distance(player.transform.position, transform.position)))
-                {
-                    //if(tutorialManager.tutorialStages[tutorialStageIndex].)
-                    MoveMuton();
-                }
-            }
         }
+
         /// <summary>
         /// Handles Tutorial Muton collision logic
         /// </summary>
         /// <param name="other"></param>
         void Collide(Collider other)
         {
-            stageName = tutorialManager.tutorialStages[tutorialStageIndex].StageName;
-            tutorialManager.TutorialTests[stageName] = true;
-            tutorialManager.tutorialStages[tutorialStageIndex].HasActiveMuton = false;
-
-            gameObject.SetActive(false);
-
+            onMutonCollision?.Invoke();
         }
+
         /// <summary>
         /// Moves the Muton to an offset in front of the Tutorial Player
         /// </summary>
-        void MoveMuton()
+        public void MoveMuton(Transform playerTransform, Vector3 spawnPointOffset)
         {
-
-            transform.position = player.transform.position +
-                                 player.transform.right * spawnPointsOffset[tutorialStageIndex].x +
-                                 player.transform.up * spawnPointsOffset[tutorialStageIndex].y +
-                                 player.transform.forward * spawnPointsOffset[tutorialStageIndex].z;
+            transform.position = playerTransform.position +
+                                 playerTransform.right * spawnPointOffset.x +
+                                 playerTransform.up * spawnPointOffset.y +
+                                 playerTransform.forward * spawnPointOffset.z;
         }
     }
 }

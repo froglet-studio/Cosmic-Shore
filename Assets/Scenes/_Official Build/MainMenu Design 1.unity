@@ -155,18 +155,6 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 8
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &84931338 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 5036209225001289746, guid: 6e26a254ab5fbd749a242ce2be20d667,
-    type: 3}
-  m_PrefabInstance: {fileID: 5036209224950004504}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7fcb218adb3f54348a9de015bd773527, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1 &489496391 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 2479656386223168652, guid: ba70c0f3eb077d44b8a538982d02dadc,
@@ -999,18 +987,6 @@ Transform:
     type: 3}
   m_PrefabInstance: {fileID: 1564738380}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &1726446934 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 7876322935933696371, guid: bd0ed2313b0c31841835230bedeaa90d,
-    type: 3}
-  m_PrefabInstance: {fileID: 6205945644082756535}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c84cc795715b8664aa69c3c613612a4f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1 &1867118896
 GameObject:
   m_ObjectHideFlags: 0
@@ -1024,6 +1000,7 @@ GameObject:
   - component: {fileID: 1867118899}
   - component: {fileID: 1867118898}
   - component: {fileID: 1867118897}
+  - component: {fileID: 1867118902}
   m_Layer: 5
   m_Name: Main_Menu_Canvas
   m_TagString: Untagged
@@ -1127,6 +1104,18 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0, y: 0}
+--- !u!114 &1867118902
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1867118896}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7ec312aba11675348ad33bf75e6bc0bb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &1882815733
 GameObject:
   m_ObjectHideFlags: 0
@@ -1628,12 +1617,32 @@ PrefabInstance:
         type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
-      objectReference: {fileID: 84931338}
+      objectReference: {fileID: 1867118902}
+    - target: {fileID: 2109514715405210260, guid: 7b41307a62a8b6f4499e38f52d12adcb,
+        type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
+      value: GameManagerOnClickTutorialButton
+      objectReference: {fileID: 0}
+    - target: {fileID: 2109514715405210260, guid: 7b41307a62a8b6f4499e38f52d12adcb,
+        type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
+      value: SingletonMenuProxy, Assembly-CSharp
+      objectReference: {fileID: 0}
     - target: {fileID: 2905640492595912166, guid: 7b41307a62a8b6f4499e38f52d12adcb,
         type: 3}
       propertyPath: onValueChanged.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
-      objectReference: {fileID: 1726446934}
+      objectReference: {fileID: 1867118902}
+    - target: {fileID: 2905640492595912166, guid: 7b41307a62a8b6f4499e38f52d12adcb,
+        type: 3}
+      propertyPath: onValueChanged.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
+      value: GameSettingChangeAudioEnabledSetting
+      objectReference: {fileID: 0}
+    - target: {fileID: 2905640492595912166, guid: 7b41307a62a8b6f4499e38f52d12adcb,
+        type: 3}
+      propertyPath: onValueChanged.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
+      value: SingletonMenuProxy, Assembly-CSharp
+      objectReference: {fileID: 0}
     - target: {fileID: 3112306421266030442, guid: 7b41307a62a8b6f4499e38f52d12adcb,
         type: 3}
       propertyPath: m_AnchoredPosition.x
@@ -1653,7 +1662,17 @@ PrefabInstance:
         type: 3}
       propertyPath: onValueChanged.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
-      objectReference: {fileID: 1726446934}
+      objectReference: {fileID: 1867118902}
+    - target: {fileID: 5811063482133158424, guid: 7b41307a62a8b6f4499e38f52d12adcb,
+        type: 3}
+      propertyPath: onValueChanged.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
+      value: GameSettingChangeGyroEnabledStatus
+      objectReference: {fileID: 0}
+    - target: {fileID: 5811063482133158424, guid: 7b41307a62a8b6f4499e38f52d12adcb,
+        type: 3}
+      propertyPath: onValueChanged.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
+      value: SingletonMenuProxy, Assembly-CSharp
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 7b41307a62a8b6f4499e38f52d12adcb, type: 3}
 --- !u!33 &2342156430694341748

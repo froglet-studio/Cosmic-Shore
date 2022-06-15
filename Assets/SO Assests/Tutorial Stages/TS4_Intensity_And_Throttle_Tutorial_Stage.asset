@@ -13,13 +13,20 @@ MonoBehaviour:
   m_Name: TS4_Intensity_And_Throttle_Tutorial_Stage
   m_EditorClassIdentifier: 
   stageName: Intensity_And_Throttle
+  spawnPointOffset: {x: 0, y: 0, z: 0}
   lineOne: {fileID: 11400000, guid: dc14be0f4503b6341b727989f0ea063a, type: 2}
+  promptNarrationLine: {fileID: 11400000, guid: dc14be0f4503b6341b727989f0ea063a,
+    type: 2}
+  retryNarrationLine: {fileID: 0}
+  failureNarrationLine: {fileID: 11400000, guid: 05384a683a023e2479c42f52cf9757e8,
+    type: 2}
   lineOneDisplayTime: 6
-  isStarted: 0
-  hasAnotherAttempt: 0
+  retryLineDisplayTime: 0
+  failLineDisplayTime: 2
+  maxAttempts: 2
   hasMuton: 1
-  hasActiveMuton: 1
-  hasFuelBar: 1
-  hasTrails: 0
-  hasCompleted: 0
-  uiPanel: {fileID: 0}
+  usesFuelBar: 1
+  usesTrails: 0
+  usesJailBlockWall: 0
+  respawnDistance: 10
+  playTime: 0

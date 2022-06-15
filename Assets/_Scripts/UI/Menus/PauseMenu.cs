@@ -65,7 +65,9 @@ namespace StarWriter.UI
             pauseButton.gameObject.SetActive(true);
             gameObject.SetActive(false);
         }
-
-
+        public void OnClickRestartTutorialButton()
+        {
+            gameManager.OnClickTutorialToggleButton();
+        }
     }
 }

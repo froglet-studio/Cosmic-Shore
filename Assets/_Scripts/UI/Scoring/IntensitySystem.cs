@@ -5,25 +5,25 @@ using System;
 public class IntensitySystem : MonoBehaviour
 {
     #region Events
-    public delegate void OnInensityOverflow(string uuid, int amount);
-    public static event OnInensityOverflow onPlayerIntensityOverflow;
+    public delegate void OnIntensityOverflow(string uuid, int amount);
+    public static event OnIntensityOverflow onPlayerIntensityOverflow;
 
     public delegate void OnIntensityChangeEvent(string uuid, float intensity);
     public static event OnIntensityChangeEvent onIntensityChange;
 
-    public delegate void OnGameOverEvent();
-    public static event OnGameOverEvent gameOver;
+    public delegate void OnIntensityZeroEvent();
+    public static event OnIntensityZeroEvent zeroIntensity;
     
     #endregion
     #region Floats
     [Tooltip("Initial and Max intensity level from 0-1")]
     [SerializeField]
     [Range(0, 1)]
-    float maxIntensity = 1f;
+    static float maxIntensity = 1f;
     [Tooltip("Current intensity level from 0-1")]
     [SerializeField]
     [Range(0, 1)]
-    float currentIntensity;
+    static float currentIntensity;
     
     [SerializeField]
     float rateOfIntesityChange = -0.02f;
@@ -33,7 +33,7 @@ public class IntensitySystem : MonoBehaviour
     [SerializeField]
     string uuidOfPlayer = "";
 
-    public float CurrentIntensity { get => currentIntensity; }
+    public static float CurrentIntensity { get => currentIntensity; }
 
     private void OnEnable()
     {
@@ -62,6 +62,11 @@ public class IntensitySystem : MonoBehaviour
         }
     }
 
+    public static void ResetIntensity()
+    {
+        currentIntensity = maxIntensity;
+    }
+
     private void ChangeIntensity(string uuid, float amount)
     {
         uuidOfPlayer = uuid;  //Recieves uuid of from Collision Events
@@ -75,6 +80,8 @@ public class IntensitySystem : MonoBehaviour
         if (currentIntensity <= 0)
         {
             currentIntensity = 0;
+            UpdateCurrentIntensity(uuidOfPlayer, currentIntensity);
+            UpdateIntensityBar(uuid, currentIntensity);
             GameOver();
         }
         if (currentIntensity != 0) 
@@ -101,6 +108,6 @@ public class IntensitySystem : MonoBehaviour
 
     private void GameOver()
     {
-        gameOver?.Invoke();
+        zeroIntensity?.Invoke();
     }
 }

@@ -13,11 +13,20 @@ MonoBehaviour:
   m_Name: TS0_Fingers_ Intro
   m_EditorClassIdentifier: 
   stageName: Stage 0 Intro Flace Fingers
+  mutonSpawnOffset: {x: 0, y: 0, z: 40}
+  jailBlockSpawnOffset: {x: 0, y: 0, z: 20}
+  respawnDistance: 200
+  playTime: 0
+  maxAttempts: 2
+  hasMuton: 1
+  usesFuelBar: 0
+  usesTrails: 0
+  usesJailBlockWall: 0
   lineOne: {fileID: 11400000, guid: 7f0eb8060f658a440b3a51c3cb3e63d3, type: 2}
+  promptNarrationLine: {fileID: 11400000, guid: 7f0eb8060f658a440b3a51c3cb3e63d3,
+    type: 2}
+  retryNarrationLine: {fileID: 0}
+  failureNarrationLine: {fileID: 0}
   lineOneDisplayTime: 4
-  isStarted: 1
-  hasAnotherAttempt: 0
-  hasMuton: 0
-  hasActiveMuton: 0
-  hasCompleted: 1
-  uiPanel: {fileID: 0}
+  retryLineDisplayTime: 0
+  failLineDisplayTime: 0

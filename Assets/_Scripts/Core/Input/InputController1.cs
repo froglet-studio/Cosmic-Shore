@@ -79,13 +79,13 @@ namespace StarWriter.Core.Input
 
         private void OnEnable()
         {
-            IntensitySystem.gameOver += OnGameOver;
+            IntensitySystem.zeroIntensity += OnGameOver;
             GameSetting.OnChangeGyroEnabledStatus += OnToggleGyro;
         }
 
         private void OnDisable()
         {
-            IntensitySystem.gameOver -= OnGameOver;
+            IntensitySystem.zeroIntensity -= OnGameOver;
             GameSetting.OnChangeGyroEnabledStatus -= OnToggleGyro;
         }
 

@@ -19,7 +19,6 @@ namespace StarWriter.Core
 
         void Start()
         {
-            
             gameSettings = GameSetting.Instance;
             audioManager = AudioManager.Instance;
 
@@ -51,7 +50,6 @@ namespace StarWriter.Core
             SceneManager.LoadScene(1);
         }
         
-
         /// <summary>
         /// Toggles the Gyro On/Off
         /// </summary>
@@ -68,25 +66,20 @@ namespace StarWriter.Core
         {
             UnPauseGame();
             SceneManager.LoadScene(2);
-            //if (hasSkippedTutorial)
-            //{
-            //    SceneManager.LoadScene(2);
-            //}
-            //else
-            //{
-            //    SceneManager.LoadScene(1);
-            //}
         }
+
         public void RestartGame()
         {
             UnPauseGame();
             //audioManager.PlayMusicClip(audioManager.ToggleMusicPlaylist());
             SceneManager.LoadScene(2);
         }
+
         public void ReturnToLobby()
         {
             SceneManager.LoadScene(0);
         }
+
         public void UnPauseGame()
         {
             if (PauseSystem.GetIsPaused()) { TogglePauseGame(); }
@@ -96,9 +89,7 @@ namespace StarWriter.Core
         {
             if (!PauseSystem.GetIsPaused()) { TogglePauseGame(); }
         }
-        /// <summary>
-        /// UnPauses game play
-        /// </summary>
+
         /// <summary>
         /// Toggles the Pause System
         /// </summary>

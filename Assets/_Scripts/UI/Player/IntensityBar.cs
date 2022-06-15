@@ -1,7 +1,4 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UI;
 
 public class IntensityBar : MonoBehaviour
 {
@@ -15,8 +12,6 @@ public class IntensityBar : MonoBehaviour
     float Intensity = 1f;
     
     float MaxMaskWidth;
-
-    RectTransform maskTransform;
 
     private void OnEnable()
     {
@@ -37,7 +32,6 @@ public class IntensityBar : MonoBehaviour
     void LateUpdate()
     {
         IntensityMask.sizeDelta = new Vector2((1 - Intensity) * MaxMaskWidth, IntensityMask.rect.height);
-      
     }
 
     /// <summary>
@@ -47,7 +41,5 @@ public class IntensityBar : MonoBehaviour
     private void ChangeIntensity(string uuid, float currentIntensity)
     {
         Intensity = currentIntensity;
-        
-        
     }
 }
