@@ -17,11 +17,11 @@ MonoBehaviour:
   jailBlockSpawnOffset: {x: 0, y: 0, z: 20}
   respawnDistance: 10
   playTime: 0
-  maxAttempts: 2
+  maxAttempts: 1
   hasMuton: 1
-  usesFuelBar: 0
-  usesTrails: 0
-  usesJailBlockWall: 0
+  usesFuelBar: 1
+  usesTrails: 1
+  usesJailBlockWall: 1
   lineOne: {fileID: 11400000, guid: 618333bc67da91541970ec5455ff0125, type: 2}
   promptNarrationLine: {fileID: 11400000, guid: 618333bc67da91541970ec5455ff0125,
     type: 2}

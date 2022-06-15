@@ -13,11 +13,11 @@ MonoBehaviour:
   m_Name: TS3_Roll_And_Collosion
   m_EditorClassIdentifier: 
   stageName: 
-  mutonSpawnOffset: {x: 0, y: 0, z: 60}
-  jailBlockSpawnOffset: {x: 0, y: 0, z: 20}
+  mutonSpawnOffset: {x: 0, y: 0, z: 40}
+  jailBlockSpawnOffset: {x: 0, y: 0, z: 30}
   respawnDistance: 10
   playTime: 0
-  maxAttempts: 2
+  maxAttempts: 1
   hasMuton: 1
   usesFuelBar: 0
   usesTrails: 0

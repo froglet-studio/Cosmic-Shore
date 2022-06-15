@@ -17,7 +17,7 @@ MonoBehaviour:
   jailBlockSpawnOffset: {x: 0, y: 0, z: 20}
   respawnDistance: 10
   playTime: 6
-  maxAttempts: 2
+  maxAttempts: 0
   hasMuton: 0
   usesFuelBar: 0
   usesTrails: 0
