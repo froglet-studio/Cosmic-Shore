@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "com.unity.2d.sprite": "1.0.0",
     "com.unity.adaptiveperformance": "3.0.2",
     "com.unity.adaptiveperformance.samsung.android": "4.0.0",
     "com.unity.ads": "3.7.5",
