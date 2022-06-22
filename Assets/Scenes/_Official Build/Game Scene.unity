@@ -1606,7 +1606,7 @@ PrefabInstance:
         type: 3}
       propertyPath: IntensityRectTransform
       value: 
-      objectReference: {fileID: 0}
+      objectReference: {fileID: 1586480805}
     - target: {fileID: 7764616919500017385, guid: c8544725eea141847982b286866c858d,
         type: 3}
       propertyPath: m_AnchorMax.x
@@ -1771,6 +1771,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   rateOfFuelChange: -0.02
   uuidOfPlayer: 
+--- !u!224 &1586480805 stripped
+RectTransform:
+  m_CorrespondingSourceObject: {fileID: 3066695830212394131, guid: c8544725eea141847982b286866c858d,
+    type: 3}
+  m_PrefabInstance: {fileID: 1586480801}
+  m_PrefabAsset: {fileID: 0}
 --- !u!224 &1663880876 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 8035663729387164693, guid: c8544725eea141847982b286866c858d,

@@ -20,7 +20,7 @@ public class FuelSystem : MonoBehaviour
     [SerializeField]
     [Range(0, 1)]
     static float maxFuel = 1f;
-    [Tooltip("Current intensity level from 0-1")]
+    [Tooltip("Current fuel level from 0-1")]
     [SerializeField]
     [Range(0, 1)]
     static float currentFuel;
@@ -53,7 +53,7 @@ public class FuelSystem : MonoBehaviour
         StartCoroutine(CountDownCoroutine());
     }
 
-    IEnumerator CountDownCoroutine() // intensity
+    IEnumerator CountDownCoroutine() // fuel
     {
         while (currentFuel != 0)
         {

@@ -8,10 +8,10 @@ public class SO_Trail_Base : ScriptableObject
     [SerializeField]
     private float maxHealth; 
     [SerializeField]
-    private float intensity; 
+    private float fuel; 
 
     public string TrailName { get => trailName; set => trailName = value; }
     // public float MaxHealth { get => maxHealth; set => maxHealth = value; }
-    public float Intensity { get => intensity; set => intensity = value; }
+    public float Fuel { get => fuel; set => fuel = value; }
     public float MaxHealth { get => maxHealth; set => maxHealth = value; }
 }
