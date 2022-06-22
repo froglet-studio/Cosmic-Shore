@@ -50,6 +50,7 @@ namespace StarWriter.Core.Tutorial
                                  playerTransform.right * spawnPointOffset.x +
                                  playerTransform.up * spawnPointOffset.y +
                                  playerTransform.forward * spawnPointOffset.z;
+            transform.rotation = Quaternion.LookRotation(playerTransform.position - transform.position, playerTransform.up);
         }
     }
 }

@@ -59,8 +59,8 @@ namespace StarWriter.Core.Tutorial
             intensityBar.gameObject.SetActive(false);
             intensitySystem.enabled = false;
             trailSpawner.enabled = false;
-
-            //intensityBar.
+            GameSetting.Instance.TurnGyroOFF();
+                
 
             InitializeTutorialStages();
 
@@ -95,6 +95,7 @@ namespace StarWriter.Core.Tutorial
             intensityBar.gameObject.SetActive(stage.UsesFuelBar);
             intensitySystem.enabled = stage.UsesFuelBar;
             trailSpawner.enabled = stage.UsesTrails;
+            if (stage.UsesGyro) GameSetting.Instance.TurnGyroON(); else GameSetting.Instance.TurnGyroOFF();
 
             if (stage.HasMuton)
                 muton.MoveMuton(player.transform, stage.MutonSpawnOffset);
@@ -107,6 +108,8 @@ namespace StarWriter.Core.Tutorial
 
             if (stage.UsesFuelBar)
                 IntensitySystem.ResetIntensity();
+            
+                
 
             stage.Begin();
             UpdateDialogueTextBox();
@@ -201,13 +204,13 @@ namespace StarWriter.Core.Tutorial
             }
 
             // Reset Jail Block if it's too far away
-            if (stage.UsesJailBlockWall)
-            {
-                if (stage.RespawnDistance >= Vector3.Distance(player.transform.position, jailBlockWall.transform.position))
-                {
-                    jailBlockWall.MoveJailBlockWall(player.transform, stage.JailBlockSpawnOffset);
-                }
-            }
+            //if (stage.UsesJailBlockWall)
+            //{
+            //    if (stage.RespawnDistance >= Vector3.Distance(player.transform.position, jailBlockWall.transform.position))
+            //    {
+            //        jailBlockWall.MoveJailBlockWall(player.transform, stage.JailBlockSpawnOffset);
+            //    }
+            //}
         }
 
         IEnumerator DelayFadeOfTextBox(float time)

@@ -28,6 +28,9 @@ public class TutorialStage : ScriptableObject
     private bool usesFuelBar;
 
     [SerializeField]
+    private bool usesGyro;
+
+    [SerializeField]
     private bool usesTrails;
 
     [SerializeField]
@@ -70,6 +73,7 @@ public class TutorialStage : ScriptableObject
     public bool HasRemainingAttempts { get => remainingAttempts > 0; }
     public bool HasMuton { get => hasMuton; set => hasMuton = value; }
     public bool UsesFuelBar { get => usesFuelBar; set => usesFuelBar = value; }
+    public bool UsesGyro { get => usesGyro; set => usesGyro = value; }
     public bool UsesTrails { get => usesTrails; set => usesTrails = value; }
     public bool HasCompleted { get => hasCompleted; }
     public bool UsesJailBlockWall { get => usesJailBlockWall; }
