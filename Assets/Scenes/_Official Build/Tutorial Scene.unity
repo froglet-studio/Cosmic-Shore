@@ -709,12 +709,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   player: {fileID: 2059123757}
   jailBlockWall: {fileID: 1307922059}
---- !u!1 &172455317 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 7295673199715285786, guid: 1b900a12070a83a40931c2e99bb9308e,
-    type: 3}
-  m_PrefabInstance: {fileID: 1934494466}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1 &223363687
 GameObject:
   m_ObjectHideFlags: 0
@@ -3279,7 +3273,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fc9985f1de22b3c4f963a6a97bf6fd05, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  intensityMeterPanel: {fileID: 172455317}
+  fuelMeterPanel: {fileID: 0}
   pauseMenuPanel: {fileID: 1216430030}
   finalScorePanel: {fileID: 0}
   pauseButton: {fileID: 1088514652}
@@ -3769,7 +3763,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &1605969336
 RectTransform:
   m_ObjectHideFlags: 0
@@ -4337,8 +4331,9 @@ MonoBehaviour:
       m_Calls: []
   m_text: 
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: ae09a1f94d095454cad81f41060edbf5, type: 2}
+  m_sharedMaterial: {fileID: -5360740250317253410, guid: ae09a1f94d095454cad81f41060edbf5,
+    type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -4362,8 +4357,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 18
-  m_fontSizeBase: 18
+  m_fontSize: 14
+  m_fontSizeBase: 14
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
