@@ -13,12 +13,12 @@ MonoBehaviour:
   m_Name: TS0_Fingers_ Intro
   m_EditorClassIdentifier: 
   stageName: Stage 0 Intro Flace Fingers
-  mutonSpawnOffset: {x: 0, y: 0, z: 40}
-  jailBlockSpawnOffset: {x: 0, y: 0, z: 20}
+  mutonSpawnOffset: {x: 0, y: 0, z: 60}
+  jailBlockSpawnOffset: {x: 0, y: 0, z: 0}
   respawnDistance: 200
   playTime: 0
   maxAttempts: 0
-  hasMuton: 0
+  hasMuton: 1
   usesFuelBar: 0
   usesTrails: 0
   usesJailBlockWall: 0

@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: TS1_Yaw
   m_EditorClassIdentifier: 
   stageName: Yaw
-  mutonSpawnOffset: {x: 20, y: 0, z: 80}
-  jailBlockSpawnOffset: {x: 0, y: 0, z: 20}
+  mutonSpawnOffset: {x: 40, y: 0, z: 100}
+  jailBlockSpawnOffset: {x: 0, y: 0, z: 0}
   respawnDistance: 10
   playTime: 0
   maxAttempts: 0
