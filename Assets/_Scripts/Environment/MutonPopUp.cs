@@ -23,7 +23,7 @@ public class MutonPopUp : MonoBehaviour
     #endregion
 
     [SerializeField]
-    int scoreBonus = 5;
+    int scoreBonus = 1;
 
     #region Referenced in Inspector
     [SerializeField]
