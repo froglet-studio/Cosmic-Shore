@@ -19,12 +19,12 @@ public class FuelBar : MonoBehaviour
 
     private void OnEnable()
     {
-        FuelSystem.onFuelChange += ChangeFuelLevel;
+        FuelSystem.onFuelChange += UpdateFuelLevel;
     }
 
     private void OnDisable()
     {
-        FuelSystem.onFuelChange -= ChangeFuelLevel;
+        FuelSystem.onFuelChange -= UpdateFuelLevel;
     }
 
     // Start is called before the first frame update
@@ -36,9 +36,11 @@ public class FuelBar : MonoBehaviour
     }
 
 
-    public void ChangeFuelLevel(string uuid, float amount)
+    public void UpdateFuelLevel(string uuid, float amount)
     {
-        currentFuelLevel += amount;
+        currentFuelLevel = amount;
+        currentFuelLevel = Mathf.Clamp(currentFuelLevel, 0, maxFuelLevel);
+        Debug.Log("Fuel Level is " + currentFuelLevel);
      
         UpdateFuelBarDisplay(currentFuelLevel);
     }
@@ -46,8 +48,6 @@ public class FuelBar : MonoBehaviour
     public void UpdateFuelBarDisplay(float displayFuelLevel)
     {
         float multiplier = 1 / fuelBarLevels;
-
-        displayFuelLevel = Mathf.Clamp(displayFuelLevel, 0, maxFuelLevel);
 
         fuelLevelImage.enabled = true;
 

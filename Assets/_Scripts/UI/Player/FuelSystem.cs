@@ -98,6 +98,7 @@ public class FuelSystem : MonoBehaviour
 
     private void UpdateFuelBar(string uuidOfPlayer, float currentFuel)
     {
+        Debug.Log("FuelSystem reading is " + currentFuel);
         if (onFuelChange != null) { onFuelChange(uuidOfPlayer, currentFuel); }
     }
 

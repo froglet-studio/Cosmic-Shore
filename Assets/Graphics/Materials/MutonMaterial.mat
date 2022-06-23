@@ -124,7 +124,7 @@ Material:
     - _ZTest: 4
     - _ZWrite: 1
     - _ZWriteControl: 1
-    - _opacity: 1.0100001
+    - _opacity: 0.77000004
     - _player: 0
     - _red: 0
     m_Colors:

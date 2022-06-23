@@ -342,7 +342,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   fuelAmount: 0.07
   sphereRadius: 100
-  scoreBonus: 5
+  scoreBonus: 1
   spentMutonPrefab: {fileID: 8491596592871572304, guid: f39596c98ed9d644a834f2fa27ec90ca,
     type: 3}
   Muton: {fileID: 7244393970774794917}
