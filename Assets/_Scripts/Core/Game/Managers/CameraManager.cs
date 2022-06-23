@@ -29,13 +29,13 @@ public class CameraManager : SingletonPersistent<CameraManager>
 
     private void OnEnable()
     {
-        IntensitySystem.zeroIntensity += ZoomEndCameraToScores;
+        FuelSystem.zeroFuel += ZoomEndCameraToScores;
         GameManager.onPlayGame += OnPlayGame;
     }
 
     private void OnDisable()
     {
-        IntensitySystem.zeroIntensity -= ZoomEndCameraToScores;
+        FuelSystem.zeroFuel -= ZoomEndCameraToScores;
         GameManager.onPlayGame -= OnPlayGame;
     }
 

@@ -15,7 +15,7 @@ public class MutonPopUp : MonoBehaviour
 
     #region Floats
     [SerializeField]
-    float intensityAmount = 0.07f;
+    float fuelAmount = 0.07f;
     
     [SerializeField]
     float sphereRadius = 100;
@@ -81,8 +81,8 @@ public class MutonPopUp : MonoBehaviour
             HapticController.PlayMutonCollisionHaptics();
             AudioManager.Instance.PlaySFXClip("Muton SFX 1");
 
-            //update intensity bar and currentScore
-            OnMutonPopUpCollision(ship.GetComponent<Player>().PlayerUUID, intensityAmount); // excess Intensity flows into currentScore
+            //update fuel bar and currentScore
+            OnMutonPopUpCollision(ship.GetComponent<Player>().PlayerUUID, fuelAmount); // excess Fuel flows into currentScore
             if (AddToScore != null) { AddToScore(ship.GetComponent<Player>().PlayerUUID, scoreBonus); }
         }
         else

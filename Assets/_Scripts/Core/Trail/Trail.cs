@@ -8,14 +8,13 @@ using StarWriter.Core;
 public class Trail : MonoBehaviour, ICollidable
 {
     [SerializeField]
-    private float intensityChange = -3f;
+    private float fuelChange = -3f;
 
     [SerializeField]
     GameObject FossilBlock;
 
     [SerializeField]
     Material material;
-    Material tempMaterial;
 
     public float waitTime = .6f;
     public delegate void TrailCollision(string uuid, float amount);
@@ -92,7 +91,7 @@ public class Trail : MonoBehaviour, ICollidable
                 //// Player Hit
                 //var impactVector = ship.transform.forward * ship.GetComponent<InputController>().speed;
                 //StartCoroutine(blockImpact.ImpactCoroutine(impactVector, tempMaterial, "Player"));
-                OnTrailCollision?.Invoke(ship.GetComponent<Player>().PlayerUUID, intensityChange);
+                OnTrailCollision?.Invoke(ship.GetComponent<Player>().PlayerUUID, fuelChange);
                 HapticController.PlayBlockCollisionHaptics();
             }
             //else

@@ -24,7 +24,7 @@ namespace StarWriter.Core.Input
 
         #region UI
         [SerializeField]
-        RectTransform IntensityRectTransform;
+        RectTransform FuelBarRectTransform;
 
         [SerializeField]
         RectTransform FinalRectTransform;
@@ -79,13 +79,13 @@ namespace StarWriter.Core.Input
 
         private void OnEnable()
         {
-            IntensitySystem.zeroIntensity += OnGameOver;
+            FuelSystem.zeroFuel += OnGameOver;
             GameSetting.OnChangeGyroEnabledStatus += OnToggleGyro;
         }
 
         private void OnDisable()
         {
-            IntensitySystem.zeroIntensity -= OnGameOver;
+            FuelSystem.zeroFuel -= OnGameOver;
             GameSetting.OnChangeGyroEnabledStatus -= OnToggleGyro;
         }
 
@@ -180,7 +180,7 @@ namespace StarWriter.Core.Input
                     cameraManager.SetFarCameraActive();
                 }
 
-                IntensityRectTransform.rotation = Quaternion.Euler(0, 0, 180);
+                FuelBarRectTransform.rotation = Quaternion.Euler(0, 0, 180);
                 PauseRectTransform.rotation = Quaternion.Euler(0, 0, 180);
                 FinalRectTransform.rotation = Quaternion.Euler(0, 0, 180);
                 gameObject.GetComponent<TrailSpawner>().waitTime = .3f;
@@ -192,7 +192,7 @@ namespace StarWriter.Core.Input
                     cameraManager.SetCloseCameraActive();
                 }
 
-                IntensityRectTransform.rotation = Quaternion.identity;
+                FuelBarRectTransform.rotation = Quaternion.identity;
                 PauseRectTransform.rotation = Quaternion.identity;
                 FinalRectTransform.rotation = Quaternion.identity;
                 gameObject.GetComponent<TrailSpawner>().waitTime = 1.5f;

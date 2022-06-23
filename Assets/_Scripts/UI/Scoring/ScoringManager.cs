@@ -13,19 +13,19 @@ public class ScoringManager : MonoBehaviour
 
     private void OnEnable()
     {
-        IntensitySystem.onPlayerIntensityOverflow += AddExcessIntensityToScore;
-        IntensitySystem.zeroIntensity += GameOver;
+        FuelSystem.onPlayerFuelOverflow += AddExcessFuelToScore;
+        FuelSystem.zeroFuel += GameOver;
         MutonPopUp.AddToScore += AddMutonBous;
     }
 
     private void OnDisable()
     {
-        IntensitySystem.onPlayerIntensityOverflow -= AddExcessIntensityToScore;
-        IntensitySystem.zeroIntensity -= GameOver;
+        FuelSystem.onPlayerFuelOverflow += AddExcessFuelToScore;
+        FuelSystem.zeroFuel += GameOver;
         MutonPopUp.AddToScore -= AddMutonBous;
     }
 
-    public void AddExcessIntensityToScore(string uuid, int amount) // TODO Needs to be private... put events on mutons and trails to handle
+    public void AddExcessFuelToScore(string uuid, int amount) // TODO Needs to be private... put events on mutons and trails to handle
     {
         if (uuid == "admin") { score += amount; }
 
@@ -34,7 +34,7 @@ public class ScoringManager : MonoBehaviour
     public void UpdateScoreBoard(int value)
     {
 
-        scoreText.text = value.ToString("D3"); // score text located on the intensity bar
+        scoreText.text = value.ToString("D3"); // score text located on the fuel bar
     }
 
     private void AddMutonBous(string uuid, int amount)
