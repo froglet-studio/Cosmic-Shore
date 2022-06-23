@@ -15,9 +15,9 @@ MonoBehaviour:
   stageName: 
   mutonSpawnOffset: {x: 0, y: 0, z: 120}
   jailBlockSpawnOffset: {x: 0, y: 0, z: 70}
-  respawnDistance: 10
+  respawnDistance: 0
   playTime: 0
-  maxAttempts: 0
+  maxAttempts: 2
   hasMuton: 1
   usesFuelBar: 0
   usesGyro: 0
