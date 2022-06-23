@@ -5,16 +5,11 @@ namespace StarWriter.Core.Tutorial
 {
     public class TutorialMuton : MonoBehaviour
     {
-        List<Collision> collisions;
+        float lastCollisionTime;
+        float collisionCoolOff = 2f;
 
         public delegate void OnTutorialMutonCollisionEvent();
         public static event OnTutorialMutonCollisionEvent onMutonCollision;
-
-        // Start is called before the first frame update
-        void Start()
-        {
-            collisions = new List<Collision>();
-        }
 
         /// <summary>
         /// Generate a list of Box Collider Collision so the specific ones can be identified for use
@@ -22,25 +17,11 @@ namespace StarWriter.Core.Tutorial
         /// <param name="collision"></param>
         private void OnCollisionEnter(Collision collision)
         {
-            collisions.Add(collision);
-        }
-
-        private void Update()
-        {
-            if (collisions.Count > 0)
+            if (Time.time > lastCollisionTime + collisionCoolOff)
             {
-                Collide(collisions[0].collider);
-                collisions.Clear();
+                lastCollisionTime = Time.time;
+                onMutonCollision?.Invoke();
             }
-        }
-
-        /// <summary>
-        /// Handles Tutorial Muton collision logic
-        /// </summary>
-        /// <param name="other"></param>
-        void Collide(Collider other)
-        {
-            onMutonCollision?.Invoke();
         }
 
         /// <summary>
@@ -55,5 +36,3 @@ namespace StarWriter.Core.Tutorial
         }
     }
 }
-
-

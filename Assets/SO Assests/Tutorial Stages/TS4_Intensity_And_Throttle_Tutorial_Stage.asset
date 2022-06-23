@@ -14,10 +14,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   stageName: Intensity_And_Throttle
   mutonSpawnOffset: {x: 0, y: 0, z: 200}
-  jailBlockSpawnOffset: {x: 0, y: 0, z: 20}
-  respawnDistance: 10
-  playTime: 10
-  maxAttempts: 0
+  jailBlockSpawnOffset: {x: 0, y: 0, z: 0}
+  respawnDistance: 0
+  playTime: 0
+  maxAttempts: 2
   hasMuton: 1
   usesFuelBar: 1
   usesGyro: 0
