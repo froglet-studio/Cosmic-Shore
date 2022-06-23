@@ -36,7 +36,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -84.71, y: -6.42}
+  m_AnchoredPosition: {x: -100, y: -67.1}
   m_SizeDelta: {x: 160, y: 80}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &8035663728208068174
@@ -123,8 +123,20 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 8213062502050597137}
         m_TargetAssemblyTypeName: StarWriter.UI.PauseMenu, Assembly-CSharp
-        m_MethodName: OnRestartButtonPressed
+        m_MethodName: OnClickRestartTutorialButton
         m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+      - m_Target: {fileID: 8035663729132098927}
+        m_TargetAssemblyTypeName: UnityEngine.GameObject, UnityEngine
+        m_MethodName: SetActive
+        m_Mode: 6
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
           m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
@@ -149,7 +161,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &8035663729132098926
 RectTransform:
   m_ObjectHideFlags: 0
@@ -224,7 +236,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: -67.1}
+  m_AnchoredPosition: {x: 100, y: -67.1}
   m_SizeDelta: {x: 160, y: 80}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &8035663729450608542
@@ -311,8 +323,20 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 8213062502050597137}
         m_TargetAssemblyTypeName: StarWriter.UI.PauseMenu, Assembly-CSharp
-        m_MethodName: OnResumeButtonPressed
+        m_MethodName: OnClickResumeTutorialButton
         m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+      - m_Target: {fileID: 8035663729132098927}
+        m_TargetAssemblyTypeName: UnityEngine.GameObject, UnityEngine
+        m_MethodName: SetActive
+        m_Mode: 6
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
           m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
@@ -339,7 +363,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &8035663729993294678
 RectTransform:
   m_ObjectHideFlags: 0
@@ -444,7 +468,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 8213062502050597137}
         m_TargetAssemblyTypeName: StarWriter.UI.PauseMenu, Assembly-CSharp
-        m_MethodName: OnTutorialButtonPressed
+        m_MethodName: OnClickTutorialButton
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -461,6 +485,16 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 8035663729132098926}
     m_Modifications:
+    - target: {fileID: 270866826425450681, guid: 0991126d982e5564ab52be02f25e2ff9,
+        type: 3}
+      propertyPath: onValueChanged.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
+      value: GameSettingChangeGyroEnabledStatus
+      objectReference: {fileID: 0}
+    - target: {fileID: 270866826425450681, guid: 0991126d982e5564ab52be02f25e2ff9,
+        type: 3}
+      propertyPath: onValueChanged.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
+      value: SingletonMenuProxy, Assembly-CSharp
+      objectReference: {fileID: 0}
     - target: {fileID: 2056144076197410607, guid: 0991126d982e5564ab52be02f25e2ff9,
         type: 3}
       propertyPath: m_Pivot.x
@@ -570,6 +604,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Name
       value: Gyro Toggle
+      objectReference: {fileID: 0}
+    - target: {fileID: 6009847558969565229, guid: 0991126d982e5564ab52be02f25e2ff9,
+        type: 3}
+      propertyPath: PlayerPrefKey
+      value: 3
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 0991126d982e5564ab52be02f25e2ff9, type: 3}
@@ -690,6 +729,21 @@ PrefabInstance:
         type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5795257754691475552, guid: 76d9a525ed265fc478883fa791ef5f7e,
+        type: 3}
+      propertyPath: onValueChanged.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
+      value: GameSettingChangeAudioEnabledSetting
+      objectReference: {fileID: 0}
+    - target: {fileID: 5795257754691475552, guid: 76d9a525ed265fc478883fa791ef5f7e,
+        type: 3}
+      propertyPath: onValueChanged.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
+      value: SingletonMenuProxy, Assembly-CSharp
+      objectReference: {fileID: 0}
+    - target: {fileID: 8664376593413015788, guid: 76d9a525ed265fc478883fa791ef5f7e,
+        type: 3}
+      propertyPath: PlayerPrefKey
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 8729312992311227127, guid: 76d9a525ed265fc478883fa791ef5f7e,
         type: 3}

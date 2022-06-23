@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 
 namespace StarWriter.Core.Input
@@ -53,8 +54,6 @@ namespace StarWriter.Core.Input
         private Quaternion displacementQ;
         private Quaternion inverseInitialRotation;
 
-
-        
         private bool isCameraDisabled = false;
 
         private bool isPitchEnabled = true;
@@ -67,16 +66,7 @@ namespace StarWriter.Core.Input
         public bool IsYawEnabled { get => isYawEnabled; set => isYawEnabled = value; }
         public bool IsRollEnabled { get => isRollEnabled; set => isRollEnabled = value; }
         public bool IsThrottleEnabled { get => isThrottleEnabled; set => isThrottleEnabled = value; }
-        public bool IsGyroEnabled { get => isGyroEnabled;  } //GameManager controls the gyro status
-
-        private void Awake()
-        {
-            if (SystemInfo.supportsGyroscope)
-            {
-                gyro = UnityEngine.Input.gyro;
-                empiricalCorrection = Quaternion.Inverse(new Quaternion(0, .65f, .75f, 0)); // TODO: move to derivedCoorection
-            }
-        }
+        public bool IsGyroEnabled { get => isGyroEnabled;  } // GameManager controls the gyro status
 
         private void OnEnable()
         {
@@ -93,37 +83,53 @@ namespace StarWriter.Core.Input
         void Start()
         {
             cameraManager = CameraManager.Instance;
-            //isCameraDisabled = false;
-
-            Debug.Log($"InputController.Start - SystemInfo.supportsGyroscope: {SystemInfo.supportsGyroscope}");
 
             if (SystemInfo.supportsGyroscope)
             {
-                Debug.Log($"InputController.Start - isGyroEnabled 1: {isGyroEnabled}");
-                isGyroEnabled = PlayerPrefs.GetInt(GameSetting.PlayerPrefKeys.isGyroEnabled.ToString()) == 1;
-                Debug.Log($"InputController.Start - isGyroEnabled 2: {isGyroEnabled}");
-                empiricalCorrection = GyroToUnity(empiricalCorrection);
+                gyro = UnityEngine.Input.gyro;
                 gyro.enabled = true;
-                Screen.sleepTimeout = SleepTimeout.NeverSleep;
-                displacementQ = shipTransform.rotation;
-                inverseInitialRotation = Quaternion.Inverse(GyroToUnity(gyro.attitude)*empiricalCorrection);
 
+                StartCoroutine(GyroInitializationCoroutine());
+
+                displacementQ = shipTransform.rotation;
+
+                Screen.sleepTimeout = SleepTimeout.NeverSleep;
             }
+        }
+
+        float gyroInitializationAcceptableRange = .05f;
+
+        IEnumerator GyroInitializationCoroutine()
+        {
+            empiricalCorrection = GyroToUnity(Quaternion.Inverse(new Quaternion(0, .65f, .75f, 0)));  // TODO: move to derivedCoorection
+            isGyroEnabled = PlayerPrefs.GetInt(GameSetting.PlayerPrefKeys.isGyroEnabled.ToString()) == 1;
+            inverseInitialRotation = Quaternion.identity;
+
+            // Turns out the gryo attitude is not avaiable immediately, so wait until we start getting values to initialize
+            while (Equals(new Quaternion(0,0,0,0), gyro.attitude))
+                yield return new WaitForSeconds(gyro.updateInterval);
+
+            var lastAttitude = gyro.attitude;
+            yield return new WaitForSeconds(gyro.updateInterval);
+
+            // Also turns out that the first value returned is garbage, so wait for it to stabilize
+            // We check for rough equality using the absolute value of the two quaternions dot product
+            while (!(1 - Mathf.Abs(Quaternion.Dot(lastAttitude, gyro.attitude)) < gyroInitializationAcceptableRange))
+            {
+                lastAttitude = gyro.attitude;
+                yield return new WaitForSeconds(gyro.updateInterval);
+            }
+
+            inverseInitialRotation = Quaternion.Inverse(GyroToUnity(gyro.attitude) * empiricalCorrection);
         }
 
         void Update()
         {
-            if (PauseSystem.GetIsPaused())
-            {
-                // TODO: remove this check and verify pause still works
-                return;
-            }
-
-            //change the camera if you flip your phone
+            // Change the camera if you flip your phone
             CameraFlip();
 
-            //convert two finger touch into values for displacement, speed, and ship animations
-            RecieveTouchInput();
+            // Convert two finger touch into values for displacement, speed, and ship animations
+            ReceiveTouchInput();
 
             RotateShip();
 
@@ -161,7 +167,6 @@ namespace StarWriter.Core.Input
 
         private void RotateShip()
         {
-            Debug.Log($"InputController.RotateShip - isGyroEnabled: {isGyroEnabled}");
             if (SystemInfo.supportsGyroscope && isGyroEnabled)
             {
                 // Updates GameObjects rotation from input device's gyroscope
@@ -208,7 +213,7 @@ namespace StarWriter.Core.Input
             }
         }
 
-        private void RecieveTouchInput()
+        private void ReceiveTouchInput()
         {
             if (UnityEngine.Input.touches.Length == 2)
             {
@@ -280,7 +285,7 @@ namespace StarWriter.Core.Input
                                 shipTransform.right) * displacementQ;
         }
 
-        //Converts Android Quaterions into Unity Quaterions
+        // Converts Android Quaterions into Unity Quaterions
         private Quaternion GyroToUnity(Quaternion q)
         {
             return new Quaternion(q.x, -q.z, q.y, q.w);
@@ -288,7 +293,7 @@ namespace StarWriter.Core.Input
 
         private void OnGameOver()
         {
-            isCameraDisabled = true; //Disables Cameras in Input Controller Update TODO: switch "disabled" to "enabled"
+            isCameraDisabled = true; // Disables Cameras in Input Controller Update TODO: switch "disabled" to "enabled"
         }
 
         /// <summary>
@@ -298,9 +303,11 @@ namespace StarWriter.Core.Input
         private void OnToggleGyro(bool status)
         {
             Debug.Log($"InputController.OnToggleGyro - status: {status}");
-            if (status) { inverseInitialRotation = Quaternion.Inverse(GyroToUnity(gyro.attitude) * empiricalCorrection); }
+            if (SystemInfo.supportsGyroscope && status) { 
+                inverseInitialRotation = Quaternion.Inverse(GyroToUnity(gyro.attitude) * empiricalCorrection);
+            }
+
             isGyroEnabled = status;
         }
-    }    
+    }
 }
-
