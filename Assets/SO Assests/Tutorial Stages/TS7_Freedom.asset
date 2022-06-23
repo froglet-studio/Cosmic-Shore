@@ -13,14 +13,15 @@ MonoBehaviour:
   m_Name: TS7_Freedom
   m_EditorClassIdentifier: 
   stageName: Freedom
-  mutonSpawnOffset: {x: 0, y: 0, z: 20}
-  jailBlockSpawnOffset: {x: 0, y: 0, z: 20}
+  mutonSpawnOffset: {x: 0, y: 0, z: 300}
+  jailBlockSpawnOffset: {x: 0, y: 0, z: 0}
   respawnDistance: 10
   playTime: 0
-  maxAttempts: 2
+  maxAttempts: 0
   hasMuton: 1
   usesFuelBar: 0
-  usesTrails: 0
+  usesGyro: 1
+  usesTrails: 1
   usesJailBlockWall: 0
   lineOne: {fileID: 11400000, guid: c7b6004b65b9d6644b122c60ef776fd9, type: 2}
   promptNarrationLine: {fileID: 11400000, guid: c7b6004b65b9d6644b122c60ef776fd9,

@@ -16,11 +16,12 @@ MonoBehaviour:
   mutonSpawnOffset: {x: 0, y: 0, z: 20}
   jailBlockSpawnOffset: {x: 0, y: 0, z: 20}
   respawnDistance: 10
-  playTime: 6
-  maxAttempts: 2
+  playTime: 15
+  maxAttempts: 0
   hasMuton: 0
   usesFuelBar: 0
-  usesTrails: 0
+  usesGyro: 1
+  usesTrails: 1
   usesJailBlockWall: 0
   lineOne: {fileID: 11400000, guid: 5e2eb0c100b91fd40bc87c7038effc12, type: 2}
   promptNarrationLine: {fileID: 11400000, guid: 5e2eb0c100b91fd40bc87c7038effc12,

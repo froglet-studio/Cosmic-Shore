@@ -6,7 +6,7 @@ using UnityEngine.SceneManagement;
 public class GameMenu : MonoBehaviour
 {
     [SerializeField]
-    GameObject intensityMeterPanel;
+    GameObject fuelMeterPanel;
     [SerializeField]
     GameObject pauseMenuPanel;
     [SerializeField]
@@ -16,12 +16,12 @@ public class GameMenu : MonoBehaviour
 
     private void OnEnable()
     {
-        IntensitySystem.zeroIntensity += GameOver;
+        FuelSystem.zeroFuel += GameOver;
     }
 
     private void OnDisable()
     {
-        IntensitySystem.zeroIntensity -= GameOver;
+        FuelSystem.zeroFuel -= GameOver;
     }
 
     /// <summary>
@@ -29,7 +29,7 @@ public class GameMenu : MonoBehaviour
     /// </summary>
     public void OnClickPauseGame()
     {
-        intensityMeterPanel.SetActive(false);
+        fuelMeterPanel.SetActive(false);
         finalScorePanel.SetActive(false);
         pauseButton.SetActive(false);
         pauseMenuPanel.SetActive(true);
@@ -41,7 +41,7 @@ public class GameMenu : MonoBehaviour
     public void OnClickUnpauseGame()
     {
 
-        intensityMeterPanel.SetActive(true);
+        fuelMeterPanel.SetActive(true);
         finalScorePanel.SetActive(false);
         pauseButton.SetActive(true);
         pauseMenuPanel.SetActive(false);
@@ -52,7 +52,7 @@ public class GameMenu : MonoBehaviour
     /// </summary>
     public void DisplayFinalScorePanel()
     {
-        intensityMeterPanel.SetActive(false);
+        fuelMeterPanel.SetActive(false);
         finalScorePanel.SetActive(true);
         pauseButton.SetActive(false);
         pauseMenuPanel.SetActive(false);

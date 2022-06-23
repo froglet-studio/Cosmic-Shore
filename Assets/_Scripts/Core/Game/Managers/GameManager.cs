@@ -60,7 +60,7 @@ namespace StarWriter.Core
         }
 
         /// <summary>
-        /// Starts Tutorial or Game bases on hasSkippedTutorial status
+        /// Starts Tutorial or Game based on hasSkippedTutorial status
         /// </summary>
         public void OnClickPlayButton()
         {

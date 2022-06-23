@@ -13,7 +13,16 @@ MonoBehaviour:
   m_Name: TS2_Ptich
   m_EditorClassIdentifier: 
   stageName: Learn_Pitch
-  spawnPointOffset: {x: 0, y: 0, z: 40}
+  mutonSpawnOffset: {x: 0, y: 40, z: 100}
+  jailBlockSpawnOffset: {x: 0, y: 0, z: 0}
+  respawnDistance: 10
+  playTime: 0
+  maxAttempts: 0
+  hasMuton: 1
+  usesFuelBar: 0
+  usesGyro: 0
+  usesTrails: 0
+  usesJailBlockWall: 0
   lineOne: {fileID: 11400000, guid: cdce6d4cfd96e7f40bcc274e2fae63bc, type: 2}
   promptNarrationLine: {fileID: 11400000, guid: cdce6d4cfd96e7f40bcc274e2fae63bc,
     type: 2}
@@ -22,10 +31,3 @@ MonoBehaviour:
   lineOneDisplayTime: 6
   retryLineDisplayTime: 0
   failLineDisplayTime: 0
-  maxAttempts: 2
-  hasMuton: 1
-  usesFuelBar: 0
-  usesTrails: 0
-  usesJailBlockWall: 0
-  respawnDistance: 10
-  playTime: 0

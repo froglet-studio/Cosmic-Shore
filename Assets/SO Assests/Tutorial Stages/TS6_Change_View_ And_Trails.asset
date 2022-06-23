@@ -13,14 +13,15 @@ MonoBehaviour:
   m_Name: TS6_Change_View_ And_Trails
   m_EditorClassIdentifier: 
   stageName: Change_View_And_Trails_Panel
-  mutonSpawnOffset: {x: 0, y: 0, z: 20}
-  jailBlockSpawnOffset: {x: 0, y: 0, z: 20}
+  mutonSpawnOffset: {x: 0, y: 0, z: 120}
+  jailBlockSpawnOffset: {x: 0, y: 0, z: 0}
   respawnDistance: 10
   playTime: 0
-  maxAttempts: 2
+  maxAttempts: 0
   hasMuton: 1
-  usesFuelBar: 0
-  usesTrails: 0
+  usesFuelBar: 1
+  usesGyro: 1
+  usesTrails: 1
   usesJailBlockWall: 0
   lineOne: {fileID: 11400000, guid: 618333bc67da91541970ec5455ff0125, type: 2}
   promptNarrationLine: {fileID: 11400000, guid: 618333bc67da91541970ec5455ff0125,

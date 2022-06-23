@@ -20,13 +20,13 @@ namespace StarWriter.Core.Tutorial
         TutorialJailBlockWall jailBlockWall;
 
         [SerializeField]
-        private IntensityBar intensityBar;
+        private FuelBar fuelBar;
 
         [SerializeField]
         private GameObject player;
 
         [SerializeField]
-        private IntensitySystem intensitySystem;
+        private FuelSystem fuelSystem;
 
         [SerializeField]
         private TextMeshProUGUI dialogueText;
@@ -37,14 +37,14 @@ namespace StarWriter.Core.Tutorial
 
         private void OnEnable()
         {
-            IntensitySystem.zeroIntensity += IntensityBarDrained;
+            FuelSystem.zeroFuel += FuelBarDrained;
             TutorialMuton.onMutonCollision += MutonCollision;
             TutorialJailBlockWall.onJailBlockCollision += JailBlockCollision;
         }
 
         private void OnDisable()
         {
-            IntensitySystem.zeroIntensity -= IntensityBarDrained;
+            FuelSystem.zeroFuel -= FuelBarDrained;
             TutorialMuton.onMutonCollision -= MutonCollision;
             TutorialJailBlockWall.onJailBlockCollision -= JailBlockCollision;
         }
@@ -56,11 +56,11 @@ namespace StarWriter.Core.Tutorial
             // Disable stuff to start
             muton.gameObject.SetActive(false);
             jailBlockWall.gameObject.SetActive(false);
-            intensityBar.gameObject.SetActive(false);
-            intensitySystem.enabled = false;
+            fuelBar.gameObject.SetActive(false);
+            fuelSystem.enabled = false;
             trailSpawner.enabled = false;
-
-            //intensityBar.
+            GameSetting.Instance.TurnGyroOFF();
+                
 
             InitializeTutorialStages();
 
@@ -92,9 +92,10 @@ namespace StarWriter.Core.Tutorial
             
             muton.gameObject.SetActive(stage.HasMuton);
             jailBlockWall.gameObject.SetActive(stage.UsesJailBlockWall);
-            intensityBar.gameObject.SetActive(stage.UsesFuelBar);
-            intensitySystem.enabled = stage.UsesFuelBar;
+            fuelBar.gameObject.SetActive(stage.UsesFuelBar);
+            fuelSystem.enabled = stage.UsesFuelBar;
             trailSpawner.enabled = stage.UsesTrails;
+            if (stage.UsesGyro) GameSetting.Instance.TurnGyroON(); else GameSetting.Instance.TurnGyroOFF();
 
             if (stage.HasMuton)
                 muton.MoveMuton(player.transform, stage.MutonSpawnOffset);
@@ -106,7 +107,9 @@ namespace StarWriter.Core.Tutorial
                 StartCoroutine(EndStageTimerCoroutine(stage.PlayTime));
 
             if (stage.UsesFuelBar)
-                IntensitySystem.ResetIntensity();
+                FuelSystem.ResetFuel();
+            
+                
 
             stage.Begin();
             UpdateDialogueTextBox();
@@ -201,13 +204,13 @@ namespace StarWriter.Core.Tutorial
             }
 
             // Reset Jail Block if it's too far away
-            if (stage.UsesJailBlockWall)
-            {
-                if (stage.RespawnDistance >= Vector3.Distance(player.transform.position, jailBlockWall.transform.position))
-                {
-                    jailBlockWall.MoveJailBlockWall(player.transform, stage.JailBlockSpawnOffset);
-                }
-            }
+            //if (stage.UsesJailBlockWall)
+            //{
+            //    if (stage.RespawnDistance >= Vector3.Distance(player.transform.position, jailBlockWall.transform.position))
+            //    {
+            //        jailBlockWall.MoveJailBlockWall(player.transform, stage.JailBlockSpawnOffset);
+            //    }
+            //}
         }
 
         IEnumerator DelayFadeOfTextBox(float time)
@@ -240,9 +243,9 @@ namespace StarWriter.Core.Tutorial
             RetryStage();
         }
 
-        private void IntensityBarDrained()
+        private void FuelBarDrained()
         {
-            IntensitySystem.ResetIntensity();
+            FuelSystem.ResetFuel();
             RetryStage();
         }
 
