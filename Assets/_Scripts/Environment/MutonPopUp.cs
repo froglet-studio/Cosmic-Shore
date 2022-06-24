@@ -15,7 +15,7 @@ public class MutonPopUp : MonoBehaviour
 
     #region Floats
     [SerializeField]
-    float fuelAmount = 0.07f;
+    float fuelAmount = .5f;
     
     [SerializeField]
     float sphereRadius = 100;
@@ -108,9 +108,10 @@ public class MutonPopUp : MonoBehaviour
             }
         }
 
-        // TODO play SFX sound
+       
 
         // Move the muton
+        Muton.GetComponent<Renderer>().material.SetFloat("_opacity",0); //opacity is reset befor the coroutine is called in case it moves first
         StartCoroutine(Muton.GetComponent<FadeIn>().FadeInCoroutine());
         transform.SetPositionAndRotation(UnityEngine.Random.insideUnitSphere * sphereRadius, UnityEngine.Random.rotation);
 

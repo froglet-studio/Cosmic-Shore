@@ -52,7 +52,7 @@ namespace StarWriter.Core.Input
         private Gyroscope gyro;
         private Quaternion empiricalCorrection;
         private Quaternion displacementQ;
-        private Quaternion inverseInitialRotation;
+        private Quaternion inverseInitialRotation=new(0,0,0,0);
 
         private bool isCameraDisabled = false;
 
@@ -103,7 +103,7 @@ namespace StarWriter.Core.Input
         {
             empiricalCorrection = GyroToUnity(Quaternion.Inverse(new Quaternion(0, .65f, .75f, 0)));  // TODO: move to derivedCoorection
             isGyroEnabled = PlayerPrefs.GetInt(GameSetting.PlayerPrefKeys.isGyroEnabled.ToString()) == 1;
-            inverseInitialRotation = new Quaternion(0, 0, 0, 0);
+            inverseInitialRotation = Quaternion.identity;
 
             // Turns out the gryo attitude is not avaiable immediately, so wait until we start getting values to initialize
             while (Equals(new Quaternion(0,0,0,0), gyro.attitude))

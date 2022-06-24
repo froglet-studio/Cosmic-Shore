@@ -1,5 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
+using StarWriter.Core.Input;
+using StarWriter.Core.Audio;
 
 namespace StarWriter.Core.Tutorial 
 {
@@ -7,6 +9,14 @@ namespace StarWriter.Core.Tutorial
     {
         float lastCollisionTime;
         float collisionCoolOff = 2f;
+
+        [SerializeField]
+        GameObject spentMutonPrefab;
+
+        [SerializeField]
+        Material material;
+        Material tempMaterial;
+
 
         public delegate void OnTutorialMutonCollisionEvent();
         public static event OnTutorialMutonCollisionEvent onMutonCollision;
@@ -21,6 +31,20 @@ namespace StarWriter.Core.Tutorial
             {
                 lastCollisionTime = Time.time;
                 onMutonCollision?.Invoke();
+                // make an exploding muton
+                var spentMuton = Instantiate<GameObject>(spentMutonPrefab);
+                spentMuton.transform.position = transform.position;
+                spentMuton.transform.localEulerAngles = transform.localEulerAngles;
+                tempMaterial = new Material(material);
+                spentMuton.GetComponent<Renderer>().material = tempMaterial;
+
+                GameObject ship = GameObject.FindWithTag("Player");
+
+                //muton animation and haptics
+                StartCoroutine(spentMuton.GetComponent<Impact>().ImpactCoroutine(
+                    ship.transform.forward * ship.GetComponent<InputController>().speed, tempMaterial, "Player"));
+                HapticController.PlayMutonCollisionHaptics();
+                AudioManager.Instance.PlaySFXClip("Muton SFX 1");
             }
         }
 
