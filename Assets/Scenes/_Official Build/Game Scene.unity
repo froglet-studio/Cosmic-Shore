@@ -1034,6 +1034,12 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3066695830212394130, guid: c8544725eea141847982b286866c858d,
         type: 3}
+      propertyPath: fuelLevelImages.Array.data[0]
+      value: 
+      objectReference: {fileID: 21300000, guid: 705e2dd9f6e3a9e48a3da4b21200829e,
+        type: 3}
+    - target: {fileID: 3066695830212394130, guid: c8544725eea141847982b286866c858d,
+        type: 3}
       propertyPath: fuelLevelImages.Array.data[15]
       value: 
       objectReference: {fileID: 21300000, guid: ec56e21c3a9226c47816974bb0b6fd46,
