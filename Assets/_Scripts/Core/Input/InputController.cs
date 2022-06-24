@@ -167,7 +167,9 @@ namespace StarWriter.Core.Input
 
         private void RotateShip()
         {
-            if (SystemInfo.supportsGyroscope && isGyroEnabled && !Equals(new Quaternion(0, 0, 0, 0), inverseInitialRotation))
+            if (SystemInfo.supportsGyroscope
+                && isGyroEnabled 
+                && !Equals(inverseInitialRotation, new Quaternion(0, 0, 0, 0)))
             {
                 // Updates GameObjects rotation from input device's gyroscope
                 shipTransform.rotation = Quaternion.Lerp(
