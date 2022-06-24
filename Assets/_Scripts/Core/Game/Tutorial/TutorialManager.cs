@@ -30,7 +30,7 @@ namespace StarWriter.Core.Tutorial
 
         [SerializeField]
         private TextMeshProUGUI dialogueText;
-        public Sprite dialogueBox;
+        public GameObject dialogueBox;
 
         private TrailSpawner trailSpawner;
         private int index = 0;
@@ -75,7 +75,7 @@ namespace StarWriter.Core.Tutorial
 
         private void BeginStage(float delay = 0)
         {
-            StopAllCoroutines();
+            StopAllCoroutines(); // TODO: is this cancelling the retry and failure dialogs?
             StartCoroutine(BeginStageCoroutine(delay));
         }
 
@@ -108,8 +108,6 @@ namespace StarWriter.Core.Tutorial
 
             if (stage.UsesFuelBar)
                 FuelSystem.ResetFuel();
-            
-                
 
             stage.Begin();
             UpdateDialogueTextBox();
@@ -217,6 +215,7 @@ namespace StarWriter.Core.Tutorial
         {
             yield return new WaitForSeconds(time);
             dialogueText.enabled = false;
+            dialogueBox.SetActive(false);
         }
 
         /// <summary>
@@ -225,6 +224,7 @@ namespace StarWriter.Core.Tutorial
         private void UpdateDialogueTextBox()
         {
             dialogueText.enabled = true;
+            dialogueBox.SetActive(true);
             dialogueText.text = tutorialStages[index].PromptLine.Text;
             StartCoroutine(DelayFadeOfTextBox(tutorialStages[index].PromptLineDisplayTime));
         }

@@ -88,7 +88,7 @@ public class TutorialStage : ScriptableObject
         remainingAttempts = maxAttempts;
         isStarted = true;
         if(uiPanel != null) { 
-            uiPanel.SetActive(true); 
+            uiPanel.SetActive(true);
         }
     }
 
