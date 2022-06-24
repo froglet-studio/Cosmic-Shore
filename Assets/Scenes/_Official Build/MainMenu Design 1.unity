@@ -26,7 +26,7 @@ RenderSettings:
   m_AmbientIntensity: 0.53
   m_AmbientMode: 3
   m_SubtractiveShadowColor: {r: 0.42, g: 0.478, b: 0.627, a: 1}
-  m_SkyboxMaterial: {fileID: 2100000, guid: 181185cbd8002ee4aad370f95ad478d9, type: 2}
+  m_SkyboxMaterial: {fileID: 2100000, guid: 971a9467129721a46a001d10ccf855d3, type: 2}
   m_HaloStrength: 0.5
   m_FlareStrength: 1
   m_FlareFadeSpeed: 3
@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0.007740228, g: 0.005838708, b: 0.008164607, a: 1}
+  m_IndirectSpecularColor: {r: 0.0032023059, g: 0.0012700945, b: 0.0012703585, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -837,6 +837,16 @@ PrefabInstance:
       propertyPath: m_Lens.m_SensorSize.x
       value: 2.1111112
       objectReference: {fileID: 0}
+    - target: {fileID: 4853709195319085108, guid: ba70c0f3eb077d44b8a538982d02dadc,
+        type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 250
+      objectReference: {fileID: 0}
+    - target: {fileID: 4853709195319085108, guid: ba70c0f3eb077d44b8a538982d02dadc,
+        type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 600
+      objectReference: {fileID: 0}
     - target: {fileID: 4853709195325629897, guid: ba70c0f3eb077d44b8a538982d02dadc,
         type: 3}
       propertyPath: m_Priority
@@ -866,6 +876,26 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Lens.m_SensorSize.x
       value: 2.1111112
+      objectReference: {fileID: 0}
+    - target: {fileID: 4853709195735906031, guid: ba70c0f3eb077d44b8a538982d02dadc,
+        type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 250
+      objectReference: {fileID: 0}
+    - target: {fileID: 4853709195735906031, guid: ba70c0f3eb077d44b8a538982d02dadc,
+        type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 550
+      objectReference: {fileID: 0}
+    - target: {fileID: 4853709195735906031, guid: ba70c0f3eb077d44b8a538982d02dadc,
+        type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4853709195735906031, guid: ba70c0f3eb077d44b8a538982d02dadc,
+        type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 4853709196102757139, guid: ba70c0f3eb077d44b8a538982d02dadc,
         type: 3}
@@ -886,6 +916,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Lens.m_SensorSize.x
       value: 2.1111112
+      objectReference: {fileID: 0}
+    - target: {fileID: 4853709196453371476, guid: ba70c0f3eb077d44b8a538982d02dadc,
+        type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 250
       objectReference: {fileID: 0}
     - target: {fileID: 4853709196820857184, guid: ba70c0f3eb077d44b8a538982d02dadc,
         type: 3}
@@ -2678,7 +2713,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 318b4eb62a2693f4e98368eb975997cd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  effect: 0.01
+  opacity: 0
   fadeInRate: 0.04
 --- !u!1 &9107254497214813130
 GameObject:

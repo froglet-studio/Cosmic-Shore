@@ -52,7 +52,7 @@ namespace StarWriter.Core.Input
         private Gyroscope gyro;
         private Quaternion empiricalCorrection;
         private Quaternion displacementQ;
-        private Quaternion inverseInitialRotation;
+        private Quaternion inverseInitialRotation=new(0,0,0,0);
 
         private bool isCameraDisabled = false;
 
@@ -167,7 +167,7 @@ namespace StarWriter.Core.Input
 
         private void RotateShip()
         {
-            if (SystemInfo.supportsGyroscope && isGyroEnabled)
+            if (SystemInfo.supportsGyroscope && isGyroEnabled && !Equals(new Quaternion(0, 0, 0, 0), inverseInitialRotation))
             {
                 // Updates GameObjects rotation from input device's gyroscope
                 shipTransform.rotation = Quaternion.Lerp(

@@ -499,7 +499,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &101881158
 RectTransform:
   m_ObjectHideFlags: 0
@@ -4058,7 +4058,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &1605969336
 RectTransform:
   m_ObjectHideFlags: 0
@@ -4602,7 +4602,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 1}
   m_AnchorMax: {x: 0.5, y: 1}
   m_AnchoredPosition: {x: 0, y: -64}
-  m_SizeDelta: {x: 350, y: 100}
+  m_SizeDelta: {x: 350, y: 80}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1840271318
 MonoBehaviour:
@@ -4831,7 +4831,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &1874884107
 RectTransform:
   m_ObjectHideFlags: 0
@@ -5081,7 +5081,7 @@ MonoBehaviour:
   LeftWing: {fileID: 2094245282}
   RightWing: {fileID: 2094245281}
   FuelBarRectTransform: {fileID: 1062010692}
-  FinalRectTransform: {fileID: 1412703298}
+  FinalRectTransform: {fileID: 1840271317}
   PauseRectTransform: {fileID: 2084823945}
   speed: 0
 --- !u!114 &2059123768
@@ -6087,6 +6087,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7af662a9018df9245aae6c6883d79e0a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  spentMutonPrefab: {fileID: 8491596592871572304, guid: f39596c98ed9d644a834f2fa27ec90ca,
+    type: 3}
+  material: {fileID: 2100000, guid: 383f21e8586fd7243a19e1d0f26110d0, type: 2}
 --- !u!135 &1050581609840963706
 SphereCollider:
   m_ObjectHideFlags: 0
