@@ -132,7 +132,7 @@ namespace StarWriter.Core.Tutorial
                     dialogueText.text = stage.RetryLine.Text;
                     StartCoroutine(DelayFadeOfTextBox(stage.RetryLineDisplayTime));
                 }
-                stage.Retry();
+                BeginStage();
             }
             else
             {
