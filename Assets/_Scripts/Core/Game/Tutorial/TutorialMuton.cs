@@ -44,7 +44,7 @@ namespace StarWriter.Core.Tutorial
                 StartCoroutine(spentMuton.GetComponent<Impact>().ImpactCoroutine(
                     ship.transform.forward * ship.GetComponent<InputController>().speed, tempMaterial, "Player"));
                 HapticController.PlayMutonCollisionHaptics();
-                AudioManager.Instance.PlaySFXClip("Muton SFX 1");
+                
             }
         }
 
