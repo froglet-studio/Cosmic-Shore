@@ -20,7 +20,7 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: CageMaterial
+  m_Name: BigCageMaterial
   m_Shader: {fileID: -6465566751694194690, guid: 6bb03b2998dc62b4b8f9964d5fe5c97e,
     type: 3}
   m_ValidKeywords:
@@ -126,7 +126,7 @@ Material:
     - _ZTest: 4
     - _ZWrite: 0
     - _ZWriteControl: 0
-    - _alpha: 0.1
+    - _alpha: 0.017
     m_Colors:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
     - _Color: {r: 1, g: 1, b: 1, a: 1}

@@ -32,7 +32,7 @@ namespace StarWriter.Core
         public bool TutorialHasBeenCompleted { get => tutorialHasBeenCompleted; set => tutorialHasBeenCompleted = value; }
         public bool IsAudioEnabled { get => isAudioEnabled; set => isAudioEnabled = value; }
         public bool IsTutorialEnabled { get => isTutorialEnabled; set => isTutorialEnabled = value; }
-        public bool IsGyroEnabled { get => isGyroEnabled; set => isGyroEnabled = value; }
+        public bool IsGyroEnabled { get => isGyroEnabled; }
         #endregion
 
         public override void Awake()
@@ -52,9 +52,9 @@ namespace StarWriter.Core
                 isAudioEnabled = true;
                 isGyroEnabled = true;
             }
-            //Not the First Time Playing
             else
             {
+                //Not the First Time Playing
                 isAudioEnabled = PlayerPrefs.GetInt(PlayerPrefKeys.isAudioEnabled.ToString()) == 1;
                 isTutorialEnabled = PlayerPrefs.GetInt(PlayerPrefKeys.isTutorialEnabled.ToString()) == 1;
                 isGyroEnabled = PlayerPrefs.GetInt(PlayerPrefKeys.isGyroEnabled.ToString()) == 1;
@@ -80,8 +80,7 @@ namespace StarWriter.Core
             isGyroEnabled = !isGyroEnabled;
             PlayerPrefs.SetInt(PlayerPrefKeys.isGyroEnabled.ToString(), isGyroEnabled ? 1 : 0);
             PlayerPrefs.Save();
-            Debug.Log($"InputController.ChangeGyroEnabledStatus - isGyroEnabled: {isGyroEnabled}");
-            OnChangeGyroEnabledStatus?.Invoke(isGyroEnabled);  //Event to toggle InputController isGryoEnabled
+            OnChangeGyroEnabledStatus?.Invoke(isGyroEnabled);  // Event to toggle InputController isGryoEnabled
         }
 
         /// <summary>
@@ -107,6 +106,3 @@ namespace StarWriter.Core
         }
     }
 }
-
-
-

@@ -8,6 +8,9 @@ public class FuelBar : MonoBehaviour
     [SerializeField]
     List<Sprite> fuelLevelImages;
 
+    [SerializeField]
+    Sprite backgroundSprite;
+
     public Image backgroundImage;
     public Image fuelLevelImage;
 
@@ -30,8 +33,9 @@ public class FuelBar : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        backgroundImage.sprite = fuelLevelImages[0];
-        fuelLevelImage.sprite = fuelLevelImages[1]; //starts at full health
+        //backgroundImage.sprite = fuelLevelImages[0];
+        backgroundImage.sprite = backgroundSprite;
+        fuelLevelImage.sprite = fuelLevelImages[0];
         currentFuelLevel = maxFuelLevel;
     }
 
@@ -41,8 +45,17 @@ public class FuelBar : MonoBehaviour
         currentFuelLevel = amount;
         currentFuelLevel = Mathf.Clamp(currentFuelLevel, 0, maxFuelLevel);
         Debug.Log("Fuel Level is " + currentFuelLevel);
-     
-        UpdateFuelBarDisplay(currentFuelLevel);
+
+        UpdateFuelBarDisplayRefactored(currentFuelLevel);
+    }
+
+    public void UpdateFuelBarDisplayRefactored(float displayFuelLevel)
+    {
+        int maxIndex = fuelLevelImages.Count - 1;
+        float percentOfFull = (displayFuelLevel / maxFuelLevel) * 1.09f;
+        int index = maxIndex - (int)Mathf.Floor(percentOfFull * maxIndex);
+
+        fuelLevelImage.sprite = fuelLevelImages[index];
     }
 
     public void UpdateFuelBarDisplay(float displayFuelLevel)
@@ -54,46 +67,46 @@ public class FuelBar : MonoBehaviour
         switch (displayFuelLevel)
         {
             case float n when (n == maxFuelLevel):
-                fuelLevelImage.sprite = fuelLevelImages[1];
+                fuelLevelImage.sprite = fuelLevelImages[0];
                 break;
             case float n when (n < maxFuelLevel && n > (maxFuelLevel - multiplier)):
-                fuelLevelImage.sprite = fuelLevelImages[2];
+                fuelLevelImage.sprite = fuelLevelImages[1];
                 break;
             case float n when (n < (maxFuelLevel - multiplier) && n > (maxFuelLevel - 2 * multiplier)):
-                fuelLevelImage.sprite = fuelLevelImages[3];
+                fuelLevelImage.sprite = fuelLevelImages[2];
                 break;
             case float n when (n < (maxFuelLevel - 2 * multiplier) && n > (maxFuelLevel - 3 * multiplier)):
-                fuelLevelImage.sprite = fuelLevelImages[4];
+                fuelLevelImage.sprite = fuelLevelImages[3];
                 break;
             case float n when (n < (maxFuelLevel - 3 * multiplier) && n > (maxFuelLevel - 4 * multiplier)):
-                fuelLevelImage.sprite = fuelLevelImages[5];
+                fuelLevelImage.sprite = fuelLevelImages[4];
                 break;
             case float n when (n < (maxFuelLevel - 4 * multiplier) && n > (maxFuelLevel - 5 * multiplier)):
-                fuelLevelImage.sprite = fuelLevelImages[6];
+                fuelLevelImage.sprite = fuelLevelImages[5];
                 break;
             case float n when (n < (maxFuelLevel - 5 * multiplier) && n > (maxFuelLevel - 6 * multiplier)):
-                fuelLevelImage.sprite = fuelLevelImages[7];
+                fuelLevelImage.sprite = fuelLevelImages[6];
                 break;
             case float n when (n < (maxFuelLevel - 6 * multiplier) && n > (maxFuelLevel - 7 * multiplier)):
-                fuelLevelImage.sprite = fuelLevelImages[8];
+                fuelLevelImage.sprite = fuelLevelImages[7];
                 break;
             case float n when (n < (maxFuelLevel - 7 * multiplier) && n > (maxFuelLevel - 8 * multiplier)):
-                fuelLevelImage.sprite = fuelLevelImages[9];
+                fuelLevelImage.sprite = fuelLevelImages[8];
                 break;
             case float n when (n < (maxFuelLevel - 8 * multiplier) && n > (maxFuelLevel - 9 * multiplier)):
-                fuelLevelImage.sprite = fuelLevelImages[10];
+                fuelLevelImage.sprite = fuelLevelImages[9];
                 break;
             case float n when (n < (maxFuelLevel - 9 * multiplier) && n > (maxFuelLevel - 10 * multiplier)):
-                fuelLevelImage.sprite = fuelLevelImages[11];
+                fuelLevelImage.sprite = fuelLevelImages[10];
                 break;
             case float n when (n < (maxFuelLevel - 10 * multiplier) && n > (maxFuelLevel - 11 * multiplier)):
-                fuelLevelImage.sprite = fuelLevelImages[12];
+                fuelLevelImage.sprite = fuelLevelImages[11];
                 break;
             case float n when (n < (maxFuelLevel - 11 * multiplier) && n > (maxFuelLevel - 12 * multiplier)):
-                fuelLevelImage.sprite = fuelLevelImages[13];
+                fuelLevelImage.sprite = fuelLevelImages[12];
                 break;
             case float n when (n < (maxFuelLevel - 12 * multiplier) && n > (maxFuelLevel - 13 * multiplier)):
-                fuelLevelImage.sprite = fuelLevelImages[14]; 
+                fuelLevelImage.sprite = fuelLevelImages[13]; 
                 break;
             case float n when (n == 0):
                 fuelLevelImage.sprite = fuelLevelImages[15];
