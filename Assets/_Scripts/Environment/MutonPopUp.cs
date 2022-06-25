@@ -79,7 +79,7 @@ public class MutonPopUp : MonoBehaviour
             StartCoroutine(spentMuton.GetComponent<Impact>().ImpactCoroutine(
                 ship.transform.forward * ship.GetComponent<InputController>().speed, tempMaterial, "Player"));
             HapticController.PlayMutonCollisionHaptics();
-            AudioManager.Instance.PlaySFXClip("Muton SFX 1");
+            //AudioSystem.Instance.PlaySFXClip("Muton SFX 1");
 
             //update fuel bar and currentScore
             OnMutonPopUpCollision(ship.GetComponent<Player>().PlayerUUID, fuelAmount); // excess Fuel flows into currentScore
@@ -108,7 +108,11 @@ public class MutonPopUp : MonoBehaviour
             }
         }
 
-        // TODO play SFX sound
+        // Play SFX sound
+        AudioSource audioSource = GetComponent<AudioSource>();
+        audioSource.PlayOneShot(audioSource.clip);
+
+        //audioSystem.PlaySFXClip(GetComponent<AudioSource>().clip); //, audioSource); 
 
         // Move the muton
         StartCoroutine(Muton.GetComponent<FadeIn>().FadeInCoroutine());

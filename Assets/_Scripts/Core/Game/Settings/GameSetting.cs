@@ -69,7 +69,7 @@ namespace StarWriter.Core
             isAudioEnabled = !isAudioEnabled;
             PlayerPrefs.SetInt(PlayerPrefKeys.isAudioEnabled.ToString(), isAudioEnabled ? 1 : 0);
             PlayerPrefs.Save();
-            OnChangeAudioEnabledStatus?.Invoke(isAudioEnabled);   //Event to toggle AudioManager isAudioEnabled         
+            OnChangeAudioEnabledStatus?.Invoke(isAudioEnabled);   //Event to toggle AudioSystem isAudioEnabled         
         }
 
         /// <summary>

@@ -11,7 +11,6 @@ namespace StarWriter.Core
         [SerializeField]
         private bool hasSkippedTutorial = false;
 
-        private AudioManager audioManager;
         private GameSetting gameSettings;
 
         public delegate void OnPlayGameEvent();
@@ -20,7 +19,6 @@ namespace StarWriter.Core
         void Start()
         {
             gameSettings = GameSetting.Instance;
-            audioManager = AudioManager.Instance;
 
             if (PlayerPrefs.GetInt("Skip Tutorial") == 1) // 0 false and 1 true
             {
