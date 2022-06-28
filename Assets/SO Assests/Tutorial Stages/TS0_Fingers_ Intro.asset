@@ -28,6 +28,6 @@ MonoBehaviour:
     type: 2}
   retryNarrationLine: {fileID: 0}
   failureNarrationLine: {fileID: 0}
-  lineOneDisplayTime: 5
+  lineOneDisplayTime: 0
   retryLineDisplayTime: 0
   failLineDisplayTime: 0

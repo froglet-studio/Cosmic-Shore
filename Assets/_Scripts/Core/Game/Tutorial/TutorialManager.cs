@@ -213,6 +213,7 @@ namespace StarWriter.Core.Tutorial
 
         IEnumerator DelayFadeOfTextBox(float time)
         {
+            if (time == 0) yield break;
             yield return new WaitForSeconds(time);
             dialogueText.enabled = false;
             dialogueBox.SetActive(false);
