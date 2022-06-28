@@ -187,30 +187,6 @@ namespace StarWriter.Core.Tutorial
             }
         }
 
-        private void Update()
-        {   
-            var stage = tutorialStages[index];
-            
-            // Reset Muton if it's too far away
-            if (stage.HasMuton)
-            {
-                // TODO: problem here if respawn distance is too low, it will just keep moving the muton further away
-                //if (stage.RespawnDistance >= (Vector3.Distance(player.transform.position, muton.transform.position)))
-                //{
-                //    muton.MoveMuton(player.transform, stage.MutonSpawnOffset);
-                //}
-            }
-
-            // Reset Jail Block if it's too far away
-            //if (stage.UsesJailBlockWall)
-            //{
-            //    if (stage.RespawnDistance >= Vector3.Distance(player.transform.position, jailBlockWall.transform.position))
-            //    {
-            //        jailBlockWall.MoveJailBlockWall(player.transform, stage.JailBlockSpawnOffset);
-            //    }
-            //}
-        }
-
         IEnumerator DelayFadeOfTextBox(float time)
         {
             if (time == 0) yield break;
