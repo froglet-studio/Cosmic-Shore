@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0.0032023059, g: 0.0012700945, b: 0.0012703585, a: 1}
+  m_IndirectSpecularColor: {r: 0.99999905, g: 0, b: 0.99999905, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -303,12 +303,6 @@ Canvas:
   m_SortingLayerID: 0
   m_SortingOrder: 0
   m_TargetDisplay: 0
---- !u!1 &703854702 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 3902679334675721759, guid: f044b6ad282929f4d9ca817c0e5a305a,
-    type: 3}
-  m_PrefabInstance: {fileID: 3902679334405631492}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1 &709728275
 GameObject:
   m_ObjectHideFlags: 0
@@ -425,12 +419,6 @@ Transform:
   m_Father: {fileID: 1243749158}
   m_RootOrder: 3
   m_LocalEulerAnglesHint: {x: 0, y: -23.83, z: 0}
---- !u!1 &717033088 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 3902679332891413420, guid: f044b6ad282929f4d9ca817c0e5a305a,
-    type: 3}
-  m_PrefabInstance: {fileID: 3902679334405631492}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1 &989920293
 GameObject:
   m_ObjectHideFlags: 0
@@ -584,108 +572,6 @@ MonoBehaviour:
   m_CameraActivatedEvent:
     m_PersistentCalls:
       m_Calls: []
---- !u!1 &1073924403 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 3902679334179489300, guid: f044b6ad282929f4d9ca817c0e5a305a,
-    type: 3}
-  m_PrefabInstance: {fileID: 3902679334405631492}
-  m_PrefabAsset: {fileID: 0}
---- !u!82 &1073924405
-AudioSource:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1073924403}
-  m_Enabled: 1
-  serializedVersion: 4
-  OutputAudioMixerGroup: {fileID: 0}
-  m_audioClip: {fileID: 8300000, guid: 03aa244127fd04840a6920cfeaadd6ec, type: 3}
-  m_PlayOnAwake: 0
-  m_Volume: 1
-  m_Pitch: 1
-  Loop: 0
-  Mute: 0
-  Spatialize: 0
-  SpatializePostEffects: 0
-  Priority: 128
-  DopplerLevel: 1
-  MinDistance: 1
-  MaxDistance: 500
-  Pan2D: 0
-  rolloffMode: 0
-  BypassEffects: 0
-  BypassListenerEffects: 0
-  BypassReverbZones: 0
-  rolloffCustomCurve:
-    serializedVersion: 2
-    m_Curve:
-    - serializedVersion: 3
-      time: 0
-      value: 1
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0.33333334
-      outWeight: 0.33333334
-    - serializedVersion: 3
-      time: 1
-      value: 0
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0.33333334
-      outWeight: 0.33333334
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
-  panLevelCustomCurve:
-    serializedVersion: 2
-    m_Curve:
-    - serializedVersion: 3
-      time: 0
-      value: 0
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0.33333334
-      outWeight: 0.33333334
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
-  spreadCustomCurve:
-    serializedVersion: 2
-    m_Curve:
-    - serializedVersion: 3
-      time: 0
-      value: 0
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0.33333334
-      outWeight: 0.33333334
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
-  reverbZoneMixCustomCurve:
-    serializedVersion: 2
-    m_Curve:
-    - serializedVersion: 3
-      time: 0
-      value: 1
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0.33333334
-      outWeight: 0.33333334
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
 --- !u!1 &1243749157
 GameObject:
   m_ObjectHideFlags: 0
@@ -1832,7 +1718,7 @@ PrefabInstance:
         type: 3}
       propertyPath: sfxGO3
       value: 
-      objectReference: {fileID: 1073924403}
+      objectReference: {fileID: 0}
     - target: {fileID: 3902679333267616925, guid: f044b6ad282929f4d9ca817c0e5a305a,
         type: 3}
       propertyPath: volume
@@ -1842,12 +1728,12 @@ PrefabInstance:
         type: 3}
       propertyPath: musicGO1
       value: 
-      objectReference: {fileID: 703854702}
+      objectReference: {fileID: 0}
     - target: {fileID: 3902679333267616925, guid: f044b6ad282929f4d9ca817c0e5a305a,
         type: 3}
       propertyPath: musicGO2
       value: 
-      objectReference: {fileID: 717033088}
+      objectReference: {fileID: 0}
     - target: {fileID: 3902679333267616925, guid: f044b6ad282929f4d9ca817c0e5a305a,
         type: 3}
       propertyPath: m_Enabled
@@ -1857,7 +1743,7 @@ PrefabInstance:
         type: 3}
       propertyPath: sfxSource
       value: 
-      objectReference: {fileID: 1073924405}
+      objectReference: {fileID: 0}
     - target: {fileID: 3902679334675721752, guid: f044b6ad282929f4d9ca817c0e5a305a,
         type: 3}
       propertyPath: Loop
@@ -2306,6 +2192,12 @@ PrefabInstance:
       propertyPath: m_SizeDelta.x
       value: 579.38
       objectReference: {fileID: 0}
+    - target: {fileID: 6250432393981458495, guid: d5b85bce09be12a43b377c137830a634,
+        type: 3}
+      propertyPath: m_Sprite
+      value: 
+      objectReference: {fileID: 21300000, guid: f638f711852325f4189f8bbe050a4b52,
+        type: 3}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: d5b85bce09be12a43b377c137830a634, type: 3}
 --- !u!4 &6439937992809815164
