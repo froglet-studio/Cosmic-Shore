@@ -13,7 +13,6 @@ public class MainMenuTrail : MonoBehaviour, ICollidable
     public float waitTime = .6f;
     public float lifeTime = 20;
 
-    // Start is called before the first frame update
     void Start()
     {
         if (container == null)
@@ -48,7 +47,6 @@ public class MainMenuTrail : MonoBehaviour, ICollidable
 
     public void Collide(Collider other)
     {
-        //TODO play SFX sound, break apart or float away
         var fossilBlock = Instantiate(FossilBlock);
         fossilBlock.transform.localScale = transform.localScale;
         fossilBlock.transform.position = transform.position;

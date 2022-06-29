@@ -13,5 +13,5 @@ MonoBehaviour:
   m_Name: Line 004
   m_EditorClassIdentifier: 
   speaker: {fileID: 11400000, guid: 153560b85d8a07a4eaa76b39fd0f60c4, type: 2}
-  text: Pedal to the metal there pilot, move your fingers inward to speed up - and
+  text: Pedal to the metal there pilot, move your fingers outward to speed up - and
     get that muton before your fuel goes out, it depletes over time.

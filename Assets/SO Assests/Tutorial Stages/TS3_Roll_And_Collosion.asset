@@ -29,6 +29,6 @@ MonoBehaviour:
   retryNarrationLine: {fileID: 11400000, guid: e2e231f326debc94fae3b2f2c47869b2, type: 2}
   failureNarrationLine: {fileID: 11400000, guid: 9fec90ae7fcbfdd4283ae9ed514d93fb,
     type: 2}
-  lineOneDisplayTime: 6
-  retryLineDisplayTime: 3
-  failLineDisplayTime: 2
+  lineOneDisplayTime: 0
+  retryLineDisplayTime: 0
+  failLineDisplayTime: 0

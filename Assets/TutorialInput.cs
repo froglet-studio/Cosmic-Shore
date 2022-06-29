@@ -41,7 +41,7 @@ public class TutorialInput : MonoBehaviour
             else 
             {
                 transform.position = Vector2.Lerp(transform.position, rightTouch + offset, .2f);
-                //transform.localScale = (1 - Vector2.Dot(rightTouch, offset)) * Vector2.one;
+                //transform.localScale = (1 - Vector2.Dot(rightTouch, offset)) * Vector2.one; //TODO make elements change to indicate deviation from intended lesson 
             }
         }
     }

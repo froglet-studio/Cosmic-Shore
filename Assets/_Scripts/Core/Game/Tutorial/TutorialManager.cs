@@ -51,6 +51,10 @@ namespace StarWriter.Core.Tutorial
 
         void Start()
         {
+            // TODO: Is this how we would like to handle this, or should we refactor?
+            FuelSystem.ResetZeroFuel();
+            FuelSystem.zeroFuel += FuelBarDrained;
+
             trailSpawner = player.GetComponent<TrailSpawner>();
 
             // Disable stuff to start
@@ -60,7 +64,6 @@ namespace StarWriter.Core.Tutorial
             fuelSystem.enabled = false;
             trailSpawner.enabled = false;
             GameSetting.Instance.TurnGyroOFF();
-                
 
             InitializeTutorialStages();
 
@@ -75,7 +78,6 @@ namespace StarWriter.Core.Tutorial
 
         private void BeginStage(float delay = 0)
         {
-            StopAllCoroutines(); // TODO: is this cancelling the retry and failure dialogs?
             StartCoroutine(BeginStageCoroutine(delay));
         }
 
@@ -132,7 +134,7 @@ namespace StarWriter.Core.Tutorial
                     dialogueText.text = stage.RetryLine.Text;
                     StartCoroutine(DelayFadeOfTextBox(stage.RetryLineDisplayTime));
                 }
-                BeginStage();
+                BeginStage(stage.RetryLineDisplayTime);
             }
             else
             {
@@ -187,32 +189,9 @@ namespace StarWriter.Core.Tutorial
             }
         }
 
-        private void Update()
-        {   
-            var stage = tutorialStages[index];
-            
-            // Reset Muton if it's too far away
-            if (stage.HasMuton)
-            {
-                // TODO: problem here if respawn distance is too low, it will just keep moving the muton further away
-                //if (stage.RespawnDistance >= (Vector3.Distance(player.transform.position, muton.transform.position)))
-                //{
-                //    muton.MoveMuton(player.transform, stage.MutonSpawnOffset);
-                //}
-            }
-
-            // Reset Jail Block if it's too far away
-            //if (stage.UsesJailBlockWall)
-            //{
-            //    if (stage.RespawnDistance >= Vector3.Distance(player.transform.position, jailBlockWall.transform.position))
-            //    {
-            //        jailBlockWall.MoveJailBlockWall(player.transform, stage.JailBlockSpawnOffset);
-            //    }
-            //}
-        }
-
         IEnumerator DelayFadeOfTextBox(float time)
         {
+            if (time == 0) yield break;
             yield return new WaitForSeconds(time);
             dialogueText.enabled = false;
             dialogueBox.SetActive(false);

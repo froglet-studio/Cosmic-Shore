@@ -1,5 +1,5 @@
+using System;
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class FuelSystem : MonoBehaviour
@@ -14,12 +14,15 @@ public class FuelSystem : MonoBehaviour
     public delegate void OnFuelZeroEvent();
     public static event OnFuelZeroEvent zeroFuel;
 
+
+
     #endregion
     #region Floats
     [Tooltip("Initial and Max fuel level from 0-1")]
     [SerializeField]
     [Range(0, 1)]
     static float maxFuel = 1f;
+    
     [Tooltip("Current fuel level from 0-1")]
     [SerializeField]
     [Range(0, 1)]
@@ -34,6 +37,14 @@ public class FuelSystem : MonoBehaviour
     string uuidOfPlayer = "";
 
     public static float CurrentFuel { get => currentFuel; }
+
+    public static void ResetZeroFuel()
+    {
+        foreach (Delegate d in zeroFuel.GetInvocationList())
+        {
+            zeroFuel -= (OnFuelZeroEvent)d;
+        }
+    }
 
     private void OnEnable()
     {

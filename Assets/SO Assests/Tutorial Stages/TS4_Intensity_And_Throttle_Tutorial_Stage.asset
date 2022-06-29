@@ -17,7 +17,7 @@ MonoBehaviour:
   jailBlockSpawnOffset: {x: 0, y: 0, z: 0}
   respawnDistance: 0
   playTime: 0
-  maxAttempts: 2
+  maxAttempts: -3
   hasMuton: 1
   usesFuelBar: 1
   usesGyro: 0
@@ -29,6 +29,6 @@ MonoBehaviour:
   retryNarrationLine: {fileID: 0}
   failureNarrationLine: {fileID: 11400000, guid: 05384a683a023e2479c42f52cf9757e8,
     type: 2}
-  lineOneDisplayTime: 6
+  lineOneDisplayTime: 0
   retryLineDisplayTime: 0
-  failLineDisplayTime: 2
+  failLineDisplayTime: 3

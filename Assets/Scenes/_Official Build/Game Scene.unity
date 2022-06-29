@@ -544,7 +544,6 @@ MonoBehaviour:
   trailLength: 20
   waitTime: 0.1
   startDelay: 2
-  useRandom: 0
 --- !u!1 &1031317111
 GameObject:
   m_ObjectHideFlags: 0
@@ -1277,6 +1276,16 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.x
       value: -50
       objectReference: {fileID: 0}
+    - target: {fileID: 185520406876558900, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 345517937622213821, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 1050404017213502718, guid: c8544725eea141847982b286866c858d,
         type: 3}
       propertyPath: HandleOnPosition.x
@@ -1286,6 +1295,16 @@ PrefabInstance:
         type: 3}
       propertyPath: HandleOffPosition.x
       value: 37
+      objectReference: {fileID: 0}
+    - target: {fileID: 2364391539481040530, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: -141.4
+      objectReference: {fileID: 0}
+    - target: {fileID: 2364391539481040530, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: -240.5
       objectReference: {fileID: 0}
     - target: {fileID: 2792548709035304050, guid: c8544725eea141847982b286866c858d,
         type: 3}
@@ -1474,6 +1493,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_SizeDelta.y
       value: 30
+      objectReference: {fileID: 0}
+    - target: {fileID: 5268193130608184238, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: m_Enabled
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 5652580219401724822, guid: c8544725eea141847982b286866c858d,
         type: 3}
@@ -1720,7 +1744,8 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.x
       value: 0
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 5268193130608184238, guid: c8544725eea141847982b286866c858d, type: 3}
   m_SourcePrefab: {fileID: 100100000, guid: c8544725eea141847982b286866c858d, type: 3}
 --- !u!1 &1586480802 stripped
 GameObject:
@@ -1827,6 +1852,24 @@ MonoBehaviour:
     type: 3}
   m_DeselectOnBackgroundClick: 1
   m_PointerBehavior: 0
+--- !u!1 &1846525470 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 3871940114429955852, guid: c8544725eea141847982b286866c858d,
+    type: 3}
+  m_PrefabInstance: {fileID: 1586480801}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1846525472
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1846525470}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 174a813eb49343843b766d2fdc4e5eb5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &1892142149
 GameObject:
   m_ObjectHideFlags: 0
@@ -1925,7 +1968,6 @@ MonoBehaviour:
   trailLength: 20
   waitTime: 0.3
   startDelay: 2
-  useRandom: 0
 --- !u!4 &1898590044 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 8350600879602490814, guid: 7fec532a729a8b648a8de2399d1b918a,

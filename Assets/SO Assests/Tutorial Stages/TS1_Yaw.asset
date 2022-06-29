@@ -20,6 +20,7 @@ MonoBehaviour:
   maxAttempts: 0
   hasMuton: 1
   usesFuelBar: 0
+  usesGyro: 0
   usesTrails: 0
   usesJailBlockWall: 0
   lineOne: {fileID: 11400000, guid: 80a14bbdf80960340bb2c4032dea4415, type: 2}
@@ -27,6 +28,6 @@ MonoBehaviour:
     type: 2}
   retryNarrationLine: {fileID: 0}
   failureNarrationLine: {fileID: 0}
-  lineOneDisplayTime: 6
+  lineOneDisplayTime: 0
   retryLineDisplayTime: 0
   failLineDisplayTime: 0

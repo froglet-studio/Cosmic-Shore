@@ -52,8 +52,9 @@ public class FuelBar : MonoBehaviour
     public void UpdateFuelBarDisplayRefactored(float displayFuelLevel)
     {
         int maxIndex = fuelLevelImages.Count - 1;
-        float percentOfFull = (displayFuelLevel / maxFuelLevel) * 1.09f;
+        float percentOfFull = (displayFuelLevel / maxFuelLevel);
         int index = maxIndex - (int)Mathf.Floor(percentOfFull * maxIndex);
+        Debug.Log("pof: " + percentOfFull + "MI: " + maxIndex + ", index: " + index);
 
         fuelLevelImage.sprite = fuelLevelImages[index];
     }
