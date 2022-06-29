@@ -27,16 +27,20 @@ public class CameraManager : SingletonPersistent<CameraManager>
     readonly int activePriority = 10;
     readonly int inactivePriority = 1;
 
+    private bool isCameraFlipEnabled = true;
+
     private void OnEnable()
     {
         FuelSystem.zeroFuel += ZoomEndCameraToScores;
         GameManager.onPlayGame += OnPlayGame;
-    }
+        GameManager.onPhoneFlip += OnPhoneFlip;
+}
 
     private void OnDisable()
     {
         FuelSystem.zeroFuel -= ZoomEndCameraToScores;
         GameManager.onPlayGame -= OnPlayGame;
+        GameManager.onPhoneFlip -= OnPhoneFlip;
     }
 
     void Start()
@@ -46,7 +50,7 @@ public class CameraManager : SingletonPersistent<CameraManager>
         closeCamera.LookAt = farCamera.LookAt = playerFollowTarget;
         closeCamera.Follow = farCamera.Follow = playerFollowTarget;
     }
-    private void OnMainMenu()
+    public void OnMainMenu()
     {
         SetMainMenuCameraActive();
     }
@@ -57,15 +61,19 @@ public class CameraManager : SingletonPersistent<CameraManager>
         closeCamera.LookAt = farCamera.LookAt = playerFollowTarget;
         closeCamera.Follow = farCamera.Follow = playerFollowTarget;
         SetFarCameraActive();
+        isCameraFlipEnabled = true;
     }
 
     private void ZoomEndCameraToScores()
     {
         SetActiveCamera(endCamera);
+        isCameraFlipEnabled = false;
     }
     public void SetMainMenuCameraActive()
     {
         SetActiveCamera(mainMenuCamera);
+        isCameraFlipEnabled = false;
+
     }
     public void SetFarCameraActive()
     {
@@ -85,5 +93,20 @@ public class CameraManager : SingletonPersistent<CameraManager>
         endCamera.Priority = inactivePriority;
 
         activeCamera.Priority = activePriority;
+    }
+
+    private void OnPhoneFlip(bool state)
+    {
+        {
+            if (isCameraFlipEnabled && state)
+            {
+                SetCloseCameraActive();
+            }
+            else if (isCameraFlipEnabled)
+            {
+                SetFarCameraActive();
+            }
+
+        }
     }
 }
