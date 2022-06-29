@@ -51,6 +51,9 @@ namespace StarWriter.Core.Tutorial
 
         void Start()
         {
+            FuelSystem.ResetZeroFuel();
+            FuelSystem.zeroFuel += FuelBarDrained;
+
             trailSpawner = player.GetComponent<TrailSpawner>();
 
             // Disable stuff to start
@@ -75,7 +78,7 @@ namespace StarWriter.Core.Tutorial
 
         private void BeginStage(float delay = 0)
         {
-            StopAllCoroutines(); // TODO: is this cancelling the retry and failure dialogs?
+            //StopAllCoroutines(); // TODO: is this cancelling the retry and failure dialogs? Answer: yes
             StartCoroutine(BeginStageCoroutine(delay));
         }
 
@@ -132,7 +135,7 @@ namespace StarWriter.Core.Tutorial
                     dialogueText.text = stage.RetryLine.Text;
                     StartCoroutine(DelayFadeOfTextBox(stage.RetryLineDisplayTime));
                 }
-                BeginStage();
+                BeginStage(stage.RetryLineDisplayTime);
             }
             else
             {
