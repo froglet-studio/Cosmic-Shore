@@ -77,6 +77,15 @@ namespace StarWriter.Core.Audio
             activeAudioSource.Play();
         }
 
+        public void PlayNextMusicClip(AudioClip audioClip, float playtime)
+        {
+            AudioSource activeAudioSource = (firstMusicSourceIsPlaying ? musicSource1 : musicSource2);
+            activeAudioSource.clip = audioClip;
+            activeAudioSource.volume = Volume;
+            activeAudioSource.Play();
+
+        }
+
         public AudioClip ToggleMusicPlaylist()
         {
             Debug.Log("Called play next song");

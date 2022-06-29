@@ -1,47 +1,91 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using Amoebius.Utility.Singleton;
 using UnityEngine;
 
-public class Jukebox : MonoBehaviour
+namespace StarWriter.Core.Audio
 {
-    [SerializeField]
-    private AudioClip[] allMusicAudioClips;
-
-    Dictionary<string, AudioClip> Songs = new Dictionary<string, AudioClip>(); //string key to access a specific song
-
-    public bool RandomizePlay = true;
-
-    void Start()
+    public class Jukebox : SingletonPersistent<Jukebox>
     {
-        InitiatizeJukebox();
-        PlaySong();     
-    }
 
-    
+        [SerializeField]
+        private SO_Song[] so_songs;  //Used for random and indexed song selection
 
-    private void InitiatizeJukebox()
-    {
-        foreach (AudioClip song in allMusicAudioClips)
+        Dictionary<string, Song> Playlist = new Dictionary<string, Song>(); //use song title key to access a specific song
+
+        private int index = 0;
+
+        public bool RandomizePlay = true;
+
+        AudioSystem audioSystem;
+
+        void Start()
         {
-            if (GetComponent<AudioClip>() != null)
+            audioSystem = AudioSystem.Instance;
+            InitiatizeJukebox();
+            //PlaySong("I've waited so long"); Tested and works
+            PlaySong("SEVERITY"); 
+            //PlaySong();
+        }
+
+
+
+        private void InitiatizeJukebox()  //Adds song SO's to the Playlist dictionary
+        {
+            foreach (SO_Song so in so_songs)
             {
-                AudioClip audioClip = GetComponent<AudioClip>();
-                Songs.Add(audioClip.name, audioClip);     //TODO work on Key for ease of reference.  currently GO name
+                Song song = new Song();
+                song.SetSongSO(so);
+                Playlist.Add(song.Title, song);
+                Debug.Log("Song " + song.Title + " added to Playlist");
+                index++;
+            }
+            index = 0;
+        }
+        private void PlaySong()
+        {
+            if (RandomizePlay)
+            {
+                PlayRandomSong();
+            }
+            else
+            {
+                PlayNextSong();
+            }
+
+        }
+
+        public void PlaySong(string title)
+        {
+            Song song;
+            if (Playlist.TryGetValue(title, out song))
+            {
+                audioSystem.PlayMusicClip(song.Clip);
             }
         }
-    }
-    private void PlaySong()
-    {
-        if (RandomizePlay)
+
+        public void PlayNextSong()
         {
-            PlayRandomSong();
+            index++;
+            audioSystem.MusicSource1.clip = so_songs[index].Clip;
+            audioSystem.MusicSource2.clip = so_songs[index + 1].Clip;
+            //audioSystem.PlayNextMusicClip();
+           
+            if (index > so_songs.Length - 1)
+            {
+                index = 0;
+            }
+        }
+
+        public void PlayRandomSong()
+        {
+            SO_Song so = so_songs[UnityEngine.Random.Range(0, so_songs.Length - 1)];
+            AudioClip clip = so.Clip;
+            AudioSource audioSource = GetComponent<AudioSource>();
+            audioSource.clip = clip;
+            audioSource.Play();
         }
     }
-
-    public void PlayRandomSong()
-    {
-        AudioClip clip = allMusicAudioClips[UnityEngine.Random.RandomRange(0, allMusicAudioClips.Length)];
-        GetComponent<AudioSource>().Play();
-    }
 }
+
