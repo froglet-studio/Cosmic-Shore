@@ -25,7 +25,7 @@ public class ScoringManager : MonoBehaviour
         MutonPopUp.AddToScore -= AddMutonBous;
     }
 
-    public void AddExcessFuelToScore(string uuid, int amount) // TODO Needs to be private... put events on mutons and trails to handle
+    private void AddExcessFuelToScore(string uuid, int amount)
     {
         if (uuid == "admin") { score += amount; }
 
@@ -33,7 +33,6 @@ public class ScoringManager : MonoBehaviour
     }
     public void UpdateScoreBoard(int value)
     {
-
         scoreText.text = value.ToString("D3"); // score text located on the fuel bar
     }
 

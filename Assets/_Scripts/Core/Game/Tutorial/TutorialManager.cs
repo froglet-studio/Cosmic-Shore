@@ -51,6 +51,7 @@ namespace StarWriter.Core.Tutorial
 
         void Start()
         {
+            // TODO: Is this how we would like to handle this, or should we refactor?
             FuelSystem.ResetZeroFuel();
             FuelSystem.zeroFuel += FuelBarDrained;
 
@@ -63,7 +64,6 @@ namespace StarWriter.Core.Tutorial
             fuelSystem.enabled = false;
             trailSpawner.enabled = false;
             GameSetting.Instance.TurnGyroOFF();
-                
 
             InitializeTutorialStages();
 
@@ -78,7 +78,6 @@ namespace StarWriter.Core.Tutorial
 
         private void BeginStage(float delay = 0)
         {
-            //StopAllCoroutines(); // TODO: is this cancelling the retry and failure dialogs? Answer: yes
             StartCoroutine(BeginStageCoroutine(delay));
         }
 
