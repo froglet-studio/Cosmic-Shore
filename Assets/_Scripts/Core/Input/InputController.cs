@@ -5,10 +5,6 @@ namespace StarWriter.Core.Input
 {
     public class InputController : MonoBehaviour
     {
-        #region Camera 
-        CameraManager cameraManager;
-        #endregion
-
         #region Ship
         [SerializeField] 
         Transform shipTransform;
@@ -21,17 +17,6 @@ namespace StarWriter.Core.Input
 
         [SerializeField]
         Transform RightWing;
-        #endregion
-
-        #region UI
-        [SerializeField]
-        RectTransform FuelBarRectTransform;
-
-        [SerializeField]
-        RectTransform FinalRectTransform;
-
-        [SerializeField]
-        RectTransform PauseRectTransform;
         #endregion
 
         public float speed;
@@ -70,20 +55,16 @@ namespace StarWriter.Core.Input
 
         private void OnEnable()
         {
-            FuelSystem.zeroFuel += OnGameOver;
             GameSetting.OnChangeGyroEnabledStatus += OnToggleGyro;
         }
 
         private void OnDisable()
         {
-            FuelSystem.zeroFuel -= OnGameOver;
             GameSetting.OnChangeGyroEnabledStatus -= OnToggleGyro;
         }
 
         void Start()
         {
-            cameraManager = CameraManager.Instance;
-
             if (SystemInfo.supportsGyroscope)
             {
                 gyro = UnityEngine.Input.gyro;
@@ -125,9 +106,6 @@ namespace StarWriter.Core.Input
 
         void Update()
         {
-            // Change the camera if you flip your phone
-            CameraFlip();
-
             // Convert two finger touch into values for displacement, speed, and ship animations
             ReceiveTouchInput();
 
@@ -186,34 +164,6 @@ namespace StarWriter.Core.Input
             }
         }
 
-        private void CameraFlip()
-        {
-            if (Mathf.Abs(UnityEngine.Input.acceleration.y) < cameraFlipThreshold) return;
-            if (UnityEngine.Input.acceleration.y > 0)
-            {
-                if (!isCameraDisabled)
-                {
-                    cameraManager.SetFarCameraActive();
-                }
-
-                FuelBarRectTransform.rotation = Quaternion.Euler(0, 0, 180);
-                PauseRectTransform.rotation = Quaternion.Euler(0, 0, 180);
-                FinalRectTransform.rotation = Quaternion.Euler(0, 0, 180);
-                gameObject.GetComponent<TrailSpawner>().waitTime = .3f;
-            }
-            else
-            {
-                if (!isCameraDisabled)
-                {
-                    cameraManager.SetCloseCameraActive();
-                }
-
-                FuelBarRectTransform.rotation = Quaternion.identity;
-                PauseRectTransform.rotation = Quaternion.identity;
-                FinalRectTransform.rotation = Quaternion.identity;
-                gameObject.GetComponent<TrailSpawner>().waitTime = 1.5f;
-            }
-        }
 
         private void ReceiveTouchInput()
         {
@@ -293,10 +243,6 @@ namespace StarWriter.Core.Input
             return new Quaternion(q.x, -q.z, q.y, q.w);
         }
 
-        private void OnGameOver()
-        {
-            isCameraDisabled = true; // Disables Cameras in Input Controller Update TODO: switch "disabled" to "enabled"
-        }
 
         /// <summary>
         /// Gets gyros updated current status from GameManager.onToggleGyro Event

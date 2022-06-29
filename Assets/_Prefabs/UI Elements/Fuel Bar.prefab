@@ -146,6 +146,7 @@ GameObject:
   - component: {fileID: 3900586876768157980}
   - component: {fileID: 3900586876768157981}
   - component: {fileID: 769644806255150057}
+  - component: {fileID: 1757875271342840114}
   m_Layer: 5
   m_Name: Fuel Bar
   m_TagString: Untagged
@@ -204,6 +205,7 @@ MonoBehaviour:
   - {fileID: 21300000, guid: 3205940bb7946d84882dd9a5297bdb92, type: 3}
   - {fileID: 21300000, guid: e357aca92e696da4b93cecde41fcbd38, type: 3}
   - {fileID: 21300000, guid: 4b181bbfb2f26ad45b5a7ba4ed7130f8, type: 3}
+  backgroundSprite: {fileID: 0}
   backgroundImage: {fileID: 3900586877286408350}
   fuelLevelImage: {fileID: 3900586877965080360}
   maxFuelLevel: 1
@@ -222,6 +224,18 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   rateOfFuelChange: -0.02
   uuidOfPlayer: 
+--- !u!114 &1757875271342840114
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3900586876768157987}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 174a813eb49343843b766d2fdc4e5eb5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &3900586877286408348
 GameObject:
   m_ObjectHideFlags: 0

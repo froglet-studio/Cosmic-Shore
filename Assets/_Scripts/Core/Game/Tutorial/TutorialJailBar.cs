@@ -9,7 +9,7 @@ namespace StarWriter.Core.Tutorial
         [SerializeField]
         private GameObject player;
         [SerializeField]
-        private GameObject jailBlockWall;
+        private TutorialJailBlockWall jailBlockWall;
 
         List<Collision> collisions;
         private readonly Vector3 spawnPointOffset;
@@ -39,15 +39,14 @@ namespace StarWriter.Core.Tutorial
         /// <param name="other"></param>
         void Collide(Collider other)
         {
+            jailBlockWall.Collide(other);
             MoveJailBlockWall();
-
         }
         /// <summary>
         /// Moves parent object Jail Block Wall if a bar is hit before the test passed collider
         /// </summary>
         void MoveJailBlockWall()
         {
-
             jailBlockWall.transform.position = player.transform.position +
                                                player.transform.right * spawnPointOffset.x +
                                                player.transform.up * spawnPointOffset.y +

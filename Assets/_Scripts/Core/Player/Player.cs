@@ -53,7 +53,6 @@ public class Player : MonoBehaviour
 
     public void ChangeShip(SO_Ship_Base ship) 
     {
-        //TODO Check if player is Local
         playerSO.ShipPrefab = ship;
     }
 

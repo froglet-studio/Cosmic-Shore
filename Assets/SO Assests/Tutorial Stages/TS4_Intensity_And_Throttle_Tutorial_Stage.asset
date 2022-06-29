@@ -17,7 +17,7 @@ MonoBehaviour:
   jailBlockSpawnOffset: {x: 0, y: 0, z: 0}
   respawnDistance: 0
   playTime: 0
-  maxAttempts: 2
+  maxAttempts: -3
   hasMuton: 1
   usesFuelBar: 1
   usesGyro: 0
@@ -31,4 +31,4 @@ MonoBehaviour:
     type: 2}
   lineOneDisplayTime: 0
   retryLineDisplayTime: 0
-  failLineDisplayTime: 0
+  failLineDisplayTime: 3
