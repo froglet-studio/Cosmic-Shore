@@ -69,5 +69,12 @@ namespace StarWriter.UI
         {
             gameManager.OnClickTutorialToggleButton();
         }
+
+        public void OnClickMainMenu()
+        {
+            gameManager.ReturnToLobby();
+        }
+
+
     }
 }

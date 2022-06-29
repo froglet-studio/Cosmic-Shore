@@ -16,8 +16,16 @@ namespace StarWriter.Core
         public delegate void OnPlayGameEvent();
         public static event OnPlayGameEvent onPlayGame;
 
+        private readonly float phoneFlipThreshold = .1f;
+
+        public delegate void OnPhoneFlipEvent(bool state);
+        public static event OnPhoneFlipEvent onPhoneFlip;
+
+        CameraManager cameraManager;
+
         void Start()
         {
+            cameraManager = CameraManager.Instance;
             gameSettings = GameSetting.Instance;
 
             if (PlayerPrefs.GetInt("Skip Tutorial") == 1) // 0 false and 1 true
@@ -30,6 +38,23 @@ namespace StarWriter.Core
         /// <summary>
         /// Toggles the Tutorial On/Off
         /// </summary>
+        /// 
+
+        private void Update()
+        {
+            if (Mathf.Abs(UnityEngine.Input.acceleration.y) < phoneFlipThreshold) return;
+            if (UnityEngine.Input.acceleration.y < 0)
+            {
+                onPhoneFlip(true);
+            }
+            else
+            {
+                onPhoneFlip(false);
+            }
+        }
+       
+
+
         public void OnClickTutorialToggleButton()
         {
             // Set gameSettings Tutorial status
@@ -74,7 +99,9 @@ namespace StarWriter.Core
 
         public void ReturnToLobby()
         {
+            UnPauseGame();
             SceneManager.LoadScene(0);
+            cameraManager.OnMainMenu();
         }
 
         public void UnPauseGame()

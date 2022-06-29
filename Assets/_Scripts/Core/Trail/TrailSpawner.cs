@@ -17,14 +17,23 @@ public class TrailSpawner : MonoBehaviour
 
     public float waitTime = .5f;            // Time until the trail block appears - camera dependent
     public float startDelay = 2;
-    public bool useRandom = true;
-
 
     [SerializeField]
     private static GameObject TrailContainer;
     private IEnumerator trailCoroutine;
 
     private readonly Queue<GameObject> trailList = new();
+
+
+    private void OnEnable()
+    {
+        GameManager.onPhoneFlip += OnPhoneFlip;
+    }
+
+    private void OnDisable()
+    {
+        GameManager.onPhoneFlip -= OnPhoneFlip;
+    }
 
     public static void ResetTrailContainer()
     {
@@ -52,6 +61,14 @@ public class TrailSpawner : MonoBehaviour
         StartCoroutine(trailCoroutine);
     }
 
+    private void OnPhoneFlip(bool state)
+    {
+        if (gameObject == GameObject.FindWithTag("Player"))
+        {
+            waitTime = state ? 1.5f : 0.3f;
+        }
+    }
+
     IEnumerator SpawnTrailCoroutine()
     {
         yield return new WaitForSeconds(startDelay);
@@ -65,15 +82,14 @@ public class TrailSpawner : MonoBehaviour
             Block.transform.parent = TrailContainer.transform;
 
             Trail trailScript = trail.GetComponent<Trail>();
+
             trailScript.waitTime = waitTime;
 
-            
             trailList.Enqueue(Block);
             if (trailList.Count > trailLength/trailPeriod)
             {
                 Destroy(trailList.Dequeue()); 
             }
-
         }
     }
 }
