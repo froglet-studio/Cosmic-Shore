@@ -2,10 +2,10 @@
 using System.Collections.Generic;
 using Amoebius.Utility.Singleton;
 using UnityEngine;
+using UnityEngine.Audio;
 
-// TODO: does not currently work
 /// <summary>
-/// Simple Audio Manager by JVZ upgrade to AudioMaster if needed 
+/// Audio System to contain audio methods accessed by other classes
 /// </summary>
 namespace StarWriter.Core.Audio
 {
@@ -14,9 +14,12 @@ namespace StarWriter.Core.Audio
     {
         #region Fields
         [SerializeField]
-        private AudioSource musicSource1; //Default Background Music      
+        AudioMixer masterMixer;
+
         [SerializeField]
-        private AudioSource musicSource2; //Default Background Music alt
+        private AudioSource musicSource1;     
+        [SerializeField]
+        private AudioSource musicSource2; 
 
         public AudioSource MusicSource1 { get => musicSource1; set => musicSource1 = value; }
         public AudioSource MusicSource2 { get => musicSource2; set => musicSource2 = value; }
@@ -54,21 +57,14 @@ namespace StarWriter.Core.Audio
             Debug.Log($"AudioSystem.Start - isAudioEnabled: {isAudioEnabled}");
             if (isAudioEnabled)
             {
-                SetMasterAudioVolume(volume);
+                SetMasterMixerVolume(volume);
             }
             else
             {
-                SetMasterAudioVolume(0);
+                SetMasterMixerVolume(0);
             }
         }
-        //public void PlayMusicClip(string audioSourcesKey)
-        //{
-        //    AudioSource activeAudioSource = AudioSources[audioSourcesKey];
-        //    activeAudioSource = (firstMusicSourceIsPlaying ? musicSource1 : musicSource2);
-        //    activeAudioSource.clip = AudioSources[audioSourcesKey].clip;
-        //    activeAudioSource.volume = Volume;
-        //    activeAudioSource.Play();
-        //}
+  
         public void PlayMusicClip(AudioClip audioClip)
         {
             AudioSource activeAudioSource = (firstMusicSourceIsPlaying ? musicSource1 : musicSource2);
@@ -77,13 +73,28 @@ namespace StarWriter.Core.Audio
             activeAudioSource.Play();
         }
 
-        public void PlayNextMusicClip(AudioClip audioClip, float playtime)
+        public void PlayNextMusicClip(AudioClip audioClip)
         {
-            AudioSource activeAudioSource = (firstMusicSourceIsPlaying ? musicSource1 : musicSource2);
-            activeAudioSource.clip = audioClip;
-            activeAudioSource.volume = Volume;
-            activeAudioSource.Play();
+            if (!CheckIfMusicSourceIsPlaying()) 
+            {
+                AudioSource activeAudioSource = (firstMusicSourceIsPlaying ? musicSource1 : musicSource2);
+                activeAudioSource.clip = audioClip;
+                activeAudioSource.volume = Volume;
+                activeAudioSource.Play();
+            }
+            else
+            {
+                if (musicSource1.isPlaying)
+                {
+                    WaitForMusicEnd(musicSource1);
+                }
+                else
+                {
+                    WaitForMusicEnd(musicSource2);
+                }
 
+            }
+            
         }
 
         public AudioClip ToggleMusicPlaylist()
@@ -157,39 +168,46 @@ namespace StarWriter.Core.Audio
             originalSource.Stop();
         }
 
-        //public void PlaySFXClip(string audioSourcesKey, AudioSource sfxSource)
-        //{
-        //    AudioSource audioSource = sfxSource;
-        //    AudioClip audioClip = AudioSources[audioSourcesKey].clip;
-        //    Debug.Log("SFX Muton Playing");
-        //    audioSource.PlayOneShot(audioClip, Volume);
-        //    Debug.Log("SFX Muton Played");
-        //}
+        IEnumerator WaitForMusicEnd(AudioSource activeAudioSource)
+        {
+            while (activeAudioSource.isPlaying)
+            {
+                yield return null;
+                CheckIfMusicSourceIsPlaying();
+            }
+        }
+
+        public bool CheckIfMusicSourceIsPlaying()
+        {
+            if (musicSource1.isPlaying || musicSource2.isPlaying)
+            {
+                return true;
+            }
+            else { return false; }
+        }
+
         public void PlaySFXClip(AudioClip audioClip, AudioSource sfxSource)
         {
             AudioSource audioSource = sfxSource;
             audioSource.PlayOneShot(audioClip);
         }
 
-        // TODO: can we get eyes on this method? Should it be passed a value for volume, or just use the value from the local variable
-        //public void PlaySFXClip(AudioClip audioClip, float volume)
-        //{
-        //    sfxSource.PlayOneShot(audioClip, volume);
-        //}
-        public void SetMasterAudioVolume(float volume)
+        public void SetMasterMixerVolume(float value)
         {
-            SetMusicVolume(volume);
-            //SetSFXVolume(volume);
+            masterMixer.SetFloat("MasterVolume", value);
         }
-        public void SetMusicVolume(float volume)
+
+        public void SetMusicMixerVolume(float value)
         {
-            musicSource1.volume = volume;
-            musicSource2.volume = volume;
+            masterMixer.SetFloat("MusicVolume", value);
         }
-        //public void SetSFXVolume(float volume)
-        //{
-        //    sfxSource.volume = volume;
-        //}
+
+        public void SetEnvironmentMixerVolume(float value)
+        {
+            masterMixer.SetFloat("EnvironmentVolume", value);
+        }
+       
+        
     }
 }
 
