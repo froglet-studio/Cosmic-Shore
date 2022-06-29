@@ -94,7 +94,7 @@ public class TutorialStage : ScriptableObject
 
     public void Retry()
     {
-        remainingAttempts--;
+        maxAttempts--;
     }
 
     public void End()

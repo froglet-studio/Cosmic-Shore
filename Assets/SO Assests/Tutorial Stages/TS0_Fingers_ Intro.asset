@@ -19,7 +19,7 @@ MonoBehaviour:
   playTime: 0
   maxAttempts: 0
   hasMuton: 1
-  usesFuelBar: 0
+  usesFuelBar: 1
   usesGyro: 0
   usesTrails: 0
   usesJailBlockWall: 0

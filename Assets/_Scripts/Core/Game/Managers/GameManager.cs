@@ -9,7 +9,7 @@ namespace StarWriter.Core
     public class GameManager : SingletonPersistent<GameManager>
     {          
         [SerializeField]
-        private bool hasSkippedTutorial = false;
+        private bool hasSkippedTutorial = false;    // TODO: why is this a serialize field? Also, it never sets the playerpref, just reads from it. Also, it never uses the value.
 
         private GameSetting gameSettings;
 
@@ -57,7 +57,6 @@ namespace StarWriter.Core
 
         public void OnClickTutorialToggleButton()
         {
-            
             // Set gameSettings Tutorial status
             gameSettings.IsTutorialEnabled = !gameSettings.IsTutorialEnabled;
             //Set PlayerPrefs Tutorial status
@@ -129,4 +128,3 @@ namespace StarWriter.Core
         }
     }
 }
-
