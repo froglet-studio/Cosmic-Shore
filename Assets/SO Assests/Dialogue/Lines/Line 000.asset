@@ -13,6 +13,5 @@ MonoBehaviour:
   m_Name: Line 000
   m_EditorClassIdentifier: 
   speaker: {fileID: 11400000, guid: 153560b85d8a07a4eaa76b39fd0f60c4, type: 2}
-  text: "All right pilot, lets go over the basics\n\n - put your fingers on the screen
-    and keep them there, no need to swipe. Head into the arena and grab that muton
-    -- the glowy thing!"
+  text: "All right pilot, lets go over the basics\n\n - Get your thumbs on the controls,
+    head into the arena, and grab that muton -- the glowy thing!"

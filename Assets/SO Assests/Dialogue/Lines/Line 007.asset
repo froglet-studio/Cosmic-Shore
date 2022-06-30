@@ -13,5 +13,5 @@ MonoBehaviour:
   m_Name: Line 007
   m_EditorClassIdentifier: 
   speaker: {fileID: 11400000, guid: 153560b85d8a07a4eaa76b39fd0f60c4, type: 2}
-  text: "The trail you leave is as deadly as the other ones around, use it to your
-    advantage. Just flip your device back around if you want to zoom in again.\r"
+  text: "Remembe, the trail you leave is as deadly as any. Flip your device back
+    around if you want to zoom in again.\r"

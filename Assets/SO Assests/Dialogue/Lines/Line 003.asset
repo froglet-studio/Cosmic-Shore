@@ -13,6 +13,5 @@ MonoBehaviour:
   m_Name: Line 003
   m_EditorClassIdentifier: 
   speaker: {fileID: 11400000, guid: 153560b85d8a07a4eaa76b39fd0f60c4, type: 2}
-  text: "Looks like you got some trails in your way - someone must have been here.
-    Slide your fingers in opposite directions to roll and avoid the trail - they\u2019re
-    dangerous!"
+  text: Looks like someone has already been through here. Slide one thumb up and
+    one down to avoid the trail.
