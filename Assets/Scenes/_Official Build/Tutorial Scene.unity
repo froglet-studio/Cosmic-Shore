@@ -2902,85 +2902,85 @@ PrefabInstance:
         type: 3}
       propertyPath: fuelLevelImages.Array.data[1]
       value: 
-      objectReference: {fileID: 21300000, guid: 0111238ca9577274e84bca473c71f2bf,
+      objectReference: {fileID: 21300000, guid: 4b181bbfb2f26ad45b5a7ba4ed7130f8,
         type: 3}
     - target: {fileID: 3900586876768157981, guid: 7873914c194767b4daf5723c304a88a6,
         type: 3}
       propertyPath: fuelLevelImages.Array.data[2]
       value: 
-      objectReference: {fileID: 21300000, guid: 416782fd266e54142a0f60100ce284d6,
+      objectReference: {fileID: 21300000, guid: 0111238ca9577274e84bca473c71f2bf,
         type: 3}
     - target: {fileID: 3900586876768157981, guid: 7873914c194767b4daf5723c304a88a6,
         type: 3}
       propertyPath: fuelLevelImages.Array.data[3]
       value: 
-      objectReference: {fileID: 21300000, guid: a596c14b8ed44a74990ca722099292ca,
+      objectReference: {fileID: 21300000, guid: 416782fd266e54142a0f60100ce284d6,
         type: 3}
     - target: {fileID: 3900586876768157981, guid: 7873914c194767b4daf5723c304a88a6,
         type: 3}
       propertyPath: fuelLevelImages.Array.data[4]
       value: 
-      objectReference: {fileID: 21300000, guid: b6217ea7e8429ed47b9c185402044a49,
+      objectReference: {fileID: 21300000, guid: a596c14b8ed44a74990ca722099292ca,
         type: 3}
     - target: {fileID: 3900586876768157981, guid: 7873914c194767b4daf5723c304a88a6,
         type: 3}
       propertyPath: fuelLevelImages.Array.data[5]
       value: 
-      objectReference: {fileID: 21300000, guid: fb9f9ecce44161342bf1de98e3262493,
+      objectReference: {fileID: 21300000, guid: b6217ea7e8429ed47b9c185402044a49,
         type: 3}
     - target: {fileID: 3900586876768157981, guid: 7873914c194767b4daf5723c304a88a6,
         type: 3}
       propertyPath: fuelLevelImages.Array.data[6]
       value: 
-      objectReference: {fileID: 21300000, guid: b09de2c5c960cf848ba54b530cf306de,
+      objectReference: {fileID: 21300000, guid: fb9f9ecce44161342bf1de98e3262493,
         type: 3}
     - target: {fileID: 3900586876768157981, guid: 7873914c194767b4daf5723c304a88a6,
         type: 3}
       propertyPath: fuelLevelImages.Array.data[7]
       value: 
-      objectReference: {fileID: 21300000, guid: 8a68e4ce87b52534c96cdfdafb0397e5,
+      objectReference: {fileID: 21300000, guid: b09de2c5c960cf848ba54b530cf306de,
         type: 3}
     - target: {fileID: 3900586876768157981, guid: 7873914c194767b4daf5723c304a88a6,
         type: 3}
       propertyPath: fuelLevelImages.Array.data[8]
       value: 
-      objectReference: {fileID: 21300000, guid: 5741f2d3cb55d67448af1d39a625a6a8,
+      objectReference: {fileID: 21300000, guid: 8a68e4ce87b52534c96cdfdafb0397e5,
         type: 3}
     - target: {fileID: 3900586876768157981, guid: 7873914c194767b4daf5723c304a88a6,
         type: 3}
       propertyPath: fuelLevelImages.Array.data[9]
       value: 
-      objectReference: {fileID: 21300000, guid: b1e4188524a5f3d4b8a46c3c0a48b2f8,
+      objectReference: {fileID: 21300000, guid: 5741f2d3cb55d67448af1d39a625a6a8,
         type: 3}
     - target: {fileID: 3900586876768157981, guid: 7873914c194767b4daf5723c304a88a6,
         type: 3}
       propertyPath: fuelLevelImages.Array.data[10]
       value: 
-      objectReference: {fileID: 21300000, guid: 31de1287df0cb194fa75f69074bfba7b,
+      objectReference: {fileID: 21300000, guid: b1e4188524a5f3d4b8a46c3c0a48b2f8,
         type: 3}
     - target: {fileID: 3900586876768157981, guid: 7873914c194767b4daf5723c304a88a6,
         type: 3}
       propertyPath: fuelLevelImages.Array.data[11]
       value: 
-      objectReference: {fileID: 21300000, guid: 3763fd7a06a06c641bc3cce90831b572,
+      objectReference: {fileID: 21300000, guid: 31de1287df0cb194fa75f69074bfba7b,
         type: 3}
     - target: {fileID: 3900586876768157981, guid: 7873914c194767b4daf5723c304a88a6,
         type: 3}
       propertyPath: fuelLevelImages.Array.data[12]
       value: 
-      objectReference: {fileID: 21300000, guid: 3205940bb7946d84882dd9a5297bdb92,
+      objectReference: {fileID: 21300000, guid: 3763fd7a06a06c641bc3cce90831b572,
         type: 3}
     - target: {fileID: 3900586876768157981, guid: 7873914c194767b4daf5723c304a88a6,
         type: 3}
       propertyPath: fuelLevelImages.Array.data[13]
       value: 
-      objectReference: {fileID: 21300000, guid: e357aca92e696da4b93cecde41fcbd38,
+      objectReference: {fileID: 21300000, guid: 3205940bb7946d84882dd9a5297bdb92,
         type: 3}
     - target: {fileID: 3900586876768157981, guid: 7873914c194767b4daf5723c304a88a6,
         type: 3}
       propertyPath: fuelLevelImages.Array.data[14]
       value: 
-      objectReference: {fileID: 21300000, guid: 4b181bbfb2f26ad45b5a7ba4ed7130f8,
+      objectReference: {fileID: 21300000, guid: e357aca92e696da4b93cecde41fcbd38,
         type: 3}
     - target: {fileID: 3900586876768157987, guid: 7873914c194767b4daf5723c304a88a6,
         type: 3}

@@ -14,18 +14,12 @@ public class FuelSystem : MonoBehaviour
     public delegate void OnFuelZeroEvent();
     public static event OnFuelZeroEvent zeroFuel;
 
-
-
     #endregion
     #region Floats
     [Tooltip("Initial and Max fuel level from 0-1")]
     [SerializeField]
     [Range(0, 1)]
     static float maxFuel = 1f;
-    
-    [Tooltip("Current fuel level from 0-1")]
-    [SerializeField]
-    [Range(0, 1)]
     static float currentFuel;
 
     [SerializeField]
@@ -61,16 +55,13 @@ public class FuelSystem : MonoBehaviour
     void Start()
     {
         currentFuel = maxFuel;
-        StartCoroutine(CountDownCoroutine());
     }
 
-    IEnumerator CountDownCoroutine() // fuel
+
+    void Update()
     {
-        while (currentFuel != 0)
-        {
-            yield return new WaitForSeconds(1);
-            ChangeFuelAmount("admin", rateOfFuelChange); //Only effects current player
-        }
+        if (currentFuel > 0)
+            ChangeFuelAmount("admin", rateOfFuelChange * Time.deltaTime); //Only effects current player
     }
 
     public static void ResetFuel()
@@ -104,13 +95,13 @@ public class FuelSystem : MonoBehaviour
 
     private void AddExcessFuelToScore(string uuidOfPlayer, int excessFuel)
     {
-        if (onPlayerFuelOverflow != null) { onPlayerFuelOverflow(uuidOfPlayer, excessFuel); }
+        onPlayerFuelOverflow?.Invoke(uuidOfPlayer, excessFuel);
     }
 
     private void UpdateFuelBar(string uuidOfPlayer, float currentFuel)
     {
         Debug.Log("FuelSystem reading is " + currentFuel);
-        if (onFuelChange != null) { onFuelChange(uuidOfPlayer, currentFuel); }
+        onFuelChange?.Invoke(uuidOfPlayer, currentFuel);
     }
 
     private void UpdateCurrentFuelAmount(string uuid, float amount)

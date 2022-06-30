@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using StarWriter.Core;
+using System.Collections;
 
 [System.Serializable]
 public class Player : MonoBehaviour
