@@ -1276,6 +1276,11 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.x
       value: -50
       objectReference: {fileID: 0}
+    - target: {fileID: 1125522470, guid: c8544725eea141847982b286866c858d, type: 3}
+      propertyPath: m_Sprite
+      value: 
+      objectReference: {fileID: 21300000, guid: 0ebdd2daaac2abe40a6e68012a998159,
+        type: 3}
     - target: {fileID: 185520406876558900, guid: c8544725eea141847982b286866c858d,
         type: 3}
       propertyPath: m_Enabled
