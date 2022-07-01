@@ -13,5 +13,4 @@ MonoBehaviour:
   m_Name: Line 001
   m_EditorClassIdentifier: 
   speaker: {fileID: 11400000, guid: 153560b85d8a07a4eaa76b39fd0f60c4, type: 2}
-  text: "Next step is yaw. \nSlide both fingers left or right and see\n if you can
-    get another muton\r."
+  text: Try moving both thumbs left or right and pick up another muton.

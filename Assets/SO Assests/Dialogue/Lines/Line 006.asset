@@ -13,5 +13,5 @@ MonoBehaviour:
   m_Name: Line 006
   m_EditorClassIdentifier: 
   speaker: {fileID: 0}
-  text: Last thing - try tilting your phone around 180 degrees, should give you a
-    new perspective.
+  text: Last thing - try rotating your phone around 180 degrees, should give you
+    a new perspective.
