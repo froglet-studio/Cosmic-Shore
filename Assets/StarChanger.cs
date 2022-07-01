@@ -4,6 +4,17 @@ using UnityEngine;
 
 public class StarChanger : MonoBehaviour
 {
+
+    private void OnEnable()
+    {
+        FuelSystem.onFuelChange += UpdateFuelLevel;
+    }
+
+    private void OnDisable()
+    {
+        FuelSystem.onFuelChange -= UpdateFuelLevel;
+    }
+
     Material starMaterial;
     Vector3 mutonPosition;
     [SerializeField]
@@ -12,17 +23,41 @@ public class StarChanger : MonoBehaviour
     [SerializeField]
     GameObject Muton;
 
+    Color green = new Color(0, .4f, .6f);
+    Color blue = new Color(0, 0, .9f);
+    Color red = new Color(.4f, 0, .7f);
+    Color starColor;
+    Color fuelColor;
+
+
     // Start is called before the first frame update
     void Start()
     {
         starMaterial = gameObject.GetComponent<Renderer>().material;
+        starMaterial.SetColor("_color", green);
+        fuelColor = green;
+
     }
 
     // Update is called once per frame
     void Update()
     {
-        mutonPosition = Vector3.Lerp(mutonPosition, Muton.transform.position*scale,.04f);
+        mutonPosition = Vector3.Lerp(mutonPosition, Muton.transform.position*scale,.02f);
+        starColor = Color.Lerp(starColor,fuelColor,.02f);
+        starMaterial.SetColor("_color", starColor);
         starMaterial.SetVector("_mutonPosition", mutonPosition);
         //RenderSettings.skybox = starMaterial;
     }
+
+    public void UpdateFuelLevel(string uuid, float amount)
+    {
+        
+        if (amount > .55f) fuelColor = green;
+        else if (amount > .23) fuelColor = blue;
+        else fuelColor = red;
+        //starMaterial.SetFloat("_fuel", amount);
+    }
+
+   
+
 }
