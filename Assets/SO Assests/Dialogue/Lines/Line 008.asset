@@ -13,5 +13,5 @@ MonoBehaviour:
   m_Name: Line 008
   m_EditorClassIdentifier: 
   speaker: {fileID: 11400000, guid: 153560b85d8a07a4eaa76b39fd0f60c4, type: 2}
-  text: "Well you got the bascis down, feel free to get your sea legs before diving
+  text: "Well those are the basics. Feel free to get your space legs before diving
     in. Take as long as you need, I get paid by the hour.\r"
