@@ -40,7 +40,6 @@ public class GameMenu : MonoBehaviour
     /// </summary>
     public void OnClickUnpauseGame()
     {
-
         fuelMeterPanel.SetActive(true);
         finalScorePanel.SetActive(false);
         pauseButton.SetActive(true);

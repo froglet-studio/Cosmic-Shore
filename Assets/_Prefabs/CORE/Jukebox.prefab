@@ -45,6 +45,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   so_songs:
+  - {fileID: 11400000, guid: 1f7ebca9281b9244ba31143be2de7799, type: 2}
+  - {fileID: 11400000, guid: bd7cffa3846cdd047b46c58cef6eb164, type: 2}
+  - {fileID: 11400000, guid: bb2c516f233054b479a5327beb6427b0, type: 2}
   - {fileID: 11400000, guid: 4484681179f3b1f41a08668c27ae1ef0, type: 2}
   - {fileID: 11400000, guid: 23e5ea5c5d2b9cb4699185ebd9ea651b, type: 2}
-  RandomizePlay: 0
+  RandomizePlay: 1
