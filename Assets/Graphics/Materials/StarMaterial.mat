@@ -126,13 +126,13 @@ Material:
     - _ZTest: 4
     - _ZWrite: 0
     - _ZWriteControl: 0
-    - _alpha: 0.03
-    - _position_scale: 0.18
-    - _scale: 150
+    - _alpha: 0.015
+    - _position_scale: -14
+    - _scale: 80
     m_Colors:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
     - _SpecColor: {r: 0.19999996, g: 0.19999996, b: 0.19999996, a: 1}
-    - _mutonPosition: {r: 14000, g: 0, b: 0, a: 0}
+    - _mutonPosition: {r: 0, g: 0, b: 0, a: 0}
   m_BuildTextureStacks: []
