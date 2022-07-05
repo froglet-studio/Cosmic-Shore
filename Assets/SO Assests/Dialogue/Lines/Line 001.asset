@@ -13,4 +13,4 @@ MonoBehaviour:
   m_Name: Line 001
   m_EditorClassIdentifier: 
   speaker: {fileID: 11400000, guid: 153560b85d8a07a4eaa76b39fd0f60c4, type: 2}
-  text: Try moving both thumbs left or right and pick up another muton.
+  text: Try moving both controls left or right and pick up another muton.
