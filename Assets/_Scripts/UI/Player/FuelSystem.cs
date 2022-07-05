@@ -8,7 +8,7 @@ public class FuelSystem : MonoBehaviour
     public delegate void OnFuelOverflow(string uuid, int amount);
     public static event OnFuelOverflow onPlayerFuelOverflow;
 
-    public delegate void OnFuelChangeEvent(string uuid, float intensity);
+    public delegate void OnFuelChangeEvent(string uuid, float amount);
     public static event OnFuelChangeEvent onFuelChange;
 
     public delegate void OnFuelZeroEvent();

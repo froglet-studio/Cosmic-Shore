@@ -25,9 +25,14 @@ namespace StarWriter.Core.Audio
         public AudioSource MusicSource2 { get => musicSource2; set => musicSource2 = value; }
 
         [SerializeField]
-        float volume = .1f;
+        float masterVolume = .1f;
+        [SerializeField]
+        float musicVolume = .1f;
+        [SerializeField]
+        float environmentVolume = .1f;
 
-        float Volume { get { return isAudioEnabled ? volume : 0; } set { } }
+
+        float MasterVolume { get { return isAudioEnabled ? masterVolume : 0; } set { } }
 
         private bool firstMusicSourceIsPlaying = true;
         private bool isAudioEnabled = true;
@@ -36,7 +41,7 @@ namespace StarWriter.Core.Audio
 
         private void Start()
         {
-            // Initialize volume
+            // Initialize masterVolume
             isAudioEnabled = PlayerPrefs.GetInt(AudioEnabledPlayerPrefKey) == 1;
             ChangeAudioEnabledStatus(isAudioEnabled);   
         }
@@ -57,7 +62,7 @@ namespace StarWriter.Core.Audio
             Debug.Log($"AudioSystem.Start - isAudioEnabled: {isAudioEnabled}");
             if (isAudioEnabled)
             {
-                SetMasterMixerVolume(volume);
+                SetMasterMixerVolume(masterVolume);
             }
             else
             {
@@ -69,7 +74,7 @@ namespace StarWriter.Core.Audio
         {
             AudioSource activeAudioSource = (firstMusicSourceIsPlaying ? musicSource1 : musicSource2);
             activeAudioSource.clip = audioClip;
-            activeAudioSource.volume = Volume;
+            activeAudioSource.volume = musicVolume;
             activeAudioSource.Play();
         }
 
@@ -79,7 +84,7 @@ namespace StarWriter.Core.Audio
             {
                 AudioSource activeAudioSource = (firstMusicSourceIsPlaying ? musicSource1 : musicSource2);
                 activeAudioSource.clip = audioClip;
-                activeAudioSource.volume = Volume;
+                activeAudioSource.volume = musicVolume;
                 activeAudioSource.Play();
             }
             else
@@ -124,8 +129,8 @@ namespace StarWriter.Core.Audio
             float t;
             for (t = 0; t < transitionTime; t += Time.deltaTime)
             {
-                // Fade out original clip volume
-                activeAudioSource.volume = (Volume - t / transitionTime);
+                // Fade out original clip masterVolume
+                activeAudioSource.volume = (MasterVolume - t / transitionTime);
                 yield return null;
             }
             activeAudioSource.Stop();
@@ -134,7 +139,7 @@ namespace StarWriter.Core.Audio
             activeAudioSource.Play();
             for (t = 0; t < transitionTime; t += Time.deltaTime)
             {
-                // Fade in new clip volume
+                // Fade in new clip masterVolume
                 activeAudioSource.volume = (t / transitionTime);
                 yield return null;
             }
@@ -161,8 +166,8 @@ namespace StarWriter.Core.Audio
         {
             for (float t = 0; t < transitionTime; t += Time.deltaTime)
             {
-                originalSource.volume = (Volume - t / transitionTime);
-                newSource.volume = Volume * (t / transitionTime);
+                originalSource.volume = (MasterVolume - t / transitionTime);
+                newSource.volume = MasterVolume * (t / transitionTime);
                 yield return null;
             }
             originalSource.Stop();
@@ -197,9 +202,21 @@ namespace StarWriter.Core.Audio
             masterMixer.SetFloat("MasterVolume", value);
         }
 
+        private float GetMasterMixerVolume()
+        {
+            masterMixer.GetFloat("MasterVolume", out masterVolume);
+            return masterVolume;
+        }
+
         public void SetMusicMixerVolume(float value)
         {
             masterMixer.SetFloat("MusicVolume", value);
+        }
+
+        private float GetMusicMixerVolume()
+        {
+            masterMixer.GetFloat("MusicVolume", out musicVolume);
+            return masterVolume;
         }
 
         public void SetEnvironmentMixerVolume(float value)

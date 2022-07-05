@@ -65,7 +65,7 @@ public class TrailSpawner : MonoBehaviour
     {
         if (gameObject == GameObject.FindWithTag("Player"))
         {
-            waitTime = state ? 1.5f : 0.3f;
+            waitTime = state ? 1.5f : 0.5f;
         }
     }
 
