@@ -259,6 +259,11 @@ PrefabInstance:
       propertyPath: m_Name
       value: BigCage
       objectReference: {fileID: 0}
+    - target: {fileID: 6441042370167047517, guid: d813bdb2818918e4781bc88b1e96449b,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: d813bdb2818918e4781bc88b1e96449b, type: 3}
 --- !u!1 &671968767

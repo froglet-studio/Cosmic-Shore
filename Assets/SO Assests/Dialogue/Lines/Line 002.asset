@@ -13,5 +13,4 @@ MonoBehaviour:
   m_Name: Line 002
   m_EditorClassIdentifier: 
   speaker: {fileID: 11400000, guid: 153560b85d8a07a4eaa76b39fd0f60c4, type: 2}
-  text: 'Good stuff. Now slide both fingers up or down, and, well - you know the
-    drill! '
+  text: Now slide both fingers up or down.
