@@ -1,7 +1,7 @@
 using UnityEngine;
 using Cinemachine;
 using StarWriter.Core;
-using Amoebius.Utility.Singleton;
+using TailGlider.Utility.Singleton;
 
 public class CameraManager : SingletonPersistent<CameraManager>
 {
@@ -31,14 +31,14 @@ public class CameraManager : SingletonPersistent<CameraManager>
 
     private void OnEnable()
     {
-        FuelSystem.zeroFuel += ZoomEndCameraToScores;
+        
         GameManager.onPlayGame += OnPlayGame;
         GameManager.onPhoneFlip += OnPhoneFlip;
 }
 
     private void OnDisable()
     {
-        FuelSystem.zeroFuel -= ZoomEndCameraToScores;
+        
         GameManager.onPlayGame -= OnPlayGame;
         GameManager.onPhoneFlip -= OnPhoneFlip;
     }
@@ -57,6 +57,7 @@ public class CameraManager : SingletonPersistent<CameraManager>
 
     private void OnPlayGame()
     {
+        FuelSystem.zeroFuel += ZoomEndCameraToScores;
         playerFollowTarget = GameObject.FindGameObjectWithTag("Player").transform;
         closeCamera.LookAt = farCamera.LookAt = playerFollowTarget;
         closeCamera.Follow = farCamera.Follow = playerFollowTarget;
@@ -66,6 +67,7 @@ public class CameraManager : SingletonPersistent<CameraManager>
 
     private void ZoomEndCameraToScores()
     {
+        FuelSystem.zeroFuel -= ZoomEndCameraToScores;
         SetActiveCamera(endCamera);
         isCameraFlipEnabled = false;
     }

@@ -1,4 +1,4 @@
-using Amoebius.Utility.Singleton;
+using TailGlider.Utility.Singleton;
 using UnityEngine;
 
 namespace StarWriter.Core

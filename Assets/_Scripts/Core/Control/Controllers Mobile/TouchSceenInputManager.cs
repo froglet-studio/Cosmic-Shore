@@ -1,6 +1,6 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
-using Amoebius.Utility.Singleton;
+using TailGlider.Utility.Singleton;
 using UnityEngine.InputSystem.EnhancedTouch;
 
 [DefaultExecutionOrder(-1)]
