@@ -74,7 +74,7 @@ namespace StarWriter.Core.Audio
         {
             AudioSource activeAudioSource = (firstMusicSourceIsPlaying ? musicSource1 : musicSource2);
             activeAudioSource.clip = audioClip;
-            activeAudioSource.volume = musicVolume;
+            //activeAudioSource.volume = musicVolume;
             activeAudioSource.Play();
         }
 
@@ -84,7 +84,7 @@ namespace StarWriter.Core.Audio
             {
                 AudioSource activeAudioSource = (firstMusicSourceIsPlaying ? musicSource1 : musicSource2);
                 activeAudioSource.clip = audioClip;
-                activeAudioSource.volume = musicVolume;
+                //activeAudioSource.volume = musicVolume;
                 activeAudioSource.Play();
             }
             else
