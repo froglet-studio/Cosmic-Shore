@@ -17,15 +17,13 @@ public class StarChanger : MonoBehaviour
 
     Material starMaterial;
     Vector3 mutonPosition;
-    [SerializeField]
-    float scale;
 
     [SerializeField]
     GameObject Muton;
 
     Color green = new Color(0, .4f, .6f);
-    Color blue = new Color(0, 0, .9f);
-    Color red = new Color(.4f, 0, .7f);
+    Color blue = new Color(.18f, .18f, .58f);
+    Color red = new Color(.28f, 0, .52f);
     Color starColor;
     Color fuelColor;
 
@@ -42,7 +40,7 @@ public class StarChanger : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        mutonPosition = Vector3.Lerp(mutonPosition, Muton.transform.position*scale,.02f);
+        mutonPosition = Vector3.Lerp(mutonPosition, Muton.transform.position,.02f);
         starColor = Color.Lerp(starColor,fuelColor,.02f);
         starMaterial.SetColor("_color", starColor);
         starMaterial.SetVector("_mutonPosition", mutonPosition);

@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace Amoebius.Utility.Singleton
+namespace TailGlider.Utility.Singleton
 {
     /// <remarks>
     /// Creates a Singleton GameObject which is NOT persistent thru scenes
