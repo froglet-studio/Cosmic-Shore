@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0, g: 0, b: 0, a: 1}
+  m_IndirectSpecularColor: {r: 0.0037926815, g: 0.0032631278, b: 0.0034446984, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -541,7 +541,7 @@ MonoBehaviour:
   trail: {fileID: 5776304996075792891, guid: 053064d82123e8b49bfb29870b5c0715, type: 3}
   offset: 0
   trailPeriod: 0.5
-  trailLength: 20
+  trailLength: 40
   waitTime: 0.1
   startDelay: 2
 --- !u!1 &1031317111
@@ -1664,6 +1664,16 @@ PrefabInstance:
       propertyPath: m_Name
       value: Player
       objectReference: {fileID: 0}
+    - target: {fileID: 7659183800259804531, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: trailLength
+      value: 40
+      objectReference: {fileID: 0}
+    - target: {fileID: 7659183800259804531, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: trailPeriod
+      value: 0.15
+      objectReference: {fileID: 0}
     - target: {fileID: 7659183800259804541, guid: c8544725eea141847982b286866c858d,
         type: 3}
       propertyPath: m_RootOrder
@@ -2058,7 +2068,7 @@ MonoBehaviour:
   trail: {fileID: 5776304996075792891, guid: 4e280247faa1d154fa25d1e92df405dc, type: 3}
   offset: 0
   trailPeriod: 0.9
-  trailLength: 20
+  trailLength: 40
   waitTime: 0.3
   startDelay: 2
 --- !u!4 &1898590044 stripped
@@ -2320,7 +2330,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!1 &4716017971667693127
 GameObject:
   m_ObjectHideFlags: 0

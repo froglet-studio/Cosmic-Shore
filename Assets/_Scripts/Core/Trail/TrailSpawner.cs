@@ -75,21 +75,26 @@ public class TrailSpawner : MonoBehaviour
         while (true)
         {
             yield return new WaitForSeconds(trailPeriod);
-
-            var Block = Instantiate(trail);
-            Block.transform.SetPositionAndRotation(transform.position - transform.forward*offset, transform.rotation);
-            //Block.transform.localScale = new Vector3(scale.x,scale.y,scale.z);
-            Block.transform.parent = TrailContainer.transform;
-
-            Trail trailScript = trail.GetComponent<Trail>();
-
-            trailScript.waitTime = waitTime;
-
-            trailList.Enqueue(Block);
-            if (trailList.Count > trailLength/trailPeriod)
+            if (Time.deltaTime < .1f)
             {
-                Destroy(trailList.Dequeue()); 
+                
+
+                var Block = Instantiate(trail);
+                Block.transform.SetPositionAndRotation(transform.position - transform.forward * offset, transform.rotation);
+                //Block.transform.localScale = new Vector3(scale.x,scale.y,scale.z);
+                Block.transform.parent = TrailContainer.transform;
+
+                Trail trailScript = trail.GetComponent<Trail>();
+
+                trailScript.waitTime = waitTime;
+
+                trailList.Enqueue(Block);
+                if (trailList.Count > trailLength / trailPeriod)
+                {
+                    Destroy(trailList.Dequeue());
+                }
             }
+            
         }
     }
 }

@@ -16,7 +16,7 @@ namespace StarWriter.Core
         public delegate void OnPlayGameEvent();
         public static event OnPlayGameEvent onPlayGame;
 
-        private readonly float phoneFlipThreshold = .1f;
+        private readonly float phoneFlipThreshold = .3f;
 
         public delegate void OnPhoneFlipEvent(bool state);
         public static event OnPhoneFlipEvent onPhoneFlip;

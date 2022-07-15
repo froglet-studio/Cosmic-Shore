@@ -29,7 +29,7 @@ Transform:
   m_GameObject: {fileID: 5776304996075792891}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 4, y: 4, z: 0.5}
+  m_LocalScale: {x: 3.5, y: 3.5, z: 2.5}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
@@ -110,7 +110,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f366d272ab4f79e419d678fc6ca23512, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  intensityChange: -3
+  fuelChange: -3
   FossilBlock: {fileID: 5776304996075792891, guid: bd8a259abee95ec4895562e6bb8aae76,
     type: 3}
   material: {fileID: 2100000, guid: 5140ec1c42866e849927f442d5965f7f, type: 2}
