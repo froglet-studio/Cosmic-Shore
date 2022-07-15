@@ -14,7 +14,7 @@ namespace StarWriter.Utility.ScreenShots
         {
             if (Input.GetKeyUp(KeyCode.C))
             {
-                ScreenCapture.CaptureScreenshot($"Screenshot {screenShotIndex}.png", 2);
+                ScreenCapture.CaptureScreenshot($"Screenshot {screenShotIndex}.png", supersize);
                 screenShotIndex++;
                 Debug.Log($"Screenshot {screenShotIndex}.png hass been taken.");
             }
@@ -22,7 +22,7 @@ namespace StarWriter.Utility.ScreenShots
 
         public void CaptureScreenShotToDisk(string path)
         {
-            ScreenCapture.CaptureScreenshot($"{path}Screenshot {screenShotIndex}.png", 2);
+            ScreenCapture.CaptureScreenshot($"{path}Screenshot {screenShotIndex}.png", supersize);
             screenShotIndex++;
             Debug.Log($"{path}Screenshot {screenShotIndex}.png has been taken.");
         }
