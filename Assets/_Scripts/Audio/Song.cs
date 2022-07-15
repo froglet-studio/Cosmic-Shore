@@ -1,27 +1,23 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Audio;
-
 namespace StarWriter.Core.Audio
 {
-    public class Song : MonoBehaviour
+    public class Song
     {
-        [SerializeField]
         SO_Song song_SO;
 
-        string title;
-        string description;
-        string author;
-
-        AudioClip clip;
+        readonly string title;
+        readonly string description;
+        readonly string author;
+        readonly AudioClip clip;
 
         public string Title { get => title; }
         public string Description { get => description; }
         public string Author { get => author; }
         public AudioClip Clip { get => clip; }
 
-        public void SetSongSO(SO_Song so)
+        public Song(SO_Song so)
         {
             song_SO = so;
 
@@ -30,7 +26,6 @@ namespace StarWriter.Core.Audio
             description = song_SO.Decription;
             author = song_SO.Author;
         }
-
     }
 }
 

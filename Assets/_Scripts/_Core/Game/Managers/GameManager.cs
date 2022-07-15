@@ -1,6 +1,6 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using Amoebius.Utility.Singleton;
+using TailGlider.Utility.Singleton;
 using StarWriter.Core.Audio;
 
 namespace StarWriter.Core

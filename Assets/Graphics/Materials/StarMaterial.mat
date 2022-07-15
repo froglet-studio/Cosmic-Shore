@@ -126,7 +126,7 @@ Material:
     - _ZTest: 4
     - _ZWrite: 0
     - _ZWriteControl: 0
-    - _alpha: 0.02
+    - _alpha: 0.08
     - _fuel: 0
     - _position_scale: -14
     - _scale: 80

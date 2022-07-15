@@ -13,4 +13,4 @@ MonoBehaviour:
   m_Name: Line 004 Fail
   m_EditorClassIdentifier: 
   speaker: {fileID: 11400000, guid: 153560b85d8a07a4eaa76b39fd0f60c4, type: 2}
-  text: Remember pilot, always look out for mutons.
+  text: Always look out for mutons.

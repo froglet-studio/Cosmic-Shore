@@ -1,6 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
-using Amoebius.Utility.Singleton;
+using TailGlider.Utility.Singleton;
 using UnityEngine;
 using UnityEngine.Audio;
 
@@ -31,12 +31,13 @@ namespace StarWriter.Core.Audio
         [SerializeField]
         float environmentVolume = .1f;
 
-
         float MasterVolume { get { return isAudioEnabled ? masterVolume : 0; } set { } }
 
         private bool firstMusicSourceIsPlaying = true;
         private bool isAudioEnabled = true;
         private string AudioEnabledPlayerPrefKey = "isAudioEnabled";
+
+        public bool IsAudioEnabled { get { return isAudioEnabled; } }
         #endregion
 
         private void Start()
@@ -74,17 +75,17 @@ namespace StarWriter.Core.Audio
         {
             AudioSource activeAudioSource = (firstMusicSourceIsPlaying ? musicSource1 : musicSource2);
             activeAudioSource.clip = audioClip;
-            activeAudioSource.volume = musicVolume;
+            //activeAudioSource.volume = musicVolume;
             activeAudioSource.Play();
         }
 
         public void PlayNextMusicClip(AudioClip audioClip)
         {
-            if (!CheckIfMusicSourceIsPlaying()) 
+            if (!IsMusicSourcePlaying()) 
             {
                 AudioSource activeAudioSource = (firstMusicSourceIsPlaying ? musicSource1 : musicSource2);
                 activeAudioSource.clip = audioClip;
-                activeAudioSource.volume = musicVolume;
+                //activeAudioSource.volume = musicVolume;
                 activeAudioSource.Play();
             }
             else
@@ -178,11 +179,11 @@ namespace StarWriter.Core.Audio
             while (activeAudioSource.isPlaying)
             {
                 yield return null;
-                CheckIfMusicSourceIsPlaying();
+                IsMusicSourcePlaying();
             }
         }
 
-        public bool CheckIfMusicSourceIsPlaying()
+        public bool IsMusicSourcePlaying()
         {
             if (musicSource1.isPlaying || musicSource2.isPlaying)
             {

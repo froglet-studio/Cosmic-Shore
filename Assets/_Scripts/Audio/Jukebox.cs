@@ -1,20 +1,19 @@
-using System;
-using System.Collections;
 using System.Collections.Generic;
-using Amoebius.Utility.Singleton;
+using TailGlider.Utility.Singleton;
 using UnityEngine;
 
 namespace StarWriter.Core.Audio
 {
     public class Jukebox : SingletonPersistent<Jukebox>
     {
-
         [SerializeField]
         private SO_Song[] so_songs;  //Used for random and indexed song selection
 
         Dictionary<string, Song> Playlist = new Dictionary<string, Song>(); //use song title key to access a specific song
 
         private int index = 0;
+
+        private string JukeboxIndexPlayerPrefKey = "JukeboxIndex";
 
         public bool RandomizePlay = true;
 
@@ -26,7 +25,7 @@ namespace StarWriter.Core.Audio
         {
             audioSystem = AudioSystem.Instance;
             InitiatizeJukebox();
-            StartJukebox();
+            StartJukebox();     // Start the jukebox once initiatization is complete
         }
 
         private void OnEnable()
@@ -41,39 +40,33 @@ namespace StarWriter.Core.Audio
 
         private void ChangeAudioEnabledStatus(bool status)
         {
-            if (status)
-            {
-                jukeboxIsOn = true;
-            }
-            if(!status)
-            {
+            jukeboxIsOn = status;
+
+            if (!jukeboxIsOn)
                 CancelAllSongsPlaying();
-                jukeboxIsOn = false;
-            }
         }
+
         private void Update()
         {
-            if (!jukeboxIsOn) { return; }  //Audio is off 
+            // if audio is enabled, the jukebox is on, and no music is playing, hit the side of the jukebox heeeeey
+            if (audioSystem.IsAudioEnabled && jukeboxIsOn && !audioSystem.IsMusicSourcePlaying()) {
+                StartJukebox();
+            }
 
-            if (audioSystem.CheckIfMusicSourceIsPlaying()) { return;  }  //currently a clip is playing
-
-            if (!audioSystem.CheckIfMusicSourceIsPlaying() && PlayerPrefs.GetInt("isAudioEnabled") == 1) //No active clip and true
+            if (!audioSystem.MusicSource1.isPlaying && !audioSystem.MusicSource2.isPlaying)
             {
                 StartJukebox();
             }
         }
 
-        private void InitiatizeJukebox()  //Adds song SO's to the Playlist dictionary
+        private void InitiatizeJukebox()  //Adds song SO's to the Playlist dictionary. Then initiatize the jukebox
         {
             foreach (SO_Song so in so_songs)
             {
-                Song song = new Song();
-                song.SetSongSO(so);
+                Song song = new Song(so);
                 Playlist.Add(song.Title, song);
                 Debug.Log("Song " + song.Title + " added to Playlist");
-                index++;
             }
-            index = 0;
         }
         private void StartJukebox()
         {
@@ -85,9 +78,10 @@ namespace StarWriter.Core.Audio
             {
                 PlayNextSong();
             }
-
         }
 
+        // TODO: Is this supposed to stop all songs playing until they're started again? If so, we need to disable to jukebox here as well
+        // Alternatively, we can make this private and have all dis/enablement go through GameSetting.OnChangeAudioEnabledStatus
         public void CancelAllSongsPlaying()
         {
             audioSystem.MusicSource1.Stop();
@@ -96,14 +90,12 @@ namespace StarWriter.Core.Audio
 
         public void PlaySong(string title)
         {
-            Song song;
-            if (Playlist.TryGetValue(title, out song))
+            // TODO: This plays a song outside of the control flow of 'random' or 'cycle'. After this song plays, 'random' or 'cycle' will continue. Is this what we want?
+            if (Playlist.TryGetValue(title, out Song song))
             {
                 audioSystem.PlayMusicClip(song.Clip);
             }
         }
-
-        
 
         public void PlayRandomSong()
         {
@@ -112,24 +104,11 @@ namespace StarWriter.Core.Audio
             audioSystem.PlayMusicClip(clip);
         }
 
+        // Start the song at the current index and increment the index to queue up the next song
         public void PlayNextSong()
         {
             audioSystem.PlayMusicClip(so_songs[index].Clip);
-            StartCoroutine(WaitForMusicToFinish());
-        }
-
-        IEnumerator WaitForMusicToFinish()
-        {
-            while (audioSystem.MusicSource1.isPlaying || audioSystem.MusicSource2.isPlaying)
-            {
-                yield return null;
-            }
-            index++;
-            if (index > so_songs.Length - 1) //Reset to beginning of song list
-            {
-                index = 0;
-            }
+            index = (index + 1) % so_songs.Length;  // increment and modulo will cycle from 0 to length-1
         }
     }
 }
-
