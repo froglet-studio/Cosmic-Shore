@@ -56,6 +56,4 @@ public class StarChanger : MonoBehaviour
         //starMaterial.SetFloat("_fuel", amount);
     }
 
-   
-
 }
