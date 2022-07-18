@@ -11,6 +11,9 @@ public class MutonPopUp : MonoBehaviour
 
     public delegate void OnCollisionIncreaseScore(string uuid, int amount);
     public static event OnCollisionIncreaseScore AddToScore;
+
+    public delegate void MutonMove();
+    public static event MutonMove OnMutonMove;
     #endregion
 
     #region Floats
@@ -18,7 +21,7 @@ public class MutonPopUp : MonoBehaviour
     float fuelAmount = 0.07f;
     
     [SerializeField]
-    float sphereRadius = 100;
+    public float sphereRadius = 100;
     
     #endregion
 
@@ -71,7 +74,10 @@ public class MutonPopUp : MonoBehaviour
         spentMuton.GetComponent<Renderer>().material = tempMaterial;
 
         GameObject ship = other.transform.parent.parent.gameObject;
+
         
+
+
         if (ship == GameObject.FindWithTag("Player"))
         {
             // Player Collision
@@ -117,6 +123,7 @@ public class MutonPopUp : MonoBehaviour
         // Move the muton
         StartCoroutine(Muton.GetComponent<FadeIn>().FadeInCoroutine());
         transform.SetPositionAndRotation(UnityEngine.Random.insideUnitSphere * sphereRadius, UnityEngine.Random.rotation);
+        OnMutonMove();
 
         // Grow tail
         TrailSpawner trailScript = ship.GetComponent<TrailSpawner>();
