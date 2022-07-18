@@ -17,6 +17,7 @@ namespace StarWriter.Core
             isTutorialEnabled,
             isAudioEnabled,
             isGyroEnabled,
+            getsExtraLife
         }
 
         #region Settings
@@ -45,6 +46,7 @@ namespace StarWriter.Core
                 PlayerPrefs.SetInt(PlayerPrefKeys.isTutorialEnabled.ToString(), 1);
                 PlayerPrefs.SetInt(PlayerPrefKeys.isAudioEnabled.ToString(), 1);  // music always on first time playing
                 PlayerPrefs.SetInt(PlayerPrefKeys.isGyroEnabled.ToString(), 1);
+                PlayerPrefs.SetInt(PlayerPrefKeys.getsExtraLife.ToString(), 1);
                 PlayerPrefs.Save();
 
                 //Initialize Bools

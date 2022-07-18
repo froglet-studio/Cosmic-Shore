@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
 using System;
+using StarWriter.Core;
 
 public class ScoringManager : MonoBehaviour
 {
@@ -16,13 +17,17 @@ public class ScoringManager : MonoBehaviour
         FuelSystem.onPlayerFuelOverflow += AddExcessFuelToScore;
         FuelSystem.zeroFuel += GameOver;
         MutonPopUp.AddToScore += AddMutonBous;
+        GameManager.onExtendPlayGame += KeepOldScore;
     }
+
+    
 
     private void OnDisable()
     {
         FuelSystem.onPlayerFuelOverflow += AddExcessFuelToScore;
         FuelSystem.zeroFuel += GameOver;
         MutonPopUp.AddToScore -= AddMutonBous;
+        GameManager.onExtendPlayGame -= KeepOldScore;
     }
 
     private void AddExcessFuelToScore(string uuid, int amount)
@@ -41,6 +46,11 @@ public class ScoringManager : MonoBehaviour
         if (uuid == "admin") { score += amount; }
 
         UpdateScoreBoard(score);
+    }
+
+    private void KeepOldScore()
+    {
+        score = PlayerPrefs.GetInt("Score");
     }
 
     private void GameOver()
