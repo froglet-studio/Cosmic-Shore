@@ -18,7 +18,7 @@ public class SnowChanger : MonoBehaviour
 
     //List<Material> materials = new List<Material>();
 
-    int crystalSize = 10;
+    int crystalSize = 15;
     float nodeScaler = 4;
     int nodedistance = 40;
     //int shellCount = 20;
