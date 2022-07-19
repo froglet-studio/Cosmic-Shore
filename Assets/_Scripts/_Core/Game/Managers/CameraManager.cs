@@ -2,6 +2,7 @@ using UnityEngine;
 using Cinemachine;
 using StarWriter.Core;
 using TailGlider.Utility.Singleton;
+using System;
 
 public class CameraManager : SingletonPersistent<CameraManager>
 {
@@ -37,6 +38,7 @@ public class CameraManager : SingletonPersistent<CameraManager>
         
         GameManager.onPlayGame += OnPlayGame;
         GameManager.onPhoneFlip += OnPhoneFlip;
+        FuelSystem.zeroFuel += OnGameOver;
 }
 
     private void OnDisable()
@@ -44,6 +46,7 @@ public class CameraManager : SingletonPersistent<CameraManager>
         
         GameManager.onPlayGame -= OnPlayGame;
         GameManager.onPhoneFlip -= OnPhoneFlip;
+        FuelSystem.zeroFuel -= OnGameOver;
     }
 
     void Start()
@@ -68,6 +71,15 @@ public class CameraManager : SingletonPersistent<CameraManager>
         isCameraFlipEnabled = true;
     }
 
+    private void OnGameOver()
+    {
+        //playerFollowTarget = GameObject.FindGameObjectWithTag("Player").transform;
+        //closeCamera.LookAt = farCamera.LookAt = playerFollowTarget;
+        //closeCamera.Follow = farCamera.Follow = playerFollowTarget;
+        //SetDeathCameraActive();
+        //isCameraFlipEnabled = true;
+    }
+
     private void ZoomEndCameraToScores()
     {
         FuelSystem.zeroFuel -= ZoomEndCameraToScores;
@@ -89,6 +101,10 @@ public class CameraManager : SingletonPersistent<CameraManager>
     {
         SetActiveCamera(closeCamera);
     }
+    private void SetDeathCameraActive()
+    {
+        SetActiveCamera(deathCamera);
+    }
 
     private void SetActiveCamera(CinemachineVirtualCameraBase activeCamera)
     {
@@ -96,6 +112,7 @@ public class CameraManager : SingletonPersistent<CameraManager>
         closeCamera.Priority = inactivePriority;
         farCamera.Priority = inactivePriority;
         endCamera.Priority = inactivePriority;
+        deathCamera.Priority = inactivePriority;
 
         activeCamera.Priority = activePriority;
     }
