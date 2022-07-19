@@ -177,6 +177,7 @@ Material:
     - _ZTest: 4
     - _ZWrite: 1
     - _ZWriteControl: 0
+    - _distance: 1185.2
     - _opacity: 1
     m_Colors:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
