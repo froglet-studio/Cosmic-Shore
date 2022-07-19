@@ -3,36 +3,50 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using StarWriter.Core;
-
+using System;
 
 public class InteractiveButtonMenu : MonoBehaviour
 {
     public Button screenshotButton;
     public Button watchAdButton;
+    public Button declineAdButton;
 
-    public bool getsAnotherLife;
+    private void OnEnable()
+    {
+        ScoringManager.onAdQualify += ShowAdButtons;
+        ScoringManager.onAdDisqualify += ShowScreenshotButton;
+    }
 
+    private void OnDisable()
+    {
+        ScoringManager.onAdQualify -= ShowAdButtons;
+        ScoringManager.onAdDisqualify -= ShowScreenshotButton;
+    }
 
     // Start is called before the first frame update
     void Start()
     {
-        screenshotButton.gameObject.SetActive(true);
+        screenshotButton.gameObject.SetActive(false);
         watchAdButton.gameObject.SetActive(false);
+        declineAdButton.gameObject.SetActive(false);
+    }
 
-        getsAnotherLife = (PlayerPrefs.GetInt(GameSetting.PlayerPrefKeys.getsExtraLife.ToString()) == 1) ? true : false; // 0 false and 1 true
-
-
-        if (getsAnotherLife)
+    private void ShowAdButtons(bool hotness)
+    {
+        watchAdButton.gameObject.SetActive(true); //ON
+        declineAdButton.gameObject.SetActive(true);  //ON
+        screenshotButton.gameObject.SetActive(false);
+        if (hotness)
         {
-            watchAdButton.gameObject.SetActive(true);
-            screenshotButton.gameObject.SetActive(false);
+            //TODO bump up watchAdButton flare and mute declineAdButton
         }
     }
 
-    public void ExtraLifeGiftedByAd()
+    private void ShowScreenshotButton()
     {
-        //FuelSystem.ResetFuel();
-        PlayerPrefs.SetInt("Gets Free Life", 0);
-        GameManager.Instance.RestartGame();
+        screenshotButton.gameObject.SetActive(true); //ON
+        watchAdButton.gameObject.SetActive(false);
+        declineAdButton.gameObject.SetActive(false);
     }
+
 }
