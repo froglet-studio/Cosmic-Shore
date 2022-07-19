@@ -29,6 +29,8 @@ public class InteractiveButtonMenu : MonoBehaviour
         screenshotButton.gameObject.SetActive(false);
         watchAdButton.gameObject.SetActive(false);
         declineAdButton.gameObject.SetActive(false);
+
+        watchAdButton.onClick.AddListener(() => GameManager.Instance.ExtraLifeGiftedByAd()); //TODO Remove once ads 
     }
 
     private void ShowAdButtons(bool hotness)

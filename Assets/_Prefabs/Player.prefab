@@ -1002,6 +1002,21 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: 7.2
       objectReference: {fileID: 0}
+    - target: {fileID: 7783076547613315151, guid: 087d2222a78ded24894cb53861ff6be4,
+        type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.size
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7783076547613315151, guid: 087d2222a78ded24894cb53861ff6be4,
+        type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Mode
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7783076547613315151, guid: 087d2222a78ded24894cb53861ff6be4,
+        type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_CallState
+      value: 2
+      objectReference: {fileID: 0}
     - target: {fileID: 7835554880265163532, guid: 087d2222a78ded24894cb53861ff6be4,
         type: 3}
       propertyPath: m_AnchoredPosition.x
@@ -1035,7 +1050,6 @@ MonoBehaviour:
   screenshotButton: {fileID: 5400416775957884428}
   watchAdButton: {fileID: 7783076548524053672}
   declineAdButton: {fileID: 8323408280195779264}
-  isExtendedLife: 0
 --- !u!1 &3871940114429955852 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 3871940115877563371, guid: 087d2222a78ded24894cb53861ff6be4,
