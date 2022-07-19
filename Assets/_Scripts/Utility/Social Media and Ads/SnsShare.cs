@@ -1,7 +1,9 @@
 using System.Collections;
 using UnityEngine.UI;
 using UnityEngine;
-
+/// <summary>
+/// Requires Native Share to function in Unity
+/// </summary>
 public class SnsShare : MonoBehaviour
 {
     public Button screenshotButton; 

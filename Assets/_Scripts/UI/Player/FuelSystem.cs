@@ -112,5 +112,6 @@ public class FuelSystem : MonoBehaviour
     private void GameOver()
     {
         zeroFuel?.Invoke();
+        
     }
 }

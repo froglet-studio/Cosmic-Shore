@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using TailGlider.Utility.Singleton;
 using StarWriter.Core.Audio;
+using System;
 
 namespace StarWriter.Core
 {
@@ -26,10 +27,24 @@ namespace StarWriter.Core
 
         CameraManager cameraManager;
 
+        public bool isExtendedLife;
+
+        private void OnEnable()
+        {
+            FuelSystem.zeroFuel += GameOver;
+        }
+
+        private void OnDisable()
+        {
+            FuelSystem.zeroFuel -= GameOver;
+        }
+
         void Start()
         {
             cameraManager = CameraManager.Instance;
             gameSettings = GameSetting.Instance;
+
+            isExtendedLife = false;
 
             if (PlayerPrefs.GetInt("Skip Tutorial") == 1) // 0 false and 1 true
             {
@@ -93,11 +108,22 @@ namespace StarWriter.Core
             SceneManager.LoadScene(2);
         }
 
+        private void GameOver()
+        {
+            PauseGame();
+        }
+
         public void RestartGame()
         {
             UnPauseGame();
             //audioManager.PlayMusicClip(audioManager.ToggleMusicPlaylist());
             SceneManager.LoadScene(2);
+        }
+
+        public void ExtraLifeGiftedByAd() // called after watching the Ad
+        {
+            UnPauseGame();
+            onExtendPlayGame?.Invoke();
         }
 
         public void ReturnToLobby()
@@ -128,7 +154,6 @@ namespace StarWriter.Core
         public void WaitOnPlayerLoading()
         {
             onPlayGame?.Invoke();
-            onExtendPlayGame?.Invoke();
         }
     }
 }
