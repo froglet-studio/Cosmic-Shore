@@ -38,7 +38,7 @@ public class CameraManager : SingletonPersistent<CameraManager>
         
         GameManager.onPlayGame += OnPlayGame;
         GameManager.onPhoneFlip += OnPhoneFlip;
-        FuelSystem.zeroFuel += OnGameOver;
+        GameManager.onDeath += OnDeath;
 }
 
     private void OnDisable()
@@ -46,7 +46,7 @@ public class CameraManager : SingletonPersistent<CameraManager>
         
         GameManager.onPlayGame -= OnPlayGame;
         GameManager.onPhoneFlip -= OnPhoneFlip;
-        FuelSystem.zeroFuel -= OnGameOver;
+        GameManager.onDeath -= OnDeath;
     }
 
     void Start()
@@ -71,13 +71,9 @@ public class CameraManager : SingletonPersistent<CameraManager>
         isCameraFlipEnabled = true;
     }
 
-    private void OnGameOver()
+    private void OnDeath()
     {
-        //playerFollowTarget = GameObject.FindGameObjectWithTag("Player").transform;
-        //closeCamera.LookAt = farCamera.LookAt = playerFollowTarget;
-        //closeCamera.Follow = farCamera.Follow = playerFollowTarget;
-        //SetDeathCameraActive();
-        //isCameraFlipEnabled = true;
+        SetDeathCameraActive();   
     }
 
     private void ZoomEndCameraToScores()

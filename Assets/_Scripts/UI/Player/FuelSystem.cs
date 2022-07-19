@@ -5,8 +5,6 @@ using UnityEngine;
 public class FuelSystem : MonoBehaviour
 {
     #region Events
-    public delegate void OnFuelOverflow(string uuid, int amount);
-    public static event OnFuelOverflow onPlayerFuelOverflow;
 
     public delegate void OnFuelChangeEvent(string uuid, float amount);
     public static event OnFuelChangeEvent onFuelChange;
@@ -72,11 +70,9 @@ public class FuelSystem : MonoBehaviour
     private void ChangeFuelAmount(string uuid, float amount)
     {
         uuidOfPlayer = uuid;  //Recieves uuid of from Collision Events
-        if (currentFuel != 0) { currentFuel += amount; }
+        if (currentFuel != 0) { currentFuel += amount; } //?
         if (currentFuel > 1f)
         {
-            int excessFuel = (int)(currentFuel - 1f);
-            AddExcessFuelToScore(uuidOfPlayer, excessFuel);  //Sending excess to Score Manager
             currentFuel = 1;
         }
         if (currentFuel <= 0)
@@ -84,18 +80,13 @@ public class FuelSystem : MonoBehaviour
             currentFuel = 0;
             UpdateCurrentFuelAmount(uuidOfPlayer, currentFuel);
             UpdateFuelBar(uuid, currentFuel);
-            GameOver();
+            zeroFuel?.Invoke();
         }
         if (currentFuel != 0)
         {
             UpdateCurrentFuelAmount(uuidOfPlayer, currentFuel);
             UpdateFuelBar(uuid, currentFuel);
         }
-    }
-
-    private void AddExcessFuelToScore(string uuidOfPlayer, int excessFuel)
-    {
-        onPlayerFuelOverflow?.Invoke(uuidOfPlayer, excessFuel);
     }
 
     private void UpdateFuelBar(string uuidOfPlayer, float currentFuel)
@@ -107,11 +98,5 @@ public class FuelSystem : MonoBehaviour
     private void UpdateCurrentFuelAmount(string uuid, float amount)
     {
         if (uuid == "admin") { currentFuel = amount; }
-    }
-
-    private void GameOver()
-    {
-        zeroFuel?.Invoke();
-        
     }
 }

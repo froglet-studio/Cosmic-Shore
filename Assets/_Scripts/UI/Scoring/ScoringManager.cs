@@ -15,39 +15,27 @@ public class ScoringManager : MonoBehaviour
     private int extendedLifeHighScore;
     [SerializeField]
     private float extralifeModifier = 0.8f;
+    bool bedazzled; //wether or not the watchAdButton is amped up
 
     public TextMeshProUGUI scoreText;
 
-    public delegate void OnAdQualifyEvent(bool hotness);
-    public static event OnAdQualifyEvent onAdQualify;
-
-    public delegate void OnAdDisqualifyEvent();
-    public static event OnAdDisqualifyEvent onAdDisqualify;
+    public delegate void OnGameOverEvent(bool bedazzled, bool advertisement);
+    public static event OnGameOverEvent onGameOver;
 
     private void OnEnable()
     {
-        FuelSystem.onPlayerFuelOverflow += AddExcessFuelToScore;
-        FuelSystem.zeroFuel += GameOver;
+        GameManager.onDeath += OnDeath;
         MutonPopUp.AddToScore += AddMutonBous;
         GameManager.onExtendPlayGame += ExtendGamePlay;
     }
 
-    
-
     private void OnDisable()
     {
-        FuelSystem.onPlayerFuelOverflow += AddExcessFuelToScore;
-        FuelSystem.zeroFuel += GameOver;
+        GameManager.onDeath -= OnDeath;
         MutonPopUp.AddToScore -= AddMutonBous;
         GameManager.onExtendPlayGame -= ExtendGamePlay;
     }
 
-    private void AddExcessFuelToScore(string uuid, int amount)
-    {
-        if (uuid == "admin") { score += amount; }
-
-        UpdateScoreBoard(score);
-    }
     public void UpdateScoreBoard(int value)
     {
         scoreText.text = value.ToString("D3"); // score text located on the fuel bar
@@ -60,56 +48,88 @@ public class ScoringManager : MonoBehaviour
         UpdateScoreBoard(score);
     }
 
-    private void ExtendGamePlay()
+    private void OnDeath()
     {
-        score = PlayerPrefs.GetInt("Score");
-        PlayerPrefs.SetInt(GameSetting.PlayerPrefKeys.getsExtraLife.ToString(), 0);  // set false 
+
+        if (PlayerPrefs.GetInt(GameSetting.PlayerPrefKeys.adsEnabled.ToString()) == 1)
+        {
+            bedazzled = ((PlayerPrefs.GetInt("Single Life High Score") * extralifeModifier) <= score);
+            
+        }
+        if (PlayerPrefs.GetInt("Single Life High Score") < score)
+        {
+            PlayerPrefs.SetInt("Single LifeHigh Score", score);
+        }
+
+        UpdatePlayerPrefScores();
+        QualifyForExtendedLifeAd();
     }
 
-    private void GameOver()
+    public void QualifyForExtendedLifeAd()
+    {
+        bool advertisements = (PlayerPrefs.GetInt(GameSetting.PlayerPrefKeys.adsEnabled.ToString()) == 1);
+        if ((extralifeModifier * (float)PlayerPrefs.GetInt("Single Life High Score") <= (float)extendedLifeScore) && 
+                (PlayerPrefs.GetInt(GameSetting.PlayerPrefKeys.adsEnabled.ToString()) == 1))
+        {
+            bedazzled = true;
+            advertisements = true;
+            onGameOver?.Invoke(bedazzled, advertisements);
+        }
+        else if (PlayerPrefs.GetInt(GameSetting.PlayerPrefKeys.adsEnabled.ToString()) == 1)
+        {
+            bedazzled = false;
+            advertisements = true;
+            onGameOver?.Invoke(bedazzled, advertisements);
+        }
+        else
+        {
+            bedazzled = false;
+            advertisements = false;
+            onGameOver?.Invoke(bedazzled, advertisements);
+        }
+
+    }
+
+    public void UpdatePlayerPrefScores()
     {
         PlayerPrefs.SetInt("Score", score);
-       
+
         //Compares Score to High Score and saves the highest value
         if (PlayerPrefs.GetInt("High Score") < score)
         {
             PlayerPrefs.SetInt("High Score", score);
         }
         PlayerPrefs.Save();
-        QualifyForExtendedLifeAd();
     }
 
-    public void QualifyForExtendedLifeAd()
+    private void ExtendGamePlay()
     {
-        bool hotness;
-        if ((extralifeModifier * (float)PlayerPrefs.GetInt("Extended High Score") <= (float)extendedLifeScore) && 
-                (PlayerPrefs.GetInt(GameSetting.PlayerPrefKeys.getsExtraLife.ToString()) == 1))
-        {
-            hotness = true;
-            onAdQualify?.Invoke(hotness);
-            //TODO do ad button with hotness and muted decline button
-        }
-        else if (PlayerPrefs.GetInt(GameSetting.PlayerPrefKeys.getsExtraLife.ToString()) == 1)
-        {
-            hotness = false;
-            onAdQualify?.Invoke(hotness);
-            //TODO do regular ad button and regular decline button
-        }
-        else
-        {
-            onAdDisqualify?.Invoke();
-        }
-
+        score = PlayerPrefs.GetInt("Score");
+        PlayerPrefs.SetInt(GameSetting.PlayerPrefKeys.adsEnabled.ToString(), 0);  // set false 
     }
 
-    private void ExtendedLifeGameOver()
-    {
-        extendedLifeScore = score;
-        if (PlayerPrefs.GetInt("Extended High Score") < extendedLifeScore)
-        {
-            PlayerPrefs.SetInt("Extended High Score", extendedLifeScore);
-        }
-    }
+    //private void ExtendedLifeGameOver()
+    //{
+    //    extendedLifeScore = score;
+    //    if (PlayerPrefs.GetInt("Extended High Score") < extendedLifeScore)
+    //    {
+    //        PlayerPrefs.SetInt("Extended High Score", extendedLifeScore);
+    //    }
 
-   
+//    PlayerPrefs.SetInt("Score", score);
+       
+//        //Compares Score to High Score and saves the highest value
+//        if (PlayerPrefs.GetInt("High Score") < score)
+//        {
+//            PlayerPrefs.SetInt("High Score", score);
+//            if (PlayerPrefs.GetInt("Single Life High Score") < score)
+//            {
+//                PlayerPrefs.SetInt("Single LifeHigh Score", score);
+//            }
+//        }
+//        PlayerPrefs.Save();
+
+
+//QualifyForExtendedLifeAd();
+    //} 
 }

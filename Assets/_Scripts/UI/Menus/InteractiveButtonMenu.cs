@@ -13,14 +13,12 @@ public class InteractiveButtonMenu : MonoBehaviour
 
     private void OnEnable()
     {
-        ScoringManager.onAdQualify += ShowAdButtons;
-        ScoringManager.onAdDisqualify += ShowScreenshotButton;
+        ScoringManager.onGameOver += OnGameOver;
     }
 
     private void OnDisable()
     {
-        ScoringManager.onAdQualify -= ShowAdButtons;
-        ScoringManager.onAdDisqualify -= ShowScreenshotButton;
+        ScoringManager.onGameOver -= OnGameOver;
     }
 
     // Start is called before the first frame update
@@ -29,18 +27,33 @@ public class InteractiveButtonMenu : MonoBehaviour
         screenshotButton.gameObject.SetActive(false);
         watchAdButton.gameObject.SetActive(false);
         declineAdButton.gameObject.SetActive(false);
+    }
 
-        watchAdButton.onClick.AddListener(() => GameManager.Instance.ExtraLifeGiftedByAd()); //TODO Remove once ads 
+    private void OnGameOver(bool bedazzled, bool advertisement)
+    {
+        if (advertisement)
+        {
+            if (bedazzled)
+            {
+
+            }
+        }
+        else
+        {
+
+        }
     }
 
     private void ShowAdButtons(bool hotness)
     {
         watchAdButton.gameObject.SetActive(true); //ON
+        watchAdButton.onClick.AddListener(() => GameManager.Instance.ExtraLifeGiftedByAd()); //TODO Remove once ads 
         declineAdButton.gameObject.SetActive(true);  //ON
+        Debug.Log("Ad button activated");
         screenshotButton.gameObject.SetActive(false);
         if (hotness)
         {
-            //TODO bump up watchAdButton flare and mute declineAdButton
+            //TODO bump up watchAdButton flare and mute declineAdButton flashiness
         }
     }
 

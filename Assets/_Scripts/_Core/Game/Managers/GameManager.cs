@@ -17,6 +17,9 @@ namespace StarWriter.Core
         public delegate void OnPlayGameEvent();
         public static event OnPlayGameEvent onPlayGame;
 
+        public delegate void OnDeathEvent();
+        public static event OnDeathEvent onDeath;
+
         public delegate void OnExtendGameEvent();
         public static event OnExtendGameEvent onExtendPlayGame;
 
@@ -31,12 +34,12 @@ namespace StarWriter.Core
 
         private void OnEnable()
         {
-            FuelSystem.zeroFuel += GameOver;
+            FuelSystem.zeroFuel += Death;
         }
 
         private void OnDisable()
         {
-            FuelSystem.zeroFuel -= GameOver;
+            FuelSystem.zeroFuel -= Death;
         }
 
         void Start()
@@ -108,9 +111,10 @@ namespace StarWriter.Core
             SceneManager.LoadScene(2);
         }
 
-        private void GameOver()
+        private void Death()
         {
             PauseGame();
+            onDeath?.Invoke();
         }
 
         public void RestartGame()
