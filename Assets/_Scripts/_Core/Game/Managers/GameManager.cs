@@ -16,6 +16,9 @@ namespace StarWriter.Core
         public delegate void OnPlayGameEvent();
         public static event OnPlayGameEvent onPlayGame;
 
+        public delegate void OnExtendGameEvent();
+        public static event OnExtendGameEvent onExtendPlayGame;
+
         private readonly float phoneFlipThreshold = .3f;
 
         public delegate void OnPhoneFlipEvent(bool state);
@@ -125,6 +128,7 @@ namespace StarWriter.Core
         public void WaitOnPlayerLoading()
         {
             onPlayGame?.Invoke();
+            onExtendPlayGame?.Invoke();
         }
     }
 }
