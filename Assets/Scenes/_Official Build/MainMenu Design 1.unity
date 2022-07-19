@@ -807,7 +807,7 @@ PrefabInstance:
     - target: {fileID: 4286694852303775635, guid: ba70c0f3eb077d44b8a538982d02dadc,
         type: 3}
       propertyPath: m_Lens.m_SensorSize.x
-      value: 2.1111112
+      value: 2.0555556
       objectReference: {fileID: 0}
     - target: {fileID: 4853709195319085108, guid: ba70c0f3eb077d44b8a538982d02dadc,
         type: 3}
@@ -847,7 +847,7 @@ PrefabInstance:
     - target: {fileID: 4853709195735906030, guid: ba70c0f3eb077d44b8a538982d02dadc,
         type: 3}
       propertyPath: m_Lens.m_SensorSize.x
-      value: 2.1111112
+      value: 2.0555556
       objectReference: {fileID: 0}
     - target: {fileID: 4853709195735906031, guid: ba70c0f3eb077d44b8a538982d02dadc,
         type: 3}
@@ -887,7 +887,7 @@ PrefabInstance:
     - target: {fileID: 4853709196102757139, guid: ba70c0f3eb077d44b8a538982d02dadc,
         type: 3}
       propertyPath: m_Lens.m_SensorSize.x
-      value: 2.1111112
+      value: 2.0555556
       objectReference: {fileID: 0}
     - target: {fileID: 4853709196453371476, guid: ba70c0f3eb077d44b8a538982d02dadc,
         type: 3}
@@ -899,6 +899,11 @@ PrefabInstance:
       propertyPath: m_Name
       value: Cinemachine Vcams
       objectReference: {fileID: 0}
+    - target: {fileID: 4853709196820857186, guid: ba70c0f3eb077d44b8a538982d02dadc,
+        type: 3}
+      propertyPath: deathCamera
+      value: 
+      objectReference: {fileID: 1618157927}
     - target: {fileID: 4853709196820857186, guid: ba70c0f3eb077d44b8a538982d02dadc,
         type: 3}
       propertyPath: mainMenuCamera
@@ -999,6 +1004,18 @@ PrefabInstance:
 --- !u!114 &1564738381 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 4286694852303775635, guid: ba70c0f3eb077d44b8a538982d02dadc,
+    type: 3}
+  m_PrefabInstance: {fileID: 1564738380}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 45e653bab7fb20e499bda25e1b646fea, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &1618157927 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 2273807540259799843, guid: ba70c0f3eb077d44b8a538982d02dadc,
     type: 3}
   m_PrefabInstance: {fileID: 1564738380}
   m_PrefabAsset: {fileID: 0}
@@ -1733,7 +1750,7 @@ PrefabInstance:
     - target: {fileID: 3902679333267616913, guid: f044b6ad282929f4d9ca817c0e5a305a,
         type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 3902679333267616924, guid: f044b6ad282929f4d9ca817c0e5a305a,
         type: 3}

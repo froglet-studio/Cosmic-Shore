@@ -2260,7 +2260,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &1883862629
 RectTransform:
   m_ObjectHideFlags: 0
@@ -2716,6 +2716,21 @@ PrefabInstance:
       propertyPath: m_Name
       value: CosmicSnow
       objectReference: {fileID: 0}
+    - target: {fileID: 639495419069806267, guid: 41222ebb42ad82c4ca52a729935c79d3,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 639495420572631481, guid: 41222ebb42ad82c4ca52a729935c79d3,
+        type: 3}
+      propertyPath: m_Materials.Array.data[0]
+      value: 
+      objectReference: {fileID: 2100000, guid: a85b4f733b8341246a2e6029f3702e3e, type: 2}
+    - target: {fileID: 639495420572631487, guid: 41222ebb42ad82c4ca52a729935c79d3,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 41222ebb42ad82c4ca52a729935c79d3, type: 3}
 --- !u!33 &2342156431054938703
@@ -2950,6 +2965,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Name
       value: BigCage
+      objectReference: {fileID: 0}
+    - target: {fileID: 6441042370167047517, guid: d813bdb2818918e4781bc88b1e96449b,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: d813bdb2818918e4781bc88b1e96449b, type: 3}

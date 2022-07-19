@@ -13,7 +13,10 @@ public class CameraManager : SingletonPersistent<CameraManager>
     
     [SerializeField]
     private CinemachineVirtualCameraBase farCamera;
-    
+
+    [SerializeField]
+    private CinemachineVirtualCameraBase deathCamera;
+
     [SerializeField]
     private CinemachineVirtualCameraBase endCamera;
     
