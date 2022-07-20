@@ -553,6 +553,11 @@ PrefabInstance:
       propertyPath: m_PreserveAspect
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 2108963416604358258, guid: 087d2222a78ded24894cb53861ff6be4,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 2276387648143521476, guid: 087d2222a78ded24894cb53861ff6be4,
         type: 3}
       propertyPath: m_AnchorMax.y
@@ -1050,6 +1055,8 @@ MonoBehaviour:
   screenshotButton: {fileID: 5400416775957884428}
   watchAdButton: {fileID: 7783076548524053672}
   declineAdButton: {fileID: 8323408280195779264}
+  bedazzledWatchAdButton: {fileID: 0}
+  dullDeclineAdButton: {fileID: 0}
 --- !u!1 &3871940114429955852 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 3871940115877563371, guid: 087d2222a78ded24894cb53861ff6be4,
