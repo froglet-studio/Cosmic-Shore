@@ -19,7 +19,7 @@ public class ScoringManager : MonoBehaviour
 
     public TextMeshProUGUI scoreText;
 
-    public delegate void OnGameOverEvent(bool bedazzled, bool advertisement);
+    public delegate void OnGameOverEvent( bool bedazzled, bool advertisement);
     public static event OnGameOverEvent onGameOver;
 
     private void OnEnable()

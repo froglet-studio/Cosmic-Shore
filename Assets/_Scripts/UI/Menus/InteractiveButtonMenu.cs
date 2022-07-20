@@ -10,58 +10,46 @@ public class InteractiveButtonMenu : MonoBehaviour
     public Button screenshotButton;
     public Button watchAdButton;
     public Button declineAdButton;
+    public Button bedazzledWatchAdButton;
+    public Button dullDeclineAdButton;
 
     private void OnEnable()
     {
+        GameManager.onPlayGame += ResetButtons;
         ScoringManager.onGameOver += OnGameOver;
     }
 
     private void OnDisable()
     {
+        GameManager.onPlayGame -= ResetButtons;
         ScoringManager.onGameOver -= OnGameOver;
     }
 
-    // Start is called before the first frame update
-    void Start()
+    public void ResetButtons()
     {
         screenshotButton.gameObject.SetActive(false);
         watchAdButton.gameObject.SetActive(false);
         declineAdButton.gameObject.SetActive(false);
+        bedazzledWatchAdButton.gameObject.SetActive(false);
+        dullDeclineAdButton.gameObject.SetActive(false);
     }
 
     private void OnGameOver(bool bedazzled, bool advertisement)
     {
-        if (advertisement)
+        if (advertisement && !bedazzled)
         {
-            if (bedazzled)
-            {
-
-            }
+            watchAdButton.gameObject.SetActive(true);
+            declineAdButton.gameObject.SetActive(true);
+            
+        }else if (advertisement && bedazzled)
+        {
+            bedazzledWatchAdButton.gameObject.SetActive(true);
+            dullDeclineAdButton.gameObject.SetActive(true);
         }
         else
         {
-
+            screenshotButton.gameObject.SetActive(true);
         }
-    }
-
-    private void ShowAdButtons(bool hotness)
-    {
-        watchAdButton.gameObject.SetActive(true); //ON
-        watchAdButton.onClick.AddListener(() => GameManager.Instance.ExtraLifeGiftedByAd()); //TODO Remove once ads 
-        declineAdButton.gameObject.SetActive(true);  //ON
-        Debug.Log("Ad button activated");
-        screenshotButton.gameObject.SetActive(false);
-        if (hotness)
-        {
-            //TODO bump up watchAdButton flare and mute declineAdButton flashiness
-        }
-    }
-
-    private void ShowScreenshotButton()
-    {
-        screenshotButton.gameObject.SetActive(true); //ON
-        watchAdButton.gameObject.SetActive(false);
-        declineAdButton.gameObject.SetActive(false);
     }
 
 }
