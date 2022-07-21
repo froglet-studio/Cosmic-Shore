@@ -53,16 +53,21 @@ public class InteractiveButtonMenu : MonoBehaviour
         if (advertisement && !bedazzled)
         {
             watchAdButton.gameObject.SetActive(true);
+            watchAdButton.onClick.AddListener(() => OnClickWatchAdButton());
             declineAdButton.gameObject.SetActive(true);
+            declineAdButton.onClick.AddListener(() => OnClickDeclineAdButton());
             
         }else if (advertisement && bedazzled)
         {
             bedazzledWatchAdButton.gameObject.SetActive(true);
+            watchAdButton.onClick.AddListener(() => OnClickWatchAdButton());
             dullDeclineAdButton.gameObject.SetActive(true);
+            declineAdButton.onClick.AddListener(() => OnClickDeclineAdButton());
         }
         else
         {
             screenshotButton.gameObject.SetActive(true);
+            screenshotButton.onClick.AddListener(() => gameObject.GetComponent<SnsShare>().Share());
         }
     }
 
