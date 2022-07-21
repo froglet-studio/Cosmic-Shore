@@ -78,10 +78,10 @@ public class GameMenu : MonoBehaviour
 
     private void ResetPanels()
     {
-        fuelMeterPanel.SetActive(false);
+        fuelMeterPanel.SetActive(true);
         finalScorePanel.SetActive(false);
         adsPanel.SetActive(false);
-        pauseButton.SetActive(false);
+        pauseButton.SetActive(true);
         pauseMenuPanel.SetActive(false);
     }
 }
