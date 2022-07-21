@@ -113,7 +113,7 @@ namespace StarWriter.Core
 
         private void Death()
         {
-            PauseGame();
+            //PauseGame();
             onDeath?.Invoke();
         }
 
