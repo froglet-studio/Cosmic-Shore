@@ -38,18 +38,21 @@ namespace StarWriter.Core
 
         private void OnGameOver(bool bedazzled, bool advertisement)
         {
-            currentScore = PlayerPrefs.GetInt("Score");
-            highScore = PlayerPrefs.GetInt("High Score");
-            if (bedazzled && !advertisement)
+            if (!advertisement)
             {
-                BedazzledHighScoreImage.gameObject.SetActive(true);
-            }
-            else
-            {
-                BedazzledHighScoreImage.gameObject.SetActive(false);
-            }
-            DisplayCurrentScoreWithSprites();
-            DisplayHighScoreWithSprites();
+                currentScore = PlayerPrefs.GetInt("Score");
+                highScore = PlayerPrefs.GetInt("High Score");
+                if (bedazzled && !advertisement)
+                {
+                    BedazzledHighScoreImage.gameObject.SetActive(true);
+                }
+                else
+                {
+                    BedazzledHighScoreImage.gameObject.SetActive(false);
+                }
+                DisplayCurrentScoreWithSprites();
+                DisplayHighScoreWithSprites();
+            }       
         }
 
         public void DisplayCurrentScoreWithSprites()
