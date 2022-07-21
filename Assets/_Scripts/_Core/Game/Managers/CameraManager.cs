@@ -39,7 +39,8 @@ public class CameraManager : SingletonPersistent<CameraManager>
         GameManager.onPlayGame += OnPlayGame;
         GameManager.onPhoneFlip += OnPhoneFlip;
         GameManager.onDeath += OnDeath;
-}
+        ScoringManager.onGameOver += OnGameOver;
+    }
 
     private void OnDisable()
     {
@@ -47,6 +48,7 @@ public class CameraManager : SingletonPersistent<CameraManager>
         GameManager.onPlayGame -= OnPlayGame;
         GameManager.onPhoneFlip -= OnPhoneFlip;
         GameManager.onDeath -= OnDeath;
+        ScoringManager.onGameOver -= OnGameOver;
     }
 
     void Start()
@@ -76,6 +78,14 @@ public class CameraManager : SingletonPersistent<CameraManager>
         SetDeathCameraActive();   
     }
 
+    private void OnGameOver(bool bedazzled, bool advertisement)
+    {
+        if (!advertisement)
+        {
+            SetEndCameraActive();
+        }
+    }
+
     private void ZoomEndCameraToScores()
     {
         FuelSystem.zeroFuel -= ZoomEndCameraToScores;
@@ -100,6 +110,10 @@ public class CameraManager : SingletonPersistent<CameraManager>
     private void SetDeathCameraActive()
     {
         SetActiveCamera(deathCamera);
+    }
+    private void SetEndCameraActive()
+    {
+        SetActiveCamera(endCamera);
     }
 
     private void SetActiveCamera(CinemachineVirtualCameraBase activeCamera)

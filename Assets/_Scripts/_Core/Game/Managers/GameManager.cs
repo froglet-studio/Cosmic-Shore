@@ -1,8 +1,6 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using TailGlider.Utility.Singleton;
-using StarWriter.Core.Audio;
-using System;
 
 namespace StarWriter.Core
 {

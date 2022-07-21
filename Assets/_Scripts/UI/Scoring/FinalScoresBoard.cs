@@ -1,9 +1,7 @@
 using UnityEngine;
-using TMPro;
-using UnityEngine.SceneManagement;
 using System.Collections.Generic;
 using UnityEngine.UI;
-using System;
+
 
 /// <summary>
 /// Controls the final and high currentScore display panel
@@ -26,9 +24,7 @@ namespace StarWriter.Core
         public Image highScoreTensPlace;
         public Image hignScoreOnesPlace;
 
-        public GameObject replayButton;
-
-        GameManager gameManager;
+        public Image BedazzledHighScoreImage;
 
         private void OnEnable()
         {
@@ -42,15 +38,18 @@ namespace StarWriter.Core
 
         private void OnGameOver(bool bedazzled, bool advertisement)
         {
-            gameManager = GameManager.Instance;
-
             currentScore = PlayerPrefs.GetInt("Score");
             highScore = PlayerPrefs.GetInt("High Score");
-
+            if (bedazzled && !advertisement)
+            {
+                BedazzledHighScoreImage.gameObject.SetActive(true);
+            }
+            else
+            {
+                BedazzledHighScoreImage.gameObject.SetActive(false);
+            }
             DisplayCurrentScoreWithSprites();
             DisplayHighScoreWithSprites();
-
-            replayButton.SetActive(true);
         }
 
         public void DisplayCurrentScoreWithSprites()
@@ -73,11 +72,6 @@ namespace StarWriter.Core
             highScoreHundredsPlace.sprite = NumIcons[hundreds];
             highScoreTensPlace.sprite = NumIcons[tens];
             hignScoreOnesPlace.sprite = NumIcons[ones];
-        }
-
-        public void OnClickReplayGameButtonPressed()
-        {
-            gameManager.RestartGame();
         }
     }
 }

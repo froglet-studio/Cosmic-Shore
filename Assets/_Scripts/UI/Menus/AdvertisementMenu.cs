@@ -2,13 +2,13 @@ using UnityEngine;
 using UnityEngine.UI;
 using StarWriter.Core;
 
-public class InteractiveButtonMenu : MonoBehaviour
+public class AdvertisementMenu : MonoBehaviour
 {
-    public Button screenshotButton;
+    
     public Button watchAdButton;
     public Button declineAdButton;
     public Button bedazzledWatchAdButton;
-    public Button bedazzledScreenshotButton;
+    
 
     private void OnEnable()
     {
@@ -24,7 +24,6 @@ public class InteractiveButtonMenu : MonoBehaviour
 
     public void ResetButtons()
     {
-        screenshotButton.gameObject.SetActive(false);
         watchAdButton.gameObject.SetActive(false);
         declineAdButton.gameObject.SetActive(false);
         bedazzledWatchAdButton.gameObject.SetActive(false);
@@ -34,8 +33,8 @@ public class InteractiveButtonMenu : MonoBehaviour
     {
         //TODO call Ad to watch
         Debug.Log("Ad requested");
-        GameManager.Instance.ExtendGame();
         ResetButtons();
+        GameManager.Instance.ExtendGame(); 
     }
 
     public void OnClickDeclineAdButton()
@@ -60,17 +59,6 @@ public class InteractiveButtonMenu : MonoBehaviour
             watchAdButton.onClick.AddListener(() => OnClickWatchAdButton());
             declineAdButton.onClick.AddListener(() => OnClickDeclineAdButton());
         }
-        else
-        {
-            if (bedazzled)
-            {
-                bedazzledScreenshotButton.gameObject.SetActive(true);
-            }
-            else
-            {
-                screenshotButton.gameObject.SetActive(true);
-            }
-            screenshotButton.onClick.AddListener(() => gameObject.GetComponent<SnsShare>().Share());
-        }
+        
     }
 }

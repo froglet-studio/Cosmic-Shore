@@ -1,8 +1,5 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
-using System;
 using StarWriter.Core;
 
 public class ScoringManager : MonoBehaviour
