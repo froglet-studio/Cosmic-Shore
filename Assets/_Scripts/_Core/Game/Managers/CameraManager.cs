@@ -2,7 +2,6 @@ using UnityEngine;
 using Cinemachine;
 using StarWriter.Core;
 using TailGlider.Utility.Singleton;
-using System;
 
 public class CameraManager : SingletonPersistent<CameraManager>
 {

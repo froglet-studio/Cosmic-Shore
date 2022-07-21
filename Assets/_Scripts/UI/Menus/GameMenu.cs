@@ -1,7 +1,5 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.SceneManagement;
+using StarWriter.Core;
 
 public class GameMenu : MonoBehaviour
 {
@@ -13,15 +11,21 @@ public class GameMenu : MonoBehaviour
     GameObject finalScorePanel;
     [SerializeField]
     GameObject pauseButton;
+    [SerializeField]
+    GameObject adsPanel;
 
     private void OnEnable()
     {
-        FuelSystem.zeroFuel += GameOver;
+        ScoringManager.onGameOver += OnGameOver;
+        GameManager.onPlayGame += ResetPanels;
+        GameManager.onDeath += OnDeath;
     }
 
     private void OnDisable()
     {
-        FuelSystem.zeroFuel -= GameOver;
+        ScoringManager.onGameOver -= OnGameOver;
+        GameManager.onPlayGame -= ResetPanels;
+        GameManager.onDeath -= OnDeath;
     }
 
     /// <summary>
@@ -31,6 +35,7 @@ public class GameMenu : MonoBehaviour
     {
         fuelMeterPanel.SetActive(false);
         finalScorePanel.SetActive(false);
+        adsPanel.SetActive(false);
         pauseButton.SetActive(false);
         pauseMenuPanel.SetActive(true);
         PauseSystem.TogglePauseGame();
@@ -42,6 +47,7 @@ public class GameMenu : MonoBehaviour
     {
         fuelMeterPanel.SetActive(true);
         finalScorePanel.SetActive(false);
+        adsPanel.SetActive(false);
         pauseButton.SetActive(true);
         pauseMenuPanel.SetActive(false);
         //WARNING INFO: PauseSystem is called on the GameManager and not here
@@ -53,14 +59,29 @@ public class GameMenu : MonoBehaviour
     {
         fuelMeterPanel.SetActive(false);
         finalScorePanel.SetActive(true);
+        adsPanel.SetActive(false);
         pauseButton.SetActive(false);
         pauseMenuPanel.SetActive(false);
     }
+    private void OnDeath()
+    {
+        adsPanel.SetActive(true);
+    }
+
     /// <summary>
     /// Called on Game Over Event
     /// </summary>
-    private void GameOver()
+    private void OnGameOver(bool bedazzled, bool advertisement)
     {
         DisplayFinalScorePanel();
+    }
+
+    private void ResetPanels()
+    {
+        fuelMeterPanel.SetActive(false);
+        finalScorePanel.SetActive(false);
+        adsPanel.SetActive(false);
+        pauseButton.SetActive(false);
+        pauseMenuPanel.SetActive(false);
     }
 }
