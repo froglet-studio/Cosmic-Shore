@@ -37,7 +37,7 @@ public class InteractiveButtonMenu : MonoBehaviour
     public void OnClickWatchAdButton()  // called by all ad buttons
     {
         //TODO call Ad to watch
-        
+        Debug.Log("Ad requested");
         GameManager.Instance.ExtendGame();
         ResetButtons();
     }
