@@ -337,7 +337,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 353, y: -125}
+  m_AnchoredPosition: {x: 353, y: 18}
   m_SizeDelta: {x: 160, y: 30}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &7309023229257008097
@@ -1017,7 +1017,7 @@ PrefabInstance:
     - target: {fileID: 470197928181440106, guid: 087d2222a78ded24894cb53861ff6be4,
         type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: -125
+      value: 42
       objectReference: {fileID: 0}
     - target: {fileID: 588738140663853821, guid: 087d2222a78ded24894cb53861ff6be4,
         type: 3}
@@ -1571,8 +1571,8 @@ MonoBehaviour:
   screenshotButton: {fileID: 5400416775957884428}
   watchAdButton: {fileID: 7783076548524053672}
   declineAdButton: {fileID: 8323408280195779264}
-  bedazzledWatchAdButton: {fileID: 0}
-  dullDeclineAdButton: {fileID: 0}
+  bedazzledWatchAdButton: {fileID: 3748619802222924804}
+  dullDeclineAdButton: {fileID: 1302199006788903152}
 --- !u!1 &3871940114429955852 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 3871940115877563371, guid: 087d2222a78ded24894cb53861ff6be4,

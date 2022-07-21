@@ -63,8 +63,8 @@ public class ScoringManager : MonoBehaviour
         }
         else
         {
-            bedazzled = false;
-            onGameOver?.Invoke(bedazzled, advertisements); //send (false, false)
+            bedazzled = ((PlayerPrefs.GetInt("High Score")) <= score);
+            onGameOver?.Invoke(bedazzled, advertisements); //send (true || false, false)
         }
         UpdatePlayerPrefScores();
     }

@@ -3,6 +3,7 @@ using TMPro;
 using UnityEngine.SceneManagement;
 using System.Collections.Generic;
 using UnityEngine.UI;
+using System;
 
 /// <summary>
 /// Controls the final and high currentScore display panel
@@ -28,8 +29,18 @@ namespace StarWriter.Core
         public GameObject replayButton;
 
         GameManager gameManager;
-        
-        void Start()
+
+        private void OnEnable()
+        {
+            ScoringManager.onGameOver += OnGameOver;
+        }
+
+        private void OnDisable()
+        {
+            ScoringManager.onGameOver -= OnGameOver;
+        }
+
+        private void OnGameOver(bool bedazzled, bool advertisement)
         {
             gameManager = GameManager.Instance;
 

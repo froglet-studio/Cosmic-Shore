@@ -1,9 +1,6 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using StarWriter.Core;
-using System;
 
 public class InteractiveButtonMenu : MonoBehaviour
 {
@@ -11,7 +8,7 @@ public class InteractiveButtonMenu : MonoBehaviour
     public Button watchAdButton;
     public Button declineAdButton;
     public Button bedazzledWatchAdButton;
-    public Button dullDeclineAdButton;
+    public Button bedazzledScreenshotButton;
 
     private void OnEnable()
     {
@@ -31,7 +28,6 @@ public class InteractiveButtonMenu : MonoBehaviour
         watchAdButton.gameObject.SetActive(false);
         declineAdButton.gameObject.SetActive(false);
         bedazzledWatchAdButton.gameObject.SetActive(false);
-        dullDeclineAdButton.gameObject.SetActive(false);
     }
 
     public void OnClickWatchAdButton()  // called by all ad buttons
@@ -50,25 +46,31 @@ public class InteractiveButtonMenu : MonoBehaviour
 
     private void OnGameOver(bool bedazzled, bool advertisement)
     {
-        if (advertisement && !bedazzled)
+        if (advertisement)
         {
-            watchAdButton.gameObject.SetActive(true);
-            watchAdButton.onClick.AddListener(() => OnClickWatchAdButton());
+            if (bedazzled)
+            {
+                bedazzledWatchAdButton.gameObject.SetActive(true);
+            }
+            else
+            {
+                watchAdButton.gameObject.SetActive(true);
+            }
             declineAdButton.gameObject.SetActive(true);
-            declineAdButton.onClick.AddListener(() => OnClickDeclineAdButton());
-            
-        }else if (advertisement && bedazzled)
-        {
-            bedazzledWatchAdButton.gameObject.SetActive(true);
             watchAdButton.onClick.AddListener(() => OnClickWatchAdButton());
-            dullDeclineAdButton.gameObject.SetActive(true);
             declineAdButton.onClick.AddListener(() => OnClickDeclineAdButton());
         }
         else
         {
-            screenshotButton.gameObject.SetActive(true);
+            if (bedazzled)
+            {
+                bedazzledScreenshotButton.gameObject.SetActive(true);
+            }
+            else
+            {
+                screenshotButton.gameObject.SetActive(true);
+            }
             screenshotButton.onClick.AddListener(() => gameObject.GetComponent<SnsShare>().Share());
         }
     }
-
 }
