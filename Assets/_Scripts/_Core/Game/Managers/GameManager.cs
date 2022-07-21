@@ -21,7 +21,7 @@ namespace StarWriter.Core
         public static event OnDeathEvent onDeath;
 
         public delegate void OnExtendGameEvent();
-        public static event OnExtendGameEvent onExtendPlayGame;
+        public static event OnExtendGameEvent onExtendGamePlay;
 
         private readonly float phoneFlipThreshold = .3f;
 
@@ -117,6 +117,14 @@ namespace StarWriter.Core
             onDeath?.Invoke();
         }
 
+        public void ExtendGame()
+        {
+            UnPauseGame();
+            onExtendGamePlay?.Invoke();
+            //TODO unpause game and make sure player is in safe area
+            //TODO  Garrett game scene stuff
+        }
+
         public void RestartGame()
         {
             UnPauseGame();
@@ -124,11 +132,6 @@ namespace StarWriter.Core
             SceneManager.LoadScene(2);
         }
 
-        public void ExtraLifeGiftedByAd() // called after watching the Ad
-        {
-            UnPauseGame();
-            onExtendPlayGame?.Invoke();
-        }
 
         public void ReturnToLobby()
         {

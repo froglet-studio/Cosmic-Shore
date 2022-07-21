@@ -15,25 +15,30 @@ public class ScoringManager : MonoBehaviour
     private int extendedLifeHighScore;
     [SerializeField]
     private float extralifeModifier = 0.8f;
+    [SerializeField]
     bool bedazzled; //wether or not the watchAdButton is amped up
+    [SerializeField]
+    private bool firstLife = true;
 
     public TextMeshProUGUI scoreText;
 
-    public delegate void OnGameOverEvent( bool bedazzled, bool advertisement);
+    public bool FirstLife { get => firstLife; set => firstLife = value; }
+
+    public delegate void OnGameOverEvent(bool bedazzled, bool advertisement);
     public static event OnGameOverEvent onGameOver;
 
     private void OnEnable()
     {
         GameManager.onDeath += OnDeath;
+        GameManager.onExtendGamePlay += ExtendGamePlay;
         MutonPopUp.AddToScore += AddMutonBous;
-        GameManager.onExtendPlayGame += ExtendGamePlay;
     }
 
     private void OnDisable()
     {
         GameManager.onDeath -= OnDeath;
         MutonPopUp.AddToScore -= AddMutonBous;
-        GameManager.onExtendPlayGame -= ExtendGamePlay;
+        GameManager.onExtendGamePlay -= ExtendGamePlay;
     }
 
     public void UpdateScoreBoard(int value)
@@ -50,44 +55,18 @@ public class ScoringManager : MonoBehaviour
 
     private void OnDeath()
     {
-
-        if (PlayerPrefs.GetInt(GameSetting.PlayerPrefKeys.adsEnabled.ToString()) == 1)
-        {
-            bedazzled = ((PlayerPrefs.GetInt("Single Life High Score") * extralifeModifier) <= score);
-            
-        }
-        if (PlayerPrefs.GetInt("Single Life High Score") < score)
-        {
-            PlayerPrefs.SetInt("Single LifeHigh Score", score);
-        }
-
-        UpdatePlayerPrefScores();
-        QualifyForExtendedLifeAd();
-    }
-
-    public void QualifyForExtendedLifeAd()
-    {
         bool advertisements = (PlayerPrefs.GetInt(GameSetting.PlayerPrefKeys.adsEnabled.ToString()) == 1);
-        if ((extralifeModifier * (float)PlayerPrefs.GetInt("Single Life High Score") <= (float)extendedLifeScore) && 
-                (PlayerPrefs.GetInt(GameSetting.PlayerPrefKeys.adsEnabled.ToString()) == 1))
+        if (advertisements)
         {
-            bedazzled = true;
-            advertisements = true;
-            onGameOver?.Invoke(bedazzled, advertisements);
-        }
-        else if (PlayerPrefs.GetInt(GameSetting.PlayerPrefKeys.adsEnabled.ToString()) == 1)
-        {
-            bedazzled = false;
-            advertisements = true;
-            onGameOver?.Invoke(bedazzled, advertisements);
+            bedazzled = ((PlayerPrefs.GetInt("Single Life High Score") * extralifeModifier) <= score);  //Sets beddazed value
+            onGameOver?.Invoke(bedazzled, advertisements); //send (true, true || false)
         }
         else
         {
             bedazzled = false;
-            advertisements = false;
-            onGameOver?.Invoke(bedazzled, advertisements);
+            onGameOver?.Invoke(bedazzled, advertisements); //send (false, false)
         }
-
+        UpdatePlayerPrefScores();
     }
 
     public void UpdatePlayerPrefScores()
@@ -99,37 +78,20 @@ public class ScoringManager : MonoBehaviour
         {
             PlayerPrefs.SetInt("High Score", score);
         }
+        if (firstLife)
+        {
+            if (PlayerPrefs.GetInt("Single Life High Score") < score)
+            {
+                PlayerPrefs.SetInt("Single LifeHigh Score", score);
+            }
+        }
         PlayerPrefs.Save();
     }
 
     private void ExtendGamePlay()
     {
-        score = PlayerPrefs.GetInt("Score");
+        firstLife = false;
         PlayerPrefs.SetInt(GameSetting.PlayerPrefKeys.adsEnabled.ToString(), 0);  // set false 
+        PlayerPrefs.Save();
     }
-
-    //private void ExtendedLifeGameOver()
-    //{
-    //    extendedLifeScore = score;
-    //    if (PlayerPrefs.GetInt("Extended High Score") < extendedLifeScore)
-    //    {
-    //        PlayerPrefs.SetInt("Extended High Score", extendedLifeScore);
-    //    }
-
-//    PlayerPrefs.SetInt("Score", score);
-       
-//        //Compares Score to High Score and saves the highest value
-//        if (PlayerPrefs.GetInt("High Score") < score)
-//        {
-//            PlayerPrefs.SetInt("High Score", score);
-//            if (PlayerPrefs.GetInt("Single Life High Score") < score)
-//            {
-//                PlayerPrefs.SetInt("Single LifeHigh Score", score);
-//            }
-//        }
-//        PlayerPrefs.Save();
-
-
-//QualifyForExtendedLifeAd();
-    //} 
 }

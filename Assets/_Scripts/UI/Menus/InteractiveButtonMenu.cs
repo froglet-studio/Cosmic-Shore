@@ -34,6 +34,20 @@ public class InteractiveButtonMenu : MonoBehaviour
         dullDeclineAdButton.gameObject.SetActive(false);
     }
 
+    public void OnClickWatchAdButton()  // called by all ad buttons
+    {
+        //TODO call Ad to watch
+        
+        GameManager.Instance.ExtendGame();
+        ResetButtons();
+    }
+
+    public void OnClickDeclineAdButton()
+    {
+        ResetButtons();
+        GameManager.Instance.ReturnToLobby();
+    }
+
     private void OnGameOver(bool bedazzled, bool advertisement)
     {
         if (advertisement && !bedazzled)
