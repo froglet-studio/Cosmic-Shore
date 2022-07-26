@@ -11,7 +11,6 @@ public class AdvertisementMenu : MonoBehaviour
     public delegate void OnDeclineAdEvent();
     public static event OnDeclineAdEvent onDeclineAd;
 
-
     private void OnEnable()
     {
         GameManager.onPlayGame += ResetButtons;
@@ -36,11 +35,8 @@ public class AdvertisementMenu : MonoBehaviour
         bedazzledWatchAdButton.gameObject.SetActive(true);
     }
 
-    public void OnClickWatchAdButton()  // called by all ad buttons
+    public void OnClickWatchAdButton()
     {
-        //TODO call Ad to watch
-        //bedazzledWatchAdButton.LoadAd();
-
         Debug.Log("Ad requested");
         ResetButtons();
         //GameManager.Instance.ExtendGame(); 
