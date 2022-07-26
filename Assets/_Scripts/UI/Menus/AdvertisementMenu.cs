@@ -4,11 +4,13 @@ using StarWriter.Core;
 
 public class AdvertisementMenu : MonoBehaviour
 {
-    
     public Button watchAdButton;
     public Button declineAdButton;
     public Button bedazzledWatchAdButton;
-    
+
+    public delegate void OnDeclineAdEvent();
+    public static event OnDeclineAdEvent onDeclineAd;
+
 
     private void OnEnable()
     {
@@ -22,11 +24,16 @@ public class AdvertisementMenu : MonoBehaviour
         ScoringManager.onGameOver -= OnGameOver;
     }
 
+    private void Awake()
+    {
+        ResetButtons();
+    }
+
     public void ResetButtons()
     {
         watchAdButton.gameObject.SetActive(false);
-        declineAdButton.gameObject.SetActive(false);
-        bedazzledWatchAdButton.gameObject.SetActive(false);
+        declineAdButton.gameObject.SetActive(true);
+        bedazzledWatchAdButton.gameObject.SetActive(true);
     }
 
     public void OnClickWatchAdButton()  // called by all ad buttons
@@ -40,7 +47,7 @@ public class AdvertisementMenu : MonoBehaviour
     public void OnClickDeclineAdButton()
     {
         ResetButtons();
-        GameManager.Instance.ReturnToLobby();
+        onDeclineAd?.Invoke();
     }
 
     private void OnGameOver(bool bedazzled, bool advertisement)
@@ -50,13 +57,14 @@ public class AdvertisementMenu : MonoBehaviour
             if (bedazzled)
             {
                 bedazzledWatchAdButton.gameObject.SetActive(true);
+                bedazzledWatchAdButton.onClick.AddListener(() => OnClickWatchAdButton());
             }
             else
             {
                 watchAdButton.gameObject.SetActive(true);
+                watchAdButton.onClick.AddListener(() => OnClickWatchAdButton());
             }
             declineAdButton.gameObject.SetActive(true);
-            watchAdButton.onClick.AddListener(() => OnClickWatchAdButton());
             declineAdButton.onClick.AddListener(() => OnClickDeclineAdButton());
         }
         

@@ -29,11 +29,13 @@ namespace StarWriter.Core
         private void OnEnable()
         {
             ScoringManager.onGameOver += OnGameOver;
+            AdvertisementMenu.onDeclineAd += OnDeclineAd;
         }
 
         private void OnDisable()
         {
             ScoringManager.onGameOver -= OnGameOver;
+            AdvertisementMenu.onDeclineAd -= OnDeclineAd;
         }
 
         private void OnGameOver(bool bedazzled, bool advertisement)
@@ -54,6 +56,24 @@ namespace StarWriter.Core
                 DisplayHighScoreWithSprites();
             }       
         }
+
+        private void OnDeclineAd()
+        {            
+            currentScore = PlayerPrefs.GetInt("Score");
+            highScore = PlayerPrefs.GetInt("High Score");
+            bool bedazzled = ((PlayerPrefs.GetInt("High Score")) <= currentScore);
+            if (bedazzled)
+            {
+                BedazzledHighScoreImage.gameObject.SetActive(true);
+            }
+            else
+            {
+                BedazzledHighScoreImage.gameObject.SetActive(false);
+            }
+            DisplayCurrentScoreWithSprites();
+            DisplayHighScoreWithSprites();
+        }
+
 
         public void DisplayCurrentScoreWithSprites()
         {
