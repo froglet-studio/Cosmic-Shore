@@ -4,7 +4,6 @@ using StarWriter.Core;
 
 public class AdvertisementMenu : MonoBehaviour
 {
-    
     public Button watchAdButton;
     public Button declineAdButton;
     public Button bedazzledWatchAdButton;
@@ -44,8 +43,7 @@ public class AdvertisementMenu : MonoBehaviour
 
     public void OnClickDeclineAdButton()
     {
-        ResetButtons();
-        GameManager.Instance.ReturnToLobby();
+        ResetButtons();      
     }
 
     private void OnGameOver(bool bedazzled, bool advertisement)

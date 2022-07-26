@@ -86,4 +86,10 @@ public class GameMenu : MonoBehaviour
         pauseButton.SetActive(true);
         pauseMenuPanel.SetActive(false);
     }
+
+    public void OnClickDeclineAdsButton()
+    {
+        adsPanel.gameObject.SetActive(false);
+        finalScorePanel.gameObject.SetActive(true);
+    }
 }
