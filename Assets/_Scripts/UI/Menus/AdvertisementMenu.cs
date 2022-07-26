@@ -4,9 +4,9 @@ using StarWriter.Core;
 
 public class AdvertisementMenu : MonoBehaviour
 {
-    public Button watchAdButton;
+    public RewardedAdsButton watchAdButton;
     public Button declineAdButton;
-    public Button bedazzledWatchAdButton;
+    public RewardedAdsButton bedazzledWatchAdButton;
 
     public delegate void OnDeclineAdEvent();
     public static event OnDeclineAdEvent onDeclineAd;
@@ -39,13 +39,16 @@ public class AdvertisementMenu : MonoBehaviour
     public void OnClickWatchAdButton()  // called by all ad buttons
     {
         //TODO call Ad to watch
+        //bedazzledWatchAdButton.LoadAd();
+
         Debug.Log("Ad requested");
         ResetButtons();
-        GameManager.Instance.ExtendGame(); 
+        //GameManager.Instance.ExtendGame(); 
     }
 
     public void OnClickDeclineAdButton()
     {
+        Debug.Log("Ad declined");
         ResetButtons();
         onDeclineAd?.Invoke();
     }
@@ -57,16 +60,14 @@ public class AdvertisementMenu : MonoBehaviour
             if (bedazzled)
             {
                 bedazzledWatchAdButton.gameObject.SetActive(true);
-                bedazzledWatchAdButton.onClick.AddListener(() => OnClickWatchAdButton());
+                bedazzledWatchAdButton.LoadAd();
             }
             else
             {
                 watchAdButton.gameObject.SetActive(true);
-                watchAdButton.onClick.AddListener(() => OnClickWatchAdButton());
+                watchAdButton.LoadAd();
             }
             declineAdButton.gameObject.SetActive(true);
-            declineAdButton.onClick.AddListener(() => OnClickDeclineAdButton());
         }
-        
     }
 }

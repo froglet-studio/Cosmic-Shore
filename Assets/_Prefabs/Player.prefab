@@ -169,9 +169,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 11afcf7805ab54846971d1a036a6673c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  watchAdButton: {fileID: 933979281573328157}
+  watchAdButton: {fileID: 0}
   declineAdButton: {fileID: 2441717304282962147}
-  bedazzledWatchAdButton: {fileID: 3687509986330891970}
+  bedazzledWatchAdButton: {fileID: 0}
 --- !u!1 &1125522467
 GameObject:
   m_ObjectHideFlags: 0
@@ -5269,7 +5269,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 8675113231480340444}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 942009124951326628}
+        m_TargetAssemblyTypeName: AdvertisementMenu, Assembly-CSharp
+        m_MethodName: OnClickDeclineAdButton
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!1 &1024097482132871290
 GameObject:
   m_ObjectHideFlags: 0
@@ -5590,7 +5602,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 7005738851014519074}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 942009124951326628}
+        m_TargetAssemblyTypeName: AdvertisementMenu, Assembly-CSharp
+        m_MethodName: OnClickWatchAdButton
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &2832345338597569461
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6364,7 +6388,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 0}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 942009124951326628}
+        m_TargetAssemblyTypeName: AdvertisementMenu, Assembly-CSharp
+        m_MethodName: OnClickWatchAdButton
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &6931953205736783580
 MonoBehaviour:
   m_ObjectHideFlags: 0

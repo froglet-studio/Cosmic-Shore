@@ -1345,6 +1345,16 @@ PrefabInstance:
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[1].m_Arguments.m_ObjectArgumentAssemblyTypeName
       value: UnityEngine.Object, UnityEngine
       objectReference: {fileID: 0}
+    - target: {fileID: 942009124951326628, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: watchAdButton
+      value: 
+      objectReference: {fileID: 1586480804}
+    - target: {fileID: 942009124951326628, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: bedazzledWatchAdButton
+      value: 
+      objectReference: {fileID: 1927965398}
     - target: {fileID: 2441717304282962147, guid: c8544725eea141847982b286866c858d,
         type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.size
@@ -1671,6 +1681,22 @@ MonoBehaviour:
   screenshotButton: {fileID: 1586480807}
   bedazzledScreenshotButton: {fileID: 1586480808}
   replayButton: {fileID: 1586480806}
+--- !u!114 &1586480811
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1586480809}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e5f9a97d04dc8294b93322a07b17cf2c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _androidGameId: 4798602
+  _iOSGameId: 4798603
+  _testMode: 1
+  _rewardedAdsButton: {fileID: 1927965398}
 --- !u!1 &1829578212
 GameObject:
   m_ObjectHideFlags: 0
@@ -1862,6 +1888,18 @@ Transform:
     type: 3}
   m_PrefabInstance: {fileID: 8350600879856906978}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &1927965398 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 2832345338597569461, guid: c8544725eea141847982b286866c858d,
+    type: 3}
+  m_PrefabInstance: {fileID: 1586480801}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2dcb61028a6b9924da6b6ab127d87fcd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &1984583055
 GameObject:
   m_ObjectHideFlags: 0
