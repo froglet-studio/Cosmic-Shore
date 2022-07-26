@@ -21,9 +21,6 @@ public class ScoringManager : MonoBehaviour
 
     public bool FirstLife { get => firstLife; set => firstLife = value; }
 
-    public delegate void OnGameOverPreEvent();
-    public static event OnGameOverPreEvent onGameOverPre;
-
     public delegate void OnGameOverEvent(bool bedazzled, bool advertisement);
     public static event OnGameOverEvent onGameOver;
 
@@ -59,13 +56,11 @@ public class ScoringManager : MonoBehaviour
         if (advertisements)
         {
             bedazzled = ((PlayerPrefs.GetInt("Single Life High Score") * extralifeModifier) <= score);  //Sets beddazed value
-            onGameOverPre?.Invoke();
             onGameOver?.Invoke(bedazzled, advertisements); //send (true, true || false)
         }
         else
         {
             bedazzled = ((PlayerPrefs.GetInt("High Score")) <= score);
-            onGameOverPre?.Invoke();
             onGameOver?.Invoke(bedazzled, advertisements); //send (true || false, false)
         }
         UpdatePlayerPrefScores();

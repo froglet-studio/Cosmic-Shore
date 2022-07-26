@@ -17,7 +17,6 @@ public class GameMenu : MonoBehaviour
 
     private void OnEnable()
     {
-        ScoringManager.onGameOverPre += OnGameOverPre;
         ScoringManager.onGameOver += OnGameOver;
         GameManager.onPlayGame += ResetPanels;
         GameManager.onDeath += OnDeath;
@@ -25,7 +24,6 @@ public class GameMenu : MonoBehaviour
 
     private void OnDisable()
     {
-        ScoringManager.onGameOverPre -= OnGameOverPre;
         ScoringManager.onGameOver -= OnGameOver;
         GameManager.onPlayGame -= ResetPanels;
         GameManager.onDeath -= OnDeath;
@@ -71,12 +69,6 @@ public class GameMenu : MonoBehaviour
     {
         adsPanel.SetActive(true);
     }
-
-    private void OnGameOverPre()
-    {
-        throw new NotImplementedException();
-    }
-
 
     /// <summary>
     /// Called on Game Over Event

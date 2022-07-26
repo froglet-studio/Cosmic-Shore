@@ -5464,6 +5464,7 @@ GameObject:
   - component: {fileID: 8522726651798595812}
   - component: {fileID: 7005738851014519074}
   - component: {fileID: 3687509986330891970}
+  - component: {fileID: 2832345338597569461}
   m_Layer: 5
   m_Name: Bedazzled Ad Button
   m_TagString: Untagged
@@ -5575,6 +5576,21 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &2832345338597569461
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3315399846409053035}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2dcb61028a6b9924da6b6ab127d87fcd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _showAdButton: {fileID: 3687509986330891970}
+  _androidAdUnitId: Rewarded_Android
+  _iOSAdUnitId: Rewarded_iOS
 --- !u!1 &3635781536112758238
 GameObject:
   m_ObjectHideFlags: 0
@@ -6617,6 +6633,7 @@ GameObject:
   - component: {fileID: 6455445702226296520}
   - component: {fileID: 3038685399397855077}
   - component: {fileID: 933979281573328157}
+  - component: {fileID: 6931953205736783580}
   m_Layer: 5
   m_Name: Watch Ad Button
   m_TagString: Untagged
@@ -6727,6 +6744,21 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &6931953205736783580
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8419792640865108505}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2dcb61028a6b9924da6b6ab127d87fcd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _showAdButton: {fileID: 933979281573328157}
+  _androidAdUnitId: Rewarded_Android
+  _iOSAdUnitId: Rewarded_iOS
 --- !u!1 &8434751123167899896
 GameObject:
   m_ObjectHideFlags: 0
