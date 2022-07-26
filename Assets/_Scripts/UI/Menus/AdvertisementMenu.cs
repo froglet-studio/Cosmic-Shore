@@ -7,7 +7,10 @@ public class AdvertisementMenu : MonoBehaviour
     public Button watchAdButton;
     public Button declineAdButton;
     public Button bedazzledWatchAdButton;
-    
+
+    public delegate void OnDeclineAdEvent();
+    public static event OnDeclineAdEvent onDeclineAd;
+
 
     private void OnEnable()
     {
@@ -43,7 +46,8 @@ public class AdvertisementMenu : MonoBehaviour
 
     public void OnClickDeclineAdButton()
     {
-        ResetButtons();      
+        ResetButtons();
+        onDeclineAd?.Invoke();
     }
 
     private void OnGameOver(bool bedazzled, bool advertisement)

@@ -90,6 +90,6 @@ public class GameMenu : MonoBehaviour
     public void OnClickDeclineAdsButton()
     {
         adsPanel.gameObject.SetActive(false);
-        finalScorePanel.gameObject.SetActive(true);
+        
     }
 }
