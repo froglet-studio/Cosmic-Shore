@@ -55,13 +55,14 @@ public class AdvertisementMenu : MonoBehaviour
             if (bedazzled)
             {
                 bedazzledWatchAdButton.gameObject.SetActive(true);
+                bedazzledWatchAdButton.onClick.AddListener(() => OnClickWatchAdButton());
             }
             else
             {
                 watchAdButton.gameObject.SetActive(true);
+                watchAdButton.onClick.AddListener(() => OnClickWatchAdButton());
             }
             declineAdButton.gameObject.SetActive(true);
-            watchAdButton.onClick.AddListener(() => OnClickWatchAdButton());
             declineAdButton.onClick.AddListener(() => OnClickDeclineAdButton());
         }
         
