@@ -37,6 +37,11 @@ public class FinalPanelMenu : MonoBehaviour
         }
     }
 
+    public void OnClickReplayButton()
+    {
+        GameManager.Instance.RestartGame();
+    }
+
     public void ResetButtons()
     {
         screenshotButton.gameObject.SetActive(false);
