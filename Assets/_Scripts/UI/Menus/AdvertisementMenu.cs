@@ -22,11 +22,16 @@ public class AdvertisementMenu : MonoBehaviour
         ScoringManager.onGameOver -= OnGameOver;
     }
 
+    private void Awake()
+    {
+        ResetButtons();
+    }
+
     public void ResetButtons()
     {
         watchAdButton.gameObject.SetActive(false);
-        declineAdButton.gameObject.SetActive(false);
-        bedazzledWatchAdButton.gameObject.SetActive(false);
+        declineAdButton.gameObject.SetActive(true);
+        bedazzledWatchAdButton.gameObject.SetActive(true);
     }
 
     public void OnClickWatchAdButton()  // called by all ad buttons
