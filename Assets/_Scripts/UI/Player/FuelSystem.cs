@@ -24,8 +24,8 @@ public class FuelSystem : MonoBehaviour
 
     #endregion
 
-    [SerializeField]
-    string uuidOfPlayer = "";
+    [SerializeField] string uuidOfPlayer = "";
+    [SerializeField] bool verboseLogging;
 
     public static float CurrentFuel { get => currentFuel; }
 
@@ -51,7 +51,7 @@ public class FuelSystem : MonoBehaviour
 
     void Start()
     {
-        currentFuel = maxFuel;
+        ResetFuel();
     }
 
 
@@ -69,33 +69,25 @@ public class FuelSystem : MonoBehaviour
     private void ChangeFuelAmount(string uuid, float amount)
     {
         uuidOfPlayer = uuid;  //Recieves uuid of from Collision Events
-        if (currentFuel != 0) { currentFuel += amount; } //?
-        if (currentFuel > 1f)
-        {
-            currentFuel = 1;
-        }
+        
+        currentFuel = Mathf.Clamp(currentFuel + amount, 0, 1);
+        UpdateCurrentFuelAmount(uuidOfPlayer, currentFuel);
+        UpdateFuelBar(uuid, currentFuel);
         if (currentFuel <= 0)
-        {
-            currentFuel = 0;
-            UpdateCurrentFuelAmount(uuidOfPlayer, currentFuel);
-            UpdateFuelBar(uuid, currentFuel);
             zeroFuel?.Invoke();
-        }
-        if (currentFuel != 0)
-        {
-            UpdateCurrentFuelAmount(uuidOfPlayer, currentFuel);
-            UpdateFuelBar(uuid, currentFuel);
-        }
     }
 
     private void UpdateFuelBar(string uuidOfPlayer, float currentFuel)
     {
-        Debug.Log("FuelSystem reading is " + currentFuel);
+        if (verboseLogging)
+            Debug.Log("FuelSystem reading is " + currentFuel);
+        
         onFuelChange?.Invoke(uuidOfPlayer, currentFuel);
     }
 
     private void UpdateCurrentFuelAmount(string uuid, float amount)
     {
-        if (uuid == "admin") { currentFuel = amount; }
+        if (uuid == "admin")
+            currentFuel = amount;
     }
 }
