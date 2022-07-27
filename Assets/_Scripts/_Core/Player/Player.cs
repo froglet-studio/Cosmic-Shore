@@ -50,6 +50,8 @@ public class Player : MonoBehaviour
         playerColor = playerSO.CharacterColor;
         playerShipPrefab = playerSO.ShipPrefab;
         playerTrailPrefab = playerSO.TrailPrefab;
+
+        GameManager.Instance.player = this;
     }
 
     public void ChangeShip(SO_Ship_Base ship) 
@@ -65,5 +67,17 @@ public class Player : MonoBehaviour
     public void ChangeColor(Color color)
     {
         playerSO.CharacterColor = color;
+    }
+
+    public void ToggleCollision(bool enabled)
+    {
+        foreach (var collider in GetComponentsInChildren<Collider>(true))
+            collider.enabled = enabled;
+    }
+
+    public void ToggleCollision()
+    {
+        foreach (var collider in GetComponentsInChildren<Collider>(true))
+            collider.enabled = !collider.enabled;
     }
 }

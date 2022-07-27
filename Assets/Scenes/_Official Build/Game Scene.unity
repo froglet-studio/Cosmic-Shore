@@ -1283,7 +1283,7 @@ PrefabInstance:
     - target: {fileID: 933979281573328157, guid: c8544725eea141847982b286866c858d,
         type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.size
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 933979281573328157, guid: c8544725eea141847982b286866c858d,
         type: 3}
@@ -1299,7 +1299,7 @@ PrefabInstance:
         type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
-      objectReference: {fileID: 0}
+      objectReference: {fileID: 1586480803}
     - target: {fileID: 933979281573328157, guid: c8544725eea141847982b286866c858d,
         type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[1].m_Target
@@ -1318,7 +1318,7 @@ PrefabInstance:
     - target: {fileID: 933979281573328157, guid: c8544725eea141847982b286866c858d,
         type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
-      value: OnClickWatchAdButton
+      value: OnClickShowAdsButton
       objectReference: {fileID: 0}
     - target: {fileID: 933979281573328157, guid: c8544725eea141847982b286866c858d,
         type: 3}
@@ -1328,7 +1328,7 @@ PrefabInstance:
     - target: {fileID: 933979281573328157, guid: c8544725eea141847982b286866c858d,
         type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
-      value: AdvertisementMenu, Assembly-CSharp
+      value: GameMenu, Assembly-CSharp
       objectReference: {fileID: 0}
     - target: {fileID: 933979281573328157, guid: c8544725eea141847982b286866c858d,
         type: 3}
@@ -1355,10 +1355,41 @@ PrefabInstance:
       propertyPath: bedazzledWatchAdButton
       value: 
       objectReference: {fileID: 1927965398}
+    - target: {fileID: 1072800463738168359, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: m_Sprite
+      value: 
+      objectReference: {fileID: 21300000, guid: 8c7c6c8c52bd82a4ea2fd63f6f5aa7e2,
+        type: 3}
+    - target: {fileID: 1207404954496990844, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: snsShare
+      value: 
+      objectReference: {fileID: 1586480810}
+    - target: {fileID: 1582318763051285272, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: m_SizeDelta.y
+      value: 80
+      objectReference: {fileID: 0}
+    - target: {fileID: 1582318763051285272, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: -42
+      objectReference: {fileID: 0}
+    - target: {fileID: 2358382763824949875, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: m_SizeDelta.y
+      value: 80
+      objectReference: {fileID: 0}
+    - target: {fileID: 2358382763824949875, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: -42
+      objectReference: {fileID: 0}
     - target: {fileID: 2441717304282962147, guid: c8544725eea141847982b286866c858d,
         type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.size
-      value: 3
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 2441717304282962147, guid: c8544725eea141847982b286866c858d,
         type: 3}
@@ -1384,7 +1415,7 @@ PrefabInstance:
         type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[1].m_Target
       value: 
-      objectReference: {fileID: 0}
+      objectReference: {fileID: 1586480803}
     - target: {fileID: 2441717304282962147, guid: c8544725eea141847982b286866c858d,
         type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[2].m_Target
@@ -1413,7 +1444,7 @@ PrefabInstance:
     - target: {fileID: 2441717304282962147, guid: c8544725eea141847982b286866c858d,
         type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[1].m_MethodName
-      value: OnClickDeclineAdButton
+      value: OnClickDeclineAdsButton
       objectReference: {fileID: 0}
     - target: {fileID: 2441717304282962147, guid: c8544725eea141847982b286866c858d,
         type: 3}
@@ -1428,7 +1459,7 @@ PrefabInstance:
     - target: {fileID: 2441717304282962147, guid: c8544725eea141847982b286866c858d,
         type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[1].m_TargetAssemblyTypeName
-      value: AdvertisementMenu, Assembly-CSharp
+      value: GameMenu, Assembly-CSharp
       objectReference: {fileID: 0}
     - target: {fileID: 2441717304282962147, guid: c8544725eea141847982b286866c858d,
         type: 3}
@@ -1463,7 +1494,7 @@ PrefabInstance:
     - target: {fileID: 3687509986330891970, guid: c8544725eea141847982b286866c858d,
         type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.size
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 3687509986330891970, guid: c8544725eea141847982b286866c858d,
         type: 3}
@@ -1474,7 +1505,7 @@ PrefabInstance:
         type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
-      objectReference: {fileID: 0}
+      objectReference: {fileID: 1586480803}
     - target: {fileID: 3687509986330891970, guid: c8544725eea141847982b286866c858d,
         type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_CallState
@@ -1483,12 +1514,12 @@ PrefabInstance:
     - target: {fileID: 3687509986330891970, guid: c8544725eea141847982b286866c858d,
         type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
-      value: OnClickWatchAdButton
+      value: OnClickShowAdsButton
       objectReference: {fileID: 0}
     - target: {fileID: 3687509986330891970, guid: c8544725eea141847982b286866c858d,
         type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
-      value: AdvertisementMenu, Assembly-CSharp
+      value: GameMenu, Assembly-CSharp
       objectReference: {fileID: 0}
     - target: {fileID: 3687509986330891970, guid: c8544725eea141847982b286866c858d,
         type: 3}
@@ -1520,6 +1551,16 @@ PrefabInstance:
       propertyPath: adsManager
       value: 
       objectReference: {fileID: 1586480802}
+    - target: {fileID: 7133701254906016188, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: m_SizeDelta.y
+      value: 80
+      objectReference: {fileID: 0}
+    - target: {fileID: 7133701254906016188, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: -42
+      objectReference: {fileID: 0}
     - target: {fileID: 7181345258476456347, guid: c8544725eea141847982b286866c858d,
         type: 3}
       propertyPath: m_IsActive

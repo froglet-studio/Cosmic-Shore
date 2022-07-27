@@ -65,7 +65,30 @@ public class AdsManager : MonoBehaviour, IUnityAdsInitializationListener, IUnity
     public void ShowAd()
     {
         // Then show the ad:
-        Advertisement.Show(_adUnitId, this);
+        var options = new ShowOptions { resultCallback = HandleShowResult };
+        //Advertisement.Show("rewardedVideoZone", options);
+
+        Advertisement.Show(_adUnitId, options, this);
+    }
+
+    private void HandleShowResult(ShowResult result)
+    {
+        switch (result)
+        {
+            case ShowResult.Finished:
+                Debug.Log("The ad was successfully shown.");
+                OnUnityAdsShowComplete(_adUnitId, UnityAdsShowCompletionState.COMPLETED);
+                //
+                // YOUR CODE TO REWARD THE GAMER
+                // Give coins etc.
+                break;
+            case ShowResult.Skipped:
+                Debug.Log("The ad was skipped before reaching the end.");
+                break;
+            case ShowResult.Failed:
+                Debug.LogError("The ad failed to be shown.");
+                break;
+        }
     }
 
     public void OnInitializationComplete()
@@ -107,7 +130,7 @@ public class AdsManager : MonoBehaviour, IUnityAdsInitializationListener, IUnity
     public void OnUnityAdsShowComplete(string adUnitId, UnityAdsShowCompletionState showCompletionState)
     {
         Debug.Log($"AdsManager.OnUnityAdsShowComplete - adUnitId: {adUnitId}, completionState: {showCompletionState}");
-        adShowComplete.Invoke(adUnitId, showCompletionState);
+        adShowComplete?.Invoke(adUnitId, showCompletionState);
     }
     public void OnUnityAdsShowFailure(string adUnitId, UnityAdsShowError error, string message)
     {

@@ -13,28 +13,6 @@ public class RewardedAdsButton : MonoBehaviour
         _showAdButton.onClick.AddListener(adsManager.ShowAd);
     }
 
-    void OnEnable()
-    {
-        AdsManager.adShowComplete += OnAdShowComplete;
-    }
-
-    void OnDisable()
-    {
-        AdsManager.adShowComplete -= OnAdShowComplete;
-    }
-
-    public void OnAdShowComplete(string adUnitId, UnityAdsShowCompletionState showCompletionState)
-    {
-        if (showCompletionState.Equals(UnityAdsShowCompletionState.COMPLETED))
-        {
-            Debug.Log("Unity Ads Rewarded Ad Completed. Extending game.");
-            // Grant a reward.
-
-            // TODO: THIS IS WHERE WE WOULD EXTEND THE GAME PLAY
-            GameManager.Instance.ExtendGame();
-        }
-    }
-
     void OnDestroy()
     {
         // Clean up the button listeners:

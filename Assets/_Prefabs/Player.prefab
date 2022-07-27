@@ -34,11 +34,11 @@ RectTransform:
   m_LocalScale: {x: 0, y: 0, z: 0}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 3066695830212394131}
   - {fileID: 7181345258476456346}
   - {fileID: 8035663729387164693}
   - {fileID: 1125522468}
   - {fileID: 2730333664039966099}
+  - {fileID: 3066695830212394131}
   m_Father: {fileID: 7659183800259804541}
   m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -120,7 +120,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fc9985f1de22b3c4f963a6a97bf6fd05, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  fuelMeterPanel: {fileID: 3066695830212394156}
+  fuelMeterPanel: {fileID: 3002780478049372038}
   pauseMenuPanel: {fileID: 8035663729387164692}
   finalScorePanel: {fileID: 7181345258476456347}
   pauseButton: {fileID: 1125522467}
@@ -137,12 +137,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e50774bfa84874243a429c7097d42f36, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  score: 0
   extendedLifeScore: 0
   extendedLifeHighScore: 0
-  extralifeModifier: 0.8
   bedazzled: 0
-  firstLife: 1
   scoreText: {fileID: 3066695830731265341}
 --- !u!114 &1586480803
 MonoBehaviour:
@@ -190,7 +187,7 @@ RectTransform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 477729227}
-  m_RootOrder: 3
+  m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 1, y: 1}
   m_AnchorMax: {x: 1, y: 1}
@@ -5612,8 +5609,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _showAdButton: {fileID: 3687509986330891970}
-  _androidAdUnitId: Rewarded_Android
-  _iOSAdUnitId: Rewarded_iOS
+  adsManager: {fileID: 0}
 --- !u!1 &3635781536112758238
 GameObject:
   m_ObjectHideFlags: 0
@@ -6282,7 +6278,7 @@ RectTransform:
   m_Children:
   - {fileID: 3701556713679901549}
   m_Father: {fileID: 477729227}
-  m_RootOrder: 4
+  m_RootOrder: 3
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
@@ -6303,8 +6299,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _androidGameId: 4798602
   _iOSGameId: 4798603
+  _androidAdUnitId: Rewarded_Android
+  _iOSAdUnitId: Rewarded_iOS
   _testMode: 1
-  _rewardedAdsButton: {fileID: 2832345338597569461}
 --- !u!114 &7595778113697884236
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6320,6 +6317,7 @@ MonoBehaviour:
   watchAdButton: {fileID: 6931953205736783580}
   declineAdButton: {fileID: 2441717304282962147}
   bedazzledWatchAdButton: {fileID: 2832345338597569461}
+  adsManager: {fileID: 0}
 --- !u!1 &8419792640865108505
 GameObject:
   m_ObjectHideFlags: 0
@@ -6468,8 +6466,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _showAdButton: {fileID: 933979281573328157}
-  _androidAdUnitId: Rewarded_Android
-  _iOSAdUnitId: Rewarded_iOS
+  adsManager: {fileID: 0}
 --- !u!1 &8434751123167899896
 GameObject:
   m_ObjectHideFlags: 0
@@ -7163,7 +7160,7 @@ PrefabInstance:
     - target: {fileID: 7181345257097104765, guid: 087d2222a78ded24894cb53861ff6be4,
         type: 3}
       propertyPath: m_RootOrder
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7181345257097104765, guid: 087d2222a78ded24894cb53861ff6be4,
         type: 3}
@@ -7645,7 +7642,7 @@ PrefabInstance:
     - target: {fileID: 8035663729132098926, guid: 58dbda2a7cc479e4091d2abacbfd4d94,
         type: 3}
       propertyPath: m_RootOrder
-      value: 2
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 8035663729132098926, guid: 58dbda2a7cc479e4091d2abacbfd4d94,
         type: 3}
@@ -8049,7 +8046,7 @@ PrefabInstance:
     - target: {fileID: 3900586876768157980, guid: 7873914c194767b4daf5723c304a88a6,
         type: 3}
       propertyPath: m_RootOrder
-      value: 0
+      value: 4
       objectReference: {fileID: 0}
     - target: {fileID: 3900586876768157980, guid: 7873914c194767b4daf5723c304a88a6,
         type: 3}
@@ -8264,15 +8261,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 7873914c194767b4daf5723c304a88a6, type: 3}
---- !u!224 &3066695830212394131 stripped
-RectTransform:
-  m_CorrespondingSourceObject: {fileID: 3900586876768157980, guid: 7873914c194767b4daf5723c304a88a6,
+--- !u!1 &3002780478049372038 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 3819818200849611273, guid: 7873914c194767b4daf5723c304a88a6,
     type: 3}
   m_PrefabInstance: {fileID: 2066796559175662991}
   m_PrefabAsset: {fileID: 0}
---- !u!1 &3066695830212394156 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 3900586876768157987, guid: 7873914c194767b4daf5723c304a88a6,
+--- !u!224 &3066695830212394131 stripped
+RectTransform:
+  m_CorrespondingSourceObject: {fileID: 3900586876768157980, guid: 7873914c194767b4daf5723c304a88a6,
     type: 3}
   m_PrefabInstance: {fileID: 2066796559175662991}
   m_PrefabAsset: {fileID: 0}

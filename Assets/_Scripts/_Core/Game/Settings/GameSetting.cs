@@ -17,7 +17,9 @@ namespace StarWriter.Core
             isTutorialEnabled,
             isAudioEnabled,
             isGyroEnabled,
-            adsEnabled
+            adsEnabled,
+            highScore,
+            firstLifeHighScore
         }
 
         #region Settings
@@ -41,8 +43,6 @@ namespace StarWriter.Core
             base.Awake();
 
             // Reset this everytime the player launches the game
-            PlayerPrefs.SetInt(PlayerPrefKeys.adsEnabled.ToString(), 1);
-
             if (!PlayerPrefs.HasKey(PlayerPrefKeys.isInitialPlay.ToString()))
             {
                 //Initialize PlayerPrefs

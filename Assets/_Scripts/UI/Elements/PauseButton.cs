@@ -16,12 +16,12 @@ namespace StarWriter.Core.UI
 
         public void OnClickPauseButton()
         {
-            gameManager.PauseGame();
+            GameManager.PauseGame();
         }
 
         public void OnClickUnPauseButton()
         {
-            gameManager.UnPauseGame();
+            GameManager.UnPauseGame();
         }
     }
 }

@@ -68,23 +68,12 @@ public class Trail : MonoBehaviour, ICollidable
     {
         if (IsPlayer(other.gameObject))
         {
-            Debug.Log("tagplayer" + GameObject.FindGameObjectsWithTag("Player").Count());
-            
-            // Play SFX sound
-            // TODO
+            other.transform.parent.parent.GetComponent<Player>().ToggleCollision();
 
-            //// Create Fossil
-            //tempMaterial = new Material(material);
-            //var fossilBlock = Instantiate(FossilBlock);
-            //fossilBlock.transform.localScale = transform.localScale;
-            //fossilBlock.transform.position = transform.position;
-            //fossilBlock.transform.localEulerAngles = transform.localEulerAngles;
-            //fossilBlock.transform.parent = container.transform;
-            //fossilBlock.GetComponent<Renderer>().material = tempMaterial;
+            Debug.Log("tagplayer" + GameObject.FindGameObjectsWithTag("Player").Count());
 
             //// Do Impact Stuff
             var ship = other.transform.parent.parent.gameObject;
-            //var blockImpact = fossilBlock.GetComponent<BlockImpact>();
             
             if (GameObject.FindGameObjectsWithTag("Player").Contains(ship))
             {
@@ -94,19 +83,7 @@ public class Trail : MonoBehaviour, ICollidable
                 OnTrailCollision?.Invoke(ship.GetComponent<Player>().PlayerUUID, fuelChange);
                 HapticController.PlayBlockCollisionHaptics();
             }
-            //else
-            //{
-            //    // AI Hit
-            //    var impactVector = ship.transform.forward * ship.GetComponent<AiShipController>().speed;
-            //    if (ship == GameObject.FindWithTag("red"))
-            //    {
-            //        StartCoroutine(blockImpact.ImpactCoroutine(impactVector, tempMaterial, "red"));
-            //    }
-            //    else
-            //    {
-            //        StartCoroutine(blockImpact.ImpactCoroutine(impactVector, tempMaterial, "blue"));
-            //    }
-            //}
+
             Destroy(gameObject);
         }
     }
