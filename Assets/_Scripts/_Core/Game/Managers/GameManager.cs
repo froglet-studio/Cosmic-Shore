@@ -54,22 +54,14 @@ namespace StarWriter.Core
             isExtendedLife = false;
         }
 
-        /// <summary>
-        /// Toggles the Tutorial On/Off
-        /// </summary>
-        /// 
-
         private void Update()
         {
             if (Mathf.Abs(UnityEngine.Input.acceleration.y) < phoneFlipThreshold) return;
+
             if (UnityEngine.Input.acceleration.y < 0)
-            {
                 onPhoneFlip(true);
-            }
             else
-            {
                 onPhoneFlip(false);
-            }
         }
 
         public void OnClickTutorialToggleButton()
@@ -109,12 +101,13 @@ namespace StarWriter.Core
 
         private void Death()
         {
-            deathCount++;
             Debug.Log("GameManager.Death");
-            //PauseGame();
+
+            // TODO: do we want to pause?            
+            // PauseGame();
             onDeath?.Invoke();
 
-            if (deathCount == 2)
+            if (deathCount++ == 2)
                 EndGame();
         }
 
