@@ -10,14 +10,15 @@ Material:
   m_Name: GreenBlockMaterial
   m_Shader: {fileID: -6465566751694194690, guid: bf8c159f627e64b439094797bff88611,
     type: 3}
-  m_ValidKeywords: []
+  m_ValidKeywords:
+  - _SURFACE_TYPE_TRANSPARENT
   m_InvalidKeywords: []
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
-  m_CustomRenderQueue: 2000
+  m_CustomRenderQueue: 3000
   stringTagMap:
-    RenderType: Opaque
+    RenderType: Transparent
   disabledShaderPasses:
   - SHADOWCASTER
   m_SavedProperties:
@@ -92,7 +93,7 @@ Material:
     - _Cutoff: 0.5
     - _DetailAlbedoMapScale: 1
     - _DetailNormalMapScale: 1
-    - _DstBlend: 0
+    - _DstBlend: 10
     - _EnvironmentReflections: 1
     - _GlossMapScale: 0
     - _Glossiness: 0
@@ -106,17 +107,18 @@ Material:
     - _Smoothness: 0.5
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1
-    - _SrcBlend: 1
-    - _Surface: 0
+    - _SrcBlend: 5
+    - _Surface: 1
     - _WorkflowMode: 1
     - _ZTest: 4
     - _ZWrite: 1
     - _ZWriteControl: 1
     - _add_cos: 0
     - _angle: 0
+    - _distance: 15
     - _multiply: 0
     - _muton: 0
-    - _opacity: 1
+    - _opacity: 10
     - _player: 0
     - _playerBlock: 1
     - _playerHit: 0

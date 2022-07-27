@@ -117,6 +117,7 @@ namespace StarWriter.Core
 
         public void ExtendGame()
         {
+            Debug.Log("Extending Game");
             UnPauseGame();
             onExtendGamePlay?.Invoke();
             //TODO unpause game and make sure player is in safe area

@@ -39,6 +39,10 @@ namespace StarWriter.Core
         public override void Awake()
         {
             base.Awake();
+
+            // Reset this everytime the player launches the game
+            PlayerPrefs.SetInt(PlayerPrefKeys.adsEnabled.ToString(), 1);
+
             if (!PlayerPrefs.HasKey(PlayerPrefKeys.isInitialPlay.ToString()))
             {
                 //Initialize PlayerPrefs
@@ -46,7 +50,7 @@ namespace StarWriter.Core
                 PlayerPrefs.SetInt(PlayerPrefKeys.isTutorialEnabled.ToString(), 1);
                 PlayerPrefs.SetInt(PlayerPrefKeys.isAudioEnabled.ToString(), 1);  // music always on first time playing
                 PlayerPrefs.SetInt(PlayerPrefKeys.isGyroEnabled.ToString(), 1);
-                PlayerPrefs.SetInt(PlayerPrefKeys.adsEnabled.ToString(), 1);
+                
                 PlayerPrefs.Save();
 
                 //Initialize Bools

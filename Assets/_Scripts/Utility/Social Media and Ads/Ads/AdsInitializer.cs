@@ -20,13 +20,16 @@ public class AdsInitializer : MonoBehaviour, IUnityAdsInitializationListener
         _gameId = (Application.platform == RuntimePlatform.IPhonePlayer)
             ? _iOSGameId
             : _androidGameId;
+        Debug.Log($"InitializeAds: OnBeforeAdvertisement.Initialize - _gameId:{_gameId}, _testMode:{_testMode}");
         Advertisement.Initialize(_gameId, _testMode, true, this);
+        Debug.Log($"InitializeAds: OnAfterAdvertisement.Initialize - _gameId:{_gameId}, _testMode:{_testMode}");
     }
 
     public void OnInitializationComplete()
     {
         Debug.Log("Unity Ads initialization complete.");
-        _rewardedAdsButton.LoadAd();
+        // For now, we're loading the ad on game over instead of here
+        // _rewardedAdsButton.LoadAd();
     }
 
     public void OnInitializationFailed(UnityAdsInitializationError error, string message)

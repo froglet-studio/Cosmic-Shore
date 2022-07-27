@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.Advertisements;
+using StarWriter.Core;
 
 public class RewardedAdsButton : MonoBehaviour, IUnityAdsLoadListener, IUnityAdsShowListener
 {
@@ -18,15 +19,26 @@ public class RewardedAdsButton : MonoBehaviour, IUnityAdsLoadListener, IUnityAds
         _adUnitId = _androidAdUnitId;
 #endif
 
+        Debug.Log($"Ad Button Awake: _adUnitId:{_adUnitId}");
         //Disable the button until the ad is ready to show:
-        _showAdButton.interactable = false;
+        //_showAdButton.interactable = false;
     }
 
     // Load content to the Ad Unit:
     public void LoadAd()
     {
+        // Just in case the button was disabled and awake has not been called yet
+        if (_adUnitId == null)
+        {
+            #if UNITY_IOS
+                    _adUnitId = _iOSAdUnitId;
+            #elif UNITY_ANDROID
+                     _adUnitId = _androidAdUnitId;
+            #endif
+        }
+
         // IMPORTANT! Only load content AFTER initialization (in this example, initialization is handled in a different script).
-        Debug.Log("Loading Ad: " + _adUnitId);
+        Debug.Log($"Loading Ad: _adUnitId:{_adUnitId}");
         Advertisement.Load(_adUnitId, this);
     }
 
@@ -40,7 +52,7 @@ public class RewardedAdsButton : MonoBehaviour, IUnityAdsLoadListener, IUnityAds
             // Configure the button to call the ShowAd() method when clicked:
             _showAdButton.onClick.AddListener(ShowAd);
             // Enable the button for users to click:
-            _showAdButton.interactable = true;
+            //_showAdButton.interactable = true;
         }
     }
 
@@ -60,6 +72,9 @@ public class RewardedAdsButton : MonoBehaviour, IUnityAdsLoadListener, IUnityAds
         {
             Debug.Log("Unity Ads Rewarded Ad Completed");
             // Grant a reward.
+
+            // TODO: THIS IS WHERE WE WOULD EXTEND THE GAME PLAY
+            GameManager.Instance.ExtendGame();
 
             // Load another ad:
             Advertisement.Load(_adUnitId, this);

@@ -48,15 +48,24 @@ namespace StarWriter.Core.Audio
 
         private void Update()
         {
-            // if audio is enabled, the jukebox is on, and no music is playing, hit the side of the jukebox heeeeey
-            if (audioSystem.IsAudioEnabled && jukeboxIsOn && !audioSystem.IsMusicSourcePlaying()) {
-                StartJukebox();
+            if (!audioSystem.IsAudioEnabled)
+            {
+                return;
+            }
+            //if audio is enabled, the jukebox is on, and no music is playing, hit the side of the jukebox heeeeey
+            if (jukeboxIsOn)
+            {
+                if (!audioSystem.IsMusicSourcePlaying())
+                {
+                    StartJukebox();
+                }
+
+                if (!audioSystem.MusicSource1.isPlaying && !audioSystem.MusicSource2.isPlaying)
+                {
+                    StartJukebox();
+                }
             }
 
-            if (!audioSystem.MusicSource1.isPlaying && !audioSystem.MusicSource2.isPlaying)
-            {
-                StartJukebox();
-            }
         }
 
         private void InitiatizeJukebox()  //Adds song SO's to the Playlist dictionary. Then initiatize the jukebox
