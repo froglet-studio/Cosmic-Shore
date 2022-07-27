@@ -29,7 +29,7 @@ public class ScoringManager : MonoBehaviour
         GameManager.onDeath += OnDeath;
         GameManager.onExtendGamePlay += ExtendGamePlay;
         MutonPopUp.AddToScore += AddMutonBous;
-        AdvertisementMenu.onDeclineAd += OnDeclineAd;
+        //AdvertisementMenu.onDeclineAd += OnDeclineAd;
     }
 
     private void OnDisable()
@@ -37,7 +37,7 @@ public class ScoringManager : MonoBehaviour
         GameManager.onDeath -= OnDeath;
         MutonPopUp.AddToScore -= AddMutonBous;
         GameManager.onExtendGamePlay -= ExtendGamePlay;
-        AdvertisementMenu.onDeclineAd -= OnDeclineAd;
+        //AdvertisementMenu.onDeclineAd -= OnDeclineAd;
     }
 
     public void UpdateScoreBoard(int value)
@@ -66,11 +66,6 @@ public class ScoringManager : MonoBehaviour
             onGameOver?.Invoke(bedazzled, advertisements); //send (true || false, false)          
         }
         UpdatePlayerPrefScores();
-    }
-
-    private void OnDeclineAd()
-    {
-
     }
 
     public void UpdatePlayerPrefScores()
