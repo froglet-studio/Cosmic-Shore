@@ -7,6 +7,7 @@ public class AdvertisementMenu : MonoBehaviour
     public RewardedAdsButton watchAdButton;
     public Button declineAdButton;
     public RewardedAdsButton bedazzledWatchAdButton;
+    public AdsManager adsManager;
 
     public delegate void OnDeclineAdEvent();
     public static event OnDeclineAdEvent onDeclineAd;
@@ -53,16 +54,9 @@ public class AdvertisementMenu : MonoBehaviour
     {
         if (advertisement)
         {
-            if (bedazzled)
-            {
-                bedazzledWatchAdButton.gameObject.SetActive(true);
-                bedazzledWatchAdButton.LoadAd();
-            }
-            else
-            {
-                watchAdButton.gameObject.SetActive(true);
-                watchAdButton.LoadAd();
-            }
+            adsManager.LoadAd();
+            bedazzledWatchAdButton.gameObject.SetActive(bedazzled);
+            watchAdButton.gameObject.SetActive(bedazzled);
             declineAdButton.gameObject.SetActive(true);
         }
     }

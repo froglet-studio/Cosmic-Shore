@@ -54,7 +54,6 @@ public class FuelSystem : MonoBehaviour
         ResetFuel();
     }
 
-
     void Update()
     {
         if (currentFuel > 0)
