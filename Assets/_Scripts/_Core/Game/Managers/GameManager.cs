@@ -136,6 +136,8 @@ namespace StarWriter.Core
             // We disabled the player's colliders during the tail collision. let's turn them back on
             Instance.player.ToggleCollision(true);
 
+
+
             // TODO: unpause game and make sure player is in safe area
             // TODO: Garrett game scene stuff
         }
