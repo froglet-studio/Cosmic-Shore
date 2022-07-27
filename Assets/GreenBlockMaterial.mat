@@ -115,10 +115,10 @@ Material:
     - _ZWriteControl: 1
     - _add_cos: 0
     - _angle: 0
-    - _distance: 15
+    - _distance: -4
     - _multiply: 0
     - _muton: 0
-    - _opacity: 10
+    - _opacity: 80
     - _player: 0
     - _playerBlock: 1
     - _playerHit: 0
