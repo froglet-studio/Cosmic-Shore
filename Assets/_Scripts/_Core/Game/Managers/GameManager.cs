@@ -37,13 +37,15 @@ namespace StarWriter.Core
         private void OnEnable()
         {
             //AdsManager.adShowComplete += OnAdShowComplete;
-            FuelSystem.zeroFuel += Death;
+            //FuelSystem.zeroFuel += Death;
+            ShipVisualEffects.onExplosionCompletion += OnExplosionCompletion;
         }
 
         private void OnDisable()
         {
             //AdsManager.adShowComplete -= OnAdShowComplete;
-            FuelSystem.zeroFuel -= Death;
+            //FuelSystem.zeroFuel -= Death;
+            ShipVisualEffects.onExplosionCompletion -= OnExplosionCompletion;
         }
 
         void Start()
@@ -99,7 +101,7 @@ namespace StarWriter.Core
             SceneManager.LoadScene(2);
         }
 
-        private void Death()
+        private void OnExplosionCompletion()
         {
             Debug.Log("GameManager.Death");
 

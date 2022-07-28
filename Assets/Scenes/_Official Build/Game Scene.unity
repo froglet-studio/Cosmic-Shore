@@ -153,7 +153,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 92ebce1823d05184a9f69f9c09f2ef18, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  slowDownLenght: 2
+  slowDownLength: 2
   timeScaleModifier: 0.05
 --- !u!4 &45479578
 Transform:
@@ -1428,6 +1428,26 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: c8544725eea141847982b286866c858d, type: 3}
+--- !u!1 &1586480802 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 7659183800259804484, guid: c8544725eea141847982b286866c858d,
+    type: 3}
+  m_PrefabInstance: {fileID: 1586480801}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1586480803
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1586480802}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eda23b53f3524b74ab4795a9c7e3abac, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  explosiveMaterial: {fileID: 0}
+  maxExplosionRadius: 0
 --- !u!1 &1829578212
 GameObject:
   m_ObjectHideFlags: 0
