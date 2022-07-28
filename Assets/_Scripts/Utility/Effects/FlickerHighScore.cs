@@ -20,6 +20,7 @@ public class FlickerHighScore : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        highScoreImageOne.enabled = true;
         StartCoroutine(ToggleBetweenImages());
     }
 
@@ -28,24 +29,24 @@ public class FlickerHighScore : MonoBehaviour
         while (gameObject.activeInHierarchy)
         {
             yield return new WaitForSeconds(Random.Range(minWaitTime, maxWaitTime));
-            int randNum = Random.Range(1, 3);
+            int randNum = Random.Range(1,4);
 
             switch (randNum)
             {
                 case 1:
-                    highScoreImageOne.enabled = highScoreImageOne.enabled;
-                    highScoreImageTwo.enabled = !highScoreImageTwo.enabled;
-                    highScoreImageThree.enabled = !highScoreImageThree.enabled;
+                    highScoreImageOne.enabled = true;
+                    highScoreImageTwo.enabled = false;
+                    highScoreImageThree.enabled = false;
                     break;
                 case 2:
-                    highScoreImageOne.enabled = highScoreImageOne.enabled;
-                    highScoreImageTwo.enabled = !highScoreImageTwo.enabled;
-                    highScoreImageThree.enabled = !highScoreImageThree.enabled;
+                    highScoreImageOne.enabled = false;
+                    highScoreImageTwo.enabled = true;
+                    highScoreImageThree.enabled = false;
                     break;
                 case 3:
-                    highScoreImageOne.enabled = highScoreImageOne.enabled;
-                    highScoreImageTwo.enabled = !highScoreImageTwo.enabled;
-                    highScoreImageThree.enabled = !highScoreImageThree.enabled;
+                    highScoreImageOne.enabled = false;
+                    highScoreImageTwo.enabled = false;
+                    highScoreImageThree.enabled = true;
                     break;
             }
         }
