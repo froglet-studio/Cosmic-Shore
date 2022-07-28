@@ -1,5 +1,4 @@
 ﻿using System.Collections;
-using System.Collections.Generic;
 using TailGlider.Utility.Singleton;
 using UnityEngine;
 using UnityEngine.Audio;
@@ -14,15 +13,13 @@ namespace StarWriter.Core.Audio
     {
         #region Fields
         [SerializeField] AudioMixer masterMixer;
-
         [SerializeField] AudioSource musicSource1;     
         [SerializeField] AudioSource musicSource2; 
+        [SerializeField] float masterVolume = .1f;
+        [SerializeField] float musicVolume = .1f;
 
         public AudioSource MusicSource1 { get => musicSource1; set => musicSource1 = value; }
         public AudioSource MusicSource2 { get => musicSource2; set => musicSource2 = value; }
-
-        [SerializeField] float masterVolume = .1f;
-        [SerializeField] float musicVolume = .1f;
 
         float MasterVolume { get { return isAudioEnabled ? masterVolume : 0; } set { } }
 
