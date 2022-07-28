@@ -17,19 +17,36 @@ public class GameMenu : MonoBehaviour
 
     private void OnEnable()
     {
-        ScoringManager.onGameOver += OnGameOver;
         GameManager.onPlayGame += ResetPanels;
         GameManager.onDeath += OnDeath;
+        GameManager.onGameOver += OnGameOver;
+        GameManager.onExtendGamePlay += OnExtendGamePlay;
     }
 
     private void OnDisable()
     {
-        ScoringManager.onGameOver -= OnGameOver;
         GameManager.onPlayGame -= ResetPanels;
         GameManager.onDeath -= OnDeath;
+        GameManager.onGameOver -= OnGameOver;
+        GameManager.onExtendGamePlay -= OnExtendGamePlay;
     }
 
-    
+    private bool extendGamePlayNeeded = false;
+
+    private void Update()
+    {
+        if (extendGamePlayNeeded)
+        {
+            fuelMeterPanel.SetActive(true);
+            finalScorePanel.SetActive(false);
+            adsPanel.SetActive(false);
+            pauseButton.SetActive(false);
+            pauseMenuPanel.SetActive(false);
+
+            extendGamePlayNeeded = false;
+        }
+    }
+
     /// <summary>
     /// Pauses the game and enables the Pause Menu
     /// </summary>
@@ -67,15 +84,23 @@ public class GameMenu : MonoBehaviour
     }
     private void OnDeath()
     {
+        DisplayFinalScorePanel();
         adsPanel.SetActive(true);
     }
 
     /// <summary>
     /// Called on Game Over Event
     /// </summary>
-    private void OnGameOver(bool bedazzled, bool advertisement)
+    private void OnGameOver()
     {
+        adsPanel.SetActive(false);
         DisplayFinalScorePanel();
+    }
+
+    public void OnExtendGamePlay()
+    {
+        // This looks wacky, but "SetActive" can only be called in the main thread, not through a delegate
+        extendGamePlayNeeded = true;
     }
 
     private void ResetPanels()
@@ -90,6 +115,14 @@ public class GameMenu : MonoBehaviour
     public void OnClickDeclineAdsButton()
     {
         adsPanel.gameObject.SetActive(false);
-        
+        GameManager.EndGame();
+    }
+
+    public void OnClickShowAdsButton()
+    {
+        adsPanel.gameObject.SetActive(false);
+
+        // TODO: this is questionable - probably want to link this up in the AdsManager events
+        GameManager.EndGame();
     }
 }

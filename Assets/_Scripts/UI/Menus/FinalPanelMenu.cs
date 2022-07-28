@@ -7,34 +7,27 @@ public class FinalPanelMenu : MonoBehaviour
     public Button bedazzledScreenshotButton;
     public Button screenshotButton;
     public Button replayButton;
+    [SerializeField] SnsShare snsShare;
 
     private void OnEnable()
     {
-        ScoringManager.onGameOver += OnGameOver;
         GameManager.onPlayGame += ResetButtons;
+        GameManager.onGameOver += OnGameOver;
     }
 
     private void OnDisable()
     {
-        ScoringManager.onGameOver -= OnGameOver;
         GameManager.onPlayGame -= ResetButtons;
+        GameManager.onGameOver -= OnGameOver;
     }
 
-    private void OnGameOver(bool bedazzled, bool advertisement)
+    private void OnGameOver()
     {
         replayButton.gameObject.SetActive(true);
-        if (!advertisement)
-        {
-            if (bedazzled)
-            {
-                bedazzledScreenshotButton.gameObject.SetActive(true);
-            }
-            else
-            {
-                screenshotButton.gameObject.SetActive(true);
-            }
-            screenshotButton.onClick.AddListener(() => gameObject.GetComponent<SnsShare>().Share());
-        }
+        bedazzledScreenshotButton.gameObject.SetActive(ScoringManager.IsScoreBedazzleWorthy);
+        bedazzledScreenshotButton.onClick.AddListener(() => snsShare.Share());
+        screenshotButton.gameObject.SetActive(!ScoringManager.IsScoreBedazzleWorthy);
+        screenshotButton.onClick.AddListener(() => snsShare.Share());
     }
 
     public void OnClickReplayButton()

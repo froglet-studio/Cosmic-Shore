@@ -1,3 +1,4 @@
+using StarWriter.Core;
 using System;
 using UnityEngine;
 
@@ -41,19 +42,28 @@ public class FuelSystem : MonoBehaviour
     {
         Trail.OnTrailCollision += ChangeFuelAmount;
         MutonPopUp.OnMutonPopUpCollision += ChangeFuelAmount;
+        GameManager.onExtendGamePlay += OnExtendGamePlay;
     }
 
     private void OnDisable()
     {
         Trail.OnTrailCollision -= ChangeFuelAmount;
         MutonPopUp.OnMutonPopUpCollision -= ChangeFuelAmount;
+        GameManager.onExtendGamePlay -= OnExtendGamePlay;
+    }
+
+    private void OnExtendGamePlay()
+    {
+        Debug.Log("FuelSystem.OnExtendGamePlay");
+        // TODO: some minor refactor around 'ResetFuel' and static stuff
+        UpdateCurrentFuelAmount("admin", maxFuel);
+        UpdateFuelBar("admin", maxFuel);
     }
 
     void Start()
     {
         ResetFuel();
     }
-
 
     void Update()
     {

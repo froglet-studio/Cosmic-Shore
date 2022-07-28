@@ -1,10 +1,10 @@
 using UnityEngine;
 using System.Collections.Generic;
 using UnityEngine.UI;
-
+using static StarWriter.Core.GameSetting;
 
 /// <summary>
-/// Controls the final and high currentScore display panel
+/// Controls the final score and high score display panel
 /// </summary>
 namespace StarWriter.Core
 {
@@ -28,52 +28,34 @@ namespace StarWriter.Core
 
         private void OnEnable()
         {
-            ScoringManager.onGameOver += OnGameOver;
+            GameManager.onGameOver += OnGameOver;
             AdvertisementMenu.onDeclineAd += OnDeclineAd;
         }
 
         private void OnDisable()
         {
-            ScoringManager.onGameOver -= OnGameOver;
+            GameManager.onGameOver -= OnGameOver;
             AdvertisementMenu.onDeclineAd -= OnDeclineAd;
         }
 
-        private void OnGameOver(bool bedazzled, bool advertisement)
+        private void OnGameOver()
         {
-            if (!advertisement)
-            {
-                currentScore = PlayerPrefs.GetInt("Score");
-                highScore = PlayerPrefs.GetInt("High Score");
-                if (bedazzled && !advertisement)
-                {
-                    BedazzledHighScoreImage.gameObject.SetActive(true);
-                }
-                else
-                {
-                    BedazzledHighScoreImage.gameObject.SetActive(false);
-                }
-                DisplayCurrentScoreWithSprites();
-                DisplayHighScoreWithSprites();
-            }       
+            currentScore = PlayerPrefs.GetInt("Score");
+            highScore = PlayerPrefs.GetInt(PlayerPrefKeys.highScore.ToString());
+            BedazzledHighScoreImage.gameObject.SetActive(ScoringManager.IsScoreBedazzleWorthy);
+            DisplayCurrentScoreWithSprites();
+            DisplayHighScoreWithSprites();
         }
 
         private void OnDeclineAd()
         {            
             currentScore = PlayerPrefs.GetInt("Score");
-            highScore = PlayerPrefs.GetInt("High Score");
-            bool bedazzled = ((PlayerPrefs.GetInt("High Score")) <= currentScore);
-            if (bedazzled)
-            {
-                BedazzledHighScoreImage.gameObject.SetActive(true);
-            }
-            else
-            {
-                BedazzledHighScoreImage.gameObject.SetActive(false);
-            }
+            highScore = PlayerPrefs.GetInt(PlayerPrefKeys.highScore.ToString());
+
+            BedazzledHighScoreImage.gameObject.SetActive(ScoringManager.IsScoreBedazzleWorthy);
             DisplayCurrentScoreWithSprites();
             DisplayHighScoreWithSprites();
         }
-
 
         public void DisplayCurrentScoreWithSprites()
         {
@@ -98,5 +80,3 @@ namespace StarWriter.Core
         }
     }
 }
-
-

@@ -56,12 +56,12 @@ namespace StarWriter.UI
         /// </summary>
         public void OnClickResumeGameButton()
         {
-            gameManager.UnPauseGame();
+            GameManager.UnPauseGame();
             transform.parent.GetComponent<GameMenu>().OnClickUnpauseGame();
         }
         public void OnClickResumeTutorialButton()
         {
-            gameManager.UnPauseGame();
+            GameManager.UnPauseGame();
             pauseButton.gameObject.SetActive(true);
             gameObject.SetActive(false);
         }
@@ -74,7 +74,5 @@ namespace StarWriter.UI
         {
             gameManager.ReturnToLobby();
         }
-
-
     }
 }

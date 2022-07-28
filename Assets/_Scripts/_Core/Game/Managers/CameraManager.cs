@@ -34,20 +34,20 @@ public class CameraManager : SingletonPersistent<CameraManager>
 
     private void OnEnable()
     {
-        
         GameManager.onPlayGame += OnPlayGame;
         GameManager.onPhoneFlip += OnPhoneFlip;
         GameManager.onDeath += OnDeath;
-        ScoringManager.onGameOver += OnGameOver;
+        GameManager.onExtendGamePlay += OnExtendGamePlay;
+        GameManager.onGameOver += OnGameOver;
     }
 
     private void OnDisable()
     {
-        
         GameManager.onPlayGame -= OnPlayGame;
         GameManager.onPhoneFlip -= OnPhoneFlip;
         GameManager.onDeath -= OnDeath;
-        ScoringManager.onGameOver -= OnGameOver;
+        GameManager.onExtendGamePlay -= OnExtendGamePlay;
+        GameManager.onGameOver -= OnGameOver;
     }
 
     void Start()
@@ -64,7 +64,7 @@ public class CameraManager : SingletonPersistent<CameraManager>
 
     private void OnPlayGame()
     {
-        FuelSystem.zeroFuel += ZoomEndCameraToScores;
+        GameManager.onDeath += ZoomEndCameraToScores;
         playerFollowTarget = GameObject.FindGameObjectWithTag("Player").transform;
         closeCamera.LookAt = farCamera.LookAt = playerFollowTarget;
         closeCamera.Follow = farCamera.Follow = playerFollowTarget;
@@ -74,20 +74,23 @@ public class CameraManager : SingletonPersistent<CameraManager>
 
     private void OnDeath()
     {
+        // TODO: is this even a thing? it seems like ZoomEndCameraToScores will always be called after
         SetDeathCameraActive();   
     }
 
-    private void OnGameOver(bool bedazzled, bool advertisement)
+    private void OnGameOver()
     {
-        if (!advertisement)
-        {
-            SetEndCameraActive();
-        }
+        SetEndCameraActive();
+    }
+
+    private void OnExtendGamePlay()
+    {
+        SetCloseCameraActive();
     }
 
     private void ZoomEndCameraToScores()
     {
-        FuelSystem.zeroFuel -= ZoomEndCameraToScores;
+        GameManager.onDeath -= ZoomEndCameraToScores;
         SetActiveCamera(endCamera);
         isCameraFlipEnabled = false;
     }
@@ -137,7 +140,6 @@ public class CameraManager : SingletonPersistent<CameraManager>
             {
                 SetFarCameraActive();
             }
-
         }
     }
 }

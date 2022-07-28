@@ -7,20 +7,24 @@ public class AdvertisementMenu : MonoBehaviour
     public RewardedAdsButton watchAdButton;
     public Button declineAdButton;
     public RewardedAdsButton bedazzledWatchAdButton;
+    public AdsManager adsManager;
 
     public delegate void OnDeclineAdEvent();
     public static event OnDeclineAdEvent onDeclineAd;
 
+    public delegate void OnWatchAdEvent();
+    public static event OnWatchAdEvent onWatchAd;
+
     private void OnEnable()
     {
         GameManager.onPlayGame += ResetButtons;
-        ScoringManager.onGameOver += OnGameOver;
+        GameManager.onDeath += OnDeath;
     }
 
     private void OnDisable()
     {
         GameManager.onPlayGame -= ResetButtons;
-        ScoringManager.onGameOver -= OnGameOver;
+        GameManager.onDeath -= OnDeath;
     }
 
     private void Awake()
@@ -39,7 +43,7 @@ public class AdvertisementMenu : MonoBehaviour
     {
         Debug.Log("Ad requested");
         ResetButtons();
-        //GameManager.Instance.ExtendGame(); 
+        //GameManager.Instance.ExtendGame();
     }
 
     public void OnClickDeclineAdButton()
@@ -49,21 +53,13 @@ public class AdvertisementMenu : MonoBehaviour
         onDeclineAd?.Invoke();
     }
 
-    private void OnGameOver(bool bedazzled, bool advertisement)
+    private void OnDeath()
     {
-        if (advertisement)
-        {
-            if (bedazzled)
-            {
-                bedazzledWatchAdButton.gameObject.SetActive(true);
-                bedazzledWatchAdButton.LoadAd();
-            }
-            else
-            {
-                watchAdButton.gameObject.SetActive(true);
-                watchAdButton.LoadAd();
-            }
-            declineAdButton.gameObject.SetActive(true);
-        }
+        var bedazzled = ScoringManager.IsScoreBedazzleWorthy;
+        
+        adsManager.LoadAd();
+        bedazzledWatchAdButton.gameObject.SetActive(bedazzled);
+        watchAdButton.gameObject.SetActive(!bedazzled);
+        declineAdButton.gameObject.SetActive(true);
     }
 }

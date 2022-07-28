@@ -75,7 +75,7 @@ namespace StarWriter.Core.Audio
         {
             AudioSource activeAudioSource = (firstMusicSourceIsPlaying ? musicSource1 : musicSource2);
             activeAudioSource.clip = audioClip;
-            //activeAudioSource.volume = musicVolume;
+            activeAudioSource.volume = musicVolume;
             activeAudioSource.Play();
         }
 
@@ -85,7 +85,7 @@ namespace StarWriter.Core.Audio
             {
                 AudioSource activeAudioSource = (firstMusicSourceIsPlaying ? musicSource1 : musicSource2);
                 activeAudioSource.clip = audioClip;
-                //activeAudioSource.volume = musicVolume;
+                activeAudioSource.volume = musicVolume;
                 activeAudioSource.Play();
             }
             else
@@ -107,12 +107,8 @@ namespace StarWriter.Core.Audio
         {
             Debug.Log("Called play next song");
             firstMusicSourceIsPlaying = !firstMusicSourceIsPlaying;
-            if (firstMusicSourceIsPlaying)
-            {
-                return musicSource2.clip;
-            }
-            else { return musicSource1.clip;  }
-                
+
+            return firstMusicSourceIsPlaying ? musicSource2.clip : musicSource1.clip;
         }
 
         public void PlayMusicClipWithFade(AudioClip audioClip, float transitionTime = 1.0f)

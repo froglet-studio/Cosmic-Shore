@@ -1,41 +1,38 @@
 using UnityEngine;
 using TMPro;
 using StarWriter.Core;
+using static StarWriter.Core.GameSetting;
 
 public class ScoringManager : MonoBehaviour
 {
-    [SerializeField]
-    int score = 0;
+    
     [SerializeField]
     private int extendedLifeScore;
     [SerializeField]
     private int extendedLifeHighScore;
     [SerializeField]
-    private float extralifeModifier = 0.8f;
-    [SerializeField]
-    bool bedazzled; //wether or not the watchAdButton is amped up
-    [SerializeField]
-    private bool firstLife = true;
+    bool bedazzled; // whether or not the watchAdButton is amped up
+
+    private static int score = 0;
+    private static bool firstLife = true;
+    private static float extralifeModifier = 0.8f;
 
     public TextMeshProUGUI scoreText;
 
     public bool FirstLife { get => firstLife; set => firstLife = value; }
 
-    public delegate void OnGameOverEvent(bool bedazzled, bool advertisement);
-    public static event OnGameOverEvent onGameOver;
-
     private void OnEnable()
     {
         GameManager.onDeath += OnDeath;
         GameManager.onExtendGamePlay += ExtendGamePlay;
-        MutonPopUp.AddToScore += AddMutonBous;
+        MutonPopUp.AddToScore += AddMutonBonus;
         //AdvertisementMenu.onDeclineAd += OnDeclineAd;
     }
 
     private void OnDisable()
     {
         GameManager.onDeath -= OnDeath;
-        MutonPopUp.AddToScore -= AddMutonBous;
+        MutonPopUp.AddToScore -= AddMutonBonus;
         GameManager.onExtendGamePlay -= ExtendGamePlay;
         //AdvertisementMenu.onDeclineAd -= OnDeclineAd;
     }
@@ -45,7 +42,7 @@ public class ScoringManager : MonoBehaviour
         scoreText.text = value.ToString("D3"); // score text located on the fuel bar
     }
 
-    private void AddMutonBous(string uuid, int amount)
+    private void AddMutonBonus(string uuid, int amount)
     {
         if (uuid == "admin") { score += amount; }
 
@@ -54,18 +51,25 @@ public class ScoringManager : MonoBehaviour
 
     private void OnDeath()
     {
-        bool advertisements = (PlayerPrefs.GetInt(GameSetting.PlayerPrefKeys.adsEnabled.ToString()) == 1);
+        bool advertisements = firstLife;//(PlayerPrefs.GetInt(GameSetting.PlayerPrefKeys.adsEnabled.ToString()) == 1);
         if (advertisements)
-        {
-            bedazzled = ((PlayerPrefs.GetInt("Single Life High Score") * extralifeModifier) <= score);  //Sets beddazed value
-            onGameOver?.Invoke(bedazzled, advertisements); //send (true, true || false)
-        }
+            bedazzled = ((PlayerPrefs.GetInt(PlayerPrefKeys.firstLifeHighScore.ToString()) * extralifeModifier) <= score);  //Sets beddazed value
         else
-        {
-            bedazzled = ((PlayerPrefs.GetInt("High Score")) <= score);
-            onGameOver?.Invoke(bedazzled, advertisements); //send (true || false, false)          
-        }
+            bedazzled = ((PlayerPrefs.GetInt("High Score")) <= score);   
+
         UpdatePlayerPrefScores();
+
+        // reset first life if this is now the second life
+        // hmm. this feels weird
+        if (!firstLife)
+            firstLife = true;
+    }
+
+    public static bool IsScoreBedazzleWorthy
+    {
+        get => firstLife ?
+            (PlayerPrefs.GetInt(PlayerPrefKeys.firstLifeHighScore.ToString()) * extralifeModifier) <= score :
+            (PlayerPrefs.GetInt(PlayerPrefKeys.highScore.ToString())) <= score;
     }
 
     public void UpdatePlayerPrefScores()
@@ -73,15 +77,15 @@ public class ScoringManager : MonoBehaviour
         PlayerPrefs.SetInt("Score", score);
 
         //Compares Score to High Score and saves the highest value
-        if (PlayerPrefs.GetInt("High Score") < score)
+        if (PlayerPrefs.GetInt(PlayerPrefKeys.highScore.ToString()) < score)
         {
-            PlayerPrefs.SetInt("High Score", score);
+            PlayerPrefs.SetInt(PlayerPrefKeys.highScore.ToString(), score);
         }
         if (firstLife)
         {
-            if (PlayerPrefs.GetInt("Single Life High Score") < score)
+            if (PlayerPrefs.GetInt(PlayerPrefKeys.firstLifeHighScore.ToString()) < score)
             {
-                PlayerPrefs.SetInt("Single LifeHigh Score", score);
+                PlayerPrefs.SetInt(PlayerPrefKeys.firstLifeHighScore.ToString(), score);
             }
         }
         PlayerPrefs.Save();
@@ -89,8 +93,10 @@ public class ScoringManager : MonoBehaviour
 
     private void ExtendGamePlay()
     {
+        Debug.Log("ScoringManager.ExtendGamePlay");
         firstLife = false;
-        PlayerPrefs.SetInt(GameSetting.PlayerPrefKeys.adsEnabled.ToString(), 0);  // set false 
-        PlayerPrefs.Save();
+
+        //PlayerPrefs.SetInt(GameSetting.PlayerPrefKeys.adsEnabled.ToString(), 0);  // set false 
+        //PlayerPrefs.Save();
     }
 }
