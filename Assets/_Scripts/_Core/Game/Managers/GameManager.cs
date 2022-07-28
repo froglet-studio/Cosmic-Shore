@@ -36,13 +36,13 @@ namespace StarWriter.Core
 
         private void OnEnable()
         {
-            AdsManager.adShowComplete += OnAdShowComplete;
+            //AdsManager.adShowComplete += OnAdShowComplete;
             FuelSystem.zeroFuel += Death;
         }
 
         private void OnDisable()
         {
-            AdsManager.adShowComplete -= OnAdShowComplete;
+            //AdsManager.adShowComplete -= OnAdShowComplete;
             FuelSystem.zeroFuel -= Death;
         }
 
