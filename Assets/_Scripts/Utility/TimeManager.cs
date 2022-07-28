@@ -6,8 +6,8 @@ using System;
 
 public class TimeManager : MonoBehaviour
 {
-    [SerializeField]
-    private float slowDownLength = 2f;
+    //[SerializeField]
+    //private float slowDownLength = 2f;
     [SerializeField]
     private float timeScaleModifier = 0.05f;
 
@@ -24,9 +24,14 @@ public class TimeManager : MonoBehaviour
         GameManager.onGameOver -= OnGameOver;
     }
 
+    private void Start()
+    {
+        ChangeTimeScale(1);
+    }
+
     private void OnZeroFuel()
     {
-        ChangeTimeScale(0.05f);
+        ChangeTimeScale(1f);
     }
 
     private void OnGameOver()
@@ -35,30 +40,30 @@ public class TimeManager : MonoBehaviour
     }
 
     // Update is called once per frame
-    void Update()
-    {
-        Time.timeScale += (1f / slowDownLength * Time.unscaledDeltaTime);
-        Time.timeScale = Mathf.Clamp(Time.timeScale , 0, 1);
-    }
+    //void Update()
+    //{
+    //    Time.timeScale += (1f / slowDownLength * Time.unscaledDeltaTime);
+    //    Time.timeScale = Mathf.Clamp(Time.timeScale , 0, 1);
+    //}
 
     public void ChangeTimeScale(float _timeScaleModifier)
     {
         timeScaleModifier = _timeScaleModifier;
         Time.timeScale = timeScaleModifier;
-        Time.fixedDeltaTime = Time.timeScale * 0.2f;
+        //Time.fixedDeltaTime = Time.timeScale * Time.fixedDeltaTime; 
     }
 
-    public void ChangeTimeScale(float _timeScaleModifier, float time)
-    {
-        slowDownLength = time;
-        timeScaleModifier = _timeScaleModifier;
-        Time.timeScale = timeScaleModifier;
-        Time.fixedDeltaTime = Time.timeScale * 0.2f;
-    }
+    //public void ChangeTimeScale(float _timeScaleModifier, float time)
+    //{
+    //    slowDownLength = time;
+    //    timeScaleModifier = _timeScaleModifier;
+    //    Time.timeScale = timeScaleModifier;
+    //    Time.fixedDeltaTime = Time.timeScale * 0.2f;
+    //}
 
-    public void ResetTimeManagerToDefaultValues()
-    {
-        slowDownLength = 2f;
-        timeScaleModifier = 0.05f;
-    }
+    //public void ResetTimeManagerToDefaultValues()
+    //{
+    //    slowDownLength = 2f;
+    //    timeScaleModifier = 0.05f;
+    //}
 }

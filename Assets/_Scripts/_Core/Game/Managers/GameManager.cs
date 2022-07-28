@@ -36,14 +36,14 @@ namespace StarWriter.Core
 
         private void OnEnable()
         {
-            //AdsManager.adShowComplete += OnAdShowComplete;
+            AdsManager.adShowComplete += OnAdShowComplete;
             //FuelSystem.zeroFuel += Death;
             ShipVisualEffects.onExplosionCompletion += OnExplosionCompletion;
         }
 
         private void OnDisable()
         {
-            //AdsManager.adShowComplete -= OnAdShowComplete;
+            AdsManager.adShowComplete -= OnAdShowComplete;
             //FuelSystem.zeroFuel -= Death;
             ShipVisualEffects.onExplosionCompletion -= OnExplosionCompletion;
         }
@@ -109,7 +109,7 @@ namespace StarWriter.Core
             // PauseGame();
             onDeath?.Invoke();
 
-            if (deathCount++ == 2)
+            if (++deathCount == 2)
                 EndGame();
         }
 

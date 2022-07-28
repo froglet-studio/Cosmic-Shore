@@ -24,6 +24,11 @@ public class ShipVisualEffects : MonoBehaviour
         FuelSystem.zeroFuel -= OnZeroFuel;
     }
 
+    private void Start()
+    {
+        explosiveMaterial.SetFloat("_explosion", 0);
+    }
+
     private void OnZeroFuel()
     {
         StartCoroutine(OnDeathShipExplosionCoroutine());
@@ -31,14 +36,21 @@ public class ShipVisualEffects : MonoBehaviour
 
     public IEnumerator OnDeathShipExplosionCoroutine()
     {
+        HapticController.PlayBlockCollisionHaptics();
+
+        // Play SFX sound //TODO for John to wire up end game sound/song and get from TIM. Consider sending an event to jukebox instead
+        //AudioSource audioSource = GetComponent<AudioSource>();
+        //audioSource.PlayOneShot(audioSource.clip);
+
         float explosionRadius = 0f;
         while (explosionRadius < maxExplosionRadius )
         {
-            yield return new WaitForSeconds(.01f);
-            explosionRadius += 0.1f;
+            yield return new WaitForSeconds(.02f);
+            explosionRadius += 20f;
             explosiveMaterial.SetFloat("_explosion", explosionRadius);
         }
         onExplosionCompletion?.Invoke();
+        explosiveMaterial.SetFloat("_explosion", 0);
     }
     
 }
