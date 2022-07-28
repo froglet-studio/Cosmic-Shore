@@ -32,14 +32,10 @@ namespace StarWriter.Core.Input
         private readonly float animationScaler = 25f;
         private readonly float yawAnimationScaler = 80f;
 
-        private readonly float cameraFlipThreshold = .1f;
-
         private Gyroscope gyro;
         private Quaternion empiricalCorrection;
         private Quaternion displacementQ;
         private Quaternion inverseInitialRotation=new(0,0,0,0);
-
-        private bool isCameraDisabled = false;
 
         private bool isPitchEnabled = true;
         private bool isYawEnabled = true;

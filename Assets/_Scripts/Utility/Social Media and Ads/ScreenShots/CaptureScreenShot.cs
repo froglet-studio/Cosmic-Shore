@@ -9,45 +9,39 @@ namespace StarWriter.Utility.ScreenShots
         public int supersize = 2;
         private int screenShotIndex = 0;
 
-
         private void Update()
         {
+#if UNITY_EDITOR
             if (Input.GetKeyUp(KeyCode.C))
             {
                 ScreenCapture.CaptureScreenshot($"Screenshot {screenShotIndex}.png", supersize);
-                screenShotIndex++;
                 Debug.Log($"Screenshot {screenShotIndex}.png hass been taken.");
+                
+                screenShotIndex++;
             }
+#endif
         }
 
         public void CaptureScreenShotToDisk(string path)
         {
             ScreenCapture.CaptureScreenshot($"{path}Screenshot {screenShotIndex}.png", supersize);
+            Debug.Log($"CaptureScreenShot.CaptureScreenShotToDisk - {path}Screenshot {screenShotIndex}.png has been taken.");
+
             screenShotIndex++;
-            Debug.Log($"{path}Screenshot {screenShotIndex}.png has been taken.");
         }
 
         public Texture CaptureScreenShotAsTexture(int superSize)
         {
             Texture screenshotTexture = ScreenCapture.CaptureScreenshotAsTexture(superSize);
+            Debug.Log($"CaptureScreenShot.CaptureScreenShotAsTexture superSize:{superSize}");
             return screenshotTexture;
-            
-            Debug.Log("Screenshot texture has been created.");
         }
 
         public void CaptureScreenShotIntoRenderTexture(RenderTexture renderTexture)
         {
             ScreenCapture.CaptureScreenshotIntoRenderTexture(renderTexture);
-
             Debug.Log("Screenshot has been applied to RenderTexture.");
         }
-
-        public void DeleteAllScreenShots(string path)
-        {
-            //TODO 
-        }
-
-
     }
 }
 

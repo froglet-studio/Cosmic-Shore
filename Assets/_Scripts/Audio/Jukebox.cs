@@ -6,14 +6,11 @@ namespace StarWriter.Core.Audio
 {
     public class Jukebox : SingletonPersistent<Jukebox>
     {
-        [SerializeField]
-        private SO_Song[] so_songs;  //Used for random and indexed song selection
+        [SerializeField] private SO_Song[] so_songs;  // Used for random and indexed song selection
 
         Dictionary<string, Song> Playlist = new Dictionary<string, Song>(); //use song title key to access a specific song
 
         private int index = 0;
-
-        private string JukeboxIndexPlayerPrefKey = "JukeboxIndex";
 
         public bool RandomizePlay = true;
 
@@ -49,9 +46,8 @@ namespace StarWriter.Core.Audio
         private void Update()
         {
             if (!audioSystem.IsAudioEnabled)
-            {
                 return;
-            }
+
             //if audio is enabled, the jukebox is on, and no music is playing, hit the side of the jukebox heeeeey
             if (jukeboxIsOn)
             {
@@ -65,7 +61,6 @@ namespace StarWriter.Core.Audio
                     StartJukebox();
                 }
             }
-
         }
 
         private void InitiatizeJukebox()  //Adds song SO's to the Playlist dictionary. Then initiatize the jukebox
