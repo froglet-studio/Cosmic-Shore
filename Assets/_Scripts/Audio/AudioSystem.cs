@@ -13,23 +13,16 @@ namespace StarWriter.Core.Audio
     public class AudioSystem : SingletonPersistent<AudioSystem>
     {
         #region Fields
-        [SerializeField]
-        AudioMixer masterMixer;
+        [SerializeField] AudioMixer masterMixer;
 
-        [SerializeField]
-        private AudioSource musicSource1;     
-        [SerializeField]
-        private AudioSource musicSource2; 
+        [SerializeField] AudioSource musicSource1;     
+        [SerializeField] AudioSource musicSource2; 
 
         public AudioSource MusicSource1 { get => musicSource1; set => musicSource1 = value; }
         public AudioSource MusicSource2 { get => musicSource2; set => musicSource2 = value; }
 
-        [SerializeField]
-        float masterVolume = .1f;
-        [SerializeField]
-        float musicVolume = .1f;
-        [SerializeField]
-        float environmentVolume = .1f;
+        [SerializeField] float masterVolume = .1f;
+        [SerializeField] float musicVolume = .1f;
 
         float MasterVolume { get { return isAudioEnabled ? masterVolume : 0; } set { } }
 
@@ -70,7 +63,7 @@ namespace StarWriter.Core.Audio
                 SetMasterMixerVolume(0);
             }
         }
-  
+
         public void PlayMusicClip(AudioClip audioClip)
         {
             AudioSource activeAudioSource = (firstMusicSourceIsPlaying ? musicSource1 : musicSource2);
@@ -98,9 +91,7 @@ namespace StarWriter.Core.Audio
                 {
                     WaitForMusicEnd(musicSource2);
                 }
-
             }
-            
         }
 
         public AudioClip ToggleMusicPlaylist()
@@ -123,18 +114,18 @@ namespace StarWriter.Core.Audio
             if (!activeAudioSource.isPlaying)
                 activeAudioSource.Play();
 
-            float t;
-            for (t = 0; t < transitionTime; t += Time.deltaTime)
+            for (float t = 0; t < transitionTime; t += Time.deltaTime)
             {
                 // Fade out original clip masterVolume
                 activeAudioSource.volume = (MasterVolume - t / transitionTime);
                 yield return null;
             }
-            activeAudioSource.Stop();
 
+            activeAudioSource.Stop();
             activeAudioSource.clip = newAudioClip; // Change AudioClip
             activeAudioSource.Play();
-            for (t = 0; t < transitionTime; t += Time.deltaTime)
+            
+            for (float t = 0; t < transitionTime; t += Time.deltaTime)
             {
                 // Fade in new clip masterVolume
                 activeAudioSource.volume = (t / transitionTime);
@@ -167,6 +158,7 @@ namespace StarWriter.Core.Audio
                 newSource.volume = MasterVolume * (t / transitionTime);
                 yield return null;
             }
+
             originalSource.Stop();
         }
 
@@ -181,11 +173,7 @@ namespace StarWriter.Core.Audio
 
         public bool IsMusicSourcePlaying()
         {
-            if (musicSource1.isPlaying || musicSource2.isPlaying)
-            {
-                return true;
-            }
-            else { return false; }
+            return musicSource1.isPlaying || musicSource2.isPlaying;
         }
 
         public void PlaySFXClip(AudioClip audioClip, AudioSource sfxSource)
@@ -199,29 +187,14 @@ namespace StarWriter.Core.Audio
             masterMixer.SetFloat("MasterVolume", value);
         }
 
-        private float GetMasterMixerVolume()
-        {
-            masterMixer.GetFloat("MasterVolume", out masterVolume);
-            return masterVolume;
-        }
-
         public void SetMusicMixerVolume(float value)
         {
             masterMixer.SetFloat("MusicVolume", value);
-        }
-
-        private float GetMusicMixerVolume()
-        {
-            masterMixer.GetFloat("MusicVolume", out musicVolume);
-            return masterVolume;
         }
 
         public void SetEnvironmentMixerVolume(float value)
         {
             masterMixer.SetFloat("EnvironmentVolume", value);
         }
-       
-        
     }
 }
-
