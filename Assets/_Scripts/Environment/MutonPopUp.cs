@@ -16,30 +16,16 @@ public class MutonPopUp : MonoBehaviour
     public static event MutonMove OnMutonMove;
     #endregion
 
-    #region Floats
-    [SerializeField]
-    float fuelAmount = 0.07f;
-    
-    [SerializeField]
-    public float sphereRadius = 100;
-    
-    #endregion
+    #region Inspector Fields
+    [SerializeField] float lifeTimeIncrease;
+    [SerializeField] float fuelAmount = 0.07f;
+    [SerializeField] public float sphereRadius = 100;
 
-    [SerializeField]
-    int scoreBonus = 1;
+    [SerializeField] int scoreBonus = 1;
 
-    #region Referenced in Inspector
-    [SerializeField]
-    GameObject spentMutonPrefab;  
-    
-    [SerializeField]
-    GameObject Muton;
-    
-    [SerializeField]
-    Material material;
-
-    [SerializeField]
-    float lifeTimeIncrease;
+    [SerializeField] GameObject spentMutonPrefab;  
+    [SerializeField] GameObject Muton;    
+    [SerializeField] Material material;
     #endregion
 
     Material tempMaterial;
@@ -75,21 +61,18 @@ public class MutonPopUp : MonoBehaviour
 
         GameObject ship = other.transform.parent.parent.gameObject;
 
-        
-
-
         if (ship == GameObject.FindWithTag("Player"))
         {
             // Player Collision
-            //muton animation and haptics
+            // Muton animation and haptics
             StartCoroutine(spentMuton.GetComponent<Impact>().ImpactCoroutine(
                 ship.transform.forward * ship.GetComponent<InputController>().speed, tempMaterial, "Player"));
             HapticController.PlayMutonCollisionHaptics();
-            //AudioSystem.Instance.PlaySFXClip("Muton SFX 1");
 
-            //update fuel bar and currentScore
+            // Update fuel bar and currentScore
             OnMutonPopUpCollision(ship.GetComponent<Player>().PlayerUUID, fuelAmount); // excess Fuel flows into currentScore
-            if (AddToScore != null) { AddToScore(ship.GetComponent<Player>().PlayerUUID, scoreBonus); }
+            if (AddToScore != null)
+                AddToScore(ship.GetComponent<Player>().PlayerUUID, scoreBonus);
         }
         else
         {
@@ -117,8 +100,6 @@ public class MutonPopUp : MonoBehaviour
         // Play SFX sound
         AudioSource audioSource = GetComponent<AudioSource>();
         audioSource.PlayOneShot(audioSource.clip);
-
-        //audioSystem.PlaySFXClip(GetComponent<AudioSource>().clip); //, audioSource); 
 
         // Move the muton
         StartCoroutine(Muton.GetComponent<FadeIn>().FadeInCoroutine());

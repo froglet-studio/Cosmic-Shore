@@ -23,18 +23,12 @@ namespace StarWriter.Core
         }
 
         #region Settings
-        [SerializeField]
-        private bool tutorialHasBeenCompleted = false;
-        [SerializeField]
-        private bool isAudioEnabled = true;
-        [SerializeField]
-        private bool isTutorialEnabled = true;
-        [SerializeField]
-        private bool isGyroEnabled = true;
+        [SerializeField] bool tutorialHasBeenCompleted = false;
+        [SerializeField] bool isAudioEnabled = true;
+        [SerializeField] bool isGyroEnabled = true;
 
         public bool TutorialHasBeenCompleted { get => tutorialHasBeenCompleted; set => tutorialHasBeenCompleted = value; }
         public bool IsAudioEnabled { get => isAudioEnabled; set => isAudioEnabled = value; }
-        public bool IsTutorialEnabled { get => isTutorialEnabled; set => isTutorialEnabled = value; }
         public bool IsGyroEnabled { get => isGyroEnabled; }
         #endregion
 
@@ -54,7 +48,6 @@ namespace StarWriter.Core
                 PlayerPrefs.Save();
 
                 //Initialize Bools
-                isTutorialEnabled = true;
                 isAudioEnabled = true;
                 isGyroEnabled = true;
             }
@@ -62,7 +55,6 @@ namespace StarWriter.Core
             {
                 //Not the First Time Playing
                 isAudioEnabled = PlayerPrefs.GetInt(PlayerPrefKeys.isAudioEnabled.ToString()) == 1;
-                isTutorialEnabled = PlayerPrefs.GetInt(PlayerPrefKeys.isTutorialEnabled.ToString()) == 1;
                 isGyroEnabled = PlayerPrefs.GetInt(PlayerPrefKeys.isGyroEnabled.ToString()) == 1;
             }
         }

@@ -49,16 +49,10 @@ namespace StarWriter.Core.Audio
 
         private void ChangeAudioEnabledStatus(bool status)
         {
-            isAudioEnabled = status;
-            Debug.Log($"AudioSystem.Start - isAudioEnabled: {isAudioEnabled}");
-            if (isAudioEnabled)
-            {
-                SetMasterMixerVolume(masterVolume);
-            }
-            else
-            {
-                SetMasterMixerVolume(0);
-            }
+            Debug.Log($"AudioSystem.ChangeAudioEnabledStatus - status: {status}");
+
+            isAudioEnabled = status;            
+            SetMasterMixerVolume(isAudioEnabled ? masterVolume : 0);
         }
 
         public void PlayMusicClip(AudioClip audioClip)
@@ -78,25 +72,6 @@ namespace StarWriter.Core.Audio
                 activeAudioSource.volume = musicVolume;
                 activeAudioSource.Play();
             }
-            else
-            {
-                if (musicSource1.isPlaying)
-                {
-                    WaitForMusicEnd(musicSource1);
-                }
-                else
-                {
-                    WaitForMusicEnd(musicSource2);
-                }
-            }
-        }
-
-        public AudioClip ToggleMusicPlaylist()
-        {
-            Debug.Log("Called play next song");
-            firstMusicSourceIsPlaying = !firstMusicSourceIsPlaying;
-
-            return firstMusicSourceIsPlaying ? musicSource2.clip : musicSource1.clip;
         }
 
         public void PlayMusicClipWithFade(AudioClip audioClip, float transitionTime = 1.0f)
@@ -114,7 +89,7 @@ namespace StarWriter.Core.Audio
             for (float t = 0; t < transitionTime; t += Time.deltaTime)
             {
                 // Fade out original clip masterVolume
-                activeAudioSource.volume = (MasterVolume - t / transitionTime);
+                activeAudioSource.volume = MasterVolume * (1 - (t / transitionTime));
                 yield return null;
             }
 
@@ -125,7 +100,7 @@ namespace StarWriter.Core.Audio
             for (float t = 0; t < transitionTime; t += Time.deltaTime)
             {
                 // Fade in new clip masterVolume
-                activeAudioSource.volume = (t / transitionTime);
+                activeAudioSource.volume = MasterVolume * (t / transitionTime);
                 yield return null;
             }
         }
@@ -151,21 +126,12 @@ namespace StarWriter.Core.Audio
         {
             for (float t = 0; t < transitionTime; t += Time.deltaTime)
             {
-                originalSource.volume = (MasterVolume - t / transitionTime);
+                originalSource.volume = MasterVolume * (1 - (t / transitionTime));
                 newSource.volume = MasterVolume * (t / transitionTime);
                 yield return null;
             }
 
             originalSource.Stop();
-        }
-
-        IEnumerator WaitForMusicEnd(AudioSource activeAudioSource)
-        {
-            while (activeAudioSource.isPlaying)
-            {
-                yield return null;
-                IsMusicSourcePlaying();
-            }
         }
 
         public bool IsMusicSourcePlaying()

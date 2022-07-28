@@ -6,7 +6,7 @@ namespace StarWriter.Core.Audio
 {
     public class Jukebox : SingletonPersistent<Jukebox>
     {
-        [SerializeField] private SO_Song[] so_songs;  // Used for random and indexed song selection
+        [SerializeField] SO_Song[] so_songs;  // Used for random and indexed song selection
 
         Dictionary<string, Song> Playlist = new Dictionary<string, Song>(); //use song title key to access a specific song
 
@@ -103,7 +103,7 @@ namespace StarWriter.Core.Audio
 
         public void PlayRandomSong()
         {
-            SO_Song so = so_songs[UnityEngine.Random.Range(0, so_songs.Length)];
+            SO_Song so = so_songs[Random.Range(0, so_songs.Length)];
             AudioClip clip = so.Clip;
             audioSystem.PlayMusicClip(clip);
         }
