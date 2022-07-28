@@ -7,8 +7,10 @@ public class AdsManager : MonoBehaviour, IUnityAdsInitializationListener, IUnity
     // Organization Core ID: 4037077
     [SerializeField] string _androidGameId;
     [SerializeField] string _iOSGameId;
+#pragma warning disable CS0414 // Ignore the not used warning - since we only use one of these two behind a precompile flag
     [SerializeField] string _androidAdUnitId = "Rewarded_Android";
     [SerializeField] string _iOSAdUnitId = "Rewarded_iOS";
+#pragma warning restore CS0414
     [SerializeField] bool _testMode = true;
 
     private string _adUnitId; // This will remain null for unsupported platforms
