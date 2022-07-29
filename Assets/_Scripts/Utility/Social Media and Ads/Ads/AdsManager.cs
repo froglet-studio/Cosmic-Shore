@@ -2,13 +2,15 @@ using StarWriter.Core;
 using UnityEngine;
 using UnityEngine.Advertisements;
 
-public class AdsManager : MonoBehaviour, IUnityAdsInitializationListener, IUnityAdsLoadListener, IUnityAdsShowListener
+public class AdsManager : MonoBehaviour, IUnityAdsInitializationListener, IUnityAdsLoadListener, IUnityAdsShowListener, IUnityAdsListener
 {
     // Organization Core ID: 4037077
     [SerializeField] string _androidGameId;
     [SerializeField] string _iOSGameId;
+#pragma warning disable CS0414 // Ignore the not used warning - since we only use one of these two behind a precompile flag
     [SerializeField] string _androidAdUnitId = "Rewarded_Android";
     [SerializeField] string _iOSAdUnitId = "Rewarded_iOS";
+#pragma warning restore CS0414
     [SerializeField] bool _testMode = true;
 
     private string _adUnitId; // This will remain null for unsupported platforms
@@ -50,6 +52,7 @@ public class AdsManager : MonoBehaviour, IUnityAdsInitializationListener, IUnity
 
         Debug.Log($"InitializeAds: OnBeforeAdvertisement.Initialize - _gameId:{_gameId}, _testMode:{_testMode}");
         Advertisement.Initialize(_gameId, _testMode, true, this);
+        Advertisement.AddListener(this);
         Debug.Log($"InitializeAds: OnAfterAdvertisement.Initialize - _gameId:{_gameId}, _testMode:{_testMode}");
     }
 
@@ -63,32 +66,13 @@ public class AdsManager : MonoBehaviour, IUnityAdsInitializationListener, IUnity
 
     // Implement a method to execute when the user clicks the button:
     public void ShowAd()
-    {
-        // Then show the ad:
-        var options = new ShowOptions { resultCallback = HandleShowResult };
-        //Advertisement.Show("rewardedVideoZone", options);
-
-        Advertisement.Show(_adUnitId, options, this);
+    {   
+        Advertisement.Show(_adUnitId, this);
     }
 
     private void HandleShowResult(ShowResult result)
     {
-        switch (result)
-        {
-            case ShowResult.Finished:
-                Debug.Log("The ad was successfully shown.");
-                OnUnityAdsShowComplete(_adUnitId, UnityAdsShowCompletionState.COMPLETED);
-                //
-                // YOUR CODE TO REWARD THE GAMER
-                // Give coins etc.
-                break;
-            case ShowResult.Skipped:
-                Debug.Log("The ad was skipped before reaching the end.");
-                break;
-            case ShowResult.Failed:
-                Debug.LogError("The ad failed to be shown.");
-                break;
-        }
+
     }
 
     public void OnInitializationComplete()
@@ -136,5 +120,40 @@ public class AdsManager : MonoBehaviour, IUnityAdsInitializationListener, IUnity
     {
         Debug.Log($"AdsManager.OnUnityAdsShowFailure - adUnitId: {adUnitId}, error: {error}, message: {message}");
         adShowFailure?.Invoke(adUnitId, error, message);
+    }
+
+    public void OnUnityAdsReady(string placementId)
+    {
+        Debug.Log($"AdsManager.OnUnityAdsReady - placementId: {placementId}");
+    }
+
+    public void OnUnityAdsDidError(string message)
+    {
+        Debug.Log($"AdsManager.OnUnityAdsDidError - message: {message}");
+    }
+
+    public void OnUnityAdsDidStart(string placementId)
+    {
+        Debug.Log($"AdsManager.OnUnityAdsDidStart - placementId: {placementId}");
+    }
+
+    public void OnUnityAdsDidFinish(string placementId, ShowResult showResult)
+    {
+        switch (showResult)
+        {
+            case ShowResult.Finished:
+                Debug.Log("The ad was successfully shown.");
+                OnUnityAdsShowComplete(_adUnitId, UnityAdsShowCompletionState.COMPLETED);
+                //
+                // YOUR CODE TO REWARD THE GAMER
+                // Give coins etc.
+                break;
+            case ShowResult.Skipped:
+                Debug.Log("The ad was skipped before reaching the end.");
+                break;
+            case ShowResult.Failed:
+                Debug.LogError("The ad failed to be shown.");
+                break;
+        }
     }
 }

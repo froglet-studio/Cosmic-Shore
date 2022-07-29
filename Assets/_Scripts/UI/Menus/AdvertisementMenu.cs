@@ -12,9 +12,6 @@ public class AdvertisementMenu : MonoBehaviour
     public delegate void OnDeclineAdEvent();
     public static event OnDeclineAdEvent onDeclineAd;
 
-    public delegate void OnWatchAdEvent();
-    public static event OnWatchAdEvent onWatchAd;
-
     private void OnEnable()
     {
         GameManager.onPlayGame += ResetButtons;
@@ -43,7 +40,6 @@ public class AdvertisementMenu : MonoBehaviour
     {
         Debug.Log("Ad requested");
         ResetButtons();
-        //GameManager.Instance.ExtendGame();
     }
 
     public void OnClickDeclineAdButton()

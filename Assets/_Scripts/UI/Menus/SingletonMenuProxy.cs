@@ -5,7 +5,7 @@ public class SingletonMenuProxy : MonoBehaviour
 {
     public void GameManagerOnClickTutorialButton()
     {
-        GameManager.Instance.OnClickTutorialToggleButton();
+        GameManager.Instance.OnClickTutorialButton();
     }
     public void GameSettingChangeAudioEnabledSetting()
     {

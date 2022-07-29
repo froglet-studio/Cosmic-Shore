@@ -1,15 +1,11 @@
-using System;
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class ShipVisualEffects : MonoBehaviour
 {
-
-    [SerializeField]
-    private Material explosiveMaterial;
-    [SerializeField]
-    private float maxExplosionRadius = 0f;
+    [SerializeField] Material explosiveMaterial;
+    [SerializeField] float maxExplosionRadius = 0f;
+    [SerializeField] float explosionRate = 1200f;
 
     public delegate void OnExplosionCompletionEvent();
     public static event OnExplosionCompletionEvent onExplosionCompletion;
@@ -45,12 +41,11 @@ public class ShipVisualEffects : MonoBehaviour
         float explosionRadius = 0f;
         while (explosionRadius < maxExplosionRadius )
         {
-            yield return new WaitForSeconds(.02f);
-            explosionRadius += 20f;
+            yield return null;  // Come back next frame
+            explosionRadius += explosionRate * Time.deltaTime;
             explosiveMaterial.SetFloat("_explosion", explosionRadius);
         }
         onExplosionCompletion?.Invoke();
         explosiveMaterial.SetFloat("_explosion", 0);
     }
-    
 }

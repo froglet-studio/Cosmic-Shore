@@ -42,7 +42,7 @@ namespace StarWriter.UI
         /// </summary>
         public void OnClickTutorialButton()
         {
-            gameManager.OnClickTutorialToggleButton();
+            gameManager.OnClickTutorialButton();
         }
         /// <summary>
         /// Restarts the Game Scene
@@ -67,7 +67,7 @@ namespace StarWriter.UI
         }
         public void OnClickRestartTutorialButton()
         {
-            gameManager.OnClickTutorialToggleButton();
+            gameManager.OnClickTutorialButton();
         }
 
         public void OnClickMainMenu()
