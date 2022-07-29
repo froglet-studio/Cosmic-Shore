@@ -50,4 +50,5 @@ MonoBehaviour:
   - {fileID: 11400000, guid: bb2c516f233054b479a5327beb6427b0, type: 2}
   - {fileID: 11400000, guid: 4484681179f3b1f41a08668c27ae1ef0, type: 2}
   - {fileID: 11400000, guid: 23e5ea5c5d2b9cb4699185ebd9ea651b, type: 2}
+  onDeathSong: {fileID: 11400000, guid: 668810ca38b66694faeb947569634ea7, type: 2}
   RandomizePlay: 1

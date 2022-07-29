@@ -8,6 +8,9 @@ namespace StarWriter.Core.Audio
     {
         [SerializeField] SO_Song[] so_songs;  // Used for random and indexed song selection
 
+        [SerializeField]
+        SO_Song onDeathSong;
+
         Dictionary<string, Song> Playlist = new Dictionary<string, Song>(); //use song title key to access a specific song
 
         private int index = 0;
@@ -27,20 +30,43 @@ namespace StarWriter.Core.Audio
 
         private void OnEnable()
         {
-            GameSetting.OnChangeAudioEnabledStatus += ChangeAudioEnabledStatus;
+            GameSetting.OnChangeAudioEnabledStatus += OnChangeAudioEnabledStatus;
+            AudioSystem.onMissingMusicSource += OnMissingAudioSystemSources;
+            GameManager.onDeath += OnDeath;
         }
 
         private void OnDisable()
         {
-            GameSetting.OnChangeAudioEnabledStatus -= ChangeAudioEnabledStatus;
+            GameSetting.OnChangeAudioEnabledStatus -= OnChangeAudioEnabledStatus;
+            AudioSystem.onMissingMusicSource -= OnMissingAudioSystemSources;
+            GameManager.onDeath -= OnDeath;
+        }
+        /// <summary>
+        /// Adds next 2 clips to the AudioSystem if a MusicSource is missing
+        /// </summary>
+        private void OnMissingAudioSystemSources()
+        {
+            IncrementSongListIndex();
+            audioSystem.MusicSource1.clip = so_songs[index].Clip;
+            IncrementSongListIndex();
+            audioSystem.MusicSource2.clip = so_songs[index].Clip;
         }
 
-        private void ChangeAudioEnabledStatus(bool status)
+        private void OnDeath()
+        {
+            Song song = new Song(onDeathSong);
+            PlaySong(song.Title);
+        }
+
+        private void OnChangeAudioEnabledStatus(bool status)
         {
             jukeboxIsOn = status;
 
-            if (!jukeboxIsOn)
-                CancelAllSongsPlaying();
+            if (jukeboxIsOn)
+            {
+                PlayNextSong();
+            }
+            else { CancelAllSongsPlaying(); }
         }
 
         private void Update()
@@ -48,30 +74,41 @@ namespace StarWriter.Core.Audio
             if (!audioSystem.IsAudioEnabled)
                 return;
 
-            //if audio is enabled, the jukebox is on, and no music is playing, hit the side of the jukebox heeeeey
             if (jukeboxIsOn)
             {
-                if (!audioSystem.IsMusicSourcePlaying())
+                if (audioSystem.IsMusicSourcePlaying())
+                {
+                    audioSystem.ConfirmMusicSourcesAreReady();   
+                }
+                else
                 {
                     StartJukebox();
                 }
 
-                if (!audioSystem.MusicSource1.isPlaying && !audioSystem.MusicSource2.isPlaying)
-                {
-                    StartJukebox();
-                }
+  
             }
         }
-
+        /// <summary>
+        /// Adds songs to Playlist
+        /// </summary>
         private void InitiatizeJukebox()  //Adds song SO's to the Playlist dictionary. Then initiatize the jukebox
         {
+            // Songs added here are specific use songs
+            Song song = new Song(onDeathSong);
+            Playlist.Add(song.Title, song);
+
+            //Add songs from the so_songs list
             foreach (SO_Song so in so_songs)
             {
-                Song song = new Song(so);
+                song = new Song(so);
                 Playlist.Add(song.Title, song);
                 Debug.Log("Song " + song.Title + " added to Playlist");
             }
+
         }
+        /// <summary>
+        /// Sets up and starts Jukebox
+        /// </summary>
         private void StartJukebox()
         {
             if (RandomizePlay)
@@ -88,18 +125,26 @@ namespace StarWriter.Core.Audio
         // Alternatively, we can make this private and have all dis/enablement go through GameSetting.OnChangeAudioEnabledStatus
         public void CancelAllSongsPlaying()
         {
-            audioSystem.MusicSource1.Stop();
-            audioSystem.MusicSource2.Stop();
+            audioSystem.StopAllSongs();
+            jukeboxIsOn = false;
         }
-
+        /// <summary>
+        /// Stop all other songs and plays a specific song
+        /// </summary>
+        /// <param name="title"></param>
         public void PlaySong(string title)
         {
+            //audioSystem.StopAllSongs();
+
             // TODO: This plays a song outside of the control flow of 'random' or 'cycle'. After this song plays, 'random' or 'cycle' will continue. Is this what we want?
             if (Playlist.TryGetValue(title, out Song song))
             {
                 audioSystem.PlayMusicClip(song.Clip);
             }
         }
+        /// <summary>
+        /// Play a random song
+        /// </summary>
 
         public void PlayRandomSong()
         {
@@ -112,7 +157,12 @@ namespace StarWriter.Core.Audio
         public void PlayNextSong()
         {
             audioSystem.PlayMusicClip(so_songs[index].Clip);
-            index = (index + 1) % so_songs.Length;  // increment and modulo will cycle from 0 to length-1
+            IncrementSongListIndex();
+        }
+
+        private void IncrementSongListIndex()
+        {
+            index = (index + 1) % so_songs.Length;  // increment and modulo will cycle from 0 to length-
         }
     }
 }
