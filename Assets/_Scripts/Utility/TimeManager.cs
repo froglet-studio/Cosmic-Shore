@@ -31,7 +31,7 @@ public class TimeManager : MonoBehaviour
 
     private void OnZeroFuel()
     {
-        ChangeTimeScale(1f);
+        ChangeTimeScale(1);
     }
 
     private void OnGameOver()

@@ -36,7 +36,7 @@ public class CameraManager : SingletonPersistent<CameraManager>
     {
         GameManager.onPlayGame += OnPlayGame;
         GameManager.onPhoneFlip += OnPhoneFlip;
-        GameManager.onDeath += OnDeath;
+        FuelSystem.zeroFuel += OnZeroFuel;
         GameManager.onExtendGamePlay += OnExtendGamePlay;
         GameManager.onGameOver += OnGameOver;
     }
@@ -45,7 +45,7 @@ public class CameraManager : SingletonPersistent<CameraManager>
     {
         GameManager.onPlayGame -= OnPlayGame;
         GameManager.onPhoneFlip -= OnPhoneFlip;
-        GameManager.onDeath -= OnDeath;
+        FuelSystem.zeroFuel -= OnZeroFuel;
         GameManager.onExtendGamePlay -= OnExtendGamePlay;
         GameManager.onGameOver -= OnGameOver;
     }
@@ -54,8 +54,8 @@ public class CameraManager : SingletonPersistent<CameraManager>
     {
         OnMainMenu();
         playerFollowTarget = endCameraLookAtTarget; // just so not null -- TODO: probably a better way to do whatever this is protecting against
-        closeCamera.LookAt = farCamera.LookAt = playerFollowTarget;
-        closeCamera.Follow = farCamera.Follow = playerFollowTarget;
+        closeCamera.LookAt = farCamera.LookAt = deathCamera.LookAt = playerFollowTarget;
+        closeCamera.Follow = farCamera.Follow = deathCamera.Follow = playerFollowTarget;
     }
     public void OnMainMenu()
     {
@@ -66,16 +66,17 @@ public class CameraManager : SingletonPersistent<CameraManager>
     {
         GameManager.onDeath += ZoomEndCameraToScores;
         playerFollowTarget = GameObject.FindGameObjectWithTag("Player").transform;
-        closeCamera.LookAt = farCamera.LookAt = playerFollowTarget;
-        closeCamera.Follow = farCamera.Follow = playerFollowTarget;
-        SetFarCameraActive();
+        closeCamera.LookAt = farCamera.LookAt = deathCamera.LookAt = playerFollowTarget;
+        closeCamera.Follow = farCamera.Follow = deathCamera.Follow = playerFollowTarget;
+        SetCloseCameraActive();
         isCameraFlipEnabled = true;
     }
 
-    private void OnDeath()
+    private void OnZeroFuel()
     {
-        // TODO: is this even a thing? it seems like ZoomEndCameraToScores will always be called after
-        SetDeathCameraActive();   
+        isCameraFlipEnabled = false;
+        SetDeathCameraActive();
+        
     }
 
     private void OnGameOver()
@@ -85,7 +86,8 @@ public class CameraManager : SingletonPersistent<CameraManager>
 
     private void OnExtendGamePlay()
     {
-        SetCloseCameraActive();
+        isCameraFlipEnabled = true;
+        //SetCloseCameraActive();
     }
 
     private void ZoomEndCameraToScores()

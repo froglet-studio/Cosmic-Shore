@@ -5,7 +5,7 @@ public class ShipVisualEffects : MonoBehaviour
 {
     [SerializeField] Material explosiveMaterial;
     [SerializeField] float maxExplosionRadius = 0f;
-    [SerializeField] float explosionRate = 1200f;
+    [SerializeField] float explosionRate = 12f;
 
     public delegate void OnExplosionCompletionEvent();
     public static event OnExplosionCompletionEvent onExplosionCompletion;
