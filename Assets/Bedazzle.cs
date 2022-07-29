@@ -6,7 +6,7 @@ using UnityEngine.UI;
 public class Bedazzle : MonoBehaviour
 {
     private Image image;
-    private float value;
+    private float hue;
     private float speed;
 
     private float increment;
@@ -22,8 +22,8 @@ public class Bedazzle : MonoBehaviour
     {
         increment += .2f*Time.deltaTime;
         increment = increment % 1;
-        value = increment*Mathf.PI*2;
-        value = Mathf.Sin(value)/6+.63f;
-        image.color = Color.HSVToRGB(value, 1, 1);
+        hue = increment*Mathf.PI*2;
+        hue = Mathf.Sin(hue)/17f+.53f;
+        image.color = Color.HSVToRGB(hue, 1, 1);
     }
 }
