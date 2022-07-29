@@ -68,7 +68,7 @@ public class Trail : MonoBehaviour, ICollidable
     {
         if (IsPlayer(other.gameObject))
         {
-            other.transform.parent.parent.GetComponent<Player>().ToggleCollision();
+            other.transform.parent.parent.GetComponent<Player>().ToggleCollision(false);
 
             Debug.Log("tagplayer" + GameObject.FindGameObjectsWithTag("Player").Count());
 

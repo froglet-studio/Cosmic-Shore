@@ -75,9 +75,4 @@ public class Player : MonoBehaviour
             collider.enabled = enabled;
     }
 
-    public void ToggleCollision()
-    {
-        foreach (var collider in GetComponentsInChildren<Collider>(true))
-            collider.enabled = !collider.enabled;
-    }
 }
