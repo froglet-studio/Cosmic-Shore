@@ -22,9 +22,9 @@ public class BlockImpact : MonoBehaviour
             }
         }
         
-        while (timeStamp <= 1)
+        while (timeStamp <= 100)
         {
-            yield return new WaitForSeconds(.001f);
+            yield return null;
             timeStamp += .001f;
             material.SetVector("_velocity", velocityScale*timeStamp*velocity);
             material.SetFloat("_opacity", (1-timeStamp));

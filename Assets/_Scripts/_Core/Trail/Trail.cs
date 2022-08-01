@@ -85,6 +85,7 @@ public class Trail : MonoBehaviour, ICollidable
             }
 
             Destroy(gameObject);
+            other.transform.parent.parent.GetComponent<Player>().ToggleCollision(true);
         }
     }
 
