@@ -10,11 +10,10 @@ public class Trail : MonoBehaviour, ICollidable
     [SerializeField]
     private float fuelChange = -3f;
 
-    [SerializeField]
-    GameObject FossilBlock;
+    [SerializeField] GameObject FossilBlock;
 
-    [SerializeField]
-    Material material;
+    [SerializeField] Material material;
+    Material tempMaterial;
 
     public float waitTime = .6f;
     public delegate void TrailCollision(string uuid, float amount);
@@ -54,14 +53,29 @@ public class Trail : MonoBehaviour, ICollidable
 
     IEnumerator ToggleBlockCoroutine()
     {
+        var finalScale = transform.localScale;
+        var size = 0f;
         yield return new WaitForSeconds(waitTime);
+        transform.localScale = finalScale * size;
         meshRenderer.enabled = true;
+        while (size < 1)
+        {
+            yield return null;
+            size += .5f*Time.deltaTime;
+            transform.localScale = finalScale * size;
+        }
         blockCollider.enabled = true;
     }
 
     void OnTriggerEnter(Collider other)
     {
-        Collide(other);
+        if (gameObject != null)
+        {
+            Destroy(gameObject);
+            Collide(other);
+        }
+        
+        
     }
 
     public void Collide(Collider other)
@@ -74,17 +88,26 @@ public class Trail : MonoBehaviour, ICollidable
 
             //// Do Impact Stuff
             var ship = other.transform.parent.parent.gameObject;
-            
-            if (GameObject.FindGameObjectsWithTag("Player").Contains(ship))
+
+            //make exploding block
+            var explodingBlock = Instantiate<GameObject>(FossilBlock);
+            explodingBlock.transform.position = transform.position;
+            explodingBlock.transform.localEulerAngles = transform.localEulerAngles;
+            tempMaterial = new Material(material);
+            explodingBlock.GetComponent<Renderer>().material = tempMaterial;
+
+
+            if (ship == GameObject.FindWithTag("Player"))
+            //if (GameObject.FindGameObjectsWithTag("Player").Contains(ship))
             {
                 //// Player Hit
-                //var impactVector = ship.transform.forward * ship.GetComponent<InputController>().speed;
-                //StartCoroutine(blockImpact.ImpactCoroutine(impactVector, tempMaterial, "Player"));
+                var impactVector = ship.transform.forward * ship.GetComponent<InputController>().speed;
+                StartCoroutine(explodingBlock.GetComponent<BlockImpact>().ImpactCoroutine(impactVector, tempMaterial, "Player"));
                 OnTrailCollision?.Invoke(ship.GetComponent<Player>().PlayerUUID, fuelChange);
                 HapticController.PlayBlockCollisionHaptics();
             }
 
-            Destroy(gameObject);
+            
             other.transform.parent.parent.GetComponent<Player>().ToggleCollision(true);
         }
     }

@@ -165,6 +165,7 @@ Material:
     - _ZTest: 4
     - _ZWrite: 1
     - _ZWriteControl: 0
+    - _distance: 0
     - _opacity: 0
     - _player: 0
     - _playerBlock: 0
