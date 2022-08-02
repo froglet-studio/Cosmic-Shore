@@ -91,10 +91,24 @@ public class TrailSpawner : MonoBehaviour
                 trailList.Enqueue(Block);
                 if (trailList.Count > trailLength / trailPeriod)
                 {
-                    Destroy(trailList.Dequeue());
+                    //StartCoroutine(ShrinkTrailCoroutine());
+                   Destroy(trailList.Dequeue());
                 }
             }
-            
         }
+    }
+
+    IEnumerator ShrinkTrailCoroutine()
+    {
+        var size = 1f;
+        var Block = trailList.Dequeue();
+        var initialSize = Block.transform.localScale;
+        while (size > 0)
+        {
+            yield return null;
+            size -= .5f * Time.deltaTime;
+            transform.localScale = initialSize * size;
+        }
+        Destroy(Block);
     }
 }
