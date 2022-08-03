@@ -1,7 +1,8 @@
 using System.Collections;
 using UnityEngine;
+using UnityEngine.Audio;
 
-public class ShipVisualEffects : MonoBehaviour
+public class ShipExplosionHandler : MonoBehaviour
 {
     [SerializeField] Material explosiveMaterial;
     [SerializeField] float maxExplosionRadius = 0f;
@@ -32,12 +33,10 @@ public class ShipVisualEffects : MonoBehaviour
 
     public IEnumerator OnDeathShipExplosionCoroutine()
     {
+        // PlayerAudioManager plays shipExplosion at this moment
+
         HapticController.PlayBlockCollisionHaptics();
-
-        // Play SFX sound //TODO for John to wire up end game sound/song and get from TIM. Consider sending an event to jukebox instead
-        //AudioSource audioSource = GetComponent<AudioSource>();
-        //audioSource.PlayOneShot(audioSource.clip);
-
+        
         float explosionRadius = 0f;
         while (explosionRadius < maxExplosionRadius )
         {
