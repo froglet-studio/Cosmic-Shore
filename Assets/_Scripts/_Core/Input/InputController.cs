@@ -61,7 +61,7 @@ namespace StarWriter.Core.Input
 
         void Start()
         {
-            if (SystemInfo.supportsGyroscope)
+            if (true) //TODO replace this with SystemInfo.supportsGyroscope and test on tablet
             {
                 gyro = UnityEngine.Input.gyro;
                 gyro.enabled = true;
@@ -141,7 +141,7 @@ namespace StarWriter.Core.Input
 
         private void RotateShip()
         {
-            if (SystemInfo.supportsGyroscope
+            if (true //TODO replace this with SystemInfo.supportsGyroscope and test on tablet
                 && isGyroEnabled 
                 && !Equals(inverseInitialRotation, new Quaternion(0, 0, 0, 0)))
             {
