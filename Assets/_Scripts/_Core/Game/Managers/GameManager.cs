@@ -36,15 +36,13 @@ namespace StarWriter.Core
         private void OnEnable()
         {
             AdsManager.adShowComplete += OnAdShowComplete;
-            //FuelSystem.zeroFuel += Death;
-            ShipVisualEffects.onExplosionCompletion += OnExplosionCompletion;
+            ShipExplosionHandler.onExplosionCompletion += OnExplosionCompletion;
         }
 
         private void OnDisable()
         {
             AdsManager.adShowComplete -= OnAdShowComplete;
-            //FuelSystem.zeroFuel -= Death;
-            ShipVisualEffects.onExplosionCompletion -= OnExplosionCompletion;
+            ShipExplosionHandler.onExplosionCompletion -= OnExplosionCompletion;
         }
 
         void Start()

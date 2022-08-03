@@ -12,6 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7f1971bc9ba07254695003955755b55e, type: 3}
   m_Name: OnDeathSong
   m_EditorClassIdentifier: 
-  clip: {fileID: 8300000, guid: 5b6dbc562f6bc450bbb9edec8a7a1724, type: 3}
+  clip: {fileID: 8300000, guid: 0d8e2bdc8afc1b542ae09a3036a8f3d9, type: 3}
   decription: Song Played on Death Event
   author: Tim Green

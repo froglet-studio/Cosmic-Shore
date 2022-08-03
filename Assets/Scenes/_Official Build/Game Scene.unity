@@ -1539,6 +1539,11 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 5451711766278987284, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: shipExplosionSFX
+      value: 
+      objectReference: {fileID: 1586480802}
     - target: {fileID: 5696699759299697694, guid: c8544725eea141847982b286866c858d,
         type: 3}
       propertyPath: m_IsActive
@@ -1714,6 +1719,12 @@ PrefabInstance:
     - {fileID: 945224391, guid: c8544725eea141847982b286866c858d, type: 3}
     - {fileID: 6523757343441895003, guid: c8544725eea141847982b286866c858d, type: 3}
   m_SourcePrefab: {fileID: 100100000, guid: c8544725eea141847982b286866c858d, type: 3}
+--- !u!1 &1586480802 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 6454932473796043099, guid: c8544725eea141847982b286866c858d,
+    type: 3}
+  m_PrefabInstance: {fileID: 1586480801}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1761562213 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 8434751124076409887, guid: c8544725eea141847982b286866c858d,

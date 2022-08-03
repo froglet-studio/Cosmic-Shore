@@ -32,14 +32,14 @@ namespace StarWriter.Core.Audio
         {
             GameSetting.OnChangeAudioEnabledStatus += OnChangeAudioEnabledStatus;
             AudioSystem.onMissingMusicSource += OnMissingAudioSystemSources;
-            GameManager.onDeath += OnDeath;
+            ShipExplosionHandler.onExplosionCompletion += OnDeathExplosionCompletion;
         }
 
         private void OnDisable()
         {
             GameSetting.OnChangeAudioEnabledStatus -= OnChangeAudioEnabledStatus;
             AudioSystem.onMissingMusicSource -= OnMissingAudioSystemSources;
-            GameManager.onDeath -= OnDeath;
+            ShipExplosionHandler.onExplosionCompletion += OnDeathExplosionCompletion;
         }
         /// <summary>
         /// Adds next 2 clips to the AudioSystem if a MusicSource is missing
@@ -52,7 +52,7 @@ namespace StarWriter.Core.Audio
             audioSystem.MusicSource2.clip = so_songs[index].Clip;
         }
 
-        private void OnDeath()
+        private void OnDeathExplosionCompletion()
         {
             Song song = new Song(onDeathSong);
             PlaySong(song.Title);
