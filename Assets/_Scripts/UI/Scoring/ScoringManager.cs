@@ -6,16 +6,12 @@ using static StarWriter.Core.GameSetting;
 public class ScoringManager : MonoBehaviour
 {
     
-    [SerializeField]
-    private int extendedLifeScore;
-    [SerializeField]
-    private int extendedLifeHighScore;
-    [SerializeField]
-    bool bedazzled; // whether or not the watchAdButton is amped up
+    [SerializeField] int extendedLifeScore;
+    [SerializeField] int extendedLifeHighScore;
 
-    private static int score = 0;
-    private static bool firstLife = true;
-    private static float extralifeModifier = 0.8f;
+    static int score = 0;
+    static bool firstLife = true;
+    static float extralifeModifier = 0.8f;
 
     public TextMeshProUGUI scoreText;
 
@@ -26,7 +22,6 @@ public class ScoringManager : MonoBehaviour
         GameManager.onDeath += OnDeath;
         GameManager.onExtendGamePlay += ExtendGamePlay;
         MutonPopUp.AddToScore += AddMutonBonus;
-        //AdvertisementMenu.onDeclineAd += OnDeclineAd;
     }
 
     private void OnDisable()
@@ -34,7 +29,6 @@ public class ScoringManager : MonoBehaviour
         GameManager.onDeath -= OnDeath;
         MutonPopUp.AddToScore -= AddMutonBonus;
         GameManager.onExtendGamePlay -= ExtendGamePlay;
-        //AdvertisementMenu.onDeclineAd -= OnDeclineAd;
     }
 
     public void UpdateScoreBoard(int value)
@@ -51,12 +45,6 @@ public class ScoringManager : MonoBehaviour
 
     private void OnDeath()
     {
-        bool advertisements = firstLife;//(PlayerPrefs.GetInt(GameSetting.PlayerPrefKeys.adsEnabled.ToString()) == 1);
-        if (advertisements)
-            bedazzled = ((PlayerPrefs.GetInt(PlayerPrefKeys.firstLifeHighScore.ToString()) * extralifeModifier) <= score);  //Sets beddazed value
-        else
-            bedazzled = ((PlayerPrefs.GetInt("High Score")) <= score);   
-
         UpdatePlayerPrefScores();
 
         // reset first life if this is now the second life
@@ -76,7 +64,7 @@ public class ScoringManager : MonoBehaviour
     {
         PlayerPrefs.SetInt("Score", score);
 
-        //Compares Score to High Score and saves the highest value
+        // Compares Score to High Score and saves the highest value
         if (PlayerPrefs.GetInt(PlayerPrefKeys.highScore.ToString()) < score)
         {
             PlayerPrefs.SetInt(PlayerPrefKeys.highScore.ToString(), score);

@@ -2,7 +2,6 @@
 using UnityEngine;
 using StarWriter.Core.Input;
 using System.Linq;
-using UnityEngine.SceneManagement;
 using StarWriter.Core;
 
 public class Trail : MonoBehaviour, ICollidable
@@ -13,7 +12,6 @@ public class Trail : MonoBehaviour, ICollidable
     [SerializeField] GameObject FossilBlock;
 
     [SerializeField] Material material;
-    Material tempMaterial;
 
     public float waitTime = .6f;
     public delegate void TrailCollision(string uuid, float amount);
@@ -39,7 +37,7 @@ public class Trail : MonoBehaviour, ICollidable
             container = new GameObject();
             container.name = "FossilBlockContainer";
             GameManager.onPlayGame += ResetTrailContainer;
-            DontDestroyOnLoad(container);   // TODO: this is probably not awesome ¯\_(ツ)_/¯
+            DontDestroyOnLoad(container); // TODO: this is probably not awesome ¯\_(ツ)_/¯
         }
 
         meshRenderer = GetComponent<MeshRenderer>();
@@ -56,14 +54,16 @@ public class Trail : MonoBehaviour, ICollidable
         var finalScale = transform.localScale;
         var size = 0f;
         yield return new WaitForSeconds(waitTime);
+
         transform.localScale = finalScale * size;
         meshRenderer.enabled = true;
         while (size < 1)
         {
-            yield return null;
             size += .5f*Time.deltaTime;
             transform.localScale = finalScale * size;
+            yield return null;
         }
+
         blockCollider.enabled = true;
     }
 
@@ -74,8 +74,6 @@ public class Trail : MonoBehaviour, ICollidable
             Destroy(gameObject);
             Collide(other);
         }
-        
-        
     }
 
     public void Collide(Collider other)
@@ -88,25 +86,23 @@ public class Trail : MonoBehaviour, ICollidable
 
             //// Do Impact Stuff
             var ship = other.transform.parent.parent.gameObject;
-
-            //make exploding block
-            var explodingBlock = Instantiate<GameObject>(FossilBlock);
-            explodingBlock.transform.position = transform.position;
-            explodingBlock.transform.localEulerAngles = transform.localEulerAngles;
-            tempMaterial = new Material(material);
-            explodingBlock.GetComponent<Renderer>().material = tempMaterial;
-
-
+            
+            //// Player Hit
             if (ship == GameObject.FindWithTag("Player"))
-            //if (GameObject.FindGameObjectsWithTag("Player").Contains(ship))
             {
-                //// Player Hit
                 var impactVector = ship.transform.forward * ship.GetComponent<InputController>().speed;
-                StartCoroutine(explodingBlock.GetComponent<BlockImpact>().ImpactCoroutine(impactVector, tempMaterial, "Player"));
+
+                // Make exploding block
+                var explodingBlock = Instantiate<GameObject>(FossilBlock);
+                explodingBlock.transform.position = transform.position;
+                explodingBlock.transform.localEulerAngles = transform.localEulerAngles;
+                explodingBlock.transform.localScale = transform.localScale;
+                explodingBlock.GetComponent<Renderer>().material = new Material(material);
+                explodingBlock.GetComponent<BlockImpact>().HandleImpact(impactVector, "Player");
+
                 OnTrailCollision?.Invoke(ship.GetComponent<Player>().PlayerUUID, fuelChange);
                 HapticController.PlayBlockCollisionHaptics();
             }
-
             
             other.transform.parent.parent.GetComponent<Player>().ToggleCollision(true);
         }
