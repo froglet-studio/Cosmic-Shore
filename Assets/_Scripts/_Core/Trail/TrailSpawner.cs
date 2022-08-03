@@ -6,21 +6,16 @@ using UnityEngine;
 
 public class TrailSpawner : MonoBehaviour
 {
-    [SerializeField]
-    GameObject trail;
+    [SerializeField] GameObject trail;
 
     public float offset = 0f;
     public float trailPeriod = .1f;
-
     public float trailLength = 20;
-    //public float trailLength = 20;
-
     public float waitTime = .5f;            // Time until the trail block appears - camera dependent
-    public float startDelay = 2;
+    public float startDelay = 2.1f;
 
     [SerializeField]
     private static GameObject TrailContainer;
-    private IEnumerator trailCoroutine;
 
     private readonly Queue<GameObject> trailList = new();
 
@@ -55,10 +50,7 @@ public class TrailSpawner : MonoBehaviour
             DontDestroyOnLoad(TrailContainer);
         }
 
-
-
-        trailCoroutine = SpawnTrailCoroutine();
-        StartCoroutine(trailCoroutine);
+        StartCoroutine(SpawnTrailCoroutine());
     }
 
     private void OnPhoneFlip(bool state)
@@ -72,29 +64,40 @@ public class TrailSpawner : MonoBehaviour
     IEnumerator SpawnTrailCoroutine()
     {
         yield return new WaitForSeconds(startDelay);
+
         while (true)
         {
-            yield return new WaitForSeconds(trailPeriod);
             if (Time.deltaTime < .1f)
             {
-                
-
                 var Block = Instantiate(trail);
                 Block.transform.SetPositionAndRotation(transform.position - transform.forward * offset, transform.rotation);
-                //Block.transform.localScale = new Vector3(scale.x,scale.y,scale.z);
                 Block.transform.parent = TrailContainer.transform;
-
-                Trail trailScript = trail.GetComponent<Trail>();
-
-                trailScript.waitTime = waitTime;
+                Block.GetComponent<Trail>().waitTime = waitTime;
 
                 trailList.Enqueue(Block);
                 if (trailList.Count > trailLength / trailPeriod)
                 {
-                    Destroy(trailList.Dequeue());
+                    StartCoroutine(ShrinkTrailCoroutine());
                 }
             }
-            
+
+            yield return new WaitForSeconds(trailPeriod);
         }
+    }
+
+    IEnumerator ShrinkTrailCoroutine()
+    {
+        var size = 1f;
+        var Block = trailList.Dequeue();
+        var initialSize = Block.transform.localScale;
+        while (size > 0)
+        {
+            size -= .5f * Time.deltaTime;
+            Block.transform.localScale = initialSize * size;
+
+            yield return null;
+        }
+
+        Destroy(Block);
     }
 }

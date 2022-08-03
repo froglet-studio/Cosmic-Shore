@@ -24,11 +24,11 @@ public class Impact : MonoBehaviour
         
         while (distance.magnitude <= 1000)
         {
-            yield return new WaitForSeconds(.01f);
+            yield return null;
             //timeStamp += .001f;
             distance += velocityScale * Time.deltaTime * velocity;
             material.SetVector("_velocity", distance);
-            material.SetFloat("_opacity", (1000- distance.magnitude)/1000);
+            material.SetFloat("_opacity", (1000 - distance.magnitude)/1000);
             transform.position += positionScale*distance;
         }
         Destroy(material);
