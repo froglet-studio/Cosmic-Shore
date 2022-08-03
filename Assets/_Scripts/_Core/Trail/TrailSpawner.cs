@@ -14,8 +14,7 @@ public class TrailSpawner : MonoBehaviour
     public float waitTime = .5f;            // Time until the trail block appears - camera dependent
     public float startDelay = 2.1f;
 
-    [SerializeField]
-    private static GameObject TrailContainer;
+    [SerializeField] static GameObject TrailContainer;  // TODO: heads up folks, "static" and "serializefield" don't work together
 
     private readonly Queue<GameObject> trailList = new();
 
@@ -47,7 +46,7 @@ public class TrailSpawner : MonoBehaviour
             TrailContainer = new GameObject();
             TrailContainer.name = "TrailContainer";
             GameManager.onPlayGame += ResetTrailContainer;
-            DontDestroyOnLoad(TrailContainer);
+            DontDestroyOnLoad(TrailContainer);  // TODO: this is probably not awesome ¯\_(ツ)_/¯
         }
 
         StartCoroutine(SpawnTrailCoroutine());

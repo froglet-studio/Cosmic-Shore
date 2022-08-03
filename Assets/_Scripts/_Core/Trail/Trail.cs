@@ -37,7 +37,7 @@ public class Trail : MonoBehaviour, ICollidable
             container = new GameObject();
             container.name = "FossilBlockContainer";
             GameManager.onPlayGame += ResetTrailContainer;
-            DontDestroyOnLoad(container);   // TODO: this is probably not awesome ¯\_(ツ)_/¯
+            DontDestroyOnLoad(container); // TODO: this is probably not awesome ¯\_(ツ)_/¯
         }
 
         meshRenderer = GetComponent<MeshRenderer>();
@@ -103,7 +103,6 @@ public class Trail : MonoBehaviour, ICollidable
                 OnTrailCollision?.Invoke(ship.GetComponent<Player>().PlayerUUID, fuelChange);
                 HapticController.PlayBlockCollisionHaptics();
             }
-
             
             other.transform.parent.parent.GetComponent<Player>().ToggleCollision(true);
         }
