@@ -103,8 +103,6 @@ public class Trail : MonoBehaviour, ICollidable
                 OnTrailCollision?.Invoke(ship.GetComponent<Player>().PlayerUUID, fuelChange);
                 HapticController.PlayBlockCollisionHaptics();
             }
-            
-            other.transform.parent.parent.GetComponent<Player>().ToggleCollision(true);
         }
     }
 

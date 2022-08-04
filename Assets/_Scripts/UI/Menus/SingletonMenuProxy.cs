@@ -15,4 +15,8 @@ public class SingletonMenuProxy : MonoBehaviour
     {
         GameSetting.Instance.ChangeGyroEnabledStatus();
     }
+    public void GameSettingInvertYEnabledStatus()
+    {
+        GameSetting.Instance.ChangeInvertYEnabledStatus();
+    }
 }

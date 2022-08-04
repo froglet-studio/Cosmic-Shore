@@ -42,7 +42,7 @@ namespace StarWriter.Core.Input
         private bool isRollEnabled = true;
         private bool isThrottleEnabled = true;
         private bool isGyroEnabled = true;
-
+        private bool invertYEnabled = false;
         public bool IsPitchEnabled { get => isPitchEnabled; set => isPitchEnabled = value; }
         public bool IsYawEnabled { get => isYawEnabled; set => isYawEnabled = value; }
         public bool IsRollEnabled { get => isRollEnabled; set => isRollEnabled = value; }
@@ -52,11 +52,14 @@ namespace StarWriter.Core.Input
         private void OnEnable()
         {
             GameSetting.OnChangeGyroEnabledStatus += OnToggleGyro;
+            GameSetting.OnChangeInvertYEnabledStatus += OnToggleInvertY;
+
         }
 
         private void OnDisable()
         {
             GameSetting.OnChangeGyroEnabledStatus -= OnToggleGyro;
+            GameSetting.OnChangeInvertYEnabledStatus -= OnToggleInvertY;
         }
 
         void Start()
@@ -102,6 +105,8 @@ namespace StarWriter.Core.Input
 
         void Update()
         {
+            if (PauseSystem.GetIsPaused()) return;
+
             // Convert two finger touch into values for displacement, speed, and ship animations
             ReceiveTouchInput();
 
@@ -166,8 +171,6 @@ namespace StarWriter.Core.Input
         {
             if (UnityEngine.Input.touches.Length == 2)
             {
-                
-
                 if (UnityEngine.Input.touches[0].position.x <= UnityEngine.Input.touches[1].position.x)
                 {
                     leftTouch = UnityEngine.Input.touches[0].position;
@@ -184,6 +187,9 @@ namespace StarWriter.Core.Input
                 float ySum = ((rightTouch.y + leftTouch.y) / (Screen.currentResolution.height) - 1);
                 float xDiff = (rightTouch.x - leftTouch.x) / (Screen.currentResolution.width);
                 float yDiff = (rightTouch.y - leftTouch.y) / (Screen.currentResolution.width);
+
+                if (invertYEnabled)
+                    ySum *= -1;
 
                 //if (isPitchEnabled) { Pitch(ySum); }    // this block was causing a bug where the ship movement is disabled untill the gyro is toggled
                 //if (isRollEnabled) { Roll(yDiff); }
@@ -207,6 +213,9 @@ namespace StarWriter.Core.Input
                     float ySum = ((rightTouch.y + leftTouch.y) / (Screen.currentResolution.height) - 1);
                     float xDiff = (rightTouch.x - leftTouch.x) / (Screen.currentResolution.width);
                     float yDiff = (rightTouch.y - leftTouch.y) / (Screen.currentResolution.width);
+
+                    if (invertYEnabled)
+                        ySum *= -1;
 
                     //if (isPitchEnabled) { Pitch(ySum); }    // this block was causing a bug where the ship movement is disabled untill the gyro is toggled
                     //if (isRollEnabled) { Roll(yDiff); }
@@ -253,7 +262,7 @@ namespace StarWriter.Core.Input
         private void Pitch(float Ysum)
         {
             displacementQ = Quaternion.AngleAxis(
-                                Ysum * -(speed * rotationThrottleScaler + rotationScaler) * Time.deltaTime, 
+                                Ysum * -(speed * rotationThrottleScaler + rotationScaler) * Time.deltaTime,
                                 shipTransform.right) * displacementQ;
         }
 
@@ -276,6 +285,17 @@ namespace StarWriter.Core.Input
             }
 
             isGyroEnabled = status;
+        }
+
+        /// <summary>
+        /// Sets InvertY Status based off of game settings event
+        /// </summary>
+        /// <param name="status"></param>bool
+        private void OnToggleInvertY(bool status)
+        {
+            Debug.Log($"InputController.OnToggleInvertY - status: {status}");
+
+            invertYEnabled = status;
         }
     }
 }

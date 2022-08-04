@@ -112,6 +112,7 @@ namespace StarWriter.Core
         {
             Debug.Log("GameManager.EndGame");
             onGameOver?.Invoke();
+            Instance.player.ToggleCollision(true);
         }
 
         public void RestartGame()
