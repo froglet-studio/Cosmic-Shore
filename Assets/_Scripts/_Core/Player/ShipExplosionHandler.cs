@@ -66,7 +66,6 @@ public class ShipExplosionHandler : MonoBehaviour
         //HapticController.PlayBlockCollisionHaptics();
 
         //float explosionRadius = 0f;
-        yield return WaitForSeconds;
         while (explosionRadius > 0)
         {
             yield return null;  // Come back next frame
