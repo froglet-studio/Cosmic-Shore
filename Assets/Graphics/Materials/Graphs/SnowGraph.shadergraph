@@ -131,8 +131,8 @@
     ],
     "m_VertexContext": {
         "m_Position": {
-            "x": 800.9998779296875,
-            "y": -436.0000305175781
+            "x": 253.9998779296875,
+            "y": -697.9999389648438
         },
         "m_Blocks": [
             {
@@ -148,8 +148,8 @@
     },
     "m_FragmentContext": {
         "m_Position": {
-            "x": 756.9998168945313,
-            "y": -121.00005340576172
+            "x": 679.0,
+            "y": -469.9999694824219
         },
         "m_Blocks": [
             {
@@ -168,7 +168,7 @@
         "preventRotation": false
     },
     "m_Path": "Shader Graphs",
-    "m_GraphPrecision": 1,
+    "m_GraphPrecision": 2,
     "m_PreviewMode": 2,
     "m_OutputNode": {
         "m_Id": ""
@@ -551,7 +551,7 @@
     "m_ZTestMode": 4,
     "m_ZWriteControl": 0,
     "m_AlphaMode": 2,
-    "m_RenderFace": 0,
+    "m_RenderFace": 2,
     "m_AlphaClip": false,
     "m_CastShadows": false,
     "m_ReceiveShadows": true,
