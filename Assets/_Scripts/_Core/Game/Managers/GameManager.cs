@@ -31,7 +31,7 @@ namespace StarWriter.Core
 
         private readonly float phoneFlipThreshold = .3f;
         private int deathCount = 0;
-        public bool isExtendedLife;
+        public int DeathCount { get { return deathCount; } }
 
         private void OnEnable()
         {
@@ -44,15 +44,11 @@ namespace StarWriter.Core
             AdsManager.adShowComplete -= OnAdShowComplete;
             ShipExplosionHandler.onExplosionCompletion -= OnExplosionCompletion;
         }
-
         void Start()
         {
             cameraManager = CameraManager.Instance;
             gameSettings = GameSetting.Instance;
-
-            isExtendedLife = false;
         }
-
         private void Update()
         {
             if (Mathf.Abs(UnityEngine.Input.acceleration.y) < phoneFlipThreshold) return;
@@ -90,9 +86,8 @@ namespace StarWriter.Core
         private void OnExplosionCompletion()
         {
             Debug.Log("GameManager.Death");
-
-            // TODO: do we want to pause?            
-            // PauseGame();
+            
+            PauseGame();
             onDeath?.Invoke();
 
             if (++deathCount == 2)
@@ -102,6 +97,7 @@ namespace StarWriter.Core
         public static void ExtendGame()
         {
             Debug.Log("GameManager.ExtendGame");
+
             UnPauseGame();
             onExtendGamePlay?.Invoke();
 
@@ -120,11 +116,10 @@ namespace StarWriter.Core
 
         public void RestartGame()
         {
+            Debug.Log("GameManager.RestartGame");
             deathCount = 0;
 
-            Debug.Log("GameManager.RestartGame");
             UnPauseGame();
-            //audioManager.PlayMusicClip(audioManager.ToggleMusicPlaylist());
             SceneManager.LoadScene(2);
         }
 
