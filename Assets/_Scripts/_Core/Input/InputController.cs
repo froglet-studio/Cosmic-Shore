@@ -26,7 +26,7 @@ namespace StarWriter.Core.Input
         private readonly float throttleScaler = 50;
         private readonly float rotationScaler = 130f;
 
-        private readonly float lerpAmount = .2f;
+        private readonly float lerpAmount = 1f;
         private readonly float smallLerpAmount = .1f;
 
         private readonly float animationScaler = 25f;
@@ -232,16 +232,16 @@ namespace StarWriter.Core.Input
             }
             else
             {
-                speed = Mathf.Lerp(speed, defaultThrottle, .01f);
-                LeftWing.localRotation = Quaternion.Lerp(LeftWing.localRotation, Quaternion.identity, smallLerpAmount);
-                RightWing.localRotation = Quaternion.Lerp(RightWing.localRotation, Quaternion.identity, smallLerpAmount);
-                Fusilage.localRotation = Quaternion.Lerp(Fusilage.localRotation, Quaternion.identity, smallLerpAmount);
+                speed = Mathf.Lerp(speed, defaultThrottle, smallLerpAmount * Time.deltaTime);
+                LeftWing.localRotation = Quaternion.Lerp(LeftWing.localRotation, Quaternion.identity, smallLerpAmount * Time.deltaTime);
+                RightWing.localRotation = Quaternion.Lerp(RightWing.localRotation, Quaternion.identity, smallLerpAmount * Time.deltaTime);
+                Fusilage.localRotation = Quaternion.Lerp(Fusilage.localRotation, Quaternion.identity, smallLerpAmount * Time.deltaTime);
             }
         }
 
         private void Throttle(float Xdiff)
         {
-            speed = Mathf.Lerp(speed, Xdiff * throttleScaler + defaultThrottle, lerpAmount);
+            speed = Mathf.Lerp(speed, Xdiff * throttleScaler + defaultThrottle, lerpAmount * Time.deltaTime);
         }
         
         private void Yaw(float Xsum)  // These need to not use *= ... remember quaternions are not commutative
