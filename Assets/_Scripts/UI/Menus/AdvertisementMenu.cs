@@ -51,11 +51,14 @@ public class AdvertisementMenu : MonoBehaviour
 
     private void OnDeath()
     {
-        var bedazzled = ScoringManager.IsScoreBedazzleWorthy;
-        
-        adsManager.LoadAd();
-        bedazzledWatchAdButton.gameObject.SetActive(bedazzled);
-        watchAdButton.gameObject.SetActive(!bedazzled);
-        declineAdButton.gameObject.SetActive(true);
+        if (GameManager.Instance.DeathCount < 2)
+        {
+            var bedazzled = ScoringManager.IsScoreBedazzleWorthy;
+
+            adsManager.LoadAd();
+            bedazzledWatchAdButton.gameObject.SetActive(bedazzled);
+            watchAdButton.gameObject.SetActive(!bedazzled);
+            declineAdButton.gameObject.SetActive(true);
+        }
     }
 }
