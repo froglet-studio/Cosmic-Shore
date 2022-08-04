@@ -21,7 +21,7 @@ namespace StarWriter.Core.Input
 
         public float speed;
 
-        private readonly float defaultThrottle = 5f;
+        private readonly float defaultThrottle = 10f;
         private readonly float rotationThrottleScaler = 3;
         private readonly float throttleScaler = 50;
         private readonly float rotationScaler = 130f;
@@ -160,12 +160,13 @@ namespace StarWriter.Core.Input
             }
         }
 
+        Vector2 leftTouch, rightTouch;
 
         private void ReceiveTouchInput()
         {
             if (UnityEngine.Input.touches.Length == 2)
             {
-                Vector2 leftTouch, rightTouch;
+                
 
                 if (UnityEngine.Input.touches[0].position.x <= UnityEngine.Input.touches[1].position.x)
                 {
@@ -190,16 +191,39 @@ namespace StarWriter.Core.Input
                 //if (isThrottleEnabled) { Throttle(xDiff); }
 
                 Pitch(ySum);  //replaces the commented out block above
-                Roll(yDiff); 
-                Yaw(xSum); 
-                Throttle(xDiff); 
+                Roll(yDiff);
+                Yaw(xSum);
+                Throttle(xDiff);
 
                 PerformShipAnimations(xSum, ySum, xDiff, yDiff);
 
             }
+            else if (UnityEngine.Input.touches.Length == 1)
+            {
+                if (leftTouch != null && rightTouch != null)
+                {
+                    // reparameterize
+                    float xSum = ((rightTouch.x + leftTouch.x) / (Screen.currentResolution.width) - 1);
+                    float ySum = ((rightTouch.y + leftTouch.y) / (Screen.currentResolution.height) - 1);
+                    float xDiff = (rightTouch.x - leftTouch.x) / (Screen.currentResolution.width);
+                    float yDiff = (rightTouch.y - leftTouch.y) / (Screen.currentResolution.width);
+
+                    //if (isPitchEnabled) { Pitch(ySum); }    // this block was causing a bug where the ship movement is disabled untill the gyro is toggled
+                    //if (isRollEnabled) { Roll(yDiff); }
+                    //if (isYawEnabled) { Yaw(xSum); }
+                    //if (isThrottleEnabled) { Throttle(xDiff); }
+
+                    Pitch(ySum);  //replaces the commented out block above
+                    Roll(yDiff);
+                    Yaw(xSum);
+                    Throttle(xDiff);
+
+                    PerformShipAnimations(xSum, ySum, xDiff, yDiff);
+                }
+            }
             else
             {
-                speed = Mathf.Lerp(speed, defaultThrottle, smallLerpAmount);
+                speed = Mathf.Lerp(speed, defaultThrottle, .01f);
                 LeftWing.localRotation = Quaternion.Lerp(LeftWing.localRotation, Quaternion.identity, smallLerpAmount);
                 RightWing.localRotation = Quaternion.Lerp(RightWing.localRotation, Quaternion.identity, smallLerpAmount);
                 Fusilage.localRotation = Quaternion.Lerp(Fusilage.localRotation, Quaternion.identity, smallLerpAmount);

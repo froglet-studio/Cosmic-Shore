@@ -9,9 +9,10 @@ public class SnowChanger : MonoBehaviour
 
     GameObject[,,] crystalLattice;
 
-    int crystalSize = 10;
+    [SerializeField] int nodesPerSide = 5;
     float nodeScaler = 4;
-    int nodedistance = 50;
+    int crystalSideLength = 500;
+    int nodedistance;
     float nodeSize = .15f;
     float sphereScaler = 2;
     float sphereDiameter;
@@ -29,15 +30,17 @@ public class SnowChanger : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        nodedistance = crystalSideLength/nodesPerSide;
+
         sphereDiameter = sphereScaler * muton.GetComponent<MutonPopUp>().sphereRadius;
 
-        crystalLattice = new GameObject[crystalSize * 2, crystalSize * 2, crystalSize * 2];
+        crystalLattice = new GameObject[nodesPerSide * 2, nodesPerSide * 2, nodesPerSide * 2];
 
-        for (int x = -crystalSize; x < crystalSize; x++)
+        for (int x = -nodesPerSide; x < nodesPerSide; x++)
         {
-            for (int y = -crystalSize; y < crystalSize; y++)
+            for (int y = -nodesPerSide; y < nodesPerSide; y++)
             {
-                for (int z = -crystalSize; z < crystalSize; z++)
+                for (int z = -nodesPerSide; z < nodesPerSide; z++)
                 {
                     GameObject tempSnow = Instantiate(snow);
                     tempSnow.transform.SetParent(transform, true);
@@ -46,7 +49,7 @@ public class SnowChanger : MonoBehaviour
                                                               y * nodedistance + Random.Range(-nodedistance / 2, nodedistance / 2),
                                                               z * nodedistance + Random.Range(-nodedistance / 2, nodedistance / 2));
                     
-                    crystalLattice[x + crystalSize, y + crystalSize, z + crystalSize] = tempSnow;
+                    crystalLattice[x + nodesPerSide, y + nodesPerSide, z + nodesPerSide] = tempSnow;
                 }
             }
         }
@@ -57,11 +60,11 @@ public class SnowChanger : MonoBehaviour
     {
         float nodeScalerOverThree = nodeScaler / 3;
 
-        for (int x = 0; x < crystalSize*2; x++)
+        for (int x = 0; x < nodesPerSide*2; x++)
         {
-            for (int y = 0; y < crystalSize*2; y++)
+            for (int y = 0; y < nodesPerSide*2; y++)
             {
-                for (int z = 0; z < crystalSize*2; z++)
+                for (int z = 0; z < nodesPerSide*2; z++)
                 {
                     var node = crystalLattice[x, y, z];
                     float clampedDistance = Mathf.Clamp(
