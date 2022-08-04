@@ -36,12 +36,14 @@ namespace StarWriter.Core
         private void OnEnable()
         {
             AdsManager.adShowComplete += OnAdShowComplete;
+            AdvertisementMenu.onDeclineAd += EndGame;   // TODO: let's move this to live in AdsManager
             ShipExplosionHandler.onExplosionCompletion += OnExplosionCompletion;
         }
 
         private void OnDisable()
         {
             AdsManager.adShowComplete -= OnAdShowComplete;
+            AdvertisementMenu.onDeclineAd -= EndGame;
             ShipExplosionHandler.onExplosionCompletion -= OnExplosionCompletion;
         }
         void Start()

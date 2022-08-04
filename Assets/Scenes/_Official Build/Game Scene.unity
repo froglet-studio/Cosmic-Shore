@@ -607,6 +607,36 @@ MonoBehaviour:
   trailLength: 40
   waitTime: 0.1
   startDelay: 2
+--- !u!1 &552995058 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 795995523, guid: c8544725eea141847982b286866c858d,
+    type: 3}
+  m_PrefabInstance: {fileID: 1586480801}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &552995061 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 795995521, guid: c8544725eea141847982b286866c858d,
+    type: 3}
+  m_PrefabInstance: {fileID: 1586480801}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 552995058}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &552995063
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 552995058}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b89749f3043840a4c91d1f21116fcea3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!4 &602055527 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 639495419069806266, guid: 41222ebb42ad82c4ca52a729935c79d3,
@@ -1296,6 +1326,10 @@ PrefabInstance:
       value: -14.1
       objectReference: {fileID: 0}
     - target: {fileID: 795995523, guid: c8544725eea141847982b286866c858d, type: 3}
+      propertyPath: m_Name
+      value: New High Score Label
+      objectReference: {fileID: 0}
+    - target: {fileID: 795995523, guid: c8544725eea141847982b286866c858d, type: 3}
       propertyPath: m_IsActive
       value: 1
       objectReference: {fileID: 0}
@@ -1329,6 +1363,10 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: 5.8
       objectReference: {fileID: 0}
+    - target: {fileID: 1679684364, guid: c8544725eea141847982b286866c858d, type: 3}
+      propertyPath: m_Name
+      value: Score Label
+      objectReference: {fileID: 0}
     - target: {fileID: 1884646755, guid: c8544725eea141847982b286866c858d, type: 3}
       propertyPath: plugSide
       value: 0
@@ -1359,6 +1397,11 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 21300000, guid: de1043e4532ca7544a14bba2be043ee2,
         type: 3}
+    - target: {fileID: 1390017555562036140, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: m_Name
+      value: High Score Label
+      objectReference: {fileID: 0}
     - target: {fileID: 1539374759231559910, guid: c8544725eea141847982b286866c858d,
         type: 3}
       propertyPath: m_SizeDelta.x
@@ -1404,6 +1447,11 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: -20
       objectReference: {fileID: 0}
+    - target: {fileID: 1712986976287995928, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: m_Name
+      value: Current Score Value
+      objectReference: {fileID: 0}
     - target: {fileID: 2276387646839665187, guid: c8544725eea141847982b286866c858d,
         type: 3}
       propertyPath: m_AnchoredPosition.x
@@ -1445,10 +1493,20 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 3554940464855877734, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 3796525758843368469, guid: c8544725eea141847982b286866c858d,
         type: 3}
       propertyPath: m_AnchoredPosition.x
       value: 65.1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4292607508567284511, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: m_Name
+      value: High Score Value
       objectReference: {fileID: 0}
     - target: {fileID: 4294644967694244619, guid: c8544725eea141847982b286866c858d,
         type: 3}
@@ -1555,6 +1613,11 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 7181345258476456350, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: BedazzledHighScoreImage
+      value: 
+      objectReference: {fileID: 552995061}
     - target: {fileID: 7427844880640305969, guid: c8544725eea141847982b286866c858d,
         type: 3}
       propertyPath: m_AnchoredPosition.x
@@ -1656,6 +1719,11 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 21300000, guid: de1043e4532ca7544a14bba2be043ee2,
         type: 3}
+    - target: {fileID: 8754209756787394727, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 8933248385023514702, guid: c8544725eea141847982b286866c858d,
         type: 3}
       propertyPath: m_IsActive

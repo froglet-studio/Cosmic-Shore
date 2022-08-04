@@ -1,15 +1,14 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
 public class Bedazzle : MonoBehaviour
 {
-    private Image image;
-    private float hue;
-    private float speed;
-
-    private float increment;
+    Image image;
+    float hue;
+    float increment;
+    float hueMidPoint = .53f;
+    float hueMagnitude = .06f;
+    const float TWO_PI = Mathf.PI * 2;
 
     // Start is called before the first frame update
     void Start()
@@ -21,9 +20,9 @@ public class Bedazzle : MonoBehaviour
     void Update()
     {
         increment += .2f*Time.deltaTime;
-        increment = increment % 1;
-        hue = increment*Mathf.PI*2;
-        hue = Mathf.Sin(hue)/17f+.53f;
+        increment %= 1;
+        hue = increment * TWO_PI;
+        hue = Mathf.Sin(hue) * hueMagnitude + hueMidPoint;
         image.color = Color.HSVToRGB(hue, 1, 1);
     }
 }
