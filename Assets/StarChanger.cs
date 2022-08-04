@@ -7,12 +7,12 @@ public class StarChanger : MonoBehaviour
 
     private void OnEnable()
     {
-        FuelSystem.onFuelChange += UpdateFuelLevel;
+        FuelSystem.OnFuelChange += UpdateFuelLevel;
     }
 
     private void OnDisable()
     {
-        FuelSystem.onFuelChange -= UpdateFuelLevel;
+        FuelSystem.OnFuelChange -= UpdateFuelLevel;
     }
 
     Material starMaterial;
@@ -44,16 +44,12 @@ public class StarChanger : MonoBehaviour
         starColor = Color.Lerp(starColor,fuelColor,.02f);
         starMaterial.SetColor("_color", starColor);
         starMaterial.SetVector("_mutonPosition", mutonPosition);
-        //RenderSettings.skybox = starMaterial;
     }
 
-    public void UpdateFuelLevel(string uuid, float amount)
+    public void UpdateFuelLevel(float amount)
     {
-        
         if (amount > .55f) fuelColor = green;
         else if (amount > .23) fuelColor = blue;
         else fuelColor = red;
-        //starMaterial.SetFloat("_fuel", amount);
     }
-
 }

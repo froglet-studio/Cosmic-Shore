@@ -5,7 +5,17 @@ using StarWriter.Core.Audio;
 
 public class MutonPopUp : MonoBehaviour
 {
+    public struct MutonDetails
+    {
+        public float fuelAmount;
+        public int scoreAmount;
+        public float tailLengthIncreaseAmount;
+    }
+
     #region Events
+    public delegate void OnCollision(GameObject ship, MutonDetails mutonDetails);
+    public static event OnCollision OnMutonCollision;
+
     public delegate void PopUpCollision(string uuid, float amount);
     public static event PopUpCollision OnMutonPopUpCollision;
 
@@ -17,6 +27,7 @@ public class MutonPopUp : MonoBehaviour
     #endregion
 
     #region Inspector Fields
+    [SerializeField] MutonDetails mutonDetails;
     [SerializeField] float lifeTimeIncrease;
     [SerializeField] float fuelAmount = 0.07f;
     [SerializeField] public float sphereRadius = 100;
@@ -73,6 +84,8 @@ public class MutonPopUp : MonoBehaviour
             OnMutonPopUpCollision(ship.GetComponent<Player>().PlayerUUID, fuelAmount); // excess Fuel flows into currentScore
             if (AddToScore != null)
                 AddToScore(ship.GetComponent<Player>().PlayerUUID, scoreBonus);
+
+            OnMutonCollision?.Invoke(ship, mutonDetails);
         }
         else
         {
@@ -99,7 +112,7 @@ public class MutonPopUp : MonoBehaviour
 
         // Play SFX sound
         AudioSource audioSource = GetComponent<AudioSource>();
-        audioSource.PlayOneShot(audioSource.clip);
+        AudioSystem.Instance.PlaySFXClip(audioSource.clip, audioSource);
 
         // Move the muton
         StartCoroutine(Muton.GetComponent<FadeIn>().FadeInCoroutine());

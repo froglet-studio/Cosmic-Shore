@@ -7,9 +7,7 @@ namespace StarWriter.Core.Audio
     public class Jukebox : SingletonPersistent<Jukebox>
     {
         [SerializeField] SO_Song[] so_songs;  // Used for random and indexed song selection
-
-        [SerializeField]
-        SO_Song onDeathSong;
+        [SerializeField] SO_Song onDeathSong;
 
         Dictionary<string, Song> Playlist = new Dictionary<string, Song>(); //use song title key to access a specific song
 
@@ -46,6 +44,9 @@ namespace StarWriter.Core.Audio
         /// </summary>
         private void OnMissingAudioSystemSources()
         {
+            // TODO: this feels strange. This feels like it's awkwardly fixing a separate issue.
+            Debug.LogWarning("OnMissingAudioSystemSources");
+            
             IncrementSongListIndex();
             audioSystem.MusicSource1.clip = so_songs[index].Clip;
             IncrementSongListIndex();
@@ -84,8 +85,6 @@ namespace StarWriter.Core.Audio
                 {
                     StartJukebox();
                 }
-
-  
             }
         }
         /// <summary>

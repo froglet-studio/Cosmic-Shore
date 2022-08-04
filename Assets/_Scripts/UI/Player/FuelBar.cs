@@ -1,4 +1,3 @@
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -13,46 +12,44 @@ public class FuelBar : MonoBehaviour
     public Image fuelLevelImage;
 
     public float maxFuelLevel = 1f;
-    public float currentFuelLevel; 
+    public float currentFuelLevel;
 
     private void OnEnable()
     {
-        FuelSystem.onFuelChange += UpdateFuelLevel;
+        FuelSystem.OnFuelChange += UpdateFuelLevel;
     }
 
     private void OnDisable()
     {
-        FuelSystem.onFuelChange -= UpdateFuelLevel;
+        FuelSystem.OnFuelChange -= UpdateFuelLevel;
     }
 
-    // Start is called before the first frame update
     void Start()
     {
-        //backgroundImage.sprite = fuelLevelImages[0];
         backgroundImage.sprite = backgroundSprite;
         fuelLevelImage.sprite = fuelLevelImages[0];
         currentFuelLevel = maxFuelLevel;
     }
 
-    public void UpdateFuelLevel(string uuid, float amount)
+    public void UpdateFuelLevel(float amount)
     {
-        currentFuelLevel = amount;
-        currentFuelLevel = Mathf.Clamp(currentFuelLevel, 0, maxFuelLevel);
-        
-        if (verboseLogging)
-            Debug.Log("Fuel Level is " + currentFuelLevel);
+        currentFuelLevel = Mathf.Clamp(amount, 0, maxFuelLevel);
 
-        UpdateFuelBarDisplay(currentFuelLevel);
+        UpdateFuelBarDisplay();
+
+        if (verboseLogging)
+            Debug.Log($"FuelBar.UpdateFuelBarDisplay - currentFuelLevel:{currentFuelLevel}");
     }
 
-    public void UpdateFuelBarDisplay(float displayFuelLevel)
+    public void UpdateFuelBarDisplay()
     {
-        int maxIndex = fuelLevelImages.Count - 1;
-        float percentOfFull = (displayFuelLevel / maxFuelLevel);
+        // bucket the percent of full and use it as an index into the sprite list
+        int maxIndex = fuelLevelImages.Count-1;
+        float percentOfFull = (currentFuelLevel / maxFuelLevel);
         int index = maxIndex - (int)Mathf.Floor(percentOfFull * maxIndex);
         
         if (verboseLogging)
-            Debug.Log("pof: " + percentOfFull + "MI: " + maxIndex + ", index: " + index);
+            Debug.Log($"FuelBar.UpdateFuelBarDisplay - percentOfFull:{percentOfFull}, maxIndex:{maxIndex}, index:{index}");
 
         fuelLevelImage.sprite = fuelLevelImages[index];
     }

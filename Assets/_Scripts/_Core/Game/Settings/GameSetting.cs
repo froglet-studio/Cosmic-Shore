@@ -19,7 +19,8 @@ namespace StarWriter.Core
             isGyroEnabled,
             adsEnabled,
             highScore,
-            firstLifeHighScore
+            firstLifeHighScore,
+            score
         }
 
         #region Settings

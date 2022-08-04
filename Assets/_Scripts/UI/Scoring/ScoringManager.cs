@@ -11,7 +11,7 @@ public class ScoringManager : MonoBehaviour
 
     static int score = 0;
     static bool firstLife = true;
-    static float extralifeModifier = 0.8f;
+    static float bedazzleThresholdPercentage = 0.8f;
 
     public TextMeshProUGUI scoreText;
 
@@ -19,6 +19,7 @@ public class ScoringManager : MonoBehaviour
 
     private void OnEnable()
     {
+        GameManager.onPlayGame += OnPlay;
         GameManager.onDeath += OnDeath;
         GameManager.onExtendGamePlay += ExtendGamePlay;
         MutonPopUp.AddToScore += AddMutonBonus;
@@ -26,9 +27,10 @@ public class ScoringManager : MonoBehaviour
 
     private void OnDisable()
     {
+        GameManager.onPlayGame -= OnPlay;
         GameManager.onDeath -= OnDeath;
-        MutonPopUp.AddToScore -= AddMutonBonus;
         GameManager.onExtendGamePlay -= ExtendGamePlay;
+        MutonPopUp.AddToScore -= AddMutonBonus;
     }
 
     public void UpdateScoreBoard(int value)
@@ -46,29 +48,32 @@ public class ScoringManager : MonoBehaviour
     private void OnDeath()
     {
         UpdatePlayerPrefScores();
+    }
 
-        // reset first life if this is now the second life
-        // hmm. this feels weird
-        if (!firstLife)
-            firstLife = true;
+    private void OnPlay()
+    {
+        Debug.Log("ScoringManager.OnPlay");
+        score = 0;
+        firstLife = true;
     }
 
     public static bool IsScoreBedazzleWorthy
     {
         get => firstLife ?
-            (PlayerPrefs.GetInt(PlayerPrefKeys.firstLifeHighScore.ToString()) * extralifeModifier) <= score :
+            (PlayerPrefs.GetInt(PlayerPrefKeys.firstLifeHighScore.ToString()) * bedazzleThresholdPercentage) <= score :
             (PlayerPrefs.GetInt(PlayerPrefKeys.highScore.ToString())) <= score;
     }
 
     public void UpdatePlayerPrefScores()
     {
-        PlayerPrefs.SetInt("Score", score);
+        PlayerPrefs.SetInt(PlayerPrefKeys.score.ToString(), score);
 
         // Compares Score to High Score and saves the highest value
         if (PlayerPrefs.GetInt(PlayerPrefKeys.highScore.ToString()) < score)
         {
             PlayerPrefs.SetInt(PlayerPrefKeys.highScore.ToString(), score);
         }
+        
         if (firstLife)
         {
             if (PlayerPrefs.GetInt(PlayerPrefKeys.firstLifeHighScore.ToString()) < score)
@@ -76,6 +81,7 @@ public class ScoringManager : MonoBehaviour
                 PlayerPrefs.SetInt(PlayerPrefKeys.firstLifeHighScore.ToString(), score);
             }
         }
+
         PlayerPrefs.Save();
     }
 
@@ -83,8 +89,5 @@ public class ScoringManager : MonoBehaviour
     {
         Debug.Log("ScoringManager.ExtendGamePlay");
         firstLife = false;
-
-        //PlayerPrefs.SetInt(GameSetting.PlayerPrefKeys.adsEnabled.ToString(), 0);  // set false 
-        //PlayerPrefs.Save();
     }
 }

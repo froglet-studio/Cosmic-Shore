@@ -13,12 +13,12 @@ public class ShipExplosionHandler : MonoBehaviour
 
     private void OnEnable()
     {
-        FuelSystem.zeroFuel += OnZeroFuel;
+        FuelSystem.OnFuelEmpty += OnZeroFuel;
     }
 
     private void OnDisable()
     {
-        FuelSystem.zeroFuel -= OnZeroFuel;
+        FuelSystem.OnFuelEmpty -= OnZeroFuel;
     }
 
     private void Start()

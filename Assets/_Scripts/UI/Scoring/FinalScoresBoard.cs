@@ -40,7 +40,7 @@ namespace StarWriter.Core
 
         private void OnGameOver()
         {
-            currentScore = PlayerPrefs.GetInt("Score");
+            currentScore = PlayerPrefs.GetInt(PlayerPrefKeys.score.ToString());
             highScore = PlayerPrefs.GetInt(PlayerPrefKeys.highScore.ToString());
             BedazzledHighScoreImage.gameObject.SetActive(ScoringManager.IsScoreBedazzleWorthy);
             DisplayCurrentScoreWithSprites();
@@ -49,7 +49,7 @@ namespace StarWriter.Core
 
         private void OnDeclineAd()
         {            
-            currentScore = PlayerPrefs.GetInt("Score");
+            currentScore = PlayerPrefs.GetInt(PlayerPrefKeys.score.ToString());
             highScore = PlayerPrefs.GetInt(PlayerPrefKeys.highScore.ToString());
 
             BedazzledHighScoreImage.gameObject.SetActive(ScoringManager.IsScoreBedazzleWorthy);

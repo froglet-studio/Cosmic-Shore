@@ -37,14 +37,14 @@ namespace StarWriter.Core.Tutorial
 
         private void OnEnable()
         {
-            FuelSystem.zeroFuel += FuelBarDrained;
+            FuelSystem.OnFuelEmpty += FuelBarDrained;
             TutorialMuton.onMutonCollision += MutonCollision;
             TutorialJailBlockWall.onJailBlockCollision += JailBlockCollision;
         }
 
         private void OnDisable()
         {
-            FuelSystem.zeroFuel -= FuelBarDrained;
+            FuelSystem.OnFuelEmpty -= FuelBarDrained;
             TutorialMuton.onMutonCollision -= MutonCollision;
             TutorialJailBlockWall.onJailBlockCollision -= JailBlockCollision;
         }
@@ -52,8 +52,8 @@ namespace StarWriter.Core.Tutorial
         void Start()
         {
             // TODO: Is this how we would like to handle this, or should we refactor?
-            FuelSystem.ResetZeroFuel();
-            FuelSystem.zeroFuel += FuelBarDrained;
+            FuelSystem.ResetFuelEmptyListeners();
+            FuelSystem.OnFuelEmpty += FuelBarDrained;
 
             trailSpawner = player.GetComponent<TrailSpawner>();
 

@@ -1,3 +1,4 @@
+using StarWriter.Core.Audio;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -10,20 +11,19 @@ public class PlayerAudioManager : MonoBehaviour
 
     private void OnEnable()
     {
-        FuelSystem.zeroFuel += OnShipExplosion;
+        FuelSystem.OnFuelEmpty += OnShipExplosion;
     }
 
     private void OnDisable()
     {
-        FuelSystem.zeroFuel -= OnShipExplosion;
+        FuelSystem.OnFuelEmpty -= OnShipExplosion;
     }
 
     private void OnShipExplosion()
     {
         AudioSource audioSource = shipExplosionSFX.GetComponent<AudioSource>();
-        AudioClip clip = audioSource.clip;
-        audioSource.PlayOneShot(clip);
+        AudioSystem.Instance.PlaySFXClip(audioSource.clip, audioSource);
+        //AudioClip clip = audioSource.clip;
+        //audioSource.PlayOneShot(clip);
     }
-
-   
 }

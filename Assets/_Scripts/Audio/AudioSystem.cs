@@ -13,8 +13,8 @@ namespace StarWriter.Core.Audio
     {
         #region Fields
         [SerializeField] AudioMixer masterMixer;
-        [SerializeField] AudioSource musicSource1;     
-        [SerializeField] AudioSource musicSource2; 
+        [SerializeField] AudioSource musicSource1;
+        [SerializeField] AudioSource musicSource2;
         [SerializeField] float masterVolume = .1f;
         [SerializeField] float musicVolume = .1f;
 
@@ -149,13 +149,16 @@ namespace StarWriter.Core.Audio
         }
         public bool ConfirmMusicSourcesAreReady()
         {
-            if(musicSource1 == null || musicSource2 == null)
+            if (musicSource1 == null || musicSource2 == null)
             {
                 onMissingMusicSource?.Invoke();
                 //wait a sec
                 return false;
             }
-            else { return true; }
+            else
+            {
+                return true;
+            }
         }
 
         public bool IsMusicSourcePlaying()
@@ -165,8 +168,8 @@ namespace StarWriter.Core.Audio
 
         public void PlaySFXClip(AudioClip audioClip, AudioSource sfxSource)
         {
-            AudioSource audioSource = sfxSource;
-            audioSource.PlayOneShot(audioClip);
+            sfxSource.volume = masterVolume;
+            sfxSource.PlayOneShot(audioClip);
         }
         #region Mixer Methods
         public void SetMasterMixerVolume(float value)

@@ -36,7 +36,7 @@ public class CameraManager : SingletonPersistent<CameraManager>
     {
         GameManager.onPlayGame += OnPlayGame;
         GameManager.onPhoneFlip += OnPhoneFlip;
-        FuelSystem.zeroFuel += OnZeroFuel;
+        FuelSystem.OnFuelEmpty += OnZeroFuel;
         GameManager.onExtendGamePlay += OnExtendGamePlay;
         GameManager.onGameOver += OnGameOver;
     }
@@ -45,7 +45,7 @@ public class CameraManager : SingletonPersistent<CameraManager>
     {
         GameManager.onPlayGame -= OnPlayGame;
         GameManager.onPhoneFlip -= OnPhoneFlip;
-        FuelSystem.zeroFuel -= OnZeroFuel;
+        FuelSystem.OnFuelEmpty -= OnZeroFuel;
         GameManager.onExtendGamePlay -= OnExtendGamePlay;
         GameManager.onGameOver -= OnGameOver;
     }
