@@ -47,4 +47,22 @@ public class ShipExplosionHandler : MonoBehaviour
         onExplosionCompletion?.Invoke();
         explosiveMaterial.SetFloat("_explosion", 0);
     }
+
+    //public IEnumerator OnRewindDeathCoroutine()
+    //{
+    //    // PlayerAudioManager plays shipExplosion at this moment
+
+    //    HapticController.PlayBlockCollisionHaptics();
+
+    //    float explosionRadius = 0f;
+    //    while (explosionRadius < maxExplosionRadius)
+    //    {
+    //        yield return null;  // Come back next frame
+    //        explosionRadius += explosionRate * Time.deltaTime;
+    //        explosiveMaterial.SetFloat("_explosion", explosionRadius);
+    //    }
+    //    onExplosionCompletion?.Invoke();
+    //    explosiveMaterial.SetFloat("_explosion", 0);
+    //}
+
 }
