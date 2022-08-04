@@ -6,8 +6,7 @@ using UnityEngine;
 
 public class PlayerAudioManager : MonoBehaviour
 {
-    [SerializeField]
-    private GameObject shipExplosionSFX;
+    [SerializeField] GameObject shipExplosionSFX;
 
     private void OnEnable()
     {
@@ -23,7 +22,5 @@ public class PlayerAudioManager : MonoBehaviour
     {
         AudioSource audioSource = shipExplosionSFX.GetComponent<AudioSource>();
         AudioSystem.Instance.PlaySFXClip(audioSource.clip, audioSource);
-        //AudioClip clip = audioSource.clip;
-        //audioSource.PlayOneShot(clip);
     }
 }

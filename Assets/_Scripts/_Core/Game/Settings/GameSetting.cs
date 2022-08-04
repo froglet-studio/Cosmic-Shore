@@ -11,22 +11,27 @@ namespace StarWriter.Core
         public delegate void OnChangeAudioMuteStatusEvent(bool status);
         public static event OnChangeAudioMuteStatusEvent OnChangeAudioEnabledStatus;
 
+        public delegate void OnChangeInvertYEnabledStatusEvent(bool status);
+        public static event OnChangeInvertYEnabledStatusEvent OnChangeInvertYEnabledStatus;
+
         public enum PlayerPrefKeys
         {
             isInitialPlay,
             isTutorialEnabled,
             isAudioEnabled,
             isGyroEnabled,
+            invertYEnabled,
             adsEnabled,
             highScore,
             firstLifeHighScore,
-            score
+            score,
         }
 
         #region Settings
         [SerializeField] bool tutorialHasBeenCompleted = false;
         [SerializeField] bool isAudioEnabled = true;
         [SerializeField] bool isGyroEnabled = true;
+        [SerializeField] bool invertYEnabled = false;
 
         public bool TutorialHasBeenCompleted { get => tutorialHasBeenCompleted; set => tutorialHasBeenCompleted = value; }
         public bool IsAudioEnabled { get => isAudioEnabled; set => isAudioEnabled = value; }
@@ -37,26 +42,29 @@ namespace StarWriter.Core
         {
             base.Awake();
 
+            if (!PlayerPrefs.HasKey(PlayerPrefKeys.isTutorialEnabled.ToString()))
+                PlayerPrefs.SetInt(PlayerPrefKeys.isTutorialEnabled.ToString(), 1);
+            
+            if (!PlayerPrefs.HasKey(PlayerPrefKeys.isAudioEnabled.ToString()))
+                PlayerPrefs.SetInt(PlayerPrefKeys.isAudioEnabled.ToString(), 1);
+            
+            if (!PlayerPrefs.HasKey(PlayerPrefKeys.invertYEnabled.ToString()))
+                PlayerPrefs.SetInt(PlayerPrefKeys.invertYEnabled.ToString(), 0);
+
+            // We are turning off the Gyro functionality for the time being. Will be reintroduced as a ship upgrade.
+            // if (!PlayerPrefs.HasKey(PlayerPrefKeys.isGyroEnabled.ToString()))
+            PlayerPrefs.SetInt(PlayerPrefKeys.isGyroEnabled.ToString(), 0);
+
+            PlayerPrefs.Save();
+
+            isAudioEnabled = PlayerPrefs.GetInt(PlayerPrefKeys.isAudioEnabled.ToString()) == 1;
+            isGyroEnabled = PlayerPrefs.GetInt(PlayerPrefKeys.isGyroEnabled.ToString()) == 1;
+            invertYEnabled = PlayerPrefs.GetInt(PlayerPrefKeys.invertYEnabled.ToString()) == 1;
+
             // Reset this everytime the player launches the game
             if (!PlayerPrefs.HasKey(PlayerPrefKeys.isInitialPlay.ToString()))
             {
-                //Initialize PlayerPrefs
-                PlayerPrefs.SetInt(PlayerPrefKeys.isInitialPlay.ToString(), 0);  // set to false after first time
-                PlayerPrefs.SetInt(PlayerPrefKeys.isTutorialEnabled.ToString(), 1);
-                PlayerPrefs.SetInt(PlayerPrefKeys.isAudioEnabled.ToString(), 1);  // music always on first time playing
-                PlayerPrefs.SetInt(PlayerPrefKeys.isGyroEnabled.ToString(), 1);
-                
-                PlayerPrefs.Save();
-
-                //Initialize Bools
-                isAudioEnabled = true;
-                isGyroEnabled = true;
-            }
-            else
-            {
-                //Not the First Time Playing
-                isAudioEnabled = PlayerPrefs.GetInt(PlayerPrefKeys.isAudioEnabled.ToString()) == 1;
-                isGyroEnabled = PlayerPrefs.GetInt(PlayerPrefKeys.isGyroEnabled.ToString()) == 1;
+                Debug.Log("First Try!");
             }
         }
 
@@ -80,6 +88,16 @@ namespace StarWriter.Core
             PlayerPrefs.SetInt(PlayerPrefKeys.isGyroEnabled.ToString(), isGyroEnabled ? 1 : 0);
             PlayerPrefs.Save();
             OnChangeGyroEnabledStatus?.Invoke(isGyroEnabled);  // Event to toggle InputController isGryoEnabled
+        }
+        /// <summary>
+        /// Toggles Invert Y Axis on/off on options menu and pause menu panels
+        /// </summary>
+        public void ChangeInvertYEnabledStatus()
+        {
+            invertYEnabled = !invertYEnabled;
+            PlayerPrefs.SetInt(PlayerPrefKeys.invertYEnabled.ToString(), invertYEnabled ? 1 : 0);
+            PlayerPrefs.Save();
+            OnChangeInvertYEnabledStatus?.Invoke(invertYEnabled);  // Event to toggle InputController isGryoEnabled
         }
 
         /// <summary>
