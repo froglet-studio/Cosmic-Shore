@@ -206,7 +206,7 @@ namespace StarWriter.Core.Input
             }
             else if (UnityEngine.Input.touches.Length == 1)
             {
-                if (leftTouch != null && rightTouch != null)
+                if (leftTouch != Vector2.zero && rightTouch != Vector2.zero)
                 {
                     // reparameterize
                     float xSum = ((rightTouch.x + leftTouch.x) / (Screen.currentResolution.width) - 1);

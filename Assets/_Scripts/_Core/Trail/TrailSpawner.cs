@@ -88,12 +88,14 @@ public class TrailSpawner : MonoBehaviour
     {
         var size = 1f;
         var Block = trailList.Dequeue();
-        var initialSize = Block.transform.localScale;
+        var initialTransformSize = Block.transform.localScale;
+        var initialColliderSize = Block.GetComponent<BoxCollider>().size;
+
         while (size > 0)
         {
             size -= .5f * Time.deltaTime;
-            Block.transform.localScale = initialSize * size;
-
+            Block.transform.localScale = initialTransformSize * size;
+            Block.GetComponent<BoxCollider>().size = initialColliderSize * size;
             yield return null;
         }
 

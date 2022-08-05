@@ -19,7 +19,7 @@ public class Trail : MonoBehaviour, ICollidable
 
     private static GameObject container;
     private MeshRenderer meshRenderer;
-    private Collider blockCollider;
+    private BoxCollider blockCollider;
 
     public static void ResetTrailContainer()
     {
@@ -43,7 +43,7 @@ public class Trail : MonoBehaviour, ICollidable
         meshRenderer = GetComponent<MeshRenderer>();
         meshRenderer.enabled = false;
 
-        blockCollider = GetComponent<Collider>();
+        blockCollider = GetComponent<BoxCollider>();
         blockCollider.enabled = false;
 
         StartCoroutine(ToggleBlockCoroutine());
@@ -51,20 +51,27 @@ public class Trail : MonoBehaviour, ICollidable
 
     IEnumerator ToggleBlockCoroutine()
     {
-        var finalScale = transform.localScale;
+        var finalTransformScale = transform.localScale;
+        var finalColliderScale = blockCollider.size;
         var size = 0f;
+
         yield return new WaitForSeconds(waitTime);
 
-        transform.localScale = finalScale * size;
+        transform.localScale = finalTransformScale * size;
+        blockCollider.size = finalColliderScale * size;
+
         meshRenderer.enabled = true;
+        blockCollider.enabled = true;
+
         while (size < 1)
         {
             size += .5f*Time.deltaTime;
-            transform.localScale = finalScale * size;
+            transform.localScale = finalTransformScale * size;
+            blockCollider.size = finalColliderScale * size;
             yield return null;
         }
 
-        blockCollider.enabled = true;
+        
     }
 
     void OnTriggerEnter(Collider other)
