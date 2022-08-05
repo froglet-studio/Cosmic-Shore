@@ -29,29 +29,17 @@ namespace StarWriter.Core
         private void OnEnable()
         {
             GameManager.onGameOver += OnGameOver;
-            AdvertisementMenu.onDeclineAd += OnDeclineAd;
         }
 
         private void OnDisable()
         {
             GameManager.onGameOver -= OnGameOver;
-            AdvertisementMenu.onDeclineAd -= OnDeclineAd;
         }
 
         private void OnGameOver()
         {
             currentScore = PlayerPrefs.GetInt(PlayerPrefKeys.score.ToString());
             highScore = PlayerPrefs.GetInt(PlayerPrefKeys.highScore.ToString());
-            BedazzledHighScoreImage.gameObject.SetActive(ScoringManager.IsScoreBedazzleWorthy);
-            DisplayCurrentScoreWithSprites();
-            DisplayHighScoreWithSprites();
-        }
-
-        private void OnDeclineAd()
-        {            
-            currentScore = PlayerPrefs.GetInt(PlayerPrefKeys.score.ToString());
-            highScore = PlayerPrefs.GetInt(PlayerPrefKeys.highScore.ToString());
-
             BedazzledHighScoreImage.gameObject.SetActive(ScoringManager.IsScoreBedazzleWorthy);
             DisplayCurrentScoreWithSprites();
             DisplayHighScoreWithSprites();

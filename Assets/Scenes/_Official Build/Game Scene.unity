@@ -1505,6 +1505,11 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.x
       value: -1.34
       objectReference: {fileID: 0}
+    - target: {fileID: 3554940464855877734, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 3796525758843368469, guid: c8544725eea141847982b286866c858d,
         type: 3}
       propertyPath: m_AnchoredPosition.x
@@ -1625,6 +1630,11 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 7181345258476456350, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: BedazzledHighScoreImage
+      value: 
+      objectReference: {fileID: 1586480805}
     - target: {fileID: 7427844880640305969, guid: c8544725eea141847982b286866c858d,
         type: 3}
       propertyPath: m_AnchoredPosition.x
@@ -1726,6 +1736,11 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 21300000, guid: de1043e4532ca7544a14bba2be043ee2,
         type: 3}
+    - target: {fileID: 8754209756787394727, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 8933248385023514702, guid: c8544725eea141847982b286866c858d,
         type: 3}
       propertyPath: m_IsActive
@@ -1757,6 +1772,18 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 7ec312aba11675348ad33bf75e6bc0bb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &1586480805 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 795995521, guid: c8544725eea141847982b286866c858d,
+    type: 3}
+  m_PrefabInstance: {fileID: 1586480801}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
 --- !u!1 &1761562213 stripped
