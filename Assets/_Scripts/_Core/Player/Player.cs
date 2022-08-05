@@ -5,23 +5,12 @@ using System.Collections;
 [System.Serializable]
 public class Player : MonoBehaviour
 {
-    [SerializeField]
-    private string playerName;
-    
-    [SerializeField]
-    private string playerUUID;
-
-    [SerializeField]
-    SO_Character_Base playerSO;
-
-    [SerializeField]
-    private Color playerColor = Color.black;
-    
-    [SerializeField]    
-    private SO_Ship_Base playerShipPrefab;
-    
-    [SerializeField]
-    private SO_Trail_Base playerTrailPrefab;
+    [SerializeField] string playerName;
+    [SerializeField] string playerUUID;
+    [SerializeField] SO_Character_Base playerSO;
+    [SerializeField] Color playerColor = Color.black;
+    [SerializeField] SO_Ship_Base playerShipPrefab;
+    [SerializeField] SO_Trail_Base playerTrailPrefab;
 
     public string PlayerName { get => playerName; }
     public string PlayerUUID { get => playerUUID; }
@@ -34,7 +23,7 @@ public class Player : MonoBehaviour
     void Start()
     {
         InitializePlayer();
-        if(playerUUID == "admin")
+        if (playerUUID == "admin")
         {
             Debug.Log("Player " + playerName + " fired up and ready to go!");
             gameManager = GameManager.Instance;
@@ -74,5 +63,4 @@ public class Player : MonoBehaviour
         foreach (var collider in GetComponentsInChildren<Collider>(true))
             collider.enabled = enabled;
     }
-
 }
