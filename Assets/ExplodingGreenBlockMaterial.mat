@@ -7,7 +7,7 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: GreenBlockMaterial
+  m_Name: ExplodingGreenBlockMaterial
   m_Shader: {fileID: -6465566751694194690, guid: a9fd020fb5d57034ab1c751f7cca8a1c,
     type: 3}
   m_ValidKeywords:

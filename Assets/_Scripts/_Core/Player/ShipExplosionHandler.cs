@@ -29,7 +29,7 @@ public class ShipExplosionHandler : MonoBehaviour
     {
         explosionRadius = maxExplosionRadius;
         explosiveMaterial.SetFloat("_explosion", explosionRadius);
-        StartCoroutine(OnRewindDeathCoroutine());
+        StartCoroutine(OnFormShipCoroutine());
     }
 
     private void OnZeroFuel()
@@ -39,7 +39,7 @@ public class ShipExplosionHandler : MonoBehaviour
     
     private void OnExtendGamePlay()
     {
-        StartCoroutine(OnRewindDeathCoroutine());
+        StartCoroutine(OnFormShipCoroutine());
     }
 
     public IEnumerator OnDeathShipExplosionCoroutine()
@@ -59,7 +59,7 @@ public class ShipExplosionHandler : MonoBehaviour
         //explosiveMaterial.SetFloat("_explosion", 0);
     }
 
-    public IEnumerator OnRewindDeathCoroutine()
+    public IEnumerator OnFormShipCoroutine()
     {
         // PlayerAudioManager plays shipExplosion at this moment
 
