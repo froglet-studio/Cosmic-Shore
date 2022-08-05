@@ -111,7 +111,7 @@ Material:
     - _ZTest: 4
     - _ZWrite: 1
     - _ZWriteControl: 0
-    - _explosion: 0
+    - _explosion: 300.0987
     - _player: 1
     - _red: 0
     m_Colors:
