@@ -16,17 +16,35 @@ public class TrailSpawner : MonoBehaviour
 
     [SerializeField] static GameObject TrailContainer;  // TODO: heads up folks, "static" and "serializefield" don't work together
 
-    private readonly Queue<GameObject> trailList = new();
-
+    readonly Queue<GameObject> trailList = new();
+    bool spawnerEnabled = true;
 
     private void OnEnable()
     {
         GameManager.onPhoneFlip += OnPhoneFlip;
+        GameManager.onDeath += PauseSpawner;
+        GameManager.onExtendGamePlay += RestartSpawnerAfterDelay;
     }
 
     private void OnDisable()
     {
         GameManager.onPhoneFlip -= OnPhoneFlip;
+        GameManager.onDeath -= PauseSpawner;
+        GameManager.onExtendGamePlay -= RestartSpawnerAfterDelay;
+    }
+
+    void PauseSpawner()
+    {
+        spawnerEnabled = false;
+    }
+    void RestartSpawnerAfterDelay()
+    {
+        StartCoroutine(RestartSpawnerAfterDelayCoroutine());
+    }
+    IEnumerator RestartSpawnerAfterDelayCoroutine()
+    {
+        yield return new WaitForSeconds(waitTime);
+        spawnerEnabled = true;
     }
 
     public static void ResetTrailContainer()
@@ -66,7 +84,7 @@ public class TrailSpawner : MonoBehaviour
 
         while (true)
         {
-            if (Time.deltaTime < .1f)
+            if (Time.deltaTime < .1f && spawnerEnabled)
             {
                 var Block = Instantiate(trail);
                 Block.transform.SetPositionAndRotation(transform.position - transform.forward * offset, transform.rotation);

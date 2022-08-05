@@ -87,8 +87,6 @@ public class Trail : MonoBehaviour, ICollidable
     {
         if (IsPlayer(other.gameObject))
         {
-            other.transform.parent.parent.GetComponent<Player>().ToggleCollision(false);
-
             Debug.Log("tagplayer" + GameObject.FindGameObjectsWithTag("Player").Count());
 
             //// Do Impact Stuff
@@ -97,6 +95,9 @@ public class Trail : MonoBehaviour, ICollidable
             //// Player Hit
             if (ship == GameObject.FindWithTag("Player"))
             {
+                // TODO: for now, we're only turning off collision on the player. In the future, we want AI ships to explode and all that too
+                other.transform.parent.parent.GetComponent<Player>().ToggleCollision(false);
+
                 var impactVector = ship.transform.forward * ship.GetComponent<InputController>().speed;
 
                 // Make exploding block

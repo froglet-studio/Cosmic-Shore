@@ -5,32 +5,21 @@ using TailGlider.Utility.Singleton;
 
 public class CameraManager : SingletonPersistent<CameraManager>
 {
-    [SerializeField]
-    private CinemachineVirtualCameraBase mainMenuCamera;
+    [SerializeField] CinemachineVirtualCameraBase mainMenuCamera;
+    [SerializeField] CinemachineVirtualCameraBase closeCamera;
+    [SerializeField] CinemachineVirtualCameraBase farCamera;
+    [SerializeField] CinemachineVirtualCameraBase deathCamera;
+    [SerializeField] CinemachineVirtualCameraBase endCamera;
     
-    [SerializeField]
-    private CinemachineVirtualCameraBase closeCamera;
-    
-    [SerializeField]
-    private CinemachineVirtualCameraBase farCamera;
-
-    [SerializeField]
-    private CinemachineVirtualCameraBase deathCamera;
-
-    [SerializeField]
-    private CinemachineVirtualCameraBase endCamera;
-    
-    [SerializeField]
-    private Transform endCameraFollowTarget;
-    
-    [SerializeField]
-    private Transform endCameraLookAtTarget;
+    [SerializeField] Transform endCameraFollowTarget;
+    [SerializeField] Transform endCameraLookAtTarget;
 
     private Transform playerFollowTarget;
     readonly int activePriority = 10;
     readonly int inactivePriority = 1;
 
     private bool isCameraFlipEnabled = true;
+    private bool isCloseCam = true;
 
     private void OnEnable()
     {
@@ -76,7 +65,6 @@ public class CameraManager : SingletonPersistent<CameraManager>
     {
         isCameraFlipEnabled = false;
         SetDeathCameraActive();
-        
     }
 
     private void OnGameOver()
@@ -87,7 +75,11 @@ public class CameraManager : SingletonPersistent<CameraManager>
     private void OnExtendGamePlay()
     {
         isCameraFlipEnabled = true;
-        //SetCloseCameraActive();
+
+        if (isCloseCam)
+            SetCloseCameraActive();
+        else
+            SetFarCameraActive();
     }
 
     private void ZoomEndCameraToScores()
@@ -133,15 +125,14 @@ public class CameraManager : SingletonPersistent<CameraManager>
 
     private void OnPhoneFlip(bool state)
     {
+        if (isCameraFlipEnabled)
         {
-            if (isCameraFlipEnabled && state)
-            {
+            isCloseCam = state;
+
+            if (isCloseCam)
                 SetCloseCameraActive();
-            }
-            else if (isCameraFlipEnabled)
-            {
+            else
                 SetFarCameraActive();
-            }
         }
     }
 }
