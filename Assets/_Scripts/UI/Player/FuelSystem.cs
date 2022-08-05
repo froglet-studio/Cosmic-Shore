@@ -79,7 +79,8 @@ public class FuelSystem : MonoBehaviour
         {
             CurrentFuel = Mathf.Clamp(currentFuel + amount, 0, 1);
 
-            Debug.Log("FuelSystem reading is " + currentFuel);
+            if (verboseLogging)
+                Debug.Log("FuelSystem reading is " + currentFuel);
         }
     }
 }

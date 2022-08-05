@@ -90,9 +90,11 @@ namespace StarWriter.Core
             Debug.Log("GameManager.Death");
             
             PauseGame();
+
+            deathCount++;
             onDeath?.Invoke();
 
-            if (++deathCount == 2)
+            if (deathCount >= 2)
                 EndGame();
         }
 
@@ -121,15 +123,15 @@ namespace StarWriter.Core
         {
             Debug.Log("GameManager.RestartGame");
             deathCount = 0;
-
-            UnPauseGame();
+            
             SceneManager.LoadScene(2);
+            UnPauseGame();
         }
 
         public void ReturnToLobby()
         {
-            UnPauseGame();
             SceneManager.LoadScene(0);
+            UnPauseGame();
             cameraManager.OnMainMenu();
         }
 
