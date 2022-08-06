@@ -4,37 +4,33 @@ using System;
 
 public class GameMenu : MonoBehaviour
 {
-    [SerializeField]
-    GameObject fuelMeterPanel;
-    [SerializeField]
-    GameObject pauseMenuPanel;
-    [SerializeField]
-    GameObject finalScorePanel;
-    [SerializeField]
-    GameObject pauseButton;
-    [SerializeField]
-    GameObject adsPanel;
+    [SerializeField] GameObject fuelMeterPanel;
+    [SerializeField] GameObject pauseMenuPanel;
+    [SerializeField] GameObject finalScorePanel;
+    [SerializeField] GameObject pauseButton;
+    [SerializeField] GameObject adsPanel;
 
     private void OnEnable()
     {
-        GameManager.onPlayGame += ResetPanels;
-        GameManager.onDeath += OnDeath;
-        GameManager.onGameOver += OnGameOver;
-        GameManager.onExtendGamePlay += OnExtendGamePlay;
+        GameManager.onPlayGame += ResetMenuPanels;
+        GameManager.onDeath += DisplayAdsPanel;
+        GameManager.onGameOver += DisplayFinalScorePanel;
+        GameManager.onExtendGamePlay += ResetMenuPanels;
     }
 
     private void OnDisable()
     {
-        GameManager.onPlayGame -= ResetPanels;
-        GameManager.onDeath -= OnDeath;
-        GameManager.onGameOver -= OnGameOver;
-        GameManager.onExtendGamePlay -= OnExtendGamePlay;
+        GameManager.onPlayGame -= ResetMenuPanels;
+        GameManager.onDeath -= DisplayAdsPanel;
+        GameManager.onGameOver -= DisplayFinalScorePanel;
+        GameManager.onExtendGamePlay -= ResetMenuPanels;
     }
 
     private bool extendGamePlayNeeded = false;
 
     private void Update()
     {
+        // TODO: not sure if this whole thing is necessary... unity seems to complain, but it also seems to work?
         if (extendGamePlayNeeded)
         {
             fuelMeterPanel.SetActive(true);
@@ -74,7 +70,7 @@ public class GameMenu : MonoBehaviour
     /// <summary>
     /// Calls the Final and High Score Panel
     /// </summary>
-    public void DisplayFinalScorePanel()
+    private void DisplayFinalScorePanel()
     {
         fuelMeterPanel.SetActive(false);
         finalScorePanel.SetActive(true);
@@ -82,28 +78,21 @@ public class GameMenu : MonoBehaviour
         pauseButton.SetActive(false);
         pauseMenuPanel.SetActive(false);
     }
-    private void OnDeath()
-    {
-        DisplayFinalScorePanel();
-        adsPanel.SetActive(true);
-    }
 
-    /// <summary>
-    /// Called on Game Over Event
-    /// </summary>
-    private void OnGameOver()
+    private void DisplayAdsPanel()
     {
-        adsPanel.SetActive(false);
-        DisplayFinalScorePanel();
+        adsPanel.SetActive(true);
     }
 
     public void OnExtendGamePlay()
     {
         // This looks wacky, but "SetActive" can only be called in the main thread, not through a delegate
-        extendGamePlayNeeded = true;
+        // extendGamePlayNeeded = true;
+
+        ResetMenuPanels();
     }
 
-    private void ResetPanels()
+    private void ResetMenuPanels()
     {
         fuelMeterPanel.SetActive(true);
         finalScorePanel.SetActive(false);

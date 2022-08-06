@@ -19,24 +19,24 @@ public class CameraManager : SingletonPersistent<CameraManager>
     readonly int inactivePriority = 1;
 
     private bool isCameraFlipEnabled = true;
-    private bool isCloseCam = true;
+    private bool useCloseCam = true;
 
     private void OnEnable()
     {
-        GameManager.onPlayGame += OnPlayGame;
-        GameManager.onPhoneFlip += OnPhoneFlip;
-        FuelSystem.OnFuelEmpty += OnZeroFuel;
-        GameManager.onExtendGamePlay += OnExtendGamePlay;
-        GameManager.onGameOver += OnGameOver;
+        GameManager.onPhoneFlip += ToggleCloseOrFarCamOnPhoneFlip;
+        GameManager.onPlayGame += SetupGamePlayCameras;
+        GameManager.onDeath += SwitchToDeathCamera;
+        GameManager.onExtendGamePlay += SwitchToGamePlayCameras;
+        GameManager.onGameOver += SwitchToEndCamera;
     }
 
     private void OnDisable()
     {
-        GameManager.onPlayGame -= OnPlayGame;
-        GameManager.onPhoneFlip -= OnPhoneFlip;
-        FuelSystem.OnFuelEmpty -= OnZeroFuel;
-        GameManager.onExtendGamePlay -= OnExtendGamePlay;
-        GameManager.onGameOver -= OnGameOver;
+        GameManager.onPhoneFlip -= ToggleCloseOrFarCamOnPhoneFlip;
+        GameManager.onPlayGame -= SetupGamePlayCameras;
+        GameManager.onDeath -= SwitchToDeathCamera;
+        GameManager.onExtendGamePlay -= SwitchToGamePlayCameras;
+        GameManager.onGameOver -= SwitchToEndCamera;
     }
 
     void Start()
@@ -51,9 +51,8 @@ public class CameraManager : SingletonPersistent<CameraManager>
         SetMainMenuCameraActive();
     }
 
-    private void OnPlayGame()
+    private void SetupGamePlayCameras()
     {
-        GameManager.onDeath += ZoomEndCameraToScores;
         playerFollowTarget = GameObject.FindGameObjectWithTag("Player").transform;
         closeCamera.LookAt = farCamera.LookAt = deathCamera.LookAt = playerFollowTarget;
         closeCamera.Follow = farCamera.Follow = deathCamera.Follow = playerFollowTarget;
@@ -61,33 +60,29 @@ public class CameraManager : SingletonPersistent<CameraManager>
         isCameraFlipEnabled = true;
     }
 
-    private void OnZeroFuel()
+    private void SwitchToDeathCamera()
     {
+        // TODO: is the death camera still a thing?
         isCameraFlipEnabled = false;
         SetDeathCameraActive();
     }
 
-    private void OnGameOver()
+    private void SwitchToEndCamera()
     {
+        isCameraFlipEnabled = false;
         SetEndCameraActive();
     }
 
-    private void OnExtendGamePlay()
+    private void SwitchToGamePlayCameras()
     {
         isCameraFlipEnabled = true;
 
-        if (isCloseCam)
+        if (useCloseCam)
             SetCloseCameraActive();
         else
             SetFarCameraActive();
     }
 
-    private void ZoomEndCameraToScores()
-    {
-        GameManager.onDeath -= ZoomEndCameraToScores;
-        SetActiveCamera(endCamera);
-        isCameraFlipEnabled = false;
-    }
     public void SetMainMenuCameraActive()
     {
         SetActiveCamera(mainMenuCamera);
@@ -123,13 +118,13 @@ public class CameraManager : SingletonPersistent<CameraManager>
         activeCamera.Priority = activePriority;
     }
 
-    private void OnPhoneFlip(bool state)
+    private void ToggleCloseOrFarCamOnPhoneFlip(bool state)
     {
         if (isCameraFlipEnabled)
         {
-            isCloseCam = state;
+            useCloseCam = state;
 
-            if (isCloseCam)
+            if (useCloseCam)
                 SetCloseCameraActive();
             else
                 SetFarCameraActive();

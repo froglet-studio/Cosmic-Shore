@@ -21,6 +21,8 @@ public class Trail : MonoBehaviour, ICollidable
     private MeshRenderer meshRenderer;
     private BoxCollider blockCollider;
 
+    // TODO: why are we doing this? The scene is getting reloaded, so shouldn't the container get voided out that way...
+    // Wait a minute... is this to account for the 'DontDestroyOnLoad(container) line further down?
     public static void ResetTrailContainer()
     {
         for (var i=0; i<container.transform.childCount; i++)
@@ -36,8 +38,9 @@ public class Trail : MonoBehaviour, ICollidable
         {
             container = new GameObject();
             container.name = "FossilBlockContainer";
-            GameManager.onPlayGame += ResetTrailContainer;
-            DontDestroyOnLoad(container); // TODO: this is probably not awesome ¯\_(ツ)_/¯
+            // TODO: see if this breaks things between rounds
+            //GameManager.onPlayGame += ResetTrailContainer;
+            //DontDestroyOnLoad(container); // TODO: this is probably not awesome ¯\_(ツ)_/¯
         }
 
         meshRenderer = GetComponent<MeshRenderer>();

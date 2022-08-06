@@ -14,42 +14,33 @@ public class AdvertisementMenu : MonoBehaviour
 
     private void OnEnable()
     {
-        GameManager.onPlayGame += ResetButtons;
-        GameManager.onDeath += OnDeath;
+        GameManager.onDeath += ShowIncentivizedAdPanel;
     }
 
     private void OnDisable()
     {
-        GameManager.onPlayGame -= ResetButtons;
-        GameManager.onDeath -= OnDeath;
+        GameManager.onDeath -= ShowIncentivizedAdPanel;
     }
 
     private void Awake()
     {
-        ResetButtons();
-    }
-
-    public void ResetButtons()
-    {
-        watchAdButton.gameObject.SetActive(false);
+        watchAdButton.gameObject.SetActive(true);
         declineAdButton.gameObject.SetActive(true);
-        bedazzledWatchAdButton.gameObject.SetActive(true);
+        bedazzledWatchAdButton.gameObject.SetActive(false);
     }
 
     public void OnClickWatchAdButton()
     {
         Debug.Log("Ad requested");
-        ResetButtons();
     }
 
     public void OnClickDeclineAdButton()
     {
         Debug.Log("Ad declined");
-        ResetButtons();
         onDeclineAd?.Invoke();
     }
 
-    private void OnDeath()
+    private void ShowIncentivizedAdPanel()
     {
         if (GameManager.Instance.DeathCount < 2)
         {

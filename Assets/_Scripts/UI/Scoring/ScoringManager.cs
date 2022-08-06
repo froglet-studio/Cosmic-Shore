@@ -5,7 +5,6 @@ using static StarWriter.Core.GameSetting;
 
 public class ScoringManager : MonoBehaviour
 {
-    
     [SerializeField] int extendedLifeScore;
     [SerializeField] int extendedLifeHighScore;
 
@@ -19,52 +18,43 @@ public class ScoringManager : MonoBehaviour
 
     private void OnEnable()
     {
-        GameManager.onPlayGame += OnPlay;
-        GameManager.onDeath += OnDeath;
-        GameManager.onExtendGamePlay += ExtendGamePlay;
-        MutonPopUp.AddToScore += AddMutonBonus;
+        GameManager.onPlayGame += ResetScoreAndDeathCount;
+        GameManager.onDeath += UpdateScoresAndDeathCount;
+        GameManager.onGameOver += UpdateScoresAndDeathCount;
+        MutonPopUp.AddToScore += UpdateScore;
     }
 
     private void OnDisable()
     {
-        GameManager.onPlayGame -= OnPlay;
-        GameManager.onDeath -= OnDeath;
-        GameManager.onExtendGamePlay -= ExtendGamePlay;
-        MutonPopUp.AddToScore -= AddMutonBonus;
+        GameManager.onPlayGame -= ResetScoreAndDeathCount;
+        GameManager.onDeath -= UpdateScoresAndDeathCount;
+        GameManager.onGameOver -= UpdateScoresAndDeathCount;
+        MutonPopUp.AddToScore -= UpdateScore;
     }
 
     public void UpdateScoreBoard(int value)
     {
+        Debug.Log($"UpdateScoreBoard - value:{value}");
         scoreText.text = value.ToString("D3"); // score text located on the fuel bar
     }
 
-    private void AddMutonBonus(string uuid, int amount)
+    private void UpdateScore(string uuid, int amount)
     {
-        if (uuid == "admin") { score += amount; }
+        if (uuid == "admin") { 
+            score += amount; 
+        }
 
         UpdateScoreBoard(score);
     }
 
-    private void OnDeath()
-    {
-        UpdatePlayerPrefScores();
-    }
-
-    private void OnPlay()
+    private void ResetScoreAndDeathCount()
     {
         Debug.Log("ScoringManager.OnPlay");
         score = 0;
         firstLife = true;
     }
 
-    public static bool IsScoreBedazzleWorthy
-    {
-        get => firstLife ?
-            (PlayerPrefs.GetInt(PlayerPrefKeys.firstLifeHighScore.ToString()) * bedazzleThresholdPercentage) <= score :
-            (PlayerPrefs.GetInt(PlayerPrefKeys.highScore.ToString())) <= score;
-    }
-
-    public void UpdatePlayerPrefScores()
+    private void UpdateScoresAndDeathCount()
     {
         PlayerPrefs.SetInt(PlayerPrefKeys.score.ToString(), score);
 
@@ -83,11 +73,14 @@ public class ScoringManager : MonoBehaviour
         }
 
         PlayerPrefs.Save();
+
+        firstLife = false;
     }
 
-    private void ExtendGamePlay()
+    public static bool IsScoreBedazzleWorthy
     {
-        Debug.Log("ScoringManager.ExtendGamePlay");
-        firstLife = false;
+        get => firstLife ?
+            (PlayerPrefs.GetInt(PlayerPrefKeys.firstLifeHighScore.ToString()) * bedazzleThresholdPercentage) <= score :
+            (PlayerPrefs.GetInt(PlayerPrefKeys.highScore.ToString())) <= score;
     }
 }

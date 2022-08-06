@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using TailGlider.Utility.Singleton;
 using UnityEngine.Advertisements;
+using System.Collections;
 
 namespace StarWriter.Core
 {
@@ -18,11 +19,11 @@ namespace StarWriter.Core
         public delegate void OnDeathEvent();
         public static event OnDeathEvent onDeath;
 
-        public delegate void OnGameOverEvent();
-        public static event OnGameOverEvent onGameOver;
-
         public delegate void OnExtendGameEvent();
         public static event OnExtendGameEvent onExtendGamePlay;
+
+        public delegate void OnGameOverEvent();
+        public static event OnGameOverEvent onGameOver;
 
         public delegate void OnPhoneFlipEvent(bool state);
         public static event OnPhoneFlipEvent onPhoneFlip;
@@ -98,18 +99,27 @@ namespace StarWriter.Core
                 EndGame();
         }
 
-        public static void ExtendGame()
+        public void ExtendGame()
         {
             Debug.Log("GameManager.ExtendGame");
-
-            UnPauseGame();
+            
             onExtendGamePlay?.Invoke();
 
             // We disabled the player's colliders during the tail collision. let's turn them back on
-            Instance.player.ToggleCollision(true);
+
+            StartCoroutine(ToggleCollisionCoroutine());
+
+            // TODO: getting an error with the below line that timescale can only be set from the main thread
+            UnPauseGame();
 
             // TODO: unpause game and make sure player is in safe area
             // TODO: Garrett game scene stuff
+        }
+
+        IEnumerator ToggleCollisionCoroutine()
+        {
+            yield return new WaitForSeconds(.5f);
+            player.ToggleCollision(true);
         }
 
         public static void EndGame()

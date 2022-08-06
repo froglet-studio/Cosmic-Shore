@@ -15,14 +15,14 @@ public class ShipExplosionHandler : MonoBehaviour
 
     private void OnEnable()
     {
-        FuelSystem.OnFuelEmpty += OnZeroFuel;
-        GameManager.onExtendGamePlay += OnExtendGamePlay;
+        FuelSystem.OnFuelEmpty += DoShipExplosionEffect;
+        GameManager.onExtendGamePlay += DoShipReformingEffect;
     }
 
     private void OnDisable()
     {
-        FuelSystem.OnFuelEmpty -= OnZeroFuel;
-        GameManager.onExtendGamePlay -= OnExtendGamePlay;
+        FuelSystem.OnFuelEmpty -= DoShipExplosionEffect;
+        GameManager.onExtendGamePlay -= DoShipReformingEffect;
     }
 
     private void Start()
@@ -32,12 +32,12 @@ public class ShipExplosionHandler : MonoBehaviour
         StartCoroutine(OnFormShipCoroutine());
     }
 
-    private void OnZeroFuel()
+    private void DoShipExplosionEffect()
     {
         StartCoroutine(OnDeathShipExplosionCoroutine());
     }
     
-    private void OnExtendGamePlay()
+    private void DoShipReformingEffect()
     {
         StartCoroutine(OnFormShipCoroutine());
     }
@@ -45,9 +45,7 @@ public class ShipExplosionHandler : MonoBehaviour
     public IEnumerator OnDeathShipExplosionCoroutine()
     {
         // PlayerAudioManager plays shipExplosion at this moment
-
         HapticController.PlayBlockCollisionHaptics();
-        
         
         while (explosionRadius < maxExplosionRadius )
         {
@@ -55,6 +53,7 @@ public class ShipExplosionHandler : MonoBehaviour
             explosionRadius += explosionRate * Time.deltaTime;
             explosiveMaterial.SetFloat("_explosion", explosionRadius);
         }
+
         onExplosionCompletion?.Invoke();
         //explosiveMaterial.SetFloat("_explosion", 0);
     }

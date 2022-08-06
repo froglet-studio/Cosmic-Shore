@@ -14,7 +14,7 @@ public class TrailSpawner : MonoBehaviour
     public float waitTime = .5f;            // Time until the trail block appears - camera dependent
     public float startDelay = 2.1f;
 
-    [SerializeField] static GameObject TrailContainer;  // TODO: heads up folks, "static" and "serializefield" don't work together
+    static GameObject TrailContainer;
 
     readonly Queue<GameObject> trailList = new();
     bool spawnerEnabled = true;
@@ -22,22 +22,22 @@ public class TrailSpawner : MonoBehaviour
     private void OnEnable()
     {
         GameManager.onPhoneFlip += OnPhoneFlip;
-        GameManager.onDeath += PauseSpawner;
-        GameManager.onExtendGamePlay += RestartSpawnerAfterDelay;
+        GameManager.onDeath += PauseTrailSpawner;
+        GameManager.onExtendGamePlay += RestartTrailSpawnerAfterDelay;
     }
 
     private void OnDisable()
     {
         GameManager.onPhoneFlip -= OnPhoneFlip;
-        GameManager.onDeath -= PauseSpawner;
-        GameManager.onExtendGamePlay -= RestartSpawnerAfterDelay;
+        GameManager.onDeath -= PauseTrailSpawner;
+        GameManager.onExtendGamePlay -= RestartTrailSpawnerAfterDelay;
     }
 
-    void PauseSpawner()
+    void PauseTrailSpawner()
     {
         spawnerEnabled = false;
     }
-    void RestartSpawnerAfterDelay()
+    void RestartTrailSpawnerAfterDelay()
     {
         StartCoroutine(RestartSpawnerAfterDelayCoroutine());
     }
@@ -47,7 +47,8 @@ public class TrailSpawner : MonoBehaviour
         spawnerEnabled = true;
     }
 
-    public static void ResetTrailContainer()
+    // TODO: verify things still work then remove this
+    private static void ResetTrailContainer()
     {
         for (var i = TrailContainer.transform.childCount-1; i >= 0; i--)
         {
@@ -63,8 +64,9 @@ public class TrailSpawner : MonoBehaviour
         {
             TrailContainer = new GameObject();
             TrailContainer.name = "TrailContainer";
-            GameManager.onPlayGame += ResetTrailContainer;
-            DontDestroyOnLoad(TrailContainer);  // TODO: this is probably not awesome ¯\_(ツ)_/¯
+            // TODO: verify things still work then remove this
+            //GameManager.onPlayGame += ResetTrailContainer;
+            //DontDestroyOnLoad(TrailContainer);  // TODO: this is probably not awesome ¯\_(ツ)_/¯
         }
 
         StartCoroutine(SpawnTrailCoroutine());

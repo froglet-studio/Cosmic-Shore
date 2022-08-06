@@ -11,34 +11,29 @@ public class FinalPanelMenu : MonoBehaviour
 
     private void OnEnable()
     {
-        GameManager.onPlayGame += ResetButtons;
         GameManager.onGameOver += OnGameOver;
     }
 
     private void OnDisable()
     {
-        GameManager.onPlayGame -= ResetButtons;
         GameManager.onGameOver -= OnGameOver;
+    }
+
+    private void Start()
+    {
+        screenshotButton.onClick.AddListener(() => snsShare.Share());
+        bedazzledScreenshotButton.onClick.AddListener(() => snsShare.Share());
     }
 
     private void OnGameOver()
     {
         replayButton.gameObject.SetActive(true);
         bedazzledScreenshotButton.gameObject.SetActive(ScoringManager.IsScoreBedazzleWorthy);
-        bedazzledScreenshotButton.onClick.AddListener(() => snsShare.Share());
         screenshotButton.gameObject.SetActive(!ScoringManager.IsScoreBedazzleWorthy);
-        screenshotButton.onClick.AddListener(() => snsShare.Share());
     }
 
     public void OnClickReplayButton()
     {
         GameManager.Instance.RestartGame();
-    }
-
-    public void ResetButtons()
-    {
-        screenshotButton.gameObject.SetActive(false);
-        bedazzledScreenshotButton.gameObject.SetActive(false);
-        replayButton.gameObject.SetActive(false);
     }
 }
