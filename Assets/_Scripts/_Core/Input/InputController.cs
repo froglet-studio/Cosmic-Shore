@@ -26,8 +26,8 @@ namespace StarWriter.Core.Input
         private readonly float throttleScaler = 50;
         private readonly float rotationScaler = 130f;
 
-        private readonly float lerpAmount = 1f;
-        private readonly float smallLerpAmount = .1f;
+        private readonly float lerpAmount = 2f;
+        private readonly float smallLerpAmount = .7f;
 
         private readonly float animationScaler = 25f;
         private readonly float yawAnimationScaler = 80f;
@@ -125,7 +125,7 @@ namespace StarWriter.Core.Input
                                             (Ydiff - Ysum) * animationScaler, //tilt based on pitch and roll
                                             0,
                                             -(Xdiff + Xsum) * yawAnimationScaler), //sweep back based on throttle and yaw
-                                        lerpAmount);
+                                        lerpAmount * Time.deltaTime);
 
             RightWing.localRotation = Quaternion.Lerp(
                                         RightWing.localRotation, 
@@ -133,7 +133,7 @@ namespace StarWriter.Core.Input
                                             -(Ysum + Ydiff) * animationScaler, 
                                             0,
                                             (Xdiff - Xsum) * yawAnimationScaler), 
-                                        lerpAmount);
+                                        lerpAmount * Time.deltaTime);
 
             Fusilage.localRotation = Quaternion.Lerp(
                                         Fusilage.localRotation, 
@@ -141,7 +141,7 @@ namespace StarWriter.Core.Input
                                             -Ysum * animationScaler,
                                             Ydiff* animationScaler,
                                             -Xsum * animationScaler),
-                                        lerpAmount);
+                                        lerpAmount * Time.deltaTime);
         }
 
         private void RotateShip()
