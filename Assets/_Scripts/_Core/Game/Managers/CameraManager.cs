@@ -25,7 +25,7 @@ public class CameraManager : SingletonPersistent<CameraManager>
     {
         GameManager.onPhoneFlip += ToggleCloseOrFarCamOnPhoneFlip;
         GameManager.onPlayGame += SetupGamePlayCameras;
-        GameManager.onDeath += SwitchToDeathCamera;
+        FuelSystem.OnFuelEmpty += SwitchToDeathCamera;
         GameManager.onExtendGamePlay += SwitchToGamePlayCameras;
         GameManager.onGameOver += SwitchToEndCamera;
     }
@@ -34,7 +34,7 @@ public class CameraManager : SingletonPersistent<CameraManager>
     {
         GameManager.onPhoneFlip -= ToggleCloseOrFarCamOnPhoneFlip;
         GameManager.onPlayGame -= SetupGamePlayCameras;
-        GameManager.onDeath -= SwitchToDeathCamera;
+        FuelSystem.OnFuelEmpty -= SwitchToDeathCamera;
         GameManager.onExtendGamePlay -= SwitchToGamePlayCameras;
         GameManager.onGameOver -= SwitchToEndCamera;
     }
@@ -62,7 +62,6 @@ public class CameraManager : SingletonPersistent<CameraManager>
 
     private void SwitchToDeathCamera()
     {
-        // TODO: is the death camera still a thing?
         isCameraFlipEnabled = false;
         SetDeathCameraActive();
     }
@@ -126,7 +125,7 @@ public class CameraManager : SingletonPersistent<CameraManager>
 
             if (useCloseCam)
                 SetCloseCameraActive();
-            else
+            else       
                 SetFarCameraActive();
         }
     }

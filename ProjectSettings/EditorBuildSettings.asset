@@ -12,6 +12,9 @@ EditorBuildSettings:
     path: Assets/Scenes/_Official Build/Tutorial Scene.unity
     guid: 85d73583f4ccfc1478efa92a6712ce67
   - enabled: 1
+    path: Assets/Scenes/TestScenes/G Sandbox/FreePlay.unity
+    guid: 0adde48cc922fbc49a3f2832729dca91
+  - enabled: 0
     path: Assets/Scenes/_Official Build/Game Scene.unity
     guid: 5e8d9932a4d84a1488c2dad96c8135dd
   - enabled: 1
