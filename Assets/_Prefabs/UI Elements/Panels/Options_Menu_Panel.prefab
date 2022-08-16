@@ -465,6 +465,11 @@ PrefabInstance:
       propertyPath: m_Name
       value: InvertYToggle
       objectReference: {fileID: 0}
+    - target: {fileID: 6009847558969565229, guid: 0991126d982e5564ab52be02f25e2ff9,
+        type: 3}
+      propertyPath: PlayerPrefKey
+      value: 4
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 0991126d982e5564ab52be02f25e2ff9, type: 3}
 --- !u!224 &130151734346563690 stripped
