@@ -6,27 +6,29 @@ namespace StarWriter.UI
 {
     public class ToggleSynchronizer : MonoBehaviour
     {
-        [SerializeField]
-        private RectTransform handleRectTransform;
-        [SerializeField]
-        private GameSetting.PlayerPrefKeys PlayerPrefKey;
-        [SerializeField]
-        private Vector3 HandleOnPosition;
-        [SerializeField]
-        private Vector3 HandleOffPosition;
+        [SerializeField] RectTransform handleRectTransform;
+        [SerializeField] GameSetting.PlayerPrefKeys PlayerPrefKey;
+        [SerializeField] Vector3 HandleOnPosition;
+        [SerializeField] Vector3 HandleOffPosition;
 
-        private Toggle toggle;
+        Toggle toggle;
 
-        private void Awake()
+        void Awake()
         {
             toggle = GetComponent<Toggle>();
             toggle.onValueChanged.AddListener(Toggled);
         }
 
-        private void Start()
+        void OnDestroy()
         {
-            toggle.SetIsOnWithoutNotify(PlayerPrefs.GetInt(PlayerPrefKey.ToString()) == 1);
-            Toggled(PlayerPrefs.GetInt(PlayerPrefKey.ToString()) == 1);
+            toggle.onValueChanged.RemoveListener(Toggled);
+        }
+
+        void Start()
+        {
+            bool state = PlayerPrefs.HasKey(PlayerPrefKey.ToString()) && PlayerPrefs.GetInt(PlayerPrefKey.ToString()) == 1;
+            toggle.SetIsOnWithoutNotify(state);
+            Toggled(state);
         }
 
         public void Toggled(bool status)
@@ -34,11 +36,5 @@ namespace StarWriter.UI
             Debug.Log($"ToggleSynchronizer.Toggled - {name} - status: {status}");
             handleRectTransform.localPosition = status ? HandleOnPosition : HandleOffPosition;
         }
-
-        private void OnDestroy()
-        {
-            toggle.onValueChanged.RemoveListener(Toggled);
-        }
     }
 }
-

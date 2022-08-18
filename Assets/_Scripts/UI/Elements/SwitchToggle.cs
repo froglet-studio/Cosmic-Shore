@@ -5,13 +5,10 @@ using UnityEngine.UI;
 
 public class SwitchToggle : MonoBehaviour
 {
-    [SerializeField]
-    private RectTransform handleRectTransform;
+    [SerializeField] RectTransform handleRectTransform;
 
-    private Toggle toggle;
-
-    private Vector3 handleDisplacement = new Vector3(20,0,0);
-    
+    Toggle toggle;
+    Vector3 handleDisplacement = new Vector3(20,0,0);
     
     void Awake()
     {
