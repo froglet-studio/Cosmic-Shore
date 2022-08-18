@@ -7,7 +7,7 @@ public class Player : MonoBehaviour
 {
     [SerializeField] string playerName;
     [SerializeField] string playerUUID;
-    [SerializeField] SO_Character_Base playerSO;
+    [SerializeField] SO_Player playerSO;
     [SerializeField] Color playerColor = Color.black;
     [SerializeField] SO_Ship_Base playerShipPrefab;
     [SerializeField] SO_Trail_Base playerTrailPrefab;
