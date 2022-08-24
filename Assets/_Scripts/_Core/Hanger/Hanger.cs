@@ -2,15 +2,18 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using TailGlider.Utility.Singleton;
-using System.Collections;
 
 namespace StarWriter.Core
 {
     public class Hanger : SingletonPersistent<Hanger>
     {
-        public List<Bay> hangerBays;
+        public List<GameObject> hangerBays;
 
-        private Bay selectedBay;
+        //public Dictionary<string, GameObject> AvailableShips;
+
+        private GameObject selectedBay;
+
+        //public GameObject SelectedBay { get => selectedBay; set => selectedBay = value; }
 
         public delegate void OnChangeBayEvent(int bayIndex);
         public static event OnChangeBayEvent onChangeBay;
@@ -18,23 +21,17 @@ namespace StarWriter.Core
         // Start is called before the first frame update
         void Start()
         {
-            SetActiveBay(1);
-        }
-
-        // Update is called once per frame
-        void Update()
-        {
-
+            SetActiveBay(0);
         }
 
         private void SetActiveBay(int idx)
         {
-            foreach(Bay bay in hangerBays)
+            foreach(GameObject bay in hangerBays)
             {
                 bay.gameObject.SetActive(false);
             }
             selectedBay = hangerBays[idx];
-            selectedBay.gameObject.SetActive(true);
+            selectedBay.gameObject.SetActive(true); 
             onChangeBay?.Invoke(idx);
         }
 
@@ -42,9 +39,6 @@ namespace StarWriter.Core
         {
             SetActiveBay(idx);
         }
-
-
-
     }
 }
 

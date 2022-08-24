@@ -35,10 +35,13 @@ namespace StarWriter.Core
         {
             GameObject selectedBay = Hanger.Instance.hangerBays[bayIndex].gameObject;
             GameObject selectedPilot = selectedBay.GetComponentInChildren<Pilot>().gameObject;
-            Debug.Log(selectedPilot.name);
-            //pilotsInfo = selectedPilot.GetComponents<Pilot>()
 
-            GameObject selectedShip = selectedBay.GetComponentInChildren<Pilot>().gameObject;
+            //pilotsInfo = selectedPilot.GetComponents<Pilot>().PilotName;
+            //pilotText.text = "Pilot is " + pilotsInfo;
+
+            GameObject selectedShip = selectedBay.GetComponentInChildren<Ship>().gameObject;
+            shipInfo = selectedShip.GetComponent<Ship>().ShipName;
+            shipText.text = "Ship is " + shipInfo;
         }
     }
 }

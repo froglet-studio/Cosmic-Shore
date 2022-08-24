@@ -2,14 +2,8 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Bay : MonoBehaviour
+public class ShipBuild01Data : MonoBehaviour
 {
-    [SerializeField]
-    private GameObject ship;
-
-    [SerializeField]
-    private GameObject pilot;
-
     // Start is called before the first frame update
     void Start()
     {
