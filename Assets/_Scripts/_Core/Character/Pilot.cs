@@ -16,9 +16,4 @@ public class Pilot : MonoBehaviour
         pilotName = pilotSO.CharacterName;
     }
 
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
 }

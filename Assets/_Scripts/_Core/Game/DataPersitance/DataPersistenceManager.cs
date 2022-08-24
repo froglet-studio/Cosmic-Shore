@@ -66,6 +66,10 @@ public class DataPersistenceManager : MonoBehaviour
     /// </summary>
     internal void LoadHanger()
     {
+        if(dataPersistenceObjects == null)
+        {
+            this.dataPersistenceObjects = FindAllDataPersistenceObjects();
+        }
         // Load saved data from disk using the file data handler
         this.hangerData = dataHandler.LoadHanger();                      
 

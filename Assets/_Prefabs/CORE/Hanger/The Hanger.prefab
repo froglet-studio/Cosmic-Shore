@@ -502,6 +502,8 @@ GameObject:
   m_Component:
   - component: {fileID: 215237432152005205}
   - component: {fileID: 215237432152005206}
+  - component: {fileID: 6559538023979878284}
+  - component: {fileID: 8044772476896837329}
   m_Layer: 0
   m_Name: The Hanger
   m_TagString: Untagged
@@ -541,9 +543,41 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   hangerBays:
-  - {fileID: 823361830}
-  - {fileID: 883355826}
-  - {fileID: 7163934166277045854}
+  - {fileID: 215237432051305737}
+  - {fileID: 2739355379137085329}
+  - {fileID: 2935986816433628912}
+--- !u!114 &6559538023979878284
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 215237432152005207}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe03c9990d041ea40b784c94adcbb6a8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  AllSO_Pilots:
+  - {fileID: 11400000, guid: 3b879b8d32a723742b5736df355810fe, type: 2}
+  pilotNames: []
+--- !u!114 &8044772476896837329
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 215237432152005207}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 29cd47ad44b935c4d817135d34b69896, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  AllSO_Ships:
+  - {fileID: 11400000, guid: aff8013a63fe03545b16c119409e4f67, type: 2}
+  - {fileID: 11400000, guid: d3f4e0faefd881840b77b307fa39eb1e, type: 2}
+  - {fileID: 11400000, guid: 6285509c1e92c08439db387acd21d1b0, type: 2}
+  shipNames: []
 --- !u!1 &1872671240810167101
 GameObject:
   m_ObjectHideFlags: 0

@@ -2,49 +2,54 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Bay003 : MonoBehaviour, IDataPersistence
+namespace StarWriter.Core.HangerBuilder
 {
-    [Tooltip("String used to save and load pilot.")]
-    public string pilot;
-    [Tooltip("String used to save and load ship.")]
-    public string ship;
-
-    [SerializeField] private GameObject shipPrefab;
-    [SerializeField] private GameObject pilotPrefab;
-
-    void Start()
+    public class Bay003 : MonoBehaviour, IDataPersistence
     {
-        shipPrefab.SetActive(true);
-        pilotPrefab.SetActive(true);
-        DataPersistenceManager.Instance.LoadHanger();
-    }
+        [Tooltip("String used to save and load pilot.")]
+        public string pilot = "";
+        [Tooltip("String used to save and load ship.")]
+        public string ship = "";
 
-    public void LoadData(HangerData data)
-    {
-        this.pilot = data.Bay003Pilot;
-        this.ship = data.Bay003Ship;
-    }
+        [SerializeField] private GameObject shipPrefab; 
+        [SerializeField] private GameObject pilotPrefab;
 
-    public void SaveData(ref HangerData data)
-    {
-        data.Bay003Pilot = this.pilot;
-        data.Bay003Ship = this.ship;
-    }
+        void Start()
+        {
+            shipPrefab.SetActive(true);
+            pilotPrefab.SetActive(true);
+            DataPersistenceManager.Instance.LoadHanger();
+        }
 
-    private void OnDisable()
-    {
-        DataPersistenceManager.Instance.SaveHanger();
-    }
+        public void LoadData(HangerData data)
+        {
+            this.pilot = data.Bay003Pilot;
+            this.ship = data.Bay003Ship;
+        }
 
-    #region Ignore me
-    public void LoadData(GameData data)
-    {
-        //Not used here
-    }
-    public void SaveData(ref GameData data)
-    {
-        //Not used here
-    }
-    #endregion
+        public void SaveData(ref HangerData data)
+        {
+            data.Bay003Pilot = this.pilot;
+            data.Bay003Ship = this.ship;
+        }
 
+        private void OnDisable()
+        {
+            DataPersistenceManager.Instance.SaveHanger();
+        }
+
+        #region Ignore me
+        public void LoadData(GameData data)
+        {
+            //Not used here
+        }
+        public void SaveData(ref GameData data)
+        {
+            //Not used here
+        }
+        #endregion
+
+    }
 }
+
+
