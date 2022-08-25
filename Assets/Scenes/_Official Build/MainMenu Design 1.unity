@@ -415,7 +415,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerName: 
   playerUUID: ai2
-  playerSO: {fileID: 11400000, guid: 9d0e2fcb63deda84a9b294b4f585717f, type: 2}
+  playerSO: {fileID: 0}
   playerColor: {r: 0, g: 0, b: 0, a: 1}
   playerShipPrefab: {fileID: 0}
   playerTrailPrefab: {fileID: 0}
@@ -1356,7 +1356,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerName: 
   playerUUID: ai
-  playerSO: {fileID: 11400000, guid: 8fc08d34109b0884b9c23412e966dca5, type: 2}
+  playerSO: {fileID: 0}
   playerColor: {r: 0, g: 0, b: 0, a: 1}
   playerShipPrefab: {fileID: 0}
   playerTrailPrefab: {fileID: 0}
@@ -1387,6 +1387,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Name
       value: Options_Menu_Panel
+      objectReference: {fileID: 0}
+    - target: {fileID: 2109514713969662608, guid: 7b41307a62a8b6f4499e38f52d12adcb,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 2109514713969662609, guid: 7b41307a62a8b6f4499e38f52d12adcb,
         type: 3}
