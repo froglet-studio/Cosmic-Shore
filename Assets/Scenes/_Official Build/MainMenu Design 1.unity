@@ -1528,6 +1528,11 @@ PrefabInstance:
       propertyPath: onValueChanged.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
       objectReference: {fileID: 1867118902}
+    - target: {fileID: 7282574330143388302, guid: 7b41307a62a8b6f4499e38f52d12adcb,
+        type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 55
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 7b41307a62a8b6f4499e38f52d12adcb, type: 3}
 --- !u!33 &2342156430694341748
@@ -2573,12 +2578,12 @@ PrefabInstance:
     - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
         type: 3}
       propertyPath: musicVolume
-      value: 0
+      value: 0.1
       objectReference: {fileID: 0}
     - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
         type: 3}
       propertyPath: masterVolume
-      value: 0
+      value: 0.1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 9426870f37f271d4daf180ef32c4d10f, type: 3}
