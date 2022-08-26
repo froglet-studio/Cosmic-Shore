@@ -75,6 +75,11 @@ namespace StarWriter.Core.Input
 
                 Screen.sleepTimeout = SleepTimeout.NeverSleep;
             }
+
+            invertYEnabled = GameSetting.Instance.InvertYEnabled;
+
+
+            Debug.Log($"invertY Enabled: {invertYEnabled}");
         }
 
         float gyroInitializationAcceptableRange = .05f;

@@ -25,10 +25,10 @@ namespace StarWriter.Core.Audio
         public AudioSource MusicSource2 { get => musicSource2; set => musicSource2 = value; }
 
         float MasterVolume { get { return isAudioEnabled ? masterVolume : 0; } set { } }
+        float MusicVolume { get { return isAudioEnabled ? musicVolume : 0; } set { } }
 
         private bool firstMusicSourceIsPlaying = true;
         private bool isAudioEnabled = true;
-        private string AudioEnabledPlayerPrefKey = "isAudioEnabled";
 
         public bool IsAudioEnabled { get { return isAudioEnabled; } }
         #endregion
@@ -36,7 +36,8 @@ namespace StarWriter.Core.Audio
         private void Start()
         {
             // Initialize masterVolume
-            isAudioEnabled = PlayerPrefs.GetInt(AudioEnabledPlayerPrefKey) == 1;
+            isAudioEnabled = GameSetting.Instance.IsAudioEnabled;
+            Debug.Log($"Audio Enabled: {isAudioEnabled}");
             ChangeAudioEnabledStatus(isAudioEnabled);   
         }
 
@@ -62,7 +63,7 @@ namespace StarWriter.Core.Audio
         {
             AudioSource activeAudioSource = (firstMusicSourceIsPlaying ? musicSource1 : musicSource2);
             activeAudioSource.clip = audioClip;
-            activeAudioSource.volume = musicVolume;
+            activeAudioSource.volume = MusicVolume;
             activeAudioSource.Play();
         }
 
@@ -74,7 +75,7 @@ namespace StarWriter.Core.Audio
                 {
                     AudioSource activeAudioSource = (firstMusicSourceIsPlaying ? musicSource2 : musicSource1);
                     activeAudioSource.clip = audioClip;
-                    activeAudioSource.volume = musicVolume;
+                    activeAudioSource.volume = MusicVolume;
                     activeAudioSource.Play();
                 }
                 else { Debug.Log("Music Source is Missing"); } 
@@ -168,7 +169,7 @@ namespace StarWriter.Core.Audio
 
         public void PlaySFXClip(AudioClip audioClip, AudioSource sfxSource)
         {
-            sfxSource.volume = masterVolume;
+            sfxSource.volume = MasterVolume;
             sfxSource.PlayOneShot(audioClip);
         }
         #region Mixer Methods
