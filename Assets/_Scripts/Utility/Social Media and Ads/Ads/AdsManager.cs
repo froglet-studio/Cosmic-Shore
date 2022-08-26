@@ -66,13 +66,13 @@ public class AdsManager : MonoBehaviour, IUnityAdsInitializationListener, IUnity
 
     // Implement a method to execute when the user clicks the button:
     public void ShowAd()
-    {   
-        Advertisement.Show(_adUnitId, this);
-    }
-
-    private void HandleShowResult(ShowResult result)
     {
+        if (GameManager.Instance.PhoneFlipState)
+            Screen.orientation = ScreenOrientation.LandscapeRight;
+        else
+            Screen.orientation = ScreenOrientation.LandscapeLeft;
 
+        Advertisement.Show(_adUnitId, this);
     }
 
     public void OnInitializationComplete()

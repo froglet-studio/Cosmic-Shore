@@ -28,6 +28,10 @@ namespace StarWriter.Core
         public delegate void OnPhoneFlipEvent(bool state);
         public static event OnPhoneFlipEvent onPhoneFlip;
 
+        public bool PhoneFlipState { get; private set; }
+
+        public ScreenOrientation initialOrientation;
+
         CameraManager cameraManager;
 
         private readonly float phoneFlipThreshold = .3f;
@@ -47,8 +51,12 @@ namespace StarWriter.Core
             AdvertisementMenu.onDeclineAd -= EndGame;
             ShipExplosionHandler.onExplosionCompletion -= OnExplosionCompletion;
         }
+
         void Start()
         {
+            initialOrientation = (UnityEngine.Input.acceleration.y < 0) ? ScreenOrientation.LandscapeLeft : ScreenOrientation.LandscapeRight;
+            Screen.orientation = initialOrientation;
+
             cameraManager = CameraManager.Instance;
             gameSettings = GameSetting.Instance;
         }
@@ -57,9 +65,15 @@ namespace StarWriter.Core
             if (Mathf.Abs(UnityEngine.Input.acceleration.y) < phoneFlipThreshold) return;
 
             if (UnityEngine.Input.acceleration.y < 0)
-                onPhoneFlip(true);
+                PhoneFlipState = true;
             else
-                onPhoneFlip(false);
+                PhoneFlipState = false;
+
+            // We started with the phone upside down, so now down is up
+            if (initialOrientation == ScreenOrientation.LandscapeRight)
+                PhoneFlipState = !PhoneFlipState;
+
+            onPhoneFlip(PhoneFlipState);
         }
 
         public void OnClickTutorialButton()
