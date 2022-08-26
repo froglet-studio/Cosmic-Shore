@@ -40,7 +40,6 @@ public class GameMenu : MonoBehaviour
             pauseButton.SetActive(false);
             pauseMenuPanel.SetActive(false);
             Controls.SetActive(false);
-
             extendGamePlayNeeded = false;
         }
     }
@@ -87,6 +86,7 @@ public class GameMenu : MonoBehaviour
     private void DisplayAdsPanel()
     {
         adsPanel.SetActive(true);
+        Controls.SetActive(false);
     }
 
     public void OnExtendGamePlay()
