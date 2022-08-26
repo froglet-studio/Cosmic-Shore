@@ -1330,6 +1330,30 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 3311840491624344927, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: m_SpriteState.m_PressedSprite
+      value: 
+      objectReference: {fileID: 21300000, guid: c8fe0eb9bf02e86409135cd569c74efe,
+        type: 3}
+    - target: {fileID: 3311840491624344927, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: m_SpriteState.m_HighlightedSprite
+      value: 
+      objectReference: {fileID: 21300000, guid: c8fe0eb9bf02e86409135cd569c74efe,
+        type: 3}
+    - target: {fileID: 3829546091995974441, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: m_SpriteState.m_PressedSprite
+      value: 
+      objectReference: {fileID: 21300000, guid: c8fe0eb9bf02e86409135cd569c74efe,
+        type: 3}
+    - target: {fileID: 3829546091995974441, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: m_SpriteState.m_HighlightedSprite
+      value: 
+      objectReference: {fileID: 21300000, guid: c8fe0eb9bf02e86409135cd569c74efe,
+        type: 3}
     - target: {fileID: 6009847558432058227, guid: c8544725eea141847982b286866c858d,
         type: 3}
       propertyPath: HandleOnPosition.x
