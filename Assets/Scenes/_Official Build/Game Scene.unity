@@ -1483,6 +1483,11 @@ PrefabInstance:
         type: 3}
     - target: {fileID: 2056144075663572081, guid: c8544725eea141847982b286866c858d,
         type: 3}
+      propertyPath: m_SizeDelta.y
+      value: 45
+      objectReference: {fileID: 0}
+    - target: {fileID: 2056144075663572081, guid: c8544725eea141847982b286866c858d,
+        type: 3}
       propertyPath: m_AnchoredPosition.x
       value: 20
       objectReference: {fileID: 0}
@@ -1506,10 +1511,70 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 6009847558432058227, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: HandleOnPosition.x
+      value: 200
+      objectReference: {fileID: 0}
+    - target: {fileID: 6009847558432058227, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: HandleOffPosition.x
+      value: 175
+      objectReference: {fileID: 0}
+    - target: {fileID: 6186308383376323836, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: m_SizeDelta.y
+      value: 45
+      objectReference: {fileID: 0}
     - target: {fileID: 6186308383376323836, guid: c8544725eea141847982b286866c858d,
         type: 3}
       propertyPath: m_AnchoredPosition.x
       value: -11
+      objectReference: {fileID: 0}
+    - target: {fileID: 6232532253099562503, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: m_RaycastTarget
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6232532253099562503, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: m_RaycastPadding.w
+      value: 37.1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6232532253099562503, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: m_RaycastPadding.x
+      value: 29.65
+      objectReference: {fileID: 0}
+    - target: {fileID: 6232532253099562503, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: m_RaycastPadding.y
+      value: 37.31
+      objectReference: {fileID: 0}
+    - target: {fileID: 6232532253099562503, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: m_RaycastPadding.z
+      value: 15.19
+      objectReference: {fileID: 0}
+    - target: {fileID: 7604192185820249491, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: m_RaycastPadding.w
+      value: 36.8
+      objectReference: {fileID: 0}
+    - target: {fileID: 7604192185820249491, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: m_RaycastPadding.x
+      value: 33.48
+      objectReference: {fileID: 0}
+    - target: {fileID: 7604192185820249491, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: m_RaycastPadding.y
+      value: 36.99
+      objectReference: {fileID: 0}
+    - target: {fileID: 7604192185820249491, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: m_RaycastPadding.z
+      value: 33.72
       objectReference: {fileID: 0}
     - target: {fileID: 7659183800259804484, guid: c8544725eea141847982b286866c858d,
         type: 3}
@@ -1644,7 +1709,7 @@ PrefabInstance:
     - target: {fileID: 8035663729387164692, guid: c8544725eea141847982b286866c858d,
         type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: c8544725eea141847982b286866c858d, type: 3}

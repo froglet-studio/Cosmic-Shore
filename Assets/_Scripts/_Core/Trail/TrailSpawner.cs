@@ -111,7 +111,7 @@ public class TrailSpawner : MonoBehaviour
         var initialTransformSize = Block.transform.localScale;
         var initialColliderSize = Block.GetComponent<BoxCollider>().size;
 
-        while (size > 0)
+        while (size > 0.01)
         {
             size -= .5f * Time.deltaTime;
             Block.transform.localScale = initialTransformSize * size;

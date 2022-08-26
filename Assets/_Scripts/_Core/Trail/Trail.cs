@@ -56,7 +56,7 @@ public class Trail : MonoBehaviour, ICollidable
     {
         var finalTransformScale = transform.localScale;
         var finalColliderScale = blockCollider.size;
-        var size = 0f;
+        var size = 0.01f;
 
         yield return new WaitForSeconds(waitTime);
 
