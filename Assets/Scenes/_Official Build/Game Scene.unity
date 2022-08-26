@@ -124,6 +124,12 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
+--- !u!1 &14205125 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 269361407558216346, guid: c8544725eea141847982b286866c858d,
+    type: 3}
+  m_PrefabInstance: {fileID: 1586480801}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &45479576
 GameObject:
   m_ObjectHideFlags: 0
@@ -411,7 +417,7 @@ AudioSource:
   serializedVersion: 4
   OutputAudioMixerGroup: {fileID: -5826038557329902450, guid: 1cf03307ae00ea44284cc75693abbb07,
     type: 2}
-  m_audioClip: {fileID: 8300000, guid: 559d19c795760584493b585dcd5880b4, type: 3}
+  m_audioClip: {fileID: 8300000, guid: a87a5f48f39cf8244a7e4445036aa7e7, type: 3}
   m_PlayOnAwake: 0
   m_Volume: 1
   m_Pitch: 1
@@ -595,6 +601,12 @@ MonoBehaviour:
   trailLength: 40
   waitTime: 0.1
   startDelay: 2
+--- !u!1 &559274387 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 5160239492520625381, guid: c8544725eea141847982b286866c858d,
+    type: 3}
+  m_PrefabInstance: {fileID: 1586480801}
+  m_PrefabAsset: {fileID: 0}
 --- !u!4 &602055527 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 639495419069806266, guid: 41222ebb42ad82c4ca52a729935c79d3,
@@ -715,6 +727,12 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 126
   m_CollisionDetection: 0
+--- !u!1 &1136885272 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 2204517947281259144, guid: c8544725eea141847982b286866c858d,
+    type: 3}
+  m_PrefabInstance: {fileID: 1586480801}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1252136493
 GameObject:
   m_ObjectHideFlags: 0
@@ -1553,6 +1571,26 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 7821527503533529787, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: explodableParts.Array.size
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 7821527503533529787, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: explodableParts.Array.data[0]
+      value: 
+      objectReference: {fileID: 559274387}
+    - target: {fileID: 7821527503533529787, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: explodableParts.Array.data[1]
+      value: 
+      objectReference: {fileID: 1136885272}
+    - target: {fileID: 7821527503533529787, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: explodableParts.Array.data[2]
+      value: 
+      objectReference: {fileID: 14205125}
     - target: {fileID: 8035663728123421229, guid: c8544725eea141847982b286866c858d,
         type: 3}
       propertyPath: m_Pivot.y
