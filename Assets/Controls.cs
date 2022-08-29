@@ -23,10 +23,15 @@ public class Controls : MonoBehaviour
     {
         Vector2 leftTouch, rightTouch;
 
-        if (UnityEngine.Input.touches.Length == 1)
+        //If there are no touches, move both controls to start positions
+        if (UnityEngine.Input.touches.Length == 0)
         {
+            transform.position = Vector2.Lerp(transform.position, initialPos, .2f);
+        }
 
-            //If there is only one touch, move one control to the finger and start following
+        //If there is only one touch, move closer control to the finger and start following
+        else if (UnityEngine.Input.touches.Length == 1)
+        {
             if (UnityEngine.Input.touches[0].position.x <= Screen.currentResolution.width / 2)
             {
                 if (Left)
@@ -53,6 +58,8 @@ public class Controls : MonoBehaviour
 
             }
         }
+
+        // If there are two touches assign one controller per touch and follow
         else if (UnityEngine.Input.touches.Length == 2)
         {
 
