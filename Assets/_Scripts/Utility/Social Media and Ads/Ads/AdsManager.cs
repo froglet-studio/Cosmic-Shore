@@ -12,6 +12,7 @@ public class AdsManager : MonoBehaviour, IUnityAdsInitializationListener, IUnity
     [SerializeField] string _iOSAdUnitId = "Rewarded_iOS";
 #pragma warning restore CS0414
     [SerializeField] bool _testMode = true;
+    [SerializeField] bool _skipAdForDevelopment = true;
 
     private string _adUnitId; // This will remain null for unsupported platforms
     private string _gameId;
@@ -67,6 +68,12 @@ public class AdsManager : MonoBehaviour, IUnityAdsInitializationListener, IUnity
     // Implement a method to execute when the user clicks the button:
     public void ShowAd()
     {
+        if (_skipAdForDevelopment)
+        {
+            OnUnityAdsShowComplete(_adUnitId, UnityAdsShowCompletionState.COMPLETED);
+            return;
+        }
+
         Screen.orientation = ScreenOrientation.AutoRotation;
 
         Advertisement.Show(_adUnitId, this);
