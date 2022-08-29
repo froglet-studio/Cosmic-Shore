@@ -1414,6 +1414,7 @@ GameObject:
   - component: {fileID: 335152505}
   - component: {fileID: 335152504}
   - component: {fileID: 335152503}
+  - component: {fileID: 335152506}
   m_Layer: 5
   m_Name: Tutorial Select Panel
   m_TagString: Untagged
@@ -1486,6 +1487,18 @@ RectTransform:
   m_AnchoredPosition: {x: 3.834961, y: -3.5999756}
   m_SizeDelta: {x: -2.470069, y: 0.5999963}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &335152506
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 335152502}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 174a813eb49343843b766d2fdc4e5eb5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &376580955
 GameObject:
   m_ObjectHideFlags: 0
@@ -3543,6 +3556,7 @@ GameObject:
   - component: {fileID: 1385394069}
   - component: {fileID: 1385394071}
   - component: {fileID: 1385394070}
+  - component: {fileID: 1385394072}
   m_Layer: 5
   m_Name: Tutorial Panel
   m_TagString: Untagged
@@ -3614,6 +3628,18 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1385394068}
   m_CullTransparentMesh: 1
+--- !u!114 &1385394072
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1385394068}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 174a813eb49343843b766d2fdc4e5eb5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &1392314039
 GameObject:
   m_ObjectHideFlags: 0
