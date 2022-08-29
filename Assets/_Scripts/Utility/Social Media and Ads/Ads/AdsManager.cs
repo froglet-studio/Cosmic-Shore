@@ -67,10 +67,7 @@ public class AdsManager : MonoBehaviour, IUnityAdsInitializationListener, IUnity
     // Implement a method to execute when the user clicks the button:
     public void ShowAd()
     {
-        if (GameManager.Instance.PhoneFlipState)
-            Screen.orientation = ScreenOrientation.LandscapeRight;
-        else
-            Screen.orientation = ScreenOrientation.LandscapeLeft;
+        Screen.orientation = ScreenOrientation.AutoRotation;
 
         Advertisement.Show(_adUnitId, this);
     }
@@ -136,7 +133,7 @@ public class AdsManager : MonoBehaviour, IUnityAdsInitializationListener, IUnity
     {
         Debug.Log($"AdsManager.OnUnityAdsDidStart - placementId: {placementId}");
     }
-
+    
     public void OnUnityAdsDidFinish(string placementId, ShowResult showResult)
     {
         switch (showResult)
@@ -144,9 +141,6 @@ public class AdsManager : MonoBehaviour, IUnityAdsInitializationListener, IUnity
             case ShowResult.Finished:
                 Debug.Log("The ad was successfully shown.");
                 OnUnityAdsShowComplete(_adUnitId, UnityAdsShowCompletionState.COMPLETED);
-                //
-                // YOUR CODE TO REWARD THE GAMER
-                // Give coins etc.
                 break;
             case ShowResult.Skipped:
                 Debug.Log("The ad was skipped before reaching the end.");

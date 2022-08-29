@@ -34,7 +34,9 @@ public class Player : MonoBehaviour
     //Sets Player Fields from the assigned Scriptable Object 
     void InitializePlayer()
     {
-        // TODO: playerSO is not assigned in the main menu scene, this method is throwing null pointer exceptions
+        if (playerSO == null)
+            return;
+
         playerName = playerSO.CharacterName;
         playerUUID = playerSO.UniqueUserID;
         playerColor = playerSO.CharacterColor;

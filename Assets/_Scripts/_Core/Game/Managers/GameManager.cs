@@ -30,7 +30,8 @@ namespace StarWriter.Core
 
         public bool PhoneFlipState { get; private set; }
 
-        public ScreenOrientation initialOrientation;
+        //public ScreenOrientation initialOrientation;
+        //private bool initialOrientationSet = false;
 
         CameraManager cameraManager;
 
@@ -52,13 +53,20 @@ namespace StarWriter.Core
             ShipExplosionHandler.onExplosionCompletion -= OnExplosionCompletion;
         }
 
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSplashScreen)]
+        static void AutoRun()
+        {
+            Debug.Log("Running before splash screen?");
+            Screen.orientation = ScreenOrientation.LandscapeLeft;
+        }
+        
+
         void Start()
         {
-            initialOrientation = (UnityEngine.Input.acceleration.y < 0) ? ScreenOrientation.LandscapeLeft : ScreenOrientation.LandscapeRight;
-            Screen.orientation = initialOrientation;
-
             cameraManager = CameraManager.Instance;
             gameSettings = GameSetting.Instance;
+
+            //StartCoroutine(InitializeScreenOrientationCoroutine());
         }
         private void Update()
         {
@@ -70,11 +78,37 @@ namespace StarWriter.Core
                 PhoneFlipState = false;
 
             // We started with the phone upside down, so now down is up
-            if (initialOrientation == ScreenOrientation.LandscapeRight)
+            /*if (initialOrientation == ScreenOrientation.LandscapeRight)
+            {
+                Debug.Log("Flipping phone flip state");
                 PhoneFlipState = !PhoneFlipState;
+            }
+
+            Debug.Log($"Phone Flip State: {PhoneFlipState}");
+            Debug.Log($"Input.acceleration.y: {UnityEngine.Input.acceleration.y}");*/
 
             onPhoneFlip(PhoneFlipState);
         }
+
+        /*
+        IEnumerator InitializeScreenOrientationCoroutine()
+        {
+            yield return new WaitForSeconds(5f);
+            
+            initialOrientation = (Mathf.Abs(UnityEngine.Input.acceleration.y) >= phoneFlipThreshold && UnityEngine.Input.acceleration.y >= 0)
+                        ? ScreenOrientation.LandscapeRight
+                        : ScreenOrientation.LandscapeLeft;
+
+            Debug.Log($"UnityEngine.Input.acceleration.y: {UnityEngine.Input.acceleration.y}");
+            Debug.Log($"InitialOrientation: {initialOrientation}");
+            Debug.Log($"ScreenOrientation == LandscapeRight: {initialOrientation == ScreenOrientation.LandscapeRight}");
+            Debug.Log($"ScreenOrientation == LandscapeLeft: {initialOrientation == ScreenOrientation.LandscapeLeft}");
+
+            Screen.orientation = initialOrientation;
+
+            initialOrientationSet = true;
+        }
+        */
 
         public void OnClickTutorialButton()
         {
@@ -184,6 +218,12 @@ namespace StarWriter.Core
 
         public void OnAdShowComplete(string adUnitId, UnityAdsShowCompletionState showCompletionState)
         {
+            Debug.Log($"Before - Screen.orientation: {Screen.orientation}");
+
+            Screen.orientation = ScreenOrientation.LandscapeLeft;
+
+            Debug.Log($"After - Screen.orientation: {Screen.orientation}");
+
             if (showCompletionState.Equals(UnityAdsShowCompletionState.COMPLETED))
             {
                 Debug.Log("Unity Ads Rewarded Ad Completed. Extending game.");
