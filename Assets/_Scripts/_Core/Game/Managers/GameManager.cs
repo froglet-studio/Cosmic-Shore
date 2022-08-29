@@ -131,6 +131,7 @@ namespace StarWriter.Core
         /// </summary>
         public void OnClickPlayButton()
         {
+            deathCount = 0;
             UnPauseGame();
             SceneManager.LoadScene(2);
         }
