@@ -3,6 +3,7 @@ using UnityEngine.SceneManagement;
 using TailGlider.Utility.Singleton;
 using UnityEngine.Advertisements;
 using System.Collections;
+using StarWriter.Core.Audio;
 
 namespace StarWriter.Core
 {
@@ -184,6 +185,8 @@ namespace StarWriter.Core
             
             SceneManager.LoadScene(2);
             UnPauseGame();
+
+            Jukebox.Instance.PlayNextSong();
         }
 
         public void ReturnToLobby()
