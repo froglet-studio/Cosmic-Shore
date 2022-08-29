@@ -394,7 +394,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   lifeTimeIncrease: 3
   fuelAmount: 0.5
-  sphereRadius: 200
+  sphereRadius: 170
   scoreBonus: 1
   spentMutonPrefab: {fileID: 8491596592871572304, guid: f39596c98ed9d644a834f2fa27ec90ca,
     type: 3}
@@ -1732,8 +1732,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   defaultThrottle: 20
-  lerpAmount: 0.2
-  lerpIncrease: 0.0015
+  lerpAmount: 0.3
+  lerpIncrease: 0.003
   shipTransform: {fileID: 1892142157}
   muton: {fileID: 430359312}
   speed: 0
