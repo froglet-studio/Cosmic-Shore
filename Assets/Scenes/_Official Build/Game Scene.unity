@@ -1398,6 +1398,16 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 21300000, guid: c8fe0eb9bf02e86409135cd569c74efe,
         type: 3}
+    - target: {fileID: 5089375961266495013, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: _testMode
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5089375961266495013, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: _skipAdForDevelopment
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 6009847558432058227, guid: c8544725eea141847982b286866c858d,
         type: 3}
       propertyPath: HandleOnPosition.x

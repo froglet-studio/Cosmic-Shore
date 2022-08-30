@@ -75,6 +75,7 @@ public class AdsManager : MonoBehaviour, IUnityAdsInitializationListener, IUnity
         }
 
         Screen.orientation = ScreenOrientation.AutoRotation;
+        //Screen.orientation = GameManager.Instance.currentOrientation;
 
         Advertisement.Show(_adUnitId, this);
     }
@@ -118,6 +119,7 @@ public class AdsManager : MonoBehaviour, IUnityAdsInitializationListener, IUnity
     public void OnUnityAdsShowComplete(string adUnitId, UnityAdsShowCompletionState showCompletionState)
     {
         Debug.Log($"AdsManager.OnUnityAdsShowComplete - adUnitId: {adUnitId}, completionState: {showCompletionState}");
+        Screen.orientation = ScreenOrientation.LandscapeLeft;
         adShowComplete?.Invoke(adUnitId, showCompletionState);
     }
     public void OnUnityAdsShowFailure(string adUnitId, UnityAdsShowError error, string message)
