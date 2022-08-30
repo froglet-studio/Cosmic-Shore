@@ -12,6 +12,9 @@ public class ScoringManager : MonoBehaviour
     static bool firstLife = true;
     static float bedazzleThresholdPercentage = 0.8f;
 
+    private static bool newHighScore;
+    private static bool firstLifeThresholdBeat;
+
     public TextMeshProUGUI scoreText;
 
     public bool FirstLife { get => firstLife; set => firstLife = value; }
@@ -52,6 +55,8 @@ public class ScoringManager : MonoBehaviour
         Debug.Log("ScoringManager.OnPlay");
         score = 0;
         firstLife = true;
+        newHighScore = false;
+        firstLifeThresholdBeat = false;
     }
 
     private void UpdateScoresAndDeathCount()
@@ -62,10 +67,15 @@ public class ScoringManager : MonoBehaviour
         if (PlayerPrefs.GetInt(PlayerPrefKeys.highScore.ToString()) < score)
         {
             PlayerPrefs.SetInt(PlayerPrefKeys.highScore.ToString(), score);
+            newHighScore = true;
         }
         
         if (firstLife)
         {
+            if (PlayerPrefs.GetInt(PlayerPrefKeys.firstLifeHighScore.ToString()) * bedazzleThresholdPercentage <= score)
+            {
+                firstLifeThresholdBeat = true;
+            }
             if (PlayerPrefs.GetInt(PlayerPrefKeys.firstLifeHighScore.ToString()) < score)
             {
                 PlayerPrefs.SetInt(PlayerPrefKeys.firstLifeHighScore.ToString(), score);
@@ -80,7 +90,12 @@ public class ScoringManager : MonoBehaviour
     public static bool IsScoreBedazzleWorthy
     {
         get => firstLife ?
-            (PlayerPrefs.GetInt(PlayerPrefKeys.firstLifeHighScore.ToString()) * bedazzleThresholdPercentage) <= score :
-            (PlayerPrefs.GetInt(PlayerPrefKeys.highScore.ToString())) <= score;
+            firstLifeThresholdBeat || (PlayerPrefs.GetInt(PlayerPrefKeys.firstLifeHighScore.ToString()) * bedazzleThresholdPercentage) <= score :
+            newHighScore || (PlayerPrefs.GetInt(PlayerPrefKeys.highScore.ToString())) < score;
+    }
+
+    public static bool IsShareBedazzleWorthy
+    {
+        get => PlayerPrefs.GetInt(PlayerPrefKeys.highScore.ToString()) <= score;
     }
 }
