@@ -53,18 +53,13 @@ namespace StarWriter.Core
             ShipExplosionHandler.onExplosionCompletion -= OnExplosionCompletion;
         }
 
+        // In order to support the splash screen always showing in the correct orientation, we use this method as a work around.
+        // In the build settings, we set orientation to AutoRotate, then lock to LandscapeLeft as the app is launching here.
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSplashScreen)]
         static void AutoRun()
         {
-            // if orientation is auto rotate
-            //   UnityEngine.Input.acceleration.y is always > 0
-            // if orientation is locked to LandscapeLeft
-            //  UnityEngine.Input.acceleration.y is > 0 if the device orientation is to the right
-            //  UnityEngine.Input.acceleration.y is < 0 if the device orientation is to the left
-
             Screen.orientation = ScreenOrientation.LandscapeLeft;
         }
-        
 
         void Start()
         {
@@ -73,22 +68,27 @@ namespace StarWriter.Core
         }
         private void Update()
         {
+            // We don't want the phone flip to flop like a fish out of water if the phone is mostly parallel to the ground
             if (Mathf.Abs(UnityEngine.Input.acceleration.y) < phoneFlipThreshold) return;
 
             if (UnityEngine.Input.acceleration.y < 0)
             {
-                PhoneFlipState = true;
-                currentOrientation = ScreenOrientation.LandscapeLeft;
-            }
-                
+                if (!PhoneFlipState)    // Check if the state changed so we don't spam the event
+                {
+                    currentOrientation = ScreenOrientation.LandscapeLeft;
+                    PhoneFlipState = true;
+                    onPhoneFlip(PhoneFlipState);
+                }
+            }    
             else
             {
-                PhoneFlipState = false;
-                currentOrientation = ScreenOrientation.LandscapeRight;
-                
-                
+                if (PhoneFlipState)    // Check if the state changed so we don't spam the event
+                {
+                    currentOrientation = ScreenOrientation.LandscapeRight;
+                    PhoneFlipState = false;
+                    onPhoneFlip(PhoneFlipState);
+                }
             }
-            onPhoneFlip(PhoneFlipState);
         }
 
 
@@ -133,11 +133,9 @@ namespace StarWriter.Core
         public void ExtendGame()
         {
             Debug.Log("GameManager.ExtendGame");
-            
             onExtendGamePlay?.Invoke();
 
             // We disabled the player's colliders during the tail collision. let's turn them back on
-
             StartCoroutine(ToggleCollisionCoroutine());
 
             // TODO: getting an error with the below line that timescale can only be set from the main thread
@@ -157,7 +155,6 @@ namespace StarWriter.Core
         {
             Debug.Log("GameManager.EndGame");
             onGameOver?.Invoke();
-            //Instance.player.ToggleCollision(true);
         }
 
         public void RestartGame()
@@ -203,11 +200,8 @@ namespace StarWriter.Core
 
         public void OnAdShowComplete(string adUnitId, UnityAdsShowCompletionState showCompletionState)
         {
-            Debug.Log($"Before - Screen.orientation: {Screen.orientation}");
-
+            Debug.Log("GameManager.OnAdShowComplete");
             Screen.orientation = ScreenOrientation.LandscapeLeft;
-
-            Debug.Log($"After - Screen.orientation: {Screen.orientation}");
 
             if (showCompletionState.Equals(UnityAdsShowCompletionState.COMPLETED))
             {

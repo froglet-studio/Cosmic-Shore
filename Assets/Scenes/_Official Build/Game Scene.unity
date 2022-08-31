@@ -1406,7 +1406,7 @@ PrefabInstance:
     - target: {fileID: 5089375961266495013, guid: c8544725eea141847982b286866c858d,
         type: 3}
       propertyPath: _skipAdForDevelopment
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6009847558432058227, guid: c8544725eea141847982b286866c858d,
         type: 3}

@@ -117,8 +117,5 @@ public class GameMenu : MonoBehaviour
     public void OnClickShowAdsButton()
     {
         adsPanel.gameObject.SetActive(false);
-
-        // TODO: this is questionable - probably want to link this up in the AdsManager events
-        GameManager.EndGame();
     }
 }
