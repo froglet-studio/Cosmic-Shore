@@ -42,9 +42,6 @@ public class CameraManager : SingletonPersistent<CameraManager>
     void Start()
     {
         OnMainMenu();
-        playerFollowTarget = endCameraLookAtTarget; // just so not null -- TODO: probably a better way to do whatever this is protecting against
-        closeCamera.LookAt = farCamera.LookAt = deathCamera.LookAt = playerFollowTarget;
-        closeCamera.Follow = farCamera.Follow = deathCamera.Follow = playerFollowTarget;
     }
     public void OnMainMenu()
     {
@@ -53,22 +50,25 @@ public class CameraManager : SingletonPersistent<CameraManager>
 
     private void SetupGamePlayCameras()
     {
+        isCameraFlipEnabled = true;
+
         playerFollowTarget = GameObject.FindGameObjectWithTag("Player").transform;
         closeCamera.LookAt = farCamera.LookAt = deathCamera.LookAt = playerFollowTarget;
         closeCamera.Follow = farCamera.Follow = deathCamera.Follow = playerFollowTarget;
         SetCloseCameraActive();
-        isCameraFlipEnabled = true;
     }
 
     private void SwitchToDeathCamera()
     {
         isCameraFlipEnabled = false;
+
         SetDeathCameraActive();
     }
 
     private void SwitchToEndCamera()
     {
         isCameraFlipEnabled = false;
+
         SetEndCameraActive();
     }
 
@@ -84,15 +84,15 @@ public class CameraManager : SingletonPersistent<CameraManager>
 
     public void SetMainMenuCameraActive()
     {
-        SetActiveCamera(mainMenuCamera);
         isCameraFlipEnabled = false;
 
+        SetActiveCamera(mainMenuCamera);
     }
+
     public void SetFarCameraActive()
     {
         SetActiveCamera(farCamera);
     }
-
     public void SetCloseCameraActive()
     {
         SetActiveCamera(closeCamera);

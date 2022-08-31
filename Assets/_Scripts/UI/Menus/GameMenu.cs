@@ -1,6 +1,5 @@
 using UnityEngine;
 using StarWriter.Core;
-using System;
 
 public class GameMenu : MonoBehaviour
 {
@@ -105,7 +104,6 @@ public class GameMenu : MonoBehaviour
         pauseButton.SetActive(true);
         pauseMenuPanel.SetActive(false);
         Controls.SetActive(true);
-
     }
 
     public void OnClickDeclineAdsButton()

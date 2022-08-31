@@ -42,7 +42,7 @@ namespace StarWriter.Core
         private void OnEnable()
         {
             AdsManager.adShowComplete += OnAdShowComplete;
-            AdvertisementMenu.onDeclineAd += EndGame;   // TODO: let's move this to live in AdsManager
+            AdvertisementMenu.onDeclineAd += EndGame;
             ShipExplosionHandler.onExplosionCompletion += OnExplosionCompletion;
         }
 
@@ -138,11 +138,9 @@ namespace StarWriter.Core
             // We disabled the player's colliders during the tail collision. let's turn them back on
             StartCoroutine(ToggleCollisionCoroutine());
 
-            // TODO: getting an error with the below line that timescale can only be set from the main thread
+            // TODO: getting an error with the below line that timescale can only be set from the main thread,
+            // but the code works... so...
             UnPauseGame();
-
-            // TODO: unpause game and make sure player is in safe area
-            // TODO: Garrett game scene stuff
         }
 
         IEnumerator ToggleCollisionCoroutine()
@@ -185,9 +183,6 @@ namespace StarWriter.Core
             if (!PauseSystem.GetIsPaused()) TogglePauseGame();
         }
 
-        /// <summary>
-        /// Toggles the Pause System
-        /// </summary>
         public static void TogglePauseGame()
         {
             PauseSystem.TogglePauseGame();
