@@ -34,13 +34,14 @@ public class Controls : MonoBehaviour
         //If there is only one touch, move closer control to the finger and start following
         else if (Input.touches.Length == 1)
         {
-            image.sprite = ActiveImage;
+            
             if (Input.touches[0].position.x <= Screen.currentResolution.width / 2)
             {
                 if (Left)
                 {
                     leftTouch = Input.touches[0].position;
                     transform.position = Vector2.Lerp(transform.position, leftTouch + offset, .2f);
+                    image.sprite = ActiveImage;
                 }
                 else 
                 {
@@ -53,6 +54,7 @@ public class Controls : MonoBehaviour
                 {
                     rightTouch = Input.touches[0].position;
                     transform.position = Vector2.Lerp(transform.position, rightTouch + offset, .2f);
+                    image.sprite = ActiveImage;
                 }
                 else
                 {
