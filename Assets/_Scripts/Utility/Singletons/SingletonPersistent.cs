@@ -9,7 +9,7 @@ namespace TailGlider.Utility.Singleton
     {
 
         public static T Instance { get; private set; }
-        
+
         public virtual void Awake()
         {
             if (Instance == null)
