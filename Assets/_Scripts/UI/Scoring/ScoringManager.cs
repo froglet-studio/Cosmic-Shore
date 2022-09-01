@@ -94,6 +94,11 @@ public class ScoringManager : MonoBehaviour
             newHighScore || (PlayerPrefs.GetInt(PlayerPrefKeys.highScore.ToString())) < score;
     }
 
+    public static bool IsAdBedazzleWorthy
+    {
+        get => PlayerPrefs.GetInt(PlayerPrefKeys.highScore.ToString()) <= score;
+    }
+
     public static bool IsShareBedazzleWorthy
     {
         get => PlayerPrefs.GetInt(PlayerPrefKeys.highScore.ToString()) <= score;
