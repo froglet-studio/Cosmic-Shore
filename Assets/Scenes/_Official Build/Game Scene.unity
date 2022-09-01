@@ -3174,6 +3174,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3311840491624344927, guid: c8544725eea141847982b286866c858d,
         type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3311840491624344927, guid: c8544725eea141847982b286866c858d,
+        type: 3}
       propertyPath: m_SpriteState.m_PressedSprite
       value: 
       objectReference: {fileID: 21300000, guid: c8fe0eb9bf02e86409135cd569c74efe,
@@ -3184,6 +3189,11 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 21300000, guid: c8fe0eb9bf02e86409135cd569c74efe,
         type: 3}
+    - target: {fileID: 3829546091995974441, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 3829546091995974441, guid: c8544725eea141847982b286866c858d,
         type: 3}
       propertyPath: m_SpriteState.m_PressedSprite
@@ -3201,6 +3211,18 @@ PrefabInstance:
       propertyPath: m_RootOrder
       value: 3
       objectReference: {fileID: 0}
+    - target: {fileID: 4423514248792601463, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: ActiveImage
+      value: 
+      objectReference: {fileID: 21300000, guid: c8fe0eb9bf02e86409135cd569c74efe,
+        type: 3}
+    - target: {fileID: 4423514248792601463, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: InactiveImage
+      value: 
+      objectReference: {fileID: 21300000, guid: 2f3e59fa31f58384c8c53b3aa1bc3f00,
+        type: 3}
     - target: {fileID: 4792950372785284311, guid: c8544725eea141847982b286866c858d,
         type: 3}
       propertyPath: m_RootOrder
@@ -3298,6 +3320,18 @@ PrefabInstance:
       propertyPath: m_RootOrder
       value: 4
       objectReference: {fileID: 0}
+    - target: {fileID: 7521570693534837787, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: ActiveImage
+      value: 
+      objectReference: {fileID: 21300000, guid: c8fe0eb9bf02e86409135cd569c74efe,
+        type: 3}
+    - target: {fileID: 7521570693534837787, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: InactiveImage
+      value: 
+      objectReference: {fileID: 21300000, guid: 2f3e59fa31f58384c8c53b3aa1bc3f00,
+        type: 3}
     - target: {fileID: 7604192185820249491, guid: c8544725eea141847982b286866c858d,
         type: 3}
       propertyPath: m_RaycastPadding.w
@@ -3485,6 +3519,8 @@ PrefabInstance:
     - {fileID: 1207404955264072347, guid: c8544725eea141847982b286866c858d, type: 3}
     - {fileID: 1226806179, guid: c8544725eea141847982b286866c858d, type: 3}
     - {fileID: 1496137425629639675, guid: c8544725eea141847982b286866c858d, type: 3}
+    - {fileID: 3311840491624344927, guid: c8544725eea141847982b286866c858d, type: 3}
+    - {fileID: 3829546091995974441, guid: c8544725eea141847982b286866c858d, type: 3}
   m_SourcePrefab: {fileID: 100100000, guid: c8544725eea141847982b286866c858d, type: 3}
 --- !u!1 &1586480802 stripped
 GameObject:
