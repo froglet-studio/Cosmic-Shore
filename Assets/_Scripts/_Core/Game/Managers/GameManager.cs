@@ -35,6 +35,8 @@ namespace StarWriter.Core
 
         CameraManager cameraManager;
 
+        AnalyticsManager analyticsManager;
+
         private readonly float phoneFlipThreshold = .3f;
         private int deathCount = 0;
         public int DeathCount { get { return deathCount; } }
@@ -66,6 +68,7 @@ namespace StarWriter.Core
         void Start()
         {
             cameraManager = CameraManager.Instance;
+            analyticsManager = AnalyticsManager.Instance;
             gameSettings = GameSetting.Instance;
         }
         void Update()
@@ -78,7 +81,7 @@ namespace StarWriter.Core
                 currentOrientation = ScreenOrientation.LandscapeLeft;
                 PhoneFlipState = true;
                 onPhoneFlip(PhoneFlipState);
-            }    
+            }
             else
             {
                 currentOrientation = ScreenOrientation.LandscapeRight;
@@ -92,7 +95,7 @@ namespace StarWriter.Core
             UnPauseGame();
             SceneManager.LoadScene(1);
         }
-        
+
         /// <summary>
         /// Toggles the Gyro On/Off
         /// </summary>
@@ -108,6 +111,7 @@ namespace StarWriter.Core
         public void OnClickPlayButton()
         {
             deathCount = 0;
+            analyticsManager.LogLevelStart();
             UnPauseGame();
             SceneManager.LoadScene(2);
         }
@@ -115,7 +119,7 @@ namespace StarWriter.Core
         private void OnExplosionCompletion()
         {
             Debug.Log("GameManager.Death");
-            
+
             PauseGame();
 
             deathCount++;
@@ -154,7 +158,7 @@ namespace StarWriter.Core
         {
             Debug.Log("GameManager.RestartGame");
             deathCount = 0;
-            
+
             SceneManager.LoadScene(2);
             UnPauseGame();
 

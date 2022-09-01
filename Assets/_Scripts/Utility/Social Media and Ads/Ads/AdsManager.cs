@@ -16,6 +16,8 @@ public class AdsManager : MonoBehaviour, IUnityAdsInitializationListener, IUnity
     private string _adUnitId; // These will fall back to android for unsupported platforms
     private string _gameId;
 
+    AnalyticsManager analyticsManager;
+
     public delegate void OnAdInitializationComplete();
     public static event OnAdInitializationComplete AdInitializationComplete;
     public delegate void OnAdInitializationFailed();
@@ -36,7 +38,8 @@ public class AdsManager : MonoBehaviour, IUnityAdsInitializationListener, IUnity
     void Awake()
     {
         InitializeAds();
-    } 
+        analyticsManager = AnalyticsManager.Instance;
+    }
 
     public void InitializeAds()
     {
@@ -44,10 +47,10 @@ public class AdsManager : MonoBehaviour, IUnityAdsInitializationListener, IUnity
         _adUnitId = _androidAdUnitId;
         _gameId = _androidGameId;
 
-        #if UNITY_IOS
+#if UNITY_IOS
            _adUnitId = _iOSAdUnitId;
            _gameId = _iOSGameId;
-        #endif
+#endif
 
         Debug.Log($"InitializeAds: OnBeforeAdvertisement.Initialize - _gameId:{_gameId}");
         Advertisement.Initialize(_gameId);
@@ -67,6 +70,7 @@ public class AdsManager : MonoBehaviour, IUnityAdsInitializationListener, IUnity
     {
         if (_skipAdForDevelopment)
         {
+            analyticsManager.LogAdImpression();
             OnUnityAdsShowComplete(_adUnitId, UnityAdsShowCompletionState.COMPLETED);
             return;
         }
@@ -140,7 +144,7 @@ public class AdsManager : MonoBehaviour, IUnityAdsInitializationListener, IUnity
     {
         Debug.Log($"AdsManager.OnUnityAdsDidStart - placementId: {placementId}");
     }
-    
+
     public void OnUnityAdsDidFinish(string placementId, ShowResult showResult)
     {
         switch (showResult)
