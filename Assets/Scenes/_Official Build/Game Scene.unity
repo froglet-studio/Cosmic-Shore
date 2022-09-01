@@ -2125,7 +2125,7 @@ Camera:
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2
-    m_Bits: 4294967295
+    m_Bits: 55
   m_RenderingPath: -1
   m_TargetTexture: {fileID: 0}
   m_TargetDisplay: 0
@@ -2530,6 +2530,42 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1385611786}
   m_Mesh: {fileID: 4579454407841743219, guid: f7480ebe6fb19a240aa2711e76340211, type: 3}
+--- !u!1 &1426260144 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 8291937983905705547, guid: c8544725eea141847982b286866c858d,
+    type: 3}
+  m_PrefabInstance: {fileID: 1586480801}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &1426260145 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 2380261382576767731, guid: c8544725eea141847982b286866c858d,
+    type: 3}
+  m_PrefabInstance: {fileID: 1586480801}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1426260146
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1426260144}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 174a813eb49343843b766d2fdc4e5eb5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &1426260147
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1426260145}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 174a813eb49343843b766d2fdc4e5eb5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &1427109149 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 162230060, guid: c8544725eea141847982b286866c858d,
@@ -3521,6 +3557,10 @@ PrefabInstance:
     - {fileID: 1496137425629639675, guid: c8544725eea141847982b286866c858d, type: 3}
     - {fileID: 3311840491624344927, guid: c8544725eea141847982b286866c858d, type: 3}
     - {fileID: 3829546091995974441, guid: c8544725eea141847982b286866c858d, type: 3}
+    - {fileID: 5575047046182654042, guid: c8544725eea141847982b286866c858d, type: 3}
+    - {fileID: 7091555164126016646, guid: c8544725eea141847982b286866c858d, type: 3}
+    - {fileID: 6767483314862854172, guid: c8544725eea141847982b286866c858d, type: 3}
+    - {fileID: 6545590477576825376, guid: c8544725eea141847982b286866c858d, type: 3}
   m_SourcePrefab: {fileID: 100100000, guid: c8544725eea141847982b286866c858d, type: 3}
 --- !u!1 &1586480802 stripped
 GameObject:

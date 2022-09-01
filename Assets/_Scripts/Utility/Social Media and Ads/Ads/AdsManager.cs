@@ -106,12 +106,12 @@ public class AdsManager : MonoBehaviour, IUnityAdsInitializationListener, IUnity
         adFailedToLoad?.Invoke(adUnitId, error, message);
     }
 
-    public void OnUnityAdsShowClick(string adUnitId) 
+    public void OnUnityAdsShowClick(string adUnitId)
     {
         Debug.Log($"AdsManager.OnUnityAdsShowClick - adUnitId: {adUnitId}");
         adShowClick?.Invoke(adUnitId);
     }
-    public void OnUnityAdsShowStart(string adUnitId) 
+    public void OnUnityAdsShowStart(string adUnitId)
     {
         Debug.Log($"AdsManager.OnUnityAdsShowStart - adUnitId: {adUnitId}");
         adShowStart?.Invoke(adUnitId);

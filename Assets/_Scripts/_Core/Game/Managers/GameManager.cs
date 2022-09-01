@@ -42,6 +42,7 @@ namespace StarWriter.Core
         private void OnEnable()
         {
             AdsManager.adShowComplete += OnAdShowComplete;
+            AdsManager.adShowFailure += OnAdShowFailure;
             AdvertisementMenu.onDeclineAd += EndGame;
             ShipExplosionHandler.onExplosionCompletion += OnExplosionCompletion;
         }
@@ -49,6 +50,7 @@ namespace StarWriter.Core
         private void OnDisable()
         {
             AdsManager.adShowComplete -= OnAdShowComplete;
+            AdsManager.adShowFailure -= OnAdShowFailure;
             AdvertisementMenu.onDeclineAd -= EndGame;
             ShipExplosionHandler.onExplosionCompletion -= OnExplosionCompletion;
         }
@@ -204,6 +206,13 @@ namespace StarWriter.Core
 
                 ExtendGame();
             }
+        }
+
+        public void OnAdShowFailure(string adUnitId, UnityAdsShowError error, string message)
+        {
+            // Just pass through to the ad completion logic
+            // TODO: We may want to use UnityAdsShowCompletionState.SKIPPED (which is correct) and do a different behavior here
+            OnAdShowComplete(adUnitId, UnityAdsShowCompletionState.COMPLETED);
         }
     }
 }
