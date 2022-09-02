@@ -68,31 +68,24 @@ namespace StarWriter.Core
             cameraManager = CameraManager.Instance;
             gameSettings = GameSetting.Instance;
         }
-        private void Update()
+        void Update()
         {
             // We don't want the phone flip to flop like a fish out of water if the phone is mostly parallel to the ground
             if (Mathf.Abs(UnityEngine.Input.acceleration.y) < phoneFlipThreshold) return;
 
             if (UnityEngine.Input.acceleration.y < 0)
             {
-                if (!PhoneFlipState)    // Check if the state changed so we don't spam the event
-                {
-                    currentOrientation = ScreenOrientation.LandscapeLeft;
-                    PhoneFlipState = true;
-                    onPhoneFlip(PhoneFlipState);
-                }
+                currentOrientation = ScreenOrientation.LandscapeLeft;
+                PhoneFlipState = true;
+                onPhoneFlip(PhoneFlipState);
             }    
             else
             {
-                if (PhoneFlipState)    // Check if the state changed so we don't spam the event
-                {
-                    currentOrientation = ScreenOrientation.LandscapeRight;
-                    PhoneFlipState = false;
-                    onPhoneFlip(PhoneFlipState);
-                }
+                currentOrientation = ScreenOrientation.LandscapeRight;
+                PhoneFlipState = false;
+                onPhoneFlip(PhoneFlipState);
             }
         }
-
 
         public void OnClickTutorialButton()
         {

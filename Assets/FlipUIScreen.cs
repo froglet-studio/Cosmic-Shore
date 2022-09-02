@@ -1,7 +1,4 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
-
 
 namespace StarWriter.Core.Input
 {
@@ -31,16 +28,13 @@ namespace StarWriter.Core.Input
                 rectTransform.anchorMin = new Vector2(1, 1);
                 rectTransform.anchorMax = new Vector2(1, 1);
                 rectTransform.anchoredPosition = new Vector3(-50, -50, 0);
-                
             }
             else
             {
                 rectTransform.anchorMin = new Vector2(0, 0);
                 rectTransform.anchorMax = new Vector2(0, 0);
                 rectTransform.anchoredPosition = new Vector3(50, 50, 0);
-                
             }
         }
     }
-
 }
