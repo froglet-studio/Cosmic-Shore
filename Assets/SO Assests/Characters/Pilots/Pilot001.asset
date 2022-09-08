@@ -10,8 +10,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 8fb376c42667ed446b26bb1137d6efd4, type: 3}
-  m_Name: Default Pilot
+  m_Name: Pilot001
   m_EditorClassIdentifier: 
-  characterName: Default Dude
-  uniqueUserID: 465738
+  characterName: Zak
+  uniqueUserID: 3452
   characterColor: {r: 0, g: 0, b: 0, a: 0}

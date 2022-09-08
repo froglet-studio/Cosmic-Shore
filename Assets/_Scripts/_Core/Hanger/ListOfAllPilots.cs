@@ -24,7 +24,7 @@ namespace StarWriter.Core.HangerBuilder
 
         private void IntializeAllPilotsDictionary()
         {
-            int idx = 0;
+            pilotNames = new List<string>();
             AllPilots = new Dictionary<string, SO_Pilot>();
 
             foreach (SO_Pilot pilot in AllSO_Pilots)
@@ -32,8 +32,7 @@ namespace StarWriter.Core.HangerBuilder
                 //Add pilot to list
                 pilotNames.Add(pilot.CharacterName);
                 //add pilot to dictionary
-                AllPilots.Add(pilotNames[idx], AllSO_Pilots[idx]);
-                idx++;
+                AllPilots.Add(pilot.CharacterName, pilot);
             }
         }
 

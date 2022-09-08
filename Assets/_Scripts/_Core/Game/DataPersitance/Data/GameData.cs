@@ -3,6 +3,25 @@ using System.Collections.Generic;
 using UnityEngine;
 
 [System.Serializable]
+public struct Settings
+{
+    public bool adsEnabled;             //TODO
+    public bool invertYEnabled;         //TODO 
+    public bool isAudioEnabled;         //TODO
+    public bool isGyroEnabled;          //TODO
+    public bool isTutorialEnabled;      //TODO
+
+    //public Settings(bool adsEnabled, bool invertYEnabled, bool isGyroEnabled, bool isTutorialEnabled, bool isAudioEnabled)
+    //{
+    //    AdsEnabled = adsEnabled;
+    //    InvertYEnabled = invertYEnabled;
+    //    IsGyroEnabled = isGyroEnabled;
+    //    IsTutorialEnabled = isTutorialEnabled;
+    //    IsAudioEnabled = isAudioEnabled;
+    //}
+}
+
+[System.Serializable]
 
 public class GameData
 {
