@@ -38,9 +38,6 @@ public class Trail : MonoBehaviour, ICollidable
         {
             container = new GameObject();
             container.name = "FossilBlockContainer";
-            // TODO: see if this breaks things between rounds
-            //GameManager.onPlayGame += ResetTrailContainer;
-            //DontDestroyOnLoad(container); // TODO: this is probably not awesome ¯\_(ツ)_/¯
         }
 
         meshRenderer = GetComponent<MeshRenderer>();
@@ -56,7 +53,7 @@ public class Trail : MonoBehaviour, ICollidable
     {
         var finalTransformScale = transform.localScale;
         var finalColliderScale = blockCollider.size;
-        var size = 0f;
+        var size = 0.01f;
 
         yield return new WaitForSeconds(waitTime);
 
@@ -81,7 +78,11 @@ public class Trail : MonoBehaviour, ICollidable
     {
         if (gameObject != null)
         {
-            Destroy(gameObject);
+            // We used to destroy the object, but we were throwing null pointers later in the code when Destroying blocks that expired
+            // Instead, let's just disable the collider and renderer and let the trailspawner clean up the object lazily
+            //Destroy(gameObject);
+            gameObject.GetComponent<BoxCollider>().enabled = false;
+            gameObject.GetComponent<MeshRenderer>().enabled = false;
             Collide(other);
         }
     }

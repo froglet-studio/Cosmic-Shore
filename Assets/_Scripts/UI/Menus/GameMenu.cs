@@ -1,6 +1,5 @@
 using UnityEngine;
 using StarWriter.Core;
-using System;
 
 public class GameMenu : MonoBehaviour
 {
@@ -9,6 +8,7 @@ public class GameMenu : MonoBehaviour
     [SerializeField] GameObject finalScorePanel;
     [SerializeField] GameObject pauseButton;
     [SerializeField] GameObject adsPanel;
+    [SerializeField] GameObject Controls;
 
     private void OnEnable()
     {
@@ -38,7 +38,7 @@ public class GameMenu : MonoBehaviour
             adsPanel.SetActive(false);
             pauseButton.SetActive(false);
             pauseMenuPanel.SetActive(false);
-
+            Controls.SetActive(false);
             extendGamePlayNeeded = false;
         }
     }
@@ -53,6 +53,7 @@ public class GameMenu : MonoBehaviour
         adsPanel.SetActive(false);
         pauseButton.SetActive(false);
         pauseMenuPanel.SetActive(true);
+        Controls.SetActive(false);
         PauseSystem.TogglePauseGame();
     }
     /// <summary>
@@ -65,6 +66,7 @@ public class GameMenu : MonoBehaviour
         adsPanel.SetActive(false);
         pauseButton.SetActive(true);
         pauseMenuPanel.SetActive(false);
+        Controls.SetActive(true);
         //WARNING INFO: PauseSystem is called on the GameManager and not here
     }
     /// <summary>
@@ -77,11 +79,13 @@ public class GameMenu : MonoBehaviour
         adsPanel.SetActive(false);
         pauseButton.SetActive(false);
         pauseMenuPanel.SetActive(false);
+        Controls.SetActive(false);
     }
 
     private void DisplayAdsPanel()
     {
         adsPanel.SetActive(true);
+        Controls.SetActive(false);
     }
 
     public void OnExtendGamePlay()
@@ -99,6 +103,7 @@ public class GameMenu : MonoBehaviour
         adsPanel.SetActive(false);
         pauseButton.SetActive(true);
         pauseMenuPanel.SetActive(false);
+        Controls.SetActive(true);
     }
 
     public void OnClickDeclineAdsButton()
@@ -110,8 +115,5 @@ public class GameMenu : MonoBehaviour
     public void OnClickShowAdsButton()
     {
         adsPanel.gameObject.SetActive(false);
-
-        // TODO: this is questionable - probably want to link this up in the AdsManager events
-        GameManager.EndGame();
     }
 }

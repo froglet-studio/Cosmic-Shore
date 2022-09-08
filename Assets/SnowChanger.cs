@@ -9,11 +9,11 @@ public class SnowChanger : MonoBehaviour
 
     GameObject[,,] crystalLattice;
 
-    [SerializeField] int nodesPerSide = 5;
-    float nodeScaler = 4;
+    [SerializeField] int nodesPerSide = 7;
+    float nodeScaler = 5;
     int crystalSideLength = 500;
-    int nodedistance;
-    float nodeSize = .15f;
+    int nodeDistance;
+    float nodeSize = .25f;
     float sphereScaler = 2;
     float sphereDiameter;
 
@@ -30,7 +30,7 @@ public class SnowChanger : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        nodedistance = crystalSideLength/nodesPerSide;
+        nodeDistance = crystalSideLength/nodesPerSide;
 
         sphereDiameter = sphereScaler * muton.GetComponent<MutonPopUp>().sphereRadius;
 
@@ -45,9 +45,9 @@ public class SnowChanger : MonoBehaviour
                     GameObject tempSnow = Instantiate(snow);
                     tempSnow.transform.SetParent(transform, true);
                     tempSnow.transform.localScale = Vector3.one * nodeScaler;
-                    tempSnow.transform.position = new Vector3(x * nodedistance + Random.Range(-nodedistance/2, nodedistance / 2),
-                                                              y * nodedistance + Random.Range(-nodedistance / 2, nodedistance / 2),
-                                                              z * nodedistance + Random.Range(-nodedistance / 2, nodedistance / 2));
+                    tempSnow.transform.position = new Vector3(x * nodeDistance + Random.Range(-nodeDistance/2, nodeDistance / 2),
+                                                              y * nodeDistance + Random.Range(-nodeDistance / 2, nodeDistance / 2),
+                                                              z * nodeDistance + Random.Range(-nodeDistance / 2, nodeDistance / 2));
                     
                     crystalLattice[x + nodesPerSide, y + nodesPerSide, z + nodesPerSide] = tempSnow;
                 }

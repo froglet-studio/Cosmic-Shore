@@ -12,7 +12,9 @@ namespace StarWriter.UI
     public class PauseMenu : MonoBehaviour
     {
         GameManager gameManager;
-        GameSetting gameSetting;  
+        GameSetting gameSetting;
+
+        [SerializeField] GameMenu gameMenu;
 
         public Button pauseButton;
 
@@ -57,7 +59,7 @@ namespace StarWriter.UI
         public void OnClickResumeGameButton()
         {
             GameManager.UnPauseGame();
-            transform.parent.GetComponent<GameMenu>().OnClickUnpauseGame();
+            gameMenu.OnClickUnpauseGame();
         }
         public void OnClickResumeTutorialButton()
         {

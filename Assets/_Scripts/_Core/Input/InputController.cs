@@ -33,7 +33,7 @@ namespace StarWriter.Core.Input
         private readonly float yawAnimationScaler = 80f;
 
         private Gyroscope gyro;
-        private Quaternion empiricalCorrection;
+        private Quaternion derivedCorrection;
         private Quaternion displacementQ;
         private Quaternion inverseInitialRotation=new(0,0,0,0);
 
@@ -64,24 +64,24 @@ namespace StarWriter.Core.Input
 
         void Start()
         {
-            if (true) //TODO replace this with SystemInfo.supportsGyroscope and test on tablet
-            {
-                gyro = UnityEngine.Input.gyro;
-                gyro.enabled = true;
+            // TODO: why is this here?
+            Screen.sleepTimeout = SleepTimeout.NeverSleep;
 
-                StartCoroutine(GyroInitializationCoroutine());
+            gyro = UnityEngine.Input.gyro;
+            gyro.enabled = true;
 
-                displacementQ = shipTransform.rotation;
+            StartCoroutine(GyroInitializationCoroutine());
 
-                Screen.sleepTimeout = SleepTimeout.NeverSleep;
-            }
+            displacementQ = shipTransform.rotation;
+
+            invertYEnabled = GameSetting.Instance.InvertYEnabled;
         }
 
         float gyroInitializationAcceptableRange = .05f;
 
         IEnumerator GyroInitializationCoroutine()
         {
-            empiricalCorrection = GyroToUnity(Quaternion.Inverse(new Quaternion(0, .65f, .75f, 0)));  // TODO: move to derivedCoorection
+            derivedCorrection = GyroToUnity(Quaternion.Inverse(new Quaternion(0, .65f, .75f, 0)));
             isGyroEnabled = PlayerPrefs.GetInt(GameSetting.PlayerPrefKeys.isGyroEnabled.ToString()) == 1;
             inverseInitialRotation = Quaternion.identity;
 
@@ -100,7 +100,7 @@ namespace StarWriter.Core.Input
                 yield return new WaitForSeconds(gyro.updateInterval);
             }
 
-            inverseInitialRotation = Quaternion.Inverse(GyroToUnity(gyro.attitude) * empiricalCorrection);
+            inverseInitialRotation = Quaternion.Inverse(GyroToUnity(gyro.attitude) * derivedCorrection);
         }
 
         void Update()
@@ -146,14 +146,12 @@ namespace StarWriter.Core.Input
 
         private void RotateShip()
         {
-            if (true //TODO replace this with SystemInfo.supportsGyroscope and test on tablet
-                && isGyroEnabled 
-                && !Equals(inverseInitialRotation, new Quaternion(0, 0, 0, 0)))
+            if (isGyroEnabled && !Equals(inverseInitialRotation, new Quaternion(0, 0, 0, 0)))
             {
                 // Updates GameObjects rotation from input device's gyroscope
                 shipTransform.rotation = Quaternion.Lerp(
                                             shipTransform.rotation,
-                                            displacementQ * inverseInitialRotation * GyroToUnity(gyro.attitude) * empiricalCorrection,
+                                            displacementQ * inverseInitialRotation * GyroToUnity(gyro.attitude) * derivedCorrection,
                                             lerpAmount);
             }
             else
@@ -191,12 +189,7 @@ namespace StarWriter.Core.Input
                 if (invertYEnabled)
                     ySum *= -1;
 
-                //if (isPitchEnabled) { Pitch(ySum); }    // this block was causing a bug where the ship movement is disabled untill the gyro is toggled
-                //if (isRollEnabled) { Roll(yDiff); }
-                //if (isYawEnabled) { Yaw(xSum); }
-                //if (isThrottleEnabled) { Throttle(xDiff); }
-
-                Pitch(ySum);  //replaces the commented out block above
+                Pitch(ySum);
                 Roll(yDiff);
                 Yaw(xSum);
                 Throttle(xDiff);
@@ -217,12 +210,7 @@ namespace StarWriter.Core.Input
                     if (invertYEnabled)
                         ySum *= -1;
 
-                    //if (isPitchEnabled) { Pitch(ySum); }    // this block was causing a bug where the ship movement is disabled untill the gyro is toggled
-                    //if (isRollEnabled) { Roll(yDiff); }
-                    //if (isYawEnabled) { Yaw(xSum); }
-                    //if (isThrottleEnabled) { Throttle(xDiff); }
-
-                    Pitch(ySum);  //replaces the commented out block above
+                    Pitch(ySum);
                     Roll(yDiff);
                     Yaw(xSum);
                     Throttle(xDiff);
@@ -281,7 +269,7 @@ namespace StarWriter.Core.Input
         {
             Debug.Log($"InputController.OnToggleGyro - status: {status}");
             if (SystemInfo.supportsGyroscope && status) { 
-                inverseInitialRotation = Quaternion.Inverse(GyroToUnity(gyro.attitude) * empiricalCorrection);
+                inverseInitialRotation = Quaternion.Inverse(GyroToUnity(gyro.attitude) * derivedCorrection);
             }
 
             isGyroEnabled = status;

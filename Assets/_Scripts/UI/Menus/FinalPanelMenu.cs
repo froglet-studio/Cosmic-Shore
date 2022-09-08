@@ -28,8 +28,8 @@ public class FinalPanelMenu : MonoBehaviour
     private void OnGameOver()
     {
         replayButton.gameObject.SetActive(true);
-        bedazzledScreenshotButton.gameObject.SetActive(ScoringManager.IsScoreBedazzleWorthy);
-        screenshotButton.gameObject.SetActive(!ScoringManager.IsScoreBedazzleWorthy);
+        bedazzledScreenshotButton.gameObject.SetActive(ScoringManager.IsShareBedazzleWorthy);
+        screenshotButton.gameObject.SetActive(!ScoringManager.IsShareBedazzleWorthy);
     }
 
     public void OnClickReplayButton()

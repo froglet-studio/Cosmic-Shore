@@ -23,6 +23,7 @@ public class TrailSpawner : MonoBehaviour
     {
         GameManager.onPhoneFlip += OnPhoneFlip;
         GameManager.onDeath += PauseTrailSpawner;
+        GameManager.onGameOver += RestartAITrailSpawnerAfterDelay;
         GameManager.onExtendGamePlay += RestartTrailSpawnerAfterDelay;
     }
 
@@ -30,43 +31,16 @@ public class TrailSpawner : MonoBehaviour
     {
         GameManager.onPhoneFlip -= OnPhoneFlip;
         GameManager.onDeath -= PauseTrailSpawner;
+        GameManager.onGameOver -= RestartAITrailSpawnerAfterDelay;
         GameManager.onExtendGamePlay -= RestartTrailSpawnerAfterDelay;
     }
 
-    void PauseTrailSpawner()
-    {
-        spawnerEnabled = false;
-    }
-    void RestartTrailSpawnerAfterDelay()
-    {
-        StartCoroutine(RestartSpawnerAfterDelayCoroutine());
-    }
-    IEnumerator RestartSpawnerAfterDelayCoroutine()
-    {
-        yield return new WaitForSeconds(waitTime);
-        spawnerEnabled = true;
-    }
-
-    // TODO: verify things still work then remove this
-    private static void ResetTrailContainer()
-    {
-        for (var i = TrailContainer.transform.childCount-1; i >= 0; i--)
-        {
-            var child = TrailContainer.transform.GetChild(i).gameObject;
-            Destroy(child);
-        }
-    }
-
-    // Start is called before the first frame update
     void Start()
     {
         if (TrailContainer == null)
         {
             TrailContainer = new GameObject();
             TrailContainer.name = "TrailContainer";
-            // TODO: verify things still work then remove this
-            //GameManager.onPlayGame += ResetTrailContainer;
-            //DontDestroyOnLoad(TrailContainer);  // TODO: this is probably not awesome ¯\_(ツ)_/¯
         }
 
         StartCoroutine(SpawnTrailCoroutine());
@@ -79,7 +53,30 @@ public class TrailSpawner : MonoBehaviour
             waitTime = state ? 1.5f : 0.5f;
         }
     }
-
+    void PauseTrailSpawner()
+    {
+        spawnerEnabled = false;
+    }
+    
+    void RestartAITrailSpawnerAfterDelay()
+    {
+        // Called on GameOver to restart only the trail spawners for the AI
+        if (gameObject != GameObject.FindWithTag("Player"))
+        {
+            StartCoroutine(RestartSpawnerAfterDelayCoroutine());
+        }
+    }
+    
+    void RestartTrailSpawnerAfterDelay()
+    {
+        // Called when extending game play to resume spawning trails for player and AI
+        StartCoroutine(RestartSpawnerAfterDelayCoroutine());
+    }
+    IEnumerator RestartSpawnerAfterDelayCoroutine()
+    {
+        yield return new WaitForSeconds(waitTime);
+        spawnerEnabled = true;
+    }
     IEnumerator SpawnTrailCoroutine()
     {
         yield return new WaitForSeconds(startDelay);
@@ -111,7 +108,7 @@ public class TrailSpawner : MonoBehaviour
         var initialTransformSize = Block.transform.localScale;
         var initialColliderSize = Block.GetComponent<BoxCollider>().size;
 
-        while (size > 0)
+        while (size > 0.01)
         {
             size -= .5f * Time.deltaTime;
             Block.transform.localScale = initialTransformSize * size;

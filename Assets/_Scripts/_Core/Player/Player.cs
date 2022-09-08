@@ -41,6 +41,9 @@ public class Player : MonoBehaviour
     //Sets Player Fields from the assigned Scriptable Object 
     void InitializePlayer()
     {
+        if (playerSO == null)
+            return;
+
         playerName = playerSO.CharacterName;
         playerUUID = playerSO.UniqueUserID;
         playerColor = playerSO.CharacterColor;

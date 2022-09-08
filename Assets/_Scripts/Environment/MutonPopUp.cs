@@ -70,6 +70,7 @@ public class MutonPopUp : MonoBehaviour
         tempMaterial = new Material(material);
         spentMuton.GetComponent<Renderer>().material = tempMaterial;
 
+        // TODO: let's refactor this so we're not locked into this ship structure
         GameObject ship = other.transform.parent.parent.gameObject;
 
         if (ship == GameObject.FindWithTag("Player"))

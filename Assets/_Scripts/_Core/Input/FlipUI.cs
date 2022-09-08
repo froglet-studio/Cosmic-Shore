@@ -22,5 +22,4 @@ namespace StarWriter.Core.Input
             else transform.rotation = Quaternion.Euler(0,0,180);
         }
     }
-
 }

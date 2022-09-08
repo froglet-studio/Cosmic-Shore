@@ -12,6 +12,7 @@ public class AdsManager : MonoBehaviour, IUnityAdsInitializationListener, IUnity
     [SerializeField] string _iOSAdUnitId = "Rewarded_iOS";
 #pragma warning restore CS0414
     [SerializeField] bool _testMode = true;
+    [SerializeField] bool _skipAdForDevelopment = true;
 
     private string _adUnitId; // This will remain null for unsupported platforms
     private string _gameId;
@@ -66,13 +67,17 @@ public class AdsManager : MonoBehaviour, IUnityAdsInitializationListener, IUnity
 
     // Implement a method to execute when the user clicks the button:
     public void ShowAd()
-    {   
-        Advertisement.Show(_adUnitId, this);
-    }
-
-    private void HandleShowResult(ShowResult result)
     {
+        if (_skipAdForDevelopment)
+        {
+            OnUnityAdsShowComplete(_adUnitId, UnityAdsShowCompletionState.COMPLETED);
+            return;
+        }
 
+        Screen.orientation = ScreenOrientation.AutoRotation;
+        //Screen.orientation = GameManager.Instance.currentOrientation;
+
+        Advertisement.Show(_adUnitId, this);
     }
 
     public void OnInitializationComplete()
@@ -101,12 +106,12 @@ public class AdsManager : MonoBehaviour, IUnityAdsInitializationListener, IUnity
         adFailedToLoad?.Invoke(adUnitId, error, message);
     }
 
-    public void OnUnityAdsShowClick(string adUnitId) 
+    public void OnUnityAdsShowClick(string adUnitId)
     {
         Debug.Log($"AdsManager.OnUnityAdsShowClick - adUnitId: {adUnitId}");
         adShowClick?.Invoke(adUnitId);
     }
-    public void OnUnityAdsShowStart(string adUnitId) 
+    public void OnUnityAdsShowStart(string adUnitId)
     {
         Debug.Log($"AdsManager.OnUnityAdsShowStart - adUnitId: {adUnitId}");
         adShowStart?.Invoke(adUnitId);
@@ -114,6 +119,7 @@ public class AdsManager : MonoBehaviour, IUnityAdsInitializationListener, IUnity
     public void OnUnityAdsShowComplete(string adUnitId, UnityAdsShowCompletionState showCompletionState)
     {
         Debug.Log($"AdsManager.OnUnityAdsShowComplete - adUnitId: {adUnitId}, completionState: {showCompletionState}");
+        Screen.orientation = ScreenOrientation.LandscapeLeft;
         adShowComplete?.Invoke(adUnitId, showCompletionState);
     }
     public void OnUnityAdsShowFailure(string adUnitId, UnityAdsShowError error, string message)
@@ -136,7 +142,7 @@ public class AdsManager : MonoBehaviour, IUnityAdsInitializationListener, IUnity
     {
         Debug.Log($"AdsManager.OnUnityAdsDidStart - placementId: {placementId}");
     }
-
+    
     public void OnUnityAdsDidFinish(string placementId, ShowResult showResult)
     {
         switch (showResult)
@@ -144,9 +150,6 @@ public class AdsManager : MonoBehaviour, IUnityAdsInitializationListener, IUnity
             case ShowResult.Finished:
                 Debug.Log("The ad was successfully shown.");
                 OnUnityAdsShowComplete(_adUnitId, UnityAdsShowCompletionState.COMPLETED);
-                //
-                // YOUR CODE TO REWARD THE GAMER
-                // Give coins etc.
                 break;
             case ShowResult.Skipped:
                 Debug.Log("The ad was skipped before reaching the end.");

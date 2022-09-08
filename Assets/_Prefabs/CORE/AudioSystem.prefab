@@ -307,4 +307,5 @@ MonoBehaviour:
   masterMixer: {fileID: 24100000, guid: 1cf03307ae00ea44284cc75693abbb07, type: 2}
   musicSource1: {fileID: 5079991984299441695}
   musicSource2: {fileID: 2269195998066776873}
-  volume: 0.1
+  masterVolume: 0.1
+  musicVolume: 0.1

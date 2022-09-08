@@ -19,7 +19,11 @@ public class Bedazzle : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        increment += .2f*Time.deltaTime;
+        var deltaTime = Time.deltaTime;
+        if (Time.timeScale == 0)
+            deltaTime = Time.fixedDeltaTime;//.16f;    // This is here so that bedazzled items still work if the game is paused - e.g during the rewarded ad screen
+
+        increment += .2f*deltaTime;
         increment %= 1;
         hue = increment * TWO_PI;
         hue = Mathf.Sin(hue) * hueMagnitude + hueMidPoint;

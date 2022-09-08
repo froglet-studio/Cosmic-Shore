@@ -36,6 +36,7 @@ namespace StarWriter.Core
         public bool TutorialHasBeenCompleted { get => tutorialHasBeenCompleted; set => tutorialHasBeenCompleted = value; }
         public bool IsAudioEnabled { get => isAudioEnabled; set => isAudioEnabled = value; }
         public bool IsGyroEnabled { get => isGyroEnabled; }
+        public bool InvertYEnabled { get => invertYEnabled; }
         #endregion
 
         public override void Awake()
