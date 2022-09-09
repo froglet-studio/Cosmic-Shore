@@ -10,10 +10,13 @@ public class DataPersistenceManager : MonoBehaviour
 
     [SerializeField] private string gameFileName = "gamedata.json";
     [SerializeField] private string hangerFileName = "hangerdata.json";
+    [SerializeField] private string playerDataFileName = "playerdata.dat";
 
     private GameData gameData;
 
     private HangerData hangerData;
+
+    private PlayerData playerData;
 
     private List<IDataPersistence> dataPersistenceObjects;
 
@@ -28,7 +31,7 @@ public class DataPersistenceManager : MonoBehaviour
             
         }
         Instance = this;
-        this.dataHandler = new FileDataHandler(Application.persistentDataPath, gameFileName, hangerFileName);
+        this.dataHandler = new FileDataHandler(Application.persistentDataPath, gameFileName, hangerFileName, playerDataFileName);
     }
 
     private void Start()
@@ -37,6 +40,7 @@ public class DataPersistenceManager : MonoBehaviour
         this.dataPersistenceObjects = FindAllDataPersistenceObjects();
         LoadGame();
         LoadHanger();
+        LoadCurrentPlayer();
     }
     /// <summary>
     /// Sets HangerData to default values
@@ -85,7 +89,7 @@ public class DataPersistenceManager : MonoBehaviour
         {
             Obj.LoadData(hangerData);
         }
-        Debug.Log("Pilot in Bay001 is " + hangerData.Bay001Pilot); ;
+        //Debug.Log("Pilot in Bay001 is " + hangerData.Bay001Pilot); ;
     }
 
     /// <summary>
@@ -138,9 +142,59 @@ public class DataPersistenceManager : MonoBehaviour
     /// </summary>
     private void OnApplicationQuit()
     {
-        SaveHanger();
         SaveGame();   
     }
+
+    public void NewPlayer()
+    {
+        this.playerData = new PlayerData();
+    }
+
+    public void LoadCurrentPlayer()
+    {
+        // Load saved data from disk using the file data handler
+        this.playerData = dataHandler.LoadCurrentPlayer();
+
+        // Create default values if GameData is null
+        if (this.playerData == null)
+        {
+            Debug.Log("PlayerData not found while attempting to load.  Created a new PlayerData file.");
+            NewPlayer();
+        }
+
+        // Push Loaded PlayerData out to scripts requiring it
+
+        //**********************************************************************************************************
+            //TODO push data to the Player and player stats and the hanger for favorite build to display first
+        //foreach (IDataPersistence Obj in dataPersistenceObjects)
+        //{
+        //    Obj.LoadData(gameData);
+        //}
+        Debug.Log("Loaded Player. " + playerData.playerName);
+    }
+
+    public void SaveCurrentPlayer()
+    {
+        // Push Loaded gamedata out to scripts to update it
+        GameObject player = GameObject.FindGameObjectWithTag("Player");
+
+        //player.GetComponent<Player>().SaveData(ref playerData);
+
+        // Save data to disk using the file data handler
+        dataHandler.SaveGame(gameData);
+
+        Debug.Log("Game Saved. " + gameData.testNumber);
+    }
+    public void ResetAllSaveFilesToDefault()
+    {
+        NewGame();
+        SaveGame();
+        NewPlayer();
+        SaveCurrentPlayer();
+        NewHanger();
+        SaveHanger();
+    }
+
     /// <summary>
     /// Finds all IDataPersistence components located on Monobehaviors
     /// </summary>

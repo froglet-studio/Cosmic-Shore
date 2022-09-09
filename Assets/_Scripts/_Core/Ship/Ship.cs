@@ -6,12 +6,17 @@ public class Ship : MonoBehaviour
 {
     [SerializeField] string shipName;
     [SerializeField] string shipUUID;
+    [ContextMenu("Generate Ship GUID")]
+    private void GenerateGUID()
+    {
+        shipUUID = System.Guid.NewGuid().ToString();
+    }
 
     [SerializeField] SO_Ship_Base ship_SO;
 
     public string ShipName { get => shipName; }
     public string ShipUUID { get => shipUUID; }
-    public SO_Ship_Base ShipSO { get => ship_SO; }
+    public SO_Ship_Base ShipSO { get => ship_SO; set => ship_SO = value; } //TODO OnChangeValue update the ship
 
 
     // Start is called before the first frame update
@@ -31,7 +36,6 @@ public class Ship : MonoBehaviour
     {
         //TODO
         shipName = ship_SO.ShipName;
-        //shipUUID = ship_SO.
 
     }
 
