@@ -20,6 +20,13 @@ public class Player : MonoBehaviour
 
     GameManager gameManager;
 
+    //TODO Get rid of playerUUID == "admin"
+    [ContextMenu("Generate Player GUID")]
+    private void GenerateGUID()
+    {
+        // TODO playerUUID = System.Guid.NewGuid().ToString();
+    }
+
     void Start()
     {
         InitializePlayer();

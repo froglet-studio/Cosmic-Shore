@@ -23,12 +23,12 @@ namespace StarWriter.Core.HangerBuilder
 
         private void OnEnable()
         {
-            Hanger.onChangeBay += UpdateSelectedBayInfo;
+            //Hanger.onChangeBay += UpdateSelectedBayInfo;
         }
 
         private void OnDisable()
         {
-            Hanger.onChangeBay -= UpdateSelectedBayInfo;
+            //Hanger.onChangeBay -= UpdateSelectedBayInfo;
         }
 
         private void UpdateSelectedBayInfo(int bayIndex)

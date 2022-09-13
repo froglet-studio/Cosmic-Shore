@@ -148,7 +148,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 579e407aa7b13a74297f7c188de00f2f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  testText: {fileID: 0}
+  testText: {fileID: 1198552310}
   testNumber: 0
 --- !u!1 &1700864128
 GameObject:
@@ -451,7 +451,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 215237432051305736}
-  - component: {fileID: 823361830}
+  - component: {fileID: 823361831}
   m_Layer: 0
   m_Name: Bay 1
   m_TagString: Untagged
@@ -476,7 +476,7 @@ Transform:
   m_Father: {fileID: 215237432152005205}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &823361830
+--- !u!114 &823361831
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -485,13 +485,19 @@ MonoBehaviour:
   m_GameObject: {fileID: 215237432051305737}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0b4401283f78f5141acf7f80b94096f6, type: 3}
+  m_Script: {fileID: 11500000, guid: a0b23014d5f7d8841854ccfed778ad01, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  bayNumber: 1
   pilot: 
   ship: 
-  shipPrefab: {fileID: 7483848119403906911}
-  pilotPrefab: {fileID: 6470617497885601392}
+  trail: 
+  playerBuild:
+    Pilot: 
+    Ship: 
+    Trail: 
+  shipHardPoint: {fileID: 7483848119403906911}
+  pilotHardPoint: {fileID: 6470617497885601392}
 --- !u!1 &215237432152005207
 GameObject:
   m_ObjectHideFlags: 0
@@ -504,6 +510,7 @@ GameObject:
   - component: {fileID: 215237432152005206}
   - component: {fileID: 6559538023979878284}
   - component: {fileID: 8044772476896837329}
+  - component: {fileID: 1913956789}
   m_Layer: 0
   m_Name: The Hanger
   m_TagString: Untagged
@@ -546,6 +553,7 @@ MonoBehaviour:
   - {fileID: 215237432051305737}
   - {fileID: 2739355379137085329}
   - {fileID: 2935986816433628912}
+  selectedBay: {fileID: 0}
 --- !u!114 &6559538023979878284
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -559,7 +567,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   AllSO_Pilots:
-  - {fileID: 11400000, guid: 3b879b8d32a723742b5736df355810fe, type: 2}
+  - {fileID: 11400000, guid: 379ec97bfb957b341b45d6a1f0d63cff, type: 2}
+  - {fileID: 11400000, guid: 23b61d36cbcd69641b256df33767c867, type: 2}
+  - {fileID: 11400000, guid: efadf48dd8c113a4b988b63a112d0ebf, type: 2}
   pilotNames: []
 --- !u!114 &8044772476896837329
 MonoBehaviour:
@@ -578,6 +588,23 @@ MonoBehaviour:
   - {fileID: 11400000, guid: d3f4e0faefd881840b77b307fa39eb1e, type: 2}
   - {fileID: 11400000, guid: 6285509c1e92c08439db387acd21d1b0, type: 2}
   shipNames: []
+--- !u!114 &1913956789
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 215237432152005207}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8d0063b4a9482874cb4bca8a8ef8e51f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  AllSO_Trails:
+  - {fileID: 11400000, guid: 0fd76e9203dce9e48864db1b5590876a, type: 2}
+  - {fileID: 11400000, guid: 09fd57d25843b4f4f8ea7e513bd95f52, type: 2}
+  - {fileID: 11400000, guid: d0204b73ca8a2374c9c3a369f8d936c3, type: 2}
+  TrailNames: []
 --- !u!1 &1872671240810167101
 GameObject:
   m_ObjectHideFlags: 0
@@ -710,7 +737,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1625155402395962997}
-  - component: {fileID: 883355826}
+  - component: {fileID: 883355827}
   m_Layer: 0
   m_Name: Bay 2
   m_TagString: Untagged
@@ -735,7 +762,7 @@ Transform:
   m_Father: {fileID: 215237432152005205}
   m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &883355826
+--- !u!114 &883355827
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -744,13 +771,19 @@ MonoBehaviour:
   m_GameObject: {fileID: 2739355379137085329}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ffb5df4c5e673104aa9484373e1b6ebe, type: 3}
+  m_Script: {fileID: 11500000, guid: a0b23014d5f7d8841854ccfed778ad01, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  bayNumber: 2
   pilot: 
   ship: 
-  shipPrefab: {fileID: 946620838175162762}
-  pilotPrefab: {fileID: 7304972447117238584}
+  trail: 
+  playerBuild:
+    Pilot: 
+    Ship: 
+    Trail: 
+  shipHardPoint: {fileID: 946620838175162762}
+  pilotHardPoint: {fileID: 7304972447117238584}
 --- !u!1 &2935986816433628912
 GameObject:
   m_ObjectHideFlags: 0
@@ -760,7 +793,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 8855080916524262758}
-  - component: {fileID: 7163934166277045854}
+  - component: {fileID: 215237431381537769}
   m_Layer: 0
   m_Name: Bay 3
   m_TagString: Untagged
@@ -785,7 +818,7 @@ Transform:
   m_Father: {fileID: 215237432152005205}
   m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &7163934166277045854
+--- !u!114 &215237431381537769
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -794,13 +827,19 @@ MonoBehaviour:
   m_GameObject: {fileID: 2935986816433628912}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: bc780cee4ad145e48b4128d1d786bb3c, type: 3}
+  m_Script: {fileID: 11500000, guid: a0b23014d5f7d8841854ccfed778ad01, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  bayNumber: 3
   pilot: 
   ship: 
-  shipPrefab: {fileID: 1828334176499791778}
-  pilotPrefab: {fileID: 1313978743169816156}
+  trail: 
+  playerBuild:
+    Pilot: 
+    Ship: 
+    Trail: 
+  shipHardPoint: {fileID: 1828334176499791778}
+  pilotHardPoint: {fileID: 1313978743169816156}
 --- !u!1 &4245492945893105822
 GameObject:
   m_ObjectHideFlags: 0
@@ -1320,6 +1359,12 @@ PrefabInstance:
       propertyPath: m_Name
       value: Pilot
       objectReference: {fileID: 0}
+    - target: {fileID: 6261039104398450331, guid: 2546ce99e57f13a4aa51aeeb90760d1a,
+        type: 3}
+      propertyPath: pilotSO
+      value: 
+      objectReference: {fileID: 11400000, guid: 379ec97bfb957b341b45d6a1f0d63cff,
+        type: 2}
     - target: {fileID: 6261039104398450332, guid: 2546ce99e57f13a4aa51aeeb90760d1a,
         type: 3}
       propertyPath: m_RootOrder
@@ -1458,6 +1503,12 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7162447033021696228, guid: 1ecea184e98fa6544b6be50ba8692d92,
         type: 3}
+      propertyPath: ship_SO
+      value: 
+      objectReference: {fileID: 11400000, guid: 6285509c1e92c08439db387acd21d1b0,
+        type: 2}
+    - target: {fileID: 7162447033021696228, guid: 1ecea184e98fa6544b6be50ba8692d92,
+        type: 3}
       propertyPath: shipName
       value: Ship 2
       objectReference: {fileID: 0}
@@ -1544,6 +1595,12 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7162447033021696228, guid: 1ecea184e98fa6544b6be50ba8692d92,
         type: 3}
+      propertyPath: ship_SO
+      value: 
+      objectReference: {fileID: 11400000, guid: d3f4e0faefd881840b77b307fa39eb1e,
+        type: 2}
+    - target: {fileID: 7162447033021696228, guid: 1ecea184e98fa6544b6be50ba8692d92,
+        type: 3}
       propertyPath: shipName
       value: Ship 3
       objectReference: {fileID: 0}
@@ -1573,6 +1630,12 @@ PrefabInstance:
       propertyPath: m_Name
       value: Pilot
       objectReference: {fileID: 0}
+    - target: {fileID: 6261039104398450331, guid: 2546ce99e57f13a4aa51aeeb90760d1a,
+        type: 3}
+      propertyPath: pilotSO
+      value: 
+      objectReference: {fileID: 11400000, guid: 23b61d36cbcd69641b256df33767c867,
+        type: 2}
     - target: {fileID: 6261039104398450332, guid: 2546ce99e57f13a4aa51aeeb90760d1a,
         type: 3}
       propertyPath: m_RootOrder
@@ -1654,6 +1717,12 @@ PrefabInstance:
       propertyPath: m_Name
       value: Pilot
       objectReference: {fileID: 0}
+    - target: {fileID: 6261039104398450331, guid: 2546ce99e57f13a4aa51aeeb90760d1a,
+        type: 3}
+      propertyPath: pilotSO
+      value: 
+      objectReference: {fileID: 11400000, guid: efadf48dd8c113a4b988b63a112d0ebf,
+        type: 2}
     - target: {fileID: 6261039104398450332, guid: 2546ce99e57f13a4aa51aeeb90760d1a,
         type: 3}
       propertyPath: m_RootOrder
@@ -1790,6 +1859,12 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 7162447033021696228, guid: 1ecea184e98fa6544b6be50ba8692d92,
+        type: 3}
+      propertyPath: ship_SO
+      value: 
+      objectReference: {fileID: 11400000, guid: aff8013a63fe03545b16c119409e4f67,
+        type: 2}
     - target: {fileID: 7162447033021696228, guid: 1ecea184e98fa6544b6be50ba8692d92,
         type: 3}
       propertyPath: shipName

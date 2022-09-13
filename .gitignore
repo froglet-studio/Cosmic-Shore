@@ -60,4 +60,5 @@ sysinfo.txt
 
 # Crashlytics generated file
 crashlytics-build.properties
+/ProjectSettings/BurstAotSettings_StandaloneWindows.json
 /Recordings
