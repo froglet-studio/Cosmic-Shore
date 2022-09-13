@@ -30,7 +30,7 @@ public class Player : MonoBehaviour
     void Start()
     {
         InitializePlayer();
-        if (playerUUID == "admin")
+        if (playerUUID == "admin")  //TODO check if this is local client
         {
             Debug.Log("Player " + playerName + " fired up and ready to go!");
             gameManager = GameManager.Instance;
