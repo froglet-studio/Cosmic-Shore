@@ -2,7 +2,7 @@ using StarWriter.Core;
 using UnityEngine;
 using UnityEngine.Advertisements;
 
-public class AdsManager : MonoBehaviour, IUnityAdsInitializationListener, IUnityAdsLoadListener, IUnityAdsShowListener, IUnityAdsListener
+public class AdsManager : MonoBehaviour, IUnityAdsInitializationListener, IUnityAdsLoadListener, IUnityAdsShowListener
 {
     // Organization Core ID: 4037077
     [SerializeField] string _androidGameId;
@@ -11,10 +11,9 @@ public class AdsManager : MonoBehaviour, IUnityAdsInitializationListener, IUnity
     [SerializeField] string _androidAdUnitId = "Rewarded_Android";
     [SerializeField] string _iOSAdUnitId = "Rewarded_iOS";
 #pragma warning restore CS0414
-    [SerializeField] bool _testMode = true;
     [SerializeField] bool _skipAdForDevelopment = true;
 
-    private string _adUnitId; // This will remain null for unsupported platforms
+    private string _adUnitId; // These will fall back to android for unsupported platforms
     private string _gameId;
 
     public delegate void OnAdInitializationComplete();
@@ -41,20 +40,18 @@ public class AdsManager : MonoBehaviour, IUnityAdsInitializationListener, IUnity
 
     public void InitializeAds()
     {
+        // Default to android settings
+        _adUnitId = _androidAdUnitId;
+        _gameId = _androidGameId;
+
         #if UNITY_IOS
-            _adUnitId = _iOSAdUnitId;
-        #elif UNITY_ANDROID
-            _adUnitId = _androidAdUnitId;
+           _adUnitId = _iOSAdUnitId;
+           _gameId = _iOSGameId;
         #endif
 
-        _gameId = (Application.platform == RuntimePlatform.IPhonePlayer)
-            ? _iOSGameId
-            : _androidGameId;
-
-        Debug.Log($"InitializeAds: OnBeforeAdvertisement.Initialize - _gameId:{_gameId}, _testMode:{_testMode}");
-        Advertisement.Initialize(_gameId, _testMode, true, this);
-        Advertisement.AddListener(this);
-        Debug.Log($"InitializeAds: OnAfterAdvertisement.Initialize - _gameId:{_gameId}, _testMode:{_testMode}");
+        Debug.Log($"InitializeAds: OnBeforeAdvertisement.Initialize - _gameId:{_gameId}");
+        Advertisement.Initialize(_gameId);
+        Debug.Log($"InitializeAds: OnAfterAdvertisement.Initialize - _gameId:{_gameId}");
     }
 
     // Load content to the Ad Unit:
@@ -74,7 +71,8 @@ public class AdsManager : MonoBehaviour, IUnityAdsInitializationListener, IUnity
             return;
         }
 
-        Screen.orientation = ScreenOrientation.AutoRotation;
+        // TODO: Toggling the screen orientation breaks ad display in iOS. For now, we're turning it off
+        //Screen.orientation = ScreenOrientation.AutoRotation;
         //Screen.orientation = GameManager.Instance.currentOrientation;
 
         Advertisement.Show(_adUnitId, this);
