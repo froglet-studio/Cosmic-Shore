@@ -26,16 +26,19 @@ public struct Settings
 public class GameData
 {
     public int testNumber; //testing only
-    //bools
+    //Game Settings data
     public bool adsEnabled;             //TODO
     public bool invertYEnabled;         //TODO 
     public bool isAudioEnabled;         //TODO
     public bool isGyroEnabled;          //TODO
     public bool isTutorialEnabled;      //TODO
-    //SCORES
+    //Scoring Data
     public int firstLifeHighScore;      //TODO
     public int highScore;               //TODO
     public int score;                   //TODO
+    //Player Data
+
+    //Hangar Data
 
 
     // the constructor will provide the default values before a GamaData.data files exists
@@ -48,9 +51,9 @@ public class GameData
         this.isAudioEnabled = true;
         this.isTutorialEnabled = true;
         //SCORES
-        this.firstLifeHighScore = 0;
-        this.highScore = 0;
-        this.score = 0;
+        this.firstLifeHighScore = 0; //Score before watching extended life ad
+        this.highScore = 0; //All time highest score on this device
+        this.score = 0; //current score saved off for use in scoreboard  //TODO Determine if this is even needed
         
     }
 }

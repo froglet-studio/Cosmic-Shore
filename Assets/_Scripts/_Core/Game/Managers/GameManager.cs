@@ -74,6 +74,8 @@ namespace StarWriter.Core
             cameraManager = CameraManager.Instance;
             analyticsManager = AnalyticsManager.Instance;
             gameSettings = GameSetting.Instance;
+
+            DataPersistenceManager.Instance.LoadGame();
         }
         void Update()
         {
@@ -214,6 +216,11 @@ namespace StarWriter.Core
             // Just pass through to the ad completion logic
             // TODO: We may want to use UnityAdsShowCompletionState.SKIPPED (which is correct) and do a different behavior here
             OnAdShowComplete(adUnitId, UnityAdsShowCompletionState.COMPLETED);
+        }
+
+        private void OnApplicationQuit()
+        {
+            DataPersistenceManager.Instance.SaveGame();
         }
     }
 }
