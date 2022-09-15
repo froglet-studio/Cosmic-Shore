@@ -41,6 +41,10 @@ namespace StarWriter.Core
         private int deathCount = 0;
         public int DeathCount { get { return deathCount; } }
 
+        string mainMenuScene = "Menu_Main";
+        string highScoreGameScene = "Game_HighScore";
+        string tutorialGameScene = "Game_Tutorial";
+
         private void OnEnable()
         {
             AdsManager.adShowComplete += OnAdShowComplete;
@@ -93,7 +97,7 @@ namespace StarWriter.Core
         public void OnClickTutorialButton()
         {
             UnPauseGame();
-            SceneManager.LoadScene(1);
+            SceneManager.LoadScene(tutorialGameScene);
         }
 
         /// <summary>
@@ -113,7 +117,7 @@ namespace StarWriter.Core
             deathCount = 0;
             analyticsManager.LogLevelStart();
             UnPauseGame();
-            SceneManager.LoadScene(2);
+            SceneManager.LoadScene(highScoreGameScene);
         }
 
         private void OnExplosionCompletion()
@@ -159,7 +163,7 @@ namespace StarWriter.Core
             Debug.Log("GameManager.RestartGame");
             deathCount = 0;
 
-            SceneManager.LoadScene(2);
+            SceneManager.LoadScene(highScoreGameScene);
             UnPauseGame();
 
             Jukebox.Instance.PlayNextSong();
@@ -167,7 +171,7 @@ namespace StarWriter.Core
 
         public void ReturnToLobby()
         {
-            SceneManager.LoadScene(0);
+            SceneManager.LoadScene(mainMenuScene);
             UnPauseGame();
             cameraManager.OnMainMenu();
         }
