@@ -20,7 +20,7 @@ public struct PlayerBuild
 [System.Serializable]
 public class HangerData 
 {
-    public SerializableDictionary<string, PlayerBuild> PlayerBuilds;
+    public Dictionary<string, PlayerBuild> PlayerBuilds;
 
     public HangerData()
     {
@@ -29,7 +29,7 @@ public class HangerData
         PlayerBuild DefaultPlayerBuild002 = new PlayerBuild("Milliron", "Dolphin", "BlueTrail");
         PlayerBuild DefaultPlayerBuild003 = new PlayerBuild("Iggy", "Shark", "RedTrail");
 
-        PlayerBuilds = new SerializableDictionary<string, PlayerBuild>();
+        PlayerBuilds = new Dictionary<string, PlayerBuild>();
 
         PlayerBuilds.Add("DefaultPlayerBuild001", DefaultPlayerBuild001);
         PlayerBuilds.Add("DefaultPlayerBuild002", DefaultPlayerBuild002);
