@@ -10,6 +10,7 @@ public class PlayerAudioManager : MonoBehaviour
 
     private void OnEnable()
     {
+        //TODO: this should be hooked up to OnDeath instead in case we want to decouple fuel depletion from death in a different game mode (for example)
         FuelSystem.OnFuelEmpty += OnShipExplosion;
     }
 
@@ -20,6 +21,8 @@ public class PlayerAudioManager : MonoBehaviour
 
     private void OnShipExplosion()
     {
+        AudioSystem.Instance.StopAllSongs();
+
         AudioSource audioSource = shipExplosionSFX.GetComponent<AudioSource>();
         AudioSystem.Instance.PlaySFXClip(audioSource.clip, audioSource);
     }
