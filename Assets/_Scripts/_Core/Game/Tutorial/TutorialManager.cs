@@ -214,7 +214,7 @@ namespace StarWriter.Core.Tutorial
         public void CompleteTutorial()
         {
             GameSetting.Instance.TutorialHasBeenCompleted = true;
-            SceneManager.LoadScene(0);
+            GameManager.Instance.ReturnToLobby();
         }
 
         public void JailBlockCollision()

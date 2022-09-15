@@ -35,9 +35,15 @@ namespace StarWriter.Core
 
         CameraManager cameraManager;
 
+        AnalyticsManager analyticsManager;
+
         private readonly float phoneFlipThreshold = .3f;
         private int deathCount = 0;
         public int DeathCount { get { return deathCount; } }
+
+        string mainMenuScene = "Menu_Main";
+        string highScoreGameScene = "Game_HighScore";
+        string tutorialGameScene = "Game_Tutorial";
 
         private void OnEnable()
         {
@@ -66,6 +72,7 @@ namespace StarWriter.Core
         void Start()
         {
             cameraManager = CameraManager.Instance;
+            analyticsManager = AnalyticsManager.Instance;
             gameSettings = GameSetting.Instance;
 
             DataPersistenceManager.Instance.LoadGame();
@@ -80,7 +87,7 @@ namespace StarWriter.Core
                 currentOrientation = ScreenOrientation.LandscapeLeft;
                 PhoneFlipState = true;
                 onPhoneFlip(PhoneFlipState);
-            }    
+            }
             else
             {
                 currentOrientation = ScreenOrientation.LandscapeRight;
@@ -92,9 +99,9 @@ namespace StarWriter.Core
         public void OnClickTutorialButton()
         {
             UnPauseGame();
-            SceneManager.LoadScene(1);
+            SceneManager.LoadScene(tutorialGameScene);
         }
-        
+
         /// <summary>
         /// Toggles the Gyro On/Off
         /// </summary>
@@ -110,14 +117,15 @@ namespace StarWriter.Core
         public void OnClickPlayButton()
         {
             deathCount = 0;
+            analyticsManager.LogLevelStart();
             UnPauseGame();
-            SceneManager.LoadScene(2);
+            SceneManager.LoadScene(highScoreGameScene);
         }
 
         private void OnExplosionCompletion()
         {
             Debug.Log("GameManager.Death");
-            
+
             PauseGame();
 
             deathCount++;
@@ -156,8 +164,8 @@ namespace StarWriter.Core
         {
             Debug.Log("GameManager.RestartGame");
             deathCount = 0;
-            
-            SceneManager.LoadScene(2);
+
+            SceneManager.LoadScene(highScoreGameScene);
             UnPauseGame();
 
             Jukebox.Instance.PlayNextSong();
@@ -165,7 +173,7 @@ namespace StarWriter.Core
 
         public void ReturnToLobby()
         {
-            SceneManager.LoadScene(0);
+            SceneManager.LoadScene(mainMenuScene);
             UnPauseGame();
             cameraManager.OnMainMenu();
         }
