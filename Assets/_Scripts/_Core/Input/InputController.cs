@@ -167,17 +167,48 @@ namespace StarWriter.Core.Input
 
         private void ReceiveTouchInput()
         {
-            if (UnityEngine.Input.touches.Length == 2)
+            var threeFingerFumble = false;
+            if (UnityEngine.Input.touches.Length >= 3)
             {
-                if (UnityEngine.Input.touches[0].position.x <= UnityEngine.Input.touches[1].position.x)
+                // Sub select the two best touch inputs here
+                // If we have more than two touches, find the closest to each of the last touch positions we used
+                threeFingerFumble = true;
+                int leftTouchIndex = 0, rightTouchIndex = 0;
+                float minLeftTouchDistance = Vector2.Distance(leftTouch, UnityEngine.Input.touches[0].position);
+                float minRightTouchDistance = Vector2.Distance(rightTouch, UnityEngine.Input.touches[0].position);
+
+                for (int i = 1; i < UnityEngine.Input.touches.Length; i++)
                 {
-                    leftTouch = UnityEngine.Input.touches[0].position;
-                    rightTouch = UnityEngine.Input.touches[1].position;
+                    if (Vector2.Distance(leftTouch, UnityEngine.Input.touches[i].position) < minLeftTouchDistance)
+                    {
+                        minLeftTouchDistance = Vector2.Distance(leftTouch, UnityEngine.Input.touches[i].position);
+                        leftTouchIndex = i;
+                    }
+                    if (Vector2.Distance(rightTouch, UnityEngine.Input.touches[i].position) < minRightTouchDistance)
+                    {
+                        minRightTouchDistance = Vector2.Distance(rightTouch, UnityEngine.Input.touches[i].position);
+                        rightTouchIndex = i;
+                    }
                 }
-                else
+                leftTouch = UnityEngine.Input.touches[leftTouchIndex].position;
+                rightTouch = UnityEngine.Input.touches[rightTouchIndex].position;
+            }
+            
+            if (UnityEngine.Input.touches.Length == 2 || threeFingerFumble)
+            {
+                // If we didn't fat finger the phone, find the 
+                if (!threeFingerFumble)
                 {
-                    leftTouch = UnityEngine.Input.touches[1].position;
-                    rightTouch = UnityEngine.Input.touches[0].position;
+                    if (UnityEngine.Input.touches[0].position.x <= UnityEngine.Input.touches[1].position.x)
+                    {
+                        leftTouch = UnityEngine.Input.touches[0].position;
+                        rightTouch = UnityEngine.Input.touches[1].position;
+                    }
+                    else
+                    {
+                        leftTouch = UnityEngine.Input.touches[1].position;
+                        rightTouch = UnityEngine.Input.touches[0].position;
+                    }
                 }
 
                 // reparameterize
@@ -195,7 +226,6 @@ namespace StarWriter.Core.Input
                 Throttle(xDiff);
 
                 PerformShipAnimations(xSum, ySum, xDiff, yDiff);
-
             }
             else if (UnityEngine.Input.touches.Length == 1)
             {
