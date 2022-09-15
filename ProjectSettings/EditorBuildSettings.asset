@@ -6,20 +6,20 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/Scenes/_Official Build/MainMenu Design 1.unity
+    path: Assets/Scenes/Menu_Main.unity
     guid: 102d08d71236a7342a94518fff75949c
   - enabled: 1
-    path: Assets/Scenes/_Official Build/Tutorial Scene.unity
+    path: Assets/Scenes/Game_HighScore.unity
+    guid: 5e8d9932a4d84a1488c2dad96c8135dd
+  - enabled: 1
+    path: Assets/Scenes/Game_TimedRound.unity
+    guid: b5001f4c731a06841a1f1ed781923922
+  - enabled: 0
+    path: Assets/Scenes/Game_Tutorial.unity
     guid: 85d73583f4ccfc1478efa92a6712ce67
   - enabled: 0
     path: Assets/Scenes/TestScenes/G Sandbox/FreePlay.unity
     guid: 0adde48cc922fbc49a3f2832729dca91
-  - enabled: 1
-    path: Assets/Scenes/_Official Build/Game Scene.unity
-    guid: 5e8d9932a4d84a1488c2dad96c8135dd
-  - enabled: 0
-    path: Assets/Scenes/RewardedAdsTheGame.unity
-    guid: d38b30765415bba428fa0e4d45e5638a
   m_configObjects:
     com.unity.adaptiveperformance.loader_settings: {fileID: 11400000, guid: 274754c57f99f5144be86c9d1014705b,
       type: 2}
