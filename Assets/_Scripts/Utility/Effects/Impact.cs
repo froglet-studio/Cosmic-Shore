@@ -4,6 +4,7 @@ using UnityEngine;
 public class Impact : MonoBehaviour
 {
     public float positionScale;
+    public float maxDistance = 3f;
     public IEnumerator ImpactCoroutine(Vector3 velocity, Material material,string ID)
     {
         var velocityScale = .07f/positionScale;
@@ -22,13 +23,14 @@ public class Impact : MonoBehaviour
             }
         }
         
-        while (distance.magnitude <= 1000)
+        while (distance.magnitude <= maxDistance)
         {
             yield return null;
             //timeStamp += .001f;
             distance += velocityScale * Time.deltaTime * velocity;
             material.SetVector("_velocity", distance);
-            material.SetFloat("_opacity", (1000 - distance.magnitude)/1000);
+            var opac = 1 - (distance.magnitude / 3f);
+            material.SetFloat("_opacity", Mathf.Clamp(1 - (distance.magnitude / maxDistance), 0, 1));
             transform.position += positionScale*distance;
         }
         Destroy(material);
