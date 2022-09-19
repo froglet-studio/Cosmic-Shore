@@ -138,7 +138,7 @@ MonoBehaviour:
   m_Material: {fileID: 0}
   m_Color: {r: 0.9489503, g: 0.80566037, b: 1, a: 1}
   m_RaycastTarget: 1
-  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
+  m_RaycastPadding: {x: 33.48, y: 36.99, z: 33.72, w: 36.8}
   m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
@@ -265,6 +265,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   handleRectTransform: {fileID: 3553377243104710093}
-  PlayerPrefKey: isAudioEnabled
+  PlayerPrefKey: 0
   HandleOnPosition: {x: 51, y: 1.5, z: 0}
   HandleOffPosition: {x: 32, y: 1.5, z: 0}

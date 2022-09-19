@@ -22,6 +22,7 @@ public class Impact : MonoBehaviour
             }
         }
         
+        // TODO: this takes a very very long time to be true
         while (distance.magnitude <= 1000)
         {
             yield return null;

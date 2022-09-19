@@ -1,16 +1,17 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
 
-public class VersionDisplay : MonoBehaviour
+namespace StarWriter.UI
 {
-    [SerializeField] TMPro.TMP_Text tmpText;
-    [SerializeField] string prefix;
-    
-    void Start()
+    public class VersionDisplay : MonoBehaviour
     {
-        Debug.Log("Application Version : " + Application.version);
-        tmpText.text = prefix + " " + Application.version;
+        [SerializeField] TMP_Text tmpText;
+        [SerializeField] string prefix;
+
+        void Start()
+        {
+            Debug.Log("Application Version : " + Application.version);
+            tmpText.text = prefix + " " + Application.version;
+        }
     }
 }

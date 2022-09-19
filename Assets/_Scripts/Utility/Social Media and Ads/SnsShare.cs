@@ -1,6 +1,7 @@
 using System.Collections;
 using UnityEngine.UI;
 using UnityEngine;
+
 /// <summary>
 /// Requires Native Share to function in Unity
 /// </summary>
@@ -9,6 +10,8 @@ public class SnsShare : MonoBehaviour
     public Button screenshotButton;
     public Button bedazzledScreenshotButton;
     public Button replayButton;
+    public GameObject VersionTMP;
+
     public void Share()
     {
         StartCoroutine(TakeScreenshotAndShare());
@@ -16,11 +19,11 @@ public class SnsShare : MonoBehaviour
 
     private IEnumerator TakeScreenshotAndShare()
     {
-        
-
         screenshotButton.gameObject.SetActive(false);
         bedazzledScreenshotButton.gameObject.SetActive(false);
         replayButton.gameObject.SetActive(false);
+        VersionTMP.SetActive(true);
+
         yield return new WaitForEndOfFrame();
 
         Texture2D ss = new Texture2D(Screen.width, Screen.height, TextureFormat.RGB24, false);
@@ -47,5 +50,6 @@ public class SnsShare : MonoBehaviour
             .Share();
         screenshotButton.gameObject.SetActive(true);
         replayButton.gameObject.SetActive(true);
+        VersionTMP.SetActive(false);
     }
 }

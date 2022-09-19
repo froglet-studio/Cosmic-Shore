@@ -261,7 +261,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   rateOfFuelChange: -0.02
-  uuidOfPlayer: 
   verboseLogging: 0
 --- !u!114 &1757875271342840114
 MonoBehaviour:
