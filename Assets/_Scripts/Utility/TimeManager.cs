@@ -6,35 +6,28 @@ using System;
 
 public class TimeManager : MonoBehaviour
 {
-
     [SerializeField] float timeScaleModifier = 0.05f;
 
     private void OnEnable()
     {
-        FuelSystem.OnFuelEmpty += OnZeroFuel;
-        GameManager.onGameOver += OnGameOver;
-        
+        FuelSystem.OnFuelEmpty += SetTimeScaleToOneX;
+        GameManager.onGameOver += SetTimeScaleToOneX;
     }
 
     private void OnDisable()
     {
-        FuelSystem.OnFuelEmpty -= OnZeroFuel;
-        GameManager.onGameOver -= OnGameOver;
+        FuelSystem.OnFuelEmpty -= SetTimeScaleToOneX;
+        GameManager.onGameOver -= SetTimeScaleToOneX;
     }
 
     private void Start()
     {
-        ChangeTimeScale(1);
+        ChangeTimeScale(timeScaleModifier);
     }
 
-    private void OnZeroFuel()
+    private void SetTimeScaleToOneX()
     {
         ChangeTimeScale(1);
-    }
-
-    private void OnGameOver()
-    {
-        ChangeTimeScale(1f);
     }
 
     public void ChangeTimeScale(float _timeScaleModifier)

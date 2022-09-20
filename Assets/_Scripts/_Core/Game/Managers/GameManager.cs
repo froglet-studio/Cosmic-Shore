@@ -50,7 +50,7 @@ namespace StarWriter.Core
             AdsManager.adShowComplete += OnAdShowComplete;
             AdsManager.adShowFailure += OnAdShowFailure;
             AdvertisementMenu.onDeclineAd += EndGame;
-            ShipExplosionHandler.onExplosionCompletion += OnExplosionCompletion;
+            ShipExplosionHandler.onShipExplosionAnimationCompletion += OnExplosionCompletion;
         }
 
         private void OnDisable()
@@ -58,7 +58,7 @@ namespace StarWriter.Core
             AdsManager.adShowComplete -= OnAdShowComplete;
             AdsManager.adShowFailure -= OnAdShowFailure;
             AdvertisementMenu.onDeclineAd -= EndGame;
-            ShipExplosionHandler.onExplosionCompletion -= OnExplosionCompletion;
+            ShipExplosionHandler.onShipExplosionAnimationCompletion -= OnExplosionCompletion;
         }
 
         // In order to support the splash screen always showing in the correct orientation, we use this method as a work around.
@@ -141,18 +141,18 @@ namespace StarWriter.Core
             onExtendGamePlay?.Invoke();
 
             // We disabled the player's colliders during the tail collision. let's turn them back on
-            StartCoroutine(ToggleCollisionCoroutine());
+            //StartCoroutine(ToggleCollisionCoroutine());
 
             // TODO: getting an error with the below line that timescale can only be set from the main thread,
             // but the code works... so...
             UnPauseGame();
         }
 
-        IEnumerator ToggleCollisionCoroutine()
-        {
-            yield return new WaitForSeconds(.5f);
-            player.ToggleCollision(true);
-        }
+        //IEnumerator ToggleCollisionCoroutine()
+        //{
+        //    yield return new WaitForSeconds(.5f);
+        //    player.ToggleCollision(true);
+        //}
 
         public static void EndGame()
         {
