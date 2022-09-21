@@ -6,7 +6,7 @@ using System;
 
 public class TimeManager : MonoBehaviour
 {
-    [SerializeField] float timeScaleModifier = 0.05f;
+    [SerializeField] float timeScaleModifier = 1;
 
     private void OnEnable()
     {
