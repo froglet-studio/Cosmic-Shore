@@ -7,6 +7,6 @@ public interface IDataPersistence
     void LoadData(GameData data);
     void SaveData(ref GameData data);
 
-    void LoadData(HangerData data);
-    void SaveData(ref HangerData data);
+    void LoadData(HangarData data);
+    void SaveData(ref HangarData data);
 }

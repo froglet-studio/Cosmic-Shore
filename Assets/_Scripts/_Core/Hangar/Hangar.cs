@@ -4,12 +4,11 @@ using UnityEngine;
 using TailGlider.Utility.Singleton;
 using System;
 
-//[RequireComponent()]
 namespace StarWriter.Core.HangerBuilder
 {
-    public class Hanger : SingletonPersistent<Hanger>, IDataPersistence
+    public class Hangar : SingletonPersistent<Hangar>
     {
-        HangerData hangerData;
+        HangarData hangarData;
 
         PlayerBuild currentPlayerBuild;
         [SerializeField] string build = "DefaultPlayerBuild001";
@@ -21,14 +20,26 @@ namespace StarWriter.Core.HangerBuilder
         private int bayIndex = 0;
 
         public int BayIndex { get => bayIndex; }
-        public HangerData HangerData { get => hangerData;  }
+
+        public HangarData CurrentHangarData { get => hangarData;  }
+
+        private void OnEnable()
+        {
+
+        }
+
+        private void OnDisable()
+        {
+            DataPersistenceManager.Instance.SaveHangarData(hangarData); //removed till V3.0 or rdy
+        }
 
         void Start()
         {
-            DataPersistenceManager.Instance.LoadHanger();
+            this.hangarData = DataPersistenceManager.Instance.LoadHangerData(); //removed till V3.0 or rdy
             SetActiveBay();
             currentPlayerBuild = new PlayerBuild();
-            hangerData.PlayerBuilds.TryGetValue(build, out currentPlayerBuild);
+            hangarData.PlayerBuilds.TryGetValue(build, out currentPlayerBuild);
+            Debug.Log("DefaultPlayerBuild001 PlayerBuild Pilot is " + currentPlayerBuild.Pilot);
         }
 
         public void OnShipButtonPressed(int idx) //TODO really OnBayButtonPressed
@@ -60,7 +71,7 @@ namespace StarWriter.Core.HangerBuilder
                     build = "DefaultPlayerBuild003";
                     break;
             }
-            hangerData.PlayerBuilds.TryGetValue(build, out currentPlayerBuild);
+            hangarData.PlayerBuilds.TryGetValue(build, out currentPlayerBuild);
             Debug.Log("Current Player Build is " + currentPlayerBuild);
             Debug.Log("Current pilot is " + currentPlayerBuild.Pilot);
             Debug.Log("Current ship is " + currentPlayerBuild.Ship);
@@ -84,32 +95,18 @@ namespace StarWriter.Core.HangerBuilder
             string trail = currentPlayerBuild.Trail;
             return trail;
         }
-        private void OnDisable()
-        {
-            DataPersistenceManager.Instance.SaveHanger();
-        }
-        #region Persistent Data
-        public void LoadData(HangerData data)
-        {
-            this.hangerData = data;
-        }
+        
+        //#region Persistent Data
+        //public void LoadData(HangarData data)
+        //{
+        //    this.hangarData = data;
+        //}
 
-        public void SaveData(ref HangerData data)
-        {
-            data = this.hangerData;
-        }
-        public void LoadData(GameData data)
-        {
-            
-        }
-
-        public void SaveData(ref GameData data)
-        {
-            
-        }
-        #endregion
-
-
+        //public void SaveData(ref HangarData data)
+        //{
+        //    data = this.hangarData;
+        //}
+        //#endregion
     }
 }
 

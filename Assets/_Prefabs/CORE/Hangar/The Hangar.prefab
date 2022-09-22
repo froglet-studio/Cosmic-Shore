@@ -512,7 +512,7 @@ GameObject:
   - component: {fileID: 8044772476896837329}
   - component: {fileID: 1913956789}
   m_Layer: 0
-  m_Name: The Hanger
+  m_Name: The Hangar
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

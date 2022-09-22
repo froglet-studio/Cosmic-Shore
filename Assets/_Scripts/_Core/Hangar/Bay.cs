@@ -7,7 +7,7 @@ namespace StarWriter.Core.HangerBuilder
 {
     public class Bay : MonoBehaviour
     {
-        Hanger hanger;
+        Hangar hangar;
 
         public PlayerBuild playerBuild;
 
@@ -29,15 +29,15 @@ namespace StarWriter.Core.HangerBuilder
 
         void Start()
         {
-            hanger = Hanger.Instance;
+            hangar = Hangar.Instance;
             playerBuild = new PlayerBuild();
             InitializeBay();
         }
         private void InitializeBay()
         {
-            TryToLoadPilot(hanger.GetCurrentPlayerBuildsPilot());
-            TryToLoadShip(hanger.GetCurrentPlayerBuildShip());
-            TryToLoadTrail(hanger.GetCurrentPlayerBuildTrail());
+            TryToLoadPilot(hangar.GetCurrentPlayerBuildsPilot());
+            TryToLoadShip(hangar.GetCurrentPlayerBuildShip());
+            TryToLoadTrail(hangar.GetCurrentPlayerBuildTrail());
 
             Debug.Log("Pilot loaded " + pilotLoaded);
             Debug.Log("Ship loaded " + shipLoaded);
@@ -49,21 +49,21 @@ namespace StarWriter.Core.HangerBuilder
 
         private void TryToLoadPilot(string pilot)
         {
-            bool success = hanger.GetComponent<ListOfAllPilots>().AllPilots.TryGetValue(pilot, out SO_Pilot tempPilotSO);
+            bool success = hangar.GetComponent<ListOfAllPilots>().AllPilots.TryGetValue(pilot, out SO_Pilot tempPilotSO);
             pilotLoaded = success;
             pilotSO = tempPilotSO;
         }
 
         private void TryToLoadShip(string pilot)
         {
-            bool success = hanger.GetComponent<ListOfAllShips>().AllShips.TryGetValue(pilot, out SO_Ship_Base tempShipSO);
+            bool success = hangar.GetComponent<ListOfAllShips>().AllShips.TryGetValue(pilot, out SO_Ship_Base tempShipSO);
             shipLoaded = success;
             shipSO = tempShipSO;
         }
 
         private void TryToLoadTrail(string pilot)
         {
-            bool success = hanger.GetComponent<ListOfAllPilots>().AllPilots.TryGetValue(pilot, out SO_Pilot tempPilotSO);
+            bool success = hangar.GetComponent<ListOfAllPilots>().AllPilots.TryGetValue(pilot, out SO_Pilot tempPilotSO);
             pilotLoaded = success;
             pilotSO = tempPilotSO;
         }

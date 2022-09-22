@@ -2,6 +2,7 @@ using UnityEngine;
 using System;
 using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
+using Newtonsoft.Json;
 
 namespace StarWriter.Core
 {
@@ -23,6 +24,7 @@ namespace StarWriter.Core
             this.playerDataFileName = playerDataFileName;
         }
 
+        #region Game Data
         public GameData LoadGame()
         {
             //string fullPath = Path.Join(dataDirPath, gameDataFileName);
@@ -48,8 +50,8 @@ namespace StarWriter.Core
                         }
                     }
                     // Deserialize the data from Json back into the C# object
-                    //loadedData = Newtonsoft.Json.JsonConvert.SerializeObject<HangerData>(dataToLoad);
-                    //loadedData = JsonUtility.FromJson<GameData>(dataToLoad);
+                    //loadedData = Newtonsoft.Json.JsonConvert.SerializeObject<GameData>(dataToLoad);
+                    loadedData = JsonUtility.FromJson<GameData>(dataToLoad);
                 }
                 catch (Exception e)
                 {
@@ -87,13 +89,15 @@ namespace StarWriter.Core
                 Debug.Log("Error saving to file " + fullPath + "\n" + e);
             }
         }
+        #endregion
 
-        public HangerData LoadHanger()
+        #region Hangar Data
+        public HangarData LoadHanger()
         {
             string fullPath = Path.Combine(dataDirPath, hangerDataFileName);
             Debug.Log("Load Path: " + fullPath);
 
-            HangerData loadedData = null;
+            HangarData loadedData = null;
 
             if (File.Exists(fullPath))
             {
@@ -112,8 +116,7 @@ namespace StarWriter.Core
                         }
                     }
                     // Deserialize the data from Json back into the C# object
-                    //loadedData = JsonConvert.DeserializeObject<Dictionary<string, PlayerBuild>>(SD); 
-                    //loadedData = JsonUtility.FromJson<HangerData>(dataToLoad);
+                    loadedData = JsonConvert.DeserializeObject<HangarData>(dataToLoad);
                 }
                 catch (Exception e)
                 {
@@ -125,7 +128,7 @@ namespace StarWriter.Core
             return loadedData;
         }
 
-        public void SaveHanger(HangerData data)
+        public void SaveHangar(HangarData data)
         {
             string fullPath = Path.Combine(dataDirPath, hangerDataFileName);
             Debug.Log("Save Path: " + fullPath);
@@ -134,7 +137,7 @@ namespace StarWriter.Core
                 //Create Directory if it is null
                 Directory.CreateDirectory(Path.GetDirectoryName(fullPath));
                 //Serialize data into Json form C# Object
-                string dataToStore = JsonUtility.ToJson(data);
+                string dataToStore = JsonConvert.SerializeObject(data);
                 //write data to file
                 using (FileStream stream = new FileStream(fullPath, FileMode.Create))
                 {
@@ -150,7 +153,9 @@ namespace StarWriter.Core
                 Debug.Log("Error saving to file " + fullPath + "\n" + e);
             }
         }
+        #endregion
 
+        #region Player Data
         public void SaveCurrentPlayer(PlayerData data)  //TODO Add string playerName and GUID to save this player
         {
             BinaryFormatter bf = new BinaryFormatter();
@@ -191,6 +196,7 @@ namespace StarWriter.Core
 
             return dataToLoad;
         }
+        #endregion
     }
 }
 

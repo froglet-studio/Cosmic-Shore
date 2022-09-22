@@ -15,7 +15,7 @@ namespace StarWriter.Core
             testText = this.GetComponent<TextMeshProUGUI>();
         }
 
-        public Dictionary<string, PlayerBuild> TestDictionary;
+        //public Dictionary<string, PlayerBuild> TestDictionary;
 
 
         //private void Awake()
@@ -84,12 +84,12 @@ namespace StarWriter.Core
 
         }
 
-        public void LoadData(HangerData data)
+        public void LoadData(HangarData data)
         {
             // Not used here
         }
 
-        public void SaveData(ref HangerData data)
+        public void SaveData(ref HangarData data)
         {
             // Not used here
         }

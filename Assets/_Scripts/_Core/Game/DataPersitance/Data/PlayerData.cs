@@ -10,11 +10,13 @@ public class PlayerData
 
     public PlayerData()
     {
-        playerName = "Default Name";
-        highestScore = 0;
+        this.playerName = "Default_Name";
+        this.highestScore = 0;
 
-        playerBuild.Add("Pilot", "Zak");
-        playerBuild.Add("Ship", "Manta");
-        playerBuild.Add("Trail", "Green");
+        this.playerBuild = new Dictionary<string, string>();
+
+        playerBuild.Add("Pilot", "Default_Pilot");
+        playerBuild.Add("Ship", "Default_Ship");
+        playerBuild.Add("Trail", "Default_Trail");
     }
 }

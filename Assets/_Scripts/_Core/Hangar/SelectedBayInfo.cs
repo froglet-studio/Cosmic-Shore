@@ -33,7 +33,7 @@ namespace StarWriter.Core.HangerBuilder
 
         private void UpdateSelectedBayInfo(int bayIndex)
         {
-            GameObject selectedBay = Hanger.Instance.hangerBays[bayIndex].gameObject;
+            GameObject selectedBay = Hangar.Instance.hangerBays[bayIndex].gameObject;
             GameObject selectedPilot = selectedBay.GetComponentInChildren<Pilot>().gameObject;
 
             pilotsInfo = selectedPilot.GetComponent<Pilot>().PilotName;
