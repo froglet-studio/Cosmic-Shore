@@ -75,7 +75,7 @@ namespace StarWriter.Core
             analyticsManager = AnalyticsManager.Instance;
             gameSettings = GameSetting.Instance;
 
-            DataPersistenceManager.Instance.LoadGame();
+            DataPersistenceManager.Instance.LoadGameData();
         }
         void Update()
         {

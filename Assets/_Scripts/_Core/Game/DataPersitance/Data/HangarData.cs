@@ -18,18 +18,18 @@ public struct PlayerBuild
 }
 
 [System.Serializable]
-public class HangerData 
+public class HangarData 
 {
     public Dictionary<string, PlayerBuild> PlayerBuilds;
 
-    public HangerData()
+    public HangarData()
     {
-        //Default builds if HangerData.data file doesn't exist
+        //Default builds if HangarData.data file doesn't exist
         PlayerBuild DefaultPlayerBuild001 = new PlayerBuild("Zak", "Manta", "GreenTrail");
         PlayerBuild DefaultPlayerBuild002 = new PlayerBuild("Milliron", "Dolphin", "BlueTrail");
         PlayerBuild DefaultPlayerBuild003 = new PlayerBuild("Iggy", "Shark", "RedTrail");
 
-        PlayerBuilds = new Dictionary<string, PlayerBuild>();
+        this.PlayerBuilds = new Dictionary<string, PlayerBuild>();
 
         PlayerBuilds.Add("DefaultPlayerBuild001", DefaultPlayerBuild001);
         PlayerBuilds.Add("DefaultPlayerBuild002", DefaultPlayerBuild002);

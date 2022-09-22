@@ -4,6 +4,7 @@ using UnityEngine;
 using System.Linq;
 using TailGlider.Utility.Singleton;
 using System;
+using Newtonsoft.Json;
 
 namespace StarWriter.Core 
 {
@@ -17,24 +18,19 @@ namespace StarWriter.Core
 
         private GameData gameData;
 
-        private HangerData hangerData;
+        private HangarData hangarData;
 
         private PlayerData playerData;
 
-        private List<IDataPersistence> dataPersistenceObjects;
+        private List<IDataPersistence> dataPersistenceObjects; //Only GameData values use IDataPersistence currently
 
         private FileDataHandler dataHandler;
         //public static DataPersistenceManager Instance { get; private set; }
 
         public override void Awake()
         {
-            base.Awake(); 
-            //if (Instance != null)
-            //{
-            //    Debug.Log("Duplicate DataPersistanceManager Instance found!");
+            base.Awake();
 
-            //}
-            //Instance = this;
             this.dataHandler = new FileDataHandler(Application.persistentDataPath, gameFileName, hangerFileName, playerDataFileName);
         }
 
@@ -42,62 +38,104 @@ namespace StarWriter.Core
         {
 
             this.dataPersistenceObjects = FindAllDataPersistenceObjects();
-            LoadGame();
-            LoadHanger();
-            LoadCurrentPlayer();
+            LoadGameData();
+            LoadHangerData(); //TODO should this only be loaded upon entering the hangar scene and saved on exiting
+            //LoadCurrentPlayer(); //TODO relook at this
         }
+
+        #region Hangar Data
         /// <summary>
-        /// Sets HangerData to default values
+        /// Sets HangarData to default values
         /// </summary>
         public void NewHanger()
         {
-            this.hangerData = new HangerData();
+            this.hangarData = new HangarData();
         }
         /// <summary>
-        /// Sends HangerData to be saved to DataHandler
+        /// Sends HangarData to be saved to DataHandler
         /// </summary>
-        internal void SaveHanger()
+        public void SaveHangarData(HangarData data)
         {
-            // Push Loaded gamedata out to scripts to update it
-            foreach (IDataPersistence Obj in dataPersistenceObjects)
-            {
-                Obj.SaveData(ref hangerData);
-            }
+            // Get most recent changes to hangarData
+            UpDateHangarData(data);
 
             // Save data to disk using the file data handler
-            dataHandler.SaveHanger(hangerData);
+            dataHandler.SaveHangar(hangarData);
 
-            Debug.Log("Game Saved. " + gameData.testNumber);
+            Debug.Log("HangarData Saved. " + hangarData.PlayerBuilds.Keys);
         }
         /// <summary>
-        /// Gets HangerData to be loaded from DataHandler, if HangerData is null Creates a new default HangerData
+        /// Gets HangarData to be loaded from DataHandler, if HangarData is null Creates a new default HangarData
         /// </summary>
-        internal void LoadHanger()
+        public HangarData LoadHangerData() //why was this set to internal
         {
-            if (dataPersistenceObjects == null)
-            {
-                this.dataPersistenceObjects = FindAllDataPersistenceObjects();
-            }
+            
             // Load saved data from disk using the file data handler
-            this.hangerData = dataHandler.LoadHanger();
+            this.hangarData = dataHandler.LoadHanger();
 
             // Create default values if GameData is null
-            if (this.hangerData == null)
+            if (this.hangarData == null)
             {
-                Debug.Log("HangerData not found while attempting to load.  Created a new HangerData file.");
+                Debug.Log("HangarData not found while attempting to load.  Created a new HangarData file.");
                 NewHanger();
             }
 
-            // Push Loaded gamedata out to scripts requiring it
-            foreach (IDataPersistence Obj in dataPersistenceObjects)
-            {
-                Obj.LoadData(hangerData);
-            }
-            //Debug.Log("Pilot in Bay001 is " + hangerData.Bay001Pilot); ;
+            return hangarData;
+            //Debug.Log("Pilot in Bay001 is " + hangarData.Bay001Pilot); ;
         }
 
+        public void UpDateHangarData(HangarData updatedData)
+        {
+            this.hangarData = updatedData;
+        }
+        #endregion
+
+        #region Player Data
+        public void NewPlayer()
+        {
+            this.playerData = new PlayerData();
+        }
+
+        public void LoadCurrentPlayer()
+        {
+            // Load saved data from disk using the file data handler
+            this.playerData = dataHandler.LoadCurrentPlayer();
+
+            // Create default values if GameData is null
+            if (this.playerData == null)
+            {
+                Debug.Log("PlayerData not found while attempting to load.  Created a new PlayerData file.");
+                NewPlayer();
+            }
+
+            // Push Loaded PlayerData out to scripts requiring it
+
+            //**********************************************************************************************************
+            //TODO push data to the Player and player stats and the hangar for favorite build to display first
+            //foreach (IDataPersistence Obj in dataPersistenceObjects)
+            //{
+            //    Obj.LoadData(gameData);
+            //}
+            Debug.Log("Loaded Player. " + playerData.playerName);
+        }
+
+        public void SaveCurrentPlayer()
+        {
+            // Push Loaded gamedata out to scripts to update it
+            GameObject player = GameObject.FindGameObjectWithTag("Player");
+
+            //player.GetComponent<Player>().SaveData(ref playerData);
+
+            // Save data to disk using the file data handler
+            dataHandler.SaveGame(gameData);
+
+            Debug.Log("Game Saved. " + gameData.testNumber);
+        }
+        #endregion
+
+        #region Game Data
         /// <summary>
-        /// Sets GameData and HangerData to default values
+        /// Sets GameData to default values
         /// </summary>
         public void NewGame()
         {
@@ -106,7 +144,7 @@ namespace StarWriter.Core
         /// <summary>
         /// Gets GameData to be loaded from DataHandler, if GameData is null Creates a new default GameData
         /// </summary>
-        public void LoadGame()
+        public void LoadGameData()
         {
             // Load saved data from disk using the file data handler
             this.gameData = dataHandler.LoadGame();
@@ -141,65 +179,9 @@ namespace StarWriter.Core
 
             Debug.Log("Game Saved. " + gameData.testNumber);
         }
+        
         /// <summary>
-        /// Saves GamaData on shutdown
-        /// </summary>
-        private void OnApplicationQuit()
-        {
-            SaveGame();
-        }
-
-        public void NewPlayer()
-        {
-            this.playerData = new PlayerData();
-        }
-
-        public void LoadCurrentPlayer()
-        {
-            // Load saved data from disk using the file data handler
-            this.playerData = dataHandler.LoadCurrentPlayer();
-
-            // Create default values if GameData is null
-            if (this.playerData == null)
-            {
-                Debug.Log("PlayerData not found while attempting to load.  Created a new PlayerData file.");
-                NewPlayer();
-            }
-
-            // Push Loaded PlayerData out to scripts requiring it
-
-            //**********************************************************************************************************
-            //TODO push data to the Player and player stats and the hanger for favorite build to display first
-            //foreach (IDataPersistence Obj in dataPersistenceObjects)
-            //{
-            //    Obj.LoadData(gameData);
-            //}
-            Debug.Log("Loaded Player. " + playerData.playerName);
-        }
-
-        public void SaveCurrentPlayer()
-        {
-            // Push Loaded gamedata out to scripts to update it
-            GameObject player = GameObject.FindGameObjectWithTag("Player");
-
-            //player.GetComponent<Player>().SaveData(ref playerData);
-
-            // Save data to disk using the file data handler
-            dataHandler.SaveGame(gameData);
-
-            Debug.Log("Game Saved. " + gameData.testNumber);
-        }
-        public void ResetAllSaveFilesToDefault()
-        {
-            NewGame();
-            SaveGame();
-            NewPlayer();
-            SaveCurrentPlayer();
-            NewHanger();
-            SaveHanger();
-        }
-
-        /// <summary>
+        /// Only use IDataPersistence for Game, Audio, Graphics Settings Data
         /// Finds all IDataPersistence components located on Monobehaviors
         /// </summary>
         /// <returns>List<IDataPersistence></returns>
@@ -208,6 +190,15 @@ namespace StarWriter.Core
             IEnumerable<IDataPersistence> dataPersistenceObjects = FindObjectsOfType<MonoBehaviour>().OfType<IDataPersistence>();
 
             return new List<IDataPersistence>(dataPersistenceObjects);
+        }
+        #endregion
+
+        /// <summary>
+        /// Saves GamaData on shutdown
+        /// </summary>
+        private void OnApplicationQuit()
+        {
+            SaveGame();
         }
     }
 }
