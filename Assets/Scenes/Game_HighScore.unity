@@ -1396,10 +1396,52 @@ PrefabInstance:
       propertyPath: m_SpriteState.m_HighlightedSprite
       value: 
       objectReference: {fileID: 0}
+    - target: {fileID: 2230169163510140602, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: m_fontAsset
+      value: 
+      objectReference: {fileID: 11400000, guid: 4b4c85d17491e8f479becb0d1e4f2a90,
+        type: 2}
+    - target: {fileID: 2230169163510140602, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: m_fontStyle
+      value: 16
+      objectReference: {fileID: 0}
+    - target: {fileID: 2230169163510140602, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: m_sharedMaterial
+      value: 
+      objectReference: {fileID: 6739800190686595404, guid: 4b4c85d17491e8f479becb0d1e4f2a90,
+        type: 2}
+    - target: {fileID: 2230169163510140602, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: m_characterSpacing
+      value: 2.67
+      objectReference: {fileID: 0}
+    - target: {fileID: 5168647555784805208, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: -90
+      objectReference: {fileID: 0}
     - target: {fileID: 5858555113718793357, guid: c8544725eea141847982b286866c858d,
         type: 3}
       propertyPath: m_IsActive
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5937580545819876907, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: m_SizeDelta.x
+      value: 100.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 5937580545819876907, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: -80
+      objectReference: {fileID: 0}
+    - target: {fileID: 5937580545819876907, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 60
       objectReference: {fileID: 0}
     - target: {fileID: 7659183800259804484, guid: c8544725eea141847982b286866c858d,
         type: 3}
