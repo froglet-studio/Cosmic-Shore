@@ -65,6 +65,7 @@ namespace StarWriter.Core.Audio
             activeAudioSource.clip = audioClip;
             activeAudioSource.volume = MusicVolume;
             activeAudioSource.Play();
+            Debug.Log($"Playing New Music Clip: {activeAudioSource.clip.name}");
         }
 
         public void PlayNextMusicClip(AudioClip audioClip)
@@ -77,8 +78,12 @@ namespace StarWriter.Core.Audio
                     activeAudioSource.clip = audioClip;
                     activeAudioSource.volume = MusicVolume;
                     activeAudioSource.Play();
+                    Debug.Log($"Playing New Music Clip: {activeAudioSource.clip.name}");
                 }
-                else { Debug.Log("Music Source is Missing"); } 
+                else
+                { 
+                    Debug.Log("Music Source is Missing");
+                } 
             }
         }
 
@@ -104,7 +109,8 @@ namespace StarWriter.Core.Audio
             activeAudioSource.Stop();
             activeAudioSource.clip = newAudioClip; // Change AudioClip
             activeAudioSource.Play();
-            
+            Debug.Log($"Playing New Music Clip: {activeAudioSource.clip.name}");
+
             for (float t = 0; t < transitionTime; t += Time.deltaTime)
             {
                 // Fade in new clip masterVolume
@@ -125,7 +131,8 @@ namespace StarWriter.Core.Audio
             //Set the new audio source
             newAudioSource.clip = newAudioClip;
             newAudioSource.Play();
-            
+            Debug.Log($"Playing New Music Clip: {newAudioSource.clip.name}");
+
             //crossfade music
             StartCoroutine(UpdateMusicWithCrossFade(activeAudioSource, newAudioSource, transitionTime));
         }
