@@ -456,10 +456,25 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 3651107063292852478, guid: fdb08022e48d2734da27536bfb303498,
+        type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: -80
+      objectReference: {fileID: 0}
+    - target: {fileID: 3651107063292852478, guid: fdb08022e48d2734da27536bfb303498,
+        type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 60
+      objectReference: {fileID: 0}
     - target: {fileID: 6527001141029902524, guid: fdb08022e48d2734da27536bfb303498,
         type: 3}
       propertyPath: m_Name
       value: Version Display Panel
+      objectReference: {fileID: 0}
+    - target: {fileID: 6527001141029902524, guid: fdb08022e48d2734da27536bfb303498,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: fdb08022e48d2734da27536bfb303498, type: 3}
