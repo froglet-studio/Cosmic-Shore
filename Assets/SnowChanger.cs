@@ -73,11 +73,10 @@ public class SnowChanger : MonoBehaviour
                     float normalizedDistance = clampedDistance / sphereDiameter;
 
                     node.transform.localScale =
-                        Vector3.up * (normalizedDistance  * nodeScaler + nodeSize) + 
+                        Vector3.forward * (normalizedDistance  * nodeScaler + nodeSize) + 
                         Vector3.one * (normalizedDistance * nodeScalerOverThree + nodeSize);
 
                     node.transform.LookAt(muton.transform);
-                    node.transform.Rotate(90,0,0);
                 }
             }
         }
