@@ -45,7 +45,8 @@ public class AnalyticsManager : SingletonPersistent<AnalyticsManager>
             if (dependencyStatus == Firebase.DependencyStatus.Available)
             {
                 app = Firebase.FirebaseApp.DefaultInstance;
-                analyticsEnabled = true;
+                // TODO: keeping analytics disabled for now until we get FireBase working on iOS
+                //analyticsEnabled = true;
                 LogAppOpen();
             }
             else
