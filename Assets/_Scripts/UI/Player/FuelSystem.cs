@@ -1,6 +1,7 @@
 using StarWriter.Core;
 using System;
 using UnityEngine;
+using StarWriter.Core.Input;
 
 public class FuelSystem : MonoBehaviour
 {
@@ -19,7 +20,7 @@ public class FuelSystem : MonoBehaviour
     static float maxFuel = 1f;
     static float currentFuel;
 
-    [SerializeField]float rateOfFuelChange = -0.02f;
+    [SerializeField]float rateOfFuelChange = -0.07f;
     #endregion
 
     [SerializeField] bool verboseLogging;
@@ -47,6 +48,8 @@ public class FuelSystem : MonoBehaviour
         Trail.OnTrailCollision += ChangeFuelAmount;
         MutonPopUp.OnMutonPopUpCollision += ChangeFuelAmount;
         GameManager.onExtendGamePlay += ResetFuel;
+        Skimmer.OnSkim += ChangeFuelAmount;
+        InputController.OnBoost += ChangeFuelAmount;
     }
 
     private void OnDisable()
@@ -54,6 +57,8 @@ public class FuelSystem : MonoBehaviour
         Trail.OnTrailCollision -= ChangeFuelAmount;
         MutonPopUp.OnMutonPopUpCollision -= ChangeFuelAmount;
         GameManager.onExtendGamePlay -= ResetFuel;
+        Skimmer.OnSkim -= ChangeFuelAmount;
+        InputController.OnBoost -= ChangeFuelAmount;
     }
 
     void Start()

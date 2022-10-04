@@ -76,7 +76,7 @@ public class Trail : MonoBehaviour, ICollidable
 
     void OnTriggerEnter(Collider other)
     {
-        if (gameObject != null)
+        if (gameObject != null && other.isTrigger == false) //don't want to catch the skimmer collider
         {
             // We used to destroy the object, but we were throwing null pointers later in the code when Destroying blocks that expired
             // Instead, let's just disable the collider and renderer and let the trailspawner clean up the object lazily
