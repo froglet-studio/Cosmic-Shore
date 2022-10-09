@@ -14,7 +14,7 @@ public class FlowFieldView : MonoBehaviour
     [SerializeField] bool reset;
 
     [SerializeField] int nodesPerSide = 4;
-    float nodeScaler = 1;
+    float nodeScaler = 5;
 
     float nodeSize = 0;
 

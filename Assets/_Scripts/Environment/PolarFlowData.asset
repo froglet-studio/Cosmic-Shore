@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3a67fd5dfc17de346a9e34f508c1f161, type: 3}
   m_Name: PolarFlowData
   m_EditorClassIdentifier: 
-  fieldThickness: 75
-  fieldWidth: 1000
-  fieldHeight: 500
-  fieldMax: 1
+  fieldThickness: 150
+  fieldWidth: 2000
+  fieldHeight: 400
+  fieldMax: 3

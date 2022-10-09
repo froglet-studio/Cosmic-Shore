@@ -339,7 +339,7 @@ namespace StarWriter.Core.Input
 
         private void Special(float xDiff, float yDiff, float xSum, float ySum)
         {
-            float fuelAmount = -.002f;
+            float fuelAmount = -.0001f;
             float threshold = .1f;
             float boost = 2.7f;
             float value = (1 - xDiff) + Mathf.Abs(yDiff) + Mathf.Abs(ySum) + Mathf.Abs(xSum);

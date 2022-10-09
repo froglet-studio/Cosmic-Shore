@@ -14,46 +14,35 @@ using UnityEngine;
         
     }
 
-   
-    
-
-
     override public Vector3 FlowVector(Transform node)
     {
-        //if ((Mathf.Pow(node.position.x, 2) / Mathf.Pow(fieldWidth, 2)) + (Mathf.Pow(node.position.y, 2) / Mathf.Pow(fieldHeight, 2)) < 1)
-        //{
-        float twoSigmaSquared = 2 * Mathf.Pow(fieldThickness, 2);
-        float twoSigma = 2 * fieldThickness;
+        
 
         float AspectRatio = (float)fieldHeight / (float)fieldWidth;
 
-        float Pr = Mathf.Sqrt(Mathf.Pow(node.position.x, 2)+ Mathf.Pow(node.position.y / AspectRatio, 2));
-        float Ptheta = Mathf.Atan2(node.position.y / Mathf.Pow(AspectRatio, 2), node.position.x);
+        float Pr = Mathf.Sqrt(Mathf.Pow(node.position.x, 2)+ Mathf.Pow(node.position.y / AspectRatio, 2)); //divide y by aspect to fit curve in bounding box
+        float Ptheta = Mathf.Atan2(node.position.y / Mathf.Pow(AspectRatio, 2), node.position.x); //divide y by aspect twice to get the flow pointed with the tangent.
 
-        float newTheta = Ptheta;
-        //if (((Ptheta+Mathf.PI) % (Mathf.PI * 2)) > (Mathf.PI/2) && ((Ptheta + Mathf.PI) % (Mathf.PI * 2)) < (Mathf.PI))//|| ((Ptheta + Mathf.PI) % (Mathf.PI * 2)) > (Mathf.PI))
-        //{
-        //    newTheta = Ptheta * (1 - .6f * Mathf.Sin(Ptheta * 2)); //empirical correction not derived
-        //}
-        //else
-        //{
-        //    newTheta = Ptheta * (1 + .6f * Mathf.Sin(Ptheta * 2));
-        //}
+        float Vr = Gaussian(Pr, fieldThickness, (fieldWidth - 3 * fieldThickness));
+        //float Vr = Mathf.Exp(-Mathf.Pow(Pr - (fieldWidth - twoSigma), 2) / twoSigmaSquared);
+        float Vtheta = Ptheta + Mathf.PI/2 ;
 
-        float Vr = Mathf.Exp(-Mathf.Pow(Pr - (fieldWidth - twoSigma), 2) / twoSigmaSquared);
-        float Vtheta = newTheta + Mathf.PI/2 ;
-
-
+        float Zdecay = Gaussian(node.position.z, fieldThickness/4,0);
 
         return new Vector3(Vr*Mathf.Cos(Vtheta)
-                                * fieldMax * (1 - Mathf.Clamp(Mathf.Abs(node.position.z / fieldThickness), 0, 1)),
+                                * fieldMax * Zdecay,
                            Vr*Mathf.Sin(Vtheta)
-                                * fieldMax * (1 - Mathf.Clamp(Mathf.Abs(node.position.z / fieldThickness), 0, 1)),
+                                * fieldMax * Zdecay,
                            0);
-        //}
-        //else return Vector3.zero;
+        
     }
+
+    float Gaussian(float input, float sigma, float distance)
+    {
+        float twoSigmaSquared = 2 * Mathf.Pow(sigma, 2);
+        return Mathf.Exp(-Mathf.Pow(input - distance, 2) / twoSigmaSquared);
+    }
+
+
 }
 
-// v.x = 5.*exp(-pow(p.y/2.-10.,2.)/10.)-5.*exp(-pow(p.y/2.+10.,2.)/10.);
-//v.y = -5.* exp(-pow(p.x - 10., 2.) / 10.) + 5.* exp(-pow(p.x + 10., 2.) / 10.);
