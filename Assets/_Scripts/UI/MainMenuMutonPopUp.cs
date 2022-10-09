@@ -23,6 +23,7 @@ public class MainMenuMutonPopUp : MonoBehaviour
 
     Material tempMaterial;
 
+
     void Start()
     {
         collisions = new List<Collision>();
@@ -58,24 +59,20 @@ public class MainMenuMutonPopUp : MonoBehaviour
 
             // animate it
             GameObject ship = other.transform.parent.parent.gameObject;
-            if (ship == GameObject.FindWithTag("Player"))
+
+
+
+            if (ship == GameObject.FindWithTag("red"))
             {
                 StartCoroutine(spentMuton.GetComponent<Impact>().ImpactCoroutine(
-                    ship.transform.forward * ship.GetComponent<InputController>().speed, tempMaterial, "Player"));
+                    ship.transform.forward * ship.GetComponent<AiShipController>().speed/10, tempMaterial, "red"));
             }
             else
             {
-                if (ship == GameObject.FindWithTag("red"))
-                {
-                    StartCoroutine(spentMuton.GetComponent<Impact>().ImpactCoroutine(
-                        ship.transform.forward * ship.GetComponent<AiShipController>().speed/10, tempMaterial, "red"));
-                }
-                else
-                {
-                    StartCoroutine(spentMuton.GetComponent<Impact>().ImpactCoroutine(
-                         ship.transform.forward * ship.GetComponent<AiShipController>().speed/10, tempMaterial, "blue"));
-                }
+                StartCoroutine(spentMuton.GetComponent<Impact>().ImpactCoroutine(
+                        ship.transform.forward * ship.GetComponent<AiShipController>().speed/10, tempMaterial, "blue"));
             }
+
 
             // move old muton
             StartCoroutine(Muton.GetComponent<FadeIn>().FadeInCoroutine());
@@ -83,7 +80,7 @@ public class MainMenuMutonPopUp : MonoBehaviour
 
             // reset ship aggression
             StarWriter.Core.Input.AiShipController controllerScript = ship.GetComponent<StarWriter.Core.Input.AiShipController>();
-            controllerScript.lerpAmount = .2f;
+            controllerScript.defaultLerp = .2f;
 
             // grow tail
             MainMenuTrailSpawner trailScript = ship.GetComponent<MainMenuTrailSpawner>();

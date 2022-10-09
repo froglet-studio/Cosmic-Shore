@@ -20,7 +20,7 @@ public class FuelSystem : MonoBehaviour
     static float maxFuel = 1f;
     static float currentFuel;
 
-    [SerializeField]float rateOfFuelChange = -0.07f;
+    [SerializeField]float rateOfFuelChange = -0.04f;
     #endregion
 
     [SerializeField] bool verboseLogging;
@@ -47,18 +47,22 @@ public class FuelSystem : MonoBehaviour
     {
         Trail.OnTrailCollision += ChangeFuelAmount;
         MutonPopUp.OnMutonPopUpCollision += ChangeFuelAmount;
+        FlowCrystal.OnMutonPopUpCollision += ChangeFuelAmount;
         GameManager.onExtendGamePlay += ResetFuel;
         Skimmer.OnSkim += ChangeFuelAmount;
         InputController.OnBoost += ChangeFuelAmount;
+        InputFlowController.OnBoost += ChangeFuelAmount;
     }
 
     private void OnDisable()
     {
         Trail.OnTrailCollision -= ChangeFuelAmount;
         MutonPopUp.OnMutonPopUpCollision -= ChangeFuelAmount;
+        FlowCrystal.OnMutonPopUpCollision += ChangeFuelAmount;
         GameManager.onExtendGamePlay -= ResetFuel;
         Skimmer.OnSkim -= ChangeFuelAmount;
         InputController.OnBoost -= ChangeFuelAmount;
+        InputFlowController.OnBoost -= ChangeFuelAmount;
     }
 
     void Start()

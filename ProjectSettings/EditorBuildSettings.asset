@@ -12,8 +12,11 @@ EditorBuildSettings:
     path: Assets/Scenes/Game_HighScore.unity
     guid: 5e8d9932a4d84a1488c2dad96c8135dd
   - enabled: 0
-    path: Assets/Scenes/Game_TimedRound.unity
-    guid: b5001f4c731a06841a1f1ed781923922
+    path: Assets/Scenes/Game_Race.unity
+    guid: fbab11f0e5a02b2498a72b7dad67b1ee
+  - enabled: 0
+    path: 
+    guid: 00000000000000000000000000000000
   - enabled: 0
     path: Assets/Scenes/Game_Tutorial.unity
     guid: 85d73583f4ccfc1478efa92a6712ce67

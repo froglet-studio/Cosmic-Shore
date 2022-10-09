@@ -530,11 +530,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   defaultThrottle: 15
-  lerpAmount: 0.5
+  defaultLerp: 0.035
+  throttleIncrease: 0.001
   lerpIncrease: 0.004
+  throttle: 0
+  lerp: 0
   shipTransform: {fileID: 487984179}
   muton: {fileID: 430359312}
   speed: 0
+  flowFieldData: {fileID: 639495419634095585}
 --- !u!114 &487984177
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1148,7 +1152,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f35ad70dcbb4e3b47af654e91d9387f8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  fuelAmount: 0.025
+  fuelAmount: 0.1
 --- !u!1 &1496602824
 GameObject:
   m_ObjectHideFlags: 0
@@ -1418,17 +1422,17 @@ PrefabInstance:
     - target: {fileID: 1137253009388046634, guid: c8544725eea141847982b286866c858d,
         type: 3}
       propertyPath: m_LocalScale.x
-      value: 8
+      value: 30
       objectReference: {fileID: 0}
     - target: {fileID: 1137253009388046634, guid: c8544725eea141847982b286866c858d,
         type: 3}
       propertyPath: m_LocalScale.y
-      value: 8
+      value: 30
       objectReference: {fileID: 0}
     - target: {fileID: 1137253009388046634, guid: c8544725eea141847982b286866c858d,
         type: 3}
       propertyPath: m_LocalScale.z
-      value: 8
+      value: 30
       objectReference: {fileID: 0}
     - target: {fileID: 1137253009388046634, guid: c8544725eea141847982b286866c858d,
         type: 3}
@@ -1474,6 +1478,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Center.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1568494804036255801, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: m_IsTrigger
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 2230169163510140602, guid: c8544725eea141847982b286866c858d,
         type: 3}
@@ -1598,7 +1607,8 @@ PrefabInstance:
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
       value: OnClickReplayButton
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 913289056513870075, guid: c8544725eea141847982b286866c858d, type: 3}
   m_SourcePrefab: {fileID: 100100000, guid: c8544725eea141847982b286866c858d, type: 3}
 --- !u!114 &1586480802 stripped
 MonoBehaviour:
@@ -1612,6 +1622,25 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6814330515934fb4a9ab5e810e146b88, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!1 &1586480803 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 7659183800259804484, guid: c8544725eea141847982b286866c858d,
+    type: 3}
+  m_PrefabInstance: {fileID: 1586480801}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1586480804
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1586480803}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9846c9cd6cfac424797ca640ebcb7a04, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  speed: 0
 --- !u!1 &1829578212
 GameObject:
   m_ObjectHideFlags: 0
@@ -1776,11 +1805,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   defaultThrottle: 20
-  lerpAmount: 0.3
+  defaultLerp: 0.035
+  throttleIncrease: 0.001
   lerpIncrease: 0.003
+  throttle: 0
+  lerp: 0
   shipTransform: {fileID: 1892142157}
   muton: {fileID: 430359312}
   speed: 0
+  flowFieldData: {fileID: 639495419634095585}
 --- !u!114 &1892142159
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2274,6 +2307,29 @@ MeshCollider:
   m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: -5493726671624683310, guid: 73e4860aaa536f24e9bee9d6accb9b43, type: 3}
+--- !u!1 &639495419634095584 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 639495419069806267, guid: 41222ebb42ad82c4ca52a729935c79d3,
+    type: 3}
+  m_PrefabInstance: {fileID: 639495419634095581}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &639495419634095585
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 639495419634095584}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 765f8ed4f2f491e4cb1e588e6223a9ef, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  field: {fileID: 11400000, guid: 93f3a235d3b643744bd7fa6da834f8bc, type: 2}
+  fieldWidth: 0
+  fieldHeight: 0
+  fieldThickness: 0
+  fieldMax: 0
 --- !u!1 &4716017971667693127
 GameObject:
   m_ObjectHideFlags: 0

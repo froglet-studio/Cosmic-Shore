@@ -24,7 +24,8 @@ namespace StarWriter.Core.Input
         string uuid;
 
         public float speed;
-        
+        ShipData shipData;
+
 
         private readonly float defaultThrottle = 10f;
         private readonly float rotationThrottleScaler = 3;
@@ -69,9 +70,13 @@ namespace StarWriter.Core.Input
 
         void Start()
         {
+
+            shipData = GetComponent<ShipData>();
+
             uuid = GameObject.FindWithTag("Player").GetComponent<Player>().PlayerUUID;
             // TODO: why is this here?
             Screen.sleepTimeout = SleepTimeout.NeverSleep;
+
 
             gyro = UnityEngine.Input.gyro;
             gyro.enabled = true;
@@ -119,7 +124,8 @@ namespace StarWriter.Core.Input
             RotateShip();
 
             // Move ship forward
-            shipTransform.position += speed * Time.deltaTime * shipTransform.forward; 
+            shipTransform.position += speed * Time.deltaTime * shipTransform.forward;
+            shipData.speed = speed;
         }
 
         private void PerformShipAnimations(float Xsum, float Ysum, float Xdiff, float Ydiff)
