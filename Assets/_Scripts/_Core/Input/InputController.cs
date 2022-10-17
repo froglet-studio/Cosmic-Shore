@@ -1,5 +1,6 @@
 using System.Collections;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace StarWriter.Core.Input
 {
@@ -38,7 +39,7 @@ namespace StarWriter.Core.Input
         private readonly float animationScaler = 25f;
         private readonly float yawAnimationScaler = 80f;
 
-        private Gyroscope gyro;
+        private UnityEngine.Gyroscope gyro;
         private Quaternion derivedCorrection;
         private Quaternion displacementQ;
         private Quaternion inverseInitialRotation=new(0,0,0,0);
@@ -179,6 +180,36 @@ namespace StarWriter.Core.Input
 
         private void ReceiveTouchInput()
         {
+            Debug.Log($"Gamepad.Current: {Gamepad.current}");
+            if (Gamepad.current != null)
+            {
+                leftTouch.x = Gamepad.current.leftStick.x.ReadValue();
+                leftTouch.y = Gamepad.current.leftStick.y.ReadValue();
+                rightTouch.x = Gamepad.current.rightStick.x.ReadValue();
+                rightTouch.y = Gamepad.current.rightStick.y.ReadValue();
+
+                Debug.Log($"right touch.x: {Gamepad.current.rightStick.x.ReadValue()}");
+
+                float xSum = (rightTouch.x + leftTouch.x) / 3f;
+                float ySum = (rightTouch.y + leftTouch.y) / 3f;
+                float xDiff = (rightTouch.x - leftTouch.x) / 3f;
+                float yDiff = (rightTouch.y - leftTouch.y) / 3f;
+
+                if (invertYEnabled)
+                    ySum *= -1;
+
+                Pitch(ySum);
+                Roll(yDiff);
+                Yaw(xSum);
+                //Throttle(xDiff);
+
+                PerformShipAnimations(xSum, ySum, xDiff, yDiff);
+
+                Special(xDiff, yDiff, xSum, ySum);
+
+                return;
+            }
+
             var threeFingerFumble = false;
             if (UnityEngine.Input.touches.Length >= 3)
             {
