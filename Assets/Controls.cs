@@ -44,7 +44,7 @@ public class Controls : MonoBehaviour
                 }
                 else 
                 {
-                    transform.position = Vector2.Lerp(transform.position, initialPos, .2f);
+                    //transform.position = Vector2.Lerp(transform.position, initialPos, .2f);
                 }
             }
             else
@@ -57,7 +57,7 @@ public class Controls : MonoBehaviour
                 }
                 else
                 {
-                    transform.position = Vector2.Lerp(transform.position, initialPos, .2f);
+                    //transform.position = Vector2.Lerp(transform.position, initialPos, .2f);
                 }
             }
         }

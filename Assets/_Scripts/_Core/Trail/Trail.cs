@@ -21,6 +21,7 @@ public class Trail : MonoBehaviour, ICollidable
     private MeshRenderer meshRenderer;
     private BoxCollider blockCollider;
 
+
     // TODO: why are we doing this? The scene is getting reloaded, so shouldn't the container get voided out that way...
     // Wait a minute... is this to account for the 'DontDestroyOnLoad(container) line further down?
     public static void ResetTrailContainer()
@@ -76,7 +77,7 @@ public class Trail : MonoBehaviour, ICollidable
 
     void OnTriggerEnter(Collider other)
     {
-        if (gameObject != null)
+        if (gameObject != null && other.isTrigger == false) //don't want to catch the skimmer collider
         {
             // We used to destroy the object, but we were throwing null pointers later in the code when Destroying blocks that expired
             // Instead, let's just disable the collider and renderer and let the trailspawner clean up the object lazily
@@ -102,7 +103,7 @@ public class Trail : MonoBehaviour, ICollidable
                 // TODO: for now, we're only turning off collision on the player. In the future, we want AI ships to explode and all that too
                 other.transform.parent.parent.GetComponent<Player>().ToggleCollision(false);
 
-                var impactVector = ship.transform.forward * ship.GetComponent<InputController>().speed;
+                var impactVector = ship.transform.forward * ship.GetComponent<ShipData>().speed;
 
                 // Make exploding block
                 var explodingBlock = Instantiate<GameObject>(FossilBlock);

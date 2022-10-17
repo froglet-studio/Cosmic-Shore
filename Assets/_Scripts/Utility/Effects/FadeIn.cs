@@ -14,9 +14,11 @@ public class FadeIn : MonoBehaviour
 
     void Start()
     {
+
         StartCoroutine(FadeInCoroutine());
         MutonMaterial = new Material(gameObject.GetComponent<Renderer>().material);
         gameObject.GetComponent<Renderer>().material = MutonMaterial;
+        
     }
 
     public IEnumerator FadeInCoroutine()

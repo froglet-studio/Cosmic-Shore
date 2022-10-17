@@ -42,6 +42,7 @@ public class MutonPopUp : MonoBehaviour
     Material tempMaterial;
     List<Collider> collisions;
 
+
     void Start()
     {
         collisions = new List<Collider>();
@@ -78,7 +79,7 @@ public class MutonPopUp : MonoBehaviour
             // Player Collision
             // Muton animation and haptics
             StartCoroutine(spentMuton.GetComponent<Impact>().ImpactCoroutine(
-                ship.transform.forward * ship.GetComponent<InputController>().speed, tempMaterial, "Player"));
+                ship.transform.forward * ship.GetComponent<ShipData>().speed, tempMaterial, "Player"));
             HapticController.PlayMutonCollisionHaptics();
 
             // Update fuel bar and currentScore
@@ -98,7 +99,8 @@ public class MutonPopUp : MonoBehaviour
                 
                 //reset ship aggression
                 AiShipController controllerScript = ship.GetComponent<AiShipController>();
-                controllerScript.lerpAmount = .2f;
+                controllerScript.lerp = controllerScript.defaultLerp;
+                controllerScript.throttle = controllerScript.defaultThrottle;
             }
             else
             {
@@ -107,7 +109,8 @@ public class MutonPopUp : MonoBehaviour
                 
                 //reset ship aggression
                 AiShipController controllerScript = ship.GetComponent<AiShipController>();
-                controllerScript.lerpAmount = .2f;
+                controllerScript.lerp = controllerScript.defaultLerp;
+                controllerScript.throttle = controllerScript.defaultThrottle;
             }
         }
 

@@ -19,7 +19,13 @@ namespace StarWriter.Core.Input
         Transform RightWing;
         #endregion
 
+        public delegate void Boost(string uuid, float amount);
+        public static event Boost OnBoost;
+        string uuid;
+
         public float speed;
+        ShipData shipData;
+
 
         private readonly float defaultThrottle = 10f;
         private readonly float rotationThrottleScaler = 3;
@@ -64,8 +70,13 @@ namespace StarWriter.Core.Input
 
         void Start()
         {
+
+            shipData = GetComponent<ShipData>();
+
+            uuid = GameObject.FindWithTag("Player").GetComponent<Player>().PlayerUUID;
             // TODO: why is this here?
             Screen.sleepTimeout = SleepTimeout.NeverSleep;
+
 
             gyro = UnityEngine.Input.gyro;
             gyro.enabled = true;
@@ -113,7 +124,8 @@ namespace StarWriter.Core.Input
             RotateShip();
 
             // Move ship forward
-            shipTransform.position += speed * Time.deltaTime * shipTransform.forward; 
+            shipTransform.position += speed * Time.deltaTime * shipTransform.forward;
+            shipData.speed = speed;
         }
 
         private void PerformShipAnimations(float Xsum, float Ysum, float Xdiff, float Ydiff)
@@ -223,14 +235,17 @@ namespace StarWriter.Core.Input
                 Pitch(ySum);
                 Roll(yDiff);
                 Yaw(xSum);
-                Throttle(xDiff);
+                //Throttle(xDiff);
 
                 PerformShipAnimations(xSum, ySum, xDiff, yDiff);
+
+                Special(xDiff, yDiff, xSum, ySum);
             }
             else if (UnityEngine.Input.touches.Length == 1)
             {
                 if (leftTouch != Vector2.zero && rightTouch != Vector2.zero)
                 {
+                    var position = UnityEngine.Input.touches[0].position;
                     // reparameterize
                     float xSum = ((rightTouch.x + leftTouch.x) / (Screen.currentResolution.width) - 1);
                     float ySum = ((rightTouch.y + leftTouch.y) / (Screen.currentResolution.height) - 1);
@@ -246,6 +261,23 @@ namespace StarWriter.Core.Input
                     Throttle(xDiff);
 
                     PerformShipAnimations(xSum, ySum, xDiff, yDiff);
+
+                    if (Vector2.Distance(leftTouch, position) < Vector2.Distance(rightTouch, position))
+                    {
+                        //var diff = position - leftTouch;
+                        //WingTipRotate(diff, true);
+                        leftTouch = position;
+                        //rightTouch = Vector2.Lerp(rightTouch, new Vector2(rightTouch.x, leftTouch.y), .1f);
+                    }
+                    else
+                    {
+                        //var diff = position - rightTouch;
+                        //WingTipRotate(diff, false);
+                        rightTouch = position;
+                        //leftTouch = Vector2.Lerp(leftTouch, new Vector2(leftTouch.x, rightTouch.y), .1f);
+                    }
+
+
                 }
             }
             else
@@ -282,6 +314,35 @@ namespace StarWriter.Core.Input
             displacementQ = Quaternion.AngleAxis(
                                 Ysum * -(speed * rotationThrottleScaler + rotationScaler) * Time.deltaTime,
                                 shipTransform.right) * displacementQ;
+        }
+
+        private void Special(float xDiff, float yDiff, float xSum, float ySum)
+        {
+            float fuelAmount = -.004f;
+            float threshold = .1f;
+            float boost = 2.7f;
+            float value = (1 - xDiff) + Mathf.Abs(yDiff) + Mathf.Abs(ySum) + Mathf.Abs(xSum);
+            if (value < threshold)
+            {
+                speed = Mathf.Lerp(speed, xDiff * throttleScaler*boost + defaultThrottle, lerpAmount * Time.deltaTime);
+                OnBoost?.Invoke(uuid, fuelAmount);
+            }
+            else
+            {
+                Throttle(xDiff);
+            }
+        }
+
+        private void WingTipRotate(Vector2 diff, bool leftWing)
+        {
+            //var value = (leftWing ? -10 : 10);
+            //Vector3 point = transform.position + value*transform.right;
+            //Vector3 axis = diff.y*transform.right + diff.x * transform.forward;
+            //Pitch(diff.y / 100);
+            //Roll(diff.x / 100);
+            //transform.RotateAround(point, axis, diff.magnitude/1f);
+            //transform.position = Vector3.Lerp(transform.position, transform.position + diff.y * transform.up * Time.deltaTime*2, diff.y*diff.y/ Screen.currentResolution.width);
+            //transform.position = Vector3.Lerp(transform.position, transform.position + diff.x * transform.right * Time.deltaTime*2, diff.y*diff.y / Screen.currentResolution.width);
         }
 
         // Converts Android Quaterions into Unity Quaterions

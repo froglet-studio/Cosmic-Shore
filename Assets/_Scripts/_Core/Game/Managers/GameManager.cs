@@ -43,6 +43,7 @@ namespace StarWriter.Core
 
         string mainMenuScene = "Menu_Main";
         string highScoreGameScene = "Game_HighScore";
+        string raceGameScene = "Game_Race";
         string tutorialGameScene = "Game_Tutorial";
 
         private void OnEnable()
@@ -119,7 +120,8 @@ namespace StarWriter.Core
             deathCount = 0;
             analyticsManager.LogLevelStart();
             UnPauseGame();
-            SceneManager.LoadScene(highScoreGameScene);
+            //SceneManager.LoadScene(highScoreGameScene);
+            SceneManager.LoadScene(highScoreGameScene); 
         }
 
         private void OnExplosionCompletion()
@@ -165,7 +167,7 @@ namespace StarWriter.Core
             Debug.Log("GameManager.RestartGame");
             deathCount = 0;
 
-            SceneManager.LoadScene(highScoreGameScene);
+            SceneManager.LoadScene(raceGameScene);
             UnPauseGame();
 
             Jukebox.Instance.PlayNextSong();

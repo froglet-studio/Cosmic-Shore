@@ -17,6 +17,8 @@ namespace StarWriter.Core.Tutorial
         Material material;
         Material tempMaterial;
 
+        ShipData shipData;
+
 
         public delegate void OnTutorialMutonCollisionEvent();
         public static event OnTutorialMutonCollisionEvent onMutonCollision;
