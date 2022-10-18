@@ -190,10 +190,10 @@ namespace StarWriter.Core.Input
 
                 Debug.Log($"right touch.x: {Gamepad.current.rightStick.x.ReadValue()}");
 
-                float xSum = (rightTouch.x + leftTouch.x) / 3f;
-                float ySum = (rightTouch.y + leftTouch.y) / 3f;
-                float xDiff = (rightTouch.x - leftTouch.x) / 3f;
-                float yDiff = (rightTouch.y - leftTouch.y) / 3f;
+                float xSum = Mathf.Pow(rightTouch.x + leftTouch.x,3) / 8f;
+                float ySum = Mathf.Pow(rightTouch.y + leftTouch.y,3) / 8f;
+                float xDiff = (leftTouch.x - rightTouch.x + 2.1f) / 4f;
+                float yDiff = Mathf.Pow(rightTouch.y - leftTouch.y,3) / 8f;
 
                 if (invertYEnabled)
                     ySum *= -1;
