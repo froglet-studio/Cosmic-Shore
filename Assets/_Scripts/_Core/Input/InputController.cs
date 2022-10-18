@@ -178,6 +178,11 @@ namespace StarWriter.Core.Input
 
         Vector2 leftTouch, rightTouch;
 
+        private float Ease(float input)
+        {
+            return input < 0 ? (Mathf.Cos(input) - 1) / 2 : -(Mathf.Cos(input) - 1) / 2;
+        }
+
         private void ReceiveTouchInput()
         {
             Debug.Log($"Gamepad.Current: {Gamepad.current}");
@@ -190,10 +195,10 @@ namespace StarWriter.Core.Input
 
                 Debug.Log($"right touch.x: {Gamepad.current.rightStick.x.ReadValue()}");
 
-                float xSum = Mathf.Pow(rightTouch.x + leftTouch.x,3) / 8f;
-                float ySum = Mathf.Pow(rightTouch.y + leftTouch.y,3) / 8f;
-                float xDiff = (leftTouch.x - rightTouch.x + 2.1f) / 4f;
-                float yDiff = Mathf.Pow(rightTouch.y - leftTouch.y,3) / 8f;
+                float xSum = Ease(rightTouch.x + leftTouch.x);
+                float ySum = Ease(rightTouch.y + leftTouch.y);
+                float xDiff = (leftTouch.x - rightTouch.x + 2.1f) / 4.1f;
+                float yDiff = Ease(rightTouch.y - leftTouch.y);
 
                 if (invertYEnabled)
                     ySum *= -1;
