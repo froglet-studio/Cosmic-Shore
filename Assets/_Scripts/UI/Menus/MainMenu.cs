@@ -21,6 +21,14 @@ namespace StarWriter.Core.UI
         {
             gameManager.OnClickPlayButton();
         }
+        public void OnClickGameModeOne()
+        {
+            gameManager.OnClickTestGameModeOne();
+        }
+        public void OnClickGameModeTwo()
+        {
+            gameManager.OnClickTestGameModeTwo();
+        }
 
         public void OnClickOptionsMenuButton()
         {

@@ -43,6 +43,8 @@ namespace StarWriter.Core
 
         string mainMenuScene = "Menu_Main";
         string highScoreGameScene = "Game_HighScore";
+        string gameTestModeOneGameScene = "Game_TestModeOne";
+        string gameTestModeTwoGameScene = "Game_TestModeTwo";
         string raceGameScene = "Game_Race";
         string tutorialGameScene = "Game_Tutorial";
 
@@ -122,6 +124,28 @@ namespace StarWriter.Core
             UnPauseGame();
             //SceneManager.LoadScene(highScoreGameScene);
             SceneManager.LoadScene(highScoreGameScene); 
+        }
+
+        /// <summary>
+        /// Starts Tutorial or Game based on hasSkippedTutorial status
+        /// </summary>
+        public void OnClickTestGameModeOne()
+        {
+            deathCount = 0;
+            analyticsManager.LogLevelStart();
+            UnPauseGame();
+            SceneManager.LoadScene(gameTestModeOneGameScene);
+        }
+
+        /// <summary>
+        /// Starts Tutorial or Game based on hasSkippedTutorial status
+        /// </summary>
+        public void OnClickTestGameModeTwo()
+        {
+            deathCount = 0;
+            analyticsManager.LogLevelStart();
+            UnPauseGame();
+            SceneManager.LoadScene(gameTestModeTwoGameScene);
         }
 
         private void OnExplosionCompletion()
