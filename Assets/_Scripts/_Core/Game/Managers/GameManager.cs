@@ -48,6 +48,8 @@ namespace StarWriter.Core
         string raceGameScene = "Game_Race";
         string tutorialGameScene = "Game_Tutorial";
 
+        string ActiveGameScene = "";
+
         private void OnEnable()
         {
             AdsManager.adShowComplete += OnAdShowComplete;
@@ -102,6 +104,7 @@ namespace StarWriter.Core
         public void OnClickTutorialButton()
         {
             UnPauseGame();
+            ActiveGameScene = tutorialGameScene;
             SceneManager.LoadScene(tutorialGameScene);
         }
 
@@ -123,6 +126,7 @@ namespace StarWriter.Core
             analyticsManager.LogLevelStart();
             UnPauseGame();
             //SceneManager.LoadScene(highScoreGameScene);
+            ActiveGameScene = highScoreGameScene;
             SceneManager.LoadScene(highScoreGameScene); 
         }
 
@@ -134,6 +138,7 @@ namespace StarWriter.Core
             deathCount = 0;
             analyticsManager.LogLevelStart();
             UnPauseGame();
+            ActiveGameScene = gameTestModeOneGameScene;
             SceneManager.LoadScene(gameTestModeOneGameScene);
         }
 
@@ -145,6 +150,7 @@ namespace StarWriter.Core
             deathCount = 0;
             analyticsManager.LogLevelStart();
             UnPauseGame();
+            ActiveGameScene = gameTestModeTwoGameScene;
             SceneManager.LoadScene(gameTestModeTwoGameScene);
         }
 
@@ -191,7 +197,7 @@ namespace StarWriter.Core
             Debug.Log("GameManager.RestartGame");
             deathCount = 0;
 
-            SceneManager.LoadScene(raceGameScene);
+            SceneManager.LoadScene(ActiveGameScene);
             UnPauseGame();
 
             Jukebox.Instance.PlayNextSong();
