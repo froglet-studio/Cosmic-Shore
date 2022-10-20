@@ -20,13 +20,13 @@ public class ShipExplosionHandler : MonoBehaviour
 
     private void OnEnable()
     {
-        FuelSystem.OnFuelEmpty += DoShipExplosionEffect;
+        DeathEvents.OnDeathBegin += DoShipExplosionEffect;
         GameManager.onExtendGamePlay += DoShipReformingEffect;
     }
 
     private void OnDisable()
     {
-        FuelSystem.OnFuelEmpty -= DoShipExplosionEffect;
+        DeathEvents.OnDeathBegin -= DoShipExplosionEffect;
         GameManager.onExtendGamePlay -= DoShipReformingEffect;
     }
 

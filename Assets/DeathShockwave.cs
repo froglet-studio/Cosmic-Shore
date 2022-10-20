@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class DeathExplosion : MonoBehaviour
+public class DeathShockwave : MonoBehaviour
 {
     SphereCollider sphereCollider;
     private float initialColliderRadius = 0f;
@@ -19,21 +19,21 @@ public class DeathExplosion : MonoBehaviour
 
     private void OnEnable()
     {
-        FuelSystem.OnFuelEmpty += OnZeroFuel;
+        DeathEvents.OnDeathBegin += Explode;
     }
 
     private void OnDisable()
     {
-        FuelSystem.OnFuelEmpty -= OnZeroFuel;
+        DeathEvents.OnDeathBegin -= Explode;
     }
 
-    void OnZeroFuel()
+    void Explode()
     {
-        StartCoroutine(OnZeroFuelCoroutine());
+        StartCoroutine(ExplodeCoroutine());
 
     }
 
-    IEnumerator OnZeroFuelCoroutine()
+    IEnumerator ExplodeCoroutine()
     {
         sphereCollider.enabled = true;
         while (sphereCollider.radius < maxColliderRadius)

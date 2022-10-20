@@ -24,6 +24,8 @@ public class Skimmer : MonoBehaviour
 
     void OnTriggerEnter(Collider other)
     {
+        Debug.Log("skim collider: " + other.name);
         OnSkim?.Invoke(ship.GetComponent<Player>().PlayerUUID, fuelAmount);
+        
     }
 }
