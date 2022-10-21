@@ -111,6 +111,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   fuelChange: -3
+  uuid: admin
   FossilBlock: {fileID: 5776304996075792891, guid: bd8a259abee95ec4895562e6bb8aae76,
     type: 3}
   material: {fileID: 2100000, guid: 0840df18df0bd8646b11c95e1861492d, type: 2}

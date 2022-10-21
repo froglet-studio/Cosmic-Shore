@@ -26,6 +26,7 @@ public class ScoringManager : MonoBehaviour
         GameManager.onGameOver += UpdateScoresAndDeathCount;
         MutonPopUp.AddToScore += UpdateScore;
         FlowCrystal.AddToScore += UpdateScore;
+        Trail.AddToScore += UpdateScore;
     }
 
     private void OnDisable()
@@ -35,6 +36,7 @@ public class ScoringManager : MonoBehaviour
         GameManager.onGameOver -= UpdateScoresAndDeathCount;
         MutonPopUp.AddToScore -= UpdateScore;
         FlowCrystal.AddToScore -= UpdateScore;
+        Trail.AddToScore -= UpdateScore;
     }
 
     public void UpdateScoreBoard(int value)

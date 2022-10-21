@@ -8,6 +8,8 @@ public class Trail : MonoBehaviour, ICollidable
 {
     [SerializeField]
     private float fuelChange = -3f;
+    private int scoreChange = 1;
+    [SerializeField] string uuid;
 
     [SerializeField] GameObject FossilBlock;
 
@@ -16,6 +18,9 @@ public class Trail : MonoBehaviour, ICollidable
     public float waitTime = .6f;
     public delegate void TrailCollision(string uuid, float amount);
     public static event TrailCollision OnTrailCollision;
+
+    public delegate void OnCollisionIncreaseScore(string uuid, int amount);
+    public static event OnCollisionIncreaseScore AddToScore;
 
     private static GameObject container;
     private MeshRenderer meshRenderer;
@@ -114,6 +119,7 @@ public class Trail : MonoBehaviour, ICollidable
                 explodingBlock.GetComponent<BlockImpact>().HandleImpact(impactVector, "Player");
 
                 OnTrailCollision?.Invoke(ship.GetComponent<Player>().PlayerUUID, fuelChange);
+                AddToScore?.Invoke(uuid, scoreChange);
                 HapticController.PlayBlockCollisionHaptics();
             }
         }
