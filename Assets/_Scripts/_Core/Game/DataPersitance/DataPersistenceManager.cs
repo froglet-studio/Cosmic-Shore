@@ -14,7 +14,7 @@ namespace StarWriter.Core
 
         [SerializeField] private string gameFileName = "gamedata.json";
         [SerializeField] private string hangerFileName = "hangerdata.json";
-        [SerializeField] private string playerDataFileName = "playerdata.dat";
+        [SerializeField] private string playerFileName = "playerdata.dat";
 
         private GameData gameData;
 
@@ -24,14 +24,14 @@ namespace StarWriter.Core
 
         private List<IDataPersistence> dataPersistenceObjects; //Only GameData values use IDataPersistence currently
 
-        private FileDataHandler dataHandler;
+        //private FileDataHandler dataHandler;
         //public static DataPersistenceManager Instance { get; private set; }
 
         public override void Awake()
         {
             base.Awake();
 
-            this.dataHandler = new FileDataHandler(Application.persistentDataPath, gameFileName, hangerFileName, playerDataFileName);
+            //this.dataHandler = new FileDataHandler(Application.persistentDataPath, gameFileName, hangerFileName, playerFileName);
         }
 
         private void Start()
@@ -51,16 +51,19 @@ namespace StarWriter.Core
         {
             this.hangarData = new HangarData();
         }
+
         /// <summary>
         /// Sends HangarData to be saved to DataHandler
         /// </summary>
         public void SaveHangarData(HangarData data)
         {
             // Get most recent changes to hangarData
-            UpDateHangarData(data);
+            UpdateHangarData(data);
+
+            FileDataHandler<HangarData> dataHandler = new FileDataHandler<HangarData>(Application.persistentDataPath, hangerFileName);
 
             // Save data to disk using the file data handler
-            dataHandler.SaveHangar(hangarData);
+            dataHandler.Save(hangarData);
 
             Debug.Log("HangarData Saved. " + hangarData.PlayerBuilds.Keys);
         }
@@ -69,9 +72,10 @@ namespace StarWriter.Core
         /// </summary>
         public HangarData LoadHangerData() //why was this set to internal
         {
-            
+            FileDataHandler<HangarData> dataHandler = new FileDataHandler<HangarData>(Application.persistentDataPath, hangerFileName);
+
             // Load saved data from disk using the file data handler
-            this.hangarData = dataHandler.LoadHanger();
+            this.hangarData = dataHandler.Load();
 
             // Create default values if GameData is null
             if (this.hangarData == null)
@@ -84,7 +88,7 @@ namespace StarWriter.Core
             //Debug.Log("Pilot in Bay001 is " + hangarData.Bay001Pilot); ;
         }
 
-        public void UpDateHangarData(HangarData updatedData)
+        public void UpdateHangarData(HangarData updatedData)
         {
             this.hangarData = updatedData;
         }
@@ -98,8 +102,10 @@ namespace StarWriter.Core
 
         public void LoadCurrentPlayer()
         {
+            FileDataHandler<PlayerData> dataHandler = new FileDataHandler<PlayerData>(Application.persistentDataPath, playerFileName);
+
             // Load saved data from disk using the file data handler
-            this.playerData = dataHandler.LoadCurrentPlayer();
+            this.playerData = dataHandler.Load();
 
             // Create default values if GameData is null
             if (this.playerData == null)
@@ -121,13 +127,15 @@ namespace StarWriter.Core
 
         public void SaveCurrentPlayer()
         {
+            FileDataHandler<PlayerData> dataHandler = new FileDataHandler<PlayerData>(Application.persistentDataPath, playerFileName);
+
             // Push Loaded gamedata out to scripts to update it
             GameObject player = GameObject.FindGameObjectWithTag("Player");
 
             //player.GetComponent<Player>().SaveData(ref playerData);
 
             // Save data to disk using the file data handler
-            dataHandler.SaveGame(gameData);
+            dataHandler.Save(playerData);
 
             Debug.Log("Game Saved. " + gameData.testNumber);
         }
@@ -146,8 +154,10 @@ namespace StarWriter.Core
         /// </summary>
         public void LoadGameData()
         {
+            FileDataHandler<GameData> dataHandler = new FileDataHandler<GameData>(Application.persistentDataPath, gameFileName);
+
             // Load saved data from disk using the file data handler
-            this.gameData = dataHandler.LoadGame();
+            this.gameData = dataHandler.Load();
 
             // Create default values if GameData is null
             if (this.gameData == null)
@@ -168,6 +178,8 @@ namespace StarWriter.Core
         /// </summary>
         public void SaveGame()
         {
+            FileDataHandler<GameData> dataHandler = new FileDataHandler<GameData>(Application.persistentDataPath, gameFileName);
+
             // Push Loaded gamedata out to scripts to update it
             foreach (IDataPersistence Obj in dataPersistenceObjects)
             {
@@ -175,7 +187,7 @@ namespace StarWriter.Core
             }
 
             // Save data to disk using the file data handler
-            dataHandler.SaveGame(gameData);
+            dataHandler.Save(gameData);
 
             Debug.Log("Game Saved. " + gameData.testNumber);
         }
@@ -202,5 +214,3 @@ namespace StarWriter.Core
         }
     }
 }
-
-

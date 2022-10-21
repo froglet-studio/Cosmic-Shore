@@ -4,16 +4,13 @@ using UnityEngine;
 
 public class PauseMuton : MonoBehaviour 
 {
-
     Material material;
-    Transform transform;
     float timer = 0;
 
     // Start is called before the first frame update
     void Start()
     {
         material = GetComponent<MeshRenderer>().material;
-        transform = GetComponent<Transform>();
         transform.localScale = new Vector3(.75f, .75f, .75f);
     }
 
@@ -24,6 +21,5 @@ public class PauseMuton : MonoBehaviour
         var timer2 = timer/360f;
         transform.Rotate(timer2, timer2, timer2);
         material.SetFloat("_Timer", timer);
-        
     }
 }

@@ -1,15 +1,13 @@
 ﻿using System.Collections;
 using UnityEngine;
-using StarWriter.Core.Input;
 using System.Linq;
-using StarWriter.Core;
 
 public class Trail : MonoBehaviour, ICollidable
 {
     [SerializeField]
     private float fuelChange = -3f;
     private int scoreChange = 1;
-    [SerializeField] string uuid;
+    public string ownerId;
 
     [SerializeField] GameObject FossilBlock;
 
@@ -25,7 +23,6 @@ public class Trail : MonoBehaviour, ICollidable
     private static GameObject container;
     private MeshRenderer meshRenderer;
     private BoxCollider blockCollider;
-
 
     // TODO: why are we doing this? The scene is getting reloaded, so shouldn't the container get voided out that way...
     // Wait a minute... is this to account for the 'DontDestroyOnLoad(container) line further down?
@@ -76,8 +73,6 @@ public class Trail : MonoBehaviour, ICollidable
             blockCollider.size = finalColliderScale * size;
             yield return null;
         }
-
-        
     }
 
     void OnTriggerEnter(Collider other)
@@ -101,25 +96,37 @@ public class Trail : MonoBehaviour, ICollidable
 
             //// Do Impact Stuff
             var ship = other.transform.parent.parent.gameObject;
-            
+
+            if (ownerId == ship.GetComponent<Player>().PlayerUUID)
+            {
+                Debug.Log($"You hit you're own tail: {ownerId}");
+            }
+            else
+            {
+                Debug.Log($"Player ({ship.GetComponent<Player>().PlayerUUID}) just gave player({ownerId}) a point via tail collision");
+                AddToScore?.Invoke(ownerId, scoreChange);
+            }
+
+            var impactVector = ship.transform.forward * ship.GetComponent<ShipData>().speed;
+
+            // Make exploding block
+            var explodingBlock = Instantiate<GameObject>(FossilBlock);
+            explodingBlock.transform.position = transform.position;
+            explodingBlock.transform.localEulerAngles = transform.localEulerAngles;
+            explodingBlock.transform.localScale = transform.localScale;
+            explodingBlock.GetComponent<Renderer>().material = new Material(material);
+            explodingBlock.GetComponent<BlockImpact>().HandleImpact(impactVector, "Player");
+
             //// Player Hit
             if (ship == GameObject.FindWithTag("Player"))
             {
                 // TODO: for now, we're only turning off collision on the player. In the future, we want AI ships to explode and all that too
-                other.transform.parent.parent.GetComponent<Player>().ToggleCollision(false);
+                // TODO: turned off collision toggling for now - need to reintroduce into death sequence somewhere else
+                //other.transform.parent.parent.GetComponent<Player>().ToggleCollision(false);
 
-                var impactVector = ship.transform.forward * ship.GetComponent<ShipData>().speed;
-
-                // Make exploding block
-                var explodingBlock = Instantiate<GameObject>(FossilBlock);
-                explodingBlock.transform.position = transform.position;
-                explodingBlock.transform.localEulerAngles = transform.localEulerAngles;
-                explodingBlock.transform.localScale = transform.localScale;
-                explodingBlock.GetComponent<Renderer>().material = new Material(material);
-                explodingBlock.GetComponent<BlockImpact>().HandleImpact(impactVector, "Player");
-
-                OnTrailCollision?.Invoke(ship.GetComponent<Player>().PlayerUUID, fuelChange);
-                AddToScore?.Invoke(uuid, scoreChange);
+                // TODO: currently AI fuel levels are not impacted when they collide with a trail
+                OnTrailCollision?.Invoke(ownerId, fuelChange);
+                
                 HapticController.PlayBlockCollisionHaptics();
             }
         }

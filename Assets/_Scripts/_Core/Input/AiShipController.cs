@@ -25,10 +25,8 @@ namespace StarWriter.Core.Input
         // Start is called before the first frame update
         void Start()
         {
-            
             lerp = defaultLerp;
             throttle = defaultThrottle;
-            
         }
 
         // Update is called once per frame
@@ -42,7 +40,6 @@ namespace StarWriter.Core.Input
                                                          lerp/distance.magnitude);
             lerp += lerpIncrease;
             throttle += throttleIncrease;
-            
 
             //Move ship forward
             Vector3 flowVector = flowFieldData.FlowVector(transform);
@@ -51,6 +48,5 @@ namespace StarWriter.Core.Input
             shipTransform.position += shipTransform.forward * Time.deltaTime * throttle + flowVector;
             speed = throttle;
         }
-
     }
 }

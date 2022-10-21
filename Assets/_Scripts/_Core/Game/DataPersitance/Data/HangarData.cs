@@ -1,6 +1,4 @@
-using System.Collections;
 using System.Collections.Generic;
-using UnityEngine;
 
 [System.Serializable]
 public struct PlayerBuild
@@ -14,7 +12,7 @@ public struct PlayerBuild
         Pilot = pilot;
         Ship = ship;
         Trail = trail;
-    } 
+    }
 }
 
 [System.Serializable]
@@ -34,20 +32,5 @@ public class HangarData
         PlayerBuilds.Add("DefaultPlayerBuild001", DefaultPlayerBuild001);
         PlayerBuilds.Add("DefaultPlayerBuild002", DefaultPlayerBuild002);
         PlayerBuilds.Add("DefaultPlayerBuild003", DefaultPlayerBuild003);
-
     }
-
-    //public void AddCustomPlayerBuild(string buildName, string pilot, string ship, string trail)
-    //{
-    //    PlayerBuild newPlayerBuild = new PlayerBuild(pilot, ship, trail);
-    //    PlayerBuilds.Add(buildName, newPlayerBuild);
-    //}
-
-    //public void RemoveCustomPlayerBuild(string buildName)
-    //{
-    //    if (buildName == "DefaultPlayerBuild001" || buildName == "DefaultPlayerBuild002" || buildName == "DefaultPlayerBuild003") 
-    //        return;
-
-    //    PlayerBuilds.Remove(buildName);
-    //}
 }

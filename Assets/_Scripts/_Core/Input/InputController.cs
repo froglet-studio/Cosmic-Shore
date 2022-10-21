@@ -193,8 +193,6 @@ namespace StarWriter.Core.Input
                 rightTouch.x = Gamepad.current.rightStick.x.ReadValue();
                 rightTouch.y = Gamepad.current.rightStick.y.ReadValue();
 
-                Debug.Log($"right touch.x: {Gamepad.current.rightStick.x.ReadValue()}");
-
                 float xSum = Ease(rightTouch.x + leftTouch.x);
                 float ySum = Ease(rightTouch.y + leftTouch.y);
                 float xDiff = (leftTouch.x - rightTouch.x + 2.1f) / 4.1f;

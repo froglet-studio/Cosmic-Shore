@@ -2,12 +2,14 @@ using UnityEngine;
 using TMPro;
 using StarWriter.Core;
 using static StarWriter.Core.GameSetting;
+using System.Collections.Generic;
 
 public class ScoringManager : MonoBehaviour
 {
     [SerializeField] int extendedLifeScore;
     [SerializeField] int extendedLifeHighScore;
 
+    Dictionary<string, int> Scores = new Dictionary<string, int>();
     static int score = 0;
     static bool firstLife = true;
     static float bedazzleThresholdPercentage = 0.8f;
@@ -47,9 +49,17 @@ public class ScoringManager : MonoBehaviour
 
     private void UpdateScore(string uuid, int amount)
     {
-        if (uuid == "admin") { 
-            score += amount; 
+        if (!Scores.ContainsKey(uuid))
+            Scores.Add(uuid, 0);
+
+        Scores[uuid] += amount;
+        if (uuid == "admin")
+        {
+            score += amount;
         }
+
+        foreach (var key in Scores.Keys)
+            Debug.Log($"Scores: {key}, {Scores[key]}");
 
         UpdateScoreBoard(score);
     }
@@ -57,6 +67,9 @@ public class ScoringManager : MonoBehaviour
     private void ResetScoreAndDeathCount()
     {
         Debug.Log("ScoringManager.OnPlay");
+        foreach (var key in Scores.Keys)
+            Scores[key] = 0;
+
         score = 0;
         firstLife = true;
         newHighScore = false;
@@ -73,7 +86,7 @@ public class ScoringManager : MonoBehaviour
             PlayerPrefs.SetInt(PlayerPrefKeys.highScore.ToString(), score);
             newHighScore = true;
         }
-        
+
         if (firstLife)
         {
             if (PlayerPrefs.GetInt(PlayerPrefKeys.firstLifeHighScore.ToString()) * bedazzleThresholdPercentage <= score)

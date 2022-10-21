@@ -3,10 +3,10 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-
+[RequireComponent(typeof(Player))]
 public class TrailSpawner : MonoBehaviour
 {
-    [SerializeField] GameObject trail;
+    [SerializeField] Trail trail;
 
     public float offset = 0f;
     public float trailPeriod = .1f;
@@ -14,9 +14,11 @@ public class TrailSpawner : MonoBehaviour
     public float waitTime = .5f;            // Time until the trail block appears - camera dependent
     public float startDelay = 2.1f;
 
+    private Player player;
+
     static GameObject TrailContainer;
 
-    readonly Queue<GameObject> trailList = new();
+    readonly Queue<Trail> trailList = new();
     bool spawnerEnabled = true;
 
     private void OnEnable()
@@ -42,6 +44,8 @@ public class TrailSpawner : MonoBehaviour
             TrailContainer = new GameObject();
             TrailContainer.name = "TrailContainer";
         }
+
+        player = GetComponent<Player>();
 
         StartCoroutine(SpawnTrailCoroutine());
     }
@@ -86,6 +90,7 @@ public class TrailSpawner : MonoBehaviour
             if (Time.deltaTime < .1f && spawnerEnabled)
             {
                 var Block = Instantiate(trail);
+                Block.ownerId = player.PlayerUUID;
                 Block.transform.SetPositionAndRotation(transform.position - transform.forward * offset, transform.rotation);
                 Block.transform.parent = TrailContainer.transform;
                 Block.GetComponent<Trail>().waitTime = waitTime;

@@ -79,6 +79,9 @@ public class FlowCrystal : MonoBehaviour
         // TODO: let's refactor this so we're not locked into this ship structure
         GameObject ship = other.transform.parent.parent.gameObject;
 
+        if (AddToScore != null)
+            AddToScore(ship.GetComponent<Player>().PlayerUUID, scoreBonus);
+
         if (ship == GameObject.FindWithTag("Player"))
         {
             // Player Collision
@@ -89,8 +92,7 @@ public class FlowCrystal : MonoBehaviour
 
             // Update fuel bar and currentScore
             OnMutonPopUpCollision(ship.GetComponent<Player>().PlayerUUID, fuelAmount); // excess Fuel flows into currentScore
-            if (AddToScore != null)
-                AddToScore(ship.GetComponent<Player>().PlayerUUID, scoreBonus);
+
 
             OnMutonCollision?.Invoke(ship, mutonDetails);
         }

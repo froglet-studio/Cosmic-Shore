@@ -1,10 +1,7 @@
-﻿using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 
 [System.Serializable]
 public class ShipData : MonoBehaviour
 {
     public float speed;
-    
 }
-                    
