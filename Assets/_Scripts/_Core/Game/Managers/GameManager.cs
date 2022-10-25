@@ -82,12 +82,25 @@ namespace StarWriter.Core
 
             DataPersistenceManager.Instance.LoadGameData();
         }
+
+        bool GamepadCameraFlip = false;
+
         void Update()
         {
             // We don't want the phone flip to flop like a fish out of water if the phone is mostly parallel to the ground
-            if (Mathf.Abs(UnityEngine.Input.acceleration.y) < phoneFlipThreshold) return;
 
-            if (UnityEngine.Input.acceleration.y < 0)
+            if (UnityEngine.InputSystem.Gamepad.current.rightTrigger.wasPressedThisFrame)
+            {
+                GamepadCameraFlip = !GamepadCameraFlip;
+                Debug.Log($"Gamepad Camera Flip {GamepadCameraFlip}");
+            }
+
+            //if (Mathf.Abs(UnityEngine.Input.acceleration.y) < phoneFlipThreshold) return;
+
+            
+                
+
+            if (UnityEngine.Input.acceleration.y < 0 || GamepadCameraFlip)
             {
                 currentOrientation = ScreenOrientation.LandscapeLeft;
                 PhoneFlipState = true;

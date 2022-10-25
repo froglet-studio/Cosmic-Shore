@@ -34,7 +34,7 @@ MonoBehaviour:
   active: 1
   distance:
     m_OverrideState: 1
-    m_Value: 1
+    m_Value: 0.709
   cropToFit:
     m_OverrideState: 0
     m_Value: 1
@@ -75,6 +75,7 @@ MonoBehaviour:
   dirtTexture:
     m_OverrideState: 0
     m_Value: {fileID: 0}
+    dimension: 1
   dirtIntensity:
     m_OverrideState: 0
     m_Value: 953
@@ -125,13 +126,13 @@ MonoBehaviour:
     m_Value: 0
   focusDistance:
     m_OverrideState: 1
-    m_Value: 80.8
+    m_Value: 31.6
   aperture:
     m_OverrideState: 1
-    m_Value: 2.8
+    m_Value: 16.3
   focalLength:
     m_OverrideState: 1
-    m_Value: 210
+    m_Value: 120
   bladeCount:
     m_OverrideState: 0
     m_Value: 5

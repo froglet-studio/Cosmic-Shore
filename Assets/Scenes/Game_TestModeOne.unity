@@ -548,7 +548,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 909fb5cbbca8c4549b5a9df56d837e55, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  trail: {fileID: 5776304996075792891, guid: 053064d82123e8b49bfb29870b5c0715, type: 3}
+  trail: {fileID: 4563009547826722997, guid: 053064d82123e8b49bfb29870b5c0715, type: 3}
   offset: 0
   trailPeriod: 0.5
   trailLength: 40
@@ -1294,7 +1294,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f35ad70dcbb4e3b47af654e91d9387f8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  fuelAmount: 2
+  fuelAmount: 0.2
+  direction: {x: 0.63, y: 0, z: 0}
 --- !u!54 &1485816438
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -1585,17 +1586,17 @@ PrefabInstance:
     - target: {fileID: 1137253009388046634, guid: c8544725eea141847982b286866c858d,
         type: 3}
       propertyPath: m_LocalScale.x
-      value: 30
+      value: 15
       objectReference: {fileID: 0}
     - target: {fileID: 1137253009388046634, guid: c8544725eea141847982b286866c858d,
         type: 3}
       propertyPath: m_LocalScale.y
-      value: 30
+      value: 15
       objectReference: {fileID: 0}
     - target: {fileID: 1137253009388046634, guid: c8544725eea141847982b286866c858d,
         type: 3}
       propertyPath: m_LocalScale.z
-      value: 30
+      value: 15
       objectReference: {fileID: 0}
     - target: {fileID: 1137253009388046634, guid: c8544725eea141847982b286866c858d,
         type: 3}
@@ -2041,7 +2042,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 909fb5cbbca8c4549b5a9df56d837e55, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  trail: {fileID: 5776304996075792891, guid: 4e280247faa1d154fa25d1e92df405dc, type: 3}
+  trail: {fileID: 4563009547826722997, guid: 4e280247faa1d154fa25d1e92df405dc, type: 3}
   offset: 0
   trailPeriod: 0.9
   trailLength: 40
