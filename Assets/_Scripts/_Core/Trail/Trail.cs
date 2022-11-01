@@ -2,7 +2,7 @@
 using UnityEngine;
 using System.Linq;
 
-public class Trail : MonoBehaviour, ICollidable
+public class Trail : MonoBehaviour
 {
     [SerializeField]
     private float fuelChange = -3f;
@@ -10,6 +10,8 @@ public class Trail : MonoBehaviour, ICollidable
     public string ownerId;
 
     [SerializeField] GameObject FossilBlock;
+    [SerializeField] GameObject ParticleEffect;
+
 
     [SerializeField] Material material;
 
@@ -75,6 +77,14 @@ public class Trail : MonoBehaviour, ICollidable
         }
     }
 
+    public void InstantiateParticle()
+    {
+        Debug.Log($"{this.name}, Instantiating Particle Emitter");
+        var particle = Instantiate(ParticleEffect);
+        particle.transform.parent = transform;
+        particle.transform.localPosition = Vector3.zero;
+        particle.transform.localScale = new Vector3(3, 3, 3);
+    }
     void OnTriggerEnter(Collider other)
     {
         if (gameObject != null && other.isTrigger == false) //don't want to catch the skimmer collider
@@ -82,6 +92,7 @@ public class Trail : MonoBehaviour, ICollidable
             // We used to destroy the object, but we were throwing null pointers later in the code when Destroying blocks that expired
             // Instead, let's just disable the collider and renderer and let the trailspawner clean up the object lazily
             //Destroy(gameObject);
+
             gameObject.GetComponent<BoxCollider>().enabled = false;
             gameObject.GetComponent<MeshRenderer>().enabled = false;
             Collide(other);

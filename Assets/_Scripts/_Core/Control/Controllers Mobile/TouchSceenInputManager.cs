@@ -43,7 +43,7 @@ public class TouchSceenInputManager : SingletonPersistent<TouchSceenInputManager
         if (OnStartTouch != null)
         {
             Debug.Log("Touch Started");
-            OnStartTouch(Utils.ScreenToWorld2D(mainCamera, touchControls.Touch.PrimaryPosition.ReadValue<Vector2>()), (float)ctx.startTime);
+            OnStartTouch(ScreenToWorld2D(mainCamera, touchControls.Touch.PrimaryPosition.ReadValue<Vector2>()), (float)ctx.startTime);
         }
         
     }
@@ -53,14 +53,8 @@ public class TouchSceenInputManager : SingletonPersistent<TouchSceenInputManager
         if (OnEndTouch != null)
         {
             Debug.Log("Touch Ended");
-            OnEndTouch(Utils.ScreenToWorld2D(mainCamera, touchControls.Touch.PrimaryPosition.ReadValue<Vector2>()), (float)ctx.time);
+            OnEndTouch(ScreenToWorld2D(mainCamera, touchControls.Touch.PrimaryPosition.ReadValue<Vector2>()), (float)ctx.time);
         }
-    }
-
-    //Returns current primary touch position for drawing
-    private Vector2 PrimaryPosition() 
-    {
-        return Utils.ScreenToWorld2D(mainCamera, touchControls.Touch.PrimaryPosition.ReadValue<Vector2>());
     }
 
     private void OnDisable()
@@ -70,6 +64,10 @@ public class TouchSceenInputManager : SingletonPersistent<TouchSceenInputManager
         touchControls.Disable();
         TouchSimulation.Disable();
     }
-
-
+    public static Vector3 ScreenToWorld2D(Camera camera, Vector3 position)
+    {
+        position.z = camera.nearClipPlane;
+        Debug.Log("Returned Position " + position);
+        return camera.ScreenToWorldPoint(position);
+    }
 }

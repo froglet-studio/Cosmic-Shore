@@ -117,7 +117,7 @@ namespace StarWriter.Core.Input
 
         void Update()
         {
-            if (PauseSystem.GetIsPaused()) return;
+            if (PauseSystem.Paused) return;
 
             // Convert two finger touch into values for displacement, speed, and ship animations
             ReceiveTouchInput();

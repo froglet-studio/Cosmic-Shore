@@ -22,8 +22,9 @@ public class FlowCrystal : MonoBehaviour
     public delegate void OnCollisionIncreaseScore(string uuid, int amount);
     public static event OnCollisionIncreaseScore AddToScore;
 
-    public delegate void MutonMove();
-    public static event MutonMove OnMutonMove;
+    // TODO: Commented out the below to remove console warning
+    //public delegate void MutonMove();
+    //public static event MutonMove OnMutonMove;
     #endregion
 
     #region Inspector Fields

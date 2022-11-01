@@ -1,7 +1,4 @@
 using StarWriter.Core.Audio;
-using System;
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class PlayerAudioManager : MonoBehaviour

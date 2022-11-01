@@ -12,8 +12,6 @@ namespace StarWriter.Core
     {
         public Player player;
 
-        private GameSetting gameSettings;
-
         public delegate void OnPlayGameEvent();
         public static event OnPlayGameEvent onPlayGame;
 
@@ -33,11 +31,11 @@ namespace StarWriter.Core
 
         public ScreenOrientation currentOrientation;
 
+        /* Singleton References */
+        GameSetting gameSettings;
         CameraManager cameraManager;
-
         AnalyticsManager analyticsManager;
 
-        private readonly float phoneFlipThreshold = .3f;
         private int deathCount = 0;
         public int DeathCount { get { return deathCount; } }
 
@@ -45,9 +43,7 @@ namespace StarWriter.Core
         string highScoreGameScene = "Game_HighScore";
         string gameTestModeOneGameScene = "Game_TestModeOne";
         string gameTestModeTwoGameScene = "Game_TestModeTwo";
-        string raceGameScene = "Game_Race";
         string tutorialGameScene = "Game_Tutorial";
-
         string ActiveGameScene = "";
 
         private void OnEnable()
@@ -83,6 +79,7 @@ namespace StarWriter.Core
             DataPersistenceManager.Instance.LoadGameData();
         }
 
+        //TODO: move this into inputcontroller
         bool GamepadCameraFlip = false;
 
         void Update()
@@ -97,9 +94,6 @@ namespace StarWriter.Core
 
             //if (Mathf.Abs(UnityEngine.Input.acceleration.y) < phoneFlipThreshold) return;
 
-            
-                
-
             if (UnityEngine.Input.acceleration.y < 0 || GamepadCameraFlip)
             {
                 currentOrientation = ScreenOrientation.LandscapeLeft;
@@ -113,6 +107,14 @@ namespace StarWriter.Core
                 onPhoneFlip(PhoneFlipState);
             }
         }
+        /// <summary>
+        /// Toggles the Gyro On/Off
+        /// </summary>
+        public void OnClickGyroToggleButton()
+        {
+            gameSettings.ChangeGyroEnabledStatus();
+        }
+
 
         public void OnClickTutorialButton()
         {
@@ -121,31 +123,15 @@ namespace StarWriter.Core
             SceneManager.LoadScene(tutorialGameScene);
         }
 
-        /// <summary>
-        /// Toggles the Gyro On/Off
-        /// </summary>
-        public void OnClickGyroToggleButton()
-        {
-            // Set gameSettings Gyro status
-            gameSettings.ChangeGyroEnabledStatus();
-        }
-
-        /// <summary>
-        /// Starts Tutorial or Game based on hasSkippedTutorial status
-        /// </summary>
         public void OnClickPlayButton()
         {
             deathCount = 0;
             analyticsManager.LogLevelStart();
             UnPauseGame();
-            //SceneManager.LoadScene(highScoreGameScene);
             ActiveGameScene = highScoreGameScene;
             SceneManager.LoadScene(highScoreGameScene); 
         }
 
-        /// <summary>
-        /// Starts Tutorial or Game based on hasSkippedTutorial status
-        /// </summary>
         public void OnClickTestGameModeOne()
         {
             deathCount = 0;
@@ -155,9 +141,6 @@ namespace StarWriter.Core
             SceneManager.LoadScene(gameTestModeOneGameScene);
         }
 
-        /// <summary>
-        /// Starts Tutorial or Game based on hasSkippedTutorial status
-        /// </summary>
         public void OnClickTestGameModeTwo()
         {
             deathCount = 0;
@@ -185,19 +168,9 @@ namespace StarWriter.Core
             Debug.Log("GameManager.ExtendGame");
             onExtendGamePlay?.Invoke();
 
-            // We disabled the player's colliders during the tail collision. let's turn them back on
-            //StartCoroutine(ToggleCollisionCoroutine());
-
-            // TODO: getting an error with the below line that timescale can only be set from the main thread,
-            // but the code works... so...
+            // TODO: getting an error with the below line that timescale can only be set from the main thread, but the code works... so...
             UnPauseGame();
         }
-
-        //IEnumerator ToggleCollisionCoroutine()
-        //{
-        //    yield return new WaitForSeconds(.5f);
-        //    player.ToggleCollision(true);
-        //}
 
         public static void EndGame()
         {
@@ -225,12 +198,12 @@ namespace StarWriter.Core
 
         public static void UnPauseGame()
         {
-            if (PauseSystem.GetIsPaused()) TogglePauseGame();
+            if (PauseSystem.Paused) TogglePauseGame();
         }
 
         public static void PauseGame()
         {
-            if (!PauseSystem.GetIsPaused()) TogglePauseGame();
+            if (!PauseSystem.Paused) TogglePauseGame();
         }
 
         public static void TogglePauseGame()

@@ -2,16 +2,11 @@
 
 public class PauseSystem
 {
-    static bool isPaused = false;
+    public static bool Paused { get; private set; }
 
     public static void TogglePauseGame()
     {
-        isPaused = !isPaused;
-        Time.timeScale = isPaused ? 0 : 1;
-    }
-
-    public static bool GetIsPaused()
-    {
-        return isPaused;
+        Paused = !Paused;
+        Time.timeScale = Paused ? 0 : 1;
     }
 }

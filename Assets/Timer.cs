@@ -1,9 +1,9 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using StarWriter.Core;
 using TMPro;
 
+// TODO: namespace
+// TODO: should this be in GameManager?
 public class Timer : MonoBehaviour
 {
     public float timeRemaining;
@@ -16,7 +16,6 @@ public class Timer : MonoBehaviour
         if (timeRemaining <= 0)
         {
             GameManager.EndGame();
-            
         }
     }
 }

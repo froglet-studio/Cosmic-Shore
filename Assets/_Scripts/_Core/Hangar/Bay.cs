@@ -9,7 +9,7 @@ namespace StarWriter.Core.HangerBuilder
     {
         Hangar hangar;
 
-        public PlayerBuild playerBuild;
+        public ShipConfiguration playerBuild;
 
         public bool pilotLoaded = false;
         public bool shipLoaded = false;
@@ -30,12 +30,11 @@ namespace StarWriter.Core.HangerBuilder
         void Start()
         {
             hangar = Hangar.Instance;
-            playerBuild = new PlayerBuild();
+            playerBuild = new ShipConfiguration();
             InitializeBay();
         }
         private void InitializeBay()
         {
-            TryToLoadPilot(hangar.GetCurrentPlayerBuildsPilot());
             TryToLoadShip(hangar.GetCurrentPlayerBuildShip());
             TryToLoadTrail(hangar.GetCurrentPlayerBuildTrail());
 

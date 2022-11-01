@@ -32,6 +32,9 @@ public class Skimmer : MonoBehaviour
         Debug.Log("skim collider: " + other.name);
         OnSkim?.Invoke(ship.GetComponent<Player>().PlayerUUID, fuelAmount);
 
+        var trail = other.GetComponent<Trail>();
+        if (trail != null) trail.InstantiateParticle();
+
         direction = Vector3.Lerp(direction, (transform.worldToLocalMatrix * (other.transform.position - transform.position)).normalized*100f,.05f);
         material.SetVector("_direction", direction);
     }

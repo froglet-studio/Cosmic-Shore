@@ -1,7 +1,7 @@
 using System.Collections;
 using UnityEngine;
 
-public class MainMenuTrail : MonoBehaviour, ICollidable
+public class MainMenuTrail : MonoBehaviour
 {
     [SerializeField]
     GameObject FossilBlock;

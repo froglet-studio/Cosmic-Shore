@@ -26,7 +26,7 @@ namespace StarWriter.Core.NPC.Control
 
         void Update()
         {
-            if (PauseSystem.GetIsPaused())
+            if (PauseSystem.Paused)
                 return;
 
             distance = Vector3.Distance(target.transform.position, transform.position);

@@ -1,18 +1,12 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace StarWriter.Movement
 {
     public class RotateAroundOrigin : MonoBehaviour
     {
-        [SerializeField]
-        private float speed = 2;
-        [SerializeField]
-        private Vector3 rotationDirection = Vector3.up;
+        [SerializeField] float speed = 2;
+        [SerializeField] Vector3 rotationDirection = Vector3.up;
 
-
-        // Update is called once per frame
         void Update()
         {
             float speedT = speed * Time.deltaTime;
@@ -21,4 +15,3 @@ namespace StarWriter.Movement
         }
     }
 }
-

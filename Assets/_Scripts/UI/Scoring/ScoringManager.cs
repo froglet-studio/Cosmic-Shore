@@ -8,7 +8,10 @@ public class ScoringManager : MonoBehaviour
 {
     [SerializeField] int extendedLifeScore;
     [SerializeField] int extendedLifeHighScore;
+    [SerializeField] List<GameObject> ScoreContainers;
+    //[SerializeField] float ScoreVerticalSpacing = 57.4f; //TODO: for dynamic scoring layout
 
+    Dictionary<string, GameObject> ScoreDisplays = new Dictionary<string, GameObject>(); // TODO: not sure I like this
     Dictionary<string, int> Scores = new Dictionary<string, int>();
     static int score = 0;
     static bool firstLife = true;
@@ -41,6 +44,19 @@ public class ScoringManager : MonoBehaviour
         Trail.AddToScore -= UpdateScore;
     }
 
+    private void Start()
+    {
+        // Initialize score panel to be blank
+        foreach (var sc in ScoreContainers)
+        {
+            var playerName = sc.transform.GetChild(0).GetComponent<TMP_Text>();
+            playerName.text = "";
+
+            var playerScore = sc.transform.GetChild(1).GetComponent<TMP_Text>();
+            playerScore.text = "";
+        }
+    }
+
     public void UpdateScoreBoard(int value)
     {
         Debug.Log($"UpdateScoreBoard - value:{value}");
@@ -50,16 +66,25 @@ public class ScoringManager : MonoBehaviour
     private void UpdateScore(string uuid, int amount)
     {
         if (!Scores.ContainsKey(uuid))
+        {
             Scores.Add(uuid, 0);
+            ScoreDisplays.Add(uuid, ScoreContainers[Scores.Count - 1]);
+            ScoreContainers[Scores.Count - 1].transform.GetChild(0).GetComponent<TMP_Text>().text = uuid;
+            ScoreContainers[Scores.Count - 1].transform.GetChild(1).GetComponent<TMP_Text>().text = "000";
+        }
 
         Scores[uuid] += amount;
+        ScoreDisplays[uuid].transform.GetChild(1).GetComponent<TMP_Text>().text = Scores[uuid].ToString("D3");
+
         if (uuid == "admin")
         {
             score += amount;
         }
 
         foreach (var key in Scores.Keys)
+        {
             Debug.Log($"Scores: {key}, {Scores[key]}");
+        }
 
         UpdateScoreBoard(score);
     }
