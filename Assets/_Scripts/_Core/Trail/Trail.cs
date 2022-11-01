@@ -118,6 +118,7 @@ public class Trail : MonoBehaviour
                 AddToScore?.Invoke(ownerId, scoreChange);
             }
 
+            // TODO: null pointers thrown here
             var impactVector = ship.transform.forward * ship.GetComponent<ShipData>().speed;
 
             // Make exploding block

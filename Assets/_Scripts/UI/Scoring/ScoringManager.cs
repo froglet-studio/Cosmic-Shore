@@ -8,9 +8,10 @@ public class ScoringManager : MonoBehaviour
 {
     [SerializeField] int extendedLifeScore;
     [SerializeField] int extendedLifeHighScore;
+    [SerializeField] GameObject WinnerDisplay;
     [SerializeField] List<GameObject> ScoreContainers;
     //[SerializeField] float ScoreVerticalSpacing = 57.4f; //TODO: for dynamic scoring layout
-
+    
     Dictionary<string, GameObject> ScoreDisplays = new Dictionary<string, GameObject>(); // TODO: not sure I like this
     Dictionary<string, int> Scores = new Dictionary<string, int>();
     static int score = 0;
@@ -21,6 +22,7 @@ public class ScoringManager : MonoBehaviour
     private static bool firstLifeThresholdBeat;
 
     public TextMeshProUGUI scoreText;
+    private bool RoundEnded = false;
 
     public bool FirstLife { get => firstLife; set => firstLife = value; }
 
@@ -55,6 +57,8 @@ public class ScoringManager : MonoBehaviour
             var playerScore = sc.transform.GetChild(1).GetComponent<TMP_Text>();
             playerScore.text = "";
         }
+
+        WinnerDisplay.SetActive(false);
     }
 
     public void UpdateScoreBoard(int value)
@@ -65,6 +69,9 @@ public class ScoringManager : MonoBehaviour
 
     private void UpdateScore(string uuid, int amount)
     {
+        if (RoundEnded)
+            return;
+
         if (!Scores.ContainsKey(uuid))
         {
             Scores.Add(uuid, 0);
@@ -95,10 +102,13 @@ public class ScoringManager : MonoBehaviour
         foreach (var key in Scores.Keys)
             Scores[key] = 0;
 
+        WinnerDisplay.SetActive(false);
+
         score = 0;
         firstLife = true;
         newHighScore = false;
         firstLifeThresholdBeat = false;
+        RoundEnded = false;
     }
 
     private void UpdateScoresAndDeathCount()
@@ -126,7 +136,29 @@ public class ScoringManager : MonoBehaviour
 
         PlayerPrefs.Save();
 
+        DisplayWinner();
+
+        // TODO: duplicate bookkeeping happening here - introduce different game modes?
         firstLife = false;
+        RoundEnded = true;
+    }
+
+    void DisplayWinner()
+    {
+        int winnersScore = 0;
+        string winnersName = "";
+        foreach (var key in Scores.Keys)
+        {
+            if (Scores[key] > winnersScore)
+            {
+                winnersScore = Scores[key];
+                winnersName = key;
+            }
+        }
+        WinnerDisplay.transform.GetChild(0).GetComponent<TMP_Text>().text = winnersName;
+        WinnerDisplay.transform.GetChild(1).GetComponent<TMP_Text>().text = winnersScore.ToString("D3");
+
+        WinnerDisplay.SetActive(true);
     }
 
     public static bool IsScoreBedazzleWorthy

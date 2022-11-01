@@ -405,6 +405,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   extendedLifeScore: 0
   extendedLifeHighScore: 0
+  WinnerDisplay: {fileID: 8546882570936324704}
+  ScoreContainers: []
   scoreText: {fileID: 3066695830731265341}
 --- !u!114 &1586480803
 MonoBehaviour:
@@ -7666,7 +7668,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 31c621618a2de9742abf00db4831f3d5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  timeRemaining: 300
+  timeRemaining: 15
   textMeshPro: {fileID: 6291447779667856171}
 --- !u!1 &2361241373521056997
 GameObject:
@@ -11483,6 +11485,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 174a813eb49343843b766d2fdc4e5eb5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!1 &8546882570936324704 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 8546882571848013447, guid: 087d2222a78ded24894cb53861ff6be4,
+    type: 3}
+  m_PrefabInstance: {fileID: 1448690919}
+  m_PrefabAsset: {fileID: 0}
 --- !u!114 &9108846037968746689 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 9108846036520057894, guid: 087d2222a78ded24894cb53861ff6be4,
