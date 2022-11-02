@@ -534,6 +534,7 @@ GameObject:
   - component: {fileID: 487984177}
   - component: {fileID: 487984176}
   - component: {fileID: 487984180}
+  - component: {fileID: 487984181}
   m_Layer: 0
   m_Name: BlueAI
   m_TagString: blue
@@ -623,6 +624,19 @@ MonoBehaviour:
   trailLength: 40
   waitTime: 0.1
   startDelay: 2
+--- !u!114 &487984181
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 487984174}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9846c9cd6cfac424797ca640ebcb7a04, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  speed: 0
 --- !u!4 &602055527 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 639495419069806266, guid: 41222ebb42ad82c4ca52a729935c79d3,
@@ -1974,6 +1988,7 @@ GameObject:
   - component: {fileID: 1892142151}
   - component: {fileID: 1892142158}
   - component: {fileID: 1892142159}
+  - component: {fileID: 1892142160}
   m_Layer: 0
   m_Name: RedAI
   m_TagString: red
@@ -2063,6 +2078,19 @@ MonoBehaviour:
   trailLength: 40
   waitTime: 0.3
   startDelay: 2
+--- !u!114 &1892142160
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1892142149}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9846c9cd6cfac424797ca640ebcb7a04, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  speed: 0
 --- !u!4 &1898590044 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 8350600879602490814, guid: 7fec532a729a8b648a8de2399d1b918a,

@@ -122,7 +122,7 @@ public class Trail : MonoBehaviour
             var impactVector = ship.transform.forward * ship.GetComponent<ShipData>().speed;
 
             // Make exploding block
-            var explodingBlock = Instantiate<GameObject>(FossilBlock);
+            var explodingBlock = Instantiate(FossilBlock);
             explodingBlock.transform.position = transform.position;
             explodingBlock.transform.localEulerAngles = transform.localEulerAngles;
             explodingBlock.transform.localScale = transform.localScale;
