@@ -766,6 +766,7 @@ GameObject:
   - component: {fileID: 709728282}
   - component: {fileID: 709728281}
   - component: {fileID: 709728279}
+  - component: {fileID: 709728283}
   - component: {fileID: 709728278}
   - component: {fileID: 709728277}
   - component: {fileID: 709728276}
@@ -794,7 +795,6 @@ MonoBehaviour:
   lerpIncrease: 0.004
   throttle: 0
   lerp: 0
-  shipTransform: {fileID: 709728282}
   muton: {fileID: 3882826178379139581}
   speed: 0
   flowFieldData: {fileID: 1243749159}
@@ -875,6 +875,20 @@ Transform:
   m_Father: {fileID: 1243749158}
   m_RootOrder: 3
   m_LocalEulerAnglesHint: {x: 0, y: -23.83, z: 0}
+--- !u!114 &709728283
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 709728275}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9846c9cd6cfac424797ca640ebcb7a04, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  speed: 0
+  boost: 0
 --- !u!1 &741509295
 GameObject:
   m_ObjectHideFlags: 0
@@ -4255,7 +4269,6 @@ MonoBehaviour:
   lerpIncrease: 0.0015
   throttle: 0
   lerp: 0
-  shipTransform: {fileID: 378015796163850468}
   muton: {fileID: 3882826178379139581}
   speed: 0
   flowFieldData: {fileID: 1243749159}
@@ -4268,6 +4281,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 378015796163850468}
+  - component: {fileID: 378015796163850479}
   - component: {fileID: 378015796163850469}
   - component: {fileID: 378015796163850467}
   - component: {fileID: 378015796163850465}
@@ -4298,6 +4312,20 @@ MonoBehaviour:
   playerColor: {r: 0, g: 0, b: 0, a: 1}
   playerShipPrefab: {fileID: 0}
   playerTrailPrefab: {fileID: 0}
+--- !u!114 &378015796163850479
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 378015796163850476}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9846c9cd6cfac424797ca640ebcb7a04, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  speed: 0
+  boost: 0
 --- !u!1 &595065266491999095
 GameObject:
   m_ObjectHideFlags: 0

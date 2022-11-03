@@ -15,7 +15,8 @@ namespace StarWriter.Core.Input
         public float throttle;
         public float lerp;
 
-        public Transform shipTransform;
+        ShipData shipData;
+
         [SerializeField] public Transform muton;
         Vector3 distance;
 
@@ -27,16 +28,17 @@ namespace StarWriter.Core.Input
         {
             lerp = defaultLerp;
             throttle = defaultThrottle;
+            shipData = GetComponent<ShipData>();
         }
 
         // Update is called once per frame
         void Update()
         {
-            distance = muton.position - shipTransform.position;
+            distance = muton.position - transform.position;
             //throttle = Mathf.Lerp(throttle, defaultThrottle, .1f);
 
-            shipTransform.localRotation = Quaternion.Lerp(shipTransform.localRotation,
-                                                         Quaternion.LookRotation(distance, shipTransform.up),
+            transform.localRotation = Quaternion.Lerp(transform.localRotation,
+                                                         Quaternion.LookRotation(distance, transform.up),
                                                          lerp/distance.magnitude);
             lerp += lerpIncrease;
             throttle += throttleIncrease;
@@ -45,8 +47,9 @@ namespace StarWriter.Core.Input
             Vector3 flowVector = flowFieldData.FlowVector(transform);
 
             //Vector3 flowVector = flowFieldData.FlowVector(transform);
-            shipTransform.position += shipTransform.forward * Time.deltaTime * throttle + flowVector;
+            transform.position += transform.forward * Time.deltaTime * throttle + flowVector;
             speed = throttle;
+            shipData.speed = speed;
         }
     }
 }

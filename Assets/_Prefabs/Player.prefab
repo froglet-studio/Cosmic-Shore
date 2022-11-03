@@ -9637,7 +9637,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   trail: {fileID: 4563009547826722997, guid: 5790c8c1f457a754baecca51ef90c82e, type: 3}
   offset: 0
-  trailPeriod: 0.15
+  trailPeriod: 6
   trailLength: 40
   waitTime: 0.5
   startDelay: 2

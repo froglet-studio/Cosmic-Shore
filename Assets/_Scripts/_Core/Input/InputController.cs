@@ -359,11 +359,13 @@ namespace StarWriter.Core.Input
             if (value < threshold)
             {
                 speed = Mathf.Lerp(speed, xDiff * throttleScaler*boost + defaultThrottle, lerpAmount * Time.deltaTime);
+                shipData.boost = true;
                 OnBoost?.Invoke(uuid, fuelAmount);
             }
             else
             {
                 Throttle(xDiff);
+                shipData.boost = false;
             }
         }
 

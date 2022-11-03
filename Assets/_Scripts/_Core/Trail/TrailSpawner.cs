@@ -9,12 +9,13 @@ public class TrailSpawner : MonoBehaviour
     [SerializeField] Trail trail;
 
     public float offset = 0f;
-    public float trailPeriod = .1f;
+    public float trailPeriod = 4f;
     public float trailLength = 20;
     public float waitTime = .5f;            // Time until the trail block appears - camera dependent
     public float startDelay = 2.1f;
 
     private Player player;
+    ShipData shipData;
 
     static GameObject TrailContainer;
 
@@ -46,6 +47,7 @@ public class TrailSpawner : MonoBehaviour
         }
 
         player = GetComponent<Player>();
+        shipData = GetComponent<ShipData>();
 
         StartCoroutine(SpawnTrailCoroutine());
     }
@@ -95,14 +97,16 @@ public class TrailSpawner : MonoBehaviour
                 Block.transform.parent = TrailContainer.transform;
                 Block.GetComponent<Trail>().waitTime = waitTime;
 
-                trailList.Enqueue(Block);
-                if (trailList.Count > trailLength / trailPeriod)
-                {
-                    StartCoroutine(ShrinkTrailCoroutine());
-                }
+                //trailList.Enqueue(Block);
+                //if (trailList.Count > trailLength / trailPeriod)
+                //{
+                //    StartCoroutine(ShrinkTrailCoroutine());
+                //}
             }
-
-            yield return new WaitForSeconds(trailPeriod);
+            if (shipData.boost)
+                yield return new WaitForSeconds(trailPeriod / (shipData.speed * 3f));
+            else
+                yield return new WaitForSeconds(trailPeriod / shipData.speed);
         }
     }
 

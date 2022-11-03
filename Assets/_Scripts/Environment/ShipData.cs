@@ -4,4 +4,5 @@
 public class ShipData : MonoBehaviour
 {
     public float speed;
+    public bool boost;
 }
