@@ -4,6 +4,7 @@ using TailGlider.Utility.Singleton;
 using UnityEngine.Advertisements;
 using System.Collections;
 using StarWriter.Core.Audio;
+using UnityEngine.InputSystem;
 
 namespace StarWriter.Core
 {
@@ -85,12 +86,15 @@ namespace StarWriter.Core
         void Update()
         {
             // We don't want the phone flip to flop like a fish out of water if the phone is mostly parallel to the ground
-
-            if (UnityEngine.InputSystem.Gamepad.current.rightTrigger.wasPressedThisFrame)
+            if (Gamepad.current != null)
             {
-                GamepadCameraFlip = !GamepadCameraFlip;
-                Debug.Log($"Gamepad Camera Flip {GamepadCameraFlip}");
+                if (UnityEngine.InputSystem.Gamepad.current.rightTrigger.wasPressedThisFrame)
+                {
+                    GamepadCameraFlip = !GamepadCameraFlip;
+                    Debug.Log($"Gamepad Camera Flip {GamepadCameraFlip}");
+                }
             }
+                
 
             //if (Mathf.Abs(UnityEngine.Input.acceleration.y) < phoneFlipThreshold) return;
 
