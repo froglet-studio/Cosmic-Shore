@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.InputSystem;
 
 public class Controls : MonoBehaviour
 {
@@ -20,6 +21,7 @@ public class Controls : MonoBehaviour
         initialPos = transform.position;
         image = GetComponent<Image>();
         image.sprite = InactiveImage;
+        gameObject.SetActive(Gamepad.current == null); //turn off "UI controls" if we have a gamepad
     }
 
     void Update()
