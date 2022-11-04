@@ -554,14 +554,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a58bf4fb65afa704194fe9e28e67d58d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  defaultThrottle: 15
-  defaultLerp: 0.035
-  throttleIncrease: 0.02
-  lerpIncrease: 0.004
+  defaultThrottle: 14
+  defaultLerp: 0.03
+  throttleIncrease: 0.03
+  lerpIncrease: 0.019
   throttle: 0
   lerp: 0
-  raycastHeight: 0
-  raycastWidth: 0
+  raycastHeight: 2
+  raycastWidth: 2
   muton: {fileID: 430359312}
   speed: 0
   flowFieldData: {fileID: 639495419634095585}
@@ -2109,14 +2109,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a58bf4fb65afa704194fe9e28e67d58d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  defaultThrottle: 20
-  defaultLerp: 0.035
-  throttleIncrease: 0.02
-  lerpIncrease: 0.003
+  defaultThrottle: 14
+  defaultLerp: 0.03
+  throttleIncrease: 0.03
+  lerpIncrease: 0.019
   throttle: 0
   lerp: 0
-  raycastHeight: 0
-  raycastWidth: 0
+  raycastHeight: 2
+  raycastWidth: 2
   muton: {fileID: 430359312}
   speed: 0
   flowFieldData: {fileID: 639495419634095585}
