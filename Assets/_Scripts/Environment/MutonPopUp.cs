@@ -117,6 +117,8 @@ public class MutonPopUp : MonoBehaviour
 
         // Play SFX sound
         AudioSource audioSource = GetComponent<AudioSource>();
+        if (audioSource == null) Debug.LogWarning("WTF, audioSource is null");
+        if (AudioSystem.Instance == null) Debug.LogWarning("WTF, AudioSystem.Instance is null");
         AudioSystem.Instance.PlaySFXClip(audioSource.clip, audioSource);
 
         // Move the muton

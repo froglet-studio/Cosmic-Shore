@@ -15,7 +15,17 @@ namespace StarWriter.Core.Input
         public float throttle;
         public float lerp;
 
+        [SerializeField] float raycastHeight;
+        [SerializeField] float raycastWidth;
+
+
+
         ShipData shipData;
+
+        RaycastHit hit;
+        float maxDistance = 20f;
+
+        //RaycastHit hit;
 
         [SerializeField] public Transform muton;
         Vector3 distance;
@@ -40,6 +50,13 @@ namespace StarWriter.Core.Input
             transform.localRotation = Quaternion.Lerp(transform.localRotation,
                                                          Quaternion.LookRotation(distance, transform.up),
                                                          lerp/distance.magnitude);
+
+
+            ShootLaser(new Vector3(raycastWidth, raycastHeight, 0));
+            ShootLaser(new Vector3(-raycastWidth, raycastHeight, 0));
+            ShootLaser(new Vector3(raycastWidth, -raycastHeight, 0));
+            ShootLaser(new Vector3(-raycastWidth, -raycastHeight, 0));
+
             lerp += lerpIncrease;
             throttle += throttleIncrease;
 
@@ -51,5 +68,19 @@ namespace StarWriter.Core.Input
             speed = throttle;
             shipData.speed = speed;
         }
+
+        void ShootLaser(Vector3 position)
+        {
+            if (Physics.Raycast(transform.position + position, transform.forward, out hit, maxDistance))
+
+            {
+                Debug.DrawLine(transform.position + position, hit.point, Color.red);
+            }
+            else
+            {
+                Debug.DrawLine(transform.position + position, (transform.position + position) + transform.forward * maxDistance, Color.green);
+            }
+        }
+
     }
 }

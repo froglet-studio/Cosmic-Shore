@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0, g: 0, b: 0, a: 1}
+  m_IndirectSpecularColor: {r: 0.0037926815, g: 0.0032631278, b: 0.0034446984, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -291,7 +291,7 @@ GameObject:
   - component: {fileID: 430359309}
   - component: {fileID: 430359314}
   - component: {fileID: 430359315}
-  m_Layer: 0
+  m_Layer: 2
   m_Name: Muton
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -556,10 +556,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   defaultThrottle: 15
   defaultLerp: 0.035
-  throttleIncrease: 0.001
+  throttleIncrease: 0.02
   lerpIncrease: 0.004
   throttle: 0
   lerp: 0
+  raycastHeight: 0
+  raycastWidth: 0
   muton: {fileID: 430359312}
   speed: 0
   flowFieldData: {fileID: 639495419634095585}
@@ -2109,10 +2111,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   defaultThrottle: 20
   defaultLerp: 0.035
-  throttleIncrease: 0.001
+  throttleIncrease: 0.02
   lerpIncrease: 0.003
   throttle: 0
   lerp: 0
+  raycastHeight: 0
+  raycastWidth: 0
   muton: {fileID: 430359312}
   speed: 0
   flowFieldData: {fileID: 639495419634095585}
