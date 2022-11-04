@@ -65,12 +65,12 @@ public class MainMenuMutonPopUp : MonoBehaviour
             if (ship == GameObject.FindWithTag("red"))
             {
                 StartCoroutine(spentMuton.GetComponent<Impact>().ImpactCoroutine(
-                    ship.transform.forward * ship.GetComponent<AiShipController>().speed/10, tempMaterial, "red"));
+                    ship.transform.forward * ship.GetComponent<ShipData>().speed/10, tempMaterial, "red"));
             }
             else
             {
                 StartCoroutine(spentMuton.GetComponent<Impact>().ImpactCoroutine(
-                        ship.transform.forward * ship.GetComponent<AiShipController>().speed/10, tempMaterial, "blue"));
+                        ship.transform.forward * ship.GetComponent<ShipData>().speed/10, tempMaterial, "blue"));
             }
 
 

@@ -103,7 +103,7 @@ public class FlowCrystal : MonoBehaviour
             if (ship == GameObject.FindWithTag("red"))
             {
                 StartCoroutine(spentMuton.GetComponent<Impact>().ImpactCoroutine(
-                    ship.transform.forward * ship.GetComponent<AiShipController>().speed, tempMaterial, "red"));
+                    ship.transform.forward * ship.GetComponent<ShipData>().speed, tempMaterial, "red"));
                 
                 //reset ship aggression
                 AiShipController controllerScript = ship.GetComponent<AiShipController>();
@@ -113,7 +113,7 @@ public class FlowCrystal : MonoBehaviour
             else
             {
                 StartCoroutine(spentMuton.GetComponent<Impact>().ImpactCoroutine(
-                     ship.transform.forward * ship.GetComponent<AiShipController>().speed, tempMaterial, "blue"));
+                     ship.transform.forward * ship.GetComponent<ShipData>().speed, tempMaterial, "blue"));
                 
                 //reset ship aggression
                 AiShipController controllerScript = ship.GetComponent<AiShipController>();
