@@ -795,6 +795,8 @@ MonoBehaviour:
   lerpIncrease: 0.004
   throttle: 0
   lerp: 0
+  raycastHeight: 0
+  raycastWidth: 0
   muton: {fileID: 3882826178379139581}
   speed: 0
   flowFieldData: {fileID: 1243749159}
@@ -2612,8 +2614,13 @@ PrefabInstance:
       objectReference: {fileID: 557720218}
     - target: {fileID: 4853709195325629897, guid: ba70c0f3eb077d44b8a538982d02dadc,
         type: 3}
+      propertyPath: m_Lens.NearClipPlane
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 4853709195325629897, guid: ba70c0f3eb077d44b8a538982d02dadc,
+        type: 3}
       propertyPath: m_Lens.m_SensorSize.x
-      value: 2.527297
+      value: 1.7777778
       objectReference: {fileID: 0}
     - target: {fileID: 4853709195505754398, guid: ba70c0f3eb077d44b8a538982d02dadc,
         type: 3}
@@ -4269,6 +4276,8 @@ MonoBehaviour:
   lerpIncrease: 0.0015
   throttle: 0
   lerp: 0
+  raycastHeight: 0
+  raycastWidth: 0
   muton: {fileID: 3882826178379139581}
   speed: 0
   flowFieldData: {fileID: 1243749159}

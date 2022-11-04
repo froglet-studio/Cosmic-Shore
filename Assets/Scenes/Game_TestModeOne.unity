@@ -555,9 +555,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   defaultThrottle: 14
-  defaultLerp: 0.03
-  throttleIncrease: 0.03
-  lerpIncrease: 0.019
+  defaultLerp: 0.01
+  throttleIncrease: 0.04
+  lerpIncrease: 0.005
   throttle: 0
   lerp: 0
   raycastHeight: 2
@@ -2109,10 +2109,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a58bf4fb65afa704194fe9e28e67d58d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  defaultThrottle: 14
-  defaultLerp: 0.03
+  defaultThrottle: 16
+  defaultLerp: 0.07
   throttleIncrease: 0.03
-  lerpIncrease: 0.019
+  lerpIncrease: 0.003
   throttle: 0
   lerp: 0
   raycastHeight: 2
