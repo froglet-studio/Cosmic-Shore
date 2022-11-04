@@ -798,7 +798,6 @@ MonoBehaviour:
   raycastHeight: 0
   raycastWidth: 0
   muton: {fileID: 3882826178379139581}
-  speed: 0
   flowFieldData: {fileID: 1243749159}
 --- !u!114 &709728277
 MonoBehaviour:
@@ -4279,7 +4278,6 @@ MonoBehaviour:
   raycastHeight: 0
   raycastWidth: 0
   muton: {fileID: 3882826178379139581}
-  speed: 0
   flowFieldData: {fileID: 1243749159}
 --- !u!1 &378015796163850476
 GameObject:

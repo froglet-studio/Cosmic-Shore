@@ -563,7 +563,6 @@ MonoBehaviour:
   raycastHeight: 2
   raycastWidth: 2
   muton: {fileID: 430359312}
-  speed: 0
   flowFieldData: {fileID: 639495419634095585}
 --- !u!114 &487984177
 MonoBehaviour:
@@ -1192,7 +1191,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f35ad70dcbb4e3b47af654e91d9387f8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  fuelAmount: 0.2
+  fuelAmount: 0.05
   direction: {x: 0.63, y: 0, z: 0}
 --- !u!54 &1485816438
 Rigidbody:
@@ -1204,7 +1203,7 @@ Rigidbody:
   serializedVersion: 2
   m_Mass: 1
   m_Drag: 0
-  m_AngularDrag: 0.05
+  m_AngularDrag: 0.08
   m_UseGravity: 0
   m_IsKinematic: 1
   m_Interpolate: 0
@@ -1567,6 +1566,11 @@ PrefabInstance:
       propertyPath: m_IsTrigger
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 1585530241021525606, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: rateOfFuelChange
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 1625897334281785461, guid: c8544725eea141847982b286866c858d,
         type: 3}
       propertyPath: m_AnchorMax.x
@@ -1613,6 +1617,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Layer
       value: 7
+      objectReference: {fileID: 0}
+    - target: {fileID: 3066695830212394130, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: maxFuelLevel
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 3173923880460936835, guid: c8544725eea141847982b286866c858d,
         type: 3}
@@ -2118,7 +2127,6 @@ MonoBehaviour:
   raycastHeight: 2
   raycastWidth: 2
   muton: {fileID: 430359312}
-  speed: 0
   flowFieldData: {fileID: 639495419634095585}
 --- !u!114 &1892142159
 MonoBehaviour:

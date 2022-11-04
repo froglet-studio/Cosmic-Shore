@@ -352,11 +352,11 @@ namespace StarWriter.Core.Input
 
         private void Special(float xDiff, float yDiff, float xSum, float ySum)
         {
-            float fuelAmount = -.0001f;
+            float fuelAmount = -.01f;
             float threshold = .1f;
-            float boost = 2.7f;
+            float boost = 4f;
             float value = (1 - xDiff) + Mathf.Abs(yDiff) + Mathf.Abs(ySum) + Mathf.Abs(xSum);
-            if (value < threshold)
+            if (value < threshold && FuelSystem.CurrentFuel>0)
             {
                 speed = Mathf.Lerp(speed, xDiff * throttleScaler*boost + defaultThrottle, lerpAmount * Time.deltaTime);
                 shipData.boost = true;
