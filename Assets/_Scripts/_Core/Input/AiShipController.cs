@@ -1,6 +1,9 @@
 using UnityEngine;
 using TMPro;
 using Cinemachine;
+using System.Collections;
+using System.Collections.Generic;
+using System;
 
 namespace StarWriter.Core.Input
 {
@@ -18,30 +21,45 @@ namespace StarWriter.Core.Input
         [SerializeField] float raycastHeight;
         [SerializeField] float raycastWidth;
 
-         enum corners 
+        enum Corner 
         {
-            topRight,
-            bottomRight,
-            bottomLeft,
-            topLeft,
+            TopRight,
+            BottomRight,
+            BottomLeft,
+            TopLeft,
         };
-
-        Vector3 topRight;
-        Vector3 bottomRight;
-        Vector3 bottomLeft;
-        Vector3 topLeft;
 
         ShipData shipData;
 
         RaycastHit hit;
         float maxDistance = 50f;
 
-        //RaycastHit hit;
-
         [SerializeField] public Transform muton;
         Vector3 distance;
 
         [SerializeField] FlowFieldData flowFieldData;
+
+        Dictionary<Corner, AvoidanceBehavior> CornerBehaviors;
+
+        #region Avoidance Stuff
+        const float Clockwise = -1;
+        const float CounterClockwise = 1;
+        struct AvoidanceBehavior
+        {
+            public float width;
+            public float height;
+            public float spin;
+            public Vector3 direction;
+
+            public AvoidanceBehavior(float width, float height, float spin, Vector3 direction)
+            {
+                this.width = width;
+                this.height = height;
+                this.spin = spin;
+                this.direction = direction;
+            }
+        }
+        #endregion
 
         // Start is called before the first frame update
         void Start()
@@ -50,7 +68,12 @@ namespace StarWriter.Core.Input
             throttle = defaultThrottle;
             shipData = GetComponent<ShipData>();
 
-            topRight = bottomRight = bottomLeft = topLeft = transform.forward;
+            CornerBehaviors = new Dictionary<Corner, AvoidanceBehavior>() {
+                { Corner.TopRight, new AvoidanceBehavior (raycastWidth, raycastHeight, Clockwise, Vector3.zero ) },
+                { Corner.BottomRight, new AvoidanceBehavior (raycastWidth, -raycastHeight, CounterClockwise, Vector3.zero ) },
+                { Corner.BottomLeft, new AvoidanceBehavior (-raycastWidth, -raycastHeight, Clockwise, Vector3.zero ) },
+                { Corner.TopLeft, new AvoidanceBehavior (-raycastWidth, raycastHeight, CounterClockwise, Vector3.zero ) }
+            };
         }
 
         // Update is called once per frame
@@ -64,18 +87,12 @@ namespace StarWriter.Core.Input
                                                          Quaternion.LookRotation(distance, transform.up),
                                                          lerp/distance.magnitude);
 
-            //rotate away from blocks
-            ShootLaser(raycastWidth * transform.right + raycastHeight * transform.up, (int)corners.topRight);
-            transform.localRotation = TurnAway(topRight, -transform.up - (transform.right / topRight.magnitude));
-
-            ShootLaser(raycastWidth * transform.right - raycastHeight * transform.up, (int)corners.bottomRight);
-            transform.localRotation = TurnAway(bottomRight, -transform.up + (transform.right / topRight.magnitude));
-
-            ShootLaser(-raycastWidth * transform.right - raycastHeight * transform.up, (int)corners.bottomLeft);
-            transform.localRotation = TurnAway(bottomLeft, -transform.up - (transform.right / topRight.magnitude));
-
-            ShootLaser(-raycastWidth * transform.right + raycastHeight * transform.up, (int)corners.topLeft);
-            transform.localRotation = TurnAway(topLeft, -transform.up + (transform.right / topRight.magnitude));
+            foreach (Corner corner in Enum.GetValues(typeof(Corner)))
+            {
+                var behavior = CornerBehaviors[corner];
+                behavior.direction = ShootLaser(behavior.width * transform.right + behavior.height * transform.up);
+                transform.localRotation = TurnAway(behavior.direction, -transform.up + (behavior.spin * (transform.right / behavior.direction.magnitude)));
+            }
 
             //get better
             lerp += lerpIncrease;
@@ -95,46 +112,17 @@ namespace StarWriter.Core.Input
                        .4f/direction.magnitude);
         }
 
-
-        void ShootLaser(Vector3 position, int corner)
+        Vector3 ShootLaser(Vector3 position)
         {
             if (Physics.Raycast(transform.position + position, transform.forward, out hit, maxDistance))
             {
-                switch (corner)
-                {
-                    case 0:
-                        topRight = hit.point - transform.position;
-                        break;
-                    case 1:
-                        bottomRight = hit.point - transform.position;
-                        break;
-                    case 2:
-                        bottomLeft = hit.point - transform.position;
-                        break;
-                    case 3:
-                        topLeft = hit.point - transform.position;
-                        break;
-                }
                 Debug.DrawLine(transform.position + position, hit.point, Color.red);
+                return hit.point - transform.position;
             }
             else
             {
-                switch (corner)
-                {
-                    case 0:
-                        topRight = transform.forward - transform.position;
-                        break;
-                    case 1:
-                        bottomRight = transform.forward - transform.position;
-                        break;
-                    case 2:
-                        bottomLeft = transform.forward - transform.position;
-                        break;
-                    case 3:
-                        topLeft = transform.forward - transform.position;
-                        break;
-                }
                 Debug.DrawLine(transform.position + position, (transform.position + position) + transform.forward * maxDistance, Color.green);
+                return transform.forward - transform.position;
             }
         }
     }
