@@ -481,12 +481,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a58bf4fb65afa704194fe9e28e67d58d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  defaultThrottle: 14
-  defaultLerp: 0.01
-  throttleIncrease: 0.04
-  lerpIncrease: 0.005
+  defaultThrottle: 20
+  defaultLerp: 55
+  throttleIncrease: 3
+  lerpIncrease: 22
   throttle: 0
   lerp: 0
+  avoidance: 27
   raycastHeight: 2
   raycastWidth: 2
   muton: {fileID: 430359312}
@@ -1758,12 +1759,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a58bf4fb65afa704194fe9e28e67d58d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  defaultThrottle: 16
-  defaultLerp: 0.07
-  throttleIncrease: 0.03
-  lerpIncrease: 0.003
+  defaultThrottle: 30
+  defaultLerp: 40
+  throttleIncrease: 5
+  lerpIncrease: 17
   throttle: 0
   lerp: 0
+  avoidance: 23
   raycastHeight: 2
   raycastWidth: 2
   muton: {fileID: 430359312}

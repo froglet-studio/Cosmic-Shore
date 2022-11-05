@@ -18,6 +18,8 @@ namespace StarWriter.Core.Input
         public float throttle;
         public float lerp;
 
+        public float avoidance = 2.5f;
+
         [SerializeField] float raycastHeight;
         [SerializeField] float raycastWidth;
 
@@ -85,18 +87,20 @@ namespace StarWriter.Core.Input
             ///rotate toward muton
             transform.localRotation = Quaternion.Lerp(transform.localRotation,
                                                          Quaternion.LookRotation(distance, transform.up),
-                                                         lerp/distance.magnitude);
+                                                         lerp/distance.magnitude * Time.deltaTime);
 
             foreach (Corner corner in Enum.GetValues(typeof(Corner)))
             {
                 var behavior = CornerBehaviors[corner];
                 behavior.direction = ShootLaser(behavior.width * transform.right + behavior.height * transform.up);
-                transform.localRotation = TurnAway(behavior.direction, -transform.up + (behavior.spin * (transform.right / behavior.direction.magnitude)));
+                transform.localRotation = TurnAway(behavior.direction, 
+                                                   -transform.up + (behavior.spin * (transform.right / behavior.direction.magnitude)), 
+                                                   avoidance / behavior.direction.magnitude * Time.deltaTime);
             }
 
             //get better
-            lerp += lerpIncrease;
-            throttle += throttleIncrease;
+            lerp += lerpIncrease * Time.deltaTime;
+            throttle += throttleIncrease * Time.deltaTime;
 
             //Move ship forward
             Vector3 flowVector = flowFieldData.FlowVector(transform);
@@ -105,11 +109,11 @@ namespace StarWriter.Core.Input
             shipData.speed = throttle;
         }
 
-        Quaternion TurnAway(Vector3 direction, Vector3 down)
+        Quaternion TurnAway(Vector3 direction, Vector3 down, float lerp)
         {
             return Quaternion.Lerp(transform.localRotation,
                     Quaternion.Inverse(Quaternion.LookRotation(direction, down)),
-                       .4f/direction.magnitude);
+                       lerp);
         }
 
         Vector3 ShootLaser(Vector3 position)
