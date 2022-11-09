@@ -1,53 +1,45 @@
-[System.Serializable]
-public struct Settings
-{
-    public bool adsEnabled;             //TODO
-    public bool invertYEnabled;         //TODO 
-    public bool isAudioEnabled;         //TODO
-    public bool isGyroEnabled;          //TODO
-    public bool isTutorialEnabled;      //TODO
-
-    //public Settings(bool adsEnabled, bool invertYEnabled, bool isGyroEnabled, bool isTutorialEnabled, bool isAudioEnabled)
-    //{
-    //    AdsEnabled = adsEnabled;
-    //    InvertYEnabled = invertYEnabled;
-    //    IsGyroEnabled = isGyroEnabled;
-    //    IsTutorialEnabled = isTutorialEnabled;
-    //    IsAudioEnabled = isAudioEnabled;
-    //}
-}
+using StarWriter.Core;
 
 [System.Serializable]
-public class GameData
+public class GameData : DataPersistenceBase<GameData>
 {
-    public int testNumber; //testing only
+    public int testNumber; // testing only
 
     //Game Settings data
-    public bool adsEnabled;             //TODO
-    public bool invertYEnabled;         //TODO 
-    public bool isAudioEnabled;         //TODO
-    public bool isGyroEnabled;          //TODO
-    public bool isTutorialEnabled;      //TODO
+    //public bool adsEnabled;               //TODO
+    //public bool invertYEnabled;           //TODO 
+    //public bool isAudioEnabled;           //TODO
+    //public bool isGyroEnabled;            //TODO
+    //public bool isTutorialEnabled;        //TODO
     
     //Scoring Data
-    public int firstLifeHighScore;      //TODO
-    public int highScore;               //TODO
-    public int score;                   //TODO
+    public int firstLifeHighScore;          //TODO
+    public int highScore;                   //TODO
+    public int score;                       //TODO
 
     // the constructor will provide the default values before a GamaData.data files exists
     public GameData()
     {
-        this.testNumber = 0; //testing only 
-        
-        //bools
-        this.adsEnabled = true;
-        this.invertYEnabled = false;  //TODO check value
-        this.isAudioEnabled = true;
-        this.isTutorialEnabled = true;
+        testNumber = 42; //testing only
 
-        //SCORES
-        this.firstLifeHighScore = 0; //Score before watching extended life ad
-        this.highScore = 0; //All time highest score on this device
-        this.score = 0; //current score saved off for use in scoreboard  //TODO Determine if this is even needed
+        // SCORES
+        firstLifeHighScore = 0;    //Score before watching extended life ad
+        highScore = 0;             //All time highest score on this device
+        score = 0;                 //current score saved off for use in scoreboard  //TODO Determine if this is even needed
+    }
+
+    public override GameData LoadData()
+    {
+        var loadedData = DataPersistenceManager.Instance.LoadGameData();
+        testNumber = loadedData.testNumber;
+        firstLifeHighScore = loadedData.firstLifeHighScore;
+        highScore = loadedData.highScore;
+        score = loadedData.score;
+        return loadedData;
+    }
+
+    public override void SaveData()
+    {
+        DataPersistenceManager.Instance.SaveGame(this);
     }
 }

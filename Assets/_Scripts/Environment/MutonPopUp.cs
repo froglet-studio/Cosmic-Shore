@@ -2,6 +2,7 @@ using UnityEngine;
 using System.Collections.Generic;
 using StarWriter.Core.Input;
 using StarWriter.Core.Audio;
+using System.Collections;
 
 public class MutonPopUp : MonoBehaviour
 {
@@ -98,7 +99,7 @@ public class MutonPopUp : MonoBehaviour
                 StartCoroutine(spentMuton.GetComponent<Impact>().ImpactCoroutine(
                     ship.transform.forward * ship.GetComponent<ShipData>().speed, tempMaterial, "red"));
                 
-                //reset ship aggression
+                // reset ship aggression
                 AiShipController controllerScript = ship.GetComponent<AiShipController>();
                 controllerScript.lerp = controllerScript.defaultLerp;
                 controllerScript.throttle = controllerScript.defaultThrottle;
@@ -108,12 +109,15 @@ public class MutonPopUp : MonoBehaviour
                 StartCoroutine(spentMuton.GetComponent<Impact>().ImpactCoroutine(
                      ship.transform.forward * ship.GetComponent<ShipData>().speed, tempMaterial, "blue"));
                 
-                //reset ship aggression
+                // reset ship aggression
                 AiShipController controllerScript = ship.GetComponent<AiShipController>();
                 controllerScript.lerp = controllerScript.defaultLerp;
                 controllerScript.throttle = controllerScript.defaultThrottle;
             }
         }
+
+        // Spawn AOE explosion
+
 
         // Play SFX sound
         AudioSource audioSource = GetComponent<AudioSource>();
@@ -129,5 +133,15 @@ public class MutonPopUp : MonoBehaviour
         // Grow tail
         TrailSpawner trailScript = ship.GetComponent<TrailSpawner>();
         trailScript.trailLength += lifeTimeIncrease;
+    }
+
+    private void ExecuteEffect(GameObject ship)
+    {
+        StartCoroutine(ExecuteEffectCoroutine());
+    }
+
+    private IEnumerator ExecuteEffectCoroutine()
+    {
+        yield return null;
     }
 }

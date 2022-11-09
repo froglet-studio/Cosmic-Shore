@@ -37,11 +37,11 @@ public class AdsManager : MonoBehaviour, IUnityAdsInitializationListener, IUnity
 
     void Awake()
     {
-        InitializeAds();
+        Initialize();
         analyticsManager = AnalyticsManager.Instance;
     }
 
-    public void InitializeAds()
+    public void Initialize()
     {
         // Default to android settings
         _adUnitId = _androidAdUnitId;
@@ -53,7 +53,7 @@ public class AdsManager : MonoBehaviour, IUnityAdsInitializationListener, IUnity
 #endif
 
         Debug.Log($"InitializeAds: OnBeforeAdvertisement.Initialize - _gameId:{_gameId}");
-        Advertisement.Initialize(_gameId);
+        Advertisement.Initialize(_gameId, _skipAdForDevelopment, this);
         Debug.Log($"InitializeAds: OnAfterAdvertisement.Initialize - _gameId:{_gameId}");
     }
 

@@ -19,7 +19,6 @@ namespace StarWriter.Core
 
         public T Load()
         {
-            //string fullPath = Path.Join(dataDirPath, gameDataFileName);
             string fullPath = Path.Combine(dataDirPath, dataFileName);
             Debug.Log("Load Path: " + fullPath);
 
@@ -42,7 +41,6 @@ namespace StarWriter.Core
                         }
                     }
                     // Deserialize the data from Json back into the C# object
-                    //loadedData = Newtonsoft.Json.JsonConvert.SerializeObject<GameData>(dataToLoad);
                     loadedData = JsonUtility.FromJson<T>(dataToLoad);
                 }
                 catch (Exception e)

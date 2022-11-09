@@ -1,3 +1,4 @@
+using StarWriter.Core;
 using System.Collections.Generic;
 
 [System.Serializable]
@@ -16,7 +17,7 @@ public struct ShipConfiguration
 }
 
 [System.Serializable]
-public class HangarData 
+public class HangarData : DataPersistenceBase<HangarData>
 {
     public int MaxBayCount = 10;
     public List<ShipConfiguration> PlayerBuilds;
@@ -28,5 +29,17 @@ public class HangarData
         PlayerBuilds.Add(new ShipConfiguration("Manta", "GreenTrail", "1.5X Boost"));
         PlayerBuilds.Add(new ShipConfiguration("Dolphin", "BlueTrail", "Skim"));
         PlayerBuilds.Add(new ShipConfiguration("Shark", "RedTrail", "2X Points"));
+    }
+
+    public override HangarData LoadData()
+    {
+        var loadedData = DataPersistenceManager.Instance.LoadHangerData();
+        PlayerBuilds = loadedData.PlayerBuilds;
+        return loadedData;
+    }
+
+    public override void SaveData()
+    {
+        DataPersistenceManager.Instance.SaveHangar(this);
     }
 }

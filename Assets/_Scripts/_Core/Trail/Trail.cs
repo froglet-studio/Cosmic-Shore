@@ -4,38 +4,27 @@ using System.Linq;
 
 public class Trail : MonoBehaviour
 {
-    [SerializeField]
-    private float fuelChange = -3f;
-    private int scoreChange = 1;
-    public string ownerId;
 
+
+    [SerializeField] float fuelChange = -3f;
     [SerializeField] GameObject FossilBlock;
     [SerializeField] GameObject ParticleEffect;
-
-
     [SerializeField] Material material;
+    [SerializeField] Vector3 ParticleEffectScale = new Vector3(1.5f, 1.5f, 1.5f);
 
+    public string ownerId;
     public float waitTime = .6f;
+
     public delegate void TrailCollision(string uuid, float amount);
     public static event TrailCollision OnTrailCollision;
 
     public delegate void OnCollisionIncreaseScore(string uuid, int amount);
     public static event OnCollisionIncreaseScore AddToScore;
 
+    private int scoreChange = 1;
     private static GameObject container;
     private MeshRenderer meshRenderer;
     private BoxCollider blockCollider;
-
-    // TODO: why are we doing this? The scene is getting reloaded, so shouldn't the container get voided out that way...
-    // Wait a minute... is this to account for the 'DontDestroyOnLoad(container) line further down?
-    public static void ResetTrailContainer()
-    {
-        for (var i=0; i<container.transform.childCount; i++)
-        {
-            var child = container.transform.GetChild(i).gameObject;
-            Destroy(child);
-        }
-    }
 
     void Start()
     {
@@ -83,7 +72,11 @@ public class Trail : MonoBehaviour
         var particle = Instantiate(ParticleEffect);
         particle.transform.parent = transform;
         particle.transform.localPosition = Vector3.zero;
-        particle.transform.localScale = new Vector3(3, 3, 3);
+        particle.transform.localScale = ParticleEffectScale;
+
+        // TODO: expose scale as a parameter or base it off of distance between block and skimmer, or both
+        // TODO: rotate particle using skimmer forward and block forward?
+        // TODO: experiment with multiple instantiations when super close
     }
     void OnTriggerEnter(Collider other)
     {
@@ -98,6 +91,7 @@ public class Trail : MonoBehaviour
             Collide(other);
         }
     }
+
 
     public void Collide(Collider other)
     {
@@ -144,9 +138,10 @@ public class Trail : MonoBehaviour
         }
     }
 
-    // TODO: Use tags to identify player instead
     private bool IsPlayer(GameObject go)
     {
-        return go.transform.parent.parent.GetComponent<Player>() != null;
+        //return go.transform.parent.parent.GetComponent<Player>() != null;
+        
+        return go.layer == LayerMask.NameToLayer("Ships");
     }
 }

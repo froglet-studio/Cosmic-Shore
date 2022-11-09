@@ -1,7 +1,8 @@
+using StarWriter.Core;
 using System.Collections.Generic;
 
 [System.Serializable]
-public class PlayerData 
+public class PlayerData : DataPersistenceBase<PlayerData>
 {
     public string playerName;
     public int highestScore;
@@ -10,13 +11,22 @@ public class PlayerData
 
     public PlayerData()
     {
-        this.playerName = "Default_Name";
-        this.highestScore = 0;
+        playerName = "Default_Name";
 
-        this.playerBuild = new Dictionary<string, string>();
-
+        playerBuild = new Dictionary<string, string>();
         playerBuild.Add("Pilot", "Default_Pilot");
         playerBuild.Add("Ship", "Default_Ship");
         playerBuild.Add("Trail", "Default_Trail");
+    }
+
+    public override PlayerData LoadData()
+    {
+        var loadedData = DataPersistenceManager.Instance.LoadPlayer();
+        playerBuild = loadedData.playerBuild;
+        return loadedData;
+    }
+    public override void SaveData()
+    {
+        DataPersistenceManager.Instance.SavePlayer(this);
     }
 }

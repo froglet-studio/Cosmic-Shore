@@ -44,6 +44,7 @@ namespace StarWriter.Core
         string highScoreGameScene = "Game_HighScore";
         string gameTestModeOneGameScene = "Game_TestModeOne";
         string gameTestModeTwoGameScene = "Game_TestModeTwo";
+        string hangarScene = "Hangar";
         string tutorialGameScene = "Game_Tutorial";
         string ActiveGameScene = "";
 
@@ -152,6 +153,11 @@ namespace StarWriter.Core
             UnPauseGame();
             ActiveGameScene = gameTestModeTwoGameScene;
             SceneManager.LoadScene(gameTestModeTwoGameScene);
+        }
+
+        public void OnClickHangar()
+        {
+            SceneManager.LoadScene(hangarScene);
         }
 
         private void OnExplosionCompletion()

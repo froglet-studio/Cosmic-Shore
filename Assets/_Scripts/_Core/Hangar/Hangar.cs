@@ -31,7 +31,7 @@ namespace StarWriter.Core.HangerBuilder
         }
         public void SaveHangarData()
         {
-            DataPersistenceManager.Instance.SaveHangarData(hangarData); //removed till V3.0 or rdy
+            DataPersistenceManager.Instance.SaveHangar(hangarData); //removed till V3.0 or rdy
         }
 
         public void OnShipButtonPressed(int idx) //TODO really OnBayButtonPressed

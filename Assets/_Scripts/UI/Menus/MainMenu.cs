@@ -30,6 +30,11 @@ namespace StarWriter.Core.UI
             gameManager.OnClickTestGameModeTwo();
         }
 
+        public void OnClickHangar()
+        {
+            gameManager.OnClickHangar();
+        }
+
         public void OnClickOptionsMenuButton()
         {
             Game_Options_Panel.SetActive(true);

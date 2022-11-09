@@ -1,8 +1,5 @@
-public interface IDataPersistence 
+public abstract class DataPersistenceBase<T>
 {
-    void LoadData(GameData data);
-    void SaveData(ref GameData data);
-
-    void LoadData(HangarData data);
-    void SaveData(ref HangarData data);
+    public abstract T LoadData();
+    public abstract void SaveData();
 }
