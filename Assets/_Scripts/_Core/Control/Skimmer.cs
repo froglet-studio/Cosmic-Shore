@@ -16,7 +16,7 @@ public class Skimmer : MonoBehaviour
     void Start()
     {
         ship = GameObject.FindWithTag("Player");
-        material = GetComponent<MeshRenderer>().material;
+        //material = GetComponent<MeshRenderer>().material;
         direction = Vector3.zero;
     }
 
@@ -24,7 +24,7 @@ public class Skimmer : MonoBehaviour
     void Update()
     {
         direction = Vector3.Lerp(direction, Vector3.zero, .02f);
-        material.SetVector("_direction", direction);
+        //material.SetVector("_direction", direction);
     }
 
     void OnTriggerEnter(Collider other)
@@ -33,9 +33,9 @@ public class Skimmer : MonoBehaviour
         OnSkim?.Invoke(ship.GetComponent<Player>().PlayerUUID, fuelAmount);
 
         var trail = other.GetComponent<Trail>();
-        if (trail != null) trail.InstantiateParticle();
+        if (trail != null) trail.InstantiateParticle(transform);
 
-        direction = Vector3.Lerp(direction, (transform.worldToLocalMatrix * (other.transform.position - transform.position)).normalized*100f,.05f);
-        material.SetVector("_direction", direction);
+        //direction = Vector3.Lerp(direction, (transform.worldToLocalMatrix * (other.transform.position - transform.position)).normalized*100f,.05f);
+        //material.SetVector("_direction", direction);
     }
 }

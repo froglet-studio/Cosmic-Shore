@@ -27,9 +27,6 @@ EditorBuildSettings:
     path: Assets/Scenes/Game_TestModeTwo_old.unity
     guid: a76492110e694fc4ea9e3907f07fe308
   - enabled: 0
-    path: Assets/Scenes/Game_Tutorial.unity
-    guid: 85d73583f4ccfc1478efa92a6712ce67
-  - enabled: 0
     path: Assets/Scenes/TestScenes/G Sandbox/FreePlay.unity
     guid: 0adde48cc922fbc49a3f2832729dca91
   m_configObjects:

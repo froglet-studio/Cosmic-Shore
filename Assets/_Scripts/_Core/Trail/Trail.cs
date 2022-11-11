@@ -66,18 +66,35 @@ public class Trail : MonoBehaviour
         }
     }
 
-    public void InstantiateParticle()
+    public void InstantiateParticle(Transform skimmer)
     {
         Debug.Log($"{this.name}, Instantiating Particle Emitter");
         var particle = Instantiate(ParticleEffect);
         particle.transform.parent = transform;
-        particle.transform.localPosition = Vector3.zero;
-        particle.transform.localScale = ParticleEffectScale;
+        //particle.transform.localPosition = Vector3.zero;
+        StartCoroutine(UpdateParticleCoroutine(particle, skimmer));
 
         // TODO: expose scale as a parameter or base it off of distance between block and skimmer, or both
         // TODO: rotate particle using skimmer forward and block forward?
         // TODO: experiment with multiple instantiations when super close
     }
+
+    IEnumerator UpdateParticleCoroutine(GameObject particle, Transform skimmer)
+    {
+        var time = 50;
+        var timer = 0;
+        while (timer < time)
+        {
+            yield return null;
+            var distance =  transform.position - skimmer.position;
+            particle.transform.localScale = new Vector3(1, 1, distance.magnitude);
+            particle.transform.rotation = Quaternion.LookRotation(distance, transform.up);
+            particle.transform.position = skimmer.position;
+            timer++;
+        }
+        Destroy(particle);
+    }
+
     void OnTriggerEnter(Collider other)
     {
         if (gameObject != null && other.isTrigger == false) //don't want to catch the skimmer collider
