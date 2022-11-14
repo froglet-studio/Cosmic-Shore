@@ -26,6 +26,8 @@ public class ScoringManager : MonoBehaviour
 
     public bool FirstLife { get => firstLife; set => firstLife = value; }
 
+    [SerializeField] bool nodeGame = false;
+
     private void OnEnable()
     {
         GameManager.onPlayGame += ResetScoreAndDeathCount;
@@ -33,6 +35,7 @@ public class ScoringManager : MonoBehaviour
         GameManager.onGameOver += UpdateScoresAndDeathCount;
         MutonPopUp.AddToScore += UpdateScore;
         FlowCrystal.AddToScore += UpdateScore;
+        if (nodeGame) TrailSpawner.AddToScore += UpdateScore;
         Trail.AddToScore += UpdateScore;
     }
 
@@ -43,6 +46,7 @@ public class ScoringManager : MonoBehaviour
         GameManager.onGameOver -= UpdateScoresAndDeathCount;
         MutonPopUp.AddToScore -= UpdateScore;
         FlowCrystal.AddToScore -= UpdateScore;
+        if (nodeGame) TrailSpawner.AddToScore -= UpdateScore;
         Trail.AddToScore -= UpdateScore;
     }
 

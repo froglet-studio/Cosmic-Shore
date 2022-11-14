@@ -10,10 +10,11 @@ public class Trail : MonoBehaviour
     [SerializeField] GameObject FossilBlock;
     [SerializeField] GameObject ParticleEffect;
     [SerializeField] Material material;
-    [SerializeField] Vector3 ParticleEffectScale = new Vector3(1.5f, 1.5f, 1.5f);
+    //[SerializeField] Vector3 ParticleEffectScale = new Vector3(1.5f, 1.5f, 1.5f);
 
     public string ownerId;
     public float waitTime = .6f;
+    public bool embiggen;
 
     public delegate void TrailCollision(string uuid, float amount);
     public static event TrailCollision OnTrailCollision;
@@ -40,28 +41,27 @@ public class Trail : MonoBehaviour
         blockCollider = GetComponent<BoxCollider>();
         blockCollider.enabled = false;
 
-        StartCoroutine(ToggleBlockCoroutine());
+        if (embiggen) StartCoroutine(ToggleBlockCoroutine(1f));
+        else StartCoroutine(ToggleBlockCoroutine(2f));
+
     }
 
-    IEnumerator ToggleBlockCoroutine()
+    IEnumerator ToggleBlockCoroutine(float finalSize)
     {
         var finalTransformScale = transform.localScale;
-        var finalColliderScale = blockCollider.size;
         var size = 0.01f;
 
         yield return new WaitForSeconds(waitTime);
 
         transform.localScale = finalTransformScale * size;
-        blockCollider.size = finalColliderScale * size;
 
         meshRenderer.enabled = true;
         blockCollider.enabled = true;
 
-        while (size < 1)
+        while (size < finalSize)
         {
             size += .5f*Time.deltaTime;
             transform.localScale = finalTransformScale * size;
-            blockCollider.size = finalColliderScale * size;
             yield return null;
         }
     }

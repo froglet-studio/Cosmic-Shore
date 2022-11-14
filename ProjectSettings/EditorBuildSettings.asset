@@ -12,23 +12,20 @@ EditorBuildSettings:
     path: Assets/Scenes/Game_HighScore.unity
     guid: 5e8d9932a4d84a1488c2dad96c8135dd
   - enabled: 1
-    path: Assets/Scenes/Game_Race.unity
-    guid: fbab11f0e5a02b2498a72b7dad67b1ee
+    path: Assets/Scenes/Game_TestModeOne.unity
+    guid: 205f64d457e811f4bac76d6502465124
   - enabled: 1
     path: Assets/Scenes/Game_TestModeTwo.unity
     guid: 511a0c2e48fb1fe43bfc4155eb90a9b2
   - enabled: 1
-    path: Assets/Scenes/Game_TestModeOne.unity
-    guid: 205f64d457e811f4bac76d6502465124
+    path: Assets/Scenes/Game_TestModeThree.unity
+    guid: c951f5a21e4ddd140b5c17c124c31a16
+  - enabled: 1
+    path: Assets/Scenes/Game_TestModeFour.unity
+    guid: 0897c1cf0786c314996a6e5364771a7d
   - enabled: 1
     path: Assets/Scenes/Hangar.unity
     guid: 5c7c9a705404ead4b9117da43ee6d105
-  - enabled: 1
-    path: Assets/Scenes/Game_TestModeTwo_old.unity
-    guid: a76492110e694fc4ea9e3907f07fe308
-  - enabled: 0
-    path: Assets/Scenes/TestScenes/G Sandbox/FreePlay.unity
-    guid: 0adde48cc922fbc49a3f2832729dca91
   m_configObjects:
     com.unity.adaptiveperformance.loader_settings: {fileID: 11400000, guid: 274754c57f99f5144be86c9d1014705b,
       type: 2}

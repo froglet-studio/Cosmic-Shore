@@ -8,10 +8,13 @@ public class TrailSpawner : MonoBehaviour
 {
     [SerializeField] Trail trail;
 
+    public delegate void OnDropIncreaseScore(string uuid, int amount);
+    public static event OnDropIncreaseScore AddToScore;
+
     public float offset = 0f;
     public float trailPeriod = 4f;
     public float trailLength = 20;
-    public float waitTime = .5f;            // Time until the trail block appears - camera dependent
+    public float waitTime = .5f;  // Time until the trail block appears - camera dependent
     public float startDelay = 2.1f;
 
     private Player player;
@@ -21,6 +24,11 @@ public class TrailSpawner : MonoBehaviour
 
     readonly Queue<Trail> trailList = new();
     bool spawnerEnabled = true;
+
+    float volume;
+    float volumeScoreScaler = .01f;
+    float score = 0f;
+    string ownerId;
 
     private void OnEnable()
     {
@@ -50,6 +58,13 @@ public class TrailSpawner : MonoBehaviour
         shipData = GetComponent<ShipData>();
 
         StartCoroutine(SpawnTrailCoroutine());
+
+        volume = trail.transform.localScale.x *
+                     trail.transform.localScale.y *
+                     trail.transform.localScale.z;
+
+        ownerId = GetComponent<Player>().PlayerUUID;
+
     }
 
     private void OnPhoneFlip(bool state)
@@ -92,19 +107,34 @@ public class TrailSpawner : MonoBehaviour
             if (Time.deltaTime < .1f && spawnerEnabled)
             {
                 var Block = Instantiate(trail);
+
+                score += shipData.boost ? volume * volumeScoreScaler*8 : volume * volumeScoreScaler; //if ship is boosted the blocks gets 8 times bigger (2^dimensionality)
+                
+                if (score > 1)
+                {
+                    AddToScore?.Invoke(ownerId, (int)score); //TODO have the trail script control the scoring instead
+                    score = score % 1;
+                }
+                
                 Block.ownerId = player.PlayerUUID;
                 Block.transform.SetPositionAndRotation(transform.position - transform.forward * offset, transform.rotation);
                 Block.transform.parent = TrailContainer.transform;
                 Block.GetComponent<Trail>().waitTime = waitTime;
+
 
                 //trailList.Enqueue(Block);
                 //if (trailList.Count > trailLength / trailPeriod)
                 //{
                 //    StartCoroutine(ShrinkTrailCoroutine());
                 //}
+                if (shipData.boost)
+                    Block.GetComponent<Trail>().embiggen = true;
+                else
+                    Block.GetComponent<Trail>().embiggen = false;
+
             }
             if (shipData.boost)
-                yield return new WaitForSeconds(trailPeriod / (shipData.speed * 3f));
+                yield return new WaitForSeconds(trailPeriod / shipData.speed);
             else
                 yield return new WaitForSeconds(trailPeriod / shipData.speed);
         }

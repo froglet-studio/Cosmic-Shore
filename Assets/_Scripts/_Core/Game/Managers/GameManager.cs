@@ -44,6 +44,8 @@ namespace StarWriter.Core
         string highScoreGameScene = "Game_HighScore";
         string gameTestModeOneGameScene = "Game_TestModeOne";
         string gameTestModeTwoGameScene = "Game_TestModeTwo";
+        string gameTestModeThreeGameScene = "Game_TestModeThree";
+        string gameTestModeFourGameScene = "Game_TestModeFour";
         string hangarScene = "Hangar";
         string tutorialGameScene = "Game_Tutorial";
         string ActiveGameScene = "";
@@ -128,7 +130,7 @@ namespace StarWriter.Core
             SceneManager.LoadScene(tutorialGameScene);
         }
 
-        public void OnClickPlayButton()
+        public void OnClickPlayButton() //TODO make this general so you pass in the load scene
         {
             deathCount = 0;
             analyticsManager.LogLevelStart();
@@ -153,6 +155,24 @@ namespace StarWriter.Core
             UnPauseGame();
             ActiveGameScene = gameTestModeTwoGameScene;
             SceneManager.LoadScene(gameTestModeTwoGameScene);
+        }
+
+        public void OnClickTestGameModeThree()
+        {
+            deathCount = 0;
+            analyticsManager.LogLevelStart();
+            UnPauseGame();
+            ActiveGameScene = gameTestModeThreeGameScene;
+            SceneManager.LoadScene(gameTestModeThreeGameScene);
+        }
+
+        public void OnClickTestGameModeFour()
+        {
+            deathCount = 0;
+            analyticsManager.LogLevelStart();
+            UnPauseGame();
+            ActiveGameScene = gameTestModeFourGameScene;
+            SceneManager.LoadScene(gameTestModeFourGameScene);
         }
 
         public void OnClickHangar()

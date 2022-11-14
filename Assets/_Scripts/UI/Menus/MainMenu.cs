@@ -29,6 +29,14 @@ namespace StarWriter.Core.UI
         {
             gameManager.OnClickTestGameModeTwo();
         }
+        public void OnClickGameModeThree()
+        {
+            gameManager.OnClickTestGameModeThree();
+        }
+        public void OnClickGameModeFour()
+        {
+            gameManager.OnClickTestGameModeFour();
+        }
 
         public void OnClickHangar()
         {
