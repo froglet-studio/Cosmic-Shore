@@ -282,6 +282,7 @@ MonoBehaviour:
     type: 3}
   Muton: {fileID: 7244393970774794917}
   material: {fileID: 2100000, guid: 383f21e8586fd7243a19e1d0f26110d0, type: 2}
+  warp: 0
 --- !u!82 &430359315
 AudioSource:
   m_ObjectHideFlags: 0
@@ -548,10 +549,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   trail: {fileID: 4563009547826722997, guid: 053064d82123e8b49bfb29870b5c0715, type: 3}
   offset: 0
-  trailPeriod: 10
+  initialWavelength: 15
   trailLength: 40
   waitTime: 0.1
   startDelay: 2
+  warp: 0
 --- !u!114 &487984181
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1360,6 +1362,11 @@ PrefabInstance:
       propertyPath: m_Name
       value: Player
       objectReference: {fileID: 0}
+    - target: {fileID: 7659183800259804531, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: initialWavelength
+      value: 5
+      objectReference: {fileID: 0}
     - target: {fileID: 7659183800259804541, guid: c8544725eea141847982b286866c858d,
         type: 3}
       propertyPath: m_RootOrder
@@ -1790,10 +1797,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   trail: {fileID: 4563009547826722997, guid: 4e280247faa1d154fa25d1e92df405dc, type: 3}
   offset: 0
-  trailPeriod: 20
+  initialWavelength: 30
   trailLength: 40
   waitTime: 0.3
   startDelay: 2
+  warp: 0
 --- !u!114 &1892142160
 MonoBehaviour:
   m_ObjectHideFlags: 0

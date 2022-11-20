@@ -8,6 +8,7 @@ TagManager:
   - ai
   - red
   - blue
+  - field
   layers:
   - Default
   - TransparentFX

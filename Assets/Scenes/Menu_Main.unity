@@ -878,15 +878,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a58bf4fb65afa704194fe9e28e67d58d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  defaultThrottle: 15
-  defaultLerp: 0.035
-  throttleIncrease: 0.001
-  lerpIncrease: 0.004
+  defaultThrottle: 6
+  defaultLerp: 40
+  throttleIncrease: 0.5
+  lerpIncrease: 17
   throttle: 0
   lerp: 0
-  avoidance: 2.5
-  raycastHeight: 0
-  raycastWidth: 0
+  avoidance: 22
+  raycastHeight: 2
+  raycastWidth: 2
   muton: {fileID: 3882826178379139581}
   flowFieldData: {fileID: 1243749159}
 --- !u!114 &709728277
@@ -922,7 +922,7 @@ MonoBehaviour:
   trail: {fileID: 5776304996075792891, guid: b1bf32c3ee6a52b4b8adc4ed64ad8eb3, type: 3}
   head: {fileID: 709728282}
   offset: 0.5
-  trailPeriod: 0.01
+  trailPeriod: 0.1
   lifeTime: 30
   waitTime: 0.01
   useRandom: 0
@@ -2972,7 +2972,12 @@ PrefabInstance:
     - target: {fileID: 2273807540259799843, guid: ba70c0f3eb077d44b8a538982d02dadc,
         type: 3}
       propertyPath: m_Lens.m_SensorSize.x
-      value: 2.527297
+      value: 1.7777778
+      objectReference: {fileID: 0}
+    - target: {fileID: 4286694852303775635, guid: ba70c0f3eb077d44b8a538982d02dadc,
+        type: 3}
+      propertyPath: m_Lens.m_SensorSize.x
+      value: 1.7777778
       objectReference: {fileID: 0}
     - target: {fileID: 4853709195325629896, guid: ba70c0f3eb077d44b8a538982d02dadc,
         type: 3}
@@ -3012,7 +3017,7 @@ PrefabInstance:
     - target: {fileID: 4853709195325629897, guid: ba70c0f3eb077d44b8a538982d02dadc,
         type: 3}
       propertyPath: m_Lens.NearClipPlane
-      value: 2
+      value: 0.001
       objectReference: {fileID: 0}
     - target: {fileID: 4853709195325629897, guid: ba70c0f3eb077d44b8a538982d02dadc,
         type: 3}
@@ -3027,7 +3032,7 @@ PrefabInstance:
     - target: {fileID: 4853709195735906030, guid: ba70c0f3eb077d44b8a538982d02dadc,
         type: 3}
       propertyPath: m_Lens.m_SensorSize.x
-      value: 2.0555556
+      value: 1.7777778
       objectReference: {fileID: 0}
     - target: {fileID: 4853709195735906030, guid: ba70c0f3eb077d44b8a538982d02dadc,
         type: 3}
@@ -4522,7 +4527,7 @@ MonoBehaviour:
   trail: {fileID: 5776304996075792891, guid: 7275c47a52838e242bc53dcd5d055dca, type: 3}
   head: {fileID: 378015796163850468}
   offset: 0.5
-  trailPeriod: 0.01
+  trailPeriod: 0.1
   lifeTime: 30
   waitTime: 0.01
   useRandom: 0
@@ -4578,15 +4583,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a58bf4fb65afa704194fe9e28e67d58d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  defaultThrottle: 20
-  defaultLerp: 0.035
-  throttleIncrease: 0.001
-  lerpIncrease: 0.0015
+  defaultThrottle: 6
+  defaultLerp: 55
+  throttleIncrease: 0.3
+  lerpIncrease: 22
   throttle: 0
   lerp: 0
-  avoidance: 2.5
-  raycastHeight: 0
-  raycastWidth: 0
+  avoidance: 27
+  raycastHeight: 2
+  raycastWidth: 2
   muton: {fileID: 3882826178379139581}
   flowFieldData: {fileID: 1243749159}
 --- !u!1 &378015796163850476

@@ -16,6 +16,9 @@ public class Trail : MonoBehaviour
     public float waitTime = .6f;
     public bool embiggen;
 
+    public bool warp = false;
+    GameObject shards;
+
     public delegate void TrailCollision(string uuid, float amount);
     public static event TrailCollision OnTrailCollision;
 
@@ -29,6 +32,8 @@ public class Trail : MonoBehaviour
 
     void Start()
     {
+        if (warp) shards = GameObject.FindGameObjectWithTag("field");
+
         if (container == null)
         {
             container = new GameObject();
@@ -41,14 +46,18 @@ public class Trail : MonoBehaviour
         blockCollider = GetComponent<BoxCollider>();
         blockCollider.enabled = false;
 
-        if (embiggen) StartCoroutine(ToggleBlockCoroutine(1f));
-        else StartCoroutine(ToggleBlockCoroutine(2f));
+        if (embiggen) StartCoroutine(ToggleBlockCoroutine(2f));
+        else StartCoroutine(ToggleBlockCoroutine(1f));
+
 
     }
 
     IEnumerator ToggleBlockCoroutine(float finalSize)
     {
         var finalTransformScale = transform.localScale;
+
+        if (warp) finalTransformScale *= shards.GetComponent<WarpFieldData>().HybridVector(transform).magnitude;
+
         var size = 0.01f;
 
         yield return new WaitForSeconds(waitTime);

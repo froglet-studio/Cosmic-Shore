@@ -12,13 +12,19 @@ public class TrailSpawner : MonoBehaviour
     public static event OnDropIncreaseScore AddToScore;
 
     public float offset = 0f;
-    public float trailPeriod = 4f;
+
+    public float initialWavelength = 4f;
+    float wavelength;
+
     public float trailLength = 20;
     public float waitTime = .5f;  // Time until the trail block appears - camera dependent
     public float startDelay = 2.1f;
 
     private Player player;
     ShipData shipData;
+
+    [SerializeField] bool warp = false;
+    GameObject shards;
 
     static GameObject TrailContainer;
 
@@ -48,11 +54,14 @@ public class TrailSpawner : MonoBehaviour
 
     void Start()
     {
+        wavelength = initialWavelength;
         if (TrailContainer == null)
         {
             TrailContainer = new GameObject();
             TrailContainer.name = "TrailContainer";
         }
+
+        shards = GameObject.FindGameObjectWithTag("field");
 
         player = GetComponent<Player>();
         shipData = GetComponent<ShipData>();
@@ -108,6 +117,8 @@ public class TrailSpawner : MonoBehaviour
             {
                 var Block = Instantiate(trail);
 
+                
+
                 score += shipData.boost ? volume * volumeScoreScaler*8 : volume * volumeScoreScaler; //if ship is boosted the blocks gets 8 times bigger (2^dimensionality)
                 
                 if (score > 1)
@@ -121,9 +132,14 @@ public class TrailSpawner : MonoBehaviour
                 Block.transform.parent = TrailContainer.transform;
                 Block.GetComponent<Trail>().waitTime = waitTime;
 
+                if (warp)
+                {
+                    Block.warp = true;
+                    wavelength = shards.GetComponent<WarpFieldData>().HybridVector(Block.transform).magnitude * initialWavelength;
+                }
 
                 //trailList.Enqueue(Block);
-                //if (trailList.Count > trailLength / trailPeriod)
+                //if (trailList.Count > trailLength / initialWavelength)
                 //{
                 //    StartCoroutine(ShrinkTrailCoroutine());
                 //}
@@ -134,9 +150,9 @@ public class TrailSpawner : MonoBehaviour
 
             }
             if (shipData.boost)
-                yield return new WaitForSeconds(trailPeriod / shipData.speed);
+                yield return new WaitForSeconds(wavelength / shipData.speed);
             else
-                yield return new WaitForSeconds(trailPeriod / shipData.speed);
+                yield return new WaitForSeconds(wavelength / shipData.speed);
         }
     }
 

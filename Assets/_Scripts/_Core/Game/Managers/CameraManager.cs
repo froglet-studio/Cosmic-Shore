@@ -21,6 +21,11 @@ public class CameraManager : SingletonPersistent<CameraManager>
     private bool isCameraFlipEnabled = true;
     private bool useCloseCam = true;
 
+    [SerializeField] float closeCamDistance = 4f;
+    [SerializeField] float farCamDistance = 50f;
+
+    WarpFieldData warpFieldData;
+
     private void OnEnable()
     {
         GameManager.onPhoneFlip += ToggleCloseOrFarCamOnPhoneFlip;
@@ -43,6 +48,12 @@ public class CameraManager : SingletonPersistent<CameraManager>
     {
         OnMainMenu();
     }
+
+    void Update()
+    {
+        warpFieldData = GetComponent<WarpFieldData>();
+    }
+
     public void OnMainMenu()
     {
         SetMainMenuCameraActive();
@@ -68,7 +79,6 @@ public class CameraManager : SingletonPersistent<CameraManager>
     private void SwitchToEndCamera()
     {
         isCameraFlipEnabled = false;
-
         SetEndCameraActive();
     }
 
@@ -128,5 +138,16 @@ public class CameraManager : SingletonPersistent<CameraManager>
             else       
                 SetFarCameraActive();
         }
+    }
+    
+    public void SetCameraDistance(float distance)
+    {
+        var vCam = closeCamera.VirtualCameraGameObject.GetComponent<CinemachineVirtualCamera>();
+        var transposer = vCam.GetCinemachineComponent<CinemachineTransposer>();
+        transposer.m_FollowOffset = new Vector3(0,0,-distance * closeCamDistance);
+
+        vCam = farCamera.VirtualCameraGameObject.GetComponent<CinemachineVirtualCamera>();
+        transposer = vCam.GetCinemachineComponent<CinemachineTransposer>();
+        transposer.m_FollowOffset = new Vector3(0, 0, -distance * farCamDistance);
     }
 }

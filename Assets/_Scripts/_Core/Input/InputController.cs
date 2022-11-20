@@ -27,10 +27,13 @@ namespace StarWriter.Core.Input
         public float speed;
         ShipData shipData;
 
+        public float initialDThrottle = 10f; //for caleb from Grace
+        public float initialThrottleScaler = 50;
 
-        private readonly float defaultThrottle = 10f;
+        public float defaultThrottle;
+        public float throttleScaler;
+
         private readonly float rotationThrottleScaler = 3;
-        private readonly float throttleScaler = 50;
         private readonly float rotationScaler = 130f;
 
         private readonly float lerpAmount = 2f;
@@ -71,6 +74,8 @@ namespace StarWriter.Core.Input
 
         void Start()
         {
+            defaultThrottle = initialDThrottle;
+            throttleScaler = initialThrottleScaler;
 
             shipData = GetComponent<ShipData>();
 
@@ -323,10 +328,7 @@ namespace StarWriter.Core.Input
             }
         }
 
-        private void Throttle(float Xdiff)
-        {
-            speed = Mathf.Lerp(speed, Xdiff * throttleScaler + defaultThrottle, lerpAmount * Time.deltaTime);
-        }
+        
         
         private void Yaw(float Xsum)  // These need to not use *= ... remember quaternions are not commutative
         {
@@ -350,7 +352,7 @@ namespace StarWriter.Core.Input
                                 shipTransform.right) * displacementQ;
         }
 
-        private void Special(float xDiff, float yDiff, float xSum, float ySum)
+        private void Special(float xDiff, float yDiff, float xSum, float ySum) //TODO decouple "special" and "throttle"
         {
             float fuelAmount = -.01f;
             float threshold = .1f;
@@ -367,6 +369,11 @@ namespace StarWriter.Core.Input
                 Throttle(xDiff);
                 shipData.boost = false;
             }
+        }
+
+        private void Throttle(float Xdiff)
+        {
+            speed = Mathf.Lerp(speed, Xdiff * throttleScaler + defaultThrottle, lerpAmount * Time.deltaTime);
         }
 
         private void WingTipRotate(Vector2 diff, bool leftWing)
