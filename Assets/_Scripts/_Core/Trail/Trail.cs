@@ -15,6 +15,7 @@ public class Trail : MonoBehaviour
     public string ownerId;
     public float waitTime = .6f;
     public bool embiggen;
+    public bool destroyed = false;
 
     public bool warp = false;
     GameObject shards;
@@ -109,11 +110,11 @@ public class Trail : MonoBehaviour
         if (gameObject != null && other.isTrigger == false) //don't want to catch the skimmer collider
         {
             // We used to destroy the object, but we were throwing null pointers later in the code when Destroying blocks that expired
-            // Instead, let's just disable the collider and renderer and let the trailspawner clean up the object lazily
-            //Destroy(gameObject);
+            // Instead, let's just disable the collider and renderer and leet th gunner rstore them
 
             gameObject.GetComponent<BoxCollider>().enabled = false;
             gameObject.GetComponent<MeshRenderer>().enabled = false;
+            destroyed = true;
             Collide(other);
         }
     }
@@ -162,6 +163,12 @@ public class Trail : MonoBehaviour
                 HapticController.PlayBlockCollisionHaptics();
             }
         }
+    }
+
+    public void restore()
+    {
+        gameObject.GetComponent<BoxCollider>().enabled = true;
+        gameObject.GetComponent<MeshRenderer>().enabled = true;
     }
 
     private bool IsPlayer(GameObject go)

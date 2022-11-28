@@ -24,10 +24,13 @@ namespace StarWriter.Core.Input
         public static event Boost OnBoost;
         string uuid;
 
+        [SerializeField] bool drift = false;
+        Vector3 savedForward = Vector3.zero;
+
         public float speed;
         ShipData shipData;
 
-        public float initialDThrottle = 10f; //for caleb from Grace
+        public float initialDThrottle = 10f; 
         public float initialThrottleScaler = 50;
 
         public float defaultThrottle;
@@ -355,25 +358,40 @@ namespace StarWriter.Core.Input
         private void Special(float xDiff, float yDiff, float xSum, float ySum) //TODO decouple "special" and "throttle"
         {
             float fuelAmount = -.01f;
-            float threshold = .1f;
+            float threshold = .3f;
             float boost = 4f;
             float value = (1 - xDiff) + Mathf.Abs(yDiff) + Mathf.Abs(ySum) + Mathf.Abs(xSum);
-            if (value < threshold && FuelSystem.CurrentFuel>0)
+
+            
+
+            if (value < threshold) //&& FuelSystem.CurrentFuel>0)
             {
-                speed = Mathf.Lerp(speed, xDiff * throttleScaler*boost + defaultThrottle, lerpAmount * Time.deltaTime);
-                shipData.boost = true;
-                OnBoost?.Invoke(uuid, fuelAmount);
+                if (drift)
+                {
+                    if (savedForward == Vector3.zero) savedForward = shipTransform.forward;
+                    speed = Mathf.Lerp(speed, xDiff * throttleScaler + defaultThrottle, lerpAmount * Time.deltaTime);
+                    shipTransform.position -= speed * Time.deltaTime * shipTransform.forward;
+                    shipTransform.position += speed * Time.deltaTime * savedForward;
+                    
+                }
+                else
+                {
+                    speed = Mathf.Lerp(speed, xDiff * throttleScaler * boost + defaultThrottle, lerpAmount * Time.deltaTime);
+                    shipData.boost = true;
+                    OnBoost?.Invoke(uuid, fuelAmount);
+                }
             }
             else
             {
+                savedForward = Vector3.zero;
                 Throttle(xDiff);
                 shipData.boost = false;
             }
         }
 
-        private void Throttle(float Xdiff)
+        private void Throttle(float xDiff)
         {
-            speed = Mathf.Lerp(speed, Xdiff * throttleScaler + defaultThrottle, lerpAmount * Time.deltaTime);
+            speed = Mathf.Lerp(speed, xDiff * throttleScaler + defaultThrottle, lerpAmount * Time.deltaTime);
         }
 
         private void WingTipRotate(Vector2 diff, bool leftWing)
@@ -405,8 +423,8 @@ namespace StarWriter.Core.Input
             if (SystemInfo.supportsGyroscope && status) { 
                 inverseInitialRotation = Quaternion.Inverse(GyroToUnity(gyro.attitude) * derivedCorrection);
             }
-
-            isGyroEnabled = status;
+            if (drift) isGyroEnabled = true;
+            else isGyroEnabled = status;
         }
 
         /// <summary>

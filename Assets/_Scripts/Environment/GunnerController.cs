@@ -6,16 +6,17 @@ public class GunnerController : MonoBehaviour
 {
 
     TrailSpawner trailSpawner;
-    float blocksFromShip;
+    float blockIndex;
     float gunnerSpeed;
     bool direction;
+    int gap = 3;
 
     // Start is called before the first frame update
     void Start()
     {
         trailSpawner = transform.parent.GetComponent<TrailSpawner>();
         gunnerSpeed = .1f;
-        blocksFromShip = 1;
+        blockIndex = 0;
         direction = true;
     }
 
@@ -24,21 +25,22 @@ public class GunnerController : MonoBehaviour
     {
         if (direction)
         {
-            blocksFromShip += gunnerSpeed;
+            blockIndex += gunnerSpeed;
         }
-        if (blocksFromShip > trailSpawner.trailList.Count - 3)
+        if (blockIndex > trailSpawner.trailList.Count - gap - gunnerSpeed)
         {
             direction = false;
         }
         if (!direction)
         {
-            blocksFromShip -= gunnerSpeed;
+            blockIndex -= gunnerSpeed;
         }
-        if (blocksFromShip < 3)
+        if (blockIndex < gap)
         {
             direction = true;
         }
-
-        transform.position = trailSpawner.trailList[trailSpawner.trailList.Count - (int)blocksFromShip].transform.position;
+        Debug.Log($"block index: {blockIndex}");
+        transform.position = trailSpawner.trailList[(int)blockIndex].transform.position;
+        if (trailSpawner.trailList[(int)blockIndex].destroyed) trailSpawner.trailList[(int)blockIndex].restore();
     }
 }
