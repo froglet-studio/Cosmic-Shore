@@ -11,7 +11,7 @@ public class BlockImpact : MonoBehaviour
     private IEnumerator ImpactCoroutine(Vector3 velocity,string ID)
     {
         var velocityScale = .1f;
-        //var positionScale = 1;
+        var positionScale = 1;
         
         Vector3 distance = Vector3.zero;
 
@@ -37,7 +37,8 @@ public class BlockImpact : MonoBehaviour
             distance += velocityScale * Time.deltaTime * velocity;
             material.SetVector("_velocity", distance);
             material.SetFloat("_opacity", (1000 - distance.magnitude) / 1000);
-            //transform.position += positionScale * distance;
+          
+            transform.position += positionScale * distance;
         }
 
         Destroy(transform.gameObject);

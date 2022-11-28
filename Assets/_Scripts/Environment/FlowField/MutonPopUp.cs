@@ -42,7 +42,7 @@ public class MutonPopUp : MonoBehaviour
 
     Material tempMaterial;
     List<Collider> collisions;
-    [SerializeField] bool warp = false;
+    [SerializeField] bool surface = false;
 
 
     void Start()
@@ -128,7 +128,7 @@ public class MutonPopUp : MonoBehaviour
 
         // Move the muton
         StartCoroutine(Muton.GetComponent<FadeIn>().FadeInCoroutine());
-        if (warp) transform.SetPositionAndRotation(UnityEngine.Random.onUnitSphere * sphereRadius, UnityEngine.Random.rotation);
+        if (surface) transform.SetPositionAndRotation(UnityEngine.Random.onUnitSphere * sphereRadius, UnityEngine.Random.rotation);
         else
         {
             transform.SetPositionAndRotation(UnityEngine.Random.insideUnitSphere * sphereRadius, UnityEngine.Random.rotation);

@@ -115,7 +115,7 @@ Material:
     - _ZWriteControl: 1
     - _add_cos: 0
     - _angle: 0
-    - _distance: -4
+    - _distance: 0
     - _multiply: 0
     - _muton: 0
     - _opacity: 80

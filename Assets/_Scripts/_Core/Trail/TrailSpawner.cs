@@ -28,7 +28,8 @@ public class TrailSpawner : MonoBehaviour
 
     static GameObject TrailContainer;
 
-    readonly Queue<Trail> trailList = new();
+    readonly Queue<Trail> trailQueue = new();
+    readonly public List<Trail> trailList = new();
     bool spawnerEnabled = true;
 
     float volume;
@@ -138,8 +139,9 @@ public class TrailSpawner : MonoBehaviour
                     wavelength = shards.GetComponent<WarpFieldData>().HybridVector(Block.transform).magnitude * initialWavelength;
                 }
 
-                //trailList.Enqueue(Block);
-                //if (trailList.Count > trailLength / initialWavelength)
+                trailQueue.Enqueue(Block);
+                trailList.Add(Block);
+                //if (trailQueue.Count > trailLength / initialWavelength)
                 //{
                 //    StartCoroutine(ShrinkTrailCoroutine());
                 //}
@@ -159,7 +161,7 @@ public class TrailSpawner : MonoBehaviour
     IEnumerator ShrinkTrailCoroutine()
     {
         var size = 1f;
-        var Block = trailList.Dequeue();
+        var Block = trailQueue.Dequeue();
         var initialTransformSize = Block.transform.localScale;
         var initialColliderSize = Block.GetComponent<BoxCollider>().size;
 
