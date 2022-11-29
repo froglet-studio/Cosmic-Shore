@@ -1,4 +1,3 @@
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -6,10 +5,9 @@ namespace StarWriter.Core.HangerBuilder
 {
     public class ListOfAllShips : MonoBehaviour
     {
-        public List<SO_Ship_Base> AllSO_Ships;
-        [SerializeField]
-        private List<string> shipNames;
-        public Dictionary<string, SO_Ship_Base> AllShips;
+        public List<SO_Ship> AllSO_Ships;
+        [SerializeField] List<string> shipNames;
+        public Dictionary<string, SO_Ship> AllShips;
 
 
         // Start is called before the first frame update
@@ -21,23 +19,22 @@ namespace StarWriter.Core.HangerBuilder
         private void IntializeAllPilotsDictionary()
         {
             int idx = 0;
-            AllShips = new Dictionary<string, SO_Ship_Base>();
+            AllShips = new Dictionary<string, SO_Ship>();
 
-            foreach (SO_Ship_Base ship in AllSO_Ships)
+            foreach (SO_Ship ship in AllSO_Ships)
             {
                 //Add ship to list
-                shipNames.Add(ship.ShipName);
+                shipNames.Add(ship.Name);
                 //add ship to dictionary
                 AllShips.Add(shipNames[idx], AllSO_Ships[idx]);
                 idx++;
             }
         }
 
-        public SO_Ship_Base GetShipSOFromAllShips(string pilotName)
+        public SO_Ship GetShipSOFromAllShips(string pilotName)
         {
-            AllShips.TryGetValue(pilotName, out SO_Ship_Base shipToReturn);
+            AllShips.TryGetValue(pilotName, out SO_Ship shipToReturn);
             return shipToReturn;
         }
     }
 }
-

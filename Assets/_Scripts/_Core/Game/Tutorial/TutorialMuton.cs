@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
 using StarWriter.Core.Input;
-using StarWriter.Core.Audio;
 
 namespace StarWriter.Core.Tutorial 
 {
@@ -16,9 +15,6 @@ namespace StarWriter.Core.Tutorial
         [SerializeField]
         Material material;
         Material tempMaterial;
-
-        ShipData shipData;
-
 
         public delegate void OnTutorialMutonCollisionEvent();
         public static event OnTutorialMutonCollisionEvent onMutonCollision;
@@ -45,7 +41,7 @@ namespace StarWriter.Core.Tutorial
                 //muton animation and haptics
                 StartCoroutine(spentMuton.GetComponent<Impact>().ImpactCoroutine(
                     ship.transform.forward * ship.GetComponent<InputController>().speed, tempMaterial, "Player"));
-                HapticController.PlayMutonCollisionHaptics();
+                HapticController.PlayCrystalImpactHaptics();
                 
             }
         }

@@ -13,7 +13,7 @@ namespace StarWriter.Core.HangerBuilder
         public bool trailLoaded = false;
 
         SO_Pilot pilotSO;
-        SO_Ship_Base shipSO;
+        SO_Ship shipSO;
         SO_Trail_Base trailSO;
 
         [SerializeField] GameObject shipHardPoint;
@@ -34,7 +34,7 @@ namespace StarWriter.Core.HangerBuilder
             Debug.Log("Ship loaded " + shipLoaded);
             Debug.Log("Trail loaded " + trailLoaded);
             Debug.Log("Pilot's name " + pilotSO.CharacterName);
-            Debug.Log("Ship's name is " + shipSO.ShipName);
+            Debug.Log("Ship's name is " + shipSO.Name);
             Debug.Log("Trail loaded is " + trailSO.TrailName);
         }
 
@@ -47,7 +47,7 @@ namespace StarWriter.Core.HangerBuilder
 
         void TryToLoadShip(string pilot)
         {
-            bool success = hangar.GetComponent<ListOfAllShips>().AllShips.TryGetValue(pilot, out SO_Ship_Base tempShipSO);
+            bool success = hangar.GetComponent<ListOfAllShips>().AllShips.TryGetValue(pilot, out SO_Ship tempShipSO);
             shipLoaded = success;
             shipSO = tempShipSO;
         }

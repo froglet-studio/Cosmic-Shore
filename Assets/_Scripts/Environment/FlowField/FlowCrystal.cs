@@ -89,7 +89,7 @@ public class FlowCrystal : MonoBehaviour
             // Muton animation and haptics
             StartCoroutine(spentMuton.GetComponent<Impact>().ImpactCoroutine(
                 ship.transform.forward * ship.GetComponent<ShipData>().speed, tempMaterial, "Player"));
-            HapticController.PlayMutonCollisionHaptics();
+            HapticController.PlayCrystalImpactHaptics();
 
             // Update fuel bar and currentScore
             OnMutonPopUpCollision(ship.GetComponent<Player>().PlayerUUID, fuelAmount); // excess Fuel flows into currentScore
@@ -135,10 +135,5 @@ public class FlowCrystal : MonoBehaviour
         transform.SetPositionAndRotation(new Vector3((field.fieldWidth - field.fieldThickness) * Mathf.Cos(eccentricAnomaly * TWO_PI / stops),
                                                      (field.fieldHeight - field.fieldThickness*aspectRatio) * Mathf.Sin(eccentricAnomaly * TWO_PI / stops), 
                                                      0), UnityEngine.Random.rotation);
-        //OnMutonMove();
-
-        // Grow tail
-        TrailSpawner trailScript = ship.GetComponent<TrailSpawner>();
-        trailScript.trailLength += lifeTimeIncrease;
     }
 }

@@ -24,7 +24,12 @@ namespace StarWriter.Core.Input
         string uuid;
 
         public float speed;
-        public float[,] flowField = new float[3, 3];
+        public float[,] flowField = new float[3, 3] 
+        { 
+            { 0, -1, 0 },
+            { 1,  0, 0 },
+            { 0,  0, 0 }
+        };
 
         [SerializeField] FlowFieldData flowFieldData;
         ShipData shipData;
@@ -86,15 +91,6 @@ namespace StarWriter.Core.Input
             displacementQ = shipTransform.rotation;
 
             invertYEnabled = GameSetting.Instance.InvertYEnabled;
-            flowField[0, 0] = 0;
-            flowField[0, 1] = -1;
-            flowField[0, 2] = 0;
-            flowField[1, 0] = 1;
-            flowField[1, 1] = 0;
-            flowField[1, 2] = 0;
-            flowField[2, 0] = 0;
-            flowField[2, 1] = 0;
-            flowField[2, 2] = 0;
         }
 
         float gyroInitializationAcceptableRange = .05f;

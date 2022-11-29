@@ -15,10 +15,6 @@ public class ShipExplosionHandler : MonoBehaviour
     public delegate void OnShipExplosionAnimationCompletionEvent();
     public static event OnShipExplosionAnimationCompletionEvent onShipExplosionAnimationCompletion;
 
-    // TODO: commenting out the below to fix console warning
-    //public delegate void OnShipFormationAnimationCompleteEvent();
-    //public static event OnShipFormationAnimationCompleteEvent OnShipFormationAnimationCompletion;
-
     private void OnEnable()
     {
         DeathEvents.OnDeathBegin += DoShipExplosionEffect;

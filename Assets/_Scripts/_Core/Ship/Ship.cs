@@ -1,47 +1,63 @@
-using System.Collections;
-using System.Collections.Generic;
+using StarWriter.Core.Input;
 using UnityEngine;
 
 public class Ship : MonoBehaviour
 {
-    [SerializeField] string shipName;
     [SerializeField] string shipUUID;
-    [ContextMenu("Generate Ship GUID")]
-    private void GenerateGUID()
+    [SerializeField] SO_Ship shipSO;
+    [SerializeField] GameObject AOEPrefab;
+
+    public enum CrystalImpactEffect
     {
-        shipUUID = System.Guid.NewGuid().ToString();
+        PlayHaptics,
+        Refuel,
+        Score,
+        AreaOfEffectExplosion,
+        ResetAggression,
     }
 
-    [SerializeField] SO_Ship_Base ship_SO;
+    public enum TrailBlockImpactEffect
+    {
+        DeactivateTrailBlock,
+        ReactivateTrailBlock,
+    }
 
-    public string ShipName { get => shipName; }
+    public string ShipName { get => shipSO.Name; }
     public string ShipUUID { get => shipUUID; }
-    public SO_Ship_Base ShipSO { get => ship_SO; set => ship_SO = value; } //TODO OnChangeValue update the ship
+    public SO_Ship ShipSO { get => shipSO; set => shipSO = value; }
 
-
-    // Start is called before the first frame update
-    void Start()
+    public void PerformCrystalImpactEffects(MutonPopUp.CrystalProperties crystalProperties)
     {
-        InitializeShip();
+        foreach (CrystalImpactEffect effect in shipSO.CrystalImpactEffects)
+        {
+            switch (effect)
+            {
+                case CrystalImpactEffect.PlayHaptics:
+                    HapticController.PlayCrystalImpactHaptics();
+                    break;
+                case CrystalImpactEffect.AreaOfEffectExplosion:
+                    // Spawn AOE explosion
+                    var AOEExplosion = Instantiate(AOEPrefab);
+                    // TODO: make explosion not collide with ships
+                    // TODO: add position to crystal properties? use crystal properties to set position
+                    AOEExplosion.transform.position = transform.position; 
+                    // Do the thing
+                    break;
+                case CrystalImpactEffect.Refuel:
+                    // TODO: the below line assumes this script will live on an object containing the player script -> could be more robust
+                    FuelSystem.ChangeFuelAmount(gameObject.GetComponent<Player>().PlayerUUID, crystalProperties.fuelAmount);
+                    break;
+                case CrystalImpactEffect.Score:
+                    // 
+                    break;
+                case CrystalImpactEffect.ResetAggression:
+                    AiShipController controllerScript = gameObject.GetComponent<AiShipController>();
+                    controllerScript.lerp = controllerScript.defaultLerp;
+                    controllerScript.throttle = controllerScript.defaultThrottle;
+                    break;
+            }
+        }
     }
 
-    // Update is called once per frame
-    void Update()
-    {
-
-    }
-
-    //Sets Ship Fields from the assigned Scriptable Object 
-    void InitializeShip()
-    {
-        //TODO
-        shipName = ship_SO.ShipName;
-
-    }
-
-    public void ChangeShip(SO_Ship_Base ship)
-    {
-        ship_SO = ship;
-        InitializeShip();
-    }
+    // TODO: public void PerformTrailBlockImpactEffects(TrailBlockProperties trailBlockProperties)
 }

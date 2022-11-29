@@ -17,7 +17,7 @@ public class HapticController : MonoBehaviour
         HapticPatterns.PlayPreset(ButtonPattern);
     }
 
-    public static void PlayMutonCollisionHaptics()
+    public static void PlayCrystalImpactHaptics()
     {
         HapticPatterns.PlayPreset(MutonCollisionPattern);
     }

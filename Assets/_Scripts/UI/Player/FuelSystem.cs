@@ -23,8 +23,6 @@ public class FuelSystem : MonoBehaviour
     [SerializeField]float rateOfFuelChange = -0.04f;
     #endregion
 
-    [SerializeField] bool verboseLogging;
-
     public static float CurrentFuel { 
         get => currentFuel; 
         private set 
@@ -46,7 +44,6 @@ public class FuelSystem : MonoBehaviour
     private void OnEnable()
     {
         Trail.OnTrailCollision += ChangeFuelAmount;
-        MutonPopUp.OnMutonPopUpCollision += ChangeFuelAmount;
         FlowCrystal.OnMutonPopUpCollision += ChangeFuelAmount;
         GameManager.onExtendGamePlay += ResetFuel;
         Skimmer.OnSkim += ChangeFuelAmount;
@@ -57,7 +54,6 @@ public class FuelSystem : MonoBehaviour
     private void OnDisable()
     {
         Trail.OnTrailCollision -= ChangeFuelAmount;
-        MutonPopUp.OnMutonPopUpCollision -= ChangeFuelAmount;
         FlowCrystal.OnMutonPopUpCollision += ChangeFuelAmount;
         GameManager.onExtendGamePlay -= ResetFuel;
         Skimmer.OnSkim -= ChangeFuelAmount;
@@ -82,14 +78,9 @@ public class FuelSystem : MonoBehaviour
         CurrentFuel = maxFuel;
     }
 
-    private void ChangeFuelAmount(string uuid, float amount)
+    public static void ChangeFuelAmount(string uuid, float amount)
     {
         if (uuid == "admin")
-        {
             CurrentFuel = Mathf.Clamp(currentFuel + amount, 0, 1);
-
-            if (verboseLogging)
-                Debug.Log("FuelSystem reading is " + currentFuel);
-        }
     }
 }

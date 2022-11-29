@@ -408,6 +408,7 @@ MonoBehaviour:
   WinnerDisplay: {fileID: 8546882570936324704}
   ScoreContainers: []
   scoreText: {fileID: 3066695830731265341}
+  nodeGame: 0
 --- !u!114 &1586480803
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -9662,7 +9663,12 @@ MonoBehaviour:
   Fusilage: {fileID: 2126671201345994155}
   LeftWing: {fileID: 4750495543154980033}
   RightWing: {fileID: 3696267483056767852}
+  drift: 0
   speed: 0
+  initialDThrottle: 10
+  initialThrottleScaler: 50
+  defaultThrottle: 0
+  throttleScaler: 0
 --- !u!114 &913289056513870075
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -9693,7 +9699,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9ca79d17578366e4f9cd2b19173ecab8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  playerName: 
+  playerName: Bowie
   playerUUID: admin
   playerSO: {fileID: 11400000, guid: 0261c50928a2b8e4f833e2f25f6f6669, type: 2}
   playerColor: {r: 0, g: 0, b: 0, a: 1}
@@ -9713,10 +9719,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   trail: {fileID: 4563009547826722997, guid: 5790c8c1f457a754baecca51ef90c82e, type: 3}
   offset: 0
-  trailPeriod: 6
+  initialWavelength: 4
   trailLength: 40
   waitTime: 0.5
   startDelay: 2
+  warp: 0
 --- !u!1 &7678655601405904825
 GameObject:
   m_ObjectHideFlags: 0
