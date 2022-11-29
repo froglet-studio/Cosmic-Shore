@@ -1,10 +1,11 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 public class SnowChanger : MonoBehaviour
 {
-    [SerializeField] GameObject muton;
+    [SerializeField] GameObject Crystal;
     [SerializeField] GameObject snow;
 
     GameObject[,,] crystalLattice;
@@ -19,12 +20,12 @@ public class SnowChanger : MonoBehaviour
 
     private void OnEnable()
     {
-        MutonPopUp.OnMutonMove += ChangeSnowSize;
+        global::Crystal.OnCrystalMove += ChangeSnowSize;
     }
 
     private void OnDisable()
     {
-        MutonPopUp.OnMutonMove -= ChangeSnowSize;
+        global::Crystal.OnCrystalMove -= ChangeSnowSize;
     }
 
     // Start is called before the first frame update
@@ -32,7 +33,7 @@ public class SnowChanger : MonoBehaviour
     {
         nodeDistance = crystalSideLength/nodesPerSide;
 
-        sphereDiameter = sphereScaler * muton.GetComponent<MutonPopUp>().sphereRadius;
+        sphereDiameter = sphereScaler * Crystal.GetComponent<Crystal>().sphereRadius;
 
         crystalLattice = new GameObject[nodesPerSide * 2, nodesPerSide * 2, nodesPerSide * 2];
 
@@ -68,7 +69,7 @@ public class SnowChanger : MonoBehaviour
                 {
                     var node = crystalLattice[x, y, z];
                     float clampedDistance = Mathf.Clamp(
-                        (node.transform.position - muton.transform.position).magnitude, 0, sphereDiameter);
+                        (node.transform.position - Crystal.transform.position).magnitude, 0, sphereDiameter);
 
                     float normalizedDistance = clampedDistance / sphereDiameter;
 
@@ -76,7 +77,7 @@ public class SnowChanger : MonoBehaviour
                         Vector3.forward * (normalizedDistance  * nodeScaler + nodeSize) + 
                         Vector3.one * (normalizedDistance * nodeScalerOverThree + nodeSize);
 
-                    node.transform.LookAt(muton.transform);
+                    node.transform.LookAt(Crystal.transform);
                 }
             }
         }

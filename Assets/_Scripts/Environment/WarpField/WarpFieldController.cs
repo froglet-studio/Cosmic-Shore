@@ -12,8 +12,8 @@ public class WarpFieldController : MonoBehaviour
     Transform blue;
     Transform red;
     InputController playerInput;
-    AiShipController redInput;
-    AiShipController blueInput;
+    AIPilot redInput;
+    AIPilot blueInput;
 
     // Start is called before the first frame update
     void Start()
@@ -26,8 +26,8 @@ public class WarpFieldController : MonoBehaviour
         red = GameObject.FindGameObjectWithTag("red").transform;
 
         playerInput = player.GetComponent<InputController>();
-        redInput = red.GetComponent<AiShipController>();
-        blueInput = blue.GetComponent<AiShipController>();
+        redInput = red.GetComponent<AIPilot>();
+        blueInput = blue.GetComponent<AIPilot>();
     }
 
     // Update is called once per frame

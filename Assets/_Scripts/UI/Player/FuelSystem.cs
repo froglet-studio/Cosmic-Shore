@@ -44,7 +44,6 @@ public class FuelSystem : MonoBehaviour
     private void OnEnable()
     {
         Trail.OnTrailCollision += ChangeFuelAmount;
-        FlowCrystal.OnMutonPopUpCollision += ChangeFuelAmount;
         GameManager.onExtendGamePlay += ResetFuel;
         Skimmer.OnSkim += ChangeFuelAmount;
         InputController.OnBoost += ChangeFuelAmount;
@@ -54,7 +53,6 @@ public class FuelSystem : MonoBehaviour
     private void OnDisable()
     {
         Trail.OnTrailCollision -= ChangeFuelAmount;
-        FlowCrystal.OnMutonPopUpCollision += ChangeFuelAmount;
         GameManager.onExtendGamePlay -= ResetFuel;
         Skimmer.OnSkim -= ChangeFuelAmount;
         InputController.OnBoost -= ChangeFuelAmount;

@@ -3,29 +3,21 @@ using UnityEngine;
 
 public class FadeIn : MonoBehaviour
 {
-    [SerializeField]
-    private float opacity;
+    [SerializeField] float fadeInRate;
 
-    [SerializeField]
-    private float fadeInRate;
-
-    //[SerializeField]
-    Material MutonMaterial;
+    Material material;
 
     void Start()
     {
-
         StartCoroutine(FadeInCoroutine());
-        MutonMaterial = new Material(gameObject.GetComponent<Renderer>().material);
-        gameObject.GetComponent<Renderer>().material = MutonMaterial;
-        
+        material = new Material(gameObject.GetComponent<Renderer>().material);
+        gameObject.GetComponent<Renderer>().material = material;
     }
 
     public IEnumerator FadeInCoroutine()
     {
-        
         fadeInRate = .001f;
-        opacity = 0;
+        var opacity = 0f;
         while (opacity < 1)
         {
             yield return null;

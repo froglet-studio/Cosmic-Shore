@@ -1,10 +1,10 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 public class StarChanger : MonoBehaviour
 {
-
     private void OnEnable()
     {
         FuelSystem.OnFuelChange += UpdateFuelLevel;
@@ -16,10 +16,9 @@ public class StarChanger : MonoBehaviour
     }
 
     Material starMaterial;
-    Vector3 mutonPosition;
+    Vector3 crystalPosition;
 
-    [SerializeField]
-    GameObject Muton;
+    [SerializeField] GameObject Crystal;
 
     Color green = new Color(0, .4f, .6f);
     Color blue = new Color(.18f, .18f, .58f);
@@ -40,10 +39,10 @@ public class StarChanger : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        mutonPosition = Vector3.Lerp(mutonPosition, Muton.transform.position,.02f);
+        crystalPosition = Vector3.Lerp(crystalPosition, Crystal.transform.position,.02f);
         starColor = Color.Lerp(starColor,fuelColor,.02f);
         starMaterial.SetColor("_color", starColor);
-        starMaterial.SetVector("_mutonPosition", mutonPosition);
+        starMaterial.SetVector("_mutonPosition", crystalPosition);
     }
 
     public void UpdateFuelLevel(float amount)

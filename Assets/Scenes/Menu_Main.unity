@@ -491,7 +491,7 @@ GameObject:
   - component: {fileID: 420213767}
   - component: {fileID: 420213766}
   m_Layer: 0
-  m_Name: EventSystem (1)
+  m_Name: EventSystem
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -584,6 +584,11 @@ PrefabInstance:
     - target: {fileID: 6441042370167047513, guid: d813bdb2818918e4781bc88b1e96449b,
         type: 3}
       propertyPath: Muton
+      value: 
+      objectReference: {fileID: 3882826178379139558}
+    - target: {fileID: 6441042370167047513, guid: d813bdb2818918e4781bc88b1e96449b,
+        type: 3}
+      propertyPath: Crystal
       value: 
       objectReference: {fileID: 3882826178379139558}
     - target: {fileID: 6441042370167047514, guid: d813bdb2818918e4781bc88b1e96449b,
@@ -903,8 +908,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerName: 
   playerUUID: ai2
-  playerSO: {fileID: 0}
-  playerColor: {r: 0, g: 0, b: 0, a: 1}
   playerShipPrefab: {fileID: 0}
   playerTrailPrefab: {fileID: 0}
 --- !u!114 &709728278
@@ -2727,7 +2730,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1416682015}
   m_Layer: 0
-  m_Name: Muton Container
+  m_Name: CrystalContainer
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -4630,8 +4633,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerName: 
   playerUUID: ai
-  playerSO: {fileID: 0}
-  playerColor: {r: 0, g: 0, b: 0, a: 1}
   playerShipPrefab: {fileID: 0}
   playerTrailPrefab: {fileID: 0}
 --- !u!114 &378015796163850479
@@ -5044,7 +5045,7 @@ GameObject:
   - component: {fileID: 3882826178379139552}
   - component: {fileID: 3882826178379139584}
   m_Layer: 0
-  m_Name: Muton
+  m_Name: Crytal
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -5078,12 +5079,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c69460cf820bb5f4c9ae89c325628cc9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  spentMutonPrefab: {fileID: 8491596592871572304, guid: 61a562cb4f0f4d744a9cb957155947d1,
+  spentCrystalPrefab: {fileID: 8491596592871572304, guid: 61a562cb4f0f4d744a9cb957155947d1,
     type: 3}
-  MutonContainer: {fileID: 1416682014}
+  Container: {fileID: 1416682014}
   lifeTimeIncrease: 3
   sphereRadius: 15
-  Muton: {fileID: 8491596593335364973}
+  Crystal: {fileID: 8491596593335364973}
   material: {fileID: 2100000, guid: 383f21e8586fd7243a19e1d0f26110d0, type: 2}
 --- !u!1001 &3902679334405631492
 PrefabInstance:
@@ -6158,7 +6159,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 318b4eb62a2693f4e98368eb975997cd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  opacity: 0
   fadeInRate: 0.04
 --- !u!1 &9107254497214813130
 GameObject:

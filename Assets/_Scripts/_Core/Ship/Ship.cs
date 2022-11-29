@@ -10,7 +10,7 @@ public class Ship : MonoBehaviour
     public enum CrystalImpactEffect
     {
         PlayHaptics,
-        Refuel,
+        FillFuel,
         Score,
         AreaOfEffectExplosion,
         ResetAggression,
@@ -18,15 +18,18 @@ public class Ship : MonoBehaviour
 
     public enum TrailBlockImpactEffect
     {
+        PlayHaptics,
+        DrainFuel,
+        DebuffSpeed,
         DeactivateTrailBlock,
-        ReactivateTrailBlock,
+        ActivateTrailBlock,
     }
 
     public string ShipName { get => shipSO.Name; }
     public string ShipUUID { get => shipUUID; }
     public SO_Ship ShipSO { get => shipSO; set => shipSO = value; }
 
-    public void PerformCrystalImpactEffects(MutonPopUp.CrystalProperties crystalProperties)
+    public void PerformCrystalImpactEffects(CrystalProperties crystalProperties)
     {
         foreach (CrystalImpactEffect effect in shipSO.CrystalImpactEffects)
         {
@@ -43,7 +46,7 @@ public class Ship : MonoBehaviour
                     AOEExplosion.transform.position = transform.position; 
                     // Do the thing
                     break;
-                case CrystalImpactEffect.Refuel:
+                case CrystalImpactEffect.FillFuel:
                     // TODO: the below line assumes this script will live on an object containing the player script -> could be more robust
                     FuelSystem.ChangeFuelAmount(gameObject.GetComponent<Player>().PlayerUUID, crystalProperties.fuelAmount);
                     break;
@@ -51,7 +54,7 @@ public class Ship : MonoBehaviour
                     // 
                     break;
                 case CrystalImpactEffect.ResetAggression:
-                    AiShipController controllerScript = gameObject.GetComponent<AiShipController>();
+                    AIPilot controllerScript = gameObject.GetComponent<AIPilot>();
                     controllerScript.lerp = controllerScript.defaultLerp;
                     controllerScript.throttle = controllerScript.defaultThrottle;
                     break;

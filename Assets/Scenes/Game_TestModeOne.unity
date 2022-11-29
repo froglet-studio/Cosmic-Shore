@@ -219,7 +219,7 @@ GameObject:
   - component: {fileID: 430359314}
   - component: {fileID: 430359315}
   m_Layer: 2
-  m_Name: Muton
+  m_Name: Crystal
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -274,13 +274,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5a8f286a585edf943935c4316edeb2b6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  lifeTimeIncrease: 3
-  fuelAmount: 0.5
+  crystalProperties:
+    fuelAmount: 0.5
+    scoreAmount: 1
+    tailLengthIncreaseAmount: 0
   sphereRadius: 170
-  scoreBonus: 1
-  spentMutonPrefab: {fileID: 8491596592871572304, guid: f39596c98ed9d644a834f2fa27ec90ca,
+  SpentCrystalPrefab: {fileID: 8491596592871572304, guid: f39596c98ed9d644a834f2fa27ec90ca,
     type: 3}
-  Muton: {fileID: 7244393970774794917}
+  CrystalModel: {fileID: 7244393970774794917}
   material: {fileID: 2100000, guid: 383f21e8586fd7243a19e1d0f26110d0, type: 2}
   surface: 0
 --- !u!82 &430359315
@@ -2001,10 +2002,15 @@ PrefabInstance:
       propertyPath: muton
       value: 
       objectReference: {fileID: 430359307}
+    - target: {fileID: 639495419069806261, guid: 41222ebb42ad82c4ca52a729935c79d3,
+        type: 3}
+      propertyPath: Crystal
+      value: 
+      objectReference: {fileID: 430359307}
     - target: {fileID: 639495419069806266, guid: 41222ebb42ad82c4ca52a729935c79d3,
         type: 3}
       propertyPath: m_RootOrder
-      value: 3
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 639495419069806266, guid: 41222ebb42ad82c4ca52a729935c79d3,
         type: 3}

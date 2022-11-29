@@ -33,8 +33,7 @@ public class ScoringManager : MonoBehaviour
         GameManager.onPlayGame += ResetScoreAndDeathCount;
         GameManager.onDeath += UpdateScoresAndDeathCount;
         GameManager.onGameOver += UpdateScoresAndDeathCount;
-        MutonPopUp.AddToScore += UpdateScore;
-        FlowCrystal.AddToScore += UpdateScore;
+        Crystal.AddToScore += UpdateScore;
         if (nodeGame) TrailSpawner.AddToScore += UpdateScore;
         Trail.AddToScore += UpdateScore;
     }
@@ -44,8 +43,7 @@ public class ScoringManager : MonoBehaviour
         GameManager.onPlayGame -= ResetScoreAndDeathCount;
         GameManager.onDeath -= UpdateScoresAndDeathCount;
         GameManager.onGameOver -= UpdateScoresAndDeathCount;
-        MutonPopUp.AddToScore -= UpdateScore;
-        FlowCrystal.AddToScore -= UpdateScore;
+        Crystal.AddToScore -= UpdateScore;
         if (nodeGame) TrailSpawner.AddToScore -= UpdateScore;
         Trail.AddToScore -= UpdateScore;
     }

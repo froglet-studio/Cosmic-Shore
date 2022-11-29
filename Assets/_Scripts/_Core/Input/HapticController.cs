@@ -4,7 +4,7 @@ using UnityEngine;
 public class HapticController : MonoBehaviour
 {
     static HapticPatterns.PresetType ButtonPattern = HapticPatterns.PresetType.LightImpact;
-    static HapticPatterns.PresetType MutonCollisionPattern = HapticPatterns.PresetType.MediumImpact;
+    static HapticPatterns.PresetType CrystalCollisionPattern = HapticPatterns.PresetType.MediumImpact;
     static HapticPatterns.PresetType BlockCollisionPattern = HapticPatterns.PresetType.Success;
 
     public void PlayPreset(int option)
@@ -19,7 +19,7 @@ public class HapticController : MonoBehaviour
 
     public static void PlayCrystalImpactHaptics()
     {
-        HapticPatterns.PlayPreset(MutonCollisionPattern);
+        HapticPatterns.PlayPreset(CrystalCollisionPattern);
     }
 
     public static void PlayBlockCollisionHaptics()
@@ -34,7 +34,7 @@ haptic preset notes:
 2, 5, 7 - might be good for running through stuff (positive)
 3 - Not in use (negative) crash? odd pattern - I wouldn't use it unless its going to match an animation cause it might seem out of place otherwise
 
-5 - Muton
+5 - Crystal
 4 - UI
 6 - crash into blocks - intense (negative feedback) 
 */

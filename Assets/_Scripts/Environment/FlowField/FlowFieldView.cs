@@ -30,12 +30,12 @@ public class FlowFieldView : MonoBehaviour
 
     private void OnEnable()
     {
-        //MutonPopUp.OnMutonMove += ChangeSnowSize;
+        //Crystal.OnCrystalMove += ChangeSnowSize;
     }
 
     private void OnDisable()
     {
-        //MutonPopUp.OnMutonMove -= ChangeSnowSize;
+        //Crystal.OnCrystalMove -= ChangeSnowSize;
     }
 
     // Start is called before the first frame update

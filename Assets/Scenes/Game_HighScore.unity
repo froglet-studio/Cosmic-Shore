@@ -144,7 +144,7 @@ GameObject:
   - component: {fileID: 430359314}
   - component: {fileID: 430359315}
   m_Layer: 0
-  m_Name: Muton
+  m_Name: Crystal
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -199,14 +199,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5a8f286a585edf943935c4316edeb2b6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  lifeTimeIncrease: 3
-  fuelAmount: 0.5
+  crystalProperties:
+    fuelAmount: 0
+    scoreAmount: 0
+    tailLengthIncreaseAmount: 0
   sphereRadius: 170
-  scoreBonus: 1
-  spentMutonPrefab: {fileID: 8491596592871572304, guid: f39596c98ed9d644a834f2fa27ec90ca,
-    type: 3}
-  Muton: {fileID: 7244393970774794917}
+  SpentCrystalPrefab: {fileID: 0}
+  CrystalModel: {fileID: 0}
   material: {fileID: 2100000, guid: 383f21e8586fd7243a19e1d0f26110d0, type: 2}
+  surface: 0
 --- !u!82 &430359315
 AudioSource:
   m_ObjectHideFlags: 0
@@ -516,6 +517,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   fuelAmount: 2
+  direction: {x: 0, y: 0, z: 0}
 --- !u!54 &1485816438
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -1055,6 +1057,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   speed: 0
+  boost: 0
 --- !u!54 &1586480810
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -1656,12 +1659,6 @@ PrefabInstance:
 --- !u!4 &5334021468383576857 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 1114034561007818392, guid: a089e5ab0159cc54aa784d6ebf15d2e4,
-    type: 3}
-  m_PrefabInstance: {fileID: 5004511580049544577}
-  m_PrefabAsset: {fileID: 0}
---- !u!1 &7244393970774794917 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 2448508127246415652, guid: a089e5ab0159cc54aa784d6ebf15d2e4,
     type: 3}
   m_PrefabInstance: {fileID: 5004511580049544577}
   m_PrefabAsset: {fileID: 0}
