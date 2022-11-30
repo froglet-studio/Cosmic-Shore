@@ -74,7 +74,7 @@ public class Crystal : MonoBehaviour
         spentCrystal.transform.localEulerAngles = transform.localEulerAngles;
         spentCrystal.GetComponent<Renderer>().material = tempMaterial;
         
-        // TODO: this is silliness, let's use the ship's name or something and just forward it transparently into the impact coroutine
+        // TODO: this is silliness, let's use the ship's name or something and just velocityDirection it transparently into the impact coroutine
         string impactId;
         if (playerGO == GameObject.FindWithTag("Player"))
             impactId = "Player";

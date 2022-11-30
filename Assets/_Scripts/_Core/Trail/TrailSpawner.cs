@@ -118,8 +118,6 @@ public class TrailSpawner : MonoBehaviour
             {
                 var Block = Instantiate(trail);
 
-                
-
                 score += shipData.boost ? volume * volumeScoreScaler*8 : volume * volumeScoreScaler; //if ship is boosted the blocks gets 8 times bigger (2^dimensionality)
                 
                 if (score > 1)
@@ -129,7 +127,7 @@ public class TrailSpawner : MonoBehaviour
                 }
                 
                 Block.ownerId = player.PlayerUUID;
-                Block.transform.SetPositionAndRotation(transform.position - transform.forward * offset, transform.rotation);
+                Block.transform.SetPositionAndRotation(transform.position - shipData.velocityDirection * offset, shipData.blockRotation);
                 Block.transform.parent = TrailContainer.transform;
                 Block.GetComponent<Trail>().waitTime = waitTime;
 

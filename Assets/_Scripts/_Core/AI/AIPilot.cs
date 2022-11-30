@@ -78,7 +78,7 @@ namespace StarWriter.Core.Input
         // Update is called once per frame
         void Update()
         {
-            ////distance to Crystal 
+            ///distance to Crystal 
             distance = muton.position - transform.position;
             
             ///rotate toward Crystal
@@ -95,15 +95,17 @@ namespace StarWriter.Core.Input
                                                    avoidance / behavior.direction.magnitude * Time.deltaTime);
             }
 
-            //get better
+            ///get better
             lerp += lerpIncrease * Time.deltaTime;
             throttle += throttleIncrease * Time.deltaTime;
 
-            //Move ship forward
+            ///Move ship velocityDirection
             Vector3 flowVector = flowFieldData.FlowVector(transform);
             transform.position += transform.forward * Time.deltaTime * throttle + flowVector;
 
             shipData.speed = throttle;
+            shipData.velocityDirection = transform.forward;
+            shipData.blockRotation = transform.rotation;
         }
 
         Quaternion TurnAway(Vector3 direction, Vector3 down, float lerp)

@@ -140,7 +140,7 @@ namespace StarWriter.Core.Input
 
             Vector3 flowVector = flowFieldData.FlowVector(transform);
 
-            // Move ship forward and update shipdata
+            // Move ship velocityDirection and update shipdata
             shipTransform.position += speed * Time.deltaTime * shipTransform.forward + flowVector;
             shipData.speed = speed;
         }
@@ -177,7 +177,7 @@ namespace StarWriter.Core.Input
         {
             if (isGyroEnabled && !Equals(inverseInitialRotation, new Quaternion(0, 0, 0, 0)))
             {
-                // Updates GameObjects rotation from input device's gyroscope
+                // Updates GameObjects blockRotation from input device's gyroscope
                 shipTransform.rotation = Quaternion.Lerp(
                                             shipTransform.rotation,
                                             displacementQ * inverseInitialRotation * GyroToUnity(gyro.attitude) * derivedCorrection,
@@ -354,7 +354,7 @@ namespace StarWriter.Core.Input
         {
             //var value = (leftWing ? -10 : 10);
             //Vector3 point = transform.position + value*transform.right;
-            //Vector3 axis = diff.y*transform.right + diff.x * transform.forward;
+            //Vector3 axis = diff.y*transform.right + diff.x * transform.velocityDirection;
             //Pitch(diff.y / 100);
             //Roll(diff.x / 100);
             //transform.RotateAround(point, axis, diff.magnitude/1f);

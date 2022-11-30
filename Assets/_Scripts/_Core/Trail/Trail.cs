@@ -85,7 +85,7 @@ public class Trail : MonoBehaviour
         StartCoroutine(UpdateParticleCoroutine(particle, skimmer));
 
         // TODO: expose scale as a parameter or base it off of distance between block and skimmer, or both
-        // TODO: rotate particle using skimmer forward and block forward?
+        // TODO: rotate particle using skimmer velocityDirection and block velocityDirection?
         // TODO: experiment with multiple instantiations when super close
     }
 

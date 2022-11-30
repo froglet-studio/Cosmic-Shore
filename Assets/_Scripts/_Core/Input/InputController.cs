@@ -1,6 +1,7 @@
 using System.Collections;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.Serialization;
 
 namespace StarWriter.Core.Input
 {
@@ -24,8 +25,9 @@ namespace StarWriter.Core.Input
         public static event Boost OnBoost;
         string uuid;
 
-        [SerializeField] bool drift = false;
-        Vector3 savedForward = Vector3.zero;
+        [SerializeField] bool driftEnabled = false;
+        bool drifting = false;
+        float boostDecay = 0;
 
         public float speed;
         ShipData shipData;
@@ -66,7 +68,6 @@ namespace StarWriter.Core.Input
         {
             GameSetting.OnChangeGyroEnabledStatus += OnToggleGyro;
             GameSetting.OnChangeInvertYEnabledStatus += OnToggleInvertY;
-
         }
 
         private void OnDisable()
@@ -85,7 +86,6 @@ namespace StarWriter.Core.Input
             uuid = GameObject.FindWithTag("Player").GetComponent<Player>().PlayerUUID;
             // TODO: why is this here?
             Screen.sleepTimeout = SleepTimeout.NeverSleep;
-
 
             gyro = UnityEngine.Input.gyro;
             gyro.enabled = true;
@@ -132,9 +132,15 @@ namespace StarWriter.Core.Input
 
             RotateShip();
 
-            // Move ship forward
+            // Move ship velocityDirection
             shipTransform.position += speed * Time.deltaTime * shipTransform.forward;
             shipData.speed = speed;
+            if (!drifting)
+            {
+                shipData.velocityDirection = shipTransform.forward;
+                shipData.blockRotation = shipTransform.rotation;
+            }
+            
         }
 
         private void PerformShipAnimations(float Xsum, float Ysum, float Xdiff, float Ydiff)
@@ -169,7 +175,7 @@ namespace StarWriter.Core.Input
         {
             if (isGyroEnabled && !Equals(inverseInitialRotation, new Quaternion(0, 0, 0, 0)))
             {
-                // Updates GameObjects rotation from input device's gyroscope
+                // Updates GameObjects blockRotation from input device's gyroscope
                 shipTransform.rotation = Quaternion.Lerp(
                                             shipTransform.rotation,
                                             displacementQ * inverseInitialRotation * GyroToUnity(gyro.attitude) * derivedCorrection,
@@ -212,12 +218,17 @@ namespace StarWriter.Core.Input
                 Pitch(ySum);
                 Roll(yDiff);
                 Yaw(xSum);
-                //Throttle(xDiff);
 
-                PerformShipAnimations(xSum, ySum, xDiff, yDiff);
-
-                Special(xDiff, yDiff, xSum, ySum);
-
+                if (driftEnabled)
+                {
+                    if (UnityEngine.InputSystem.Gamepad.current.leftTrigger.isPressed) Drift(xDiff);
+                    else
+                    {
+                        if (boostDecay > 0) ExitDrift(xDiff);
+                        else Special(xDiff, yDiff, xSum, ySum);
+                    }
+                }
+                else Special(xDiff, yDiff, xSum, ySum);
                 return;
             }
 
@@ -281,8 +292,16 @@ namespace StarWriter.Core.Input
 
                 PerformShipAnimations(xSum, ySum, xDiff, yDiff);
 
-                Special(xDiff, yDiff, xSum, ySum);
+                if (driftEnabled && boostDecay > 0)
+                {
+                    ExitDrift(xDiff);
+                }
+                else
+                {
+                    Special(xDiff, yDiff, xSum, ySum);
+                }
             }
+
             else if (UnityEngine.Input.touches.Length == 1)
             {
                 if (leftTouch != Vector2.zero && rightTouch != Vector2.zero)
@@ -300,7 +319,15 @@ namespace StarWriter.Core.Input
                     Pitch(ySum);
                     Roll(yDiff);
                     Yaw(xSum);
-                    Throttle(xDiff);
+
+                    if (driftEnabled)
+                    {
+                        Drift(xDiff);
+                    }
+                    else
+                    {
+                        Throttle(xDiff);
+                    }
 
                     PerformShipAnimations(xSum, ySum, xDiff, yDiff);
 
@@ -318,8 +345,6 @@ namespace StarWriter.Core.Input
                         rightTouch = position;
                         //leftTouch = Vector2.Lerp(leftTouch, new Vector2(leftTouch.x, rightTouch.y), .1f);
                     }
-
-
                 }
             }
             else
@@ -331,8 +356,29 @@ namespace StarWriter.Core.Input
             }
         }
 
-        
-        
+        private void Drift(float xDiff)
+        {
+            if (!drifting)
+            {
+                shipData.velocityDirection = shipTransform.forward;
+                shipData.blockRotation = shipTransform.rotation;
+            }
+            speed = Mathf.Lerp(speed, xDiff * throttleScaler + defaultThrottle, lerpAmount * Time.deltaTime);
+            shipTransform.position -= speed * Time.deltaTime * shipTransform.forward;
+            shipTransform.position += speed * Time.deltaTime * shipData.velocityDirection;
+            boostDecay = 6f;
+            drifting = true;
+        }
+
+        private void ExitDrift(float xDiff)
+        {
+            drifting = false;
+            boostDecay -= Time.deltaTime;
+            speed = Mathf.Lerp(speed, xDiff * throttleScaler * boostDecay + defaultThrottle, lerpAmount * Time.deltaTime);
+            shipData.velocityDirection = shipTransform.forward;
+            shipData.blockRotation = shipTransform.rotation;
+        }
+
         private void Yaw(float Xsum)  // These need to not use *= ... remember quaternions are not commutative
         {
             displacementQ = Quaternion.AngleAxis(
@@ -366,24 +412,13 @@ namespace StarWriter.Core.Input
 
             if (value < threshold) //&& FuelSystem.CurrentFuel>0)
             {
-                if (drift)
-                {
-                    if (savedForward == Vector3.zero) savedForward = shipTransform.forward;
-                    speed = Mathf.Lerp(speed, xDiff * throttleScaler + defaultThrottle, lerpAmount * Time.deltaTime);
-                    shipTransform.position -= speed * Time.deltaTime * shipTransform.forward;
-                    shipTransform.position += speed * Time.deltaTime * savedForward;
-                    
-                }
-                else
-                {
-                    speed = Mathf.Lerp(speed, xDiff * throttleScaler * boost + defaultThrottle, lerpAmount * Time.deltaTime);
-                    shipData.boost = true;
-                    OnBoost?.Invoke(uuid, fuelAmount);
-                }
+                
+                speed = Mathf.Lerp(speed, xDiff * throttleScaler * boost + defaultThrottle, lerpAmount * Time.deltaTime);
+                shipData.boost = true;
+                OnBoost?.Invoke(uuid, fuelAmount);
             }
             else
             {
-                savedForward = Vector3.zero;
                 Throttle(xDiff);
                 shipData.boost = false;
             }
@@ -398,7 +433,7 @@ namespace StarWriter.Core.Input
         {
             //var value = (leftWing ? -10 : 10);
             //Vector3 point = transform.position + value*transform.right;
-            //Vector3 axis = diff.y*transform.right + diff.x * transform.forward;
+            //Vector3 axis = diff.y*transform.right + diff.x * transform.velocityDirection;
             //Pitch(diff.y / 100);
             //Roll(diff.x / 100);
             //transform.RotateAround(point, axis, diff.magnitude/1f);
@@ -423,7 +458,7 @@ namespace StarWriter.Core.Input
             if (SystemInfo.supportsGyroscope && status) { 
                 inverseInitialRotation = Quaternion.Inverse(GyroToUnity(gyro.attitude) * derivedCorrection);
             }
-            if (drift) isGyroEnabled = true;
+            if (driftEnabled) isGyroEnabled = true;
             else isGyroEnabled = status;
         }
 

@@ -120,9 +120,9 @@ public class WarpFieldView : MonoBehaviour
                     node.forward = -hybridVector;
 
                     //node.transform.localScale =
-                    //    Vector3.forward * (flowVector.magnitude * nodeScaler + nodeSize) +
+                    //    Vector3.velocityDirection * (flowVector.magnitude * nodeScaler + nodeSize) +
                     //    Vector3.one * (flowVector.magnitude * nodeScalerOverThree + nodeSize);
-                    //node.forward = flowVector;
+                    //node.velocityDirection = flowVector;
                 }
             }
         }

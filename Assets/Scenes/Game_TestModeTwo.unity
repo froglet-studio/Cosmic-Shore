@@ -219,7 +219,7 @@ GameObject:
   - component: {fileID: 430359314}
   - component: {fileID: 430359315}
   m_Layer: 2
-  m_Name: Muton
+  m_Name: Crystal
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -274,13 +274,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5a8f286a585edf943935c4316edeb2b6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  lifeTimeIncrease: 3
-  fuelAmount: 0.5
+  crystalProperties:
+    fuelAmount: 0
+    scoreAmount: 0
+    tailLengthIncreaseAmount: 0
   sphereRadius: 170
-  scoreBonus: 3
-  spentMutonPrefab: {fileID: 8491596592871572304, guid: f39596c98ed9d644a834f2fa27ec90ca,
+  SpentCrystalPrefab: {fileID: 8491596592871572304, guid: f39596c98ed9d644a834f2fa27ec90ca,
     type: 3}
-  Muton: {fileID: 7244393970774794917}
+  CrystalModel: {fileID: 7244393970774794917}
   material: {fileID: 2100000, guid: 383f21e8586fd7243a19e1d0f26110d0, type: 2}
   surface: 0
 --- !u!82 &430359315
@@ -394,6 +395,7 @@ GameObject:
   - component: {fileID: 487984177}
   - component: {fileID: 487984176}
   - component: {fileID: 487984180}
+  - component: {fileID: 487984182}
   m_Layer: 0
   m_Name: BlueAI
   m_TagString: blue
@@ -438,8 +440,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerName: 
   playerUUID: blue
-  playerSO: {fileID: 0}
-  playerColor: {r: 0, g: 0, b: 0, a: 1}
   playerShipPrefab: {fileID: 0}
   playerTrailPrefab: {fileID: 0}
 --- !u!33 &487984178
@@ -499,6 +499,24 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   speed: 0
   boost: 0
+  velocityDirection: {x: 0, y: 0, z: 0}
+  blockRotation: {x: 0, y: 0, z: 0, w: 0}
+--- !u!114 &487984182
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 487984174}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a273abd40c7104c4392188723ab929d6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  shipUUID: blue
+  shipSO: {fileID: 11400000, guid: 48570157b8621ef47a488abb24b437d1, type: 2}
+  AOEPrefab: {fileID: 2728798890556433942, guid: 4a855af160021d241b8c1ac70cf2d792,
+    type: 3}
 --- !u!4 &602055527 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 639495419069806266, guid: 41222ebb42ad82c4ca52a729935c79d3,
@@ -1362,6 +1380,11 @@ PrefabInstance:
       propertyPath: drift
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 7659183800259804543, guid: c8544725eea141847982b286866c858d,
+        type: 3}
+      propertyPath: driftEnabled
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 8035663728123421219, guid: c8544725eea141847982b286866c858d,
         type: 3}
       propertyPath: m_Sprite
@@ -1439,6 +1462,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   speed: 0
   boost: 0
+  velocityDirection: {x: 0, y: 0, z: 0}
+  blockRotation: {x: 0, y: 0, z: 0, w: 0}
 --- !u!1 &1586480805 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 7749568266328190416, guid: c8544725eea141847982b286866c858d,
@@ -1479,6 +1504,22 @@ Transform:
     type: 3}
   m_PrefabInstance: {fileID: 1586480801}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &1586480816
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1586480803}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a273abd40c7104c4392188723ab929d6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  shipUUID: admin
+  shipSO: {fileID: 11400000, guid: aff8013a63fe03545b16c119409e4f67, type: 2}
+  AOEPrefab: {fileID: 2728798890556433942, guid: 4a855af160021d241b8c1ac70cf2d792,
+    type: 3}
 --- !u!1 &1651219645
 GameObject:
   m_ObjectHideFlags: 0
@@ -1785,6 +1826,7 @@ GameObject:
   - component: {fileID: 1892142151}
   - component: {fileID: 1892142158}
   - component: {fileID: 1892142159}
+  - component: {fileID: 1892142161}
   m_Layer: 0
   m_Name: RedAI
   m_TagString: red
@@ -1806,8 +1848,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerName: 
   playerUUID: red
-  playerSO: {fileID: 0}
-  playerColor: {r: 0, g: 0, b: 0, a: 1}
   playerShipPrefab: {fileID: 0}
   playerTrailPrefab: {fileID: 0}
 --- !u!33 &1892142156
@@ -1890,6 +1930,24 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   speed: 0
   boost: 0
+  velocityDirection: {x: 0, y: 0, z: 0}
+  blockRotation: {x: 0, y: 0, z: 0, w: 0}
+--- !u!114 &1892142161
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1892142149}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a273abd40c7104c4392188723ab929d6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  shipUUID: red
+  shipSO: {fileID: 11400000, guid: 0b7f991b9ab90f8468ce2e6e1fd825c8, type: 2}
+  AOEPrefab: {fileID: 2728798890556433942, guid: 4a855af160021d241b8c1ac70cf2d792,
+    type: 3}
 --- !u!4 &1898590044 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 8350600879602490814, guid: 7fec532a729a8b648a8de2399d1b918a,
@@ -2029,10 +2087,15 @@ PrefabInstance:
       propertyPath: muton
       value: 
       objectReference: {fileID: 430359307}
+    - target: {fileID: 639495419069806261, guid: 41222ebb42ad82c4ca52a729935c79d3,
+        type: 3}
+      propertyPath: Crystal
+      value: 
+      objectReference: {fileID: 430359307}
     - target: {fileID: 639495419069806266, guid: 41222ebb42ad82c4ca52a729935c79d3,
         type: 3}
       propertyPath: m_RootOrder
-      value: 3
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 639495419069806266, guid: 41222ebb42ad82c4ca52a729935c79d3,
         type: 3}
