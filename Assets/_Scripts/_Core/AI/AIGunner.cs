@@ -1,3 +1,4 @@
+using Firebase;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -5,17 +6,18 @@ using UnityEngine;
 public class AIGunner : MonoBehaviour
 {
 
-    public delegate void Fire();
-    public static event Fire OnFire;
+    //public delegate void Fire();
+    //public static event Fire OnFire;
 
     TrailSpawner trailSpawner;
-    int nextBlockIndex;
+    int nextBlockIndex = 1;
     int previousBlockIndex;
-    float gunnerSpeed;
+    float gunnerSpeed = 5;
     float lerpAmount;
-    bool direction;
+    bool direction = true;
     int gap = 3;
-    float angle = 1;
+    float rotationSpeed = 40;
+    Gun gun;
 
     [SerializeField] GameObject gun;
     [SerializeField] GameObject gunMount;
@@ -25,9 +27,7 @@ public class AIGunner : MonoBehaviour
     void Start()
     {
         trailSpawner = transform.parent.GetComponent<TrailSpawner>();
-        gunnerSpeed = 5f;
-        nextBlockIndex = 1;
-        direction = true;
+        fire = gun.transform.GetComponent<Gun>();
     }
 
     // Update is called once per frame
@@ -61,16 +61,16 @@ public class AIGunner : MonoBehaviour
                                           trailSpawner.trailList[nextBlockIndex].transform.position,
                                           lerpAmount);
 
-        transform.rotation = Quaternion.Lerp(trailSpawner.trailList[previousBlockIndex].transform.rotation, trailSpawner.trailList[nextBlockIndex].transform.rotation, lerpAmount);
-        //transform.rotation = trailSpawner.trailList[nextBlockIndex].transform.rotation;
+        transform.rotation = Quaternion.Lerp(trailSpawner.trailList[previousBlockIndex].transform.rotation,
+                                             trailSpawner.trailList[nextBlockIndex].transform.rotation,
+                                             lerpAmount);
         transform.Rotate(90, 0, 0);
 
         if (trailSpawner.trailList[(int)previousBlockIndex].destroyed) trailSpawner.trailList[(int)nextBlockIndex].restore();
 
-        //angle++;
-        //angle %= 360;
-        //gun.transform.localRotation = Quaternion.Lerp(gun.transform.localRotation, Quaternion.Euler(new Vector3(0, angle, 0)), .05f);
-        gunMount.transform.Rotate(0, angle * Time.deltaTime * 40, 0);
-        OnFire?.Invoke();
+        //gun.transform.localRotation = Quaternion.Lerp(gun.transform.localRotation, Quaternion.Euler(new Vector3(0, 0, 0)), .05f);
+        gunMount.transform.Rotate(0, rotationSpeed * Time.deltaTime, 0);
+        Gun.FireGun();
+        //OnFire?.Invoke();
     }
 }

@@ -229,7 +229,7 @@ MonoBehaviour:
   projectilePrefab: {fileID: 7877928849292311340, guid: 8d80761fade24204c8bf81c8fe6e4e42,
     type: 3}
   speed: 10
-  projectileTime: 5
+  projectileTime: 200
   firePeriod: 0.2
 --- !u!1001 &368155543
 PrefabInstance:

@@ -225,88 +225,59 @@ namespace StarWriter.Core.Input
                     else
                     {
                         if (boostDecay > 0) ExitDrift(xDiff);
-                        else Special(xDiff, yDiff, xSum, ySum);
+                        else Special(xSum, ySum, xDiff, yDiff);
                     }
                 }
-                else Special(xDiff, yDiff, xSum, ySum);
-                return;
-            }
-
-            var threeFingerFumble = false;
-            if (UnityEngine.Input.touches.Length >= 3)
-            {
-                // Sub select the two best touch inputs here
-                // If we have more than two touches, find the closest to each of the last touch positions we used
-                threeFingerFumble = true;
-                int leftTouchIndex = 0, rightTouchIndex = 0;
-                float minLeftTouchDistance = Vector2.Distance(leftTouch, UnityEngine.Input.touches[0].position);
-                float minRightTouchDistance = Vector2.Distance(rightTouch, UnityEngine.Input.touches[0].position);
-
-                for (int i = 1; i < UnityEngine.Input.touches.Length; i++)
-                {
-                    if (Vector2.Distance(leftTouch, UnityEngine.Input.touches[i].position) < minLeftTouchDistance)
-                    {
-                        minLeftTouchDistance = Vector2.Distance(leftTouch, UnityEngine.Input.touches[i].position);
-                        leftTouchIndex = i;
-                    }
-                    if (Vector2.Distance(rightTouch, UnityEngine.Input.touches[i].position) < minRightTouchDistance)
-                    {
-                        minRightTouchDistance = Vector2.Distance(rightTouch, UnityEngine.Input.touches[i].position);
-                        rightTouchIndex = i;
-                    }
-                }
-                leftTouch = UnityEngine.Input.touches[leftTouchIndex].position;
-                rightTouch = UnityEngine.Input.touches[rightTouchIndex].position;
-            }
-            
-            if (UnityEngine.Input.touches.Length == 2 || threeFingerFumble)
-            {
-                // If we didn't fat finger the phone, find the 
-                if (!threeFingerFumble)
-                {
-                    if (UnityEngine.Input.touches[0].position.x <= UnityEngine.Input.touches[1].position.x)
-                    {
-                        leftTouch = UnityEngine.Input.touches[0].position;
-                        rightTouch = UnityEngine.Input.touches[1].position;
-                    }
-                    else
-                    {
-                        leftTouch = UnityEngine.Input.touches[1].position;
-                        rightTouch = UnityEngine.Input.touches[0].position;
-                    }
-                }
-
-                // reparameterize
-                float xSum = ((rightTouch.x + leftTouch.x) / (Screen.currentResolution.width) - 1);
-                float ySum = ((rightTouch.y + leftTouch.y) / (Screen.currentResolution.height) - 1);
-                float xDiff = (rightTouch.x - leftTouch.x) / (Screen.currentResolution.width);
-                float yDiff = (rightTouch.y - leftTouch.y) / (Screen.currentResolution.width);
-
-                if (invertYEnabled)
-                    ySum *= -1;
-
-                Pitch(ySum);
-                Roll(yDiff);
-                Yaw(xSum);
-                //Throttle(xDiff);
+                else Special(xSum, ySum, xDiff, yDiff);
 
                 PerformShipAnimations(xSum, ySum, xDiff, yDiff);
-
-                if (driftEnabled && boostDecay > 0)
-                {
-                    ExitDrift(xDiff);
-                }
-                else
-                {
-                    Special(xDiff, yDiff, xSum, ySum);
-                }
             }
-
-            else if (UnityEngine.Input.touches.Length == 1)
+            else
             {
-                if (leftTouch != Vector2.zero && rightTouch != Vector2.zero)
+                var threeFingerFumble = false;
+                if (UnityEngine.Input.touches.Length >= 3)
                 {
-                    var position = UnityEngine.Input.touches[0].position;
+                    // Sub select the two best touch inputs here
+                    // If we have more than two touches, find the closest to each of the last touch positions we used
+                    threeFingerFumble = true;
+                    int leftTouchIndex = 0, rightTouchIndex = 0;
+                    float minLeftTouchDistance = Vector2.Distance(leftTouch, UnityEngine.Input.touches[0].position);
+                    float minRightTouchDistance = Vector2.Distance(rightTouch, UnityEngine.Input.touches[0].position);
+
+                    for (int i = 1; i < UnityEngine.Input.touches.Length; i++)
+                    {
+                        if (Vector2.Distance(leftTouch, UnityEngine.Input.touches[i].position) < minLeftTouchDistance)
+                        {
+                            minLeftTouchDistance = Vector2.Distance(leftTouch, UnityEngine.Input.touches[i].position);
+                            leftTouchIndex = i;
+                        }
+                        if (Vector2.Distance(rightTouch, UnityEngine.Input.touches[i].position) < minRightTouchDistance)
+                        {
+                            minRightTouchDistance = Vector2.Distance(rightTouch, UnityEngine.Input.touches[i].position);
+                            rightTouchIndex = i;
+                        }
+                    }
+                    leftTouch = UnityEngine.Input.touches[leftTouchIndex].position;
+                    rightTouch = UnityEngine.Input.touches[rightTouchIndex].position;
+                }
+
+                if (UnityEngine.Input.touches.Length == 2 || threeFingerFumble)
+                {
+                    // If we didn't fat finger the phone, find the 
+                    if (!threeFingerFumble)
+                    {
+                        if (UnityEngine.Input.touches[0].position.x <= UnityEngine.Input.touches[1].position.x)
+                        {
+                            leftTouch = UnityEngine.Input.touches[0].position;
+                            rightTouch = UnityEngine.Input.touches[1].position;
+                        }
+                        else
+                        {
+                            leftTouch = UnityEngine.Input.touches[1].position;
+                            rightTouch = UnityEngine.Input.touches[0].position;
+                        }
+                    }
+
                     // reparameterize
                     float xSum = ((rightTouch.x + leftTouch.x) / (Screen.currentResolution.width) - 1);
                     float ySum = ((rightTouch.y + leftTouch.y) / (Screen.currentResolution.height) - 1);
@@ -319,35 +290,68 @@ namespace StarWriter.Core.Input
                     Pitch(ySum);
                     Roll(yDiff);
                     Yaw(xSum);
-
-                    if (driftEnabled)
-                    {
-                        Drift(xDiff);
-                    }
-                    else
-                    {
-                        Throttle(xDiff);
-                    }
+                    //Throttle(xDiff);
 
                     PerformShipAnimations(xSum, ySum, xDiff, yDiff);
 
-                    if (Vector2.Distance(leftTouch, position) < Vector2.Distance(rightTouch, position))
+                    if (driftEnabled && boostDecay > 0)
                     {
-                        leftTouch = position;
+                        ExitDrift(xDiff);
                     }
                     else
                     {
-                        rightTouch = position;
+                        Special(xSum, ySum, xDiff, yDiff);
                     }
                 }
+
+                else if (UnityEngine.Input.touches.Length == 1)
+                {
+                    if (leftTouch != Vector2.zero && rightTouch != Vector2.zero)
+                    {
+                        var position = UnityEngine.Input.touches[0].position;
+                        // reparameterize
+                        float xSum = ((rightTouch.x + leftTouch.x) / (Screen.currentResolution.width) - 1);
+                        float ySum = ((rightTouch.y + leftTouch.y) / (Screen.currentResolution.height) - 1);
+                        float xDiff = (rightTouch.x - leftTouch.x) / (Screen.currentResolution.width);
+                        float yDiff = (rightTouch.y - leftTouch.y) / (Screen.currentResolution.width);
+
+                        if (invertYEnabled)
+                            ySum *= -1;
+
+                        Pitch(ySum);
+                        Roll(yDiff);
+                        Yaw(xSum);
+
+                        if (driftEnabled)
+                        {
+                            Drift(xDiff);
+                        }
+                        else
+                        {
+                            Throttle(xDiff);
+                        }
+
+                        PerformShipAnimations(xSum, ySum, xDiff, yDiff);
+
+                        if (Vector2.Distance(leftTouch, position) < Vector2.Distance(rightTouch, position))
+                        {
+                            leftTouch = position;
+                        }
+                        else
+                        {
+                            rightTouch = position;
+                        }
+                    }
+                }
+                else
+                {
+                    speed = Mathf.Lerp(speed, defaultThrottle, smallLerpAmount * Time.deltaTime);
+                    LeftWing.localRotation = Quaternion.Lerp(LeftWing.localRotation, Quaternion.identity, smallLerpAmount * Time.deltaTime);
+                    RightWing.localRotation = Quaternion.Lerp(RightWing.localRotation, Quaternion.identity, smallLerpAmount * Time.deltaTime);
+                    Fusilage.localRotation = Quaternion.Lerp(Fusilage.localRotation, Quaternion.identity, smallLerpAmount * Time.deltaTime);
+                }
             }
-            else
-            {
-                speed = Mathf.Lerp(speed, defaultThrottle, smallLerpAmount * Time.deltaTime);
-                LeftWing.localRotation = Quaternion.Lerp(LeftWing.localRotation, Quaternion.identity, smallLerpAmount * Time.deltaTime);
-                RightWing.localRotation = Quaternion.Lerp(RightWing.localRotation, Quaternion.identity, smallLerpAmount * Time.deltaTime);
-                Fusilage.localRotation = Quaternion.Lerp(Fusilage.localRotation, Quaternion.identity, smallLerpAmount * Time.deltaTime);
-            }
+            
         }
 
         private void Drift(float xDiff)
@@ -395,7 +399,7 @@ namespace StarWriter.Core.Input
                                 shipTransform.right) * displacementQ;
         }
 
-        private void Special(float xDiff, float yDiff, float xSum, float ySum) // TODO decouple "special" and "throttle"
+        private void Special(float xSum, float ySum, float xDiff, float yDiff) // TODO decouple "special" and "throttle"
         {
             float fuelAmount = -.01f;
             float threshold = .3f;
