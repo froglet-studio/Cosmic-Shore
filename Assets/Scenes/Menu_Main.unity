@@ -983,6 +983,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   speed: 0
   boost: 0
+  velocityDirection: {x: 0, y: 0, z: 0}
+  blockRotation: {x: 0, y: 0, z: 0, w: 0}
 --- !u!1 &741509295
 GameObject:
   m_ObjectHideFlags: 0
@@ -4649,6 +4651,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   speed: 0
   boost: 0
+  velocityDirection: {x: 0, y: 0, z: 0}
+  blockRotation: {x: 0, y: 0, z: 0, w: 0}
 --- !u!1 &595065266491999095
 GameObject:
   m_ObjectHideFlags: 0

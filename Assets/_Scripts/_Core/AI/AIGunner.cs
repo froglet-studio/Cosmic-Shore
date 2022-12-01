@@ -5,13 +5,20 @@ using UnityEngine;
 public class AIGunner : MonoBehaviour
 {
 
+    public delegate void Fire();
+    public static event Fire OnFire;
+
     TrailSpawner trailSpawner;
     int nextBlockIndex;
-    int previousblockIndex;
+    int previousBlockIndex;
     float gunnerSpeed;
     float lerpAmount;
     bool direction;
     int gap = 3;
+    float angle = 1;
+
+    [SerializeField] GameObject gun;
+    [SerializeField] GameObject gunMount;
 
 
     // Start is called before the first frame update
@@ -26,28 +33,23 @@ public class AIGunner : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        lerpAmount += gunnerSpeed * Time.deltaTime;
-        if (direction)
+        if (trailSpawner.trailList[(int)nextBlockIndex].destroyed) lerpAmount += gunnerSpeed/4f * Time.deltaTime;
+        else lerpAmount += gunnerSpeed * Time.deltaTime;
+        if (direction && lerpAmount > 1)
         {
-            if (lerpAmount > 1)
-            {
-                previousblockIndex = nextBlockIndex;
-                nextBlockIndex++;
-                lerpAmount -= 1f;
-            }
+            previousBlockIndex = nextBlockIndex;
+            nextBlockIndex++;
+            lerpAmount -= 1f;
         }
         if (nextBlockIndex > trailSpawner.trailList.Count - gap)
         {
             direction = false;
         }
-        if (!direction)
+        if (!direction && lerpAmount > 1)
         {
-            if (lerpAmount > 1)
-            {
-                previousblockIndex = nextBlockIndex;
-                nextBlockIndex--;
-                lerpAmount -= 1f;
-            }
+            previousBlockIndex = nextBlockIndex;
+            nextBlockIndex--;
+            lerpAmount -= 1f;
         }
         if (nextBlockIndex < gap)
         {
@@ -55,9 +57,20 @@ public class AIGunner : MonoBehaviour
         }
         Debug.Log($"block index: {nextBlockIndex}");
         
-        transform.position = Vector3.Lerp(trailSpawner.trailList[previousblockIndex].transform.position,
+        transform.position = Vector3.Lerp(trailSpawner.trailList[previousBlockIndex].transform.position,
                                           trailSpawner.trailList[nextBlockIndex].transform.position,
                                           lerpAmount);
-        if (trailSpawner.trailList[(int)nextBlockIndex].destroyed) trailSpawner.trailList[(int)nextBlockIndex].restore();
+
+        transform.rotation = Quaternion.Lerp(trailSpawner.trailList[previousBlockIndex].transform.rotation, trailSpawner.trailList[nextBlockIndex].transform.rotation, lerpAmount);
+        //transform.rotation = trailSpawner.trailList[nextBlockIndex].transform.rotation;
+        transform.Rotate(90, 0, 0);
+
+        if (trailSpawner.trailList[(int)previousBlockIndex].destroyed) trailSpawner.trailList[(int)nextBlockIndex].restore();
+
+        //angle++;
+        //angle %= 360;
+        //gun.transform.localRotation = Quaternion.Lerp(gun.transform.localRotation, Quaternion.Euler(new Vector3(0, angle, 0)), .05f);
+        gunMount.transform.Rotate(0, angle * Time.deltaTime * 40, 0);
+        OnFire?.Invoke();
     }
 }
