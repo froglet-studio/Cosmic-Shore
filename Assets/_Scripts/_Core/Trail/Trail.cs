@@ -8,7 +8,7 @@ public class Trail : MonoBehaviour, IEntity
     [SerializeField] GameObject FossilBlock;
     [SerializeField] GameObject ParticleEffect;
     [SerializeField] Material material;
-    //[SerializeField] Vector3 ParticleEffectScale = new Vector3(1.5f, 1.5f, 1.5f);
+    [SerializeField] TrailBlockProperties trailBlockProperties;
 
     public string ownerId;
     public float waitTime = .6f;
@@ -139,10 +139,10 @@ public class Trail : MonoBehaviour, IEntity
             //other.transform.parent.parent.GetComponent<Player>().ToggleCollision(false);
 
             // TODO: currently AI fuel levels are not impacted when they collide with a trail
-            OnTrailCollision?.Invoke(ownerId, fuelChange);
-                
             // TODO: use PerformBlockImpactEffects
-            HapticController.PlayBlockCollisionHaptics();
+            OnTrailCollision?.Invoke(ownerId, fuelChange);
+            
+            ship.PerformTrailBlockImpactEffects(trailBlockProperties);
         }
     }
 

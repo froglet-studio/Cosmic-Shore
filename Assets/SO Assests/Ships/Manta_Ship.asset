@@ -16,4 +16,4 @@ MonoBehaviour:
   maxHealth: 0
   maxFuel: 0
   crystalImpactEffects: 000000000100000003000000
-  trailBlockImpactEffects: 
+  trailBlockImpactEffects: 000000000300000002000000

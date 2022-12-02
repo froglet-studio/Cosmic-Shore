@@ -52,10 +52,13 @@ public class Ship : MonoBehaviour
             switch (effect)
             {
                 case TrailBlockImpactEffect.PlayHaptics:
+                    HapticController.PlayBlockCollisionHaptics();
                     break;
                 case TrailBlockImpactEffect.DrainFuel:
                     break;
                 case TrailBlockImpactEffect.DebuffSpeed:
+                    // TODO: replace this with a coroutine
+                    GetComponent<ShipData>().speed *= trailBlockProperties.speedDebuffAmount;
                     break;
                 case TrailBlockImpactEffect.DeactivateTrailBlock:
                     break;
