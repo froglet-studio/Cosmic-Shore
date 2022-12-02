@@ -112,7 +112,15 @@ public class Trail : MonoBehaviour, IEntity
         }
         else if (IsExplosion(other.gameObject))
         {
-            var impactVector = other.transform.position - transform.position;
+            var speed = other.GetComponent<AOEExplosion>().speed;
+            var impactVector = (transform.position - other.transform.position).normalized*speed;
+
+            Explode(impactVector, "Player"); // TODO: need to attribute the explosion color to the team that made the explosion
+        }
+        else if (IsProjectile(other.gameObject))
+        {
+            var speed = other.GetComponent<Projectile>().Velocity;
+            var impactVector = speed;
 
             Explode(impactVector, "Player"); // TODO: need to attribute the explosion color to the team that made the explosion
         }
@@ -183,5 +191,9 @@ public class Trail : MonoBehaviour, IEntity
     private bool IsExplosion(GameObject go)
     {
         return go.layer == LayerMask.NameToLayer("Explosions");
+    }
+    private bool IsProjectile(GameObject go)
+    {
+        return go.layer == LayerMask.NameToLayer("Projectiles");
     }
 }

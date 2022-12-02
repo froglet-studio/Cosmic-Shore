@@ -31,6 +31,7 @@ public class AOEExplosion : MonoBehaviour, IEntity
     [SerializeField] float MaxScale = 200f;
     [SerializeField] float ExplosionDuration = 2f;
     [SerializeField] float ExplosionDelay = .2f;
+    public float speed = .5f;
     [SerializeField] GameObject Geometry;
 
     Team team;
@@ -51,7 +52,7 @@ public class AOEExplosion : MonoBehaviour, IEntity
         //while (MaxScale > Geometry.transform.localScale.x)
         while (MaxScale > transform.localScale.x)
         {
-            transform.localScale += new Vector3(.5f, .5f, .5f);
+            transform.localScale += new Vector3(speed, speed, speed);
             yield return null;
         }
 

@@ -21,6 +21,7 @@ public class Gun : MonoBehaviour
             var projectile = Instantiate(projectilePrefab);
             projectile.transform.rotation = Quaternion.LookRotation(transform.up);
             projectile.transform.position = transform.position + projectile.transform.forward * 2;
+            projectile.GetComponent<Projectile>().Velocity = projectile.transform.forward * speed;
             StartCoroutine(MoveProjectileCoroutine(projectile));
             onCooldown = true;
             StartCoroutine(CooldownCoroutine());
