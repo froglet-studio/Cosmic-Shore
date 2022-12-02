@@ -6,13 +6,12 @@ public class Player : MonoBehaviour
 {
     [SerializeField] string playerName;
     [SerializeField] string playerUUID;
-    [SerializeField] SO_Ship playerShipPrefab;
-    [SerializeField] SO_Trail_Base playerTrailPrefab;
+    [SerializeField] Ship ship;
+    public Team Team;
 
     public string PlayerName { get => playerName; }
     public string PlayerUUID { get => playerUUID; }
-    public SO_Ship PlayerShipPrefab { get => playerShipPrefab; }
-    public SO_Trail_Base PlayerTrailPrefab { get => playerTrailPrefab; }
+    public Ship Ship { get => ship; }
 
     GameManager gameManager;
 
@@ -24,11 +23,5 @@ public class Player : MonoBehaviour
             gameManager = GameManager.Instance;
             gameManager.WaitOnPlayerLoading();
         }
-    }
-
-    public void ToggleCollision(bool enabled)
-    {
-        foreach (var collider in GetComponentsInChildren<Collider>(true))
-            collider.enabled = enabled;
     }
 }

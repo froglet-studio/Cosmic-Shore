@@ -2,10 +2,8 @@
 using UnityEngine;
 using System.Linq;
 
-public class Trail : MonoBehaviour
+public class Trail : MonoBehaviour, IEntity
 {
-
-
     [SerializeField] float fuelChange = -3f;
     [SerializeField] GameObject FossilBlock;
     [SerializeField] GameObject ParticleEffect;
@@ -30,6 +28,10 @@ public class Trail : MonoBehaviour
     private static GameObject container;
     private MeshRenderer meshRenderer;
     private BoxCollider blockCollider;
+    Team team;
+    EntityType entityType = EntityType.TrailBlock;
+    public Team Team { get => team; set => team = value; }
+    public EntityType EntityType { get => entityType; }
 
     void Start()
     {
@@ -49,8 +51,6 @@ public class Trail : MonoBehaviour
 
         if (embiggen) StartCoroutine(ToggleBlockCoroutine(2f));
         else StartCoroutine(ToggleBlockCoroutine(1f));
-
-
     }
 
     IEnumerator ToggleBlockCoroutine(float finalSize)
@@ -78,15 +78,9 @@ public class Trail : MonoBehaviour
 
     public void InstantiateParticle(Transform skimmer)
     {
-        Debug.Log($"{this.name}, Instantiating Particle Emitter");
         var particle = Instantiate(ParticleEffect);
         particle.transform.parent = transform;
-        //particle.transform.localPosition = Vector3.zero;
         StartCoroutine(UpdateParticleCoroutine(particle, skimmer));
-
-        // TODO: expose scale as a parameter or base it off of distance between block and skimmer, or both
-        // TODO: rotate particle using skimmer velocityDirection and block velocityDirection?
-        // TODO: experiment with multiple instantiations when super close
     }
 
     IEnumerator UpdateParticleCoroutine(GameObject particle, Transform skimmer)
@@ -95,86 +89,99 @@ public class Trail : MonoBehaviour
         var timer = 0;
         while (timer < time)
         {
-            yield return null;
             var distance =  transform.position - skimmer.position;
             particle.transform.localScale = new Vector3(1, 1, distance.magnitude);
             particle.transform.rotation = Quaternion.LookRotation(distance, transform.up);
             particle.transform.position = skimmer.position;
             timer++;
+
+            yield return null;
         }
         Destroy(particle);
     }
 
     void OnTriggerEnter(Collider other)
     {
-        if (gameObject != null && other.isTrigger == false) //don't want to catch the skimmer collider
+        if (IsShip(other.gameObject))
         {
-            // We used to destroy the object, but we were throwing null pointers later in the code when Destroying blocks that expired
-            // Instead, let's just disable the collider and renderer and leet th gunner rstore them
+            var ship = other.GetComponent<ShipGeometry>().Ship;
+            var impactVector = ship.transform.forward * ship.GetComponent<ShipData>().speed;
 
-            gameObject.GetComponent<BoxCollider>().enabled = false;
-            gameObject.GetComponent<MeshRenderer>().enabled = false;
-            destroyed = true;
-            Collide(other);
+            Collide(ship);
+            Explode(impactVector, ship.Player.PlayerName);
+        }
+        else if (IsExplosion(other.gameObject))
+        {
+            var impactVector = other.transform.position - transform.position;
+
+            Explode(impactVector, "Player"); // TODO: need to attribute the explosion color to the team that made the explosion
         }
     }
 
-
-    public void Collide(Collider other)
+    public void Collide(Ship ship)
     {
-        if (IsPlayer(other.gameObject))
+        //if (other.GetComponent<Ship>().Team == team)
+        if (ownerId == ship.Player.PlayerUUID)
         {
-            Debug.Log("tagplayer" + GameObject.FindGameObjectsWithTag("Player").Count());
-
-            //// Do Impact Stuff
-            var ship = other.transform.parent.parent.gameObject;
-
-            if (ownerId == ship.GetComponent<Player>().PlayerUUID)
-            {
-                Debug.Log($"You hit you're own tail: {ownerId}");
-            }
-            else
-            {
-                Debug.Log($"Player ({ship.GetComponent<Player>().PlayerUUID}) just gave player({ownerId}) a point via tail collision");
-                AddToScore?.Invoke(ownerId, scoreChange);
-            }
-
-            // TODO: null pointers thrown here
-            var impactVector = ship.transform.forward * ship.GetComponent<ShipData>().speed;
-
-            // Make exploding block
-            var explodingBlock = Instantiate(FossilBlock);
-            explodingBlock.transform.position = transform.position;
-            explodingBlock.transform.localEulerAngles = transform.localEulerAngles;
-            explodingBlock.transform.localScale = transform.localScale;
-            explodingBlock.GetComponent<Renderer>().material = new Material(material);
-            explodingBlock.GetComponent<BlockImpact>().HandleImpact(impactVector, "Player");
-
-            //// Player Hit
-            if (ship == GameObject.FindWithTag("Player"))
-            {
-                // TODO: for now, we're only turning off collision on the player. In the future, we want AI ships to explode and all that too
-                // TODO: turned off collision toggling for now - need to reintroduce into death sequence somewhere else
-                //other.transform.parent.parent.GetComponent<Player>().ToggleCollision(false);
-
-                // TODO: currently AI fuel levels are not impacted when they collide with a trail
-                OnTrailCollision?.Invoke(ownerId, fuelChange);
-                
-                HapticController.PlayBlockCollisionHaptics();
-            }
+            Debug.Log($"You hit you're teams tail - ownerId: {ownerId}, team: {team}");
         }
+        else
+        {
+            Debug.Log($"Player ({ship.Player.PlayerUUID}) just gave player({ownerId}) a point via tail collision");
+            AddToScore?.Invoke(ownerId, scoreChange);
+        }
+
+        //// Player Hit
+        if (ship.Player == GameObject.FindWithTag("Player"))
+        {
+            // TODO: for now, we're only turning off collision on the player. In the future, we want AI ships to explode and all that too
+            // TODO: turned off collision toggling for now - need to reintroduce into death sequence somewhere else
+            //other.transform.parent.parent.GetComponent<Player>().ToggleCollision(false);
+
+            // TODO: currently AI fuel levels are not impacted when they collide with a trail
+            OnTrailCollision?.Invoke(ownerId, fuelChange);
+                
+            // TODO: use PerformBlockImpactEffects
+            HapticController.PlayBlockCollisionHaptics();
+        }
+    }
+
+    void Explode(Vector3 impactVector, string impactId)
+    {
+        // We don't destroy the trail blocks, we keep the objects around so they can be restored
+        gameObject.GetComponent<BoxCollider>().enabled = false;
+        gameObject.GetComponent<MeshRenderer>().enabled = false;
+
+        // Make exploding block
+        var explodingBlock = Instantiate(FossilBlock);
+        explodingBlock.transform.position = transform.position;
+        explodingBlock.transform.localEulerAngles = transform.localEulerAngles;
+        explodingBlock.transform.localScale = transform.localScale;
+        explodingBlock.GetComponent<Renderer>().material = new Material(material);
+        explodingBlock.GetComponent<BlockImpact>().HandleImpact(impactVector, impactId);
+
+        destroyed = true;
     }
 
     public void restore()
     {
         gameObject.GetComponent<BoxCollider>().enabled = true;
         gameObject.GetComponent<MeshRenderer>().enabled = true;
+
+        destroyed = false;
     }
 
-    private bool IsPlayer(GameObject go)
+    // TODO: utility class needed to hold these
+    private bool IsShip(GameObject go)
     {
-        //return go.transform.parent.parent.GetComponent<Player>() != null;
-        
         return go.layer == LayerMask.NameToLayer("Ships");
+    }
+    private bool IsSkimmer(GameObject go)
+    {
+        return go.layer == LayerMask.NameToLayer("Skimmers");
+    }
+    private bool IsExplosion(GameObject go)
+    {
+        return go.layer == LayerMask.NameToLayer("Explosions");
     }
 }

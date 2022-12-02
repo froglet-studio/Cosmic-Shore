@@ -1,70 +1,27 @@
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using TailGlider.Utility.Singleton;
-using System;
 
 namespace StarWriter.Core.HangerBuilder
 {
     public class Hangar : SingletonPersistent<Hangar>
     {
-        [SerializeField] int bayIndex = 0;
+        [SerializeField] Dictionary<string, SO_Ship> ships = new Dictionary<string, SO_Ship>();
 
-        ShipConfiguration currentPlayerBuild;
+        [SerializeField] int SelectedBayIndex = 0;
 
-        public List<GameObject> hangerBays;
+        public List<SO_Ship> bayShips;
 
-        public GameObject selectedBay;
-        
-        public int BayIndex { get => bayIndex; }
+        public SO_Ship selectedShip { get; private set; }
 
-        HangarData hangarData;
-        public HangarData CurrentHangarData { get => hangarData;  }
+        public int BayIndex { get => SelectedBayIndex; }
 
-        void Start()
+        private void Start()
         {
-            this.hangarData = DataPersistenceManager.Instance.LoadHangerData(); //removed till V3.0 or rdy
-            SetActiveBay();
-            currentPlayerBuild = new ShipConfiguration();
-            currentPlayerBuild = hangarData.PlayerBuilds[bayIndex];
-            Debug.Log("Default ShipConfiguration Upgrade is " + currentPlayerBuild.Upgrade1);
-        }
-        public void SaveHangarData()
-        {
-            DataPersistenceManager.Instance.SaveHangar(hangarData); //removed till V3.0 or rdy
-        }
+            if (!PlayerPrefs.HasKey("ShipName"))
+                PlayerPrefs.SetString("ShipName", "Manta");
 
-        public void OnShipButtonPressed(int idx) //TODO really OnBayButtonPressed
-        {
-            bayIndex = idx;
-            SetActiveBay();
-            LoadShipConfigurationFromBay();
-        }
-        private void SetActiveBay()
-        {          
-            foreach (GameObject bay in hangerBays)
-                bay.gameObject.SetActive(false);
-            
-            selectedBay = hangerBays[bayIndex];
-            selectedBay.gameObject.SetActive(true);            
-        }
-        private void LoadShipConfigurationFromBay()
-        {
-            currentPlayerBuild = hangarData.PlayerBuilds[bayIndex];
-            Debug.Log("Current Player Build is " + currentPlayerBuild);
-            Debug.Log("Current upgrade is " + currentPlayerBuild.Upgrade1);
-            Debug.Log("Current ship is " + currentPlayerBuild.Ship);
-            Debug.Log("Current trail is " + currentPlayerBuild.Trail);
-        }
 
-        public string GetCurrentPlayerBuildShip()
-        {
-            return currentPlayerBuild.Ship;
-        }
-
-        public string GetCurrentPlayerBuildTrail()
-        {
-            return currentPlayerBuild.Trail;
         }
     }
 }

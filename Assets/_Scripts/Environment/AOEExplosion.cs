@@ -1,15 +1,42 @@
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
+
+public enum Team
+{
+    None,
+    Green,
+    Red,
+}
+
+public enum EntityType
+{
+    Ship,
+    TrailBlock,
+    Explosion,
+    Skimmer,
+    Crystal,
+}
+
+public interface IEntity
+{
+    Team Team { get; set; }
+    EntityType EntityType { get; }
+}
+
 
 // TODO: namespace
 // TODO: add IBlockImpact interface
-public class AOEExplosion : MonoBehaviour
+public class AOEExplosion : MonoBehaviour, IEntity
 {
     [SerializeField] float MaxScale = 200f;
     [SerializeField] float ExplosionDuration = 2f;
     [SerializeField] float ExplosionDelay = .2f;
     [SerializeField] GameObject Geometry;
+
+    Team team;
+    EntityType entityType = EntityType.Explosion;
+    public Team Team { get => team; set => team = value; }
+    public EntityType EntityType { get => entityType; }
 
     void Start()
     {

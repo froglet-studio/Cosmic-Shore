@@ -10,8 +10,10 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b9f1e5e5ae9dd594ba08cd8789e5fd91, type: 3}
-  m_Name: Dolpin_Ship
+  m_Name: Dolphin_Ship
   m_EditorClassIdentifier: 
-  shipName: Dolpin
+  shipName: Dolphin
   maxHealth: 0
-  maxEnergy: 0
+  maxFuel: 0
+  crystalImpactEffects: 
+  trailBlockImpactEffects: 

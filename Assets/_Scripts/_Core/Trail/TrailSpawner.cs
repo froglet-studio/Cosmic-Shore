@@ -3,13 +3,10 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-[RequireComponent(typeof(Player))]
+[RequireComponent(typeof(Ship))]
 public class TrailSpawner : MonoBehaviour
 {
     [SerializeField] Trail trail;
-
-    public delegate void OnDropIncreaseScore(string uuid, int amount);
-    public static event OnDropIncreaseScore AddToScore;
 
     public float offset = 0f;
 
@@ -20,7 +17,7 @@ public class TrailSpawner : MonoBehaviour
     public float waitTime = .5f;  // Time until the trail block appears - camera dependent
     public float startDelay = 2.1f;
 
-    private Player player;
+    private Ship ship;
     ShipData shipData;
 
     [SerializeField] bool warp = false;
@@ -34,6 +31,7 @@ public class TrailSpawner : MonoBehaviour
 
     float volume;
     float volumeScoreScaler = .01f;
+    float boostedVolumeScoreScaler = .08f;  // if ship is boosted the blocks gets 8 times bigger (2^dimensionality)
     float score = 0f;
     string ownerId;
 
@@ -63,18 +61,16 @@ public class TrailSpawner : MonoBehaviour
         }
 
         shards = GameObject.FindGameObjectWithTag("field");
-
-        player = GetComponent<Player>();
+        ship = GetComponent<Ship>();
         shipData = GetComponent<ShipData>();
 
         StartCoroutine(SpawnTrailCoroutine());
 
         volume = trail.transform.localScale.x *
-                     trail.transform.localScale.y *
-                     trail.transform.localScale.z;
+                 trail.transform.localScale.y *
+                 trail.transform.localScale.z;
 
-        ownerId = GetComponent<Player>().PlayerUUID;
-
+        ownerId = ship.Player.PlayerUUID;
     }
 
     private void OnPhoneFlip(bool state)
@@ -88,7 +84,7 @@ public class TrailSpawner : MonoBehaviour
     {
         spawnerEnabled = false;
     }
-    
+
     void RestartAITrailSpawnerAfterDelay()
     {
         // Called on GameOver to restart only the trail spawners for the AI
@@ -97,7 +93,7 @@ public class TrailSpawner : MonoBehaviour
             StartCoroutine(RestartSpawnerAfterDelayCoroutine());
         }
     }
-    
+
     void RestartTrailSpawnerAfterDelay()
     {
         // Called when extending game play to resume spawning trails for player and AI
@@ -116,61 +112,31 @@ public class TrailSpawner : MonoBehaviour
         {
             if (Time.deltaTime < .1f && spawnerEnabled)
             {
-                var Block = Instantiate(trail);
+                score += shipData.boost ? volume * boostedVolumeScoreScaler : volume * volumeScoreScaler;
 
-                score += shipData.boost ? volume * volumeScoreScaler*8 : volume * volumeScoreScaler; //if ship is boosted the blocks gets 8 times bigger (2^dimensionality)
-                
-                if (score > 1)
+                if (score > 1 && ScoringManager.Instance.nodeGame)
                 {
-                    AddToScore?.Invoke(ownerId, (int)score); //TODO have the trail script control the scoring instead
+                    ScoringManager.Instance.UpdateScore(ownerId, (int)score);
                     score = score % 1;
                 }
-                
-                Block.ownerId = player.PlayerUUID;
+
+                var Block = Instantiate(trail);
+                Block.ownerId = ship.Player.PlayerUUID;
                 Block.transform.SetPositionAndRotation(transform.position - shipData.velocityDirection * offset, shipData.blockRotation);
                 Block.transform.parent = TrailContainer.transform;
-                Block.GetComponent<Trail>().waitTime = waitTime;
+                Block.waitTime = waitTime;
+                Block.embiggen = shipData.boost;
+                Block.Team = ship.Team;
+                Block.warp = warp;
 
-                if (warp)
-                {
-                    Block.warp = true;
+                if (Block.warp)
                     wavelength = shards.GetComponent<WarpFieldData>().HybridVector(Block.transform).magnitude * initialWavelength;
-                }
 
                 trailQueue.Enqueue(Block);
                 trailList.Add(Block);
-                //if (trailQueue.Count > trailLength / initialWavelength)
-                //{
-                //    StartCoroutine(ShrinkTrailCoroutine());
-                //}
-                if (shipData.boost)
-                    Block.GetComponent<Trail>().embiggen = true;
-                else
-                    Block.GetComponent<Trail>().embiggen = false;
-
             }
-            if (shipData.boost)
-                yield return new WaitForSeconds(wavelength / shipData.speed);
-            else
-                yield return new WaitForSeconds(wavelength / shipData.speed);
+
+            yield return new WaitForSeconds(wavelength / shipData.speed);
         }
-    }
-
-    IEnumerator ShrinkTrailCoroutine()
-    {
-        var size = 1f;
-        var Block = trailQueue.Dequeue();
-        var initialTransformSize = Block.transform.localScale;
-        var initialColliderSize = Block.GetComponent<BoxCollider>().size;
-
-        while (size > 0.01)
-        {
-            size -= .5f * Time.deltaTime;
-            Block.transform.localScale = initialTransformSize * size;
-            Block.GetComponent<BoxCollider>().size = initialColliderSize * size;
-            yield return null;
-        }
-
-        Destroy(Block);
     }
 }

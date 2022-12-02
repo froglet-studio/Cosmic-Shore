@@ -24,8 +24,8 @@ public class GameData : DataPersistenceBase<GameData>
 
         // SCORES
         firstLifeHighScore = 0;    //Score before watching extended life ad
-        highScore = 0;             //All time highest score on this device
-        score = 0;                 //current score saved off for use in scoreboard  //TODO Determine if this is even needed
+        highScore = 0;             //All time highest SinglePlayerScore on this device
+        score = 0;                 //current SinglePlayerScore saved off for use in scoreboard  //TODO Determine if this is even needed
     }
 
     public override GameData LoadData()

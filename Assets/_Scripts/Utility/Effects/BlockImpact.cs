@@ -22,7 +22,7 @@ public class BlockImpact : MonoBehaviour
         }
         else
         {
-            if (ID == "red") 
+            if (ID == "Red") 
             {   
                 material.SetFloat("_playerHit", 0); material.SetFloat("_redHit", 1);
             }

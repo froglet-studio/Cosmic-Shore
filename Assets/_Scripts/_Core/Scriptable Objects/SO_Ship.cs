@@ -7,12 +7,12 @@ public class SO_Ship : ScriptableObject
     [SerializeField] string shipName;
     [SerializeField] float maxHealth;
     [SerializeField] float maxFuel;
-    [SerializeField] List<Ship.CrystalImpactEffect> crystalImpactEffects;
-    [SerializeField] List<Ship.TrailBlockImpactEffect> trailBlockImpactEffects;
+    [SerializeField] List<CrystalImpactEffect> crystalImpactEffects;
+    [SerializeField] List<TrailBlockImpactEffect> trailBlockImpactEffects;
 
     public string Name { get => shipName; }
     public float MaxHealth { get => maxHealth; }
     public float MaxFuel { get => maxFuel; }
-    public List<Ship.CrystalImpactEffect> CrystalImpactEffects { get => crystalImpactEffects; }
-    public List<Ship.TrailBlockImpactEffect> TrailBlockImpactEffects { get => trailBlockImpactEffects; }
+    public List<CrystalImpactEffect> CrystalImpactEffects { get => crystalImpactEffects; }
+    public List<TrailBlockImpactEffect> TrailBlockImpactEffects { get => trailBlockImpactEffects; }
 }

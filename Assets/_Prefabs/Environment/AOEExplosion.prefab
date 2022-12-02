@@ -10,7 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 6454128237993233764}
   - component: {fileID: 3479271500403630839}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: AOEExplosion
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -62,7 +62,7 @@ GameObject:
   - component: {fileID: 222469110799729297}
   - component: {fileID: 9124262208705958054}
   - component: {fileID: 5748954255915939637}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: Sphere
   m_TagString: Untagged
   m_Icon: {fileID: 0}

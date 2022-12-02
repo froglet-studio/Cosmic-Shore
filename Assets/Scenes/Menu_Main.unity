@@ -908,8 +908,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerName: 
   playerUUID: ai2
-  playerShipPrefab: {fileID: 0}
-  playerTrailPrefab: {fileID: 0}
+  ship: {fileID: 0}
+  Team: 0
 --- !u!114 &709728278
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1611,7 +1611,7 @@ Camera:
   m_Depth: 0
   m_CullingMask:
     serializedVersion: 2
-    m_Bits: 55
+    m_Bits: 3895
   m_RenderingPath: -1
   m_TargetTexture: {fileID: 0}
   m_TargetDisplay: 0
@@ -2658,7 +2658,7 @@ GameObject:
   - component: {fileID: 1406804387}
   - component: {fileID: 1406804386}
   m_Layer: 5
-  m_Name: PlayTestModeThreeButton
+  m_Name: PlayTestNodeSurfaceButton
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2843,7 +2843,7 @@ GameObject:
   - component: {fileID: 1454182225}
   - component: {fileID: 1454182224}
   m_Layer: 5
-  m_Name: PlayTestModeFourButton
+  m_Name: PlayTestWarpButton
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -3246,7 +3246,7 @@ GameObject:
   - component: {fileID: 1574179950}
   - component: {fileID: 1574179949}
   m_Layer: 5
-  m_Name: PlayTestModeTwoButton
+  m_Name: PlayTestNodeInteriorButton
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -4391,7 +4391,7 @@ GameObject:
   - component: {fileID: 2076727305}
   - component: {fileID: 2076727304}
   m_Layer: 5
-  m_Name: PlayTestModeOneButton
+  m_Name: PlayTestControlButton
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -4717,8 +4717,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerName: 
   playerUUID: ai
-  playerShipPrefab: {fileID: 0}
-  playerTrailPrefab: {fileID: 0}
+  ship: {fileID: 0}
+  Team: 0
 --- !u!114 &378015796163850479
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5394,6 +5394,26 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Enabled
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5036209225001289746, guid: 6e26a254ab5fbd749a242ce2be20d667,
+        type: 3}
+      propertyPath: gameTestModeOneGameScene
+      value: Game_TestControl
+      objectReference: {fileID: 0}
+    - target: {fileID: 5036209225001289746, guid: 6e26a254ab5fbd749a242ce2be20d667,
+        type: 3}
+      propertyPath: gameTestModeTwoGameScene
+      value: Game_TestNodeInterior
+      objectReference: {fileID: 0}
+    - target: {fileID: 5036209225001289746, guid: 6e26a254ab5fbd749a242ce2be20d667,
+        type: 3}
+      propertyPath: gameTestModeFourGameScene
+      value: Game_TestWarp
+      objectReference: {fileID: 0}
+    - target: {fileID: 5036209225001289746, guid: 6e26a254ab5fbd749a242ce2be20d667,
+        type: 3}
+      propertyPath: gameTestModeThreeGameScene
+      value: Game_TestNodeSurface
       objectReference: {fileID: 0}
     - target: {fileID: 5036209225001289759, guid: 6e26a254ab5fbd749a242ce2be20d667,
         type: 3}

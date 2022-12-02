@@ -9,7 +9,7 @@ public class AIGunner : MonoBehaviour
     //public delegate void Fire();
     //public static event Fire OnFire;
 
-    TrailSpawner trailSpawner;
+    
     int nextBlockIndex = 1;
     int previousBlockIndex;
     float gunnerSpeed = 5;
@@ -17,17 +17,18 @@ public class AIGunner : MonoBehaviour
     bool direction = true;
     int gap = 3;
     float rotationSpeed = 40;
-    Gun gun;
+    //Gun gun;
 
-    [SerializeField] GameObject gun;
+    [SerializeField] Gun gun;
     [SerializeField] GameObject gunMount;
+    [SerializeField] TrailSpawner trailSpawner;
 
 
     // Start is called before the first frame update
     void Start()
     {
-        trailSpawner = transform.parent.GetComponent<TrailSpawner>();
-        fire = gun.transform.GetComponent<Gun>();
+        //trailSpawner = transform.parent.GetComponent<TrailSpawner>();
+        //gun = gun.transform.GetComponent<Gun>();
     }
 
     // Update is called once per frame
@@ -70,7 +71,7 @@ public class AIGunner : MonoBehaviour
 
         //gun.transform.localRotation = Quaternion.Lerp(gun.transform.localRotation, Quaternion.Euler(new Vector3(0, 0, 0)), .05f);
         gunMount.transform.Rotate(0, rotationSpeed * Time.deltaTime, 0);
-        Gun.FireGun();
+        gun.FireGun();
         //OnFire?.Invoke();
     }
 }

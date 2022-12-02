@@ -15,16 +15,16 @@ EditorBuildSettings:
     path: Assets/Scenes/Game_TestModeGrace.unity
     guid: 511a0c2e48fb1fe43bfc4155eb90a9b2
   - enabled: 1
-    path: Assets/Scenes/Game_TestModeOne.unity
+    path: Assets/Scenes/Game_TestControl.unity
     guid: 205f64d457e811f4bac76d6502465124
   - enabled: 1
-    path: Assets/Scenes/Game_TestModeTwo.unity
+    path: Assets/Scenes/Game_TestNodeInterior.unity
     guid: 920ffcc6282de7f4ba58fa8c03466701
   - enabled: 1
-    path: Assets/Scenes/Game_TestModeThree.unity
+    path: Assets/Scenes/Game_TestNodeSurface.unity
     guid: c951f5a21e4ddd140b5c17c124c31a16
   - enabled: 1
-    path: Assets/Scenes/Game_TestModeFour.unity
+    path: Assets/Scenes/Game_TestWarp.unity
     guid: 0897c1cf0786c314996a6e5364771a7d
   - enabled: 1
     path: Assets/Scenes/Hangar.unity

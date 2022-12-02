@@ -31,9 +31,10 @@ namespace StarWriter.Core.HangerBuilder
             //Hanger.onChangeBay -= UpdateSelectedBayInfo;
         }
 
+        /*
         private void UpdateSelectedBayInfo(int bayIndex)
         {
-            GameObject selectedBay = Hangar.Instance.hangerBays[bayIndex].gameObject;
+            GameObject selectedBay = Hangar.Instance.bayShips[bayIndex].gameObject;
             GameObject selectedPilot = selectedBay.GetComponentInChildren<Pilot>().gameObject;
 
             pilotsInfo = selectedPilot.GetComponent<Pilot>().PilotName;
@@ -43,6 +44,7 @@ namespace StarWriter.Core.HangerBuilder
             shipInfo = selectedShip.GetComponent<Ship>().ShipName;
             shipText.text = "Ship is " + shipInfo;
         }
+        */
     }
 }
 

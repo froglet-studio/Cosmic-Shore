@@ -1,9 +1,11 @@
 using UnityEngine;
 using System.Collections.Generic;
 using StarWriter.Core.Audio;
-using UnityEngine.Serialization;
 
-public class Crystal : MonoBehaviour
+// can you even?
+//   ?
+//  ? ?
+public class Crystal : MonoBehaviour, IEntity
 {
     #region Events
     public delegate void OnCollisionIncreaseScore(string uuid, int amount);
@@ -25,6 +27,9 @@ public class Crystal : MonoBehaviour
     List<Collider> collisions;
     [SerializeField] bool surface = false;
 
+    EntityType entityType = EntityType.Crystal;
+    public Team Team { get => Team.None; set => Debug.LogError("Someone tried to set the team type for a crystal"); }
+    public EntityType EntityType { get => entityType; }
 
     void Start()
     {
@@ -47,21 +52,19 @@ public class Crystal : MonoBehaviour
 
     private void Collide(Collider other)
     {
-        if (!IsPlayer(other.gameObject))
+        if (!IsShip(other.gameObject))
             return;
 
         // TODO: let's refactor this so we're not locked into this playerGO structure
+        //GameObject playerGO = other.transform.parent.parent.gameObject;
         GameObject playerGO = other.transform.parent.parent.gameObject;
 
         //
         // Do the ship specific crystal stuff
         //
 
-        // TODO: this needs to move into the ship PerformCrystalImpactEffects method...
-        if (AddToScore != null)
-            AddToScore(playerGO.GetComponent<Player>().PlayerUUID, crystalProperties.scoreAmount);
-
-        playerGO.GetComponent<Ship>().PerformCrystalImpactEffects(crystalProperties);
+        var ship = other.GetComponent<ShipGeometry>().Ship;
+        ship.PerformCrystalImpactEffects(crystalProperties);
 
         //
         // Do the crystal stuff that always happens (ship independent)
@@ -74,17 +77,8 @@ public class Crystal : MonoBehaviour
         spentCrystal.transform.localEulerAngles = transform.localEulerAngles;
         spentCrystal.GetComponent<Renderer>().material = tempMaterial;
         
-        // TODO: this is silliness, let's use the ship's name or something and just velocityDirection it transparently into the impact coroutine
-        string impactId;
-        if (playerGO == GameObject.FindWithTag("Player"))
-            impactId = "Player";
-        else if (playerGO == GameObject.FindWithTag("red"))
-            impactId = "red";
-        else
-            impactId = "blue";
-
         StartCoroutine(spentCrystal.GetComponent<Impact>().ImpactCoroutine(
-            playerGO.transform.forward * playerGO.GetComponent<ShipData>().speed, tempMaterial, impactId));
+            ship.transform.forward * ship.GetComponent<ShipData>().speed, tempMaterial, ship.Player.PlayerName));
 
         // Play SFX sound
         AudioSource audioSource = GetComponent<AudioSource>();
@@ -103,10 +97,8 @@ public class Crystal : MonoBehaviour
         }
     }
 
-    private bool IsPlayer(GameObject go)
+    private bool IsShip(GameObject go)
     {
-        //return go.transform.parent.parent.GetComponent<Player>() != null;
-
         return go.layer == LayerMask.NameToLayer("Ships");
     }
 }

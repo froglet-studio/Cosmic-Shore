@@ -3,31 +3,15 @@ using UnityEngine;
 
 public class Ship : MonoBehaviour
 {
-    [SerializeField] string shipUUID;
     [SerializeField] SO_Ship shipSO;
     [SerializeField] GameObject AOEPrefab;
-
-    public enum CrystalImpactEffect
-    {
-        PlayHaptics,
-        FillFuel,
-        Score,
-        AreaOfEffectExplosion,
-        ResetAggression,
-    }
-
-    public enum TrailBlockImpactEffect
-    {
-        PlayHaptics,
-        DrainFuel,
-        DebuffSpeed,
-        DeactivateTrailBlock,
-        ActivateTrailBlock,
-    }
+    [SerializeField] Player player;
+    Team team;
 
     public string ShipName { get => shipSO.Name; }
-    public string ShipUUID { get => shipUUID; }
     public SO_Ship ShipSO { get => shipSO; set => shipSO = value; }
+    public Team Team { get => team; set => team = value; }
+    public Player Player { get => player; set => player = value; }
 
     public void PerformCrystalImpactEffects(CrystalProperties crystalProperties)
     {
@@ -40,20 +24,19 @@ public class Ship : MonoBehaviour
                     break;
                 case CrystalImpactEffect.AreaOfEffectExplosion:
                     // Spawn AOE explosion
-                    var AOEExplosion = Instantiate(AOEPrefab);
-                    // TODO: make explosion not collide with ships
                     // TODO: add position to crystal properties? use crystal properties to set position
+                    var AOEExplosion = Instantiate(AOEPrefab);
+                    AOEExplosion.GetComponent<AOEExplosion>().Team = team;
                     AOEExplosion.transform.position = transform.position; 
-                    // Do the thing
                     break;
                 case CrystalImpactEffect.FillFuel:
-                    // TODO: the below line assumes this script will live on an object containing the player script -> could be more robust
-                    FuelSystem.ChangeFuelAmount(gameObject.GetComponent<Player>().PlayerUUID, crystalProperties.fuelAmount);
+                    FuelSystem.ChangeFuelAmount(player.PlayerUUID, crystalProperties.fuelAmount);
                     break;
                 case CrystalImpactEffect.Score:
-                    // 
+                    ScoringManager.Instance.UpdateScore(player.PlayerUUID, crystalProperties.scoreAmount);
                     break;
                 case CrystalImpactEffect.ResetAggression:
+                    // TODO: PLAYERSHIP null pointer here
                     AIPilot controllerScript = gameObject.GetComponent<AIPilot>();
                     controllerScript.lerp = controllerScript.defaultLerp;
                     controllerScript.throttle = controllerScript.defaultThrottle;
@@ -62,5 +45,29 @@ public class Ship : MonoBehaviour
         }
     }
 
-    // TODO: public void PerformTrailBlockImpactEffects(TrailBlockProperties trailBlockProperties)
+    public void PerformTrailBlockImpactEffects(TrailBlockProperties trailBlockProperties)
+    {
+        foreach (TrailBlockImpactEffect effect in shipSO.TrailBlockImpactEffects)
+        {
+            switch (effect)
+            {
+                case TrailBlockImpactEffect.PlayHaptics:
+                    break;
+                case TrailBlockImpactEffect.DrainFuel:
+                    break;
+                case TrailBlockImpactEffect.DebuffSpeed:
+                    break;
+                case TrailBlockImpactEffect.DeactivateTrailBlock:
+                    break;
+                case TrailBlockImpactEffect.ActivateTrailBlock:
+                    break;
+            }
+        }
+    }
+
+    public void ToggleCollision(bool enabled)
+    {
+        foreach (var collider in GetComponentsInChildren<Collider>(true))
+            collider.enabled = enabled;
+    }
 }

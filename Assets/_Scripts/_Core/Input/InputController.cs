@@ -30,7 +30,7 @@ namespace StarWriter.Core.Input
         float boostDecay = 0;
 
         public float speed;
-        ShipData shipData;
+        [SerializeField] ShipData shipData;
 
         public float initialDThrottle = 10f; 
         public float initialThrottleScaler = 50;
@@ -81,7 +81,7 @@ namespace StarWriter.Core.Input
             defaultThrottle = initialDThrottle;
             throttleScaler = initialThrottleScaler;
 
-            shipData = GetComponent<ShipData>();
+            //shipData = GetComponent<ShipData>();
 
             uuid = GameObject.FindWithTag("Player").GetComponent<Player>().PlayerUUID;
             // TODO: why is this here?

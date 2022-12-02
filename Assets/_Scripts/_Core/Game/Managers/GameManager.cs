@@ -2,7 +2,6 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using TailGlider.Utility.Singleton;
 using UnityEngine.Advertisements;
-using System.Collections;
 using StarWriter.Core.Audio;
 using UnityEngine.InputSystem;
 
@@ -41,11 +40,11 @@ namespace StarWriter.Core
         public int DeathCount { get { return deathCount; } }
 
         string mainMenuScene = "Menu_Main";
-        string highScoreGameScene = "Game_HighScore";
-        string gameTestModeOneGameScene = "Game_TestModeOne";
-        string gameTestModeTwoGameScene = "Game_TestModeTwo";
-        string gameTestModeThreeGameScene = "Game_TestModeThree";
-        string gameTestModeFourGameScene = "Game_TestModeFour";
+        [SerializeField] string gameScene = "Game_HighScore";
+        [SerializeField] string gameTestModeOneGameScene = "Game_TestModeOne";
+        [SerializeField] string gameTestModeTwoGameScene = "Game_TestModeTwo";
+        [SerializeField] string gameTestModeThreeGameScene = "Game_TestModeThree";
+        [SerializeField] string gameTestModeFourGameScene = "Game_TestModeFour";
         string hangarScene = "Hangar";
         string tutorialGameScene = "Game_Tutorial";
         string ActiveGameScene = "";
@@ -135,8 +134,8 @@ namespace StarWriter.Core
             deathCount = 0;
             analyticsManager.LogLevelStart();
             UnPauseGame();
-            ActiveGameScene = highScoreGameScene;
-            SceneManager.LoadScene(highScoreGameScene); 
+            ActiveGameScene = gameTestModeZeroGameScene;
+            SceneManager.LoadScene(gameTestModeZeroGameScene); 
         }
 
         public void OnClickTestGameModeOne()

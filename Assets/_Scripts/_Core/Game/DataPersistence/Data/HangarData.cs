@@ -6,13 +6,13 @@ public struct ShipConfiguration
 {
     public string Ship;   
     public string Trail;
-    public string Upgrade1;
+    public string TagLine;
 
-    public ShipConfiguration(string ship, string trail, string upgrade1)
+    public ShipConfiguration(string ship, string trail, string tagLine)
     {
         Ship = ship;
         Trail = trail;
-        Upgrade1 = upgrade1;
+        TagLine = tagLine;
     }
 }
 

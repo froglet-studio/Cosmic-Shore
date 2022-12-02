@@ -4,7 +4,7 @@ using UnityEngine.UI;
 using static StarWriter.Core.GameSetting;
 
 /// <summary>
-/// Controls the final score and high score display panel
+/// Controls the final SinglePlayerScore and high SinglePlayerScore display panel
 /// </summary>
 namespace StarWriter.Core
 {

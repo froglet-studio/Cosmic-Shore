@@ -27,8 +27,8 @@ namespace StarWriter.Core.HangerBuilder
         }
         void InitializeBay()
         {
-            TryToLoadShip(hangar.GetCurrentPlayerBuildShip());
-            TryToLoadTrail(hangar.GetCurrentPlayerBuildTrail());
+            //TryToLoadShip(hangar.GetCurrentPlayerBuildShip());
+            //TryToLoadTrail(hangar.GetCurrentPlayerBuildTrail());
 
             Debug.Log("Pilot loaded " + pilotLoaded);
             Debug.Log("Ship loaded " + shipLoaded);
@@ -60,4 +60,3 @@ namespace StarWriter.Core.HangerBuilder
         }
     }
 }
-

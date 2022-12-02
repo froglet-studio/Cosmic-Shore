@@ -3,18 +3,20 @@ using TMPro;
 using StarWriter.Core;
 using static StarWriter.Core.GameSetting;
 using System.Collections.Generic;
+using StarWriter.Utility.Singleton;
 
-public class ScoringManager : MonoBehaviour
+public class ScoringManager : Singleton<ScoringManager>
 {
+    // TODO: remove deprecated 'extended life' stuff
     [SerializeField] int extendedLifeScore;
     [SerializeField] int extendedLifeHighScore;
     [SerializeField] GameObject WinnerDisplay;
     [SerializeField] List<GameObject> ScoreContainers;
-    //[SerializeField] float ScoreVerticalSpacing = 57.4f; //TODO: for dynamic scoring layout
     
     Dictionary<string, GameObject> ScoreDisplays = new Dictionary<string, GameObject>(); // TODO: not sure I like this
-    Dictionary<string, int> Scores = new Dictionary<string, int>();
-    static int score = 0;
+    Dictionary<string, int> PlayerScores = new Dictionary<string, int>();
+    Dictionary<Team, int> TeamScores = new Dictionary<Team, int>();
+    static int SinglePlayerScore = 0;
     static bool firstLife = true;
     static float bedazzleThresholdPercentage = 0.8f;
 
@@ -26,7 +28,7 @@ public class ScoringManager : MonoBehaviour
 
     public bool FirstLife { get => firstLife; set => firstLife = value; }
 
-    [SerializeField] bool nodeGame = false;
+    [SerializeField] public bool nodeGame = false;
 
     private void OnEnable()
     {
@@ -34,7 +36,6 @@ public class ScoringManager : MonoBehaviour
         GameManager.onDeath += UpdateScoresAndDeathCount;
         GameManager.onGameOver += UpdateScoresAndDeathCount;
         Crystal.AddToScore += UpdateScore;
-        if (nodeGame) TrailSpawner.AddToScore += UpdateScore;
         Trail.AddToScore += UpdateScore;
     }
 
@@ -44,13 +45,12 @@ public class ScoringManager : MonoBehaviour
         GameManager.onDeath -= UpdateScoresAndDeathCount;
         GameManager.onGameOver -= UpdateScoresAndDeathCount;
         Crystal.AddToScore -= UpdateScore;
-        if (nodeGame) TrailSpawner.AddToScore -= UpdateScore;
         Trail.AddToScore -= UpdateScore;
     }
 
     private void Start()
     {
-        // Initialize score panel to be blank
+        // Initialize SinglePlayerScore panel to be blank
         foreach (var sc in ScoreContainers)
         {
             var playerName = sc.transform.GetChild(0).GetComponent<TMP_Text>();
@@ -66,47 +66,47 @@ public class ScoringManager : MonoBehaviour
     public void UpdateScoreBoard(int value)
     {
         Debug.Log($"UpdateScoreBoard - value:{value}");
-        scoreText.text = value.ToString("D3"); // score text located on the fuel bar
+        scoreText.text = value.ToString("D3"); // SinglePlayerScore text located on the fuel bar
     }
 
-    private void UpdateScore(string uuid, int amount)
+    public void UpdateScore(string uuid, int amount)
     {
         if (RoundEnded)
             return;
 
-        if (!Scores.ContainsKey(uuid))
+        if (!PlayerScores.ContainsKey(uuid))
         {
-            Scores.Add(uuid, 0);
-            ScoreDisplays.Add(uuid, ScoreContainers[Scores.Count - 1]);
-            ScoreContainers[Scores.Count - 1].transform.GetChild(0).GetComponent<TMP_Text>().text = uuid;
-            ScoreContainers[Scores.Count - 1].transform.GetChild(1).GetComponent<TMP_Text>().text = "000";
+            PlayerScores.Add(uuid, 0);
+            ScoreDisplays.Add(uuid, ScoreContainers[PlayerScores.Count - 1]);
+            ScoreContainers[PlayerScores.Count - 1].transform.GetChild(0).GetComponent<TMP_Text>().text = uuid;
+            ScoreContainers[PlayerScores.Count - 1].transform.GetChild(1).GetComponent<TMP_Text>().text = "000";
         }
 
-        Scores[uuid] += amount;
-        ScoreDisplays[uuid].transform.GetChild(1).GetComponent<TMP_Text>().text = Scores[uuid].ToString("D3");
+        PlayerScores[uuid] += amount;
+        ScoreDisplays[uuid].transform.GetChild(1).GetComponent<TMP_Text>().text = PlayerScores[uuid].ToString("D3");
 
         if (uuid == "admin")
         {
-            score += amount;
+            SinglePlayerScore += amount;
         }
 
-        foreach (var key in Scores.Keys)
+        foreach (var key in PlayerScores.Keys)
         {
-            Debug.Log($"Scores: {key}, {Scores[key]}");
+            Debug.Log($"Scores: {key}, {PlayerScores[key]}");
         }
 
-        UpdateScoreBoard(score);
+        UpdateScoreBoard(SinglePlayerScore);
     }
 
     private void ResetScoreAndDeathCount()
     {
         Debug.Log("ScoringManager.OnPlay");
-        foreach (var key in Scores.Keys)
-            Scores[key] = 0;
+        foreach (var key in PlayerScores.Keys)
+            PlayerScores[key] = 0;
 
         WinnerDisplay.SetActive(false);
 
-        score = 0;
+        SinglePlayerScore = 0;
         firstLife = true;
         newHighScore = false;
         firstLifeThresholdBeat = false;
@@ -115,24 +115,24 @@ public class ScoringManager : MonoBehaviour
 
     private void UpdateScoresAndDeathCount()
     {
-        PlayerPrefs.SetInt(PlayerPrefKeys.score.ToString(), score);
+        PlayerPrefs.SetInt(PlayerPrefKeys.score.ToString(), SinglePlayerScore);
 
         // Compares Score to High Score and saves the highest value
-        if (PlayerPrefs.GetInt(PlayerPrefKeys.highScore.ToString()) < score)
+        if (PlayerPrefs.GetInt(PlayerPrefKeys.highScore.ToString()) < SinglePlayerScore)
         {
-            PlayerPrefs.SetInt(PlayerPrefKeys.highScore.ToString(), score);
+            PlayerPrefs.SetInt(PlayerPrefKeys.highScore.ToString(), SinglePlayerScore);
             newHighScore = true;
         }
 
         if (firstLife)
         {
-            if (PlayerPrefs.GetInt(PlayerPrefKeys.firstLifeHighScore.ToString()) * bedazzleThresholdPercentage <= score)
+            if (PlayerPrefs.GetInt(PlayerPrefKeys.firstLifeHighScore.ToString()) * bedazzleThresholdPercentage <= SinglePlayerScore)
             {
                 firstLifeThresholdBeat = true;
             }
-            if (PlayerPrefs.GetInt(PlayerPrefKeys.firstLifeHighScore.ToString()) < score)
+            if (PlayerPrefs.GetInt(PlayerPrefKeys.firstLifeHighScore.ToString()) < SinglePlayerScore)
             {
-                PlayerPrefs.SetInt(PlayerPrefKeys.firstLifeHighScore.ToString(), score);
+                PlayerPrefs.SetInt(PlayerPrefKeys.firstLifeHighScore.ToString(), SinglePlayerScore);
             }
         }
 
@@ -149,11 +149,11 @@ public class ScoringManager : MonoBehaviour
     {
         int winnersScore = 0;
         string winnersName = "";
-        foreach (var key in Scores.Keys)
+        foreach (var key in PlayerScores.Keys)
         {
-            if (Scores[key] > winnersScore)
+            if (PlayerScores[key] > winnersScore)
             {
-                winnersScore = Scores[key];
+                winnersScore = PlayerScores[key];
                 winnersName = key;
             }
         }
@@ -166,17 +166,17 @@ public class ScoringManager : MonoBehaviour
     public static bool IsScoreBedazzleWorthy
     {
         get => firstLife ?
-            firstLifeThresholdBeat || (PlayerPrefs.GetInt(PlayerPrefKeys.firstLifeHighScore.ToString()) * bedazzleThresholdPercentage) <= score :
-            newHighScore || (PlayerPrefs.GetInt(PlayerPrefKeys.highScore.ToString())) < score;
+            firstLifeThresholdBeat || (PlayerPrefs.GetInt(PlayerPrefKeys.firstLifeHighScore.ToString()) * bedazzleThresholdPercentage) <= SinglePlayerScore :
+            newHighScore || (PlayerPrefs.GetInt(PlayerPrefKeys.highScore.ToString())) < SinglePlayerScore;
     }
 
     public static bool IsAdBedazzleWorthy
     {
-        get => PlayerPrefs.GetInt(PlayerPrefKeys.highScore.ToString()) <= score;
+        get => PlayerPrefs.GetInt(PlayerPrefKeys.highScore.ToString()) <= SinglePlayerScore;
     }
 
     public static bool IsShareBedazzleWorthy
     {
-        get => PlayerPrefs.GetInt(PlayerPrefKeys.highScore.ToString()) <= score;
+        get => PlayerPrefs.GetInt(PlayerPrefKeys.highScore.ToString()) <= SinglePlayerScore;
     }
 }
