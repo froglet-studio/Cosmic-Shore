@@ -40,7 +40,7 @@ namespace StarWriter.Core
         public int DeathCount { get { return deathCount; } }
 
         string mainMenuScene = "Menu_Main";
-        [SerializeField] string gameScene = "Game_HighScore";
+        [SerializeField] string gameTestModeZeroGameScene = "Game_HighScore";
         [SerializeField] string gameTestModeOneGameScene = "Game_TestModeOne";
         [SerializeField] string gameTestModeTwoGameScene = "Game_TestModeTwo";
         [SerializeField] string gameTestModeThreeGameScene = "Game_TestModeThree";
