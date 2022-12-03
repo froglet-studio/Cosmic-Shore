@@ -12,7 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b9f1e5e5ae9dd594ba08cd8789e5fd91, type: 3}
   m_Name: Manta_Blue_Ship
   m_EditorClassIdentifier: 
-  shipName: Manta
+  prefab: {fileID: 8031032588988629247, guid: d3d71cc2c3b8f67448be1600b8d27a11, type: 3}
+  shipName: Manta Blue
   maxHealth: 0
   maxFuel: 0
   crystalImpactEffects: 0400000003000000

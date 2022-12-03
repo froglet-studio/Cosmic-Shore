@@ -1,16 +1,17 @@
 using System.Collections.Generic;
 using UnityEngine;
 using TailGlider.Utility.Singleton;
+using System.Linq;
 
 namespace StarWriter.Core.HangerBuilder
 {
     public class Hangar : SingletonPersistent<Hangar>
     {
-        [SerializeField] Dictionary<string, SO_Ship> ships = new Dictionary<string, SO_Ship>();
+        Dictionary<string, SO_Ship> ships = new Dictionary<string, SO_Ship>();
 
         [SerializeField] int SelectedBayIndex = 0;
-
-        public List<SO_Ship> bayShips;
+        [SerializeField] public List<SO_Ship> allShips;
+        [SerializeField] public List<SO_Ship> bayShips;
 
         public SO_Ship selectedShip { get; private set; }
 
@@ -18,10 +19,20 @@ namespace StarWriter.Core.HangerBuilder
 
         private void Start()
         {
+            foreach (SO_Ship ship in allShips)
+                ships.Add(ship.Name, ship);
+
             if (!PlayerPrefs.HasKey("ShipName"))
                 PlayerPrefs.SetString("ShipName", "Manta");
-
-
+        }
+        public SO_Ship LoadPlayerShip()
+        {
+            return ships[PlayerPrefs.GetString("ShipName")];
+        }
+        public SO_Ship LoadAIShip()
+        {
+            System.Random rand = new System.Random();
+            return ships.ElementAt(rand.Next(0, ships.Count)).Value;
         }
     }
 }

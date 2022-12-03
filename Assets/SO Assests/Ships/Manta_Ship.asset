@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b9f1e5e5ae9dd594ba08cd8789e5fd91, type: 3}
   m_Name: Manta_Ship
   m_EditorClassIdentifier: 
+  prefab: {fileID: 6417075533431866457, guid: 8088c0e7095051647bcbcd5a6373ca38, type: 3}
   shipName: Manta
   maxHealth: 0
   maxFuel: 0

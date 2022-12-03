@@ -112,6 +112,9 @@ public class Trail : MonoBehaviour, IEntity
         }
         else if (IsExplosion(other.gameObject))
         {
+            if (other.GetComponent<AOEExplosion>().Team == Team)
+                return;
+
             var speed = other.GetComponent<AOEExplosion>().speed;
             var impactVector = (transform.position - other.transform.position).normalized*speed;
 

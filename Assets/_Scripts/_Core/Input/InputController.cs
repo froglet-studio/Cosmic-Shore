@@ -8,8 +8,7 @@ namespace StarWriter.Core.Input
     public class InputController : MonoBehaviour
     {
         #region Ship
-        [SerializeField] 
-        Transform shipTransform;
+        [SerializeField] public Transform shipTransform;
 
         [SerializeField]
         Transform Fusilage;
@@ -30,7 +29,7 @@ namespace StarWriter.Core.Input
         float boostDecay = 0;
 
         public float speed;
-        [SerializeField] ShipData shipData;
+        [SerializeField] public ShipData shipData;
 
         public float initialDThrottle = 10f; 
         public float initialThrottleScaler = 50;
@@ -230,7 +229,7 @@ namespace StarWriter.Core.Input
                 }
                 else Special(xSum, ySum, xDiff, yDiff);
 
-                PerformShipAnimations(xSum, ySum, xDiff, yDiff);
+                //PerformShipAnimations(xSum, ySum, xDiff, yDiff);
             }
             else
             {

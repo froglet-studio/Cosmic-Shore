@@ -1,11 +1,13 @@
 using StarWriter.Core.Input;
 using UnityEngine;
 
+[RequireComponent(typeof(TrailSpawner))]
 public class Ship : MonoBehaviour
 {
     [SerializeField] SO_Ship shipSO;
     [SerializeField] GameObject AOEPrefab;
     [SerializeField] Player player;
+    [SerializeField] public TrailSpawner TrailSpawner;
     Team team;
 
     public string ShipName { get => shipSO.Name; }
