@@ -31,8 +31,10 @@ namespace StarWriter.Core.HangerBuilder
         }
         public SO_Ship LoadAIShip()
         {
-            System.Random rand = new System.Random();
-            return ships.ElementAt(rand.Next(0, ships.Count)).Value;
+            if (PlayerPrefs.GetString("ShipName") == "Manta")
+                return ships["Manta Red"];
+            else
+                return ships["Manta"];
         }
     }
 }

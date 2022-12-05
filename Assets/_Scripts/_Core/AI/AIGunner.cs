@@ -10,18 +10,28 @@ public class AIGunner : MonoBehaviour
     int gap = 3;
     float rotationSpeed = 40;
     TrailSpawner trailSpawner;
+    public Team Team;
 
     [SerializeField] Gun gun;
     [SerializeField] GameObject gunMount;
     [SerializeField] Player player;
+    [SerializeField] float startDelay = 3f;
+    float elapsedTimeSinceStart;
 
     private void Start()
     {
         trailSpawner = player.Ship.TrailSpawner;
+        Team = player.Team;
+        gun.Team = Team;
     }
 
     void Update()
     {
+        // Give the ships a small head start so some blocks exist
+        elapsedTimeSinceStart += Time.deltaTime;
+        if (elapsedTimeSinceStart < startDelay)
+            return;
+
         if (trailSpawner.trailList[(int)nextBlockIndex].destroyed) lerpAmount += gunnerSpeed/4f * Time.deltaTime;
         else lerpAmount += gunnerSpeed * Time.deltaTime;
         if (direction && lerpAmount > 1)

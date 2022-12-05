@@ -33,10 +33,10 @@ namespace StarWriter.Core.Input
         RaycastHit hit;
         float maxDistance = 50f;
 
-        [SerializeField] public Transform muton;
+        [SerializeField] public Transform muton;    //TODO: stop serializing this, we need to load the ship in and wire it up dynamically
         Vector3 distance;
 
-        [SerializeField] FlowFieldData flowFieldData;
+        [SerializeField] public FlowFieldData flowFieldData;    //TODO: stop serializing this, we need to load the ship in and wire it up dynamically
 
         Dictionary<Corner, AvoidanceBehavior> CornerBehaviors;
 

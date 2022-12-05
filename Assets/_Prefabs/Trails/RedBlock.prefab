@@ -116,6 +116,11 @@ MonoBehaviour:
   ParticleEffect: {fileID: 3706253519474275301, guid: e0864f60c97232b4aa8943a83e70de0a,
     type: 3}
   material: {fileID: 2100000, guid: b864b8d0a0bb035479ac5a3c2fe425bd, type: 2}
-  ParticleEffectScale: {x: 1.5, y: 1.5, z: 1.5}
+  trailBlockProperties:
+    volume: 0.2
+    speedDebuffAmount: 1
   ownerId: 
   waitTime: 0.1
+  embiggen: 0
+  destroyed: 0
+  warp: 0

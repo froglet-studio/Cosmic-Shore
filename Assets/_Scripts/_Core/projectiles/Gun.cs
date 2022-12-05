@@ -8,28 +8,24 @@ public class Gun : MonoBehaviour
     public float speed = 10;
     public float projectileTime = 5;
     public float firePeriod = .2f;
+    public Team Team;
     bool onCooldown = false;
  
     public void FireGun()
     {
         if (onCooldown)
-        {
             return;
-        }
-        else
-        {
-            var projectile = Instantiate(projectilePrefab);
-            projectile.transform.rotation = Quaternion.LookRotation(transform.up);
-            projectile.transform.position = transform.position + projectile.transform.forward * 2;
-            projectile.GetComponent<Projectile>().Velocity = projectile.transform.forward * speed;
-            StartCoroutine(MoveProjectileCoroutine(projectile));
-            onCooldown = true;
-            StartCoroutine(CooldownCoroutine());
-        }
 
+        var projectile = Instantiate(projectilePrefab);
+        projectile.transform.rotation = Quaternion.LookRotation(transform.up);
+        projectile.transform.position = transform.position + projectile.transform.forward * 2;
+        projectile.GetComponent<Projectile>().Velocity = projectile.transform.forward * speed;
+        projectile.GetComponent<Projectile>().Team = Team;
+        StartCoroutine(MoveProjectileCoroutine(projectile));
+        onCooldown = true;
+        StartCoroutine(CooldownCoroutine());
 
     }
-
     private IEnumerator CooldownCoroutine()
     {
         yield return new WaitForSeconds(firePeriod);

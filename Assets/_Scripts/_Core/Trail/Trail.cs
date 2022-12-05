@@ -74,6 +74,9 @@ public class Trail : MonoBehaviour, IEntity
             transform.localScale = finalTransformScale * size;
             yield return null;
         }
+
+        // Add block to team score when created
+        ScoringManager.Instance.UpdateTeamScore(team, trailBlockProperties.volume);
     }
 
     public void InstantiateParticle(Transform skimmer)
@@ -122,6 +125,9 @@ public class Trail : MonoBehaviour, IEntity
         }
         else if (IsProjectile(other.gameObject))
         {
+            if (other.GetComponent<Projectile>().Team == Team)
+                return;
+
             var speed = other.GetComponent<Projectile>().Velocity;
             var impactVector = speed;
 
@@ -131,7 +137,6 @@ public class Trail : MonoBehaviour, IEntity
 
     public void Collide(Ship ship)
     {
-        //if (other.GetComponent<Ship>().Team == team)
         if (ownerId == ship.Player.PlayerUUID)
         {
             Debug.Log($"You hit you're teams tail - ownerId: {ownerId}, team: {team}");
@@ -172,6 +177,9 @@ public class Trail : MonoBehaviour, IEntity
         explodingBlock.GetComponent<BlockImpact>().HandleImpact(impactVector, impactId);
 
         destroyed = true;
+
+        // Remove block from team score when destroyed
+        ScoringManager.Instance.UpdateTeamScore(team, trailBlockProperties.volume*-1);
     }
 
     public void restore()
@@ -180,6 +188,9 @@ public class Trail : MonoBehaviour, IEntity
         gameObject.GetComponent<MeshRenderer>().enabled = true;
 
         destroyed = false;
+
+        // Add block back to team score when created
+        ScoringManager.Instance.UpdateTeamScore(team, trailBlockProperties.volume);
     }
 
     // TODO: utility class needed to hold these

@@ -4,6 +4,7 @@ using TailGlider.Utility.Singleton;
 using UnityEngine.Advertisements;
 using StarWriter.Core.Audio;
 using UnityEngine.InputSystem;
+using StarWriter.Core.Input;
 
 namespace StarWriter.Core
 {
@@ -243,6 +244,13 @@ namespace StarWriter.Core
         public void WaitOnPlayerLoading()
         {
             onPlayGame?.Invoke();
+        }
+
+        public void WaitOnAILoading(AIPilot pilot)
+        {
+            // TODO: we should rename muton to 'CrystalTransform'
+            pilot.muton = FindObjectOfType<Crystal>().transform;
+            pilot.flowFieldData = FindObjectOfType<FlowFieldData>();
         }
 
         public void OnAdShowComplete(string adUnitId, UnityAdsShowCompletionState showCompletionState)

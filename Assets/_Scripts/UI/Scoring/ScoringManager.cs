@@ -12,10 +12,11 @@ public class ScoringManager : Singleton<ScoringManager>
     [SerializeField] int extendedLifeHighScore;
     [SerializeField] GameObject WinnerDisplay;
     [SerializeField] List<GameObject> ScoreContainers;
+    [SerializeField] bool TeamScoresEnabled = false;
     
     Dictionary<string, GameObject> ScoreDisplays = new Dictionary<string, GameObject>(); // TODO: not sure I like this
     Dictionary<string, int> PlayerScores = new Dictionary<string, int>();
-    Dictionary<Team, int> TeamScores = new Dictionary<Team, int>();
+    Dictionary<Team, float> TeamScores = new Dictionary<Team, float>();
     static int SinglePlayerScore = 0;
     static bool firstLife = true;
     static float bedazzleThresholdPercentage = 0.8f;
@@ -35,8 +36,11 @@ public class ScoringManager : Singleton<ScoringManager>
         GameManager.onPlayGame += ResetScoreAndDeathCount;
         GameManager.onDeath += UpdateScoresAndDeathCount;
         GameManager.onGameOver += UpdateScoresAndDeathCount;
-        Crystal.AddToScore += UpdateScore;
-        Trail.AddToScore += UpdateScore;
+        if (!TeamScoresEnabled)
+        {
+            Crystal.AddToScore += UpdateScore;
+            Trail.AddToScore += UpdateScore;
+        }
     }
 
     private void OnDisable()
@@ -44,8 +48,11 @@ public class ScoringManager : Singleton<ScoringManager>
         GameManager.onPlayGame -= ResetScoreAndDeathCount;
         GameManager.onDeath -= UpdateScoresAndDeathCount;
         GameManager.onGameOver -= UpdateScoresAndDeathCount;
-        Crystal.AddToScore -= UpdateScore;
-        Trail.AddToScore -= UpdateScore;
+        if (!TeamScoresEnabled)
+        {
+            Crystal.AddToScore -= UpdateScore;
+            Trail.AddToScore -= UpdateScore;
+        }
     }
 
     private void Start()
@@ -67,6 +74,28 @@ public class ScoringManager : Singleton<ScoringManager>
     {
         Debug.Log($"UpdateScoreBoard - value:{value}");
         scoreText.text = value.ToString("D3"); // SinglePlayerScore text located on the fuel bar
+    }
+
+    public void UpdateTeamScore(Team team, float amount)
+    {
+        if (RoundEnded)
+            return;
+
+        if (!TeamScores.ContainsKey(team))
+        {
+            TeamScores.Add(team, 0);
+            ScoreDisplays.Add(team.ToString(), ScoreContainers[TeamScores.Count - 1]);
+            ScoreContainers[TeamScores.Count - 1].transform.GetChild(0).GetComponent<TMP_Text>().text = team.ToString();
+            ScoreContainers[TeamScores.Count - 1].transform.GetChild(1).GetComponent<TMP_Text>().text = "000";
+        }
+
+        TeamScores[team] += amount;
+        ScoreDisplays[team.ToString()].transform.GetChild(1).GetComponent<TMP_Text>().text = ((int)TeamScores[team]).ToString("D3");
+
+        foreach (var key in TeamScores.Keys)
+        {
+            Debug.Log($"Scores: {key}, {TeamScores[key]}");
+        }
     }
 
     public void UpdateScore(string uuid, int amount)
@@ -103,6 +132,8 @@ public class ScoringManager : Singleton<ScoringManager>
         Debug.Log("ScoringManager.OnPlay");
         foreach (var key in PlayerScores.Keys)
             PlayerScores[key] = 0;
+        foreach (var key in TeamScores.Keys)
+            TeamScores[key] = 0;
 
         WinnerDisplay.SetActive(false);
 
@@ -138,11 +169,32 @@ public class ScoringManager : Singleton<ScoringManager>
 
         PlayerPrefs.Save();
 
-        DisplayWinner();
+        if (TeamScoresEnabled)
+            DisplayWinningTeam();
+        else
+            DisplayWinner();
 
         // TODO: duplicate bookkeeping happening here - introduce different game modes?
         firstLife = false;
         RoundEnded = true;
+    }
+
+    void DisplayWinningTeam()
+    {
+        int winnersScore = 0;
+        string winnersName = "";
+        foreach (var key in TeamScores.Keys)
+        {
+            if (TeamScores[key] > winnersScore)
+            {
+                winnersScore = (int)TeamScores[key];
+                winnersName = key.ToString();
+            }
+        }
+        WinnerDisplay.transform.GetChild(0).GetComponent<TMP_Text>().text = winnersName;
+        WinnerDisplay.transform.GetChild(1).GetComponent<TMP_Text>().text = winnersScore.ToString("D3");
+
+        WinnerDisplay.SetActive(true);
     }
 
     void DisplayWinner()

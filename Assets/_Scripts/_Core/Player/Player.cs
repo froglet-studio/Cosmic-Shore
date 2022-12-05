@@ -10,6 +10,7 @@ public class Player : MonoBehaviour
     [SerializeField] string playerUUID;
     [SerializeField] Ship ship;
     [SerializeField] GameObject shipContainer;
+    //[SerializeField] AIGunner aiGunner;
     public Team Team;
 
     public string PlayerName { get => playerName; }
@@ -20,6 +21,8 @@ public class Player : MonoBehaviour
 
     void Start()
     {
+        gameManager = GameManager.Instance;
+
         if (playerUUID == "admin")  //TODO check if this is local client
         {
             SO_Ship shipSO = Hangar.Instance.LoadPlayerShip();
@@ -35,12 +38,23 @@ public class Player : MonoBehaviour
             ship.Team = Team;
             ship.Player = this;
 
-            gameManager = GameManager.Instance;
             gameManager.WaitOnPlayerLoading();
         }
         else
         {
             Hangar.Instance.LoadAIShip();
+
+            // TODO: random dice roll, or opposite of player ship selection
+            SO_Ship shipSO = Hangar.Instance.LoadAIShip();
+            var shipInstance = Instantiate(shipSO.Prefab);
+            shipInstance.transform.SetParent(shipContainer.transform, false);
+            ship = shipInstance.GetComponent<Ship>();
+
+            ship.Team = Team;
+            ship.Player = this;
+            //aiGunner.trailSpawner = ship.TrailSpawner;
+
+            gameManager.WaitOnAILoading(ship.GetComponent<AIPilot>());
         }
     }
 }
