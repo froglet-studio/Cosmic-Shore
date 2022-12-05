@@ -118,7 +118,7 @@ public class Trail : MonoBehaviour, IEntity
             if (other.GetComponent<AOEExplosion>().Team == Team)
                 return;
 
-            var speed = other.GetComponent<AOEExplosion>().speed;
+            var speed = other.GetComponent<AOEExplosion>().speed*10;
             var impactVector = (transform.position - other.transform.position).normalized*speed;
 
             Explode(impactVector, "Player"); // TODO: need to attribute the explosion color to the team that made the explosion
