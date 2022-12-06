@@ -132,8 +132,9 @@ namespace StarWriter.Core.Input
             RotateShip();
 
             // Move ship velocityDirection
-            shipTransform.position += speed * Time.deltaTime * shipTransform.forward;
-            shipData.speed = speed;
+            shipData.inputSpeed = speed;
+            shipTransform.position += shipData.speed * Time.deltaTime * shipTransform.forward;
+            
             if (!drifting)
             {
                 shipData.velocityDirection = shipTransform.forward;

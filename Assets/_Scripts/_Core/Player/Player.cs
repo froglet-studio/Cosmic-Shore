@@ -33,6 +33,7 @@ public class Player : MonoBehaviour
 
             var inputController = GetComponent<InputController>();
             inputController.shipTransform = shipInstance.transform;
+            inputController.shipData = shipInstance.GetComponent<ShipData>();
 
             ship = shipInstance.GetComponent<Ship>();
             ship.Team = Team;

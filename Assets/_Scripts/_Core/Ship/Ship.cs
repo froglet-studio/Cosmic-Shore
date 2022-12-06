@@ -1,4 +1,5 @@
 using StarWriter.Core.Input;
+using System.Collections;
 using UnityEngine;
 
 [RequireComponent(typeof(TrailSpawner))]
@@ -59,8 +60,7 @@ public class Ship : MonoBehaviour
                 case TrailBlockImpactEffect.DrainFuel:
                     break;
                 case TrailBlockImpactEffect.DebuffSpeed:
-                    // TODO: replace this with a coroutine
-                    GetComponent<ShipData>().speed *= trailBlockProperties.speedDebuffAmount;
+                    StartCoroutine(DebuffSpeedCoroutine(trailBlockProperties));
                     break;
                 case TrailBlockImpactEffect.DeactivateTrailBlock:
                     break;
@@ -75,4 +75,23 @@ public class Ship : MonoBehaviour
         foreach (var collider in GetComponentsInChildren<Collider>(true))
             collider.enabled = enabled;
     }
+
+
+    IEnumerator DebuffSpeedCoroutine(TrailBlockProperties trailBlockProperties)
+    {
+        var speedMultiplier = GetComponent<ShipData>().speedMultiplier;
+
+        var speedMultiplierDelta = -trailBlockProperties.speedDebuffAmount; //this is so multiple debuffs can run in parallel
+        speedMultiplier -= trailBlockProperties.speedDebuffAmount;
+
+        var speedReturnRate = .01f; // this might cause errors if this is changed
+
+        while (speedMultiplierDelta < 0)
+        {
+            speedMultiplierDelta += speedReturnRate;
+            speedMultiplier += speedReturnRate;
+            yield return null;
+        }
+    }
+
 }
