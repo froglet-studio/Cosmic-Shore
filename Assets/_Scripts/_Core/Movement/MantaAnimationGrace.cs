@@ -24,12 +24,12 @@ class MantaAnimationGrace : ShipAnimation
         // Ship animations TODO: figure out how to leverage a single definition for pitch, etc. that captures the gyro in the animations.
 
         AnimatePart(LeftWing,
-                    (-throttle + roll - pitch) * animationScaler,
+                    (roll - pitch) * animationScaler,
                     0,
                     -(throttle + yaw) * yawAnimationScaler);
 
         AnimatePart(RightWing,
-                    -(throttle - roll + pitch) * animationScaler,
+                    -(roll + pitch) * animationScaler,
                     0,
                     (throttle - yaw) * yawAnimationScaler);
 
