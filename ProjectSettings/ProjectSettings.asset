@@ -228,6 +228,7 @@ PlayerSettings:
   androidMaxAspectRatio: 2.1
   applicationIdentifier:
     Android: com.FrogletGames.TailGlider
+    Standalone: com.Froglet-Games.Tail-Glider
     iPhone: com.Froglet-Games.Tail-Glider
   buildNumber:
     Standalone: 0
