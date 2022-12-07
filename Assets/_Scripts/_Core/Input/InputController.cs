@@ -28,7 +28,7 @@ namespace StarWriter.Core.Input
         bool drifting = false;
         float boostDecay = 0;
 
-        public float speed;
+        float speed;
         [SerializeField] public ShipData shipData;
 
         public float initialDThrottle = 10f; 

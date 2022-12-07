@@ -15,6 +15,7 @@ public class ShipData : MonoBehaviour
 
     private void Update()
     {
+        if (speedMultiplier < 0) speedMultiplier = 0;
         speed = inputSpeed * speedMultiplier;
     }
 }

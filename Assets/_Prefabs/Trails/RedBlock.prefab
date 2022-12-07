@@ -118,7 +118,7 @@ MonoBehaviour:
   material: {fileID: 2100000, guid: b864b8d0a0bb035479ac5a3c2fe425bd, type: 2}
   trailBlockProperties:
     volume: 0.2
-    speedDebuffAmount: 1
+    speedDebuffAmount: 2
   ownerId: 
   waitTime: 0.1
   embiggen: 0

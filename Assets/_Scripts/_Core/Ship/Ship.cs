@@ -1,6 +1,8 @@
 using StarWriter.Core.Input;
+using System.Collections.Generic;
 using System.Collections;
 using UnityEngine;
+using System;
 
 [RequireComponent(typeof(TrailSpawner))]
 public class Ship : MonoBehaviour
@@ -10,11 +12,40 @@ public class Ship : MonoBehaviour
     [SerializeField] Player player;
     [SerializeField] public TrailSpawner TrailSpawner;
     Team team;
+    ShipData shipData;
+
+    class SpeedModifier
+    {
+        public float initialValue;
+        public float duration;
+        public float elapsedTime;
+
+        public SpeedModifier(float initialValue, float duration, float elapsedTime)
+        {
+            this.initialValue = initialValue;
+            this.duration = duration;
+            this.elapsedTime = elapsedTime;
+        }
+    }
+
+    List<SpeedModifier> SpeedModifiers = new List<SpeedModifier>();
+    float speedModifierDuration = 2f;
+    float speedModifierMax = 6f;
 
     public string ShipName { get => shipSO.Name; }
     public SO_Ship ShipSO { get => shipSO; set => shipSO = value; }
     public Team Team { get => team; set => team = value; }
     public Player Player { get => player; set => player = value; }
+
+    public void Start()
+    {
+        shipData = GetComponent<ShipData>();
+    }
+
+    void Update()
+    {
+        ApplySpeedModifiers();
+    }
 
     public void PerformCrystalImpactEffects(CrystalProperties crystalProperties)
     {
@@ -60,7 +91,8 @@ public class Ship : MonoBehaviour
                 case TrailBlockImpactEffect.DrainFuel:
                     break;
                 case TrailBlockImpactEffect.DebuffSpeed:
-                    StartCoroutine(DebuffSpeedCoroutine(trailBlockProperties));
+                    //StartCoroutine(DebuffSpeedCoroutine(trailBlockProperties));
+                    SpeedModifiers.Add(new SpeedModifier(trailBlockProperties.speedDebuffAmount, speedModifierDuration, 0));
                     break;
                 case TrailBlockImpactEffect.DeactivateTrailBlock:
                     break;
@@ -69,6 +101,27 @@ public class Ship : MonoBehaviour
             }
         }
     }
+
+    private void ApplySpeedModifiers()
+    {
+        float accumulatedSpeedModification = 1; 
+        for (int i = SpeedModifiers.Count-1; i >= 0; i--)
+        {
+            var modifier = SpeedModifiers[i];
+
+            modifier.elapsedTime += Time.deltaTime;
+
+            if (modifier.elapsedTime >= modifier.duration)
+                SpeedModifiers.RemoveAt(i);
+            else
+                accumulatedSpeedModification *= Mathf.Lerp(modifier.initialValue, 1f, modifier.elapsedTime / modifier.duration);
+        }
+
+        accumulatedSpeedModification = Mathf.Min(accumulatedSpeedModification, speedModifierMax);
+        shipData.speedMultiplier = accumulatedSpeedModification;
+    }
+
+ 
 
     public void ToggleCollision(bool enabled)
     {
@@ -79,19 +132,16 @@ public class Ship : MonoBehaviour
 
     IEnumerator DebuffSpeedCoroutine(TrailBlockProperties trailBlockProperties)
     {
-        var speedMultiplier = GetComponent<ShipData>().speedMultiplier;
-
         var speedMultiplierDelta = -trailBlockProperties.speedDebuffAmount; //this is so multiple debuffs can run in parallel
-        speedMultiplier -= trailBlockProperties.speedDebuffAmount;
+        shipData.speedMultiplier -= trailBlockProperties.speedDebuffAmount;
 
         var speedReturnRate = .01f; // this might cause errors if this is changed
 
         while (speedMultiplierDelta < 0)
         {
             speedMultiplierDelta += speedReturnRate;
-            speedMultiplier += speedReturnRate;
+            shipData.speedMultiplier += speedReturnRate;
             yield return null;
         }
     }
-
 }
