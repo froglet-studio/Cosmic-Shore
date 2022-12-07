@@ -18,31 +18,35 @@ class MantaAnimation : ShipAnimation
     private readonly float yawAnimationScaler = 80f;
     private readonly float lerpAmount = 2f;
 
-    public override void PerformShipAnimations(float Xsum, float Ysum, float Xdiff, float Ydiff)
+    public override void PerformShipAnimations(float yaw, float pitch, float throttle, float roll)
     {
         // Ship animations TODO: figure out how to leverage a single definition for pitch, etc. that captures the gyro in the animations.
-        LeftWing.localRotation = Quaternion.Lerp(
-                                    LeftWing.localRotation,
-                                    Quaternion.Euler(
-                                        (Ydiff - Ysum) * animationScaler, //tilt based on pitch and roll
-                                        0,
-                                        -(Xdiff + Xsum) * yawAnimationScaler), //sweep back based on throttle and yaw
-                                    lerpAmount * Time.deltaTime);
 
-        RightWing.localRotation = Quaternion.Lerp(
-                                    RightWing.localRotation,
-                                    Quaternion.Euler(
-                                        -(Ydiff + Ysum) * animationScaler,
-                                        0,
-                                        (Xdiff - Xsum) * yawAnimationScaler),
-                                    lerpAmount * Time.deltaTime);
+        AnimatePart(LeftWing,
+                    (roll - pitch) * animationScaler,
+                    0,
+                    -(throttle + yaw) * yawAnimationScaler);
 
-        Fusilage.localRotation = Quaternion.Lerp(
-                                    Fusilage.localRotation,
+        AnimatePart(RightWing,
+                    -(roll + pitch) * animationScaler,
+                    0,
+                    (throttle - yaw) * yawAnimationScaler);
+
+        AnimatePart(Fusilage,
+                    -pitch * animationScaler,
+                    roll * animationScaler,
+                    -yaw * animationScaler);
+    }
+
+    void AnimatePart(Transform part, float partPitch, float partRoll, float partYaw)
+    {
+        part.localRotation = Quaternion.Lerp(
+                                    part.localRotation,
                                     Quaternion.Euler(
-                                        -Ysum * animationScaler,
-                                        Ydiff * animationScaler,
-                                        -Xsum * animationScaler),
+                                        partPitch,
+                                        partRoll, 
+                                        partYaw),  
                                     lerpAmount * Time.deltaTime);
     }
+
 }
