@@ -6,5 +6,6 @@ using UnityEngine;
 public abstract class ShipAnimation : MonoBehaviour
 
 { 
-    public abstract void PerformShipAnimations(float Xsum, float Ysum, float Xdiff, float Ydiff);
+    public abstract void PerformShipAnimations(float ySum, float xSum, float yDiff, float xDiff);
+    public abstract void Idle();
 }

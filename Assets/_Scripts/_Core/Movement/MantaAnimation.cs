@@ -5,20 +5,18 @@ using UnityEngine;
 class MantaAnimation : ShipAnimation
 {
 
-    [SerializeField]
-    Transform Fusilage;
+    [SerializeField] Transform Fusilage;
 
-    [SerializeField]
-    Transform LeftWing;
+    [SerializeField] Transform LeftWing;
 
-    [SerializeField]
-    Transform RightWing;
+    [SerializeField] Transform RightWing;
 
-    private readonly float animationScaler = 25f;
-    private readonly float yawAnimationScaler = 80f;
-    private readonly float lerpAmount = 2f;
+    readonly float animationScaler = 25f;
+    readonly float yawAnimationScaler = 80f;
+    readonly float lerpAmount = 2f;
+    readonly float smallLerpAmount = .7f;
 
-    public override void PerformShipAnimations(float yaw, float pitch, float throttle, float roll)
+    public override void PerformShipAnimations(float pitch, float yaw, float roll, float throttle)
     {
         // Ship animations TODO: figure out how to leverage a single definition for pitch, etc. that captures the gyro in the animations.
 
@@ -38,6 +36,13 @@ class MantaAnimation : ShipAnimation
                     -yaw * animationScaler);
     }
 
+    public override void Idle()
+    {
+        LeftWing.localRotation = Quaternion.Lerp(LeftWing.localRotation, Quaternion.identity, smallLerpAmount * Time.deltaTime);
+        RightWing.localRotation = Quaternion.Lerp(RightWing.localRotation, Quaternion.identity, smallLerpAmount * Time.deltaTime);
+        Fusilage.localRotation = Quaternion.Lerp(Fusilage.localRotation, Quaternion.identity, smallLerpAmount * Time.deltaTime);
+    }
+
     void AnimatePart(Transform part, float partPitch, float partRoll, float partYaw)
     {
         part.localRotation = Quaternion.Lerp(
@@ -48,5 +53,4 @@ class MantaAnimation : ShipAnimation
                                         partYaw),  
                                     lerpAmount * Time.deltaTime);
     }
-
 }
