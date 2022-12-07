@@ -483,6 +483,7 @@ GameObject:
   - component: {fileID: 874579555101021523}
   - component: {fileID: 874579555101021522}
   - component: {fileID: 874579555101021527}
+  - component: {fileID: 6293426128044408357}
   m_Layer: 0
   m_Name: MantaV2
   m_TagString: Player_Ship
@@ -538,6 +539,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9846c9cd6cfac424797ca640ebcb7a04, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  inputSpeed: 1
+  speedMultiplier: 1
   speed: 19
   boost: 0
   velocityDirection: {x: 0, y: 0, z: 0}
@@ -578,6 +581,21 @@ MonoBehaviour:
     type: 3}
   player: {fileID: 0}
   TrailSpawner: {fileID: 874579555101021522}
+--- !u!114 &6293426128044408357
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 46ca128b16ccbfd42be69beb8b52be77, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  Fusilage: {fileID: 1270108863620668732}
+  LeftWing: {fileID: 5606427375248905302}
+  RightWing: {fileID: 4569155575849788411}
 --- !u!1 &8339078010103532652
 GameObject:
   m_ObjectHideFlags: 0

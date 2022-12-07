@@ -10,6 +10,8 @@ namespace StarWriter.Core.Input
         #region Ship
         [SerializeField] public Transform shipTransform;
 
+        public ShipAnimation shipAnimation;
+
         [SerializeField]
         Transform Fusilage;
 
@@ -36,6 +38,11 @@ namespace StarWriter.Core.Input
 
         public float defaultThrottle;
         public float throttleScaler;
+
+        float xSum;
+        float ySum;
+        float xDiff;
+        float yDiff;
 
         private readonly float rotationThrottleScaler = 3;
         private readonly float rotationScaler = 130f;
@@ -207,10 +214,10 @@ namespace StarWriter.Core.Input
                 rightTouch.x = Gamepad.current.rightStick.x.ReadValue();
                 rightTouch.y = Gamepad.current.rightStick.y.ReadValue();
 
-                float xSum = Ease(rightTouch.x + leftTouch.x);
-                float ySum = Ease(rightTouch.y + leftTouch.y);
-                float xDiff = (leftTouch.x - rightTouch.x + 2.1f) / 4.1f;
-                float yDiff = Ease(rightTouch.y - leftTouch.y);
+                xSum = Ease(rightTouch.x + leftTouch.x);
+                ySum = Ease(rightTouch.y + leftTouch.y);
+                xDiff = (leftTouch.x - rightTouch.x + 2.1f) / 4.1f;
+                yDiff = Ease(rightTouch.y - leftTouch.y);
 
                 if (invertYEnabled)
                     ySum *= -1;
@@ -230,7 +237,7 @@ namespace StarWriter.Core.Input
                 }
                 else Special(xSum, ySum, xDiff, yDiff);
 
-                //PerformShipAnimations(xSum, ySum, xDiff, yDiff);
+                shipAnimation.PerformShipAnimations(xSum, ySum, xDiff, yDiff);
             }
             else
             {
@@ -279,10 +286,10 @@ namespace StarWriter.Core.Input
                     }
 
                     // reparameterize
-                    float xSum = ((rightTouch.x + leftTouch.x) / (Screen.currentResolution.width) - 1);
-                    float ySum = ((rightTouch.y + leftTouch.y) / (Screen.currentResolution.height) - 1);
-                    float xDiff = (rightTouch.x - leftTouch.x) / (Screen.currentResolution.width);
-                    float yDiff = (rightTouch.y - leftTouch.y) / (Screen.currentResolution.width);
+                    xSum = ((rightTouch.x + leftTouch.x) / (Screen.currentResolution.width) - 1);
+                    ySum = ((rightTouch.y + leftTouch.y) / (Screen.currentResolution.height) - 1);
+                    xDiff = (rightTouch.x - leftTouch.x) / (Screen.currentResolution.width);
+                    yDiff = (rightTouch.y - leftTouch.y) / (Screen.currentResolution.width);
 
                     if (invertYEnabled)
                         ySum *= -1;
@@ -310,10 +317,10 @@ namespace StarWriter.Core.Input
                     {
                         var position = UnityEngine.Input.touches[0].position;
                         // reparameterize
-                        float xSum = ((rightTouch.x + leftTouch.x) / (Screen.currentResolution.width) - 1);
-                        float ySum = ((rightTouch.y + leftTouch.y) / (Screen.currentResolution.height) - 1);
-                        float xDiff = (rightTouch.x - leftTouch.x) / (Screen.currentResolution.width);
-                        float yDiff = (rightTouch.y - leftTouch.y) / (Screen.currentResolution.width);
+                        xSum = ((rightTouch.x + leftTouch.x) / (Screen.currentResolution.width) - 1);
+                        ySum = ((rightTouch.y + leftTouch.y) / (Screen.currentResolution.height) - 1);
+                        xDiff = (rightTouch.x - leftTouch.x) / (Screen.currentResolution.width);
+                        yDiff = (rightTouch.y - leftTouch.y) / (Screen.currentResolution.width);
 
                         if (invertYEnabled)
                             ySum *= -1;
