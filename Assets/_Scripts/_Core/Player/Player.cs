@@ -40,6 +40,9 @@ public class Player : MonoBehaviour
             var shipAnimation = shipInstance.GetComponent<ShipAnimation>();
             inputController.shipAnimation = shipAnimation;
 
+            // TODO: add in AIPilot to prefab if needed
+            //shipInstance.GetComponent<AIPilot>().enabled = false;
+
             //inputController.shipAnimation = shipInstance.GetComponent<ShipAnimation>();
 
             ship = shipInstance.GetComponent<Ship>();
@@ -61,6 +64,8 @@ public class Player : MonoBehaviour
             ship.Team = Team;
             ship.Player = this;
             //aiGunner.trailSpawner = ship.TrailSpawner;
+
+            shipInstance.GetComponent<AIPilot>().enabled = true;
 
             gameManager.WaitOnAILoading(ship.GetComponent<AIPilot>());
         }

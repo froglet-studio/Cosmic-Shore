@@ -38,7 +38,6 @@ public class ScoringManager : Singleton<ScoringManager>
         GameManager.onGameOver += UpdateScoresAndDeathCount;
         if (!TeamScoresEnabled)
         {
-            Crystal.AddToScore += UpdateScore;
             Trail.AddToScore += UpdateScore;
         }
     }
@@ -50,7 +49,6 @@ public class ScoringManager : Singleton<ScoringManager>
         GameManager.onGameOver -= UpdateScoresAndDeathCount;
         if (!TeamScoresEnabled)
         {
-            Crystal.AddToScore -= UpdateScore;
             Trail.AddToScore -= UpdateScore;
         }
     }

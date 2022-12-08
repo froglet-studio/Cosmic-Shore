@@ -15,8 +15,6 @@ public class AIGunner : MonoBehaviour
     [SerializeField] Gun gun;
     [SerializeField] GameObject gunMount;
     [SerializeField] Player player;
-    [SerializeField] float startDelay = 3f;
-    float elapsedTimeSinceStart;
 
     private void Start()
     {
@@ -28,8 +26,7 @@ public class AIGunner : MonoBehaviour
     void Update()
     {
         // Give the ships a small head start so some blocks exist
-        elapsedTimeSinceStart += Time.deltaTime;
-        if (elapsedTimeSinceStart < startDelay)
+        if (trailSpawner.trailList.Count < gap+1)
             return;
 
         if (trailSpawner.trailList[(int)nextBlockIndex].destroyed) lerpAmount += gunnerSpeed/4f * Time.deltaTime;

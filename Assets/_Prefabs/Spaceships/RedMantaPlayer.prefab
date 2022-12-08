@@ -399,7 +399,7 @@ GameObject:
   - component: {fileID: 8182518000464848904}
   - component: {fileID: 3823739190145388258}
   m_Layer: 0
-  m_Name: RedMantaV2
+  m_Name: RedMantaPlayer
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -489,7 +489,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a273abd40c7104c4392188723ab929d6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  shipSO: {fileID: 11400000, guid: 0b7f991b9ab90f8468ce2e6e1fd825c8, type: 2}
+  shipSO: {fileID: 11400000, guid: 91398dfa217e9d340addd95033c59912, type: 2}
   AOEPrefab: {fileID: 2728798890556433942, guid: 4a855af160021d241b8c1ac70cf2d792,
     type: 3}
   player: {fileID: 0}

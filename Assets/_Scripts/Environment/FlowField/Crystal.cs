@@ -8,9 +8,6 @@ using StarWriter.Core.Audio;
 public class Crystal : MonoBehaviour, IEntity
 {
     #region Events
-    public delegate void OnCollisionIncreaseScore(string uuid, int amount);
-    public static event OnCollisionIncreaseScore AddToScore;
-
     public delegate void CrystalMove();
     public static event CrystalMove OnCrystalMove;
     #endregion

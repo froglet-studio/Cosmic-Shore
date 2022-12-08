@@ -34,7 +34,7 @@ namespace StarWriter.Core.HangerBuilder
             if (PlayerPrefs.GetString("ShipName") == "Manta")
                 return ships["Manta Red"];
             else
-                return ships["Manta"];
+                return ships["Manta Green"];
         }
     }
 }

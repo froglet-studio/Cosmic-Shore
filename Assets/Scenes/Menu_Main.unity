@@ -909,6 +909,7 @@ MonoBehaviour:
   playerName: 
   playerUUID: ai2
   ship: {fileID: 0}
+  shipContainer: {fileID: 0}
   Team: 0
 --- !u!114 &709728278
 MonoBehaviour:
@@ -2652,8 +2653,10 @@ MonoBehaviour:
   SelectedBayIndex: 0
   allShips:
   - {fileID: 11400000, guid: aff8013a63fe03545b16c119409e4f67, type: 2}
+  - {fileID: 11400000, guid: 91398dfa217e9d340addd95033c59912, type: 2}
   - {fileID: 11400000, guid: 48570157b8621ef47a488abb24b437d1, type: 2}
   - {fileID: 11400000, guid: 0b7f991b9ab90f8468ce2e6e1fd825c8, type: 2}
+  - {fileID: 11400000, guid: 9bd8c1a5397eb1943b7d28005244d7d8, type: 2}
   bayShips: []
 --- !u!4 &1349904467
 Transform:
@@ -4768,6 +4771,7 @@ MonoBehaviour:
   playerName: 
   playerUUID: ai
   ship: {fileID: 0}
+  shipContainer: {fileID: 0}
   Team: 0
 --- !u!114 &378015796163850479
 MonoBehaviour:
