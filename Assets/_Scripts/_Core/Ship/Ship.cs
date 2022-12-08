@@ -91,7 +91,6 @@ public class Ship : MonoBehaviour
                 case TrailBlockImpactEffect.DrainFuel:
                     break;
                 case TrailBlockImpactEffect.DebuffSpeed:
-                    //StartCoroutine(DebuffSpeedCoroutine(trailBlockProperties));
                     SpeedModifiers.Add(new SpeedModifier(trailBlockProperties.speedDebuffAmount, speedModifierDuration, 0));
                     break;
                 case TrailBlockImpactEffect.DeactivateTrailBlock:

@@ -51,7 +51,6 @@ public class AIGunner : MonoBehaviour
         {
             direction = true;
         }
-        Debug.Log($"block index: {nextBlockIndex}");
         
         transform.position = Vector3.Lerp(trailSpawner.trailList[previousBlockIndex].transform.position,
                                           trailSpawner.trailList[nextBlockIndex].transform.position,

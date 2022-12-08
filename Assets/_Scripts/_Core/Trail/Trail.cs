@@ -76,7 +76,8 @@ public class Trail : MonoBehaviour, IEntity
         }
 
         // Add block to team score when created
-        ScoringManager.Instance.UpdateTeamScore(team, trailBlockProperties.volume);
+        if (ScoringManager.Instance != null)
+            ScoringManager.Instance.UpdateTeamScore(team, trailBlockProperties.volume);
     }
 
     public void InstantiateParticle(Transform skimmer)

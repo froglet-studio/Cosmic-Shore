@@ -39,14 +39,16 @@ public class AnalyticsManager : SingletonPersistent<AnalyticsManager>
 
     private void Initialize()
     {
+        // TODO: keeping analytics disabled for now until we get FireBase working on iOS
+        /*
         Firebase.FirebaseApp.CheckAndFixDependenciesAsync().ContinueWith(task =>
         {
             var dependencyStatus = task.Result;
             if (dependencyStatus == Firebase.DependencyStatus.Available)
             {
                 app = Firebase.FirebaseApp.DefaultInstance;
-                // TODO: keeping analytics disabled for now until we get FireBase working on iOS
-                //analyticsEnabled = true;
+                
+                analyticsEnabled = true;
                 LogAppOpen();
             }
             else
@@ -55,5 +57,6 @@ public class AnalyticsManager : SingletonPersistent<AnalyticsManager>
                   "Could not resolve all Firebase dependencies: {0}", dependencyStatus));
             }
         });
+        */
     }
 }

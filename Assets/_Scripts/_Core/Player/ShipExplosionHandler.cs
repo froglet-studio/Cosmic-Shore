@@ -93,6 +93,8 @@ public class ShipExplosionHandler : MonoBehaviour
     IEnumerator ToggleCollisionCoroutine()
     {
         yield return new WaitForSeconds(.2f);
+        Debug.LogWarning($"Player: {GameManager.Instance.player}");
+        Debug.LogWarning($"Ship: {GameManager.Instance.player.Ship}");
         GameManager.Instance.player.Ship.ToggleCollision(true); // TODO: PLAYERSHIP null pointer here
     }
 }
