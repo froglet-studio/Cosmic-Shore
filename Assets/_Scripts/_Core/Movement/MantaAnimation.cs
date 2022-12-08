@@ -21,19 +21,20 @@ class MantaAnimation : ShipAnimation
         // Ship animations TODO: figure out how to leverage a single definition for pitch, etc. that captures the gyro in the animations.
 
         AnimatePart(LeftWing,
-                    (roll - pitch) * animationScaler,
                     0,
-                    -(throttle + yaw) * yawAnimationScaler);
+                    -(throttle - yaw) * yawAnimationScaler,
+                    (roll + pitch) * animationScaler);
+                    
 
         AnimatePart(RightWing,
-                    -(roll + pitch) * animationScaler,
                     0,
-                    (throttle - yaw) * yawAnimationScaler);
+                    (throttle + yaw) * yawAnimationScaler,
+                    (roll - pitch) * animationScaler);
 
         AnimatePart(Fusilage,
                     -pitch * animationScaler,
-                    roll * animationScaler,
-                    -yaw * animationScaler);
+                    yaw * animationScaler,
+                    roll * animationScaler);
     }
 
     public override void Idle()
@@ -43,14 +44,14 @@ class MantaAnimation : ShipAnimation
         Fusilage.localRotation = Quaternion.Lerp(Fusilage.localRotation, Quaternion.identity, smallLerpAmount * Time.deltaTime);
     }
 
-    void AnimatePart(Transform part, float partPitch, float partRoll, float partYaw)
+    void AnimatePart(Transform part, float partPitch, float partYaw, float partRoll)
     {
         part.localRotation = Quaternion.Lerp(
                                     part.localRotation,
                                     Quaternion.Euler(
                                         partPitch,
-                                        partRoll, 
-                                        partYaw),  
+                                        partYaw,
+                                        partRoll),  
                                     lerpAmount * Time.deltaTime);
     }
 }
