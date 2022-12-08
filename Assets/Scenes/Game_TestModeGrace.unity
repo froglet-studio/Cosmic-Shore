@@ -5829,7 +5829,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: fe00c6d9a4256ac4e9e8e1d7947c5c3e, type: 2}
+  - {fileID: 2100000, guid: 8afa9ff09a0bb9c4888657f67e55edab, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -6445,7 +6445,7 @@ Camera:
   m_FOVAxisMode: 0
   m_SensorSize: {x: 2.0555556, y: 1}
   m_LensShift: {x: 0, y: 0}
-  m_FocalLength: 0.27539226
+  m_FocalLength: 0.86602545
   m_NormalizedViewPortRect:
     serializedVersion: 2
     x: 0
