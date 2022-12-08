@@ -34,6 +34,14 @@ public class Player : MonoBehaviour
             var inputController = GetComponent<InputController>();
             inputController.shipTransform = shipInstance.transform;
 
+            inputController.shipData = shipInstance.GetComponent<ShipData>();
+
+
+            var shipAnimation = shipInstance.GetComponent<ShipAnimation>();
+            inputController.shipAnimation = shipAnimation;
+
+            //inputController.shipAnimation = shipInstance.GetComponent<ShipAnimation>();
+
             ship = shipInstance.GetComponent<Ship>();
             ship.Team = Team;
             ship.Player = this;

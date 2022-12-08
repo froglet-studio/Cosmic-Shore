@@ -148,7 +148,7 @@ public class Trail : MonoBehaviour, IEntity
         }
 
         //// Player Hit
-        if (ship.Player == GameObject.FindWithTag("Player"))
+        //if (ship.Player == GameObject.FindWithTag("Player"))
         {
             // TODO: for now, we're only turning off collision on the player. In the future, we want AI ships to explode and all that too
             // TODO: turned off collision toggling for now - need to reintroduce into death sequence somewhere else

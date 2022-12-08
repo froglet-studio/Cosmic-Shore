@@ -10,14 +10,8 @@ namespace StarWriter.Core.Input
         #region Ship
         [SerializeField] public Transform shipTransform;
 
-        [SerializeField]
-        Transform Fusilage;
+        public ShipAnimation shipAnimation;
 
-        [SerializeField]
-        Transform LeftWing;
-
-        [SerializeField]
-        Transform RightWing;
         #endregion
 
         public delegate void Boost(string uuid, float amount);
@@ -28,7 +22,7 @@ namespace StarWriter.Core.Input
         bool drifting = false;
         float boostDecay = 0;
 
-        public float speed;
+        float speed;
         [SerializeField] public ShipData shipData;
 
         public float initialDThrottle = 10f; 
@@ -36,6 +30,11 @@ namespace StarWriter.Core.Input
 
         public float defaultThrottle;
         public float throttleScaler;
+
+        float xSum;
+        float ySum;
+        float xDiff;
+        float yDiff;
 
         private readonly float rotationThrottleScaler = 3;
         private readonly float rotationScaler = 130f;
@@ -132,8 +131,9 @@ namespace StarWriter.Core.Input
             RotateShip();
 
             // Move ship velocityDirection
-            shipTransform.position += speed * Time.deltaTime * shipTransform.forward;
-            shipData.speed = speed;
+            shipData.inputSpeed = speed;
+            shipTransform.position += shipData.speed * Time.deltaTime * shipTransform.forward;
+            
             if (!drifting)
             {
                 shipData.velocityDirection = shipTransform.forward;
@@ -142,33 +142,7 @@ namespace StarWriter.Core.Input
             
         }
 
-        private void PerformShipAnimations(float Xsum, float Ysum, float Xdiff, float Ydiff)
-        {
-            // Ship animations TODO: figure out how to leverage a single definition for pitch, etc. that captures the gyro in the animations.
-            LeftWing.localRotation = Quaternion.Lerp(
-                                        LeftWing.localRotation, 
-                                        Quaternion.Euler(
-                                            (Ydiff - Ysum) * animationScaler, //tilt based on pitch and roll
-                                            0,
-                                            -(Xdiff + Xsum) * yawAnimationScaler), //sweep back based on throttle and yaw
-                                        lerpAmount * Time.deltaTime);
-
-            RightWing.localRotation = Quaternion.Lerp(
-                                        RightWing.localRotation, 
-                                        Quaternion.Euler(
-                                            -(Ysum + Ydiff) * animationScaler, 
-                                            0,
-                                            (Xdiff - Xsum) * yawAnimationScaler), 
-                                        lerpAmount * Time.deltaTime);
-
-            Fusilage.localRotation = Quaternion.Lerp(
-                                        Fusilage.localRotation, 
-                                        Quaternion.Euler(
-                                            -Ysum * animationScaler,
-                                            Ydiff* animationScaler,
-                                            -Xsum * animationScaler),
-                                        lerpAmount * Time.deltaTime);
-        }
+        
 
         private void RotateShip()
         {
@@ -206,10 +180,10 @@ namespace StarWriter.Core.Input
                 rightTouch.x = Gamepad.current.rightStick.x.ReadValue();
                 rightTouch.y = Gamepad.current.rightStick.y.ReadValue();
 
-                float xSum = Ease(rightTouch.x + leftTouch.x);
-                float ySum = Ease(rightTouch.y + leftTouch.y);
-                float xDiff = (leftTouch.x - rightTouch.x + 2.1f) / 4.1f;
-                float yDiff = Ease(rightTouch.y - leftTouch.y);
+                xSum = Ease(rightTouch.x + leftTouch.x);
+                ySum = Ease(rightTouch.y + leftTouch.y);
+                xDiff = (leftTouch.x - rightTouch.x + 2.1f) / 4.1f;
+                yDiff = Ease(rightTouch.y - leftTouch.y);
 
                 if (invertYEnabled)
                     ySum *= -1;
@@ -224,12 +198,12 @@ namespace StarWriter.Core.Input
                     else
                     {
                         if (boostDecay > 0) ExitDrift(xDiff);
-                        else Special(xSum, ySum, xDiff, yDiff);
+                        else Special(ySum, xSum, yDiff, xDiff);
                     }
                 }
-                else Special(xSum, ySum, xDiff, yDiff);
+                else Special(ySum, xSum, yDiff, xDiff);
 
-                //PerformShipAnimations(xSum, ySum, xDiff, yDiff);
+                shipAnimation.PerformShipAnimations(ySum, xSum, yDiff, xDiff);
             }
             else
             {
@@ -278,10 +252,10 @@ namespace StarWriter.Core.Input
                     }
 
                     // reparameterize
-                    float xSum = ((rightTouch.x + leftTouch.x) / (Screen.currentResolution.width) - 1);
-                    float ySum = ((rightTouch.y + leftTouch.y) / (Screen.currentResolution.height) - 1);
-                    float xDiff = (rightTouch.x - leftTouch.x) / (Screen.currentResolution.width);
-                    float yDiff = (rightTouch.y - leftTouch.y) / (Screen.currentResolution.width);
+                    xSum = ((rightTouch.x + leftTouch.x) / (Screen.currentResolution.width) - 1);
+                    ySum = ((rightTouch.y + leftTouch.y) / (Screen.currentResolution.height) - 1);
+                    xDiff = (rightTouch.x - leftTouch.x) / (Screen.currentResolution.width);
+                    yDiff = (rightTouch.y - leftTouch.y) / (Screen.currentResolution.width);
 
                     if (invertYEnabled)
                         ySum *= -1;
@@ -291,7 +265,7 @@ namespace StarWriter.Core.Input
                     Yaw(xSum);
                     //Throttle(xDiff);
 
-                    PerformShipAnimations(xSum, ySum, xDiff, yDiff);
+                    shipAnimation.PerformShipAnimations(ySum, xSum, yDiff, xDiff);
 
                     if (driftEnabled && boostDecay > 0)
                     {
@@ -299,7 +273,7 @@ namespace StarWriter.Core.Input
                     }
                     else
                     {
-                        Special(xSum, ySum, xDiff, yDiff);
+                        Special(ySum, xSum, yDiff, xDiff);
                     }
                 }
 
@@ -309,10 +283,10 @@ namespace StarWriter.Core.Input
                     {
                         var position = UnityEngine.Input.touches[0].position;
                         // reparameterize
-                        float xSum = ((rightTouch.x + leftTouch.x) / (Screen.currentResolution.width) - 1);
-                        float ySum = ((rightTouch.y + leftTouch.y) / (Screen.currentResolution.height) - 1);
-                        float xDiff = (rightTouch.x - leftTouch.x) / (Screen.currentResolution.width);
-                        float yDiff = (rightTouch.y - leftTouch.y) / (Screen.currentResolution.width);
+                        xSum = ((rightTouch.x + leftTouch.x) / (Screen.currentResolution.width) - 1);
+                        ySum = ((rightTouch.y + leftTouch.y) / (Screen.currentResolution.height) - 1);
+                        xDiff = (rightTouch.x - leftTouch.x) / (Screen.currentResolution.width);
+                        yDiff = (rightTouch.y - leftTouch.y) / (Screen.currentResolution.width);
 
                         if (invertYEnabled)
                             ySum *= -1;
@@ -330,7 +304,7 @@ namespace StarWriter.Core.Input
                             Throttle(xDiff);
                         }
 
-                        PerformShipAnimations(xSum, ySum, xDiff, yDiff);
+                        shipAnimation.PerformShipAnimations(ySum, xSum, yDiff, xDiff);
 
                         if (Vector2.Distance(leftTouch, position) < Vector2.Distance(rightTouch, position))
                         {
@@ -345,12 +319,9 @@ namespace StarWriter.Core.Input
                 else
                 {
                     speed = Mathf.Lerp(speed, defaultThrottle, smallLerpAmount * Time.deltaTime);
-                    LeftWing.localRotation = Quaternion.Lerp(LeftWing.localRotation, Quaternion.identity, smallLerpAmount * Time.deltaTime);
-                    RightWing.localRotation = Quaternion.Lerp(RightWing.localRotation, Quaternion.identity, smallLerpAmount * Time.deltaTime);
-                    Fusilage.localRotation = Quaternion.Lerp(Fusilage.localRotation, Quaternion.identity, smallLerpAmount * Time.deltaTime);
+                    shipAnimation.Idle();
                 }
             }
-            
         }
 
         private void Drift(float xDiff)
@@ -398,7 +369,7 @@ namespace StarWriter.Core.Input
                                 shipTransform.right) * displacementQ;
         }
 
-        private void Special(float xSum, float ySum, float xDiff, float yDiff) // TODO decouple "special" and "throttle"
+        private void Special(float ySum, float xSum, float yDiff, float xDiff) // TODO decouple "special" and "throttle"
         {
             float fuelAmount = -.01f;
             float threshold = .3f;
