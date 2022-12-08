@@ -377,6 +377,12 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 8615459834079177212, guid: 8a9d12e43096881468feb22e39e9fbeb,
+        type: 3}
+      propertyPath: AOEPrefab
+      value: 
+      objectReference: {fileID: 3844806713261670429, guid: 697345885e4838445a5d9db5ab931ed5,
+        type: 3}
     - target: {fileID: 8615459834825002481, guid: 8a9d12e43096881468feb22e39e9fbeb,
         type: 3}
       propertyPath: TeamScoresEnabled
@@ -460,6 +466,12 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 7939216235008396302, guid: 32cc35a6605af014c926743312133238,
+        type: 3}
+      propertyPath: AOEPrefab
+      value: 
+      objectReference: {fileID: 3844806713261670429, guid: 697345885e4838445a5d9db5ab931ed5,
+        type: 3}
     - target: {fileID: 9106189021102876753, guid: 32cc35a6605af014c926743312133238,
         type: 3}
       propertyPath: m_Name
@@ -530,6 +542,12 @@ PrefabInstance:
       propertyPath: flowFieldData
       value: 
       objectReference: {fileID: 639495419634095585}
+    - target: {fileID: 9106189021306550726, guid: 32cc35a6605af014c926743312133238,
+        type: 3}
+      propertyPath: AOEPrefab
+      value: 
+      objectReference: {fileID: 3844806713261670429, guid: 697345885e4838445a5d9db5ab931ed5,
+        type: 3}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 32cc35a6605af014c926743312133238, type: 3}
 --- !u!4 &602055527 stripped
@@ -550,6 +568,12 @@ PrefabInstance:
       propertyPath: player
       value: 
       objectReference: {fileID: 433663843}
+    - target: {fileID: 874579555101021527, guid: 8088c0e7095051647bcbcd5a6373ca38,
+        type: 3}
+      propertyPath: AOEPrefab
+      value: 
+      objectReference: {fileID: 3844806713261670429, guid: 697345885e4838445a5d9db5ab931ed5,
+        type: 3}
     - target: {fileID: 5928382658856804067, guid: 8088c0e7095051647bcbcd5a6373ca38,
         type: 3}
       propertyPath: m_RootOrder
@@ -743,6 +767,12 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 3020133054318620859, guid: 53e79d860ee215d47b9e46c215418585,
+        type: 3}
+      propertyPath: AOEPrefab
+      value: 
+      objectReference: {fileID: 3844806713261670429, guid: 697345885e4838445a5d9db5ab931ed5,
+        type: 3}
     - target: {fileID: 3020133054318620860, guid: 53e79d860ee215d47b9e46c215418585,
         type: 3}
       propertyPath: muton
