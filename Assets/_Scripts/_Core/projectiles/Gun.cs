@@ -21,6 +21,7 @@ public class Gun : MonoBehaviour
         projectile.transform.position = transform.position + projectile.transform.forward * 2;
         projectile.GetComponent<Projectile>().Velocity = projectile.transform.forward * speed;
         projectile.GetComponent<Projectile>().Team = Team;
+        projectile.transform.parent = transform;
         StartCoroutine(MoveProjectileCoroutine(projectile));
         onCooldown = true;
         StartCoroutine(CooldownCoroutine());

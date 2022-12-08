@@ -40,8 +40,7 @@ public class Player : MonoBehaviour
             var shipAnimation = shipInstance.GetComponent<ShipAnimation>();
             inputController.shipAnimation = shipAnimation;
 
-            // TODO: add in AIPilot to prefab if needed
-            //shipInstance.GetComponent<AIPilot>().enabled = false;
+            shipInstance.GetComponent<AIPilot>().enabled = false;
 
             //inputController.shipAnimation = shipInstance.GetComponent<ShipAnimation>();
 

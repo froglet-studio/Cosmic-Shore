@@ -25,7 +25,7 @@ public class Trail : MonoBehaviour, IEntity
     public static event OnCollisionIncreaseScore AddToScore;
 
     private int scoreChange = 1;
-    private static GameObject container;
+    private static GameObject fossilBlockContainer;
     private MeshRenderer meshRenderer;
     private BoxCollider blockCollider;
     Team team;
@@ -37,10 +37,10 @@ public class Trail : MonoBehaviour, IEntity
     {
         if (warp) shards = GameObject.FindGameObjectWithTag("field");
 
-        if (container == null)
+        if (fossilBlockContainer == null)
         {
-            container = new GameObject();
-            container.name = "FossilBlockContainer";
+            fossilBlockContainer = new GameObject();
+            fossilBlockContainer.name = "FossilBlockContainer";
         }
 
         meshRenderer = GetComponent<MeshRenderer>();
@@ -174,6 +174,7 @@ public class Trail : MonoBehaviour, IEntity
         explodingBlock.transform.position = transform.position;
         explodingBlock.transform.localEulerAngles = transform.localEulerAngles;
         explodingBlock.transform.localScale = transform.localScale;
+        explodingBlock.transform.parent = fossilBlockContainer.transform;
         explodingBlock.GetComponent<Renderer>().material = new Material(material);
         explodingBlock.GetComponent<BlockImpact>().HandleImpact(impactVector, impactId);
 

@@ -366,7 +366,7 @@ PrefabInstance:
         type: 3}
       propertyPath: shipData
       value: 
-      objectReference: {fileID: 433663842}
+      objectReference: {fileID: 0}
     - target: {fileID: 2151207714166088056, guid: 8a9d12e43096881468feb22e39e9fbeb,
         type: 3}
       propertyPath: m_Name
@@ -396,18 +396,6 @@ Transform:
     type: 3}
   m_PrefabInstance: {fileID: 433663840}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &433663842 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 8615459834079177208, guid: 8a9d12e43096881468feb22e39e9fbeb,
-    type: 3}
-  m_PrefabInstance: {fileID: 433663840}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9846c9cd6cfac424797ca640ebcb7a04, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!114 &433663843 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 2151207714166088012, guid: 8a9d12e43096881468feb22e39e9fbeb,
@@ -563,21 +551,10 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 433663844}
     m_Modifications:
-    - target: {fileID: 874579555101021527, guid: 8088c0e7095051647bcbcd5a6373ca38,
-        type: 3}
-      propertyPath: player
-      value: 
-      objectReference: {fileID: 433663843}
-    - target: {fileID: 874579555101021527, guid: 8088c0e7095051647bcbcd5a6373ca38,
-        type: 3}
-      propertyPath: AOEPrefab
-      value: 
-      objectReference: {fileID: 3844806713261670429, guid: 697345885e4838445a5d9db5ab931ed5,
-        type: 3}
     - target: {fileID: 5928382658856804067, guid: 8088c0e7095051647bcbcd5a6373ca38,
         type: 3}
       propertyPath: m_RootOrder
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5928382658856804067, guid: 8088c0e7095051647bcbcd5a6373ca38,
         type: 3}
