@@ -31,8 +31,13 @@ public class AOEExplosion : MonoBehaviour, IEntity
     [SerializeField] float MaxScale = 200f;
     [SerializeField] float ExplosionDuration = 2f;
     [SerializeField] float ExplosionDelay = .2f;
-    public float speed = .5f;
     [SerializeField] GameObject Geometry;
+
+    public float speed = 5f; // TODO: use the easing of the explosion to change this over time
+    float elapsedTime;
+    const float PI_OVER_TWO = Mathf.PI / 2;
+
+    Vector3 MaxScaleVector;
 
     Team team;
     EntityType entityType = EntityType.Explosion;
@@ -41,22 +46,20 @@ public class AOEExplosion : MonoBehaviour, IEntity
 
     void Start()
     {
+        MaxScaleVector = new Vector3(MaxScale, MaxScale, MaxScale);
         StartCoroutine(ExplodeCoroutine());
     }
 
     IEnumerator ExplodeCoroutine()
     {
         yield return new WaitForSeconds(ExplosionDelay);
-        // TODO: leverage explosion duration to derive the scale increment factor
-        // TODO: apply some kind of easing
-        //while (MaxScale > Geometry.transform.localScale.x)
-        while (MaxScale > transform.localScale.x)
+
+        while (elapsedTime < ExplosionDuration)
         {
-            transform.localScale += new Vector3(speed, speed, speed);
+            elapsedTime += Time.deltaTime;
+            transform.localScale = Vector3.Lerp(Vector3.zero, MaxScaleVector, Mathf.Sin((elapsedTime / ExplosionDuration) * PI_OVER_TWO));
             yield return null;
         }
-
-        transform.localScale = new Vector3(.1f, .1f, .1f);
 
         Destroy(gameObject);
     }

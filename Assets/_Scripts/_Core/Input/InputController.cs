@@ -42,9 +42,6 @@ namespace StarWriter.Core.Input
         private readonly float lerpAmount = 2f;
         private readonly float smallLerpAmount = .7f;
 
-        private readonly float animationScaler = 25f;
-        private readonly float yawAnimationScaler = 80f;
-
         private UnityEngine.Gyroscope gyro;
         private Quaternion derivedCorrection;
         private Quaternion displacementQ;

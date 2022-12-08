@@ -1,29 +1,18 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class WarpFieldView : MonoBehaviour
 {
+    public int seed;
 
     [SerializeField] GameObject snow;
-
-    GameObject[,,] crystalLattice;
     [SerializeField] bool reset;
-
     [SerializeField] int nodesPerSide = 4;
     [SerializeField] float nodeScaler = 5f;
 
-    float nodeSize = 0;
-
+    GameObject TemporaryContainer;
+    GameObject[,,] crystalLattice;
     WarpFieldData warpFieldData;
-
-    float nodeDistanceX;
-    float nodeDistanceY;
-    float nodeDistanceZ;
-
-    public int seed;
-
-    private GameObject TemporaryContainer;
+    Vector3 nodeDistance = Vector3.zero;
 
     private void OnEnable()
     {
@@ -58,9 +47,9 @@ public class WarpFieldView : MonoBehaviour
         warpFieldData.Init();
         warpFieldData.UpdateScriptableObjectValues();
 
-        nodeDistanceX = warpFieldData.fieldWidth / nodesPerSide;
-        nodeDistanceY = warpFieldData.fieldHeight / nodesPerSide;
-        nodeDistanceZ = warpFieldData.fieldThickness / nodesPerSide;
+        nodeDistance.x = warpFieldData.fieldWidth / nodesPerSide;
+        nodeDistance.y = warpFieldData.fieldHeight / nodesPerSide;
+        nodeDistance.z = warpFieldData.fieldThickness / nodesPerSide;
 
         MakeShards();
         ChangeShards();
@@ -109,20 +98,15 @@ public class WarpFieldView : MonoBehaviour
                     newSeed++;
                     Random.InitState(newSeed);
 
-                    node.transform.position = new Vector3((x - nodesPerSide) * nodeDistanceX + Random.Range(-nodeDistanceX / 2, nodeDistanceX / 2),
-                                                          (y - nodesPerSide) * nodeDistanceY + Random.Range(-nodeDistanceY / 2, nodeDistanceY / 2),
-                                                          (z - nodesPerSide) * nodeDistanceZ + Random.Range(-nodeDistanceZ / 2, nodeDistanceZ / 2));
+                    node.transform.position = new Vector3((x - nodesPerSide) * nodeDistance.x + Random.Range(-nodeDistance.x / 2, nodeDistance.x / 2),
+                                                          (y - nodesPerSide) * nodeDistance.y + Random.Range(-nodeDistance.y / 2, nodeDistance.y / 2),
+                                                          (z - nodesPerSide) * nodeDistance.z + Random.Range(-nodeDistance.z / 2, nodeDistance.z / 2));
 
                     Vector3 hybridVector = warpFieldData.HybridVector(node);
 
                     node.transform.localScale = Vector3.forward * nodeScaler * 3 +
                         Vector3.one * (hybridVector.magnitude * nodeScaler);
                     node.forward = -hybridVector;
-
-                    //node.transform.localScale =
-                    //    Vector3.velocityDirection * (flowVector.magnitude * nodeScaler + nodeSize) +
-                    //    Vector3.one * (flowVector.magnitude * nodeScalerOverThree + nodeSize);
-                    //node.velocityDirection = flowVector;
                 }
             }
         }
