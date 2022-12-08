@@ -11,10 +11,10 @@ class MantaAnimation : ShipAnimation
 
     [SerializeField] Transform RightWing;
 
-    readonly float animationScaler = 25f;
-    readonly float yawAnimationScaler = 80f;
-    readonly float lerpAmount = 2f;
-    readonly float smallLerpAmount = .7f;
+    [SerializeField] float animationScaler = 25f;
+    [SerializeField] float yawAnimationScaler = 80f;
+    [SerializeField] float lerpAmount = 2f;
+    [SerializeField] float smallLerpAmount = .7f;
 
     public override void PerformShipAnimations(float pitch, float yaw, float roll, float throttle)
     {

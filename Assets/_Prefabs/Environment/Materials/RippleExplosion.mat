@@ -20,7 +20,7 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Outer_RippleExplosion
+  m_Name: RippleExplosion
   m_Shader: {fileID: -6465566751694194690, guid: e7609cecd3553f746828074af2226b7a,
     type: 3}
   m_ValidKeywords: []
