@@ -7,7 +7,7 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: RippleMaterial
+  m_Name: RippleMaterialGreen
   m_Shader: {fileID: -6465566751694194690, guid: e7609cecd3553f746828074af2226b7a,
     type: 3}
   m_ValidKeywords: []
@@ -124,13 +124,13 @@ Material:
     m_Colors:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
-    - _Color_Texture: {r: 0.9414794, g: 1.0087279, b: 3.1270566, a: 0}
+    - _Color_Texture: {r: 0.36039874, g: 1.860437, b: 1.0082682, a: 0}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
-    - _Fresnel_Color: {r: 0, g: 0.04387096, b: 0.136, a: 0}
+    - _Fresnel_Color: {r: 0, g: 0.121500015, b: 0.135, a: 0}
     - _Gradient_Color: {r: 0, g: 0, b: 0, a: 0}
     - _Ripple_Origin: {r: 1, g: 1, b: 0, a: 0}
-    - _Scroll_Speed: {r: 0.12, g: -0.12, b: 0, a: 0}
-    - _Scroll_Speed_2: {r: -0.01, g: -0.1, b: 0, a: 0}
+    - _Scroll_Speed: {r: -0.12, g: -0.12, b: 0, a: 0}
+    - _Scroll_Speed_2: {r: -0.03, g: 0.03, b: 0, a: 0}
     - _SpecColor: {r: 0.19999996, g: 0.19999996, b: 0.19999996, a: 1}
   m_BuildTextureStacks: []
 --- !u!114 &2764051715434170311

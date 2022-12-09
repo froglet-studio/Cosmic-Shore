@@ -15,7 +15,7 @@ GameObject:
   - component: {fileID: 7530736874585816541}
   - component: {fileID: 4173946516839143748}
   m_Layer: 10
-  m_Name: AOEExplosion
+  m_Name: AOEExplosionBlue
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -81,7 +81,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: fd4788fd12c71f64185794559710e4ea, type: 2}
+  - {fileID: 2100000, guid: 8afa9ff09a0bb9c4888657f67e55edab, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
