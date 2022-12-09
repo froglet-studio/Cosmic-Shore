@@ -2634,7 +2634,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0dd461ea802fa5b44a2984898187228c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  PlayerShipName: GreenManta
+  PlayerShipName: Dolphin
   AIShipName: RedMantaAI
   SelectedBayIndex: 0
   ShipPrefabs:
@@ -2642,6 +2642,7 @@ MonoBehaviour:
   - {fileID: 8182518000464848904, guid: 3e878151f62c69e4baf79aa7b5d0adc0, type: 3}
   - {fileID: 874579555101021527, guid: b133316bddc570841bd18ecab25e508e, type: 3}
   - {fileID: 8182518000464848904, guid: 8363148718aae1844b1e57334151db21, type: 3}
+  - {fileID: 874579555101021527, guid: 3cc1c31e8138b6448ae4264dd90d24ac, type: 3}
 --- !u!4 &1349904467
 Transform:
   m_ObjectHideFlags: 0
