@@ -2,14 +2,17 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-class MantaAnimation : ShipAnimation
+class SharkAnimation : ShipAnimation
 {
-
     [SerializeField] Transform Fusilage;
 
     [SerializeField] Transform LeftWing;
 
     [SerializeField] Transform RightWing;
+
+    [SerializeField] Transform Head;
+
+    [SerializeField] Transform Tail;
 
     [SerializeField] float animationScaler = 25f;
     [SerializeField] float yawAnimationScaler = 80f;
