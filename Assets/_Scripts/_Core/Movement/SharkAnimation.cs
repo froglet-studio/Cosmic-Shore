@@ -23,6 +23,11 @@ class SharkAnimation : ShipAnimation
     {
         // Ship animations TODO: figure out how to leverage a single definition for pitch, etc. that captures the gyro in the animations.
 
+        AnimatePart(Fusilage,
+                    -pitch * animationScaler,
+                    yaw * animationScaler,
+                    roll * animationScaler);
+
         AnimatePart(LeftWing,
                     Brake(throttle) * yawAnimationScaler,
                     -(throttle - yaw) * yawAnimationScaler,
@@ -34,10 +39,15 @@ class SharkAnimation : ShipAnimation
                     (throttle + yaw) * yawAnimationScaler,
                     (roll - pitch) * animationScaler);
 
-        AnimatePart(Fusilage,
+        AnimatePart(Head,
                     -pitch * animationScaler,
                     yaw * animationScaler,
                     roll * animationScaler);
+
+        AnimatePart(Tail,
+                    0,
+                    yaw * yawAnimationScaler,
+                    0);
     }
 
     public override void Idle()
