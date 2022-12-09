@@ -2634,19 +2634,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0dd461ea802fa5b44a2984898187228c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  PlayerShipName: GreenManta
+  AIShipName: RedMantaAI
   SelectedBayIndex: 0
   ShipPrefabs:
   - {fileID: 874579555101021527, guid: 8088c0e7095051647bcbcd5a6373ca38, type: 3}
-  - {fileID: 874579555101021527, guid: b133316bddc570841bd18ecab25e508e, type: 3}
   - {fileID: 8182518000464848904, guid: 3e878151f62c69e4baf79aa7b5d0adc0, type: 3}
+  - {fileID: 874579555101021527, guid: b133316bddc570841bd18ecab25e508e, type: 3}
   - {fileID: 8182518000464848904, guid: 8363148718aae1844b1e57334151db21, type: 3}
-  allShips:
-  - {fileID: 11400000, guid: aff8013a63fe03545b16c119409e4f67, type: 2}
-  - {fileID: 11400000, guid: 91398dfa217e9d340addd95033c59912, type: 2}
-  - {fileID: 11400000, guid: 48570157b8621ef47a488abb24b437d1, type: 2}
-  - {fileID: 11400000, guid: 0b7f991b9ab90f8468ce2e6e1fd825c8, type: 2}
-  - {fileID: 11400000, guid: 9bd8c1a5397eb1943b7d28005244d7d8, type: 2}
-  bayShips: []
 --- !u!4 &1349904467
 Transform:
   m_ObjectHideFlags: 0

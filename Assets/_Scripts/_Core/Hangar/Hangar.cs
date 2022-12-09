@@ -5,8 +5,12 @@ using System.Linq;
 
 namespace StarWriter.Core.HangerBuilder
 {
+
     public class Hangar : SingletonPersistent<Hangar>
     {
+        [SerializeField] string PlayerShipName = "GreenManta";
+        [SerializeField] string AIShipName = "RedMantaAI";
+
         Dictionary<string, Ship> ships = new Dictionary<string, Ship>();
 
         [SerializeField] int SelectedBayIndex = 0;
@@ -20,20 +24,14 @@ namespace StarWriter.Core.HangerBuilder
         {
             foreach (var ship in ShipPrefabs)
                 ships.Add(ship.name, ship);
-
-            if (!PlayerPrefs.HasKey("ShipName") || PlayerPrefs.GetString("ShipName") == "Manta")
-                PlayerPrefs.SetString("ShipName", "GreenManta");
         }
         public Ship LoadPlayerShip()
         {
-            return Instantiate(ships[PlayerPrefs.GetString("ShipName")]);
+            return Instantiate(ships[PlayerShipName]);
         }
         public Ship LoadAIShip()
         {
-            if (PlayerPrefs.GetString("ShipName") == "GreenManta")
-                return Instantiate(ships["RedMantaAI"]);
-            else
-                return Instantiate(ships["GreenMantaAI"]);
+            return Instantiate(ships[AIShipName]);
         }
     }
 }
