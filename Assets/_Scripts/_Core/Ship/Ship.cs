@@ -6,7 +6,6 @@ using UnityEngine;
 [RequireComponent(typeof(TrailSpawner))]
 public class Ship : MonoBehaviour
 {
-    [SerializeField] SO_Ship shipSO;
     [SerializeField] string Name;
     [SerializeField] GameObject AOEPrefab;
     [SerializeField] Player player;
