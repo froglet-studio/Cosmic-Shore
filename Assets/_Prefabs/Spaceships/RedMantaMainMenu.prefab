@@ -13,7 +13,6 @@ GameObject:
   - component: {fileID: 1334521784450368779}
   - component: {fileID: 1334521784450368778}
   - component: {fileID: 1334521784450368781}
-  - component: {fileID: 1240501347620952964}
   m_Layer: 8
   m_Name: Fusilage
   m_TagString: Untagged
@@ -115,19 +114,6 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 126
   m_CollisionDetection: 0
---- !u!114 &1240501347620952964
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1334521784450368776}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7fb6382bf0db779459bec0fc29158ac4, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  Ship: {fileID: 8182518000464848904}
 --- !u!1 &1334521784760732870
 GameObject:
   m_ObjectHideFlags: 0
@@ -141,7 +127,6 @@ GameObject:
   - component: {fileID: 1334521784760732873}
   - component: {fileID: 1334521784760732872}
   - component: {fileID: 1334521784760732875}
-  - component: {fileID: 5710091901759515404}
   m_Layer: 8
   m_Name: RightWing
   m_TagString: Untagged
@@ -243,19 +228,6 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 126
   m_CollisionDetection: 0
---- !u!114 &5710091901759515404
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1334521784760732870}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7fb6382bf0db779459bec0fc29158ac4, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  Ship: {fileID: 8182518000464848904}
 --- !u!1 &1334521784826145861
 GameObject:
   m_ObjectHideFlags: 0
@@ -269,7 +241,6 @@ GameObject:
   - component: {fileID: 1334521784826145864}
   - component: {fileID: 1334521784826145863}
   - component: {fileID: 1334521784826145866}
-  - component: {fileID: 7447785457666641887}
   m_Layer: 8
   m_Name: LeftWing
   m_TagString: Untagged
@@ -371,19 +342,6 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 126
   m_CollisionDetection: 0
---- !u!114 &7447785457666641887
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1334521784826145861}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7fb6382bf0db779459bec0fc29158ac4, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  Ship: {fileID: 8182518000464848904}
 --- !u!1 &6050451020763014727
 GameObject:
   m_ObjectHideFlags: 0
@@ -393,15 +351,9 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 6394079618223766781}
-  - component: {fileID: 3837862575524404816}
-  - component: {fileID: 2040246286915941264}
-  - component: {fileID: -2090051954208650702}
-  - component: {fileID: 8182518000464848904}
-  - component: {fileID: 3823739190145388258}
-  - component: {fileID: 6548276816462997802}
   m_Layer: 0
-  m_Name: RedManta
-  m_TagString: Player_Ship
+  m_Name: RedMantaMainMenu
+  m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -424,121 +376,3 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 90, y: 0, z: 0}
---- !u!114 &3837862575524404816
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6050451020763014727}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: eda23b53f3524b74ab4795a9c7e3abac, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  explodableParts:
-  - {fileID: 1334521784450368776}
-  - {fileID: 1334521784826145861}
-  - {fileID: 1334521784760732870}
-  explosiveMaterial: {fileID: 2100000, guid: b0e105431956f1b40b8ef19fbde85b3b, type: 2}
-  maxExplosionRadius: 300
-  explosionRate: 12
---- !u!114 &2040246286915941264
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6050451020763014727}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 909fb5cbbca8c4549b5a9df56d837e55, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  trail: {fileID: 4563009547826722997, guid: 4e280247faa1d154fa25d1e92df405dc, type: 3}
-  offset: 0
-  initialWavelength: 30
-  trailLength: 40
-  waitTime: 0.3
-  startDelay: 2
-  warp: 0
---- !u!114 &-2090051954208650702
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6050451020763014727}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9846c9cd6cfac424797ca640ebcb7a04, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  inputSpeed: 1
-  speedMultiplier: 1
-  speed: 0
-  boost: 0
-  velocityDirection: {x: 0, y: 0, z: 0}
-  blockRotation: {x: 0, y: 0, z: 0, w: 0}
---- !u!114 &8182518000464848904
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6050451020763014727}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a273abd40c7104c4392188723ab929d6, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  shipSO: {fileID: 11400000, guid: 91398dfa217e9d340addd95033c59912, type: 2}
-  Name: RedManta
-  AOEPrefab: {fileID: 2728798890556433942, guid: 4a855af160021d241b8c1ac70cf2d792,
-    type: 3}
-  player: {fileID: 0}
-  TrailSpawner: {fileID: 2040246286915941264}
-  crystalImpactEffects: 000000000100000003000000
-  trailBlockImpactEffects: 000000000300000002000000
---- !u!114 &3823739190145388258
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6050451020763014727}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a58bf4fb65afa704194fe9e28e67d58d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  defaultThrottle: 30
-  defaultLerp: 40
-  throttleIncrease: 5
-  lerpIncrease: 17
-  throttle: 0
-  lerp: 0
-  avoidance: 23
-  raycastHeight: 2
-  raycastWidth: 2
-  muton: {fileID: 0}
-  flowFieldData: {fileID: 0}
---- !u!114 &6548276816462997802
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6050451020763014727}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 46ca128b16ccbfd42be69beb8b52be77, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  Fusilage: {fileID: 1334521784450368777}
-  LeftWing: {fileID: 1334521784826145862}
-  RightWing: {fileID: 1334521784760732871}
-  animationScaler: 25
-  yawAnimationScaler: 80
-  lerpAmount: 2
-  smallLerpAmount: 0.7

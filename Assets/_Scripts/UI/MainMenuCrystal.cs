@@ -1,26 +1,19 @@
 using System.Collections.Generic;
 using UnityEngine;
 using StarWriter.Core.Input;
-using UnityEngine.Serialization;
 
 public class MainMenuCrystal : MonoBehaviour
 {
     [SerializeField] GameObject spentCrystalPrefab;
-
     [SerializeField] GameObject Container;
+    [SerializeField] GameObject Crystal;
+    [SerializeField] Material material;
 
     public float lifeTimeIncrease = 20;
     public float sphereRadius = 100;
 
-    [SerializeField] GameObject Crystal;
-
     List<Collision> collisions;
-
-    [SerializeField]
-    Material material;
-
     Material tempMaterial;
-
 
     void Start()
     {
@@ -48,29 +41,21 @@ public class MainMenuCrystal : MonoBehaviour
         //check if a ship
         if (other.transform.parent.parent.GetComponent<AIPilot>() != null)
         {
+            tempMaterial = new Material(material);
+
             //make an exploding Crystal
-            var spentCrystal = Instantiate<GameObject>(spentCrystalPrefab);
+            var spentCrystal = Instantiate(spentCrystalPrefab);
+            spentCrystal.GetComponent<Renderer>().material = tempMaterial;
             spentCrystal.transform.position = transform.position;
             spentCrystal.transform.localEulerAngles = transform.localEulerAngles;
-            tempMaterial = new Material(material);
-            spentCrystal.GetComponent<Renderer>().material = tempMaterial;
+            spentCrystal.transform.parent = Container.transform;
 
             // animate it
             GameObject ship = other.transform.parent.parent.gameObject;
 
-
-
-            if (ship == GameObject.FindWithTag("red"))
-            {
-                StartCoroutine(spentCrystal.GetComponent<Impact>().ImpactCoroutine(
-                    ship.transform.forward * ship.GetComponent<ShipData>().speed/10, tempMaterial, "red"));
-            }
-            else
-            {
-                StartCoroutine(spentCrystal.GetComponent<Impact>().ImpactCoroutine(
-                        ship.transform.forward * ship.GetComponent<ShipData>().speed/10, tempMaterial, "blue"));
-            }
-
+            var shipId = ship == GameObject.FindWithTag("red") ? "red" : "blue";
+            StartCoroutine(spentCrystal.GetComponent<Impact>().ImpactCoroutine(
+                ship.transform.forward * ship.GetComponent<ShipData>().speed/10, tempMaterial, shipId));
 
             // move old Crystal
             StartCoroutine(Crystal.GetComponent<FadeIn>().FadeInCoroutine());

@@ -25,10 +25,9 @@ public class Player : MonoBehaviour
 
         if (playerUUID == "admin")  //TODO check if this is local client
         {
-            SO_Ship shipSO = Hangar.Instance.LoadPlayerShip();
             foreach (Transform child in shipContainer.transform) Destroy(child.gameObject);
-            
-            var shipInstance = Instantiate(shipSO.Prefab);
+
+            Ship shipInstance = Hangar.Instance.LoadPlayerShip();
             shipInstance.transform.SetParent(shipContainer.transform, false);
 
             var inputController = GetComponent<InputController>();
@@ -52,11 +51,8 @@ public class Player : MonoBehaviour
         }
         else
         {
-            Hangar.Instance.LoadAIShip();
-
             // TODO: random dice roll, or opposite of player ship selection
-            SO_Ship shipSO = Hangar.Instance.LoadAIShip();
-            var shipInstance = Instantiate(shipSO.Prefab);
+            Ship shipInstance = Hangar.Instance.LoadAIShip();
             shipInstance.transform.SetParent(shipContainer.transform, false);
             ship = shipInstance.GetComponent<Ship>();
 

@@ -34,7 +34,7 @@ public class AOEExplosion : MonoBehaviour, IEntity
     [SerializeField] GameObject Geometry;
 
     public float speed = 5f; // TODO: use the easing of the explosion to change this over time
-    float elapsedTime;
+    
     const float PI_OVER_TWO = Mathf.PI / 2;
 
     Vector3 MaxScaleVector;
@@ -53,7 +53,8 @@ public class AOEExplosion : MonoBehaviour, IEntity
     IEnumerator ExplodeCoroutine()
     {
         yield return new WaitForSeconds(ExplosionDelay);
-
+        
+        var elapsedTime = 0f;
         while (elapsedTime < ExplosionDuration)
         {
             elapsedTime += Time.deltaTime;

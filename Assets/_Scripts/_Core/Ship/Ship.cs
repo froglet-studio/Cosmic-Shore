@@ -2,15 +2,18 @@ using StarWriter.Core.Input;
 using System.Collections.Generic;
 using System.Collections;
 using UnityEngine;
-using System;
 
 [RequireComponent(typeof(TrailSpawner))]
 public class Ship : MonoBehaviour
 {
     [SerializeField] SO_Ship shipSO;
+    [SerializeField] string Name;
     [SerializeField] GameObject AOEPrefab;
     [SerializeField] Player player;
     [SerializeField] public TrailSpawner TrailSpawner;
+    [SerializeField] List<CrystalImpactEffect> crystalImpactEffects;
+    [SerializeField] List<TrailBlockImpactEffect> trailBlockImpactEffects;
+
     Team team;
     ShipData shipData;
 
@@ -32,8 +35,6 @@ public class Ship : MonoBehaviour
     float speedModifierDuration = 2f;
     float speedModifierMax = 6f;
 
-    public string ShipName { get => shipSO.Name; }
-    public SO_Ship ShipSO { get => shipSO; set => shipSO = value; }
     public Team Team { get => team; set => team = value; }
     public Player Player { get => player; set => player = value; }
 
@@ -41,7 +42,6 @@ public class Ship : MonoBehaviour
     {
         shipData = GetComponent<ShipData>();
     }
-
     void Update()
     {
         ApplySpeedModifiers();
@@ -49,7 +49,7 @@ public class Ship : MonoBehaviour
 
     public void PerformCrystalImpactEffects(CrystalProperties crystalProperties)
     {
-        foreach (CrystalImpactEffect effect in shipSO.CrystalImpactEffects)
+        foreach (CrystalImpactEffect effect in crystalImpactEffects)
         {
             switch (effect)
             {
@@ -61,7 +61,7 @@ public class Ship : MonoBehaviour
                     // TODO: add position to crystal properties? use crystal properties to set position
                     var AOEExplosion = Instantiate(AOEPrefab);
                     AOEExplosion.GetComponent<AOEExplosion>().Team = team;
-                    AOEExplosion.transform.position = transform.position; 
+                    AOEExplosion.transform.position = transform.position;
                     break;
                 case CrystalImpactEffect.FillFuel:
                     FuelSystem.ChangeFuelAmount(player.PlayerUUID, crystalProperties.fuelAmount);
@@ -81,7 +81,7 @@ public class Ship : MonoBehaviour
 
     public void PerformTrailBlockImpactEffects(TrailBlockProperties trailBlockProperties)
     {
-        foreach (TrailBlockImpactEffect effect in shipSO.TrailBlockImpactEffects)
+        foreach (TrailBlockImpactEffect effect in trailBlockImpactEffects)
         {
             switch (effect)
             {

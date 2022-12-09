@@ -2635,6 +2635,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   SelectedBayIndex: 0
+  ShipPrefabs:
+  - {fileID: 874579555101021527, guid: 8088c0e7095051647bcbcd5a6373ca38, type: 3}
+  - {fileID: 874579555101021527, guid: b133316bddc570841bd18ecab25e508e, type: 3}
+  - {fileID: 8182518000464848904, guid: 3e878151f62c69e4baf79aa7b5d0adc0, type: 3}
+  - {fileID: 8182518000464848904, guid: 8363148718aae1844b1e57334151db21, type: 3}
   allShips:
   - {fileID: 11400000, guid: aff8013a63fe03545b16c119409e4f67, type: 2}
   - {fileID: 11400000, guid: 91398dfa217e9d340addd95033c59912, type: 2}
@@ -5190,10 +5195,10 @@ MonoBehaviour:
   spentCrystalPrefab: {fileID: 8491596592871572304, guid: 61a562cb4f0f4d744a9cb957155947d1,
     type: 3}
   Container: {fileID: 1416682014}
-  lifeTimeIncrease: 3
-  sphereRadius: 15
   Crystal: {fileID: 8491596593335364973}
   material: {fileID: 2100000, guid: 383f21e8586fd7243a19e1d0f26110d0, type: 2}
+  lifeTimeIncrease: 3
+  sphereRadius: 15
 --- !u!1 &4105671971620406239
 GameObject:
   m_ObjectHideFlags: 0

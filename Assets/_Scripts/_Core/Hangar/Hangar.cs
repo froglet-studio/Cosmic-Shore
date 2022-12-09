@@ -7,34 +7,39 @@ namespace StarWriter.Core.HangerBuilder
 {
     public class Hangar : SingletonPersistent<Hangar>
     {
-        Dictionary<string, SO_Ship> ships = new Dictionary<string, SO_Ship>();
+        //Dictionary<string, SO_Ship> ships = new Dictionary<string, SO_Ship>();
+        Dictionary<string, Ship> ships = new Dictionary<string, Ship>();
 
         [SerializeField] int SelectedBayIndex = 0;
+        [SerializeField] public List<Ship> ShipPrefabs;
         [SerializeField] public List<SO_Ship> allShips;
         [SerializeField] public List<SO_Ship> bayShips;
 
-        public SO_Ship selectedShip { get; private set; }
+        public Ship selectedShip { get; private set; }
 
         public int BayIndex { get => SelectedBayIndex; }
 
         private void Start()
         {
-            foreach (SO_Ship ship in allShips)
-                ships.Add(ship.Name, ship);
+            //foreach (SO_Ship ship in allShips)
+            //    ships.Add(ship.Name, ship);
 
-            if (!PlayerPrefs.HasKey("ShipName"))
-                PlayerPrefs.SetString("ShipName", "Manta");
+            foreach (var ship in ShipPrefabs)
+                ships.Add(ship.name, ship);
+
+            if (!PlayerPrefs.HasKey("ShipName") || PlayerPrefs.GetString("ShipName") == "Manta")
+                PlayerPrefs.SetString("ShipName", "GreenManta");
         }
-        public SO_Ship LoadPlayerShip()
+        public Ship LoadPlayerShip()
         {
-            return ships[PlayerPrefs.GetString("ShipName")];
+            return Instantiate(ships[PlayerPrefs.GetString("ShipName")]);
         }
-        public SO_Ship LoadAIShip()
+        public Ship LoadAIShip()
         {
-            if (PlayerPrefs.GetString("ShipName") == "Manta")
-                return ships["Manta Red"];
+            if (PlayerPrefs.GetString("ShipName") == "GreenManta")
+                return Instantiate(ships["RedMantaAI"]);
             else
-                return ships["Manta Green"];
+                return Instantiate(ships["GreenMantaAI"]);
         }
     }
 }
