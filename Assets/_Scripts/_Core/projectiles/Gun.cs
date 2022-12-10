@@ -8,7 +8,7 @@ public class Gun : MonoBehaviour
     public float speed = 10;
     public float projectileTime = 5;
     public float firePeriod = .2f;
-    public Team Team;
+    public Teams Team;
     bool onCooldown = false;
  
     public void FireGun()

@@ -2,7 +2,7 @@
 using UnityEngine;
 using System.Linq;
 
-public class Trail : MonoBehaviour, IEntity
+public class Trail : MonoBehaviour
 {
     [SerializeField] float fuelChange = -3f;
     [SerializeField] GameObject FossilBlock;
@@ -28,10 +28,8 @@ public class Trail : MonoBehaviour, IEntity
     private static GameObject fossilBlockContainer;
     private MeshRenderer meshRenderer;
     private BoxCollider blockCollider;
-    Team team;
-    EntityType entityType = EntityType.TrailBlock;
-    public Team Team { get => team; set => team = value; }
-    public EntityType EntityType { get => entityType; }
+    Teams team;
+    public Teams Team { get => team; set => team = value; }
 
     void Start()
     {

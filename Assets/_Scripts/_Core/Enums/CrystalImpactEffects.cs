@@ -1,4 +1,4 @@
-public enum CrystalImpactEffect
+public enum CrystalImpactEffects
 {
     PlayHaptics,
     FillFuel,

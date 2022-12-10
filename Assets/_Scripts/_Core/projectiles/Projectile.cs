@@ -5,5 +5,5 @@ using UnityEngine;
 public class Projectile : MonoBehaviour
 {
     public Vector3 Velocity;
-    public Team Team;
+    public Teams Team;
 }

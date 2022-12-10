@@ -10,7 +10,7 @@ public class AIGunner : MonoBehaviour
     int gap = 3;
     float rotationSpeed = 40;
     TrailSpawner trailSpawner;
-    public Team Team;
+    public Teams Team;
 
     [SerializeField] Gun gun;
     [SerializeField] GameObject gunMount;

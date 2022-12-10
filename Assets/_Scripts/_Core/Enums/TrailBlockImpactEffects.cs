@@ -1,4 +1,4 @@
-public enum TrailBlockImpactEffect
+public enum TrailBlockImpactEffects
 {
     PlayHaptics,
     DrainFuel,

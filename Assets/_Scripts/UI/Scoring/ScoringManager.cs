@@ -16,7 +16,7 @@ public class ScoringManager : Singleton<ScoringManager>
     
     Dictionary<string, GameObject> ScoreDisplays = new Dictionary<string, GameObject>(); // TODO: not sure I like this
     Dictionary<string, int> PlayerScores = new Dictionary<string, int>();
-    Dictionary<Team, float> TeamScores = new Dictionary<Team, float>();
+    Dictionary<Teams, float> TeamScores = new Dictionary<Teams, float>();
     static int SinglePlayerScore = 0;
     static bool firstLife = true;
     static float bedazzleThresholdPercentage = 0.8f;
@@ -74,7 +74,7 @@ public class ScoringManager : Singleton<ScoringManager>
         scoreText.text = value.ToString("D3"); // SinglePlayerScore text located on the fuel bar
     }
 
-    public void UpdateTeamScore(Team team, float amount)
+    public void UpdateTeamScore(Teams team, float amount)
     {
         if (RoundEnded)
             return;

@@ -1,20 +1,22 @@
 using StarWriter.Core.Input;
 using System.Collections.Generic;
-using System.Collections;
 using UnityEngine;
 
 [RequireComponent(typeof(TrailSpawner))]
 public class Ship : MonoBehaviour
 {
     [SerializeField] string Name;
+    [SerializeField] public ShipTypes ShipType;
     [SerializeField] GameObject AOEPrefab;
     [SerializeField] Player player;
     [SerializeField] public TrailSpawner TrailSpawner;
-    [SerializeField] List<CrystalImpactEffect> crystalImpactEffects;
-    [SerializeField] List<TrailBlockImpactEffect> trailBlockImpactEffects;
+    [SerializeField] List<CrystalImpactEffects> crystalImpactEffects;
+    [SerializeField] List<TrailBlockImpactEffects> trailBlockImpactEffects;
 
-    Team team;
+    Teams team;
     ShipData shipData;
+    private Material ShipMaterial;
+    private List<ShipGeometry> shipGeometries = new List<ShipGeometry>();
 
     class SpeedModifier
     {
@@ -34,7 +36,7 @@ public class Ship : MonoBehaviour
     float speedModifierDuration = 2f;
     float speedModifierMax = 6f;
 
-    public Team Team { get => team; set => team = value; }
+    public Teams Team { get => team; set => team = value; }
     public Player Player { get => player; set => player = value; }
 
     public void Start()
@@ -48,27 +50,27 @@ public class Ship : MonoBehaviour
 
     public void PerformCrystalImpactEffects(CrystalProperties crystalProperties)
     {
-        foreach (CrystalImpactEffect effect in crystalImpactEffects)
+        foreach (CrystalImpactEffects effect in crystalImpactEffects)
         {
             switch (effect)
             {
-                case CrystalImpactEffect.PlayHaptics:
+                case CrystalImpactEffects.PlayHaptics:
                     HapticController.PlayCrystalImpactHaptics();
                     break;
-                case CrystalImpactEffect.AreaOfEffectExplosion:
+                case CrystalImpactEffects.AreaOfEffectExplosion:
                     // Spawn AOE explosion
                     // TODO: add position to crystal properties? use crystal properties to set position
                     var AOEExplosion = Instantiate(AOEPrefab);
                     AOEExplosion.GetComponent<AOEExplosion>().Team = team;
                     AOEExplosion.transform.position = transform.position;
                     break;
-                case CrystalImpactEffect.FillFuel:
+                case CrystalImpactEffects.FillFuel:
                     FuelSystem.ChangeFuelAmount(player.PlayerUUID, crystalProperties.fuelAmount);
                     break;
-                case CrystalImpactEffect.Score:
+                case CrystalImpactEffects.Score:
                     ScoringManager.Instance.UpdateScore(player.PlayerUUID, crystalProperties.scoreAmount);
                     break;
-                case CrystalImpactEffect.ResetAggression:
+                case CrystalImpactEffects.ResetAggression:
                     // TODO: PLAYERSHIP null pointer here
                     AIPilot controllerScript = gameObject.GetComponent<AIPilot>();
                     controllerScript.lerp = controllerScript.defaultLerp;
@@ -80,21 +82,21 @@ public class Ship : MonoBehaviour
 
     public void PerformTrailBlockImpactEffects(TrailBlockProperties trailBlockProperties)
     {
-        foreach (TrailBlockImpactEffect effect in trailBlockImpactEffects)
+        foreach (TrailBlockImpactEffects effect in trailBlockImpactEffects)
         {
             switch (effect)
             {
-                case TrailBlockImpactEffect.PlayHaptics:
+                case TrailBlockImpactEffects.PlayHaptics:
                     HapticController.PlayBlockCollisionHaptics();
                     break;
-                case TrailBlockImpactEffect.DrainFuel:
+                case TrailBlockImpactEffects.DrainFuel:
                     break;
-                case TrailBlockImpactEffect.DebuffSpeed:
+                case TrailBlockImpactEffects.DebuffSpeed:
                     SpeedModifiers.Add(new SpeedModifier(trailBlockProperties.speedDebuffAmount, speedModifierDuration, 0));
                     break;
-                case TrailBlockImpactEffect.DeactivateTrailBlock:
+                case TrailBlockImpactEffects.DeactivateTrailBlock:
                     break;
-                case TrailBlockImpactEffect.ActivateTrailBlock:
+                case TrailBlockImpactEffects.ActivateTrailBlock:
                     break;
             }
         }
@@ -119,27 +121,30 @@ public class Ship : MonoBehaviour
         shipData.speedMultiplier = accumulatedSpeedModification;
     }
 
- 
-
     public void ToggleCollision(bool enabled)
     {
         foreach (var collider in GetComponentsInChildren<Collider>(true))
             collider.enabled = enabled;
     }
 
-
-    IEnumerator DebuffSpeedCoroutine(TrailBlockProperties trailBlockProperties)
+    public void RegisterShipGeometry(ShipGeometry shipGeometry)
     {
-        var speedMultiplierDelta = -trailBlockProperties.speedDebuffAmount; //this is so multiple debuffs can run in parallel
-        shipData.speedMultiplier -= trailBlockProperties.speedDebuffAmount;
+        shipGeometries.Add(shipGeometry);
+        ApplyShipMaterial();
+    }
 
-        var speedReturnRate = .01f; // this might cause errors if this is changed
+    public void SetShipMaterial(Material material)
+    {
+        ShipMaterial = material;
+        ApplyShipMaterial();
+    }
 
-        while (speedMultiplierDelta < 0)
-        {
-            speedMultiplierDelta += speedReturnRate;
-            shipData.speedMultiplier += speedReturnRate;
-            yield return null;
-        }
+    private void ApplyShipMaterial()
+    {
+        if (ShipMaterial == null)
+            return;
+
+        foreach (var shipGeometry in shipGeometries)
+            shipGeometry.GetComponent<MeshRenderer>().material = ShipMaterial;
     }
 }

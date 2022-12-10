@@ -5,7 +5,7 @@ using StarWriter.Core.Audio;
 // can you even?
 //   ?
 //  ? ?
-public class Crystal : MonoBehaviour, IEntity
+public class Crystal : MonoBehaviour
 {
     #region Events
     public delegate void CrystalMove();
@@ -24,9 +24,7 @@ public class Crystal : MonoBehaviour, IEntity
     List<Collider> collisions;
     [SerializeField] bool surface = false;
 
-    EntityType entityType = EntityType.Crystal;
-    public Team Team { get => Team.None; set => Debug.LogError("Someone tried to set the team type for a crystal"); }
-    public EntityType EntityType { get => entityType; }
+    public Teams Team { get => Teams.None; set => Debug.LogError("Someone tried to set the team type for a crystal"); }
 
     void Start()
     {

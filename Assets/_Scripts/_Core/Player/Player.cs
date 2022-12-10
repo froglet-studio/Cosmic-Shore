@@ -11,7 +11,7 @@ public class Player : MonoBehaviour
     [SerializeField] Ship ship;
     [SerializeField] GameObject shipContainer;
     //[SerializeField] AIGunner aiGunner;
-    public Team Team;
+    public Teams Team;
 
     public string PlayerName { get => playerName; }
     public string PlayerUUID { get => playerUUID; }
@@ -52,7 +52,7 @@ public class Player : MonoBehaviour
         else
         {
             // TODO: random dice roll, or opposite of player ship selection
-            Ship shipInstance = Hangar.Instance.LoadAIShip();
+            Ship shipInstance = Hangar.Instance.LoadAI1Ship();
             shipInstance.transform.SetParent(shipContainer.transform, false);
             ship = shipInstance.GetComponent<Ship>();
 
