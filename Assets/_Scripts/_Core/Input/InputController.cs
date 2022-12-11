@@ -38,8 +38,8 @@ namespace StarWriter.Core.Input
         float xDiff;
         float yDiff;
 
-        private readonly float rotationThrottleScaler = 3;
-        private readonly float rotationScaler = 130f;
+        private readonly float rotationThrottleScaler = 0;
+        public float rotationScaler = 130f;
 
         private readonly float lerpAmount = 2f;
         private readonly float smallLerpAmount = .7f;
@@ -186,7 +186,7 @@ namespace StarWriter.Core.Input
                 if (Gamepad.current.leftTrigger.isPressed) ship.PerformLeftStickEffectsEffects();
                 if (Gamepad.current.rightTrigger.isPressed) ship.PerformRightStickEffectsEffects();
                 if (!Gamepad.current.leftTrigger.isPressed) ship.StopLeftStickEffectsEffects();
-                if (!Gamepad.current.rightTrigger.isPressed) ship.StopRightStickEffectsEffects();
+                if (!Gamepad.current.rightTrigger.isPressed) ship.StopRightStickEffectsEffects(); // TODO: decouple triggers
 
                 Pitch(ySum);
                 Yaw(xSum);
@@ -354,7 +354,7 @@ namespace StarWriter.Core.Input
                                 shipTransform.right) * displacementQ;
         }
 
-        private void CheckThrottle(float ySum, float xSum, float yDiff, float xDiff) // TODO decouple "special" and "throttle"
+        private void CheckThrottle(float ySum, float xSum, float yDiff, float xDiff)
         {
 
             float threshold = .3f;

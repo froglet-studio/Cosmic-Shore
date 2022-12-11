@@ -1,8 +1,9 @@
 
-public enum ShipAbilities
+public enum ActiveAbilities
 {
     Drift,
     Boost,
     Invulnerability,
-    ToggleCamera
+    ToggleCamera,
+    ToggleMode
 }

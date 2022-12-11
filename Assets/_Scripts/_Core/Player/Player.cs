@@ -9,6 +9,7 @@ public class Player : MonoBehaviour
     [SerializeField] string playerName;
     [SerializeField] string playerUUID;
     [SerializeField] Ship ship;
+    [SerializeField] Skimmer skimmer;
     [SerializeField] GameObject shipContainer;
     //[SerializeField] AIGunner aiGunner;
     public Teams Team;
@@ -53,6 +54,8 @@ public class Player : MonoBehaviour
 
             ship.Team = Team;
             ship.Player = this;
+            skimmer.Player = this;
+            ship.skimmer= skimmer;
             //aiGunner.trailSpawner = ship.TrailSpawner;
 
             shipInstance.GetComponent<AIPilot>().enabled = true;
