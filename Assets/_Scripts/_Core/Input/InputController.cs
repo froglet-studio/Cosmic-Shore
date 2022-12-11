@@ -8,9 +8,10 @@ namespace StarWriter.Core.Input
     public class InputController : MonoBehaviour
     {
         #region Ship
-        [SerializeField] public Transform shipTransform;
-
-        public ShipAnimation shipAnimation;
+        [SerializeField] public Ship ship;
+        Transform shipTransform;
+        ShipAnimation shipAnimation;
+        ShipData shipData;
 
         #endregion
 
@@ -18,12 +19,13 @@ namespace StarWriter.Core.Input
         public static event Boost OnBoost;
         string uuid;
 
+        float phoneFlipThreshold = .1f;
+
         [SerializeField] bool driftEnabled = false;
         bool drifting = false;
-        float boostDecay = 0;
+        public float boostDecay = 0;
 
         float speed;
-        [SerializeField] public ShipData shipData;
 
         public float initialDThrottle = 10f; 
         public float initialThrottleScaler = 50;
@@ -36,8 +38,8 @@ namespace StarWriter.Core.Input
         float xDiff;
         float yDiff;
 
-        private readonly float rotationThrottleScaler = 3;
-        private readonly float rotationScaler = 130f;
+        private readonly float rotationThrottleScaler = 0;
+        public float rotationScaler = 130f;
 
         private readonly float lerpAmount = 2f;
         private readonly float smallLerpAmount = .7f;
@@ -47,16 +49,8 @@ namespace StarWriter.Core.Input
         private Quaternion displacementQ;
         private Quaternion inverseInitialRotation=new(0,0,0,0);
 
-        private bool isPitchEnabled = true;
-        private bool isYawEnabled = true;
-        private bool isRollEnabled = true;
-        private bool isThrottleEnabled = true;
         private bool isGyroEnabled = true;
         private bool invertYEnabled = false;
-        public bool IsPitchEnabled { get => isPitchEnabled; set => isPitchEnabled = value; }
-        public bool IsYawEnabled { get => isYawEnabled; set => isYawEnabled = value; }
-        public bool IsRollEnabled { get => isRollEnabled; set => isRollEnabled = value; }
-        public bool IsThrottleEnabled { get => isThrottleEnabled; set => isThrottleEnabled = value; }
         public bool IsGyroEnabled { get => isGyroEnabled;  } // GameManager controls the gyro status
 
         private void OnEnable()
@@ -73,10 +67,12 @@ namespace StarWriter.Core.Input
 
         void Start()
         {
+            shipTransform = ship.transform;
+            shipAnimation = ship.GetComponent<ShipAnimation>();
+            shipData = ship.GetComponent<ShipData>();
+
             defaultThrottle = initialDThrottle;
             throttleScaler = initialThrottleScaler;
-
-            //shipData = GetComponent<ShipData>();
 
             uuid = GameObject.FindWithTag("Player").GetComponent<Player>().PlayerUUID;
             // TODO: why is this here?
@@ -136,7 +132,6 @@ namespace StarWriter.Core.Input
                 shipData.velocityDirection = shipTransform.forward;
                 shipData.blockRotation = shipTransform.rotation;
             }
-            
         }
 
         
@@ -185,25 +180,30 @@ namespace StarWriter.Core.Input
                 if (invertYEnabled)
                     ySum *= -1;
 
-                Pitch(ySum);
-                Roll(yDiff);
-                Yaw(xSum);
+                if (Gamepad.current.rightShoulder.wasPressedThisFrame && !GameManager.Instance.PhoneFlipState) ship.StartFlipEffects();
+                else if (Gamepad.current.rightShoulder.wasPressedThisFrame && GameManager.Instance.PhoneFlipState) ship.StopFlipEffects();
+            
+                if (Gamepad.current.leftTrigger.isPressed) ship.PerformLeftStickEffectsEffects();
+                if (Gamepad.current.rightTrigger.isPressed) ship.PerformRightStickEffectsEffects();
+                if (!Gamepad.current.leftTrigger.isPressed) ship.StopLeftStickEffectsEffects();
+                if (!Gamepad.current.rightTrigger.isPressed) ship.StopRightStickEffectsEffects(); // TODO: decouple triggers
 
-                if (driftEnabled)
-                {
-                    if (UnityEngine.InputSystem.Gamepad.current.leftTrigger.isPressed) Drift(xDiff);
-                    else
-                    {
-                        if (boostDecay > 0) ExitDrift(xDiff);
-                        else Special(ySum, xSum, yDiff, xDiff);
-                    }
-                }
-                else Special(ySum, xSum, yDiff, xDiff);
+                Pitch(ySum);
+                Yaw(xSum);
+                Roll(yDiff);
+
+                if (boostDecay <= 0) CheckThrottle(ySum, xSum, yDiff, xDiff);
 
                 shipAnimation.PerformShipAnimations(ySum, xSum, yDiff, xDiff);
             }
             else
             {
+                if (Mathf.Abs(UnityEngine.Input.acceleration.y) >= phoneFlipThreshold)
+                {
+                    if (UnityEngine.Input.acceleration.y < 0 &&  !GameManager.Instance.PhoneFlipState) ship.StartFlipEffects(); // TODO: do interface stuff here
+                    else if (UnityEngine.Input.acceleration.y > 0 && GameManager.Instance.PhoneFlipState) ship.StopFlipEffects();
+                }
+
                 var threeFingerFumble = false;
                 if (UnityEngine.Input.touches.Length >= 3)
                 {
@@ -248,30 +248,18 @@ namespace StarWriter.Core.Input
                         }
                     }
 
-                    // reparameterize
-                    xSum = ((rightTouch.x + leftTouch.x) / (Screen.currentResolution.width) - 1);
-                    ySum = ((rightTouch.y + leftTouch.y) / (Screen.currentResolution.height) - 1);
-                    xDiff = (rightTouch.x - leftTouch.x) / (Screen.currentResolution.width);
-                    yDiff = (rightTouch.y - leftTouch.y) / (Screen.currentResolution.width);
-
-                    if (invertYEnabled)
-                        ySum *= -1;
+                    Reparameterize();
 
                     Pitch(ySum);
-                    Roll(yDiff);
                     Yaw(xSum);
-                    //Throttle(xDiff);
+                    Roll(yDiff);
+
+                    ship.StopLeftStickEffectsEffects();
+                    ship.StopRightStickEffectsEffects();
+
+                    if (boostDecay <= 0) CheckThrottle(ySum, xSum, yDiff, xDiff);
 
                     shipAnimation.PerformShipAnimations(ySum, xSum, yDiff, xDiff);
-
-                    if (driftEnabled && boostDecay > 0)
-                    {
-                        ExitDrift(xDiff);
-                    }
-                    else
-                    {
-                        Special(ySum, xSum, yDiff, xDiff);
-                    }
                 }
 
                 else if (UnityEngine.Input.touches.Length == 1)
@@ -279,38 +267,27 @@ namespace StarWriter.Core.Input
                     if (leftTouch != Vector2.zero && rightTouch != Vector2.zero)
                     {
                         var position = UnityEngine.Input.touches[0].position;
-                        // reparameterize
-                        xSum = ((rightTouch.x + leftTouch.x) / (Screen.currentResolution.width) - 1);
-                        ySum = ((rightTouch.y + leftTouch.y) / (Screen.currentResolution.height) - 1);
-                        xDiff = (rightTouch.x - leftTouch.x) / (Screen.currentResolution.width);
-                        yDiff = (rightTouch.y - leftTouch.y) / (Screen.currentResolution.width);
 
-                        if (invertYEnabled)
-                            ySum *= -1;
+                        Reparameterize();
 
                         Pitch(ySum);
-                        Roll(yDiff);
                         Yaw(xSum);
-
-                        if (driftEnabled)
-                        {
-                            Drift(xDiff);
-                        }
-                        else
-                        {
-                            Throttle(xDiff);
-                        }
-
-                        shipAnimation.PerformShipAnimations(ySum, xSum, yDiff, xDiff);
+                        Roll(yDiff);
 
                         if (Vector2.Distance(leftTouch, position) < Vector2.Distance(rightTouch, position))
                         {
                             leftTouch = position;
+                            ship.PerformLeftStickEffectsEffects();
                         }
                         else
                         {
                             rightTouch = position;
+                            ship.PerformRightStickEffectsEffects();
                         }
+
+                        if (!drifting) Throttle();
+
+                        shipAnimation.PerformShipAnimations(ySum, xSum, yDiff, xDiff);
                     }
                 }
                 else
@@ -321,7 +298,18 @@ namespace StarWriter.Core.Input
             }
         }
 
-        private void Drift(float xDiff)
+        void Reparameterize()
+        {
+            xSum = ((rightTouch.x + leftTouch.x) / (Screen.currentResolution.width) - 1);
+            ySum = ((rightTouch.y + leftTouch.y) / (Screen.currentResolution.height) - 1);
+            xDiff = (rightTouch.x - leftTouch.x) / (Screen.currentResolution.width);
+            yDiff = (rightTouch.y - leftTouch.y) / (Screen.currentResolution.width);
+
+            if (invertYEnabled)
+                ySum *= -1;
+        }
+
+        public void Drift(float driftBoostDecay)
         {
             if (!drifting)
             {
@@ -331,11 +319,11 @@ namespace StarWriter.Core.Input
             speed = Mathf.Lerp(speed, xDiff * throttleScaler + defaultThrottle, lerpAmount * Time.deltaTime);
             shipTransform.position -= speed * Time.deltaTime * shipTransform.forward;
             shipTransform.position += speed * Time.deltaTime * shipData.velocityDirection;
-            boostDecay = 6f;
+            boostDecay = driftBoostDecay;
             drifting = true;
         }
 
-        private void ExitDrift(float xDiff)
+        public void ExitDrift()
         {
             drifting = false;
             boostDecay -= Time.deltaTime;
@@ -366,30 +354,30 @@ namespace StarWriter.Core.Input
                                 shipTransform.right) * displacementQ;
         }
 
-        private void Special(float ySum, float xSum, float yDiff, float xDiff) // TODO decouple "special" and "throttle"
+        private void CheckThrottle(float ySum, float xSum, float yDiff, float xDiff)
         {
-            float fuelAmount = -.01f;
+
             float threshold = .3f;
-            float boost = 4f;
             float value = (1 - xDiff) + Mathf.Abs(yDiff) + Mathf.Abs(ySum) + Mathf.Abs(xSum);
 
-            
-
-            if (value < threshold && FuelSystem.CurrentFuel>0)
+            if (value < threshold)
             {
-                
-                speed = Mathf.Lerp(speed, xDiff * throttleScaler * boost + defaultThrottle, lerpAmount * Time.deltaTime);
-                shipData.boost = true;
-                OnBoost?.Invoke(uuid, fuelAmount);
+                ship.PerformFullSpeedStraightEffects();
             }
             else
             {
-                Throttle(xDiff);
-                shipData.boost = false;
+                ship.StopFullSpeedStraightEffects();
+                Throttle();
             }
         }
 
-        private void Throttle(float xDiff)
+        public void BoostShip(float boost, float fuelAmount)
+        {
+            speed = Mathf.Lerp(speed, xDiff * throttleScaler * boost + defaultThrottle, lerpAmount * Time.deltaTime);
+            OnBoost?.Invoke(uuid, fuelAmount);
+        }
+
+        public void Throttle()
         {
             speed = Mathf.Lerp(speed, xDiff * throttleScaler + defaultThrottle, lerpAmount * Time.deltaTime);
         }
@@ -399,7 +387,6 @@ namespace StarWriter.Core.Input
         {
             return new Quaternion(q.x, -q.z, q.y, q.w);
         }
-
 
         /// <summary>
         /// Gets gyros updated current status from GameManager.onToggleGyro Event

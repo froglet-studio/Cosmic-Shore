@@ -17,7 +17,6 @@ namespace StarWriter.Core
         public enum PlayerPrefKeys
         {
             isInitialPlay,
-            isTutorialEnabled,
             isAudioEnabled,
             isGyroEnabled,
             invertYEnabled,
@@ -28,12 +27,10 @@ namespace StarWriter.Core
         }
 
         #region Settings
-        [SerializeField] bool tutorialHasBeenCompleted = false;
         [SerializeField] bool isAudioEnabled = true;
         [SerializeField] bool isGyroEnabled = true;
         [SerializeField] bool invertYEnabled = false;
 
-        public bool TutorialHasBeenCompleted { get => tutorialHasBeenCompleted; set => tutorialHasBeenCompleted = value; }
         public bool IsAudioEnabled { get => isAudioEnabled; set => isAudioEnabled = value; }
         public bool IsGyroEnabled { get => isGyroEnabled; }
         public bool InvertYEnabled { get => invertYEnabled; }
@@ -42,9 +39,6 @@ namespace StarWriter.Core
         public override void Awake()
         {
             base.Awake();
-
-            if (!PlayerPrefs.HasKey(PlayerPrefKeys.isTutorialEnabled.ToString()))
-                PlayerPrefs.SetInt(PlayerPrefKeys.isTutorialEnabled.ToString(), 1);
             
             if (!PlayerPrefs.HasKey(PlayerPrefKeys.isAudioEnabled.ToString()))
                 PlayerPrefs.SetInt(PlayerPrefKeys.isAudioEnabled.ToString(), 1);
@@ -59,7 +53,7 @@ namespace StarWriter.Core
             PlayerPrefs.Save();
 
             isAudioEnabled = PlayerPrefs.GetInt(PlayerPrefKeys.isAudioEnabled.ToString()) == 1;
-            isGyroEnabled = PlayerPrefs.GetInt(PlayerPrefKeys.isGyroEnabled.ToString()) == 1;
+            //isGyroEnabled = PlayerPrefs.GetInt(PlayerPrefKeys.isGyroEnabled.ToString()) == 1;
             invertYEnabled = PlayerPrefs.GetInt(PlayerPrefKeys.invertYEnabled.ToString()) == 1;
 
             // Reset this everytime the player launches the game

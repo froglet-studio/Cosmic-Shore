@@ -28,7 +28,7 @@ namespace StarWriter.Core
         public delegate void OnPhoneFlipEvent(bool state);
         public static event OnPhoneFlipEvent onPhoneFlip;
 
-        public bool PhoneFlipState { get; private set; }
+        public bool PhoneFlipState;
 
         public ScreenOrientation currentOrientation;
 
@@ -91,26 +91,26 @@ namespace StarWriter.Core
             
             if (Gamepad.current != null)
             {
-                if (UnityEngine.InputSystem.Gamepad.current.rightTrigger.wasPressedThisFrame)
-                {
-                    GamepadCameraFlip = !GamepadCameraFlip;
-                    Debug.Log($"Gamepad Camera Flip {GamepadCameraFlip}");
-                }
+                //if (UnityEngine.InputSystem.Gamepad.current.rightShoulder.wasPressedThisFrame)
+                //{
+                //    GamepadCameraFlip = !GamepadCameraFlip;
+                //    Debug.Log($"Gamepad Camera Flip {GamepadCameraFlip}");
+                //}
             }
 
             //// We don't want the phone flip to flop like a fish out of water if the phone is mostly parallel to the ground
             //if (Mathf.Abs(UnityEngine.Input.acceleration.y) < phoneFlipThreshold) return;
 
-            if (UnityEngine.Input.acceleration.y < 0 || GamepadCameraFlip)
+            if (PhoneFlipState)
             {
                 currentOrientation = ScreenOrientation.LandscapeLeft;
-                PhoneFlipState = true;
+                //PhoneFlipState = true;
                 onPhoneFlip(PhoneFlipState);
             }
             else
             {
                 currentOrientation = ScreenOrientation.LandscapeRight;
-                PhoneFlipState = false;
+                //PhoneFlipState = false;
                 onPhoneFlip(PhoneFlipState);
             }
         }

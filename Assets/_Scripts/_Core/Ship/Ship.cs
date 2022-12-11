@@ -1,4 +1,5 @@
 using StarWriter.Core.Input;
+using StarWriter.Core;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -7,14 +8,28 @@ public class Ship : MonoBehaviour
 {
     [SerializeField] string Name;
     [SerializeField] public ShipTypes ShipType;
+    [SerializeField] public TrailSpawner TrailSpawner;
+    [SerializeField] public Skimmer skimmer;
     [SerializeField] GameObject AOEPrefab;
     [SerializeField] Player player;
-    [SerializeField] public TrailSpawner TrailSpawner;
     [SerializeField] List<CrystalImpactEffects> crystalImpactEffects;
     [SerializeField] List<TrailBlockImpactEffects> trailBlockImpactEffects;
 
+    [SerializeField] List<ActiveAbilities> fullSpeedStraightEffects;
+    [SerializeField] List<ActiveAbilities> rightStickEffects;
+    [SerializeField] List<ActiveAbilities> leftStickEffects;
+    [SerializeField] List<ActiveAbilities> flipEffects;
+
+    [SerializeField] List<PassiveAbilities> passiveEffects;
+
+    [SerializeField] float boostMultiplier = 4f;
+    [SerializeField] float boostFuelAmount = -.01f;
+    [SerializeField] float driftBoostDecay = 6f;
+    [SerializeField] float rotationScaler = 130;
+
     Teams team;
     ShipData shipData;
+    InputController inputController;
     private Material ShipMaterial;
     private List<ShipGeometry> shipGeometries = new List<ShipGeometry>();
 
@@ -42,6 +57,9 @@ public class Ship : MonoBehaviour
     public void Start()
     {
         shipData = GetComponent<ShipData>();
+        inputController = player.GetComponent<InputController>();
+        PerformShipPassiveEffects(passiveEffects);
+
     }
     void Update()
     {
@@ -97,6 +115,106 @@ public class Ship : MonoBehaviour
                 case TrailBlockImpactEffects.DeactivateTrailBlock:
                     break;
                 case TrailBlockImpactEffects.ActivateTrailBlock:
+                    break;
+            }
+        }
+    }
+
+    public void PerformFullSpeedStraightEffects()
+    {
+        PerformShipAbilitiesEffects(fullSpeedStraightEffects);
+    }
+    public void PerformRightStickEffectsEffects()
+    {
+        PerformShipAbilitiesEffects(rightStickEffects);
+    }
+    public void PerformLeftStickEffectsEffects()
+    {
+        PerformShipAbilitiesEffects(leftStickEffects);
+    }
+    public void StartFlipEffects()
+    {
+        PerformShipAbilitiesEffects(flipEffects);
+    }
+
+    public void StopFullSpeedStraightEffects()
+    {
+        StopShipAbilitiesEffects(fullSpeedStraightEffects);
+    }
+    public void StopRightStickEffectsEffects()
+    {
+        StopShipAbilitiesEffects(rightStickEffects);
+    }
+    public void StopLeftStickEffectsEffects()
+    {
+        StopShipAbilitiesEffects(leftStickEffects);
+    }
+    public void StopFlipEffects()
+    {
+        StopShipAbilitiesEffects(flipEffects);
+    }
+
+    void PerformShipAbilitiesEffects(List<ActiveAbilities> shipAbilities)
+    {
+        foreach (ActiveAbilities effect in shipAbilities)
+        {
+            switch (effect)
+            {
+                case ActiveAbilities.Drift:
+                    inputController.Drift(driftBoostDecay);
+                    break;
+                case ActiveAbilities.Boost:
+                    if (FuelSystem.CurrentFuel > 0)
+                    {
+                        inputController.BoostShip(boostMultiplier, boostFuelAmount); // TODO move fuel change out of inputController
+                        shipData.boost = true;
+                    }
+                    else StopFullSpeedStraightEffects(); // TODO this will stop other effects
+                    break;
+                case ActiveAbilities.Invulnerability:
+                    break;
+                case ActiveAbilities.ToggleCamera:
+                    GameManager.Instance.PhoneFlipState = true; // TODO: remove Game manager dependency
+                    break;
+            }
+        }
+    }
+
+    void StopShipAbilitiesEffects(List<ActiveAbilities> shipAbilities)
+    {
+        foreach (ActiveAbilities effect in shipAbilities)
+        {
+            switch (effect)
+            {
+                case ActiveAbilities.Drift:
+                    if (inputController.boostDecay > 0) inputController.ExitDrift();
+                    break;
+                case ActiveAbilities.Boost:
+                    shipData.boost = false;
+                    break;
+                case ActiveAbilities.Invulnerability:
+                    break;
+                case ActiveAbilities.ToggleCamera:
+                    GameManager.Instance.PhoneFlipState = false;
+                    break;
+            }
+        }
+    }
+
+    void PerformShipPassiveEffects(List<PassiveAbilities> passiveEffects)
+    {
+        foreach (PassiveAbilities effect in passiveEffects)
+        {
+            switch (effect)
+            {
+                case PassiveAbilities.TurnSpeed:
+                    inputController.rotationScaler = rotationScaler;
+                    break;
+                case PassiveAbilities.BlockThief:
+                    skimmer.thief = true;
+                    break;
+                case PassiveAbilities.BlockScout:
+
                     break;
             }
         }

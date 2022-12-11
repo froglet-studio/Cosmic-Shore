@@ -1,5 +1,6 @@
 using System.Collections;
 using UnityEngine;
+using static UnityEditor.ShaderGraph.Internal.KeywordDependentCollection;
 
 public enum EntityType
 {
@@ -18,6 +19,7 @@ public class AOEExplosion : MonoBehaviour
     [SerializeField] float ExplosionDuration = 2f;
     [SerializeField] float ExplosionDelay = .2f;
     [SerializeField] GameObject Geometry;
+    Material material;
 
     public float speed = 5f; // TODO: use the easing of the explosion to change this over time
     
@@ -32,6 +34,7 @@ public class AOEExplosion : MonoBehaviour
     {
         MaxScaleVector = new Vector3(MaxScale, MaxScale, MaxScale);
         StartCoroutine(ExplodeCoroutine());
+        material = Geometry.GetComponent<MeshRenderer>().material;
     }
 
     IEnumerator ExplodeCoroutine()
@@ -43,6 +46,7 @@ public class AOEExplosion : MonoBehaviour
         {
             elapsedTime += Time.deltaTime;
             transform.localScale = Vector3.Lerp(Vector3.zero, MaxScaleVector, Mathf.Sin((elapsedTime / ExplosionDuration) * PI_OVER_TWO));
+            material.SetFloat("_Opacity", Mathf.Clamp((MaxScaleVector - transform.localScale).magnitude/MaxScaleVector.magnitude, 0, 1));
             yield return null;
         }
 

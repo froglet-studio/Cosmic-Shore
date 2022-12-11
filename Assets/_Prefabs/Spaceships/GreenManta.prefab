@@ -367,12 +367,21 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Name: GreenManta
   ShipType: 1
+  TrailSpawner: {fileID: 874579555101021522}
   AOEPrefab: {fileID: 2728798890556433942, guid: 4a855af160021d241b8c1ac70cf2d792,
     type: 3}
   player: {fileID: 0}
-  TrailSpawner: {fileID: 874579555101021522}
   crystalImpactEffects: 000000000100000003000000
   trailBlockImpactEffects: 000000000300000002000000
+  fullSpeedStraightEffects: 01000000
+  rightStickEffects: 
+  leftStickEffects: 
+  flipEffects: 03000000
+  passiveEffects: 00000000
+  boostMultiplier: 2
+  boostFuelAmount: 0
+  driftBoostDecay: 0
+  rotationScaler: 70
 --- !u!114 &3440187540988767646
 MonoBehaviour:
   m_ObjectHideFlags: 0

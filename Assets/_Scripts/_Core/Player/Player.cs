@@ -9,6 +9,7 @@ public class Player : MonoBehaviour
     [SerializeField] string playerName;
     [SerializeField] string playerUUID;
     [SerializeField] Ship ship;
+    [SerializeField] Skimmer skimmer;
     [SerializeField] GameObject shipContainer;
 
     public Teams Team;
@@ -31,10 +32,7 @@ public class Player : MonoBehaviour
             shipInstance.GetComponent<AIPilot>().enabled = false;
 
             var inputController = GetComponent<InputController>();
-            inputController.shipTransform = shipInstance.transform;
-            inputController.shipData = shipInstance.GetComponent<ShipData>();
-            inputController.shipAnimation = shipInstance.GetComponent<ShipAnimation>();
-
+            inputController.ship = shipInstance;
             ship = shipInstance.GetComponent<Ship>();
             ship.Team = Team;
             ship.Player = this;
@@ -53,6 +51,8 @@ public class Player : MonoBehaviour
             ship = shipInstance.GetComponent<Ship>();
             ship.Team = Team;
             ship.Player = this;
+            skimmer.Player = this;
+            ship.skimmer= skimmer;
 
             gameManager.WaitOnAILoading(ship.GetComponent<AIPilot>());
         }

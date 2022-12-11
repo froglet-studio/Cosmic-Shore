@@ -18,7 +18,7 @@ public class FuelSystem : MonoBehaviour
     [SerializeField]
     [Range(0, 1)]
     static float maxFuel = 1f;
-    static float currentFuel;
+    static float currentFuel; // TODO: this should be part of ShipData
 
     [SerializeField]float rateOfFuelChange = -0.04f;
     #endregion
