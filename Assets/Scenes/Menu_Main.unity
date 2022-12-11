@@ -2635,9 +2635,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   PlayerTeam: 1
-  PlayerShipType: 1
-  PlayerTeammateShipType: 1
-  AI1ShipType: 2
+  PlayerShipType: 3
+  PlayerTeammateShipType: 0
+  AI1ShipType: 0
   AI2ShipType: 0
   PlayerShipName: Dolphin
   AIShipName: RedMantaAI

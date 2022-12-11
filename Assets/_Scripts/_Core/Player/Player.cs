@@ -31,9 +31,12 @@ public class Player : MonoBehaviour
             shipInstance.transform.SetParent(shipContainer.transform, false);
 
             var inputController = GetComponent<InputController>();
+            inputController.ship = shipInstance;
+
             inputController.shipTransform = shipInstance.transform;
 
             inputController.shipData = shipInstance.GetComponent<ShipData>();
+
 
 
             var shipAnimation = shipInstance.GetComponent<ShipAnimation>();

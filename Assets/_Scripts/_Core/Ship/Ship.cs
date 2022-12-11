@@ -1,4 +1,5 @@
 using StarWriter.Core.Input;
+using StarWriter.Core;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -7,11 +8,17 @@ public class Ship : MonoBehaviour
 {
     [SerializeField] string Name;
     [SerializeField] public ShipTypes ShipType;
+    [SerializeField] public TrailSpawner TrailSpawner;
     [SerializeField] GameObject AOEPrefab;
     [SerializeField] Player player;
-    [SerializeField] public TrailSpawner TrailSpawner;
     [SerializeField] List<CrystalImpactEffects> crystalImpactEffects;
     [SerializeField] List<TrailBlockImpactEffects> trailBlockImpactEffects;
+    [SerializeField] List<ShipAbilities> fullSpeedStraightEffects;
+    [SerializeField] List<ShipAbilities> rightStickEffects;
+    [SerializeField] List<ShipAbilities> leftStickEffects;
+    [SerializeField] List<ShipAbilities> flipEffects;
+
+    [SerializeField] float boostMultiplier;
 
     Teams team;
     ShipData shipData;
@@ -97,6 +104,81 @@ public class Ship : MonoBehaviour
                 case TrailBlockImpactEffects.DeactivateTrailBlock:
                     break;
                 case TrailBlockImpactEffects.ActivateTrailBlock:
+                    break;
+            }
+        }
+    }
+
+    public void StartFullSpeedStraightEffects()
+    {
+        StartShipAbilitiesEffects(fullSpeedStraightEffects);
+    }
+    public void StartRightStickEffectsEffects()
+    {
+        StartShipAbilitiesEffects(rightStickEffects);
+    }
+    public void StartLeftStickEffectsEffects()
+    {
+        StartShipAbilitiesEffects(leftStickEffects);
+    }
+    public void StartFlipEffects()
+    {
+        StartShipAbilitiesEffects(flipEffects);
+    }
+
+    public void StopFullSpeedStraightEffects()
+    {
+        StopShipAbilitiesEffects(fullSpeedStraightEffects);
+    }
+    public void StopRightStickEffectsEffects()
+    {
+        StopShipAbilitiesEffects(rightStickEffects);
+    }
+    public void StopLeftStickEffectsEffects()
+    {
+        StopShipAbilitiesEffects(leftStickEffects);
+    }
+    public void StopFlipEffects()
+    {
+        StopShipAbilitiesEffects(flipEffects);
+    }
+
+
+    void StartShipAbilitiesEffects(List<ShipAbilities> shipAbilities)
+    {
+        foreach (ShipAbilities effect in shipAbilities)
+        {
+            switch (effect)
+            {
+                case ShipAbilities.Drift:
+                    break;
+                case ShipAbilities.Boost:
+
+                    break;
+                case ShipAbilities.Invulnerability:
+                    break;
+                case ShipAbilities.ToggleCamera:
+                    GameManager.Instance.PhoneFlipState = true;
+                    break;
+            }
+        }
+    }
+
+    void StopShipAbilitiesEffects(List<ShipAbilities> shipAbilities)
+    {
+        foreach (ShipAbilities effect in shipAbilities)
+        {
+            switch (effect)
+            {
+                case ShipAbilities.Drift:
+                    break;
+                case ShipAbilities.Boost:
+
+                    break;
+                case ShipAbilities.Invulnerability:
+                    break;
+                case ShipAbilities.ToggleCamera:
+                    GameManager.Instance.PhoneFlipState = false;
                     break;
             }
         }
