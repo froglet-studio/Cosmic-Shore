@@ -122,7 +122,6 @@ namespace StarWriter.Core
             gameSettings.ChangeGyroEnabledStatus();
         }
 
-
         public void OnClickTutorialButton()
         {
             UnPauseGame();
@@ -130,49 +129,37 @@ namespace StarWriter.Core
             SceneManager.LoadScene(tutorialGameScene);
         }
 
-        public void OnClickPlayButton() //TODO make this general so you pass in the load scene
+        private void EnterGame(string scenename)
         {
             deathCount = 0;
             analyticsManager.LogLevelStart();
             UnPauseGame();
             ActiveGameScene = gameTestModeZeroGameScene;
-            SceneManager.LoadScene(gameTestModeZeroGameScene); 
+            SceneManager.LoadScene(scenename);
+        }
+        public void OnClickPlayButton() //TODO make this general so you pass in the load scene
+        {
+            EnterGame(gameTestModeZeroGameScene);
         }
 
         public void OnClickTestGameModeOne()
         {
-            deathCount = 0;
-            analyticsManager.LogLevelStart();
-            UnPauseGame();
-            ActiveGameScene = gameTestModeOneGameScene;
-            SceneManager.LoadScene(gameTestModeOneGameScene);
+            EnterGame(gameTestModeOneGameScene);
         }
 
         public void OnClickTestGameModeTwo()
         {
-            deathCount = 0;
-            analyticsManager.LogLevelStart();
-            UnPauseGame();
-            ActiveGameScene = gameTestModeTwoGameScene;
-            SceneManager.LoadScene(gameTestModeTwoGameScene);
+            EnterGame(gameTestModeTwoGameScene);
         }
 
         public void OnClickTestGameModeThree()
         {
-            deathCount = 0;
-            analyticsManager.LogLevelStart();
-            UnPauseGame();
-            ActiveGameScene = gameTestModeThreeGameScene;
-            SceneManager.LoadScene(gameTestModeThreeGameScene);
+            EnterGame(gameTestModeThreeGameScene);
         }
 
         public void OnClickTestGameModeFour()
         {
-            deathCount = 0;
-            analyticsManager.LogLevelStart();
-            UnPauseGame();
-            ActiveGameScene = gameTestModeFourGameScene;
-            SceneManager.LoadScene(gameTestModeFourGameScene);
+            EnterGame(gameTestModeFourGameScene);
         }
 
         public void OnClickHangar()
@@ -243,13 +230,14 @@ namespace StarWriter.Core
 
         public void WaitOnPlayerLoading()
         {
+
             onPlayGame?.Invoke();
         }
 
         public void WaitOnAILoading(AIPilot pilot)
         {
-            // TODO: we should rename muton to 'CrystalTransform'
-            pilot.muton = FindObjectOfType<Crystal>().transform;
+            // TODO: we should rename CrystalTransform to 'CrystalTransform'
+            pilot.CrystalTransform = FindObjectOfType<Crystal>().transform;
             pilot.flowFieldData = FindObjectOfType<FlowFieldData>();
         }
 

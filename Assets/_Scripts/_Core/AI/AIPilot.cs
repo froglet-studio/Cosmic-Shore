@@ -33,7 +33,7 @@ namespace StarWriter.Core.Input
         RaycastHit hit;
         float maxDistance = 50f;
 
-        [SerializeField] public Transform muton;    //TODO: stop serializing this, we need to load the ship in and wire it up dynamically
+        public Transform CrystalTransform;
         Vector3 distance;
 
         [SerializeField] public FlowFieldData flowFieldData;    //TODO: stop serializing this, we need to load the ship in and wire it up dynamically
@@ -79,7 +79,7 @@ namespace StarWriter.Core.Input
         void Update()
         {
             ///distance to Crystal 
-            distance = muton.position - transform.position;
+            distance = CrystalTransform.position - transform.position;
             
             ///rotate toward Crystal
             transform.localRotation = Quaternion.Lerp(transform.localRotation,
