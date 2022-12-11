@@ -32,15 +32,7 @@ public class Player : MonoBehaviour
 
             var inputController = GetComponent<InputController>();
             inputController.ship = shipInstance;
-
-            inputController.shipTransform = shipInstance.transform;
-
-            inputController.shipData = shipInstance.GetComponent<ShipData>();
-
-
-
-            var shipAnimation = shipInstance.GetComponent<ShipAnimation>();
-            inputController.shipAnimation = shipAnimation;
+            
 
             shipInstance.GetComponent<AIPilot>().enabled = false;
 

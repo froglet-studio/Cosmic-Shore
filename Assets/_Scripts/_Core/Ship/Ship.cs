@@ -18,10 +18,13 @@ public class Ship : MonoBehaviour
     [SerializeField] List<ShipAbilities> leftStickEffects;
     [SerializeField] List<ShipAbilities> flipEffects;
 
-    [SerializeField] float boostMultiplier;
+    [SerializeField] float boostMultiplier = 4f;
+    [SerializeField] float boostFuelAmount = -.01f;
+    [SerializeField] float driftBoostDecay = 6f;
 
     Teams team;
     ShipData shipData;
+    InputController inputController;
     private Material ShipMaterial;
     private List<ShipGeometry> shipGeometries = new List<ShipGeometry>();
 
@@ -49,6 +52,7 @@ public class Ship : MonoBehaviour
     public void Start()
     {
         shipData = GetComponent<ShipData>();
+        inputController = player.GetComponent<InputController>();
     }
     void Update()
     {
@@ -109,21 +113,21 @@ public class Ship : MonoBehaviour
         }
     }
 
-    public void StartFullSpeedStraightEffects()
+    public void PerformFullSpeedStraightEffects()
     {
-        StartShipAbilitiesEffects(fullSpeedStraightEffects);
+        PerformShipAbilitiesEffects(fullSpeedStraightEffects);
     }
-    public void StartRightStickEffectsEffects()
+    public void PerformRightStickEffectsEffects()
     {
-        StartShipAbilitiesEffects(rightStickEffects);
+        PerformShipAbilitiesEffects(rightStickEffects);
     }
-    public void StartLeftStickEffectsEffects()
+    public void PerformLeftStickEffectsEffects()
     {
-        StartShipAbilitiesEffects(leftStickEffects);
+        PerformShipAbilitiesEffects(leftStickEffects);
     }
     public void StartFlipEffects()
     {
-        StartShipAbilitiesEffects(flipEffects);
+        PerformShipAbilitiesEffects(flipEffects);
     }
 
     public void StopFullSpeedStraightEffects()
@@ -144,21 +148,27 @@ public class Ship : MonoBehaviour
     }
 
 
-    void StartShipAbilitiesEffects(List<ShipAbilities> shipAbilities)
+    void PerformShipAbilitiesEffects(List<ShipAbilities> shipAbilities)
     {
         foreach (ShipAbilities effect in shipAbilities)
         {
             switch (effect)
             {
                 case ShipAbilities.Drift:
+                    inputController.Drift(driftBoostDecay);
                     break;
                 case ShipAbilities.Boost:
-
+                    if (FuelSystem.CurrentFuel > 0)
+                    {
+                        inputController.BoostShip(boostMultiplier, boostFuelAmount); // TODO move fuel change out of inputController
+                        shipData.boost = true;
+                    }
+                    else StopFullSpeedStraightEffects();
                     break;
                 case ShipAbilities.Invulnerability:
                     break;
                 case ShipAbilities.ToggleCamera:
-                    GameManager.Instance.PhoneFlipState = true;
+                    GameManager.Instance.PhoneFlipState = true; // TODO: remove Game manager dependency
                     break;
             }
         }
@@ -171,9 +181,10 @@ public class Ship : MonoBehaviour
             switch (effect)
             {
                 case ShipAbilities.Drift:
+                    if (inputController.boostDecay > 0) inputController.ExitDrift();
                     break;
                 case ShipAbilities.Boost:
-
+                    shipData.boost = false;
                     break;
                 case ShipAbilities.Invulnerability:
                     break;
