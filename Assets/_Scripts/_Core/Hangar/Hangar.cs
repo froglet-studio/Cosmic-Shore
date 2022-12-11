@@ -30,7 +30,6 @@ namespace StarWriter.Core.HangerBuilder
         Teams AITeam;
 
         public Ship selectedShip { get; private set; }
-
         public int BayIndex { get => SelectedBayIndex; }
 
         private void Start()
@@ -54,7 +53,6 @@ namespace StarWriter.Core.HangerBuilder
         }
         public Ship LoadPlayerShip()
         {
-            //return Instantiate(ships[PlayerShipName]);
             return Instantiate(shipTypeMap[PlayerShipType]);
         }
         public Ship LoadPlayerTeammateShip()

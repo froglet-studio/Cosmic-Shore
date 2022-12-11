@@ -28,6 +28,7 @@ public class Gun : MonoBehaviour
         StartCoroutine(MoveProjectileCoroutine(projectile));
         StartCoroutine(CooldownCoroutine());
     }
+
     IEnumerator CooldownCoroutine()
     {
         yield return new WaitForSeconds(firePeriod);
