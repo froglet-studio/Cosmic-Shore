@@ -19,7 +19,7 @@ class DolphinAnimation : ShipAnimation
     [SerializeField] Transform RightTail;
 
     [SerializeField] float animationScaler = 25f;
-    [SerializeField] float yawAnimationScaler = 80f;
+    [SerializeField] float yawAnimationScaler = 60f;
     [SerializeField] float lerpAmount = 2f;
     [SerializeField] float smallLerpAmount = .7f;
 
@@ -49,19 +49,19 @@ class DolphinAnimation : ShipAnimation
                     roll * animationScaler);
 
         AnimatePart(TailEnd,
-                    0,
-                    yaw * yawAnimationScaler,
-                    0);
+                    -pitch * animationScaler,
+                    yaw * animationScaler,
+                    roll * animationScaler);
 
         AnimatePart(LeftTail,
-                    0,
-                    yaw * yawAnimationScaler,
-                    0);
+                    -pitch * animationScaler,
+                    yaw * animationScaler,
+                    roll * animationScaler);
 
         AnimatePart(RightTail,
-                    0,
-                    yaw * yawAnimationScaler,
-                    0);
+                    -pitch * animationScaler,
+                    yaw * animationScaler,
+                    roll * animationScaler);
     }
 
     public override void Idle()

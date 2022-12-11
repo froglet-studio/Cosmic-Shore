@@ -9,7 +9,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 7338564917182643040}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: TailStart
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -46,7 +46,7 @@ GameObject:
   - component: {fileID: 2100043152315436097}
   - component: {fileID: 1291222147976488378}
   - component: {fileID: 6484635186119048356}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: RightWing
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -173,7 +173,7 @@ GameObject:
   - component: {fileID: 4351505211611878148}
   - component: {fileID: 3138748978525211090}
   - component: {fileID: 7105874488655566022}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: LeftTail
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -283,7 +283,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 6578901157774687055}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: LeftTail
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -320,7 +320,7 @@ GameObject:
   - component: {fileID: 3718266842472452450}
   - component: {fileID: 2265179341715976661}
   - component: {fileID: 1575042033869308829}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: TailStart
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -447,7 +447,7 @@ GameObject:
   - component: {fileID: 3021131876590485937}
   - component: {fileID: 6933307267220691511}
   - component: {fileID: 6823490476796747025}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: TailEnd
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -562,7 +562,7 @@ GameObject:
   - component: {fileID: 5360513500110400407}
   - component: {fileID: 2603888210720923949}
   - component: {fileID: 5984091817235662159}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: DorsalFin
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -793,6 +793,7 @@ MonoBehaviour:
   Name: Dolphin
   ShipType: 3
   TrailSpawner: {fileID: 874579555101021522}
+  skimmer: {fileID: 0}
   AOEPrefab: {fileID: 2728798890556433942, guid: 4a855af160021d241b8c1ac70cf2d792,
     type: 3}
   player: {fileID: 0}
@@ -802,9 +803,11 @@ MonoBehaviour:
   rightStickEffects: 00000000
   leftStickEffects: 00000000
   flipEffects: 03000000
+  passiveEffects: 
   boostMultiplier: 4
   boostFuelAmount: -0.01
   driftBoostDecay: 6
+  rotationScaler: 130
 --- !u!114 &3440187540988767646
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -860,7 +863,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 6642230746651385217}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: TailEnd
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -892,7 +895,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 7918529821298379185}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: RightTail
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -929,7 +932,7 @@ GameObject:
   - component: {fileID: 7868708236497552480}
   - component: {fileID: 4458220980870840549}
   - component: {fileID: 8267400746743433992}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: LeftWing
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1056,7 +1059,7 @@ GameObject:
   - component: {fileID: 806450572131708929}
   - component: {fileID: 4008953167173299489}
   - component: {fileID: 8825121340288137215}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: RightTail
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1171,7 +1174,7 @@ GameObject:
   - component: {fileID: 2985035825714547446}
   - component: {fileID: 172272221538144058}
   - component: {fileID: 1170807938846233775}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Fusilage
   m_TagString: Untagged
   m_Icon: {fileID: 0}
