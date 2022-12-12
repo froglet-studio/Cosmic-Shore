@@ -22,8 +22,11 @@ namespace StarWriter.Core.Input
         float phoneFlipThreshold = .1f;
 
         [SerializeField] bool driftEnabled = false;
-        bool drifting = false;
+        public bool drifting = false;
         public float boostDecay = 0;
+
+        bool LeftStickEffectsStopped = true;
+        bool RightStickEffectsStopped = true;
 
         float speed;
 
@@ -125,16 +128,14 @@ namespace StarWriter.Core.Input
 
             // Move ship velocityDirection
             shipData.inputSpeed = speed;
-            shipTransform.position += shipData.speed * Time.deltaTime * shipTransform.forward;
             
             if (!drifting)
             {
+                shipTransform.position += shipData.speed * Time.deltaTime * shipTransform.forward;
                 shipData.velocityDirection = shipTransform.forward;
                 shipData.blockRotation = shipTransform.rotation;
             }
         }
-
-        
 
         private void RotateShip()
         {
@@ -182,11 +183,27 @@ namespace StarWriter.Core.Input
 
                 if (Gamepad.current.rightShoulder.wasPressedThisFrame && !GameManager.Instance.PhoneFlipState) ship.StartFlipEffects();
                 else if (Gamepad.current.rightShoulder.wasPressedThisFrame && GameManager.Instance.PhoneFlipState) ship.StopFlipEffects();
-            
-                if (Gamepad.current.leftTrigger.isPressed) ship.PerformLeftStickEffectsEffects();
-                if (Gamepad.current.rightTrigger.isPressed) ship.PerformRightStickEffectsEffects();
-                if (!Gamepad.current.leftTrigger.isPressed) ship.StopLeftStickEffectsEffects();
-                if (!Gamepad.current.rightTrigger.isPressed) ship.StopRightStickEffectsEffects(); // TODO: decouple triggers
+
+                if (Gamepad.current.leftTrigger.isPressed)
+                {
+                    LeftStickEffectsStopped = false;
+                    ship.PerformLeftStickEffectsEffects();
+                }
+                if (Gamepad.current.rightTrigger.isPressed)
+                {
+                    RightStickEffectsStopped = false;
+                    ship.PerformRightStickEffectsEffects();
+                }
+                if (Gamepad.current.leftTrigger.wasReleasedThisFrame) 
+                {
+                    LeftStickEffectsStopped = true;
+                    ship.StopLeftStickEffects(); 
+                }
+                if (Gamepad.current.rightTrigger.wasReleasedThisFrame)
+                {
+                    RightStickEffectsStopped = true;
+                    ship.StopRightStickEffects();
+                }
 
                 Pitch(ySum);
                 Yaw(xSum);
@@ -254,10 +271,18 @@ namespace StarWriter.Core.Input
                     Yaw(xSum);
                     Roll(yDiff);
 
-                    ship.StopLeftStickEffectsEffects();
-                    ship.StopRightStickEffectsEffects();
+                    if (!LeftStickEffectsStopped)
+                    {
+                        LeftStickEffectsStopped = true;
+                        ship.StopLeftStickEffects();
+                    }
+                    if (!RightStickEffectsStopped)
+                    {
+                        RightStickEffectsStopped = true;
+                        ship.StopRightStickEffects();
+                    }
 
-                    if (boostDecay <= 0) CheckThrottle(ySum, xSum, yDiff, xDiff);
+                    if (boostDecay <= 0 && !drifting) CheckThrottle(ySum, xSum, yDiff, xDiff);
 
                     shipAnimation.PerformShipAnimations(ySum, xSum, yDiff, xDiff);
                 }
@@ -277,11 +302,13 @@ namespace StarWriter.Core.Input
                         if (Vector2.Distance(leftTouch, position) < Vector2.Distance(rightTouch, position))
                         {
                             leftTouch = position;
+                            LeftStickEffectsStopped = false;
                             ship.PerformLeftStickEffectsEffects();
                         }
                         else
                         {
                             rightTouch = position;
+                            RightStickEffectsStopped = false;
                             ship.PerformRightStickEffectsEffects();
                         }
 
@@ -309,27 +336,24 @@ namespace StarWriter.Core.Input
                 ySum *= -1;
         }
 
-        public void Drift(float driftBoostDecay)
+        public void Drift()
         {
-            if (!drifting)
-            {
-                shipData.velocityDirection = shipTransform.forward;
-                shipData.blockRotation = shipTransform.rotation;
-            }
-            speed = Mathf.Lerp(speed, xDiff * throttleScaler + defaultThrottle, lerpAmount * Time.deltaTime);
-            shipTransform.position -= speed * Time.deltaTime * shipTransform.forward;
-            shipTransform.position += speed * Time.deltaTime * shipData.velocityDirection;
-            boostDecay = driftBoostDecay;
             drifting = true;
+            speed = Mathf.Lerp(speed, xDiff * throttleScaler + defaultThrottle, lerpAmount * Time.deltaTime);
+            shipTransform.position += speed * Time.deltaTime * shipData.velocityDirection;
+            boostDecay += .03f;
         }
 
-        public void ExitDrift()
+        public IEnumerator DecayingBoost()
         {
-            drifting = false;
-            boostDecay -= Time.deltaTime;
-            speed = Mathf.Lerp(speed, xDiff * throttleScaler * boostDecay + defaultThrottle, lerpAmount * Time.deltaTime);
-            shipData.velocityDirection = shipTransform.forward;
-            shipData.blockRotation = shipTransform.rotation;
+            if (boostDecay > 10) boostDecay = 10;
+            while (boostDecay > 0)
+            {
+                boostDecay -= Time.deltaTime;
+                speed = Mathf.Lerp(speed, xDiff * throttleScaler * boostDecay + defaultThrottle, lerpAmount * Time.deltaTime);
+                if (boostDecay <= 1) boostDecay = 0;
+                yield return null;
+            }  
         }
 
         private void Yaw(float Xsum)  // These need to not use *= ... remember quaternions are not commutative
@@ -356,7 +380,6 @@ namespace StarWriter.Core.Input
 
         private void CheckThrottle(float ySum, float xSum, float yDiff, float xDiff)
         {
-
             float threshold = .3f;
             float value = (1 - xDiff) + Mathf.Abs(yDiff) + Mathf.Abs(ySum) + Mathf.Abs(xSum);
 

@@ -19,7 +19,7 @@ class DolphinAnimation : ShipAnimation
     [SerializeField] Transform RightTail;
 
     [SerializeField] float animationScaler = 25f;
-    [SerializeField] float yawAnimationScaler = 60f;
+    [SerializeField] float yawAnimationScaler = 40f;
     [SerializeField] float lerpAmount = 2f;
     [SerializeField] float smallLerpAmount = .7f;
 
@@ -69,6 +69,10 @@ class DolphinAnimation : ShipAnimation
         LeftWing.localRotation = Quaternion.Lerp(LeftWing.localRotation, Quaternion.identity, smallLerpAmount * Time.deltaTime);
         RightWing.localRotation = Quaternion.Lerp(RightWing.localRotation, Quaternion.identity, smallLerpAmount * Time.deltaTime);
         Fusilage.localRotation = Quaternion.Lerp(Fusilage.localRotation, Quaternion.identity, smallLerpAmount * Time.deltaTime);
+        TailStart.localRotation = Quaternion.Lerp(TailStart.localRotation, Quaternion.identity, smallLerpAmount * Time.deltaTime);
+        TailEnd.localRotation = Quaternion.Lerp(TailEnd.localRotation, Quaternion.identity, smallLerpAmount * Time.deltaTime);
+        LeftTail.localRotation = Quaternion.Lerp(LeftTail.localRotation, Quaternion.identity, smallLerpAmount * Time.deltaTime);
+        RightTail.localRotation = Quaternion.Lerp(RightTail.localRotation, Quaternion.identity, smallLerpAmount * Time.deltaTime);
     }
 
     void AnimatePart(Transform part, float partPitch, float partYaw, float partRoll)

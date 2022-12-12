@@ -2,10 +2,15 @@ using StarWriter.Core.Input;
 using StarWriter.Core;
 using System.Collections.Generic;
 using UnityEngine;
+using Mono.Cecil.Cil;
 
 [RequireComponent(typeof(TrailSpawner))]
 public class Ship : MonoBehaviour
 {
+    public delegate void TrailCollision(string uuid, float amount);
+    public static event TrailCollision OnTrailCollision;
+
+
     [SerializeField] string Name;
     [SerializeField] public ShipTypes ShipType;
     [SerializeField] public TrailSpawner TrailSpawner;
@@ -24,8 +29,9 @@ public class Ship : MonoBehaviour
 
     [SerializeField] float boostMultiplier = 4f;
     [SerializeField] float boostFuelAmount = -.01f;
-    [SerializeField] float driftBoostDecay = 6f;
     [SerializeField] float rotationScaler = 130;
+    [SerializeField] GameObject head;
+    bool invulnerable;
 
     Teams team;
     ShipData shipData;
@@ -108,6 +114,7 @@ public class Ship : MonoBehaviour
                     HapticController.PlayBlockCollisionHaptics();
                     break;
                 case TrailBlockImpactEffects.DrainFuel:
+                    //OnTrailCollision?.Invoke(ownerId, fuelChange);
                     break;
                 case TrailBlockImpactEffects.DebuffSpeed:
                     SpeedModifiers.Add(new SpeedModifier(trailBlockProperties.speedDebuffAmount, speedModifierDuration, 0));
@@ -115,6 +122,10 @@ public class Ship : MonoBehaviour
                 case TrailBlockImpactEffects.DeactivateTrailBlock:
                     break;
                 case TrailBlockImpactEffects.ActivateTrailBlock:
+                    break;
+                case TrailBlockImpactEffects.OnlyBuffSpeed:
+                    if (trailBlockProperties.speedDebuffAmount < 1) SpeedModifiers.Add(new SpeedModifier(1/trailBlockProperties.speedDebuffAmount, speedModifierDuration, 0));
+                    else SpeedModifiers.Add(new SpeedModifier(trailBlockProperties.speedDebuffAmount, speedModifierDuration, 0));
                     break;
             }
         }
@@ -141,11 +152,11 @@ public class Ship : MonoBehaviour
     {
         StopShipAbilitiesEffects(fullSpeedStraightEffects);
     }
-    public void StopRightStickEffectsEffects()
+    public void StopRightStickEffects()
     {
         StopShipAbilitiesEffects(rightStickEffects);
     }
-    public void StopLeftStickEffectsEffects()
+    public void StopLeftStickEffects()
     {
         StopShipAbilitiesEffects(leftStickEffects);
     }
@@ -161,7 +172,7 @@ public class Ship : MonoBehaviour
             switch (effect)
             {
                 case ActiveAbilities.Drift:
-                    inputController.Drift(driftBoostDecay);
+                    inputController.Drift();
                     break;
                 case ActiveAbilities.Boost:
                     if (FuelSystem.CurrentFuel > 0)
@@ -172,6 +183,13 @@ public class Ship : MonoBehaviour
                     else StopFullSpeedStraightEffects(); // TODO this will stop other effects
                     break;
                 case ActiveAbilities.Invulnerability:
+                    if (!invulnerable)
+                    {
+                        invulnerable = true;
+                        trailBlockImpactEffects.Remove(TrailBlockImpactEffects.DebuffSpeed);
+                        trailBlockImpactEffects.Add(TrailBlockImpactEffects.OnlyBuffSpeed);
+                    }
+                    head.transform.localScale *= 1.01f;
                     break;
                 case ActiveAbilities.ToggleCamera:
                     GameManager.Instance.PhoneFlipState = true; // TODO: remove Game manager dependency
@@ -187,12 +205,17 @@ public class Ship : MonoBehaviour
             switch (effect)
             {
                 case ActiveAbilities.Drift:
-                    if (inputController.boostDecay > 0) inputController.ExitDrift();
+                    inputController.drifting = false;
+                    StartCoroutine(inputController.DecayingBoost());
                     break;
                 case ActiveAbilities.Boost:
                     shipData.boost = false;
                     break;
                 case ActiveAbilities.Invulnerability:
+                    invulnerable = false;
+                    trailBlockImpactEffects.Add(TrailBlockImpactEffects.DebuffSpeed);
+                    trailBlockImpactEffects.Remove(TrailBlockImpactEffects.OnlyBuffSpeed);
+                    head.transform.localScale = Vector3.one;
                     break;
                 case ActiveAbilities.ToggleCamera:
                     GameManager.Instance.PhoneFlipState = false;
@@ -214,7 +237,6 @@ public class Ship : MonoBehaviour
                     skimmer.thief = true;
                     break;
                 case PassiveAbilities.BlockScout:
-
                     break;
             }
         }

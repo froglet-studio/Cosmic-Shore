@@ -155,7 +155,7 @@ public class Trail : MonoBehaviour
 
             // TODO: currently AI fuel levels are not impacted when they collide with a trail
             // TODO: use PerformBlockImpactEffects
-            OnTrailCollision?.Invoke(ownerId, fuelChange);
+            //OnTrailCollision?.Invoke(ownerId, fuelChange);
             
             ship.PerformTrailBlockImpactEffects(trailBlockProperties);
         }

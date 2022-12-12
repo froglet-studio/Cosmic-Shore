@@ -5,4 +5,5 @@ public enum TrailBlockImpactEffects
     DebuffSpeed,
     DeactivateTrailBlock,
     ActivateTrailBlock,
+    OnlyBuffSpeed
 }

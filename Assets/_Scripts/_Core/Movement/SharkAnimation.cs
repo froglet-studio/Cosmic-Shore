@@ -30,13 +30,13 @@ class SharkAnimation : ShipAnimation
 
         AnimatePart(LeftWing,
                     Brake(throttle) * yawAnimationScaler,
-                    -(throttle - yaw) * yawAnimationScaler,
+                    0,
                     (roll + pitch) * animationScaler);
                     
 
         AnimatePart(RightWing,
                     Brake(throttle) * yawAnimationScaler,
-                    (throttle + yaw) * yawAnimationScaler,
+                    0,
                     (roll - pitch) * animationScaler);
 
         AnimatePart(Head,
@@ -45,9 +45,9 @@ class SharkAnimation : ShipAnimation
                     roll * animationScaler);
 
         AnimatePart(Tail,
-                    0,
-                    yaw * yawAnimationScaler,
-                    0);
+                    -pitch * animationScaler,
+                    yaw * animationScaler,
+                    roll * animationScaler);
     }
 
     public override void Idle()
