@@ -27,6 +27,7 @@ namespace StarWriter.Core.Input
 
         bool LeftStickEffectsStopped = true;
         bool RightStickEffectsStopped = true;
+        bool FullSpeedStraightEffectsStopped = true;
 
         float speed;
 
@@ -386,10 +387,16 @@ namespace StarWriter.Core.Input
             if (value < threshold)
             {
                 ship.PerformFullSpeedStraightEffects();
+                FullSpeedStraightEffectsStopped = false;
             }
             else
             {
-                ship.StopFullSpeedStraightEffects();
+                if (!FullSpeedStraightEffectsStopped)
+                {
+                    FullSpeedStraightEffectsStopped = true;
+                    ship.StopFullSpeedStraightEffects();
+                }
+                
                 Throttle();
             }
         }

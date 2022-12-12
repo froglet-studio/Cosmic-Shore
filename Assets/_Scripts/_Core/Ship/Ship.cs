@@ -189,7 +189,7 @@ public class Ship : MonoBehaviour
                         trailBlockImpactEffects.Remove(TrailBlockImpactEffects.DebuffSpeed);
                         trailBlockImpactEffects.Add(TrailBlockImpactEffects.OnlyBuffSpeed);
                     }
-                    head.transform.localScale *= 1.01f;
+                    head.transform.localScale *= 1.02f;
                     break;
                 case ActiveAbilities.ToggleCamera:
                     GameManager.Instance.PhoneFlipState = true; // TODO: remove Game manager dependency

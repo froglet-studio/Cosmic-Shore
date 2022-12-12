@@ -19,7 +19,8 @@ class DolphinAnimation : ShipAnimation
     [SerializeField] Transform RightTail;
 
     [SerializeField] float animationScaler = 25f;
-    [SerializeField] float yawAnimationScaler = 40f;
+    [SerializeField] float yawAnimationScaler = 15f;
+    [SerializeField] float rollAnimationScaler = 15f;
     [SerializeField] float lerpAmount = 2f;
     [SerializeField] float smallLerpAmount = .7f;
 
@@ -35,13 +36,13 @@ class DolphinAnimation : ShipAnimation
         AnimatePart(LeftWing,
                     Brake(throttle) * yawAnimationScaler,
                     -(throttle - yaw) * yawAnimationScaler,
-                    (roll + pitch) * animationScaler);
+                    (roll + pitch) * rollAnimationScaler);
                     
 
         AnimatePart(RightWing,
                     Brake(throttle) * yawAnimationScaler,
                     (throttle + yaw) * yawAnimationScaler,
-                    (roll - pitch) * animationScaler);
+                    (roll - pitch) * rollAnimationScaler);
 
         AnimatePart(TailStart,
                     -pitch * animationScaler,

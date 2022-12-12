@@ -797,7 +797,7 @@ MonoBehaviour:
   AOEPrefab: {fileID: 2728798890556433942, guid: 4a855af160021d241b8c1ac70cf2d792,
     type: 3}
   player: {fileID: 0}
-  crystalImpactEffects: 000000000100000003000000
+  crystalImpactEffects: 0000000003000000
   trailBlockImpactEffects: 000000000300000002000000
   fullSpeedStraightEffects: 
   rightStickEffects: 00000000
@@ -806,8 +806,8 @@ MonoBehaviour:
   passiveEffects: 00000000
   boostMultiplier: 4
   boostFuelAmount: -0.01
-  driftBoostDecay: 6
   rotationScaler: 200
+  head: {fileID: 0}
 --- !u!114 &3440187540988767646
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -850,8 +850,9 @@ MonoBehaviour:
   TailEnd: {fileID: 6642230746651385217}
   LeftTail: {fileID: 6578901157774687055}
   RightTail: {fileID: 7918529821298379185}
-  animationScaler: 25
-  yawAnimationScaler: 80
+  animationScaler: 15
+  yawAnimationScaler: 60
+  rollAnimationScaler: 15
   lerpAmount: 2
   smallLerpAmount: 0.7
 --- !u!1 &7056368880709611073
@@ -1273,7 +1274,7 @@ BoxCollider:
   m_IsTrigger: 0
   m_Enabled: 1
   serializedVersion: 2
-  m_Size: {x: 1, y: 1, z: 1}
+  m_Size: {x: -0.62, y: 0.66, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
 --- !u!114 &1170807938846233775
 MonoBehaviour:
