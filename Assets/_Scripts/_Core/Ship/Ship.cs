@@ -125,10 +125,10 @@ public class Ship : MonoBehaviour
                 case CrystalImpactEffects.AreaOfEffectExplosion:
                     // Spawn AOE explosion
                     // TODO: add position to crystal properties? use crystal properties to set position
-                    var AOEExplosion = Instantiate(AOEPrefab);
-                    AOEExplosion.GetComponent<AOEExplosion>().Team = team;
+                    var AOEExplosion = Instantiate(AOEPrefab).GetComponent<AOEExplosion>();
+                    AOEExplosion.Team = team;
                     AOEExplosion.transform.position = transform.position;
-                    AOEExplosion.GetComponent<AOEExplosion>().MaxScale = FuelSystem.CurrentFuel * maxExplosionScale;
+                    AOEExplosion.MaxScale = FuelSystem.CurrentFuel * maxExplosionScale;
                     break;
                 case CrystalImpactEffects.FillFuel:
                     FuelSystem.ChangeFuelAmount(player.PlayerUUID, crystalProperties.fuelAmount);
@@ -169,9 +169,7 @@ public class Ship : MonoBehaviour
                 case TrailBlockImpactEffects.ActivateTrailBlock:
                     break;
                 case TrailBlockImpactEffects.OnlyBuffSpeed:
-                    //if (trailBlockProperties.speedDebuffAmount < 1) SpeedModifiers.Add(new SpeedModifier(1 - trailBlockProperties.speedDebuffAmount, speedModifierDuration, 0));
                     if (trailBlockProperties.speedDebuffAmount > 1) SpeedModifiers.Add(new SpeedModifier(trailBlockProperties.speedDebuffAmount, speedModifierDuration, 0));
-                    //else SpeedModifiers.Add(new SpeedModifier(trailBlockProperties.speedDebuffAmount, speedModifierDuration, 0));
                     break;
                 case TrailBlockImpactEffects.ChangeFuel:
                     FuelSystem.ChangeFuelAmount(player.PlayerUUID, blockFuelChange);
@@ -227,7 +225,7 @@ public class Ship : MonoBehaviour
                     if (FuelSystem.CurrentFuel > 0)
                     {
                         inputController.BoostShip(boostMultiplier, boostFuelAmount); // TODO move fuel change out of inputController
-                        shipData.boost = true;
+                        shipData.boost = true; // TODO make a block change ability instead
                     }
                     else StopFullSpeedStraightEffects(); // TODO this will stop other effects
                     break;
@@ -238,7 +236,7 @@ public class Ship : MonoBehaviour
                         trailBlockImpactEffects.Remove(TrailBlockImpactEffects.DebuffSpeed);
                         trailBlockImpactEffects.Add(TrailBlockImpactEffects.OnlyBuffSpeed);
                     }
-                    head.transform.localScale *= 1.02f;
+                    head.transform.localScale *= 1.02f; // TODO make this its own ability 
                     break;
                 case ActiveAbilities.ToggleCamera:
                     GameManager.Instance.PhoneFlipState = true; // TODO: remove Game manager dependency
@@ -259,7 +257,7 @@ public class Ship : MonoBehaviour
             {
                 case ActiveAbilities.Drift:
                     inputController.drifting = false;
-                    StartCoroutine(inputController.DecayingBoostCoroutine());
+                    StartCoroutine(inputController.DecayingBoostCoroutine()); // TODO wrap the coroutine so it isn't called here directly
                     break;
                 case ActiveAbilities.Boost:
                     shipData.boost = false;

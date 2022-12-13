@@ -2,14 +2,6 @@ using System.Collections;
 using UnityEngine;
 using static UnityEditor.ShaderGraph.Internal.KeywordDependentCollection;
 
-public enum EntityType
-{
-    Ship,
-    TrailBlock,
-    Explosion,
-    Skimmer,
-    Crystal,
-}
 
 // TODO: namespace
 // TODO: add IBlockImpact interface
