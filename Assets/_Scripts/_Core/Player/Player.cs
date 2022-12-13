@@ -2,6 +2,7 @@
 using StarWriter.Core;
 using StarWriter.Core.HangerBuilder;
 using StarWriter.Core.Input;
+using System.Collections.Generic;
 
 [System.Serializable]
 public class Player : MonoBehaviour
@@ -58,4 +59,23 @@ public class Player : MonoBehaviour
             gameManager.WaitOnAILoading(ship.GetComponent<AIPilot>());
         }
     }
+
+    public Ship[] LoadSecondShip(ShipTypes PlayerShipType)
+    {
+        Ship shipInstance2 = Hangar.Instance.LoadSecondPlayerShip(PlayerShipType);
+        shipInstance2.transform.SetParent(shipContainer.transform, false);
+        shipInstance2.GetComponent<AIPilot>().enabled = false;
+
+        var inputController = GetComponent<InputController>();
+        inputController.ship = shipInstance2;
+        ship = shipInstance2.GetComponent<Ship>();
+        ship.Team = Team;
+        ship.Player = this;
+        //skimmer.Player = this;
+        ship.skimmer = skimmer;
+        shipInstance2.enabled = false;
+        Ship[] ships = new Ship[] { ship, shipInstance2 };
+        return ships;
+    }
+
 }

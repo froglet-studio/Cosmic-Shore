@@ -15,7 +15,7 @@ public enum EntityType
 // TODO: add IBlockImpact interface
 public class AOEExplosion : MonoBehaviour
 {
-    [SerializeField] float MaxScale = 200f;
+    [SerializeField] public float MaxScale = 200f;
     [SerializeField] float ExplosionDuration = 2f;
     [SerializeField] float ExplosionDelay = .2f;
     [SerializeField] GameObject Geometry;

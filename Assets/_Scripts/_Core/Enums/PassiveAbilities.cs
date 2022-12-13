@@ -3,5 +3,9 @@ public enum PassiveAbilities
 {
     TurnSpeed,
     BlockThief,
-    BlockScout
+    BlockScout,
+    CloseCam,
+    FarCam,
+    SecondMode,
+    SpeedBasedTurning
 }

@@ -55,6 +55,10 @@ namespace StarWriter.Core.HangerBuilder
         {
             return Instantiate(shipTypeMap[PlayerShipType]);
         }
+        public Ship LoadSecondPlayerShip(ShipTypes PlayerShipType)
+        {
+            return Instantiate(shipTypeMap[PlayerShipType]);
+        }
         public Ship LoadPlayerTeammateShip()
         {
             return Instantiate(shipTypeMap[PlayerTeammateShipType]);

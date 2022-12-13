@@ -797,17 +797,23 @@ MonoBehaviour:
   AOEPrefab: {fileID: 2728798890556433942, guid: 4a855af160021d241b8c1ac70cf2d792,
     type: 3}
   player: {fileID: 0}
-  crystalImpactEffects: 0000000003000000
-  trailBlockImpactEffects: 000000000300000002000000
+  crystalImpactEffects: 000000000400000002000000
+  trailBlockImpactEffects: 00000000030000000200000001000000
   fullSpeedStraightEffects: 
   rightStickEffects: 00000000
   leftStickEffects: 00000000
   flipEffects: 03000000
-  passiveEffects: 00000000
+  passiveEffects: 0000000006000000
   boostMultiplier: 4
   boostFuelAmount: -0.01
-  rotationScaler: 200
+  rotationScaler: 190
+  rotationThrottleScaler: 0.5
+  maxExplosionScale: 500
+  blockFuelChange: 0
+  closeCamDistance: 0
+  farCamDistance: 0
   head: {fileID: 0}
+  SecondMode: 5
 --- !u!114 &3440187540988767646
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1361,6 +1367,11 @@ PrefabInstance:
       propertyPath: ship
       value: 
       objectReference: {fileID: 874579555101021527}
+    - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
+      propertyPath: fuelAmount
+      value: 0.005
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 6540c78597c2dcc468123b270169fc44, type: 3}
 --- !u!4 &282447970148362685 stripped

@@ -23,7 +23,7 @@ namespace StarWriter.Core.Input
 
         [SerializeField] bool driftEnabled = false;
         public bool drifting = false;
-        public float boostDecay = 0;
+        public float boostDecay = 1;
 
         bool LeftStickEffectsStopped = true;
         bool RightStickEffectsStopped = true;
@@ -42,7 +42,7 @@ namespace StarWriter.Core.Input
         float xDiff;
         float yDiff;
 
-        private readonly float rotationThrottleScaler = 0;
+        public float rotationThrottleScaler = 0;
         public float rotationScaler = 130f;
 
         private readonly float lerpAmount = 2f;
@@ -206,11 +206,11 @@ namespace StarWriter.Core.Input
                     ship.StopRightStickEffects();
                 }
 
-                Pitch(ySum);
-                Yaw(xSum);
-                Roll(yDiff);
+                Pitch();
+                Yaw();
+                Roll();
 
-                if (boostDecay <= 0) CheckThrottle(ySum, xSum, yDiff, xDiff);
+                if (boostDecay <= 1) CheckThrottle();
 
                 shipAnimation.PerformShipAnimations(ySum, xSum, yDiff, xDiff);
             }
@@ -268,9 +268,9 @@ namespace StarWriter.Core.Input
 
                     Reparameterize();
 
-                    Pitch(ySum);
-                    Yaw(xSum);
-                    Roll(yDiff);
+                    Pitch();
+                    Yaw();
+                    Roll();
 
                     if (!LeftStickEffectsStopped)
                     {
@@ -283,7 +283,7 @@ namespace StarWriter.Core.Input
                         ship.StopRightStickEffects();
                     }
 
-                    if (boostDecay <= 0 && !drifting) CheckThrottle(ySum, xSum, yDiff, xDiff);
+                    if (boostDecay <= 1 && !drifting) CheckThrottle();
 
                     shipAnimation.PerformShipAnimations(ySum, xSum, yDiff, xDiff);
                 }
@@ -296,9 +296,9 @@ namespace StarWriter.Core.Input
 
                         Reparameterize();
 
-                        Pitch(ySum);
-                        Yaw(xSum);
-                        Roll(yDiff);
+                        Pitch();
+                        Yaw();
+                        Roll();
 
                         if (Vector2.Distance(leftTouch, position) < Vector2.Distance(rightTouch, position))
                         {
@@ -345,41 +345,39 @@ namespace StarWriter.Core.Input
             boostDecay += .03f;
         }
 
-        public IEnumerator DecayingBoost()
+        public IEnumerator DecayingBoostCoroutine()
         {
-            if (boostDecay > 10) boostDecay = 10;
-            while (boostDecay > 0)
+            while (boostDecay > 1)
             {
-                boostDecay -= Time.deltaTime;
+                boostDecay = Mathf.Clamp(boostDecay - Time.deltaTime, 1, 10);
                 speed = Mathf.Lerp(speed, xDiff * throttleScaler * boostDecay + defaultThrottle, lerpAmount * Time.deltaTime);
-                if (boostDecay <= 1) boostDecay = 0;
                 yield return null;
-            }  
+            }
         }
 
-        private void Yaw(float Xsum)  // These need to not use *= ... remember quaternions are not commutative
+        private void Yaw()  // These need to not use *= ... remember quaternions are not commutative
         {
             displacementQ = Quaternion.AngleAxis(
-                                Xsum * (speed * rotationThrottleScaler + rotationScaler) *
+                                xSum * (speed * rotationThrottleScaler + rotationScaler) *
                                     (Screen.currentResolution.width/Screen.currentResolution.height) * Time.deltaTime, 
                                 shipTransform.up) * displacementQ;
         }
 
-        private void Roll(float Ydiff)
+        private void Roll()
         {
             displacementQ = Quaternion.AngleAxis(
-                                Ydiff * (speed * rotationThrottleScaler + rotationScaler) * Time.deltaTime,
+                                yDiff * (speed * rotationThrottleScaler + rotationScaler) * Time.deltaTime,
                                 shipTransform.forward) * displacementQ;
         }
 
-        private void Pitch(float Ysum)
+        private void Pitch()
         {
             displacementQ = Quaternion.AngleAxis(
-                                Ysum * -(speed * rotationThrottleScaler + rotationScaler) * Time.deltaTime,
+                                ySum * -(speed * rotationThrottleScaler + rotationScaler) * Time.deltaTime,
                                 shipTransform.right) * displacementQ;
         }
 
-        private void CheckThrottle(float ySum, float xSum, float yDiff, float xDiff)
+        private void CheckThrottle()
         {
             float threshold = .3f;
             float value = (1 - xDiff) + Mathf.Abs(yDiff) + Mathf.Abs(ySum) + Mathf.Abs(xSum);
@@ -396,7 +394,6 @@ namespace StarWriter.Core.Input
                     FullSpeedStraightEffectsStopped = true;
                     ship.StopFullSpeedStraightEffects();
                 }
-                
                 Throttle();
             }
         }

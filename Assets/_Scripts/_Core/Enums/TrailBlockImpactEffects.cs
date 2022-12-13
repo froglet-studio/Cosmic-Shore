@@ -1,9 +1,10 @@
 public enum TrailBlockImpactEffects
 {
     PlayHaptics,
-    DrainFuel,
+    DrainHalfFuel,
     DebuffSpeed,
     DeactivateTrailBlock,
     ActivateTrailBlock,
-    OnlyBuffSpeed
+    OnlyBuffSpeed,
+    ChangeFuel
 }

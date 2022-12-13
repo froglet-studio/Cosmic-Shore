@@ -382,7 +382,12 @@ MonoBehaviour:
   boostMultiplier: 2
   boostFuelAmount: 0
   rotationScaler: 70
+  maxExplosionScale: 500
+  blockFuelChange: 0
+  closeCamDistance: 0
+  farCamDistance: 0
   head: {fileID: 0}
+  SecondMode: 5
 --- !u!114 &3440187540988767646
 MonoBehaviour:
   m_ObjectHideFlags: 0

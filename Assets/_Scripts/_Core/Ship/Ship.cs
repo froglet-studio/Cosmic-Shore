@@ -10,6 +10,7 @@ public class Ship : MonoBehaviour
     public delegate void TrailCollision(string uuid, float amount);
     public static event TrailCollision OnTrailCollision;
 
+    CameraManager cameraManager;
 
     [SerializeField] string Name;
     [SerializeField] public ShipTypes ShipType;
@@ -30,8 +31,16 @@ public class Ship : MonoBehaviour
     [SerializeField] float boostMultiplier = 4f;
     [SerializeField] float boostFuelAmount = -.01f;
     [SerializeField] float rotationScaler = 130;
+    [SerializeField] float rotationThrottleScaler;
+    [SerializeField] float maxExplosionScale = 500;
+    [SerializeField] float blockFuelChange;
+    [SerializeField] float closeCamDistance;
+    [SerializeField] float farCamDistance;
     [SerializeField] GameObject head;
     bool invulnerable;
+    [SerializeField] ShipTypes SecondMode = ShipTypes.Shark;
+    Ship secondShip;
+    Ship[] ships;
 
     Teams team;
     ShipData shipData;
@@ -62,14 +71,46 @@ public class Ship : MonoBehaviour
 
     public void Start()
     {
+        cameraManager = CameraManager.Instance;
         shipData = GetComponent<ShipData>();
         inputController = player.GetComponent<InputController>();
         PerformShipPassiveEffects(passiveEffects);
+        
 
     }
     void Update()
     {
         ApplySpeedModifiers();
+    }
+
+    void PerformShipPassiveEffects(List<PassiveAbilities> passiveEffects)
+    {
+        foreach (PassiveAbilities effect in passiveEffects)
+        {
+            switch (effect)
+            {
+                case PassiveAbilities.TurnSpeed:
+                    inputController.rotationScaler = rotationScaler;
+                    break;
+                case PassiveAbilities.BlockThief:
+                    skimmer.thief = true;
+                    break;
+                case PassiveAbilities.BlockScout:
+                    break;
+                case PassiveAbilities.CloseCam:
+                    cameraManager.SetCloseCameraDistance(closeCamDistance);
+                    break;
+                case PassiveAbilities.FarCam:
+                    cameraManager.SetFarCameraDistance(farCamDistance);
+                    break;
+                case PassiveAbilities.SecondMode:
+                    ships = Player.LoadSecondShip(SecondMode);
+                    break;
+                case PassiveAbilities.SpeedBasedTurning:
+                    inputController.rotationThrottleScaler = rotationThrottleScaler;
+                    break;
+            }
+        }
     }
 
     public void PerformCrystalImpactEffects(CrystalProperties crystalProperties)
@@ -87,9 +128,13 @@ public class Ship : MonoBehaviour
                     var AOEExplosion = Instantiate(AOEPrefab);
                     AOEExplosion.GetComponent<AOEExplosion>().Team = team;
                     AOEExplosion.transform.position = transform.position;
+                    AOEExplosion.GetComponent<AOEExplosion>().MaxScale = FuelSystem.CurrentFuel * maxExplosionScale;
                     break;
                 case CrystalImpactEffects.FillFuel:
                     FuelSystem.ChangeFuelAmount(player.PlayerUUID, crystalProperties.fuelAmount);
+                    break;
+                case CrystalImpactEffects.DrainFuel:
+                    FuelSystem.ChangeFuelAmount(player.PlayerUUID, -FuelSystem.CurrentFuel);
                     break;
                 case CrystalImpactEffects.Score:
                     ScoringManager.Instance.UpdateScore(player.PlayerUUID, crystalProperties.scoreAmount);
@@ -113,8 +158,8 @@ public class Ship : MonoBehaviour
                 case TrailBlockImpactEffects.PlayHaptics:
                     HapticController.PlayBlockCollisionHaptics();
                     break;
-                case TrailBlockImpactEffects.DrainFuel:
-                    //OnTrailCollision?.Invoke(ownerId, fuelChange);
+                case TrailBlockImpactEffects.DrainHalfFuel:
+                    FuelSystem.ChangeFuelAmount(player.PlayerUUID, -FuelSystem.CurrentFuel/2f);
                     break;
                 case TrailBlockImpactEffects.DebuffSpeed:
                     SpeedModifiers.Add(new SpeedModifier(trailBlockProperties.speedDebuffAmount, speedModifierDuration, 0));
@@ -124,8 +169,12 @@ public class Ship : MonoBehaviour
                 case TrailBlockImpactEffects.ActivateTrailBlock:
                     break;
                 case TrailBlockImpactEffects.OnlyBuffSpeed:
-                    if (trailBlockProperties.speedDebuffAmount < 1) SpeedModifiers.Add(new SpeedModifier(1/trailBlockProperties.speedDebuffAmount, speedModifierDuration, 0));
-                    else SpeedModifiers.Add(new SpeedModifier(trailBlockProperties.speedDebuffAmount, speedModifierDuration, 0));
+                    //if (trailBlockProperties.speedDebuffAmount < 1) SpeedModifiers.Add(new SpeedModifier(1 - trailBlockProperties.speedDebuffAmount, speedModifierDuration, 0));
+                    if (trailBlockProperties.speedDebuffAmount > 1) SpeedModifiers.Add(new SpeedModifier(trailBlockProperties.speedDebuffAmount, speedModifierDuration, 0));
+                    //else SpeedModifiers.Add(new SpeedModifier(trailBlockProperties.speedDebuffAmount, speedModifierDuration, 0));
+                    break;
+                case TrailBlockImpactEffects.ChangeFuel:
+                    FuelSystem.ChangeFuelAmount(player.PlayerUUID, blockFuelChange);
                     break;
             }
         }
@@ -194,6 +243,10 @@ public class Ship : MonoBehaviour
                 case ActiveAbilities.ToggleCamera:
                     GameManager.Instance.PhoneFlipState = true; // TODO: remove Game manager dependency
                     break;
+                case ActiveAbilities.ToggleMode:
+                    ships[0].enabled = false;
+                    ships[1].enabled = true;
+                    break;
             }
         }
     }
@@ -206,7 +259,7 @@ public class Ship : MonoBehaviour
             {
                 case ActiveAbilities.Drift:
                     inputController.drifting = false;
-                    StartCoroutine(inputController.DecayingBoost());
+                    StartCoroutine(inputController.DecayingBoostCoroutine());
                     break;
                 case ActiveAbilities.Boost:
                     shipData.boost = false;
@@ -219,24 +272,6 @@ public class Ship : MonoBehaviour
                     break;
                 case ActiveAbilities.ToggleCamera:
                     GameManager.Instance.PhoneFlipState = false;
-                    break;
-            }
-        }
-    }
-
-    void PerformShipPassiveEffects(List<PassiveAbilities> passiveEffects)
-    {
-        foreach (PassiveAbilities effect in passiveEffects)
-        {
-            switch (effect)
-            {
-                case PassiveAbilities.TurnSpeed:
-                    inputController.rotationScaler = rotationScaler;
-                    break;
-                case PassiveAbilities.BlockThief:
-                    skimmer.thief = true;
-                    break;
-                case PassiveAbilities.BlockScout:
                     break;
             }
         }
