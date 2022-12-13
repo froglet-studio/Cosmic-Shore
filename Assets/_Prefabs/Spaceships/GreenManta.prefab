@@ -368,6 +368,7 @@ MonoBehaviour:
   Name: GreenManta
   ShipType: 1
   TrailSpawner: {fileID: 874579555101021522}
+  skimmer: {fileID: 874579554510349383}
   AOEPrefab: {fileID: 2728798890556433942, guid: 4a855af160021d241b8c1ac70cf2d792,
     type: 3}
   player: {fileID: 0}
@@ -380,8 +381,8 @@ MonoBehaviour:
   passiveEffects: 00000000
   boostMultiplier: 2
   boostFuelAmount: 0
-  driftBoostDecay: 0
   rotationScaler: 70
+  head: {fileID: 0}
 --- !u!114 &3440187540988767646
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -403,7 +404,7 @@ MonoBehaviour:
   avoidance: 23
   raycastHeight: 2
   raycastWidth: 2
-  muton: {fileID: 0}
+  CrystalTransform: {fileID: 0}
   flowFieldData: {fileID: 0}
 --- !u!114 &6293426128044408357
 MonoBehaviour:
@@ -632,3 +633,15 @@ Transform:
     type: 3}
   m_PrefabInstance: {fileID: 7471713358279828738}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &874579554510349383 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
+    type: 3}
+  m_PrefabInstance: {fileID: 7471713358279828738}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f35ad70dcbb4e3b47af654e91d9387f8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 

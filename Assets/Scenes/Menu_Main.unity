@@ -891,7 +891,7 @@ MonoBehaviour:
   avoidance: 22
   raycastHeight: 2
   raycastWidth: 2
-  CrystalTransform: {fileID: 0}
+  CrystalTransform: {fileID: 3882826178379139581}
   flowFieldData: {fileID: 1243749159}
 --- !u!114 &709728278
 MonoBehaviour:
@@ -4722,7 +4722,7 @@ MonoBehaviour:
   avoidance: 27
   raycastHeight: 2
   raycastWidth: 2
-  CrystalTransform: {fileID: 0}
+  CrystalTransform: {fileID: 3882826178379139581}
   flowFieldData: {fileID: 1243749159}
 --- !u!1 &378015796163850476
 GameObject:
