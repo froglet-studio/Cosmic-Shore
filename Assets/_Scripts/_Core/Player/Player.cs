@@ -34,11 +34,11 @@ public class Player : MonoBehaviour
 
             var inputController = GetComponent<InputController>();
             inputController.ship = shipInstance;
+
             ship = shipInstance.GetComponent<Ship>();
             ship.Team = Team;
             ship.Player = this;
-            //skimmer.Player = this;
-            ship.skimmer = skimmer;
+            ship.skimmer.Player = this;
 
             gameManager.WaitOnPlayerLoading();
         }
@@ -54,8 +54,7 @@ public class Player : MonoBehaviour
             ship = shipInstance.GetComponent<Ship>();
             ship.Team = Team;
             ship.Player = this;
-            //skimmer.Player = this;
-            ship.skimmer= skimmer;
+            ship.skimmer.Player = this;
 
             gameManager.WaitOnAILoading(ship.GetComponent<AIPilot>());
         }
