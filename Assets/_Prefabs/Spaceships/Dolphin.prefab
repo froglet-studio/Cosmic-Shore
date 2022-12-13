@@ -173,6 +173,7 @@ GameObject:
   - component: {fileID: 4351505211611878148}
   - component: {fileID: 3138748978525211090}
   - component: {fileID: 7105874488655566022}
+  - component: {fileID: 3554682554001885228}
   m_Layer: 8
   m_Name: LeftTail
   m_TagString: Untagged
@@ -274,6 +275,19 @@ BoxCollider:
   serializedVersion: 2
   m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &3554682554001885228
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1463393096304612524}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7fb6382bf0db779459bec0fc29158ac4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  Ship: {fileID: 874579555101021527}
 --- !u!1 &2156342784882863979
 GameObject:
   m_ObjectHideFlags: 0
@@ -447,6 +461,7 @@ GameObject:
   - component: {fileID: 3021131876590485937}
   - component: {fileID: 6933307267220691511}
   - component: {fileID: 6823490476796747025}
+  - component: {fileID: 5552066624866299862}
   m_Layer: 8
   m_Name: TailEnd
   m_TagString: Untagged
@@ -548,6 +563,19 @@ BoxCollider:
   serializedVersion: 2
   m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &5552066624866299862
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3743426984857614330}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7fb6382bf0db779459bec0fc29158ac4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  Ship: {fileID: 874579555101021527}
 --- !u!1 &4662679416581426262
 GameObject:
   m_ObjectHideFlags: 0
@@ -1066,6 +1094,7 @@ GameObject:
   - component: {fileID: 806450572131708929}
   - component: {fileID: 4008953167173299489}
   - component: {fileID: 8825121340288137215}
+  - component: {fileID: 2490547353737667460}
   m_Layer: 8
   m_Name: RightTail
   m_TagString: Untagged
@@ -1167,6 +1196,19 @@ BoxCollider:
   serializedVersion: 2
   m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &2490547353737667460
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8211653562881954920}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7fb6382bf0db779459bec0fc29158ac4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  Ship: {fileID: 874579555101021527}
 --- !u!1 &8921444315668696485
 GameObject:
   m_ObjectHideFlags: 0

@@ -140,28 +140,26 @@ public class CameraManager : SingletonPersistent<CameraManager>
         }
     }
 
-    public void SetFarCameraDistance(float distance)
+    public void SetCameraDistance(CinemachineVirtualCameraBase camera, float distance)
     {
-        var vCam = farCamera.VirtualCameraGameObject.GetComponent<CinemachineVirtualCamera>();
+        var vCam = camera.VirtualCameraGameObject.GetComponent<CinemachineVirtualCamera>();
         var transposer = vCam.GetCinemachineComponent<CinemachineTransposer>();
         transposer.m_FollowOffset = new Vector3(0, 0, distance);
+    }
+
+    public void SetFarCameraDistance(float distance)
+    {
+        SetCameraDistance(farCamera, distance);
     }
 
     public void SetCloseCameraDistance(float distance) 
     {
-        var vCam = closeCamera.VirtualCameraGameObject.GetComponent<CinemachineVirtualCamera>();
-        var transposer = vCam.GetCinemachineComponent<CinemachineTransposer>();
-        transposer.m_FollowOffset = new Vector3(0, 0, distance);
+        SetCameraDistance(closeCamera, distance);
     }
 
-    public void SetCameraDistance(float distance) // TODO consolidate this and previous two
+    public void SetBothCameraDistances(float distance)
     {
-        var vCam = closeCamera.VirtualCameraGameObject.GetComponent<CinemachineVirtualCamera>();
-        var transposer = vCam.GetCinemachineComponent<CinemachineTransposer>();
-        transposer.m_FollowOffset = new Vector3(0,0,-distance * closeCamDistance);
-
-        vCam = farCamera.VirtualCameraGameObject.GetComponent<CinemachineVirtualCamera>();
-        transposer = vCam.GetCinemachineComponent<CinemachineTransposer>();
-        transposer.m_FollowOffset = new Vector3(0, 0, -distance * farCamDistance);
+        SetCameraDistance(farCamera, distance);
+        SetCameraDistance(closeCamera, distance);
     }
 }
