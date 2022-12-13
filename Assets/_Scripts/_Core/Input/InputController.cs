@@ -42,7 +42,7 @@ namespace StarWriter.Core.Input
         float xDiff;
         float yDiff;
 
-        private readonly float rotationThrottleScaler = 0;
+        public float rotationThrottleScaler = 0;
         public float rotationScaler = 130f;
 
         private readonly float lerpAmount = 2f;

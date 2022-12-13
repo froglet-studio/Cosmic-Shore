@@ -139,7 +139,21 @@ public class CameraManager : SingletonPersistent<CameraManager>
                 SetFarCameraActive();
         }
     }
-    
+
+    public void SetFarCameraDistance(float distance)
+    {
+        var vCam = farCamera.VirtualCameraGameObject.GetComponent<CinemachineVirtualCamera>();
+        var transposer = vCam.GetCinemachineComponent<CinemachineTransposer>();
+        transposer.m_FollowOffset = new Vector3(0, 0, distance);
+    }
+
+    public void SetCloseCameraDistance(float distance)
+    {
+        var vCam = closeCamera.VirtualCameraGameObject.GetComponent<CinemachineVirtualCamera>();
+        var transposer = vCam.GetCinemachineComponent<CinemachineTransposer>();
+        transposer.m_FollowOffset = new Vector3(0, 0, distance);
+    }
+
     public void SetCameraDistance(float distance)
     {
         var vCam = closeCamera.VirtualCameraGameObject.GetComponent<CinemachineVirtualCamera>();
