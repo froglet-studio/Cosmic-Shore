@@ -98,7 +98,6 @@ public class Ship : MonoBehaviour
                 case PassiveAbilities.BlockScout:
                     break;
                 case PassiveAbilities.CloseCam:
-                    Debug.Log($"CameraManager: {cameraManager}");
                     cameraManager.SetCloseCameraDistance(closeCamDistance);
                     break;
                 case PassiveAbilities.FarCam:
@@ -260,7 +259,7 @@ public class Ship : MonoBehaviour
             {
                 case ActiveAbilities.Drift:
                     inputController.drifting = false;
-                    StartCoroutine(inputController.DecayingBoost());
+                    StartCoroutine(inputController.DecayingBoostCoroutine());
                     break;
                 case ActiveAbilities.Boost:
                     shipData.boost = false;

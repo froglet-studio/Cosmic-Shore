@@ -147,14 +147,14 @@ public class CameraManager : SingletonPersistent<CameraManager>
         transposer.m_FollowOffset = new Vector3(0, 0, distance);
     }
 
-    public void SetCloseCameraDistance(float distance)
+    public void SetCloseCameraDistance(float distance) 
     {
         var vCam = closeCamera.VirtualCameraGameObject.GetComponent<CinemachineVirtualCamera>();
         var transposer = vCam.GetCinemachineComponent<CinemachineTransposer>();
         transposer.m_FollowOffset = new Vector3(0, 0, distance);
     }
 
-    public void SetCameraDistance(float distance)
+    public void SetCameraDistance(float distance) // TODO consolidate this and previous two
     {
         var vCam = closeCamera.VirtualCameraGameObject.GetComponent<CinemachineVirtualCamera>();
         var transposer = vCam.GetCinemachineComponent<CinemachineTransposer>();
