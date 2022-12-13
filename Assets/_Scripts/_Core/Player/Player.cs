@@ -44,12 +44,11 @@ public class Player : MonoBehaviour
         }
         else
         {
-            // TODO: random dice roll, or opposite of player ship selection
+            
             Ship shipInstance = Hangar.Instance.LoadAI1Ship();
             shipInstance.transform.SetParent(shipContainer.transform, false);
             shipInstance.GetComponent<AIPilot>().enabled = true;
 
-            // TODO: should AIPilot script be getting setup here? Yes probably. The AIPilot should likely be on
 
             ship = shipInstance.GetComponent<Ship>();
             ship.Team = Team;

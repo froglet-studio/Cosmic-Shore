@@ -1,7 +1,14 @@
 using System.Collections;
 using UnityEngine;
-using static UnityEditor.ShaderGraph.Internal.KeywordDependentCollection;
 
+public class AOEBlockCreation : AOEExplosion
+{
+    protected override IEnumerator ExplodeCoroutine()
+    {
+        // TODO Implement me
+        yield return new WaitForEndOfFrame();
+    }
+}
 
 // TODO: namespace
 // TODO: add IBlockImpact interface
@@ -29,7 +36,7 @@ public class AOEExplosion : MonoBehaviour
         material = Geometry.GetComponent<MeshRenderer>().material;
     }
 
-    IEnumerator ExplodeCoroutine()
+    protected virtual IEnumerator ExplodeCoroutine()
     {
         yield return new WaitForSeconds(ExplosionDelay);
         

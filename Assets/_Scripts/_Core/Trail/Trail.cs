@@ -105,7 +105,7 @@ public class Trail : MonoBehaviour
             var impactVector = ship.transform.forward * ship.GetComponent<ShipData>().speed;
 
             Collide(ship);
-            Explode(impactVector, ship.Player.PlayerName);
+            Explode(impactVector, ship.Team);
         }
         else if (IsExplosion(other.gameObject))
         {
@@ -115,7 +115,8 @@ public class Trail : MonoBehaviour
             var speed = other.GetComponent<AOEExplosion>().speed*10;
             var impactVector = (transform.position - other.transform.position).normalized*speed;
 
-            Explode(impactVector, "Player"); // TODO: need to attribute the explosion color to the team that made the explosion
+            
+            Explode(impactVector, other.GetComponent<AOEExplosion>().Team); // TODO: need to attribute the explosion color to the team that made the explosion
         }
         else if (IsProjectile(other.gameObject))
         {
@@ -125,7 +126,7 @@ public class Trail : MonoBehaviour
             var speed = other.GetComponent<Projectile>().Velocity;
             var impactVector = speed;
 
-            Explode(impactVector, "Player"); // TODO: need to attribute the explosion color to the team that made the explosion
+            Explode(impactVector, other.GetComponent<Projectile>().Team); // TODO: need to attribute the explosion color to the team that made the explosion
         }
     }
 
@@ -156,7 +157,7 @@ public class Trail : MonoBehaviour
         }
     }
 
-    void Explode(Vector3 impactVector, string impactId)
+    void Explode(Vector3 impactVector, Teams team)
     {
         // We don't destroy the trail blocks, we keep the objects around so they can be restored
         gameObject.GetComponent<BoxCollider>().enabled = false;
@@ -169,7 +170,7 @@ public class Trail : MonoBehaviour
         explodingBlock.transform.localScale = transform.localScale;
         explodingBlock.transform.parent = fossilBlockContainer.transform;
         explodingBlock.GetComponent<Renderer>().material = new Material(material);
-        explodingBlock.GetComponent<BlockImpact>().HandleImpact(impactVector, impactId);
+        explodingBlock.GetComponent<BlockImpact>().HandleImpact(impactVector, team);
 
         destroyed = true;
 

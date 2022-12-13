@@ -3,12 +3,12 @@ using UnityEngine;
 
 public class BlockImpact : MonoBehaviour
 {
-    public void HandleImpact(Vector3 velocity, string ID)
+    public void HandleImpact(Vector3 velocity, Teams team)
     {
-        StartCoroutine(ImpactCoroutine(velocity, ID));
+        StartCoroutine(ImpactCoroutine(velocity, team));
     }
 
-    private IEnumerator ImpactCoroutine(Vector3 velocity,string ID)
+    private IEnumerator ImpactCoroutine(Vector3 velocity, Teams team)
     {
         var velocityScale = .1f;
         var positionScale = 1;
@@ -17,16 +17,16 @@ public class BlockImpact : MonoBehaviour
 
         Material material = GetComponent<MeshRenderer>().material;
 
-        if (ID == "Player") { 
+        if (team == Teams.Green) { 
             material.SetFloat("_playerHit", 1); 
         }
         else
         {
-            if (ID == "Red") 
+            if (team == Teams.Red) 
             {   
                 material.SetFloat("_playerHit", 0); material.SetFloat("_redHit", 1);
             }
-            else { 
+            else {
                 material.SetFloat("_playerHit", 0); material.SetFloat("_redHit", 0); 
             }
         }
