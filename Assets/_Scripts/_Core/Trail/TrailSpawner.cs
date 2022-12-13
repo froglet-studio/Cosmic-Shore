@@ -17,11 +17,17 @@ public class TrailSpawner : MonoBehaviour
     public float waitTime = .5f;  // Time until the trail block appears - camera dependent
     public float startDelay = 2.1f;
 
+    private Material blockMaterial;
     private Ship ship;
     ShipData shipData;
 
     [SerializeField] bool warp = false;
     GameObject shards;
+
+    public void SetBlockMaterial(Material material)
+    {
+        blockMaterial = material;
+    }
 
     static GameObject TrailContainer;
 
@@ -128,6 +134,7 @@ public class TrailSpawner : MonoBehaviour
                 Block.embiggen = shipData.boost;
                 Block.Team = ship.Team;
                 Block.warp = warp;
+                Block.GetComponent<MeshRenderer>().material = blockMaterial;
 
                 if (Block.warp)
                     wavelength = shards.GetComponent<WarpFieldData>().HybridVector(Block.transform).magnitude * initialWavelength;

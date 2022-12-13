@@ -14,12 +14,13 @@ namespace StarWriter.Core.HangerBuilder
         [SerializeField] ShipTypes AI1ShipType = ShipTypes.MantaAI;
         [SerializeField] ShipTypes AI2ShipType = ShipTypes.Random;
 
-        [SerializeField] string PlayerShipName = "GreenManta";
-        [SerializeField] string AIShipName = "RedMantaAI";
         [SerializeField] Material GreenTeamMaterial;
         [SerializeField] Material RedTeamMaterial;
+        [SerializeField] Material GreenTeamBlockMaterial;
+        [SerializeField] Material RedTeamBlockMaterial;
 
         Dictionary<Teams, Material> TeamsMaterials;
+        Dictionary<Teams, Material> TeamBlockMaterials;
 
         Dictionary<string, Ship> ships = new Dictionary<string, Ship>();
         Dictionary<ShipTypes, Ship> shipTypeMap = new Dictionary<ShipTypes, Ship>();
@@ -38,6 +39,10 @@ namespace StarWriter.Core.HangerBuilder
                 { Teams.Green, GreenTeamMaterial },
                 { Teams.Red,   RedTeamMaterial },
             };
+            TeamBlockMaterials = new Dictionary<Teams, Material>() {
+                { Teams.Green, GreenTeamBlockMaterial },
+                { Teams.Red,   RedTeamBlockMaterial },
+            };
             if (PlayerTeam == Teams.None) {
                 Debug.LogError("Player Team is set to None. Defaulting to Green team");
                 PlayerTeam = Teams.Green;
@@ -53,7 +58,11 @@ namespace StarWriter.Core.HangerBuilder
         }
         public Ship LoadPlayerShip()
         {
-            return Instantiate(shipTypeMap[PlayerShipType]);
+            Ship ship = Instantiate(shipTypeMap[PlayerShipType]);
+            ship.SetShipMaterial(TeamsMaterials[PlayerTeam]);
+            ship.SetBlockMaterial(TeamBlockMaterials[PlayerTeam]);
+
+            return ship;
         }
         public Ship LoadSecondPlayerShip(ShipTypes PlayerShipType)
         {
@@ -79,8 +88,10 @@ namespace StarWriter.Core.HangerBuilder
                 System.Random random = new System.Random();
                 shipType = (ShipTypes)values.GetValue(random.Next(1, values.Length));
             }
+
             Ship ship = Instantiate(shipTypeMap[shipType]);
             ship.SetShipMaterial(TeamsMaterials[AITeam]);
+            ship.SetBlockMaterial(TeamBlockMaterials[AITeam]);
 
             return ship;
         }

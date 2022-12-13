@@ -1,10 +1,8 @@
 ﻿using System.Collections;
 using UnityEngine;
-using System.Linq;
 
 public class Trail : MonoBehaviour
 {
-    [SerializeField] float fuelChange = -3f;
     [SerializeField] GameObject FossilBlock;
     [SerializeField] GameObject ParticleEffect;
     [SerializeField] Material material;
@@ -17,9 +15,6 @@ public class Trail : MonoBehaviour
 
     public bool warp = false;
     GameObject shards;
-
-    public delegate void TrailCollision(string uuid, float amount);
-    public static event TrailCollision OnTrailCollision;
 
     public delegate void OnCollisionIncreaseScore(string uuid, int amount);
     public static event OnCollisionIncreaseScore AddToScore;

@@ -83,12 +83,8 @@ namespace StarWriter.Core
             DataPersistenceManager.Instance.LoadGameData();
         }
 
-        //TODO: move this into inputcontroller
-        bool GamepadCameraFlip = false;
-
         void Update()
         {
-            
             if (Gamepad.current != null)
             {
                 //if (UnityEngine.InputSystem.Gamepad.current.rightShoulder.wasPressedThisFrame)
@@ -104,13 +100,11 @@ namespace StarWriter.Core
             if (PhoneFlipState)
             {
                 currentOrientation = ScreenOrientation.LandscapeLeft;
-                //PhoneFlipState = true;
                 onPhoneFlip(PhoneFlipState);
             }
             else
             {
                 currentOrientation = ScreenOrientation.LandscapeRight;
-                //PhoneFlipState = false;
                 onPhoneFlip(PhoneFlipState);
             }
         }

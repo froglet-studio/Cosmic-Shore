@@ -2,14 +2,10 @@ using StarWriter.Core.Input;
 using StarWriter.Core;
 using System.Collections.Generic;
 using UnityEngine;
-using Mono.Cecil.Cil;
 
 [RequireComponent(typeof(TrailSpawner))]
 public class Ship : MonoBehaviour
 {
-    public delegate void TrailCollision(string uuid, float amount);
-    public static event TrailCollision OnTrailCollision;
-
     CameraManager cameraManager;
 
     [SerializeField] string Name;
@@ -66,7 +62,7 @@ public class Ship : MonoBehaviour
     float speedModifierDuration = 2f;
     float speedModifierMax = 6f;
 
-    public Teams Team { get => team; set => team = value; }
+    public Teams Team { get => team; set => team = value; } 
     public Player Player { get => player; set => player = value; }
 
     public void Start()
@@ -75,8 +71,6 @@ public class Ship : MonoBehaviour
         shipData = GetComponent<ShipData>();
         inputController = player.GetComponent<InputController>();
         PerformShipPassiveEffects(passiveEffects);
-        
-
     }
     void Update()
     {
@@ -310,6 +304,11 @@ public class Ship : MonoBehaviour
     {
         ShipMaterial = material;
         ApplyShipMaterial();
+    }
+
+    public void SetBlockMaterial(Material material)
+    {
+        TrailSpawner.SetBlockMaterial(material);
     }
 
     private void ApplyShipMaterial()
