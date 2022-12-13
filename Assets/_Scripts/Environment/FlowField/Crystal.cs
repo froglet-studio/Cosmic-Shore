@@ -57,7 +57,7 @@ public class Crystal : MonoBehaviour
         //
         // Do the ship specific crystal stuff
         //
-        Debug.Log($"crystal collision ship: {other}");
+        Debug.Log($"crystal collision ship {other}");
         var ship = other.GetComponent<ShipGeometry>().Ship;
         ship.PerformCrystalImpactEffects(crystalProperties);
 
