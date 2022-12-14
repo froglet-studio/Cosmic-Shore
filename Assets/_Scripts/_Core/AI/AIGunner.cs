@@ -65,6 +65,6 @@ public class AIGunner : MonoBehaviour
 
         //gun.transform.localRotation = Quaternion.Lerp(gun.transform.localRotation, Quaternion.Euler(new Vector3(0, 0, 0)), .05f);
         gunMount.transform.Rotate(0, rotationSpeed * Time.deltaTime, 0);
-        gun.FireGun();
+        gun.FireGun(player.transform);
     }
 }
