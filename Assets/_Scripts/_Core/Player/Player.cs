@@ -2,7 +2,6 @@
 using StarWriter.Core;
 using StarWriter.Core.HangerBuilder;
 using StarWriter.Core.Input;
-using System.Collections.Generic;
 
 [System.Serializable]
 public class Player : MonoBehaviour
@@ -20,42 +19,50 @@ public class Player : MonoBehaviour
 
     GameManager gameManager;
 
+    void SetupAIShip(Ship shipInstance)
+    {
+        shipInstance.transform.SetParent(shipContainer.transform, false);
+        shipInstance.GetComponent<AIPilot>().enabled = true;
+
+        ship = shipInstance.GetComponent<Ship>();
+        ship.Team = Team;
+        ship.Player = this;
+        ship.skimmer.Player = this;
+
+        gameManager.WaitOnAILoading(ship.GetComponent<AIPilot>());
+    }
     void Start()
     {
         gameManager = GameManager.Instance;
 
         foreach (Transform child in shipContainer.transform) Destroy(child.gameObject);
 
-        if (playerUUID == "admin")  //TODO check if this is local client
+        switch (playerName)
         {
-            Ship shipInstance = Hangar.Instance.LoadPlayerShip();
-            shipInstance.transform.SetParent(shipContainer.transform, false);
-            shipInstance.GetComponent<AIPilot>().enabled = false;
+            case "HostileOne":
+                SetupAIShip(Hangar.Instance.LoadHostileAI1Ship());
+                break;
+            case "HostileTwo":
+                SetupAIShip(Hangar.Instance.LoadHostileAI2Ship());
+                break;
+            case "FriendlyOne":
+                SetupAIShip(Hangar.Instance.LoadFriendlyAIShip()); 
+                break;
+            default: // Player
+                Ship shipInstance = Hangar.Instance.LoadPlayerShip();
+                shipInstance.transform.SetParent(shipContainer.transform, false);
+                shipInstance.GetComponent<AIPilot>().enabled = false;
 
-            var inputController = GetComponent<InputController>();
-            inputController.ship = shipInstance;
+                var inputController = GetComponent<InputController>();
+                inputController.ship = shipInstance;
 
-            ship = shipInstance.GetComponent<Ship>();
-            ship.Team = Team;
-            ship.Player = this;
-            ship.skimmer.Player = this;
+                ship = shipInstance.GetComponent<Ship>();
+                ship.Team = Team;
+                ship.Player = this;
+                ship.skimmer.Player = this;
 
-            gameManager.WaitOnPlayerLoading();
-        }
-        else
-        {
-            
-            Ship shipInstance = Hangar.Instance.LoadAI1Ship();
-            shipInstance.transform.SetParent(shipContainer.transform, false);
-            shipInstance.GetComponent<AIPilot>().enabled = true;
-
-
-            ship = shipInstance.GetComponent<Ship>();
-            ship.Team = Team;
-            ship.Player = this;
-            ship.skimmer.Player = this;
-
-            gameManager.WaitOnAILoading(ship.GetComponent<AIPilot>());
+                gameManager.WaitOnPlayerLoading();
+                break;
         }
     }
 

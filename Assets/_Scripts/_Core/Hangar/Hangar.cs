@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using TailGlider.Utility.Singleton;
+using UnityEngine.Serialization;
 
 namespace StarWriter.Core.HangerBuilder
 {
@@ -9,10 +10,14 @@ namespace StarWriter.Core.HangerBuilder
         // TODO: let player objects pass in a ship type to the hangar and load it
         // TODO: player object or the GameManager should inform the Hanger what the player's team is
         [SerializeField] Teams PlayerTeam = Teams.Green;
+        Teams AITeam;
         [SerializeField] ShipTypes PlayerShipType = ShipTypes.Manta;
-        [SerializeField] ShipTypes PlayerTeammateShipType = ShipTypes.Manta;
-        [SerializeField] ShipTypes AI1ShipType = ShipTypes.MantaAI;
-        [SerializeField] ShipTypes AI2ShipType = ShipTypes.Random;
+        [FormerlySerializedAs("PlayerTeammateShipType")]
+        [SerializeField] ShipTypes FriendlyAIShipType = ShipTypes.Manta;
+        [FormerlySerializedAs("AI1ShipType")]
+        [SerializeField] ShipTypes HostileAI1ShipType = ShipTypes.MantaAI;
+        [FormerlySerializedAs("AI2ShipType")]
+        [SerializeField] ShipTypes HostileAI2ShipType = ShipTypes.Random;
 
         [SerializeField] Material GreenTeamMaterial;
         [SerializeField] Material RedTeamMaterial;
@@ -28,7 +33,7 @@ namespace StarWriter.Core.HangerBuilder
         [SerializeField] int SelectedBayIndex = 0;
         [SerializeField] public List<Ship> ShipPrefabs;
 
-        Teams AITeam;
+        
 
         public Ship selectedShip { get; private set; }
         public int BayIndex { get => SelectedBayIndex; }
@@ -64,23 +69,19 @@ namespace StarWriter.Core.HangerBuilder
 
             return ship;
         }
-        public Ship LoadSecondPlayerShip(ShipTypes PlayerShipType)
+        public Ship LoadFriendlyAIShip()
         {
-            return Instantiate(shipTypeMap[PlayerShipType]);
+            return LoadAIShip(FriendlyAIShipType, PlayerTeam);
         }
-        public Ship LoadPlayerTeammateShip()
+        public Ship LoadHostileAI1Ship()
         {
-            return Instantiate(shipTypeMap[PlayerTeammateShipType]);
+            return LoadAIShip(HostileAI1ShipType, AITeam);
         }
-        public Ship LoadAI1Ship()
+        public Ship LoadHostileAI2Ship()
         {
-            return LoadAIShip(AI1ShipType);
+            return LoadAIShip(HostileAI2ShipType, AITeam);
         }
-        public Ship LoadAI2Ship()
-        {
-            return LoadAIShip(AI2ShipType);
-        }
-        public Ship LoadAIShip(ShipTypes shipType)
+        public Ship LoadAIShip(ShipTypes shipType, Teams team)
         {
             if (shipType == ShipTypes.Random)
             {
@@ -90,10 +91,15 @@ namespace StarWriter.Core.HangerBuilder
             }
 
             Ship ship = Instantiate(shipTypeMap[shipType]);
-            ship.SetShipMaterial(TeamsMaterials[AITeam]);
-            ship.SetBlockMaterial(TeamBlockMaterials[AITeam]);
+            ship.SetShipMaterial(TeamsMaterials[team]);
+            ship.SetBlockMaterial(TeamBlockMaterials[team]);
 
             return ship;
+        }
+
+        public Ship LoadSecondPlayerShip(ShipTypes PlayerShipType)
+        {
+            return Instantiate(shipTypeMap[PlayerShipType]);
         }
     }
 }
