@@ -2635,7 +2635,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   PlayerTeam: 1
-  PlayerShipType: 3
+  PlayerShipType: 5
   PlayerTeammateShipType: 2
   AI1ShipType: 2
   AI2ShipType: 2
