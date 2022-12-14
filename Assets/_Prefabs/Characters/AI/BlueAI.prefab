@@ -57,6 +57,8 @@ MonoBehaviour:
   playerName: Blue
   playerUUID: blue
   ship: {fileID: 3020133054318620859}
+  skimmer: {fileID: 0}
+  shipContainer: {fileID: 0}
   Team: 0
 --- !u!1001 &3020133054318620854
 PrefabInstance:
@@ -152,22 +154,6 @@ GameObject:
     type: 3}
   m_PrefabInstance: {fileID: 3020133054318620854}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &3020133054318620859
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5087482719140802633}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a273abd40c7104c4392188723ab929d6, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  shipSO: {fileID: 11400000, guid: 48570157b8621ef47a488abb24b437d1, type: 2}
-  AOEPrefab: {fileID: 2728798890556433942, guid: 4a855af160021d241b8c1ac70cf2d792,
-    type: 3}
-  player: {fileID: 3020133054467548944}
 --- !u!114 &3020133054318620858
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -180,13 +166,49 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 909fb5cbbca8c4549b5a9df56d837e55, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  trail: {fileID: 4563009547826722997, guid: 053064d82123e8b49bfb29870b5c0715, type: 3}
+  trail: {fileID: 4563009547826722997, guid: 4e280247faa1d154fa25d1e92df405dc, type: 3}
   offset: 0
   initialWavelength: 15
   trailLength: 40
   waitTime: 0.1
   startDelay: 2
   warp: 0
+--- !u!114 &3020133054318620859
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5087482719140802633}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a273abd40c7104c4392188723ab929d6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  Name: 
+  ShipType: 0
+  TrailSpawner: {fileID: 0}
+  skimmer: {fileID: 0}
+  AOEPrefab: {fileID: 2728798890556433942, guid: 4a855af160021d241b8c1ac70cf2d792,
+    type: 3}
+  player: {fileID: 3020133054467548944}
+  crystalImpactEffects: 
+  trailBlockImpactEffects: 
+  fullSpeedStraightEffects: 
+  rightStickEffects: 
+  leftStickEffects: 
+  flipEffects: 
+  passiveEffects: 
+  boostMultiplier: 4
+  boostFuelAmount: -0.01
+  rotationScaler: 130
+  rotationThrottleScaler: 0
+  maxExplosionScale: 500
+  blockFuelChange: 0
+  closeCamDistance: 0
+  farCamDistance: 0
+  head: {fileID: 0}
+  SecondMode: 5
 --- !u!114 &3020133054318620860
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -208,7 +230,7 @@ MonoBehaviour:
   avoidance: 27
   raycastHeight: 2
   raycastWidth: 2
-  muton: {fileID: 0}
+  CrystalTransform: {fileID: 0}
   flowFieldData: {fileID: 0}
 --- !u!114 &3020133054318620863
 MonoBehaviour:
@@ -222,6 +244,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9846c9cd6cfac424797ca640ebcb7a04, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  inputSpeed: 1
+  speedMultiplier: 1
   speed: 0
   boost: 0
   velocityDirection: {x: 0, y: 0, z: 0}

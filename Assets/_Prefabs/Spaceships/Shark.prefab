@@ -586,7 +586,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 909fb5cbbca8c4549b5a9df56d837e55, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  trail: {fileID: 4563009547826722997, guid: 5790c8c1f457a754baecca51ef90c82e, type: 3}
+  trail: {fileID: 4563009547826722997, guid: 053064d82123e8b49bfb29870b5c0715, type: 3}
   offset: 0
   initialWavelength: 5
   trailLength: 40
@@ -640,6 +640,7 @@ MonoBehaviour:
   boostMultiplier: 3
   boostFuelAmount: -0.01
   rotationScaler: 140
+  rotationThrottleScaler: 0
   maxExplosionScale: 500
   blockFuelChange: 0.1
   closeCamDistance: -0.5

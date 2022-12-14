@@ -29,7 +29,7 @@ Transform:
   m_GameObject: {fileID: 5776304996075792891}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 11, y: 11, z: 0.8}
+  m_LocalScale: {x: 1, y: 1, z: 0.32}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
@@ -116,7 +116,11 @@ MonoBehaviour:
   ParticleEffect: {fileID: 3706253519474275301, guid: a8ae8dc22c65f554ea8bb6e1bf2458f1,
     type: 3}
   material: {fileID: 2100000, guid: 4596e8c23c1593b4eadfc4a2157a53e5, type: 2}
+  trailBlockProperties:
+    volume: 0
+    speedDebuffAmount: 0
   ownerId: 
   waitTime: 0.1
   embiggen: 0
+  destroyed: 0
   warp: 0
