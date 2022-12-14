@@ -11,7 +11,7 @@ public class Gun : MonoBehaviour
     public Teams Team;
     bool onCooldown = false;
  
-    public void FireGun()
+    public void FireGun(Transform containerTransform)
     {
         if (onCooldown)
             return;
@@ -21,7 +21,7 @@ public class Gun : MonoBehaviour
         var projectile = Instantiate(projectilePrefab);
         projectile.transform.rotation = Quaternion.LookRotation(transform.up);
         projectile.transform.position = transform.position + projectile.transform.forward * 2;
-        projectile.transform.parent = transform;
+        projectile.transform.parent = containerTransform;
         projectile.GetComponent<Projectile>().Velocity = projectile.transform.forward * speed;
         projectile.GetComponent<Projectile>().Team = Team;
 
