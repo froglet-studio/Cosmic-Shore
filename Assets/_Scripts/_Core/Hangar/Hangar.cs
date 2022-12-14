@@ -33,7 +33,10 @@ namespace StarWriter.Core.HangerBuilder
         [SerializeField] int SelectedBayIndex = 0;
         [SerializeField] public List<Ship> ShipPrefabs;
 
-        
+        public void SetPlayerShip(int shipType)
+        {
+            PlayerShipType = (ShipTypes)shipType;
+        }
 
         public Ship selectedShip { get; private set; }
         public int BayIndex { get => SelectedBayIndex; }
@@ -63,6 +66,9 @@ namespace StarWriter.Core.HangerBuilder
         }
         public Ship LoadPlayerShip()
         {
+            if (PlayerShipType == ShipTypes.Random)
+                PlayerShipType = ShipTypes.Manta;
+
             Ship ship = Instantiate(shipTypeMap[PlayerShipType]);
             ship.SetShipMaterial(TeamsMaterials[PlayerTeam]);
             ship.SetBlockMaterial(TeamBlockMaterials[PlayerTeam]);
