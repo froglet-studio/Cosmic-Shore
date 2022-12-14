@@ -528,8 +528,8 @@ GameObject:
   - component: {fileID: 3440187540988767646}
   - component: {fileID: 3496801340156507927}
   m_Layer: 0
-  m_Name: Shark
-  m_TagString: Player_Ship
+  m_Name: SharkAI
+  m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -623,20 +623,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a273abd40c7104c4392188723ab929d6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Name: Shark
-  ShipType: 3
+  Name: SharkAI
+  ShipType: 6
   TrailSpawner: {fileID: 874579555101021522}
   skimmer: {fileID: 874579554510349383}
-  AOEPrefab: {fileID: 2728798890556433942, guid: f5ecfb9923155a84c860975d559b2714,
+  AOEPrefab: {fileID: 2728798890556433942, guid: 4a855af160021d241b8c1ac70cf2d792,
     type: 3}
   player: {fileID: 0}
-  crystalImpactEffects: 0000000004000000
-  trailBlockImpactEffects: 00000000030000000500000006000000
-  fullSpeedStraightEffects: 01000000
+  crystalImpactEffects: 05000000
+  trailBlockImpactEffects: 03000000
+  fullSpeedStraightEffects: 
   rightStickEffects: 
   leftStickEffects: 
-  flipEffects: 03000000
-  passiveEffects: 000000000300000004000000
+  flipEffects: 
+  passiveEffects: 
   boostMultiplier: 3
   boostFuelAmount: -0.01
   rotationScaler: 140
@@ -665,7 +665,7 @@ MonoBehaviour:
   lerpIncrease: 17
   throttle: 0
   lerp: 0
-  avoidance: 23
+  avoidance: -23
   raycastHeight: 2
   raycastWidth: 2
   CrystalTransform: {fileID: 0}
