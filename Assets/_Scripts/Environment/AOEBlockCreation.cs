@@ -6,8 +6,8 @@ public class AOEBlockCreation : AOEExplosion
 {
     [SerializeField] Trail trail;
     private Material blockMaterial;
-    int blockCount = 8;
-    float radius = 10f;
+    float blockCount = 8;
+    float radius = 30f;
 
     public void SetBlockMaterial(Material material)
     {
@@ -16,16 +16,26 @@ public class AOEBlockCreation : AOEExplosion
 
     protected override IEnumerator ExplodeCoroutine()
     {
-        for (int i = 0;i<blockCount;i++)
+        for (int i = 0; i < blockCount; i++)
         {
             var Block = Instantiate(trail);
             Block.Team = Team;
-            Block.MaxScale = MaxScale;
-            Block.transform.SetPositionAndRotation(transform.position + new Vector3(
-                                                        radius * Mathf.Cos((i / blockCount) * 360),
-                                                        radius * Mathf.Sin((i / blockCount) * 360),
-                                                        0),
-                                                   Quaternion.LookRotation(transform.position));
+            Block.MaxScale = 5;
+            var position = transform.position +
+                              radius * Mathf.Cos((i / blockCount) * 2 * Mathf.PI) * transform.right +
+                              radius * Mathf.Sin((i / blockCount) * 2 * Mathf.PI) * transform.up;
+            Block.transform.SetPositionAndRotation(position,
+                                                   Quaternion.LookRotation(position-transform.position, transform.forward));
+            Block = Instantiate(trail);
+            Block.Team = Team;
+            Block.MaxScale = 5;
+            position = transform.position +
+                              1.5f * radius * Mathf.Cos(((i + .5f) / blockCount) * 2 * Mathf.PI) * transform.right +
+                              1.5f * radius * Mathf.Sin(((i + .5f) / blockCount) * 2 * Mathf.PI) * transform.up;
+            Block.transform.SetPositionAndRotation(position,
+                                                   Quaternion.LookRotation(position - transform.position, transform.forward));
+
+
         }
         yield return new WaitForEndOfFrame();
     }
