@@ -121,7 +121,7 @@ public class Ship : MonoBehaviour
                     // TODO: add position to crystal properties? use crystal properties to set position
                     var AOEExplosion = Instantiate(AOEPrefab).GetComponent<AOEExplosion>();
                     AOEExplosion.Team = team;
-                    AOEExplosion.transform.position = transform.position;
+                    AOEExplosion.transform.SetPositionAndRotation(transform.position,transform.rotation);
                     AOEExplosion.MaxScale = FuelSystem.CurrentFuel * maxExplosionScale;
                     break;
                 case CrystalImpactEffects.FillFuel:

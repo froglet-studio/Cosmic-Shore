@@ -12,6 +12,8 @@ public class Trail : MonoBehaviour
     public float waitTime = .6f;
     public bool embiggen;
     public bool destroyed = false;
+    public float MaxScale = 1f;
+
 
     public bool warp = false;
     GameObject shards;
@@ -43,7 +45,7 @@ public class Trail : MonoBehaviour
         blockCollider.enabled = false;
 
         if (embiggen) StartCoroutine(ToggleBlockCoroutine(2f));
-        else StartCoroutine(ToggleBlockCoroutine(1f));
+        else StartCoroutine(ToggleBlockCoroutine(MaxScale));
     }
 
     IEnumerator ToggleBlockCoroutine(float finalSize)

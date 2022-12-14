@@ -1,14 +1,7 @@
 using System.Collections;
 using UnityEngine;
 
-public class AOEBlockCreation : AOEExplosion
-{
-    protected override IEnumerator ExplodeCoroutine()
-    {
-        // TODO Implement me
-        yield return new WaitForEndOfFrame();
-    }
-}
+
 
 // TODO: namespace
 // TODO: add IBlockImpact interface
