@@ -21,11 +21,6 @@ public class CameraManager : SingletonPersistent<CameraManager>
     private bool isCameraFlipEnabled = true;
     private bool useCloseCam = true;
 
-    [SerializeField] float closeCamDistance = 4f;
-    [SerializeField] float farCamDistance = 50f;
-
-    WarpFieldData warpFieldData;
-
     private void OnEnable()
     {
         GameManager.onPhoneFlip += ToggleCloseOrFarCamOnPhoneFlip;
@@ -47,11 +42,6 @@ public class CameraManager : SingletonPersistent<CameraManager>
     void Start()
     {
         OnMainMenu();
-    }
-
-    void Update()
-    {
-        warpFieldData = GetComponent<WarpFieldData>();
     }
 
     public void OnMainMenu()

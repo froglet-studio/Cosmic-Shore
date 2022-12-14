@@ -46,6 +46,8 @@ public class Trail : MonoBehaviour
 
         if (embiggen) StartCoroutine(ToggleBlockCoroutine(2f));
         else StartCoroutine(ToggleBlockCoroutine(MaxScale));
+
+        trailBlockProperties.position = transform.position;
     }
 
     IEnumerator ToggleBlockCoroutine(float finalSize)
@@ -73,6 +75,8 @@ public class Trail : MonoBehaviour
         // Add block to team score when created
         if (ScoringManager.Instance != null)
             ScoringManager.Instance.UpdateTeamScore(team, trailBlockProperties.volume);
+
+        //if (NodeControlManager)
     }
 
     public void InstantiateParticle(Transform skimmer)

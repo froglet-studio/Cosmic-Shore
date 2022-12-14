@@ -89,9 +89,6 @@ public class ScoringManager : Singleton<ScoringManager>
 
         TeamScores[team] += amount;
         ScoreDisplays[team.ToString()].transform.GetChild(1).GetComponent<TMP_Text>().text = ((int)TeamScores[team]).ToString("D3");
-
-        //foreach (var key in TeamScores.Keys)
-        //    Debug.Log($"Scores: {key}, {TeamScores[key]}");
     }
 
     public void UpdateScore(string uuid, int amount)

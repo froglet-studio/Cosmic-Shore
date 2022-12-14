@@ -1,6 +1,5 @@
 ﻿using UnityEngine;
 
-
 namespace StarWriter.Core.UI
 {
     /// <summary>
@@ -16,7 +15,6 @@ namespace StarWriter.Core.UI
         {
             gameManager = GameManager.Instance;
         }
-
         public void OnClickPlayGame()
         {
             gameManager.OnClickPlayButton();
@@ -37,20 +35,14 @@ namespace StarWriter.Core.UI
         {
             gameManager.OnClickTestGameModeFour();
         }
-
         public void OnClickHangar()
         {
             gameManager.OnClickHangar();
         }
-
         public void OnClickOptionsMenuButton()
         {
             Game_Options_Panel.SetActive(true);
             gameObject.SetActive(false);
         }
-
-        
     }
 }
-
-

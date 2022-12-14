@@ -3400,10 +3400,10 @@ MonoBehaviour:
   m_OnValueChanged:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 1349904466}
-        m_TargetAssemblyTypeName: StarWriter.Core.HangerBuilder.Hangar, Assembly-CSharp
-        m_MethodName: SetPlayerShip
-        m_Mode: 0
+      - m_Target: {fileID: 1867118902}
+        m_TargetAssemblyTypeName: SingletonMenuProxy, Assembly-CSharp
+        m_MethodName: HangarSetPlayerShip
+        m_Mode: 3
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
           m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
@@ -3653,7 +3653,7 @@ MonoBehaviour:
   PlayerTeam: 1
   PlayerShipType: 3
   FriendlyAIShipType: 4
-  HostileAI1ShipType: 6
+  HostileAI1ShipType: 1
   HostileAI2ShipType: 6
   GreenTeamMaterial: {fileID: 2100000, guid: cbf0164b1addfee43a45e430c464b6fd, type: 2}
   RedTeamMaterial: {fileID: 2100000, guid: b0e105431956f1b40b8ef19fbde85b3b, type: 2}
@@ -4280,12 +4280,12 @@ PrefabInstance:
     - target: {fileID: 2273807540259799843, guid: ba70c0f3eb077d44b8a538982d02dadc,
         type: 3}
       propertyPath: m_Lens.m_SensorSize.x
-      value: 1.7777778
+      value: 2.0555556
       objectReference: {fileID: 0}
     - target: {fileID: 4286694852303775635, guid: ba70c0f3eb077d44b8a538982d02dadc,
         type: 3}
       propertyPath: m_Lens.m_SensorSize.x
-      value: 1.7777778
+      value: 2.0555556
       objectReference: {fileID: 0}
     - target: {fileID: 4853709195325629896, guid: ba70c0f3eb077d44b8a538982d02dadc,
         type: 3}
@@ -4330,7 +4330,7 @@ PrefabInstance:
     - target: {fileID: 4853709195325629897, guid: ba70c0f3eb077d44b8a538982d02dadc,
         type: 3}
       propertyPath: m_Lens.m_SensorSize.x
-      value: 1.7777778
+      value: 2.0555556
       objectReference: {fileID: 0}
     - target: {fileID: 4853709195505754398, guid: ba70c0f3eb077d44b8a538982d02dadc,
         type: 3}
@@ -4340,7 +4340,7 @@ PrefabInstance:
     - target: {fileID: 4853709195735906030, guid: ba70c0f3eb077d44b8a538982d02dadc,
         type: 3}
       propertyPath: m_Lens.m_SensorSize.x
-      value: 1.7777778
+      value: 2.0555556
       objectReference: {fileID: 0}
     - target: {fileID: 4853709195735906030, guid: ba70c0f3eb077d44b8a538982d02dadc,
         type: 3}
@@ -4395,7 +4395,7 @@ PrefabInstance:
     - target: {fileID: 4853709196102757139, guid: ba70c0f3eb077d44b8a538982d02dadc,
         type: 3}
       propertyPath: m_Lens.m_SensorSize.x
-      value: 1.7777778
+      value: 2.0555556
       objectReference: {fileID: 0}
     - target: {fileID: 4853709196820857184, guid: ba70c0f3eb077d44b8a538982d02dadc,
         type: 3}

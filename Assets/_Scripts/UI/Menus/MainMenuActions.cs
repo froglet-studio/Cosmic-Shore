@@ -1,7 +1,8 @@
 using UnityEngine;
 using StarWriter.Core;
+using StarWriter.Core.HangerBuilder;
 
-public class SingletonMenuProxy : MonoBehaviour
+public class MainMenuActions : MonoBehaviour
 {
     public void GameManagerOnClickTutorialButton()
     {
@@ -18,5 +19,9 @@ public class SingletonMenuProxy : MonoBehaviour
     public void GameSettingInvertYEnabledStatus()
     {
         GameSetting.Instance.ChangeInvertYEnabledStatus();
+    }
+    public void HangarSetPlayerShip(int shipType)
+    {
+        Hangar.Instance.SetPlayerShip(shipType);
     }
 }
