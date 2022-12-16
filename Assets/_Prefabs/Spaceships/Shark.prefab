@@ -638,11 +638,11 @@ MonoBehaviour:
   flipEffects: 03000000
   passiveEffects: 000000000300000004000000
   boostMultiplier: 3
-  boostFuelAmount: -0.01
+  boostFuelAmount: -0.005
   rotationScaler: 140
   rotationThrottleScaler: 0
   maxExplosionScale: 500
-  blockFuelChange: 0.1
+  blockFuelChange: 0.03
   closeCamDistance: -5
   farCamDistance: -15
   head: {fileID: 3710282027580066907}
