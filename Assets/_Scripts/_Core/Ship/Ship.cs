@@ -133,9 +133,6 @@ public class Ship : MonoBehaviour
                 case CrystalImpactEffects.Score:
                     ScoringManager.Instance.UpdateScore(player.PlayerUUID, crystalProperties.scoreAmount);
                     break;
-                case CrystalImpactEffects.SpeedBoost:
-                    SpeedModifiers.Add(new SpeedModifier(boostMultiplier, 6, 0));
-                    break;
                 case CrystalImpactEffects.ResetAggression:
                     // TODO: PLAYERSHIP null pointer here
                     AIPilot controllerScript = gameObject.GetComponent<AIPilot>();

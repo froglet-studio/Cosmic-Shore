@@ -4,7 +4,6 @@ public enum CrystalImpactEffects
     FillFuel,
     DrainFuel,
     Score,
-    SpeedBoost,
     AreaOfEffectExplosion,
     ResetAggression
 }
