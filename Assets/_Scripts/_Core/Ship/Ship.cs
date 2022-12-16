@@ -122,7 +122,7 @@ public class Ship : MonoBehaviour
                     var AOEExplosion = Instantiate(AOEPrefab).GetComponent<AOEExplosion>();
                     AOEExplosion.Team = team;
                     AOEExplosion.transform.SetPositionAndRotation(transform.position,transform.rotation);
-                    AOEExplosion.MaxScale = FuelSystem.CurrentFuel * maxExplosionScale;
+                    AOEExplosion.MaxScale = 50 + FuelSystem.CurrentFuel * maxExplosionScale;
                     break;
                 case CrystalImpactEffects.FillFuel:
                     FuelSystem.ChangeFuelAmount(player.PlayerUUID, crystalProperties.fuelAmount);
