@@ -626,7 +626,7 @@ MonoBehaviour:
   Name: Shark
   ShipType: 3
   TrailSpawner: {fileID: 874579555101021522}
-  skimmer: {fileID: 874579554510349383}
+  skimmer: {fileID: 0}
   AOEPrefab: {fileID: 2728798890556433942, guid: f5ecfb9923155a84c860975d559b2714,
     type: 3}
   player: {fileID: 0}
@@ -638,11 +638,11 @@ MonoBehaviour:
   flipEffects: 03000000
   passiveEffects: 000000000300000004000000
   boostMultiplier: 3
-  boostFuelAmount: -0.01
+  boostFuelAmount: -0.005
   rotationScaler: 140
   rotationThrottleScaler: 0
   maxExplosionScale: 500
-  blockFuelChange: 0.1
+  blockFuelChange: 0.025
   closeCamDistance: -5
   farCamDistance: -15
   head: {fileID: 3710282027580066907}
@@ -941,15 +941,3 @@ Transform:
     type: 3}
   m_PrefabInstance: {fileID: 7471713358279828738}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &874579554510349383 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
-    type: 3}
-  m_PrefabInstance: {fileID: 7471713358279828738}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f35ad70dcbb4e3b47af654e91d9387f8, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
