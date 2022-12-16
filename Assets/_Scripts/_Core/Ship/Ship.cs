@@ -28,7 +28,7 @@ public class Ship : MonoBehaviour
     [SerializeField] float boostFuelAmount = -.01f;
     [SerializeField] float rotationScaler = 130;
     [SerializeField] float rotationThrottleScaler;
-    [SerializeField] float maxExplosionScale = 500;
+    [SerializeField] float maxExplosionScale = 400;
     [SerializeField] float blockFuelChange;
     [SerializeField] float closeCamDistance;
     [SerializeField] float farCamDistance;
