@@ -836,7 +836,7 @@ MonoBehaviour:
   boostFuelAmount: -0.01
   rotationScaler: 190
   rotationThrottleScaler: 0.5
-  maxExplosionScale: 500
+  maxExplosionScale: 250
   blockFuelChange: 0
   closeCamDistance: 0
   farCamDistance: 0
