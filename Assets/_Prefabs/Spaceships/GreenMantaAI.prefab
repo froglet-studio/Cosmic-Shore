@@ -369,7 +369,7 @@ MonoBehaviour:
   ShipType: 4
   TrailSpawner: {fileID: 874579555101021522}
   skimmer: {fileID: 874579554510349383}
-  AOEPrefab: {fileID: 2728798890556433942, guid: 4a855af160021d241b8c1ac70cf2d792,
+  AOEPrefab: {fileID: 5223509924604101809, guid: 42557cca5640fea41b2576f9b95b4eef,
     type: 3}
   player: {fileID: 0}
   crystalImpactEffects: 040000000200000005000000
