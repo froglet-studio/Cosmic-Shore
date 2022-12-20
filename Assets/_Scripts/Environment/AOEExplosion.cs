@@ -22,6 +22,9 @@ public class AOEExplosion : MonoBehaviour
     Teams team;
     public Teams Team { get => team; set => team = value; }
 
+    Ship ship;
+    public Ship Ship{ get => ship; set => ship = value; }
+
     void Start()
     {
         MaxScaleVector = new Vector3(MaxScale, MaxScale, MaxScale);

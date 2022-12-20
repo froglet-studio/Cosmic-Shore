@@ -109,6 +109,8 @@ public class Ship : MonoBehaviour
 
     public void PerformCrystalImpactEffects(CrystalProperties crystalProperties)
     {
+        ScoringManager.Instance.CrystalCollected(this, crystalProperties);
+
         foreach (CrystalImpactEffects effect in crystalImpactEffects)
         {
             switch (effect)
@@ -121,6 +123,7 @@ public class Ship : MonoBehaviour
                     // TODO: add position to crystal properties? use crystal properties to set position
                     var AOEExplosion = Instantiate(AOEPrefab).GetComponent<AOEExplosion>();
                     AOEExplosion.Team = team;
+                    AOEExplosion.Ship = this;
                     AOEExplosion.transform.SetPositionAndRotation(transform.position,transform.rotation);
                     AOEExplosion.MaxScale = 50 + FuelSystem.CurrentFuel * maxExplosionScale;
                     break;

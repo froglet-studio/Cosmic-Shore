@@ -21,7 +21,14 @@ public class Skimmer : MonoBehaviour
         if (trail != null)
         {
             trail.InstantiateParticle(transform);
-            if (thief) trail.Team = Player.Team;
+            
+            if (thief)
+            {
+                trail.Team = Player.Team;
+                trail.PlayerName = ship.Player.PlayerName;
+
+                // TODO: update control/scoring stats
+            }
         }
     }
 }

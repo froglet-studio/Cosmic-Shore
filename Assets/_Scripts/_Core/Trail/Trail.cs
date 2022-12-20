@@ -8,17 +8,16 @@ public class Trail : MonoBehaviour
     [SerializeField] Material material;
     [SerializeField] TrailBlockProperties trailBlockProperties;
 
-    public string ownerId;
+    public string ownerId;  // TODO: is the ownerId the player name? I hope it is.
     public float waitTime = .6f;
     public bool embiggen;
     public bool destroyed = false;
     public float MaxScale = 1f;
 
-
     public bool warp = false;
     GameObject shards;
 
-    public delegate void OnCollisionIncreaseScore(string uuid, int amount);
+    public delegate void OnCollisionIncreaseScore(string uuid, float amount);
     public static event OnCollisionIncreaseScore AddToScore;
 
     private int scoreChange = 1;
@@ -27,6 +26,8 @@ public class Trail : MonoBehaviour
     private BoxCollider blockCollider;
     Teams team;
     public Teams Team { get => team; set => team = value; }
+    string playerName;
+    public string PlayerName { get => playerName; set => playerName = value; }
 
     void Start()
     {
@@ -74,10 +75,15 @@ public class Trail : MonoBehaviour
 
         // Add block to team score when created
         if (ScoringManager.Instance != null)
+        {
             ScoringManager.Instance.UpdateTeamScore(team, trailBlockProperties.volume);
+            ScoringManager.Instance.UpdateScore(playerName, trailBlockProperties.volume);
 
-        //if (NodeControlManager)
-    }
+            ScoringManager.Instance.BlockCreated(team, playerName, trailBlockProperties);
+        }
+
+            //if (NodeControlManager)
+        }
 
     public void InstantiateParticle(Transform skimmer)
     {
@@ -112,6 +118,7 @@ public class Trail : MonoBehaviour
 
             Collide(ship);
             Explode(impactVector, ship.Team);
+            ScoringManager.Instance.BlockDestroyed(team, ship.Player.PlayerName, trailBlockProperties);
         }
         else if (IsExplosion(other.gameObject))
         {
@@ -123,6 +130,8 @@ public class Trail : MonoBehaviour
 
             
             Explode(impactVector, other.GetComponent<AOEExplosion>().Team); // TODO: need to attribute the explosion color to the team that made the explosion
+
+            ScoringManager.Instance.BlockDestroyed(other.GetComponent<AOEExplosion>().Team, other.GetComponent<AOEExplosion>().Ship.Player.PlayerName, trailBlockProperties);
         }
         else if (IsProjectile(other.gameObject))
         {
@@ -133,6 +142,8 @@ public class Trail : MonoBehaviour
             var impactVector = speed;
 
             Explode(impactVector, other.GetComponent<Projectile>().Team); // TODO: need to attribute the explosion color to the team that made the explosion
+
+            ScoringManager.Instance.BlockDestroyed(other.GetComponent<Projectile>().Team, other.GetComponent<Projectile>().Ship.Player.PlayerName, trailBlockProperties);
         }
     }
 
@@ -182,6 +193,7 @@ public class Trail : MonoBehaviour
 
         // Remove block from team score when destroyed
         ScoringManager.Instance.UpdateTeamScore(team, trailBlockProperties.volume*-1);
+        ScoringManager.Instance.UpdateScore(ownerId, trailBlockProperties.volume*-1);
     }
 
     public void restore()
@@ -193,6 +205,7 @@ public class Trail : MonoBehaviour
 
         // Add block back to team score when created
         ScoringManager.Instance.UpdateTeamScore(team, trailBlockProperties.volume);
+        ScoringManager.Instance.UpdateScore(ownerId, trailBlockProperties.volume);
     }
 
     // TODO: utility class needed to hold these

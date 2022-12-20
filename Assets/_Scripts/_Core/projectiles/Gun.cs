@@ -9,6 +9,7 @@ public class Gun : MonoBehaviour
     public float projectileTime = 5;
     public float firePeriod = .2f;
     public Teams Team;
+    public Ship Ship;
     bool onCooldown = false;
  
     public void FireGun(Transform containerTransform)
@@ -24,6 +25,7 @@ public class Gun : MonoBehaviour
         projectile.transform.parent = containerTransform;
         projectile.GetComponent<Projectile>().Velocity = projectile.transform.forward * speed;
         projectile.GetComponent<Projectile>().Team = Team;
+        projectile.GetComponent<Projectile>().Ship = Ship;
 
         StartCoroutine(MoveProjectileCoroutine(projectile));
         StartCoroutine(CooldownCoroutine());

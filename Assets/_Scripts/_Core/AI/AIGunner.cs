@@ -11,6 +11,7 @@ public class AIGunner : MonoBehaviour
     float rotationSpeed = 40;
     TrailSpawner trailSpawner;
     public Teams Team;
+    public Ship Ship;
 
     [SerializeField] Gun gun;
     [SerializeField] GameObject gunMount;
@@ -20,7 +21,9 @@ public class AIGunner : MonoBehaviour
     {
         trailSpawner = player.Ship.TrailSpawner;
         Team = player.Team;
+        Ship = player.Ship;
         gun.Team = Team;
+        gun.Ship = Ship;
     }
 
     void Update()
