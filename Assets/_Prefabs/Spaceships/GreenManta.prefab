@@ -372,7 +372,7 @@ MonoBehaviour:
   AOEPrefab: {fileID: 2728798890556433942, guid: 4a855af160021d241b8c1ac70cf2d792,
     type: 3}
   player: {fileID: 0}
-  crystalImpactEffects: 000000000100000003000000
+  crystalImpactEffects: 00000000
   trailBlockImpactEffects: 000000000300000002000000
   fullSpeedStraightEffects: 01000000
   rightStickEffects: 
@@ -382,6 +382,7 @@ MonoBehaviour:
   boostMultiplier: 2
   boostFuelAmount: 0
   rotationScaler: 70
+  rotationThrottleScaler: 0
   maxExplosionScale: 500
   blockFuelChange: 0
   closeCamDistance: 0

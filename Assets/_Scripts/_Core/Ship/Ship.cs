@@ -60,7 +60,7 @@ public class Ship : MonoBehaviour
 
     List<SpeedModifier> SpeedModifiers = new List<SpeedModifier>();
     float speedModifierDuration = 2f;
-    float speedModifierMax = 6f;
+    float speedModifierMax = 100f;
 
     public Teams Team { get => team; set => team = value; } 
     public Player Player { get => player; set => player = value; }
@@ -129,6 +129,9 @@ public class Ship : MonoBehaviour
                     break;
                 case CrystalImpactEffects.FillFuel:
                     FuelSystem.ChangeFuelAmount(player.PlayerUUID, crystalProperties.fuelAmount);
+                    break;
+                case CrystalImpactEffects.Boost:
+                    SpeedModifiers.Add(new SpeedModifier(crystalProperties.speedBuffAmount, 4 * speedModifierDuration, 0));
                     break;
                 case CrystalImpactEffects.DrainFuel:
                     FuelSystem.ChangeFuelAmount(player.PlayerUUID, -FuelSystem.CurrentFuel);

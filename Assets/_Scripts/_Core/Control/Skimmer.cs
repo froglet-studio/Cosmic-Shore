@@ -5,10 +5,11 @@ using UnityEngine;
 
 public class Skimmer : MonoBehaviour
 {
-    [SerializeField] Ship ship;
+    [SerializeField] public Ship ship;
     [SerializeField] public Player Player;
     [SerializeField] float fuelAmount;
-    [SerializeField] List<SkimmerImpactEffects> skimmerImpactEffects;
+    [SerializeField] List<TrailBlockImpactEffects> trailBlockImpactEffects;
+    public Teams team;
     public bool thief;
 
 
@@ -19,14 +20,16 @@ public class Skimmer : MonoBehaviour
     //Maja added this to try and enable shark skimmer smashing
     public void PerformSkimmerImpactEffects(TrailBlockProperties trailBlockProperties)
     {
-        foreach (SkimmerImpactEffects effect in skimmerImpactEffects)
+        foreach (TrailBlockImpactEffects effect in trailBlockImpactEffects)
         {
             switch (effect)
             {
-                case SkimmerImpactEffects.PlayHaptics:
+                case TrailBlockImpactEffects.PlayHaptics:
                     HapticController.PlayBlockCollisionHaptics();
                     break;
-                case SkimmerImpactEffects.DeactivateTrailBlock:
+                case TrailBlockImpactEffects.DeactivateTrailBlock:
+                    trailBlockProperties.trail.Explode(ship.transform.forward * ship.GetComponent<ShipData>().speed, team);
+                    ScoringManager.Instance.BlockDestroyed(team, ship.Player.PlayerName, trailBlockProperties);
                     break;
             }
         }

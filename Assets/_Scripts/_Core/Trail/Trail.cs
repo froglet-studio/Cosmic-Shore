@@ -49,6 +49,7 @@ public class Trail : MonoBehaviour
         else StartCoroutine(ToggleBlockCoroutine(MaxScale));
 
         trailBlockProperties.position = transform.position;
+        trailBlockProperties.trail = this;
     }
 
     IEnumerator ToggleBlockCoroutine(float finalSize)
@@ -120,6 +121,10 @@ public class Trail : MonoBehaviour
             Explode(impactVector, ship.Team);
             ScoringManager.Instance.BlockDestroyed(team, ship.Player.PlayerName, trailBlockProperties);
         }
+        else if (IsSkimmer(other.gameObject))
+        {
+            other.GetComponent<Skimmer>().PerformSkimmerImpactEffects(trailBlockProperties);
+        }
         else if (IsExplosion(other.gameObject))
         {
             if (other.GetComponent<AOEExplosion>().Team == Team)
@@ -174,7 +179,7 @@ public class Trail : MonoBehaviour
         }
     }
 
-    void Explode(Vector3 impactVector, Teams team)
+    public void Explode(Vector3 impactVector, Teams team)
     {
         // We don't destroy the trail blocks, we keep the objects around so they can be restored
         gameObject.GetComponent<BoxCollider>().enabled = false;
