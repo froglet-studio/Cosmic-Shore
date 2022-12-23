@@ -31,6 +31,10 @@ public class Skimmer : MonoBehaviour
                     trailBlockProperties.trail.Explode(ship.transform.forward * ship.GetComponent<ShipData>().speed, team);
                     ScoringManager.Instance.BlockDestroyed(team, ship.Player.PlayerName, trailBlockProperties);
                     break;
+                // This is actually redundant with Skimmer's built in "Fuel Amount" variable
+                //case TrailBlockImpactEffects.ChangeFuel:
+                    //FuelSystem.ChangeFuelAmount(Player.PlayerUUID, ship.blockFuelChange);
+                    //break;
             }
         }
     }

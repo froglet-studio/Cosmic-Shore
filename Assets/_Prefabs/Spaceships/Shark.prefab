@@ -630,7 +630,7 @@ MonoBehaviour:
   AOEPrefab: {fileID: 2728798890556433942, guid: f5ecfb9923155a84c860975d559b2714,
     type: 3}
   player: {fileID: 0}
-  crystalImpactEffects: 0000000004000000
+  crystalImpactEffects: 0000000005000000
   trailBlockImpactEffects: 00000000030000000500000006000000
   fullSpeedStraightEffects: 01000000
   rightStickEffects: 
@@ -931,7 +931,7 @@ PrefabInstance:
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
       propertyPath: fuelAmount
-      value: 0
+      value: 0.03
       objectReference: {fileID: 0}
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
@@ -946,7 +946,7 @@ PrefabInstance:
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
       propertyPath: trailBlockImpactEffects.Array.size
-      value: 3
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}

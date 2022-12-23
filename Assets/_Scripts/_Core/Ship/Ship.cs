@@ -60,7 +60,7 @@ public class Ship : MonoBehaviour
 
     List<SpeedModifier> SpeedModifiers = new List<SpeedModifier>();
     float speedModifierDuration = 2f;
-    float speedModifierMax = 100f;
+    float speedModifierMax = 6f;
 
     public Teams Team { get => team; set => team = value; } 
     public Player Player { get => player; set => player = value; }
