@@ -6,5 +6,6 @@ public enum TrailBlockImpactEffects
     DeactivateTrailBlock,
     ActivateTrailBlock,
     OnlyBuffSpeed,
-    ChangeFuel
+    ChangeFuel,
+    Steal
 }

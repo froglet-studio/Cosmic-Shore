@@ -173,9 +173,6 @@ public class ScoringManager : Singleton<ScoringManager>
 
         if (!PlayerScores.ContainsKey(playerName))
         {
-            Debug.LogWarning($"Player UUID: {playerName}");
-            Debug.LogWarning($"PlayerScores Count: {PlayerScores.Count}");
-            Debug.LogWarning($"ScoreContainers Count: {ScoreContainers.Count}");
             PlayerScores.Add(playerName, 0);
             ScoreDisplays.Add(playerName, ScoreContainers[PlayerScores.Count - 1]);
             ScoreContainers[PlayerScores.Count - 1].transform.GetChild(0).GetComponent<TMP_Text>().text = playerName;

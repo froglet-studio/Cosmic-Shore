@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using StarWriter.Core.HangerBuilder;
+using System.Collections;
 using UnityEngine;
 
 public class Trail : MonoBehaviour
@@ -199,6 +200,20 @@ public class Trail : MonoBehaviour
         // Remove block from team score when destroyed
         ScoringManager.Instance.UpdateTeamScore(team, trailBlockProperties.volume*-1);
         ScoringManager.Instance.UpdateScore(playerName, trailBlockProperties.volume*-1);
+    }
+
+    public void ConvertToTeam(string PlayerName, Teams team)
+    {
+        ScoringManager.Instance.UpdateTeamScore(this.team, trailBlockProperties.volume * -1);
+        ScoringManager.Instance.UpdateScore(playerName, trailBlockProperties.volume * -1);
+
+        this.team = team;
+        this.playerName = PlayerName;
+
+        ScoringManager.Instance.UpdateTeamScore(this.team, trailBlockProperties.volume);
+        ScoringManager.Instance.UpdateScore(playerName, trailBlockProperties.volume);
+
+        gameObject.GetComponent<MeshRenderer>().material = Hangar.Instance.GetTeamBlockMaterial(team);
     }
 
     public void restore()

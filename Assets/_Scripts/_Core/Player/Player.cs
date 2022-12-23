@@ -28,6 +28,7 @@ public class Player : MonoBehaviour
         ship.Team = Team;
         ship.Player = this;
         ship.skimmer.Player = this;
+        ship.skimmer.team = Team;
 
         gameManager.WaitOnAILoading(ship.GetComponent<AIPilot>());
     }
@@ -60,6 +61,7 @@ public class Player : MonoBehaviour
                 ship.Team = Team;
                 ship.Player = this;
                 ship.skimmer.Player = this;
+                ship.skimmer.team = Team;
 
                 gameManager.WaitOnPlayerLoading();
                 break;

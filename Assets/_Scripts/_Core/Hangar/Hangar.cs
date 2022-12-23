@@ -107,5 +107,10 @@ namespace StarWriter.Core.HangerBuilder
         {
             return Instantiate(shipTypeMap[PlayerShipType]);
         }
+
+        public Material GetTeamBlockMaterial(Teams team)
+        {
+            return TeamBlockMaterials[team];
+        }
     }
 }
