@@ -16,11 +16,11 @@ public struct RoundStats
 
     public RoundStats(bool dummy = false)
     {
-        this.blocksCreated = 0;
-        this.blocksDestroyed = 0;
-        this.volumeCreated = 0;
-        this.volumeDestroyed = 0;
-        this.crystalsCollected = 0;
+        blocksCreated = 0;
+        blocksDestroyed = 0;
+        volumeCreated = 0;
+        volumeDestroyed = 0;
+        crystalsCollected = 0;
     }
 }
 
@@ -166,23 +166,26 @@ public class ScoringManager : Singleton<ScoringManager>
         ScoreDisplays[team.ToString()].transform.GetChild(1).GetComponent<TMP_Text>().text = ((int)TeamScores[team]).ToString("D3");
     }
 
-    public void UpdateScore(string uuid, float amount)
+    public void UpdateScore(string playerName, float amount)
     {
         if (RoundEnded)
             return;
 
-        if (!PlayerScores.ContainsKey(uuid))
+        if (!PlayerScores.ContainsKey(playerName))
         {
-            PlayerScores.Add(uuid, 0);
-            ScoreDisplays.Add(uuid, ScoreContainers[PlayerScores.Count - 1]);
-            ScoreContainers[PlayerScores.Count - 1].transform.GetChild(0).GetComponent<TMP_Text>().text = uuid;
+            Debug.LogWarning($"Player UUID: {playerName}");
+            Debug.LogWarning($"PlayerScores Count: {PlayerScores.Count}");
+            Debug.LogWarning($"ScoreContainers Count: {ScoreContainers.Count}");
+            PlayerScores.Add(playerName, 0);
+            ScoreDisplays.Add(playerName, ScoreContainers[PlayerScores.Count - 1]);
+            ScoreContainers[PlayerScores.Count - 1].transform.GetChild(0).GetComponent<TMP_Text>().text = playerName;
             ScoreContainers[PlayerScores.Count - 1].transform.GetChild(1).GetComponent<TMP_Text>().text = "000";
         }
 
-        PlayerScores[uuid] += amount;
-        ScoreDisplays[uuid].transform.GetChild(1).GetComponent<TMP_Text>().text = ((int)PlayerScores[uuid]).ToString("D3");
+        PlayerScores[playerName] += amount;
+        ScoreDisplays[playerName].transform.GetChild(1).GetComponent<TMP_Text>().text = ((int)PlayerScores[playerName]).ToString("D3");
 
-        if (uuid == "admin")
+        if (playerName == "admin")
         {
             SinglePlayerScore += amount;
         }

@@ -128,7 +128,7 @@ namespace StarWriter.Core
             deathCount = 0;
             analyticsManager.LogLevelStart();
             UnPauseGame();
-            ActiveGameScene = gameTestModeZeroGameScene;
+            ActiveGameScene = scenename;
             SceneManager.LoadScene(scenename);
         }
         public void OnClickPlayButton() //TODO make this general so you pass in the load scene

@@ -198,7 +198,7 @@ public class Trail : MonoBehaviour
 
         // Remove block from team score when destroyed
         ScoringManager.Instance.UpdateTeamScore(team, trailBlockProperties.volume*-1);
-        ScoringManager.Instance.UpdateScore(ownerId, trailBlockProperties.volume*-1);
+        ScoringManager.Instance.UpdateScore(playerName, trailBlockProperties.volume*-1);
     }
 
     public void restore()
@@ -210,7 +210,7 @@ public class Trail : MonoBehaviour
 
         // Add block back to team score when created
         ScoringManager.Instance.UpdateTeamScore(team, trailBlockProperties.volume);
-        ScoringManager.Instance.UpdateScore(ownerId, trailBlockProperties.volume);
+        ScoringManager.Instance.UpdateScore(playerName, trailBlockProperties.volume);
     }
 
     // TODO: utility class needed to hold these

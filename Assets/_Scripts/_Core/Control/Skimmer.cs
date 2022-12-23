@@ -1,5 +1,3 @@
-using StarWriter.Core.Input;
-using StarWriter.Core;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -29,7 +27,7 @@ public class Skimmer : MonoBehaviour
                     break;
                 case TrailBlockImpactEffects.DeactivateTrailBlock:
                     trailBlockProperties.trail.Explode(ship.transform.forward * ship.GetComponent<ShipData>().speed, team);
-                    ScoringManager.Instance.BlockDestroyed(team, ship.Player.PlayerName, trailBlockProperties);
+                    ScoringManager.Instance.BlockDestroyed(team, Player.PlayerName, trailBlockProperties);
                     break;
                 // This is actually redundant with Skimmer's built in "Fuel Amount" variable
                 //case TrailBlockImpactEffects.ChangeFuel:
