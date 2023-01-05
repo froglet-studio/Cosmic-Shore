@@ -1,39 +1,53 @@
+using StarWriter.Core;
 using StarWriter.Utility.Singleton;
 using System.Collections.Generic;
 using UnityEngine;
 
 public class NodeControlManager : Singleton<NodeControlManager>
 {
-    struct TeamVolume
+    [SerializeField] List<Node> Nodes;
+
+    void OnEnable()
     {
-        public float volume;
-        public Teams team;
+        GameManager.onDeath += OutputNodeControl;
+        GameManager.onGameOver += OutputNodeControl;
     }
-    [SerializeField] List<GameObject> Nodes;
 
-    Dictionary<GameObject, TeamVolume> NodeVolumes = new Dictionary<GameObject, TeamVolume>();
+    void OnDisable()
+    {
+        GameManager.onDeath -= OutputNodeControl;
+        GameManager.onGameOver -= OutputNodeControl;
+    }
 
-    public void AddBlock(Teams team, TrailBlockProperties blockProperties)
+    public void AddBlock(Teams team, string playerName, TrailBlockProperties blockProperties)
     {
         foreach (var node in Nodes)
         {
-            if (Vector3.Distance(blockProperties.position, node.transform.position) < node.transform.localScale.x)
+            if (node.ContainsPosition(blockProperties.position))
             {
-                //NodeVolumes[node]. += blockProperties.volume;
+                node.ChangeVolume(team, blockProperties.volume);
+                break;
             }
         }
     }
 
-    public void RemoveBlock(Teams team, TrailBlockProperties blockProperties)
-    {
-
-    }
-
-    void Start()
+    public void RemoveBlock(Teams team, string playerName, TrailBlockProperties blockProperties)
     {
         foreach (var node in Nodes)
         {
-            //NodeVolumes.Add(node, 0);
+            if (node.ContainsPosition(blockProperties.position))
+            {
+                node.ChangeVolume(team, -blockProperties.volume);
+                break;
+            }
+        }
+    }
+
+    public void OutputNodeControl()
+    {
+        foreach (var node in Nodes)
+        {
+            Debug.LogWarning($"Node Control - Node ID: {node.ID}, Controlling Team: {node.ControllingTeam}, Green Volume: {node.GetTeamVolume(Teams.Green)}, Red Volume: {node.GetTeamVolume(Teams.Red)}");
         }
     }
 }

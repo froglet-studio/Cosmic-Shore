@@ -84,6 +84,12 @@ public class Trail : MonoBehaviour
             ScoringManager.Instance.BlockCreated(team, playerName, trailBlockProperties);
         }
 
+        if (NodeControlManager.Instance != null)
+        {
+            // Node control tracking
+            NodeControlManager.Instance.AddBlock(team, playerName, trailBlockProperties);
+        }
+
             //if (NodeControlManager)
         }
 
@@ -121,6 +127,11 @@ public class Trail : MonoBehaviour
             Collide(ship);
             Explode(impactVector, ship.Team);
             ScoringManager.Instance.BlockDestroyed(team, ship.Player.PlayerName, trailBlockProperties);
+
+            if (NodeControlManager.Instance != null)
+            {
+                NodeControlManager.Instance.RemoveBlock(team, ship.Player.PlayerName, trailBlockProperties);
+            }
         }
         else if (IsSkimmer(other.gameObject))
         {
@@ -138,6 +149,11 @@ public class Trail : MonoBehaviour
             Explode(impactVector, other.GetComponent<AOEExplosion>().Team); // TODO: need to attribute the explosion color to the team that made the explosion
 
             ScoringManager.Instance.BlockDestroyed(other.GetComponent<AOEExplosion>().Team, other.GetComponent<AOEExplosion>().Ship.Player.PlayerName, trailBlockProperties);
+
+            if (NodeControlManager.Instance != null)
+            {
+                NodeControlManager.Instance.RemoveBlock(other.GetComponent<AOEExplosion>().Team, other.GetComponent<AOEExplosion>().Ship.Player.PlayerName, trailBlockProperties);
+            }
         }
         else if (IsProjectile(other.gameObject))
         {
@@ -150,6 +166,11 @@ public class Trail : MonoBehaviour
             Explode(impactVector, other.GetComponent<Projectile>().Team); // TODO: need to attribute the explosion color to the team that made the explosion
 
             ScoringManager.Instance.BlockDestroyed(other.GetComponent<Projectile>().Team, other.GetComponent<Projectile>().Ship.Player.PlayerName, trailBlockProperties);
+
+            if (NodeControlManager.Instance != null)
+            {
+                NodeControlManager.Instance.RemoveBlock(other.GetComponent<Projectile>().Team, other.GetComponent<Projectile>().Ship.Player.PlayerName, trailBlockProperties);
+            }
         }
     }
 
