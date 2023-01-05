@@ -1,6 +1,7 @@
 using System.Collections;
 using UnityEngine.UI;
 using UnityEngine;
+using StarWriter.Core.Input;
 
 /// <summary>
 /// Requires Native Share to function in Unity
@@ -29,7 +30,7 @@ public class SnsShare : MonoBehaviour
         Texture2D ss = new Texture2D(Screen.width, Screen.height, TextureFormat.RGB24, false);
         ss.ReadPixels(new Rect(0, 0, Screen.width, Screen.height), 0, 0);
 
-        if (StarWriter.Core.GameManager.Instance.currentOrientation == ScreenOrientation.LandscapeRight)
+        if (InputController.currentOrientation == ScreenOrientation.LandscapeRight)
         {
             Color[] pixels = ss.GetPixels();
             System.Array.Reverse(pixels);
@@ -42,7 +43,7 @@ public class SnsShare : MonoBehaviour
 
         Destroy(ss); // Must destroy to prevent memory leaks
 
-        Screen.orientation = StarWriter.Core.GameManager.Instance.currentOrientation;
+        Screen.orientation = InputController.currentOrientation;
 
         new NativeShare().AddFile(filePath)
             .SetSubject("").SetText("").SetUrl("")

@@ -46,7 +46,6 @@ public class FuelSystem : MonoBehaviour
         GameManager.onExtendGamePlay += ResetFuel;
         Skimmer.OnSkim += ChangeFuelAmount;
         InputController.OnBoost += ChangeFuelAmount;
-        InputFlowController.OnBoost += ChangeFuelAmount;
     }
 
     private void OnDisable()
@@ -54,7 +53,6 @@ public class FuelSystem : MonoBehaviour
         GameManager.onExtendGamePlay -= ResetFuel;
         Skimmer.OnSkim -= ChangeFuelAmount;
         InputController.OnBoost -= ChangeFuelAmount;
-        InputFlowController.OnBoost -= ChangeFuelAmount;
     }
 
     void Start()

@@ -43,7 +43,6 @@ public class TrailSpawner : MonoBehaviour
 
     private void OnEnable()
     {
-        GameManager.onPhoneFlip += OnPhoneFlip;
         GameManager.onDeath += PauseTrailSpawner;
         GameManager.onGameOver += RestartAITrailSpawnerAfterDelay;
         GameManager.onExtendGamePlay += RestartTrailSpawnerAfterDelay;
@@ -51,7 +50,6 @@ public class TrailSpawner : MonoBehaviour
 
     private void OnDisable()
     {
-        GameManager.onPhoneFlip -= OnPhoneFlip;
         GameManager.onDeath -= PauseTrailSpawner;
         GameManager.onGameOver -= RestartAITrailSpawnerAfterDelay;
         GameManager.onExtendGamePlay -= RestartTrailSpawnerAfterDelay;
@@ -79,12 +77,9 @@ public class TrailSpawner : MonoBehaviour
         ownerId = ship.Player.PlayerUUID;
     }
 
-    private void OnPhoneFlip(bool state)
+    public void ToggleBlockWaitTime(bool state)
     {
-        if (gameObject == GameObject.FindWithTag("Player"))
-        {
-            waitTime = state ? 1.5f : 0.5f;
-        }
+        waitTime = state ? 1.5f : 0.5f;
     }
     void PauseTrailSpawner()
     {

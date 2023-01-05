@@ -12,10 +12,6 @@ public class MainMenuActions : MonoBehaviour
     {
         GameSetting.Instance.ChangeAudioEnabledStatus();
     }
-    public void GameSettingChangeGyroEnabledStatus()
-    {
-        GameSetting.Instance.ChangeGyroEnabledStatus();
-    }
     public void GameSettingInvertYEnabledStatus()
     {
         GameSetting.Instance.ChangeInvertYEnabledStatus();

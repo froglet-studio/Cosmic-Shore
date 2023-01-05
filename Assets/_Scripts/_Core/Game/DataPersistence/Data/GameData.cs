@@ -9,7 +9,6 @@ public class GameData : DataPersistenceBase<GameData>
     //public bool adsEnabled;               //TODO
     //public bool invertYEnabled;           //TODO 
     //public bool isAudioEnabled;           //TODO
-    //public bool isGyroEnabled;            //TODO
     //public bool isTutorialEnabled;        //TODO
     
     //Scoring Data

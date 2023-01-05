@@ -5,5 +5,6 @@ public enum ActiveAbilities
     Boost,
     Invulnerability,
     ToggleCamera,
-    ToggleMode
+    ToggleMode,
+    ToggleGyro
 }

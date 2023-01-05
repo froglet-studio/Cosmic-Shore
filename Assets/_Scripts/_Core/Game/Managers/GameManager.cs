@@ -25,15 +25,7 @@ namespace StarWriter.Core
         public delegate void OnGameOverEvent();
         public static event OnGameOverEvent onGameOver;
 
-        public delegate void OnPhoneFlipEvent(bool state);
-        public static event OnPhoneFlipEvent onPhoneFlip;
-
-        public bool PhoneFlipState;
-
-        public ScreenOrientation currentOrientation;
-
         /* Singleton References */
-        GameSetting gameSettings;
         CameraManager cameraManager;
         AnalyticsManager analyticsManager;
 
@@ -78,42 +70,8 @@ namespace StarWriter.Core
         {
             cameraManager = CameraManager.Instance;
             analyticsManager = AnalyticsManager.Instance;
-            gameSettings = GameSetting.Instance;
 
             DataPersistenceManager.Instance.LoadGameData();
-        }
-
-        void Update()
-        {
-            if (Gamepad.current != null)
-            {
-                //if (UnityEngine.InputSystem.Gamepad.current.rightShoulder.wasPressedThisFrame)
-                //{
-                //    GamepadCameraFlip = !GamepadCameraFlip;
-                //    Debug.Log($"Gamepad Camera Flip {GamepadCameraFlip}");
-                //}
-            }
-
-            //// We don't want the phone flip to flop like a fish out of water if the phone is mostly parallel to the ground
-            //if (Mathf.Abs(UnityEngine.Input.acceleration.y) < phoneFlipThreshold) return;
-
-            if (PhoneFlipState)
-            {
-                currentOrientation = ScreenOrientation.LandscapeLeft;
-                onPhoneFlip(PhoneFlipState);
-            }
-            else
-            {
-                currentOrientation = ScreenOrientation.LandscapeRight;
-                onPhoneFlip(PhoneFlipState);
-            }
-        }
-        /// <summary>
-        /// Toggles the Gyro On/Off
-        /// </summary>
-        public void OnClickGyroToggleButton()
-        {
-            gameSettings.ChangeGyroEnabledStatus();
         }
 
         public void OnClickTutorialButton()

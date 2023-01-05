@@ -1,7 +1,6 @@
 using System.Collections;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using UnityEngine.Serialization;
 
 namespace StarWriter.Core.Input
 {
@@ -12,16 +11,16 @@ namespace StarWriter.Core.Input
         Transform shipTransform;
         ShipAnimation shipAnimation;
         ShipData shipData;
-
         #endregion
+
+        float phoneFlipThreshold = .1f;
+        public bool PhoneFlipState;
+        public static ScreenOrientation currentOrientation;
 
         public delegate void Boost(string uuid, float amount);
         public static event Boost OnBoost;
         string uuid;
 
-        float phoneFlipThreshold = .1f;
-
-        [SerializeField] bool driftEnabled = false;
         public bool drifting = false;
         public float boostDecay = 1;
 
@@ -45,27 +44,27 @@ namespace StarWriter.Core.Input
         public float rotationThrottleScaler = 0;
         public float rotationScaler = 130f;
 
-        private readonly float lerpAmount = 2f;
-        private readonly float smallLerpAmount = .7f;
+        readonly float lerpAmount = 2f;
+        readonly float smallLerpAmount = .7f;
 
-        private UnityEngine.Gyroscope gyro;
-        private Quaternion derivedCorrection;
-        private Quaternion displacementQ;
-        private Quaternion inverseInitialRotation=new(0,0,0,0);
+        UnityEngine.Gyroscope gyro;
+        Quaternion derivedCorrection;
+        Quaternion displacementQ;
+        Quaternion inverseInitialRotation=new(0,0,0,0);
 
-        private bool isGyroEnabled = true;
-        private bool invertYEnabled = false;
-        public bool IsGyroEnabled { get => isGyroEnabled;  } // GameManager controls the gyro status
+        bool isGyroEnabled = false;
+        bool invertYEnabled = false;
+        float gyroInitializationAcceptableRange = .05f;
 
-        private void OnEnable()
+        Vector2 leftTouch, rightTouch;
+
+        void OnEnable()
         {
-            GameSetting.OnChangeGyroEnabledStatus += OnToggleGyro;
             GameSetting.OnChangeInvertYEnabledStatus += OnToggleInvertY;
         }
 
-        private void OnDisable()
+        void OnDisable()
         {
-            GameSetting.OnChangeGyroEnabledStatus -= OnToggleGyro;
             GameSetting.OnChangeInvertYEnabledStatus -= OnToggleInvertY;
         }
 
@@ -79,6 +78,7 @@ namespace StarWriter.Core.Input
             throttleScaler = initialThrottleScaler;
 
             uuid = GameObject.FindWithTag("Player").GetComponent<Player>().PlayerUUID;
+            
             // TODO: why is this here?
             Screen.sleepTimeout = SleepTimeout.NeverSleep;
 
@@ -92,12 +92,9 @@ namespace StarWriter.Core.Input
             invertYEnabled = GameSetting.Instance.InvertYEnabled;
         }
 
-        float gyroInitializationAcceptableRange = .05f;
-
         IEnumerator GyroInitializationCoroutine()
         {
             derivedCorrection = GyroToUnity(Quaternion.Inverse(new Quaternion(0, .65f, .75f, 0)));
-            isGyroEnabled = PlayerPrefs.GetInt(GameSetting.PlayerPrefKeys.isGyroEnabled.ToString()) == 1;
             inverseInitialRotation = Quaternion.identity;
 
             // Turns out the gryo attitude is not avaiable immediately, so wait until we start getting values to initialize
@@ -138,7 +135,7 @@ namespace StarWriter.Core.Input
             }
         }
 
-        private void RotateShip()
+        void RotateShip()
         {
             if (isGyroEnabled && !Equals(inverseInitialRotation, new Quaternion(0, 0, 0, 0)))
             {
@@ -157,14 +154,7 @@ namespace StarWriter.Core.Input
             }
         }
 
-        Vector2 leftTouch, rightTouch;
-
-        private float Ease(float input)
-        {
-            return input < 0 ? (Mathf.Cos(input) - 1) / 2 : -(Mathf.Cos(input) - 1) / 2;
-        }
-
-        private void ReceiveTouchInput()
+        void ReceiveTouchInput()
         {
             Debug.Log($"Gamepad.Current: {Gamepad.current}");
             if (Gamepad.current != null)
@@ -182,8 +172,10 @@ namespace StarWriter.Core.Input
                 if (invertYEnabled)
                     ySum *= -1;
 
-                if (Gamepad.current.rightShoulder.wasPressedThisFrame && !GameManager.Instance.PhoneFlipState) ship.StartFlipEffects();
-                else if (Gamepad.current.rightShoulder.wasPressedThisFrame && GameManager.Instance.PhoneFlipState) ship.StopFlipEffects();
+                if (Gamepad.current.rightShoulder.wasPressedThisFrame && !PhoneFlipState) 
+                    ship.StartFlipEffects();
+                else if (Gamepad.current.rightShoulder.wasPressedThisFrame && PhoneFlipState) 
+                    ship.StopFlipEffects();
 
                 if (Gamepad.current.leftTrigger.isPressed)
                 {
@@ -218,8 +210,24 @@ namespace StarWriter.Core.Input
             {
                 if (Mathf.Abs(UnityEngine.Input.acceleration.y) >= phoneFlipThreshold)
                 {
-                    if (UnityEngine.Input.acceleration.y < 0 &&  !GameManager.Instance.PhoneFlipState) ship.StartFlipEffects(); // TODO: do interface stuff here
-                    else if (UnityEngine.Input.acceleration.y > 0 && GameManager.Instance.PhoneFlipState) ship.StopFlipEffects();
+                    if (UnityEngine.Input.acceleration.y < 0 && PhoneFlipState)
+                    {
+                        PhoneFlipState = false;
+                        ship.StopFlipEffects();
+
+                        currentOrientation = ScreenOrientation.LandscapeLeft;
+
+                        Debug.Log($"InputController Phone flip state change detected - new flip state: {PhoneFlipState}, acceleration.y: {UnityEngine.Input.acceleration.y}");
+                    }
+                    else if (UnityEngine.Input.acceleration.y > 0 && !PhoneFlipState)
+                    {
+                        PhoneFlipState = true;
+                        ship.StartFlipEffects();
+
+                        currentOrientation = ScreenOrientation.LandscapeRight;
+
+                        Debug.Log($"InputController Phone flip state change detected - new flip state: {PhoneFlipState}, acceleration.y: {UnityEngine.Input.acceleration.y}");
+                    }
                 }
 
                 var threeFingerFumble = false;
@@ -345,7 +353,11 @@ namespace StarWriter.Core.Input
             boostDecay += .03f;
         }
 
-        public IEnumerator DecayingBoostCoroutine()
+        public void StopShipBoost()
+        {
+            StartCoroutine(DecayingBoostCoroutine());
+        }
+        IEnumerator DecayingBoostCoroutine()
         {
             while (boostDecay > 1)
             {
@@ -355,7 +367,13 @@ namespace StarWriter.Core.Input
             }
         }
 
-        private void Yaw()  // These need to not use *= ... remember quaternions are not commutative
+        public void BoostShip(float boost, float fuelAmount)
+        {
+            speed = Mathf.Lerp(speed, xDiff * throttleScaler * boost + defaultThrottle, lerpAmount * Time.deltaTime);
+            OnBoost?.Invoke(uuid, fuelAmount);
+        }
+
+        void Yaw()  // These need to not use *= ... remember quaternions are not commutative
         {
             displacementQ = Quaternion.AngleAxis(
                                 xSum * (speed * rotationThrottleScaler + rotationScaler) *
@@ -363,21 +381,21 @@ namespace StarWriter.Core.Input
                                 shipTransform.up) * displacementQ;
         }
 
-        private void Roll()
+        void Roll()
         {
             displacementQ = Quaternion.AngleAxis(
                                 yDiff * (speed * rotationThrottleScaler + rotationScaler) * Time.deltaTime,
                                 shipTransform.forward) * displacementQ;
         }
 
-        private void Pitch()
+        void Pitch()
         {
             displacementQ = Quaternion.AngleAxis(
                                 ySum * -(speed * rotationThrottleScaler + rotationScaler) * Time.deltaTime,
                                 shipTransform.right) * displacementQ;
         }
 
-        private void CheckThrottle()
+        void CheckThrottle()
         {
             float threshold = .3f;
             float value = (1 - xDiff) + Mathf.Abs(yDiff) + Mathf.Abs(ySum) + Mathf.Abs(xSum);
@@ -398,19 +416,13 @@ namespace StarWriter.Core.Input
             }
         }
 
-        public void BoostShip(float boost, float fuelAmount)
-        {
-            speed = Mathf.Lerp(speed, xDiff * throttleScaler * boost + defaultThrottle, lerpAmount * Time.deltaTime);
-            OnBoost?.Invoke(uuid, fuelAmount);
-        }
-
-        public void Throttle()
+        void Throttle()
         {
             speed = Mathf.Lerp(speed, xDiff * throttleScaler + defaultThrottle, lerpAmount * Time.deltaTime);
         }
 
         // Converts Android Quaterions into Unity Quaterions
-        private Quaternion GyroToUnity(Quaternion q)
+        Quaternion GyroToUnity(Quaternion q)
         {
             return new Quaternion(q.x, -q.z, q.y, q.w);
         }
@@ -419,25 +431,30 @@ namespace StarWriter.Core.Input
         /// Gets gyros updated current status from GameManager.onToggleGyro Event
         /// </summary>
         /// <param name="status"></param>bool
-        private void OnToggleGyro(bool status)
+        public void OnToggleGyro(bool status)
         {
             Debug.Log($"InputController.OnToggleGyro - status: {status}");
             if (SystemInfo.supportsGyroscope && status) { 
                 inverseInitialRotation = Quaternion.Inverse(GyroToUnity(gyro.attitude) * derivedCorrection);
             }
-            if (driftEnabled) isGyroEnabled = true;
-            else isGyroEnabled = status;
+            
+            isGyroEnabled = status;
         }
 
         /// <summary>
         /// Sets InvertY Status based off of game settings event
         /// </summary>
         /// <param name="status"></param>bool
-        private void OnToggleInvertY(bool status)
+        void OnToggleInvertY(bool status)
         {
             Debug.Log($"InputController.OnToggleInvertY - status: {status}");
 
             invertYEnabled = status;
+        }
+
+        float Ease(float input)
+        {
+            return input < 0 ? (Mathf.Cos(input) - 1) / 2 : -(Mathf.Cos(input) - 1) / 2;
         }
     }
 }

@@ -23,7 +23,6 @@ public class CameraManager : SingletonPersistent<CameraManager>
 
     private void OnEnable()
     {
-        GameManager.onPhoneFlip += ToggleCloseOrFarCamOnPhoneFlip;
         GameManager.onPlayGame += SetupGamePlayCameras;
         DeathEvents.OnDeathBegin += SwitchToDeathCamera;
         GameManager.onExtendGamePlay += SwitchToGamePlayCameras;
@@ -32,7 +31,6 @@ public class CameraManager : SingletonPersistent<CameraManager>
 
     private void OnDisable()
     {
-        GameManager.onPhoneFlip -= ToggleCloseOrFarCamOnPhoneFlip;
         GameManager.onPlayGame -= SetupGamePlayCameras;
         DeathEvents.OnDeathBegin -= SwitchToDeathCamera;
         GameManager.onExtendGamePlay -= SwitchToGamePlayCameras;
@@ -117,7 +115,7 @@ public class CameraManager : SingletonPersistent<CameraManager>
         activeCamera.Priority = activePriority;
     }
 
-    private void ToggleCloseOrFarCamOnPhoneFlip(bool state)
+    public void ToggleCloseOrFarCamOnPhoneFlip(bool state)
     {
         if (isCameraFlipEnabled)
         {

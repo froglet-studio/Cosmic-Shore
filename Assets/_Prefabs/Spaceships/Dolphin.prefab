@@ -830,7 +830,7 @@ MonoBehaviour:
   fullSpeedStraightEffects: 
   rightStickEffects: 00000000
   leftStickEffects: 00000000
-  flipEffects: 03000000
+  flipEffects: 05000000
   passiveEffects: 0000000006000000
   boostMultiplier: 4
   boostFuelAmount: -0.01

@@ -5276,6 +5276,7 @@ GameObject:
   - component: {fileID: 1867118898}
   - component: {fileID: 1867118897}
   - component: {fileID: 1867118902}
+  - component: {fileID: 1867118903}
   m_Layer: 5
   m_Name: Main_Menu_Canvas
   m_TagString: Untagged
@@ -5392,6 +5393,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7ec312aba11675348ad33bf75e6bc0bb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &1867118903
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1867118896}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9271666597d4ff7409bc51a4f91813f4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  phoneFlipThreshold: 0.1
+  PhoneFlipState: 0
+  currentOrientation: 0
 --- !u!1 &1887455553
 GameObject:
   m_ObjectHideFlags: 0

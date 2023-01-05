@@ -1,25 +1,27 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace StarWriter.Core.Input
 {
     public class FlipUI : MonoBehaviour
     {
-        private void OnEnable()
+        void OnEnable()
         {
-            GameManager.onPhoneFlip += OnPhoneFlip;
+            PhoneFlipDetector.onPhoneFlip += OnPhoneFlip;
         }
 
-        private void OnDisable()
+        void OnDisable()
         {
-            GameManager.onPhoneFlip -= OnPhoneFlip;
+            PhoneFlipDetector.onPhoneFlip -= OnPhoneFlip;
         }
-        // Start is called before the first frame update
-        private void OnPhoneFlip(bool state)
+        
+        void OnPhoneFlip(bool state)
         {
-            if (state) transform.rotation = Quaternion.identity;
-            else transform.rotation = Quaternion.Euler(0,0,180);
+            if (state)
+                // Flip Off
+                transform.rotation = Quaternion.identity;
+            else 
+                // Flip On
+                transform.rotation = Quaternion.Euler(0,0,180);
         }
     }
 }

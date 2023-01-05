@@ -239,11 +239,14 @@ public class Ship : MonoBehaviour
                     head.transform.localScale *= 1.02f; // TODO make this its own ability 
                     break;
                 case ActiveAbilities.ToggleCamera:
-                    GameManager.Instance.PhoneFlipState = true; // TODO: remove Game manager dependency
+                    CameraManager.Instance.ToggleCloseOrFarCamOnPhoneFlip(true);
+                    TrailSpawner.ToggleBlockWaitTime(true);
                     break;
                 case ActiveAbilities.ToggleMode:
-                    ships[0].enabled = false;
-                    ships[1].enabled = true;
+                    // TODO
+                    break;
+                case ActiveAbilities.ToggleGyro:
+                    inputController.OnToggleGyro(true);
                     break;
             }
         }
@@ -257,7 +260,7 @@ public class Ship : MonoBehaviour
             {
                 case ActiveAbilities.Drift:
                     inputController.drifting = false;
-                    StartCoroutine(inputController.DecayingBoostCoroutine()); // TODO wrap the coroutine so it isn't called here directly
+                    inputController.StopShipBoost();
                     break;
                 case ActiveAbilities.Boost:
                     shipData.boost = false;
@@ -269,7 +272,14 @@ public class Ship : MonoBehaviour
                     head.transform.localScale = Vector3.one;
                     break;
                 case ActiveAbilities.ToggleCamera:
-                    GameManager.Instance.PhoneFlipState = false;
+                    CameraManager.Instance.ToggleCloseOrFarCamOnPhoneFlip(false);
+                    TrailSpawner.ToggleBlockWaitTime(false);
+                    break;
+                case ActiveAbilities.ToggleMode:
+                    // TODO
+                    break;
+                case ActiveAbilities.ToggleGyro:
+                    inputController.OnToggleGyro(false);
                     break;
             }
         }
