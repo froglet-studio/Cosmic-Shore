@@ -14,6 +14,7 @@ public class Trail : MonoBehaviour
     public bool embiggen;
     public bool destroyed = false;
     public float MaxScale = 1f;
+    public string ID;
 
     public bool warp = false;
     GameObject shards;
