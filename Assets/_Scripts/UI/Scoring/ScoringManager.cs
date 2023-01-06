@@ -5,21 +5,28 @@ using static StarWriter.Core.GameSetting;
 using System.Collections.Generic;
 using StarWriter.Utility.Singleton;
 
-
 public struct RoundStats
 {
     public int blocksCreated;
     public int blocksDestroyed;
+    public int allyBlocksDestroyed;
+    public int enemyBlocksDestroyed;
     public float volumeCreated;
     public float volumeDestroyed;
+    public float allyVolumeDestroyed;
+    public float enemyVolumeDestroyed;
     public int crystalsCollected;
 
     public RoundStats(bool dummy = false)
     {
         blocksCreated = 0;
         blocksDestroyed = 0;
+        allyBlocksDestroyed = 0;
+        enemyBlocksDestroyed = 0;
         volumeCreated = 0;
         volumeDestroyed = 0;
+        allyVolumeDestroyed = 0;
+        enemyVolumeDestroyed = 0;
         crystalsCollected = 0;
     }
 }
@@ -30,7 +37,8 @@ public class ScoringManager : Singleton<ScoringManager>
     [SerializeField] int extendedLifeHighScore;
     [SerializeField] GameObject WinnerDisplay;
     [SerializeField] List<GameObject> ScoreContainers;
-    [SerializeField] List<GameObject> PlayerVolumeContainers;
+    [SerializeField] List<GameObject> EndOfRoundStatContainers;
+    [SerializeField] List<GameObject> PlayerVolumeContainers;       // TODO: remove this - has been replaced by End Of Round Stats Containers
     [SerializeField] bool TeamScoresEnabled = false;
 
     // Stats Tracking
@@ -96,12 +104,20 @@ public class ScoringManager : Singleton<ScoringManager>
 
         var roundStats = teamStats[team];
         roundStats.blocksDestroyed++;
+        roundStats.allyBlocksDestroyed += team == trailBlockProperties.trail.Team ? 1 : 0;
+        roundStats.enemyBlocksDestroyed += team == trailBlockProperties.trail.Team ? 0 : 1;
         roundStats.volumeDestroyed += trailBlockProperties.volume;
+        roundStats.allyVolumeDestroyed += team == trailBlockProperties.trail.Team ? trailBlockProperties.volume : 0;
+        roundStats.enemyVolumeDestroyed += team == trailBlockProperties.trail.Team ? 0 : trailBlockProperties.volume;
         teamStats[team] = roundStats;
 
         roundStats = playerStats[playerName];
         roundStats.blocksDestroyed++;
+        roundStats.allyBlocksDestroyed += team == trailBlockProperties.trail.Team ? 1 : 0;
+        roundStats.enemyBlocksDestroyed += team == trailBlockProperties.trail.Team ? 0 : 1;
         roundStats.volumeDestroyed += trailBlockProperties.volume;
+        roundStats.allyVolumeDestroyed += team == trailBlockProperties.trail.Team ? trailBlockProperties.volume : 0;
+        roundStats.enemyVolumeDestroyed += team == trailBlockProperties.trail.Team ? 0 : trailBlockProperties.volume;
         playerStats[playerName] = roundStats;
     }
 
@@ -252,22 +268,31 @@ public class ScoringManager : Singleton<ScoringManager>
 
     void OutputRoundStats()
     {
-        foreach (var team in teamStats.Keys)
+        /*foreach (var team in teamStats.Keys)
         {
             Debug.LogWarning($"Team Stats - Team:{team}, Crystals Collected: {teamStats[team].crystalsCollected} ");
-            Debug.LogWarning($"Team Stats - Team:{team}, Blocks Created: {teamStats[team].blocksCreated} ");
-            Debug.LogWarning($"Team Stats - Team:{team}, Blocks Destroyed: {teamStats[team].blocksDestroyed} ");
+            //Debug.LogWarning($"Team Stats - Team:{team}, Blocks Created: {teamStats[team].blocksCreated} ");
+            //Debug.LogWarning($"Team Stats - Team:{team}, Blocks Destroyed: {teamStats[team].blocksDestroyed} ");
             Debug.LogWarning($"Team Stats - Team:{team}, Volume Created: {teamStats[team].volumeCreated} ");
             Debug.LogWarning($"Team Stats - Team:{team}, Volume Destroyed: {teamStats[team].volumeDestroyed} ");
-        }
+        }*/
 
+        int i = 0;
         foreach (var player in playerStats.Keys)
         {
             Debug.LogWarning($"PlayerStats - Player:{player}, Crystals Collected: {playerStats[player].crystalsCollected} ");
-            Debug.LogWarning($"PlayerStats - Player:{player}, Blocks Created: {playerStats[player].blocksCreated} ");
-            Debug.LogWarning($"PlayerStats - Player:{player}, Blocks Destroyed: {playerStats[player].blocksDestroyed} ");
+            //Debug.LogWarning($"PlayerStats - Player:{Player}, Blocks Created: {playerStats[Player].blocksCreated} ");
+            //Debug.LogWarning($"PlayerStats - Player:{Player}, Blocks Destroyed: {playerStats[Player].blocksDestroyed} ");
             Debug.LogWarning($"PlayerStats - Player:{player}, Volume Created: {playerStats[player].volumeCreated} ");
             Debug.LogWarning($"PlayerStats - Player:{player}, Volume Destroyed: {playerStats[player].volumeDestroyed} ");
+
+            var container = EndOfRoundStatContainers[i];
+            container.transform.GetChild(0).GetComponent<TMP_Text>().text = player;
+            container.transform.GetChild(1).GetComponent<TMP_Text>().text = playerStats[player].volumeCreated.ToString("F1");
+            container.transform.GetChild(2).GetComponent<TMP_Text>().text = playerStats[player].volumeDestroyed.ToString("F1");
+            container.transform.GetChild(3).GetComponent<TMP_Text>().text = playerStats[player].crystalsCollected.ToString("D");
+
+            i++;
         }
     }
 
@@ -286,11 +311,11 @@ public class ScoringManager : Singleton<ScoringManager>
                 MVPName = key;
             }
 
-            var volumeContainer = PlayerVolumeContainers[i];
+            //var volumeContainer = PlayerVolumeContainers[i];
             
-            volumeContainer.transform.GetChild(0).GetComponent<TMP_Text>().text = key;
-            volumeContainer.transform.GetChild(1).GetComponent<TMP_Text>().text = ((int)PlayerScores[key]).ToString("D3");
-            volumeContainer.SetActive(true);
+            //volumeContainer.transform.GetChild(0).GetComponent<TMP_Text>().text = key;
+            //volumeContainer.transform.GetChild(1).GetComponent<TMP_Text>().text = ((int)PlayerScores[key]).ToString("D3");
+            //volumeContainer.SetActive(true);
         }
     }
 
