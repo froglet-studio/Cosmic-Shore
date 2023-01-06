@@ -91,7 +91,7 @@ public class TrailSpawner : MonoBehaviour
     void RestartAITrailSpawnerAfterDelay()
     {
         // Called on GameOver to restart only the trail spawners for the AI
-        if (gameObject != GameObject.FindWithTag("Player"))
+        if (gameObject != GameObject.FindWithTag("Player_Ship"))
         {
             StartCoroutine(RestartSpawnerAfterDelayCoroutine());
         }
