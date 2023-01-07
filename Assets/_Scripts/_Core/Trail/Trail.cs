@@ -15,6 +15,7 @@ public class Trail : MonoBehaviour
     public bool destroyed = false;
     public float MaxScale = 1f;
     public string ID;
+    public Vector3 Dimensions;
 
     public bool warp = false;
     GameObject shards;
@@ -47,11 +48,12 @@ public class Trail : MonoBehaviour
         blockCollider = GetComponent<BoxCollider>();
         blockCollider.enabled = false;
 
-        if (embiggen) StartCoroutine(ToggleBlockCoroutine(2f));
-        else StartCoroutine(ToggleBlockCoroutine(MaxScale));
-
+        var size = embiggen ? 2f : MaxScale;
+        trailBlockProperties.volume = size * Dimensions.x * Dimensions.y * Dimensions.z;
         trailBlockProperties.position = transform.position;
         trailBlockProperties.trail = this;
+
+        StartCoroutine(ToggleBlockCoroutine(size));
     }
 
     IEnumerator ToggleBlockCoroutine(float finalSize)
@@ -83,6 +85,8 @@ public class Trail : MonoBehaviour
             ScoringManager.Instance.UpdateScore(playerName, trailBlockProperties.volume);
 
             ScoringManager.Instance.BlockCreated(team, playerName, trailBlockProperties);
+
+            //Debug.LogWarning($"Created block. Volume: {trailBlockProperties.volume}, Dimensions: {Dimensions}, MaxSize: {MaxScale}");
         }
 
         if (NodeControlManager.Instance != null)
@@ -90,9 +94,7 @@ public class Trail : MonoBehaviour
             // Node control tracking
             NodeControlManager.Instance.AddBlock(team, playerName, trailBlockProperties);
         }
-
-            //if (NodeControlManager)
-        }
+    }
 
     public void InstantiateParticle(Transform skimmer)
     {
@@ -186,20 +188,8 @@ public class Trail : MonoBehaviour
             Debug.Log($"Player ({ship.Player.PlayerUUID}) just gave player({ownerId}) a point via tail collision");
             AddToScore?.Invoke(ownerId, scoreChange);
         }
-
-        //// Player Hit
-        //if (ship.Player == GameObject.FindWithTag("Player"))
-        {
-            // TODO: for now, we're only turning off collision on the player. In the future, we want AI ships to explode and all that too
-            // TODO: turned off collision toggling for now - need to reintroduce into death sequence somewhere else
-            //other.transform.parent.parent.GetComponent<Player>().ToggleCollision(false);
-
-            // TODO: currently AI fuel levels are not impacted when they collide with a trail
-            // TODO: use PerformBlockImpactEffects
-            //OnTrailCollision?.Invoke(ownerId, fuelChange);
             
-            ship.PerformTrailBlockImpactEffects(trailBlockProperties);
-        }
+        ship.PerformTrailBlockImpactEffects(trailBlockProperties);
     }
 
     public void Explode(Vector3 impactVector, Teams team)

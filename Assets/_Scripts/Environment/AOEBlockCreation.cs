@@ -1,5 +1,4 @@
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class AOEBlockCreation : AOEExplosion
@@ -18,27 +17,37 @@ public class AOEBlockCreation : AOEExplosion
     {
         for (int i = 0; i < blockCount; i++)
         {
-            var Block = Instantiate(trail);
-            Block.Team = Team;
-            Block.PlayerName = Ship.Player.PlayerName;
-            Block.MaxScale = 5;
             var position = transform.position +
                               radius * Mathf.Cos((i / blockCount) * 2 * Mathf.PI) * transform.right +
                               radius * Mathf.Sin((i / blockCount) * 2 * Mathf.PI) * transform.up;
-            Block.transform.SetPositionAndRotation(position,
-                                                   Quaternion.LookRotation(position-transform.position, transform.forward));
-            Block = Instantiate(trail);
+            var Block = Instantiate(trail);
             Block.Team = Team;
+            Block.ownerId = Ship.Player.PlayerUUID;
             Block.PlayerName = Ship.Player.PlayerName;
             Block.MaxScale = 5;
+            Block.transform.SetPositionAndRotation(position, Quaternion.LookRotation(position-transform.position, transform.forward));
+            Block.GetComponent<MeshRenderer>().material = blockMaterial;
+            Block.ID = Block.ownerId + "::AOE::" + Time.time + "::" + i;
+            Block.Dimensions = trail.transform.localScale;
+            // TODO: need to put AOE Block creations into the trail container
+            //Block.transform.parent = TrailContainer.transform;
+
             position = transform.position +
                               1.5f * radius * Mathf.Cos(((i + .5f) / blockCount) * 2 * Mathf.PI) * transform.right +
                               1.5f * radius * Mathf.Sin(((i + .5f) / blockCount) * 2 * Mathf.PI) * transform.up;
-            Block.transform.SetPositionAndRotation(position,
-                                                   Quaternion.LookRotation(position - transform.position, transform.forward));
-
-
+            Block = Instantiate(trail);
+            Block.Team = Team;
+            Block.ownerId = Ship.Player.PlayerUUID;
+            Block.PlayerName = Ship.Player.PlayerName;
+            Block.MaxScale = 5;
+            Block.transform.SetPositionAndRotation(position, Quaternion.LookRotation(position - transform.position, transform.forward));
+            Block.GetComponent<MeshRenderer>().material = blockMaterial;
+            Block.ID = Block.ownerId + "::AOE::" + Time.time + "::" + i + "-2";
+            Block.Dimensions = trail.transform.localScale;
+            // TODO: need to put AOE Block creations into the trail container
+            //Block.transform.parent = TrailContainer.transform;
         }
+
         yield return new WaitForEndOfFrame();
     }
 }

@@ -134,6 +134,7 @@ public class TrailSpawner : MonoBehaviour
                 Block.warp = warp;
                 Block.GetComponent<MeshRenderer>().material = blockMaterial;
                 Block.ID = ownerId + "::" + spawnedTrailCount++;
+                Block.Dimensions = trail.transform.localScale;
 
                 if (Block.warp)
                     wavelength = shards.GetComponent<WarpFieldData>().HybridVector(Block.transform).magnitude * initialWavelength;
