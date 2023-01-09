@@ -17,8 +17,10 @@ public class TrailSpawner : MonoBehaviour
     public float waitTime = .5f;  // Time until the trail block appears - camera dependent
     public float startDelay = 2.1f;
 
-    private Material blockMaterial;
-    private Ship ship;
+    int spawnedTrailCount;
+
+    Material blockMaterial;
+    Ship ship;
     ShipData shipData;
 
     [SerializeField] bool warp = false;
@@ -89,7 +91,7 @@ public class TrailSpawner : MonoBehaviour
     void RestartAITrailSpawnerAfterDelay()
     {
         // Called on GameOver to restart only the trail spawners for the AI
-        if (gameObject != GameObject.FindWithTag("Player"))
+        if (gameObject != GameObject.FindWithTag("Player_Ship"))
         {
             StartCoroutine(RestartSpawnerAfterDelayCoroutine());
         }
@@ -131,6 +133,8 @@ public class TrailSpawner : MonoBehaviour
                 Block.Team = ship.Team;
                 Block.warp = warp;
                 Block.GetComponent<MeshRenderer>().material = blockMaterial;
+                Block.ID = ownerId + "::" + spawnedTrailCount++;
+                Block.Dimensions = trail.transform.localScale;
 
                 if (Block.warp)
                     wavelength = shards.GetComponent<WarpFieldData>().HybridVector(Block.transform).magnitude * initialWavelength;

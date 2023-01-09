@@ -10,6 +10,10 @@ public class Skimmer : MonoBehaviour
     public Teams team;
     public bool thief;
 
+    Dictionary<string, float> skimStartTimes = new Dictionary<string, float>();
+
+    [SerializeField] float MultiSkimMultiplier = 0f;
+    int activelySkimmingBlockCount = 0;
 
     // TODO: move this away from using an event
     public delegate void Skim(string uuid, float amount);
@@ -49,20 +53,50 @@ public class Skimmer : MonoBehaviour
     void OnTriggerEnter(Collider other)
     {
         Debug.Log("skim collider: " + other.name);
-        OnSkim?.Invoke(ship.Player.PlayerUUID, fuelAmount);
 
         var trail = other.GetComponent<Trail>();
         if (trail != null)
         {
+            activelySkimmingBlockCount++;
             trail.InstantiateParticle(transform);
-            
-            if (thief)
-            {
-                trail.Team = Player.Team;
-                trail.PlayerName = ship.Player.PlayerName;
 
-                // TODO: update control/scoring stats
-            }
+            if (thief && trail.Team != Player.Team)
+                trail.ConvertToTeam(Player.PlayerName, Player.Team);
+
+            skimStartTimes.Add(trail.ID, Time.time);
+
+            OnSkim?.Invoke(ship.Player.PlayerUUID, fuelAmount + (activelySkimmingBlockCount * MultiSkimMultiplier));
+        }
+    }
+
+    void OnTriggerStay(Collider other)
+    {
+        float skimDecayDuration = 1;
+
+        var trail = other.GetComponent<Trail>();
+        if (trail != null)
+        {
+            // start with a baseline fuel amount the ranges from 0-1 depending on proximity of the skimmer to the trail block
+            var fuel = fuelAmount * (1 - (Vector3.Magnitude(transform.position - other.transform.position) / transform.localScale.x));
+
+            // apply decay
+            fuel *= Mathf.Min(0, (skimDecayDuration - (Time.time - skimStartTimes[trail.ID])) / skimDecayDuration);
+
+            // apply multiskim multiplier
+            fuel += (activelySkimmingBlockCount * MultiSkimMultiplier);
+
+            // grant the fuel
+            OnSkim?.Invoke(ship.Player.PlayerUUID, fuel);
+        }
+    }
+
+    void OnTriggerExit(Collider other)
+    {
+        var trail = other.GetComponent<Trail>();
+        if (trail != null)
+        {
+            skimStartTimes.Remove(trail.ID);
+            activelySkimmingBlockCount--;
         }
     }
 }

@@ -10,7 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 639495419069806266}
   - component: {fileID: 639495419069806261}
-  m_Layer: 0
+  m_Layer: 13
   m_Name: CosmicSnow
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -45,7 +45,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 355219de309c3c1418444878b646dca4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  muton: {fileID: 0}
+  Crystal: {fileID: 0}
   snow: {fileID: 639495420572631487}
   nodesPerSide: 5
 --- !u!1 &639495420572631487
@@ -60,7 +60,7 @@ GameObject:
   - component: {fileID: 639495420572631480}
   - component: {fileID: 639495420572631481}
   - component: {fileID: 639495419634095583}
-  m_Layer: 0
+  m_Layer: 13
   m_Name: Tetrahedron
   m_TagString: Untagged
   m_Icon: {fileID: 0}

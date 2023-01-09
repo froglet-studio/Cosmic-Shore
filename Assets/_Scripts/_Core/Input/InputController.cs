@@ -172,10 +172,16 @@ namespace StarWriter.Core.Input
                 if (invertYEnabled)
                     ySum *= -1;
 
-                if (Gamepad.current.rightShoulder.wasPressedThisFrame && !PhoneFlipState) 
+                if (Gamepad.current.rightShoulder.wasPressedThisFrame && !PhoneFlipState)
+                {
+                    PhoneFlipState = true;
                     ship.StartFlipEffects();
-                else if (Gamepad.current.rightShoulder.wasPressedThisFrame && PhoneFlipState) 
+                }
+                else if (Gamepad.current.rightShoulder.wasPressedThisFrame && PhoneFlipState)
+                {
+                    PhoneFlipState = false;
                     ship.StopFlipEffects();
+                }
 
                 if (Gamepad.current.leftTrigger.isPressed)
                 {
