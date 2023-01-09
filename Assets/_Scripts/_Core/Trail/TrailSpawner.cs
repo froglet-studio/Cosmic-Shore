@@ -31,6 +31,11 @@ public class TrailSpawner : MonoBehaviour
         blockMaterial = material;
     }
 
+    public Material GetBlockMaterial()
+    {
+        return blockMaterial;
+    }
+
     static GameObject TrailContainer;
 
     readonly Queue<Trail> trailQueue = new();

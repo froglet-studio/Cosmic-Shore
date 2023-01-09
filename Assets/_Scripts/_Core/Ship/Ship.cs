@@ -33,6 +33,8 @@ public class Ship : MonoBehaviour
     [SerializeField] float closeCamDistance;
     [SerializeField] float farCamDistance;
     [SerializeField] GameObject head;
+    [SerializeField] GameObject ShipRotationOverride;
+
     bool invulnerable;
     [SerializeField] ShipTypes SecondMode = ShipTypes.Shark;
     Ship secondShip;
@@ -41,8 +43,8 @@ public class Ship : MonoBehaviour
     Teams team;
     ShipData shipData;
     InputController inputController;
-    private Material ShipMaterial;
-    private List<ShipGeometry> shipGeometries = new List<ShipGeometry>();
+    Material ShipMaterial;
+    List<ShipGeometry> shipGeometries = new List<ShipGeometry>();
 
     class SpeedModifier
     {
@@ -130,6 +132,9 @@ public class Ship : MonoBehaviour
                     AOEExplosion.Ship = this;
                     AOEExplosion.transform.SetPositionAndRotation(transform.position,transform.rotation);
                     AOEExplosion.MaxScale = 50 + FuelSystem.CurrentFuel * maxExplosionScale;
+
+                    if (typeof(AOEExplosion) == typeof(AOEBlockCreation))
+                        ((AOEBlockCreation)AOEExplosion).SetBlockMaterial(TrailSpawner.GetBlockMaterial());
                     break;
                 case CrystalImpactEffects.FillFuel:
                     FuelSystem.ChangeFuelAmount(player.PlayerUUID, crystalProperties.fuelAmount);
@@ -289,7 +294,7 @@ public class Ship : MonoBehaviour
         }
     }
 
-    private void ApplySpeedModifiers()
+    void ApplySpeedModifiers()
     {
         float accumulatedSpeedModification = 1; 
         for (int i = SpeedModifiers.Count-1; i >= 0; i--)
@@ -331,7 +336,15 @@ public class Ship : MonoBehaviour
         TrailSpawner.SetBlockMaterial(material);
     }
 
-    private void ApplyShipMaterial()
+    public void FlipShipUpsideDown()
+    {
+        ShipRotationOverride.transform.localRotation = Quaternion.Euler(0, 0, 180);
+    }
+    public void FlipShipRightsideUp()
+    {
+        ShipRotationOverride.transform.localRotation = Quaternion.Euler(0, 0, 0);
+    }
+    void ApplyShipMaterial()
     {
         if (ShipMaterial == null)
             return;

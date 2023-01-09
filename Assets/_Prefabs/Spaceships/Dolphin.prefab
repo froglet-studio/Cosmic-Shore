@@ -820,6 +820,7 @@ MonoBehaviour:
   waitTime: 0.5
   startDelay: 2
   warp: 0
+  SaturatedBlockDensity: 10
 --- !u!114 &874579555101021523
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -873,6 +874,7 @@ MonoBehaviour:
   closeCamDistance: 0
   farCamDistance: 0
   head: {fileID: 0}
+  ShipRotationOverride: {fileID: 1087614488730427270}
   SecondMode: 5
 --- !u!114 &3440187540988767646
 MonoBehaviour:

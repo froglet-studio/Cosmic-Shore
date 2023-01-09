@@ -221,6 +221,7 @@ namespace StarWriter.Core.Input
                     {
                         PhoneFlipState = false;
                         ship.StopFlipEffects();
+                        ship.FlipShipRightsideUp();
 
                         currentOrientation = ScreenOrientation.LandscapeLeft;
 
@@ -230,6 +231,7 @@ namespace StarWriter.Core.Input
                     {
                         PhoneFlipState = true;
                         ship.StartFlipEffects();
+                        ship.FlipShipUpsideDown();
 
                         currentOrientation = ScreenOrientation.LandscapeRight;
 
