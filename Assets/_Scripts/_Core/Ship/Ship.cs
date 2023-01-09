@@ -103,6 +103,10 @@ public class Ship : MonoBehaviour
                 case PassiveAbilities.SpeedBasedTurning:
                     inputController.rotationThrottleScaler = rotationThrottleScaler;
                     break;
+                case PassiveAbilities.DensityBasedBlockSize:
+                    // TODO: WIP Density based block size
+
+                    break;
             }
         }
     }

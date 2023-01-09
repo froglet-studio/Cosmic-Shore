@@ -7,10 +7,9 @@ namespace StarWriter.UI
     {
         [SerializeField] TMP_Text tmpText;
         [SerializeField] string prefix;
-
         void Start()
         {
-            Debug.Log("Application Version : " + Application.version);
+            //Debug.Log("Application Version : " + Application.version);
             tmpText.text = prefix + " " + Application.version;
         }
     }

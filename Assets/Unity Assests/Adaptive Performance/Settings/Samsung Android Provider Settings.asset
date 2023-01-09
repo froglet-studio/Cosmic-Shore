@@ -15,7 +15,7 @@ MonoBehaviour:
   m_Logging: 0
   m_AutomaticPerformanceModeEnabled: 1
   m_EnableBoostOnStartup: 1
-  m_StatsLoggingFrequencyInFrames: 1
+  m_StatsLoggingFrequencyInFrames: 0
   m_IndexerSettings:
     m_Active: 1
     m_ThermalActionDelay: 10

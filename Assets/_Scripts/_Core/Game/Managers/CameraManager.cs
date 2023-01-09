@@ -14,14 +14,14 @@ public class CameraManager : SingletonPersistent<CameraManager>
     [SerializeField] Transform endCameraFollowTarget;
     [SerializeField] Transform endCameraLookAtTarget;
 
-    private Transform playerFollowTarget;
+    Transform playerFollowTarget;
     readonly int activePriority = 10;
     readonly int inactivePriority = 1;
 
-    private bool isCameraFlipEnabled = true;
-    private bool useCloseCam = true;
+    bool isCameraFlipEnabled = true;
+    bool useCloseCam = true;
 
-    private void OnEnable()
+    void OnEnable()
     {
         GameManager.onPlayGame += SetupGamePlayCameras;
         DeathEvents.OnDeathBegin += SwitchToDeathCamera;
@@ -29,7 +29,7 @@ public class CameraManager : SingletonPersistent<CameraManager>
         GameManager.onGameOver += SwitchToEndCamera;
     }
 
-    private void OnDisable()
+    void OnDisable()
     {
         GameManager.onPlayGame -= SetupGamePlayCameras;
         DeathEvents.OnDeathBegin -= SwitchToDeathCamera;
@@ -47,7 +47,7 @@ public class CameraManager : SingletonPersistent<CameraManager>
         SetMainMenuCameraActive();
     }
 
-    private void SetupGamePlayCameras()
+    void SetupGamePlayCameras()
     {
         isCameraFlipEnabled = true;
 
@@ -57,20 +57,20 @@ public class CameraManager : SingletonPersistent<CameraManager>
         SetCloseCameraActive();
     }
 
-    private void SwitchToDeathCamera()
+    void SwitchToDeathCamera()
     {
         isCameraFlipEnabled = false;
 
         SetDeathCameraActive();
     }
 
-    private void SwitchToEndCamera()
+    void SwitchToEndCamera()
     {
         isCameraFlipEnabled = false;
         SetEndCameraActive();
     }
 
-    private void SwitchToGamePlayCameras()
+    void SwitchToGamePlayCameras()
     {
         isCameraFlipEnabled = true;
 
@@ -95,16 +95,16 @@ public class CameraManager : SingletonPersistent<CameraManager>
     {
         SetActiveCamera(closeCamera);
     }
-    private void SetDeathCameraActive()
+    void SetDeathCameraActive()
     {
         SetActiveCamera(deathCamera);
     }
-    private void SetEndCameraActive()
+    void SetEndCameraActive()
     {
         SetActiveCamera(endCamera);
     }
 
-    private void SetActiveCamera(CinemachineVirtualCameraBase activeCamera)
+    void SetActiveCamera(CinemachineVirtualCameraBase activeCamera)
     {
         mainMenuCamera.Priority = inactivePriority;
         closeCamera.Priority = inactivePriority;

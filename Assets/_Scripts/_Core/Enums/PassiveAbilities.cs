@@ -7,5 +7,6 @@ public enum PassiveAbilities
     CloseCam,
     FarCam,
     SecondMode,
-    SpeedBasedTurning
+    SpeedBasedTurning,
+    DensityBasedBlockSize,
 }

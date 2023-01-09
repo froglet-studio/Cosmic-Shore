@@ -83,6 +83,27 @@ public class TrailSpawner : MonoBehaviour
     {
         waitTime = state ? 1.5f : 0.5f;
     }
+
+    [Tooltip("Number of proximal blocks before trail block size reaches minimum")]
+    [SerializeField] int SaturatedBlockDensity = 10; 
+
+    public void SetBlockDensity(int blockDensity)
+    {
+
+        // TODO WIP Here
+        /*
+        var trail = other.GetComponent<Trail>();
+        if (trail != null)
+        {
+            // start with a baseline fuel amount the ranges from 0-1 depending on proximity of the skimmer to the trail block
+            var fuel = fuelAmount * (1 - (Vector3.Magnitude(transform.position - other.transform.position) / transform.localScale.x));
+
+            // apply multiskim multiplier
+            fuel += (activelySkimmingBlockCount * MultiSkimMultiplier);
+        }
+        */
+    }
+
     void PauseTrailSpawner()
     {
         spawnerEnabled = false;
@@ -102,11 +123,13 @@ public class TrailSpawner : MonoBehaviour
         // Called when extending game play to resume spawning trails for player and AI
         StartCoroutine(RestartSpawnerAfterDelayCoroutine());
     }
+
     IEnumerator RestartSpawnerAfterDelayCoroutine()
     {
         yield return new WaitForSeconds(waitTime);
         spawnerEnabled = true;
     }
+
     IEnumerator SpawnTrailCoroutine()
     {
         yield return new WaitForSeconds(startDelay);

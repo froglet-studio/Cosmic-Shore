@@ -1,8 +1,6 @@
 using UnityEngine;
 using System;
 using System.IO;
-using System.Runtime.Serialization.Formatters.Binary;
-using Newtonsoft.Json;
 
 namespace StarWriter.Core
 {
@@ -40,12 +38,12 @@ namespace StarWriter.Core
                             Debug.Log(dataToLoad);
                         }
                     }
+                    
                     // Deserialize the data from Json back into the C# object
                     loadedData = JsonUtility.FromJson<T>(dataToLoad);
                 }
                 catch (Exception e)
                 {
-
                     Debug.Log("Error occured while loading file from " + fullPath + "\n" + e);
                 }
             }
@@ -55,15 +53,17 @@ namespace StarWriter.Core
 
         public void Save(T data)
         {
-            //string fullPath = Path.Join(dataDirPath, gameDataFileName);
             string fullPath = Path.Combine(dataDirPath, dataFileName);
             Debug.Log("Save Path: " + fullPath);
+            
             try
             {
                 //Create Directory if it is null
                 Directory.CreateDirectory(Path.GetDirectoryName(fullPath));
+                
                 //Serialize data into Json form C# Object
                 string dataToStore = JsonUtility.ToJson(data);
+                
                 //write data to file
                 using (FileStream stream = new FileStream(fullPath, FileMode.Create))
                 {

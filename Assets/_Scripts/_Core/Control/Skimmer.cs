@@ -15,6 +15,8 @@ public class Skimmer : MonoBehaviour
     [SerializeField] float MultiSkimMultiplier = 0f;
     int activelySkimmingBlockCount = 0;
 
+    public int ActivelySkimmingBlockCount { get { return activelySkimmingBlockCount; } }
+
     // TODO: move this away from using an event
     public delegate void Skim(string uuid, float amount);
     public static event Skim OnSkim;
@@ -54,8 +56,7 @@ public class Skimmer : MonoBehaviour
     {
         Debug.Log("skim collider: " + other.name);
 
-        var trail = other.GetComponent<Trail>();
-        if (trail != null)
+        if (other.TryGetComponent<Trail>(out var trail))
         {
             activelySkimmingBlockCount++;
             trail.InstantiateParticle(transform);
@@ -73,8 +74,7 @@ public class Skimmer : MonoBehaviour
     {
         float skimDecayDuration = 1;
 
-        var trail = other.GetComponent<Trail>();
-        if (trail != null)
+        if (other.TryGetComponent<Trail>(out var trail))
         {
             // start with a baseline fuel amount the ranges from 0-1 depending on proximity of the skimmer to the trail block
             var fuel = fuelAmount * (1 - (Vector3.Magnitude(transform.position - other.transform.position) / transform.localScale.x));
@@ -92,8 +92,7 @@ public class Skimmer : MonoBehaviour
 
     void OnTriggerExit(Collider other)
     {
-        var trail = other.GetComponent<Trail>();
-        if (trail != null)
+        if (other.TryGetComponent<Trail>(out var trail))
         {
             skimStartTimes.Remove(trail.ID);
             activelySkimmingBlockCount--;

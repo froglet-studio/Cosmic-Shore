@@ -144,6 +144,7 @@ namespace StarWriter.Core.Input
                                             shipTransform.rotation,
                                             displacementQ * inverseInitialRotation * GyroToUnity(gyro.attitude) * derivedCorrection,
                                             lerpAmount);
+                
             }
             else
             {
@@ -156,7 +157,7 @@ namespace StarWriter.Core.Input
 
         void ReceiveTouchInput()
         {
-            Debug.Log($"Gamepad.Current: {Gamepad.current}");
+            //Debug.Log($"Gamepad.Current: {Gamepad.current}");
             if (Gamepad.current != null)
             {
                 leftTouch.x = Gamepad.current.leftStick.x.ReadValue();

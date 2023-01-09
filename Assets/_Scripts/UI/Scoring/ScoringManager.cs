@@ -299,60 +299,6 @@ public class ScoringManager : Singleton<ScoringManager>
     void DisplayPlayerScores()
     {
         OutputRoundStats();
-
-        float MVPScore = 0;
-        string MVPName = "";
-        int i = 0;
-        foreach (var key in PlayerScores.Keys)
-        {
-            if (PlayerScores[key] > MVPScore)
-            {
-                MVPScore = PlayerScores[key];
-                MVPName = key;
-            }
-
-            //var volumeContainer = PlayerVolumeContainers[i];
-            
-            //volumeContainer.transform.GetChild(0).GetComponent<TMP_Text>().text = key;
-            //volumeContainer.transform.GetChild(1).GetComponent<TMP_Text>().text = ((int)PlayerScores[key]).ToString("D3");
-            //volumeContainer.SetActive(true);
-        }
-    }
-
-    void DisplayWinningTeam()
-    {
-        int winnersScore = 0;
-        string winnersName = "";
-        foreach (var key in TeamScores.Keys)
-        {
-            if (TeamScores[key] > winnersScore)
-            {
-                winnersScore = (int)TeamScores[key];
-                winnersName = key.ToString();
-            }
-        }
-        WinnerDisplay.transform.GetChild(0).GetComponent<TMP_Text>().text = winnersName;
-        WinnerDisplay.transform.GetChild(1).GetComponent<TMP_Text>().text = ((int)winnersScore).ToString("D3");
-
-        WinnerDisplay.SetActive(true);
-    }
-
-    void DisplayWinner()
-    {
-        float winnersScore = 0;
-        string winnersName = "";
-        foreach (var key in PlayerScores.Keys)
-        {
-            if (PlayerScores[key] > winnersScore)
-            {
-                winnersScore = PlayerScores[key];
-                winnersName = key;
-            }
-        }
-        WinnerDisplay.transform.GetChild(0).GetComponent<TMP_Text>().text = winnersName;
-        WinnerDisplay.transform.GetChild(1).GetComponent<TMP_Text>().text = ((int)winnersScore).ToString("D3");
-
-        WinnerDisplay.SetActive(true);
     }
 
     public static bool IsScoreBedazzleWorthy
