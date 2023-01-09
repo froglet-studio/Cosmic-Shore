@@ -550,8 +550,8 @@
     ],
     "m_VertexContext": {
         "m_Position": {
-            "x": 1731.0,
-            "y": 967.0
+            "x": 1842.9998779296875,
+            "y": 911.0
         },
         "m_Blocks": [
             {
@@ -1154,10 +1154,10 @@
         "m_Expanded": true,
         "m_Position": {
             "serializedVersion": "2",
-            "x": 1110.0,
-            "y": 344.0,
-            "width": 208.0,
-            "height": 302.0
+            "x": 1036.0,
+            "y": 370.0,
+            "width": 207.9998779296875,
+            "height": 301.99993896484377
         }
     },
     "m_Slots": [
@@ -2952,10 +2952,10 @@
         "m_Expanded": true,
         "m_Position": {
             "serializedVersion": "2",
-            "x": 1609.0,
-            "y": 1452.0,
-            "width": 177.0,
-            "height": 34.0
+            "x": 1506.9998779296875,
+            "y": 1433.0,
+            "width": 177.0001220703125,
+            "height": 33.9998779296875
         }
     },
     "m_Slots": [
