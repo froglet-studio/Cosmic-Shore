@@ -1,10 +1,8 @@
 using UnityEngine;
 using System.Collections.Generic;
+using StarWriter.Core;
 using StarWriter.Core.Audio;
 
-// can you even?
-//   ?
-//  ? ?
 public class Crystal : MonoBehaviour
 {
     #region Events
@@ -45,7 +43,7 @@ public class Crystal : MonoBehaviour
         }
     }
 
-    private void Collide(Collider other)
+    void Collide(Collider other)
     {
         if (!IsShip(other.gameObject))
             return;
@@ -92,10 +90,8 @@ public class Crystal : MonoBehaviour
         }
     }
 
-    private bool IsShip(GameObject go)
+    bool IsShip(GameObject go)
     {
         return go.layer == LayerMask.NameToLayer("Ships");
     }
-
-
 }

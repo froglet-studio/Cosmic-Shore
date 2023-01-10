@@ -1,50 +1,50 @@
 using System.Collections;
 using UnityEngine;
 
-
-
-// TODO: namespace
 // TODO: add IBlockImpact interface
-public class AOEExplosion : MonoBehaviour
+namespace StarWriter.Core
 {
-    [SerializeField] public float MaxScale = 200f;
-    [SerializeField] float ExplosionDuration = 2f;
-    [SerializeField] float ExplosionDelay = .2f;
-    [SerializeField] GameObject Geometry;
-    Material material;
-
-    public float speed = 5f; // TODO: use the easing of the explosion to change this over time
-    
-    const float PI_OVER_TWO = Mathf.PI / 2;
-
-    Vector3 MaxScaleVector;
-
-    Teams team;
-    public Teams Team { get => team; set => team = value; }
-
-    Ship ship;
-    public Ship Ship{ get => ship; set => ship = value; }
-
-    void Start()
+    public class AOEExplosion : MonoBehaviour
     {
-        MaxScaleVector = new Vector3(MaxScale, MaxScale, MaxScale);
-        StartCoroutine(ExplodeCoroutine());
-        material = Geometry.GetComponent<MeshRenderer>().material;
-    }
+        [SerializeField] public float MaxScale = 200f;
+        [SerializeField] float ExplosionDuration = 2f;
+        [SerializeField] float ExplosionDelay = .2f;
+        [SerializeField] GameObject Geometry;
+        Material material;
 
-    protected virtual IEnumerator ExplodeCoroutine()
-    {
-        yield return new WaitForSeconds(ExplosionDelay);
-        
-        var elapsedTime = 0f;
-        while (elapsedTime < ExplosionDuration)
+        public float speed = 5f; // TODO: use the easing of the explosion to change this over time
+
+        const float PI_OVER_TWO = Mathf.PI / 2;
+
+        Vector3 MaxScaleVector;
+
+        Teams team;
+        public Teams Team { get => team; set => team = value; }
+
+        Ship ship;
+        public Ship Ship { get => ship; set => ship = value; }
+
+        void Start()
         {
-            elapsedTime += Time.deltaTime;
-            transform.localScale = Vector3.Lerp(Vector3.zero, MaxScaleVector, Mathf.Sin((elapsedTime / ExplosionDuration) * PI_OVER_TWO));
-            material.SetFloat("_Opacity", Mathf.Clamp((MaxScaleVector - transform.localScale).magnitude/MaxScaleVector.magnitude, 0, 1));
-            yield return null;
+            MaxScaleVector = new Vector3(MaxScale, MaxScale, MaxScale);
+            StartCoroutine(ExplodeCoroutine());
+            material = Geometry.GetComponent<MeshRenderer>().material;
         }
 
-        Destroy(gameObject);
+        protected virtual IEnumerator ExplodeCoroutine()
+        {
+            yield return new WaitForSeconds(ExplosionDelay);
+
+            var elapsedTime = 0f;
+            while (elapsedTime < ExplosionDuration)
+            {
+                elapsedTime += Time.deltaTime;
+                transform.localScale = Vector3.Lerp(Vector3.zero, MaxScaleVector, Mathf.Sin((elapsedTime / ExplosionDuration) * PI_OVER_TWO));
+                material.SetFloat("_Opacity", Mathf.Clamp((MaxScaleVector - transform.localScale).magnitude / MaxScaleVector.magnitude, 0, 1));
+                yield return null;
+            }
+
+            Destroy(gameObject);
+        }
     }
 }

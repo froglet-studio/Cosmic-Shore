@@ -1,11 +1,14 @@
 using UnityEngine;
 
-public class ShipGeometry : MonoBehaviour
+namespace StarWriter.Core
 {
-    [SerializeField] public Ship Ship;
-
-    private void Start()
+    public class ShipGeometry : MonoBehaviour
     {
-        Ship.RegisterShipGeometry(this);
+        [SerializeField] public Ship Ship;
+
+        void Start()
+        {
+            Ship.RegisterShipGeometry(this);
+        }
     }
 }

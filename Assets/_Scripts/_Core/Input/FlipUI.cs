@@ -16,12 +16,7 @@ namespace StarWriter.Core.Input
         
         void OnPhoneFlip(bool state)
         {
-            if (state)
-                // Flip Off
-                transform.rotation = Quaternion.identity;
-            else 
-                // Flip On
-                transform.rotation = Quaternion.Euler(0,0,180);
+            transform.rotation = state ? Quaternion.identity /* Flip Off */ : Quaternion.Euler(0, 0, 180) /* Flip On */;
         }
     }
 }
