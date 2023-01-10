@@ -362,7 +362,7 @@ namespace StarWriter.Core.Input
             boostDecay += .03f;
         }
 
-        public void StopShipBoost()
+        public void StartBoostWithDecay()
         {
             StartCoroutine(DecayingBoostCoroutine());
         }

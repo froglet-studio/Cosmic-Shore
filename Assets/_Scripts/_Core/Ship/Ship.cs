@@ -40,6 +40,8 @@ public class Ship : MonoBehaviour
     Ship secondShip;
     Ship[] ships;
 
+    Vector3 initialDirection = Vector3.zero;
+
     Teams team;
     ShipData shipData;
     InputController inputController;
@@ -229,6 +231,8 @@ public class Ship : MonoBehaviour
             {
                 case ActiveAbilities.Drift:
                     inputController.Drift();
+                    if (initialDirection == Vector3.zero) initialDirection = transform.forward;
+                    cameraManager.DriftCam(initialDirection, transform.forward);
                     break;
                 case ActiveAbilities.Boost:
                     if (FuelSystem.CurrentFuel > 0)
@@ -269,7 +273,7 @@ public class Ship : MonoBehaviour
             {
                 case ActiveAbilities.Drift:
                     inputController.drifting = false;
-                    inputController.StopShipBoost();
+                    inputController.StartBoostWithDecay();
                     break;
                 case ActiveAbilities.Boost:
                     shipData.boost = false;
