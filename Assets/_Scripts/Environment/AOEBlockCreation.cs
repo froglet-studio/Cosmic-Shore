@@ -25,7 +25,7 @@ public class AOEBlockCreation : AOEExplosion
             Block.Team = Team;
             Block.ownerId = Ship.Player.PlayerUUID;
             Block.PlayerName = Ship.Player.PlayerName;
-            Block.MaxScale = 5;
+            Block.MaxSize = 5;
             Block.transform.SetPositionAndRotation(position, Quaternion.LookRotation(position-transform.position, transform.forward));
             Block.GetComponent<MeshRenderer>().material = blockMaterial;
             Block.ID = Block.ownerId + "::AOE::" + Time.time + "::" + i;
@@ -40,7 +40,7 @@ public class AOEBlockCreation : AOEExplosion
             Block.Team = Team;
             Block.ownerId = Ship.Player.PlayerUUID;
             Block.PlayerName = Ship.Player.PlayerName;
-            Block.MaxScale = 5;
+            Block.MaxSize = 5;
             Block.transform.SetPositionAndRotation(position, Quaternion.LookRotation(position - transform.position, transform.forward));
             Block.GetComponent<MeshRenderer>().material = blockMaterial;
             Block.ID = Block.ownerId + "::AOE::" + Time.time + "::" + i + "-2";

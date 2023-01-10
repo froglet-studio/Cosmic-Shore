@@ -15,7 +15,7 @@ namespace StarWriter.Core
         public float waitTime = .6f;
         public bool embiggen;
         public bool destroyed = false;
-        public float MaxScale = 1f;
+        public float MaxSize = 1f;
         public string ID;
         public Vector3 Dimensions;
 
@@ -50,33 +50,32 @@ namespace StarWriter.Core
             blockCollider = GetComponent<BoxCollider>();
             blockCollider.enabled = false;
 
-            var size = embiggen ? 2f : MaxScale;
-            trailBlockProperties.volume = size * Dimensions.x * Dimensions.y * Dimensions.z;
+            trailBlockProperties.volume = MaxSize * Dimensions.x * Dimensions.y * Dimensions.z;
             trailBlockProperties.position = transform.position;
             trailBlockProperties.trail = this;
 
-            StartCoroutine(ToggleBlockCoroutine(size));
+            StartCoroutine(ToggleBlockCoroutine(MaxSize));
         }
 
-        IEnumerator ToggleBlockCoroutine(float finalSize)
+        IEnumerator ToggleBlockCoroutine(float MaxSize)
         {
-            var finalTransformScale = transform.localScale;
+            var DefaultTransformScale = transform.localScale;
 
-            if (warp) finalTransformScale *= shards.GetComponent<WarpFieldData>().HybridVector(transform).magnitude;
+            if (warp) DefaultTransformScale *= shards.GetComponent<WarpFieldData>().HybridVector(transform).magnitude;
 
             var size = 0.01f;
 
             yield return new WaitForSeconds(waitTime);
 
-            transform.localScale = finalTransformScale * size;
+            transform.localScale = DefaultTransformScale * size;
 
             meshRenderer.enabled = true;
             blockCollider.enabled = true;
 
-            while (size < finalSize)
+            while (size < MaxSize)
             {
                 size += .5f * Time.deltaTime;
-                transform.localScale = finalTransformScale * size;
+                transform.localScale = DefaultTransformScale * size;
                 yield return null;
             }
 
@@ -88,7 +87,7 @@ namespace StarWriter.Core
 
                 ScoringManager.Instance.BlockCreated(team, playerName, trailBlockProperties);
 
-                //Debug.LogWarning($"Created block. Volume: {trailBlockProperties.volume}, Dimensions: {Dimensions}, MaxSize: {MaxScale}");
+                //Debug.LogWarning($"Created block. Volume: {trailBlockProperties.volume}, Dimensions: {Dimensions}, MaxSize: {MaxSize}");
             }
 
             if (NodeControlManager.Instance != null)
