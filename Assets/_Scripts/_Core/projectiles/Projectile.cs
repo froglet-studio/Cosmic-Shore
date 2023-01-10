@@ -1,10 +1,11 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
-public class Projectile : MonoBehaviour
+namespace StarWriter.Core
 {
-    public Vector3 Velocity;
-    public Teams Team;
-    public Ship Ship;
+    public class Projectile : MonoBehaviour
+    {
+        public Vector3 Velocity;
+        public Teams Team;
+        public Ship Ship;
+    }
 }

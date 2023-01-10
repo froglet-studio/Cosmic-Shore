@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using StarWriter.Core;
 using StarWriter.Core.Input;
 
 public class MainMenuCrystal : MonoBehaviour

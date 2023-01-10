@@ -1,21 +1,22 @@
 ﻿using UnityEngine;
 
-[System.Serializable]
-public class ShipData : MonoBehaviour
+namespace StarWriter.Core
 {
-    public float inputSpeed = 1;
-    public float speedMultiplier = 1;
-    public float speed;
-
-    public bool boost;
-    public Vector3 velocityDirection;
-    public Quaternion blockRotation;
-
-    
-
-    private void Update()
+    [System.Serializable]
+    public class ShipData : MonoBehaviour
     {
-        if (speedMultiplier < 0) speedMultiplier = 0;
-        speed = inputSpeed * speedMultiplier;
+        public float inputSpeed = 1;
+        public float speedMultiplier = 1;
+        public float speed;
+
+        public bool boost;
+        public Vector3 velocityDirection;
+        public Quaternion blockRotation;
+
+        void Update()
+        {
+            if (speedMultiplier < 0) speedMultiplier = 0;
+            speed = inputSpeed * speedMultiplier;
+        }
     }
 }
