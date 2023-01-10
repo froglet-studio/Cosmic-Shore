@@ -3,16 +3,16 @@ using UnityEngine;
 
 public class Skimmer : MonoBehaviour
 {
+    [SerializeField] List<TrailBlockImpactEffects> trailBlockImpactEffects;
     [SerializeField] public Ship ship;
     [SerializeField] public Player Player;
     [SerializeField] float fuelAmount;
-    [SerializeField] List<TrailBlockImpactEffects> trailBlockImpactEffects;
-    public Teams team;
+    [SerializeField] float MultiSkimMultiplier = 0f;
+    [HideInInspector] public Teams team;
     public bool thief;
 
     Dictionary<string, float> skimStartTimes = new Dictionary<string, float>();
 
-    [SerializeField] float MultiSkimMultiplier = 0f;
     int activelySkimmingBlockCount = 0;
 
     public int ActivelySkimmingBlockCount { get { return activelySkimmingBlockCount; } }
