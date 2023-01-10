@@ -272,7 +272,7 @@ namespace StarWriter.Core
             {
                 case ActiveAbilities.Drift:
                     inputController.drifting = false;
-                    inputController.StopShipBoost();
+                    inputController.StartBoostWithDecay();
                     break;
                 case ActiveAbilities.Boost:
                     shipData.boost = false;
