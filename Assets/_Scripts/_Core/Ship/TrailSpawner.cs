@@ -145,7 +145,7 @@ public class TrailSpawner : MonoBehaviour
             {
                 score += shipData.boost ? volume * boostedVolumeScoreScaler : volume * volumeScoreScaler;
 
-                if (score > 1 && ScoringManager.Instance.nodeGame)
+                if (score > 1 && ScoringManager.Instance != null && ScoringManager.Instance.nodeGame)
                 {
                     ScoringManager.Instance.UpdateScore(ownerId, (int)score);
                     score = score % 1;

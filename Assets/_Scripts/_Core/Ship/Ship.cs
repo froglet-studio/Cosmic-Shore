@@ -116,7 +116,8 @@ namespace StarWriter.Core
 
         public void PerformCrystalImpactEffects(CrystalProperties crystalProperties)
         {
-            ScoringManager.Instance.CrystalCollected(this, crystalProperties);
+            if (ScoringManager.Instance != null)
+                ScoringManager.Instance.CrystalCollected(this, crystalProperties);
 
             foreach (CrystalImpactEffects effect in crystalImpactEffects)
             {
@@ -147,7 +148,8 @@ namespace StarWriter.Core
                         FuelSystem.ChangeFuelAmount(player.PlayerUUID, -FuelSystem.CurrentFuel);
                         break;
                     case CrystalImpactEffects.Score:
-                        ScoringManager.Instance.UpdateScore(player.PlayerUUID, crystalProperties.scoreAmount);
+                        if (ScoringManager.Instance != null)
+                            ScoringManager.Instance.UpdateScore(player.PlayerUUID, crystalProperties.scoreAmount);
                         break;
                     case CrystalImpactEffects.ResetAggression:
                         // TODO: PLAYERSHIP null pointer here

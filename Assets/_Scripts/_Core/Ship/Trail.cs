@@ -131,7 +131,10 @@ namespace StarWriter.Core
 
                 Collide(ship);
                 Explode(impactVector, ship.Team);
-                ScoringManager.Instance.BlockDestroyed(team, ship.Player.PlayerName, trailBlockProperties);
+                if (ScoringManager.Instance != null)
+                {
+                    ScoringManager.Instance.BlockDestroyed(team, ship.Player.PlayerName, trailBlockProperties);
+                }
 
                 if (NodeControlManager.Instance != null)
                 {
@@ -153,7 +156,10 @@ namespace StarWriter.Core
 
                 Explode(impactVector, other.GetComponent<AOEExplosion>().Team); // TODO: need to attribute the explosion color to the team that made the explosion
 
-                ScoringManager.Instance.BlockDestroyed(other.GetComponent<AOEExplosion>().Team, other.GetComponent<AOEExplosion>().Ship.Player.PlayerName, trailBlockProperties);
+                if (ScoringManager.Instance != null)
+                {
+                    ScoringManager.Instance.BlockDestroyed(other.GetComponent<AOEExplosion>().Team, other.GetComponent<AOEExplosion>().Ship.Player.PlayerName, trailBlockProperties);
+                }
 
                 if (NodeControlManager.Instance != null)
                 {
@@ -212,8 +218,11 @@ namespace StarWriter.Core
             destroyed = true;
 
             // Remove block from team score when destroyed
-            ScoringManager.Instance.UpdateTeamScore(team, trailBlockProperties.volume * -1);
-            ScoringManager.Instance.UpdateScore(playerName, trailBlockProperties.volume * -1);
+            if (ScoringManager.Instance != null)
+            {
+                ScoringManager.Instance.UpdateTeamScore(team, trailBlockProperties.volume * -1);
+                ScoringManager.Instance.UpdateScore(playerName, trailBlockProperties.volume * -1);
+            }
         }
 
         public void ConvertToTeam(string PlayerName, Teams team)

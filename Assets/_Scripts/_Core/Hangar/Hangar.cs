@@ -41,8 +41,10 @@ namespace StarWriter.Core.HangerBuilder
         public Ship selectedShip { get; private set; }
         public int BayIndex { get => SelectedBayIndex; }
 
-        private void Start()
+        public override void Awake()
         {
+            base.Awake();
+
             TeamsMaterials = new Dictionary<Teams, Material>() {
                 { Teams.Green, GreenTeamMaterial },
                 { Teams.Red,   RedTeamMaterial },
@@ -60,7 +62,10 @@ namespace StarWriter.Core.HangerBuilder
             {
                 ships.Add(ship.name, ship);
                 shipTypeMap.Add(ship.ShipType, ship);
+                Debug.Log($"Adding ship to shiptypemap - {ship.ShipType}, {ship}");
             }
+
+
 
             AITeam = PlayerTeam == Teams.Green ? Teams.Red : Teams.Green;
         }

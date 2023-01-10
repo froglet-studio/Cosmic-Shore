@@ -86,7 +86,7 @@ public class Crystal : MonoBehaviour
         else
         {
             transform.SetPositionAndRotation(UnityEngine.Random.insideUnitSphere * sphereRadius, UnityEngine.Random.rotation);
-            OnCrystalMove(); // TODO: understand why this throws a null exception when the if statement isn't removed // TODO: understand the previous 'TODO' comment... does it mean to say "if statement is removed"
+            OnCrystalMove?.Invoke(); // TODO: understand why this throws a null exception when the if statement isn't removed // TODO: understand the previous 'TODO' comment... does it mean to say "if statement is removed"
         }
     }
 
