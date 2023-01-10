@@ -5,9 +5,9 @@ using UnityEngine;
 public class AOEBlockCreation : AOEExplosion
 {
     [SerializeField] Trail trail;
-    private Material blockMaterial;
-    float blockCount = 8;
-    float radius = 30f;
+    [SerializeField] float blockCount = 8;
+    [SerializeField] float radius = 30f;
+    Material blockMaterial;
 
     public void SetBlockMaterial(Material material)
     {
