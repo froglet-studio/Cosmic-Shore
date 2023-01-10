@@ -155,7 +155,6 @@ public class TrailSpawner : MonoBehaviour
                 Block.transform.SetPositionAndRotation(transform.position - shipData.velocityDirection * offset, shipData.blockRotation);
                 Block.transform.parent = TrailContainer.transform;
                 Block.waitTime = waitTime;
-                Block.embiggen = shipData.boost;
                 Block.ownerId = ship.Player.PlayerUUID;
                 Block.PlayerName = ship.Player.PlayerName;
                 Block.Team = ship.Team;
