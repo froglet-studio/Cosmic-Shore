@@ -33,7 +33,7 @@ Transform:
   m_LocalScale: {x: 2, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 1219692404207381732}
+  m_Father: {fileID: 3397189760217659071}
   m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!33 &3158356808154679415
@@ -128,6 +128,41 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Ship: {fileID: 874579555101021527}
+--- !u!1 &1878660672777590133
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3397189760217659071}
+  m_Layer: 0
+  m_Name: ShipRotationOverride
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &3397189760217659071
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1878660672777590133}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 282447970148362685}
+  - {fileID: 6031211562208651239}
+  - {fileID: 8620160303732317513}
+  - {fileID: 4377882507933526056}
+  m_Father: {fileID: 5928382658856804067}
+  m_RootOrder: 0
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2306761366267364778
 GameObject:
   m_ObjectHideFlags: 0
@@ -161,7 +196,7 @@ Transform:
   m_LocalScale: {x: 2, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 1219692404207381732}
+  m_Father: {fileID: 3397189760217659071}
   m_RootOrder: 3
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!33 &6299084237453175230
@@ -256,41 +291,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Ship: {fileID: 874579555101021527}
---- !u!1 &4343935266849732334
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1219692404207381732}
-  m_Layer: 0
-  m_Name: ShipRotationOverride
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &1219692404207381732
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4343935266849732334}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 282447970148362685}
-  - {fileID: 6031211562208651239}
-  - {fileID: 8620160303732317513}
-  - {fileID: 4377882507933526056}
-  m_Father: {fileID: 5928382658856804067}
-  m_RootOrder: 0
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &6417075533431866457
 GameObject:
   m_ObjectHideFlags: 0
@@ -307,8 +307,8 @@ GameObject:
   - component: {fileID: 3440187540988767646}
   - component: {fileID: 6293426128044408357}
   m_Layer: 0
-  m_Name: GreenMantaAI
-  m_TagString: Untagged
+  m_Name: GunManta
+  m_TagString: Player_Ship
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -325,7 +325,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 1219692404207381732}
+  - {fileID: 3397189760217659071}
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -346,7 +346,7 @@ MonoBehaviour:
   - {fileID: 956471339697806072}
   - {fileID: 2306761366267364778}
   explosiveMaterial: {fileID: 2100000, guid: cbf0164b1addfee43a45e430c464b6fd, type: 2}
-  maxExplosionRadius: 250
+  maxExplosionRadius: 300
   explosionRate: 120
 --- !u!114 &874579555101021522
 MonoBehaviour:
@@ -398,30 +398,30 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a273abd40c7104c4392188723ab929d6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Name: GreenMantaAI
-  ShipType: 6
+  Name: GreenManta
+  ShipType: 4
   TrailSpawner: {fileID: 874579555101021522}
   skimmer: {fileID: 874579554510349383}
-  AOEPrefab: {fileID: 5223509924604101809, guid: 42557cca5640fea41b2576f9b95b4eef,
+  AOEPrefab: {fileID: 2728798890556433942, guid: 4a855af160021d241b8c1ac70cf2d792,
     type: 3}
   player: {fileID: 0}
-  crystalImpactEffects: 04000000020000000500000006000000
-  trailBlockImpactEffects: 0300000006000000
-  fullSpeedStraightEffects: 
+  crystalImpactEffects: 0000000004000000
+  trailBlockImpactEffects: 000000000300000002000000
+  fullSpeedStraightEffects: 01000000
   rightStickEffects: 
   leftStickEffects: 
-  flipEffects: 
-  passiveEffects: 
-  boostMultiplier: 4
-  boostFuelAmount: -0.01
-  rotationScaler: 130
+  flipEffects: 03000000
+  passiveEffects: 00000000
+  boostMultiplier: 2
+  boostFuelAmount: 0
+  rotationScaler: 70
   rotationThrottleScaler: 0
-  maxExplosionScale: 250
-  blockFuelChange: 0.1
+  maxExplosionScale: 500
+  blockFuelChange: 0
   closeCamDistance: 0
   farCamDistance: 0
   head: {fileID: 0}
-  ShipRotationOverride: {fileID: 4343935266849732334}
+  ShipRotationOverride: {fileID: 1878660672777590133}
   SecondMode: 5
 --- !u!114 &3440187540988767646
 MonoBehaviour:
@@ -495,10 +495,10 @@ Transform:
   m_GameObject: {fileID: 7989725769420682486}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 1, y: 3, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 1219692404207381732}
+  m_Father: {fileID: 3397189760217659071}
   m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!33 &2941161157129680931
@@ -598,7 +598,7 @@ PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Modification:
-    m_TransformParent: {fileID: 1219692404207381732}
+    m_TransformParent: {fileID: 3397189760217659071}
     m_Modifications:
     - target: {fileID: 4816621673548213744, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
@@ -669,6 +669,16 @@ PrefabInstance:
         type: 3}
       propertyPath: fuelAmount
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
+      propertyPath: trailBlockImpactEffects.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
+      propertyPath: trailBlockImpactEffects.Array.data[0]
+      value: 7
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 6540c78597c2dcc468123b270169fc44, type: 3}

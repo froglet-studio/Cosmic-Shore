@@ -620,7 +620,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Name: SharkAI
-  ShipType: 6
+  ShipType: 8
   TrailSpawner: {fileID: 874579555101021522}
   skimmer: {fileID: 874579554510349383}
   AOEPrefab: {fileID: 2728798890556433942, guid: 4a855af160021d241b8c1ac70cf2d792,

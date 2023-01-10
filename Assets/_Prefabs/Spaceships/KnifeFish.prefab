@@ -29,7 +29,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 7154766555880760750}
-  m_Father: {fileID: 7842916041031125885}
+  m_Father: {fileID: 5720471622467000753}
   m_RootOrder: 5
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &744850128600491525
@@ -65,7 +65,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 7842916041031125885}
+  m_Father: {fileID: 5720471622467000753}
   m_RootOrder: 4
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!33 &5703341003693891795
@@ -160,6 +160,46 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Ship: {fileID: 874579555101021527}
+--- !u!1 &1087614488730427270
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 5720471622467000753}
+  m_Layer: 0
+  m_Name: ShipRotationOverride
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &5720471622467000753
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1087614488730427270}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 282447970148362685}
+  - {fileID: 4809017785977291204}
+  - {fileID: 5738881746581368189}
+  - {fileID: 6913418377377194506}
+  - {fileID: 4275138887046070967}
+  - {fileID: 7338564917182643040}
+  - {fileID: 6642230746651385217}
+  - {fileID: 6578901157774687055}
+  - {fileID: 7918529821298379185}
+  m_Father: {fileID: 5928382658856804067}
+  m_RootOrder: 0
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1463393096304612524
 GameObject:
   m_ObjectHideFlags: 0
@@ -188,14 +228,14 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1463393096304612524}
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalRotation: {x: 0, y: 0, z: 0.58517, w: 0.8109107}
   m_LocalPosition: {x: 0.33480835, y: 0.28867197, z: -2.0516968}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 6578901157774687055}
   m_RootOrder: 0
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 71.63}
 --- !u!33 &1637302780533641323
 MeshFilter:
   m_ObjectHideFlags: 0
@@ -317,7 +357,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 226990768735957183}
-  m_Father: {fileID: 7842916041031125885}
+  m_Father: {fileID: 5720471622467000753}
   m_RootOrder: 7
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2877688561880709149
@@ -448,46 +488,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Ship: {fileID: 874579555101021527}
---- !u!1 &2897121333247873258
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 7842916041031125885}
-  m_Layer: 0
-  m_Name: ShipRotationOverride
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &7842916041031125885
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2897121333247873258}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 282447970148362685}
-  - {fileID: 4809017785977291204}
-  - {fileID: 5738881746581368189}
-  - {fileID: 6913418377377194506}
-  - {fileID: 4275138887046070967}
-  - {fileID: 7338564917182643040}
-  - {fileID: 6642230746651385217}
-  - {fileID: 6578901157774687055}
-  - {fileID: 7918529821298379185}
-  m_Father: {fileID: 5928382658856804067}
-  m_RootOrder: 0
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &3743426984857614330
 GameObject:
   m_ObjectHideFlags: 0
@@ -649,7 +649,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 7842916041031125885}
+  m_Father: {fileID: 5720471622467000753}
   m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!33 &3012476846400295800
@@ -760,8 +760,8 @@ GameObject:
   - component: {fileID: 3440187540988767646}
   - component: {fileID: 1871436205027819587}
   m_Layer: 0
-  m_Name: DolphinAI
-  m_TagString: Untagged
+  m_Name: KnifeFish
+  m_TagString: Player_Ship
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -778,7 +778,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 7842916041031125885}
+  - {fileID: 5720471622467000753}
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -799,7 +799,7 @@ MonoBehaviour:
   - {fileID: 7640717969865516594}
   - {fileID: 744850128600491525}
   explosiveMaterial: {fileID: 2100000, guid: cbf0164b1addfee43a45e430c464b6fd, type: 2}
-  maxExplosionRadius: 300
+  maxExplosionRadius: 400
   explosionRate: 120
 --- !u!114 &874579555101021522
 MonoBehaviour:
@@ -851,30 +851,30 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a273abd40c7104c4392188723ab929d6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Name: Dolphin
-  ShipType: 7
+  Name: KnifeFish
+  ShipType: 5
   TrailSpawner: {fileID: 874579555101021522}
   skimmer: {fileID: 874579554510349383}
   AOEPrefab: {fileID: 2728798890556433942, guid: 4a855af160021d241b8c1ac70cf2d792,
     type: 3}
   player: {fileID: 0}
-  crystalImpactEffects: 040000000200000005000000
-  trailBlockImpactEffects: 030000000200000001000000
+  crystalImpactEffects: 000000000200000005000000
+  trailBlockImpactEffects: 00000000030000000200000001000000
   fullSpeedStraightEffects: 
-  rightStickEffects: 
-  leftStickEffects: 
-  flipEffects: 
-  passiveEffects: 
+  rightStickEffects: 00000000
+  leftStickEffects: 00000000
+  flipEffects: 05000000
+  passiveEffects: 0000000006000000
   boostMultiplier: 4
   boostFuelAmount: -0.01
   rotationScaler: 190
   rotationThrottleScaler: 0.5
-  maxExplosionScale: 250
+  maxExplosionScale: 400
   blockFuelChange: 0
   closeCamDistance: 0
   farCamDistance: 0
   head: {fileID: 0}
-  ShipRotationOverride: {fileID: 2897121333247873258}
+  ShipRotationOverride: {fileID: 1087614488730427270}
   SecondMode: 5
 --- !u!114 &3440187540988767646
 MonoBehaviour:
@@ -952,7 +952,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 4812123105064309664}
-  m_Father: {fileID: 7842916041031125885}
+  m_Father: {fileID: 5720471622467000753}
   m_RootOrder: 6
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &7358388499312562070
@@ -984,7 +984,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 4822958494272606715}
-  m_Father: {fileID: 7842916041031125885}
+  m_Father: {fileID: 5720471622467000753}
   m_RootOrder: 8
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &7640717969865516594
@@ -1020,7 +1020,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 7842916041031125885}
+  m_Father: {fileID: 5720471622467000753}
   m_RootOrder: 3
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!33 &3792485968958548069
@@ -1143,14 +1143,14 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8211653562881954920}
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalRotation: {x: 0, y: 0, z: 0.7468123, w: 0.665035}
   m_LocalPosition: {x: -0.33584595, y: 0.26186037, z: -2.0328674}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 7918529821298379185}
   m_RootOrder: 0
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 96.63}
 --- !u!33 &7418932254566873510
 MeshFilter:
   m_ObjectHideFlags: 0
@@ -1276,7 +1276,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 7842916041031125885}
+  m_Father: {fileID: 5720471622467000753}
   m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!33 &7507212650467994425
@@ -1376,7 +1376,7 @@ PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Modification:
-    m_TransformParent: {fileID: 7842916041031125885}
+    m_TransformParent: {fileID: 5720471622467000753}
     m_Modifications:
     - target: {fileID: 4816621673548213744, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
@@ -1446,7 +1446,22 @@ PrefabInstance:
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
       propertyPath: fuelAmount
-      value: 0.005
+      value: 0.01
+      objectReference: {fileID: 0}
+    - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
+      propertyPath: MultiSkimMultiplier
+      value: 0.01
+      objectReference: {fileID: 0}
+    - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
+      propertyPath: trailBlockImpactEffects.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
+      propertyPath: trailBlockImpactEffects.Array.data[0]
+      value: 6
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 6540c78597c2dcc468123b270169fc44, type: 3}

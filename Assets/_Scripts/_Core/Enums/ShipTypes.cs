@@ -4,6 +4,8 @@ public enum ShipTypes
     Manta,
     Dolphin,
     Shark,
+    GunManta,
+    KnifeFish,
     MantaAI,
     DolphinAI,
     SharkAI
