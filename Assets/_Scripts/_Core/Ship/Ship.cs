@@ -41,11 +41,13 @@ namespace StarWriter.Core
         Ship secondShip;
         Ship[] ships;
 
-        Teams team;
-        ShipData shipData;
-        InputController inputController;
-        Material ShipMaterial;
-        List<ShipGeometry> shipGeometries = new List<ShipGeometry>();
+    Vector3 initialDirection = Vector3.zero;
+
+    Teams team;
+    ShipData shipData;
+    InputController inputController;
+    Material ShipMaterial;
+    List<ShipGeometry> shipGeometries = new List<ShipGeometry>();
 
         class SpeedModifier
         {
@@ -224,78 +226,78 @@ namespace StarWriter.Core
             StopShipAbilitiesEffects(flipEffects);
         }
 
-        void PerformShipAbilitiesEffects(List<ActiveAbilities> shipAbilities)
+    void PerformShipAbilitiesEffects(List<ActiveAbilities> shipAbilities)
+    {
+        foreach (ActiveAbilities effect in shipAbilities)
         {
-            foreach (ActiveAbilities effect in shipAbilities)
+            switch (effect)
             {
-                switch (effect)
-                {
-                    case ActiveAbilities.Drift:
-                        inputController.Drift();
-                        break;
-                    case ActiveAbilities.Boost:
-                        if (FuelSystem.CurrentFuel > 0)
-                        {
-                            inputController.BoostShip(boostMultiplier, boostFuelAmount); // TODO move fuel change out of inputController
-                            shipData.boost = true; // TODO make a block change ability instead
-                        }
-                        else StopFullSpeedStraightEffects(); // TODO this will stop other effects
-                        break;
-                    case ActiveAbilities.Invulnerability:
-                        if (!invulnerable)
-                        {
-                            invulnerable = true;
-                            trailBlockImpactEffects.Remove(TrailBlockImpactEffects.DebuffSpeed);
-                            trailBlockImpactEffects.Add(TrailBlockImpactEffects.OnlyBuffSpeed);
-                        }
-                        head.transform.localScale *= 1.02f; // TODO make this its own ability 
-                        break;
-                    case ActiveAbilities.ToggleCamera:
-                        CameraManager.Instance.ToggleCloseOrFarCamOnPhoneFlip(true);
-                        TrailSpawner.ToggleBlockWaitTime(true);
-                        break;
-                    case ActiveAbilities.ToggleMode:
-                        // TODO
-                        break;
-                    case ActiveAbilities.ToggleGyro:
-                        inputController.OnToggleGyro(true);
-                        break;
-                }
+                case ActiveAbilities.Drift:
+                    inputController.Drift();
+                    break;
+                case ActiveAbilities.Boost:
+                    if (FuelSystem.CurrentFuel > 0)
+                    {
+                        inputController.BoostShip(boostMultiplier, boostFuelAmount); // TODO move fuel change out of inputController
+                        shipData.boost = true; // TODO make a block change ability instead
+                    }
+                    else StopFullSpeedStraightEffects(); // TODO this will stop other effects
+                    break;
+                case ActiveAbilities.Invulnerability:
+                    if (!invulnerable)
+                    {
+                        invulnerable = true;
+                        trailBlockImpactEffects.Remove(TrailBlockImpactEffects.DebuffSpeed);
+                        trailBlockImpactEffects.Add(TrailBlockImpactEffects.OnlyBuffSpeed);
+                    }
+                    head.transform.localScale *= 1.02f; // TODO make this its own ability 
+                    break;
+                case ActiveAbilities.ToggleCamera:
+                    CameraManager.Instance.ToggleCloseOrFarCamOnPhoneFlip(true);
+                    TrailSpawner.ToggleBlockWaitTime(true);
+                    break;
+                case ActiveAbilities.ToggleMode:
+                    // TODO
+                    break;
+                case ActiveAbilities.ToggleGyro:
+                    inputController.OnToggleGyro(true);
+                    break;
             }
         }
+    }
 
-        void StopShipAbilitiesEffects(List<ActiveAbilities> shipAbilities)
+    void StopShipAbilitiesEffects(List<ActiveAbilities> shipAbilities)
+    {
+        foreach (ActiveAbilities effect in shipAbilities)
         {
-            foreach (ActiveAbilities effect in shipAbilities)
+            switch (effect)
             {
-                switch (effect)
-                {
-                    case ActiveAbilities.Drift:
-                        inputController.drifting = false;
-                        inputController.StopShipBoost();
-                        break;
-                    case ActiveAbilities.Boost:
-                        shipData.boost = false;
-                        break;
-                    case ActiveAbilities.Invulnerability:
-                        invulnerable = false;
-                        trailBlockImpactEffects.Add(TrailBlockImpactEffects.DebuffSpeed);
-                        trailBlockImpactEffects.Remove(TrailBlockImpactEffects.OnlyBuffSpeed);
-                        head.transform.localScale = Vector3.one;
-                        break;
-                    case ActiveAbilities.ToggleCamera:
-                        CameraManager.Instance.ToggleCloseOrFarCamOnPhoneFlip(false);
-                        TrailSpawner.ToggleBlockWaitTime(false);
-                        break;
-                    case ActiveAbilities.ToggleMode:
-                        // TODO
-                        break;
-                    case ActiveAbilities.ToggleGyro:
-                        inputController.OnToggleGyro(false);
-                        break;
-                }
+                case ActiveAbilities.Drift:
+                    inputController.drifting = false;
+                    inputController.StopShipBoost();
+                    break;
+                case ActiveAbilities.Boost:
+                    shipData.boost = false;
+                    break;
+                case ActiveAbilities.Invulnerability:
+                    invulnerable = false;
+                    trailBlockImpactEffects.Add(TrailBlockImpactEffects.DebuffSpeed);
+                    trailBlockImpactEffects.Remove(TrailBlockImpactEffects.OnlyBuffSpeed);
+                    head.transform.localScale = Vector3.one;
+                    break;
+                case ActiveAbilities.ToggleCamera:
+                    CameraManager.Instance.ToggleCloseOrFarCamOnPhoneFlip(false);
+                    TrailSpawner.ToggleBlockWaitTime(false);
+                    break;
+                case ActiveAbilities.ToggleMode:
+                    // TODO
+                    break;
+                case ActiveAbilities.ToggleGyro:
+                    inputController.OnToggleGyro(false);
+                    break;
             }
         }
+    }
 
         void ApplySpeedModifiers()
         {

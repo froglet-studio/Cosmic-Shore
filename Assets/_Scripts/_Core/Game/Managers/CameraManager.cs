@@ -2,6 +2,7 @@ using UnityEngine;
 using Cinemachine;
 using StarWriter.Core;
 using TailGlider.Utility.Singleton;
+using static UnityEditor.ShaderGraph.Internal.KeywordDependentCollection;
 
 public class CameraManager : SingletonPersistent<CameraManager>
 {
@@ -21,7 +22,9 @@ public class CameraManager : SingletonPersistent<CameraManager>
     bool isCameraFlipEnabled = true;
     bool useCloseCam = true;
 
-    void OnEnable()
+    Vector3 tempOffset = Vector3.zero;
+
+    private void OnEnable()
     {
         GameManager.onPlayGame += SetupGamePlayCameras;
         DeathEvents.OnDeathBegin += SwitchToDeathCamera;
@@ -149,5 +152,14 @@ public class CameraManager : SingletonPersistent<CameraManager>
     {
         SetCameraDistance(farCamera, distance);
         SetCameraDistance(closeCamera, distance);
+    }
+
+    public void DriftCam(Vector3 initialDirection, Vector3 currentRotation)
+    {
+        
+        var vCam = closeCamera.VirtualCameraGameObject.GetComponent<CinemachineVirtualCamera>();
+        var transposer = vCam.GetCinemachineComponent<CinemachineTransposer>();
+        if (tempOffset == Vector3.zero) tempOffset = transposer.m_FollowOffset;
+        transposer.m_FollowOffset = Quaternion.FromToRotation(currentRotation, initialDirection) * tempOffset;
     }
 }
