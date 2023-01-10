@@ -231,8 +231,8 @@ public class Ship : MonoBehaviour
             {
                 case ActiveAbilities.Drift:
                     inputController.Drift();
-                    if (initialDirection == Vector3.zero) initialDirection = transform.forward;
-                    cameraManager.DriftCam(initialDirection, transform.forward);
+                    //if (initialDirection == Vector3.zero) initialDirection = transform.forward; TODO: WIP
+                    //cameraManager.DriftCam(initialDirection, transform.forward);
                     break;
                 case ActiveAbilities.Boost:
                     if (FuelSystem.CurrentFuel > 0)
