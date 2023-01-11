@@ -36,7 +36,7 @@ namespace StarWriter.Core
                         break;
                     case TrailBlockImpactEffects.DeactivateTrailBlock:
                         trailBlockProperties.trail.Explode(ship.transform.forward * ship.GetComponent<ShipData>().speed, team);
-                        ScoringManager.Instance.BlockDestroyed(team, Player.PlayerName, trailBlockProperties);
+                        StatsManager.Instance.BlockDestroyed(team, Player.PlayerName, trailBlockProperties);
 
                         if (NodeControlManager.Instance != null)
                         {

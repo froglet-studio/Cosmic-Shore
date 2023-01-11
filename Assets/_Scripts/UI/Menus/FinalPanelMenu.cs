@@ -4,32 +4,29 @@ using StarWriter.Core;
 
 public class FinalPanelMenu : MonoBehaviour
 {
-    public Button bedazzledScreenshotButton;
-    public Button screenshotButton;
-    public Button replayButton;
     [SerializeField] SnsShare snsShare;
+    [SerializeField] public Button screenshotButton;
+    [SerializeField] public Button replayButton;
 
-    private void OnEnable()
+    void OnEnable()
     {
         GameManager.onGameOver += OnGameOver;
     }
 
-    private void OnDisable()
+    void OnDisable()
     {
         GameManager.onGameOver -= OnGameOver;
     }
 
-    private void Start()
+    void Start()
     {
         screenshotButton.onClick.AddListener(() => snsShare.Share());
-        bedazzledScreenshotButton.onClick.AddListener(() => snsShare.Share());
     }
 
-    private void OnGameOver()
+    void OnGameOver()
     {
         replayButton.gameObject.SetActive(true);
-        bedazzledScreenshotButton.gameObject.SetActive(ScoringManager.IsShareBedazzleWorthy);
-        screenshotButton.gameObject.SetActive(!ScoringManager.IsShareBedazzleWorthy);
+        screenshotButton.gameObject.SetActive(true);
     }
 
     public void OnClickReplayButton()

@@ -6,7 +6,6 @@ public class AdvertisementMenu : MonoBehaviour
 {
     public RewardedAdsButton watchAdButton;
     public Button declineAdButton;
-    public RewardedAdsButton bedazzledWatchAdButton;
     public AdsManager adsManager;
 
     public delegate void OnDeclineAdEvent();
@@ -26,7 +25,6 @@ public class AdvertisementMenu : MonoBehaviour
     {
         watchAdButton.gameObject.SetActive(true);
         declineAdButton.gameObject.SetActive(true);
-        bedazzledWatchAdButton.gameObject.SetActive(false);
     }
 
     public void OnClickWatchAdButton()
@@ -44,11 +42,9 @@ public class AdvertisementMenu : MonoBehaviour
     {
         if (GameManager.Instance.DeathCount < 2)
         {
-            var bedazzled = ScoringManager.IsScoreBedazzleWorthy;
 
             adsManager.LoadAd();
-            bedazzledWatchAdButton.gameObject.SetActive(bedazzled);
-            watchAdButton.gameObject.SetActive(!bedazzled);
+            watchAdButton.gameObject.SetActive(true);
             declineAdButton.gameObject.SetActive(true);
         }
     }

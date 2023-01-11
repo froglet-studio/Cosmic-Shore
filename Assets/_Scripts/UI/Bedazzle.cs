@@ -10,18 +10,16 @@ public class Bedazzle : MonoBehaviour
     float hueMagnitude = .06f;
     const float TWO_PI = Mathf.PI * 2;
 
-    // Start is called before the first frame update
     void Start()
     {
         image = GetComponent<Image>();
     }
 
-    // Update is called once per frame
     void Update()
     {
         var deltaTime = Time.deltaTime;
         if (Time.timeScale == 0)
-            deltaTime = Time.fixedDeltaTime;//.16f;    // This is here so that bedazzled items still work if the game is paused - e.g during the rewarded ad screen
+            deltaTime = Time.fixedDeltaTime; // This is here so that bedazzled items still work if the game is paused - e.g during the rewarded ad screen
 
         increment += .2f*deltaTime;
         increment %= 1;

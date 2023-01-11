@@ -9,7 +9,6 @@ using StarWriter.Core.Input;
 public class SnsShare : MonoBehaviour
 {
     public Button screenshotButton;
-    public Button bedazzledScreenshotButton;
     public Button replayButton;
     public GameObject VersionTMP;
 
@@ -21,7 +20,6 @@ public class SnsShare : MonoBehaviour
     private IEnumerator TakeScreenshotAndShare()
     {
         screenshotButton.gameObject.SetActive(false);
-        bedazzledScreenshotButton.gameObject.SetActive(false);
         replayButton.gameObject.SetActive(false);
         VersionTMP.SetActive(true);
 
