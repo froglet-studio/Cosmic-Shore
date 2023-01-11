@@ -1,10 +1,11 @@
+using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
 using StarWriter.Core;
 using static StarWriter.Core.GameSetting;
-using System.Collections.Generic;
 using StarWriter.Utility.Singleton;
 
+// TODO: pull out into separate file
 public struct RoundStats
 {
     public int blocksCreated;
@@ -31,12 +32,11 @@ public struct RoundStats
     }
 }
 
-public class ScoringManager : Singleton<ScoringManager>
+public class StatsManager : Singleton<StatsManager>
 {
     [SerializeField] int extendedLifeScore;
     [SerializeField] int extendedLifeHighScore;
     [SerializeField] GameObject WinnerDisplay;
-    [SerializeField] List<GameObject> ScoreContainers;
     [SerializeField] List<GameObject> EndOfRoundStatContainers;
     [SerializeField] List<GameObject> PlayerVolumeContainers;       // TODO: remove this - has been replaced by End Of Round Stats Containers
     [SerializeField] bool TeamScoresEnabled = false;
@@ -50,10 +50,6 @@ public class ScoringManager : Singleton<ScoringManager>
     Dictionary<Teams, float> TeamScores = new Dictionary<Teams, float>();
     static float SinglePlayerScore = 0;
     static bool firstLife = true;
-    static float bedazzleThresholdPercentage = 0.8f;
-
-    private static bool newHighScore;
-    private static bool firstLifeThresholdBeat;
 
     public TextMeshProUGUI scoreText;
     private bool RoundEnded = false;
@@ -121,41 +117,26 @@ public class ScoringManager : Singleton<ScoringManager>
         playerStats[playerName] = roundStats;
     }
 
-
-    private void OnEnable()
+    void OnEnable()
     {
         GameManager.onPlayGame += ResetScoreAndDeathCount;
         GameManager.onDeath += UpdateScoresAndDeathCount;
         GameManager.onGameOver += UpdateScoresAndDeathCount;
         if (!TeamScoresEnabled)
-        {
             Trail.AddToScore += UpdateScore;
-        }
     }
 
-    private void OnDisable()
+    void OnDisable()
     {
         GameManager.onPlayGame -= ResetScoreAndDeathCount;
         GameManager.onDeath -= UpdateScoresAndDeathCount;
         GameManager.onGameOver -= UpdateScoresAndDeathCount;
         if (!TeamScoresEnabled)
-        {
             Trail.AddToScore -= UpdateScore;
-        }
     }
 
-    private void Start()
+    void Start()
     {
-        // Initialize SinglePlayerScore panel to be blank
-        foreach (var sc in ScoreContainers)
-        {
-            var playerName = sc.transform.GetChild(0).GetComponent<TMP_Text>();
-            playerName.text = "";
-
-            var playerScore = sc.transform.GetChild(1).GetComponent<TMP_Text>();
-            playerScore.text = "";
-        }
-
         WinnerDisplay.SetActive(false);
     }
 
@@ -171,15 +152,9 @@ public class ScoringManager : Singleton<ScoringManager>
             return;
 
         if (!TeamScores.ContainsKey(team))
-        {
             TeamScores.Add(team, 0);
-            ScoreDisplays.Add(team.ToString(), ScoreContainers[TeamScores.Count - 1]);
-            ScoreContainers[TeamScores.Count - 1].transform.GetChild(0).GetComponent<TMP_Text>().text = team.ToString();
-            ScoreContainers[TeamScores.Count - 1].transform.GetChild(1).GetComponent<TMP_Text>().text = "000";
-        }
 
         TeamScores[team] += amount;
-        ScoreDisplays[team.ToString()].transform.GetChild(1).GetComponent<TMP_Text>().text = ((int)TeamScores[team]).ToString("D3");
     }
 
     public void UpdateScore(string playerName, float amount)
@@ -188,20 +163,9 @@ public class ScoringManager : Singleton<ScoringManager>
             return;
 
         if (!PlayerScores.ContainsKey(playerName))
-        {
             PlayerScores.Add(playerName, 0);
-            ScoreDisplays.Add(playerName, ScoreContainers[PlayerScores.Count - 1]);
-            ScoreContainers[PlayerScores.Count - 1].transform.GetChild(0).GetComponent<TMP_Text>().text = playerName;
-            ScoreContainers[PlayerScores.Count - 1].transform.GetChild(1).GetComponent<TMP_Text>().text = "000";
-        }
 
         PlayerScores[playerName] += amount;
-        ScoreDisplays[playerName].transform.GetChild(1).GetComponent<TMP_Text>().text = ((int)PlayerScores[playerName]).ToString("D3");
-
-        if (playerName == "admin")
-        {
-            SinglePlayerScore += amount;
-        }
 
         foreach (var key in PlayerScores.Keys)
         {
@@ -211,7 +175,7 @@ public class ScoringManager : Singleton<ScoringManager>
         UpdateScoreBoard(SinglePlayerScore);
     }
 
-    private void ResetScoreAndDeathCount()
+    void ResetScoreAndDeathCount()
     {
         Debug.Log("ScoringManager.OnPlay");
         foreach (var key in PlayerScores.Keys)
@@ -223,43 +187,24 @@ public class ScoringManager : Singleton<ScoringManager>
 
         SinglePlayerScore = 0;
         firstLife = true;
-        newHighScore = false;
-        firstLifeThresholdBeat = false;
         RoundEnded = false;
     }
 
-    private void UpdateScoresAndDeathCount()
+    void UpdateScoresAndDeathCount()
     {
         PlayerPrefs.SetInt(PlayerPrefKeys.score.ToString(), (int)SinglePlayerScore);
 
         // Compares Score to High Score and saves the highest value
         if (PlayerPrefs.GetInt(PlayerPrefKeys.highScore.ToString()) < SinglePlayerScore)
-        {
             PlayerPrefs.SetInt(PlayerPrefKeys.highScore.ToString(), (int)SinglePlayerScore);
-            newHighScore = true;
-        }
 
         if (firstLife)
-        {
-            if (PlayerPrefs.GetInt(PlayerPrefKeys.firstLifeHighScore.ToString()) * bedazzleThresholdPercentage <= SinglePlayerScore)
-            {
-                firstLifeThresholdBeat = true;
-            }
             if (PlayerPrefs.GetInt(PlayerPrefKeys.firstLifeHighScore.ToString()) < SinglePlayerScore)
-            {
                 PlayerPrefs.SetInt(PlayerPrefKeys.firstLifeHighScore.ToString(), (int)SinglePlayerScore);
-            }
-        }
 
         PlayerPrefs.Save();
 
-        // TODO: Cleanup
-        if (TeamScoresEnabled)
-            //DisplayWinningTeam();
-            DisplayPlayerScores();
-        else
-            //DisplayWinner();
-            DisplayPlayerScores();
+        DisplayPlayerScores();
 
         // TODO: duplicate bookkeeping happening here - introduce different game modes?
         firstLife = false;
@@ -299,22 +244,5 @@ public class ScoringManager : Singleton<ScoringManager>
     void DisplayPlayerScores()
     {
         OutputRoundStats();
-    }
-
-    public static bool IsScoreBedazzleWorthy
-    {
-        get => firstLife ?
-            firstLifeThresholdBeat || (PlayerPrefs.GetInt(PlayerPrefKeys.firstLifeHighScore.ToString()) * bedazzleThresholdPercentage) <= SinglePlayerScore :
-            newHighScore || (PlayerPrefs.GetInt(PlayerPrefKeys.highScore.ToString())) < SinglePlayerScore;
-    }
-
-    public static bool IsAdBedazzleWorthy
-    {
-        get => PlayerPrefs.GetInt(PlayerPrefKeys.highScore.ToString()) <= SinglePlayerScore;
-    }
-
-    public static bool IsShareBedazzleWorthy
-    {
-        get => PlayerPrefs.GetInt(PlayerPrefKeys.highScore.ToString()) <= SinglePlayerScore;
     }
 }

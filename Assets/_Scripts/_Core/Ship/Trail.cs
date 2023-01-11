@@ -80,12 +80,12 @@ namespace StarWriter.Core
             }
 
             // Add block to team score when created
-            if (ScoringManager.Instance != null)
+            if (StatsManager.Instance != null)
             {
-                ScoringManager.Instance.UpdateTeamScore(team, trailBlockProperties.volume);
-                ScoringManager.Instance.UpdateScore(playerName, trailBlockProperties.volume);
+                StatsManager.Instance.UpdateTeamScore(team, trailBlockProperties.volume);
+                StatsManager.Instance.UpdateScore(playerName, trailBlockProperties.volume);
 
-                ScoringManager.Instance.BlockCreated(team, playerName, trailBlockProperties);
+                StatsManager.Instance.BlockCreated(team, playerName, trailBlockProperties);
 
                 //Debug.LogWarning($"Created block. Volume: {trailBlockProperties.volume}, Dimensions: {Dimensions}, MaxSize: {MaxSize}");
             }
@@ -130,9 +130,9 @@ namespace StarWriter.Core
 
                 Collide(ship);
                 Explode(impactVector, ship.Team);
-                if (ScoringManager.Instance != null)
+                if (StatsManager.Instance != null)
                 {
-                    ScoringManager.Instance.BlockDestroyed(team, ship.Player.PlayerName, trailBlockProperties);
+                    StatsManager.Instance.BlockDestroyed(team, ship.Player.PlayerName, trailBlockProperties);
                 }
 
                 if (NodeControlManager.Instance != null)
@@ -155,9 +155,9 @@ namespace StarWriter.Core
 
                 Explode(impactVector, other.GetComponent<AOEExplosion>().Team); // TODO: need to attribute the explosion color to the team that made the explosion
 
-                if (ScoringManager.Instance != null)
+                if (StatsManager.Instance != null)
                 {
-                    ScoringManager.Instance.BlockDestroyed(other.GetComponent<AOEExplosion>().Team, other.GetComponent<AOEExplosion>().Ship.Player.PlayerName, trailBlockProperties);
+                    StatsManager.Instance.BlockDestroyed(other.GetComponent<AOEExplosion>().Team, other.GetComponent<AOEExplosion>().Ship.Player.PlayerName, trailBlockProperties);
                 }
 
                 if (NodeControlManager.Instance != null)
@@ -175,7 +175,7 @@ namespace StarWriter.Core
 
                 Explode(impactVector, other.GetComponent<Projectile>().Team); // TODO: need to attribute the explosion color to the team that made the explosion
 
-                ScoringManager.Instance.BlockDestroyed(other.GetComponent<Projectile>().Team, other.GetComponent<Projectile>().Ship.Player.PlayerName, trailBlockProperties);
+                StatsManager.Instance.BlockDestroyed(other.GetComponent<Projectile>().Team, other.GetComponent<Projectile>().Ship.Player.PlayerName, trailBlockProperties);
 
                 if (NodeControlManager.Instance != null)
                 {
@@ -217,23 +217,23 @@ namespace StarWriter.Core
             destroyed = true;
 
             // Remove block from team score when destroyed
-            if (ScoringManager.Instance != null)
+            if (StatsManager.Instance != null)
             {
-                ScoringManager.Instance.UpdateTeamScore(team, trailBlockProperties.volume * -1);
-                ScoringManager.Instance.UpdateScore(playerName, trailBlockProperties.volume * -1);
+                StatsManager.Instance.UpdateTeamScore(team, trailBlockProperties.volume * -1);
+                StatsManager.Instance.UpdateScore(playerName, trailBlockProperties.volume * -1);
             }
         }
 
         public void ConvertToTeam(string PlayerName, Teams team)
         {
-            ScoringManager.Instance.UpdateTeamScore(this.team, trailBlockProperties.volume * -1);
-            ScoringManager.Instance.UpdateScore(playerName, trailBlockProperties.volume * -1);
+            StatsManager.Instance.UpdateTeamScore(this.team, trailBlockProperties.volume * -1);
+            StatsManager.Instance.UpdateScore(playerName, trailBlockProperties.volume * -1);
 
             this.team = team;
             this.playerName = PlayerName;
 
-            ScoringManager.Instance.UpdateTeamScore(this.team, trailBlockProperties.volume);
-            ScoringManager.Instance.UpdateScore(playerName, trailBlockProperties.volume);
+            StatsManager.Instance.UpdateTeamScore(this.team, trailBlockProperties.volume);
+            StatsManager.Instance.UpdateScore(playerName, trailBlockProperties.volume);
 
             gameObject.GetComponent<MeshRenderer>().material = Hangar.Instance.GetTeamBlockMaterial(team);
         }
@@ -246,8 +246,8 @@ namespace StarWriter.Core
             destroyed = false;
 
             // Add block back to team score when created
-            ScoringManager.Instance.UpdateTeamScore(team, trailBlockProperties.volume);
-            ScoringManager.Instance.UpdateScore(playerName, trailBlockProperties.volume);
+            StatsManager.Instance.UpdateTeamScore(team, trailBlockProperties.volume);
+            StatsManager.Instance.UpdateScore(playerName, trailBlockProperties.volume);
         }
 
         // TODO: utility class needed to hold these

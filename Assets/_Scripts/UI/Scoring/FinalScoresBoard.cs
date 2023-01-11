@@ -24,8 +24,6 @@ namespace StarWriter.Core
         public Image highScoreTensPlace;
         public Image hignScoreOnesPlace;
 
-        public Image BedazzledHighScoreImage;
-
         private void OnEnable()
         {
             GameManager.onGameOver += OnGameOver;
@@ -40,7 +38,6 @@ namespace StarWriter.Core
         {
             currentScore = PlayerPrefs.GetInt(PlayerPrefKeys.score.ToString());
             highScore = PlayerPrefs.GetInt(PlayerPrefKeys.highScore.ToString());
-            BedazzledHighScoreImage.gameObject.SetActive(ScoringManager.IsScoreBedazzleWorthy);
             DisplayCurrentScoreWithSprites();
             DisplayHighScoreWithSprites();
         }
