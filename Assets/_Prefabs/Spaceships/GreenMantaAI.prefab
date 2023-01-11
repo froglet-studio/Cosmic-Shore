@@ -405,7 +405,7 @@ MonoBehaviour:
   AOEPrefab: {fileID: 2728798890556433942, guid: 4a855af160021d241b8c1ac70cf2d792,
     type: 3}
   player: {fileID: 0}
-  crystalImpactEffects: 04000000020000000500000006000000
+  crystalImpactEffects: 04000000050000000200000006000000
   trailBlockImpactEffects: 0300000006000000
   fullSpeedStraightEffects: 
   rightStickEffects: 
