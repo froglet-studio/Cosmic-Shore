@@ -440,7 +440,7 @@ MonoBehaviour:
   - {fileID: 1334521784826145861}
   - {fileID: 1334521784760732870}
   explosiveMaterial: {fileID: 2100000, guid: b0e105431956f1b40b8ef19fbde85b3b, type: 2}
-  maxExplosionRadius: 300
+  maxExplosionRadius: 250
   explosionRate: 12
 --- !u!114 &2040246286915941264
 MonoBehaviour:
@@ -461,6 +461,7 @@ MonoBehaviour:
   waitTime: 0.3
   startDelay: 2
   warp: 0
+  SaturatedBlockDensity: 10
 --- !u!114 &-2090051954208650702
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -491,14 +492,31 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a273abd40c7104c4392188723ab929d6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  shipSO: {fileID: 11400000, guid: 0b7f991b9ab90f8468ce2e6e1fd825c8, type: 2}
   Name: RedMantaAI
+  ShipType: 0
+  TrailSpawner: {fileID: 2040246286915941264}
+  skimmer: {fileID: 0}
   AOEPrefab: {fileID: 2728798890556433942, guid: 4a855af160021d241b8c1ac70cf2d792,
     type: 3}
   player: {fileID: 0}
-  TrailSpawner: {fileID: 2040246286915941264}
   crystalImpactEffects: 0400000003000000
   trailBlockImpactEffects: 03000000
+  fullSpeedStraightEffects: 
+  rightStickEffects: 
+  leftStickEffects: 
+  flipEffects: 
+  passiveEffects: 
+  boostMultiplier: 4
+  boostFuelAmount: -0.01
+  rotationScaler: 130
+  rotationThrottleScaler: 0
+  maxExplosionScale: 250
+  blockFuelChange: 0
+  closeCamDistance: 0
+  farCamDistance: 0
+  head: {fileID: 0}
+  ShipRotationOverride: {fileID: 0}
+  SecondMode: 3
 --- !u!114 &3823739190145388258
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -520,5 +538,5 @@ MonoBehaviour:
   avoidance: 23
   raycastHeight: 2
   raycastWidth: 2
-  muton: {fileID: 0}
+  CrystalTransform: {fileID: 0}
   flowFieldData: {fileID: 0}

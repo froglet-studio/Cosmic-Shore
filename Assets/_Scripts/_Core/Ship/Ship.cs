@@ -199,11 +199,11 @@ namespace StarWriter.Core
         {
             PerformShipAbilitiesEffects(fullSpeedStraightEffects);
         }
-        public void PerformRightStickEffectsEffects()
+        public void PerformRightStickEffects()
         {
             PerformShipAbilitiesEffects(rightStickEffects);
         }
-        public void PerformLeftStickEffectsEffects()
+        public void PerformLeftStickEffects()
         {
             PerformShipAbilitiesEffects(leftStickEffects);
         }
@@ -236,7 +236,11 @@ namespace StarWriter.Core
             switch (effect)
             {
                 case ActiveAbilities.Drift:
-                    inputController.Drift();
+                    inputController.drifting = true;
+                    //cameraManager.SetFarCameraDistance(closeCamDistance); //use the far cam as the drift cam by setting it to the close cam distance first
+                    //cameraManager.SetFarCameraActive();
+                    //shipData.velocityDirection
+                    //cameraManager.DriftCam(shipData.velocityDirection, transform.forward);
                     break;
                 case ActiveAbilities.Boost:
                     if (FuelSystem.CurrentFuel > 0)
@@ -277,7 +281,10 @@ namespace StarWriter.Core
             {
                 case ActiveAbilities.Drift:
                     inputController.drifting = false;
-                    inputController.StartBoostWithDecay();
+                    //cameraManager.SetCloseCameraActive();
+                    //cameraManager.driftDistance = 1;
+                    //cameraManager.tempOffset = Vector3.zero;
+                    inputController.EndDrift();
                     break;
                 case ActiveAbilities.Boost:
                     shipData.boost = false;

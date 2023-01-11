@@ -22,7 +22,9 @@ public class CameraManager : SingletonPersistent<CameraManager>
     bool isCameraFlipEnabled = true;
     bool useCloseCam = true;
 
-    Vector3 tempOffset = Vector3.zero;
+    // Drift stuff
+    public float driftDistance = 1f;
+    public Vector3 tempOffset = Vector3.zero;
 
     private void OnEnable()
     {
@@ -157,9 +159,10 @@ public class CameraManager : SingletonPersistent<CameraManager>
     public void DriftCam(Vector3 initialDirection, Vector3 currentRotation)
     {
         
-        var vCam = closeCamera.VirtualCameraGameObject.GetComponent<CinemachineVirtualCamera>();
+        var vCam = farCamera.VirtualCameraGameObject.GetComponent<CinemachineVirtualCamera>();
         var transposer = vCam.GetCinemachineComponent<CinemachineTransposer>();
         if (tempOffset == Vector3.zero) tempOffset = transposer.m_FollowOffset;
-        transposer.m_FollowOffset = Quaternion.FromToRotation(currentRotation, initialDirection) * tempOffset;
+        transposer.m_FollowOffset = Quaternion.FromToRotation(currentRotation, initialDirection) * tempOffset * driftDistance;
+        driftDistance += 0f;
     }
 }

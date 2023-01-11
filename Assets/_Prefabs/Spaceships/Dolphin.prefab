@@ -864,14 +864,14 @@ MonoBehaviour:
   rightStickEffects: 00000000
   leftStickEffects: 00000000
   flipEffects: 05000000
-  passiveEffects: 0000000006000000
+  passiveEffects: 000000000600000003000000
   boostMultiplier: 4
   boostFuelAmount: -0.01
   rotationScaler: 190
   rotationThrottleScaler: 0.5
   maxExplosionScale: 300
   blockFuelChange: 0
-  closeCamDistance: 0
+  closeCamDistance: -5
   farCamDistance: 0
   head: {fileID: 0}
   ShipRotationOverride: {fileID: 1087614488730427270}
