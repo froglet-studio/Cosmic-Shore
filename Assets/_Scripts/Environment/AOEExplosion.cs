@@ -1,39 +1,39 @@
 using System.Collections;
 using UnityEngine;
 
-// TODO: add IBlockImpact interface
 namespace StarWriter.Core
 {
     public class AOEExplosion : MonoBehaviour
     {
-        [SerializeField] public float MaxScale = 200f;
-        [SerializeField] float ExplosionDuration = 2f;
-        [SerializeField] float ExplosionDelay = .2f;
-        [SerializeField] GameObject Geometry;
-        Material material;
-
         public float speed = 5f; // TODO: use the easing of the explosion to change this over time
-
         const float PI_OVER_TWO = Mathf.PI / 2;
-
         Vector3 MaxScaleVector;
 
+        [SerializeField] public float MaxScale = 200f;
+        [SerializeField] float ExplosionDuration = 2f;
+        [SerializeField] protected float ExplosionDelay = .2f;
+        
+        Material material;
+        [HideInInspector] public Material Material { get { return material; } set { material = value; Debug.LogWarning($"Setting AOEExplosion material: {material}");  } }
+
         Teams team;
-        public Teams Team { get => team; set => team = value; }
+        [HideInInspector] public Teams Team { get => team; set => team = value; }
 
         Ship ship;
-        public Ship Ship { get => ship; set => ship = value; }
+        [HideInInspector] public Ship Ship { get => ship; set => ship = value; }
 
         void Start()
         {
             MaxScaleVector = new Vector3(MaxScale, MaxScale, MaxScale);
             StartCoroutine(ExplodeCoroutine());
-            material = Geometry.GetComponent<MeshRenderer>().material;
         }
 
         protected virtual IEnumerator ExplodeCoroutine()
         {
             yield return new WaitForSeconds(ExplosionDelay);
+
+            if (TryGetComponent<MeshRenderer>(out var meshRenderer))
+                meshRenderer.material = material;
 
             var elapsedTime = 0f;
             while (elapsedTime < ExplosionDuration)

@@ -16,6 +16,8 @@ public class AOEBlockCreation : AOEExplosion
 
     protected override IEnumerator ExplodeCoroutine()
     {
+        yield return new WaitForSeconds(ExplosionDelay);
+
         for (int i = 0; i < blockCount; i++)
         {
             var position = transform.position +

@@ -23,9 +23,12 @@ namespace StarWriter.Core.HangerBuilder
         [SerializeField] Material RedTeamMaterial;
         [SerializeField] Material GreenTeamBlockMaterial;
         [SerializeField] Material RedTeamBlockMaterial;
+        [SerializeField] Material GreenTeamAOEExplosionMaterial;
+        [SerializeField] Material RedTeamAOEExplosionMaterial;
 
         Dictionary<Teams, Material> TeamsMaterials;
         Dictionary<Teams, Material> TeamBlockMaterials;
+        Dictionary<Teams, Material> TeamAOEExplosionMaterials;
 
         Dictionary<string, Ship> ships = new Dictionary<string, Ship>();
         Dictionary<ShipTypes, Ship> shipTypeMap = new Dictionary<ShipTypes, Ship>();
@@ -53,6 +56,10 @@ namespace StarWriter.Core.HangerBuilder
                 { Teams.Green, GreenTeamBlockMaterial },
                 { Teams.Red,   RedTeamBlockMaterial },
             };
+            TeamAOEExplosionMaterials = new Dictionary<Teams, Material>() {
+                { Teams.Green, GreenTeamAOEExplosionMaterial },
+                { Teams.Red,   RedTeamAOEExplosionMaterial },
+            };
             if (PlayerTeam == Teams.None) {
                 Debug.LogError("Player Team is set to None. Defaulting to Green team");
                 PlayerTeam = Teams.Green;
@@ -77,6 +84,7 @@ namespace StarWriter.Core.HangerBuilder
             Ship ship = Instantiate(shipTypeMap[PlayerShipType]);
             ship.SetShipMaterial(TeamsMaterials[PlayerTeam]);
             ship.SetBlockMaterial(TeamBlockMaterials[PlayerTeam]);
+            ship.SetAOEExplosionMaterial(TeamAOEExplosionMaterials[PlayerTeam]);
 
             return ship;
         }
@@ -104,6 +112,7 @@ namespace StarWriter.Core.HangerBuilder
             Ship ship = Instantiate(shipTypeMap[shipType]);
             ship.SetShipMaterial(TeamsMaterials[team]);
             ship.SetBlockMaterial(TeamBlockMaterials[team]);
+            ship.SetAOEExplosionMaterial(TeamAOEExplosionMaterials[team]);
 
             return ship;
         }

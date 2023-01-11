@@ -41,13 +41,14 @@ namespace StarWriter.Core
         Ship secondShip;
         Ship[] ships;
 
-    Vector3 initialDirection = Vector3.zero;
+        Vector3 initialDirection = Vector3.zero;
 
-    Teams team;
-    ShipData shipData;
-    InputController inputController;
-    Material ShipMaterial;
-    List<ShipGeometry> shipGeometries = new List<ShipGeometry>();
+        Teams team;
+        ShipData shipData;
+        InputController inputController;
+        Material ShipMaterial;
+        Material AOEExplosionMaterial;
+        List<ShipGeometry> shipGeometries = new List<ShipGeometry>();
 
         class SpeedModifier
         {
@@ -132,13 +133,15 @@ namespace StarWriter.Core
                         // Spawn AOE explosion
                         // TODO: add position to crystal properties? use crystal properties to set position
                         var AOEExplosion = Instantiate(AOEPrefab).GetComponent<AOEExplosion>();
+                        AOEExplosion.Material = AOEExplosionMaterial;
                         AOEExplosion.Team = team;
                         AOEExplosion.Ship = this;
                         AOEExplosion.transform.SetPositionAndRotation(transform.position, transform.rotation);
                         AOEExplosion.MaxScale = 50 + FuelSystem.CurrentFuel * maxExplosionScale;
 
-                        if (typeof(AOEExplosion) == typeof(AOEBlockCreation))
-                            ((AOEBlockCreation)AOEExplosion).SetBlockMaterial(TrailSpawner.GetBlockMaterial());
+                        if (AOEExplosion is AOEBlockCreation aoeBlockcreation)
+                            aoeBlockcreation.SetBlockMaterial(TrailSpawner.GetBlockMaterial());
+
                         break;
                     case CrystalImpactEffects.FillFuel:
                         FuelSystem.ChangeFuelAmount(player.PlayerUUID, crystalProperties.fuelAmount);
@@ -339,6 +342,11 @@ namespace StarWriter.Core
         public void SetBlockMaterial(Material material)
         {
             TrailSpawner.SetBlockMaterial(material);
+        }
+
+        public void SetAOEExplosionMaterial(Material material)
+        {
+            AOEExplosionMaterial = material;
         }
 
         public void FlipShipUpsideDown()

@@ -3858,6 +3858,10 @@ MonoBehaviour:
     type: 2}
   RedTeamBlockMaterial: {fileID: 2100000, guid: 6a9bda8b03d768b49af63226292fa2c6,
     type: 2}
+  GreenTeamAOEExplosionMaterial: {fileID: 2100000, guid: fd4788fd12c71f64185794559710e4ea,
+    type: 2}
+  RedTeamAOEExplosionMaterial: {fileID: 2100000, guid: 36ee0116158df2c438f8a0b13ef1ad49,
+    type: 2}
   SelectedBayIndex: 0
   ShipPrefabs:
   - {fileID: 874579555101021527, guid: 920c06d41c62d1f4482a2f80e793bbf8, type: 3}
