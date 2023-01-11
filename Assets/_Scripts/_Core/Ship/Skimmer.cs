@@ -57,8 +57,6 @@ namespace StarWriter.Core
 
         void OnTriggerEnter(Collider other)
         {
-            Debug.Log("skim collider: " + other.name);
-
             if (other.TryGetComponent<Trail>(out var trail))
             {
                 activelySkimmingBlockCount++;
@@ -67,7 +65,8 @@ namespace StarWriter.Core
                 if (thief && trail.Team != Player.Team)
                     trail.ConvertToTeam(Player.PlayerName, Player.Team);
 
-                skimStartTimes.Add(trail.ID, Time.time);
+                if (!skimStartTimes.ContainsKey(trail.ID))
+                    skimStartTimes.Add(trail.ID, Time.time);
 
                 OnSkim?.Invoke(ship.Player.PlayerUUID, fuelAmount + (activelySkimmingBlockCount * MultiSkimMultiplier));
             }
