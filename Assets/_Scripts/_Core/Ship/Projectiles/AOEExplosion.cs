@@ -14,7 +14,7 @@ namespace StarWriter.Core
         [SerializeField] protected float ExplosionDelay = .2f;
         
         Material material;
-        [HideInInspector] public Material Material { get { return material; } set { material = value; Debug.LogWarning($"Setting AOEExplosion material: {material}");  } }
+        [HideInInspector] public Material Material { get { return material; } set { material = new Material(value); Debug.LogWarning($"Setting AOEExplosion material: {material}");  } }
 
         Teams team;
         [HideInInspector] public Teams Team { get => team; set => team = value; }

@@ -204,6 +204,7 @@ namespace StarWriter.Core
 
         public void Restore()
         {
+            Debug.Log("Restoring trail block");
             if (StatsManager.Instance != null)
                 StatsManager.Instance.BlockRestored(team, playerName, trailBlockProperties);
 
