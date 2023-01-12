@@ -26,7 +26,7 @@ namespace StarWriter.Core.Input
 
         bool LeftStickEffectsStarted = false;
         bool RightStickEffectsStarted = false;
-        bool FullSpeedStraightEffectsStopped = true;
+        bool FullSpeedStraightEffectsStarted = false;
 
         float speed;
 
@@ -389,12 +389,6 @@ namespace StarWriter.Core.Input
             }
         }
 
-        public void BoostShip(float boost, float fuelAmount)
-        {
-            speed = Mathf.Lerp(speed, xDiff * throttleScaler * boost + defaultThrottle, lerpAmount * Time.deltaTime);
-            OnBoost?.Invoke(uuid, fuelAmount);
-        }
-
         void Yaw()  // These need to not use *= ... remember quaternions are not commutative
         {
             displacementQ = Quaternion.AngleAxis(
@@ -424,14 +418,17 @@ namespace StarWriter.Core.Input
 
             if (value < threshold)
             {
-                ship.PerformShipAbility(ShipActiveAbilityTypes.FullSpeedStraightAbility);
-                FullSpeedStraightEffectsStopped = false;
+                if (!FullSpeedStraightEffectsStarted)
+                {
+                    FullSpeedStraightEffectsStarted = true;
+                    ship.PerformShipAbility(ShipActiveAbilityTypes.FullSpeedStraightAbility);
+                }
             }
             else
             {
-                if (!FullSpeedStraightEffectsStopped)
+                if (FullSpeedStraightEffectsStarted)
                 {
-                    FullSpeedStraightEffectsStopped = true;
+                    FullSpeedStraightEffectsStarted = false;
                     ship.StopShipAbility(ShipActiveAbilityTypes.FullSpeedStraightAbility);
                 }
                 Throttle();
@@ -440,8 +437,21 @@ namespace StarWriter.Core.Input
 
         void Throttle()
         {
-            speed = Mathf.Lerp(speed, xDiff * throttleScaler + defaultThrottle, lerpAmount * Time.deltaTime);
+            float boostAmount = 1f;
+            if (shipData.boost && FuelSystem.CurrentFuel > 0)
+            {
+                boostAmount = ship.boostMultiplier;
+                //BoostShip(ship.boostMultiplier, ship.boostFuelAmount);
+                OnBoost?.Invoke(uuid, ship.boostFuelAmount);
+            }
+            speed = Mathf.Lerp(speed, xDiff * throttleScaler * boostAmount + defaultThrottle, lerpAmount * Time.deltaTime);
         }
+
+        //public void BoostShip(float boost, float fuelAmount)
+        //{
+        //    speed = Mathf.Lerp(speed, xDiff * throttleScaler * boost + defaultThrottle, lerpAmount * Time.deltaTime);
+        //    OnBoost?.Invoke(uuid, fuelAmount);
+        //}
 
         // Converts Android Quaterions into Unity Quaterions
         Quaternion GyroToUnity(Quaternion q)
@@ -456,7 +466,8 @@ namespace StarWriter.Core.Input
         public void OnToggleGyro(bool status)
         {
             Debug.Log($"InputController.OnToggleGyro - status: {status}");
-            if (SystemInfo.supportsGyroscope && status) { 
+            if (SystemInfo.supportsGyroscope && status) 
+            { 
                 inverseInitialRotation = Quaternion.Inverse(GyroToUnity(gyro.attitude) * derivedCorrection);
             }
             

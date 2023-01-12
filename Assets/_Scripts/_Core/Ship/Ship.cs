@@ -34,8 +34,8 @@ namespace StarWriter.Core
 
         [SerializeField] List<PassiveAbilities> passiveEffects;
 
-        [SerializeField] float boostMultiplier = 4f;
-        [SerializeField] float boostFuelAmount = -.01f;
+        public float boostMultiplier = 4f;
+        public float boostFuelAmount = -.01f;
         [SerializeField] float rotationScaler = 130;
         [SerializeField] float rotationThrottleScaler;
         [SerializeField] float maxExplosionScale = 400;
@@ -260,13 +260,7 @@ namespace StarWriter.Core
                         //cameraManager.DriftCam(shipData.velocityDirection, transform.forward);
                         break;
                     case ActiveAbilities.Boost:
-                        if (FuelSystem.CurrentFuel > 0)
-                        {
-                            inputController.BoostShip(boostMultiplier, boostFuelAmount); // TODO move fuel change out of inputController
-                            shipData.boost = true; // TODO make a block change ability instead
-                        }
-                        else
-                            StopShipAbility(ShipActiveAbilityTypes.FullSpeedStraightAbility); // TODO this will stop other effects
+                        shipData.boost = true;
                         break;
                     case ActiveAbilities.Invulnerability:
                         if (!invulnerable)
