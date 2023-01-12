@@ -55,6 +55,7 @@ public struct RoundStats
 
 public class StatsManager : Singleton<StatsManager>
 {
+    [SerializeField] TMP_Text StatDump;
     [SerializeField] List<GameObject> EndOfRoundStatContainers;
     [SerializeField] public bool nodeGame = false;
 
@@ -255,6 +256,7 @@ public class StatsManager : Singleton<StatsManager>
     // TODO: we probably want a UI class that talks to the stats managaer and updates the UI rather than doing it in here directly
     void OutputRoundStats()
     {
+        StatDump.text = JsonConvert.SerializeObject(playerStats, Formatting.Indented);
 
         foreach (var team in teamStats.Keys)
         {
