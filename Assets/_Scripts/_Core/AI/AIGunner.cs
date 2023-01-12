@@ -35,8 +35,11 @@ namespace StarWriter.Core.AI
             if (trailSpawner.trailList.Count < gap + 1)
                 return;
 
-            if (trailSpawner.trailList[(int)nextBlockIndex].destroyed) lerpAmount += gunnerSpeed / 4f * Time.deltaTime;
-            else lerpAmount += gunnerSpeed * Time.deltaTime;
+            if (trailSpawner.trailList[(int)nextBlockIndex].destroyed) 
+                lerpAmount += gunnerSpeed / 4f * Time.deltaTime;
+            else 
+                lerpAmount += gunnerSpeed * Time.deltaTime;
+
             if (direction && lerpAmount > 1)
             {
                 previousBlockIndex = nextBlockIndex;
@@ -67,7 +70,7 @@ namespace StarWriter.Core.AI
                                                  lerpAmount);
             transform.Rotate(90, 0, 0);
 
-            if (trailSpawner.trailList[(int)previousBlockIndex].destroyed) trailSpawner.trailList[(int)nextBlockIndex].Restore();
+            if (trailSpawner.trailList[(int)previousBlockIndex].destroyed) trailSpawner.trailList[(int)previousBlockIndex].Restore();
 
             //gun.transform.localRotation = Quaternion.Lerp(gun.transform.localRotation, Quaternion.Euler(new Vector3(0, 0, 0)), .05f);
             gunMount.transform.Rotate(0, rotationSpeed * Time.deltaTime, 0);
