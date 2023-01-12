@@ -38,6 +38,7 @@ namespace StarWriter.Core
         [SerializeField] string gameTestModeTwoGameScene = "Game_TestModeTwo";
         [SerializeField] string gameTestModeThreeGameScene = "Game_TestModeThree";
         [SerializeField] string gameTestModeFourGameScene = "Game_TestModeFour";
+        [SerializeField] string gameTestDesign = "Game_TestDesign";
         string hangarScene = "Hangar";
         string tutorialGameScene = "Game_Tutorial";
         string ActiveGameScene = "";
@@ -112,6 +113,11 @@ namespace StarWriter.Core
         public void OnClickTestGameModeFour()
         {
             EnterGame(gameTestModeFourGameScene);
+        }
+
+        public void OnClickGameTestDesign()
+        {
+            EnterGame(gameTestDesign);
         }
 
         public void OnClickHangar()

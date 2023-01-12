@@ -176,33 +176,33 @@ namespace StarWriter.Core.Input
                 if (Gamepad.current.rightShoulder.wasPressedThisFrame && !PhoneFlipState)
                 {
                     PhoneFlipState = true;
-                    ship.StartFlipEffects();
+                    ship.PerformShipAbility(ShipActiveAbilityTypes.FlipAbility);
                 }
                 else if (Gamepad.current.rightShoulder.wasPressedThisFrame && PhoneFlipState)
                 {
                     PhoneFlipState = false;
-                    ship.StopFlipEffects();
+                    ship.StopShipAbility(ShipActiveAbilityTypes.FlipAbility);
                 }
 
                 if (Gamepad.current.leftTrigger.wasPressedThisFrame)
                 {
                     //LeftStickEffectsStarted = false;
-                    ship.PerformLeftStickEffects();
+                    ship.PerformShipAbility(ShipActiveAbilityTypes.LeftStickAbility);
                 }
                 if (Gamepad.current.rightTrigger.wasPressedThisFrame)
                 {
                     //RightStickEffectsStarted = false;
-                    ship.PerformRightStickEffects();
+                    ship.PerformShipAbility(ShipActiveAbilityTypes.RightStickAbility);
                 }
                 if (Gamepad.current.leftTrigger.wasReleasedThisFrame) 
                 {
                     //LeftStickEffectsStarted = true;
-                    ship.StopLeftStickEffects(); 
+                    ship.StopShipAbility(ShipActiveAbilityTypes.LeftStickAbility);
                 }
                 if (Gamepad.current.rightTrigger.wasReleasedThisFrame)
                 {
                     //RightStickEffectsStarted = true;
-                    ship.StopRightStickEffects();
+                    ship.StopShipAbility(ShipActiveAbilityTypes.RightStickAbility);
                 }
 
                 Pitch();
@@ -221,7 +221,7 @@ namespace StarWriter.Core.Input
                     if (UnityEngine.Input.acceleration.y < 0 && PhoneFlipState)
                     {
                         PhoneFlipState = false;
-                        ship.StopFlipEffects();
+                        ship.StopShipAbility(ShipActiveAbilityTypes.FlipAbility);
                         ship.FlipShipRightsideUp();
 
                         currentOrientation = ScreenOrientation.LandscapeLeft;
@@ -231,7 +231,7 @@ namespace StarWriter.Core.Input
                     else if (UnityEngine.Input.acceleration.y > 0 && !PhoneFlipState)
                     {
                         PhoneFlipState = true;
-                        ship.StartFlipEffects();
+                        ship.PerformShipAbility(ShipActiveAbilityTypes.FlipAbility);
                         ship.FlipShipUpsideDown();
 
                         currentOrientation = ScreenOrientation.LandscapeRight;
@@ -293,12 +293,12 @@ namespace StarWriter.Core.Input
                     if (LeftStickEffectsStarted)
                     {
                         LeftStickEffectsStarted = false;
-                        ship.StopLeftStickEffects();
+                        ship.StopShipAbility(ShipActiveAbilityTypes.LeftStickAbility);
                     }
                     if (RightStickEffectsStarted)
                     {
                         RightStickEffectsStarted = false;
-                        ship.StopRightStickEffects();
+                        ship.StopShipAbility(ShipActiveAbilityTypes.RightStickAbility);
                     }
 
                     if (drifting)
@@ -323,7 +323,8 @@ namespace StarWriter.Core.Input
                         if (Vector2.Distance(leftTouch, position) < Vector2.Distance(rightTouch, position) && !LeftStickEffectsStarted)
                         {
                             LeftStickEffectsStarted = true;
-                            ship.PerformLeftStickEffects();
+                            ship.PerformShipAbility(ShipActiveAbilityTypes.LeftStickAbility);
+
                         }
                         else if (Vector2.Distance(leftTouch, position) < Vector2.Distance(rightTouch, position))
                         {
@@ -332,7 +333,7 @@ namespace StarWriter.Core.Input
                         else if (!RightStickEffectsStarted)
                         {
                             RightStickEffectsStarted = true;
-                            ship.PerformRightStickEffects();
+                            ship.PerformShipAbility(ShipActiveAbilityTypes.RightStickAbility);
                         }
                         else
                         {
@@ -423,7 +424,7 @@ namespace StarWriter.Core.Input
 
             if (value < threshold)
             {
-                ship.PerformFullSpeedStraightEffects();
+                ship.PerformShipAbility(ShipActiveAbilityTypes.FullSpeedStraightAbility);
                 FullSpeedStraightEffectsStopped = false;
             }
             else
@@ -431,7 +432,7 @@ namespace StarWriter.Core.Input
                 if (!FullSpeedStraightEffectsStopped)
                 {
                     FullSpeedStraightEffectsStopped = true;
-                    ship.StopFullSpeedStraightEffects();
+                    ship.StopShipAbility(ShipActiveAbilityTypes.FullSpeedStraightAbility);
                 }
                 Throttle();
             }
