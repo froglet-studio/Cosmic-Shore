@@ -94,7 +94,6 @@ public class TrailSpawner : MonoBehaviour
 
     public void SetBlockDensity(int blockDensity)
     {
-
         // TODO WIP Here
         /*
         var trail = other.GetComponent<Trail>();
@@ -143,14 +142,6 @@ public class TrailSpawner : MonoBehaviour
         {
             if (Time.deltaTime < .1f && spawnerEnabled)
             {
-                score += shipData.boost ? volume * boostedVolumeScoreScaler : volume * volumeScoreScaler;
-
-                if (score > 1 && StatsManager.Instance != null && StatsManager.Instance.nodeGame)
-                {
-                    StatsManager.Instance.UpdateScore(ownerId, (int)score);
-                    score = score % 1;
-                }
-
                 var Block = Instantiate(trail);
                 Block.transform.SetPositionAndRotation(transform.position - shipData.velocityDirection * offset, shipData.blockRotation);
                 Block.transform.parent = TrailContainer.transform;
