@@ -35,20 +35,13 @@ namespace StarWriter.Core
                         HapticController.PlayBlockCollisionHaptics();
                         break;
                     case TrailBlockImpactEffects.DeactivateTrailBlock:
-                        trailBlockProperties.trail.Explode(ship.transform.forward * ship.GetComponent<ShipData>().speed, team);
-                        StatsManager.Instance.BlockDestroyed(team, Player.PlayerName, trailBlockProperties);
-
-                        if (NodeControlManager.Instance != null)
-                        {
-                            // Node control tracking
-                            NodeControlManager.Instance.RemoveBlock(team, Player.PlayerName, trailBlockProperties);
-                        }
+                        trailBlockProperties.trail.Explode(ship.transform.forward * ship.GetComponent<ShipData>().speed, team, Player.PlayerName);
                         break;
                     case TrailBlockImpactEffects.Steal:
-                        trailBlockProperties.trail.ConvertToTeam(Player.PlayerName, team);
+                        trailBlockProperties.trail.Steal(Player.PlayerName, team);
                         break;
-                        // This is actually redundant with Skimmer's built in "Fuel Amount" variable
-                        //case TrailBlockImpactEffects.ChangeFuel:
+                    // This is actually redundant with Skimmer's built in "Fuel Amount" variable
+                    //case TrailBlockImpactEffects.ChangeFuel:
                         //FuelSystem.ChangeFuelAmount(Player.PlayerUUID, ship.blockFuelChange);
                         //break;
                 }
@@ -60,10 +53,10 @@ namespace StarWriter.Core
             if (other.TryGetComponent<Trail>(out var trail))
             {
                 activelySkimmingBlockCount++;
-                trail.InstantiateParticle(transform);
+                trail.DisplaySkimParticleEffect(transform);
 
                 if (thief && trail.Team != Player.Team)
-                    trail.ConvertToTeam(Player.PlayerName, Player.Team);
+                    trail.Steal(Player.PlayerName, Player.Team);
 
                 if (!skimStartTimes.ContainsKey(trail.ID))
                     skimStartTimes.Add(trail.ID, Time.time);

@@ -67,7 +67,7 @@ namespace StarWriter.Core.AI
                                                  lerpAmount);
             transform.Rotate(90, 0, 0);
 
-            if (trailSpawner.trailList[(int)previousBlockIndex].destroyed) trailSpawner.trailList[(int)nextBlockIndex].restore();
+            if (trailSpawner.trailList[(int)previousBlockIndex].destroyed) trailSpawner.trailList[(int)nextBlockIndex].Restore();
 
             //gun.transform.localRotation = Quaternion.Lerp(gun.transform.localRotation, Quaternion.Euler(new Vector3(0, 0, 0)), .05f);
             gunMount.transform.Rotate(0, rotationSpeed * Time.deltaTime, 0);

@@ -4,6 +4,15 @@ using UnityEngine;
 
 namespace StarWriter.Core
 {
+    // TODO: pull into separate file
+    public enum ShipActiveAbilityTypes
+    {
+        FullSpeedStraightAbility,
+        RightStickAbility,
+        LeftStickAbility,
+        FlipAbility,
+    }
+
     [RequireComponent(typeof(TrailSpawner))]
     public class Ship : MonoBehaviour
     {
@@ -38,10 +47,6 @@ namespace StarWriter.Core
 
         bool invulnerable;
         [SerializeField] ShipTypes SecondMode = ShipTypes.Shark;
-        Ship secondShip;
-        Ship[] ships;
-
-        Vector3 initialDirection = Vector3.zero;
 
         Teams team;
         ShipData shipData;
@@ -104,7 +109,8 @@ namespace StarWriter.Core
                         cameraManager.SetFarCameraDistance(farCamDistance);
                         break;
                     case PassiveAbilities.SecondMode:
-                        ships = Player.LoadSecondShip(SecondMode);
+                        // TODO: ship mode toggling
+
                         break;
                     case PassiveAbilities.SpeedBasedTurning:
                         inputController.rotationThrottleScaler = rotationThrottleScaler;
@@ -153,8 +159,9 @@ namespace StarWriter.Core
                         FuelSystem.ChangeFuelAmount(player.PlayerUUID, -FuelSystem.CurrentFuel);
                         break;
                     case CrystalImpactEffects.Score:
-                        if (StatsManager.Instance != null)
-                            StatsManager.Instance.UpdateScore(player.PlayerUUID, crystalProperties.scoreAmount);
+                        //if (StatsManager.Instance != null)
+                        //    StatsManager.Instance.UpdateScore(player.PlayerUUID, crystalProperties.scoreAmount);
+                        // TODO: Remove this impact effect, or re-introduce scoring in a separate game mode
                         break;
                     case CrystalImpactEffects.ResetAggression:
                         // TODO: PLAYERSHIP null pointer here
@@ -195,119 +202,128 @@ namespace StarWriter.Core
             }
         }
 
-        public void PerformFullSpeedStraightEffects()
+        public void PerformShipAbility(ShipActiveAbilityTypes abilityType)
         {
-            PerformShipAbilitiesEffects(fullSpeedStraightEffects);
-        }
-        public void PerformRightStickEffects()
-        {
-            PerformShipAbilitiesEffects(rightStickEffects);
-        }
-        public void PerformLeftStickEffects()
-        {
-            PerformShipAbilitiesEffects(leftStickEffects);
-        }
-        public void StartFlipEffects()
-        {
-            PerformShipAbilitiesEffects(flipEffects);
-        }
-
-        public void StopFullSpeedStraightEffects()
-        {
-            StopShipAbilitiesEffects(fullSpeedStraightEffects);
-        }
-        public void StopRightStickEffects()
-        {
-            StopShipAbilitiesEffects(rightStickEffects);
-        }
-        public void StopLeftStickEffects()
-        {
-            StopShipAbilitiesEffects(leftStickEffects);
-        }
-        public void StopFlipEffects()
-        {
-            StopShipAbilitiesEffects(flipEffects);
-        }
-
-    void PerformShipAbilitiesEffects(List<ActiveAbilities> shipAbilities)
-    {
-        foreach (ActiveAbilities effect in shipAbilities)
-        {
-            switch (effect)
+            switch(abilityType)
             {
-                case ActiveAbilities.Drift:
-                    inputController.drifting = true;
-                    //cameraManager.SetFarCameraDistance(closeCamDistance); //use the far cam as the drift cam by setting it to the close cam distance first
-                    //cameraManager.SetFarCameraActive();
-                    //shipData.velocityDirection
-                    //cameraManager.DriftCam(shipData.velocityDirection, transform.forward);
+                case ShipActiveAbilityTypes.FullSpeedStraightAbility:
+                    PerformShipAbilitiesEffects(fullSpeedStraightEffects);
                     break;
-                case ActiveAbilities.Boost:
-                    if (FuelSystem.CurrentFuel > 0)
-                    {
-                        inputController.BoostShip(boostMultiplier, boostFuelAmount); // TODO move fuel change out of inputController
-                        shipData.boost = true; // TODO make a block change ability instead
-                    }
-                    else StopFullSpeedStraightEffects(); // TODO this will stop other effects
+                case ShipActiveAbilityTypes.RightStickAbility:
+                    PerformShipAbilitiesEffects(rightStickEffects);
                     break;
-                case ActiveAbilities.Invulnerability:
-                    if (!invulnerable)
-                    {
-                        invulnerable = true;
-                        trailBlockImpactEffects.Remove(TrailBlockImpactEffects.DebuffSpeed);
-                        trailBlockImpactEffects.Add(TrailBlockImpactEffects.OnlyBuffSpeed);
-                    }
-                    head.transform.localScale *= 1.02f; // TODO make this its own ability 
+                case ShipActiveAbilityTypes.LeftStickAbility:
+                    PerformShipAbilitiesEffects(leftStickEffects);
                     break;
-                case ActiveAbilities.ToggleCamera:
-                    CameraManager.Instance.ToggleCloseOrFarCamOnPhoneFlip(true);
-                    TrailSpawner.ToggleBlockWaitTime(true);
-                    break;
-                case ActiveAbilities.ToggleMode:
-                    // TODO
-                    break;
-                case ActiveAbilities.ToggleGyro:
-                    inputController.OnToggleGyro(true);
+                case ShipActiveAbilityTypes.FlipAbility:
+                    PerformShipAbilitiesEffects(flipEffects);
                     break;
             }
         }
-    }
 
-    void StopShipAbilitiesEffects(List<ActiveAbilities> shipAbilities)
-    {
-        foreach (ActiveAbilities effect in shipAbilities)
+        public void StopShipAbility(ShipActiveAbilityTypes abilityType)
         {
-            switch (effect)
+            if (StatsManager.Instance != null)
+                // TODO: this is just tracking counts, be we want to track duration
+                StatsManager.Instance.AbilityActivated(Team, player.PlayerName, abilityType, 1);
+
+            switch (abilityType)
             {
-                case ActiveAbilities.Drift:
-                    inputController.drifting = false;
-                    //cameraManager.SetCloseCameraActive();
-                    //cameraManager.driftDistance = 1;
-                    //cameraManager.tempOffset = Vector3.zero;
-                    inputController.EndDrift();
+                case ShipActiveAbilityTypes.FullSpeedStraightAbility:
+                    StopShipAbilitiesEffects(fullSpeedStraightEffects);
                     break;
-                case ActiveAbilities.Boost:
-                    shipData.boost = false;
+                case ShipActiveAbilityTypes.RightStickAbility:
+                    StopShipAbilitiesEffects(rightStickEffects);
                     break;
-                case ActiveAbilities.Invulnerability:
-                    invulnerable = false;
-                    trailBlockImpactEffects.Add(TrailBlockImpactEffects.DebuffSpeed);
-                    trailBlockImpactEffects.Remove(TrailBlockImpactEffects.OnlyBuffSpeed);
-                    head.transform.localScale = Vector3.one;
+                case ShipActiveAbilityTypes.LeftStickAbility:
+                    StopShipAbilitiesEffects(leftStickEffects);
                     break;
-                case ActiveAbilities.ToggleCamera:
-                    CameraManager.Instance.ToggleCloseOrFarCamOnPhoneFlip(false);
-                    TrailSpawner.ToggleBlockWaitTime(false);
-                    break;
-                case ActiveAbilities.ToggleMode:
-                    // TODO
-                    break;
-                case ActiveAbilities.ToggleGyro:
-                    inputController.OnToggleGyro(false);
+                case ShipActiveAbilityTypes.FlipAbility:
+                    StopShipAbilitiesEffects(flipEffects);
                     break;
             }
         }
-    }
+
+        void PerformShipAbilitiesEffects(List<ActiveAbilities> shipAbilities)
+        {
+            foreach (ActiveAbilities effect in shipAbilities)
+            {
+                switch (effect)
+                {
+                    case ActiveAbilities.Drift:
+                        inputController.drifting = true;
+                        //cameraManager.SetFarCameraDistance(closeCamDistance); //use the far cam as the drift cam by setting it to the close cam distance first
+                        //cameraManager.SetFarCameraActive();
+                        //shipData.velocityDirection
+                        //cameraManager.DriftCam(shipData.velocityDirection, transform.forward);
+                        break;
+                    case ActiveAbilities.Boost:
+                        if (FuelSystem.CurrentFuel > 0)
+                        {
+                            inputController.BoostShip(boostMultiplier, boostFuelAmount); // TODO move fuel change out of inputController
+                            shipData.boost = true; // TODO make a block change ability instead
+                        }
+                        else
+                            StopShipAbility(ShipActiveAbilityTypes.FullSpeedStraightAbility); // TODO this will stop other effects
+                        break;
+                    case ActiveAbilities.Invulnerability:
+                        if (!invulnerable)
+                        {
+                            invulnerable = true;
+                            trailBlockImpactEffects.Remove(TrailBlockImpactEffects.DebuffSpeed);
+                            trailBlockImpactEffects.Add(TrailBlockImpactEffects.OnlyBuffSpeed);
+                        }
+                        head.transform.localScale *= 1.02f; // TODO make this its own ability 
+                        break;
+                    case ActiveAbilities.ToggleCamera:
+                        CameraManager.Instance.ToggleCloseOrFarCamOnPhoneFlip(true);
+                        TrailSpawner.ToggleBlockWaitTime(true);
+                        break;
+                    case ActiveAbilities.ToggleMode:
+                        // TODO
+                        break;
+                    case ActiveAbilities.ToggleGyro:
+                        inputController.OnToggleGyro(true);
+                        break;
+                }
+            }
+        }
+
+        void StopShipAbilitiesEffects(List<ActiveAbilities> shipAbilities)
+        {
+            foreach (ActiveAbilities effect in shipAbilities)
+            {
+                switch (effect)
+                {
+                    case ActiveAbilities.Drift:
+                        inputController.drifting = false;
+                        //cameraManager.SetCloseCameraActive();
+                        //cameraManager.driftDistance = 1;
+                        //cameraManager.tempOffset = Vector3.zero;
+                        inputController.EndDrift();
+                        break;
+                    case ActiveAbilities.Boost:
+                        shipData.boost = false;
+                        break;
+                    case ActiveAbilities.Invulnerability:
+                        invulnerable = false;
+                        trailBlockImpactEffects.Add(TrailBlockImpactEffects.DebuffSpeed);
+                        trailBlockImpactEffects.Remove(TrailBlockImpactEffects.OnlyBuffSpeed);
+                        head.transform.localScale = Vector3.one;
+                        break;
+                    case ActiveAbilities.ToggleCamera:
+                        CameraManager.Instance.ToggleCloseOrFarCamOnPhoneFlip(false);
+                        TrailSpawner.ToggleBlockWaitTime(false);
+                        break;
+                    case ActiveAbilities.ToggleMode:
+                        // TODO
+                        break;
+                    case ActiveAbilities.ToggleGyro:
+                        inputController.OnToggleGyro(false);
+                        break;
+                }
+            }
+        }
 
         void ApplySpeedModifiers()
         {
