@@ -202,8 +202,11 @@ namespace StarWriter.Core
             }
         }
 
+        float abilityStartTime;
+
         public void PerformShipAbility(ShipActiveAbilityTypes abilityType)
         {
+            abilityStartTime = Time.time;
             switch(abilityType)
             {
                 case ShipActiveAbilityTypes.FullSpeedStraightAbility:
@@ -224,8 +227,7 @@ namespace StarWriter.Core
         public void StopShipAbility(ShipActiveAbilityTypes abilityType)
         {
             if (StatsManager.Instance != null)
-                // TODO: this is just tracking counts, be we want to track duration
-                StatsManager.Instance.AbilityActivated(Team, player.PlayerName, abilityType, 1);
+                StatsManager.Instance.AbilityActivated(Team, player.PlayerName, abilityType, Time.time-abilityStartTime);
 
             switch (abilityType)
             {
