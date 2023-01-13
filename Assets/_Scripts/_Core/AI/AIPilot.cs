@@ -6,6 +6,8 @@ namespace StarWriter.Core.Input
 {
     public class AIPilot : MonoBehaviour
     {
+        public int DifficultyLevel;
+
         public float defaultThrottle = .6f;
         public float defaultLerp = .035f;
 
@@ -16,6 +18,12 @@ namespace StarWriter.Core.Input
         public float lerp;
 
         public float avoidance = 2.5f;
+
+        float LevelAwareAvoidance { get { return avoidance + (DifficultyLevel * .3f); } }
+        float LevelAwareDefaultThrottle { get { return defaultThrottle * DifficultyLevel * .3f; } }
+        float LevelAwareDefaultLerp { get { return defaultLerp * DifficultyLevel * .3f; } }
+        float LevelAwareThrottleIncrease { get { return throttleIncrease * DifficultyLevel * .3f; } }
+        float LevelAwareLerpIncrease { get { return lerpIncrease * DifficultyLevel * .3f; } }
 
         [SerializeField] float raycastHeight;
         [SerializeField] float raycastWidth;

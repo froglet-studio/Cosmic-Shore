@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using TailGlider.Utility.Singleton;
 using UnityEngine.Serialization;
+using StarWriter.Core.Input;
 
 namespace StarWriter.Core.HangerBuilder
 {
@@ -39,6 +40,15 @@ namespace StarWriter.Core.HangerBuilder
         public void SetPlayerShip(int shipType)
         {
             PlayerShipType = (ShipTypes)shipType;
+        }
+
+        [Range(0,10)]
+        [SerializeField]
+        int AIDifficultyLevel = 5;
+
+        public void SetAiDifficultyLevel(int level)
+        {
+            AIDifficultyLevel = level;
         }
 
         public Ship selectedShip { get; private set; }
@@ -113,6 +123,9 @@ namespace StarWriter.Core.HangerBuilder
             ship.SetShipMaterial(TeamsMaterials[team]);
             ship.SetBlockMaterial(TeamBlockMaterials[team]);
             ship.SetAOEExplosionMaterial(TeamAOEExplosionMaterials[team]);
+
+            AIPilot pilot = ship.GetComponent<AIPilot>();
+            pilot.DifficultyLevel = AIDifficultyLevel;
 
             return ship;
         }
