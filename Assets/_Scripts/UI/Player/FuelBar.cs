@@ -1,9 +1,11 @@
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
 public class FuelBar : MonoBehaviour
 {
+    [SerializeField] TMP_Text fuelLevelText;
     [SerializeField] List<Sprite> fuelLevelImages;
     [SerializeField] Sprite backgroundSprite;
     [SerializeField] bool verboseLogging;
@@ -52,5 +54,7 @@ public class FuelBar : MonoBehaviour
             Debug.Log($"FuelBar.UpdateFuelBarDisplay - percentOfFull:{percentOfFull}, maxIndex:{maxIndex}, index:{index}");
 
         fuelLevelImage.sprite = fuelLevelImages[index];
+
+        fuelLevelText.text = (currentFuelLevel * 100).ToString("F0");
     }
 }
