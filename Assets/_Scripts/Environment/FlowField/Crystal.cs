@@ -71,7 +71,7 @@ public class Crystal : MonoBehaviour
         spentCrystal.GetComponent<Renderer>().material = tempMaterial;
         
         StartCoroutine(spentCrystal.GetComponent<Impact>().ImpactCoroutine(
-            ship.transform.forward * ship.GetComponent<ShipData>().speed, tempMaterial, ship.Player.PlayerName));
+            ship.transform.forward * ship.GetComponent<ShipData>().Speed, tempMaterial, ship.Player.PlayerName));
 
         // Play SFX sound
         AudioSource audioSource = GetComponent<AudioSource>();

@@ -5,18 +5,21 @@ namespace StarWriter.Core
     [System.Serializable]
     public class ShipData : MonoBehaviour
     {
-        public float inputSpeed = 1;
-        public float speedMultiplier = 1;
-        public float speed;
+        public float InputSpeed = 1;
+        public float SpeedMultiplier = 1;
+        public float Speed;
 
-        public bool boost;
+        public bool Boosting = false;
+        public bool BoostDecaying = false;
+        public bool Drifting = false;
+
         public Vector3 velocityDirection;
         public Quaternion blockRotation;
 
         void Update()
         {
-            if (speedMultiplier < 0) speedMultiplier = 0;
-            speed = inputSpeed * speedMultiplier;
+            if (SpeedMultiplier < 0) SpeedMultiplier = 0;
+            Speed = InputSpeed * SpeedMultiplier;
         }
     }
 }

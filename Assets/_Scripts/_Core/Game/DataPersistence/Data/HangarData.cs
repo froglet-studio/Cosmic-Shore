@@ -26,7 +26,7 @@ public class HangarData : DataPersistenceBase<HangarData>
     {
         // Default builds if HangarData.data file doesn't exist
         PlayerBuilds = new List<ShipConfiguration>();
-        PlayerBuilds.Add(new ShipConfiguration("Manta", "GreenTrail", "1.5X Boost"));
+        PlayerBuilds.Add(new ShipConfiguration("Manta", "GreenTrail", "1.5X Boosting"));
         PlayerBuilds.Add(new ShipConfiguration("Dolphin", "BlueTrail", "Skim"));
         PlayerBuilds.Add(new ShipConfiguration("Shark", "RedTrail", "2X Points"));
     }

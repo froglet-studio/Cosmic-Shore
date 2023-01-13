@@ -253,14 +253,14 @@ namespace StarWriter.Core
                 switch (effect)
                 {
                     case ActiveAbilities.Drift:
-                        inputController.drifting = true;
+                        shipData.Drifting = true;
                         //cameraManager.SetFarCameraDistance(closeCamDistance); //use the far cam as the drift cam by setting it to the close cam distance first
                         //cameraManager.SetFarCameraActive();
                         //shipData.velocityDirection
                         //cameraManager.DriftCam(shipData.velocityDirection, transform.forward);
                         break;
                     case ActiveAbilities.Boost:
-                        shipData.boost = true;
+                        shipData.Boosting = true;
                         break;
                     case ActiveAbilities.Invulnerability:
                         if (!invulnerable)
@@ -292,14 +292,14 @@ namespace StarWriter.Core
                 switch (effect)
                 {
                     case ActiveAbilities.Drift:
-                        inputController.drifting = false;
+                        //inputController.drifting = false;
                         //cameraManager.SetCloseCameraActive();
                         //cameraManager.driftDistance = 1;
                         //cameraManager.tempOffset = Vector3.zero;
                         inputController.EndDrift();
                         break;
                     case ActiveAbilities.Boost:
-                        shipData.boost = false;
+                        shipData.Boosting = false;
                         break;
                     case ActiveAbilities.Invulnerability:
                         invulnerable = false;
@@ -337,7 +337,7 @@ namespace StarWriter.Core
             }
 
             accumulatedSpeedModification = Mathf.Min(accumulatedSpeedModification, speedModifierMax);
-            shipData.speedMultiplier = accumulatedSpeedModification;
+            shipData.SpeedMultiplier = accumulatedSpeedModification;
         }
 
         public void ToggleCollision(bool enabled)

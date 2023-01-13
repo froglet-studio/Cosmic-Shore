@@ -161,7 +161,7 @@ public class TrailSpawner : MonoBehaviour
                 trailList.Add(Block);
             }
 
-            yield return new WaitForSeconds(wavelength / shipData.speed);
+            yield return new WaitForSeconds(wavelength / shipData.Speed);
         }
     }
 }
