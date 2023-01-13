@@ -1307,6 +1307,11 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 1570021878407158040, guid: 8a9d12e43096881468feb22e39e9fbeb,
+        type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 2151207714166088001, guid: 8a9d12e43096881468feb22e39e9fbeb,
         type: 3}
       propertyPath: m_RootOrder
@@ -1382,6 +1387,11 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 3605246080441337875, guid: 8a9d12e43096881468feb22e39e9fbeb,
+        type: 3}
+      propertyPath: m_RootOrder
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 4768087250954392368, guid: 8a9d12e43096881468feb22e39e9fbeb,
         type: 3}
       propertyPath: m_IsActive
@@ -1407,6 +1417,16 @@ PrefabInstance:
       propertyPath: fuelLevelText
       value: 
       objectReference: {fileID: 433663845}
+    - target: {fileID: 6710174941947658542, guid: 8a9d12e43096881468feb22e39e9fbeb,
+        type: 3}
+      propertyPath: m_RootOrder
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6710174942611699356, guid: 8a9d12e43096881468feb22e39e9fbeb,
+        type: 3}
+      propertyPath: m_RootOrder
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 6941599016129815588, guid: 8a9d12e43096881468feb22e39e9fbeb,
         type: 3}
       propertyPath: m_IsActive
@@ -1610,6 +1630,11 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 639495419634095585}
     - target: {fileID: 5500129876515504705, guid: 32cc35a6605af014c926743312133238,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5577729423146840957, guid: 32cc35a6605af014c926743312133238,
         type: 3}
       propertyPath: m_IsActive
       value: 0
@@ -2549,7 +2574,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 849053858}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 31c621618a2de9742abf00db4831f3d5, type: 3}
   m_Name: 
@@ -3473,6 +3498,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1166022315}
+  - component: {fileID: 1166022316}
+  - component: {fileID: 1166022317}
   m_Layer: 5
   m_Name: Scoreboard
   m_TagString: Untagged
@@ -3503,6 +3530,31 @@ RectTransform:
   m_AnchoredPosition: {x: 30, y: -30}
   m_SizeDelta: {x: 110, y: 40}
   m_Pivot: {x: 0, y: 1}
+--- !u!114 &1166022316
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1166022314}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 174a813eb49343843b766d2fdc4e5eb5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &1166022317
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1166022314}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2f502c767d8d163438f96db7f3750419, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  currentScoreText: {fileID: 1559324030}
 --- !u!1 &1214940407
 GameObject:
   m_ObjectHideFlags: 0
@@ -4435,7 +4487,7 @@ GameObject:
   - component: {fileID: 1559324031}
   - component: {fileID: 1559324030}
   m_Layer: 5
-  m_Name: FinalCountDown
+  m_Name: Score Difference
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -5880,6 +5932,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Name
       value: Gunner
+      objectReference: {fileID: 0}
+    - target: {fileID: 5911286265880590778, guid: 47bb21d46e4f57b4da0555f8d83b048f,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 47bb21d46e4f57b4da0555f8d83b048f, type: 3}
