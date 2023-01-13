@@ -1,5 +1,4 @@
 using System.Collections;
-using System.Linq;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -164,15 +163,6 @@ namespace StarWriter.Core.Input
 
         void ReceiveInput()
         {
-            //Debug.Log($"Gamepad.Current: {Gamepad.current}");
-
-            var deviceCount = InputSystem.devices;
-            foreach (var device in deviceCount)
-            {
-                if (device is Mouse) Debug.Log($"found a mouse: {device.description}");
-                if (device is Gamepad) Debug.Log($"found a gamepad: {device.description}");
-            }
-
             if (Gamepad.current != null)
             {
                 leftTouch.x = Gamepad.current.leftStick.x.ReadValue();
@@ -201,22 +191,18 @@ namespace StarWriter.Core.Input
 
                 if (Gamepad.current.leftTrigger.wasPressedThisFrame)
                 {
-                    //leftStickEffectsStarted = false;
                     ship.PerformShipAbility(ShipActiveAbilityTypes.LeftStickAbility);
                 }
                 if (Gamepad.current.rightTrigger.wasPressedThisFrame)
                 {
-                    //rightStickEffectsStarted = false;
                     ship.PerformShipAbility(ShipActiveAbilityTypes.RightStickAbility);
                 }
                 if (Gamepad.current.leftTrigger.wasReleasedThisFrame) 
                 {
-                    //leftStickEffectsStarted = true;
                     ship.StopShipAbility(ShipActiveAbilityTypes.LeftStickAbility);
                 }
                 if (Gamepad.current.rightTrigger.wasReleasedThisFrame)
                 {
-                    //rightStickEffectsStarted = true;
                     ship.StopShipAbility(ShipActiveAbilityTypes.RightStickAbility);
                 }
 
