@@ -4,6 +4,7 @@ using StarWriter.Core;
 public class GameMenu : MonoBehaviour
 {
     [SerializeField] GameObject fuelMeterPanel;
+    [SerializeField] GameObject scorePanel;
     [SerializeField] GameObject pauseMenuPanel;
     [SerializeField] GameObject finalScorePanel;
     [SerializeField] GameObject pauseButton;
@@ -34,6 +35,7 @@ public class GameMenu : MonoBehaviour
         if (extendGamePlayNeeded)
         {
             fuelMeterPanel.SetActive(true);
+            scorePanel.SetActive(true);
             finalScorePanel.SetActive(false);
             adsPanel.SetActive(false);
             pauseButton.SetActive(false);
@@ -49,6 +51,7 @@ public class GameMenu : MonoBehaviour
     public void OnClickPauseGame()
     {
         fuelMeterPanel.SetActive(false);
+        scorePanel.SetActive(false);
         finalScorePanel.SetActive(false);
         adsPanel.SetActive(false);
         pauseButton.SetActive(false);
@@ -62,6 +65,7 @@ public class GameMenu : MonoBehaviour
     public void OnClickUnpauseGame()
     {
         fuelMeterPanel.SetActive(true);
+        scorePanel.SetActive(true);
         finalScorePanel.SetActive(false);
         adsPanel.SetActive(false);
         pauseButton.SetActive(true);
@@ -75,6 +79,7 @@ public class GameMenu : MonoBehaviour
     private void DisplayFinalScorePanel()
     {
         fuelMeterPanel.SetActive(false);
+        scorePanel.SetActive(false);
         finalScorePanel.SetActive(true);
         adsPanel.SetActive(false);
         pauseButton.SetActive(false);
@@ -99,6 +104,7 @@ public class GameMenu : MonoBehaviour
     private void ResetMenuPanels()
     {
         fuelMeterPanel.SetActive(true);
+        scorePanel.SetActive(true);
         finalScorePanel.SetActive(false);
         adsPanel.SetActive(false);
         pauseButton.SetActive(true);

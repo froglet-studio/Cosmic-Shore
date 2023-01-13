@@ -62,8 +62,13 @@ public class StatsManager : Singleton<StatsManager>
     Dictionary<Teams, RoundStats> teamStats = new Dictionary<Teams, RoundStats>();
     Dictionary<string, RoundStats> playerStats = new Dictionary<string, RoundStats>();
 
+    bool RecordStats = true;
+
     public void CrystalCollected(Ship ship, CrystalProperties crystalProperties)
     {
+        if (!RecordStats)
+            return;
+
         MaybeCreateDictionaryEntries(ship.Team, ship.Player.PlayerName);
 
         var roundStats = teamStats[ship.Team];
@@ -77,6 +82,9 @@ public class StatsManager : Singleton<StatsManager>
 
     public void BlockCreated(Teams creatingTeam, string creatingPlayerName, TrailBlockProperties createdTrailBlockProperties)
     {
+        if (!RecordStats)
+            return;
+
         MaybeCreateDictionaryEntries(creatingTeam, creatingPlayerName);
 
         var roundStats = teamStats[creatingTeam];
@@ -96,6 +104,9 @@ public class StatsManager : Singleton<StatsManager>
 
     public void BlockDestroyed(Teams destroyingTeam, string destroyingPlayerName, TrailBlockProperties destroyedTrailBlockProperties)
     {
+        if (!RecordStats)
+            return;
+
         MaybeCreateDictionaryEntries(destroyingTeam, destroyingPlayerName);
 
         // Team Destruction Stats
@@ -131,7 +142,11 @@ public class StatsManager : Singleton<StatsManager>
         playerStats[destroyedTrailBlockProperties.trail.PlayerName] = roundStats;
     }
 
-    public void BlockRestored(Teams restoringTeam, string restoringPlayerName, TrailBlockProperties restoredTrailBlockProperties) {
+    public void BlockRestored(Teams restoringTeam, string restoringPlayerName, TrailBlockProperties restoredTrailBlockProperties)
+    {
+        if (!RecordStats)
+            return;
+
         MaybeCreateDictionaryEntries(restoringTeam, restoringPlayerName);
 
         var roundStats = teamStats[restoringTeam];
@@ -149,7 +164,11 @@ public class StatsManager : Singleton<StatsManager>
         playerStats[restoringPlayerName] = roundStats;
     }
 
-    public void BlockStolen(Teams stealingTeam, string stealingPlayerName, TrailBlockProperties stolenTrailBlockProperties) {
+    public void BlockStolen(Teams stealingTeam, string stealingPlayerName, TrailBlockProperties stolenTrailBlockProperties)
+    {
+        if (!RecordStats)
+            return;
+
         MaybeCreateDictionaryEntries(stealingTeam, stealingPlayerName);
 
         // Team Stealing Stats
@@ -183,6 +202,9 @@ public class StatsManager : Singleton<StatsManager>
 
     public void AbilityActivated(Teams team, string playerName, ShipActiveAbilityTypes abilityType, float duration)
     {
+        if (!RecordStats)
+            return;
+
         MaybeCreateDictionaryEntries(team, playerName);
         RoundStats roundStats;
         switch (abilityType)
@@ -249,6 +271,7 @@ public class StatsManager : Singleton<StatsManager>
 
     void ResetStats()
     {
+        RecordStats = true;
         teamStats = new Dictionary<Teams, RoundStats>();
         playerStats = new Dictionary<string, RoundStats>();
     }
@@ -256,35 +279,25 @@ public class StatsManager : Singleton<StatsManager>
     // TODO: we probably want a UI class that talks to the stats managaer and updates the UI rather than doing it in here directly
     void OutputRoundStats()
     {
+        RecordStats = false;
         StatDump.text = JsonConvert.SerializeObject(playerStats, Formatting.Indented);
+        Debug.LogWarning(JsonConvert.SerializeObject(playerStats, Formatting.Indented));
+        Debug.LogWarning(JsonConvert.SerializeObject(teamStats, Formatting.Indented));
 
         foreach (var team in teamStats.Keys)
         {
             Debug.LogWarning($"Team Stats - Team:{team}");
-            Debug.LogWarning(JsonConvert.SerializeObject(teamStats, Formatting.Indented));
-            //Debug.LogWarning($"Team Stats - Team:{team}, Crystals Collected: {teamStats[team].crystalsCollected} ");
-            //Debug.LogWarning($"Team Stats - Team:{team}, Blocks Created: {teamStats[team].blocksCreated} ");
-            //Debug.LogWarning($"Team Stats - Team:{team}, Blocks Destroyed: {teamStats[team].friendlyBlocksDestroyed} ");
-            //Debug.LogWarning($"Team Stats - Team:{team}, Volume Created: {teamStats[team].volumeCreated} ");
-            //Debug.LogWarning($"Team Stats - Team:{team}, Volume Destroyed: {teamStats[team].friendlyVolumeDestroyed} ");
         }
 
         int i = 0;
         foreach (var player in playerStats.Keys)
         {
             Debug.LogWarning($"PlayerStats - Player:{player}");
-            Debug.LogWarning(JsonConvert.SerializeObject(playerStats, Formatting.Indented));
-
-            //Debug.LogWarning($"PlayerStats - Player:{player}, Crystals Collected: {playerStats[player].crystalsCollected} ");
-            //Debug.LogWarning($"PlayerStats - Player:{Player}, Blocks Created: {playerStats[Player].blocksCreated} ");
-            //Debug.LogWarning($"PlayerStats - Player:{Player}, Blocks Destroyed: {playerStats[Player].friendlyBlocksDestroyed} ");
-            //Debug.LogWarning($"PlayerStats - Player:{player}, Volume Created: {playerStats[player].volumeCreated} ");
-            //Debug.LogWarning($"PlayerStats - Player:{player}, Volume Destroyed: {playerStats[player].friendlyVolumeDestroyed} ");
 
             var container = EndOfRoundStatContainers[i];
             container.transform.GetChild(0).GetComponent<TMP_Text>().text = player;
-            container.transform.GetChild(1).GetComponent<TMP_Text>().text = playerStats[player].volumeCreated.ToString("F1");
-            container.transform.GetChild(2).GetComponent<TMP_Text>().text = playerStats[player].friendlyVolumeDestroyed.ToString("F1");
+            container.transform.GetChild(1).GetComponent<TMP_Text>().text = playerStats[player].volumeCreated.ToString("F0");
+            container.transform.GetChild(2).GetComponent<TMP_Text>().text = playerStats[player].friendlyVolumeDestroyed.ToString("F0");
             container.transform.GetChild(3).GetComponent<TMP_Text>().text = playerStats[player].crystalsCollected.ToString("D");
 
             i++;
