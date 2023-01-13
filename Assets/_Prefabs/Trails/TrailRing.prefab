@@ -63,7 +63,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: cbf0164b1addfee43a45e430c464b6fd, type: 2}
+  - {fileID: 2100000, guid: 59f6d6a3372c0664696851a4e7448d57, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -109,7 +109,7 @@ MonoBehaviour:
   waitTime: 0.6
   embiggen: 0
   destroyed: 0
-  MaxScale: 1
+  MaxSize: 1
   ID: 
   Dimensions: {x: 0, y: 0, z: 0}
   warp: 0
@@ -152,8 +152,8 @@ Transform:
   m_GameObject: {fileID: 5640491096809136745}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
+  m_LocalScale: {x: 3, y: 3, z: 3}
+  m_ConstrainProportionsScale: 1
   m_Children:
   - {fileID: 2815286555567707160}
   - {fileID: 6948566393429274041}
@@ -173,18 +173,19 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   FossilBlock: {fileID: 0}
-  ParticleEffect: {fileID: 0}
-  material: {fileID: 0}
+  ParticleEffect: {fileID: 3706253519474275301, guid: 2d5ef26f11cfb824fa85b6f5cd632c79,
+    type: 3}
+  material: {fileID: 2100000, guid: 0840df18df0bd8646b11c95e1861492d, type: 2}
   trailBlockProperties:
     position: {x: 0, y: 0, z: 0}
-    volume: 0
-    speedDebuffAmount: 0
-    trail: {fileID: 0}
+    volume: 12
+    speedDebuffAmount: 0.4
+    trail: {fileID: -897873109721747345}
   ownerId: 
   waitTime: 0.6
   embiggen: 0
   destroyed: 0
-  MaxScale: 1
+  MaxSize: 1
   ID: 
   Dimensions: {x: 0, y: 0, z: 0}
   warp: 0
@@ -251,7 +252,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: fd4788fd12c71f64185794559710e4ea, type: 2}
+  - {fileID: 2100000, guid: 94816aafbcd18de4e832dee554a70d6d, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -297,7 +298,7 @@ MonoBehaviour:
   waitTime: 0.6
   embiggen: 0
   destroyed: 0
-  MaxScale: 1
+  MaxSize: 1
   ID: 
   Dimensions: {x: 0, y: 0, z: 0}
   warp: 0

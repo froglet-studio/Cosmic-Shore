@@ -10,7 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 5379804968261110185}
   - component: {fileID: 8861249621397640354}
-  - component: {fileID: 4301399347988883097}
+  - component: {fileID: -8974862383606203619}
   - component: {fileID: 4956392865713775143}
   - component: {fileID: 5633833628421006770}
   m_Layer: 0
@@ -43,7 +43,7 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3296339347280791465}
   m_Mesh: {fileID: -1997935121753691475, guid: ac7426dec8a0dc9498eebc195ef98f98, type: 3}
---- !u!23 &4301399347988883097
+--- !u!23 &-8974862383606203619
 MeshRenderer:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -63,7 +63,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: b0e105431956f1b40b8ef19fbde85b3b, type: 2}
+  - {fileID: 2100000, guid: 5140ec1c42866e849927f442d5965f7f, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -93,12 +93,12 @@ MeshCollider:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3296339347280791465}
   m_Material: {fileID: 0}
-  m_IsTrigger: 0
+  m_IsTrigger: 1
   m_Enabled: 1
   serializedVersion: 4
-  m_Convex: 0
+  m_Convex: 1
   m_CookingOptions: 30
-  m_Mesh: {fileID: -7535646311510487904, guid: b9d7b8071fefe494aad69ba131d23987, type: 3}
+  m_Mesh: {fileID: -1997935121753691475, guid: ac7426dec8a0dc9498eebc195ef98f98, type: 3}
 --- !u!114 &5633833628421006770
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -111,19 +111,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f366d272ab4f79e419d678fc6ca23512, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  FossilBlock: {fileID: 0}
-  ParticleEffect: {fileID: 0}
-  material: {fileID: 0}
+  FossilBlock: {fileID: 5776304996075792891, guid: bd8a259abee95ec4895562e6bb8aae76,
+    type: 3}
+  ParticleEffect: {fileID: 3706253519474275301, guid: 2d5ef26f11cfb824fa85b6f5cd632c79,
+    type: 3}
+  material: {fileID: 2100000, guid: 0840df18df0bd8646b11c95e1861492d, type: 2}
   trailBlockProperties:
     position: {x: 0, y: 0, z: 0}
-    volume: 0
-    speedDebuffAmount: 0
-    trail: {fileID: 0}
+    volume: 10
+    speedDebuffAmount: 0.4
+    trail: {fileID: 5633833628421006770}
   ownerId: 
-  waitTime: 0.6
+  waitTime: 0.1
   embiggen: 0
   destroyed: 0
-  MaxScale: 1
+  MaxSize: 1
   ID: 
   Dimensions: {x: 0, y: 0, z: 0}
   warp: 0
