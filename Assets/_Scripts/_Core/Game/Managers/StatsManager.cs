@@ -296,8 +296,8 @@ public class StatsManager : Singleton<StatsManager>
 
             var container = EndOfRoundStatContainers[i];
             container.transform.GetChild(0).GetComponent<TMP_Text>().text = player;
-            container.transform.GetChild(1).GetComponent<TMP_Text>().text = playerStats[player].volumeCreated.ToString("D");
-            container.transform.GetChild(2).GetComponent<TMP_Text>().text = playerStats[player].friendlyVolumeDestroyed.ToString("D");
+            container.transform.GetChild(1).GetComponent<TMP_Text>().text = playerStats[player].volumeCreated.ToString("F0");
+            container.transform.GetChild(2).GetComponent<TMP_Text>().text = playerStats[player].friendlyVolumeDestroyed.ToString("F0");
             container.transform.GetChild(3).GetComponent<TMP_Text>().text = playerStats[player].crystalsCollected.ToString("D");
 
             i++;
