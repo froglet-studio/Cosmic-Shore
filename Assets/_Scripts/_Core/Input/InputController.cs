@@ -49,7 +49,7 @@ namespace StarWriter.Core.Input
 
         UnityEngine.Gyroscope gyro;
         Quaternion derivedCorrection;
-        Quaternion displacementQ;
+        Quaternion displacementQuaternion;
         Quaternion inverseInitialRotation=new(0,0,0,0);
 
         bool isGyroEnabled = false;
@@ -87,7 +87,7 @@ namespace StarWriter.Core.Input
 
             StartCoroutine(GyroInitializationCoroutine());
 
-            displacementQ = shipTransform.rotation;
+            displacementQuaternion = shipTransform.rotation;
 
             invertYEnabled = GameSetting.Instance.InvertYEnabled;
         }
@@ -142,7 +142,7 @@ namespace StarWriter.Core.Input
                 // Updates GameObjects blockRotation from input device's gyroscope
                 shipTransform.rotation = Quaternion.Lerp(
                                             shipTransform.rotation,
-                                            displacementQ * inverseInitialRotation * GyroToUnity(gyro.attitude) * derivedCorrection,
+                                            displacementQuaternion * inverseInitialRotation * GyroToUnity(gyro.attitude) * derivedCorrection,
                                             lerpAmount);
                 
             }
@@ -150,14 +150,13 @@ namespace StarWriter.Core.Input
             {
                 shipTransform.rotation = Quaternion.Lerp(
                                             shipTransform.rotation,
-                                            displacementQ,
+                                            displacementQuaternion,
                                             lerpAmount);
             }
         }
 
         void ReceiveTouchInput()
         {
-            //Debug.Log($"Gamepad.Current: {Gamepad.current}");
             if (Gamepad.current != null)
             {
                 leftTouch.x = Gamepad.current.leftStick.x.ReadValue();
@@ -186,22 +185,18 @@ namespace StarWriter.Core.Input
 
                 if (Gamepad.current.leftTrigger.wasPressedThisFrame)
                 {
-                    //LeftStickEffectsStarted = false;
                     ship.PerformShipAbility(ShipActiveAbilityTypes.LeftStickAbility);
                 }
                 if (Gamepad.current.rightTrigger.wasPressedThisFrame)
                 {
-                    //RightStickEffectsStarted = false;
                     ship.PerformShipAbility(ShipActiveAbilityTypes.RightStickAbility);
                 }
                 if (Gamepad.current.leftTrigger.wasReleasedThisFrame) 
                 {
-                    //LeftStickEffectsStarted = true;
                     ship.StopShipAbility(ShipActiveAbilityTypes.LeftStickAbility);
                 }
                 if (Gamepad.current.rightTrigger.wasReleasedThisFrame)
                 {
-                    //RightStickEffectsStarted = true;
                     ship.StopShipAbility(ShipActiveAbilityTypes.RightStickAbility);
                 }
 
@@ -266,7 +261,6 @@ namespace StarWriter.Core.Input
                     leftTouch = UnityEngine.Input.touches[leftTouchIndex].position;
                     rightTouch = UnityEngine.Input.touches[rightTouchIndex].position;
                 }
-
                 if (UnityEngine.Input.touches.Length == 2 || threeFingerFumble)
                 {
                     // If we didn't fat finger the phone, find the 
@@ -307,7 +301,6 @@ namespace StarWriter.Core.Input
 
                     shipAnimation.PerformShipAnimations(ySum, xSum, yDiff, xDiff);
                 }
-
                 else if (UnityEngine.Input.touches.Length == 1)
                 {
                     if (leftTouch != Vector2.zero && rightTouch != Vector2.zero)
@@ -324,7 +317,6 @@ namespace StarWriter.Core.Input
                         {
                             LeftStickEffectsStarted = true;
                             ship.PerformShipAbility(ShipActiveAbilityTypes.LeftStickAbility);
-
                         }
                         else if (Vector2.Distance(leftTouch, position) < Vector2.Distance(rightTouch, position))
                         {
@@ -391,24 +383,24 @@ namespace StarWriter.Core.Input
 
         void Yaw()  // These need to not use *= ... remember quaternions are not commutative
         {
-            displacementQ = Quaternion.AngleAxis(
+            displacementQuaternion = Quaternion.AngleAxis(
                                 xSum * (speed * rotationThrottleScaler + rotationScaler) *
                                     (Screen.currentResolution.width/Screen.currentResolution.height) * Time.deltaTime, 
-                                shipTransform.up) * displacementQ;
+                                shipTransform.up) * displacementQuaternion;
         }
 
         void Roll()
         {
-            displacementQ = Quaternion.AngleAxis(
+            displacementQuaternion = Quaternion.AngleAxis(
                                 yDiff * (speed * rotationThrottleScaler + rotationScaler) * Time.deltaTime,
-                                shipTransform.forward) * displacementQ;
+                                shipTransform.forward) * displacementQuaternion;
         }
 
         void Pitch()
         {
-            displacementQ = Quaternion.AngleAxis(
+            displacementQuaternion = Quaternion.AngleAxis(
                                 ySum * -(speed * rotationThrottleScaler + rotationScaler) * Time.deltaTime,
-                                shipTransform.right) * displacementQ;
+                                shipTransform.right) * displacementQuaternion;
         }
 
         void CheckThrottle()

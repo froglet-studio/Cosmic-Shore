@@ -41,11 +41,6 @@ public class TrailSpawner : MonoBehaviour
     readonly Queue<Trail> trailQueue = new();
     readonly public List<Trail> trailList = new();
     bool spawnerEnabled = true;
-
-    float volume;
-    float volumeScoreScaler = .01f;
-    float boostedVolumeScoreScaler = .08f;  // if ship is boosted the blocks gets 8 times bigger (2^dimensionality)
-    float score = 0f;
     string ownerId;
 
     private void OnEnable()
@@ -77,10 +72,6 @@ public class TrailSpawner : MonoBehaviour
 
         StartCoroutine(SpawnTrailCoroutine());
 
-        volume = trail.transform.localScale.x *
-                 trail.transform.localScale.y *
-                 trail.transform.localScale.z;
-
         ownerId = ship.Player.PlayerUUID;
     }
 
@@ -92,8 +83,9 @@ public class TrailSpawner : MonoBehaviour
     [Tooltip("Number of proximal blocks before trail block size reaches minimum")]
     [SerializeField] int SaturatedBlockDensity = 10; 
 
-    public void SetBlockDensity(int blockDensity)
+    public void SetNearbyBlockCount(int blockCount)
     {
+
         // TODO WIP Here
         /*
         var trail = other.GetComponent<Trail>();

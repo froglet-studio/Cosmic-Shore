@@ -1,25 +1,26 @@
 using UnityEngine;
-using StarWriter.Core;
 
 namespace StarWriter.Core.AI
 {
     public class AIGunner : MonoBehaviour
     {
-        int nextBlockIndex = 1;
-        int previousBlockIndex;
-        float gunnerSpeed = 5;
-        float lerpAmount;
-        bool direction = true;
-        int gap = 3;
-        float rotationSpeed = 40;
-        TrailSpawner trailSpawner;
-        public Teams Team;
-        public Ship Ship;
-
         [SerializeField] Gun gun;
         [SerializeField] GameObject gunMount;
         [SerializeField] Player player;
 
+        [SerializeField] float gunnerSpeed = 5;
+        [SerializeField] float rotationSpeed = 40;
+        [SerializeField] int gap = 3;
+
+        public Teams Team;
+        public Ship Ship;
+        TrailSpawner trailSpawner;
+        
+        int nextBlockIndex = 1;
+        int previousBlockIndex;
+        float lerpAmount;
+        bool moveForward = true;
+        
         private void Start()
         {
             trailSpawner = player.Ship.TrailSpawner;
@@ -40,26 +41,20 @@ namespace StarWriter.Core.AI
             else 
                 lerpAmount += gunnerSpeed * Time.deltaTime;
 
-            if (direction && lerpAmount > 1)
+            // reached end of segment, move to next block
+            if (lerpAmount > 1)
             {
-                previousBlockIndex = nextBlockIndex;
-                nextBlockIndex++;
+                previousBlockIndex = moveForward ? nextBlockIndex++ : nextBlockIndex--;
                 lerpAmount -= 1f;
             }
+
+            // reached end of trail, reverse direction
             if (nextBlockIndex > trailSpawner.trailList.Count - gap)
-            {
-                direction = false;
-            }
-            if (!direction && lerpAmount > 1)
-            {
-                previousBlockIndex = nextBlockIndex;
-                nextBlockIndex--;
-                lerpAmount -= 1f;
-            }
+                moveForward = false;
+
+            // reached beginning of trail, reverse direction
             if (nextBlockIndex < gap)
-            {
-                direction = true;
-            }
+                moveForward = true;
 
             transform.position = Vector3.Lerp(trailSpawner.trailList[previousBlockIndex].transform.position,
                                               trailSpawner.trailList[nextBlockIndex].transform.position,
@@ -70,9 +65,9 @@ namespace StarWriter.Core.AI
                                                  lerpAmount);
             transform.Rotate(90, 0, 0);
 
-            if (trailSpawner.trailList[(int)previousBlockIndex].destroyed) trailSpawner.trailList[(int)previousBlockIndex].Restore();
+            if (trailSpawner.trailList[(int)previousBlockIndex].destroyed)
+                trailSpawner.trailList[(int)previousBlockIndex].Restore();
 
-            //gun.transform.localRotation = Quaternion.Lerp(gun.transform.localRotation, Quaternion.Euler(new Vector3(0, 0, 0)), .05f);
             gunMount.transform.Rotate(0, rotationSpeed * Time.deltaTime, 0);
             gun.FireGun(player.transform);
         }
