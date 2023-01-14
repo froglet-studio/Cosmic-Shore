@@ -118,7 +118,7 @@ namespace StarWriter.Core
             if (IsShip(other.gameObject))
             {
                 var ship = other.GetComponent<ShipGeometry>().Ship;
-                var impactVector = ship.transform.forward * ship.GetComponent<ShipData>().speed;
+                var impactVector = ship.transform.forward * ship.GetComponent<ShipData>().Speed;
 
                 Collide(ship);
                 Explode(impactVector, ship.Team, ship.Player.PlayerName);

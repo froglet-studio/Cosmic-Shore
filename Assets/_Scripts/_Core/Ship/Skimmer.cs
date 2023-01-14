@@ -36,7 +36,7 @@ namespace StarWriter.Core
                         HapticController.PlayBlockCollisionHaptics();
                         break;
                     case TrailBlockImpactEffects.DeactivateTrailBlock:
-                        trailBlockProperties.trail.Explode(ship.transform.forward * ship.GetComponent<ShipData>().speed, team, Player.PlayerName);
+                        trailBlockProperties.trail.Explode(ship.transform.forward * ship.GetComponent<ShipData>().Speed, team, Player.PlayerName);
                         break;
                     case TrailBlockImpactEffects.Steal:
                         trailBlockProperties.trail.Steal(Player.PlayerName, team);

@@ -6,6 +6,7 @@ namespace StarWriter.Core.Input
 {
     public class AIPilot : MonoBehaviour
     {
+
         public int DifficultyLevel;
 
         public float defaultThrottle = .6f;
@@ -24,6 +25,7 @@ namespace StarWriter.Core.Input
         float LevelAwareDefaultLerp { get { return defaultLerp * DifficultyLevel * .3f; } }
         float LevelAwareThrottleIncrease { get { return throttleIncrease * DifficultyLevel * .3f; } }
         float LevelAwareLerpIncrease { get { return lerpIncrease * DifficultyLevel * .3f; } }
+
 
         [SerializeField] float raycastHeight;
         [SerializeField] float raycastWidth;
@@ -111,7 +113,7 @@ namespace StarWriter.Core.Input
             Vector3 flowVector = flowFieldData.FlowVector(transform);
             transform.position += transform.forward * Time.deltaTime * throttle + flowVector;
 
-            shipData.speed = throttle;
+            shipData.Speed = throttle;
             shipData.velocityDirection = transform.forward;
             shipData.blockRotation = transform.rotation;
         }

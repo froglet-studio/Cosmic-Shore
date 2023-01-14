@@ -813,12 +813,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 909fb5cbbca8c4549b5a9df56d837e55, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  trail: {fileID: 4563009547826722997, guid: 4e280247faa1d154fa25d1e92df405dc, type: 3}
-  offset: 0
-  initialWavelength: 5
+  trail: {fileID: -897873109721747345, guid: bc3f944985402cc4db551bc3262e9775, type: 3}
+  offset: 2
+  initialWavelength: 12
   trailLength: 40
   waitTime: 0.5
-  startDelay: 2
+  startDelay: 1
   warp: 0
   SaturatedBlockDensity: 10
 --- !u!114 &874579555101021523
