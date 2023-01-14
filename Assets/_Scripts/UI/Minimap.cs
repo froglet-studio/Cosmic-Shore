@@ -8,7 +8,6 @@ namespace StarWriter.Core
         [SerializeField] Player Player;
         [SerializeField] float CameraRadius;
         [SerializeField] Node activeNode;
-        // TODO: make node aware
 
         Ship ship;
 

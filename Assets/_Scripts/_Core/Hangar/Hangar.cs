@@ -82,8 +82,6 @@ namespace StarWriter.Core.HangerBuilder
                 Debug.Log($"Adding ship to shiptypemap - {ship.ShipType}, {ship}");
             }
 
-
-
             AITeam = PlayerTeam == Teams.Green ? Teams.Red : Teams.Green;
         }
         public Ship LoadPlayerShip()

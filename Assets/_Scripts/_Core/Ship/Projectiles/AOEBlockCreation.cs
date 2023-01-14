@@ -7,6 +7,7 @@ public class AOEBlockCreation : AOEExplosion
     [SerializeField] Trail trail;
     [SerializeField] float blockCount = 8;
     [SerializeField] float radius = 30f;
+    [SerializeField] float blockScale = 5f;
     Material blockMaterial;
 
     public void SetBlockMaterial(Material material)
@@ -27,11 +28,10 @@ public class AOEBlockCreation : AOEExplosion
             Block.Team = Team;
             Block.ownerId = Ship.Player.PlayerUUID;
             Block.PlayerName = Ship.Player.PlayerName;
-            Block.MaxSize = 5;
             Block.transform.SetPositionAndRotation(position, Quaternion.LookRotation(position-transform.position, transform.forward));
             Block.GetComponent<MeshRenderer>().material = blockMaterial;
             Block.ID = Block.ownerId + "::AOE::" + Time.time + "::" + i;
-            Block.Dimensions = trail.transform.localScale;
+            Block.Dimensions = trail.transform.localScale * blockScale;
             // TODO: need to put AOE Block creations into the trail container
             //Block.transform.parent = TrailContainer.transform;
 
@@ -42,11 +42,10 @@ public class AOEBlockCreation : AOEExplosion
             Block.Team = Team;
             Block.ownerId = Ship.Player.PlayerUUID;
             Block.PlayerName = Ship.Player.PlayerName;
-            Block.MaxSize = 5;
             Block.transform.SetPositionAndRotation(position, Quaternion.LookRotation(position - transform.position, transform.forward));
             Block.GetComponent<MeshRenderer>().material = blockMaterial;
             Block.ID = Block.ownerId + "::AOE::" + Time.time + "::" + i + "-2";
-            Block.Dimensions = trail.transform.localScale;
+            Block.Dimensions = trail.transform.localScale * blockScale;
             // TODO: need to put AOE Block creations into the trail container
             //Block.transform.parent = TrailContainer.transform;
         }

@@ -11,11 +11,10 @@ namespace StarWriter.Core
         [SerializeField] Material material;
         [SerializeField] TrailBlockProperties trailBlockProperties;
 
+        [SerializeField] float growthRate = .5f;
         public string ownerId;  // TODO: is the ownerId the player name? I hope it is.
         public float waitTime = .6f;
-        public bool embiggen;
         public bool destroyed = false;
-        public float MaxSize = 1f;
         public string ID;
         public Vector3 Dimensions;
 
@@ -50,30 +49,32 @@ namespace StarWriter.Core
             blockCollider = GetComponent<BoxCollider>();
             blockCollider.enabled = false;
 
-            trailBlockProperties.volume = MaxSize * Dimensions.x * Dimensions.y * Dimensions.z;
+            trailBlockProperties.volume = Dimensions.x * Dimensions.y * Dimensions.z;
             trailBlockProperties.position = transform.position;
             trailBlockProperties.trail = this;
 
-            StartCoroutine(CreateBlockCoroutine(MaxSize));
+            StartCoroutine(CreateBlockCoroutine());
         }
 
-        IEnumerator CreateBlockCoroutine(float MaxSize)
+        IEnumerator CreateBlockCoroutine()
         {
-            var DefaultTransformScale = transform.localScale;
-            var size = 0.01f;
-
-            if (warp) DefaultTransformScale *= shards.GetComponent<WarpFieldData>().HybridVector(transform).magnitude;
-
             yield return new WaitForSeconds(waitTime);
 
-            transform.localScale = DefaultTransformScale * size;
             meshRenderer.enabled = true;
             blockCollider.enabled = true;
 
-            while (size < MaxSize)
+            var DefaultTransformScale = Dimensions;
+            var size = 0.01f;
+
+            if (warp) 
+                DefaultTransformScale *= shards.GetComponent<WarpFieldData>().HybridVector(transform).magnitude;
+            
+            transform.localScale = DefaultTransformScale * size;
+
+            while (size < 1)
             {
                 transform.localScale = DefaultTransformScale * size;
-                size += .5f * Time.deltaTime;
+                size += growthRate * Time.deltaTime;
                 
                 yield return null;
             }

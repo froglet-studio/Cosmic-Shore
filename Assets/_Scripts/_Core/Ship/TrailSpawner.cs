@@ -73,6 +73,7 @@ public class TrailSpawner : MonoBehaviour
         StartCoroutine(SpawnTrailCoroutine());
 
         ownerId = ship.Player.PlayerUUID;
+        blockScale = minBlockScale;
     }
 
     public void ToggleBlockWaitTime(bool state)
@@ -81,23 +82,16 @@ public class TrailSpawner : MonoBehaviour
     }
 
     [Tooltip("Number of proximal blocks before trail block size reaches minimum")]
-    [SerializeField] int SaturatedBlockDensity = 10; 
+    [SerializeField] int MaxNearbyBlockCount = 10;
+    [SerializeField] float minBlockScale = 1;
+    [SerializeField] float maxBlockScale = 1;
+    float blockScale;
 
     public void SetNearbyBlockCount(int blockCount)
     {
-
-        // TODO WIP Here
-        /*
-        var trail = other.GetComponent<Trail>();
-        if (trail != null)
-        {
-            // start with a baseline fuel amount the ranges from 0-1 depending on proximity of the skimmer to the trail block
-            var fuel = fuelAmount * (1 - (Vector3.Magnitude(transform.position - other.transform.position) / transform.localScale.x));
-
-            // apply multiskim multiplier
-            fuel += (activelySkimmingBlockCount * MultiSkimMultiplier);
-        }
-        */
+        blockCount = Mathf.Min(blockCount, MaxNearbyBlockCount);
+        Debug.Log($"Nearby Block Count: {blockCount}");
+        blockScale = Mathf.Max(minBlockScale, maxBlockScale * (1  - (blockCount / MaxNearbyBlockCount)));
     }
 
     void PauseTrailSpawner()
@@ -144,7 +138,7 @@ public class TrailSpawner : MonoBehaviour
                 Block.warp = warp;
                 Block.GetComponent<MeshRenderer>().material = blockMaterial;
                 Block.ID = ownerId + "::" + spawnedTrailCount++;
-                Block.Dimensions = trail.transform.localScale;
+                Block.Dimensions = new Vector3(trail.transform.localScale.x * blockScale, trail.transform.localScale.y * blockScale, trail.transform.localScale.z);
 
                 if (Block.warp)
                     wavelength = shards.GetComponent<WarpFieldData>().HybridVector(Block.transform).magnitude * initialWavelength;

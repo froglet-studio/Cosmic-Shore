@@ -367,7 +367,9 @@ MonoBehaviour:
   waitTime: 0.5
   startDelay: 2
   warp: 0
-  SaturatedBlockDensity: 10
+  MaxNearbyBlockCount: 10
+  minBlockScale: 1
+  maxBlockScale: 1
 --- !u!114 &874579555101021523
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -416,7 +418,7 @@ MonoBehaviour:
   boostFuelAmount: -0.01
   rotationScaler: 130
   rotationThrottleScaler: 0
-  maxExplosionScale: 250
+  maxExplosionScale: 25
   blockFuelChange: 0.1
   closeCamDistance: 0
   farCamDistance: 0
@@ -435,6 +437,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a58bf4fb65afa704194fe9e28e67d58d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  DifficultyLevel: 0
   defaultThrottle: 30
   defaultLerp: 40
   throttleIncrease: 5

@@ -3848,7 +3848,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   PlayerTeam: 1
-  PlayerShipType: 3
+  PlayerShipType: 0
   FriendlyAIShipType: 6
   HostileAI1ShipType: 8
   HostileAI2ShipType: 7
@@ -3872,6 +3872,7 @@ MonoBehaviour:
   - {fileID: 874579555101021527, guid: b54ef64beb037444ab1aec9f8d00fcbb, type: 3}
   - {fileID: 874579555101021527, guid: 73c8fd79b947fef4f80df7c233451d3c, type: 3}
   - {fileID: 874579555101021527, guid: 569a1dc27b1f75543a7c975f2ac03364, type: 3}
+  AIDifficultyLevel: 5
 --- !u!4 &1349904467
 Transform:
   m_ObjectHideFlags: 0

@@ -48,11 +48,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3aee2172b77b5524797b5b5f0a9d1efe, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  MaxScale: 200
+  speed: 0.5
+  MaxScale: 15
   ExplosionDuration: 2
   ExplosionDelay: 0.2
-  Geometry: {fileID: 5223509924604101809}
-  speed: 0.5
 --- !u!33 &8996282107689040899
 MeshFilter:
   m_ObjectHideFlags: 0

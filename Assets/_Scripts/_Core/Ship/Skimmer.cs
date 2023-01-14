@@ -10,6 +10,7 @@ namespace StarWriter.Core
         [SerializeField] public Player Player;
         [SerializeField] float fuelAmount;
         [SerializeField] float MultiSkimMultiplier = 0f;
+        [SerializeField] bool NotifyNearbyBlockCount;
         [HideInInspector] public Teams team;
         
         public bool thief; // TODO: this should be part of the impact effects
@@ -62,6 +63,9 @@ namespace StarWriter.Core
                     skimStartTimes.Add(trail.ID, Time.time);
 
                 OnSkim?.Invoke(ship.Player.PlayerUUID, fuelAmount + (activelySkimmingBlockCount * MultiSkimMultiplier));
+
+                if (NotifyNearbyBlockCount)
+                    ship.TrailSpawner.SetNearbyBlockCount(ActivelySkimmingBlockCount);
             }
         }
 
@@ -91,6 +95,9 @@ namespace StarWriter.Core
             {
                 skimStartTimes.Remove(trail.ID);
                 activelySkimmingBlockCount--;
+
+                if (NotifyNearbyBlockCount)
+                    ship.TrailSpawner.SetNearbyBlockCount(ActivelySkimmingBlockCount);
             }
         }
     }

@@ -820,7 +820,9 @@ MonoBehaviour:
   waitTime: 0.5
   startDelay: 2
   warp: 0
-  SaturatedBlockDensity: 10
+  MaxNearbyBlockCount: 10
+  minBlockScale: 1
+  maxBlockScale: 1
 --- !u!114 &874579555101021523
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -855,7 +857,7 @@ MonoBehaviour:
   ShipType: 7
   TrailSpawner: {fileID: 874579555101021522}
   skimmer: {fileID: 874579554510349383}
-  AOEPrefab: {fileID: 5223509924604101809, guid: 42557cca5640fea41b2576f9b95b4eef,
+  AOEPrefab: {fileID: 2728798890556433942, guid: 4a855af160021d241b8c1ac70cf2d792,
     type: 3}
   player: {fileID: 0}
   crystalImpactEffects: 04000000050000000200000006000000
@@ -869,7 +871,7 @@ MonoBehaviour:
   boostFuelAmount: -0.01
   rotationScaler: 190
   rotationThrottleScaler: 0.5
-  maxExplosionScale: 250
+  maxExplosionScale: 25
   blockFuelChange: 0
   closeCamDistance: 0
   farCamDistance: 0
@@ -888,6 +890,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a58bf4fb65afa704194fe9e28e67d58d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  DifficultyLevel: 0
   defaultThrottle: 30
   defaultLerp: 40
   throttleIncrease: 5
