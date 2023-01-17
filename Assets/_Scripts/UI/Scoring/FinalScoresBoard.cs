@@ -38,8 +38,8 @@ namespace StarWriter.Core
         {
             currentScore = PlayerPrefs.GetInt(PlayerPrefKeys.score.ToString());
             highScore = PlayerPrefs.GetInt(PlayerPrefKeys.highScore.ToString());
-            DisplayCurrentScoreWithSprites();
-            DisplayHighScoreWithSprites();
+            //DisplayCurrentScoreWithSprites(); TODO: turn these back on if we fix the indexing issue when scores are high
+            //DisplayHighScoreWithSprites();
         }
 
         public void DisplayCurrentScoreWithSprites()
