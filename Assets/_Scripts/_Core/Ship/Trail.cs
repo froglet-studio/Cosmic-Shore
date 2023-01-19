@@ -190,17 +190,20 @@ namespace StarWriter.Core
 
         public void Steal(string playerName, Teams team)
         {
-            if (StatsManager.Instance != null)
-                StatsManager.Instance.BlockStolen(team, playerName, trailBlockProperties);
+            if (this.team != team)
+            {
+                if (StatsManager.Instance != null)
+                    StatsManager.Instance.BlockStolen(team, playerName, trailBlockProperties);
 
-            if (NodeControlManager.Instance != null)
-                //NodeControlManager.Instance.RemoveBlock(team, playerName, trailBlockProperties);
-                Debug.Log("TODO: Notify NodeControlManager that a block was stolen");
+                if (NodeControlManager.Instance != null)
+                    //NodeControlManager.Instance.RemoveBlock(team, playerName, trailBlockProperties);
+                    Debug.Log("TODO: Notify NodeControlManager that a block was stolen");
 
-            this.team = team;
-            this.playerName = playerName;
+                this.team = team;
+                this.playerName = playerName;
 
-            gameObject.GetComponent<MeshRenderer>().material = Hangar.Instance.GetTeamBlockMaterial(team);
+                gameObject.GetComponent<MeshRenderer>().material = Hangar.Instance.GetTeamBlockMaterial(team);
+            } 
         }
 
         public void Restore()

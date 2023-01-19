@@ -284,23 +284,34 @@ public class StatsManager : Singleton<StatsManager>
         Debug.LogWarning(JsonConvert.SerializeObject(playerStats, Formatting.Indented));
         Debug.LogWarning(JsonConvert.SerializeObject(teamStats, Formatting.Indented));
 
+        int i = 0;
         foreach (var team in teamStats.Keys)
         {
+            var container = EndOfRoundStatContainers[i];
             Debug.LogWarning($"Team Stats - Team:{team}");
+            container.transform.GetChild(2).GetComponent<TMP_Text>().text = teamStats[team].volumeRemaining.ToString("F0");
+            i++;
         }
 
-        int i = 0;
+        i = 0;
         foreach (var player in playerStats.Keys)
         {
             Debug.LogWarning($"PlayerStats - Player:{player}");
 
             var container = EndOfRoundStatContainers[i];
-            container.transform.GetChild(0).GetComponent<TMP_Text>().text = player;
-            container.transform.GetChild(1).GetComponent<TMP_Text>().text = playerStats[player].volumeCreated.ToString("F0");
-            container.transform.GetChild(2).GetComponent<TMP_Text>().text = playerStats[player].hostileVolumeDestroyed.ToString("F0");
-            container.transform.GetChild(3).GetComponent<TMP_Text>().text = playerStats[player].crystalsCollected.ToString("D");
+            //container.transform.GetChild(0).GetComponent<TMP_Text>().text = player;
+            container.transform.GetChild(1).GetComponent<TMP_Text>().text = (playerStats[player].volumeCreated + playerStats[player].hostileVolumeDestroyed 
+                                                                            -playerStats[player].friendlyVolumeDestroyed + (2 * playerStats[player].volumeStolen)).ToString("F0");
+            //container.transform.GetChild(3).GetComponent<TMP_Text>().text = playerStats[player].crystalsCollected.ToString("D");
 
             i++;
         }
+
+        var container0 = EndOfRoundStatContainers[0];
+        var container1 = EndOfRoundStatContainers[1];
+
+        container0.transform.GetChild(3).GetComponent<TMP_Text>().text = (teamStats[Teams.Green].volumeRemaining - teamStats[Teams.Red].volumeRemaining).ToString("F0");
+        //container1.transform.GetChild(3).GetComponent<TMP_Text>().text = 
+
     }
 }
