@@ -289,7 +289,7 @@ public class StatsManager : Singleton<StatsManager>
         {
             var container = EndOfRoundStatContainers[i];
             Debug.LogWarning($"Team Stats - Team:{team}");
-            container.transform.GetChild(2).GetComponent<TMP_Text>().text = teamStats[team].volumeRemaining.ToString("F0");
+            //container.transform.GetChild(2).GetComponent<TMP_Text>().text = teamStats[team].volumeRemaining.ToString("F0");
             i++;
         }
 
@@ -299,10 +299,12 @@ public class StatsManager : Singleton<StatsManager>
             Debug.LogWarning($"PlayerStats - Player:{player}");
 
             var container = EndOfRoundStatContainers[i];
-            //container.transform.GetChild(0).GetComponent<TMP_Text>().text = player;
             container.transform.GetChild(1).GetComponent<TMP_Text>().text = (playerStats[player].volumeCreated + playerStats[player].hostileVolumeDestroyed 
                                                                             -playerStats[player].friendlyVolumeDestroyed + (2 * playerStats[player].volumeStolen)).ToString("F0");
-            //container.transform.GetChild(3).GetComponent<TMP_Text>().text = playerStats[player].crystalsCollected.ToString("D");
+            container.transform.GetChild(0).GetComponent<TMP_Text>().text = player;
+            container.transform.GetChild(1).GetComponent<TMP_Text>().text = playerStats[player].volumeCreated.ToString("F0");
+            container.transform.GetChild(2).GetComponent<TMP_Text>().text = playerStats[player].hostileVolumeDestroyed.ToString("F0");
+            container.transform.GetChild(3).GetComponent<TMP_Text>().text = playerStats[player].crystalsCollected.ToString("D");
 
             i++;
         }

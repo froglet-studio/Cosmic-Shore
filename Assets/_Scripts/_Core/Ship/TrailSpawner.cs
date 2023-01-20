@@ -14,6 +14,7 @@ public class TrailSpawner : MonoBehaviour
     float wavelength;
 
     public float trailLength = 20;
+    [SerializeField] float defaultWaitTime = .5f;
     public float waitTime = .5f;  // Time until the trail block appears - camera dependent
     public float startDelay = 2.1f;
 
@@ -59,6 +60,7 @@ public class TrailSpawner : MonoBehaviour
 
     void Start()
     {
+        waitTime = defaultWaitTime;
         wavelength = initialWavelength;
         if (TrailContainer == null)
         {
@@ -78,7 +80,7 @@ public class TrailSpawner : MonoBehaviour
 
     public void ToggleBlockWaitTime(bool state)
     {
-        waitTime = state ? 1.5f : 0.5f;
+        waitTime = state ? defaultWaitTime*3 : defaultWaitTime;
     }
 
     [Tooltip("Number of proximal blocks before trail block size reaches minimum")]
