@@ -308,7 +308,7 @@ GameObject:
   - component: {fileID: 3440187540988767646}
   - component: {fileID: 6293426128044408357}
   m_Layer: 0
-  m_Name: GreenManta
+  m_Name: Manta
   m_TagString: Player_Ship
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
