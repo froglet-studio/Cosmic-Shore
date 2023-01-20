@@ -13,8 +13,6 @@ namespace StarWriter.Core
         [SerializeField] float MultiSkimMultiplier = 0f;
         [SerializeField] bool NotifyNearbyBlockCount;
         [HideInInspector] public Teams team;
-        
-        public bool thief; // TODO: this should be part of the impact effects
  
         Dictionary<string, float> skimStartTimes = new Dictionary<string, float>();
 
@@ -81,9 +79,6 @@ namespace StarWriter.Core
             {
                 activelySkimmingBlockCount++;
                 trail.DisplaySkimParticleEffect(transform);
-
-                if (thief && trail.Team != Player.Team)
-                    trail.Steal(Player.PlayerName, Player.Team);
 
                 if (!skimStartTimes.ContainsKey(trail.ID))
                     skimStartTimes.Add(trail.ID, Time.time);

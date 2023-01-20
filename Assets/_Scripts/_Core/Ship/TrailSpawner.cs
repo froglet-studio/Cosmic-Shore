@@ -93,9 +93,10 @@ public class TrailSpawner : MonoBehaviour
     {
         blockCount = Mathf.Min(blockCount, MaxNearbyBlockCount);
         Debug.Log($"Nearby Block Count: {blockCount}");
-        blockScale = Mathf.Max(minBlockScale, maxBlockScale * (1  - (blockCount / MaxNearbyBlockCount)));
+        blockScale = Mathf.Max(minBlockScale, maxBlockScale * (1  - (blockCount / (float)MaxNearbyBlockCount)));
+        Debug.Log($"block scale: {blockScale}");
     }
-
+     
     void PauseTrailSpawner()
     {
         spawnerEnabled = false;
@@ -140,7 +141,7 @@ public class TrailSpawner : MonoBehaviour
                 Block.warp = warp;
                 Block.GetComponent<MeshRenderer>().material = blockMaterial;
                 Block.ID = ownerId + "::" + spawnedTrailCount++;
-                Block.Dimensions = new Vector3(trail.transform.localScale.x * blockScale, trail.transform.localScale.y * blockScale, trail.transform.localScale.z);
+                Block.Dimensions = new Vector3(trail.transform.localScale.x * blockScale, trail.transform.localScale.y, trail.transform.localScale.z);
 
                 if (Block.warp)
                     wavelength = shards.GetComponent<WarpFieldData>().HybridVector(Block.transform).magnitude * initialWavelength;

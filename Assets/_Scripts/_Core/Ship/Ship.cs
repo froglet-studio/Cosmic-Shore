@@ -97,8 +97,8 @@ namespace StarWriter.Core
                     case PassiveAbilities.TurnSpeed:
                         inputController.rotationScaler = rotationScaler;
                         break;
-                    case PassiveAbilities.BlockThief:
-                        skimmer.thief = true;
+                    case PassiveAbilities.BlockThief: //TODO remove
+                        //skimmer.thief = true;
                         break;
                     case PassiveAbilities.BlockScout:
                         break;

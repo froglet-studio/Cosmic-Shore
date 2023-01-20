@@ -365,10 +365,11 @@ MonoBehaviour:
   offset: 0
   initialWavelength: 5
   trailLength: 40
+  defaultWaitTime: 0.5
   waitTime: 0.5
   startDelay: 2
   warp: 0
-  MaxNearbyBlockCount: 10
+  MaxNearbyBlockCount: 50
   minBlockScale: 1
   maxBlockScale: 10
 --- !u!114 &874579555101021523
@@ -383,10 +384,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9846c9cd6cfac424797ca640ebcb7a04, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  inputSpeed: 1
-  speedMultiplier: 1
-  speed: 19
-  boost: 0
+  InputSpeed: 1
+  SpeedMultiplier: 1
+  Speed: 0
+  Boosting: 0
+  BoostDecaying: 0
+  Drifting: 0
   velocityDirection: {x: 0, y: 0, z: 0}
   blockRotation: {x: 0, y: 0, z: 0, w: 0}
 --- !u!114 &874579555101021527
@@ -617,17 +620,17 @@ PrefabInstance:
     - target: {fileID: 7231566422788689087, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
       propertyPath: m_LocalScale.x
-      value: 45
+      value: 200
       objectReference: {fileID: 0}
     - target: {fileID: 7231566422788689087, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
       propertyPath: m_LocalScale.y
-      value: 45
+      value: 200
       objectReference: {fileID: 0}
     - target: {fileID: 7231566422788689087, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
       propertyPath: m_LocalScale.z
-      value: 45
+      value: 200
       objectReference: {fileID: 0}
     - target: {fileID: 7231566422788689087, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
