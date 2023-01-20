@@ -6,7 +6,7 @@ using UnityEngine;
 [RequireComponent(typeof(Ship))]
 public class TrailSpawner : MonoBehaviour
 {
-    [SerializeField] Trail trail;
+    public Trail trail;
 
     public float offset = 0f;
 

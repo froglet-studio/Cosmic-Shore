@@ -915,6 +915,21 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7231566422788689087, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
+      propertyPath: m_LocalScale.x
+      value: 8
+      objectReference: {fileID: 0}
+    - target: {fileID: 7231566422788689087, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
+      propertyPath: m_LocalScale.y
+      value: 8
+      objectReference: {fileID: 0}
+    - target: {fileID: 7231566422788689087, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
+      propertyPath: m_LocalScale.z
+      value: 8
+      objectReference: {fileID: 0}
+    - target: {fileID: 7231566422788689087, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
       objectReference: {fileID: 0}
@@ -997,6 +1012,11 @@ PrefabInstance:
         type: 3}
       propertyPath: trailBlockImpactEffects.Array.data[2]
       value: 6
+      objectReference: {fileID: 0}
+    - target: {fileID: 9103907316180665772, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
+      propertyPath: m_Radius
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 6540c78597c2dcc468123b270169fc44, type: 3}
