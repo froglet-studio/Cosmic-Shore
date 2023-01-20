@@ -643,7 +643,7 @@ MonoBehaviour:
   rotationScaler: 140
   rotationThrottleScaler: 0
   maxExplosionScale: 500
-  blockFuelChange: 0.03
+  blockFuelChange: 0.05
   closeCamDistance: -5
   farCamDistance: -15
   head: {fileID: 3710282027580066907}
