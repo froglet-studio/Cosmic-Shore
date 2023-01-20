@@ -48,7 +48,7 @@ MonoBehaviour:
   MaxScale: 200
   ExplosionDuration: 2
   ExplosionDelay: 0.2
-  trail: {fileID: 4563009547826722997, guid: 5790c8c1f457a754baecca51ef90c82e, type: 3}
+  trail: {fileID: 4563009547826722997, guid: a8ff3605479dc4f4aa347019813160ab, type: 3}
   blockCount: 8
   radius: 15
   blockScale: {x: 10, y: 5, z: 2}
