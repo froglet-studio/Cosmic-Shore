@@ -23,7 +23,6 @@ namespace StarWriter.Core.Input
 
         public bool drifting = false;
 
-        bool boostDecaying = false; 
         public float boostDecay = 1; 
 
 
