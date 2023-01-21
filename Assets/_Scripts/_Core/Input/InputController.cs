@@ -133,12 +133,12 @@ namespace StarWriter.Core.Input
             
             if (!shipData.Drifting)
             {
-                shipTransform.position += shipData.Speed * Time.deltaTime * shipTransform.forward;
                 shipData.velocityDirection = shipTransform.forward;
                 shipData.blockRotation = shipTransform.rotation;
-                
             }
-            else Drift();
+            else StoreBoost();
+
+            shipTransform.position += shipData.Speed * Time.deltaTime * shipData.velocityDirection;
         }
 
         void RotateShip()
@@ -351,10 +351,9 @@ namespace StarWriter.Core.Input
                 ySum *= -1;
         }
 
-        void Drift()
+        void StoreBoost()
         {
-            shipTransform.position += speed * Time.deltaTime * shipData.velocityDirection;
-            boostDecay += .03f;
+            boostDecay += .03f; // TODO make this settable by the ship script.
         }
 
         public void EndDrift()
@@ -365,13 +364,14 @@ namespace StarWriter.Core.Input
 
         IEnumerator DecayingBoostCoroutine()
         {
-            boostDecaying = true;
+            shipData.BoostDecaying = true;
             while (boostDecay > 1)
             {
                 boostDecay = Mathf.Clamp(boostDecay - Time.deltaTime, 1, 10);
+                Debug.Log(boostDecay);
                 yield return null;
             }
-            boostDecaying = false;
+            shipData.BoostDecaying = false;
         }
 
         void Yaw()  // These need to not use *= ... remember quaternions are not commutative

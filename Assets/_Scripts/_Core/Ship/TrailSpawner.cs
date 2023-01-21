@@ -92,9 +92,9 @@ public class TrailSpawner : MonoBehaviour
     public void SetNearbyBlockCount(int blockCount)
     {
         blockCount = Mathf.Min(blockCount, MaxNearbyBlockCount);
-        Debug.Log($"Nearby Block Count: {blockCount}");
+        //Debug.Log($"Nearby Block Count: {blockCount}");
         blockScale = Mathf.Max(minBlockScale, maxBlockScale * (1  - (blockCount / (float)MaxNearbyBlockCount)));
-        Debug.Log($"block scale: {blockScale}");
+        //Debug.Log($"block scale: {blockScale}");
     }
      
     void PauseTrailSpawner()
