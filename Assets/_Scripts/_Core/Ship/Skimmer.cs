@@ -1,4 +1,5 @@
 using StarWriter.Core.Input;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -7,6 +8,8 @@ namespace StarWriter.Core
     public class Skimmer : MonoBehaviour
     {
         [SerializeField] List<TrailBlockImpactEffects> trailBlockImpactEffects;
+        [SerializeField] float time = 300f;
+        [SerializeField] bool skimVisualFX = true;
         [SerializeField] public Ship ship;
         [SerializeField] public Player Player;
         [SerializeField] float fuelAmount;
@@ -78,7 +81,7 @@ namespace StarWriter.Core
             if (other.TryGetComponent<Trail>(out var trail))
             {
                 activelySkimmingBlockCount++;
-                trail.DisplaySkimParticleEffect(transform);
+                if (skimVisualFX) StartCoroutine(DisplaySkimParticleEffectCoroutine(trail));
 
                 if (!skimStartTimes.ContainsKey(trail.ID))
                     skimStartTimes.Add(trail.ID, Time.time);
@@ -120,6 +123,28 @@ namespace StarWriter.Core
                 if (NotifyNearbyBlockCount)
                     ship.TrailSpawner.SetNearbyBlockCount(ActivelySkimmingBlockCount);
             }
+        }
+
+
+        IEnumerator DisplaySkimParticleEffectCoroutine(Trail trail)
+        {
+            var particle = Instantiate(trail.ParticleEffect);
+            particle.transform.parent = trail.transform;
+
+            var timer = 0;
+            var scaledTime = time / ship.GetComponent<ShipData>().Speed;
+            while (timer < scaledTime)
+            {
+                scaledTime = time / ship.GetComponent<ShipData>().Speed;
+                var distance = trail.transform.position - transform.position;
+                particle.transform.localScale = new Vector3(1, 1, distance.magnitude);
+                particle.transform.rotation = Quaternion.LookRotation(distance, trail.transform.up);
+                particle.transform.position = transform.position;
+                timer++;
+
+                yield return null;
+            }
+            Destroy(particle);
         }
     }
 }

@@ -7,7 +7,7 @@ namespace StarWriter.Core
     public class Trail : MonoBehaviour
     {
         [SerializeField] GameObject FossilBlock;
-        [SerializeField] GameObject ParticleEffect;
+        public GameObject ParticleEffect;
         [SerializeField] Material material;
         [SerializeField] TrailBlockProperties trailBlockProperties;
 
@@ -85,31 +85,6 @@ namespace StarWriter.Core
 
             if (NodeControlManager.Instance != null)
                 NodeControlManager.Instance.AddBlock(team, playerName, trailBlockProperties);
-        }
-
-        public void DisplaySkimParticleEffect(Transform skimmer)
-        {
-            StartCoroutine(DisplaySkimParticleEffectCoroutine(skimmer));
-        }
-
-        IEnumerator DisplaySkimParticleEffectCoroutine(Transform skimmerTransform)
-        {
-            var particle = Instantiate(ParticleEffect);
-            particle.transform.parent = transform;
-
-            var time = 50;
-            var timer = 0;
-            while (timer < time)
-            {
-                var distance = transform.position - skimmerTransform.position;
-                particle.transform.localScale = new Vector3(1, 1, distance.magnitude);
-                particle.transform.rotation = Quaternion.LookRotation(distance, transform.up);
-                particle.transform.position = skimmerTransform.position;
-                timer++;
-
-                yield return null;
-            }
-            Destroy(particle);
         }
 
         // TODO: none of the collision detection should be on the trail
