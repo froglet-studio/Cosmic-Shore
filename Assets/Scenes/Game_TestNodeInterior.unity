@@ -1177,7 +1177,7 @@ MonoBehaviour:
     scoreAmount: 1
     tailLengthIncreaseAmount: 0
     speedBuffAmount: 3.5
-  sphereRadius: 170
+  sphereRadius: 400
   SpentCrystalPrefab: {fileID: 8491596592871572304, guid: f39596c98ed9d644a834f2fa27ec90ca,
     type: 3}
   CrystalModel: {fileID: 7244393970774794917}
@@ -3425,17 +3425,17 @@ PrefabInstance:
     - target: {fileID: 8200116291734656446, guid: cb702179ff5b42f41a3521ccd59e6934,
         type: 3}
       propertyPath: m_LocalScale.x
-      value: 340
+      value: 400
       objectReference: {fileID: 0}
     - target: {fileID: 8200116291734656446, guid: cb702179ff5b42f41a3521ccd59e6934,
         type: 3}
       propertyPath: m_LocalScale.y
-      value: 340
+      value: 400
       objectReference: {fileID: 0}
     - target: {fileID: 8200116291734656446, guid: cb702179ff5b42f41a3521ccd59e6934,
         type: 3}
       propertyPath: m_LocalScale.z
-      value: 340
+      value: 400
       objectReference: {fileID: 0}
     - target: {fileID: 8200116291734656446, guid: cb702179ff5b42f41a3521ccd59e6934,
         type: 3}
