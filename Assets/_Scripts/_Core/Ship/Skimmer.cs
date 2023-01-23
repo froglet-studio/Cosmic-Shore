@@ -43,7 +43,7 @@ namespace StarWriter.Core
                         break;
                     case TrailBlockImpactEffects.DeactivateTrailBlock:
                         TrailSpawner spawner = ship.GetComponent<TrailSpawner>();
-                        spawner.waitTime = transform.localScale.z/Player.GetComponent<InputController>().initialDThrottle + spawner.trail.transform.localScale.z;
+                        spawner.waitTime = transform.localScale.z/Player.GetComponent<InputController>().initialDThrottle + spawner.TrailZScale;
                         break;
                     case TrailBlockImpactEffects.Steal:
                         break;
@@ -131,19 +131,20 @@ namespace StarWriter.Core
             var particle = Instantiate(trail.ParticleEffect);
             particle.transform.parent = trail.transform;
 
-            var timer = 0;
-            var scaledTime = time / ship.GetComponent<ShipData>().Speed;
-            while (timer < scaledTime)
+            int timer = 0;
+            float scaledTime;
+            do
             {
-                scaledTime = time / ship.GetComponent<ShipData>().Speed;
                 var distance = trail.transform.position - transform.position;
+                scaledTime = time / ship.GetComponent<ShipData>().Speed;
                 particle.transform.localScale = new Vector3(1, 1, distance.magnitude);
                 particle.transform.rotation = Quaternion.LookRotation(distance, trail.transform.up);
                 particle.transform.position = transform.position;
                 timer++;
 
                 yield return null;
-            }
+            } while (timer < scaledTime);
+
             Destroy(particle);
         }
     }

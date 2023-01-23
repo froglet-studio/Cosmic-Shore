@@ -6,7 +6,7 @@ using UnityEngine;
 [RequireComponent(typeof(Ship))]
 public class TrailSpawner : MonoBehaviour
 {
-    public Trail trail;
+    [SerializeField] Trail trail;
 
     public float offset = 0f;
 
@@ -36,6 +36,8 @@ public class TrailSpawner : MonoBehaviour
     {
         return blockMaterial;
     }
+
+    public float TrailZScale => trail.transform.localScale.z;
 
     static GameObject TrailContainer;
 
@@ -92,9 +94,7 @@ public class TrailSpawner : MonoBehaviour
     public void SetNearbyBlockCount(int blockCount)
     {
         blockCount = Mathf.Min(blockCount, MaxNearbyBlockCount);
-        //Debug.Log($"Nearby Block Count: {blockCount}");
         blockScale = Mathf.Max(minBlockScale, maxBlockScale * (1  - (blockCount / (float)MaxNearbyBlockCount)));
-        //Debug.Log($"block scale: {blockScale}");
     }
      
     void PauseTrailSpawner()
