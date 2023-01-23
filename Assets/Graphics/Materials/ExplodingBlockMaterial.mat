@@ -116,8 +116,8 @@ Material:
     - _add_cos: 0
     - _angle: 0
     - _distance: 0
-    - _fadeShellThickness: 0
-    - _innerFadeOutRadius: 0
+    - _fadeShellThickness: 4
+    - _innerFadeOutRadius: 3
     - _multiply: 0
     - _muton: 0
     - _opacity: 80
