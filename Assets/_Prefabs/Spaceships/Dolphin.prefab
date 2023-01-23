@@ -817,10 +817,13 @@ MonoBehaviour:
   offset: 0
   initialWavelength: 5
   trailLength: 40
+  defaultWaitTime: 0.5
   waitTime: 0.5
   startDelay: 2
   warp: 0
-  SaturatedBlockDensity: 10
+  MaxNearbyBlockCount: 10
+  minBlockScale: 1
+  maxBlockScale: 1
 --- !u!114 &874579555101021523
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -833,10 +836,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9846c9cd6cfac424797ca640ebcb7a04, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  inputSpeed: 1
-  speedMultiplier: 1
-  speed: 19
-  boost: 0
+  InputSpeed: 1
+  SpeedMultiplier: 1
+  Speed: 0
+  Boosting: 0
+  BoostDecaying: 0
+  Drifting: 0
   velocityDirection: {x: 0, y: 0, z: 0}
   blockRotation: {x: 0, y: 0, z: 0, w: 0}
 --- !u!114 &874579555101021527
@@ -869,7 +874,8 @@ MonoBehaviour:
   boostFuelAmount: -0.01
   rotationScaler: 190
   rotationThrottleScaler: 0.5
-  maxExplosionScale: 300
+  minExplosionScale: 200
+  maxExplosionScale: 500
   blockFuelChange: 0
   closeCamDistance: -5
   farCamDistance: 0
@@ -888,6 +894,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a58bf4fb65afa704194fe9e28e67d58d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  DifficultyLevel: 0
   defaultThrottle: 30
   defaultLerp: 40
   throttleIncrease: 5

@@ -49,7 +49,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   speed: 0.5
-  MaxScale: 15
+  MaxScale: 0
   ExplosionDuration: 12
   ExplosionDelay: 0.2
 --- !u!33 &8683897607158942398

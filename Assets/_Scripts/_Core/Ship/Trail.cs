@@ -7,7 +7,7 @@ namespace StarWriter.Core
     public class Trail : MonoBehaviour
     {
         [SerializeField] GameObject FossilBlock;
-        public GameObject ParticleEffect;
+        public GameObject ParticleEffect; // TODO: move this so it references the Team to retrieve the effect.
         [SerializeField] Material material;
         [SerializeField] TrailBlockProperties trailBlockProperties;
 

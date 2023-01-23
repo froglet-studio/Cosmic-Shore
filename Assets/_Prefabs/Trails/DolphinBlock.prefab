@@ -63,7 +63,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 6a9bda8b03d768b49af63226292fa2c6, type: 2}
+  - {fileID: 2100000, guid: 5140ec1c42866e849927f442d5965f7f, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -120,11 +120,10 @@ MonoBehaviour:
     volume: 0.2
     speedDebuffAmount: 0.4
     trail: {fileID: 0}
+  growthRate: 0.5
   ownerId: 
   waitTime: 0.1
-  embiggen: 0
   destroyed: 0
-  MaxSize: 1
   ID: 
   Dimensions: {x: 0, y: 0, z: 0}
   warp: 0

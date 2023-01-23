@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using StarWriter.Core.Input;
 using UnityEngine;
 
+
 namespace StarWriter.Core
 {
     // TODO: pull into separate file
@@ -38,6 +39,7 @@ namespace StarWriter.Core
         public float boostFuelAmount = -.01f;
         [SerializeField] float rotationScaler = 130;
         [SerializeField] float rotationThrottleScaler;
+        [SerializeField] float minExplosionScale = 50;
         [SerializeField] float maxExplosionScale = 400;
         [SerializeField] float blockFuelChange;
         [SerializeField] float closeCamDistance;
@@ -143,7 +145,7 @@ namespace StarWriter.Core
                         AOEExplosion.Team = team;
                         AOEExplosion.Ship = this;
                         AOEExplosion.transform.SetPositionAndRotation(transform.position, transform.rotation);
-                        AOEExplosion.MaxScale = 50 + FuelSystem.CurrentFuel * maxExplosionScale;
+                        AOEExplosion.MaxScale =  Mathf.Max(minExplosionScale, FuelSystem.CurrentFuel * maxExplosionScale);
 
                         if (AOEExplosion is AOEBlockCreation aoeBlockcreation)
                             aoeBlockcreation.SetBlockMaterial(TrailSpawner.GetBlockMaterial());
