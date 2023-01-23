@@ -19,8 +19,6 @@ public class FuelSystem : MonoBehaviour
     [Range(0, 1)]
     static float maxFuel = 1f;
     static float currentFuel; // TODO: this should be part of ShipData
-
-    [SerializeField]float rateOfFuelChange = -0.04f;
     #endregion
 
     public static float CurrentFuel { 
@@ -41,14 +39,14 @@ public class FuelSystem : MonoBehaviour
         }
     }
 
-    private void OnEnable()
+    void OnEnable()
     {
         GameManager.onExtendGamePlay += ResetFuel;
         Skimmer.OnSkim += ChangeFuelAmount;
         InputController.OnBoost += ChangeFuelAmount;
     }
 
-    private void OnDisable()
+    void OnDisable()
     {
         GameManager.onExtendGamePlay -= ResetFuel;
         Skimmer.OnSkim -= ChangeFuelAmount;
@@ -60,13 +58,6 @@ public class FuelSystem : MonoBehaviour
         ResetFuel();
     }
 
-    void Update()
-    {
-        // TODO: we need to get "admin" out of the codebase
-        if (currentFuel > 0)
-            ChangeFuelAmount("admin", rateOfFuelChange * Time.deltaTime); // Only effects current player
-    }
-
     public static void ResetFuel()
     {
         CurrentFuel = maxFuel;
@@ -74,7 +65,6 @@ public class FuelSystem : MonoBehaviour
 
     public static void ChangeFuelAmount(string uuid, float amount)
     {
-        if (uuid == "admin")
-            CurrentFuel = Mathf.Clamp(currentFuel + amount, 0, 1);
+        CurrentFuel = Mathf.Clamp(currentFuel + amount, 0, 1);
     }
 }

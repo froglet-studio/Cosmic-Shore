@@ -75,10 +75,6 @@ public class AdsManager : MonoBehaviour, IUnityAdsInitializationListener, IUnity
             return;
         }
 
-        // TODO: Toggling the screen orientation breaks ad display in iOS. For now, we're turning it off
-        //Screen.orientation = ScreenOrientation.AutoRotation;
-        //Screen.orientation = GameManager.Instance.currentOrientation;
-
         Advertisement.Show(_adUnitId, this);
     }
 

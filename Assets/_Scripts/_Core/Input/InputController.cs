@@ -72,7 +72,6 @@ namespace StarWriter.Core.Input
 
         void Start()
         {
-            
             shipTransform = ship.transform;
             shipAnimation = ship.GetComponent<ShipAnimation>();
             shipData = ship.GetComponent<ShipData>();
@@ -81,9 +80,6 @@ namespace StarWriter.Core.Input
             throttleScaler = initialThrottleScaler;
 
             uuid = GameObject.FindWithTag("Player").GetComponent<Player>().PlayerUUID;
-            
-            // TODO: why is this here?
-            Screen.sleepTimeout = SleepTimeout.NeverSleep;
 
             gyro = UnityEngine.Input.gyro;
             gyro.enabled = true;

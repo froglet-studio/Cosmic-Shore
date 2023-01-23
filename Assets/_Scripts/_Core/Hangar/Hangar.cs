@@ -8,8 +8,6 @@ namespace StarWriter.Core.HangerBuilder
 {
     public class Hangar : SingletonPersistent<Hangar>
     {
-        // TODO: let player objects pass in a ship type to the hangar and load it
-        // TODO: player object or the GameManager should inform the Hanger what the player's team is
         [SerializeField] Teams PlayerTeam = Teams.Green;
         Teams AITeam;
         [SerializeField] ShipTypes PlayerShipType = ShipTypes.Manta;

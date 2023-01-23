@@ -11,7 +11,7 @@ public class GameMenu : MonoBehaviour
     [SerializeField] GameObject adsPanel;
     [SerializeField] GameObject Controls;
 
-    private void OnEnable()
+    void OnEnable()
     {
         GameManager.onPlayGame += ResetMenuPanels;
         GameManager.onDeath += DisplayAdsPanel;
@@ -19,7 +19,7 @@ public class GameMenu : MonoBehaviour
         GameManager.onExtendGamePlay += ResetMenuPanels;
     }
 
-    private void OnDisable()
+    void OnDisable()
     {
         GameManager.onPlayGame -= ResetMenuPanels;
         GameManager.onDeath -= DisplayAdsPanel;
@@ -27,20 +27,14 @@ public class GameMenu : MonoBehaviour
         GameManager.onExtendGamePlay -= ResetMenuPanels;
     }
 
-    private bool extendGamePlayNeeded = false;
+    bool extendGamePlayNeeded = false;
 
-    private void Update()
+    void Update()
     {
-        // TODO: not sure if this whole thing is necessary... unity seems to complain, but it also seems to work?
         if (extendGamePlayNeeded)
         {
-            fuelMeterPanel.SetActive(true);
-            scorePanel.SetActive(true);
-            finalScorePanel.SetActive(false);
-            adsPanel.SetActive(false);
-            pauseButton.SetActive(false);
-            pauseMenuPanel.SetActive(false);
-            Controls.SetActive(false);
+            // This looks wacky, but "SetActive" can only be called in the main thread, not through a delegate
+            ResetMenuPanels();
             extendGamePlayNeeded = false;
         }
     }
@@ -76,7 +70,7 @@ public class GameMenu : MonoBehaviour
     /// <summary>
     /// Calls the Final and High Score Panel
     /// </summary>
-    private void DisplayFinalScorePanel()
+    void DisplayFinalScorePanel()
     {
         fuelMeterPanel.SetActive(false);
         scorePanel.SetActive(false);
@@ -87,7 +81,7 @@ public class GameMenu : MonoBehaviour
         Controls.SetActive(false);
     }
 
-    private void DisplayAdsPanel()
+    void DisplayAdsPanel()
     {
         adsPanel.SetActive(true);
         Controls.SetActive(false);
@@ -96,12 +90,10 @@ public class GameMenu : MonoBehaviour
     public void OnExtendGamePlay()
     {
         // This looks wacky, but "SetActive" can only be called in the main thread, not through a delegate
-        // extendGamePlayNeeded = true;
-
-        ResetMenuPanels();
+        extendGamePlayNeeded = true;
     }
 
-    private void ResetMenuPanels()
+    void ResetMenuPanels()
     {
         fuelMeterPanel.SetActive(true);
         scorePanel.SetActive(true);

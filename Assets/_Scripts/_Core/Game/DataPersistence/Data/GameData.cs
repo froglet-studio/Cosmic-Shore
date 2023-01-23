@@ -4,17 +4,11 @@ using StarWriter.Core;
 public class GameData : DataPersistenceBase<GameData>
 {
     public int testNumber; // testing only
-
-    //Game Settings data
-    //public bool adsEnabled;               //TODO
-    //public bool invertYEnabled;           //TODO 
-    //public bool isAudioEnabled;           //TODO
-    //public bool isTutorialEnabled;        //TODO
     
     //Scoring Data
-    public int firstLifeHighScore;          //TODO
-    public int highScore;                   //TODO
-    public int score;                       //TODO
+    public int firstLifeHighScore;
+    public int highScore;
+    public int score;
 
     // the constructor will provide the default values before a GamaData.data files exists
     public GameData()

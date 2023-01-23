@@ -188,13 +188,11 @@ namespace StarWriter.Core
 
         public void WaitOnPlayerLoading()
         {
-
             onPlayGame?.Invoke();
         }
 
         public void WaitOnAILoading(AIPilot pilot)
         {
-            // TODO: we should rename CrystalTransform to 'CrystalTransform'
             pilot.CrystalTransform = FindObjectOfType<Crystal>().transform;
             pilot.flowFieldData = FindObjectOfType<FlowFieldData>();
         }
@@ -210,16 +208,21 @@ namespace StarWriter.Core
 
                 ExtendGame();
             }
+            if (showCompletionState.Equals(UnityAdsShowCompletionState.SKIPPED))
+            {
+                Debug.Log("Unity Ads Rewarded Ad SKIPPED do to ad failure. Extending game.");
+
+                ExtendGame();
+            }
         }
 
         public void OnAdShowFailure(string adUnitId, UnityAdsShowError error, string message)
         {
-            // Just pass through to the ad completion logic
-            // TODO: We may want to use UnityAdsShowCompletionState.SKIPPED (which is correct) and do a different behavior here
-            OnAdShowComplete(adUnitId, UnityAdsShowCompletionState.COMPLETED);
+            // Give them the benefit of the doubt and just pass through to the ad completion logic
+            OnAdShowComplete(adUnitId, UnityAdsShowCompletionState.SKIPPED);
         }
 
-        private void OnApplicationQuit()
+        void OnApplicationQuit()
         {
             DataPersistenceManager.Instance.SaveGame();
         }

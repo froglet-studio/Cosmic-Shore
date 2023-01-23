@@ -138,8 +138,6 @@ namespace StarWriter.Core
                         HapticController.PlayCrystalImpactHaptics();
                         break;
                     case CrystalImpactEffects.AreaOfEffectExplosion:
-                        // Spawn AOE explosion
-                        // TODO: add position to crystal properties? use crystal properties to set position
                         var AOEExplosion = Instantiate(AOEPrefab).GetComponent<AOEExplosion>();
                         AOEExplosion.Material = AOEExplosionMaterial;
                         AOEExplosion.Team = team;
@@ -166,7 +164,6 @@ namespace StarWriter.Core
                         // TODO: Remove this impact effect, or re-introduce scoring in a separate game mode
                         break;
                     case CrystalImpactEffects.ResetAggression:
-                        // TODO: PLAYERSHIP null pointer here
                         AIPilot controllerScript = gameObject.GetComponent<AIPilot>();
                         controllerScript.lerp = controllerScript.defaultLerp;
                         controllerScript.throttle = controllerScript.defaultThrottle;
