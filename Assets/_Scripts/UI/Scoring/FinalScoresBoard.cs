@@ -16,13 +16,8 @@ namespace StarWriter.Core
         // List of 0-9 sprites
         public List<Sprite> NumIcons = new List<Sprite>();
 
-        public Image scoreHundredsPlace;
-        public Image scoreTensPlace;
-        public Image scoreOnesPlace;
-
-        public Image highScoreHundredsPlace;
-        public Image highScoreTensPlace;
-        public Image hignScoreOnesPlace;
+        [SerializeField] Image[] ScoreDisplayImages;
+        [SerializeField] Image[] HighScoreDisplayImages;
 
         private void OnEnable()
         {
@@ -38,30 +33,61 @@ namespace StarWriter.Core
         {
             currentScore = PlayerPrefs.GetInt(PlayerPrefKeys.score.ToString());
             highScore = PlayerPrefs.GetInt(PlayerPrefKeys.highScore.ToString());
-            //DisplayCurrentScoreWithSprites(); TODO: turn these back on if we fix the indexing issue when scores are high
-            //DisplayHighScoreWithSprites();
+            DisplayCurrentScoreWithSprites();
+            DisplayHighScoreWithSprites();
+        }
+
+        int Magnitude(int value)
+        {
+            int magnitude = 0;
+            while (value > 0)
+            {
+                magnitude++;
+                value = value / 10;
+            };
+
+            return magnitude;
+        }
+
+        public void DisplaySpritedNumber(int value, Image[] display)
+        {
+            var magnitude = Magnitude(value);
+
+            if (magnitude >= display.Length)
+            {
+                Debug.LogError($"DisplaySpritedNumber - Not enough images in display array to show number - value's magnitude:{magnitude}, display array length:{display.Length} ");
+                return;
+            }
+
+            // Below loop is implementing this algo, then assigning the associated sprite
+            // int hundreds = (currentScore % 1000) / 100;
+            // int tens     = (currentScore % 100) / 10;
+            // int ones     = (currentScore % 10) / 1;
+
+            for (var i=0; i <= magnitude; i++)
+            {
+                int powOfTenModulo = (int)Mathf.Pow(10, i+1);
+                int powOfTenDivision = (int)Mathf.Pow(10, i);
+                int valueAtMagnitude = (value % powOfTenModulo) / powOfTenDivision;
+
+                if (display[i] == null)
+                {
+                    Debug.LogError($"DisplaySpritedNumber - Image element of display array was null, exiting - image index: {i}");
+                    return;
+                }
+
+                display[i].sprite = NumIcons[valueAtMagnitude];
+            }
         }
 
         public void DisplayCurrentScoreWithSprites()
         {
-            int hundreds = currentScore / 100;
-            int tens = (currentScore % 100) / 10;
-            int ones = (currentScore % 10);
-
-            scoreHundredsPlace.sprite = NumIcons[hundreds];
-            scoreTensPlace.sprite = NumIcons[tens];
-            scoreOnesPlace.sprite = NumIcons[ones];       
+            DisplaySpritedNumber(currentScore, ScoreDisplayImages);
         }
 
         public void DisplayHighScoreWithSprites()
         {
-            int hundreds = highScore / 100;
-            int tens = (highScore % 100) / 10;
-            int ones = (highScore % 10);
-
-            highScoreHundredsPlace.sprite = NumIcons[hundreds];
-            highScoreTensPlace.sprite = NumIcons[tens];
-            hignScoreOnesPlace.sprite = NumIcons[ones];
+            DisplaySpritedNumber(highScore, HighScoreDisplayImages);
         }
     }
 }
