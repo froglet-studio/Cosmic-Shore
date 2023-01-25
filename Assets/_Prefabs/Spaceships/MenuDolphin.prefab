@@ -760,7 +760,7 @@ GameObject:
   - component: {fileID: 3440187540988767646}
   - component: {fileID: 1871436205027819587}
   m_Layer: 0
-  m_Name: DolphinAI
+  m_Name: MenuDolphin
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -800,7 +800,7 @@ MonoBehaviour:
   - {fileID: 744850128600491525}
   explosiveMaterial: {fileID: 2100000, guid: cbf0164b1addfee43a45e430c464b6fd, type: 2}
   maxExplosionRadius: 400
-  explosionRate: 120
+  explosionRate: 200
 --- !u!114 &874579555101021522
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -813,7 +813,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 909fb5cbbca8c4549b5a9df56d837e55, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  trail: {fileID: 4563009547826722997, guid: 78bd71c2ca5dd3845acf7480fe182e26, type: 3}
+  trail: {fileID: 4563009547826722997, guid: 21757137a3002b64096be5813c054a5d, type: 3}
   offset: 0
   initialWavelength: 5
   trailLength: 40
@@ -863,8 +863,8 @@ MonoBehaviour:
   AOEPrefab: {fileID: 2728798890556433942, guid: 4a855af160021d241b8c1ac70cf2d792,
     type: 3}
   player: {fileID: 0}
-  crystalImpactEffects: 04000000050000000200000006000000
-  trailBlockImpactEffects: 030000000200000001000000
+  crystalImpactEffects: 0600000005000000
+  trailBlockImpactEffects: 03000000
   fullSpeedStraightEffects: 
   rightStickEffects: 
   leftStickEffects: 
