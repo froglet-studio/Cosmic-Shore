@@ -1182,7 +1182,6 @@ MonoBehaviour:
     type: 3}
   CrystalModel: {fileID: 7244393970774794917}
   material: {fileID: 2100000, guid: 383f21e8586fd7243a19e1d0f26110d0, type: 2}
-  surface: 0
 --- !u!82 &430359315
 AudioSource:
   m_ObjectHideFlags: 0
@@ -1299,6 +1298,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 938456149671388118, guid: 8a9d12e43096881468feb22e39e9fbeb,
         type: 3}
+      propertyPath: m_Name
+      value: NodeControlDisplay
+      objectReference: {fileID: 0}
+    - target: {fileID: 938456149671388118, guid: 8a9d12e43096881468feb22e39e9fbeb,
+        type: 3}
       propertyPath: m_IsActive
       value: 0
       objectReference: {fileID: 0}
@@ -1412,6 +1416,11 @@ PrefabInstance:
       propertyPath: shipData
       value: 
       objectReference: {fileID: 0}
+    - target: {fileID: 2151207714166088012, guid: 8a9d12e43096881468feb22e39e9fbeb,
+        type: 3}
+      propertyPath: chargeDisplay
+      value: 
+      objectReference: {fileID: 1567190167}
     - target: {fileID: 2151207714166088056, guid: 8a9d12e43096881468feb22e39e9fbeb,
         type: 3}
       propertyPath: m_Name
@@ -1452,6 +1461,11 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 6710174941400096912, guid: 8a9d12e43096881468feb22e39e9fbeb,
+        type: 3}
+      propertyPath: m_Name
+      value: ChargeDisplay
+      objectReference: {fileID: 0}
     - target: {fileID: 6710174941400096942, guid: 8a9d12e43096881468feb22e39e9fbeb,
         type: 3}
       propertyPath: fuelLevelText
@@ -1466,6 +1480,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_RootOrder
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6790381493870271418, guid: 8a9d12e43096881468feb22e39e9fbeb,
+        type: 3}
+      propertyPath: m_Name
+      value: Panel
       objectReference: {fileID: 0}
     - target: {fileID: 6941599016129815588, guid: 8a9d12e43096881468feb22e39e9fbeb,
         type: 3}
@@ -4722,6 +4741,18 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1559324028}
   m_CullTransparentMesh: 1
+--- !u!114 &1567190167 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 6710174941400096942, guid: 8a9d12e43096881468feb22e39e9fbeb,
+    type: 3}
+  m_PrefabInstance: {fileID: 433663840}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 033c5152e03074a49a6bbf901f0e00d0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &1573856531
 GameObject:
   m_ObjectHideFlags: 0

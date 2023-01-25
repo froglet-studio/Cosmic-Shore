@@ -12,10 +12,15 @@ public class Player : MonoBehaviour
     [SerializeField] Skimmer skimmer;
     [SerializeField] GameObject shipContainer;
 
+
+
     public Teams Team;
     public string PlayerName { get => playerName; }
     public string PlayerUUID { get => playerUUID; }
     public Ship Ship { get => ship; }
+
+    [Header("HUD Containers")]
+    [SerializeField] ChargeDisplay chargeDisplay;
 
     GameManager gameManager;
 
@@ -63,6 +68,9 @@ public class Player : MonoBehaviour
                 ship.skimmer.Player = this;
                 ship.skimmer.team = Team;
 
+                if (chargeDisplay != null)
+                    ship.GetComponent<ResourceSystem>().ChargeDisplay = chargeDisplay;
+
                 gameManager.WaitOnPlayerLoading();
                 break;
         }
@@ -85,5 +93,4 @@ public class Player : MonoBehaviour
         Ship[] ships = new Ship[] { ship, shipInstance2 };
         return ships;
     }
-
 }

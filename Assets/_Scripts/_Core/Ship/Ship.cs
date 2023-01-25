@@ -14,6 +14,7 @@ namespace StarWriter.Core
         FlipAbility,
     }
 
+    [RequireComponent(typeof(ResourceSystem))]
     [RequireComponent(typeof(TrailSpawner))]
     public class Ship : MonoBehaviour
     {
@@ -55,6 +56,7 @@ namespace StarWriter.Core
         InputController inputController;
         Material ShipMaterial;
         Material AOEExplosionMaterial;
+        ResourceSystem resourceSystem;
         List<ShipGeometry> shipGeometries = new List<ShipGeometry>();
 
         class SpeedModifier
@@ -82,6 +84,7 @@ namespace StarWriter.Core
         {
             cameraManager = CameraManager.Instance;
             shipData = GetComponent<ShipData>();
+            resourceSystem = GetComponent<ResourceSystem>();
             inputController = player.GetComponent<InputController>();
             PerformShipPassiveEffects(passiveEffects);
         }
@@ -143,20 +146,20 @@ namespace StarWriter.Core
                         AOEExplosion.Team = team;
                         AOEExplosion.Ship = this;
                         AOEExplosion.transform.SetPositionAndRotation(transform.position, transform.rotation);
-                        AOEExplosion.MaxScale =  Mathf.Max(minExplosionScale, FuelSystem.CurrentFuel * maxExplosionScale);
+                        AOEExplosion.MaxScale =  Mathf.Max(minExplosionScale, resourceSystem.CurrentCharge * maxExplosionScale);
 
                         if (AOEExplosion is AOEBlockCreation aoeBlockcreation)
                             aoeBlockcreation.SetBlockMaterial(TrailSpawner.GetBlockMaterial());
 
                         break;
                     case CrystalImpactEffects.FillFuel:
-                        FuelSystem.ChangeFuelAmount(player.PlayerUUID, crystalProperties.fuelAmount);
+                        resourceSystem.ChangeChargeAmount(player.PlayerUUID, crystalProperties.fuelAmount);
                         break;
                     case CrystalImpactEffects.Boost:
                         SpeedModifiers.Add(new SpeedModifier(crystalProperties.speedBuffAmount, 4 * speedModifierDuration, 0));
                         break;
                     case CrystalImpactEffects.DrainFuel:
-                        FuelSystem.ChangeFuelAmount(player.PlayerUUID, -FuelSystem.CurrentFuel);
+                        resourceSystem.ChangeChargeAmount(player.PlayerUUID, -resourceSystem.CurrentCharge);
                         break;
                     case CrystalImpactEffects.Score:
                         //if (StatsManager.Instance != null)
@@ -182,7 +185,7 @@ namespace StarWriter.Core
                         HapticController.PlayBlockCollisionHaptics();
                         break;
                     case TrailBlockImpactEffects.DrainHalfFuel:
-                        FuelSystem.ChangeFuelAmount(player.PlayerUUID, -FuelSystem.CurrentFuel / 2f);
+                        resourceSystem.ChangeChargeAmount(player.PlayerUUID, -resourceSystem.CurrentCharge / 2f);
                         break;
                     case TrailBlockImpactEffects.DebuffSpeed:
                         SpeedModifiers.Add(new SpeedModifier(trailBlockProperties.speedDebuffAmount, speedModifierDuration, 0));
@@ -195,7 +198,7 @@ namespace StarWriter.Core
                         if (trailBlockProperties.speedDebuffAmount > 1) SpeedModifiers.Add(new SpeedModifier(trailBlockProperties.speedDebuffAmount, speedModifierDuration, 0));
                         break;
                     case TrailBlockImpactEffects.ChangeFuel:
-                        FuelSystem.ChangeFuelAmount(player.PlayerUUID, blockFuelChange);
+                        resourceSystem.ChangeChargeAmount(player.PlayerUUID, blockFuelChange);
                         break;
                 }
             }

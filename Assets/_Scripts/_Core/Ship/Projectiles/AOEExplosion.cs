@@ -16,7 +16,7 @@ namespace StarWriter.Core
         Material material;
         Teams team;
         Ship ship;
-        [HideInInspector] public Material Material { get { return material; } set { material = new Material(value); Debug.LogWarning($"Setting AOEExplosion material: {material}");  } }
+        [HideInInspector] public Material Material { get { return material; } set { material = new Material(value); } }
         [HideInInspector] public Teams Team { get => team; set => team = value; }
         [HideInInspector] public Ship Ship { get => ship; set => ship = value; }
 

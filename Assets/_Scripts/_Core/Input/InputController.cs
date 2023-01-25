@@ -11,6 +11,7 @@ namespace StarWriter.Core.Input
         Transform shipTransform;
         ShipAnimation shipAnimation;
         ShipData shipData;
+        ResourceSystem resourceSystem;
         #endregion
 
         float phoneFlipThreshold = .1f;
@@ -75,6 +76,7 @@ namespace StarWriter.Core.Input
             shipTransform = ship.transform;
             shipAnimation = ship.GetComponent<ShipAnimation>();
             shipData = ship.GetComponent<ShipData>();
+            resourceSystem = ship.GetComponent<ResourceSystem>();
 
             defaultThrottle = initialDThrottle;
             throttleScaler = initialThrottleScaler;
@@ -419,7 +421,7 @@ namespace StarWriter.Core.Input
         void Throttle()
         {
             float boostAmount = 1f;
-            if (shipData.Boosting && FuelSystem.CurrentFuel > 0)
+            if (shipData.Boosting && resourceSystem.CurrentCharge > 0)
             {
                 boostAmount = ship.boostMultiplier;
                 OnBoost?.Invoke(uuid, ship.boostFuelAmount);

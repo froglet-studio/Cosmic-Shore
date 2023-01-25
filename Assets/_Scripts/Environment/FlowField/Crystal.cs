@@ -20,9 +20,6 @@ public class Crystal : MonoBehaviour
 
     Material tempMaterial;
     List<Collider> collisions;
-    [SerializeField] bool surface = false;
-
-    public Teams Team { get => Teams.None; set => Debug.LogError("Someone tried to set the team type for a crystal"); }
 
     void Start()
     {

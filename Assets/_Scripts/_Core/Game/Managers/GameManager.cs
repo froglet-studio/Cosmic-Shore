@@ -19,9 +19,6 @@ namespace StarWriter.Core
         public delegate void OnDeathEvent();
         public static event OnDeathEvent onDeath;
 
-        public delegate void OnExtendGameEvent();
-        public static event OnExtendGameEvent onExtendGamePlay;
-
         public delegate void OnGameOverEvent();
         public static event OnGameOverEvent onGameOver;
 
@@ -45,16 +42,16 @@ namespace StarWriter.Core
 
         private void OnEnable()
         {
-            AdsManager.adShowComplete += OnAdShowComplete;
-            AdsManager.adShowFailure += OnAdShowFailure;
+            AdsManager.AdShowComplete += OnAdShowComplete;
+            AdsManager.AdShowFailure += OnAdShowFailure;
             AdvertisementMenu.onDeclineAd += EndGame;
             ShipExplosionHandler.onShipExplosionAnimationCompletion += OnExplosionCompletion;
         }
 
         private void OnDisable()
         {
-            AdsManager.adShowComplete -= OnAdShowComplete;
-            AdsManager.adShowFailure -= OnAdShowFailure;
+            AdsManager.AdShowComplete -= OnAdShowComplete;
+            AdsManager.AdShowFailure -= OnAdShowFailure;
             AdvertisementMenu.onDeclineAd -= EndGame;
             ShipExplosionHandler.onShipExplosionAnimationCompletion -= OnExplosionCompletion;
         }
@@ -138,15 +135,6 @@ namespace StarWriter.Core
                 EndGame();
         }
 
-        public void ExtendGame()
-        {
-            Debug.Log("GameManager.ExtendGame");
-            onExtendGamePlay?.Invoke();
-
-            // TODO: getting an error with the below line that timescale can only be set from the main thread, but the code works... so...
-            UnPauseGame();
-        }
-
         public static void EndGame()
         {
             Debug.Log("GameManager.EndGame");
@@ -191,10 +179,10 @@ namespace StarWriter.Core
             onPlayGame?.Invoke();
         }
 
-        public void WaitOnAILoading(AIPilot pilot)
+        public void WaitOnAILoading(AIPilot aiPilot)
         {
-            pilot.CrystalTransform = FindObjectOfType<Crystal>().transform;
-            pilot.flowFieldData = FindObjectOfType<FlowFieldData>();
+            aiPilot.CrystalTransform = FindObjectOfType<Crystal>().transform;
+            aiPilot.flowFieldData = FindObjectOfType<FlowFieldData>();
         }
 
         public void OnAdShowComplete(string adUnitId, UnityAdsShowCompletionState showCompletionState)
@@ -206,13 +194,11 @@ namespace StarWriter.Core
             {
                 Debug.Log("Unity Ads Rewarded Ad Completed. Extending game.");
 
-                ExtendGame();
             }
             if (showCompletionState.Equals(UnityAdsShowCompletionState.SKIPPED))
             {
                 Debug.Log("Unity Ads Rewarded Ad SKIPPED do to ad failure. Extending game.");
 
-                ExtendGame();
             }
         }
 

@@ -1,16 +1,14 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
+
 namespace StarWriter.Core.Audio
 {
     public class Song
     {
-        SO_Song song_SO;
-
+        readonly SO_Song song_SO;
+        readonly AudioClip clip;
         readonly string title;
         readonly string description;
         readonly string author;
-        readonly AudioClip clip;
 
         public string Title { get => title; }
         public string Description { get => description; }
@@ -28,4 +26,3 @@ namespace StarWriter.Core.Audio
         }
     }
 }
-

@@ -16,7 +16,6 @@ public class GameMenu : MonoBehaviour
         GameManager.onPlayGame += ResetMenuPanels;
         GameManager.onDeath += DisplayAdsPanel;
         GameManager.onGameOver += DisplayFinalScorePanel;
-        GameManager.onExtendGamePlay += ResetMenuPanels;
     }
 
     void OnDisable()
@@ -24,7 +23,6 @@ public class GameMenu : MonoBehaviour
         GameManager.onPlayGame -= ResetMenuPanels;
         GameManager.onDeath -= DisplayAdsPanel;
         GameManager.onGameOver -= DisplayFinalScorePanel;
-        GameManager.onExtendGamePlay -= ResetMenuPanels;
     }
 
     bool extendGamePlayNeeded = false;

@@ -7,28 +7,26 @@ public class SnowChanger : MonoBehaviour
 {
     [SerializeField] GameObject Crystal;
     [SerializeField] GameObject snow;
+    [SerializeField] int nodesPerSide = 7;
 
     GameObject[,,] crystalLattice;
-
-    [SerializeField] int nodesPerSide = 7;
-    float nodeScaler = 10;
-    int crystalSideLength = 500;
+    readonly float nodeScaler = 10;
+    readonly int crystalSideLength = 500;
+    readonly float nodeSize = .25f;
+    readonly float sphereScaler = 2;
     int nodeDistance;
-    float nodeSize = .25f;
-    float sphereScaler = 2;
     float sphereDiameter;
 
-    private void OnEnable()
+    void OnEnable()
     {
         global::Crystal.OnCrystalMove += ChangeSnowSize;
     }
 
-    private void OnDisable()
+    void OnDisable()
     {
         global::Crystal.OnCrystalMove -= ChangeSnowSize;
     }
 
-    // Start is called before the first frame update
     void Start()
     {
         nodeDistance = crystalSideLength/nodesPerSide;

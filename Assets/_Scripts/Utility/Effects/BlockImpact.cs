@@ -31,7 +31,7 @@ public class BlockImpact : MonoBehaviour
             }
         }
         
-        while (distance.magnitude <= 1000) // TODO make velocity constant
+        while (distance.magnitude <= 1000)
         {
             yield return null;
             distance += velocityScale * Time.deltaTime * velocity;

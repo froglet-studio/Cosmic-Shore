@@ -29,7 +29,6 @@ public class CameraManager : SingletonPersistent<CameraManager>
     {
         GameManager.onPlayGame += SetupGamePlayCameras;
         DeathEvents.OnDeathBegin += SwitchToDeathCamera;
-        GameManager.onExtendGamePlay += SwitchToGamePlayCameras;
         GameManager.onGameOver += SwitchToEndCamera;
     }
 
@@ -37,7 +36,6 @@ public class CameraManager : SingletonPersistent<CameraManager>
     {
         GameManager.onPlayGame -= SetupGamePlayCameras;
         DeathEvents.OnDeathBegin -= SwitchToDeathCamera;
-        GameManager.onExtendGamePlay -= SwitchToGamePlayCameras;
         GameManager.onGameOver -= SwitchToEndCamera;
     }
 
