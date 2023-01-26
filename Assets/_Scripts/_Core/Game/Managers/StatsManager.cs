@@ -57,6 +57,7 @@ public class StatsManager : Singleton<StatsManager>
 {
     [SerializeField] TMP_Text StatDump;
     [SerializeField] List<GameObject> EndOfRoundStatContainers;
+    [SerializeField] TMP_Text WinnerText;
     [SerializeField] public bool nodeGame = false;
 
     public Dictionary<Teams, RoundStats> teamStats = new Dictionary<Teams, RoundStats>();
@@ -310,16 +311,13 @@ public class StatsManager : Singleton<StatsManager>
             i++;
         }
 
-        //var container0 = EndOfRoundStatContainers[0];
-        //var container1 = EndOfRoundStatContainers[1];
-
+        //var winContainer = WinnerContainer[0];
         //Calculate  and display winner
-        //var finalScore = teamStats[Teams.Green].volumeRemaining - teamStats[Teams.Red].volumeRemaining;
-        //var winner = finalScore > 0 ? "Green" : "Red";
-        //container1.transform.GetChild(4).GetComponent<TMP_Text>().text = winner;
+        var finalScore = teamStats[Teams.Green].volumeRemaining - teamStats[Teams.Red].volumeRemaining;
+        var winner = finalScore > 0 ? "Green" : "Red";
+        WinnerText.text = winner;
 
+        //var container0 = EndOfRoundStatContainers[0];
         //container0.transform.GetChild(4).GetComponent<TMP_Text>().text = (teamStats[Teams.Green].volumeRemaining - teamStats[Teams.Red].volumeRemaining).ToString("F0");
-        //container1.transform.GetChild(3).GetComponent<TMP_Text>().text = 
-
     }
 }

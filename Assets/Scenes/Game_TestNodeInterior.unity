@@ -1529,6 +1529,11 @@ PrefabInstance:
       objectReference: {fileID: 1038795494}
     - target: {fileID: 8615459834825002481, guid: 8a9d12e43096881468feb22e39e9fbeb,
         type: 3}
+      propertyPath: WinnerText
+      value: 
+      objectReference: {fileID: 1276395728}
+    - target: {fileID: 8615459834825002481, guid: 8a9d12e43096881468feb22e39e9fbeb,
+        type: 3}
       propertyPath: TeamScoresEnabled
       value: 1
       objectReference: {fileID: 0}
