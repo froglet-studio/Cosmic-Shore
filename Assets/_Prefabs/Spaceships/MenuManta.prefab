@@ -305,6 +305,7 @@ GameObject:
   - component: {fileID: 874579555101021523}
   - component: {fileID: 874579555101021527}
   - component: {fileID: 3440187540988767646}
+  - component: {fileID: 1435252848482629424}
   - component: {fileID: 6293426128044408357}
   m_Layer: 0
   m_Name: MenuManta
@@ -409,14 +410,8 @@ MonoBehaviour:
   skimmer: {fileID: 874579554510349383}
   AOEPrefab: {fileID: 2728798890556433942, guid: 4a855af160021d241b8c1ac70cf2d792,
     type: 3}
-  player: {fileID: 0}
   crystalImpactEffects: 0500000006000000
   trailBlockImpactEffects: 03000000
-  fullSpeedStraightEffects: 
-  rightStickEffects: 
-  leftStickEffects: 
-  flipEffects: 
-  passiveEffects: 
   boostMultiplier: 4
   boostFuelAmount: -0.01
   rotationScaler: 130
@@ -429,6 +424,11 @@ MonoBehaviour:
   head: {fileID: 0}
   ShipRotationOverride: {fileID: 4343935266849732334}
   SecondMode: 5
+  fullSpeedStraightEffects: 
+  rightStickEffects: 
+  leftStickEffects: 
+  flipEffects: 
+  controlOverrides: 
 --- !u!114 &3440187540988767646
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -453,6 +453,19 @@ MonoBehaviour:
   raycastWidth: 2
   CrystalTransform: {fileID: 0}
   flowFieldData: {fileID: 0}
+--- !u!114 &1435252848482629424
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 737294a573670f74389a7af68df314d5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ChargeDisplay: {fileID: 0}
 --- !u!114 &6293426128044408357
 MonoBehaviour:
   m_ObjectHideFlags: 0

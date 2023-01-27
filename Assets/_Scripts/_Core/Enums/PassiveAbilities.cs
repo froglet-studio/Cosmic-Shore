@@ -3,11 +3,9 @@
 public enum ShipControlOverrides
 {
     TurnSpeed = 0,
-    BlockThief = 1,
     BlockScout = 2,
     CloseCam = 3,
     FarCam = 4,
     SecondMode = 5,
     SpeedBasedTurning = 6,
-    DensityBasedBlockSize = 7,
 }

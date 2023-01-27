@@ -526,6 +526,7 @@ GameObject:
   - component: {fileID: 874579555101021523}
   - component: {fileID: 874579555101021527}
   - component: {fileID: 3440187540988767646}
+  - component: {fileID: 1435252848482629424}
   - component: {fileID: 3496801340156507927}
   m_Layer: 0
   m_Name: SharkAI
@@ -585,6 +586,7 @@ MonoBehaviour:
   offset: 0
   initialWavelength: 5
   trailLength: 40
+  defaultWaitTime: 0.5
   waitTime: 0.5
   startDelay: 2
   warp: 0
@@ -629,18 +631,13 @@ MonoBehaviour:
   skimmer: {fileID: 874579554510349383}
   AOEPrefab: {fileID: 2728798890556433942, guid: f5ecfb9923155a84c860975d559b2714,
     type: 3}
-  player: {fileID: 0}
   crystalImpactEffects: 0500000006000000
   trailBlockImpactEffects: 03000000
-  fullSpeedStraightEffects: 
-  rightStickEffects: 
-  leftStickEffects: 
-  flipEffects: 
-  passiveEffects: 
   boostMultiplier: 3
   boostFuelAmount: -0.01
   rotationScaler: 140
   rotationThrottleScaler: 0
+  minExplosionScale: 50
   maxExplosionScale: 25
   blockFuelChange: 0.1
   closeCamDistance: -0.5
@@ -648,6 +645,11 @@ MonoBehaviour:
   head: {fileID: 3710282027580066907}
   ShipRotationOverride: {fileID: 7280205895322334339}
   SecondMode: 5
+  fullSpeedStraightEffects: 
+  rightStickEffects: 
+  leftStickEffects: 
+  flipEffects: 
+  controlOverrides: 
 --- !u!114 &3440187540988767646
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -672,6 +674,19 @@ MonoBehaviour:
   raycastWidth: 2
   CrystalTransform: {fileID: 0}
   flowFieldData: {fileID: 0}
+--- !u!114 &1435252848482629424
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 737294a573670f74389a7af68df314d5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ChargeDisplay: {fileID: 0}
 --- !u!114 &3496801340156507927
 MonoBehaviour:
   m_ObjectHideFlags: 0

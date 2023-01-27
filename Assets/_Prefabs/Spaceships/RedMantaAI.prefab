@@ -397,6 +397,7 @@ GameObject:
   - component: {fileID: 2040246286915941264}
   - component: {fileID: -2090051954208650702}
   - component: {fileID: 8182518000464848904}
+  - component: {fileID: 3663466243956636630}
   - component: {fileID: 3823739190145388258}
   m_Layer: 0
   m_Name: RedMantaAI
@@ -458,10 +459,13 @@ MonoBehaviour:
   offset: 0
   initialWavelength: 30
   trailLength: 40
+  defaultWaitTime: 0.5
   waitTime: 0.3
   startDelay: 2
   warp: 0
-  SaturatedBlockDensity: 10
+  MaxNearbyBlockCount: 10
+  minBlockScale: 1
+  maxBlockScale: 1
 --- !u!114 &-2090051954208650702
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -474,10 +478,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9846c9cd6cfac424797ca640ebcb7a04, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  inputSpeed: 1
-  speedMultiplier: 1
-  speed: 0
-  boost: 0
+  InputSpeed: 1
+  SpeedMultiplier: 1
+  Speed: 0
+  Boosting: 0
+  BoostDecaying: 0
+  Drifting: 0
   velocityDirection: {x: 0, y: 0, z: 0}
   blockRotation: {x: 0, y: 0, z: 0, w: 0}
 --- !u!114 &8182518000464848904
@@ -498,18 +504,13 @@ MonoBehaviour:
   skimmer: {fileID: 0}
   AOEPrefab: {fileID: 2728798890556433942, guid: 4a855af160021d241b8c1ac70cf2d792,
     type: 3}
-  player: {fileID: 0}
   crystalImpactEffects: 0400000003000000
   trailBlockImpactEffects: 03000000
-  fullSpeedStraightEffects: 
-  rightStickEffects: 
-  leftStickEffects: 
-  flipEffects: 
-  passiveEffects: 
   boostMultiplier: 4
   boostFuelAmount: -0.01
   rotationScaler: 130
   rotationThrottleScaler: 0
+  minExplosionScale: 50
   maxExplosionScale: 250
   blockFuelChange: 0
   closeCamDistance: 0
@@ -517,6 +518,24 @@ MonoBehaviour:
   head: {fileID: 0}
   ShipRotationOverride: {fileID: 0}
   SecondMode: 3
+  fullSpeedStraightEffects: 
+  rightStickEffects: 
+  leftStickEffects: 
+  flipEffects: 
+  controlOverrides: 
+--- !u!114 &3663466243956636630
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6050451020763014727}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 737294a573670f74389a7af68df314d5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ChargeDisplay: {fileID: 0}
 --- !u!114 &3823739190145388258
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -529,6 +548,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a58bf4fb65afa704194fe9e28e67d58d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  DifficultyLevel: 0
   defaultThrottle: 30
   defaultLerp: 40
   throttleIncrease: 5

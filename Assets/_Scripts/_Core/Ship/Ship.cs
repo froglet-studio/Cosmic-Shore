@@ -105,9 +105,6 @@ namespace StarWriter.Core
                     case ShipControlOverrides.TurnSpeed:
                         inputController.rotationScaler = rotationScaler;
                         break;
-                    case ShipControlOverrides.BlockThief: //TODO remove
-                        //skimmer.thief = true;
-                        break;
                     case ShipControlOverrides.BlockScout:
                         break;
                     case ShipControlOverrides.CloseCam:
@@ -122,10 +119,6 @@ namespace StarWriter.Core
                         break;
                     case ShipControlOverrides.SpeedBasedTurning:
                         inputController.rotationThrottleScaler = rotationThrottleScaler;
-                        break;
-                    case ShipControlOverrides.DensityBasedBlockSize:
-                        // TODO: WIP Density based block size
-
                         break;
                 }
             }
@@ -173,11 +166,10 @@ namespace StarWriter.Core
                         // TODO: Remove this impact effect, or re-introduce scoring in a separate game mode
                         break;
                     case CrystalImpactEffects.ResetAggression:
-                        AIPilot controllerScript = gameObject.GetComponent<AIPilot>();
-                        if (controllerScript != null)
+                        if (gameObject.TryGetComponent<AIPilot>(out var aiPilot))
                         {
-                            controllerScript.lerp = controllerScript.defaultLerp;
-                            controllerScript.throttle = controllerScript.defaultThrottle;
+                            aiPilot.lerp = aiPilot.defaultLerp;
+                            aiPilot.throttle = aiPilot.defaultThrottle;
                         }
                         break;
                 }
