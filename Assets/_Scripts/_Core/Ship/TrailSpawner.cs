@@ -39,7 +39,7 @@ public class TrailSpawner : MonoBehaviour
 
     public float TrailZScale => trail.transform.localScale.z;
 
-    static GameObject TrailContainer;
+    public static GameObject TrailContainer;
 
     readonly Queue<Trail> trailQueue = new();
     readonly public List<Trail> trailList = new();

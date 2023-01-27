@@ -33,11 +33,11 @@ namespace StarWriter.Core.Input
 
         float speed;
 
-        public float initialDThrottle = 10f; 
-        public float initialThrottleScaler = 50;
+        public float defaultThrottle = 10f;
+        public float defaultThrottleScaler = 50;
 
-        public float defaultThrottle;
-        public float throttleScaler;
+        [HideInInspector] public float throttle;
+        [HideInInspector] public float throttleScaler;
 
         float xSum;
         float ySum;
@@ -78,8 +78,8 @@ namespace StarWriter.Core.Input
             shipData = ship.GetComponent<ShipData>();
             resourceSystem = ship.GetComponent<ResourceSystem>();
 
-            defaultThrottle = initialDThrottle;
-            throttleScaler = initialThrottleScaler;
+            throttle = defaultThrottle;
+            throttleScaler = defaultThrottleScaler;
 
             uuid = GameObject.FindWithTag("Player").GetComponent<Player>().PlayerUUID;
 
@@ -95,7 +95,7 @@ namespace StarWriter.Core.Input
 
         IEnumerator GyroInitializationCoroutine()
         {
-            derivedCorrection = GyroToUnity(Quaternion.Inverse(new Quaternion(0, .65f, .75f, 0)));
+            derivedCorrection = GyroQuaternionToUnityQuaternion(Quaternion.Inverse(new Quaternion(0, .65f, .75f, 0)));
             inverseInitialRotation = Quaternion.identity;
 
             // Turns out the gryo attitude is not avaiable immediately, so wait until we start getting values to initialize
@@ -113,7 +113,7 @@ namespace StarWriter.Core.Input
                 yield return new WaitForSeconds(gyro.updateInterval);
             }
 
-            inverseInitialRotation = Quaternion.Inverse(GyroToUnity(gyro.attitude) * derivedCorrection);
+            inverseInitialRotation = Quaternion.Inverse(GyroQuaternionToUnityQuaternion(gyro.attitude) * derivedCorrection);
         }
 
         void Update()
@@ -145,7 +145,7 @@ namespace StarWriter.Core.Input
                 // Updates GameObjects blockRotation from input device's gyroscope
                 shipTransform.rotation = Quaternion.Lerp(
                                             shipTransform.rotation,
-                                            displacementQuaternion * inverseInitialRotation * GyroToUnity(gyro.attitude) * derivedCorrection,
+                                            displacementQuaternion * inverseInitialRotation * GyroQuaternionToUnityQuaternion(gyro.attitude) * derivedCorrection,
                                             lerpAmount);
                 
             }
@@ -331,7 +331,7 @@ namespace StarWriter.Core.Input
                 }
                 else
                 {
-                    speed = Mathf.Lerp(speed, defaultThrottle, smallLerpAmount * Time.deltaTime);
+                    speed = Mathf.Lerp(speed, throttle, smallLerpAmount * Time.deltaTime);
                     shipAnimation.Idle();
                 }
             }
@@ -371,12 +371,11 @@ namespace StarWriter.Core.Input
             shipData.BoostDecaying = false;
         }
 
-        void Yaw()  // These need to not use *= ... remember quaternions are not commutative
+        void Pitch()
         {
             displacementQuaternion = Quaternion.AngleAxis(
-                                xSum * (speed * rotationThrottleScaler + rotationScaler) *
-                                    (Screen.currentResolution.width/Screen.currentResolution.height) * Time.deltaTime, 
-                                shipTransform.up) * displacementQuaternion;
+                                ySum * -(speed * rotationThrottleScaler + rotationScaler) * Time.deltaTime,
+                                shipTransform.right) * displacementQuaternion;
         }
 
         void Roll()
@@ -386,11 +385,25 @@ namespace StarWriter.Core.Input
                                 shipTransform.forward) * displacementQuaternion;
         }
 
-        void Pitch()
+
+        void Yaw()  // These need to not use *= ... remember quaternions are not commutative
         {
             displacementQuaternion = Quaternion.AngleAxis(
-                                ySum * -(speed * rotationThrottleScaler + rotationScaler) * Time.deltaTime,
-                                shipTransform.right) * displacementQuaternion;
+                                xSum * (speed * rotationThrottleScaler + rotationScaler) *
+                                    (Screen.currentResolution.width/Screen.currentResolution.height) * Time.deltaTime, 
+                                shipTransform.up) * displacementQuaternion;
+        }
+
+        void Throttle()
+        {
+            float boostAmount = 1f;
+            if (shipData.Boosting && resourceSystem.CurrentCharge > 0)
+            {
+                boostAmount = ship.boostMultiplier;
+                OnBoost?.Invoke(uuid, ship.boostFuelAmount);
+            }
+            if (shipData.BoostDecaying) boostAmount *= boostDecay;
+            speed = Mathf.Lerp(speed, xDiff * throttleScaler * boostAmount + throttle, lerpAmount * Time.deltaTime);
         }
 
         void CheckThrottle()
@@ -418,20 +431,10 @@ namespace StarWriter.Core.Input
             Throttle();
         }
 
-        void Throttle()
-        {
-            float boostAmount = 1f;
-            if (shipData.Boosting && resourceSystem.CurrentCharge > 0)
-            {
-                boostAmount = ship.boostMultiplier;
-                OnBoost?.Invoke(uuid, ship.boostFuelAmount);
-            }
-            if (shipData.BoostDecaying) boostAmount *= boostDecay;
-            speed = Mathf.Lerp(speed, xDiff * throttleScaler * boostAmount + defaultThrottle, lerpAmount * Time.deltaTime);
-        }
 
-        // Converts Android Quaterions into Unity Quaterions
-        Quaternion GyroToUnity(Quaternion q)
+        // TODO: move to centralized helper class
+        // Converts Android Quaternions into Unity Quaternions
+        Quaternion GyroQuaternionToUnityQuaternion(Quaternion q)
         {
             return new Quaternion(q.x, -q.z, q.y, q.w);
         }
@@ -445,7 +448,7 @@ namespace StarWriter.Core.Input
             Debug.Log($"InputController.OnToggleGyro - status: {status}");
             if (SystemInfo.supportsGyroscope && status) 
             { 
-                inverseInitialRotation = Quaternion.Inverse(GyroToUnity(gyro.attitude) * derivedCorrection);
+                inverseInitialRotation = Quaternion.Inverse(GyroQuaternionToUnityQuaternion(gyro.attitude) * derivedCorrection);
             }
             
             isGyroEnabled = status;

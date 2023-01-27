@@ -21,35 +21,32 @@ public class AOEBlockCreation : AOEExplosion
 
         for (int i = 0; i < blockCount; i++)
         {
+            // Ring One
             var position = transform.position +
                               radius * Mathf.Cos((i / blockCount) * 2 * Mathf.PI) * transform.right +
                               radius * Mathf.Sin((i / blockCount) * 2 * Mathf.PI) * transform.up;
-            var Block = Instantiate(trail);
-            Block.Team = Team;
-            Block.ownerId = Ship.Player.PlayerUUID;
-            Block.PlayerName = Ship.Player.PlayerName;
-            Block.transform.SetPositionAndRotation(position, Quaternion.LookRotation(position - transform.position, transform.forward));
-            Block.GetComponent<MeshRenderer>().material = blockMaterial;
-            Block.ID = Block.ownerId + "::AOE::" + Time.time + "::" + i;
-            Block.Dimensions = blockScale;
-            // TODO: need to put AOE Block creations into the trail container
-            //Block.transform.parent = TrailContainer.transform;
-
+            CreateBlock(position, "::AOE::" + Time.time + "::" + i);
+            
+            // Ring two
             position = transform.position +
                               1.5f * radius * Mathf.Cos(((i + .5f) / blockCount) * 2 * Mathf.PI) * transform.right +
                               1.5f * radius * Mathf.Sin(((i + .5f) / blockCount) * 2 * Mathf.PI) * transform.up;
-            Block = Instantiate(trail); //TODO: make into a function that gets called for each ring
-            Block.Team = Team;
-            Block.ownerId = Ship.Player.PlayerUUID;
-            Block.PlayerName = Ship.Player.PlayerName;
-            Block.transform.SetPositionAndRotation(position, Quaternion.LookRotation(position - transform.position, transform.forward));
-            Block.GetComponent<MeshRenderer>().material = blockMaterial;
-            Block.ID = Block.ownerId + "::AOE::" + Time.time + "::" + i + "-2";
-            Block.Dimensions = blockScale;
-            // TODO: need to put AOE Block creations into the trail container
-            //Block.transform.parent = TrailContainer.transform;
+            CreateBlock(position, "::AOE::" + Time.time + "::" + i + "-2");
         }
 
         yield return new WaitForEndOfFrame();
+    }
+
+    void CreateBlock(Vector3 position, string ownerId)
+    {
+        var Block = Instantiate(trail);
+        Block.Team = Team;
+        Block.ownerId = Ship.Player.PlayerUUID;
+        Block.PlayerName = Ship.Player.PlayerName;
+        Block.transform.SetPositionAndRotation(position, Quaternion.LookRotation(position - transform.position, transform.forward));
+        Block.GetComponent<MeshRenderer>().material = blockMaterial;
+        Block.ID = Block.ownerId + ownerId;  
+        Block.Dimensions = blockScale;
+        Block.transform.parent = TrailSpawner.TrailContainer.transform;
     }
 }

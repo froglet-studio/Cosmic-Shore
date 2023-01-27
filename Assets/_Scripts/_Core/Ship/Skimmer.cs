@@ -43,7 +43,7 @@ namespace StarWriter.Core
                         break;
                     case TrailBlockImpactEffects.DeactivateTrailBlock:
                         TrailSpawner spawner = ship.GetComponent<TrailSpawner>();
-                        spawner.waitTime = transform.localScale.z/Player.GetComponent<InputController>().initialDThrottle + spawner.TrailZScale;
+                        spawner.waitTime = transform.localScale.z/Player.GetComponent<InputController>().defaultThrottle + spawner.TrailZScale;
                         break;
                     case TrailBlockImpactEffects.Steal:
                         break;

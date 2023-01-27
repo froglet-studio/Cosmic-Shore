@@ -1,9 +1,8 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using TailGlider.Utility.Singleton;
+using TailGlider.Utility.Singleton; // TODO: re-namespace to StarWriter
 using UnityEngine.Advertisements;
 using StarWriter.Core.Audio;
-using UnityEngine.InputSystem;
 using StarWriter.Core.Input;
 
 namespace StarWriter.Core
@@ -26,21 +25,22 @@ namespace StarWriter.Core
         CameraManager cameraManager;
         AnalyticsManager analyticsManager;
 
-        private int deathCount = 0;
+        int deathCount = 0;
         public int DeathCount { get { return deathCount; } }
 
-        string mainMenuScene = "Menu_Main";
+        [Header("Scene Names")]
+        [SerializeField] string mainMenuScene = "Menu_Main";
         [SerializeField] string gameTestModeZeroGameScene = "Game_HighScore";
         [SerializeField] string gameTestModeOneGameScene = "Game_TestModeOne";
         [SerializeField] string gameTestModeTwoGameScene = "Game_TestModeTwo";
         [SerializeField] string gameTestModeThreeGameScene = "Game_TestModeThree";
         [SerializeField] string gameTestModeFourGameScene = "Game_TestModeFour";
         [SerializeField] string gameTestDesign = "Game_TestDesign";
-        string hangarScene = "Hangar";
-        string tutorialGameScene = "Game_Tutorial";
+        [SerializeField] string hangarScene = "Hangar";
+        [SerializeField] string tutorialGameScene = "Game_Tutorial";
         string ActiveGameScene = "";
 
-        private void OnEnable()
+        void OnEnable()
         {
             AdsManager.AdShowComplete += OnAdShowComplete;
             AdsManager.AdShowFailure += OnAdShowFailure;
@@ -48,7 +48,7 @@ namespace StarWriter.Core
             ShipExplosionHandler.onShipExplosionAnimationCompletion += OnExplosionCompletion;
         }
 
-        private void OnDisable()
+        void OnDisable()
         {
             AdsManager.AdShowComplete -= OnAdShowComplete;
             AdsManager.AdShowFailure -= OnAdShowFailure;
@@ -56,6 +56,7 @@ namespace StarWriter.Core
             ShipExplosionHandler.onShipExplosionAnimationCompletion -= OnExplosionCompletion;
         }
 
+        // TODO: should this live somewhere else?
         // In order to support the splash screen always showing in the correct orientation, we use this method as a work around.
         // In the build settings, we set orientation to AutoRotate, then lock to LandscapeLeft as the app is launching here.
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSplashScreen)]
@@ -79,14 +80,6 @@ namespace StarWriter.Core
             SceneManager.LoadScene(tutorialGameScene);
         }
 
-        private void EnterGame(string scenename)
-        {
-            deathCount = 0;
-            analyticsManager.LogLevelStart();
-            UnPauseGame();
-            ActiveGameScene = scenename;
-            SceneManager.LoadScene(scenename);
-        }
         public void OnClickPlayButton() //TODO make this general so you pass in the load scene
         {
             EnterGame(gameTestModeZeroGameScene);
@@ -122,7 +115,16 @@ namespace StarWriter.Core
             SceneManager.LoadScene(hangarScene);
         }
 
-        private void OnExplosionCompletion()
+        void EnterGame(string scenename)
+        {
+            deathCount = 0;
+            analyticsManager.LogLevelStart();
+            UnPauseGame();
+            ActiveGameScene = scenename;
+            SceneManager.LoadScene(scenename);
+        }
+
+        void OnExplosionCompletion()
         {
             Debug.Log("GameManager.Death");
 
