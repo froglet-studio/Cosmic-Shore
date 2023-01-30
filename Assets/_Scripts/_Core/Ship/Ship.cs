@@ -89,6 +89,9 @@ namespace StarWriter.Core
             resourceSystem = GetComponent<ResourceSystem>();
             inputController = player.GetComponent<InputController>();
             ApplyShipControlOverrides(controlOverrides);
+
+            foreach (var shipGeometry in shipGeometries)
+                shipGeometry.AddComponent<ShipGeometry>().Ship = this;
         }
 
         void Update()
