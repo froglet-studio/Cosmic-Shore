@@ -13,7 +13,6 @@ GameObject:
   - component: {fileID: 3781874253630279930}
   - component: {fileID: 4127170776019713870}
   - component: {fileID: 1654588609137546061}
-  - component: {fileID: 4066479382979716242}
   m_Layer: 8
   m_Name: RightWing
   m_TagString: Untagged
@@ -115,19 +114,6 @@ BoxCollider:
   serializedVersion: 2
   m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
---- !u!114 &4066479382979716242
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 434498384779577929}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7fb6382bf0db779459bec0fc29158ac4, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  Ship: {fileID: 874579555101021527}
 --- !u!1 &1022800225184736306
 GameObject:
   m_ObjectHideFlags: 0
@@ -141,7 +127,6 @@ GameObject:
   - component: {fileID: 4975863360127898479}
   - component: {fileID: 4214488346518086535}
   - component: {fileID: 8772939327680970367}
-  - component: {fileID: 4242125728914603804}
   m_Layer: 8
   m_Name: LeftWing
   m_TagString: Untagged
@@ -243,19 +228,6 @@ BoxCollider:
   serializedVersion: 2
   m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
---- !u!114 &4242125728914603804
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1022800225184736306}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7fb6382bf0db779459bec0fc29158ac4, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  Ship: {fileID: 874579555101021527}
 --- !u!1 &3710282027580066907
 GameObject:
   m_ObjectHideFlags: 0
@@ -269,7 +241,6 @@ GameObject:
   - component: {fileID: 4394100151112073150}
   - component: {fileID: 4678070812524577607}
   - component: {fileID: 9011029411027150724}
-  - component: {fileID: 5815213532545962120}
   m_Layer: 8
   m_Name: Head
   m_TagString: Untagged
@@ -371,19 +342,6 @@ BoxCollider:
   serializedVersion: 2
   m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
---- !u!114 &5815213532545962120
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3710282027580066907}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7fb6382bf0db779459bec0fc29158ac4, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  Ship: {fileID: 874579555101021527}
 --- !u!1 &5736286126695899062
 GameObject:
   m_ObjectHideFlags: 0
@@ -397,7 +355,6 @@ GameObject:
   - component: {fileID: 4731028049906724493}
   - component: {fileID: 3785256342561323654}
   - component: {fileID: 2447232292877246622}
-  - component: {fileID: 7358880852497624037}
   m_Layer: 8
   m_Name: Tail
   m_TagString: Untagged
@@ -499,19 +456,6 @@ BoxCollider:
   serializedVersion: 2
   m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
---- !u!114 &7358880852497624037
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5736286126695899062}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7fb6382bf0db779459bec0fc29158ac4, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  Ship: {fileID: 874579555101021527}
 --- !u!1 &6417075533431866457
 GameObject:
   m_ObjectHideFlags: 0
@@ -629,6 +573,12 @@ MonoBehaviour:
   ShipType: 8
   TrailSpawner: {fileID: 874579555101021522}
   skimmer: {fileID: 874579554510349383}
+  shipGeometries:
+  - {fileID: 3710282027580066907}
+  - {fileID: 8807318159750696826}
+  - {fileID: 1022800225184736306}
+  - {fileID: 434498384779577929}
+  - {fileID: 5736286126695899062}
   AOEPrefab: {fileID: 2728798890556433942, guid: f5ecfb9923155a84c860975d559b2714,
     type: 3}
   crystalImpactEffects: 0500000006000000
@@ -790,7 +740,6 @@ GameObject:
   - component: {fileID: 1829759850135421928}
   - component: {fileID: 2985457945452092855}
   - component: {fileID: 8971417797068476619}
-  - component: {fileID: 2539730336501009750}
   m_Layer: 8
   m_Name: Fusilage
   m_TagString: Untagged
@@ -892,19 +841,6 @@ BoxCollider:
   serializedVersion: 2
   m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
---- !u!114 &2539730336501009750
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8807318159750696826}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7fb6382bf0db779459bec0fc29158ac4, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  Ship: {fileID: 874579555101021527}
 --- !u!1001 &7471713358279828738
 PrefabInstance:
   m_ObjectHideFlags: 0

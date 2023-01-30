@@ -38,6 +38,7 @@ namespace StarWriter.Core
         [SerializeField] public ShipTypes ShipType;
         [SerializeField] public TrailSpawner TrailSpawner;  // TODO: this should not be serialized -> pull from required component instead
         [SerializeField] public Skimmer skimmer;
+        [SerializeField] List<GameObject> shipGeometries;
         [SerializeField] GameObject AOEPrefab;
         
         [SerializeField] List<CrystalImpactEffects> crystalImpactEffects;
@@ -73,7 +74,6 @@ namespace StarWriter.Core
         Material ShipMaterial;
         Material AOEExplosionMaterial;
         ResourceSystem resourceSystem;
-        readonly List<ShipGeometry> shipGeometries = new List<ShipGeometry>();
         readonly List<ShipSpeedModifier> SpeedModifiers = new List<ShipSpeedModifier>();
         float speedModifierDuration = 2f;
         float speedModifierMax = 6f;
@@ -323,12 +323,6 @@ namespace StarWriter.Core
         {
             foreach (var collider in GetComponentsInChildren<Collider>(true))
                 collider.enabled = enabled;
-        }
-
-        public void RegisterShipGeometry(ShipGeometry shipGeometry)
-        {
-            shipGeometries.Add(shipGeometry);
-            ApplyShipMaterial();
         }
 
         public void SetShipMaterial(Material material)
