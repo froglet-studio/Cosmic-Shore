@@ -4,17 +4,16 @@ using UnityEngine;
 
 public class AOEConicExplosion : AOEExplosion
 {
-
     [SerializeField] float heightMultiplier = 10;
 
    Vector3 startingPosition;
 
-
-    void Start()
+    protected override void Start()
     {
+        base.Start();
+
+        startingPosition = container.transform.position;
         MaxScaleVector = new Vector3(MaxScale, MaxScale, MaxScale * heightMultiplier);
-        startingPosition = transform.position;
-        StartCoroutine(ExplodeCoroutine());
     }
 
     protected override IEnumerator ExplodeCoroutine()
@@ -28,9 +27,9 @@ public class AOEConicExplosion : AOEExplosion
         while (elapsedTime < ExplosionDuration)
         {
             elapsedTime += Time.deltaTime;
-            transform.localScale = Vector3.Lerp(Vector3.zero, MaxScaleVector, Mathf.Sin((elapsedTime / ExplosionDuration) * PI_OVER_TWO));
-            transform.position = startingPosition;
-            Material.SetFloat("_Opacity", Mathf.Clamp((MaxScaleVector - transform.localScale).magnitude / MaxScaleVector.magnitude, 0, 1));
+            container.transform.localScale = Vector3.Lerp(Vector3.zero, MaxScaleVector, Mathf.Sin((elapsedTime / ExplosionDuration) * PI_OVER_TWO));
+            container.transform.position = startingPosition;
+            Material.SetFloat("_Opacity", Mathf.Clamp((MaxScaleVector - container.transform.localScale).magnitude / MaxScaleVector.magnitude, 0, 1));
             yield return null;
         }
 

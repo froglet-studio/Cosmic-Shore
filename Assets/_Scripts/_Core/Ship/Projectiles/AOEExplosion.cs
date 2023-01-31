@@ -13,8 +13,10 @@ namespace StarWriter.Core
         [SerializeField] public float MaxScale = 200f;
         [SerializeField] protected float ExplosionDuration = 2f;
         [SerializeField] protected float ExplosionDelay = .2f;
-        [SerializeField] protected GameObject container;
-        
+        Quaternion containerRotation;
+        Vector3 containerPosition;
+        protected GameObject container;
+
         Material material;
         Teams team;
         Ship ship;
@@ -22,8 +24,13 @@ namespace StarWriter.Core
         [HideInInspector] public Teams Team { get => team; set => team = value; }
         [HideInInspector] public Ship Ship { get => ship; set => ship = value; }
 
-        void Start()
+        protected virtual void Start()
         {
+            container = new GameObject();
+            container.name = "AOEContainer";
+            container.transform.SetPositionAndRotation(containerPosition, containerRotation);
+            container.transform.parent = transform.parent;
+            transform.SetParent(container.transform, false); // SetParent with false to take container's world position
             MaxScaleVector = new Vector3(MaxScale, MaxScale, MaxScale);
             StartCoroutine(ExplodeCoroutine());
         }
@@ -39,18 +46,18 @@ namespace StarWriter.Core
             while (elapsedTime < ExplosionDuration)
             {
                 elapsedTime += Time.deltaTime;
-                transform.localScale = Vector3.Lerp(Vector3.zero, MaxScaleVector, Mathf.Sin((elapsedTime / ExplosionDuration) * PI_OVER_TWO));
-                material.SetFloat("_Opacity", Mathf.Clamp((MaxScaleVector - transform.localScale).magnitude / MaxScaleVector.magnitude, 0, 1));
+                container.transform.localScale = Vector3.Lerp(Vector3.zero, MaxScaleVector, Mathf.Sin((elapsedTime / ExplosionDuration) * PI_OVER_TWO));
+                material.SetFloat("_Opacity", Mathf.Clamp((MaxScaleVector - container.transform.localScale).magnitude / MaxScaleVector.magnitude, 0, 1));
                 yield return null;
             }
 
-            Destroy(gameObject);
+            Destroy(container.gameObject);
         }
 
-        public void SetPositionAndRotation(Vector3 postion, Quaternion rotation)
+        public void SetPositionAndRotation(Vector3 position, Quaternion rotation)
         {
-            container.transform.SetPositionAndRotation(postion, rotation);
+            containerRotation = rotation;
+            containerPosition = position;
         }
-
     }
 }
