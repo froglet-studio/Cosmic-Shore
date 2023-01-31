@@ -156,13 +156,13 @@ public class CameraManager : SingletonPersistent<CameraManager>
         SetCameraDistance(closeCamera, distance);
     }
 
-    public void DriftCam()
+    public void ZoomOut()
     {
         zoomingOut = true;
-        StartCoroutine(DriftCamCoroutine());
+        StartCoroutine(ZoomOutCoroutine());
     }
 
-    IEnumerator DriftCamCoroutine()
+    IEnumerator ZoomOutCoroutine()
     {
         var vCam = closeCamera.VirtualCameraGameObject.GetComponent<CinemachineVirtualCamera>();
         var transposer = vCam.GetCinemachineComponent<CinemachineTransposer>();

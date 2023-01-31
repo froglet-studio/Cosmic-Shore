@@ -264,7 +264,7 @@ namespace StarWriter.Core
                     case ActiveAbilities.Drift:
                         // TODO: this should call inputController.StartDrift
                         shipData.Drifting = true;
-                        cameraManager.DriftCam();
+                        cameraManager.ZoomOut();
                         break;
                     case ActiveAbilities.Boost:
                         shipData.Boosting = true;
