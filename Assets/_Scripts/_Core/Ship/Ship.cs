@@ -111,6 +111,7 @@ namespace StarWriter.Core
                     case ShipControlOverrides.BlockScout:
                         break;
                     case ShipControlOverrides.CloseCam:
+                        cameraManager.closeCamDistance = closeCamDistance;
                         cameraManager.SetCloseCameraDistance(closeCamDistance);
                         break;
                     case ShipControlOverrides.FarCam:
@@ -263,6 +264,7 @@ namespace StarWriter.Core
                     case ActiveAbilities.Drift:
                         // TODO: this should call inputController.StartDrift
                         shipData.Drifting = true;
+                        cameraManager.DriftCam();
                         break;
                     case ActiveAbilities.Boost:
                         shipData.Boosting = true;
@@ -298,6 +300,7 @@ namespace StarWriter.Core
                 {
                     case ActiveAbilities.Drift:
                         inputController.EndDrift();
+                        cameraManager.zoomingOut = false;
                         break;
                     case ActiveAbilities.Boost:
                         shipData.Boosting = false;

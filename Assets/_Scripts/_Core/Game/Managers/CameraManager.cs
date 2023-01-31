@@ -2,6 +2,7 @@ using UnityEngine;
 using Cinemachine;
 using StarWriter.Core;
 using TailGlider.Utility.Singleton;
+using System.Collections;
 
 public class CameraManager : SingletonPersistent<CameraManager>
 {
@@ -24,6 +25,8 @@ public class CameraManager : SingletonPersistent<CameraManager>
     // Drift stuff
     public float driftDistance = 1f;
     public Vector3 tempOffset = Vector3.zero;
+    public bool zoomingOut;
+    public float closeCamDistance;
 
     private void OnEnable()
     {
@@ -153,13 +156,30 @@ public class CameraManager : SingletonPersistent<CameraManager>
         SetCameraDistance(closeCamera, distance);
     }
 
-    public void DriftCam(Vector3 initialDirection, Vector3 currentRotation)
+    public void DriftCam()
     {
-        
-        var vCam = farCamera.VirtualCameraGameObject.GetComponent<CinemachineVirtualCamera>();
+        zoomingOut = true;
+        StartCoroutine(DriftCamCoroutine());
+    }
+
+    IEnumerator DriftCamCoroutine()
+    {
+        var vCam = closeCamera.VirtualCameraGameObject.GetComponent<CinemachineVirtualCamera>();
         var transposer = vCam.GetCinemachineComponent<CinemachineTransposer>();
-        if (tempOffset == Vector3.zero) tempOffset = transposer.m_FollowOffset;
-        transposer.m_FollowOffset = Quaternion.FromToRotation(currentRotation, initialDirection) * tempOffset * driftDistance;
-        driftDistance += 0f;
+        var followOffset = new Vector3(0, 0, closeCamDistance);
+        while (zoomingOut)
+        {
+            transposer.m_FollowOffset = driftDistance*followOffset;
+            driftDistance += .015f;
+            yield return new WaitForSeconds(.03f);
+        }
+        while (driftDistance > 1)
+        {
+            transposer.m_FollowOffset = driftDistance * followOffset;
+            driftDistance -= .06f;
+            yield return new WaitForSeconds(.03f);
+        }
+        SetCloseCameraDistance(closeCamDistance);
+        driftDistance = 1f;
     }
 }
