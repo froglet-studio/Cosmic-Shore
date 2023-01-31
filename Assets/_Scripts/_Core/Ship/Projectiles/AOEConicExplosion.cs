@@ -24,7 +24,7 @@ public class AOEConicExplosion : AOEExplosion
         yield return new WaitForSeconds(ExplosionDelay);
 
         if (cone.TryGetComponent<MeshRenderer>(out var meshRenderer))
-            meshRenderer.material = material;
+            meshRenderer.material = Material;
 
         var elapsedTime = 0f;
         while (elapsedTime < ExplosionDuration)
@@ -32,7 +32,7 @@ public class AOEConicExplosion : AOEExplosion
             elapsedTime += Time.deltaTime;
             transform.localScale = Vector3.Lerp(Vector3.zero, MaxScaleVector, Mathf.Sin((elapsedTime / ExplosionDuration) * PI_OVER_TWO));
             transform.position = startingPosition;
-            material.SetFloat("_Opacity", Mathf.Clamp((MaxScaleVector - transform.localScale).magnitude / MaxScaleVector.magnitude, 0, 1));
+            Material.SetFloat("_Opacity", Mathf.Clamp((MaxScaleVector - transform.localScale).magnitude / MaxScaleVector.magnitude, 0, 1));
             yield return null;
         }
 
