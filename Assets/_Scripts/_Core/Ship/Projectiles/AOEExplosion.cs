@@ -1,4 +1,5 @@
 using System.Collections;
+using System.ComponentModel;
 using UnityEngine;
 
 namespace StarWriter.Core
@@ -12,6 +13,7 @@ namespace StarWriter.Core
         [SerializeField] public float MaxScale = 200f;
         [SerializeField] protected float ExplosionDuration = 2f;
         [SerializeField] protected float ExplosionDelay = .2f;
+        [SerializeField] protected GameObject container;
         
         Material material;
         Teams team;
@@ -44,5 +46,11 @@ namespace StarWriter.Core
 
             Destroy(gameObject);
         }
+
+        public void SetPositionAndRotation(Vector3 postion, Quaternion rotation)
+        {
+            container.transform.SetPositionAndRotation(postion, rotation);
+        }
+
     }
 }

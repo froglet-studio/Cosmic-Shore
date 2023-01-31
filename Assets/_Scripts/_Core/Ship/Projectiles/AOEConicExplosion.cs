@@ -6,8 +6,6 @@ public class AOEConicExplosion : AOEExplosion
 {
 
     [SerializeField] float heightMultiplier = 10;
-    [SerializeField] GameObject cone;
-
 
    Vector3 startingPosition;
 
@@ -23,7 +21,7 @@ public class AOEConicExplosion : AOEExplosion
     {
         yield return new WaitForSeconds(ExplosionDelay);
 
-        if (cone.TryGetComponent<MeshRenderer>(out var meshRenderer))
+        if (TryGetComponent<MeshRenderer>(out var meshRenderer))
             meshRenderer.material = Material;
 
         var elapsedTime = 0f;
