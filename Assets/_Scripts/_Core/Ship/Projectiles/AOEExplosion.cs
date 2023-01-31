@@ -6,20 +6,20 @@ namespace StarWriter.Core
     public class AOEExplosion : MonoBehaviour
     {
         public float speed = 5f; // TODO: use the easing of the explosion to change this over time
-        const float PI_OVER_TWO = Mathf.PI / 2;
-        Vector3 MaxScaleVector;
+        protected const float PI_OVER_TWO = Mathf.PI / 2;
+        protected Vector3 MaxScaleVector;
 
         [SerializeField] public float MaxScale = 200f;
-        [SerializeField] float ExplosionDuration = 2f;
+        [SerializeField] protected float ExplosionDuration = 2f;
         [SerializeField] protected float ExplosionDelay = .2f;
-        
-        Material material;
+
+        protected Material material;
         [HideInInspector] public Material Material { get { return material; } set { material = new Material(value); Debug.LogWarning($"Setting AOEExplosion material: {material}");  } }
 
-        Teams team;
+        protected Teams team;
         [HideInInspector] public Teams Team { get => team; set => team = value; }
 
-        Ship ship;
+        protected Ship ship;
         [HideInInspector] public Ship Ship { get => ship; set => ship = value; }
 
         void Start()
