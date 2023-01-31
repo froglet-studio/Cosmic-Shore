@@ -52,6 +52,7 @@ MonoBehaviour:
   MaxScale: 0
   ExplosionDuration: 12
   ExplosionDelay: 0.2
+  container: {fileID: 2728798890556433942}
 --- !u!33 &8683897607158942398
 MeshFilter:
   m_ObjectHideFlags: 0

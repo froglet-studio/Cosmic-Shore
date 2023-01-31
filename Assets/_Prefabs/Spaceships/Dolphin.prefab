@@ -800,7 +800,7 @@ MonoBehaviour:
   - {fileID: 3743426984857614330}
   - {fileID: 1463393096304612524}
   - {fileID: 8211653562881954920}
-  AOEPrefab: {fileID: 2728798890556433942, guid: 4a855af160021d241b8c1ac70cf2d792,
+  AOEPrefab: {fileID: 1648745813719768611, guid: a0e3cd3f1e4981d48be69cf6f8e94d2e,
     type: 3}
   crystalImpactEffects: 000000000500000002000000
   trailBlockImpactEffects: 00000000030000000200000001000000
@@ -808,8 +808,8 @@ MonoBehaviour:
   boostFuelAmount: -0.01
   rotationScaler: 190
   rotationThrottleScaler: 0.5
-  minExplosionScale: 200
-  maxExplosionScale: 500
+  minExplosionScale: 800
+  maxExplosionScale: 800
   blockFuelChange: 0
   closeCamDistance: -5
   farCamDistance: 0

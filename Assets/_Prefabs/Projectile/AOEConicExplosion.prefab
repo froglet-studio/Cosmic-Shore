@@ -9,6 +9,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 5752656132832295805}
+  - component: {fileID: 8500778324052630132}
   - component: {fileID: 7666174123980291980}
   - component: {fileID: 5027942104245630562}
   - component: {fileID: 1557010462434185060}
@@ -36,6 +37,24 @@ Transform:
   m_Father: {fileID: 8108155278946711032}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: -90, y: 0, z: 0}
+--- !u!114 &8500778324052630132
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1345184663021557544}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d4954cc91a9f2d64f9738ee263dae759, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  speed: 5
+  MaxScale: 200
+  ExplosionDuration: 2
+  ExplosionDelay: 0.2
+  container: {fileID: 1648745813719768611}
+  heightMultiplier: 10
 --- !u!33 &7666174123980291980
 MeshFilter:
   m_ObjectHideFlags: 0
@@ -137,9 +156,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 8108155278946711032}
-  - component: {fileID: 354514784513700237}
   m_Layer: 10
-  m_Name: AEOConicExplosion
+  m_Name: AOEConicExplosion
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -161,21 +179,3 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &354514784513700237
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1648745813719768611}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d4954cc91a9f2d64f9738ee263dae759, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  speed: 5
-  MaxScale: 0
-  ExplosionDuration: 4
-  ExplosionDelay: 0.2
-  heightMultiplier: 5
-  cone: {fileID: 1345184663021557544}
