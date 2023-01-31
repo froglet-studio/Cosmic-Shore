@@ -12,16 +12,6 @@ public class StarChanger : MonoBehaviour
     Color starColor;
     Color fuelColor;
 
-    private void OnEnable()
-    {
-        FuelSystem.OnFuelChange += UpdateFuelLevel;
-    }
-
-    private void OnDisable()
-    {
-        FuelSystem.OnFuelChange -= UpdateFuelLevel;
-    }
-
     void Start()
     {
         starMaterial = gameObject.GetComponent<Renderer>().material;

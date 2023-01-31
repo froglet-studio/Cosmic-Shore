@@ -20,9 +20,6 @@ public class Crystal : MonoBehaviour
 
     Material tempMaterial;
     List<Collider> collisions;
-    [SerializeField] bool surface = false;
-
-    public Teams Team { get => Teams.None; set => Debug.LogError("Someone tried to set the team type for a crystal"); }
 
     void Start()
     {
@@ -48,10 +45,6 @@ public class Crystal : MonoBehaviour
         if (!IsShip(other.gameObject))
             return;
 
-        // TODO: let's refactor this so we're not locked into this playerGO structure
-        //GameObject playerGO = other.transform.parent.parent.gameObject;
-        GameObject playerGO = other.transform.parent.parent.gameObject;
-
         //
         // Do the ship specific crystal stuff
         //
@@ -65,7 +58,7 @@ public class Crystal : MonoBehaviour
 
         // Make an exploding Crystal
         tempMaterial = new Material(material);
-        var spentCrystal = Instantiate<GameObject>(SpentCrystalPrefab);
+        var spentCrystal = Instantiate(SpentCrystalPrefab);
         spentCrystal.transform.position = transform.position;
         spentCrystal.transform.localEulerAngles = transform.localEulerAngles;
         spentCrystal.GetComponent<Renderer>().material = tempMaterial;
@@ -75,19 +68,14 @@ public class Crystal : MonoBehaviour
 
         // Play SFX sound
         AudioSource audioSource = GetComponent<AudioSource>();
-        if (audioSource == null) Debug.LogWarning("WTF, audioSource is null");                      // TODO: remove this debug if not seen by 12/12/22
-        if (AudioSystem.Instance == null) Debug.LogWarning("WTF, AudioSystem.Instance is null");    // TODO: remove this debug if not seen by 12/12/22
+        if (audioSource == null) Debug.LogWarning("WTF, audioSource is null");                      // TODO: remove this debug if not seen _again_ by 2/12/23
+        if (AudioSystem.Instance == null) Debug.LogWarning("WTF, AudioSystem.Instance is null");    // TODO: remove this debug if not seen _again_ by 2/12/23
         AudioSystem.Instance.PlaySFXClip(audioSource.clip, audioSource);
 
         // Move the Crystal
         StartCoroutine(CrystalModel.GetComponent<FadeIn>().FadeInCoroutine());
-        if (surface) 
-            transform.SetPositionAndRotation(UnityEngine.Random.onUnitSphere * sphereRadius, UnityEngine.Random.rotation);
-        else
-        {
-            transform.SetPositionAndRotation(UnityEngine.Random.insideUnitSphere * sphereRadius, UnityEngine.Random.rotation);
-            OnCrystalMove?.Invoke(); // TODO: understand why this throws a null exception when the if statement isn't removed // TODO: understand the previous 'TODO' comment... does it mean to say "if statement is removed"
-        }
+        transform.SetPositionAndRotation(Random.insideUnitSphere * sphereRadius, Random.rotation);
+        OnCrystalMove?.Invoke();
     }
 
     bool IsShip(GameObject go)

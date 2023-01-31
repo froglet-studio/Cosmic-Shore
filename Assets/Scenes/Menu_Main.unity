@@ -419,7 +419,6 @@ MonoBehaviour:
     type: 3}
   CrystalModel: {fileID: 1238110562}
   material: {fileID: 2100000, guid: 383f21e8586fd7243a19e1d0f26110d0, type: 2}
-  surface: 0
 --- !u!135 &194708250
 SphereCollider:
   m_ObjectHideFlags: 0

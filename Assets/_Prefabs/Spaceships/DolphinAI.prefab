@@ -45,7 +45,6 @@ GameObject:
   - component: {fileID: 8422180867404287457}
   - component: {fileID: 2100043152315436097}
   - component: {fileID: 1291222147976488378}
-  - component: {fileID: 6484635186119048356}
   m_Layer: 8
   m_Name: RightWing
   m_TagString: Untagged
@@ -147,19 +146,6 @@ BoxCollider:
   serializedVersion: 2
   m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
---- !u!114 &6484635186119048356
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 744850128600491525}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7fb6382bf0db779459bec0fc29158ac4, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  Ship: {fileID: 874579555101021527}
 --- !u!1 &1463393096304612524
 GameObject:
   m_ObjectHideFlags: 0
@@ -173,7 +159,6 @@ GameObject:
   - component: {fileID: 4351505211611878148}
   - component: {fileID: 3138748978525211090}
   - component: {fileID: 7105874488655566022}
-  - component: {fileID: 3554682554001885228}
   m_Layer: 8
   m_Name: LeftTail
   m_TagString: Untagged
@@ -275,19 +260,6 @@ BoxCollider:
   serializedVersion: 2
   m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
---- !u!114 &3554682554001885228
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1463393096304612524}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7fb6382bf0db779459bec0fc29158ac4, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  Ship: {fileID: 874579555101021527}
 --- !u!1 &2156342784882863979
 GameObject:
   m_ObjectHideFlags: 0
@@ -333,7 +305,6 @@ GameObject:
   - component: {fileID: 2071846683305667431}
   - component: {fileID: 3718266842472452450}
   - component: {fileID: 2265179341715976661}
-  - component: {fileID: 1575042033869308829}
   m_Layer: 8
   m_Name: TailStart
   m_TagString: Untagged
@@ -435,19 +406,6 @@ BoxCollider:
   serializedVersion: 2
   m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
---- !u!114 &1575042033869308829
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2877688561880709149}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7fb6382bf0db779459bec0fc29158ac4, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  Ship: {fileID: 874579555101021527}
 --- !u!1 &2897121333247873258
 GameObject:
   m_ObjectHideFlags: 0
@@ -501,7 +459,6 @@ GameObject:
   - component: {fileID: 3021131876590485937}
   - component: {fileID: 6933307267220691511}
   - component: {fileID: 6823490476796747025}
-  - component: {fileID: 5552066624866299862}
   m_Layer: 8
   m_Name: TailEnd
   m_TagString: Untagged
@@ -603,19 +560,6 @@ BoxCollider:
   serializedVersion: 2
   m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
---- !u!114 &5552066624866299862
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3743426984857614330}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7fb6382bf0db779459bec0fc29158ac4, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  Ship: {fileID: 874579555101021527}
 --- !u!1 &4662679416581426262
 GameObject:
   m_ObjectHideFlags: 0
@@ -629,7 +573,6 @@ GameObject:
   - component: {fileID: 4225736959264864257}
   - component: {fileID: 5360513500110400407}
   - component: {fileID: 2603888210720923949}
-  - component: {fileID: 5984091817235662159}
   m_Layer: 8
   m_Name: DorsalFin
   m_TagString: Untagged
@@ -731,19 +674,6 @@ BoxCollider:
   serializedVersion: 2
   m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
---- !u!114 &5984091817235662159
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4662679416581426262}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7fb6382bf0db779459bec0fc29158ac4, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  Ship: {fileID: 874579555101021527}
 --- !u!1 &6417075533431866457
 GameObject:
   m_ObjectHideFlags: 0
@@ -758,6 +688,7 @@ GameObject:
   - component: {fileID: 874579555101021523}
   - component: {fileID: 874579555101021527}
   - component: {fileID: 3440187540988767646}
+  - component: {fileID: 1435252848482629424}
   - component: {fileID: 1871436205027819587}
   m_Layer: 0
   m_Name: DolphinAI
@@ -799,7 +730,7 @@ MonoBehaviour:
   - {fileID: 7640717969865516594}
   - {fileID: 744850128600491525}
   explosiveMaterial: {fileID: 2100000, guid: cbf0164b1addfee43a45e430c464b6fd, type: 2}
-  maxExplosionRadius: 300
+  maxExplosionRadius: 400
   explosionRate: 120
 --- !u!114 &874579555101021522
 MonoBehaviour:
@@ -813,10 +744,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 909fb5cbbca8c4549b5a9df56d837e55, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  trail: {fileID: 4563009547826722997, guid: 4e280247faa1d154fa25d1e92df405dc, type: 3}
+  trail: {fileID: 4563009547826722997, guid: 78bd71c2ca5dd3845acf7480fe182e26, type: 3}
   offset: 0
   initialWavelength: 5
   trailLength: 40
+  defaultWaitTime: 0.5
   waitTime: 0.5
   startDelay: 2
   warp: 0
@@ -835,10 +767,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9846c9cd6cfac424797ca640ebcb7a04, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  inputSpeed: 1
-  speedMultiplier: 1
-  speed: 19
-  boost: 0
+  InputSpeed: 1
+  SpeedMultiplier: 1
+  Speed: 0
+  Boosting: 0
+  BoostDecaying: 0
+  Drifting: 0
   velocityDirection: {x: 0, y: 0, z: 0}
   blockRotation: {x: 0, y: 0, z: 0, w: 0}
 --- !u!114 &874579555101021527
@@ -857,27 +791,36 @@ MonoBehaviour:
   ShipType: 7
   TrailSpawner: {fileID: 874579555101021522}
   skimmer: {fileID: 874579554510349383}
+  shipGeometries:
+  - {fileID: 4662679416581426262}
+  - {fileID: 8921444315668696485}
+  - {fileID: 7640717969865516594}
+  - {fileID: 744850128600491525}
+  - {fileID: 2877688561880709149}
+  - {fileID: 3743426984857614330}
+  - {fileID: 1463393096304612524}
+  - {fileID: 8211653562881954920}
   AOEPrefab: {fileID: 2728798890556433942, guid: 4a855af160021d241b8c1ac70cf2d792,
     type: 3}
-  player: {fileID: 0}
   crystalImpactEffects: 04000000050000000200000006000000
   trailBlockImpactEffects: 030000000200000001000000
-  fullSpeedStraightEffects: 
-  rightStickEffects: 
-  leftStickEffects: 
-  flipEffects: 
-  passiveEffects: 
   boostMultiplier: 4
   boostFuelAmount: -0.01
   rotationScaler: 190
   rotationThrottleScaler: 0.5
-  maxExplosionScale: 25
+  minExplosionScale: 50
+  maxExplosionScale: 400
   blockFuelChange: 0
   closeCamDistance: 0
   farCamDistance: 0
   head: {fileID: 0}
   ShipRotationOverride: {fileID: 2897121333247873258}
   SecondMode: 5
+  fullSpeedStraightEffects: 
+  rightStickEffects: 
+  leftStickEffects: 
+  flipEffects: 
+  controlOverrides: 
 --- !u!114 &3440187540988767646
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -902,6 +845,19 @@ MonoBehaviour:
   raycastWidth: 2
   CrystalTransform: {fileID: 0}
   flowFieldData: {fileID: 0}
+--- !u!114 &1435252848482629424
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 737294a573670f74389a7af68df314d5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ChargeDisplay: {fileID: 0}
 --- !u!114 &1871436205027819587
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1003,7 +959,6 @@ GameObject:
   - component: {fileID: 6059311606329806119}
   - component: {fileID: 7868708236497552480}
   - component: {fileID: 4458220980870840549}
-  - component: {fileID: 8267400746743433992}
   m_Layer: 8
   m_Name: LeftWing
   m_TagString: Untagged
@@ -1105,19 +1060,6 @@ BoxCollider:
   serializedVersion: 2
   m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
---- !u!114 &8267400746743433992
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7640717969865516594}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7fb6382bf0db779459bec0fc29158ac4, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  Ship: {fileID: 874579555101021527}
 --- !u!1 &8211653562881954920
 GameObject:
   m_ObjectHideFlags: 0
@@ -1131,7 +1073,6 @@ GameObject:
   - component: {fileID: 806450572131708929}
   - component: {fileID: 4008953167173299489}
   - component: {fileID: 8825121340288137215}
-  - component: {fileID: 2490547353737667460}
   m_Layer: 8
   m_Name: RightTail
   m_TagString: Untagged
@@ -1233,19 +1174,6 @@ BoxCollider:
   serializedVersion: 2
   m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
---- !u!114 &2490547353737667460
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8211653562881954920}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7fb6382bf0db779459bec0fc29158ac4, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  Ship: {fileID: 874579555101021527}
 --- !u!1 &8921444315668696485
 GameObject:
   m_ObjectHideFlags: 0
@@ -1259,7 +1187,6 @@ GameObject:
   - component: {fileID: 5189290122842957682}
   - component: {fileID: 2985035825714547446}
   - component: {fileID: 172272221538144058}
-  - component: {fileID: 1170807938846233775}
   m_Layer: 8
   m_Name: Fusilage
   m_TagString: Untagged
@@ -1361,19 +1288,6 @@ BoxCollider:
   serializedVersion: 2
   m_Size: {x: 0.62, y: 0.66, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
---- !u!114 &1170807938846233775
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8921444315668696485}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7fb6382bf0db779459bec0fc29158ac4, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  Ship: {fileID: 874579555101021527}
 --- !u!1001 &7471713358279828738
 PrefabInstance:
   m_ObjectHideFlags: 0

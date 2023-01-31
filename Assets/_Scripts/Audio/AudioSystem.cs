@@ -18,42 +18,47 @@ namespace StarWriter.Core.Audio
         [SerializeField] float masterVolume = .1f;
         [SerializeField] float musicVolume = .1f;
 
-        public delegate void OnMissingMusicSourceEvent();
-        public static event OnMissingMusicSourceEvent onMissingMusicSource;
-
         public AudioSource MusicSource1 { get => musicSource1; set => musicSource1 = value; }
         public AudioSource MusicSource2 { get => musicSource2; set => musicSource2 = value; }
 
         float MasterVolume { get { return isAudioEnabled ? masterVolume : 0; } set { } }
         float MusicVolume { get { return isAudioEnabled ? musicVolume : 0; } set { } }
 
-        private bool firstMusicSourceIsPlaying = true;
-        private bool isAudioEnabled = true;
+        bool firstMusicSourceIsPlaying = true;
+        bool isAudioEnabled = true;
 
         public bool IsAudioEnabled { get { return isAudioEnabled; } }
         #endregion
 
-        private void Start()
+        void Start()
         {
-            // Initialize masterVolume
-            isAudioEnabled = GameSetting.Instance.IsAudioEnabled;
+            if (musicSource1 == null || musicSource2 == null)
+            {
+                Debug.LogError("Missing Music Source for Audio System. Disabling Audio.");
+                isAudioEnabled = false;
+            }
+            else
+            {
+                isAudioEnabled = GameSetting.Instance.IsAudioEnabled;
+            }
+
             Debug.Log($"Audio Enabled: {isAudioEnabled}");
-            ChangeAudioEnabledStatus(isAudioEnabled);   
+            ChangeAudioEnabledStatus(isAudioEnabled);
         }
 
-        private void OnEnable()
+        void OnEnable()
         {
             GameSetting.OnChangeAudioEnabledStatus += ChangeAudioEnabledStatus;
         }
 
-        private void OnDisable()
+        void OnDisable()
         {
             GameSetting.OnChangeAudioEnabledStatus -= ChangeAudioEnabledStatus;
         }
 
-        private void ChangeAudioEnabledStatus(bool status)
+        void ChangeAudioEnabledStatus(bool status)
         {
-            Debug.Log($"AudioSystem.ONChangeAudioEnabledStatus - status: {status}");
+            Debug.Log($"AudioSystem.OnChangeAudioEnabledStatus - status: {status}");
 
             isAudioEnabled = status;            
             SetMasterMixerVolume(isAudioEnabled ? masterVolume : 0);
@@ -70,21 +75,11 @@ namespace StarWriter.Core.Audio
 
         public void PlayNextMusicClip(AudioClip audioClip)
         {
-            if (IsMusicSourcePlaying()) 
-            {
-                if (ConfirmMusicSourcesAreReady())
-                {
-                    AudioSource activeAudioSource = (firstMusicSourceIsPlaying ? musicSource2 : musicSource1);
-                    activeAudioSource.clip = audioClip;
-                    activeAudioSource.volume = MusicVolume;
-                    activeAudioSource.Play();
-                    Debug.Log($"Playing New Music Clip: {activeAudioSource.clip.name}");
-                }
-                else
-                { 
-                    Debug.Log("Music Source is Missing");
-                } 
-            }
+            AudioSource activeAudioSource = (firstMusicSourceIsPlaying ? musicSource2 : musicSource1);
+            activeAudioSource.clip = audioClip;
+            activeAudioSource.volume = MusicVolume;
+            activeAudioSource.Play();
+            Debug.Log($"Playing New Music Clip: {activeAudioSource.clip.name}");
         }
 
         public void PlayMusicClipWithFade(AudioClip audioClip, float transitionTime = 1.0f)
@@ -149,24 +144,10 @@ namespace StarWriter.Core.Audio
             originalSource.Stop();
         }
 
-        public bool StopAllSongs()
+        public void StopAllSongs()
         {
             musicSource1.Stop();
             musicSource2.Stop();
-            return true;
-        }
-        public bool ConfirmMusicSourcesAreReady()
-        {
-            if (musicSource1 == null || musicSource2 == null)
-            {
-                onMissingMusicSource?.Invoke();
-                //wait a sec
-                return false;
-            }
-            else
-            {
-                return true;
-            }
         }
 
         public bool IsMusicSourcePlaying()

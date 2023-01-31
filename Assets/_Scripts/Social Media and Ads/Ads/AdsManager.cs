@@ -1,4 +1,3 @@
-using StarWriter.Core;
 using UnityEngine;
 using UnityEngine.Advertisements;
 
@@ -25,15 +24,15 @@ public class AdsManager : MonoBehaviour, IUnityAdsInitializationListener, IUnity
     public delegate void OnAdLoaded();
     public static event OnAdLoaded AdLoaded;
     public delegate void OnAdFailedToLoad(string adUnitId, UnityAdsLoadError error, string message);
-    public static event OnAdFailedToLoad adFailedToLoad;
+    public static event OnAdFailedToLoad AdFailedToLoad;
     public delegate void OnAdShowClick(string adUnitId);
-    public static event OnAdShowClick adShowClick;
+    public static event OnAdShowClick AdShowClick;
     public delegate void OnAdShowStart(string adUnitId);
-    public static event OnAdShowStart adShowStart;
+    public static event OnAdShowStart AdShowStart;
     public delegate void OnAdShowComplete(string adUnitId, UnityAdsShowCompletionState showCompletionState);
-    public static event OnAdShowComplete adShowComplete;
+    public static event OnAdShowComplete AdShowComplete;
     public delegate void OnAdShowFailure(string adUnitId, UnityAdsShowError error, string message);
-    public static event OnAdShowFailure adShowFailure;
+    public static event OnAdShowFailure AdShowFailure;
 
     void Awake()
     {
@@ -75,10 +74,6 @@ public class AdsManager : MonoBehaviour, IUnityAdsInitializationListener, IUnity
             return;
         }
 
-        // TODO: Toggling the screen orientation breaks ad display in iOS. For now, we're turning it off
-        //Screen.orientation = ScreenOrientation.AutoRotation;
-        //Screen.orientation = GameManager.Instance.currentOrientation;
-
         Advertisement.Show(_adUnitId, this);
     }
 
@@ -105,29 +100,29 @@ public class AdsManager : MonoBehaviour, IUnityAdsInitializationListener, IUnity
     public void OnUnityAdsFailedToLoad(string adUnitId, UnityAdsLoadError error, string message)
     {
         Debug.Log($"AdsManager.OnUnityAdsFailedToLoad - adUnitId:{adUnitId}, error: {error}, message: {message}");
-        adFailedToLoad?.Invoke(adUnitId, error, message);
+        AdFailedToLoad?.Invoke(adUnitId, error, message);
     }
 
     public void OnUnityAdsShowClick(string adUnitId)
     {
         Debug.Log($"AdsManager.OnUnityAdsShowClick - adUnitId: {adUnitId}");
-        adShowClick?.Invoke(adUnitId);
+        AdShowClick?.Invoke(adUnitId);
     }
     public void OnUnityAdsShowStart(string adUnitId)
     {
         Debug.Log($"AdsManager.OnUnityAdsShowStart - adUnitId: {adUnitId}");
-        adShowStart?.Invoke(adUnitId);
+        AdShowStart?.Invoke(adUnitId);
     }
     public void OnUnityAdsShowComplete(string adUnitId, UnityAdsShowCompletionState showCompletionState)
     {
         Debug.Log($"AdsManager.OnUnityAdsShowComplete - adUnitId: {adUnitId}, completionState: {showCompletionState}");
         Screen.orientation = ScreenOrientation.LandscapeLeft;
-        adShowComplete?.Invoke(adUnitId, showCompletionState);
+        AdShowComplete?.Invoke(adUnitId, showCompletionState);
     }
     public void OnUnityAdsShowFailure(string adUnitId, UnityAdsShowError error, string message)
     {
         Debug.Log($"AdsManager.OnUnityAdsShowFailure - adUnitId: {adUnitId}, error: {error}, message: {message}");
-        adShowFailure?.Invoke(adUnitId, error, message);
+        AdShowFailure?.Invoke(adUnitId, error, message);
     }
 
     public void OnUnityAdsReady(string placementId)
@@ -147,6 +142,8 @@ public class AdsManager : MonoBehaviour, IUnityAdsInitializationListener, IUnity
 
     public void OnUnityAdsDidFinish(string placementId, ShowResult showResult)
     {
+        Debug.Log($"AdsManager.OnUnityAdsDidStart - placementId: {placementId}, showResult: {showResult}");
+
         switch (showResult)
         {
             case ShowResult.Finished:

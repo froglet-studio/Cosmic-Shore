@@ -14,7 +14,7 @@ GameObject:
   - component: {fileID: 6724784892155022458}
   - component: {fileID: 4563009547826722997}
   m_Layer: 0
-  m_Name: MantaBlock
+  m_Name: AIDolphinBlock
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -29,7 +29,7 @@ Transform:
   m_GameObject: {fileID: 5776304996075792891}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 4, y: 0.5, z: 2}
+  m_LocalScale: {x: 3.5, y: 3.5, z: 3.5}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
@@ -112,7 +112,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   FossilBlock: {fileID: 5776304996075792891, guid: bd8a259abee95ec4895562e6bb8aae76,
     type: 3}
-  ParticleEffect: {fileID: 3706253519474275301, guid: 2d5ef26f11cfb824fa85b6f5cd632c79,
+  ParticleEffect: {fileID: 3706253519474275301, guid: e0864f60c97232b4aa8943a83e70de0a,
     type: 3}
   material: {fileID: 2100000, guid: 186855228d11e2c4cac0ea081d911c3d, type: 2}
   trailBlockProperties:
@@ -122,7 +122,7 @@ MonoBehaviour:
     trail: {fileID: 0}
   growthRate: 0.5
   ownerId: 
-  waitTime: 0.5
+  waitTime: 0.1
   destroyed: 0
   ID: 
   Dimensions: {x: 0, y: 0, z: 0}

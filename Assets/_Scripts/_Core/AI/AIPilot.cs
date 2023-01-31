@@ -46,7 +46,7 @@ namespace StarWriter.Core.Input
         public Transform CrystalTransform;
         Vector3 distance;
 
-        [SerializeField] public FlowFieldData flowFieldData;    //TODO: stop serializing this, we need to load the ship in and wire it up dynamically
+        public FlowFieldData flowFieldData;
 
         Dictionary<Corner, AvoidanceBehavior> CornerBehaviors;
 

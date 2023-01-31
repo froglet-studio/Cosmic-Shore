@@ -3,32 +3,33 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+[RequireComponent(typeof(Ship))]
 public class ShipExplosionHandler : MonoBehaviour
 {
     [SerializeField] List<GameObject> explodableParts;
     [SerializeField] Material explosiveMaterial;
     [SerializeField] float maxExplosionRadius = 0f;
     [SerializeField] float explosionRate = 12f;
-    private float explosionRadius;
-    private List<Material> explosiveMaterials;
+    Ship ship;
+    float explosionRadius;
+    List<Material> explosiveMaterials;
 
     public delegate void OnShipExplosionAnimationCompletionEvent();
     public static event OnShipExplosionAnimationCompletionEvent onShipExplosionAnimationCompletion;
 
-    private void OnEnable()
+    void OnEnable()
     {
         DeathEvents.OnDeathBegin += DoShipExplosionEffect;
-        GameManager.onExtendGamePlay += DoShipReformingEffect;
     }
 
-    private void OnDisable()
+    void OnDisable()
     {
         DeathEvents.OnDeathBegin -= DoShipExplosionEffect;
-        GameManager.onExtendGamePlay -= DoShipReformingEffect;
     }
 
-    private void Start()
+    void Start()
     {
+        ship = GetComponent<Ship>();
         explosiveMaterials = new List<Material>();
 
         foreach (var explodable in explodableParts)
@@ -41,21 +42,16 @@ public class ShipExplosionHandler : MonoBehaviour
         StartCoroutine(OnFormShipCoroutine());
     }
 
-    private void DoShipExplosionEffect()
+    void DoShipExplosionEffect()
     {
         StartCoroutine(OnDeathShipExplosionCoroutine());
-    }
-    
-    private void DoShipReformingEffect()
-    {
-        StartCoroutine(OnFormShipCoroutine());
     }
 
     public IEnumerator OnDeathShipExplosionCoroutine()
     {
         HapticController.PlayBlockCollisionHaptics();
-        
-        while (explosionRadius < maxExplosionRadius )
+
+        while (explosionRadius < maxExplosionRadius)
         {
             yield return null;  // Come back next frame
             explosionRadius += explosionRate * Time.deltaTime;
@@ -93,8 +89,7 @@ public class ShipExplosionHandler : MonoBehaviour
     IEnumerator ToggleCollisionCoroutine()
     {
         yield return new WaitForSeconds(.2f);
-        Debug.LogWarning($"Player: {GameManager.Instance.player}");
-        Debug.LogWarning($"Ship: {GameManager.Instance.player.Ship}");
-        GameManager.Instance.player.Ship.ToggleCollision(true); // TODO: PLAYERSHIP null pointer here
+
+        ship.ToggleCollision(true);
     }
 }

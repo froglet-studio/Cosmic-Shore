@@ -6,7 +6,7 @@ using UnityEngine;
 [RequireComponent(typeof(Ship))]
 public class TrailSpawner : MonoBehaviour
 {
-    public Trail trail;
+    [SerializeField] Trail trail;
 
     public float offset = 0f;
 
@@ -37,7 +37,9 @@ public class TrailSpawner : MonoBehaviour
         return blockMaterial;
     }
 
-    static GameObject TrailContainer;
+    public float TrailZScale => trail.transform.localScale.z;
+
+    public static GameObject TrailContainer;
 
     readonly Queue<Trail> trailQueue = new();
     readonly public List<Trail> trailList = new();
@@ -48,14 +50,12 @@ public class TrailSpawner : MonoBehaviour
     {
         GameManager.onDeath += PauseTrailSpawner;
         GameManager.onGameOver += RestartAITrailSpawnerAfterDelay;
-        GameManager.onExtendGamePlay += RestartTrailSpawnerAfterDelay;
     }
 
     private void OnDisable()
     {
         GameManager.onDeath -= PauseTrailSpawner;
         GameManager.onGameOver -= RestartAITrailSpawnerAfterDelay;
-        GameManager.onExtendGamePlay -= RestartTrailSpawnerAfterDelay;
     }
 
     void Start()
@@ -92,9 +92,7 @@ public class TrailSpawner : MonoBehaviour
     public void SetNearbyBlockCount(int blockCount)
     {
         blockCount = Mathf.Min(blockCount, MaxNearbyBlockCount);
-        //Debug.Log($"Nearby Block Count: {blockCount}");
         blockScale = Mathf.Max(minBlockScale, maxBlockScale * (1  - (blockCount / (float)MaxNearbyBlockCount)));
-        //Debug.Log($"block scale: {blockScale}");
     }
      
     void PauseTrailSpawner()

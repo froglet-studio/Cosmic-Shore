@@ -1,6 +1,4 @@
-using System.Collections.Generic;
 using UnityEngine;
-using System.Linq;
 using TailGlider.Utility.Singleton;
 
 namespace StarWriter.Core 

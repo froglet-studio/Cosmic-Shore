@@ -1,9 +1,8 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using TailGlider.Utility.Singleton;
+using TailGlider.Utility.Singleton; // TODO: re-namespace to StarWriter
 using UnityEngine.Advertisements;
 using StarWriter.Core.Audio;
-using UnityEngine.InputSystem;
 using StarWriter.Core.Input;
 
 namespace StarWriter.Core
@@ -19,9 +18,6 @@ namespace StarWriter.Core
         public delegate void OnDeathEvent();
         public static event OnDeathEvent onDeath;
 
-        public delegate void OnExtendGameEvent();
-        public static event OnExtendGameEvent onExtendGamePlay;
-
         public delegate void OnGameOverEvent();
         public static event OnGameOverEvent onGameOver;
 
@@ -29,36 +25,38 @@ namespace StarWriter.Core
         CameraManager cameraManager;
         AnalyticsManager analyticsManager;
 
-        private int deathCount = 0;
+        int deathCount = 0;
         public int DeathCount { get { return deathCount; } }
 
-        string mainMenuScene = "Menu_Main";
+        [Header("Scene Names")]
+        [SerializeField] string mainMenuScene = "Menu_Main";
         [SerializeField] string gameTestModeZeroGameScene = "Game_HighScore";
         [SerializeField] string gameTestModeOneGameScene = "Game_TestModeOne";
         [SerializeField] string gameTestModeTwoGameScene = "Game_TestModeTwo";
         [SerializeField] string gameTestModeThreeGameScene = "Game_TestModeThree";
         [SerializeField] string gameTestModeFourGameScene = "Game_TestModeFour";
         [SerializeField] string gameTestDesign = "Game_TestDesign";
-        string hangarScene = "Hangar";
-        string tutorialGameScene = "Game_Tutorial";
+        [SerializeField] string hangarScene = "Hangar";
+        [SerializeField] string tutorialGameScene = "Game_Tutorial";
         string ActiveGameScene = "";
 
-        private void OnEnable()
+        void OnEnable()
         {
-            AdsManager.adShowComplete += OnAdShowComplete;
-            AdsManager.adShowFailure += OnAdShowFailure;
+            AdsManager.AdShowComplete += OnAdShowComplete;
+            AdsManager.AdShowFailure += OnAdShowFailure;
             AdvertisementMenu.onDeclineAd += EndGame;
             ShipExplosionHandler.onShipExplosionAnimationCompletion += OnExplosionCompletion;
         }
 
-        private void OnDisable()
+        void OnDisable()
         {
-            AdsManager.adShowComplete -= OnAdShowComplete;
-            AdsManager.adShowFailure -= OnAdShowFailure;
+            AdsManager.AdShowComplete -= OnAdShowComplete;
+            AdsManager.AdShowFailure -= OnAdShowFailure;
             AdvertisementMenu.onDeclineAd -= EndGame;
             ShipExplosionHandler.onShipExplosionAnimationCompletion -= OnExplosionCompletion;
         }
 
+        // TODO: should this live somewhere else?
         // In order to support the splash screen always showing in the correct orientation, we use this method as a work around.
         // In the build settings, we set orientation to AutoRotate, then lock to LandscapeLeft as the app is launching here.
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSplashScreen)]
@@ -82,14 +80,6 @@ namespace StarWriter.Core
             SceneManager.LoadScene(tutorialGameScene);
         }
 
-        private void EnterGame(string scenename)
-        {
-            deathCount = 0;
-            analyticsManager.LogLevelStart();
-            UnPauseGame();
-            ActiveGameScene = scenename;
-            SceneManager.LoadScene(scenename);
-        }
         public void OnClickPlayButton() //TODO make this general so you pass in the load scene
         {
             EnterGame(gameTestModeZeroGameScene);
@@ -125,7 +115,16 @@ namespace StarWriter.Core
             SceneManager.LoadScene(hangarScene);
         }
 
-        private void OnExplosionCompletion()
+        void EnterGame(string scenename)
+        {
+            deathCount = 0;
+            analyticsManager.LogLevelStart();
+            UnPauseGame();
+            ActiveGameScene = scenename;
+            SceneManager.LoadScene(scenename);
+        }
+
+        void OnExplosionCompletion()
         {
             Debug.Log("GameManager.Death");
 
@@ -136,15 +135,6 @@ namespace StarWriter.Core
 
             if (deathCount >= 2)
                 EndGame();
-        }
-
-        public void ExtendGame()
-        {
-            Debug.Log("GameManager.ExtendGame");
-            onExtendGamePlay?.Invoke();
-
-            // TODO: getting an error with the below line that timescale can only be set from the main thread, but the code works... so...
-            UnPauseGame();
         }
 
         public static void EndGame()
@@ -188,15 +178,13 @@ namespace StarWriter.Core
 
         public void WaitOnPlayerLoading()
         {
-
             onPlayGame?.Invoke();
         }
 
-        public void WaitOnAILoading(AIPilot pilot)
+        public void WaitOnAILoading(AIPilot aiPilot)
         {
-            // TODO: we should rename CrystalTransform to 'CrystalTransform'
-            pilot.CrystalTransform = FindObjectOfType<Crystal>().transform;
-            pilot.flowFieldData = FindObjectOfType<FlowFieldData>();
+            aiPilot.CrystalTransform = FindObjectOfType<Crystal>().transform;
+            aiPilot.flowFieldData = FindObjectOfType<FlowFieldData>();
         }
 
         public void OnAdShowComplete(string adUnitId, UnityAdsShowCompletionState showCompletionState)
@@ -208,18 +196,21 @@ namespace StarWriter.Core
             {
                 Debug.Log("Unity Ads Rewarded Ad Completed. Extending game.");
 
-                ExtendGame();
+            }
+            if (showCompletionState.Equals(UnityAdsShowCompletionState.SKIPPED))
+            {
+                Debug.Log("Unity Ads Rewarded Ad SKIPPED do to ad failure. Extending game.");
+
             }
         }
 
         public void OnAdShowFailure(string adUnitId, UnityAdsShowError error, string message)
         {
-            // Just pass through to the ad completion logic
-            // TODO: We may want to use UnityAdsShowCompletionState.SKIPPED (which is correct) and do a different behavior here
-            OnAdShowComplete(adUnitId, UnityAdsShowCompletionState.COMPLETED);
+            // Give them the benefit of the doubt and just pass through to the ad completion logic
+            OnAdShowComplete(adUnitId, UnityAdsShowCompletionState.SKIPPED);
         }
 
-        private void OnApplicationQuit()
+        void OnApplicationQuit()
         {
             DataPersistenceManager.Instance.SaveGame();
         }
