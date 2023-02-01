@@ -808,7 +808,7 @@ MonoBehaviour:
   boostFuelAmount: -0.01
   rotationScaler: 190
   rotationThrottleScaler: 0.5
-  minExplosionScale: 800
+  minExplosionScale: 200
   maxExplosionScale: 800
   blockFuelChange: 0
   closeCamDistance: -5
