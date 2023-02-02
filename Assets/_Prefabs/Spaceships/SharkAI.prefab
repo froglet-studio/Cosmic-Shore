@@ -572,8 +572,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Name: SharkAI
   ShipType: 8
-  TrailSpawner: {fileID: 874579555101021522}
-  skimmer: {fileID: 874579554510349383}
+  nearFieldSkimmer: {fileID: 874579554510349383}
+  farFieldSkimmer: {fileID: 0}
   shipGeometries:
   - {fileID: 3710282027580066907}
   - {fileID: 8807318159750696826}
@@ -582,6 +582,7 @@ MonoBehaviour:
   - {fileID: 5736286126695899062}
   AOEPrefab: {fileID: 2728798890556433942, guid: f5ecfb9923155a84c860975d559b2714,
     type: 3}
+  TrailSpawner: {fileID: 874579555101021522}
   crystalImpactEffects: 0500000006000000
   trailBlockImpactEffects: 03000000
   boostMultiplier: 3
@@ -594,7 +595,7 @@ MonoBehaviour:
   closeCamDistance: -0.5
   farCamDistance: -15
   head: {fileID: 3710282027580066907}
-  ShipRotationOverride: {fileID: 7280205895322334339}
+  OrientationHandle: {fileID: 7280205895322334339}
   SecondMode: 5
   fullSpeedStraightEffects: 
   rightStickEffects: 
@@ -701,7 +702,7 @@ GameObject:
   m_Component:
   - component: {fileID: 4507180760791760312}
   m_Layer: 0
-  m_Name: ShipRotationOverride
+  m_Name: OrientationHandle
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

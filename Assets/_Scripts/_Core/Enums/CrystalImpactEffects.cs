@@ -9,5 +9,5 @@ public enum CrystalImpactEffects
     Boost = 4,
     AreaOfEffectExplosion = 5,
     ResetAggression = 6,
-    IncrementCharge = 7,
+    IncrementLevel = 7,
 }

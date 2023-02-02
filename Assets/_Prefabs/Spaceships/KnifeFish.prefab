@@ -156,7 +156,7 @@ GameObject:
   m_Component:
   - component: {fileID: 5720471622467000753}
   m_Layer: 0
-  m_Name: ShipRotationOverride
+  m_Name: OrientationHandle
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -789,8 +789,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Name: KnifeFish
   ShipType: 5
-  TrailSpawner: {fileID: 874579555101021522}
-  skimmer: {fileID: 874579554510349383}
+  nearFieldSkimmer: {fileID: 874579554510349383}
+  farFieldSkimmer: {fileID: 0}
   shipGeometries:
   - {fileID: 4662679416581426262}
   - {fileID: 8921444315668696485}
@@ -802,6 +802,7 @@ MonoBehaviour:
   - {fileID: 8211653562881954920}
   AOEPrefab: {fileID: 2728798890556433942, guid: 4a855af160021d241b8c1ac70cf2d792,
     type: 3}
+  TrailSpawner: {fileID: 874579555101021522}
   crystalImpactEffects: 00000000020000000500000004000000
   trailBlockImpactEffects: 00000000030000000200000001000000
   boostMultiplier: 4
@@ -814,7 +815,7 @@ MonoBehaviour:
   closeCamDistance: 0
   farCamDistance: 0
   head: {fileID: 0}
-  ShipRotationOverride: {fileID: 1087614488730427270}
+  OrientationHandle: {fileID: 1087614488730427270}
   SecondMode: 5
   fullSpeedStraightEffects: 
   rightStickEffects: 00000000

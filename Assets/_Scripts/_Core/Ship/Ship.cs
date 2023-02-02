@@ -1,49 +1,34 @@
 using System.Collections.Generic;
 using StarWriter.Core.Input;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace StarWriter.Core
 {
-    // TODO: pull into separate file
-    public enum ShipActiveAbilityTypes
-    {
-        FullSpeedStraightAbility = 0,
-        RightStickAbility = 1,
-        LeftStickAbility = 2,
-        FlipAbility = 3,
-    }
-
-    // TODO: pull into separate file
-    public struct ShipSpeedModifier
-    {
-        public float initialValue;
-        public float duration;
-        public float elapsedTime;
-
-        public ShipSpeedModifier(float initialValue, float duration, float elapsedTime)
-        {
-            this.initialValue = initialValue;
-            this.duration = duration;
-            this.elapsedTime = elapsedTime;
-        }
-    }
-
     [RequireComponent(typeof(ResourceSystem))]
     [RequireComponent(typeof(TrailSpawner))]
     public class Ship : MonoBehaviour
     {
-        CameraManager cameraManager;
+        
 
+        [Header("Ship Meta")]
         [SerializeField] string Name;
         [SerializeField] public ShipTypes ShipType;
-        [SerializeField] public TrailSpawner TrailSpawner;  // TODO: this should not be serialized -> pull from required component instead
-        [SerializeField] public Skimmer skimmer;
-        [SerializeField] List<GameObject> shipGeometries;
+
+        [Header("Ship Components")]
+        [SerializeField] Skimmer nearFieldSkimmer;
+        [SerializeField] Skimmer farFieldSkimmer;
+        [SerializeField] GameObject OrientationHandle;
         [SerializeField] GameObject AOEPrefab;
-        
+        [SerializeField] List<GameObject> shipGeometries;
+        [HideInInspector] public TrailSpawner TrailSpawner;
+        [SerializeField] GameObject head;
+
+        [Header("Environment Interactions")]
         [SerializeField] List<CrystalImpactEffects> crystalImpactEffects;
         [SerializeField] List<TrailBlockImpactEffects> trailBlockImpactEffects;
 
+        [Header("Configuration")]
         public float boostMultiplier = 4f;
         public float boostFuelAmount = -.01f;
         [SerializeField] float rotationScaler = 130;
@@ -53,23 +38,25 @@ namespace StarWriter.Core
         [SerializeField] float blockFuelChange;
         [SerializeField] float closeCamDistance;
         [SerializeField] float farCamDistance;
-        [SerializeField] GameObject head;
-        [SerializeField] GameObject ShipRotationOverride;
-        [SerializeField] ShipTypes SecondMode = ShipTypes.Shark;
+        [SerializeField] float minFarFieldSkimmerScale = 100;
+        [SerializeField] float maxFarFieldSkimmerScale = 200;
+        [SerializeField] float minNearFieldSkimmerScale = 15;
+        [SerializeField] float maxNearFieldSkimmerScale = 100;
 
         [Header("Dynamically Assignable Controls")]
-        [SerializeField] List<ActiveAbilities> fullSpeedStraightEffects;
-        [SerializeField] List<ActiveAbilities> rightStickEffects;
-        [SerializeField] List<ActiveAbilities> leftStickEffects;
-        [SerializeField] List<ActiveAbilities> flipEffects;
-
-        [Header("Control Overrides")]
+        [SerializeField] List<ShipActions> fullSpeedStraightEffects;
+        [SerializeField] List<ShipActions> rightStickEffects;
+        [SerializeField] List<ShipActions> leftStickEffects;
+        [SerializeField] List<ShipActions> flipEffects;
         [SerializeField] List<ShipControlOverrides> controlOverrides;
+
+        Dictionary<ShipControls, List<ShipActions>> ShipControlActions;
 
         bool invulnerable;
         Teams team;
-        ShipData shipData; // TODO: this should be a required component or just a series of properties on the ship
+        CameraManager cameraManager;
         Player player;
+        ShipData shipData; // TODO: this should be a required component or just a series of properties on the ship
         InputController inputController;
         Material ShipMaterial;
         Material AOEExplosionMaterial;
@@ -79,11 +66,30 @@ namespace StarWriter.Core
         float speedModifierMax = 6f;
         float abilityStartTime;
 
-        public Teams Team { get => team; set => team = value; }
-        public Player Player { get => player; set => player = value; }
+        public Teams Team 
+        { 
+            get => team; 
+            set 
+            { 
+                team = value;
+                if (nearFieldSkimmer != null) nearFieldSkimmer.team = value;
+                if (farFieldSkimmer != null) farFieldSkimmer.team = value; 
+            }
+        }
+        public Player Player 
+        { 
+            get => player;
+            set
+            {
+                player = value;
+                if (nearFieldSkimmer != null) nearFieldSkimmer.Player = value;
+                if (farFieldSkimmer != null) farFieldSkimmer.Player = value;
+            }
+        }
 
         void Start()
         {
+            TrailSpawner = GetComponent<TrailSpawner>();
             cameraManager = CameraManager.Instance;
             shipData = GetComponent<ShipData>();
             resourceSystem = GetComponent<ResourceSystem>();
@@ -92,6 +98,13 @@ namespace StarWriter.Core
 
             foreach (var shipGeometry in shipGeometries)
                 shipGeometry.AddComponent<ShipGeometry>().Ship = this;
+
+            ShipControlActions = new Dictionary<ShipControls, List<ShipActions>> { 
+                { ShipControls.FullSpeedStraightAction, fullSpeedStraightEffects },
+                { ShipControls.FlipAction, flipEffects },
+                { ShipControls.LeftStickAction, leftStickEffects },
+                { ShipControls.RightStickAction, rightStickEffects }
+            };
         }
 
         void Update()
@@ -152,8 +165,9 @@ namespace StarWriter.Core
                             aoeBlockcreation.SetBlockMaterial(TrailSpawner.GetBlockMaterial());
 
                         break;
-                    case CrystalImpactEffects.IncrementCharge:
-                        resourceSystem.ChangeChargeAmount(player.PlayerUUID, ChargeDisplay.OneFuelUnit);
+                    case CrystalImpactEffects.IncrementLevel:
+                        resourceSystem.ChangeLevel(player.PlayerUUID, ChargeDisplay.OneFuelUnit);
+                        ScaleSkimmersWithLevel();
                         break;
                     case CrystalImpactEffects.FillCharge:
                         resourceSystem.ChangeChargeAmount(player.PlayerUUID, crystalProperties.fuelAmount);
@@ -180,6 +194,7 @@ namespace StarWriter.Core
             }
         }
 
+
         public void PerformTrailBlockImpactEffects(TrailBlockProperties trailBlockProperties)
         {
             foreach (TrailBlockImpactEffects effect in trailBlockImpactEffects)
@@ -205,71 +220,33 @@ namespace StarWriter.Core
                     case TrailBlockImpactEffects.ChangeCharge:
                         resourceSystem.ChangeChargeAmount(player.PlayerUUID, blockFuelChange);
                         break;
-                    case TrailBlockImpactEffects.DecrementCharge:
-                        resourceSystem.ChangeChargeAmount(player.PlayerUUID, ChargeDisplay.OneFuelUnit);
+                    case TrailBlockImpactEffects.DecrementLevel:
+                        resourceSystem.ChangeLevel(player.PlayerUUID, -ChargeDisplay.OneFuelUnit);
+                        ScaleSkimmersWithLevel();
                         break;
                 }
             }
         }
 
 
-        public void PerformShipAbility(ShipActiveAbilityTypes abilityType)
+        public void PerformShipControllerActions(ShipControls controlType)
         {
             abilityStartTime = Time.time;
-            switch(abilityType)
-            {
-                case ShipActiveAbilityTypes.FullSpeedStraightAbility:
-                    PerformShipAbilitiesEffects(fullSpeedStraightEffects);
-                    break;
-                case ShipActiveAbilityTypes.RightStickAbility:
-                    PerformShipAbilitiesEffects(rightStickEffects);
-                    break;
-                case ShipActiveAbilityTypes.LeftStickAbility:
-                    PerformShipAbilitiesEffects(leftStickEffects);
-                    break;
-                case ShipActiveAbilityTypes.FlipAbility:
-                    PerformShipAbilitiesEffects(flipEffects);
-                    break;
-            }
-        }
+            var shipActions = ShipControlActions[controlType];
 
-        public void StopShipAbility(ShipActiveAbilityTypes abilityType)
-        {
-            if (StatsManager.Instance != null)
-                StatsManager.Instance.AbilityActivated(Team, player.PlayerName, abilityType, Time.time-abilityStartTime);
-
-            switch (abilityType)
+            foreach (ShipActions action in shipActions)
             {
-                case ShipActiveAbilityTypes.FullSpeedStraightAbility:
-                    StopShipAbilitiesEffects(fullSpeedStraightEffects);
-                    break;
-                case ShipActiveAbilityTypes.RightStickAbility:
-                    StopShipAbilitiesEffects(rightStickEffects);
-                    break;
-                case ShipActiveAbilityTypes.LeftStickAbility:
-                    StopShipAbilitiesEffects(leftStickEffects);
-                    break;
-                case ShipActiveAbilityTypes.FlipAbility:
-                    StopShipAbilitiesEffects(flipEffects);
-                    break;
-            }
-        }
-
-        void PerformShipAbilitiesEffects(List<ActiveAbilities> shipAbilities)
-        {
-            foreach (ActiveAbilities effect in shipAbilities)
-            {
-                switch (effect)
+                switch (action)
                 {
-                    case ActiveAbilities.Drift:
+                    case ShipActions.Drift:
                         // TODO: this should call inputController.StartDrift
                         shipData.Drifting = true;
                         cameraManager.ZoomOut();
                         break;
-                    case ActiveAbilities.Boost:
+                    case ShipActions.Boost:
                         shipData.Boosting = true;
                         break;
-                    case ActiveAbilities.Invulnerability:
+                    case ShipActions.Invulnerability:
                         if (!invulnerable)
                         {
                             invulnerable = true;
@@ -278,47 +255,51 @@ namespace StarWriter.Core
                         }
                         head.transform.localScale *= 1.02f; // TODO make this its own ability 
                         break;
-                    case ActiveAbilities.ToggleCamera:
+                    case ShipActions.ToggleCamera:
                         CameraManager.Instance.ToggleCloseOrFarCamOnPhoneFlip(true);
                         TrailSpawner.ToggleBlockWaitTime(true);
                         break;
-                    case ActiveAbilities.ToggleMode:
+                    case ShipActions.ToggleMode:
                         // TODO
                         break;
-                    case ActiveAbilities.ToggleGyro:
+                    case ShipActions.ToggleGyro:
                         inputController.OnToggleGyro(true);
                         break;
                 }
             }
         }
 
-        void StopShipAbilitiesEffects(List<ActiveAbilities> shipAbilities)
+        public void StopShipControllerActions(ShipControls controlType)
         {
-            foreach (ActiveAbilities effect in shipAbilities)
+            if (StatsManager.Instance != null)
+                StatsManager.Instance.AbilityActivated(Team, player.PlayerName, controlType, Time.time-abilityStartTime);
+
+            var shipActions = ShipControlActions[controlType];
+            foreach (ShipActions action in shipActions)
             {
-                switch (effect)
+                switch (action)
                 {
-                    case ActiveAbilities.Drift:
+                    case ShipActions.Drift:
                         inputController.EndDrift();
                         cameraManager.zoomingOut = false;
                         break;
-                    case ActiveAbilities.Boost:
+                    case ShipActions.Boost:
                         shipData.Boosting = false;
                         break;
-                    case ActiveAbilities.Invulnerability:
+                    case ShipActions.Invulnerability:
                         invulnerable = false;
                         trailBlockImpactEffects.Add(TrailBlockImpactEffects.DebuffSpeed);
                         trailBlockImpactEffects.Remove(TrailBlockImpactEffects.OnlyBuffSpeed);
                         head.transform.localScale = Vector3.one;
                         break;
-                    case ActiveAbilities.ToggleCamera:
+                    case ShipActions.ToggleCamera:
                         CameraManager.Instance.ToggleCloseOrFarCamOnPhoneFlip(false);
                         TrailSpawner.ToggleBlockWaitTime(false);
                         break;
-                    case ActiveAbilities.ToggleMode:
+                    case ShipActions.ToggleMode:
                         // TODO
                         break;
-                    case ActiveAbilities.ToggleGyro:
+                    case ShipActions.ToggleGyro:
                         inputController.OnToggleGyro(false);
                         break;
                 }
@@ -349,11 +330,11 @@ namespace StarWriter.Core
 
         public void FlipShipUpsideDown()
         {
-            ShipRotationOverride.transform.localRotation = Quaternion.Euler(0, 0, 180);
+            OrientationHandle.transform.localRotation = Quaternion.Euler(0, 0, 180);
         }
         public void FlipShipRightsideUp()
         {
-            ShipRotationOverride.transform.localRotation = Quaternion.Euler(0, 0, 0);
+            OrientationHandle.transform.localRotation = Quaternion.Euler(0, 0, 0);
         }
 
         void ApplySpeedModifiers()
@@ -383,6 +364,12 @@ namespace StarWriter.Core
 
             foreach (var shipGeometry in shipGeometries)
                 shipGeometry.GetComponent<MeshRenderer>().material = ShipMaterial;
+        }
+
+        void ScaleSkimmersWithLevel()
+        {
+            nearFieldSkimmer.transform.localScale = Vector3.one * (minNearFieldSkimmerScale + ((resourceSystem.CurrentLevel / resourceSystem.MaxLevel) * (maxNearFieldSkimmerScale - minNearFieldSkimmerScale)));
+            farFieldSkimmer.transform.localScale = Vector3.one * (maxFarFieldSkimmerScale - ((resourceSystem.CurrentLevel / resourceSystem.MaxLevel) * (maxFarFieldSkimmerScale - minFarFieldSkimmerScale)));
         }
     }
 }

@@ -9,18 +9,15 @@ public class Player : MonoBehaviour
     [SerializeField] string playerName;
     [SerializeField] string playerUUID;
     [SerializeField] Ship ship;
-    [SerializeField] Skimmer skimmer;
     [SerializeField] GameObject shipContainer;
 
-
+    [Header("HUD Containers")]
+    [SerializeField] ChargeDisplay chargeDisplay;
 
     public Teams Team;
     public string PlayerName { get => playerName; }
     public string PlayerUUID { get => playerUUID; }
     public Ship Ship { get => ship; }
-
-    [Header("HUD Containers")]
-    [SerializeField] ChargeDisplay chargeDisplay;
 
     GameManager gameManager;
 
@@ -32,11 +29,10 @@ public class Player : MonoBehaviour
         ship = shipInstance.GetComponent<Ship>();
         ship.Team = Team;
         ship.Player = this;
-        ship.skimmer.Player = this;
-        ship.skimmer.team = Team;
 
         gameManager.WaitOnAILoading(ship.GetComponent<AIPilot>());
     }
+
     void Start()
     {
         gameManager = GameManager.Instance;
@@ -65,8 +61,6 @@ public class Player : MonoBehaviour
                 ship = shipInstance.GetComponent<Ship>();
                 ship.Team = Team;
                 ship.Player = this;
-                ship.skimmer.Player = this;
-                ship.skimmer.team = Team;
 
                 if (chargeDisplay != null)
                     ship.GetComponent<ResourceSystem>().ChargeDisplay = chargeDisplay;
@@ -74,23 +68,5 @@ public class Player : MonoBehaviour
                 gameManager.WaitOnPlayerLoading();
                 break;
         }
-    }
-
-    public Ship[] LoadSecondShip(ShipTypes PlayerShipType)
-    {
-        Ship shipInstance2 = Hangar.Instance.LoadSecondPlayerShip(PlayerShipType);
-        shipInstance2.transform.SetParent(shipContainer.transform, false);
-        shipInstance2.GetComponent<AIPilot>().enabled = false;
-
-        var inputController = GetComponent<InputController>();
-        inputController.ship = shipInstance2;
-        ship = shipInstance2.GetComponent<Ship>();
-        ship.Team = Team;
-        ship.Player = this;
-        //skimmer.Player = this;
-        ship.skimmer = skimmer;
-        shipInstance2.enabled = false;
-        Ship[] ships = new Ship[] { ship, shipInstance2 };
-        return ships;
     }
 }
