@@ -10,5 +10,5 @@ public enum TrailBlockImpactEffects
     OnlyBuffSpeed = 5,
     ChangeCharge = 6,
     Steal = 7,
-    DecrementCharge = 8,
+    DecrementLevel = 8,
 }

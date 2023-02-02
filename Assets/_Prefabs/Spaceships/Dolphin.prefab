@@ -156,7 +156,7 @@ GameObject:
   m_Component:
   - component: {fileID: 5720471622467000753}
   m_Layer: 0
-  m_Name: ShipRotationOverride
+  m_Name: OrientationHandle
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -789,8 +789,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Name: Dolphin
   ShipType: 2
-  TrailSpawner: {fileID: 874579555101021522}
-  skimmer: {fileID: 874579554510349383}
+  nearFieldSkimmer: {fileID: 874579554510349383}
+  farFieldSkimmer: {fileID: 0}
   shipGeometries:
   - {fileID: 4662679416581426262}
   - {fileID: 8921444315668696485}
@@ -802,6 +802,7 @@ MonoBehaviour:
   - {fileID: 8211653562881954920}
   AOEPrefab: {fileID: 9218889541719856748, guid: 2ae56847c6f549948a71f41eaf59f749,
     type: 3}
+  TrailSpawner: {fileID: 874579555101021522}
   crystalImpactEffects: 000000000500000002000000
   trailBlockImpactEffects: 00000000030000000200000001000000
   boostMultiplier: 4
@@ -814,7 +815,7 @@ MonoBehaviour:
   closeCamDistance: -5
   farCamDistance: 0
   head: {fileID: 0}
-  ShipRotationOverride: {fileID: 1087614488730427270}
+  OrientationHandle: {fileID: 1087614488730427270}
   SecondMode: 5
   fullSpeedStraightEffects: 
   rightStickEffects: 00000000

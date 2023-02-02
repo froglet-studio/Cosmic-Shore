@@ -17,12 +17,12 @@ namespace StarWriter.Core
         [FormerlySerializedAs("maxFuel")]
         [SerializeField]
         [Range(0, 1)]
-        static float maxCharge = 1f;
+        float maxCharge = 1f;
 
         [Tooltip("Initial charge level from 0-1")]
         [SerializeField]
         [Range(0, 1)]
-        static float initialCharge = 1f;
+        float initialCharge = 1f;
 
         float currentCharge;
 
@@ -35,6 +35,32 @@ namespace StarWriter.Core
 
                 if (ChargeDisplay != null)
                     ChargeDisplay.UpdateDisplay(currentCharge);
+            }
+        }
+
+        [Tooltip("Max charge level from 0-1")]
+        [SerializeField]
+        [Range(0, 1)]
+        float maxLevel = 1f;
+
+        [Tooltip("Initial charge level from 0-1")]
+        [SerializeField]
+        [Range(0, 1)]
+        float initialLevel = 0f;
+
+        float currentLevel;
+
+        public float MaxLevel {  get { return maxLevel; } }
+
+        public float CurrentLevel
+        {
+            get => currentLevel;
+            private set
+            {
+                currentLevel = value;
+
+                if (ChargeDisplay != null)
+                    ChargeDisplay.UpdateDisplay(currentLevel);
             }
         }
 
@@ -57,16 +83,26 @@ namespace StarWriter.Core
         void Start()
         {
             ResetCharge();
+            ResetLevel();
         }
 
         public void ResetCharge()
         {
             CurrentCharge = initialCharge;
         }
+        public void ResetLevel()
+        {
+            CurrentLevel = initialLevel;
+        }
 
         public void ChangeChargeAmount(string uuid, float amount)
         {
             CurrentCharge = Mathf.Clamp(currentCharge + amount, 0, maxCharge);
+        }
+
+        public void ChangeLevel(string uuid, float amount)
+        {
+            CurrentLevel = Mathf.Clamp(currentLevel + amount, 0, maxLevel);
         }
     }
 }

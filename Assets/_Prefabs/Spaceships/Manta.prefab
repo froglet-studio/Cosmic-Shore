@@ -124,7 +124,7 @@ GameObject:
   m_Component:
   - component: {fileID: 3397189760217659071}
   m_Layer: 0
-  m_Name: ShipRotationOverride
+  m_Name: OrientationHandle
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -379,16 +379,19 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Name: GreenManta
   ShipType: 1
-  TrailSpawner: {fileID: 874579555101021522}
-  skimmer: {fileID: 874579554510349383}
+  nearFieldSkimmer: {fileID: 874579554510349383}
+  farFieldSkimmer: {fileID: 3138628630497430536}
+  OrientationHandle: {fileID: 1878660672777590133}
+  AOEPrefab: {fileID: 2728798890556433942, guid: 4a855af160021d241b8c1ac70cf2d792,
+    type: 3}
   shipGeometries:
   - {fileID: 7989725769420682486}
   - {fileID: 956471339697806072}
   - {fileID: 2306761366267364778}
-  AOEPrefab: {fileID: 2728798890556433942, guid: 4a855af160021d241b8c1ac70cf2d792,
-    type: 3}
-  crystalImpactEffects: 0000000004000000
-  trailBlockImpactEffects: 000000000300000002000000
+  TrailSpawner: {fileID: 874579555101021522}
+  head: {fileID: 0}
+  crystalImpactEffects: 000000000400000007000000
+  trailBlockImpactEffects: 00000000030000000200000008000000
   boostMultiplier: 2
   boostFuelAmount: 0
   rotationScaler: 70
@@ -398,9 +401,10 @@ MonoBehaviour:
   blockFuelChange: 0
   closeCamDistance: 0
   farCamDistance: 0
-  head: {fileID: 0}
-  ShipRotationOverride: {fileID: 1878660672777590133}
-  SecondMode: 5
+  minFarFieldSkimmerScale: 100
+  maxFarFieldSkimmerScale: 200
+  minNearFieldSkimmerScale: 15
+  maxNearFieldSkimmerScale: 100
   fullSpeedStraightEffects: 01000000
   rightStickEffects: 
   leftStickEffects: 
@@ -442,6 +446,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 737294a573670f74389a7af68df314d5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  maxCharge: 1
+  initialCharge: 1
+  maxLevel: 1
+  initialLevel: 0
   ChargeDisplay: {fileID: 0}
 --- !u!114 &6293426128044408357
 MonoBehaviour:
@@ -696,6 +704,18 @@ Transform:
     type: 3}
   m_PrefabInstance: {fileID: 4619950853104356685}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &3138628630497430536 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
+    type: 3}
+  m_PrefabInstance: {fileID: 4619950853104356685}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f35ad70dcbb4e3b47af654e91d9387f8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1001 &7471713358279828738
 PrefabInstance:
   m_ObjectHideFlags: 0

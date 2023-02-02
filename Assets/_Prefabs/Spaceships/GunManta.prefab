@@ -124,7 +124,7 @@ GameObject:
   m_Component:
   - component: {fileID: 3397189760217659071}
   m_Layer: 0
-  m_Name: ShipRotationOverride
+  m_Name: OrientationHandle
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -378,14 +378,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Name: GreenManta
   ShipType: 4
-  TrailSpawner: {fileID: 874579555101021522}
-  skimmer: {fileID: 874579554510349383}
+  nearFieldSkimmer: {fileID: 874579554510349383}
+  farFieldSkimmer: {fileID: 0}
   shipGeometries:
   - {fileID: 7989725769420682486}
   - {fileID: 956471339697806072}
   - {fileID: 2306761366267364778}
   AOEPrefab: {fileID: 2728798890556433942, guid: 4a855af160021d241b8c1ac70cf2d792,
     type: 3}
+  TrailSpawner: {fileID: 874579555101021522}
   crystalImpactEffects: 0000000004000000
   trailBlockImpactEffects: 000000000300000002000000
   boostMultiplier: 2
@@ -398,7 +399,7 @@ MonoBehaviour:
   closeCamDistance: 0
   farCamDistance: 0
   head: {fileID: 0}
-  ShipRotationOverride: {fileID: 1878660672777590133}
+  OrientationHandle: {fileID: 1878660672777590133}
   SecondMode: 5
   fullSpeedStraightEffects: 01000000
   rightStickEffects: 
