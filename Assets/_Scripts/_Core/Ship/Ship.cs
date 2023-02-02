@@ -42,6 +42,8 @@ namespace StarWriter.Core
         [SerializeField] float maxFarFieldSkimmerScale = 200;
         [SerializeField] float minNearFieldSkimmerScale = 15;
         [SerializeField] float maxNearFieldSkimmerScale = 100;
+        [SerializeField] bool boostSkimmerScaling = false;
+        [SerializeField] float BoostSkimmerScaler = .01f;
 
         [Header("Dynamically Assignable Controls")]
         [SerializeField] List<ShipActions> fullSpeedStraightEffects;
@@ -65,6 +67,8 @@ namespace StarWriter.Core
         float speedModifierDuration = 2f;
         float speedModifierMax = 6f;
         float abilityStartTime;
+        float boostDuration;
+        bool boostSkimmerScalingStopped;
 
         public Teams Team 
         { 
@@ -110,6 +114,7 @@ namespace StarWriter.Core
         void Update()
         {
             ApplySpeedModifiers();
+            ScaleSkimmerDuringBoost();
         }
 
         void ApplyShipControlOverrides(List<ShipControlOverrides> controlOverrides)
@@ -285,6 +290,7 @@ namespace StarWriter.Core
                         break;
                     case ShipActions.Boost:
                         shipData.Boosting = false;
+                        boostSkimmerScalingStopped = true;
                         break;
                     case ShipActions.Invulnerability:
                         invulnerable = false;
@@ -370,6 +376,21 @@ namespace StarWriter.Core
         {
             nearFieldSkimmer.transform.localScale = Vector3.one * (minNearFieldSkimmerScale + ((resourceSystem.CurrentLevel / resourceSystem.MaxLevel) * (maxNearFieldSkimmerScale - minNearFieldSkimmerScale)));
             farFieldSkimmer.transform.localScale = Vector3.one * (maxFarFieldSkimmerScale - ((resourceSystem.CurrentLevel / resourceSystem.MaxLevel) * (maxFarFieldSkimmerScale - minFarFieldSkimmerScale)));
+        }
+
+        void ScaleSkimmerDuringBoost()
+        {
+            if (shipData.Boosting && boostSkimmerScaling)
+            {
+                boostDuration += Time.deltaTime;
+                nearFieldSkimmer.transform.localScale = Mathf.Min(minNearFieldSkimmerScale + boostDuration* BoostSkimmerScaler, maxNearFieldSkimmerScale) * Vector3.one;
+            }
+            else if (boostSkimmerScalingStopped)
+            {
+                boostSkimmerScalingStopped = false;
+                boostDuration = 0;
+                nearFieldSkimmer.transform.localScale = minNearFieldSkimmerScale* Vector3.one;
+}
         }
     }
 }
