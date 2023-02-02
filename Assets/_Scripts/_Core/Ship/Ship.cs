@@ -33,6 +33,7 @@ namespace StarWriter.Core
         [SerializeField] float rotationThrottleScaler;
         [SerializeField] float minExplosionScale = 50;
         [SerializeField] float maxExplosionScale = 400;
+
         [SerializeField] float blockFuelChange;
         [SerializeField] float closeCamDistance;
         [SerializeField] float farCamDistance;
@@ -345,7 +346,6 @@ namespace StarWriter.Core
             for (int i = SpeedModifiers.Count - 1; i >= 0; i--)
             {
                 var modifier = SpeedModifiers[i];
-
                 modifier.elapsedTime += Time.deltaTime;
                 SpeedModifiers[i] = modifier;
 
