@@ -18,6 +18,7 @@ namespace StarWriter.Core
         [HideInInspector] public Teams team;
  
         Dictionary<string, float> skimStartTimes = new Dictionary<string, float>();
+        CameraManager cameraManager;
 
         int activelySkimmingBlockCount = 0;
 
@@ -27,10 +28,11 @@ namespace StarWriter.Core
         public delegate void Skim(string uuid, float amount);
         public static event Skim OnSkim;
 
-        //public void Start()
-        //{
-        //    PerformSkimmerStartEffects();
-        //}
+        public void Start()
+        {
+            //PerformSkimmerStartEffects();
+            cameraManager = CameraManager.Instance;
+        }
 
 
         //public void PerformSkimmerStartEffects()
@@ -88,6 +90,7 @@ namespace StarWriter.Core
 
                 if (NotifyNearbyBlockCount)
                     ship.TrailSpawner.SetNearbyBlockCount(ActivelySkimmingBlockCount);
+                    //cameraManager.SetCloseCameraDistance(Mathf.Min(cameraManager.closeCamDistance * (10 - activelySkimmingBlockCount), cameraManager.closeCamDistance));
             }
         }
 
@@ -120,6 +123,7 @@ namespace StarWriter.Core
 
                 if (NotifyNearbyBlockCount)
                     ship.TrailSpawner.SetNearbyBlockCount(ActivelySkimmingBlockCount);
+                    //cameraManager.SetCloseCameraDistance(Mathf.Min(cameraManager.closeCamDistance*(10-activelySkimmingBlockCount), cameraManager.closeCamDistance));
             }
         }
 
