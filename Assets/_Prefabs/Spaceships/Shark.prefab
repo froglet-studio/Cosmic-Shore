@@ -527,6 +527,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   trail: {fileID: 4563009547826722997, guid: 053064d82123e8b49bfb29870b5c0715, type: 3}
+  skimmer: {fileID: 874579554510349383}
   offset: 0
   initialWavelength: 5
   trailLength: 40
@@ -573,15 +574,17 @@ MonoBehaviour:
   ShipType: 3
   nearFieldSkimmer: {fileID: 874579554510349383}
   farFieldSkimmer: {fileID: 0}
+  OrientationHandle: {fileID: 7569251362483239328}
+  AOEPrefab: {fileID: 2728798890556433942, guid: f5ecfb9923155a84c860975d559b2714,
+    type: 3}
   shipGeometries:
   - {fileID: 3710282027580066907}
   - {fileID: 8807318159750696826}
   - {fileID: 1022800225184736306}
   - {fileID: 434498384779577929}
   - {fileID: 5736286126695899062}
-  AOEPrefab: {fileID: 2728798890556433942, guid: f5ecfb9923155a84c860975d559b2714,
-    type: 3}
   TrailSpawner: {fileID: 874579555101021522}
+  head: {fileID: 3710282027580066907}
   crystalImpactEffects: 0000000005000000
   trailBlockImpactEffects: 00000000030000000500000006000000
   boostMultiplier: 3
@@ -593,9 +596,12 @@ MonoBehaviour:
   blockFuelChange: 0.01
   closeCamDistance: -5
   farCamDistance: -15
-  head: {fileID: 3710282027580066907}
-  OrientationHandle: {fileID: 7569251362483239328}
-  SecondMode: 5
+  minFarFieldSkimmerScale: 100
+  maxFarFieldSkimmerScale: 200
+  minNearFieldSkimmerScale: 15
+  maxNearFieldSkimmerScale: 60
+  boostSkimmerScaling: 1
+  BoostSkimmerScaler: 15
   fullSpeedStraightEffects: 01000000
   rightStickEffects: 
   leftStickEffects: 
@@ -637,6 +643,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 737294a573670f74389a7af68df314d5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  maxCharge: 1
+  initialCharge: 1
+  maxLevel: 1
+  initialLevel: 0
   ChargeDisplay: {fileID: 0}
 --- !u!114 &3496801340156507927
 MonoBehaviour:
@@ -867,17 +877,17 @@ PrefabInstance:
     - target: {fileID: 7231566422788689087, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
       propertyPath: m_LocalScale.x
-      value: 8
+      value: 15
       objectReference: {fileID: 0}
     - target: {fileID: 7231566422788689087, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
       propertyPath: m_LocalScale.y
-      value: 8
+      value: 15
       objectReference: {fileID: 0}
     - target: {fileID: 7231566422788689087, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
       propertyPath: m_LocalScale.z
-      value: 8
+      value: 15
       objectReference: {fileID: 0}
     - target: {fileID: 7231566422788689087, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
@@ -972,7 +982,7 @@ PrefabInstance:
     - target: {fileID: 9103907316180665772, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
       propertyPath: m_Radius
-      value: 1
+      value: 0.5
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 6540c78597c2dcc468123b270169fc44, type: 3}
@@ -988,9 +998,57 @@ MonoBehaviour:
     type: 3}
   m_PrefabInstance: {fileID: 7471713358279828738}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
+  m_GameObject: {fileID: 2695624631939139826}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f35ad70dcbb4e3b47af654e91d9387f8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!1 &2695624631939139826 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 4816621673548213744, guid: 6540c78597c2dcc468123b270169fc44,
+    type: 3}
+  m_PrefabInstance: {fileID: 7471713358279828738}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &7861079316744108528
+MeshRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2695624631939139826}
+  m_Enabled: 0
+  m_CastShadows: 1
+  m_ReceiveShadows: 1
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: c646e9f785387b54695f4b151b59001e, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_AdditionalVertexStreams: {fileID: 0}

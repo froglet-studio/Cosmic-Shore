@@ -355,7 +355,6 @@ namespace StarWriter.Core.Input
 
         public void EndDrift()
         {
-            shipData.Drifting = false;
             StartCoroutine(DecayingBoostCoroutine());
         }
 

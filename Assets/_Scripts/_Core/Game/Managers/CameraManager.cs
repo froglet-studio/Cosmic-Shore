@@ -23,7 +23,7 @@ public class CameraManager : SingletonPersistent<CameraManager>
     bool useCloseCam = true;
 
     // Drift stuff
-    public float driftDistance = 1f;
+    public float distanceScaler = 1f;
     public Vector3 tempOffset = Vector3.zero;
     public bool zoomingOut;
     public float closeCamDistance;
@@ -156,11 +156,11 @@ public class CameraManager : SingletonPersistent<CameraManager>
         SetCameraDistance(closeCamera, distance);
     }
 
-    public void ZoomOut()
-    {
-        zoomingOut = true;
-        StartCoroutine(ZoomOutCoroutine());
-    }
+    //public void ZoomOut()
+    //{
+    //    zoomingOut = true;
+    //    StartCoroutine(ZoomOutCoroutine());
+    //}
 
     IEnumerator ZoomOutCoroutine()
     {
@@ -169,17 +169,49 @@ public class CameraManager : SingletonPersistent<CameraManager>
         var followOffset = new Vector3(0, 0, closeCamDistance);
         while (zoomingOut)
         {
-            transposer.m_FollowOffset = driftDistance*followOffset;
-            driftDistance += .015f;
+            transposer.m_FollowOffset = distanceScaler*followOffset;
+            distanceScaler += .015f;
             yield return new WaitForSeconds(.03f);
         }
-        while (driftDistance > 1)
+    }
+
+    public void ZoomOut()
+    {
+        if (returnToNeutralCoroutine != null)
         {
-            transposer.m_FollowOffset = driftDistance * followOffset;
-            driftDistance -= .06f;
+            StopCoroutine(returnToNeutralCoroutine);
+            returnToNeutralCoroutine = null;
+        }
+        zoomingOut = true;
+        zoomOutCoroutine = StartCoroutine(ZoomOutCoroutine());
+    }
+
+    public void ResetToNeutral()
+    {
+        if (zoomOutCoroutine != null)
+        {
+            StopCoroutine(zoomOutCoroutine);
+            zoomOutCoroutine = null;
+        }
+        zoomingOut = false;
+        returnToNeutralCoroutine = StartCoroutine(ReturnToNeutralCoroutine());
+    }
+
+    Coroutine zoomOutCoroutine;
+    Coroutine returnToNeutralCoroutine;
+
+    IEnumerator ReturnToNeutralCoroutine()
+    {
+        var vCam = closeCamera.VirtualCameraGameObject.GetComponent<CinemachineVirtualCamera>();
+        var transposer = vCam.GetCinemachineComponent<CinemachineTransposer>();
+        var followOffset = new Vector3(0, 0, closeCamDistance);
+        while (distanceScaler > 1)
+        {
+            transposer.m_FollowOffset = distanceScaler * followOffset;
+            distanceScaler -= .06f;
             yield return new WaitForSeconds(.03f);
         }
         SetCloseCameraDistance(closeCamDistance);
-        driftDistance = 1f;
+        distanceScaler = 1f;
     }
 }

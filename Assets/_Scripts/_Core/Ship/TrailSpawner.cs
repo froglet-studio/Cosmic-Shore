@@ -7,6 +7,7 @@ using UnityEngine;
 public class TrailSpawner : MonoBehaviour
 {
     [SerializeField] Trail trail;
+    [SerializeField] Skimmer skimmer;
 
     public float offset = 0f;
 
@@ -132,7 +133,7 @@ public class TrailSpawner : MonoBehaviour
                 var Block = Instantiate(trail);
                 Block.transform.SetPositionAndRotation(transform.position - shipData.velocityDirection * offset, shipData.blockRotation);
                 Block.transform.parent = TrailContainer.transform;
-                Block.waitTime = waitTime;
+                Block.waitTime = (skimmer.transform.localScale.z + TrailZScale) / ship.GetComponent<ShipData>().Speed; ;
                 Block.ownerId = ship.Player.PlayerUUID;
                 Block.PlayerName = ship.Player.PlayerName;
                 Block.Team = ship.Team;

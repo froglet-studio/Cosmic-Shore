@@ -334,6 +334,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   trail: {fileID: 4563009547826722997, guid: 21757137a3002b64096be5813c054a5d, type: 3}
+  skimmer: {fileID: 874579554510349383}
   offset: 0
   initialWavelength: 5
   trailLength: 40
