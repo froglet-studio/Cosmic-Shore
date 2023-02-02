@@ -27,29 +27,27 @@ namespace StarWriter.Core
         public delegate void Skim(string uuid, float amount);
         public static event Skim OnSkim;
 
-        public void Start()
-        {
-            PerformSkimmerStartEffects();
-        }
+        //public void Start()
+        //{
+        //    PerformSkimmerStartEffects();
+        //}
 
 
-        public void PerformSkimmerStartEffects()
-        {
-            foreach (TrailBlockImpactEffects effect in trailBlockImpactEffects)
-            {
-                switch (effect)
-                {
-                    case TrailBlockImpactEffects.PlayHaptics:
-                        break;
-                    case TrailBlockImpactEffects.DeactivateTrailBlock:
-                        TrailSpawner spawner = ship.GetComponent<TrailSpawner>();
-                        spawner.waitTime = transform.localScale.z/Player.GetComponent<InputController>().defaultThrottle + spawner.TrailZScale;
-                        break;
-                    case TrailBlockImpactEffects.Steal:
-                        break;
-                }
-            }
-        }
+        //public void PerformSkimmerStartEffects()
+        //{
+        //    foreach (TrailBlockImpactEffects effect in trailBlockImpactEffects)
+        //    {
+        //        switch (effect)
+        //        {
+        //            case TrailBlockImpactEffects.PlayHaptics:
+        //                break;
+        //            case TrailBlockImpactEffects.DeactivateTrailBlock:
+        //                break;
+        //            case TrailBlockImpactEffects.Steal:
+        //                break;
+        //        }
+        //    }
+        //}
 
 
         //Maja added this to try and enable shark skimmer smashing

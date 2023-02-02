@@ -364,6 +364,7 @@ namespace StarWriter.Core
                 var modifier = SpeedModifiers[i];
 
                 modifier.elapsedTime += Time.deltaTime;
+                SpeedModifiers[i] = modifier;
 
                 if (modifier.elapsedTime >= modifier.duration)
                     SpeedModifiers.RemoveAt(i);
