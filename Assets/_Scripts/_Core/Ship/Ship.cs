@@ -9,8 +9,6 @@ namespace StarWriter.Core
     [RequireComponent(typeof(TrailSpawner))]
     public class Ship : MonoBehaviour
     {
-        
-
         [Header("Ship Meta")]
         [SerializeField] string Name;
         [SerializeField] public ShipTypes ShipType;
@@ -114,7 +112,7 @@ namespace StarWriter.Core
         void Update()
         {
             ApplySpeedModifiers();
-            ScaleSkimmerDuringBoost();
+            ScaleSkimmerDuringBoost(); // TODO: turn this into apply skimmer modifiers
         }
 
         void ApplyShipControlOverrides(List<ShipControlOverrides> controlOverrides)
@@ -137,7 +135,6 @@ namespace StarWriter.Core
                         break;
                     case ShipControlOverrides.SecondMode:
                         // TODO: ship mode toggling
-
                         break;
                     case ShipControlOverrides.SpeedBasedTurning:
                         inputController.rotationThrottleScaler = rotationThrottleScaler;
@@ -199,7 +196,6 @@ namespace StarWriter.Core
             }
         }
 
-
         public void PerformTrailBlockImpactEffects(TrailBlockProperties trailBlockProperties)
         {
             foreach (TrailBlockImpactEffects effect in trailBlockImpactEffects)
@@ -232,7 +228,6 @@ namespace StarWriter.Core
                 }
             }
         }
-
 
         public void PerformShipControllerActions(ShipControls controlType)
         {
@@ -285,8 +280,9 @@ namespace StarWriter.Core
                 switch (action)
                 {
                     case ShipActions.Drift:
+                        shipData.Drifting = false;
                         inputController.EndDrift();
-                        cameraManager.zoomingOut = false;
+                        cameraManager.ResetToNeutral();
                         break;
                     case ShipActions.Boost:
                         shipData.Boosting = false;
@@ -389,7 +385,7 @@ namespace StarWriter.Core
             {
                 boostSkimmerScalingStopped = false;
                 boostDuration = 0;
-                nearFieldSkimmer.transform.localScale = minNearFieldSkimmerScale* Vector3.one;
+                nearFieldSkimmer.transform.localScale = minNearFieldSkimmerScale * Vector3.one;
 }
         }
     }
