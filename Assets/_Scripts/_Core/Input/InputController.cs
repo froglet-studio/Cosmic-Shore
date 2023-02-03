@@ -396,7 +396,7 @@ namespace StarWriter.Core.Input
         void Throttle()
         {
             float boostAmount = 1f;
-            if (shipData.Boosting && resourceSystem.CurrentCharge > 0)
+            if (shipData.Boosting && resourceSystem.CurrentCharge > 0) // TODO: if we run out of fuel while full speed and straight the ship data still thinks we are boosting
             {
                 boostAmount = ship.boostMultiplier;
                 OnBoost?.Invoke(uuid, ship.boostFuelAmount);

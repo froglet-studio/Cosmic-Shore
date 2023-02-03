@@ -377,17 +377,26 @@ namespace StarWriter.Core
 
         void ScaleSkimmerDuringBoost()
         {
-            if (shipData.Boosting && boostSkimmerScaling)
+            if (boostSkimmerScaling && shipData.Boosting && resourceSystem.CurrentCharge > 0)
             {
                 boostDuration += Time.deltaTime;
-                nearFieldSkimmer.transform.localScale = Mathf.Min(minNearFieldSkimmerScale + boostDuration* BoostSkimmerScaler, maxNearFieldSkimmerScale) * Vector3.one;
+                nearFieldSkimmer.transform.localScale = Mathf.Min(minNearFieldSkimmerScale + boostDuration * BoostSkimmerScaler, maxNearFieldSkimmerScale) * Vector3.one;
             }
-            else if (boostSkimmerScalingStopped && boostSkimmerScaling)
+            else if (boostSkimmerScaling && boostSkimmerScalingStopped)
             {
-                boostSkimmerScalingStopped = false;
-                boostDuration = 0;
-                nearFieldSkimmer.transform.localScale = minNearFieldSkimmerScale * Vector3.one;
-}
+                if (nearFieldSkimmer.transform.localScale.z > minNearFieldSkimmerScale)
+                {
+                    boostDuration -= Time.deltaTime*2;
+                    nearFieldSkimmer.transform.localScale = Mathf.Min(minNearFieldSkimmerScale + boostDuration * BoostSkimmerScaler, maxNearFieldSkimmerScale) * Vector3.one;
+                }
+                else
+                {
+                    boostSkimmerScalingStopped = false;
+                    boostDuration = 0;
+                    nearFieldSkimmer.transform.localScale = minNearFieldSkimmerScale * Vector3.one;
+                }
+                
+            }
         }
     }
 }
