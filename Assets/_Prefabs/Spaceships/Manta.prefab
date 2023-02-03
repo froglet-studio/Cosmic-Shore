@@ -345,7 +345,7 @@ MonoBehaviour:
   warp: 0
   MaxNearbyBlockCount: 50
   minBlockScale: 1
-  maxBlockScale: 10
+  maxBlockScale: 15
 --- !u!114 &874579555101021523
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -400,17 +400,19 @@ MonoBehaviour:
   minExplosionScale: 50
   maxExplosionScale: 500
   blockFuelChange: 0
-  closeCamDistance: 0
-  farCamDistance: 0
+  closeCamDistance: -5
+  farCamDistance: -60
   minFarFieldSkimmerScale: 100
   maxFarFieldSkimmerScale: 200
   minNearFieldSkimmerScale: 15
   maxNearFieldSkimmerScale: 100
+  boostSkimmerScaling: 0
+  BoostSkimmerScaler: 0.01
   fullSpeedStraightEffects: 01000000
   rightStickEffects: 
   leftStickEffects: 
   flipEffects: 03000000
-  controlOverrides: 
+  controlOverrides: 030000000400000000000000
 --- !u!114 &3440187540988767646
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -685,6 +687,11 @@ PrefabInstance:
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
       propertyPath: NotifyNearbyBlockCount
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
+      propertyPath: notifyNearbyBlockCount
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,

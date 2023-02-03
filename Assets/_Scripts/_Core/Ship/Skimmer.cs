@@ -14,7 +14,7 @@ namespace StarWriter.Core
         [SerializeField] public Player Player;
         [SerializeField] float fuelAmount;
         [SerializeField] float MultiSkimMultiplier = 0f;
-        [SerializeField] bool NotifyNearbyBlockCount;
+        [SerializeField] bool notifyNearbyBlockCount;
         [HideInInspector] public Teams team;
  
         Dictionary<string, float> skimStartTimes = new Dictionary<string, float>();
@@ -88,9 +88,8 @@ namespace StarWriter.Core
 
                 OnSkim?.Invoke(ship.Player.PlayerUUID, fuelAmount + (activelySkimmingBlockCount * MultiSkimMultiplier));
 
-                if (NotifyNearbyBlockCount)
-                    ship.TrailSpawner.SetNearbyBlockCount(ActivelySkimmingBlockCount);
-                    //cameraManager.SetCloseCameraDistance(Mathf.Min(cameraManager.closeCamDistance * (10 - activelySkimmingBlockCount), cameraManager.closeCamDistance));
+                if (notifyNearbyBlockCount)
+                    NotifyNearbyBlockCount();
             }
         }
 
@@ -121,12 +120,16 @@ namespace StarWriter.Core
                 skimStartTimes.Remove(trail.ID);
                 activelySkimmingBlockCount--;
 
-                if (NotifyNearbyBlockCount)
-                    ship.TrailSpawner.SetNearbyBlockCount(ActivelySkimmingBlockCount);
-                    //cameraManager.SetCloseCameraDistance(Mathf.Min(cameraManager.closeCamDistance*(10-activelySkimmingBlockCount), cameraManager.closeCamDistance));
+                if (notifyNearbyBlockCount)
+                    NotifyNearbyBlockCount();
             }
         }
 
+        void NotifyNearbyBlockCount()
+        {
+            ship.TrailSpawner.SetNearbyBlockCount(ActivelySkimmingBlockCount);
+            cameraManager.SetCloseCameraDistance(Mathf.Min((cameraManager.FarCamDistance) * (1 - (float)activelySkimmingBlockCount / ship.TrailSpawner.MaxNearbyBlockCount), cameraManager.CloseCamDistance));
+        }
 
         IEnumerator DisplaySkimParticleEffectCoroutine(Trail trail)
         {

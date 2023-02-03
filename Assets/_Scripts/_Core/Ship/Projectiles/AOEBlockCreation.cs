@@ -25,25 +25,33 @@ public class AOEBlockCreation : AOEExplosion
             var position = transform.position +
                               radius * Mathf.Cos((i / blockCount) * 2 * Mathf.PI) * transform.right +
                               radius * Mathf.Sin((i / blockCount) * 2 * Mathf.PI) * transform.up;
-            CreateBlock(position, "::AOE::" + Time.time + "::" + i);
+            CreateBlock(position, position, "::AOE::" + Time.time + "::" + i);
             
             // Ring two
             position = transform.position +
                               1.5f * radius * Mathf.Cos(((i + .5f) / blockCount) * 2 * Mathf.PI) * transform.right +
-                              1.5f * radius * Mathf.Sin(((i + .5f) / blockCount) * 2 * Mathf.PI) * transform.up;
-            CreateBlock(position, "::AOE::" + Time.time + "::" + i + "-2");
+                              1.5f * radius * Mathf.Sin(((i + .5f) / blockCount) * 2 * Mathf.PI) * transform.up
+                              -.5f * radius * transform.forward;
+            CreateBlock(position, position +  radius * transform.forward, "::AOE::" + Time.time + "::" + i + "-2");
+
+            // Ring three
+            position = transform.position +
+                              2f * radius * Mathf.Cos((i / blockCount) * 2 * Mathf.PI) * transform.right +
+                              2f * radius * Mathf.Sin((i / blockCount) * 2 * Mathf.PI) * transform.up
+                              - radius * transform.forward; ;
+            CreateBlock(position, position + 2*radius * transform.forward, "::AOE::" + Time.time + "::" + i + "-3");
         }
 
         yield return new WaitForEndOfFrame();
     }
 
-    void CreateBlock(Vector3 position, string ownerId)
+    void CreateBlock(Vector3 position, Vector3 lookPosition, string ownerId)
     {
         var Block = Instantiate(trail);
         Block.Team = Team;
         Block.ownerId = Ship.Player.PlayerUUID;
         Block.PlayerName = Ship.Player.PlayerName;
-        Block.transform.SetPositionAndRotation(position, Quaternion.LookRotation(position - transform.position, transform.forward));
+        Block.transform.SetPositionAndRotation(position, Quaternion.LookRotation(lookPosition - transform.position, transform.forward));
         Block.GetComponent<MeshRenderer>().material = blockMaterial;
         Block.ID = Block.ownerId + ownerId;  
         Block.Dimensions = blockScale;

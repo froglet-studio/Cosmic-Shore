@@ -128,10 +128,11 @@ namespace StarWriter.Core
                     case ShipControlOverrides.BlockScout:
                         break;
                     case ShipControlOverrides.CloseCam:
-                        cameraManager.closeCamDistance = closeCamDistance;
+                        cameraManager.CloseCamDistance = closeCamDistance;
                         cameraManager.SetCloseCameraDistance(closeCamDistance);
                         break;
                     case ShipControlOverrides.FarCam:
+                        cameraManager.FarCamDistance = farCamDistance;
                         cameraManager.SetFarCameraDistance(farCamDistance);
                         break;
                     case ShipControlOverrides.SecondMode:
@@ -381,7 +382,7 @@ namespace StarWriter.Core
                 boostDuration += Time.deltaTime;
                 nearFieldSkimmer.transform.localScale = Mathf.Min(minNearFieldSkimmerScale + boostDuration* BoostSkimmerScaler, maxNearFieldSkimmerScale) * Vector3.one;
             }
-            else if (boostSkimmerScalingStopped)
+            else if (boostSkimmerScalingStopped && boostSkimmerScaling)
             {
                 boostSkimmerScalingStopped = false;
                 boostDuration = 0;

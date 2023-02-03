@@ -4610,12 +4610,12 @@ PrefabInstance:
     - target: {fileID: 2273807540259799843, guid: ba70c0f3eb077d44b8a538982d02dadc,
         type: 3}
       propertyPath: m_Lens.m_SensorSize.x
-      value: 2.0555556
+      value: 1.7777778
       objectReference: {fileID: 0}
     - target: {fileID: 4286694852303775635, guid: ba70c0f3eb077d44b8a538982d02dadc,
         type: 3}
       propertyPath: m_Lens.m_SensorSize.x
-      value: 2.0555556
+      value: 1.7777778
       objectReference: {fileID: 0}
     - target: {fileID: 4853709195319085108, guid: ba70c0f3eb077d44b8a538982d02dadc,
         type: 3}
@@ -4670,12 +4670,12 @@ PrefabInstance:
     - target: {fileID: 4853709195325629897, guid: ba70c0f3eb077d44b8a538982d02dadc,
         type: 3}
       propertyPath: m_Lens.NearClipPlane
-      value: 0.001
+      value: 3
       objectReference: {fileID: 0}
     - target: {fileID: 4853709195325629897, guid: ba70c0f3eb077d44b8a538982d02dadc,
         type: 3}
       propertyPath: m_Lens.m_SensorSize.x
-      value: 2.0555556
+      value: 1.7777778
       objectReference: {fileID: 0}
     - target: {fileID: 4853709195505754398, guid: ba70c0f3eb077d44b8a538982d02dadc,
         type: 3}
@@ -4685,7 +4685,7 @@ PrefabInstance:
     - target: {fileID: 4853709195735906030, guid: ba70c0f3eb077d44b8a538982d02dadc,
         type: 3}
       propertyPath: m_Lens.m_SensorSize.x
-      value: 2.0555556
+      value: 1.7777778
       objectReference: {fileID: 0}
     - target: {fileID: 4853709195735906030, guid: ba70c0f3eb077d44b8a538982d02dadc,
         type: 3}
@@ -4760,7 +4760,7 @@ PrefabInstance:
     - target: {fileID: 4853709196102757139, guid: ba70c0f3eb077d44b8a538982d02dadc,
         type: 3}
       propertyPath: m_Lens.m_SensorSize.x
-      value: 2.0555556
+      value: 1.7777778
       objectReference: {fileID: 0}
     - target: {fileID: 4853709196453371476, guid: ba70c0f3eb077d44b8a538982d02dadc,
         type: 3}

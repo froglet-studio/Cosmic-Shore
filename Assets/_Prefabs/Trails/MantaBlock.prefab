@@ -120,7 +120,7 @@ MonoBehaviour:
     volume: 0.2
     speedDebuffAmount: 0.4
     trail: {fileID: 0}
-  growthRate: 0.5
+  growthRate: 2
   ownerId: 
   waitTime: 0.5
   destroyed: 0

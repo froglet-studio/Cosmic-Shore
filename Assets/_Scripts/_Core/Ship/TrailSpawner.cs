@@ -85,7 +85,7 @@ public class TrailSpawner : MonoBehaviour
     }
 
     [Tooltip("Number of proximal blocks before trail block size reaches minimum")]
-    [SerializeField] int MaxNearbyBlockCount = 10;
+    [SerializeField] public int MaxNearbyBlockCount = 10;
     [SerializeField] float minBlockScale = 1;
     [SerializeField] float maxBlockScale = 1;
     float blockScale;
