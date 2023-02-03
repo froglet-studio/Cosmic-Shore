@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using StarWriter.Core.Input;
+using UnityEditor.ShaderGraph.Internal;
 using UnityEngine;
 using UnityEngine.Serialization;
 
@@ -43,6 +44,9 @@ namespace StarWriter.Core
         [SerializeField] float maxNearFieldSkimmerScale = 100;
         [SerializeField] bool boostSkimmerScaling = false;
         [SerializeField] float BoostSkimmerScaler = .01f;
+        [SerializeField] float cameraGrowthRate = .15f;
+        [SerializeField] float cameraShrinkRate = .06f;
+        [SerializeField] float throttle = 50;
 
         [Header("Dynamically Assignable Controls")]
         [SerializeField] List<ShipActions> fullSpeedStraightEffects;
@@ -140,6 +144,9 @@ namespace StarWriter.Core
                         break;
                     case ShipControlOverrides.SpeedBasedTurning:
                         inputController.rotationThrottleScaler = rotationThrottleScaler;
+                        break;
+                    case ShipControlOverrides.Throttle:
+                        inputController.defaultThrottleScaler = throttle;
                         break;
                 }
             }
@@ -243,7 +250,6 @@ namespace StarWriter.Core
                     case ShipActions.Drift:
                         // TODO: this should call inputController.StartDrift
                         shipData.Drifting = true;
-                        cameraManager.ZoomOut();
                         break;
                     case ShipActions.Boost:
                         shipData.Boosting = true;
@@ -267,6 +273,9 @@ namespace StarWriter.Core
                     case ShipActions.ToggleGyro:
                         inputController.OnToggleGyro(true);
                         break;
+                    case ShipActions.ZoomOut:
+                        cameraManager.ZoomOut(cameraGrowthRate);
+                        break;
                 }
             }
         }
@@ -284,7 +293,6 @@ namespace StarWriter.Core
                     case ShipActions.Drift:
                         shipData.Drifting = false;
                         inputController.EndDrift();
-                        cameraManager.ResetToNeutral();
                         break;
                     case ShipActions.Boost:
                         shipData.Boosting = false;
@@ -305,6 +313,9 @@ namespace StarWriter.Core
                         break;
                     case ShipActions.ToggleGyro:
                         inputController.OnToggleGyro(false);
+                        break;
+                    case ShipActions.ZoomOut:
+                        cameraManager.ResetToNeutral(cameraShrinkRate);
                         break;
                 }
             }

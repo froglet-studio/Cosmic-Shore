@@ -8,4 +8,5 @@ public enum ShipControlOverrides
     FarCam = 4,
     SecondMode = 5,
     SpeedBasedTurning = 6,
+    Throttle = 7
 }

@@ -153,7 +153,6 @@ public class CameraManager : SingletonPersistent<CameraManager>
             {
                 lerpRate = .006f;
             }
-
             else 
             {
                 lerpRate = .002f;
@@ -193,20 +192,9 @@ public class CameraManager : SingletonPersistent<CameraManager>
     //    StartCoroutine(ZoomOutCoroutine());
     //}
 
-    IEnumerator ZoomOutCoroutine()
-    {
-        var vCam = closeCamera.VirtualCameraGameObject.GetComponent<CinemachineVirtualCamera>();
-        var transposer = vCam.GetCinemachineComponent<CinemachineTransposer>();
-        var followOffset = new Vector3(0, 0, CloseCamDistance);
-        while (ZoomingOut)
-        {
-            transposer.m_FollowOffset = distanceScaler*followOffset;
-            distanceScaler += .015f;
-            yield return new WaitForSeconds(.03f);
-        }
-    }
 
-    public void ZoomOut()
+
+    public void ZoomOut(float growthRate)
     {
         if (returnToNeutralCoroutine != null)
         {
@@ -214,10 +202,23 @@ public class CameraManager : SingletonPersistent<CameraManager>
             returnToNeutralCoroutine = null;
         }
         ZoomingOut = true;
-        zoomOutCoroutine = StartCoroutine(ZoomOutCoroutine());
+        zoomOutCoroutine = StartCoroutine(ZoomOutCoroutine(growthRate));
     }
 
-    public void ResetToNeutral()
+    IEnumerator ZoomOutCoroutine(float growthRate)
+    {
+        var vCam = closeCamera.VirtualCameraGameObject.GetComponent<CinemachineVirtualCamera>();
+        var transposer = vCam.GetCinemachineComponent<CinemachineTransposer>();
+        var followOffset = new Vector3(0, 0, CloseCamDistance);
+        while (ZoomingOut && transposer.m_FollowOffset.z > FarCamDistance)
+        {
+            transposer.m_FollowOffset = distanceScaler * followOffset;
+            distanceScaler += growthRate;
+            yield return new WaitForSeconds(.03f);
+        }
+    }
+
+    public void ResetToNeutral(float shrinkRate)
     {
         if (zoomOutCoroutine != null)
         {
@@ -225,13 +226,13 @@ public class CameraManager : SingletonPersistent<CameraManager>
             zoomOutCoroutine = null;
         }
         ZoomingOut = false;
-        returnToNeutralCoroutine = StartCoroutine(ReturnToNeutralCoroutine());
+        returnToNeutralCoroutine = StartCoroutine(ReturnToNeutralCoroutine(shrinkRate));
     }
 
     Coroutine zoomOutCoroutine;
     Coroutine returnToNeutralCoroutine;
 
-    IEnumerator ReturnToNeutralCoroutine()
+    IEnumerator ReturnToNeutralCoroutine(float shrinkRate)
     {
         var vCam = closeCamera.VirtualCameraGameObject.GetComponent<CinemachineVirtualCamera>();
         var transposer = vCam.GetCinemachineComponent<CinemachineTransposer>();
@@ -239,7 +240,7 @@ public class CameraManager : SingletonPersistent<CameraManager>
         while (distanceScaler > 1)
         {
             transposer.m_FollowOffset = distanceScaler * followOffset;
-            distanceScaler -= .06f;
+            distanceScaler -= shrinkRate;
             yield return new WaitForSeconds(.03f);
         }
         SetCloseCameraDistance(CloseCamDistance);

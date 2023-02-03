@@ -76,7 +76,7 @@ public class TrailSpawner : MonoBehaviour
         StartCoroutine(SpawnTrailCoroutine());
 
         ownerId = ship.Player.PlayerUUID;
-        blockScale = minBlockScale;
+        XScaler = minBlockScale;
     }
 
     public void ToggleBlockWaitTime(bool state)
@@ -88,12 +88,21 @@ public class TrailSpawner : MonoBehaviour
     [SerializeField] public int MaxNearbyBlockCount = 10;
     [SerializeField] float minBlockScale = 1;
     [SerializeField] float maxBlockScale = 1;
-    float blockScale;
+    
+    float XScaler = 1;
+    float YScaler = 1;
+    float ZScaler = 1;
+
 
     public void SetNearbyBlockCount(int blockCount)
     {
         blockCount = Mathf.Min(blockCount, MaxNearbyBlockCount);
-        blockScale = Mathf.Max(minBlockScale, maxBlockScale * (1  - (blockCount / (float)MaxNearbyBlockCount)));
+        XScaler = Mathf.Max(minBlockScale, maxBlockScale * (1  - (blockCount / (float)MaxNearbyBlockCount)));
+    }
+
+    public void SetZScaling(float amount)
+    {
+        ZScaler = 1 + Mathf.Abs(amount);
     }
      
     void PauseTrailSpawner()
@@ -140,7 +149,7 @@ public class TrailSpawner : MonoBehaviour
                 Block.warp = warp;
                 Block.GetComponent<MeshRenderer>().material = blockMaterial;
                 Block.ID = ownerId + "::" + spawnedTrailCount++;
-                Block.Dimensions = new Vector3(trail.transform.localScale.x * blockScale, trail.transform.localScale.y, trail.transform.localScale.z);
+                Block.Dimensions = new Vector3(trail.transform.localScale.x * XScaler, trail.transform.localScale.y * YScaler, trail.transform.localScale.z * ZScaler);
 
                 if (Block.warp)
                     wavelength = shards.GetComponent<WarpFieldData>().HybridVector(Block.transform).magnitude * initialWavelength;

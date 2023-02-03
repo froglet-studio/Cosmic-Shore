@@ -33,10 +33,10 @@ namespace StarWriter.Core.Input
 
         float speed;
 
-        public float defaultThrottle = 10f;
+        public float defaultMinimumSpeed = 10f;
         public float defaultThrottleScaler = 50;
 
-        [HideInInspector] public float throttle;
+        [HideInInspector] public float minimumSpeed;
         [HideInInspector] public float throttleScaler;
 
         float xSum;
@@ -78,7 +78,7 @@ namespace StarWriter.Core.Input
             shipData = ship.GetComponent<ShipData>();
             resourceSystem = ship.GetComponent<ResourceSystem>();
 
-            throttle = defaultThrottle;
+            minimumSpeed = defaultMinimumSpeed;
             throttleScaler = defaultThrottleScaler;
 
             uuid = GameObject.FindWithTag("Player").GetComponent<Player>().PlayerUUID;
@@ -331,7 +331,7 @@ namespace StarWriter.Core.Input
                 }
                 else
                 {
-                    speed = Mathf.Lerp(speed, throttle, smallLerpAmount * Time.deltaTime);
+                    speed = Mathf.Lerp(speed, minimumSpeed, smallLerpAmount * Time.deltaTime);
                     shipAnimation.Idle();
                 }
             }
@@ -402,7 +402,7 @@ namespace StarWriter.Core.Input
                 OnBoost?.Invoke(uuid, ship.boostFuelAmount);
             }
             if (shipData.BoostDecaying) boostAmount *= boostDecay;
-            speed = Mathf.Lerp(speed, xDiff * throttleScaler * boostAmount + throttle, lerpAmount * Time.deltaTime);
+            speed = Mathf.Lerp(speed, xDiff * throttleScaler * boostAmount + minimumSpeed, lerpAmount * Time.deltaTime);
         }
 
         void CheckThrottle()

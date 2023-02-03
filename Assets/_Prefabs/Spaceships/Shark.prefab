@@ -602,7 +602,10 @@ MonoBehaviour:
   maxNearFieldSkimmerScale: 60
   boostSkimmerScaling: 1
   BoostSkimmerScaler: 15
-  fullSpeedStraightEffects: 01000000
+  cameraGrowthRate: 0.03
+  cameraShrinkRate: 0.03
+  throttle: 50
+  fullSpeedStraightEffects: 0100000006000000
   rightStickEffects: 
   leftStickEffects: 
   flipEffects: 03000000

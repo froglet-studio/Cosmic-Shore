@@ -345,7 +345,7 @@ MonoBehaviour:
   warp: 0
   MaxNearbyBlockCount: 50
   minBlockScale: 1
-  maxBlockScale: 15
+  maxBlockScale: 20
 --- !u!114 &874579555101021523
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -391,7 +391,7 @@ MonoBehaviour:
   - {fileID: 2306761366267364778}
   TrailSpawner: {fileID: 874579555101021522}
   head: {fileID: 0}
-  crystalImpactEffects: 000000000400000007000000
+  crystalImpactEffects: 0000000007000000
   trailBlockImpactEffects: 00000000030000000200000008000000
   boostMultiplier: 2
   boostFuelAmount: 0
@@ -408,11 +408,14 @@ MonoBehaviour:
   maxNearFieldSkimmerScale: 100
   boostSkimmerScaling: 0
   BoostSkimmerScaler: 0.01
-  fullSpeedStraightEffects: 01000000
+  cameraGrowthRate: 0.15
+  cameraShrinkRate: 0.06
+  throttle: 80
+  fullSpeedStraightEffects: 
   rightStickEffects: 
   leftStickEffects: 
   flipEffects: 03000000
-  controlOverrides: 030000000400000000000000
+  controlOverrides: 03000000040000000000000007000000
 --- !u!114 &3440187540988767646
 MonoBehaviour:
   m_ObjectHideFlags: 0

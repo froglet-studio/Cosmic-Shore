@@ -792,6 +792,9 @@ MonoBehaviour:
   ShipType: 2
   nearFieldSkimmer: {fileID: 874579554510349383}
   farFieldSkimmer: {fileID: 0}
+  OrientationHandle: {fileID: 1087614488730427270}
+  AOEPrefab: {fileID: 9218889541719856748, guid: 2ae56847c6f549948a71f41eaf59f749,
+    type: 3}
   shipGeometries:
   - {fileID: 4662679416581426262}
   - {fileID: 8921444315668696485}
@@ -801,9 +804,8 @@ MonoBehaviour:
   - {fileID: 3743426984857614330}
   - {fileID: 1463393096304612524}
   - {fileID: 8211653562881954920}
-  AOEPrefab: {fileID: 9218889541719856748, guid: 2ae56847c6f549948a71f41eaf59f749,
-    type: 3}
   TrailSpawner: {fileID: 874579555101021522}
+  head: {fileID: 0}
   crystalImpactEffects: 000000000500000002000000
   trailBlockImpactEffects: 00000000030000000200000001000000
   boostMultiplier: 4
@@ -815,14 +817,17 @@ MonoBehaviour:
   blockFuelChange: 0
   closeCamDistance: -5
   farCamDistance: 0
-  head: {fileID: 0}
-  OrientationHandle: {fileID: 1087614488730427270}
-  SecondMode: 5
+  minFarFieldSkimmerScale: 100
+  maxFarFieldSkimmerScale: 200
+  minNearFieldSkimmerScale: 15
+  maxNearFieldSkimmerScale: 100
+  boostSkimmerScaling: 0
+  BoostSkimmerScaler: 0.01
   fullSpeedStraightEffects: 
-  rightStickEffects: 00000000
-  leftStickEffects: 00000000
+  rightStickEffects: 0000000006000000
+  leftStickEffects: 0000000006000000
   flipEffects: 05000000
-  controlOverrides: 03000000
+  controlOverrides: 0300000000000000
 --- !u!114 &3440187540988767646
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -859,6 +864,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 737294a573670f74389a7af68df314d5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  maxCharge: 1
+  initialCharge: 1
+  maxLevel: 1
+  initialLevel: 0
   ChargeDisplay: {fileID: 0}
 --- !u!114 &1871436205027819587
 MonoBehaviour:
