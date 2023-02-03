@@ -47,6 +47,8 @@ namespace StarWriter.Core
         [SerializeField] float cameraGrowthRate = .15f;
         [SerializeField] float cameraShrinkRate = .06f;
         [SerializeField] float throttle = 50;
+        [SerializeField] float BoostDecayGrowthRate = .03f;
+        [SerializeField] float MaxBoostDecay = 10;
 
         [Header("Dynamically Assignable Controls")]
         [SerializeField] List<ShipActions> fullSpeedStraightEffects;
@@ -147,6 +149,12 @@ namespace StarWriter.Core
                         break;
                     case ShipControlOverrides.Throttle:
                         inputController.defaultThrottleScaler = throttle;
+                        break;
+                    case ShipControlOverrides.BoostDecayGrowthRate:
+                        inputController.BoostDecayGrowthRate = BoostDecayGrowthRate;
+                        break;
+                    case ShipControlOverrides.MaxBoostDecay:
+                        inputController.MaxBoostDecay = MaxBoostDecay;
                         break;
                 }
             }

@@ -22,10 +22,7 @@ namespace StarWriter.Core.Input
         public static event Boost OnBoost;
         string uuid;
 
-        public bool drifting = false;
-
         public float boostDecay = 1; 
-
 
         bool leftStickEffectsStarted = false;
         bool rightStickEffectsStarted = false;
@@ -35,6 +32,8 @@ namespace StarWriter.Core.Input
 
         public float defaultMinimumSpeed = 10f;
         public float defaultThrottleScaler = 50;
+        public float MaxBoostDecay = 10;
+        public float BoostDecayGrowthRate = .03f;
 
         [HideInInspector] public float minimumSpeed;
         [HideInInspector] public float throttleScaler;
@@ -127,13 +126,19 @@ namespace StarWriter.Core.Input
 
             // Move ship velocityDirection
             shipData.InputSpeed = speed;
-            
+
+            shipData.blockRotation = shipTransform.rotation;
+
             if (!shipData.Drifting)
             {
                 shipData.velocityDirection = shipTransform.forward;
-                shipData.blockRotation = shipTransform.rotation;
             }
-            else StoreBoost();
+            else 
+            {
+                StoreBoost();
+                ship.GetComponent<TrailSpawner>().SetDotProduct(Vector3.Dot(shipData.velocityDirection, shipTransform.forward));
+            }
+            
 
             shipTransform.position += shipData.Speed * Time.deltaTime * shipData.velocityDirection;
         }
@@ -350,11 +355,12 @@ namespace StarWriter.Core.Input
 
         void StoreBoost()
         {
-            boostDecay += .03f; // TODO make this settable by the ship script.
+            boostDecay += BoostDecayGrowthRate; 
         }
 
         public void EndDrift()
         {
+            ship.GetComponent<TrailSpawner>().SetDotProduct(1);
             StartCoroutine(DecayingBoostCoroutine());
         }
 
@@ -363,7 +369,7 @@ namespace StarWriter.Core.Input
             shipData.BoostDecaying = true;
             while (boostDecay > 1)
             {
-                boostDecay = Mathf.Clamp(boostDecay - Time.deltaTime, 1, 10);
+                boostDecay = Mathf.Clamp(boostDecay - Time.deltaTime, 1, MaxBoostDecay);
                 Debug.Log(boostDecay);
                 yield return null;
             }

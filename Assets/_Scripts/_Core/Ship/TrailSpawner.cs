@@ -11,11 +11,14 @@ public class TrailSpawner : MonoBehaviour
 
     public float offset = 0f;
 
-    public float initialWavelength = 4f;
+    [SerializeField] float initialWavelength = 4f;
+    [SerializeField] float minWavelength = 1f;
+
     float wavelength;
 
     public float trailLength = 20;
     [SerializeField] float defaultWaitTime = .5f;
+    
     public float waitTime = .5f;  // Time until the trail block appears - camera dependent
     public float startDelay = 2.1f;
 
@@ -100,9 +103,10 @@ public class TrailSpawner : MonoBehaviour
         XScaler = Mathf.Max(minBlockScale, maxBlockScale * (1  - (blockCount / (float)MaxNearbyBlockCount)));
     }
 
-    public void SetZScaling(float amount)
+    public void SetDotProduct(float amount)
     {
-        ZScaler = 1 + Mathf.Abs(amount);
+        ZScaler = Mathf.Max(minBlockScale, maxBlockScale * (1 - Mathf.Abs(amount)));
+        wavelength = Mathf.Max(minWavelength, initialWavelength * Mathf.Abs(amount)); 
     }
      
     void PauseTrailSpawner()

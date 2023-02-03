@@ -747,7 +747,8 @@ MonoBehaviour:
   trail: {fileID: 4563009547826722997, guid: 4e280247faa1d154fa25d1e92df405dc, type: 3}
   skimmer: {fileID: 874579554510349383}
   offset: 0
-  initialWavelength: 5
+  initialWavelength: 12
+  minWavelength: 6
   trailLength: 40
   defaultWaitTime: 0.5
   waitTime: 0.5
@@ -755,7 +756,7 @@ MonoBehaviour:
   warp: 0
   MaxNearbyBlockCount: 10
   minBlockScale: 1
-  maxBlockScale: 1
+  maxBlockScale: 5
 --- !u!114 &874579555101021523
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -823,11 +824,16 @@ MonoBehaviour:
   maxNearFieldSkimmerScale: 100
   boostSkimmerScaling: 0
   BoostSkimmerScaler: 0.01
+  cameraGrowthRate: 0.05
+  cameraShrinkRate: 0.12
+  throttle: 50
+  BoostDecayGrowthRate: 0.03
+  MaxBoostDecay: 6
   fullSpeedStraightEffects: 
   rightStickEffects: 0000000006000000
   leftStickEffects: 0000000006000000
   flipEffects: 05000000
-  controlOverrides: 0300000000000000
+  controlOverrides: 03000000000000000800000009000000
 --- !u!114 &3440187540988767646
 MonoBehaviour:
   m_ObjectHideFlags: 0
