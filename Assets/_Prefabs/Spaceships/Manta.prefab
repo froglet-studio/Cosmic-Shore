@@ -338,6 +338,7 @@ MonoBehaviour:
   skimmer: {fileID: 874579554510349383}
   offset: 0
   initialWavelength: 5
+  minWavelength: 1
   trailLength: 40
   defaultWaitTime: 0.5
   waitTime: 0.5
@@ -406,11 +407,13 @@ MonoBehaviour:
   maxFarFieldSkimmerScale: 200
   minNearFieldSkimmerScale: 15
   maxNearFieldSkimmerScale: 100
-  boostSkimmerScaling: 0
-  BoostSkimmerScaler: 0.01
-  cameraGrowthRate: 0.15
-  cameraShrinkRate: 0.06
+  skimmerGrowthRate: 1
+  skimmerShrinkRate: 1
+  cameraGrowthRate: 5
+  cameraShrinkRate: 5
   throttle: 80
+  BoostDecayGrowthRate: 0.03
+  MaxBoostDecay: 10
   fullSpeedStraightEffects: 
   rightStickEffects: 
   leftStickEffects: 

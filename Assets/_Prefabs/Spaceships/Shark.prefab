@@ -595,16 +595,16 @@ MonoBehaviour:
   minExplosionScale: 50
   maxExplosionScale: 500
   blockFuelChange: 0.01
-  closeCamDistance: -7
-  farCamDistance: -42
+  closeCamDistance: -10
+  farCamDistance: -60
   minFarFieldSkimmerScale: 100
   maxFarFieldSkimmerScale: 200
   minNearFieldSkimmerScale: 10
   maxNearFieldSkimmerScale: 60
   skimmerGrowthRate: 8
   skimmerShrinkRate: 8
-  cameraGrowthRate: 5.714
-  cameraShrinkRate: 5.714
+  cameraGrowthRate: 8
+  cameraShrinkRate: 8
   throttle: 50
   BoostDecayGrowthRate: 0.03
   MaxBoostDecay: 10
