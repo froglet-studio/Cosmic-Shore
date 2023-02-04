@@ -822,10 +822,10 @@ MonoBehaviour:
   maxFarFieldSkimmerScale: 200
   minNearFieldSkimmerScale: 15
   maxNearFieldSkimmerScale: 100
-  boostSkimmerScaling: 0
-  BoostSkimmerScaler: 0.01
-  cameraGrowthRate: 0.05
-  cameraShrinkRate: 0.12
+  skimmerGrowthRate: 1
+  skimmerShrinkRate: 1
+  cameraGrowthRate: 5
+  cameraShrinkRate: 5
   throttle: 50
   BoostDecayGrowthRate: 0.03
   MaxBoostDecay: 6

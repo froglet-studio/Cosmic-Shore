@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using StarWriter.Core.Input;
 using UnityEngine;
@@ -41,10 +42,10 @@ namespace StarWriter.Core
         [SerializeField] float maxFarFieldSkimmerScale = 200;
         [SerializeField] float minNearFieldSkimmerScale = 15;
         [SerializeField] float maxNearFieldSkimmerScale = 100;
-        [SerializeField] bool boostSkimmerScaling = false;
-        [SerializeField] float BoostSkimmerScaler = .01f;
-        [SerializeField] float cameraGrowthRate = .15f;
-        [SerializeField] float cameraShrinkRate = .06f;
+        [SerializeField] float skimmerGrowthRate = 1;
+        [SerializeField] float skimmerShrinkRate = 1;
+        [SerializeField] float cameraGrowthRate = 1;
+        [SerializeField] float cameraShrinkRate = 1;
         [SerializeField] float throttle = 50;
         [SerializeField] float BoostDecayGrowthRate = .03f;
         [SerializeField] float MaxBoostDecay = 10;
@@ -71,8 +72,8 @@ namespace StarWriter.Core
         float speedModifierDuration = 2f;
         float speedModifierMax = 6f;
         float abilityStartTime;
-        float boostDuration;
-        bool boostSkimmerScalingStopped;
+        float elapsedTime;
+        bool SkimmerGrowing;
 
         public Teams Team 
         { 
@@ -118,7 +119,6 @@ namespace StarWriter.Core
         void Update()
         {
             ApplySpeedModifiers();
-            ScaleSkimmerDuringBoost(); // TODO: turn this into apply skimmer modifiers
         }
 
         void ApplyShipControlOverrides(List<ShipControlOverrides> controlOverrides)
@@ -283,6 +283,9 @@ namespace StarWriter.Core
                     case ShipActions.ZoomOut:
                         cameraManager.ZoomOut(cameraGrowthRate);
                         break;
+                    case ShipActions.GrowSkimmer:
+                        GrowSkimmer(skimmerGrowthRate);
+                        break;
                 }
             }
         }
@@ -303,7 +306,6 @@ namespace StarWriter.Core
                         break;
                     case ShipActions.Boost:
                         shipData.Boosting = false;
-                        boostSkimmerScalingStopped = true;
                         break;
                     case ShipActions.Invulnerability:
                         invulnerable = false;
@@ -323,6 +325,9 @@ namespace StarWriter.Core
                         break;
                     case ShipActions.ZoomOut:
                         cameraManager.ResetToNeutral(cameraShrinkRate);
+                        break;
+                    case ShipActions.GrowSkimmer:
+                        ResetSkimmerToNeutral(skimmerShrinkRate);
                         break;
                 }
             }
@@ -393,28 +398,47 @@ namespace StarWriter.Core
             farFieldSkimmer.transform.localScale = Vector3.one * (maxFarFieldSkimmerScale - ((resourceSystem.CurrentLevel / resourceSystem.MaxLevel) * (maxFarFieldSkimmerScale - minFarFieldSkimmerScale)));
         }
 
-        void ScaleSkimmerDuringBoost()
+        Coroutine returnSkimmerToNeutralCoroutine;
+        Coroutine growSkimmerCoroutine;
+        void GrowSkimmer(float growthRate)
         {
-            if (boostSkimmerScaling && shipData.Boosting && resourceSystem.CurrentCharge > 0)
+            if (returnSkimmerToNeutralCoroutine != null)
             {
-                boostDuration += Time.deltaTime;
-                nearFieldSkimmer.transform.localScale = Mathf.Min(minNearFieldSkimmerScale + boostDuration * BoostSkimmerScaler, maxNearFieldSkimmerScale) * Vector3.one;
+                StopCoroutine(returnSkimmerToNeutralCoroutine);
+                returnSkimmerToNeutralCoroutine = null;
             }
-            else if (boostSkimmerScaling && boostSkimmerScalingStopped)
+            SkimmerGrowing = true;
+            growSkimmerCoroutine = StartCoroutine(GrowSkimmerCoroutine(growthRate));
+        }
+
+        IEnumerator GrowSkimmerCoroutine(float growthRate)
+        {
+            while (SkimmerGrowing && nearFieldSkimmer.transform.localScale.z < maxNearFieldSkimmerScale)
             {
-                if (nearFieldSkimmer.transform.localScale.z > minNearFieldSkimmerScale)
-                {
-                    boostDuration -= Time.deltaTime*2;
-                    nearFieldSkimmer.transform.localScale = Mathf.Min(minNearFieldSkimmerScale + boostDuration * BoostSkimmerScaler, maxNearFieldSkimmerScale) * Vector3.one;
-                }
-                else
-                {
-                    boostSkimmerScalingStopped = false;
-                    boostDuration = 0;
-                    nearFieldSkimmer.transform.localScale = minNearFieldSkimmerScale * Vector3.one;
-                }
-                
+                nearFieldSkimmer.transform.localScale += Time.deltaTime * growthRate * Vector3.one;
+                yield return null;
             }
+        }
+
+        public void ResetSkimmerToNeutral(float shrinkRate)
+        {
+            if (growSkimmerCoroutine != null)
+            {
+                StopCoroutine(growSkimmerCoroutine);
+                growSkimmerCoroutine = null;
+            }
+            SkimmerGrowing = false;
+            returnSkimmerToNeutralCoroutine = StartCoroutine(ReturnSkimmerToNeutralCoroutine(shrinkRate));
+        }
+
+        IEnumerator ReturnSkimmerToNeutralCoroutine(float shrinkRate)
+        {
+            while (nearFieldSkimmer.transform.localScale.z > minNearFieldSkimmerScale)
+            {
+                nearFieldSkimmer.transform.localScale -= Time.deltaTime * shrinkRate * Vector3.one;
+                yield return null;
+            }
+            nearFieldSkimmer.transform.localScale = minNearFieldSkimmerScale * Vector3.one;
         }
     }
 }

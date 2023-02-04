@@ -8,5 +8,6 @@ public enum ShipActions
     ToggleCamera = 3,
     ToggleMode = 4,
     ToggleGyro = 5,
-    ZoomOut = 6
+    ZoomOut = 6,
+    GrowSkimmer = 7
 }

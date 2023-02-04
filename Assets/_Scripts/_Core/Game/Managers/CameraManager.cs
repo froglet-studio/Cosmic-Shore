@@ -148,7 +148,7 @@ public class CameraManager : SingletonPersistent<CameraManager>
         var transposer = vCam.GetCinemachineComponent<CinemachineTransposer>();
         while (transposer.m_FollowOffset != new Vector3(0, 0, distance))
         {
-            var lerpRate = .006f;
+            float lerpRate;
             if (transposer.m_FollowOffset.z < distance)
             {
                 lerpRate = .006f;
@@ -209,12 +209,10 @@ public class CameraManager : SingletonPersistent<CameraManager>
     {
         var vCam = closeCamera.VirtualCameraGameObject.GetComponent<CinemachineVirtualCamera>();
         var transposer = vCam.GetCinemachineComponent<CinemachineTransposer>();
-        var followOffset = new Vector3(0, 0, CloseCamDistance);
         while (ZoomingOut && transposer.m_FollowOffset.z > FarCamDistance)
         {
-            transposer.m_FollowOffset = distanceScaler * followOffset;
-            distanceScaler += growthRate;
-            yield return new WaitForSeconds(.03f);
+            transposer.m_FollowOffset += Time.deltaTime * Mathf.Abs(growthRate) * -Vector3.forward;         
+            yield return null;
         }
     }
 
@@ -236,14 +234,12 @@ public class CameraManager : SingletonPersistent<CameraManager>
     {
         var vCam = closeCamera.VirtualCameraGameObject.GetComponent<CinemachineVirtualCamera>();
         var transposer = vCam.GetCinemachineComponent<CinemachineTransposer>();
-        var followOffset = new Vector3(0, 0, CloseCamDistance);
-        while (distanceScaler > 1)
+        while (transposer.m_FollowOffset.z <= CloseCamDistance)
         {
-            transposer.m_FollowOffset = distanceScaler * followOffset;
-            distanceScaler -= shrinkRate;
-            yield return new WaitForSeconds(.03f);
+            transposer.m_FollowOffset += Time.deltaTime * Mathf.Abs(shrinkRate) * Vector3.forward;
+            yield return null;
         }
-        SetCloseCameraDistance(CloseCamDistance);
-        distanceScaler = 1f;
+        transposer.m_FollowOffset = new Vector3(0,0,CloseCamDistance);
+        //SetCloseCameraDistance(CloseCamDistance);
     }
 }
