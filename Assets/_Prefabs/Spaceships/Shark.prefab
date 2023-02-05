@@ -614,7 +614,7 @@ MonoBehaviour:
   fullSpeedStraightEffects: 010000000600000007000000
   rightStickEffects: 
   leftStickEffects: 
-  flipEffects: 03000000
+  flipEffects: 
   controlOverrides: 0300000004000000
 --- !u!114 &3440187540988767646
 MonoBehaviour:
