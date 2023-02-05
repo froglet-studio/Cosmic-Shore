@@ -16,6 +16,8 @@ public class TrailSpawner : MonoBehaviour
 
     float wavelength;
 
+    public float gap;
+
     public float trailLength = 20;
     [SerializeField] float defaultWaitTime = .5f;
     
@@ -135,6 +137,28 @@ public class TrailSpawner : MonoBehaviour
         spawnerEnabled = true;
     }
 
+    void CreateBlock(float halfGap)
+    {
+        var Block = Instantiate(trail);
+        Block.Dimensions = new Vector3(trail.transform.localScale.x * XScaler / 2f - Mathf.Abs(halfGap), trail.transform.localScale.y * YScaler, trail.transform.localScale.z * ZScaler);
+        Block.transform.SetPositionAndRotation(transform.position - shipData.velocityDirection * offset + ship.transform.right * ((trail.transform.localScale.x * XScaler )/ 4f + Mathf.Abs(halfGap)/2)*(halfGap/ Mathf.Abs(halfGap)), shipData.blockRotation);
+        Block.transform.parent = TrailContainer.transform;
+        Block.waitTime = (skimmer.transform.localScale.z + TrailZScale) / ship.GetComponent<ShipData>().Speed;
+        Block.ownerId = ship.Player.PlayerUUID;
+        Block.PlayerName = ship.Player.PlayerName;
+        Block.Team = ship.Team;
+        Block.warp = warp;
+        Block.GetComponent<MeshRenderer>().material = blockMaterial;
+        Block.ID = ownerId + "::" + spawnedTrailCount++;
+        
+
+        if (Block.warp)
+            wavelength = shards.GetComponent<WarpFieldData>().HybridVector(Block.transform).magnitude * initialWavelength;
+
+        trailQueue.Enqueue(Block);
+        trailList.Add(Block);
+    }
+
     IEnumerator SpawnTrailCoroutine()
     {
         yield return new WaitForSeconds(startDelay);
@@ -143,23 +167,32 @@ public class TrailSpawner : MonoBehaviour
         {
             if (Time.deltaTime < .1f && spawnerEnabled)
             {
-                var Block = Instantiate(trail);
-                Block.transform.SetPositionAndRotation(transform.position - shipData.velocityDirection * offset, shipData.blockRotation);
-                Block.transform.parent = TrailContainer.transform;
-                Block.waitTime = (skimmer.transform.localScale.z + TrailZScale) / ship.GetComponent<ShipData>().Speed; ;
-                Block.ownerId = ship.Player.PlayerUUID;
-                Block.PlayerName = ship.Player.PlayerName;
-                Block.Team = ship.Team;
-                Block.warp = warp;
-                Block.GetComponent<MeshRenderer>().material = blockMaterial;
-                Block.ID = ownerId + "::" + spawnedTrailCount++;
-                Block.Dimensions = new Vector3(trail.transform.localScale.x * XScaler, trail.transform.localScale.y * YScaler, trail.transform.localScale.z * ZScaler);
+                if (gap == 0)
+                {
+                    var Block = Instantiate(trail);
+                    Block.transform.SetPositionAndRotation(transform.position - shipData.velocityDirection * offset, shipData.blockRotation);
+                    Block.transform.parent = TrailContainer.transform;
+                    Block.waitTime = (skimmer.transform.localScale.z + TrailZScale) / ship.GetComponent<ShipData>().Speed;
+                    Block.ownerId = ship.Player.PlayerUUID;
+                    Block.PlayerName = ship.Player.PlayerName;
+                    Block.Team = ship.Team;
+                    Block.warp = warp;
+                    Block.GetComponent<MeshRenderer>().material = blockMaterial;
+                    Block.ID = ownerId + "::" + spawnedTrailCount++;
+                    Block.Dimensions = new Vector3(trail.transform.localScale.x * XScaler, trail.transform.localScale.y * YScaler, trail.transform.localScale.z * ZScaler);
 
-                if (Block.warp)
-                    wavelength = shards.GetComponent<WarpFieldData>().HybridVector(Block.transform).magnitude * initialWavelength;
+                    if (Block.warp)
+                        wavelength = shards.GetComponent<WarpFieldData>().HybridVector(Block.transform).magnitude * initialWavelength;
 
-                trailQueue.Enqueue(Block);
-                trailList.Add(Block);
+                    trailQueue.Enqueue(Block);
+                    trailList.Add(Block);
+                }
+                else
+                {
+                    CreateBlock(gap / 2);
+                    CreateBlock(-gap / 2);
+                }
+                
             }
 
             yield return new WaitForSeconds(wavelength / shipData.Speed);
