@@ -26,7 +26,7 @@ public class WarpFieldController : MonoBehaviour
     {
         var fieldResult = warpFieldData.HybridVector(player).magnitude;
         cameraManager.SetBothCameraDistances(-fieldResult); //TODO: set clip plane to half the distance
-        playerInput.throttleScaler = playerInput.defaultThrottleScaler * fieldResult;
+        playerInput.ThrottleScaler = playerInput.DefaultThrottleScaler * fieldResult;
         playerInput.minimumSpeed = playerInput.defaultMinimumSpeed * fieldResult;
 
         player.localScale = Vector3.one * fieldResult;

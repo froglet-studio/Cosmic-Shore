@@ -38,14 +38,16 @@ namespace StarWriter.Core
         [SerializeField] float blockFuelChange;
         [SerializeField] float closeCamDistance;
         [SerializeField] float farCamDistance;
+        [SerializeField] float cameraGrowthRate = 1;
+        [SerializeField] float cameraShrinkRate = 1;
         [SerializeField] float minFarFieldSkimmerScale = 100;
         [SerializeField] float maxFarFieldSkimmerScale = 200;
         [SerializeField] float minNearFieldSkimmerScale = 15;
         [SerializeField] float maxNearFieldSkimmerScale = 100;
         [SerializeField] float skimmerGrowthRate = 1;
         [SerializeField] float skimmerShrinkRate = 1;
-        [SerializeField] float cameraGrowthRate = 1;
-        [SerializeField] float cameraShrinkRate = 1;
+        [SerializeField] float minGap = 0;
+        [SerializeField] float maxGap = 0;
         [SerializeField] float throttle = 50;
         [SerializeField] float BoostDecayGrowthRate = .03f;
         [SerializeField] float MaxBoostDecay = 10;
@@ -114,6 +116,7 @@ namespace StarWriter.Core
                 { ShipControls.LeftStickAction, leftStickEffects },
                 { ShipControls.RightStickAction, rightStickEffects }
             };
+            ScaleGapWithLevel();
         }
 
         void Update()
@@ -147,7 +150,7 @@ namespace StarWriter.Core
                         inputController.rotationThrottleScaler = rotationThrottleScaler;
                         break;
                     case ShipControlOverrides.Throttle:
-                        inputController.defaultThrottleScaler = throttle;
+                        inputController.ThrottleScaler = throttle;
                         break;
                     case ShipControlOverrides.BoostDecayGrowthRate:
                         inputController.BoostDecayGrowthRate = BoostDecayGrowthRate;
@@ -186,6 +189,7 @@ namespace StarWriter.Core
                     case CrystalImpactEffects.IncrementLevel:
                         resourceSystem.ChangeLevel(player.PlayerUUID, ChargeDisplay.OneFuelUnit);
                         ScaleSkimmersWithLevel();
+                        ScaleGapWithLevel();
                         break;
                     case CrystalImpactEffects.FillCharge:
                         resourceSystem.ChangeChargeAmount(player.PlayerUUID, crystalProperties.fuelAmount);
@@ -240,6 +244,7 @@ namespace StarWriter.Core
                     case TrailBlockImpactEffects.DecrementLevel:
                         resourceSystem.ChangeLevel(player.PlayerUUID, -ChargeDisplay.OneFuelUnit);
                         ScaleSkimmersWithLevel();
+                        ScaleGapWithLevel();
                         break;
                 }
             }
@@ -397,6 +402,11 @@ namespace StarWriter.Core
             nearFieldSkimmer.transform.localScale = Vector3.one * (minNearFieldSkimmerScale + ((resourceSystem.CurrentLevel / resourceSystem.MaxLevel) * (maxNearFieldSkimmerScale - minNearFieldSkimmerScale)));
             farFieldSkimmer.transform.localScale = Vector3.one * (maxFarFieldSkimmerScale - ((resourceSystem.CurrentLevel / resourceSystem.MaxLevel) * (maxFarFieldSkimmerScale - minFarFieldSkimmerScale)));
         }
+        void ScaleGapWithLevel()
+        {
+            TrailSpawner.gap = maxGap - ((resourceSystem.CurrentLevel / resourceSystem.MaxLevel) * (maxGap - minGap));
+        }
+
 
         Coroutine returnSkimmerToNeutralCoroutine;
         Coroutine growSkimmerCoroutine;

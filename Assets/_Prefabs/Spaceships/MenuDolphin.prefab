@@ -815,8 +815,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   trail: {fileID: 4563009547826722997, guid: 21757137a3002b64096be5813c054a5d, type: 3}
+  skimmer: {fileID: 0}
   offset: 0
   initialWavelength: 5
+  minWavelength: 1
+  gap: 0
   trailLength: 40
   defaultWaitTime: 0.5
   waitTime: 0.5
@@ -861,6 +864,9 @@ MonoBehaviour:
   ShipType: 7
   nearFieldSkimmer: {fileID: 874579554510349383}
   farFieldSkimmer: {fileID: 0}
+  OrientationHandle: {fileID: 2897121333247873258}
+  AOEPrefab: {fileID: 2728798890556433942, guid: 4a855af160021d241b8c1ac70cf2d792,
+    type: 3}
   shipGeometries:
   - {fileID: 4662679416581426262}
   - {fileID: 8921444315668696485}
@@ -870,9 +876,8 @@ MonoBehaviour:
   - {fileID: 3743426984857614330}
   - {fileID: 1463393096304612524}
   - {fileID: 8211653562881954920}
-  AOEPrefab: {fileID: 2728798890556433942, guid: 4a855af160021d241b8c1ac70cf2d792,
-    type: 3}
   TrailSpawner: {fileID: 874579555101021522}
+  head: {fileID: 0}
   crystalImpactEffects: 0600000005000000
   trailBlockImpactEffects: 03000000
   boostMultiplier: 4
@@ -884,9 +889,19 @@ MonoBehaviour:
   blockFuelChange: 0
   closeCamDistance: 0
   farCamDistance: 0
-  head: {fileID: 0}
-  OrientationHandle: {fileID: 2897121333247873258}
-  SecondMode: 5
+  cameraGrowthRate: 1
+  cameraShrinkRate: 1
+  minFarFieldSkimmerScale: 100
+  maxFarFieldSkimmerScale: 200
+  minNearFieldSkimmerScale: 15
+  maxNearFieldSkimmerScale: 100
+  skimmerGrowthRate: 1
+  skimmerShrinkRate: 1
+  minGap: 0
+  maxGap: 0
+  throttle: 50
+  BoostDecayGrowthRate: 0.03
+  MaxBoostDecay: 10
   fullSpeedStraightEffects: 
   rightStickEffects: 
   leftStickEffects: 
@@ -928,6 +943,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 737294a573670f74389a7af68df314d5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  maxCharge: 1
+  initialCharge: 1
+  maxLevel: 1
+  initialLevel: 0
   ChargeDisplay: {fileID: 0}
 --- !u!114 &1871436205027819587
 MonoBehaviour:

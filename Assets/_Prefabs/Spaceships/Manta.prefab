@@ -339,6 +339,7 @@ MonoBehaviour:
   offset: 0
   initialWavelength: 5
   minWavelength: 1
+  gap: 0
   trailLength: 40
   defaultWaitTime: 0.5
   waitTime: 0.5
@@ -346,7 +347,7 @@ MonoBehaviour:
   warp: 0
   MaxNearbyBlockCount: 50
   minBlockScale: 1
-  maxBlockScale: 20
+  maxBlockScale: 8
 --- !u!114 &874579555101021523
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -403,14 +404,16 @@ MonoBehaviour:
   blockFuelChange: 0
   closeCamDistance: -5
   farCamDistance: -60
+  cameraGrowthRate: 5
+  cameraShrinkRate: 5
   minFarFieldSkimmerScale: 100
   maxFarFieldSkimmerScale: 200
   minNearFieldSkimmerScale: 15
   maxNearFieldSkimmerScale: 100
   skimmerGrowthRate: 1
   skimmerShrinkRate: 1
-  cameraGrowthRate: 5
-  cameraShrinkRate: 5
+  minGap: 6
+  maxGap: 19
   throttle: 80
   BoostDecayGrowthRate: 0.03
   MaxBoostDecay: 10
