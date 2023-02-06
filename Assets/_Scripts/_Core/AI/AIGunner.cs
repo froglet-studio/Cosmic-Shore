@@ -10,7 +10,7 @@ namespace StarWriter.Core.AI
 
         [SerializeField] float gunnerSpeed = 5;
         [SerializeField] float rotationSpeed = 40;
-        [SerializeField] int gap = 3;
+        [SerializeField] int padding = 3;
 
         public Teams Team;
         public Ship Ship;
@@ -33,7 +33,7 @@ namespace StarWriter.Core.AI
         void Update()
         {
             // Give the ships a small head start so some blocks exist
-            if (trailSpawner.trailList.Count < gap + 1)
+            if (trailSpawner.trailList.Count < padding + 1)
                 return;
 
             if (trailSpawner.trailList[(int)nextBlockIndex].destroyed) 
@@ -49,11 +49,11 @@ namespace StarWriter.Core.AI
             }
 
             // reached end of trail, reverse direction
-            if (nextBlockIndex > trailSpawner.trailList.Count - gap)
+            if (nextBlockIndex > trailSpawner.trailList.Count - padding)
                 moveForward = false;
 
             // reached beginning of trail, reverse direction
-            if (nextBlockIndex < gap)
+            if (nextBlockIndex < padding)
                 moveForward = true;
 
             transform.position = Vector3.Lerp(trailSpawner.trailList[previousBlockIndex].transform.position,

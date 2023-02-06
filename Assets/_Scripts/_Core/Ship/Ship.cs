@@ -59,7 +59,7 @@ namespace StarWriter.Core
         [SerializeField] List<ShipActions> flipEffects;
         [SerializeField] List<ShipControlOverrides> controlOverrides;
 
-        Dictionary<ShipControls, List<ShipActions>> ShipControlActions;
+        Dictionary<InputActions, List<ShipActions>> ShipControlActions;
 
         bool invulnerable;
         Teams team;
@@ -110,11 +110,11 @@ namespace StarWriter.Core
             foreach (var shipGeometry in shipGeometries)
                 shipGeometry.AddComponent<ShipGeometry>().Ship = this;
 
-            ShipControlActions = new Dictionary<ShipControls, List<ShipActions>> { 
-                { ShipControls.FullSpeedStraightAction, fullSpeedStraightEffects },
-                { ShipControls.FlipAction, flipEffects },
-                { ShipControls.LeftStickAction, leftStickEffects },
-                { ShipControls.RightStickAction, rightStickEffects }
+            ShipControlActions = new Dictionary<InputActions, List<ShipActions>> { 
+                { InputActions.FullSpeedStraightAction, fullSpeedStraightEffects },
+                { InputActions.FlipAction, flipEffects },
+                { InputActions.LeftStickAction, leftStickEffects },
+                { InputActions.RightStickAction, rightStickEffects }
             };
             ScaleGapWithLevel();
         }
@@ -246,11 +246,14 @@ namespace StarWriter.Core
                         ScaleSkimmersWithLevel();
                         ScaleGapWithLevel();
                         break;
+                    case TrailBlockImpactEffects.Attach:
+                        Attach(trailBlockProperties.TrailSpawner.trailList[trailBlockProperties.Index]);
+                        break;
                 }
             }
         }
 
-        public void PerformShipControllerActions(ShipControls controlType)
+        public void PerformShipControllerActions(InputActions controlType)
         {
             abilityStartTime = Time.time;
             var shipActions = ShipControlActions[controlType];
@@ -295,7 +298,7 @@ namespace StarWriter.Core
             }
         }
 
-        public void StopShipControllerActions(ShipControls controlType)
+        public void StopShipControllerActions(InputActions controlType)
         {
             if (StatsManager.Instance != null)
                 StatsManager.Instance.AbilityActivated(Team, player.PlayerName, controlType, Time.time-abilityStartTime);
@@ -450,5 +453,11 @@ namespace StarWriter.Core
             }
             nearFieldSkimmer.transform.localScale = minNearFieldSkimmerScale * Vector3.one;
         }
+
+        void Attach(Trail trail) 
+        { 
+
+        }
+
     }
 }

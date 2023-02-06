@@ -11,4 +11,5 @@ public enum TrailBlockImpactEffects
     ChangeCharge = 6,
     Steal = 7,
     DecrementLevel = 8,
+    Attach = 9
 }

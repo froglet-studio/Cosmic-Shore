@@ -18,8 +18,7 @@ namespace StarWriter.Core.Input
         public bool PhoneFlipState;
         public static ScreenOrientation currentOrientation;
 
-        public delegate void Boost(string uuid, float amount);
-        public static event Boost OnBoost;
+        
         string uuid;
 
         public float boostDecay = 1; 
@@ -27,6 +26,26 @@ namespace StarWriter.Core.Input
         bool leftStickEffectsStarted = false;
         bool rightStickEffectsStarted = false;
         bool fullSpeedStraightEffectsStarted = false;
+
+        float xSum;
+        float ySum;
+        float xDiff;
+        float yDiff;
+
+        UnityEngine.Gyroscope gyro;
+        Quaternion derivedCorrection;
+        float gyroInitializationAcceptableRange = .05f;
+
+        bool isGyroEnabled = false;
+        bool invertYEnabled = false;
+
+        Vector2 leftTouch, rightTouch;
+
+
+
+        //move these to ShipController.cs
+        public delegate void Boost(string uuid, float amount);
+        public static event Boost OnBoost;
 
         float speed;
 
@@ -36,12 +55,7 @@ namespace StarWriter.Core.Input
         public float BoostDecayGrowthRate = .03f;
 
         [HideInInspector] public float minimumSpeed;
-        [HideInInspector] public float ThrottleScaler;
-
-        float xSum;
-        float ySum;
-        float xDiff;
-        float yDiff;
+        [HideInInspector] public float ThrottleScaler; 
 
         public float rotationThrottleScaler = 0;
         public float rotationScaler = 130f;
@@ -49,16 +63,13 @@ namespace StarWriter.Core.Input
         readonly float lerpAmount = 2f;
         readonly float smallLerpAmount = .7f;
 
-        UnityEngine.Gyroscope gyro;
-        Quaternion derivedCorrection;
         Quaternion displacementQuaternion;
         Quaternion inverseInitialRotation=new(0,0,0,0);
 
-        bool isGyroEnabled = false;
-        bool invertYEnabled = false;
-        float gyroInitializationAcceptableRange = .05f;
 
-        Vector2 leftTouch, rightTouch;
+
+
+
 
         void OnEnable()
         {
@@ -72,24 +83,24 @@ namespace StarWriter.Core.Input
 
         void Start()
         {
+
             shipTransform = ship.transform;
             shipAnimation = ship.GetComponent<ShipAnimation>();
+            uuid = GameObject.FindWithTag("Player").GetComponent<Player>().PlayerUUID;
+            gyro = UnityEngine.Input.gyro;
+            gyro.enabled = true;
+            StartCoroutine(GyroInitializationCoroutine());
+            invertYEnabled = GameSetting.Instance.InvertYEnabled;
+
+
+            // maybe move the ShipController 
             shipData = ship.GetComponent<ShipData>();
             resourceSystem = ship.GetComponent<ResourceSystem>();
 
+            // Move to ShipController
             minimumSpeed = defaultMinimumSpeed;
             ThrottleScaler = DefaultThrottleScaler;
-
-            uuid = GameObject.FindWithTag("Player").GetComponent<Player>().PlayerUUID;
-
-            gyro = UnityEngine.Input.gyro;
-            gyro.enabled = true;
-
-            StartCoroutine(GyroInitializationCoroutine());
-
-            displacementQuaternion = shipTransform.rotation;
-
-            invertYEnabled = GameSetting.Instance.InvertYEnabled;
+            displacementQuaternion = shipTransform.rotation;           
         }
 
         IEnumerator GyroInitializationCoroutine()
@@ -122,11 +133,12 @@ namespace StarWriter.Core.Input
             // Convert two finger touch into values for displacement, Speed, and ship animations
             ReceiveInput();
 
+
+            // Move to ShipController
             RotateShip();
 
             // Move ship velocityDirection
             shipData.InputSpeed = speed;
-
             shipData.blockRotation = shipTransform.rotation;
 
             if (!shipData.Drifting)
@@ -139,28 +151,7 @@ namespace StarWriter.Core.Input
                 ship.GetComponent<TrailSpawner>().SetDotProduct(Vector3.Dot(shipData.velocityDirection, shipTransform.forward));
             }
             
-
             shipTransform.position += shipData.Speed * Time.deltaTime * shipData.velocityDirection;
-        }
-
-        void RotateShip()
-        {
-            if (isGyroEnabled && !Equals(inverseInitialRotation, new Quaternion(0, 0, 0, 0)))
-            {
-                // Updates GameObjects blockRotation from input device's gyroscope
-                shipTransform.rotation = Quaternion.Lerp(
-                                            shipTransform.rotation,
-                                            displacementQuaternion * inverseInitialRotation * GyroQuaternionToUnityQuaternion(gyro.attitude) * derivedCorrection,
-                                            lerpAmount);
-                
-            }
-            else
-            {
-                shipTransform.rotation = Quaternion.Lerp(
-                                            shipTransform.rotation,
-                                            displacementQuaternion,
-                                            lerpAmount);
-            }
         }
 
         void ReceiveInput()
@@ -183,29 +174,29 @@ namespace StarWriter.Core.Input
                 if (Gamepad.current.rightShoulder.wasPressedThisFrame && !PhoneFlipState)
                 {
                     PhoneFlipState = true;
-                    ship.PerformShipControllerActions(ShipControls.FlipAction);
+                    ship.PerformShipControllerActions(InputActions.FlipAction);
                 }
                 else if (Gamepad.current.rightShoulder.wasPressedThisFrame && PhoneFlipState)
                 {
                     PhoneFlipState = false;
-                    ship.StopShipControllerActions(ShipControls.FlipAction);
+                    ship.StopShipControllerActions(InputActions.FlipAction);
                 }
 
                 if (Gamepad.current.leftTrigger.wasPressedThisFrame)
                 {
-                    ship.PerformShipControllerActions(ShipControls.LeftStickAction);
+                    ship.PerformShipControllerActions(InputActions.LeftStickAction);
                 }
                 if (Gamepad.current.rightTrigger.wasPressedThisFrame)
                 {
-                    ship.PerformShipControllerActions(ShipControls.RightStickAction);
+                    ship.PerformShipControllerActions(InputActions.RightStickAction);
                 }
-                if (Gamepad.current.leftTrigger.wasReleasedThisFrame) 
+                if (Gamepad.current.leftTrigger.wasReleasedThisFrame)
                 {
-                    ship.StopShipControllerActions(ShipControls.LeftStickAction);
+                    ship.StopShipControllerActions(InputActions.LeftStickAction);
                 }
                 if (Gamepad.current.rightTrigger.wasReleasedThisFrame)
                 {
-                    ship.StopShipControllerActions(ShipControls.RightStickAction);
+                    ship.StopShipControllerActions(InputActions.RightStickAction);
                 }
 
                 Pitch();
@@ -222,7 +213,7 @@ namespace StarWriter.Core.Input
                     if (UnityEngine.Input.acceleration.y < 0 && PhoneFlipState)
                     {
                         PhoneFlipState = false;
-                        ship.StopShipControllerActions(ShipControls.FlipAction);
+                        ship.StopShipControllerActions(InputActions.FlipAction);
                         ship.FlipShipRightsideUp();
 
                         currentOrientation = ScreenOrientation.LandscapeLeft;
@@ -232,7 +223,7 @@ namespace StarWriter.Core.Input
                     else if (UnityEngine.Input.acceleration.y > 0 && !PhoneFlipState)
                     {
                         PhoneFlipState = true;
-                        ship.PerformShipControllerActions(ShipControls.FlipAction);
+                        ship.PerformShipControllerActions(InputActions.FlipAction);
                         ship.FlipShipUpsideDown();
 
                         currentOrientation = ScreenOrientation.LandscapeRight;
@@ -287,12 +278,12 @@ namespace StarWriter.Core.Input
                     if (leftStickEffectsStarted)
                     {
                         leftStickEffectsStarted = false;
-                        ship.StopShipControllerActions(ShipControls.LeftStickAction);
+                        ship.StopShipControllerActions(InputActions.LeftStickAction);
                     }
                     if (rightStickEffectsStarted)
                     {
                         rightStickEffectsStarted = false;
-                        ship.StopShipControllerActions(ShipControls.RightStickAction);
+                        ship.StopShipControllerActions(InputActions.RightStickAction);
                     }
                 }
                 else if (UnityEngine.Input.touches.Length == 1)
@@ -304,7 +295,7 @@ namespace StarWriter.Core.Input
                         if (Vector2.Distance(leftTouch, position) < Vector2.Distance(rightTouch, position) && !leftStickEffectsStarted)
                         {
                             leftStickEffectsStarted = true;
-                            ship.PerformShipControllerActions(ShipControls.LeftStickAction);
+                            ship.PerformShipControllerActions(InputActions.LeftStickAction);
                         }
                         else if (Vector2.Distance(leftTouch, position) < Vector2.Distance(rightTouch, position))
                         {
@@ -313,7 +304,7 @@ namespace StarWriter.Core.Input
                         else if (!rightStickEffectsStarted)
                         {
                             rightStickEffectsStarted = true;
-                            ship.PerformShipControllerActions(ShipControls.RightStickAction);
+                            ship.PerformShipControllerActions(InputActions.RightStickAction);
                         }
                         else
                         {
@@ -322,7 +313,7 @@ namespace StarWriter.Core.Input
                     }
                 }
 
-                if(UnityEngine.Input.touches.Length > 0)
+                if (UnityEngine.Input.touches.Length > 0)
                 {
                     Reparameterize();
 
@@ -352,6 +343,68 @@ namespace StarWriter.Core.Input
             if (invertYEnabled)
                 ySum *= -1;
         }
+
+        // TODO: move to centralized helper class
+        // Converts Android Quaternions into Unity Quaternions
+        Quaternion GyroQuaternionToUnityQuaternion(Quaternion q)
+        {
+            return new Quaternion(q.x, -q.z, q.y, q.w);
+        }
+
+        /// <summary>
+        /// Gets gyros updated current status from GameManager.onToggleGyro Event
+        /// </summary>
+        /// <param name="status"></param>bool
+        public void OnToggleGyro(bool status)
+        {
+            Debug.Log($"InputController.OnToggleGyro - status: {status}");
+            if (SystemInfo.supportsGyroscope && status)
+            {
+                inverseInitialRotation = Quaternion.Inverse(GyroQuaternionToUnityQuaternion(gyro.attitude) * derivedCorrection);
+            }
+
+            isGyroEnabled = status;
+        }
+
+        /// <summary>
+        /// Sets InvertY Status based off of game settings event
+        /// </summary>
+        /// <param name="status"></param>bool
+        void OnToggleInvertY(bool status)
+        {
+            Debug.Log($"InputController.OnToggleInvertY - status: {status}");
+
+            invertYEnabled = status;
+        }
+
+        float Ease(float input)
+        {
+            return input < 0 ? (Mathf.Cos(input) - 1) / 2 : -(Mathf.Cos(input) - 1) / 2;
+        }
+
+
+        //Move to ShipController
+        void RotateShip()
+        {
+            if (isGyroEnabled && !Equals(inverseInitialRotation, new Quaternion(0, 0, 0, 0)))
+            {
+                // Updates GameObjects blockRotation from input device's gyroscope
+                shipTransform.rotation = Quaternion.Lerp(
+                                            shipTransform.rotation,
+                                            displacementQuaternion * inverseInitialRotation * GyroQuaternionToUnityQuaternion(gyro.attitude) * derivedCorrection,
+                                            lerpAmount);
+                
+            }
+            else
+            {
+                shipTransform.rotation = Quaternion.Lerp(
+                                            shipTransform.rotation,
+                                            displacementQuaternion,
+                                            lerpAmount);
+            }
+        }
+
+        
 
         void StoreBoost()
         {
@@ -421,7 +474,7 @@ namespace StarWriter.Core.Input
                 if (!fullSpeedStraightEffectsStarted)
                 {
                     fullSpeedStraightEffectsStarted = true;
-                    ship.PerformShipControllerActions(ShipControls.FullSpeedStraightAction);
+                    ship.PerformShipControllerActions(InputActions.FullSpeedStraightAction);
                 }
             }
             else
@@ -429,7 +482,7 @@ namespace StarWriter.Core.Input
                 if (fullSpeedStraightEffectsStarted)
                 {
                     fullSpeedStraightEffectsStarted = false;
-                    ship.StopShipControllerActions(ShipControls.FullSpeedStraightAction);
+                    ship.StopShipControllerActions(InputActions.FullSpeedStraightAction);
                 }
                 
             }
@@ -437,42 +490,6 @@ namespace StarWriter.Core.Input
         }
 
 
-        // TODO: move to centralized helper class
-        // Converts Android Quaternions into Unity Quaternions
-        Quaternion GyroQuaternionToUnityQuaternion(Quaternion q)
-        {
-            return new Quaternion(q.x, -q.z, q.y, q.w);
-        }
 
-        /// <summary>
-        /// Gets gyros updated current status from GameManager.onToggleGyro Event
-        /// </summary>
-        /// <param name="status"></param>bool
-        public void OnToggleGyro(bool status)
-        {
-            Debug.Log($"InputController.OnToggleGyro - status: {status}");
-            if (SystemInfo.supportsGyroscope && status) 
-            { 
-                inverseInitialRotation = Quaternion.Inverse(GyroQuaternionToUnityQuaternion(gyro.attitude) * derivedCorrection);
-            }
-            
-            isGyroEnabled = status;
-        }
-
-        /// <summary>
-        /// Sets InvertY Status based off of game settings event
-        /// </summary>
-        /// <param name="status"></param>bool
-        void OnToggleInvertY(bool status)
-        {
-            Debug.Log($"InputController.OnToggleInvertY - status: {status}");
-
-            invertYEnabled = status;
-        }
-
-        float Ease(float input)
-        {
-            return input < 0 ? (Mathf.Cos(input) - 1) / 2 : -(Mathf.Cos(input) - 1) / 2;
-        }
     }
 }

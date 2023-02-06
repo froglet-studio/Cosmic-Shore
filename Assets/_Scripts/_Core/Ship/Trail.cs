@@ -17,6 +17,8 @@ namespace StarWriter.Core
         public bool destroyed = false;
         public string ID;
         public Vector3 Dimensions;
+        public int Index;
+        public TrailSpawner TrailSpawner;
 
         public bool warp = false;
         GameObject shards;
@@ -52,6 +54,9 @@ namespace StarWriter.Core
             trailBlockProperties.volume = Dimensions.x * Dimensions.y * Dimensions.z;
             trailBlockProperties.position = transform.position;
             trailBlockProperties.trail = this;
+            trailBlockProperties.Index = Index;
+            trailBlockProperties.TrailSpawner = TrailSpawner;
+
 
             StartCoroutine(CreateBlockCoroutine());
         }

@@ -47,7 +47,7 @@ public class TrailSpawner : MonoBehaviour
 
     public static GameObject TrailContainer;
 
-    readonly Queue<Trail> trailQueue = new();
+    readonly Queue<Trail> trailQueue = new(); // TODO: unused
     readonly public List<Trail> trailList = new();
     bool spawnerEnabled = true;
     string ownerId;
@@ -149,6 +149,8 @@ public class TrailSpawner : MonoBehaviour
         Block.Team = ship.Team;
         Block.warp = warp;
         Block.GetComponent<MeshRenderer>().material = blockMaterial;
+
+        Block.Index = spawnedTrailCount;
         Block.ID = ownerId + "::" + spawnedTrailCount++;
         
 
@@ -156,7 +158,7 @@ public class TrailSpawner : MonoBehaviour
             wavelength = shards.GetComponent<WarpFieldData>().HybridVector(Block.transform).magnitude * initialWavelength;
 
         trailQueue.Enqueue(Block);
-        trailList.Add(Block);
+        
     }
 
     IEnumerator SpawnTrailCoroutine()
@@ -170,6 +172,7 @@ public class TrailSpawner : MonoBehaviour
                 if (gap == 0)
                 {
                     var Block = Instantiate(trail);
+                    Block.Dimensions = new Vector3(trail.transform.localScale.x * XScaler, trail.transform.localScale.y * YScaler, trail.transform.localScale.z * ZScaler);
                     Block.transform.SetPositionAndRotation(transform.position - shipData.velocityDirection * offset, shipData.blockRotation);
                     Block.transform.parent = TrailContainer.transform;
                     Block.waitTime = (skimmer.transform.localScale.z + TrailZScale) / ship.GetComponent<ShipData>().Speed;
@@ -178,8 +181,11 @@ public class TrailSpawner : MonoBehaviour
                     Block.Team = ship.Team;
                     Block.warp = warp;
                     Block.GetComponent<MeshRenderer>().material = blockMaterial;
+                    Block.Index = spawnedTrailCount;
                     Block.ID = ownerId + "::" + spawnedTrailCount++;
-                    Block.Dimensions = new Vector3(trail.transform.localScale.x * XScaler, trail.transform.localScale.y * YScaler, trail.transform.localScale.z * ZScaler);
+                    Block.TrailSpawner = this;
+                    
+                   
 
                     if (Block.warp)
                         wavelength = shards.GetComponent<WarpFieldData>().HybridVector(Block.transform).magnitude * initialWavelength;
@@ -191,10 +197,8 @@ public class TrailSpawner : MonoBehaviour
                 {
                     CreateBlock(gap / 2);
                     CreateBlock(-gap / 2);
-                }
-                
+                } 
             }
-
             yield return new WaitForSeconds(wavelength / shipData.Speed);
         }
     }

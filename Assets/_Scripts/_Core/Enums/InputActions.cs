@@ -1,4 +1,4 @@
-public enum ShipControls
+public enum InputActions
 {
     FullSpeedStraightAction = 0,
     RightStickAction = 1,
