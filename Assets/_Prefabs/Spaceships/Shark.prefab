@@ -465,13 +465,14 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 5928382658856804067}
+  - component: {fileID: 874579555101021527}
   - component: {fileID: 6964962696344697388}
   - component: {fileID: 874579555101021522}
   - component: {fileID: 874579555101021523}
-  - component: {fileID: 874579555101021527}
   - component: {fileID: 3440187540988767646}
   - component: {fileID: 1435252848482629424}
   - component: {fileID: 3496801340156507927}
+  - component: {fileID: 2456609266732234764}
   m_Layer: 0
   m_Name: Shark
   m_TagString: Player_Ship
@@ -495,6 +496,64 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &874579555101021527
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a273abd40c7104c4392188723ab929d6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  Name: Shark
+  ShipType: 3
+  nearFieldSkimmer: {fileID: 874579554510349383}
+  farFieldSkimmer: {fileID: 0}
+  OrientationHandle: {fileID: 7569251362483239328}
+  AOEPrefab: {fileID: 2728798890556433942, guid: f5ecfb9923155a84c860975d559b2714,
+    type: 3}
+  shipGeometries:
+  - {fileID: 3710282027580066907}
+  - {fileID: 8807318159750696826}
+  - {fileID: 1022800225184736306}
+  - {fileID: 434498384779577929}
+  - {fileID: 5736286126695899062}
+  TrailSpawner: {fileID: 874579555101021522}
+  head: {fileID: 3710282027580066907}
+  crystalImpactEffects: 0000000005000000
+  trailBlockImpactEffects: 00000000030000000500000006000000
+  boostMultiplier: 3
+  boostFuelAmount: -0.005
+  rotationScaler: 140
+  rotationThrottleScaler: 0
+  minExplosionScale: 50
+  maxExplosionScale: 500
+  blockFuelChange: 0.01
+  closeCamDistance: -10
+  farCamDistance: -60
+  cameraGrowthRate: 8
+  cameraShrinkRate: 8
+  minFarFieldSkimmerScale: 100
+  maxFarFieldSkimmerScale: 200
+  minNearFieldSkimmerScale: 10
+  maxNearFieldSkimmerScale: 60
+  skimmerGrowthRate: 8
+  skimmerShrinkRate: 8
+  minGap: 1
+  maxGap: 1
+  throttle: 50
+  BoostDecayGrowthRate: 0.03
+  MaxBoostDecay: 10
+  fullSpeedStraightEffects: 010000000600000007000000
+  rightStickEffects: 
+  leftStickEffects: 
+  flipEffects: 
+  idleEffects: 
+  controlOverrides: 0300000004000000
+  inputController: {fileID: 0}
 --- !u!114 &6964962696344697388
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -560,62 +619,6 @@ MonoBehaviour:
   Drifting: 0
   velocityDirection: {x: 0, y: 0, z: 0}
   blockRotation: {x: 0, y: 0, z: 0, w: 0}
---- !u!114 &874579555101021527
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6417075533431866457}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a273abd40c7104c4392188723ab929d6, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  Name: Shark
-  ShipType: 3
-  nearFieldSkimmer: {fileID: 874579554510349383}
-  farFieldSkimmer: {fileID: 0}
-  OrientationHandle: {fileID: 7569251362483239328}
-  AOEPrefab: {fileID: 2728798890556433942, guid: f5ecfb9923155a84c860975d559b2714,
-    type: 3}
-  shipGeometries:
-  - {fileID: 3710282027580066907}
-  - {fileID: 8807318159750696826}
-  - {fileID: 1022800225184736306}
-  - {fileID: 434498384779577929}
-  - {fileID: 5736286126695899062}
-  TrailSpawner: {fileID: 874579555101021522}
-  head: {fileID: 3710282027580066907}
-  crystalImpactEffects: 0000000005000000
-  trailBlockImpactEffects: 00000000030000000500000006000000
-  boostMultiplier: 3
-  boostFuelAmount: -0.005
-  rotationScaler: 140
-  rotationThrottleScaler: 0
-  minExplosionScale: 50
-  maxExplosionScale: 500
-  blockFuelChange: 0.01
-  closeCamDistance: -10
-  farCamDistance: -60
-  cameraGrowthRate: 8
-  cameraShrinkRate: 8
-  minFarFieldSkimmerScale: 100
-  maxFarFieldSkimmerScale: 200
-  minNearFieldSkimmerScale: 10
-  maxNearFieldSkimmerScale: 60
-  skimmerGrowthRate: 8
-  skimmerShrinkRate: 8
-  minGap: 1
-  maxGap: 1
-  throttle: 50
-  BoostDecayGrowthRate: 0.03
-  MaxBoostDecay: 10
-  fullSpeedStraightEffects: 010000000600000007000000
-  rightStickEffects: 
-  leftStickEffects: 
-  flipEffects: 
-  controlOverrides: 0300000004000000
 --- !u!114 &3440187540988767646
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -678,6 +681,28 @@ MonoBehaviour:
   yawAnimationScaler: 80
   lerpAmount: 2
   smallLerpAmount: 0.7
+--- !u!114 &2456609266732234764
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 95baa921cf22958449a3143749d5e0e3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ship: {fileID: 0}
+  boostDecay: 1
+  defaultMinimumSpeed: 10
+  DefaultThrottleScaler: 50
+  MaxBoostDecay: 10
+  BoostDecayGrowthRate: 0.03
+  minimumSpeed: 0
+  ThrottleScaler: 0
+  rotationThrottleScaler: 0
+  rotationScaler: 130
 --- !u!1 &7020314743814055985
 GameObject:
   m_ObjectHideFlags: 0

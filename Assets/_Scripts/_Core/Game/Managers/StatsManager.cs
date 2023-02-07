@@ -201,7 +201,7 @@ public class StatsManager : Singleton<StatsManager>
         playerStats[stolenTrailBlockProperties.trail.PlayerName] = roundStats;
     }
 
-    public void AbilityActivated(Teams team, string playerName, InputActions abilityType, float duration)
+    public void AbilityActivated(Teams team, string playerName, InputEvents abilityType, float duration)
     {
         if (!RecordStats)
             return;
@@ -210,7 +210,7 @@ public class StatsManager : Singleton<StatsManager>
         RoundStats roundStats;
         switch (abilityType)
         {
-            case InputActions.FullSpeedStraightAction:
+            case InputEvents.FullSpeedStraightAction:
                 roundStats = teamStats[team];
                 roundStats.fullSpeedStraightAbilityActiveTime += duration;
                 teamStats[team] = roundStats;
@@ -219,7 +219,7 @@ public class StatsManager : Singleton<StatsManager>
                 roundStats.fullSpeedStraightAbilityActiveTime += duration;
                 playerStats[playerName] = roundStats;
                 break;
-            case InputActions.RightStickAction:
+            case InputEvents.RightStickAction:
                 roundStats = teamStats[team];
                 roundStats.rightStickAbilityActiveTime += duration;
                 teamStats[team] = roundStats;
@@ -228,7 +228,7 @@ public class StatsManager : Singleton<StatsManager>
                 roundStats.rightStickAbilityActiveTime += duration;
                 playerStats[playerName] = roundStats;
                 break;
-            case InputActions.LeftStickAction:
+            case InputEvents.LeftStickAction:
                 roundStats = teamStats[team];
                 roundStats.leftStickAbilityActiveTime += duration;
                 teamStats[team] = roundStats;
@@ -237,7 +237,7 @@ public class StatsManager : Singleton<StatsManager>
                 roundStats.leftStickAbilityActiveTime += duration;
                 playerStats[playerName] = roundStats;
                 break;
-            case InputActions.FlipAction:
+            case InputEvents.FlipAction:
                 roundStats = teamStats[team];
                 roundStats.flipAbilityActiveTime += duration;
                 teamStats[team] = roundStats;

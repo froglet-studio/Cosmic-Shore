@@ -53,7 +53,7 @@ MonoBehaviour:
   MaxScale: 200
   ExplosionDuration: 2
   ExplosionDelay: 0.2
-  heightMultiplier: 10
+  height: 800
 --- !u!33 &520348123677097672
 MeshFilter:
   m_ObjectHideFlags: 0
@@ -82,7 +82,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: fd4788fd12c71f64185794559710e4ea, type: 2}
+  - {fileID: 2100000, guid: 82f6d088289c6214dbbfc97a4fe1bbf4, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0

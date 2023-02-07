@@ -273,13 +273,15 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 5928382658856804067}
+  - component: {fileID: 874579555101021527}
   - component: {fileID: 6964962696344697388}
   - component: {fileID: 874579555101021522}
   - component: {fileID: 874579555101021523}
-  - component: {fileID: 874579555101021527}
   - component: {fileID: 3440187540988767646}
   - component: {fileID: 1435252848482629424}
   - component: {fileID: 6293426128044408357}
+  - component: {fileID: 5628442807914575019}
+  - component: {fileID: 7686683633640807837}
   m_Layer: 0
   m_Name: Manta
   m_TagString: Player_Ship
@@ -303,6 +305,62 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &874579555101021527
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a273abd40c7104c4392188723ab929d6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  Name: GreenManta
+  ShipType: 1
+  nearFieldSkimmer: {fileID: 874579554510349383}
+  farFieldSkimmer: {fileID: 3138628630497430536}
+  OrientationHandle: {fileID: 1878660672777590133}
+  AOEPrefab: {fileID: 2728798890556433942, guid: 4a855af160021d241b8c1ac70cf2d792,
+    type: 3}
+  shipGeometries:
+  - {fileID: 7989725769420682486}
+  - {fileID: 956471339697806072}
+  - {fileID: 2306761366267364778}
+  TrailSpawner: {fileID: 874579555101021522}
+  head: {fileID: 0}
+  crystalImpactEffects: 0000000007000000
+  trailBlockImpactEffects: 00000000030000000200000008000000
+  boostMultiplier: 2
+  boostFuelAmount: 0
+  rotationScaler: 70
+  rotationThrottleScaler: 0
+  minExplosionScale: 50
+  maxExplosionScale: 500
+  blockFuelChange: 0
+  closeCamDistance: -5
+  farCamDistance: -60
+  cameraGrowthRate: 5
+  cameraShrinkRate: 5
+  minFarFieldSkimmerScale: 100
+  maxFarFieldSkimmerScale: 200
+  minNearFieldSkimmerScale: 15
+  maxNearFieldSkimmerScale: 100
+  skimmerGrowthRate: 1
+  skimmerShrinkRate: 1
+  minGap: 6
+  maxGap: 19
+  throttle: 80
+  BoostDecayGrowthRate: 0.03
+  MaxBoostDecay: 10
+  fullSpeedStraightEffects: 
+  rightStickEffects: 
+  leftStickEffects: 
+  flipEffects: 
+  idleEffects: 
+  controlOverrides: 03000000040000000000000007000000
+  inputController: {fileID: 0}
 --- !u!114 &6964962696344697388
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -368,60 +426,6 @@ MonoBehaviour:
   Drifting: 0
   velocityDirection: {x: 0, y: 0, z: 0}
   blockRotation: {x: 0, y: 0, z: 0, w: 0}
---- !u!114 &874579555101021527
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6417075533431866457}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a273abd40c7104c4392188723ab929d6, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  Name: GreenManta
-  ShipType: 1
-  nearFieldSkimmer: {fileID: 874579554510349383}
-  farFieldSkimmer: {fileID: 3138628630497430536}
-  OrientationHandle: {fileID: 1878660672777590133}
-  AOEPrefab: {fileID: 2728798890556433942, guid: 4a855af160021d241b8c1ac70cf2d792,
-    type: 3}
-  shipGeometries:
-  - {fileID: 7989725769420682486}
-  - {fileID: 956471339697806072}
-  - {fileID: 2306761366267364778}
-  TrailSpawner: {fileID: 874579555101021522}
-  head: {fileID: 0}
-  crystalImpactEffects: 0000000007000000
-  trailBlockImpactEffects: 00000000030000000200000008000000
-  boostMultiplier: 2
-  boostFuelAmount: 0
-  rotationScaler: 70
-  rotationThrottleScaler: 0
-  minExplosionScale: 50
-  maxExplosionScale: 500
-  blockFuelChange: 0
-  closeCamDistance: -5
-  farCamDistance: -60
-  cameraGrowthRate: 5
-  cameraShrinkRate: 5
-  minFarFieldSkimmerScale: 100
-  maxFarFieldSkimmerScale: 200
-  minNearFieldSkimmerScale: 15
-  maxNearFieldSkimmerScale: 100
-  skimmerGrowthRate: 1
-  skimmerShrinkRate: 1
-  minGap: 6
-  maxGap: 19
-  throttle: 80
-  BoostDecayGrowthRate: 0.03
-  MaxBoostDecay: 10
-  fullSpeedStraightEffects: 
-  rightStickEffects: 
-  leftStickEffects: 
-  flipEffects: 
-  controlOverrides: 03000000040000000000000007000000
 --- !u!114 &3440187540988767646
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -482,6 +486,50 @@ MonoBehaviour:
   yawAnimationScaler: 80
   lerpAmount: 2
   smallLerpAmount: 0.7
+--- !u!114 &5628442807914575019
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 95baa921cf22958449a3143749d5e0e3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ship: {fileID: 0}
+  boostDecay: 1
+  defaultMinimumSpeed: 10
+  DefaultThrottleScaler: 50
+  MaxBoostDecay: 10
+  BoostDecayGrowthRate: 0.03
+  minimumSpeed: 0
+  ThrottleScaler: 0
+  rotationThrottleScaler: 0
+  rotationScaler: 130
+--- !u!114 &7686683633640807837
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 95baa921cf22958449a3143749d5e0e3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ship: {fileID: 0}
+  boostDecay: 1
+  defaultMinimumSpeed: 10
+  DefaultThrottleScaler: 50
+  MaxBoostDecay: 10
+  BoostDecayGrowthRate: 0.03
+  minimumSpeed: 0
+  ThrottleScaler: 0
+  rotationThrottleScaler: 0
+  rotationScaler: 130
 --- !u!1 &7989725769420682486
 GameObject:
   m_ObjectHideFlags: 0

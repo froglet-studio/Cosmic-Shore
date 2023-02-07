@@ -8,13 +8,14 @@ namespace StarWriter.Core
 {
     [RequireComponent(typeof(ResourceSystem))]
     [RequireComponent(typeof(TrailSpawner))]
+    //[RequireComponent(typeof(ShipController))]
     public class Ship : MonoBehaviour
     {
-        [Header("Ship Meta")]
+        [Header("ship Meta")]
         [SerializeField] string Name;
         [SerializeField] public ShipTypes ShipType;
 
-        [Header("Ship Components")]
+        [Header("ship Components")]
         [SerializeField] Skimmer nearFieldSkimmer;
         [SerializeField] Skimmer farFieldSkimmer;
         [SerializeField] GameObject OrientationHandle;
@@ -22,6 +23,7 @@ namespace StarWriter.Core
         [SerializeField] List<GameObject> shipGeometries;
         [HideInInspector] public TrailSpawner TrailSpawner;
         [SerializeField] GameObject head;
+        ShipController shipController;
 
         [Header("Environment Interactions")]
         [SerializeField] List<CrystalImpactEffects> crystalImpactEffects;
@@ -57,16 +59,18 @@ namespace StarWriter.Core
         [SerializeField] List<ShipActions> rightStickEffects;
         [SerializeField] List<ShipActions> leftStickEffects;
         [SerializeField] List<ShipActions> flipEffects;
+        [SerializeField] List<ShipActions> idleEffects;
+
         [SerializeField] List<ShipControlOverrides> controlOverrides;
 
-        Dictionary<InputActions, List<ShipActions>> ShipControlActions;
+        Dictionary<InputEvents, List<ShipActions>> ShipControlActions;
 
         bool invulnerable;
         Teams team;
         CameraManager cameraManager;
         Player player;
         ShipData shipData; // TODO: this should be a required component or just a series of properties on the ship
-        InputController inputController;
+        public InputController inputController;
         Material ShipMaterial;
         Material AOEExplosionMaterial;
         ResourceSystem resourceSystem;
@@ -100,6 +104,7 @@ namespace StarWriter.Core
 
         void Start()
         {
+            shipController = GetComponent<ShipController>();
             TrailSpawner = GetComponent<TrailSpawner>();
             cameraManager = CameraManager.Instance;
             shipData = GetComponent<ShipData>();
@@ -110,11 +115,12 @@ namespace StarWriter.Core
             foreach (var shipGeometry in shipGeometries)
                 shipGeometry.AddComponent<ShipGeometry>().Ship = this;
 
-            ShipControlActions = new Dictionary<InputActions, List<ShipActions>> { 
-                { InputActions.FullSpeedStraightAction, fullSpeedStraightEffects },
-                { InputActions.FlipAction, flipEffects },
-                { InputActions.LeftStickAction, leftStickEffects },
-                { InputActions.RightStickAction, rightStickEffects }
+            ShipControlActions = new Dictionary<InputEvents, List<ShipActions>> { 
+                { InputEvents.FullSpeedStraightAction, fullSpeedStraightEffects },
+                { InputEvents.FlipAction, flipEffects },
+                { InputEvents.LeftStickAction, leftStickEffects },
+                { InputEvents.RightStickAction, rightStickEffects },
+                { InputEvents.IdleAction, idleEffects }
             };
             ScaleGapWithLevel();
         }
@@ -131,7 +137,7 @@ namespace StarWriter.Core
                 switch (effect)
                 {
                     case ShipControlOverrides.TurnSpeed:
-                        inputController.rotationScaler = rotationScaler;
+                        shipController.rotationScaler = rotationScaler;
                         break;
                     case ShipControlOverrides.BlockScout:
                         break;
@@ -147,16 +153,16 @@ namespace StarWriter.Core
                         // TODO: ship mode toggling
                         break;
                     case ShipControlOverrides.SpeedBasedTurning:
-                        inputController.rotationThrottleScaler = rotationThrottleScaler;
+                        shipController.rotationThrottleScaler = rotationThrottleScaler;
                         break;
                     case ShipControlOverrides.Throttle:
-                        inputController.ThrottleScaler = throttle;
+                        shipController.ThrottleScaler = throttle;
                         break;
                     case ShipControlOverrides.BoostDecayGrowthRate:
-                        inputController.BoostDecayGrowthRate = BoostDecayGrowthRate;
+                        shipController.BoostDecayGrowthRate = BoostDecayGrowthRate;
                         break;
                     case ShipControlOverrides.MaxBoostDecay:
-                        inputController.MaxBoostDecay = MaxBoostDecay;
+                        shipController.MaxBoostDecay = MaxBoostDecay;
                         break;
                 }
             }
@@ -253,7 +259,7 @@ namespace StarWriter.Core
             }
         }
 
-        public void PerformShipControllerActions(InputActions controlType)
+        public void PerformShipControllerActions(InputEvents controlType)
         {
             abilityStartTime = Time.time;
             var shipActions = ShipControlActions[controlType];
@@ -298,7 +304,7 @@ namespace StarWriter.Core
             }
         }
 
-        public void StopShipControllerActions(InputActions controlType)
+        public void StopShipControllerActions(InputEvents controlType)
         {
             if (StatsManager.Instance != null)
                 StatsManager.Instance.AbilityActivated(Team, player.PlayerName, controlType, Time.time-abilityStartTime);
@@ -310,7 +316,7 @@ namespace StarWriter.Core
                 {
                     case ShipActions.Drift:
                         shipData.Drifting = false;
-                        inputController.EndDrift();
+                        shipController.EndDrift();
                         break;
                     case ShipActions.Boost:
                         shipData.Boosting = false;

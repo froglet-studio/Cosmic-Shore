@@ -8,7 +8,7 @@ public class WarpFieldController : MonoBehaviour
     Transform player;
     Transform blue;
     Transform red;
-    InputController playerInput;
+    ShipController shipController;
 
     void Start()
     {
@@ -19,15 +19,15 @@ public class WarpFieldController : MonoBehaviour
         blue = GameObject.FindGameObjectWithTag("blue").transform;
         red = GameObject.FindGameObjectWithTag("red").transform;
 
-        playerInput = player.GetComponent<InputController>();
+        shipController = player.GetComponent<InputController>().ship.GetComponent<ShipController>();
     }
 
     void Update()
     {
         var fieldResult = warpFieldData.HybridVector(player).magnitude;
         cameraManager.SetBothCameraDistances(-fieldResult); //TODO: set clip plane to half the distance
-        playerInput.ThrottleScaler = playerInput.DefaultThrottleScaler * fieldResult;
-        playerInput.minimumSpeed = playerInput.defaultMinimumSpeed * fieldResult;
+        shipController.ThrottleScaler = shipController.DefaultThrottleScaler * fieldResult;
+        shipController.minimumSpeed = shipController.defaultMinimumSpeed * fieldResult;
 
         player.localScale = Vector3.one * fieldResult;
         blue.localScale = Vector3.one * fieldResult;

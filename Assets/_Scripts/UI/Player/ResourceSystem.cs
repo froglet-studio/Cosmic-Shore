@@ -71,13 +71,13 @@ namespace StarWriter.Core
         void OnEnable()
         {
             Skimmer.OnSkim += ChangeChargeAmount;
-            InputController.OnBoost += ChangeChargeAmount;
+            ShipController.OnBoost += ChangeChargeAmount;
         }
 
         void OnDisable()
         {
             Skimmer.OnSkim -= ChangeChargeAmount;
-            InputController.OnBoost -= ChangeChargeAmount;
+            ShipController.OnBoost -= ChangeChargeAmount;
         }
 
         void Start()
