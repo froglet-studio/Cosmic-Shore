@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 2800000, guid: 7255455e0845d4144a9243c4255e0d63, type: 3}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0.0037926815, g: 0.0032631278, b: 0.0034446984, a: 1}
+  m_IndirectSpecularColor: {r: 0.0034294135, g: 0.0027427685, b: 0.055450626, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -406,6 +406,11 @@ PrefabInstance:
       propertyPath: m_Name
       value: FxBubbles
       objectReference: {fileID: 0}
+    - target: {fileID: 2926846742882288561, guid: a78f77a5aba82c8409647f4fad08a9f0,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 8197875262822908811, guid: a78f77a5aba82c8409647f4fad08a9f0,
         type: 3}
       propertyPath: moveWithTransform
@@ -587,7 +592,6 @@ MonoBehaviour:
     type: 3}
   CrystalModel: {fileID: 7244393970774794917}
   material: {fileID: 2100000, guid: 383f21e8586fd7243a19e1d0f26110d0, type: 2}
-  surface: 0
 --- !u!82 &430359315
 AudioSource:
   m_ObjectHideFlags: 0
@@ -1573,6 +1577,69 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 773030350}
   m_CullTransparentMesh: 1
+--- !u!1 &817523133
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 817523134}
+  - component: {fileID: 817523135}
+  - component: {fileID: 817523136}
+  m_Layer: 0
+  m_Name: DesignPostProcessing outernode
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &817523134
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 817523133}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: -0.11999999}
+  m_LocalScale: {x: 5000, y: 5000, z: 5000}
+  m_ConstrainProportionsScale: 1
+  m_Children: []
+  m_Father: {fileID: 1449494197}
+  m_RootOrder: 3
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &817523135
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 817523133}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 172515602e62fb746b5d573b38a5fe58, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_IsGlobal: 0
+  priority: -1
+  blendDistance: 0
+  weight: 1
+  sharedProfile: {fileID: 11400000, guid: ddab5cfb9d728894b9fe1410363b822a, type: 2}
+--- !u!65 &817523136
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 817523133}
+  m_Material: {fileID: 0}
+  m_IsTrigger: 0
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Size: {x: 1, y: 1, z: 1}
+  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &879955296
 GameObject:
   m_ObjectHideFlags: 0
@@ -2040,7 +2107,7 @@ Transform:
   m_ConstrainProportionsScale: 1
   m_Children: []
   m_Father: {fileID: 1449494197}
-  m_RootOrder: 6
+  m_RootOrder: 7
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!135 &1083084373
 SphereCollider:
@@ -2244,7 +2311,7 @@ PrefabInstance:
     - target: {fileID: 8200116291734656446, guid: cb702179ff5b42f41a3521ccd59e6934,
         type: 3}
       propertyPath: m_RootOrder
-      value: 4
+      value: 5
       objectReference: {fileID: 0}
     - target: {fileID: 8200116291734656446, guid: cb702179ff5b42f41a3521ccd59e6934,
         type: 3}
@@ -2994,6 +3061,7 @@ Transform:
   - {fileID: 430359312}
   - {fileID: 1898590044}
   - {fileID: 1749024016}
+  - {fileID: 817523134}
   - {fileID: 602055527}
   - {fileID: 1978495218}
   - {fileID: 2106948208}
@@ -3548,7 +3616,7 @@ GameObject:
   - component: {fileID: 1749024018}
   - component: {fileID: 1749024017}
   m_Layer: 0
-  m_Name: DesignPostProcessing
+  m_Name: DesignPostProcessing node
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -4285,7 +4353,7 @@ Transform:
   m_ConstrainProportionsScale: 1
   m_Children: []
   m_Father: {fileID: 1449494197}
-  m_RootOrder: 5
+  m_RootOrder: 6
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!23 &2106948209
 MeshRenderer:
@@ -4485,7 +4553,7 @@ PrefabInstance:
     - target: {fileID: 639495419069806266, guid: 41222ebb42ad82c4ca52a729935c79d3,
         type: 3}
       propertyPath: m_RootOrder
-      value: 3
+      value: 4
       objectReference: {fileID: 0}
     - target: {fileID: 639495419069806266, guid: 41222ebb42ad82c4ca52a729935c79d3,
         type: 3}
@@ -4964,7 +5032,7 @@ PrefabInstance:
     - target: {fileID: 8350600879602490808, guid: 7fec532a729a8b648a8de2399d1b918a,
         type: 3}
       propertyPath: m_IsActive
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8350600879602490809, guid: 7fec532a729a8b648a8de2399d1b918a,
         type: 3}
