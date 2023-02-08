@@ -33,4 +33,9 @@ public class FinalPanelMenu : MonoBehaviour
     {
         GameManager.Instance.RestartGame();
     }
+
+    public void OnClickMainMenu()
+    {
+        GameManager.Instance.ReturnToMainMenu();
+    }
 }
