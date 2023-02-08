@@ -58,10 +58,14 @@ public class ShipController : MonoBehaviour
     protected void Update()
     {
         if (inputController == null) inputController = ship.inputController;
-
-        RotateShip();
+        if (inputController.Idle) Idle();
+        else
+        {
+            RotateShip();
+            
+            shipData.blockRotation = transform.rotation; // TODO: move this
+        }
         MoveShip();
-        shipData.blockRotation = transform.rotation; // TODO: movee this
     }
 
     protected void RotateShip()
@@ -133,6 +137,8 @@ public class ShipController : MonoBehaviour
                             transform.up) * displacementQuaternion;
     }
 
+    
+
     protected virtual void MoveShip()
     {
         float boostAmount = 1f;
@@ -166,4 +172,10 @@ public class ShipController : MonoBehaviour
     {
         OnBoost?.Invoke(uuid, amount);
     }
+
+    private void Idle()
+    {
+        
+    }
+
 }
