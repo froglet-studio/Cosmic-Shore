@@ -16,7 +16,7 @@ namespace StarWriter.Core
         public float waitTime = .6f;
         public bool destroyed = false;
         public string ID;
-        public Vector3 Dimensions;
+        public Vector3 InnerDimensions;
         public int Index;
         public TrailSpawner TrailSpawner;
 
@@ -51,7 +51,10 @@ namespace StarWriter.Core
             blockCollider = GetComponent<BoxCollider>();
             blockCollider.enabled = false;
 
-            trailBlockProperties.volume = Dimensions.x * Dimensions.y * Dimensions.z;
+            var spread = (Vector3)meshRenderer.material.GetVector("_spread");
+            var outerDimensions = InnerDimensions + 2 * spread;
+
+            trailBlockProperties.volume = outerDimensions.x * outerDimensions.y * outerDimensions.z;
             trailBlockProperties.position = transform.position;
             trailBlockProperties.trail = this;
             trailBlockProperties.Index = Index;
@@ -68,7 +71,7 @@ namespace StarWriter.Core
             meshRenderer.enabled = true;
             blockCollider.enabled = true;
 
-            var DefaultTransformScale = Dimensions;
+            var DefaultTransformScale = InnerDimensions;
             var size = 0.01f;
 
             if (warp) 

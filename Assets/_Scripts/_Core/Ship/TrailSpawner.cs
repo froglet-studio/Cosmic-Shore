@@ -140,7 +140,7 @@ public class TrailSpawner : MonoBehaviour
     void CreateBlock(float halfGap)
     {
         var Block = Instantiate(trail);
-        Block.Dimensions = new Vector3(trail.transform.localScale.x * XScaler / 2f - Mathf.Abs(halfGap), trail.transform.localScale.y * YScaler, trail.transform.localScale.z * ZScaler);
+        Block.InnerDimensions = new Vector3(trail.transform.localScale.x * XScaler / 2f - Mathf.Abs(halfGap), trail.transform.localScale.y * YScaler, trail.transform.localScale.z * ZScaler);
         Block.transform.SetPositionAndRotation(transform.position - shipData.VelocityDirection * offset + ship.transform.right * ((trail.transform.localScale.x * XScaler )/ 4f + Mathf.Abs(halfGap)/2)*(halfGap/ Mathf.Abs(halfGap)), shipData.blockRotation);
         Block.transform.parent = TrailContainer.transform;
         Block.waitTime = (skimmer.transform.localScale.z + TrailZScale) / ship.GetComponent<ShipData>().Speed;
@@ -149,6 +149,7 @@ public class TrailSpawner : MonoBehaviour
         Block.Team = ship.Team;
         Block.warp = warp;
         Block.GetComponent<MeshRenderer>().material = blockMaterial;
+        Block.GetComponent<BoxCollider>().size = Vector3.one + (Vector3)blockMaterial.GetVector("_spread");
 
         Block.Index = spawnedTrailCount;
         Block.ID = ownerId + "::" + spawnedTrailCount++;
@@ -172,7 +173,7 @@ public class TrailSpawner : MonoBehaviour
                 if (gap == 0)
                 {
                     var Block = Instantiate(trail);
-                    Block.Dimensions = new Vector3(trail.transform.localScale.x * XScaler, trail.transform.localScale.y * YScaler, trail.transform.localScale.z * ZScaler);
+                    Block.InnerDimensions = new Vector3(trail.transform.localScale.x * XScaler, trail.transform.localScale.y * YScaler, trail.transform.localScale.z * ZScaler);
                     Block.transform.SetPositionAndRotation(transform.position - shipData.VelocityDirection * offset, shipData.blockRotation);
                     Block.transform.parent = TrailContainer.transform;
                     Block.waitTime = (skimmer.transform.localScale.z + TrailZScale) / ship.GetComponent<ShipData>().Speed;

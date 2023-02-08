@@ -54,7 +54,7 @@ public class AOEBlockCreation : AOEExplosion
         Block.transform.SetPositionAndRotation(position, Quaternion.LookRotation(lookPosition - transform.position, transform.forward));
         Block.GetComponent<MeshRenderer>().material = blockMaterial;
         Block.ID = Block.ownerId + ownerId;  
-        Block.Dimensions = blockScale;
+        Block.InnerDimensions = blockScale;
         Block.transform.parent = TrailSpawner.TrailContainer.transform;
     }
 }
