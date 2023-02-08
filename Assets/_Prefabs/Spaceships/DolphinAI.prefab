@@ -744,10 +744,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 909fb5cbbca8c4549b5a9df56d837e55, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  trail: {fileID: 4563009547826722997, guid: 78bd71c2ca5dd3845acf7480fe182e26, type: 3}
+  trail: {fileID: 4563009547826722997, guid: 4e280247faa1d154fa25d1e92df405dc, type: 3}
   skimmer: {fileID: 874579554510349383}
   offset: 0
-  initialWavelength: 5
+  initialWavelength: 9
   minWavelength: 1
   gap: 0
   trailLength: 40
@@ -776,7 +776,7 @@ MonoBehaviour:
   Boosting: 0
   BoostDecaying: 0
   Drifting: 0
-  velocityDirection: {x: 0, y: 0, z: 0}
+  VelocityDirection: {x: 0, y: 0, z: 0}
   blockRotation: {x: 0, y: 0, z: 0, w: 0}
 --- !u!114 &874579555101021527
 MonoBehaviour:
@@ -814,7 +814,7 @@ MonoBehaviour:
   boostFuelAmount: -0.01
   rotationScaler: 190
   rotationThrottleScaler: 0.5
-  minExplosionScale: 50
+  minExplosionScale: 100
   maxExplosionScale: 400
   blockFuelChange: 0
   closeCamDistance: 0
@@ -827,8 +827,8 @@ MonoBehaviour:
   maxNearFieldSkimmerScale: 100
   skimmerGrowthRate: 1
   skimmerShrinkRate: 1
-  minGap: 0
-  maxGap: 0
+  minGap: 1
+  maxGap: 1
   throttle: 50
   BoostDecayGrowthRate: 0.03
   MaxBoostDecay: 10
@@ -836,7 +836,9 @@ MonoBehaviour:
   rightStickEffects: 
   leftStickEffects: 
   flipEffects: 
+  idleEffects: 
   controlOverrides: 
+  inputController: {fileID: 0}
 --- !u!114 &3440187540988767646
 MonoBehaviour:
   m_ObjectHideFlags: 0

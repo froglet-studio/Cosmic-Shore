@@ -333,10 +333,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 909fb5cbbca8c4549b5a9df56d837e55, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  trail: {fileID: 4563009547826722997, guid: 21757137a3002b64096be5813c054a5d, type: 3}
+  trail: {fileID: 4563009547826722997, guid: 5790c8c1f457a754baecca51ef90c82e, type: 3}
   skimmer: {fileID: 874579554510349383}
   offset: 0
   initialWavelength: 5
+  minWavelength: 1
+  gap: 0
   trailLength: 40
   defaultWaitTime: 0.5
   waitTime: 0.5
@@ -363,7 +365,7 @@ MonoBehaviour:
   Boosting: 0
   BoostDecaying: 0
   Drifting: 0
-  velocityDirection: {x: 0, y: 0, z: 0}
+  VelocityDirection: {x: 0, y: 0, z: 0}
   blockRotation: {x: 0, y: 0, z: 0, w: 0}
 --- !u!114 &874579555101021527
 MonoBehaviour:
@@ -381,13 +383,15 @@ MonoBehaviour:
   ShipType: 6
   nearFieldSkimmer: {fileID: 874579554510349383}
   farFieldSkimmer: {fileID: 0}
+  OrientationHandle: {fileID: 4343935266849732334}
+  AOEPrefab: {fileID: 2728798890556433942, guid: 4a855af160021d241b8c1ac70cf2d792,
+    type: 3}
   shipGeometries:
   - {fileID: 7989725769420682486}
   - {fileID: 956471339697806072}
   - {fileID: 2306761366267364778}
-  AOEPrefab: {fileID: 2728798890556433942, guid: 4a855af160021d241b8c1ac70cf2d792,
-    type: 3}
   TrailSpawner: {fileID: 874579555101021522}
+  head: {fileID: 0}
   crystalImpactEffects: 0400000006000000
   trailBlockImpactEffects: 03000000
   boostMultiplier: 4
@@ -399,14 +403,26 @@ MonoBehaviour:
   blockFuelChange: 0.1
   closeCamDistance: 0
   farCamDistance: 0
-  head: {fileID: 0}
-  OrientationHandle: {fileID: 4343935266849732334}
-  SecondMode: 5
+  cameraGrowthRate: 1
+  cameraShrinkRate: 1
+  minFarFieldSkimmerScale: 100
+  maxFarFieldSkimmerScale: 200
+  minNearFieldSkimmerScale: 15
+  maxNearFieldSkimmerScale: 100
+  skimmerGrowthRate: 1
+  skimmerShrinkRate: 1
+  minGap: 5
+  maxGap: 5
+  throttle: 50
+  BoostDecayGrowthRate: 0.03
+  MaxBoostDecay: 10
   fullSpeedStraightEffects: 
   rightStickEffects: 
   leftStickEffects: 
   flipEffects: 
+  idleEffects: 
   controlOverrides: 
+  inputController: {fileID: 0}
 --- !u!114 &3440187540988767646
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -443,6 +459,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 737294a573670f74389a7af68df314d5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  maxCharge: 1
+  initialCharge: 1
+  maxLevel: 1
+  initialLevel: 0
   ChargeDisplay: {fileID: 0}
 --- !u!114 &6293426128044408357
 MonoBehaviour:
