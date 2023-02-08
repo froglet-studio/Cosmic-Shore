@@ -14,10 +14,12 @@ namespace StarWriter.Core
         public Ship Ship;
         bool onCooldown = false;
 
-        public void FireGun(Transform containerTransform)
+        public void FireGun(Transform containerTransform, Vector3 inheritedVelocity)
         {
             if (onCooldown)
                 return;
+
+            
 
             onCooldown = true;
 
@@ -25,7 +27,7 @@ namespace StarWriter.Core
             projectile.transform.rotation = Quaternion.LookRotation(transform.up);
             projectile.transform.position = transform.position + projectile.transform.forward * 2;
             projectile.transform.parent = containerTransform;
-            projectile.GetComponent<Projectile>().Velocity = projectile.transform.forward * speed;
+            projectile.GetComponent<Projectile>().Velocity = projectile.transform.forward * speed + inheritedVelocity;
             projectile.GetComponent<Projectile>().Team = Team;
             projectile.GetComponent<Projectile>().Ship = Ship;
 
@@ -45,7 +47,7 @@ namespace StarWriter.Core
             while (elapsedTime < projectileTime)
             {
                 elapsedTime += Time.deltaTime;
-                projectile.transform.position += projectile.transform.forward * speed * Time.deltaTime;
+                projectile.transform.position += projectile.GetComponent<Projectile>().Velocity * Time.deltaTime;
                 yield return null;
             }
 

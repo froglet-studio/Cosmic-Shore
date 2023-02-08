@@ -122,8 +122,7 @@ namespace StarWriter.Core
                 if (other.GetComponent<Projectile>().Team == Team)
                     return;
 
-                var speed = other.GetComponent<Projectile>().Velocity;
-                var impactVector = speed;
+                var impactVector = other.GetComponent<Projectile>().Velocity;
 
                 Explode(impactVector, other.GetComponent<Projectile>().Team, other.GetComponent<Projectile>().Ship.Player.PlayerName); // TODO: need to attribute the explosion color to the team that made the explosion
             }

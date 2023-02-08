@@ -8,19 +8,19 @@ using StarWriter.Core.Input;
 public class ShipController : MonoBehaviour
 {
     #region Ship
-    Ship ship;
+    protected Ship ship;
     ShipAnimation shipAnimation;
-    ShipData shipData;
-    ResourceSystem resourceSystem;
+    protected ShipData shipData;
+    protected ResourceSystem resourceSystem;
     #endregion
 
-    string uuid;
-    InputController inputController;
+    protected string uuid;
+    protected InputController inputController;
 
     public delegate void Boost(string uuid, float amount);
     public static event Boost OnBoost;
 
-    float speed;
+    protected float speed;
     public float boostDecay = 1;
 
     public float defaultMinimumSpeed = 10f;
@@ -34,14 +34,14 @@ public class ShipController : MonoBehaviour
     public float rotationThrottleScaler = 0;
     public float rotationScaler = 130f;
 
-    readonly float lerpAmount = 2f;
+    protected readonly float lerpAmount = 2f;
     readonly float smallLerpAmount = .7f;
 
-    Quaternion displacementQuaternion;
+    protected Quaternion displacementQuaternion;
     Quaternion inverseInitialRotation = new(0, 0, 0, 0);
 
     // Start is called before the first frame update
-    void Start()
+    protected void Start()
     {
         ship = GetComponent<Ship>();
         uuid = GameObject.FindWithTag("Player").GetComponent<Player>().PlayerUUID;
@@ -55,31 +55,16 @@ public class ShipController : MonoBehaviour
     }
 
     // Update is called once per frame
-    void Update()
+    protected void Update()
     {
-        RotateShip();
-        MoveShip();
-
         if (inputController == null) inputController = ship.inputController;
 
-        // Move ship velocityDirection
-        shipData.InputSpeed = speed;
-        shipData.blockRotation = transform.rotation;
-
-        if (!shipData.Drifting)
-        {
-            shipData.velocityDirection = transform.forward;
-        }
-        else
-        {
-            StoreBoost();
-            ship.GetComponent<TrailSpawner>().SetDotProduct(Vector3.Dot(shipData.velocityDirection, transform.forward));
-        }
-
-        transform.position += shipData.Speed * Time.deltaTime * shipData.velocityDirection;
+        RotateShip();
+        MoveShip();
+        shipData.blockRotation = transform.rotation; // TODO: movee this
     }
 
-    void RotateShip()
+    protected void RotateShip()
     {
         Pitch();
         Yaw();
@@ -102,14 +87,12 @@ public class ShipController : MonoBehaviour
         }
     }
 
-
-
     void StoreBoost()
     {
         boostDecay += BoostDecayGrowthRate;
     }
 
-    public void EndDrift()
+    public void EndDrift() 
     {
         ship.GetComponent<TrailSpawner>().SetDotProduct(1);
         StartCoroutine(DecayingBoostCoroutine());
@@ -127,14 +110,14 @@ public class ShipController : MonoBehaviour
         shipData.BoostDecaying = false;
     }
 
-    void Pitch()
+    protected void Pitch()
     {
         displacementQuaternion = Quaternion.AngleAxis(
                             inputController.YSum * -(speed * rotationThrottleScaler + rotationScaler) * Time.deltaTime,
                             transform.right) * displacementQuaternion;
     }
 
-    void Roll()
+    protected void Roll()
     {
         displacementQuaternion = Quaternion.AngleAxis(
                             inputController.YDiff * (speed * rotationThrottleScaler + rotationScaler) * Time.deltaTime,
@@ -142,7 +125,7 @@ public class ShipController : MonoBehaviour
     }
 
 
-    void Yaw()  // These need to not use *= ... remember quaternions are not commutative
+    protected virtual void Yaw()  // These need to not use *= ... remember quaternions are not commutative
     {
         displacementQuaternion = Quaternion.AngleAxis(
                             inputController.XSum * (speed * rotationThrottleScaler + rotationScaler) *
@@ -150,7 +133,7 @@ public class ShipController : MonoBehaviour
                             transform.up) * displacementQuaternion;
     }
 
-    void MoveShip()
+    protected virtual void MoveShip()
     {
         float boostAmount = 1f;
         if (shipData.Boosting && resourceSystem.CurrentCharge > 0) // TODO: if we run out of fuel while full speed and straight the ship data still thinks we are boosting
@@ -160,6 +143,27 @@ public class ShipController : MonoBehaviour
         }
         if (shipData.BoostDecaying) boostAmount *= boostDecay;
         speed = Mathf.Lerp(speed, inputController.XDiff * ThrottleScaler * boostAmount + minimumSpeed, lerpAmount * Time.deltaTime);
+
+        // Move ship velocityDirection
+        shipData.InputSpeed = speed;
+        
+
+        if (!shipData.Drifting)
+        {
+            shipData.VelocityDirection = transform.forward;
+        }
+        else
+        {
+            StoreBoost();
+            ship.GetComponent<TrailSpawner>().SetDotProduct(Vector3.Dot(shipData.VelocityDirection, transform.forward));
+        }
+
+        transform.position += shipData.Speed * Time.deltaTime * shipData.VelocityDirection;
+
     }
 
+    protected void InvokeBoost(float amount)
+    {
+        OnBoost?.Invoke(uuid, amount);
+    }
 }

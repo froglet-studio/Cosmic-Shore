@@ -272,15 +272,16 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 5928382658856804067}
+  - component: {fileID: 874579555101021527}
   - component: {fileID: 6964962696344697388}
   - component: {fileID: 874579555101021522}
   - component: {fileID: 874579555101021523}
-  - component: {fileID: 874579555101021527}
+  - component: {fileID: 6315651686961786297}
   - component: {fileID: 3440187540988767646}
   - component: {fileID: 6293426128044408357}
   - component: {fileID: 1435252848482629424}
   m_Layer: 0
-  m_Name: GunManta
+  m_Name: GunFish
   m_TagString: Player_Ship
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -299,9 +300,66 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 3397189760217659071}
+  - {fileID: 3459134076240855183}
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &874579555101021527
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a273abd40c7104c4392188723ab929d6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  Name: GreenManta
+  ShipType: 4
+  nearFieldSkimmer: {fileID: 874579554510349383}
+  farFieldSkimmer: {fileID: 0}
+  OrientationHandle: {fileID: 1878660672777590133}
+  AOEPrefab: {fileID: 2728798890556433942, guid: 4a855af160021d241b8c1ac70cf2d792,
+    type: 3}
+  shipGeometries:
+  - {fileID: 7989725769420682486}
+  - {fileID: 956471339697806072}
+  - {fileID: 2306761366267364778}
+  TrailSpawner: {fileID: 874579555101021522}
+  head: {fileID: 0}
+  crystalImpactEffects: 0000000004000000
+  trailBlockImpactEffects: 000000000300000002000000
+  boostMultiplier: 2
+  boostFuelAmount: 0
+  rotationScaler: 70
+  rotationThrottleScaler: 0
+  minExplosionScale: 50
+  maxExplosionScale: 500
+  blockFuelChange: 0
+  closeCamDistance: -10
+  farCamDistance: -50
+  cameraGrowthRate: 1
+  cameraShrinkRate: 1
+  minFarFieldSkimmerScale: 100
+  maxFarFieldSkimmerScale: 200
+  minNearFieldSkimmerScale: 15
+  maxNearFieldSkimmerScale: 100
+  skimmerGrowthRate: 1
+  skimmerShrinkRate: 1
+  minGap: 0
+  maxGap: 0
+  throttle: 50
+  BoostDecayGrowthRate: 0.03
+  MaxBoostDecay: 10
+  fullSpeedStraightEffects: 
+  rightStickEffects: 
+  leftStickEffects: 
+  flipEffects: 03000000
+  idleEffects: 
+  controlOverrides: 000000000300000004000000
+  inputController: {fileID: 0}
 --- !u!114 &6964962696344697388
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -334,8 +392,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   trail: {fileID: 4563009547826722997, guid: 5790c8c1f457a754baecca51ef90c82e, type: 3}
+  skimmer: {fileID: 874579554510349383}
   offset: 0
   initialWavelength: 5
+  minWavelength: 1
+  gap: 0
   trailLength: 40
   defaultWaitTime: 0.5
   waitTime: 0.5
@@ -362,9 +423,9 @@ MonoBehaviour:
   Boosting: 0
   BoostDecaying: 0
   Drifting: 0
-  velocityDirection: {x: 0, y: 0, z: 0}
+  VelocityDirection: {x: 0, y: 0, z: 0}
   blockRotation: {x: 0, y: 0, z: 0, w: 0}
---- !u!114 &874579555101021527
+--- !u!114 &6315651686961786297
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -373,39 +434,19 @@ MonoBehaviour:
   m_GameObject: {fileID: 6417075533431866457}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a273abd40c7104c4392188723ab929d6, type: 3}
+  m_Script: {fileID: 11500000, guid: 8931715ca622a9744a7689f33100c42b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Name: GreenManta
-  ShipType: 4
-  nearFieldSkimmer: {fileID: 874579554510349383}
-  farFieldSkimmer: {fileID: 0}
-  shipGeometries:
-  - {fileID: 7989725769420682486}
-  - {fileID: 956471339697806072}
-  - {fileID: 2306761366267364778}
-  AOEPrefab: {fileID: 2728798890556433942, guid: 4a855af160021d241b8c1ac70cf2d792,
-    type: 3}
-  TrailSpawner: {fileID: 874579555101021522}
-  crystalImpactEffects: 0000000004000000
-  trailBlockImpactEffects: 000000000300000002000000
-  boostMultiplier: 2
-  boostFuelAmount: 0
-  rotationScaler: 70
+  boostDecay: 1
+  defaultMinimumSpeed: 40
+  DefaultThrottleScaler: 40
+  MaxBoostDecay: 10
+  BoostDecayGrowthRate: 0.03
+  minimumSpeed: 0
+  ThrottleScaler: 0
   rotationThrottleScaler: 0
-  minExplosionScale: 50
-  maxExplosionScale: 500
-  blockFuelChange: 0
-  closeCamDistance: 0
-  farCamDistance: 0
-  head: {fileID: 0}
-  OrientationHandle: {fileID: 1878660672777590133}
-  SecondMode: 5
-  fullSpeedStraightEffects: 01000000
-  rightStickEffects: 
-  leftStickEffects: 
-  flipEffects: 03000000
-  controlOverrides: 
+  rotationScaler: 130
+  gun: {fileID: 3459134076240855180}
 --- !u!114 &3440187540988767646
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -461,6 +502,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 737294a573670f74389a7af68df314d5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  maxCharge: 1
+  initialCharge: 1
+  maxLevel: 1
+  initialLevel: 0
   ChargeDisplay: {fileID: 0}
 --- !u!1 &7989725769420682486
 GameObject:
@@ -576,6 +621,108 @@ BoxCollider:
   serializedVersion: 2
   m_Size: {x: 0.9894366, y: 0.27572674, z: 1.2173165}
   m_Center: {x: -0.000000014901161, y: 0.00602147, z: -0.0023677945}
+--- !u!1001 &1000753451247602654
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    m_TransformParent: {fileID: 5928382658856804067}
+    m_Modifications:
+    - target: {fileID: 4459183666627939152, guid: 340b92d77208a7347843154145a64863,
+        type: 3}
+      propertyPath: m_Name
+      value: Gun
+      objectReference: {fileID: 0}
+    - target: {fileID: 4459183666627939153, guid: 340b92d77208a7347843154145a64863,
+        type: 3}
+      propertyPath: m_RootOrder
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4459183666627939153, guid: 340b92d77208a7347843154145a64863,
+        type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4459183666627939153, guid: 340b92d77208a7347843154145a64863,
+        type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4459183666627939153, guid: 340b92d77208a7347843154145a64863,
+        type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 1.02
+      objectReference: {fileID: 0}
+    - target: {fileID: 4459183666627939153, guid: 340b92d77208a7347843154145a64863,
+        type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.7071068
+      objectReference: {fileID: 0}
+    - target: {fileID: 4459183666627939153, guid: 340b92d77208a7347843154145a64863,
+        type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0.7071068
+      objectReference: {fileID: 0}
+    - target: {fileID: 4459183666627939153, guid: 340b92d77208a7347843154145a64863,
+        type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4459183666627939153, guid: 340b92d77208a7347843154145a64863,
+        type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4459183666627939153, guid: 340b92d77208a7347843154145a64863,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 90
+      objectReference: {fileID: 0}
+    - target: {fileID: 4459183666627939153, guid: 340b92d77208a7347843154145a64863,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4459183666627939153, guid: 340b92d77208a7347843154145a64863,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4459183666627939154, guid: 340b92d77208a7347843154145a64863,
+        type: 3}
+      propertyPath: Ship
+      value: 
+      objectReference: {fileID: 874579555101021527}
+    - target: {fileID: 4459183666627939154, guid: 340b92d77208a7347843154145a64863,
+        type: 3}
+      propertyPath: Team
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4459183666627939154, guid: 340b92d77208a7347843154145a64863,
+        type: 3}
+      propertyPath: projectileTime
+      value: 100
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 340b92d77208a7347843154145a64863, type: 3}
+--- !u!114 &3459134076240855180 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 4459183666627939154, guid: 340b92d77208a7347843154145a64863,
+    type: 3}
+  m_PrefabInstance: {fileID: 1000753451247602654}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 35a4e5dfc7064254cb27fc78eefb05a0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!4 &3459134076240855183 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 4459183666627939153, guid: 340b92d77208a7347843154145a64863,
+    type: 3}
+  m_PrefabInstance: {fileID: 1000753451247602654}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &7471713358279828738
 PrefabInstance:
   m_ObjectHideFlags: 0

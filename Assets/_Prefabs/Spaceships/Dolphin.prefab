@@ -917,7 +917,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 95baa921cf22958449a3143749d5e0e3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  ship: {fileID: 0}
   boostDecay: 1
   defaultMinimumSpeed: 10
   DefaultThrottleScaler: 50

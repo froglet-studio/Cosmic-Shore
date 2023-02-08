@@ -13,7 +13,7 @@ namespace StarWriter.Core
         public bool BoostDecaying = false;
         public bool Drifting = false;
 
-        public Vector3 velocityDirection;
+        public Vector3 VelocityDirection;
         public Quaternion blockRotation;
 
         void Update()

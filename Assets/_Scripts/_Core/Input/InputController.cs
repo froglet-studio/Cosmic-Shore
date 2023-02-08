@@ -94,15 +94,15 @@ namespace StarWriter.Core.Input
                 rightTouch.x = Gamepad.current.rightStick.x.ReadValue();
                 rightTouch.y = Gamepad.current.rightStick.y.ReadValue();
 
-                if (Gamepad.current.leftStick.IsActuated() || Gamepad.current.rightStick.IsActuated())
-                {
-                    Idle = true;
-                    ship.PerformShipControllerActions(InputEvents.IdleAction);
-                }
-                else if (Idle)
+                if (Gamepad.current.leftStick.IsActuated() || Gamepad.current.rightStick.IsActuated() && Idle)
                 {
                     Idle = false;
                     ship.StopShipControllerActions(InputEvents.IdleAction);
+                }
+                else if (!Idle)
+                {
+                    Idle = true;
+                    ship.PerformShipControllerActions(InputEvents.IdleAction);
                 }
 
                 XSum = Ease(rightTouch.x + leftTouch.x);

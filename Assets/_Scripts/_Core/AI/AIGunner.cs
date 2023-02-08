@@ -69,7 +69,7 @@ namespace StarWriter.Core.AI
                 trailSpawner.trailList[(int)previousBlockIndex].Restore();
 
             gunMount.transform.Rotate(0, rotationSpeed * Time.deltaTime, 0);
-            gun.FireGun(player.transform);
+            gun.FireGun(player.transform, gunnerSpeed*transform.forward);
         }
     }
 }
