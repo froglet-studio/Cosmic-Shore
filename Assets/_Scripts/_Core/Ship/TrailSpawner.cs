@@ -94,8 +94,8 @@ public class TrailSpawner : MonoBehaviour
     [SerializeField] float minBlockScale = 1;
     [SerializeField] float maxBlockScale = 1;
     
-    float XScaler = 1;
-    float YScaler = 1;
+    public float XScaler = 1;
+    public float YScaler = 1;
     float ZScaler = 1;
 
 
@@ -150,6 +150,7 @@ public class TrailSpawner : MonoBehaviour
         Block.warp = warp;
         Block.GetComponent<MeshRenderer>().material = blockMaterial;
         Block.GetComponent<BoxCollider>().size = Vector3.one + (Vector3)blockMaterial.GetVector("_spread");
+        Block.TrailSpawner = this;
 
         Block.Index = spawnedTrailCount;
         Block.ID = ownerId + "::" + spawnedTrailCount++;
@@ -159,7 +160,8 @@ public class TrailSpawner : MonoBehaviour
             wavelength = shards.GetComponent<WarpFieldData>().HybridVector(Block.transform).magnitude * initialWavelength;
 
         trailQueue.Enqueue(Block);
-        
+        trailList.Add(Block);
+
     }
 
     IEnumerator SpawnTrailCoroutine()

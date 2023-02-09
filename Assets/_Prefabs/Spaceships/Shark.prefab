@@ -540,14 +540,18 @@ MonoBehaviour:
   maxFarFieldSkimmerScale: 200
   minNearFieldSkimmerScale: 10
   maxNearFieldSkimmerScale: 60
+  minTrailYScale: 1
+  maxTrailYScale: 1.7
   skimmerGrowthRate: 8
   skimmerShrinkRate: 8
+  trailGrowthRate: 2
+  trailShrinkRate: 2
   minGap: 1
   maxGap: 1
   throttle: 50
   BoostDecayGrowthRate: 0.03
   MaxBoostDecay: 10
-  fullSpeedStraightEffects: 010000000600000007000000
+  fullSpeedStraightEffects: 01000000060000000700000009000000
   rightStickEffects: 
   leftStickEffects: 
   flipEffects: 
@@ -599,6 +603,8 @@ MonoBehaviour:
   MaxNearbyBlockCount: 10
   minBlockScale: 1
   maxBlockScale: 1
+  XScaler: 1
+  YScaler: 1
 --- !u!114 &874579555101021523
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -615,9 +621,10 @@ MonoBehaviour:
   SpeedMultiplier: 1
   Speed: 0
   Boosting: 0
+  ChargingBoost: 0
   BoostDecaying: 0
   Drifting: 0
-  velocityDirection: {x: 0, y: 0, z: 0}
+  VelocityDirection: {x: 0, y: 0, z: 0}
   blockRotation: {x: 0, y: 0, z: 0, w: 0}
 --- !u!114 &3440187540988767646
 MonoBehaviour:
@@ -693,7 +700,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 95baa921cf22958449a3143749d5e0e3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  ship: {fileID: 0}
   boostDecay: 1
   defaultMinimumSpeed: 10
   DefaultThrottleScaler: 50

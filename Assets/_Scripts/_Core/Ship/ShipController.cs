@@ -58,10 +58,16 @@ public class ShipController : MonoBehaviour
     protected void Update()
     {
         if (inputController == null) inputController = ship.inputController;
+        if (inputController.Idle) Idle();
+        else
+        {
+            RotateShip();
+            
+            shipData.blockRotation = transform.rotation; // TODO: move this
+        }
+        if (shipData.ChargingBoost) ChargeBoost();
 
-        RotateShip();
         MoveShip();
-        shipData.blockRotation = transform.rotation; // TODO: movee this
     }
 
     protected void RotateShip()
@@ -87,14 +93,13 @@ public class ShipController : MonoBehaviour
         }
     }
 
-    void StoreBoost()
+    void ChargeBoost()
     {
         boostDecay += BoostDecayGrowthRate;
     }
 
-    public void EndDrift() 
+    public void StartChargedBoost() 
     {
-        ship.GetComponent<TrailSpawner>().SetDotProduct(1);
         StartCoroutine(DecayingBoostCoroutine());
     }
 
@@ -133,6 +138,8 @@ public class ShipController : MonoBehaviour
                             transform.up) * displacementQuaternion;
     }
 
+    
+
     protected virtual void MoveShip()
     {
         float boostAmount = 1f;
@@ -148,14 +155,13 @@ public class ShipController : MonoBehaviour
         shipData.InputSpeed = speed;
         
 
-        if (!shipData.Drifting)
+        if (shipData.Drifting)
         {
-            shipData.VelocityDirection = transform.forward;
+            ship.GetComponent<TrailSpawner>().SetDotProduct(Vector3.Dot(shipData.VelocityDirection, transform.forward));
         }
         else
         {
-            StoreBoost();
-            ship.GetComponent<TrailSpawner>().SetDotProduct(Vector3.Dot(shipData.VelocityDirection, transform.forward));
+            shipData.VelocityDirection = transform.forward;
         }
 
         transform.position += shipData.Speed * Time.deltaTime * shipData.VelocityDirection;
@@ -166,4 +172,10 @@ public class ShipController : MonoBehaviour
     {
         OnBoost?.Invoke(uuid, amount);
     }
+
+    private void Idle()
+    {
+        
+    }
+
 }

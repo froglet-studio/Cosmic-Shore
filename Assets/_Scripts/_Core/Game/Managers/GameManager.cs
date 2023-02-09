@@ -154,6 +154,12 @@ namespace StarWriter.Core
             Jukebox.Instance.PlayNextSong();
         }
 
+        public void ReturnToMainMenu()
+        {
+            Debug.Log("GameManager.ReturnToMainMenu");
+            SceneManager.LoadScene(mainMenuScene);
+        }
+
         public void ReturnToLobby()
         {
             SceneManager.LoadScene(mainMenuScene);

@@ -141,7 +141,7 @@ namespace StarWriter.Core.Input
                     ship.StopShipControllerActions(InputEvents.RightStickAction);
                 }
 
-                CheckThrottle();
+                CheckFullSpeedStraight();
 
             }
             else
@@ -255,7 +255,7 @@ namespace StarWriter.Core.Input
                 {
                     Reparameterize();
 
-                    CheckThrottle();
+                    CheckFullSpeedStraight();
 
                     if (Idle)
                     {
@@ -266,7 +266,7 @@ namespace StarWriter.Core.Input
                 else
                 {
                     Idle = true;
-                    ship.PerformShipControllerActions(InputEvents.IdleAction);  
+                    ship.PerformShipControllerActions(InputEvents.IdleAction); // consider placing some stop methods for other Input events here  
                 }
             }
         }
@@ -325,7 +325,7 @@ namespace StarWriter.Core.Input
             return input < 0 ? (Mathf.Cos(input) - 1) / 2 : -(Mathf.Cos(input) - 1) / 2;
         }
 
-        void CheckThrottle()
+        void CheckFullSpeedStraight()
         {
             float threshold = .3f;
             float value = (1 - XDiff) + Mathf.Abs(YDiff) + Mathf.Abs(YSum) + Mathf.Abs(XSum);

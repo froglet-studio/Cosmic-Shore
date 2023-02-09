@@ -280,7 +280,6 @@ GameObject:
   - component: {fileID: 3440187540988767646}
   - component: {fileID: 1435252848482629424}
   - component: {fileID: 6293426128044408357}
-  - component: {fileID: 5628442807914575019}
   - component: {fileID: 7686683633640807837}
   m_Layer: 0
   m_Name: Manta
@@ -424,7 +423,7 @@ MonoBehaviour:
   Boosting: 0
   BoostDecaying: 0
   Drifting: 0
-  velocityDirection: {x: 0, y: 0, z: 0}
+  VelocityDirection: {x: 0, y: 0, z: 0}
   blockRotation: {x: 0, y: 0, z: 0, w: 0}
 --- !u!114 &3440187540988767646
 MonoBehaviour:
@@ -486,28 +485,6 @@ MonoBehaviour:
   yawAnimationScaler: 80
   lerpAmount: 2
   smallLerpAmount: 0.7
---- !u!114 &5628442807914575019
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6417075533431866457}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 95baa921cf22958449a3143749d5e0e3, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  ship: {fileID: 0}
-  boostDecay: 1
-  defaultMinimumSpeed: 10
-  DefaultThrottleScaler: 50
-  MaxBoostDecay: 10
-  BoostDecayGrowthRate: 0.03
-  minimumSpeed: 0
-  ThrottleScaler: 0
-  rotationThrottleScaler: 0
-  rotationScaler: 130
 --- !u!114 &7686683633640807837
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -520,7 +497,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 95baa921cf22958449a3143749d5e0e3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  ship: {fileID: 0}
   boostDecay: 1
   defaultMinimumSpeed: 10
   DefaultThrottleScaler: 50

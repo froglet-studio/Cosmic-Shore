@@ -11,7 +11,7 @@ EditorBuildSettings:
   - enabled: 0
     path: Assets/Scenes/Game_HighScore.unity
     guid: 5e8d9932a4d84a1488c2dad96c8135dd
-  - enabled: 1
+  - enabled: 0
     path: Assets/Scenes/Game_TestDesign.unity
     guid: 511a0c2e48fb1fe43bfc4155eb90a9b2
   - enabled: 0

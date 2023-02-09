@@ -683,10 +683,10 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 5928382658856804067}
+  - component: {fileID: 874579555101021527}
   - component: {fileID: 6964962696344697388}
   - component: {fileID: 874579555101021522}
   - component: {fileID: 874579555101021523}
-  - component: {fileID: 874579555101021527}
   - component: {fileID: 1435252848482629424}
   - component: {fileID: 1871436205027819587}
   - component: {fileID: 3440187540988767646}
@@ -714,6 +714,67 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &874579555101021527
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a273abd40c7104c4392188723ab929d6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  Name: Dolphin
+  ShipType: 2
+  nearFieldSkimmer: {fileID: 874579554510349383}
+  farFieldSkimmer: {fileID: 0}
+  OrientationHandle: {fileID: 1087614488730427270}
+  AOEPrefab: {fileID: 9218889541719856748, guid: 2ae56847c6f549948a71f41eaf59f749,
+    type: 3}
+  shipGeometries:
+  - {fileID: 4662679416581426262}
+  - {fileID: 8921444315668696485}
+  - {fileID: 7640717969865516594}
+  - {fileID: 744850128600491525}
+  - {fileID: 2877688561880709149}
+  - {fileID: 3743426984857614330}
+  - {fileID: 1463393096304612524}
+  - {fileID: 8211653562881954920}
+  TrailSpawner: {fileID: 874579555101021522}
+  head: {fileID: 0}
+  crystalImpactEffects: 000000000500000002000000
+  trailBlockImpactEffects: 00000000030000000200000001000000
+  boostMultiplier: 4
+  boostFuelAmount: -0.01
+  rotationScaler: 190
+  rotationThrottleScaler: 0.5
+  minExplosionScale: 200
+  maxExplosionScale: 800
+  blockFuelChange: 0
+  closeCamDistance: -5
+  farCamDistance: -20
+  cameraGrowthRate: 5
+  cameraShrinkRate: 5
+  minFarFieldSkimmerScale: 100
+  maxFarFieldSkimmerScale: 200
+  minNearFieldSkimmerScale: 15
+  maxNearFieldSkimmerScale: 100
+  skimmerGrowthRate: 1
+  skimmerShrinkRate: 1
+  minGap: 1
+  maxGap: 1
+  throttle: 50
+  BoostDecayGrowthRate: 0.03
+  MaxBoostDecay: 6
+  fullSpeedStraightEffects: 
+  rightStickEffects: 000000000600000008000000
+  leftStickEffects: 000000000600000008000000
+  flipEffects: 05000000
+  idleEffects: 
+  controlOverrides: 0300000004000000000000000800000009000000
+  inputController: {fileID: 0}
 --- !u!114 &6964962696344697388
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -775,71 +836,11 @@ MonoBehaviour:
   SpeedMultiplier: 1
   Speed: 0
   Boosting: 0
+  ChargingBoost: 0
   BoostDecaying: 0
   Drifting: 0
-  velocityDirection: {x: 0, y: 0, z: 0}
+  VelocityDirection: {x: 0, y: 0, z: 0}
   blockRotation: {x: 0, y: 0, z: 0, w: 0}
---- !u!114 &874579555101021527
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6417075533431866457}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a273abd40c7104c4392188723ab929d6, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  Name: Dolphin
-  ShipType: 2
-  nearFieldSkimmer: {fileID: 874579554510349383}
-  farFieldSkimmer: {fileID: 0}
-  OrientationHandle: {fileID: 1087614488730427270}
-  AOEPrefab: {fileID: 9218889541719856748, guid: 2ae56847c6f549948a71f41eaf59f749,
-    type: 3}
-  shipGeometries:
-  - {fileID: 4662679416581426262}
-  - {fileID: 8921444315668696485}
-  - {fileID: 7640717969865516594}
-  - {fileID: 744850128600491525}
-  - {fileID: 2877688561880709149}
-  - {fileID: 3743426984857614330}
-  - {fileID: 1463393096304612524}
-  - {fileID: 8211653562881954920}
-  TrailSpawner: {fileID: 874579555101021522}
-  head: {fileID: 0}
-  crystalImpactEffects: 000000000500000002000000
-  trailBlockImpactEffects: 00000000030000000200000001000000
-  boostMultiplier: 4
-  boostFuelAmount: -0.01
-  rotationScaler: 190
-  rotationThrottleScaler: 0.5
-  minExplosionScale: 200
-  maxExplosionScale: 800
-  blockFuelChange: 0
-  closeCamDistance: -5
-  farCamDistance: -20
-  cameraGrowthRate: 5
-  cameraShrinkRate: 5
-  minFarFieldSkimmerScale: 100
-  maxFarFieldSkimmerScale: 200
-  minNearFieldSkimmerScale: 15
-  maxNearFieldSkimmerScale: 100
-  skimmerGrowthRate: 1
-  skimmerShrinkRate: 1
-  minGap: 1
-  maxGap: 1
-  throttle: 50
-  BoostDecayGrowthRate: 0.03
-  MaxBoostDecay: 6
-  fullSpeedStraightEffects: 
-  rightStickEffects: 0000000006000000
-  leftStickEffects: 0000000006000000
-  flipEffects: 05000000
-  idleEffects: 
-  controlOverrides: 0300000004000000000000000800000009000000
-  inputController: {fileID: 0}
 --- !u!114 &1435252848482629424
 MonoBehaviour:
   m_ObjectHideFlags: 0
