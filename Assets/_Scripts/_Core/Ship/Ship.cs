@@ -258,7 +258,7 @@ namespace StarWriter.Core
                         ScaleGapWithLevel();
                         break;
                     case TrailBlockImpactEffects.Attach:
-                        Attach(trailBlockProperties.TrailSpawner.trailList[trailBlockProperties.Index]);
+                        Attach(trailBlockProperties.trail);
                         break;
                 }
             }
@@ -310,6 +310,9 @@ namespace StarWriter.Core
                         break;
                     case ShipActions.GrowTrail:
                         GrowTrail(trailGrowthRate);
+                        break;
+                    case ShipActions.Detach:
+                        Detach();
                         break;
                 }
             }
@@ -534,11 +537,15 @@ namespace StarWriter.Core
             nearFieldSkimmer.transform.localScale = minNearFieldSkimmerScale * Vector3.one;
         }
 
-
-
         void Attach(Trail trail) 
         { 
+            shipData.Attached = true;
+            shipData.AttachedTrail = trail;
+        }
 
+        void Detach()
+        {
+            shipData.Attached = false;
         }
 
     }

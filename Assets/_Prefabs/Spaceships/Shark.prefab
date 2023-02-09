@@ -541,7 +541,7 @@ MonoBehaviour:
   minNearFieldSkimmerScale: 10
   maxNearFieldSkimmerScale: 60
   minTrailYScale: 1
-  maxTrailYScale: 2
+  maxTrailYScale: 1.7
   skimmerGrowthRate: 8
   skimmerShrinkRate: 8
   trailGrowthRate: 2
