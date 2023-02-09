@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using StarWriter.Core;
+using static UnityEditor.ShaderGraph.Internal.KeywordDependentCollection;
 
 public class GunShipController : ShipController
 {
@@ -9,12 +10,13 @@ public class GunShipController : ShipController
     [SerializeField] Gun leftGun;
     [SerializeField] Gun rightGun;
 
-    int nextBlockIndex = 1;
-    int previousBlockIndex;
+    public int nextBlockIndex = 1;
+    public int previousBlockIndex;
     float trailLerpAmount;
     bool moveForward = true;
 
-    float trailSpeed = 1f;
+    [SerializeField] float maxTrailSpeed = 1f;
+    [SerializeField] float reducedTrailSpeed = 1f;
 
     Player player;
 
@@ -49,37 +51,13 @@ public class GunShipController : ShipController
     {
         if (shipData.Attached) 
         {
-            if (shipData.AttachedTrail.TrailSpawner.trailList[(int)nextBlockIndex].destroyed)
-                trailLerpAmount += trailSpeed / 4f * Time.deltaTime;
-            else
-                trailLerpAmount += trailSpeed * Time.deltaTime;
-
-            if (trailLerpAmount > 1)
-            {
-                previousBlockIndex = nextBlockIndex;
-                if (moveForward) nextBlockIndex += 2;
-                else nextBlockIndex -= 2;
-                trailLerpAmount -= 1f;
-            }
-
-            transform.position = Vector3.Lerp(shipData.AttachedTrail.TrailSpawner.trailList[previousBlockIndex].transform.position,
-                                              shipData.AttachedTrail.TrailSpawner.trailList[nextBlockIndex].transform.position,
-                                              trailLerpAmount);
-
-            //transform.rotation = Quaternion.Lerp(shipData.AttachedTrail.TrailSpawner.trailList[previousBlockIndex].transform.rotation,
-            //                                     shipData.AttachedTrail.TrailSpawner.trailList[nextBlockIndex].transform.rotation,
-            //                                     trailLerpAmount);
-
-            if (shipData.AttachedTrail.TrailSpawner.trailList[(int)previousBlockIndex].destroyed)
-                shipData.AttachedTrail.TrailSpawner.trailList[(int)previousBlockIndex].Restore();
+            Slide();
         }
+
         else
         {
             base.MoveShip();
         }
- 
-
-
 
     //    var velocity = (minimumSpeed - (Mathf.Abs(inputController.XSum) * ThrottleScaler)) * transform.forward + (inputController.XSum * ThrottleScaler * transform.right);
     //    shipData.VelocityDirection = velocity.normalized;
@@ -94,5 +72,38 @@ public class GunShipController : ShipController
         leftGun.FireGun(player.transform, shipData.VelocityDirection * shipData.Speed);
         rightGun.FireGun(player.transform, shipData.VelocityDirection * shipData.Speed);
     }
+    void Slide()
+    {
+        var gapStep = 2;
+        var trailSpawner = shipData.AttachedTrail.TrailSpawner;
+        if (moveForward && ship.TrailSpawner.gap > 0) nextBlockIndex = shipData.AttachedTrail.Index + gapStep;
+        else if (ship.TrailSpawner.gap > 0) nextBlockIndex = shipData.AttachedTrail.Index - gapStep;
+        else if (moveForward) nextBlockIndex = shipData.AttachedTrail.Index + 1;
+        else nextBlockIndex = shipData.AttachedTrail.Index - 1;
 
+        var distance = trailSpawner.trailList[nextBlockIndex].transform.position - shipData.AttachedTrail.TrailSpawner.trailList[shipData.AttachedTrail.Index].transform.position;
+        var timeSpaceCorrectedInput = inputController.XDiff * Time.deltaTime / distance.magnitude;
+
+        if (trailSpawner.trailList[(int)nextBlockIndex].destroyed)
+            trailLerpAmount += reducedTrailSpeed * timeSpaceCorrectedInput;
+        else
+            trailLerpAmount += maxTrailSpeed * timeSpaceCorrectedInput;
+
+        transform.position = Vector3.Lerp(shipData.AttachedTrail.transform.position,
+                                          trailSpawner.trailList[nextBlockIndex].transform.position,
+                                          trailLerpAmount);
+
+        if (trailLerpAmount > 1)
+        {
+            shipData.AttachedTrail = trailSpawner.trailList[nextBlockIndex];
+            trailLerpAmount -= 1f;
+        }
+
+        //transform.rotation = Quaternion.Lerp(shipData.AttachedTrail.TrailSpawner.trailList[previousBlockIndex].transform.rotation,
+        //                                     shipData.AttachedTrail.TrailSpawner.trailList[nextBlockIndex].transform.rotation,
+        //                                     trailLerpAmount);
+
+        if (shipData.AttachedTrail.destroyed)
+            shipData.AttachedTrail.Restore();
+    }
 }

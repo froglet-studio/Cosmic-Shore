@@ -266,6 +266,12 @@ namespace StarWriter.Core.Input
                 else
                 {
                     Idle = true;
+
+                    XSum = 0;
+                    YSum = 0;
+                    XDiff = 0;
+                    YDiff = 0;
+                    
                     ship.PerformShipControllerActions(InputEvents.IdleAction); // consider placing some stop methods for other Input events here  
                 }
             }

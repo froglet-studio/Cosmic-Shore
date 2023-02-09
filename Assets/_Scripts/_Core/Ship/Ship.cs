@@ -545,7 +545,22 @@ namespace StarWriter.Core
         void Detach()
         {
             shipData.Attached = false;
+
+            TurnOffColliderCoroutine(3);
         }
+
+        IEnumerator TurnOffColliderCoroutine(float duration)
+        {
+            float elapsedTime = 0f;
+            while (elapsedTime < duration)
+            {
+                GetComponent<Collider>().enabled = false;
+                elapsedTime += Time.deltaTime;
+                yield return null;
+            }
+            GetComponent<Collider>().enabled = true;
+        }
+
 
     }
 }

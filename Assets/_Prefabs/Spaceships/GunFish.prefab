@@ -459,6 +459,8 @@ MonoBehaviour:
   topGun: {fileID: 6325554860274326311}
   leftGun: {fileID: 3459134076240855180}
   rightGun: {fileID: 6375360903085026602}
+  maxTrailSpeed: 50
+  reducedTrailSpeed: 30
 --- !u!114 &3440187540988767646
 MonoBehaviour:
   m_ObjectHideFlags: 0
