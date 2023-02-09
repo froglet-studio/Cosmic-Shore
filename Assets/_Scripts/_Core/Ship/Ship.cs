@@ -46,8 +46,12 @@ namespace StarWriter.Core
         [SerializeField] float maxFarFieldSkimmerScale = 200;
         [SerializeField] float minNearFieldSkimmerScale = 15;
         [SerializeField] float maxNearFieldSkimmerScale = 100;
+        [SerializeField] float minTrailYScale = 15;
+        [SerializeField] float maxTrailYScale = 100;
         [SerializeField] float skimmerGrowthRate = 1;
         [SerializeField] float skimmerShrinkRate = 1;
+        [SerializeField] float trailGrowthRate = 1; 
+        [SerializeField] float trailShrinkRate = 1; 
         [SerializeField] float minGap = 0;
         [SerializeField] float maxGap = 0;
         [SerializeField] float throttle = 50;
@@ -79,7 +83,8 @@ namespace StarWriter.Core
         float speedModifierMax = 6f;
         float abilityStartTime;
         float elapsedTime;
-        bool SkimmerGrowing;
+        bool skimmerGrowing;
+        bool trailGrowing;
 
         public Teams Team 
         { 
@@ -303,6 +308,9 @@ namespace StarWriter.Core
                     case ShipActions.ChargeBoost: 
                         shipData.ChargingBoost = true;
                         break;
+                    case ShipActions.GrowTrail:
+                        GrowTrail(trailGrowthRate);
+                        break;
                 }
             }
         }
@@ -350,6 +358,9 @@ namespace StarWriter.Core
                     case ShipActions.ChargeBoost:
                         shipData.ChargingBoost = false;
                         shipController.StartChargedBoost();
+                        break;
+                    case ShipActions.GrowTrail:
+                        ResetTrailToNeutral(trailShrinkRate);
                         break;
                 }
             }
@@ -427,6 +438,14 @@ namespace StarWriter.Core
 
         Coroutine returnSkimmerToNeutralCoroutine;
         Coroutine growSkimmerCoroutine;
+        Coroutine returnTrailToNeutralCoroutine;
+        Coroutine growTrailCoroutine;
+
+        //
+        // grow skimmer
+        //
+
+
         void GrowSkimmer(float growthRate)
         {
             if (returnSkimmerToNeutralCoroutine != null)
@@ -434,13 +453,13 @@ namespace StarWriter.Core
                 StopCoroutine(returnSkimmerToNeutralCoroutine);
                 returnSkimmerToNeutralCoroutine = null;
             }
-            SkimmerGrowing = true;
+            skimmerGrowing = true;
             growSkimmerCoroutine = StartCoroutine(GrowSkimmerCoroutine(growthRate));
         }
 
         IEnumerator GrowSkimmerCoroutine(float growthRate)
         {
-            while (SkimmerGrowing && nearFieldSkimmer.transform.localScale.z < maxNearFieldSkimmerScale)
+            while (skimmerGrowing && nearFieldSkimmer.transform.localScale.z < maxNearFieldSkimmerScale)
             {
                 nearFieldSkimmer.transform.localScale += Time.deltaTime * growthRate * Vector3.one;
                 yield return null;
@@ -454,7 +473,7 @@ namespace StarWriter.Core
                 StopCoroutine(growSkimmerCoroutine);
                 growSkimmerCoroutine = null;
             }
-            SkimmerGrowing = false;
+            skimmerGrowing = false;
             returnSkimmerToNeutralCoroutine = StartCoroutine(ReturnSkimmerToNeutralCoroutine(shrinkRate));
         }
 
@@ -467,6 +486,55 @@ namespace StarWriter.Core
             }
             nearFieldSkimmer.transform.localScale = minNearFieldSkimmerScale * Vector3.one;
         }
+
+        //
+        // Grow trail
+        //
+
+        void GrowTrail(float growthRate)
+        {
+            if (returnTrailToNeutralCoroutine != null)
+            {
+                StopCoroutine(returnTrailToNeutralCoroutine);
+                returnTrailToNeutralCoroutine = null;
+            }
+            trailGrowing = true;
+            growTrailCoroutine = StartCoroutine(GrowTrailCoroutine(growthRate));
+        }
+
+        IEnumerator GrowTrailCoroutine(float growthRate)
+        {
+            while (trailGrowing && TrailSpawner.YScaler < maxTrailYScale)
+            {
+                TrailSpawner.YScaler += Time.deltaTime * growthRate;
+                TrailSpawner.XScaler += Time.deltaTime * growthRate;
+                yield return null;
+            }
+        }
+
+        public void ResetTrailToNeutral(float shrinkRate)
+        {
+            if (growTrailCoroutine != null)
+            {
+                StopCoroutine(growTrailCoroutine);
+                growTrailCoroutine = null;
+            }
+            trailGrowing = false;
+            returnTrailToNeutralCoroutine = StartCoroutine(ReturnTrailToNeutralCoroutine(shrinkRate));
+        }
+
+        IEnumerator ReturnTrailToNeutralCoroutine(float shrinkRate)
+        {
+            while (TrailSpawner.YScaler  > minTrailYScale)
+            {
+                TrailSpawner.YScaler -= Time.deltaTime * shrinkRate;
+                TrailSpawner.XScaler -= Time.deltaTime * shrinkRate;
+                yield return null;
+            }
+            nearFieldSkimmer.transform.localScale = minNearFieldSkimmerScale * Vector3.one;
+        }
+
+
 
         void Attach(Trail trail) 
         { 

@@ -94,8 +94,8 @@ public class TrailSpawner : MonoBehaviour
     [SerializeField] float minBlockScale = 1;
     [SerializeField] float maxBlockScale = 1;
     
-    float XScaler = 1;
-    float YScaler = 1;
+    public float XScaler = 1;
+    public float YScaler = 1;
     float ZScaler = 1;
 
 
@@ -110,8 +110,6 @@ public class TrailSpawner : MonoBehaviour
         ZScaler = Mathf.Max(minBlockScale, maxBlockScale * (1 - Mathf.Abs(amount)));
         wavelength = Mathf.Max(minWavelength, initialWavelength * Mathf.Abs(amount)); 
     }
-
-    //public void Set
      
     void PauseTrailSpawner()
     {

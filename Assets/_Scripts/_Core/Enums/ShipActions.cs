@@ -10,5 +10,6 @@ public enum ShipActions
     ToggleGyro = 5,
     ZoomOut = 6,
     GrowSkimmer = 7,
-    ChargeBoost = 8
+    ChargeBoost = 8,
+    GrowTrail = 9
 }
