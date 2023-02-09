@@ -331,7 +331,6 @@ namespace StarWriter.Core
                     case ShipActions.Drift:
                         shipData.Drifting = false;
                         GetComponent<TrailSpawner>().SetDotProduct(1);
-                        shipController.StartChargedBoost();
                         break;
                     case ShipActions.Boost:
                         shipData.Boosting = false;
