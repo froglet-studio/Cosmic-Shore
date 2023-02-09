@@ -41,7 +41,7 @@ public class ShipController : MonoBehaviour
     Quaternion inverseInitialRotation = new(0, 0, 0, 0);
 
     // Start is called before the first frame update
-    protected void Start()
+    protected virtual void Start()
     {
         ship = GetComponent<Ship>();
         uuid = GameObject.FindWithTag("Player").GetComponent<Player>().PlayerUUID;
@@ -55,7 +55,7 @@ public class ShipController : MonoBehaviour
     }
 
     // Update is called once per frame
-    protected void Update()
+    protected virtual void Update()
     {
         if (inputController == null) inputController = ship.inputController;
         if (inputController.Idle) Idle();

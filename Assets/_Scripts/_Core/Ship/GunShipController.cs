@@ -18,7 +18,7 @@ public class GunShipController : ShipController
 
     Player player;
 
-    new void Start()
+    protected override void Start()
     {
         base.Start();
         player = GameObject.FindWithTag("Player").GetComponent<Player>();
@@ -34,7 +34,7 @@ public class GunShipController : ShipController
         
     }
 
-    new private void Update()
+    protected override void Update()
     {
         base.Update();
         Fire();
@@ -42,10 +42,10 @@ public class GunShipController : ShipController
 
     //override protected void Yaw()
     //{
-        
+
     //}
 
-    override protected void MoveShip()
+    protected override void MoveShip()
     {
         if (shipData.Attached) 
         {

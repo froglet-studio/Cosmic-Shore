@@ -96,7 +96,7 @@ BoxCollider:
   m_IsTrigger: 1
   m_Enabled: 1
   serializedVersion: 2
-  m_Size: {x: 1, y: 1, z: 1}
+  m_Size: {x: 1.05, y: 1.05, z: 1.05}
   m_Center: {x: 0, y: 0, z: 0}
 --- !u!114 &4563009547826722997
 MonoBehaviour:
@@ -120,10 +120,14 @@ MonoBehaviour:
     volume: 0.2
     speedDebuffAmount: 0.4
     trail: {fileID: 0}
+    Index: 0
+    TrailSpawner: {fileID: 0}
   growthRate: 0.5
   ownerId: 
   waitTime: 0.1
   destroyed: 0
   ID: 
-  Dimensions: {x: 0, y: 0, z: 0}
+  InnerDimensions: {x: 0, y: 0, z: 0}
+  Index: 0
+  TrailSpawner: {fileID: 0}
   warp: 0
