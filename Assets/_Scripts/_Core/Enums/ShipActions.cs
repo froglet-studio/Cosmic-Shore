@@ -9,5 +9,6 @@ public enum ShipActions
     ToggleMode = 4,
     ToggleGyro = 5,
     ZoomOut = 6,
-    GrowSkimmer = 7
+    GrowSkimmer = 7,
+    ChargeBoost = 8
 }

@@ -10,6 +10,7 @@ namespace StarWriter.Core
         public float Speed;
 
         public bool Boosting = false;
+        public bool ChargingBoost = false;
         public bool BoostDecaying = false;
         public bool Drifting = false;
 

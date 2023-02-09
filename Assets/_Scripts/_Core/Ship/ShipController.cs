@@ -65,6 +65,8 @@ public class ShipController : MonoBehaviour
             
             shipData.blockRotation = transform.rotation; // TODO: move this
         }
+        if (shipData.ChargingBoost) ChargeBoost();
+
         MoveShip();
     }
 
@@ -91,14 +93,13 @@ public class ShipController : MonoBehaviour
         }
     }
 
-    void StoreBoost()
+    void ChargeBoost()
     {
         boostDecay += BoostDecayGrowthRate;
     }
 
-    public void EndDrift() 
+    public void StartChargedBoost() 
     {
-        ship.GetComponent<TrailSpawner>().SetDotProduct(1);
         StartCoroutine(DecayingBoostCoroutine());
     }
 
@@ -154,14 +155,13 @@ public class ShipController : MonoBehaviour
         shipData.InputSpeed = speed;
         
 
-        if (!shipData.Drifting)
+        if (shipData.Drifting)
         {
-            shipData.VelocityDirection = transform.forward;
+            ship.GetComponent<TrailSpawner>().SetDotProduct(Vector3.Dot(shipData.VelocityDirection, transform.forward));
         }
         else
         {
-            StoreBoost();
-            ship.GetComponent<TrailSpawner>().SetDotProduct(Vector3.Dot(shipData.VelocityDirection, transform.forward));
+            shipData.VelocityDirection = transform.forward;
         }
 
         transform.position += shipData.Speed * Time.deltaTime * shipData.VelocityDirection;

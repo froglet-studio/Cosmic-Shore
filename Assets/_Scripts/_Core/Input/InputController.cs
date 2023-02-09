@@ -266,7 +266,7 @@ namespace StarWriter.Core.Input
                 else
                 {
                     Idle = true;
-                    ship.PerformShipControllerActions(InputEvents.IdleAction);  
+                    ship.PerformShipControllerActions(InputEvents.IdleAction); // consider placing some stop methods for other Input events here  
                 }
             }
         }

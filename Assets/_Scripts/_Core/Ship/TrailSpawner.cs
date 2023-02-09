@@ -110,6 +110,8 @@ public class TrailSpawner : MonoBehaviour
         ZScaler = Mathf.Max(minBlockScale, maxBlockScale * (1 - Mathf.Abs(amount)));
         wavelength = Mathf.Max(minWavelength, initialWavelength * Mathf.Abs(amount)); 
     }
+
+    //public void Set
      
     void PauseTrailSpawner()
     {

@@ -300,6 +300,9 @@ namespace StarWriter.Core
                     case ShipActions.GrowSkimmer:
                         GrowSkimmer(skimmerGrowthRate);
                         break;
+                    case ShipActions.ChargeBoost: 
+                        shipData.ChargingBoost = true;
+                        break;
                 }
             }
         }
@@ -316,7 +319,8 @@ namespace StarWriter.Core
                 {
                     case ShipActions.Drift:
                         shipData.Drifting = false;
-                        shipController.EndDrift();
+                        GetComponent<TrailSpawner>().SetDotProduct(1);
+                        shipController.StartChargedBoost();
                         break;
                     case ShipActions.Boost:
                         shipData.Boosting = false;
@@ -342,6 +346,10 @@ namespace StarWriter.Core
                         break;
                     case ShipActions.GrowSkimmer:
                         ResetSkimmerToNeutral(skimmerShrinkRate);
+                        break;
+                    case ShipActions.ChargeBoost:
+                        shipData.ChargingBoost = false;
+                        shipController.StartChargedBoost();
                         break;
                 }
             }
