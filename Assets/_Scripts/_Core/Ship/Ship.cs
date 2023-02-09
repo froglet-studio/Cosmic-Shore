@@ -199,7 +199,7 @@ namespace StarWriter.Core
                         break;
                     case CrystalImpactEffects.IncrementLevel:
                         resourceSystem.ChangeLevel(player.PlayerUUID, ChargeDisplay.OneFuelUnit);
-                        ScaleSkimmersWithLevel();
+                        ScaleSkimmersWithLevel(); // TODO: decouple with leveling
                         ScaleGapWithLevel();
                         break;
                     case CrystalImpactEffects.FillCharge:

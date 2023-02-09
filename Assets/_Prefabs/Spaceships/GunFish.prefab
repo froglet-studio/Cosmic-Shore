@@ -330,7 +330,7 @@ MonoBehaviour:
   - {fileID: 2306761366267364778}
   TrailSpawner: {fileID: 874579555101021522}
   head: {fileID: 0}
-  crystalImpactEffects: 000000000400000007000000
+  crystalImpactEffects: 0000000004000000
   trailBlockImpactEffects: 0000000009000000
   boostMultiplier: 2
   boostFuelAmount: 0
@@ -459,6 +459,8 @@ MonoBehaviour:
   topGun: {fileID: 6325554860274326311}
   leftGun: {fileID: 3459134076240855180}
   rightGun: {fileID: 6375360903085026602}
+  nextBlockIndex: 1
+  previousBlockIndex: 0
   maxTrailSpeed: 50
   reducedTrailSpeed: 30
 --- !u!114 &3440187540988767646
