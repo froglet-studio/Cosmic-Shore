@@ -22,27 +22,20 @@ public class AOEBlockCreation : AOEExplosion
         for (int i = 0; i < blockCount; i++)
         {
             // Ring One
-            var position = transform.position +
-                              radius * Mathf.Cos((i / blockCount) * 2 * Mathf.PI) * transform.right +
-                              radius * Mathf.Sin((i / blockCount) * 2 * Mathf.PI) * transform.up;
-            CreateBlock(position, position, "::AOE::" + Time.time + "::" + i);
-            
-            // Ring two
-            position = transform.position +
-                              1.5f * radius * Mathf.Cos(((i + .5f) / blockCount) * 2 * Mathf.PI) * transform.right +
-                              1.5f * radius * Mathf.Sin(((i + .5f) / blockCount) * 2 * Mathf.PI) * transform.up
-                              -.5f * radius * transform.forward;
-            CreateBlock(position, position +  radius * transform.forward, "::AOE::" + Time.time + "::" + i + "-2");
-
-            // Ring three
-            position = transform.position +
-                              2f * radius * Mathf.Cos((i / blockCount) * 2 * Mathf.PI) * transform.right +
-                              2f * radius * Mathf.Sin((i / blockCount) * 2 * Mathf.PI) * transform.up
-                              - radius * transform.forward; ;
-            CreateBlock(position, position + 2*radius * transform.forward, "::AOE::" + Time.time + "::" + i + "-3");
+            CreateRing(i,   0,    0, 0);
+            CreateRing(i, .5f, 1.5f, 1);
+            CreateRing(i,   0,   2f, 2);
         }
 
         yield return new WaitForEndOfFrame();
+    }
+
+    void CreateRing(int i, float phase, float scale, float tilt)
+    {
+        var position = transform.position +
+                             scale * radius * Mathf.Cos((i + phase / blockCount) * 2 * Mathf.PI) * transform.right +
+                             scale * radius * Mathf.Sin((i + phase / blockCount) * 2 * Mathf.PI) * transform.up;
+        CreateBlock(position, position + tilt * radius * transform.forward, "::AOE::" + Time.time + "::" + i);
     }
 
     void CreateBlock(Vector3 position, Vector3 lookPosition, string ownerId)

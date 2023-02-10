@@ -18,6 +18,8 @@ public class GunShipController : ShipController
     [SerializeField] float maxTrailSpeed = 1f;
     [SerializeField] float reducedTrailSpeed = 1f;
 
+    int padding = 3; 
+
     Player player;
 
     protected override void Start()
@@ -101,33 +103,20 @@ public class GunShipController : ShipController
             trailLerpAmount -= 1f;
         }
 
-        if (moveForward)
+        if (nextBlockIndex < padding || nextBlockIndex > trailSpawner.trailList.Count - padding)
         {
-            if (Vector3.Dot(transform.forward, distance) > 0) 
-            {
-                Debug.Log("moving forward pointing forward");
-            } 
-            else
-            {
-                Debug.Log("moving forward pointing backward");
-                moveForward = false;
-                shipData.AttachedTrail = trailSpawner.trailList[nextBlockIndex];
-                trailLerpAmount = 1 - trailLerpAmount;
-            }
+            transform.rotation *= Quaternion.Euler(0, 180, 0);
         }
-        else
+
+
+
+        if (Vector3.Dot(transform.forward, distance) < 0 || nextBlockIndex < padding || nextBlockIndex > trailSpawner.trailList.Count - padding)
         {
-            if (Vector3.Dot(transform.forward, distance) > 0) 
-            {
-                Debug.Log("moving backward pointing backward");
-            } 
-            else
-            {
-                Debug.Log("moving backward pointing forward");
-                moveForward = true;
-                shipData.AttachedTrail = trailSpawner.trailList[nextBlockIndex];
-                trailLerpAmount = 1 - trailLerpAmount;
-            }
+            if (moveForward) moveForward = false;
+            else moveForward = true;
+
+            shipData.AttachedTrail = trailSpawner.trailList[nextBlockIndex];
+            trailLerpAmount = 1 - trailLerpAmount;
         }
 
 

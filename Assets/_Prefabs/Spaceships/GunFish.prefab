@@ -732,13 +732,19 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4459183666627939154, guid: 340b92d77208a7347843154145a64863,
         type: 3}
+      propertyPath: trail
+      value: 
+      objectReference: {fileID: 4563009547826722997, guid: 4e280247faa1d154fa25d1e92df405dc,
+        type: 3}
+    - target: {fileID: 4459183666627939154, guid: 340b92d77208a7347843154145a64863,
+        type: 3}
       propertyPath: firePeriod
       value: 0.1
       objectReference: {fileID: 0}
     - target: {fileID: 4459183666627939154, guid: 340b92d77208a7347843154145a64863,
         type: 3}
       propertyPath: projectileTime
-      value: 100
+      value: 5
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 340b92d77208a7347843154145a64863, type: 3}
@@ -854,13 +860,19 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4459183666627939154, guid: 340b92d77208a7347843154145a64863,
         type: 3}
+      propertyPath: trail
+      value: 
+      objectReference: {fileID: 4563009547826722997, guid: 5790c8c1f457a754baecca51ef90c82e,
+        type: 3}
+    - target: {fileID: 4459183666627939154, guid: 340b92d77208a7347843154145a64863,
+        type: 3}
       propertyPath: firePeriod
       value: 0.1
       objectReference: {fileID: 0}
     - target: {fileID: 4459183666627939154, guid: 340b92d77208a7347843154145a64863,
         type: 3}
       propertyPath: projectileTime
-      value: 100
+      value: 5
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 340b92d77208a7347843154145a64863, type: 3}
@@ -1083,13 +1095,19 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4459183666627939154, guid: 340b92d77208a7347843154145a64863,
         type: 3}
+      propertyPath: trail
+      value: 
+      objectReference: {fileID: 4563009547826722997, guid: 053064d82123e8b49bfb29870b5c0715,
+        type: 3}
+    - target: {fileID: 4459183666627939154, guid: 340b92d77208a7347843154145a64863,
+        type: 3}
       propertyPath: firePeriod
       value: 0.1
       objectReference: {fileID: 0}
     - target: {fileID: 4459183666627939154, guid: 340b92d77208a7347843154145a64863,
         type: 3}
       propertyPath: projectileTime
-      value: 100
+      value: 5
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 340b92d77208a7347843154145a64863, type: 3}
