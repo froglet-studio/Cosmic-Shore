@@ -69,7 +69,6 @@ namespace StarWriter.Core
             {
                 elapsedTime += Time.deltaTime;
                 projectile.transform.position += velocity * Time.deltaTime;
-                projectile.GetComponent<Projectile>().ElapsedTime = elapsedTime;    
                 yield return null;
             }
             //while (projectile.GetComponent<Projectile>().Velocity.magnitude > .1f)
