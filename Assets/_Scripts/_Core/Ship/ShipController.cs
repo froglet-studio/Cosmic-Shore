@@ -35,7 +35,6 @@ public class ShipController : MonoBehaviour
     public float rotationScaler = 130f;
 
     protected readonly float lerpAmount = 2f;
-    readonly float smallLerpAmount = .7f;
 
     protected Quaternion displacementQuaternion;
     Quaternion inverseInitialRotation = new(0, 0, 0, 0);

@@ -1,10 +1,12 @@
 using System.Collections;
 using StarWriter.Core;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 public class AOEBlockCreation : AOEExplosion
 {
-    [SerializeField] Trail trail;
+    [FormerlySerializedAs("trail")]
+    [SerializeField] TrailBlock trailBlock;
     [SerializeField] float blockCount = 8;
     [SerializeField] float radius = 30f;
     [SerializeField] Vector3 blockScale = new Vector3(20f, 10f, 5f);
@@ -40,7 +42,7 @@ public class AOEBlockCreation : AOEExplosion
 
     void CreateBlock(Vector3 position, Vector3 lookPosition, string ownerId)
     {
-        var Block = Instantiate(trail);
+        var Block = Instantiate(trailBlock);
         Block.Team = Team;
         Block.ownerId = Ship.Player.PlayerUUID;
         Block.PlayerName = Ship.Player.PlayerName;

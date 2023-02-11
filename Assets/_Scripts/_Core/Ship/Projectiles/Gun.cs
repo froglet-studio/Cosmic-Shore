@@ -14,7 +14,7 @@ namespace StarWriter.Core
         public Ship Ship;
         bool onCooldown = false;
 
-        [SerializeField] Trail trail;
+        [SerializeField] TrailBlock trail;
         Material blockMaterial;
         [SerializeField] Vector3 blockScale = new Vector3(20f, 10f, 5f);
 

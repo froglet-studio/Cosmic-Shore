@@ -63,10 +63,10 @@ namespace StarWriter.Core
                         HapticController.PlayBlockCollisionHaptics();
                         break;
                     case TrailBlockImpactEffects.DeactivateTrailBlock:
-                        trailBlockProperties.trail.Explode(ship.transform.forward * ship.GetComponent<ShipData>().Speed, team, Player.PlayerName);
+                        trailBlockProperties.trailBlock.Explode(ship.transform.forward * ship.GetComponent<ShipData>().Speed, team, Player.PlayerName);
                         break;
                     case TrailBlockImpactEffects.Steal:
-                        trailBlockProperties.trail.Steal(Player.PlayerName, team);
+                        trailBlockProperties.trailBlock.Steal(Player.PlayerName, team);
                         break;
                     // This is actually redundant with Skimmer's built in "Fuel Amount" variable
                     //case TrailBlockImpactEffects.ChangeFuel:
@@ -78,32 +78,39 @@ namespace StarWriter.Core
 
         void OnTriggerEnter(Collider other)
         {
-            if (other.TryGetComponent<Trail>(out var trail))
-            {
-                activelySkimmingBlockCount++;
-                if (skimVisualFX) StartCoroutine(DisplaySkimParticleEffectCoroutine(trail));
-
-                if (!skimStartTimes.ContainsKey(trail.ID))
-                    skimStartTimes.Add(trail.ID, Time.time);
-
-                OnSkim?.Invoke(ship.Player.PlayerUUID, fuelAmount + (activelySkimmingBlockCount * MultiSkimMultiplier));
-
-                if (notifyNearbyBlockCount)
-                    NotifyNearbyBlockCount();
-            }
+            if (other.TryGetComponent<TrailBlock>(out var trailBlock))
+                StartSkim(trailBlock);
         }
+
+        void StartSkim(TrailBlock trailBlock)
+        {
+            activelySkimmingBlockCount++;
+            if (skimVisualFX) StartCoroutine(DisplaySkimParticleEffectCoroutine(trailBlock));
+
+            if (!skimStartTimes.ContainsKey(trailBlock.ID))
+                skimStartTimes.Add(trailBlock.ID, Time.time);
+
+            OnSkim?.Invoke(ship.Player.PlayerUUID, fuelAmount + (activelySkimmingBlockCount * MultiSkimMultiplier));
+
+            if (notifyNearbyBlockCount)
+                NotifyNearbyBlockCount();
+        }
+
 
         void OnTriggerStay(Collider other)
         {
             float skimDecayDuration = 1;
 
-            if (other.TryGetComponent<Trail>(out var trail))
+            if (other.TryGetComponent<TrailBlock>(out var trailBlock))
             {
+                if(!skimStartTimes.ContainsKey(trailBlock.ID))   // Occasionally, seeing a KeyNotFoundException, so maybe we miss the OnTriggerEnter event (note: always seems to be for AOE blocks)
+                    StartSkim(trailBlock);
+
                 // start with a baseline fuel amount the ranges from 0-1 depending on proximity of the skimmer to the trail block
                 var fuel = fuelAmount * (1 - (Vector3.Magnitude(transform.position - other.transform.position) / transform.localScale.x));
 
                 // apply decay
-                fuel *= Mathf.Min(0, (skimDecayDuration - (Time.time - skimStartTimes[trail.ID])) / skimDecayDuration);
+                fuel *= Mathf.Min(0, (skimDecayDuration - (Time.time - skimStartTimes[trailBlock.ID])) / skimDecayDuration);
 
                 // apply multiskim multiplier
                 fuel += (activelySkimmingBlockCount * MultiSkimMultiplier);
@@ -115,9 +122,9 @@ namespace StarWriter.Core
 
         void OnTriggerExit(Collider other)
         {
-            if (other.TryGetComponent<Trail>(out var trail))
+            if (other.TryGetComponent<TrailBlock>(out var trailBlock))
             {
-                skimStartTimes.Remove(trail.ID);
+                skimStartTimes.Remove(trailBlock.ID);
                 activelySkimmingBlockCount--;
 
                 if (notifyNearbyBlockCount)
@@ -131,19 +138,19 @@ namespace StarWriter.Core
             cameraManager.SetCloseCameraDistance(Mathf.Min((cameraManager.FarCamDistance) * (1 - (float)activelySkimmingBlockCount / ship.TrailSpawner.MaxNearbyBlockCount), cameraManager.CloseCamDistance));
         }
 
-        IEnumerator DisplaySkimParticleEffectCoroutine(Trail trail)
+        IEnumerator DisplaySkimParticleEffectCoroutine(TrailBlock trailBlock)
         {
-            var particle = Instantiate(trail.ParticleEffect);
-            particle.transform.parent = trail.transform;
+            var particle = Instantiate(trailBlock.ParticleEffect);
+            particle.transform.parent = trailBlock.transform;
 
             int timer = 0;
             float scaledTime;
             do
             {
-                var distance = trail.transform.position - transform.position;
+                var distance = trailBlock.transform.position - transform.position;
                 scaledTime = time / ship.GetComponent<ShipData>().Speed;
                 particle.transform.localScale = new Vector3(1, 1, distance.magnitude);
-                particle.transform.rotation = Quaternion.LookRotation(distance, trail.transform.up);
+                particle.transform.rotation = Quaternion.LookRotation(distance, trailBlock.transform.up);
                 particle.transform.position = transform.position;
                 timer++;
 
