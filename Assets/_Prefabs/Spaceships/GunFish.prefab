@@ -353,8 +353,8 @@ MonoBehaviour:
   skimmerShrinkRate: 1
   trailGrowthRate: 1
   trailShrinkRate: 1
-  minGap: 10
-  maxGap: 10
+  minGap: 3
+  maxGap: 3
   throttle: 50
   BoostDecayGrowthRate: 0.03
   MaxBoostDecay: 10
@@ -362,7 +362,7 @@ MonoBehaviour:
   rightStickEffects: 0000000006000000
   leftStickEffects: 0000000006000000
   flipEffects: 0a000000
-  idleEffects: 
+  idleEffects: 0a000000
   controlOverrides: 000000000300000004000000
   inputController: {fileID: 0}
 --- !u!114 &6964962696344697388
@@ -396,11 +396,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 909fb5cbbca8c4549b5a9df56d837e55, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  trail: {fileID: 4563009547826722997, guid: 5790c8c1f457a754baecca51ef90c82e, type: 3}
+  trailBlock: {fileID: 4563009547826722997, guid: 68d3aecc8e78ee64ab14601164273680,
+    type: 3}
   skimmer: {fileID: 874579554510349383}
   offset: 0
-  initialWavelength: 5
-  minWavelength: 1
+  initialWavelength: 10
+  minWavelength: 7
   gap: 0
   trailLength: 40
   defaultWaitTime: 0.5
@@ -432,7 +433,7 @@ MonoBehaviour:
   BoostDecaying: 0
   Drifting: 0
   Attached: 0
-  AttachedTrail: {fileID: 0}
+  AttachedTrailBlock: {fileID: 0}
   VelocityDirection: {x: 0, y: 0, z: 0}
   blockRotation: {x: 0, y: 0, z: 0, w: 0}
 --- !u!114 &6315651686961786297
@@ -662,8 +663,13 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4459183666627939153, guid: 340b92d77208a7347843154145a64863,
         type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 4459183666627939153, guid: 340b92d77208a7347843154145a64863,
+        type: 3}
       propertyPath: m_LocalScale.z
-      value: 0.3
+      value: 0.08
       objectReference: {fileID: 0}
     - target: {fileID: 4459183666627939153, guid: 340b92d77208a7347843154145a64863,
         type: 3}
@@ -728,7 +734,7 @@ PrefabInstance:
     - target: {fileID: 4459183666627939154, guid: 340b92d77208a7347843154145a64863,
         type: 3}
       propertyPath: speed
-      value: 30
+      value: 50
       objectReference: {fileID: 0}
     - target: {fileID: 4459183666627939154, guid: 340b92d77208a7347843154145a64863,
         type: 3}
@@ -743,8 +749,23 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4459183666627939154, guid: 340b92d77208a7347843154145a64863,
         type: 3}
+      propertyPath: blockScale.x
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4459183666627939154, guid: 340b92d77208a7347843154145a64863,
+        type: 3}
+      propertyPath: blockScale.y
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4459183666627939154, guid: 340b92d77208a7347843154145a64863,
+        type: 3}
+      propertyPath: blockScale.z
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 4459183666627939154, guid: 340b92d77208a7347843154145a64863,
+        type: 3}
       propertyPath: projectileTime
-      value: 5
+      value: 2
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 340b92d77208a7347843154145a64863, type: 3}
@@ -791,7 +812,7 @@ PrefabInstance:
     - target: {fileID: 4459183666627939153, guid: 340b92d77208a7347843154145a64863,
         type: 3}
       propertyPath: m_LocalScale.z
-      value: 0.3
+      value: 0.08
       objectReference: {fileID: 0}
     - target: {fileID: 4459183666627939153, guid: 340b92d77208a7347843154145a64863,
         type: 3}
@@ -856,13 +877,13 @@ PrefabInstance:
     - target: {fileID: 4459183666627939154, guid: 340b92d77208a7347843154145a64863,
         type: 3}
       propertyPath: speed
-      value: 30
+      value: 50
       objectReference: {fileID: 0}
     - target: {fileID: 4459183666627939154, guid: 340b92d77208a7347843154145a64863,
         type: 3}
       propertyPath: trail
       value: 
-      objectReference: {fileID: 4563009547826722997, guid: 5790c8c1f457a754baecca51ef90c82e,
+      objectReference: {fileID: 4563009547826722997, guid: 68d3aecc8e78ee64ab14601164273680,
         type: 3}
     - target: {fileID: 4459183666627939154, guid: 340b92d77208a7347843154145a64863,
         type: 3}
@@ -871,8 +892,23 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4459183666627939154, guid: 340b92d77208a7347843154145a64863,
         type: 3}
+      propertyPath: blockScale.x
+      value: 1.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 4459183666627939154, guid: 340b92d77208a7347843154145a64863,
+        type: 3}
+      propertyPath: blockScale.y
+      value: 1.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 4459183666627939154, guid: 340b92d77208a7347843154145a64863,
+        type: 3}
+      propertyPath: blockScale.z
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 4459183666627939154, guid: 340b92d77208a7347843154145a64863,
+        type: 3}
       propertyPath: projectileTime
-      value: 5
+      value: 2
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 340b92d77208a7347843154145a64863, type: 3}
@@ -1091,7 +1127,7 @@ PrefabInstance:
     - target: {fileID: 4459183666627939154, guid: 340b92d77208a7347843154145a64863,
         type: 3}
       propertyPath: speed
-      value: 30
+      value: 50
       objectReference: {fileID: 0}
     - target: {fileID: 4459183666627939154, guid: 340b92d77208a7347843154145a64863,
         type: 3}
@@ -1106,8 +1142,23 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4459183666627939154, guid: 340b92d77208a7347843154145a64863,
         type: 3}
+      propertyPath: blockScale.x
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4459183666627939154, guid: 340b92d77208a7347843154145a64863,
+        type: 3}
+      propertyPath: blockScale.y
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4459183666627939154, guid: 340b92d77208a7347843154145a64863,
+        type: 3}
+      propertyPath: blockScale.z
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 4459183666627939154, guid: 340b92d77208a7347843154145a64863,
+        type: 3}
       propertyPath: projectileTime
-      value: 5
+      value: 2
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 340b92d77208a7347843154145a64863, type: 3}

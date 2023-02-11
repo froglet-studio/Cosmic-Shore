@@ -539,13 +539,14 @@ namespace StarWriter.Core
         void Attach(TrailBlock trailBlock) 
         { 
             shipData.Attached = true;
+            TrailSpawner.PauseTrailSpawner();
             shipData.AttachedTrailBlock = trailBlock;
         }
 
         void Detach()
         {
             shipData.Attached = false;
-
+            TrailSpawner.RestartTrailSpawnerAfterDelay();
             TurnOffColliderCoroutine(3);
         }
 
