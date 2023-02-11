@@ -184,7 +184,7 @@ Material:
     - _REFLECTIONS_COLOR: {r: 1, g: 1, b: 1, a: 1}
     - _SpecColor: {r: 0.19999996, g: 0.19999996, b: 0.19999996, a: 1}
     - _Spread: {r: 0.08, g: 0.08, b: 0.08, a: 0}
-    - _spread: {r: 0.1, g: 0.1, b: 0.1, a: 0}
+    - _spread: {r: 0.2, g: 0.2, b: 0.2, a: 0}
     - _velocity: {r: 0, g: 0, b: 0, a: 0}
   m_BuildTextureStacks: []
 --- !u!114 &3950940957184209918

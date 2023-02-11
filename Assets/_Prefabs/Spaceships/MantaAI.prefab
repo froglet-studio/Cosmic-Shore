@@ -347,6 +347,8 @@ MonoBehaviour:
   MaxNearbyBlockCount: 10
   minBlockScale: 1
   maxBlockScale: 4
+  XScaler: 1
+  YScaler: 1
 --- !u!114 &874579555101021523
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -363,8 +365,11 @@ MonoBehaviour:
   SpeedMultiplier: 1
   Speed: 0
   Boosting: 0
+  ChargingBoost: 0
   BoostDecaying: 0
   Drifting: 0
+  Attached: 0
+  AttachedTrail: {fileID: 0}
   VelocityDirection: {x: 0, y: 0, z: 0}
   blockRotation: {x: 0, y: 0, z: 0, w: 0}
 --- !u!114 &874579555101021527
@@ -384,7 +389,7 @@ MonoBehaviour:
   nearFieldSkimmer: {fileID: 874579554510349383}
   farFieldSkimmer: {fileID: 0}
   OrientationHandle: {fileID: 4343935266849732334}
-  AOEPrefab: {fileID: 2728798890556433942, guid: 4a855af160021d241b8c1ac70cf2d792,
+  AOEPrefab: {fileID: 2728798890556433942, guid: f5ecfb9923155a84c860975d559b2714,
     type: 3}
   shipGeometries:
   - {fileID: 7989725769420682486}
@@ -392,7 +397,7 @@ MonoBehaviour:
   - {fileID: 2306761366267364778}
   TrailSpawner: {fileID: 874579555101021522}
   head: {fileID: 0}
-  crystalImpactEffects: 0400000006000000
+  crystalImpactEffects: 0600000005000000
   trailBlockImpactEffects: 03000000
   boostMultiplier: 4
   boostFuelAmount: -0.01
@@ -409,8 +414,12 @@ MonoBehaviour:
   maxFarFieldSkimmerScale: 200
   minNearFieldSkimmerScale: 15
   maxNearFieldSkimmerScale: 100
+  minTrailYScale: 15
+  maxTrailYScale: 100
   skimmerGrowthRate: 1
   skimmerShrinkRate: 1
+  trailGrowthRate: 1
+  trailShrinkRate: 1
   minGap: 5
   maxGap: 5
   throttle: 50

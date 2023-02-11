@@ -21,20 +21,20 @@ public class AOEBlockCreation : AOEExplosion
 
         for (int i = 0; i < blockCount; i++)
         {
-            // Ring One
-            CreateRing(i,   0,    0, 0);
-            CreateRing(i, .5f, 1.5f, 1);
-            CreateRing(i,   0,   2f, 2);
+            CreateRing(i,   0,    1, 0, 0);
+            CreateRing(i, .5f, 1.5f, 1, -.5f);
+            CreateRing(i,   0,   2f, 2, -1);
         }
 
         yield return new WaitForEndOfFrame();
     }
 
-    void CreateRing(int i, float phase, float scale, float tilt)
+    void CreateRing(int i, float phase, float scale, float tilt, float sweep)
     {
         var position = transform.position +
-                             scale * radius * Mathf.Cos((i + phase / blockCount) * 2 * Mathf.PI) * transform.right +
-                             scale * radius * Mathf.Sin((i + phase / blockCount) * 2 * Mathf.PI) * transform.up;
+                             scale * radius * Mathf.Cos(((i + phase) / blockCount) * 2 * Mathf.PI) * transform.right +
+                             scale * radius * Mathf.Sin(((i + phase) / blockCount) * 2 * Mathf.PI) * transform.up +
+                             sweep * radius * transform.forward;
         CreateBlock(position, position + tilt * radius * transform.forward, "::AOE::" + Time.time + "::" + i);
     }
 
