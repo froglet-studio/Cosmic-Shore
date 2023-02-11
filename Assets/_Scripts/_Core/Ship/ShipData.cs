@@ -15,7 +15,7 @@ namespace StarWriter.Core
         public bool Drifting = false;
 
         public bool Attached = false;
-        public Trail AttachedTrail;
+        public TrailBlock AttachedTrailBlock;
 
         public Vector3 VelocityDirection;
         public Quaternion blockRotation;

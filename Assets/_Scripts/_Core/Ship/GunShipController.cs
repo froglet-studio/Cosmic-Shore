@@ -1,8 +1,5 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using StarWriter.Core;
-using static UnityEditor.ShaderGraph.Internal.KeywordDependentCollection;
 
 public class GunShipController : ShipController
 {
@@ -79,13 +76,13 @@ public class GunShipController : ShipController
         
 
         var gapStep = 2;
-        var trailSpawner = shipData.AttachedTrail.TrailSpawner;
-        if (moveForward && ship.TrailSpawner.gap > 0) nextBlockIndex = shipData.AttachedTrail.Index + gapStep;
-        else if (ship.TrailSpawner.gap > 0) nextBlockIndex = shipData.AttachedTrail.Index - gapStep;
-        else if (moveForward) nextBlockIndex = shipData.AttachedTrail.Index + 1;
-        else nextBlockIndex = shipData.AttachedTrail.Index - 1;
+        var trailSpawner = shipData.AttachedTrailBlock.TrailSpawner;
+        if (moveForward && ship.TrailSpawner.gap > 0) nextBlockIndex = shipData.AttachedTrailBlock.Index + gapStep;
+        else if (ship.TrailSpawner.gap > 0) nextBlockIndex = shipData.AttachedTrailBlock.Index - gapStep;
+        else if (moveForward) nextBlockIndex = shipData.AttachedTrailBlock.Index + 1;
+        else nextBlockIndex = shipData.AttachedTrailBlock.Index - 1;
 
-        var distance = trailSpawner.trailList[nextBlockIndex].transform.position - shipData.AttachedTrail.transform.position;
+        var distance = trailSpawner.trailList[nextBlockIndex].transform.position - shipData.AttachedTrailBlock.transform.position;
         var timeSpaceCorrectedInput = inputController.XDiff * Time.deltaTime / distance.magnitude;
 
         if (trailSpawner.trailList[(int)nextBlockIndex].destroyed)
@@ -93,13 +90,13 @@ public class GunShipController : ShipController
         else
             trailLerpAmount += maxTrailSpeed * timeSpaceCorrectedInput;
 
-        transform.position = Vector3.Lerp(shipData.AttachedTrail.transform.position,
+        transform.position = Vector3.Lerp(shipData.AttachedTrailBlock.transform.position,
                                           trailSpawner.trailList[nextBlockIndex].transform.position,
                                           trailLerpAmount);
 
         if (trailLerpAmount > 1)
         {
-            shipData.AttachedTrail = trailSpawner.trailList[nextBlockIndex];
+            shipData.AttachedTrailBlock = trailSpawner.trailList[nextBlockIndex];
             trailLerpAmount -= 1f;
         }
 
@@ -115,7 +112,7 @@ public class GunShipController : ShipController
             if (moveForward) moveForward = false;
             else moveForward = true;
 
-            shipData.AttachedTrail = trailSpawner.trailList[nextBlockIndex];
+            shipData.AttachedTrailBlock = trailSpawner.trailList[nextBlockIndex];
             trailLerpAmount = 1 - trailLerpAmount;
         }
 
@@ -124,7 +121,7 @@ public class GunShipController : ShipController
         //                                     shipData.AttachedTrail.TrailSpawner.trailList[nextBlockIndex].transform.rotation,
         //                                     trailLerpAmount);
 
-        if (shipData.AttachedTrail.destroyed)
-            shipData.AttachedTrail.Restore();
+        if (shipData.AttachedTrailBlock.destroyed)
+            shipData.AttachedTrailBlock.Restore();
     }
 }

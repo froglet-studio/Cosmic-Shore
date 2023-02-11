@@ -2,11 +2,13 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 [RequireComponent(typeof(Ship))]
 public class TrailSpawner : MonoBehaviour
 {
-    [SerializeField] Trail trail;
+    [FormerlySerializedAs("trail")]
+    [SerializeField] TrailBlock trailBlock;
     [SerializeField] Skimmer skimmer;
 
     public float offset = 0f;
@@ -43,12 +45,12 @@ public class TrailSpawner : MonoBehaviour
         return blockMaterial;
     }
 
-    public float TrailZScale => trail.transform.localScale.z;
+    public float TrailZScale => trailBlock.transform.localScale.z;
 
     public static GameObject TrailContainer;
 
-    readonly Queue<Trail> trailQueue = new(); // TODO: unused
-    readonly public List<Trail> trailList = new();
+    readonly Queue<TrailBlock> trailQueue = new(); // TODO: unused
+    readonly public List<TrailBlock> trailList = new();
     bool spawnerEnabled = true;
     string ownerId;
 
@@ -139,9 +141,9 @@ public class TrailSpawner : MonoBehaviour
 
     void CreateBlock(float halfGap)
     {
-        var Block = Instantiate(trail);
-        Block.InnerDimensions = new Vector3(trail.transform.localScale.x * XScaler / 2f - Mathf.Abs(halfGap), trail.transform.localScale.y * YScaler, trail.transform.localScale.z * ZScaler);
-        Block.transform.SetPositionAndRotation(transform.position - shipData.VelocityDirection * offset + ship.transform.right * ((trail.transform.localScale.x * XScaler )/ 4f + Mathf.Abs(halfGap)/2)*(halfGap/ Mathf.Abs(halfGap)), shipData.blockRotation);
+        var Block = Instantiate(trailBlock);
+        Block.InnerDimensions = new Vector3(trailBlock.transform.localScale.x * XScaler / 2f - Mathf.Abs(halfGap), trailBlock.transform.localScale.y * YScaler, trailBlock.transform.localScale.z * ZScaler);
+        Block.transform.SetPositionAndRotation(transform.position - shipData.VelocityDirection * offset + ship.transform.right * ((trailBlock.transform.localScale.x * XScaler )/ 4f + Mathf.Abs(halfGap)/2)*(halfGap/ Mathf.Abs(halfGap)), shipData.blockRotation);
         Block.transform.parent = TrailContainer.transform;
         Block.waitTime = (skimmer.transform.localScale.z + TrailZScale) / ship.GetComponent<ShipData>().Speed;
         Block.ownerId = ship.Player.PlayerUUID;
@@ -179,8 +181,8 @@ public class TrailSpawner : MonoBehaviour
             {
                 if (gap == 0)
                 {
-                    var Block = Instantiate(trail);
-                    Block.InnerDimensions = new Vector3(trail.transform.localScale.x * XScaler, trail.transform.localScale.y * YScaler, trail.transform.localScale.z * ZScaler);
+                    var Block = Instantiate(trailBlock);
+                    Block.InnerDimensions = new Vector3(trailBlock.transform.localScale.x * XScaler, trailBlock.transform.localScale.y * YScaler, trailBlock.transform.localScale.z * ZScaler);
                     Block.transform.SetPositionAndRotation(transform.position - shipData.VelocityDirection * offset, shipData.blockRotation);
                     Block.transform.parent = TrailContainer.transform;
                     Block.waitTime = (skimmer.transform.localScale.z + TrailZScale) / ship.GetComponent<ShipData>().Speed;

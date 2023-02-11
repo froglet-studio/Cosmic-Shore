@@ -18,6 +18,8 @@ public class Crystal : MonoBehaviour
     [SerializeField] Material material;
     #endregion
 
+    Vector3 origin = Vector3.zero;
+
     Material tempMaterial;
     List<Collider> collisions;
 
@@ -74,12 +76,17 @@ public class Crystal : MonoBehaviour
 
         // Move the Crystal
         StartCoroutine(CrystalModel.GetComponent<FadeIn>().FadeInCoroutine());
-        transform.SetPositionAndRotation(Random.insideUnitSphere * sphereRadius, Random.rotation);
+        transform.SetPositionAndRotation(Random.insideUnitSphere * sphereRadius + origin, Random.rotation);
         OnCrystalMove?.Invoke();
     }
 
     bool IsShip(GameObject go)
     {
         return go.layer == LayerMask.NameToLayer("Ships");
+    }
+
+    public void SetOrigin(Vector3 origin)
+    {
+        this.origin = origin;
     }
 }

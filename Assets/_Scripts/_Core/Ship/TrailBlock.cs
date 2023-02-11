@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace StarWriter.Core
 {
-    public class Trail : MonoBehaviour
+    public class TrailBlock : MonoBehaviour
     {
         [SerializeField] GameObject FossilBlock;
         public GameObject ParticleEffect; // TODO: move this so it references the Team to retrieve the effect.
@@ -56,7 +56,7 @@ namespace StarWriter.Core
 
             trailBlockProperties.volume = outerDimensions.x * outerDimensions.y * outerDimensions.z;
             trailBlockProperties.position = transform.position;
-            trailBlockProperties.trail = this;
+            trailBlockProperties.trailBlock = this;
             trailBlockProperties.Index = Index;
             trailBlockProperties.TrailSpawner = TrailSpawner;
 
@@ -95,7 +95,7 @@ namespace StarWriter.Core
                 NodeControlManager.Instance.AddBlock(team, playerName, trailBlockProperties);
         }
 
-        // TODO: none of the collision detection should be on the trail
+        // TODO: none of the collision detection should be on the trailblock
         void OnTriggerEnter(Collider other)
         {
             if (IsShip(other.gameObject))
@@ -137,15 +137,8 @@ namespace StarWriter.Core
 
         public void Collide(Ship ship)
         {
-            if (ownerId == ship.Player.PlayerUUID)
-            {
-                Debug.Log($"You hit you're teams tail - ownerId: {ownerId}, team: {team}");
-            }
-            else
-            {
-                Debug.Log($"Player ({ship.Player.PlayerUUID}) just gave player({ownerId}) a point via tail collision");
+            if (ownerId != ship.Player.PlayerUUID)
                 AddToScore?.Invoke(ownerId, scoreChange);
-            }
 
             ship.PerformTrailBlockImpactEffects(trailBlockProperties);
         }

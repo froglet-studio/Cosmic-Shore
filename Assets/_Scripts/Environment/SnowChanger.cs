@@ -1,7 +1,4 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Serialization;
 
 public class SnowChanger : MonoBehaviour
 {
@@ -16,6 +13,7 @@ public class SnowChanger : MonoBehaviour
     readonly float sphereScaler = 2;
     int nodeDistance;
     float sphereDiameter;
+    Vector3 origin = Vector3.zero;
 
     void OnEnable()
     {
@@ -29,6 +27,9 @@ public class SnowChanger : MonoBehaviour
 
     void Start()
     {
+        // TODO: this should be injected by the node, but that's not working at the moment :/
+        origin = transform.parent.position;
+
         nodeDistance = crystalSideLength/nodesPerSide;
 
         sphereDiameter = sphereScaler * Crystal.GetComponent<Crystal>().sphereRadius;
@@ -44,9 +45,9 @@ public class SnowChanger : MonoBehaviour
                     GameObject tempSnow = Instantiate(snow);
                     tempSnow.transform.SetParent(transform, true);
                     tempSnow.transform.localScale = Vector3.one * nodeScaler;
-                    tempSnow.transform.position = new Vector3(x * nodeDistance + Random.Range(-nodeDistance/2, nodeDistance / 2),
-                                                              y * nodeDistance + Random.Range(-nodeDistance / 2, nodeDistance / 2),
-                                                              z * nodeDistance + Random.Range(-nodeDistance / 2, nodeDistance / 2));
+                    tempSnow.transform.position = origin + new Vector3(x * nodeDistance + Random.Range(-nodeDistance/2, nodeDistance / 2),
+                                                                       y * nodeDistance + Random.Range(-nodeDistance / 2, nodeDistance / 2),
+                                                                       z * nodeDistance + Random.Range(-nodeDistance / 2, nodeDistance / 2));
                     
                     crystalLattice[x + nodesPerSide, y + nodesPerSide, z + nodesPerSide] = tempSnow;
                 }
@@ -79,5 +80,10 @@ public class SnowChanger : MonoBehaviour
                 }
             }
         }
+    }
+    
+    public void SetOrigin(Vector3 origin)
+    {
+        this.origin = origin;
     }
 }

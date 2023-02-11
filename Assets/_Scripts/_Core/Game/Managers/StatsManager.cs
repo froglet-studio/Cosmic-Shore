@@ -113,34 +113,34 @@ public class StatsManager : Singleton<StatsManager>
         // Team Destruction Stats
         var roundStats = teamStats[destroyingTeam];
         roundStats.blocksDestroyed++;
-        roundStats.friendlyBlocksDestroyed += destroyingTeam == destroyedTrailBlockProperties.trail.Team ? 1 : 0;
-        roundStats.hostileBlocksDestroyed += destroyingTeam == destroyedTrailBlockProperties.trail.Team ? 0 : 1;
+        roundStats.friendlyBlocksDestroyed += destroyingTeam == destroyedTrailBlockProperties.trailBlock.Team ? 1 : 0;
+        roundStats.hostileBlocksDestroyed += destroyingTeam == destroyedTrailBlockProperties.trailBlock.Team ? 0 : 1;
         roundStats.volumeDestroyed += destroyedTrailBlockProperties.volume;
-        roundStats.friendlyVolumeDestroyed += destroyingTeam == destroyedTrailBlockProperties.trail.Team ? destroyedTrailBlockProperties.volume : 0;
-        roundStats.hostileVolumeDestroyed += destroyingTeam == destroyedTrailBlockProperties.trail.Team ? 0 : destroyedTrailBlockProperties.volume;
+        roundStats.friendlyVolumeDestroyed += destroyingTeam == destroyedTrailBlockProperties.trailBlock.Team ? destroyedTrailBlockProperties.volume : 0;
+        roundStats.hostileVolumeDestroyed += destroyingTeam == destroyedTrailBlockProperties.trailBlock.Team ? 0 : destroyedTrailBlockProperties.volume;
         teamStats[destroyingTeam] = roundStats;
 
         // Team Remaining
-        roundStats = teamStats[destroyedTrailBlockProperties.trail.Team];
+        roundStats = teamStats[destroyedTrailBlockProperties.trailBlock.Team];
         roundStats.blocksRemaining--;
         roundStats.volumeRemaining -= destroyedTrailBlockProperties.volume;
-        teamStats[destroyedTrailBlockProperties.trail.Team] = roundStats;
+        teamStats[destroyedTrailBlockProperties.trailBlock.Team] = roundStats;
 
         // Player Destruction Stats
         roundStats = playerStats[destroyingPlayerName];
         roundStats.blocksDestroyed++;
-        roundStats.friendlyBlocksDestroyed += destroyingTeam == destroyedTrailBlockProperties.trail.Team ? 1 : 0;
-        roundStats.hostileBlocksDestroyed += destroyingTeam == destroyedTrailBlockProperties.trail.Team ? 0 : 1;
+        roundStats.friendlyBlocksDestroyed += destroyingTeam == destroyedTrailBlockProperties.trailBlock.Team ? 1 : 0;
+        roundStats.hostileBlocksDestroyed += destroyingTeam == destroyedTrailBlockProperties.trailBlock.Team ? 0 : 1;
         roundStats.volumeDestroyed += destroyedTrailBlockProperties.volume;
-        roundStats.friendlyVolumeDestroyed += destroyingTeam == destroyedTrailBlockProperties.trail.Team ? destroyedTrailBlockProperties.volume : 0;
-        roundStats.hostileVolumeDestroyed += destroyingTeam == destroyedTrailBlockProperties.trail.Team ? 0 : destroyedTrailBlockProperties.volume;
+        roundStats.friendlyVolumeDestroyed += destroyingTeam == destroyedTrailBlockProperties.trailBlock.Team ? destroyedTrailBlockProperties.volume : 0;
+        roundStats.hostileVolumeDestroyed += destroyingTeam == destroyedTrailBlockProperties.trailBlock.Team ? 0 : destroyedTrailBlockProperties.volume;
         playerStats[destroyingPlayerName] = roundStats;
 
         // Player Remaining
-        roundStats = playerStats[destroyedTrailBlockProperties.trail.PlayerName];
+        roundStats = playerStats[destroyedTrailBlockProperties.trailBlock.PlayerName];
         roundStats.blocksRemaining--;
         roundStats.volumeRemaining -= destroyedTrailBlockProperties.volume;
-        playerStats[destroyedTrailBlockProperties.trail.PlayerName] = roundStats;
+        playerStats[destroyedTrailBlockProperties.trailBlock.PlayerName] = roundStats;
     }
 
     public void BlockRestored(Teams restoringTeam, string restoringPlayerName, TrailBlockProperties restoredTrailBlockProperties)
@@ -189,16 +189,16 @@ public class StatsManager : Singleton<StatsManager>
         playerStats[stealingPlayerName] = roundStats;
 
         // Team Remaining
-        roundStats = teamStats[stolenTrailBlockProperties.trail.Team];
+        roundStats = teamStats[stolenTrailBlockProperties.trailBlock.Team];
         roundStats.blocksRemaining--;
         roundStats.volumeRemaining -= stolenTrailBlockProperties.volume;
-        teamStats[stolenTrailBlockProperties.trail.Team] = roundStats;
+        teamStats[stolenTrailBlockProperties.trailBlock.Team] = roundStats;
 
         // Player Remaining
-        roundStats = playerStats[stolenTrailBlockProperties.trail.PlayerName];
+        roundStats = playerStats[stolenTrailBlockProperties.trailBlock.PlayerName];
         roundStats.blocksRemaining--;
         roundStats.volumeRemaining -= stolenTrailBlockProperties.volume;
-        playerStats[stolenTrailBlockProperties.trail.PlayerName] = roundStats;
+        playerStats[stolenTrailBlockProperties.trailBlock.PlayerName] = roundStats;
     }
 
     public void AbilityActivated(Teams team, string playerName, InputEvents abilityType, float duration)

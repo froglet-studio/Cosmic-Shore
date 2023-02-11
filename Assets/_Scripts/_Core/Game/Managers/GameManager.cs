@@ -151,7 +151,7 @@ namespace StarWriter.Core
             SceneManager.LoadScene(ActiveGameScene);
             UnPauseGame();
 
-            Jukebox.Instance.PlayNextSong();
+            Jukebox.Instance.PlayNextSong(); // TODO null pointer on this line
         }
 
         public void ReturnToMainMenu()
@@ -218,7 +218,7 @@ namespace StarWriter.Core
 
         void OnApplicationQuit()
         {
-            DataPersistenceManager.Instance.SaveGame();
+            DataPersistenceManager.Instance.SaveGame();     // TODO: null pointer here
         }
     }
 }

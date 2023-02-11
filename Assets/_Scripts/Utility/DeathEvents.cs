@@ -7,11 +7,11 @@ public class DeathEvents : MonoBehaviour
 
     private void OnEnable()
     {
-        //Trail.OnTrailCollision += Die;
+        //TrailBlock.OnTrailCollision += Die;
     }
     private void OnDisable()
     {
-        //Trail.OnTrailCollision -= Die;
+        //TrailBlock.OnTrailCollision -= Die;
     }
 
     public void Die(string uuid, float fuelAmount)

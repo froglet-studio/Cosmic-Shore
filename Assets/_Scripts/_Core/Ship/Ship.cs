@@ -258,7 +258,7 @@ namespace StarWriter.Core
                         ScaleGapWithLevel();
                         break;
                     case TrailBlockImpactEffects.Attach:
-                        Attach(trailBlockProperties.trail);
+                        Attach(trailBlockProperties.trailBlock);
                         break;
                 }
             }
@@ -536,10 +536,10 @@ namespace StarWriter.Core
             nearFieldSkimmer.transform.localScale = minNearFieldSkimmerScale * Vector3.one;
         }
 
-        void Attach(Trail trail) 
+        void Attach(TrailBlock trailBlock) 
         { 
             shipData.Attached = true;
-            shipData.AttachedTrail = trail;
+            shipData.AttachedTrailBlock = trailBlock;
         }
 
         void Detach()

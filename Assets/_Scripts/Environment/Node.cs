@@ -5,6 +5,8 @@ public class Node : MonoBehaviour
 {
     [SerializeField] public string ID;
     [SerializeField] float volumeControlThreshold = 100f;
+    [SerializeField] SnowChanger SnowChanger;
+    [SerializeField] Crystal Crystal;
 
     Dictionary<Teams, float> teamVolumes = new Dictionary<Teams, float>();
 
@@ -12,6 +14,9 @@ public class Node : MonoBehaviour
     {
         teamVolumes.Add(Teams.Green, 0);
         teamVolumes.Add(Teams.Red, 0);
+
+        SnowChanger.SetOrigin(transform.position);
+        Crystal.SetOrigin(transform.position);
     }
 
     public bool ContainsPosition(Vector3 position)
