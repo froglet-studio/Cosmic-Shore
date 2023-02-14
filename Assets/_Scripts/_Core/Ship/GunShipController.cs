@@ -12,6 +12,9 @@ public class GunShipController : ShipController
     float trailLerpAmount;
     bool moveForward = true;
 
+    float chargeDepletionRate = -.05f;
+    float rechargeRate = .1f;
+
     [SerializeField] float maxTrailSpeed = 1f;
     [SerializeField] float reducedTrailSpeed = 1f;
 
@@ -38,7 +41,7 @@ public class GunShipController : ShipController
     protected override void Update()
     {
         base.Update();
-        Fire();
+        if (resourceSystem.CurrentCharge > 0) Fire();
     }
 
     //override protected void Yaw()
@@ -67,14 +70,15 @@ public class GunShipController : ShipController
 
     void Fire()
     {
+        resourceSystem.ChangeChargeAmount(uuid, chargeDepletionRate * Time.deltaTime);
         topGun.FireGun(player.transform, shipData.VelocityDirection * shipData.Speed);
         leftGun.FireGun(player.transform, shipData.VelocityDirection * shipData.Speed);
         rightGun.FireGun(player.transform, shipData.VelocityDirection * shipData.Speed);
     }
     void Slide()
     {
-        
 
+        resourceSystem.ChangeChargeAmount(uuid, rechargeRate * Time.deltaTime);
         var gapStep = 2;
         var trailSpawner = shipData.AttachedTrailBlock.TrailSpawner;
         if (moveForward && ship.TrailSpawner.gap > 0) nextBlockIndex = shipData.AttachedTrailBlock.Index + gapStep;

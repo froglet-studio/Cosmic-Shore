@@ -30,13 +30,13 @@ namespace StarWriter.Core
 
             onCooldown = true;
 
-            var projectile = Instantiate(projectilePrefab);
+            var projectile = Instantiate(projectilePrefab).GetComponent<Projectile>();
             projectile.transform.rotation = Quaternion.LookRotation(transform.up);
             projectile.transform.position = transform.position + projectile.transform.forward * 2;
             projectile.transform.parent = containerTransform;
-            projectile.GetComponent<Projectile>().Velocity = projectile.transform.forward * speed + inheritedVelocity;
-            projectile.GetComponent<Projectile>().Team = Team;
-            projectile.GetComponent<Projectile>().Ship = Ship;
+            projectile.Velocity = projectile.transform.forward * speed + inheritedVelocity;
+            projectile.Team = Team;
+            projectile.Ship = Ship;
 
             StartCoroutine(MoveProjectileCoroutine(projectile));
             StartCoroutine(CooldownCoroutine());
@@ -61,25 +61,18 @@ namespace StarWriter.Core
             Block.transform.parent = TrailSpawner.TrailContainer.transform;
         }
 
-        IEnumerator MoveProjectileCoroutine(GameObject projectile)
+        IEnumerator MoveProjectileCoroutine(Projectile projectile)
         {
             var elapsedTime = 0f;
-            var velocity = projectile.GetComponent<Projectile>().Velocity;
+            var velocity = projectile.Velocity;
             while (elapsedTime < projectileTime)
             {
                 elapsedTime += Time.deltaTime;
                 projectile.transform.position += velocity * Time.deltaTime;
                 yield return null;
             }
-            //while (projectile.GetComponent<Projectile>().Velocity.magnitude > .1f)
-            //{
-            //    projectile.GetComponent<Projectile>().Velocity -= velocity * Time.deltaTime;
-            //    projectile.transform.position += projectile.GetComponent<Projectile>().Velocity * Time.deltaTime;
-            //    yield return null;
-            //}
             CreateBlock(projectile.transform.position, projectile.transform.rotation, "::projectile::" + Time.time);
-            Destroy(projectile);
-            
+            Destroy(projectile.gameObject);
         }
     }
 }
