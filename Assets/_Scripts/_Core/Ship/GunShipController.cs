@@ -18,6 +18,10 @@ public class GunShipController : ShipController
     [SerializeField] float maxTrailSpeed = 1f;
     [SerializeField] float reducedTrailSpeed = 1f;
 
+    public float ProjectileScale = 1f;
+    public Vector3 BlockScale = new Vector3(1.5f, 1.5f, 3f);
+
+
     int padding = 3; 
 
     Player player;
@@ -71,9 +75,9 @@ public class GunShipController : ShipController
     void Fire()
     {
         resourceSystem.ChangeChargeAmount(uuid, chargeDepletionRate * Time.deltaTime);
-        topGun.FireGun(player.transform, shipData.VelocityDirection * shipData.Speed);
-        leftGun.FireGun(player.transform, shipData.VelocityDirection * shipData.Speed);
-        rightGun.FireGun(player.transform, shipData.VelocityDirection * shipData.Speed);
+        topGun.FireGun(player.transform, shipData.VelocityDirection * shipData.Speed, ProjectileScale, BlockScale);
+        leftGun.FireGun(player.transform, shipData.VelocityDirection * shipData.Speed, ProjectileScale, BlockScale);
+        rightGun.FireGun(player.transform, shipData.VelocityDirection * shipData.Speed, ProjectileScale, BlockScale);
     }
     void Slide()
     {

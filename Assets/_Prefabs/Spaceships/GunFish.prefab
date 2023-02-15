@@ -320,50 +320,55 @@ MonoBehaviour:
   Name: GreenManta
   ShipType: 4
   nearFieldSkimmer: {fileID: 874579554510349383}
-  farFieldSkimmer: {fileID: 0}
   OrientationHandle: {fileID: 1878660672777590133}
-  AOEPrefab: {fileID: 2728798890556433942, guid: 4a855af160021d241b8c1ac70cf2d792,
-    type: 3}
   shipGeometries:
   - {fileID: 7989725769420682486}
   - {fileID: 956471339697806072}
   - {fileID: 2306761366267364778}
   TrailSpawner: {fileID: 874579555101021522}
   head: {fileID: 0}
-  crystalImpactEffects: 0000000004000000
+  AOEPrefab: {fileID: 2728798890556433942, guid: 4a855af160021d241b8c1ac70cf2d792,
+    type: 3}
+  farFieldSkimmer: {fileID: 0}
+  crystalImpactEffects: 0000000007000000
   trailBlockImpactEffects: 0000000009000000
-  boostMultiplier: 2
-  boostFuelAmount: 0
-  rotationScaler: 70
-  rotationThrottleScaler: 0
   minExplosionScale: 50
   maxExplosionScale: 500
   blockFuelChange: 0
-  closeCamDistance: -10
-  farCamDistance: -50
+  boostMultiplier: 2
+  boostFuelAmount: 0
+  fullSpeedStraightEffects: 
+  rightStickEffects: 0000000006000000
+  leftStickEffects: 0000000006000000
+  flipEffects: 0a000000
+  idleEffects: 0a000000
   cameraGrowthRate: 1
   cameraShrinkRate: 1
-  minFarFieldSkimmerScale: 100
-  maxFarFieldSkimmerScale: 200
-  minNearFieldSkimmerScale: 15
-  maxNearFieldSkimmerScale: 100
   minTrailYScale: 15
   maxTrailYScale: 100
   skimmerGrowthRate: 1
   skimmerShrinkRate: 1
   trailGrowthRate: 1
   trailShrinkRate: 1
+  levelEffects: 0200000003000000
+  minFarFieldSkimmerScale: 100
+  maxFarFieldSkimmerScale: 200
+  minNearFieldSkimmerScale: 15
+  maxNearFieldSkimmerScale: 100
   minGap: 3
   maxGap: 3
+  minProjectileScale: 1
+  maxProjectileScale: 10
+  minProjectileBlockScale: {x: 1.5, y: 1.5, z: 3}
+  maxProjectileBlockScale: {x: 1.5, y: 1.5, z: 30}
+  controlOverrides: 000000000300000004000000
+  closeCamDistance: -10
+  farCamDistance: -50
   throttle: 50
   BoostDecayGrowthRate: 0.03
   MaxBoostDecay: 10
-  fullSpeedStraightEffects: 
-  rightStickEffects: 0000000006000000
-  leftStickEffects: 0000000006000000
-  flipEffects: 0a000000
-  idleEffects: 0a000000
-  controlOverrides: 000000000300000004000000
+  rotationScaler: 70
+  rotationThrottleScaler: 0
   inputController: {fileID: 0}
 --- !u!114 &6964962696344697388
 MonoBehaviour:
@@ -464,6 +469,8 @@ MonoBehaviour:
   previousBlockIndex: 0
   maxTrailSpeed: 50
   reducedTrailSpeed: 30
+  ProjectileScale: 1
+  BlockScale: {x: 1.5, y: 1.5, z: 3}
 --- !u!114 &3440187540988767646
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1009,8 +1016,13 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
+      propertyPath: skimVisualFX
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
       propertyPath: trailBlockImpactEffects.Array.size
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}

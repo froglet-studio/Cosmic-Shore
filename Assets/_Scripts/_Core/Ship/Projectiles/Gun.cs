@@ -16,14 +16,14 @@ namespace StarWriter.Core
 
         [SerializeField] TrailBlock trail;
         Material blockMaterial;
-        [SerializeField] Vector3 blockScale = new Vector3(20f, 10f, 5f);
+        [SerializeField] Vector3 blockScale = new Vector3(1.5f, 1.5f, 3f);
 
         private void Start()
         {
             blockMaterial = Ship.GetComponent<TrailSpawner>().GetBlockMaterial();
         }
 
-        public void FireGun(Transform containerTransform, Vector3 inheritedVelocity)
+        public void FireGun(Transform containerTransform, Vector3 inheritedVelocity, float projectileScale, Vector3 blockScale)
         {
             if (onCooldown)
                 return;
@@ -33,12 +33,13 @@ namespace StarWriter.Core
             var projectile = Instantiate(projectilePrefab).GetComponent<Projectile>();
             projectile.transform.rotation = Quaternion.LookRotation(transform.up);
             projectile.transform.position = transform.position + projectile.transform.forward * 2;
+            projectile.transform.localScale = projectileScale * Vector3.one;
             projectile.transform.parent = containerTransform;
             projectile.Velocity = projectile.transform.forward * speed + inheritedVelocity;
             projectile.Team = Team;
             projectile.Ship = Ship;
 
-            StartCoroutine(MoveProjectileCoroutine(projectile));
+            StartCoroutine(MoveProjectileCoroutine(projectile, blockScale));
             StartCoroutine(CooldownCoroutine());
         }
 
@@ -48,7 +49,7 @@ namespace StarWriter.Core
             onCooldown = false;
         }
 
-        void CreateBlock(Vector3 position, Quaternion rotation, string ownerId)
+        void CreateBlock(Vector3 position, Quaternion rotation, string ownerId, Vector3 blockScale)
         {
             var Block = Instantiate(trail);
             Block.Team = Team;
@@ -61,7 +62,7 @@ namespace StarWriter.Core
             Block.transform.parent = TrailSpawner.TrailContainer.transform;
         }
 
-        IEnumerator MoveProjectileCoroutine(Projectile projectile)
+        IEnumerator MoveProjectileCoroutine(Projectile projectile, Vector3 blockScale)
         {
             var elapsedTime = 0f;
             var velocity = projectile.Velocity;
@@ -71,7 +72,7 @@ namespace StarWriter.Core
                 projectile.transform.position += velocity * Time.deltaTime;
                 yield return null;
             }
-            CreateBlock(projectile.transform.position, projectile.transform.rotation, "::projectile::" + Time.time);
+            CreateBlock(projectile.transform.position, projectile.transform.rotation, "::projectile::" + Time.time, blockScale);
             Destroy(projectile.gameObject);
         }
     }

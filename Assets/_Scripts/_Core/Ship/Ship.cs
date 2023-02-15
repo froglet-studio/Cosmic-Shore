@@ -17,47 +17,28 @@ namespace StarWriter.Core
 
         [Header("ship Components")]
         [SerializeField] Skimmer nearFieldSkimmer;
-        [SerializeField] Skimmer farFieldSkimmer;
         [SerializeField] GameObject OrientationHandle;
-        [SerializeField] GameObject AOEPrefab;
         [SerializeField] List<GameObject> shipGeometries;
         [HideInInspector] public TrailSpawner TrailSpawner;
         [SerializeField] GameObject head;
         ShipController shipController;
 
+        [Header("optional ship Components")]
+        [SerializeField] GameObject AOEPrefab;
+        [SerializeField] Skimmer farFieldSkimmer;
+
         [Header("Environment Interactions")]
         [SerializeField] List<CrystalImpactEffects> crystalImpactEffects;
         [SerializeField] List<TrailBlockImpactEffects> trailBlockImpactEffects;
 
+        [SerializeField] float minExplosionScale = 50;
+        [SerializeField] float maxExplosionScale = 400;
+        [SerializeField] float blockFuelChange;
+
         [Header("Configuration")]
         public float boostMultiplier = 4f;
         public float boostFuelAmount = -.01f;
-        [SerializeField] float rotationScaler = 130;
-        [SerializeField] float rotationThrottleScaler;
-        [SerializeField] float minExplosionScale = 50;
-        [SerializeField] float maxExplosionScale = 400;
-
-        [SerializeField] float blockFuelChange;
-        [SerializeField] float closeCamDistance;
-        [SerializeField] float farCamDistance;
-        [SerializeField] float cameraGrowthRate = 1;
-        [SerializeField] float cameraShrinkRate = 1;
-        [SerializeField] float minFarFieldSkimmerScale = 100;
-        [SerializeField] float maxFarFieldSkimmerScale = 200;
-        [SerializeField] float minNearFieldSkimmerScale = 15;
-        [SerializeField] float maxNearFieldSkimmerScale = 100;
-        [SerializeField] float minTrailYScale = 15;
-        [SerializeField] float maxTrailYScale = 100;
-        [SerializeField] float skimmerGrowthRate = 1;
-        [SerializeField] float skimmerShrinkRate = 1;
-        [SerializeField] float trailGrowthRate = 1; 
-        [SerializeField] float trailShrinkRate = 1; 
-        [SerializeField] float minGap = 0;
-        [SerializeField] float maxGap = 0;
-        [SerializeField] float throttle = 50;
-        [SerializeField] float BoostDecayGrowthRate = .03f;
-        [SerializeField] float MaxBoostDecay = 10;
-
+        
         [Header("Dynamically Assignable Controls")]
         [SerializeField] List<ShipActions> fullSpeedStraightEffects;
         [SerializeField] List<ShipActions> rightStickEffects;
@@ -65,7 +46,38 @@ namespace StarWriter.Core
         [SerializeField] List<ShipActions> flipEffects;
         [SerializeField] List<ShipActions> idleEffects;
 
+        [SerializeField] float cameraGrowthRate = 1;
+        [SerializeField] float cameraShrinkRate = 1;
+        [SerializeField] float minTrailYScale = 15;
+        [SerializeField] float maxTrailYScale = 100;
+        [SerializeField] float skimmerGrowthRate = 1;
+        [SerializeField] float skimmerShrinkRate = 1;
+        [SerializeField] float trailGrowthRate = 1;
+        [SerializeField] float trailShrinkRate = 1;
+
+        [Header("Passive Effects")]
+        [SerializeField] List<LevelEffects> levelEffects;
+   
+        [SerializeField] float minFarFieldSkimmerScale = 100;
+        [SerializeField] float maxFarFieldSkimmerScale = 200;
+        [SerializeField] float minNearFieldSkimmerScale = 15;
+        [SerializeField] float maxNearFieldSkimmerScale = 100;
+        [SerializeField] float minGap = 0;
+        [SerializeField] float maxGap = 0;
+        [SerializeField] float minProjectileScale = 1;
+        [SerializeField] float maxProjectileScale = 10;
+        [SerializeField] Vector3 minProjectileBlockScale = new Vector3(1.5f, 1.5f, 3f);
+        [SerializeField] Vector3 maxProjectileBlockScale = new Vector3(1.5f, 1.5f, 30f);
+
         [SerializeField] List<ShipControlOverrides> controlOverrides;
+        [SerializeField] float closeCamDistance;
+        [SerializeField] float farCamDistance;
+        [SerializeField] float throttle = 50;
+        [SerializeField] float BoostDecayGrowthRate = .03f;
+        [SerializeField] float MaxBoostDecay = 10;
+        [SerializeField] float rotationScaler = 130;
+        [SerializeField] float rotationThrottleScaler;
+
 
         Dictionary<InputEvents, List<ShipActions>> ShipControlActions;
 
@@ -74,7 +86,7 @@ namespace StarWriter.Core
         CameraManager cameraManager;
         Player player;
         ShipData shipData; // TODO: this should be a required component or just a series of properties on the ship
-        public InputController inputController;
+        [HideInInspector] public InputController inputController;
         Material ShipMaterial;
         Material AOEExplosionMaterial;
         ResourceSystem resourceSystem;
@@ -198,9 +210,7 @@ namespace StarWriter.Core
 
                         break;
                     case CrystalImpactEffects.IncrementLevel:
-                        resourceSystem.ChangeLevel(player.PlayerUUID, ChargeDisplay.OneFuelUnit);
-                        ScaleSkimmersWithLevel(); // TODO: decouple with leveling
-                        ScaleGapWithLevel();
+                        IncrementLevel();
                         break;
                     case CrystalImpactEffects.FillCharge:
                         resourceSystem.ChangeChargeAmount(player.PlayerUUID, crystalProperties.fuelAmount);
@@ -253,9 +263,7 @@ namespace StarWriter.Core
                         resourceSystem.ChangeChargeAmount(player.PlayerUUID, blockFuelChange);
                         break;
                     case TrailBlockImpactEffects.DecrementLevel:
-                        resourceSystem.ChangeLevel(player.PlayerUUID, -ChargeDisplay.OneFuelUnit);
-                        ScaleSkimmersWithLevel();
-                        ScaleGapWithLevel();
+                        DecrementLevel();
                         break;
                     case TrailBlockImpactEffects.Attach:
                         Attach(trailBlockProperties.trailBlock);
@@ -286,8 +294,7 @@ namespace StarWriter.Core
                             invulnerable = true;
                             trailBlockImpactEffects.Remove(TrailBlockImpactEffects.DebuffSpeed);
                             trailBlockImpactEffects.Add(TrailBlockImpactEffects.OnlyBuffSpeed);
-                        }
-                        head.transform.localScale *= 1.02f; // TODO make this its own ability 
+                        } 
                         break;
                     case ShipActions.ToggleCamera:
                         CameraManager.Instance.ToggleCloseOrFarCamOnPhoneFlip(true);
@@ -339,7 +346,6 @@ namespace StarWriter.Core
                         invulnerable = false;
                         trailBlockImpactEffects.Add(TrailBlockImpactEffects.DebuffSpeed);
                         trailBlockImpactEffects.Remove(TrailBlockImpactEffects.OnlyBuffSpeed);
-                        head.transform.localScale = Vector3.one;
                         break;
                     case ShipActions.ToggleCamera:
                         CameraManager.Instance.ToggleCloseOrFarCamOnPhoneFlip(false);
@@ -427,21 +433,14 @@ namespace StarWriter.Core
                 shipGeometry.GetComponent<MeshRenderer>().material = ShipMaterial;
         }
 
-        void ScaleSkimmersWithLevel()
-        {
-            nearFieldSkimmer.transform.localScale = Vector3.one * (minNearFieldSkimmerScale + ((resourceSystem.CurrentLevel / resourceSystem.MaxLevel) * (maxNearFieldSkimmerScale - minNearFieldSkimmerScale)));
-            farFieldSkimmer.transform.localScale = Vector3.one * (maxFarFieldSkimmerScale - ((resourceSystem.CurrentLevel / resourceSystem.MaxLevel) * (maxFarFieldSkimmerScale - minFarFieldSkimmerScale)));
-        }
-        void ScaleGapWithLevel()
-        {
-            TrailSpawner.gap = maxGap - ((resourceSystem.CurrentLevel / resourceSystem.MaxLevel) * (maxGap - minGap));
-        }
+        
 
 
         Coroutine returnSkimmerToNeutralCoroutine;
         Coroutine growSkimmerCoroutine;
         Coroutine returnTrailToNeutralCoroutine;
         Coroutine growTrailCoroutine;
+       
 
         //
         // grow skimmer
@@ -536,6 +535,10 @@ namespace StarWriter.Core
             nearFieldSkimmer.transform.localScale = minNearFieldSkimmerScale * Vector3.one;
         }
 
+        //
+        // Attach and Detach
+        //
+
         void Attach(TrailBlock trailBlock) 
         { 
             shipData.Attached = true;
@@ -550,6 +553,65 @@ namespace StarWriter.Core
             TurnOffColliderCoroutine(3);
         }
 
+        //
+        // level up and down
+        //
+
+
+        void UpdateLevel()
+        {
+            foreach (LevelEffects effect in levelEffects)
+            {
+                switch (effect)
+                {
+                    case LevelEffects.ScaleSkimmers:
+                        ScaleSkimmersWithLevel();
+                        break;
+                    case LevelEffects.ScaleGap:
+                        ScaleGapWithLevel();
+                        break;
+                    case LevelEffects.ScaleProjectiles:
+                        ScaleProjectilesWithLevel();
+                        break;
+                    case LevelEffects.ScaleProjectileBlocks:
+                        ScaleProjectileBlocksWithLevel();
+                        break;
+                }
+            }
+        }
+
+        void IncrementLevel()
+        {
+            resourceSystem.ChangeLevel(player.PlayerUUID, ChargeDisplay.OneFuelUnit);
+            UpdateLevel();
+        }
+
+        void DecrementLevel()
+        {
+            resourceSystem.ChangeLevel(player.PlayerUUID, -ChargeDisplay.OneFuelUnit);
+            UpdateLevel();
+        }
+
+        void ScaleSkimmersWithLevel()
+        {
+            nearFieldSkimmer.transform.localScale = Vector3.one * (minNearFieldSkimmerScale + ((resourceSystem.CurrentLevel / resourceSystem.MaxLevel) * (maxNearFieldSkimmerScale - minNearFieldSkimmerScale)));
+            farFieldSkimmer.transform.localScale = Vector3.one * (maxFarFieldSkimmerScale - ((resourceSystem.CurrentLevel / resourceSystem.MaxLevel) * (maxFarFieldSkimmerScale - minFarFieldSkimmerScale)));
+        }
+        void ScaleGapWithLevel()
+        {
+            TrailSpawner.gap = maxGap - ((resourceSystem.CurrentLevel / resourceSystem.MaxLevel) * (maxGap - minGap));
+        }
+
+        void ScaleProjectilesWithLevel()
+        {
+            ((GunShipController)shipController).ProjectileScale = minProjectileScale + ((resourceSystem.CurrentLevel / resourceSystem.MaxLevel) * (maxProjectileScale - minProjectileScale));
+        }
+
+        void ScaleProjectileBlocksWithLevel()
+        {
+            ((GunShipController)shipController).BlockScale = minProjectileBlockScale + ((resourceSystem.CurrentLevel / resourceSystem.MaxLevel) * (maxProjectileBlockScale - minProjectileBlockScale));
+        }
+
         IEnumerator TurnOffColliderCoroutine(float duration)
         {
             float elapsedTime = 0f;
@@ -561,7 +623,5 @@ namespace StarWriter.Core
             }
             GetComponent<Collider>().enabled = true;
         }
-
-
     }
 }
