@@ -334,12 +334,12 @@ MonoBehaviour:
   trailBlockImpactEffects: 0000000009000000
   minExplosionScale: 50
   maxExplosionScale: 500
-  blockFuelChange: 0
+  blockChargeChange: 0
   boostMultiplier: 2
   boostFuelAmount: 0
   fullSpeedStraightEffects: 
-  rightStickEffects: 0000000006000000
-  leftStickEffects: 0000000006000000
+  rightStickEffects: 000000000600000008000000
+  leftStickEffects: 000000000600000008000000
   flipEffects: 0a000000
   idleEffects: 0a000000
   cameraGrowthRate: 1
@@ -526,11 +526,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 737294a573670f74389a7af68df314d5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  maxCharge: 1
-  initialCharge: 1
+  maxBoost: 1
+  initialBoost: 1
   maxLevel: 1
   initialLevel: 0
-  ChargeDisplay: {fileID: 0}
+  maxAmmo: 1
+  initialAmmo: 1
+  BoostDisplay: {fileID: 0}
+  LevelDisplay: {fileID: 0}
+  AmmoDisplay: {fileID: 0}
 --- !u!1 &7989725769420682486
 GameObject:
   m_ObjectHideFlags: 0
