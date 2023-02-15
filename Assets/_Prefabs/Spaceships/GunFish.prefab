@@ -361,13 +361,13 @@ MonoBehaviour:
   maxProjectileScale: 10
   minProjectileBlockScale: {x: 1.5, y: 1.5, z: 3}
   maxProjectileBlockScale: {x: 1.5, y: 1.5, z: 30}
-  controlOverrides: 000000000300000004000000
+  controlOverrides: 00000000030000000400000000000000
   closeCamDistance: -10
   farCamDistance: -50
   throttle: 50
   BoostDecayGrowthRate: 0.03
   MaxBoostDecay: 10
-  rotationScaler: 70
+  rotationScaler: 190
   rotationThrottleScaler: 0
   inputController: {fileID: 0}
 --- !u!114 &6964962696344697388

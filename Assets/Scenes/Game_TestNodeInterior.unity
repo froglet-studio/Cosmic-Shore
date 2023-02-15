@@ -1794,6 +1794,16 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2151207714166088012, guid: 8a9d12e43096881468feb22e39e9fbeb,
         type: 3}
+      propertyPath: ammoDisplay
+      value: 
+      objectReference: {fileID: 1753545762}
+    - target: {fileID: 2151207714166088012, guid: 8a9d12e43096881468feb22e39e9fbeb,
+        type: 3}
+      propertyPath: boostDisplay
+      value: 
+      objectReference: {fileID: 1567190167}
+    - target: {fileID: 2151207714166088012, guid: 8a9d12e43096881468feb22e39e9fbeb,
+        type: 3}
       propertyPath: levelDisplay
       value: 
       objectReference: {fileID: 724525052}
@@ -6990,6 +7000,18 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1711185005}
   m_CullTransparentMesh: 1
+--- !u!114 &1753545762 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 3900586876768157981, guid: 7873914c194767b4daf5723c304a88a6,
+    type: 3}
+  m_PrefabInstance: {fileID: 1429930230}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 033c5152e03074a49a6bbf901f0e00d0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &1829578212
 GameObject:
   m_ObjectHideFlags: 0
