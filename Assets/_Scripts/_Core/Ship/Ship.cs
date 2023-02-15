@@ -33,7 +33,7 @@ namespace StarWriter.Core
 
         [SerializeField] float minExplosionScale = 50;
         [SerializeField] float maxExplosionScale = 400;
-        [SerializeField] float blockFuelChange;
+        [SerializeField] float blockChargeChange;
 
         [Header("Configuration")]
         public float boostMultiplier = 4f;
@@ -203,7 +203,7 @@ namespace StarWriter.Core
                         AOEExplosion.Team = team;
                         AOEExplosion.Ship = this;
                         AOEExplosion.SetPositionAndRotation(transform.position, transform.rotation);
-                        AOEExplosion.MaxScale =  Mathf.Max(minExplosionScale, resourceSystem.CurrentCharge * maxExplosionScale);
+                        AOEExplosion.MaxScale =  Mathf.Max(minExplosionScale, resourceSystem.CurrentBoost * maxExplosionScale);
 
                         if (AOEExplosion is AOEBlockCreation aoeBlockcreation)
                             aoeBlockcreation.SetBlockMaterial(TrailSpawner.GetBlockMaterial());
@@ -213,13 +213,13 @@ namespace StarWriter.Core
                         IncrementLevel();
                         break;
                     case CrystalImpactEffects.FillCharge:
-                        resourceSystem.ChangeChargeAmount(player.PlayerUUID, crystalProperties.fuelAmount);
+                        resourceSystem.ChangeBoostAmount(player.PlayerUUID, crystalProperties.fuelAmount);
                         break;
                     case CrystalImpactEffects.Boost:
                         SpeedModifiers.Add(new ShipSpeedModifier(crystalProperties.speedBuffAmount, 4 * speedModifierDuration, 0));
                         break;
-                    case CrystalImpactEffects.DrainCharge:
-                        resourceSystem.ChangeChargeAmount(player.PlayerUUID, -resourceSystem.CurrentCharge);
+                    case CrystalImpactEffects.DrainAmmo:
+                        resourceSystem.ChangeAmmoAmount(player.PlayerUUID, -resourceSystem.CurrentAmmo);
                         break;
                     case CrystalImpactEffects.Score:
                         //if (StatsManager.Instance != null)
@@ -246,8 +246,8 @@ namespace StarWriter.Core
                     case TrailBlockImpactEffects.PlayHaptics:
                         HapticController.PlayBlockCollisionHaptics();
                         break;
-                    case TrailBlockImpactEffects.DrainHalfFuel:
-                        resourceSystem.ChangeChargeAmount(player.PlayerUUID, -resourceSystem.CurrentCharge / 2f);
+                    case TrailBlockImpactEffects.DrainHalfAmmo:
+                        resourceSystem.ChangeAmmoAmount(player.PlayerUUID, -resourceSystem.CurrentAmmo / 2f);
                         break;
                     case TrailBlockImpactEffects.DebuffSpeed:
                         SpeedModifiers.Add(new ShipSpeedModifier(trailBlockProperties.speedDebuffAmount, speedModifierDuration, 0));
@@ -259,14 +259,17 @@ namespace StarWriter.Core
                     case TrailBlockImpactEffects.OnlyBuffSpeed:
                         if (trailBlockProperties.speedDebuffAmount > 1) SpeedModifiers.Add(new ShipSpeedModifier(trailBlockProperties.speedDebuffAmount, speedModifierDuration, 0));
                         break;
-                    case TrailBlockImpactEffects.ChangeCharge:
-                        resourceSystem.ChangeChargeAmount(player.PlayerUUID, blockFuelChange);
+                    case TrailBlockImpactEffects.ChangeBoost:
+                        resourceSystem.ChangeBoostAmount(player.PlayerUUID, blockChargeChange);
                         break;
                     case TrailBlockImpactEffects.DecrementLevel:
                         DecrementLevel();
                         break;
                     case TrailBlockImpactEffects.Attach:
                         Attach(trailBlockProperties.trailBlock);
+                        break;
+                    case TrailBlockImpactEffects.ChangeAmmo:
+                        resourceSystem.ChangeAmmoAmount(player.PlayerUUID, blockChargeChange);
                         break;
                 }
             }

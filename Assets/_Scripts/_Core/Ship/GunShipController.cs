@@ -45,7 +45,7 @@ public class GunShipController : ShipController
     protected override void Update()
     {
         base.Update();
-        if (resourceSystem.CurrentCharge > 0) Fire();
+        if (resourceSystem.CurrentBoost > 0) Fire();
     }
 
     //override protected void Yaw()
@@ -74,7 +74,7 @@ public class GunShipController : ShipController
 
     void Fire()
     {
-        resourceSystem.ChangeChargeAmount(uuid, chargeDepletionRate * Time.deltaTime);
+        resourceSystem.ChangeBoostAmount(uuid, chargeDepletionRate * Time.deltaTime);
         topGun.FireGun(player.transform, shipData.VelocityDirection * shipData.Speed, ProjectileScale, BlockScale);
         leftGun.FireGun(player.transform, shipData.VelocityDirection * shipData.Speed, ProjectileScale, BlockScale);
         rightGun.FireGun(player.transform, shipData.VelocityDirection * shipData.Speed, ProjectileScale, BlockScale);
@@ -82,7 +82,7 @@ public class GunShipController : ShipController
     void Slide()
     {
 
-        resourceSystem.ChangeChargeAmount(uuid, rechargeRate * Time.deltaTime);
+        resourceSystem.ChangeBoostAmount(uuid, rechargeRate * Time.deltaTime);
         var gapStep = 2;
         var trailSpawner = shipData.AttachedTrailBlock.TrailSpawner;
         if (moveForward && ship.TrailSpawner.gap > 0) nextBlockIndex = shipData.AttachedTrailBlock.Index + gapStep;

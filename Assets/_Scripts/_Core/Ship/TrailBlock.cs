@@ -9,7 +9,7 @@ namespace StarWriter.Core
         [SerializeField] GameObject FossilBlock;
         public GameObject ParticleEffect; // TODO: move this so it references the Team to retrieve the effect.
         [SerializeField] Material material;
-        [SerializeField] TrailBlockProperties trailBlockProperties;
+        public TrailBlockProperties TrailBlockProperties;
 
         [SerializeField] float growthRate = .5f;
         public string ownerId;  // TODO: is the ownerId the player name? I hope it is.
@@ -54,11 +54,11 @@ namespace StarWriter.Core
             var spread = (Vector3)meshRenderer.material.GetVector("_spread");
             var outerDimensions = InnerDimensions + 2 * spread;
 
-            trailBlockProperties.volume = outerDimensions.x * outerDimensions.y * outerDimensions.z;
-            trailBlockProperties.position = transform.position;
-            trailBlockProperties.trailBlock = this;
-            trailBlockProperties.Index = Index;
-            trailBlockProperties.TrailSpawner = TrailSpawner;
+            TrailBlockProperties.volume = outerDimensions.x * outerDimensions.y * outerDimensions.z;
+            TrailBlockProperties.position = transform.position;
+            TrailBlockProperties.trailBlock = this;
+            TrailBlockProperties.Index = Index;
+            TrailBlockProperties.TrailSpawner = TrailSpawner;
 
 
             StartCoroutine(CreateBlockCoroutine());
@@ -89,10 +89,10 @@ namespace StarWriter.Core
 
             // Add block to team score when created
             if (StatsManager.Instance != null)
-                StatsManager.Instance.BlockCreated(team, playerName, trailBlockProperties);
+                StatsManager.Instance.BlockCreated(team, playerName, TrailBlockProperties);
 
             if (NodeControlManager.Instance != null)
-                NodeControlManager.Instance.AddBlock(team, playerName, trailBlockProperties);
+                NodeControlManager.Instance.AddBlock(team, playerName, TrailBlockProperties);
         }
 
         // TODO: none of the collision detection should be on the trailblock
@@ -110,10 +110,10 @@ namespace StarWriter.Core
                     Explode(impactVector, ship.Team, ship.Player.PlayerName);
                 }
             }
-            else if (IsSkimmer(other.gameObject))
-            {
-                other.GetComponent<Skimmer>().PerformSkimmerImpactEffects(trailBlockProperties);
-            }
+            //else if (IsSkimmer(other.gameObject))
+            //{
+            //    other.GetComponent<Skimmer>().PerformSkimmerImpactEffects(TrailBlockProperties);
+            //}
             else if (IsExplosion(other.gameObject))
             {
                 if (other.GetComponent<AOEExplosion>().Team == Team)
@@ -140,7 +140,7 @@ namespace StarWriter.Core
             if (ownerId != ship.Player.PlayerUUID)
                 AddToScore?.Invoke(ownerId, scoreChange);
 
-            ship.PerformTrailBlockImpactEffects(trailBlockProperties);
+            ship.PerformTrailBlockImpactEffects(TrailBlockProperties);
         }
 
         public void Explode(Vector3 impactVector, Teams team, string playerName)
@@ -161,10 +161,10 @@ namespace StarWriter.Core
             destroyed = true;
 
             if (StatsManager.Instance != null)
-                StatsManager.Instance.BlockDestroyed(team, playerName, trailBlockProperties);
+                StatsManager.Instance.BlockDestroyed(team, playerName, TrailBlockProperties);
 
             if (NodeControlManager.Instance != null)
-                NodeControlManager.Instance.RemoveBlock(team, playerName, trailBlockProperties);
+                NodeControlManager.Instance.RemoveBlock(team, playerName, TrailBlockProperties);
         }
 
         public void Steal(string playerName, Teams team)
@@ -172,7 +172,7 @@ namespace StarWriter.Core
             if (this.team != team)
             {
                 if (StatsManager.Instance != null)
-                    StatsManager.Instance.BlockStolen(team, playerName, trailBlockProperties);
+                    StatsManager.Instance.BlockStolen(team, playerName, TrailBlockProperties);
 
                 if (NodeControlManager.Instance != null)
                     //NodeControlManager.Instance.RemoveBlock(team, playerName, trailBlockProperties);
@@ -189,7 +189,7 @@ namespace StarWriter.Core
         {
             Debug.Log("Restoring trail block");
             if (StatsManager.Instance != null)
-                StatsManager.Instance.BlockRestored(team, playerName, trailBlockProperties);
+                StatsManager.Instance.BlockRestored(team, playerName, TrailBlockProperties);
 
             if (NodeControlManager.Instance != null)
                 //NodeControlManager.Instance.RemoveBlock(team, playerName, trailBlockProperties);

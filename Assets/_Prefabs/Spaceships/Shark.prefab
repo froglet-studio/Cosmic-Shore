@@ -511,10 +511,7 @@ MonoBehaviour:
   Name: Shark
   ShipType: 3
   nearFieldSkimmer: {fileID: 874579554510349383}
-  farFieldSkimmer: {fileID: 0}
   OrientationHandle: {fileID: 7569251362483239328}
-  AOEPrefab: {fileID: 2728798890556433942, guid: f5ecfb9923155a84c860975d559b2714,
-    type: 3}
   shipGeometries:
   - {fileID: 3710282027580066907}
   - {fileID: 8807318159750696826}
@@ -523,40 +520,48 @@ MonoBehaviour:
   - {fileID: 5736286126695899062}
   TrailSpawner: {fileID: 874579555101021522}
   head: {fileID: 3710282027580066907}
+  AOEPrefab: {fileID: 2728798890556433942, guid: f5ecfb9923155a84c860975d559b2714,
+    type: 3}
+  farFieldSkimmer: {fileID: 0}
   crystalImpactEffects: 0000000005000000
   trailBlockImpactEffects: 00000000030000000500000006000000
-  boostMultiplier: 3
-  boostFuelAmount: -0.005
-  rotationScaler: 140
-  rotationThrottleScaler: 0
   minExplosionScale: 50
   maxExplosionScale: 500
-  blockFuelChange: 0.01
-  closeCamDistance: -10
-  farCamDistance: -60
+  blockChargeChange: 0
+  boostMultiplier: 3
+  boostFuelAmount: -0.01
+  fullSpeedStraightEffects: 01000000060000000700000009000000
+  rightStickEffects: 
+  leftStickEffects: 
+  flipEffects: 
+  idleEffects: 
   cameraGrowthRate: 8
   cameraShrinkRate: 8
-  minFarFieldSkimmerScale: 100
-  maxFarFieldSkimmerScale: 200
-  minNearFieldSkimmerScale: 10
-  maxNearFieldSkimmerScale: 60
   minTrailYScale: 1
   maxTrailYScale: 1.7
   skimmerGrowthRate: 8
   skimmerShrinkRate: 8
   trailGrowthRate: 2
   trailShrinkRate: 2
+  levelEffects: 
+  minFarFieldSkimmerScale: 100
+  maxFarFieldSkimmerScale: 200
+  minNearFieldSkimmerScale: 10
+  maxNearFieldSkimmerScale: 60
   minGap: 1
   maxGap: 1
+  minProjectileScale: 1
+  maxProjectileScale: 10
+  minProjectileBlockScale: {x: 1.5, y: 1.5, z: 3}
+  maxProjectileBlockScale: {x: 1.5, y: 1.5, z: 30}
+  controlOverrides: 0300000004000000
+  closeCamDistance: -10
+  farCamDistance: -60
   throttle: 50
   BoostDecayGrowthRate: 0.03
   MaxBoostDecay: 10
-  fullSpeedStraightEffects: 01000000060000000700000009000000
-  rightStickEffects: 
-  leftStickEffects: 
-  flipEffects: 
-  idleEffects: 
-  controlOverrides: 0300000004000000
+  rotationScaler: 140
+  rotationThrottleScaler: 0
   inputController: {fileID: 0}
 --- !u!114 &6964962696344697388
 MonoBehaviour:
@@ -589,7 +594,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 909fb5cbbca8c4549b5a9df56d837e55, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  trail: {fileID: 4563009547826722997, guid: 053064d82123e8b49bfb29870b5c0715, type: 3}
+  trailBlock: {fileID: 4563009547826722997, guid: 053064d82123e8b49bfb29870b5c0715,
+    type: 3}
   skimmer: {fileID: 874579554510349383}
   offset: 0
   initialWavelength: 5
@@ -624,6 +630,8 @@ MonoBehaviour:
   ChargingBoost: 0
   BoostDecaying: 0
   Drifting: 0
+  Attached: 0
+  AttachedTrailBlock: {fileID: 0}
   VelocityDirection: {x: 0, y: 0, z: 0}
   blockRotation: {x: 0, y: 0, z: 0, w: 0}
 --- !u!114 &3440187540988767646
@@ -662,11 +670,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 737294a573670f74389a7af68df314d5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  maxCharge: 1
-  initialCharge: 1
+  maxBoost: 1
+  initialBoost: 1
   maxLevel: 1
   initialLevel: 0
-  ChargeDisplay: {fileID: 0}
+  maxAmmo: 1
+  initialAmmo: 1
+  BoostDisplay: {fileID: 0}
+  LevelDisplay: {fileID: 0}
+  AmmoDisplay: {fileID: 0}
 --- !u!114 &3496801340156507927
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -991,6 +1003,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
+      propertyPath: chargeAmount
+      value: 0.01
+      objectReference: {fileID: 0}
+    - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
       propertyPath: skimVisualFX
       value: 0
       objectReference: {fileID: 0}
@@ -1007,7 +1024,7 @@ PrefabInstance:
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
       propertyPath: trailBlockImpactEffects.Array.size
-      value: 2
+      value: 3
       objectReference: {fileID: 0}
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}

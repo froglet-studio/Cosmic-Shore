@@ -3,13 +3,14 @@
 public enum TrailBlockImpactEffects
 {
     PlayHaptics = 0,
-    DrainHalfFuel = 1,
+    DrainHalfAmmo = 1,
     DebuffSpeed = 2,
     DeactivateTrailBlock = 3,
     ActivateTrailBlock = 4,
     OnlyBuffSpeed = 5,
-    ChangeCharge = 6,
+    ChangeBoost = 6,
     Steal = 7,
     DecrementLevel = 8,
-    Attach = 9
+    Attach = 9,
+    ChangeAmmo = 10
 }
