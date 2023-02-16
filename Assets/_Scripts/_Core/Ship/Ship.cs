@@ -45,6 +45,7 @@ namespace StarWriter.Core
         [SerializeField] List<ShipActions> leftStickEffects;
         [SerializeField] List<ShipActions> flipEffects;
         [SerializeField] List<ShipActions> idleEffects;
+        [SerializeField] List<ShipActions> minimumSpeedStraightEffects;
 
         [SerializeField] float cameraGrowthRate = 1;
         [SerializeField] float cameraShrinkRate = 1;
@@ -137,7 +138,8 @@ namespace StarWriter.Core
                 { InputEvents.FlipAction, flipEffects },
                 { InputEvents.LeftStickAction, leftStickEffects },
                 { InputEvents.RightStickAction, rightStickEffects },
-                { InputEvents.IdleAction, idleEffects }
+                { InputEvents.IdleAction, idleEffects },
+                { InputEvents.MinimumSpeedStraightAction, minimumSpeedStraightEffects }
             };
             ScaleGapWithLevel();
         }
@@ -324,6 +326,9 @@ namespace StarWriter.Core
                     case ShipActions.Detach:
                         Detach();
                         break;
+                    case ShipActions.PauseGuns:
+                        shipData.GunsActive = false;
+                        break;
                 }
             }
         }
@@ -372,6 +377,9 @@ namespace StarWriter.Core
                         break;
                     case ShipActions.GrowTrail:
                         ResetTrailToNeutral(trailShrinkRate);
+                        break;
+                    case ShipActions.PauseGuns:
+                        shipData.GunsActive = true;
                         break;
                 }
             }

@@ -17,6 +17,8 @@ namespace StarWriter.Core.Input
         bool leftStickEffectsStarted = false;
         bool rightStickEffectsStarted = false;
         bool fullSpeedStraightEffectsStarted = false;
+        bool minimumSpeedStraightEffectsStarted = false;
+
 
         public float XSum;
         public float YSum;
@@ -141,7 +143,7 @@ namespace StarWriter.Core.Input
                     ship.StopShipControllerActions(InputEvents.RightStickAction);
                 }
 
-                CheckFullSpeedStraight();
+                CheckSpeedAndOrientation();
 
             }
             else
@@ -255,7 +257,7 @@ namespace StarWriter.Core.Input
                 {
                     Reparameterize();
 
-                    CheckFullSpeedStraight();
+                    CheckSpeedAndOrientation();
 
                     if (Idle)
                     {
@@ -331,17 +333,28 @@ namespace StarWriter.Core.Input
             return input < 0 ? (Mathf.Cos(input) - 1) / 2 : -(Mathf.Cos(input) - 1) / 2;
         }
 
-        void CheckFullSpeedStraight()
+        void CheckSpeedAndOrientation()
         {
             float threshold = .3f;
-            float value = (1 - XDiff) + Mathf.Abs(YDiff) + Mathf.Abs(YSum) + Mathf.Abs(XSum);
+            float sumOfRotations = Mathf.Abs(YDiff) + Mathf.Abs(YSum) + Mathf.Abs(XSum);
+            float DeviationFromFullSpeedStraight = (1 - XDiff) + sumOfRotations;
+            float DeviationFromMinimumSpeedStraight = XDiff + sumOfRotations;
 
-            if (value < threshold)
+
+            if (DeviationFromFullSpeedStraight < threshold)
             {
                 if (!fullSpeedStraightEffectsStarted)
                 {
                     fullSpeedStraightEffectsStarted = true;
                     ship.PerformShipControllerActions(InputEvents.FullSpeedStraightAction);
+                }
+            }
+            else if (DeviationFromMinimumSpeedStraight < threshold)
+            {
+                if (!minimumSpeedStraightEffectsStarted)
+                {
+                    minimumSpeedStraightEffectsStarted = true;
+                    ship.PerformShipControllerActions(InputEvents.MinimumSpeedStraightAction);
                 }
             }
             else
@@ -350,6 +363,11 @@ namespace StarWriter.Core.Input
                 {
                     fullSpeedStraightEffectsStarted = false;
                     ship.StopShipControllerActions(InputEvents.FullSpeedStraightAction);
+                }
+                if (minimumSpeedStraightEffectsStarted)
+                {
+                    minimumSpeedStraightEffectsStarted = false;
+                    ship.StopShipControllerActions(InputEvents.MinimumSpeedStraightAction);
                 }
 
             }

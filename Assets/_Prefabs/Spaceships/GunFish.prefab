@@ -342,6 +342,7 @@ MonoBehaviour:
   leftStickEffects: 000000000600000008000000
   flipEffects: 0a000000
   idleEffects: 0a000000
+  minimumSpeedStraightEffects: 0b000000
   cameraGrowthRate: 1
   cameraShrinkRate: 1
   minTrailYScale: 15
@@ -439,6 +440,7 @@ MonoBehaviour:
   Drifting: 0
   Attached: 0
   AttachedTrailBlock: {fileID: 0}
+  GunsActive: 0
   VelocityDirection: {x: 0, y: 0, z: 0}
   blockRotation: {x: 0, y: 0, z: 0, w: 0}
 --- !u!114 &6315651686961786297

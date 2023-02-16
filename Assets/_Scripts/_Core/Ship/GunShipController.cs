@@ -1,8 +1,10 @@
 using UnityEngine;
 using StarWriter.Core;
+using System.Collections.Generic;
 
 public class GunShipController : ShipController
 {
+    [SerializeField] List <Gun> gunList; // TODO: teach Garret why the ship stops firing if this isn't serialized
     [SerializeField] Gun topGun;
     [SerializeField] Gun leftGun;
     [SerializeField] Gun rightGun;
@@ -31,21 +33,22 @@ public class GunShipController : ShipController
         base.Start();
         player = GameObject.FindWithTag("Player").GetComponent<Player>();
 
-        topGun.Team = player.Team;
-        topGun.Ship = ship;
+        gunList.Add(topGun); 
+        gunList.Add(leftGun); 
+        gunList.Add(rightGun);
 
-        leftGun.Team = player.Team;
-        leftGun.Ship = ship;
-        
-        rightGun.Team = player.Team;
-        rightGun.Ship = ship;
-        
+        foreach (Gun gun in gunList)
+        {
+            gun.Team = player.Team;
+            gun.Ship = ship;
+        }
+
     }
 
     protected override void Update()
     {
         base.Update();
-        if (resourceSystem.CurrentAmmo > 0) Fire();
+        if (resourceSystem.CurrentAmmo > 0 && shipData.GunsActive) Fire();
     }
 
     //override protected void Yaw()
@@ -75,10 +78,12 @@ public class GunShipController : ShipController
     void Fire()
     {
         resourceSystem.ChangeAmmoAmount(uuid, chargeDepletionRate * Time.deltaTime);
-        topGun.FireGun(player.transform, shipData.VelocityDirection * shipData.Speed, ProjectileScale, BlockScale);
-        leftGun.FireGun(player.transform, shipData.VelocityDirection * shipData.Speed, ProjectileScale, BlockScale);
-        rightGun.FireGun(player.transform, shipData.VelocityDirection * shipData.Speed, ProjectileScale, BlockScale);
+        foreach (Gun gun in gunList)
+        {
+            gun.FireGun(player.transform, shipData.VelocityDirection * shipData.Speed, ProjectileScale, BlockScale);
+        }
     }
+
     void Slide()
     {
 

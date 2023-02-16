@@ -17,6 +17,8 @@ namespace StarWriter.Core
         public bool Attached = false;
         public TrailBlock AttachedTrailBlock;
 
+        public bool GunsActive = true;
+
         public Vector3 VelocityDirection;
         public Quaternion blockRotation;
 
