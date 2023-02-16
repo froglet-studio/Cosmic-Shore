@@ -178,7 +178,7 @@ public class TrailSpawner : MonoBehaviour
 
         while (true)
         {
-            if (Time.deltaTime < .1f && spawnerEnabled)
+            if (Time.deltaTime < .1f && spawnerEnabled && !shipData.Attached)
             {
                 if (gap == 0)
                 {

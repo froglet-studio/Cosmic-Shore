@@ -440,7 +440,7 @@ MonoBehaviour:
   Drifting: 0
   Attached: 0
   AttachedTrailBlock: {fileID: 0}
-  GunsActive: 0
+  GunsActive: 1
   VelocityDirection: {x: 0, y: 0, z: 0}
   blockRotation: {x: 0, y: 0, z: 0, w: 0}
 --- !u!114 &6315651686961786297
@@ -464,13 +464,14 @@ MonoBehaviour:
   ThrottleScaler: 0
   rotationThrottleScaler: 0
   rotationScaler: 130
-  topGun: {fileID: 6325554860274326311}
-  leftGun: {fileID: 3459134076240855180}
-  rightGun: {fileID: 6375360903085026602}
+  gunList:
+  - {fileID: 6325554860274326311}
+  - {fileID: 3459134076240855180}
+  - {fileID: 6375360903085026602}
   nextBlockIndex: 1
   previousBlockIndex: 0
-  maxTrailSpeed: 50
-  reducedTrailSpeed: 30
+  maxTrailSpeed: 150
+  reducedTrailSpeed: 50
   ProjectileScale: 1
   BlockScale: {x: 1.5, y: 1.5, z: 3}
 --- !u!114 &3440187540988767646

@@ -4,10 +4,7 @@ using System.Collections.Generic;
 
 public class GunShipController : ShipController
 {
-    [SerializeField] List <Gun> gunList; // TODO: teach Garret why the ship stops firing if this isn't serialized
-    [SerializeField] Gun topGun;
-    [SerializeField] Gun leftGun;
-    [SerializeField] Gun rightGun;
+    [SerializeField] List <Gun> gunList;
 
     public int nextBlockIndex = 1;
     public int previousBlockIndex;
@@ -32,10 +29,6 @@ public class GunShipController : ShipController
     {
         base.Start();
         player = GameObject.FindWithTag("Player").GetComponent<Player>();
-
-        gunList.Add(topGun); 
-        gunList.Add(leftGun); 
-        gunList.Add(rightGun);
 
         foreach (Gun gun in gunList)
         {
@@ -135,6 +128,10 @@ public class GunShipController : ShipController
         //                                     trailLerpAmount);
 
         if (shipData.AttachedTrailBlock.destroyed)
+        {
             shipData.AttachedTrailBlock.Restore();
+            shipData.AttachedTrailBlock.Steal(player.name, player.Team);
+        }
+            
     }
 }
