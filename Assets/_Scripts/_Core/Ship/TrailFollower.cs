@@ -58,6 +58,8 @@ namespace StarWriter.Core
                 return;
             }
 
+            
+
             // TODO: percentTowardNextBlock is always positive?
 
             var distanceToTravel = 0f;  // <-- This is what we're calculating
@@ -66,7 +68,9 @@ namespace StarWriter.Core
             var blockIndex = 0;
             var currentBlock = upcomingBlocks[blockIndex];
             var nextBlock = upcomingBlocks[blockIndex+1];
-            
+
+            //Debug.Log($"Move: {attachedBlockIndex},{percentTowardNextBlock},{direction},{transform.position},{currentBlock.transform.position}, {Throttle * FriendlyTerrainSpeed * Time.deltaTime}");
+
             var distanceToNextBlock = Vector3.Magnitude(nextBlock.transform.position - currentBlock.transform.position) * (1-percentTowardNextBlock);
             var speedToNextBlock = Throttle * GetTerrainAwareBlockSpeed(currentBlock);
             var timeToNextBlock = distanceToNextBlock / speedToNextBlock;

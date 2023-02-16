@@ -96,9 +96,11 @@ namespace StarWriter.Core
             var currentBlock = trailList[startIndex];
             var nextBlock = trailList[startIndex + incrementor];
 
-            Debug.Log($"Project: {currentBlock.transform.position},{nextBlock.transform.position}");
+            //Debug.Log($"Project: {currentBlock.transform.position},{nextBlock.transform.position}");
 
             var distanceToNextBlock = Vector3.Magnitude(nextBlock.transform.position - currentBlock.transform.position) * (1 - initialLerp);
+            distanceTravelled += distanceToNextBlock;
+            //Debug.Log($"Project - distances: {distance},{distanceToNextBlock}");
 
             while (distanceTravelled < distance)
             {
