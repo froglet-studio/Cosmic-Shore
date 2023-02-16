@@ -8,6 +8,7 @@ public class FinalPanelMenu : MonoBehaviour
     [SerializeField] SnsShare snsShare;
     [SerializeField] public Button screenshotButton;
     [SerializeField] public Button replayButton;
+    [SerializeField] public GameObject toggleObject;
 
     void OnEnable()
     {
@@ -39,5 +40,14 @@ public class FinalPanelMenu : MonoBehaviour
     public void OnClickMainMenu()
     {
         gameManager.ReturnToLobby();
+    }
+
+    
+    public void ToggleGameObject() //So I have a gut feeling that this ISNT where we want this script to live... But it does work.
+    {
+        if (toggleObject.activeInHierarchy == true)
+            toggleObject.SetActive(false);
+        else
+            toggleObject.SetActive(true);
     }
 }
