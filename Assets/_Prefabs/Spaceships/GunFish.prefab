@@ -318,53 +318,59 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a273abd40c7104c4392188723ab929d6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Name: GreenManta
+  Name: GunManta
   ShipType: 4
   nearFieldSkimmer: {fileID: 874579554510349383}
-  farFieldSkimmer: {fileID: 0}
   OrientationHandle: {fileID: 1878660672777590133}
-  AOEPrefab: {fileID: 2728798890556433942, guid: 4a855af160021d241b8c1ac70cf2d792,
-    type: 3}
   shipGeometries:
   - {fileID: 7989725769420682486}
   - {fileID: 956471339697806072}
   - {fileID: 2306761366267364778}
   TrailSpawner: {fileID: 874579555101021522}
   head: {fileID: 0}
+  AOEPrefab: {fileID: 2728798890556433942, guid: 4a855af160021d241b8c1ac70cf2d792,
+    type: 3}
+  farFieldSkimmer: {fileID: 0}
   crystalImpactEffects: 0000000007000000
   trailBlockImpactEffects: 0000000009000000
-  boostMultiplier: 2
-  boostFuelAmount: 0
-  rotationScaler: 190
-  rotationThrottleScaler: 0
   minExplosionScale: 50
   maxExplosionScale: 500
-  blockFuelChange: 0
-  closeCamDistance: -10
-  farCamDistance: -50
+  blockChargeChange: 0
+  boostMultiplier: 2
+  boostFuelAmount: 0
+  fullSpeedStraightEffects: 
+  rightStickEffects: 000000000600000008000000
+  leftStickEffects: 000000000600000008000000
+  flipEffects: 0a000000
+  idleEffects: 0a000000
+  minimumSpeedStraightEffects: 
   cameraGrowthRate: 1
   cameraShrinkRate: 1
-  minFarFieldSkimmerScale: 100
-  maxFarFieldSkimmerScale: 200
-  minNearFieldSkimmerScale: 15
-  maxNearFieldSkimmerScale: 100
   minTrailYScale: 15
   maxTrailYScale: 100
   skimmerGrowthRate: 1
   skimmerShrinkRate: 1
   trailGrowthRate: 1
   trailShrinkRate: 1
+  levelEffects: 
+  minFarFieldSkimmerScale: 100
+  maxFarFieldSkimmerScale: 200
+  minNearFieldSkimmerScale: 15
+  maxNearFieldSkimmerScale: 100
   minGap: 0
   maxGap: 0
+  minProjectileScale: 1
+  maxProjectileScale: 10
+  minProjectileBlockScale: {x: 1.5, y: 1.5, z: 3}
+  maxProjectileBlockScale: {x: 1.5, y: 1.5, z: 30}
+  controlOverrides: 00000000030000000400000000000000
+  closeCamDistance: -10
+  farCamDistance: -50
   throttle: 50
   BoostDecayGrowthRate: 0.03
   MaxBoostDecay: 10
-  fullSpeedStraightEffects: 
-  rightStickEffects: 000000000600000008000000
-  leftStickEffects: 000000000600000008000000
-  flipEffects: 0a000000
-  idleEffects: 0a000000
-  controlOverrides: 00000000030000000400000000000000
+  rotationScaler: 190
+  rotationThrottleScaler: 0
   inputController: {fileID: 0}
 --- !u!114 &6964962696344697388
 MonoBehaviour:
@@ -435,6 +441,7 @@ MonoBehaviour:
   Drifting: 0
   Attached: 0
   AttachedTrailBlock: {fileID: 0}
+  GunsActive: 1
   VelocityDirection: {x: 0, y: 0, z: 0}
   blockRotation: {x: 0, y: 0, z: 0, w: 0}
 --- !u!114 &6315651686961786297
@@ -462,6 +469,8 @@ MonoBehaviour:
   leftGun: {fileID: 3459134076240855180}
   rightGun: {fileID: 6375360903085026602}
   trailFollower: {fileID: 7081412522392871879}
+  ProjectileScale: 1
+  BlockScale: {x: 1.5, y: 1.5, z: 3}
   nextBlockIndex: 1
   previousBlockIndex: 0
   maxTrailSpeed: 150
@@ -521,11 +530,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 737294a573670f74389a7af68df314d5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  maxCharge: 1
-  initialCharge: 1
+  maxBoost: 1
+  initialBoost: 1
   maxLevel: 1
   initialLevel: 0
-  ChargeDisplay: {fileID: 0}
+  maxAmmo: 1
+  initialAmmo: 1
+  BoostDisplay: {fileID: 0}
+  LevelDisplay: {fileID: 0}
+  AmmoDisplay: {fileID: 0}
 --- !u!114 &7081412522392871879
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -538,9 +551,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 176c662296efcc847a97193a5e7ba824, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  FriendlyTerrainSpeed: 1
-  HostileTerrainSpeed: 0.75
-  DestroyedTerrainSpeed: 0.5
+  FriendlyTerrainSpeed: 25
+  HostileTerrainSpeed: 20
+  DestroyedTerrainSpeed: 10
   Throttle: 0
 --- !u!1 &7989725769420682486
 GameObject:

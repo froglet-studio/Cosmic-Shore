@@ -3521,6 +3521,7 @@ GameObject:
   - component: {fileID: 1326411056}
   - component: {fileID: 1326411055}
   - component: {fileID: 1326411058}
+  - component: {fileID: 1326411059}
   m_Layer: 5
   m_Name: Dropdown
   m_TagString: Untagged
@@ -3616,8 +3617,8 @@ MonoBehaviour:
   m_OnValueChanged:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 1867118902}
-        m_TargetAssemblyTypeName: MainMenuActions, Assembly-CSharp
+      - m_Target: {fileID: 1326411059}
+        m_TargetAssemblyTypeName: ShipSelection, Assembly-CSharp
         m_MethodName: HangarSetPlayerShip
         m_Mode: 0
         m_Arguments:
@@ -3677,6 +3678,18 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 62fd43b77862fa142be168fbd2cc10e2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &1326411059
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1326411053}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 99f7ba4327257df458418dcb55cee811, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
 --- !u!1 &1333129417

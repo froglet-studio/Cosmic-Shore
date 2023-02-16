@@ -8,7 +8,6 @@ namespace StarWriter.Core
 {
     [RequireComponent(typeof(ResourceSystem))]
     [RequireComponent(typeof(TrailSpawner))]
-    //[RequireComponent(typeof(ShipController))]
     public class Ship : MonoBehaviour
     {
         [Header("ship Meta")]
@@ -551,10 +550,13 @@ namespace StarWriter.Core
         //
 
         void Attach(TrailBlock trailBlock) 
-        { 
-            shipData.Attached = true;
-            shipData.AttachedTrailBlock = trailBlock;
-            IncrementLevel();
+        {
+            if (trailBlock.Trail != null)
+            {
+                shipData.Attached = true;
+                shipData.AttachedTrailBlock = trailBlock;
+                IncrementLevel();
+            }
         }
 
         void Detach()
@@ -609,8 +611,10 @@ namespace StarWriter.Core
 
         void ScaleSkimmersWithLevel()
         {
-            nearFieldSkimmer.transform.localScale = Vector3.one * (minNearFieldSkimmerScale + ((resourceSystem.CurrentLevel / resourceSystem.MaxLevel) * (maxNearFieldSkimmerScale - minNearFieldSkimmerScale)));
-            farFieldSkimmer.transform.localScale = Vector3.one * (maxFarFieldSkimmerScale - ((resourceSystem.CurrentLevel / resourceSystem.MaxLevel) * (maxFarFieldSkimmerScale - minFarFieldSkimmerScale)));
+            if (nearFieldSkimmer != null)
+                nearFieldSkimmer.transform.localScale = Vector3.one * (minNearFieldSkimmerScale + ((resourceSystem.CurrentLevel / resourceSystem.MaxLevel) * (maxNearFieldSkimmerScale - minNearFieldSkimmerScale)));
+            if (farFieldSkimmer != null)
+                farFieldSkimmer.transform.localScale = Vector3.one * (maxFarFieldSkimmerScale - ((resourceSystem.CurrentLevel / resourceSystem.MaxLevel) * (maxFarFieldSkimmerScale - minFarFieldSkimmerScale)));
         }
         void ScaleGapWithLevel()
         {
@@ -619,24 +623,29 @@ namespace StarWriter.Core
 
         void ScaleProjectilesWithLevel()
         {
-            ((GunShipController)shipController).ProjectileScale = minProjectileScale + ((resourceSystem.CurrentLevel / resourceSystem.MaxLevel) * (maxProjectileScale - minProjectileScale));
+            if (shipController is GunShipController controller)
+                controller.ProjectileScale = minProjectileScale + ((resourceSystem.CurrentLevel / resourceSystem.MaxLevel) * (maxProjectileScale - minProjectileScale));
+            else
+                Debug.LogWarning("Trying to scale projectile of ShipController that is not a GunShipController");
         }
 
         void ScaleProjectileBlocksWithLevel()
         {
-            ((GunShipController)shipController).BlockScale = minProjectileBlockScale + ((resourceSystem.CurrentLevel / resourceSystem.MaxLevel) * (maxProjectileBlockScale - minProjectileBlockScale));
+            if (shipController is GunShipController controller)
+                controller.BlockScale = minProjectileBlockScale + ((resourceSystem.CurrentLevel / resourceSystem.MaxLevel) * (maxProjectileBlockScale - minProjectileBlockScale));
+            else
+                Debug.LogWarning("Trying to scale projectile block of ShipController that is not a GunShipController");
         }
 
         IEnumerator TemporaryIntangibilityCoroutine(float duration)
         {
-            float elapsedTime = 0f;
-            while (elapsedTime < duration)
-            {
-                GetComponent<Collider>().enabled = false;
-                elapsedTime += Time.deltaTime;
-                yield return null;
-            }
-            GetComponent<Collider>().enabled = true;
+            foreach (var geometry in shipGeometries)
+                geometry.GetComponent<Collider>().enabled = false;
+
+            yield return new WaitForSeconds(duration);
+
+            foreach (var geometry in shipGeometries)
+                geometry.GetComponent<Collider>().enabled = true;
         }
     }
 }
