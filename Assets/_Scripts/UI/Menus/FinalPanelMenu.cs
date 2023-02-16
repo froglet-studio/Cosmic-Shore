@@ -23,13 +23,13 @@ public class FinalPanelMenu : MonoBehaviour
     void Start()
     {
         gameManager = GameManager.Instance;
-        screenshotButton.onClick.AddListener(() => snsShare.Share());
+        screenshotButton?.onClick.AddListener(() => snsShare.Share());
     }
 
     void OnGameOver()
     {
         replayButton.gameObject.SetActive(true);
-        screenshotButton.gameObject.SetActive(true);
+        screenshotButton?.gameObject.SetActive(true);
     }
 
     public void OnClickReplayButton()

@@ -16,8 +16,4 @@ public class MainMenuActions : MonoBehaviour
     {
         GameSetting.Instance.ChangeInvertYEnabledStatus();
     }
-    public void HangarSetPlayerShip(int shipType)
-    {
-        Hangar.Instance.SetPlayerShip(shipType);
-    }
 }

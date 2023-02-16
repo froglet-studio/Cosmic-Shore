@@ -10,7 +10,7 @@ namespace StarWriter.Core.HangerBuilder
     {
         [SerializeField] Teams PlayerTeam = Teams.Green;
         Teams AITeam;
-        [SerializeField] ShipTypes PlayerShipType = ShipTypes.Manta;
+        [SerializeField] ShipTypes PlayerShipType = ShipTypes.Random;
         [FormerlySerializedAs("PlayerTeammateShipType")]
         [SerializeField] ShipTypes FriendlyAIShipType = ShipTypes.Manta;
         [FormerlySerializedAs("AI1ShipType")]
@@ -35,9 +35,17 @@ namespace StarWriter.Core.HangerBuilder
         [SerializeField] int SelectedBayIndex = 0;
         [SerializeField] public List<Ship> ShipPrefabs;
 
+        string SelectedShipPlayerPrefKey = "SelectedShip";
+
         public void SetPlayerShip(int shipType)
         {
             PlayerShipType = (ShipTypes)shipType;
+            PlayerPrefs.SetInt(SelectedShipPlayerPrefKey, shipType);
+        }
+
+        public ShipTypes GetPlayerShip()
+        {
+            return PlayerShipType;
         }
 
         [Range(0,10)]
@@ -55,6 +63,9 @@ namespace StarWriter.Core.HangerBuilder
         public override void Awake()
         {
             base.Awake();
+
+            if (PlayerPrefs.HasKey(SelectedShipPlayerPrefKey))
+                PlayerShipType = (ShipTypes) PlayerPrefs.GetInt(SelectedShipPlayerPrefKey);
 
             TeamsMaterials = new Dictionary<Teams, Material>() {
                 { Teams.Green, GreenTeamMaterial },
