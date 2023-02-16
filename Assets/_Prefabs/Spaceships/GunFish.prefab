@@ -320,50 +320,56 @@ MonoBehaviour:
   Name: GreenManta
   ShipType: 4
   nearFieldSkimmer: {fileID: 874579554510349383}
-  farFieldSkimmer: {fileID: 0}
   OrientationHandle: {fileID: 1878660672777590133}
-  AOEPrefab: {fileID: 2728798890556433942, guid: 4a855af160021d241b8c1ac70cf2d792,
-    type: 3}
   shipGeometries:
   - {fileID: 7989725769420682486}
   - {fileID: 956471339697806072}
   - {fileID: 2306761366267364778}
   TrailSpawner: {fileID: 874579555101021522}
   head: {fileID: 0}
-  crystalImpactEffects: 0000000004000000
+  AOEPrefab: {fileID: 2728798890556433942, guid: 4a855af160021d241b8c1ac70cf2d792,
+    type: 3}
+  farFieldSkimmer: {fileID: 0}
+  crystalImpactEffects: 0000000007000000
   trailBlockImpactEffects: 0000000009000000
-  boostMultiplier: 2
-  boostFuelAmount: 0
-  rotationScaler: 70
-  rotationThrottleScaler: 0
   minExplosionScale: 50
   maxExplosionScale: 500
-  blockFuelChange: 0
-  closeCamDistance: -10
-  farCamDistance: -50
+  blockChargeChange: 0
+  boostMultiplier: 2
+  boostFuelAmount: 0
+  fullSpeedStraightEffects: 
+  rightStickEffects: 000000000600000008000000
+  leftStickEffects: 000000000600000008000000
+  flipEffects: 0a000000
+  idleEffects: 0a000000
+  minimumSpeedStraightEffects: 0b000000
   cameraGrowthRate: 1
   cameraShrinkRate: 1
-  minFarFieldSkimmerScale: 100
-  maxFarFieldSkimmerScale: 200
-  minNearFieldSkimmerScale: 15
-  maxNearFieldSkimmerScale: 100
   minTrailYScale: 15
   maxTrailYScale: 100
   skimmerGrowthRate: 1
   skimmerShrinkRate: 1
   trailGrowthRate: 1
   trailShrinkRate: 1
-  minGap: 10
-  maxGap: 10
+  levelEffects: 0200000003000000
+  minFarFieldSkimmerScale: 100
+  maxFarFieldSkimmerScale: 200
+  minNearFieldSkimmerScale: 15
+  maxNearFieldSkimmerScale: 100
+  minGap: 3
+  maxGap: 3
+  minProjectileScale: 1
+  maxProjectileScale: 10
+  minProjectileBlockScale: {x: 1.5, y: 1.5, z: 3}
+  maxProjectileBlockScale: {x: 1.5, y: 1.5, z: 30}
+  controlOverrides: 00000000030000000400000000000000
+  closeCamDistance: -10
+  farCamDistance: -50
   throttle: 50
   BoostDecayGrowthRate: 0.03
   MaxBoostDecay: 10
-  fullSpeedStraightEffects: 
-  rightStickEffects: 0000000006000000
-  leftStickEffects: 0000000006000000
-  flipEffects: 0a000000
-  idleEffects: 
-  controlOverrides: 000000000300000004000000
+  rotationScaler: 190
+  rotationThrottleScaler: 0
   inputController: {fileID: 0}
 --- !u!114 &6964962696344697388
 MonoBehaviour:
@@ -396,11 +402,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 909fb5cbbca8c4549b5a9df56d837e55, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  trail: {fileID: 4563009547826722997, guid: 5790c8c1f457a754baecca51ef90c82e, type: 3}
+  trailBlock: {fileID: 4563009547826722997, guid: 68d3aecc8e78ee64ab14601164273680,
+    type: 3}
   skimmer: {fileID: 874579554510349383}
   offset: 0
-  initialWavelength: 5
-  minWavelength: 1
+  initialWavelength: 10
+  minWavelength: 7
   gap: 0
   trailLength: 40
   defaultWaitTime: 0.5
@@ -432,7 +439,8 @@ MonoBehaviour:
   BoostDecaying: 0
   Drifting: 0
   Attached: 0
-  AttachedTrail: {fileID: 0}
+  AttachedTrailBlock: {fileID: 0}
+  GunsActive: 1
   VelocityDirection: {x: 0, y: 0, z: 0}
   blockRotation: {x: 0, y: 0, z: 0, w: 0}
 --- !u!114 &6315651686961786297
@@ -456,13 +464,16 @@ MonoBehaviour:
   ThrottleScaler: 0
   rotationThrottleScaler: 0
   rotationScaler: 130
-  topGun: {fileID: 6325554860274326311}
-  leftGun: {fileID: 3459134076240855180}
-  rightGun: {fileID: 6375360903085026602}
+  gunList:
+  - {fileID: 6325554860274326311}
+  - {fileID: 3459134076240855180}
+  - {fileID: 6375360903085026602}
   nextBlockIndex: 1
   previousBlockIndex: 0
-  maxTrailSpeed: 50
-  reducedTrailSpeed: 30
+  maxTrailSpeed: 150
+  reducedTrailSpeed: 50
+  ProjectileScale: 1
+  BlockScale: {x: 1.5, y: 1.5, z: 3}
 --- !u!114 &3440187540988767646
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -518,11 +529,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 737294a573670f74389a7af68df314d5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  maxCharge: 1
-  initialCharge: 1
+  maxBoost: 1
+  initialBoost: 1
   maxLevel: 1
   initialLevel: 0
-  ChargeDisplay: {fileID: 0}
+  maxAmmo: 1
+  initialAmmo: 1
+  BoostDisplay: {fileID: 0}
+  LevelDisplay: {fileID: 0}
+  AmmoDisplay: {fileID: 0}
 --- !u!1 &7989725769420682486
 GameObject:
   m_ObjectHideFlags: 0
@@ -662,8 +677,13 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4459183666627939153, guid: 340b92d77208a7347843154145a64863,
         type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 4459183666627939153, guid: 340b92d77208a7347843154145a64863,
+        type: 3}
       propertyPath: m_LocalScale.z
-      value: 0.3
+      value: 0.08
       objectReference: {fileID: 0}
     - target: {fileID: 4459183666627939153, guid: 340b92d77208a7347843154145a64863,
         type: 3}
@@ -728,7 +748,7 @@ PrefabInstance:
     - target: {fileID: 4459183666627939154, guid: 340b92d77208a7347843154145a64863,
         type: 3}
       propertyPath: speed
-      value: 30
+      value: 50
       objectReference: {fileID: 0}
     - target: {fileID: 4459183666627939154, guid: 340b92d77208a7347843154145a64863,
         type: 3}
@@ -743,8 +763,23 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4459183666627939154, guid: 340b92d77208a7347843154145a64863,
         type: 3}
+      propertyPath: blockScale.x
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4459183666627939154, guid: 340b92d77208a7347843154145a64863,
+        type: 3}
+      propertyPath: blockScale.y
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4459183666627939154, guid: 340b92d77208a7347843154145a64863,
+        type: 3}
+      propertyPath: blockScale.z
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 4459183666627939154, guid: 340b92d77208a7347843154145a64863,
+        type: 3}
       propertyPath: projectileTime
-      value: 5
+      value: 2
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 340b92d77208a7347843154145a64863, type: 3}
@@ -791,7 +826,7 @@ PrefabInstance:
     - target: {fileID: 4459183666627939153, guid: 340b92d77208a7347843154145a64863,
         type: 3}
       propertyPath: m_LocalScale.z
-      value: 0.3
+      value: 0.08
       objectReference: {fileID: 0}
     - target: {fileID: 4459183666627939153, guid: 340b92d77208a7347843154145a64863,
         type: 3}
@@ -856,13 +891,13 @@ PrefabInstance:
     - target: {fileID: 4459183666627939154, guid: 340b92d77208a7347843154145a64863,
         type: 3}
       propertyPath: speed
-      value: 30
+      value: 50
       objectReference: {fileID: 0}
     - target: {fileID: 4459183666627939154, guid: 340b92d77208a7347843154145a64863,
         type: 3}
       propertyPath: trail
       value: 
-      objectReference: {fileID: 4563009547826722997, guid: 5790c8c1f457a754baecca51ef90c82e,
+      objectReference: {fileID: 4563009547826722997, guid: 68d3aecc8e78ee64ab14601164273680,
         type: 3}
     - target: {fileID: 4459183666627939154, guid: 340b92d77208a7347843154145a64863,
         type: 3}
@@ -871,8 +906,23 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4459183666627939154, guid: 340b92d77208a7347843154145a64863,
         type: 3}
+      propertyPath: blockScale.x
+      value: 1.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 4459183666627939154, guid: 340b92d77208a7347843154145a64863,
+        type: 3}
+      propertyPath: blockScale.y
+      value: 1.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 4459183666627939154, guid: 340b92d77208a7347843154145a64863,
+        type: 3}
+      propertyPath: blockScale.z
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 4459183666627939154, guid: 340b92d77208a7347843154145a64863,
+        type: 3}
       propertyPath: projectileTime
-      value: 5
+      value: 2
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 340b92d77208a7347843154145a64863, type: 3}
@@ -973,8 +1023,13 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
+      propertyPath: skimVisualFX
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
       propertyPath: trailBlockImpactEffects.Array.size
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
@@ -1091,7 +1146,7 @@ PrefabInstance:
     - target: {fileID: 4459183666627939154, guid: 340b92d77208a7347843154145a64863,
         type: 3}
       propertyPath: speed
-      value: 30
+      value: 50
       objectReference: {fileID: 0}
     - target: {fileID: 4459183666627939154, guid: 340b92d77208a7347843154145a64863,
         type: 3}
@@ -1106,8 +1161,23 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4459183666627939154, guid: 340b92d77208a7347843154145a64863,
         type: 3}
+      propertyPath: blockScale.x
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4459183666627939154, guid: 340b92d77208a7347843154145a64863,
+        type: 3}
+      propertyPath: blockScale.y
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4459183666627939154, guid: 340b92d77208a7347843154145a64863,
+        type: 3}
+      propertyPath: blockScale.z
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 4459183666627939154, guid: 340b92d77208a7347843154145a64863,
+        type: 3}
       propertyPath: projectileTime
-      value: 5
+      value: 2
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 340b92d77208a7347843154145a64863, type: 3}

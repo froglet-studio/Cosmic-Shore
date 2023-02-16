@@ -12,7 +12,9 @@ public class Player : MonoBehaviour
     [SerializeField] GameObject shipContainer;
 
     [Header("HUD Containers")]
-    [SerializeField] ChargeDisplay chargeDisplay;
+    [SerializeField] ChargeDisplay boostDisplay;
+    [SerializeField] ChargeDisplay levelDisplay;
+    [SerializeField] ChargeDisplay ammoDisplay;
 
     public Teams Team;
     public string PlayerName { get => playerName; }
@@ -62,8 +64,12 @@ public class Player : MonoBehaviour
                 ship.Team = Team;
                 ship.Player = this;
 
-                if (chargeDisplay != null)
-                    ship.GetComponent<ResourceSystem>().ChargeDisplay = chargeDisplay;
+                if (boostDisplay != null)
+                    ship.GetComponent<ResourceSystem>().BoostDisplay = boostDisplay;
+                if (levelDisplay != null)
+                    ship.GetComponent<ResourceSystem>().LevelDisplay = levelDisplay;
+                if (levelDisplay != null)
+                    ship.GetComponent<ResourceSystem>().AmmoDisplay = ammoDisplay;
 
                 gameManager.WaitOnPlayerLoading();
                 break;

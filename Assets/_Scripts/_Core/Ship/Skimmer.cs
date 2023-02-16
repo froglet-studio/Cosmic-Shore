@@ -8,15 +8,17 @@ namespace StarWriter.Core
     public class Skimmer : MonoBehaviour
     {
         [SerializeField] List<TrailBlockImpactEffects> trailBlockImpactEffects;
+        [SerializeField] List<SkimmerStayEffects> skimmerStayEffects;
         [SerializeField] float time = 300f;
         [SerializeField] bool skimVisualFX = true;
         [SerializeField] public Ship ship;
         [SerializeField] public Player Player;
-        [SerializeField] float fuelAmount;
+        [SerializeField] float chargeAmount;
         [SerializeField] float MultiSkimMultiplier = 0f;
         [SerializeField] bool notifyNearbyBlockCount;
         [HideInInspector] public Teams team;
- 
+        ResourceSystem resourceSystem;
+
         Dictionary<string, float> skimStartTimes = new Dictionary<string, float>();
         CameraManager cameraManager;
 
@@ -32,6 +34,7 @@ namespace StarWriter.Core
         {
             //PerformSkimmerStartEffects();
             cameraManager = CameraManager.Instance;
+            resourceSystem = ship.GetComponent<ResourceSystem>();
         }
 
 
@@ -53,7 +56,7 @@ namespace StarWriter.Core
 
 
         //Maja added this to try and enable shark skimmer smashing
-        public void PerformSkimmerImpactEffects(TrailBlockProperties trailBlockProperties)
+        void PerformSkimmerImpactEffects(TrailBlockProperties trailBlockProperties)
         {
             foreach (TrailBlockImpactEffects effect in trailBlockImpactEffects)
             {
@@ -68,10 +71,32 @@ namespace StarWriter.Core
                     case TrailBlockImpactEffects.Steal:
                         trailBlockProperties.trailBlock.Steal(Player.PlayerName, team);
                         break;
-                    // This is actually redundant with Skimmer's built in "Fuel Amount" variable
-                    //case TrailBlockImpactEffects.ChangeFuel:
+                    case TrailBlockImpactEffects.ChangeBoost:
+                        resourceSystem.ChangeBoostAmount(Player.PlayerUUID, chargeAmount + (activelySkimmingBlockCount * MultiSkimMultiplier));
+                        break;
+                    case TrailBlockImpactEffects.ChangeAmmo:
+                        resourceSystem.ChangeAmmoAmount(Player.PlayerUUID, chargeAmount + (activelySkimmingBlockCount * MultiSkimMultiplier));
+                        break;
+                        // This is actually redundant with Skimmer's built in "Fuel Amount" variable
+                        //case TrailBlockImpactEffects.ChangeFuel:
                         //FuelSystem.ChangeFuelAmount(Player.PlayerUUID, ship.blockFuelChange);
                         //break;
+                }
+            }
+        }
+
+        void PerformSkimmerStayEffects(TrailBlockProperties trailBlockProperties, float chargeAmount)
+        {
+            foreach (SkimmerStayEffects effect in skimmerStayEffects)
+            {
+                switch (effect)
+                {
+                    case SkimmerStayEffects.ChangeBoost:
+                        resourceSystem.ChangeBoostAmount(Player.PlayerUUID, chargeAmount);
+                        break;
+                    case SkimmerStayEffects.ChangeAmmo:
+                        resourceSystem.ChangeAmmoAmount(Player.PlayerUUID, chargeAmount);
+                        break;
                 }
             }
         }
@@ -79,7 +104,10 @@ namespace StarWriter.Core
         void OnTriggerEnter(Collider other)
         {
             if (other.TryGetComponent<TrailBlock>(out var trailBlock))
+            {
                 StartSkim(trailBlock);
+                PerformSkimmerImpactEffects(trailBlock.TrailBlockProperties);
+            }      
         }
 
         void StartSkim(TrailBlock trailBlock)
@@ -90,7 +118,7 @@ namespace StarWriter.Core
             if (!skimStartTimes.ContainsKey(trailBlock.ID))
                 skimStartTimes.Add(trailBlock.ID, Time.time);
 
-            OnSkim?.Invoke(ship.Player.PlayerUUID, fuelAmount + (activelySkimmingBlockCount * MultiSkimMultiplier));
+            //OnSkim?.Invoke(ship.Player.PlayerUUID, fuelAmount + (activelySkimmingBlockCount * MultiSkimMultiplier));
 
             if (notifyNearbyBlockCount)
                 NotifyNearbyBlockCount();
@@ -107,7 +135,7 @@ namespace StarWriter.Core
                     StartSkim(trailBlock);
 
                 // start with a baseline fuel amount the ranges from 0-1 depending on proximity of the skimmer to the trail block
-                var fuel = fuelAmount * (1 - (Vector3.Magnitude(transform.position - other.transform.position) / transform.localScale.x));
+                var fuel = chargeAmount * (1 - (Vector3.Magnitude(transform.position - other.transform.position) / transform.localScale.x));
 
                 // apply decay
                 fuel *= Mathf.Min(0, (skimDecayDuration - (Time.time - skimStartTimes[trailBlock.ID])) / skimDecayDuration);
@@ -116,7 +144,8 @@ namespace StarWriter.Core
                 fuel += (activelySkimmingBlockCount * MultiSkimMultiplier);
 
                 // grant the fuel
-                OnSkim?.Invoke(ship.Player.PlayerUUID, fuel);
+                PerformSkimmerStayEffects(trailBlock.TrailBlockProperties, fuel);
+                //OnSkim?.Invoke(ship.Player.PlayerUUID, fuel);
             }
         }
 
@@ -159,5 +188,6 @@ namespace StarWriter.Core
 
             Destroy(particle);
         }
+
     }
 }

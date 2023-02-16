@@ -17,6 +17,8 @@ namespace StarWriter.Core.Input
         bool leftStickEffectsStarted = false;
         bool rightStickEffectsStarted = false;
         bool fullSpeedStraightEffectsStarted = false;
+        bool minimumSpeedStraightEffectsStarted = false;
+
 
         public float XSum;
         public float YSum;
@@ -94,16 +96,16 @@ namespace StarWriter.Core.Input
                 rightTouch.x = Gamepad.current.rightStick.x.ReadValue();
                 rightTouch.y = Gamepad.current.rightStick.y.ReadValue();
 
-                if (Gamepad.current.leftStick.IsActuated() || Gamepad.current.rightStick.IsActuated() && Idle)
-                {
-                    Idle = false;
-                    ship.StopShipControllerActions(InputEvents.IdleAction);
-                }
-                else if (!Idle)
-                {
-                    Idle = true;
-                    ship.PerformShipControllerActions(InputEvents.IdleAction);
-                }
+                //if (Gamepad.current.leftStick.IsActuated() || Gamepad.current.rightStick.IsActuated() && Idle)
+                //{
+                //    Idle = false;
+                //    ship.StopShipControllerActions(InputEvents.IdleAction);
+                //}
+                //else if (!Idle)
+                //{
+                //    Idle = true;
+                //    ship.PerformShipControllerActions(InputEvents.IdleAction);
+                //}
 
                 XSum = Ease(rightTouch.x + leftTouch.x);
                 YSum = Ease(rightTouch.y + leftTouch.y);
@@ -112,6 +114,17 @@ namespace StarWriter.Core.Input
 
                 if (invertYEnabled)
                     YSum *= -1;
+
+                if (Gamepad.current.leftShoulder.wasPressedThisFrame)
+                {
+                    Idle = true;
+                    ship.PerformShipControllerActions(InputEvents.IdleAction);
+                }
+                if (Gamepad.current.leftShoulder.wasReleasedThisFrame)
+                {
+                    Idle = false;
+                    ship.StopShipControllerActions(InputEvents.IdleAction);
+                }
 
                 if (Gamepad.current.rightShoulder.wasPressedThisFrame && !PhoneFlipState)
                 {
@@ -128,20 +141,21 @@ namespace StarWriter.Core.Input
                 {
                     ship.PerformShipControllerActions(InputEvents.LeftStickAction);
                 }
-                if (Gamepad.current.rightTrigger.wasPressedThisFrame)
-                {
-                    ship.PerformShipControllerActions(InputEvents.RightStickAction);
-                }
                 if (Gamepad.current.leftTrigger.wasReleasedThisFrame)
                 {
                     ship.StopShipControllerActions(InputEvents.LeftStickAction);
+                }
+
+                if (Gamepad.current.rightTrigger.wasPressedThisFrame)
+                {
+                    ship.PerformShipControllerActions(InputEvents.RightStickAction);
                 }
                 if (Gamepad.current.rightTrigger.wasReleasedThisFrame)
                 {
                     ship.StopShipControllerActions(InputEvents.RightStickAction);
                 }
 
-                CheckFullSpeedStraight();
+                CheckSpeedAndOrientation();
 
             }
             else
@@ -255,7 +269,7 @@ namespace StarWriter.Core.Input
                 {
                     Reparameterize();
 
-                    CheckFullSpeedStraight();
+                    CheckSpeedAndOrientation();
 
                     if (Idle)
                     {
@@ -331,17 +345,28 @@ namespace StarWriter.Core.Input
             return input < 0 ? (Mathf.Cos(input) - 1) / 2 : -(Mathf.Cos(input) - 1) / 2;
         }
 
-        void CheckFullSpeedStraight()
+        void CheckSpeedAndOrientation()
         {
             float threshold = .3f;
-            float value = (1 - XDiff) + Mathf.Abs(YDiff) + Mathf.Abs(YSum) + Mathf.Abs(XSum);
+            float sumOfRotations = Mathf.Abs(YDiff) + Mathf.Abs(YSum) + Mathf.Abs(XSum);
+            float DeviationFromFullSpeedStraight = (1 - XDiff) + sumOfRotations;
+            float DeviationFromMinimumSpeedStraight = XDiff + sumOfRotations;
 
-            if (value < threshold)
+
+            if (DeviationFromFullSpeedStraight < threshold)
             {
                 if (!fullSpeedStraightEffectsStarted)
                 {
                     fullSpeedStraightEffectsStarted = true;
                     ship.PerformShipControllerActions(InputEvents.FullSpeedStraightAction);
+                }
+            }
+            else if (DeviationFromMinimumSpeedStraight < threshold)
+            {
+                if (!minimumSpeedStraightEffectsStarted)
+                {
+                    minimumSpeedStraightEffectsStarted = true;
+                    ship.PerformShipControllerActions(InputEvents.MinimumSpeedStraightAction);
                 }
             }
             else
@@ -350,6 +375,11 @@ namespace StarWriter.Core.Input
                 {
                     fullSpeedStraightEffectsStarted = false;
                     ship.StopShipControllerActions(InputEvents.FullSpeedStraightAction);
+                }
+                if (minimumSpeedStraightEffectsStarted)
+                {
+                    minimumSpeedStraightEffectsStarted = false;
+                    ship.StopShipControllerActions(InputEvents.MinimumSpeedStraightAction);
                 }
 
             }

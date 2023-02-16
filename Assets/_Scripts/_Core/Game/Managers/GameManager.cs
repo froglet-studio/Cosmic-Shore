@@ -154,11 +154,11 @@ namespace StarWriter.Core
             Jukebox.Instance.PlayNextSong(); // TODO null pointer on this line
         }
 
-        public void ReturnToMainMenu()
-        {
-            Debug.Log("GameManager.ReturnToMainMenu");
-            SceneManager.LoadScene(mainMenuScene);
-        }
+        //public void ReturnToMainMenu()
+        //{
+        //    Debug.Log("GameManager.ReturnToMainMenu");
+        //    SceneManager.LoadScene(mainMenuScene);
+        //}
 
         public void ReturnToLobby()
         {

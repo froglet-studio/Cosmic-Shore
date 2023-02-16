@@ -16,7 +16,7 @@ public class ChargeDisplay : MonoBehaviour
     readonly float maxChargeLevel = 1f;
     float currentChargeLevel;
 
-    public static readonly float OneFuelUnit = 1/14f;
+    public static readonly float OneFuelUnit = 1/7f;
 
     void Start()
     {

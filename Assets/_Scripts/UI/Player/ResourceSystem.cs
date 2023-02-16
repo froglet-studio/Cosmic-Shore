@@ -7,44 +7,43 @@ namespace StarWriter.Core
 {
     public enum ResourceType
     {
-        Charge = 0,
-        Ammunition = 1,
-        Level = 2,
+        Charge,
+        Ammunition,
     }
 
     public class ResourceSystem : MonoBehaviour
     {
-        [Tooltip("Max charge level from 0-1")]
-        [FormerlySerializedAs("maxFuel")]
+        [Tooltip("Max boost level from 0-1")]
+        [FormerlySerializedAs("maxBoost")]
         [SerializeField]
         [Range(0, 1)]
-        float maxCharge = 1f;
+        float maxBoost = 1f;
 
-        [Tooltip("Initial charge level from 0-1")]
+        [Tooltip("Initial boost level from 0-1")]
         [SerializeField]
         [Range(0, 1)]
-        float initialCharge = 1f;
+        float initialBoost = 1f;
 
-        float currentCharge;
+        float currentBoost;
 
-        public float CurrentCharge
+        public float CurrentBoost
         {
-            get => currentCharge;
+            get => currentBoost;
             private set
             {
-                currentCharge = value;
+                currentBoost = value;
 
-                if (ChargeDisplay != null)
-                    ChargeDisplay.UpdateDisplay(currentCharge);
+                if (BoostDisplay != null)
+                    BoostDisplay.UpdateDisplay(currentBoost);
             }
         }
 
-        [Tooltip("Max charge level from 0-1")]
+        [Tooltip("Max level from 0-1")]
         [SerializeField]
         [Range(0, 1)]
         float maxLevel = 1f;
 
-        [Tooltip("Initial charge level from 0-1")]
+        [Tooltip("Initial level from 0-1")]
         [SerializeField]
         [Range(0, 1)]
         float initialLevel = 0f;
@@ -60,52 +59,87 @@ namespace StarWriter.Core
             {
                 currentLevel = value;
 
-                if (ChargeDisplay != null)
-                    ChargeDisplay.UpdateDisplay(currentLevel);
+                if (LevelDisplay != null)
+                    LevelDisplay.UpdateDisplay(currentLevel);
             }
         }
 
-        public ChargeDisplay ChargeDisplay;
+        [Tooltip("Max ammo level from 0-1")]
+        [FormerlySerializedAs("maxAmmo")]
+        [SerializeField]
+        [Range(0, 1)]
+        float maxAmmo = 1f;
+
+        [Tooltip("Initial boost level from 0-1")]
+        [SerializeField]
+        [Range(0, 1)]
+        float initialAmmo = 1f;
+
+        float currentAmmo;
+
+        public float CurrentAmmo
+        {
+            get => currentAmmo;
+            private set
+            {
+                currentAmmo = value;
+
+                if (AmmoDisplay != null)
+                    AmmoDisplay.UpdateDisplay(currentAmmo);
+            }
+        }
+
+        public ChargeDisplay BoostDisplay;
+        public ChargeDisplay LevelDisplay;
+        public ChargeDisplay AmmoDisplay;
 
         // WIP
         // TODO: we can't use events like this anymore because each ship has a resource system - we need to communicate with the ship or resource system directly instead
         void OnEnable()
         {
-            Skimmer.OnSkim += ChangeChargeAmount;
-            ShipController.OnBoost += ChangeChargeAmount;
+            //Skimmer.OnSkim += ChangeBoostAmount;
+            ShipController.OnBoost += ChangeBoostAmount;
         }
 
         void OnDisable()
         {
-            Skimmer.OnSkim -= ChangeChargeAmount;
-            ShipController.OnBoost -= ChangeChargeAmount;
+            //Skimmer.OnSkim -= ChangeBoostAmount;
+            ShipController.OnBoost -= ChangeBoostAmount;
         }
 
         void Start()
         {
-            ResetCharge();
+            ResetBoost();
             ResetLevel();
+            ResetAmmo();
         }
 
-        public void ResetCharge()
+        public void ResetBoost()
         {
-            CurrentCharge = initialCharge;
+            CurrentBoost = initialBoost;
         }
         public void ResetLevel()
         {
             CurrentLevel = initialLevel;
         }
-
-        // TODO: get rid of UUID here
-        public void ChangeChargeAmount(string uuid, float amount)
+        public void ResetAmmo()
         {
-            CurrentCharge = Mathf.Clamp(currentCharge + amount, 0, maxCharge);
+            CurrentAmmo = initialAmmo;
         }
 
-        // TODO: get rid of UUID here
+        public void ChangeBoostAmount(string uuid, float amount)
+        {
+            CurrentBoost = Mathf.Clamp(currentBoost + amount, 0, maxBoost);
+        }
+
         public void ChangeLevel(string uuid, float amount)
         {
             CurrentLevel = Mathf.Clamp(currentLevel + amount, 0, maxLevel);
+        }
+
+        public void ChangeAmmoAmount(string uuid, float amount)
+        {
+            CurrentAmmo = Mathf.Clamp(currentAmmo + amount, 0, maxAmmo);
         }
     }
 }

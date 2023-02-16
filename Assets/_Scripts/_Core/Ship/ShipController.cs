@@ -95,6 +95,7 @@ public class ShipController : MonoBehaviour
     void ChargeBoost()
     {
         boostDecay += BoostDecayGrowthRate;
+        resourceSystem.ChangeBoostAmount(ship.Player.PlayerUUID, BoostDecayGrowthRate);
     }
 
     public void StartChargedBoost() 
@@ -108,10 +109,12 @@ public class ShipController : MonoBehaviour
         while (boostDecay > 1)
         {
             boostDecay = Mathf.Clamp(boostDecay - Time.deltaTime, 1, MaxBoostDecay);
-            Debug.Log(boostDecay);
+            resourceSystem.ChangeBoostAmount(ship.Player.PlayerUUID, -Time.deltaTime);
             yield return null;
         }
         shipData.BoostDecaying = false;
+        resourceSystem.ChangeBoostAmount(ship.Player.PlayerUUID, -resourceSystem.CurrentBoost);
+
     }
 
     protected void Pitch()
@@ -142,7 +145,7 @@ public class ShipController : MonoBehaviour
     protected virtual void MoveShip()
     {
         float boostAmount = 1f;
-        if (shipData.Boosting && resourceSystem.CurrentCharge > 0) // TODO: if we run out of fuel while full speed and straight the ship data still thinks we are boosting
+        if (shipData.Boosting && resourceSystem.CurrentBoost > 0) // TODO: if we run out of fuel while full speed and straight the ship data still thinks we are boosting
         {
             boostAmount = ship.boostMultiplier;
             OnBoost?.Invoke(uuid, ship.boostFuelAmount);

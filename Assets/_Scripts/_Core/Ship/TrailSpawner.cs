@@ -112,8 +112,9 @@ public class TrailSpawner : MonoBehaviour
         ZScaler = Mathf.Max(minBlockScale, maxBlockScale * (1 - Mathf.Abs(amount)));
         wavelength = Mathf.Max(minWavelength, initialWavelength * Mathf.Abs(amount)); 
     }
+
      
-    void PauseTrailSpawner()
+    public void PauseTrailSpawner()
     {
         spawnerEnabled = false;
     }
@@ -127,7 +128,7 @@ public class TrailSpawner : MonoBehaviour
         }
     }
 
-    void RestartTrailSpawnerAfterDelay()
+    public void RestartTrailSpawnerAfterDelay()
     {
         // Called when extending game play to resume spawning trails for player and AI
         StartCoroutine(RestartSpawnerAfterDelayCoroutine());
@@ -177,7 +178,7 @@ public class TrailSpawner : MonoBehaviour
 
         while (true)
         {
-            if (Time.deltaTime < .1f && spawnerEnabled)
+            if (Time.deltaTime < .1f && spawnerEnabled && !shipData.Attached)
             {
                 if (gap == 0)
                 {
