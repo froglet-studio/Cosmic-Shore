@@ -32,6 +32,7 @@ namespace StarWriter.Core.AI
 
         void Update()
         {
+            /*
             // Give the ships a small head start so some blocks exist
             if (trailSpawner.trailList.Count < padding + 1)
                 return;
@@ -70,6 +71,7 @@ namespace StarWriter.Core.AI
 
             gunMount.transform.Rotate(0, rotationSpeed * Time.deltaTime, 0);
             gun.FireGun(player.transform, gunnerSpeed*transform.forward);
+            */
         }
     }
 }

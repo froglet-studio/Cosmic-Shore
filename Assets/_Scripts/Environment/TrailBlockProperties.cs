@@ -10,6 +10,6 @@ namespace StarWriter.Core
         public float speedDebuffAmount; //don't use more than two sig figs, see ship.DebuffSpeed
         public TrailBlock trailBlock;
         public int Index;
-        public TrailSpawner TrailSpawner;
+        public Trail Trail;
     }
 }

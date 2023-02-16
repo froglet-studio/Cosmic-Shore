@@ -7,8 +7,9 @@ namespace StarWriter.Core
 {
     public enum ResourceType
     {
-        Charge,
-        Ammunition,
+        Charge = 0,
+        Ammunition = 1,
+        Level = 2,
     }
 
     public class ResourceSystem : MonoBehaviour
@@ -95,11 +96,13 @@ namespace StarWriter.Core
             CurrentLevel = initialLevel;
         }
 
+        // TODO: get rid of UUID here
         public void ChangeChargeAmount(string uuid, float amount)
         {
             CurrentCharge = Mathf.Clamp(currentCharge + amount, 0, maxCharge);
         }
 
+        // TODO: get rid of UUID here
         public void ChangeLevel(string uuid, float amount)
         {
             CurrentLevel = Mathf.Clamp(currentLevel + amount, 0, maxLevel);

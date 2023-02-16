@@ -18,10 +18,11 @@ namespace StarWriter.Core
         public string ID;
         public Vector3 InnerDimensions;
         public int Index;
-        public TrailSpawner TrailSpawner;
+        //public TrailSpawner TrailSpawner;
 
         public bool warp = false;
         GameObject shards;
+        public Trail Trail;
 
         public delegate void OnCollisionIncreaseScore(string uuid, float amount);
         public static event OnCollisionIncreaseScore AddToScore;
@@ -58,7 +59,7 @@ namespace StarWriter.Core
             trailBlockProperties.position = transform.position;
             trailBlockProperties.trailBlock = this;
             trailBlockProperties.Index = Index;
-            trailBlockProperties.TrailSpawner = TrailSpawner;
+            trailBlockProperties.Trail = Trail;
 
 
             StartCoroutine(CreateBlockCoroutine());

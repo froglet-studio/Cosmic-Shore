@@ -28,6 +28,7 @@ public class TrailSpawner : MonoBehaviour
 
     int spawnedTrailCount;
 
+    Trail trail = new();
     Material blockMaterial;
     Ship ship;
     ShipData shipData;
@@ -49,8 +50,7 @@ public class TrailSpawner : MonoBehaviour
 
     public static GameObject TrailContainer;
 
-    readonly Queue<TrailBlock> trailQueue = new(); // TODO: unused
-    readonly public List<TrailBlock> trailList = new();
+    
     bool spawnerEnabled = true;
     string ownerId;
 
@@ -152,7 +152,7 @@ public class TrailSpawner : MonoBehaviour
         Block.warp = warp;
         Block.GetComponent<MeshRenderer>().material = blockMaterial;
         Block.GetComponent<BoxCollider>().size = Vector3.one + VectorDivision((Vector3)blockMaterial.GetVector("_spread"), Block.InnerDimensions);
-        Block.TrailSpawner = this;
+        Block.Trail = trail;
 
         Block.Index = spawnedTrailCount;
         Block.ID = ownerId + "::" + spawnedTrailCount++;
@@ -161,8 +161,8 @@ public class TrailSpawner : MonoBehaviour
         if (Block.warp)
             wavelength = shards.GetComponent<WarpFieldData>().HybridVector(Block.transform).magnitude * initialWavelength;
 
-        trailQueue.Enqueue(Block);
-        trailList.Add(Block);
+        
+        trail.Add(Block);
 
     }
 
@@ -193,15 +193,12 @@ public class TrailSpawner : MonoBehaviour
                     Block.GetComponent<MeshRenderer>().material = blockMaterial;
                     Block.Index = spawnedTrailCount;
                     Block.ID = ownerId + "::" + spawnedTrailCount++;
-                    Block.TrailSpawner = this;
-                    
-                   
+                    Block.Trail = trail;
 
                     if (Block.warp)
                         wavelength = shards.GetComponent<WarpFieldData>().HybridVector(Block.transform).magnitude * initialWavelength;
 
-                    trailQueue.Enqueue(Block);
-                    trailList.Add(Block);
+                    trail.Add(Block);
                 }
                 else
                 {
