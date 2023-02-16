@@ -4,6 +4,7 @@ using StarWriter.Core;
 
 public class FinalPanelMenu : MonoBehaviour
 {
+    GameManager gameManager;
     [SerializeField] SnsShare snsShare;
     [SerializeField] public Button screenshotButton;
     [SerializeField] public Button replayButton;
@@ -20,6 +21,7 @@ public class FinalPanelMenu : MonoBehaviour
 
     void Start()
     {
+        gameManager = GameManager.Instance;
         screenshotButton.onClick.AddListener(() => snsShare.Share());
     }
 
@@ -36,6 +38,6 @@ public class FinalPanelMenu : MonoBehaviour
 
     public void OnClickMainMenu()
     {
-        GameManager.Instance.ReturnToMainMenu();
+        gameManager.ReturnToLobby();
     }
 }
