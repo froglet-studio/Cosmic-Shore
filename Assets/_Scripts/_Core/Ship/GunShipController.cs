@@ -8,6 +8,12 @@ public class GunShipController : ShipController
     [SerializeField] Gun rightGun;
     [SerializeField] TrailFollower trailFollower;
 
+    float chargeDepletionRate = -.05f;
+    float rechargeRate = .1f;
+
+    public float ProjectileScale = 1f;
+    public Vector3 BlockScale = new Vector3(1.5f, 1.5f, 3f);
+
     public int nextBlockIndex = 1;
     public int previousBlockIndex;
     //float trailLerpAmount;
@@ -40,7 +46,7 @@ public class GunShipController : ShipController
     protected override void Update()
     {
         base.Update();
-        Fire();
+        if (resourceSystem.CurrentAmmo > 0 && shipData.GunsActive) Fire();
     }
     protected override void MoveShip()
     {
@@ -73,9 +79,10 @@ public class GunShipController : ShipController
 
     void Fire()
     {
-        topGun.FireGun(player.transform, shipData.VelocityDirection * shipData.Speed);
-        leftGun.FireGun(player.transform, shipData.VelocityDirection * shipData.Speed);
-        rightGun.FireGun(player.transform, shipData.VelocityDirection * shipData.Speed);
+        resourceSystem.ChangeAmmoAmount(uuid, chargeDepletionRate * Time.deltaTime);
+        topGun.FireGun(player.transform, shipData.VelocityDirection * shipData.Speed, ProjectileScale, BlockScale);
+        leftGun.FireGun(player.transform, shipData.VelocityDirection * shipData.Speed, ProjectileScale, BlockScale);
+        rightGun.FireGun(player.transform, shipData.VelocityDirection * shipData.Speed, ProjectileScale, BlockScale);
     }
     void Slide()
     {
