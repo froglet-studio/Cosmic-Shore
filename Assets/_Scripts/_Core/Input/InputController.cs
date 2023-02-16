@@ -96,16 +96,16 @@ namespace StarWriter.Core.Input
                 rightTouch.x = Gamepad.current.rightStick.x.ReadValue();
                 rightTouch.y = Gamepad.current.rightStick.y.ReadValue();
 
-                if (Gamepad.current.leftStick.IsActuated() || Gamepad.current.rightStick.IsActuated() && Idle)
-                {
-                    Idle = false;
-                    ship.StopShipControllerActions(InputEvents.IdleAction);
-                }
-                else if (!Idle)
-                {
-                    Idle = true;
-                    ship.PerformShipControllerActions(InputEvents.IdleAction);
-                }
+                //if (Gamepad.current.leftStick.IsActuated() || Gamepad.current.rightStick.IsActuated() && Idle)
+                //{
+                //    Idle = false;
+                //    ship.StopShipControllerActions(InputEvents.IdleAction);
+                //}
+                //else if (!Idle)
+                //{
+                //    Idle = true;
+                //    ship.PerformShipControllerActions(InputEvents.IdleAction);
+                //}
 
                 XSum = Ease(rightTouch.x + leftTouch.x);
                 YSum = Ease(rightTouch.y + leftTouch.y);
@@ -114,6 +114,17 @@ namespace StarWriter.Core.Input
 
                 if (invertYEnabled)
                     YSum *= -1;
+
+                if (Gamepad.current.leftShoulder.wasPressedThisFrame)
+                {
+                    Idle = true;
+                    ship.PerformShipControllerActions(InputEvents.IdleAction);
+                }
+                if (Gamepad.current.leftShoulder.wasReleasedThisFrame)
+                {
+                    Idle = false;
+                    ship.StopShipControllerActions(InputEvents.IdleAction);
+                }
 
                 if (Gamepad.current.rightShoulder.wasPressedThisFrame && !PhoneFlipState)
                 {
@@ -130,13 +141,14 @@ namespace StarWriter.Core.Input
                 {
                     ship.PerformShipControllerActions(InputEvents.LeftStickAction);
                 }
-                if (Gamepad.current.rightTrigger.wasPressedThisFrame)
-                {
-                    ship.PerformShipControllerActions(InputEvents.RightStickAction);
-                }
                 if (Gamepad.current.leftTrigger.wasReleasedThisFrame)
                 {
                     ship.StopShipControllerActions(InputEvents.LeftStickAction);
+                }
+
+                if (Gamepad.current.rightTrigger.wasPressedThisFrame)
+                {
+                    ship.PerformShipControllerActions(InputEvents.RightStickAction);
                 }
                 if (Gamepad.current.rightTrigger.wasReleasedThisFrame)
                 {
