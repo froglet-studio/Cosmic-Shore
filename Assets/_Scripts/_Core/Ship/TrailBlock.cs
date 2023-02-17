@@ -121,15 +121,6 @@ namespace StarWriter.Core
 
                 Explode(impactVector, other.GetComponent<AOEExplosion>().Team, other.GetComponent<AOEExplosion>().Ship.Player.PlayerName);
             }
-            else if (IsProjectile(other.gameObject))
-            {
-                if (other.GetComponent<Projectile>().Team == Team)
-                    return;
-
-                var impactVector = other.GetComponent<Projectile>().Velocity;
-
-                Explode(impactVector, other.GetComponent<Projectile>().Team, other.GetComponent<Projectile>().Ship.Player.PlayerName); // TODO: need to attribute the explosion color to the team that made the explosion
-            }
         }
 
         public void Collide(Ship ship)
@@ -203,17 +194,11 @@ namespace StarWriter.Core
         {
             return go.layer == LayerMask.NameToLayer("Ships");
         }
-        private bool IsSkimmer(GameObject go)
-        {
-            return go.layer == LayerMask.NameToLayer("Skimmers");
-        }
+
         private bool IsExplosion(GameObject go)
         {
             return go.layer == LayerMask.NameToLayer("Explosions");
         }
-        private bool IsProjectile(GameObject go)
-        {
-            return go.layer == LayerMask.NameToLayer("Projectiles");
-        }
+
     }
 }

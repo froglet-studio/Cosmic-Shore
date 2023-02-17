@@ -343,7 +343,7 @@ MonoBehaviour:
   leftStickEffects: 000000000600000008000000
   flipEffects: 0a000000
   idleEffects: 0a000000
-  minimumSpeedStraightEffects: 
+  minimumSpeedStraightEffects: 0b000000
   cameraGrowthRate: 1
   cameraShrinkRate: 1
   minTrailYScale: 15

@@ -28,9 +28,9 @@ public class Crystal : MonoBehaviour
         collisions = new List<Collider>();
     }
 
-    void OnCollisionEnter(Collision collision)
+    void OnTriggerEnter(Collider other)
     {
-        collisions.Add(collision.collider);
+        collisions.Add(other);
     }
 
     private void Update()
@@ -44,15 +44,25 @@ public class Crystal : MonoBehaviour
 
     void Collide(Collider other)
     {
-        if (!IsShip(other.gameObject))
-            return;
+        Ship ship;
+        Vector3 velocity;
+        if (IsShip(other.gameObject))
+        {
+            ship = other.GetComponent<ShipGeometry>().Ship;
+            velocity = ship.GetComponent<ShipData>().Course * ship.GetComponent<ShipData>().Speed;
+        }
+        else if (IsProjectile(other.gameObject))
+        {
+            ship = other.GetComponent<Projectile>().Ship;
+            velocity = other.GetComponent<Projectile>().Velocity;
+        }
+        else return;
 
         //
         // Do the ship specific crystal stuff
         //
-
-        var ship = other.GetComponent<ShipGeometry>().Ship;
         ship.PerformCrystalImpactEffects(crystalProperties);
+
 
         //
         // Do the crystal stuff that always happens (ship independent)
@@ -83,6 +93,11 @@ public class Crystal : MonoBehaviour
     bool IsShip(GameObject go)
     {
         return go.layer == LayerMask.NameToLayer("Ships");
+    }
+
+    private bool IsProjectile(GameObject go)
+    {
+        return go.layer == LayerMask.NameToLayer("Projectiles");
     }
 
     public void SetOrigin(Vector3 origin)
