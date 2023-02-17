@@ -77,6 +77,8 @@ namespace StarWriter.Core
 
         float currentAmmo;
 
+        public float MaxAmmo { get { return maxAmmo; } }
+
         public float CurrentAmmo
         {
             get => currentAmmo;

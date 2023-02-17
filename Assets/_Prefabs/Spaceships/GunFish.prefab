@@ -338,7 +338,7 @@ MonoBehaviour:
   blockChargeChange: 0
   boostMultiplier: 2
   boostFuelAmount: 0
-  fullSpeedStraightEffects: 
+  fullSpeedStraightEffects: 0c000000
   rightStickEffects: 000000000600000008000000
   leftStickEffects: 000000000600000008000000
   flipEffects: 0a000000

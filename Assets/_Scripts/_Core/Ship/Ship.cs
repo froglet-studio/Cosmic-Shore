@@ -328,6 +328,9 @@ namespace StarWriter.Core
                     case ShipActions.PauseGuns:
                         shipData.GunsActive = false;
                         break;
+                    case ShipActions.FireBigGun:
+                        if (shipController is GunShipController) ((GunShipController)shipController).BigFire();
+                        break;
                 }
             }
         }

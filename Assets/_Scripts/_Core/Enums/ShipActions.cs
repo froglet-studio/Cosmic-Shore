@@ -13,5 +13,6 @@ public enum ShipActions
     ChargeBoost = 8,
     GrowTrail = 9,
     Detach = 10,
-    PauseGuns = 11
+    PauseGuns = 11,
+    FireBigGun = 12
 }
