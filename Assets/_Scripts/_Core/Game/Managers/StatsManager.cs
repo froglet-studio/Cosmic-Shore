@@ -4,6 +4,7 @@ using TMPro;
 using StarWriter.Core;
 using StarWriter.Utility.Singleton;
 using Newtonsoft.Json;
+using System;
 
 // TODO: pull out into separate file
 [System.Serializable]
@@ -280,10 +281,43 @@ public class StatsManager : Singleton<StatsManager>
     // TODO: we probably want a UI class that talks to the stats managaer and updates the UI rather than doing it in here directly
     void OutputRoundStats()
     {
+
+        string statsString = "<mspace=4.5px>\n";
+        statsString += "<b>Field".PadRight(38) + " | ";
+
+        foreach (var playerName in playerStats.Keys)
+        {
+            statsString += playerName.PadRight(10) + " | ";
+        }
+        statsString += "</b>\n";
+
+        var fieldInfoList = typeof(RoundStats).GetFields();
+        foreach (var fieldInfo in fieldInfoList)
+        {
+            string statValues = fieldInfo.Name.PadRight(35) + " | ";
+
+            foreach (var playerName in playerStats.Keys)
+            {
+                object fieldValue = fieldInfo.GetValue(playerStats[playerName]);
+                statValues += fieldValue.ToString().PadRight(10) + " | ";
+            }
+
+            statsString.Substring(statsString.Length - 3);
+            statsString += statValues + "\n";
+        }
+
+        statsString += "</mspace=4.5px>";
+
+
+        Debug.LogWarning(statsString.ToString());
+
+
         RecordStats = false;
         StatDump.text = JsonConvert.SerializeObject(playerStats, Formatting.Indented);
         Debug.LogWarning(JsonConvert.SerializeObject(playerStats, Formatting.Indented));
         Debug.LogWarning(JsonConvert.SerializeObject(teamStats, Formatting.Indented));
+
+        StatDump.text = statsString;
 
         int i = 0;
         foreach (var team in teamStats.Keys)

@@ -150,16 +150,7 @@ namespace StarWriter.Core
 
             SceneManager.LoadScene(ActiveGameScene);
             UnPauseGame();
-
-            Jukebox.Instance.PlayNextSong(); // TODO null pointer on this line
         }
-
-        //public void ReturnToMainMenu()
-        //{
-        //    Debug.Log("GameManager.ReturnToMainMenu");
-        //    SceneManager.LoadScene(mainMenuScene);
-        //}
-
         public void ReturnToLobby()
         {
             SceneManager.LoadScene(mainMenuScene);

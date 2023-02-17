@@ -52,15 +52,15 @@ public class GunShipController : ShipController
     {
         if (shipData.Attached && !attached)
         {
-            attached = !attached;
+            attached = shipData.Attached;
             trailFollower.Attach(shipData.AttachedTrailBlock);
         }
         else if (!shipData.Attached && attached)
         {
-            attached = !attached;
+            attached = shipData.Attached;
             trailFollower.Detach();
         }
-     
+
         if (attached)
         {
             Slide();
@@ -69,12 +69,6 @@ public class GunShipController : ShipController
         {
             base.MoveShip();
         }
-
-    //    var velocity = (minimumSpeed - (Mathf.Abs(inputController.XSum) * ThrottleScaler)) * transform.forward + (inputController.XSum * ThrottleScaler * transform.right);
-    //    shipData.VelocityDirection = velocity.normalized;
-    //    shipData.InputSpeed = velocity.magnitude;
-    //    transform.position += shipData.Speed * shipData.VelocityDirection * Time.deltaTime;
-
     }
 
     void Fire()
@@ -86,9 +80,6 @@ public class GunShipController : ShipController
     }
     void Slide()
     {
-
-        //var trail = shipData.AttachedTrailBlock.Trail;
-
         trailFollower.Throttle = inputController.XDiff;
         trailFollower.Move();
 
