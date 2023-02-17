@@ -104,7 +104,7 @@ namespace StarWriter.Core
 
             while (distanceTravelled < distance)
             {
-                distanceTravelled += distanceToNextBlock;
+                
 
                 startIndex += incrementor;
                 if (startIndex >= trailList.Count - 1 || startIndex <= 0) // End of trail encountered
@@ -119,6 +119,7 @@ namespace StarWriter.Core
                 nextBlock = trailList[startIndex + incrementor];
 
                 distanceToNextBlock = Vector3.Magnitude(nextBlock.transform.position - currentBlock.transform.position);
+                distanceTravelled += distanceToNextBlock;
             }
 
             var overflow = distanceTravelled - distance;

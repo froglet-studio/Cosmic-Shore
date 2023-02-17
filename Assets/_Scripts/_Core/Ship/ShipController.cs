@@ -159,14 +159,14 @@ public class ShipController : MonoBehaviour
 
         if (shipData.Drifting)
         {
-            ship.GetComponent<TrailSpawner>().SetDotProduct(Vector3.Dot(shipData.VelocityDirection, transform.forward));
+            ship.GetComponent<TrailSpawner>().SetDotProduct(Vector3.Dot(shipData.Course, transform.forward));
         }
         else
         {
-            shipData.VelocityDirection = transform.forward;
+            shipData.Course = transform.forward;
         }
 
-        transform.position += shipData.Speed * Time.deltaTime * shipData.VelocityDirection;
+        transform.position += shipData.Speed * Time.deltaTime * shipData.Course;
 
     }
 
