@@ -25,9 +25,9 @@ namespace StarWriter.Core
             blockMaterial = Ship.GetComponent<TrailSpawner>().GetBlockMaterial();
         }
 
-        public void FireGun(Transform containerTransform, Vector3 inheritedVelocity, float projectileScale, Vector3 blockScale)
+        public void FireGun(Transform containerTransform, Vector3 inheritedVelocity, float projectileScale, Vector3 blockScale, bool ignoreCooldown = false, float projectileTime = )
         {
-            if (onCooldown)
+            if (onCooldown && !ignoreCooldown)
                 return;
 
             onCooldown = true;

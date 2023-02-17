@@ -280,7 +280,7 @@ GameObject:
   - component: {fileID: 874579555101021523}
   - component: {fileID: 6315651686961786297}
   - component: {fileID: 3440187540988767646}
-  - component: {fileID: 6293426128044408357}
+  - component: {fileID: 4005043449782909879}
   - component: {fileID: 1435252848482629424}
   - component: {fileID: 7081412522392871879}
   m_Layer: 0
@@ -499,7 +499,7 @@ MonoBehaviour:
   raycastWidth: 2
   CrystalTransform: {fileID: 0}
   flowFieldData: {fileID: 0}
---- !u!114 &6293426128044408357
+--- !u!114 &4005043449782909879
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -508,14 +508,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 6417075533431866457}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 46ca128b16ccbfd42be69beb8b52be77, type: 3}
+  m_Script: {fileID: 11500000, guid: 858d27e97e36b394593e6f2fe8c73f06, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   Fusilage: {fileID: 6031211562208651239}
   LeftWing: {fileID: 8620160303732317513}
   RightWing: {fileID: 4377882507933526056}
-  animationScaler: 25
-  yawAnimationScaler: 80
+  animationScaler: 10
+  yawAnimationScaler: 30
   lerpAmount: 2
   smallLerpAmount: 0.7
 --- !u!114 &1435252848482629424
