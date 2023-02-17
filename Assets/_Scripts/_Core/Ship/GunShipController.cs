@@ -95,8 +95,8 @@ public class GunShipController : ShipController
 
 
         // TODO: need to restore the below block to give player ability to change direction
-        /*
-        if (Vector3.Dot(transform.forward, trailFollower.Heading) < 0)
+        
+        if (Vector3.Dot(transform.forward, shipData.Course) < 0)
         {
             moveForward = !moveForward;
 
@@ -105,7 +105,7 @@ public class GunShipController : ShipController
             else
                 trailFollower.SetDirection(TrailFollowerDirection.Backward);
         }
-        */
+        
 
         //if (moveForward && ship.TrailSpawner.gap > 0) nextBlockIndex = shipData.AttachedTrailBlock.Index + gapStep;
         //else if (ship.TrailSpawner.gap > 0) nextBlockIndex = shipData.AttachedTrailBlock.Index - gapStep;

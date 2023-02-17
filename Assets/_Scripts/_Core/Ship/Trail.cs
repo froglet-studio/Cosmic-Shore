@@ -125,7 +125,7 @@ namespace StarWriter.Core
             var overflow = distanceTravelled - distance;
 
             // OUT PARAMETERS
-            heading = (currentBlock.transform.position - nextBlock.transform.position).normalized;
+            heading = (nextBlock.transform.position - currentBlock.transform.position).normalized;
             endIndex = startIndex;
             finalLerp = 1 - (overflow / (currentBlock.transform.position - nextBlock.transform.position).magnitude);
             outDirection = (TrailFollowerDirection) incrementor;
