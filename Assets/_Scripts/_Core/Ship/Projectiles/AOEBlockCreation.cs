@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using StarWriter.Core;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -6,10 +7,12 @@ using UnityEngine.Serialization;
 public class AOEBlockCreation : AOEExplosion
 {
     [SerializeField] TrailBlock trailBlock;
-    [SerializeField] float blockCount = 8;
+    [SerializeField] float blockCount = 8; // TODO: make int
+    [SerializeField] int ringCount = 3;
     [SerializeField] float radius = 30f;
     [SerializeField] Vector3 blockScale = new Vector3(20f, 10f, 5f);
     Material blockMaterial;
+    List<Trail> trails = new List<Trail>();
 
     public void SetBlockMaterial(Material material)
     {
@@ -19,27 +22,28 @@ public class AOEBlockCreation : AOEExplosion
     protected override IEnumerator ExplodeCoroutine()
     {
         yield return new WaitForSeconds(ExplosionDelay);
-
-        for (int i = 0; i < blockCount; i++)
+        
+        for (int ring = 0; ring < ringCount; ring++)
         {
-            CreateRing(i,   0,    1, 0, 0);
-            CreateRing(i, .5f, 1.5f, 1, -.5f);
-            CreateRing(i,   0,   2f, 2, -1);
+            trails.Add(new Trail());
+            for (int block = 0; block < blockCount; block++)
+            {
+                CreateRingBlock(block, ring%2*.5f, ring/2f + 1f, ring, -ring/2f, trails[ring]);
+            }
         }
-
         yield return new WaitForEndOfFrame();
     }
 
-    void CreateRing(int i, float phase, float scale, float tilt, float sweep)
+    void CreateRingBlock(int i, float phase, float scale, float tilt, float sweep, Trail trail)
     {
         var position = transform.position +
                              scale * radius * Mathf.Cos(((i + phase) / blockCount) * 2 * Mathf.PI) * transform.right +
                              scale * radius * Mathf.Sin(((i + phase) / blockCount) * 2 * Mathf.PI) * transform.up +
                              sweep * radius * transform.forward;
-        CreateBlock(position, position + tilt * radius * transform.forward, "::AOE::" + Time.time + "::" + i);
+        CreateBlock(position, position + tilt * radius * transform.forward, "::AOE::" + Time.time + "::" + i, trail);
     }
 
-    void CreateBlock(Vector3 position, Vector3 lookPosition, string ownerId)
+    void CreateBlock(Vector3 position, Vector3 lookPosition, string ownerId, Trail trail)
     {
         var Block = Instantiate(trailBlock);
         Block.Team = Team;
@@ -50,5 +54,7 @@ public class AOEBlockCreation : AOEExplosion
         Block.ID = Block.ownerId + ownerId;  
         Block.InnerDimensions = blockScale;
         Block.transform.parent = TrailSpawner.TrailContainer.transform;
+        Block.Trail = trail;
+        trail.Add(Block);
     }
 }
