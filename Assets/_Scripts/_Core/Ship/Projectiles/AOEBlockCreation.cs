@@ -5,7 +5,6 @@ using UnityEngine.Serialization;
 
 public class AOEBlockCreation : AOEExplosion
 {
-    [FormerlySerializedAs("trail")]
     [SerializeField] TrailBlock trailBlock;
     [SerializeField] float blockCount = 8;
     [SerializeField] float radius = 30f;

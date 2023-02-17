@@ -96,6 +96,11 @@ namespace StarWriter.Core
                 NodeControlManager.Instance.AddBlock(team, playerName, TrailBlockProperties);
         }
 
+        public void Grow()
+        {
+            // TODO: start a block scaling coroutine that updates inner dimensions and volume tracking stats
+        }
+
         // TODO: none of the collision detection should be on the trailblock
         void OnTriggerEnter(Collider other)
         {
@@ -175,7 +180,7 @@ namespace StarWriter.Core
 
         public void Restore()
         {
-            Debug.Log("Restoring trail block");
+            Debug.Log("Restoring trailBlock block");
             if (StatsManager.Instance != null)
                 StatsManager.Instance.BlockRestored(team, playerName, TrailBlockProperties);
 

@@ -103,3 +103,6 @@ MonoBehaviour:
   firePeriod: 0.2
   Team: 0
   Ship: {fileID: 0}
+  trailBlock: {fileID: 4563009547826722997, guid: 68d3aecc8e78ee64ab14601164273680,
+    type: 3}
+  blockScale: {x: 1.5, y: 1.5, z: 3}

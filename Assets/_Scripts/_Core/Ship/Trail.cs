@@ -7,7 +7,7 @@ namespace StarWriter.Core
     public class Trail
     {
         readonly bool isLoop;
-        List<TrailBlock> trailList;
+        public List<TrailBlock> TrailList { get; }
         Dictionary<TrailBlock, int> trailBlockIndices;
 
         public Trail(bool isLoop = false)
@@ -16,9 +16,9 @@ namespace StarWriter.Core
 
             // TODO: maybe circular list is not needed
             if (isLoop)
-                trailList = new CircularList<TrailBlock>();
+                TrailList = new CircularList<TrailBlock>();
             else
-                trailList = new List<TrailBlock>();
+                TrailList = new List<TrailBlock>();
             
 
             trailBlockIndices = new Dictionary<TrailBlock, int>();
@@ -26,8 +26,8 @@ namespace StarWriter.Core
 
         public void Add(TrailBlock block)
         {
-            trailBlockIndices.Add(block, trailList.Count);
-            trailList.Add(block);
+            trailBlockIndices.Add(block, TrailList.Count);
+            TrailList.Add(block);
         }
 
         public int GetBlockIndex(TrailBlock block)
@@ -47,8 +47,8 @@ namespace StarWriter.Core
         {
             int incrementor = (int) direction;   // Fun bit of cleverness, enum forward is 1 and backward is -1
             var distanceTravelled = 0f;
-            var currentBlock = trailList[index];
-            var nextBlock = trailList[index + incrementor];
+            var currentBlock = TrailList[index];
+            var nextBlock = TrailList[index + incrementor];
             var lookAheadBlocks = new List<TrailBlock> { currentBlock };
 
             var distanceToNextBlock = Vector3.Magnitude(nextBlock.transform.position - currentBlock.transform.position) * (1 - lerp);
@@ -60,16 +60,16 @@ namespace StarWriter.Core
                 lookAheadBlocks.Add(nextBlock);
 
                 index += incrementor;
-                if (index >= trailList.Count-1 || index <= 0) // End of trail encountered
+                if (index >= TrailList.Count-1 || index <= 0) // End of trail encountered
                 {
                     if (isLoop)
-                        index %= trailList.Count;
+                        index %= TrailList.Count;
                     else
                         incrementor *= -1;
                 }
 
-                currentBlock = trailList[index];
-                nextBlock = trailList[index + incrementor];
+                currentBlock = TrailList[index];
+                nextBlock = TrailList[index + incrementor];
 
                 distanceToNextBlock = Vector3.Magnitude(nextBlock.transform.position - currentBlock.transform.position);
             }
@@ -93,8 +93,8 @@ namespace StarWriter.Core
         {
             int incrementor = (int)direction;   // Fun bit of cleverness, enum forward is 1 and backward is -1
             var distanceTravelled = 0f;
-            var currentBlock = trailList[startIndex];
-            var nextBlock = trailList[startIndex + incrementor];
+            var currentBlock = TrailList[startIndex];
+            var nextBlock = TrailList[startIndex + incrementor];
 
             //Debug.Log($"Project: {currentBlock.transform.position},{nextBlock.transform.position}");
 
@@ -107,16 +107,16 @@ namespace StarWriter.Core
                 
 
                 startIndex += incrementor;
-                if (startIndex >= trailList.Count - 1 || startIndex <= 0) // End of trail encountered
+                if (startIndex >= TrailList.Count - 1 || startIndex <= 0) // End of trail encountered
                 {
                     if (isLoop)
-                        startIndex %= trailList.Count;
+                        startIndex %= TrailList.Count;
                     else
                         incrementor *= -1;
                 }
 
-                currentBlock = trailList[startIndex];
-                nextBlock = trailList[startIndex + incrementor];
+                currentBlock = TrailList[startIndex];
+                nextBlock = TrailList[startIndex + incrementor];
 
                 distanceToNextBlock = Vector3.Magnitude(nextBlock.transform.position - currentBlock.transform.position);
                 distanceTravelled += distanceToNextBlock;
@@ -136,7 +136,7 @@ namespace StarWriter.Core
         // TODO: bounds checking
         public TrailBlock GetBlock(int blockIndex)
         {
-            return trailList[blockIndex];
+            return TrailList[blockIndex];
         }
     }
 

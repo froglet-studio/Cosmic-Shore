@@ -7,7 +7,6 @@ using UnityEngine.Serialization;
 [RequireComponent(typeof(Ship))]
 public class TrailSpawner : MonoBehaviour
 {
-    [FormerlySerializedAs("trail")]
     [SerializeField] TrailBlock trailBlock;
     [SerializeField] Skimmer skimmer;
 
@@ -92,7 +91,7 @@ public class TrailSpawner : MonoBehaviour
         waitTime = state ? defaultWaitTime*3 : defaultWaitTime;
     }
 
-    [Tooltip("Number of proximal blocks before trail block size reaches minimum")]
+    [Tooltip("Number of proximal blocks before trailBlock block size reaches minimum")]
     [SerializeField] public int MaxNearbyBlockCount = 10;
     [SerializeField] float minBlockScale = 1;
     [SerializeField] float maxBlockScale = 1;

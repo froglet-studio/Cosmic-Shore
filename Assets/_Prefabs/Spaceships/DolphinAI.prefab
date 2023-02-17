@@ -744,7 +744,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 909fb5cbbca8c4549b5a9df56d837e55, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  trail: {fileID: 4563009547826722997, guid: 4e280247faa1d154fa25d1e92df405dc, type: 3}
+  trailBlock: {fileID: 4563009547826722997, guid: 4e280247faa1d154fa25d1e92df405dc,
+    type: 3}
   skimmer: {fileID: 874579554510349383}
   offset: 0
   initialWavelength: 9
@@ -758,6 +759,8 @@ MonoBehaviour:
   MaxNearbyBlockCount: 10
   minBlockScale: 1
   maxBlockScale: 1
+  XScaler: 1
+  YScaler: 1
 --- !u!114 &874579555101021523
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -770,13 +773,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9846c9cd6cfac424797ca640ebcb7a04, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  InputSpeed: 1
-  SpeedMultiplier: 1
-  Speed: 0
+  inputSpeed: 1
+  speedMultiplier: 1
+  speed: 0
   Boosting: 0
+  ChargingBoost: 0
   BoostDecaying: 0
   Drifting: 0
-  VelocityDirection: {x: 0, y: 0, z: 0}
+  Attached: 0
+  AttachedTrailBlock: {fileID: 0}
+  GunsActive: 1
+  Course: {x: 0, y: 0, z: 0}
   blockRotation: {x: 0, y: 0, z: 0, w: 0}
 --- !u!114 &874579555101021527
 MonoBehaviour:
@@ -793,10 +800,7 @@ MonoBehaviour:
   Name: Dolphin
   ShipType: 7
   nearFieldSkimmer: {fileID: 874579554510349383}
-  farFieldSkimmer: {fileID: 0}
   OrientationHandle: {fileID: 2897121333247873258}
-  AOEPrefab: {fileID: 2728798890556433942, guid: 4a855af160021d241b8c1ac70cf2d792,
-    type: 3}
   shipGeometries:
   - {fileID: 4662679416581426262}
   - {fileID: 8921444315668696485}
@@ -808,36 +812,49 @@ MonoBehaviour:
   - {fileID: 8211653562881954920}
   TrailSpawner: {fileID: 874579555101021522}
   head: {fileID: 0}
+  AOEPrefab: {fileID: 2728798890556433942, guid: 4a855af160021d241b8c1ac70cf2d792,
+    type: 3}
+  farFieldSkimmer: {fileID: 0}
   crystalImpactEffects: 04000000050000000200000006000000
   trailBlockImpactEffects: 030000000200000001000000
-  boostMultiplier: 4
-  boostFuelAmount: -0.01
-  rotationScaler: 190
-  rotationThrottleScaler: 0.5
   minExplosionScale: 100
   maxExplosionScale: 400
-  blockFuelChange: 0
-  closeCamDistance: 0
-  farCamDistance: 0
-  cameraGrowthRate: 1
-  cameraShrinkRate: 1
-  minFarFieldSkimmerScale: 100
-  maxFarFieldSkimmerScale: 200
-  minNearFieldSkimmerScale: 15
-  maxNearFieldSkimmerScale: 100
-  skimmerGrowthRate: 1
-  skimmerShrinkRate: 1
-  minGap: 1
-  maxGap: 1
-  throttle: 50
-  BoostDecayGrowthRate: 0.03
-  MaxBoostDecay: 10
+  blockChargeChange: 0
+  boostMultiplier: 4
+  boostFuelAmount: -0.01
   fullSpeedStraightEffects: 
   rightStickEffects: 
   leftStickEffects: 
   flipEffects: 
   idleEffects: 
+  minimumSpeedStraightEffects: 
+  cameraGrowthRate: 1
+  cameraShrinkRate: 1
+  minTrailYScale: 15
+  maxTrailYScale: 100
+  skimmerGrowthRate: 1
+  skimmerShrinkRate: 1
+  trailGrowthRate: 1
+  trailShrinkRate: 1
+  levelEffects: 
+  minFarFieldSkimmerScale: 100
+  maxFarFieldSkimmerScale: 200
+  minNearFieldSkimmerScale: 15
+  maxNearFieldSkimmerScale: 100
+  minGap: 1
+  maxGap: 1
+  minProjectileScale: 1
+  maxProjectileScale: 10
+  minProjectileBlockScale: {x: 1.5, y: 1.5, z: 3}
+  maxProjectileBlockScale: {x: 1.5, y: 1.5, z: 30}
   controlOverrides: 
+  closeCamDistance: 0
+  farCamDistance: 0
+  throttle: 50
+  BoostDecayGrowthRate: 0.03
+  MaxBoostDecay: 10
+  rotationScaler: 190
+  rotationThrottleScaler: 0.5
   inputController: {fileID: 0}
 --- !u!114 &3440187540988767646
 MonoBehaviour:
@@ -875,11 +892,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 737294a573670f74389a7af68df314d5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  maxCharge: 1
-  initialCharge: 1
+  maxBoost: 1
+  initialBoost: 1
   maxLevel: 1
   initialLevel: 0
-  ChargeDisplay: {fileID: 0}
+  maxAmmo: 1
+  initialAmmo: 1
+  BoostDisplay: {fileID: 0}
+  LevelDisplay: {fileID: 0}
+  AmmoDisplay: {fileID: 0}
 --- !u!114 &1871436205027819587
 MonoBehaviour:
   m_ObjectHideFlags: 0
