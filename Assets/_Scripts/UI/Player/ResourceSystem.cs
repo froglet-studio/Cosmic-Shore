@@ -9,12 +9,13 @@ namespace StarWriter.Core
     {
         Charge,
         Ammunition,
+        Boost,
+        Level
     }
 
     public class ResourceSystem : MonoBehaviour
     {
         [Tooltip("Max boost level from 0-1")]
-        [FormerlySerializedAs("maxBoost")]
         [SerializeField]
         [Range(0, 1)]
         float maxBoost = 1f;
@@ -65,7 +66,6 @@ namespace StarWriter.Core
         }
 
         [Tooltip("Max ammo level from 0-1")]
-        [FormerlySerializedAs("maxAmmo")]
         [SerializeField]
         [Range(0, 1)]
         float maxAmmo = 1f;

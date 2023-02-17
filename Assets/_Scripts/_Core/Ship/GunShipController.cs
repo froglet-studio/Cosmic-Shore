@@ -74,19 +74,25 @@ public class GunShipController : ShipController
     void Fire()
     {
         resourceSystem.ChangeAmmoAmount(uuid, chargeDepletionRate * Time.deltaTime);
-        topGun.FireGun(player.transform, shipData.VelocityDirection * shipData.Speed, ProjectileScale, BlockScale);
-        leftGun.FireGun(player.transform, shipData.VelocityDirection * shipData.Speed, ProjectileScale, BlockScale);
-        rightGun.FireGun(player.transform, shipData.VelocityDirection * shipData.Speed, ProjectileScale, BlockScale);
+        topGun.FireGun(player.transform, shipData.Course * shipData.Speed, ProjectileScale, BlockScale);
+        leftGun.FireGun(player.transform, shipData.Course * shipData.Speed, ProjectileScale, BlockScale);
+        rightGun.FireGun(player.transform, shipData.Course * shipData.Speed, ProjectileScale, BlockScale);
     }
     void Slide()
     {
+        resourceSystem.ChangeAmmoAmount(uuid, rechargeRate * Time.deltaTime);
         trailFollower.Throttle = inputController.XDiff;
         trailFollower.Move();
 
         shipData.AttachedTrailBlock = trailFollower.AttachedTrailBlock;
 
         if (shipData.AttachedTrailBlock.destroyed)
+        {
             shipData.AttachedTrailBlock.Restore();
+            shipData.AttachedTrailBlock.Steal(player.PlayerName, player.Team);
+        }
+            
+
 
         // TODO: need to restore the below block to give player ability to change direction
         /*

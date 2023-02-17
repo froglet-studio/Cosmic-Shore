@@ -25,14 +25,16 @@ namespace StarWriter.Core
 
         public bool IsAttached { get { return attachedTrail != null; } }
         public TrailBlock AttachedTrailBlock { get { return attachedTrail.GetBlock(attachedBlockIndex); } }
-        public Vector3 Heading { get; private set; }
+
+        ShipData shipData;
 
         void Start()
         {
             // TODO: find a better way of setting team that doesn't assume a ship
             team = GetComponent<Ship>().Team;
+            shipData = GetComponent<ShipData>();
         }
-        void Update() {}
+        void Update() {} 
 
         public void Attach(TrailBlock trailBlock)
         {
@@ -85,17 +87,23 @@ namespace StarWriter.Core
                 
                 distanceToNextBlock = Vector3.Magnitude(nextBlock.transform.position - currentBlock.transform.position);
                 speedToNextBlock = Throttle * GetTerrainAwareBlockSpeed(currentBlock);
+                shipData.InputSpeed = speedToNextBlock;
+                speedToNextBlock = shipData.Speed;
+
                 timeToNextBlock = distanceToNextBlock / speedToNextBlock;
             }
+
 
             // Accumulate the remain
             distanceToTravel += speedToNextBlock * timeRemaining;
 
             // Do the movement and save the out direction
             transform.position = attachedTrail.Project(attachedBlockIndex, percentTowardNextBlock, direction, distanceToTravel, 
-                                                      out attachedBlockIndex, out percentTowardNextBlock, out TrailFollowerDirection outDirection, out Vector3 heading);
+                                                      out attachedBlockIndex, out percentTowardNextBlock, out TrailFollowerDirection outDirection, out Vector3 course);
 
-            Heading = heading;
+
+            shipData.Course = course;
+            
 
             if (outDirection != direction)
             {

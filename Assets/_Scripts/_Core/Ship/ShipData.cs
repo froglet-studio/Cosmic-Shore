@@ -5,9 +5,12 @@ namespace StarWriter.Core
     [System.Serializable]
     public class ShipData : MonoBehaviour
     {
-        public float InputSpeed = 1;
-        public float SpeedMultiplier = 1;
-        public float Speed;
+        [SerializeField] float inputSpeed = 1;
+                  public float InputSpeed { set { inputSpeed = Mathf.Max(value, 0); speed = inputSpeed * speedMultiplier;}}
+        [SerializeField] float speedMultiplier = 1;
+                  public float SpeedMultiplier { set { speedMultiplier = Mathf.Max(value, 0); speed = inputSpeed * speedMultiplier; } } 
+        [SerializeField] float speed;
+                  public float Speed { get { speed = inputSpeed * speedMultiplier; return speed; } }
 
         public bool Boosting = false;
         public bool ChargingBoost = false;
@@ -19,13 +22,7 @@ namespace StarWriter.Core
 
         public bool GunsActive = true;
 
-        public Vector3 VelocityDirection;
+        public Vector3 Course;
         public Quaternion blockRotation;
-
-        void Update()
-        {
-            if (SpeedMultiplier < 0) SpeedMultiplier = 0;
-            Speed = InputSpeed * SpeedMultiplier;
-        }
     }
 }
