@@ -76,7 +76,7 @@ public class GunShipController : ShipController
         if (resourceSystem.CurrentAmmo > resourceSystem.MaxAmmo / 2f)
         {
             resourceSystem.ChangeAmmoAmount(uuid, -resourceSystem.MaxAmmo / 4f);
-            topGun.FireGun(player.transform, shipData.Course * shipData.Speed, ProjectileScale * 15, BlockScale * 2, true);
+            topGun.FireGun(player.transform, shipData.Course * shipData.Speed * 2, ProjectileScale * 15, BlockScale * 2, true, 4f);
         }
         
     }

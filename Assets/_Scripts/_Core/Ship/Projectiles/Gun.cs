@@ -25,7 +25,7 @@ namespace StarWriter.Core
             blockMaterial = Ship.GetComponent<TrailSpawner>().GetBlockMaterial();
         }
 
-        public void FireGun(Transform containerTransform, Vector3 inheritedVelocity, float projectileScale, Vector3 blockScale, bool ignoreCooldown = false, float projectileTime = )
+        public void FireGun(Transform containerTransform, Vector3 inheritedVelocity, float projectileScale, Vector3 blockScale, bool ignoreCooldown = false, float projectileTime = 2)
         {
             if (onCooldown && !ignoreCooldown)
                 return;
@@ -41,7 +41,7 @@ namespace StarWriter.Core
             projectile.Team = Team;
             projectile.Ship = Ship;
 
-            StartCoroutine(MoveProjectileCoroutine(projectile, blockScale));
+            StartCoroutine(MoveProjectileCoroutine(projectile, blockScale, projectileTime));
             StartCoroutine(CooldownCoroutine());
         }
 
@@ -67,7 +67,7 @@ namespace StarWriter.Core
             trail.Add(Block);
         }
 
-        IEnumerator MoveProjectileCoroutine(Projectile projectile, Vector3 blockScale)
+        IEnumerator MoveProjectileCoroutine(Projectile projectile, Vector3 blockScale, float projectileTime)
         {
             var elapsedTime = 0f;
             var velocity = projectile.Velocity;
