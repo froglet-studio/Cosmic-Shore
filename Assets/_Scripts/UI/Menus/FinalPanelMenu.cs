@@ -28,7 +28,7 @@ public class FinalPanelMenu : MonoBehaviour
 
     void OnGameOver()
     {
-        replayButton.gameObject.SetActive(true);
+        //replayButton.gameObject.SetActive(true);
         screenshotButton?.gameObject.SetActive(true);
     }
 
