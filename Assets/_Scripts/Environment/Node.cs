@@ -26,6 +26,9 @@ public class Node : MonoBehaviour
 
     public void ChangeVolume(Teams team, float volume)
     {
+        if (!teamVolumes.ContainsKey(team))
+            teamVolumes.Add(team, 0);
+
         teamVolumes[team] += volume;
     }
 
@@ -41,6 +44,9 @@ public class Node : MonoBehaviour
     {
         get
         {
+            if (!enabled || !teamVolumes.ContainsKey(Teams.Green) || !teamVolumes.ContainsKey(Teams.Red))
+                return Teams.None;
+
             if (teamVolumes[Teams.Green] < volumeControlThreshold && teamVolumes[Teams.Red] < volumeControlThreshold)
                 return Teams.None;
 
