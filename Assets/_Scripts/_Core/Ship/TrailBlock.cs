@@ -1,5 +1,6 @@
 ﻿using StarWriter.Core.HangerBuilder;
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace StarWriter.Core
@@ -10,6 +11,8 @@ namespace StarWriter.Core
         public GameObject ParticleEffect; // TODO: move this so it references the Team to retrieve the effect.
         [SerializeField] Material material;
         [SerializeField] public TrailBlockProperties TrailBlockProperties;
+
+        readonly List<ShipScaleModifier> ScaleModifiers = new List<ShipScaleModifier>();
 
         [SerializeField] float growthRate = .5f;
         public string ownerId;  // TODO: is the ownerId the player name? I hope it is.
@@ -96,10 +99,60 @@ namespace StarWriter.Core
                 NodeControlManager.Instance.AddBlock(team, playerName, TrailBlockProperties);
         }
 
-        public void Grow()
+        //IEnumerator GrowBlockCoroutine(float amount)
+        //{
+
+        //    var DefaultTransformScale = InnerDimensions;
+        //    var size = 1;
+
+        //    if (warp)
+        //        DefaultTransformScale *= shards.GetComponent<WarpFieldData>().HybridVector(transform).magnitude;
+
+        //    transform.localScale = DefaultTransformScale * size;
+
+        //    while (size < 1 + amount)
+        //    {
+        //        transform.localScale = DefaultTransformScale * size;
+        //        size += growthRate * Time.deltaTime;
+
+        //        yield return null;
+        //    }
+
+        //    // Add block to team score when created
+        //    if (StatsManager.Instance != null)
+        //        StatsManager.Instance.BlockCreated(team, playerName, TrailBlockProperties);
+
+        //    if (NodeControlManager.Instance != null)
+        //        NodeControlManager.Instance.AddBlock(team, playerName, TrailBlockProperties);
+        //}
+
+        public void Grow(float amount)
         {
-            // TODO: start a block scaling coroutine that updates inner dimensions and volume tracking stats
+            //StartCoroutine(GrowBlockCoroutine(amount));// TODO: start a block scaling coroutine that updates inner dimensions and volume tracking stats
         }
+
+
+
+        //void ApplyScaleModifiers()
+        //{
+        //    float accumulatedSpeedModification = 1;
+        //    for (int i = ScaleModifiers.Count - 1; i >= 0; i--)
+        //    {
+        //        var modifier = ScaleModifiers[i];
+        //        modifier.elapsedTime += Time.deltaTime;
+        //        ScaleModifiers[i] = modifier;
+
+        //        if (modifier.elapsedTime >= modifier.duration)
+        //            ScaleModifiers.RemoveAt(i);
+        //        else
+        //            accumulatedSpeedModification *= Mathf.Lerp(modifier.initialValue, 1f, modifier.elapsedTime / modifier.duration);
+        //    }
+
+        //    accumulatedSpeedModification = Mathf.Min(accumulatedSpeedModification, scaleModifiersModifierMax);
+        //    ship.shipData.SpeedMultiplier = accumulatedSpeedModification;
+        //}
+
+
 
         // TODO: none of the collision detection should be on the trailblock
         void OnTriggerEnter(Collider other)

@@ -523,7 +523,7 @@ MonoBehaviour:
   AOEPrefab: {fileID: 2728798890556433942, guid: f5ecfb9923155a84c860975d559b2714,
     type: 3}
   farFieldSkimmer: {fileID: 0}
-  crystalImpactEffects: 0000000005000000
+  crystalImpactEffects: 0000000001000000
   trailBlockImpactEffects: 00000000030000000500000006000000
   minExplosionScale: 50
   maxExplosionScale: 500
@@ -535,6 +535,7 @@ MonoBehaviour:
   leftStickEffects: 
   flipEffects: 
   idleEffects: 
+  minimumSpeedStraightEffects: 
   cameraGrowthRate: 8
   cameraShrinkRate: 8
   minTrailYScale: 1
@@ -623,16 +624,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9846c9cd6cfac424797ca640ebcb7a04, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  InputSpeed: 1
-  SpeedMultiplier: 1
-  Speed: 0
+  inputSpeed: 1
+  speedMultiplier: 1
+  speed: 0
   Boosting: 0
   ChargingBoost: 0
   BoostDecaying: 0
   Drifting: 0
   Attached: 0
   AttachedTrailBlock: {fileID: 0}
-  VelocityDirection: {x: 0, y: 0, z: 0}
+  GunsActive: 1
+  Course: {x: 0, y: 0, z: 0}
   blockRotation: {x: 0, y: 0, z: 0, w: 0}
 --- !u!114 &3440187540988767646
 MonoBehaviour:
@@ -670,6 +672,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 737294a573670f74389a7af68df314d5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  usesBoost: 1
+  usesLevels: 0
+  usesAmmo: 0
   maxBoost: 1
   initialBoost: 1
   maxLevel: 1

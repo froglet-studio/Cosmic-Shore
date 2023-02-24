@@ -204,7 +204,7 @@ namespace StarWriter.Core
                         AOEExplosion.Team = team;
                         AOEExplosion.Ship = this;
                         AOEExplosion.SetPositionAndRotation(transform.position, transform.rotation);
-                        AOEExplosion.MaxScale =  Mathf.Max(minExplosionScale, resourceSystem.CurrentBoost * maxExplosionScale);
+                        AOEExplosion.MaxScale =  Mathf.Max(minExplosionScale, resourceSystem.CurrentAmmo * maxExplosionScale);
 
                         if (AOEExplosion is AOEBlockCreation aoeBlockcreation)
                             aoeBlockcreation.SetBlockMaterial(TrailSpawner.GetBlockMaterial());

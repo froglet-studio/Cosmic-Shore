@@ -17,7 +17,7 @@ public class ChargeDisplay : MonoBehaviour
     readonly float maxChargeLevel = 1f;
     float currentChargeLevel;
 
-    public static readonly float OneFuelUnit = 1/7f;
+    public static readonly float OneFuelUnit = 1/10f;
 
     void Start()
     {
@@ -37,7 +37,7 @@ public class ChargeDisplay : MonoBehaviour
         // bucket the percent of full and use it as an index into the sprite list
         int maxIndex = fuelLevelImages.Count - 1;
         float percentOfFull = (currentChargeLevel / maxChargeLevel);
-        int index = maxIndex - (int)Mathf.Floor(percentOfFull * maxIndex);
+        int index = (int)Mathf.Floor(percentOfFull * maxIndex);
 
         if (verboseLogging)
             Debug.Log($"FuelBar.UpdateFuelBarDisplay - percentOfFull:{percentOfFull}, maxIndex:{maxIndex}, index:{index}");

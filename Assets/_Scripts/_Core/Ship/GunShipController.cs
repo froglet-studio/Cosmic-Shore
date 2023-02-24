@@ -101,7 +101,7 @@ public class GunShipController : ShipController
             shipData.AttachedTrailBlock.Restore();
             shipData.AttachedTrailBlock.Steal(player.PlayerName, player.Team);
         }
-        else shipData.AttachedTrailBlock.Grow();
+        else shipData.AttachedTrailBlock.Grow(4);
             
 
 

@@ -2,6 +2,7 @@ using System;
 using UnityEngine;
 using StarWriter.Core.Input;
 using UnityEngine.Serialization;
+using System.Collections;
 
 namespace StarWriter.Core
 {
@@ -15,6 +16,10 @@ namespace StarWriter.Core
 
     public class ResourceSystem : MonoBehaviour
     {
+        [SerializeField] bool usesBoost;
+        [SerializeField] bool usesLevels;
+        [SerializeField] bool usesAmmo;
+
         [Tooltip("Max boost level from 0-1")]
         [SerializeField]
         [Range(0, 1)]
@@ -111,9 +116,19 @@ namespace StarWriter.Core
 
         void Start()
         {
-            ResetBoost();
-            ResetLevel();
-            ResetAmmo();
+            StartCoroutine(LateStart());
+        }
+
+        IEnumerator LateStart()
+        {
+            yield return new WaitForSeconds(.2f);
+
+            if (usesBoost) ResetBoost();
+            else BoostDisplay.gameObject.SetActive(false);
+            if (usesLevels) ResetLevel();
+            else LevelDisplay.gameObject.SetActive(false);
+            if (usesAmmo) ResetAmmo();
+            else AmmoDisplay.gameObject.SetActive(false);
         }
 
         public void ResetBoost()

@@ -326,10 +326,10 @@ MonoBehaviour:
   - {fileID: 2306761366267364778}
   TrailSpawner: {fileID: 874579555101021522}
   head: {fileID: 0}
-  AOEPrefab: {fileID: 2728798890556433942, guid: 4a855af160021d241b8c1ac70cf2d792,
+  AOEPrefab: {fileID: 2728798890556433942, guid: f5ecfb9923155a84c860975d559b2714,
     type: 3}
   farFieldSkimmer: {fileID: 3138628630497430536}
-  crystalImpactEffects: 0000000007000000
+  crystalImpactEffects: 000000000700000005000000
   trailBlockImpactEffects: 00000000030000000200000008000000
   minExplosionScale: 50
   maxExplosionScale: 500
@@ -478,6 +478,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 737294a573670f74389a7af68df314d5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  usesBoost: 0
+  usesLevels: 1
+  usesAmmo: 0
   maxBoost: 1
   initialBoost: 1
   maxLevel: 1
