@@ -8,14 +8,14 @@ using UnityEngine.Serialization;
 public class DartBoard : MonoBehaviour
 {
     [SerializeField] TrailBlock trailBlock;
-    [SerializeField] float blockCount = 6; // TODO: make int
-    [SerializeField] int ringCount = 6;
-    [SerializeField] float ringThickness = 30f;
-    [SerializeField] Vector3 blockScale = new Vector3(20f, 10f, 5f);
+    float blockCount = 6; // TODO: make int
+    int ringCount = 6;
+    float ringThickness = 30f;
+    Vector3 blockScale = new Vector3(20f, 10f, 5f);
 
 
     //dartboard position
-    [SerializeField] float dartBoardRadius = 200;
+    float dartBoardRadius = 300;
     public float difficultyAngle = 20;
     //Vector3 dartBoardPosition;
 
