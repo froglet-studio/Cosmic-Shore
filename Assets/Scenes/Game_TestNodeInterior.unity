@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0, g: 0, b: 0, a: 1}
+  m_IndirectSpecularColor: {r: 0.0037926815, g: 0.0032631278, b: 0.0034446984, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -7462,6 +7462,75 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_ShowMaskGraphic: 0
+--- !u!1001 &1270350427
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 145180626581237985, guid: 54f0f432989c18145a4ac711a4511ce9,
+        type: 3}
+      propertyPath: m_Name
+      value: DartBoard
+      objectReference: {fileID: 0}
+    - target: {fileID: 145180626581237999, guid: 54f0f432989c18145a4ac711a4511ce9,
+        type: 3}
+      propertyPath: m_RootOrder
+      value: 8
+      objectReference: {fileID: 0}
+    - target: {fileID: 145180626581237999, guid: 54f0f432989c18145a4ac711a4511ce9,
+        type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 32.029427
+      objectReference: {fileID: 0}
+    - target: {fileID: 145180626581237999, guid: 54f0f432989c18145a4ac711a4511ce9,
+        type: 3}
+      propertyPath: m_LocalPosition.y
+      value: -60.939873
+      objectReference: {fileID: 0}
+    - target: {fileID: 145180626581237999, guid: 54f0f432989c18145a4ac711a4511ce9,
+        type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 127.00074
+      objectReference: {fileID: 0}
+    - target: {fileID: 145180626581237999, guid: 54f0f432989c18145a4ac711a4511ce9,
+        type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 145180626581237999, guid: 54f0f432989c18145a4ac711a4511ce9,
+        type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 145180626581237999, guid: 54f0f432989c18145a4ac711a4511ce9,
+        type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 145180626581237999, guid: 54f0f432989c18145a4ac711a4511ce9,
+        type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 145180626581237999, guid: 54f0f432989c18145a4ac711a4511ce9,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 145180626581237999, guid: 54f0f432989c18145a4ac711a4511ce9,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 145180626581237999, guid: 54f0f432989c18145a4ac711a4511ce9,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 54f0f432989c18145a4ac711a4511ce9, type: 3}
 --- !u!1 &1307720189
 GameObject:
   m_ObjectHideFlags: 0
