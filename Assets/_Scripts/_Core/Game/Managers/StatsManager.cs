@@ -271,7 +271,7 @@ public class StatsManager : Singleton<StatsManager>
             playerStats.Add(playerName, new RoundStats());
     }
 
-    void ResetStats()
+    public void ResetStats()
     {
         RecordStats = true;
         teamStats = new Dictionary<Teams, RoundStats>();

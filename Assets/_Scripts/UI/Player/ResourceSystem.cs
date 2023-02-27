@@ -124,11 +124,11 @@ namespace StarWriter.Core
             yield return new WaitForSeconds(.2f);
 
             if (usesBoost) ResetBoost();
-            else BoostDisplay.gameObject.SetActive(false);
+            else BoostDisplay?.gameObject.SetActive(false);
             if (usesLevels) ResetLevel();
-            else LevelDisplay.gameObject.SetActive(false);
+            else LevelDisplay?.gameObject.SetActive(false);
             if (usesAmmo) ResetAmmo();
-            else AmmoDisplay.gameObject.SetActive(false);
+            else AmmoDisplay?.gameObject.SetActive(false);
         }
 
         public void ResetBoost()

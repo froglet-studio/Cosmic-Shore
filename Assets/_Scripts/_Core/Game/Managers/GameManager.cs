@@ -38,7 +38,6 @@ namespace StarWriter.Core
         [SerializeField] string gameTestDesign = "Game_TestDesign";
         [SerializeField] string hangarScene = "Hangar";
         [SerializeField] string tutorialGameScene = "Game_Tutorial";
-        string ActiveGameScene = "";
 
         void OnEnable()
         {
@@ -76,7 +75,6 @@ namespace StarWriter.Core
         public void OnClickTutorialButton()
         {
             UnPauseGame();
-            ActiveGameScene = tutorialGameScene;
             SceneManager.LoadScene(tutorialGameScene);
         }
 
@@ -120,7 +118,6 @@ namespace StarWriter.Core
             deathCount = 0;
             analyticsManager.LogLevelStart();
             UnPauseGame();
-            ActiveGameScene = scenename;
             SceneManager.LoadScene(scenename);
         }
 
@@ -148,7 +145,7 @@ namespace StarWriter.Core
             Debug.Log("GameManager.RestartGame");
             deathCount = 0;
 
-            SceneManager.LoadScene(ActiveGameScene);
+            SceneManager.LoadScene(SceneManager.GetActiveScene().name);
             UnPauseGame();
         }
         public void ReturnToLobby()
