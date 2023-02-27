@@ -91,7 +91,7 @@ namespace StarWriter.Core
                 yield return null;
             }
 
-            // Add block to team score when created
+            //Add block to team score when created
             if (StatsManager.Instance != null)
                 StatsManager.Instance.BlockCreated(team, playerName, TrailBlockProperties);
 

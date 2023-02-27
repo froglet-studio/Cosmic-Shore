@@ -24,7 +24,9 @@ public class AOEConicExplosion : AOEExplosion
         while (elapsedTime < ExplosionDuration)
         {
             elapsedTime += Time.deltaTime;
-            container.transform.localScale = Vector3.Lerp(Vector3.zero, MaxScaleVector, Mathf.Sin((elapsedTime / ExplosionDuration) * PI_OVER_TWO));
+            var lerpAmount = Mathf.Sin((elapsedTime / ExplosionDuration) * PI_OVER_TWO);
+            container.transform.localScale = Vector3.Lerp(Vector3.zero, MaxScaleVector, lerpAmount);
+            GetComponent<SphereCollider>().radius = container.transform.localScale.x / (container.transform.localScale.z * 2);
             Material.SetFloat("_Opacity", Mathf.Clamp((MaxScaleVector - container.transform.localScale).magnitude / MaxScaleVector.magnitude, 0, 1));
             yield return null;
         }
