@@ -44,6 +44,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c84cc795715b8664aa69c3c613612a4f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  isMuted: 0
-  tutorialEnabled: 1
-  gyroEnabled: 1
+  isAudioEnabled: 1
+  invertYEnabled: 0

@@ -53,13 +53,14 @@ public class CameraManager : SingletonPersistent<CameraManager>
         SetMainMenuCameraActive();
     }
 
-    void SetupGamePlayCameras()
+    public void SetupGamePlayCameras()
     {
         isCameraFlipEnabled = true;
 
         playerFollowTarget = GameObject.FindGameObjectWithTag("Player_Ship").transform;
         closeCamera.LookAt = farCamera.LookAt = deathCamera.LookAt = playerFollowTarget;
         closeCamera.Follow = farCamera.Follow = deathCamera.Follow = playerFollowTarget;
+        
         SetCloseCameraActive();
     }
 
