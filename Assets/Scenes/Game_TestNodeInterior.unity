@@ -9393,6 +9393,11 @@ PrefabInstance:
         type: 3}
     - target: {fileID: 145180626581237984, guid: 54f0f432989c18145a4ac711a4511ce9,
         type: 3}
+      propertyPath: difficultyAngle
+      value: 40
+      objectReference: {fileID: 0}
+    - target: {fileID: 145180626581237984, guid: 54f0f432989c18145a4ac711a4511ce9,
+        type: 3}
       propertyPath: greenTrailBlock
       value: 
       objectReference: {fileID: 4563009547826722997, guid: 8503108e8786e1a4caa36ddb1a58f00e,

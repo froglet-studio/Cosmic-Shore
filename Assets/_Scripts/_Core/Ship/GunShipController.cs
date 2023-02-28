@@ -73,7 +73,7 @@ public class GunShipController : ShipController
 
     public void BigFire()
     {
-        if (resourceSystem.CurrentAmmo > resourceSystem.MaxAmmo / 2f)
+        if (resourceSystem.CurrentAmmo > resourceSystem.MaxAmmo / 6f)
         {
             resourceSystem.ChangeAmmoAmount(uuid, -resourceSystem.MaxAmmo / 4f);
             topGun.FireGun(player.transform, shipData.Course * shipData.Speed * 2, ProjectileScale * 15, BlockScale * 2, true, 4f);
@@ -102,19 +102,23 @@ public class GunShipController : ShipController
             shipData.AttachedTrailBlock.Steal(player.PlayerName, player.Team);
         }
         else shipData.AttachedTrailBlock.Grow(4);
-            
+
 
 
         // TODO: need to restore the below block to give player ability to change direction
-        
-        if (Vector3.Dot(transform.forward, shipData.Course) < 0)
-        {
-            moveForward = !moveForward;
 
-            if (moveForward)
-                trailFollower.SetDirection(TrailFollowerDirection.Forward);
-            else
-                trailFollower.SetDirection(TrailFollowerDirection.Backward);
+        float lookThreshold = .4f;
+        if (Mathf.Abs(Vector3.Dot(transform.forward, shipData.Course)) >= lookThreshold)
+        {
+            if (Vector3.Dot(transform.forward, shipData.Course) < 0)
+            {
+                moveForward = !moveForward;
+
+                if (moveForward)
+                    trailFollower.SetDirection(TrailFollowerDirection.Forward);
+                else
+                    trailFollower.SetDirection(TrailFollowerDirection.Backward);
+            }
         }
         
 
