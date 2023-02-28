@@ -52,8 +52,9 @@ public class Player : MonoBehaviour
             case "FriendlyOne":
                 SetupAIShip(Hangar.Instance.LoadFriendlyAIShip()); 
                 break;
-            default: // Player
-                Ship shipInstance = Hangar.Instance.LoadPlayerShip();
+            case "PlayerOne":
+            case "PlayerTwo":
+                Ship shipInstance = Hangar.Instance.LoadPlayerShip(ShipTypes.Dolphin, Team);
                 shipInstance.transform.SetParent(shipContainer.transform, false);
                 shipInstance.GetComponent<AIPilot>().enabled = false;
 
@@ -61,6 +62,27 @@ public class Player : MonoBehaviour
                 inputController.ship = shipInstance;
 
                 ship = shipInstance.GetComponent<Ship>();
+                ship.Team = Team;
+                ship.Player = this;
+
+                if (boostDisplay != null)
+                    ship.GetComponent<ResourceSystem>().BoostDisplay = boostDisplay;
+                if (levelDisplay != null)
+                    ship.GetComponent<ResourceSystem>().LevelDisplay = levelDisplay;
+                if (levelDisplay != null)
+                    ship.GetComponent<ResourceSystem>().AmmoDisplay = ammoDisplay;
+
+                //gameManager.WaitOnPlayerLoading();
+                break;
+            default: // Single player game 
+                Ship shipInstance_ = Hangar.Instance.LoadPlayerShip(ShipTypes.Dolphin, Team);
+                shipInstance_.transform.SetParent(shipContainer.transform, false);
+                shipInstance_.GetComponent<AIPilot>().enabled = false;
+
+                var inputController_ = GetComponent<InputController>();
+                inputController_.ship = shipInstance_;
+
+                ship = shipInstance_.GetComponent<Ship>();
                 ship.Team = Team;
                 ship.Player = this;
 

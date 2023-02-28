@@ -64,6 +64,17 @@ public class CameraManager : SingletonPersistent<CameraManager>
         SetCloseCameraActive();
     }
 
+    public void SetupGamePlayCameras(Transform _transform)
+    {
+        isCameraFlipEnabled = true;
+
+        playerFollowTarget = _transform;
+        closeCamera.LookAt = farCamera.LookAt = deathCamera.LookAt = playerFollowTarget;
+        closeCamera.Follow = farCamera.Follow = deathCamera.Follow = playerFollowTarget;
+
+        SetCloseCameraActive();
+    }
+
     void SwitchToDeathCamera()
     {
         isCameraFlipEnabled = false;
@@ -151,13 +162,10 @@ public class CameraManager : SingletonPersistent<CameraManager>
         {
             float lerpRate;
             if (transposer.m_FollowOffset.z < distance)
-            {
                 lerpRate = .006f;
-            }
             else 
-            {
                 lerpRate = .002f;
-            }
+
             transposer.m_FollowOffset = Vector3.Lerp(transposer.m_FollowOffset, new Vector3(0, 0, distance), lerpRate);
             vCam.m_Lens.NearClipPlane = Mathf.Lerp(vCam.m_Lens.NearClipPlane, -distance / 5, lerpRate);
             yield return null;
@@ -173,12 +181,10 @@ public class CameraManager : SingletonPersistent<CameraManager>
     {
         var vCam = closeCamera.VirtualCameraGameObject.GetComponent<CinemachineVirtualCamera>();
         var transposer = vCam.GetCinemachineComponent<CinemachineTransposer>();
-        if (setCameraDistanceCoroutine != null) StopCoroutine(setCameraDistanceCoroutine);
+        if (setCameraDistanceCoroutine != null) 
+            StopCoroutine(setCameraDistanceCoroutine);
         if (transposer.m_FollowOffset != new Vector3(0, 0, distance))
-        {
             setCameraDistanceCoroutine = StartCoroutine(SetCameraDistanceCoroutine(closeCamera, distance));
-        }
-        
     }
 
     public void SetBothCameraDistances(float distance)
@@ -186,15 +192,6 @@ public class CameraManager : SingletonPersistent<CameraManager>
         SetCameraDistance(farCamera, distance);
         SetCameraDistance(closeCamera, distance);
     }
-
-    //public void ZoomOut()
-    //{
-    //    ZoomingOut = true;
-    //    StartCoroutine(ZoomOutCoroutine());
-    //}
-
-
-
     public void ZoomOut(float growthRate)
     {
         if (returnToNeutralCoroutine != null)

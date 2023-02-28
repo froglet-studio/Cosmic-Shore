@@ -57,6 +57,7 @@ public class ShipController : MonoBehaviour
     protected virtual void Update()
     {
         if (inputController == null) inputController = ship.inputController;
+        if (inputController.Paused) return;
         if (inputController.Idle) Idle();
         else
         {

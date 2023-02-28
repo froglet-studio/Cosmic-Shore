@@ -121,20 +121,24 @@ public class TrailSpawner : MonoBehaviour
 
     void RestartAITrailSpawnerAfterDelay()
     {
-        // Called on GameOver to restart only the trail spawners for the AI
+        // Called on EndGame to restart only the trail spawners for the AI
         if (gameObject != GameObject.FindWithTag("Player_Ship"))
         {
-            StartCoroutine(RestartSpawnerAfterDelayCoroutine());
+            StartCoroutine(RestartSpawnerAfterDelayCoroutine(waitTime));
         }
     }
 
     public void RestartTrailSpawnerAfterDelay()
     {
         // Called when extending game play to resume spawning trails for player and AI
-        StartCoroutine(RestartSpawnerAfterDelayCoroutine());
+        RestartTrailSpawnerAfterDelay(waitTime);
     }
-
-    IEnumerator RestartSpawnerAfterDelayCoroutine()
+    public void RestartTrailSpawnerAfterDelay(float waitTime)
+    {
+        // Called when extending game play to resume spawning trails for player and AI
+        StartCoroutine(RestartSpawnerAfterDelayCoroutine(waitTime));
+    }
+    IEnumerator RestartSpawnerAfterDelayCoroutine(float waitTime)
     {
         yield return new WaitForSeconds(waitTime);
         spawnerEnabled = true;
@@ -209,5 +213,13 @@ public class TrailSpawner : MonoBehaviour
             }
             yield return new WaitForSeconds(wavelength / shipData.Speed);
         }
+    }
+
+    public static void NukeTheTrails()
+    {
+        if (TrailContainer == null) return;
+
+        foreach (Transform child in TrailContainer.transform)
+            Destroy(child.gameObject);
     }
 }

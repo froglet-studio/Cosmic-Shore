@@ -31,8 +31,10 @@ namespace StarWriter.Core.Input
         Quaternion derivedCorrection;
         float gyroInitializationAcceptableRange = .05f;
 
+        public bool Paused {  get => inputPaused; }
         public bool isGyroEnabled = false;
         bool invertYEnabled = false;
+        bool inputPaused;
 
         Vector2 leftTouch, rightTouch;
 
@@ -81,7 +83,7 @@ namespace StarWriter.Core.Input
 
         void Update()
         {
-            if (PauseSystem.Paused) return;
+            if (PauseSystem.Paused || inputPaused) return;
 
             // Convert two finger touch into values for displacement, Speed, and ship animations
             ReceiveInput();
@@ -383,6 +385,11 @@ namespace StarWriter.Core.Input
                 }
 
             }
+        }
+
+        public void PauseInput(bool paused=true)
+        {
+            inputPaused = paused;
         }
     }
 }

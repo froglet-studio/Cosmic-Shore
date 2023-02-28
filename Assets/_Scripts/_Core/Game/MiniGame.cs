@@ -1,77 +1,156 @@
+using StarWriter.Core.Input;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 public class MiniGame : MonoBehaviour
 {
     [SerializeField] TurnMonitor TurnMonitor;
     //[SerializeField] ScoreTracker ScoreTracker;
     [SerializeField] List<ShipTypes> AllowedShipTypes;
-    [SerializeField] int NumberOfPlayers = 1;
+    [SerializeField] int NumberOfPlayers = 1;   // TODO: get rid of this and use player count instead
     [SerializeField] int NumberOfRounds = int.MaxValue;
+    [SerializeField] GameObject CountdownDisplay;   // TODO we will show the player a brief countdown before the round starts
+    [SerializeField] GameObject PlayerOrigin;
 
+    // Game State Tracking
+    int TurnsTakenThisRound = 0;
+    int RoundsPlayedThisGame = 0;
+    
+    // Player Tracking
+    int activePlayerId;
+    int RemainingPlayersActivePlayerIndex = -1;
     List<int> RemainingPlayers;
+    [SerializeField] protected List<Player> Players;
+    protected Player ActivePlayer;
 
-    void Start()
+    protected virtual void Start()
     {
-        
+        StartNewGame();
+        // Give other objects a few moments to start
+        // StartCoroutine(StartNewGameCoroutine());
     }
 
+    IEnumerator StartNewGameCoroutine()
+    {
+        yield return new WaitForSeconds(.2f);
+        StartNewGame();
+    }
 
+    public virtual void StartNewGame()
+    {
+        RemainingPlayers = new();
+        for (var i = 0; i < Players.Count; i++) RemainingPlayers.Add(i);
+
+        StartGame();
+    }
     void Update()
     {
         if (TurnMonitor.CheckForEndOfTurn())
         {
-            TurnOver();
+            EndTurn();
             return;
         }
     }
 
-    int TurnsTakenThisRound = 0;
-    int RoundsPlayedThisGame = 0;
-
-    public virtual void TurnOver()
+    void StartGame()
     {
-        ++TurnsTakenThisRound;
-
-        if (TurnsTakenThisRound >= NumberOfPlayers)
-            RoundOver();
-    }
-
-    void RoundOver()
-    {
-        TurnsTakenThisRound = 0;
-
-        ++RoundsPlayedThisGame;
-
-        if (RoundsPlayedThisGame >= NumberOfRounds)
-            GameOver();
-    }
-
-    void GameOver()
-    {
-        Debug.Log("MiniGame.GameOver");
         RoundsPlayedThisGame = 0;
-    }
-
-    void StartTurn()
-    {
-
+        StartRound();
     }
 
     void StartRound()
     {
-
+        Debug.Log($"Round {RoundsPlayedThisGame + 1} Start");
+        TurnsTakenThisRound = 0;
+        StartTurn();
     }
 
-    void StartGame()
+    void StartTurn()
+    {
+        ReadyNextPlayer();
+        SetupTurn();
+        TurnMonitor.NewTurn();
+
+        Debug.Log($"Player {activePlayerId + 1} Get Ready!");
+    }
+
+    public virtual void EndTurn() // TODO: this needs to be public?
+    {
+        ++TurnsTakenThisRound;
+
+        Debug.Log($"MiniGame.EndTurn - Turns Taken: {TurnsTakenThisRound} ");
+
+        if (TurnsTakenThisRound >= RemainingPlayers.Count)
+            EndRound();
+        else
+            StartTurn();
+    }
+
+    void EndRound()
+    {
+        ++RoundsPlayedThisGame;
+
+        Debug.Log($"MiniGame.EndRound - Rounds Played: {RoundsPlayedThisGame} ");
+
+        if (RoundsPlayedThisGame >= NumberOfRounds)
+            EndGame();
+        else
+            StartRound();
+    }
+
+    void EndGame()
+    {
+        Debug.Log($"MiniGame.EndGame - Rounds Played: {RoundsPlayedThisGame} ");
+        StartNewGame();
+    }
+
+    void LoopActivePlayerIndex()
+    {
+        RemainingPlayersActivePlayerIndex++;
+        RemainingPlayersActivePlayerIndex %= RemainingPlayers.Count;
+    }
+
+    void EliminateActivePlayer()
     {
 
     }
-}
 
-public class RoundTracker
-{
-    public int PlayerCount;
+    protected virtual void ReadyNextPlayer()
+    {
+        LoopActivePlayerIndex();
+        activePlayerId = RemainingPlayers[RemainingPlayersActivePlayerIndex];
+        ActivePlayer = Players[activePlayerId];
 
+        foreach (var player in Players)
+        {
+            Debug.Log($"PlayerUUID: {player.PlayerUUID}");
+            player.gameObject.SetActive(player.PlayerUUID == ActivePlayer.PlayerUUID);
+        }
+    }
 
+    protected virtual void SetupTurn()
+    {
+        ActivePlayer.transform.SetPositionAndRotation(PlayerOrigin.transform.position, PlayerOrigin.transform.rotation);
+        ActivePlayer.GetComponent<InputController>().PauseInput();
+        ActivePlayer.Ship.Teleport(transform);
+        ActivePlayer.Ship.TrailSpawner.PauseTrailSpawner();
+        TrailSpawner.NukeTheTrails();
+        CameraManager.Instance.SetupGamePlayCameras(ActivePlayer.Ship.transform);
+        StartCoroutine(CountdownCoroutine());
+    }
+
+    IEnumerator CountdownCoroutine()
+    {
+        Debug.Log("Countdown: 3");
+        yield return new WaitForSeconds(1);
+        Debug.Log("Countdown: 2");
+        yield return new WaitForSeconds(1);
+        Debug.Log("Countdown: 1");
+        yield return new WaitForSeconds(1);
+        Debug.Log("Go!");
+        ActivePlayer.GetComponent<InputController>().PauseInput(false);
+        ActivePlayer.Ship.TrailSpawner.RestartTrailSpawnerAfterDelay();
+    }
 }

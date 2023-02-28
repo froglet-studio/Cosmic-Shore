@@ -32,7 +32,8 @@ namespace StarWriter.Core
         [SerializeField] string mainMenuScene = "Menu_Main";
         [SerializeField] string gameTestModeZeroGameScene = "Game_HighScore";
         [SerializeField] string gameTestModeOneGameScene = "Game_TestModeOne";
-        [SerializeField] string gameTestModeTwoGameScene = "Game_TestModeTwo";
+        //[SerializeField] string gameTestModeTwoGameScene = "Game_TestModeTwo";
+        [SerializeField] string gameTestModeTwoGameScene = "MinigameExploration";
         [SerializeField] string gameTestModeThreeGameScene = "Game_TestModeThree";
         [SerializeField] string gameTestModeFourGameScene = "Game_TestModeFour";
         [SerializeField] string gameTestDesign = "Game_TestDesign";

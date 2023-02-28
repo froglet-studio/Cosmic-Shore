@@ -8003,6 +8003,11 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 5036209225001289746, guid: 6e26a254ab5fbd749a242ce2be20d667,
+        type: 3}
+      propertyPath: gameTestModeTwoGameScene
+      value: MinigameExploration
+      objectReference: {fileID: 0}
     - target: {fileID: 5036209225001289759, guid: 6e26a254ab5fbd749a242ce2be20d667,
         type: 3}
       propertyPath: m_Name

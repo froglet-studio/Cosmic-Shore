@@ -418,6 +418,11 @@ namespace StarWriter.Core
             OrientationHandle.transform.localRotation = Quaternion.Euler(0, 0, 0);
         }
 
+        public void Teleport(Transform _transform)
+        {
+            transform.SetPositionAndRotation(_transform.position, _transform.rotation);
+        }
+
         void ApplySpeedModifiers()
         {
             float accumulatedSpeedModification = 1;

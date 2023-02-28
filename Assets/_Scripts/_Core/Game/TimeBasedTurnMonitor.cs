@@ -12,7 +12,7 @@ public class TimeBasedTurnMonitor : TurnMonitor
 
     public override void NewTurn()
     {
-        throw new System.NotImplementedException();
+        elapsedTime = 0;
     }
 
     void Update() {

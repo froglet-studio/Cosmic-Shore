@@ -104,6 +104,17 @@ namespace StarWriter.Core.HangerBuilder
 
             return ship;
         }
+
+        public Ship LoadPlayerShip(ShipTypes shipType, Teams team)
+        {
+            Ship ship = Instantiate(shipTypeMap[shipType]);
+            ship.SetShipMaterial(TeamsMaterials[team]);
+            ship.SetBlockMaterial(TeamBlockMaterials[team]);
+            ship.SetAOEExplosionMaterial(TeamAOEExplosionMaterials[team]);
+
+            return ship;
+        }
+
         public Ship LoadFriendlyAIShip()
         {
             return LoadAIShip(FriendlyAIShipType, PlayerTeam);
