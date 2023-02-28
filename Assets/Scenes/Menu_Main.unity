@@ -3015,7 +3015,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Ship Name
+  m_text: Ship Name / Pilot
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 74b1f7ccd5dee88479170fd5b12041d4, type: 2}
   m_sharedMaterial: {fileID: 5604121039834938731, guid: 74b1f7ccd5dee88479170fd5b12041d4,
@@ -3768,7 +3768,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 687637693}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 1396375859}
+        m_TargetAssemblyTypeName: StarWriter.Core.UI.MainMenu, Assembly-CSharp
+        m_MethodName: OnClickHangar
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &687637693
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4000,7 +4012,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
   m_AnchoredPosition: {x: 0, y: 5}
-  m_SizeDelta: {x: 200, y: 20}
+  m_SizeDelta: {x: 260, y: 20}
   m_Pivot: {x: 0, y: 0}
 --- !u!114 &712635405
 MonoBehaviour:
@@ -4022,7 +4034,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Abilities
+  m_text: Abilities / Minigames
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 74b1f7ccd5dee88479170fd5b12041d4, type: 2}
   m_sharedMaterial: {fileID: 5604121039834938731, guid: 74b1f7ccd5dee88479170fd5b12041d4,
@@ -4866,7 +4878,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 817227460}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 1396375859}
+        m_TargetAssemblyTypeName: StarWriter.Core.UI.MainMenu, Assembly-CSharp
+        m_MethodName: OnClickHome
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &817227460
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6765,7 +6789,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0.5}
   m_AnchorMax: {x: 0, y: 0.5}
-  m_AnchoredPosition: {x: 300, y: 70}
+  m_AnchoredPosition: {x: 300, y: 80}
   m_SizeDelta: {x: 300, y: 2}
   m_Pivot: {x: 0, y: 0.5}
 --- !u!114 &1117899262
@@ -8675,7 +8699,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 1, y: 0}
   m_AnchorMax: {x: 1, y: 0}
-  m_AnchoredPosition: {x: -30, y: 35}
+  m_AnchoredPosition: {x: -90, y: 50}
   m_SizeDelta: {x: 190, y: 30}
   m_Pivot: {x: 1, y: 0}
 --- !u!1 &1396375857 stripped
@@ -9512,7 +9536,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -8, y: -120}
+  m_AnchoredPosition: {x: 0, y: -80}
   m_SizeDelta: {x: 209, y: 44}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!95 &1574179949
@@ -9814,7 +9838,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0.5}
   m_AnchorMax: {x: 0, y: 0.5}
-  m_AnchoredPosition: {x: 300, y: -10}
+  m_AnchoredPosition: {x: 300, y: 0}
   m_SizeDelta: {x: 300, y: 2}
   m_Pivot: {x: 0, y: 0.5}
 --- !u!114 &1610669794
@@ -11252,6 +11276,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Game_Options_Panel: {fileID: 2017681450}
+  Hangar_Panel: {fileID: 0}
+  Main_Menu_Panel: {fileID: 0}
 --- !u!114 &1867118898
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -13400,7 +13426,7 @@ PrefabInstance:
     - target: {fileID: 2350283631426957306, guid: 7b41307a62a8b6f4499e38f52d12adcb,
         type: 3}
       propertyPath: m_IsActive
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 2824662593341274891, guid: 7b41307a62a8b6f4499e38f52d12adcb,
         type: 3}
@@ -14178,7 +14204,7 @@ PrefabInstance:
     - target: {fileID: 6250432392537397586, guid: d5b85bce09be12a43b377c137830a634,
         type: 3}
       propertyPath: m_IsActive
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6250432392537397591, guid: d5b85bce09be12a43b377c137830a634,
         type: 3}
@@ -14362,6 +14388,16 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 6250432393284652853, guid: d5b85bce09be12a43b377c137830a634,
+        type: 3}
+      propertyPath: Hangar_Panel
+      value: 
+      objectReference: {fileID: 2014429631}
+    - target: {fileID: 6250432393284652853, guid: d5b85bce09be12a43b377c137830a634,
+        type: 3}
+      propertyPath: Main_Menu_Panel
+      value: 
+      objectReference: {fileID: 1396375857}
     - target: {fileID: 6250432393284652853, guid: d5b85bce09be12a43b377c137830a634,
         type: 3}
       propertyPath: Game_Options_Panel
