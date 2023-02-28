@@ -75,9 +75,9 @@ public class DartBoard : MonoBehaviour
                              ring * ringThickness * Mathf.Sin(((i + phase) / (blockCount * ring)) * 2 * Mathf.PI) * transform.up +
                              sweep * ringThickness * transform.forward;
         CreateBlock(position, position + tilt * ringThickness * transform.forward, "::AOE::" + Time.time + "::" + i, trail,
-            new Vector3(((Mathf.PI / 3f) * ringThickness) - (gap / (6 * ring)), 
-                        (ringCount - ring) * ringThickness/3f,
-                         ringThickness - (gap/5f)), trailBlock, player);
+            new Vector3(((Mathf.PI / 3f) * ringThickness) - (gap / (6 * ring)), // blockwidth 
+                        (ringCount - ring) * ringThickness/3f, // dartboard thickness
+                         ringThickness - (gap/5f)), trailBlock, player); //annulus thickness
     }
 
     void CreateBlock(Vector3 position, Vector3 lookPosition, string blockId, Trail trail, Vector3 scale, TrailBlock trailBlock, Player player)

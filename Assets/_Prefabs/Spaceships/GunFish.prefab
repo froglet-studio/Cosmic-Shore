@@ -340,9 +340,9 @@ MonoBehaviour:
   boostFuelAmount: 0
   fullSpeedStraightEffects: 
   rightStickEffects: 0c000000
-  leftStickEffects: 0c000000
-  flipEffects: 0a000000
-  idleEffects: 0a000000
+  leftStickEffects: 0a000000
+  flipEffects: 0b000000
+  idleEffects: 0b000000
   minimumSpeedStraightEffects: 0b000000
   cameraGrowthRate: 1
   cameraShrinkRate: 1
