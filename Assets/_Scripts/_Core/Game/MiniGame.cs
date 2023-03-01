@@ -2,27 +2,26 @@ using StarWriter.Core.Input;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 public class MiniGame : MonoBehaviour
 {
     [SerializeField] TurnMonitor TurnMonitor;
-    //[SerializeField] ScoreTracker ScoreTracker;
+    [SerializeField] ScoreTracker ScoreTracker;
     [SerializeField] List<ShipTypes> AllowedShipTypes;
     [SerializeField] int NumberOfPlayers = 1;   // TODO: get rid of this and use player count instead
     [SerializeField] int NumberOfRounds = int.MaxValue;
-    [SerializeField] GameObject CountdownDisplay;   // TODO we will show the player a brief countdown before the round starts
+    [SerializeField] GameObject CountdownDisplay;   // TODO: we will show the player a brief countdown before the round starts
     [SerializeField] GameObject PlayerOrigin;
+    [SerializeField] protected List<Player> Players;
 
     // Game State Tracking
     int TurnsTakenThisRound = 0;
     int RoundsPlayedThisGame = 0;
     
-    // Player Tracking
+    // playerId Tracking
     int activePlayerId;
     int RemainingPlayersActivePlayerIndex = -1;
     List<int> RemainingPlayers;
-    [SerializeField] protected List<Player> Players;
     protected Player ActivePlayer;
 
     protected virtual void Start()
@@ -78,7 +77,7 @@ public class MiniGame : MonoBehaviour
 
     public virtual void EndTurn() // TODO: this needs to be public?
     {
-        ++TurnsTakenThisRound;
+        TurnsTakenThisRound++;
 
         Debug.Log($"MiniGame.EndTurn - Turns Taken: {TurnsTakenThisRound} ");
 
@@ -90,11 +89,13 @@ public class MiniGame : MonoBehaviour
 
     void EndRound()
     {
-        ++RoundsPlayedThisGame;
+        RoundsPlayedThisGame++;
+
+        ResolveEliminations();
 
         Debug.Log($"MiniGame.EndRound - Rounds Played: {RoundsPlayedThisGame} ");
 
-        if (RoundsPlayedThisGame >= NumberOfRounds)
+        if (RoundsPlayedThisGame >= NumberOfRounds)// || RemainingPlayers.Count < 2
             EndGame();
         else
             StartRound();
@@ -103,6 +104,8 @@ public class MiniGame : MonoBehaviour
     void EndGame()
     {
         Debug.Log($"MiniGame.EndGame - Rounds Played: {RoundsPlayedThisGame} ");
+
+        // TODO: show a scoreboard or do other cool stuff
         StartNewGame();
     }
 
@@ -112,9 +115,21 @@ public class MiniGame : MonoBehaviour
         RemainingPlayersActivePlayerIndex %= RemainingPlayers.Count;
     }
 
+    List<int> EliminatedPlayers = new List<int>();
+
     void EliminateActivePlayer()
     {
+        // TODO Add to queue and resolve when round ends
+        EliminatedPlayers.Add(activePlayerId);
+    }
 
+    void ResolveEliminations()
+    {
+        EliminatedPlayers.Reverse();
+        foreach (var playerId in EliminatedPlayers)
+            RemainingPlayers.Remove(playerId);
+
+        EliminatedPlayers = new List<int>();
     }
 
     protected virtual void ReadyNextPlayer()

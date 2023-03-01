@@ -648,6 +648,7 @@ GameObject:
   - component: {fileID: 1078953705}
   - component: {fileID: 1078953703}
   - component: {fileID: 1078953706}
+  - component: {fileID: 1078953707}
   m_Layer: 0
   m_Name: Game
   m_TagString: Untagged
@@ -696,6 +697,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   TurnMonitor: {fileID: 1078953703}
+  ScoreTracker: {fileID: 1078953707}
   AllowedShipTypes: 02000000
   NumberOfPlayers: 2
   NumberOfRounds: 3
@@ -707,6 +709,20 @@ MonoBehaviour:
   DartBoard: {fileID: 641529687}
   Crystal: {fileID: 1568959833}
   CrystalStartPosition: {x: 0, y: 0, z: 180}
+--- !u!114 &1078953707
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1078953702}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8a8eb12f3db145b49948825ed7a796cc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ScoringMode: 0
+  GolfRules: 0
 --- !u!1 &1192541910
 GameObject:
   m_ObjectHideFlags: 0

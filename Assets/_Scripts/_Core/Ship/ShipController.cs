@@ -1,5 +1,4 @@
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using StarWriter.Core;
 using StarWriter.Core.Input;
@@ -56,16 +55,20 @@ public class ShipController : MonoBehaviour
     // Update is called once per frame
     protected virtual void Update()
     {
-        if (inputController == null) inputController = ship.inputController;
-        if (inputController.Paused) return;
-        if (inputController.Idle) Idle();
+        if (inputController == null) 
+            inputController = ship.inputController;
+        if (inputController.Paused) 
+            return;
+        if (inputController.Idle) 
+            Idle();
         else
         {
             RotateShip();
             
             shipData.blockRotation = transform.rotation; // TODO: move this
         }
-        if (shipData.ChargingBoost) ChargeBoost();
+        if (shipData.ChargingBoost)
+            ChargeBoost();
 
         MoveShip();
     }
