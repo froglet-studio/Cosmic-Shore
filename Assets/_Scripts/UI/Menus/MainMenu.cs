@@ -8,6 +8,8 @@ namespace StarWriter.Core.UI
     public class MainMenu : MonoBehaviour
     {
         public GameObject Game_Options_Panel;
+        public GameObject Hangar_Panel;
+        public GameObject Main_Menu_Panel;
 
         GameManager gameManager;
 
@@ -41,12 +43,26 @@ namespace StarWriter.Core.UI
         }
         public void OnClickHangar()
         {
-            gameManager.OnClickHangar();
+            //gameManager.OnClickHangar();
+            Hangar_Panel.SetActive(true);
+            Game_Options_Panel.SetActive(false);
+            Main_Menu_Panel.SetActive(false);
+            //gameObject.SetActive(false);
         }
         public void OnClickOptionsMenuButton()
         {
             Game_Options_Panel.SetActive(true);
-            gameObject.SetActive(false);
+            Main_Menu_Panel.SetActive(false);
+            Hangar_Panel.SetActive(false);
+            //gameObject.SetActive(false);
         }
+        public void OnClickHome()
+        {
+            Main_Menu_Panel.SetActive(true);
+            Game_Options_Panel.SetActive(false);
+            Hangar_Panel.SetActive(false);
+            //gameObject.SetActive(false);
+        }
+
     }
 }
