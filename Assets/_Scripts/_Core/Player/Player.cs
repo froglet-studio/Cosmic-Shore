@@ -21,6 +21,8 @@ public class Player : MonoBehaviour
     public string PlayerUUID { get => playerUUID; }
     public Ship Ship { get => ship; }
 
+    [SerializeField] ShipTypes defaultShip = ShipTypes.Dolphin;
+
     GameManager gameManager;
 
     void SetupAIShip(Ship shipInstance)
@@ -54,7 +56,7 @@ public class Player : MonoBehaviour
                 break;
             case "PlayerOne":
             case "PlayerTwo":
-                Ship shipInstance = Hangar.Instance.LoadPlayerShip(ShipTypes.Dolphin, Team);
+                Ship shipInstance = Hangar.Instance.LoadPlayerShip(defaultShip, Team);
                 shipInstance.transform.SetParent(shipContainer.transform, false);
                 shipInstance.GetComponent<AIPilot>().enabled = false;
 
@@ -75,7 +77,7 @@ public class Player : MonoBehaviour
                 //gameManager.WaitOnPlayerLoading();
                 break;
             default: // Single player game 
-                Ship shipInstance_ = Hangar.Instance.LoadPlayerShip(ShipTypes.Dolphin, Team);
+                Ship shipInstance_ = Hangar.Instance.LoadPlayerShip(defaultShip, Team);
                 shipInstance_.transform.SetParent(shipContainer.transform, false);
                 shipInstance_.GetComponent<AIPilot>().enabled = false;
 

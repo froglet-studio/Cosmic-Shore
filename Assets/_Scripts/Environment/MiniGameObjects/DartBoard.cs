@@ -9,7 +9,7 @@ public class DartBoard : MonoBehaviour
     [SerializeField] TrailBlock redTrailBlock;
     
     float blockCount = 6; // TODO: make int
-    int ringCount = 25;
+    int ringCount = 24;
     float ringThickness = 5f;
     float gap = 6;
     //Vector3 blockScale = new Vector3(3f, 2f, 1f)
@@ -63,7 +63,7 @@ public class DartBoard : MonoBehaviour
                 if ((block / ring + ring/3) % 2 == 0)// || (block / ring) % 6 == 1 || (block / ring) % 6 == 2) 
                 { trailBlock = greenTrailBlock; player = PlayerOne; }
                 else { trailBlock = redTrailBlock; player = PlayerTwo; }
-                CreateRingBlock(block, ring % 2 * .5f, 0, 0, trails[ring-1], ring, trailBlock, player);
+                CreateRingBlock(block, 0, 0, 0, trails[ring-1], ring, trailBlock, player); // old value for phase = ring % 2 * .5f
             }
         }
     }
@@ -74,7 +74,7 @@ public class DartBoard : MonoBehaviour
                              ring * ringThickness * Mathf.Cos(((i + phase) / (blockCount * ring)) * 2 * Mathf.PI) * transform.right +
                              ring * ringThickness * Mathf.Sin(((i + phase) / (blockCount * ring)) * 2 * Mathf.PI) * transform.up +
                              sweep * ringThickness * transform.forward;
-        CreateBlock(position, position + tilt * ringThickness * transform.forward, "::AOE::" + Time.time + "::" + i, trail,
+        CreateBlock(position, position + tilt * ringThickness * transform.forward, "::DartBoard::" + Time.time + "::" + i, trail,
             new Vector3(((Mathf.PI / 3f) * ringThickness) - (gap / (6 * ring)), // blockwidth 
                         (ringCount - ring) * ringThickness/3f, // dartboard thickness
                          ringThickness - (gap/5f)), trailBlock, player); //annulus thickness
