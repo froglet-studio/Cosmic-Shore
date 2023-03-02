@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using StarWriter.Core;
 using UnityEngine;
+using static UnityEditor.Experimental.GraphView.GraphView;
 
 public class DartBoard : MonoBehaviour
 {
@@ -18,7 +19,7 @@ public class DartBoard : MonoBehaviour
     public Player PlayerTwo;
 
     //dartboard position
-    float dartBoardRadius = 300;
+    public float dartBoardRadius = 100;
 
     public float difficultyAngle = 40;
     public int numberOfDartBoards = 4;
@@ -27,10 +28,14 @@ public class DartBoard : MonoBehaviour
     //[SerializeField] Material blockMaterial;
     List<Trail> trails = new List<Trail>();
 
-    private void Start()
+    void Start()
     {
         //PlayerOne = GameObject.FindGameObjectWithTag("Player").GetComponent<Player>();
         //PlayerTwo = GameObject.FindGameObjectWithTag("red").GetComponent<Player>();
+
+        // TODO these should be injected by the game
+        PlayerOne.Team = Teams.Green;
+        PlayerTwo.Team = Teams.Red;
 
         Initialize();
     }
@@ -42,8 +47,9 @@ public class DartBoard : MonoBehaviour
 
         for (int i = 0; i < numberOfDartBoards; i++)
         {
-            transform.position = Quaternion.Euler(0, 0, Random.Range(i * 90, i * 90 + 20)) *
-                (Quaternion.Euler(0, Random.Range(Mathf.Max(difficultyAngle - 20, 40), difficultyAngle), 0) *
+            transform.position = Quaternion.Euler(0, 0, /*Random.Range(i * 90, i * 90 + 20)*/ 0) *
+                //(Quaternion.Euler(0, Random.Range(Mathf.Max(difficultyAngle - 20, 40), difficultyAngle), 0) *
+                (Quaternion.Euler(0, difficultyAngle, 0) *
                 (dartBoardRadius * Vector3.forward));
 
             transform.LookAt(Vector3.zero);

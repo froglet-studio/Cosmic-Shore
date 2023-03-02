@@ -12,6 +12,7 @@ public class MiniGame : MonoBehaviour
     [SerializeField] int NumberOfRounds = int.MaxValue;
     [SerializeField] GameObject CountdownDisplay;   // TODO: we will show the player a brief countdown before the round starts
     [SerializeField] GameObject PlayerOrigin;
+    [SerializeField] GameObject EndGameScreen;
     [SerializeField] protected List<Player> Players;
 
     // Game State Tracking
@@ -27,6 +28,7 @@ public class MiniGame : MonoBehaviour
     protected virtual void Start()
     {
         StartNewGame();
+
         // Give other objects a few moments to start
         // StartCoroutine(StartNewGameCoroutine());
     }
@@ -55,6 +57,7 @@ public class MiniGame : MonoBehaviour
 
     void StartGame()
     {
+        EndGameScreen.SetActive(false);
         RoundsPlayedThisGame = 0;
         StartRound();
     }
@@ -68,9 +71,12 @@ public class MiniGame : MonoBehaviour
 
     void StartTurn()
     {
+        
         ReadyNextPlayer();
         SetupTurn();
         TurnMonitor.NewTurn();
+
+        ScoreTracker.StartTurn(Players[activePlayerId].PlayerName);
 
         Debug.Log($"Player {activePlayerId + 1} Get Ready!");
     }
@@ -79,6 +85,7 @@ public class MiniGame : MonoBehaviour
     {
         TurnsTakenThisRound++;
 
+        ScoreTracker.EndTurn();
         Debug.Log($"MiniGame.EndTurn - Turns Taken: {TurnsTakenThisRound} ");
 
         if (TurnsTakenThisRound >= RemainingPlayers.Count)
@@ -104,9 +111,14 @@ public class MiniGame : MonoBehaviour
     void EndGame()
     {
         Debug.Log($"MiniGame.EndGame - Rounds Played: {RoundsPlayedThisGame} ");
+        Debug.Log($"MiniGame.EndGame - Winner: {ScoreTracker.GetWinner()} ");
+        Debug.Log($"MiniGame.EndGame - Player One Score: {ScoreTracker.GetScore(Players[0].PlayerName)} ");
+        Debug.Log($"MiniGame.EndGame - Player Two Score: {ScoreTracker.GetScore(Players[1].PlayerName)} ");
 
+        EndGameScreen.SetActive(true);
+        ScoreTracker.DisplayScores();
         // TODO: show a scoreboard or do other cool stuff
-        StartNewGame();
+        //StartNewGame();
     }
 
     void LoopActivePlayerIndex()
@@ -148,8 +160,9 @@ public class MiniGame : MonoBehaviour
     protected virtual void SetupTurn()
     {
         ActivePlayer.transform.SetPositionAndRotation(PlayerOrigin.transform.position, PlayerOrigin.transform.rotation);
+        //ActivePlayer.Ship.transform.SetPositionAndRotation(PlayerOrigin.transform.position, PlayerOrigin.transform.rotation);
         ActivePlayer.GetComponent<InputController>().PauseInput();
-        ActivePlayer.Ship.Teleport(transform);
+        ActivePlayer.Ship.Teleport(PlayerOrigin.transform);
         ActivePlayer.Ship.TrailSpawner.PauseTrailSpawner();
         TrailSpawner.NukeTheTrails();
         CameraManager.Instance.SetupGamePlayCameras(ActivePlayer.Ship.transform);

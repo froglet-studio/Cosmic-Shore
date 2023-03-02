@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using TMPro;
 using UnityEngine;
 
 public enum ScoringModes
@@ -15,17 +16,21 @@ public class ScoreTracker : MonoBehaviour
     [SerializeField] ScoringModes ScoringMode;
     [SerializeField] bool GolfRules;
 
+    [SerializeField] TMP_Text WinnerNameContainer;
+    [SerializeField] List<TMP_Text> PlayerNameContainers;
+    [SerializeField] List<TMP_Text> PlayerScoreContainers;
+
     Dictionary<string, float> playerScores = new ();
-    string currentPlayerId;
+    string currentPlayerName;
     int turnsPlayed = 0;
     float turnStartTime;
 
-    public virtual void StartTurn(string playerId)
+    public virtual void StartTurn(string playerName)
     {
-        if (!playerScores.ContainsKey(playerId))
-            playerScores.Add(playerId, 0);
+        if (!playerScores.ContainsKey(playerName))
+            playerScores.Add(playerName, 0);
 
-        currentPlayerId = playerId;
+        currentPlayerName = playerName;
         turnStartTime = Time.time;
     }
 
@@ -36,33 +41,66 @@ public class ScoreTracker : MonoBehaviour
         switch (ScoringMode)
         {
             case ScoringModes.VolumeDestroyed:
-                playerScores[currentPlayerId] += StatsManager.Instance.playerStats[currentPlayerId].volumeDestroyed;
+                playerScores[currentPlayerName] += StatsManager.Instance.playerStats[currentPlayerName].volumeDestroyed;
+                StatsManager.Instance.ResetStats();
                 break;
             case ScoringModes.VolumeCreated:
-                playerScores[currentPlayerId] += StatsManager.Instance.playerStats[currentPlayerId].volumeCreated;
+                playerScores[currentPlayerName] += StatsManager.Instance.playerStats[currentPlayerName].volumeCreated;
+                StatsManager.Instance.ResetStats();
                 break;
             case ScoringModes.TimePlayed:
                 // TODO: 1000 is a magic number to give more precision to time tracking as an integer value
-                playerScores[currentPlayerId] += (Time.time - turnStartTime) * 1000;  
+                playerScores[currentPlayerName] += (Time.time - turnStartTime) * 1000;  
                 break;
             case ScoringModes.TurnsPlayed:
-                playerScores[currentPlayerId] = turnsPlayed;
+                playerScores[currentPlayerName] = turnsPlayed;
                 break;
         }
     }
 
     public virtual string GetWinner()
     {
-        // TODO this doesn't handle a tie
+        bool minTie;
+        bool maxTie;
+        float minScore = float.MaxValue; 
+        float maxScore = float.MinValue;
+        string minKey ="";
+        string maxKey = "";
+        foreach (var key in playerScores.Keys)
+        {
+            if (playerScores[key] <= minScore)
+            {
+                minTie = playerScores[key] == minScore;
+                minScore = playerScores[key];
+                minKey = key;
+            }
+            if (playerScores[key] >= maxScore)
+            {
+                maxTie = playerScores[key] == maxScore;
+                maxScore = playerScores[key];
+                maxKey = key;
+            }
+        }
 
         if (GolfRules)
-            return playerScores.Min().Key;
+            return minKey;
         else 
-            return playerScores.Max().Key;
+            return maxKey;
     }
 
-    public virtual int GetScore(string playerId) 
+    public virtual int GetScore(string playerName) 
     {
-        return (int) playerScores[playerId];
+        return (int) playerScores[playerName];
+    }
+
+    public virtual void DisplayScores()
+    {
+        WinnerNameContainer.text = GetWinner();
+        for (var i = 0; i < playerScores.Keys.Count; i++)
+        {
+            string key = playerScores.Keys.Skip(i).Take(1).First();
+            PlayerNameContainers[i].text = key;
+            PlayerScoreContainers[i].text = playerScores[key].ToString();
+        }
     }
 }

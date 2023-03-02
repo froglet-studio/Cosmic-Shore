@@ -12,10 +12,9 @@ public class DartMiniGame : MiniGame
     {
         base.Start();
 
-        // TODO make these dynamic
+        // TODO: make these dynamic
         DartBoard.PlayerOne = Players[0];
-        DartBoard.PlayerOne = Players[1];
-        // CrystalStartPosition = Crystal.transform.position;
+        DartBoard.PlayerTwo = Players[1];
     }
 
     protected override void SetupTurn()
