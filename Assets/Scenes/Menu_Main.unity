@@ -4252,7 +4252,7 @@ MonoBehaviour:
   m_Interactable: 1
   m_TargetGraphic: {fileID: 1938656465}
   toggleTransition: 0
-  graphic: {fileID: 1938656465}
+  graphic: {fileID: 938219853}
   m_Group: {fileID: 1289090948}
   onValueChanged:
     m_PersistentCalls:
@@ -12718,7 +12718,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &2014429632
 RectTransform:
   m_ObjectHideFlags: 0
