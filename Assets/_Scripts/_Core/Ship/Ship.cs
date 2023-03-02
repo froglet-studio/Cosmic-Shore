@@ -423,6 +423,14 @@ namespace StarWriter.Core
             transform.SetPositionAndRotation(_transform.position, _transform.rotation);
         }
 
+        // TODO: need to be able to disable ship abilities as well for minigames
+        public void DisableSkimmer()
+        {
+            nearFieldSkimmer?.gameObject.SetActive(false);
+            farFieldSkimmer?.gameObject.SetActive(false);
+        }
+
+
         void ApplySpeedModifiers()
         {
             float accumulatedSpeedModification = 1;

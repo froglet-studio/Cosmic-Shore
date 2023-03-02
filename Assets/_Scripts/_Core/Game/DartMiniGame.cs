@@ -21,7 +21,7 @@ public class DartMiniGame : MiniGame
     {
         base.SetupTurn();
 
-        // Setup the dartboard
+        TrailSpawner.NukeTheTrails();
         DartBoard.Initialize();
         Crystal.transform.position = CrystalStartPosition;
     }

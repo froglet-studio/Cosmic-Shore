@@ -10,7 +10,7 @@ public class TimeBasedTurnMonitor : TurnMonitor
         return elapsedTime > duration;
     }
 
-    public override void NewTurn()
+    public override void NewTurn(string playerName)
     {
         elapsedTime = 0;
     }

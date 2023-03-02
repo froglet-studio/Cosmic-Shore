@@ -110,6 +110,7 @@ public class StatsManager : Singleton<StatsManager>
             return;
 
         MaybeCreateDictionaryEntries(destroyingTeam, destroyingPlayerName);
+        MaybeCreateDictionaryEntries(destroyedTrailBlockProperties.trailBlock.Team, destroyedTrailBlockProperties.trailBlock.PlayerName);
 
         // Team Destruction Stats
         var roundStats = teamStats[destroyingTeam];
@@ -150,6 +151,7 @@ public class StatsManager : Singleton<StatsManager>
             return;
 
         MaybeCreateDictionaryEntries(restoringTeam, restoringPlayerName);
+        MaybeCreateDictionaryEntries(restoredTrailBlockProperties.trailBlock.Team, restoredTrailBlockProperties.trailBlock.PlayerName);
 
         var roundStats = teamStats[restoringTeam];
         roundStats.blocksRestored++;
@@ -172,6 +174,7 @@ public class StatsManager : Singleton<StatsManager>
             return;
 
         MaybeCreateDictionaryEntries(stealingTeam, stealingPlayerName);
+        MaybeCreateDictionaryEntries(stolenTrailBlockProperties.trailBlock.Team, stolenTrailBlockProperties.trailBlock.PlayerName);
 
         // Team Stealing Stats
         var roundStats = teamStats[stealingTeam];

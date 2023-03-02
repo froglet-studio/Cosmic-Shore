@@ -32,6 +32,9 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/TestScenes/MinigameExploration.unity
     guid: 6197568b1ea35f94a812815c41df57e1
+  - enabled: 1
+    path: Assets/Scenes/TestScenes/MinigameFlightSchool.unity
+    guid: c7bc1993712d2734593d1d4e50b01dcb
   m_configObjects:
     com.unity.adaptiveperformance.loader_settings: {fileID: 11400000, guid: 274754c57f99f5144be86c9d1014705b,
       type: 2}

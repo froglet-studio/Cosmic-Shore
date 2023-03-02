@@ -2,6 +2,7 @@ using StarWriter.Core.Input;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class MiniGame : MonoBehaviour
 {
@@ -23,7 +24,8 @@ public class MiniGame : MonoBehaviour
     int activePlayerId;
     int RemainingPlayersActivePlayerIndex = -1;
     List<int> RemainingPlayers;
-    protected Player ActivePlayer;
+    public Player ActivePlayer;
+    protected bool gameRunning;
 
     protected virtual void Start()
     {
@@ -39,6 +41,9 @@ public class MiniGame : MonoBehaviour
         StartNewGame();
     }
 
+    // TODO: use the scene navigator instead?
+    public void ResetAndReplay() { SceneManager.LoadScene(SceneManager.GetActiveScene().name); }
+
     public virtual void StartNewGame()
     {
         RemainingPlayers = new();
@@ -46,8 +51,11 @@ public class MiniGame : MonoBehaviour
 
         StartGame();
     }
-    void Update()
+    protected virtual void Update()
     {
+        if (!gameRunning)
+            return;
+
         if (TurnMonitor.CheckForEndOfTurn())
         {
             EndTurn();
@@ -57,6 +65,8 @@ public class MiniGame : MonoBehaviour
 
     void StartGame()
     {
+        gameRunning = true;
+        Debug.Log($"MiniGame.StartGame, ... {Time.time}");
         EndGameScreen.SetActive(false);
         RoundsPlayedThisGame = 0;
         StartRound();
@@ -64,7 +74,7 @@ public class MiniGame : MonoBehaviour
 
     void StartRound()
     {
-        Debug.Log($"Round {RoundsPlayedThisGame + 1} Start");
+        Debug.Log($"MiniGame.StartRound - Round {RoundsPlayedThisGame + 1} Start, ... {Time.time}");
         TurnsTakenThisRound = 0;
         StartTurn();
     }
@@ -74,11 +84,11 @@ public class MiniGame : MonoBehaviour
         
         ReadyNextPlayer();
         SetupTurn();
-        TurnMonitor.NewTurn();
+        TurnMonitor.NewTurn(Players[activePlayerId].PlayerName);
 
         ScoreTracker.StartTurn(Players[activePlayerId].PlayerName);
 
-        Debug.Log($"Player {activePlayerId + 1} Get Ready!");
+        Debug.Log($"Player {activePlayerId + 1} Get Ready! {Time.time}");
     }
 
     public virtual void EndTurn() // TODO: this needs to be public?
@@ -86,7 +96,7 @@ public class MiniGame : MonoBehaviour
         TurnsTakenThisRound++;
 
         ScoreTracker.EndTurn();
-        Debug.Log($"MiniGame.EndTurn - Turns Taken: {TurnsTakenThisRound} ");
+        Debug.Log($"MiniGame.EndTurn - Turns Taken: {TurnsTakenThisRound}, ... {Time.time}");
 
         if (TurnsTakenThisRound >= RemainingPlayers.Count)
             EndRound();
@@ -100,9 +110,9 @@ public class MiniGame : MonoBehaviour
 
         ResolveEliminations();
 
-        Debug.Log($"MiniGame.EndRound - Rounds Played: {RoundsPlayedThisGame} ");
+        Debug.Log($"MiniGame.EndRound - Rounds Played: {RoundsPlayedThisGame}, ... {Time.time}");
 
-        if (RoundsPlayedThisGame >= NumberOfRounds)// || RemainingPlayers.Count < 2
+        if (RoundsPlayedThisGame >= NumberOfRounds || RemainingPlayers.Count <=0)// || RemainingPlayers.Count < 2
             EndGame();
         else
             StartRound();
@@ -110,11 +120,12 @@ public class MiniGame : MonoBehaviour
 
     void EndGame()
     {
-        Debug.Log($"MiniGame.EndGame - Rounds Played: {RoundsPlayedThisGame} ");
+        Debug.Log($"MiniGame.EndGame - Rounds Played: {RoundsPlayedThisGame}, ... {Time.time}");
         Debug.Log($"MiniGame.EndGame - Winner: {ScoreTracker.GetWinner()} ");
         Debug.Log($"MiniGame.EndGame - Player One Score: {ScoreTracker.GetScore(Players[0].PlayerName)} ");
         Debug.Log($"MiniGame.EndGame - Player Two Score: {ScoreTracker.GetScore(Players[1].PlayerName)} ");
 
+        gameRunning = false;
         EndGameScreen.SetActive(true);
         ScoreTracker.DisplayScores();
         // TODO: show a scoreboard or do other cool stuff
@@ -129,19 +140,22 @@ public class MiniGame : MonoBehaviour
 
     List<int> EliminatedPlayers = new List<int>();
 
-    void EliminateActivePlayer()
+    protected void EliminateActivePlayer()
     {
         // TODO Add to queue and resolve when round ends
         EliminatedPlayers.Add(activePlayerId);
     }
 
-    void ResolveEliminations()
+    protected void ResolveEliminations()
     {
         EliminatedPlayers.Reverse();
         foreach (var playerId in EliminatedPlayers)
             RemainingPlayers.Remove(playerId);
 
         EliminatedPlayers = new List<int>();
+
+        if (RemainingPlayers.Count <= 0)
+            EndGame();
     }
 
     protected virtual void ReadyNextPlayer()
@@ -164,7 +178,7 @@ public class MiniGame : MonoBehaviour
         ActivePlayer.GetComponent<InputController>().PauseInput();
         ActivePlayer.Ship.Teleport(PlayerOrigin.transform);
         ActivePlayer.Ship.TrailSpawner.PauseTrailSpawner();
-        TrailSpawner.NukeTheTrails();
+        
         CameraManager.Instance.SetupGamePlayCameras(ActivePlayer.Ship.transform);
         StartCoroutine(CountdownCoroutine());
     }

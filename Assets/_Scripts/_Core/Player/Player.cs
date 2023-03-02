@@ -21,7 +21,7 @@ public class Player : MonoBehaviour
     public string PlayerUUID { get => playerUUID; }
     public Ship Ship { get => ship; }
 
-    [SerializeField] ShipTypes defaultShip = ShipTypes.Dolphin;
+    [SerializeField] public ShipTypes defaultShip = ShipTypes.Dolphin;
 
     GameManager gameManager;
 

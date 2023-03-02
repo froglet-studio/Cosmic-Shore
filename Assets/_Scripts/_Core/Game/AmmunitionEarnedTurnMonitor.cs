@@ -9,7 +9,7 @@ public class AmmunitionEarnedTurnMonitor : TurnMonitor
         throw new System.NotImplementedException();
     }
 
-    public override void NewTurn()
+    public override void NewTurn(string playerName)
     {
         throw new System.NotImplementedException();
     }

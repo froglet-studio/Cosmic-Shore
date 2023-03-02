@@ -50,8 +50,8 @@ public class TrailSpawner : MonoBehaviour
 
     public static GameObject TrailContainer;
 
-    
-    bool spawnerEnabled = true;
+    [Tooltip("This is serialized for debug visibility")]
+    [SerializeField] bool spawnerEnabled = true;
     string ownerId;
 
     private void OnEnable()
