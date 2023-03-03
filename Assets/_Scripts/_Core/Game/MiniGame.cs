@@ -6,7 +6,7 @@ using UnityEngine.SceneManagement;
 
 public class MiniGame : MonoBehaviour
 {
-    [SerializeField] TurnMonitor TurnMonitor;
+    [SerializeField] List<TurnMonitor> TurnMonitors;
     [SerializeField] ScoreTracker ScoreTracker;
     [SerializeField] List<ShipTypes> AllowedShipTypes;
     [SerializeField] int NumberOfPlayers = 1;   // TODO: get rid of this and use player count instead
@@ -56,10 +56,13 @@ public class MiniGame : MonoBehaviour
         if (!gameRunning)
             return;
 
-        if (TurnMonitor.CheckForEndOfTurn())
+        foreach (var turnMonitor in TurnMonitors)
         {
-            EndTurn();
-            return;
+            if (turnMonitor.CheckForEndOfTurn())
+            {
+                EndTurn();
+                return;
+            }
         }
     }
 
@@ -84,7 +87,8 @@ public class MiniGame : MonoBehaviour
         
         ReadyNextPlayer();
         SetupTurn();
-        TurnMonitor.NewTurn(Players[activePlayerId].PlayerName);
+        foreach (var turnMonitor in TurnMonitors)
+            turnMonitor.NewTurn(Players[activePlayerId].PlayerName);
 
         ScoreTracker.StartTurn(Players[activePlayerId].PlayerName);
 
