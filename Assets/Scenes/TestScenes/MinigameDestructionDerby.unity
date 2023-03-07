@@ -3223,13 +3223,12 @@ MonoBehaviour:
   trailBlock: {fileID: 0}
   numberOfSegments: 1
   spawnableSegments:
-  - {fileID: 1440938882}
   - {fileID: 675029770}
+  - {fileID: 1440938882}
   spawnSegmentWeights:
-  - 50
-  - 50
-  aa: 0.5
-  bb: 0.25
+  - 0
+  - 1
+  Seed: 57
 --- !u!114 &1568959833 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 6588436222817790495, guid: fced5b15da3ad1d41b4e3b7385609e37,

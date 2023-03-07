@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Security.Cryptography;
 using StarWriter.Core;
 using UnityEngine;
 
@@ -9,11 +8,11 @@ public class SegmentSpawner : MonoBehaviour
     [SerializeField] int numberOfSegments = 1;
     [SerializeField] List<SpawnableAbstractBase> spawnableSegments;
     [SerializeField] List<float> spawnSegmentWeights;
+    [SerializeField] int Seed;
     List<Trail> trails = new List<Trail>();
-
-
-    [SerializeField] float aa;
-    [SerializeField] float bb;
+    System.Random random = new System.Random();
+    //[SerializeField] float aa;
+    //[SerializeField] float bb;
 
     void Start()
     {
@@ -22,6 +21,8 @@ public class SegmentSpawner : MonoBehaviour
 
     public void Initialize()
     {
+        if (Seed != 0) random = new System.Random(Seed);
+
         // Clear out last run
         foreach (Trail trail in trails) { 
             foreach (var block in trail.TrailList)
@@ -43,33 +44,46 @@ public class SegmentSpawner : MonoBehaviour
 
         var spawned = SpawnRandom();
         spawned.transform.position = new Vector3(90, 90, 0);
-        
+        PositionSpawnedObject(spawned, 0);
+
         spawned = SpawnRandom();
         spawned.transform.position = new Vector3(-90, 90, 0);
+        PositionSpawnedObject(spawned, 0);
 
         spawned = SpawnRandom();
         spawned.transform.position = new Vector3(-90, -90, 0);
+        PositionSpawnedObject(spawned, 0);
 
         spawned = SpawnRandom();
         spawned.transform.position = new Vector3(90, -90, 0);
+        PositionSpawnedObject(spawned, 0);
+    }
 
-        /*
-        for (int i = 0; i < numberOfSegments; i++)
+    void PositionSpawnedObject(GameObject spawned, int positioningScheme)
+    {
+        switch (positioningScheme)
         {
-            spawned = spawnableSegments[0].Spawn();
-            trails.AddRange(spawnableSegments[0].GetTrails());
+            case 0:
+                // Volumetric Grid, looking at origin
+                var volumeSideLength = 100;
+                var voxelSideLength = 10;
+                var x = random.Next(0, volumeSideLength/voxelSideLength) * voxelSideLength;
+                var y = random.Next(0, volumeSideLength/voxelSideLength) * voxelSideLength;
+                var z = random.Next(0, volumeSideLength/voxelSideLength) * voxelSideLength;
+                spawned.transform.position = new Vector3(x, y, z);
+                spawned.transform.LookAt(Vector3.zero, Vector3.up);
+                break;
+            case 1:
+                // Put it at 90, 90, 0
+                spawned.transform.position = new Vector3(90, 90, 0);
+                break;
+            case 2:
+                break;
         }
-
-        var heart = spawnableSegments[1].Spawn(); ;
-        trails.AddRange(spawnableSegments[1].GetTrails());
-        heart.transform.position = new Vector3(90, 90, 0);
-        */
     }
 
     GameObject SpawnRandom()
     {
-        var random = new System.Random();
-
         var spawnWeight = random.NextDouble();
         var spawnIndex = 0;
         var totalWeight = 0f;
@@ -82,6 +96,7 @@ public class SegmentSpawner : MonoBehaviour
         return spawnableSegments[spawnIndex].Spawn();
     }
 
+    /*
     void CreateSpiralSegment()
     {
         GameObject container = new GameObject();
@@ -118,4 +133,5 @@ public class SegmentSpawner : MonoBehaviour
         Block.Trail = trail;
         trail.Add(Block);
     }
+    */
 }
