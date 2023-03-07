@@ -2264,7 +2264,6 @@ GameObject:
   - component: {fileID: 1078953707}
   - component: {fileID: 1078953708}
   - component: {fileID: 1078953709}
-  - component: {fileID: 1078953710}
   m_Layer: 0
   m_Name: Game
   m_TagString: Untagged
@@ -2285,6 +2284,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1375943528}
+  - {fileID: 1840785580}
   m_Father: {fileID: 0}
   m_RootOrder: 3
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -2338,7 +2338,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   TurnMonitors:
-  - {fileID: 1078953710}
+  - {fileID: 1840785581}
   - {fileID: 1375943527}
   ScoreTracker: {fileID: 1078953707}
   AllowedShipTypes: 01000000020000000300000000000000
@@ -2354,20 +2354,6 @@ MonoBehaviour:
   Crystal: {fileID: 1568959833}
   CrystalStartPosition: {x: 0, y: 0, z: 120}
   CrystalStartScale: {x: 7, y: 7, z: 7}
---- !u!114 &1078953710
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1078953702}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0f618497a9d7e11478039f9ede389ec4, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  CrystalCollisions: 1
-  Game: {fileID: 1078953709}
 --- !u!1 &1192541910
 GameObject:
   m_ObjectHideFlags: 0
@@ -3199,6 +3185,52 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 061f308768b5b564bbb0f130d1a8f02e, type: 3}
+--- !u!1 &1840785579
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1840785580}
+  - component: {fileID: 1840785581}
+  m_Layer: 0
+  m_Name: CrystalCollisionTurnMonitor
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1840785580
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1840785579}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1078953705}
+  m_RootOrder: 1
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1840785581
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1840785579}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0f618497a9d7e11478039f9ede389ec4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  CrystalCollisions: 1
+  Game: {fileID: 1078953709}
 --- !u!1 &1885079322
 GameObject:
   m_ObjectHideFlags: 0
