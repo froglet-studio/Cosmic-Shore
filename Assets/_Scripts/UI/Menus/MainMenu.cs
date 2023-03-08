@@ -10,6 +10,8 @@ namespace StarWriter.Core.UI
         public GameObject Game_Options_Panel;
         public GameObject Hangar_Panel;
         public GameObject Main_Menu_Panel;
+        public GameObject Minigames_Panel;
+        public GameObject Records_Panel;
 
         GameManager gameManager;
 
@@ -43,25 +45,43 @@ namespace StarWriter.Core.UI
         }
         public void OnClickHangar()
         {
-            //gameManager.OnClickHangar();
             Hangar_Panel.SetActive(true);
             Game_Options_Panel.SetActive(false);
             Main_Menu_Panel.SetActive(false);
-            //gameObject.SetActive(false);
+            Minigames_Panel.SetActive(false);
+            Records_Panel.SetActive(false);
         }
+        public void OnClickRecords()
+        {
+            Hangar_Panel.SetActive(false);
+            Game_Options_Panel.SetActive(false);
+            Main_Menu_Panel.SetActive(false);
+            Minigames_Panel.SetActive(false);
+            Records_Panel.SetActive(true);
+        }
+        public void OnClickMinigames()
+        {
+            Minigames_Panel.SetActive(true);
+            Game_Options_Panel.SetActive(false);
+            Main_Menu_Panel.SetActive(false);
+            Hangar_Panel.SetActive(false);
+            Records_Panel.SetActive(false);
+        }   
         public void OnClickOptionsMenuButton()
         {
             Game_Options_Panel.SetActive(true);
             Main_Menu_Panel.SetActive(false);
             Hangar_Panel.SetActive(false);
-            //gameObject.SetActive(false);
+            Minigames_Panel.SetActive(false);
+            Records_Panel.SetActive(false);
         }
         public void OnClickHome()
         {
             Main_Menu_Panel.SetActive(true);
             Game_Options_Panel.SetActive(false);
             Hangar_Panel.SetActive(false);
-            //gameObject.SetActive(false);
+            Minigames_Panel.SetActive(false);
+            Records_Panel.SetActive(false);
         }
 
     }
