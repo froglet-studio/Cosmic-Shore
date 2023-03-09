@@ -12,7 +12,7 @@ public class GunShipController : ShipController
     float rechargeRate = .1f;
 
     public float ProjectileScale = 1f;
-    public Vector3 BlockScale = new Vector3(1.5f, 1.5f, 3f);
+    public Vector3 BlockScale = new Vector3(4f, 4f, .6f);
 
     public int nextBlockIndex = 1;
     public int previousBlockIndex;
@@ -73,10 +73,10 @@ public class GunShipController : ShipController
 
     public void BigFire()
     {
-        if (resourceSystem.CurrentAmmo > resourceSystem.MaxAmmo / 6f)
+        if (resourceSystem.CurrentAmmo > resourceSystem.MaxAmmo / 10f)
         {
-            resourceSystem.ChangeAmmoAmount(uuid, -resourceSystem.MaxAmmo / 4f);
-            topGun.FireGun(player.transform, shipData.Course * shipData.Speed * 2, ProjectileScale * 15, BlockScale * 2, true, 4f);
+            resourceSystem.ChangeAmmoAmount(uuid, -resourceSystem.MaxAmmo / 10f);
+            topGun.FireGun(player.transform, 20, shipData.Course * shipData.Speed, ProjectileScale * 15, BlockScale * 2, true, 4f);
         }
         
     }
@@ -84,10 +84,11 @@ public class GunShipController : ShipController
     void Fire()
     {
         resourceSystem.ChangeAmmoAmount(uuid, chargeDepletionRate * Time.deltaTime); // TODO: this should probably be an amount not a rate. let the gun cooldown handle delta time, but then there is asymmetry with the recharge rate . . . 
-        topGun.FireGun(player.transform, shipData.Course * shipData.Speed, ProjectileScale, BlockScale);
-        leftGun.FireGun(player.transform, shipData.Course * shipData.Speed, ProjectileScale, BlockScale);
-        rightGun.FireGun(player.transform, shipData.Course * shipData.Speed, ProjectileScale, BlockScale);
+        topGun.FireGun(player.transform, 10, shipData.Course * shipData.Speed, ProjectileScale, BlockScale);
+        leftGun.FireGun(player.transform, 10, shipData.Course * shipData.Speed, ProjectileScale, BlockScale);
+        rightGun.FireGun(player.transform, 10, shipData.Course * shipData.Speed, ProjectileScale, BlockScale);
     }
+
     void Slide()
     {
         resourceSystem.ChangeAmmoAmount(uuid, rechargeRate * Time.deltaTime);

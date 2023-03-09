@@ -48,8 +48,8 @@ public class DartBoard : MonoBehaviour
         for (int i = 0; i < numberOfDartBoards; i++)
         {
             transform.position = Quaternion.Euler(0, 0, /*Random.Range(i * 90, i * 90 + 20)*/ 0) *
-                //(Quaternion.Euler(0, Random.Range(Mathf.Max(difficultyAngle - 20, 40), difficultyAngle), 0) *
-                (Quaternion.Euler(0, difficultyAngle, 0) *
+                (Quaternion.Euler(0, Random.Range(Mathf.Max(difficultyAngle - 20, 40), Mathf.Max(difficultyAngle - 20, 40)), 0) *
+                //(Quaternion.Euler(0, difficultyAngle, 0) *
                 (dartBoardRadius * Vector3.forward));
 
             transform.LookAt(Vector3.zero);
