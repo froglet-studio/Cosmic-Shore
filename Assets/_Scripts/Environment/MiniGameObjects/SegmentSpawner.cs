@@ -89,15 +89,15 @@ public class SegmentSpawner : MonoBehaviour
         switch (positioningScheme)
         {
             case PositioningScheme.SphereUniform:
-                transform.SetPositionAndRotation(Random.insideUnitSphere * sphereRadius, Random.rotation);
+                spawned.transform.SetPositionAndRotation(Random.insideUnitSphere * sphereRadius, Random.rotation);
                 return;
             case PositioningScheme.SphereSurface:
                 
                 int difficultyAngle = 90;
-                transform.position = Quaternion.Euler(0, 0, random.Next(index * (360/ numberOfSegments), index * (360 / numberOfSegments) + 20)) *
+                spawned.transform.position = Quaternion.Euler(0, 0, random.Next(index * (360/ numberOfSegments), index * (360 / numberOfSegments) + 20)) *
                     (Quaternion.Euler(0, random.Next(Mathf.Max(difficultyAngle - 20, 40), Mathf.Max(difficultyAngle - 20, 40)), 0) *
                     (sphereRadius * Vector3.forward));
-                transform.LookAt(Vector3.zero);
+                spawned.transform.LookAt(Vector3.zero);
                 return;
             case PositioningScheme.Cubic:
                 // Volumetric Grid, looking at origin
