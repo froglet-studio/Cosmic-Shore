@@ -1,5 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class DartMiniGame : MiniGame
@@ -22,7 +20,6 @@ public class DartMiniGame : MiniGame
         base.SetupTurn();
 
         TrailSpawner.NukeTheTrails();
-        //DartBoard.Initialize();
         Crystal.transform.position = CrystalStartPosition;
     }
 }
