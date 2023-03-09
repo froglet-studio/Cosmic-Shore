@@ -912,6 +912,38 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 7d3c24f07511c2b449da87870cb86cce, type: 3}
+--- !u!1 &267734839
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 267734840}
+  m_Layer: 0
+  m_Name: Spawners (1)
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &267734840
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 267734839}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 1344816198}
+  m_Father: {fileID: 1471404063}
+  m_RootOrder: 6
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &301493325
 GameObject:
   m_ObjectHideFlags: 0
@@ -1435,6 +1467,11 @@ PrefabInstance:
       objectReference: {fileID: 1270553252}
     - target: {fileID: 145180626581237984, guid: 54f0f432989c18145a4ac711a4511ce9,
         type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 145180626581237984, guid: 54f0f432989c18145a4ac711a4511ce9,
+        type: 3}
       propertyPath: redTrailBlock
       value: 
       objectReference: {fileID: 4563009547826722997, guid: 34146ee2267ac224da1df0d1326f4563,
@@ -1464,6 +1501,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Name
       value: DartBoard
+      objectReference: {fileID: 0}
+    - target: {fileID: 145180626581237985, guid: 54f0f432989c18145a4ac711a4511ce9,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 145180626581237999, guid: 54f0f432989c18145a4ac711a4511ce9,
         type: 3}
@@ -1529,7 +1571,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 641529686}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 0}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 591e5a01275ccbc4f954ac32954da18b, type: 3}
   m_Name: 
@@ -1828,7 +1870,7 @@ PrefabInstance:
     - target: {fileID: 6588436222817790493, guid: fced5b15da3ad1d41b4e3b7385609e37,
         type: 3}
       propertyPath: m_LocalPosition.z
-      value: -90
+      value: -120
       objectReference: {fileID: 0}
     - target: {fileID: 6588436222817790493, guid: fced5b15da3ad1d41b4e3b7385609e37,
         type: 3}
@@ -3052,6 +3094,59 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1332551697}
   m_CullTransparentMesh: 1
+--- !u!1 &1344816197
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1344816198}
+  - component: {fileID: 1344816199}
+  m_Layer: 0
+  m_Name: DartBoardSpawner
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1344816198
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1344816197}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 267734840}
+  m_RootOrder: 0
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1344816199
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1344816197}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 591e5a01275ccbc4f954ac32954da18b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  greenTrailBlock: {fileID: 4563009547826722997, guid: 8503108e8786e1a4caa36ddb1a58f00e,
+    type: 3}
+  redTrailBlock: {fileID: 4563009547826722997, guid: 34146ee2267ac224da1df0d1326f4563,
+    type: 3}
+  PlayerOne: {fileID: 1649340654}
+  PlayerTwo: {fileID: 1270553252}
+  dartBoardRadius: 100
+  difficultyAngle: 40
+  numberOfDartBoards: 4
 --- !u!1 &1471404062
 GameObject:
   m_ObjectHideFlags: 0
@@ -3061,6 +3156,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1471404063}
+  - component: {fileID: 1471404064}
   m_Layer: 0
   m_Name: Environment
   m_TagString: Untagged
@@ -3086,9 +3182,30 @@ Transform:
   - {fileID: 1180410982}
   - {fileID: 1192541911}
   - {fileID: 1309816787}
+  - {fileID: 267734840}
   m_Father: {fileID: 0}
   m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1471404064
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1471404062}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b5d3599573f5d3348865c8d5efe8c29f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  trailBlock: {fileID: 0}
+  numberOfSegments: 4
+  spawnableSegments:
+  - {fileID: 1344816199}
+  positioningScheme: 1
+  spawnSegmentWeights:
+  - 1
+  Seed: 0
 --- !u!114 &1568959833 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 6588436222817790495, guid: fced5b15da3ad1d41b4e3b7385609e37,

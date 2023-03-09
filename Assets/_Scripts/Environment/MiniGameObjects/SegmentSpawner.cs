@@ -2,15 +2,30 @@ using System.Collections.Generic;
 using StarWriter.Core;
 using UnityEngine;
 
+
+public enum PositioningScheme
+{
+    SphereUniform = 0,
+    SphereSurface = 1,
+    StraightLine = 2,
+    KinkyLine = 3,
+    CurvyLine = 4,
+    ToroidSurface = 5,
+    Cubic = 6,
+}
+
 public class SegmentSpawner : MonoBehaviour
 {
     [SerializeField] TrailBlock trailBlock;
     [SerializeField] int numberOfSegments = 1;
     [SerializeField] List<SpawnableAbstractBase> spawnableSegments;
+    [SerializeField] PositioningScheme positioningScheme = PositioningScheme.SphereUniform;
     [SerializeField] List<float> spawnSegmentWeights;
     [SerializeField] int Seed;
     List<Trail> trails = new List<Trail>();
     System.Random random = new System.Random();
+
+    int index;
     //[SerializeField] float aa;
     //[SerializeField] float bb;
 
@@ -42,28 +57,49 @@ public class SegmentSpawner : MonoBehaviour
             spawnSegmentWeights[i] = spawnSegmentWeights[i] * (1 / totalWeight);
         }
 
-        var spawned = SpawnRandom();
-        spawned.transform.position = new Vector3(90, 90, 0);
-        PositionSpawnedObject(spawned, 0);
+        
+        for (int i=0; i < numberOfSegments; i++)
+        {
+            var spawned = SpawnRandom();
+            PositionSpawnedObject(spawned, positioningScheme);
+            index++;
+        }
 
-        spawned = SpawnRandom();
-        spawned.transform.position = new Vector3(-90, 90, 0);
-        PositionSpawnedObject(spawned, 0);
+        //var spawned = SpawnRandom();
+        //spawned.transform.position = new Vector3(90, 90, 0);
+        //PositionSpawnedObject(spawned, 0);
 
-        spawned = SpawnRandom();
-        spawned.transform.position = new Vector3(-90, -90, 0);
-        PositionSpawnedObject(spawned, 0);
+        //spawned = SpawnRandom();
+        //spawned.transform.position = new Vector3(-90, 90, 0);
+        //PositionSpawnedObject(spawned, 0);
 
-        spawned = SpawnRandom();
-        spawned.transform.position = new Vector3(90, -90, 0);
-        PositionSpawnedObject(spawned, 0);
+        //spawned = SpawnRandom();
+        //spawned.transform.position = new Vector3(-90, -90, 0);
+        //PositionSpawnedObject(spawned, 0);
+
+        //spawned = SpawnRandom();
+        //spawned.transform.position = new Vector3(90, -90, 0);
+        //PositionSpawnedObject(spawned, 0);
     }
 
-    void PositionSpawnedObject(GameObject spawned, int positioningScheme)
+    float sphereRadius = 200f;
+
+    void PositionSpawnedObject(GameObject spawned, PositioningScheme positioningScheme)
     {
         switch (positioningScheme)
         {
-            case 0:
+            case PositioningScheme.SphereUniform:
+                transform.SetPositionAndRotation(Random.insideUnitSphere * sphereRadius, Random.rotation);
+                return;
+            case PositioningScheme.SphereSurface:
+                
+                int difficultyAngle = 90;
+                transform.position = Quaternion.Euler(0, 0, random.Next(index * (360/ numberOfSegments), index * (360 / numberOfSegments) + 20)) *
+                    (Quaternion.Euler(0, random.Next(Mathf.Max(difficultyAngle - 20, 40), Mathf.Max(difficultyAngle - 20, 40)), 0) *
+                    (sphereRadius * Vector3.forward));
+                transform.LookAt(Vector3.zero);
+                return;
+            case PositioningScheme.Cubic:
                 // Volumetric Grid, looking at origin
                 var volumeSideLength = 100;
                 var voxelSideLength = 10;
@@ -73,12 +109,12 @@ public class SegmentSpawner : MonoBehaviour
                 spawned.transform.position = new Vector3(x, y, z);
                 spawned.transform.LookAt(Vector3.zero, Vector3.up);
                 break;
-            case 1:
-                // Put it at 90, 90, 0
-                spawned.transform.position = new Vector3(90, 90, 0);
-                break;
-            case 2:
-                break;
+            //case 1:
+            //    // Put it at 90, 90, 0
+            //    spawned.transform.position = new Vector3(90, 90, 0);
+            //    break;
+            //case 2:
+            //    break;
         }
     }
 

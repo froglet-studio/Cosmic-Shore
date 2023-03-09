@@ -4,11 +4,14 @@ using StarWriter.Core;
 using UnityEngine;
 using static UnityEditor.Experimental.GraphView.GraphView;
 
-public class DartBoard : MonoBehaviour
+public class DartBoard : SpawnableAbstractBase
 {
     [SerializeField] TrailBlock greenTrailBlock;
     [SerializeField] TrailBlock redTrailBlock;
-    
+
+    GameObject container;
+
+
     float blockCount = 6; // TODO: make int
     int ringCount = 24;
     float ringThickness = 5f;
@@ -26,7 +29,7 @@ public class DartBoard : MonoBehaviour
     //Vector3 dartBoardPosition;
 
     //[SerializeField] Material blockMaterial;
-    List<Trail> trails = new List<Trail>();
+    //List<Trail> trails = new List<Trail>();
 
     void Start()
     {
@@ -37,30 +40,32 @@ public class DartBoard : MonoBehaviour
         PlayerOne.Team = Teams.Green;
         PlayerTwo.Team = Teams.Red;
 
-        Initialize();
+        //Initialize();
     }
 
-    public void Initialize()
-    {
-        foreach (Transform child in transform)
-            Destroy(child.gameObject);
+    //public void Initialize()
+    //{
+    //    foreach (Transform child in transform)
+    //        Destroy(child.gameObject);
 
-        for (int i = 0; i < numberOfDartBoards; i++)
-        {
-            transform.position = Quaternion.Euler(0, 0, /*Random.Range(i * 90, i * 90 + 20)*/ 0) *
-                (Quaternion.Euler(0, Random.Range(Mathf.Max(difficultyAngle - 20, 40), Mathf.Max(difficultyAngle - 20, 40)), 0) *
-                //(Quaternion.Euler(0, difficultyAngle, 0) *
-                (dartBoardRadius * Vector3.forward));
+    //    for (int i = 0; i < numberOfDartBoards; i++)
+    //    {
+    //        transform.position = Quaternion.Euler(0, 0, /*Random.Range(i * 90, i * 90 + 20)*/ 0) *
+    //            (Quaternion.Euler(0, Random.Range(Mathf.Max(difficultyAngle - 20, 40), Mathf.Max(difficultyAngle - 20, 40)), 0) *
+    //            //(Quaternion.Euler(0, difficultyAngle, 0) *
+    //            (dartBoardRadius * Vector3.forward));
 
-            transform.LookAt(Vector3.zero);
-            CreateRings();
-        }
-    }
+    //        transform.LookAt(Vector3.zero);
+    //        CreateRings();
+    //    }
+    //}
 
     void CreateRings()
     {
         TrailBlock trailBlock;
         Player player;
+        container = new GameObject();
+
         for (int ring = 1; ring <= ringCount; ring++)
         {
             trails.Add(new Trail());
@@ -93,10 +98,16 @@ public class DartBoard : MonoBehaviour
         Block.ownerId = player.PlayerUUID;
         Block.PlayerName = player.PlayerName;
         Block.transform.SetPositionAndRotation(position, Quaternion.LookRotation(lookPosition - transform.position, transform.forward));
-        Block.transform.SetParent(transform, false);
+        Block.transform.SetParent(container.transform, false);
         Block.ID = blockId;
         Block.InnerDimensions = scale;
         Block.Trail = trail;
         trail.Add(Block);
+    }
+
+    public override GameObject Spawn()
+    {
+        CreateRings();
+        return container;
     }
 }
