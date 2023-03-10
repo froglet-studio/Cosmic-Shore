@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "PolarFlowData", menuName = "ScriptableObjects/PolarFlow", order = 2)]
+[CreateAssetMenu(fileName = "PolarFlowData", menuName = "TailGlider/Flow/PolarFlow", order = 10)]
 [System.Serializable] public class PolarFlow : FlowFieldSO
 {
 

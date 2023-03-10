@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "OvalFlowData", menuName = "ScriptableObjects/OvalFlow", order = 2)]
+[CreateAssetMenu(fileName = "OvalFlowData", menuName = "TailGlider/Flow/OvalFlow", order = 10)]
 [System.Serializable] public class OvalFlow : FlowFieldSO
 {
 

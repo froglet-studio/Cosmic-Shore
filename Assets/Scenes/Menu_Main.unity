@@ -1495,7 +1495,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 133702997}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 59f8146938fff824cb5fd77236b75775, type: 3}
   m_Name: 
@@ -1552,7 +1552,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 130}
-  m_SizeDelta: {x: 360, y: 180}
+  m_SizeDelta: {x: 324, y: 184}
   m_Pivot: {x: 0.5, y: 1}
 --- !u!114 &144477654
 MonoBehaviour:
@@ -10921,6 +10921,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1001758846}
   - component: {fileID: 1001758847}
+  - component: {fileID: 1001758848}
   m_Layer: 5
   m_Name: Minigames Screen
   m_TagString: Untagged
@@ -10962,6 +10963,32 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 174a813eb49343843b766d2fdc4e5eb5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &1001758848
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1001758845}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: de0489feb2583f34cb62e8fe745d111b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  Games: []
+  Ships:
+  - {fileID: 11400000, guid: 09bd6a7de2eab2c4692dba5c06738034, type: 2}
+  - {fileID: 11400000, guid: 01c923d68448e074f9ae11d258426949, type: 2}
+  SelectedGameName: {fileID: 1324198341}
+  SelectedGameDescription: {fileID: 662188359}
+  SelectedGamePreviewWindow: {fileID: 144477652}
+  SelectedGameName2: {fileID: 292662841}
+  SelectedGameDescription2: {fileID: 1640475072}
+  SelectedGamePreviewWindow2: {fileID: 1733018679}
+  ShipSelectionTemplate: {fileID: 1518206055}
+  GameSelectionTemplate: {fileID: 1793428032}
+  PlayerCountButtonContainer: {fileID: 133702997}
+  DifficultyButtonContainer: {fileID: 843319167}
 --- !u!1 &1011993986
 GameObject:
   m_ObjectHideFlags: 0
@@ -12506,7 +12533,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 1136563909}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 1001758848}
+        m_TargetAssemblyTypeName: MiniGamesMenu, Assembly-CSharp
+        m_MethodName: PlaySelectedGame
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &1136563909
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -13607,7 +13646,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1222714946}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 59f8146938fff824cb5fd77236b75775, type: 3}
   m_Name: 
@@ -18995,7 +19034,7 @@ GameObject:
   - component: {fileID: 1640475073}
   - component: {fileID: 1640475072}
   m_Layer: 5
-  m_Name: Ability Description
+  m_Name: Game Description
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -20060,7 +20099,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 130}
-  m_SizeDelta: {x: 360, y: 180}
+  m_SizeDelta: {x: 324, y: 184}
   m_Pivot: {x: 0.5, y: 1}
 --- !u!114 &1733018681
 MonoBehaviour:

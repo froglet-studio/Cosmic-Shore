@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "GaussianFlowData", menuName = "ScriptableObjects/GaussianFlow", order = 2)]
+[CreateAssetMenu(fileName = "GaussianFlowData", menuName = "TailGlider/Flow/GaussianFlow", order = 10)]
 [System.Serializable] public class GaussianFlow : FlowFieldSO
 {
 

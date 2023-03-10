@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "New Song", menuName = "Create SO/Song")]
+[CreateAssetMenu(fileName = "New Song", menuName = "TailGlider/Song", order = 5)]
 public class SO_Song : ScriptableObject
 {
     [SerializeField]

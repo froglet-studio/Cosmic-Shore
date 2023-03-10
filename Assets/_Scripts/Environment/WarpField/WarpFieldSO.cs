@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "WarpFieldData", menuName = "ScriptableObjects/WarpfieldSO", order = 1)]
+[CreateAssetMenu(fileName = "WarpFieldData", menuName = "TailGlider/Warp/WarpfieldSO", order = 10)]
 [System.Serializable] public class WarpFieldSO : ScriptableObject
 { 
 

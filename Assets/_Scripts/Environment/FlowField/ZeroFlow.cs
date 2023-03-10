@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "ZeroFlowData", menuName = "ScriptableObjects/ZeroFlow", order = 2)]
+[CreateAssetMenu(fileName = "ZeroFlowData", menuName = "TailGlider/Flow/ZeroFlow", order = 10)]
 [System.Serializable] public class ZeroFlow : FlowFieldSO
 {
 

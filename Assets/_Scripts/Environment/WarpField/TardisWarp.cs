@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements;
 
-[CreateAssetMenu(fileName = "TardisWarpData", menuName = "ScriptableObjects/TardisWarp", order = 2)]
+[CreateAssetMenu(fileName = "TardisWarpData", menuName = "TailGlider/Warp/TardisWarp", order = 10)]
 [System.Serializable] public class TardisWarp : WarpFieldSO
 {
 

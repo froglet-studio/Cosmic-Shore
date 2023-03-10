@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "EllipticalFlowData", menuName = "ScriptableObjects/EllipticalFlow", order = 2)]
+[CreateAssetMenu(fileName = "EllipticalFlowData", menuName = "TailGlider/Flow/EllipticalFlow", order = 10)]
 [System.Serializable] public class EllipticalFlow : FlowFieldSO
 {
 

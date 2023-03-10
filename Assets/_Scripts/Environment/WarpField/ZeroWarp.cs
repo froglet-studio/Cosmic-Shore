@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "ZeroWarpData", menuName = "ScriptableObjects/ZeroWarp", order = 2)]
+[CreateAssetMenu(fileName = "ZeroWarpData", menuName = "TailGlider/Warp/ZeroWarp", order = 10)]
 [System.Serializable] public class ZeroWarp : WarpFieldSO
 {
 
