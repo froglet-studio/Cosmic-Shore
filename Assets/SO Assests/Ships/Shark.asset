@@ -15,8 +15,8 @@ MonoBehaviour:
   Class: 3
   Name: Shark
   Description: Dun dun dun dun
-  Icon: {fileID: 21300000, guid: 7f6d89094d5447d4a9887d54b0a0c749, type: 3}
-  SelectedIcon: {fileID: 21300000, guid: 5b01173704c14f744998a2a109e90e8b, type: 3}
+  Icon: {fileID: 21300000, guid: c087ff434810a354191ae4fea2f9eaa8, type: 3}
+  SelectedIcon: {fileID: 21300000, guid: 3ad8487a3da49064e889ce10b2bbc4c9, type: 3}
   TrailPreviewImage: {fileID: 21300000, guid: f59564772bfac8642a09ad4e75466830, type: 3}
   PreviewImage: {fileID: -312768529563260625, guid: 3da05e9f66c9f254c8875335e7e9179e,
     type: 3}

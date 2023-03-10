@@ -44,6 +44,12 @@ public class MiniGame : MonoBehaviour
     // TODO: use the scene navigator instead?
     public void ResetAndReplay() { SceneManager.LoadScene(SceneManager.GetActiveScene().name); }
 
+    public void Exit()
+    {
+        // TODO: this is kind of hokie
+        SceneManager.LoadScene(0);
+    }
+
     public virtual void StartNewGame()
     {
         RemainingPlayers = new();
