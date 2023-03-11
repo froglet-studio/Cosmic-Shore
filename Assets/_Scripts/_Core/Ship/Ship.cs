@@ -317,7 +317,7 @@ namespace StarWriter.Core
                         GrowSkimmer(skimmerGrowthRate);
                         break;
                     case ShipActions.ChargeBoost: 
-                        shipData.ChargingBoost = true;
+                        shipData.BoostCharging = true;
                         break;
                     case ShipActions.GrowTrail:
                         GrowTrail(trailGrowthRate);
@@ -374,7 +374,7 @@ namespace StarWriter.Core
                         ResetSkimmerToNeutral(skimmerShrinkRate);
                         break;
                     case ShipActions.ChargeBoost:
-                        shipData.ChargingBoost = false;
+                        shipData.BoostCharging = false;
                         shipController.StartChargedBoost();
                         break;
                     case ShipActions.GrowTrail:

@@ -20,10 +20,16 @@ namespace StarWriter.Core.HangerBuilder
 
         [SerializeField] Material GreenTeamMaterial;
         [SerializeField] Material RedTeamMaterial;
+        [SerializeField] Material BlueTeamMaterial;
+        [SerializeField] Material YellowTeamMaterial;
         [SerializeField] Material GreenTeamBlockMaterial;
         [SerializeField] Material RedTeamBlockMaterial;
+        [SerializeField] Material BlueTeamBlockMaterial;
+        [SerializeField] Material YellowTeamBlockMaterial;
         [SerializeField] Material GreenTeamAOEExplosionMaterial;
         [SerializeField] Material RedTeamAOEExplosionMaterial;
+        [SerializeField] Material BlueTeamAOEExplosionMaterial;
+        [SerializeField] Material YellowTeamAOEExplosionMaterial;
 
         Dictionary<Teams, Material> TeamsMaterials;
         Dictionary<Teams, Material> TeamBlockMaterials;
@@ -70,14 +76,20 @@ namespace StarWriter.Core.HangerBuilder
             TeamsMaterials = new Dictionary<Teams, Material>() {
                 { Teams.Green, GreenTeamMaterial },
                 { Teams.Red,   RedTeamMaterial },
+                { Teams.Blue,  BlueTeamMaterial },
+                { Teams.Yellow,  YellowTeamMaterial },
             };
             TeamBlockMaterials = new Dictionary<Teams, Material>() {
                 { Teams.Green, GreenTeamBlockMaterial },
                 { Teams.Red,   RedTeamBlockMaterial },
+                { Teams.Blue,  BlueTeamBlockMaterial },
+                { Teams.Yellow,  YellowTeamBlockMaterial },
             };
             TeamAOEExplosionMaterials = new Dictionary<Teams, Material>() {
                 { Teams.Green, GreenTeamAOEExplosionMaterial },
                 { Teams.Red,   RedTeamAOEExplosionMaterial },
+                { Teams.Blue,  BlueTeamAOEExplosionMaterial },
+                { Teams.Yellow,  YellowTeamAOEExplosionMaterial },
             };
             if (PlayerTeam == Teams.None) {
                 Debug.LogError("Player Team is set to None. Defaulting to Green team");

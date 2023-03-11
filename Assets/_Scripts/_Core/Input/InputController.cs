@@ -19,7 +19,6 @@ namespace StarWriter.Core.Input
         bool fullSpeedStraightEffectsStarted = false;
         bool minimumSpeedStraightEffectsStarted = false;
 
-
         public float XSum;
         public float YSum;
         public float XDiff;

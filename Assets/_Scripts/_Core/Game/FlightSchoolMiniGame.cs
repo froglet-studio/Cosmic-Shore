@@ -5,16 +5,10 @@ public class FlightSchoolMiniGame : MiniGame
     [SerializeField] Crystal Crystal;
     [SerializeField] Vector3 CrystalStartPosition;
     [SerializeField] Vector3 CrystalStartScale = Vector3.one;
-    
+    public static new ShipTypes PlayerShipType = ShipTypes.Manta;
     protected override void Start()
     {
         base.Start();
-
-        // TODO: THIS IS A CLUDGE -- maybe not if it exists in the MiniGame base script and accounts for players up to max
-        Players[0].Team = Teams.Green;
-        Players[1].Team = Teams.Red;
-        Players[0].Ship.DisableSkimmer();
-        Players[1].Ship.DisableSkimmer();
     }
 
     protected override void Update()
@@ -35,6 +29,8 @@ public class FlightSchoolMiniGame : MiniGame
     protected override void SetupTurn()
     {
         base.SetupTurn();
+        
+        ActivePlayer.Ship.DisableSkimmer();
 
         StatsManager.Instance.ResetStats(); // TODO: this belongs in the EliminationMonitor
         Crystal.transform.position = CrystalStartPosition;

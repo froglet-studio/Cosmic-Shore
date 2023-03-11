@@ -41,11 +41,13 @@ public class ScoreTracker : MonoBehaviour
         switch (ScoringMode)
         {
             case ScoringModes.VolumeDestroyed:
-                playerScores[currentPlayerName] += StatsManager.Instance.playerStats[currentPlayerName].volumeDestroyed;
+                if (StatsManager.Instance.playerStats.ContainsKey(currentPlayerName))
+                    playerScores[currentPlayerName] += StatsManager.Instance.playerStats[currentPlayerName].volumeDestroyed;
                 StatsManager.Instance.ResetStats();
                 break;
             case ScoringModes.VolumeCreated:
-                playerScores[currentPlayerName] += StatsManager.Instance.playerStats[currentPlayerName].volumeCreated;
+                if (StatsManager.Instance.playerStats.ContainsKey(currentPlayerName))
+                    playerScores[currentPlayerName] += StatsManager.Instance.playerStats[currentPlayerName].volumeCreated;
                 StatsManager.Instance.ResetStats();
                 break;
             case ScoringModes.TimePlayed:

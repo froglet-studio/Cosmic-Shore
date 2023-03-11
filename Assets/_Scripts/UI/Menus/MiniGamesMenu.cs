@@ -65,11 +65,12 @@ public class MiniGamesMenu : MonoBehaviour
         // Select the one
         SelectedShip = Ships[index];
         ShipSelectionContainer.GetChild(index).gameObject.GetComponent<Image>().sprite = SelectedShip.SelectedIcon;
-        
+
+        // notify the mini game engine that this is the ship to play
+        MiniGame.PlayerShipType = SelectedShip.Class;
+
         // populate the games list with the one's games
         PopulateGameSelectionList();
-
-        // TODO: need to notify the mini game engine that this is the ship to play (use the hangar?)
     }
 
     public void SelectGame(int index)
@@ -84,14 +85,30 @@ public class MiniGamesMenu : MonoBehaviour
         SelectedGame = SelectedShip.MiniGames[index];
         GameSelectionContainer.GetChild(index).gameObject.GetComponent<Image>().sprite = SelectedGame.SelectedIcon;
 
+        Debug.Log($"SelectGame, PlayerCountButtonContainer.transform.childCount: {PlayerCountButtonContainer.transform.childCount}");
+
         // Setup player count and difficulty buttons
-        for (var i = 0; i >= PlayerCountButtonContainer.transform.childCount; i++)
+
+        // TODO: this is kludgy
+        //PlayerCountButtonContainer.transform.GetChild(0).gameObject.GetComponent<Image>().sprite = PlayerCountButtonContainer.transform.GetChild(0).gameObject.GetComponent<Button>().spriteState.selectedSprite;
+        for (var i = 0; i < PlayerCountButtonContainer.transform.childCount; i++)
         {
-            var playerCount = i;
+            Debug.Log($"SelectGame - SelectedGame.MaxPlayers:{SelectedGame.MaxPlayers}, i:{i}, i < SelectedGame.MaxPlayers:{i < SelectedGame.MaxPlayers}");
+            var playerCount = i+1;
             PlayerCountButtonContainer.transform.GetChild(i).gameObject.SetActive(i < SelectedGame.MaxPlayers);
             PlayerCountButtonContainer.transform.GetChild(i).gameObject.GetComponent<Button>().onClick.RemoveAllListeners();
             PlayerCountButtonContainer.transform.GetChild(i).gameObject.GetComponent<Button>().onClick.AddListener(() => SetPlayerCount(playerCount));
         }
+
+        // TODO: this is kludgy
+        //DifficultyButtonContainer.transform.GetChild(0).gameObject.GetComponent<Image>().sprite = DifficultyButtonContainer.transform.GetChild(0).gameObject.GetComponent<Button>().spriteState.selectedSprite;
+        for (var i = 0; i < DifficultyButtonContainer.transform.childCount; i++)
+        {
+            var difficulty = i + 1;
+            DifficultyButtonContainer.transform.GetChild(i).gameObject.GetComponent<Button>().onClick.RemoveAllListeners();
+            DifficultyButtonContainer.transform.GetChild(i).gameObject.GetComponent<Button>().onClick.AddListener(() => SetDifficulty(difficulty));
+        }
+
 
         PopulateGameDetails();
     }
@@ -103,16 +120,20 @@ public class MiniGamesMenu : MonoBehaviour
 
     public void SetPlayerCount(int playerCount)
     {
+        Debug.Log($"SetPlayerCount: {playerCount}");
         PlayerCount = playerCount;
 
-        // TODO: need to notify the mini game engine that this is the number of players (use the hangar?)
+        // notify the mini game engine that this is the number of players
+        MiniGame.NumberOfPlayers = playerCount;
     }
 
     public void SetDifficulty(int difficulty)
     {
+        Debug.Log($"SetDifficulty: {difficulty}");
         DifficultyLevel = difficulty;
 
-        // TODO: need to notify the mini game engine that this is the difficulty
+        // notify the mini game engine that this is the difficulty
+        MiniGame.DifficultyLevel= difficulty;
     }
 
     void PopulateShipSelectionList()

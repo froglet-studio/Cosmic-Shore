@@ -6,15 +6,24 @@ using UnityEngine.SceneManagement;
 
 public class MiniGame : MonoBehaviour
 {
+    [SerializeField] Player playerPrefab;
     [SerializeField] List<TurnMonitor> TurnMonitors;
     [SerializeField] ScoreTracker ScoreTracker;
     [SerializeField] List<ShipTypes> AllowedShipTypes;
-    [SerializeField] int NumberOfPlayers = 1;   // TODO: get rid of this and use player count instead
+    
     [SerializeField] int NumberOfRounds = int.MaxValue;
     [SerializeField] GameObject CountdownDisplay;   // TODO: we will show the player a brief countdown before the round starts
     [SerializeField] GameObject PlayerOrigin;
     [SerializeField] GameObject EndGameScreen;
-    [SerializeField] protected List<Player> Players;
+    protected List<Player> Players;
+
+    List<Teams> PlayerTeams = new List<Teams>() { Teams.Green, Teams.Red, Teams.Blue, Teams.Yellow };
+    List<string> PlayerNames = new List<string>() { "PlayerOne", "PlayerTwo", "PlayerThree", "PlayerFour" };
+
+    // Configuration set by player
+    public static int NumberOfPlayers = 2;
+    public static int DifficultyLevel = 1;
+    public static ShipTypes PlayerShipType = ShipTypes.Dolphin;
 
     // Game State Tracking
     int TurnsTakenThisRound = 0;
@@ -23,16 +32,28 @@ public class MiniGame : MonoBehaviour
     // playerId Tracking
     int activePlayerId;
     int RemainingPlayersActivePlayerIndex = -1;
-    List<int> RemainingPlayers;
+    List<int> RemainingPlayers = new();
     public Player ActivePlayer;
     protected bool gameRunning;
 
     protected virtual void Start()
     {
-        StartNewGame();
+        Players = new List<Player>();
+        for (var i = 0; i < NumberOfPlayers; i++)
+        {
+            Players.Add(Instantiate(playerPrefab));
+            Players[i].defaultShip = PlayerShipType;
+            Players[i].Team = PlayerTeams[i];
+            Players[i].PlayerName = PlayerNames[i];
+            Players[i].PlayerUUID = PlayerNames[i];
+            Players[i].name = "Player" + (i+1);
+            Players[i].gameObject.SetActive(true);
+        }
+
+        //StartNewGame();
 
         // Give other objects a few moments to start
-        // StartCoroutine(StartNewGameCoroutine());
+        StartCoroutine(StartNewGameCoroutine());
     }
 
     IEnumerator StartNewGameCoroutine()
@@ -90,7 +111,6 @@ public class MiniGame : MonoBehaviour
 
     void StartTurn()
     {
-        
         ReadyNextPlayer();
         SetupTurn();
         foreach (var turnMonitor in TurnMonitors)
@@ -132,14 +152,12 @@ public class MiniGame : MonoBehaviour
     {
         Debug.Log($"MiniGame.EndGame - Rounds Played: {RoundsPlayedThisGame}, ... {Time.time}");
         Debug.Log($"MiniGame.EndGame - Winner: {ScoreTracker.GetWinner()} ");
-        Debug.Log($"MiniGame.EndGame - Player One Score: {ScoreTracker.GetScore(Players[0].PlayerName)} ");
-        Debug.Log($"MiniGame.EndGame - Player Two Score: {ScoreTracker.GetScore(Players[1].PlayerName)} ");
+        foreach (var player in Players)
+            Debug.Log($"MiniGame.EndGame - Player One Score: {ScoreTracker.GetScore(player.PlayerName)} ");
 
         gameRunning = false;
         EndGameScreen.SetActive(true);
         ScoreTracker.DisplayScores();
-        // TODO: show a scoreboard or do other cool stuff
-        //StartNewGame();
     }
 
     void LoopActivePlayerIndex()
@@ -187,8 +205,9 @@ public class MiniGame : MonoBehaviour
         //ActivePlayer.Ship.transform.SetPositionAndRotation(PlayerOrigin.transform.position, PlayerOrigin.transform.rotation);
         ActivePlayer.GetComponent<InputController>().PauseInput();
         ActivePlayer.Ship.Teleport(PlayerOrigin.transform);
+        ActivePlayer.Ship.GetComponent<ShipController>().Reset();
         ActivePlayer.Ship.TrailSpawner.PauseTrailSpawner();
-        
+
         CameraManager.Instance.SetupGamePlayCameras(ActivePlayer.Ship.transform);
         StartCoroutine(CountdownCoroutine());
     }
@@ -204,5 +223,6 @@ public class MiniGame : MonoBehaviour
         Debug.Log("Go!");
         ActivePlayer.GetComponent<InputController>().PauseInput(false);
         ActivePlayer.Ship.TrailSpawner.RestartTrailSpawnerAfterDelay();
+        ActivePlayer.Ship.TrailSpawner.ForceStartSpawningTrail();
     }
 }

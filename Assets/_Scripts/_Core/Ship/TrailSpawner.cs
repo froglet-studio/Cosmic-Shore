@@ -176,6 +176,11 @@ public class TrailSpawner : MonoBehaviour
         return new Vector3(Vector1.x / Vector2.x, Vector1.y / Vector2.y, Vector1.z / Vector2.z);
     }
 
+    public void ForceStartSpawningTrail()
+    {
+        StartCoroutine(SpawnTrailCoroutine());
+    }
+
     IEnumerator SpawnTrailCoroutine()
     {
         yield return new WaitForSeconds(startDelay);

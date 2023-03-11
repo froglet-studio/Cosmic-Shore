@@ -13,7 +13,7 @@ namespace StarWriter.Core
                   public float Speed { get { speed = inputSpeed * speedMultiplier; return speed; } }
 
         public bool Boosting = false;
-        public bool ChargingBoost = false;
+        public bool BoostCharging = false;
         public bool BoostDecaying = false;
         public bool Drifting = false;
 

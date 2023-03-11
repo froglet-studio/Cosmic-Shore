@@ -42,7 +42,7 @@ public class ShipController : MonoBehaviour
     protected virtual void Start()
     {
         ship = GetComponent<Ship>();
-        uuid = GameObject.FindWithTag("Player").GetComponent<Player>().PlayerUUID;
+        uuid = ship.Player.PlayerUUID;
         shipData = ship.GetComponent<ShipData>();
         resourceSystem = ship.GetComponent<ResourceSystem>();
 
@@ -50,6 +50,22 @@ public class ShipController : MonoBehaviour
         ThrottleScaler = DefaultThrottleScaler;
         displacementQuaternion = transform.rotation;
         inputController = ship.inputController;
+    }
+
+    public void Reset()
+    {
+        minimumSpeed = defaultMinimumSpeed;
+        ThrottleScaler = DefaultThrottleScaler;
+        displacementQuaternion = transform.rotation;
+        shipData.Boosting = false;
+        shipData.BoostCharging = false;
+        shipData.BoostDecaying = false;
+        shipData.Drifting = false;
+        shipData.Attached = false;
+        shipData.GunsActive = false;
+        shipData.InputSpeed = 1;
+        shipData.SpeedMultiplier = 1;
+        shipData.Course = transform.forward;
     }
 
     // Update is called once per frame
@@ -67,7 +83,7 @@ public class ShipController : MonoBehaviour
             
             shipData.blockRotation = transform.rotation; // TODO: move this
         }
-        if (shipData.ChargingBoost)
+        if (shipData.BoostCharging)
             ChargeBoost();
 
         MoveShip();

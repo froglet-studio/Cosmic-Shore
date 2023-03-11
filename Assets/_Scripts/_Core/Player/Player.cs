@@ -17,8 +17,8 @@ public class Player : MonoBehaviour
     [SerializeField] ChargeDisplay ammoDisplay;
 
     public Teams Team;
-    public string PlayerName { get => playerName; }
-    public string PlayerUUID { get => playerUUID; }
+    public string PlayerName { get => playerName; set => playerName = value; }
+    public string PlayerUUID { get => playerUUID; set => playerUUID = value; }
     public Ship Ship { get => ship; }
 
     [SerializeField] public ShipTypes defaultShip = ShipTypes.Dolphin;
@@ -39,6 +39,7 @@ public class Player : MonoBehaviour
 
     void Start()
     {
+        Debug.Log($"Player.Start - Player Name: {PlayerName}");
         gameManager = GameManager.Instance;
 
         foreach (Transform child in shipContainer.transform) Destroy(child.gameObject);
@@ -56,6 +57,9 @@ public class Player : MonoBehaviour
                 break;
             case "PlayerOne":
             case "PlayerTwo":
+            case "PlayerThree":
+            case "PlayerFour":
+                Debug.Log($"Player.Start - Instantiate Ship: {PlayerName}");
                 Ship shipInstance = Hangar.Instance.LoadPlayerShip(defaultShip, Team);
                 shipInstance.transform.SetParent(shipContainer.transform, false);
                 shipInstance.GetComponent<AIPilot>().enabled = false;

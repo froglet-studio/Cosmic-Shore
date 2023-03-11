@@ -22,6 +22,6 @@ MonoBehaviour:
     type: 3}
   Abilities: []
   MiniGames:
-  - {fileID: 11400000, guid: 812851e4603217c469662dc3cb9c6d93, type: 2}
   - {fileID: 11400000, guid: 27f7ec1e006fb3a4cbb91572e943cf67, type: 2}
   - {fileID: 11400000, guid: 3537310ecbdad2e449bbca31d2aa8599, type: 2}
+  - {fileID: 11400000, guid: 812851e4603217c469662dc3cb9c6d93, type: 2}
