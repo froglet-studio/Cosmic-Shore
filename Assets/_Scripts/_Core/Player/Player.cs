@@ -39,7 +39,6 @@ public class Player : MonoBehaviour
 
     void Start()
     {
-        Debug.Log($"Player.Start - Player Name: {PlayerName}");
         gameManager = GameManager.Instance;
 
         foreach (Transform child in shipContainer.transform) Destroy(child.gameObject);
@@ -78,7 +77,6 @@ public class Player : MonoBehaviour
                 if (levelDisplay != null)
                     ship.GetComponent<ResourceSystem>().AmmoDisplay = ammoDisplay;
 
-                //gameManager.WaitOnPlayerLoading();
                 break;
             default: // Single player game 
                 Ship shipInstance_ = Hangar.Instance.LoadPlayerShip(defaultShip, Team);

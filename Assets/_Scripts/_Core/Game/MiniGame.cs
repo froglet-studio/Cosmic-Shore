@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 
 public class MiniGame : MonoBehaviour
 {
@@ -12,7 +13,6 @@ public class MiniGame : MonoBehaviour
     [SerializeField] List<ShipTypes> AllowedShipTypes;
     
     [SerializeField] int NumberOfRounds = int.MaxValue;
-    [SerializeField] GameObject CountdownDisplay;   // TODO: we will show the player a brief countdown before the round starts
     [SerializeField] GameObject PlayerOrigin;
     [SerializeField] GameObject EndGameScreen;
     protected List<Player> Players;
@@ -212,15 +212,64 @@ public class MiniGame : MonoBehaviour
         StartCoroutine(CountdownCoroutine());
     }
 
+    [SerializeField] Image CountdownDisplay;
+    [SerializeField] Sprite Countdown3;
+    [SerializeField] Sprite Countdown2;
+    [SerializeField] Sprite Countdown1;
+    [SerializeField] Sprite Countdown0;
+    [SerializeField] float CountdownGrowScale = 1.5f;
     IEnumerator CountdownCoroutine()
     {
+        CountdownDisplay.gameObject.SetActive(true);
+
         Debug.Log("Countdown: 3");
-        yield return new WaitForSeconds(1);
+        var elapsedTime = 0f;
+        CountdownDisplay.transform.localScale = Vector3.one;
+        CountdownDisplay.sprite = Countdown3;
+        
+        while (elapsedTime < 1) { 
+            elapsedTime += Time.deltaTime;
+            CountdownDisplay.transform.localScale = Vector3.one + (Vector3.one * ( (CountdownGrowScale-1) *elapsedTime));
+            yield return null;
+        }
+
         Debug.Log("Countdown: 2");
-        yield return new WaitForSeconds(1);
+        elapsedTime = 0f;
+        CountdownDisplay.transform.localScale = Vector3.one;
+        CountdownDisplay.sprite = Countdown2;
+        while (elapsedTime < 1)
+        {
+            elapsedTime += Time.deltaTime;
+            CountdownDisplay.transform.localScale = Vector3.one + (Vector3.one * ((CountdownGrowScale - 1) * elapsedTime));
+            yield return null;
+        }
+
+        CountdownDisplay.transform.localScale = Vector3.one;
+        CountdownDisplay.sprite = Countdown1;
+        elapsedTime = 0f;
+
         Debug.Log("Countdown: 1");
-        yield return new WaitForSeconds(1);
-        Debug.Log("Go!");
+        while (elapsedTime < 1)
+        {
+            elapsedTime += Time.deltaTime;
+            CountdownDisplay.transform.localScale = Vector3.one + (Vector3.one * ((CountdownGrowScale - 1) * elapsedTime));
+            yield return null;
+        }
+
+        CountdownDisplay.transform.localScale = Vector3.one;
+        CountdownDisplay.sprite = Countdown0;
+        elapsedTime = 0f;
+
+        Debug.Log("Countdown: 0");
+        while (elapsedTime < 1)
+        {
+            elapsedTime += Time.deltaTime;
+            CountdownDisplay.transform.localScale = Vector3.one + (Vector3.one * ((CountdownGrowScale - 1) * elapsedTime));
+            yield return null;
+        }
+
+        CountdownDisplay.gameObject.SetActive(false);
+
         ActivePlayer.GetComponent<InputController>().PauseInput(false);
         ActivePlayer.Ship.TrailSpawner.RestartTrailSpawnerAfterDelay();
         ActivePlayer.Ship.TrailSpawner.ForceStartSpawningTrail();
