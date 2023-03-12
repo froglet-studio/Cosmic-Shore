@@ -15,8 +15,8 @@ MonoBehaviour:
   Class: 1
   Name: Manta
   Description: 
-  Icon: {fileID: 21300000, guid: af751f64d9c2bff4787f38cba7d996d0, type: 3}
-  SelectedIcon: {fileID: 21300000, guid: 04314e621a6ca3a418cd318fa058bef8, type: 3}
+  Icon: {fileID: 21300000, guid: 01859b1cc60120f4b9be2cc2fca392fc, type: 3}
+  SelectedIcon: {fileID: 21300000, guid: f789f5fc2efa3eb45a2ee8127775a7fd, type: 3}
   TrailPreviewImage: {fileID: 21300000, guid: f34967e7459562641bb4f0dcc2d85aa8, type: 3}
   PreviewImage: {fileID: -6415259062133742075, guid: 3da05e9f66c9f254c8875335e7e9179e,
     type: 3}
