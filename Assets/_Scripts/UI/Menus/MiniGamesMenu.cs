@@ -138,10 +138,11 @@ public class MiniGamesMenu : MonoBehaviour
 
     void PopulateShipSelectionList()
     {
-        // Destroy all but the template
+        // Deactivate All
         for (var i = 0; i < ShipSelectionContainer.childCount; i++)
             ShipSelectionContainer.GetChild(i).gameObject.SetActive(false);
 
+        // Reactivate based on the number of ships
         for (var i = 0; i < Ships.Count; i++)
         {
             var selectionIndex = i;
@@ -155,29 +156,27 @@ public class MiniGamesMenu : MonoBehaviour
         }
 
         StartCoroutine(SelectShipCoroutine(0));
-        //SelectShip(0);
     }
 
     void PopulateGameSelectionList()
     {
+        // Deactivate All
         for (var i = 0; i < GameSelectionContainer.transform.childCount; i++)
             GameSelectionContainer.GetChild(i).gameObject.SetActive(false);
-                //Destroy(GameSelectionContainer.transform.GetChild(i).gameObject);
 
+        // Reactivate based on the number of games for the given ship
         for (var i = 0; i < SelectedShip.MiniGames.Count; i++) {
             var selectionIndex = i;
             var game = SelectedShip.MiniGames[i];
             Debug.Log($"Populating Game Select List: {game.Name}");
-            var gameSelection = GameSelectionContainer.GetChild(i).gameObject;//Instantiate(GameSelectionTemplate);
+            var gameSelection = GameSelectionContainer.GetChild(i).gameObject;
             gameSelection.SetActive(true);
-            //gameSelection.transform.parent = GameSelectionContainer;
             gameSelection.GetComponent<Image>().sprite = game.Icon;
             gameSelection.GetComponent<Button>().onClick.RemoveAllListeners();
             gameSelection.GetComponent<Button>().onClick.AddListener(() => SelectGame(selectionIndex));
         }
 
         StartCoroutine(SelectGameCoroutine(0));
-        //SelectGame(0);
     }
 
     void PopulateGameDetails()
