@@ -194,7 +194,7 @@ namespace StarWriter.Core
             }
             if (showCompletionState.Equals(UnityAdsShowCompletionState.SKIPPED))
             {
-                Debug.Log("Unity Ads Rewarded Ad SKIPPED do to ad failure. Extending game.");
+                Debug.Log("Unity Ads Rewarded Ad SKIPPED due to ad failure. Extending game.");
 
             }
         }
@@ -203,11 +203,6 @@ namespace StarWriter.Core
         {
             // Give them the benefit of the doubt and just pass through to the ad completion logic
             OnAdShowComplete(adUnitId, UnityAdsShowCompletionState.SKIPPED);
-        }
-
-        void OnApplicationQuit()
-        {
-            DataPersistenceManager.Instance.SaveGame();     // TODO: null pointer here
         }
     }
 }

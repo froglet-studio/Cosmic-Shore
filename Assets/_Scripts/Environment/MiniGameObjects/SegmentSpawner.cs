@@ -16,11 +16,13 @@ public enum PositioningScheme
 public class SegmentSpawner : MonoBehaviour
 {
     [SerializeField] TrailBlock trailBlock;
-    [SerializeField] int numberOfSegments = 1;
+    [SerializeField] public int numberOfSegments = 1;
     [SerializeField] List<SpawnableAbstractBase> spawnableSegments;
     [SerializeField] PositioningScheme positioningScheme = PositioningScheme.SphereUniform;
     [SerializeField] List<float> spawnSegmentWeights;
-    [SerializeField] int Seed;
+    [SerializeField] public int Seed;
+    [SerializeField] bool InitializeOnStart;
+    GameObject SpawnedSegmentContainer;
     List<Trail> trails = new();
     System.Random random = new();
     int spawnedItemCount;
@@ -28,7 +30,11 @@ public class SegmentSpawner : MonoBehaviour
 
     void Start()
     {
-        Initialize();
+        SpawnedSegmentContainer = new GameObject();
+        SpawnedSegmentContainer.name = "SpawnedSegments";
+
+        if (InitializeOnStart)
+            Initialize();
     }
 
     public void Initialize()
@@ -40,7 +46,7 @@ public class SegmentSpawner : MonoBehaviour
             foreach (var block in trail.TrailList)
                 Destroy(block);
 
-        trails.Clear();
+        NukeTheTrails();
 
         normalizeWeights();
 
@@ -50,6 +56,16 @@ public class SegmentSpawner : MonoBehaviour
             PositionSpawnedObject(spawned, positioningScheme);
             spawnedItemCount++;
         }
+    }
+
+    public void NukeTheTrails()
+    {
+        trails.Clear();
+
+        if (SpawnedSegmentContainer == null) return;
+
+        foreach (Transform child in SpawnedSegmentContainer.transform)
+            Destroy(child.gameObject);
     }
 
     void PositionSpawnedObject(GameObject spawned, PositioningScheme positioningScheme)

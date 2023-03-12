@@ -219,7 +219,7 @@ public class TrailSpawner : MonoBehaviour
             yield return new WaitForSeconds(wavelength / shipData.Speed);
         }
     }
-
+    
     public static void NukeTheTrails()
     {
         if (TrailContainer == null) return;

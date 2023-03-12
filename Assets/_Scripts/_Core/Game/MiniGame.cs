@@ -59,20 +59,27 @@ public class MiniGame : MonoBehaviour
     IEnumerator StartNewGameCoroutine()
     {
         yield return new WaitForSeconds(.2f);
+        
         StartNewGame();
     }
 
     // TODO: use the scene navigator instead?
-    public void ResetAndReplay() { SceneManager.LoadScene(SceneManager.GetActiveScene().name); }
+    public void ResetAndReplay()
+    { 
+        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+    }
 
     public void Exit()
     {
+        if (PauseSystem.Paused) PauseSystem.TogglePauseGame();
         // TODO: this is kind of hokie
         SceneManager.LoadScene(0);
     }
 
     public virtual void StartNewGame()
     {
+        if (PauseSystem.Paused) PauseSystem.TogglePauseGame();
+
         RemainingPlayers = new();
         for (var i = 0; i < Players.Count; i++) RemainingPlayers.Add(i);
 
@@ -153,8 +160,9 @@ public class MiniGame : MonoBehaviour
         Debug.Log($"MiniGame.EndGame - Rounds Played: {RoundsPlayedThisGame}, ... {Time.time}");
         Debug.Log($"MiniGame.EndGame - Winner: {ScoreTracker.GetWinner()} ");
         foreach (var player in Players)
-            Debug.Log($"MiniGame.EndGame - Player One Score: {ScoreTracker.GetScore(player.PlayerName)} ");
+            Debug.Log($"MiniGame.EndGame - Player Score: {ScoreTracker.GetScore(player.PlayerName)} ");
 
+        PauseSystem.TogglePauseGame();
         gameRunning = false;
         EndGameScreen.SetActive(true);
         ScoreTracker.DisplayScores();
@@ -218,56 +226,31 @@ public class MiniGame : MonoBehaviour
     [SerializeField] Sprite Countdown1;
     [SerializeField] Sprite Countdown0;
     [SerializeField] float CountdownGrowScale = 1.5f;
+
+    IEnumerator CountdownDigitCoroutine(Sprite digit)
+    {
+        var elapsedTime = 0f;
+        CountdownDisplay.transform.localScale = Vector3.one;
+        CountdownDisplay.sprite = digit;
+
+        while (elapsedTime < 1)
+        {
+            elapsedTime += Time.deltaTime;
+            CountdownDisplay.transform.localScale = Vector3.one + (Vector3.one * ((CountdownGrowScale - 1) * elapsedTime));
+            yield return null;
+        }
+    }
+
     IEnumerator CountdownCoroutine()
     {
         CountdownDisplay.gameObject.SetActive(true);
 
-        Debug.Log("Countdown: 3");
-        var elapsedTime = 0f;
-        CountdownDisplay.transform.localScale = Vector3.one;
-        CountdownDisplay.sprite = Countdown3;
-        
-        while (elapsedTime < 1) { 
-            elapsedTime += Time.deltaTime;
-            CountdownDisplay.transform.localScale = Vector3.one + (Vector3.one * ( (CountdownGrowScale-1) *elapsedTime));
-            yield return null;
-        }
-
-        Debug.Log("Countdown: 2");
-        elapsedTime = 0f;
-        CountdownDisplay.transform.localScale = Vector3.one;
-        CountdownDisplay.sprite = Countdown2;
-        while (elapsedTime < 1)
-        {
-            elapsedTime += Time.deltaTime;
-            CountdownDisplay.transform.localScale = Vector3.one + (Vector3.one * ((CountdownGrowScale - 1) * elapsedTime));
-            yield return null;
-        }
+        yield return StartCoroutine(CountdownDigitCoroutine(Countdown3));
+        yield return StartCoroutine(CountdownDigitCoroutine(Countdown2));
+        yield return StartCoroutine(CountdownDigitCoroutine(Countdown1));
+        yield return StartCoroutine(CountdownDigitCoroutine(Countdown0));
 
         CountdownDisplay.transform.localScale = Vector3.one;
-        CountdownDisplay.sprite = Countdown1;
-        elapsedTime = 0f;
-
-        Debug.Log("Countdown: 1");
-        while (elapsedTime < 1)
-        {
-            elapsedTime += Time.deltaTime;
-            CountdownDisplay.transform.localScale = Vector3.one + (Vector3.one * ((CountdownGrowScale - 1) * elapsedTime));
-            yield return null;
-        }
-
-        CountdownDisplay.transform.localScale = Vector3.one;
-        CountdownDisplay.sprite = Countdown0;
-        elapsedTime = 0f;
-
-        Debug.Log("Countdown: 0");
-        while (elapsedTime < 1)
-        {
-            elapsedTime += Time.deltaTime;
-            CountdownDisplay.transform.localScale = Vector3.one + (Vector3.one * ((CountdownGrowScale - 1) * elapsedTime));
-            yield return null;
-        }
-
         CountdownDisplay.gameObject.SetActive(false);
 
         ActivePlayer.GetComponent<InputController>().PauseInput(false);
