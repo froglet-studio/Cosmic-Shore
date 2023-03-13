@@ -12,10 +12,12 @@ namespace StarWriter.Core
         [SerializeField] float speed;
                   public float Speed { get { speed = inputSpeed * speedMultiplier; return speed; } }
 
+
         public bool Boosting = false;
         public bool BoostCharging = false;
         public bool BoostDecaying = false;
         public bool Drifting = false;
+        public bool LayingBulletTrail = false;
 
         public bool Attached = false;
         public TrailBlock AttachedTrailBlock;

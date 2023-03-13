@@ -12,7 +12,7 @@ public class GunShipController : ShipController
     float rechargeRate = .1f;
 
     public float ProjectileScale = 1f;
-    public Vector3 BlockScale = new Vector3(4f, 4f, .6f);
+    public Vector3 BlockScale = new Vector3(4f, 4f, 1f);
 
     public int nextBlockIndex = 1;
     public int previousBlockIndex;

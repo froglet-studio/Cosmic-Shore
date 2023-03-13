@@ -415,6 +415,7 @@ MonoBehaviour:
   waitTime: 0.5
   startDelay: 2
   warp: 0
+  spawnerEnabled: 1
   MaxNearbyBlockCount: 10
   minBlockScale: 1
   maxBlockScale: 1
@@ -436,9 +437,10 @@ MonoBehaviour:
   speedMultiplier: 1
   speed: 0
   Boosting: 0
-  ChargingBoost: 0
+  BoostCharging: 0
   BoostDecaying: 0
   Drifting: 0
+  LayingBulletTrail: 0
   Attached: 0
   AttachedTrailBlock: {fileID: 0}
   GunsActive: 1

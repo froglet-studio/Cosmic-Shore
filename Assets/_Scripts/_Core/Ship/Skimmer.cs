@@ -103,8 +103,13 @@ namespace StarWriter.Core
 
         void OnTriggerEnter(Collider other)
         {
+            if (other.TryGetComponent<ShipGeometry>(out var shipGeometry))
+            {
+                Debug.Log($"skimmer ship geometry: {shipGeometry}");
+            }
             if (other.TryGetComponent<TrailBlock>(out var trailBlock))
             {
+                Debug.Log($"trail Block: {trailBlock}");
                 StartSkim(trailBlock);
                 PerformSkimmerImpactEffects(trailBlock.TrailBlockProperties);
             }      
