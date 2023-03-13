@@ -11,6 +11,7 @@ namespace StarWriter.Core.UI
         public GameObject Hangar_Panel;
         public GameObject Main_Menu_Panel;
         public GameObject Minigames_Panel;
+        public GameObject Minigames_Settings_Panel;
         public GameObject Records_Panel;
         public GameObject Ship_Select;
 
@@ -50,6 +51,7 @@ namespace StarWriter.Core.UI
             Game_Options_Panel.SetActive(false);
             Main_Menu_Panel.SetActive(false);
             Minigames_Panel.SetActive(false);
+            Minigames_Settings_Panel.SetActive(false);
             Records_Panel.SetActive(false);
             Ship_Select.SetActive(false);
         }
@@ -59,6 +61,7 @@ namespace StarWriter.Core.UI
             Game_Options_Panel.SetActive(false);
             Main_Menu_Panel.SetActive(false);
             Minigames_Panel.SetActive(false);
+            Minigames_Settings_Panel.SetActive(false);
             Records_Panel.SetActive(true);
             Ship_Select.SetActive(false);
         }
@@ -67,6 +70,7 @@ namespace StarWriter.Core.UI
             Minigames_Panel.SetActive(true);
             Game_Options_Panel.SetActive(false);
             Main_Menu_Panel.SetActive(false);
+            Minigames_Settings_Panel.SetActive(false);
             Hangar_Panel.SetActive(false);
             Records_Panel.SetActive(false);
             Ship_Select.SetActive(false);
@@ -77,6 +81,7 @@ namespace StarWriter.Core.UI
             Main_Menu_Panel.SetActive(false);
             Hangar_Panel.SetActive(false);
             Minigames_Panel.SetActive(false);
+            Minigames_Settings_Panel.SetActive(false);
             Records_Panel.SetActive(false);
             Ship_Select.SetActive(false);
         }
@@ -86,9 +91,9 @@ namespace StarWriter.Core.UI
             Game_Options_Panel.SetActive(false);
             Hangar_Panel.SetActive(false);
             Minigames_Panel.SetActive(false);
+            Minigames_Settings_Panel.SetActive(false);
             Records_Panel.SetActive(false);
             Ship_Select.SetActive(false);
         }
-
     }
 }
