@@ -9,6 +9,7 @@ namespace StarWriter.Core
     {
         [SerializeField] List<TrailBlockImpactEffects> trailBlockImpactEffects;
         [SerializeField] List<SkimmerStayEffects> skimmerStayEffects;
+        [SerializeField] List<ShipImpactEffects> shipImpactEffects;
         [SerializeField] float time = 300f;
         [SerializeField] bool skimVisualFX = true;
         [SerializeField] public Ship ship;
@@ -56,7 +57,7 @@ namespace StarWriter.Core
 
 
         //Maja added this to try and enable shark skimmer smashing
-        void PerformSkimmerImpactEffects(TrailBlockProperties trailBlockProperties)
+        void PerformTrailImpactEffects(TrailBlockProperties trailBlockProperties)
         {
             foreach (TrailBlockImpactEffects effect in trailBlockImpactEffects)
             {
@@ -85,7 +86,23 @@ namespace StarWriter.Core
             }
         }
 
-        void PerformSkimmerStayEffects(TrailBlockProperties trailBlockProperties, float chargeAmount)
+        void PerformShipImpactEffects(ShipGeometry shipGeometry)
+        {
+            foreach (ShipImpactEffects effect in shipImpactEffects)
+            {
+                switch (effect)
+                {
+                    case ShipImpactEffects.DebuffSpawner:
+                        shipGeometry.Ship.TrailSpawner.PauseTrailSpawner();
+                        shipGeometry.Ship.TrailSpawner.RestartTrailSpawnerAfterDelay(5);
+                        break;
+
+                }
+            }
+        }
+
+
+        void PerformTrailStayEffects(TrailBlockProperties trailBlockProperties, float chargeAmount)
         {
             foreach (SkimmerStayEffects effect in skimmerStayEffects)
             {
@@ -105,13 +122,12 @@ namespace StarWriter.Core
         {
             if (other.TryGetComponent<ShipGeometry>(out var shipGeometry))
             {
-                //ship.TrailSpawner.
-                //Debug.Log($"skimmer ship geometry: {shipGeometry}");
+                PerformShipImpactEffects(shipGeometry);
             }
             if (other.TryGetComponent<TrailBlock>(out var trailBlock))
             {
                 StartSkim(trailBlock);
-                PerformSkimmerImpactEffects(trailBlock.TrailBlockProperties);
+                PerformTrailImpactEffects(trailBlock.TrailBlockProperties);
             }      
         }
 
@@ -149,7 +165,7 @@ namespace StarWriter.Core
                 fuel += (activelySkimmingBlockCount * MultiSkimMultiplier);
 
                 // grant the fuel
-                PerformSkimmerStayEffects(trailBlock.TrailBlockProperties, fuel);
+                PerformTrailStayEffects(trailBlock.TrailBlockProperties, fuel);
                 //OnSkim?.Invoke(ship.Player.PlayerUUID, fuel);
             }
         }
