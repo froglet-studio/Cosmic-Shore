@@ -1,6 +1,5 @@
 using UnityEngine;
 using TMPro;
-using StarWriter.Core;
 
 public class CurrentScore : MonoBehaviour
 {

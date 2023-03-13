@@ -72,6 +72,8 @@ namespace StarWriter.Core
             PlayerPrefs.SetInt(PlayerPrefKeys.invertYEnabled.ToString(), invertYEnabled ? 1 : 0);
             PlayerPrefs.Save();
             OnChangeInvertYEnabledStatus?.Invoke(invertYEnabled);  // Event to toggle InputController isGryoEnabled
+
+            Debug.Log($"ChangeInvertYEnabledStatus: {invertYEnabled}");
         }
     }
 }
