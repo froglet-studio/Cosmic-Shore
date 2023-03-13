@@ -13090,7 +13090,7 @@ GameObject:
   - component: {fileID: 1111146382}
   - component: {fileID: 1111146385}
   m_Layer: 5
-  m_Name: Nav Bar (1)
+  m_Name: Nav Bar
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -27587,7 +27587,7 @@ PrefabInstance:
     - target: {fileID: 2109514713969662608, guid: 7b41307a62a8b6f4499e38f52d12adcb,
         type: 3}
       propertyPath: m_IsActive
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 2109514713969662609, guid: 7b41307a62a8b6f4499e38f52d12adcb,
         type: 3}
@@ -28608,11 +28608,6 @@ PrefabInstance:
         type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5036209225001289746, guid: 6e26a254ab5fbd749a242ce2be20d667,
-        type: 3}
-      propertyPath: gameTestModeTwoGameScene
-      value: MinigameExploration
       objectReference: {fileID: 0}
     - target: {fileID: 5036209225001289759, guid: 6e26a254ab5fbd749a242ce2be20d667,
         type: 3}
