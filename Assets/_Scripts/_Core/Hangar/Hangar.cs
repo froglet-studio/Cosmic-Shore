@@ -45,6 +45,7 @@ namespace StarWriter.Core.HangerBuilder
 
         public void SetPlayerShip(int shipType)
         {
+            Debug.Log($"Hangar.SetPlayerShip: {(ShipTypes)shipType}");
             PlayerShipType = (ShipTypes)shipType;
             PlayerPrefs.SetInt(SelectedShipPlayerPrefKey, shipType);
         }

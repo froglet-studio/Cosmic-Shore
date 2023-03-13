@@ -1,8 +1,7 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using TailGlider.Utility.Singleton; // TODO: re-namespace to StarWriter
+using TailGlider.Utility.Singleton;
 using UnityEngine.Advertisements;
-using StarWriter.Core.Audio;
 using StarWriter.Core.Input;
 
 namespace StarWriter.Core
@@ -10,8 +9,6 @@ namespace StarWriter.Core
     [DefaultExecutionOrder(0)]
     public class GameManager : SingletonPersistent<GameManager>
     {
-        public Player player;
-
         public delegate void OnPlayGameEvent();
         public static event OnPlayGameEvent onPlayGame;
 
@@ -32,8 +29,7 @@ namespace StarWriter.Core
         [SerializeField] string mainMenuScene = "Menu_Main";
         [SerializeField] string gameTestModeZeroGameScene = "Game_HighScore";
         [SerializeField] string gameTestModeOneGameScene = "Game_TestModeOne";
-        //[SerializeField] string gameTestModeTwoGameScene = "Game_TestModeTwo";
-        [SerializeField] string gameTestModeTwoGameScene = "MinigameExploration";
+        [SerializeField] string gameTestModeTwoGameScene = "Game_TestNodeInterior";
         [SerializeField] string gameTestModeThreeGameScene = "Game_TestModeThree";
         [SerializeField] string gameTestModeFourGameScene = "Game_TestModeFour";
         [SerializeField] string gameTestDesign = "Game_TestDesign";
