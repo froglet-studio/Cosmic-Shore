@@ -15,8 +15,8 @@ MonoBehaviour:
   Class: 0
   Name: Random
   Description: Roll the dice
-  Icon: {fileID: 21300000, guid: fc1d7a25ca54ab94e90bff71393f4cf0, type: 3}
-  SelectedIcon: {fileID: 21300000, guid: 0ce9460d914baaa4190637de533b70e3, type: 3}
+  Icon: {fileID: 21300000, guid: 88020190113f0bb48b779ac6c1e4f467, type: 3}
+  SelectedIcon: {fileID: 21300000, guid: d99f0b8a50d1ca646b2ae12a81d6f8b7, type: 3}
   TrailPreviewImage: {fileID: 21300000, guid: ec56e21c3a9226c47816974bb0b6fd46, type: 3}
   PreviewImage: {fileID: 6684065222803499413, guid: 3da05e9f66c9f254c8875335e7e9179e,
     type: 3}
