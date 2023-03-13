@@ -13,15 +13,15 @@ MonoBehaviour:
   m_Name: Shark
   m_EditorClassIdentifier: 
   Class: 3
-  Name: Shark
+  Name: Rampage
   Description: Dun dun dun dun
   Icon: {fileID: 21300000, guid: 2f25d43091cd95b4ba63624192b69769, type: 3}
   SelectedIcon: {fileID: 21300000, guid: aa8c00a5343222d439660e9e400e542c, type: 3}
   TrailPreviewImage: {fileID: 21300000, guid: f59564772bfac8642a09ad4e75466830, type: 3}
-  PreviewImage: {fileID: 21300000, guid: d3d69a6a63871714f8328f1a0de44535, type: 3}
+  PreviewImage: {fileID: 21300000, guid: c801dcff16939ed4aa2630e56f539290, type: 3}
   Abilities:
   - {fileID: 11400000, guid: f9f41e3b69e020741878e22c46c8190c, type: 2}
-  - {fileID: 11400000, guid: f9f41e3b69e020741878e22c46c8190c, type: 2}
+  - {fileID: 11400000, guid: 049001867ddf0504c93f7a903f691ca4, type: 2}
   MiniGames:
   - {fileID: 11400000, guid: 812851e4603217c469662dc3cb9c6d93, type: 2}
   - {fileID: 11400000, guid: 3537310ecbdad2e449bbca31d2aa8599, type: 2}
