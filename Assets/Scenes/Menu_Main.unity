@@ -22355,6 +22355,7 @@ MonoBehaviour:
   Minigames_Panel: {fileID: 2044870686}
   Records_Panel: {fileID: 2109514715100340523}
   Ship_Select: {fileID: 193029997}
+  Minigame_Settings: {fileID: 2043692916}
 --- !u!114 &1867118898
 MonoBehaviour:
   m_ObjectHideFlags: 0
