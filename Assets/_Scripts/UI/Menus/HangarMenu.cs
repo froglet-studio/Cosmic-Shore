@@ -28,6 +28,8 @@ public class HangarMenu : MonoBehaviour
 
     void PopulateShipSelectionList()
     {
+        if (ShipSelectionContainer == null) return;
+
         // Deactivate all
         for (var i = 0; i < ShipSelectionContainer.childCount; i++)
             ShipSelectionContainer.GetChild(i).gameObject.SetActive(false);
@@ -50,6 +52,8 @@ public class HangarMenu : MonoBehaviour
 
     void PopulateAbilitySelectionList()
     {
+        if (AbilitySelectionContainer == null) return;
+
         // Deactivate all
         for (var i = 0; i < AbilitySelectionContainer.transform.childCount; i++)
             AbilitySelectionContainer.GetChild(i).gameObject.SetActive(false);
@@ -67,7 +71,8 @@ public class HangarMenu : MonoBehaviour
             abilitySelection.GetComponent<Button>().onClick.AddListener(() => SelectAbility(selectionIndex));
         }
 
-        StartCoroutine(SelectAbilityCoroutine(0));
+        if (SelectedShip.Abilities.Count > 0)
+            StartCoroutine(SelectAbilityCoroutine(0));
     }
 
     void PopulateShipDetails()
@@ -77,10 +82,10 @@ public class HangarMenu : MonoBehaviour
         Debug.Log($"Populating Ship Details List: {SelectedShip.Icon}");
         Debug.Log($"Populating Ship Details List: {SelectedShip.PreviewImage}");
 
-        SelectedShipName.text = SelectedShip.Name;
-        SelectedShipDescription.text = SelectedShip.Description;
-        SelectedShipImage.sprite = SelectedShip.PreviewImage;
-        SelectedShipTrailImage.sprite = SelectedShip.TrailPreviewImage;
+        if (SelectedShipName != null) SelectedShipName.text = SelectedShip.Name;
+        if (SelectedShipDescription != null) SelectedShipDescription.text = SelectedShip.Description;
+        if (SelectedShipImage != null) SelectedShipImage.sprite = SelectedShip.PreviewImage;
+        if (SelectedShipTrailImage !=null) SelectedShipTrailImage.sprite = SelectedShip.TrailPreviewImage;
     }
     
     void PopulateAbilityDetails()
@@ -90,14 +95,17 @@ public class HangarMenu : MonoBehaviour
         Debug.Log($"Populating Ability Details List: {SelectedAbility.Icon}");
         Debug.Log($"Populating Ability Details List: {SelectedAbility.PreviewClip}");
 
-        SelectedAbilityName.text = SelectedAbility.Name;
-        SelectedAbilityDescription.text = SelectedAbility.Description;
+        if (SelectedAbilityName != null) SelectedAbilityName.text = SelectedAbility.Name;
+        if (SelectedAbilityDescription != null) SelectedAbilityDescription.text = SelectedAbility.Description;
 
-        for (var i = 2; i < SelectedAbilityPreviewWindow.transform.childCount; i++)
-            Destroy(SelectedAbilityPreviewWindow.transform.GetChild(i).gameObject);
+        if (SelectedAbilityPreviewWindow != null)
+        {
+            for (var i = 2; i < SelectedAbilityPreviewWindow.transform.childCount; i++)
+                Destroy(SelectedAbilityPreviewWindow.transform.GetChild(i).gameObject);
 
-        var preview = Instantiate(SelectedAbility.PreviewClip);
-        preview.transform.SetParent(SelectedAbilityPreviewWindow.transform, false);
+            var preview = Instantiate(SelectedAbility.PreviewClip);
+            preview.transform.SetParent(SelectedAbilityPreviewWindow.transform, false);
+        }
     }
 
     public void SelectShip(int index)
