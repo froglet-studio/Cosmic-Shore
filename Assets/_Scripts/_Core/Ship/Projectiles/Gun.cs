@@ -57,17 +57,7 @@ namespace StarWriter.Core
             Vector3 distance;
             Vector3 lookAtVector;
             
-            //Vector3 reflectedVector = Quaternion.AngleAxis(180, distance) * lookAtTarget.transform.forward;
-            //float angle1 = Vector3.Angle(lookAtTarget.transform.forward, distance);
-            //Vector3 outOfPlaneVector = Vector3.Cross(lookAtTarget.transform.forward, distance);
-            //float curveRadius = distance.magnitude / (2 * Mathf.Sin(angle1));
-            //Vector3 distanceFromPreviousBlockToCurveCenter = (Quaternion.AngleAxis(-90, outOfPlaneVector) * lookAtTarget.transform.forward * curveRadius);
-            //Vector3 centerOfCurvaturePosition = lookAtTarget.position + distanceFromPreviousBlockToCurveCenter;
-
-            //Vector3 blockPosition = centerOfCurvaturePosition + Quaternion.AngleAxis(3, outOfPlaneVector) * (-distanceFromPreviousBlockToCurveCenter);
-
-            //for (int i = 1; i < 2*angle1; i++) 
-            //{
+            
             var Block = Instantiate(trailBlock);
             if (trail.TrailList.Count == 0) 
             { 

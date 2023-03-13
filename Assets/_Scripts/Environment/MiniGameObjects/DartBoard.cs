@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using StarWriter.Core;
 using UnityEngine;
 
-
 public class DartBoard : SpawnableAbstractBase
 {
     [SerializeField] TrailBlock greenTrailBlock;
