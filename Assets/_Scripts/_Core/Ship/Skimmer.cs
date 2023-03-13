@@ -105,6 +105,7 @@ namespace StarWriter.Core
         {
             if (other.TryGetComponent<ShipGeometry>(out var shipGeometry))
             {
+                ship.TrailSpawner.
                 //Debug.Log($"skimmer ship geometry: {shipGeometry}");
             }
             if (other.TryGetComponent<TrailBlock>(out var trailBlock))
