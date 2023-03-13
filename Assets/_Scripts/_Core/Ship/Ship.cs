@@ -331,6 +331,10 @@ namespace StarWriter.Core
                     case ShipActions.FireBigGun:
                         if (shipController is GunShipController) ((GunShipController)shipController).BigFire();
                         break;
+                    case ShipActions.layBulletTrail:
+                        shipData.LayingBulletTrail = true;
+                        break;
+
                 }
             }
         }
@@ -382,6 +386,9 @@ namespace StarWriter.Core
                         break;
                     case ShipActions.PauseGuns:
                         shipData.GunsActive = true;
+                        break;
+                    case ShipActions.layBulletTrail:
+                        shipData.LayingBulletTrail = false;
                         break;
                 }
             }

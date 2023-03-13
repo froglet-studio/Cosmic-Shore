@@ -14,5 +14,6 @@ public enum ShipActions
     GrowTrail = 9,
     Detach = 10,
     PauseGuns = 11,
-    FireBigGun = 12
+    FireBigGun = 12,
+    layBulletTrail = 13
 }
