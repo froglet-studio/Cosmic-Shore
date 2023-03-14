@@ -54,7 +54,7 @@ namespace StarWriter.Core
         //        }
         //    }
         //}
-
+        
 
         //Maja added this to try and enable shark skimmer smashing
         void PerformTrailImpactEffects(TrailBlockProperties trailBlockProperties)
@@ -73,7 +73,7 @@ namespace StarWriter.Core
                         trailBlockProperties.trailBlock.Steal(Player.PlayerName, team);
                         break;
                     case TrailBlockImpactEffects.ChangeBoost:
-                        resourceSystem.ChangeBoostAmount(Player.PlayerUUID, chargeAmount + (activelySkimmingBlockCount * MultiSkimMultiplier));
+                        resourceSystem.ChangeBoostAmount(Player.PlayerUUID, (chargeAmount * trailBlockProperties.volume) + (activelySkimmingBlockCount * MultiSkimMultiplier));
                         break;
                     case TrailBlockImpactEffects.ChangeAmmo:
                         resourceSystem.ChangeAmmoAmount(Player.PlayerUUID, chargeAmount + (activelySkimmingBlockCount * MultiSkimMultiplier));
@@ -92,11 +92,13 @@ namespace StarWriter.Core
             {
                 switch (effect)
                 {
-                    case ShipImpactEffects.DebuffSpawner:
+                    case ShipImpactEffects.TrailSpawnerCooldown:
                         shipGeometry.Ship.TrailSpawner.PauseTrailSpawner();
                         shipGeometry.Ship.TrailSpawner.RestartTrailSpawnerAfterDelay(10);
                         break;
-
+                    case ShipImpactEffects.PlayHaptics:
+                        HapticController.PlayShipCollisionHaptics();
+                        break;
                 }
             }
         }

@@ -6,6 +6,7 @@ public class HapticController : MonoBehaviour
     static HapticPatterns.PresetType ButtonPattern = HapticPatterns.PresetType.LightImpact;
     static HapticPatterns.PresetType CrystalCollisionPattern = HapticPatterns.PresetType.MediumImpact;
     static HapticPatterns.PresetType BlockCollisionPattern = HapticPatterns.PresetType.Success;
+    static HapticPatterns.PresetType ShipCollisionPattern = HapticPatterns.PresetType.HeavyImpact;
 
     public void PlayPreset(int option)
     {
@@ -25,6 +26,10 @@ public class HapticController : MonoBehaviour
     public static void PlayBlockCollisionHaptics()
     {
         HapticPatterns.PlayPreset(BlockCollisionPattern);
+    }
+    public static void PlayShipCollisionHaptics()
+    {
+        HapticPatterns.PlayPreset(ShipCollisionPattern);
     }
 }
 /*

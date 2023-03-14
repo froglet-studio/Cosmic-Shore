@@ -2,5 +2,6 @@
 // Always assign a static numeric value to your enum types
 public enum ShipImpactEffects
 {
-    DebuffSpawner = 0,
+    TrailSpawnerCooldown = 0,
+    PlayHaptics = 1
 }
