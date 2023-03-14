@@ -8334,6 +8334,7 @@ GameObject:
   m_Component:
   - component: {fileID: 772964166}
   - component: {fileID: 772964167}
+  - component: {fileID: 772964168}
   m_Layer: 5
   m_Name: Records Screen
   m_TagString: Untagged
@@ -8374,6 +8375,24 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 174a813eb49343843b766d2fdc4e5eb5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &772964168
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 772964165}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7f7df5bea58cb22468273de1a9facada, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  Games:
+  - {fileID: 11400000, guid: 27f7ec1e006fb3a4cbb91572e943cf67, type: 2}
+  - {fileID: 11400000, guid: 3537310ecbdad2e449bbca31d2aa8599, type: 2}
+  - {fileID: 11400000, guid: 812851e4603217c469662dc3cb9c6d93, type: 2}
+  GameSelectionContainer: {fileID: 283141851}
+  HighScoresContainer: {fileID: 1358711680}
 --- !u!1 &780678797
 GameObject:
   m_ObjectHideFlags: 0
