@@ -11,14 +11,14 @@ public class AOESlowExplosion : AOEExplosion
         Debug.Log("AOE Slow Explosion Collision");
         if (other.TryGetComponent<ShipGeometry>(out var shipGeometry))
         {
-            if (shipGeometry.Ship.Team == Team) 
+            if (shipGeometry.Ship.Team == Team)
             {
                 Debug.Log("tried to slow yourself");
                 return;
             }
 
             Debug.Log("tried to slow foe");
-            shipGeometry.Ship.ModifySpeed(0,10);
+            shipGeometry.Ship.ModifySpeed(.1f,10);
         }
     }
 

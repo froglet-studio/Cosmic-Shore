@@ -216,7 +216,7 @@ public class TrailSpawner : MonoBehaviour
                     CreateBlock(-gap / 2, trail2);
                 } 
             }
-            yield return new WaitForSeconds(wavelength / shipData.Speed);
+            yield return new WaitForSeconds(Mathf.Clamp(wavelength / shipData.Speed,0,3f));
         }
     }
     
