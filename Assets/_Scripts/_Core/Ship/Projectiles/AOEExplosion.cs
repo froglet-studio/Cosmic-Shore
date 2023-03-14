@@ -5,11 +5,11 @@ namespace StarWriter.Core
 {
     public class AOEExplosion : MonoBehaviour
     {
-        public float speed = 5f; // TODO: use the easing of the explosion to change this over time
+        public float speed = 50f; // TODO: use the easing of the explosion to change this over time
         protected const float PI_OVER_TWO = Mathf.PI / 2;
         protected Vector3 MaxScaleVector;
 
-        [SerializeField] public float MaxScale = 200f;
+        [HideInInspector] public float MaxScale = 200f;
         [SerializeField] protected float ExplosionDuration = 2f;
         [SerializeField] protected float ExplosionDelay = .2f;
         Quaternion containerRotation;
@@ -34,6 +34,19 @@ namespace StarWriter.Core
             StartCoroutine(ExplodeCoroutine());
         }
 
+        protected virtual void OnTriggerEnter(Collider other)
+        {
+            if (other.TryGetComponent<TrailBlock>(out var trailBlock))
+            {
+                if (trailBlock.Team == Team)
+                    return;
+
+                var impactVector = (other.transform.position - transform.position).normalized * speed;
+
+                trailBlock.Explode(impactVector, Team, Ship.Player.PlayerName);
+            }
+        }
+
         protected virtual IEnumerator ExplodeCoroutine()
         {
             yield return new WaitForSeconds(ExplosionDelay);
@@ -45,8 +58,10 @@ namespace StarWriter.Core
             while (elapsedTime < ExplosionDuration)
             {
                 elapsedTime += Time.deltaTime;
-                container.transform.localScale = Vector3.Lerp(Vector3.zero, MaxScaleVector, Mathf.Sin((elapsedTime / ExplosionDuration) * PI_OVER_TWO));
-                material.SetFloat("_Opacity", Mathf.Clamp((MaxScaleVector - container.transform.localScale).magnitude / MaxScaleVector.magnitude, 0, 1));
+                var easing = Mathf.Sin((elapsedTime / ExplosionDuration) * PI_OVER_TWO);
+                container.transform.localScale = Vector3.Lerp(Vector3.zero, MaxScaleVector, easing);
+                material.SetFloat("_Opacity", 1-easing);
+                //material.SetFloat("_Opacity", Mathf.Clamp((MaxScaleVector - container.transform.localScale).magnitude / MaxScaleVector.magnitude, 0, 1));
                 yield return null;
             }
 

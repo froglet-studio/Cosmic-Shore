@@ -251,7 +251,7 @@ namespace StarWriter.Core
                         resourceSystem.ChangeAmmoAmount(player.PlayerUUID, -resourceSystem.CurrentAmmo / 2f);
                         break;
                     case TrailBlockImpactEffects.DebuffSpeed:
-                        SpeedModifiers.Add(new ShipSpeedModifier(trailBlockProperties.speedDebuffAmount, speedModifierDuration, 0));
+                        ModifySpeed(trailBlockProperties.speedDebuffAmount, speedModifierDuration);
                         break;
                     case TrailBlockImpactEffects.DeactivateTrailBlock:
                         break;
@@ -437,6 +437,14 @@ namespace StarWriter.Core
             farFieldSkimmer?.gameObject.SetActive(false);
         }
 
+        //
+        // Speed Modification
+        //
+
+        public void ModifySpeed(float amount, float duration)
+        {
+            SpeedModifiers.Add(new ShipSpeedModifier(amount, duration, 0));
+        }
 
         void ApplySpeedModifiers()
         {

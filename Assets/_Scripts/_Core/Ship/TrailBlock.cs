@@ -169,16 +169,6 @@ namespace StarWriter.Core
                     Explode(impactVector, ship.Team, ship.Player.PlayerName);
                 }
             }
-            else if (IsExplosion(other.gameObject))
-            {
-                if (other.GetComponent<AOEExplosion>().Team == Team)
-                    return;
-
-                var speed = other.GetComponent<AOEExplosion>().speed * 10;
-                var impactVector = (transform.position - other.transform.position).normalized * speed;
-
-                Explode(impactVector, other.GetComponent<AOEExplosion>().Team, other.GetComponent<AOEExplosion>().Ship.Player.PlayerName);
-            }
         }
 
         public void Collide(Ship ship)
@@ -257,6 +247,5 @@ namespace StarWriter.Core
         {
             return go.layer == LayerMask.NameToLayer("Explosions");
         }
-
     }
 }

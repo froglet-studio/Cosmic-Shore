@@ -29,7 +29,7 @@ Transform:
   m_GameObject: {fileID: 434498384779577929}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 3, y: 3, z: 3}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 3930926120077726301}
@@ -143,7 +143,7 @@ Transform:
   m_GameObject: {fileID: 1022800225184736306}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 3, y: 3, z: 3}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 3930926120077726301}
@@ -257,7 +257,7 @@ Transform:
   m_GameObject: {fileID: 3710282027580066907}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 3, y: 3, z: 3}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 3930926120077726301}
@@ -520,13 +520,13 @@ MonoBehaviour:
   - {fileID: 5736286126695899062}
   TrailSpawner: {fileID: 874579555101021522}
   head: {fileID: 3710282027580066907}
-  AOEPrefab: {fileID: 2728798890556433942, guid: f5ecfb9923155a84c860975d559b2714,
+  AOEPrefab: {fileID: 2728798890556433942, guid: d568a14301490e54280955b50673f884,
     type: 3}
   farFieldSkimmer: {fileID: 0}
-  crystalImpactEffects: 0000000001000000
+  crystalImpactEffects: 000000000100000005000000
   trailBlockImpactEffects: 00000000030000000500000006000000
-  minExplosionScale: 50
-  maxExplosionScale: 500
+  minExplosionScale: 1000
+  maxExplosionScale: 1000
   blockChargeChange: 0
   boostMultiplier: 3
   boostFuelAmount: -0.01
@@ -539,16 +539,16 @@ MonoBehaviour:
   cameraGrowthRate: 8
   cameraShrinkRate: 8
   minTrailYScale: 1
-  maxTrailYScale: 1.7
+  maxTrailYScale: 3
   skimmerGrowthRate: 8
   skimmerShrinkRate: 8
-  trailGrowthRate: 2
-  trailShrinkRate: 2
+  trailGrowthRate: 3
+  trailShrinkRate: 3
   levelEffects: 
   minFarFieldSkimmerScale: 100
   maxFarFieldSkimmerScale: 200
-  minNearFieldSkimmerScale: 10
-  maxNearFieldSkimmerScale: 60
+  minNearFieldSkimmerScale: 20
+  maxNearFieldSkimmerScale: 80
   minGap: 1
   maxGap: 1
   minProjectileScale: 1
@@ -753,7 +753,7 @@ Transform:
   m_GameObject: {fileID: 7020314743814055985}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 3, y: 3, z: 3}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 8550839755898240319}
@@ -826,7 +826,7 @@ Transform:
   m_GameObject: {fileID: 8807318159750696826}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 3, y: 3, z: 3}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 3930926120077726301}
@@ -936,17 +936,17 @@ PrefabInstance:
     - target: {fileID: 7231566422788689087, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
       propertyPath: m_LocalScale.x
-      value: 15
+      value: 20
       objectReference: {fileID: 0}
     - target: {fileID: 7231566422788689087, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
       propertyPath: m_LocalScale.y
-      value: 15
+      value: 20
       objectReference: {fileID: 0}
     - target: {fileID: 7231566422788689087, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
       propertyPath: m_LocalScale.z
-      value: 15
+      value: 20
       objectReference: {fileID: 0}
     - target: {fileID: 7231566422788689087, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}

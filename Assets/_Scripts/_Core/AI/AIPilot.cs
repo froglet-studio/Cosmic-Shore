@@ -111,9 +111,11 @@ namespace StarWriter.Core.Input
 
             ///Move ship velocityDirection
             Vector3 flowVector = flowFieldData.FlowVector(transform);
+            shipData.InputSpeed = throttle;
+            throttle = shipData.Speed;
             transform.position += transform.forward * Time.deltaTime * throttle + flowVector;
 
-            shipData.InputSpeed = throttle;
+
             shipData.Course = transform.forward;
             shipData.blockRotation = transform.rotation;
         }
