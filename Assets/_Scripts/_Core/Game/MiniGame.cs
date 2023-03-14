@@ -36,6 +36,8 @@ public class MiniGame : MonoBehaviour
     public Player ActivePlayer;
     protected bool gameRunning;
 
+    protected MiniGames gameMode;
+
     protected virtual void Start()
     {
         Players = new List<Player>();
@@ -166,7 +168,29 @@ public class MiniGame : MonoBehaviour
         gameRunning = false;
         EndGameScreen.SetActive(true);
         ScoreTracker.DisplayScores();
-        
+
+        // TODO pull into a function
+        // Update leaderboard stats
+        var leaderboardDictionary = LeaderboardDataAccessor.Load();
+        List<LeaderboardEntry> leaderboardEntries;
+        if (leaderboardDictionary.ContainsKey(gameMode))
+            leaderboardEntries = leaderboardDictionary[gameMode];
+        else
+            leaderboardEntries = LeaderboardDataAccessor.LeaderboardEntriesDefault[gameMode];
+
+        // For each score in score tracker, check to see if it belongs on leaderboard.
+        // iterate over highest score first,
+        // compare against lowest score first in a loop
+        foreach (var player in Players)
+        {
+            Debug.Log($"MiniGame.EndGame - Player Score: {ScoreTracker.GetScore(player.PlayerName)} ");
+            leaderboardEntries.Add(new LeaderboardEntry(player.PlayerName, ScoreTracker.GetScore(player.PlayerName), PlayerShipType));
+        }
+
+        leaderboardEntries.Sort((score1, score2) => score2.Score.CompareTo(score1.Score));
+        leaderboardEntries.RemoveRange(5, leaderboardEntries.Count - 5);
+
+        LeaderboardDataAccessor.Save(gameMode, leaderboardEntries);
     }
 
     void LoopActivePlayerIndex()

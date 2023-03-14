@@ -8,36 +8,7 @@ using UnityEngine.UI;
 
 public class LeaderboardsMenu : MonoBehaviour
 {
-    Dictionary<MiniGames, List<LeaderboardEntry>> LeaderboardEntries = new() 
-    {
-        { 
-            MiniGames.Darts, new List<LeaderboardEntry>()
-            { 
-                new LeaderboardEntry("foo", 10, ShipTypes.Manta),
-                new LeaderboardEntry("bar", 75, ShipTypes.Dolphin),
-                new LeaderboardEntry("bar", 50, ShipTypes.Dolphin),
-                new LeaderboardEntry("ass", 100, ShipTypes.Shark) 
-            }  
-        },
-        { 
-            MiniGames.DestructionDerby, new List<LeaderboardEntry>() 
-            {
-                new LeaderboardEntry("qux", 10, ShipTypes.Manta),
-                new LeaderboardEntry("foo", 75, ShipTypes.Shark),
-                new LeaderboardEntry("foo", 50, ShipTypes.Shark),
-                new LeaderboardEntry("ass", 100, ShipTypes.Manta)
-            }
-        },
-        { 
-            MiniGames.FlightSchool, new List<LeaderboardEntry>() 
-            {
-                new LeaderboardEntry("baz", 20, ShipTypes.Dolphin),
-                new LeaderboardEntry("qux", 75, ShipTypes.GunManta),
-                new LeaderboardEntry("bar", 50, ShipTypes.Manta),
-                new LeaderboardEntry("ass", 100, ShipTypes.Shark)
-            }  
-        },
-    };
+    Dictionary<MiniGames, List<LeaderboardEntry>> LeaderboardEntries;
 
     [SerializeField] List<SO_MiniGame> Games;
     [SerializeField] Transform GameSelectionContainer;
@@ -98,9 +69,17 @@ public class LeaderboardsMenu : MonoBehaviour
         Debug.Log($"PopulateGameHighScores: {SelectedGame.Name}");
         Debug.Log($"PopulateGameHighScores: {SelectedGame.Description}");
 
-        var highScores = LeaderboardEntries[SelectedGame.Mode];
+        List<LeaderboardEntry> highScores;
+        if (!LeaderboardEntries.ContainsKey(SelectedGame.Mode))
+        {
+            highScores = LeaderboardDataAccessor.LeaderboardEntriesDefault[SelectedGame.Mode];
+            LeaderboardDataAccessor.Save(SelectedGame.Mode, highScores);
+        }
+        else
+            highScores = LeaderboardEntries[SelectedGame.Mode];
+        
+        // TODO: need reverse sort for golf mode
         highScores.Sort( (score1,score2) => score2.Score.CompareTo(score1.Score));
-
 
         for (var i = 0; i < HighScoresContainer.transform.childCount; i++)
             HighScoresContainer.transform.GetChild(i).gameObject.SetActive(false);

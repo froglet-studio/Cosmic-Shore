@@ -5,10 +5,14 @@ public class FlightSchoolMiniGame : MiniGame
     [SerializeField] Crystal Crystal;
     [SerializeField] Vector3 CrystalStartPosition;
     [SerializeField] Vector3 CrystalStartScale = Vector3.one;
+
     public static new ShipTypes PlayerShipType = ShipTypes.Manta;
+
     protected override void Start()
     {
         base.Start();
+
+        gameMode = MiniGames.FlightSchool;
     }
 
     protected override void Update()
