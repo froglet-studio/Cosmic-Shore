@@ -524,12 +524,12 @@ MonoBehaviour:
     type: 3}
   farFieldSkimmer: {fileID: 0}
   crystalImpactEffects: 000000000100000005000000
-  trailBlockImpactEffects: 00000000030000000500000006000000
-  minExplosionScale: 1000
-  maxExplosionScale: 1000
+  trailBlockImpactEffects: 
+  minExplosionScale: 400
+  maxExplosionScale: 400
   blockChargeChange: 0
   boostMultiplier: 3
-  boostFuelAmount: -0.01
+  boostFuelAmount: -0.007
   fullSpeedStraightEffects: 01000000060000000700000009000000
   rightStickEffects: 
   leftStickEffects: 
@@ -1011,7 +1011,7 @@ PrefabInstance:
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
       propertyPath: chargeAmount
-      value: 0.01
+      value: 0.017
       objectReference: {fileID: 0}
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}

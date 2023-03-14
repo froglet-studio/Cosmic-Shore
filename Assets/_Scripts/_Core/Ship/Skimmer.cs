@@ -94,7 +94,7 @@ namespace StarWriter.Core
                 {
                     case ShipImpactEffects.DebuffSpawner:
                         shipGeometry.Ship.TrailSpawner.PauseTrailSpawner();
-                        shipGeometry.Ship.TrailSpawner.RestartTrailSpawnerAfterDelay(5);
+                        shipGeometry.Ship.TrailSpawner.RestartTrailSpawnerAfterDelay(10);
                         break;
 
                 }
