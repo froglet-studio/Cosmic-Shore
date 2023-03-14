@@ -10,10 +10,11 @@ namespace StarWriter.Core
         [SerializeField] string gameFileName = "gamedata.json";
         [SerializeField] string hangerFileName = "hangerdata.json";
         [SerializeField] string playerFileName = "playerdata.json";
+        [SerializeField] string leaderboardFileName = "leaderboarddata.json";
 
-        private GameData gameData;
-        private HangarData hangarData;
-        private PlayerData playerData;
+        GameData gameData;
+        HangarData hangarData;
+        PlayerData playerData;
 
         private void Start()
         {
@@ -156,13 +157,5 @@ namespace StarWriter.Core
             Debug.Log($"Saved Game - Game Test Number: {gameData.testNumber}");
         }
         #endregion
-
-        /// <summary>
-        /// Saves GamaData on shutdown
-        /// </summary>
-        private void OnApplicationQuit()
-        {
-            SaveGame();
-        }
     }
 }
