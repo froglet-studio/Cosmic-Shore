@@ -6,49 +6,35 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
-public class HighScoresMenu : MonoBehaviour
+public class LeaderboardsMenu : MonoBehaviour
 {
-    public struct HighScore
-    {
-        public string PlayerName;
-        public int Score;
-        public ShipTypes ShipType;
-
-        public HighScore(string playerName, int score, ShipTypes shipType)
-        {
-            PlayerName = playerName;
-            Score = score;
-            ShipType = shipType;
-        }
-    }
-
-    Dictionary<MiniGames, List<HighScore>> HighScores = new() 
+    Dictionary<MiniGames, List<LeaderboardEntry>> LeaderboardEntries = new() 
     {
         { 
-            MiniGames.Darts, new List<HighScore>()
+            MiniGames.Darts, new List<LeaderboardEntry>()
             { 
-                new HighScore("foo", 10, ShipTypes.Manta),
-                new HighScore("bar", 75, ShipTypes.Dolphin),
-                new HighScore("bar", 50, ShipTypes.Dolphin),
-                new HighScore("ass", 100, ShipTypes.Shark) 
+                new LeaderboardEntry("foo", 10, ShipTypes.Manta),
+                new LeaderboardEntry("bar", 75, ShipTypes.Dolphin),
+                new LeaderboardEntry("bar", 50, ShipTypes.Dolphin),
+                new LeaderboardEntry("ass", 100, ShipTypes.Shark) 
             }  
         },
         { 
-            MiniGames.DestructionDerby, new List<HighScore>() 
+            MiniGames.DestructionDerby, new List<LeaderboardEntry>() 
             {
-                new HighScore("qux", 10, ShipTypes.Manta),
-                new HighScore("foo", 75, ShipTypes.Shark),
-                new HighScore("foo", 50, ShipTypes.Shark),
-                new HighScore("ass", 100, ShipTypes.Manta)
+                new LeaderboardEntry("qux", 10, ShipTypes.Manta),
+                new LeaderboardEntry("foo", 75, ShipTypes.Shark),
+                new LeaderboardEntry("foo", 50, ShipTypes.Shark),
+                new LeaderboardEntry("ass", 100, ShipTypes.Manta)
             }
         },
         { 
-            MiniGames.FlightSchool, new List<HighScore>() 
+            MiniGames.FlightSchool, new List<LeaderboardEntry>() 
             {
-                new HighScore("baz", 20, ShipTypes.Dolphin),
-                new HighScore("qux", 75, ShipTypes.GunManta),
-                new HighScore("bar", 50, ShipTypes.Manta),
-                new HighScore("ass", 100, ShipTypes.Shark)
+                new LeaderboardEntry("baz", 20, ShipTypes.Dolphin),
+                new LeaderboardEntry("qux", 75, ShipTypes.GunManta),
+                new LeaderboardEntry("bar", 50, ShipTypes.Manta),
+                new LeaderboardEntry("ass", 100, ShipTypes.Shark)
             }  
         },
     };
@@ -62,6 +48,7 @@ public class HighScoresMenu : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        LeaderboardEntries = LeaderboardDataAccessor.Load();
         PopulateGameSelectionList();
     }
 
@@ -111,7 +98,7 @@ public class HighScoresMenu : MonoBehaviour
         Debug.Log($"PopulateGameHighScores: {SelectedGame.Name}");
         Debug.Log($"PopulateGameHighScores: {SelectedGame.Description}");
 
-        var highScores = HighScores[SelectedGame.Mode];
+        var highScores = LeaderboardEntries[SelectedGame.Mode];
         highScores.Sort( (score1,score2) => score2.Score.CompareTo(score1.Score));
 
 

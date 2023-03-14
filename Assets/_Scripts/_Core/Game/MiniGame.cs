@@ -166,6 +166,7 @@ public class MiniGame : MonoBehaviour
         gameRunning = false;
         EndGameScreen.SetActive(true);
         ScoreTracker.DisplayScores();
+        
     }
 
     void LoopActivePlayerIndex()
