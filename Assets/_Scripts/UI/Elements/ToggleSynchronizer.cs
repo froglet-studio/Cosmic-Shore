@@ -1,6 +1,5 @@
 using StarWriter.Core;
 using UnityEngine;
-using UnityEngine.UI;
 
 namespace StarWriter.UI
 {

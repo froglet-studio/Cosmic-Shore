@@ -79,7 +79,7 @@ public class Player : MonoBehaviour
 
                 break;
             default: // Single player game 
-                Ship shipInstance_ = Hangar.Instance.LoadPlayerShip(defaultShip, Team);
+                Ship shipInstance_ = Hangar.Instance.LoadPlayerShip();
                 shipInstance_.transform.SetParent(shipContainer.transform, false);
                 shipInstance_.GetComponent<AIPilot>().enabled = false;
 

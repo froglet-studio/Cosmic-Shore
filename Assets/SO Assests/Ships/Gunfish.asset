@@ -18,7 +18,7 @@ MonoBehaviour:
   Icon: {fileID: 21300000, guid: 58f6744284bd6794c8f14386e31d98f2, type: 3}
   SelectedIcon: {fileID: 21300000, guid: a374e365e51fe7544ac1c022615542aa, type: 3}
   TrailPreviewImage: {fileID: 21300000, guid: f59564772bfac8642a09ad4e75466830, type: 3}
-  PreviewImage: {fileID: 21300000, guid: 2aa2da060d1cc72468616cfc30463913, type: 3}
+  PreviewImage: {fileID: 21300000, guid: 992f171df4560e64c96343061dd90ff3, type: 3}
   Abilities:
   - {fileID: 11400000, guid: bf4c23aad32b0f4489dbc09db593aab4, type: 2}
   MiniGames:

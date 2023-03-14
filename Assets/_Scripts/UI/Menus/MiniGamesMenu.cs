@@ -37,6 +37,12 @@ public class MiniGamesMenu : MonoBehaviour
         ShipSelectionTemplate.SetActive(false);
         GameSelectionTemplate.SetActive(false);
 
+        for (var i = 0; i < PlayerCountButtonContainer.transform.childCount; i++)
+            PlayerCountIcons.Add(PlayerCountButtonContainer.transform.GetChild(i).gameObject.GetComponent<Image>().sprite);
+
+        for (var i = 0; i < DifficultyButtonContainer.transform.childCount; i++)
+            DifficultyIcons.Add(DifficultyButtonContainer.transform.GetChild(i).gameObject.GetComponent<Image>().sprite);
+
         PopulateShipSelectionList();
     }
 
@@ -73,6 +79,9 @@ public class MiniGamesMenu : MonoBehaviour
         PopulateGameSelectionList();
     }
 
+    List<Sprite> DifficultyIcons = new List<Sprite>();
+    List<Sprite> PlayerCountIcons = new List<Sprite>();
+
     public void SelectGame(int index)
     {
         Debug.Log($"SelectGame: {index}");
@@ -99,6 +108,7 @@ public class MiniGamesMenu : MonoBehaviour
             PlayerCountButtonContainer.transform.GetChild(i).gameObject.GetComponent<Button>().onClick.RemoveAllListeners();
             PlayerCountButtonContainer.transform.GetChild(i).gameObject.GetComponent<Button>().onClick.AddListener(() => SetPlayerCount(playerCount));
         }
+        SetPlayerCount(1);
 
         // TODO: this is kludgy
         //DifficultyButtonContainer.transform.GetChild(0).gameObject.GetComponent<Image>().sprite = DifficultyButtonContainer.transform.GetChild(0).gameObject.GetComponent<Button>().spriteState.selectedSprite;
@@ -108,7 +118,7 @@ public class MiniGamesMenu : MonoBehaviour
             DifficultyButtonContainer.transform.GetChild(i).gameObject.GetComponent<Button>().onClick.RemoveAllListeners();
             DifficultyButtonContainer.transform.GetChild(i).gameObject.GetComponent<Button>().onClick.AddListener(() => SetDifficulty(difficulty));
         }
-
+        SetDifficulty(1);
 
         PopulateGameDetails();
     }
@@ -123,6 +133,11 @@ public class MiniGamesMenu : MonoBehaviour
         Debug.Log($"SetPlayerCount: {playerCount}");
         PlayerCount = playerCount;
 
+        for (var i = 0; i < PlayerCountButtonContainer.transform.childCount; i++)
+            PlayerCountButtonContainer.transform.GetChild(i).gameObject.GetComponent<Image>().sprite = PlayerCountIcons[i];
+
+        PlayerCountButtonContainer.transform.GetChild(playerCount - 1).gameObject.GetComponent<Image>().sprite = PlayerCountButtonContainer.transform.GetChild(playerCount - 1).gameObject.GetComponent<Button>().spriteState.selectedSprite;
+
         // notify the mini game engine that this is the number of players
         MiniGame.NumberOfPlayers = playerCount;
     }
@@ -131,6 +146,11 @@ public class MiniGamesMenu : MonoBehaviour
     {
         Debug.Log($"SetDifficulty: {difficulty}");
         DifficultyLevel = difficulty;
+
+        for (var i = 0; i < DifficultyButtonContainer.transform.childCount; i++)
+            DifficultyButtonContainer.transform.GetChild(i).gameObject.GetComponent<Image>().sprite = DifficultyIcons[i];
+
+        DifficultyButtonContainer.transform.GetChild(difficulty - 1).gameObject.GetComponent<Image>().sprite = DifficultyButtonContainer.transform.GetChild(difficulty - 1).gameObject.GetComponent<Button>().spriteState.selectedSprite;
 
         // notify the mini game engine that this is the difficulty
         MiniGame.DifficultyLevel= difficulty;
