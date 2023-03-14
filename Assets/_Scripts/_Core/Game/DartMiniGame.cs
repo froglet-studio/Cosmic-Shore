@@ -10,6 +10,8 @@ public class DartMiniGame : MiniGame
     {
         base.Start();
 
+        gameMode = MiniGames.Darts;
+
         // TODO: make these dynamic
         DartBoard.PlayerOne = Players[0];
         DartBoard.PlayerTwo = Players[1];

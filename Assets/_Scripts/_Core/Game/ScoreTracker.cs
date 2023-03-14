@@ -104,5 +104,10 @@ public class ScoreTracker : MonoBehaviour
             PlayerNameContainers[i].text = key;
             PlayerScoreContainers[i].text = playerScores[key].ToString();
         }
+        for (var i = playerScores.Keys.Count; i<PlayerNameContainers.Count; i++)
+        {
+            PlayerNameContainers[i].text = "";
+            PlayerScoreContainers[i].text = "";
+        }
     }
 }
