@@ -329,8 +329,8 @@ MonoBehaviour:
   AOEPrefab: {fileID: 2728798890556433942, guid: f5ecfb9923155a84c860975d559b2714,
     type: 3}
   farFieldSkimmer: {fileID: 3138628630497430536}
-  crystalImpactEffects: 000000000700000005000000
-  trailBlockImpactEffects: 00000000030000000200000008000000
+  crystalImpactEffects: 0000000005000000
+  trailBlockImpactEffects: 000000000300000002000000
   minExplosionScale: 50
   maxExplosionScale: 500
   blockChargeChange: 0
@@ -355,8 +355,8 @@ MonoBehaviour:
   maxFarFieldSkimmerScale: 200
   minNearFieldSkimmerScale: 15
   maxNearFieldSkimmerScale: 100
-  minGap: 6
-  maxGap: 19
+  minGap: 9
+  maxGap: 9
   minProjectileScale: 1
   maxProjectileScale: 10
   minProjectileBlockScale: {x: 1.5, y: 1.5, z: 3}
@@ -364,7 +364,7 @@ MonoBehaviour:
   controlOverrides: 03000000040000000000000007000000
   closeCamDistance: -5
   farCamDistance: -60
-  throttle: 80
+  throttle: 120
   BoostDecayGrowthRate: 0.03
   MaxBoostDecay: 10
   rotationScaler: 70
@@ -405,10 +405,10 @@ MonoBehaviour:
     type: 3}
   skimmer: {fileID: 874579554510349383}
   offset: 0
-  initialWavelength: 5
+  initialWavelength: 6
   minWavelength: 1
   gap: 0
-  trailLength: 40
+  InnerDimensions: {x: 0, y: 0, z: 0}
   defaultWaitTime: 0.5
   waitTime: 0.5
   startDelay: 2
@@ -416,7 +416,7 @@ MonoBehaviour:
   spawnerEnabled: 1
   MaxNearbyBlockCount: 50
   minBlockScale: 1
-  maxBlockScale: 8
+  maxBlockScale: 10
   XScaler: 1
   YScaler: 1
 --- !u!114 &874579555101021523

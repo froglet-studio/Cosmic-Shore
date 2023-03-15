@@ -6,13 +6,13 @@ using UnityEngine.Serialization;
 
 public class AOEBlockCreation : AOEExplosion
 {
-    [SerializeField] TrailBlock trailBlock;
+    [SerializeField] protected TrailBlock trailBlock;
     [SerializeField] float blockCount = 8; // TODO: make int
     [SerializeField] int ringCount = 3;
     [SerializeField] float radius = 30f;
-    [SerializeField] Vector3 blockScale = new Vector3(20f, 10f, 5f);
-    Material blockMaterial;
-    List<Trail> trails = new List<Trail>();
+    [SerializeField] protected Vector3 blockScale = new Vector3(20f, 10f, 5f);
+    protected Material blockMaterial;
+    protected List<Trail> trails = new List<Trail>();
 
     public void SetBlockMaterial(Material material)
     {
@@ -34,7 +34,7 @@ public class AOEBlockCreation : AOEExplosion
         yield return new WaitForEndOfFrame();
     }
 
-    void CreateRingBlock(int i, float phase, float scale, float tilt, float sweep, Trail trail)
+    virtual protected void CreateRingBlock(int i, float phase, float scale, float tilt, float sweep, Trail trail)
     {
         var position = transform.position +
                              scale * radius * Mathf.Cos(((i + phase) / blockCount) * 2 * Mathf.PI) * transform.right +
@@ -43,7 +43,7 @@ public class AOEBlockCreation : AOEExplosion
         CreateBlock(position, position + tilt * radius * transform.forward, "::AOE::" + Time.time + "::" + i, trail);
     }
 
-    void CreateBlock(Vector3 position, Vector3 lookPosition, string ownerId, Trail trail)
+    virtual protected TrailBlock CreateBlock(Vector3 position, Vector3 lookPosition, string ownerId, Trail trail)
     {
         var Block = Instantiate(trailBlock);
         Block.Team = Team;
@@ -56,5 +56,6 @@ public class AOEBlockCreation : AOEExplosion
         Block.transform.parent = TrailSpawner.TrailContainer.transform;
         Block.Trail = trail;
         trail.Add(Block);
+        return Block;
     }
 }

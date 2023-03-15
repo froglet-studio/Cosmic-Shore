@@ -208,7 +208,10 @@ namespace StarWriter.Core
 
                         if (AOEExplosion is AOEBlockCreation aoeBlockcreation)
                             aoeBlockcreation.SetBlockMaterial(TrailSpawner.GetBlockMaterial());
-
+                        if (AOEExplosion is AOEFlowerCreation aoeFlowerCreation)
+                        {
+                            StartCoroutine(CreateTunnelCoroutine(aoeFlowerCreation, 1f));
+                        }
                         break;
                     case CrystalImpactEffects.IncrementLevel:
                         IncrementLevel();
@@ -666,6 +669,24 @@ namespace StarWriter.Core
                 controller.BlockScale = minProjectileBlockScale + ((resourceSystem.CurrentLevel / resourceSystem.MaxLevel) * (maxProjectileBlockScale - minProjectileBlockScale));
             else
                 Debug.LogWarning("Trying to scale projectile block of ShipController that is not a GunShipController");
+        }
+
+        IEnumerator CreateTunnelCoroutine(AOEFlowerCreation aoeFlowerCreation, float duration)
+        {
+            var elapsedTime = 0f;
+            int currentPosition = TrailSpawner.TrailLength - 1;
+            while (elapsedTime < duration)
+            {
+                elapsedTime += Time.deltaTime;
+                
+                if (currentPosition < TrailSpawner.TrailLength)
+                {
+                    currentPosition++;
+                    aoeFlowerCreation.SetBlockDimensions(TrailSpawner.InnerDimensions);
+                    aoeFlowerCreation.SeedBlocks(TrailSpawner.GetLastTwoBlocks(), 1f - Mathf.Abs(elapsedTime*2f/duration - 1f));
+                }
+                yield return null;
+            }
         }
 
         IEnumerator TemporaryIntangibilityCoroutine(float duration)

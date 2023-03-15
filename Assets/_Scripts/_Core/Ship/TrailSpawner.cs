@@ -1,7 +1,9 @@
 ﻿using StarWriter.Core;
+using System;
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
-
+using UnityEngine.Android;
 
 [RequireComponent(typeof(Ship))]
 public class TrailSpawner : MonoBehaviour
@@ -17,8 +19,9 @@ public class TrailSpawner : MonoBehaviour
     float wavelength;
 
     public float gap;
+    public Vector3 InnerDimensions;
 
-    public float trailLength = 20;
+    public int TrailLength { get { return trail.TrailList.Count; } }
     [SerializeField] float defaultWaitTime = .5f;
     
     public float waitTime = .5f;  // Time until the trail block appears - camera dependent
@@ -28,6 +31,7 @@ public class TrailSpawner : MonoBehaviour
 
     Trail trail = new();
     Trail trail2 = new();
+
     Material blockMaterial;
     Ship ship;
     ShipData shipData;
@@ -43,6 +47,16 @@ public class TrailSpawner : MonoBehaviour
     public Material GetBlockMaterial()
     {
         return blockMaterial;
+    }
+
+    public List<TrailBlock> GetLastTwoBlocks() 
+    {
+        List<TrailBlock> lastTwoBlocks = new List<TrailBlock>
+        {
+            trail.TrailList[trail.TrailList.Count - 1],
+            trail2.TrailList[trail.TrailList.Count - 1]
+        };
+        return lastTwoBlocks;
     }
 
     public float TrailZScale => trailBlock.transform.localScale.z;
@@ -113,10 +127,10 @@ public class TrailSpawner : MonoBehaviour
     void XLerper(float newXScaler)
     {
         if (lerper != null) StopCoroutine(lerper);
-        lerper = StartCoroutine(Lerper((i) => { XScaler = i; }, () => XScaler ,newXScaler, 2, 10));
+        lerper = StartCoroutine(LerpingCoroutine((i) => { XScaler = i; }, () => XScaler ,newXScaler, 2, 10));
     }
 
-    IEnumerator Lerper(System.Action<float> replacementMethod, System.Func<float> getCurrent, float newValue, float duration, int steps)
+    IEnumerator LerpingCoroutine(System.Action<float> replacementMethod, System.Func<float> getCurrent, float newValue, float duration, int steps)
     {
         float elapsedTime = 0;
         while (elapsedTime < duration)
@@ -168,6 +182,7 @@ public class TrailSpawner : MonoBehaviour
     {
         var Block = Instantiate(trailBlock);
         Block.InnerDimensions = new Vector3(trailBlock.transform.localScale.x * XScaler / 2f - Mathf.Abs(halfGap), trailBlock.transform.localScale.y * YScaler, trailBlock.transform.localScale.z * ZScaler);
+        InnerDimensions = Block.InnerDimensions;
         Block.transform.SetPositionAndRotation(transform.position - shipData.Course * offset + ship.transform.right * ((trailBlock.transform.localScale.x * XScaler )/ 4f + Mathf.Abs(halfGap)/2)*(halfGap/ Mathf.Abs(halfGap)), shipData.blockRotation);
         Block.transform.parent = TrailContainer.transform;
         Block.waitTime = (skimmer.transform.localScale.z + TrailZScale) / ship.GetComponent<ShipData>().Speed;
@@ -213,6 +228,7 @@ public class TrailSpawner : MonoBehaviour
                 {
                     var Block = Instantiate(trailBlock);
                     Block.InnerDimensions = new Vector3(trailBlock.transform.localScale.x * XScaler, trailBlock.transform.localScale.y * YScaler, trailBlock.transform.localScale.z * ZScaler);
+                    InnerDimensions = Block.InnerDimensions;
                     Block.transform.SetPositionAndRotation(transform.position - shipData.Course * offset, shipData.blockRotation);
                     Block.transform.parent = TrailContainer.transform;
                     Block.waitTime = (skimmer.transform.localScale.z + TrailZScale) / ship.GetComponent<ShipData>().Speed;

@@ -533,6 +533,7 @@ MonoBehaviour:
   initialWavelength: 5
   minWavelength: 1
   gap: 0
+  InnerDimensions: {x: 0, y: 0, z: 0}
   trailLength: 40
   defaultWaitTime: 0.5
   waitTime: 0.5
@@ -593,7 +594,7 @@ MonoBehaviour:
   - {fileID: 5736286126695899062}
   TrailSpawner: {fileID: 874579555101021522}
   head: {fileID: 3710282027580066907}
-  AOEPrefab: {fileID: 2728798890556433942, guid: f5ecfb9923155a84c860975d559b2714,
+  AOEPrefab: {fileID: 2728798890556433942, guid: bdb355fdad94b1442ae09bb64ed1ad14,
     type: 3}
   farFieldSkimmer: {fileID: 0}
   crystalImpactEffects: 0600000005000000
