@@ -596,7 +596,7 @@ MonoBehaviour:
   AOEPrefab: {fileID: 2728798890556433942, guid: f5ecfb9923155a84c860975d559b2714,
     type: 3}
   farFieldSkimmer: {fileID: 0}
-  crystalImpactEffects: 06000000
+  crystalImpactEffects: 0600000005000000
   trailBlockImpactEffects: 03000000
   minExplosionScale: 50
   maxExplosionScale: 25

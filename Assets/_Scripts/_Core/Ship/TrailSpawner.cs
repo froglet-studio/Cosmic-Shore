@@ -1,10 +1,7 @@
 ﻿using StarWriter.Core;
 using System.Collections;
-using System.Collections.Generic;
-using System.Timers;
 using UnityEngine;
-using UnityEngine.Serialization;
-using static UnityEditor.ShaderGraph.Internal.KeywordDependentCollection;
+
 
 [RequireComponent(typeof(Ship))]
 public class TrailSpawner : MonoBehaviour
