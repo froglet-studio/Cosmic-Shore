@@ -538,6 +538,7 @@ MonoBehaviour:
   waitTime: 0.5
   startDelay: 2
   warp: 0
+  spawnerEnabled: 1
   MaxNearbyBlockCount: 10
   minBlockScale: 1
   maxBlockScale: 1
@@ -559,9 +560,10 @@ MonoBehaviour:
   speedMultiplier: 1
   speed: 0
   Boosting: 0
-  ChargingBoost: 0
+  BoostCharging: 0
   BoostDecaying: 0
   Drifting: 0
+  LayingBulletTrail: 0
   Attached: 0
   AttachedTrailBlock: {fileID: 0}
   GunsActive: 1
@@ -594,7 +596,7 @@ MonoBehaviour:
   AOEPrefab: {fileID: 2728798890556433942, guid: f5ecfb9923155a84c860975d559b2714,
     type: 3}
   farFieldSkimmer: {fileID: 0}
-  crystalImpactEffects: 0500000006000000
+  crystalImpactEffects: 06000000
   trailBlockImpactEffects: 03000000
   minExplosionScale: 50
   maxExplosionScale: 25
@@ -671,6 +673,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 737294a573670f74389a7af68df314d5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  usesBoost: 0
+  usesLevels: 0
+  usesAmmo: 0
   maxBoost: 1
   initialBoost: 1
   maxLevel: 1

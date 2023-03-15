@@ -413,6 +413,7 @@ MonoBehaviour:
   waitTime: 0.5
   startDelay: 2
   warp: 0
+  spawnerEnabled: 1
   MaxNearbyBlockCount: 50
   minBlockScale: 1
   maxBlockScale: 8
@@ -434,9 +435,10 @@ MonoBehaviour:
   speedMultiplier: 1
   speed: 0
   Boosting: 0
-  ChargingBoost: 0
+  BoostCharging: 0
   BoostDecaying: 0
   Drifting: 0
+  LayingBulletTrail: 0
   Attached: 0
   AttachedTrailBlock: {fileID: 0}
   GunsActive: 1
@@ -792,6 +794,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Name
       value: ThiefSkimmer
+      objectReference: {fileID: 0}
+    - target: {fileID: 4816621673548213744, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 7231566422788689087, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}

@@ -1,8 +1,10 @@
 ﻿using StarWriter.Core;
 using System.Collections;
 using System.Collections.Generic;
+using System.Timers;
 using UnityEngine;
 using UnityEngine.Serialization;
+using static UnityEditor.ShaderGraph.Internal.KeywordDependentCollection;
 
 [RequireComponent(typeof(Ship))]
 public class TrailSpawner : MonoBehaviour
@@ -81,9 +83,11 @@ public class TrailSpawner : MonoBehaviour
         shipData = GetComponent<ShipData>();
 
         StartCoroutine(SpawnTrailCoroutine());
+        
 
         ownerId = ship.Player.PlayerUUID;
         XScaler = minBlockScale;
+        
     }
 
     public void ToggleBlockWaitTime(bool state)
@@ -100,12 +104,31 @@ public class TrailSpawner : MonoBehaviour
     public float YScaler = 1;
     float ZScaler = 1;
 
+    Coroutine lerper;
 
     public void SetNearbyBlockCount(int blockCount)
     {
         blockCount = Mathf.Min(blockCount, MaxNearbyBlockCount);
-        XScaler = Mathf.Max(minBlockScale, maxBlockScale * (1  - (blockCount / (float)MaxNearbyBlockCount)));
+        float newXScaler = Mathf.Max(minBlockScale, maxBlockScale * (1 - (blockCount / (float)MaxNearbyBlockCount)));
+        XLerper(newXScaler);
     }
+
+    void XLerper(float newXScaler)
+    {
+        if (lerper != null) StopCoroutine(lerper);
+        lerper = StartCoroutine(Lerper((i) => { XScaler = i; }, () => XScaler ,newXScaler, 2, 10));
+    }
+
+    IEnumerator Lerper(System.Action<float> replacementMethod, System.Func<float> getCurrent, float newValue, float duration, int steps)
+    {
+        float elapsedTime = 0;
+        while (elapsedTime < duration)
+        {
+            elapsedTime += Time.deltaTime;
+            replacementMethod(Mathf.Lerp(getCurrent(), newValue, elapsedTime / duration));
+            yield return new WaitForSeconds(duration / (float)steps);
+        } 
+    } 
 
     public void SetDotProduct(float amount)
     {

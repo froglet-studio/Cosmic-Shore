@@ -135,11 +135,15 @@ namespace StarWriter.Core
 
         void StartSkim(TrailBlock trailBlock)
         {
-            activelySkimmingBlockCount++;
+            
             if (skimVisualFX) StartCoroutine(DisplaySkimParticleEffectCoroutine(trailBlock));
 
             if (!skimStartTimes.ContainsKey(trailBlock.ID))
+            {
+                activelySkimmingBlockCount++;
                 skimStartTimes.Add(trailBlock.ID, Time.time);
+            }
+                
 
             //OnSkim?.Invoke(ship.Player.PlayerUUID, fuelAmount + (activelySkimmingBlockCount * MultiSkimMultiplier));
 
@@ -187,7 +191,8 @@ namespace StarWriter.Core
         void NotifyNearbyBlockCount()
         {
             ship.TrailSpawner.SetNearbyBlockCount(ActivelySkimmingBlockCount);
-            cameraManager.SetCloseCameraDistance(Mathf.Min((cameraManager.FarCamDistance) * (1 - (float)activelySkimmingBlockCount / ship.TrailSpawner.MaxNearbyBlockCount), cameraManager.CloseCamDistance));
+            cameraManager.SetCloseCameraDistance(Mathf.Min((cameraManager.FarCamDistance) 
+                * (1 - (float)activelySkimmingBlockCount / ship.TrailSpawner.MaxNearbyBlockCount), cameraManager.CloseCamDistance)); //use min because distance is negative
         }
 
         IEnumerator DisplaySkimParticleEffectCoroutine(TrailBlock trailBlock)

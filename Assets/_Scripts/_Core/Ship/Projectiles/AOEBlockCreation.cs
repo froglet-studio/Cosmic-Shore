@@ -51,7 +51,7 @@ public class AOEBlockCreation : AOEExplosion
         Block.PlayerName = Ship.Player.PlayerName;
         Block.transform.SetPositionAndRotation(position, Quaternion.LookRotation(lookPosition - transform.position, transform.forward));
         Block.GetComponent<MeshRenderer>().material = blockMaterial;
-        Block.ID = Block.ownerId + ownerId;  
+        Block.ID = Block.ownerId + ownerId + position;  
         Block.InnerDimensions = blockScale;
         Block.transform.parent = TrailSpawner.TrailContainer.transform;
         Block.Trail = trail;
