@@ -60,6 +60,16 @@ public class LeaderboardDataAccessor
                 new LeaderboardEntry("Igarus",  50, ShipTypes.Shark),
             }
         },
+        {
+            MiniGames.ShootingGallery, new List<LeaderboardEntry>()
+            {
+                new LeaderboardEntry("Spades",  10, ShipTypes.Dolphin),
+                new LeaderboardEntry("Siren",   20, ShipTypes.GunManta),
+                new LeaderboardEntry("Igarus", 30, ShipTypes.Manta),
+                new LeaderboardEntry("Fenrys",  40, ShipTypes.Shark),
+                new LeaderboardEntry("Gradies",  50, ShipTypes.Shark),
+            }
+        },
     };
 }
 

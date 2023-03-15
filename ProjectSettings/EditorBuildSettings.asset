@@ -20,6 +20,9 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/MinigameDestructionDerby.unity
     guid: edd6d49bdc48a024191b7be414b3a994
+  - enabled: 1
+    path: Assets/Scenes/MinigameShootingGallery.unity
+    guid: 3c3b1e401c6162547b78d787ab28640c
   - enabled: 0
     path: Assets/Scenes/Game_HighScore.unity
     guid: 5e8d9932a4d84a1488c2dad96c8135dd

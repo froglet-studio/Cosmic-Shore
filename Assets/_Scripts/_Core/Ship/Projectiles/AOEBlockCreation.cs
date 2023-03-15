@@ -2,7 +2,6 @@ using System.Collections;
 using System.Collections.Generic;
 using StarWriter.Core;
 using UnityEngine;
-using UnityEngine.Serialization;
 
 public class AOEBlockCreation : AOEExplosion
 {

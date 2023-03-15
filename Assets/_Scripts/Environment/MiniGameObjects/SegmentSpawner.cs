@@ -15,7 +15,6 @@ public enum PositioningScheme
 
 public class SegmentSpawner : MonoBehaviour
 {
-    [SerializeField] TrailBlock trailBlock;
     [SerializeField] public int numberOfSegments = 1;
     [SerializeField] List<SpawnableAbstractBase> spawnableSegments;
     [SerializeField] PositioningScheme positioningScheme = PositioningScheme.SphereUniform;
@@ -80,6 +79,14 @@ public class SegmentSpawner : MonoBehaviour
                 int difficultyAngle = 90;
                 spawned.transform.position = Quaternion.Euler(0, 0, random.Next(spawnedItemCount * (360/ numberOfSegments), spawnedItemCount * (360 / numberOfSegments) + 20)) *
                     (Quaternion.Euler(0, random.Next(Mathf.Max(difficultyAngle - 20, 40), Mathf.Max(difficultyAngle - 20, 40)), 0) *
+                    (sphereRadius * Vector3.forward));
+                spawned.transform.LookAt(Vector3.zero);
+                return;
+            case PositioningScheme.ToroidSurface:
+                // TODO: this is not a torus, it's ripped from the sphere
+                int toroidDifficultyAngle = 90;
+                spawned.transform.position = Quaternion.Euler(0, 0, random.Next(spawnedItemCount * (360 / numberOfSegments), spawnedItemCount * (360 / numberOfSegments) + 20)) *
+                    (Quaternion.Euler(0, random.Next(Mathf.Max(toroidDifficultyAngle - 20, 40), Mathf.Max(toroidDifficultyAngle - 20, 40)), 0) *
                     (sphereRadius * Vector3.forward));
                 spawned.transform.LookAt(Vector3.zero);
                 return;

@@ -6,4 +6,5 @@ public enum MiniGames
     FlightSchool = 1,
     DestructionDerby = 2,
     Darts = 3,
+    ShootingGallery = 4,
 }
