@@ -18,7 +18,7 @@ EditorBuildSettings:
     path: Assets/Scenes/MinigameFlightSchool.unity
     guid: c7bc1993712d2734593d1d4e50b01dcb
   - enabled: 1
-    path: Assets/Scenes/MinigameDestructionDerby.unity
+    path: Assets/Scenes/MinigameRampage.unity
     guid: edd6d49bdc48a024191b7be414b3a994
   - enabled: 1
     path: Assets/Scenes/MinigameShootingGallery.unity

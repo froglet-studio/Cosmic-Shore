@@ -1,5 +1,5 @@
 using UnityEngine;
-public class DestructionDerbyMiniGame : MiniGame
+public class RampageMiniGame : MiniGame
 {
     [SerializeField] Crystal Crystal;
     [SerializeField] Vector3 CrystalStartPosition;
@@ -12,7 +12,7 @@ public class DestructionDerbyMiniGame : MiniGame
     {
         base.Start();
 
-        gameMode = MiniGames.DestructionDerby;
+        gameMode = MiniGames.Rampage;
         SegmentSpawner.Seed = new System.Random().Next();
     }
 

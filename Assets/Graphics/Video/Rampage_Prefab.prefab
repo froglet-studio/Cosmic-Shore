@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 241334157148977053}
   - component: {fileID: 241334157148977051}
   m_Layer: 5
-  m_Name: DestructionDerby_Prefab
+  m_Name: Rampage_Prefab
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
