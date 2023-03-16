@@ -355,15 +355,15 @@ MonoBehaviour:
   maxFarFieldSkimmerScale: 200
   minNearFieldSkimmerScale: 15
   maxNearFieldSkimmerScale: 100
-  minGap: 9
-  maxGap: 9
+  minGap: 12
+  maxGap: 12
   minProjectileScale: 1
   maxProjectileScale: 10
   minProjectileBlockScale: {x: 1.5, y: 1.5, z: 3}
   maxProjectileBlockScale: {x: 1.5, y: 1.5, z: 30}
   controlOverrides: 03000000040000000000000007000000
   closeCamDistance: -5
-  farCamDistance: -60
+  farCamDistance: -160
   throttle: 120
   BoostDecayGrowthRate: 0.03
   MaxBoostDecay: 10
@@ -404,17 +404,18 @@ MonoBehaviour:
   trailBlock: {fileID: 4563009547826722997, guid: 5790c8c1f457a754baecca51ef90c82e,
     type: 3}
   skimmer: {fileID: 874579554510349383}
+  waitTillOutsideSkimmer: 0
   offset: 0
-  initialWavelength: 6
+  initialWavelength: 8
   minWavelength: 1
-  gap: 0
+  gap: 12
   InnerDimensions: {x: 0, y: 0, z: 0}
   defaultWaitTime: 0.5
   waitTime: 0.5
   startDelay: 2
   warp: 0
   spawnerEnabled: 1
-  MaxNearbyBlockCount: 50
+  MaxNearbyBlockCount: 70
   minBlockScale: 1
   maxBlockScale: 10
   XScaler: 1
@@ -860,6 +861,11 @@ PrefabInstance:
       propertyPath: ship
       value: 
       objectReference: {fileID: 874579555101021527}
+    - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
+      propertyPath: selfSkim
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
       propertyPath: fuelAmount

@@ -140,7 +140,6 @@ namespace StarWriter.Core
                 { InputEvents.IdleAction, idleEffects },
                 { InputEvents.MinimumSpeedStraightAction, minimumSpeedStraightEffects }
             };
-            ScaleGapWithLevel();
         }
 
         void Update()
@@ -210,7 +209,7 @@ namespace StarWriter.Core
                             aoeBlockcreation.SetBlockMaterial(TrailSpawner.GetBlockMaterial());
                         if (AOEExplosion is AOEFlowerCreation aoeFlowerCreation)
                         {
-                            StartCoroutine(CreateTunnelCoroutine(aoeFlowerCreation, 1f));
+                            StartCoroutine(CreateTunnelCoroutine(aoeFlowerCreation, 3));
                         }
                         break;
                     case CrystalImpactEffects.IncrementLevel:
@@ -671,19 +670,18 @@ namespace StarWriter.Core
                 Debug.LogWarning("Trying to scale projectile block of ShipController that is not a GunShipController");
         }
 
-        IEnumerator CreateTunnelCoroutine(AOEFlowerCreation aoeFlowerCreation, float duration)
+        IEnumerator CreateTunnelCoroutine(AOEFlowerCreation aoeFlowerCreation, float amount)
         {
-            var elapsedTime = 0f;
+            var count = 0f;
             int currentPosition = TrailSpawner.TrailLength - 1;
-            while (elapsedTime < duration)
-            {
-                elapsedTime += Time.deltaTime;
-                
+            while (count < amount)
+            { 
                 if (currentPosition < TrailSpawner.TrailLength)
                 {
+                    count++;
                     currentPosition++;
                     aoeFlowerCreation.SetBlockDimensions(TrailSpawner.InnerDimensions);
-                    aoeFlowerCreation.SeedBlocks(TrailSpawner.GetLastTwoBlocks(), 1f - Mathf.Abs(elapsedTime*2f/duration - 1f));
+                    aoeFlowerCreation.SeedBlocks(TrailSpawner.GetLastTwoBlocks());
                 }
                 yield return null;
             }

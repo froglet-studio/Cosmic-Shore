@@ -12,6 +12,7 @@ namespace StarWriter.Core
         [SerializeField] List<ShipImpactEffects> shipImpactEffects;
         [SerializeField] float time = 300f;
         [SerializeField] bool skimVisualFX = true;
+        [SerializeField] bool selfSkim = true;
         [SerializeField] public Ship ship;
         [SerializeField] public Player Player;
         [SerializeField] float chargeAmount;
@@ -23,7 +24,7 @@ namespace StarWriter.Core
         Dictionary<string, float> skimStartTimes = new Dictionary<string, float>();
         CameraManager cameraManager;
 
-        int activelySkimmingBlockCount = 0;
+        public int activelySkimmingBlockCount = 0;
 
         public int ActivelySkimmingBlockCount { get { return activelySkimmingBlockCount; } }
 
@@ -135,8 +136,12 @@ namespace StarWriter.Core
 
         void StartSkim(TrailBlock trailBlock)
         {
-            
-            if (skimVisualFX) StartCoroutine(DisplaySkimParticleEffectCoroutine(trailBlock));
+
+            if (skimVisualFX)
+            {
+                if (selfSkim || trailBlock.Team != team)
+                StartCoroutine(DisplaySkimParticleEffectCoroutine(trailBlock));
+            }
 
             if (!skimStartTimes.ContainsKey(trailBlock.ID))
             {
@@ -216,6 +221,5 @@ namespace StarWriter.Core
 
             Destroy(particle);
         }
-
     }
 }
