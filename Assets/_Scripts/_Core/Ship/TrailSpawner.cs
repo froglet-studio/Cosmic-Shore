@@ -11,6 +11,8 @@ public class TrailSpawner : MonoBehaviour
     [SerializeField] TrailBlock trailBlock;
     [SerializeField] Skimmer skimmer;
 
+    [SerializeField] bool waitTillOutsideSkimmer = true;
+
     public float offset = 0f;
 
     [SerializeField] float initialWavelength = 4f;
@@ -185,7 +187,7 @@ public class TrailSpawner : MonoBehaviour
         InnerDimensions = Block.InnerDimensions;
         Block.transform.SetPositionAndRotation(transform.position - shipData.Course * offset + ship.transform.right * ((trailBlock.transform.localScale.x * XScaler )/ 4f + Mathf.Abs(halfGap)/2)*(halfGap/ Mathf.Abs(halfGap)), shipData.blockRotation);
         Block.transform.parent = TrailContainer.transform;
-        Block.waitTime = (skimmer.transform.localScale.z + TrailZScale) / ship.GetComponent<ShipData>().Speed;
+        if (waitTillOutsideSkimmer) Block.waitTime = (skimmer.transform.localScale.z + TrailZScale) / ship.GetComponent<ShipData>().Speed;
         Block.ownerId = ship.Player.PlayerUUID;
         Block.PlayerName = ship.Player.PlayerName;
         Block.Team = ship.Team;
