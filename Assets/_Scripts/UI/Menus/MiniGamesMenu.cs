@@ -15,13 +15,12 @@ public class MiniGamesMenu : MonoBehaviour
     [SerializeField] TMPro.TMP_Text SelectedGameName2;
     [SerializeField] TMPro.TMP_Text SelectedGameDescription2;
     [SerializeField] GameObject SelectedGamePreviewWindow2;
-    [SerializeField] GameObject ShipSelectionTemplate;
-    [SerializeField] GameObject GameSelectionTemplate;
+    [SerializeField] Transform ShipSelectionContainer;
+    [SerializeField] Transform GameSelectionContainer;
     [SerializeField] GameObject PlayerCountButtonContainer;
     [SerializeField] GameObject DifficultyButtonContainer;
 
-    Transform ShipSelectionContainer;
-    Transform GameSelectionContainer;
+
     SO_Ship SelectedShip;
     SO_MiniGame SelectedGame;
     int PlayerCount;
@@ -31,12 +30,6 @@ public class MiniGamesMenu : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        ShipSelectionContainer = ShipSelectionTemplate.transform.parent;
-        GameSelectionContainer = GameSelectionTemplate.transform.parent;
-
-        ShipSelectionTemplate.SetActive(false);
-        GameSelectionTemplate.SetActive(false);
-
         for (var i = 0; i < PlayerCountButtonContainer.transform.childCount; i++)
             PlayerCountIcons.Add(PlayerCountButtonContainer.transform.GetChild(i).gameObject.GetComponent<Image>().sprite);
 

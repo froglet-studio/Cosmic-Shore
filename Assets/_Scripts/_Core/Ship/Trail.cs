@@ -16,7 +16,7 @@ namespace StarWriter.Core
 
             // TODO: maybe circular list is not needed
             if (isLoop)
-                TrailList = new CircularList<TrailBlock>();
+                TrailList = new List<TrailBlock>();
             else
                 TrailList = new List<TrailBlock>();
             
@@ -60,13 +60,15 @@ namespace StarWriter.Core
                 lookAheadBlocks.Add(nextBlock);
 
                 index += incrementor;
-                if (index >= TrailList.Count-1 || index <= 0) // End of trail encountered
+                if (index >= TrailList.Count || index <= 0) // End of trail encountered
                 {
                     if (isLoop)
                         index %= TrailList.Count;
                     else
                         incrementor *= -1;
                 }
+
+                Debug.Log($"LookAhead - index:{index}, incrementor:{incrementor}, TrailList.Count:{TrailList.Count}, isLoop:{isLoop}");
 
                 currentBlock = TrailList[index];
                 nextBlock = TrailList[index + incrementor];
@@ -149,7 +151,7 @@ namespace StarWriter.Core
         public CircularList(int index)
         {
             if (index < 0 || index >= Count)
-                throw new Exception(string.Format("Index must between {0} and {1}", 0, Count));
+                throw new Exception(string.Format("Index must between {0} and {1}, index was {2}", 0, Count, index));
 
             Index = index;
         }

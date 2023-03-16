@@ -41,7 +41,7 @@ public class LeaderboardDataAccessor
             }
         },
         {
-            MiniGames.DestructionDerby, new List<LeaderboardEntry>()
+            MiniGames.Rampage, new List<LeaderboardEntry>()
             {
                 new LeaderboardEntry("Gradies", 10, ShipTypes.Dolphin),
                 new LeaderboardEntry("Spades",  20, ShipTypes.Shark),
@@ -58,6 +58,36 @@ public class LeaderboardDataAccessor
                 new LeaderboardEntry("Gradies", 30, ShipTypes.Manta),
                 new LeaderboardEntry("Fenrys",  40, ShipTypes.Shark),
                 new LeaderboardEntry("Igarus",  50, ShipTypes.Shark),
+            }
+        },
+        {
+            MiniGames.ShootingGallery, new List<LeaderboardEntry>()
+            {
+                new LeaderboardEntry("Spades",  10, ShipTypes.Dolphin),
+                new LeaderboardEntry("Siren",   20, ShipTypes.GunManta),
+                new LeaderboardEntry("Igarus",  30, ShipTypes.Manta),
+                new LeaderboardEntry("Fenrys",  40, ShipTypes.Shark),
+                new LeaderboardEntry("Gradies", 50, ShipTypes.Shark),
+            }
+        },
+        {
+            MiniGames.DriftCourse, new List<LeaderboardEntry>()
+            {
+                new LeaderboardEntry("Igarus",  10, ShipTypes.Dolphin),
+                new LeaderboardEntry("Siren",   20, ShipTypes.GunManta),
+                new LeaderboardEntry("Spades",  30, ShipTypes.Manta),
+                new LeaderboardEntry("Gradies", 40, ShipTypes.Shark),
+                new LeaderboardEntry("Fenrys",  50, ShipTypes.Shark),
+            }
+        },
+        {
+            MiniGames.ThiefCourse, new List<LeaderboardEntry>()
+            {
+                new LeaderboardEntry("Igarus",  10, ShipTypes.Dolphin),
+                new LeaderboardEntry("Gradies", 20, ShipTypes.GunManta),
+                new LeaderboardEntry("Spades",  30, ShipTypes.Manta),
+                new LeaderboardEntry("Siren",   40, ShipTypes.Shark),
+                new LeaderboardEntry("Fenrys",  50, ShipTypes.Shark),
             }
         },
     };

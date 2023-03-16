@@ -15,6 +15,7 @@ namespace StarWriter.Core.UI
         public GameObject Records_Panel;
         public GameObject Ship_Select;
         public GameObject Minigame_Settings;
+        public GameObject Coming_Soon;
 
         GameManager gameManager;
 
@@ -56,6 +57,7 @@ namespace StarWriter.Core.UI
             Records_Panel.SetActive(false);
             Ship_Select.SetActive(false);
             Minigame_Settings.SetActive(false);
+            Coming_Soon.SetActive(false);
         }
         public void OnClickRecords()
         {
@@ -67,6 +69,7 @@ namespace StarWriter.Core.UI
             Records_Panel.SetActive(true);
             Ship_Select.SetActive(false);
             Minigame_Settings.SetActive(false);
+            Coming_Soon.SetActive(false);
         }
         public void OnClickMinigames()
         {
@@ -78,6 +81,7 @@ namespace StarWriter.Core.UI
             Records_Panel.SetActive(false);
             Ship_Select.SetActive(false);
             Minigame_Settings.SetActive(false);
+            Coming_Soon.SetActive(false);
         }   
         public void OnClickOptionsMenuButton()
         {
@@ -89,6 +93,7 @@ namespace StarWriter.Core.UI
             Records_Panel.SetActive(false);
             Ship_Select.SetActive(false);
             Minigame_Settings.SetActive(false);
+            Coming_Soon.SetActive(false);
         }
         public void OnClickHome()
         {
@@ -100,6 +105,7 @@ namespace StarWriter.Core.UI
             Records_Panel.SetActive(false);
             Ship_Select.SetActive(false);
             Minigame_Settings.SetActive(false);
+            Coming_Soon.SetActive(false);
         }
     }
 }

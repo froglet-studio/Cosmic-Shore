@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0309a5343d820c14abd73b35f6fa50f1, type: 3}
+  m_Name: ShipShark
+  m_EditorClassIdentifier: 
+  Class: 3
+  Name: Rampage
+  Description: Dun dun dun dun
+  Icon: {fileID: 21300000, guid: 2f25d43091cd95b4ba63624192b69769, type: 3}
+  SelectedIcon: {fileID: 21300000, guid: aa8c00a5343222d439660e9e400e542c, type: 3}
+  TrailPreviewImage: {fileID: 21300000, guid: 449a10c84f724994eb0401e2f1c3d7d4, type: 3}
+  PreviewImage: {fileID: 21300000, guid: 161e07fc5930fca4ebeccaa1257a4176, type: 3}
+  Abilities:
+  - {fileID: 11400000, guid: f9f41e3b69e020741878e22c46c8190c, type: 2}
+  - {fileID: 11400000, guid: 049001867ddf0504c93f7a903f691ca4, type: 2}
+  MiniGames:
+  - {fileID: 11400000, guid: 812851e4603217c469662dc3cb9c6d93, type: 2}
+  - {fileID: 11400000, guid: 3537310ecbdad2e449bbca31d2aa8599, type: 2}

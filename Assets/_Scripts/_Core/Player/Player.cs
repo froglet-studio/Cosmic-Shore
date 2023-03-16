@@ -71,11 +71,11 @@ public class Player : MonoBehaviour
                 ship.Player = this;
 
                 if (boostDisplay != null)
-                    ship.GetComponent<ResourceSystem>().BoostDisplay = boostDisplay;
+                    ship.ResourceSystem.BoostDisplay = boostDisplay;
                 if (levelDisplay != null)
-                    ship.GetComponent<ResourceSystem>().LevelDisplay = levelDisplay;
+                    ship.ResourceSystem.LevelDisplay = levelDisplay;
                 if (levelDisplay != null)
-                    ship.GetComponent<ResourceSystem>().AmmoDisplay = ammoDisplay;
+                    ship.ResourceSystem.AmmoDisplay = ammoDisplay;
 
                 break;
             default: // Single player game 
@@ -91,11 +91,11 @@ public class Player : MonoBehaviour
                 ship.Player = this;
 
                 if (boostDisplay != null)
-                    ship.GetComponent<ResourceSystem>().BoostDisplay = boostDisplay;
+                    ship.ResourceSystem.BoostDisplay = boostDisplay;
                 if (levelDisplay != null)
-                    ship.GetComponent<ResourceSystem>().LevelDisplay = levelDisplay;
+                    ship.ResourceSystem.LevelDisplay = levelDisplay;
                 if (levelDisplay != null)
-                    ship.GetComponent<ResourceSystem>().AmmoDisplay = ammoDisplay;
+                    ship.ResourceSystem.AmmoDisplay = ammoDisplay;
 
                 gameManager.WaitOnPlayerLoading();
                 break;

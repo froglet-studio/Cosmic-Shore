@@ -15,7 +15,6 @@ public enum PositioningScheme
 
 public class SegmentSpawner : MonoBehaviour
 {
-    [SerializeField] TrailBlock trailBlock;
     [SerializeField] public int numberOfSegments = 1;
     [SerializeField] List<SpawnableAbstractBase> spawnableSegments;
     [SerializeField] PositioningScheme positioningScheme = PositioningScheme.SphereUniform;
@@ -27,6 +26,7 @@ public class SegmentSpawner : MonoBehaviour
     System.Random random = new();
     int spawnedItemCount;
     float sphereRadius = 200f;
+    [SerializeField] float straighLineLength = 400f;
 
     void Start()
     {
@@ -82,6 +82,18 @@ public class SegmentSpawner : MonoBehaviour
                     (Quaternion.Euler(0, random.Next(Mathf.Max(difficultyAngle - 20, 40), Mathf.Max(difficultyAngle - 20, 40)), 0) *
                     (sphereRadius * Vector3.forward));
                 spawned.transform.LookAt(Vector3.zero);
+                return;
+            case PositioningScheme.ToroidSurface:
+                // TODO: this is not a torus, it's ripped from the sphere
+                int toroidDifficultyAngle = 90;
+                spawned.transform.position = Quaternion.Euler(0, 0, random.Next(spawnedItemCount * (360 / numberOfSegments), spawnedItemCount * (360 / numberOfSegments) + 20)) *
+                    (Quaternion.Euler(0, random.Next(Mathf.Max(toroidDifficultyAngle - 20, 40), Mathf.Max(toroidDifficultyAngle - 20, 40)), 0) *
+                    (sphereRadius * Vector3.forward));
+                spawned.transform.LookAt(Vector3.zero);
+                return;
+            case PositioningScheme.StraightLine:
+                spawned.transform.position = new Vector3(0, 0, spawnedItemCount*straighLineLength);
+                spawned.transform.Rotate(Vector3.forward, (float)random.NextDouble() * 180);
                 return;
             case PositioningScheme.Cubic:
                 // Volumetric Grid, looking at origin

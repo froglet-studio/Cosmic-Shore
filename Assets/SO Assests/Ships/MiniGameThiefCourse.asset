@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe040efad3307fb449b6b72ad15362da, type: 3}
+  m_Name: MiniGameThiefCourse
+  m_EditorClassIdentifier: 
+  Mode: 5
+  Name: Double Cross
+  Description: Rubble Rubble - The Hamburgler
+  Icon: {fileID: 21300000, guid: 25fbaa47682a54d43b7241f6ba275397, type: 3}
+  SelectedIcon: {fileID: 21300000, guid: 109f5a8865472e84daedd02da5f569b1, type: 3}
+  PreviewClip: {fileID: 241334157148977051, guid: bce3acfd8a554e942bc4f1903e25eb07,
+    type: 3}
+  MinPlayers: 1
+  MaxPlayers: 4
+  SceneName: MinigameThiefCourse

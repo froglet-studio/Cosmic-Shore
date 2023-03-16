@@ -4,6 +4,9 @@ public enum MiniGames
 {
     Random = 0,
     FlightSchool = 1,
-    DestructionDerby = 2,
+    Rampage = 2,
     Darts = 3,
+    ShootingGallery = 4,
+    ThiefCourse = 5,
+    DriftCourse = 6,
 }

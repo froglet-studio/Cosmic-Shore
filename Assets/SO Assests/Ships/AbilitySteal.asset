@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d2e71a383343c2e4d86ebd2ae5bdd45e, type: 3}
+  m_Name: AbilitySteal
+  m_EditorClassIdentifier: 
+  Action: 9
+  Name: Steal
+  Description: I love stealin', I love takin' things
+  Icon: {fileID: 21300000, guid: 9b0ae653561b0c3448f3c9df3ffd522e, type: 3}
+  SelectedIcon: {fileID: 21300000, guid: d419162ffc77de24da21512cd8767ed6, type: 3}
+  PreviewClip: {fileID: 2096801853598961014, guid: e838c42bdbc409946944368a0ac2d38d,
+    type: 3}

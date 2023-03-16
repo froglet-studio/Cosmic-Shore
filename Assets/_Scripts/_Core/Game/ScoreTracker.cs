@@ -5,10 +5,11 @@ using UnityEngine;
 
 public enum ScoringModes
 {
-    VolumeDestroyed,
-    VolumeCreated,
-    TimePlayed,
-    TurnsPlayed
+    VolumeDestroyed = 0,
+    VolumeCreated = 1,
+    TimePlayed = 2,
+    TurnsPlayed = 3,
+    VolumeStolen = 4
 }
 
 public class ScoreTracker : MonoBehaviour
@@ -48,6 +49,11 @@ public class ScoreTracker : MonoBehaviour
             case ScoringModes.VolumeCreated:
                 if (StatsManager.Instance.playerStats.ContainsKey(currentPlayerName))
                     playerScores[currentPlayerName] += StatsManager.Instance.playerStats[currentPlayerName].volumeCreated;
+                StatsManager.Instance.ResetStats();
+                break;
+            case ScoringModes.VolumeStolen:
+                if (StatsManager.Instance.playerStats.ContainsKey(currentPlayerName))
+                    playerScores[currentPlayerName] += StatsManager.Instance.playerStats[currentPlayerName].volumeStolen;
                 StatsManager.Instance.ResetStats();
                 break;
             case ScoringModes.TimePlayed:
