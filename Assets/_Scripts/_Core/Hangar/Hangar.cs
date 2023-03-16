@@ -3,6 +3,7 @@ using UnityEngine;
 using TailGlider.Utility.Singleton;
 using UnityEngine.Serialization;
 using StarWriter.Core.Input;
+using System;
 
 namespace StarWriter.Core.HangerBuilder
 {
@@ -108,7 +109,11 @@ namespace StarWriter.Core.HangerBuilder
         public Ship LoadPlayerShip()
         {
             if (PlayerShipType == ShipTypes.Random)
-                PlayerShipType = ShipTypes.Manta;
+            {
+                Array values = Enum.GetValues(typeof(ShipTypes));
+                System.Random random = new System.Random();
+                PlayerShipType = (ShipTypes)values.GetValue(random.Next(values.Length));
+            }
 
             Ship ship = Instantiate(shipTypeMap[PlayerShipType]);
             ship.SetShipMaterial(TeamsMaterials[PlayerTeam]);

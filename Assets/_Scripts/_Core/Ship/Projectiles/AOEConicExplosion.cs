@@ -1,15 +1,23 @@
 using System.Collections;
 using StarWriter.Core;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 public class AOEConicExplosion : AOEExplosion
 {
     [SerializeField] float height = 800; //maybe pull from node diameter
+    GameObject coneContainer;
+    Vector3 containerPosition;
+    Quaternion containerRotation;
 
     protected override void Start()
     {
         base.Start();
 
+        coneContainer = new GameObject("ExplosionCone");
+        coneContainer.transform.SetParent(container.transform, false);
+        coneContainer.transform.SetPositionAndRotation(containerPosition, containerRotation);
+        transform.SetParent(coneContainer.transform, false);
         MaxScaleVector = new Vector3(MaxScale, MaxScale, height);
     }
 
@@ -25,12 +33,18 @@ public class AOEConicExplosion : AOEExplosion
         {
             elapsedTime += Time.deltaTime;
             var lerpAmount = Mathf.Sin((elapsedTime / ExplosionDuration) * PI_OVER_TWO);
-            container.transform.localScale = Vector3.Lerp(Vector3.zero, MaxScaleVector, lerpAmount);
-            GetComponent<SphereCollider>().radius = container.transform.localScale.x / (container.transform.localScale.z * 2);
-            Material.SetFloat("_Opacity", Mathf.Clamp((MaxScaleVector - container.transform.localScale).magnitude / MaxScaleVector.magnitude, 0, 1));
+            coneContainer.transform.localScale = Vector3.Lerp(Vector3.zero, MaxScaleVector, lerpAmount);
+            GetComponent<SphereCollider>().radius = coneContainer.transform.localScale.x / (coneContainer.transform.localScale.z * 2);
+            Material.SetFloat("_Opacity", Mathf.Clamp((MaxScaleVector - coneContainer.transform.localScale).magnitude / MaxScaleVector.magnitude, 0, 1));
             yield return null;
         }
 
         Destroy(gameObject);
+    }
+
+    public override void SetPositionAndRotation(Vector3 position, Quaternion rotation)
+    {
+        containerPosition = position;
+        containerRotation = rotation;
     }
 }

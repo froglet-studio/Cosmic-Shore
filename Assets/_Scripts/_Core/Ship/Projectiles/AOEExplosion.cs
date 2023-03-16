@@ -12,9 +12,7 @@ namespace StarWriter.Core
         [HideInInspector] public float MaxScale = 200f;
         [SerializeField] protected float ExplosionDuration = 2f;
         [SerializeField] protected float ExplosionDelay = .2f;
-        Quaternion containerRotation;
-        Vector3 containerPosition;
-        protected GameObject container;
+        protected static GameObject container;
 
         Material material;
         Teams team;
@@ -25,10 +23,8 @@ namespace StarWriter.Core
 
         protected virtual void Start()
         {
-            container = new GameObject();
-            container.name = "AOEContainer";
-            container.transform.SetPositionAndRotation(containerPosition, containerRotation);
-            container.transform.parent = transform.parent;
+            if (container == null) container = new GameObject("AOEContainer");
+
             transform.SetParent(container.transform, false); // SetParent with false to take container's world position
             MaxScaleVector = new Vector3(MaxScale, MaxScale, MaxScale);
             StartCoroutine(ExplodeCoroutine());
@@ -59,19 +55,18 @@ namespace StarWriter.Core
             {
                 elapsedTime += Time.deltaTime;
                 var easing = Mathf.Sin((elapsedTime / ExplosionDuration) * PI_OVER_TWO);
-                container.transform.localScale = Vector3.Lerp(Vector3.zero, MaxScaleVector, easing);
+                transform.localScale = Vector3.Lerp(Vector3.zero, MaxScaleVector, easing);
                 material.SetFloat("_Opacity", 1-easing);
                 //material.SetFloat("_Opacity", Mathf.Clamp((MaxScaleVector - container.transform.localScale).magnitude / MaxScaleVector.magnitude, 0, 1));
                 yield return null;
             }
 
-            Destroy(container.gameObject);
+            Destroy(this);
         }
 
-        public void SetPositionAndRotation(Vector3 position, Quaternion rotation)
+        public virtual void SetPositionAndRotation(Vector3 position, Quaternion rotation)
         {
-            containerRotation = rotation;
-            containerPosition = position;
+            transform.SetPositionAndRotation(position, rotation);
         }
     }
 }

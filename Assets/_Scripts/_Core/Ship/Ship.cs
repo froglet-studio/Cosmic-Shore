@@ -119,13 +119,17 @@ namespace StarWriter.Core
             }
         }
 
-        void Start()
+        void Awake()
         {
+            ResourceSystem = GetComponent<ResourceSystem>();
             shipController = GetComponent<ShipController>();
             TrailSpawner = GetComponent<TrailSpawner>();
-            cameraManager = CameraManager.Instance;
             shipData = GetComponent<ShipData>();
-            ResourceSystem = GetComponent<ResourceSystem>();
+        }
+
+        void Start()
+        {
+            cameraManager = CameraManager.Instance;
             inputController = player.GetComponent<InputController>();
             ApplyShipControlOverrides(controlOverrides);
 
