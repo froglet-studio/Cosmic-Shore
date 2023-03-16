@@ -12112,6 +12112,8 @@ MonoBehaviour:
   SelectedGameName2: {fileID: 292662841}
   SelectedGameDescription2: {fileID: 1640475072}
   SelectedGamePreviewWindow2: {fileID: 1733018679}
+  ShipSelectionContainer: {fileID: 557996062}
+  GameSelectionContainer: {fileID: 1222714947}
   ShipSelectionTemplate: {fileID: 1518206055}
   GameSelectionTemplate: {fileID: 1793428032}
   PlayerCountButtonContainer: {fileID: 133702997}
