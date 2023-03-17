@@ -29,6 +29,7 @@ namespace StarWriter.Core
 
         [Header("Environment Interactions")]
         [SerializeField] List<CrystalImpactEffects> crystalImpactEffects;
+        [SerializeField] List<FakeCrystalImpactEffects> fakeCrystalImpactEffects;
         [SerializeField] List<TrailBlockImpactEffects> trailBlockImpactEffects;
 
         [SerializeField] float minExplosionScale = 50;
@@ -169,6 +170,25 @@ namespace StarWriter.Core
                         break;
                     case ShipControlOverrides.MaxBoostDecay:
                         shipController.MaxBoostDecay = MaxBoostDecay;
+                        break;
+                }
+            }
+        }
+
+        public void PerformFakeCrystalImpactEffects(CrystalProperties crystalProperties)
+        {
+            //if (StatsManager.Instance != null)
+            //    StatsManager.Instance.CrystalCollected(this, crystalProperties);
+
+            foreach (FakeCrystalImpactEffects effect in fakeCrystalImpactEffects)
+            {
+                switch (effect)
+                {
+                    case FakeCrystalImpactEffects.PlayHaptics:
+                        HapticController.PlayFakeCrystalImpactHaptics();
+                        break;
+                    case FakeCrystalImpactEffects.ReduceSpeed:
+                        ModifySpeed(.1f, 10);
                         break;
                 }
             }
@@ -335,7 +355,11 @@ namespace StarWriter.Core
                             fake.Team = team;
                             fake.SetPositionAndRotation(transform.position + (Quaternion.Euler(0, 0, Random.Range(0, 360)) * transform.up * Random.Range(40, 60)) + (transform.forward * 40), transform.rotation);
                             ResourceSystem.ChangeAmmoAmount(player.PlayerUUID, -ResourceSystem.MaxAmmo / 3f);
+                            
                         }
+                        break;
+                    case ShipActions.StartGuns:
+                        shipData.GunsActive = true;
                         break;
 
                 }
@@ -388,7 +412,6 @@ namespace StarWriter.Core
                         ResetTrailToNeutral(trailShrinkRate);
                         break;
                     case ShipActions.PauseGuns:
-                        shipData.GunsActive = true;
                         break;
                     case ShipActions.LayBulletTrail:
                         shipData.LayingBulletTrail = false;

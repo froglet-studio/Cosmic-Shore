@@ -747,15 +747,17 @@ MonoBehaviour:
   trailBlock: {fileID: 4563009547826722997, guid: 4e280247faa1d154fa25d1e92df405dc,
     type: 3}
   skimmer: {fileID: 874579554510349383}
+  waitTillOutsideSkimmer: 1
   offset: 0
   initialWavelength: 9
   minWavelength: 1
-  gap: 0
-  trailLength: 40
+  gap: 1
+  InnerDimensions: {x: 0, y: 0, z: 0}
   defaultWaitTime: 0.5
   waitTime: 0.5
   startDelay: 2
   warp: 0
+  spawnerEnabled: 1
   MaxNearbyBlockCount: 10
   minBlockScale: 1
   maxBlockScale: 1
@@ -777,9 +779,10 @@ MonoBehaviour:
   speedMultiplier: 1
   speed: 0
   Boosting: 0
-  ChargingBoost: 0
+  BoostCharging: 0
   BoostDecaying: 0
   Drifting: 0
+  LayingBulletTrail: 0
   Attached: 0
   AttachedTrailBlock: {fileID: 0}
   GunsActive: 1
@@ -815,6 +818,7 @@ MonoBehaviour:
   AOEPrefab: {fileID: 2728798890556433942, guid: 4a855af160021d241b8c1ac70cf2d792,
     type: 3}
   farFieldSkimmer: {fileID: 0}
+  fakeCrystal: {fileID: 0}
   crystalImpactEffects: 04000000050000000200000006000000
   trailBlockImpactEffects: 030000000200000001000000
   minExplosionScale: 100
@@ -850,12 +854,10 @@ MonoBehaviour:
   controlOverrides: 
   closeCamDistance: 0
   farCamDistance: 0
-  throttle: 50
   BoostDecayGrowthRate: 0.03
   MaxBoostDecay: 10
-  rotationScaler: 190
-  rotationThrottleScaler: 0.5
   inputController: {fileID: 0}
+  ResourceSystem: {fileID: 0}
 --- !u!114 &3440187540988767646
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -892,6 +894,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 737294a573670f74389a7af68df314d5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  usesBoost: 0
+  usesLevels: 0
+  usesAmmo: 0
   maxBoost: 1
   initialBoost: 1
   maxLevel: 1

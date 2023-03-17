@@ -333,18 +333,19 @@ MonoBehaviour:
   farFieldSkimmer: {fileID: 0}
   fakeCrystal: {fileID: 0}
   crystalImpactEffects: 0000000008000000
+  fakeCrystalImpactEffects: 0000000005000000
   trailBlockImpactEffects: 0000000009000000
   minExplosionScale: 50
   maxExplosionScale: 500
   blockChargeChange: 0
   boostMultiplier: 2
   boostFuelAmount: 0
-  fullSpeedStraightEffects: 
+  fullSpeedStraightEffects: 0b000000
   rightStickEffects: 0c000000
   leftStickEffects: 0a000000
-  flipEffects: 0b000000
-  idleEffects: 0b000000
-  minimumSpeedStraightEffects: 0b000000
+  flipEffects: 
+  idleEffects: 
+  minimumSpeedStraightEffects: 0f000000
   cameraGrowthRate: 1
   cameraShrinkRate: 1
   minTrailYScale: 15
@@ -409,7 +410,7 @@ MonoBehaviour:
   offset: 0
   initialWavelength: 10
   minWavelength: 7
-  gap: 0
+  gap: 1
   InnerDimensions: {x: 0, y: 0, z: 0}
   defaultWaitTime: 0.5
   waitTime: 0.5
