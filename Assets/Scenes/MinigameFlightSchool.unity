@@ -688,6 +688,11 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 114521897}
     m_Modifications:
+    - target: {fileID: 750320515548628448, guid: 494deef066b46a24a9b5226c4203833c,
+        type: 3}
+      propertyPath: m_Name
+      value: Display Winning team sprite
+      objectReference: {fileID: 0}
     - target: {fileID: 750320515603018799, guid: 494deef066b46a24a9b5226c4203833c,
         type: 3}
       propertyPath: m_AnchorMax.y
@@ -946,6 +951,12 @@ RectTransform:
     type: 3}
   m_PrefabInstance: {fileID: 1003390196}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &1003390198 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 750320515651948985, guid: 494deef066b46a24a9b5226c4203833c,
+    type: 3}
+  m_PrefabInstance: {fileID: 1003390196}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1078953702
 GameObject:
   m_ObjectHideFlags: 0
@@ -1043,7 +1054,7 @@ MonoBehaviour:
   AllowedShipTypes: 01000000020000000300000000000000
   NumberOfRounds: 2147483647
   PlayerOrigin: {fileID: 1192541910}
-  EndGameScreen: {fileID: 0}
+  EndGameScreen: {fileID: 1003390198}
   ActivePlayer: {fileID: 0}
   CountdownDisplay: {fileID: 355343202}
   Countdown3: {fileID: 21300000, guid: f2202bfb9f07ec64d9cf9db6946d63bd, type: 3}
