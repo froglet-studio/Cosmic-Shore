@@ -15,8 +15,8 @@ MonoBehaviour:
   Mode: 1
   Name: FlightSchool
   Description: What you do before going to Flight Club
-  Icon: {fileID: 21300000, guid: e0a581cfd30cae046b38bf63fe5bbad9, type: 3}
-  SelectedIcon: {fileID: 21300000, guid: d019c44c40eb4274fbbd79aec9977a72, type: 3}
+  Icon: {fileID: 21300000, guid: dcd76f2027da3434a8def3c21ad5f2a6, type: 3}
+  SelectedIcon: {fileID: 21300000, guid: f5f5c0fc0c4cfba4d8ff8f1418081c2b, type: 3}
   PreviewClip: {fileID: 3312024567346999270, guid: 51aa26330ad783b4d9f1d54a91583c41,
     type: 3}
   MinPlayers: 1
