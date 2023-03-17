@@ -31,8 +31,8 @@ public class FakeCrystal : Crystal
         {
             return;
         }
-        ship.ModifySpeed(.1f, 10);
 
+        ship.PerformFakeCrystalImpactEffects(crystalProperties);
 
 
         //

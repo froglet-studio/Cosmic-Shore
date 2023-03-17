@@ -746,6 +746,7 @@ MonoBehaviour:
   farFieldSkimmer: {fileID: 0}
   fakeCrystal: {fileID: 0}
   crystalImpactEffects: 000000000600000002000000
+  fakeCrystalImpactEffects: 0000000005000000
   trailBlockImpactEffects: 00000000030000000200000001000000
   minExplosionScale: 200
   maxExplosionScale: 800
@@ -822,7 +823,7 @@ MonoBehaviour:
   offset: 0
   initialWavelength: 12
   minWavelength: 6
-  gap: 0
+  gap: 1
   InnerDimensions: {x: 0, y: 0, z: 0}
   defaultWaitTime: 0.5
   waitTime: 0.5

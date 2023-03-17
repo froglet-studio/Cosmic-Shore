@@ -16,5 +16,6 @@ public enum ShipActions
     PauseGuns = 11,
     FireBigGun = 12,
     LayBulletTrail = 13,
-    DropFakeCrystal = 14
+    DropFakeCrystal = 14,
+    StartGuns = 15
 }

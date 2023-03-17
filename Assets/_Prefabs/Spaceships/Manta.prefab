@@ -332,6 +332,7 @@ MonoBehaviour:
   fakeCrystal: {fileID: 8379901470580388096, guid: f7e728a0fa445ed41bc8c1c565fa3f21,
     type: 3}
   crystalImpactEffects: 000000000600000003000000
+  fakeCrystalImpactEffects: 0000000005000000
   trailBlockImpactEffects: 000000000300000002000000
   minExplosionScale: 50
   maxExplosionScale: 500
