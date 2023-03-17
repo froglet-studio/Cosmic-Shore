@@ -2331,6 +2331,11 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 114521897}
     m_Modifications:
+    - target: {fileID: 750320515548628448, guid: 494deef066b46a24a9b5226c4203833c,
+        type: 3}
+      propertyPath: m_Name
+      value: Display winning team sprite
+      objectReference: {fileID: 0}
     - target: {fileID: 750320515603018799, guid: 494deef066b46a24a9b5226c4203833c,
         type: 3}
       propertyPath: m_AnchorMax.y

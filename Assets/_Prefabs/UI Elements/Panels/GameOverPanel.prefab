@@ -787,8 +787,7 @@ GameObject:
   - component: {fileID: 750320515548628253}
   - component: {fileID: 750320515548628450}
   m_Layer: 5
-  m_Name: Make this change either color or swap a sprite or color (your choice) based
-    on winning team
+  m_Name: Display winning team sprite
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
