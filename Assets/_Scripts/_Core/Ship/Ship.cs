@@ -213,6 +213,9 @@ namespace StarWriter.Core
                     case CrystalImpactEffects.DrainAmmo:
                         ResourceSystem.ChangeAmmoAmount(player.PlayerUUID, -ResourceSystem.CurrentAmmo);
                         break;
+                    case CrystalImpactEffects.GainOneThirdMaxAmmo:
+                        ResourceSystem.ChangeAmmoAmount(player.PlayerUUID, ResourceSystem.MaxAmmo/3f);
+                        break;
                     case CrystalImpactEffects.Score:
                         //if (StatsManager.Instance != null)
                         //    StatsManager.Instance.UpdateScore(player.PlayerUUID, crystalProperties.scoreAmount);
@@ -326,9 +329,13 @@ namespace StarWriter.Core
                         shipData.LayingBulletTrail = true;
                         break;
                     case ShipActions.DropFakeCrystal:
-                        var fake = Instantiate(fakeCrystal).GetComponent<FakeCrystal>();
-                        //fakeCrystal.Team = team;
-                        fake.SetPositionAndRotation(transform.position + Quaternion.Euler(0,0,Random.Range(0,360))*transform.up*Random.Range(20,30) + transform.forward * 30, transform.rotation);
+                        if (ResourceSystem.CurrentAmmo > ResourceSystem.MaxAmmo / 3f)
+                        {
+                            var fake = Instantiate(fakeCrystal).GetComponent<FakeCrystal>();
+                            fake.Team = team;
+                            fake.SetPositionAndRotation(transform.position + (Quaternion.Euler(0, 0, Random.Range(0, 360)) * transform.up * Random.Range(40, 60)) + (transform.forward * 40), transform.rotation);
+                            ResourceSystem.ChangeAmmoAmount(player.PlayerUUID, -ResourceSystem.MaxAmmo / 3f);
+                        }
                         break;
 
                 }

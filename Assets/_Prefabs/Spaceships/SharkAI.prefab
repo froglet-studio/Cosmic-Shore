@@ -529,12 +529,12 @@ MonoBehaviour:
   trailBlock: {fileID: 4563009547826722997, guid: 053064d82123e8b49bfb29870b5c0715,
     type: 3}
   skimmer: {fileID: 874579554510349383}
+  waitTillOutsideSkimmer: 1
   offset: 0
   initialWavelength: 5
   minWavelength: 1
   gap: 0
   InnerDimensions: {x: 0, y: 0, z: 0}
-  trailLength: 40
   defaultWaitTime: 0.5
   waitTime: 0.5
   startDelay: 2
@@ -597,7 +597,8 @@ MonoBehaviour:
   AOEPrefab: {fileID: 2728798890556433942, guid: bdb355fdad94b1442ae09bb64ed1ad14,
     type: 3}
   farFieldSkimmer: {fileID: 0}
-  crystalImpactEffects: 0600000005000000
+  fakeCrystal: {fileID: 0}
+  crystalImpactEffects: 0600000007000000
   trailBlockImpactEffects: 03000000
   minExplosionScale: 50
   maxExplosionScale: 25
@@ -632,12 +633,10 @@ MonoBehaviour:
   controlOverrides: 
   closeCamDistance: -0.5
   farCamDistance: -15
-  throttle: 50
   BoostDecayGrowthRate: 0.03
   MaxBoostDecay: 10
-  rotationScaler: 140
-  rotationThrottleScaler: 0
   inputController: {fileID: 0}
+  ResourceSystem: {fileID: 0}
 --- !u!114 &3440187540988767646
 MonoBehaviour:
   m_ObjectHideFlags: 0

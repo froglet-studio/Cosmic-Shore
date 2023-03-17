@@ -331,7 +331,8 @@ MonoBehaviour:
   AOEPrefab: {fileID: 2728798890556433942, guid: 4a855af160021d241b8c1ac70cf2d792,
     type: 3}
   farFieldSkimmer: {fileID: 0}
-  crystalImpactEffects: 0000000007000000
+  fakeCrystal: {fileID: 0}
+  crystalImpactEffects: 0000000008000000
   trailBlockImpactEffects: 0000000009000000
   minExplosionScale: 50
   maxExplosionScale: 500
@@ -366,12 +367,10 @@ MonoBehaviour:
   controlOverrides: 00000000030000000400000000000000
   closeCamDistance: -10
   farCamDistance: -50
-  throttle: 50
   BoostDecayGrowthRate: 0.03
   MaxBoostDecay: 10
-  rotationScaler: 190
-  rotationThrottleScaler: 0
   inputController: {fileID: 0}
+  ResourceSystem: {fileID: 0}
 --- !u!114 &6964962696344697388
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -406,11 +405,12 @@ MonoBehaviour:
   trailBlock: {fileID: 4563009547826722997, guid: 68d3aecc8e78ee64ab14601164273680,
     type: 3}
   skimmer: {fileID: 874579554510349383}
+  waitTillOutsideSkimmer: 1
   offset: 0
   initialWavelength: 10
   minWavelength: 7
   gap: 0
-  trailLength: 40
+  InnerDimensions: {x: 0, y: 0, z: 0}
   defaultWaitTime: 0.5
   waitTime: 0.5
   startDelay: 2
@@ -466,7 +466,9 @@ MonoBehaviour:
   minimumSpeed: 0
   ThrottleScaler: 0
   rotationThrottleScaler: 0
-  rotationScaler: 130
+  PitchScaler: 130
+  YawScaler: 130
+  RollScaler: 130
   topGun: {fileID: 6325554860274326311}
   leftGun: {fileID: 3459134076240855180}
   rightGun: {fileID: 6375360903085026602}

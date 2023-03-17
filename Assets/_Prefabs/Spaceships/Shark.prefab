@@ -523,7 +523,8 @@ MonoBehaviour:
   AOEPrefab: {fileID: 2728798890556433942, guid: d568a14301490e54280955b50673f884,
     type: 3}
   farFieldSkimmer: {fileID: 0}
-  crystalImpactEffects: 000000000100000005000000
+  fakeCrystal: {fileID: 0}
+  crystalImpactEffects: 000000000100000006000000
   trailBlockImpactEffects: 
   minExplosionScale: 400
   maxExplosionScale: 400
@@ -558,12 +559,10 @@ MonoBehaviour:
   controlOverrides: 0300000004000000
   closeCamDistance: -10
   farCamDistance: -60
-  throttle: 50
   BoostDecayGrowthRate: 0.03
   MaxBoostDecay: 10
-  rotationScaler: 140
-  rotationThrottleScaler: 0
   inputController: {fileID: 0}
+  ResourceSystem: {fileID: 0}
 --- !u!114 &6964962696344697388
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -598,11 +597,12 @@ MonoBehaviour:
   trailBlock: {fileID: 4563009547826722997, guid: 053064d82123e8b49bfb29870b5c0715,
     type: 3}
   skimmer: {fileID: 874579554510349383}
+  waitTillOutsideSkimmer: 1
   offset: 0
   initialWavelength: 5
   minWavelength: 1
   gap: 0
-  trailLength: 40
+  InnerDimensions: {x: 0, y: 0, z: 0}
   defaultWaitTime: 0.8
   waitTime: 0.5
   startDelay: 2
@@ -727,7 +727,9 @@ MonoBehaviour:
   minimumSpeed: 0
   ThrottleScaler: 0
   rotationThrottleScaler: 0
-  rotationScaler: 130
+  PitchScaler: 130
+  YawScaler: 130
+  RollScaler: 130
 --- !u!1 &7020314743814055985
 GameObject:
   m_ObjectHideFlags: 0

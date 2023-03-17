@@ -5,9 +5,11 @@ public enum CrystalImpactEffects
     PlayHaptics = 0,
     FillCharge = 1,
     DrainAmmo = 2,
-    Score = 3,
-    Boost = 4,
-    AreaOfEffectExplosion = 5,
-    ResetAggression = 6,
-    IncrementLevel = 7,
+    GainOneThirdMaxAmmo = 3,
+    Score = 4,
+    Boost = 5,
+    AreaOfEffectExplosion = 6,
+    ResetAggression = 7,
+    IncrementLevel = 8,
+    
 }

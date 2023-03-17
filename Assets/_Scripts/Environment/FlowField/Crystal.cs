@@ -14,7 +14,7 @@ public class Crystal : MonoBehaviour
     [SerializeField] protected CrystalProperties crystalProperties;
     [SerializeField] public float sphereRadius = 100;
     [SerializeField] protected GameObject SpentCrystalPrefab;
-    [SerializeField] GameObject CrystalModel; 
+    [SerializeField] protected GameObject CrystalModel; 
     [SerializeField] protected Material material;
     #endregion
 
@@ -75,8 +75,8 @@ public class Crystal : MonoBehaviour
         spentCrystal.transform.localEulerAngles = transform.localEulerAngles;
         spentCrystal.GetComponent<Renderer>().material = tempMaterial;
         
-        StartCoroutine(spentCrystal.GetComponent<Impact>().ImpactCoroutine(
-            ship.transform.forward * ship.GetComponent<ShipData>().Speed, tempMaterial, ship.Player.PlayerName));
+        spentCrystal.GetComponent<Impact>().StartImpactCoroutine(
+            ship.transform.forward * ship.GetComponent<ShipData>().Speed, tempMaterial, ship.Player.PlayerName);
 
         // Play SFX sound
         AudioSource audioSource = GetComponent<AudioSource>();

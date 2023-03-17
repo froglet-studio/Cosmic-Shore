@@ -331,7 +331,7 @@ MonoBehaviour:
   farFieldSkimmer: {fileID: 3138628630497430536}
   fakeCrystal: {fileID: 8379901470580388096, guid: f7e728a0fa445ed41bc8c1c565fa3f21,
     type: 3}
-  crystalImpactEffects: 0000000005000000
+  crystalImpactEffects: 000000000600000003000000
   trailBlockImpactEffects: 000000000300000002000000
   minExplosionScale: 50
   maxExplosionScale: 500
@@ -483,13 +483,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   usesBoost: 0
   usesLevels: 0
-  usesAmmo: 0
+  usesAmmo: 1
   maxBoost: 1
   initialBoost: 1
   maxLevel: 1
   initialLevel: 0
   maxAmmo: 1
-  initialAmmo: 1
+  initialAmmo: 0.392
   BoostDisplay: {fileID: 0}
   LevelDisplay: {fileID: 0}
   AmmoDisplay: {fileID: 0}

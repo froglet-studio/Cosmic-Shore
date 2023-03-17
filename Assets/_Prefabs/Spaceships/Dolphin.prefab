@@ -744,7 +744,8 @@ MonoBehaviour:
   AOEPrefab: {fileID: 9218889541719856748, guid: 2ae56847c6f549948a71f41eaf59f749,
     type: 3}
   farFieldSkimmer: {fileID: 0}
-  crystalImpactEffects: 000000000500000002000000
+  fakeCrystal: {fileID: 0}
+  crystalImpactEffects: 000000000600000002000000
   trailBlockImpactEffects: 00000000030000000200000001000000
   minExplosionScale: 200
   maxExplosionScale: 800
@@ -779,12 +780,10 @@ MonoBehaviour:
   controlOverrides: 0300000004000000000000000800000009000000
   closeCamDistance: -5
   farCamDistance: -20
-  throttle: 50
   BoostDecayGrowthRate: 0.03
   MaxBoostDecay: 6
-  rotationScaler: 190
-  rotationThrottleScaler: 0.5
   inputController: {fileID: 0}
+  ResourceSystem: {fileID: 0}
 --- !u!114 &6964962696344697388
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -819,15 +818,17 @@ MonoBehaviour:
   trailBlock: {fileID: 4563009547826722997, guid: 4e280247faa1d154fa25d1e92df405dc,
     type: 3}
   skimmer: {fileID: 874579554510349383}
+  waitTillOutsideSkimmer: 1
   offset: 0
   initialWavelength: 12
   minWavelength: 6
   gap: 0
-  trailLength: 40
+  InnerDimensions: {x: 0, y: 0, z: 0}
   defaultWaitTime: 0.5
   waitTime: 0.5
   startDelay: 2
   warp: 0
+  spawnerEnabled: 1
   MaxNearbyBlockCount: 10
   minBlockScale: 1
   maxBlockScale: 5
@@ -849,9 +850,10 @@ MonoBehaviour:
   speedMultiplier: 1
   speed: 0
   Boosting: 0
-  ChargingBoost: 0
+  BoostCharging: 0
   BoostDecaying: 0
   Drifting: 0
+  LayingBulletTrail: 0
   Attached: 0
   AttachedTrailBlock: {fileID: 0}
   GunsActive: 1
@@ -949,7 +951,9 @@ MonoBehaviour:
   minimumSpeed: 0
   ThrottleScaler: 0
   rotationThrottleScaler: 0
-  rotationScaler: 130
+  PitchScaler: 130
+  YawScaler: 130
+  RollScaler: 130
 --- !u!1 &7056368880709611073
 GameObject:
   m_ObjectHideFlags: 0

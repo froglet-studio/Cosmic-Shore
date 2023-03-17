@@ -5,7 +5,13 @@ public class Impact : MonoBehaviour
 {
     public float positionScale;
     public float maxDistance = 3f;
-    public IEnumerator ImpactCoroutine(Vector3 velocity, Material material,string ID)
+
+    public void StartImpactCoroutine(Vector3 velocity, Material material, string ID)
+    {
+        StartCoroutine(ImpactCoroutine(velocity, material, ID));
+    }
+
+    IEnumerator ImpactCoroutine(Vector3 velocity, Material material,string ID)
     {
         var velocityScale = .07f/positionScale;
         Vector3 distance = Vector3.zero;

@@ -26,11 +26,11 @@ public class FakeCrystal : Crystal
         //
         // Do the ship specific crystal stuff
         //
-        
-        //if (ship.Team == Team)
-        //{
-        //    return;
-        //}
+
+        if (ship.Team == Team)
+        {
+            return;
+        }
         ship.ModifySpeed(.1f, 10);
 
 
@@ -46,15 +46,15 @@ public class FakeCrystal : Crystal
         spentCrystal.transform.localEulerAngles = transform.localEulerAngles;
         spentCrystal.GetComponent<Renderer>().material = tempMaterial;
 
-        StartCoroutine(spentCrystal.GetComponent<Impact>().ImpactCoroutine(
-            ship.transform.forward * ship.GetComponent<ShipData>().Speed, tempMaterial, ship.Player.PlayerName));
+        spentCrystal.GetComponent<Impact>().StartImpactCoroutine(
+            ship.transform.forward * ship.GetComponent<ShipData>().Speed, tempMaterial, ship.Player.PlayerName);
 
         // Play SFX sound
         AudioSource audioSource = GetComponent<AudioSource>();
         if (audioSource == null) Debug.LogWarning("WTF, audioSource is null");                      // TODO: remove this debug if not seen _again_ by 2/12/23
         if (AudioSystem.Instance == null) Debug.LogWarning("WTF, AudioSystem.Instance is null");    // TODO: remove this debug if not seen _again_ by 2/12/23
         AudioSystem.Instance.PlaySFXClip(audioSource.clip, audioSource);
-
+        Destroy(transform.gameObject);
     }
 
     public virtual void SetPositionAndRotation(Vector3 position, Quaternion rotation)
