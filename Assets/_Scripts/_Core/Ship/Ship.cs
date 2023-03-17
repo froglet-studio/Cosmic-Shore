@@ -25,6 +25,7 @@ namespace StarWriter.Core
         [Header("optional ship Components")]
         [SerializeField] GameObject AOEPrefab;
         [SerializeField] Skimmer farFieldSkimmer;
+        [SerializeField] FakeCrystal fakeCrystal;
 
         [Header("Environment Interactions")]
         [SerializeField] List<CrystalImpactEffects> crystalImpactEffects;
@@ -321,8 +322,13 @@ namespace StarWriter.Core
                     case ShipActions.FireBigGun:
                         if (shipController is GunShipController) ((GunShipController)shipController).BigFire();
                         break;
-                    case ShipActions.layBulletTrail:
+                    case ShipActions.LayBulletTrail:
                         shipData.LayingBulletTrail = true;
+                        break;
+                    case ShipActions.DropFakeCrystal:
+                        var fake = Instantiate(fakeCrystal).GetComponent<FakeCrystal>();
+                        //fakeCrystal.Team = team;
+                        fake.SetPositionAndRotation(transform.position + Quaternion.Euler(0,0,Random.Range(0,360))*transform.up*Random.Range(20,30) + transform.forward * 30, transform.rotation);
                         break;
 
                 }
@@ -377,7 +383,7 @@ namespace StarWriter.Core
                     case ShipActions.PauseGuns:
                         shipData.GunsActive = true;
                         break;
-                    case ShipActions.layBulletTrail:
+                    case ShipActions.LayBulletTrail:
                         shipData.LayingBulletTrail = false;
                         break;
                 }

@@ -329,6 +329,8 @@ MonoBehaviour:
   AOEPrefab: {fileID: 2728798890556433942, guid: f5ecfb9923155a84c860975d559b2714,
     type: 3}
   farFieldSkimmer: {fileID: 3138628630497430536}
+  fakeCrystal: {fileID: 8379901470580388096, guid: f7e728a0fa445ed41bc8c1c565fa3f21,
+    type: 3}
   crystalImpactEffects: 0000000005000000
   trailBlockImpactEffects: 000000000300000002000000
   minExplosionScale: 50
@@ -337,8 +339,8 @@ MonoBehaviour:
   boostMultiplier: 2
   boostFuelAmount: 0
   fullSpeedStraightEffects: 
-  rightStickEffects: 
-  leftStickEffects: 
+  rightStickEffects: 0e000000
+  leftStickEffects: 0e000000
   flipEffects: 
   idleEffects: 
   minimumSpeedStraightEffects: 
@@ -355,8 +357,8 @@ MonoBehaviour:
   maxFarFieldSkimmerScale: 200
   minNearFieldSkimmerScale: 15
   maxNearFieldSkimmerScale: 100
-  minGap: 12
-  maxGap: 12
+  minGap: 0
+  maxGap: 0
   minProjectileScale: 1
   maxProjectileScale: 10
   minProjectileBlockScale: {x: 1.5, y: 1.5, z: 3}

@@ -15,5 +15,6 @@ public enum ShipActions
     Detach = 10,
     PauseGuns = 11,
     FireBigGun = 12,
-    layBulletTrail = 13
+    LayBulletTrail = 13,
+    DropFakeCrystal = 14
 }

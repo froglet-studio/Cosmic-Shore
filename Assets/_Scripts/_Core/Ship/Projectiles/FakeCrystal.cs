@@ -3,46 +3,11 @@ using System.Collections.Generic;
 using StarWriter.Core;
 using StarWriter.Core.Audio;
 
-public class Crystal : MonoBehaviour
+public class FakeCrystal : Crystal
 {
-    #region Events
-    public delegate void CrystalMove();
-    public static event CrystalMove OnCrystalMove;
-    #endregion
-
-    #region Inspector Fields
-    [SerializeField] protected CrystalProperties crystalProperties;
-    [SerializeField] public float sphereRadius = 100;
-    [SerializeField] protected GameObject SpentCrystalPrefab;
-    [SerializeField] GameObject CrystalModel; 
-    [SerializeField] protected Material material;
-    #endregion
-
-    Vector3 origin = Vector3.zero;
-
-    protected Material tempMaterial;
-    List<Collider> collisions;
-
-    protected virtual void Start()
-    {
-        collisions = new List<Collider>();
-    }
-
-    protected virtual void OnTriggerEnter(Collider other)
-    {
-        collisions.Add(other);
-    }
-
-    protected virtual void Update()
-    {
-        if (collisions.Count > 0)
-        {
-            Collide(collisions[0]);
-            collisions.Clear();
-        }
-    }
-
-    protected virtual void Collide(Collider other)
+    Teams team;
+    [HideInInspector] public Teams Team { get => team; set => team = value; }
+    protected override void Collide(Collider other)
     {
         Ship ship;
         Vector3 velocity;
@@ -61,7 +26,13 @@ public class Crystal : MonoBehaviour
         //
         // Do the ship specific crystal stuff
         //
-        ship.PerformCrystalImpactEffects(crystalProperties);
+        
+        //if (ship.Team == Team)
+        //{
+        //    return;
+        //}
+        ship.ModifySpeed(.1f, 10);
+
 
 
         //
@@ -74,7 +45,7 @@ public class Crystal : MonoBehaviour
         spentCrystal.transform.position = transform.position;
         spentCrystal.transform.localEulerAngles = transform.localEulerAngles;
         spentCrystal.GetComponent<Renderer>().material = tempMaterial;
-        
+
         StartCoroutine(spentCrystal.GetComponent<Impact>().ImpactCoroutine(
             ship.transform.forward * ship.GetComponent<ShipData>().Speed, tempMaterial, ship.Player.PlayerName));
 
@@ -84,24 +55,11 @@ public class Crystal : MonoBehaviour
         if (AudioSystem.Instance == null) Debug.LogWarning("WTF, AudioSystem.Instance is null");    // TODO: remove this debug if not seen _again_ by 2/12/23
         AudioSystem.Instance.PlaySFXClip(audioSource.clip, audioSource);
 
-        // Move the Crystal
-        StartCoroutine(CrystalModel.GetComponent<FadeIn>().FadeInCoroutine());
-        transform.SetPositionAndRotation(Random.insideUnitSphere * sphereRadius + origin, Random.rotation);
-        OnCrystalMove?.Invoke();
     }
 
-    protected virtual bool IsShip(GameObject go)
+    public virtual void SetPositionAndRotation(Vector3 position, Quaternion rotation)
     {
-        return go.layer == LayerMask.NameToLayer("Ships");
+        transform.SetPositionAndRotation(position, rotation);
     }
 
-    protected virtual bool IsProjectile(GameObject go)
-    {
-        return go.layer == LayerMask.NameToLayer("Projectiles");
-    }
-
-    public void SetOrigin(Vector3 origin)
-    {
-        this.origin = origin;
-    }
 }
