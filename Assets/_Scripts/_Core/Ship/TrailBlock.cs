@@ -85,9 +85,8 @@ namespace StarWriter.Core
 
             while (size < 1)
             {
+                size = Mathf.Clamp(size + growthRate * Time.deltaTime, 0, 1);
                 transform.localScale = DefaultTransformScale * size;
-                size += growthRate * Time.deltaTime;
-                
                 yield return null;
             }
 

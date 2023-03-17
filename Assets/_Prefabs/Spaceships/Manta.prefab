@@ -361,15 +361,13 @@ MonoBehaviour:
   maxProjectileScale: 10
   minProjectileBlockScale: {x: 1.5, y: 1.5, z: 3}
   maxProjectileBlockScale: {x: 1.5, y: 1.5, z: 30}
-  controlOverrides: 03000000040000000000000007000000
+  controlOverrides: 030000000400000000000000
   closeCamDistance: -5
   farCamDistance: -160
-  throttle: 120
   BoostDecayGrowthRate: 0.03
   MaxBoostDecay: 10
-  rotationScaler: 70
-  rotationThrottleScaler: 0
   inputController: {fileID: 0}
+  ResourceSystem: {fileID: 0}
 --- !u!114 &6964962696344697388
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -406,7 +404,7 @@ MonoBehaviour:
   skimmer: {fileID: 874579554510349383}
   waitTillOutsideSkimmer: 0
   offset: 0
-  initialWavelength: 8
+  initialWavelength: 10
   minWavelength: 1
   gap: 12
   InnerDimensions: {x: 0, y: 0, z: 0}
@@ -417,7 +415,7 @@ MonoBehaviour:
   spawnerEnabled: 1
   MaxNearbyBlockCount: 70
   minBlockScale: 1
-  maxBlockScale: 10
+  maxBlockScale: 7
   XScaler: 1
   YScaler: 1
 --- !u!114 &874579555101021523
@@ -482,7 +480,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   usesBoost: 0
-  usesLevels: 1
+  usesLevels: 0
   usesAmmo: 0
   maxBoost: 1
   initialBoost: 1
@@ -526,13 +524,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   boostDecay: 1
   defaultMinimumSpeed: 10
-  DefaultThrottleScaler: 50
+  DefaultThrottleScaler: 62
   MaxBoostDecay: 10
   BoostDecayGrowthRate: 0.03
   minimumSpeed: 0
   ThrottleScaler: 0
   rotationThrottleScaler: 0
-  rotationScaler: 130
+  PitchScaler: 90
+  YawScaler: 60
+  RollScaler: 90
 --- !u!1 &7989725769420682486
 GameObject:
   m_ObjectHideFlags: 0

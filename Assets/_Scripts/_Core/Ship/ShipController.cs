@@ -31,7 +31,9 @@ public class ShipController : MonoBehaviour
     [HideInInspector] public float ThrottleScaler;
 
     public float rotationThrottleScaler = 0;
-    public float rotationScaler = 130f;
+    public float PitchScaler = 130f;
+    public float YawScaler = 130f;
+    public float RollScaler = 130f;
 
     protected readonly float lerpAmount = 2f;
 
@@ -137,30 +139,28 @@ public class ShipController : MonoBehaviour
 
     }
 
-    protected void Pitch()
+    protected void Pitch() // These need to not use *= because quaternions are not commutative
     {
         displacementQuaternion = Quaternion.AngleAxis(
-                            inputController.YSum * -(speed * rotationThrottleScaler + rotationScaler) * Time.deltaTime,
+                            inputController.YSum * -(speed * rotationThrottleScaler + PitchScaler) * Time.deltaTime,
                             transform.right) * displacementQuaternion;
+    }
+
+    protected virtual void Yaw()  
+    {
+        displacementQuaternion = Quaternion.AngleAxis(
+                            inputController.XSum * (speed * rotationThrottleScaler + YawScaler) *
+                                (Screen.currentResolution.width / Screen.currentResolution.height) * Time.deltaTime,
+                            transform.up) * displacementQuaternion;
     }
 
     protected void Roll()
     {
         displacementQuaternion = Quaternion.AngleAxis(
-                            inputController.YDiff * (speed * rotationThrottleScaler + rotationScaler) * Time.deltaTime,
+                            inputController.YDiff * (speed * rotationThrottleScaler + RollScaler) * Time.deltaTime,
                             transform.forward) * displacementQuaternion;
     }
 
-
-    protected virtual void Yaw()  // These need to not use *= ... remember quaternions are not commutative
-    {
-        displacementQuaternion = Quaternion.AngleAxis(
-                            inputController.XSum * (speed * rotationThrottleScaler + rotationScaler) *
-                                (Screen.currentResolution.width / Screen.currentResolution.height) * Time.deltaTime,
-                            transform.up) * displacementQuaternion;
-    }
-
-    
 
     protected virtual void MoveShip()
     {

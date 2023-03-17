@@ -72,12 +72,8 @@ namespace StarWriter.Core
         [SerializeField] List<ShipControlOverrides> controlOverrides;
         [SerializeField] float closeCamDistance;
         [SerializeField] float farCamDistance;
-        [SerializeField] float throttle = 50;
         [SerializeField] float BoostDecayGrowthRate = .03f;
         [SerializeField] float MaxBoostDecay = 10;
-        [SerializeField] float rotationScaler = 130;
-        [SerializeField] float rotationThrottleScaler;
-
 
         Dictionary<InputEvents, List<ShipActions>> ShipControlActions;
 
@@ -157,9 +153,6 @@ namespace StarWriter.Core
             {
                 switch (effect)
                 {
-                    case ShipControlOverrides.TurnSpeed:
-                        shipController.rotationScaler = rotationScaler;
-                        break;
                     case ShipControlOverrides.BlockScout:
                         break;
                     case ShipControlOverrides.CloseCam:
@@ -169,15 +162,6 @@ namespace StarWriter.Core
                     case ShipControlOverrides.FarCam:
                         cameraManager.FarCamDistance = farCamDistance;
                         cameraManager.SetFarCameraDistance(farCamDistance);
-                        break;
-                    case ShipControlOverrides.SecondMode:
-                        // TODO: ship mode toggling
-                        break;
-                    case ShipControlOverrides.SpeedBasedTurning:
-                        shipController.rotationThrottleScaler = rotationThrottleScaler;
-                        break;
-                    case ShipControlOverrides.Throttle:
-                        shipController.ThrottleScaler = throttle;
                         break;
                     case ShipControlOverrides.BoostDecayGrowthRate:
                         shipController.BoostDecayGrowthRate = BoostDecayGrowthRate;

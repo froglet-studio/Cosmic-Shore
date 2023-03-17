@@ -185,7 +185,7 @@ public class TrailSpawner : MonoBehaviour
         var Block = Instantiate(trailBlock);
         Block.InnerDimensions = new Vector3(trailBlock.transform.localScale.x * XScaler / 2f - Mathf.Abs(halfGap), trailBlock.transform.localScale.y * YScaler, trailBlock.transform.localScale.z * ZScaler);
         InnerDimensions = Block.InnerDimensions;
-        Block.transform.SetPositionAndRotation(transform.position - shipData.Course * offset + ship.transform.right * ((trailBlock.transform.localScale.x * XScaler )/ 4f + Mathf.Abs(halfGap)/2)*(halfGap/ Mathf.Abs(halfGap)), shipData.blockRotation);
+        Block.transform.SetPositionAndRotation(transform.position - shipData.Course * offset + ship.transform.right * (Block.InnerDimensions.x/2f + Mathf.Abs(halfGap)) * (halfGap / Mathf.Abs(halfGap)), shipData.blockRotation);
         Block.transform.parent = TrailContainer.transform;
         if (waitTillOutsideSkimmer) Block.waitTime = (skimmer.transform.localScale.z + TrailZScale) / ship.GetComponent<ShipData>().Speed;
         Block.ownerId = ship.Player.PlayerUUID;
