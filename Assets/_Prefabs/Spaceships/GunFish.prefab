@@ -460,7 +460,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   boostDecay: 1
-  defaultMinimumSpeed: 40
+  defaultMinimumSpeed: 0
   DefaultThrottleScaler: 40
   MaxBoostDecay: 10
   BoostDecayGrowthRate: 0.03

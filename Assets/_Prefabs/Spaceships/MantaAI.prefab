@@ -403,7 +403,8 @@ MonoBehaviour:
     type: 3}
   farFieldSkimmer: {fileID: 0}
   fakeCrystal: {fileID: 0}
-  crystalImpactEffects: 0600000005000000
+  crystalImpactEffects: 0600000007000000
+  fakeCrystalImpactEffects: 
   trailBlockImpactEffects: 03000000
   minExplosionScale: 50
   maxExplosionScale: 25
