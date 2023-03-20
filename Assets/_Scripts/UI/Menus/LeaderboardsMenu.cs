@@ -10,15 +10,17 @@ public class LeaderboardsMenu : MonoBehaviour
 {
     Dictionary<MiniGames, List<LeaderboardEntry>> LeaderboardEntries;
 
-    [SerializeField] List<SO_MiniGame> Games;
+    [SerializeField] SO_GameList GameList;
     [SerializeField] Transform GameSelectionContainer;
     [SerializeField] GameObject HighScoresContainer;
 
+    List<SO_MiniGame> Games;
     SO_MiniGame SelectedGame;
 
     // Start is called before the first frame update
     void Start()
     {
+        Games = GameList.GameList;
         LeaderboardEntries = LeaderboardDataAccessor.Load();
         PopulateGameSelectionList();
     }

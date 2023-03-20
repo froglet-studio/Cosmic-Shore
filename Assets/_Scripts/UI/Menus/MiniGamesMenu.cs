@@ -8,7 +8,8 @@ using UnityEngine.UI;
 public class MiniGamesMenu : MonoBehaviour
 {
     [SerializeField] List<SO_MiniGame> Games;
-    [SerializeField] List<SO_Ship> Ships;
+    [SerializeField] SO_ShipList ShipList;
+    
     [SerializeField] TMPro.TMP_Text SelectedGameName;
     [SerializeField] TMPro.TMP_Text SelectedGameDescription;
     [SerializeField] GameObject SelectedGamePreviewWindow;
@@ -21,6 +22,7 @@ public class MiniGamesMenu : MonoBehaviour
     [SerializeField] GameObject DifficultyButtonContainer;
 
 
+    List<SO_Ship> Ships;
     SO_Ship SelectedShip;
     SO_MiniGame SelectedGame;
     int PlayerCount;
@@ -30,6 +32,8 @@ public class MiniGamesMenu : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        Ships = ShipList.ShipList;
+
         for (var i = 0; i < PlayerCountButtonContainer.transform.childCount; i++)
             PlayerCountIcons.Add(PlayerCountButtonContainer.transform.GetChild(i).gameObject.GetComponent<Image>().sprite);
 

@@ -1,3 +1,4 @@
+using StarWriter.Core;
 using StarWriter.Core.HangerBuilder;
 using System.Collections;
 using System.Collections.Generic;
@@ -6,7 +7,7 @@ using UnityEngine.UI;
 
 public class HangarMenu : MonoBehaviour
 {
-    [SerializeField] List<SO_Ship> Ships;
+    [SerializeField] SO_ShipList ShipList;
     [SerializeField] TMPro.TMP_Text SelectedShipName;
     [SerializeField] TMPro.TMP_Text SelectedShipDescription;
     [SerializeField] Image SelectedShipImage;
@@ -18,11 +19,13 @@ public class HangarMenu : MonoBehaviour
     [SerializeField] Transform ShipSelectionContainer;
     [SerializeField] Transform AbilitySelectionContainer;
 
+    List<SO_Ship> Ships;
     SO_Ship SelectedShip;
     SO_ShipAbility SelectedAbility;
 
     void Start()
     {
+        Ships = ShipList.ShipList;
         PopulateShipSelectionList();
     }
 

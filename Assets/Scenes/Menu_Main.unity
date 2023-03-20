@@ -2654,12 +2654,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fadc06dfc9d7ae042a097c714d04f107, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Ships:
-  - {fileID: 11400000, guid: 09bd6a7de2eab2c4692dba5c06738034, type: 2}
-  - {fileID: 11400000, guid: 7cb4181195d52044e8d11df3a10d847c, type: 2}
-  - {fileID: 11400000, guid: 01c923d68448e074f9ae11d258426949, type: 2}
-  - {fileID: 11400000, guid: 4c20827f06f99b44d99df4dc16a1e182, type: 2}
-  - {fileID: 11400000, guid: 2c15cd0fcfb69f14aaeeafe3b6b46f82, type: 2}
+  ShipList: {fileID: 0}
   SelectedShipName: {fileID: 0}
   SelectedShipDescription: {fileID: 1652157128}
   SelectedShipImage: {fileID: 1288808736}
@@ -9476,10 +9471,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7f7df5bea58cb22468273de1a9facada, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Games:
-  - {fileID: 11400000, guid: 27f7ec1e006fb3a4cbb91572e943cf67, type: 2}
-  - {fileID: 11400000, guid: 3537310ecbdad2e449bbca31d2aa8599, type: 2}
-  - {fileID: 11400000, guid: 812851e4603217c469662dc3cb9c6d93, type: 2}
+  GameList: {fileID: 11400000, guid: 295aa0134b55e474d9aceca4bbb5b444, type: 2}
   GameSelectionContainer: {fileID: 283141851}
   HighScoresContainer: {fileID: 1358711680}
 --- !u!1 &780678797
@@ -12717,11 +12709,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Games: []
-  Ships:
-  - {fileID: 11400000, guid: 01c923d68448e074f9ae11d258426949, type: 2}
-  - {fileID: 11400000, guid: 09bd6a7de2eab2c4692dba5c06738034, type: 2}
-  - {fileID: 11400000, guid: 7cb4181195d52044e8d11df3a10d847c, type: 2}
-  - {fileID: 11400000, guid: 4c20827f06f99b44d99df4dc16a1e182, type: 2}
+  ShipList: {fileID: 11400000, guid: 49c7c10ad2901c74589c28317a4eb17b, type: 2}
   SelectedGameName: {fileID: 1324198341}
   SelectedGameDescription: {fileID: 662188359}
   SelectedGamePreviewWindow: {fileID: 144477652}
@@ -28239,11 +28227,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fadc06dfc9d7ae042a097c714d04f107, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Ships:
-  - {fileID: 11400000, guid: 09bd6a7de2eab2c4692dba5c06738034, type: 2}
-  - {fileID: 11400000, guid: 7cb4181195d52044e8d11df3a10d847c, type: 2}
-  - {fileID: 11400000, guid: 01c923d68448e074f9ae11d258426949, type: 2}
-  - {fileID: 11400000, guid: 4c20827f06f99b44d99df4dc16a1e182, type: 2}
+  ShipList: {fileID: 11400000, guid: 49c7c10ad2901c74589c28317a4eb17b, type: 2}
   SelectedShipName: {fileID: 2099123634}
   SelectedShipDescription: {fileID: 474235692}
   SelectedShipImage: {fileID: 1687463390}

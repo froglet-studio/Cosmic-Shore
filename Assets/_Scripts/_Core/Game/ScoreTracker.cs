@@ -114,6 +114,8 @@ public class ScoreTracker : MonoBehaviour
         {
             PlayerNameContainers[i].text = "";
             PlayerScoreContainers[i].text = "";
+
+            PlayerScoreContainers[i].gameObject.SetActive(false);
         }
     }
 }
