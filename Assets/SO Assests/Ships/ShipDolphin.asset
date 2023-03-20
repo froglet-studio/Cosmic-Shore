@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Class: 2
   Name: Riptide
-  Description: Faster than lightning, lives in a world full of wonder, flying there
-    under the sea
+  Description: 'Precision, drifting, sligshot, high-energy cannon, technical Get
+    all this energy to charge up to a big '
   Icon: {fileID: 21300000, guid: 22b7c955b46672a4caefae280d308a70, type: 3}
   SelectedIcon: {fileID: 21300000, guid: 2334e51a9e8aba44291c927e1e42bd9d, type: 3}
   TrailPreviewImage: {fileID: 21300000, guid: 08960a7a149292543b89ed3e6c09025c, type: 3}

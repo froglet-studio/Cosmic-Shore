@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0.0037926815, g: 0.0032631278, b: 0.0034446984, a: 1}
+  m_IndirectSpecularColor: {r: 0, g: 0, b: 0, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -4137,7 +4137,7 @@ PrefabInstance:
     - target: {fileID: 5077553941378397865, guid: 8a9d12e43096881468feb22e39e9fbeb,
         type: 3}
       propertyPath: m_RootOrder
-      value: 10
+      value: 11
       objectReference: {fileID: 0}
     - target: {fileID: 5077553941378397865, guid: 8a9d12e43096881468feb22e39e9fbeb,
         type: 3}
@@ -4462,6 +4462,16 @@ PrefabInstance:
         type: 3}
       propertyPath: m_AnchoredPosition.y
       value: -6
+      objectReference: {fileID: 0}
+    - target: {fileID: 5858440872359151014, guid: 8a9d12e43096881468feb22e39e9fbeb,
+        type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
+      value: 
+      objectReference: {fileID: 216671815}
+    - target: {fileID: 5858440872359151014, guid: 8a9d12e43096881468feb22e39e9fbeb,
+        type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
+      value: OnClickMainMenu
       objectReference: {fileID: 0}
     - target: {fileID: 5913022352999478274, guid: 8a9d12e43096881468feb22e39e9fbeb,
         type: 3}
@@ -6270,6 +6280,16 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Sprite
       value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 8969741006456292276, guid: 8a9d12e43096881468feb22e39e9fbeb,
+        type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
+      value: 
+      objectReference: {fileID: 216671815}
+    - target: {fileID: 8969741006456292276, guid: 8a9d12e43096881468feb22e39e9fbeb,
+        type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
+      value: OnClickReplayButton
       objectReference: {fileID: 0}
     - target: {fileID: 9036857614917007555, guid: 8a9d12e43096881468feb22e39e9fbeb,
         type: 3}
