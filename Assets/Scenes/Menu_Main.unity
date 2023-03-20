@@ -2654,7 +2654,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fadc06dfc9d7ae042a097c714d04f107, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  ShipList: {fileID: 0}
+  ShipList: {fileID: 11400000, guid: 49c7c10ad2901c74589c28317a4eb17b, type: 2}
   SelectedShipName: {fileID: 0}
   SelectedShipDescription: {fileID: 1652157128}
   SelectedShipImage: {fileID: 1288808736}

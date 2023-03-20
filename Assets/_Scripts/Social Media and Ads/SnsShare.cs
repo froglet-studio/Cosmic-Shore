@@ -20,7 +20,7 @@ public class SnsShare : MonoBehaviour
     private IEnumerator TakeScreenshotAndShare()
     {
         screenshotButton.gameObject.SetActive(false);
-        replayButton.gameObject.SetActive(false);
+        //replayButton.gameObject.SetActive(false);
         VersionTMP.SetActive(true);
 
         yield return new WaitForEndOfFrame();
@@ -48,7 +48,7 @@ public class SnsShare : MonoBehaviour
             .SetCallback((res, target) => { Debug.Log($"result {res}, target app: {target}"); Screen.orientation = ScreenOrientation.LandscapeLeft; })
             .Share();
         screenshotButton.gameObject.SetActive(true);
-        replayButton.gameObject.SetActive(true);
+        //replayButton.gameObject.SetActive(true);
         VersionTMP.SetActive(false);
     }
 }
