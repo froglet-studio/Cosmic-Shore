@@ -340,12 +340,12 @@ MonoBehaviour:
   blockChargeChange: 0
   boostMultiplier: 2
   boostFuelAmount: 0
-  fullSpeedStraightEffects: 0b000000
+  fullSpeedStraightEffects: 
   rightStickEffects: 0c000000
   leftStickEffects: 0a000000
   flipEffects: 
   idleEffects: 
-  minimumSpeedStraightEffects: 0f000000
+  minimumSpeedStraightEffects: 
   cameraGrowthRate: 1
   cameraShrinkRate: 1
   minTrailYScale: 15
@@ -444,7 +444,7 @@ MonoBehaviour:
   LayingBulletTrail: 0
   Attached: 0
   AttachedTrailBlock: {fileID: 0}
-  GunsActive: 1
+  GunsActive: 0
   Course: {x: 0, y: 0, z: 0}
   blockRotation: {x: 0, y: 0, z: 0, w: 0}
 --- !u!114 &6315651686961786297

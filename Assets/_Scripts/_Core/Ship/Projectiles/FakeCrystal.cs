@@ -7,6 +7,7 @@ public class FakeCrystal : Crystal
 {
     Teams team;
     [HideInInspector] public Teams Team { get => team; set => team = value; }
+
     protected override void Collide(Collider other)
     {
         Ship ship;

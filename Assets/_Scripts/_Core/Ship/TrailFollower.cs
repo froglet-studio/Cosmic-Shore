@@ -115,7 +115,13 @@ namespace StarWriter.Core
 
         public void SetDirection(TrailFollowerDirection direction)
         {
+            if (this.direction == direction) return;
+
             this.direction = direction;
+            percentTowardNextBlock = 1 - percentTowardNextBlock;
+
+            if (this.direction == TrailFollowerDirection.Forward) attachedBlockIndex--;
+            else attachedBlockIndex++;
         }
 
         float GetTerrainAwareBlockSpeed(TrailBlock trailBlock) 

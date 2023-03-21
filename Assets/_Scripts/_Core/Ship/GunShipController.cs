@@ -91,78 +91,37 @@ public class GunShipController : ShipController
 
     void Slide()
     {
+
+        float lookThreshold = -.6f;
+        float throttle;
+        float zeroPosition = .2f;
+
+        throttle = (inputController.XDiff - zeroPosition)/(1 - zeroPosition);
+
+        if (Vector3.Dot(transform.forward, shipData.Course) < lookThreshold && throttle > 0)
+             moveForward = !moveForward;
+
+        if ((moveForward && throttle > 0) || (!moveForward && throttle < 0))
+            trailFollower.SetDirection(TrailFollowerDirection.Forward);
+        else
+            trailFollower.SetDirection(TrailFollowerDirection.Backward);
+            
         resourceSystem.ChangeAmmoAmount(uuid, rechargeRate * Time.deltaTime);
-        trailFollower.Throttle = inputController.XDiff;
+        trailFollower.Throttle = Mathf.Abs(throttle);
         trailFollower.Move();
 
         shipData.AttachedTrailBlock = trailFollower.AttachedTrailBlock;
 
         if (shipData.AttachedTrailBlock.destroyed)
         {
-            shipData.AttachedTrailBlock.Restore();
-            shipData.AttachedTrailBlock.Steal(player.PlayerName, player.Team);
-        }
-        else shipData.AttachedTrailBlock.Grow(4);
-
-
-
-        // TODO: need to restore the below block to give player ability to change direction
-
-        float lookThreshold = .4f;
-        if (Mathf.Abs(Vector3.Dot(transform.forward, shipData.Course)) >= lookThreshold)
-        {
-            if (Vector3.Dot(transform.forward, shipData.Course) < 0)
-            {
-                moveForward = !moveForward;
-
-                if (moveForward)
-                    trailFollower.SetDirection(TrailFollowerDirection.Forward);
-                else
-                    trailFollower.SetDirection(TrailFollowerDirection.Backward);
-            }
+            shipData.AttachedTrailBlock.Restore();  
         }
         
+        else shipData.AttachedTrailBlock.Grow(4);
 
-        //if (moveForward && ship.TrailSpawner.gap > 0) nextBlockIndex = shipData.AttachedTrailBlock.Index + gapStep;
-        //else if (ship.TrailSpawner.gap > 0) nextBlockIndex = shipData.AttachedTrailBlock.Index - gapStep;
-        //else if (moveForward) nextBlockIndex = shipData.AttachedTrailBlock.Index + 1;
+        shipData.AttachedTrailBlock.Steal(player.PlayerName, player.Team);
 
-
-        //if (moveForward) nextBlockIndex = shipData.AttachedTrailBlock.Index + 1;
-        //else nextBlockIndex = shipData.AttachedTrailBlock.Index - 1;
-
-        //var distance = trailSpawner.trailList[nextBlockIndex].transform.position - shipData.AttachedTrailBlock.transform.position;
-        //var timeSpaceCorrectedInput = inputController.XDiff * Time.deltaTime / distance.magnitude;
-
-        //if (trailSpawner.trailList[(int)nextBlockIndex].destroyed)
-        //    trailLerpAmount += reducedTrailSpeed * timeSpaceCorrectedInput;
-        //else
-        //    trailLerpAmount += maxTrailSpeed * timeSpaceCorrectedInput;
-
-
-        //transform.position = Vector3.Lerp(shipData.AttachedTrailBlock.transform.position,
-        //                                  trailSpawner.trailList[nextBlockIndex].transform.position,
-        //                                  trailLerpAmount);
-
-        //if (trailLerpAmount > 1)
-        //{
-        //    shipData.AttachedTrailBlock = trailSpawner.trailList[nextBlockIndex];
-        //    trailLerpAmount -= 1f;
-        //}
-
-        //if (nextBlockIndex < padding || nextBlockIndex > trailSpawner.trailList.Count - padding)
-        //{
-        //    transform.rotation *= Quaternion.Euler(0, 180, 0);
-        //}
-
-
-
-
-
-
-        //transform.rotation = Quaternion.Lerp(shipData.attachedTrail.TrailSpawner.trailList[previousBlockIndex].transform.rotation,
-        //                                     shipData.attachedTrail.TrailSpawner.trailList[nextBlockIndex].transform.rotation,
-        //                                     trailLerpAmount);
+        
 
     }
 }

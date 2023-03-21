@@ -282,6 +282,7 @@ namespace StarWriter.Core
                         break;
                     case TrailBlockImpactEffects.Attach:
                         Attach(trailBlockProperties.trailBlock);
+                        shipData.GunsActive = true;
                         break;
                     case TrailBlockImpactEffects.ChangeAmmo:
                         ResourceSystem.ChangeAmmoAmount(player.PlayerUUID, blockChargeChange);
@@ -338,6 +339,7 @@ namespace StarWriter.Core
                         break;
                     case ShipActions.Detach:
                         Detach();
+                        shipData.GunsActive = false;
                         break;
                     case ShipActions.PauseGuns:
                         shipData.GunsActive = false;

@@ -22,7 +22,7 @@ namespace StarWriter.Core
         public bool Attached = false;
         public TrailBlock AttachedTrailBlock;
 
-        public bool GunsActive = true;
+        public bool GunsActive = false;
 
         public Vector3 Course;
         public Quaternion blockRotation;

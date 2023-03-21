@@ -45,6 +45,7 @@ namespace StarWriter.Core
         /// <returns></returns>
         public List<TrailBlock> LookAhead(int index, float lerp, TrailFollowerDirection direction, float distance)
         {
+            
             int incrementor = (int) direction;   // Fun bit of cleverness, enum forward is 1 and backward is -1
             var distanceTravelled = 0f;
             var currentBlock = TrailList[index];
