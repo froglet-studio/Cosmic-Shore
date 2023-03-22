@@ -16,6 +16,6 @@ MonoBehaviour:
   Name: Charge
   Description: Charge Cannon
   Icon: {fileID: 21300000, guid: a59bb0ac607ec7747838b0af208c6568, type: 3}
-  SelectedIcon: {fileID: 21300000, guid: a59bb0ac607ec7747838b0af208c6568, type: 3}
+  SelectedIcon: {fileID: 21300000, guid: 6e4a484316095f8408cebff2a4947317, type: 3}
   PreviewClip: {fileID: 2096801853598961014, guid: e838c42bdbc409946944368a0ac2d38d,
     type: 3}
