@@ -1373,9 +1373,9 @@
         "m_Expanded": true,
         "m_Position": {
             "serializedVersion": "2",
-            "x": 1739.0,
-            "y": 1437.0,
-            "width": 207.9998779296875,
+            "x": 1764.9998779296875,
+            "y": 1407.0,
+            "width": 208.0001220703125,
             "height": 302.0
         }
     },
@@ -2187,8 +2187,8 @@
         "m_Expanded": true,
         "m_Position": {
             "serializedVersion": "2",
-            "x": 1234.0,
-            "y": 1437.0,
+            "x": 1260.0,
+            "y": 1407.0,
             "width": 208.0,
             "height": 326.0
         }
@@ -2343,8 +2343,8 @@
     "m_ObjectId": "39d28e2c04124f7aabbf72cf45f8226c",
     "m_Title": "Fresnel Edges",
     "m_Position": {
-        "x": 1003.3541870117188,
-        "y": 1377.5869140625
+        "x": 1029.0,
+        "y": 1348.0
     }
 }
 
@@ -4059,10 +4059,10 @@
         "m_Expanded": true,
         "m_Position": {
             "serializedVersion": "2",
-            "x": 1317.0,
-            "y": 1796.9998779296875,
-            "width": 146.9998779296875,
-            "height": 34.0001220703125
+            "x": 1343.0,
+            "y": 1767.0,
+            "width": 147.0,
+            "height": 34.0
         }
     },
     "m_Slots": [
@@ -5571,9 +5571,9 @@
         "m_Expanded": true,
         "m_Position": {
             "serializedVersion": "2",
-            "x": 1481.9998779296875,
-            "y": 1437.0,
-            "width": 208.0001220703125,
+            "x": 1508.0,
+            "y": 1407.0,
+            "width": 208.0,
             "height": 302.0
         }
     },
@@ -5653,10 +5653,10 @@
         "m_Expanded": true,
         "m_Position": {
             "serializedVersion": "2",
-            "x": 1529.0,
-            "y": 1763.0,
+            "x": 1555.0,
+            "y": 1733.0,
             "width": 188.0,
-            "height": 33.9998779296875
+            "height": 34.0
         }
     },
     "m_Slots": [
@@ -6715,8 +6715,8 @@
         "m_Expanded": true,
         "m_Position": {
             "serializedVersion": "2",
-            "x": 1028.0,
-            "y": 1554.0,
+            "x": 1054.0,
+            "y": 1524.0,
             "width": 176.0,
             "height": 34.0
         }

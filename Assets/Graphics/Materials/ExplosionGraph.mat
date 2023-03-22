@@ -110,7 +110,7 @@ Material:
     - _Cutoff: 0.5
     - _DetailAlbedoMapScale: 1
     - _DetailNormalMapScale: 1
-    - _DissolveScale: 65.36
+    - _DissolveScale: -14.27
     - _DstBlend: 0
     - _EnvironmentReflections: 1
     - _Float: 1
@@ -118,7 +118,7 @@ Material:
     - _Glossiness: 0
     - _GlossyReflections: 0
     - _Metallic: 0
-    - _NoiseAmount: 2.92
+    - _NoiseAmount: 9.67
     - _OcclusionStrength: 1
     - _Opacity: 0
     - _Parallax: 0.005
@@ -139,8 +139,8 @@ Material:
     m_Colors:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
-    - _Color1: {r: 0, g: 0.65882355, b: 2.4156864, a: 1}
-    - _Color2: {r: 3.5137255, g: 0.8784314, b: 1.882353, a: 1}
+    - _Color1: {r: 0.0009803922, g: 0.008333334, b: 0.007107843, a: 0.14901961}
+    - _Color2: {r: 0.0019607844, g: 0.15392157, b: 0.1637255, a: 0.09411765}
     - _DissolveSpeed: {r: 0.3, g: 0.2, b: 0, a: 0}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
     - _ShipForward: {r: 0.57, g: 0, b: 0.61, a: 0}
