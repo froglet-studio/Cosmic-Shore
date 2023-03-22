@@ -101,6 +101,7 @@ Material:
     m_Ints: []
     m_Floats:
     - _AlphaClip: 0
+    - _Alpha_Clip_Threshold: 1.12
     - _Blend: 0
     - _BumpScale: 1
     - _CastShadows: 0
@@ -139,8 +140,8 @@ Material:
     m_Colors:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
-    - _Color1: {r: 0.0009803922, g: 0.008333334, b: 0.007107843, a: 0.14901961}
-    - _Color2: {r: 0.0019607844, g: 0.15392157, b: 0.1637255, a: 0.09411765}
+    - _Color1: {r: 0, g: 0.03137255, b: 0.03137255, a: 0.14901961}
+    - _Color2: {r: 0, g: 0.21629149, b: 0.23292929, a: 0.09411765}
     - _DissolveSpeed: {r: 0.3, g: 0.2, b: 0, a: 0}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
     - _ShipForward: {r: 0.57, g: 0, b: 0.61, a: 0}
