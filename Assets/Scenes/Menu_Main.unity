@@ -12032,6 +12032,8 @@ MonoBehaviour:
   Ship_Select: {fileID: 193029997}
   Minigame_Settings: {fileID: 2043692916}
   Coming_Soon: {fileID: 159858785}
+  NavBar: {fileID: 1111146381}
+  NavSelection: []
 --- !u!114 &921072168
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.UI;
 
 public class PanelSwipe : MonoBehaviour, IDragHandler, IEndDragHandler{
     private Vector3 panelLocation;
@@ -13,6 +14,9 @@ public class PanelSwipe : MonoBehaviour, IDragHandler, IEndDragHandler{
     public GameObject Ship_Select;
     public GameObject Minigame_Settings;
     public GameObject Coming_Soon;
+
+    [SerializeField] Transform NavBar;
+    [SerializeField] public List<GameObject> NavSelection;
     void Start()
     {
         NavigateTo(currentScreen);
@@ -29,10 +33,12 @@ public class PanelSwipe : MonoBehaviour, IDragHandler, IEndDragHandler{
             if(percentage > 0 && currentScreen < transform.childCount -1){
                 newLocation += new Vector3(-Screen.width, 0, 0);
                 currentScreen += 1;
+                UpdateNavBar(currentScreen);
             }
             else if(percentage < 0 && currentScreen > 0){
                 newLocation += new Vector3(Screen.width, 0, 0);
                 currentScreen -= 1;
+                UpdateNavBar(currentScreen);
             }
             StartCoroutine(SmoothMove(transform.position, newLocation, easing));
             panelLocation = newLocation;
@@ -47,6 +53,8 @@ public class PanelSwipe : MonoBehaviour, IDragHandler, IEndDragHandler{
         Vector3 newLocation = new Vector3(-ScreenIndex * Screen.width, 0, 0);
         StartCoroutine(SmoothMove(transform.position, newLocation, easing));
         panelLocation = newLocation;
+        currentScreen = ScreenIndex;
+        UpdateNavBar(currentScreen);
     }
     IEnumerator SmoothMove(Vector3 startpos, Vector3 endpos, float seconds){
         float t = 0f;
@@ -59,7 +67,6 @@ public class PanelSwipe : MonoBehaviour, IDragHandler, IEndDragHandler{
     public void OnClickHangar()
     {
         NavigateTo(3);
-        currentScreen = 3;
         Ship_Select.SetActive(false);
         Minigame_Settings.SetActive(false);
         Coming_Soon.SetActive(false);
@@ -67,7 +74,6 @@ public class PanelSwipe : MonoBehaviour, IDragHandler, IEndDragHandler{
     public void OnClickRecords()
     {
         NavigateTo(1);
-        currentScreen = 1;
         Ship_Select.SetActive(false);
         Minigame_Settings.SetActive(false);
         Coming_Soon.SetActive(false);
@@ -75,7 +81,6 @@ public class PanelSwipe : MonoBehaviour, IDragHandler, IEndDragHandler{
     public void OnClickMinigames()
     {
         NavigateTo(4);
-        currentScreen = 4;
         Ship_Select.SetActive(false);
         Minigame_Settings.SetActive(false);
         Coming_Soon.SetActive(false);
@@ -83,7 +88,6 @@ public class PanelSwipe : MonoBehaviour, IDragHandler, IEndDragHandler{
     public void OnClickOptionsMenuButton()
     {
         NavigateTo(0);
-        currentScreen = 0;
         Ship_Select.SetActive(false);
         Minigame_Settings.SetActive(false);
         Coming_Soon.SetActive(false);
@@ -91,7 +95,6 @@ public class PanelSwipe : MonoBehaviour, IDragHandler, IEndDragHandler{
     public void OnClickHome()
     {
         NavigateTo(2);
-        currentScreen = 2;
         Ship_Select.SetActive(false);
         Minigame_Settings.SetActive(false);
         Coming_Soon.SetActive(false);
@@ -105,11 +108,12 @@ public class PanelSwipe : MonoBehaviour, IDragHandler, IEndDragHandler{
             currentScreen -= 1;
             StartCoroutine(SmoothMove(transform.position, newLocation, easing));
             panelLocation = newLocation;
-            Debug.Log(panelLocation);
+            UpdateNavBar(currentScreen);
         }
         else
         {
-
+            //I didn't want to write these empty else statements.
+            //I was happy just not having else statements.
         }
     }
     public void OnClickRight()
@@ -121,11 +125,24 @@ public class PanelSwipe : MonoBehaviour, IDragHandler, IEndDragHandler{
             currentScreen += 1;
             StartCoroutine(SmoothMove(transform.position, newLocation, easing));
             panelLocation = newLocation;
-            Debug.Log(panelLocation);
+            UpdateNavBar(currentScreen);
         }
         else
         {
-
+            //But here they are.
+            //Am I supposed to put like return void or something?
         }
+    }
+    public void UpdateNavBar(int index)
+    {
+        // Deselect them all
+        for (var i = 0; i < NavBar.childCount; i++)
+            NavBar.GetChild(i).GetChild(1).gameObject.SetActive(false);
+        for (var i = 0; i <NavBar.childCount; i++)
+            NavBar.GetChild(i).GetChild(0).gameObject.SetActive(true);
+
+        // Select the one
+        NavBar.GetChild(index+1).GetChild(0).gameObject.SetActive(false);
+        NavBar.GetChild(index + 1).GetChild(1).gameObject.SetActive(true);
     }
 }
