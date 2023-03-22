@@ -22,6 +22,9 @@ MonoBehaviour:
   PreviewImage: {fileID: 21300000, guid: 2b8d9fc7f5ac2ef4797aff544e892206, type: 3}
   Abilities:
   - {fileID: 11400000, guid: d074e7db0642624469d142a9f9fe28f1, type: 2}
+  - {fileID: 11400000, guid: e2772bd51facc0a45a6baa711d576d73, type: 2}
+  - {fileID: 11400000, guid: 81e1cc30914b65e48b7551479143a005, type: 2}
+  - {fileID: 11400000, guid: 8fbab90eb61d9b8429305c20fe9eb239, type: 2}
   MiniGames:
   - {fileID: 11400000, guid: 812851e4603217c469662dc3cb9c6d93, type: 2}
   - {fileID: 11400000, guid: 27f7ec1e006fb3a4cbb91572e943cf67, type: 2}

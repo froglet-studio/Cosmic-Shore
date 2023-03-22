@@ -20,7 +20,10 @@ MonoBehaviour:
   TrailPreviewImage: {fileID: 21300000, guid: 2e75f6670391025489d30c8361fb8de3, type: 3}
   PreviewImage: {fileID: 21300000, guid: 36d843333c8983047900532e41e0fd07, type: 3}
   Abilities:
+  - {fileID: 11400000, guid: cf4c7963673545946af80618f5a52917, type: 2}
   - {fileID: 11400000, guid: 260209c83d5be594a81043ebceea8ddf, type: 2}
+  - {fileID: 11400000, guid: 2c4bb3cbbacfb02489a36a11aa4c3d1e, type: 2}
+  - {fileID: 11400000, guid: 094b4c0cea37d4a4fb02edf8122006d1, type: 2}
   MiniGames:
   - {fileID: 11400000, guid: 812851e4603217c469662dc3cb9c6d93, type: 2}
   - {fileID: 11400000, guid: 176e63d5800dcf147b46497fd88e0fea, type: 2}

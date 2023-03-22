@@ -13,9 +13,9 @@ MonoBehaviour:
   m_Name: AbilitySteal
   m_EditorClassIdentifier: 
   Action: 9
-  Name: Steal
+  Name: Block Thief
   Description: I love stealin', I love takin' things
-  Icon: {fileID: 21300000, guid: 9b0ae653561b0c3448f3c9df3ffd522e, type: 3}
-  SelectedIcon: {fileID: 21300000, guid: d419162ffc77de24da21512cd8767ed6, type: 3}
+  Icon: {fileID: 21300000, guid: 298c5d0b188222442b241b3ec53d640e, type: 3}
+  SelectedIcon: {fileID: 21300000, guid: 298c5d0b188222442b241b3ec53d640e, type: 3}
   PreviewClip: {fileID: 2096801853598961014, guid: e838c42bdbc409946944368a0ac2d38d,
     type: 3}
