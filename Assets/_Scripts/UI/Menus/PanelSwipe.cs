@@ -96,4 +96,36 @@ public class PanelSwipe : MonoBehaviour, IDragHandler, IEndDragHandler{
         Minigame_Settings.SetActive(false);
         Coming_Soon.SetActive(false);
     }
+    public void OnClickLeft()
+    {
+        if (currentScreen > 0)
+        {
+            Vector3 newLocation = panelLocation;
+            newLocation += new Vector3(Screen.width, 0, 0);
+            currentScreen -= 1;
+            StartCoroutine(SmoothMove(transform.position, newLocation, easing));
+            panelLocation = newLocation;
+            Debug.Log(panelLocation);
+        }
+        else
+        {
+
+        }
+    }
+    public void OnClickRight()
+    {
+        if (currentScreen < transform.childCount - 1)
+        {
+            Vector3 newLocation = panelLocation;
+            newLocation += new Vector3(-Screen.width, 0, 0);
+            currentScreen += 1;
+            StartCoroutine(SmoothMove(transform.position, newLocation, easing));
+            panelLocation = newLocation;
+            Debug.Log(panelLocation);
+        }
+        else
+        {
+
+        }
+    }
 }
