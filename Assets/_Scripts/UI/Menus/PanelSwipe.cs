@@ -142,7 +142,7 @@ public class PanelSwipe : MonoBehaviour, IDragHandler, IEndDragHandler{
             NavBar.GetChild(i).GetChild(0).gameObject.SetActive(true);
 
         // Select the one
+        NavBar.GetChild(index + 1).GetChild(1).gameObject.SetActive(true); 
         NavBar.GetChild(index+1).GetChild(0).gameObject.SetActive(false);
-        NavBar.GetChild(index + 1).GetChild(1).gameObject.SetActive(true);
     }
 }
