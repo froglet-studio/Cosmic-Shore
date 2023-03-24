@@ -4,9 +4,8 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
-public class PanelSwipe : MonoBehaviour, IDragHandler, IEndDragHandler{
-    private Vector3 panelLocation;
-    private Vector3 initialPanelLocation;
+public class PanelSwipe : MonoBehaviour, IDragHandler, IEndDragHandler {
+
     public float percentThreshold = 0.2f; // Sensitivity of swipe detector. Smaller number = more sensitive
     public float easing = 0.5f; // Makes the transition less jarring
     public int currentScreen; // Keeps track of how many screens you have in the menu system. From 0 to 4, home = 2
@@ -15,134 +14,128 @@ public class PanelSwipe : MonoBehaviour, IDragHandler, IEndDragHandler{
     public GameObject Minigame_Settings;
     public GameObject Coming_Soon;
 
+    Vector3 panelLocation;
+    Coroutine navigateCoroutine;
+
+    const int OPTIONS = 0;
+    const int RECORDS = 1;
+    const int HOME = 2;
+    const int HANGAR = 3;
+    const int ARCADE = 4;
+
     [SerializeField] Transform NavBar;
     [SerializeField] public List<GameObject> NavSelection;
     void Start()
     {
-        NavigateTo(currentScreen);
-    }
-    public void OnDrag(PointerEventData data) {
-        float difference = data.pressPosition.x - data.position.x;
-        transform.position = panelLocation - new Vector3(difference, 0, 0);
+        NavigateTo(HOME, false);
     }
 
-    public void OnEndDrag(PointerEventData data){
+    public void OnDrag(PointerEventData data)
+    {
+        transform.position = panelLocation - new Vector3(data.pressPosition.x - data.position.x, 0, 0);
+    }
+
+    public void OnEndDrag(PointerEventData data)
+    {
         float percentage = (data.pressPosition.x - data.position.x) / Screen.width;
-        if(Mathf.Abs(percentage) >= percentThreshold){
-            Vector3 newLocation = panelLocation;
-            if(percentage > 0 && currentScreen < transform.childCount -1){
-                newLocation += new Vector3(-Screen.width, 0, 0);
-                currentScreen += 1;
-                UpdateNavBar(currentScreen);
-            }
-            else if(percentage < 0 && currentScreen > 0){
-                newLocation += new Vector3(Screen.width, 0, 0);
-                currentScreen -= 1;
-                UpdateNavBar(currentScreen);
-            }
-            StartCoroutine(SmoothMove(transform.position, newLocation, easing));
-            panelLocation = newLocation;
-            Debug.Log(panelLocation);
-        }
-        else{
-            StartCoroutine(SmoothMove(transform.position, panelLocation, easing));
+
+        if (percentage >= percentThreshold && currentScreen < transform.childCount - 1)
+            NavigateRight();
+        else if (percentage <= -percentThreshold && currentScreen > 0)
+            NavigateLeft();
+        else
+        {
+            // Reset back to current screen
+            if (navigateCoroutine != null)
+                StopCoroutine(navigateCoroutine);
+            navigateCoroutine = StartCoroutine(SmoothMove(transform.position, panelLocation, easing));
         }
     }
 
-    public void NavigateTo(int ScreenIndex) {
+    public void NavigateTo(int ScreenIndex, bool animate=true) {
+        ScreenIndex = Mathf.Clamp(ScreenIndex, 0, transform.childCount - 1);
+
+        if (ScreenIndex == currentScreen)
+            return;
+
         Vector3 newLocation = new Vector3(-ScreenIndex * Screen.width, 0, 0);
-        StartCoroutine(SmoothMove(transform.position, newLocation, easing));
         panelLocation = newLocation;
+
+        if (animate)
+        {
+            if (navigateCoroutine != null)
+                StopCoroutine(navigateCoroutine);
+            navigateCoroutine = StartCoroutine(SmoothMove(transform.position, newLocation, easing));
+        }
+        else
+            transform.position = newLocation;
+
         currentScreen = ScreenIndex;
         UpdateNavBar(currentScreen);
+        DeactiveSubpages();
     }
-    IEnumerator SmoothMove(Vector3 startpos, Vector3 endpos, float seconds){
+
+    public void OnClickOptionsMenuButton()
+    {
+        NavigateTo(OPTIONS);
+    }
+    public void OnClickRecords()
+    {
+        NavigateTo(RECORDS);
+    }
+    public void OnClickHome()
+    {
+        NavigateTo(HOME);
+    }
+    public void OnClickHangar()
+    {
+        NavigateTo(HANGAR);
+    }
+    public void OnClickMinigames()
+    {
+        NavigateTo(ARCADE);
+    }
+    public void NavigateLeft()
+    {
+        if (currentScreen <= 0)
+            return;
+
+        NavigateTo(currentScreen - 1);
+    }
+    public void NavigateRight()
+    {
+        if (currentScreen >= transform.childCount - 1)
+            return;
+
+        NavigateTo(currentScreen + 1);
+    }
+    void DeactiveSubpages()
+    {
+        Ship_Select.SetActive(false);
+        Minigame_Settings.SetActive(false);
+        Coming_Soon.SetActive(false);
+    }
+    void UpdateNavBar(int index)
+    {
+        // Deselect them all
+        for (var i = 1; i < NavBar.childCount-1; i++)
+        {
+            NavBar.GetChild(i).GetChild(0).gameObject.SetActive(true);
+            NavBar.GetChild(i).GetChild(1).gameObject.SetActive(false);
+        }
+
+        // Select the one
+        NavBar.GetChild(index+1).GetChild(0).gameObject.SetActive(false);
+        NavBar.GetChild(index+1).GetChild(1).gameObject.SetActive(true);
+    }
+    IEnumerator SmoothMove(Vector3 startpos, Vector3 endpos, float seconds)
+    {
         float t = 0f;
-        while(t <= 1.0){
+        while (t <= 1.0)
+        {
             t += Time.deltaTime / seconds;
             transform.position = Vector3.Lerp(startpos, endpos, Mathf.SmoothStep(0f, 1f, t));
             yield return null;
         }
-    }
-    public void OnClickHangar()
-    {
-        NavigateTo(3);
-        Ship_Select.SetActive(false);
-        Minigame_Settings.SetActive(false);
-        Coming_Soon.SetActive(false);
-    }
-    public void OnClickRecords()
-    {
-        NavigateTo(1);
-        Ship_Select.SetActive(false);
-        Minigame_Settings.SetActive(false);
-        Coming_Soon.SetActive(false);
-    }
-    public void OnClickMinigames()
-    {
-        NavigateTo(4);
-        Ship_Select.SetActive(false);
-        Minigame_Settings.SetActive(false);
-        Coming_Soon.SetActive(false);
-    }
-    public void OnClickOptionsMenuButton()
-    {
-        NavigateTo(0);
-        Ship_Select.SetActive(false);
-        Minigame_Settings.SetActive(false);
-        Coming_Soon.SetActive(false);
-    }
-    public void OnClickHome()
-    {
-        NavigateTo(2);
-        Ship_Select.SetActive(false);
-        Minigame_Settings.SetActive(false);
-        Coming_Soon.SetActive(false);
-    }
-    public void OnClickLeft()
-    {
-        if (currentScreen > 0)
-        {
-            Vector3 newLocation = panelLocation;
-            newLocation += new Vector3(Screen.width, 0, 0);
-            currentScreen -= 1;
-            StartCoroutine(SmoothMove(transform.position, newLocation, easing));
-            panelLocation = newLocation;
-            UpdateNavBar(currentScreen);
-        }
-        else
-        {
-            //I didn't want to write these empty else statements.
-            //I was happy just not having else statements.
-        }
-    }
-    public void OnClickRight()
-    {
-        if (currentScreen < transform.childCount - 1)
-        {
-            Vector3 newLocation = panelLocation;
-            newLocation += new Vector3(-Screen.width, 0, 0);
-            currentScreen += 1;
-            StartCoroutine(SmoothMove(transform.position, newLocation, easing));
-            panelLocation = newLocation;
-            UpdateNavBar(currentScreen);
-        }
-        else
-        {
-            //But here they are.
-            //Am I supposed to put like return void or something?
-        }
-    }
-    public void UpdateNavBar(int index)
-    {
-        // Deselect them all
-        for (var i = 0; i < NavBar.childCount; i++)
-            NavBar.GetChild(i).GetChild(1).gameObject.SetActive(false);
-        for (var i = 0; i <NavBar.childCount; i++)
-            NavBar.GetChild(i).GetChild(0).gameObject.SetActive(true);
-
-        // Select the one
-        NavBar.GetChild(index+1).GetChild(0).gameObject.SetActive(false);
-        NavBar.GetChild(index + 1).GetChild(1).gameObject.SetActive(true);
     }
 }
