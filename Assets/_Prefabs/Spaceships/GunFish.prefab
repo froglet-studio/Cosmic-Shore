@@ -278,6 +278,7 @@ GameObject:
   - component: {fileID: 6964962696344697388}
   - component: {fileID: 874579555101021522}
   - component: {fileID: 874579555101021523}
+  - component: {fileID: 975128113266807093}
   - component: {fileID: 6315651686961786297}
   - component: {fileID: 3440187540988767646}
   - component: {fileID: 4005043449782909879}
@@ -447,7 +448,7 @@ MonoBehaviour:
   GunsActive: 0
   Course: {x: 0, y: 0, z: 0}
   blockRotation: {x: 0, y: 0, z: 0, w: 0}
---- !u!114 &6315651686961786297
+--- !u!114 &975128113266807093
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -455,6 +456,39 @@ MonoBehaviour:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6417075533431866457}
   m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dacd2f5e41c617b4cb01f684936923cb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  boostDecay: 1
+  defaultMinimumSpeed: 0
+  DefaultThrottleScaler: 40
+  MaxBoostDecay: 10
+  BoostDecayGrowthRate: 0.03
+  minimumSpeed: 10
+  ThrottleScaler: 50
+  rotationThrottleScaler: 0
+  PitchScaler: 130
+  YawScaler: 130
+  RollScaler: 130
+  topGun: {fileID: 6325554860274326311}
+  leftGun: {fileID: 3459134076240855180}
+  rightGun: {fileID: 6375360903085026602}
+  trailFollower: {fileID: 7081412522392871879}
+  ProjectileScale: 1
+  BlockScale: {x: 4, y: 4, z: 0.4}
+  nextBlockIndex: 1
+  previousBlockIndex: 0
+  maxTrailSpeed: 150
+  reducedTrailSpeed: 50
+--- !u!114 &6315651686961786297
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 8931715ca622a9744a7689f33100c42b, type: 3}
   m_Name: 

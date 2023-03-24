@@ -26,7 +26,7 @@ namespace StarWriter.Core
         }
 
         public void FireGun(Transform containerTransform, float speed, Vector3 inheritedVelocity, 
-            float projectileScale, Vector3 blockScale, bool ignoreCooldown = false, float projectileTime = 2)
+            float projectileScale, Vector3 blockScale, bool ignoreCooldown = false, float projectileTime = 3)
         {
             if (onCooldown && !ignoreCooldown)
                 return;

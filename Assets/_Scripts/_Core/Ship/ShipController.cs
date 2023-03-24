@@ -139,7 +139,7 @@ public class ShipController : MonoBehaviour
 
     }
 
-    protected void Pitch() // These need to not use *= because quaternions are not commutative
+    protected virtual void Pitch() // These need to not use *= because quaternions are not commutative
     {
         displacementQuaternion = Quaternion.AngleAxis(
                             inputController.YSum * -(speed * rotationThrottleScaler + PitchScaler) * Time.deltaTime,
@@ -154,7 +154,7 @@ public class ShipController : MonoBehaviour
                             transform.up) * displacementQuaternion;
     }
 
-    protected void Roll()
+    protected virtual void Roll()
     {
         displacementQuaternion = Quaternion.AngleAxis(
                             inputController.YDiff * (speed * rotationThrottleScaler + RollScaler) * Time.deltaTime,

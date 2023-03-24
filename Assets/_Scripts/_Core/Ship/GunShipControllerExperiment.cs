@@ -1,7 +1,7 @@
 using UnityEngine;
 using StarWriter.Core;
 
-public class GunShipController : ShipController
+public class GunShipControllerExperiment : ShipController
 {
     [SerializeField] Gun topGun;
     [SerializeField] Gun leftGun;
@@ -48,12 +48,48 @@ public class GunShipController : ShipController
         base.Update();
         if (resourceSystem.CurrentAmmo > 0 && shipData.GunsActive) Fire();
     }
+
+    protected override void Pitch()
+    {
+        if (shipData.Attached)
+        {
+            displacementQuaternion = Quaternion.AngleAxis(
+                            inputController.YSum * -(speed * rotationThrottleScaler + PitchScaler) * Time.deltaTime,
+                            shipData.Course*(int)trailFollower.Direction) * displacementQuaternion;
+        }
+        else { base.Pitch(); }
+        
+    }
+
+    protected override void Yaw()
+    {
+        if (shipData.Attached)
+        {
+            displacementQuaternion = Quaternion.AngleAxis(
+                            inputController.XSum * (speed * rotationThrottleScaler + YawScaler) *
+                                (Screen.currentResolution.width / Screen.currentResolution.height) * Time.deltaTime,
+                            transform.up) * displacementQuaternion;
+        }
+        else { base.Yaw(); }
+       
+    }
+
+    protected override void Roll()
+    {
+        if (shipData.Attached)
+        {
+            //transform.up = Vector3.Cross(shipData.Course,transform.forward);
+        }
+        else { base.Roll(); }
+    }
+
     protected override void MoveShip()
     {
         if (shipData.Attached && !attached)
         {
             attached = shipData.Attached;
             trailFollower.Attach(shipData.AttachedTrailBlock);
+            transform.rotation = shipData.AttachedTrailBlock.transform.rotation;
         }
         else if (!shipData.Attached && attached)
         {
@@ -77,8 +113,7 @@ public class GunShipController : ShipController
         {
             resourceSystem.ChangeAmmoAmount(uuid, -resourceSystem.MaxAmmo / 10f);
             topGun.FireGun(player.transform, 30, shipData.Course * shipData.Speed, ProjectileScale * 15, BlockScale * 2, true, 5f);
-        }
-        
+        } 
     }
 
     void Fire()
@@ -91,12 +126,10 @@ public class GunShipController : ShipController
 
     void Slide()
     {
-
-        float lookThreshold = -.9f;
+        float lookThreshold = -1f;
         float throttle;
-        float zeroPosition = .5f;
 
-        throttle = (inputController.XDiff - zeroPosition)/(1 - zeroPosition);
+        throttle = -inputController.YDiff;
 
         if (Vector3.Dot(transform.forward, shipData.Course) < lookThreshold && throttle > 0)
              moveForward = !moveForward;
@@ -120,8 +153,5 @@ public class GunShipController : ShipController
         else shipData.AttachedTrailBlock.Grow(4);
 
         shipData.AttachedTrailBlock.Steal(player.PlayerName, player.Team);
-
-        
-
     }
 }

@@ -15,6 +15,7 @@ namespace StarWriter.Core
         Teams team;
         float percentTowardNextBlock;
         TrailFollowerDirection direction;
+        public TrailFollowerDirection Direction { get { return direction; } }
         
         [SerializeField] float FriendlyTerrainSpeed;
         [SerializeField] float HostileTerrainSpeed;
@@ -75,6 +76,8 @@ namespace StarWriter.Core
 
             var distanceToNextBlock = Vector3.Magnitude(nextBlock.transform.position - currentBlock.transform.position) * (1-percentTowardNextBlock);
             var speedToNextBlock = Throttle * GetTerrainAwareBlockSpeed(currentBlock);
+            shipData.InputSpeed = speedToNextBlock;
+            speedToNextBlock = shipData.Speed;
             var timeToNextBlock = distanceToNextBlock / speedToNextBlock;
 
             while (timeRemaining > timeToNextBlock)
@@ -89,6 +92,7 @@ namespace StarWriter.Core
                 speedToNextBlock = Throttle * GetTerrainAwareBlockSpeed(currentBlock);
                 shipData.InputSpeed = speedToNextBlock;
                 speedToNextBlock = shipData.Speed;
+
 
                 timeToNextBlock = distanceToNextBlock / speedToNextBlock;
             }
