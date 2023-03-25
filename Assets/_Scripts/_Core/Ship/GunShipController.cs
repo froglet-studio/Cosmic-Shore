@@ -76,7 +76,10 @@ public class GunShipController : ShipController
         if (resourceSystem.CurrentAmmo > resourceSystem.MaxAmmo / 10f)
         {
             resourceSystem.ChangeAmmoAmount(uuid, -resourceSystem.MaxAmmo / 10f);
-            topGun.FireGun(player.transform, 90, shipData.Course * shipData.Speed, ProjectileScale * 15, BlockScale * 2, true, 3f);
+            Vector3 inheretedVelocity;
+            if (attached) inheretedVelocity = transform.forward;
+            else inheretedVelocity = shipData.Course;
+            topGun.FireGun(player.transform, 90, inheretedVelocity * shipData.Speed, ProjectileScale * 15, BlockScale * 2, true, 3f);
         }
         
     }
@@ -84,9 +87,19 @@ public class GunShipController : ShipController
     void Fire()
     {
         //resourceSystem.ChangeAmmoAmount(uuid, chargeDepletionRate * Time.deltaTime); // TODO: this should probably be an amount not a rate. let the gun cooldown handle delta time, but then there is asymmetry with the recharge rate . . . 
-        topGun.FireGun(player.transform, 90, shipData.Course * shipData.Speed, ProjectileScale, BlockScale);
-        leftGun.FireGun(player.transform, 90, shipData.Course * shipData.Speed, ProjectileScale, BlockScale);
-        rightGun.FireGun(player.transform, 90, shipData.Course * shipData.Speed, ProjectileScale, BlockScale);
+        if (attached)
+        {
+            topGun.FireGun(player.transform, 90, transform.forward * shipData.Speed, ProjectileScale, BlockScale);
+            leftGun.FireGun(player.transform, 90, transform.forward * shipData.Speed, ProjectileScale, BlockScale);
+            rightGun.FireGun(player.transform, 90, transform.forward * shipData.Speed, ProjectileScale, BlockScale);
+        }
+        else
+        {
+            topGun.FireGun(player.transform, 90, shipData.Course * shipData.Speed, ProjectileScale, BlockScale);
+            leftGun.FireGun(player.transform, 90, shipData.Course * shipData.Speed, ProjectileScale, BlockScale);
+            rightGun.FireGun(player.transform, 90, shipData.Course * shipData.Speed, ProjectileScale, BlockScale);
+        }
+        
     }
 
     void Slide()
@@ -120,8 +133,5 @@ public class GunShipController : ShipController
         else shipData.AttachedTrailBlock.Grow(4);
 
         shipData.AttachedTrailBlock.Steal(player.PlayerName, player.Team);
-
-        
-
     }
 }

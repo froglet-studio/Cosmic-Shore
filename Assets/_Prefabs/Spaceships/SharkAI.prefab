@@ -651,9 +651,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   DifficultyLevel: 0
-  defaultThrottle: 5
+  defaultThrottle: 30
   defaultLerp: 40
-  throttleIncrease: 1
+  throttleIncrease: 5
   lerpIncrease: 17
   throttle: 0
   lerp: 0

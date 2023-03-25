@@ -60,7 +60,6 @@ namespace StarWriter.Core
                         HapticController.PlayShipCollisionHaptics();
                         break;
                     case ShipImpactEffects.SpinAround:
-                        Debug.Log($"spin {Quaternion.LookRotation(Velocity)}");
                         shipGeometry.Ship.transform.localRotation = Quaternion.LookRotation(Velocity);
                         break;
                     case ShipImpactEffects.Knockback:
