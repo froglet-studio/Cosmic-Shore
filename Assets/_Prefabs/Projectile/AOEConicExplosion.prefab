@@ -53,6 +53,7 @@ MonoBehaviour:
   MaxScale: 200
   ExplosionDuration: 2
   ExplosionDelay: 0.2
+  shipImpactEffects: 0200000003000000040000000100000000000000
   height: 800
 --- !u!33 &520348123677097672
 MeshFilter:
@@ -140,7 +141,7 @@ SphereCollider:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 9218889541719856748}
   m_Material: {fileID: 0}
-  m_IsTrigger: 0
+  m_IsTrigger: 1
   m_Enabled: 1
   serializedVersion: 2
   m_Radius: 0.24
