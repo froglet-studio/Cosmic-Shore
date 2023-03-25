@@ -161,6 +161,17 @@ public class ShipController : MonoBehaviour
                             transform.forward) * displacementQuaternion;
     }
 
+    public void Rotate(Vector3 euler)
+    {
+        displacementQuaternion = Quaternion.Euler(euler) * displacementQuaternion;
+    }
+
+    public void Rotate(Quaternion rotation, bool replace = false)
+    {
+        if (replace) displacementQuaternion = rotation;
+        else displacementQuaternion = rotation * displacementQuaternion;
+    }
+
 
     protected virtual void MoveShip()
     {

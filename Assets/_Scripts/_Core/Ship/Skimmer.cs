@@ -104,7 +104,6 @@ namespace StarWriter.Core
             }
         }
 
-
         void PerformTrailStayEffects(TrailBlockProperties trailBlockProperties, float chargeAmount)
         {
             foreach (SkimmerStayEffects effect in skimmerStayEffects)

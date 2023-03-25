@@ -493,6 +493,11 @@ namespace StarWriter.Core
             shipData.SpeedMultiplier = accumulatedSpeedModification;
         }
 
+        public void Rotate(Quaternion rotation)
+        {
+            shipController.Rotate(rotation);
+        }
+
         void ApplyShipMaterial()
         {
             if (ShipMaterial == null)

@@ -599,6 +599,7 @@ MonoBehaviour:
   farFieldSkimmer: {fileID: 0}
   fakeCrystal: {fileID: 0}
   crystalImpactEffects: 0600000007000000
+  fakeCrystalImpactEffects: 
   trailBlockImpactEffects: 03000000
   minExplosionScale: 50
   maxExplosionScale: 25
@@ -650,9 +651,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   DifficultyLevel: 0
-  defaultThrottle: 30
+  defaultThrottle: 5
   defaultLerp: 40
-  throttleIncrease: 5
+  throttleIncrease: 1
   lerpIncrease: 17
   throttle: 0
   lerp: 0
