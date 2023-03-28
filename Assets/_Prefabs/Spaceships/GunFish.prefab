@@ -345,7 +345,7 @@ MonoBehaviour:
   rightStickEffects: 0c000000
   leftStickEffects: 0a000000
   flipEffects: 
-  idleEffects: 
+  idleEffects: 0e000000
   minimumSpeedStraightEffects: 
   cameraGrowthRate: 1
   cameraShrinkRate: 1

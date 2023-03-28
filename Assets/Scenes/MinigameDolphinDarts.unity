@@ -217,8 +217,9 @@ RectTransform:
   m_Children:
   - {fileID: 355343199}
   - {fileID: 1956103030}
+  - {fileID: 1078953705}
   m_Father: {fileID: 0}
-  m_RootOrder: 4
+  m_RootOrder: 3
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
@@ -524,18 +525,6 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 54f0f432989c18145a4ac711a4511ce9, type: 3}
---- !u!114 &641529687 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 145180626581237984, guid: 54f0f432989c18145a4ac711a4511ce9,
-    type: 3}
-  m_PrefabInstance: {fileID: 641529686}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 591e5a01275ccbc4f954ac32954da18b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!4 &641529688 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 145180626581237999, guid: 54f0f432989c18145a4ac711a4511ce9,
@@ -719,7 +708,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 7
+  m_RootOrder: 6
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1078953702
 GameObject:
@@ -761,13 +750,13 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1078953702}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: -960, y: -540, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 0}
-  m_RootOrder: 3
+  m_Father: {fileID: 114521897}
+  m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &1078953706
 MonoBehaviour:
@@ -796,9 +785,10 @@ MonoBehaviour:
   Countdown1: {fileID: 21300000, guid: e349453ab9bba76458c019322f48e341, type: 3}
   Countdown0: {fileID: 21300000, guid: 989d86426e9e0bd45a6b8c70d4443c33, type: 3}
   CountdownGrowScale: 1.5
-  DartBoard: {fileID: 641529687}
+  DartBoard: {fileID: 1344816199}
   Crystal: {fileID: 1568959833}
   CrystalStartPosition: {x: 0, y: 0, z: -120}
+  SegmentSpawner: {fileID: 1471404064}
 --- !u!114 &1078953707
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1068,7 +1058,7 @@ PrefabInstance:
     - target: {fileID: 2151207714166088001, guid: 8a9d12e43096881468feb22e39e9fbeb,
         type: 3}
       propertyPath: m_RootOrder
-      value: 6
+      value: 5
       objectReference: {fileID: 0}
     - target: {fileID: 2151207714166088001, guid: 8a9d12e43096881468feb22e39e9fbeb,
         type: 3}
@@ -1559,7 +1549,7 @@ PrefabInstance:
     - target: {fileID: 2151207714166088001, guid: 8a9d12e43096881468feb22e39e9fbeb,
         type: 3}
       propertyPath: m_RootOrder
-      value: 5
+      value: 4
       objectReference: {fileID: 0}
     - target: {fileID: 2151207714166088001, guid: 8a9d12e43096881468feb22e39e9fbeb,
         type: 3}

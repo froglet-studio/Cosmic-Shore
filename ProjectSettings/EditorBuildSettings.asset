@@ -23,6 +23,12 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/MinigameShootingGallery.unity
     guid: 3c3b1e401c6162547b78d787ab28640c
+  - enabled: 1
+    path: Assets/Scenes/MinigameThiefCourse.unity
+    guid: 608ee7a6fb653984e8456f57d82fb67e
+  - enabled: 1
+    path: Assets/Scenes/MinigameDriftCourse.unity
+    guid: 6425f480a5e05034ba9c772941d8b3e0
   - enabled: 0
     path: Assets/Scenes/Game_HighScore.unity
     guid: 5e8d9932a4d84a1488c2dad96c8135dd

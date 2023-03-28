@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using StarWriter.Core;
 using UnityEngine;
 
-public class DartBoard : SpawnableAbstractBase
+public class SpawnableDartBoard : SpawnableAbstractBase
 {
     [SerializeField] TrailBlock greenTrailBlock;
     [SerializeField] TrailBlock redTrailBlock;
@@ -11,11 +11,10 @@ public class DartBoard : SpawnableAbstractBase
     GameObject container;
 
 
-    float blockCount = 6; // TODO: make int
+    int blockCount = 6;
     int ringCount = 24;
     float ringThickness = 5f;
     float gap = 6;
-    //Vector3 blockScale = new Vector3(3f, 2f, 1f)
 
     public Player PlayerOne;
     public Player PlayerTwo;
@@ -24,46 +23,22 @@ public class DartBoard : SpawnableAbstractBase
     public float dartBoardRadius = 100;
 
     public float difficultyAngle = 40;
-    public int numberOfDartBoards = 4;
-    //Vector3 dartBoardPosition;
-
-    //[SerializeField] Material blockMaterial;
-    //List<Trail> trails = new List<Trail>();
 
     void Start()
     {
-        //PlayerOne = GameObject.FindGameObjectWithTag("Player").GetComponent<Player>();
-        //PlayerTwo = GameObject.FindGameObjectWithTag("red").GetComponent<Player>();
-
         // TODO these should be injected by the game
         PlayerOne.Team = Teams.Green;
         PlayerTwo.Team = Teams.Red;
 
-        //Initialize();
     }
 
-    //public void Initialize()
-    //{
-    //    foreach (Transform child in transform)
-    //        Destroy(child.gameObject);
-
-    //    for (int i = 0; i < numberOfDartBoards; i++)
-    //    {
-    //        transform.position = Quaternion.Euler(0, 0, /*Random.Range(i * 90, i * 90 + 20)*/ 0) *
-    //            (Quaternion.Euler(0, Random.Range(Mathf.Max(difficultyAngle - 20, 40), Mathf.Max(difficultyAngle - 20, 40)), 0) *
-    //            //(Quaternion.Euler(0, difficultyAngle, 0) *
-    //            (dartBoardRadius * Vector3.forward));
-
-    //        transform.LookAt(Vector3.zero);
-    //        CreateRings();
-    //    }
-    //}
 
     void CreateRings()
     {
         TrailBlock trailBlock;
         Player player;
         container = new GameObject();
+        container.name = "SpawnedDartBoard";
 
         for (int ring = 1; ring <= ringCount; ring++)
         {
@@ -84,7 +59,7 @@ public class DartBoard : SpawnableAbstractBase
                              ring * ringThickness * Mathf.Cos(((i + phase) / (blockCount * ring)) * 2 * Mathf.PI) * transform.right +
                              ring * ringThickness * Mathf.Sin(((i + phase) / (blockCount * ring)) * 2 * Mathf.PI) * transform.up +
                              sweep * ringThickness * transform.forward;
-        CreateBlock(position, position + tilt * ringThickness * transform.forward, "::DartBoard::" + Time.time + "::" + i, trail,
+        CreateBlock(position, position + tilt * ringThickness * transform.forward, "::SpawnableDartBoard::" + Time.time + "::" + i, trail,
             new Vector3(((Mathf.PI / 3f) * ringThickness) - (gap / (6 * ring)), // blockwidth 
                         (ringCount - ring) * ringThickness/3f, // dartboard thickness
                          ringThickness - (gap/5f)), trailBlock, player); //annulus thickness
