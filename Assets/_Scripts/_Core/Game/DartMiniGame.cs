@@ -14,11 +14,13 @@ public class DartMiniGame : MiniGame
         gameMode = MiniGames.Darts;
 
         // TODO: make these dynamic
-        DartBoard.PlayerOne = Players[0];
-        DartBoard.PlayerTwo = Players[1];
+        //DartBoard.PlayerOne = Players[0];
+        //DartBoard.PlayerTwo = Players[1];
 
         SegmentSpawner.Seed = new System.Random().Next();
+        SegmentSpawner.DifficultyAngle = DifficultyLevel * (140 / 4); // (180 - random buffer - dartbard arclength) / (max difficulty level)
         SegmentSpawner.Initialize();
+         
     }
 
     protected override void SetupTurn()

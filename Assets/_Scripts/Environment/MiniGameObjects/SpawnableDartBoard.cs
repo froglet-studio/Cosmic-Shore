@@ -12,7 +12,7 @@ public class SpawnableDartBoard : SpawnableAbstractBase
 
 
     int blockCount = 6;
-    int ringCount = 24;
+    int ringCount = 30;
     float ringThickness = 5f;
     float gap = 6;
 
@@ -21,8 +21,6 @@ public class SpawnableDartBoard : SpawnableAbstractBase
 
     //dartboard position
     public float dartBoardRadius = 100;
-
-    public float difficultyAngle = 40;
 
     void Start()
     {

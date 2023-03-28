@@ -103,7 +103,7 @@ public class ScoreTracker : MonoBehaviour
 
     public virtual void DisplayScores()
     {
-        WinnerNameContainer.text = GetWinner();
+        //WinnerNameContainer.text = GetWinner();
         for (var i = 0; i < playerScores.Keys.Count; i++)
         {
             string key = playerScores.Keys.Skip(i).Take(1).First();

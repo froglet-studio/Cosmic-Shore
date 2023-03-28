@@ -116,6 +116,13 @@ namespace StarWriter.Core
             else AmmoDisplay?.gameObject.SetActive(false);
         }
 
+        public void Reset()
+        {
+            ResetBoost();
+            ResetLevel();
+            ResetAmmo();
+        }
+
         public void ResetBoost()
         {
             CurrentBoost = initialBoost;

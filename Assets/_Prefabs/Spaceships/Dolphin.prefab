@@ -880,7 +880,7 @@ MonoBehaviour:
   maxLevel: 1
   initialLevel: 0
   maxAmmo: 1
-  initialAmmo: 0.5
+  initialAmmo: 1
   BoostDisplay: {fileID: 0}
   LevelDisplay: {fileID: 0}
   AmmoDisplay: {fileID: 0}
@@ -944,17 +944,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 95baa921cf22958449a3143749d5e0e3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  boostDecay: 1
-  defaultMinimumSpeed: 10
+  MinimumSpeed: 0
+  ThrottleScaler: 0
+  DefaultMinimumSpeed: 10
   DefaultThrottleScaler: 50
+  BoostDecay: 1
   MaxBoostDecay: 10
   BoostDecayGrowthRate: 0.03
-  minimumSpeed: 0
-  ThrottleScaler: 0
-  rotationThrottleScaler: 0
-  PitchScaler: 130
-  YawScaler: 130
-  RollScaler: 130
+  PitchScaler: 200
+  YawScaler: 200
+  RollScaler: 200
+  RotationThrottleScaler: 0
 --- !u!1 &7056368880709611073
 GameObject:
   m_ObjectHideFlags: 0

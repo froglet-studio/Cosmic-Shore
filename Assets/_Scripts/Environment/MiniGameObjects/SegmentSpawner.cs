@@ -25,8 +25,9 @@ public class SegmentSpawner : MonoBehaviour
     List<Trail> trails = new();
     System.Random random = new();
     int spawnedItemCount;
-    float sphereRadius = 200f;
+    float sphereRadius = 250f;
     [SerializeField] float straighLineLength = 400f;
+    public int DifficultyAngle = 90;
 
     void Start()
     {
@@ -77,9 +78,9 @@ public class SegmentSpawner : MonoBehaviour
                 return;
             case PositioningScheme.SphereSurface:
                 
-                int difficultyAngle = 90;
+
                 spawned.transform.position = Quaternion.Euler(0, 0, random.Next(spawnedItemCount * (360/ numberOfSegments), spawnedItemCount * (360 / numberOfSegments) + 20)) *
-                    (Quaternion.Euler(0, random.Next(Mathf.Max(difficultyAngle - 20, 40), Mathf.Max(difficultyAngle + 20, 40)), 0) *
+                    (Quaternion.Euler(0, random.Next(Mathf.Max(DifficultyAngle - 20, 40), Mathf.Max(DifficultyAngle + 20, 40)), 0) *
                     (sphereRadius * Vector3.forward));
                 spawned.transform.LookAt(Vector3.zero);
                 return;

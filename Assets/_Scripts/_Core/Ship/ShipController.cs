@@ -49,6 +49,7 @@ public class ShipController : MonoBehaviour
         MinimumSpeed = DefaultMinimumSpeed;
         ThrottleScaler = DefaultThrottleScaler;
         accumulatedRotation = transform.rotation;
+        resourceSystem.Reset();
         shipData.Reset();
     }
 
