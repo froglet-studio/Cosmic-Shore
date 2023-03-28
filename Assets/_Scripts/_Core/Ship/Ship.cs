@@ -141,11 +141,11 @@ namespace StarWriter.Core
 
             ShipControlActions = new Dictionary<InputEvents, List<ShipActions>> { 
                 { InputEvents.FullSpeedStraightAction, fullSpeedStraightEffects },
-                { InputEvents.FlipAction, flipEffects },
+                { InputEvents.MinimumSpeedStraightAction, minimumSpeedStraightEffects },
                 { InputEvents.LeftStickAction, leftStickEffects },
                 { InputEvents.RightStickAction, rightStickEffects },
+                { InputEvents.FlipAction, flipEffects },
                 { InputEvents.IdleAction, idleEffects },
-                { InputEvents.MinimumSpeedStraightAction, minimumSpeedStraightEffects }
             };
         }
 
@@ -240,11 +240,6 @@ namespace StarWriter.Core
                         break;
                     case CrystalImpactEffects.GainOneThirdMaxAmmo:
                         ResourceSystem.ChangeAmmoAmount(ResourceSystem.MaxAmmo/3f);
-                        break;
-                    case CrystalImpactEffects.Score:
-                        //if (StatsManager.Instance != null)
-                        //    StatsManager.Instance.UpdateScore(player.PlayerUUID, crystalProperties.scoreAmount);
-                        // TODO: Remove this impact effect, or re-introduce scoring in a separate game mode
                         break;
                     case CrystalImpactEffects.ResetAggression:
                         if (gameObject.TryGetComponent<AIPilot>(out var aiPilot))

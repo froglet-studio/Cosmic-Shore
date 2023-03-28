@@ -16,7 +16,7 @@ public class ShipController : MonoBehaviour
     protected InputController inputController;
     protected float speed;
     protected readonly float lerpAmount = 2f;
-    protected Quaternion displacementQuaternion;
+    protected Quaternion accumulatedRotation;
 
     [HideInInspector] public float MinimumSpeed;
     [HideInInspector] public float ThrottleScaler;
@@ -40,7 +40,7 @@ public class ShipController : MonoBehaviour
 
         MinimumSpeed = DefaultMinimumSpeed;
         ThrottleScaler = DefaultThrottleScaler;
-        displacementQuaternion = transform.rotation;
+        accumulatedRotation = transform.rotation;
         inputController = ship.inputController;
     }
 
@@ -48,7 +48,7 @@ public class ShipController : MonoBehaviour
     {
         MinimumSpeed = DefaultMinimumSpeed;
         ThrottleScaler = DefaultThrottleScaler;
-        displacementQuaternion = transform.rotation;
+        accumulatedRotation = transform.rotation;
         shipData.Reset();
     }
 
@@ -83,14 +83,14 @@ public class ShipController : MonoBehaviour
             // Updates GameObjects blockRotation from input device's gyroscope
             transform.rotation = Quaternion.Lerp(
                                         transform.rotation,
-                                        displacementQuaternion * inputController.GetGyroRotation(),
+                                        accumulatedRotation * inputController.GetGyroRotation(),
                                         lerpAmount);
         }
         else
         {
             transform.rotation = Quaternion.Lerp(
                                         transform.rotation,
-                                        displacementQuaternion,
+                                        accumulatedRotation,
                                         lerpAmount);
         }
     }
@@ -117,40 +117,39 @@ public class ShipController : MonoBehaviour
         }
         shipData.BoostDecaying = false;
         resourceSystem.ChangeBoostAmount(-resourceSystem.CurrentBoost);
-
     }
 
     protected virtual void Pitch() // These need to not use *= because quaternions are not commutative
     {
-        displacementQuaternion = Quaternion.AngleAxis(
+        accumulatedRotation = Quaternion.AngleAxis(
                             inputController.YSum * -(speed * RotationThrottleScaler + PitchScaler) * Time.deltaTime,
-                            transform.right) * displacementQuaternion;
+                            transform.right) * accumulatedRotation;
     }
 
     protected virtual void Yaw()  
     {
-        displacementQuaternion = Quaternion.AngleAxis(
+        accumulatedRotation = Quaternion.AngleAxis(
                             inputController.XSum * (speed * RotationThrottleScaler + YawScaler) *
                                 (Screen.currentResolution.width / Screen.currentResolution.height) * Time.deltaTime,
-                            transform.up) * displacementQuaternion;
+                            transform.up) * accumulatedRotation;
     }
 
     protected virtual void Roll()
     {
-        displacementQuaternion = Quaternion.AngleAxis(
+        accumulatedRotation = Quaternion.AngleAxis(
                             inputController.YDiff * (speed * RotationThrottleScaler + RollScaler) * Time.deltaTime,
-                            transform.forward) * displacementQuaternion;
+                            transform.forward) * accumulatedRotation;
     }
 
     public void Rotate(Vector3 euler)
     {
-        displacementQuaternion = Quaternion.Euler(euler) * displacementQuaternion;
+        accumulatedRotation = Quaternion.Euler(euler) * accumulatedRotation;
     }
 
     public void Rotate(Quaternion rotation, bool replace = false)
     {
-        if (replace) displacementQuaternion = rotation;
-        else displacementQuaternion = rotation * displacementQuaternion;
+        if (replace) accumulatedRotation = rotation;
+        else accumulatedRotation = rotation * accumulatedRotation;
     }
 
     protected virtual void MoveShip()

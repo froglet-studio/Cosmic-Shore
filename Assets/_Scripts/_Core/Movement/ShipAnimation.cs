@@ -19,13 +19,9 @@ public abstract class ShipAnimation : MonoBehaviour
         if (inputController != null) // the line above makes this run the moment it has the handle
         {
             if (inputController.Idle)
-            {
                 Idle();
-            }
             else
-            {
                 PerformShipAnimations(inputController.YSum, inputController.XSum, inputController.YDiff, inputController.XDiff);
-            }
         }
     }
 

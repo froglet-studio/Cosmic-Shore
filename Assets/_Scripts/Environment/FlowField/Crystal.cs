@@ -75,7 +75,7 @@ public class Crystal : MonoBehaviour
         spentCrystal.transform.localEulerAngles = transform.localEulerAngles;
         spentCrystal.GetComponent<Renderer>().material = tempMaterial;
         
-        spentCrystal.GetComponent<Impact>().StartImpactCoroutine(
+        spentCrystal.GetComponent<Impact>().HandleImpact(
             ship.transform.forward * ship.GetComponent<ShipData>().Speed, tempMaterial, ship.Player.PlayerName);
 
         // Play SFX sound

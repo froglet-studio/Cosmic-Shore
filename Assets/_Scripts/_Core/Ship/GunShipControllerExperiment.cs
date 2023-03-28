@@ -53,9 +53,9 @@ public class GunShipControllerExperiment : ShipController
     {
         if (shipData.Attached)
         {
-            displacementQuaternion = Quaternion.AngleAxis(
-                            inputController.YSum * -(speed * rotationThrottleScaler + PitchScaler) * Time.deltaTime,
-                            shipData.Course*(int)trailFollower.Direction) * displacementQuaternion;
+            accumulatedRotation = Quaternion.AngleAxis(
+                            inputController.YSum * -(speed * RotationThrottleScaler + PitchScaler) * Time.deltaTime,
+                            shipData.Course*(int)trailFollower.Direction) * accumulatedRotation;
         }
         else { base.Pitch(); }
         
@@ -65,10 +65,10 @@ public class GunShipControllerExperiment : ShipController
     {
         if (shipData.Attached)
         {
-            displacementQuaternion = Quaternion.AngleAxis(
-                            inputController.XSum * (speed * rotationThrottleScaler + YawScaler) *
+            accumulatedRotation = Quaternion.AngleAxis(
+                            inputController.XSum * (speed * RotationThrottleScaler + YawScaler) *
                                 (Screen.currentResolution.width / Screen.currentResolution.height) * Time.deltaTime,
-                            transform.up) * displacementQuaternion;
+                            transform.up) * accumulatedRotation;
         }
         else { base.Yaw(); }
        
@@ -111,7 +111,7 @@ public class GunShipControllerExperiment : ShipController
     {
         if (resourceSystem.CurrentAmmo > resourceSystem.MaxAmmo / 10f)
         {
-            resourceSystem.ChangeAmmoAmount(uuid, -resourceSystem.MaxAmmo / 10f);
+            resourceSystem.ChangeAmmoAmount(-resourceSystem.MaxAmmo / 10f);
             topGun.FireGun(player.transform, 30, shipData.Course * shipData.Speed, ProjectileScale * 15, BlockScale * 2, true, 5f);
         } 
     }
@@ -139,7 +139,7 @@ public class GunShipControllerExperiment : ShipController
         else
             trailFollower.SetDirection(TrailFollowerDirection.Backward);
             
-        resourceSystem.ChangeAmmoAmount(uuid, rechargeRate * Time.deltaTime);
+        resourceSystem.ChangeAmmoAmount(rechargeRate * Time.deltaTime);
         trailFollower.Throttle = Mathf.Abs(throttle);
         trailFollower.Move();
 

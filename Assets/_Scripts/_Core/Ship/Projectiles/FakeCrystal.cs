@@ -10,28 +10,17 @@ public class FakeCrystal : Crystal
 
     protected override void Collide(Collider other)
     {
-        Ship ship;
-        Vector3 velocity;
-        if (IsShip(other.gameObject))
-        {
-            ship = other.GetComponent<ShipGeometry>().Ship;
-            velocity = ship.GetComponent<ShipData>().Course * ship.GetComponent<ShipData>().Speed;
-        }
-        else if (IsProjectile(other.gameObject))
-        {
-            ship = other.GetComponent<Projectile>().Ship;
-            velocity = other.GetComponent<Projectile>().Velocity;
-        }
-        else return;
+        if (!IsShip(other.gameObject) && !IsProjectile(other.gameObject))
+            return;
+
+        Ship ship = IsShip(other.gameObject) ? other.GetComponent<ShipGeometry>().Ship : other.GetComponent<Projectile>().Ship;
 
         //
         // Do the ship specific crystal stuff
         //
 
         if (ship.Team == Team)
-        {
             return;
-        }
 
         ship.PerformFakeCrystalImpactEffects(crystalProperties);
 
@@ -47,14 +36,13 @@ public class FakeCrystal : Crystal
         spentCrystal.transform.localEulerAngles = transform.localEulerAngles;
         spentCrystal.GetComponent<Renderer>().material = tempMaterial;
 
-        spentCrystal.GetComponent<Impact>().StartImpactCoroutine(
+        spentCrystal.GetComponent<Impact>().HandleImpact(
             ship.transform.forward * ship.GetComponent<ShipData>().Speed, tempMaterial, ship.Player.PlayerName);
 
         // Play SFX sound
         AudioSource audioSource = GetComponent<AudioSource>();
-        if (audioSource == null) Debug.LogWarning("WTF, audioSource is null");                      // TODO: remove this debug if not seen _again_ by 2/12/23
-        if (AudioSystem.Instance == null) Debug.LogWarning("WTF, AudioSystem.Instance is null");    // TODO: remove this debug if not seen _again_ by 2/12/23
         AudioSystem.Instance.PlaySFXClip(audioSource.clip, audioSource);
+
         Destroy(transform.gameObject);
     }
 
