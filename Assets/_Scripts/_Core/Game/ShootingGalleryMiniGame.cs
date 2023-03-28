@@ -1,20 +1,18 @@
 using StarWriter.Core;
 using System.Collections.Generic;
 using UnityEngine;
+
 public class ShootingGalleryMiniGame : MiniGame
 {
     [SerializeField] Crystal Crystal;
     [SerializeField] Vector3 CrystalStartPosition;
     [SerializeField] SegmentSpawner SegmentSpawner;
 
-
     public static new ShipTypes PlayerShipType = ShipTypes.GunManta;
 
     protected override void Start()
     {
         base.Start();
-
-        
 
         gameMode = MiniGames.ShootingGallery;
         SegmentSpawner.Seed = new System.Random().Next();
@@ -24,22 +22,19 @@ public class ShootingGalleryMiniGame : MiniGame
     {
         base.SetupTurn();
 
-        SegmentSpawner.numberOfSegments = 60;
-
         TrailSpawner.NukeTheTrails();
-        Crystal.transform.position = CrystalStartPosition;
 
+        SegmentSpawner.numberOfSegments = 60;
         SegmentSpawner.Initialize();
 
+        Crystal.transform.position = CrystalStartPosition;
         ActivePlayer.Ship.TrailSpawner.PauseTrailSpawner();
 
         FormRing();
     }
 
-
     [SerializeField] protected TrailBlock trailBlock;
     [SerializeField] float blockCount = 20;
-    [SerializeField] int ringCount = 3;
     [SerializeField] float radius = 60f;
     [SerializeField] protected Vector3 blockScale = new Vector3(20f, 10f, 5f);
     [SerializeField] protected Material blockMaterial;
@@ -75,10 +70,8 @@ public class ShootingGalleryMiniGame : MiniGame
         Block.ownerId = ActivePlayer.PlayerUUID;
         Block.PlayerName = ActivePlayer.PlayerName;
         Block.transform.SetPositionAndRotation(position, Quaternion.LookRotation(lookPosition - transform.position, transform.forward));
-        //Block.GetComponent<MeshRenderer>().material = blockMaterial;
         Block.ID = Block.ownerId + position;
         Block.InnerDimensions = blockScale;
-        //Block.transform.parent = TrailSpawner.TrailContainer.transform;
         Block.Trail = trail;
         trail.Add(Block);
         return Block;

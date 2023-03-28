@@ -12,7 +12,6 @@ namespace StarWriter.Core
         [SerializeField] float speed;
                   public float Speed { get { speed = inputSpeed * speedMultiplier; return speed; } }
 
-
         public bool Boosting = false;
         public bool BoostCharging = false;
         public bool BoostDecaying = false;
@@ -26,5 +25,20 @@ namespace StarWriter.Core
 
         public Vector3 Course;
         public Quaternion blockRotation;
+
+        public void Reset()
+        {
+            Boosting = false;
+            BoostCharging = false;
+            BoostDecaying = false;
+            Drifting = false;
+            LayingBulletTrail = false;
+            Attached = false;
+            AttachedTrailBlock = null;
+            GunsActive = false;
+            InputSpeed = 1;
+            SpeedMultiplier = 1;
+            Course = transform.forward;
+        }
     }
 }

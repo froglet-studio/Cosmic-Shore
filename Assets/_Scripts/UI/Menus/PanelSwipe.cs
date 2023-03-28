@@ -1,11 +1,10 @@
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
-using UnityEngine.UI;
 
 public class PanelSwipe : MonoBehaviour, IDragHandler, IEndDragHandler {
 
+    
     public float percentThreshold = 0.2f; // Sensitivity of swipe detector. Smaller number = more sensitive
     public float easing = 0.5f; // Makes the transition less jarring
     public int currentScreen; // Keeps track of how many screens you have in the menu system. From 0 to 4, home = 2
@@ -13,6 +12,8 @@ public class PanelSwipe : MonoBehaviour, IDragHandler, IEndDragHandler {
     public GameObject Ship_Select;
     public GameObject Minigame_Settings;
     public GameObject Coming_Soon;
+    
+    [SerializeField] Transform NavBar;
 
     Vector3 panelLocation;
     Coroutine navigateCoroutine;
@@ -22,9 +23,7 @@ public class PanelSwipe : MonoBehaviour, IDragHandler, IEndDragHandler {
     const int HOME = 2;
     const int HANGAR = 3;
     const int ARCADE = 4;
-
-    [SerializeField] Transform NavBar;
-    [SerializeField] public List<GameObject> NavSelection;
+    
     void Start()
     {
         NavigateTo(HOME, false);

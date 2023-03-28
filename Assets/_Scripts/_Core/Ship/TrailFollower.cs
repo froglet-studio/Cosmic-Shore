@@ -2,6 +2,7 @@ using UnityEngine;
 
 namespace StarWriter.Core
 {
+    // TODO: move to enum folder
     public enum TrailFollowerDirection
     {
         Forward = 1,
@@ -16,7 +17,8 @@ namespace StarWriter.Core
         float percentTowardNextBlock;
         TrailFollowerDirection direction;
         public TrailFollowerDirection Direction { get { return direction; } }
-        
+
+
         [SerializeField] float FriendlyTerrainSpeed;
         [SerializeField] float HostileTerrainSpeed;
         [SerializeField] float DestroyedTerrainSpeed;
@@ -35,7 +37,6 @@ namespace StarWriter.Core
             team = GetComponent<Ship>().Team;
             shipData = GetComponent<ShipData>();
         }
-        void Update() {} 
 
         public void Attach(TrailBlock trailBlock)
         {
@@ -61,24 +62,20 @@ namespace StarWriter.Core
                 return;
             }
 
-            
-
             // TODO: percentTowardNextBlock is always positive?
 
             var distanceToTravel = 0f;  // <-- This is what we're calculating
-            var timeRemaining = Time.deltaTime;  // 
+            var timeRemaining = Time.deltaTime; 
 
             var blockIndex = 0;
             var currentBlock = upcomingBlocks[blockIndex];
             var nextBlock = upcomingBlocks[blockIndex+1];
 
-            //Debug.Log($"Move: {attachedBlockIndex},{percentTowardNextBlock},{direction},{transform.position},{currentBlock.transform.position}, {Throttle * FriendlyTerrainSpeed * Time.deltaTime}");
-
             var distanceToNextBlock = Vector3.Magnitude(nextBlock.transform.position - currentBlock.transform.position) * (1-percentTowardNextBlock);
             var speedToNextBlock = Throttle * GetTerrainAwareBlockSpeed(currentBlock);
+            var timeToNextBlock = distanceToNextBlock / speedToNextBlock;
             shipData.InputSpeed = speedToNextBlock;
             speedToNextBlock = shipData.Speed;
-            var timeToNextBlock = distanceToNextBlock / speedToNextBlock;
 
             while (timeRemaining > timeToNextBlock)
             {
@@ -92,7 +89,6 @@ namespace StarWriter.Core
                 speedToNextBlock = Throttle * GetTerrainAwareBlockSpeed(currentBlock);
                 shipData.InputSpeed = speedToNextBlock;
                 speedToNextBlock = shipData.Speed;
-
 
                 timeToNextBlock = distanceToNextBlock / speedToNextBlock;
             }

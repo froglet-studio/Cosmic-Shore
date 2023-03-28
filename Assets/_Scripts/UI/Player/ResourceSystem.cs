@@ -1,11 +1,10 @@
 using System;
 using UnityEngine;
-using StarWriter.Core.Input;
-using UnityEngine.Serialization;
 using System.Collections;
 
 namespace StarWriter.Core
 {
+    // TODO: P1 move to enum folder
     public enum ResourceType
     {
         Charge,
@@ -100,20 +99,6 @@ namespace StarWriter.Core
         public ChargeDisplay LevelDisplay;
         public ChargeDisplay AmmoDisplay;
 
-        // WIP
-        // TODO: we can't use events like this anymore because each ship has a resource system - we need to communicate with the ship or resource system directly instead
-        void OnEnable()
-        {
-            //Skimmer.OnSkim += ChangeBoostAmount;
-            ShipController.OnBoost += ChangeBoostAmount;
-        }
-
-        void OnDisable()
-        {
-            //Skimmer.OnSkim -= ChangeBoostAmount;
-            ShipController.OnBoost -= ChangeBoostAmount;
-        }
-
         void Start()
         {
             StartCoroutine(LateStart());
@@ -144,17 +129,17 @@ namespace StarWriter.Core
             CurrentAmmo = initialAmmo;
         }
 
-        public void ChangeBoostAmount(string uuid, float amount)
+        public void ChangeBoostAmount(float amount)
         {
             CurrentBoost = Mathf.Clamp(currentBoost + amount, 0, maxBoost);
         }
 
-        public void ChangeLevel(string uuid, float amount)
+        public void ChangeLevel(float amount)
         {
             CurrentLevel = Mathf.Clamp(currentLevel + amount, 0, maxLevel);
         }
 
-        public void ChangeAmmoAmount(string uuid, float amount)
+        public void ChangeAmmoAmount(float amount)
         {
             CurrentAmmo = Mathf.Clamp(currentAmmo + amount, 0, maxAmmo);
         }

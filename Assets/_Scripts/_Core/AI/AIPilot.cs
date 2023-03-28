@@ -6,7 +6,6 @@ namespace StarWriter.Core.Input
 {
     public class AIPilot : MonoBehaviour
     {
-
         public int DifficultyLevel;
 
         public float defaultThrottle = .6f;
@@ -25,7 +24,6 @@ namespace StarWriter.Core.Input
         float LevelAwareDefaultLerp { get { return defaultLerp * DifficultyLevel * .3f; } }
         float LevelAwareThrottleIncrease { get { return throttleIncrease * DifficultyLevel * .3f; } }
         float LevelAwareLerpIncrease { get { return lerpIncrease * DifficultyLevel * .3f; } }
-
 
         [SerializeField] float raycastHeight;
         [SerializeField] float raycastWidth;
@@ -70,7 +68,6 @@ namespace StarWriter.Core.Input
         }
         #endregion
 
-        // Start is called before the first frame update
         void Start()
         {
             lerp = defaultLerp;
@@ -85,7 +82,6 @@ namespace StarWriter.Core.Input
             };
         }
 
-        // Update is called once per frame
         void Update()
         {
             ///distance to Crystal 
