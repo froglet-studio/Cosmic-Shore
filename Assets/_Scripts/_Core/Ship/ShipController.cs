@@ -13,7 +13,6 @@ public class ShipController : MonoBehaviour
     protected ResourceSystem resourceSystem;
     #endregion
 
-    protected string uuid;  // TODO: remove this
     protected InputController inputController;
     protected float speed;
     protected readonly float lerpAmount = 2f;
@@ -35,7 +34,6 @@ public class ShipController : MonoBehaviour
 
     protected virtual void Start()
     {
-        uuid = ship.Player.PlayerUUID;
         ship = GetComponent<Ship>();
         shipData = ship.GetComponent<ShipData>();
         resourceSystem = ship.GetComponent<ResourceSystem>();

@@ -88,7 +88,8 @@ namespace StarWriter.Core.Input
             ReceiveInput();
         }
 
-        bool AutoPilotEnabled = true;
+        // WIP
+        bool AutoPilotEnabled = false;
 
         void ReceiveInput()
         {
