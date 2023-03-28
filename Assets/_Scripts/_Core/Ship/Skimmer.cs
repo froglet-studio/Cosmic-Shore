@@ -1,4 +1,3 @@
-using StarWriter.Core.Input;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -21,43 +20,20 @@ namespace StarWriter.Core
         [HideInInspector] public Teams team;
         ResourceSystem resourceSystem;
 
-        Dictionary<string, float> skimStartTimes = new Dictionary<string, float>();
+        Dictionary<string, float> skimStartTimes;
         CameraManager cameraManager;
 
         public int activelySkimmingBlockCount = 0;
-
         public int ActivelySkimmingBlockCount { get { return activelySkimmingBlockCount; } }
 
-        // TODO: move this away from using an event
-        public delegate void Skim(string uuid, float amount);
-        public static event Skim OnSkim;
-
-        public void Start()
+        void Start()
         {
-            //PerformSkimmerStartEffects();
+            skimStartTimes = new();
             cameraManager = CameraManager.Instance;
             resourceSystem = ship.GetComponent<ResourceSystem>();
         }
 
-
-        //public void PerformSkimmerStartEffects()
-        //{
-        //    foreach (TrailBlockImpactEffects effect in trailBlockImpactEffects)
-        //    {
-        //        switch (effect)
-        //        {
-        //            case TrailBlockImpactEffects.PlayHaptics:
-        //                break;
-        //            case TrailBlockImpactEffects.DeactivateTrailBlock:
-        //                break;
-        //            case TrailBlockImpactEffects.Steal:
-        //                break;
-        //        }
-        //    }
-        //}
-        
-
-        //Maja added this to try and enable shark skimmer smashing
+        // Maja added this to try and enable shark skimmer smashing
         void PerformTrailImpactEffects(TrailBlockProperties trailBlockProperties)
         {
             foreach (TrailBlockImpactEffects effect in trailBlockImpactEffects)
@@ -74,14 +50,14 @@ namespace StarWriter.Core
                         trailBlockProperties.trailBlock.Steal(Player.PlayerName, team);
                         break;
                     case TrailBlockImpactEffects.ChangeBoost:
-                        resourceSystem.ChangeBoostAmount(Player.PlayerUUID, (chargeAmount * trailBlockProperties.volume) + (activelySkimmingBlockCount * MultiSkimMultiplier));
+                        resourceSystem.ChangeBoostAmount((chargeAmount * trailBlockProperties.volume) + (activelySkimmingBlockCount * MultiSkimMultiplier));
                         break;
                     case TrailBlockImpactEffects.ChangeAmmo:
-                        resourceSystem.ChangeAmmoAmount(Player.PlayerUUID, chargeAmount + (activelySkimmingBlockCount * MultiSkimMultiplier));
+                        resourceSystem.ChangeAmmoAmount(chargeAmount + (activelySkimmingBlockCount * MultiSkimMultiplier));
                         break;
                         // This is actually redundant with Skimmer's built in "Fuel Amount" variable
                         //case TrailBlockImpactEffects.ChangeFuel:
-                        //FuelSystem.ChangeFuelAmount(Player.PlayerUUID, ship.blockFuelChange);
+                        //FuelSystem.ChangeFuelAmount(ship.blockFuelChange);
                         //break;
                 }
             }
@@ -104,18 +80,17 @@ namespace StarWriter.Core
             }
         }
 
-
-        void PerformTrailStayEffects(TrailBlockProperties trailBlockProperties, float chargeAmount)
+        void PerformTrailStayEffects(float chargeAmount)
         {
             foreach (SkimmerStayEffects effect in skimmerStayEffects)
             {
                 switch (effect)
                 {
                     case SkimmerStayEffects.ChangeBoost:
-                        resourceSystem.ChangeBoostAmount(Player.PlayerUUID, chargeAmount);
+                        resourceSystem.ChangeBoostAmount(chargeAmount);
                         break;
                     case SkimmerStayEffects.ChangeAmmo:
-                        resourceSystem.ChangeAmmoAmount(Player.PlayerUUID, chargeAmount);
+                        resourceSystem.ChangeAmmoAmount(chargeAmount);
                         break;
                 }
             }
@@ -149,9 +124,6 @@ namespace StarWriter.Core
                 skimStartTimes.Add(trailBlock.ID, Time.time);
             }
                 
-
-            //OnSkim?.Invoke(ship.Player.PlayerUUID, fuelAmount + (activelySkimmingBlockCount * MultiSkimMultiplier));
-
             if (notifyNearbyBlockCount)
                 NotifyNearbyBlockCount();
         }
@@ -176,8 +148,7 @@ namespace StarWriter.Core
                 fuel += (activelySkimmingBlockCount * MultiSkimMultiplier);
 
                 // grant the fuel
-                PerformTrailStayEffects(trailBlock.TrailBlockProperties, fuel);
-                //OnSkim?.Invoke(ship.Player.PlayerUUID, fuel);
+                PerformTrailStayEffects(fuel);
             }
         }
 
@@ -197,7 +168,7 @@ namespace StarWriter.Core
         {
             ship.TrailSpawner.SetNearbyBlockCount(ActivelySkimmingBlockCount);
             cameraManager.SetCloseCameraDistance(Mathf.Min((cameraManager.FarCamDistance) 
-                * (1 - (float)activelySkimmingBlockCount / ship.TrailSpawner.MaxNearbyBlockCount), cameraManager.CloseCamDistance)); //use min because distance is negative
+                * (1 - (float)activelySkimmingBlockCount / ship.TrailSpawner.MaxNearbyBlockCount), cameraManager.CloseCamDistance)); // use min because distance is negative
         }
 
         IEnumerator DisplaySkimParticleEffectCoroutine(TrailBlock trailBlock)
@@ -212,12 +183,12 @@ namespace StarWriter.Core
                 var distance = trailBlock.transform.position - transform.position;
                 scaledTime = time / ship.GetComponent<ShipData>().Speed;
                 particle.transform.localScale = new Vector3(1, 1, distance.magnitude);
-                particle.transform.rotation = Quaternion.LookRotation(distance, trailBlock.transform.up);
-                particle.transform.position = transform.position;
+                particle.transform.SetPositionAndRotation(transform.position, Quaternion.LookRotation(distance, trailBlock.transform.up));
                 timer++;
 
                 yield return null;
-            } while (timer < scaledTime);
+            } 
+            while (timer < scaledTime);
 
             Destroy(particle);
         }

@@ -14,11 +14,6 @@ class DataAccessor
         FilePath = Application.persistentDataPath + "/" + fileName;
     }
 
-    public bool SaveFileExists()
-    {
-        return File.Exists(FilePath);
-    }
-
     public void Save<T>(T data) where T : new()
     {
 

@@ -1,6 +1,7 @@
 using UnityEngine;
 using TailGlider.Utility.Singleton;
 
+// TODO: P1 remove this file
 namespace StarWriter.Core 
 {
     public class DataPersistenceManager : SingletonPersistent<DataPersistenceManager>
@@ -10,7 +11,6 @@ namespace StarWriter.Core
         [SerializeField] string gameFileName = "gamedata.json";
         [SerializeField] string hangerFileName = "hangerdata.json";
         [SerializeField] string playerFileName = "playerdata.json";
-        [SerializeField] string leaderboardFileName = "leaderboarddata.json";
 
         GameData gameData;
         HangarData hangarData;

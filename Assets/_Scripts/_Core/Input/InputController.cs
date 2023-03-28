@@ -88,9 +88,16 @@ namespace StarWriter.Core.Input
             ReceiveInput();
         }
 
+        bool AutoPilotEnabled = true;
+
         void ReceiveInput()
         {
-            if (Gamepad.current != null)
+
+            if (AutoPilotEnabled)
+            {
+
+            }
+            else if (Gamepad.current != null)
             {
                 leftTouch.x = Gamepad.current.leftStick.x.ReadValue();
                 leftTouch.y = Gamepad.current.leftStick.y.ReadValue();
@@ -157,7 +164,6 @@ namespace StarWriter.Core.Input
                 }
 
                 CheckSpeedAndOrientation();
-
             }
             else
             {

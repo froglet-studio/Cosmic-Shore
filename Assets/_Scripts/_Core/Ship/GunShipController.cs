@@ -1,102 +1,92 @@
 using UnityEngine;
 using StarWriter.Core;
+using System.Collections.Generic;
 
 public class GunShipController : ShipController
 {
     [SerializeField] Gun topGun;
     [SerializeField] Gun leftGun;
     [SerializeField] Gun rightGun;
+    [SerializeField] GameObject projectileContainer;
     [SerializeField] TrailFollower trailFollower;
-
-    float chargeDepletionRate = -.05f;
-    float rechargeRate = .1f;
+    [SerializeField] float chargeDepletionRate = -.05f;
+    [SerializeField] float rechargeRate = .1f;
 
     public float ProjectileScale = 1f;
-    public Vector3 BlockScale = new Vector3(4f, 4f, 1f);
+    public Vector3 BlockScale = new(4f, 4f, 1f);
 
-    public int nextBlockIndex = 1;
-    public int previousBlockIndex;
-    //float trailLerpAmount;
+    List<Gun> guns;
     bool moveForward = true;
     bool attached = false;
-
-    [SerializeField] float maxTrailSpeed = 1f;
-    [SerializeField] float reducedTrailSpeed = 1f;
-
-    //int padding = 3; 
-
-    Player player;
 
     protected override void Start()
     {
         base.Start();
-        player = GameObject.FindWithTag("Player").GetComponent<Player>();
 
-        topGun.Team = player.Team;
-        topGun.Ship = ship;
+        projectileContainer = new GameObject($"{ship.Player.PlayerName}_Projectiles");
+        guns = new List<Gun>() { topGun, leftGun, rightGun };
 
-        leftGun.Team = player.Team;
-        leftGun.Ship = ship;
-        
-        rightGun.Team = player.Team;
-        rightGun.Ship = ship;
-        
+        foreach (var gun in guns)
+        {
+            gun.Team = ship.Team;
+            gun.Ship = ship;
+        }
     }
 
     protected override void Update()
     {
         base.Update();
+
         if (resourceSystem.CurrentAmmo > 0 && shipData.GunsActive) Fire();
     }
+
     protected override void MoveShip()
     {
         if (shipData.Attached && !attached)
-        {
-            attached = shipData.Attached;
             trailFollower.Attach(shipData.AttachedTrailBlock);
-        }
         else if (!shipData.Attached && attached)
-        {
-            attached = shipData.Attached;
             trailFollower.Detach();
-        }
+
+        attached = shipData.Attached;
 
         if (attached)
-        {
             Slide();
-        }
         else
-        {
-            base.MoveShip();
-        }
+            MoveShip();
     }
 
     public void BigFire()
     {
         if (resourceSystem.CurrentAmmo > resourceSystem.MaxAmmo / 10f)
         {
-            resourceSystem.ChangeAmmoAmount(uuid, -resourceSystem.MaxAmmo / 10f);
-            topGun.FireGun(player.transform, 20, shipData.Course * shipData.Speed, ProjectileScale * 15, BlockScale * 2, true, 4f);
+            resourceSystem.ChangeAmmoAmount(-resourceSystem.MaxAmmo / 10f);
+
+            Vector3 inheritedVelocity;
+            if (attached) inheritedVelocity = transform.forward;
+            else inheritedVelocity = shipData.Course;
+
+            // TODO: magic numbers
+            topGun.FireGun(projectileContainer.transform, 90, inheritedVelocity * shipData.Speed, ProjectileScale * 15, BlockScale * 2, true, 3f);
         }
-        
     }
 
     void Fire()
     {
-        resourceSystem.ChangeAmmoAmount(uuid, chargeDepletionRate * Time.deltaTime); // TODO: this should probably be an amount not a rate. let the gun cooldown handle delta time, but then there is asymmetry with the recharge rate . . . 
-        topGun.FireGun(player.transform, 10, shipData.Course * shipData.Speed, ProjectileScale, BlockScale);
-        leftGun.FireGun(player.transform, 10, shipData.Course * shipData.Speed, ProjectileScale, BlockScale);
-        rightGun.FireGun(player.transform, 10, shipData.Course * shipData.Speed, ProjectileScale, BlockScale);
+        resourceSystem.ChangeAmmoAmount(chargeDepletionRate * Time.deltaTime); // TODO: this should probably be an amount not a rate. let the gun cooldown handle delta time, but then there is asymmetry with the recharge rate . . . 
+
+        var inheritedVelocity = attached ? transform.forward * shipData.Speed : shipData.Course * shipData.Speed;
+
+        foreach (var gun in guns) // TODO: magic number for projectile speed (30)
+            gun.FireGun(projectileContainer.transform, 90, inheritedVelocity, ProjectileScale, BlockScale);
     }
 
     void Slide()
     {
-
+        // TODO: magic numbers
         float lookThreshold = -.6f;
-        float throttle;
         float zeroPosition = .2f;
 
-        throttle = (inputController.XDiff - zeroPosition)/(1 - zeroPosition);
+        var throttle = (inputController.XDiff - zeroPosition)/(1 - zeroPosition);
 
         if (Vector3.Dot(transform.forward, shipData.Course) < lookThreshold && throttle > 0)
              moveForward = !moveForward;
@@ -105,23 +95,19 @@ public class GunShipController : ShipController
             trailFollower.SetDirection(TrailFollowerDirection.Forward);
         else
             trailFollower.SetDirection(TrailFollowerDirection.Backward);
-            
-        resourceSystem.ChangeAmmoAmount(uuid, rechargeRate * Time.deltaTime);
+
         trailFollower.Throttle = Mathf.Abs(throttle);
         trailFollower.Move();
 
+        // TODO: should this be pulled out as an action type?          
+        resourceSystem.ChangeAmmoAmount(rechargeRate * Time.deltaTime);
+
         shipData.AttachedTrailBlock = trailFollower.AttachedTrailBlock;
+        shipData.AttachedTrailBlock.Steal(ship.Player.PlayerName, ship.Team);
 
         if (shipData.AttachedTrailBlock.destroyed)
-        {
-            shipData.AttachedTrailBlock.Restore();  
-        }
-        
-        else shipData.AttachedTrailBlock.Grow(4);
-
-        shipData.AttachedTrailBlock.Steal(player.PlayerName, player.Team);
-
-        
-
+            shipData.AttachedTrailBlock.Restore(); 
+        else 
+            shipData.AttachedTrailBlock.Grow(4);
     }
 }

@@ -2,7 +2,6 @@ using System.Collections;
 using System.Collections.Generic;
 using StarWriter.Core.Input;
 using UnityEngine;
-using UnityEngine.Serialization;
 
 namespace StarWriter.Core
 {
@@ -66,6 +65,8 @@ namespace StarWriter.Core
         [SerializeField] float maxNearFieldSkimmerScale = 100;
         [SerializeField] float minGap = 0;
         [SerializeField] float maxGap = 0;
+
+        // TODO: move these into GunShipController
         [SerializeField] float minProjectileScale = 1;
         [SerializeField] float maxProjectileScale = 10;
         [SerializeField] Vector3 minProjectileBlockScale = new Vector3(1.5f, 1.5f, 3f);
@@ -92,9 +93,13 @@ namespace StarWriter.Core
         float speedModifierDuration = 2f;
         float speedModifierMax = 6f;
         float abilityStartTime;
-        float elapsedTime;
         bool skimmerGrowing;
         bool trailGrowing;
+
+        Coroutine returnSkimmerToNeutralCoroutine;
+        Coroutine growSkimmerCoroutine;
+        Coroutine returnTrailToNeutralCoroutine;
+        Coroutine growTrailCoroutine;
 
         public Teams Team 
         { 
@@ -225,16 +230,16 @@ namespace StarWriter.Core
                         IncrementLevel();
                         break;
                     case CrystalImpactEffects.FillCharge:
-                        ResourceSystem.ChangeBoostAmount(player.PlayerUUID, crystalProperties.fuelAmount);
+                        ResourceSystem.ChangeBoostAmount(crystalProperties.fuelAmount);
                         break;
                     case CrystalImpactEffects.Boost:
                         SpeedModifiers.Add(new ShipSpeedModifier(crystalProperties.speedBuffAmount, 4 * speedModifierDuration, 0));
                         break;
                     case CrystalImpactEffects.DrainAmmo:
-                        ResourceSystem.ChangeAmmoAmount(player.PlayerUUID, -ResourceSystem.CurrentAmmo);
+                        ResourceSystem.ChangeAmmoAmount(-ResourceSystem.CurrentAmmo);
                         break;
                     case CrystalImpactEffects.GainOneThirdMaxAmmo:
-                        ResourceSystem.ChangeAmmoAmount(player.PlayerUUID, ResourceSystem.MaxAmmo/3f);
+                        ResourceSystem.ChangeAmmoAmount(ResourceSystem.MaxAmmo/3f);
                         break;
                     case CrystalImpactEffects.Score:
                         //if (StatsManager.Instance != null)
@@ -262,7 +267,7 @@ namespace StarWriter.Core
                         HapticController.PlayBlockCollisionHaptics();
                         break;
                     case TrailBlockImpactEffects.DrainHalfAmmo:
-                        ResourceSystem.ChangeAmmoAmount(player.PlayerUUID, -ResourceSystem.CurrentAmmo / 2f);
+                        ResourceSystem.ChangeAmmoAmount(-ResourceSystem.CurrentAmmo / 2f);
                         break;
                     case TrailBlockImpactEffects.DebuffSpeed:
                         ModifySpeed(trailBlockProperties.speedDebuffAmount, speedModifierDuration);
@@ -275,7 +280,7 @@ namespace StarWriter.Core
                         if (trailBlockProperties.speedDebuffAmount > 1) SpeedModifiers.Add(new ShipSpeedModifier(trailBlockProperties.speedDebuffAmount, speedModifierDuration, 0));
                         break;
                     case TrailBlockImpactEffects.ChangeBoost:
-                        ResourceSystem.ChangeBoostAmount(player.PlayerUUID, blockChargeChange);
+                        ResourceSystem.ChangeBoostAmount(blockChargeChange);
                         break;
                     case TrailBlockImpactEffects.DecrementLevel:
                         DecrementLevel();
@@ -285,7 +290,7 @@ namespace StarWriter.Core
                         shipData.GunsActive = true;
                         break;
                     case TrailBlockImpactEffects.ChangeAmmo:
-                        ResourceSystem.ChangeAmmoAmount(player.PlayerUUID, blockChargeChange);
+                        ResourceSystem.ChangeAmmoAmount(blockChargeChange);
                         break;
                 }
             }
@@ -356,14 +361,12 @@ namespace StarWriter.Core
                             var fake = Instantiate(fakeCrystal).GetComponent<FakeCrystal>();
                             fake.Team = team;
                             fake.SetPositionAndRotation(transform.position + (Quaternion.Euler(0, 0, Random.Range(0, 360)) * transform.up * Random.Range(40, 60)) + (transform.forward * 40), transform.rotation);
-                            ResourceSystem.ChangeAmmoAmount(player.PlayerUUID, -ResourceSystem.MaxAmmo / 3f);
-                            
+                            ResourceSystem.ChangeAmmoAmount(-ResourceSystem.MaxAmmo / 3f);
                         }
                         break;
                     case ShipActions.StartGuns:
                         shipData.GunsActive = true;
                         break;
-
                 }
             }
         }
@@ -493,6 +496,11 @@ namespace StarWriter.Core
             shipData.SpeedMultiplier = accumulatedSpeedModification;
         }
 
+        public void Rotate(Quaternion rotation)
+        {
+            shipController.Rotate(rotation);
+        }
+
         void ApplyShipMaterial()
         {
             if (ShipMaterial == null)
@@ -502,20 +510,9 @@ namespace StarWriter.Core
                 shipGeometry.GetComponent<MeshRenderer>().material = ShipMaterial;
         }
 
-        
-
-
-        Coroutine returnSkimmerToNeutralCoroutine;
-        Coroutine growSkimmerCoroutine;
-        Coroutine returnTrailToNeutralCoroutine;
-        Coroutine growTrailCoroutine;
-       
-
         //
         // grow skimmer
         //
-
-
         void GrowSkimmer(float growthRate)
         {
             if (returnSkimmerToNeutralCoroutine != null)
@@ -560,7 +557,6 @@ namespace StarWriter.Core
         //
         // Grow trail
         //
-
         void GrowTrail(float growthRate)
         {
             if (returnTrailToNeutralCoroutine != null)
@@ -607,7 +603,6 @@ namespace StarWriter.Core
         //
         // Attach and Detach
         //
-
         void Attach(TrailBlock trailBlock) 
         {
             if (trailBlock.Trail != null)
@@ -632,8 +627,6 @@ namespace StarWriter.Core
         //
         // level up and down
         //
-
-
         void UpdateLevel()
         {
             foreach (LevelEffects effect in levelEffects)
@@ -658,13 +651,13 @@ namespace StarWriter.Core
 
         void IncrementLevel()
         {
-            ResourceSystem.ChangeLevel(player.PlayerUUID, ChargeDisplay.OneFuelUnit);
+            ResourceSystem.ChangeLevel(ChargeDisplay.OneFuelUnit);
             UpdateLevel();
         }
 
         void DecrementLevel()
         {
-            ResourceSystem.ChangeLevel(player.PlayerUUID, -ChargeDisplay.OneFuelUnit);
+            ResourceSystem.ChangeLevel(-ChargeDisplay.OneFuelUnit);
             UpdateLevel();
         }
 
@@ -682,6 +675,7 @@ namespace StarWriter.Core
 
         void ScaleProjectilesWithLevel()
         {
+            // TODO: 
             if (shipController is GunShipController controller)
                 controller.ProjectileScale = minProjectileScale + ((ResourceSystem.CurrentLevel / ResourceSystem.MaxLevel) * (maxProjectileScale - minProjectileScale));
             else

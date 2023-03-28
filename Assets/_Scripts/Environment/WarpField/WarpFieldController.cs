@@ -27,7 +27,7 @@ public class WarpFieldController : MonoBehaviour
         var fieldResult = warpFieldData.HybridVector(player).magnitude;
         cameraManager.SetBothCameraDistances(-fieldResult); //TODO: set clip plane to half the distance
         shipController.ThrottleScaler = shipController.DefaultThrottleScaler * fieldResult;
-        shipController.minimumSpeed = shipController.defaultMinimumSpeed * fieldResult;
+        shipController.MinimumSpeed = shipController.DefaultMinimumSpeed * fieldResult;
 
         player.localScale = Vector3.one * fieldResult;
         blue.localScale = Vector3.one * fieldResult;
