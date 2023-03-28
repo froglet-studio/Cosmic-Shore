@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace StarWriter.Core
@@ -12,6 +13,7 @@ namespace StarWriter.Core
         [HideInInspector] public float MaxScale = 200f;
         [SerializeField] protected float ExplosionDuration = 2f;
         [SerializeField] protected float ExplosionDelay = .2f;
+        [SerializeField] List<ShipImpactEffects> shipImpactEffects;
         protected static GameObject container;
 
         Material material;
@@ -32,14 +34,20 @@ namespace StarWriter.Core
 
         protected virtual void OnTriggerEnter(Collider other)
         {
+            var impactVector = (other.transform.position - transform.position).normalized * speed;
             if (other.TryGetComponent<TrailBlock>(out var trailBlock))
             {
                 if (trailBlock.Team == Team)
                     return;
 
-                var impactVector = (other.transform.position - transform.position).normalized * speed;
-
                 trailBlock.Explode(impactVector, Team, Ship.Player.PlayerName);
+            }
+            if (other.TryGetComponent<ShipGeometry>(out var shipGeometry))
+            {
+                if (shipGeometry.Ship.Team == Team)
+                    return;
+
+                PerformShipImpactEffects(shipGeometry, impactVector);
             }
         }
 
@@ -62,6 +70,32 @@ namespace StarWriter.Core
             }
 
             Destroy(this);
+        }
+
+        protected virtual void PerformShipImpactEffects(ShipGeometry shipGeometry, Vector3 impactVector)
+        {
+            foreach (ShipImpactEffects effect in shipImpactEffects)
+            {
+                switch (effect)
+                {
+                    case ShipImpactEffects.TrailSpawnerCooldown:
+                        shipGeometry.Ship.TrailSpawner.PauseTrailSpawner();
+                        shipGeometry.Ship.TrailSpawner.RestartTrailSpawnerAfterDelay(10);
+                        break;
+                    case ShipImpactEffects.PlayHaptics:
+                        HapticController.PlayShipCollisionHaptics();
+                        break;
+                    case ShipImpactEffects.SpinAround:
+                        shipGeometry.Ship.transform.localRotation = Quaternion.LookRotation(impactVector);
+                        break;
+                    case ShipImpactEffects.Knockback:
+                        shipGeometry.Ship.transform.localPosition += impactVector / 2f;
+                        break;
+                    case ShipImpactEffects.Stun:
+                        shipGeometry.Ship.ModifySpeed(.1f, 10);
+                        break;
+                }
+            }
         }
 
         public virtual void SetPositionAndRotation(Vector3 position, Quaternion rotation)

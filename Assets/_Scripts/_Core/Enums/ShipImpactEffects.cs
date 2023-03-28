@@ -3,5 +3,8 @@
 public enum ShipImpactEffects
 {
     TrailSpawnerCooldown = 0,
-    PlayHaptics = 1
+    PlayHaptics = 1,
+    SpinAround = 2,
+    Knockback = 3,
+    Stun,
 }
