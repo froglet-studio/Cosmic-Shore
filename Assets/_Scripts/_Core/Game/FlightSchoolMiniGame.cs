@@ -13,6 +13,9 @@ public class FlightSchoolMiniGame : MiniGame
         base.Start();
 
         gameMode = MiniGames.FlightSchool;
+        Crystal.transform.position = CrystalStartPosition;
+        Crystal.transform.localScale = CrystalStartScale;
+        Crystal.SetOrigin(CrystalStartPosition);
     }
 
     protected override void Update()
@@ -30,6 +33,24 @@ public class FlightSchoolMiniGame : MiniGame
         }
     }
 
+    public override void EndTurn() // TODO: this needs to be public?
+    {
+        foreach (var turnMonitor in TurnMonitors)
+        {
+            if (turnMonitor is TimeBasedTurnMonitor timeMonitor)
+            {
+                if (timeMonitor.CheckForEndOfTurn()) 
+                {
+                    EliminateActivePlayer();
+                    base.EndTurn();
+                    return;
+                }
+            }
+        }
+        
+        base.EndTurn();
+    }
+
     protected override void SetupTurn()
     {
         base.SetupTurn();
@@ -37,7 +58,5 @@ public class FlightSchoolMiniGame : MiniGame
         ActivePlayer.Ship.DisableSkimmer();
 
         StatsManager.Instance.ResetStats(); // TODO: this belongs in the EliminationMonitor
-        Crystal.transform.position = CrystalStartPosition;
-        Crystal.transform.localScale = CrystalStartScale;
     }
 }

@@ -655,7 +655,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0a66c9f1814dd7a49a173c0f8d502ce0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  duration: 13
+  duration: 15
 --- !u!4 &1078953705
 Transform:
   m_ObjectHideFlags: 0
@@ -1909,6 +1909,21 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 750320515659381797, guid: 494deef066b46a24a9b5226c4203833c,
+        type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
+      value: 
+      objectReference: {fileID: 1956103032}
+    - target: {fileID: 750320515659381797, guid: 494deef066b46a24a9b5226c4203833c,
+        type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
+      value: OnClickReplayButton
+      objectReference: {fileID: 0}
+    - target: {fileID: 750320515659381797, guid: 494deef066b46a24a9b5226c4203833c,
+        type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
+      value: FinalPanelMenu, Assembly-CSharp
+      objectReference: {fileID: 0}
     - target: {fileID: 750320515659381803, guid: 494deef066b46a24a9b5226c4203833c,
         type: 3}
       propertyPath: m_AnchorMax.y
@@ -1999,6 +2014,21 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: -174
       objectReference: {fileID: 0}
+    - target: {fileID: 750320517316370156, guid: 494deef066b46a24a9b5226c4203833c,
+        type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
+      value: 
+      objectReference: {fileID: 1956103032}
+    - target: {fileID: 750320517316370156, guid: 494deef066b46a24a9b5226c4203833c,
+        type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
+      value: OnClickMainMenu
+      objectReference: {fileID: 0}
+    - target: {fileID: 750320517316370156, guid: 494deef066b46a24a9b5226c4203833c,
+        type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
+      value: FinalPanelMenu, Assembly-CSharp
+      objectReference: {fileID: 0}
     - target: {fileID: 750320517316370162, guid: 494deef066b46a24a9b5226c4203833c,
         type: 3}
       propertyPath: m_AnchorMax.y
@@ -2038,6 +2068,22 @@ GameObject:
     type: 3}
   m_PrefabInstance: {fileID: 1956103029}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &1956103032
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1956103031}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6814330515934fb4a9ab5e810e146b88, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  snsShare: {fileID: 0}
+  screenshotButton: {fileID: 0}
+  replayButton: {fileID: 0}
+  toggleObject: {fileID: 0}
 --- !u!114 &2118175365 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 750320515283051588, guid: 494deef066b46a24a9b5226c4203833c,

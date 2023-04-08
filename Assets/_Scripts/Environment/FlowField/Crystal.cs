@@ -16,6 +16,15 @@ public class Crystal : MonoBehaviour
     [SerializeField] protected GameObject SpentCrystalPrefab;
     [SerializeField] protected GameObject CrystalModel; 
     [SerializeField] protected Material material;
+    [SerializeField] protected bool shipImpactEffects = true;
+    #endregion
+
+    [Header("Optional Crystal Effects")]
+    #region Optional Fields
+    [SerializeField] List<CrystalImpactEffects> crystalImpactEffects;
+    [SerializeField] GameObject AOEPrefab;
+    [SerializeField] float maxExplosionScale;
+    [SerializeField] Material AOEExplosionMaterial;
     #endregion
 
     Vector3 origin = Vector3.zero;
@@ -42,6 +51,30 @@ public class Crystal : MonoBehaviour
         }
     }
 
+    public void PerformCrystalImpactEffects(CrystalProperties crystalProperties, Ship ship)
+    {
+        if (StatsManager.Instance != null)
+            StatsManager.Instance.CrystalCollected(ship, crystalProperties);
+
+        foreach (CrystalImpactEffects effect in crystalImpactEffects)
+        {
+            switch (effect)
+            {
+                case CrystalImpactEffects.PlayHaptics:
+                    HapticController.PlayCrystalImpactHaptics();
+                    break;
+                case CrystalImpactEffects.AreaOfEffectExplosion:
+                    var AOEExplosion = Instantiate(AOEPrefab).GetComponent<AOEExplosion>();
+                    AOEExplosion.Material = AOEExplosionMaterial;
+                    AOEExplosion.Team = Teams.None;
+                    AOEExplosion.Ship = ship;
+                    AOEExplosion.SetPositionAndRotation(transform.position, transform.rotation);
+                    AOEExplosion.MaxScale = maxExplosionScale;
+                    break;
+            }
+        }
+    }
+
     protected virtual void Collide(Collider other)
     {
         Ship ship;
@@ -61,7 +94,11 @@ public class Crystal : MonoBehaviour
         //
         // Do the ship specific crystal stuff
         //
-        ship.PerformCrystalImpactEffects(crystalProperties);
+        if (shipImpactEffects)
+        {
+            ship.PerformCrystalImpactEffects(crystalProperties);
+        }
+        PerformCrystalImpactEffects(crystalProperties, ship);
 
 
         //

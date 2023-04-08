@@ -8,8 +8,8 @@ using UnityEngine.UI;
 public class MiniGame : MonoBehaviour
 {
     [SerializeField] Player playerPrefab;
-    [SerializeField] List<TurnMonitor> TurnMonitors;
-    [SerializeField] ScoreTracker ScoreTracker;
+    [SerializeField] protected List<TurnMonitor> TurnMonitors;
+    [SerializeField] protected ScoreTracker ScoreTracker;
     [SerializeField] List<ShipTypes> AllowedShipTypes;
     
     [SerializeField] int NumberOfRounds = int.MaxValue;
@@ -26,13 +26,13 @@ public class MiniGame : MonoBehaviour
     public static ShipTypes PlayerShipType = ShipTypes.Dolphin;
 
     // Game State Tracking
-    int TurnsTakenThisRound = 0;
+    protected int TurnsTakenThisRound = 0;
     int RoundsPlayedThisGame = 0;
     
     // playerId Tracking
     int activePlayerId;
     int RemainingPlayersActivePlayerIndex = -1;
-    List<int> RemainingPlayers = new();
+    protected List<int> RemainingPlayers = new();
     public Player ActivePlayer;
     protected bool gameRunning;
 
@@ -118,7 +118,7 @@ public class MiniGame : MonoBehaviour
         StartTurn();
     }
 
-    void StartTurn()
+    protected void StartTurn()
     {
         ReadyNextPlayer();
         SetupTurn();
@@ -143,7 +143,7 @@ public class MiniGame : MonoBehaviour
             StartTurn();
     }
 
-    void EndRound()
+    protected void EndRound()
     {
         RoundsPlayedThisGame++;
 
@@ -279,7 +279,7 @@ public class MiniGame : MonoBehaviour
         CountdownDisplay.gameObject.SetActive(false);
 
         ActivePlayer.GetComponent<InputController>().PauseInput(false);
-        ActivePlayer.Ship.TrailSpawner.RestartTrailSpawnerAfterDelay();
         ActivePlayer.Ship.TrailSpawner.ForceStartSpawningTrail();
+        ActivePlayer.Ship.TrailSpawner.RestartTrailSpawnerAfterDelay(2f);
     }
 }
