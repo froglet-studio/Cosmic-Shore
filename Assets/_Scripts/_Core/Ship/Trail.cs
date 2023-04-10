@@ -139,6 +139,7 @@ namespace StarWriter.Core
         // TODO: bounds checking
         public TrailBlock GetBlock(int blockIndex)
         {
+            if (blockIndex < 0) return TrailList[0];
             return TrailList[blockIndex];
         }
     }

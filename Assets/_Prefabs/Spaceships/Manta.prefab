@@ -525,17 +525,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 95baa921cf22958449a3143749d5e0e3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  boostDecay: 1
-  defaultMinimumSpeed: 10
+  MinimumSpeed: 0
+  ThrottleScaler: 0
+  DefaultMinimumSpeed: 10
   DefaultThrottleScaler: 62
+  BoostDecay: 1
   MaxBoostDecay: 10
   BoostDecayGrowthRate: 0.03
-  minimumSpeed: 0
-  ThrottleScaler: 0
-  rotationThrottleScaler: 0
   PitchScaler: 90
   YawScaler: 60
   RollScaler: 90
+  RotationThrottleScaler: 0
 --- !u!1 &7989725769420682486
 GameObject:
   m_ObjectHideFlags: 0
@@ -877,12 +877,17 @@ PrefabInstance:
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
       propertyPath: trailBlockImpactEffects.Array.size
-      value: 1
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
       propertyPath: trailBlockImpactEffects.Array.data[0]
       value: 7
+      objectReference: {fileID: 0}
+    - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
+      propertyPath: trailBlockImpactEffects.Array.data[1]
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 6540c78597c2dcc468123b270169fc44, type: 3}

@@ -26,7 +26,7 @@ public class SegmentSpawner : MonoBehaviour
     System.Random random = new();
     int spawnedItemCount;
     float sphereRadius = 250f;
-    [SerializeField] float straighLineLength = 400f;
+    public float StraightLineLength = 400f;
     public int DifficultyAngle = 90;
 
     void Start()
@@ -38,7 +38,7 @@ public class SegmentSpawner : MonoBehaviour
             Initialize();
     }
 
-    public void Initialize()
+    public void Initialize(float difficultyLevel = 1)
     {
         if (Seed != 0) random = new System.Random(Seed);
 
@@ -53,7 +53,7 @@ public class SegmentSpawner : MonoBehaviour
 
         for (int i=0; i < numberOfSegments; i++)
         {
-            var spawned = SpawnRandom();
+            var spawned = SpawnRandom(difficultyLevel);
             PositionSpawnedObject(spawned, positioningScheme);
             spawnedItemCount++;
         }
@@ -93,7 +93,7 @@ public class SegmentSpawner : MonoBehaviour
                 spawned.transform.LookAt(Vector3.zero);
                 return;
             case PositioningScheme.StraightLine:
-                spawned.transform.position = new Vector3(0, 0, spawnedItemCount*straighLineLength);
+                spawned.transform.position = new Vector3(0, 0, spawnedItemCount*StraightLineLength);
                 spawned.transform.Rotate(Vector3.forward, (float)random.NextDouble() * 180);
                 return;
             case PositioningScheme.Cubic:
@@ -109,7 +109,7 @@ public class SegmentSpawner : MonoBehaviour
         }
     }
 
-    GameObject SpawnRandom()
+    GameObject SpawnRandom(float difficultyLevel = 1)
     {
         var spawnWeight = random.NextDouble();
         var spawnIndex = 0;
@@ -120,7 +120,7 @@ public class SegmentSpawner : MonoBehaviour
             totalWeight += spawnSegmentWeights[i];
         }
 
-        return spawnableSegments[spawnIndex].Spawn();
+        return spawnableSegments[spawnIndex].Spawn(difficultyLevel);
     }
 
     void normalizeWeights()
