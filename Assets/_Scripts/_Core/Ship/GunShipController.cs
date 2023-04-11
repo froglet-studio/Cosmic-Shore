@@ -52,7 +52,7 @@ public class GunShipController : ShipController
         if (attached)
             Slide();
         else
-            MoveShip();
+            base.MoveShip();
     }
 
     public void BigFire()
