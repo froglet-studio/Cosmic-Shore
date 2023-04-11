@@ -102,7 +102,7 @@ namespace StarWriter.Core
             {
                 PerformShipImpactEffects(shipGeometry);
             }
-            if (other.TryGetComponent<TrailBlock>(out var trailBlock))
+            if (other.TryGetComponent<TrailBlock>(out var trailBlock) && (selfSkim || trailBlock.Team != team))
             {
                 StartSkim(trailBlock);
                 PerformTrailImpactEffects(trailBlock.TrailBlockProperties);
@@ -112,9 +112,8 @@ namespace StarWriter.Core
         void StartSkim(TrailBlock trailBlock)
         {
 
-            if (skimVisualFX)
+            if (skimVisualFX && (selfSkim || trailBlock.Team != team))
             {
-                if (selfSkim || trailBlock.Team != team)
                 StartCoroutine(DisplaySkimParticleEffectCoroutine(trailBlock));
             }
 
@@ -133,7 +132,7 @@ namespace StarWriter.Core
         {
             float skimDecayDuration = 1;
 
-            if (other.TryGetComponent<TrailBlock>(out var trailBlock))
+            if (other.TryGetComponent<TrailBlock>(out var trailBlock) && (selfSkim || trailBlock.Team != team))
             {
                 if(!skimStartTimes.ContainsKey(trailBlock.ID))   // Occasionally, seeing a KeyNotFoundException, so maybe we miss the OnTriggerEnter event (note: always seems to be for AOE blocks)
                     StartSkim(trailBlock);
@@ -154,7 +153,7 @@ namespace StarWriter.Core
 
         void OnTriggerExit(Collider other)
         {
-            if (other.TryGetComponent<TrailBlock>(out var trailBlock))
+            if (other.TryGetComponent<TrailBlock>(out var trailBlock) && (selfSkim || trailBlock.Team != team))
             {
                 skimStartTimes.Remove(trailBlock.ID);
                 activelySkimmingBlockCount--;

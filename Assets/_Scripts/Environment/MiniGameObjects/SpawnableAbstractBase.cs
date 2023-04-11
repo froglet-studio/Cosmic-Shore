@@ -27,7 +27,7 @@ public abstract class SpawnableAbstractBase : MonoBehaviour
         Block.Team = Teams.None;
         Block.ownerId = "public";
         Block.PlayerName = "";
-        Block.transform.SetPositionAndRotation(position, Quaternion.LookRotation(lookPosition - transform.position, transform.forward));
+        Block.transform.SetPositionAndRotation(position, Quaternion.LookRotation(lookPosition - position));
         Block.transform.SetParent(container.transform, false);
         Block.ID = blockId;
         Block.InnerDimensions = scale;

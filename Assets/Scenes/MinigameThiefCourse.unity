@@ -3750,7 +3750,7 @@ MonoBehaviour:
   - 1
   Seed: 0
   InitializeOnStart: 0
-  straightLineLength: 120
+  StraightLineLength: 400
   DifficultyAngle: 90
 --- !u!114 &1568959833 stripped
 MonoBehaviour:
@@ -4514,6 +4514,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   trailBlock: {fileID: 4563009547826722997, guid: 2a19c011ad2d54641ad144fbe33d3586,
     type: 3}
+  scale: {x: 1, y: 1, z: 4}
 --- !u!4 &2091254372
 Transform:
   m_ObjectHideFlags: 0
