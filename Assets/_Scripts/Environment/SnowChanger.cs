@@ -4,14 +4,22 @@ public class SnowChanger : MonoBehaviour
 {
     [SerializeField] GameObject Crystal;
     [SerializeField] GameObject snow;
-    [SerializeField] int nodesPerSide = 7;
+    [SerializeField] Vector3 crystalSize = new Vector3(500, 500, 500);
+    [SerializeField] int shardDistance = 100;
+
+    [Header("Optional Fields")]
+    [SerializeField] bool lookAt;
+    [SerializeField] Vector3 targetAxis;
+    [SerializeField] Vector3 newOrigin;
+    
 
     GameObject[,,] crystalLattice;
     readonly float nodeScaler = 10;
-    readonly int crystalSideLength = 500;
     readonly float nodeSize = .25f;
     readonly float sphereScaler = 2;
-    int nodeDistance;
+    int shardsX;
+    int shardsY;
+    int shardsZ;
     float sphereDiameter;
     Vector3 origin = Vector3.zero;
 
@@ -28,28 +36,31 @@ public class SnowChanger : MonoBehaviour
     void Start()
     {
         // TODO: this should be injected by the node, but that's not working at the moment :/
-        origin = transform.parent.position;
+        if (newOrigin != null) origin = newOrigin;
+        else origin = transform.parent.position;
 
-        nodeDistance = crystalSideLength/nodesPerSide;
+        shardsX = (int)(crystalSize.x / shardDistance);
+        shardsY = (int)(crystalSize.y / shardDistance);
+        shardsZ = (int)(crystalSize.z / shardDistance);
 
         sphereDiameter = sphereScaler * Crystal.GetComponent<Crystal>().sphereRadius;
 
-        crystalLattice = new GameObject[nodesPerSide * 2, nodesPerSide * 2, nodesPerSide * 2];
+        crystalLattice = new GameObject[shardsX * 2 + 1, shardsY * 2 + 1, shardsZ * 2 + 1]; // both sides of each axis plus the midplane
 
-        for (int x = -nodesPerSide; x < nodesPerSide; x++)
+        for (int x = -shardsX; x <= shardsX; x++)
         {
-            for (int y = -nodesPerSide; y < nodesPerSide; y++)
+            for (int y = -shardsY; y <= shardsY; y++)
             {
-                for (int z = -nodesPerSide; z < nodesPerSide; z++)
+                for (int z = -shardsZ; z <= shardsZ; z++)
                 {
                     GameObject tempSnow = Instantiate(snow);
                     tempSnow.transform.SetParent(transform, true);
                     tempSnow.transform.localScale = Vector3.one * nodeScaler;
-                    tempSnow.transform.position = origin + new Vector3(x * nodeDistance + Random.Range(-nodeDistance/2, nodeDistance / 2),
-                                                                       y * nodeDistance + Random.Range(-nodeDistance / 2, nodeDistance / 2),
-                                                                       z * nodeDistance + Random.Range(-nodeDistance / 2, nodeDistance / 2));
+                    tempSnow.transform.position = origin + new Vector3(x * shardDistance + Random.Range(-shardDistance / 2, shardDistance / 2),
+                                                                       y * shardDistance + Random.Range(-shardDistance / 2, shardDistance / 2),
+                                                                       z * shardDistance + Random.Range(-shardDistance / 2, shardDistance / 2));
                     
-                    crystalLattice[x + nodesPerSide, y + nodesPerSide, z + nodesPerSide] = tempSnow;
+                    crystalLattice[x + shardsX, y + shardsY, z + shardsZ] = tempSnow;
                 }
             }
         }
@@ -60,24 +71,38 @@ public class SnowChanger : MonoBehaviour
     {
         float nodeScalerOverThree = nodeScaler / 3;
 
-        for (int x = 0; x < nodesPerSide*2; x++)
+        for (int x = 0; x < shardsX * 2 +1; x++)
         {
-            for (int y = 0; y < nodesPerSide*2; y++)
+            for (int y = 0; y < shardsY * 2 + 1; y++)
             {
-                for (int z = 0; z < nodesPerSide*2; z++)
+                for (int z = 0; z < shardsZ * 2 + 1; z++)
                 {
-                    var node = crystalLattice[x, y, z];
-                    float clampedDistance = Mathf.Clamp(
-                        (node.transform.position - Crystal.transform.position).magnitude, 0, sphereDiameter);
+                    var shard = crystalLattice[x, y, z];
+                    float normalizedDistance;
+                    if (targetAxis != null)
+                    {
+                        var reject = shard.transform.position - (Vector3.Dot(shard.transform.position, targetAxis.normalized) * targetAxis.normalized);
+                        var maxDistance = Mathf.Max(shardsX, shardsY) * shardDistance;
+                        float clampedDistance = Mathf.Clamp(reject.magnitude, 0, maxDistance);
 
-                    float normalizedDistance = clampedDistance / sphereDiameter;
+                        normalizedDistance = clampedDistance / maxDistance;
 
-                    node.transform.localScale =
-                        Vector3.forward * (normalizedDistance  * nodeScaler + nodeSize) + 
+                        if (lookAt) shard.transform.rotation = Quaternion.LookRotation(-reject.normalized);
+                        else shard.transform.rotation = Quaternion.LookRotation(targetAxis);
+                    }
+                    else
+                    {
+                        shard.transform.LookAt(Crystal.transform);
+                        float clampedDistance = Mathf.Clamp(
+                        (shard.transform.position - Crystal.transform.position).magnitude, 0, sphereDiameter);
+
+                        normalizedDistance = clampedDistance / sphereDiameter;
+                    }
+                    shard.transform.localScale =
+                        Vector3.forward * (normalizedDistance * nodeScaler + nodeSize) +
                         Vector3.one * (normalizedDistance * nodeScalerOverThree + nodeSize);
 
-                    node.transform.LookAt(Crystal.transform);
-                }
+                }       
             }
         }
     }

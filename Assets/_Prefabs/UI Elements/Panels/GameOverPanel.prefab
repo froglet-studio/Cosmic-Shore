@@ -1045,6 +1045,7 @@ GameObject:
   - component: {fileID: 750320515651948984}
   - component: {fileID: 750320515651948986}
   - component: {fileID: 750320515651948987}
+  - component: {fileID: 1795084714513099726}
   m_Layer: 5
   m_Name: GameOverPanel
   m_TagString: Untagged
@@ -1112,6 +1113,22 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!114 &1795084714513099726
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 750320515651948985}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6814330515934fb4a9ab5e810e146b88, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  snsShare: {fileID: 0}
+  screenshotButton: {fileID: 0}
+  replayButton: {fileID: 0}
+  toggleObject: {fileID: 0}
 --- !u!1 &750320515659381800
 GameObject:
   m_ObjectHideFlags: 0
@@ -1234,9 +1251,9 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 0}
-        m_TargetAssemblyTypeName: MiniGame, Assembly-CSharp
-        m_MethodName: ResetAndReplay
+      - m_Target: {fileID: 1795084714513099726}
+        m_TargetAssemblyTypeName: FinalPanelMenu, Assembly-CSharp
+        m_MethodName: OnClickReplayButton
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -3033,9 +3050,9 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 0}
-        m_TargetAssemblyTypeName: MiniGame, Assembly-CSharp
-        m_MethodName: Exit
+      - m_Target: {fileID: 1795084714513099726}
+        m_TargetAssemblyTypeName: FinalPanelMenu, Assembly-CSharp
+        m_MethodName: OnClickMainMenu
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
