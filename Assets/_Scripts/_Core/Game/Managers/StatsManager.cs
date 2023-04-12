@@ -58,6 +58,7 @@ public class StatsManager : Singleton<StatsManager>
 {
     [SerializeField] TMP_Text StatDump;
     [SerializeField] List<GameObject> EndOfRoundStatContainers;
+    // TODO: p1 - we probably want a UI class that talks to the stats managar and updates the UI - move WinnerText there
     [SerializeField] TMP_Text WinnerText;
     [SerializeField] public bool nodeGame = false;
 
@@ -281,7 +282,7 @@ public class StatsManager : Singleton<StatsManager>
         playerStats = new Dictionary<string, RoundStats>();
     }
 
-    // TODO: we probably want a UI class that talks to the stats managaer and updates the UI rather than doing it in here directly
+    // TODO: p1 - we probably want a UI class that talks to the stats managar and updates the UI rather than doing it in here directly
     void OutputRoundStats()
     {
 

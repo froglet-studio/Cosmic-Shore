@@ -180,11 +180,9 @@ namespace StarWriter.Core
             }
         }
 
+        // TODO: P1 merge all impact effects into single enum
         public void PerformFakeCrystalImpactEffects(CrystalProperties crystalProperties)
         {
-            //if (StatsManager.Instance != null)
-            //    StatsManager.Instance.CrystalCollected(this, crystalProperties);
-
             foreach (FakeCrystalImpactEffects effect in fakeCrystalImpactEffects)
             {
                 switch (effect)
