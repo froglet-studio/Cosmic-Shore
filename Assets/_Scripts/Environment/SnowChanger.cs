@@ -43,7 +43,7 @@ public class SnowChanger : MonoBehaviour
         shardsY = (int)(crystalSize.y / shardDistance);
         shardsZ = (int)(crystalSize.z / shardDistance);
 
-        sphereDiameter = sphereScaler * Crystal.GetComponent<Crystal>().sphereRadius;
+        if (Crystal != null) sphereDiameter = sphereScaler * Crystal.GetComponent<Crystal>().sphereRadius;
 
         crystalLattice = new GameObject[shardsX * 2 + 1, shardsY * 2 + 1, shardsZ * 2 + 1]; // both sides of each axis plus the midplane
 
@@ -79,24 +79,23 @@ public class SnowChanger : MonoBehaviour
                 {
                     var shard = crystalLattice[x, y, z];
                     float normalizedDistance;
-                    if (targetAxis != null)
+                    if (Crystal != null)
+                    { 
+                        float clampedDistance = Mathf.Clamp(
+                        (shard.transform.position - Crystal.transform.position).magnitude, 0, sphereDiameter);
+                        normalizedDistance = clampedDistance / sphereDiameter;
+
+                        shard.transform.LookAt(Crystal.transform);
+                    }
+                    else
                     {
                         var reject = shard.transform.position - (Vector3.Dot(shard.transform.position, targetAxis.normalized) * targetAxis.normalized);
                         var maxDistance = Mathf.Max(shardsX, shardsY) * shardDistance;
                         float clampedDistance = Mathf.Clamp(reject.magnitude, 0, maxDistance);
-
                         normalizedDistance = clampedDistance / maxDistance;
 
                         if (lookAt) shard.transform.rotation = Quaternion.LookRotation(-reject.normalized);
                         else shard.transform.rotation = Quaternion.LookRotation(targetAxis);
-                    }
-                    else
-                    {
-                        shard.transform.LookAt(Crystal.transform);
-                        float clampedDistance = Mathf.Clamp(
-                        (shard.transform.position - Crystal.transform.position).magnitude, 0, sphereDiameter);
-
-                        normalizedDistance = clampedDistance / sphereDiameter;
                     }
                     shard.transform.localScale =
                         Vector3.forward * (normalizedDistance * nodeScaler + nodeSize) +
