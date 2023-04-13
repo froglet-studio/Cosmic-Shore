@@ -14,12 +14,17 @@ public enum ScoringModes
 
 public class ScoreTracker : MonoBehaviour
 {
+    [HideInInspector] public TMP_Text ActivePlayerScoreDisplay;
+    
     [SerializeField] ScoringModes ScoringMode;
     [SerializeField] bool GolfRules;
 
+    // TODO: p1 wire these display fields up through the HUD
     [SerializeField] TMP_Text WinnerNameContainer;
+    
     [SerializeField] List<TMP_Text> PlayerNameContainers;
     [SerializeField] List<TMP_Text> PlayerScoreContainers;
+
 
     Dictionary<string, float> playerScores = new ();
     string currentPlayerName;
@@ -33,6 +38,42 @@ public class ScoreTracker : MonoBehaviour
 
         currentPlayerName = playerName;
         turnStartTime = Time.time;
+    }
+
+    void Update()
+    {
+        if (turnStartTime == 0)
+            return;
+
+        if (ActivePlayerScoreDisplay != null)
+        {
+            var score = 0f;
+            switch (ScoringMode)
+            {
+                case ScoringModes.VolumeDestroyed:
+                    if (StatsManager.Instance.playerStats.ContainsKey(currentPlayerName))
+                        score = playerScores[currentPlayerName] + StatsManager.Instance.playerStats[currentPlayerName].volumeDestroyed;
+                    break;
+                case ScoringModes.VolumeCreated:
+                    if (StatsManager.Instance.playerStats.ContainsKey(currentPlayerName))
+                        score = playerScores[currentPlayerName] + StatsManager.Instance.playerStats[currentPlayerName].volumeCreated;
+                    break;
+                case ScoringModes.VolumeStolen:
+                    if (StatsManager.Instance.playerStats.ContainsKey(currentPlayerName))
+                        score = playerScores[currentPlayerName] + StatsManager.Instance.playerStats[currentPlayerName].volumeStolen;
+                    break;
+                case ScoringModes.TimePlayed:
+                    // TODO: 1000 is a magic number to give more precision to time tracking as an integer value
+                    score = playerScores[currentPlayerName] + (Time.time - turnStartTime) * 1000;
+                    break;
+                case ScoringModes.TurnsPlayed:
+                    score = turnsPlayed;
+                    break;
+            }
+
+            ActivePlayerScoreDisplay.text = ((int) score).ToString();
+        }
+            
     }
 
     public virtual void EndTurn()

@@ -1,12 +1,14 @@
 using StarWriter.Core.Input;
 using System.Collections;
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 public class MiniGame : MonoBehaviour
 {
+    [SerializeField] MiniGameHUD HUD;
     [SerializeField] Player playerPrefab;
     [SerializeField] protected List<TurnMonitor> TurnMonitors;
     [SerializeField] protected ScoreTracker ScoreTracker;
@@ -51,6 +53,12 @@ public class MiniGame : MonoBehaviour
             Players[i].name = "Player" + (i+1);
             Players[i].gameObject.SetActive(true);
         }
+
+        CountdownDisplay = HUD.CountdownDisplay;
+        ScoreTracker.ActivePlayerScoreDisplay = HUD.ScoreDisplay;
+        foreach (var turnMonitor in TurnMonitors)
+            if (turnMonitor is TimeBasedTurnMonitor tbtMonitor)
+                tbtMonitor.display = HUD.RoundTimeDisplay;
 
         //StartNewGame();
 
@@ -245,7 +253,8 @@ public class MiniGame : MonoBehaviour
         StartCoroutine(CountdownCoroutine());
     }
 
-    [SerializeField] Image CountdownDisplay;
+    // TODO: make the countdown timer its own monobehavior
+    Image CountdownDisplay;
     [SerializeField] Sprite Countdown3;
     [SerializeField] Sprite Countdown2;
     [SerializeField] Sprite Countdown1;

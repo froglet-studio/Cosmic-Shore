@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using StarWriter.Core;
 using UnityEngine;
 
+// TODO: P1 move to enums folder
 public enum PositioningScheme
 {
     SphereUniform = 0,
