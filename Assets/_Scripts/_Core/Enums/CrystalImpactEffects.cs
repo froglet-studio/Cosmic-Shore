@@ -11,5 +11,7 @@ public enum CrystalImpactEffects
     AreaOfEffectExplosion = 6,
     ResetAggression = 7,
     IncrementLevel = 8,
-    
+    PlayFakeCrystalHaptics = 9,
+    ReduceSpeed = 10
+
 }

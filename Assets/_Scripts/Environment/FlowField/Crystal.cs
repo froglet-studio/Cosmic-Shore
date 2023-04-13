@@ -63,6 +63,9 @@ public class Crystal : MonoBehaviour
                 case CrystalImpactEffects.PlayHaptics:
                     HapticController.PlayCrystalImpactHaptics();
                     break;
+                case CrystalImpactEffects.PlayFakeCrystalHaptics:
+                    HapticController.PlayFakeCrystalImpactHaptics();
+                    break;
                 case CrystalImpactEffects.AreaOfEffectExplosion:
                     var AOEExplosion = Instantiate(AOEPrefab).GetComponent<AOEExplosion>();
                     AOEExplosion.Material = AOEExplosionMaterial;
@@ -70,6 +73,9 @@ public class Crystal : MonoBehaviour
                     AOEExplosion.Ship = ship;
                     AOEExplosion.SetPositionAndRotation(transform.position, transform.rotation);
                     AOEExplosion.MaxScale = maxExplosionScale;
+                    break;
+                case CrystalImpactEffects.ReduceSpeed:
+                    ship.ModifySpeed(.1f, 10);
                     break;
             }
         }

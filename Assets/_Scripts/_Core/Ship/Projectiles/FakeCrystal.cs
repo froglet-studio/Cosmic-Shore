@@ -22,7 +22,7 @@ public class FakeCrystal : Crystal
         if (ship.Team == Team)
             return;
 
-        ship.PerformFakeCrystalImpactEffects(crystalProperties);
+        PerformCrystalImpactEffects(crystalProperties, ship);
 
 
         //
