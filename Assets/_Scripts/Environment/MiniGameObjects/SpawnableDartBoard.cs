@@ -11,10 +11,10 @@ public class SpawnableDartBoard : SpawnableAbstractBase
     GameObject container;
 
 
-    int blockCount = 6;
-    int ringCount = 30;
-    float ringThickness = 5f;
-    float gap = 6;
+    [SerializeField] int blockCount = 6;
+    [SerializeField] int ringCount = 30;
+    [SerializeField] float ringThickness = 5f;
+    [SerializeField] float gap = 6;
 
     public Player PlayerOne;
     public Player PlayerTwo;
@@ -58,7 +58,7 @@ public class SpawnableDartBoard : SpawnableAbstractBase
                              ring * ringThickness * Mathf.Sin(((i + phase) / (blockCount * ring)) * 2 * Mathf.PI) * transform.up +
                              sweep * ringThickness * transform.forward;
         CreateBlock(position, position + tilt * ringThickness * transform.forward, "::SpawnableDartBoard::" + Time.time + "::" + i, trail,
-            new Vector3(((Mathf.PI / 3f) * ringThickness) - (gap / (6 * ring)), // blockwidth 
+            new Vector3(((Mathf.PI / 3f) * ringThickness) - (gap / (2 * ring)), // blockwidth 
                         (ringCount - ring) * ringThickness/3f, // dartboard thickness
                          ringThickness - (gap/5f)), trailBlock, player); //annulus thickness
     }
