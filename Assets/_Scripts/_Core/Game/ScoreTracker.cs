@@ -42,6 +42,9 @@ public class ScoreTracker : MonoBehaviour
 
     void Update()
     {
+        if (turnStartTime == 0)
+            return;
+
         if (ActivePlayerScoreDisplay != null)
         {
             var score = 0f;
