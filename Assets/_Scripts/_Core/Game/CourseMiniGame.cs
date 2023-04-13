@@ -4,6 +4,7 @@ public class CourseMiniGame : MiniGame
     [SerializeField] Crystal Crystal;
     [SerializeField] Vector3 CrystalStartPosition;
     [SerializeField] SegmentSpawner SegmentSpawner;
+    [SerializeField] int numberOfSegments = 10;
 
 
     public static new ShipTypes PlayerShipType = ShipTypes.Shark;
@@ -20,7 +21,7 @@ public class CourseMiniGame : MiniGame
     {
         base.SetupTurn();
 
-        SegmentSpawner.numberOfSegments = 20;
+        SegmentSpawner.numberOfSegments = numberOfSegments;
         
         TrailSpawner.NukeTheTrails();
         Crystal.transform.position = CrystalStartPosition;

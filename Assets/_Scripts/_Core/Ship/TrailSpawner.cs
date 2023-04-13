@@ -1,4 +1,5 @@
 ﻿using StarWriter.Core;
+using StarWriter.Utility.Tools;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -126,22 +127,12 @@ public class TrailSpawner : MonoBehaviour
         XLerper(newXScaler);
     }
 
+    Tools tool= new Tools();
     void XLerper(float newXScaler)
     {
         if (lerper != null) StopCoroutine(lerper);
-        lerper = StartCoroutine(LerpingCoroutine((i) => { XScaler = i; }, () => XScaler ,newXScaler, 2, 10));
+        lerper = StartCoroutine(tool.LerpingCoroutine((i) => { XScaler = i; }, () => XScaler ,newXScaler, 4, 1000));
     }
-
-    IEnumerator LerpingCoroutine(System.Action<float> replacementMethod, System.Func<float> getCurrent, float newValue, float duration, int steps)
-    {
-        float elapsedTime = 0;
-        while (elapsedTime < duration)
-        {
-            elapsedTime += Time.deltaTime;
-            replacementMethod(Mathf.Lerp(getCurrent(), newValue, elapsedTime / duration));
-            yield return new WaitForSeconds(duration / (float)steps);
-        } 
-    } 
 
     public void SetDotProduct(float amount)
     {

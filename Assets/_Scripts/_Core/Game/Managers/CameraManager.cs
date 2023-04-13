@@ -3,6 +3,9 @@ using Cinemachine;
 using StarWriter.Core;
 using TailGlider.Utility.Singleton;
 using System.Collections;
+using StarWriter.Utility.Tools;
+
+
 
 public class CameraManager : SingletonPersistent<CameraManager>
 {
@@ -26,8 +29,12 @@ public class CameraManager : SingletonPersistent<CameraManager>
     public float distanceScaler = 1f;
     public Vector3 tempOffset = Vector3.zero;
     public bool ZoomingOut;
+
     public float CloseCamDistance;
     public float FarCamDistance;
+    float targetDistance;
+    CinemachineVirtualCamera vCam;
+    CinemachineTransposer transposer;
 
     private void OnEnable()
     {
@@ -131,6 +138,8 @@ public class CameraManager : SingletonPersistent<CameraManager>
         deathCamera.Priority = inactivePriority;
 
         activeCamera.Priority = activePriority;
+        vCam = closeCamera.VirtualCameraGameObject.GetComponent<CinemachineVirtualCamera>();
+        transposer = vCam.GetCinemachineComponent<CinemachineTransposer>();
     }
 
     public void ToggleCloseOrFarCamOnPhoneFlip(bool state)
@@ -172,6 +181,14 @@ public class CameraManager : SingletonPersistent<CameraManager>
         }
     }
 
+    Coroutine lerper;
+    Tools tool= new Tools();
+    void DistanceLerper(float newDistanceScalar)
+    {
+        if (lerper != null) StopCoroutine(lerper);
+        lerper = StartCoroutine(tool.LerpingCoroutine((i) => { transposer.m_FollowOffset = new Vector3(0, 0, i); }, () => transposer.m_FollowOffset.z, newDistanceScalar, 4f, 1000));
+    }
+
     public void SetFarCameraDistance(float distance)
     {
         SetCameraDistance(farCamera, distance);
@@ -181,10 +198,11 @@ public class CameraManager : SingletonPersistent<CameraManager>
     {
         var vCam = closeCamera.VirtualCameraGameObject.GetComponent<CinemachineVirtualCamera>();
         var transposer = vCam.GetCinemachineComponent<CinemachineTransposer>();
-        if (setCameraDistanceCoroutine != null) 
-            StopCoroutine(setCameraDistanceCoroutine);
+        //if (setCameraDistanceCoroutine != null) 
+        //    StopCoroutine(setCameraDistanceCoroutine);
         if (transposer.m_FollowOffset != new Vector3(0, 0, distance))
-            setCameraDistanceCoroutine = StartCoroutine(SetCameraDistanceCoroutine(closeCamera, distance));
+            DistanceLerper(distance);
+            //setCameraDistanceCoroutine = StartCoroutine(SetCameraDistanceCoroutine(closeCamera, distance));
     }
 
     public void SetBothCameraDistances(float distance)
