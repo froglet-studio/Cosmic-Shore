@@ -28,7 +28,6 @@ namespace StarWriter.Core
 
         [Header("Environment Interactions")]
         [SerializeField] List<CrystalImpactEffects> crystalImpactEffects;
-        //[SerializeField] List<FakeCrystalImpactEffects> fakeCrystalImpactEffects;
         [SerializeField] List<TrailBlockImpactEffects> trailBlockImpactEffects;
 
         [SerializeField] float minExplosionScale = 50;
@@ -180,22 +179,6 @@ namespace StarWriter.Core
             }
         }
 
-        // TODO: P1 merge all impact effects into single enum
-        //public void PerformFakeCrystalImpactEffects(CrystalProperties crystalProperties)
-        //{
-        //    foreach (FakeCrystalImpactEffects effect in fakeCrystalImpactEffects)
-        //    {
-        //        switch (effect)
-        //        {
-        //            case FakeCrystalImpactEffects.PlayHaptics:
-        //                HapticController.PlayFakeCrystalImpactHaptics();
-        //                break;
-        //            case FakeCrystalImpactEffects.ReduceSpeed:
-        //                ModifySpeed(.1f, 10);
-        //                break;
-        //        }
-        //    }
-        //}
 
         public void PerformCrystalImpactEffects(CrystalProperties crystalProperties)
         {
