@@ -594,12 +594,11 @@ MonoBehaviour:
   - {fileID: 5736286126695899062}
   TrailSpawner: {fileID: 874579555101021522}
   head: {fileID: 3710282027580066907}
-  AOEPrefab: {fileID: 2728798890556433942, guid: bdb355fdad94b1442ae09bb64ed1ad14,
+  AOEPrefab: {fileID: 2728798890556433942, guid: 00bae5f156b110d4d9271f0b774b63ab,
     type: 3}
   farFieldSkimmer: {fileID: 0}
   fakeCrystal: {fileID: 0}
   crystalImpactEffects: 0600000007000000
-  fakeCrystalImpactEffects: 
   trailBlockImpactEffects: 03000000
   minExplosionScale: 50
   maxExplosionScale: 25

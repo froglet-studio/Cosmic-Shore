@@ -5,6 +5,7 @@ public class FlightSchoolMiniGame : MiniGame
     [SerializeField] Crystal Crystal;
     [SerializeField] Vector3 CrystalStartPosition;
     [SerializeField] Vector3 CrystalStartScale = Vector3.one;
+    [SerializeField] SegmentSpawner SegmentSpawner;
 
     public static new ShipTypes PlayerShipType = ShipTypes.Manta;
 
@@ -16,6 +17,9 @@ public class FlightSchoolMiniGame : MiniGame
         Crystal.transform.position = CrystalStartPosition;
         Crystal.transform.localScale = CrystalStartScale;
         Crystal.SetOrigin(CrystalStartPosition);
+
+        SegmentSpawner.Seed = new System.Random().Next();
+        SegmentSpawner.Initialize(DifficultyLevel);
     }
 
     protected override void Update()

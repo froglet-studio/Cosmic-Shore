@@ -22,6 +22,7 @@ public class SegmentSpawner : MonoBehaviour
     [SerializeField] List<float> spawnSegmentWeights;
     [SerializeField] public int Seed;
     [SerializeField] bool InitializeOnStart;
+    [SerializeField] Vector3 origin = Vector3.zero;
     GameObject SpawnedSegmentContainer;
     List<Trail> trails = new();
     System.Random random = new();
@@ -94,7 +95,7 @@ public class SegmentSpawner : MonoBehaviour
                 spawned.transform.LookAt(Vector3.zero);
                 return;
             case PositioningScheme.StraightLine:
-                spawned.transform.position = new Vector3(0, 0, spawnedItemCount*StraightLineLength);
+                spawned.transform.position = new Vector3(0, 0, spawnedItemCount*StraightLineLength) + origin;
                 spawned.transform.Rotate(Vector3.forward, (float)random.NextDouble() * 180);
                 return;
             case PositioningScheme.Cubic:

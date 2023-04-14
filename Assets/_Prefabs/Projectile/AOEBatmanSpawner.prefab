@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 8507666106090082286}
   - component: {fileID: 338372563534182169}
   m_Layer: 10
-  m_Name: AOEBlockSpawner
+  m_Name: AOEBatmanSpawner
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

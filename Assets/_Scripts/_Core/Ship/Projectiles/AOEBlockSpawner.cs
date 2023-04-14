@@ -12,6 +12,7 @@ public class AOEBlockSpawner : AOEBlockCreation
         yield return new WaitForSeconds(ExplosionDelay);
 
         spawnable.Spawn().transform.SetPositionAndRotation(Ship.transform.position,Ship.transform.rotation);
+
         yield return new WaitForEndOfFrame();
     }
 }

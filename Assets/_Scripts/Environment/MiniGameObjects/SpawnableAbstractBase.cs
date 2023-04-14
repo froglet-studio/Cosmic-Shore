@@ -2,6 +2,8 @@ using StarWriter.Core;
 using System.Collections.Generic;
 using UnityEngine;
 
+
+
 public abstract class SpawnableAbstractBase : MonoBehaviour
 {
     protected System.Random rng = new System.Random();
