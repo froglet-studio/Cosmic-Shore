@@ -2,7 +2,6 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using StarWriter.Core;
-using UnityEngine.UIElements;
 
 public class SpawnableFlower : SpawnableAbstractBase
 {
@@ -58,7 +57,7 @@ public class SpawnableFlower : SpawnableAbstractBase
             CreateBranches(block2, maxGap, angle / 2f, container, 1, 6);
         }
         CreateBranches(lastTwoBlocks[0], maxGap, angle / 2f, container, 1, 6);
-        lastTwoBlocks[1].transform.Rotate(0, 0, 180);
+        //lastTwoBlocks[1].transform.Rotate(0, 0, 180);
         CreateBranches(lastTwoBlocks[1], maxGap, angle / 2f, container, 1, 6);
     }
 
@@ -77,7 +76,7 @@ public class SpawnableFlower : SpawnableAbstractBase
         {
             for (int i = -1; i <= 1; i += 2)
             {
-                TrailBlock block = CreateBlock(trailBlock.transform.position, trailBlock.transform.forward, trailBlock.transform.up, trailBlock.ID + i, trails[trails.Count - 1], container);
+                TrailBlock block = CreateBlock(trailBlock.transform.position, trailBlock.transform.forward, trailBlock.transform.up, $"Depth:{depth},Branch:{branch},I:{i}", trails[trails.Count - 1], container);
                 Vector3 origin = block.transform.position + (block.transform.right * (blockScale.x / 2 + gap)) * handedness;
                 block.transform.RotateAround(origin, block.transform.forward, 180);
                 origin = block.transform.position - (block.transform.right * (blockScale.x / 2 + gap)) * handedness;
@@ -92,13 +91,13 @@ public class SpawnableFlower : SpawnableAbstractBase
         }
         else if (branch == Branch.first)
         {
-            TrailBlock block = CreateBlock(trailBlock.transform.position, trailBlock.transform.forward, trailBlock.transform.up, trailBlock.ID + -angle, trails[trails.Count - 1], container);
+            TrailBlock block = CreateBlock(trailBlock.transform.position, trailBlock.transform.forward, trailBlock.transform.up, $"Depth:{depth},Branch:{branch},Angle:{angle}", trails[trails.Count - 1], container);
             Vector3 origin = block.transform.position + (block.transform.right * (blockScale.x / 2 + gap)) * handedness;
             block.transform.RotateAround(origin, block.transform.forward, 180 - angle * 4);
         }
         else
         {
-            TrailBlock block = CreateBlock(trailBlock.transform.position, trailBlock.transform.forward, trailBlock.transform.up, trailBlock.ID + angle, trails[trails.Count - 1], container);
+            TrailBlock block = CreateBlock(trailBlock.transform.position, trailBlock.transform.forward, trailBlock.transform.up, $"Depth:{depth},Branch:{branch},Angle:{angle}", trails[trails.Count - 1], container);
             Vector3 origin = block.transform.position + (block.transform.right * (blockScale.x / 2 + gap)) * handedness;
             block.transform.RotateAround(origin, block.transform.forward, 180 + angle * 4);
         }
@@ -114,12 +113,11 @@ public class SpawnableFlower : SpawnableAbstractBase
         Block.PlayerName = "";
         Block.transform.SetPositionAndRotation(position, Quaternion.LookRotation(lookPosition, up));
         //Block.GetComponent<MeshRenderer>().material = material;
-        Block.ID = Block.ownerId + ownerId + position;
+        Block.ID = /*Block.ownerId +*/ ownerId + position;
         Block.InnerDimensions = blockScale;
         Block.Trail = trail;
         trail.Add(Block);
         Block.transform.SetParent(container.transform, false);
         return Block;
     }
-
 }
