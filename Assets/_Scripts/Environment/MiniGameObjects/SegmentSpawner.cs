@@ -40,7 +40,7 @@ public class SegmentSpawner : MonoBehaviour
             Initialize();
     }
 
-    public void Initialize(float difficultyLevel = 1)
+    public void Initialize(int difficultyLevel = 1)
     {
         if (Seed != 0) random = new System.Random(Seed);
 
@@ -111,7 +111,7 @@ public class SegmentSpawner : MonoBehaviour
         }
     }
 
-    GameObject SpawnRandom(float difficultyLevel = 1)
+    GameObject SpawnRandom(int difficultyLevel = 1)
     {
         var spawnWeight = random.NextDouble();
         var spawnIndex = 0;

@@ -24,6 +24,11 @@ public class SpawnableFlower : SpawnableAbstractBase
         return Spawn(lastTwoBlocks);
     }
 
+    public override GameObject Spawn(int difficultyLevel)
+    {
+        return Spawn(lastTwoBlocks);
+    }
+
     public GameObject Spawn(List<TrailBlock> lastTwoBlocks) 
     {
         GameObject container = new GameObject();
@@ -43,9 +48,6 @@ public class SpawnableFlower : SpawnableAbstractBase
         var origin = (lastTwoBlocks[0].transform.position + lastTwoBlocks[1].transform.position) / 2;
         var maxGap = Mathf.Abs(lastTwoBlocks[0].transform.localScale.x - (blockScale.x / 2f));
 
-        //CreateBlock(lastTwoBlocks[0].transform.position, lastTwoBlocks[0].transform.forward, lastTwoBlocks[0].transform.up, trailBlock.ID + 1 + "seed", trails[trails.Count - 1], container);
-        //CreateBlock(lastTwoBlocks[1].transform.position, lastTwoBlocks[1].transform.forward, -lastTwoBlocks[1].transform.up, trailBlock.ID + 2 + "seed", trails[trails.Count - 1], container);
-
         var angle = 30;
         for (int i = angle; i <= 180; i += angle)
         {
@@ -56,9 +58,6 @@ public class SpawnableFlower : SpawnableAbstractBase
             CreateBranches(block1, maxGap, angle / 2f, container, 1, 6);
             CreateBranches(block2, maxGap, angle / 2f, container, 1, 6);
         }
-        CreateBranches(lastTwoBlocks[0], maxGap, angle / 2f, container, 1, 6);
-        //lastTwoBlocks[1].transform.Rotate(0, 0, 180);
-        CreateBranches(lastTwoBlocks[1], maxGap, angle / 2f, container, 1, 6);
     }
 
     enum Branch

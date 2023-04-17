@@ -7,7 +7,7 @@ public class SpawnableHelix : SpawnableAbstractBase
     [SerializeField] Vector3 scale;
     static int ObjectsSpawned = 0;
 
-    public override GameObject Spawn(float difficultyLevel = 1)
+    public override GameObject Spawn(int difficultyLevel = 1)
     {
         GameObject container = new GameObject();
         container.name = "Wave" + ObjectsSpawned++;
