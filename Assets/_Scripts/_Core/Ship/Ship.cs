@@ -1,10 +1,70 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using StarWriter.Core.Input;
+using UnityEditor;
 using UnityEngine;
 
 namespace StarWriter.Core
 {
+
+    using System.Reflection;
+
+
+    [CustomEditor(typeof(Ship))]
+    public class ShipEditor : Editor
+    {
+        public override void OnInspectorGUI()
+        {
+            serializedObject.Update();
+            var shipScript = (Ship)target;
+
+            SerializedProperty property = serializedObject.GetIterator();
+
+            while (property.NextVisible(true))
+            {
+                FieldInfo fieldInfo = shipScript.GetType().GetField(property.name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+
+                if (fieldInfo != null)
+                {
+                    ShowIfAttribute showIfControlOverrideAttribute = (ShowIfAttribute)Attribute.GetCustomAttribute(
+                        fieldInfo,
+                        typeof(ShowIfAttribute)
+                    );
+
+                    if (showIfControlOverrideAttribute == null || shipScript.ControlOverrides.Contains(showIfControlOverrideAttribute.ControlOverride)
+                                                               || shipScript.LevelEffects.Contains(showIfControlOverrideAttribute.LevelEffect)
+                                                               || shipScript.crystalImpactEffects.Contains(showIfControlOverrideAttribute.CrystalImpactEffect)
+                                                               || shipScript.fullSpeedStraightEffects.Contains(showIfControlOverrideAttribute.Action)
+                                                               || shipScript.rightStickEffects.Contains(showIfControlOverrideAttribute.Action)
+                                                               || shipScript.leftStickEffects.Contains(showIfControlOverrideAttribute.Action)
+                                                               || shipScript.flipEffects.Contains(showIfControlOverrideAttribute.Action)
+                                                               || shipScript.idleEffects.Contains(showIfControlOverrideAttribute.Action)
+                                                               || shipScript.minimumSpeedStraightEffects.Contains(showIfControlOverrideAttribute.Action))
+                    {
+                        EditorGUILayout.PropertyField(property, true);
+                    }
+                }
+            }
+            serializedObject.ApplyModifiedProperties();
+        }
+    }
+    
+
+    [AttributeUsage(AttributeTargets.Field, AllowMultiple = false, Inherited = true)]
+    public class ShowIfAttribute : PropertyAttribute
+    {
+        public ShipControlOverrides ControlOverride { get; private set; }
+        public ShipActions Action { get; private set; }
+        public ShipLevelEffects LevelEffect { get; private set; }
+        public CrystalImpactEffects CrystalImpactEffect { get; private set; }
+
+        public ShowIfAttribute(ShipControlOverrides controlOverride) { ControlOverride = controlOverride; }
+        public ShowIfAttribute(ShipActions action) { Action = action; }
+        public ShowIfAttribute(ShipLevelEffects levelEffect) { LevelEffect = levelEffect; }
+        public ShowIfAttribute(CrystalImpactEffects crystalImpactEffect) { CrystalImpactEffect = crystalImpactEffect; }
+    }
+
     [RequireComponent(typeof(ResourceSystem))]
     [RequireComponent(typeof(TrailSpawner))]
     public class Ship : MonoBehaviour
@@ -24,60 +84,80 @@ namespace StarWriter.Core
         [Header("optional ship Components")]
         [SerializeField] GameObject AOEPrefab;
         [SerializeField] Skimmer farFieldSkimmer;
+        [ShowIf(ShipActions.DropFakeCrystal)]
         [SerializeField] FakeCrystal fakeCrystal;
 
         [Header("Environment Interactions")]
-        [SerializeField] List<CrystalImpactEffects> crystalImpactEffects;
-        [SerializeField] List<TrailBlockImpactEffects> trailBlockImpactEffects;
-
+        public List<CrystalImpactEffects> crystalImpactEffects;
+        [ShowIf(CrystalImpactEffects.AreaOfEffectExplosion)]
         [SerializeField] float minExplosionScale = 50;
+        [ShowIf(CrystalImpactEffects.AreaOfEffectExplosion)]
         [SerializeField] float maxExplosionScale = 400;
+
+        List<TrailBlockImpactEffects> trailBlockImpactEffects;
         [SerializeField] float blockChargeChange;
 
         [Header("Configuration")]
-        public float boostMultiplier = 4f;
-        public float boostFuelAmount = -.01f;
+        public float boostMultiplier = 4f; //TODO: Move to ShipController
+        public float boostFuelAmount = -.01f; 
         
         [Header("Dynamically Assignable Controls")]
-        [SerializeField] List<ShipActions> fullSpeedStraightEffects;
-        [SerializeField] List<ShipActions> rightStickEffects;
-        [SerializeField] List<ShipActions> leftStickEffects;
-        [SerializeField] List<ShipActions> flipEffects;
-        [SerializeField] List<ShipActions> idleEffects;
-        [SerializeField] List<ShipActions> minimumSpeedStraightEffects;
+        public List<ShipActions> fullSpeedStraightEffects;
+        public List<ShipActions> rightStickEffects;
+        public List<ShipActions> leftStickEffects;
+        public List<ShipActions> flipEffects;
+        public List<ShipActions> idleEffects;
+        public List<ShipActions> minimumSpeedStraightEffects;
 
+        [ShowIf(ShipActions.ZoomOut)]
         [SerializeField] float cameraGrowthRate = 1;
+        [ShowIf(ShipActions.ZoomOut)]
         [SerializeField] float cameraShrinkRate = 1;
+        [ShowIf(ShipActions.GrowTrail)]
         [SerializeField] float minTrailYScale = 15;
+        [ShowIf(ShipActions.GrowTrail)]
         [SerializeField] float maxTrailYScale = 100;
-        [SerializeField] float skimmerGrowthRate = 1;
-        [SerializeField] float skimmerShrinkRate = 1;
+
+        [ShowIf(ShipActions.GrowTrail)]
         [SerializeField] float trailGrowthRate = 1;
+        [ShowIf(ShipActions.GrowTrail)]
         [SerializeField] float trailShrinkRate = 1;
+        [ShowIf(ShipActions.GrowSkimmer)]
+        [SerializeField] float skimmerGrowthRate = 1;
+        [ShowIf(ShipActions.GrowSkimmer)]
+        [SerializeField] float skimmerShrinkRate = 1;
 
         [Header("Passive Effects")]
-        [SerializeField] List<LevelEffects> levelEffects;
-   
-        [SerializeField] float minFarFieldSkimmerScale = 100;
-        [SerializeField] float maxFarFieldSkimmerScale = 200;
-        [SerializeField] float minNearFieldSkimmerScale = 15;
-        [SerializeField] float maxNearFieldSkimmerScale = 100;
+        public List<ShipLevelEffects> LevelEffects;
+        
+        [ShowIf(ShipLevelEffects.ScaleGap)]
         [SerializeField] float minGap = 0;
+        [ShowIf(ShipLevelEffects.ScaleGap)]
         [SerializeField] float maxGap = 0;
+        [ShowIf(ShipLevelEffects.ScaleSkimmers)]
+        [SerializeField] float minFarFieldSkimmerScale = 100;
+        [ShowIf(ShipLevelEffects.ScaleSkimmers)]
+        [SerializeField] float maxFarFieldSkimmerScale = 200;
+        [ShowIf(ShipLevelEffects.ScaleSkimmers)]
+        [SerializeField] float minNearFieldSkimmerScale = 15;
+        [ShowIf(ShipLevelEffects.ScaleSkimmers)]
+        [SerializeField] float maxNearFieldSkimmerScale = 100;
 
         // TODO: move these into GunShipController
+        [ShowIf(ShipLevelEffects.ScaleProjectiles)]
         [SerializeField] float minProjectileScale = 1;
+        [ShowIf(ShipLevelEffects.ScaleProjectiles)]
         [SerializeField] float maxProjectileScale = 10;
+        [ShowIf(ShipLevelEffects.ScaleProjectileBlocks)]
         [SerializeField] Vector3 minProjectileBlockScale = new Vector3(1.5f, 1.5f, 3f);
+        [ShowIf(ShipLevelEffects.ScaleProjectileBlocks)]
         [SerializeField] Vector3 maxProjectileBlockScale = new Vector3(1.5f, 1.5f, 30f);
 
-        [SerializeField] List<ShipControlOverrides> controlOverrides;
-        [SerializeField] float closeCamDistance;
-        [SerializeField] float farCamDistance;
-        [SerializeField] float BoostDecayGrowthRate = .03f;
-        [SerializeField] float MaxBoostDecay = 10;
+        public List<ShipControlOverrides> ControlOverrides;
+        [ShowIf(ShipControlOverrides.CloseCam)] public float closeCamDistance;
+        [ShowIf(ShipControlOverrides.FarCam)] [SerializeField] float farCamDistance;
 
-        Dictionary<InputEvents, List<ShipActions>> ShipControlActions;
+        public Dictionary<InputEvents, List<ShipActions>> ShipControlActions;
 
         bool invulnerable;
         Teams team;
@@ -133,7 +213,7 @@ namespace StarWriter.Core
         {
             cameraManager = CameraManager.Instance;
             inputController = player.GetComponent<InputController>();
-            ApplyShipControlOverrides(controlOverrides);
+            ApplyShipControlOverrides(ControlOverrides);
 
             foreach (var shipGeometry in shipGeometries)
                 shipGeometry.AddComponent<ShipGeometry>().Ship = this;
@@ -146,6 +226,7 @@ namespace StarWriter.Core
                 { InputEvents.FlipAction, flipEffects },
                 { InputEvents.IdleAction, idleEffects },
             };
+            
         }
 
         void Update()
@@ -159,8 +240,6 @@ namespace StarWriter.Core
             {
                 switch (effect)
                 {
-                    case ShipControlOverrides.BlockScout:
-                        break;
                     case ShipControlOverrides.CloseCam:
                         cameraManager.CloseCamDistance = closeCamDistance;
                         cameraManager.SetCloseCameraDistance(closeCamDistance);
@@ -168,12 +247,6 @@ namespace StarWriter.Core
                     case ShipControlOverrides.FarCam:
                         cameraManager.FarCamDistance = farCamDistance;
                         cameraManager.SetFarCameraDistance(farCamDistance);
-                        break;
-                    case ShipControlOverrides.BoostDecayGrowthRate:
-                        shipController.BoostDecayGrowthRate = BoostDecayGrowthRate;
-                        break;
-                    case ShipControlOverrides.MaxBoostDecay:
-                        shipController.MaxBoostDecay = MaxBoostDecay;
                         break;
                 }
             }
@@ -336,7 +409,7 @@ namespace StarWriter.Core
                         {
                             var fake = Instantiate(fakeCrystal).GetComponent<FakeCrystal>();
                             fake.Team = team;
-                            fake.SetPositionAndRotation(transform.position + (Quaternion.Euler(0, 0, Random.Range(0, 360)) * transform.up * Random.Range(40, 60)) + (transform.forward * 40), transform.rotation);
+                            fake.SetPositionAndRotation(transform.position + (Quaternion.Euler(0, 0, UnityEngine.Random.Range(0, 360)) * transform.up * UnityEngine.Random.Range(40, 60)) + (transform.forward * 40), transform.rotation);
                             ResourceSystem.ChangeAmmoAmount(-ResourceSystem.MaxAmmo / 3f);
                         }
                         break;
@@ -605,20 +678,20 @@ namespace StarWriter.Core
         //
         void UpdateLevel()
         {
-            foreach (LevelEffects effect in levelEffects)
+            foreach (ShipLevelEffects effect in LevelEffects)
             {
                 switch (effect)
                 {
-                    case LevelEffects.ScaleSkimmers:
+                    case global::ShipLevelEffects.ScaleSkimmers:
                         ScaleSkimmersWithLevel();
                         break;
-                    case LevelEffects.ScaleGap:
+                    case global::ShipLevelEffects.ScaleGap:
                         ScaleGapWithLevel();
                         break;
-                    case LevelEffects.ScaleProjectiles:
+                    case global::ShipLevelEffects.ScaleProjectiles:
                         ScaleProjectilesWithLevel();
                         break;
-                    case LevelEffects.ScaleProjectileBlocks:
+                    case global::ShipLevelEffects.ScaleProjectileBlocks:
                         ScaleProjectileBlocksWithLevel();
                         break;
                 }

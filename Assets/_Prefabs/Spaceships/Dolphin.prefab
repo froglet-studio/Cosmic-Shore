@@ -745,17 +745,15 @@ MonoBehaviour:
     type: 3}
   farFieldSkimmer: {fileID: 0}
   fakeCrystal: {fileID: 0}
-  crystalImpactEffects: 000000000600000002000000
-  fakeCrystalImpactEffects: 0000000005000000
-  trailBlockImpactEffects: 00000000030000000200000001000000
+  crystalImpactEffects: 0b0000000600000002000000
   minExplosionScale: 200
-  maxExplosionScale: 800
+  maxExplosionScale: 400
   blockChargeChange: 0
   boostMultiplier: 0
   boostFuelAmount: 0
   fullSpeedStraightEffects: 
-  rightStickEffects: 000000000600000008000000
-  leftStickEffects: 000000000600000008000000
+  rightStickEffects: 100000000600000008000000
+  leftStickEffects: 100000000600000008000000
   flipEffects: 05000000
   idleEffects: 
   minimumSpeedStraightEffects: 
@@ -763,26 +761,24 @@ MonoBehaviour:
   cameraShrinkRate: 5
   minTrailYScale: 15
   maxTrailYScale: 100
-  skimmerGrowthRate: 1
-  skimmerShrinkRate: 1
   trailGrowthRate: 1
   trailShrinkRate: 1
-  levelEffects: 
+  skimmerGrowthRate: 1
+  skimmerShrinkRate: 1
+  LevelEffects: 
+  minGap: 1
+  maxGap: 1
   minFarFieldSkimmerScale: 100
   maxFarFieldSkimmerScale: 200
   minNearFieldSkimmerScale: 15
   maxNearFieldSkimmerScale: 100
-  minGap: 1
-  maxGap: 1
   minProjectileScale: 1
   maxProjectileScale: 10
   minProjectileBlockScale: {x: 1.5, y: 1.5, z: 3}
   maxProjectileBlockScale: {x: 1.5, y: 1.5, z: 30}
-  controlOverrides: 0300000004000000000000000800000009000000
+  ControlOverrides: 0300000004000000
   closeCamDistance: -5
   farCamDistance: -20
-  BoostDecayGrowthRate: 0.03
-  MaxBoostDecay: 6
   inputController: {fileID: 0}
   ResourceSystem: {fileID: 0}
 --- !u!114 &6964962696344697388
@@ -949,7 +945,7 @@ MonoBehaviour:
   DefaultMinimumSpeed: 10
   DefaultThrottleScaler: 50
   BoostDecay: 1
-  MaxBoostDecay: 10
+  MaxBoostDecay: 6
   BoostDecayGrowthRate: 0.03
   PitchScaler: 200
   YawScaler: 200

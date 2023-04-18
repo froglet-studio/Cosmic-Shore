@@ -9,6 +9,7 @@ public class SpawnableFlower : SpawnableAbstractBase
     [SerializeField] List<TrailBlock> lastTwoBlocks;
     [SerializeField] protected TrailBlock trailBlock;
     [SerializeField] Vector3 blockScale = new Vector3(20f, 10f, 5f);
+    [SerializeField] int depth = 6;
 
     static int ObjectsSpawned = 0;
 
@@ -55,8 +56,8 @@ public class SpawnableFlower : SpawnableAbstractBase
             TrailBlock block2 = CreateBlock(lastTwoBlocks[1].transform.position, lastTwoBlocks[1].transform.forward, -lastTwoBlocks[1].transform.up, trailBlock.ID + 2 + i, trails[trails.Count - 1], container);
             block1.transform.RotateAround(origin, block1.transform.forward, i);
             block2.transform.RotateAround(origin, block2.transform.forward, i);
-            CreateBranches(block1, maxGap, angle / 2f, container, 1, 6);
-            CreateBranches(block2, maxGap, angle / 2f, container, 1, 6);
+            CreateBranches(block1, maxGap, angle / 2f, container, 1, depth);
+            CreateBranches(block2, maxGap, angle / 2f, container, 1, depth);
         }
     }
 

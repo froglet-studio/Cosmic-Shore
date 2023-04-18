@@ -30,7 +30,7 @@ namespace StarWriter.Core
         {
             skimStartTimes = new();
             cameraManager = CameraManager.Instance;
-            resourceSystem = ship.GetComponent<ResourceSystem>();
+            if (ship != null) resourceSystem = ship.GetComponent<ResourceSystem>();
         }
 
         // Maja added this to try and enable shark skimmer smashing
@@ -101,6 +101,7 @@ namespace StarWriter.Core
             if (other.TryGetComponent<ShipGeometry>(out var shipGeometry))
             {
                 PerformShipImpactEffects(shipGeometry);
+                Debug.Log("ship impact");
             }
             if (other.TryGetComponent<TrailBlock>(out var trailBlock) && (selfSkim || trailBlock.Team != team))
             {
@@ -112,7 +113,7 @@ namespace StarWriter.Core
         void StartSkim(TrailBlock trailBlock)
         {
 
-            if (skimVisualFX && (selfSkim || trailBlock.Team != team))
+            if (skimVisualFX && (selfSkim || trailBlock.Team != team)) 
             {
                 StartCoroutine(DisplaySkimParticleEffectCoroutine(trailBlock));
             }

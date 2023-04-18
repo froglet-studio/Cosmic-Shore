@@ -39,7 +39,7 @@ namespace StarWriter.Core
         string playerName;
         public string PlayerName { get => playerName; set => playerName = value; }
 
-        void Start()
+        protected virtual void Start()
         {
             if (warp) shards = GameObject.FindGameObjectWithTag("field");
 
