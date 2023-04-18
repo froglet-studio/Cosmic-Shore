@@ -84,15 +84,12 @@ namespace StarWriter.Core
         [Header("optional ship Components")]
         [SerializeField] GameObject AOEPrefab;
         [SerializeField] Skimmer farFieldSkimmer;
-        [ShowIf(ShipActions.DropFakeCrystal)]
-        [SerializeField] FakeCrystal fakeCrystal;
+        [ShowIf(ShipActions.DropFakeCrystal)] [SerializeField] FakeCrystal fakeCrystal;
 
         [Header("Environment Interactions")]
         public List<CrystalImpactEffects> crystalImpactEffects;
-        [ShowIf(CrystalImpactEffects.AreaOfEffectExplosion)]
-        [SerializeField] float minExplosionScale = 50;
-        [ShowIf(CrystalImpactEffects.AreaOfEffectExplosion)]
-        [SerializeField] float maxExplosionScale = 400;
+        [ShowIf(CrystalImpactEffects.AreaOfEffectExplosion)] [SerializeField] float minExplosionScale = 50;
+        [ShowIf(CrystalImpactEffects.AreaOfEffectExplosion)] [SerializeField] float maxExplosionScale = 400;
 
         List<TrailBlockImpactEffects> trailBlockImpactEffects;
         [SerializeField] float blockChargeChange;
@@ -109,49 +106,31 @@ namespace StarWriter.Core
         public List<ShipActions> idleEffects;
         public List<ShipActions> minimumSpeedStraightEffects;
 
-        [ShowIf(ShipActions.ZoomOut)]
-        [SerializeField] float cameraGrowthRate = 1;
-        [ShowIf(ShipActions.ZoomOut)]
-        [SerializeField] float cameraShrinkRate = 1;
-        [ShowIf(ShipActions.GrowTrail)]
-        [SerializeField] float minTrailYScale = 15;
-        [ShowIf(ShipActions.GrowTrail)]
-        [SerializeField] float maxTrailYScale = 100;
+        [ShowIf(ShipActions.ZoomOut)] [SerializeField] float cameraGrowthRate = 1;
+        [ShowIf(ShipActions.ZoomOut)] [SerializeField] float cameraShrinkRate = 1;
+        [ShowIf(ShipActions.GrowTrail)] [SerializeField] float minTrailYScale = 15;
+        [ShowIf(ShipActions.GrowTrail)] [SerializeField] float maxTrailYScale = 100;
 
-        [ShowIf(ShipActions.GrowTrail)]
-        [SerializeField] float trailGrowthRate = 1;
-        [ShowIf(ShipActions.GrowTrail)]
-        [SerializeField] float trailShrinkRate = 1;
-        [ShowIf(ShipActions.GrowSkimmer)]
-        [SerializeField] float skimmerGrowthRate = 1;
-        [ShowIf(ShipActions.GrowSkimmer)]
-        [SerializeField] float skimmerShrinkRate = 1;
+        [ShowIf(ShipActions.GrowTrail)] [SerializeField] float trailGrowthRate = 1;
+        [ShowIf(ShipActions.GrowTrail)] [SerializeField] float trailShrinkRate = 1;
+        [ShowIf(ShipActions.GrowSkimmer)] [SerializeField] float skimmerGrowthRate = 1;
+        [ShowIf(ShipActions.GrowSkimmer)] [SerializeField] float skimmerShrinkRate = 1;
 
         [Header("Passive Effects")]
         public List<ShipLevelEffects> LevelEffects;
         
-        [ShowIf(ShipLevelEffects.ScaleGap)]
-        [SerializeField] float minGap = 0;
-        [ShowIf(ShipLevelEffects.ScaleGap)]
-        [SerializeField] float maxGap = 0;
-        [ShowIf(ShipLevelEffects.ScaleSkimmers)]
-        [SerializeField] float minFarFieldSkimmerScale = 100;
-        [ShowIf(ShipLevelEffects.ScaleSkimmers)]
-        [SerializeField] float maxFarFieldSkimmerScale = 200;
-        [ShowIf(ShipLevelEffects.ScaleSkimmers)]
-        [SerializeField] float minNearFieldSkimmerScale = 15;
-        [ShowIf(ShipLevelEffects.ScaleSkimmers)]
-        [SerializeField] float maxNearFieldSkimmerScale = 100;
+        [ShowIf(ShipLevelEffects.ScaleGap)] [SerializeField] float minGap = 0;
+        [ShowIf(ShipLevelEffects.ScaleGap)] [SerializeField] float maxGap = 0;
+        [ShowIf(ShipLevelEffects.ScaleSkimmers)] [SerializeField] float minFarFieldSkimmerScale = 100;
+        [ShowIf(ShipLevelEffects.ScaleSkimmers)] [SerializeField] float maxFarFieldSkimmerScale = 200;
+        [ShowIf(ShipLevelEffects.ScaleSkimmers)] [SerializeField] float minNearFieldSkimmerScale = 15;
+        [ShowIf(ShipLevelEffects.ScaleSkimmers)] [SerializeField] float maxNearFieldSkimmerScale = 100;
 
         // TODO: move these into GunShipController
-        [ShowIf(ShipLevelEffects.ScaleProjectiles)]
-        [SerializeField] float minProjectileScale = 1;
-        [ShowIf(ShipLevelEffects.ScaleProjectiles)]
-        [SerializeField] float maxProjectileScale = 10;
-        [ShowIf(ShipLevelEffects.ScaleProjectileBlocks)]
-        [SerializeField] Vector3 minProjectileBlockScale = new Vector3(1.5f, 1.5f, 3f);
-        [ShowIf(ShipLevelEffects.ScaleProjectileBlocks)]
-        [SerializeField] Vector3 maxProjectileBlockScale = new Vector3(1.5f, 1.5f, 30f);
+        [ShowIf(ShipLevelEffects.ScaleProjectiles)] [SerializeField] float minProjectileScale = 1;
+        [ShowIf(ShipLevelEffects.ScaleProjectiles)] [SerializeField] float maxProjectileScale = 10;
+        [ShowIf(ShipLevelEffects.ScaleProjectileBlocks)] [SerializeField] Vector3 minProjectileBlockScale = new Vector3(1.5f, 1.5f, 3f);
+        [ShowIf(ShipLevelEffects.ScaleProjectileBlocks)] [SerializeField] Vector3 maxProjectileBlockScale = new Vector3(1.5f, 1.5f, 30f);
 
         public List<ShipControlOverrides> ControlOverrides;
         [ShowIf(ShipControlOverrides.CloseCam)] public float closeCamDistance;
@@ -682,16 +661,16 @@ namespace StarWriter.Core
             {
                 switch (effect)
                 {
-                    case global::ShipLevelEffects.ScaleSkimmers:
+                    case ShipLevelEffects.ScaleSkimmers:
                         ScaleSkimmersWithLevel();
                         break;
-                    case global::ShipLevelEffects.ScaleGap:
+                    case ShipLevelEffects.ScaleGap:
                         ScaleGapWithLevel();
                         break;
-                    case global::ShipLevelEffects.ScaleProjectiles:
+                    case ShipLevelEffects.ScaleProjectiles:
                         ScaleProjectilesWithLevel();
                         break;
-                    case global::ShipLevelEffects.ScaleProjectileBlocks:
+                    case ShipLevelEffects.ScaleProjectileBlocks:
                         ScaleProjectileBlocksWithLevel();
                         break;
                 }
