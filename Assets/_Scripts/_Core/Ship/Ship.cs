@@ -1,70 +1,11 @@
-using System;
+
 using System.Collections;
 using System.Collections.Generic;
 using StarWriter.Core.Input;
-using UnityEditor;
 using UnityEngine;
 
 namespace StarWriter.Core
 {
-
-    using System.Reflection;
-
-
-    [CustomEditor(typeof(Ship))]
-    public class ShipEditor : Editor
-    {
-        public override void OnInspectorGUI()
-        {
-            serializedObject.Update();
-            var shipScript = (Ship)target;
-
-            SerializedProperty property = serializedObject.GetIterator();
-
-            while (property.NextVisible(true))
-            {
-                FieldInfo fieldInfo = shipScript.GetType().GetField(property.name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly);
-
-                if (fieldInfo != null)
-                {
-                    ShowIfAttribute showIfControlOverrideAttribute = (ShowIfAttribute)Attribute.GetCustomAttribute(
-                        fieldInfo,
-                        typeof(ShowIfAttribute)
-                    );
-
-                    if (showIfControlOverrideAttribute == null 
-                        || shipScript.ControlOverrides.Contains(showIfControlOverrideAttribute.ControlOverride)
-                        || shipScript.LevelEffects.Contains(showIfControlOverrideAttribute.LevelEffect)
-                        || shipScript.crystalImpactEffects.Contains(showIfControlOverrideAttribute.CrystalImpactEffect)
-                        || shipScript.fullSpeedStraightEffects.Contains(showIfControlOverrideAttribute.Action)
-                        || shipScript.rightStickEffects.Contains(showIfControlOverrideAttribute.Action)
-                        || shipScript.leftStickEffects.Contains(showIfControlOverrideAttribute.Action)
-                        || shipScript.flipEffects.Contains(showIfControlOverrideAttribute.Action)
-                        || shipScript.idleEffects.Contains(showIfControlOverrideAttribute.Action)
-                        || shipScript.minimumSpeedStraightEffects.Contains(showIfControlOverrideAttribute.Action))
-                    {
-                        EditorGUILayout.PropertyField(property, true);
-                    }
-                }
-            }
-            serializedObject.ApplyModifiedProperties();
-        }
-    }
-    
-
-    [AttributeUsage(AttributeTargets.Field, AllowMultiple = false, Inherited = true)]
-    public class ShowIfAttribute : PropertyAttribute
-    {
-        public ShipControlOverrides ControlOverride { get; private set; }
-        public ShipActions Action { get; private set; }
-        public ShipLevelEffects LevelEffect { get; private set; }
-        public CrystalImpactEffects CrystalImpactEffect { get; private set; }
-
-        public ShowIfAttribute(ShipControlOverrides controlOverride) { ControlOverride = controlOverride; }
-        public ShowIfAttribute(ShipActions action) { Action = action; }
-        public ShowIfAttribute(ShipLevelEffects levelEffect) { LevelEffect = levelEffect; }
-        public ShowIfAttribute(CrystalImpactEffects crystalImpactEffect) { CrystalImpactEffect = crystalImpactEffect; }
-    }
 
     [RequireComponent(typeof(ResourceSystem))]
     [RequireComponent(typeof(TrailSpawner))]

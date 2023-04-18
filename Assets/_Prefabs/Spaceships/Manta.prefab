@@ -331,8 +331,7 @@ MonoBehaviour:
   farFieldSkimmer: {fileID: 3138628630497430536}
   fakeCrystal: {fileID: 8379901470580388096, guid: f7e728a0fa445ed41bc8c1c565fa3f21,
     type: 3}
-  crystalImpactEffects: 000000000600000003000000
-  trailBlockImpactEffects: 000000000300000002000000
+  crystalImpactEffects: 06000000030000000b000000
   minExplosionScale: 50
   maxExplosionScale: 500
   blockChargeChange: 0
@@ -348,17 +347,17 @@ MonoBehaviour:
   cameraShrinkRate: 5
   minTrailYScale: 15
   maxTrailYScale: 100
-  skimmerGrowthRate: 1
-  skimmerShrinkRate: 1
   trailGrowthRate: 1
   trailShrinkRate: 1
+  skimmerGrowthRate: 1
+  skimmerShrinkRate: 1
   LevelEffects: 
+  minGap: 0
+  maxGap: 0
   minFarFieldSkimmerScale: 100
   maxFarFieldSkimmerScale: 200
   minNearFieldSkimmerScale: 15
   maxNearFieldSkimmerScale: 100
-  minGap: 0
-  maxGap: 0
   minProjectileScale: 1
   maxProjectileScale: 10
   minProjectileBlockScale: {x: 1.5, y: 1.5, z: 3}
