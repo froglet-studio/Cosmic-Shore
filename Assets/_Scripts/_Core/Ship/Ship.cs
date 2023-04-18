@@ -32,15 +32,16 @@ namespace StarWriter.Core
                         typeof(ShowIfAttribute)
                     );
 
-                    if (showIfControlOverrideAttribute == null || shipScript.ControlOverrides.Contains(showIfControlOverrideAttribute.ControlOverride)
-                                                               || shipScript.LevelEffects.Contains(showIfControlOverrideAttribute.LevelEffect)
-                                                               || shipScript.crystalImpactEffects.Contains(showIfControlOverrideAttribute.CrystalImpactEffect)
-                                                               || shipScript.fullSpeedStraightEffects.Contains(showIfControlOverrideAttribute.Action)
-                                                               || shipScript.rightStickEffects.Contains(showIfControlOverrideAttribute.Action)
-                                                               || shipScript.leftStickEffects.Contains(showIfControlOverrideAttribute.Action)
-                                                               || shipScript.flipEffects.Contains(showIfControlOverrideAttribute.Action)
-                                                               || shipScript.idleEffects.Contains(showIfControlOverrideAttribute.Action)
-                                                               || shipScript.minimumSpeedStraightEffects.Contains(showIfControlOverrideAttribute.Action))
+                    if (showIfControlOverrideAttribute == null 
+                        || shipScript.ControlOverrides.Contains(showIfControlOverrideAttribute.ControlOverride)
+                        || shipScript.LevelEffects.Contains(showIfControlOverrideAttribute.LevelEffect)
+                        || shipScript.crystalImpactEffects.Contains(showIfControlOverrideAttribute.CrystalImpactEffect)
+                        || shipScript.fullSpeedStraightEffects.Contains(showIfControlOverrideAttribute.Action)
+                        || shipScript.rightStickEffects.Contains(showIfControlOverrideAttribute.Action)
+                        || shipScript.leftStickEffects.Contains(showIfControlOverrideAttribute.Action)
+                        || shipScript.flipEffects.Contains(showIfControlOverrideAttribute.Action)
+                        || shipScript.idleEffects.Contains(showIfControlOverrideAttribute.Action)
+                        || shipScript.minimumSpeedStraightEffects.Contains(showIfControlOverrideAttribute.Action))
                     {
                         EditorGUILayout.PropertyField(property, true);
                     }
