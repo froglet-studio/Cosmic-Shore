@@ -57,15 +57,16 @@ public class GunShipController : ShipController
 
     public void BigFire()
     {
-        if (resourceSystem.CurrentAmmo > resourceSystem.MaxAmmo / 10f)
+        
+        if (resourceSystem.CurrentAmmo > resourceSystem.MaxAmmo / 10f) // TODO: WIP magic numbers
         {
-            resourceSystem.ChangeAmmoAmount(-resourceSystem.MaxAmmo / 10f);
+            resourceSystem.ChangeAmmoAmount(-resourceSystem.MaxAmmo / 10f); // TODO: WIP magic numbers
 
             Vector3 inheritedVelocity;
             if (attached) inheritedVelocity = transform.forward;
             else inheritedVelocity = shipData.Course;
 
-            // TODO: magic numbers
+            // TODO: WIP magic numbers
             topGun.FireGun(projectileContainer.transform, 90, inheritedVelocity * shipData.Speed, ProjectileScale * 15, BlockScale * 2, true, 3f);
         }
     }

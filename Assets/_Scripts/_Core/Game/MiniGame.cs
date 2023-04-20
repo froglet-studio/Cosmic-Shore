@@ -1,7 +1,6 @@
 using StarWriter.Core.Input;
 using System.Collections;
 using System.Collections.Generic;
-using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -16,7 +15,7 @@ public class MiniGame : MonoBehaviour
     
     [SerializeField] int NumberOfRounds = int.MaxValue;
     [SerializeField] GameObject PlayerOrigin;
-    [SerializeField] GameObject EndGameScreen;
+    [SerializeField] GameObject EndGameScreen; // TODO: maybe this gets unified with the HUD -> there's something that shows/hides HUD, end game, etc
     protected List<Player> Players;
 
     List<Teams> PlayerTeams = new List<Teams>() { Teams.Green, Teams.Red, Teams.Blue, Teams.Yellow };
@@ -59,8 +58,6 @@ public class MiniGame : MonoBehaviour
         foreach (var turnMonitor in TurnMonitors)
             if (turnMonitor is TimeBasedTurnMonitor tbtMonitor)
                 tbtMonitor.display = HUD.RoundTimeDisplay;
-
-        //StartNewGame();
 
         // Give other objects a few moments to start
         StartCoroutine(StartNewGameCoroutine());

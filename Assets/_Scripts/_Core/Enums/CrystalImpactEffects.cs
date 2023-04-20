@@ -2,7 +2,6 @@
 // Always assign a static numeric value to your enum types
 public enum CrystalImpactEffects
 {
-    
     FillCharge = 1,
     DrainAmmo = 2,
     GainOneThirdMaxAmmo = 3,
@@ -14,5 +13,4 @@ public enum CrystalImpactEffects
     PlayFakeCrystalHaptics = 9,
     ReduceSpeed = 10,
     PlayHaptics = 11,
-
 }

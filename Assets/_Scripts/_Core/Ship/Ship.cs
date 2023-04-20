@@ -1,4 +1,3 @@
-
 using System.Collections;
 using System.Collections.Generic;
 using StarWriter.Core.Input;
@@ -6,57 +5,51 @@ using UnityEngine;
 
 namespace StarWriter.Core
 {
-
     [RequireComponent(typeof(ResourceSystem))]
     [RequireComponent(typeof(TrailSpawner))]
+    [RequireComponent(typeof(ShipData))]
     public class Ship : MonoBehaviour
     {
+        [HideInInspector] public CameraManager cameraManager;
+        [HideInInspector] public InputController inputController;
+        [HideInInspector] public ResourceSystem ResourceSystem;
+
         [Header("ship Meta")]
         [SerializeField] string Name;
         [SerializeField] public ShipTypes ShipType;
 
         [Header("ship Components")]
+        [HideInInspector] public TrailSpawner TrailSpawner;
         [SerializeField] Skimmer nearFieldSkimmer;
         [SerializeField] GameObject OrientationHandle;
-        [SerializeField] List<GameObject> shipGeometries;
-        [HideInInspector] public TrailSpawner TrailSpawner;
+        [SerializeField] public List<GameObject> shipGeometries;
         [SerializeField] GameObject head;
         ShipController shipController;
+        ShipData shipData;
 
         [Header("optional ship Components")]
         [SerializeField] GameObject AOEPrefab;
         [SerializeField] Skimmer farFieldSkimmer;
-        [ShowIf(ShipActions.DropFakeCrystal)] [SerializeField] FakeCrystal fakeCrystal;
 
         [Header("Environment Interactions")]
         public List<CrystalImpactEffects> crystalImpactEffects;
         [ShowIf(CrystalImpactEffects.AreaOfEffectExplosion)] [SerializeField] float minExplosionScale = 50;
         [ShowIf(CrystalImpactEffects.AreaOfEffectExplosion)] [SerializeField] float maxExplosionScale = 400;
 
-        List<TrailBlockImpactEffects> trailBlockImpactEffects;
+        [SerializeField] List<TrailBlockImpactEffects> trailBlockImpactEffects;
         [SerializeField] float blockChargeChange;
 
         [Header("Configuration")]
-        public float boostMultiplier = 4f; //TODO: Move to ShipController
+        public float boostMultiplier = 4f; // TODO: Move to ShipController
         public float boostFuelAmount = -.01f; 
-        
-        [Header("Dynamically Assignable Controls")]
-        public List<ShipActions> fullSpeedStraightEffects;
-        public List<ShipActions> rightStickEffects;
-        public List<ShipActions> leftStickEffects;
-        public List<ShipActions> flipEffects;
-        public List<ShipActions> idleEffects;
-        public List<ShipActions> minimumSpeedStraightEffects;
 
-        [ShowIf(ShipActions.ZoomOut)] [SerializeField] float cameraGrowthRate = 1;
-        [ShowIf(ShipActions.ZoomOut)] [SerializeField] float cameraShrinkRate = 1;
-        [ShowIf(ShipActions.GrowTrail)] [SerializeField] float minTrailYScale = 15;
-        [ShowIf(ShipActions.GrowTrail)] [SerializeField] float maxTrailYScale = 100;
-
-        [ShowIf(ShipActions.GrowTrail)] [SerializeField] float trailGrowthRate = 1;
-        [ShowIf(ShipActions.GrowTrail)] [SerializeField] float trailShrinkRate = 1;
-        [ShowIf(ShipActions.GrowSkimmer)] [SerializeField] float skimmerGrowthRate = 1;
-        [ShowIf(ShipActions.GrowSkimmer)] [SerializeField] float skimmerShrinkRate = 1;
+        [SerializeField] List<ShipActionAbstractBase> maxSpeedStraightActions;
+        [SerializeField] List<ShipActionAbstractBase> minSpeedStraightActions;
+        [SerializeField] List<ShipActionAbstractBase> leftStickShipActions;
+        [SerializeField] List<ShipActionAbstractBase> rightStickShipActions;
+        [SerializeField] List<ShipActionAbstractBase> flipShipActions;
+        [SerializeField] List<ShipActionAbstractBase> idleShipActions;
+        Dictionary<InputEvents, List<ShipActionAbstractBase>> ShipControlActions;
 
         [Header("Passive Effects")]
         public List<ShipLevelEffects> LevelEffects;
@@ -65,8 +58,8 @@ namespace StarWriter.Core
         [ShowIf(ShipLevelEffects.ScaleGap)] [SerializeField] float maxGap = 0;
         [ShowIf(ShipLevelEffects.ScaleSkimmers)] [SerializeField] float minFarFieldSkimmerScale = 100;
         [ShowIf(ShipLevelEffects.ScaleSkimmers)] [SerializeField] float maxFarFieldSkimmerScale = 200;
-        [ShowIf(ShipLevelEffects.ScaleSkimmers)] [SerializeField] float minNearFieldSkimmerScale = 15;
-        [ShowIf(ShipLevelEffects.ScaleSkimmers)] [SerializeField] float maxNearFieldSkimmerScale = 100;
+        [SerializeField] float minNearFieldSkimmerScale = 15;
+        [SerializeField] float maxNearFieldSkimmerScale = 100;
 
         // TODO: move these into GunShipController
         [ShowIf(ShipLevelEffects.ScaleProjectiles)] [SerializeField] float minProjectileScale = 1;
@@ -75,32 +68,17 @@ namespace StarWriter.Core
         [ShowIf(ShipLevelEffects.ScaleProjectileBlocks)] [SerializeField] Vector3 maxProjectileBlockScale = new Vector3(1.5f, 1.5f, 30f);
 
         public List<ShipControlOverrides> ControlOverrides;
-        [ShowIf(ShipControlOverrides.CloseCam)] public float closeCamDistance;
-        [ShowIf(ShipControlOverrides.FarCam)] [SerializeField] float farCamDistance;
+        [SerializeField] float closeCamDistance;
+        [SerializeField] float farCamDistance;
 
-        public Dictionary<InputEvents, List<ShipActions>> ShipControlActions;
-
-        bool invulnerable;
-        Teams team;
-        CameraManager cameraManager;
-        Player player;
-        ShipData shipData; // TODO: this should be a required component or just a series of properties on the ship
-        [HideInInspector] public InputController inputController;
+        List<ShipSpeedModifier> SpeedModifiers = new();
         Material ShipMaterial;
         Material AOEExplosionMaterial;
-        [HideInInspector] public ResourceSystem ResourceSystem;
-        readonly List<ShipSpeedModifier> SpeedModifiers = new List<ShipSpeedModifier>();
         float speedModifierDuration = 2f;
         float speedModifierMax = 6f;
         float abilityStartTime;
-        bool skimmerGrowing;
-        bool trailGrowing;
 
-        Coroutine returnSkimmerToNeutralCoroutine;
-        Coroutine growSkimmerCoroutine;
-        Coroutine returnTrailToNeutralCoroutine;
-        Coroutine growTrailCoroutine;
-
+        Teams team;
         public Teams Team 
         { 
             get => team; 
@@ -111,6 +89,8 @@ namespace StarWriter.Core
                 if (farFieldSkimmer != null) farFieldSkimmer.team = value; 
             }
         }
+
+        Player player;
         public Player Player 
         { 
             get => player;
@@ -139,15 +119,18 @@ namespace StarWriter.Core
             foreach (var shipGeometry in shipGeometries)
                 shipGeometry.AddComponent<ShipGeometry>().Ship = this;
 
-            ShipControlActions = new Dictionary<InputEvents, List<ShipActions>> { 
-                { InputEvents.FullSpeedStraightAction, fullSpeedStraightEffects },
-                { InputEvents.MinimumSpeedStraightAction, minimumSpeedStraightEffects },
-                { InputEvents.LeftStickAction, leftStickEffects },
-                { InputEvents.RightStickAction, rightStickEffects },
-                { InputEvents.FlipAction, flipEffects },
-                { InputEvents.IdleAction, idleEffects },
+            ShipControlActions = new Dictionary<InputEvents, List<ShipActionAbstractBase>> {
+                { InputEvents.FullSpeedStraightAction, maxSpeedStraightActions },
+                { InputEvents.MinimumSpeedStraightAction, minSpeedStraightActions },
+                { InputEvents.LeftStickAction, leftStickShipActions },
+                { InputEvents.RightStickAction, rightStickShipActions },
+                { InputEvents.FlipAction, flipShipActions },
+                { InputEvents.IdleAction, idleShipActions },
             };
-            
+
+            foreach (var key in ShipControlActions.Keys)
+                foreach (var shipAction in ShipControlActions[key])
+                    shipAction.Ship = this;
         }
 
         void Update()
@@ -172,7 +155,6 @@ namespace StarWriter.Core
                 }
             }
         }
-
 
         public void PerformCrystalImpactEffects(CrystalProperties crystalProperties)
         {
@@ -269,130 +251,20 @@ namespace StarWriter.Core
         public void PerformShipControllerActions(InputEvents controlType)
         {
             abilityStartTime = Time.time;
-            var shipActions = ShipControlActions[controlType];
-
-            foreach (ShipActions action in shipActions)
-            {
-                switch (action)
-                {
-                    case ShipActions.Drift:
-                        // TODO: this should call inputController.StartDrift
-                        shipData.Drifting = true;
-                        break;
-                    case ShipActions.Boost:
-                        shipData.Boosting = true;
-                        break;
-                    case ShipActions.Invulnerability:
-                        if (!invulnerable)
-                        {
-                            invulnerable = true;
-                            trailBlockImpactEffects.Remove(TrailBlockImpactEffects.DebuffSpeed);
-                            trailBlockImpactEffects.Add(TrailBlockImpactEffects.OnlyBuffSpeed);
-                        } 
-                        break;
-                    case ShipActions.ToggleCamera:
-                        CameraManager.Instance.ToggleCloseOrFarCamOnPhoneFlip(true);
-                        TrailSpawner.ToggleBlockWaitTime(true);
-                        break;
-                    case ShipActions.ToggleMode:
-                        // TODO
-                        break;
-                    case ShipActions.ToggleGyro:
-                        inputController.OnToggleGyro(true);
-                        break;
-                    case ShipActions.ZoomOut:
-                        cameraManager.ZoomOut(cameraGrowthRate);
-                        break;
-                    case ShipActions.GrowSkimmer:
-                        GrowSkimmer(skimmerGrowthRate);
-                        break;
-                    case ShipActions.ChargeBoost: 
-                        shipData.BoostCharging = true;
-                        break;
-                    case ShipActions.GrowTrail:
-                        GrowTrail(trailGrowthRate);
-                        break;
-                    case ShipActions.Detach:
-                        Detach();
-                        shipData.GunsActive = false;
-                        break;
-                    case ShipActions.PauseGuns:
-                        shipData.GunsActive = false;
-                        break;
-                    case ShipActions.FireBigGun:
-                        if (shipController is GunShipController) ((GunShipController)shipController).BigFire();
-                        break;
-                    case ShipActions.LayBulletTrail:
-                        shipData.LayingBulletTrail = true;
-                        break;
-                    case ShipActions.DropFakeCrystal:
-                        if (ResourceSystem.CurrentAmmo > ResourceSystem.MaxAmmo / 3f)
-                        {
-                            var fake = Instantiate(fakeCrystal).GetComponent<FakeCrystal>();
-                            fake.Team = team;
-                            fake.SetPositionAndRotation(transform.position + (Quaternion.Euler(0, 0, UnityEngine.Random.Range(0, 360)) * transform.up * UnityEngine.Random.Range(40, 60)) + (transform.forward * 40), transform.rotation);
-                            ResourceSystem.ChangeAmmoAmount(-ResourceSystem.MaxAmmo / 3f);
-                        }
-                        break;
-                    case ShipActions.StartGuns:
-                        shipData.GunsActive = true;
-                        break;
-                }
-            }
+            var shipControlActions = ShipControlActions[controlType];
+            foreach (var action in shipControlActions)
+                action.StartAction();
         }
 
         public void StopShipControllerActions(InputEvents controlType)
         {
+            // TODO: p1 ability activation tracking doesn't work - needs to have separate time keeping for each control type
             if (StatsManager.Instance != null)
                 StatsManager.Instance.AbilityActivated(Team, player.PlayerName, controlType, Time.time-abilityStartTime);
 
-            var shipActions = ShipControlActions[controlType];
-            foreach (ShipActions action in shipActions)
-            {
-                switch (action)
-                {
-                    case ShipActions.Drift:
-                        shipData.Drifting = false;
-                        GetComponent<TrailSpawner>().SetDotProduct(1);
-                        break;
-                    case ShipActions.Boost:
-                        shipData.Boosting = false;
-                        break;
-                    case ShipActions.Invulnerability:
-                        invulnerable = false;
-                        trailBlockImpactEffects.Add(TrailBlockImpactEffects.DebuffSpeed);
-                        trailBlockImpactEffects.Remove(TrailBlockImpactEffects.OnlyBuffSpeed);
-                        break;
-                    case ShipActions.ToggleCamera:
-                        CameraManager.Instance.ToggleCloseOrFarCamOnPhoneFlip(false);
-                        TrailSpawner.ToggleBlockWaitTime(false);
-                        break;
-                    case ShipActions.ToggleMode:
-                        // TODO
-                        break;
-                    case ShipActions.ToggleGyro:
-                        inputController.OnToggleGyro(false);
-                        break;
-                    case ShipActions.ZoomOut:
-                        cameraManager.ResetToNeutral(cameraShrinkRate);
-                        break;
-                    case ShipActions.GrowSkimmer:
-                        ResetSkimmerToNeutral(skimmerShrinkRate);
-                        break;
-                    case ShipActions.ChargeBoost:
-                        shipData.BoostCharging = false;
-                        shipController.StartChargedBoost();
-                        break;
-                    case ShipActions.GrowTrail:
-                        ResetTrailToNeutral(trailShrinkRate);
-                        break;
-                    case ShipActions.PauseGuns:
-                        break;
-                    case ShipActions.LayBulletTrail:
-                        shipData.LayingBulletTrail = false;
-                        break;
-                }
-            }
+            var shipControlActions = ShipControlActions[controlType];
+            foreach (var action in shipControlActions)
+                action.StopAction();
         }
 
         public void ToggleCollision(bool enabled)
@@ -441,7 +313,6 @@ namespace StarWriter.Core
         //
         // Speed Modification
         //
-
         public void ModifySpeed(float amount, float duration)
         {
             SpeedModifiers.Add(new ShipSpeedModifier(amount, duration, 0));
@@ -466,11 +337,6 @@ namespace StarWriter.Core
             shipData.SpeedMultiplier = accumulatedSpeedModification;
         }
 
-        public void Rotate(Quaternion rotation)
-        {
-            shipController.Rotate(rotation);
-        }
-
         void ApplyShipMaterial()
         {
             if (ShipMaterial == null)
@@ -478,96 +344,6 @@ namespace StarWriter.Core
 
             foreach (var shipGeometry in shipGeometries)
                 shipGeometry.GetComponent<MeshRenderer>().material = ShipMaterial;
-        }
-
-        //
-        // grow skimmer
-        //
-        void GrowSkimmer(float growthRate)
-        {
-            if (returnSkimmerToNeutralCoroutine != null)
-            {
-                StopCoroutine(returnSkimmerToNeutralCoroutine);
-                returnSkimmerToNeutralCoroutine = null;
-            }
-            skimmerGrowing = true;
-            growSkimmerCoroutine = StartCoroutine(GrowSkimmerCoroutine(growthRate));
-        }
-
-        IEnumerator GrowSkimmerCoroutine(float growthRate)
-        {
-            while (skimmerGrowing && nearFieldSkimmer.transform.localScale.z < maxNearFieldSkimmerScale)
-            {
-                nearFieldSkimmer.transform.localScale += Time.deltaTime * growthRate * Vector3.one;
-                yield return null;
-            }
-        }
-
-        public void ResetSkimmerToNeutral(float shrinkRate)
-        {
-            if (growSkimmerCoroutine != null)
-            {
-                StopCoroutine(growSkimmerCoroutine);
-                growSkimmerCoroutine = null;
-            }
-            skimmerGrowing = false;
-            returnSkimmerToNeutralCoroutine = StartCoroutine(ReturnSkimmerToNeutralCoroutine(shrinkRate));
-        }
-
-        IEnumerator ReturnSkimmerToNeutralCoroutine(float shrinkRate)
-        {
-            while (nearFieldSkimmer.transform.localScale.z > minNearFieldSkimmerScale)
-            {
-                nearFieldSkimmer.transform.localScale -= Time.deltaTime * shrinkRate * Vector3.one;
-                yield return null;
-            }
-            nearFieldSkimmer.transform.localScale = minNearFieldSkimmerScale * Vector3.one;
-        }
-
-        //
-        // Grow trail
-        //
-        void GrowTrail(float growthRate)
-        {
-            if (returnTrailToNeutralCoroutine != null)
-            {
-                StopCoroutine(returnTrailToNeutralCoroutine);
-                returnTrailToNeutralCoroutine = null;
-            }
-            trailGrowing = true;
-            growTrailCoroutine = StartCoroutine(GrowTrailCoroutine(growthRate));
-        }
-
-        IEnumerator GrowTrailCoroutine(float growthRate)
-        {
-            while (trailGrowing && TrailSpawner.YScaler < maxTrailYScale)
-            {
-                TrailSpawner.YScaler += Time.deltaTime * growthRate;
-                TrailSpawner.XScaler += Time.deltaTime * growthRate;
-                yield return null;
-            }
-        }
-
-        public void ResetTrailToNeutral(float shrinkRate)
-        {
-            if (growTrailCoroutine != null)
-            {
-                StopCoroutine(growTrailCoroutine);
-                growTrailCoroutine = null;
-            }
-            trailGrowing = false;
-            returnTrailToNeutralCoroutine = StartCoroutine(ReturnTrailToNeutralCoroutine(shrinkRate));
-        }
-
-        IEnumerator ReturnTrailToNeutralCoroutine(float shrinkRate)
-        {
-            while (TrailSpawner.YScaler  > minTrailYScale)
-            {
-                TrailSpawner.YScaler -= Time.deltaTime * shrinkRate;
-                TrailSpawner.XScaler -= Time.deltaTime * shrinkRate;
-                yield return null;
-            }
-            nearFieldSkimmer.transform.localScale = minNearFieldSkimmerScale * Vector3.one;
         }
 
         //
@@ -579,18 +355,6 @@ namespace StarWriter.Core
             {
                 shipData.Attached = true;
                 shipData.AttachedTrailBlock = trailBlock;
-                IncrementLevel();
-            }
-        }
-
-        void Detach()
-        {
-            if (shipData.Attached)
-            {
-                shipData.Attached = false;
-                shipData.AttachedTrailBlock = null;
-                StartCoroutine(TemporaryIntangibilityCoroutine(3));
-                DecrementLevel();
             }
         }
 
@@ -675,17 +439,6 @@ namespace StarWriter.Core
                 }
                 yield return null;
             }
-        }
-
-        IEnumerator TemporaryIntangibilityCoroutine(float duration)
-        {
-            foreach (var geometry in shipGeometries)
-                geometry.GetComponent<Collider>().enabled = false;
-
-            yield return new WaitForSeconds(duration);
-
-            foreach (var geometry in shipGeometries)
-                geometry.GetComponent<Collider>().enabled = true;
         }
     }
 }

@@ -27,13 +27,7 @@ namespace StarWriter.Core
                     if (showIfControlOverrideAttribute == null 
                         || shipScript.ControlOverrides.Contains(showIfControlOverrideAttribute.ControlOverride)
                         || shipScript.LevelEffects.Contains(showIfControlOverrideAttribute.LevelEffect)
-                        || shipScript.crystalImpactEffects.Contains(showIfControlOverrideAttribute.CrystalImpactEffect)
-                        || shipScript.fullSpeedStraightEffects.Contains(showIfControlOverrideAttribute.Action)
-                        || shipScript.rightStickEffects.Contains(showIfControlOverrideAttribute.Action)
-                        || shipScript.leftStickEffects.Contains(showIfControlOverrideAttribute.Action)
-                        || shipScript.flipEffects.Contains(showIfControlOverrideAttribute.Action)
-                        || shipScript.idleEffects.Contains(showIfControlOverrideAttribute.Action)
-                        || shipScript.minimumSpeedStraightEffects.Contains(showIfControlOverrideAttribute.Action))
+                        || shipScript.crystalImpactEffects.Contains(showIfControlOverrideAttribute.CrystalImpactEffect))
                     {
                         EditorGUILayout.PropertyField(property, true);
                     }

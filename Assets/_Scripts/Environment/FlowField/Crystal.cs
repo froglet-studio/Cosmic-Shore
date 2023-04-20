@@ -63,19 +63,19 @@ public class Crystal : MonoBehaviour
                 case CrystalImpactEffects.PlayHaptics:
                     HapticController.PlayCrystalImpactHaptics();
                     break;
-                case CrystalImpactEffects.PlayFakeCrystalHaptics:
+                case CrystalImpactEffects.PlayFakeCrystalHaptics:   // TODO: P1 need to merge haptics and take an enum to determine which on to play
                     HapticController.PlayFakeCrystalImpactHaptics();
                     break;
                 case CrystalImpactEffects.AreaOfEffectExplosion:
                     var AOEExplosion = Instantiate(AOEPrefab).GetComponent<AOEExplosion>();
                     AOEExplosion.Material = AOEExplosionMaterial;
-                    AOEExplosion.Team = Teams.None;
+                    AOEExplosion.Team = Teams.None; // TODO: is this a bug?
                     AOEExplosion.Ship = ship;
                     AOEExplosion.SetPositionAndRotation(transform.position, transform.rotation);
                     AOEExplosion.MaxScale = maxExplosionScale;
                     break;
                 case CrystalImpactEffects.ReduceSpeed:
-                    ship.ModifySpeed(.1f, 10);
+                    ship.ModifySpeed(.1f, 10);  // TODO: Magic numbers
                     break;
             }
         }
@@ -104,28 +104,16 @@ public class Crystal : MonoBehaviour
         {
             ship.PerformCrystalImpactEffects(crystalProperties);
         }
+
         PerformCrystalImpactEffects(crystalProperties, ship);
 
 
         //
         // Do the crystal stuff that always happens (ship independent)
         //
+        Explode(ship);
 
-        // Make an exploding Crystal
-        tempMaterial = new Material(material);
-        var spentCrystal = Instantiate(SpentCrystalPrefab);
-        spentCrystal.transform.position = transform.position;
-        spentCrystal.transform.localEulerAngles = transform.localEulerAngles;
-        spentCrystal.GetComponent<Renderer>().material = tempMaterial;
-        
-        spentCrystal.GetComponent<Impact>().HandleImpact(
-            ship.transform.forward * ship.GetComponent<ShipData>().Speed, tempMaterial, ship.Player.PlayerName);
-
-        // Play SFX sound
-        AudioSource audioSource = GetComponent<AudioSource>();
-        if (audioSource == null) Debug.LogWarning("WTF, audioSource is null");                      // TODO: remove this debug if not seen _again_ by 2/12/23
-        if (AudioSystem.Instance == null) Debug.LogWarning("WTF, AudioSystem.Instance is null");    // TODO: remove this debug if not seen _again_ by 2/12/23
-        AudioSystem.Instance.PlaySFXClip(audioSource.clip, audioSource);
+        PlayExplosionAudio();
 
         // Move the Crystal
         StartCoroutine(CrystalModel.GetComponent<FadeIn>().FadeInCoroutine());
@@ -133,12 +121,32 @@ public class Crystal : MonoBehaviour
         OnCrystalMove?.Invoke();
     }
 
-    protected virtual bool IsShip(GameObject go)
+    protected void Explode(Ship ship)
+    {
+        tempMaterial = new Material(material);
+        var spentCrystal = Instantiate(SpentCrystalPrefab);
+        spentCrystal.transform.position = transform.position;
+        spentCrystal.transform.localEulerAngles = transform.localEulerAngles;
+        spentCrystal.GetComponent<Renderer>().material = tempMaterial;
+
+        spentCrystal.GetComponent<Impact>().HandleImpact(
+            ship.transform.forward * ship.GetComponent<ShipData>().Speed, tempMaterial, ship.Player.PlayerName);
+    }
+
+    protected void PlayExplosionAudio()
+    {
+        AudioSource audioSource = GetComponent<AudioSource>();
+        AudioSystem.Instance.PlaySFXClip(audioSource.clip, audioSource);
+    }
+
+    // TODO: P1 move to static ObjectResolver class
+    protected bool IsShip(GameObject go)
     {
         return go.layer == LayerMask.NameToLayer("Ships");
     }
 
-    protected virtual bool IsProjectile(GameObject go)
+    // TODO: P1 move to static ObjectResolver class
+    protected bool IsProjectile(GameObject go)
     {
         return go.layer == LayerMask.NameToLayer("Projectiles");
     }

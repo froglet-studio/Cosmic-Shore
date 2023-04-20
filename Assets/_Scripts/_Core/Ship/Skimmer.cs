@@ -1,23 +1,28 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace StarWriter.Core
 {
     public class Skimmer : MonoBehaviour
     {
-        [SerializeField] List<TrailBlockImpactEffects> trailBlockImpactEffects;
-        [SerializeField] List<SkimmerStayEffects> skimmerStayEffects;
+        [FormerlySerializedAs("trailBlockImpactEffects")]
+        [SerializeField] List<TrailBlockImpactEffects> blockImpactEffects;
+        [FormerlySerializedAs("skimmerStayEffects")]
+        [SerializeField] List<SkimmerStayEffects> blockStayEffects;
         [SerializeField] List<ShipImpactEffects> shipImpactEffects;
-        [SerializeField] float time = 300f;
+        [SerializeField] float particleDurationAtSpeedOne = 300f;
         [SerializeField] bool skimVisualFX = true;
         [SerializeField] bool selfSkim = true;
-        [SerializeField] public Ship ship;
-        [SerializeField] public Player Player;
         [SerializeField] float chargeAmount;
         [SerializeField] float MultiSkimMultiplier = 0f;
         [SerializeField] bool notifyNearbyBlockCount;
+        
+        [HideInInspector] public Ship ship;
+        [HideInInspector] public Player Player;
         [HideInInspector] public Teams team;
+        
         ResourceSystem resourceSystem;
 
         Dictionary<string, float> skimStartTimes;
@@ -33,10 +38,10 @@ namespace StarWriter.Core
             if (ship != null) resourceSystem = ship.GetComponent<ResourceSystem>();
         }
 
-        // Maja added this to try and enable shark skimmer smashing
-        void PerformTrailImpactEffects(TrailBlockProperties trailBlockProperties)
+        // TODO: p1- review -- Maja added this to try and enable shark skimmer smashing
+        void PerformBlockImpactEffects(TrailBlockProperties trailBlockProperties)
         {
-            foreach (TrailBlockImpactEffects effect in trailBlockImpactEffects)
+            foreach (TrailBlockImpactEffects effect in blockImpactEffects)
             {
                 switch (effect)
                 {
@@ -80,9 +85,9 @@ namespace StarWriter.Core
             }
         }
 
-        void PerformTrailStayEffects(float chargeAmount)
+        void PerformBlockStayEffects(float chargeAmount)
         {
-            foreach (SkimmerStayEffects effect in skimmerStayEffects)
+            foreach (SkimmerStayEffects effect in blockStayEffects)
             {
                 switch (effect)
                 {
@@ -106,13 +111,12 @@ namespace StarWriter.Core
             if (other.TryGetComponent<TrailBlock>(out var trailBlock) && (selfSkim || trailBlock.Team != team))
             {
                 StartSkim(trailBlock);
-                PerformTrailImpactEffects(trailBlock.TrailBlockProperties);
+                PerformBlockImpactEffects(trailBlock.TrailBlockProperties);
             }      
         }
 
         void StartSkim(TrailBlock trailBlock)
         {
-
             if (skimVisualFX && (selfSkim || trailBlock.Team != team)) 
             {
                 StartCoroutine(DisplaySkimParticleEffectCoroutine(trailBlock));
@@ -127,7 +131,6 @@ namespace StarWriter.Core
             if (notifyNearbyBlockCount)
                 NotifyNearbyBlockCount();
         }
-
 
         void OnTriggerStay(Collider other)
         {
@@ -148,7 +151,7 @@ namespace StarWriter.Core
                 fuel += (activelySkimmingBlockCount * MultiSkimMultiplier);
 
                 // grant the fuel
-                PerformTrailStayEffects(fuel);
+                PerformBlockStayEffects(fuel);
             }
         }
 
@@ -180,8 +183,9 @@ namespace StarWriter.Core
             float scaledTime;
             do
             {
+                // TODO: 
                 var distance = trailBlock.transform.position - transform.position;
-                scaledTime = time / ship.GetComponent<ShipData>().Speed;
+                scaledTime = particleDurationAtSpeedOne / ship.GetComponent<ShipData>().Speed; // TODO: divide by zero possible
                 particle.transform.localScale = new Vector3(1, 1, distance.magnitude);
                 particle.transform.SetPositionAndRotation(transform.position, Quaternion.LookRotation(distance, trailBlock.transform.up));
                 timer++;

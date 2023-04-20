@@ -1,5 +1,54 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
+--- !u!1 &477942985372925436
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 808689176682098569}
+  - component: {fileID: 867704553499413969}
+  m_Layer: 0
+  m_Name: DropDecoyAction
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &808689176682098569
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 477942985372925436}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 8075578658670966254}
+  m_RootOrder: 0
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &867704553499413969
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 477942985372925436}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b5e32b0be2767fc45a0f5d685b466496, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  decoysPerFullAmmo: 3
+  dropForwardDistance: 40
+  dropRadiusMinRange: 40
+  dropRadiusMaxRange: 60
+  decoy: {fileID: 8379901470580388096, guid: f7e728a0fa445ed41bc8c1c565fa3f21, type: 3}
 --- !u!1 &956471339697806072
 GameObject:
   m_ObjectHideFlags: 0
@@ -301,6 +350,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 3397189760217659071}
+  - {fileID: 8075578658670966254}
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -337,12 +387,20 @@ MonoBehaviour:
   blockChargeChange: 0
   boostMultiplier: 2
   boostFuelAmount: 0
-  fullSpeedStraightEffects: 
-  rightStickEffects: 0e000000
-  leftStickEffects: 0e000000
-  flipEffects: 
-  idleEffects: 
-  minimumSpeedStraightEffects: 
+  fullSpeedStraightActions: 
+  rightStickActions: 0e000000
+  leftStickActions: 0e000000
+  flipActions: 
+  idleActions: 
+  minimumSpeedStraightActions: 
+  maxSpeedStraightActions: []
+  minSpeedStraightActions: []
+  leftStickShipActions:
+  - {fileID: 867704553499413969}
+  rightStickShipActions:
+  - {fileID: 867704553499413969}
+  flipShipActions: []
+  idleShipActions: []
   cameraGrowthRate: 5
   cameraShrinkRate: 5
   minTrailYScale: 15
@@ -365,6 +423,7 @@ MonoBehaviour:
   ControlOverrides: 0300000004000000
   closeCamDistance: -2
   farCamDistance: -160
+  cameraManager: {fileID: 0}
   inputController: {fileID: 0}
   ResourceSystem: {fileID: 0}
 --- !u!114 &6964962696344697388
@@ -532,6 +591,38 @@ MonoBehaviour:
   YawScaler: 60
   RollScaler: 90
   RotationThrottleScaler: 0
+--- !u!1 &7850473780452578400
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 8075578658670966254}
+  m_Layer: 0
+  m_Name: ShipActions
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &8075578658670966254
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7850473780452578400}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 808689176682098569}
+  m_Father: {fileID: 5928382658856804067}
+  m_RootOrder: 1
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &7989725769420682486
 GameObject:
   m_ObjectHideFlags: 0
@@ -874,6 +965,16 @@ PrefabInstance:
         type: 3}
       propertyPath: skimVisualFX
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
+      propertyPath: blockImpactEffects.Array.size
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
+      propertyPath: blockImpactEffects.Array.data[0]
+      value: 7
       objectReference: {fileID: 0}
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}

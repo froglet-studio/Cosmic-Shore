@@ -1,0 +1,35 @@
+using StarWriter.Core;
+using UnityEngine;
+
+public class DropDecoyAction : ShipActionAbstractBase
+{
+    [SerializeField] float decoysPerFullAmmo = 3;
+    [SerializeField] float dropForwardDistance = 40;
+    [SerializeField] float dropRadiusMinRange = 40;
+    [SerializeField] float dropRadiusMaxRange = 60;
+    [SerializeField] FakeCrystal decoy;
+    ResourceSystem resourceSystem;
+
+    void Start()
+    {
+        resourceSystem = ship.ResourceSystem;
+    }
+    public override void StartAction()
+    {
+        if (resourceSystem.CurrentAmmo > resourceSystem.MaxAmmo / decoysPerFullAmmo)
+        {
+            resourceSystem.ChangeAmmoAmount(-resourceSystem.MaxAmmo / decoysPerFullAmmo);
+
+            var fake = Instantiate(decoy).GetComponent<FakeCrystal>();
+            fake.Team = ship.Team;
+            fake.transform.position = ship.transform.position;
+            fake.transform.position += Quaternion.Euler(0, 0, Random.Range(0, 360)) * ship.transform.up * Random.Range(dropRadiusMinRange, dropRadiusMaxRange);
+            fake.transform.position += ship.transform.forward * dropForwardDistance;
+        }
+    }
+
+    public override void StopAction()
+    {
+
+    }
+}

@@ -142,17 +142,6 @@ public class ShipController : MonoBehaviour
                             transform.forward) * accumulatedRotation;
     }
 
-    public void Rotate(Vector3 euler)
-    {
-        accumulatedRotation = Quaternion.Euler(euler) * accumulatedRotation;
-    }
-
-    public void Rotate(Quaternion rotation, bool replace = false)
-    {
-        if (replace) accumulatedRotation = rotation;
-        else accumulatedRotation = rotation * accumulatedRotation;
-    }
-
     protected virtual void MoveShip()
     {
         float boostAmount = 1f;

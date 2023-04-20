@@ -2,7 +2,6 @@
 // Always assign a static numeric value to your enum types
 public enum ShipActions
 {
-
     Boost = 1,
     Invulnerability = 2,
     ToggleCamera = 3,
