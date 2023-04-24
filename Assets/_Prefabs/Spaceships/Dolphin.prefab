@@ -871,7 +871,8 @@ MonoBehaviour:
   fakeCrystal: {fileID: 0}
   crystalImpactEffects: 0b0000000600000002000000
   minExplosionScale: 200
-  maxExplosionScale: 400
+  maxExplosionScale: 800
+  trailBlockImpactEffects: 00000000010000000300000002000000
   blockChargeChange: 0
   boostMultiplier: 0
   boostFuelAmount: 0

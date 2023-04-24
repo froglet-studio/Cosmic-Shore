@@ -11,4 +11,5 @@ public enum ShipTypes
     MantaAI = 6,
     DolphinAI = 7,
     SharkAI = 8,
+    Bufo = 9
 }

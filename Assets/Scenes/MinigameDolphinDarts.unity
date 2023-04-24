@@ -304,6 +304,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 267734840}
+  - component: {fileID: 267734841}
   m_Layer: 0
   m_Name: Spawners
   m_TagString: Untagged
@@ -327,6 +328,30 @@ Transform:
   m_Father: {fileID: 1471404063}
   m_RootOrder: 5
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &267734841
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 267734839}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b5d3599573f5d3348865c8d5efe8c29f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  numberOfSegments: 3
+  spawnableSegments:
+  - {fileID: 1344816199}
+  positioningScheme: 1
+  spawnSegmentWeights:
+  - 1
+  Seed: 0
+  InitializeOnStart: 0
+  origin: {x: 0, y: 0, z: 0}
+  sphereRadius: 220
+  StraightLineLength: 400
+  DifficultyAngle: 90
 --- !u!114 &322422721 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 750320516025525672, guid: 494deef066b46a24a9b5226c4203833c,
@@ -703,7 +728,7 @@ MonoBehaviour:
   DartBoard: {fileID: 1344816199}
   Crystal: {fileID: 1568959833}
   CrystalStartPosition: {x: 0, y: 0, z: 0}
-  SegmentSpawner: {fileID: 1471404064}
+  SegmentSpawner: {fileID: 267734841}
 --- !u!114 &1078953707
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1468,7 +1493,7 @@ MonoBehaviour:
   redTrailBlock: {fileID: 4563009547826722997, guid: 34146ee2267ac224da1df0d1326f4563,
     type: 3}
   blockCount: 6
-  ringCount: 21
+  ringCount: 18
   ringThickness: 8
   gap: 15
   PlayerOne: {fileID: 1649340654}
@@ -1495,7 +1520,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1471404063}
-  - component: {fileID: 1471404064}
   m_Layer: 0
   m_Name: Environment
   m_TagString: Untagged
@@ -1524,29 +1548,6 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 3
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1471404064
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1471404062}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b5d3599573f5d3348865c8d5efe8c29f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  numberOfSegments: 3
-  spawnableSegments:
-  - {fileID: 1344816199}
-  positioningScheme: 1
-  spawnSegmentWeights:
-  - 1
-  Seed: 0
-  InitializeOnStart: 0
-  origin: {x: 0, y: 0, z: 0}
-  StraightLineLength: 400
-  DifficultyAngle: 90
 --- !u!114 &1568959833 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 6588436222817790495, guid: fced5b15da3ad1d41b4e3b7385609e37,

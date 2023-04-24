@@ -748,8 +748,7 @@ MonoBehaviour:
     type: 3}
   farFieldSkimmer: {fileID: 0}
   fakeCrystal: {fileID: 0}
-  crystalImpactEffects: 0b0000000100000006000000
-  fakeCrystalImpactEffects: 0000000005000000
+  crystalImpactEffects: 0100000006000000
   minExplosionScale: 400
   maxExplosionScale: 400
   trailBlockImpactEffects: 
@@ -791,12 +790,9 @@ MonoBehaviour:
   maxProjectileScale: 10
   minProjectileBlockScale: {x: 1.5, y: 1.5, z: 3}
   maxProjectileBlockScale: {x: 1.5, y: 1.5, z: 30}
-  ControlOverrides: 0300000004000000 
+  ControlOverrides: 0300000004000000
   closeCamDistance: -10
   farCamDistance: -60
-  cameraManager: {fileID: 0}
-  BoostDecayGrowthRate: 0.03
-  MaxBoostDecay: 10
   inputController: {fileID: 0}
   ResourceSystem: {fileID: 0}
 --- !u!114 &6964962696344697388

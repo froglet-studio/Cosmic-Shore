@@ -73,7 +73,7 @@ namespace StarWriter.Core
 
         List<ShipSpeedModifier> SpeedModifiers = new();
         Material ShipMaterial;
-        Material AOEExplosionMaterial;
+        public Material AOEExplosionMaterial;
         float speedModifierDuration = 2f;
         float speedModifierMax = 6f;
         float abilityStartTime;

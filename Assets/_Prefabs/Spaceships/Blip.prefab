@@ -309,6 +309,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: da47fdb990762b04cbf4714c4f814b47, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  topGun: {fileID: 6325554860274326311}
+  ProjectileScale: 1
+  BlockScale: {x: 4, y: 4, z: 1}
 --- !u!1 &6417075533431866457
 GameObject:
   m_ObjectHideFlags: 0
@@ -329,7 +332,7 @@ GameObject:
   - component: {fileID: 1435252848482629424}
   - component: {fileID: 7081412522392871879}
   m_Layer: 0
-  m_Name: GunFish
+  m_Name: Blip
   m_TagString: Player_Ship
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -364,20 +367,22 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a273abd40c7104c4392188723ab929d6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Name: GunManta
+  cameraManager: {fileID: 0}
+  inputController: {fileID: 0}
+  ResourceSystem: {fileID: 0}
+  Name: Blip
   ShipType: 4
+  TrailSpawner: {fileID: 874579555101021522}
   nearFieldSkimmer: {fileID: 874579554510349383}
   OrientationHandle: {fileID: 1878660672777590133}
   shipGeometries:
   - {fileID: 7989725769420682486}
   - {fileID: 956471339697806072}
   - {fileID: 2306761366267364778}
-  TrailSpawner: {fileID: 874579555101021522}
   head: {fileID: 0}
   AOEPrefab: {fileID: 2728798890556433942, guid: 4a855af160021d241b8c1ac70cf2d792,
     type: 3}
   farFieldSkimmer: {fileID: 0}
-  fakeCrystal: {fileID: 0}
   crystalImpactEffects: 0b0000000800000003000000
   minExplosionScale: 50
   maxExplosionScale: 500
@@ -385,12 +390,6 @@ MonoBehaviour:
   blockChargeChange: 0
   boostMultiplier: 2
   boostFuelAmount: 0
-  fullSpeedStraightActions: 
-  rightStickActions: 0c000000
-  leftStickActions: 0a000000
-  flipActions: 
-  idleActions: 0e000000
-  minimumSpeedStraightActions: 
   maxSpeedStraightActions: []
   minSpeedStraightActions: []
   leftStickShipActions:
@@ -401,14 +400,6 @@ MonoBehaviour:
   flipShipActions: []
   idleShipActions:
   - {fileID: 1861400119619617689}
-  cameraGrowthRate: 1
-  cameraShrinkRate: 1
-  minTrailYScale: 15
-  maxTrailYScale: 100
-  trailGrowthRate: 1
-  trailShrinkRate: 1
-  skimmerGrowthRate: 1
-  skimmerShrinkRate: 1
   LevelEffects: 020000000300000001000000
   minGap: 1
   maxGap: 2
@@ -423,9 +414,7 @@ MonoBehaviour:
   ControlOverrides: 0300000004000000
   closeCamDistance: -10
   farCamDistance: -50
-  cameraManager: {fileID: 0}
-  inputController: {fileID: 0}
-  ResourceSystem: {fileID: 0}
+  AOEExplosionMaterial: {fileID: 0}
 --- !u!114 &6964962696344697388
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -527,7 +516,6 @@ MonoBehaviour:
   topGun: {fileID: 6325554860274326311}
   leftGun: {fileID: 3459134076240855180}
   rightGun: {fileID: 6375360903085026602}
-  projectileContainer: {fileID: 0}
   trailFollower: {fileID: 7081412522392871879}
   chargeDepletionRate: -0.05
   rechargeRate: 0.1
@@ -564,8 +552,6 @@ MonoBehaviour:
   BlockScale: {x: 4, y: 4, z: 0.4}
   nextBlockIndex: 1
   previousBlockIndex: 0
-  maxTrailSpeed: 150
-  reducedTrailSpeed: 50
 --- !u!114 &3440187540988767646
 MonoBehaviour:
   m_ObjectHideFlags: 0

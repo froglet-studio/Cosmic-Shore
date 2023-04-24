@@ -8,7 +8,7 @@ public class GunShipControllerExperiment : ShipController
     [SerializeField] Gun rightGun;
     [SerializeField] TrailFollower trailFollower;
 
-    float chargeDepletionRate = -.05f;
+    //float chargeDepletionRate = -.05f;
     float rechargeRate = .1f;
 
     public float ProjectileScale = 1f;
@@ -20,8 +20,8 @@ public class GunShipControllerExperiment : ShipController
     bool moveForward = true;
     bool attached = false;
 
-    [SerializeField] float maxTrailSpeed = 1f;
-    [SerializeField] float reducedTrailSpeed = 1f;
+    //[SerializeField] float maxTrailSpeed = 1f;
+    //[SerializeField] float reducedTrailSpeed = 1f;
 
     //int padding = 3; 
 

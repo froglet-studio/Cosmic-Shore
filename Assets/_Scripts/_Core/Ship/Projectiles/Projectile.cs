@@ -11,7 +11,7 @@ namespace StarWriter.Core
         [SerializeField] List<TrailBlockImpactEffects> trailBlockImpactEffects;
         [SerializeField] List<ShipImpactEffects> shipImpactEffects;
 
-        void OnTriggerEnter(Collider other)
+        protected virtual void OnTriggerEnter(Collider other)
         {
             if (other.TryGetComponent<TrailBlock>(out var trailBlock))
             {
@@ -30,7 +30,7 @@ namespace StarWriter.Core
             }
         }
 
-        void PerformTrailImpactEffects(TrailBlockProperties trailBlockProperties)
+        protected virtual void PerformTrailImpactEffects(TrailBlockProperties trailBlockProperties)
         {
             foreach (TrailBlockImpactEffects effect in trailBlockImpactEffects)
             {
@@ -46,7 +46,7 @@ namespace StarWriter.Core
             }
         }
 
-        void PerformShipImpactEffects(ShipGeometry shipGeometry)
+        protected virtual void PerformShipImpactEffects(ShipGeometry shipGeometry)
         {
             foreach (ShipImpactEffects effect in shipImpactEffects)
             {

@@ -594,12 +594,11 @@ MonoBehaviour:
   - {fileID: 5736286126695899062}
   TrailSpawner: {fileID: 874579555101021522}
   head: {fileID: 3710282027580066907}
-  AOEPrefab: {fileID: 2728798890556433942, guid: 00bae5f156b110d4d9271f0b774b63ab,
+  AOEPrefab: {fileID: 2728798890556433942, guid: bdb355fdad94b1442ae09bb64ed1ad14,
     type: 3}
   farFieldSkimmer: {fileID: 0}
   fakeCrystal: {fileID: 0}
   crystalImpactEffects: 0600000007000000
-  trailBlockImpactEffects: 03000000
   minExplosionScale: 50
   maxExplosionScale: 25
   blockChargeChange: 0
@@ -615,26 +614,24 @@ MonoBehaviour:
   cameraShrinkRate: 1
   minTrailYScale: 15
   maxTrailYScale: 100
-  skimmerGrowthRate: 1
-  skimmerShrinkRate: 1
   trailGrowthRate: 1
   trailShrinkRate: 1
-  levelEffects: 
+  skimmerGrowthRate: 1
+  skimmerShrinkRate: 1
+  LevelEffects: 
+  minGap: 2
+  maxGap: 2
   minFarFieldSkimmerScale: 100
   maxFarFieldSkimmerScale: 200
   minNearFieldSkimmerScale: 15
   maxNearFieldSkimmerScale: 100
-  minGap: 2
-  maxGap: 2
   minProjectileScale: 1
   maxProjectileScale: 10
   minProjectileBlockScale: {x: 1.5, y: 1.5, z: 3}
   maxProjectileBlockScale: {x: 1.5, y: 1.5, z: 30}
-  controlOverrides: 
+  ControlOverrides: 
   closeCamDistance: -0.5
   farCamDistance: -15
-  BoostDecayGrowthRate: 0.03
-  MaxBoostDecay: 10
   inputController: {fileID: 0}
   ResourceSystem: {fileID: 0}
 --- !u!114 &3440187540988767646

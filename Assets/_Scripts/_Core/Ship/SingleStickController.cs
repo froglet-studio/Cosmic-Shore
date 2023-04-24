@@ -2,12 +2,10 @@ using UnityEngine;
 using StarWriter.Core;
 using System.Collections.Generic;
 
-public class GunShipController : ShipController
+public class SingleStickController : ShipController
 {
     [SerializeField] Gun topGun;
-    [SerializeField] Gun leftGun;
-    [SerializeField] Gun rightGun;
-    GameObject projectileContainer;
+    [SerializeField] GameObject projectileContainer;
     [SerializeField] TrailFollower trailFollower;
     [SerializeField] float chargeDepletionRate = -.05f;
     [SerializeField] float rechargeRate = .1f;
@@ -24,7 +22,7 @@ public class GunShipController : ShipController
         base.Start();
 
         projectileContainer = new GameObject($"{ship.Player.PlayerName}_Projectiles");
-        guns = new List<Gun>() { topGun, leftGun, rightGun };
+        guns = new List<Gun>() { topGun};
 
         foreach (var gun in guns)
         {
