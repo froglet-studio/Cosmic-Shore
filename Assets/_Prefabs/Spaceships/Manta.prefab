@@ -366,34 +366,30 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a273abd40c7104c4392188723ab929d6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  cameraManager: {fileID: 0}
+  inputController: {fileID: 0}
+  ResourceSystem: {fileID: 0}
   Name: GreenManta
   ShipType: 1
+  TrailSpawner: {fileID: 874579555101021522}
+  ShipController: {fileID: 0}
   nearFieldSkimmer: {fileID: 874579554510349383}
   OrientationHandle: {fileID: 1878660672777590133}
   shipGeometries:
   - {fileID: 7989725769420682486}
   - {fileID: 956471339697806072}
   - {fileID: 2306761366267364778}
-  TrailSpawner: {fileID: 874579555101021522}
   head: {fileID: 0}
   AOEPrefab: {fileID: 2728798890556433942, guid: f5ecfb9923155a84c860975d559b2714,
     type: 3}
   farFieldSkimmer: {fileID: 3138628630497430536}
-  fakeCrystal: {fileID: 8379901470580388096, guid: f7e728a0fa445ed41bc8c1c565fa3f21,
-    type: 3}
   crystalImpactEffects: 06000000030000000b000000
   minExplosionScale: 50
   maxExplosionScale: 500
-  trailBlockImpactEffects: 
+  trailBlockImpactEffects: 000000000300000002000000
   blockChargeChange: 0
   boostMultiplier: 2
   boostFuelAmount: 0
-  fullSpeedStraightActions: 
-  rightStickActions: 0e000000
-  leftStickActions: 0e000000
-  flipActions: 
-  idleActions: 
-  minimumSpeedStraightActions: 
   maxSpeedStraightActions: []
   minSpeedStraightActions: []
   leftStickShipActions:
@@ -402,14 +398,6 @@ MonoBehaviour:
   - {fileID: 867704553499413969}
   flipShipActions: []
   idleShipActions: []
-  cameraGrowthRate: 5
-  cameraShrinkRate: 5
-  minTrailYScale: 15
-  maxTrailYScale: 100
-  trailGrowthRate: 1
-  trailShrinkRate: 1
-  skimmerGrowthRate: 1
-  skimmerShrinkRate: 1
   LevelEffects: 
   minGap: 0
   maxGap: 0
@@ -424,9 +412,7 @@ MonoBehaviour:
   ControlOverrides: 0300000004000000
   closeCamDistance: -2
   farCamDistance: -160
-  cameraManager: {fileID: 0}
-  inputController: {fileID: 0}
-  ResourceSystem: {fileID: 0}
+  AOEExplosionMaterial: {fileID: 0}
 --- !u!114 &6964962696344697388
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -489,9 +475,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9846c9cd6cfac424797ca640ebcb7a04, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  inputSpeed: 1
-  speedMultiplier: 1
-  speed: 0
+  Speed: 0
   Boosting: 0
   BoostCharging: 0
   BoostDecaying: 0

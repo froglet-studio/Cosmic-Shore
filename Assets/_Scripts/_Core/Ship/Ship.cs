@@ -20,11 +20,12 @@ namespace StarWriter.Core
 
         [Header("ship Components")]
         [HideInInspector] public TrailSpawner TrailSpawner;
+        [HideInInspector] public ShipController ShipController;
         [SerializeField] Skimmer nearFieldSkimmer;
         [SerializeField] GameObject OrientationHandle;
         [SerializeField] public List<GameObject> shipGeometries;
         [SerializeField] GameObject head;
-        ShipController shipController;
+        
         ShipData shipData;
 
         [Header("optional ship Components")]
@@ -71,11 +72,9 @@ namespace StarWriter.Core
         [SerializeField] float closeCamDistance;
         [SerializeField] float farCamDistance;
 
-        List<ShipSpeedModifier> SpeedModifiers = new();
         Material ShipMaterial;
         public Material AOEExplosionMaterial;
         float speedModifierDuration = 2f;
-        float speedModifierMax = 6f;
         float abilityStartTime;
 
         Teams team;
@@ -105,7 +104,7 @@ namespace StarWriter.Core
         void Awake()
         {
             ResourceSystem = GetComponent<ResourceSystem>();
-            shipController = GetComponent<ShipController>();
+            ShipController = GetComponent<ShipController>();
             TrailSpawner = GetComponent<TrailSpawner>();
             shipData = GetComponent<ShipData>();
         }
@@ -133,10 +132,6 @@ namespace StarWriter.Core
                     shipAction.Ship = this;
         }
 
-        void Update()
-        {
-            ApplySpeedModifiers();
-        }
 
         void ApplyShipControlOverrides(List<ShipControlOverrides> controlOverrides)
         {
@@ -190,7 +185,7 @@ namespace StarWriter.Core
                         ResourceSystem.ChangeBoostAmount(crystalProperties.fuelAmount);
                         break;
                     case CrystalImpactEffects.Boost:
-                        SpeedModifiers.Add(new ShipSpeedModifier(crystalProperties.speedBuffAmount, 4 * speedModifierDuration, 0));
+                        ShipController.ModifyThrottle(crystalProperties.speedBuffAmount, 4 * speedModifierDuration);
                         break;
                     case CrystalImpactEffects.DrainAmmo:
                         ResourceSystem.ChangeAmmoAmount(-ResourceSystem.CurrentAmmo);
@@ -222,14 +217,14 @@ namespace StarWriter.Core
                         ResourceSystem.ChangeAmmoAmount(-ResourceSystem.CurrentAmmo / 2f);
                         break;
                     case TrailBlockImpactEffects.DebuffSpeed:
-                        ModifySpeed(trailBlockProperties.speedDebuffAmount, speedModifierDuration);
+                        ShipController.ModifyThrottle(trailBlockProperties.speedDebuffAmount, speedModifierDuration);
                         break;
                     case TrailBlockImpactEffects.DeactivateTrailBlock:
                         break;
                     case TrailBlockImpactEffects.ActivateTrailBlock:
                         break;
                     case TrailBlockImpactEffects.OnlyBuffSpeed:
-                        if (trailBlockProperties.speedDebuffAmount > 1) SpeedModifiers.Add(new ShipSpeedModifier(trailBlockProperties.speedDebuffAmount, speedModifierDuration, 0));
+                        if (trailBlockProperties.speedDebuffAmount > 1) ShipController.ModifyThrottle(trailBlockProperties.speedDebuffAmount, speedModifierDuration);
                         break;
                     case TrailBlockImpactEffects.ChangeBoost:
                         ResourceSystem.ChangeBoostAmount(blockChargeChange);
@@ -310,32 +305,6 @@ namespace StarWriter.Core
             farFieldSkimmer?.gameObject.SetActive(false);
         }
 
-        //
-        // Speed Modification
-        //
-        public void ModifySpeed(float amount, float duration)
-        {
-            SpeedModifiers.Add(new ShipSpeedModifier(amount, duration, 0));
-        }
-
-        void ApplySpeedModifiers()
-        {
-            float accumulatedSpeedModification = 1;
-            for (int i = SpeedModifiers.Count - 1; i >= 0; i--)
-            {
-                var modifier = SpeedModifiers[i];
-                modifier.elapsedTime += Time.deltaTime;
-                SpeedModifiers[i] = modifier;
-
-                if (modifier.elapsedTime >= modifier.duration)
-                    SpeedModifiers.RemoveAt(i);
-                else
-                    accumulatedSpeedModification *= Mathf.Lerp(modifier.initialValue, 1f, modifier.elapsedTime / modifier.duration);
-            }
-
-            accumulatedSpeedModification = Mathf.Min(accumulatedSpeedModification, speedModifierMax);
-            shipData.SpeedMultiplier = accumulatedSpeedModification;
-        }
 
         void ApplyShipMaterial()
         {
@@ -410,7 +379,7 @@ namespace StarWriter.Core
         void ScaleProjectilesWithLevel()
         {
             // TODO: 
-            if (shipController is GunShipController controller)
+            if (ShipController is GunShipController controller)
                 controller.ProjectileScale = minProjectileScale + ((ResourceSystem.CurrentLevel / ResourceSystem.MaxLevel) * (maxProjectileScale - minProjectileScale));
             else
                 Debug.LogWarning("Trying to scale projectile of ShipController that is not a GunShipController");
@@ -418,7 +387,7 @@ namespace StarWriter.Core
 
         void ScaleProjectileBlocksWithLevel()
         {
-            if (shipController is GunShipController controller)
+            if (ShipController is GunShipController controller)
                 controller.BlockScale = minProjectileBlockScale + ((ResourceSystem.CurrentLevel / ResourceSystem.MaxLevel) * (maxProjectileBlockScale - minProjectileBlockScale));
             else
                 Debug.LogWarning("Trying to scale projectile block of ShipController that is not a GunShipController");

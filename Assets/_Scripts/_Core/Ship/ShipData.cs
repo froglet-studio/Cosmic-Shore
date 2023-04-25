@@ -5,12 +5,7 @@ namespace StarWriter.Core
     [System.Serializable]
     public class ShipData : MonoBehaviour
     {
-        [SerializeField] float inputSpeed = 1;
-                  public float InputSpeed { set { inputSpeed = Mathf.Max(value, 0); speed = inputSpeed * speedMultiplier;}}
-        [SerializeField] float speedMultiplier = 1;
-                  public float SpeedMultiplier { set { speedMultiplier = Mathf.Max(value, 0); speed = inputSpeed * speedMultiplier; } } 
-        [SerializeField] float speed;
-                  public float Speed { get { speed = inputSpeed * speedMultiplier; return speed; } }
+        public float Speed;
 
         public bool Boosting = false;
         public bool BoostCharging = false;
@@ -36,8 +31,8 @@ namespace StarWriter.Core
             Attached = false;
             AttachedTrailBlock = null;
             GunsActive = false;
-            InputSpeed = 1;
-            SpeedMultiplier = 1;
+            //InputSpeed = 1;
+            //SpeedMultiplier = 1;
             Course = transform.forward;
         }
     }

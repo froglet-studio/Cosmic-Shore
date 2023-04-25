@@ -276,6 +276,7 @@ MonoBehaviour:
   ControlOverrides: 0300000004000000
   closeCamDistance: -10
   farCamDistance: -50
+  AOEExplosionMaterial: {fileID: 0}
 --- !u!114 &6964962696344697388
 MonoBehaviour:
   m_ObjectHideFlags: 0

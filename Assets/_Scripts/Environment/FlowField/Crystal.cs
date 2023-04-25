@@ -75,7 +75,7 @@ public class Crystal : MonoBehaviour
                     AOEExplosion.MaxScale = maxExplosionScale;
                     break;
                 case CrystalImpactEffects.ReduceSpeed:
-                    ship.ModifySpeed(.1f, 10);  // TODO: Magic numbers
+                    ship.ShipController.ModifyThrottle(.1f, 10);  // TODO: Magic numbers
                     break;
             }
         }

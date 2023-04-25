@@ -30,11 +30,13 @@ namespace StarWriter.Core
         public TrailBlock AttachedTrailBlock { get { return attachedTrail.GetBlock(attachedBlockIndex); } }
 
         ShipData shipData;
+        Ship ship;
 
         void Start()
         {
             // TODO: find a better way of setting team that doesn't assume a ship
-            team = GetComponent<Ship>().Team;
+            ship = GetComponent<Ship>();
+            team = ship.Team;
             shipData = GetComponent<ShipData>();
         }
 
@@ -73,9 +75,11 @@ namespace StarWriter.Core
 
             var distanceToNextBlock = Vector3.Magnitude(nextBlock.transform.position - currentBlock.transform.position) * (1-percentTowardNextBlock);
             var speedToNextBlock = Throttle * GetTerrainAwareBlockSpeed(currentBlock);
+            
+            speedToNextBlock *= ship.ShipController.SpeedMultiplier;
+            shipData.Speed = speedToNextBlock;
+
             var timeToNextBlock = distanceToNextBlock / speedToNextBlock;
-            shipData.InputSpeed = speedToNextBlock;
-            speedToNextBlock = shipData.Speed;
 
             while (timeRemaining > timeToNextBlock)
             {
@@ -87,12 +91,11 @@ namespace StarWriter.Core
                 
                 distanceToNextBlock = Vector3.Magnitude(nextBlock.transform.position - currentBlock.transform.position);
                 speedToNextBlock = Throttle * GetTerrainAwareBlockSpeed(currentBlock);
-                shipData.InputSpeed = speedToNextBlock;
-                speedToNextBlock = shipData.Speed;
+                speedToNextBlock *= ship.ShipController.SpeedMultiplier;
+                shipData.Speed = speedToNextBlock;
 
                 timeToNextBlock = distanceToNextBlock / speedToNextBlock;
             }
-
 
             // Accumulate the remain
             distanceToTravel += speedToNextBlock * timeRemaining;
@@ -101,10 +104,8 @@ namespace StarWriter.Core
             transform.position = attachedTrail.Project(attachedBlockIndex, percentTowardNextBlock, direction, distanceToTravel, 
                                                       out attachedBlockIndex, out percentTowardNextBlock, out TrailFollowerDirection outDirection, out Vector3 course);
 
-
             shipData.Course = course;
             
-
             if (outDirection != direction)
             {
                 // Ping ponged

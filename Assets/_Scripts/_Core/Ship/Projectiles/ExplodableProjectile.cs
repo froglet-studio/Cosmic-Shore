@@ -33,6 +33,5 @@ namespace StarWriter.Core
             if (AOEExplosion is AOEBlockCreation aoeBlockcreation)
                 aoeBlockcreation.SetBlockMaterial(Ship.TrailSpawner.GetBlockMaterial());
         }
-
     }
 }

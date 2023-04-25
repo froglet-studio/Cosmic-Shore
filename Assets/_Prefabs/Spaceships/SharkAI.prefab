@@ -472,6 +472,7 @@ GameObject:
   - component: {fileID: 3440187540988767646}
   - component: {fileID: 1435252848482629424}
   - component: {fileID: 3496801340156507927}
+  - component: {fileID: 2465068438299943845}
   m_Layer: 0
   m_Name: SharkAI
   m_TagString: Untagged
@@ -557,9 +558,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9846c9cd6cfac424797ca640ebcb7a04, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  inputSpeed: 1
-  speedMultiplier: 1
-  speed: 0
+  Speed: 0
   Boosting: 0
   BoostCharging: 0
   BoostDecaying: 0
@@ -582,8 +581,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a273abd40c7104c4392188723ab929d6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  cameraManager: {fileID: 0}
+  inputController: {fileID: 0}
+  ResourceSystem: {fileID: 0}
   Name: SharkAI
   ShipType: 8
+  TrailSpawner: {fileID: 874579555101021522}
+  ShipController: {fileID: 0}
   nearFieldSkimmer: {fileID: 874579554510349383}
   OrientationHandle: {fileID: 7280205895322334339}
   shipGeometries:
@@ -592,32 +596,23 @@ MonoBehaviour:
   - {fileID: 1022800225184736306}
   - {fileID: 434498384779577929}
   - {fileID: 5736286126695899062}
-  TrailSpawner: {fileID: 874579555101021522}
   head: {fileID: 3710282027580066907}
   AOEPrefab: {fileID: 2728798890556433942, guid: bdb355fdad94b1442ae09bb64ed1ad14,
     type: 3}
   farFieldSkimmer: {fileID: 0}
-  fakeCrystal: {fileID: 0}
   crystalImpactEffects: 0600000007000000
   minExplosionScale: 50
   maxExplosionScale: 25
+  trailBlockImpactEffects: 
   blockChargeChange: 0
   boostMultiplier: 3
   boostFuelAmount: -0.01
-  fullSpeedStraightEffects: 
-  rightStickEffects: 
-  leftStickEffects: 
-  flipEffects: 
-  idleEffects: 
-  minimumSpeedStraightEffects: 
-  cameraGrowthRate: 1
-  cameraShrinkRate: 1
-  minTrailYScale: 15
-  maxTrailYScale: 100
-  trailGrowthRate: 1
-  trailShrinkRate: 1
-  skimmerGrowthRate: 1
-  skimmerShrinkRate: 1
+  maxSpeedStraightActions: []
+  minSpeedStraightActions: []
+  leftStickShipActions: []
+  rightStickShipActions: []
+  flipShipActions: []
+  idleShipActions: []
   LevelEffects: 
   minGap: 2
   maxGap: 2
@@ -632,8 +627,7 @@ MonoBehaviour:
   ControlOverrides: 
   closeCamDistance: -0.5
   farCamDistance: -15
-  inputController: {fileID: 0}
-  ResourceSystem: {fileID: 0}
+  AOEExplosionMaterial: {fileID: 0}
 --- !u!114 &3440187540988767646
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -703,6 +697,29 @@ MonoBehaviour:
   yawAnimationScaler: 80
   lerpAmount: 2
   smallLerpAmount: 0.7
+--- !u!114 &2465068438299943845
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 95baa921cf22958449a3143749d5e0e3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  MinimumSpeed: 10
+  ThrottleScaler: 50
+  DefaultMinimumSpeed: 10
+  DefaultThrottleScaler: 50
+  BoostDecay: 1
+  MaxBoostDecay: 10
+  BoostDecayGrowthRate: 0.03
+  PitchScaler: 130
+  YawScaler: 130
+  RollScaler: 130
+  RotationThrottleScaler: 0
 --- !u!1 &7020314743814055985
 GameObject:
   m_ObjectHideFlags: 0

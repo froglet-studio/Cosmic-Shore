@@ -2,6 +2,7 @@ using System.Collections;
 using UnityEngine;
 using StarWriter.Core;
 using StarWriter.Core.Input;
+using System.Collections.Generic;
 
 public class ShipController : MonoBehaviour
 {
@@ -32,6 +33,15 @@ public class ShipController : MonoBehaviour
     public float RollScaler = 130f;
     public float RotationThrottleScaler = 0;
 
+    List<ShipThrottleModifier> ThrottleModifiers = new();
+    List<ShipVelocityModifier> VelocityModifiers = new();
+    float speedModifierMax = 6f;
+    float velocityModifierMax = 100;
+    float throttleMultiplier = 1;
+    public float SpeedMultiplier { get { return throttleMultiplier; } }
+    Vector3 velocityShift = Vector3.zero;
+
+
     protected virtual void Start()
     {
         ship = GetComponent<Ship>();
@@ -55,17 +65,23 @@ public class ShipController : MonoBehaviour
 
     protected virtual void Update()
     {
-        if (inputController == null) 
+        if (inputController == null)
+        {
             inputController = ship.inputController;
 
-        if (inputController.Paused) 
-            return;
+            if (inputController.Paused)
+                return;
 
-        if (inputController.Idle) 
-            return;
+            if (inputController.Idle)
+                return;
+        }
+            
 
         if (shipData.BoostCharging)
             ChargeBoost();
+
+        ApplyThrottleModifiers();
+        ApplyVelocityModifiers();
 
         RotateShip();
         shipData.blockRotation = transform.rotation;
@@ -78,14 +94,23 @@ public class ShipController : MonoBehaviour
         Pitch();
         Yaw();
         Roll();
-
-        if (inputController.isGyroEnabled && !Equals(inverseInitialRotation, new Quaternion(0, 0, 0, 0)))
+        if (inputController == null)
         {
-            // Updates GameObjects blockRotation from input device's gyroscope
-            transform.rotation = Quaternion.Lerp(
-                                        transform.rotation,
-                                        accumulatedRotation * inputController.GetGyroRotation(),
-                                        lerpAmount);
+            if (inputController.isGyroEnabled && !Equals(inverseInitialRotation, new Quaternion(0, 0, 0, 0)))
+            {
+                // Updates GameObjects blockRotation from input device's gyroscope
+                transform.rotation = Quaternion.Lerp(
+                                            transform.rotation,
+                                            accumulatedRotation * inputController.GetGyroRotation(),
+                                            lerpAmount);
+            }
+            else
+            {
+                transform.rotation = Quaternion.Lerp(
+                                            transform.rotation,
+                                            accumulatedRotation,
+                                            lerpAmount);
+            }
         }
         else
         {
@@ -153,8 +178,8 @@ public class ShipController : MonoBehaviour
         if (shipData.BoostDecaying) boostAmount *= BoostDecay;
         speed = Mathf.Lerp(speed, inputController.XDiff * ThrottleScaler * boostAmount + MinimumSpeed, lerpAmount * Time.deltaTime);
 
-        // Move ship velocityDirection
-        shipData.InputSpeed = speed;
+        speed *= throttleMultiplier;
+        shipData.Speed = speed;
 
         if (shipData.Drifting)
         {
@@ -165,6 +190,53 @@ public class ShipController : MonoBehaviour
             shipData.Course = transform.forward;
         }
 
-        transform.position += shipData.Speed * Time.deltaTime * shipData.Course;
+        transform.position += (speed * shipData.Course + velocityShift) * Time.deltaTime;
+    }
+
+    public void ModifyThrottle(float amount, float duration)
+    {
+        ThrottleModifiers.Add(new ShipThrottleModifier(amount, duration, 0));
+    }
+
+    public void ModifyVelocity(Vector3 amount, float duration)
+    {
+        VelocityModifiers.Add(new ShipVelocityModifier(amount, duration, 0));
+    }
+
+    void ApplyThrottleModifiers()
+    {
+        float accumulatedThrottleModification = 1;
+        for (int i = ThrottleModifiers.Count - 1; i >= 0; i--)
+        {
+            var modifier = ThrottleModifiers[i];
+            modifier.elapsedTime += Time.deltaTime;
+            ThrottleModifiers[i] = modifier;
+
+            if (modifier.elapsedTime >= modifier.duration)
+                ThrottleModifiers.RemoveAt(i);
+            else
+                accumulatedThrottleModification *= Mathf.Lerp(modifier.initialValue, 1f, modifier.elapsedTime / modifier.duration);
+        }
+
+        accumulatedThrottleModification = Mathf.Min(accumulatedThrottleModification, speedModifierMax);
+        throttleMultiplier = Mathf.Max(accumulatedThrottleModification, 0) ;
+    }
+
+    void ApplyVelocityModifiers()
+    {
+        Vector3 accumulatedVelocityModification = Vector3.zero;
+        for (int i = VelocityModifiers.Count - 1; i >= 0; i--)
+        {
+            var modifier = VelocityModifiers[i];
+            modifier.elapsedTime += Time.deltaTime;
+            VelocityModifiers[i] = modifier;
+
+            if (modifier.elapsedTime >= modifier.duration)
+                VelocityModifiers.RemoveAt(i);
+            else
+                accumulatedVelocityModification += Vector3.Lerp(modifier.initialValue, Vector3.zero, modifier.elapsedTime / modifier.duration);
+        }
+
+        velocityShift = Mathf.Min(accumulatedVelocityModification.magnitude, velocityModifierMax) * accumulatedVelocityModification.normalized;
     }
 }

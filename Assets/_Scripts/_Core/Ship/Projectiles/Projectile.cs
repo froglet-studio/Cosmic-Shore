@@ -63,10 +63,11 @@ namespace StarWriter.Core
                         shipGeometry.Ship.transform.localRotation = Quaternion.LookRotation(Velocity);
                         break;
                     case ShipImpactEffects.Knockback:
-                        shipGeometry.Ship.transform.localPosition += Velocity/2f;
+                        //shipGeometry.Ship.transform.localPosition += Velocity/2f;
+                        shipGeometry.Ship.ShipController.ModifyVelocity(Velocity,2);
                         break;
                     case ShipImpactEffects.Stun:
-                        shipGeometry.Ship.ModifySpeed(.1f, 10);
+                        shipGeometry.Ship.ShipController.ModifyThrottle(.1f, 10);
                         break;
                 }
             }

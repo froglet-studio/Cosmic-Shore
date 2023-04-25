@@ -1,10 +1,12 @@
-public struct ShipSpeedModifier
+using UnityEngine;
+
+public struct ShipVelocityModifier
 {
-    public float initialValue;
+    public Vector3 initialValue;
     public float duration;
     public float elapsedTime;
 
-    public ShipSpeedModifier(float initialValue, float duration, float elapsedTime)
+    public ShipVelocityModifier(Vector3 initialValue, float duration, float elapsedTime)
     {
         this.initialValue = initialValue;
         this.duration = duration;
