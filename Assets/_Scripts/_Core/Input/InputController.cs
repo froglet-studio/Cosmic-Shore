@@ -117,8 +117,8 @@ namespace StarWriter.Core.Input
                 //    ship.PerformShipControllerActions(InputEvents.IdleAction);
                 //}
 
-                XSum = Ease(rightTouch.x + leftTouch.x);
-                YSum = Ease(rightTouch.y + leftTouch.y);
+                XSum = Ease(rightTouch.x + leftTouch.x); //negative is because joysitcks and unity axes don't agree
+                YSum = -Ease(rightTouch.y + leftTouch.y);
                 XDiff = (leftTouch.x - rightTouch.x + 2.1f) / 4.1f;
                 YDiff = Ease(rightTouch.y - leftTouch.y);
 
@@ -302,10 +302,10 @@ namespace StarWriter.Core.Input
 
         void Reparameterize()
         {
-            XSum = ((rightTouch.x + leftTouch.x) / (Screen.currentResolution.width) - 1);
-            YSum = ((rightTouch.y + leftTouch.y) / (Screen.currentResolution.height) - 1);
-            XDiff = (rightTouch.x - leftTouch.x) / (Screen.currentResolution.width);
-            YDiff = (rightTouch.y - leftTouch.y) / (Screen.currentResolution.width);
+            XSum = ((rightTouch.x + leftTouch.x) / Screen.currentResolution.width) - 1; //negative is because joysitcks and unity axes don't agree
+            YSum = (-(rightTouch.y + leftTouch.y) / Screen.currentResolution.height) - 1;
+            XDiff = (rightTouch.x - leftTouch.x) / Screen.currentResolution.width;
+            YDiff = (rightTouch.y - leftTouch.y) / Screen.currentResolution.width;
 
             if (invertYEnabled)
                 YSum *= -1;

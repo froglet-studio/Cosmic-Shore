@@ -341,7 +341,7 @@ MonoBehaviour:
   offset: 0
   initialWavelength: 5
   minWavelength: 1
-  gap: 5
+  gap: 7
   InnerDimensions: {x: 0, y: 0, z: 0}
   defaultWaitTime: 0.5
   waitTime: 0.5
@@ -409,7 +409,7 @@ MonoBehaviour:
   crystalImpactEffects: 0600000007000000
   minExplosionScale: 50
   maxExplosionScale: 25
-  trailBlockImpactEffects: 03000000
+  trailBlockImpactEffects: 0300000002000000
   blockChargeChange: 0
   boostMultiplier: 4
   boostFuelAmount: -0.01
@@ -453,9 +453,9 @@ MonoBehaviour:
   BoostDecay: 1
   MaxBoostDecay: 10
   BoostDecayGrowthRate: 0.03
-  PitchScaler: 130
-  YawScaler: 130
-  RollScaler: 130
+  PitchScaler: 100
+  YawScaler: 100
+  RollScaler: 100
   RotationThrottleScaler: 0
 --- !u!114 &3440187540988767646
 MonoBehaviour:
@@ -470,13 +470,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   DifficultyLevel: 0
-  defaultThrottle: 1
+  defaultThrottle: 0.8
   defaultLerp: 200
   throttleIncrease: 0
   lerpIncrease: 0
   throttle: 0
   lerp: 0
-  avoidance: 0
+  avoidance: 30
   XSum: 0
   YSum: 0
   XDiff: 0

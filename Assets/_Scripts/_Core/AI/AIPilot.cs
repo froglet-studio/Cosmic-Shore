@@ -49,6 +49,10 @@ namespace StarWriter.Core.Input
         ShipData shipData;
         Ship ship;
 
+        float lastPitchTarget;
+        float lastYawTarget;
+        float lastRollTarget;
+
         RaycastHit hit;
         float maxDistance = 50f;
 
@@ -97,55 +101,59 @@ namespace StarWriter.Core.Input
 
         void Update()
         {
-            ///distance to Crystal 
-            distance = CrystalTransform.position - transform.position;
 
-            ///rotate toward Crystal
-            Quaternion newRotation = Quaternion.Lerp(transform.localRotation,
-                                                         Quaternion.LookRotation(distance, transform.up),
-                                                         1);//Mathf.Clamp(lerp/distance.magnitude,.1f,.9f));
+            Vector3 distance = CrystalTransform.position - transform.position;
+            Vector3 desiredDirection = distance.normalized;
 
-            //foreach (Corner corner in Enum.GetValues(typeof(Corner)))
-            //{
-            //    var behavior = CornerBehaviors[corner];
-            //    behavior.direction = ShootLaser(behavior.width * transform.right + behavior.height * transform.up);
-            //    newRotation = TurnAway(newRotation, behavior.direction, 
-            //                                       -transform.up + (behavior.spin * (transform.right / behavior.direction.magnitude)), 
-            //                                       avoidance / behavior.direction.magnitude);
-            //}
+            if (distance.magnitude < float.Epsilon) // Avoid division by zero
+                return;
 
-            var rotationOperator = newRotation * Quaternion.Inverse(transform.rotation);
-            XSum = Mathf.Clamp(LinearStep(rotationOperator.eulerAngles.y), -1, 1);
-            YSum = Mathf.Clamp(LinearStep(rotationOperator.eulerAngles.x), -1, 1);
-            YDiff = Mathf.Clamp(LinearStep(rotationOperator.eulerAngles.z), -1, 1);
-                    ///get better
+            Vector3 combinedLocalCrossProduct = Vector3.zero;
+            float clampedLerp = Mathf.Clamp(avoidance / distance.magnitude, 0, 0.9f);
+
+            foreach (Corner corner in Enum.GetValues(typeof(Corner)))
+            {
+                var behavior = CornerBehaviors[corner];
+                Vector3 laserHitDirection = ShootLaser(behavior.width * transform.right + behavior.height * transform.up);
+
+                Vector3 adjustedDirection = TurnAway(desiredDirection, laserHitDirection, (-transform.up + (behavior.spin * transform.right)) / laserHitDirection.magnitude, clampedLerp); // TODO: avoidance is wip
+                Vector3 crossProduct = Vector3.Cross(transform.forward, adjustedDirection);
+                Vector3 localCrossProduct = transform.InverseTransformDirection(crossProduct);
+                combinedLocalCrossProduct += localCrossProduct;
+            }
+
+            float angle = Mathf.Asin(Mathf.Clamp(combinedLocalCrossProduct.magnitude, -1f, 1f)) * Mathf.Rad2Deg;
+
+            YSum = Mathf.Clamp(angle * combinedLocalCrossProduct.x, -1, 1);
+            XSum = Mathf.Clamp(angle * combinedLocalCrossProduct.y, -1, 1);
+            YDiff = Mathf.Clamp(angle * combinedLocalCrossProduct.z, -1, 1);
+            ///get better
             lerp += lerpIncrease * Time.deltaTime;
             throttle += throttleIncrease * Time.deltaTime;
 
-            ///Move ship velocityDirection
-            //Vector3 flowVector = flowFieldData.FlowVector(transform);
-            //shipData.Speed = throttle;
-
-            //shipData.Course = transform.forward;
-
+  
             XDiff = Mathf.Clamp(throttle,0,1);
-            //transform.position += (shipData.Speed * shipData.Course) * Time.deltaTime;
-
-            //shipData.blockRotation = transform.rotation;
+           
         }
 
-        float LinearStep(float input) 
+        Vector3 TurnAway(Vector3 originalDirection, Vector3 obstacleDirection, Vector3 rotationDirection, float avoidanceFactor)
         {
-            if (input < 180) return -input / 180;
-            else return -input / 180 + 2;
+            if (obstacleDirection == Vector3.zero) // No obstacle detected
+                return originalDirection;
+
+            float dotProduct = Vector3.Dot(originalDirection, obstacleDirection.normalized);
+            if (dotProduct > 0) // Obstacle is in the direction we want to move
+                return originalDirection + rotationDirection * avoidanceFactor;
+
+            return originalDirection;
         }
 
-        Quaternion TurnAway(Quaternion initial, Vector3 direction, Vector3 down, float lerp)
+        float SigmoidResponse(float input)
         {
-            return Quaternion.Lerp(initial,
-                    Quaternion.Inverse(Quaternion.LookRotation(direction, down)),
-                       lerp);
+            float output = 2 * (1 / (1 + Mathf.Exp(-0.1f * input)) - 0.5f);
+            return output;
         }
+
 
         Vector3 ShootLaser(Vector3 position)
         {

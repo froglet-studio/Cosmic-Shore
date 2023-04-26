@@ -863,13 +863,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   DifficultyLevel: 0
-  defaultThrottle: 0.5
+  defaultThrottle: 0.7
   defaultLerp: 25
-  throttleIncrease: 0.01
+  throttleIncrease: 0.02
   lerpIncrease: 1
   throttle: 0
   lerp: 0
-  avoidance: 0
+  avoidance: 15
   XSum: 0
   YSum: 0
   XDiff: 0

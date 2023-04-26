@@ -96,9 +96,11 @@ public class ShipController : MonoBehaviour
         
         if (inputController != null)
         {
-            Pitch();
-            Yaw();
+            
             Roll();
+            Yaw();
+            Pitch();
+
             if (inputController.isGyroEnabled && !Equals(inverseInitialRotation, new Quaternion(0, 0, 0, 0)))
             {
                 // Updates GameObjects blockRotation from input device's gyroscope
@@ -151,7 +153,7 @@ public class ShipController : MonoBehaviour
     protected virtual void Pitch() // These need to not use *= because quaternions are not commutative
     {
         accumulatedRotation = Quaternion.AngleAxis(
-                            inputController.YSum * -(speed * RotationThrottleScaler + PitchScaler) * Time.deltaTime,
+                            inputController.YSum * (speed * RotationThrottleScaler + PitchScaler) * Time.deltaTime,
                             transform.right) * accumulatedRotation;
     }
 
