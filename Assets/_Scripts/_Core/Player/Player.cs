@@ -30,6 +30,9 @@ public class Player : MonoBehaviour
         shipInstance.transform.SetParent(shipContainer.transform, false);
         shipInstance.GetComponent<AIPilot>().enabled = true;
 
+        var inputController = GetComponent<InputController>();
+        inputController.ship = shipInstance;
+
         ship = shipInstance.GetComponent<Ship>();
         ship.Team = Team;
         ship.Player = this;

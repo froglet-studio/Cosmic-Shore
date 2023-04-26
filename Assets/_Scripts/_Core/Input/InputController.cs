@@ -8,6 +8,7 @@ namespace StarWriter.Core.Input
     {
         #region Ship
         [SerializeField] public Ship ship;
+        [SerializeField] public bool AutoPilotEnabled = false;
         #endregion
 
         float phoneFlipThreshold = .1f;
@@ -88,15 +89,15 @@ namespace StarWriter.Core.Input
             ReceiveInput();
         }
 
-        // WIP
-        bool AutoPilotEnabled = false;
-
         void ReceiveInput()
         {
 
             if (AutoPilotEnabled)
             {
-
+                XSum = ship.AutoPilot.XSum;
+                YSum = ship.AutoPilot.YSum;
+                XDiff = ship.AutoPilot.XDiff;
+                YDiff = ship.AutoPilot.YDiff;
             }
             else if (Gamepad.current != null)
             {

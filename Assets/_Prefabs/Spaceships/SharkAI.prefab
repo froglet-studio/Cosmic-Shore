@@ -469,10 +469,10 @@ GameObject:
   - component: {fileID: 874579555101021522}
   - component: {fileID: 874579555101021523}
   - component: {fileID: 874579555101021527}
+  - component: {fileID: 2465068438299943845}
   - component: {fileID: 3440187540988767646}
   - component: {fileID: 1435252848482629424}
   - component: {fileID: 3496801340156507927}
-  - component: {fileID: 2465068438299943845}
   m_Layer: 0
   m_Name: SharkAI
   m_TagString: Untagged
@@ -588,6 +588,7 @@ MonoBehaviour:
   ShipType: 8
   TrailSpawner: {fileID: 874579555101021522}
   ShipController: {fileID: 0}
+  AutoPilot: {fileID: 0}
   nearFieldSkimmer: {fileID: 874579554510349383}
   OrientationHandle: {fileID: 7280205895322334339}
   shipGeometries:
@@ -628,6 +629,29 @@ MonoBehaviour:
   closeCamDistance: -0.5
   farCamDistance: -15
   AOEExplosionMaterial: {fileID: 0}
+--- !u!114 &2465068438299943845
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 95baa921cf22958449a3143749d5e0e3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  MinimumSpeed: 10
+  ThrottleScaler: 50
+  DefaultMinimumSpeed: 10
+  DefaultThrottleScaler: 50
+  BoostDecay: 1
+  MaxBoostDecay: 10
+  BoostDecayGrowthRate: 0.03
+  PitchScaler: 130
+  YawScaler: 130
+  RollScaler: 130
+  RotationThrottleScaler: 0
 --- !u!114 &3440187540988767646
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -641,15 +665,20 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   DifficultyLevel: 0
-  defaultThrottle: 30
+  defaultThrottle: 0.7
   defaultLerp: 40
-  throttleIncrease: 5
+  throttleIncrease: 0
   lerpIncrease: 17
   throttle: 0
   lerp: 0
   avoidance: -23
+  XSum: 0
+  YSum: 0
+  XDiff: 0
+  YDiff: 0
   raycastHeight: 2
   raycastWidth: 2
+  autoPilotEnabled: 1
   CrystalTransform: {fileID: 0}
   flowFieldData: {fileID: 0}
 --- !u!114 &1435252848482629424
@@ -697,29 +726,6 @@ MonoBehaviour:
   yawAnimationScaler: 80
   lerpAmount: 2
   smallLerpAmount: 0.7
---- !u!114 &2465068438299943845
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6417075533431866457}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 95baa921cf22958449a3143749d5e0e3, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  MinimumSpeed: 10
-  ThrottleScaler: 50
-  DefaultMinimumSpeed: 10
-  DefaultThrottleScaler: 50
-  BoostDecay: 1
-  MaxBoostDecay: 10
-  BoostDecayGrowthRate: 0.03
-  PitchScaler: 130
-  YawScaler: 130
-  RollScaler: 130
-  RotationThrottleScaler: 0
 --- !u!1 &7020314743814055985
 GameObject:
   m_ObjectHideFlags: 0

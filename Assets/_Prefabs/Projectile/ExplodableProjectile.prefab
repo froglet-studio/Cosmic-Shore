@@ -4842,7 +4842,7 @@ MonoBehaviour:
   Ship: {fileID: 0}
   trailBlockImpactEffects: 
   shipImpactEffects: 
-  AOEPrefab: {fileID: 3479271500403630839, guid: 4a855af160021d241b8c1ac70cf2d792,
+  AOEPrefab: {fileID: 5915562654621825366, guid: 23f98261be8a7e345ab09f0504d8a76f,
     type: 3}
   minExplosionScale: 300
   maxExplosionScale: 600

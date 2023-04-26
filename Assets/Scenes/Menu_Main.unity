@@ -18950,6 +18950,12 @@ MonoBehaviour:
   m_FlexibleWidth: -1
   m_FlexibleHeight: 0
   m_LayoutPriority: 1
+--- !u!1 &1464945265 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 9106189021102876753, guid: 32cc35a6605af014c926743312133238,
+    type: 3}
+  m_PrefabInstance: {fileID: 1526305478}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1469793408
 GameObject:
   m_ObjectHideFlags: 0
@@ -20143,6 +20149,27 @@ Transform:
     type: 3}
   m_PrefabInstance: {fileID: 1526305478}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &1526305480
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1464945265}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4b03e7163961e2c4b9d04056b4fcb40e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ship: {fileID: 0}
+  AutoPilotEnabled: 0
+  PhoneFlipState: 0
+  XSum: 0
+  YSum: 0
+  XDiff: 0
+  YDiff: 0
+  Idle: 0
+  isGyroEnabled: 0
 --- !u!1 &1528014926
 GameObject:
   m_ObjectHideFlags: 0
@@ -25338,6 +25365,33 @@ RectTransform:
   m_AnchoredPosition: {x: 60, y: -95}
   m_SizeDelta: {x: 136, y: -145}
   m_Pivot: {x: 0, y: 1}
+--- !u!1 &1942904367 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 9106189021102876753, guid: 32cc35a6605af014c926743312133238,
+    type: 3}
+  m_PrefabInstance: {fileID: 1111691961}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1942904368
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1942904367}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4b03e7163961e2c4b9d04056b4fcb40e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ship: {fileID: 0}
+  AutoPilotEnabled: 0
+  PhoneFlipState: 0
+  XSum: 0
+  YSum: 0
+  XDiff: 0
+  YDiff: 0
+  Idle: 0
+  isGyroEnabled: 0
 --- !u!1 &1949510400
 GameObject:
   m_ObjectHideFlags: 0

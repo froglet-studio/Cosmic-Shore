@@ -276,6 +276,7 @@ GameObject:
   - component: {fileID: 874579555101021522}
   - component: {fileID: 874579555101021523}
   - component: {fileID: 874579555101021527}
+  - component: {fileID: 6120662786131229299}
   - component: {fileID: 3440187540988767646}
   - component: {fileID: 1435252848482629424}
   - component: {fileID: 6293426128044408357}
@@ -364,9 +365,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9846c9cd6cfac424797ca640ebcb7a04, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  inputSpeed: 1
-  speedMultiplier: 1
-  speed: 0
+  Speed: 0
   Boosting: 0
   BoostCharging: 0
   BoostDecaying: 0
@@ -389,60 +388,75 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a273abd40c7104c4392188723ab929d6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  cameraManager: {fileID: 0}
+  inputController: {fileID: 0}
+  ResourceSystem: {fileID: 0}
   Name: GreenMantaAI
   ShipType: 6
+  TrailSpawner: {fileID: 874579555101021522}
+  ShipController: {fileID: 0}
+  AutoPilot: {fileID: 0}
   nearFieldSkimmer: {fileID: 874579554510349383}
   OrientationHandle: {fileID: 4343935266849732334}
   shipGeometries:
   - {fileID: 7989725769420682486}
   - {fileID: 956471339697806072}
   - {fileID: 2306761366267364778}
-  TrailSpawner: {fileID: 874579555101021522}
   head: {fileID: 0}
   AOEPrefab: {fileID: 2728798890556433942, guid: f5ecfb9923155a84c860975d559b2714,
     type: 3}
   farFieldSkimmer: {fileID: 0}
-  fakeCrystal: {fileID: 0}
   crystalImpactEffects: 0600000007000000
-  fakeCrystalImpactEffects: 
-  trailBlockImpactEffects: 03000000
   minExplosionScale: 50
   maxExplosionScale: 25
+  trailBlockImpactEffects: 03000000
   blockChargeChange: 0
   boostMultiplier: 4
   boostFuelAmount: -0.01
-  fullSpeedStraightEffects: 
-  rightStickEffects: 
-  leftStickEffects: 
-  flipEffects: 
-  idleEffects: 
-  minimumSpeedStraightEffects: 
-  cameraGrowthRate: 1
-  cameraShrinkRate: 1
-  minTrailYScale: 15
-  maxTrailYScale: 100
-  skimmerGrowthRate: 1
-  skimmerShrinkRate: 1
-  trailGrowthRate: 1
-  trailShrinkRate: 1
-  levelEffects: 
+  maxSpeedStraightActions: []
+  minSpeedStraightActions: []
+  leftStickShipActions: []
+  rightStickShipActions: []
+  flipShipActions: []
+  idleShipActions: []
+  LevelEffects: 
+  minGap: 5
+  maxGap: 5
   minFarFieldSkimmerScale: 100
   maxFarFieldSkimmerScale: 200
   minNearFieldSkimmerScale: 15
   maxNearFieldSkimmerScale: 100
-  minGap: 5
-  maxGap: 5
   minProjectileScale: 1
   maxProjectileScale: 10
   minProjectileBlockScale: {x: 1.5, y: 1.5, z: 3}
   maxProjectileBlockScale: {x: 1.5, y: 1.5, z: 30}
-  controlOverrides: 
+  ControlOverrides: 
   closeCamDistance: 0
   farCamDistance: 0
-  BoostDecayGrowthRate: 0.03
+  AOEExplosionMaterial: {fileID: 0}
+--- !u!114 &6120662786131229299
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 95baa921cf22958449a3143749d5e0e3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  MinimumSpeed: 10
+  ThrottleScaler: 50
+  DefaultMinimumSpeed: 10
+  DefaultThrottleScaler: 50
+  BoostDecay: 1
   MaxBoostDecay: 10
-  inputController: {fileID: 0}
-  ResourceSystem: {fileID: 0}
+  BoostDecayGrowthRate: 0.03
+  PitchScaler: 130
+  YawScaler: 130
+  RollScaler: 130
+  RotationThrottleScaler: 0
 --- !u!114 &3440187540988767646
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -456,15 +470,20 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   DifficultyLevel: 0
-  defaultThrottle: 30
-  defaultLerp: 40
-  throttleIncrease: 5
-  lerpIncrease: 17
+  defaultThrottle: 1
+  defaultLerp: 200
+  throttleIncrease: 0
+  lerpIncrease: 0
   throttle: 0
   lerp: 0
-  avoidance: 23
+  avoidance: 0
+  XSum: 0
+  YSum: 0
+  XDiff: 0
+  YDiff: 0
   raycastHeight: 2
   raycastWidth: 2
+  autoPilotEnabled: 1
   CrystalTransform: {fileID: 0}
   flowFieldData: {fileID: 0}
 --- !u!114 &1435252848482629424
@@ -720,6 +739,16 @@ PrefabInstance:
         type: 3}
       propertyPath: NotifyNearbyBlockCount
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
+      propertyPath: blockImpactEffects.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
+      propertyPath: blockImpactEffects.Array.data[0]
+      value: 7
       objectReference: {fileID: 0}
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}

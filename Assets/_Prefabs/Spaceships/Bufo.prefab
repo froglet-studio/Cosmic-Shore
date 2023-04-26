@@ -238,13 +238,13 @@ MonoBehaviour:
   Name: Bufo
   ShipType: 9
   TrailSpawner: {fileID: 874579555101021522}
+  ShipController: {fileID: 0}
   nearFieldSkimmer: {fileID: 874579554510349383}
   OrientationHandle: {fileID: 1878660672777590133}
   shipGeometries:
   - {fileID: 7989725769420682486}
   head: {fileID: 0}
-  AOEPrefab: {fileID: 2728798890556433942, guid: 4a855af160021d241b8c1ac70cf2d792,
-    type: 3}
+  AOEPrefab: {fileID: 0}
   farFieldSkimmer: {fileID: 0}
   crystalImpactEffects: 0b0000000800000003000000
   minExplosionScale: 50
@@ -339,9 +339,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9846c9cd6cfac424797ca640ebcb7a04, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  inputSpeed: 1
-  speedMultiplier: 1
-  speed: 0
+  Speed: 0
   Boosting: 0
   BoostCharging: 0
   BoostDecaying: 0

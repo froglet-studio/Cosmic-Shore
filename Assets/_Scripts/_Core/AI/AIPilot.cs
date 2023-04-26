@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 using System;
+using System.Runtime.InteropServices.WindowsRuntime;
 
 namespace StarWriter.Core.Input
 {
@@ -19,6 +20,13 @@ namespace StarWriter.Core.Input
 
         public float avoidance = 2.5f;
 
+        public float XSum;
+        public float YSum;
+        public float XDiff;
+        public float YDiff;
+
+        int frameCount = 0;
+
         float LevelAwareAvoidance { get { return avoidance + (DifficultyLevel * .3f); } }
         float LevelAwareDefaultThrottle { get { return defaultThrottle * DifficultyLevel * .3f; } }
         float LevelAwareDefaultLerp { get { return defaultLerp * DifficultyLevel * .3f; } }
@@ -27,6 +35,8 @@ namespace StarWriter.Core.Input
 
         [SerializeField] float raycastHeight;
         [SerializeField] float raycastWidth;
+
+        [SerializeField] bool autoPilotEnabled;
 
         enum Corner 
         {
@@ -37,6 +47,7 @@ namespace StarWriter.Core.Input
         };
 
         ShipData shipData;
+        Ship ship;
 
         RaycastHit hit;
         float maxDistance = 50f;
@@ -70,6 +81,8 @@ namespace StarWriter.Core.Input
 
         void Start()
         {
+            ship = GetComponent<Ship>();
+            if (autoPilotEnabled) { ship.inputController.AutoPilotEnabled = true; }
             lerp = defaultLerp;
             throttle = defaultThrottle;
             shipData = GetComponent<ShipData>();
@@ -86,38 +99,50 @@ namespace StarWriter.Core.Input
         {
             ///distance to Crystal 
             distance = CrystalTransform.position - transform.position;
-            
+
             ///rotate toward Crystal
-            transform.localRotation = Quaternion.Lerp(transform.localRotation,
+            Quaternion newRotation = Quaternion.Lerp(transform.localRotation,
                                                          Quaternion.LookRotation(distance, transform.up),
-                                                         lerp/distance.magnitude * Time.deltaTime);
+                                                         1);//Mathf.Clamp(lerp/distance.magnitude,.1f,.9f));
 
-            foreach (Corner corner in Enum.GetValues(typeof(Corner)))
-            {
-                var behavior = CornerBehaviors[corner];
-                behavior.direction = ShootLaser(behavior.width * transform.right + behavior.height * transform.up);
-                transform.localRotation = TurnAway(behavior.direction, 
-                                                   -transform.up + (behavior.spin * (transform.right / behavior.direction.magnitude)), 
-                                                   avoidance / behavior.direction.magnitude * Time.deltaTime);
-            }
+            //foreach (Corner corner in Enum.GetValues(typeof(Corner)))
+            //{
+            //    var behavior = CornerBehaviors[corner];
+            //    behavior.direction = ShootLaser(behavior.width * transform.right + behavior.height * transform.up);
+            //    newRotation = TurnAway(newRotation, behavior.direction, 
+            //                                       -transform.up + (behavior.spin * (transform.right / behavior.direction.magnitude)), 
+            //                                       avoidance / behavior.direction.magnitude);
+            //}
 
-            ///get better
+            var rotationOperator = newRotation * Quaternion.Inverse(transform.rotation);
+            XSum = Mathf.Clamp(LinearStep(rotationOperator.eulerAngles.y), -1, 1);
+            YSum = Mathf.Clamp(LinearStep(rotationOperator.eulerAngles.x), -1, 1);
+            YDiff = Mathf.Clamp(LinearStep(rotationOperator.eulerAngles.z), -1, 1);
+                    ///get better
             lerp += lerpIncrease * Time.deltaTime;
             throttle += throttleIncrease * Time.deltaTime;
 
             ///Move ship velocityDirection
-            Vector3 flowVector = flowFieldData.FlowVector(transform);
-            shipData.Speed = throttle;
+            //Vector3 flowVector = flowFieldData.FlowVector(transform);
+            //shipData.Speed = throttle;
 
-            shipData.Course = transform.forward;
-            transform.position += (shipData.Speed * shipData.Course) * Time.deltaTime;
+            //shipData.Course = transform.forward;
 
-            shipData.blockRotation = transform.rotation;
+            XDiff = Mathf.Clamp(throttle,0,1);
+            //transform.position += (shipData.Speed * shipData.Course) * Time.deltaTime;
+
+            //shipData.blockRotation = transform.rotation;
         }
 
-        Quaternion TurnAway(Vector3 direction, Vector3 down, float lerp)
+        float LinearStep(float input) 
         {
-            return Quaternion.Lerp(transform.localRotation,
+            if (input < 180) return -input / 180;
+            else return -input / 180 + 2;
+        }
+
+        Quaternion TurnAway(Quaternion initial, Vector3 direction, Vector3 down, float lerp)
+        {
+            return Quaternion.Lerp(initial,
                     Quaternion.Inverse(Quaternion.LookRotation(direction, down)),
                        lerp);
         }

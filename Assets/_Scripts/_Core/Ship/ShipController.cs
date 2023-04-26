@@ -68,7 +68,9 @@ public class ShipController : MonoBehaviour
         if (inputController == null)
         {
             inputController = ship.inputController;
-
+        }
+        if (inputController != null)
+        { 
             if (inputController.Paused)
                 return;
 
@@ -91,11 +93,12 @@ public class ShipController : MonoBehaviour
 
     protected void RotateShip()
     {
-        Pitch();
-        Yaw();
-        Roll();
-        if (inputController == null)
+        
+        if (inputController != null)
         {
+            Pitch();
+            Yaw();
+            Roll();
             if (inputController.isGyroEnabled && !Equals(inverseInitialRotation, new Quaternion(0, 0, 0, 0)))
             {
                 // Updates GameObjects blockRotation from input device's gyroscope
@@ -176,6 +179,7 @@ public class ShipController : MonoBehaviour
             resourceSystem.ChangeBoostAmount(ship.boostFuelAmount);
         }
         if (shipData.BoostDecaying) boostAmount *= BoostDecay;
+        if (inputController != null)
         speed = Mathf.Lerp(speed, inputController.XDiff * ThrottleScaler * boostAmount + MinimumSpeed, lerpAmount * Time.deltaTime);
 
         speed *= throttleMultiplier;

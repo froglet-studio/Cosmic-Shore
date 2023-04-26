@@ -21,6 +21,7 @@ namespace StarWriter.Core
         [Header("ship Components")]
         [HideInInspector] public TrailSpawner TrailSpawner;
         [HideInInspector] public ShipController ShipController;
+        [HideInInspector] public AIPilot AutoPilot;
         [SerializeField] Skimmer nearFieldSkimmer;
         [SerializeField] GameObject OrientationHandle;
         [SerializeField] public List<GameObject> shipGeometries;
@@ -113,6 +114,7 @@ namespace StarWriter.Core
         {
             cameraManager = CameraManager.Instance;
             inputController = player.GetComponent<InputController>();
+            AutoPilot = GetComponent<AIPilot>();
             ApplyShipControlOverrides(ControlOverrides);
 
             foreach (var shipGeometry in shipGeometries)

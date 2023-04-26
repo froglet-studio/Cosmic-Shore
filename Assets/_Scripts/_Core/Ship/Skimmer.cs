@@ -14,7 +14,7 @@ namespace StarWriter.Core
         [SerializeField] List<ShipImpactEffects> shipImpactEffects;
         [SerializeField] float particleDurationAtSpeedOne = 300f;
         [SerializeField] bool skimVisualFX = true;
-        [SerializeField] bool selfSkim = true;
+        [SerializeField] bool affectSelf = true;
         [SerializeField] float chargeAmount;
         [SerializeField] float MultiSkimMultiplier = 0f;
         [SerializeField] bool notifyNearbyBlockCount;
@@ -108,7 +108,7 @@ namespace StarWriter.Core
                 PerformShipImpactEffects(shipGeometry);
                 Debug.Log("ship impact");
             }
-            if (other.TryGetComponent<TrailBlock>(out var trailBlock) && (selfSkim || trailBlock.Team != team))
+            if (other.TryGetComponent<TrailBlock>(out var trailBlock) && (affectSelf || trailBlock.Team != team))
             {
                 StartSkim(trailBlock);
                 PerformBlockImpactEffects(trailBlock.TrailBlockProperties);
@@ -117,7 +117,7 @@ namespace StarWriter.Core
 
         void StartSkim(TrailBlock trailBlock)
         {
-            if (skimVisualFX && (selfSkim || trailBlock.Team != team)) 
+            if (skimVisualFX && (affectSelf || trailBlock.Team != team)) 
             {
                 StartCoroutine(DisplaySkimParticleEffectCoroutine(trailBlock));
             }
@@ -136,7 +136,7 @@ namespace StarWriter.Core
         {
             float skimDecayDuration = 1;
 
-            if (other.TryGetComponent<TrailBlock>(out var trailBlock) && (selfSkim || trailBlock.Team != team))
+            if (other.TryGetComponent<TrailBlock>(out var trailBlock) && (affectSelf || trailBlock.Team != team))
             {
                 if(!skimStartTimes.ContainsKey(trailBlock.ID))   // Occasionally, seeing a KeyNotFoundException, so maybe we miss the OnTriggerEnter event (note: always seems to be for AOE blocks)
                     StartSkim(trailBlock);
@@ -157,7 +157,7 @@ namespace StarWriter.Core
 
         void OnTriggerExit(Collider other)
         {
-            if (other.TryGetComponent<TrailBlock>(out var trailBlock) && (selfSkim || trailBlock.Team != team))
+            if (other.TryGetComponent<TrailBlock>(out var trailBlock) && (affectSelf || trailBlock.Team != team))
             {
                 skimStartTimes.Remove(trailBlock.ID);
                 activelySkimmingBlockCount--;

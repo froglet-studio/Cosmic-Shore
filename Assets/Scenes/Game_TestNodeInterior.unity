@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0, g: 0, b: 0, a: 1}
+  m_IndirectSpecularColor: {r: 0.0037926815, g: 0.0032631278, b: 0.0034446984, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -818,6 +818,11 @@ MonoBehaviour:
     type: 3}
   CrystalModel: {fileID: 254047264}
   material: {fileID: 2100000, guid: 383f21e8586fd7243a19e1d0f26110d0, type: 2}
+  shipImpactEffects: 1
+  crystalImpactEffects: 
+  AOEPrefab: {fileID: 0}
+  maxExplosionScale: 0
+  AOEExplosionMaterial: {fileID: 0}
 --- !u!135 &300082285
 SphereCollider:
   m_ObjectHideFlags: 0
@@ -1263,6 +1268,11 @@ MonoBehaviour:
     type: 3}
   CrystalModel: {fileID: 7244393970774794917}
   material: {fileID: 2100000, guid: 383f21e8586fd7243a19e1d0f26110d0, type: 2}
+  shipImpactEffects: 1
+  crystalImpactEffects: 
+  AOEPrefab: {fileID: 0}
+  maxExplosionScale: 0
+  AOEExplosionMaterial: {fileID: 0}
 --- !u!82 &430359315
 AudioSource:
   m_ObjectHideFlags: 0
@@ -9163,6 +9173,11 @@ MonoBehaviour:
     type: 3}
   CrystalModel: {fileID: 245775002}
   material: {fileID: 2100000, guid: 383f21e8586fd7243a19e1d0f26110d0, type: 2}
+  shipImpactEffects: 1
+  crystalImpactEffects: 
+  AOEPrefab: {fileID: 0}
+  maxExplosionScale: 0
+  AOEExplosionMaterial: {fileID: 0}
 --- !u!135 &1028324179
 SphereCollider:
   m_ObjectHideFlags: 0
@@ -10087,6 +10102,32 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1307720189}
   m_CullTransparentMesh: 1
+--- !u!1 &1360556388 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 9106189021102876753, guid: 32cc35a6605af014c926743312133238,
+    type: 3}
+  m_PrefabInstance: {fileID: 451321388}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1360556389
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1360556388}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4b03e7163961e2c4b9d04056b4fcb40e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ship: {fileID: 0}
+  PhoneFlipState: 0
+  XSum: 0
+  YSum: 0
+  XDiff: 0
+  YDiff: 0
+  Idle: 0
+  isGyroEnabled: 0
 --- !u!1 &1402460999 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 5004294844718895904, guid: 8a9d12e43096881468feb22e39e9fbeb,

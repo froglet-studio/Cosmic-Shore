@@ -14,6 +14,7 @@ namespace StarWriter.Core
         [SerializeField] protected float ExplosionDuration = 2f;
         [SerializeField] protected float ExplosionDelay = .2f;
         [SerializeField] List<ShipImpactEffects> shipImpactEffects;
+        [SerializeField] bool affectSelf = false;
         protected static GameObject container;
 
         Material material;
@@ -36,14 +37,14 @@ namespace StarWriter.Core
             var impactVector = (other.transform.position - transform.position).normalized * speed;
             if (other.TryGetComponent<TrailBlock>(out var trailBlock))
             {
-                if (trailBlock.Team == Team)
+                if (trailBlock.Team == Team && !affectSelf)
                     return;
 
                 trailBlock.Explode(impactVector, Team, Ship.Player.PlayerName);
             }
             if (other.TryGetComponent<ShipGeometry>(out var shipGeometry))
             {
-                if (shipGeometry.Ship.Team == Team)
+                if (shipGeometry.Ship.Team == Team && !affectSelf)
                     return;
 
                 PerformShipImpactEffects(shipGeometry, impactVector);
@@ -88,7 +89,8 @@ namespace StarWriter.Core
                         shipGeometry.Ship.transform.localRotation = Quaternion.LookRotation(impactVector);
                         break;
                     case ShipImpactEffects.Knockback:
-                        shipGeometry.Ship.transform.localPosition += impactVector / 2f;
+                        shipGeometry.Ship.ShipController.ModifyVelocity(impactVector * 100, 2);
+                        //shipGeometry.Ship.transform.localPosition += impactVector / 2f;
                         break;
                     case ShipImpactEffects.Stun:
                         shipGeometry.Ship.ShipController.ModifyThrottle(.1f, 10);
