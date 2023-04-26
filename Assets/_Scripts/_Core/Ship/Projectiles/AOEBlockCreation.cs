@@ -13,12 +13,11 @@ public class AOEBlockCreation : AOEExplosion
     protected Material blockMaterial;
     protected List<Trail> trails = new List<Trail>();
 
-    public void SetBlockMaterial(Material material)
+    protected override void Start()
     {
-        blockMaterial = material;
+        blockMaterial = Ship.TrailSpawner.GetBlockMaterial();
+        base.Start();
     }
-
-
 
     protected override IEnumerator ExplodeCoroutine()
     {
@@ -28,29 +27,25 @@ public class AOEBlockCreation : AOEExplosion
         {
             trails.Add(new Trail());
             for (int block = 0; block < blockCount; block++)
-            {
                 CreateRingBlock(block, ring%2*.5f, ring/2f + 1f, ring, -ring/2f, trails[ring]);
-            }
         }
-        yield return new WaitForEndOfFrame();
     }
 
     virtual protected void CreateRingBlock(int i, float phase, float scale, float tilt, float sweep, Trail trail)
     {
-        var position = transform.position +
-                             scale * radius * Mathf.Cos(((i + phase) / blockCount) * 2 * Mathf.PI) * transform.right +
-                             scale * radius * Mathf.Sin(((i + phase) / blockCount) * 2 * Mathf.PI) * transform.up +
-                             sweep * radius * transform.forward;
-        CreateBlock(position, position + tilt * radius * transform.forward, "::AOE::" + Time.time + "::" + i, trail);
+        var offset = scale * radius * Mathf.Cos(((i + phase) / blockCount) * 2 * Mathf.PI) * transform.right +
+                     scale * radius * Mathf.Sin(((i + phase) / blockCount) * 2 * Mathf.PI) * transform.up +
+                     sweep * radius * transform.forward;
+        CreateBlock(transform.position + offset, offset + tilt * radius * transform.forward, transform.forward, "::AOE::" + Time.time + "::" + i, trail);
     }
 
-    virtual protected TrailBlock CreateBlock(Vector3 position, Vector3 lookPosition, string ownerId, Trail trail)
+    virtual protected TrailBlock CreateBlock(Vector3 position, Vector3 forward, Vector3 up, string ownerId, Trail trail)
     {
         var Block = Instantiate(trailBlock);
         Block.Team = Team;
         Block.ownerId = Ship.Player.PlayerUUID;
         Block.PlayerName = Ship.Player.PlayerName;
-        Block.transform.SetPositionAndRotation(position, Quaternion.LookRotation(lookPosition - transform.position, transform.forward));
+        Block.transform.SetPositionAndRotation(position, Quaternion.LookRotation(forward, up));
         Block.GetComponent<MeshRenderer>().material = blockMaterial;
         Block.ID = Block.ownerId + ownerId + position;  
         Block.InnerDimensions = blockScale;

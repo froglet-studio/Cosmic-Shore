@@ -2,7 +2,8 @@
 // Always assign a static numeric value to your enum types
 public enum Teams
 {
-    None = 0,
+    None = -1,
+    Unassigned = 0,
     Green = 1,
     Red = 2,
     Blue = 3,

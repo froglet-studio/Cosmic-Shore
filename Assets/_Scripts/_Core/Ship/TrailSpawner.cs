@@ -1,10 +1,8 @@
 ﻿using StarWriter.Core;
 using StarWriter.Utility.Tools;
-using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Android;
 
 [RequireComponent(typeof(Ship))]
 public class TrailSpawner : MonoBehaviour
@@ -54,12 +52,12 @@ public class TrailSpawner : MonoBehaviour
 
     public List<TrailBlock> GetLastTwoBlocks() 
     {
-        List<TrailBlock> lastTwoBlocks = new List<TrailBlock>
+        return new List<TrailBlock>
         {
-            trail.TrailList[trail.TrailList.Count - 1],
-            trail2.TrailList[trail.TrailList.Count - 1]
+            // ^1 is the hat operator for index of last element
+            trail.TrailList[^1],
+            trail2.TrailList[^1]
         };
-        return lastTwoBlocks;
     }
 
     public float TrailZScale => trailBlock.transform.localScale.z;
@@ -97,11 +95,9 @@ public class TrailSpawner : MonoBehaviour
         shipData = GetComponent<ShipData>();
 
         StartCoroutine(SpawnTrailCoroutine());
-        
 
         ownerId = ship.Player.PlayerUUID;
         XScaler = minBlockScale;
-        
     }
 
     public void ToggleBlockWaitTime(bool state)

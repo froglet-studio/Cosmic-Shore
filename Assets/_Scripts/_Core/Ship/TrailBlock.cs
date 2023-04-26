@@ -1,6 +1,5 @@
 ﻿using StarWriter.Core.HangerBuilder;
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace StarWriter.Core
@@ -8,32 +7,24 @@ namespace StarWriter.Core
     public class TrailBlock : MonoBehaviour
     {
         [SerializeField] GameObject FossilBlock;
-        public GameObject ParticleEffect; // TODO: move this so it references the Team to retrieve the effect.
         [SerializeField] Material material;
         [SerializeField] public TrailBlockProperties TrailBlockProperties;
-
-        readonly List<ShipScaleModifier> ScaleModifiers = new List<ShipScaleModifier>();
-
         [SerializeField] float growthRate = .5f;
+        public GameObject ParticleEffect; // TODO: move this so it references the Team to retrieve the effect.
         public string ownerId;  // TODO: is the ownerId the player name? I hope it is.
         public float waitTime = .6f;
         public bool destroyed = false;
         public string ID;
         public Vector3 InnerDimensions;
         public int Index;
-        //public TrailSpawner TrailSpawner;
 
         public bool warp = false;
         GameObject shards;
         public Trail Trail;
 
-        public delegate void OnCollisionIncreaseScore(string uuid, float amount);
-        public static event OnCollisionIncreaseScore AddToScore;
-
-        private int scoreChange = 1;
-        private static GameObject fossilBlockContainer;
-        private MeshRenderer meshRenderer;
-        private BoxCollider blockCollider;
+        static GameObject fossilBlockContainer;
+        MeshRenderer meshRenderer;
+        BoxCollider blockCollider;
         Teams team;
         public Teams Team { get => team; set => team = value; }
         string playerName;
@@ -63,7 +54,6 @@ namespace StarWriter.Core
             TrailBlockProperties.trailBlock = this;
             TrailBlockProperties.Index = Index;
             TrailBlockProperties.Trail = Trail;
-
 
             StartCoroutine(CreateBlockCoroutine());
         }
@@ -161,21 +151,12 @@ namespace StarWriter.Core
                 var ship = other.GetComponent<ShipGeometry>().Ship;
                 var impactVector = ship.transform.forward * ship.GetComponent<ShipData>().Speed;
 
-
                 if (!ship.GetComponent<ShipData>().Attached)
                 {
-                    Collide(ship);
+                    ship.PerformTrailBlockImpactEffects(TrailBlockProperties);
                     Explode(impactVector, ship.Team, ship.Player.PlayerName);
                 }
             }
-        }
-
-        public void Collide(Ship ship)
-        {
-            if (ownerId != ship.Player.PlayerUUID)
-                AddToScore?.Invoke(ownerId, scoreChange);
-
-            ship.PerformTrailBlockImpactEffects(TrailBlockProperties);
         }
 
         public void Explode(Vector3 impactVector, Teams team, string playerName)
@@ -237,14 +218,9 @@ namespace StarWriter.Core
         }
 
         // TODO: utility class needed to hold these
-        private bool IsShip(GameObject go)
+        bool IsShip(GameObject go)
         {
             return go.layer == LayerMask.NameToLayer("Ships");
-        }
-
-        private bool IsExplosion(GameObject go)
-        {
-            return go.layer == LayerMask.NameToLayer("Explosions");
         }
     }
 }

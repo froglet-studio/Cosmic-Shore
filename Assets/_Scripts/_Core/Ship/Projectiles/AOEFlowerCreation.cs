@@ -2,33 +2,40 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using StarWriter.Core;
-using UnityEngine.UIElements;
 
 public class AOEFlowerCreation : AOEBlockCreation
 {
+    [SerializeField] int TunnelAmount = 3;
+    enum Branch
+    {
+        first = -1,
+        both = 0,
+        second = 1,
+    }
 
     protected override IEnumerator ExplodeCoroutine()
     {
         yield return new WaitForSeconds(ExplosionDelay);
 
-        //for (int ring = 0; ring < ringCount; ring++)
-        //{
-        //    trails.Add(new Trail());
-        //    for (int block = 0; block < blockCount; block++)
-        //    {
-        //        CreateRingBlock(block, ring % 2 * .5f, ring / 2f + 1f, ring, -ring / 2f, trails[ring]);
-        //    }
-        //}
-        yield return new WaitForEndOfFrame();
+        var count = 0f;
+        int currentPosition = Ship.TrailSpawner.TrailLength - 1;
+        while (count < TunnelAmount)
+        {
+            if (currentPosition < Ship.TrailSpawner.TrailLength)
+            {
+                count++;
+                currentPosition++;
+                SetBlockDimensions(Ship.TrailSpawner.InnerDimensions);
+                SeedBlocks(Ship.TrailSpawner.GetLastTwoBlocks());
+            }
+            yield return null;
+        }
     }
-
 
     public void SetBlockDimensions(Vector3 InnerDimensions)
     {
         blockScale = InnerDimensions;
     }
-
-    
 
     public void SeedBlocks(List<TrailBlock> lastTwoBlocks)
     {
@@ -51,16 +58,9 @@ public class AOEFlowerCreation : AOEBlockCreation
         CreateBranches(lastTwoBlocks[1], maxGap, angle/2f);
     }
 
-    enum Branch
-    {
-        both = 0,
-        first = -1,
-        second = 1,
-    }
   
     void CreateBranches(TrailBlock trailBlock, float gap, float angle, int handedness = 1, int depth = 0, Branch branch = Branch.both)
     {
-        //var angle = 30;
         --depth;
         if (branch == Branch.both) 
         {
@@ -79,35 +79,14 @@ public class AOEFlowerCreation : AOEBlockCreation
                 }
             }
         }
-        else if (branch == Branch.first)
-        {
-            TrailBlock block = CreateBlock(trailBlock.transform.position, trailBlock.transform.forward, trailBlock.transform.up, trailBlock.ID + -angle, trails[trails.Count - 1]);
-            Vector3 origin = block.transform.position + (block.transform.right * (blockScale.x / 2 + gap)) * handedness;
-            block.transform.RotateAround(origin, block.transform.forward, 180 - angle*4);
-        }
         else
         {
+            if (branch == Branch.first)
+                angle = -angle;
+
             TrailBlock block = CreateBlock(trailBlock.transform.position, trailBlock.transform.forward, trailBlock.transform.up, trailBlock.ID + angle, trails[trails.Count - 1]);
             Vector3 origin = block.transform.position + (block.transform.right * (blockScale.x / 2 + gap)) * handedness;
-            block.transform.RotateAround(origin, block.transform.forward, 180 + angle*4);
+            block.transform.RotateAround(origin, block.transform.forward, 180 + angle * 4);
         }
-        
     }
-
-    protected TrailBlock CreateBlock(Vector3 position, Vector3 lookPosition, Vector3 up, string ownerId, Trail trail)
-    {
-        var Block = Instantiate(trailBlock);
-        Block.Team = Team;
-        Block.ownerId = Ship.Player.PlayerUUID;
-        Block.PlayerName = Ship.Player.PlayerName;
-        Block.transform.SetPositionAndRotation(position, Quaternion.LookRotation(lookPosition, up));
-        Block.GetComponent<MeshRenderer>().material = blockMaterial;
-        Block.ID = Block.ownerId + ownerId + position;
-        Block.InnerDimensions = blockScale;
-        Block.transform.parent = TrailSpawner.TrailContainer.transform;
-        Block.Trail = trail;
-        trail.Add(Block);
-        return Block;
-    }
-
 }

@@ -17,6 +17,7 @@ public class Crystal : MonoBehaviour
     [SerializeField] protected GameObject CrystalModel; 
     [SerializeField] protected Material material;
     [SerializeField] protected bool shipImpactEffects = true;
+    [SerializeField] protected Teams team = Teams.None;
     #endregion
 
     [Header("Optional Crystal Effects")]
@@ -69,7 +70,7 @@ public class Crystal : MonoBehaviour
                 case CrystalImpactEffects.AreaOfEffectExplosion:
                     var AOEExplosion = Instantiate(AOEPrefab).GetComponent<AOEExplosion>();
                     AOEExplosion.Material = AOEExplosionMaterial;
-                    AOEExplosion.Team = Teams.None; // TODO: is this a bug?
+                    AOEExplosion.Team = team;
                     AOEExplosion.Ship = ship;
                     AOEExplosion.SetPositionAndRotation(transform.position, transform.rotation);
                     AOEExplosion.MaxScale = maxExplosionScale;

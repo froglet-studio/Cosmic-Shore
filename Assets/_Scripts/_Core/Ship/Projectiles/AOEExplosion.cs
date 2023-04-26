@@ -27,8 +27,14 @@ namespace StarWriter.Core
         protected virtual void Start()
         {
             if (container == null) container = new GameObject("AOEContainer");
+
+            if (team == Teams.Unassigned)
+                team = Ship.Team;
+            if (material == null) 
+                material = Ship.AOEExplosionMaterial;
             transform.SetParent(container.transform, false); // SetParent with false to take container's world position
             MaxScaleVector = new Vector3(MaxScale, MaxScale, MaxScale);
+
             StartCoroutine(ExplodeCoroutine());
         }
 

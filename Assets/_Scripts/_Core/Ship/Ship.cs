@@ -1,4 +1,3 @@
-using System.Collections;
 using System.Collections.Generic;
 using StarWriter.Core.Input;
 using UnityEngine;
@@ -134,7 +133,6 @@ namespace StarWriter.Core
                     shipAction.Ship = this;
         }
 
-
         void ApplyShipControlOverrides(List<ShipControlOverrides> controlOverrides)
         {
             foreach (ShipControlOverrides effect in controlOverrides)
@@ -167,18 +165,9 @@ namespace StarWriter.Core
                         break;
                     case CrystalImpactEffects.AreaOfEffectExplosion:
                         var AOEExplosion = Instantiate(AOEPrefab).GetComponent<AOEExplosion>();
-                        AOEExplosion.Material = AOEExplosionMaterial;
-                        AOEExplosion.Team = team;
                         AOEExplosion.Ship = this;
                         AOEExplosion.SetPositionAndRotation(transform.position, transform.rotation);
                         AOEExplosion.MaxScale =  Mathf.Max(minExplosionScale, ResourceSystem.CurrentAmmo * maxExplosionScale);
-
-                        if (AOEExplosion is AOEBlockCreation aoeBlockcreation)
-                            aoeBlockcreation.SetBlockMaterial(TrailSpawner.GetBlockMaterial());
-                        if (AOEExplosion is AOEFlowerCreation aoeFlowerCreation)
-                        {
-                            StartCoroutine(CreateTunnelCoroutine(aoeFlowerCreation, 3));
-                        }
                         break;
                     case CrystalImpactEffects.IncrementLevel:
                         IncrementLevel();
@@ -295,9 +284,9 @@ namespace StarWriter.Core
             OrientationHandle.transform.localRotation = Quaternion.Euler(0, 0, 0);
         }
 
-        public void Teleport(Transform _transform)
+        public void Teleport(Transform targetTransform)
         {
-            transform.SetPositionAndRotation(_transform.position, _transform.rotation);
+            transform.SetPositionAndRotation(targetTransform.position, targetTransform.rotation);
         }
 
         // TODO: need to be able to disable ship abilities as well for minigames
@@ -393,23 +382,6 @@ namespace StarWriter.Core
                 controller.BlockScale = minProjectileBlockScale + ((ResourceSystem.CurrentLevel / ResourceSystem.MaxLevel) * (maxProjectileBlockScale - minProjectileBlockScale));
             else
                 Debug.LogWarning("Trying to scale projectile block of ShipController that is not a GunShipController");
-        }
-
-        IEnumerator CreateTunnelCoroutine(AOEFlowerCreation aoeFlowerCreation, float amount)
-        {
-            var count = 0f;
-            int currentPosition = TrailSpawner.TrailLength - 1;
-            while (count < amount)
-            { 
-                if (currentPosition < TrailSpawner.TrailLength)
-                {
-                    count++;
-                    currentPosition++;
-                    aoeFlowerCreation.SetBlockDimensions(TrailSpawner.InnerDimensions);
-                    aoeFlowerCreation.SeedBlocks(TrailSpawner.GetLastTwoBlocks());
-                }
-                yield return null;
-            }
         }
     }
 }
