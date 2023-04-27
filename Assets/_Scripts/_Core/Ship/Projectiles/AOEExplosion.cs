@@ -6,7 +6,7 @@ namespace StarWriter.Core
 {
     public class AOEExplosion : MonoBehaviour
     {
-        public float speed = 50f; // TODO: use the easing of the explosion to change this over time
+        [HideInInspector] public float speed;
         protected const float PI_OVER_TWO = Mathf.PI / 2;
         protected Vector3 MaxScaleVector;
 
@@ -26,6 +26,7 @@ namespace StarWriter.Core
 
         protected virtual void Start()
         {
+            speed = MaxScale / ExplosionDuration; // TODO: use the easing of the explosion to change this over time
             if (container == null) container = new GameObject("AOEContainer");
 
             if (team == Teams.Unassigned)

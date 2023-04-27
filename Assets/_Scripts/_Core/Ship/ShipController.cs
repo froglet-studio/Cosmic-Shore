@@ -204,11 +204,6 @@ public class ShipController : MonoBehaviour
         ThrottleModifiers.Add(new ShipThrottleModifier(amount, duration, 0));
     }
 
-    public void ModifyVelocity(Vector3 amount, float duration)
-    {
-        VelocityModifiers.Add(new ShipVelocityModifier(amount, duration, 0));
-    }
-
     void ApplyThrottleModifiers()
     {
         float accumulatedThrottleModification = 1;
@@ -226,6 +221,11 @@ public class ShipController : MonoBehaviour
 
         accumulatedThrottleModification = Mathf.Min(accumulatedThrottleModification, speedModifierMax);
         throttleMultiplier = Mathf.Max(accumulatedThrottleModification, 0) ;
+    }
+
+    public void ModifyVelocity(Vector3 amount, float duration)
+    {
+        VelocityModifiers.Add(new ShipVelocityModifier(amount, duration, 0));
     }
 
     void ApplyVelocityModifiers()

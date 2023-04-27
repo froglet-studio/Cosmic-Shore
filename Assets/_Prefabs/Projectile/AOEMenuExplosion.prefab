@@ -50,7 +50,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   speed: 3
   MaxScale: 0
-  ExplosionDuration: 5
+  ExplosionDuration: 3
   ExplosionDelay: 0.2
   shipImpactEffects: 
   affectSelf: 0

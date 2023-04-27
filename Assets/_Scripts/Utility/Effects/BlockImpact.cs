@@ -10,8 +10,6 @@ public class BlockImpact : MonoBehaviour
 
     private IEnumerator ImpactCoroutine(Vector3 velocity, Teams team)
     {
-        var velocityScale = .1f;
-        var positionScale = 1;
         
         Vector3 distance = Vector3.zero;
 
@@ -30,15 +28,18 @@ public class BlockImpact : MonoBehaviour
                 material.SetFloat("_playerHit", 0); material.SetFloat("_redHit", 0); 
             }
         }
-        
-        while (distance.magnitude <= 1000)
+        var initialPosition = transform.position;
+        var maxDuration = 7;
+        var duration = 0f;
+        while (duration <= maxDuration)
         {
             yield return null;
-            distance += velocityScale * Time.deltaTime * velocity;
+            duration += Time.deltaTime;
+            distance += Time.deltaTime * velocity;
             material.SetVector("_velocity", distance);
-            material.SetFloat("_opacity", (1000 - distance.magnitude) / 1000);
+            material.SetFloat("_opacity", 1 - (duration / maxDuration));
           
-            transform.position += positionScale * distance;
+            transform.position = initialPosition + distance;
         }
 
         Destroy(transform.gameObject);

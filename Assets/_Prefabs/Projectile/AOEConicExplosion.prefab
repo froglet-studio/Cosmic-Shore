@@ -51,9 +51,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   speed: 20
   MaxScale: 200
-  ExplosionDuration: 2
+  ExplosionDuration: 6
   ExplosionDelay: 0.2
   shipImpactEffects: 0200000003000000040000000100000000000000
+  affectSelf: 0
   height: 800
 --- !u!33 &520348123677097672
 MeshFilter:
