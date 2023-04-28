@@ -140,7 +140,7 @@ Material:
     - _Spread: {r: 0.2, g: 0.2, b: 0.2, a: 0}
     - _add_vector: {r: 0, g: 0, b: 9, a: 0}
     - _tangent: {r: 1.51, g: -2.92, b: 1.83, a: 0}
-    - _velocity: {r: 0.001, g: 0.001, b: 0.001, a: 0}
+    - _velocity: {r: 0.01, g: 0.01, b: 0.01, a: 0}
   m_BuildTextureStacks: []
 --- !u!114 &2422392668265197798
 MonoBehaviour:
