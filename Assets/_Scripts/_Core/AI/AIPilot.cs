@@ -122,7 +122,7 @@ namespace StarWriter.Core.Input
                 combinedLocalCrossProduct += localCrossProduct;
             }
             
-            float angle = Mathf.Asin(Mathf.Clamp(combinedLocalCrossProduct.magnitude * aggressiveness/ distance.magnitude, -1f, 1f)) * Mathf.Rad2Deg;
+            float angle = Mathf.Asin(Mathf.Clamp(combinedLocalCrossProduct.magnitude * aggressiveness/ Mathf.Min(distance.magnitude, maxDistance*2), -1f, 1f)) * Mathf.Rad2Deg;
 
             YSum = Mathf.Clamp(angle * combinedLocalCrossProduct.x, -1, 1);
             XSum = Mathf.Clamp(angle * combinedLocalCrossProduct.y, -1, 1);

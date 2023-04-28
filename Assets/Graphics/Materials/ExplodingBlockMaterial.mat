@@ -119,6 +119,7 @@ Material:
     - _angle: 0
     - _distance: 0
     - _fadeShellThickness: 4
+    - _gradientThickness: 0.5
     - _innerFadeOutRadius: 3
     - _multiply: 0
     - _muton: 0
