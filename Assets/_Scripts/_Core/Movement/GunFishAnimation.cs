@@ -23,16 +23,16 @@ class GunFishAnimation : ShipAnimation
         AnimatePart(LeftWing,
                     Brake(throttle) * yawAnimationScaler,
                     -(throttle - yaw) * yawAnimationScaler,
-                    (roll + pitch) * animationScaler);
+                    (roll - pitch) * animationScaler);
                     
 
         AnimatePart(RightWing,
                     Brake(throttle) * yawAnimationScaler,
                     (throttle + yaw) * yawAnimationScaler,
-                    (roll - pitch) * animationScaler);
+                    (roll + pitch) * animationScaler);
 
         AnimatePart(Fusilage,
-                    -pitch * animationScaler,
+                    pitch * animationScaler,
                     yaw * animationScaler,
                     roll * animationScaler);
     }

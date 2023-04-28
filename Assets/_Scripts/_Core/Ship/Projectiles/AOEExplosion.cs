@@ -45,7 +45,10 @@ namespace StarWriter.Core
             if (other.TryGetComponent<TrailBlock>(out var trailBlock))
             {
                 if (trailBlock.Team == Team && !affectSelf)
+                {
+                    trailBlock.ActivateShield(2f);
                     return;
+                }
 
                 trailBlock.Explode(impactVector, Team, Ship.Player.PlayerName);
             }

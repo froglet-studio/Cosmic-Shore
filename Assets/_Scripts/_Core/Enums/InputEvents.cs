@@ -5,5 +5,6 @@ public enum InputEvents
     LeftStickAction = 2,
     FlipAction = 3,
     IdleAction = 4,
-    MinimumSpeedStraightAction = 5
+    MinimumSpeedStraightAction = 5,
+    ButtonAction = 6
 }

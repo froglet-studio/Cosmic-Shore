@@ -1,6 +1,7 @@
 using System;
 using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 
 namespace StarWriter.Core
 {
@@ -15,9 +16,14 @@ namespace StarWriter.Core
 
     public class ResourceSystem : MonoBehaviour
     {
+
+        [SerializeField] List<ResourceType> Resources;
         [SerializeField] bool usesBoost;
         [SerializeField] bool usesLevels;
         [SerializeField] bool usesAmmo;
+
+        [SerializeField] bool gainsAmmo = false;
+        [SerializeField] float ammoGainRate = .1f;
 
         [Tooltip("Max boost level from 0-1")]
         [SerializeField]
@@ -104,9 +110,15 @@ namespace StarWriter.Core
             StartCoroutine(LateStart());
         }
 
+        private void Update()
+        {
+            if (gainsAmmo) ChangeAmmoAmount(Time.deltaTime * ammoGainRate);
+        }
+
         IEnumerator LateStart()
         {
             yield return new WaitForSeconds(.2f);
+
 
             if (usesBoost) ResetBoost();
             else BoostDisplay?.gameObject.SetActive(false);

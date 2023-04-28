@@ -102,8 +102,12 @@ namespace StarWriter.Core
 
             // Do the movement and save the out direction
             transform.position = attachedTrail.Project(attachedBlockIndex, percentTowardNextBlock, direction, distanceToTravel, 
-                                                      out attachedBlockIndex, out percentTowardNextBlock, out TrailFollowerDirection outDirection, out Vector3 course);
-
+                                                      out var newAttachedBlockIndex, out percentTowardNextBlock, out TrailFollowerDirection outDirection, out Vector3 course);
+            if (newAttachedBlockIndex != attachedBlockIndex) 
+            {
+                attachedBlockIndex = newAttachedBlockIndex;
+                ((GunShipController)ship.ShipController).FinalBlockSlideEffects(); 
+            }
             shipData.Course = course;
             
             if (outDirection != direction)

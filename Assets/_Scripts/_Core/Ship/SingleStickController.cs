@@ -20,6 +20,7 @@ public class SingleStickController : ShipController
     protected override void Start()
     {
         base.Start();
+        ship.inputController.portrait = true;
 
         projectileContainer = new GameObject($"{ship.Player.PlayerName}_Projectiles");
         guns = new List<Gun>() { topGun};

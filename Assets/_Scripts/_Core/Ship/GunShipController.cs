@@ -100,15 +100,27 @@ public class GunShipController : ShipController
         trailFollower.Throttle = Mathf.Abs(throttle);
         trailFollower.Move();
 
+        SlideActions();
+    }
+    void SlideActions()
+    {
         // TODO: should this be pulled out as an action type?          
         resourceSystem.ChangeAmmoAmount(rechargeRate * Time.deltaTime);
+    }
 
+    public void FinalBlockSlideEffects()
+    {
         shipData.AttachedTrailBlock = trailFollower.AttachedTrailBlock;
-        shipData.AttachedTrailBlock.Steal(ship.Player.PlayerName, ship.Team);
 
         if (shipData.AttachedTrailBlock.destroyed)
-            shipData.AttachedTrailBlock.Restore(); 
-        else 
-            shipData.AttachedTrailBlock.Grow(4);
+            shipData.AttachedTrailBlock.Restore();
+
+        if (shipData.AttachedTrailBlock.Team == ship.Team)
+        {
+            //shipData.AttachedTrailBlock.Grow(4);
+            shipData.AttachedTrailBlock.ActivateShield();
+        }
+        else shipData.AttachedTrailBlock.Steal(ship.Player.PlayerName, ship.Team);
     }
+
 }

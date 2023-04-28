@@ -1,6 +1,7 @@
 using StarWriter.Core;
 
-public class ChargeBoostAction : ShipActionAbstractBase
+
+public class StopGunsAction : ShipActionAbstractBase
 {
     ShipData shipData;
 
@@ -10,12 +11,10 @@ public class ChargeBoostAction : ShipActionAbstractBase
     }
     public override void StartAction()
     {
-        shipData.BoostCharging = true;
+        shipData.GunsActive = false;
     }
 
     public override void StopAction()
     {
-        shipData.BoostCharging = false;
-        ship.ShipController.StartChargedBoost();
     }
 }

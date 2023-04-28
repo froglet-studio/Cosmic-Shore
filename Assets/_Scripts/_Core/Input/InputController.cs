@@ -14,6 +14,7 @@ namespace StarWriter.Core.Input
         float phoneFlipThreshold = .1f;
         public bool PhoneFlipState;
         public static ScreenOrientation currentOrientation;
+        public bool portrait = false;
 
         bool leftStickEffectsStarted = false;
         bool rightStickEffectsStarted = false;
@@ -169,7 +170,11 @@ namespace StarWriter.Core.Input
             }
             else
             {
-                if (Mathf.Abs(UnityEngine.Input.acceleration.y) >= phoneFlipThreshold)
+                if (portrait)
+                {
+                    ship.SetShipUp(90);
+                }
+                else if (Mathf.Abs(UnityEngine.Input.acceleration.y) >= phoneFlipThreshold)
                 {
                     if (UnityEngine.Input.acceleration.y < 0 && PhoneFlipState)
                     {

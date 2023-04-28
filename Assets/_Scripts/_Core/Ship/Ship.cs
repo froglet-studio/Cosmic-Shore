@@ -290,6 +290,11 @@ namespace StarWriter.Core
             OrientationHandle.transform.localRotation = Quaternion.Euler(0, 0, 0);
         }
 
+        public void SetShipUp(float angle)
+        {
+            OrientationHandle.transform.localRotation = Quaternion.Euler(0, 0, angle);
+        }
+
         public void Teleport(Transform targetTransform)
         {
             transform.SetPositionAndRotation(targetTransform.position, targetTransform.rotation);

@@ -12,7 +12,7 @@ public class ChargeDisplay : MonoBehaviour
     [SerializeField] Image backgroundImage;
     [SerializeField] Image fuelLevelImage;
     [SerializeField] StarChanger starChanger;
-    [SerializeField] float majaNumber = 1;
+    
     
     readonly float maxChargeLevel = 1f;
     float currentChargeLevel;
@@ -44,6 +44,6 @@ public class ChargeDisplay : MonoBehaviour
 
         fuelLevelImage.sprite = fuelLevelImages[index];
 
-        fuelLevelText.text = (currentChargeLevel * 100/majaNumber).ToString("F0");
+        fuelLevelText.text = (currentChargeLevel * 100f).ToString("F0");
     }
 }

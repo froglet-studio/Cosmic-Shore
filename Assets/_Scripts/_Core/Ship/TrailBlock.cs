@@ -42,7 +42,7 @@ namespace StarWriter.Core
             }
 
             meshRenderer = GetComponent<MeshRenderer>();
-            gameObject.GetComponent<MeshRenderer>().material = Hangar.Instance.GetTeamBlockMaterial(team);
+            if (team != Teams.Unassigned) gameObject.GetComponent<MeshRenderer>().material = Hangar.Instance.GetTeamBlockMaterial(team);
             meshRenderer.enabled = false;
 
             blockCollider = GetComponent<BoxCollider>();
@@ -167,7 +167,7 @@ namespace StarWriter.Core
         {
             if (Shielded)
             {
-                PopShield();
+                DeactivateShield();
                 return;
             }
 
@@ -193,7 +193,7 @@ namespace StarWriter.Core
                 NodeControlManager.Instance.RemoveBlock(team, playerName, TrailBlockProperties);
         }
 
-        public void PopShield()
+        public void DeactivateShield()
         {
             Shielded = false;
             TrailBlockProperties.Shielded = false;
@@ -209,13 +209,29 @@ namespace StarWriter.Core
             // TODO: need stats
         }
 
+        public void ActivateShield(float duration)
+        {
+            StartCoroutine(ActivateShieldCoroutine(duration));
+        }
+
+        IEnumerator ActivateShieldCoroutine(float duration)
+        {
+            Shielded = true;
+            TrailBlockProperties.Shielded = true;
+            gameObject.GetComponent<MeshRenderer>().material = Hangar.Instance.GetTeamShieldedBlockMaterial(this.team);
+            yield return new WaitForSeconds(duration);
+            Shielded = false;
+            TrailBlockProperties.Shielded = false;
+            gameObject.GetComponent<MeshRenderer>().material = Hangar.Instance.GetTeamBlockMaterial(this.team);
+        }
+
         public void Steal(string playerName, Teams team)
         {
             if (this.team != team)
             {
                 if (Shielded)
                 {
-                    PopShield();
+                    DeactivateShield();
                     return;
                 }
                 if (StatsManager.Instance != null)
