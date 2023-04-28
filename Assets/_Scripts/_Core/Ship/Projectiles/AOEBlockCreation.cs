@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using StarWriter.Core;
 using UnityEngine;
+using StarWriter.Core.HangerBuilder;
 
 public class AOEBlockCreation : AOEExplosion
 {
@@ -10,12 +11,14 @@ public class AOEBlockCreation : AOEExplosion
     [SerializeField] int ringCount = 3;
     [SerializeField] float radius = 30f;
     [SerializeField] protected Vector3 blockScale = new Vector3(20f, 10f, 5f);
+    [SerializeField] bool shielded = true;
     protected Material blockMaterial;
     protected List<Trail> trails = new List<Trail>();
 
     protected override void Start()
     {
-        blockMaterial = Ship.TrailSpawner.GetBlockMaterial();
+        if (shielded) blockMaterial = Hangar.Instance.GetTeamShieldedBlockMaterial(Ship.Team);
+        else blockMaterial = Ship.TrailSpawner.GetBlockMaterial();
         base.Start();
     }
 
@@ -51,6 +54,7 @@ public class AOEBlockCreation : AOEExplosion
         Block.InnerDimensions = blockScale;
         Block.transform.parent = TrailSpawner.TrailContainer.transform;
         Block.Trail = trail;
+        if (shielded) Block.Shielded = true;
         trail.Add(Block);
         return Block;
     }

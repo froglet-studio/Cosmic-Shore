@@ -2662,6 +2662,7 @@ MonoBehaviour:
   CrystalModel: {fileID: 1238110562}
   material: {fileID: 2100000, guid: 383f21e8586fd7243a19e1d0f26110d0, type: 2}
   shipImpactEffects: 1
+  team: -1
   crystalImpactEffects: 
   AOEPrefab: {fileID: 0}
   maxExplosionScale: 0
@@ -29238,9 +29239,29 @@ PrefabInstance:
       objectReference: {fileID: 2100000, guid: 4596e8c23c1593b4eadfc4a2157a53e5, type: 2}
     - target: {fileID: 302356026468653294, guid: fdbd97f79a7aec14f8fadd5589780a74,
         type: 3}
+      propertyPath: RedTeamShieldedBlockMaterial
+      value: 
+      objectReference: {fileID: 2100000, guid: 295e1410f47fecd499c48b814aeb09a0, type: 2}
+    - target: {fileID: 302356026468653294, guid: fdbd97f79a7aec14f8fadd5589780a74,
+        type: 3}
+      propertyPath: BlueTeamShieldedBlockMaterial
+      value: 
+      objectReference: {fileID: 2100000, guid: 298c2cb6efb754d45a11c950431c58a3, type: 2}
+    - target: {fileID: 302356026468653294, guid: fdbd97f79a7aec14f8fadd5589780a74,
+        type: 3}
+      propertyPath: GreenTeamShieldedBlockMaterial
+      value: 
+      objectReference: {fileID: 2100000, guid: d8eecfb8be075a44991cdede59d8e0f1, type: 2}
+    - target: {fileID: 302356026468653294, guid: fdbd97f79a7aec14f8fadd5589780a74,
+        type: 3}
       propertyPath: YellowTeamAOEExplosionMaterial
       value: 
       objectReference: {fileID: 2100000, guid: 37eeeb7b5e625684caca36f02cec8a0f, type: 2}
+    - target: {fileID: 302356026468653294, guid: fdbd97f79a7aec14f8fadd5589780a74,
+        type: 3}
+      propertyPath: YellowTeamShieldedBlockMaterial
+      value: 
+      objectReference: {fileID: 2100000, guid: 88959345b82b41a46b13e42acea0cf37, type: 2}
     - target: {fileID: 302356026468653295, guid: fdbd97f79a7aec14f8fadd5589780a74,
         type: 3}
       propertyPath: m_RootOrder

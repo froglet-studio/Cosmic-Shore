@@ -7,7 +7,7 @@ namespace StarWriter.Core
     public class TrailBlock : MonoBehaviour
     {
         [SerializeField] GameObject FossilBlock;
-        [SerializeField] Material material;
+        [SerializeField] Material explodingMaterial;
         [SerializeField] public TrailBlockProperties TrailBlockProperties;
         [SerializeField] float growthRate = .5f;
         public GameObject ParticleEffect; // TODO: move this so it references the Team to retrieve the effect.
@@ -17,6 +17,7 @@ namespace StarWriter.Core
         public string ID;
         public Vector3 InnerDimensions;
         public int Index;
+        public bool Shielded = false;
 
         public bool warp = false;
         GameObject shards;
@@ -41,6 +42,7 @@ namespace StarWriter.Core
             }
 
             meshRenderer = GetComponent<MeshRenderer>();
+            gameObject.GetComponent<MeshRenderer>().material = Hangar.Instance.GetTeamBlockMaterial(team);
             meshRenderer.enabled = false;
 
             blockCollider = GetComponent<BoxCollider>();
@@ -54,8 +56,10 @@ namespace StarWriter.Core
             TrailBlockProperties.trailBlock = this;
             TrailBlockProperties.Index = Index;
             TrailBlockProperties.Trail = Trail;
+            TrailBlockProperties.Shielded = Shielded;
 
             StartCoroutine(CreateBlockCoroutine());
+            if (Shielded) ActivateShield();
         }
 
         IEnumerator CreateBlockCoroutine()
@@ -161,6 +165,12 @@ namespace StarWriter.Core
 
         public void Explode(Vector3 impactVector, Teams team, string playerName)
         {
+            if (Shielded)
+            {
+                PopShield();
+                return;
+            }
+
             // We don't destroy the trail blocks, we keep the objects around so they can be restored
             gameObject.GetComponent<BoxCollider>().enabled = false;
             gameObject.GetComponent<MeshRenderer>().enabled = false;
@@ -171,7 +181,7 @@ namespace StarWriter.Core
             explodingBlock.transform.localEulerAngles = transform.localEulerAngles;
             explodingBlock.transform.localScale = transform.localScale;
             explodingBlock.transform.parent = fossilBlockContainer.transform;
-            explodingBlock.GetComponent<Renderer>().material = new Material(material);
+            explodingBlock.GetComponent<Renderer>().material = new Material(explodingMaterial);
             explodingBlock.GetComponent<BlockImpact>().HandleImpact(impactVector, team);
 
             destroyed = true;
@@ -183,10 +193,31 @@ namespace StarWriter.Core
                 NodeControlManager.Instance.RemoveBlock(team, playerName, TrailBlockProperties);
         }
 
+        public void PopShield()
+        {
+            Shielded = false;
+            TrailBlockProperties.Shielded = false;
+            gameObject.GetComponent<MeshRenderer>().material = Hangar.Instance.GetTeamBlockMaterial(this.team);
+            // TODO: need stats
+        }
+
+        public void ActivateShield()
+        {
+            Shielded = true;
+            TrailBlockProperties.Shielded = true;
+            gameObject.GetComponent<MeshRenderer>().material = Hangar.Instance.GetTeamShieldedBlockMaterial(this.team);
+            // TODO: need stats
+        }
+
         public void Steal(string playerName, Teams team)
         {
             if (this.team != team)
             {
+                if (Shielded)
+                {
+                    PopShield();
+                    return;
+                }
                 if (StatsManager.Instance != null)
                     StatsManager.Instance.BlockStolen(team, playerName, TrailBlockProperties);
 

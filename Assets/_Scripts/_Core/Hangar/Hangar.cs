@@ -27,6 +27,10 @@ namespace StarWriter.Core.HangerBuilder
         [SerializeField] Material RedTeamBlockMaterial;
         [SerializeField] Material BlueTeamBlockMaterial;
         [SerializeField] Material YellowTeamBlockMaterial;
+        [SerializeField] Material GreenTeamShieldedBlockMaterial;
+        [SerializeField] Material RedTeamShieldedBlockMaterial;
+        [SerializeField] Material BlueTeamShieldedBlockMaterial;
+        [SerializeField] Material YellowTeamShieldedBlockMaterial;
         [SerializeField] Material GreenTeamAOEExplosionMaterial;
         [SerializeField] Material RedTeamAOEExplosionMaterial;
         [SerializeField] Material BlueTeamAOEExplosionMaterial;
@@ -34,6 +38,7 @@ namespace StarWriter.Core.HangerBuilder
 
         Dictionary<Teams, Material> TeamsMaterials;
         Dictionary<Teams, Material> TeamBlockMaterials;
+        Dictionary<Teams, Material> TeamShieldedBlockMaterials;
         Dictionary<Teams, Material> TeamAOEExplosionMaterials;
 
         Dictionary<string, Ship> ships = new Dictionary<string, Ship>();
@@ -87,6 +92,12 @@ namespace StarWriter.Core.HangerBuilder
                 { Teams.Blue,  BlueTeamBlockMaterial },
                 { Teams.Yellow,  YellowTeamBlockMaterial },
             };
+            TeamShieldedBlockMaterials = new Dictionary<Teams, Material>() {
+                { Teams.Green, GreenTeamShieldedBlockMaterial },
+                { Teams.Red,   RedTeamShieldedBlockMaterial},
+                { Teams.Blue,  BlueTeamShieldedBlockMaterial},
+                { Teams.Yellow, YellowTeamShieldedBlockMaterial},
+            };
             TeamAOEExplosionMaterials = new Dictionary<Teams, Material>() {
                 { Teams.Green, GreenTeamAOEExplosionMaterial },
                 { Teams.Red,   RedTeamAOEExplosionMaterial },
@@ -118,6 +129,7 @@ namespace StarWriter.Core.HangerBuilder
             Ship ship = Instantiate(shipTypeMap[PlayerShipType]);
             ship.SetShipMaterial(TeamsMaterials[PlayerTeam]);
             ship.SetBlockMaterial(TeamBlockMaterials[PlayerTeam]);
+            ship.SetShieldedBlockMaterial(TeamShieldedBlockMaterials[PlayerTeam]);
             ship.SetAOEExplosionMaterial(TeamAOEExplosionMaterials[PlayerTeam]);
 
             return ship;
@@ -128,6 +140,7 @@ namespace StarWriter.Core.HangerBuilder
             Ship ship = Instantiate(shipTypeMap[shipType]);
             ship.SetShipMaterial(TeamsMaterials[team]);
             ship.SetBlockMaterial(TeamBlockMaterials[team]);
+            ship.SetShieldedBlockMaterial(TeamShieldedBlockMaterials[team]);
             ship.SetAOEExplosionMaterial(TeamAOEExplosionMaterials[team]);
 
             return ship;
@@ -157,6 +170,7 @@ namespace StarWriter.Core.HangerBuilder
             Ship ship = Instantiate(shipTypeMap[shipType]);
             ship.SetShipMaterial(TeamsMaterials[team]);
             ship.SetBlockMaterial(TeamBlockMaterials[team]);
+            ship.SetShieldedBlockMaterial(TeamShieldedBlockMaterials[team]);
             ship.SetAOEExplosionMaterial(TeamAOEExplosionMaterials[team]);
 
             AIPilot pilot = ship.GetComponent<AIPilot>();
@@ -173,6 +187,11 @@ namespace StarWriter.Core.HangerBuilder
         public Material GetTeamBlockMaterial(Teams team)
         {
             return TeamBlockMaterials[team];
+        }
+        
+        public Material GetTeamShieldedBlockMaterial(Teams team)
+        {
+            return TeamShieldedBlockMaterials[team];
         }
     }
 }

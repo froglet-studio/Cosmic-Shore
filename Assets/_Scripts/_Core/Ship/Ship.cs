@@ -270,6 +270,11 @@ namespace StarWriter.Core
             TrailSpawner.SetBlockMaterial(material);
         }
 
+        public void SetShieldedBlockMaterial(Material material)
+        {
+            TrailSpawner.SetShieldedBlockMaterial(material);
+        }
+
         public void SetAOEExplosionMaterial(Material material)
         {
             AOEExplosionMaterial = material;

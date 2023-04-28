@@ -11,6 +11,7 @@ public class TrailSpawner : MonoBehaviour
     [SerializeField] Skimmer skimmer;
 
     [SerializeField] bool waitTillOutsideSkimmer = true;
+    [SerializeField] bool shielded = false;
 
     public float offset = 0f;
 
@@ -34,6 +35,7 @@ public class TrailSpawner : MonoBehaviour
     Trail trail2 = new();
 
     Material blockMaterial;
+    Material shieldedBlockMaterial;
     Ship ship;
     ShipData shipData;
 
@@ -43,6 +45,11 @@ public class TrailSpawner : MonoBehaviour
     public void SetBlockMaterial(Material material)
     {
         blockMaterial = material;
+    }
+
+    public void SetShieldedBlockMaterial(Material material)
+    {
+        shieldedBlockMaterial = material;
     }
 
     public Material GetBlockMaterial()
@@ -179,7 +186,8 @@ public class TrailSpawner : MonoBehaviour
         Block.PlayerName = ship.Player.PlayerName;
         Block.Team = ship.Team;
         Block.warp = warp;
-        Block.GetComponent<MeshRenderer>().material = blockMaterial;
+        if (shielded) Block.GetComponent<MeshRenderer>().material = blockMaterial;
+        else Block.GetComponent<MeshRenderer>().material = shieldedBlockMaterial;
         Block.GetComponent<BoxCollider>().size = Vector3.one + VectorDivision((Vector3)blockMaterial.GetVector("_spread"), Block.InnerDimensions);
         Block.Trail = trail;
 

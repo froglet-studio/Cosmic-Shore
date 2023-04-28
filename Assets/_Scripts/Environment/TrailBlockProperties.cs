@@ -11,5 +11,6 @@ namespace StarWriter.Core
         public TrailBlock trailBlock;
         public int Index;
         public Trail Trail;
+        public bool Shielded;
     }
 }
