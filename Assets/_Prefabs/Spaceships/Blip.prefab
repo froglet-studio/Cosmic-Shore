@@ -373,6 +373,8 @@ MonoBehaviour:
   Name: Blip
   ShipType: 4
   TrailSpawner: {fileID: 874579555101021522}
+  ShipController: {fileID: 0}
+  AutoPilot: {fileID: 0}
   nearFieldSkimmer: {fileID: 874579554510349383}
   OrientationHandle: {fileID: 1878660672777590133}
   shipGeometries:
@@ -400,7 +402,7 @@ MonoBehaviour:
   flipShipActions: []
   idleShipActions:
   - {fileID: 1861400119619617689}
-  LevelEffects: 020000000300000001000000
+  LevelEffects: 02000000
   minGap: 1
   maxGap: 2
   minFarFieldSkimmerScale: 100
@@ -450,6 +452,7 @@ MonoBehaviour:
     type: 3}
   skimmer: {fileID: 874579554510349383}
   waitTillOutsideSkimmer: 1
+  shielded: 0
   offset: 0
   initialWavelength: 10
   minWavelength: 7
@@ -477,9 +480,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9846c9cd6cfac424797ca640ebcb7a04, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  inputSpeed: 1
-  speedMultiplier: 1
-  speed: 0
+  Speed: 0
   Boosting: 0
   BoostCharging: 0
   BoostDecaying: 0
@@ -566,14 +567,19 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   DifficultyLevel: 0
   defaultThrottle: 30
-  defaultLerp: 40
+  defaultAggressiveness: 0.035
   throttleIncrease: 5
-  lerpIncrease: 17
+  aggressivenessIncrease: 0.001
   throttle: 0
-  lerp: 0
+  aggressiveness: 0.1
   avoidance: 23
+  XSum: 0
+  YSum: 0
+  XDiff: 0
+  YDiff: 0
   raycastHeight: 2
   raycastWidth: 2
+  autoPilotEnabled: 0
   CrystalTransform: {fileID: 0}
   flowFieldData: {fileID: 0}
 --- !u!114 &4005043449782909879
@@ -608,7 +614,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   usesBoost: 0
-  usesLevels: 1
+  usesLevels: 0
   usesAmmo: 1
   maxBoost: 1
   initialBoost: 1

@@ -280,10 +280,11 @@ namespace StarWriter.Core
             AOEExplosionMaterial = material;
         }
 
-        public void FlipShipUpsideDown()
+        public void FlipShipUpsideDown() // TODO: move to shipController
         {
             OrientationHandle.transform.localRotation = Quaternion.Euler(0, 0, 180);
         }
+
         public void FlipShipRightsideUp()
         {
             OrientationHandle.transform.localRotation = Quaternion.Euler(0, 0, 0);

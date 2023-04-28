@@ -302,8 +302,8 @@ namespace StarWriter.Core.Input
 
         void Reparameterize()
         {
-            XSum = ((rightTouch.x + leftTouch.x) / Screen.currentResolution.width) - 1; //negative is because joysitcks and unity axes don't agree
-            YSum = (-(rightTouch.y + leftTouch.y) / Screen.currentResolution.height) - 1;
+            XSum = ((rightTouch.x + leftTouch.x) / Screen.currentResolution.width) - 1; 
+            YSum = -(((rightTouch.y + leftTouch.y) / Screen.currentResolution.height) - 1); //negative is because joysitcks and unity axes don't agree
             XDiff = (rightTouch.x - leftTouch.x) / Screen.currentResolution.width;
             YDiff = (rightTouch.y - leftTouch.y) / Screen.currentResolution.width;
 
