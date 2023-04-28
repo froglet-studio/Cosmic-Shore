@@ -10,13 +10,13 @@ namespace StarWriter.Core.Input
         public int DifficultyLevel;
 
         public float defaultThrottle = .6f;
-        public float defaultLerp = .035f;
+        public float defaultAggressiveness = .035f;
 
         public float throttleIncrease = .001f;
-        public float lerpIncrease = .001f;
+        public float aggressivenessIncrease = .001f;
 
         public float throttle;
-        public float lerp;
+        public float aggressiveness = .1f;
 
         public float avoidance = 2.5f;
 
@@ -29,9 +29,9 @@ namespace StarWriter.Core.Input
 
         float LevelAwareAvoidance { get { return avoidance + (DifficultyLevel * .3f); } }
         float LevelAwareDefaultThrottle { get { return defaultThrottle * DifficultyLevel * .3f; } }
-        float LevelAwareDefaultLerp { get { return defaultLerp * DifficultyLevel * .3f; } }
+        float LevelAwareDefaultLerp { get { return defaultAggressiveness * DifficultyLevel * .3f; } }
         float LevelAwareThrottleIncrease { get { return throttleIncrease * DifficultyLevel * .3f; } }
-        float LevelAwareLerpIncrease { get { return lerpIncrease * DifficultyLevel * .3f; } }
+        float LevelAwareLerpIncrease { get { return aggressivenessIncrease * DifficultyLevel * .3f; } }
 
         [SerializeField] float raycastHeight;
         [SerializeField] float raycastWidth;
@@ -87,7 +87,7 @@ namespace StarWriter.Core.Input
         {
             ship = GetComponent<Ship>();
             if (autoPilotEnabled) { ship.inputController.AutoPilotEnabled = true; }
-            lerp = defaultLerp;
+            aggressiveness = defaultAggressiveness;
             throttle = defaultThrottle;
             shipData = GetComponent<ShipData>();
 
@@ -121,14 +121,14 @@ namespace StarWriter.Core.Input
                 Vector3 localCrossProduct = transform.InverseTransformDirection(crossProduct);
                 combinedLocalCrossProduct += localCrossProduct;
             }
-
-            float angle = Mathf.Asin(Mathf.Clamp(combinedLocalCrossProduct.magnitude, -1f, 1f)) * Mathf.Rad2Deg;
+            
+            float angle = Mathf.Asin(Mathf.Clamp(combinedLocalCrossProduct.magnitude * aggressiveness/ distance.magnitude, -1f, 1f)) * Mathf.Rad2Deg;
 
             YSum = Mathf.Clamp(angle * combinedLocalCrossProduct.x, -1, 1);
             XSum = Mathf.Clamp(angle * combinedLocalCrossProduct.y, -1, 1);
             YDiff = Mathf.Clamp(angle * combinedLocalCrossProduct.z, -1, 1);
             ///get better
-            lerp += lerpIncrease * Time.deltaTime;
+            aggressiveness += aggressivenessIncrease * Time.deltaTime;
             throttle += throttleIncrease * Time.deltaTime;
 
   

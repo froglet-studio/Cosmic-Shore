@@ -337,7 +337,7 @@ MonoBehaviour:
   trailBlock: {fileID: 4563009547826722997, guid: 5790c8c1f457a754baecca51ef90c82e,
     type: 3}
   skimmer: {fileID: 874579554510349383}
-  waitTillOutsideSkimmer: 1
+  waitTillOutsideSkimmer: 0
   offset: 0
   initialWavelength: 5
   minWavelength: 1
@@ -470,12 +470,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   DifficultyLevel: 0
-  defaultThrottle: 0.8
-  defaultLerp: 200
-  throttleIncrease: 0
-  lerpIncrease: 0
+  defaultThrottle: 0.7
+  defaultAggressiveness: 0.05
+  throttleIncrease: 0.02
+  aggressivenessIncrease: 0.07
   throttle: 0
-  lerp: 0
+  aggressiveness: 0.1
   avoidance: 30
   XSum: 0
   YSum: 0

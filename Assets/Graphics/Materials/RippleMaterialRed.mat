@@ -106,9 +106,9 @@ Material:
     - _GlossyReflections: 0
     - _Gradient_Edge: 0.15
     - _Metallic: 0
-    - _Noise_Scale: 0.13
+    - _Noise_Scale: 0.05
     - _OcclusionStrength: 1
-    - _Opacity: 0.67831206
+    - _Opacity: 1
     - _Parallax: 0.005
     - _QueueControl: 0
     - _QueueOffset: 0

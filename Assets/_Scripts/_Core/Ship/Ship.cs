@@ -187,7 +187,7 @@ namespace StarWriter.Core
                     case CrystalImpactEffects.ResetAggression:
                         if (gameObject.TryGetComponent<AIPilot>(out var aiPilot))
                         {
-                            aiPilot.lerp = aiPilot.defaultLerp;
+                            aiPilot.aggressiveness = aiPilot.defaultAggressiveness;
                             aiPilot.throttle = aiPilot.defaultThrottle;
                         }
                         break;
