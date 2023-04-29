@@ -1,5 +1,53 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
+--- !u!1 &1034863810764821312
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1058357794393307148}
+  - component: {fileID: 8019026085058197081}
+  m_Layer: 0
+  m_Name: ChargedFireGunAction
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1058357794393307148
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1034863810764821312}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: -196.28, y: -175.3, z: 0.00007629396}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 4369262321157730261}
+  m_RootOrder: 1
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &8019026085058197081
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1034863810764821312}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9633e52896cf12147b75b904c74afc78, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  topGun: {fileID: 6325554860274326311}
+  ProjectileScale: 1
+  BlockScale: {x: 4, y: 4, z: 1}
+  chargePerSecond: 1
 --- !u!1 &1878660672777590133
 GameObject:
   m_ObjectHideFlags: 0
@@ -33,53 +81,6 @@ Transform:
   m_Father: {fileID: 5928382658856804067}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &2905456650178862820
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 2682141685163518091}
-  - component: {fileID: 6274364622300635993}
-  m_Layer: 0
-  m_Name: FireGunAction
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &2682141685163518091
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2905456650178862820}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 4369262321157730261}
-  m_RootOrder: 0
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &6274364622300635993
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2905456650178862820}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: da47fdb990762b04cbf4714c4f814b47, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  topGun: {fileID: 6325554860274326311}
-  ProjectileScale: 1
-  BlockScale: {x: 4, y: 4, z: 1}
 --- !u!1 &2922084150275773488
 GameObject:
   m_ObjectHideFlags: 0
@@ -110,7 +111,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 4369262321157730261}
-  m_RootOrder: 1
+  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &530330926117300620
 MonoBehaviour:
@@ -240,7 +241,6 @@ GameObject:
   - component: {fileID: 3440187540988767646}
   - component: {fileID: 7279892912462638078}
   - component: {fileID: 1435252848482629424}
-  - component: {fileID: 7081412522392871879}
   m_Layer: 0
   m_Name: Bufo
   m_TagString: Player_Ship
@@ -304,7 +304,7 @@ MonoBehaviour:
   leftStickShipActions:
   - {fileID: 530330926117300620}
   rightStickShipActions:
-  - {fileID: 6274364622300635993}
+  - {fileID: 8019026085058197081}
   flipShipActions: []
   idleShipActions: []
   LevelEffects: 020000000300000001000000
@@ -353,7 +353,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 909fb5cbbca8c4549b5a9df56d837e55, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  trailBlock: {fileID: 4563009547826722997, guid: 68d3aecc8e78ee64ab14601164273680,
+  trailBlock: {fileID: 4563009547826722997, guid: 0e7b9177c2c35b946b8d409509762af1,
     type: 3}
   skimmer: {fileID: 874579554510349383}
   waitTillOutsideSkimmer: 1
@@ -411,17 +411,16 @@ MonoBehaviour:
   MinimumSpeed: 10
   ThrottleScaler: 50
   DefaultMinimumSpeed: 0
-  DefaultThrottleScaler: 40
+  DefaultThrottleScaler: 20
   BoostDecay: 1
   MaxBoostDecay: 10
   BoostDecayGrowthRate: 0.03
-  PitchScaler: 160
-  YawScaler: 160
-  RollScaler: 160
+  PitchScaler: 60
+  YawScaler: 60
+  RollScaler: 60
   RotationThrottleScaler: 0
   topGun: {fileID: 6325554860274326311}
   projectileContainer: {fileID: 0}
-  trailFollower: {fileID: 7081412522392871879}
   chargeDepletionRate: -0.05
   rechargeRate: 0.1
   ProjectileScale: 1
@@ -499,22 +498,6 @@ MonoBehaviour:
   BoostDisplay: {fileID: 0}
   LevelDisplay: {fileID: 0}
   AmmoDisplay: {fileID: 0}
---- !u!114 &7081412522392871879
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6417075533431866457}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 176c662296efcc847a97193a5e7ba824, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  FriendlyTerrainSpeed: 100
-  HostileTerrainSpeed: 20
-  DestroyedTerrainSpeed: 10
-  Throttle: 0
 --- !u!1 &6878347770711062259
 GameObject:
   m_ObjectHideFlags: 0
@@ -543,8 +526,8 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 2682141685163518091}
   - {fileID: 4875274132360377489}
+  - {fileID: 1058357794393307148}
   m_Father: {fileID: 5928382658856804067}
   m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}

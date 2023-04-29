@@ -6,7 +6,6 @@ public class SingleStickController : ShipController
 {
     [SerializeField] Gun topGun;
     [SerializeField] GameObject projectileContainer;
-    [SerializeField] TrailFollower trailFollower;
     [SerializeField] float chargeDepletionRate = -.05f;
     [SerializeField] float rechargeRate = .1f;
 
@@ -41,16 +40,7 @@ public class SingleStickController : ShipController
 
     protected override void MoveShip()
     {
-        if (shipData.Attached && !attached)
-            trailFollower.Attach(shipData.AttachedTrailBlock);
-        else if (!shipData.Attached && attached)
-            trailFollower.Detach();
-
-        attached = shipData.Attached;
-
-        if (attached)
-            Slide();
-        else
+        
             base.MoveShip();
     }
 
@@ -78,36 +68,5 @@ public class SingleStickController : ShipController
 
         foreach (var gun in guns) // TODO: magic number for projectile speed (30)
             gun.FireGun(projectileContainer.transform, 90, inheritedVelocity, ProjectileScale, BlockScale);
-    }
-
-    void Slide()
-    {
-        // TODO: magic numbers
-        float lookThreshold = -.6f;
-        float zeroPosition = .2f;
-
-        var throttle = (inputController.XDiff - zeroPosition)/(1 - zeroPosition);
-
-        if (Vector3.Dot(transform.forward, shipData.Course) < lookThreshold && throttle > 0)
-             moveForward = !moveForward;
-
-        if ((moveForward && throttle > 0) || (!moveForward && throttle < 0))
-            trailFollower.SetDirection(TrailFollowerDirection.Forward);
-        else
-            trailFollower.SetDirection(TrailFollowerDirection.Backward);
-
-        trailFollower.Throttle = Mathf.Abs(throttle);
-        trailFollower.Move();
-
-        // TODO: should this be pulled out as an action type?          
-        resourceSystem.ChangeAmmoAmount(rechargeRate * Time.deltaTime);
-
-        shipData.AttachedTrailBlock = trailFollower.AttachedTrailBlock;
-        shipData.AttachedTrailBlock.Steal(ship.Player.PlayerName, ship.Team);
-
-        if (shipData.AttachedTrailBlock.destroyed)
-            shipData.AttachedTrailBlock.Restore(); 
-        else 
-            shipData.AttachedTrailBlock.Grow(4);
     }
 }

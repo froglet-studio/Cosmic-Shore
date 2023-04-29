@@ -7,6 +7,7 @@ namespace StarWriter.Core
         [SerializeField] AOEExplosion AOEPrefab;
         [SerializeField] float minExplosionScale;
         [SerializeField] float maxExplosionScale;
+        public float Charge = 0;
 
         protected override void OnTriggerEnter(Collider other)
         {
@@ -18,7 +19,7 @@ namespace StarWriter.Core
             var AOEExplosion = Instantiate(AOEPrefab).GetComponent<AOEExplosion>();
             AOEExplosion.Ship = Ship;
             AOEExplosion.SetPositionAndRotation(transform.position, transform.rotation);
-            AOEExplosion.MaxScale = Mathf.Max(minExplosionScale, Ship.ResourceSystem.CurrentAmmo * maxExplosionScale);
+            AOEExplosion.MaxScale = (Charge * (maxExplosionScale - minExplosionScale)) + minExplosionScale; 
         }
     }
 }

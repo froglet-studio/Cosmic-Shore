@@ -27,7 +27,7 @@ namespace StarWriter.Core
         }
 
         public void FireGun(Transform containerTransform, float speed, Vector3 inheritedVelocity, 
-            float projectileScale, Vector3 blockScale, bool ignoreCooldown = false, float projectileTime = 3)
+            float projectileScale, Vector3 blockScale, bool ignoreCooldown = false, float projectileTime = 3, float charge = 0)
         {
             if (onCooldown && !ignoreCooldown)
                 return;
@@ -42,6 +42,7 @@ namespace StarWriter.Core
             projectile.Velocity = projectile.transform.forward * speed + inheritedVelocity;
             projectile.Team = Team;
             projectile.Ship = Ship;
+            if (projectile is ExplodableProjectile) ((ExplodableProjectile)projectile).Charge = charge;
 
             StartCoroutine(MoveProjectileCoroutine(projectile, blockScale, projectileTime));
             StartCoroutine(CooldownCoroutine());

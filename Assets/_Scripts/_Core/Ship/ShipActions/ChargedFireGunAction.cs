@@ -1,7 +1,8 @@
 using StarWriter.Core;
+using System.Collections;
 using UnityEngine;
 
-public class FireGunAction : ShipActionAbstractBase
+public class ChargedFireGunAction : ShipActionAbstractBase
 {
     // TODO: WIP gun firing needs to be reworked
     [SerializeField] Gun topGun;
@@ -13,6 +14,10 @@ public class FireGunAction : ShipActionAbstractBase
 
     public float ProjectileScale = 1f;
     public Vector3 BlockScale = new(4f, 4f, 1f);
+    
+    float charge = 0;
+    [SerializeField] float chargePerSecond = 1;
+    Coroutine gainCharge;
 
     void Start()
     {
@@ -23,7 +28,19 @@ public class FireGunAction : ShipActionAbstractBase
     }
     public override void StartAction()
     {
-        if (resourceSystem.CurrentAmmo > ammoCost) 
+        gainCharge = StartCoroutine(GainChargeCoroutine());
+    }
+
+    IEnumerator GainChargeCoroutine()
+    {
+        yield return new WaitForSeconds(.5f);
+        charge += chargePerSecond * .5f;
+    }
+
+    public override void StopAction()
+    {
+        StopCoroutine(gainCharge);
+        if (resourceSystem.CurrentAmmo > ammoCost)
         {
             resourceSystem.ChangeAmmoAmount(-ammoCost);
 
@@ -32,13 +49,9 @@ public class FireGunAction : ShipActionAbstractBase
             else inheritedVelocity = shipData.Course;
 
             // TODO: WIP magic numbers
-            topGun.FireGun(projectileContainer.transform, 90, inheritedVelocity * shipData.Speed, ProjectileScale * 15, BlockScale * 2, true, 3f);
+            topGun.FireGun(projectileContainer.transform, 90, inheritedVelocity * shipData.Speed, ProjectileScale * 15, BlockScale * 2, true, 3f, charge);
         }
-    }
-
-    public override void StopAction()
-    {
-
+        charge = 0;
     }
 
 
