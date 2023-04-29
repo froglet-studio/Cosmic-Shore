@@ -7,6 +7,7 @@ namespace StarWriter.Core
     {
         [SerializeField] GameObject projectilePrefab;
 
+        public bool Detonate = false;
         public float projectileTime = 2;
         public float firePeriod = .2f;
         public Teams Team;
@@ -97,6 +98,7 @@ namespace StarWriter.Core
             
         }
 
+
         IEnumerator MoveProjectileCoroutine(Projectile projectile, Vector3 blockScale, float projectileTime)
         {
             var elapsedTime = 0f;
@@ -105,30 +107,35 @@ namespace StarWriter.Core
             
             while (elapsedTime < projectileTime)
             {
+                if (Detonate)
+                {
+                    Destroy(projectile.gameObject);
+                    yield break;
+                }
                 elapsedTime += Time.deltaTime;
                 projectile.transform.position += velocity * Time.deltaTime;
                 yield return null;
             }
 
-            if (trail.TrailList.Count == 0) lookAtTarget = Ship.transform;
-            else lookAtTarget = trail.TrailList[trail.TrailList.Count - 1].transform;
+            //if (trail.TrailList.Count == 0) lookAtTarget = Ship.transform;
+            //else lookAtTarget = trail.TrailList[trail.TrailList.Count - 1].transform;
 
-            if (shipData.LayingBulletTrail)
-            {
-                CreateBlock(projectile.transform.position, lookAtTarget, "::projectile::" + Time.time, blockScale);
-            }
-            else if (trail.TrailList.Count < 7 && trail.TrailList.Count != 0)
-            {
-                foreach (TrailBlock trailBlock in trail.TrailList)
-                {
-                    Destroy(trailBlock.gameObject);
-                }
-                trail = new();
-            }
-            else if (trail.TrailList.Count > 0)
-            {
-                trail = new();
-            }
+            //if (shipData.LayingBulletTrail)
+            //{
+            //    CreateBlock(projectile.transform.position, lookAtTarget, "::projectile::" + Time.time, blockScale);
+            //}
+            //else if (trail.TrailList.Count < 7 && trail.TrailList.Count != 0)
+            //{
+            //    foreach (TrailBlock trailBlock in trail.TrailList)
+            //    {
+            //        Destroy(trailBlock.gameObject);
+            //    }
+            //    trail = new();
+            //}
+            //else if (trail.TrailList.Count > 0)
+            //{
+            //    trail = new();
+            //}
 
             Destroy(projectile.gameObject);
         }
