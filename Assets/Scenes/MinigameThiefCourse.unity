@@ -688,6 +688,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1020381235}
+  - component: {fileID: 1020381236}
   m_Layer: 0
   m_Name: Spawners
   m_TagString: Untagged
@@ -711,6 +712,29 @@ Transform:
   m_Father: {fileID: 1471404063}
   m_RootOrder: 6
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1020381236
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1020381234}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b5d3599573f5d3348865c8d5efe8c29f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  numberOfSegments: 1
+  spawnableSegments:
+  - {fileID: 2091254371}
+  positioningScheme: 2
+  spawnSegmentWeights:
+  - 1
+  Seed: 0
+  InitializeOnStart: 0
+  origin: {x: 0, y: 0, z: 500}
+  StraightLineLength: 400
+  DifficultyAngle: 90
 --- !u!1001 &1059225105
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1123,7 +1147,7 @@ MonoBehaviour:
   CountdownGrowScale: 1.5
   Crystal: {fileID: 1568959833}
   CrystalStartPosition: {x: 0, y: 0, z: -120}
-  SegmentSpawner: {fileID: 1471404064}
+  SegmentSpawner: {fileID: 1020381236}
   numberOfSegments: 10
 --- !u!4 &1180410982 stripped
 Transform:
@@ -1769,7 +1793,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1471404063}
-  - component: {fileID: 1471404064}
   m_Layer: 0
   m_Name: Environment
   m_TagString: Untagged
@@ -1799,28 +1822,6 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1471404064
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1471404062}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b5d3599573f5d3348865c8d5efe8c29f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  numberOfSegments: 1
-  spawnableSegments:
-  - {fileID: 2091254371}
-  positioningScheme: 2
-  spawnSegmentWeights:
-  - 1
-  Seed: 0
-  InitializeOnStart: 0
-  StraightLineLength: 400
-  DifficultyAngle: 90
 --- !u!114 &1568959833 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 6588436222817790495, guid: fced5b15da3ad1d41b4e3b7385609e37,
