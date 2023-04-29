@@ -105,7 +105,7 @@ namespace StarWriter.Core.HangerBuilder
                 { Teams.Yellow,  YellowTeamAOEExplosionMaterial },
             };
             if (PlayerTeam == Teams.None) {
-                Debug.LogError("Player Team is set to None. Defaulting to Green team");
+                Debug.LogError("Player Team is set to None. Defaulting to Green Team");
                 PlayerTeam = Teams.Green;
             }
 
