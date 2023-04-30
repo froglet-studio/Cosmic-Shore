@@ -45,11 +45,11 @@ public class Crystal : MonoBehaviour
 
     protected virtual void Update()
     {
-        if (collisions.Count > 0)
+        if (collisions.Count > 0 && collisions[0] != null)
         {
             Collide(collisions[0]);
-            collisions.Clear();
         }
+        collisions.Clear();
     }
 
     public void PerformCrystalImpactEffects(CrystalProperties crystalProperties, Ship ship)

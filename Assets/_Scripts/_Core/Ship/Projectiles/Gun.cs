@@ -108,12 +108,13 @@ namespace StarWriter.Core
             
             while (elapsedTime < projectileTime)
             {
+                if (projectile == null) yield break;
                 if (Detonate)
                 {
                     Destroy(projectile.gameObject);
                     yield break;
                 }
-                elapsedTime += Time.deltaTime;
+                elapsedTime += Time.deltaTime;              
                 projectile.transform.position += velocity * Time.deltaTime;
                 yield return null;
             }

@@ -406,7 +406,7 @@ MonoBehaviour:
   offset: 0
   initialWavelength: 13
   minWavelength: 11
-  gap: 1
+  gap: 4
   InnerDimensions: {x: 0, y: 0, z: 0}
   defaultWaitTime: 0.5
   waitTime: 0.5
