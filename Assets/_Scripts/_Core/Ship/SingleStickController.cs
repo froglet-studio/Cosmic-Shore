@@ -44,7 +44,7 @@ public class SingleStickController : ShipController
             base.MoveShip();
     }
 
-    public void BigFire()
+    public void BigFire() // TODO: move to Gun.cs
     {
         
         if (resourceSystem.CurrentAmmo > resourceSystem.MaxAmmo / 10f) // TODO: WIP magic numbers
@@ -60,7 +60,7 @@ public class SingleStickController : ShipController
         }
     }
 
-    void Fire()
+    void Fire() // TODO: move to Gun.cs
     {
         resourceSystem.ChangeAmmoAmount(chargeDepletionRate * Time.deltaTime); // TODO: this should probably be an amount not a rate. let the gun cooldown handle delta time, but then there is asymmetry with the recharge rate . . . 
 

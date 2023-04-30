@@ -1,6 +1,7 @@
 using System.Collections;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.UIElements;
 
 namespace StarWriter.Core.Input
 {
@@ -224,6 +225,7 @@ namespace StarWriter.Core.Input
                     leftTouch = UnityEngine.Input.touches[leftTouchIndex].position;
                     rightTouch = UnityEngine.Input.touches[rightTouchIndex].position;
                 }
+                
                 if (UnityEngine.Input.touches.Length == 2 || threeFingerFumble)
                 {
                     // If we didn't fat finger the phone, find the 
@@ -241,6 +243,22 @@ namespace StarWriter.Core.Input
                         }
                     }
 
+                    if (portrait)
+                    {
+                        float minTouchDistance = Vector2.Distance(rightTouch, UnityEngine.Input.touches[0].position);
+                        int touchIndex = 0;
+                        for (int i = 1; i < UnityEngine.Input.touches.Length; i++)
+                        {
+                            if (Vector2.Distance(rightTouch, UnityEngine.Input.touches[i].position) < minTouchDistance)
+                            {
+                                minTouchDistance = Vector2.Distance(leftTouch, UnityEngine.Input.touches[i].position);
+                                touchIndex = i;
+                            }
+                        }
+                        rightTouch = UnityEngine.Input.touches[touchIndex].position;
+                    }
+
+
                     if (leftStickEffectsStarted)
                     {
                         leftStickEffectsStarted = false;
@@ -252,9 +270,14 @@ namespace StarWriter.Core.Input
                         ship.StopShipControllerActions(InputEvents.RightStickAction);
                     }
                 }
-                else if (UnityEngine.Input.touches.Length == 1)
+                if (UnityEngine.Input.touches.Length == 1)
                 {
-                    if (leftTouch != Vector2.zero && rightTouch != Vector2.zero)
+                    if (portrait)
+                    {
+                        rightTouch = UnityEngine.Input.touches[0].position;
+                        leftTouch = new Vector2(Screen.currentResolution.width / 4f, Screen.currentResolution.height / 2f);
+                    }
+                    else if (leftTouch != Vector2.zero && rightTouch != Vector2.zero)
                     {
                         var position = UnityEngine.Input.touches[0].position;
 

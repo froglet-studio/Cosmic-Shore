@@ -46,6 +46,7 @@ public class Controls : MonoBehaviour
                 }
                 else 
                 {
+                    transform.position = Input.touches[0].position;
                     //transform.position = Vector2.Lerp(transform.position, initialPos, .2f);
                 }
             }
@@ -59,6 +60,7 @@ public class Controls : MonoBehaviour
                 }
                 else
                 {
+                    transform.position = Input.touches[0].position;
                     //transform.position = Vector2.Lerp(transform.position, initialPos, .2f);
                 }
             }
