@@ -15,6 +15,8 @@ public class Player : MonoBehaviour
     [SerializeField] ChargeDisplay boostDisplay;
     [SerializeField] ChargeDisplay levelDisplay;
     [SerializeField] ChargeDisplay ammoDisplay;
+    [SerializeField] ChargeDisplay chargeDisplay;
+
 
     public Teams Team;
     public string PlayerName { get => playerName; set => playerName = value; }
@@ -77,8 +79,10 @@ public class Player : MonoBehaviour
                     ship.ResourceSystem.BoostDisplay = boostDisplay;
                 if (levelDisplay != null)
                     ship.ResourceSystem.LevelDisplay = levelDisplay;
-                if (levelDisplay != null)
+                if (ammoDisplay != null)
                     ship.ResourceSystem.AmmoDisplay = ammoDisplay;
+                if (chargeDisplay != null)
+                    ship.ResourceSystem.ChargeDisplay = chargeDisplay;
 
                 break;
             default: // Single player game 
@@ -97,8 +101,10 @@ public class Player : MonoBehaviour
                     ship.ResourceSystem.BoostDisplay = boostDisplay;
                 if (levelDisplay != null)
                     ship.ResourceSystem.LevelDisplay = levelDisplay;
-                if (levelDisplay != null)
+                if (ammoDisplay != null)
                     ship.ResourceSystem.AmmoDisplay = ammoDisplay;
+                if (chargeDisplay != null)
+                    ship.ResourceSystem.ChargeDisplay = chargeDisplay;
 
                 gameManager.WaitOnPlayerLoading();
                 break;

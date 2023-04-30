@@ -1,4 +1,5 @@
 using StarWriter.Core;
+using System;
 using System.Collections;
 using UnityEngine;
 
@@ -24,7 +25,6 @@ public class ChargedFireGunAction : ShipActionAbstractBase
         projectileContainer = new GameObject($"{ship.Player.PlayerName}_Projectiles");
         shipData = ship.GetComponent<ShipData>();
         resourceSystem = ship.ResourceSystem;
-        ammoCost = resourceSystem.MaxAmmo / 10f; // TODO: WIP magic numbers
     }
     public override void StartAction()
     {
@@ -33,13 +33,20 @@ public class ChargedFireGunAction : ShipActionAbstractBase
 
     IEnumerator GainChargeCoroutine()
     {
-        yield return new WaitForSeconds(.5f);
-        charge += chargePerSecond * .5f;
+        var chargePeriod = .1f;
+        while (charge<1)
+        {
+            yield return new WaitForSeconds(chargePeriod);
+            charge += chargePerSecond * chargePeriod;
+            resourceSystem.ChangeChargeAmount(chargePerSecond * chargePeriod);
+        }
     }
 
     public override void StopAction()
     {
-        StopCoroutine(gainCharge);
+        charge = Mathf.Clamp(charge, 0, 1);
+        ammoCost = charge;
+        if (gainCharge != null) StopCoroutine(gainCharge);
         if (resourceSystem.CurrentAmmo > ammoCost)
         {
             resourceSystem.ChangeAmmoAmount(-ammoCost);
@@ -49,9 +56,10 @@ public class ChargedFireGunAction : ShipActionAbstractBase
             else inheritedVelocity = shipData.Course;
 
             // TODO: WIP magic numbers
-            topGun.FireGun(projectileContainer.transform, 90, inheritedVelocity * shipData.Speed, ProjectileScale * 15, BlockScale * 2, true, 3f, charge);
+            topGun.FireGun(projectileContainer.transform, 90, inheritedVelocity * shipData.Speed, ProjectileScale, BlockScale * 2, true, 3f, charge);
         }
         charge = 0;
+        resourceSystem.ResetCharge();
     }
 
 

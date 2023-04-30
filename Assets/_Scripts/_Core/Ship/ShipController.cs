@@ -126,6 +126,18 @@ public class ShipController : MonoBehaviour
         }
     }
 
+    public void FlatSpinShip(float YAngle)
+    {
+        accumulatedRotation = Quaternion.AngleAxis(
+                            180,
+                            transform.up) * accumulatedRotation;
+    }
+
+    public void SpinShip(Vector3 newDirection)
+    {
+        transform.localRotation = Quaternion.LookRotation(newDirection);
+    }
+
     public void StartChargedBoost() 
     {
         StartCoroutine(DecayingBoostCoroutine());

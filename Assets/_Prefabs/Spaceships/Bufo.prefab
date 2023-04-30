@@ -45,9 +45,53 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   topGun: {fileID: 6325554860274326311}
-  ProjectileScale: 1
+  ProjectileScale: 4
   BlockScale: {x: 4, y: 4, z: 1}
-  chargePerSecond: 1
+  chargePerSecond: 0.3
+--- !u!1 &1187085259217856650
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 5804691365993225693}
+  - component: {fileID: 7682765118055047933}
+  m_Layer: 0
+  m_Name: SpinAroundAction
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &5804691365993225693
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1187085259217856650}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: -196.28, y: -175.3, z: 0.00007629396}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 4369262321157730261}
+  m_RootOrder: 2
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &7682765118055047933
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1187085259217856650}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5448c7430e50c334ca6f2edd1f6acb1c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &1878660672777590133
 GameObject:
   m_ObjectHideFlags: 0
@@ -292,7 +336,7 @@ MonoBehaviour:
   head: {fileID: 0}
   AOEPrefab: {fileID: 0}
   farFieldSkimmer: {fileID: 0}
-  crystalImpactEffects: 0b0000000800000003000000
+  crystalImpactEffects: 0b00000003000000
   minExplosionScale: 50
   maxExplosionScale: 500
   trailBlockImpactEffects: 0000000003000000
@@ -305,9 +349,10 @@ MonoBehaviour:
   - {fileID: 530330926117300620}
   rightStickShipActions:
   - {fileID: 8019026085058197081}
-  flipShipActions: []
+  flipShipActions:
+  - {fileID: 7682765118055047933}
   idleShipActions: []
-  LevelEffects: 020000000300000001000000
+  LevelEffects: 
   minGap: 1
   maxGap: 2
   minFarFieldSkimmerScale: 100
@@ -359,8 +404,8 @@ MonoBehaviour:
   waitTillOutsideSkimmer: 1
   shielded: 0
   offset: 0
-  initialWavelength: 10
-  minWavelength: 7
+  initialWavelength: 13
+  minWavelength: 11
   gap: 1
   InnerDimensions: {x: 0, y: 0, z: 0}
   defaultWaitTime: 0.5
@@ -487,6 +532,7 @@ MonoBehaviour:
   usesBoost: 0
   usesLevels: 0
   usesAmmo: 1
+  usesCharge: 1
   gainsAmmo: 1
   ammoGainRate: 0.01
   maxBoost: 1
@@ -495,9 +541,12 @@ MonoBehaviour:
   initialLevel: 0
   maxAmmo: 1
   initialAmmo: 1
+  maxCharge: 1
+  initialCharge: 0
   BoostDisplay: {fileID: 0}
   LevelDisplay: {fileID: 0}
   AmmoDisplay: {fileID: 0}
+  ChargeDisplay: {fileID: 0}
 --- !u!1 &6878347770711062259
 GameObject:
   m_ObjectHideFlags: 0
@@ -528,6 +577,7 @@ Transform:
   m_Children:
   - {fileID: 4875274132360377489}
   - {fileID: 1058357794393307148}
+  - {fileID: 5804691365993225693}
   m_Father: {fileID: 5928382658856804067}
   m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -884,7 +934,7 @@ PrefabInstance:
     - target: {fileID: 4459183666627939154, guid: 340b92d77208a7347843154145a64863,
         type: 3}
       propertyPath: projectileTime
-      value: 2
+      value: 4
       objectReference: {fileID: 0}
     - target: {fileID: 4459183666627939154, guid: 340b92d77208a7347843154145a64863,
         type: 3}

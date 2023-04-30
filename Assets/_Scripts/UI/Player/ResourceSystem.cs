@@ -21,6 +21,7 @@ namespace StarWriter.Core
         [SerializeField] bool usesBoost;
         [SerializeField] bool usesLevels;
         [SerializeField] bool usesAmmo;
+        [SerializeField] bool usesCharge;
 
         [SerializeField] bool gainsAmmo = false;
         [SerializeField] float ammoGainRate = .1f;
@@ -101,9 +102,36 @@ namespace StarWriter.Core
             }
         }
 
+        [Tooltip("Max ammo level from 0-1")]
+        [SerializeField]
+        [Range(0, 1)]
+        float maxCharge = 1f;
+
+        [Tooltip("Initial boost level from 0-1")]
+        [SerializeField]
+        [Range(0, 1)]
+        float initialCharge = 1f;
+
+        float currentCharge;
+
+        public float MaxCharge { get { return maxCharge; } }
+
+        public float CurrentCharge
+        {
+            get => currentCharge;
+            private set
+            {
+                currentCharge = value;
+
+                if (ChargeDisplay != null)
+                    ChargeDisplay.UpdateDisplay(currentCharge);
+            }
+        }
+
         public ChargeDisplay BoostDisplay;
         public ChargeDisplay LevelDisplay;
         public ChargeDisplay AmmoDisplay;
+        public ChargeDisplay ChargeDisplay;
 
         void Start()
         {
@@ -126,6 +154,8 @@ namespace StarWriter.Core
             else LevelDisplay?.gameObject.SetActive(false);
             if (usesAmmo) ResetAmmo();
             else AmmoDisplay?.gameObject.SetActive(false);
+            if (usesCharge) ResetAmmo();
+            else ChargeDisplay?.gameObject.SetActive(false);
         }
 
         public void Reset()
@@ -133,6 +163,7 @@ namespace StarWriter.Core
             ResetBoost();
             ResetLevel();
             ResetAmmo();
+            ResetCharge();
         }
 
         public void ResetBoost()
@@ -148,6 +179,11 @@ namespace StarWriter.Core
             CurrentAmmo = initialAmmo;
         }
 
+         public void ResetCharge()
+        {
+            CurrentCharge = initialCharge;
+        }
+
         public void ChangeBoostAmount(float amount)
         {
             CurrentBoost = Mathf.Clamp(currentBoost + amount, 0, maxBoost);
@@ -161,6 +197,11 @@ namespace StarWriter.Core
         public void ChangeAmmoAmount(float amount)
         {
             CurrentAmmo = Mathf.Clamp(currentAmmo + amount, 0, maxAmmo);
+        }
+        
+        public void ChangeChargeAmount(float amount)
+        {
+            CurrentCharge = Mathf.Clamp(currentCharge + amount, 0, maxCharge);
         }
     }
 }
