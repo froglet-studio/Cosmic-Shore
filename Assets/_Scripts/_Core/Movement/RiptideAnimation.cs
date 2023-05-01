@@ -2,21 +2,21 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-class DolphinAnimation : ShipAnimation
+public class RiptideAnimation : ShipAnimation
 {
-    [SerializeField] Transform Fusilage;
+    [SerializeField] Transform Chassis;
 
-    [SerializeField] Transform LeftWing;
-
+    [SerializeField] Transform NoseTop;
     [SerializeField] Transform RightWing;
-
-    [SerializeField] Transform TailStart;
-
-    [SerializeField] Transform TailEnd;
-
-    [SerializeField] Transform LeftTail;
-
-    [SerializeField] Transform RightTail;
+    [SerializeField] Transform NoseBottom;
+    [SerializeField] Transform LeftWing;
+    
+    [SerializeField] Transform ThrusterTopRight;
+    [SerializeField] Transform ThrusterRight;
+    [SerializeField] Transform ThrusterBottomRight;
+    [SerializeField] Transform ThrusterBottomLeft;
+    [SerializeField] Transform ThrusterLeft;
+    [SerializeField] Transform ThrusterTopLeft;
 
     [SerializeField] float animationScaler = 25f;
     [SerializeField] float yawAnimationScaler = 15f;
@@ -24,11 +24,12 @@ class DolphinAnimation : ShipAnimation
     [SerializeField] float lerpAmount = 2f;
     [SerializeField] float smallLerpAmount = .7f;
 
+
     public override void PerformShipAnimations(float pitch, float yaw, float roll, float throttle)
     {
         // Ship animations TODO: figure out how to leverage a single definition for pitch, etc. that captures the gyro in the animations.
 
-        AnimatePart(Fusilage,
+        AnimatePart(Chassis,
                     pitch * animationScaler,
                     yaw * animationScaler,
                     roll * animationScaler);
@@ -37,29 +38,19 @@ class DolphinAnimation : ShipAnimation
                     Brake(throttle) * yawAnimationScaler,
                     -(throttle - yaw) * yawAnimationScaler,
                     (roll - pitch) * rollAnimationScaler);
-                    
+
 
         AnimatePart(RightWing,
                     Brake(throttle) * yawAnimationScaler,
                     (throttle + yaw) * yawAnimationScaler,
                     (roll + pitch) * rollAnimationScaler);
 
-        AnimatePart(TailStart,
+        AnimatePart(ThrusterLeft,
                     pitch * animationScaler,
                     yaw * animationScaler,
                     roll * animationScaler);
 
-        AnimatePart(TailEnd,
-                    pitch * animationScaler,
-                    yaw * animationScaler,
-                    roll * animationScaler);
-
-        AnimatePart(LeftTail,
-                    pitch * animationScaler,
-                    yaw * animationScaler,
-                    roll * animationScaler);
-
-        AnimatePart(RightTail,
+        AnimatePart(ThrusterRight,
                     pitch * animationScaler,
                     yaw * animationScaler,
                     roll * animationScaler);
@@ -69,11 +60,9 @@ class DolphinAnimation : ShipAnimation
     {
         LeftWing.localRotation = Quaternion.Lerp(LeftWing.localRotation, Quaternion.identity, smallLerpAmount * Time.deltaTime);
         RightWing.localRotation = Quaternion.Lerp(RightWing.localRotation, Quaternion.identity, smallLerpAmount * Time.deltaTime);
-        Fusilage.localRotation = Quaternion.Lerp(Fusilage.localRotation, Quaternion.identity, smallLerpAmount * Time.deltaTime);
-        TailStart.localRotation = Quaternion.Lerp(TailStart.localRotation, Quaternion.identity, smallLerpAmount * Time.deltaTime);
-        TailEnd.localRotation = Quaternion.Lerp(TailEnd.localRotation, Quaternion.identity, smallLerpAmount * Time.deltaTime);
-        LeftTail.localRotation = Quaternion.Lerp(LeftTail.localRotation, Quaternion.identity, smallLerpAmount * Time.deltaTime);
-        RightTail.localRotation = Quaternion.Lerp(RightTail.localRotation, Quaternion.identity, smallLerpAmount * Time.deltaTime);
+        Chassis.localRotation = Quaternion.Lerp(Chassis.localRotation, Quaternion.identity, smallLerpAmount * Time.deltaTime);
+        ThrusterLeft.localRotation = Quaternion.Lerp(ThrusterLeft.localRotation, Quaternion.identity, smallLerpAmount * Time.deltaTime);
+        ThrusterRight.localRotation = Quaternion.Lerp(ThrusterRight.localRotation, Quaternion.identity, smallLerpAmount * Time.deltaTime);
     }
 
     void AnimatePart(Transform part, float partPitch, float partYaw, float partRoll)
@@ -83,7 +72,7 @@ class DolphinAnimation : ShipAnimation
                                     Quaternion.Euler(
                                         partPitch,
                                         partYaw,
-                                        partRoll),  
+                                        partRoll),
                                     lerpAmount * Time.deltaTime);
     }
 
