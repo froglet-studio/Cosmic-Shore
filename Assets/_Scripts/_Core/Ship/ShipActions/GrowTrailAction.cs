@@ -9,6 +9,7 @@ public class GrowTrailAction : GrowActionBase
         {
             spawner.YScaler += Time.deltaTime * growRate;
             spawner.XScaler += Time.deltaTime * growRate;
+            spawner.gap += Time.deltaTime * growRate * 2;
             yield return null;
         }
     }
@@ -20,6 +21,7 @@ public class GrowTrailAction : GrowActionBase
         {
             spawner.YScaler -= Time.deltaTime * shrinkRate;
             spawner.XScaler -= Time.deltaTime * shrinkRate;
+            spawner.gap -= Time.deltaTime * shrinkRate * 2;
             yield return null;
         }
     }
