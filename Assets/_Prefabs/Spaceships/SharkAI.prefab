@@ -609,15 +609,21 @@ MonoBehaviour:
   blockChargeChange: 0
   boostMultiplier: 3
   boostFuelAmount: -0.01
-  maxSpeedStraightActions: []
-  minSpeedStraightActions: []
-  leftStickShipActions: []
-  rightStickShipActions: []
-  flipShipActions: []
-  idleShipActions: []
-  LevelEffects: 
-  minGap: 2
-  maxGap: 2
+  fullSpeedStraightEffects: 
+  rightStickEffects: 
+  leftStickEffects: 
+  flipEffects: 
+  idleEffects: 
+  minimumSpeedStraightEffects: 
+  cameraGrowthRate: 1
+  cameraShrinkRate: 1
+  minTrailYScale: 15
+  maxTrailYScale: 100
+  skimmerGrowthRate: 1
+  skimmerShrinkRate: 1
+  trailGrowthRate: 1
+  trailShrinkRate: 1
+  levelEffects: 
   minFarFieldSkimmerScale: 100
   maxFarFieldSkimmerScale: 200
   minNearFieldSkimmerScale: 15
@@ -629,30 +635,10 @@ MonoBehaviour:
   ControlOverrides: 
   closeCamDistance: -0.5
   farCamDistance: -15
-  AOEExplosionMaterial: {fileID: 0}
---- !u!114 &2465068438299943845
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6417075533431866457}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 95baa921cf22958449a3143749d5e0e3, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  MinimumSpeed: 10
-  ThrottleScaler: 50
-  DefaultMinimumSpeed: 10
-  DefaultThrottleScaler: 50
-  BoostDecay: 1
-  MaxBoostDecay: 10
   BoostDecayGrowthRate: 0.03
-  PitchScaler: 130
-  YawScaler: 130
-  RollScaler: 130
-  RotationThrottleScaler: 0
+  MaxBoostDecay: 10
+  inputController: {fileID: 0}
+  ResourceSystem: {fileID: 0}
 --- !u!114 &3440187540988767646
 MonoBehaviour:
   m_ObjectHideFlags: 0

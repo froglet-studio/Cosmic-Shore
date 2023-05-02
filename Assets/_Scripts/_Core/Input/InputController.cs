@@ -15,7 +15,7 @@ namespace StarWriter.Core.Input
         float phoneFlipThreshold = .1f;
         public bool PhoneFlipState;
         public static ScreenOrientation currentOrientation;
-        public bool portrait = false;
+        public bool Portrait = false;
 
         bool leftStickEffectsStarted = false;
         bool rightStickEffectsStarted = false;
@@ -171,7 +171,7 @@ namespace StarWriter.Core.Input
             }
             else
             {
-                if (portrait)
+                if (Portrait)
                 {
                     ship.SetShipUp(90);
                 }
@@ -243,19 +243,10 @@ namespace StarWriter.Core.Input
                         }
                     }
 
-                    if (portrait)
+                    if (Portrait)
                     {
-                        float minTouchDistance = Vector2.Distance(rightTouch, UnityEngine.Input.touches[0].position);
-                        int touchIndex = 0;
-                        for (int i = 1; i < UnityEngine.Input.touches.Length; i++)
-                        {
-                            if (Vector2.Distance(rightTouch, UnityEngine.Input.touches[i].position) < minTouchDistance)
-                            {
-                                minTouchDistance = Vector2.Distance(leftTouch, UnityEngine.Input.touches[i].position);
-                                touchIndex = i;
-                            }
-                        }
-                        rightTouch = UnityEngine.Input.touches[touchIndex].position;
+                        rightTouch = leftTouch;
+                        leftTouch = new Vector2(Screen.currentResolution.width / 4f, Screen.currentResolution.height / 2f);
                     }
 
 
@@ -272,7 +263,7 @@ namespace StarWriter.Core.Input
                 }
                 if (UnityEngine.Input.touches.Length == 1)
                 {
-                    if (portrait)
+                    if (Portrait)
                     {
                         rightTouch = UnityEngine.Input.touches[0].position;
                         leftTouch = new Vector2(Screen.currentResolution.width / 4f, Screen.currentResolution.height / 2f);
@@ -332,7 +323,7 @@ namespace StarWriter.Core.Input
         {
             XSum = ((rightTouch.x + leftTouch.x) / Screen.currentResolution.width) - 1; 
             YSum = -(((rightTouch.y + leftTouch.y) / Screen.currentResolution.height) - 1); //negative is because joysitcks and unity axes don't agree
-            XDiff = (rightTouch.x - leftTouch.x) / Screen.currentResolution.width;
+            XDiff = Portrait ? 1 : (rightTouch.x - leftTouch.x) / Screen.currentResolution.width ;
             YDiff = (rightTouch.y - leftTouch.y) / Screen.currentResolution.width;
 
             if (invertYEnabled)

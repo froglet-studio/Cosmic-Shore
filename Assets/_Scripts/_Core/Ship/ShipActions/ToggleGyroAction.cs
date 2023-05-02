@@ -6,7 +6,7 @@ public class ToggleGyroAction : ShipActionAbstractBase
 
     void Start()
     {
-        inputController = ship.inputController;
+        inputController = ship.InputController;
     }
 
     public override void StartAction()

@@ -1,5 +1,6 @@
+using System;
 using System.Collections;
-using System.Collections.Generic;
+using System.Reflection;
 using UnityEngine;
 
 namespace StarWriter.Utility.Tools
@@ -16,6 +17,24 @@ namespace StarWriter.Utility.Tools
                 yield return new WaitForSeconds(duration / (float)steps);
             }
         }
+
+        public IEnumerator LateStart(float seconds, string functionName)
+        {
+            yield return new WaitForSeconds(seconds);
+
+            Type thisType = this.GetType();
+            MethodInfo method = thisType.GetMethod(functionName);
+            if (method != null)
+            {
+                Action function = (Action)Delegate.CreateDelegate(typeof(Action), this, method);
+                function();
+            }
+            else
+            {
+                Debug.LogError("Could not find function: " + functionName);
+            }
+        }
+
     }
 }
 

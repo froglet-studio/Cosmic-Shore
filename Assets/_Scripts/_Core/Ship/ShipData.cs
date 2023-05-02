@@ -12,6 +12,7 @@ namespace StarWriter.Core
         public bool BoostDecaying = false;
         public bool Drifting = false;
         public bool LayingBulletTrail = false;
+        public bool Portrait = false;
 
         public bool Attached = false;
         public TrailBlock AttachedTrailBlock;

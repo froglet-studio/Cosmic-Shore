@@ -10,7 +10,7 @@ namespace StarWriter.Core
     public class Ship : MonoBehaviour
     {
         [HideInInspector] public CameraManager cameraManager;
-        [HideInInspector] public InputController inputController;
+        [HideInInspector] public InputController InputController;
         [HideInInspector] public ResourceSystem ResourceSystem;
 
         [Header("ship Meta")]
@@ -112,7 +112,7 @@ namespace StarWriter.Core
         void Start()
         {
             cameraManager = CameraManager.Instance;
-            inputController = player.GetComponent<InputController>();
+            InputController = player.GetComponent<InputController>();
             AutoPilot = GetComponent<AIPilot>();
             ApplyShipControlOverrides(ControlOverrides);
 

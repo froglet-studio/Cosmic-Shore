@@ -892,7 +892,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   cameraManager: {fileID: 0}
-  inputController: {fileID: 0}
+  InputController: {fileID: 0}
   ResourceSystem: {fileID: 0}
   Name: Bufo
   ShipType: 9
@@ -1013,6 +1013,7 @@ MonoBehaviour:
   BoostDecaying: 0
   Drifting: 0
   LayingBulletTrail: 0
+  Portrait: 0
   Attached: 0
   AttachedTrailBlock: {fileID: 0}
   GunsActive: 0
@@ -1037,9 +1038,9 @@ MonoBehaviour:
   BoostDecay: 1
   MaxBoostDecay: 10
   BoostDecayGrowthRate: 0.03
-  PitchScaler: 60
-  YawScaler: 60
-  RollScaler: 60
+  PitchScaler: 80
+  YawScaler: 80
+  RollScaler: 80
   RotationThrottleScaler: 0
   topGun: {fileID: 6325554860274326311}
   projectileContainer: {fileID: 0}

@@ -1,3 +1,4 @@
+using StarWriter.Core;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -23,8 +24,12 @@ class BufoAnimation : ShipAnimation
     [SerializeField] float lerpAmount = 2f;
     [SerializeField] float smallLerpAmount = .7f;
 
+    ShipData shipData;
+
     private void Start()
     {
+        shipData = GetComponent<ShipData>();
+
         Transforms.Add(Fusilage);
         Transforms.Add(Turret);
         Transforms.Add(ThrusterTopRight);
@@ -92,13 +97,27 @@ class BufoAnimation : ShipAnimation
 
     void AnimatePart(Transform part, float partPitch, float partYaw, float partRoll)
     {
-        part.localRotation = Quaternion.Lerp(
-                                    part.localRotation,
-                                    Quaternion.Euler(
+        Quaternion rotation;
+        if (shipData.Portrait)
+        {
+            rotation = Quaternion.Euler(
+                                            partYaw,
+                                            -partPitch,
+                                            -partRoll);
+        }
+        else
+        {
+            rotation = Quaternion.Euler(
                                         partPitch,
                                         partYaw,
-                                        partRoll),  
-                                    lerpAmount * Time.deltaTime);
+                                        partRoll);
+        }
+
+        part.localRotation = Quaternion.Lerp(
+                                part.localRotation,
+                                rotation,
+                                lerpAmount * Time.deltaTime);
+        
     }
 
 }

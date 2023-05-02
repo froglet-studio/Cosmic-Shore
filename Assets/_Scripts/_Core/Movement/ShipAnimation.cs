@@ -10,12 +10,12 @@ public abstract class ShipAnimation : MonoBehaviour
     InputController inputController;
     void Start()
     {
-        inputController = GetComponent<Ship>().inputController;
+        inputController = GetComponent<Ship>().InputController;
     }
 
     void Update()
     {
-        if (inputController == null) inputController = GetComponent<Ship>().inputController; 
+        if (inputController == null) inputController = GetComponent<Ship>().InputController; 
         if (inputController != null) // the line above makes this run the moment it has the handle
         {
             if (inputController.Idle)

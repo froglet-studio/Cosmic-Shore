@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.InputSystem;
+using StarWriter.Utility.Tools;
 
 public class Controls : MonoBehaviour
 {
@@ -10,6 +11,7 @@ public class Controls : MonoBehaviour
     [SerializeField] Vector2 offset;
     [SerializeField] Sprite InactiveImage;
     [SerializeField] Sprite ActiveImage;
+    [SerializeField] Player player;
 
     Image image;
     Vector2 initialPos;
@@ -22,10 +24,15 @@ public class Controls : MonoBehaviour
         image = GetComponent<Image>();
         image.sprite = InactiveImage;
         gameObject.SetActive(Gamepad.current == null); //turn off "UI controls" if we have a gamepad
+        //Tools tools = new Tools();
+        //StartCoroutine(tools.LateStart( 2f, "PortraitCheck"));
     }
+
+    void PortraitCheck() { gameObject.SetActive(!Left || !player.Ship.InputController.Portrait); }
 
     void Update()
     {
+        PortraitCheck();
         //If there are no touches, move both controls to start positions
         if (Input.touches.Length == 0)
         {
@@ -46,7 +53,8 @@ public class Controls : MonoBehaviour
                 }
                 else 
                 {
-                    transform.position = Input.touches[0].position;
+                    image.sprite = InactiveImage;
+                    //transform.position = Input.touches[0].position;
                     //transform.position = Vector2.Lerp(transform.position, initialPos, .2f);
                 }
             }
@@ -60,7 +68,8 @@ public class Controls : MonoBehaviour
                 }
                 else
                 {
-                    transform.position = Input.touches[0].position;
+                    image.sprite = InactiveImage;
+                    //transform.position = Input.touches[0].position;
                     //transform.position = Vector2.Lerp(transform.position, initialPos, .2f);
                 }
             }

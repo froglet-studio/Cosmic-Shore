@@ -51,7 +51,7 @@ public class ShipController : MonoBehaviour
         MinimumSpeed = DefaultMinimumSpeed;
         ThrottleScaler = DefaultThrottleScaler;
         accumulatedRotation = transform.rotation;
-        inputController = ship.inputController;
+        inputController = ship.InputController;
     }
 
     public void Reset()
@@ -67,7 +67,7 @@ public class ShipController : MonoBehaviour
     {
         if (inputController == null)
         {
-            inputController = ship.inputController;
+            inputController = ship.InputController;
         }
         if (inputController != null)
         { 
