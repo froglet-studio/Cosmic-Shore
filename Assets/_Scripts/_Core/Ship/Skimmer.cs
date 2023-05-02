@@ -52,6 +52,7 @@ namespace StarWriter.Core
                         trailBlockProperties.trailBlock.Explode(ship.transform.forward * ship.GetComponent<ShipData>().Speed, team, Player.PlayerName);
                         break;
                     case TrailBlockImpactEffects.Steal:
+                        //Debug.Log($"steal: playername {Player.PlayerName} team: {team}");
                         trailBlockProperties.trailBlock.Steal(Player.PlayerName, team);
                         break;
                     case TrailBlockImpactEffects.ChangeBoost:
