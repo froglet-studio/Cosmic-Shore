@@ -25,24 +25,25 @@ public class PortraitUI : MonoBehaviour
     {
         if (player.Ship.InputController.Portrait)
         {
-            // Set the position of the RectTransform
-            rectTransform.localPosition = portraitPosition;
-
             // Set the anchorMin and anchorMax values to center the RectTransform
             rectTransform.anchorMin = portraitAnchorMin;
             rectTransform.anchorMax = portraitAnchorMax;
 
+            // Set the position of the RectTransform
+            rectTransform.localPosition = portraitPosition;
             // Rotate the RectTransform 90 degrees around the z-axis
             rectTransform.rotation = Quaternion.Euler(0f, 0f, 90f);
         }
         else
         {
-            // Set the position of the RectTransform
-            rectTransform.localPosition = position;
+      
 
             // Set the anchorMin and anchorMax values to center the RectTransform
             rectTransform.anchorMin = anchorMin;
             rectTransform.anchorMax = anchorMax;
+
+            // Set the position of the RectTransform
+            rectTransform.localPosition = position;
 
             // Rotate the RectTransform 90 degrees around the z-axis
             rectTransform.rotation = Quaternion.Euler(0f, 0f, 0f);
