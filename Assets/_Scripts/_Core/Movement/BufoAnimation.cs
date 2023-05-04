@@ -20,7 +20,6 @@ class BufoAnimation : ShipAnimation
 
     static float animationScaler = 32f;
     float exaggeratedAnimationScaler = 1.4f * animationScaler;
-    [SerializeField] float yawAnimationScaler = 80f;
     [SerializeField] float lerpAmount = 2f;
     [SerializeField] float smallLerpAmount = .7f;
 

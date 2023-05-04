@@ -25,8 +25,6 @@ namespace StarWriter.Core.Input
         public float XDiff;
         public float YDiff;
 
-        int frameCount = 0;
-
         float LevelAwareAvoidance { get { return avoidance + (DifficultyLevel * .3f); } }
         float LevelAwareDefaultThrottle { get { return defaultThrottle * DifficultyLevel * .3f; } }
         float LevelAwareDefaultLerp { get { return defaultAggressiveness * DifficultyLevel * .3f; } }

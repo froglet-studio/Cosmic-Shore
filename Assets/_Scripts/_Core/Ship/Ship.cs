@@ -9,6 +9,7 @@ namespace StarWriter.Core
     [RequireComponent(typeof(ShipData))]
     public class Ship : MonoBehaviour
     {
+        [SerializeField] List<ImpactProperties> impactProperties;
         [HideInInspector] public CameraManager cameraManager;
         [HideInInspector] public InputController InputController;
         [HideInInspector] public ResourceSystem ResourceSystem;

@@ -1,6 +1,16 @@
 using Lofelt.NiceVibrations;
 using UnityEngine;
 
+public enum HapticType
+{
+    None = 0,
+    ButtonPress = 1,
+    BlockCollision = 2,
+    ShipCollision = 3,
+    CystalCollision = 4,
+    DecoyCollision = 5,
+}
+
 public class HapticController : MonoBehaviour
 {
     static HapticPatterns.PresetType ButtonPattern = HapticPatterns.PresetType.LightImpact;
@@ -9,9 +19,31 @@ public class HapticController : MonoBehaviour
     static HapticPatterns.PresetType ShipCollisionPattern = HapticPatterns.PresetType.HeavyImpact;
     static HapticPatterns.PresetType FakeCrystalCollisionPattern = HapticPatterns.PresetType.HeavyImpact;
 
-    public void PlayPreset(int option)
+    public static void PlayPreset(int option)
     {
         HapticPatterns.PlayPreset((HapticPatterns.PresetType) option);
+    }
+
+    public static void PlayHaptic(HapticType type)
+    {
+        switch (type)
+        {
+            case HapticType.ButtonPress:
+                PlayButtonPressHaptics();
+                break;
+            case HapticType.BlockCollision:
+                PlayBlockCollisionHaptics();
+                break;
+            case HapticType.ShipCollision:
+                PlayShipCollisionHaptics();
+                break;
+            case HapticType.CystalCollision:
+                PlayCrystalImpactHaptics();
+                break;
+            case HapticType.DecoyCollision:
+                PlayFakeCrystalImpactHaptics();
+                break;
+        }
     }
 
     public static void PlayButtonPressHaptics()

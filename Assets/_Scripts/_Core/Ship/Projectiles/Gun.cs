@@ -104,7 +104,6 @@ namespace StarWriter.Core
         {
             var elapsedTime = 0f;
             var velocity = projectile.Velocity;
-            Transform lookAtTarget;
             
             while (elapsedTime < projectileTime)
             {
@@ -119,6 +118,7 @@ namespace StarWriter.Core
                 yield return null;
             }
 
+            //Transform lookAtTarget;
             //if (trail.TrailList.Count == 0) lookAtTarget = Ship.transform;
             //else lookAtTarget = trail.TrailList[trail.TrailList.Count - 1].transform;
 

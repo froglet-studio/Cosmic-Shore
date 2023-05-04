@@ -18,11 +18,13 @@ namespace StarWriter.Core
         public Vector3 InnerDimensions;
         public int Index;
         public bool Shielded = false;
+        public float Volume { get => outerDimensions.x * outerDimensions.y * outerDimensions.z; }
 
         public bool warp = false;
         GameObject shards;
         public Trail Trail;
 
+        Vector3 outerDimensions;
         static GameObject fossilBlockContainer;
         MeshRenderer meshRenderer;
         BoxCollider blockCollider;
@@ -48,8 +50,8 @@ namespace StarWriter.Core
             blockCollider = GetComponent<BoxCollider>();
             blockCollider.enabled = false;
 
-            var spread = (Vector3)meshRenderer.material.GetVector("_spread");
-            var outerDimensions = InnerDimensions + 2 * spread;
+            var spread = (Vector3) meshRenderer.material.GetVector("_spread");
+            outerDimensions = InnerDimensions + 2 * spread;
 
             TrailBlockProperties.volume = outerDimensions.x * outerDimensions.y * outerDimensions.z;
             TrailBlockProperties.position = transform.position;
