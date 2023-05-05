@@ -7,13 +7,11 @@ public class SingleStickController : ShipController
     [SerializeField] Gun topGun;
     [SerializeField] GameObject projectileContainer;
     [SerializeField] float chargeDepletionRate = -.05f;
-    [SerializeField] float rechargeRate = .1f;
 
     public float ProjectileScale = 1f;
     public Vector3 BlockScale = new(4f, 4f, 1f);
 
     List<Gun> guns;
-    bool moveForward = true;
     bool attached = false;
 
     protected override void Start()

@@ -366,13 +366,25 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a273abd40c7104c4392188723ab929d6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  impactProperties:
+  - fuelBonus: 0
+    fuelPenalty: 0
+    scoreBonus: 0
+    scorePenalty: 0
+    tailLengthBonus: 0
+    tailLengthPenalty: 0
+    speedBonus: 0
+    speedPenalty: 0
+    hapticType: 0
+    trailBlock: {fileID: 0}
   cameraManager: {fileID: 0}
-  inputController: {fileID: 0}
+  InputController: {fileID: 0}
   ResourceSystem: {fileID: 0}
   Name: GreenManta
   ShipType: 1
   TrailSpawner: {fileID: 874579555101021522}
   ShipController: {fileID: 0}
+  AutoPilot: {fileID: 0}
   nearFieldSkimmer: {fileID: 874579554510349383}
   OrientationHandle: {fileID: 1878660672777590133}
   shipGeometries:
@@ -386,6 +398,7 @@ MonoBehaviour:
   crystalImpactEffects: 06000000030000000b000000
   minExplosionScale: 50
   maxExplosionScale: 500
+  trailBlockImpactEffects: 
   blockChargeChange: 0
   boostMultiplier: 2
   boostFuelAmount: 0
@@ -447,6 +460,7 @@ MonoBehaviour:
     type: 3}
   skimmer: {fileID: 874579554510349383}
   waitTillOutsideSkimmer: 0
+  shielded: 0
   offset: 0
   initialWavelength: 10
   minWavelength: 1
@@ -480,6 +494,7 @@ MonoBehaviour:
   BoostDecaying: 0
   Drifting: 0
   LayingBulletTrail: 0
+  Portrait: 0
   Attached: 0
   AttachedTrailBlock: {fileID: 0}
   GunsActive: 1
@@ -499,14 +514,19 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   DifficultyLevel: 0
   defaultThrottle: 30
-  defaultLerp: 40
+  defaultAggressiveness: 0.035
   throttleIncrease: 5
-  lerpIncrease: 17
+  aggressivenessIncrease: 0.001
   throttle: 0
-  lerp: 0
+  aggressiveness: 0.1
   avoidance: 23
+  XSum: 0
+  YSum: 0
+  XDiff: 0
+  YDiff: 0
   raycastHeight: 2
   raycastWidth: 2
+  autoPilotEnabled: 0
   CrystalTransform: {fileID: 0}
   flowFieldData: {fileID: 0}
 --- !u!114 &1435252848482629424
@@ -521,18 +541,25 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 737294a573670f74389a7af68df314d5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  Resources: 
   usesBoost: 0
   usesLevels: 0
   usesAmmo: 1
+  usesCharge: 0
+  gainsAmmo: 0
+  ammoGainRate: 0.1
   maxBoost: 1
   initialBoost: 1
   maxLevel: 1
   initialLevel: 0
   maxAmmo: 1
   initialAmmo: 0.392
+  maxCharge: 1
+  initialCharge: 1
   BoostDisplay: {fileID: 0}
   LevelDisplay: {fileID: 0}
   AmmoDisplay: {fileID: 0}
+  ChargeDisplay: {fileID: 0}
 --- !u!114 &6293426128044408357
 MonoBehaviour:
   m_ObjectHideFlags: 0
