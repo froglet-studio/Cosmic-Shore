@@ -465,7 +465,7 @@ namespace StarWriter.Core.Input
 
         public void SetPortrait(bool value)
         {
-            if (value) threeButtonPanel.FadeInButtons();
+            if (value) threeButtonPanel.FadeInButtons(); // TODO: make these event driven instead?
             else threeButtonPanel.FadeOutButtons();
             Portrait = value; 
         }
