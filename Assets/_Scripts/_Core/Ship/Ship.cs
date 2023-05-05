@@ -50,6 +50,10 @@ namespace StarWriter.Core
         [SerializeField] List<ShipActionAbstractBase> rightStickShipActions;
         [SerializeField] List<ShipActionAbstractBase> flipShipActions;
         [SerializeField] List<ShipActionAbstractBase> idleShipActions;
+        [SerializeField] List<ShipActionAbstractBase> button1ShipActions;
+        [SerializeField] List<ShipActionAbstractBase> button2ShipActions;
+        [SerializeField] List<ShipActionAbstractBase> button3ShipActions;
+
         Dictionary<InputEvents, List<ShipActionAbstractBase>> ShipControlActions;
 
         [Header("Passive Effects")]
@@ -126,7 +130,10 @@ namespace StarWriter.Core
                 { InputEvents.RightStickAction, rightStickShipActions },
                 { InputEvents.FlipAction, flipShipActions },
                 { InputEvents.IdleAction, idleShipActions },
-            };
+               { InputEvents.Button1Action, button1ShipActions },
+               { InputEvents.Button2Action, button2ShipActions },
+               { InputEvents.Button3Action, button3ShipActions },
+                };
 
             foreach (var key in ShipControlActions.Keys)
                 foreach (var shipAction in ShipControlActions[key])

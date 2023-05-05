@@ -12,7 +12,7 @@ public class SpinAroundAction : ShipActionAbstractBase
 
     public override void StopAction()
     {
-        ship.ShipController.FlatSpinShip(180);
+
     }
 
 }

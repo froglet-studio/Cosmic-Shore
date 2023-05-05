@@ -922,13 +922,16 @@ MonoBehaviour:
   boostFuelAmount: 0
   maxSpeedStraightActions: []
   minSpeedStraightActions: []
-  leftStickShipActions:
-  - {fileID: 530330926117300620}
-  rightStickShipActions:
-  - {fileID: 8019026085058197081}
-  flipShipActions:
-  - {fileID: 7682765118055047933}
+  leftStickShipActions: []
+  rightStickShipActions: []
+  flipShipActions: []
   idleShipActions: []
+  button1ShipActions:
+  - {fileID: 530330926117300620}
+  button2ShipActions:
+  - {fileID: 8019026085058197081}
+  button3ShipActions:
+  - {fileID: 7682765118055047933}
   LevelEffects: 
   minGap: 1
   maxGap: 2

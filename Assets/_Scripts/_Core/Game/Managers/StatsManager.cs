@@ -29,6 +29,9 @@ public struct RoundStats
     public float rightStickAbilityActiveTime;
     public float leftStickAbilityActiveTime;
     public float flipAbilityActiveTime;
+    public float button1AbilityActiveTime;
+    public float button2AbilityActiveTime;
+    public float button3AbilityActiveTime;
 
     public RoundStats(bool dummy = false)
     {
@@ -51,7 +54,11 @@ public struct RoundStats
         rightStickAbilityActiveTime = 0;
         leftStickAbilityActiveTime = 0;
         flipAbilityActiveTime = 0;
-    }
+        button1AbilityActiveTime = 0;
+        button2AbilityActiveTime = 0;
+        button3AbilityActiveTime = 0;
+
+}
 }
 
 public class StatsManager : Singleton<StatsManager>
@@ -249,6 +256,33 @@ public class StatsManager : Singleton<StatsManager>
 
                 roundStats = playerStats[playerName];
                 roundStats.flipAbilityActiveTime += duration;
+                playerStats[playerName] = roundStats;
+                break;
+            case InputEvents.Button1Action:
+                roundStats = teamStats[team];
+                roundStats.button1AbilityActiveTime += duration;
+                teamStats[team] = roundStats;
+
+                roundStats = playerStats[playerName];
+                roundStats.button1AbilityActiveTime += duration;
+                playerStats[playerName] = roundStats;
+                break;
+            case InputEvents.Button2Action:
+                roundStats = teamStats[team];
+                roundStats.button2AbilityActiveTime += duration;
+                teamStats[team] = roundStats;
+
+                roundStats = playerStats[playerName];
+                roundStats.button2AbilityActiveTime += duration;
+                playerStats[playerName] = roundStats;
+                break;
+            case InputEvents.Button3Action:
+                roundStats = teamStats[team];
+                roundStats.button3AbilityActiveTime += duration;
+                teamStats[team] = roundStats;
+
+                roundStats = playerStats[playerName];
+                roundStats.button3AbilityActiveTime += duration;
                 playerStats[playerName] = roundStats;
                 break;
         }

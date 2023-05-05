@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Threading;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UIElements;
@@ -7,6 +8,9 @@ namespace StarWriter.Core.Input
 {
     public class InputController : MonoBehaviour
     {
+        [SerializeField] ThreeButtonPanel threeButtonPanel;
+        
+
         #region Ship
         [SerializeField] public Ship ship;
         [SerializeField] public bool AutoPilotEnabled = false;
@@ -296,8 +300,12 @@ namespace StarWriter.Core.Input
                 if (UnityEngine.Input.touches.Length > 0)
                 {
                     Reparameterize();
-
                     CheckSpeedAndOrientation();
+
+                    if (Portrait)
+                    {
+                        threeButtonPanel.FadeOutButtons();
+                    }
 
                     if (Idle)
                     {
@@ -307,13 +315,20 @@ namespace StarWriter.Core.Input
                 }
                 else
                 {
-                    Idle = true;
+                    if (Portrait)
+                    {
+                        threeButtonPanel.FadeInButtons();
+                        CheckSpeedAndOrientation();
+                    }
+                    else 
+                    {
+                        XSum = 0;
+                        YSum = 0;
+                        XDiff = 0;
+                        YDiff = 0;
+                    }
 
-                    XSum = 0;
-                    YSum = 0;
-                    XDiff = 0;
-                    YDiff = 0;
-                    
+                    Idle = true;
                     ship.PerformShipControllerActions(InputEvents.IdleAction); // consider placing some stop methods for other Input events here  
                 }
             }
@@ -417,5 +432,43 @@ namespace StarWriter.Core.Input
         {
             inputPaused = paused;
         }
+
+        public void Button1Press() 
+        {
+            ship.PerformShipControllerActions(InputEvents.Button1Action);
+        }
+
+        public void Button1Release()
+        {
+            ship.StopShipControllerActions(InputEvents.Button1Action);
+        }
+
+        public void Button2Press() 
+        {
+            ship.PerformShipControllerActions(InputEvents.Button2Action);
+        }
+
+        public void Button2Release()
+        {
+            ship.StopShipControllerActions(InputEvents.Button2Action);
+        }
+
+        public void Button3Press() 
+        {
+            ship.PerformShipControllerActions(InputEvents.Button3Action);
+        }
+
+        public void Button3Release()
+        {
+            ship.StopShipControllerActions(InputEvents.Button3Action);
+        }
+
+        public void SetPortrait(bool value)
+        {
+            if (value) threeButtonPanel.FadeInButtons();
+            else threeButtonPanel.FadeOutButtons();
+            Portrait = value; 
+        }
+
     }
 }

@@ -13,6 +13,7 @@ namespace StarWriter.Core
         public bool Drifting = false;
         public bool LayingBulletTrail = false;
         public bool Portrait = false;
+        public bool ShowThreeButtonPanel = false;
 
         public bool Attached = false;
         public TrailBlock AttachedTrailBlock;
