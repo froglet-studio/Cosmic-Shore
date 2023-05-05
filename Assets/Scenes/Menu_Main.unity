@@ -480,10 +480,10 @@ RectTransform:
   m_Father: {fileID: 1396375858}
   m_RootOrder: 5
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0.5}
-  m_AnchorMax: {x: 1, y: 0.5}
-  m_AnchoredPosition: {x: -60, y: -165}
-  m_SizeDelta: {x: -591, y: 45}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: -95.3, y: -160}
+  m_SizeDelta: {x: 209, y: 45}
   m_Pivot: {x: 1, y: 0}
 --- !u!114 &22239502
 MonoBehaviour:
@@ -2662,7 +2662,7 @@ MonoBehaviour:
   CrystalModel: {fileID: 1238110562}
   material: {fileID: 2100000, guid: 383f21e8586fd7243a19e1d0f26110d0, type: 2}
   shipImpactEffects: 1
-  team: -1
+  Team: -1
   crystalImpactEffects: 
   AOEPrefab: {fileID: 0}
   maxExplosionScale: 0
@@ -18245,7 +18245,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &1423636628
 RectTransform:
   m_ObjectHideFlags: 0
@@ -20192,10 +20192,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4b03e7163961e2c4b9d04056b4fcb40e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  threeButtonPanel: {fileID: 0}
   ship: {fileID: 0}
   AutoPilotEnabled: 0
   PhoneFlipState: 0
-  portrait: 0
+  Portrait: 0
   XSum: 0
   YSum: 0
   XDiff: 0
@@ -20940,10 +20941,10 @@ RectTransform:
   m_Father: {fileID: 1396375858}
   m_RootOrder: 4
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0.5}
-  m_AnchorMax: {x: 1, y: 0.5}
-  m_AnchoredPosition: {x: -60, y: -115}
-  m_SizeDelta: {x: -591, y: 46}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 258.2, y: -160}
+  m_SizeDelta: {x: 209, y: 46}
   m_Pivot: {x: 1, y: 0}
 --- !u!95 &1574179949
 Animator:
@@ -25346,10 +25347,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4b03e7163961e2c4b9d04056b4fcb40e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  threeButtonPanel: {fileID: 0}
   ship: {fileID: 0}
   AutoPilotEnabled: 0
   PhoneFlipState: 0
-  portrait: 0
+  Portrait: 0
   XSum: 0
   YSum: 0
   XDiff: 0

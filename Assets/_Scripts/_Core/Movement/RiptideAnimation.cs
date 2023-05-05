@@ -32,9 +32,9 @@ public class RiptideAnimation : ShipAnimation
     [SerializeField] float smallLerpAmount = .7f;
 
     static Vector3 defaultThrusterPosition = new Vector3(0, .15f, -1.7f);
-    Vector3 backwardThrusterPosition = defaultThrusterPosition - new Vector3(0, 0, 2);
+    Vector3 backwardThrusterPosition = defaultThrusterPosition - new Vector3(0, 0, 0);
     Vector3 defaultWingPosition = Vector3.zero;
-    Vector3 forwardWingPosition = new Vector3(0, 0, 4);
+    Vector3 forwardWingPosition = new Vector3(0, 0, 2.3f);
 
     private void Start()
     {

@@ -782,10 +782,15 @@ PrefabInstance:
       propertyPath: m_Delegates.Array.data[1].callback.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
       objectReference: {fileID: 2101040121}
+    - target: {fileID: 180560129690919480, guid: fe865d309fab2f44cb225e312d612ddb,
+        type: 3}
+      propertyPath: m_Color.a
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 3792388166272916900, guid: fe865d309fab2f44cb225e312d612ddb,
         type: 3}
       propertyPath: m_Color.a
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 3792388166272916900, guid: fe865d309fab2f44cb225e312d612ddb,
         type: 3}
@@ -810,6 +815,11 @@ PrefabInstance:
     - target: {fileID: 7638020663407967644, guid: fe865d309fab2f44cb225e312d612ddb,
         type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.size
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7959117657231009637, guid: fe865d309fab2f44cb225e312d612ddb,
+        type: 3}
+      propertyPath: m_Color.a
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8666518134979662275, guid: fe865d309fab2f44cb225e312d612ddb,
@@ -3342,6 +3352,11 @@ PrefabInstance:
     - target: {fileID: 2151207714166088003, guid: 8a9d12e43096881468feb22e39e9fbeb,
         type: 3}
       propertyPath: ThreeButtonPanel
+      value: 
+      objectReference: {fileID: 1504597597}
+    - target: {fileID: 2151207714166088003, guid: 8a9d12e43096881468feb22e39e9fbeb,
+        type: 3}
+      propertyPath: threeButtonPanel
       value: 
       objectReference: {fileID: 1504597597}
     - target: {fileID: 2151207714166088012, guid: 8a9d12e43096881468feb22e39e9fbeb,
@@ -10928,7 +10943,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4b03e7163961e2c4b9d04056b4fcb40e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  ThreeButtonPanel: {fileID: 0}
+  threeButtonPanel: {fileID: 0}
   ship: {fileID: 0}
   AutoPilotEnabled: 0
   PhoneFlipState: 0
