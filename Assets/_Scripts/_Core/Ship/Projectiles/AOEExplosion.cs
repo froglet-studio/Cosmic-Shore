@@ -17,7 +17,7 @@ namespace StarWriter.Core
         [SerializeField] bool affectSelf = false;
         protected static GameObject container;
 
-        Material material;
+        protected Material material;
         Teams team;
         Ship ship;
         [HideInInspector] public Material Material { get { return material; } set { material = new Material(value); } }

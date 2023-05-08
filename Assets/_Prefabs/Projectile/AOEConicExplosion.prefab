@@ -41,7 +41,7 @@ ParticleSystem:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3504896582959173953}
   serializedVersion: 8
-  lengthInSec: 3
+  lengthInSec: 2.3
   simulationSpeed: 1
   stopAction: 0
   cullingMode: 0
@@ -3999,7 +3999,7 @@ ParticleSystem:
       serializedVersion: 2
       minMaxState: 0
       minColor: {r: 1, g: 1, b: 1, a: 1}
-      maxColor: {r: 0.066898026, g: 0.45149696, b: 0.5188679, a: 1}
+      maxColor: {r: 0.06666667, g: 0.08731091, b: 0.5176471, a: 1}
       maxGradient:
         serializedVersion: 2
         key0: {r: 1, g: 1, b: 1, a: 1}
@@ -4115,7 +4115,7 @@ ParticleSystem:
       serializedVersion: 2
       minMaxState: 0
       minColor: {r: 1, g: 1, b: 1, a: 1}
-      maxColor: {r: 0.057493728, g: 0.41130146, b: 0.4811321, a: 1}
+      maxColor: {r: 0.05882353, g: 0.08155897, b: 0.48235294, a: 1}
       maxGradient:
         serializedVersion: 2
         key0: {r: 1, g: 1, b: 1, a: 1}
@@ -4865,8 +4865,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   speed: 20
   MaxScale: 200
-  ExplosionDuration: 3.5
-  ExplosionDelay: 0.2
+  ExplosionDuration: 2.7
+  ExplosionDelay: 0
   shipImpactEffects: 0200000003000000040000000100000000000000
   affectSelf: 0
   height: 800
@@ -4898,7 +4898,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 34e02368fd396cb4180b8eb6130a84b6, type: 2}
+  - {fileID: 2100000, guid: e80b9e4fc0849dc4a9457127812a05d5, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0

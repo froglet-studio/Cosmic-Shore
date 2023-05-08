@@ -79,6 +79,7 @@ namespace StarWriter.Core
 
         Material ShipMaterial;
         public Material AOEExplosionMaterial;
+        public Material AOEConicExplosionMaterial;
         float speedModifierDuration = 2f;
         float abilityStartTime;
 
@@ -286,6 +287,11 @@ namespace StarWriter.Core
         public void SetAOEExplosionMaterial(Material material)
         {
             AOEExplosionMaterial = material;
+        }
+
+        public void SetAOEConicExplosionMaterial(Material material)
+        {
+            AOEConicExplosionMaterial = material;
         }
 
         public void FlipShipUpsideDown() // TODO: move to shipController

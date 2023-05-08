@@ -13,7 +13,7 @@ public class AOEConicExplosion : AOEExplosion
     protected override void Start()
     {
         base.Start();
-
+        material = new Material(Ship.AOEConicExplosionMaterial);
         coneContainer = new GameObject("ExplosionCone");
         coneContainer.transform.SetParent(container.transform, false);
         coneContainer.transform.SetPositionAndRotation(containerPosition, containerRotation);
