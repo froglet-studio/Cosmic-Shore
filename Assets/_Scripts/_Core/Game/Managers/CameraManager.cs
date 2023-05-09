@@ -182,11 +182,10 @@ public class CameraManager : SingletonPersistent<CameraManager>
     }
 
     Coroutine lerper;
-    Tools tool= new Tools();
     void DistanceLerper(float newDistanceScalar)
     {
         if (lerper != null) StopCoroutine(lerper);
-        lerper = StartCoroutine(tool.LerpingCoroutine((i) => { transposer.m_FollowOffset = new Vector3(0, 0, i); }, () => transposer.m_FollowOffset.z, newDistanceScalar, 4f, 1000));
+        lerper = StartCoroutine(Tools.LerpingCoroutine((i) => { transposer.m_FollowOffset = new Vector3(0, 0, i); }, () => transposer.m_FollowOffset.z, newDistanceScalar, 4f, 1000));
     }
 
     public void SetFarCameraDistance(float distance)

@@ -7,7 +7,7 @@ namespace StarWriter.Utility.Tools
 {
     public struct Tools
     {
-        public IEnumerator LerpingCoroutine(System.Action<float> replacementMethod, System.Func<float> getCurrent, float newValue, float duration, int steps)
+        public static IEnumerator LerpingCoroutine(Action<float> replacementMethod, Func<float> getCurrent, float newValue, float duration, int steps)
         {
             float elapsedTime = 0;
             while (elapsedTime < duration)
@@ -37,4 +37,3 @@ namespace StarWriter.Utility.Tools
 
     }
 }
-

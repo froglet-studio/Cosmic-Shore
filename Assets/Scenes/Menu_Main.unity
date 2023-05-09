@@ -2662,7 +2662,7 @@ MonoBehaviour:
   CrystalModel: {fileID: 1238110562}
   material: {fileID: 2100000, guid: 383f21e8586fd7243a19e1d0f26110d0, type: 2}
   shipImpactEffects: 1
-  team: -1
+  Team: -1
   crystalImpactEffects: 
   AOEPrefab: {fileID: 0}
   maxExplosionScale: 0
@@ -20195,7 +20195,7 @@ MonoBehaviour:
   ship: {fileID: 0}
   AutoPilotEnabled: 0
   PhoneFlipState: 0
-  portrait: 0
+  Portrait: 0
   XSum: 0
   YSum: 0
   XDiff: 0
@@ -25349,7 +25349,7 @@ MonoBehaviour:
   ship: {fileID: 0}
   AutoPilotEnabled: 0
   PhoneFlipState: 0
-  portrait: 0
+  Portrait: 0
   XSum: 0
   YSum: 0
   XDiff: 0
