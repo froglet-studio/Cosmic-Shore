@@ -74,8 +74,8 @@ public class ShipController : MonoBehaviour
             if (inputController.Paused)
                 return;
 
-            if (inputController.Idle)
-                return;
+            //if (inputController.Idle)
+                //return;
         }
             
 

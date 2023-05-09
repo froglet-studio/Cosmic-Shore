@@ -6,7 +6,7 @@ using UnityEngine;
 public class ChargedFireGunAction : ShipActionAbstractBase
 {
     // TODO: WIP gun firing needs to be reworked
-    [SerializeField] Gun topGun;
+    [SerializeField] Gun gun;
 
     ResourceSystem resourceSystem;
     ShipData shipData;
@@ -28,7 +28,8 @@ public class ChargedFireGunAction : ShipActionAbstractBase
     }
     public override void StartAction()
     {
-        gainCharge = StartCoroutine(GainChargeCoroutine());
+        if (shipData.LiveProjectiles) gun.Detonate = true;
+        else gainCharge = StartCoroutine(GainChargeCoroutine());
     }
 
     IEnumerator GainChargeCoroutine()
@@ -42,25 +43,55 @@ public class ChargedFireGunAction : ShipActionAbstractBase
         }
     }
 
-    public override void StopAction()
+    Coroutine checkProjectiles;
+
+    IEnumerator CheckProjectiles()
     {
-        charge = Mathf.Clamp(charge, 0, 1);
-        ammoCost = charge;
-        if (gainCharge != null) StopCoroutine(gainCharge);
-        if (resourceSystem.CurrentAmmo > ammoCost)
+        while (projectileContainer.GetComponentsInChildren<Projectile>().Length > 0)
         {
-            resourceSystem.ChangeAmmoAmount(-ammoCost);
-
-            Vector3 inheritedVelocity;
-            if (shipData.Attached) inheritedVelocity = transform.forward;
-            else inheritedVelocity = shipData.Course;
-
-            // TODO: WIP magic numbers
-            topGun.FireGun(projectileContainer.transform, 90, inheritedVelocity * shipData.Speed, ProjectileScale, BlockScale * 2, true, 3f, charge);
+            shipData.LiveProjectiles = true;
+            yield return null;
         }
-        charge = 0;
-        resourceSystem.ResetCharge();
+        shipData.LiveProjectiles = false;
     }
 
+    private void StartCheckProjectiles()
+    {
+        StopCheckProjectiles();
+        checkProjectiles = StartCoroutine(CheckProjectiles());
+    }
 
+    private void StopCheckProjectiles()
+    {
+        if (checkProjectiles != null)
+        {
+            StopCoroutine(checkProjectiles);
+            checkProjectiles = null;
+        }
+    }
+
+    public override void StopAction()
+    {
+        if (gun.Detonate) { gun.Detonate = false; }
+        else
+        {
+            charge = Mathf.Clamp(charge, 0, 1);
+            ammoCost = charge;
+            if (gainCharge != null) StopCoroutine(gainCharge);
+            if (resourceSystem.CurrentAmmo > ammoCost)
+            {
+                resourceSystem.ChangeAmmoAmount(-ammoCost);
+
+                Vector3 inheritedVelocity;
+                if (shipData.Attached) inheritedVelocity = transform.forward;
+                else inheritedVelocity = shipData.Course;
+
+                // TODO: WIP magic numbers
+                gun.FireGun(projectileContainer.transform, 90, inheritedVelocity * shipData.Speed, ProjectileScale, BlockScale * 2, true, 3f, charge);
+                StartCheckProjectiles();
+            }
+            charge = 0;
+            resourceSystem.ResetCharge();
+        }
+    }
 }

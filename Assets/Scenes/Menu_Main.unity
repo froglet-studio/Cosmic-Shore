@@ -29227,6 +29227,46 @@ PrefabInstance:
       propertyPath: YellowTeamShieldedBlockMaterial
       value: 
       objectReference: {fileID: 2100000, guid: 88959345b82b41a46b13e42acea0cf37, type: 2}
+    - target: {fileID: 302356026468653294, guid: fdbd97f79a7aec14f8fadd5589780a74,
+        type: 3}
+      propertyPath: RedTeamAOEConicExplosionMaterial
+      value: 
+      objectReference: {fileID: 2100000, guid: bb6be751b7625924898df5f4bfe10630, type: 2}
+    - target: {fileID: 302356026468653294, guid: fdbd97f79a7aec14f8fadd5589780a74,
+        type: 3}
+      propertyPath: RedTeamConicAOEExplosionMaterial
+      value: 
+      objectReference: {fileID: 2100000, guid: bb6be751b7625924898df5f4bfe10630, type: 2}
+    - target: {fileID: 302356026468653294, guid: fdbd97f79a7aec14f8fadd5589780a74,
+        type: 3}
+      propertyPath: BlueTeamAOEConicExplosionMaterial
+      value: 
+      objectReference: {fileID: 2100000, guid: 14ab3291fb6fa3e429bd05a28c89945c, type: 2}
+    - target: {fileID: 302356026468653294, guid: fdbd97f79a7aec14f8fadd5589780a74,
+        type: 3}
+      propertyPath: BlueTeamConicAOEExplosionMaterial
+      value: 
+      objectReference: {fileID: 2100000, guid: 34e02368fd396cb4180b8eb6130a84b6, type: 2}
+    - target: {fileID: 302356026468653294, guid: fdbd97f79a7aec14f8fadd5589780a74,
+        type: 3}
+      propertyPath: GreenTeamAOEConicExplosionMaterial
+      value: 
+      objectReference: {fileID: 2100000, guid: 34e02368fd396cb4180b8eb6130a84b6, type: 2}
+    - target: {fileID: 302356026468653294, guid: fdbd97f79a7aec14f8fadd5589780a74,
+        type: 3}
+      propertyPath: GreenTeamConicAOEExplosionMaterial
+      value: 
+      objectReference: {fileID: 2100000, guid: 34e02368fd396cb4180b8eb6130a84b6, type: 2}
+    - target: {fileID: 302356026468653294, guid: fdbd97f79a7aec14f8fadd5589780a74,
+        type: 3}
+      propertyPath: YellowTeamAOEConicExplosionMaterial
+      value: 
+      objectReference: {fileID: 2100000, guid: e80b9e4fc0849dc4a9457127812a05d5, type: 2}
+    - target: {fileID: 302356026468653294, guid: fdbd97f79a7aec14f8fadd5589780a74,
+        type: 3}
+      propertyPath: YellowTeamConicAOEExplosionMaterial
+      value: 
+      objectReference: {fileID: 2100000, guid: 34e02368fd396cb4180b8eb6130a84b6, type: 2}
     - target: {fileID: 302356026468653295, guid: fdbd97f79a7aec14f8fadd5589780a74,
         type: 3}
       propertyPath: m_RootOrder
