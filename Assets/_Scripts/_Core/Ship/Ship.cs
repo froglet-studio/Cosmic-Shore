@@ -9,6 +9,7 @@ namespace StarWriter.Core
     [RequireComponent(typeof(ShipData))]
     public class Ship : MonoBehaviour
     {
+        [SerializeField] List<ImpactProperties> impactProperties;
         [HideInInspector] public CameraManager cameraManager;
         [HideInInspector] public InputController InputController;
         [HideInInspector] public ResourceSystem ResourceSystem;
@@ -21,12 +22,13 @@ namespace StarWriter.Core
         [HideInInspector] public TrailSpawner TrailSpawner;
         [HideInInspector] public ShipController ShipController;
         [HideInInspector] public AIPilot AutoPilot;
+        [HideInInspector] public ShipData ShipData;
         [SerializeField] Skimmer nearFieldSkimmer;
         [SerializeField] GameObject OrientationHandle;
         [SerializeField] public List<GameObject> shipGeometries;
         [SerializeField] GameObject head;
         
-        ShipData shipData;
+        
 
         [Header("optional ship Components")]
         [SerializeField] GameObject AOEPrefab;
@@ -50,6 +52,10 @@ namespace StarWriter.Core
         [SerializeField] List<ShipActionAbstractBase> rightStickShipActions;
         [SerializeField] List<ShipActionAbstractBase> flipShipActions;
         [SerializeField] List<ShipActionAbstractBase> idleShipActions;
+        [SerializeField] List<ShipActionAbstractBase> button1ShipActions;
+        [SerializeField] List<ShipActionAbstractBase> button2ShipActions;
+        [SerializeField] List<ShipActionAbstractBase> button3ShipActions;
+
         Dictionary<InputEvents, List<ShipActionAbstractBase>> ShipControlActions;
 
         [Header("Passive Effects")]
@@ -74,6 +80,7 @@ namespace StarWriter.Core
 
         Material ShipMaterial;
         public Material AOEExplosionMaterial;
+        public Material AOEConicExplosionMaterial;
         float speedModifierDuration = 2f;
         float abilityStartTime;
 
@@ -106,7 +113,7 @@ namespace StarWriter.Core
             ResourceSystem = GetComponent<ResourceSystem>();
             ShipController = GetComponent<ShipController>();
             TrailSpawner = GetComponent<TrailSpawner>();
-            shipData = GetComponent<ShipData>();
+            ShipData = GetComponent<ShipData>();
         }
 
         void Start()
@@ -126,7 +133,10 @@ namespace StarWriter.Core
                 { InputEvents.RightStickAction, rightStickShipActions },
                 { InputEvents.FlipAction, flipShipActions },
                 { InputEvents.IdleAction, idleShipActions },
-            };
+               { InputEvents.Button1Action, button1ShipActions },
+               { InputEvents.Button2Action, button2ShipActions },
+               { InputEvents.Button3Action, button3ShipActions },
+                };
 
             foreach (var key in ShipControlActions.Keys)
                 foreach (var shipAction in ShipControlActions[key])
@@ -225,7 +235,7 @@ namespace StarWriter.Core
                         break;
                     case TrailBlockImpactEffects.Attach:
                         Attach(trailBlockProperties.trailBlock);
-                        shipData.GunsActive = true;
+                        ShipData.GunsActive = true;
                         break;
                     case TrailBlockImpactEffects.ChangeAmmo:
                         ResourceSystem.ChangeAmmoAmount(blockChargeChange);
@@ -280,6 +290,11 @@ namespace StarWriter.Core
             AOEExplosionMaterial = material;
         }
 
+        public void SetAOEConicExplosionMaterial(Material material)
+        {
+            AOEConicExplosionMaterial = material;
+        }
+
         public void FlipShipUpsideDown() // TODO: move to shipController
         {
             OrientationHandle.transform.localRotation = Quaternion.Euler(0, 0, 180);
@@ -324,8 +339,8 @@ namespace StarWriter.Core
         {
             if (trailBlock.Trail != null)
             {
-                shipData.Attached = true;
-                shipData.AttachedTrailBlock = trailBlock;
+                ShipData.Attached = true;
+                ShipData.AttachedTrailBlock = trailBlock;
             }
         }
 

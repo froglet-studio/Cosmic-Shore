@@ -26,7 +26,7 @@ public abstract class SpawnableAbstractBase : MonoBehaviour
     protected virtual void CreateBlock(Vector3 position, Vector3 lookPosition, string blockId, Trail trail, Vector3 scale, TrailBlock trailBlock, GameObject container)
     {
         var Block = Instantiate(trailBlock);
-        Block.Team = Teams.None;
+        Block.Team = Teams.Unassigned;
         Block.ownerId = "public";
         Block.PlayerName = "";
         Block.transform.SetPositionAndRotation(position, Quaternion.LookRotation(lookPosition - position));

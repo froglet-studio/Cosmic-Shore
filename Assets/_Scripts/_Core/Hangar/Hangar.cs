@@ -35,11 +35,17 @@ namespace StarWriter.Core.HangerBuilder
         [SerializeField] Material RedTeamAOEExplosionMaterial;
         [SerializeField] Material BlueTeamAOEExplosionMaterial;
         [SerializeField] Material YellowTeamAOEExplosionMaterial;
+        [SerializeField] Material GreenTeamAOEConicExplosionMaterial;
+        [SerializeField] Material RedTeamAOEConicExplosionMaterial;
+        [SerializeField] Material BlueTeamAOEConicExplosionMaterial;
+        [SerializeField] Material YellowTeamAOEConicExplosionMaterial;
+
 
         Dictionary<Teams, Material> TeamsMaterials;
         Dictionary<Teams, Material> TeamBlockMaterials;
         Dictionary<Teams, Material> TeamShieldedBlockMaterials;
         Dictionary<Teams, Material> TeamAOEExplosionMaterials;
+        Dictionary<Teams, Material> TeamAOEConicExplosionMaterials;
 
         Dictionary<string, Ship> ships = new Dictionary<string, Ship>();
         Dictionary<ShipTypes, Ship> shipTypeMap = new Dictionary<ShipTypes, Ship>();
@@ -104,6 +110,12 @@ namespace StarWriter.Core.HangerBuilder
                 { Teams.Blue,  BlueTeamAOEExplosionMaterial },
                 { Teams.Yellow,  YellowTeamAOEExplosionMaterial },
             };
+            TeamAOEConicExplosionMaterials = new Dictionary<Teams, Material>() {
+                { Teams.Green, GreenTeamAOEConicExplosionMaterial },
+                { Teams.Red,   RedTeamAOEConicExplosionMaterial },
+                { Teams.Blue,  BlueTeamAOEConicExplosionMaterial },
+                { Teams.Yellow,  YellowTeamAOEConicExplosionMaterial },
+            };
             if (PlayerTeam == Teams.None) {
                 Debug.LogError("Player Team is set to None. Defaulting to Green Team");
                 PlayerTeam = Teams.Green;
@@ -131,6 +143,7 @@ namespace StarWriter.Core.HangerBuilder
             ship.SetBlockMaterial(TeamBlockMaterials[PlayerTeam]);
             ship.SetShieldedBlockMaterial(TeamShieldedBlockMaterials[PlayerTeam]);
             ship.SetAOEExplosionMaterial(TeamAOEExplosionMaterials[PlayerTeam]);
+            ship.SetAOEConicExplosionMaterial(TeamAOEConicExplosionMaterials[PlayerTeam]);
 
             return ship;
         }
@@ -142,6 +155,7 @@ namespace StarWriter.Core.HangerBuilder
             ship.SetBlockMaterial(TeamBlockMaterials[team]);
             ship.SetShieldedBlockMaterial(TeamShieldedBlockMaterials[team]);
             ship.SetAOEExplosionMaterial(TeamAOEExplosionMaterials[team]);
+            ship.SetAOEConicExplosionMaterial(TeamAOEConicExplosionMaterials[team]);
 
             return ship;
         }
@@ -172,6 +186,7 @@ namespace StarWriter.Core.HangerBuilder
             ship.SetBlockMaterial(TeamBlockMaterials[team]);
             ship.SetShieldedBlockMaterial(TeamShieldedBlockMaterials[team]);
             ship.SetAOEExplosionMaterial(TeamAOEExplosionMaterials[team]);
+            ship.SetAOEConicExplosionMaterial(TeamAOEConicExplosionMaterials[team]);
 
             AIPilot pilot = ship.GetComponent<AIPilot>();
             pilot.DifficultyLevel = AIDifficultyLevel;

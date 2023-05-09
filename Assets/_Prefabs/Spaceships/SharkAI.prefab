@@ -469,7 +469,6 @@ GameObject:
   - component: {fileID: 874579555101021522}
   - component: {fileID: 874579555101021523}
   - component: {fileID: 874579555101021527}
-  - component: {fileID: 2465068438299943845}
   - component: {fileID: 3440187540988767646}
   - component: {fileID: 1435252848482629424}
   - component: {fileID: 3496801340156507927}
@@ -565,6 +564,8 @@ MonoBehaviour:
   BoostDecaying: 0
   Drifting: 0
   LayingBulletTrail: 0
+  Portrait: 0
+  ShowThreeButtonPanel: 0
   Attached: 0
   AttachedTrailBlock: {fileID: 0}
   GunsActive: 1
@@ -582,8 +583,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a273abd40c7104c4392188723ab929d6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  impactProperties: []
   cameraManager: {fileID: 0}
-  inputController: {fileID: 0}
+  InputController: {fileID: 0}
   ResourceSystem: {fileID: 0}
   Name: SharkAI
   ShipType: 8
@@ -609,21 +611,18 @@ MonoBehaviour:
   blockChargeChange: 0
   boostMultiplier: 3
   boostFuelAmount: -0.01
-  fullSpeedStraightEffects: 
-  rightStickEffects: 
-  leftStickEffects: 
-  flipEffects: 
-  idleEffects: 
-  minimumSpeedStraightEffects: 
-  cameraGrowthRate: 1
-  cameraShrinkRate: 1
-  minTrailYScale: 15
-  maxTrailYScale: 100
-  skimmerGrowthRate: 1
-  skimmerShrinkRate: 1
-  trailGrowthRate: 1
-  trailShrinkRate: 1
-  levelEffects: 
+  maxSpeedStraightActions: []
+  minSpeedStraightActions: []
+  leftStickShipActions: []
+  rightStickShipActions: []
+  flipShipActions: []
+  idleShipActions: []
+  button1ShipActions: []
+  button2ShipActions: []
+  button3ShipActions: []
+  LevelEffects: 
+  minGap: 0
+  maxGap: 0
   minFarFieldSkimmerScale: 100
   maxFarFieldSkimmerScale: 200
   minNearFieldSkimmerScale: 15
@@ -635,10 +634,7 @@ MonoBehaviour:
   ControlOverrides: 
   closeCamDistance: -0.5
   farCamDistance: -15
-  BoostDecayGrowthRate: 0.03
-  MaxBoostDecay: 10
-  inputController: {fileID: 0}
-  ResourceSystem: {fileID: 0}
+  AOEExplosionMaterial: {fileID: 0}
 --- !u!114 &3440187540988767646
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -651,14 +647,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a58bf4fb65afa704194fe9e28e67d58d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  DifficultyLevel: 0
+  DifficultyLevel: 1
   defaultThrottle: 0.7
   defaultAggressiveness: 0.05
   throttleIncrease: 0.02
   aggressivenessIncrease: 0.07
-  throttle: 0
+  throttle: 1
   aggressiveness: 0.1
-  avoidance: -23
+  avoidance: 0
   XSum: 0
   YSum: 0
   XDiff: 0
@@ -680,18 +676,25 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 737294a573670f74389a7af68df314d5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  Resources: 
   usesBoost: 0
   usesLevels: 0
   usesAmmo: 0
+  usesCharge: 0
+  gainsAmmo: 0
+  ammoGainRate: 0.1
   maxBoost: 1
   initialBoost: 1
   maxLevel: 1
   initialLevel: 0
   maxAmmo: 1
   initialAmmo: 1
+  maxCharge: 1
+  initialCharge: 1
   BoostDisplay: {fileID: 0}
   LevelDisplay: {fileID: 0}
   AmmoDisplay: {fileID: 0}
+  ChargeDisplay: {fileID: 0}
 --- !u!114 &3496801340156507927
 MonoBehaviour:
   m_ObjectHideFlags: 0

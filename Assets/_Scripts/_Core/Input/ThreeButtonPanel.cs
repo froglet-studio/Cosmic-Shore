@@ -2,50 +2,64 @@ using StarWriter.Core;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-
+using UnityEngine.UI;
 
 public class ThreeButtonPanel : MonoBehaviour
 {
-    Dictionary<int, List<ShipActionAbstractBase>> ButtonActions;
-    [SerializeField] List<ShipActionAbstractBase> Button1Actions;
-    [SerializeField] List<ShipActionAbstractBase> Button2Actions;
-    [SerializeField] List<ShipActionAbstractBase> Button3Actions;
-
-    Ship ship;
-    float abilityStartTime;
+    public float fadeDuration = 0.2f;
+    Image[] buttonImages;
+    Color[] originalColors;
+    bool opaque = false;
 
     void Start()
     {
-        ButtonActions = new Dictionary<int , List<ShipActionAbstractBase>> 
+        
+        buttonImages = GetComponentsInChildren<Image>();
+        originalColors = new Color[buttonImages.Length];
+
+        for (int i = 0; i < buttonImages.Length; i++)
         {
-                { 1, Button1Actions},
-                { 2, Button2Actions },
-                { 3, Button3Actions },
-        };
+            originalColors[i] = buttonImages[i].color;
+        }
+        FadeOutButtons();
+    }    
 
-        foreach (var key in ButtonActions.Keys)
-            foreach (var shipAction in ButtonActions[key])
-                shipAction.Ship = ship;
-
+    public void FadeOutButtons()
+    {
+        if (buttonImages != null && opaque)
+        {
+            opaque = false;
+            for (int i = 0; i < buttonImages.Length; i++)
+            {
+                if (this.isActiveAndEnabled) StartCoroutine(FadeButton(buttonImages[i], originalColors[i], 0f));
+            }
+        }
     }
 
-    public void PerformButtonActions(int buttonNumber)
+    public void FadeInButtons()
     {
-        abilityStartTime = Time.time;
-        var buttonActions = ButtonActions[buttonNumber];
-        foreach (var action in buttonActions)
-            action.StartAction();
+        if (buttonImages != null && !opaque)
+        {
+            opaque = true;
+            for (int i = 0; i < buttonImages.Length; i++)
+            {
+                if (this.isActiveAndEnabled) StartCoroutine(FadeButton(buttonImages[i], originalColors[i], 1f));
+            }
+        }
     }
 
-    public void StopButtonActions(int buttonNumber)
+    IEnumerator FadeButton(Image buttonImage, Color originalColor, float targetAlpha)
     {
-        // TODO: p1 ability activation tracking doesn't work - needs to have separate time keeping for each control type
-        if (StatsManager.Instance != null)
-            StatsManager.Instance.AbilityActivated(ship.Team, ship.Player.PlayerName, InputEvents.ButtonAction, Time.time - abilityStartTime);
+        float timeElapsed = 0f;
 
-        var buttonActions = ButtonActions[buttonNumber];
-        foreach (var action in buttonActions)
-            action.StopAction();
+        while (timeElapsed < fadeDuration)
+        {
+            timeElapsed += Time.deltaTime;
+            float alpha = Mathf.Lerp(buttonImage.color.a, targetAlpha, timeElapsed / fadeDuration);
+            buttonImage.color = new Color(originalColor.r, originalColor.g, originalColor.b, alpha);
+            yield return null;
+        }
+        buttonImage.color = new Color(originalColor.r, originalColor.g, originalColor.b, targetAlpha);
     }
 
 }

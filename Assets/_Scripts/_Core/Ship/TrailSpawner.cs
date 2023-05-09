@@ -187,8 +187,12 @@ public class TrailSpawner : MonoBehaviour
         Block.PlayerName = ship.Player.PlayerName;
         Block.Team = ship.Team;
         Block.warp = warp;
-        if (shielded) Block.GetComponent<MeshRenderer>().material = blockMaterial;
-        else Block.GetComponent<MeshRenderer>().material = shieldedBlockMaterial;
+        if (shielded)
+        {
+            Block.GetComponent<MeshRenderer>().material = shieldedBlockMaterial;
+            Block.Shielded = true;
+        }
+        else Block.GetComponent<MeshRenderer>().material = blockMaterial;
         Block.GetComponent<BoxCollider>().size = Vector3.one + VectorDivision((Vector3)blockMaterial.GetVector("_spread"), Block.InnerDimensions);
         Block.Trail = trail;
 
