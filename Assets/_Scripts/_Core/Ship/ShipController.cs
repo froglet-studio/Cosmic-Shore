@@ -74,19 +74,21 @@ public class ShipController : MonoBehaviour
             if (inputController.Paused)
                 return;
 
-            //if (inputController.Idle)
-                //return;
+            RotateShip();
+            shipData.blockRotation = transform.rotation;
+
+            if (shipData.Stationary)
+                return;
         }
-            
+
+        RotateShip();
+        shipData.blockRotation = transform.rotation;
 
         if (shipData.BoostCharging)
             ChargeBoost();
 
         ApplyThrottleModifiers();
         ApplyVelocityModifiers();
-
-        RotateShip();
-        shipData.blockRotation = transform.rotation;
 
         MoveShip();
     }

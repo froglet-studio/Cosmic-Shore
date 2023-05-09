@@ -22,12 +22,13 @@ namespace StarWriter.Core
         [HideInInspector] public TrailSpawner TrailSpawner;
         [HideInInspector] public ShipController ShipController;
         [HideInInspector] public AIPilot AutoPilot;
+        [HideInInspector] public ShipData ShipData;
         [SerializeField] Skimmer nearFieldSkimmer;
         [SerializeField] GameObject OrientationHandle;
         [SerializeField] public List<GameObject> shipGeometries;
         [SerializeField] GameObject head;
         
-        ShipData shipData;
+        
 
         [Header("optional ship Components")]
         [SerializeField] GameObject AOEPrefab;
@@ -112,7 +113,7 @@ namespace StarWriter.Core
             ResourceSystem = GetComponent<ResourceSystem>();
             ShipController = GetComponent<ShipController>();
             TrailSpawner = GetComponent<TrailSpawner>();
-            shipData = GetComponent<ShipData>();
+            ShipData = GetComponent<ShipData>();
         }
 
         void Start()
@@ -234,7 +235,7 @@ namespace StarWriter.Core
                         break;
                     case TrailBlockImpactEffects.Attach:
                         Attach(trailBlockProperties.trailBlock);
-                        shipData.GunsActive = true;
+                        ShipData.GunsActive = true;
                         break;
                     case TrailBlockImpactEffects.ChangeAmmo:
                         ResourceSystem.ChangeAmmoAmount(blockChargeChange);
@@ -338,8 +339,8 @@ namespace StarWriter.Core
         {
             if (trailBlock.Trail != null)
             {
-                shipData.Attached = true;
-                shipData.AttachedTrailBlock = trailBlock;
+                ShipData.Attached = true;
+                ShipData.AttachedTrailBlock = trailBlock;
             }
         }
 

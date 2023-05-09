@@ -24,7 +24,9 @@ namespace StarWriter.Core
         [SerializeField] bool usesCharge;
 
         [SerializeField] bool gainsAmmo = false;
-        [SerializeField] float ammoGainRate = .1f;
+        [SerializeField] float ammoGainRate = .01f;
+        [SerializeField] float elevatedAmmoGainRate = .03f;
+
 
         [Tooltip("Max boost level from 0-1")]
         [SerializeField]
@@ -133,14 +135,18 @@ namespace StarWriter.Core
         public ChargeDisplay AmmoDisplay;
         public ChargeDisplay ChargeDisplay;
 
+        ShipData shipData;
+
         void Start()
         {
             StartCoroutine(LateStart());
+            shipData = GetComponent<ShipData>();
         }
 
         private void Update()
         {
-            if (gainsAmmo) ChangeAmmoAmount(Time.deltaTime * ammoGainRate);
+            if (shipData.ElevatedAmmoGain) ChangeAmmoAmount(Time.deltaTime * elevatedAmmoGainRate);
+            else if (gainsAmmo) ChangeAmmoAmount(Time.deltaTime * ammoGainRate);
         }
 
         IEnumerator LateStart()

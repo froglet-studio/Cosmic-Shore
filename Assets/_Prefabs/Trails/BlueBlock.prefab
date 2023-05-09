@@ -117,7 +117,7 @@ MonoBehaviour:
     position: {x: 0, y: 0, z: 0}
     volume: 0
     speedDebuffAmount: 0
-    trailBlock: {fileID: 0}
+    trailBlock: {fileID: 4563009547826722997}
     Index: 0
     Shielded: 0
   growthRate: 0.5

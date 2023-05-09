@@ -14,7 +14,7 @@ public class ChargedFireGunAction : ShipActionAbstractBase
     float ammoCost;
 
     public float ProjectileScale = 1f;
-    public Vector3 BlockScale = new(4f, 4f, 1f);
+    public Vector3 BlockScale = new(4f, 4f, 1f); // TODO: Get rid of the need for this.
     
     float charge = 0;
     [SerializeField] float chargePerSecond = 1;
@@ -87,7 +87,7 @@ public class ChargedFireGunAction : ShipActionAbstractBase
                 else inheritedVelocity = shipData.Course;
 
                 // TODO: WIP magic numbers
-                gun.FireGun(projectileContainer.transform, 90, inheritedVelocity * shipData.Speed, ProjectileScale, BlockScale * 2, true, 3f, charge);
+                gun.FireGun(projectileContainer.transform, 90, inheritedVelocity * shipData.Speed, ProjectileScale*charge, BlockScale * 2, true, float.MaxValue, charge);
                 StartCheckProjectiles();
             }
             charge = 0;

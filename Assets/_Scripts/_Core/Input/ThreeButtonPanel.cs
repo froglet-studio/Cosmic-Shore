@@ -7,7 +7,6 @@ using UnityEngine.UI;
 public class ThreeButtonPanel : MonoBehaviour
 {
     public float fadeDuration = 0.2f;
-    Button[] buttons;
     Image[] buttonImages;
     Color[] originalColors;
     bool opaque = false;

@@ -20193,6 +20193,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   threeButtonPanel: {fileID: 0}
+  rearView: {fileID: 0}
   ship: {fileID: 0}
   AutoPilotEnabled: 0
   PhoneFlipState: 0
@@ -25348,6 +25349,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   threeButtonPanel: {fileID: 0}
+  rearView: {fileID: 0}
   ship: {fileID: 0}
   AutoPilotEnabled: 0
   PhoneFlipState: 0

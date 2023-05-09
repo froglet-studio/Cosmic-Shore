@@ -9,6 +9,7 @@ namespace StarWriter.Core.Input
     public class InputController : MonoBehaviour
     {
         [SerializeField] ThreeButtonPanel threeButtonPanel;
+        [SerializeField] GameObject rearView;
         
 
         #region Ship
@@ -465,8 +466,16 @@ namespace StarWriter.Core.Input
 
         public void SetPortrait(bool value)
         {
-            if (value) threeButtonPanel.FadeInButtons(); // TODO: make these event driven instead?
-            else threeButtonPanel.FadeOutButtons();
+            if (value)
+            {
+                threeButtonPanel.FadeInButtons(); // TODO: make these event driven instead?
+                rearView.SetActive(true);
+            }
+            else
+            {
+                threeButtonPanel.FadeOutButtons();
+                rearView.SetActive(false);
+            }
             Portrait = value; 
         }
 

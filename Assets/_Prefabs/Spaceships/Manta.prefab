@@ -385,6 +385,7 @@ MonoBehaviour:
   TrailSpawner: {fileID: 874579555101021522}
   ShipController: {fileID: 0}
   AutoPilot: {fileID: 0}
+  ShipData: {fileID: 0}
   nearFieldSkimmer: {fileID: 874579554510349383}
   OrientationHandle: {fileID: 1878660672777590133}
   shipGeometries:
@@ -398,7 +399,7 @@ MonoBehaviour:
   crystalImpactEffects: 06000000030000000b000000
   minExplosionScale: 50
   maxExplosionScale: 500
-  trailBlockImpactEffects: 
+  trailBlockImpactEffects: 02000000
   blockChargeChange: 0
   boostMultiplier: 2
   boostFuelAmount: 0
@@ -410,6 +411,9 @@ MonoBehaviour:
   - {fileID: 867704553499413969}
   flipShipActions: []
   idleShipActions: []
+  button1ShipActions: []
+  button2ShipActions: []
+  button3ShipActions: []
   LevelEffects: 
   minGap: 0
   maxGap: 0
@@ -422,9 +426,10 @@ MonoBehaviour:
   minProjectileBlockScale: {x: 1.5, y: 1.5, z: 3}
   maxProjectileBlockScale: {x: 1.5, y: 1.5, z: 30}
   ControlOverrides: 0300000004000000
-  closeCamDistance: -2
+  closeCamDistance: -2.5
   farCamDistance: -160
   AOEExplosionMaterial: {fileID: 0}
+  AOEConicExplosionMaterial: {fileID: 0}
 --- !u!114 &6964962696344697388
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -495,6 +500,10 @@ MonoBehaviour:
   Drifting: 0
   LayingBulletTrail: 0
   Portrait: 0
+  ShowThreeButtonPanel: 0
+  LiveProjectiles: 0
+  Stationary: 0
+  ElevatedAmmoGain: 0
   Attached: 0
   AttachedTrailBlock: {fileID: 0}
   GunsActive: 1
@@ -548,6 +557,7 @@ MonoBehaviour:
   usesCharge: 0
   gainsAmmo: 0
   ammoGainRate: 0.1
+  elevatedAmmoGainRate: 0.03
   maxBoost: 1
   initialBoost: 1
   maxLevel: 1
@@ -969,6 +979,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
+      propertyPath: affectSelf
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
       propertyPath: fuelAmount
       value: 0
       objectReference: {fileID: 0}
@@ -980,7 +995,7 @@ PrefabInstance:
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
       propertyPath: blockImpactEffects.Array.size
-      value: 3
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
