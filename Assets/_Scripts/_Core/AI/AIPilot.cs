@@ -34,7 +34,7 @@ namespace StarWriter.Core.Input
         [SerializeField] float raycastHeight;
         [SerializeField] float raycastWidth;
 
-        [SerializeField] bool autoPilotEnabled;
+        public bool autoPilotEnabled;
 
         enum Corner 
         {

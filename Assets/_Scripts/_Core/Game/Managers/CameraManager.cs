@@ -4,8 +4,7 @@ using StarWriter.Core;
 using TailGlider.Utility.Singleton;
 using System.Collections;
 using StarWriter.Utility.Tools;
-
-
+using StarWriter.Core.HangerBuilder;
 
 public class CameraManager : SingletonPersistent<CameraManager>
 {
@@ -64,7 +63,7 @@ public class CameraManager : SingletonPersistent<CameraManager>
     {
         isCameraFlipEnabled = true;
 
-        playerFollowTarget = GameObject.FindGameObjectWithTag("Player_Ship").transform;
+        playerFollowTarget = Hangar.Instance.SelectedShip.transform;
         closeCamera.LookAt = farCamera.LookAt = deathCamera.LookAt = playerFollowTarget;
         closeCamera.Follow = farCamera.Follow = deathCamera.Follow = playerFollowTarget;
         

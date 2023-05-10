@@ -76,7 +76,7 @@ namespace StarWriter.Core.HangerBuilder
             AIDifficultyLevel = level;
         }
 
-        public Ship selectedShip { get; private set; }
+        public Ship SelectedShip { get; private set; }
         public int BayIndex { get => SelectedBayIndex; }
 
         public override void Awake()
@@ -145,6 +145,8 @@ namespace StarWriter.Core.HangerBuilder
             ship.SetAOEExplosionMaterial(TeamAOEExplosionMaterials[PlayerTeam]);
             ship.SetAOEConicExplosionMaterial(TeamAOEConicExplosionMaterials[PlayerTeam]);
 
+            SelectedShip = ship;
+
             return ship;
         }
 
@@ -156,6 +158,8 @@ namespace StarWriter.Core.HangerBuilder
             ship.SetShieldedBlockMaterial(TeamShieldedBlockMaterials[team]);
             ship.SetAOEExplosionMaterial(TeamAOEExplosionMaterials[team]);
             ship.SetAOEConicExplosionMaterial(TeamAOEConicExplosionMaterials[team]);
+
+            SelectedShip = ship;
 
             return ship;
         }
@@ -190,6 +194,7 @@ namespace StarWriter.Core.HangerBuilder
 
             AIPilot pilot = ship.GetComponent<AIPilot>();
             pilot.DifficultyLevel = AIDifficultyLevel;
+            pilot.autoPilotEnabled = true;
 
             return ship;
         }

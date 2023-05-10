@@ -9,7 +9,8 @@ public enum ScoringModes
     VolumeCreated = 1,
     TimePlayed = 2,
     TurnsPlayed = 3,
-    VolumeStolen = 4
+    VolumeStolen = 4,
+    BlocksStolen = 5
 }
 
 public class ScoreTracker : MonoBehaviour
@@ -68,6 +69,10 @@ public class ScoreTracker : MonoBehaviour
                     break;
                 case ScoringModes.TurnsPlayed:
                     score = turnsPlayed;
+                    break;
+                case ScoringModes.BlocksStolen:
+                    if (StatsManager.Instance.playerStats.ContainsKey(currentPlayerName))
+                        score = playerScores[currentPlayerName] + StatsManager.Instance.playerStats[currentPlayerName].blocksStolen;
                     break;
             }
 

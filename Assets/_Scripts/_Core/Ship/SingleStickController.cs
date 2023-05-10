@@ -5,13 +5,11 @@ using System.Collections.Generic;
 public class SingleStickController : ShipController
 {
     [SerializeField] Gun topGun;
-    [SerializeField] float chargeDepletionRate = -.05f;
 
     public float ProjectileScale = 1f;
     public Vector3 BlockScale = new(4f, 4f, 1f);
 
     List<Gun> guns;
-    bool attached = false;
 
     protected override void Start()
     {
