@@ -120,21 +120,23 @@ public class TrailSpawner : MonoBehaviour
     public float XScaler = 1;
     public float YScaler = 1;
     float ZScaler = 1;
-
+    int nearbyBlocks;
     Coroutine lerper;
 
     public void SetNearbyBlockCount(int blockCount)
     {
-        blockCount = Mathf.Min(blockCount, MaxNearbyBlockCount);
-        float newXScaler = Mathf.Max(minBlockScale, maxBlockScale * (1 - (blockCount / (float)MaxNearbyBlockCount)));
+        if (nearbyBlocks == blockCount)
+            return;
+
+        nearbyBlocks = Mathf.Min(blockCount, MaxNearbyBlockCount);
+        float newXScaler = Mathf.Max(minBlockScale, maxBlockScale * (1 - (nearbyBlocks / (float)MaxNearbyBlockCount)));
         XLerper(newXScaler);
     }
 
-    Tools tool= new Tools();
     void XLerper(float newXScaler)
     {
         if (lerper != null) StopCoroutine(lerper);
-        lerper = StartCoroutine(tool.LerpingCoroutine((i) => { XScaler = i; }, () => XScaler ,newXScaler, 4, 1000));
+        lerper = StartCoroutine(Tools.LerpingCoroutine((i) => { XScaler = i; }, () => XScaler ,newXScaler, 4, 1000));
     }
 
     public void SetDotProduct(float amount)
@@ -142,7 +144,6 @@ public class TrailSpawner : MonoBehaviour
         ZScaler = Mathf.Max(minBlockScale, maxBlockScale * (1 - Mathf.Abs(amount)));
         wavelength = Mathf.Max(minWavelength, initialWavelength * Mathf.Abs(amount)); 
     }
-
      
     public void PauseTrailSpawner()
     {
@@ -202,9 +203,7 @@ public class TrailSpawner : MonoBehaviour
         if (Block.warp)
             wavelength = shards.GetComponent<WarpFieldData>().HybridVector(Block.transform).magnitude * initialWavelength;
 
-        
         trail.Add(Block);
-
     }
 
     Vector3 VectorDivision(Vector3 Vector1, Vector3 Vector2) // TODO: move to tools
