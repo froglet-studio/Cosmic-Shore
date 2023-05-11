@@ -136,7 +136,7 @@ public class TrailSpawner : MonoBehaviour
     void XLerper(float newXScaler)
     {
         if (lerper != null) StopCoroutine(lerper);
-        lerper = StartCoroutine(Tools.LerpingCoroutine((i) => { XScaler = i; }, () => XScaler ,newXScaler, 1.5f));
+        lerper = StartCoroutine(Tools.LerpingCoroutine(XScaler, newXScaler, 1.5f, (i) => { XScaler = i; }));
     }
 
     public void SetDotProduct(float amount)
