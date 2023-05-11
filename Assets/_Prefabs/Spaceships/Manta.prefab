@@ -417,7 +417,7 @@ MonoBehaviour:
   LevelEffects: 
   minGap: 0
   maxGap: 0
-  minFarFieldSkimmerScale: 100
+  minFarFieldSkimmerScale: 200
   maxFarFieldSkimmerScale: 200
   minNearFieldSkimmerScale: 15
   maxNearFieldSkimmerScale: 100
@@ -427,7 +427,7 @@ MonoBehaviour:
   maxProjectileBlockScale: {x: 1.5, y: 1.5, z: 30}
   ControlOverrides: 0300000004000000
   closeCamDistance: -2.5
-  farCamDistance: -160
+  farCamDistance: -100
   AOEExplosionMaterial: {fileID: 0}
   AOEConicExplosionMaterial: {fileID: 0}
 --- !u!114 &6964962696344697388
@@ -478,7 +478,7 @@ MonoBehaviour:
   spawnerEnabled: 1
   MaxNearbyBlockCount: 70
   minBlockScale: 1
-  maxBlockScale: 7
+  maxBlockScale: 5
   XScaler: 1
   YScaler: 1
 --- !u!114 &874579555101021523
@@ -778,17 +778,17 @@ PrefabInstance:
     - target: {fileID: 7231566422788689087, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
       propertyPath: m_LocalScale.x
-      value: 200
+      value: 175
       objectReference: {fileID: 0}
     - target: {fileID: 7231566422788689087, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
       propertyPath: m_LocalScale.y
-      value: 200
+      value: 175
       objectReference: {fileID: 0}
     - target: {fileID: 7231566422788689087, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
       propertyPath: m_LocalScale.z
-      value: 200
+      value: 175
       objectReference: {fileID: 0}
     - target: {fileID: 7231566422788689087, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}

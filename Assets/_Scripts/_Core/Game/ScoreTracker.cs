@@ -109,6 +109,11 @@ public class ScoreTracker : MonoBehaviour
             case ScoringModes.TurnsPlayed:
                 playerScores[currentPlayerName] = turnsPlayed;
                 break;
+            case ScoringModes.BlocksStolen:
+                if (StatsManager.Instance.playerStats.ContainsKey(currentPlayerName))
+                    playerScores[currentPlayerName] += StatsManager.Instance.playerStats[currentPlayerName].blocksStolen;
+                StatsManager.Instance.ResetStats();
+                break;
         }
     }
 

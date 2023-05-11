@@ -151,7 +151,7 @@ namespace StarWriter.Core
                 {
                     case ShipControlOverrides.CloseCam:
                         cameraManager.CloseCamDistance = closeCamDistance;
-                        cameraManager.SetCloseCameraDistance(closeCamDistance);
+                        cameraManager.SetCameraDistance(closeCamDistance);
                         break;
                     case ShipControlOverrides.FarCam:
                         cameraManager.FarCamDistance = farCamDistance;

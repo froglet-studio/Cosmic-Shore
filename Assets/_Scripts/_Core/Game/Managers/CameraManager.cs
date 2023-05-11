@@ -5,6 +5,7 @@ using TailGlider.Utility.Singleton;
 using System.Collections;
 using StarWriter.Utility.Tools;
 using StarWriter.Core.HangerBuilder;
+using static UnityEditor.ShaderGraph.Internal.KeywordDependentCollection;
 
 public class CameraManager : SingletonPersistent<CameraManager>
 {
@@ -184,7 +185,7 @@ public class CameraManager : SingletonPersistent<CameraManager>
     void DistanceLerper(float newDistanceScalar)
     {
         if (lerper != null) StopCoroutine(lerper);
-        lerper = StartCoroutine(Tools.LerpingCoroutine((i) => { transposer.m_FollowOffset = new Vector3(0, 0, i); }, () => transposer.m_FollowOffset.z, newDistanceScalar, 4f, 1000));
+        lerper = StartCoroutine(Tools.LerpingCoroutine((i) => { transposer.m_FollowOffset = new Vector3(0, 0, i); }, () => transposer.m_FollowOffset.z, newDistanceScalar, 1f));
     }
 
     public void SetFarCameraDistance(float distance)
@@ -192,15 +193,16 @@ public class CameraManager : SingletonPersistent<CameraManager>
         SetCameraDistance(farCamera, distance);
     }
 
-    public void SetCloseCameraDistance(float distance) 
+    public void SetCameraDistance(float distance) 
     {
-        var vCam = closeCamera.VirtualCameraGameObject.GetComponent<CinemachineVirtualCamera>();
-        var transposer = vCam.GetCinemachineComponent<CinemachineTransposer>();
-        //if (setCameraDistanceCoroutine != null) 
-        //    StopCoroutine(setCameraDistanceCoroutine);
         if (transposer.m_FollowOffset != new Vector3(0, 0, distance))
             DistanceLerper(distance);
-            //setCameraDistanceCoroutine = StartCoroutine(SetCameraDistanceCoroutine(closeCamera, distance));
+    }
+
+    public void SetNormalizedCameraDistance(float normalizedDistance)
+    {
+        if (transposer.m_FollowOffset != new Vector3(0, 0, normalizedDistance))
+            DistanceLerper((FarCamDistance - CloseCamDistance) * normalizedDistance + CloseCamDistance);
     }
 
     public void SetBothCameraDistances(float distance)

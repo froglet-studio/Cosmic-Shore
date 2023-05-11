@@ -120,6 +120,7 @@ MonoBehaviour:
     trailBlock: {fileID: 0}
     Index: 0
     Shielded: 0
+    TimeCreated: 0
   growthRate: 6
   ParticleEffect: {fileID: 3706253519474275301, guid: 2d5ef26f11cfb824fa85b6f5cd632c79,
     type: 3}

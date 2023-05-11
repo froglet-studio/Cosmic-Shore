@@ -12,5 +12,6 @@ namespace StarWriter.Core
         public int Index;
         public Trail Trail;
         public bool Shielded;
+        public float TimeCreated;
     }
 }

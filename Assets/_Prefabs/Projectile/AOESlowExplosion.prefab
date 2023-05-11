@@ -53,6 +53,8 @@ MonoBehaviour:
   ExplosionDuration: 4
   ExplosionDelay: 0.2
   shipImpactEffects: 0400000001000000
+  affectSelf: 0
+  destructive: 0
 --- !u!33 &8683897607158942398
 MeshFilter:
   m_ObjectHideFlags: 0
