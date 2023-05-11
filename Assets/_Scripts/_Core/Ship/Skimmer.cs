@@ -183,25 +183,9 @@ namespace StarWriter.Core
         {   
             if (notifyNearbyBlockCount )
             {
-                //foreach (Collider other in Physics.OverlapSphere(transform.position,100))
-                //{
-                //    if (other.TryGetComponent<TrailBlock>(out var trailBlock))
-                //    {
-                //        if (trailBlock.Team != team || Time.time - trailBlock.TrailBlockProperties.TimeCreated > 5)
-                //        {
 
-                //            minMatureBlockDistance = Mathf.Min(Vector3.Distance(transform.position, trailBlock.transform.position), minMatureBlockDistance);
-                //        }
-                //    }
-                //}
-
-
-                
                 var normalizedDistance = Mathf.Clamp(Mathf.InverseLerp(15f, transform.localScale.x/2, minMatureBlockDistance), 0,1);
-                //var cameraDistance = (cameraManager.FarCamDistance - cameraManager.CloseCamDistance) * normalizedDistance + cameraManager.CloseCamDistance;
-    
-                //var cameraDistance = Mathf.Min(Mathf.Max(cameraManager.FarCamDistance , -minMatureBlockDistance), cameraManager.CloseCamDistance);
-                //var lerp = Mathf.InverseLerp(cameraManager.CloseCamDistance, cameraManager.FarCamDistance, cameraDistance);
+
 
                 ship.TrailSpawner.SetNormalizedXScale(normalizedDistance);
 

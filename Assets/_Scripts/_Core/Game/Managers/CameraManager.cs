@@ -5,7 +5,7 @@ using TailGlider.Utility.Singleton;
 using System.Collections;
 using StarWriter.Utility.Tools;
 using StarWriter.Core.HangerBuilder;
-using static UnityEditor.ShaderGraph.Internal.KeywordDependentCollection;
+
 
 public class CameraManager : SingletonPersistent<CameraManager>
 {
