@@ -990,7 +990,7 @@ MonoBehaviour:
   maxProjectileScale: 10
   minProjectileBlockScale: {x: 4, y: 4, z: 0.4}
   maxProjectileBlockScale: {x: 8, y: 8, z: 0.4}
-  ControlOverrides: 0300000004000000
+  ControlOverrides: 03000000
   closeCamDistance: -13
   farCamDistance: -50
   AOEExplosionMaterial: {fileID: 0}
@@ -1098,7 +1098,6 @@ MonoBehaviour:
   RollScaler: 80
   RotationThrottleScaler: 0
   topGun: {fileID: 6325554860274326311}
-  chargeDepletionRate: -0.05
   ProjectileScale: 1
   BlockScale: {x: 4, y: 4, z: 0.4}
 --- !u!114 &3440187540988767646
