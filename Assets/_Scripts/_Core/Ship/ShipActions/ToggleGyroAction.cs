@@ -1,4 +1,4 @@
-using StarWriter.Core.Input;
+using StarWriter.Core.IO;
 
 public class ToggleGyroAction : ShipActionAbstractBase
 {

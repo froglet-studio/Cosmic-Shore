@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace StarWriter.Core.Input
+namespace StarWriter.Core.IO
 {
 
     [RequireComponent(typeof(RectTransform))]

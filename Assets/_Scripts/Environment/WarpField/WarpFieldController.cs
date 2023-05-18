@@ -1,5 +1,5 @@
 using UnityEngine;
-using StarWriter.Core.Input;
+using StarWriter.Core.IO;
 
 // TODO: P1 remove this class
 public class WarpFieldController : MonoBehaviour

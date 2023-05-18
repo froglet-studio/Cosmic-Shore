@@ -1,10 +1,10 @@
 using System.Collections;
 using System.Threading;
 using UnityEngine;
-using UnityEngine.InputSystem;
+using Gamepad = UnityEngine.InputSystem.Gamepad;
 using UnityEngine.UIElements;
 
-namespace StarWriter.Core.Input
+namespace StarWriter.Core.IO
 {
     public class InputController : MonoBehaviour
     {
@@ -27,10 +27,21 @@ namespace StarWriter.Core.Input
         bool fullSpeedStraightEffectsStarted = false;
         bool minimumSpeedStraightEffectsStarted = false;
 
+        int leftTouchIndex = 0, rightTouchIndex = 0;
+        bool oneFinger = false;
+        bool leftActive = true;
+
         public float XSum;
         public float YSum;
         public float XDiff;
         public float YDiff;
+
+        float JoystickRadius = 350f;
+        public Vector2 RightJoystick = Vector2.zero;
+        public Vector2 LeftJoystick = Vector2.zero;
+
+        Vector2 RightJoystickStart;
+        Vector2 LeftJoystickStart;
 
         public bool Idle;
 
@@ -43,7 +54,8 @@ namespace StarWriter.Core.Input
         bool invertYEnabled = false;
         bool inputPaused;
 
-        Vector2 leftTouch, rightTouch;
+        Vector2 leftInput = new Vector2(200, 200);
+        Vector2 rightInput = new Vector2(Screen.currentResolution.width - 200, 200);
 
         Quaternion inverseInitialRotation=new(0,0,0,0);
 
@@ -59,7 +71,8 @@ namespace StarWriter.Core.Input
 
         void Start()
         {
-            gyro = UnityEngine.Input.gyro;
+            Debug.Log($"joystick readius {400 / Screen.dpi}");
+            gyro = Input.gyro;
             gyro.enabled = true;
             StartCoroutine(GyroInitializationCoroutine());
             invertYEnabled = GameSetting.Instance.InvertYEnabled;       
@@ -108,10 +121,10 @@ namespace StarWriter.Core.Input
             }
             else if (Gamepad.current != null)
             {
-                leftTouch.x = Gamepad.current.leftStick.x.ReadValue();
-                leftTouch.y = Gamepad.current.leftStick.y.ReadValue();
-                rightTouch.x = Gamepad.current.rightStick.x.ReadValue();
-                rightTouch.y = Gamepad.current.rightStick.y.ReadValue();
+                leftInput.x = Gamepad.current.leftStick.x.ReadValue();
+                leftInput.y = Gamepad.current.leftStick.y.ReadValue();
+                rightInput.x = Gamepad.current.rightStick.x.ReadValue();
+                rightInput.y = Gamepad.current.rightStick.y.ReadValue();
 
                 //if (Gamepad.current.leftStick.IsActuated() || Gamepad.current.rightStick.IsActuated() && Idle)
                 //{
@@ -124,10 +137,11 @@ namespace StarWriter.Core.Input
                 //    ship.PerformShipControllerActions(InputEvents.IdleAction);
                 //}
 
-                XSum = Ease(rightTouch.x + leftTouch.x); //negative is because joysitcks and unity axes don't agree
-                YSum = -Ease(rightTouch.y + leftTouch.y);
-                XDiff = (leftTouch.x - rightTouch.x + 2.1f) / 4.1f;
-                YDiff = Ease(rightTouch.y - leftTouch.y);
+                //Debug.Log($"rightInput {rightInput}, leftInput {leftInput}");
+                XSum = Ease(rightInput.x + leftInput.x); 
+                YSum = -Ease(rightInput.y + leftInput.y); //negative is because joysitcks and unity axes don't agree
+                XDiff = (leftInput.x - rightInput.x + 2.1f) / 4.1f;
+                YDiff = Ease(rightInput.y - leftInput.y);
 
                 if (invertYEnabled)
                     YSum *= -1;
@@ -180,9 +194,9 @@ namespace StarWriter.Core.Input
                 {
                     ship.SetShipUp(90);
                 }
-                else if (Mathf.Abs(UnityEngine.Input.acceleration.y) >= phoneFlipThreshold)
+                else if (Mathf.Abs(Input.acceleration.y) >= phoneFlipThreshold)
                 {
-                    if (UnityEngine.Input.acceleration.y < 0 && PhoneFlipState)
+                    if (Input.acceleration.y < 0 && PhoneFlipState)
                     {
                         PhoneFlipState = false;
                         ship.StopShipControllerActions(InputEvents.FlipAction);
@@ -190,9 +204,9 @@ namespace StarWriter.Core.Input
 
                         currentOrientation = ScreenOrientation.LandscapeLeft;
 
-                        Debug.Log($"InputController Phone flip state change detected - new flip state: {PhoneFlipState}, acceleration.y: {UnityEngine.Input.acceleration.y}");
+                        Debug.Log($"InputController Phone flip state change detected - new flip state: {PhoneFlipState}, acceleration.y: {Input.acceleration.y}");
                     }
-                    else if (UnityEngine.Input.acceleration.y > 0 && !PhoneFlipState)
+                    else if (Input.acceleration.y > 0 && !PhoneFlipState)
                     {
                         PhoneFlipState = true;
                         ship.PerformShipControllerActions(InputEvents.FlipAction);
@@ -200,60 +214,64 @@ namespace StarWriter.Core.Input
 
                         currentOrientation = ScreenOrientation.LandscapeRight;
 
-                        Debug.Log($"InputController Phone flip state change detected - new flip state: {PhoneFlipState}, acceleration.y: {UnityEngine.Input.acceleration.y}");
+                        Debug.Log($"InputController Phone flip state change detected - new flip state: {PhoneFlipState}, acceleration.y: {Input.acceleration.y}");
                     }
                 }
 
+                
                 var threeFingerFumble = false;
-                if (UnityEngine.Input.touches.Length >= 3)
+                if (Input.touchCount >= 3)
                 {
                     // Sub select the two best touch inputs here
                     // If we have more than two touches, find the closest to each of the last touch positions we used
                     threeFingerFumble = true;
-                    int leftTouchIndex = 0, rightTouchIndex = 0;
-                    float minLeftTouchDistance = Vector2.Distance(leftTouch, UnityEngine.Input.touches[0].position);
-                    float minRightTouchDistance = Vector2.Distance(rightTouch, UnityEngine.Input.touches[0].position);
 
-                    for (int i = 1; i < UnityEngine.Input.touches.Length; i++)
+                    float minLeftTouchDistance = Vector2.Distance(leftInput, Input.touches[0].position);
+                    float minRightTouchDistance = Vector2.Distance(rightInput, Input.touches[0].position);
+
+                    for (int i = 1; i < Input.touches.Length; i++)
                     {
-                        if (Vector2.Distance(leftTouch, UnityEngine.Input.touches[i].position) < minLeftTouchDistance)
+                        if (Vector2.Distance(leftInput, Input.touches[i].position) < minLeftTouchDistance)
                         {
-                            minLeftTouchDistance = Vector2.Distance(leftTouch, UnityEngine.Input.touches[i].position);
+                            minLeftTouchDistance = Vector2.Distance(leftInput, Input.touches[i].position);
                             leftTouchIndex = i;
                         }
-                        if (Vector2.Distance(rightTouch, UnityEngine.Input.touches[i].position) < minRightTouchDistance)
+                        if (Vector2.Distance(rightInput, Input.touches[i].position) < minRightTouchDistance)
                         {
-                            minRightTouchDistance = Vector2.Distance(rightTouch, UnityEngine.Input.touches[i].position);
+                            minRightTouchDistance = Vector2.Distance(rightInput, Input.touches[i].position);
                             rightTouchIndex = i;
                         }
                     }
-                    leftTouch = UnityEngine.Input.touches[leftTouchIndex].position;
-                    rightTouch = UnityEngine.Input.touches[rightTouchIndex].position;
                 }
                 
-                if (UnityEngine.Input.touches.Length == 2 || threeFingerFumble)
+                if (Input.touchCount == 2 || threeFingerFumble)
                 {
                     // If we didn't fat finger the phone, find the 
                     if (!threeFingerFumble)
                     {
-                        if (UnityEngine.Input.touches[0].position.x <= UnityEngine.Input.touches[1].position.x)
+                        if (Input.touches[0].position.x <= Input.touches[1].position.x)
                         {
-                            leftTouch = UnityEngine.Input.touches[0].position;
-                            rightTouch = UnityEngine.Input.touches[1].position;
+                            leftTouchIndex = 0;
+                            rightTouchIndex = 1;
                         }
                         else
                         {
-                            leftTouch = UnityEngine.Input.touches[1].position;
-                            rightTouch = UnityEngine.Input.touches[0].position;
+                            leftTouchIndex = 1;
+                            rightTouchIndex = 0;
                         }
                     }
 
+                    leftInput = Input.touches[leftTouchIndex].position;
+                    rightInput = Input.touches[rightTouchIndex].position;
+
                     if (Portrait)
                     {
-                        rightTouch = leftTouch;
-                        leftTouch = new Vector2(Screen.currentResolution.width / 4f, Screen.currentResolution.height / 2f);
+                        rightInput = leftInput; // if your palm hits it is better to take the one closer to the top.
+                        leftActive = false;
                     }
 
+                    HandleJoystick(ref LeftJoystickStart, leftTouchIndex, ref LeftJoystick);
+                    HandleJoystick(ref RightJoystickStart, rightTouchIndex, ref RightJoystick);
 
                     if (leftStickEffectsStarted)
                     {
@@ -266,39 +284,51 @@ namespace StarWriter.Core.Input
                         ship.StopShipControllerActions(InputEvents.RightStickAction);
                     }
                 }
-                if (UnityEngine.Input.touches.Length == 1)
-                {
-                    if (Portrait)
-                    {
-                        rightTouch = UnityEngine.Input.touches[0].position;
-                        leftTouch = new Vector2(Screen.currentResolution.width / 4f, Screen.currentResolution.height / 2f);
-                    }
-                    else if (leftTouch != Vector2.zero && rightTouch != Vector2.zero)
-                    {
-                        var position = UnityEngine.Input.touches[0].position;
 
-                        if (Vector2.Distance(leftTouch, position) < Vector2.Distance(rightTouch, position) && !leftStickEffectsStarted)
+                if (Input.touchCount == 1)
+                {
+                    oneFinger = true;
+                    //if (Portrait)
+                    //{
+                    //    rightInput = Input.touches[0].position;
+                    //    leftInput = new Vector2(Screen.currentResolution.width / 4f, Screen.currentResolution.height / 2f);
+                    //}
+                    //else
+                    //if (leftInput != Vector2.zero && rightInput != Vector2.zero)
+                    //{
+                        var position = Input.touches[0].position;
+
+                        
+                        if (Vector2.Distance(leftInput, position) < Vector2.Distance(rightInput, position))
                         {
-                            leftStickEffectsStarted = true;
-                            ship.PerformShipControllerActions(InputEvents.LeftStickAction);
-                        }
-                        else if (Vector2.Distance(leftTouch, position) < Vector2.Distance(rightTouch, position))
-                        {
-                            leftTouch = position;
-                        }
-                        else if (!rightStickEffectsStarted)
-                        {
-                            rightStickEffectsStarted = true;
-                            ship.PerformShipControllerActions(InputEvents.RightStickAction);
+                            if (!leftStickEffectsStarted)
+                            {
+                                leftStickEffectsStarted = true;
+                                ship.PerformShipControllerActions(InputEvents.LeftStickAction);
+                            }
+                        leftInput = position;
+                            leftTouchIndex = 0;
+                            HandleJoystick(ref LeftJoystickStart, leftTouchIndex, ref LeftJoystick);
+                            leftActive = true;
                         }
                         else
                         {
-                            rightTouch = position;
+                            if (!rightStickEffectsStarted)
+                            {
+                                rightStickEffectsStarted = true;
+                                ship.PerformShipControllerActions(InputEvents.RightStickAction);
+                            }
+                            rightInput = position;
+                            rightTouchIndex = 0;
+                            HandleJoystick(ref RightJoystickStart, rightTouchIndex, ref RightJoystick);
+                            leftActive = false;
                         }
-                    }
-                }
 
-                if (UnityEngine.Input.touches.Length > 0)
+                    //}
+                }
+                else oneFinger = false;
+
+                if (Input.touchCount > 0)
                 {
                     Reparameterize();
                     CheckSpeedAndOrientation();
@@ -335,15 +365,52 @@ namespace StarWriter.Core.Input
             }
         }
 
+        void HandleJoystick(ref Vector2 joystickStart, int touchIndex, ref Vector2 joystick)
+        {
+            Touch touch = Input.touches[touchIndex];
+
+            if (touch.phase == TouchPhase.Began)
+            {
+                //joystickStart = (touchIndex == leftTouchIndex) ? leftInput : rightInput;
+                joystickStart = touch.position;
+            }
+
+            Vector2 offset = touch.position - joystickStart;
+            Vector2 clampedOffset = Vector2.ClampMagnitude(offset, JoystickRadius) / JoystickRadius;
+            joystick = clampedOffset;
+        }
+
         void Reparameterize()
         {
-            XSum = ((rightTouch.x + leftTouch.x) / Screen.currentResolution.width) - 1; 
-            YSum = -(((rightTouch.y + leftTouch.y) / Screen.currentResolution.height) - 1); //negative is because joysitcks and unity axes don't agree
-            XDiff = Portrait ? 1 : (rightTouch.x - leftTouch.x) / Screen.currentResolution.width ;
-            YDiff = (rightTouch.y - leftTouch.y) / Screen.currentResolution.width;
+            //Debug.Log($"RightJoystick {RightJoystick}, LeftJoystick {LeftJoystick}");
+            if (oneFinger || Portrait)
+            {
+                if (leftActive)
+                {
+                    XSum = Ease(LeftJoystick.x);
+                    YSum = -Ease(LeftJoystick.y); //negative is because joysitcks and unity axes don't agree
+                    XDiff = .5f;
+                    YDiff = 0;
+                }
+                else
+                {
+                    XSum = Ease(RightJoystick.x);
+                    YSum = -Ease(RightJoystick.y); //negative is because joysitcks and unity axes don't agree
+                    XDiff = .5f;
+                    YDiff = 0;
+                }
+            }
+            else
+            {
+                XSum = Ease(RightJoystick.x + LeftJoystick.x);
+                YSum = -Ease(RightJoystick.y + LeftJoystick.y); //negative is because joysitcks and unity axes don't agree
+                XDiff = (LeftJoystick.x - RightJoystick.x + 2.1f) / 4.1f;
+                YDiff = Ease(RightJoystick.y - LeftJoystick.y);
+            }
 
             if (invertYEnabled)
                 YSum *= -1;
+
         }
 
         // TODO: move to centralized helper class

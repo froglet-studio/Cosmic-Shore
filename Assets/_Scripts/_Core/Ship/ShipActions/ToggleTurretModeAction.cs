@@ -1,5 +1,5 @@
 using StarWriter.Core;
-using StarWriter.Core.Input;
+using StarWriter.Core.IO;
 public class ToggleTurretModeAction : ShipActionAbstractBase
 {
     ShipData shipData;

@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using StarWriter.Core.Input;
+using StarWriter.Core.IO;
 using UnityEngine;
 
 namespace StarWriter.Core

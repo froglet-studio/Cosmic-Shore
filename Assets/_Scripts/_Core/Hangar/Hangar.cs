@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using TailGlider.Utility.Singleton;
 using UnityEngine.Serialization;
-using StarWriter.Core.Input;
+using StarWriter.Core.IO;
 using System;
 
 namespace StarWriter.Core.HangerBuilder
