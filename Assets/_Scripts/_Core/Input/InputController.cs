@@ -36,7 +36,7 @@ namespace StarWriter.Core.IO
         public float XDiff;
         public float YDiff;
 
-        float JoystickRadius = 350f;
+        float JoystickRadius = Screen.dpi;
         public Vector2 RightJoystick = Vector2.zero;
         public Vector2 LeftJoystick = Vector2.zero;
 
@@ -71,7 +71,6 @@ namespace StarWriter.Core.IO
 
         void Start()
         {
-            Debug.Log($"joystick readius {400 / Screen.dpi}");
             gyro = Input.gyro;
             gyro.enabled = true;
             StartCoroutine(GyroInitializationCoroutine());
