@@ -36,7 +36,7 @@ namespace StarWriter.Core.IO
         public float XDiff;
         public float YDiff;
 
-        float JoystickRadius = Screen.dpi;
+        float JoystickRadius;
         public Vector2 RightJoystick = Vector2.zero;
         public Vector2 LeftJoystick = Vector2.zero;
 
@@ -54,8 +54,7 @@ namespace StarWriter.Core.IO
         bool invertYEnabled = false;
         bool inputPaused;
 
-        Vector2 leftInput = new Vector2(200, 200);
-        Vector2 rightInput = new Vector2(Screen.currentResolution.width - 200, 200);
+        Vector2 leftInput, rightInput;
 
         Quaternion inverseInitialRotation=new(0,0,0,0);
 
@@ -71,6 +70,10 @@ namespace StarWriter.Core.IO
 
         void Start()
         {
+            JoystickRadius = Screen.dpi;
+            leftInput = new Vector2(JoystickRadius, JoystickRadius);
+            rightInput = new Vector2(Screen.currentResolution.width - JoystickRadius, JoystickRadius);
+
             gyro = Input.gyro;
             gyro.enabled = true;
             StartCoroutine(GyroInitializationCoroutine());

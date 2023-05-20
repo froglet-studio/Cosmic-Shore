@@ -189,7 +189,7 @@ namespace StarWriter.Core
 
                 ship.TrailSpawner.SetNormalizedXScale(normalizedDistance);
 
-                if (!ship.InputController.AutoPilotEnabled) cameraManager.SetNormalizedCameraDistance(normalizedDistance);
+                if (!ship.InputController.AutoPilotEnabled && cameraManager != null) cameraManager.SetNormalizedCameraDistance(normalizedDistance);
 
                 minMatureBlockDistance = Mathf.Infinity;
             } 
