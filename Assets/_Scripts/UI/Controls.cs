@@ -16,11 +16,13 @@ public class Controls : MonoBehaviour
     Image image;
     Vector2 initialPos;
 
+    float JoystickRadius;
     Vector2 leftTouch, rightTouch;
 
     void Start()
     {
-        initialPos = transform.position;
+        JoystickRadius = Screen.dpi;
+        initialPos = Left ? new Vector2(JoystickRadius, JoystickRadius) : new Vector2(Screen.currentResolution.width - JoystickRadius, JoystickRadius);
         image = GetComponent<Image>();
         image.sprite = InactiveImage;
         gameObject.SetActive(Gamepad.current == null); //turn off "UI controls" if we have a gamepad
