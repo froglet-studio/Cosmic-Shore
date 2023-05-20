@@ -36,13 +36,12 @@ namespace StarWriter.Core.IO
         public float XDiff;
         public float YDiff;
 
-        float JoystickRadius;
+        float JoystickRadius = Screen.dpi;
         public Vector2 RightJoystick = Vector2.zero;
         public Vector2 LeftJoystick = Vector2.zero;
 
         Vector2 RightJoystickStart;
         Vector2 LeftJoystickStart;
-        bool start;
 
         public bool Idle;
 
@@ -72,7 +71,6 @@ namespace StarWriter.Core.IO
 
         void Start()
         {
-            float JoystickRadius = Screen.dpi;
             gyro = Input.gyro;
             gyro.enabled = true;
             StartCoroutine(GyroInitializationCoroutine());
