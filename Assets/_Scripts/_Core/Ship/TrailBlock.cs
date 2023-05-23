@@ -59,6 +59,7 @@ namespace StarWriter.Core
             TrailBlockProperties.Index = Index;
             TrailBlockProperties.Trail = Trail;
             TrailBlockProperties.Shielded = Shielded;
+            TrailBlockProperties.TimeCreated = Time.time;
 
             StartCoroutine(CreateBlockCoroutine());
             if (Shielded) ActivateShield();

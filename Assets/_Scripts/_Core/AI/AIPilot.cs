@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System;
 using System.Runtime.InteropServices.WindowsRuntime;
 
-namespace StarWriter.Core.Input
+namespace StarWriter.Core.IO
 {
     public class AIPilot : MonoBehaviour
     {
@@ -34,7 +34,7 @@ namespace StarWriter.Core.Input
         [SerializeField] float raycastHeight;
         [SerializeField] float raycastWidth;
 
-        [SerializeField] bool autoPilotEnabled;
+        public bool autoPilotEnabled;
 
         enum Corner 
         {

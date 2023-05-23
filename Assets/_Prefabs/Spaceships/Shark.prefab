@@ -732,8 +732,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a273abd40c7104c4392188723ab929d6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  impactProperties: []
+  cameraManager: {fileID: 0}
+  InputController: {fileID: 0}
+  ResourceSystem: {fileID: 0}
   Name: Shark
   ShipType: 3
+  TrailSpawner: {fileID: 874579555101021522}
+  ShipController: {fileID: 0}
+  AutoPilot: {fileID: 0}
+  ShipData: {fileID: 0}
   nearFieldSkimmer: {fileID: 874579554510349383}
   OrientationHandle: {fileID: 7569251362483239328}
   shipGeometries:
@@ -742,12 +750,10 @@ MonoBehaviour:
   - {fileID: 1022800225184736306}
   - {fileID: 434498384779577929}
   - {fileID: 5736286126695899062}
-  TrailSpawner: {fileID: 874579555101021522}
   head: {fileID: 3710282027580066907}
   AOEPrefab: {fileID: 2728798890556433942, guid: d568a14301490e54280955b50673f884,
     type: 3}
   farFieldSkimmer: {fileID: 0}
-  fakeCrystal: {fileID: 0}
   crystalImpactEffects: 0100000006000000
   minExplosionScale: 400
   maxExplosionScale: 400
@@ -755,12 +761,6 @@ MonoBehaviour:
   blockChargeChange: 0
   boostMultiplier: 3
   boostFuelAmount: -0.007
-  fullSpeedStraightActions: 01000000060000000700000009000000
-  rightStickActions: 
-  leftStickActions: 
-  flipActions: 
-  idleActions: 
-  minimumSpeedStraightActions: 
   maxSpeedStraightActions:
   - {fileID: 1315493734959331551}
   - {fileID: 6430648885380261475}
@@ -771,14 +771,9 @@ MonoBehaviour:
   rightStickShipActions: []
   flipShipActions: []
   idleShipActions: []
-  cameraGrowthRate: 8
-  cameraShrinkRate: 8
-  minTrailYScale: 1
-  maxTrailYScale: 3
-  trailGrowthRate: 3
-  trailShrinkRate: 3
-  skimmerGrowthRate: 8
-  skimmerShrinkRate: 8
+  button1ShipActions: []
+  button2ShipActions: []
+  button3ShipActions: []
   LevelEffects: 
   minGap: 1
   maxGap: 1
@@ -790,11 +785,11 @@ MonoBehaviour:
   maxProjectileScale: 10
   minProjectileBlockScale: {x: 1.5, y: 1.5, z: 3}
   maxProjectileBlockScale: {x: 1.5, y: 1.5, z: 30}
-  ControlOverrides: 0300000004000000
+  ControlOverrides: 0400000003000000
   closeCamDistance: -10
   farCamDistance: -60
-  inputController: {fileID: 0}
-  ResourceSystem: {fileID: 0}
+  AOEExplosionMaterial: {fileID: 0}
+  AOEConicExplosionMaterial: {fileID: 0}
 --- !u!114 &6964962696344697388
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -830,6 +825,7 @@ MonoBehaviour:
     type: 3}
   skimmer: {fileID: 874579554510349383}
   waitTillOutsideSkimmer: 1
+  shielded: 0
   offset: 0
   initialWavelength: 5
   minWavelength: 1
@@ -857,14 +853,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9846c9cd6cfac424797ca640ebcb7a04, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  inputSpeed: 1
-  speedMultiplier: 1
-  speed: 0
+  Speed: 0
   Boosting: 0
   BoostCharging: 0
   BoostDecaying: 0
   Drifting: 0
   LayingBulletTrail: 0
+  Portrait: 0
+  ShowThreeButtonPanel: 0
+  LiveProjectiles: 0
+  Stationary: 0
+  ElevatedAmmoGain: 0
   Attached: 0
   AttachedTrailBlock: {fileID: 0}
   GunsActive: 1
@@ -884,14 +883,19 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   DifficultyLevel: 0
   defaultThrottle: 30
-  defaultLerp: 40
+  defaultAggressiveness: 0.035
   throttleIncrease: 5
-  lerpIncrease: 17
+  aggressivenessIncrease: 0.001
   throttle: 0
-  lerp: 0
+  aggressiveness: 0.1
   avoidance: 23
+  XSum: 0
+  YSum: 0
+  XDiff: 0
+  YDiff: 0
   raycastHeight: 2
   raycastWidth: 2
+  autoPilotEnabled: 0
   CrystalTransform: {fileID: 0}
   flowFieldData: {fileID: 0}
 --- !u!114 &1435252848482629424
@@ -906,18 +910,26 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 737294a573670f74389a7af68df314d5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  Resources: 
   usesBoost: 1
   usesLevels: 0
   usesAmmo: 0
+  usesCharge: 0
+  gainsAmmo: 0
+  ammoGainRate: 0.01
+  elevatedAmmoGainRate: 0.03
   maxBoost: 1
   initialBoost: 1
   maxLevel: 1
   initialLevel: 0
   maxAmmo: 1
   initialAmmo: 1
+  maxCharge: 1
+  initialCharge: 1
   BoostDisplay: {fileID: 0}
   LevelDisplay: {fileID: 0}
   AmmoDisplay: {fileID: 0}
+  ChargeDisplay: {fileID: 0}
 --- !u!114 &3496801340156507927
 MonoBehaviour:
   m_ObjectHideFlags: 0

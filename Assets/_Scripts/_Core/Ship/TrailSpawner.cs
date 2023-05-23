@@ -120,23 +120,23 @@ public class TrailSpawner : MonoBehaviour
     public float XScaler = 1;
     public float YScaler = 1;
     float ZScaler = 1;
-    int nearbyBlocks;
+    float Xscale;
     Coroutine lerper;
 
-    public void SetNearbyBlockCount(int blockCount)
+    public void SetNormalizedXScale(float normalizedXScale)
     {
-        if (nearbyBlocks == blockCount)
+        if (Xscale == normalizedXScale)
             return;
 
-        nearbyBlocks = Mathf.Min(blockCount, MaxNearbyBlockCount);
-        float newXScaler = Mathf.Max(minBlockScale, maxBlockScale * (1 - (nearbyBlocks / (float)MaxNearbyBlockCount)));
+        Xscale = Mathf.Min(normalizedXScale, 1);
+        float newXScaler = Mathf.Max(minBlockScale, maxBlockScale * Xscale);
         XLerper(newXScaler);
     }
 
     void XLerper(float newXScaler)
     {
         if (lerper != null) StopCoroutine(lerper);
-        lerper = StartCoroutine(Tools.LerpingCoroutine((i) => { XScaler = i; }, () => XScaler ,newXScaler, 4, 1000));
+        lerper = StartCoroutine(Tools.LerpingCoroutine(XScaler, newXScaler, 1.5f, (i) => { XScaler = i; }));
     }
 
     public void SetDotProduct(float amount)

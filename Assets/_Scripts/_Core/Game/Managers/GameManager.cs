@@ -2,7 +2,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using TailGlider.Utility.Singleton;
 using UnityEngine.Advertisements;
-using StarWriter.Core.Input;
+using StarWriter.Core.IO;
 
 namespace StarWriter.Core
 {

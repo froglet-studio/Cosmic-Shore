@@ -15,6 +15,8 @@ namespace StarWriter.Core
         [SerializeField] protected float ExplosionDelay = .2f;
         [SerializeField] List<ShipImpactEffects> shipImpactEffects;
         [SerializeField] bool affectSelf = false;
+        [SerializeField] bool destructive = true;
+        
         protected static GameObject container;
 
         protected Material material;
@@ -44,7 +46,7 @@ namespace StarWriter.Core
             var impactVector = (other.transform.position - transform.position).normalized * speed;
             if (other.TryGetComponent<TrailBlock>(out var trailBlock))
             {
-                if (trailBlock.Team == Team && !affectSelf)
+                if (trailBlock.Team == Team && !affectSelf || !destructive)
                 {
                     trailBlock.ActivateShield(2f);
                     return;

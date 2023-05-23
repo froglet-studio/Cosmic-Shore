@@ -4,7 +4,7 @@ using StarWriter.Core;
 using TailGlider.Utility.Singleton;
 using System.Collections;
 using StarWriter.Utility.Tools;
-
+using StarWriter.Core.HangerBuilder;
 
 
 public class CameraManager : SingletonPersistent<CameraManager>
@@ -64,7 +64,7 @@ public class CameraManager : SingletonPersistent<CameraManager>
     {
         isCameraFlipEnabled = true;
 
-        playerFollowTarget = GameObject.FindGameObjectWithTag("Player_Ship").transform;
+        playerFollowTarget = Hangar.Instance.SelectedShip.transform;
         closeCamera.LookAt = farCamera.LookAt = deathCamera.LookAt = playerFollowTarget;
         closeCamera.Follow = farCamera.Follow = deathCamera.Follow = playerFollowTarget;
         
@@ -95,16 +95,6 @@ public class CameraManager : SingletonPersistent<CameraManager>
         SetEndCameraActive();
     }
 
-    void SwitchToGamePlayCameras()
-    {
-        isCameraFlipEnabled = true;
-
-        if (useCloseCam)
-            SetCloseCameraActive();
-        else
-            SetFarCameraActive();
-    }
-
     public void SetMainMenuCameraActive()
     {
         isCameraFlipEnabled = false;
@@ -112,10 +102,6 @@ public class CameraManager : SingletonPersistent<CameraManager>
         SetActiveCamera(mainMenuCamera);
     }
 
-    public void SetFarCameraActive()
-    {
-        SetActiveCamera(farCamera);
-    }
     public void SetCloseCameraActive()
     {
         SetActiveCamera(closeCamera);
@@ -142,73 +128,29 @@ public class CameraManager : SingletonPersistent<CameraManager>
         transposer = vCam.GetCinemachineComponent<CinemachineTransposer>();
     }
 
-    public void ToggleCloseOrFarCamOnPhoneFlip(bool state)
-    {
-        if (isCameraFlipEnabled)
-        {
-            useCloseCam = state;
-
-            if (useCloseCam)
-                SetCloseCameraActive();
-            else       
-                SetFarCameraActive();
-        }
-    }
-
-    void SetCameraDistance(CinemachineVirtualCameraBase camera, float distance)
-    {
-        var vCam = camera.VirtualCameraGameObject.GetComponent<CinemachineVirtualCamera>();
-        var transposer = vCam.GetCinemachineComponent<CinemachineTransposer>();
-        transposer.m_FollowOffset = new Vector3(0, 0, distance);
-    }
-
-    Coroutine setCameraDistanceCoroutine;
-    IEnumerator SetCameraDistanceCoroutine(CinemachineVirtualCameraBase camera, float distance)
-    {
-        var vCam = camera.VirtualCameraGameObject.GetComponent<CinemachineVirtualCamera>();
-        var transposer = vCam.GetCinemachineComponent<CinemachineTransposer>();
-        while (transposer.m_FollowOffset != new Vector3(0, 0, distance))
-        {
-            float lerpRate;
-            if (transposer.m_FollowOffset.z < distance)
-                lerpRate = .006f;
-            else 
-                lerpRate = .002f;
-
-            transposer.m_FollowOffset = Vector3.Lerp(transposer.m_FollowOffset, new Vector3(0, 0, distance), lerpRate);
-            vCam.m_Lens.NearClipPlane = Mathf.Lerp(vCam.m_Lens.NearClipPlane, -distance / 5, lerpRate);
-            yield return null;
-        }
-    }
-
     Coroutine lerper;
-    void DistanceLerper(float newDistanceScalar)
+
+    void ClipPlaneAndOffsetLerper(float normalizedDistance)
     {
+        float CloseCamClipPlane = -CloseCamDistance / 5;
+        float FarCamClipPlane = 5f;
         if (lerper != null) StopCoroutine(lerper);
-        lerper = StartCoroutine(Tools.LerpingCoroutine((i) => { transposer.m_FollowOffset = new Vector3(0, 0, i); }, () => transposer.m_FollowOffset.z, newDistanceScalar, 4f, 1000));
+        lerper = StartCoroutine(Tools.LerpingCoroutine((transposer.m_FollowOffset.z - CloseCamDistance) / (FarCamDistance - CloseCamDistance),
+            normalizedDistance, 1.5f, (i) =>
+            {
+                vCam.m_Lens.NearClipPlane = (FarCamClipPlane - CloseCamClipPlane) * i + CloseCamClipPlane;
+                transposer.m_FollowOffset = new Vector3(0, 0, (FarCamDistance - CloseCamDistance) * i + CloseCamDistance);
+            }));
     }
 
-    public void SetFarCameraDistance(float distance)
+    public void SetNormalizedCameraDistance(float normalizedDistance)
     {
-        SetCameraDistance(farCamera, distance);
+        if (transposer.m_FollowOffset != new Vector3(0, 0, normalizedDistance))
+        {
+            ClipPlaneAndOffsetLerper(normalizedDistance);
+        }  
     }
 
-    public void SetCloseCameraDistance(float distance) 
-    {
-        var vCam = closeCamera.VirtualCameraGameObject.GetComponent<CinemachineVirtualCamera>();
-        var transposer = vCam.GetCinemachineComponent<CinemachineTransposer>();
-        //if (setCameraDistanceCoroutine != null) 
-        //    StopCoroutine(setCameraDistanceCoroutine);
-        if (transposer.m_FollowOffset != new Vector3(0, 0, distance))
-            DistanceLerper(distance);
-            //setCameraDistanceCoroutine = StartCoroutine(SetCameraDistanceCoroutine(closeCamera, distance));
-    }
-
-    public void SetBothCameraDistances(float distance)
-    {
-        SetCameraDistance(farCamera, distance);
-        SetCameraDistance(closeCamera, distance);
-    }
     public void ZoomOut(float growthRate)
     {
         if (returnToNeutralCoroutine != null)

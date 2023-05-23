@@ -9,4 +9,5 @@ public enum MiniGames
     ShootingGallery = 4,
     ThiefCourse = 5,
     DriftCourse = 6,
+    Sandbox = 7
 }

@@ -7,14 +7,14 @@ namespace StarWriter.Utility.Tools
 {
     public struct Tools
     {
-        public static IEnumerator LerpingCoroutine(Action<float> replacementMethod, Func<float> getCurrent, float newValue, float duration, int steps)
+        public static IEnumerator LerpingCoroutine(float getCurrent, float newValue, float duration, Action<float> replacementMethod)
         {
             float elapsedTime = 0;
             while (elapsedTime < duration)
             {
                 elapsedTime += Time.deltaTime;
-                replacementMethod(Mathf.Lerp(getCurrent(), newValue, elapsedTime / duration));
-                yield return new WaitForSeconds(duration / (float)steps);
+                replacementMethod(Mathf.Lerp(getCurrent, newValue, elapsedTime / duration));
+                yield return null;
             }
         }
 

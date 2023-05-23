@@ -1,5 +1,5 @@
 using UnityEngine;
-using StarWriter.Core.Input;
+using StarWriter.Core.IO;
 
 // TODO: P1 remove this class
 public class WarpFieldController : MonoBehaviour
@@ -26,7 +26,7 @@ public class WarpFieldController : MonoBehaviour
     void Update()
     {
         var fieldResult = warpFieldData.HybridVector(player).magnitude;
-        cameraManager.SetBothCameraDistances(-fieldResult); //TODO: set clip plane to half the distance
+        //cameraManager.SetBothCameraDistances(-fieldResult); //TODO: set clip plane to half the distance
         shipController.ThrottleScaler = shipController.DefaultThrottleScaler * fieldResult;
         shipController.MinimumSpeed = shipController.DefaultMinimumSpeed * fieldResult;
 

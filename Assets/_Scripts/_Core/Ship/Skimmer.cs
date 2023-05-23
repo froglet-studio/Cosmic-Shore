@@ -139,10 +139,19 @@ namespace StarWriter.Core
                 if(!skimStartTimes.ContainsKey(trailBlock.ID))   // Occasionally, seeing a KeyNotFoundException, so maybe we miss the OnTriggerEnter event (note: always seems to be for AOE blocks)
                     StartSkim(trailBlock);
 
-                var distance = Vector3.Magnitude(transform.position - other.transform.position);
+                float distance = Vector3.Distance(transform.position, other.transform.position);
 
-                if (trailBlock.ownerId != ship.Player.PlayerUUID)
-                    minNonSelfBlockDistance = Mathf.Min(distance, minNonSelfBlockDistance);
+                if (trailBlock.ownerId != ship.Player.PlayerUUID || Time.time - trailBlock.TrailBlockProperties.TimeCreated > 5)
+                {
+
+                    if (distance < minMatureBlockDistance)
+                    {
+                        
+                        minMatureBlockDistance = distance;
+                    }
+                }
+
+                
 
                 // start with a baseline fuel amount the ranges from 0-1 depending on proximity of the skimmer to the trail block
                 var fuel = chargeAmount * (1 - (distance / transform.localScale.x));
@@ -167,20 +176,26 @@ namespace StarWriter.Core
             }
         }
 
-        float minNonSelfBlockDistanceCameraDenominator = 10;
-        float minNonSelfBlockDistance = Mathf.Infinity;
+
+        float minMatureBlockDistance = Mathf.Infinity;
 
         void FixedUpdate()
         {   
-            ship.TrailSpawner.SetNearbyBlockCount(ActivelySkimmingBlockCount);
+            if (notifyNearbyBlockCount )
+            {
 
-            var cameraDistance = Mathf.Min(1 - (float)activelySkimmingBlockCount / ship.TrailSpawner.MaxNearbyBlockCount, minNonSelfBlockDistance/ minNonSelfBlockDistanceCameraDenominator);
-
-            cameraManager.SetCloseCameraDistance(Mathf.Min(cameraManager.FarCamDistance * cameraDistance, cameraManager.CloseCamDistance)); // use min because distance is negative
+                var normalizedDistance = Mathf.Clamp(Mathf.InverseLerp(15f, transform.localScale.x/2, minMatureBlockDistance), 0,1);
 
 
-            minNonSelfBlockDistance = Mathf.Infinity;
+                ship.TrailSpawner.SetNormalizedXScale(normalizedDistance);
+
+                if (!ship.InputController.AutoPilotEnabled && cameraManager != null) cameraManager.SetNormalizedCameraDistance(normalizedDistance);
+
+                minMatureBlockDistance = Mathf.Infinity;
+            } 
+            
         }
+
         IEnumerator DisplaySkimParticleEffectCoroutine(TrailBlock trailBlock)
         {
             var particle = Instantiate(trailBlock.ParticleEffect);
@@ -190,7 +205,6 @@ namespace StarWriter.Core
             float scaledTime;
             do
             {
-                // TODO: 
                 var distance = trailBlock.transform.position - transform.position;
                 scaledTime = particleDurationAtSpeedOne / ship.GetComponent<ShipData>().Speed; // TODO: divide by zero possible
                 particle.transform.localScale = new Vector3(1, 1, distance.magnitude);

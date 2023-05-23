@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using StarWriter.Core.Input;
+using StarWriter.Core.IO;
 using UnityEngine;
 
 namespace StarWriter.Core
@@ -151,11 +151,11 @@ namespace StarWriter.Core
                 {
                     case ShipControlOverrides.CloseCam:
                         cameraManager.CloseCamDistance = closeCamDistance;
-                        cameraManager.SetCloseCameraDistance(closeCamDistance);
+                        cameraManager.SetNormalizedCameraDistance(0);
                         break;
                     case ShipControlOverrides.FarCam:
                         cameraManager.FarCamDistance = farCamDistance;
-                        cameraManager.SetFarCameraDistance(farCamDistance);
+                        cameraManager.SetNormalizedCameraDistance(1);
                         break;
                 }
             }
