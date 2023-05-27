@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace TailGlider.Utility.Singleton
+namespace StarWriter.Utility.Singleton
 {
     /// <remarks>
     /// Creates a Singleton GameObject which is persistent thru scenes

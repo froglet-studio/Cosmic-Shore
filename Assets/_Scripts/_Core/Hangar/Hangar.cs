@@ -1,22 +1,19 @@
+using StarWriter.Core.IO;
+using StarWriter.Utility.Singleton;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
-using TailGlider.Utility.Singleton;
-using UnityEngine.Serialization;
-using StarWriter.Core.IO;
-using System;
 
 namespace StarWriter.Core.HangerBuilder
 {
     public class Hangar : SingletonPersistent<Hangar>
     {
-        [SerializeField] Teams PlayerTeam = Teams.Green;
         Teams AITeam;
+
+        [SerializeField] Teams PlayerTeam = Teams.Green;
         [SerializeField] ShipTypes PlayerShipType = ShipTypes.Random;
-        [FormerlySerializedAs("PlayerTeammateShipType")]
         [SerializeField] ShipTypes FriendlyAIShipType = ShipTypes.Manta;
-        [FormerlySerializedAs("AI1ShipType")]
         [SerializeField] ShipTypes HostileAI1ShipType = ShipTypes.MantaAI;
-        [FormerlySerializedAs("AI2ShipType")]
         [SerializeField] ShipTypes HostileAI2ShipType = ShipTypes.Random;
 
         [SerializeField] Material GreenTeamMaterial;
@@ -40,7 +37,6 @@ namespace StarWriter.Core.HangerBuilder
         [SerializeField] Material BlueTeamAOEConicExplosionMaterial;
         [SerializeField] Material YellowTeamAOEConicExplosionMaterial;
 
-
         Dictionary<Teams, Material> TeamsMaterials;
         Dictionary<Teams, Material> TeamBlockMaterials;
         Dictionary<Teams, Material> TeamShieldedBlockMaterials;
@@ -53,7 +49,7 @@ namespace StarWriter.Core.HangerBuilder
         [SerializeField] int SelectedBayIndex = 0;
         [SerializeField] public List<Ship> ShipPrefabs;
 
-        string SelectedShipPlayerPrefKey = "SelectedShip";
+        readonly string SelectedShipPlayerPrefKey = "SelectedShip";
 
         public void SetPlayerShip(int shipType)
         {
@@ -116,7 +112,8 @@ namespace StarWriter.Core.HangerBuilder
                 { Teams.Blue,  BlueTeamAOEConicExplosionMaterial },
                 { Teams.Yellow,  YellowTeamAOEConicExplosionMaterial },
             };
-            if (PlayerTeam == Teams.None) {
+            if (PlayerTeam == Teams.None)
+            {
                 Debug.LogError("Player Team is set to None. Defaulting to Green Team");
                 PlayerTeam = Teams.Green;
             }

@@ -1,11 +1,10 @@
-using UnityEngine;
 using Cinemachine;
 using StarWriter.Core;
-using TailGlider.Utility.Singleton;
-using System.Collections;
-using StarWriter.Utility.Tools;
 using StarWriter.Core.HangerBuilder;
-
+using StarWriter.Utility.Singleton;
+using StarWriter.Utility.Tools;
+using System.Collections;
+using UnityEngine;
 
 public class CameraManager : SingletonPersistent<CameraManager>
 {
@@ -22,32 +21,26 @@ public class CameraManager : SingletonPersistent<CameraManager>
     readonly int activePriority = 10;
     readonly int inactivePriority = 1;
 
-    bool isCameraFlipEnabled = true;
-    bool useCloseCam = true;
-
     // Drift stuff
-    public float distanceScaler = 1f;
-    public Vector3 tempOffset = Vector3.zero;
-    public bool ZoomingOut;
+    bool zoomingOut;
 
     public float CloseCamDistance;
     public float FarCamDistance;
-    float targetDistance;
     CinemachineVirtualCamera vCam;
     CinemachineTransposer transposer;
 
     private void OnEnable()
     {
         GameManager.onPlayGame += SetupGamePlayCameras;
-        DeathEvents.OnDeathBegin += SwitchToDeathCamera;
-        GameManager.onGameOver += SwitchToEndCamera;
+        DeathEvents.OnDeathBegin += SetDeathCameraActive;
+        GameManager.onGameOver += SetEndCameraActive;
     }
 
     void OnDisable()
     {
         GameManager.onPlayGame -= SetupGamePlayCameras;
-        DeathEvents.OnDeathBegin -= SwitchToDeathCamera;
-        GameManager.onGameOver -= SwitchToEndCamera;
+        DeathEvents.OnDeathBegin -= SetDeathCameraActive;
+        GameManager.onGameOver -= SetEndCameraActive;
     }
 
     void Start()
@@ -62,8 +55,6 @@ public class CameraManager : SingletonPersistent<CameraManager>
 
     public void SetupGamePlayCameras()
     {
-        isCameraFlipEnabled = true;
-
         playerFollowTarget = Hangar.Instance.SelectedShip.transform;
         closeCamera.LookAt = farCamera.LookAt = deathCamera.LookAt = playerFollowTarget;
         closeCamera.Follow = farCamera.Follow = deathCamera.Follow = playerFollowTarget;
@@ -73,8 +64,6 @@ public class CameraManager : SingletonPersistent<CameraManager>
 
     public void SetupGamePlayCameras(Transform _transform)
     {
-        isCameraFlipEnabled = true;
-
         playerFollowTarget = _transform;
         closeCamera.LookAt = farCamera.LookAt = deathCamera.LookAt = playerFollowTarget;
         closeCamera.Follow = farCamera.Follow = deathCamera.Follow = playerFollowTarget;
@@ -82,26 +71,10 @@ public class CameraManager : SingletonPersistent<CameraManager>
         SetCloseCameraActive();
     }
 
-    void SwitchToDeathCamera()
-    {
-        isCameraFlipEnabled = false;
-
-        SetDeathCameraActive();
-    }
-
-    void SwitchToEndCamera()
-    {
-        isCameraFlipEnabled = false;
-        SetEndCameraActive();
-    }
-
     public void SetMainMenuCameraActive()
     {
-        isCameraFlipEnabled = false;
-
         SetActiveCamera(mainMenuCamera);
     }
-
     public void SetCloseCameraActive()
     {
         SetActiveCamera(closeCamera);
@@ -134,7 +107,9 @@ public class CameraManager : SingletonPersistent<CameraManager>
     {
         float CloseCamClipPlane = -CloseCamDistance / 5;
         float FarCamClipPlane = 5f;
-        if (lerper != null) StopCoroutine(lerper);
+        if (lerper != null) 
+            StopCoroutine(lerper);
+        
         lerper = StartCoroutine(Tools.LerpingCoroutine((transposer.m_FollowOffset.z - CloseCamDistance) / (FarCamDistance - CloseCamDistance),
             normalizedDistance, 1.5f, (i) =>
             {
@@ -158,7 +133,7 @@ public class CameraManager : SingletonPersistent<CameraManager>
             StopCoroutine(returnToNeutralCoroutine);
             returnToNeutralCoroutine = null;
         }
-        ZoomingOut = true;
+        zoomingOut = true;
         zoomOutCoroutine = StartCoroutine(ZoomOutCoroutine(growthRate));
     }
 
@@ -166,7 +141,7 @@ public class CameraManager : SingletonPersistent<CameraManager>
     {
         var vCam = closeCamera.VirtualCameraGameObject.GetComponent<CinemachineVirtualCamera>();
         var transposer = vCam.GetCinemachineComponent<CinemachineTransposer>();
-        while (ZoomingOut && transposer.m_FollowOffset.z > FarCamDistance)
+        while (zoomingOut && transposer.m_FollowOffset.z > FarCamDistance)
         {
             transposer.m_FollowOffset += Time.deltaTime * Mathf.Abs(growthRate) * -Vector3.forward;         
             yield return null;
@@ -180,7 +155,7 @@ public class CameraManager : SingletonPersistent<CameraManager>
             StopCoroutine(zoomOutCoroutine);
             zoomOutCoroutine = null;
         }
-        ZoomingOut = false;
+        zoomingOut = false;
         returnToNeutralCoroutine = StartCoroutine(ReturnToNeutralCoroutine(shrinkRate));
     }
 
@@ -197,6 +172,5 @@ public class CameraManager : SingletonPersistent<CameraManager>
             yield return null;
         }
         transposer.m_FollowOffset = new Vector3(0,0,CloseCamDistance);
-        //SetCloseCameraDistance(CloseCamDistance);
     }
 }

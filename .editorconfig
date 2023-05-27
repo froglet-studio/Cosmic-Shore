@@ -1,0 +1,4 @@
+﻿[*.cs]
+
+# UNT0013: Remove invalid SerializeField attribute
+dotnet_diagnostic.UNT0013.severity = none

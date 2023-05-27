@@ -1,8 +1,8 @@
-using UnityEngine;
-using UnityEngine.SceneManagement;
-using TailGlider.Utility.Singleton;
-using UnityEngine.Advertisements;
 using StarWriter.Core.IO;
+using StarWriter.Utility.Singleton;
+using UnityEngine;
+using UnityEngine.Advertisements;
+using UnityEngine.SceneManagement;
 
 namespace StarWriter.Core
 {
@@ -65,8 +65,6 @@ namespace StarWriter.Core
         {
             cameraManager = CameraManager.Instance;
             analyticsManager = AnalyticsManager.Instance;
-
-            DataPersistenceManager.Instance.LoadGameData();
         }
 
         public void OnClickTutorialButton()

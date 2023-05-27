@@ -1,5 +1,5 @@
-using System.Collections.Generic;
 using StarWriter.Core.IO;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace StarWriter.Core
@@ -27,8 +27,6 @@ namespace StarWriter.Core
         [SerializeField] GameObject OrientationHandle;
         [SerializeField] public List<GameObject> shipGeometries;
         [SerializeField] GameObject head;
-        
-        
 
         [Header("optional ship Components")]
         [SerializeField] GameObject AOEPrefab;
@@ -133,9 +131,9 @@ namespace StarWriter.Core
                 { InputEvents.RightStickAction, rightStickShipActions },
                 { InputEvents.FlipAction, flipShipActions },
                 { InputEvents.IdleAction, idleShipActions },
-               { InputEvents.Button1Action, button1ShipActions },
-               { InputEvents.Button2Action, button2ShipActions },
-               { InputEvents.Button3Action, button3ShipActions },
+                { InputEvents.Button1Action, button1ShipActions },
+                { InputEvents.Button2Action, button2ShipActions },
+                { InputEvents.Button3Action, button3ShipActions },
                 };
 
             foreach (var key in ShipControlActions.Keys)

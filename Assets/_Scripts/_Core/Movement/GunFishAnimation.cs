@@ -1,20 +1,16 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 class GunFishAnimation : ShipAnimation
 {
-
     [SerializeField] Transform Fusilage;
-
     [SerializeField] Transform LeftWing;
-
     [SerializeField] Transform RightWing;
 
     [SerializeField] float animationScaler = 25f;
     [SerializeField] float yawAnimationScaler = 80f;
     [SerializeField] float lerpAmount = 2f;
     [SerializeField] float smallLerpAmount = .7f;
+    [SerializeField] float brakeThreshold = .65f;
 
     public override void PerformShipAnimations(float pitch, float yaw, float roll, float throttle)
     {
@@ -24,7 +20,6 @@ class GunFishAnimation : ShipAnimation
                     Brake(throttle) * yawAnimationScaler,
                     -(throttle - yaw) * yawAnimationScaler,
                     (roll - pitch) * animationScaler);
-                    
 
         AnimatePart(RightWing,
                     Brake(throttle) * yawAnimationScaler,
@@ -57,10 +52,6 @@ class GunFishAnimation : ShipAnimation
 
     float Brake(float throttle)
     {
-        var brakeThreshold = .65f;
-        float newThrottle;
-        if (throttle < brakeThreshold) newThrottle = throttle - brakeThreshold;
-        else newThrottle = 0;
-        return newThrottle;
+        return throttle < brakeThreshold ? throttle - brakeThreshold : 0;
     }
 }

@@ -1,5 +1,5 @@
 ﻿using System.Collections;
-using TailGlider.Utility.Singleton;
+using StarWriter.Utility.Singleton;
 using UnityEngine;
 using UnityEngine.Audio;
 

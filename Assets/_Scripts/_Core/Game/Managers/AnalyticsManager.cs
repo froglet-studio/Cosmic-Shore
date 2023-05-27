@@ -1,5 +1,5 @@
-using TailGlider.Utility.Singleton;
 using Firebase;
+using StarWriter.Utility.Singleton;
 
 public class AnalyticsManager : SingletonPersistent<AnalyticsManager>
 {

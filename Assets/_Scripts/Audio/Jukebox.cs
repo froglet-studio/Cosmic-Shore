@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using TailGlider.Utility.Singleton;
+using StarWriter.Utility.Singleton;
 using UnityEngine;
 
 namespace StarWriter.Core.Audio
