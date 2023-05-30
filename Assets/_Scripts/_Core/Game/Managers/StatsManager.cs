@@ -1,10 +1,9 @@
-using System.Collections.Generic;
-using UnityEngine;
-using TMPro;
+using Newtonsoft.Json;
 using StarWriter.Core;
 using StarWriter.Utility.Singleton;
-using Newtonsoft.Json;
-using System;
+using System.Collections.Generic;
+using TMPro;
+using UnityEngine;
 
 // TODO: pull out into separate file
 [System.Serializable]
