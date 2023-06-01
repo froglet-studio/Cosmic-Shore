@@ -37,7 +37,7 @@ public class AnalyticsManager : SingletonPersistent<AnalyticsManager>
         }
     }
 
-    private void Initialize()
+    void Initialize()
     {
         // TODO: keeping analytics disabled for now until we get FireBase working on iOS
         /*

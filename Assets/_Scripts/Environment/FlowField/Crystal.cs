@@ -2,6 +2,7 @@ using UnityEngine;
 using System.Collections.Generic;
 using StarWriter.Core;
 using StarWriter.Core.Audio;
+using System;
 
 public class Crystal : MonoBehaviour
 {
@@ -118,7 +119,7 @@ public class Crystal : MonoBehaviour
 
         // Move the Crystal
         StartCoroutine(CrystalModel.GetComponent<FadeIn>().FadeInCoroutine());
-        transform.SetPositionAndRotation(Random.insideUnitSphere * sphereRadius + origin, Random.rotation);
+        transform.SetPositionAndRotation(UnityEngine.Random.insideUnitSphere * sphereRadius + origin, UnityEngine.Random.rotation);
         OnCrystalMove?.Invoke();
     }
 

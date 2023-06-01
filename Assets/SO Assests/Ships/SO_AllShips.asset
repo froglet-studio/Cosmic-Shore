@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 66b2d03a886ae694786cc67c764ad821, type: 3}
-  m_Name: AllShips
+  m_Name: SO_AllShips
   m_EditorClassIdentifier: 
   ShipList:
   - {fileID: 11400000, guid: 09bd6a7de2eab2c4692dba5c06738034, type: 2}

@@ -1,5 +1,4 @@
 using StarWriter.Core;
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -21,43 +20,24 @@ public class RiptideAnimation : ShipAnimation
     [SerializeField] Transform ThrusterLeft;
     [SerializeField] Transform ThrusterTopLeft;
 
-    public List<Transform> Transforms;
+    List<Transform> animationTransforms;
+    const float animationScaler = 25f;
+    const float exaggeratedAnimationScaler = 3 * animationScaler;
 
-    
-
-    static float animationScaler = 25f;
-    float exaggeratedAnimationScaler = 3 * animationScaler;
-
-    [SerializeField] float lerpAmount = 2f;
-    [SerializeField] float smallLerpAmount = .7f;
-
-    static Vector3 defaultThrusterPosition = new Vector3(0, .15f, -1.7f);
-    Vector3 backwardThrusterPosition = defaultThrusterPosition - new Vector3(0, 0, 0);
+    static Vector3 defaultThrusterPosition = new(0, .15f, -1.7f);
+    Vector3 backwardThrusterPosition = defaultThrusterPosition - new Vector3(0, 0, 0);  //TODO: P1 this is pointless
     Vector3 defaultWingPosition = Vector3.zero;
-    Vector3 forwardWingPosition = new Vector3(0, 0, 2.3f);
+    Vector3 forwardWingPosition = new(0, 0, 2.3f);
 
-    private void Start()
+    protected override void Start()
     {
+        base.Start();
         shipData = GetComponent<ShipData>();
-        Transforms.Add(DriftHandle);
-        Transforms.Add(NoseTop);
-        Transforms.Add(RightWing);
-        Transforms.Add(NoseBottom);
-        Transforms.Add(LeftWing);
-        Transforms.Add(ThrusterTopRight);
-        Transforms.Add(ThrusterRight);
-        Transforms.Add(ThrusterBottomRight);
-        Transforms.Add(ThrusterBottomLeft);
-        Transforms.Add(ThrusterLeft);
-        Transforms.Add(ThrusterTopLeft);
+        animationTransforms = new List<Transform>() { ThrusterTopRight, ThrusterRight, ThrusterBottomRight, ThrusterBottomLeft, ThrusterLeft, ThrusterTopLeft };
     }
 
-
-    public override void PerformShipAnimations(float pitch, float yaw, float roll, float throttle)
+    protected override void PerformShipAnimations(float pitch, float yaw, float roll, float throttle)
     {
-        // Ship animations TODO: figure out how to leverage a single definition for pitch, etc. that captures the gyro in the animations.
-        
-
         Vector3 wingPosition;
         Vector3 thrusterPosition;
 
@@ -67,15 +47,6 @@ public class RiptideAnimation : ShipAnimation
                     roll * animationScaler,
                     Vector3.zero);
 
-        //AnimatePart(NoseTop,
-        //            pitch * animationScaler,
-        //            yaw * animationScaler,
-        //            roll * animationScaler);
-
-        //AnimatePart(NoseBottom,
-        //            pitch * animationScaler,
-        //            yaw * animationScaler,
-        //            roll * animationScaler);
         if (shipData.Drifting)
         {
             DriftHandle.rotation = Quaternion.LookRotation(shipData.Course,transform.up);
@@ -90,7 +61,6 @@ public class RiptideAnimation : ShipAnimation
             ThrusterLeft.parent = DriftHandle;
             ThrusterTopLeft.parent = DriftHandle;
             thrusterPosition = backwardThrusterPosition;
-
         }
         else
         {
@@ -112,7 +82,6 @@ public class RiptideAnimation : ShipAnimation
                     (yaw + throttle) * exaggeratedAnimationScaler,
                     (roll + pitch) * animationScaler,
                     wingPosition);
-
         
         AnimatePart(LeftWing,
                     Brake(throttle) * animationScaler,
@@ -120,73 +89,33 @@ public class RiptideAnimation : ShipAnimation
                     (roll - pitch) * animationScaler,
                     wingPosition);
 
-        AnimatePart(ThrusterTopRight,
-                    pitch * exaggeratedAnimationScaler,
-                    yaw * exaggeratedAnimationScaler,
-                    roll * exaggeratedAnimationScaler,
-                    thrusterPosition);
-
-
-        AnimatePart(ThrusterRight,
-                    pitch * exaggeratedAnimationScaler,
-                    yaw * exaggeratedAnimationScaler,
-                    roll * exaggeratedAnimationScaler,
-                    thrusterPosition);
-
-        AnimatePart(ThrusterBottomRight,
-                    pitch * exaggeratedAnimationScaler,
-                    yaw * exaggeratedAnimationScaler,
-                    roll * exaggeratedAnimationScaler,
-                    thrusterPosition);
+        var pitchScalar = pitch * exaggeratedAnimationScaler;
+        var yawScalar = yaw * exaggeratedAnimationScaler;
+        var rollScalar = roll * exaggeratedAnimationScaler;
         
-        AnimatePart(ThrusterBottomLeft,
-                    pitch * exaggeratedAnimationScaler,
-                    yaw * exaggeratedAnimationScaler,
-                    roll * exaggeratedAnimationScaler,
-                    thrusterPosition);
-        
-        AnimatePart(ThrusterLeft,
-                    pitch * exaggeratedAnimationScaler,
-                    yaw * exaggeratedAnimationScaler,
-                    roll * exaggeratedAnimationScaler,
-                    thrusterPosition);
-
-        AnimatePart(ThrusterTopLeft,
-                    pitch * exaggeratedAnimationScaler,
-                    yaw * exaggeratedAnimationScaler,
-                    roll * exaggeratedAnimationScaler,
-                    thrusterPosition);
+        foreach (var part in animationTransforms)
+            AnimatePart(part, pitchScalar, yawScalar, rollScalar, thrusterPosition);
     }
 
-    public override void Idle()
+    void AnimatePart(Transform part, float pitch, float yaw, float roll, Vector3 position)
     {
-        foreach (Transform transform in Transforms)
-        {
-            resetAnimation(transform);
-        }
+        base.AnimatePart(part, pitch, yaw, roll);
+
+        part.localPosition = Vector3.Lerp(part.localPosition, position, lerpAmount * Time.deltaTime);
     }
 
-    void resetAnimation(Transform part) {part.localRotation = Quaternion.Lerp(part.localRotation, Quaternion.identity, smallLerpAmount * Time.deltaTime); }
-
-
-    void AnimatePart(Transform part, float partPitch, float partYaw, float partRoll, Vector3 partPosition)
+    protected override void AssignTransforms()
     {
-        part.localRotation = Quaternion.Lerp(
-                                    part.localRotation,
-                                    Quaternion.Euler(
-                                        partPitch,
-                                        partYaw,
-                                        partRoll),
-                                    lerpAmount * Time.deltaTime);
-        part.localPosition = Vector3.Lerp(part.localPosition, partPosition, lerpAmount * Time.deltaTime);
-    }
-
-    float Brake(float throttle)
-    {
-        var brakeThreshold = .65f;
-        float newThrottle;
-        if (throttle < brakeThreshold) newThrottle = throttle - brakeThreshold;
-        else newThrottle = 0;
-        return newThrottle;
+        Transforms.Add(DriftHandle);
+        Transforms.Add(NoseTop);
+        Transforms.Add(RightWing);
+        Transforms.Add(NoseBottom);
+        Transforms.Add(LeftWing);
+        Transforms.Add(ThrusterTopRight);
+        Transforms.Add(ThrusterRight);
+        Transforms.Add(ThrusterBottomRight);
+        Transforms.Add(ThrusterBottomLeft);
+        Transforms.Add(ThrusterLeft);
+        Transforms.Add(ThrusterTopLeft);
     }
 }

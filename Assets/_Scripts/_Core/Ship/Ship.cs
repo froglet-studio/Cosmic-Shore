@@ -14,11 +14,11 @@ namespace StarWriter.Core
         [HideInInspector] public InputController InputController;
         [HideInInspector] public ResourceSystem ResourceSystem;
 
-        [Header("ship Meta")]
+        [Header("Ship Meta")]
         [SerializeField] string Name;
         [SerializeField] public ShipTypes ShipType;
 
-        [Header("ship Components")]
+        [Header("Ship Components")]
         [HideInInspector] public TrailSpawner TrailSpawner;
         [HideInInspector] public ShipController ShipController;
         [HideInInspector] public AIPilot AutoPilot;
@@ -28,7 +28,7 @@ namespace StarWriter.Core
         [SerializeField] public List<GameObject> shipGeometries;
         [SerializeField] GameObject head;
 
-        [Header("optional ship Components")]
+        [Header("Optional Ship Components")]
         [SerializeField] GameObject AOEPrefab;
         [SerializeField] Skimmer farFieldSkimmer;
 

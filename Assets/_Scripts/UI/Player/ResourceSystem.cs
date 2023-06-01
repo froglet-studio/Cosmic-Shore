@@ -16,7 +16,6 @@ namespace StarWriter.Core
 
     public class ResourceSystem : MonoBehaviour
     {
-
         [SerializeField] List<ResourceType> Resources;
         [SerializeField] bool usesBoost;
         [SerializeField] bool usesLevels;
@@ -130,10 +129,10 @@ namespace StarWriter.Core
             }
         }
 
-        public ChargeDisplay BoostDisplay;
-        public ChargeDisplay LevelDisplay;
-        public ChargeDisplay AmmoDisplay;
-        public ChargeDisplay ChargeDisplay;
+        [HideInInspector] public ChargeDisplay BoostDisplay;
+        [HideInInspector] public ChargeDisplay LevelDisplay;
+        [HideInInspector] public ChargeDisplay AmmoDisplay;
+        [HideInInspector] public ChargeDisplay ChargeDisplay;
 
         ShipData shipData;
 
@@ -143,7 +142,7 @@ namespace StarWriter.Core
             shipData = GetComponent<ShipData>();
         }
 
-        private void Update()
+        void Update()
         {
             if (shipData.ElevatedAmmoGain) ChangeAmmoAmount(Time.deltaTime * elevatedAmmoGainRate);
             else if (gainsAmmo) ChangeAmmoAmount(Time.deltaTime * ammoGainRate);
@@ -153,15 +152,12 @@ namespace StarWriter.Core
         {
             yield return new WaitForSeconds(.2f);
 
-
-            if (usesBoost) ResetBoost();
-            else BoostDisplay?.gameObject.SetActive(false);
-            if (usesLevels) ResetLevel();
-            else LevelDisplay?.gameObject.SetActive(false);
-            if (usesAmmo) ResetAmmo();
-            else AmmoDisplay?.gameObject.SetActive(false);
-            if (usesCharge) ResetAmmo();
-            else ChargeDisplay?.gameObject.SetActive(false);
+            Reset();
+            
+            BoostDisplay?.gameObject.SetActive(usesBoost);
+            LevelDisplay?.gameObject.SetActive(usesLevels);
+            AmmoDisplay?.gameObject.SetActive(usesAmmo);
+            ChargeDisplay?.gameObject.SetActive(usesCharge);
         }
 
         public void Reset()
@@ -185,7 +181,7 @@ namespace StarWriter.Core
             CurrentAmmo = initialAmmo;
         }
 
-         public void ResetCharge()
+        public void ResetCharge()
         {
             CurrentCharge = initialCharge;
         }

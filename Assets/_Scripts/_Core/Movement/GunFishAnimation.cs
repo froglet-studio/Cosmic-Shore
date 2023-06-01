@@ -8,14 +8,9 @@ class GunFishAnimation : ShipAnimation
 
     [SerializeField] float animationScaler = 25f;
     [SerializeField] float yawAnimationScaler = 80f;
-    [SerializeField] float lerpAmount = 2f;
-    [SerializeField] float smallLerpAmount = .7f;
-    [SerializeField] float brakeThreshold = .65f;
 
-    public override void PerformShipAnimations(float pitch, float yaw, float roll, float throttle)
+    protected override void PerformShipAnimations(float pitch, float yaw, float roll, float throttle)
     {
-        // Ship animations TODO: figure out how to leverage a single definition for pitch, etc. that captures the gyro in the animations.
-
         AnimatePart(LeftWing,
                     Brake(throttle) * yawAnimationScaler,
                     -(throttle - yaw) * yawAnimationScaler,
@@ -32,26 +27,10 @@ class GunFishAnimation : ShipAnimation
                     roll * animationScaler);
     }
 
-    public override void Idle()
+    protected override void AssignTransforms()
     {
-        LeftWing.localRotation = Quaternion.Lerp(LeftWing.localRotation, Quaternion.identity, smallLerpAmount * Time.deltaTime);
-        RightWing.localRotation = Quaternion.Lerp(RightWing.localRotation, Quaternion.identity, smallLerpAmount * Time.deltaTime);
-        Fusilage.localRotation = Quaternion.Lerp(Fusilage.localRotation, Quaternion.identity, smallLerpAmount * Time.deltaTime);
-    }
-
-    void AnimatePart(Transform part, float partPitch, float partYaw, float partRoll)
-    {
-        part.localRotation = Quaternion.Lerp(
-                                    part.localRotation,
-                                    Quaternion.Euler(
-                                        partPitch,
-                                        partYaw,
-                                        partRoll),  
-                                    lerpAmount * Time.deltaTime);
-    }
-
-    float Brake(float throttle)
-    {
-        return throttle < brakeThreshold ? throttle - brakeThreshold : 0;
+        Transforms.Add(Fusilage);
+        Transforms.Add(LeftWing);
+        Transforms.Add(RightWing);
     }
 }

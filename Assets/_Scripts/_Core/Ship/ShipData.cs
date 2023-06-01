@@ -11,7 +11,6 @@ namespace StarWriter.Core
         public bool BoostCharging = false;
         public bool BoostDecaying = false;
         public bool Drifting = false;
-        public bool LayingBulletTrail = false;
         public bool Portrait = false;
         public bool ShowThreeButtonPanel = false;
         public bool LiveProjectiles = false;
@@ -32,12 +31,9 @@ namespace StarWriter.Core
             BoostCharging = false;
             BoostDecaying = false;
             Drifting = false;
-            LayingBulletTrail = false;
             Attached = false;
             AttachedTrailBlock = null;
             GunsActive = false;
-            //InputSpeed = 1;
-            //SpeedMultiplier = 1;
             Course = transform.forward;
         }
     }
