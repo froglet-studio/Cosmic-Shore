@@ -5,14 +5,6 @@ using System.Collections.Generic;
 
 namespace StarWriter.Core
 {
-    // TODO: P1 move to enum folder
-    public enum ResourceType
-    {
-        Charge,
-        Ammunition,
-        Boost,
-        Level
-    }
 
     public class ResourceSystem : MonoBehaviour
     {
@@ -25,7 +17,6 @@ namespace StarWriter.Core
         [SerializeField] bool gainsAmmo = false;
         [SerializeField] float ammoGainRate = .01f;
         [SerializeField] float elevatedAmmoGainRate = .03f;
-
 
         [Tooltip("Max boost level from 0-1")]
         [SerializeField]
@@ -129,17 +120,21 @@ namespace StarWriter.Core
             }
         }
 
-        [HideInInspector] public ChargeDisplay BoostDisplay;
-        [HideInInspector] public ChargeDisplay LevelDisplay;
-        [HideInInspector] public ChargeDisplay AmmoDisplay;
-        [HideInInspector] public ChargeDisplay ChargeDisplay;
+        [HideInInspector] public ResourceDisplay BoostDisplay;
+        [HideInInspector] public ResourceDisplay LevelDisplay;
+        [HideInInspector] public ResourceDisplay AmmoDisplay;
+        [HideInInspector] public ResourceDisplay ChargeDisplay;
+        [HideInInspector] public ResourceDisplay MassDisplay;
+        [HideInInspector] public ResourceDisplay SpaceTimeDisplay;
 
+        public static readonly float OneFuelUnit = 1 / 10f;
         ShipData shipData;
 
         void Start()
         {
-            StartCoroutine(LateStart());
             shipData = GetComponent<ShipData>();
+
+            StartCoroutine(LateStart());
         }
 
         void Update()
@@ -185,6 +180,14 @@ namespace StarWriter.Core
         {
             CurrentCharge = initialCharge;
         }
+        public void ResetMass()
+        {
+            CurrentCharge = initialCharge;
+        }
+        public void ResetSpaceTime()
+        {
+            CurrentCharge = initialCharge;
+        }
 
         public void ChangeBoostAmount(float amount)
         {
@@ -204,6 +207,75 @@ namespace StarWriter.Core
         public void ChangeChargeAmount(float amount)
         {
             CurrentCharge = Mathf.Clamp(currentCharge + amount, 0, maxCharge);
+        }
+
+
+        /*
+         * TODO: we may want to move everything below this line to a new component
+         */
+        [HideInInspector] public ResourceDisplay ChargeLevelDisplay;
+        [HideInInspector] public ResourceDisplay MassLevelDisplay;
+        [HideInInspector] public ResourceDisplay SpaceTimeLevelDisplay;
+        const int MaxChargeLevel = 10;
+        const int MaxMassLevel = 10;
+        const int MaxSpaceTimeLevel = 10;
+        public int InitialChargeLevel = 0;
+        public int InitialMassLevel = 0;
+        public int InitialSpaceTimeLevel = 0;
+        int chargeLevel;
+        int massLevel;
+        int spaceTimeLevel;
+
+        public int ChargeLevel
+        {
+            get => chargeLevel;
+            private set
+            {
+                chargeLevel = value;
+
+                if (ChargeLevelDisplay != null)
+                    ChargeLevelDisplay.UpdateDisplay(chargeLevel);
+            }
+        }
+        public int MassLevel
+        {
+            get => massLevel;
+            private set
+            {
+                massLevel = value;
+
+                if (MassLevelDisplay != null)
+                    MassLevelDisplay.UpdateDisplay(massLevel);
+            }
+        }
+        public int SpaceTimeLevel
+        {
+            get => spaceTimeLevel;
+            private set
+            {
+                spaceTimeLevel = value;
+
+                if (SpaceTimeLevelDisplay != null)
+                    SpaceTimeLevelDisplay.UpdateDisplay(spaceTimeLevel);
+            }
+        }
+        public void InitializeElementLevels()
+        {
+            chargeLevel = InitialChargeLevel;
+            massLevel = InitialMassLevel;
+            spaceTimeLevel = InitialSpaceTimeLevel;
+        }
+        public void IncrementChargeLevel()
+        {
+            chargeLevel = Math.Clamp(chargeLevel + 1, 0, MaxChargeLevel);
+        }
+        public void IncrementMassLevel()
+        {
+            massLevel = Math.Clamp(massLevel + 1, 0, MaxMassLevel);
+        }
+        public void IncrementSpaceTimeLevel()
+        {
+            spaceTimeLevel = Math.Clamp(spaceTimeLevel + 1, 0, MaxSpaceTimeLevel);
         }
     }
 }

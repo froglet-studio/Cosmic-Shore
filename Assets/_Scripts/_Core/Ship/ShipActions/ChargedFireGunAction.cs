@@ -1,5 +1,4 @@
 using StarWriter.Core;
-using System;
 using System.Collections;
 using UnityEngine;
 
@@ -7,6 +6,7 @@ public class ChargedFireGunAction : ShipActionAbstractBase
 {
     // TODO: WIP gun firing needs to be reworked
     [SerializeField] Gun gun;
+    [SerializeField] float chargePerSecond = 1;
 
     ResourceSystem resourceSystem;
     ShipData shipData;
@@ -17,7 +17,6 @@ public class ChargedFireGunAction : ShipActionAbstractBase
     public Vector3 BlockScale = new(4f, 4f, 1f); // TODO: Get rid of the need for this.
     
     float charge = 0;
-    [SerializeField] float chargePerSecond = 1;
     Coroutine gainCharge;
 
     void Start()
@@ -52,23 +51,18 @@ public class ChargedFireGunAction : ShipActionAbstractBase
             shipData.LiveProjectiles = true;
             yield return null;
         }
+
         shipData.LiveProjectiles = false;
     }
 
-    private void StartCheckProjectiles()
+    void StartCheckProjectiles()
     {
-        StopCheckProjectiles();
+        if (checkProjectiles != null)
+            StopCoroutine(checkProjectiles);
+
         checkProjectiles = StartCoroutine(CheckProjectiles());
     }
 
-    private void StopCheckProjectiles()
-    {
-        if (checkProjectiles != null)
-        {
-            StopCoroutine(checkProjectiles);
-            checkProjectiles = null;
-        }
-    }
 
     public override void StopAction()
     {
@@ -90,6 +84,7 @@ public class ChargedFireGunAction : ShipActionAbstractBase
                 gun.FireGun(projectileContainer.transform, 90, inheritedVelocity * shipData.Speed, ProjectileScale*charge, BlockScale * 2, true, float.MaxValue, charge);
                 StartCheckProjectiles();
             }
+
             charge = 0;
             resourceSystem.ResetCharge();
         }

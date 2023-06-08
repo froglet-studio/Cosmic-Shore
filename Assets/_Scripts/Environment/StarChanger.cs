@@ -6,9 +6,9 @@ public class StarChanger : MonoBehaviour
 
     Material starMaterial;
     Vector3 crystalPosition;
-    Color green = new Color(0, .4f, .6f);
-    Color blue = new Color(.18f, .18f, .58f);
-    Color red = new Color(.28f, 0, .52f);
+    Color green = new(0, .4f, .6f);
+    Color blue = new(.18f, .18f, .58f);
+    Color red = new(.28f, 0, .52f);
     Color starColor;
     Color fuelColor;
 

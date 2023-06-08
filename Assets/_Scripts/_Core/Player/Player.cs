@@ -12,10 +12,13 @@ public class Player : MonoBehaviour
     [SerializeField] GameObject shipContainer;
 
     [Header("HUD Containers")]
-    [SerializeField] ChargeDisplay boostDisplay;
-    [SerializeField] ChargeDisplay levelDisplay;
-    [SerializeField] ChargeDisplay ammoDisplay;
-    [SerializeField] ChargeDisplay chargeDisplay;
+    [SerializeField] ResourceDisplay boostDisplay;
+    [SerializeField] ResourceDisplay levelDisplay;
+    [SerializeField] ResourceDisplay ammoDisplay;
+    [SerializeField] ResourceDisplay chargeDisplay;
+    [SerializeField] ResourceDisplay ChargeLevelDisplay;
+    [SerializeField] ResourceDisplay MassLevelDisplay;
+    [SerializeField] ResourceDisplay SpaceTimeLevelDisplay;
 
 
     public Teams Team;
@@ -65,49 +68,42 @@ public class Player : MonoBehaviour
             case "PlayerFour":
                 Debug.Log($"Player.Start - Instantiate Ship: {PlayerName}");
                 Ship shipInstance = Hangar.Instance.LoadPlayerShip(defaultShip, Team);
-                shipInstance.transform.SetParent(shipContainer.transform, false);
-                shipInstance.GetComponent<AIPilot>().enabled = false;
-
-                var inputController = GetComponent<InputController>();
-                inputController.ship = shipInstance;
-
-                ship = shipInstance.GetComponent<Ship>();
-                ship.Team = Team;
-                ship.Player = this;
-
-                if (boostDisplay != null)
-                    ship.ResourceSystem.BoostDisplay = boostDisplay;
-                if (levelDisplay != null)
-                    ship.ResourceSystem.LevelDisplay = levelDisplay;
-                if (ammoDisplay != null)
-                    ship.ResourceSystem.AmmoDisplay = ammoDisplay;
-                if (chargeDisplay != null)
-                    ship.ResourceSystem.ChargeDisplay = chargeDisplay;
-
+                SetupPlayerShip(shipInstance);
                 break;
             default: // Single player game 
+                Debug.Log($"Player.Start - Instantiate Ship: Single Player");
                 Ship shipInstance_ = Hangar.Instance.LoadPlayerShip();
-                shipInstance_.transform.SetParent(shipContainer.transform, false);
-                shipInstance_.GetComponent<AIPilot>().enabled = false;
-
-                var inputController_ = GetComponent<InputController>();
-                inputController_.ship = shipInstance_;
-
-                ship = shipInstance_.GetComponent<Ship>();
-                ship.Team = Team;
-                ship.Player = this;
-
-                if (boostDisplay != null)
-                    ship.ResourceSystem.BoostDisplay = boostDisplay;
-                if (levelDisplay != null)
-                    ship.ResourceSystem.LevelDisplay = levelDisplay;
-                if (ammoDisplay != null)
-                    ship.ResourceSystem.AmmoDisplay = ammoDisplay;
-                if (chargeDisplay != null)
-                    ship.ResourceSystem.ChargeDisplay = chargeDisplay;
-
+                SetupPlayerShip(shipInstance_);
                 gameManager.WaitOnPlayerLoading();
                 break;
+        }
+
+        void SetupPlayerShip(Ship shipInstance)
+        {
+            shipInstance.transform.SetParent(shipContainer.transform, false);
+            shipInstance.GetComponent<AIPilot>().enabled = false;
+
+            var inputController = GetComponent<InputController>();
+            inputController.ship = shipInstance;
+
+            ship = shipInstance.GetComponent<Ship>();
+            ship.Team = Team;
+            ship.Player = this;
+
+            if (boostDisplay != null)
+                ship.ResourceSystem.BoostDisplay = boostDisplay;
+            if (levelDisplay != null)
+                ship.ResourceSystem.LevelDisplay = levelDisplay;
+            if (ammoDisplay != null)
+                ship.ResourceSystem.AmmoDisplay = ammoDisplay;
+            if (chargeDisplay != null)
+                ship.ResourceSystem.ChargeDisplay = chargeDisplay;
+            if (ChargeLevelDisplay != null)
+                ship.ResourceSystem.ChargeLevelDisplay = ChargeLevelDisplay;
+            if (MassLevelDisplay != null)
+                ship.ResourceSystem.MassLevelDisplay = MassLevelDisplay;
+            if (SpaceTimeLevelDisplay != null)
+                ship.ResourceSystem.SpaceTimeLevelDisplay = SpaceTimeLevelDisplay;
         }
     }
 }

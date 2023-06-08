@@ -11,6 +11,7 @@ namespace StarWriter.Core.HangerBuilder
         Teams AITeam;
 
         [SerializeField] Teams PlayerTeam = Teams.Green;
+        [SerializeField] SO_Pilot PlayerPilot;  // Serialized for inspection in hierarchy
         [SerializeField] ShipTypes PlayerShipType = ShipTypes.Random;
         [SerializeField] ShipTypes FriendlyAIShipType = ShipTypes.Manta;
         [SerializeField] ShipTypes HostileAI1ShipType = ShipTypes.MantaAI;
@@ -43,10 +44,9 @@ namespace StarWriter.Core.HangerBuilder
         Dictionary<Teams, Material> TeamAOEExplosionMaterials;
         Dictionary<Teams, Material> TeamAOEConicExplosionMaterials;
 
-        Dictionary<string, Ship> ships = new Dictionary<string, Ship>();
-        Dictionary<ShipTypes, Ship> shipTypeMap = new Dictionary<ShipTypes, Ship>();
+        Dictionary<string, Ship> ships = new();
+        Dictionary<ShipTypes, Ship> shipTypeMap = new();
 
-        [SerializeField] int SelectedBayIndex = 0;
         [SerializeField] public List<Ship> ShipPrefabs;
 
         readonly string SelectedShipPlayerPrefKey = "SelectedShip";
@@ -56,6 +56,11 @@ namespace StarWriter.Core.HangerBuilder
             Debug.Log($"Hangar.SetPlayerShip: {(ShipTypes)shipType}");
             PlayerShipType = (ShipTypes)shipType;
             PlayerPrefs.SetInt(SelectedShipPlayerPrefKey, shipType);
+        }
+
+        public void SetPlayerPilot(SO_Pilot pilot)
+        {
+            PlayerPilot = pilot;
         }
 
         public ShipTypes GetPlayerShip()
@@ -73,8 +78,6 @@ namespace StarWriter.Core.HangerBuilder
         }
 
         public Ship SelectedShip { get; private set; }
-        public int BayIndex { get => SelectedBayIndex; }
-
         public override void Awake()
         {
             base.Awake();
@@ -135,21 +138,14 @@ namespace StarWriter.Core.HangerBuilder
                 PlayerShipType = (ShipTypes)values.GetValue(random.Next(values.Length));
             }
 
-            Ship ship = Instantiate(shipTypeMap[PlayerShipType]);
-            ship.SetShipMaterial(TeamsMaterials[PlayerTeam]);
-            ship.SetBlockMaterial(TeamBlockMaterials[PlayerTeam]);
-            ship.SetShieldedBlockMaterial(TeamShieldedBlockMaterials[PlayerTeam]);
-            ship.SetAOEExplosionMaterial(TeamAOEExplosionMaterials[PlayerTeam]);
-            ship.SetAOEConicExplosionMaterial(TeamAOEConicExplosionMaterials[PlayerTeam]);
-
-            SelectedShip = ship;
-
-            return ship;
+            return LoadPlayerShip(PlayerShipType, PlayerTeam);
         }
 
         public Ship LoadPlayerShip(ShipTypes shipType, Teams team)
         {
             Ship ship = Instantiate(shipTypeMap[shipType]);
+
+            ship.SetPilot(PlayerPilot);
             ship.SetShipMaterial(TeamsMaterials[team]);
             ship.SetBlockMaterial(TeamBlockMaterials[team]);
             ship.SetShieldedBlockMaterial(TeamShieldedBlockMaterials[team]);

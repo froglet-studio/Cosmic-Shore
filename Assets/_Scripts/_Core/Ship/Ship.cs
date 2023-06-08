@@ -81,6 +81,7 @@ namespace StarWriter.Core
         public Material AOEConicExplosionMaterial;
         float speedModifierDuration = 2f;
         float abilityStartTime;
+        SO_Pilot pilot;
 
         Teams team;
         public Teams Team 
@@ -267,6 +268,16 @@ namespace StarWriter.Core
                 collider.enabled = enabled;
         }
 
+        public void SetPilot(SO_Pilot pilot)
+        {
+            this.pilot = pilot;
+            ResourceSystem.InitialChargeLevel = pilot.InitialCharge;
+            ResourceSystem.InitialMassLevel = pilot.InitialMass;
+            ResourceSystem.InitialSpaceTimeLevel = pilot.InitialSpaceTime;
+
+            ResourceSystem.InitializeElementLevels();
+        }
+
         public void SetShipMaterial(Material material)
         {
             ShipMaterial = material;
@@ -369,13 +380,13 @@ namespace StarWriter.Core
 
         void IncrementLevel()
         {
-            ResourceSystem.ChangeLevel(ChargeDisplay.OneFuelUnit);
+            ResourceSystem.ChangeLevel(ResourceSystem.OneFuelUnit);
             UpdateLevel();
         }
 
         void DecrementLevel()
         {
-            ResourceSystem.ChangeLevel(-ChargeDisplay.OneFuelUnit);
+            ResourceSystem.ChangeLevel(-ResourceSystem.OneFuelUnit);
             UpdateLevel();
         }
 

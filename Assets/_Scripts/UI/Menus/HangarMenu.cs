@@ -1,9 +1,15 @@
-using StarWriter.Core;
 using StarWriter.Core.HangerBuilder;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+
+public enum PilotElement
+{
+    Charge = 1,
+    Mass = 2,
+    SpaceTime = 3,
+}
 
 public class HangarMenu : MonoBehaviour
 {
@@ -21,6 +27,7 @@ public class HangarMenu : MonoBehaviour
 
     List<SO_Ship> Ships;
     SO_Ship SelectedShip;
+    SO_Pilot SelectedPilot;
     SO_ShipAbility SelectedAbility;
 
     void Start()
@@ -132,6 +139,25 @@ public class HangarMenu : MonoBehaviour
 
         // populate the games list with the one's games
         PopulateAbilitySelectionList();
+    }
+
+    public void SelectPilot(int elementInt)
+    {
+        var element = (PilotElement)elementInt;
+        switch (element)
+        {
+            case PilotElement.Charge:
+                SelectedPilot = SelectedShip.ChargePilot;
+                break;
+            case PilotElement.Mass:
+                SelectedPilot = SelectedShip.MassPilot;
+                break;
+            case PilotElement.SpaceTime:
+                SelectedPilot = SelectedShip.SpaceTimePilot;
+                break;
+        }
+
+        Hangar.Instance.SetPlayerPilot(SelectedPilot);
     }
 
     public void SelectAbility(int index)

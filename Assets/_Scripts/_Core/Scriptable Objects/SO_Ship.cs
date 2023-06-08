@@ -13,6 +13,9 @@ public class SO_Ship : ScriptableObject
     [SerializeField] public Sprite SelectedIcon;
     [SerializeField] public Sprite TrailPreviewImage;
     [SerializeField] public Sprite PreviewImage;
+    [SerializeField] public SO_Pilot ChargePilot;
+    [SerializeField] public SO_Pilot MassPilot;
+    [SerializeField] public SO_Pilot SpaceTimePilot;
     [SerializeField] public List<SO_ShipAbility> Abilities;
     [SerializeField] public List<SO_MiniGame> MiniGames;
 }
