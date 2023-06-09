@@ -19,6 +19,9 @@ MonoBehaviour:
   SelectedIcon: {fileID: 21300000, guid: f789f5fc2efa3eb45a2ee8127775a7fd, type: 3}
   TrailPreviewImage: {fileID: 21300000, guid: 2e75f6670391025489d30c8361fb8de3, type: 3}
   PreviewImage: {fileID: 21300000, guid: 36d843333c8983047900532e41e0fd07, type: 3}
+  ChargePilot: {fileID: 11400000, guid: 6d520cd7eb8878b4aa2551e0591bc08d, type: 2}
+  MassPilot: {fileID: 11400000, guid: 2e5f4ffcc1432904db324d970ab221c4, type: 2}
+  SpaceTimePilot: {fileID: 11400000, guid: 33dfe353bacfe9741a371ea3deaba88e, type: 2}
   Abilities:
   - {fileID: 11400000, guid: cf4c7963673545946af80618f5a52917, type: 2}
   - {fileID: 11400000, guid: 260209c83d5be594a81043ebceea8ddf, type: 2}

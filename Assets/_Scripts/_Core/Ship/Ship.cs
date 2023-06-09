@@ -135,7 +135,7 @@ namespace StarWriter.Core
                 { InputEvents.Button1Action, button1ShipActions },
                 { InputEvents.Button2Action, button2ShipActions },
                 { InputEvents.Button3Action, button3ShipActions },
-                };
+            };
 
             foreach (var key in ShipControlActions.Keys)
                 foreach (var shipAction in ShipControlActions[key])
