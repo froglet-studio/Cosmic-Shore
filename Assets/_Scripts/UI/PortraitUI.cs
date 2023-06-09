@@ -7,13 +7,13 @@ public class PortraitUI : MonoBehaviour
     [SerializeField] Player player;
     RectTransform rectTransform;
 
-    [SerializeField] Vector2 portraitAnchorMin;
-    [SerializeField] Vector2 portraitAnchorMax;
     [SerializeField] Vector2 anchorMin;
     [SerializeField] Vector2 anchorMax;
-    [SerializeField] Vector2 portraitPosition;
     [SerializeField] Vector2 position;
-
+    [SerializeField] Vector2 portraitAnchorMin;
+    [SerializeField] Vector2 portraitAnchorMax;
+    [SerializeField] Vector2 portraitPosition;
+    
     // Start is called before the first frame update
     void Start()
     {

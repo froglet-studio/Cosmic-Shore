@@ -145,7 +145,9 @@ namespace StarWriter.Core.HangerBuilder
         {
             Ship ship = Instantiate(shipTypeMap[shipType]);
 
-            ship.SetPilot(PlayerPilot);
+            if (PlayerPilot != null)
+                ship.SetPilot(PlayerPilot);
+
             ship.SetShipMaterial(TeamsMaterials[team]);
             ship.SetBlockMaterial(TeamBlockMaterials[team]);
             ship.SetShieldedBlockMaterial(TeamShieldedBlockMaterials[team]);

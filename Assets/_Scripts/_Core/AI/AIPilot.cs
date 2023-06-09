@@ -98,7 +98,6 @@ namespace StarWriter.Core.IO
 
         void Update()
         {
-
             Vector3 distance = CrystalTransform.position - transform.position;
             Vector3 desiredDirection = distance.normalized;
 

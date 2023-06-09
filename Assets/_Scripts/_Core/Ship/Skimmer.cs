@@ -192,8 +192,7 @@ namespace StarWriter.Core
                 if (!ship.InputController.AutoPilotEnabled && cameraManager != null) cameraManager.SetNormalizedCameraDistance(normalizedDistance);
 
                 minMatureBlockDistance = Mathf.Infinity;
-            } 
-            
+            }
         }
 
         IEnumerator DisplaySkimParticleEffectCoroutine(TrailBlock trailBlock)
