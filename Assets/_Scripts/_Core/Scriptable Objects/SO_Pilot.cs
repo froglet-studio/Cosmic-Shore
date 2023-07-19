@@ -11,7 +11,6 @@ public class SO_Pilot : ScriptableObject
     [SerializeField] public Sprite Image;
     [SerializeField] public int InitialMass;
     [SerializeField] public int InitialCharge;
-    [FormerlySerializedAs("InitialSpaceTime")]
     [SerializeField] public int InitialSpace;
     [SerializeField] public int InitialTime;
 }

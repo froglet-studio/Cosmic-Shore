@@ -19,7 +19,6 @@ public class Player : MonoBehaviour
     [SerializeField] ResourceDisplay chargeDisplay;
     [SerializeField] ResourceDisplay ChargeLevelDisplay;
     [SerializeField] ResourceDisplay MassLevelDisplay;
-    [FormerlySerializedAs("SpaceTimeLevelDisplay")]
     [SerializeField] ResourceDisplay SpaceLevelDisplay;
     [SerializeField] ResourceDisplay TimeLevelDisplay;
 

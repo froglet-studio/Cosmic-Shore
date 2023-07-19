@@ -386,7 +386,10 @@ public class StatsManager : Singleton<StatsManager>
         //Calculate  and display winner
         var finalScore = teamStats[Teams.Green].volumeRemaining - teamStats[Teams.Red].volumeRemaining;
         var winner = finalScore > 0 ? "Green" : "Red";
-        WinnerText.text = winner;
+        if (WinnerText != null)
+            WinnerText.text = winner;
+        else
+            Debug.Log($"Winner: {winner}");
 
         //var container0 = EndOfRoundStatContainers[0];
         //container0.transform.GetChild(4).GetComponent<TMP_Text>().text = (teamStats[Teams.Green].volumeRemaining - teamStats[Teams.Red].volumeRemaining).ToString("F0");
