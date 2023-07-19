@@ -8,27 +8,39 @@ namespace StarWriter.Core.IO
     {
         public int DifficultyLevel;
 
-        public float defaultThrottle = .6f;
-        public float defaultAggressiveness = .035f;
+        //public float defaultThrottle = .6f;
+        [SerializeField] float defaultThrottleHigh = .6f;
+        [SerializeField] float defaultThrottleLow  = .6f;
 
-        public float throttleIncrease = .001f;
-        public float aggressivenessIncrease = .001f;
+        //public float defaultAggressiveness = .035f;
+        [SerializeField] float defaultAggressivenessHigh = .035f;
+        [SerializeField] float defaultAggressivenessLow  = .035f;
 
-        public float throttle;
-        public float aggressiveness = .1f;
+        //public float throttleIncrease = .001f;
+        [SerializeField] float throttleIncreaseHigh = .001f;
+        [SerializeField] float throttleIncreaseLow  = .001f;
 
-        public float avoidance = 2.5f;
+        //public float avoidance = 2.5f;
+        [SerializeField] float avoidanceHigh = 2.5f;
+        [SerializeField] float avoidanceLow = 2.5f;
+
+        //public float aggressivenessIncrease = .001f;
+        [SerializeField] float aggressivenessIncreaseHigh = .001f;
+        [SerializeField] float aggressivenessIncreaseLow  = .001f;
+
+        [HideInInspector] public float throttle;
+        [HideInInspector] public float aggressiveness;
 
         public float XSum;
         public float YSum;
         public float XDiff;
         public float YDiff;
 
-        float LevelAwareAvoidance { get { return avoidance + (DifficultyLevel * .3f); } }
-        float LevelAwareDefaultThrottle { get { return defaultThrottle * DifficultyLevel * .3f; } }
-        float LevelAwareDefaultLerp { get { return defaultAggressiveness * DifficultyLevel * .3f; } }
-        float LevelAwareThrottleIncrease { get { return throttleIncrease * DifficultyLevel * .3f; } }
-        float LevelAwareLerpIncrease { get { return aggressivenessIncrease * DifficultyLevel * .3f; } }
+        [HideInInspector] public float defaultThrottle { get { return Mathf.Lerp(defaultThrottleLow, defaultThrottleHigh, DifficultyLevel); } }
+        [HideInInspector] public float defaultAggressiveness { get { return Mathf.Lerp(defaultAggressivenessLow, defaultAggressivenessHigh, DifficultyLevel); } }
+        float throttleIncrease { get { return Mathf.Lerp(throttleIncreaseLow, throttleIncreaseHigh, DifficultyLevel); } }
+        float avoidance { get { return Mathf.Lerp(avoidanceLow, avoidanceHigh, DifficultyLevel); } }
+        float aggressivenessIncrease { get { return Mathf.Lerp(aggressivenessIncreaseLow, aggressivenessIncreaseHigh, DifficultyLevel); } }
 
         [SerializeField] float raycastHeight;
         [SerializeField] float raycastWidth;

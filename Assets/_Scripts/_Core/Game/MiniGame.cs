@@ -245,6 +245,7 @@ public class MiniGame : MonoBehaviour
         ActivePlayer.Ship.Teleport(PlayerOrigin.transform);
         ActivePlayer.Ship.GetComponent<ShipController>().Reset();
         ActivePlayer.Ship.TrailSpawner.PauseTrailSpawner();
+        ActivePlayer.Ship.ResourceSystem.Reset();
 
         CameraManager.Instance.SetupGamePlayCameras(ActivePlayer.Ship.transform);
         StartCoroutine(CountdownCoroutine());

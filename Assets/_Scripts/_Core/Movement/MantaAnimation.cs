@@ -5,6 +5,10 @@ class MantaAnimation : ShipAnimation
     [SerializeField] Transform Fusilage;
     [SerializeField] Transform LeftWing;
     [SerializeField] Transform RightWing;
+    [SerializeField] Transform ThrusterTopRight;
+    [SerializeField] Transform ThrusterTopLeft;
+    [SerializeField] Transform ThrusterBottomLeft;
+    [SerializeField] Transform ThrusterBottomRight;
 
     [SerializeField] float animationScaler = 25f;
     [SerializeField] float yawAnimationScaler = 80f;
@@ -25,6 +29,27 @@ class MantaAnimation : ShipAnimation
                     -pitch * animationScaler,
                     yaw * animationScaler,
                     roll * animationScaler);
+
+        AnimatePart(ThrusterBottomLeft,
+                    Brake(throttle) * yawAnimationScaler,
+                    -(throttle - yaw) * yawAnimationScaler,
+                    (roll - pitch - (3 * (1 - throttle))) * animationScaler);
+
+        AnimatePart(ThrusterTopRight,
+                    Brake(throttle) * yawAnimationScaler,
+                    (throttle + yaw) * yawAnimationScaler,
+                    (roll - pitch  - (3 * (1 - throttle))) * animationScaler);
+
+        AnimatePart(ThrusterTopLeft,
+                    Brake(throttle) * yawAnimationScaler,
+                    -(throttle - yaw) * yawAnimationScaler,
+                    (roll + pitch + (3 * (1 - throttle))) * animationScaler);
+
+        AnimatePart(ThrusterBottomRight,
+                    Brake(throttle) * yawAnimationScaler,
+                    (throttle + yaw) * yawAnimationScaler,
+                    (roll + pitch + (3 * (1 - throttle))) * animationScaler);
+
     }
 
     protected override void AssignTransforms()

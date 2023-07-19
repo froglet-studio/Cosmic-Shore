@@ -336,7 +336,7 @@ RectTransform:
   - {fileID: 118482675}
   - {fileID: 1997790082}
   m_Father: {fileID: 433663844}
-  m_RootOrder: 2
+  m_RootOrder: 4
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 90}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
@@ -920,7 +920,7 @@ PrefabInstance:
     - target: {fileID: 8666518134979662275, guid: fe865d309fab2f44cb225e312d612ddb,
         type: 3}
       propertyPath: m_RootOrder
-      value: 4
+      value: 6
       objectReference: {fileID: 0}
     - target: {fileID: 8666518134979662275, guid: fe865d309fab2f44cb225e312d612ddb,
         type: 3}
@@ -1890,12 +1890,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   player: {fileID: 433663843}
-  portraitAnchorMin: {x: 0, y: 0}
-  portraitAnchorMax: {x: 0, y: 0}
   anchorMin: {x: 0, y: 1}
   anchorMax: {x: 0, y: 1}
-  portraitPosition: {x: -400, y: -230}
   position: {x: -360, y: 230}
+  portraitAnchorMin: {x: 0, y: 0}
+  portraitAnchorMax: {x: 0, y: 0}
+  portraitPosition: {x: -400, y: -230}
 --- !u!1 &412407944
 GameObject:
   m_ObjectHideFlags: 0
@@ -6712,6 +6712,11 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 7349715292834690109, guid: 8a9d12e43096881468feb22e39e9fbeb,
+        type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: -40
+      objectReference: {fileID: 0}
     - target: {fileID: 7406751912267332137, guid: 8a9d12e43096881468feb22e39e9fbeb,
         type: 3}
       propertyPath: m_AnchorMax.y
@@ -8144,12 +8149,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   player: {fileID: 433663843}
-  portraitAnchorMin: {x: 0, y: 1}
-  portraitAnchorMax: {x: 0, y: 1}
   anchorMin: {x: 1, y: 1}
   anchorMax: {x: 1, y: 1}
-  portraitPosition: {x: -400, y: 230}
   position: {x: 400, y: 230}
+  portraitAnchorMin: {x: 0, y: 1}
+  portraitAnchorMax: {x: 0, y: 1}
+  portraitPosition: {x: -400, y: 230}
 --- !u!1001 &451321388
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -11554,12 +11559,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   player: {fileID: 433663843}
-  portraitAnchorMin: {x: 1, y: 0}
-  portraitAnchorMax: {x: 1, y: 0}
   anchorMin: {x: 0.5, y: 0}
   anchorMax: {x: 0.5, y: 0}
-  portraitPosition: {x: 360, y: -90}
   position: {x: 0, y: -180}
+  portraitAnchorMin: {x: 1, y: 0}
+  portraitAnchorMax: {x: 1, y: 0}
+  portraitPosition: {x: 360, y: -90}
 --- !u!1 &1567188304 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 6735757434467165247, guid: 8a9d12e43096881468feb22e39e9fbeb,
@@ -12600,7 +12605,7 @@ RectTransform:
   m_Children:
   - {fileID: 917434782}
   m_Father: {fileID: 433663844}
-  m_RootOrder: 6
+  m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 1, y: 0}
   m_AnchorMax: {x: 1, y: 0}
@@ -13363,6 +13368,11 @@ PrefabInstance:
         type: 3}
       propertyPath: field of view
       value: 60
+      objectReference: {fileID: 0}
+    - target: {fileID: 5247650485044281827, guid: 061f308768b5b564bbb0f130d1a8f02e,
+        type: 3}
+      propertyPath: far clip plane
+      value: 8000
       objectReference: {fileID: 0}
     - target: {fileID: 5247650485044281827, guid: 061f308768b5b564bbb0f130d1a8f02e,
         type: 3}
