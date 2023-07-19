@@ -749,6 +749,7 @@ MonoBehaviour:
     type: 3}
   skimmer: {fileID: 874579554510349383}
   waitTillOutsideSkimmer: 1
+  shielded: 0
   offset: 0
   initialWavelength: 9
   minWavelength: 1
@@ -781,7 +782,11 @@ MonoBehaviour:
   BoostCharging: 0
   BoostDecaying: 0
   Drifting: 0
-  LayingBulletTrail: 0
+  Portrait: 0
+  ShowThreeButtonPanel: 0
+  LiveProjectiles: 0
+  Stationary: 0
+  ElevatedAmmoGain: 0
   Attached: 0
   AttachedTrailBlock: {fileID: 0}
   GunsActive: 1
@@ -799,14 +804,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a273abd40c7104c4392188723ab929d6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  impactProperties: []
   cameraManager: {fileID: 0}
-  inputController: {fileID: 0}
+  InputController: {fileID: 0}
   ResourceSystem: {fileID: 0}
   Name: Dolphin
   ShipType: 7
   TrailSpawner: {fileID: 874579555101021522}
   ShipController: {fileID: 0}
   AutoPilot: {fileID: 0}
+  ShipData: {fileID: 0}
   nearFieldSkimmer: {fileID: 874579554510349383}
   OrientationHandle: {fileID: 2897121333247873258}
   shipGeometries:
@@ -835,6 +842,9 @@ MonoBehaviour:
   rightStickShipActions: []
   flipShipActions: []
   idleShipActions: []
+  button1ShipActions: []
+  button2ShipActions: []
+  button3ShipActions: []
   LevelEffects: 
   minGap: 1
   maxGap: 1
@@ -850,6 +860,7 @@ MonoBehaviour:
   closeCamDistance: 0
   farCamDistance: 0
   AOEExplosionMaterial: {fileID: 0}
+  AOEConicExplosionMaterial: {fileID: 0}
 --- !u!114 &3440187540988767646
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -864,7 +875,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   DifficultyLevel: 0
   defaultThrottle: 0.7
-  defaultAggressiveness: 0.05
+  defaultAggressiveness: 0.03
   throttleIncrease: 0.02
   aggressivenessIncrease: 0.07
   throttle: 0
@@ -891,18 +902,34 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 737294a573670f74389a7af68df314d5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  Resources: 
   usesBoost: 0
   usesLevels: 0
   usesAmmo: 0
+  usesCharge: 0
+  gainsAmmo: 0
+  ammoGainRate: 0.01
+  elevatedAmmoGainRate: 0.03
   maxBoost: 1
   initialBoost: 1
   maxLevel: 1
   initialLevel: 0
   maxAmmo: 1
   initialAmmo: 1
+  maxCharge: 1
+  initialCharge: 1
   BoostDisplay: {fileID: 0}
   LevelDisplay: {fileID: 0}
   AmmoDisplay: {fileID: 0}
+  ChargeDisplay: {fileID: 0}
+  MassDisplay: {fileID: 0}
+  SpaceTimeDisplay: {fileID: 0}
+  ChargeLevelDisplay: {fileID: 0}
+  MassLevelDisplay: {fileID: 0}
+  SpaceTimeLevelDisplay: {fileID: 0}
+  InitialChargeLevel: 0
+  InitialMassLevel: 0
+  InitialSpaceTimeLevel: 0
 --- !u!114 &1871436205027819587
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -915,6 +942,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 936b9a8c853bc0e4885c7d74e16a9804, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  brakeThreshold: 0.65
+  lerpAmount: 2
+  smallLerpAmount: 0.7
   Fusilage: {fileID: 5738881746581368189}
   LeftWing: {fileID: 6913418377377194506}
   RightWing: {fileID: 4275138887046070967}
@@ -925,8 +955,6 @@ MonoBehaviour:
   animationScaler: 15
   yawAnimationScaler: 60
   rollAnimationScaler: 15
-  lerpAmount: 2
-  smallLerpAmount: 0.7
 --- !u!114 &2903335905544140420
 MonoBehaviour:
   m_ObjectHideFlags: 0
