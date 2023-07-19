@@ -33,22 +33,22 @@ class MantaAnimation : ShipAnimation
         AnimatePart(ThrusterBottomLeft,
                     Brake(throttle) * yawAnimationScaler,
                     -(throttle - yaw) * yawAnimationScaler,
-                    (roll + pitch) * animationScaler);
+                    (roll - pitch - (3 * (1 - throttle))) * animationScaler);
 
         AnimatePart(ThrusterTopRight,
                     Brake(throttle) * yawAnimationScaler,
                     (throttle + yaw) * yawAnimationScaler,
-                    (roll - pitch) * animationScaler);
+                    (roll - pitch  - (3 * (1 - throttle))) * animationScaler);
 
         AnimatePart(ThrusterTopLeft,
                     Brake(throttle) * yawAnimationScaler,
                     -(throttle - yaw) * yawAnimationScaler,
-                    (roll + pitch) * animationScaler);
+                    (roll + pitch + (3 * (1 - throttle))) * animationScaler);
 
         AnimatePart(ThrusterBottomRight,
                     Brake(throttle) * yawAnimationScaler,
                     (throttle + yaw) * yawAnimationScaler,
-                    (roll - pitch) * animationScaler);
+                    (roll + pitch + (3 * (1 - throttle))) * animationScaler);
 
     }
 
