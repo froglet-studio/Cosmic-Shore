@@ -81,7 +81,7 @@ namespace StarWriter.Core
                 yield return null;
             }
 
-            Destroy(this);
+            Destroy(gameObject);
         }
 
         protected virtual void PerformShipImpactEffects(ShipGeometry shipGeometry, Vector3 impactVector)
