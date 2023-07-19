@@ -2,6 +2,7 @@
 using StarWriter.Core;
 using StarWriter.Core.HangerBuilder;
 using StarWriter.Core.IO;
+using UnityEngine.Serialization;
 
 [System.Serializable]
 public class Player : MonoBehaviour
@@ -18,7 +19,9 @@ public class Player : MonoBehaviour
     [SerializeField] ResourceDisplay chargeDisplay;
     [SerializeField] ResourceDisplay ChargeLevelDisplay;
     [SerializeField] ResourceDisplay MassLevelDisplay;
-    [SerializeField] ResourceDisplay SpaceTimeLevelDisplay;
+    [FormerlySerializedAs("SpaceTimeLevelDisplay")]
+    [SerializeField] ResourceDisplay SpaceLevelDisplay;
+    [SerializeField] ResourceDisplay TimeLevelDisplay;
 
 
     public Teams Team;
@@ -102,8 +105,10 @@ public class Player : MonoBehaviour
                 ship.ResourceSystem.ChargeLevelDisplay = ChargeLevelDisplay;
             if (MassLevelDisplay != null)
                 ship.ResourceSystem.MassLevelDisplay = MassLevelDisplay;
-            if (SpaceTimeLevelDisplay != null)
-                ship.ResourceSystem.SpaceTimeLevelDisplay = SpaceTimeLevelDisplay;
+            if (SpaceLevelDisplay != null)
+                ship.ResourceSystem.SpaceLevelDisplay = SpaceLevelDisplay;
+            if (TimeLevelDisplay != null)
+                ship.ResourceSystem.TimeLevelDisplay = TimeLevelDisplay;
         }
     }
 }

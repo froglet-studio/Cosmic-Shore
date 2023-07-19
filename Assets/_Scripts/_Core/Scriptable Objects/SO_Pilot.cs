@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Serialization;
 
 [CreateAssetMenu(fileName = "Spike Spiegel", menuName = "TailGlider/Pilot", order = 1)]
 [System.Serializable]
@@ -10,5 +11,7 @@ public class SO_Pilot : ScriptableObject
     [SerializeField] public Sprite Image;
     [SerializeField] public int InitialMass;
     [SerializeField] public int InitialCharge;
-    [SerializeField] public int InitialSpaceTime;
+    [FormerlySerializedAs("InitialSpaceTime")]
+    [SerializeField] public int InitialSpace;
+    [SerializeField] public int InitialTime;
 }

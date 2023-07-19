@@ -4,11 +4,13 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
+// TODO: P1, move to enum folder
 public enum PilotElement
 {
     Charge = 1,
     Mass = 2,
-    SpaceTime = 3,
+    Space = 3,
+    Time = 4,
 }
 
 public class HangarMenu : MonoBehaviour
@@ -152,8 +154,11 @@ public class HangarMenu : MonoBehaviour
             case PilotElement.Mass:
                 SelectedPilot = SelectedShip.MassPilot;
                 break;
-            case PilotElement.SpaceTime:
-                SelectedPilot = SelectedShip.SpaceTimePilot;
+            case PilotElement.Space:
+                SelectedPilot = SelectedShip.SpacePilot;
+                break;
+            case PilotElement.Time:
+                SelectedPilot = SelectedShip.TimePilot;
                 break;
         }
 

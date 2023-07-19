@@ -273,7 +273,8 @@ namespace StarWriter.Core
             this.pilot = pilot;
             ResourceSystem.InitialChargeLevel = pilot.InitialCharge;
             ResourceSystem.InitialMassLevel = pilot.InitialMass;
-            ResourceSystem.InitialSpaceTimeLevel = pilot.InitialSpaceTime;
+            ResourceSystem.InitialSpaceLevel = pilot.InitialSpace;
+            ResourceSystem.InitialTimeLevel = pilot.InitialTime;
 
             ResourceSystem.InitializeElementLevels();
         }

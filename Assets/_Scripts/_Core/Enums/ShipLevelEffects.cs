@@ -2,7 +2,6 @@
 // Always assign a static numeric value to your enum types
 public enum ShipLevelEffects
 {
-    
     ScaleGap = 1,
     ScaleProjectiles = 2,
     ScaleProjectileBlocks = 3,

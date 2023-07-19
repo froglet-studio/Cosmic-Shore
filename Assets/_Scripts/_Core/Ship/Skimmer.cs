@@ -7,9 +7,7 @@ namespace StarWriter.Core
 {
     public class Skimmer : MonoBehaviour
     {
-        [FormerlySerializedAs("trailBlockImpactEffects")]
         [SerializeField] List<TrailBlockImpactEffects> blockImpactEffects;
-        [FormerlySerializedAs("skimmerStayEffects")]
         [SerializeField] List<SkimmerStayEffects> blockStayEffects;
         [SerializeField] List<ShipImpactEffects> shipImpactEffects;
         [SerializeField] float particleDurationAtSpeedOne = 300f;

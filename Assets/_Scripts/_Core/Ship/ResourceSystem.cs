@@ -125,7 +125,8 @@ namespace StarWriter.Core
         [HideInInspector] public ResourceDisplay AmmoDisplay;
         [HideInInspector] public ResourceDisplay ChargeDisplay;
         [HideInInspector] public ResourceDisplay MassDisplay;
-        [HideInInspector] public ResourceDisplay SpaceTimeDisplay;
+        [HideInInspector] public ResourceDisplay SpaceDisplay;
+        [HideInInspector] public ResourceDisplay TimeDisplay;
 
         public static readonly float OneFuelUnit = 1 / 10f;
         ShipData shipData;
@@ -180,14 +181,22 @@ namespace StarWriter.Core
         {
             CurrentCharge = initialCharge;
         }
+
+        /*
+        // TODO: P1 use these or lose these
         public void ResetMass()
         {
             CurrentCharge = initialCharge;
         }
-        public void ResetSpaceTime()
+        public void ResetSpace()
         {
             CurrentCharge = initialCharge;
         }
+        public void ResetTime() // When we implement this for real, this name is pretty vague...
+        {
+            CurrentCharge = initialCharge;
+        }
+        */
 
         public void ChangeBoostAmount(float amount)
         {
@@ -215,16 +224,20 @@ namespace StarWriter.Core
          */
         [HideInInspector] public ResourceDisplay ChargeLevelDisplay;
         [HideInInspector] public ResourceDisplay MassLevelDisplay;
-        [HideInInspector] public ResourceDisplay SpaceTimeLevelDisplay;
+        [HideInInspector] public ResourceDisplay SpaceLevelDisplay;
+        [HideInInspector] public ResourceDisplay TimeLevelDisplay;
         const int MaxChargeLevel = 10;
         const int MaxMassLevel = 10;
-        const int MaxSpaceTimeLevel = 10;
+        const int MaxSpaceLevel = 10;
+        const int MaxTimeLevel = 10;
         public int InitialChargeLevel = 0;
         public int InitialMassLevel = 0;
-        public int InitialSpaceTimeLevel = 0;
+        public int InitialSpaceLevel = 0;
+        public int InitialTimeLevel = 0;
         int chargeLevel;
         int massLevel;
-        int spaceTimeLevel;
+        int spaceLevel;
+        int timeLevel;
 
         public int ChargeLevel
         {
@@ -248,22 +261,34 @@ namespace StarWriter.Core
                     MassLevelDisplay.UpdateDisplay(massLevel);
             }
         }
-        public int SpaceTimeLevel
+        public int SpaceLevel
         {
-            get => spaceTimeLevel;
+            get => spaceLevel;
             private set
             {
-                spaceTimeLevel = value;
+                spaceLevel = value;
 
-                if (SpaceTimeLevelDisplay != null)
-                    SpaceTimeLevelDisplay.UpdateDisplay(spaceTimeLevel);
+                if (SpaceLevelDisplay != null)
+                    SpaceLevelDisplay.UpdateDisplay(spaceLevel);
+            }
+        }
+        public int TimeLevel
+        {
+            get => timeLevel;
+            private set
+            {
+                timeLevel = value;
+
+                if (TimeLevelDisplay != null)
+                    TimeLevelDisplay.UpdateDisplay(timeLevel);
             }
         }
         public void InitializeElementLevels()
         {
             chargeLevel = InitialChargeLevel;
             massLevel = InitialMassLevel;
-            spaceTimeLevel = InitialSpaceTimeLevel;
+            spaceLevel = InitialSpaceLevel;
+            timeLevel = InitialTimeLevel;
         }
         public void IncrementChargeLevel()
         {
@@ -273,9 +298,13 @@ namespace StarWriter.Core
         {
             massLevel = Math.Clamp(massLevel + 1, 0, MaxMassLevel);
         }
-        public void IncrementSpaceTimeLevel()
+        public void IncrementSpaceLevel()
         {
-            spaceTimeLevel = Math.Clamp(spaceTimeLevel + 1, 0, MaxSpaceTimeLevel);
+            spaceLevel = Math.Clamp(spaceLevel + 1, 0, MaxSpaceLevel);
+        }
+        public void IncrementTimeLevel()
+        {
+            timeLevel = Math.Clamp(timeLevel + 1, 0, MaxTimeLevel);
         }
     }
 }

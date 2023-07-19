@@ -10,6 +10,7 @@ namespace StarWriter.Core
         Boost = 2,
         Level = 3,
         Mass = 4,
-        SpaceTime = 5,
+        Space = 5,
+        Time = 6,
     }
 }
