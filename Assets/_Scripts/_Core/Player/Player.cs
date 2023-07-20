@@ -2,7 +2,6 @@
 using StarWriter.Core;
 using StarWriter.Core.HangerBuilder;
 using StarWriter.Core.IO;
-using UnityEngine.Serialization;
 
 [System.Serializable]
 public class Player : MonoBehaviour
