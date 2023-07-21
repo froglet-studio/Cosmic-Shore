@@ -1,8 +1,6 @@
 using System.Collections;
-using System.Threading;
 using UnityEngine;
 using Gamepad = UnityEngine.InputSystem.Gamepad;
-using UnityEngine.UIElements;
 
 namespace StarWriter.Core.IO
 {
@@ -10,7 +8,6 @@ namespace StarWriter.Core.IO
     {
         [SerializeField] ThreeButtonPanel threeButtonPanel;
         [SerializeField] GameObject rearView;
-        
 
         #region Ship
         [SerializeField] public Ship ship;
@@ -465,7 +462,6 @@ namespace StarWriter.Core.IO
             float DeviationFromFullSpeedStraight = (1 - XDiff) + sumOfRotations;
             float DeviationFromMinimumSpeedStraight = XDiff + sumOfRotations;
 
-
             if (DeviationFromFullSpeedStraight < threshold)
             {
                 if (!fullSpeedStraightEffectsStarted)
@@ -547,6 +543,5 @@ namespace StarWriter.Core.IO
             }
             Portrait = value; 
         }
-
     }
 }

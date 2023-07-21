@@ -91,6 +91,16 @@ public class LeaderboardDataAccessor
                 new LeaderboardEntry("Fenrys",  50, ShipTypes.Shark),
             }
         },
+        {
+            MiniGames.SingleBiomeTeamMatch, new List<LeaderboardEntry>()
+            {
+                new LeaderboardEntry("Igarus",  10, ShipTypes.Dolphin),
+                new LeaderboardEntry("Gradies", 20, ShipTypes.GunManta),
+                new LeaderboardEntry("Spades",  30, ShipTypes.Manta),
+                new LeaderboardEntry("Siren",   40, ShipTypes.Shark),
+                new LeaderboardEntry("Fenrys",  50, ShipTypes.Shark),
+            }
+        },
     };
 }
 

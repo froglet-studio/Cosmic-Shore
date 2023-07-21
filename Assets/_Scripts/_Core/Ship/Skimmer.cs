@@ -181,13 +181,12 @@ namespace StarWriter.Core
         {   
             if (notifyNearbyBlockCount )
             {
-
                 var normalizedDistance = Mathf.Clamp(Mathf.InverseLerp(15f, transform.localScale.x/2, minMatureBlockDistance), 0,1);
-
 
                 ship.TrailSpawner.SetNormalizedXScale(normalizedDistance);
 
-                if (!ship.InputController.AutoPilotEnabled && cameraManager != null) cameraManager.SetNormalizedCameraDistance(normalizedDistance);
+                if (!ship.InputController.AutoPilotEnabled && cameraManager != null) 
+                    cameraManager.SetNormalizedCameraDistance(normalizedDistance);
 
                 minMatureBlockDistance = Mathf.Infinity;
             }
