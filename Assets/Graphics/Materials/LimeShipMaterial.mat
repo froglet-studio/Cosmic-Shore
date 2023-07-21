@@ -7,8 +7,8 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: GreenShieldedBlockMaterial
-  m_Shader: {fileID: -6465566751694194690, guid: bf8c159f627e64b439094797bff88611,
+  m_Name: LimeShipMaterial
+  m_Shader: {fileID: -6465566751694194690, guid: 0236447d5f06b0541a43756d85b5f222,
     type: 3}
   m_ValidKeywords: []
   m_InvalidKeywords: []
@@ -81,7 +81,6 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _Add_sin: 0
     - _AlphaClip: 0
     - _Blend: 0
     - _BumpScale: 1
@@ -100,7 +99,6 @@ Material:
     - _Metallic: 0
     - _OcclusionStrength: 1
     - _Parallax: 0.005
-    - _Proximity: 80
     - _QueueControl: 0
     - _QueueOffset: 0
     - _ReceiveShadows: 1
@@ -112,36 +110,19 @@ Material:
     - _WorkflowMode: 1
     - _ZTest: 4
     - _ZWrite: 1
-    - _ZWriteControl: 1
-    - _add_cos: 0
-    - _angle: 0
-    - _distance: -4
-    - _multiply: 0
-    - _muton: 0
-    - _opacity: 80
-    - _player: 0
-    - _playerBlock: 1
-    - _playerHit: 0
+    - _ZWriteControl: 0
+    - _explosion: 0
+    - _player: 1
     - _red: 0
-    - _redBlock: 1
-    - _redHit: 0
-    - _scale: 0
-    - _seedx: 0.8
-    - _seedy: 0.1
     m_Colors:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
-    - _BrightColor: {r: 0, g: 1.0980952, b: 2.1185474, a: 1}
-    - _Color: {r: 0, g: 0.7754338, b: 0.54808146, a: 1}
-    - _DarkColor: {r: 0, g: 0.069324195, b: 0.13310245, a: 1}
+    - _Color: {r: 1, g: 1, b: 1, a: 1}
+    - _Color1: {r: 0.08685852, g: 0.4245283, b: 0.014684892, a: 1}
+    - _Color2: {r: 0.27491134, g: 0.7264151, b: 0.045686405, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
     - _SpecColor: {r: 0.19999996, g: 0.19999996, b: 0.19999996, a: 1}
-    - _Spread: {r: 0.005, g: 0.35, b: 0.1, a: 0}
-    - _add_vector: {r: 0, g: 0, b: 9, a: 0}
-    - _spread: {r: 0.6, g: 0.6, b: 0.6, a: 0}
-    - _tangent: {r: 1.51, g: -2.92, b: 1.83, a: 0}
-    - _velocity: {r: 0, g: 0, b: 0, a: 0}
   m_BuildTextureStacks: []
---- !u!114 &2422392668265197798
+--- !u!114 &1367109350331944237
 MonoBehaviour:
   m_ObjectHideFlags: 11
   m_CorrespondingSourceObject: {fileID: 0}

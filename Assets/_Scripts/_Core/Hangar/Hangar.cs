@@ -188,7 +188,7 @@ namespace StarWriter.Core.HangerBuilder
             ship.SetAOEConicExplosionMaterial(TeamAOEConicExplosionMaterials[team]);
 
             AIPilot pilot = ship.GetComponent<AIPilot>();
-            pilot.DifficultyLevel = AIDifficultyLevel;
+            pilot.SkillLevel = AIDifficultyLevel;
             pilot.autoPilotEnabled = true;
 
             return ship;

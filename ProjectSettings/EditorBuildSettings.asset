@@ -24,7 +24,7 @@ EditorBuildSettings:
     path: Assets/Scenes/MinigameShootingGallery.unity
     guid: 3c3b1e401c6162547b78d787ab28640c
   - enabled: 1
-    path: Assets/Scenes/MinigameThiefCourse.unity
+    path: Assets/Scenes/TestScenes/ColorTest.unity
     guid: 608ee7a6fb653984e8456f57d82fb67e
   - enabled: 1
     path: Assets/Scenes/MinigameDriftCourse.unity
@@ -32,6 +32,9 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/MinigameSandbox.unity
     guid: 6f71535b00043c345b3216d994f22499
+  - enabled: 1
+    path: Assets/Scenes/MinigameThiefCourse.unity
+    guid: ab6402f21daa97944b25e308c2a26008
   - enabled: 0
     path: Assets/Scenes/Game_HighScore.unity
     guid: 5e8d9932a4d84a1488c2dad96c8135dd
