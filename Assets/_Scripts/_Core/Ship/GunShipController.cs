@@ -4,9 +4,9 @@ using System.Collections.Generic;
 
 public class GunShipController : ShipController
 {
-    [SerializeField] Gun topGun;
-    [SerializeField] Gun leftGun;
-    [SerializeField] Gun rightGun;
+    //[SerializeField] Gun topGun;
+    //[SerializeField] Gun leftGun;
+    //[SerializeField] Gun rightGun;
     GameObject projectileContainer;
     [SerializeField] TrailFollower trailFollower;
     [SerializeField] float chargeDepletionRate = -.05f;
@@ -18,34 +18,51 @@ public class GunShipController : ShipController
     List<Gun> guns;
     bool moveForward = true;
     bool attached = false;
+    CameraManager cameraManager;
+    
+
 
     protected override void Start()
     {
         base.Start();
-
+        cameraManager = CameraManager.Instance;
         projectileContainer = new GameObject($"{ship.Player.PlayerName}_Projectiles");
-        guns = new List<Gun>() { topGun, leftGun, rightGun };
+        //guns = new List<Gun>() { topGun, leftGun, rightGun };
 
-        foreach (var gun in guns)
-        {
-            gun.Team = ship.Team;
-            gun.Ship = ship;
-        }
+        //foreach (var gun in guns)
+        //{
+        //    gun.Team = ship.Team;
+        //    gun.Ship = ship;
+        //}
     }
 
     protected override void Update()
     {
         base.Update();
 
-        if (resourceSystem.CurrentAmmo > 0 && shipData.GunsActive) Fire();
+        //if (resourceSystem.CurrentAmmo > 0 && shipData.GunsActive) Fire();
     }
 
     protected override void MoveShip()
     {
         if (shipData.Attached && !attached)
+        {
             trailFollower.Attach(shipData.AttachedTrailBlock);
+            if (!ship.InputController.AutoPilotEnabled && cameraManager != null)
+            {
+                cameraManager.SetNormalizedCameraDistance(1);
+                Debug.Log("camera now set to 0");
+            }
+        }
         else if (!shipData.Attached && attached)
+        {
             trailFollower.Detach();
+            if (!ship.InputController.AutoPilotEnabled && cameraManager != null)
+            {
+                cameraManager.SetNormalizedCameraDistance(0);
+                Debug.Log("camera now set to 0");
+            }
+        }
 
         attached = shipData.Attached;
 
@@ -55,31 +72,31 @@ public class GunShipController : ShipController
             base.MoveShip();
     }
 
-    public void BigFire()
-    {
+    //public void BigFire()
+    //{
         
-        if (resourceSystem.CurrentAmmo > resourceSystem.MaxAmmo / 10f) // TODO: WIP magic numbers
-        {
-            resourceSystem.ChangeAmmoAmount(-resourceSystem.MaxAmmo / 10f); // TODO: WIP magic numbers
+    //    if (resourceSystem.CurrentAmmo > resourceSystem.MaxAmmo / 10f) // TODO: WIP magic numbers
+    //    {
+    //        resourceSystem.ChangeAmmoAmount(-resourceSystem.MaxAmmo / 10f); // TODO: WIP magic numbers
 
-            Vector3 inheritedVelocity;
-            if (attached) inheritedVelocity = transform.forward;
-            else inheritedVelocity = shipData.Course;
+    //        Vector3 inheritedVelocity;
+    //        if (attached) inheritedVelocity = transform.forward;
+    //        else inheritedVelocity = shipData.Course;
 
-            // TODO: WIP magic numbers
-            topGun.FireGun(projectileContainer.transform, 90, inheritedVelocity * shipData.Speed, ProjectileScale * 15, BlockScale * 2, true, 3f);
-        }
-    }
+    //        // TODO: WIP magic numbers
+    //        topGun.FireGun(projectileContainer.transform, 90, inheritedVelocity * shipData.Speed, ProjectileScale * 15, BlockScale * 2, true, 3f);
+    //    }
+    //}
 
-    void Fire()
-    {
-        resourceSystem.ChangeAmmoAmount(chargeDepletionRate * Time.deltaTime); // TODO: this should probably be an amount not a rate. let the gun cooldown handle delta time, but then there is asymmetry with the recharge rate . . . 
+    //void Fire()
+    //{
+    //    resourceSystem.ChangeAmmoAmount(chargeDepletionRate * Time.deltaTime); // TODO: this should probably be an amount not a rate. let the gun cooldown handle delta time, but then there is asymmetry with the recharge rate . . . 
 
-        var inheritedVelocity = attached ? transform.forward * shipData.Speed : shipData.Course * shipData.Speed;
+    //    var inheritedVelocity = attached ? transform.forward * shipData.Speed : shipData.Course * shipData.Speed;
 
-        foreach (var gun in guns) // TODO: magic number for projectile speed (30)
-            gun.FireGun(projectileContainer.transform, 90, inheritedVelocity, ProjectileScale, BlockScale);
-    }
+    //    foreach (var gun in guns) // TODO: magic number for projectile speed (30)
+    //        gun.FireGun(projectileContainer.transform, 90, inheritedVelocity, ProjectileScale, BlockScale);
+    //}
 
     void Slide()
     {

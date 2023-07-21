@@ -40,7 +40,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 221518ef91623a7438a71fef23660601, type: 3}
   m_Name: WhiteBalance
   m_EditorClassIdentifier: 
-  active: 1
+  active: 0
   temperature:
     m_OverrideState: 1
     m_Value: 43
@@ -81,25 +81,25 @@ MonoBehaviour:
   active: 1
   threshold:
     m_OverrideState: 1
-    m_Value: 0.42
+    m_Value: 0.3
   intensity:
     m_OverrideState: 1
-    m_Value: 4.44
+    m_Value: 2.5
   scatter:
     m_OverrideState: 0
     m_Value: 0.7
   clamp:
-    m_OverrideState: 0
-    m_Value: 65468.4
+    m_OverrideState: 1
+    m_Value: 0.5
   tint:
     m_OverrideState: 1
-    m_Value: {r: 0.121568605, g: 0.5237983, b: 0.9607843, a: 1}
+    m_Value: {r: 1, g: 1, b: 1, a: 1}
   highQualityFiltering:
     m_OverrideState: 0
-    m_Value: 0
-  skipIterations:
-    m_OverrideState: 0
     m_Value: 1
+  skipIterations:
+    m_OverrideState: 1
+    m_Value: 5
   dirtTexture:
     m_OverrideState: 0
     m_Value: {fileID: 0}

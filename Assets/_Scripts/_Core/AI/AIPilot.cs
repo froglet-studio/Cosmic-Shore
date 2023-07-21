@@ -6,7 +6,7 @@ namespace StarWriter.Core.IO
 {
     public class AIPilot : MonoBehaviour
     {
-        public int DifficultyLevel;
+        public float SkillLevel;
 
         //public float defaultThrottle = .6f;
         [SerializeField] float defaultThrottleHigh = .6f;
@@ -36,11 +36,11 @@ namespace StarWriter.Core.IO
         public float XDiff;
         public float YDiff;
 
-        [HideInInspector] public float defaultThrottle { get { return Mathf.Lerp(defaultThrottleLow, defaultThrottleHigh, DifficultyLevel); } }
-        [HideInInspector] public float defaultAggressiveness { get { return Mathf.Lerp(defaultAggressivenessLow, defaultAggressivenessHigh, DifficultyLevel); } }
-        float throttleIncrease { get { return Mathf.Lerp(throttleIncreaseLow, throttleIncreaseHigh, DifficultyLevel); } }
-        float avoidance { get { return Mathf.Lerp(avoidanceLow, avoidanceHigh, DifficultyLevel); } }
-        float aggressivenessIncrease { get { return Mathf.Lerp(aggressivenessIncreaseLow, aggressivenessIncreaseHigh, DifficultyLevel); } }
+        [HideInInspector] public float defaultThrottle { get { return Mathf.Lerp(defaultThrottleLow, defaultThrottleHigh, SkillLevel); } }
+        [HideInInspector] public float defaultAggressiveness { get { return Mathf.Lerp(defaultAggressivenessLow, defaultAggressivenessHigh, SkillLevel); } }
+        float throttleIncrease { get { return Mathf.Lerp(throttleIncreaseLow, throttleIncreaseHigh, SkillLevel); } }
+        float avoidance { get { return Mathf.Lerp(avoidanceLow, avoidanceHigh, SkillLevel); } }
+        float aggressivenessIncrease { get { return Mathf.Lerp(aggressivenessIncreaseLow, aggressivenessIncreaseHigh, SkillLevel); } }
 
         [SerializeField] float raycastHeight;
         [SerializeField] float raycastWidth;
@@ -117,14 +117,14 @@ namespace StarWriter.Core.IO
                 return;
 
             Vector3 combinedLocalCrossProduct = Vector3.zero;
-            float clampedLerp = Mathf.Clamp(avoidance / distance.magnitude, 0, 0.9f);
+            
 
             foreach (Corner corner in Enum.GetValues(typeof(Corner)))
             {
                 var behavior = CornerBehaviors[corner];
                 Vector3 laserHitDirection = ShootLaser(behavior.width * transform.right + behavior.height * transform.up);
-
-                Vector3 adjustedDirection = TurnAway(desiredDirection, laserHitDirection, (-transform.up + (behavior.spin * transform.right)) / laserHitDirection.magnitude, clampedLerp); // TODO: avoidance is wip
+                float clampedLerp = Mathf.Clamp(avoidance / laserHitDirection.magnitude, 0, 0.9f);
+                Vector3 adjustedDirection = TurnAway(desiredDirection, laserHitDirection, (-transform.up + (behavior.spin * transform.right)) , clampedLerp); // TODO: avoidance is wip
                 Vector3 crossProduct = Vector3.Cross(transform.forward, adjustedDirection);
                 Vector3 localCrossProduct = transform.InverseTransformDirection(crossProduct);
                 combinedLocalCrossProduct += localCrossProduct;
@@ -151,7 +151,7 @@ namespace StarWriter.Core.IO
 
             float dotProduct = Vector3.Dot(originalDirection, obstacleDirection.normalized);
             if (dotProduct > 0) // Obstacle is in the direction we want to move
-                return originalDirection + rotationDirection * avoidanceFactor;
+                return originalDirection + (rotationDirection * avoidanceFactor);
 
             return originalDirection;
         }

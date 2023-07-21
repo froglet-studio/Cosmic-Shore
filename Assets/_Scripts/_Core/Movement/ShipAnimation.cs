@@ -6,7 +6,7 @@ using UnityEngine;
 [RequireComponent(typeof(Ship))]
 public abstract class ShipAnimation : MonoBehaviour
 {
-    InputController inputController;
+    protected InputController inputController;
 
     [SerializeField] protected float brakeThreshold = .65f;
     [SerializeField] protected float lerpAmount = 2f;
@@ -21,7 +21,7 @@ public abstract class ShipAnimation : MonoBehaviour
         AssignTransforms();
     }
 
-    void Update()
+    protected virtual void Update()
     {
         if (inputController == null) inputController = GetComponent<Ship>().InputController; 
         if (inputController != null) // the line above makes this run the moment it has the handle
