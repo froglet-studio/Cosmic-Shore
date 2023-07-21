@@ -4,15 +4,6 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
-// TODO: P1, move to enum folder
-public enum PilotElement
-{
-    Charge = 1,
-    Mass = 2,
-    Space = 3,
-    Time = 4,
-}
-
 public class HangarMenu : MonoBehaviour
 {
     [SerializeField] SO_ShipList ShipList;

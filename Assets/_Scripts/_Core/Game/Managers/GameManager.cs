@@ -172,6 +172,7 @@ namespace StarWriter.Core
 
         public void WaitOnAILoading(AIPilot aiPilot)
         {
+            // TODO: elemental crystals, FindObjectOfType may no work anymore for this
             aiPilot.CrystalTransform = FindObjectOfType<Crystal>().transform;
             aiPilot.flowFieldData = FindObjectOfType<FlowFieldData>();
         }

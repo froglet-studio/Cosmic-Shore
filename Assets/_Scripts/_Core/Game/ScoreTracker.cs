@@ -10,7 +10,8 @@ public enum ScoringModes
     TimePlayed = 2,
     TurnsPlayed = 3,
     VolumeStolen = 4,
-    BlocksStolen = 5
+    BlocksStolen = 5,
+    TeamVolumeRemaining = 6,
 }
 
 public class ScoreTracker : MonoBehaviour
@@ -73,6 +74,13 @@ public class ScoreTracker : MonoBehaviour
                 case ScoringModes.BlocksStolen:
                     if (StatsManager.Instance.playerStats.ContainsKey(currentPlayerName))
                         score = playerScores[currentPlayerName] + StatsManager.Instance.playerStats[currentPlayerName].blocksStolen;
+                    break;
+                case ScoringModes.TeamVolumeRemaining:
+                    var teamStats = StatsManager.Instance.teamStats;  // TODO: Hardcoded player team to Green... reconsider
+                    var greenVolume = teamStats.ContainsKey(Teams.Green) ? teamStats[Teams.Green].volumeRemaining : 0f;
+                    var redVolume = teamStats.ContainsKey(Teams.Red) ? teamStats[Teams.Red].volumeRemaining : 0f;
+
+                    score = (greenVolume - redVolume);
                     break;
             }
 

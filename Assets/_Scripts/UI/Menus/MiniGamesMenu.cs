@@ -150,7 +150,7 @@ public class MiniGamesMenu : MonoBehaviour
         DifficultyButtonContainer.transform.GetChild(difficulty - 1).gameObject.GetComponent<Image>().sprite = DifficultyButtonContainer.transform.GetChild(difficulty - 1).gameObject.GetComponent<Button>().spriteState.selectedSprite;
 
         // notify the mini game engine that this is the difficulty
-        MiniGame.DifficultyLevel= difficulty;
+        MiniGame.DifficultyLevel = difficulty;
     }
 
     void PopulateShipSelectionList()
