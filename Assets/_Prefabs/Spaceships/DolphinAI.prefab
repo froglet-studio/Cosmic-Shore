@@ -873,17 +873,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a58bf4fb65afa704194fe9e28e67d58d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  DifficultyLevel: 10
+  SkillLevel: 1
   defaultThrottleHigh: 0.6
-  defaultThrottleLow: 0.6
+  defaultThrottleLow: 0.8
   defaultAggressivenessHigh: 0.035
-  defaultAggressivenessLow: 0.035
+  defaultAggressivenessLow: 0.05
   throttleIncreaseHigh: 0.001
-  throttleIncreaseLow: 0.001
+  throttleIncreaseLow: 0.01
   avoidanceHigh: 2.5
-  avoidanceLow: 2.5
+  avoidanceLow: 5
   aggressivenessIncreaseHigh: 0.001
-  aggressivenessIncreaseLow: 0.001
+  aggressivenessIncreaseLow: 0.01
   throttle: 0
   aggressiveness: 0.1
   XSum: 0
@@ -928,13 +928,16 @@ MonoBehaviour:
   AmmoDisplay: {fileID: 0}
   ChargeDisplay: {fileID: 0}
   MassDisplay: {fileID: 0}
-  SpaceTimeDisplay: {fileID: 0}
+  SpaceDisplay: {fileID: 0}
+  TimeDisplay: {fileID: 0}
   ChargeLevelDisplay: {fileID: 0}
   MassLevelDisplay: {fileID: 0}
-  SpaceTimeLevelDisplay: {fileID: 0}
+  SpaceLevelDisplay: {fileID: 0}
+  TimeLevelDisplay: {fileID: 0}
   InitialChargeLevel: 0
   InitialMassLevel: 0
-  InitialSpaceTimeLevel: 0
+  InitialSpaceLevel: 0
+  InitialTimeLevel: 0
 --- !u!114 &1871436205027819587
 MonoBehaviour:
   m_ObjectHideFlags: 0
