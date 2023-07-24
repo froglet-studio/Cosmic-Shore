@@ -5,7 +5,6 @@ using System.Collections.Generic;
 
 namespace StarWriter.Core
 {
-
     public class ResourceSystem : MonoBehaviour
     {
         [SerializeField] List<ResourceType> Resources;

@@ -151,6 +151,11 @@ PrefabInstance:
       propertyPath: m_Layer
       value: 2
       objectReference: {fileID: 0}
+    - target: {fileID: 6588436222817790470, guid: fced5b15da3ad1d41b4e3b7385609e37,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 6588436222817790493, guid: fced5b15da3ad1d41b4e3b7385609e37,
         type: 3}
       propertyPath: m_RootOrder
@@ -7318,6 +7323,11 @@ PrefabInstance:
       propertyPath: EndOfRoundStatContainers.Array.data[3]
       value: 
       objectReference: {fileID: 1681559499}
+    - target: {fileID: 8615459834825002486, guid: 8a9d12e43096881468feb22e39e9fbeb,
+        type: 3}
+      propertyPath: m_Camera
+      value: 
+      objectReference: {fileID: 2047869375}
     - target: {fileID: 8615459834825002491, guid: 8a9d12e43096881468feb22e39e9fbeb,
         type: 3}
       propertyPath: m_IsActive
@@ -9995,7 +10005,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   HUD: {fileID: 654054541}
-  playerPrefab: {fileID: 433663843}
+  playerPrefab: {fileID: 2151207714166088012, guid: 8a9d12e43096881468feb22e39e9fbeb,
+    type: 3}
   TurnMonitors:
   - {fileID: 1527998409}
   ScoreTracker: {fileID: 1527998408}
@@ -10729,12 +10740,12 @@ PrefabInstance:
     - target: {fileID: 5247650485044281852, guid: 061f308768b5b564bbb0f130d1a8f02e,
         type: 3}
       propertyPath: m_LocalRotation.w
-      value: 0.014161397
+      value: 0.014161362
       objectReference: {fileID: 0}
     - target: {fileID: 5247650485044281852, guid: 061f308768b5b564bbb0f130d1a8f02e,
         type: 3}
       propertyPath: m_LocalRotation.x
-      value: 0.00019546802
+      value: 0.00019546723
       objectReference: {fileID: 0}
     - target: {fileID: 5247650485044281852, guid: 061f308768b5b564bbb0f130d1a8f02e,
         type: 3}
@@ -10744,7 +10755,7 @@ PrefabInstance:
     - target: {fileID: 5247650485044281852, guid: 061f308768b5b564bbb0f130d1a8f02e,
         type: 3}
       propertyPath: m_LocalRotation.z
-      value: -0.013800179
+      value: -0.013800159
       objectReference: {fileID: 0}
     - target: {fileID: 5247650485044281852, guid: 061f308768b5b564bbb0f130d1a8f02e,
         type: 3}
@@ -10763,6 +10774,12 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 061f308768b5b564bbb0f130d1a8f02e, type: 3}
+--- !u!20 &2047869375 stripped
+Camera:
+  m_CorrespondingSourceObject: {fileID: 5247650485044281827, guid: 061f308768b5b564bbb0f130d1a8f02e,
+    type: 3}
+  m_PrefabInstance: {fileID: 2047869374}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &2047892987
 GameObject:
   m_ObjectHideFlags: 0

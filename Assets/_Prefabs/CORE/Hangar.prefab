@@ -24,7 +24,7 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 302356026468653293}
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -45,28 +45,55 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   PlayerTeam: 1
+  PlayerPilot: {fileID: 0}
   PlayerShipType: 0
   FriendlyAIShipType: 6
-  HostileAI1ShipType: 8
+  HostileAI1ShipType: 6
   HostileAI2ShipType: 7
   GreenTeamMaterial: {fileID: 2100000, guid: cbf0164b1addfee43a45e430c464b6fd, type: 2}
   RedTeamMaterial: {fileID: 2100000, guid: b0e105431956f1b40b8ef19fbde85b3b, type: 2}
+  BlueTeamMaterial: {fileID: 2100000, guid: c739bccc290901b4cac760f82c02cbcd, type: 2}
+  YellowTeamMaterial: {fileID: 2100000, guid: 2d8f06b3b049067499bfc06179a4a314, type: 2}
   GreenTeamBlockMaterial: {fileID: 2100000, guid: 5140ec1c42866e849927f442d5965f7f,
     type: 2}
   RedTeamBlockMaterial: {fileID: 2100000, guid: 6a9bda8b03d768b49af63226292fa2c6,
+    type: 2}
+  BlueTeamBlockMaterial: {fileID: 2100000, guid: 052ad6cedfeeddc4fb21fcb46fc2606e,
+    type: 2}
+  YellowTeamBlockMaterial: {fileID: 2100000, guid: 80af0fed05f82884aaf443b0bcc8af5f,
+    type: 2}
+  GreenTeamShieldedBlockMaterial: {fileID: 2100000, guid: d8eecfb8be075a44991cdede59d8e0f1,
+    type: 2}
+  RedTeamShieldedBlockMaterial: {fileID: 2100000, guid: 295e1410f47fecd499c48b814aeb09a0,
+    type: 2}
+  BlueTeamShieldedBlockMaterial: {fileID: 2100000, guid: 298c2cb6efb754d45a11c950431c58a3,
+    type: 2}
+  YellowTeamShieldedBlockMaterial: {fileID: 2100000, guid: 88959345b82b41a46b13e42acea0cf37,
     type: 2}
   GreenTeamAOEExplosionMaterial: {fileID: 2100000, guid: fd4788fd12c71f64185794559710e4ea,
     type: 2}
   RedTeamAOEExplosionMaterial: {fileID: 2100000, guid: 36ee0116158df2c438f8a0b13ef1ad49,
     type: 2}
-  SelectedBayIndex: 0
+  BlueTeamAOEExplosionMaterial: {fileID: 2100000, guid: 4596e8c23c1593b4eadfc4a2157a53e5,
+    type: 2}
+  YellowTeamAOEExplosionMaterial: {fileID: 2100000, guid: 37eeeb7b5e625684caca36f02cec8a0f,
+    type: 2}
+  GreenTeamAOEConicExplosionMaterial: {fileID: 2100000, guid: 34e02368fd396cb4180b8eb6130a84b6,
+    type: 2}
+  RedTeamAOEConicExplosionMaterial: {fileID: 2100000, guid: bb6be751b7625924898df5f4bfe10630,
+    type: 2}
+  BlueTeamAOEConicExplosionMaterial: {fileID: 2100000, guid: 14ab3291fb6fa3e429bd05a28c89945c,
+    type: 2}
+  YellowTeamAOEConicExplosionMaterial: {fileID: 2100000, guid: e80b9e4fc0849dc4a9457127812a05d5,
+    type: 2}
   ShipPrefabs:
   - {fileID: 874579555101021527, guid: 920c06d41c62d1f4482a2f80e793bbf8, type: 3}
-  - {fileID: 874579555101021527, guid: b133316bddc570841bd18ecab25e508e, type: 3}
+  - {fileID: 874579555101021527, guid: ec808aa496daa7b489fa5baabe9a19ea, type: 3}
   - {fileID: 874579555101021527, guid: 3cc1c31e8138b6448ae4264dd90d24ac, type: 3}
   - {fileID: 874579555101021527, guid: 9206854f3fecd6c47be89099a013dfd4, type: 3}
   - {fileID: 874579555101021527, guid: 6b2bdbe32b1ed4944a62366baf0d8a80, type: 3}
   - {fileID: 874579555101021527, guid: b54ef64beb037444ab1aec9f8d00fcbb, type: 3}
+  - {fileID: 874579555101021527, guid: cc90998ce81596a49be5dba224e2d7a6, type: 3}
   - {fileID: 874579555101021527, guid: 73c8fd79b947fef4f80df7c233451d3c, type: 3}
   - {fileID: 874579555101021527, guid: 569a1dc27b1f75543a7c975f2ac03364, type: 3}
   AIDifficultyLevel: 5

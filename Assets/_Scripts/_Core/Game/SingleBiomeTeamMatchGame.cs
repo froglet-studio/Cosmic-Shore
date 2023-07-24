@@ -27,7 +27,7 @@ public class SingleBiomeTeamMatchGame : MiniGame
     {
         base.SetupTurn();
 
-        TrailSpawner.NukeTheTrails();
+        //TrailSpawner.NukeTheTrails();
         //Crystal.transform.position = CrystalStartPosition;
     }
 }
