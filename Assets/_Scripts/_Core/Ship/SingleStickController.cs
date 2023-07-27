@@ -14,8 +14,8 @@ public class SingleStickController : ShipController
     protected override void Start()
     {
         base.Start();
-        ship.InputController.SetPortrait(true);
-        shipData.Portrait = true;
+        //ship.InputController.SetPortrait(true);
+        //shipData.Portrait = true;
 
         guns = new List<Gun>() { topGun};
 

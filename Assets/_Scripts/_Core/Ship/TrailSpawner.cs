@@ -196,14 +196,15 @@ public class TrailSpawner : MonoBehaviour
         Block.GetComponent<BoxCollider>().size = Vector3.one + VectorDivision((Vector3)blockMaterial.GetVector("_spread"), Block.InnerDimensions);
         Block.Trail = trail;
 
-        Block.Index = spawnedTrailCount;
+        trail.Add(Block);
+        Block.Index = trail.TrailList.IndexOf(Block);
         Block.ID = ownerId + "::" + spawnedTrailCount++;
         
 
         if (Block.warp)
             wavelength = shards.GetComponent<WarpFieldData>().HybridVector(Block.transform).magnitude * initialWavelength;
 
-        trail.Add(Block);
+        
     }
 
     Vector3 VectorDivision(Vector3 Vector1, Vector3 Vector2) // TODO: move to tools

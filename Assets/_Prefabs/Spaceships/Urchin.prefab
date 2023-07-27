@@ -239,7 +239,7 @@ Rigidbody:
   m_Drag: 0
   m_AngularDrag: 0
   m_UseGravity: 0
-  m_IsKinematic: 0
+  m_IsKinematic: 1
   m_Interpolate: 0
   m_Constraints: 126
   m_CollisionDetection: 0
@@ -451,7 +451,7 @@ Rigidbody:
   m_Drag: 0
   m_AngularDrag: 0
   m_UseGravity: 0
-  m_IsKinematic: 0
+  m_IsKinematic: 1
   m_Interpolate: 0
   m_Constraints: 126
   m_CollisionDetection: 0
@@ -599,8 +599,8 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 7329710663377148752}
-  m_Father: {fileID: 3397189760217659071}
-  m_RootOrder: 5
+  m_Father: {fileID: 6871072789186117683}
+  m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!33 &6982809579961211092
 MeshFilter:
@@ -665,7 +665,7 @@ Rigidbody:
   m_Drag: 0
   m_AngularDrag: 0
   m_UseGravity: 0
-  m_IsKinematic: 0
+  m_IsKinematic: 1
   m_Interpolate: 0
   m_Constraints: 126
   m_CollisionDetection: 0
@@ -831,12 +831,6 @@ Transform:
   - {fileID: 282447970148362685}
   - {fileID: 8588335881619357846}
   - {fileID: 6871072789186117683}
-  - {fileID: 6251596704822793376}
-  - {fileID: 2885084922986201507}
-  - {fileID: 4216008049781415479}
-  - {fileID: 5230464174213204243}
-  - {fileID: 3169492700597220149}
-  - {fileID: 440112524701344820}
   m_Father: {fileID: 5928382658856804067}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -1129,7 +1123,7 @@ Rigidbody:
   m_Drag: 0
   m_AngularDrag: 0
   m_UseGravity: 0
-  m_IsKinematic: 0
+  m_IsKinematic: 1
   m_Interpolate: 0
   m_Constraints: 126
   m_CollisionDetection: 0
@@ -1276,8 +1270,8 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1270300511381695551}
-  m_Father: {fileID: 3397189760217659071}
-  m_RootOrder: 3
+  m_Father: {fileID: 6871072789186117683}
+  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!33 &777425666622107349
 MeshFilter:
@@ -1342,7 +1336,7 @@ Rigidbody:
   m_Drag: 0
   m_AngularDrag: 0
   m_UseGravity: 0
-  m_IsKinematic: 0
+  m_IsKinematic: 1
   m_Interpolate: 0
   m_Constraints: 126
   m_CollisionDetection: 0
@@ -1489,8 +1483,8 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 7025818160229434134}
-  m_Father: {fileID: 3397189760217659071}
-  m_RootOrder: 7
+  m_Father: {fileID: 6871072789186117683}
+  m_RootOrder: 4
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!33 &3098473838424149547
 MeshFilter:
@@ -1555,7 +1549,7 @@ Rigidbody:
   m_Drag: 0
   m_AngularDrag: 0
   m_UseGravity: 0
-  m_IsKinematic: 0
+  m_IsKinematic: 1
   m_Interpolate: 0
   m_Constraints: 126
   m_CollisionDetection: 0
@@ -1599,7 +1593,7 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3973492122190050347}
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -1670,7 +1664,7 @@ Rigidbody:
   m_Drag: 0
   m_AngularDrag: 0
   m_UseGravity: 0
-  m_IsKinematic: 0
+  m_IsKinematic: 1
   m_Interpolate: 0
   m_Constraints: 126
   m_CollisionDetection: 0
@@ -2062,7 +2056,7 @@ Rigidbody:
   m_Drag: 0
   m_AngularDrag: 0
   m_UseGravity: 0
-  m_IsKinematic: 0
+  m_IsKinematic: 1
   m_Interpolate: 0
   m_Constraints: 126
   m_CollisionDetection: 0
@@ -2112,8 +2106,8 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 4773132631387925858}
-  m_Father: {fileID: 3397189760217659071}
-  m_RootOrder: 8
+  m_Father: {fileID: 6871072789186117683}
+  m_RootOrder: 5
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!33 &6692379112533038137
 MeshFilter:
@@ -2178,7 +2172,7 @@ Rigidbody:
   m_Drag: 0
   m_AngularDrag: 0
   m_UseGravity: 0
-  m_IsKinematic: 0
+  m_IsKinematic: 1
   m_Interpolate: 0
   m_Constraints: 126
   m_CollisionDetection: 0
@@ -2423,8 +2417,8 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 6410421509415370956}
-  m_Father: {fileID: 3397189760217659071}
-  m_RootOrder: 6
+  m_Father: {fileID: 6871072789186117683}
+  m_RootOrder: 3
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!33 &8696119451964816077
 MeshFilter:
@@ -2489,7 +2483,7 @@ Rigidbody:
   m_Drag: 0
   m_AngularDrag: 0
   m_UseGravity: 0
-  m_IsKinematic: 0
+  m_IsKinematic: 1
   m_Interpolate: 0
   m_Constraints: 126
   m_CollisionDetection: 0
@@ -2657,8 +2651,8 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 8017339515916015792}
-  m_Father: {fileID: 3397189760217659071}
-  m_RootOrder: 4
+  m_Father: {fileID: 6871072789186117683}
+  m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!33 &2817422050326434966
 MeshFilter:
@@ -2723,7 +2717,7 @@ Rigidbody:
   m_Drag: 0
   m_AngularDrag: 0
   m_UseGravity: 0
-  m_IsKinematic: 0
+  m_IsKinematic: 1
   m_Interpolate: 0
   m_Constraints: 126
   m_CollisionDetection: 0
@@ -2754,11 +2748,11 @@ GameObject:
   - component: {fileID: 874579555101021522}
   - component: {fileID: 874579555101021523}
   - component: {fileID: 975128113266807093}
-  - component: {fileID: 6315651686961786297}
   - component: {fileID: 3440187540988767646}
   - component: {fileID: 4005043449782909879}
   - component: {fileID: 1435252848482629424}
   - component: {fileID: 7081412522392871879}
+  - component: {fileID: 8607513911732901166}
   m_Layer: 0
   m_Name: Urchin
   m_TagString: Player_Ship
@@ -2840,10 +2834,10 @@ MonoBehaviour:
   - {fileID: 4981221834739771465}
   - {fileID: 3973492122190050347}
   - {fileID: 7835283986601519113}
+  head: {fileID: 0}
   AOEPrefab: {fileID: 2728798890556433942, guid: 4a855af160021d241b8c1ac70cf2d792,
     type: 3}
   farFieldSkimmer: {fileID: 0}
-  LookAtObject: {fileID: 0}
   crystalImpactEffects: 0b0000000800000003000000
   minExplosionScale: 50
   maxExplosionScale: 500
@@ -2879,7 +2873,6 @@ MonoBehaviour:
   ControlOverrides: 0400000003000000
   closeCamDistance: -3
   farCamDistance: -6
-  farCamHeight: 6
   AOEExplosionMaterial: {fileID: 0}
   AOEConicExplosionMaterial: {fileID: 0}
 --- !u!114 &6964962696344697388
@@ -2988,37 +2981,6 @@ MonoBehaviour:
   rechargeRate: 0.1
   ProjectileScale: 1
   BlockScale: {x: 4, y: 4, z: 0.4}
---- !u!114 &6315651686961786297
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6417075533431866457}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8931715ca622a9744a7689f33100c42b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  MinimumSpeed: 0
-  ThrottleScaler: 0
-  DefaultMinimumSpeed: 0
-  DefaultThrottleScaler: 40
-  BoostDecay: 1
-  MaxBoostDecay: 10
-  BoostDecayGrowthRate: 0.03
-  PitchScaler: 130
-  YawScaler: 130
-  RollScaler: 130
-  RotationThrottleScaler: 0
-  topGun: {fileID: 0}
-  leftGun: {fileID: 0}
-  rightGun: {fileID: 0}
-  trailFollower: {fileID: 7081412522392871879}
-  ProjectileScale: 1
-  BlockScale: {x: 4, y: 4, z: 0.4}
-  nextBlockIndex: 1
-  previousBlockIndex: 0
 --- !u!114 &3440187540988767646
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3065,7 +3027,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 858d27e97e36b394593e6f2fe8c73f06, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  brakeThreshold: 0.65
+  brakeThreshold: 0.5
   lerpAmount: 2
   smallLerpAmount: 0.7
   Body: {fileID: 6871072789186117683}
@@ -3081,8 +3043,8 @@ MonoBehaviour:
   JetTopRight: {fileID: 440112524701344820}
   ShroudTopLeft: {fileID: 7025818160229434134}
   ShroudTopRight: {fileID: 4773132631387925858}
-  animationScaler: 10
-  yawAnimationScaler: 30
+  animationScaler: 30
+  yawAnimationScaler: 60
 --- !u!114 &1435252848482629424
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3142,6 +3104,21 @@ MonoBehaviour:
   HostileTerrainSpeed: 10
   DestroyedTerrainSpeed: 10
   Throttle: 0
+--- !u!114 &8607513911732901166
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1e03405a6e8a59b468bd7970ecc7d3e0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  TransparentMaterial: {fileID: 2100000, guid: cc4ffbaa55bcb9b4494cfdc9d19d1214, type: 2}
+  OpaqueMaterial: {fileID: 2100000, guid: 5140ec1c42866e849927f442d5965f7f, type: 2}
+  radiusInBlocks: 5
 --- !u!1 &6529595402500225743
 GameObject:
   m_ObjectHideFlags: 0
@@ -3496,7 +3473,7 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 7835283986601519113}
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -3567,7 +3544,7 @@ Rigidbody:
   m_Drag: 0
   m_AngularDrag: 0
   m_UseGravity: 0
-  m_IsKinematic: 0
+  m_IsKinematic: 1
   m_Interpolate: 0
   m_Constraints: 126
   m_CollisionDetection: 0
@@ -3615,7 +3592,13 @@ Transform:
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children: []
+  m_Children:
+  - {fileID: 6251596704822793376}
+  - {fileID: 2885084922986201507}
+  - {fileID: 4216008049781415479}
+  - {fileID: 5230464174213204243}
+  - {fileID: 3169492700597220149}
+  - {fileID: 440112524701344820}
   m_Father: {fileID: 3397189760217659071}
   m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -3696,7 +3679,7 @@ Rigidbody:
   m_Drag: 0
   m_AngularDrag: 0
   m_UseGravity: 0
-  m_IsKinematic: 0
+  m_IsKinematic: 1
   m_Interpolate: 0
   m_Constraints: 126
   m_CollisionDetection: 0
