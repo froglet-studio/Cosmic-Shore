@@ -63,7 +63,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 5140ec1c42866e849927f442d5965f7f, type: 2}
+  - {fileID: 2100000, guid: cc4ffbaa55bcb9b4494cfdc9d19d1214, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -120,6 +120,7 @@ MonoBehaviour:
     trailBlock: {fileID: 0}
     Index: 0
     Shielded: 0
+    TimeCreated: 0
   growthRate: 0.5
   ParticleEffect: {fileID: 3706253519474275301, guid: 2d5ef26f11cfb824fa85b6f5cd632c79,
     type: 3}

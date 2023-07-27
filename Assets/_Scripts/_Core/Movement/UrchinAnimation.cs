@@ -66,20 +66,23 @@ class UrchinAnimation : ShipAnimation
 
     protected override void PerformShipAnimations(float pitch, float yaw, float roll, float throttle)
     {
-        //AnimatePart(LeftGun,
-        //            Brake(throttle) * yawAnimationScaler,
-        //            -(throttle - yaw) * yawAnimationScaler,
-        //            (roll + pitch) * animationScaler);
 
-        //AnimatePart(RightGun,
-        //            Brake(throttle) * yawAnimationScaler,
-        //            (throttle + yaw) * yawAnimationScaler,
-        //            (roll - pitch) * animationScaler);
+        if (GetComponent<Ship>().ShipData.Attached)
+        {
+            AnimatePart(Body,
+               Time.deltaTime * 100f,
+                0,
+                0);
+        }
+        else
+        {
+            AnimatePart(Body,
+                -pitch * animationScaler,
+                yaw * animationScaler,
+                roll * animationScaler);
+        }
 
-        AnimatePart(Body,
-                    -pitch * animationScaler,
-                    yaw * animationScaler,
-                    roll * animationScaler);
+
 
         AnimatePart(LeftGun,
                     -pitch * animationScaler,
@@ -92,24 +95,27 @@ class UrchinAnimation : ShipAnimation
                     roll * animationScaler);
 
         AnimatePart(JetBottomLeft,
-                    Brake(throttle) * yawAnimationScaler,
-                    -(throttle - yaw) * yawAnimationScaler,
-                    (roll + pitch + (3 * (1 - throttle))) * animationScaler);
-
-        AnimatePart(JetTopRight,
-                    Brake(throttle) * yawAnimationScaler,
-                    (throttle + yaw) * yawAnimationScaler,
-                    (roll + pitch + (3 * (1 - throttle))) * animationScaler);
-
-        AnimatePart(JetTopLeft,
-                    Brake(throttle) * yawAnimationScaler,
-                    -(throttle - yaw) * yawAnimationScaler,
-                    (roll - pitch - (3 * (1 - throttle))) * animationScaler);
+                -pitch * animationScaler,
+                yaw * animationScaler,
+                roll * animationScaler);
 
         AnimatePart(JetBottomRight,
-                    Brake(throttle) * yawAnimationScaler,
-                    (throttle + yaw) * yawAnimationScaler,
-                    (roll - pitch - (3 * (1 - throttle))) * animationScaler);
+                -pitch * animationScaler,
+                yaw * animationScaler,
+                roll * animationScaler);
+
+        AnimatePart(JetTopLeft,
+                -pitch * animationScaler,
+                yaw * animationScaler,
+                roll * animationScaler);
+
+        AnimatePart(JetTopRight,
+                -pitch * animationScaler,
+                yaw * animationScaler,
+                roll * animationScaler);
+
+
+
     }
 
     protected override void AssignTransforms()
