@@ -48,7 +48,6 @@ namespace StarWriter.Core
             
             int incrementor = (int) direction;   // Fun bit of cleverness, enum forward is 1 and backward is -1
             var distanceTravelled = 0f;
-            Debug.Log($"Trail.cs, index: {index}");
             var currentBlock = TrailList[index];
             var nextBlock = TrailList[index + incrementor];
             var lookAheadBlocks = new List<TrailBlock> { currentBlock };

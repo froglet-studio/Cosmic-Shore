@@ -12,7 +12,9 @@ public class TrailViewer : MonoBehaviour
     private LineRenderer lineRenderer;
     private Trail attachedTrail;
 
-    List<TrailBlock> transparentBlocks = new List<TrailBlock>();
+    List<TrailBlock> transparentBlocks = new();
+    List<Material> savedMaterials = new();
+    
 
     void Start()
     {
@@ -27,15 +29,14 @@ public class TrailViewer : MonoBehaviour
     {
         if (transparentBlocks != null)
         {
-            foreach (TrailBlock block in transparentBlocks)
+            for (var i = 0; i < transparentBlocks.Count; i++)
             {
-                if (attachedTrail.TrailList.Contains(block))
-                {
-                    block.GetComponent<Renderer>().material = OpaqueMaterial;
-                }
+                transparentBlocks[i].GetComponent<Renderer>().material = savedMaterials[i];
             }
+
             transparentBlocks.Clear();
         }
+
         lineRenderer.enabled = false;
 
         if (!trailFollower.IsAttached) return;
@@ -57,6 +58,7 @@ public class TrailViewer : MonoBehaviour
         for (int i = attachedBlockIndex - radiusInBlocks; i < attachedBlockIndex + radiusInBlocks; i++)
         {
             if (i >= attachedTrail.TrailList.Count - 1 || i <= 0) continue;
+            savedMaterials.Add(attachedTrail.TrailList[i].GetComponent<Renderer>().material);
             attachedTrail.TrailList[i].GetComponent<Renderer>().material = TransparentMaterial;
             transparentBlocks.Add(attachedTrail.TrailList[i]);
         }
