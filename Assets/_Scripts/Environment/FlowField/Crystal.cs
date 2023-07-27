@@ -62,19 +62,8 @@ public class Crystal : MonoBehaviour
         {
             switch (effect)
             {
-                case CrystalImpactEffects.PlayHaptics:
-                    HapticController.PlayCrystalImpactHaptics();
-                    break;
                 case CrystalImpactEffects.PlayFakeCrystalHaptics:   // TODO: P1 need to merge haptics and take an enum to determine which on to play
                     HapticController.PlayFakeCrystalImpactHaptics();
-                    break;
-                case CrystalImpactEffects.AreaOfEffectExplosion:
-                    var AOEExplosion = Instantiate(AOEPrefab).GetComponent<AOEExplosion>();
-                    AOEExplosion.Material = AOEExplosionMaterial;
-                    AOEExplosion.Team = Team;
-                    AOEExplosion.Ship = ship;
-                    AOEExplosion.SetPositionAndRotation(transform.position, transform.rotation);
-                    AOEExplosion.MaxScale = maxExplosionScale;
                     break;
                 case CrystalImpactEffects.ReduceSpeed:
                     ship.ShipController.ModifyThrottle(.1f, 10);  // TODO: Magic numbers
@@ -86,16 +75,13 @@ public class Crystal : MonoBehaviour
     protected virtual void Collide(Collider other)
     {
         Ship ship;
-        Vector3 velocity;
         if (IsShip(other.gameObject))
         {
             ship = other.GetComponent<ShipGeometry>().Ship;
-            velocity = ship.GetComponent<ShipData>().Course * ship.GetComponent<ShipData>().Speed;
         }
         else if (IsProjectile(other.gameObject))
         {
-            ship = other.GetComponent<Projectile>().Ship;
-            velocity = other.GetComponent<Projectile>().Velocity;
+            ship = other.GetComponent<Projectile>().Ship;   // TODO: does this mean ships can shoot the crystal to collect it?
         }
         else return;
 
@@ -107,12 +93,11 @@ public class Crystal : MonoBehaviour
             ship.PerformCrystalImpactEffects(crystalProperties);
         }
 
-        PerformCrystalImpactEffects(crystalProperties, ship);
-
-
         //
         // Do the crystal stuff that always happens (ship independent)
         //
+        PerformCrystalImpactEffects(crystalProperties, ship);
+
         Explode(ship);
 
         PlayExplosionAudio();
