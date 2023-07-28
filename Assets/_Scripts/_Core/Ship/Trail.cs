@@ -69,7 +69,7 @@ namespace StarWriter.Core
                         incrementor *= -1;
                 }
 
-                Debug.Log($"LookAhead - index:{index}, incrementor:{incrementor}, TrailList.Count:{TrailList.Count}, isLoop:{isLoop}");
+                //Debug.Log($"LookAhead - index:{index}, incrementor:{incrementor}, TrailList.Count:{TrailList.Count}, isLoop:{isLoop}");
 
                 currentBlock = TrailList[index];
                 nextBlock = TrailList[index + incrementor];

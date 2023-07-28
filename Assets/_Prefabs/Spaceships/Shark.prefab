@@ -691,11 +691,11 @@ GameObject:
   - component: {fileID: 874579555101021527}
   - component: {fileID: 6964962696344697388}
   - component: {fileID: 874579555101021522}
-  - component: {fileID: 874579555101021523}
   - component: {fileID: 3440187540988767646}
   - component: {fileID: 1435252848482629424}
   - component: {fileID: 3496801340156507927}
   - component: {fileID: 2456609266732234764}
+  - component: {fileID: 6441696348568773771}
   m_Layer: 0
   m_Name: Shark
   m_TagString: Player_Ship
@@ -759,8 +759,8 @@ MonoBehaviour:
   maxExplosionScale: 400
   trailBlockImpactEffects: 
   blockChargeChange: 0
-  boostMultiplier: 3
-  boostFuelAmount: -0.007
+  boostMultiplier: 6
+  boostFuelAmount: -0.015
   maxSpeedStraightActions:
   - {fileID: 1315493734959331551}
   - {fileID: 6430648885380261475}
@@ -841,34 +841,6 @@ MonoBehaviour:
   maxBlockScale: 1
   XScaler: 1
   YScaler: 1
---- !u!114 &874579555101021523
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6417075533431866457}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9846c9cd6cfac424797ca640ebcb7a04, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  Speed: 0
-  Boosting: 0
-  BoostCharging: 0
-  BoostDecaying: 0
-  Drifting: 0
-  LayingBulletTrail: 0
-  Portrait: 0
-  ShowThreeButtonPanel: 0
-  LiveProjectiles: 0
-  Stationary: 0
-  ElevatedAmmoGain: 0
-  Attached: 0
-  AttachedTrailBlock: {fileID: 0}
-  GunsActive: 1
-  Course: {x: 0, y: 0, z: 0}
-  blockRotation: {x: 0, y: 0, z: 0, w: 0}
 --- !u!114 &3440187540988767646
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -881,14 +853,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a58bf4fb65afa704194fe9e28e67d58d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  DifficultyLevel: 0
-  defaultThrottle: 30
-  defaultAggressiveness: 0.035
-  throttleIncrease: 5
-  aggressivenessIncrease: 0.001
+  SkillLevel: 0
+  defaultThrottleHigh: 0.6
+  defaultThrottleLow: 0.6
+  defaultAggressivenessHigh: 0.035
+  defaultAggressivenessLow: 0.035
+  throttleIncreaseHigh: 0.001
+  throttleIncreaseLow: 0.001
+  avoidanceHigh: 2.5
+  avoidanceLow: 2.5
+  aggressivenessIncreaseHigh: 0.001
+  aggressivenessIncreaseLow: 0.001
   throttle: 0
   aggressiveness: 0.1
-  avoidance: 23
   XSum: 0
   YSum: 0
   XDiff: 0
@@ -930,6 +907,17 @@ MonoBehaviour:
   LevelDisplay: {fileID: 0}
   AmmoDisplay: {fileID: 0}
   ChargeDisplay: {fileID: 0}
+  MassDisplay: {fileID: 0}
+  SpaceDisplay: {fileID: 0}
+  TimeDisplay: {fileID: 0}
+  ChargeLevelDisplay: {fileID: 0}
+  MassLevelDisplay: {fileID: 0}
+  SpaceLevelDisplay: {fileID: 0}
+  TimeLevelDisplay: {fileID: 0}
+  InitialChargeLevel: 0
+  InitialMassLevel: 0
+  InitialSpaceLevel: 0
+  InitialTimeLevel: 0
 --- !u!114 &3496801340156507927
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -942,6 +930,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7f94d6809195bd847aae6efcae136d3a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  brakeThreshold: 0.65
+  lerpAmount: 2
+  smallLerpAmount: 0.7
   Fusilage: {fileID: 5638961722823708748}
   LeftWing: {fileID: 9010769729400544042}
   RightWing: {fileID: 8945025754154443436}
@@ -949,8 +940,6 @@ MonoBehaviour:
   Tail: {fileID: 2378205035692549883}
   animationScaler: 25
   yawAnimationScaler: 80
-  lerpAmount: 2
-  smallLerpAmount: 0.7
 --- !u!114 &2456609266732234764
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -967,13 +956,37 @@ MonoBehaviour:
   ThrottleScaler: 0
   DefaultMinimumSpeed: 10
   DefaultThrottleScaler: 50
-  BoostDecay: 1
-  MaxBoostDecay: 10
-  BoostDecayGrowthRate: 0.03
   PitchScaler: 130
   YawScaler: 130
   RollScaler: 130
   RotationThrottleScaler: 0
+--- !u!114 &6441696348568773771
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 61d08a99952fdc44d96f926228873c0c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  Speed: 0
+  Boosting: 0
+  ChargedBoostDischarging: 0
+  Drifting: 0
+  Portrait: 0
+  ShowThreeButtonPanel: 0
+  LiveProjectiles: 0
+  Stationary: 0
+  ElevatedAmmoGain: 0
+  ChargedBoostCharge: 1
+  Attached: 0
+  AttachedTrailBlock: {fileID: 0}
+  GunsActive: 0
+  Course: {x: 0, y: 0, z: 1}
+  blockRotation: {x: 0, y: 0, z: 0, w: 0}
 --- !u!1 &7020314743814055985
 GameObject:
   m_ObjectHideFlags: 0
@@ -1257,7 +1270,7 @@ PrefabInstance:
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
       propertyPath: chargeAmount
-      value: 0.0017
+      value: 0.00015
       objectReference: {fileID: 0}
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}

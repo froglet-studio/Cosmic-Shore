@@ -5,8 +5,9 @@ using UnityEngine;
 public class ChargeBoostAction : ShipActionAbstractBase
 {
     bool BoostCharging;
-    float BoostChargeRate = .33f;
-    float MaxBoostCharge = 10;
+    [SerializeField] float BoostChargeRate = .33f;
+    [SerializeField] float BoostDischargeRate = .25f;
+    [SerializeField] float MaxBoostCharge = 10;
     ShipStatus shipData;
 
     void Start()
@@ -45,8 +46,8 @@ public class ChargeBoostAction : ShipActionAbstractBase
         shipData.ChargedBoostDischarging = true;
         while (shipData.ChargedBoostCharge > 1)
         {
-            shipData.ChargedBoostCharge = Mathf.Clamp(shipData.ChargedBoostCharge - Time.deltaTime, 1, MaxBoostCharge);
-            ship.ResourceSystem.ChangeBoostAmount(-Time.deltaTime);
+            shipData.ChargedBoostCharge = Mathf.Clamp(shipData.ChargedBoostCharge - Time.deltaTime * BoostDischargeRate, 1, MaxBoostCharge);
+            ship.ResourceSystem.ChangeBoostAmount(-Time.deltaTime * BoostDischargeRate);
             yield return null;
         }
         shipData.ChargedBoostCharge = 1;

@@ -613,6 +613,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d83c4d9a1b2407d4790cb6b65a698b7f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  BoostChargeRate: 0.5
+  BoostDischargeRate: 0.2
+  MaxBoostCharge: 20
 --- !u!1 &2999483566616187699
 GameObject:
   m_ObjectHideFlags: 0
@@ -1225,9 +1228,9 @@ MonoBehaviour:
   maxProjectileScale: 10
   minProjectileBlockScale: {x: 1.5, y: 1.5, z: 3}
   maxProjectileBlockScale: {x: 1.5, y: 1.5, z: 30}
-  ControlOverrides: 040000000300000003000000
+  ControlOverrides: 0400000003000000
   closeCamDistance: -8
-  farCamDistance: -20
+  farCamDistance: -16
   AOEExplosionMaterial: {fileID: 0}
   AOEConicExplosionMaterial: {fileID: 0}
 --- !u!114 &6964962696344697388
@@ -1278,7 +1281,7 @@ MonoBehaviour:
   spawnerEnabled: 1
   MaxNearbyBlockCount: 10
   minBlockScale: 1
-  maxBlockScale: 5
+  maxBlockScale: 8
   XScaler: 1
   YScaler: 1
 --- !u!114 &1435252848482629424
@@ -1944,12 +1947,12 @@ PrefabInstance:
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
       propertyPath: chargeAmount
-      value: 0.003
+      value: 0.004
       objectReference: {fileID: 0}
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
       propertyPath: MultiSkimMultiplier
-      value: 0.0002
+      value: 0.0003
       objectReference: {fileID: 0}
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}

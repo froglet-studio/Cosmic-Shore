@@ -2,19 +2,20 @@ using UnityEngine;
 using System.Collections.Generic;
 using StarWriter.Core;
 using System;
+using System.Linq;
 
 public class TrailViewer : MonoBehaviour
 {
     public Material TransparentMaterial;
-    public Material OpaqueMaterial;
     public int radiusInBlocks = 5;
     private TrailFollower trailFollower;
     private LineRenderer lineRenderer;
     private Trail attachedTrail;
 
     List<TrailBlock> transparentBlocks = new();
-    List<Material> savedMaterials = new();
-    
+    //List<Material> savedMaterials = new();
+    Dictionary<TrailBlock, Material> originalMaterials = new Dictionary<TrailBlock, Material>();
+
 
     void Start()
     {
@@ -25,15 +26,20 @@ public class TrailViewer : MonoBehaviour
         lineRenderer.startWidth = lineRenderer.endWidth = 0.1f;
     }
 
+
     void Update()
     {
         if (transparentBlocks != null)
         {
-            for (var i = 0; i < transparentBlocks.Count; i++)
+            Debug.Log("Number of entries in originalMaterials: " + originalMaterials.Count);
+            foreach (TrailBlock block in transparentBlocks)
             {
-                transparentBlocks[i].GetComponent<Renderer>().material = savedMaterials[i];
+                if (block.GetComponent<Renderer>().sharedMaterial.Equals(TransparentMaterial))
+                {
+                    Debug.Log("restoring material");
+                    block.GetComponent<Renderer>().sharedMaterial = originalMaterials[block];  // Retrieve the original material
+                }
             }
-
             transparentBlocks.Clear();
         }
 
@@ -43,26 +49,24 @@ public class TrailViewer : MonoBehaviour
 
 
         attachedTrail = trailFollower.AttachedTrailBlock.Trail;
-
-        //attachedTrail.TrailList[trailFollower.AttachedTrailBlock.Index].GetComponent<Renderer>().material = TransparentMaterial;
-
-
-
         int attachedBlockIndex = trailFollower.AttachedTrailBlock.Index;
-
-        // Reset materials of previously transparent blocks
-
 
 
         // Set materials of blocks in view distance
         for (int i = attachedBlockIndex - radiusInBlocks; i < attachedBlockIndex + radiusInBlocks; i++)
         {
+            Material tempMaterial;
             if (i >= attachedTrail.TrailList.Count - 1 || i <= 0) continue;
-            savedMaterials.Add(attachedTrail.TrailList[i].GetComponent<Renderer>().material);
-            attachedTrail.TrailList[i].GetComponent<Renderer>().material = TransparentMaterial;
-            transparentBlocks.Add(attachedTrail.TrailList[i]);
+            var block = attachedTrail.TrailList[i];
+            if (!block.GetComponent<Renderer>().sharedMaterial.Equals(TransparentMaterial))
+            {
+                Debug.Log("set material");
+                tempMaterial = (block.GetComponent<Renderer>().material);
+                block.GetComponent<Renderer>().sharedMaterial = TransparentMaterial;
+                transparentBlocks.Add(block);
+                originalMaterials[block] = tempMaterial;
+            }
         }
-
 
         // Draw line
         lineRenderer.positionCount = transparentBlocks.Count;
@@ -71,7 +75,6 @@ public class TrailViewer : MonoBehaviour
             lineRenderer.SetPosition(transparentBlocks.IndexOf(block), block.transform.position);
         }
         lineRenderer.enabled = true;
-
 
     }
 }

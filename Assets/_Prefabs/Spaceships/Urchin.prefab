@@ -640,7 +640,7 @@ MonoBehaviour:
   projectilePrefab: {fileID: 7877928849292311340, guid: 8d80761fade24204c8bf81c8fe6e4e42,
     type: 3}
   Detonate: 0
-  projectileTime: 2
+  projectileTime: 3
   firePeriod: 0.1
   Team: 1
   Ship: {fileID: 874579555101021527}
@@ -835,7 +835,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   gun: {fileID: 7480786212238001713}
-  ProjectileScale: 5
+  ammoCost: 0.03
+  ProjectileScale: 10
   BlockScale: {x: 4, y: 4, z: 1}
 --- !u!1 &2323831624999812778
 GameObject:
@@ -979,7 +980,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   gun: {fileID: 1896180257573412121}
-  ProjectileScale: 5
+  ammoCost: 0.03
+  ProjectileScale: 10
   BlockScale: {x: 4, y: 4, z: 1}
 --- !u!1 &3009779053630328212
 GameObject:
@@ -2458,7 +2460,7 @@ MonoBehaviour:
   projectilePrefab: {fileID: 7877928849292311340, guid: 8d80761fade24204c8bf81c8fe6e4e42,
     type: 3}
   Detonate: 0
-  projectileTime: 2
+  projectileTime: 3
   firePeriod: 0.1
   Team: 1
   Ship: {fileID: 874579555101021527}
@@ -2702,13 +2704,13 @@ GameObject:
   - component: {fileID: 874579555101021527}
   - component: {fileID: 6964962696344697388}
   - component: {fileID: 874579555101021522}
-  - component: {fileID: 874579555101021523}
   - component: {fileID: 975128113266807093}
   - component: {fileID: 3440187540988767646}
   - component: {fileID: 4005043449782909879}
   - component: {fileID: 1435252848482629424}
   - component: {fileID: 7081412522392871879}
   - component: {fileID: 8607513911732901166}
+  - component: {fileID: 6441696348568773771}
   m_Layer: 0
   m_Name: Urchin
   m_TagString: Player_Ship
@@ -2827,7 +2829,7 @@ MonoBehaviour:
   maxProjectileBlockScale: {x: 8, y: 8, z: 0.4}
   ControlOverrides: 0400000003000000
   closeCamDistance: -3
-  farCamDistance: -6
+  farCamDistance: -50
   AOEExplosionMaterial: {fileID: 0}
   AOEConicExplosionMaterial: {fileID: 0}
 --- !u!114 &6964962696344697388
@@ -2881,33 +2883,6 @@ MonoBehaviour:
   maxBlockScale: 1
   XScaler: 1
   YScaler: 1
---- !u!114 &874579555101021523
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6417075533431866457}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9846c9cd6cfac424797ca640ebcb7a04, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  Speed: 0
-  Boosting: 0
-  ChargedBoostDischarging: 0
-  Drifting: 0
-  Portrait: 0
-  ShowThreeButtonPanel: 0
-  LiveProjectiles: 0
-  Stationary: 0
-  ElevatedAmmoGain: 0
-  ChargedBoostCharge: 1
-  Attached: 0
-  AttachedTrailBlock: {fileID: 0}
-  GunsActive: 0
-  Course: {x: 0, y: 0, z: 0}
-  blockRotation: {x: 0, y: 0, z: 0, w: 0}
 --- !u!114 &975128113266807093
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3071,6 +3046,33 @@ MonoBehaviour:
   TransparentMaterial: {fileID: 2100000, guid: cc4ffbaa55bcb9b4494cfdc9d19d1214, type: 2}
   OpaqueMaterial: {fileID: 2100000, guid: 5140ec1c42866e849927f442d5965f7f, type: 2}
   radiusInBlocks: 5
+--- !u!114 &6441696348568773771
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 61d08a99952fdc44d96f926228873c0c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  Speed: 0
+  Boosting: 0
+  ChargedBoostDischarging: 0
+  Drifting: 0
+  Portrait: 0
+  ShowThreeButtonPanel: 0
+  LiveProjectiles: 0
+  Stationary: 0
+  ElevatedAmmoGain: 0
+  ChargedBoostCharge: 1
+  Attached: 0
+  AttachedTrailBlock: {fileID: 0}
+  GunsActive: 0
+  Course: {x: 0, y: 0, z: 1}
+  blockRotation: {x: 0, y: 0, z: 0, w: 0}
 --- !u!1 &6529595402500225743
 GameObject:
   m_ObjectHideFlags: 0

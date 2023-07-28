@@ -9,7 +9,7 @@ public class FireGunAction : ShipActionAbstractBase
     ResourceSystem resourceSystem;
     ShipStatus shipData;
     GameObject projectileContainer;
-    float ammoCost;
+    [SerializeField] float ammoCost = .03f;
 
     public float ProjectileScale = 1f;
     public Vector3 BlockScale = new(4f, 4f, 1f);
@@ -19,7 +19,6 @@ public class FireGunAction : ShipActionAbstractBase
         projectileContainer = new GameObject($"{ship.Player.PlayerName}_Projectiles");
         shipData = ship.GetComponent<ShipStatus>();
         resourceSystem = ship.ResourceSystem;
-        ammoCost = resourceSystem.MaxAmmo / 10f; // TODO: WIP magic numbers
     }
     public override void StartAction()
     {
