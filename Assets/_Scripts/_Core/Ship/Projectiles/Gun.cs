@@ -35,7 +35,7 @@ namespace StarWriter.Core
             onCooldown = true;
 
             var projectile = Instantiate(projectilePrefab).GetComponent<Projectile>();
-            projectile.transform.rotation = Quaternion.LookRotation(transform.up);
+            projectile.transform.rotation = Quaternion.LookRotation(transform.forward);
             projectile.transform.position = transform.position + projectile.transform.forward *30;
             projectile.transform.localScale = projectileScale * Vector3.one;
             projectile.transform.parent = containerTransform;

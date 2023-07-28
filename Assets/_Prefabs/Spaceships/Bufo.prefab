@@ -159,9 +159,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   gun: {fileID: 6325554860274326311}
+  chargePerSecond: 0.3
   ProjectileScale: 30
   BlockScale: {x: 4, y: 4, z: 1}
-  chargePerSecond: 0.3
 --- !u!1 &1187085259217856650
 GameObject:
   m_ObjectHideFlags: 0
@@ -960,6 +960,8 @@ MonoBehaviour:
   head: {fileID: 0}
   AOEPrefab: {fileID: 0}
   farFieldSkimmer: {fileID: 0}
+  gunGeometries:
+  - {fileID: 6325554860274326311}
   crystalImpactEffects: 0b00000003000000
   minExplosionScale: 50
   maxExplosionScale: 500
@@ -1063,12 +1065,12 @@ MonoBehaviour:
   BoostCharging: 0
   BoostDecaying: 0
   Drifting: 0
-  LayingBulletTrail: 0
   Portrait: 0
   ShowThreeButtonPanel: 0
   LiveProjectiles: 0
   Stationary: 0
   ElevatedAmmoGain: 0
+  ThreeButtonPanel: 0
   Attached: 0
   AttachedTrailBlock: {fileID: 0}
   GunsActive: 0
@@ -1112,14 +1114,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a58bf4fb65afa704194fe9e28e67d58d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  DifficultyLevel: 0
-  defaultThrottle: 30
-  defaultAggressiveness: 0.035
-  throttleIncrease: 5
-  aggressivenessIncrease: 0.001
+  SkillLevel: 0
+  defaultThrottleHigh: 0.6
+  defaultThrottleLow: 0.6
+  defaultAggressivenessHigh: 0.035
+  defaultAggressivenessLow: 0.035
+  throttleIncreaseHigh: 0.001
+  throttleIncreaseLow: 0.001
+  avoidanceHigh: 2.5
+  avoidanceLow: 2.5
+  aggressivenessIncreaseHigh: 0.001
+  aggressivenessIncreaseLow: 0.001
   throttle: 0
   aggressiveness: 0.1
-  avoidance: 23
   XSum: 0
   YSum: 0
   XDiff: 0
@@ -1141,6 +1148,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a7eea55f63d884a4a8578cce1191b814, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  brakeThreshold: 0.65
+  lerpAmount: 2
+  smallLerpAmount: 0.7
   Fusilage: {fileID: 6031211562208651239}
   Turret: {fileID: 7114079162329278027}
   ThrusterTopRight: {fileID: 3256079961591114543}
@@ -1149,9 +1159,6 @@ MonoBehaviour:
   ThrusterBottomLeft: {fileID: 5454256248822961657}
   ThrusterLeft: {fileID: 529108071204997003}
   ThrusterTopLeft: {fileID: 6678995285312206212}
-  Transforms: []
-  lerpAmount: 2
-  smallLerpAmount: 0.7
 --- !u!114 &1435252848482629424
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1184,6 +1191,17 @@ MonoBehaviour:
   LevelDisplay: {fileID: 0}
   AmmoDisplay: {fileID: 0}
   ChargeDisplay: {fileID: 0}
+  MassDisplay: {fileID: 0}
+  SpaceDisplay: {fileID: 0}
+  TimeDisplay: {fileID: 0}
+  ChargeLevelDisplay: {fileID: 0}
+  MassLevelDisplay: {fileID: 0}
+  SpaceLevelDisplay: {fileID: 0}
+  TimeLevelDisplay: {fileID: 0}
+  InitialChargeLevel: 0
+  InitialMassLevel: 0
+  InitialSpaceLevel: 0
+  InitialTimeLevel: 0
 --- !u!1 &6613648354675814919
 GameObject:
   m_ObjectHideFlags: 0
