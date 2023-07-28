@@ -1,3 +1,9 @@
+// Remember folks, only you can prevent Unity from arbitrarily swapping enum values in files.
+// Always assign a static numeric value to your enum types
+
+/*
+ * List of all effects that can be activated on impact when objects collide
+ */
 public enum ImpactEffects
 {
     FillCharge = 1,

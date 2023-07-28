@@ -161,6 +161,11 @@ namespace StarWriter.Core
                 if (!ship.GetComponent<ShipData>().Attached)
                 {
                     ship.PerformTrailBlockImpactEffects(TrailBlockProperties);
+                }
+
+                // Check again because the ship may have attached as part of it's block impact effects
+                if (!ship.GetComponent<ShipData>().Attached)
+                {
                     Explode(impactVector, ship.Team, ship.Player.PlayerName);
                 }
             }

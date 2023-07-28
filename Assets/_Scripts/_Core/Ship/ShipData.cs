@@ -8,14 +8,14 @@ namespace StarWriter.Core
         public float Speed;
 
         public bool Boosting = false;
-        public bool BoostCharging = false;
-        public bool BoostDecaying = false;
+        public bool ChargedBoostDischarging = false;
         public bool Drifting = false;
         public bool Portrait = false;
         public bool ShowThreeButtonPanel = false;
         public bool LiveProjectiles = false;
         public bool Stationary = false;
         public bool ElevatedAmmoGain = false;
+        public float ChargedBoostCharge = 1f;
 
         public bool Attached = false;
         public TrailBlock AttachedTrailBlock;
@@ -28,13 +28,13 @@ namespace StarWriter.Core
         public void Reset()
         {
             Boosting = false;
-            BoostCharging = false;
-            BoostDecaying = false;
+            ChargedBoostDischarging = false;
             Drifting = false;
             Attached = false;
             AttachedTrailBlock = null;
             GunsActive = false;
             Course = transform.forward;
-        }
+            ChargedBoostCharge = 1f;
+    }
     }
 }

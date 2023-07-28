@@ -24,9 +24,6 @@ public class ShipController : MonoBehaviour
 
     public float DefaultMinimumSpeed = 10f;
     public float DefaultThrottleScaler = 50;
-    public float BoostDecay = 1;
-    public float MaxBoostDecay = 10;
-    public float BoostDecayGrowthRate = .03f;
 
     public float PitchScaler = 130f;
     public float YawScaler = 130f;
@@ -84,9 +81,6 @@ public class ShipController : MonoBehaviour
         RotateShip();
         shipData.blockRotation = transform.rotation;
 
-        if (shipData.BoostCharging)
-            ChargeBoost();
-
         ApplyThrottleModifiers();
         ApplyVelocityModifiers();
 
@@ -140,30 +134,6 @@ public class ShipController : MonoBehaviour
         transform.localRotation = Quaternion.LookRotation(newDirection);
     }
 
-    public void StartChargedBoost() 
-    {
-        StartCoroutine(DecayingBoostCoroutine());
-    }
-
-    void ChargeBoost()
-    {
-        BoostDecay += BoostDecayGrowthRate;
-        resourceSystem.ChangeBoostAmount(BoostDecayGrowthRate);
-    }
-
-    IEnumerator DecayingBoostCoroutine()
-    {
-        shipData.BoostDecaying = true;
-        while (BoostDecay > 1)
-        {
-            BoostDecay = Mathf.Clamp(BoostDecay - Time.deltaTime, 1, MaxBoostDecay);
-            resourceSystem.ChangeBoostAmount(-Time.deltaTime);
-            yield return null;
-        }
-        shipData.BoostDecaying = false;
-        resourceSystem.ChangeBoostAmount(-resourceSystem.CurrentBoost);
-    }
-
     protected virtual void Pitch() // These need to not use *= because quaternions are not commutative
     {
         accumulatedRotation = Quaternion.AngleAxis(
@@ -194,7 +164,7 @@ public class ShipController : MonoBehaviour
             boostAmount = ship.boostMultiplier;
             resourceSystem.ChangeBoostAmount(ship.boostFuelAmount);
         }
-        if (shipData.BoostDecaying) boostAmount *= BoostDecay;
+        if (shipData.ChargedBoostDischarging) boostAmount *= shipData.ChargedBoostCharge;
         if (inputController != null)
         speed = Mathf.Lerp(speed, inputController.XDiff * ThrottleScaler * boostAmount + MinimumSpeed, lerpAmount * Time.deltaTime);
 
