@@ -243,7 +243,7 @@ public class MiniGame : MonoBehaviour
         //ActivePlayer.Ship.transform.SetPositionAndRotation(PlayerOrigin.transform.position, PlayerOrigin.transform.rotation);
         ActivePlayer.GetComponent<InputController>().PauseInput();
         ActivePlayer.Ship.Teleport(PlayerOrigin.transform);
-        ActivePlayer.Ship.GetComponent<ShipController>().Reset();
+        ActivePlayer.Ship.GetComponent<ShipTransformer>().Reset();
         ActivePlayer.Ship.TrailSpawner.PauseTrailSpawner();
         ActivePlayer.Ship.ResourceSystem.Reset();
 

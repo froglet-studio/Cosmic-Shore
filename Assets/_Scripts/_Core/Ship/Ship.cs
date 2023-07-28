@@ -6,7 +6,7 @@ namespace StarWriter.Core
 {
     [RequireComponent(typeof(ResourceSystem))]
     [RequireComponent(typeof(TrailSpawner))]
-    [RequireComponent(typeof(ShipData))]
+    [RequireComponent(typeof(ShipStatus))]
     public class Ship : MonoBehaviour
     {
         [SerializeField] List<ImpactProperties> impactProperties;
@@ -20,9 +20,9 @@ namespace StarWriter.Core
 
         [Header("Ship Components")]
         [HideInInspector] public TrailSpawner TrailSpawner;
-        [HideInInspector] public ShipController ShipController;
+        [HideInInspector] public ShipTransformer ShipController;
         [HideInInspector] public AIPilot AutoPilot;
-        [HideInInspector] public ShipData ShipData;
+        [HideInInspector] public ShipStatus ShipData;
         [SerializeField] Skimmer nearFieldSkimmer;
         [SerializeField] GameObject OrientationHandle;
         [SerializeField] public List<GameObject> shipGeometries;
@@ -110,9 +110,9 @@ namespace StarWriter.Core
         void Awake()
         {
             ResourceSystem = GetComponent<ResourceSystem>();
-            ShipController = GetComponent<ShipController>();
+            ShipController = GetComponent<ShipTransformer>();
             TrailSpawner = GetComponent<TrailSpawner>();
-            ShipData = GetComponent<ShipData>();
+            ShipData = GetComponent<ShipStatus>();
         }
 
         void Start()
@@ -409,7 +409,7 @@ namespace StarWriter.Core
             if (ShipController is GunShipController controller)
                 controller.ProjectileScale = minProjectileScale + ((ResourceSystem.CurrentLevel / ResourceSystem.MaxLevel) * (maxProjectileScale - minProjectileScale));
             else
-                Debug.LogWarning("Trying to scale projectile of ShipController that is not a GunShipController");
+                Debug.LogWarning("Trying to scale projectile of ShipTransformer that is not a GunShipController");
         }
 
         void ScaleProjectileBlocksWithLevel()
@@ -417,7 +417,7 @@ namespace StarWriter.Core
             if (ShipController is GunShipController controller)
                 controller.BlockScale = minProjectileBlockScale + ((ResourceSystem.CurrentLevel / ResourceSystem.MaxLevel) * (maxProjectileBlockScale - minProjectileBlockScale));
             else
-                Debug.LogWarning("Trying to scale projectile block of ShipController that is not a GunShipController");
+                Debug.LogWarning("Trying to scale projectile block of ShipTransformer that is not a GunShipController");
         }
     }
 }

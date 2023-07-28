@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class RiptideAnimation : ShipAnimation
 {
-    ShipData shipData;
+    ShipStatus shipData;
     [SerializeField] Transform DriftHandle;
     [SerializeField] Transform Chassis;
 
@@ -32,7 +32,7 @@ public class RiptideAnimation : ShipAnimation
     protected override void Start()
     {
         base.Start();
-        shipData = GetComponent<ShipData>();
+        shipData = GetComponent<ShipStatus>();
         animationTransforms = new List<Transform>() { ThrusterTopRight, ThrusterRight, ThrusterBottomRight, ThrusterBottomLeft, ThrusterLeft, ThrusterTopLeft };
     }
 

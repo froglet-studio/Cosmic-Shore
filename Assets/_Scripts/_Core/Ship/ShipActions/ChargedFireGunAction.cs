@@ -9,7 +9,7 @@ public class ChargedFireGunAction : ShipActionAbstractBase
     [SerializeField] float chargePerSecond = 1;
 
     ResourceSystem resourceSystem;
-    ShipData shipData;
+    ShipStatus shipData;
     GameObject projectileContainer;
     float ammoCost;
 
@@ -22,7 +22,7 @@ public class ChargedFireGunAction : ShipActionAbstractBase
     void Start()
     {
         projectileContainer = new GameObject($"{ship.Player.PlayerName}_Projectiles");
-        shipData = ship.GetComponent<ShipData>();
+        shipData = ship.GetComponent<ShipStatus>();
         resourceSystem = ship.ResourceSystem;
     }
     public override void StartAction()
@@ -77,7 +77,7 @@ public class ChargedFireGunAction : ShipActionAbstractBase
                 resourceSystem.ChangeAmmoAmount(-ammoCost);
 
                 Vector3 inheritedVelocity;
-                if (shipData.Attached) inheritedVelocity = transform.forward;
+                if (shipData.Attached || shipData.Stationary) inheritedVelocity = transform.forward;
                 else inheritedVelocity = shipData.Course;
 
                 // TODO: WIP magic numbers

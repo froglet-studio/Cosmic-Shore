@@ -55,7 +55,7 @@ namespace StarWriter.Core.IO
             TopLeft,
         };
 
-        ShipData shipData;
+        ShipStatus shipData;
         Ship ship;
 
         float lastPitchTarget;
@@ -98,7 +98,7 @@ namespace StarWriter.Core.IO
             if (autoPilotEnabled) { ship.InputController.AutoPilotEnabled = true; }
             aggressiveness = defaultAggressiveness;
             throttle = defaultThrottle;
-            shipData = GetComponent<ShipData>();
+            shipData = GetComponent<ShipStatus>();
 
             CornerBehaviors = new Dictionary<Corner, AvoidanceBehavior>() {
                 { Corner.TopRight, new AvoidanceBehavior (raycastWidth, raycastHeight, Clockwise, Vector3.zero ) },

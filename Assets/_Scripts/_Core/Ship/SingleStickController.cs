@@ -2,7 +2,7 @@ using UnityEngine;
 using StarWriter.Core;
 using System.Collections.Generic;
 
-public class SingleStickController : ShipController
+public class SingleStickController : ShipTransformer
 {
     [SerializeField] Gun topGun;
 

@@ -2,11 +2,11 @@ using StarWriter.Core;
 
 public class DetachAction : ShipActionAbstractBase
 {
-    ShipData shipData;
+    ShipStatus shipData;
 
     void Start()
     {
-        shipData = ship.GetComponent<ShipData>();
+        shipData = ship.GetComponent<ShipStatus>();
     }
     public override void StartAction()
     {

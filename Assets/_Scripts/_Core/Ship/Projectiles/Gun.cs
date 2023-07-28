@@ -18,12 +18,12 @@ namespace StarWriter.Core
 
         [SerializeField] TrailBlock trailBlock;
         Material blockMaterial;
-        ShipData shipData;
+        ShipStatus shipData;
 
         private void Start()
         {
             blockMaterial = Ship.GetComponent<TrailSpawner>().GetBlockMaterial();
-            shipData = Ship.GetComponent<ShipData>();
+            shipData = Ship.GetComponent<ShipStatus>();
         }
 
         public void FireGun(Transform containerTransform, float speed, Vector3 inheritedVelocity, 
@@ -36,7 +36,7 @@ namespace StarWriter.Core
 
             var projectile = Instantiate(projectilePrefab).GetComponent<Projectile>();
             projectile.transform.rotation = Quaternion.LookRotation(transform.forward);
-            projectile.transform.position = transform.position + projectile.transform.forward *30;
+            projectile.transform.position = transform.position + projectile.transform.forward * 5;
             projectile.transform.localScale = projectileScale * Vector3.one;
             projectile.transform.parent = containerTransform;
             projectile.Velocity = projectile.transform.forward * speed + inheritedVelocity;

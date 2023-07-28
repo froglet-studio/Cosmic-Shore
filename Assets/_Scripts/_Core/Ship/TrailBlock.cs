@@ -156,20 +156,45 @@ namespace StarWriter.Core
             if (IsShip(other.gameObject))
             {
                 var ship = other.GetComponent<ShipGeometry>().Ship;
-                var impactVector = ship.transform.forward * ship.GetComponent<ShipData>().Speed;
+                var impactVector = ship.transform.forward * ship.GetComponent<ShipStatus>().Speed;
 
-                if (!ship.GetComponent<ShipData>().Attached)
+                if (!ship.GetComponent<ShipStatus>().Attached)
                 {
                     ship.PerformTrailBlockImpactEffects(TrailBlockProperties);
                 }
 
                 // Check again because the ship may have attached as part of it's block impact effects
-                if (!ship.GetComponent<ShipData>().Attached)
+                if (!ship.GetComponent<ShipStatus>().Attached)
                 {
                     Explode(impactVector, ship.Team, ship.Player.PlayerName);
                 }
             }
         }
+
+        public void Devastate(Vector3 impactVector, Teams team, string playerName)
+        {
+            {
+
+                // Make exploding block
+                var explodingBlock = Instantiate(FossilBlock);
+                explodingBlock.transform.position = transform.position;
+                explodingBlock.transform.localEulerAngles = transform.localEulerAngles;
+                explodingBlock.transform.localScale = transform.localScale;
+                explodingBlock.transform.parent = fossilBlockContainer.transform;
+                explodingBlock.GetComponent<Renderer>().material = new Material(explodingMaterial);
+                explodingBlock.GetComponent<BlockImpact>().HandleImpact(impactVector, team);
+
+                if (StatsManager.Instance != null)
+                    StatsManager.Instance.BlockDestroyed(team, playerName, TrailBlockProperties);
+
+                if (NodeControlManager.Instance != null)
+                    NodeControlManager.Instance.RemoveBlock(team, playerName, TrailBlockProperties);
+                Trail.TrailList.Remove(this);
+
+                Destroy(gameObject);
+            }
+        }
+
 
         public void Explode(Vector3 impactVector, Teams team, string playerName)
         {

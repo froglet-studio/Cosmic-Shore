@@ -2,7 +2,7 @@ using StarWriter.Core;
 using StarWriter.Core.IO;
 public class ToggleTurretModeAction : ShipActionAbstractBase
 {
-    ShipData shipData;
+    ShipStatus shipData;
 
     void Start()
     {

@@ -128,11 +128,11 @@ namespace StarWriter.Core
         [HideInInspector] public ResourceDisplay TimeDisplay;
 
         public static readonly float OneFuelUnit = 1 / 10f;
-        ShipData shipData;
+        ShipStatus shipData;
 
         void Start()
         {
-            shipData = GetComponent<ShipData>();
+            shipData = GetComponent<ShipStatus>();
 
             StartCoroutine(LateStart());
         }

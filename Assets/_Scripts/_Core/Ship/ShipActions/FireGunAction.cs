@@ -4,10 +4,10 @@ using UnityEngine;
 public class FireGunAction : ShipActionAbstractBase
 {
     // TODO: WIP gun firing needs to be reworked
-    [SerializeField] Gun topGun;
+    [SerializeField] Gun gun;
 
     ResourceSystem resourceSystem;
-    ShipData shipData;
+    ShipStatus shipData;
     GameObject projectileContainer;
     float ammoCost;
 
@@ -17,7 +17,7 @@ public class FireGunAction : ShipActionAbstractBase
     void Start()
     {
         projectileContainer = new GameObject($"{ship.Player.PlayerName}_Projectiles");
-        shipData = ship.GetComponent<ShipData>();
+        shipData = ship.GetComponent<ShipStatus>();
         resourceSystem = ship.ResourceSystem;
         ammoCost = resourceSystem.MaxAmmo / 10f; // TODO: WIP magic numbers
     }
@@ -28,11 +28,11 @@ public class FireGunAction : ShipActionAbstractBase
             resourceSystem.ChangeAmmoAmount(-ammoCost);
 
             Vector3 inheritedVelocity;
-            if (shipData.Attached) inheritedVelocity = transform.forward;
+            if (shipData.Attached) inheritedVelocity = gun.transform.forward;
             else inheritedVelocity = shipData.Course;
 
             // TODO: WIP magic numbers
-            topGun.FireGun(projectileContainer.transform, 90, inheritedVelocity * shipData.Speed, ProjectileScale * 15, BlockScale * 2, true, 3f);
+            gun.FireGun(projectileContainer.transform, 90, inheritedVelocity * shipData.Speed, ProjectileScale, BlockScale * 2, true, 3f);
         }
     }
 

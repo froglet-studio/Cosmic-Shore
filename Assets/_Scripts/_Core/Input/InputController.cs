@@ -120,6 +120,11 @@ namespace StarWriter.Core.IO
             }
             else if (Gamepad.current != null)
             {
+                if (ship.ShipData.ShowThreeButtonPanel)
+                {
+                    threeButtonPanel.FadeInButtons();
+                    rearView.SetActive(true);
+                }
                 leftInput.x = Gamepad.current.leftStick.x.ReadValue();
                 leftInput.y = Gamepad.current.leftStick.y.ReadValue();
                 rightInput.x = Gamepad.current.rightStick.x.ReadValue();
@@ -184,6 +189,34 @@ namespace StarWriter.Core.IO
                 {
                     ship.StopShipControllerActions(InputEvents.RightStickAction);
                 }
+
+                if (Gamepad.current.xButton.wasPressedThisFrame)
+                {
+                    ship.PerformShipControllerActions(InputEvents.Button3Action);
+                }
+                if (Gamepad.current.xButton.wasReleasedThisFrame)
+                {
+                    ship.StopShipControllerActions(InputEvents.Button3Action);
+                }
+
+                if (Gamepad.current.aButton.wasPressedThisFrame)
+                {
+                    ship.PerformShipControllerActions(InputEvents.Button2Action);
+                }
+                if (Gamepad.current.aButton.wasReleasedThisFrame)
+                {
+                    ship.StopShipControllerActions(InputEvents.Button2Action);
+                }
+
+                if (Gamepad.current.bButton.wasPressedThisFrame)
+                {
+                    ship.PerformShipControllerActions(InputEvents.Button1Action);
+                }
+                if (Gamepad.current.bButton.wasReleasedThisFrame)
+                {
+                    ship.StopShipControllerActions(InputEvents.Button1Action);
+                }
+
 
                 CheckSpeedAndOrientation();
             }
@@ -345,7 +378,7 @@ namespace StarWriter.Core.IO
                 }
                 else
                 {
-                    if (Portrait)
+                    if (Portrait || ship.ShipData.ShowThreeButtonPanel)
                     {
                         threeButtonPanel.FadeInButtons();
                         CheckSpeedAndOrientation();
@@ -533,12 +566,12 @@ namespace StarWriter.Core.IO
         {
             if (value)
             {
-                threeButtonPanel.FadeInButtons(); // TODO: make these event driven instead?
+                //threeButtonPanel.FadeInButtons(); // TODO: make these event driven instead?
                 rearView.SetActive(true);
             }
             else
             {
-                threeButtonPanel.FadeOutButtons();
+                //threeButtonPanel.FadeOutButtons();
                 rearView.SetActive(false);
             }
             Portrait = value; 

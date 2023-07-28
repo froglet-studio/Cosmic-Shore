@@ -4869,6 +4869,8 @@ MonoBehaviour:
   ExplosionDelay: 0
   shipImpactEffects: 0200000003000000040000000100000000000000
   affectSelf: 0
+  destructive: 1
+  devastating: 1
   height: 800
 --- !u!33 &520348123677097672
 MeshFilter:

@@ -117,7 +117,7 @@ public class Crystal : MonoBehaviour
         spentCrystal.GetComponent<Renderer>().material = tempMaterial;
 
         spentCrystal.GetComponent<Impact>().HandleImpact(
-            ship.transform.forward * ship.GetComponent<ShipData>().Speed, tempMaterial, ship.Player.PlayerName);
+            ship.transform.forward * ship.GetComponent<ShipStatus>().Speed, tempMaterial, ship.Player.PlayerName);
     }
 
     protected void PlayExplosionAudio()

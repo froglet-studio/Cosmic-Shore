@@ -47,7 +47,7 @@ namespace StarWriter.Core
                         HapticController.PlayBlockCollisionHaptics();
                         break;
                     case TrailBlockImpactEffects.DeactivateTrailBlock:
-                        trailBlockProperties.trailBlock.Explode(ship.transform.forward * ship.GetComponent<ShipData>().Speed, team, Player.PlayerName);
+                        trailBlockProperties.trailBlock.Explode(ship.transform.forward * ship.GetComponent<ShipStatus>().Speed, team, Player.PlayerName);
                         break;
                     case TrailBlockImpactEffects.Steal:
                         //Debug.Log($"steal: playername {Player.PlayerName} team: {team}");
@@ -202,7 +202,7 @@ namespace StarWriter.Core
             do
             {
                 var distance = trailBlock.transform.position - transform.position;
-                scaledTime = particleDurationAtSpeedOne / ship.GetComponent<ShipData>().Speed; // TODO: divide by zero possible
+                scaledTime = particleDurationAtSpeedOne / ship.GetComponent<ShipStatus>().Speed; // TODO: divide by zero possible
                 particle.transform.localScale = new Vector3(1, 1, distance.magnitude);
                 particle.transform.SetPositionAndRotation(transform.position, Quaternion.LookRotation(distance, trailBlock.transform.up));
                 timer++;

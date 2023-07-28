@@ -37,7 +37,7 @@ public class TrailSpawner : MonoBehaviour
     Material blockMaterial;
     Material shieldedBlockMaterial;
     Ship ship;
-    ShipData shipData;
+    ShipStatus shipData;
 
     [SerializeField] bool warp = false;
     GameObject shards;
@@ -99,7 +99,7 @@ public class TrailSpawner : MonoBehaviour
 
         shards = GameObject.FindGameObjectWithTag("field");
         ship = GetComponent<Ship>();
-        shipData = GetComponent<ShipData>();
+        shipData = GetComponent<ShipStatus>();
 
         StartCoroutine(SpawnTrailCoroutine());
 
@@ -182,7 +182,7 @@ public class TrailSpawner : MonoBehaviour
         InnerDimensions = Block.InnerDimensions;
         Block.transform.SetPositionAndRotation(transform.position - shipData.Course * offset + ship.transform.right * (Block.InnerDimensions.x/2f + Mathf.Abs(halfGap)) * (halfGap / Mathf.Abs(halfGap)), shipData.blockRotation);
         Block.transform.parent = TrailContainer.transform;
-        if (waitTillOutsideSkimmer) Block.waitTime = (skimmer.transform.localScale.z + TrailZScale) / ship.GetComponent<ShipData>().Speed;
+        if (waitTillOutsideSkimmer) Block.waitTime = (skimmer.transform.localScale.z + TrailZScale) / ship.GetComponent<ShipStatus>().Speed;
         Block.ownerId = ship.Player.PlayerUUID;
         Block.PlayerName = ship.Player.PlayerName;
         Block.Team = ship.Team;
@@ -232,7 +232,7 @@ public class TrailSpawner : MonoBehaviour
                     InnerDimensions = Block.InnerDimensions;
                     Block.transform.SetPositionAndRotation(transform.position - shipData.Course * offset, shipData.blockRotation);
                     Block.transform.parent = TrailContainer.transform;
-                    Block.waitTime = (skimmer.transform.localScale.z + TrailZScale) / ship.GetComponent<ShipData>().Speed;
+                    Block.waitTime = (skimmer.transform.localScale.z + TrailZScale) / ship.GetComponent<ShipStatus>().Speed;
                     Block.ownerId = ship.Player.PlayerUUID;
                     Block.PlayerName = ship.Player.PlayerName;
                     Block.Team = ship.Team;

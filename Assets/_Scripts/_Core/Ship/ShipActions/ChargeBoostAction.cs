@@ -7,19 +7,20 @@ public class ChargeBoostAction : ShipActionAbstractBase
     bool BoostCharging;
     float BoostChargeRate = .33f;
     float MaxBoostCharge = 10;
-    ShipData shipData;
+    ShipStatus shipData;
 
     void Start()
     {
-        shipData = ship.GetComponent<ShipData>();
+        shipData = ship.GetComponent<ShipStatus>();
     }
 
     void Update()
     {
         if (BoostCharging)
         {
+            Debug.Log("charging boost");
             shipData.ChargedBoostCharge += BoostChargeRate * Time.deltaTime;
-            ship.ResourceSystem.ChangeBoostAmount(BoostChargeRate);
+            ship.ResourceSystem.ChangeBoostAmount(BoostChargeRate * Time.deltaTime);
         }
     }
 
@@ -48,6 +49,7 @@ public class ChargeBoostAction : ShipActionAbstractBase
             ship.ResourceSystem.ChangeBoostAmount(-Time.deltaTime);
             yield return null;
         }
+        shipData.ChargedBoostCharge = 1;
         shipData.ChargedBoostDischarging = false;
         ship.ResourceSystem.ChangeBoostAmount(-ship.ResourceSystem.CurrentBoost);
     }

@@ -29,7 +29,7 @@ namespace StarWriter.Core
         public bool IsAttached { get { return attachedTrail != null; } }
         public TrailBlock AttachedTrailBlock { get { return attachedTrail.GetBlock(attachedBlockIndex); } }
 
-        ShipData shipData;
+        ShipStatus shipData;
         Ship ship;
 
         void Start()
@@ -37,7 +37,7 @@ namespace StarWriter.Core
             // TODO: find a better way of setting team that doesn't assume a ship
             ship = GetComponent<Ship>();
             team = ship.Team;
-            shipData = GetComponent<ShipData>();
+            shipData = GetComponent<ShipStatus>();
         }
 
         public void Attach(TrailBlock trailBlock)

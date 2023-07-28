@@ -4,13 +4,13 @@ using StarWriter.Core;
 using StarWriter.Core.IO;
 using System.Collections.Generic;
 
-public class ShipController : MonoBehaviour
+public class ShipTransformer : MonoBehaviour
 {
     Quaternion inverseInitialRotation = new(0, 0, 0, 0);
 
     #region Ship
     protected Ship ship;
-    protected ShipData shipData;
+    protected ShipStatus shipData;
     protected ResourceSystem resourceSystem;
     #endregion
 
@@ -42,7 +42,7 @@ public class ShipController : MonoBehaviour
     protected virtual void Start()
     {
         ship = GetComponent<Ship>();
-        shipData = ship.GetComponent<ShipData>();
+        shipData = ship.GetComponent<ShipStatus>();
         resourceSystem = ship.GetComponent<ResourceSystem>();
 
         MinimumSpeed = DefaultMinimumSpeed;

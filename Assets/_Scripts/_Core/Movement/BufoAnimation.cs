@@ -16,13 +16,13 @@ class BufoAnimation : ShipAnimation
     const float animationScalar = 32f;
     const float exaggeratedAnimationScalar = 1.4f * animationScalar;
 
-    ShipData shipData;
+    ShipStatus shipData;
 
     protected override void Start()
     {
         base.Start();
 
-        shipData = GetComponent<ShipData>();
+        shipData = GetComponent<ShipStatus>();
     }
 
     protected override void AssignTransforms()

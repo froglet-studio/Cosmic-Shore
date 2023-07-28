@@ -9,7 +9,7 @@ public class WarpFieldController : MonoBehaviour
     Transform player;
     Transform blue;
     Transform red;
-    ShipController shipController;
+    ShipTransformer shipController;
 
     void Start()
     {
@@ -20,7 +20,7 @@ public class WarpFieldController : MonoBehaviour
         blue = GameObject.FindGameObjectWithTag("blue").transform;
         red = GameObject.FindGameObjectWithTag("red").transform;
 
-        shipController = player.GetComponent<InputController>().ship.GetComponent<ShipController>();
+        shipController = player.GetComponent<InputController>().ship.GetComponent<ShipTransformer>();
     }
 
     void Update()

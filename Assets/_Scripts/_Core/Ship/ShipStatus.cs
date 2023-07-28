@@ -3,7 +3,7 @@
 namespace StarWriter.Core
 {
     [System.Serializable]
-    public class ShipData : MonoBehaviour
+    public class ShipStatus : MonoBehaviour
     {
         public float Speed;
 

@@ -16,6 +16,7 @@ namespace StarWriter.Core
         [SerializeField] List<ShipImpactEffects> shipImpactEffects;
         [SerializeField] bool affectSelf = false;
         [SerializeField] bool destructive = true;
+        [SerializeField] bool devastating = false;
         
         protected static GameObject container;
 
@@ -51,8 +52,8 @@ namespace StarWriter.Core
                     trailBlock.ActivateShield(2f);
                     return;
                 }
-
-                trailBlock.Explode(impactVector, Team, Ship.Player.PlayerName);
+                if (devastating) trailBlock.Devastate(impactVector, Team, Ship.Player.PlayerName);
+                else trailBlock.Explode(impactVector, Team, Ship.Player.PlayerName);
             }
             if (other.TryGetComponent<ShipGeometry>(out var shipGeometry))
             {

@@ -158,7 +158,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9633e52896cf12147b75b904c74afc78, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  gun: {fileID: 6325554860274326311}
+  gun: {fileID: 8651902880312481496}
   chargePerSecond: 0.3
   ProjectileScale: 30
   BlockScale: {x: 4, y: 4, z: 1}
@@ -398,7 +398,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1e309c81823458a4cb85e8e5cbb34efd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  gun: {fileID: 6325554860274326311}
+  gun: {fileID: 8651902880312481496}
 --- !u!1 &3810881439382311579
 GameObject:
   m_ObjectHideFlags: 0
@@ -513,6 +513,59 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 126
   m_CollisionDetection: 0
+--- !u!1 &4020192982439536181
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1809389772574070562}
+  - component: {fileID: 8651902880312481496}
+  m_Layer: 0
+  m_Name: GameObject
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1809389772574070562
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4020192982439536181}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2076705799395951233}
+  m_RootOrder: 0
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &8651902880312481496
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4020192982439536181}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 35a4e5dfc7064254cb27fc78eefb05a0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  projectilePrefab: {fileID: 7877928849292311340, guid: 40caad35706c5244ea955f96abb24774,
+    type: 3}
+  Detonate: 0
+  projectileTime: 4
+  firePeriod: 0.1
+  Team: 1
+  Ship: {fileID: 874579555101021527}
+  trailBlock: {fileID: 4563009547826722997, guid: 68d3aecc8e78ee64ab14601164273680,
+    type: 3}
 --- !u!1 &4033402039330603154
 GameObject:
   m_ObjectHideFlags: 0
@@ -815,7 +868,8 @@ Transform:
   m_LocalPosition: {x: 0, y: 1, z: 0}
   m_LocalScale: {x: 1.2, y: 0.1, z: 1.2}
   m_ConstrainProportionsScale: 0
-  m_Children: []
+  m_Children:
+  - {fileID: 2076705799395951233}
   m_Father: {fileID: 6325554860274326308}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -895,11 +949,11 @@ GameObject:
   - component: {fileID: 874579555101021527}
   - component: {fileID: 6964962696344697388}
   - component: {fileID: 874579555101021522}
-  - component: {fileID: 874579555101021523}
   - component: {fileID: -3607265076877978738}
   - component: {fileID: 3440187540988767646}
   - component: {fileID: 7279892912462638078}
   - component: {fileID: 1435252848482629424}
+  - component: {fileID: 6441696348568773771}
   m_Layer: 0
   m_Name: Bufo
   m_TagString: Player_Ship
@@ -960,8 +1014,6 @@ MonoBehaviour:
   head: {fileID: 0}
   AOEPrefab: {fileID: 0}
   farFieldSkimmer: {fileID: 0}
-  gunGeometries:
-  - {fileID: 6325554860274326311}
   crystalImpactEffects: 0b00000003000000
   minExplosionScale: 50
   maxExplosionScale: 500
@@ -1048,34 +1100,6 @@ MonoBehaviour:
   maxBlockScale: 1
   XScaler: 1
   YScaler: 1
---- !u!114 &874579555101021523
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6417075533431866457}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9846c9cd6cfac424797ca640ebcb7a04, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  Speed: 0
-  Boosting: 0
-  BoostCharging: 0
-  BoostDecaying: 0
-  Drifting: 0
-  Portrait: 0
-  ShowThreeButtonPanel: 0
-  LiveProjectiles: 0
-  Stationary: 0
-  ElevatedAmmoGain: 0
-  ThreeButtonPanel: 0
-  Attached: 0
-  AttachedTrailBlock: {fileID: 0}
-  GunsActive: 0
-  Course: {x: 0, y: 0, z: 0}
-  blockRotation: {x: 0, y: 0, z: 0, w: 0}
 --- !u!114 &-3607265076877978738
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1092,14 +1116,11 @@ MonoBehaviour:
   ThrottleScaler: 50
   DefaultMinimumSpeed: 0
   DefaultThrottleScaler: 30
-  BoostDecay: 1
-  MaxBoostDecay: 10
-  BoostDecayGrowthRate: 0.03
   PitchScaler: 80
   YawScaler: 80
   RollScaler: 80
   RotationThrottleScaler: 0
-  topGun: {fileID: 6325554860274326311}
+  topGun: {fileID: 8651902880312481496}
   ProjectileScale: 1
   BlockScale: {x: 4, y: 4, z: 0.4}
 --- !u!114 &3440187540988767646
@@ -1202,6 +1223,33 @@ MonoBehaviour:
   InitialMassLevel: 0
   InitialSpaceLevel: 0
   InitialTimeLevel: 0
+--- !u!114 &6441696348568773771
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 61d08a99952fdc44d96f926228873c0c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  Speed: 0
+  Boosting: 0
+  ChargedBoostDischarging: 0
+  Drifting: 0
+  Portrait: 0
+  ShowThreeButtonPanel: 1
+  LiveProjectiles: 0
+  Stationary: 0
+  ElevatedAmmoGain: 0
+  ChargedBoostCharge: 1
+  Attached: 0
+  AttachedTrailBlock: {fileID: 0}
+  GunsActive: 0
+  Course: {x: 0, y: 0, z: 1}
+  blockRotation: {x: 0, y: 0, z: 0, w: 0}
 --- !u!1 &6613648354675814919
 GameObject:
   m_ObjectHideFlags: 0
@@ -1556,6 +1604,38 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!1 &8982780777535131561
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2076705799395951233}
+  m_Layer: 0
+  m_Name: GameObject
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2076705799395951233
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8982780777535131561}
+  m_LocalRotation: {x: -0.7071068, y: 0, z: 0, w: 0.7071068}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 1809389772574070562}
+  m_Father: {fileID: 8030027593793278704}
+  m_RootOrder: 0
+  m_LocalEulerAnglesHint: {x: -90, y: 0, z: 0}
 --- !u!1 &9149021282830574197
 GameObject:
   m_ObjectHideFlags: 0
@@ -1940,7 +2020,8 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 7877928849292311340, guid: 40caad35706c5244ea955f96abb24774,
         type: 3}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 4459183666627939154, guid: 340b92d77208a7347843154145a64863, type: 3}
   m_SourcePrefab: {fileID: 100100000, guid: 340b92d77208a7347843154145a64863, type: 3}
 --- !u!4 &6325554860274326308 stripped
 Transform:
@@ -1948,15 +2029,3 @@ Transform:
     type: 3}
   m_PrefabInstance: {fileID: 7650157036297031797}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &6325554860274326311 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 4459183666627939154, guid: 340b92d77208a7347843154145a64863,
-    type: 3}
-  m_PrefabInstance: {fileID: 7650157036297031797}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 35a4e5dfc7064254cb27fc78eefb05a0, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
