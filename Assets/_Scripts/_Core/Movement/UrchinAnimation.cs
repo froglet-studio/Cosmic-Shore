@@ -38,7 +38,7 @@ class UrchinAnimation : ShipAnimation
     {
         base.Update();
 
-        if (GetComponent<Ship>().ShipData.Attached)
+        if (GetComponent<Ship>().ShipStatus.Attached)
         {
             ResetParts(scaledParts, 6);
         }
@@ -67,7 +67,7 @@ class UrchinAnimation : ShipAnimation
     protected override void PerformShipAnimations(float pitch, float yaw, float roll, float throttle)
     {
 
-        if (GetComponent<Ship>().ShipData.Attached)
+        if (GetComponent<Ship>().ShipStatus.Attached)
         {
             AnimatePart(Body,
                Time.deltaTime * 100f,

@@ -18,6 +18,7 @@ namespace StarWriter.Core.IO
         public bool PhoneFlipState;
         public static ScreenOrientation currentOrientation;
         public bool Portrait = false;
+        public bool SingleStick = false;
 
         bool leftStickEffectsStarted = false;
         bool rightStickEffectsStarted = false;
@@ -37,8 +38,11 @@ namespace StarWriter.Core.IO
         public Vector2 RightJoystick = Vector2.zero;
         public Vector2 LeftJoystick = Vector2.zero;
 
-        Vector2 RightJoystickStart;
-        Vector2 LeftJoystickStart;
+        public Vector2 RightJoystickStart;
+        public Vector2 LeftJoystickStart;
+
+        public Vector2 RightClampedPosition;
+        public Vector2 LeftClampedPosition;
 
         public bool Idle;
 
@@ -52,6 +56,7 @@ namespace StarWriter.Core.IO
         bool inputPaused;
 
         Vector2 leftInput, rightInput;
+        
 
         Quaternion inverseInitialRotation=new(0,0,0,0);
 
@@ -68,8 +73,8 @@ namespace StarWriter.Core.IO
         void Start()
         {
             JoystickRadius = Screen.dpi;
-            leftInput = new Vector2(JoystickRadius, JoystickRadius);
-            rightInput = new Vector2(Screen.currentResolution.width - JoystickRadius, JoystickRadius);
+            leftInput = LeftClampedPosition = new Vector2(JoystickRadius, JoystickRadius);
+            rightInput = RightClampedPosition = new Vector2(Screen.currentResolution.width - JoystickRadius, JoystickRadius);
 
             gyro = Input.gyro;
             gyro.enabled = true;
@@ -120,7 +125,7 @@ namespace StarWriter.Core.IO
             }
             else if (Gamepad.current != null)
             {
-                if (ship.ShipData.ShowThreeButtonPanel)
+                if (ship.ShipStatus.ShowThreeButtonPanel)
                 {
                     threeButtonPanel.FadeInButtons();
                     rearView.SetActive(true);
@@ -302,8 +307,8 @@ namespace StarWriter.Core.IO
                         leftActive = false;
                     }
 
-                    HandleJoystick(ref LeftJoystickStart, leftTouchIndex, ref LeftJoystick);
-                    HandleJoystick(ref RightJoystickStart, rightTouchIndex, ref RightJoystick);
+                    HandleJoystick(ref LeftJoystickStart, leftTouchIndex, ref LeftJoystick, ref LeftClampedPosition);
+                    HandleJoystick(ref RightJoystickStart, rightTouchIndex, ref RightJoystick, ref RightClampedPosition);
 
                     if (leftStickEffectsStarted)
                     {
@@ -340,7 +345,7 @@ namespace StarWriter.Core.IO
                             }
                         leftInput = position;
                             leftTouchIndex = 0;
-                            HandleJoystick(ref LeftJoystickStart, leftTouchIndex, ref LeftJoystick);
+                            HandleJoystick(ref LeftJoystickStart, leftTouchIndex, ref LeftJoystick, ref LeftClampedPosition);
                             leftActive = true;
                         }
                         else
@@ -352,7 +357,7 @@ namespace StarWriter.Core.IO
                             }
                             rightInput = position;
                             rightTouchIndex = 0;
-                            HandleJoystick(ref RightJoystickStart, rightTouchIndex, ref RightJoystick);
+                            HandleJoystick(ref RightJoystickStart, rightTouchIndex, ref RightJoystick, ref RightClampedPosition);
                             leftActive = false;
                         }
 
@@ -378,7 +383,7 @@ namespace StarWriter.Core.IO
                 }
                 else
                 {
-                    if (Portrait || ship.ShipData.ShowThreeButtonPanel)
+                    if (Portrait || ship.ShipStatus.ShowThreeButtonPanel)
                     {
                         threeButtonPanel.FadeInButtons();
                         CheckSpeedAndOrientation();
@@ -397,7 +402,7 @@ namespace StarWriter.Core.IO
             }
         }
 
-        void HandleJoystick(ref Vector2 joystickStart, int touchIndex, ref Vector2 joystick)
+        void HandleJoystick(ref Vector2 joystickStart, int touchIndex, ref Vector2 joystick, ref Vector2 clampedPosition)
         {
             Touch touch = Input.touches[touchIndex];
 
@@ -408,8 +413,10 @@ namespace StarWriter.Core.IO
             }
 
             Vector2 offset = touch.position - joystickStart;
-            Vector2 clampedOffset = Vector2.ClampMagnitude(offset, JoystickRadius) / JoystickRadius;
-            joystick = clampedOffset;
+            Vector2 clampedOffset = Vector2.ClampMagnitude(offset, JoystickRadius); 
+            clampedPosition = joystickStart + clampedOffset;
+            Vector2 normalizedOffset = clampedOffset / JoystickRadius;
+            joystick = normalizedOffset;
         }
 
         void Reparameterize()

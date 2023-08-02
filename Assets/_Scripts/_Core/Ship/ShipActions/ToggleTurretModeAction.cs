@@ -6,7 +6,7 @@ public class ToggleTurretModeAction : ShipActionAbstractBase
 
     void Start()
     {
-        shipData = ship.ShipData;
+        shipData = ship.ShipStatus;
     }
 
     public override void StartAction()

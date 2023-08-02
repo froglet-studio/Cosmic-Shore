@@ -13,23 +13,23 @@ public class SingleStickController : ShipTransformer
 
     protected override void Start()
     {
+        //ship.InputController.SingleStick = true;
+
         base.Start();
-        //ship.InputController.SetPortrait(true);
-        //shipData.Portrait = true;
 
         guns = new List<Gun>() { topGun};
-
         foreach (var gun in guns)
         {
             gun.Team = ship.Team;
             gun.Ship = ship;
         }
+
     }
 
     protected override void Update()
     {
         base.Update();
-
+        
     }
 
     protected override void MoveShip()

@@ -179,7 +179,7 @@ namespace StarWriter.Core
 
         void FixedUpdate()
         {   
-            if (notifyNearbyBlockCount )
+            if (notifyNearbyBlockCount && !ship.ShipStatus.AutoPilotEnabled)
             {
                 var normalizedDistance = Mathf.Clamp(Mathf.InverseLerp(15f, transform.localScale.x/2, minMatureBlockDistance), 0,1);
 

@@ -16,6 +16,7 @@ namespace StarWriter.Core
         public bool Stationary = false;
         public bool ElevatedAmmoGain = false;
         public float ChargedBoostCharge = 1f;
+        public bool AutoPilotEnabled = false;
 
         public bool Attached = false;
         public TrailBlock AttachedTrailBlock;

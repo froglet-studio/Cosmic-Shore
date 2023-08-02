@@ -105,7 +105,7 @@ namespace StarWriter.Core
                         if (shipGeometry.Ship.Team == team)
                         {
                             shipGeometry.Ship.ShipController.ModifyVelocity(impactVector * 100, 2);
-                            shipGeometry.Ship.ShipController.ModifyThrottle(1.009f, 4);
+                            shipGeometry.Ship.ShipController.ModifyThrottle(1.02f, 6);
                         }
                         else shipGeometry.Ship.ShipController.ModifyVelocity(impactVector * 100, 3);
                         //shipGeometry.Ship.transform.localPosition += impactVector / 2f;

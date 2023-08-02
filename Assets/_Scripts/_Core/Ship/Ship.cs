@@ -22,7 +22,7 @@ namespace StarWriter.Core
         [HideInInspector] public TrailSpawner TrailSpawner;
         [HideInInspector] public ShipTransformer ShipController;
         [HideInInspector] public AIPilot AutoPilot;
-        [HideInInspector] public ShipStatus ShipData;
+        [HideInInspector] public ShipStatus ShipStatus;
         [SerializeField] Skimmer nearFieldSkimmer;
         [SerializeField] GameObject OrientationHandle;
         [SerializeField] public List<GameObject> shipGeometries;
@@ -112,7 +112,7 @@ namespace StarWriter.Core
             ResourceSystem = GetComponent<ResourceSystem>();
             ShipController = GetComponent<ShipTransformer>();
             TrailSpawner = GetComponent<TrailSpawner>();
-            ShipData = GetComponent<ShipStatus>();
+            ShipStatus = GetComponent<ShipStatus>();
         }
 
         void Start()
@@ -234,7 +234,7 @@ namespace StarWriter.Core
                         break;
                     case TrailBlockImpactEffects.Attach:
                         Attach(trailBlockProperties.trailBlock);
-                        ShipData.GunsActive = true;
+                        ShipStatus.GunsActive = true;
                         break;
                     case TrailBlockImpactEffects.ChangeAmmo:
                         ResourceSystem.ChangeAmmoAmount(blockChargeChange);
@@ -349,8 +349,8 @@ namespace StarWriter.Core
         {
             if (trailBlock.Trail != null)
             {
-                ShipData.Attached = true;
-                ShipData.AttachedTrailBlock = trailBlock;
+                ShipStatus.Attached = true;
+                ShipStatus.AttachedTrailBlock = trailBlock;
             }
         }
 

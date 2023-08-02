@@ -95,7 +95,11 @@ namespace StarWriter.Core.IO
         void Start()
         {
             ship = GetComponent<Ship>();
-            if (autoPilotEnabled) { ship.InputController.AutoPilotEnabled = true; }
+            if (autoPilotEnabled) 
+            { 
+                ship.InputController.AutoPilotEnabled = true;
+                ship.ShipStatus.AutoPilotEnabled = true;
+            }
             aggressiveness = defaultAggressiveness;
             throttle = defaultThrottle;
             shipData = GetComponent<ShipStatus>();

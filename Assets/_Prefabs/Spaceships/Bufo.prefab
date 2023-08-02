@@ -984,7 +984,7 @@ MonoBehaviour:
   TrailSpawner: {fileID: 874579555101021522}
   ShipController: {fileID: 0}
   AutoPilot: {fileID: 0}
-  ShipData: {fileID: 0}
+  ShipStatus: {fileID: 0}
   nearFieldSkimmer: {fileID: 874579554510349383}
   OrientationHandle: {fileID: 1878660672777590133}
   shipGeometries:
@@ -1183,8 +1183,8 @@ MonoBehaviour:
   usesAmmo: 1
   usesCharge: 1
   gainsAmmo: 1
-  ammoGainRate: 0.01
-  elevatedAmmoGainRate: 0.03
+  ammoGainRate: 0.02
+  elevatedAmmoGainRate: 0.05
   maxBoost: 1
   initialBoost: 1
   maxLevel: 1
@@ -1230,6 +1230,7 @@ MonoBehaviour:
   Stationary: 0
   ElevatedAmmoGain: 0
   ChargedBoostCharge: 1
+  AutoPilotEnabled: 0
   Attached: 0
   AttachedTrailBlock: {fileID: 0}
   GunsActive: 0
