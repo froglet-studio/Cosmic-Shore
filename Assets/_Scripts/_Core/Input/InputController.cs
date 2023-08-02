@@ -41,6 +41,9 @@ namespace StarWriter.Core.IO
         public Vector2 RightJoystickStart;
         public Vector2 LeftJoystickStart;
 
+        public Vector2 RightJoystickHome;
+        public Vector2 LeftJoystickHome;
+
         public Vector2 RightClampedPosition;
         public Vector2 LeftClampedPosition;
 
@@ -73,8 +76,8 @@ namespace StarWriter.Core.IO
         void Start()
         {
             JoystickRadius = Screen.dpi;
-            leftInput = LeftClampedPosition = new Vector2(JoystickRadius, JoystickRadius);
-            rightInput = RightClampedPosition = new Vector2(Screen.currentResolution.width - JoystickRadius, JoystickRadius);
+            leftInput = LeftClampedPosition = LeftJoystickHome = new Vector2(JoystickRadius, JoystickRadius);
+            rightInput = RightClampedPosition = RightJoystickHome = new Vector2(Screen.currentResolution.width - JoystickRadius, JoystickRadius);
 
             gyro = Input.gyro;
             gyro.enabled = true;
@@ -301,7 +304,7 @@ namespace StarWriter.Core.IO
                     leftInput = Input.touches[leftTouchIndex].position;
                     rightInput = Input.touches[rightTouchIndex].position;
 
-                    if (Portrait)
+                    if (Portrait || SingleStick)
                     {
                         rightInput = leftInput; // if your palm hits it is better to take the one closer to the top.
                         leftActive = false;

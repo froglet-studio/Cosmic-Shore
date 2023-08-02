@@ -13,10 +13,8 @@ public class SingleStickController : ShipTransformer
 
     protected override void Start()
     {
-        //ship.InputController.SingleStick = true;
-
         base.Start();
-
+        inputController.SingleStick = true;
         guns = new List<Gun>() { topGun};
         foreach (var gun in guns)
         {
@@ -28,6 +26,10 @@ public class SingleStickController : ShipTransformer
 
     protected override void Update()
     {
+        if (!inputController.SingleStick && inputController != null)
+        {
+            inputController.SingleStick = true;
+        }
         base.Update();
         
     }

@@ -122,7 +122,7 @@ namespace StarWriter.Core.IO
 
             Vector3 combinedLocalCrossProduct = Vector3.zero;
             
-
+            
             foreach (Corner corner in Enum.GetValues(typeof(Corner)))
             {
                 var behavior = CornerBehaviors[corner];

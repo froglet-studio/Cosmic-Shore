@@ -21,13 +21,13 @@ public class ThumbStickUI : MonoBehaviour
 
     void Start()
     {
-        leftTouch = player.Ship.InputController.LeftClampedPosition;
-        rightTouch = player.Ship.InputController.RightClampedPosition;
+        //leftTouch = player.Ship.InputController.LeftClampedPosition;
+        //rightTouch = player.Ship.InputController.RightClampedPosition;
 
 
         //JoystickRadius = Screen.dpi;
         //initialPos = Left ? new Vector2(JoystickRadius, JoystickRadius) : new Vector2(Screen.currentResolution.width - JoystickRadius, JoystickRadius);
-        initialPos = Left ? leftTouch : rightTouch;
+        //initialPos = Left ? leftTouch : rightTouch;
         image = GetComponent<Image>();
         image.sprite = InactiveImage;
         gameObject.SetActive(Gamepad.current == null); //turn off "UI controls" if we have a gamepad
@@ -44,7 +44,7 @@ public class ThumbStickUI : MonoBehaviour
         if (Input.touches.Length == 0)
         {
  
-            transform.position = Left ? Vector2.Lerp(transform.position, player.Ship.InputController.LeftJoystickStart, .2f) : Vector2.Lerp(transform.position, player.Ship.InputController.RightJoystickStart, .2f);
+            transform.position = Left ? Vector2.Lerp(transform.position, player.Ship.InputController.LeftJoystickHome, .2f) : Vector2.Lerp(transform.position, player.Ship.InputController.RightJoystickHome, .2f);
             image.sprite = InactiveImage;
         }
         else if (Left)
