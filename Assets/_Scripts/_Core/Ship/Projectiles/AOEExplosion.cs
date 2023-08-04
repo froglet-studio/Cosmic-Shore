@@ -111,7 +111,7 @@ namespace StarWriter.Core
                         //shipGeometry.Ship.transform.localPosition += impactVector / 2f;
                         break;
                     case ShipImpactEffects.Stun:
-                        shipGeometry.Ship.ShipController.ModifyThrottle(.1f, 10);
+                        shipGeometry.Ship.ShipController.ModifyThrottle(.1f, 2);
                         break;
                 }
             }

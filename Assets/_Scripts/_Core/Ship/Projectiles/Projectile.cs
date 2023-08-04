@@ -42,6 +42,9 @@ namespace StarWriter.Core
                     case TrailBlockImpactEffects.Steal:
                         trailBlockProperties.trailBlock.Steal(Ship.Player.PlayerName, Team);
                         break;
+                    case TrailBlockImpactEffects.Shield:
+                        trailBlockProperties.trailBlock.ActivateShield(.5f);
+                        break;
                 }
             }
         }

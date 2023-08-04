@@ -304,11 +304,11 @@ namespace StarWriter.Core.IO
                     leftInput = Input.touches[leftTouchIndex].position;
                     rightInput = Input.touches[rightTouchIndex].position;
 
-                    if (Portrait || SingleStick)
-                    {
-                        rightInput = leftInput; // if your palm hits it is better to take the one closer to the top.
-                        leftActive = false;
-                    }
+                    //if (Portrait || SingleStick)
+                    //{
+                    //    rightInput = leftInput; // if your palm hits it is better to take the one closer to the top.
+                    //    leftActive = false;
+                    //}
 
                     HandleJoystick(ref LeftJoystickStart, leftTouchIndex, ref LeftJoystick, ref LeftClampedPosition);
                     HandleJoystick(ref RightJoystickStart, rightTouchIndex, ref RightJoystick, ref RightClampedPosition);

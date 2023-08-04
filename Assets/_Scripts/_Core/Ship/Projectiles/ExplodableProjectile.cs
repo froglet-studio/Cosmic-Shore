@@ -9,10 +9,10 @@ namespace StarWriter.Core
         [SerializeField] float maxExplosionScale;
         public float Charge = 0;
 
-        protected override void OnTriggerEnter(Collider other)
-        {
-            Destroy(gameObject);
-        }
+        //protected override void OnTriggerEnter(Collider other)
+        //{
+        //    Destroy(gameObject);
+        //}
 
         public void OnDestroy()
         {

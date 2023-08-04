@@ -44,7 +44,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9633e52896cf12147b75b904c74afc78, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  gun: {fileID: 0}
+  gun: {fileID: 2353136872146328024}
   chargePerSecond: 0.4
   ProjectileScale: 30
   BlockScale: {x: 4, y: 4, z: 1}
@@ -103,7 +103,9 @@ GameObject:
   - component: {fileID: 8897785412424212353}
   - component: {fileID: 5600445168592713735}
   - component: {fileID: 6089100079071239088}
-  m_Layer: 0
+  - component: {fileID: 8027274436437978935}
+  - component: {fileID: 89293459747768141}
+  m_Layer: 8
   m_Name: Ship_Wedge_Jet_UL
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -177,6 +179,35 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!54 &8027274436437978935
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1652545777288694586}
+  serializedVersion: 2
+  m_Mass: 1
+  m_Drag: 0
+  m_AngularDrag: 0.05
+  m_UseGravity: 0
+  m_IsKinematic: 1
+  m_Interpolate: 0
+  m_Constraints: 126
+  m_CollisionDetection: 0
+--- !u!65 &89293459747768141
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1652545777288694586}
+  m_Material: {fileID: 0}
+  m_IsTrigger: 0
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Size: {x: 1.5186423, y: 1.6498325, z: 4.5785522}
+  m_Center: {x: -2.7253995, y: 1.4609891, z: -1.5239595}
 --- !u!1 &1878660672777590133
 GameObject:
   m_ObjectHideFlags: 0
@@ -255,7 +286,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1e309c81823458a4cb85e8e5cbb34efd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  gun: {fileID: 0}
+  gun: {fileID: 2353136872146328024}
 --- !u!1 &3193920657457234309
 GameObject:
   m_ObjectHideFlags: 0
@@ -267,7 +298,9 @@ GameObject:
   - component: {fileID: 4212487309909106204}
   - component: {fileID: 7971854155354396167}
   - component: {fileID: 480776854233637271}
-  m_Layer: 0
+  - component: {fileID: 7818734245933827439}
+  - component: {fileID: 9166392423966681246}
+  m_Layer: 8
   m_Name: Ship_Wedge_Body
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -349,6 +382,35 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!54 &7818734245933827439
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3193920657457234309}
+  serializedVersion: 2
+  m_Mass: 1
+  m_Drag: 0
+  m_AngularDrag: 0.05
+  m_UseGravity: 0
+  m_IsKinematic: 1
+  m_Interpolate: 0
+  m_Constraints: 126
+  m_CollisionDetection: 0
+--- !u!65 &9166392423966681246
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3193920657457234309}
+  m_Material: {fileID: 0}
+  m_IsTrigger: 0
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Size: {x: 6.532537, y: 3.008922, z: 10.58719}
+  m_Center: {x: 0.00002169609, y: 0.010816038, z: 1.9703916}
 --- !u!1 &3280377671054936772
 GameObject:
   m_ObjectHideFlags: 0
@@ -360,7 +422,9 @@ GameObject:
   - component: {fileID: 7231711063342619480}
   - component: {fileID: 5198188954001146664}
   - component: {fileID: 2121360704108465276}
-  m_Layer: 0
+  - component: {fileID: 210415036891084639}
+  - component: {fileID: 6663161052304177400}
+  m_Layer: 8
   m_Name: Ship_Wedge_Jet_UR
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -434,6 +498,35 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!54 &210415036891084639
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3280377671054936772}
+  serializedVersion: 2
+  m_Mass: 1
+  m_Drag: 0
+  m_AngularDrag: 0.05
+  m_UseGravity: 0
+  m_IsKinematic: 1
+  m_Interpolate: 0
+  m_Constraints: 126
+  m_CollisionDetection: 0
+--- !u!65 &6663161052304177400
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3280377671054936772}
+  m_Material: {fileID: 0}
+  m_IsTrigger: 0
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Size: {x: 1.5186424, y: 1.6498325, z: 4.5785522}
+  m_Center: {x: 2.7253995, y: 1.4609891, z: -1.5239595}
 --- !u!1 &3907232763667441001
 GameObject:
   m_ObjectHideFlags: 0
@@ -445,7 +538,10 @@ GameObject:
   - component: {fileID: 2886768247551816212}
   - component: {fileID: 2873895225941202093}
   - component: {fileID: 1606696643768797110}
-  m_Layer: 0
+  - component: {fileID: 2461940627183083153}
+  - component: {fileID: 8882324691466000757}
+  - component: {fileID: 2353136872146328024}
+  m_Layer: 8
   m_Name: Ship_Wedge_Projectile
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -517,6 +613,55 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!54 &2461940627183083153
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3907232763667441001}
+  serializedVersion: 2
+  m_Mass: 1
+  m_Drag: 0
+  m_AngularDrag: 0.05
+  m_UseGravity: 0
+  m_IsKinematic: 1
+  m_Interpolate: 0
+  m_Constraints: 126
+  m_CollisionDetection: 0
+--- !u!65 &8882324691466000757
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3907232763667441001}
+  m_Material: {fileID: 0}
+  m_IsTrigger: 0
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Size: {x: 1.4999999, y: 1.5, z: 1.5}
+  m_Center: {x: 0.003809929, y: -0.0018759072, z: -0.0007096827}
+--- !u!114 &2353136872146328024
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3907232763667441001}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 35a4e5dfc7064254cb27fc78eefb05a0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  projectilePrefab: {fileID: 7877928849292311340, guid: 40caad35706c5244ea955f96abb24774,
+    type: 3}
+  Detonate: 0
+  projectileTime: 2
+  firePeriod: 0.2
+  Team: 0
+  Ship: {fileID: 874579555101021527}
+  trailBlock: {fileID: 0}
 --- !u!1 &4251409320503842611
 GameObject:
   m_ObjectHideFlags: 0
@@ -603,7 +748,9 @@ GameObject:
   - component: {fileID: 7678595967868367213}
   - component: {fileID: 4807321233958284117}
   - component: {fileID: 1237377958554349931}
-  m_Layer: 0
+  - component: {fileID: 1676132437469415107}
+  - component: {fileID: 4056677086936947587}
+  m_Layer: 8
   m_Name: Ship_Wedge_Fin_Down
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -676,6 +823,35 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!54 &1676132437469415107
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5121483745170456138}
+  serializedVersion: 2
+  m_Mass: 1
+  m_Drag: 0
+  m_AngularDrag: 0.05
+  m_UseGravity: 0
+  m_IsKinematic: 1
+  m_Interpolate: 0
+  m_Constraints: 126
+  m_CollisionDetection: 0
+--- !u!65 &4056677086936947587
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5121483745170456138}
+  m_Material: {fileID: 0}
+  m_IsTrigger: 0
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Size: {x: 0.6387007, y: 3.5803113, z: 3.2635088}
+  m_Center: {x: 0, y: -3.7117803, z: 0.055890203}
 --- !u!1 &5469308656037274025
 GameObject:
   m_ObjectHideFlags: 0
@@ -687,7 +863,9 @@ GameObject:
   - component: {fileID: 2581097436023366747}
   - component: {fileID: 6588844441995441461}
   - component: {fileID: 7483569527223069724}
-  m_Layer: 0
+  - component: {fileID: 1299386167814700969}
+  - component: {fileID: 7093570758043318156}
+  m_Layer: 8
   m_Name: Ship_Wedge_Jet_BR
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -761,6 +939,35 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!54 &1299386167814700969
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5469308656037274025}
+  serializedVersion: 2
+  m_Mass: 1
+  m_Drag: 0
+  m_AngularDrag: 0.05
+  m_UseGravity: 0
+  m_IsKinematic: 1
+  m_Interpolate: 0
+  m_Constraints: 126
+  m_CollisionDetection: 0
+--- !u!65 &7093570758043318156
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5469308656037274025}
+  m_Material: {fileID: 0}
+  m_IsTrigger: 0
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Size: {x: 1.5186424, y: 1.6498326, z: 4.5785522}
+  m_Center: {x: 2.7253995, y: -1.460989, z: -1.5239595}
 --- !u!1 &6417075533431866457
 GameObject:
   m_ObjectHideFlags: 0
@@ -998,8 +1205,7 @@ MonoBehaviour:
   lerpAmount: 2
   smallLerpAmount: 0.7
   Fusilage: {fileID: 4212487309909106204}
-  Turret: {fileID: 0}
-  ThrusterTopRight: {fileID: 8897785412424212353}
+  ThrusterTopRight: {fileID: 7231711063342619480}
   TopWing: {fileID: 1213139273052516398}
   ThrusterBottomRight: {fileID: 2581097436023366747}
   ThrusterBottomLeft: {fileID: 5779807336682455925}
@@ -1122,7 +1328,9 @@ GameObject:
   - component: {fileID: 5779807336682455925}
   - component: {fileID: 8007926952255176686}
   - component: {fileID: 413790582811709337}
-  m_Layer: 0
+  - component: {fileID: 2522117155211997005}
+  - component: {fileID: 6261744242355109290}
+  m_Layer: 8
   m_Name: Ship_Wedge_Jet_BL
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1196,6 +1404,35 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!54 &2522117155211997005
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7699084221746907587}
+  serializedVersion: 2
+  m_Mass: 1
+  m_Drag: 0
+  m_AngularDrag: 0.05
+  m_UseGravity: 0
+  m_IsKinematic: 1
+  m_Interpolate: 0
+  m_Constraints: 126
+  m_CollisionDetection: 0
+--- !u!65 &6261744242355109290
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7699084221746907587}
+  m_Material: {fileID: 0}
+  m_IsTrigger: 0
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Size: {x: 1.5186423, y: 1.6498326, z: 4.5785522}
+  m_Center: {x: -2.7253995, y: -1.460989, z: -1.5239595}
 --- !u!1 &7868440465732788152
 GameObject:
   m_ObjectHideFlags: 0
@@ -1207,7 +1444,9 @@ GameObject:
   - component: {fileID: 1213139273052516398}
   - component: {fileID: 3487210660448863495}
   - component: {fileID: 8257829601533477878}
-  m_Layer: 0
+  - component: {fileID: 2519135786550413226}
+  - component: {fileID: 7834911367042793009}
+  m_Layer: 8
   m_Name: Ship_Wedge_Fin_Up
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1280,6 +1519,35 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!54 &2519135786550413226
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7868440465732788152}
+  serializedVersion: 2
+  m_Mass: 1
+  m_Drag: 0
+  m_AngularDrag: 0.05
+  m_UseGravity: 0
+  m_IsKinematic: 1
+  m_Interpolate: 0
+  m_Constraints: 126
+  m_CollisionDetection: 0
+--- !u!65 &7834911367042793009
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7868440465732788152}
+  m_Material: {fileID: 0}
+  m_IsTrigger: 0
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Size: {x: 0.6387007, y: 3.5803113, z: 3.2635088}
+  m_Center: {x: 0, y: 3.7117803, z: 0.055890203}
 --- !u!1 &9149021282830574197
 GameObject:
   m_ObjectHideFlags: 0
