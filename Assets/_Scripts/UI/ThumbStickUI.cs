@@ -30,12 +30,16 @@ public class ThumbStickUI : MonoBehaviour
         //initialPos = Left ? leftTouch : rightTouch;
         image = GetComponent<Image>();
         image.sprite = InactiveImage;
-        gameObject.SetActive(Gamepad.current == null); //turn off "UI controls" if we have a gamepad
-        //Tools tools = new Tools();
-        //StartCoroutine(tools.LateStart( 2f, "PortraitCheck"));
+
+        if (!player.Ship.ShipStatus.AutoPilotEnabled) { StartCoroutine(InitializeCoroutine()); }
     }
 
-    void PortraitCheck() { gameObject.SetActive(!Left || !player.Ship.InputController.Portrait); }
+    // wait until the input controller is wired up then only show if there is no gamepad and the left one when flying with single stick controls 
+    IEnumerator InitializeCoroutine()
+    {
+        yield return new WaitUntil(() => player.Ship.InputController != null);
+        gameObject.SetActive(Gamepad.current == null && (Left || !player.Ship.InputController.SingleStickControls)); ;
+    }
 
     void Update()
     {

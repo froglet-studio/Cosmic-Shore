@@ -1152,7 +1152,7 @@ MonoBehaviour:
   YawScaler: 100
   RollScaler: 100
   RotationThrottleScaler: 0
-  topGun: {fileID: 0}
+  topGun: {fileID: 2353136872146328024}
   ProjectileScale: 1
   BlockScale: {x: 4, y: 4, z: 0.4}
 --- !u!114 &3440187540988767646
