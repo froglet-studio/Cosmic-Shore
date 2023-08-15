@@ -44,25 +44,28 @@ public class ThumbStickUI : MonoBehaviour
     void Update()
     {
 
+        if (!player.Ship.ShipStatus.AutoPilotEnabled)
+        {
+            if (Input.touches.Length == 0)
+            {
 
-        if (Input.touches.Length == 0)
-        {
- 
-            transform.position = Left ? Vector2.Lerp(transform.position, player.Ship.InputController.LeftJoystickHome, .2f) : Vector2.Lerp(transform.position, player.Ship.InputController.RightJoystickHome, .2f);
-            image.sprite = InactiveImage;
+                transform.position = Left ? Vector2.Lerp(transform.position, player.Ship.InputController.LeftJoystickHome, .2f) : Vector2.Lerp(transform.position, player.Ship.InputController.RightJoystickHome, .2f);
+                image.sprite = InactiveImage;
+            }
+            else if (Left)
+            {
+                leftTouch = player.Ship.InputController.LeftClampedPosition;
+                transform.position = Vector2.Lerp(transform.position, leftTouch, .2f);
+                image.sprite = ActiveImage;
+            }
+            else
+            {
+                rightTouch = player.Ship.InputController.RightClampedPosition;
+                transform.position = Vector2.Lerp(transform.position, rightTouch, .2f);
+                image.sprite = ActiveImage;
+            }
         }
-        else if (Left)
-        {
-            leftTouch = player.Ship.InputController.LeftClampedPosition;
-            transform.position = Vector2.Lerp(transform.position, leftTouch, .2f);
-            image.sprite = ActiveImage;
-        }
-        else
-        {
-            rightTouch = player.Ship.InputController.RightClampedPosition;
-            transform.position = Vector2.Lerp(transform.position, rightTouch, .2f);
-            image.sprite = ActiveImage;
-        }
+       
 
 
 

@@ -170,7 +170,7 @@ namespace StarWriter.Core
                 switch (effect)
                 {
                     case CrystalImpactEffects.PlayHaptics:
-                        HapticController.PlayCrystalImpactHaptics();
+                        if (!ShipStatus.AutoPilotEnabled) HapticController.PlayCrystalImpactHaptics();
                         break;
                     case CrystalImpactEffects.AreaOfEffectExplosion:
                         var AOEExplosion = Instantiate(AOEPrefab).GetComponent<AOEExplosion>();
