@@ -46,6 +46,7 @@ namespace StarWriter.Core.IO
         [SerializeField] float raycastWidth;
 
         public bool autoPilotEnabled;
+        public bool LookingAtCrystal = false;
 
         enum Corner 
         {
@@ -114,38 +115,42 @@ namespace StarWriter.Core.IO
 
         void Update()
         {
-            Vector3 distance = CrystalTransform.position - transform.position;
-            Vector3 desiredDirection = distance.normalized;
-
-            if (distance.magnitude < float.Epsilon) // Avoid division by zero
-                return;
-
-            Vector3 combinedLocalCrossProduct = Vector3.zero;
-            
-            
-            foreach (Corner corner in Enum.GetValues(typeof(Corner)))
+            if (autoPilotEnabled)
             {
-                var behavior = CornerBehaviors[corner];
-                Vector3 laserHitDirection = ShootLaser(behavior.width * transform.right + behavior.height * transform.up);
-                float clampedLerp = Mathf.Clamp(avoidance / laserHitDirection.magnitude, 0, 0.9f);
-                Vector3 adjustedDirection = TurnAway(desiredDirection, laserHitDirection, (-transform.up + (behavior.spin * transform.right)) , clampedLerp); // TODO: avoidance is wip
-                Vector3 crossProduct = Vector3.Cross(transform.forward, adjustedDirection);
-                Vector3 localCrossProduct = transform.InverseTransformDirection(crossProduct);
-                combinedLocalCrossProduct += localCrossProduct;
+                Vector3 distance = CrystalTransform.position - transform.position;
+
+                Vector3 desiredDirection = distance.normalized;
+                LookingAtCrystal = Vector3.Dot(desiredDirection, transform.forward) >= .9;
+
+                if (distance.magnitude < float.Epsilon) // Avoid division by zero
+                    return;
+
+                Vector3 combinedLocalCrossProduct = Vector3.zero;
+
+                foreach (Corner corner in Enum.GetValues(typeof(Corner)))
+                {
+                    var behavior = CornerBehaviors[corner];
+                    Vector3 laserHitDirection = ShootLaser(behavior.width * transform.right + behavior.height * transform.up);
+                    float clampedLerp = Mathf.Clamp(avoidance / laserHitDirection.magnitude, 0, 0.9f);
+                    Vector3 adjustedDirection = TurnAway(desiredDirection, laserHitDirection, (-transform.up + (behavior.spin * transform.right)), clampedLerp); // TODO: avoidance is wip
+                    Vector3 crossProduct = Vector3.Cross(transform.forward, adjustedDirection);
+                    Vector3 localCrossProduct = transform.InverseTransformDirection(crossProduct);
+                    combinedLocalCrossProduct += localCrossProduct;
+                }
+
+                float angle = Mathf.Asin(Mathf.Clamp(combinedLocalCrossProduct.magnitude * aggressiveness / Mathf.Min(distance.magnitude, maxDistance * 10), -1f, 1f)) * Mathf.Rad2Deg;
+
+                YSum = Mathf.Clamp(angle * combinedLocalCrossProduct.x, -1, 1);
+                XSum = Mathf.Clamp(angle * combinedLocalCrossProduct.y, -1, 1);
+                YDiff = Mathf.Clamp(angle * combinedLocalCrossProduct.z, -1, 1);
+                ///get better
+                aggressiveness += aggressivenessIncrease * Time.deltaTime;
+                throttle += throttleIncrease * Time.deltaTime;
+
+                XDiff = LookingAtCrystal ? 1 : Mathf.Clamp(throttle, 0, 1);
+                
             }
-            
-            float angle = Mathf.Asin(Mathf.Clamp(combinedLocalCrossProduct.magnitude * aggressiveness/ Mathf.Min(distance.magnitude, maxDistance*10), -1f, 1f)) * Mathf.Rad2Deg;
 
-            YSum = Mathf.Clamp(angle * combinedLocalCrossProduct.x, -1, 1);
-            XSum = Mathf.Clamp(angle * combinedLocalCrossProduct.y, -1, 1);
-            YDiff = Mathf.Clamp(angle * combinedLocalCrossProduct.z, -1, 1);
-            ///get better
-            aggressiveness += aggressivenessIncrease * Time.deltaTime;
-            throttle += throttleIncrease * Time.deltaTime;
-
-  
-            XDiff = Mathf.Clamp(throttle,0,1);
-           
         }
 
         Vector3 TurnAway(Vector3 originalDirection, Vector3 obstacleDirection, Vector3 rotationDirection, float avoidanceFactor)

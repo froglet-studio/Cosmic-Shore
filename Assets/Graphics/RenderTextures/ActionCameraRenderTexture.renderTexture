@@ -6,7 +6,7 @@ RenderTexture:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: RearViewRenderTexture
+  m_Name: ActionCameraRenderTexture
   m_ImageContentsHash:
     serializedVersion: 2
     Hash: 00000000000000000000000000000000
@@ -14,11 +14,11 @@ RenderTexture:
   m_DownscaleFallback: 0
   m_IsAlphaChannelOptional: 0
   serializedVersion: 5
-  m_Width: 512
-  m_Height: 512
+  m_Width: 1920
+  m_Height: 1080
   m_AntiAliasing: 4
   m_MipCount: -1
-  m_DepthStencilFormat: 92
+  m_DepthStencilFormat: 0
   m_ColorFormat: 8
   m_MipMap: 0
   m_GenerateMips: 1

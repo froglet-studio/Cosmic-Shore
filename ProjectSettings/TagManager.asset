@@ -9,6 +9,7 @@ TagManager:
   - red
   - blue
   - field
+  - ActionCamera
   layers:
   - Default
   - TransparentFX

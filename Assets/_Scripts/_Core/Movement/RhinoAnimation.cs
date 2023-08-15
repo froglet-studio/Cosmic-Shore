@@ -1,6 +1,6 @@
 using UnityEngine;
 
-class SharkAnimation : ShipAnimation
+class RhinoAnimation : ShipAnimation
 {
     [SerializeField] Transform Fusilage;
     [SerializeField] Transform LeftWing;

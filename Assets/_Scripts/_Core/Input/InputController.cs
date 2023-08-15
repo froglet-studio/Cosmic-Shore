@@ -126,6 +126,7 @@ namespace StarWriter.Core.IO
                 YSum = ship.AutoPilot.YSum;
                 XDiff = ship.AutoPilot.XDiff;
                 YDiff = ship.AutoPilot.YDiff;
+                CheckSpeedAndOrientation();
             }
             else if (Gamepad.current != null)
             {
