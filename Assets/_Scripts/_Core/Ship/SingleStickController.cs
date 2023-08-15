@@ -1,6 +1,7 @@
 using UnityEngine;
 using StarWriter.Core;
 using System.Collections.Generic;
+using System.Collections;
 
 public class SingleStickController : ShipTransformer
 {
@@ -14,30 +15,20 @@ public class SingleStickController : ShipTransformer
     protected override void Start()
     {
         base.Start();
-        inputController.SingleStick = true;
+        inputController.SingleStickControls = true;
         guns = new List<Gun>() { topGun};
         foreach (var gun in guns)
         {
             gun.Team = ship.Team;
             gun.Ship = ship;
         }
-
+        StartCoroutine(InitializeSingleStickControlsCoroutine());
     }
 
-    protected override void Update()
+    IEnumerator InitializeSingleStickControlsCoroutine()
     {
-        if (!inputController.SingleStick && inputController != null)
-        {
-            inputController.SingleStick = true;
-        }
-        base.Update();
-        
-    }
-
-    protected override void MoveShip()
-    {
-        
-        base.MoveShip();
+        yield return new WaitUntil(() => inputController != null);
+        inputController.SingleStickControls = true;
     }
 
 }

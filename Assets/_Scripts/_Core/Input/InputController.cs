@@ -18,7 +18,7 @@ namespace StarWriter.Core.IO
         public bool PhoneFlipState;
         public static ScreenOrientation currentOrientation;
         public bool Portrait = false;
-        public bool SingleStick = false;
+        public bool SingleStickControls = false;
 
         bool leftStickEffectsStarted = false;
         bool rightStickEffectsStarted = false;
@@ -26,7 +26,7 @@ namespace StarWriter.Core.IO
         bool minimumSpeedStraightEffectsStarted = false;
 
         int leftTouchIndex = 0, rightTouchIndex = 0;
-        bool oneFinger = false;
+        bool oneFingerMode = false;
         bool leftActive = true;
 
         public float XSum;
@@ -75,7 +75,8 @@ namespace StarWriter.Core.IO
 
         void Start()
         {
-            JoystickRadius = Screen.dpi;
+
+                JoystickRadius = Screen.dpi;
             leftInput = LeftClampedPosition = LeftJoystickHome = new Vector2(JoystickRadius, JoystickRadius);
             rightInput = RightClampedPosition = RightJoystickHome = new Vector2(Screen.currentResolution.width - JoystickRadius, JoystickRadius);
 
@@ -257,88 +258,77 @@ namespace StarWriter.Core.IO
                         Debug.Log($"InputController Phone flip state change detected - new flip state: {PhoneFlipState}, acceleration.y: {Input.acceleration.y}");
                     }
                 }
-
                 
-                var threeFingerFumble = false;
-                if (Input.touchCount >= 3)
+                if (SingleStickControls)
                 {
-                    // Sub select the two best touch inputs here
-                    // If we have more than two touches, find the closest to each of the last touch positions we used
-                    threeFingerFumble = true;
-
-                    float minLeftTouchDistance = Vector2.Distance(leftInput, Input.touches[0].position);
-                    float minRightTouchDistance = Vector2.Distance(rightInput, Input.touches[0].position);
-
-                    for (int i = 1; i < Input.touches.Length; i++)
+                    if (Input.touchCount > 0)
                     {
-                        if (Vector2.Distance(leftInput, Input.touches[i].position) < minLeftTouchDistance)
-                        {
-                            minLeftTouchDistance = Vector2.Distance(leftInput, Input.touches[i].position);
-                            leftTouchIndex = i;
-                        }
-                        if (Vector2.Distance(rightInput, Input.touches[i].position) < minRightTouchDistance)
-                        {
-                            minRightTouchDistance = Vector2.Distance(rightInput, Input.touches[i].position);
-                            rightTouchIndex = i;
-                        }
+                        leftTouchIndex = Input.touchCount >= 2 ? GetClosestTouch(leftInput) : 0;
+                        HandleJoystick(ref LeftJoystickStart, leftTouchIndex, ref LeftJoystick, ref LeftClampedPosition);
                     }
                 }
-                
-                if (Input.touchCount == 2 || threeFingerFumble)
+                else
                 {
-                    // If we didn't fat finger the phone, find the 
-                    if (!threeFingerFumble)
+                    var threeFingerFumble = false;
+                    if (Input.touchCount >= 3)
                     {
-                        if (Input.touches[0].position.x <= Input.touches[1].position.x)
+                        // Sub select the two best touch inputs here
+                        // If we have more than two touches, find the closest to each of the last touch positions we used
+                        threeFingerFumble = true;
+
+                        leftTouchIndex = GetClosestTouch(leftInput);
+                        rightTouchIndex = GetClosestTouch(rightInput);
+                    }
+
+                    if (Input.touchCount == 2 || threeFingerFumble)
+                    {
+                        // If we didn't fat finger the phone, find the 
+                        if (!threeFingerFumble)
                         {
-                            leftTouchIndex = 0;
-                            rightTouchIndex = 1;
+                            if (Input.touches[0].position.x <= Input.touches[1].position.x)
+                            {
+                                leftTouchIndex = 0;
+                                rightTouchIndex = 1;
+                            }
+                            else
+                            {
+                                leftTouchIndex = 1;
+                                rightTouchIndex = 0;
+                            }
                         }
-                        else
+
+                        leftInput = Input.touches[leftTouchIndex].position;
+                        rightInput = Input.touches[rightTouchIndex].position;
+
+                        HandleJoystick(ref LeftJoystickStart, leftTouchIndex, ref LeftJoystick, ref LeftClampedPosition);
+                        HandleJoystick(ref RightJoystickStart, rightTouchIndex, ref RightJoystick, ref RightClampedPosition);
+
+                        if (leftStickEffectsStarted)
                         {
-                            leftTouchIndex = 1;
-                            rightTouchIndex = 0;
+                            leftStickEffectsStarted = false;
+                            ship.StopShipControllerActions(InputEvents.LeftStickAction);
+                        }
+                        if (rightStickEffectsStarted)
+                        {
+                            rightStickEffectsStarted = false;
+                            ship.StopShipControllerActions(InputEvents.RightStickAction);
                         }
                     }
 
-                    leftInput = Input.touches[leftTouchIndex].position;
-                    rightInput = Input.touches[rightTouchIndex].position;
-
-                    //if (Portrait || SingleStick)
-                    //{
-                    //    rightInput = leftInput; // if your palm hits it is better to take the one closer to the top.
-                    //    leftActive = false;
-                    //}
-
-                    HandleJoystick(ref LeftJoystickStart, leftTouchIndex, ref LeftJoystick, ref LeftClampedPosition);
-                    HandleJoystick(ref RightJoystickStart, rightTouchIndex, ref RightJoystick, ref RightClampedPosition);
-
-                    if (leftStickEffectsStarted)
+                    if (Input.touchCount == 1)
                     {
-                        leftStickEffectsStarted = false;
-                        ship.StopShipControllerActions(InputEvents.LeftStickAction);
-                    }
-                    if (rightStickEffectsStarted)
-                    {
-                        rightStickEffectsStarted = false;
-                        ship.StopShipControllerActions(InputEvents.RightStickAction);
-                    }
-                }
-
-                if (Input.touchCount == 1)
-                {
-                    oneFinger = true;
-                    //if (Portrait)
-                    //{
-                    //    rightInput = Input.touches[0].position;
-                    //    leftInput = new Vector2(Screen.currentResolution.width / 4f, Screen.currentResolution.height / 2f);
-                    //}
-                    //else
-                    //if (leftInput != Vector2.zero && rightInput != Vector2.zero)
-                    //{
+                        oneFingerMode = true;
+                        //if (Portrait)
+                        //{
+                        //    rightInput = Input.touches[0].position;
+                        //    leftInput = new Vector2(Screen.currentResolution.width / 4f, Screen.currentResolution.height / 2f);
+                        //}
+                        //else
+                        //if (leftInput != Vector2.zero && rightInput != Vector2.zero)
+                        //{
                         var position = Input.touches[0].position;
 
-                        
+
                         if (Vector2.Distance(leftInput, position) < Vector2.Distance(rightInput, position))
                         {
                             if (!leftStickEffectsStarted)
@@ -346,7 +336,7 @@ namespace StarWriter.Core.IO
                                 leftStickEffectsStarted = true;
                                 ship.PerformShipControllerActions(InputEvents.LeftStickAction);
                             }
-                        leftInput = position;
+                            leftInput = position;
                             leftTouchIndex = 0;
                             HandleJoystick(ref LeftJoystickStart, leftTouchIndex, ref LeftJoystick, ref LeftClampedPosition);
                             leftActive = true;
@@ -364,9 +354,11 @@ namespace StarWriter.Core.IO
                             leftActive = false;
                         }
 
-                    //}
+                        //}
+                    }
+                    else oneFingerMode = false;
                 }
-                else oneFinger = false;
+                
 
                 if (Input.touchCount > 0)
                 {
@@ -425,7 +417,7 @@ namespace StarWriter.Core.IO
         void Reparameterize()
         {
             //Debug.Log($"RightJoystick {RightJoystick}, LeftJoystick {LeftJoystick}");
-            if (oneFinger || Portrait)
+            if (oneFingerMode || SingleStickControls)
             {
                 if (leftActive)
                 {
@@ -586,5 +578,22 @@ namespace StarWriter.Core.IO
             }
             Portrait = value; 
         }
+
+        int GetClosestTouch(Vector2 target)
+        {
+            int touchIndex = 0;
+            float minDistance = Mathf.Infinity;
+
+            for (int i = 0; i < Input.touches.Length; i++)
+            {
+                if (Vector2.Distance(target, Input.touches[i].position) < minDistance)
+                {
+                    minDistance = Vector2.Distance(target, Input.touches[i].position);
+                    touchIndex = i;
+                }
+            }
+            return touchIndex;
+        }
+
     }
 }
