@@ -169,6 +169,7 @@ public class MiniGame : MonoBehaviour
         foreach (var player in Players)
             Debug.Log($"MiniGame.EndGame - Player Score: {ScoreTracker.GetScore(player.PlayerName)} ");
 
+        CameraManager.Instance.SetEndCameraActive();
         PauseSystem.TogglePauseGame();
         gameRunning = false;
         EndGameScreen.SetActive(true);
