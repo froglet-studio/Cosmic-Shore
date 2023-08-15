@@ -63,7 +63,7 @@ public class Crystal : MonoBehaviour
             switch (effect)
             {
                 case CrystalImpactEffects.PlayFakeCrystalHaptics:   // TODO: P1 need to merge haptics and take an enum to determine which on to play
-                    HapticController.PlayFakeCrystalImpactHaptics();
+                    if (!ship.ShipStatus.AutoPilotEnabled) HapticController.PlayFakeCrystalImpactHaptics();
                     break;
                 case CrystalImpactEffects.ReduceSpeed:
                     ship.ShipController.ModifyThrottle(.1f, 10);  // TODO: Magic numbers

@@ -122,6 +122,7 @@ Material:
     m_Ints: []
     m_Floats:
     - Normal_Blend: 0.5
+    - _Alpha: 0
     - _AlphaClip: 0
     - _BASE_COLOR_WEIGHT: 1
     - _BUMP_MAP_STRENGTH: 0.3
@@ -176,9 +177,9 @@ Material:
     m_Colors:
     - _BASE_COLOR: {r: 1, g: 1, b: 1, a: 1}
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
-    - _BrightColor: {r: 3.469805, g: 3.564869, b: 0, a: 1}
+    - _BrightColor: {r: 1.2075472, g: 1.0949559, b: 0.075946234, a: 1}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
-    - _DarkColor: {r: 0.24528301, g: 0.21505651, b: 0.0034709796, a: 1}
+    - _DarkColor: {r: 0.16831183, g: 0.08049697, b: 0.010976859, a: 1}
     - _EMISSION_COLOR: {r: 0, g: 0, b: 0, a: 0}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
     - _REFLECTIONS_COLOR: {r: 1, g: 1, b: 1, a: 1}

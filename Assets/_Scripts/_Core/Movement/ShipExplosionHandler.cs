@@ -49,7 +49,7 @@ public class ShipExplosionHandler : MonoBehaviour
 
     public IEnumerator OnDeathShipExplosionCoroutine()
     {
-        HapticController.PlayBlockCollisionHaptics();
+        if (!ship.ShipStatus.AutoPilotEnabled) HapticController.PlayBlockCollisionHaptics();
 
         while (explosionRadius < maxExplosionRadius)
         {

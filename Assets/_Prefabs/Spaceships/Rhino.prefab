@@ -65,7 +65,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: cbf0164b1addfee43a45e430c464b6fd, type: 2}
+  - {fileID: 2100000, guid: b0e105431956f1b40b8ef19fbde85b3b, type: 2}
   - {fileID: 2100000, guid: c739bccc290901b4cac760f82c02cbcd, type: 2}
   - {fileID: 2100000, guid: 923d366546007394ea6c8aaff6a06863, type: 2}
   - {fileID: 2100000, guid: 99f64c48ac212f744a3fffd9d4eee770, type: 2}
@@ -182,7 +182,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: cbf0164b1addfee43a45e430c464b6fd, type: 2}
+  - {fileID: 2100000, guid: b0e105431956f1b40b8ef19fbde85b3b, type: 2}
   - {fileID: 2100000, guid: 99f64c48ac212f744a3fffd9d4eee770, type: 2}
   - {fileID: 2100000, guid: c739bccc290901b4cac760f82c02cbcd, type: 2}
   m_StaticBatchInfo:
@@ -479,7 +479,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: cbf0164b1addfee43a45e430c464b6fd, type: 2}
+  - {fileID: 2100000, guid: b0e105431956f1b40b8ef19fbde85b3b, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -639,7 +639,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: cbf0164b1addfee43a45e430c464b6fd, type: 2}
+  - {fileID: 2100000, guid: b0e105431956f1b40b8ef19fbde85b3b, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -753,7 +753,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: cbf0164b1addfee43a45e430c464b6fd, type: 2}
+  - {fileID: 2100000, guid: b0e105431956f1b40b8ef19fbde85b3b, type: 2}
   - {fileID: 2100000, guid: c739bccc290901b4cac760f82c02cbcd, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
@@ -823,7 +823,7 @@ GameObject:
   - component: {fileID: 2456609266732234764}
   - component: {fileID: 6441696348568773771}
   m_Layer: 0
-  m_Name: Shark
+  m_Name: Rhino
   m_TagString: Player_Ship
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -915,7 +915,7 @@ MonoBehaviour:
   maxProjectileBlockScale: {x: 1.5, y: 1.5, z: 30}
   ControlOverrides: 0400000003000000
   closeCamDistance: -20
-  farCamDistance: -60
+  farCamDistance: -80
   AOEExplosionMaterial: {fileID: 0}
   AOEConicExplosionMaterial: {fileID: 0}
 --- !u!114 &6964962696344697388
@@ -1064,8 +1064,8 @@ MonoBehaviour:
   Fusilage: {fileID: 700233851725834780}
   LeftWing: {fileID: 5699081205659755316}
   RightWing: {fileID: 5585958008222949722}
-  Head: {fileID: 0}
-  Tail: {fileID: 0}
+  LeftEngine: {fileID: 666264045177679767}
+  RightEngine: {fileID: 4971119476819806587}
   animationScaler: 25
   yawAnimationScaler: 80
 --- !u!114 &2456609266732234764
@@ -1179,7 +1179,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: cbf0164b1addfee43a45e430c464b6fd, type: 2}
+  - {fileID: 2100000, guid: b0e105431956f1b40b8ef19fbde85b3b, type: 2}
   - {fileID: 2100000, guid: 99f64c48ac212f744a3fffd9d4eee770, type: 2}
   - {fileID: 2100000, guid: c739bccc290901b4cac760f82c02cbcd, type: 2}
   m_StaticBatchInfo:
@@ -1328,7 +1328,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: cbf0164b1addfee43a45e430c464b6fd, type: 2}
+  - {fileID: 2100000, guid: b0e105431956f1b40b8ef19fbde85b3b, type: 2}
   - {fileID: 2100000, guid: c739bccc290901b4cac760f82c02cbcd, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0

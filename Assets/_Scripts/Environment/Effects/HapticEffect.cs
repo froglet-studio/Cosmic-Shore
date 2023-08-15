@@ -4,7 +4,7 @@
     {
         public static void ApplyEffect(Ship ship, ImpactProperties impactProperties)
         {
-            HapticController.PlayHaptic(impactProperties.hapticType);
+            if (!ship.ShipStatus.AutoPilotEnabled) HapticController.PlayHaptic(impactProperties.hapticType);
         }
     }
 }

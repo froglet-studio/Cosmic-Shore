@@ -5,8 +5,8 @@ class SharkAnimation : ShipAnimation
     [SerializeField] Transform Fusilage;
     [SerializeField] Transform LeftWing;
     [SerializeField] Transform RightWing;
-    [SerializeField] Transform Head;
-    [SerializeField] Transform Tail;
+    [SerializeField] Transform LeftEngine;
+    [SerializeField] Transform RightEngine;
 
     [SerializeField] float animationScaler = 25f;
     [SerializeField] float yawAnimationScaler = 80f;
@@ -14,13 +14,13 @@ class SharkAnimation : ShipAnimation
     protected override void PerformShipAnimations(float pitch, float yaw, float roll, float throttle)
     {
         AnimatePart(LeftWing,
-                    Brake(throttle) * yawAnimationScaler,
                     0,
+                    -Brake(throttle) * yawAnimationScaler,
                     (roll + pitch) * animationScaler);
 
         AnimatePart(RightWing,
-                    Brake(throttle) * yawAnimationScaler,
                     0,
+                    Brake(throttle) * yawAnimationScaler,
                     (roll - pitch) * animationScaler);
 
         AnimatePart(Fusilage,
@@ -28,15 +28,15 @@ class SharkAnimation : ShipAnimation
                     yaw * animationScaler,
                     roll * animationScaler);
 
-        AnimatePart(Head,
-                    -pitch * animationScaler,
-                    yaw * animationScaler,
-                    roll * animationScaler);
+        AnimatePart(LeftEngine,
+                    0,
+                    Brake(throttle) * yawAnimationScaler,
+                    0);
 
-        AnimatePart(Tail,
-                    -pitch * animationScaler,
-                    yaw * animationScaler,
-                    roll * animationScaler);
+        AnimatePart(RightEngine,
+                    0,
+                    -Brake(throttle) * yawAnimationScaler,
+                    0);
     }
 
     protected override void AssignTransforms()

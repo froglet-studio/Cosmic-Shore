@@ -211,7 +211,7 @@ namespace StarWriter.Core
                 switch (effect)
                 {
                     case TrailBlockImpactEffects.PlayHaptics:
-                        HapticController.PlayBlockCollisionHaptics();
+                        if (!ShipStatus.AutoPilotEnabled) HapticController.PlayBlockCollisionHaptics();
                         break;
                     case TrailBlockImpactEffects.DrainHalfAmmo:
                         ResourceSystem.ChangeAmmoAmount(-ResourceSystem.CurrentAmmo / 2f);

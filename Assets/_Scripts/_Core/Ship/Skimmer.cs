@@ -44,7 +44,7 @@ namespace StarWriter.Core
                 switch (effect)
                 {
                     case TrailBlockImpactEffects.PlayHaptics:
-                        HapticController.PlayBlockCollisionHaptics();
+                        if (!ship.ShipStatus.AutoPilotEnabled) HapticController.PlayBlockCollisionHaptics();
                         break;
                     case TrailBlockImpactEffects.DeactivateTrailBlock:
                         trailBlockProperties.trailBlock.Explode(ship.transform.forward * ship.GetComponent<ShipStatus>().Speed, team, Player.PlayerName);
@@ -78,7 +78,7 @@ namespace StarWriter.Core
                         shipGeometry.Ship.TrailSpawner.RestartTrailSpawnerAfterDelay(10);
                         break;
                     case ShipImpactEffects.PlayHaptics:
-                        HapticController.PlayShipCollisionHaptics();
+                        if (!ship.ShipStatus.AutoPilotEnabled) HapticController.PlayShipCollisionHaptics();
                         break;
                 }
             }

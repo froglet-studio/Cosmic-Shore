@@ -18,7 +18,7 @@ public class MiniGame : MonoBehaviour
     [SerializeField] GameObject EndGameScreen; // TODO: maybe this gets unified with the HUD -> there's something that shows/hides HUD, end game, etc
     protected List<Player> Players;
 
-    List<Teams> PlayerTeams = new List<Teams>() { Teams.Green, Teams.Red, Teams.Blue, Teams.Yellow };
+    List<Teams> PlayerTeams = new List<Teams>() { Teams.Green, Teams.Red, Teams.Yellow, Teams.Blue};
     List<string> PlayerNames = new List<string>() { "PlayerOne", "PlayerTwo", "PlayerThree", "PlayerFour" };
 
     // Configuration set by player

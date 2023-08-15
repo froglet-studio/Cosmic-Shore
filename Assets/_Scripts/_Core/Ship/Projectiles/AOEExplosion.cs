@@ -96,7 +96,7 @@ namespace StarWriter.Core
                         shipGeometry.Ship.TrailSpawner.RestartTrailSpawnerAfterDelay(10);
                         break;
                     case ShipImpactEffects.PlayHaptics:
-                        HapticController.PlayShipCollisionHaptics();
+                        if (!shipGeometry.Ship.ShipStatus.AutoPilotEnabled) HapticController.PlayShipCollisionHaptics();
                         break;
                     case ShipImpactEffects.SpinAround:
                         shipGeometry.Ship.ShipController.SpinShip(impactVector);
