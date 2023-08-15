@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class SingleBiomeTeamMatchGame : MiniGame
+public class CellularDuelMiniGame : MiniGame
 {
     [SerializeField] Crystal Crystal;
     [SerializeField] Player FriendlyAI;
@@ -12,7 +12,7 @@ public class SingleBiomeTeamMatchGame : MiniGame
     {
         base.Start();
 
-        gameMode = MiniGames.SingleBiomeTeamMatch;
+        gameMode = MiniGames.CellularDuel;
 
         /*HostileOne.gameObject.SetActive(true);
 

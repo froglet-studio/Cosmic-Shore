@@ -82,7 +82,7 @@ public class LeaderboardDataAccessor
             }
         },
         {
-            MiniGames.ThiefCourse, new List<LeaderboardEntry>()
+            MiniGames.BlockBandit, new List<LeaderboardEntry>()
             {
                 new LeaderboardEntry("Igarus",  10, ShipTypes.Dolphin),
                 new LeaderboardEntry("Gradies", 20, ShipTypes.GunManta),
@@ -92,7 +92,7 @@ public class LeaderboardDataAccessor
             }
         },
         {
-            MiniGames.SingleBiomeTeamMatch, new List<LeaderboardEntry>()
+            MiniGames.CellularDuel, new List<LeaderboardEntry>()
             {
                 new LeaderboardEntry("Igarus",  10, ShipTypes.Dolphin),
                 new LeaderboardEntry("Gradies", 20, ShipTypes.GunManta),

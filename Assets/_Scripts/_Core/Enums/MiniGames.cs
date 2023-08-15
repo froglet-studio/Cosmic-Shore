@@ -7,8 +7,8 @@ public enum MiniGames
     Rampage = 2,
     Darts = 3,
     ShootingGallery = 4,
-    ThiefCourse = 5,
+    BlockBandit = 5,
     DriftCourse = 6,
     Sandbox = 7,
-    SingleBiomeTeamMatch = 8,
+    CellularDuel = 8,
 }

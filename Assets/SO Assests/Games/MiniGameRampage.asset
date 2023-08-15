@@ -14,7 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Mode: 2
   Name: Rampage
-  Description: '"You''re gonna wreck it" - Someone close to Ralph'
+  Description: Break, smash, and obliterate your way through the course, leaving
+    a trail of galactic mayhem. Only the most devastating will emerge victorious.
   Icon: {fileID: 21300000, guid: 2f25d43091cd95b4ba63624192b69769, type: 3}
   SelectedIcon: {fileID: 21300000, guid: aa8c00a5343222d439660e9e400e542c, type: 3}
   PreviewClip: {fileID: 241334157148977051, guid: bce3acfd8a554e942bc4f1903e25eb07,
