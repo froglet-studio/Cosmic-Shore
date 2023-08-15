@@ -33,7 +33,7 @@ EditorBuildSettings:
     path: Assets/Scenes/MinigameSandbox.unity
     guid: 6f71535b00043c345b3216d994f22499
   - enabled: 1
-    path: Assets/Scenes/MinigameThiefCourse.unity
+    path: Assets/Scenes/MinigameBlockBandit.unity
     guid: ab6402f21daa97944b25e308c2a26008
   - enabled: 0
     path: Assets/Scenes/Game_HighScore.unity
