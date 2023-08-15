@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace StarWriter.Core.UI
 {
@@ -7,6 +8,7 @@ namespace StarWriter.Core.UI
     /// </summary>
     public class MainMenu : MonoBehaviour
     {
+        [SerializeField] MiniGamesMenu miniGamesMenu;
 
         GameManager gameManager;
 
@@ -14,6 +16,24 @@ namespace StarWriter.Core.UI
         {
             gameManager = GameManager.Instance;
         }
+
+        public void OnClickSoar()
+        {
+            MiniGame.PlayerShipType = ShipTypes.Manta;
+            MiniGame.DifficultyLevel = 1;
+            MiniGame.NumberOfPlayers = 1;
+
+            SceneManager.LoadScene("MinigameSandbox");
+        }
+        public void OnClickSmash()
+        {
+            MiniGame.PlayerShipType = ShipTypes.Shark;
+            MiniGame.DifficultyLevel = 1;
+            MiniGame.NumberOfPlayers = 1;
+
+            SceneManager.LoadScene("MinigameSandbox");
+        }
+
         public void OnClickPlayGame()
         {
             gameManager.OnClickPlayButton();

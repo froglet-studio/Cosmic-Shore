@@ -4,6 +4,7 @@ using System.Runtime.Serialization.Formatters.Binary;
 using System.Runtime.Serialization;
 using Newtonsoft.Json;
 using System.Text;
+using System;
 
 class DataAccessor
 {
@@ -54,7 +55,23 @@ class DataAccessor
 
                 dataStream.Close();
             }
-            catch (SerializationException ex)
+            catch (Exception ex)
+            {
+                // This likely indicates that the file format has changed across builds
+                // For now, let's just recreate the file as a poor version of self healing
+                // Once the app is in the wild, we will need a strategy for updating these data models
+                // Maybe it's enough to just make additive changes?
+                Debug.LogError($"Issue encountered while deserializing a save file :( {FilePath}");
+                Debug.LogError($"Exception Message: {ex.Message}");
+
+                dataStream.Close();
+
+                File.Delete(FilePath);
+
+                Data = new T();
+                return Data;
+            }
+            /*catch (SerializationException ex)
             {
                 // This likely indicates that the file format has changed across builds
                 // For now, let's just recreate the file as a poor version of self healing
@@ -67,7 +84,7 @@ class DataAccessor
 
                 Data = new T();
                 return Data;
-            }
+            }*/
             finally
             {
                 if (dataStream != null)

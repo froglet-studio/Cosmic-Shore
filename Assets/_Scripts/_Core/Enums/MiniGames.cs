@@ -9,6 +9,6 @@ public enum MiniGames
     ShootingGallery = 4,
     BlockBandit = 5,
     DriftCourse = 6,
-    Sandbox = 7,
+    Freestyle = 7,
     CellularDuel = 8,
 }

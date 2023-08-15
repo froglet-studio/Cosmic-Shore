@@ -47,7 +47,7 @@ namespace StarWriter.Core
             var impactVector = (other.transform.position - transform.position).normalized * speed;
             if (other.TryGetComponent<TrailBlock>(out var trailBlock))
             {
-                if (trailBlock.Team == Team && !affectSelf || !destructive)
+                if ( (trailBlock.Team == Team && !affectSelf) || !destructive)
                 {
                     trailBlock.ActivateShield(2f);
                     return;

@@ -230,7 +230,7 @@ namespace StarWriter.Core
         {
             Shielded = false;
             TrailBlockProperties.Shielded = false;
-            gameObject.GetComponent<MeshRenderer>().material = Hangar.Instance.GetTeamBlockMaterial(this.team);
+            gameObject.GetComponent<MeshRenderer>().material = Hangar.Instance.GetTeamBlockMaterial(team);
             // TODO: need stats
         }
 
@@ -238,7 +238,7 @@ namespace StarWriter.Core
         {
             Shielded = true;
             TrailBlockProperties.Shielded = true;
-            gameObject.GetComponent<MeshRenderer>().material = Hangar.Instance.GetTeamShieldedBlockMaterial(this.team);
+            gameObject.GetComponent<MeshRenderer>().material = Hangar.Instance.GetTeamShieldedBlockMaterial(team);
             // TODO: need stats
         }
 
@@ -249,13 +249,11 @@ namespace StarWriter.Core
 
         IEnumerator ActivateShieldCoroutine(float duration)
         {
-            Shielded = true;
-            TrailBlockProperties.Shielded = true;
-            gameObject.GetComponent<MeshRenderer>().material = Hangar.Instance.GetTeamShieldedBlockMaterial(this.team);
+            ActivateShield();
+
             yield return new WaitForSeconds(duration);
-            Shielded = false;
-            TrailBlockProperties.Shielded = false;
-            gameObject.GetComponent<MeshRenderer>().material = Hangar.Instance.GetTeamBlockMaterial(this.team);
+            
+            DeactivateShield();
         }
 
         public void Steal(string playerName, Teams team)
