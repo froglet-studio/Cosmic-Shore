@@ -10,5 +10,5 @@ public enum MiniGames
     BlockBandit = 5,
     DriftCourse = 6,
     Sandbox = 7,
-    SingleBiomeTeamMatch = 8,
+    CellularDuel = 8,
 }
