@@ -1,6 +1,5 @@
 using UnityEngine;
 
-
 namespace StarWriter.Utility.Singleton
 {
     /// <remarks>

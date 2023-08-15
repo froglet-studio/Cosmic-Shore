@@ -9,7 +9,6 @@ public enum ImpactEffects
     FillCharge = 1,
     DrainAmmo = 2,
     GainOneThirdMaxAmmo = 3,
-    Score = 4,
     Boost = 5,
     AreaOfEffectExplosion = 6,
     ResetAggression = 7,
@@ -28,3 +27,60 @@ public enum ImpactEffects
     Steal = 7,
     Attach = 9,
 }
+
+/*
+{
+    HapticEffectProperties
+        int HapticId
+
+    
+    // FEEDBACK
+    PlayHaptics(HapticEffectProperties),
+    PlayHaptics,
+    ResetAggression,
+
+    // RESOURCES   
+    type, quanity, unit
+    charge, 100, percent of current
+
+    ResourceEffectProperties
+        enum ResourceType
+        float Amount
+        enum AllocationType
+
+    AdjustResource(ResourceEffectProperties)
+
+    FillCharge,
+    FillOneThirdMaxAmmo,
+    DrainAmmo,
+    DrainHalfAmmo,
+    ChargeAmmo,
+    ChargeBoost,
+
+    // Buffs
+    OnlyBuffSpeed,
+    IncrementLevel,
+    Boost,    
+
+    // Debuffs
+    DebuffSpeed,
+    ReduceSpeed,
+    DecrementLevel,
+    TrailSpawnerCooldown,
+    SpinAround,
+    Knockback,
+    Stun,
+
+    // Blocks
+    DeactivateTrailBlock,
+    ActivateTrailBlock,
+    StealTrailBlock,
+    Attach,
+    Grow,
+    Shrink,
+    Shield,
+
+    // Ship
+    TriggerAreaEffect,
+}
+*/

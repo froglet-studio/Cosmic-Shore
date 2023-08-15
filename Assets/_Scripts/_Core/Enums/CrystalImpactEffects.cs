@@ -5,7 +5,6 @@ public enum CrystalImpactEffects
     FillCharge = 1,
     DrainAmmo = 2,
     GainOneThirdMaxAmmo = 3,
-    Score = 4,
     Boost = 5,
     AreaOfEffectExplosion = 6,
     ResetAggression = 7,
