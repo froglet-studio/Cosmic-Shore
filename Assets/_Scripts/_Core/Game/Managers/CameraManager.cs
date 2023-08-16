@@ -79,11 +79,11 @@ public class CameraManager : SingletonPersistent<CameraManager>
     {
         SetActiveCamera(closeCamera);
     }
-    void SetDeathCameraActive()
+    public void SetDeathCameraActive()
     {
         SetActiveCamera(deathCamera);
     }
-    void SetEndCameraActive()
+    public void SetEndCameraActive()
     {
         SetActiveCamera(endCamera);
     }

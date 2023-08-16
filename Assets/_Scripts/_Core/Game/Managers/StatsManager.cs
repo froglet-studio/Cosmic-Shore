@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 
-// TODO: pull out into separate file
+// TODO: P1 pull out into separate file
 [System.Serializable]
 public struct RoundStats
 {
@@ -56,8 +56,7 @@ public struct RoundStats
         button1AbilityActiveTime = 0;
         button2AbilityActiveTime = 0;
         button3AbilityActiveTime = 0;
-
-}
+    }
 }
 
 public class StatsManager : Singleton<StatsManager>

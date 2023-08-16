@@ -58,6 +58,12 @@ namespace StarWriter.Core.HangerBuilder
             PlayerPrefs.SetInt(SelectedShipPlayerPrefKey, shipType);
         }
 
+        public void SetAIShip(int shipType)
+        {
+            Debug.Log($"Hangar.SetAIShip: {(ShipTypes)shipType}");
+            HostileAI1ShipType = (ShipTypes)shipType;
+        }
+
         public void SetPlayerPilot(SO_Pilot pilot)
         {
             PlayerPilot = pilot;
@@ -90,30 +96,35 @@ namespace StarWriter.Core.HangerBuilder
                 { Teams.Red,   RedTeamMaterial },
                 { Teams.Blue,  BlueTeamMaterial },
                 { Teams.Yellow,  YellowTeamMaterial },
+                { Teams.Unassigned,  BlueTeamMaterial },
             };
             TeamBlockMaterials = new Dictionary<Teams, Material>() {
                 { Teams.Green, GreenTeamBlockMaterial },
                 { Teams.Red,   RedTeamBlockMaterial },
                 { Teams.Blue,  BlueTeamBlockMaterial },
                 { Teams.Yellow,  YellowTeamBlockMaterial },
+                { Teams.Unassigned,  BlueTeamBlockMaterial },
             };
             TeamShieldedBlockMaterials = new Dictionary<Teams, Material>() {
                 { Teams.Green, GreenTeamShieldedBlockMaterial },
                 { Teams.Red,   RedTeamShieldedBlockMaterial},
                 { Teams.Blue,  BlueTeamShieldedBlockMaterial},
                 { Teams.Yellow, YellowTeamShieldedBlockMaterial},
+                { Teams.Unassigned,  BlueTeamShieldedBlockMaterial},
             };
             TeamAOEExplosionMaterials = new Dictionary<Teams, Material>() {
                 { Teams.Green, GreenTeamAOEExplosionMaterial },
                 { Teams.Red,   RedTeamAOEExplosionMaterial },
                 { Teams.Blue,  BlueTeamAOEExplosionMaterial },
                 { Teams.Yellow,  YellowTeamAOEExplosionMaterial },
+                { Teams.Unassigned,  BlueTeamAOEExplosionMaterial },
             };
             TeamAOEConicExplosionMaterials = new Dictionary<Teams, Material>() {
                 { Teams.Green, GreenTeamAOEConicExplosionMaterial },
                 { Teams.Red,   RedTeamAOEConicExplosionMaterial },
                 { Teams.Blue,  BlueTeamAOEConicExplosionMaterial },
                 { Teams.Yellow,  YellowTeamAOEConicExplosionMaterial },
+                { Teams.Unassigned,  BlueTeamAOEConicExplosionMaterial },
             };
             if (PlayerTeam == Teams.None)
             {

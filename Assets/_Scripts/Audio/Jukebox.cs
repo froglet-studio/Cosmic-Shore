@@ -67,13 +67,16 @@ namespace StarWriter.Core.Audio
         void InitializeJukebox()  // Adds song SO's to the Playlist dictionary. Then initialize the jukebox
         {
             // Songs added here are specific use songs
-            Song song = new Song(onDeathSong);
-            Playlist.Add(song.Title, song);
+            if (onDeathSong != null)
+            {
+                Song song = new Song(onDeathSong);
+                Playlist.Add(song.Title, song);
+            }
 
             //Add songs from the so_songs list
             foreach (SO_Song so in so_songs)
             {
-                song = new Song(so);
+                Song song = new Song(so);
                 Playlist.Add(song.Title, song);
                 Debug.Log("Song " + song.Title + " added to Playlist");
             }

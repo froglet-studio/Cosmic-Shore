@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0309a5343d820c14abd73b35f6fa50f1, type: 3}
   m_Name: SO_LaunchPartyShipUrchin
   m_EditorClassIdentifier: 
-  Class: 9
+  Class: 4
   Name: Urchin
   Description: Don't mess with me or I will shoot. I will shoot anyway, but don't
     mess with me.
