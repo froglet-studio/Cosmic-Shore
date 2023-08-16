@@ -37,12 +37,17 @@ namespace StarWriter.Core.HangerBuilder
         [SerializeField] Material RedTeamAOEConicExplosionMaterial;
         [SerializeField] Material BlueTeamAOEConicExplosionMaterial;
         [SerializeField] Material YellowTeamAOEConicExplosionMaterial;
+        [SerializeField] Material GreenTeamSkimmerMaterial;
+        [SerializeField] Material RedTeamSkimmerMaterial;
+        [SerializeField] Material BlueTeamSkimmerMaterial;
+        [SerializeField] Material YellowTeamSkimmerMaterial;
 
         Dictionary<Teams, Material> TeamsMaterials;
         Dictionary<Teams, Material> TeamBlockMaterials;
         Dictionary<Teams, Material> TeamShieldedBlockMaterials;
         Dictionary<Teams, Material> TeamAOEExplosionMaterials;
         Dictionary<Teams, Material> TeamAOEConicExplosionMaterials;
+        Dictionary<Teams, Material> TeamSkimmerMaterials;
 
         Dictionary<string, Ship> ships = new();
         Dictionary<ShipTypes, Ship> shipTypeMap = new();
@@ -126,6 +131,14 @@ namespace StarWriter.Core.HangerBuilder
                 { Teams.Yellow,  YellowTeamAOEConicExplosionMaterial },
                 { Teams.Unassigned,  BlueTeamAOEConicExplosionMaterial },
             };
+            TeamSkimmerMaterials = new Dictionary<Teams, Material>() {
+                { Teams.Green, GreenTeamSkimmerMaterial },
+                { Teams.Red,   RedTeamSkimmerMaterial },
+                { Teams.Blue,  BlueTeamSkimmerMaterial },
+                { Teams.Yellow,  YellowTeamSkimmerMaterial },
+                { Teams.Unassigned,  BlueTeamSkimmerMaterial },
+            };
+
             if (PlayerTeam == Teams.None)
             {
                 Debug.LogError("Player Team is set to None. Defaulting to Green Team");
@@ -164,6 +177,7 @@ namespace StarWriter.Core.HangerBuilder
             ship.SetShieldedBlockMaterial(TeamShieldedBlockMaterials[team]);
             ship.SetAOEExplosionMaterial(TeamAOEExplosionMaterials[team]);
             ship.SetAOEConicExplosionMaterial(TeamAOEConicExplosionMaterials[team]);
+            ship.SetSkimmerMaterial(TeamSkimmerMaterials[team]);
 
             SelectedShip = ship;
 

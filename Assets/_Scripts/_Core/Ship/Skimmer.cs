@@ -16,6 +16,9 @@ namespace StarWriter.Core
         [SerializeField] float chargeAmount;
         [SerializeField] float MultiSkimMultiplier = 0f;
         [SerializeField] bool notifyNearbyBlockCount;
+
+        Material material;
+        [SerializeField] bool visible = false;
         
         [HideInInspector] public Ship ship;
         [HideInInspector] public Player Player;
@@ -31,6 +34,7 @@ namespace StarWriter.Core
 
         void Start()
         {
+            if (visible) material = new Material(ship.SkimmerMaterial);
             skimStartTimes = new();
             cameraManager = CameraManager.Instance;
             if (ship != null) resourceSystem = ship.GetComponent<ResourceSystem>();
