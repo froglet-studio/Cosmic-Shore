@@ -4,9 +4,9 @@ using UnityEngine;
 public class SpawnableEllipsoid : SpawnableAbstractBase
 {
     [SerializeField] TrailBlock trailBlock;
-    [SerializeField] float maxlength;
-    [SerializeField] float maxwidth;
-    [SerializeField] float maxheight;
+    public float maxlength;
+    public float maxwidth;
+    public float maxheight;
 
     float length;
     float width;
