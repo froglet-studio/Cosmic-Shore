@@ -23,7 +23,7 @@ namespace StarWriter.Core.UI
             MiniGame.DifficultyLevel = 1;
             MiniGame.NumberOfPlayers = 1;
 
-            SceneManager.LoadScene("MinigameSandbox");
+            SceneManager.LoadScene("MinigameFreestyle");
         }
         public void OnClickSmash()
         {
@@ -31,7 +31,7 @@ namespace StarWriter.Core.UI
             MiniGame.DifficultyLevel = 1;
             MiniGame.NumberOfPlayers = 1;
 
-            SceneManager.LoadScene("MinigameSandbox");
+            SceneManager.LoadScene("MinigameFreestyle");
         }
 
         public void OnClickPlayGame()
