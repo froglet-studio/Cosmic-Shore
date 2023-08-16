@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0.0037926815, g: 0.0032631278, b: 0.0034446984, a: 1}
+  m_IndirectSpecularColor: {r: 0, g: 0, b: 0, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -3125,6 +3125,11 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 1955457708660300593, guid: 8a9d12e43096881468feb22e39e9fbeb,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 1966916306606820429, guid: 8a9d12e43096881468feb22e39e9fbeb,
         type: 3}
       propertyPath: m_AnchorMax.y
@@ -5398,6 +5403,11 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 5279397807135249238, guid: 8a9d12e43096881468feb22e39e9fbeb,
+        type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 67
+      objectReference: {fileID: 0}
     - target: {fileID: 5288972487397856440, guid: 8a9d12e43096881468feb22e39e9fbeb,
         type: 3}
       propertyPath: m_AnchorMax.y
@@ -6303,6 +6313,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_AnchoredPosition.y
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6934691946133772947, guid: 8a9d12e43096881468feb22e39e9fbeb,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6941599016129815588, guid: 8a9d12e43096881468feb22e39e9fbeb,
         type: 3}
@@ -7436,12 +7451,12 @@ PrefabInstance:
         type: 3}
       propertyPath: EndOfRoundStatContainers.Array.data[2]
       value: 
-      objectReference: {fileID: 1402460999}
+      objectReference: {fileID: 0}
     - target: {fileID: 8615459834825002481, guid: 8a9d12e43096881468feb22e39e9fbeb,
         type: 3}
       propertyPath: EndOfRoundStatContainers.Array.data[3]
       value: 
-      objectReference: {fileID: 1681559499}
+      objectReference: {fileID: 0}
     - target: {fileID: 8615459834825002491, guid: 8a9d12e43096881468feb22e39e9fbeb,
         type: 3}
       propertyPath: m_IsActive
@@ -11219,7 +11234,7 @@ MonoBehaviour:
   AutoPilotEnabled: 0
   PhoneFlipState: 0
   Portrait: 0
-  SingleStick: 0
+  SingleStickControls: 0
   XSum: 0
   YSum: 0
   XDiff: 0
@@ -11228,16 +11243,12 @@ MonoBehaviour:
   LeftJoystick: {x: 0, y: 0}
   RightJoystickStart: {x: 0, y: 0}
   LeftJoystickStart: {x: 0, y: 0}
+  RightJoystickHome: {x: 0, y: 0}
+  LeftJoystickHome: {x: 0, y: 0}
   RightClampedPosition: {x: 0, y: 0}
   LeftClampedPosition: {x: 0, y: 0}
   Idle: 0
   isGyroEnabled: 0
---- !u!1 &1402460999 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 5004294844718895904, guid: 8a9d12e43096881468feb22e39e9fbeb,
-    type: 3}
-  m_PrefabInstance: {fileID: 433663840}
-  m_PrefabAsset: {fileID: 0}
 --- !u!224 &1433451916 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 1735058506752886825, guid: 8a9d12e43096881468feb22e39e9fbeb,
@@ -11747,12 +11758,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   canRotate: 1
   speed: -30
---- !u!1 &1681559499 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 4719396172014919909, guid: 8a9d12e43096881468feb22e39e9fbeb,
-    type: 3}
-  m_PrefabInstance: {fileID: 433663840}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1718435486
 GameObject:
   m_ObjectHideFlags: 0
@@ -13364,12 +13369,12 @@ PrefabInstance:
     - target: {fileID: 5247650485044281852, guid: 061f308768b5b564bbb0f130d1a8f02e,
         type: 3}
       propertyPath: m_LocalRotation.w
-      value: 0.014161397
+      value: 0.014161362
       objectReference: {fileID: 0}
     - target: {fileID: 5247650485044281852, guid: 061f308768b5b564bbb0f130d1a8f02e,
         type: 3}
       propertyPath: m_LocalRotation.x
-      value: 0.00019546802
+      value: 0.00019546723
       objectReference: {fileID: 0}
     - target: {fileID: 5247650485044281852, guid: 061f308768b5b564bbb0f130d1a8f02e,
         type: 3}
@@ -13379,7 +13384,7 @@ PrefabInstance:
     - target: {fileID: 5247650485044281852, guid: 061f308768b5b564bbb0f130d1a8f02e,
         type: 3}
       propertyPath: m_LocalRotation.z
-      value: -0.013800179
+      value: -0.013800159
       objectReference: {fileID: 0}
     - target: {fileID: 5247650485044281852, guid: 061f308768b5b564bbb0f130d1a8f02e,
         type: 3}
