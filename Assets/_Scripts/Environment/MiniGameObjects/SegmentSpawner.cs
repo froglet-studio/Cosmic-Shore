@@ -40,7 +40,7 @@ public class SegmentSpawner : MonoBehaviour
             Initialize();
     }
 
-    public void Initialize(int difficultyLevel = 1)
+    public void Initialize()
     {
         if (Seed != 0) random = new System.Random(Seed);
 
@@ -55,7 +55,7 @@ public class SegmentSpawner : MonoBehaviour
 
         for (int i=0; i < numberOfSegments; i++)
         {
-            var spawned = SpawnRandom(difficultyLevel);
+            var spawned = SpawnRandom();
             PositionSpawnedObject(spawned, positioningScheme);
             spawnedItemCount++;
         }
@@ -111,7 +111,7 @@ public class SegmentSpawner : MonoBehaviour
         }
     }
 
-    GameObject SpawnRandom(int difficultyLevel = 1)
+    GameObject SpawnRandom()
     {
         var spawnWeight = random.NextDouble();
         var spawnIndex = 0;
@@ -122,7 +122,7 @@ public class SegmentSpawner : MonoBehaviour
             totalWeight += spawnSegmentWeights[i];
         }
 
-        return spawnableSegments[spawnIndex].Spawn(difficultyLevel);
+        return spawnableSegments[spawnIndex].Spawn();
     }
 
     void normalizeWeights()

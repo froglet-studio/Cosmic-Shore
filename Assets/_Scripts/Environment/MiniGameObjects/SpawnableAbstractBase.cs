@@ -12,7 +12,6 @@ public abstract class SpawnableAbstractBase : MonoBehaviour
 
 
     public abstract GameObject Spawn();
-    public virtual GameObject Spawn(int difficultyLevel = 1) { return Spawn(); }
 
     public virtual void SetSeed(int seed)
     {

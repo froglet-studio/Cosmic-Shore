@@ -25,11 +25,6 @@ public class SpawnableFlower : SpawnableAbstractBase
         return Spawn(lastTwoBlocks);
     }
 
-    public override GameObject Spawn(int difficultyLevel)
-    {
-        return Spawn(lastTwoBlocks);
-    }
-
     public GameObject Spawn(List<TrailBlock> lastTwoBlocks) 
     {
         GameObject container = new GameObject();

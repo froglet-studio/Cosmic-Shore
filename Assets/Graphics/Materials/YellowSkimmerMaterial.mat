@@ -7,7 +7,7 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: YellowSkimmerMaterial 1
+  m_Name: YellowSkimmerMaterial
   m_Shader: {fileID: -6465566751694194690, guid: 45e26bf6e32e3df49b2a5f541e634514,
     type: 3}
   m_ValidKeywords:

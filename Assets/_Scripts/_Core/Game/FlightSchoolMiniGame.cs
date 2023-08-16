@@ -19,7 +19,7 @@ public class FlightSchoolMiniGame : MiniGame
         Crystal.SetOrigin(CrystalStartPosition);
 
         SegmentSpawner.Seed = new System.Random().Next();
-        SegmentSpawner.Initialize(DifficultyLevel);
+        SegmentSpawner.Initialize();
     }
 
     protected override void Update()
