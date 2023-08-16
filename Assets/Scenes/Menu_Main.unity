@@ -13569,6 +13569,18 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1011993986}
   m_CullTransparentMesh: 1
+--- !u!114 &1019533258 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 639495419069806261, guid: 41222ebb42ad82c4ca52a729935c79d3,
+    type: 3}
+  m_PrefabInstance: {fileID: 1373556165}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 355219de309c3c1418444878b646dca4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &1020356373
 GameObject:
   m_ObjectHideFlags: 0
@@ -16854,6 +16866,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1243749158}
   - component: {fileID: 1243749159}
+  - component: {fileID: 1243749160}
   m_Layer: 0
   m_Name: Environment
   m_TagString: Untagged
@@ -16900,6 +16913,20 @@ MonoBehaviour:
   fieldHeight: 0
   fieldThickness: 0
   fieldMax: 0
+--- !u!114 &1243749160
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1243749157}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f330c08a1e7665643adcc232c0cffef9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  Nodes:
+  - {fileID: 6652253183185117136}
 --- !u!1 &1250076186
 GameObject:
   m_ObjectHideFlags: 0
@@ -31764,6 +31791,7 @@ GameObject:
   - component: {fileID: 5951265923679880268}
   - component: {fileID: 2342156430694341748}
   - component: {fileID: 6652253183185117135}
+  - component: {fileID: 6652253183185117136}
   m_Layer: 0
   m_Name: Icosphere
   m_TagString: Untagged
@@ -32467,6 +32495,22 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &6652253183185117136
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4105671971620406239}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 349be5718d2f4654f95293618dd77a71, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ID: Node1
+  volumeControlThreshold: 100
+  SnowChanger: {fileID: 1019533258}
+  Crystal: {fileID: 194708249}
 --- !u!1001 &7628750790309683641
 PrefabInstance:
   m_ObjectHideFlags: 0

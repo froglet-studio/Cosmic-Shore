@@ -1,9 +1,7 @@
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.InputSystem;
-using StarWriter.Utility.Tools;
 
 public class ThumbStickUI : MonoBehaviour
 {
@@ -24,50 +22,44 @@ public class ThumbStickUI : MonoBehaviour
         //leftTouch = player.Ship.InputController.LeftClampedPosition;
         //rightTouch = player.Ship.InputController.RightClampedPosition;
 
-
         //JoystickRadius = Screen.dpi;
         //initialPos = Left ? new Vector2(JoystickRadius, JoystickRadius) : new Vector2(Screen.currentResolution.width - JoystickRadius, JoystickRadius);
         //initialPos = Left ? leftTouch : rightTouch;
         image = GetComponent<Image>();
         image.sprite = InactiveImage;
 
-        if (!player.Ship.ShipStatus.AutoPilotEnabled) { StartCoroutine(InitializeCoroutine()); }
+        if (!Player.ActivePlayer.Ship.ShipStatus.AutoPilotEnabled) { StartCoroutine(InitializeCoroutine()); }
     }
 
     // wait until the input controller is wired up then only show if there is no gamepad and the left one when flying with single stick controls 
     IEnumerator InitializeCoroutine()
     {
-        yield return new WaitUntil(() => player.Ship.InputController != null);
-        gameObject.SetActive(Gamepad.current == null && (Left || !player.Ship.InputController.SingleStickControls)); ;
+        yield return new WaitUntil(() => Player.ActivePlayer.Ship.InputController != null);
+        gameObject.SetActive(Gamepad.current == null && (Left || !Player.ActivePlayer.Ship.InputController.SingleStickControls)); ;
     }
 
     void Update()
     {
-
-        if (!player.Ship.ShipStatus.AutoPilotEnabled)
+        if (!Player.ActivePlayer.Ship.ShipStatus.AutoPilotEnabled)
         {
             if (Input.touches.Length == 0)
             {
-
-                transform.position = Left ? Vector2.Lerp(transform.position, player.Ship.InputController.LeftJoystickHome, .2f) : Vector2.Lerp(transform.position, player.Ship.InputController.RightJoystickHome, .2f);
+                transform.position = Left ? Vector2.Lerp(transform.position, Player.ActivePlayer.Ship.InputController.LeftJoystickHome, .2f) : Vector2.Lerp(transform.position, Player.ActivePlayer.Ship.InputController.RightJoystickHome, .2f);
                 image.sprite = InactiveImage;
             }
             else if (Left)
             {
-                leftTouch = player.Ship.InputController.LeftClampedPosition;
+                leftTouch = Player.ActivePlayer.Ship.InputController.LeftClampedPosition;
                 transform.position = Vector2.Lerp(transform.position, leftTouch, .2f);
                 image.sprite = ActiveImage;
             }
             else
             {
-                rightTouch = player.Ship.InputController.RightClampedPosition;
+                rightTouch = Player.ActivePlayer.Ship.InputController.RightClampedPosition;
                 transform.position = Vector2.Lerp(transform.position, rightTouch, .2f);
                 image.sprite = ActiveImage;
             }
         }
-       
-
-
 
         //PortraitCheck();
         ////If there are no touches, move both controls to start positions

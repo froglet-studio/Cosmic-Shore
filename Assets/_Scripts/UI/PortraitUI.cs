@@ -23,7 +23,7 @@ public class PortraitUI : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (player.Ship.InputController.Portrait)
+        if (Player.ActivePlayer.Ship.InputController.Portrait)
         {
             // Set the anchorMin and anchorMax values to center the RectTransform
             rectTransform.anchorMin = portraitAnchorMin;

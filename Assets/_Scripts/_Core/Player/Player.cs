@@ -21,6 +21,8 @@ public class Player : MonoBehaviour
     [SerializeField] ResourceDisplay SpaceLevelDisplay;
     [SerializeField] ResourceDisplay TimeLevelDisplay;
 
+    public static Player ActivePlayer;
+
 
     public Teams Team;
     public string PlayerName { get => playerName; set => playerName = value; }
@@ -90,6 +92,8 @@ public class Player : MonoBehaviour
             ship = shipInstance.GetComponent<Ship>();
             ship.Team = Team;
             ship.Player = this;
+
+            ActivePlayer = this;
 
             if (boostDisplay != null)
                 ship.ResourceSystem.BoostDisplay = boostDisplay;
