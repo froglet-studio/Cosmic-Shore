@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using StarWriter.Core.IO;
+using System.Collections.Generic;
 using UnityEngine;
 
 public class Node : MonoBehaviour
@@ -10,6 +11,10 @@ public class Node : MonoBehaviour
 
     Dictionary<Teams, float> teamVolumes = new Dictionary<Teams, float>();
 
+    Dictionary<int, CellItem> CellItems = new Dictionary<int, CellItem>();
+    List<AIPilot> AIPilots = new List<AIPilot>();
+    int itemsAdded;
+
     void Start()
     {
         teamVolumes.Add(Teams.Green, 0);
@@ -17,6 +22,58 @@ public class Node : MonoBehaviour
 
         SnowChanger.SetOrigin(transform.position);
         Crystal.SetOrigin(transform.position);
+    }
+
+    public void AddItem(CellItem item)
+    {
+        item.SetID(++itemsAdded);
+        CellItems.Add(item.GetID(), item);
+        NotifyPilotsOfUpdates();
+    }
+
+    public void RemoveItem(CellItem item)
+    {
+        CellItems.Remove(item.GetID());
+        NotifyPilotsOfUpdates();
+    }
+
+    public void UpdateItem(CellItem item)
+    {
+        NotifyPilotsOfUpdates();
+    }
+
+    public void RegisterForUpdates(AIPilot pilot)
+    {
+        AIPilots.Add(pilot);
+    }
+
+    void NotifyPilotsOfUpdates()
+    {
+        foreach (var pilot in AIPilots)
+            pilot.NodeContentUpdated();
+    }
+
+    public Dictionary<int, CellItem> GetContents()
+    {
+        return CellItems;
+    }
+
+    public CellItem GetClosestItem(Vector3 position)
+    {
+        float MinDistance = Mathf.Infinity;
+        CellItem closestItem = null;
+
+        foreach (var item in CellItems.Values)
+        {
+            var distance = Vector3.Distance(item.transform.position, position);
+            if (distance < MinDistance)
+            {
+                closestItem = item;
+                MinDistance = distance;
+            }
+        }
+
+        return closestItem;
     }
 
     public bool ContainsPosition(Vector3 position)

@@ -3,9 +3,19 @@ using StarWriter.Utility.Singleton;
 using System.Collections.Generic;
 using UnityEngine;
 
+// TODO: Rename to 'CellManager'
 public class NodeControlManager : Singleton<NodeControlManager>
 {
     [SerializeField] List<Node> Nodes;
+
+    public Node GetNodeByPosition(Vector3 position)
+    {
+        foreach (var node in Nodes)
+            if (node.ContainsPosition(position))
+                return node;
+
+        return null;
+    }
 
     void OnEnable()
     {
@@ -17,6 +27,42 @@ public class NodeControlManager : Singleton<NodeControlManager>
     {
         GameManager.onDeath -= OutputNodeControl;
         GameManager.onGameOver -= OutputNodeControl;
+    }
+
+    public void AddItem(CellItem item)
+    {
+        foreach (var node in Nodes)
+        {
+            if (node.ContainsPosition(item.transform.position))
+            {
+                node.AddItem(item);
+                break;
+            }
+        }
+    }
+
+    public void RemoveItem(CellItem item)
+    {
+        foreach (var node in Nodes)
+        {
+            if (node.ContainsPosition(item.transform.position))
+            {
+                node.RemoveItem(item);
+                break;
+            }
+        }
+    }
+
+    public void UpdateItem(CellItem item)
+    {
+        foreach (var node in Nodes)
+        {
+            if (node.ContainsPosition(item.transform.position))
+            {
+                node.UpdateItem(item);
+                break;
+            }
+        }
     }
 
     public void AddBlock(Teams team, string playerName, TrailBlockProperties blockProperties)
