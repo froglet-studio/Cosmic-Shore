@@ -35,6 +35,9 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/MinigameBlockBandit.unity
     guid: ab6402f21daa97944b25e308c2a26008
+  - enabled: 1
+    path: Assets/Scenes/MinigameCellularDuel.unity
+    guid: a0793cb7cf4069b44ba82acfddb04f11
   - enabled: 0
     path: Assets/Scenes/Game_HighScore.unity
     guid: 5e8d9932a4d84a1488c2dad96c8135dd
