@@ -20,6 +20,8 @@ public class FakeCrystal : Crystal
 
         PlayExplosionAudio();
 
+        RemoveSelfFromNode();
+
         Destroy(gameObject);
     }
 }

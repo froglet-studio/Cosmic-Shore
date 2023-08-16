@@ -66,6 +66,7 @@ namespace StarWriter.Core.IO
         RaycastHit hit;
         float maxDistance = 50f;
 
+        // TODO: rename to 'TargetTransform'
         public Transform CrystalTransform;
         Vector3 distance;
 
@@ -111,6 +112,17 @@ namespace StarWriter.Core.IO
                 { Corner.BottomLeft, new AvoidanceBehavior (-raycastWidth, -raycastHeight, Clockwise, Vector3.zero ) },
                 { Corner.TopLeft, new AvoidanceBehavior (-raycastWidth, raycastHeight, CounterClockwise, Vector3.zero ) }
             };
+
+            var activeNode = NodeControlManager.Instance.GetNodeByPosition(transform.position);
+            activeNode.RegisterForUpdates(this);
+        }
+
+        public void NodeContentUpdated()
+        {
+            var activeNode = NodeControlManager.Instance.GetNodeByPosition(transform.position);
+            
+            // TODO: null checks
+            CrystalTransform = activeNode.GetClosestItem(transform.position).transform;
         }
 
         void Update()

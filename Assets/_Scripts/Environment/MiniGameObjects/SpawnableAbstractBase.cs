@@ -10,6 +10,7 @@ public abstract class SpawnableAbstractBase : MonoBehaviour
     protected int Seed;
     protected List<Trail> trails = new List<Trail>();
 
+
     public abstract GameObject Spawn();
     public virtual GameObject Spawn(int difficultyLevel = 1) { return Spawn(); }
 

@@ -4,7 +4,7 @@ using StarWriter.Core;
 using StarWriter.Core.Audio;
 using System;
 
-public class Crystal : MonoBehaviour
+public class Crystal : CellItem
 {
     #region Events
     public delegate void CrystalMove();
@@ -36,6 +36,7 @@ public class Crystal : MonoBehaviour
 
     protected virtual void Start()
     {
+        AddSelfToNode();
         collisions = new List<Collider>();
     }
 
@@ -106,6 +107,8 @@ public class Crystal : MonoBehaviour
         StartCoroutine(CrystalModel.GetComponent<FadeIn>().FadeInCoroutine());
         transform.SetPositionAndRotation(UnityEngine.Random.insideUnitSphere * sphereRadius + origin, UnityEngine.Random.rotation);
         OnCrystalMove?.Invoke();
+
+        UpdateSelfWithNode();
     }
 
     protected void Explode(Ship ship)
