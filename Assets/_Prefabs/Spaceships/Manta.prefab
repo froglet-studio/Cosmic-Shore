@@ -786,6 +786,7 @@ MonoBehaviour:
   farCamDistance: -100
   AOEExplosionMaterial: {fileID: 0}
   AOEConicExplosionMaterial: {fileID: 0}
+  SkimmerMaterial: {fileID: 0}
 --- !u!114 &6964962696344697388
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -869,6 +870,7 @@ MonoBehaviour:
   raycastHeight: 2
   raycastWidth: 2
   autoPilotEnabled: 0
+  LookingAtCrystal: 0
   CrystalTransform: {fileID: 0}
   flowFieldData: {fileID: 0}
 --- !u!114 &1435252848482629424
@@ -954,9 +956,9 @@ MonoBehaviour:
   ThrottleScaler: 0
   DefaultMinimumSpeed: 10
   DefaultThrottleScaler: 62
-  PitchScaler: 90
-  YawScaler: 60
-  RollScaler: 90
+  PitchScaler: 40
+  YawScaler: 20
+  RollScaler: 40
   RotationThrottleScaler: 0
 --- !u!114 &6441696348568773771
 MonoBehaviour:
