@@ -984,15 +984,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   SkillLevel: 0
   defaultThrottleHigh: 0.9
-  defaultThrottleLow: 0.2
+  defaultThrottleLow: 0.1
   defaultAggressivenessHigh: 0.04
-  defaultAggressivenessLow: 0.02
+  defaultAggressivenessLow: 0.01
   throttleIncreaseHigh: 0.002
-  throttleIncreaseLow: 0.001
+  throttleIncreaseLow: 0.0005
   avoidanceHigh: -2.5
   avoidanceLow: -2.5
   aggressivenessIncreaseHigh: 0.002
-  aggressivenessIncreaseLow: 0.001
+  aggressivenessIncreaseLow: 0.0005
   throttle: 0
   aggressiveness: 0.1
   XSum: 0

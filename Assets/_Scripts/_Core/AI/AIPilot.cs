@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 using System;
+using System.Collections;
 
 namespace StarWriter.Core.IO
 {
@@ -47,6 +48,10 @@ namespace StarWriter.Core.IO
 
         public bool AutoPilotEnabled;
         public bool LookingAtCrystal = false;
+
+        [SerializeField] bool useAbility = false;
+        [SerializeField] float abilityCooldown;
+        [SerializeField] ShipActionAbstractBase ability;
 
         enum Corner 
         {
@@ -115,6 +120,7 @@ namespace StarWriter.Core.IO
 
             var activeNode = NodeControlManager.Instance.GetNodeByPosition(transform.position);
             activeNode.RegisterForUpdates(this);
+            if (useAbility) StartCoroutine(UseAbilityCoroutine(ability));
         }
 
         public void NodeContentUpdated()
@@ -197,5 +203,15 @@ namespace StarWriter.Core.IO
                 return transform.forward - transform.position;
             }
         }
+
+        IEnumerator UseAbilityCoroutine(ShipActionAbstractBase action) 
+        {
+            while (useAbility)
+            {
+                yield return new WaitForSeconds(abilityCooldown); // wait first to give the resource system time to load
+                action.StartAction();
+            }
+        }
+
     }
 }

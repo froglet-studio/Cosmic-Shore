@@ -851,16 +851,16 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   SkillLevel: 0
-  defaultThrottleHigh: 30
-  defaultThrottleLow: 0.7
-  defaultAggressivenessHigh: 0.055
-  defaultAggressivenessLow: 0.03
-  throttleIncreaseHigh: 5
-  throttleIncreaseLow: 0.02
+  defaultThrottleHigh: 0.9
+  defaultThrottleLow: 0.6
+  defaultAggressivenessHigh: 0.09
+  defaultAggressivenessLow: 0.06
+  throttleIncreaseHigh: 0.001
+  throttleIncreaseLow: 0.0005
   avoidanceHigh: 35
   avoidanceLow: 15
   aggressivenessIncreaseHigh: 0.07
-  aggressivenessIncreaseLow: 0.001
+  aggressivenessIncreaseLow: 0.02
   throttle: 0
   aggressiveness: 0.1
   XSum: 0
@@ -869,8 +869,11 @@ MonoBehaviour:
   YDiff: 0
   raycastHeight: 2
   raycastWidth: 2
-  autoPilotEnabled: 0
+  AutoPilotEnabled: 0
   LookingAtCrystal: 0
+  useAbility: 1
+  abilityCooldown: 5
+  ability: {fileID: 867704553499413969}
   CrystalTransform: {fileID: 0}
   flowFieldData: {fileID: 0}
 --- !u!114 &1435252848482629424
