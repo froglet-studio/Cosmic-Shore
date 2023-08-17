@@ -1,6 +1,8 @@
 using System.Collections;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.LowLevel;
 
 public class PanelSwipe : MonoBehaviour, IDragHandler, IEndDragHandler {
 
@@ -27,6 +29,18 @@ public class PanelSwipe : MonoBehaviour, IDragHandler, IEndDragHandler {
     void Start()
     {
         NavigateTo(HOME, false);
+    }
+
+    void Update()
+    {
+        if (Gamepad.current != null && Gamepad.current[GamepadButton.DpadLeft].wasPressedThisFrame)
+        {
+            NavigateLeft();
+        }
+        if (Gamepad.current != null && Gamepad.current[GamepadButton.DpadRight].wasPressedThisFrame)
+        {
+            NavigateRight();
+        }
     }
 
     public void OnDrag(PointerEventData data)
