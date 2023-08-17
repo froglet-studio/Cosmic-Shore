@@ -80,9 +80,9 @@ namespace StarWriter.Core.HangerBuilder
             return PlayerShipType;
         }
 
-        [Range(0,10)]
+        [Range(1,4)]
         [SerializeField]
-        int AIDifficultyLevel = 5;
+        int AIDifficultyLevel = 1;
 
         public void SetAiDifficultyLevel(int level)
         {
@@ -215,8 +215,8 @@ namespace StarWriter.Core.HangerBuilder
             ship.SetSkimmerMaterial(TeamSkimmerMaterials[team]);
 
             AIPilot pilot = ship.GetComponent<AIPilot>();
-            pilot.SkillLevel = AIDifficultyLevel;
-            pilot.autoPilotEnabled = true;
+            pilot.SkillLevel = ((float)AIDifficultyLevel-1) / 3; // this assumes that levels remain from 1-4
+            pilot.AutoPilotEnabled = true;
 
             return ship;
         }

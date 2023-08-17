@@ -29,6 +29,13 @@ public class CameraManager : SingletonPersistent<CameraManager>
     CinemachineVirtualCamera vCam;
     CinemachineTransposer transposer;
 
+    Coroutine zoomOutCoroutine;
+    Coroutine returnToNeutralCoroutine;
+
+    Coroutine lerper;
+
+
+
     private void OnEnable()
     {
         GameManager.onPlayGame += SetupGamePlayCameras;
@@ -97,11 +104,13 @@ public class CameraManager : SingletonPersistent<CameraManager>
         deathCamera.Priority = inactivePriority;
 
         activeCamera.Priority = activePriority;
-        vCam = closeCamera.VirtualCameraGameObject.GetComponent<CinemachineVirtualCamera>();
-        transposer = vCam.GetCinemachineComponent<CinemachineTransposer>();
+        if (activeCamera == closeCamera)
+        {
+            vCam = activeCamera.VirtualCameraGameObject.GetComponent<CinemachineVirtualCamera>();
+            transposer = vCam.GetCinemachineComponent<CinemachineTransposer>();
+        }
+        ResetToNeutral(2);
     }
-
-    Coroutine lerper;
 
     void ClipPlaneAndOffsetLerper(float normalizedDistance)
     {
@@ -158,9 +167,6 @@ public class CameraManager : SingletonPersistent<CameraManager>
         zoomingOut = false;
         returnToNeutralCoroutine = StartCoroutine(ReturnToNeutralCoroutine(shrinkRate));
     }
-
-    Coroutine zoomOutCoroutine;
-    Coroutine returnToNeutralCoroutine;
 
     IEnumerator ReturnToNeutralCoroutine(float shrinkRate)
     {

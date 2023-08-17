@@ -42,6 +42,8 @@ public class TrailSpawner : MonoBehaviour
     [SerializeField] bool warp = false;
     GameObject shards;
 
+    Coroutine spawnTrailCoroutine;
+
     public void SetBlockMaterial(Material material)
     {
         blockMaterial = material;
@@ -101,7 +103,7 @@ public class TrailSpawner : MonoBehaviour
         ship = GetComponent<Ship>();
         shipData = GetComponent<ShipStatus>();
 
-        StartCoroutine(SpawnTrailCoroutine());
+        spawnTrailCoroutine = StartCoroutine(SpawnTrailCoroutine());
 
         ownerId = ship.Player.PlayerUUID;
         XScaler = minBlockScale;
@@ -214,7 +216,8 @@ public class TrailSpawner : MonoBehaviour
 
     public void ForceStartSpawningTrail()
     {
-        StartCoroutine(SpawnTrailCoroutine());
+        StopCoroutine(spawnTrailCoroutine);
+        spawnTrailCoroutine = StartCoroutine(SpawnTrailCoroutine());
     }
 
     IEnumerator SpawnTrailCoroutine()
@@ -223,7 +226,7 @@ public class TrailSpawner : MonoBehaviour
 
         while (true)
         {
-            if (Time.deltaTime < .1f && spawnerEnabled && !shipData.Attached)
+            if (Time.deltaTime < .1f && spawnerEnabled && !shipData.Attached && shipData.Speed > .01f)
             {
                 if (gap == 0)
                 {
