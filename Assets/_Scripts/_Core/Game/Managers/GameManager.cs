@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.Advertisements;
 using UnityEngine.SceneManagement;
 
+// TODO: P1 - some work needs to be done to unify this with the MiniGame engine managers
 namespace StarWriter.Core
 {
     [DefaultExecutionOrder(0)]
