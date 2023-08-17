@@ -150,12 +150,14 @@ namespace StarWriter.Core
                 switch (effect)
                 {
                     case ShipControlOverrides.CloseCam:
+                        if (AutoPilot.AutoPilotEnabled) break;
                         cameraManager.CloseCamDistance = closeCamDistance;
-                        cameraManager.SetNormalizedCameraDistance(0);
+                        //cameraManager.SetNormalizedCameraDistance(0);
                         break;
                     case ShipControlOverrides.FarCam:
+                        if (AutoPilot.AutoPilotEnabled) break;
                         cameraManager.FarCamDistance = farCamDistance;
-                        cameraManager.SetNormalizedCameraDistance(1);
+                        //cameraManager.SetNormalizedCameraDistance(1);
                         break;
                 }
             }

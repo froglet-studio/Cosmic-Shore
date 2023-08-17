@@ -45,7 +45,7 @@ namespace StarWriter.Core.IO
         [SerializeField] float raycastHeight;
         [SerializeField] float raycastWidth;
 
-        public bool autoPilotEnabled;
+        public bool AutoPilotEnabled;
         public bool LookingAtCrystal = false;
 
         enum Corner 
@@ -97,11 +97,10 @@ namespace StarWriter.Core.IO
         void Start()
         {
             ship = GetComponent<Ship>();
-            if (autoPilotEnabled) 
+            if (AutoPilotEnabled) 
             { 
                 ship.InputController.AutoPilotEnabled = true;
                 ship.ShipStatus.AutoPilotEnabled = true;
-                ship.cameraManager.ResetToNeutral(1); // TODO: this was a temporary fix for something weird going on with the AI camera
             }
             aggressiveness = defaultAggressiveness;
             throttle = defaultThrottle;
@@ -128,7 +127,7 @@ namespace StarWriter.Core.IO
 
         void Update()
         {
-            if (autoPilotEnabled)
+            if (AutoPilotEnabled)
             {
                 Vector3 distance = CrystalTransform.position - transform.position;
 
