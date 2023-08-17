@@ -101,6 +101,7 @@ namespace StarWriter.Core.IO
             { 
                 ship.InputController.AutoPilotEnabled = true;
                 ship.ShipStatus.AutoPilotEnabled = true;
+                ship.cameraManager.ResetToNeutral(1); // TODO: this was a temporary fix for something weird going on with the AI camera
             }
             aggressiveness = defaultAggressiveness;
             throttle = defaultThrottle;
