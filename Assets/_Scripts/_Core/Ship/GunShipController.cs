@@ -32,7 +32,7 @@ public class GunShipController : ShipTransformer
             trailFollower.Attach(shipData.AttachedTrailBlock);
             if (!ship.InputController.AutoPilotEnabled && cameraManager != null)
             {
-                cameraManager.SetNormalizedCameraDistance(1);
+                cameraManager.SetNormalizedCloseCameraDistance(1);
                 Debug.Log("camera now set to 0");
             }
         }
@@ -41,7 +41,7 @@ public class GunShipController : ShipTransformer
             trailFollower.Detach();
             if (!ship.InputController.AutoPilotEnabled && cameraManager != null)
             {
-                cameraManager.SetNormalizedCameraDistance(0);
+                cameraManager.SetNormalizedCloseCameraDistance(0);
                 Debug.Log("camera now set to 0");
             }
         }

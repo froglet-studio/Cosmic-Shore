@@ -23,7 +23,7 @@ public class PortraitUI : MonoBehaviour
 
     IEnumerator InitializeCoroutine()
     {
-        yield return new WaitUntil(() => Player.ActivePlayer.Ship != null && Player.ActivePlayer.Ship != null && Player.ActivePlayer.Ship.InputController != null);
+        yield return new WaitUntil(() => Player.ActivePlayer != null && Player.ActivePlayer.Ship != null && Player.ActivePlayer.Ship != null && Player.ActivePlayer.Ship.InputController != null);
 
         playerReady = true;
     }

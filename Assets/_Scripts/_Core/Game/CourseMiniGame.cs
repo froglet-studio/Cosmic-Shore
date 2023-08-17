@@ -14,8 +14,6 @@ public class CourseMiniGame : MiniGame
     protected override void Start()
     {
         base.Start();
-
-        gameMode = MiniGames.Rampage;
         SegmentSpawner.Seed = new System.Random().Next();
         SpawnableHelix.spread = DifficultyLevel;
         numberOfSegments = numberOfSegments * DifficultyLevel;

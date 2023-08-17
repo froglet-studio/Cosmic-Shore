@@ -13,7 +13,6 @@ public class FlightSchoolMiniGame : MiniGame
     {
         base.Start();
 
-        gameMode = MiniGames.FlightSchool;
         Crystal.transform.position = CrystalStartPosition;
         Crystal.transform.localScale = CrystalStartScale;
         Crystal.SetOrigin(CrystalStartPosition);

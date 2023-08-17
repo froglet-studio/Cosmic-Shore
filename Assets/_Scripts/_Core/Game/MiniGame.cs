@@ -7,6 +7,7 @@ using UnityEngine.UI;
 
 public class MiniGame : MonoBehaviour
 {
+    [SerializeField] protected MiniGames gameMode;
     [SerializeField] MiniGameHUD HUD;
     [SerializeField] Player playerPrefab;
     [SerializeField] protected List<TurnMonitor> TurnMonitors;
@@ -37,7 +38,6 @@ public class MiniGame : MonoBehaviour
     public Player ActivePlayer;
     protected bool gameRunning;
 
-    protected MiniGames gameMode;
 
     protected virtual void Start()
     {
@@ -166,16 +166,21 @@ public class MiniGame : MonoBehaviour
     {
         Debug.Log($"MiniGame.EndGame - Rounds Played: {RoundsPlayedThisGame}, ... {Time.time}");
         Debug.Log($"MiniGame.EndGame - Winner: {ScoreTracker.GetWinner()} ");
+
         foreach (var player in Players)
             Debug.Log($"MiniGame.EndGame - Player Score: {ScoreTracker.GetScore(player.PlayerName)} ");
+
+        UpdateLeaderboardEntries();
 
         CameraManager.Instance.SetEndCameraActive();
         PauseSystem.TogglePauseGame();
         gameRunning = false;
         EndGameScreen.SetActive(true);
         ScoreTracker.DisplayScores();
+    }
 
-        // TODO pull into a function
+    void UpdateLeaderboardEntries()
+    {
         // Update leaderboard stats
         var leaderboardDictionary = LeaderboardDataAccessor.Load();
         List<LeaderboardEntry> leaderboardEntries;
@@ -183,6 +188,10 @@ public class MiniGame : MonoBehaviour
             leaderboardEntries = leaderboardDictionary[gameMode];
         else
             leaderboardEntries = LeaderboardDataAccessor.LeaderboardEntriesDefault[gameMode];
+
+        
+        foreach (var entry in leaderboardEntries)
+            Debug.Log($"LeaderboardEntries: {entry.PlayerName}, {entry.Score}");
 
         // For each score in score tracker, check to see if it belongs on leaderboard.
         // iterate over highest score first,
@@ -195,6 +204,9 @@ public class MiniGame : MonoBehaviour
 
         leaderboardEntries.Sort((score1, score2) => score2.Score.CompareTo(score1.Score));
         leaderboardEntries.RemoveRange(5, leaderboardEntries.Count - 5);
+
+        foreach (var entry in leaderboardEntries)
+            Debug.Log($"LeaderboardEntries: {entry.PlayerName}, {entry.Score}");
 
         LeaderboardDataAccessor.Save(gameMode, leaderboardEntries);
     }

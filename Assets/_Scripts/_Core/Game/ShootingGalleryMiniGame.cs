@@ -14,7 +14,6 @@ public class ShootingGalleryMiniGame : MiniGame
     {
         base.Start();
 
-        gameMode = MiniGames.ShootingGallery;
         SegmentSpawner.Seed = new System.Random().Next();
     }
 
