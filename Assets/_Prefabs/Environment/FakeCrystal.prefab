@@ -192,10 +192,13 @@ MonoBehaviour:
   CrystalModel: {fileID: 4604809919382375336}
   material: {fileID: 2100000, guid: f14d7b6ff3151b94ebe8faf36edfb48d, type: 2}
   shipImpactEffects: 0
+  Team: -1
   crystalImpactEffects: 090000000a000000
   AOEPrefab: {fileID: 0}
   maxExplosionScale: 0
   AOEExplosionMaterial: {fileID: 0}
+  blueCrystalMaterial: {fileID: 2100000, guid: 895126e47250c1048a63f77d1b7a35df, type: 2}
+  isplayer: 0
 --- !u!82 &6588436222817790494
 AudioSource:
   m_ObjectHideFlags: 0

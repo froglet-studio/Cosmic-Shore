@@ -67,7 +67,7 @@ public class Crystal : CellItem
                     if (!ship.ShipStatus.AutoPilotEnabled) HapticController.PlayFakeCrystalImpactHaptics();
                     break;
                 case CrystalImpactEffects.ReduceSpeed:
-                    ship.ShipController.ModifyThrottle(.1f, 10);  // TODO: Magic numbers
+                    ship.ShipController.ModifyThrottle(.1f, 3);  // TODO: Magic numbers
                     break;
             }
         }
