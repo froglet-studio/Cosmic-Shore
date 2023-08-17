@@ -14,7 +14,7 @@ GameObject:
   - component: {fileID: 2991285116248911400}
   - component: {fileID: 1710393595221742176}
   m_Layer: 8
-  m_Name: Rhino_Test
+  m_Name: Body
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -983,15 +983,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   SkillLevel: 0
-  defaultThrottleHigh: 0.6
-  defaultThrottleLow: 0.6
-  defaultAggressivenessHigh: 0.035
-  defaultAggressivenessLow: 0.035
-  throttleIncreaseHigh: 0.001
+  defaultThrottleHigh: 0.9
+  defaultThrottleLow: 0.2
+  defaultAggressivenessHigh: 0.04
+  defaultAggressivenessLow: 0.02
+  throttleIncreaseHigh: 0.002
   throttleIncreaseLow: 0.001
-  avoidanceHigh: 2.5
-  avoidanceLow: 2.5
-  aggressivenessIncreaseHigh: 0.001
+  avoidanceHigh: -2.5
+  avoidanceLow: -2.5
+  aggressivenessIncreaseHigh: 0.002
   aggressivenessIncreaseLow: 0.001
   throttle: 0
   aggressiveness: 0.1
@@ -1001,7 +1001,7 @@ MonoBehaviour:
   YDiff: 0
   raycastHeight: 2
   raycastWidth: 2
-  autoPilotEnabled: 0
+  AutoPilotEnabled: 0
   LookingAtCrystal: 0
   CrystalTransform: {fileID: 0}
   flowFieldData: {fileID: 0}
