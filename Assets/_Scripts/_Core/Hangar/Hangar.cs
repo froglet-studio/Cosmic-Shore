@@ -201,9 +201,9 @@ namespace StarWriter.Core.HangerBuilder
         {
             if (shipType == ShipTypes.Random)
             {
-                System.Array values = System.Enum.GetValues(typeof(ShipTypes));
+                Array values = Enum.GetValues(typeof(ShipTypes));
                 System.Random random = new System.Random();
-                shipType = (ShipTypes)values.GetValue(random.Next(1, values.Length));
+                shipType = (ShipTypes) values.GetValue(random.Next(1, values.Length));
             }
 
             Ship ship = Instantiate(shipTypeMap[shipType]);

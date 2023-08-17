@@ -10,7 +10,6 @@ public class CameraManager : SingletonPersistent<CameraManager>
 {
     [SerializeField] CinemachineVirtualCameraBase mainMenuCamera;
     [SerializeField] CinemachineVirtualCameraBase closeCamera;
-    [SerializeField] CinemachineVirtualCameraBase farCamera;
     [SerializeField] CinemachineVirtualCameraBase deathCamera;
     [SerializeField] CinemachineVirtualCameraBase endCamera;
     
@@ -26,15 +25,13 @@ public class CameraManager : SingletonPersistent<CameraManager>
 
     public float CloseCamDistance;
     public float FarCamDistance;
+
     CinemachineVirtualCamera vCam;
     CinemachineTransposer transposer;
 
     Coroutine zoomOutCoroutine;
     Coroutine returnToNeutralCoroutine;
-
     Coroutine lerper;
-
-
 
     private void OnEnable()
     {
@@ -63,8 +60,8 @@ public class CameraManager : SingletonPersistent<CameraManager>
     public void SetupGamePlayCameras()
     {
         playerFollowTarget = Hangar.Instance.SelectedShip.transform;
-        closeCamera.LookAt = farCamera.LookAt = deathCamera.LookAt = playerFollowTarget;
-        closeCamera.Follow = farCamera.Follow = deathCamera.Follow = playerFollowTarget;
+        closeCamera.LookAt = deathCamera.LookAt = playerFollowTarget;
+        closeCamera.Follow = deathCamera.Follow = playerFollowTarget;
         
         SetCloseCameraActive();
     }
@@ -72,8 +69,8 @@ public class CameraManager : SingletonPersistent<CameraManager>
     public void SetupGamePlayCameras(Transform _transform)
     {
         playerFollowTarget = _transform;
-        closeCamera.LookAt = farCamera.LookAt = deathCamera.LookAt = playerFollowTarget;
-        closeCamera.Follow = farCamera.Follow = deathCamera.Follow = playerFollowTarget;
+        closeCamera.LookAt = deathCamera.LookAt = playerFollowTarget;
+        closeCamera.Follow = deathCamera.Follow = playerFollowTarget;
 
         SetCloseCameraActive();
     }
@@ -97,19 +94,16 @@ public class CameraManager : SingletonPersistent<CameraManager>
 
     void SetActiveCamera(CinemachineVirtualCameraBase activeCamera)
     {
+        Debug.Log($"SetActiveCamera {activeCamera.Name}");
+
         mainMenuCamera.Priority = inactivePriority;
         closeCamera.Priority = inactivePriority;
-        farCamera.Priority = inactivePriority;
         endCamera.Priority = inactivePriority;
         deathCamera.Priority = inactivePriority;
 
         activeCamera.Priority = activePriority;
-        if (activeCamera == closeCamera)
-        {
-            vCam = activeCamera.VirtualCameraGameObject.GetComponent<CinemachineVirtualCamera>();
-            transposer = vCam.GetCinemachineComponent<CinemachineTransposer>();
-        }
-        ResetToNeutral(2);
+
+        if (activeCamera == closeCamera) ResetCloseCameraToNeutral(2);
     }
 
     void ClipPlaneAndOffsetLerper(float normalizedDistance)
@@ -127,15 +121,18 @@ public class CameraManager : SingletonPersistent<CameraManager>
             }));
     }
 
-    public void SetNormalizedCameraDistance(float normalizedDistance)
+    public void SetNormalizedCloseCameraDistance(float normalizedDistance)
     {
+        vCam = closeCamera.VirtualCameraGameObject.GetComponent<CinemachineVirtualCamera>();
+        transposer = vCam.GetCinemachineComponent<CinemachineTransposer>();
+
         if (transposer.m_FollowOffset != new Vector3(0, 0, normalizedDistance))
         {
             ClipPlaneAndOffsetLerper(normalizedDistance);
         }  
     }
 
-    public void ZoomOut(float growthRate)
+    public void ZoomCloseCameraOut(float growthRate)
     {
         if (returnToNeutralCoroutine != null)
         {
@@ -143,13 +140,14 @@ public class CameraManager : SingletonPersistent<CameraManager>
             returnToNeutralCoroutine = null;
         }
         zoomingOut = true;
-        zoomOutCoroutine = StartCoroutine(ZoomOutCoroutine(growthRate));
+        zoomOutCoroutine = StartCoroutine(ZoomOutCloseCameraCoroutine(growthRate));
     }
 
-    IEnumerator ZoomOutCoroutine(float growthRate)
+    IEnumerator ZoomOutCloseCameraCoroutine(float growthRate)
     {
         var vCam = closeCamera.VirtualCameraGameObject.GetComponent<CinemachineVirtualCamera>();
         var transposer = vCam.GetCinemachineComponent<CinemachineTransposer>();
+
         while (zoomingOut && transposer.m_FollowOffset.z > FarCamDistance)
         {
             transposer.m_FollowOffset += Time.deltaTime * Mathf.Abs(growthRate) * -Vector3.forward;         
@@ -157,7 +155,7 @@ public class CameraManager : SingletonPersistent<CameraManager>
         }
     }
 
-    public void ResetToNeutral(float shrinkRate)
+    public void ResetCloseCameraToNeutral(float shrinkRate)
     {
         if (zoomOutCoroutine != null)
         {
@@ -165,18 +163,20 @@ public class CameraManager : SingletonPersistent<CameraManager>
             zoomOutCoroutine = null;
         }
         zoomingOut = false;
-        returnToNeutralCoroutine = StartCoroutine(ReturnToNeutralCoroutine(shrinkRate));
+        returnToNeutralCoroutine = StartCoroutine(ReturnCloseCameraToNeutralCoroutine(shrinkRate));
     }
 
-    IEnumerator ReturnToNeutralCoroutine(float shrinkRate)
+    IEnumerator ReturnCloseCameraToNeutralCoroutine(float shrinkRate)
     {
         var vCam = closeCamera.VirtualCameraGameObject.GetComponent<CinemachineVirtualCamera>();
         var transposer = vCam.GetCinemachineComponent<CinemachineTransposer>();
+
         while (transposer.m_FollowOffset.z <= CloseCamDistance)
         {
             transposer.m_FollowOffset += Time.deltaTime * Mathf.Abs(shrinkRate) * Vector3.forward;
             yield return null;
         }
-        transposer.m_FollowOffset = new Vector3(0,0,CloseCamDistance);
+
+        transposer.m_FollowOffset = new Vector3(0, 0, CloseCamDistance);
     }
 }

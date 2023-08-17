@@ -27,6 +27,8 @@ public class ScoreTracker : MonoBehaviour
     [SerializeField] List<TMP_Text> PlayerNameContainers;
     [SerializeField] List<TMP_Text> PlayerScoreContainers;
 
+    // Magic number to give more precision to time tracking as an integer value
+    [SerializeField] int TimePlayedScoreMultiplier = 1000;
 
     Dictionary<string, float> playerScores = new ();
     string currentPlayerName;
@@ -65,8 +67,7 @@ public class ScoreTracker : MonoBehaviour
                         score = playerScores[currentPlayerName] + StatsManager.Instance.playerStats[currentPlayerName].volumeStolen;
                     break;
                 case ScoringModes.TimePlayed:
-                    // TODO: 1000 is a magic number to give more precision to time tracking as an integer value
-                    score = playerScores[currentPlayerName] + (Time.time - turnStartTime) * 1000;
+                    score = playerScores[currentPlayerName] + (Time.time - turnStartTime) * TimePlayedScoreMultiplier;
                     break;
                 case ScoringModes.TurnsPlayed:
                     score = turnsPlayed;
@@ -86,7 +87,6 @@ public class ScoreTracker : MonoBehaviour
 
             ActivePlayerScoreDisplay.text = ((int) score).ToString();
         }
-            
     }
 
     public virtual void EndTurn()
@@ -111,8 +111,7 @@ public class ScoreTracker : MonoBehaviour
                 StatsManager.Instance.ResetStats();
                 break;
             case ScoringModes.TimePlayed:
-                // TODO: 1000 is a magic number to give more precision to time tracking as an integer value
-                playerScores[currentPlayerName] += (Time.time - turnStartTime) * 1000;  
+                playerScores[currentPlayerName] += (Time.time - turnStartTime) * TimePlayedScoreMultiplier;  
                 break;
             case ScoringModes.TurnsPlayed:
                 playerScores[currentPlayerName] = turnsPlayed;
@@ -120,6 +119,13 @@ public class ScoreTracker : MonoBehaviour
             case ScoringModes.BlocksStolen:
                 if (StatsManager.Instance.playerStats.ContainsKey(currentPlayerName))
                     playerScores[currentPlayerName] += StatsManager.Instance.playerStats[currentPlayerName].blocksStolen;
+                StatsManager.Instance.ResetStats();
+                break;
+            case ScoringModes.TeamVolumeRemaining:
+                var teamStats = StatsManager.Instance.teamStats;
+                var greenVolume = teamStats.ContainsKey(Teams.Green) ? teamStats[Teams.Green].volumeRemaining : 0f;
+                var redVolume = teamStats.ContainsKey(Teams.Red) ? teamStats[Teams.Red].volumeRemaining : 0f;
+                playerScores[currentPlayerName] = (greenVolume - redVolume);
                 StatsManager.Instance.ResetStats();
                 break;
         }

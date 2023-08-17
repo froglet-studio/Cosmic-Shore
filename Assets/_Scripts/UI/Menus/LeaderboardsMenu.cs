@@ -19,6 +19,15 @@ public class LeaderboardsMenu : MonoBehaviour
     void Start()
     {
         Games = GameList.GameList;
+
+        // TODO: Reconsider this implementation for avoiding displaying Freestyle on the scoreboard
+        foreach (var game in Games) {
+            if (game.Mode == MiniGames.Freestyle)
+            {
+                Games.Remove(game);
+                break;
+            }
+        }
         LeaderboardEntries = LeaderboardDataAccessor.Load();
         PopulateGameSelectionList();
     }
@@ -67,7 +76,6 @@ public class LeaderboardsMenu : MonoBehaviour
     void PopulateGameHighScores()
     {
         Debug.Log($"PopulateGameHighScores: {SelectedGame.Name}");
-        Debug.Log($"PopulateGameHighScores: {SelectedGame.Description}");
 
         List<LeaderboardEntry> highScores;
         if (!LeaderboardEntries.ContainsKey(SelectedGame.Mode))

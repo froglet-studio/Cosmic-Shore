@@ -14,9 +14,7 @@ public class RampageMiniGame : MiniGame
     {
         base.Start();
 
-        gameMode = MiniGames.Rampage;
         SegmentSpawner.Seed = new System.Random().Next();
-       
     }
 
     protected override void SetupTurn()
