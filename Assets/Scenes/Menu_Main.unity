@@ -30497,7 +30497,7 @@ PrefabInstance:
     - target: {fileID: 302356026468653294, guid: fdbd97f79a7aec14f8fadd5589780a74,
         type: 3}
       propertyPath: HostileAI1ShipType
-      value: 3
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 302356026468653294, guid: fdbd97f79a7aec14f8fadd5589780a74,
         type: 3}
@@ -30572,7 +30572,7 @@ PrefabInstance:
         type: 3}
       propertyPath: BlueTeamAOEExplosionMaterial
       value: 
-      objectReference: {fileID: 2100000, guid: 4596e8c23c1593b4eadfc4a2157a53e5, type: 2}
+      objectReference: {fileID: 2100000, guid: c2cc6fd663ff20049ab3a4c489ee8407, type: 2}
     - target: {fileID: 302356026468653294, guid: fdbd97f79a7aec14f8fadd5589780a74,
         type: 3}
       propertyPath: RedTeamShieldedBlockMaterial
@@ -30592,7 +30592,7 @@ PrefabInstance:
         type: 3}
       propertyPath: YellowTeamAOEExplosionMaterial
       value: 
-      objectReference: {fileID: 2100000, guid: 37eeeb7b5e625684caca36f02cec8a0f, type: 2}
+      objectReference: {fileID: 2100000, guid: da79ad017c0b4e441bb6acc4891f942d, type: 2}
     - target: {fileID: 302356026468653294, guid: fdbd97f79a7aec14f8fadd5589780a74,
         type: 3}
       propertyPath: YellowTeamShieldedBlockMaterial
