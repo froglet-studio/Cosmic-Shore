@@ -17,6 +17,7 @@ namespace StarWriter.Core.HangerBuilder
         [SerializeField] ShipTypes HostileAI1ShipType = ShipTypes.MantaAI;
         [SerializeField] ShipTypes HostileAI2ShipType = ShipTypes.Random;
 
+        // TODO: P1 - clean this up
         [SerializeField] Material GreenTeamMaterial;
         [SerializeField] Material RedTeamMaterial;
         [SerializeField] Material BlueTeamMaterial;

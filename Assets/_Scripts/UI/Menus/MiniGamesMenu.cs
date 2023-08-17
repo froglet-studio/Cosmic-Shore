@@ -1,3 +1,4 @@
+using StarWriter.Core.HangerBuilder;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -148,6 +149,8 @@ public class MiniGamesMenu : MonoBehaviour
             DifficultyButtonContainer.transform.GetChild(i).gameObject.GetComponent<Image>().sprite = DifficultyIcons[i];
 
         DifficultyButtonContainer.transform.GetChild(difficulty - 1).gameObject.GetComponent<Image>().sprite = DifficultyButtonContainer.transform.GetChild(difficulty - 1).gameObject.GetComponent<Button>().spriteState.selectedSprite;
+
+        Hangar.Instance.SetAiDifficultyLevel(difficulty);
 
         // notify the mini game engine that this is the difficulty
         MiniGame.DifficultyLevel = difficulty;

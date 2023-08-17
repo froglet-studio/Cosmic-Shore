@@ -7,30 +7,38 @@ using UnityEngine.UI;
 /// Displays and controls toggles and buttons on the Pause Menu Panel
 /// </summary>
 
+// TODO: P1 - Need to unify this menu code with Main Menu Code
 namespace StarWriter.UI
 {
     public class PauseMenu : MonoBehaviour
     {
+        //[SerializeField] GameMenu gameMenu;
+        [SerializeField] GameObject MiniGameHUD;
+
         GameManager gameManager;
         GameSetting gameSetting;
-
-        [SerializeField] GameMenu gameMenu;
-
-        public Button pauseButton;
 
         // Start is called before the first frame update
         void Start()
         {
             gameManager = GameManager.Instance;
             gameSetting = GameSetting.Instance;
-
         }
+
         /// <summary>
         /// Toggles the Master Volume On/Off
         /// </summary>
-        public void OnToggleMusic()
+        public void OnClickToggleMusic()
         {
             gameSetting.ChangeAudioEnabledStatus();
+        }
+
+        /// <summary>
+        /// Toggles the Inverted Y Axis Controls
+        /// </summary>
+        public void OnClickToggleInvertY()
+        {
+            gameSetting.ChangeInvertYEnabledStatus();
         }
 
         /// <summary>
@@ -47,23 +55,25 @@ namespace StarWriter.UI
         {
             gameManager.OnClickPlayButton();
         }
+
         /// <summary>
         /// UnPauses the game 
         /// </summary>
         public void OnClickResumeGameButton()
         {
             GameManager.UnPauseGame();
-            gameMenu.OnClickUnpauseGame();
+            MiniGameHUD.SetActive(true);
+            //gameMenu.OnClickUnpauseGame();
         }
-        public void OnClickResumeTutorialButton()
+
+        /// <summary>
+        /// Pauses the game 
+        /// </summary>
+        public void OnClickPauseGameButton()
         {
-            GameManager.UnPauseGame();
-            pauseButton.gameObject.SetActive(true);
-            gameObject.SetActive(false);
-        }
-        public void OnClickRestartTutorialButton()
-        {
-            gameManager.OnClickTutorialButton();
+            GameManager.PauseGame();
+            MiniGameHUD.SetActive(false);
+            //gameMenu.OnClickPauseGame();
         }
 
         public void OnClickMainMenu()
