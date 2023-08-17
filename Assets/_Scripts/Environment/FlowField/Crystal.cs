@@ -36,8 +36,8 @@ public class Crystal : CellItem
 
     protected virtual void Start()
     {
-        AddSelfToNode();
         collisions = new List<Collider>();
+        AddSelfToNode();
     }
 
     protected virtual void OnTriggerEnter(Collider other)

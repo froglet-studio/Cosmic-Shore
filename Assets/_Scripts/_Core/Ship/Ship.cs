@@ -272,10 +272,10 @@ namespace StarWriter.Core
         public void SetPilot(SO_Pilot pilot)
         {
             this.pilot = pilot;
-            ResourceSystem.InitialChargeLevel = pilot.InitialCharge;
-            ResourceSystem.InitialMassLevel = pilot.InitialMass;
-            ResourceSystem.InitialSpaceLevel = pilot.InitialSpace;
-            ResourceSystem.InitialTimeLevel = pilot.InitialTime;
+            ResourceSystem.InitialChargeLevel = this.pilot.InitialCharge;
+            ResourceSystem.InitialMassLevel = this.pilot.InitialMass;
+            ResourceSystem.InitialSpaceLevel = this.pilot.InitialSpace;
+            ResourceSystem.InitialTimeLevel = this.pilot.InitialTime;
 
             ResourceSystem.InitializeElementLevels();
         }

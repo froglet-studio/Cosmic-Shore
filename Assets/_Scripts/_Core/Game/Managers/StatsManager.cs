@@ -67,8 +67,8 @@ public class StatsManager : Singleton<StatsManager>
     [SerializeField] TMP_Text WinnerText;
     [SerializeField] public bool nodeGame = false;
 
-    public Dictionary<Teams, RoundStats> teamStats = new Dictionary<Teams, RoundStats>();
-    public Dictionary<string, RoundStats> playerStats = new Dictionary<string, RoundStats>();
+    public Dictionary<Teams, RoundStats> teamStats = new();
+    public Dictionary<string, RoundStats> playerStats = new();
 
     bool RecordStats = true;
 
@@ -317,7 +317,6 @@ public class StatsManager : Singleton<StatsManager>
     // TODO: p1 - we probably want a UI class that talks to the stats managar and updates the UI rather than doing it in here directly
     void OutputRoundStats()
     {
-
         string statsString = "<mspace=4.5px>\n";
         statsString += "<b>Field".PadRight(38) + " | ";
 
@@ -346,7 +345,6 @@ public class StatsManager : Singleton<StatsManager>
 
 
         Debug.LogWarning(statsString.ToString());
-
 
         RecordStats = false;
         StatDump.text = JsonConvert.SerializeObject(playerStats, Formatting.Indented);

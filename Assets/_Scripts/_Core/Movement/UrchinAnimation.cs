@@ -21,7 +21,6 @@ class UrchinAnimation : ShipAnimation
     [SerializeField] Transform ShroudTopRight;
 
     [SerializeField] float animationScaler = 25f;
-    [SerializeField] float yawAnimationScaler = 80f;
 
     protected List<Transform> scaledParts = new();
 

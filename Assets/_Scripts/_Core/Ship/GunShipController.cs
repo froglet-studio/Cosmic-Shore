@@ -1,46 +1,28 @@
 using UnityEngine;
 using StarWriter.Core;
-using System.Collections.Generic;
 
 public class GunShipController : ShipTransformer
 {
-    //[SerializeField] Gun topGun;
-    //[SerializeField] Gun leftGun;
-    //[SerializeField] Gun rightGun;
-    GameObject projectileContainer;
     [SerializeField] TrailFollower trailFollower;
-    [SerializeField] float chargeDepletionRate = -.05f;
     [SerializeField] float rechargeRate = .1f;
 
     public float ProjectileScale = 1f;
     public Vector3 BlockScale = new(4f, 4f, 1f);
 
-    List<Gun> guns;
     bool moveForward = true;
     bool attached = false;
     CameraManager cameraManager;
-    
 
 
     protected override void Start()
     {
         base.Start();
         cameraManager = CameraManager.Instance;
-        projectileContainer = new GameObject($"{ship.Player.PlayerName}_Projectiles");
-        //guns = new List<Gun>() { topGun, leftGun, rightGun };
-
-        //foreach (var gun in guns)
-        //{
-        //    gun.Team = ship.Team;
-        //    gun.Ship = ship;
-        //}
     }
 
     protected override void Update()
     {
         base.Update();
-
-        //if (resourceSystem.CurrentAmmo > 0 && shipData.GunsActive) Fire();
     }
 
     protected override void MoveShip()
@@ -139,5 +121,4 @@ public class GunShipController : ShipTransformer
         }
         else shipData.AttachedTrailBlock.Steal(ship.Player.PlayerName, ship.Team);
     }
-
 }

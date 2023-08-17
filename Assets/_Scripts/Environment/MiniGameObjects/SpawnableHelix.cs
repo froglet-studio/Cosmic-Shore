@@ -10,7 +10,7 @@ public class SpawnableHelix : SpawnableAbstractBase
 
     public override GameObject Spawn()
     {
-        GameObject container = new GameObject();
+        GameObject container = new();
         container.name = "Wave" + ObjectsSpawned++;
 
         var trail = new Trail();
@@ -30,15 +30,11 @@ public class SpawnableHelix : SpawnableAbstractBase
             var x = (Mathf.Sin(t) * xc1) + (Mathf.Sin(t*xc2 + xc3) * xc4);
             var y = (Mathf.Cos(t) * yc1) + (Mathf.Cos(t*yc2 + yc3) * yc4);
             var position = new Vector3(x, y, t*30f);
-            var lookPosition = position;
-            if (block != 0) lookPosition = trail.GetBlock(block - 1).transform.position;
+            var lookPosition = (block == 0) ? position : trail.GetBlock(block - 1).transform.position;
             CreateBlock(position, lookPosition, container.name + "::BLOCK::" + block, trail, scale, trailBlock, container);
         }
-
-        
 
         trails.Add(trail);
         return container;
     }
-
 }

@@ -212,6 +212,7 @@ namespace StarWriter.Core.HangerBuilder
             ship.SetShieldedBlockMaterial(TeamShieldedBlockMaterials[team]);
             ship.SetAOEExplosionMaterial(TeamAOEExplosionMaterials[team]);
             ship.SetAOEConicExplosionMaterial(TeamAOEConicExplosionMaterials[team]);
+            ship.SetSkimmerMaterial(TeamSkimmerMaterials[team]);
 
             AIPilot pilot = ship.GetComponent<AIPilot>();
             pilot.SkillLevel = AIDifficultyLevel;

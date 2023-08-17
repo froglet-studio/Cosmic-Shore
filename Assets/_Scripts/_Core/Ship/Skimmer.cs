@@ -1,7 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Serialization;
 
 namespace StarWriter.Core
 {
@@ -26,7 +25,7 @@ namespace StarWriter.Core
         
         ResourceSystem resourceSystem;
 
-        Dictionary<string, float> skimStartTimes;
+        Dictionary<string, float> skimStartTimes = new();
         CameraManager cameraManager;
 
         public int activelySkimmingBlockCount = 0;
@@ -34,10 +33,13 @@ namespace StarWriter.Core
 
         void Start()
         {
-            if (visible) material = new Material(ship.SkimmerMaterial);
-            skimStartTimes = new();
             cameraManager = CameraManager.Instance;
-            if (ship != null) resourceSystem = ship.GetComponent<ResourceSystem>();
+            if (ship != null)
+            {
+                resourceSystem = ship.GetComponent<ResourceSystem>();
+                if (visible)
+                    material = new Material(ship.SkimmerMaterial);
+            }
         }
 
         // TODO: p1- review -- Maja added this to try and enable shark skimmer smashing
@@ -144,16 +146,7 @@ namespace StarWriter.Core
                 float distance = Vector3.Distance(transform.position, other.transform.position);
 
                 if (trailBlock.ownerId != ship.Player.PlayerUUID || Time.time - trailBlock.TrailBlockProperties.TimeCreated > 5)
-                {
-
-                    if (distance < minMatureBlockDistance)
-                    {
-                        
-                        minMatureBlockDistance = distance;
-                    }
-                }
-
-                
+                    minMatureBlockDistance = Mathf.Min(minMatureBlockDistance, distance);
 
                 // start with a baseline fuel amount the ranges from 0-1 depending on proximity of the skimmer to the trail block
                 var fuel = chargeAmount * (1 - (distance / transform.localScale.x));
