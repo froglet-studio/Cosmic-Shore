@@ -3,6 +3,17 @@ using StarWriter.Core;
 
 public class FakeCrystal : Crystal
 {
+    [SerializeField] Material blueCrystalMaterial;
+    //[SerializeField] GameObject CrystalGeometry;
+    public bool isplayer = false;
+
+    protected override void Start()
+    {
+        base.Start();
+        if (isplayer) GetComponentInChildren<MeshRenderer>().material = blueCrystalMaterial;
+    }
+
+
     protected override void Collide(Collider other)
     {
         if (!IsShip(other.gameObject) && !IsProjectile(other.gameObject))

@@ -21,6 +21,7 @@ public class DropDecoyAction : ShipActionAbstractBase
             resourceSystem.ChangeAmmoAmount(-resourceSystem.MaxAmmo / decoysPerFullAmmo);
 
             var fake = Instantiate(decoy).GetComponent<FakeCrystal>();
+            if (ship.Player.tag == "Player") fake.isplayer = true;
             fake.Team = ship.Team;
             fake.transform.position = ship.transform.position;
             fake.transform.position += Quaternion.Euler(0, 0, Random.Range(0, 360)) * ship.transform.up * Random.Range(dropRadiusMinRange, dropRadiusMaxRange);
