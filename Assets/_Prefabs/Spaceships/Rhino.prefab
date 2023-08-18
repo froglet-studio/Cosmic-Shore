@@ -1003,6 +1003,10 @@ MonoBehaviour:
   raycastWidth: 2
   AutoPilotEnabled: 0
   LookingAtCrystal: 0
+  ram: 1
+  useAbility: 0
+  abilityCooldown: 0
+  ability: {fileID: 0}
   CrystalTransform: {fileID: 0}
   flowFieldData: {fileID: 0}
 --- !u!114 &1435252848482629424

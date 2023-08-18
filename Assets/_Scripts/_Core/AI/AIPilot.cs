@@ -49,6 +49,7 @@ namespace StarWriter.Core.IO
 
         public bool AutoPilotEnabled;
         public bool LookingAtCrystal = false;
+        public bool ram = false;
 
         [SerializeField] bool useAbility = false;
         [SerializeField] float abilityCooldown;
@@ -188,7 +189,7 @@ namespace StarWriter.Core.IO
                 aggressiveness += aggressivenessIncrease * Time.deltaTime;
                 throttle += throttleIncrease * Time.deltaTime;
 
-                XDiff = LookingAtCrystal ? 1 : Mathf.Clamp(throttle, 0, 1);
+                XDiff = (LookingAtCrystal && ram) ? 1 : Mathf.Clamp(throttle, 0, 1);
                 
             }
 

@@ -14,7 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Class: 1
   Name: Manta
-  Description: This is one high energy cosmic ray
+  Description: Soar with grace through open space on relaxing scouting missions,
+    or run a heist with a flyby. Either way you get to relax while helping your team.
   Icon: {fileID: 21300000, guid: 3a6fc9befce30444884fe8912d237f2e, type: 3}
   SelectedIcon: {fileID: 21300000, guid: 4dc09966e540a9c4c8bb466918fe43e9, type: 3}
   TrailPreviewImage: {fileID: 21300000, guid: 2e75f6670391025489d30c8361fb8de3, type: 3}

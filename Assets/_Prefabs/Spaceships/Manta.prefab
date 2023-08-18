@@ -852,9 +852,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   SkillLevel: 0
   defaultThrottleHigh: 0.9
-  defaultThrottleLow: 0.6
+  defaultThrottleLow: 0.2
   defaultAggressivenessHigh: 0.09
-  defaultAggressivenessLow: 0.06
+  defaultAggressivenessLow: 0.04
   throttleIncreaseHigh: 0.001
   throttleIncreaseLow: 0.0005
   avoidanceHigh: 35
@@ -871,6 +871,7 @@ MonoBehaviour:
   raycastWidth: 2
   AutoPilotEnabled: 0
   LookingAtCrystal: 0
+  ram: 0
   useAbility: 1
   abilityCooldown: 5
   ability: {fileID: 867704553499413969}

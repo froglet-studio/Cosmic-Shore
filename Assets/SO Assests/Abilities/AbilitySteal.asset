@@ -14,7 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Action: 9
   Name: Block Thief
-  Description: I love stealin', I love takin' things
+  Description: Skim past mass to change it from working against you to working for
+    you.
   Icon: {fileID: 21300000, guid: 298c5d0b188222442b241b3ec53d640e, type: 3}
   SelectedIcon: {fileID: 21300000, guid: 50a8e48bf03b5a74ea43b555989bd755, type: 3}
   PreviewClip: {fileID: 2096801853598961014, guid: b57721ca7d9f65e49aad79e3099e3ef3,

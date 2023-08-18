@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Action: 2
   Name: Shockwave
-  Description: '"As you command, mighty Megatron." "I am only loyal to Megatron."
-    "Prepare for termination!" "You won''t get passed me."'
+  Description: When you hit a crystal it unleashes a stunning explosion, making opponents
+    easier to blitz.
   Icon: {fileID: 21300000, guid: 01d05499fd04e4f43b81f7bd5e605932, type: 3}
   SelectedIcon: {fileID: 21300000, guid: 4035f6b2094032445aa6917ebaf65998, type: 3}
   PreviewClip: {fileID: 2096801853598961014, guid: ddbce171511b60c41b7d0d4eca0ce3a1,
