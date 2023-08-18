@@ -29,7 +29,7 @@ public class NodeControlManager : Singleton<NodeControlManager>
         GameManager.onGameOver -= OutputNodeControl;
     }
 
-    public void AddItem(CellItem item)
+    public void AddItem(NodeItem item)
     {
         foreach (var node in Nodes)
         {
@@ -41,7 +41,7 @@ public class NodeControlManager : Singleton<NodeControlManager>
         }
     }
 
-    public void RemoveItem(CellItem item)
+    public void RemoveItem(NodeItem item)
     {
         foreach (var node in Nodes)
         {
@@ -53,7 +53,7 @@ public class NodeControlManager : Singleton<NodeControlManager>
         }
     }
 
-    public void UpdateItem(CellItem item)
+    public void UpdateItem(NodeItem item)
     {
         foreach (var node in Nodes)
         {

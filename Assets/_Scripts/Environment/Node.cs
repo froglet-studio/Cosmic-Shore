@@ -11,7 +11,7 @@ public class Node : MonoBehaviour
 
     Dictionary<Teams, float> teamVolumes = new Dictionary<Teams, float>();
 
-    Dictionary<int, CellItem> CellItems = new Dictionary<int, CellItem>();
+    Dictionary<int, NodeItem> NodeItems = new Dictionary<int, NodeItem>();
     List<AIPilot> AIPilots = new List<AIPilot>();
     int itemsAdded;
 
@@ -24,20 +24,20 @@ public class Node : MonoBehaviour
         Crystal.SetOrigin(transform.position);
     }
 
-    public void AddItem(CellItem item)
+    public void AddItem(NodeItem item)
     {
         item.SetID(++itemsAdded);
-        CellItems.Add(item.GetID(), item);
+        NodeItems.Add(item.GetID(), item);
         NotifyPilotsOfUpdates();
     }
 
-    public void RemoveItem(CellItem item)
+    public void RemoveItem(NodeItem item)
     {
-        CellItems.Remove(item.GetID());
+        NodeItems.Remove(item.GetID());
         NotifyPilotsOfUpdates();
     }
 
-    public void UpdateItem(CellItem item)
+    public void UpdateItem(NodeItem item)
     {
         NotifyPilotsOfUpdates();
     }
@@ -53,17 +53,17 @@ public class Node : MonoBehaviour
             pilot.NodeContentUpdated();
     }
 
-    public Dictionary<int, CellItem> GetContents()
+    public Dictionary<int, NodeItem> GetItems()
     {
-        return CellItems;
+        return NodeItems;
     }
 
-    public CellItem GetClosestItem(Vector3 position)
+    public NodeItem GetClosestItem(Vector3 position)
     {
         float MinDistance = Mathf.Infinity;
-        CellItem closestItem = null;
+        NodeItem closestItem = null;
 
-        foreach (var item in CellItems.Values)
+        foreach (var item in NodeItems.Values)
         {
             var distance = Vector3.Distance(item.transform.position, position);
             if (distance < MinDistance)
@@ -78,7 +78,7 @@ public class Node : MonoBehaviour
 
     public bool ContainsPosition(Vector3 position)
     {
-        return Vector3.Distance(position, transform.position) < transform.localScale.x; //only works if nodes remain spherical
+        return Vector3.Distance(position, transform.position) < transform.localScale.x; // only works if nodes remain spherical
     }
 
     public void ChangeVolume(Teams team, float volume)

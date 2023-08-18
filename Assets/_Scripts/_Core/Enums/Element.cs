@@ -1,4 +1,4 @@
-﻿public enum PilotElement
+﻿public enum Element
 {
     None = 0,
     Charge = 1,

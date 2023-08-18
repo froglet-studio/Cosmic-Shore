@@ -136,19 +136,19 @@ public class HangarMenu : MonoBehaviour
 
     public void SelectPilot(int elementInt)
     {
-        var element = (PilotElement)elementInt;
+        var element = (Element) elementInt;
         switch (element)
         {
-            case PilotElement.Charge:
+            case Element.Charge:
                 SelectedPilot = SelectedShip.ChargePilot;
                 break;
-            case PilotElement.Mass:
+            case Element.Mass:
                 SelectedPilot = SelectedShip.MassPilot;
                 break;
-            case PilotElement.Space:
+            case Element.Space:
                 SelectedPilot = SelectedShip.SpacePilot;
                 break;
-            case PilotElement.Time:
+            case Element.Time:
                 SelectedPilot = SelectedShip.TimePilot;
                 break;
         }

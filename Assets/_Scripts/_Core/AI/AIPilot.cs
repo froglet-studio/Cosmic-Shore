@@ -2,6 +2,7 @@ using UnityEngine;
 using System.Collections.Generic;
 using System;
 using System.Collections;
+using UnityEngine.UIElements;
 
 namespace StarWriter.Core.IO
 {
@@ -127,9 +128,30 @@ namespace StarWriter.Core.IO
         {
             Debug.Log($"NodeContentUpdated - transform.position: {transform.position}");
             var activeNode = NodeControlManager.Instance.GetNodeByPosition(transform.position);
-            
+
             // TODO: null checks
-            CrystalTransform = activeNode.GetClosestItem(transform.position).transform;
+            //CrystalTransform = activeNode.GetClosestItem(transform.position).transform;
+
+            var nodeItems = activeNode.GetItems();
+            float MinDistance = Mathf.Infinity;
+            NodeItem closestItem = null;
+
+            foreach (var item in nodeItems.Values)
+            { 
+                // Debuffs are disguised as desireable to the other team
+                // So, if it's good, or if it's bad but made by another team, go for it
+                if (item.ItemType == ItemType.Buff || (item.ItemType == ItemType.Debuff && item.Team != ship.Team))
+                {
+                    var distance = Vector3.Distance(item.transform.position, transform.position);
+                    if (distance < MinDistance)
+                    {
+                        closestItem = item;
+                        MinDistance = distance;
+                    }
+                }
+            }
+
+            CrystalTransform = closestItem == null ? activeNode.transform : closestItem.transform;
         }
 
         void Update()

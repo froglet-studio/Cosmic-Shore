@@ -1,8 +1,17 @@
 ﻿using UnityEngine;
 
-public class CellItem : MonoBehaviour
+public enum ItemType
+{
+    None = 0,
+    Buff = 1,
+    Debuff = 2,
+}
+
+public class NodeItem : MonoBehaviour
 {
     protected int id;
+    public Teams Team = Teams.None;
+    public ItemType ItemType = ItemType.Buff;
 
     public int GetID()
     {

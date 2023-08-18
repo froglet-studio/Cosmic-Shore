@@ -4,7 +4,7 @@ using StarWriter.Core;
 using StarWriter.Core.Audio;
 using System;
 
-public class Crystal : CellItem
+public class Crystal : NodeItem
 {
     #region Events
     public delegate void CrystalMove();
@@ -18,7 +18,6 @@ public class Crystal : CellItem
     [SerializeField] protected GameObject CrystalModel; 
     [SerializeField] protected Material material;
     [SerializeField] protected bool shipImpactEffects = true;
-    public Teams Team = Teams.None;
     #endregion
 
     [Header("Optional Crystal Effects")]
@@ -36,6 +35,7 @@ public class Crystal : CellItem
 
     protected virtual void Start()
     {
+
         collisions = new List<Collider>();
         AddSelfToNode();
     }
