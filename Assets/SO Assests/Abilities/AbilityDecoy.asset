@@ -13,9 +13,10 @@ MonoBehaviour:
   m_Name: AbilityDecoy
   m_EditorClassIdentifier: 
   Action: 14
-  Name: Decoy
+  Name: Drop a janky off color crystal that the shards don't point at. Don't worry
+    it still
   Description: Decoy
   Icon: {fileID: 21300000, guid: 61e139bcddda0104798ca172972b3017, type: 3}
   SelectedIcon: {fileID: 21300000, guid: 50497305e5ad710478cd48f32d3795ab, type: 3}
-  PreviewClip: {fileID: 2096801853598961014, guid: e838c42bdbc409946944368a0ac2d38d,
+  PreviewClip: {fileID: 2096801853598961014, guid: 69266ce696196854cbee3a8cd072a8f7,
     type: 3}

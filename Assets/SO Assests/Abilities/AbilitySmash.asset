@@ -17,5 +17,5 @@ MonoBehaviour:
   Description: That's my secret captain. I'm always angry.
   Icon: {fileID: 21300000, guid: 377abf4d2118f4f488b8bff68e4f713c, type: 3}
   SelectedIcon: {fileID: 21300000, guid: 8093884ca2f1a2949ab8da9e1212d255, type: 3}
-  PreviewClip: {fileID: 2096801853598961014, guid: e838c42bdbc409946944368a0ac2d38d,
+  PreviewClip: {fileID: 2096801853598961014, guid: 95e0820abc65d8a45af1a85872c3eccc,
     type: 3}

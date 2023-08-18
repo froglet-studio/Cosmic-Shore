@@ -18,5 +18,5 @@ MonoBehaviour:
     "Prepare for termination!" "You won''t get passed me."'
   Icon: {fileID: 21300000, guid: 01d05499fd04e4f43b81f7bd5e605932, type: 3}
   SelectedIcon: {fileID: 21300000, guid: 4035f6b2094032445aa6917ebaf65998, type: 3}
-  PreviewClip: {fileID: 2096801853598961014, guid: e838c42bdbc409946944368a0ac2d38d,
+  PreviewClip: {fileID: 2096801853598961014, guid: ddbce171511b60c41b7d0d4eca0ce3a1,
     type: 3}

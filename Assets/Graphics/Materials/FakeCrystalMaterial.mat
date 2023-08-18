@@ -126,7 +126,7 @@ Material:
     - _ZWrite: 1
     - _ZWriteControl: 1
     - _opacity: 1.0100001
-    - _player: 0
+    - _player: 1
     - _red: 0
     m_Colors:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
