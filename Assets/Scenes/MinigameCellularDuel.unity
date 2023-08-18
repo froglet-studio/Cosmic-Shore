@@ -255,18 +255,6 @@ Transform:
     type: 3}
   m_PrefabInstance: {fileID: 19339884}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &19339886 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 6588436222817790495, guid: fced5b15da3ad1d41b4e3b7385609e37,
-    type: 3}
-  m_PrefabInstance: {fileID: 19339884}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5a8f286a585edf943935c4316edeb2b6, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1 &38465051 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 8615459835641348127, guid: 8a9d12e43096881468feb22e39e9fbeb,
@@ -2793,6 +2781,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5a8f286a585edf943935c4316edeb2b6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  Team: -1
+  ItemType: 1
   crystalProperties:
     fuelAmount: 1
     scoreAmount: 1
@@ -2804,7 +2794,6 @@ MonoBehaviour:
   CrystalModel: {fileID: 7244393970774794917}
   material: {fileID: 2100000, guid: 383f21e8586fd7243a19e1d0f26110d0, type: 2}
   shipImpactEffects: 1
-  Team: -1
   crystalImpactEffects: 
   AOEPrefab: {fileID: 0}
   maxExplosionScale: 0
@@ -9085,18 +9074,6 @@ PrefabInstance:
         type: 3}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 32cc35a6605af014c926743312133238, type: 3}
---- !u!114 &451321389 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 9106189021102876755, guid: 32cc35a6605af014c926743312133238,
-    type: 3}
-  m_PrefabInstance: {fileID: 451321388}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1360556388}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9ca79d17578366e4f9cd2b19173ecab8, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1 &458524440
 GameObject:
   m_ObjectHideFlags: 0
@@ -9942,6 +9919,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Name
       value: MiniGameHUD
+      objectReference: {fileID: 0}
+    - target: {fileID: 1720411786844436948, guid: 491eb8350c5c6ab45a8b291192f9891a,
+        type: 3}
+      propertyPath: m_enableKerning
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1720411786918787520, guid: 491eb8350c5c6ab45a8b291192f9891a,
         type: 3}
@@ -11465,9 +11447,9 @@ RectTransform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1107766957}
-  m_LocalRotation: {x: 0.7071068, y: -0, z: -0, w: 0.7071068}
-  m_LocalPosition: {x: 0, y: 0, z: -300}
-  m_LocalScale: {x: 0, y: 0, z: 0}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0.000061035156}
+  m_LocalScale: {x: 2.3999999, y: 2.3999999, z: 2.3999999}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1285155009}
@@ -11476,8 +11458,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: -701.5, y: -394.5}
-  m_SizeDelta: {x: -1403, y: -789}
+  m_AnchoredPosition: {x: 442, y: 248.50012}
+  m_SizeDelta: {x: -236, y: -133}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1107766959
 MonoBehaviour:
@@ -12541,18 +12523,6 @@ PrefabInstance:
         type: 3}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 32cc35a6605af014c926743312133238, type: 3}
---- !u!114 &1466531421 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 9106189021102876755, guid: 32cc35a6605af014c926743312133238,
-    type: 3}
-  m_PrefabInstance: {fileID: 1466531420}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9ca79d17578366e4f9cd2b19173ecab8, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1 &1492986688 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 6934691946133772947, guid: 8a9d12e43096881468feb22e39e9fbeb,
@@ -12631,6 +12601,7 @@ MonoBehaviour:
   - {fileID: 220781845}
   - {fileID: 220781843}
   - {fileID: 220781841}
+  TimePlayedScoreMultiplier: 1000
 --- !u!114 &1527998409
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -12672,9 +12643,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ea1f86e75b9f8534e97f42ce24675b5b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  gameMode: 8
   HUD: {fileID: 654054541}
-  playerPrefab: {fileID: 2151207714166088012, guid: 8a9d12e43096881468feb22e39e9fbeb,
-    type: 3}
+  playerPrefab: {fileID: 433663843}
   TurnMonitors:
   - {fileID: 1527998409}
   ScoreTracker: {fileID: 1527998408}
@@ -12683,16 +12654,11 @@ MonoBehaviour:
   PlayerOrigin: {fileID: 1984950343}
   EndGameScreen: {fileID: 220781837}
   ActivePlayer: {fileID: 0}
-  gameMode: 8
   Countdown3: {fileID: 21300000, guid: f2202bfb9f07ec64d9cf9db6946d63bd, type: 3}
   Countdown2: {fileID: 21300000, guid: 5bf5264d128e5d44c8f089e6ee61d206, type: 3}
   Countdown1: {fileID: 21300000, guid: e349453ab9bba76458c019322f48e341, type: 3}
   Countdown0: {fileID: 21300000, guid: 989d86426e9e0bd45a6b8c70d4443c33, type: 3}
   CountdownGrowScale: 1.5
-  Crystal: {fileID: 19339886}
-  FriendlyAI: {fileID: 2145254199}
-  HostileOne: {fileID: 451321389}
-  HostileTwo: {fileID: 1466531421}
 --- !u!1 &1556032173 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 8420105567103338333, guid: 8a9d12e43096881468feb22e39e9fbeb,
@@ -15348,18 +15314,6 @@ PrefabInstance:
         type: 3}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 32cc35a6605af014c926743312133238, type: 3}
---- !u!114 &2145254199 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 9106189021102876755, guid: 32cc35a6605af014c926743312133238,
-    type: 3}
-  m_PrefabInstance: {fileID: 2145254198}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9ca79d17578366e4f9cd2b19173ecab8, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1001 &639495419634095581
 PrefabInstance:
   m_ObjectHideFlags: 0
