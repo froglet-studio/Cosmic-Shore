@@ -6,7 +6,6 @@ public class SpawnableHelix : SpawnableAbstractBase
     [SerializeField] TrailBlock trailBlock;
     [SerializeField] Vector3 scale;
     static int ObjectsSpawned = 0;
-    public int spread = 1;
 
     public override GameObject Spawn()
     {

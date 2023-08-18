@@ -16,7 +16,7 @@ public enum PositioningScheme
 
 public class SegmentSpawner : MonoBehaviour
 {
-    [SerializeField] public int numberOfSegments = 1;
+    [HideInInspector] public int numberOfSegments = 1;
     [SerializeField] List<SpawnableAbstractBase> spawnableSegments;
     [SerializeField] PositioningScheme positioningScheme = PositioningScheme.SphereUniform;
     [SerializeField] List<float> spawnSegmentWeights;
