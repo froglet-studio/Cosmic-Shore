@@ -2131,13 +2131,12 @@ MonoBehaviour:
   spawnableSegments:
   - {fileID: 2091254373}
   - {fileID: 1450883833}
-  - {fileID: 1692904587}
   positioningScheme: 0
   spawnSegmentWeights:
-  - 1
-  - 1
-  - 1
+  - 5
+  - 25
   Seed: 0
+  parent: {fileID: 0}
   origin: {x: 0, y: 0, z: 0}
   StraightLineLength: 0
   DifficultyAngle: 0
