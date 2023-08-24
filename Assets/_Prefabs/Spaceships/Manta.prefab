@@ -960,9 +960,9 @@ MonoBehaviour:
   ThrottleScaler: 0
   DefaultMinimumSpeed: 10
   DefaultThrottleScaler: 62
-  PitchScaler: 40
-  YawScaler: 20
-  RollScaler: 40
+  PitchScaler: 50
+  YawScaler: 25
+  RollScaler: 75
   RotationThrottleScaler: 0
 --- !u!114 &6441696348568773771
 MonoBehaviour:
