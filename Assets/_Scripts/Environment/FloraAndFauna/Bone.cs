@@ -7,8 +7,8 @@ public class Bone
     public Bone Parent { get; private set; }
     public List<Bone> Children { get; private set; } = new List<Bone>();
 
-    private float animationSpeed = 1.0f;
-    private float animationAmplitude = 50.0f;
+    private float animationSpeed = .4f;
+    private float animationAmplitude = .02f;
 
     public Bone(Transform transform, Bone parent = null)
     {
@@ -25,19 +25,21 @@ public class Bone
         // Simple oscillation using sine function
         float offset = Mathf.Sin(Time.time * animationSpeed) * animationAmplitude;
 
-        // If it's a child bone, the animation amplitude is increased
+        // If it's a child bone, the animation amplitude is decreased
         if (Parent != null)
         {
-            offset *= 1.5f;
+            offset *= .8f;
+            Transform.localPosition = Vector3.one*offset + Transform.localPosition ;
         }
 
         // Apply the offset to the bone's position
-        Transform.localPosition = new Vector3(Transform.localPosition.x + offset, Transform.localPosition.y, Transform.localPosition.z);
+        
 
         // Animate the child bones
         foreach (var child in Children)
         {
             child.Animate(deltaTime);
         }
+
     }
 }

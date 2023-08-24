@@ -2133,15 +2133,15 @@ MonoBehaviour:
   - {fileID: 1450883833}
   positioningScheme: 0
   spawnSegmentWeights:
-  - 5
-  - 25
+  - 1
+  - 1
   Seed: 0
   parent: {fileID: 0}
   origin: {x: 0, y: 0, z: 0}
   StraightLineLength: 0
   DifficultyAngle: 0
   InitializeOnStart: 0
-  numberOfSegments: 1000
+  numberOfSegments: 0
 --- !u!1 &1036794943
 GameObject:
   m_ObjectHideFlags: 0
@@ -3078,7 +3078,7 @@ MonoBehaviour:
   Crystal: {fileID: 1568959833}
   CrystalStartPosition: {x: 0, y: 0, z: -120}
   SegmentSpawner: {fileID: 1020381236}
-  numberOfSegments: 30
+  numberOfSegments: 10
   straightLineLength: 400
 --- !u!114 &1081073957 stripped
 MonoBehaviour:

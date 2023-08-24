@@ -14,6 +14,7 @@ namespace StarWriter.Core
         public string ownerId;  // TODO: is the ownerId the player name? I hope it is.
         public float waitTime = .6f;
         public bool destroyed = false;
+        public bool devastated = false;
         public string ID;
         public Vector3 InnerDimensions;
         public int Index;
@@ -171,28 +172,33 @@ namespace StarWriter.Core
             }
         }
 
+        // destroy shielded blocks and make them unrestorable
         public void Devastate(Vector3 impactVector, Teams team, string playerName)
         {
-            {
+            // We don't destroy the trail blocks, we keep the objects around so they maintain the list structure
+            gameObject.GetComponent<BoxCollider>().enabled = false;
+            gameObject.GetComponent<MeshRenderer>().enabled = false;
 
-                // Make exploding block
-                var explodingBlock = Instantiate(FossilBlock);
-                explodingBlock.transform.position = transform.position;
-                explodingBlock.transform.localEulerAngles = transform.localEulerAngles;
-                explodingBlock.transform.localScale = transform.localScale;
-                explodingBlock.transform.parent = fossilBlockContainer.transform;
-                explodingBlock.GetComponent<Renderer>().material = new Material(explodingMaterial);
-                explodingBlock.GetComponent<BlockImpact>().HandleImpact(impactVector, team);
+            // Make exploding block
+            var explodingBlock = Instantiate(FossilBlock);
+            explodingBlock.transform.position = transform.position;
+            explodingBlock.transform.localEulerAngles = transform.localEulerAngles;
+            explodingBlock.transform.localScale = transform.localScale;
+            explodingBlock.transform.parent = fossilBlockContainer.transform;
+            explodingBlock.GetComponent<Renderer>().material = new Material(explodingMaterial);
+            explodingBlock.GetComponent<BlockImpact>().HandleImpact(impactVector, team);
 
-                if (StatsManager.Instance != null)
-                    StatsManager.Instance.BlockDestroyed(team, playerName, TrailBlockProperties);
+            destroyed = true;
+            devastated = true;
 
-                if (NodeControlManager.Instance != null)
-                    NodeControlManager.Instance.RemoveBlock(team, playerName, TrailBlockProperties);
-                Trail.TrailList.Remove(this);
+            if (StatsManager.Instance != null)
+                StatsManager.Instance.BlockDestroyed(team, playerName, TrailBlockProperties);
 
-                Destroy(gameObject);
-            }
+            if (NodeControlManager.Instance != null)
+                NodeControlManager.Instance.RemoveBlock(team, playerName, TrailBlockProperties);
+            //Trail.TrailList.Remove(this);
+
+            //Destroy(gameObject);
         }
 
 
@@ -281,18 +287,21 @@ namespace StarWriter.Core
 
         public void Restore()
         {
-            Debug.Log("Restoring trailBlock block");
-            if (StatsManager.Instance != null)
-                StatsManager.Instance.BlockRestored(team, playerName, TrailBlockProperties);
+            if (!devastated)
+            {
+                Debug.Log("Restoring trailBlock block");
+                if (StatsManager.Instance != null)
+                    StatsManager.Instance.BlockRestored(team, playerName, TrailBlockProperties);
 
-            if (NodeControlManager.Instance != null)
-                //NodeControlManager.Instance.RemoveBlock(team, playerName, TrailBlockProperties);
-                Debug.Log("TODO: Notify NodeControlManager that a block was restored");
+                if (NodeControlManager.Instance != null)
+                    //NodeControlManager.Instance.RemoveBlock(team, playerName, TrailBlockProperties);
+                    Debug.Log("TODO: Notify NodeControlManager that a block was restored");
 
-            gameObject.GetComponent<BoxCollider>().enabled = true;
-            gameObject.GetComponent<MeshRenderer>().enabled = true;
+                gameObject.GetComponent<BoxCollider>().enabled = true;
+                gameObject.GetComponent<MeshRenderer>().enabled = true;
 
-            destroyed = false;
+                destroyed = false;
+            }
         }
 
         // TODO: utility class needed to hold these

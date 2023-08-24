@@ -145,7 +145,7 @@ public class GunShipControllerExperiment : ShipTransformer
 
         shipData.AttachedTrailBlock = trailFollower.AttachedTrailBlock;
 
-        if (shipData.AttachedTrailBlock.destroyed)
+        if (shipData.AttachedTrailBlock.destroyed && !shipData.AttachedTrailBlock.devastated)
         {
             shipData.AttachedTrailBlock.Restore();  
         }
