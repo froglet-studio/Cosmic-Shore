@@ -1,10 +1,8 @@
-using StarWriter.Core;
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class ThreeButtonPanel : MonoBehaviour
+public class ShipButtonPanel : MonoBehaviour
 {
     public float fadeDuration = 0.2f;
     Image[] buttonImages;

@@ -189,7 +189,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &3900586876768157980
 RectTransform:
   m_ObjectHideFlags: 0
@@ -223,6 +223,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 033c5152e03074a49a6bbf901f0e00d0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  verboseLogging: 0
+  backgroundImage: {fileID: 3900586877286408350}
+  backgroundSprite: {fileID: 0}
   fuelLevelText: {fileID: 8308972445466795362}
   fuelLevelImages:
   - {fileID: 21300000, guid: 6ffb58a130a475b4a8afd6853ec02b77, type: 3}
@@ -241,11 +244,7 @@ MonoBehaviour:
   - {fileID: 21300000, guid: 3205940bb7946d84882dd9a5297bdb92, type: 3}
   - {fileID: 21300000, guid: e357aca92e696da4b93cecde41fcbd38, type: 3}
   - {fileID: 21300000, guid: 4b181bbfb2f26ad45b5a7ba4ed7130f8, type: 3}
-  backgroundSprite: {fileID: 0}
-  verboseLogging: 0
-  backgroundImage: {fileID: 3900586877286408350}
   fuelLevelImage: {fileID: 3900586877965080360}
-  starChanger: {fileID: 0}
 --- !u!114 &1757875271342840114
 MonoBehaviour:
   m_ObjectHideFlags: 0

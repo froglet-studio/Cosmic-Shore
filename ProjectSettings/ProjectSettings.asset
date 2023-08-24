@@ -13,7 +13,7 @@ PlayerSettings:
   useOnDemandResources: 0
   accelerometerFrequency: 60
   companyName: Froglet Games
-  productName: Tail Glider
+  productName: Cosmic Shore
   defaultCursor: {fileID: 0}
   cursorHotspot: {x: 0, y: 0}
   m_SplashScreenBackgroundColor: {r: 0, g: 0, b: 0, a: 1}
@@ -135,7 +135,7 @@ PlayerSettings:
     16:10: 1
     16:9: 1
     Others: 1
-  bundleVersion: 0.0.2
+  bundleVersion: 0.1.0
   preloadedAssets:
   - {fileID: 4284087679900875766, guid: 274754c57f99f5144be86c9d1014705b, type: 2}
   - {fileID: 11400000, guid: 39144da157254664c8332b4d6ef6aa52, type: 2}
@@ -165,8 +165,8 @@ PlayerSettings:
     Standalone: 0
     iPhone: 0
     tvOS: 0
-  overrideDefaultApplicationIdentifier: 0
-  AndroidBundleVersionCode: 8
+  overrideDefaultApplicationIdentifier: 1
+  AndroidBundleVersionCode: 11
   AndroidMinSdkVersion: 28
   AndroidTargetSdkVersion: 31
   AndroidPreferredInstallLocation: 1

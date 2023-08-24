@@ -181,22 +181,6 @@ namespace StarWriter.Core
             CurrentCharge = initialCharge;
         }
 
-        /*
-        // TODO: P1 use these or lose these
-        public void ResetMass()
-        {
-            CurrentCharge = initialCharge;
-        }
-        public void ResetSpace()
-        {
-            CurrentCharge = initialCharge;
-        }
-        public void ResetTime() // When we implement this for real, this name is pretty vague...
-        {
-            CurrentCharge = initialCharge;
-        }
-        */
-
         public void ChangeBoostAmount(float amount)
         {
             CurrentBoost = Mathf.Clamp(currentBoost + amount, 0, maxBoost);

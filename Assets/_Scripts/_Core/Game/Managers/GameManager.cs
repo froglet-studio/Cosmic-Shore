@@ -20,14 +20,14 @@ namespace StarWriter.Core
         public static event OnGameOverEvent onGameOver;
 
         /* Singleton References */
-        CameraManager cameraManager;
+        static CameraManager cameraManager;
         AnalyticsManager analyticsManager;
 
         int deathCount = 0;
         public int DeathCount { get { return deathCount; } }
 
         [Header("Scene Names")]
-        [SerializeField] string mainMenuScene = "Menu_Main";
+        static string mainMenuScene = "Menu_Main";
         [SerializeField] string gameTestModeZeroGameScene = "Game_HighScore";
         [SerializeField] string gameTestModeOneGameScene = "Game_TestModeOne";
         [SerializeField] string gameTestModeTwoGameScene = "Game_TestNodeInterior";
@@ -144,7 +144,8 @@ namespace StarWriter.Core
             SceneManager.LoadScene(SceneManager.GetActiveScene().name);
             UnPauseGame();
         }
-        public void ReturnToLobby()
+
+        public static void ReturnToLobby()
         {
             SceneManager.LoadScene(mainMenuScene);
             UnPauseGame();

@@ -8,19 +8,20 @@ using UnityEngine.UI;
 public class MiniGame : MonoBehaviour
 {
     [SerializeField] protected MiniGames gameMode;
-    [SerializeField] MiniGameHUD HUD;
-    [SerializeField] Player playerPrefab;
+    [SerializeField] protected int NumberOfRounds = int.MaxValue;
     [SerializeField] protected List<TurnMonitor> TurnMonitors;
     [SerializeField] protected ScoreTracker ScoreTracker;
-    [SerializeField] List<ShipTypes> AllowedShipTypes;
-    
-    [SerializeField] int NumberOfRounds = int.MaxValue;
+    [SerializeField] GameCanvas GameCanvas;
+    [SerializeField] Player playerPrefab;
     [SerializeField] GameObject PlayerOrigin;
-    [SerializeField] GameObject EndGameScreen; // TODO: maybe this gets unified with the HUD -> there's something that shows/hides HUD, end game, etc
+
+    protected Button ReadyButton;
+    protected GameObject EndGameScreen;
+    protected MiniGameHUD HUD;
     protected List<Player> Players;
 
-    List<Teams> PlayerTeams = new List<Teams>() { Teams.Green, Teams.Red, Teams.Yellow, Teams.Blue};
-    List<string> PlayerNames = new List<string>() { "PlayerOne", "PlayerTwo", "PlayerThree", "PlayerFour" };
+    List<Teams> PlayerTeams = new() { Teams.Green, Teams.Red, Teams.Yellow };
+    List<string> PlayerNames = new() { "PlayerOne", "PlayerTwo", "PlayerThree" };
 
     // Configuration set by player
     public static int NumberOfPlayers = 2;
@@ -31,13 +32,24 @@ public class MiniGame : MonoBehaviour
     protected int TurnsTakenThisRound = 0;
     int RoundsPlayedThisGame = 0;
     
-    // playerId Tracking
+    // PlayerId Tracking
     int activePlayerId;
     int RemainingPlayersActivePlayerIndex = -1;
     protected List<int> RemainingPlayers = new();
-    public Player ActivePlayer;
+    [HideInInspector] public Player ActivePlayer;
     protected bool gameRunning;
 
+    protected virtual void Awake()
+    {
+        EndGameScreen = GameCanvas.EndGameScreen;
+        HUD = GameCanvas.MiniGameHUD;
+        ReadyButton = HUD.ReadyButton;
+        CountdownDisplay = HUD.CountdownDisplay;
+        ScoreTracker.GameCanvas = GameCanvas;
+        foreach (var turnMonitor in TurnMonitors)
+            if (turnMonitor is TimeBasedTurnMonitor tbtMonitor)
+                tbtMonitor.display = HUD.RoundTimeDisplay;
+    }
 
     protected virtual void Start()
     {
@@ -53,11 +65,8 @@ public class MiniGame : MonoBehaviour
             Players[i].gameObject.SetActive(true);
         }
 
-        CountdownDisplay = HUD.CountdownDisplay;
-        ScoreTracker.ActivePlayerScoreDisplay = HUD.ScoreDisplay;
-        foreach (var turnMonitor in TurnMonitors)
-            if (turnMonitor is TimeBasedTurnMonitor tbtMonitor)
-                tbtMonitor.display = HUD.RoundTimeDisplay;
+        ReadyButton.onClick.AddListener(OnReadyClicked);
+        ReadyButton.gameObject.SetActive(false);
 
         // Give other objects a few moments to start
         StartCoroutine(StartNewGameCoroutine());
@@ -81,6 +90,12 @@ public class MiniGame : MonoBehaviour
         if (PauseSystem.Paused) PauseSystem.TogglePauseGame();
         // TODO: this is kind of hokie
         SceneManager.LoadScene(0);
+    }
+
+    public void OnReadyClicked()
+    {
+        ReadyButton.gameObject.SetActive(false);
+        StartCoroutine(CountdownCoroutine());
     }
 
     public virtual void StartNewGame()
@@ -120,15 +135,13 @@ public class MiniGame : MonoBehaviour
     {
         Debug.Log($"MiniGame.StartRound - Round {RoundsPlayedThisGame + 1} Start, ... {Time.time}");
         TurnsTakenThisRound = 0;
-        StartTurn();
+        SetupTurn();
     }
 
     protected void StartTurn()
     {
-        ReadyNextPlayer();
-        SetupTurn();
         foreach (var turnMonitor in TurnMonitors)
-            turnMonitor.NewTurn(Players[activePlayerId].PlayerName);
+            turnMonitor.ResumeTurn();
 
         ScoreTracker.StartTurn(Players[activePlayerId].PlayerName);
 
@@ -145,7 +158,7 @@ public class MiniGame : MonoBehaviour
         if (TurnsTakenThisRound >= RemainingPlayers.Count)
             EndRound();
         else
-            StartTurn();
+            SetupTurn();
     }
 
     protected void EndRound()
@@ -156,7 +169,7 @@ public class MiniGame : MonoBehaviour
 
         Debug.Log($"MiniGame.EndRound - Rounds Played: {RoundsPlayedThisGame}, ... {Time.time}");
 
-        if (RoundsPlayedThisGame >= NumberOfRounds || RemainingPlayers.Count <=0)// || RemainingPlayers.Count < 2
+        if (RoundsPlayedThisGame >= NumberOfRounds || RemainingPlayers.Count <=0)
             EndGame();
         else
             StartRound();
@@ -252,8 +265,16 @@ public class MiniGame : MonoBehaviour
 
     protected virtual void SetupTurn()
     {
+        ReadyNextPlayer();
+
+        // Wait for player ready before activating turn monitor (only really relevant for time based monitor)
+        foreach (var turnMonitor in TurnMonitors)
+        {
+            turnMonitor.NewTurn(Players[activePlayerId].PlayerName);
+            turnMonitor.PauseTurn();
+        }
+
         ActivePlayer.transform.SetPositionAndRotation(PlayerOrigin.transform.position, PlayerOrigin.transform.rotation);
-        //ActivePlayer.Ship.transform.SetPositionAndRotation(PlayerOrigin.transform.position, PlayerOrigin.transform.rotation);
         ActivePlayer.GetComponent<InputController>().PauseInput();
         ActivePlayer.Ship.Teleport(PlayerOrigin.transform);
         ActivePlayer.Ship.GetComponent<ShipTransformer>().Reset();
@@ -261,10 +282,15 @@ public class MiniGame : MonoBehaviour
         ActivePlayer.Ship.ResourceSystem.Reset();
 
         CameraManager.Instance.SetupGamePlayCameras(ActivePlayer.Ship.transform);
-        StartCoroutine(CountdownCoroutine());
+
+        // For single player games, don't require the extra button press
+        if (Players.Count > 1)
+            ReadyButton.gameObject.SetActive(true);
+        else
+            OnReadyClicked();
     }
 
-    // TODO: make the countdown timer its own monobehavior
+    // TODO: P1 make the countdown timer its own monobehavior
     Image CountdownDisplay;
     [SerializeField] Sprite Countdown3;
     [SerializeField] Sprite Countdown2;
@@ -294,6 +320,8 @@ public class MiniGame : MonoBehaviour
         yield return StartCoroutine(CountdownDigitCoroutine(Countdown2));
         yield return StartCoroutine(CountdownDigitCoroutine(Countdown1));
         yield return StartCoroutine(CountdownDigitCoroutine(Countdown0));
+
+        StartTurn();
 
         CountdownDisplay.transform.localScale = Vector3.one;
         CountdownDisplay.gameObject.SetActive(false);

@@ -6,19 +6,17 @@ namespace StarWriter.Core.IO
 {
     public class InputController : MonoBehaviour
     {
-        [SerializeField] ThreeButtonPanel threeButtonPanel;
-        [SerializeField] GameObject rearView;
-
-        #region Ship
-        [SerializeField] public Ship ship;
+        [SerializeField] GameCanvas gameCanvas;
         [SerializeField] public bool AutoPilotEnabled = false;
-        #endregion
+        [HideInInspector] public Ship ship;
 
         float phoneFlipThreshold = .1f;
         public bool PhoneFlipState;
         public static ScreenOrientation currentOrientation;
         public bool Portrait = false;
         public bool SingleStickControls = false;
+        ShipButtonPanel shipButtonPanel;
+        GameObject rearView;
 
         bool leftStickEffectsStarted = false;
         bool rightStickEffectsStarted = false;
@@ -29,27 +27,25 @@ namespace StarWriter.Core.IO
         bool oneFingerMode = false;
         bool leftActive = true;
 
-        public float XSum;
-        public float YSum;
-        public float XDiff;
-        public float YDiff;
+        [HideInInspector] public float XSum;
+        [HideInInspector] public float YSum;
+        [HideInInspector] public float XDiff;
+        [HideInInspector] public float YDiff;
 
         float JoystickRadius;
-        public Vector2 RightJoystick = Vector2.zero;
-        public Vector2 LeftJoystick = Vector2.zero;
+        Vector2 RightJoystick = Vector2.zero;
+        Vector2 LeftJoystick = Vector2.zero;
+        Vector2 RightJoystickStart;
+        Vector2 LeftJoystickStart;
 
-        public Vector2 RightJoystickStart;
-        public Vector2 LeftJoystickStart;
-
-        public Vector2 RightJoystickHome;
-        public Vector2 LeftJoystickHome;
-
-        public Vector2 RightClampedPosition;
-        public Vector2 LeftClampedPosition;
+        [HideInInspector] public Vector2 RightJoystickHome;
+        [HideInInspector] public Vector2 LeftJoystickHome;
+        [HideInInspector] public Vector2 RightClampedPosition;
+        [HideInInspector] public Vector2 LeftClampedPosition;
 
         public bool Idle;
 
-        UnityEngine.Gyroscope gyro;
+        Gyroscope gyro;
         Quaternion derivedCorrection;
         float gyroInitializationAcceptableRange = .05f;
 
@@ -59,7 +55,6 @@ namespace StarWriter.Core.IO
         bool inputPaused;
 
         Vector2 leftInput, rightInput;
-        
 
         Quaternion inverseInitialRotation=new(0,0,0,0);
 
@@ -75,8 +70,13 @@ namespace StarWriter.Core.IO
 
         void Start()
         {
+            if (gameCanvas != null)
+            {
+                shipButtonPanel = gameCanvas.ShipButtonPanel;
+                rearView = gameCanvas.RearView;
+            }
 
-                JoystickRadius = Screen.dpi;
+            JoystickRadius = Screen.dpi;
             leftInput = LeftClampedPosition = LeftJoystickHome = new Vector2(JoystickRadius, JoystickRadius);
             rightInput = RightClampedPosition = RightJoystickHome = new Vector2(Screen.currentResolution.width - JoystickRadius, JoystickRadius);
 
@@ -132,26 +132,15 @@ namespace StarWriter.Core.IO
             {
                 if (ship.ShipStatus.ShowThreeButtonPanel)
                 {
-                    threeButtonPanel.FadeInButtons();
+                    shipButtonPanel.FadeInButtons();
                     rearView.SetActive(true);
                 }
+
                 leftInput.x = Gamepad.current.leftStick.x.ReadValue();
                 leftInput.y = Gamepad.current.leftStick.y.ReadValue();
                 rightInput.x = Gamepad.current.rightStick.x.ReadValue();
                 rightInput.y = Gamepad.current.rightStick.y.ReadValue();
 
-                //if (Gamepad.current.leftStick.IsActuated() || Gamepad.current.rightStick.IsActuated() && Idle)
-                //{
-                //    Idle = false;
-                //    ship.StopShipControllerActions(InputEvents.IdleAction);
-                //}
-                //else if (!Idle)
-                //{
-                //    Idle = true;
-                //    ship.PerformShipControllerActions(InputEvents.IdleAction);
-                //}
-
-                //Debug.Log($"rightInput {rightInput}, leftInput {leftInput}");
                 XSum = Ease(rightInput.x + leftInput.x); 
                 YSum = -Ease(rightInput.y + leftInput.y); //negative is because joysitcks and unity axes don't agree
                 XDiff = (leftInput.x - rightInput.x + 2.1f) / 4.1f;
@@ -319,16 +308,7 @@ namespace StarWriter.Core.IO
                     if (Input.touchCount == 1)
                     {
                         oneFingerMode = true;
-                        //if (Portrait)
-                        //{
-                        //    rightInput = Input.touches[0].position;
-                        //    leftInput = new Vector2(Screen.currentResolution.width / 4f, Screen.currentResolution.height / 2f);
-                        //}
-                        //else
-                        //if (leftInput != Vector2.zero && rightInput != Vector2.zero)
-                        //{
                         var position = Input.touches[0].position;
-
 
                         if (Vector2.Distance(leftInput, position) < Vector2.Distance(rightInput, position))
                         {
@@ -368,7 +348,7 @@ namespace StarWriter.Core.IO
 
                     if (Portrait)
                     {
-                        threeButtonPanel.FadeOutButtons();
+                        shipButtonPanel.FadeOutButtons();
                     }
 
                     if (Idle)
@@ -381,7 +361,7 @@ namespace StarWriter.Core.IO
                 {
                     if (Portrait || ship.ShipStatus.ShowThreeButtonPanel)
                     {
-                        threeButtonPanel.FadeInButtons();
+                        shipButtonPanel.FadeInButtons();
                         CheckSpeedAndOrientation();
                     }
                     else 

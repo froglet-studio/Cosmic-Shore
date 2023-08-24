@@ -3,7 +3,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.InputSystem;
 
-public class ThumbStickUI : MonoBehaviour
+public class ThumbCursor : MonoBehaviour
 {
     [SerializeField] bool Left;
     [SerializeField] Vector2 offset;

@@ -18,6 +18,8 @@ public class TimeBasedTurnMonitor : TurnMonitor
     }
 
     void Update() {
+        if (paused) return;
+
         elapsedTime += Time.deltaTime;
 
         if (display!= null)
