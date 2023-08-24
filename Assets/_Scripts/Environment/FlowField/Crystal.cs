@@ -26,6 +26,7 @@ public class Crystal : NodeItem
     [SerializeField] GameObject AOEPrefab;
     [SerializeField] float maxExplosionScale;
     [SerializeField] Material AOEExplosionMaterial;
+    [SerializeField] Element element = Element.None;
     #endregion
 
     Vector3 origin = Vector3.zero;

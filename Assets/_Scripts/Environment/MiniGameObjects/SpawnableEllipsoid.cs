@@ -18,7 +18,7 @@ public class SpawnableEllipsoid : SpawnableAbstractBase
     public override GameObject Spawn()
     {
         GameObject container = new GameObject();
-        container.name = "HEART" + SegmentsSpawned++;
+        container.name = "Ellipsoid" + SegmentsSpawned++;
 
         length = ((float)rng.Next(1,100))/100* maxlength;
         width = ((float)rng.Next(1, 100)) / 100 * maxwidth;

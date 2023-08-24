@@ -28,6 +28,5 @@ public class CourseMiniGame : MiniGame
         Crystal.transform.position = CrystalStartPosition;
 
         SegmentSpawner.Initialize();
-        SegmentSpawner.StraightLineLength = 360 / DifficultyLevel;
     }
 }

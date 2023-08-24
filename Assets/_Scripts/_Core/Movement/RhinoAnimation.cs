@@ -16,27 +16,27 @@ class RhinoAnimation : ShipAnimation
         AnimatePart(LeftWing,
                     0,
                     -Brake(throttle) * yawAnimationScaler,
-                    (roll + pitch) * animationScaler);
+                    (-1+throttle) * yawAnimationScaler);
 
         AnimatePart(RightWing,
                     0,
                     Brake(throttle) * yawAnimationScaler,
-                    (roll - pitch) * animationScaler);
+                    (1-throttle) * yawAnimationScaler);
 
         AnimatePart(Fusilage,
-                    -pitch * animationScaler,
+                    pitch * animationScaler,
                     yaw * animationScaler,
                     roll * animationScaler);
 
         AnimatePart(LeftEngine,
                     0,
                     Brake(throttle) * yawAnimationScaler,
-                    0);
+                    -(-1 + throttle) * yawAnimationScaler);
 
         AnimatePart(RightEngine,
                     0,
                     -Brake(throttle) * yawAnimationScaler,
-                    0);
+                    -(1 - throttle) * yawAnimationScaler);
     }
 
     protected override void AssignTransforms()
