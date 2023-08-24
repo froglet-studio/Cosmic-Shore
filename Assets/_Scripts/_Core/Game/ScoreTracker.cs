@@ -2,6 +2,8 @@ using System.Collections.Generic;
 using System.Linq;
 using TMPro;
 using UnityEngine;
+using UnityEngine.InputSystem.HID;
+using UnityEngine.UI;
 
 public enum ScoringModes
 {
@@ -17,23 +19,47 @@ public enum ScoringModes
 public class ScoreTracker : MonoBehaviour
 {
     [HideInInspector] public TMP_Text ActivePlayerScoreDisplay;
-    
-    [SerializeField] ScoringModes ScoringMode;
-    [SerializeField] bool GolfRules;
-
-    // TODO: p1 wire these display fields up through the HUD
-    [SerializeField] TMP_Text WinnerNameContainer;
-    
-    [SerializeField] List<TMP_Text> PlayerNameContainers;
-    [SerializeField] List<TMP_Text> PlayerScoreContainers;
 
     // Magic number to give more precision to time tracking as an integer value
     [SerializeField] int TimePlayedScoreMultiplier = 1000;
+    [SerializeField] ScoringModes ScoringMode;
+    [SerializeField] bool GolfRules;
+    [HideInInspector] public GameCanvas GameCanvas;
 
+    VerticalLayoutGroup Scoreboard;
+    TMP_Text WinnerNameContainer;
+    Image WinnerBannerImage;
+    Color GreenTeamWinColor;
+    Color RedTeamWinColor;
+    Color YellowTeamWinColor;
+
+    List<TMP_Text> PlayerNameContainers = new();
+    List<TMP_Text> PlayerScoreContainers = new();
     Dictionary<string, float> playerScores = new ();
     string currentPlayerName;
     int turnsPlayed = 0;
     float turnStartTime;
+
+    void Start()
+    {
+        Scoreboard = GameCanvas.Scoreboard;
+        ActivePlayerScoreDisplay = GameCanvas.MiniGameHUD.ScoreDisplay;
+        WinnerNameContainer = GameCanvas.WinnerNameContainer;
+        WinnerBannerImage = GameCanvas.WinnerBannerImage;
+        GreenTeamWinColor = GameCanvas.GreenTeamWinColor;
+        RedTeamWinColor = GameCanvas.RedTeamWinColor;
+        YellowTeamWinColor = GameCanvas.YellowTeamWinColor;
+
+        for (var i = 0; i < Scoreboard.transform.childCount; i++)
+        {
+            var child = Scoreboard.transform.GetChild(i);
+            Debug.Log($"init scoreboard name: {child.name}");
+            Debug.Log($"init scoreboard child count: {child.transform.childCount}");
+            //Debug.Log($"init scoreboard: {child.transform.GetChild(0).name}");
+            PlayerNameContainers.Add(child.transform.GetChild(0).GetComponent<TMP_Text>());
+            PlayerScoreContainers.Add(child.transform.GetChild(1).GetComponent<TMP_Text>());
+        }
+    }
 
     public virtual void StartTurn(string playerName)
     {

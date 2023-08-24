@@ -5,66 +5,9 @@ using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 
-// TODO: P1 pull out into separate file
-[System.Serializable]
-public struct RoundStats
-{
-    public int blocksCreated;
-    public int blocksDestroyed;
-    public int blocksRestored;
-    public int blocksStolen;
-    public int blocksRemaining;
-    public int friendlyBlocksDestroyed;
-    public int hostileBlocksDestroyed;
-    public float volumeCreated;
-    public float volumeDestroyed;
-    public float volumeRestored;
-    public float volumeStolen;
-    public float volumeRemaining;
-    public float friendlyVolumeDestroyed;
-    public float hostileVolumeDestroyed;
-    public int crystalsCollected;
-    public float fullSpeedStraightAbilityActiveTime;
-    public float rightStickAbilityActiveTime;
-    public float leftStickAbilityActiveTime;
-    public float flipAbilityActiveTime;
-    public float button1AbilityActiveTime;
-    public float button2AbilityActiveTime;
-    public float button3AbilityActiveTime;
-
-    public RoundStats(bool dummy = false)
-    {
-        blocksCreated = 0;
-        blocksDestroyed = 0;
-        blocksRestored = 0;
-        blocksStolen = 0;
-        blocksRemaining = 0;
-        friendlyBlocksDestroyed = 0;
-        hostileBlocksDestroyed = 0;
-        volumeCreated = 0;
-        volumeDestroyed = 0;
-        volumeRestored = 0;
-        volumeStolen = 0;
-        volumeRemaining = 0;
-        friendlyVolumeDestroyed = 0;
-        hostileVolumeDestroyed = 0;
-        crystalsCollected = 0;
-        fullSpeedStraightAbilityActiveTime = 0;
-        rightStickAbilityActiveTime = 0;
-        leftStickAbilityActiveTime = 0;
-        flipAbilityActiveTime = 0;
-        button1AbilityActiveTime = 0;
-        button2AbilityActiveTime = 0;
-        button3AbilityActiveTime = 0;
-    }
-}
-
 public class StatsManager : Singleton<StatsManager>
 {
-    [SerializeField] TMP_Text StatDump;
     [SerializeField] List<GameObject> EndOfRoundStatContainers;
-    // TODO: p1 - we probably want a UI class that talks to the stats managar and updates the UI - move WinnerText there
-    [SerializeField] TMP_Text WinnerText;
     [SerializeField] public bool nodeGame = false;
 
     public Dictionary<Teams, RoundStats> teamStats = new();
@@ -317,6 +260,8 @@ public class StatsManager : Singleton<StatsManager>
     // TODO: p1 - we probably want a UI class that talks to the stats managar and updates the UI rather than doing it in here directly
     void OutputRoundStats()
     {
+        RecordStats = false;
+
         string statsString = "<mspace=4.5px>\n";
         statsString += "<b>Field".PadRight(38) + " | ";
 
@@ -340,25 +285,17 @@ public class StatsManager : Singleton<StatsManager>
             statsString.Substring(statsString.Length - 3);
             statsString += statValues + "\n";
         }
-
         statsString += "</mspace=4.5px>";
 
-
         Debug.LogWarning(statsString.ToString());
-
-        RecordStats = false;
-        StatDump.text = JsonConvert.SerializeObject(playerStats, Formatting.Indented);
         Debug.LogWarning(JsonConvert.SerializeObject(playerStats, Formatting.Indented));
         Debug.LogWarning(JsonConvert.SerializeObject(teamStats, Formatting.Indented));
-
-        StatDump.text = statsString;
 
         int i = 0;
         foreach (var team in teamStats.Keys)
         {
             var container = EndOfRoundStatContainers[i];
             Debug.LogWarning($"Team Stats - Team:{team}");
-            //container.transform.GetChild(2).GetComponent<TMP_Text>().text = teamStats[team].volumeRemaining.ToString("F0");
             i++;
         }
 
@@ -374,21 +311,13 @@ public class StatsManager : Singleton<StatsManager>
             //Individual Impact or Score
             container.transform.GetChild(3).GetComponent<TMP_Text>().text = (playerStats[player].volumeCreated + playerStats[player].hostileVolumeDestroyed
                                                                             - playerStats[player].friendlyVolumeDestroyed + (2 * playerStats[player].volumeStolen)).ToString("F0");
-            //container.transform.GetChild(3).GetComponent<TMP_Text>().text = playerStats[player].crystalsCollected.ToString("D");
 
             i++;
         }
 
-        //var winContainer = WinnerContainer[0];
         //Calculate  and display winner
         var finalScore = teamStats[Teams.Green].volumeRemaining - teamStats[Teams.Red].volumeRemaining;
         var winner = finalScore > 0 ? "Green" : "Red";
-        if (WinnerText != null)
-            WinnerText.text = winner;
-        else
-            Debug.Log($"Winner: {winner}");
-
-        //var container0 = EndOfRoundStatContainers[0];
-        //container0.transform.GetChild(4).GetComponent<TMP_Text>().text = (teamStats[Teams.Green].volumeRemaining - teamStats[Teams.Red].volumeRemaining).ToString("F0");
+        Debug.Log($"Winner: {winner}");
     }
 }

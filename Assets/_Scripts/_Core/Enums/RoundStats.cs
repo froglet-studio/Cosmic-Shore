@@ -22,6 +22,9 @@ namespace StarWriter.Core
         public float rightStickAbilityActiveTime;
         public float leftStickAbilityActiveTime;
         public float flipAbilityActiveTime;
+        public float button1AbilityActiveTime;
+        public float button2AbilityActiveTime;
+        public float button3AbilityActiveTime;
 
         public RoundStats(bool dummy = false)
         {
@@ -44,6 +47,9 @@ namespace StarWriter.Core
             rightStickAbilityActiveTime = 0;
             leftStickAbilityActiveTime = 0;
             flipAbilityActiveTime = 0;
+            button1AbilityActiveTime = 0;
+            button2AbilityActiveTime = 0;
+            button3AbilityActiveTime = 0;
         }
     }
 }

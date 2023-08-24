@@ -10,16 +10,7 @@ public class Player : MonoBehaviour
     [SerializeField] string playerUUID;
     [SerializeField] Ship ship;
     [SerializeField] GameObject shipContainer;
-
-    [Header("HUD Containers")]
-    [SerializeField] ResourceDisplay boostDisplay;
-    [SerializeField] ResourceDisplay levelDisplay;
-    [SerializeField] ResourceDisplay ammoDisplay;
-    [SerializeField] ResourceDisplay chargeDisplay;
-    [SerializeField] ResourceDisplay ChargeLevelDisplay;
-    [SerializeField] ResourceDisplay MassLevelDisplay;
-    [SerializeField] ResourceDisplay SpaceLevelDisplay;
-    [SerializeField] ResourceDisplay TimeLevelDisplay;
+    [SerializeField] GameCanvas GameCanvas;
 
     public static Player ActivePlayer;
 
@@ -83,34 +74,25 @@ public class Player : MonoBehaviour
 
         void SetupPlayerShip(Ship shipInstance)
         {
+            ActivePlayer = this;
+
             shipInstance.transform.SetParent(shipContainer.transform, false);
             shipInstance.GetComponent<AIPilot>().enabled = false;
 
-            var inputController = GetComponent<InputController>();
-            inputController.ship = shipInstance;
-
+            GetComponent<InputController>().ship = shipInstance;
+            
             ship = shipInstance.GetComponent<Ship>();
             ship.Team = Team;
             ship.Player = this;
-
-            ActivePlayer = this;
-
-            if (boostDisplay != null)
-                ship.ResourceSystem.BoostDisplay = boostDisplay;
-            if (levelDisplay != null)
-                ship.ResourceSystem.LevelDisplay = levelDisplay;
-            if (ammoDisplay != null)
-                ship.ResourceSystem.AmmoDisplay = ammoDisplay;
-            if (chargeDisplay != null)
-                ship.ResourceSystem.ChargeDisplay = chargeDisplay;
-            if (ChargeLevelDisplay != null)
-                ship.ResourceSystem.ChargeLevelDisplay = ChargeLevelDisplay;
-            if (MassLevelDisplay != null)
-                ship.ResourceSystem.MassLevelDisplay = MassLevelDisplay;
-            if (SpaceLevelDisplay != null)
-                ship.ResourceSystem.SpaceLevelDisplay = SpaceLevelDisplay;
-            if (TimeLevelDisplay != null)
-                ship.ResourceSystem.TimeLevelDisplay = TimeLevelDisplay;
+            // TODO: P1 do we want to refactor to just give the resource system a display group?
+            ship.ResourceSystem.BoostDisplay = GameCanvas.ResourceDisplayGroup.BoostDisplay;
+            ship.ResourceSystem.AmmoDisplay = GameCanvas.ResourceDisplayGroup.AmmoDisplay;
+            ship.ResourceSystem.ChargeDisplay = GameCanvas.ResourceDisplayGroup.ChargeDisplay;
+            ship.ResourceSystem.LevelDisplay = GameCanvas.ResourceDisplayGroup.LevelDisplay;
+            ship.ResourceSystem.ChargeLevelDisplay = GameCanvas.ResourceDisplayGroup.ChargeLevelDisplay;
+            ship.ResourceSystem.MassLevelDisplay = GameCanvas.ResourceDisplayGroup.MassLevelDisplay;
+            ship.ResourceSystem.SpaceLevelDisplay = GameCanvas.ResourceDisplayGroup.SpaceLevelDisplay;
+            ship.ResourceSystem.TimeLevelDisplay = GameCanvas.ResourceDisplayGroup.TimeLevelDisplay;
         }
     }
 }

@@ -1,7 +1,5 @@
 using UnityEngine;
 using StarWriter.Core;
-using StarWriter.Core.Audio;
-using UnityEngine.UI;
 
 /// <summary>
 /// Displays and controls toggles and buttons on the Pause Menu Panel
@@ -41,19 +39,9 @@ namespace StarWriter.UI
             gameSetting.ChangeInvertYEnabledStatus();
         }
 
-        /// <summary>
-        /// Calls the Tutorial Scene to be loaded
-        /// </summary>
-        public void OnClickTutorialButton()
+        public void OnClickReplayButton()
         {
-            gameManager.OnClickTutorialButton();
-        }
-        /// <summary>
-        /// Restarts the Game Scene
-        /// </summary>
-        public void OnClickRestartButton()
-        {
-            gameManager.OnClickPlayButton();
+            GameManager.Instance.RestartGame();
         }
 
         /// <summary>
@@ -78,7 +66,7 @@ namespace StarWriter.UI
 
         public void OnClickMainMenu()
         {
-            gameManager.ReturnToLobby();
+            GameManager.ReturnToLobby();
         }
     }
 }
