@@ -1,6 +1,7 @@
 using StarWriter.Core;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 public class SpawnableCord : SpawnableAbstractBase
 {
@@ -36,12 +37,14 @@ public class SpawnableCord : SpawnableAbstractBase
         int bonesCount = verticesCount / verticesPerBone;
         
         Bone previousBone = null;
-        for (int i = 0; i < bonesCount; i++)
+        for (int i = 0; i <= bonesCount; i++)
         {
             Transform boneTransform = new GameObject("Bone" + i).transform;
             boneTransform.SetParent(container.transform);
             Bone bone = new Bone(boneTransform, previousBone);
+            Debug.Log($"bone {i}");
             bones.Add(bone);
+            Debug.Log($"bonecount {bones.Count}");
             previousBone = bone;
         }
 
@@ -68,6 +71,7 @@ public class SpawnableCord : SpawnableAbstractBase
         for (int vertex = 0; vertex < verticesCount; vertex++)
         {
             // Determine the influencing bone based on vertex position
+            Debug.Log($"vertex {vertex} vertex / verticesPerBone {vertex / verticesPerBone}");
             Bone influencingBone = bones[vertex / verticesPerBone];
 
             // Get position from the bone and adjust using the original logic if needed

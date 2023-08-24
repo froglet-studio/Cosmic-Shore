@@ -29,7 +29,7 @@ public class Bone
         if (Parent != null)
         {
             offset *= .8f;
-            Transform.localPosition = Vector3.one*offset + Transform.localPosition ;
+            //Transform.localPosition = Vector3.one*offset + Transform.localPosition ;
         }
 
         // Apply the offset to the bone's position
