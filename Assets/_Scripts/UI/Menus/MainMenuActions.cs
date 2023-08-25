@@ -1,23 +1,27 @@
 using UnityEngine;
 using StarWriter.Core;
-using StarWriter.Core.HangerBuilder;
 
 public class MainMenuActions : MonoBehaviour
 {
-    public void GameManagerOnClickTutorialButton()
+    public void GameSettingToggleMusicEnabledSetting()
     {
-        GameManager.Instance.OnClickTutorialButton();
+        GameSetting.Instance.ChangeMusicEnabledSetting();
     }
-    public void GameSettingChangeAudioEnabledSetting()
+    public void GameSettingToggleSFXEnabledSetting()
     {
-        GameSetting.Instance.ChangeAudioEnabledStatus();
+        GameSetting.Instance.ChangeSFXEnabledSetting();
     }
-    public void GameSettingInvertYEnabledStatus()
+    public void GameSettingToggleHapticEnabledSetting()
+    {
+        GameSetting.Instance.ChangeHapticsEnabledSetting();
+    }
+    public void GameSettingToggleInvertYEnabledSetting()
     {
         GameSetting.Instance.ChangeInvertYEnabledStatus();
     }
 
-    private GameObject toggleObject;
+    // TODO: P1 - i think this is deprecated and should be removed
+    GameObject toggleObject;
     public void ToggleGameObject() //I think this is a better place for this to live
     {
         toggleObject = GetComponent<GameObject>();

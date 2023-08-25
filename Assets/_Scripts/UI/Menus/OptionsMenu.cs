@@ -1,15 +1,22 @@
-using System.Collections;
-using System.Collections.Generic;
+using StarWriter.Core;
 using UnityEngine;
 
 public class OptionsMenu : MonoBehaviour
 {
-    [SerializeField]
-    private GameObject Main_Menu_Panel;
-
-    public void OnPressButtonReturnToMain()
+    public void ToggleMusicEnabledSetting()
     {
-        Main_Menu_Panel.SetActive(true);
-        gameObject.SetActive(false);
+        GameSetting.Instance.ChangeMusicEnabledSetting();
+    }
+    public void ToggleSFXEnabledSetting()
+    {
+        GameSetting.Instance.ChangeSFXEnabledSetting();
+    }
+    public void ToggleHapticEnabledSetting()
+    {
+        GameSetting.Instance.ChangeHapticsEnabledSetting();
+    }
+    public void ToggleInvertYEnabledSetting()
+    {
+        GameSetting.Instance.ChangeInvertYEnabledStatus();
     }
 }

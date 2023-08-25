@@ -1,4 +1,5 @@
 using Lofelt.NiceVibrations;
+using StarWriter.Core;
 using UnityEngine;
 
 public enum HapticType
@@ -21,11 +22,17 @@ public class HapticController : MonoBehaviour
 
     public static void PlayPreset(int option)
     {
+        if (!GameSetting.Instance.HapticsEnabled)
+            return;
+
         HapticPatterns.PlayPreset((HapticPatterns.PresetType) option);
     }
 
     public static void PlayHaptic(HapticType type)
     {
+        if (!GameSetting.Instance.HapticsEnabled)
+            return;
+
         switch (type)
         {
             case HapticType.ButtonPress:
@@ -48,25 +55,23 @@ public class HapticController : MonoBehaviour
 
     public static void PlayButtonPressHaptics()
     {
-        HapticPatterns.PlayPreset(ButtonPattern);
+        PlayPreset((int)ButtonPattern);
     }
-
     public static void PlayCrystalImpactHaptics()
     {
-        HapticPatterns.PlayPreset(CrystalCollisionPattern);
+        PlayPreset((int) CrystalCollisionPattern);
     }
-
     public static void PlayBlockCollisionHaptics()
     {
-        HapticPatterns.PlayPreset(BlockCollisionPattern);
+        PlayPreset((int) BlockCollisionPattern);
     }
     public static void PlayShipCollisionHaptics()
     {
-        HapticPatterns.PlayPreset(ShipCollisionPattern);
+        PlayPreset((int) ShipCollisionPattern);
     }
     public static void PlayFakeCrystalImpactHaptics()
     {
-        HapticPatterns.PlayPreset(FakeCrystalCollisionPattern);
+        PlayPreset((int) FakeCrystalCollisionPattern);
     }
 }
 /*

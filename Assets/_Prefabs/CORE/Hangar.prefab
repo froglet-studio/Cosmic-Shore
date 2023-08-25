@@ -47,9 +47,9 @@ MonoBehaviour:
   PlayerTeam: 1
   PlayerPilot: {fileID: 0}
   PlayerShipType: 0
-  FriendlyAIShipType: 6
-  HostileAI1ShipType: 6
-  HostileAI2ShipType: 7
+  FriendlyAIShipType: 3
+  HostileAI1ShipType: 1
+  HostileAI2ShipType: 1
   GreenTeamMaterial: {fileID: 2100000, guid: cbf0164b1addfee43a45e430c464b6fd, type: 2}
   RedTeamMaterial: {fileID: 2100000, guid: b0e105431956f1b40b8ef19fbde85b3b, type: 2}
   BlueTeamMaterial: {fileID: 2100000, guid: c739bccc290901b4cac760f82c02cbcd, type: 2}
@@ -74,9 +74,9 @@ MonoBehaviour:
     type: 2}
   RedTeamAOEExplosionMaterial: {fileID: 2100000, guid: 36ee0116158df2c438f8a0b13ef1ad49,
     type: 2}
-  BlueTeamAOEExplosionMaterial: {fileID: 2100000, guid: 4596e8c23c1593b4eadfc4a2157a53e5,
+  BlueTeamAOEExplosionMaterial: {fileID: 2100000, guid: c2cc6fd663ff20049ab3a4c489ee8407,
     type: 2}
-  YellowTeamAOEExplosionMaterial: {fileID: 2100000, guid: 37eeeb7b5e625684caca36f02cec8a0f,
+  YellowTeamAOEExplosionMaterial: {fileID: 2100000, guid: da79ad017c0b4e441bb6acc4891f942d,
     type: 2}
   GreenTeamAOEConicExplosionMaterial: {fileID: 2100000, guid: 34e02368fd396cb4180b8eb6130a84b6,
     type: 2}
@@ -85,6 +85,14 @@ MonoBehaviour:
   BlueTeamAOEConicExplosionMaterial: {fileID: 2100000, guid: 14ab3291fb6fa3e429bd05a28c89945c,
     type: 2}
   YellowTeamAOEConicExplosionMaterial: {fileID: 2100000, guid: e80b9e4fc0849dc4a9457127812a05d5,
+    type: 2}
+  GreenTeamSkimmerMaterial: {fileID: 2100000, guid: fe66db79de93ab94e961bac837ce3cbc,
+    type: 2}
+  RedTeamSkimmerMaterial: {fileID: 2100000, guid: 8d6a9cc182227b54e87b708033928a03,
+    type: 2}
+  BlueTeamSkimmerMaterial: {fileID: 2100000, guid: 5cfaa8affbc59b4478e4a773a64abee1,
+    type: 2}
+  YellowTeamSkimmerMaterial: {fileID: 2100000, guid: b79db83c1cba53847bab05c37e299982,
     type: 2}
   ShipPrefabs:
   - {fileID: 874579555101021527, guid: 920c06d41c62d1f4482a2f80e793bbf8, type: 3}
@@ -96,4 +104,4 @@ MonoBehaviour:
   - {fileID: 874579555101021527, guid: cc90998ce81596a49be5dba224e2d7a6, type: 3}
   - {fileID: 874579555101021527, guid: 73c8fd79b947fef4f80df7c233451d3c, type: 3}
   - {fileID: 874579555101021527, guid: 569a1dc27b1f75543a7c975f2ac03364, type: 3}
-  AIDifficultyLevel: 5
+  AIDifficultyLevel: 1

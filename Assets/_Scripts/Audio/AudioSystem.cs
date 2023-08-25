@@ -15,53 +15,63 @@ namespace StarWriter.Core.Audio
         [SerializeField] AudioMixer masterMixer;
         [SerializeField] AudioSource musicSource1;
         [SerializeField] AudioSource musicSource2;
-        [SerializeField] float masterVolume = .1f;
         [SerializeField] float musicVolume = .1f;
+        [SerializeField] float sfxVolume = .1f;
 
         public AudioSource MusicSource1 { get => musicSource1; set => musicSource1 = value; }
         public AudioSource MusicSource2 { get => musicSource2; set => musicSource2 = value; }
 
-        float MasterVolume { get { return isAudioEnabled ? masterVolume : 0; } set { } }
-        float MusicVolume { get { return isAudioEnabled ? musicVolume : 0; } set { } }
+        float SFXVolume { get { return sfxEnabled ? sfxVolume : 0; } }
+        float MusicVolume { get { return musicEnabled ? musicVolume : 0; } }
 
         bool firstMusicSourceIsPlaying = true;
-        bool isAudioEnabled = true;
+        bool musicEnabled = true;
+        bool sfxEnabled = true;
 
-        public bool IsAudioEnabled { get { return isAudioEnabled; } }
+        public bool MusicEnabled { get { return musicEnabled; } }
+        public bool SFXEnabled { get { return sfxEnabled; } }
         #endregion
 
         void Start()
         {
+
+            // TODO: P1 - revisit necessity of this
             if (musicSource1 == null || musicSource2 == null)
             {
                 Debug.LogError("Missing Music Source for Audio System. Disabling Audio.");
-                isAudioEnabled = false;
+                musicEnabled = false;
             }
             else
             {
-                isAudioEnabled = GameSetting.Instance.IsAudioEnabled;
+                musicEnabled = GameSetting.Instance.MusicEnabled;
             }
+            sfxEnabled = GameSetting.Instance.SFXEnabled;
 
-            Debug.Log($"Audio Enabled: {isAudioEnabled}");
-            ChangeAudioEnabledStatus(isAudioEnabled);
+            ChangeMusicEnabledStatus(musicEnabled);
         }
 
         void OnEnable()
         {
-            GameSetting.OnChangeAudioEnabledStatus += ChangeAudioEnabledStatus;
+            GameSetting.OnChangeMusicEnabledStatus += ChangeMusicEnabledStatus;
+            GameSetting.OnChangeSFXEnabledStatus += ChangeSFXEnabledStatus;
         }
 
         void OnDisable()
         {
-            GameSetting.OnChangeAudioEnabledStatus -= ChangeAudioEnabledStatus;
+            GameSetting.OnChangeMusicEnabledStatus -= ChangeMusicEnabledStatus;
+            GameSetting.OnChangeSFXEnabledStatus -= ChangeSFXEnabledStatus;
         }
 
-        void ChangeAudioEnabledStatus(bool status)
+        void ChangeMusicEnabledStatus(bool status)
         {
             Debug.Log($"AudioSystem.OnChangeAudioEnabledStatus - status: {status}");
 
-            isAudioEnabled = status;            
-            SetMasterMixerVolume(isAudioEnabled ? masterVolume : 0);
+            musicEnabled = status;            
+            SetMixerMusicVolume(musicEnabled ? musicVolume : 0);
+        }
+        void ChangeSFXEnabledStatus(bool status)
+        {
+            sfxEnabled = status;
         }
 
         public void PlayMusicClip(AudioClip audioClip)
@@ -97,7 +107,7 @@ namespace StarWriter.Core.Audio
             for (float t = 0; t < transitionTime; t += Time.deltaTime)
             {
                 // Fade out original clip masterVolume
-                activeAudioSource.volume = MasterVolume * (1 - (t / transitionTime));
+                activeAudioSource.volume = SFXVolume * (1 - (t / transitionTime));
                 yield return null;
             }
 
@@ -109,7 +119,7 @@ namespace StarWriter.Core.Audio
             for (float t = 0; t < transitionTime; t += Time.deltaTime)
             {
                 // Fade in new clip masterVolume
-                activeAudioSource.volume = MasterVolume * (t / transitionTime);
+                activeAudioSource.volume = SFXVolume * (t / transitionTime);
                 yield return null;
             }
         }
@@ -136,8 +146,8 @@ namespace StarWriter.Core.Audio
         {
             for (float t = 0; t < transitionTime; t += Time.deltaTime)
             {
-                originalSource.volume = MasterVolume * (1 - (t / transitionTime));
-                newSource.volume = MasterVolume * (t / transitionTime);
+                originalSource.volume = SFXVolume * (1 - (t / transitionTime));
+                newSource.volume = SFXVolume * (t / transitionTime);
                 yield return null;
             }
 
@@ -157,23 +167,19 @@ namespace StarWriter.Core.Audio
 
         public void PlaySFXClip(AudioClip audioClip, AudioSource sfxSource)
         {
-            sfxSource.volume = MasterVolume;
+            sfxSource.volume = SFXVolume;
             sfxSource.PlayOneShot(audioClip);
         }
         #region Mixer Methods
-        public void SetMasterMixerVolume(float value)
-        {
-            masterMixer.SetFloat("MasterVolume", value);
-        }
 
-        public void SetMusicMixerVolume(float value)
+        public void SetMixerMusicVolume(float value)
         {
             masterMixer.SetFloat("MusicVolume", value);
         }
 
-        public void SetEnvironmentMixerVolume(float value)
+        public void SetMixerSFXVolume(float value)
         {
-            masterMixer.SetFloat("EnvironmentVolume", value);
+            masterMixer.SetFloat("SFXVolume", value);
         }
         #endregion
     }

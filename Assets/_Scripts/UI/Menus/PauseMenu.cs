@@ -28,7 +28,7 @@ namespace StarWriter.UI
         /// </summary>
         public void OnClickToggleMusic()
         {
-            gameSetting.ChangeAudioEnabledStatus();
+            gameSetting.ChangeMusicEnabledSetting();
         }
 
         /// <summary>

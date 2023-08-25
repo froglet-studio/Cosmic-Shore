@@ -5,44 +5,56 @@ namespace StarWriter.Core
 {
     public class GameSetting : SingletonPersistent<GameSetting>
     {
-        public delegate void OnChangeAudioMuteStatusEvent(bool status);
-        public static event OnChangeAudioMuteStatusEvent OnChangeAudioEnabledStatus;
+        public delegate void OnChangeMusicEnabledStatusEvent(bool status);
+        public static event OnChangeMusicEnabledStatusEvent OnChangeMusicEnabledStatus;
+
+        public delegate void OnChangeSFXEnabledStatusEvent(bool status);
+        public static event OnChangeSFXEnabledStatusEvent OnChangeSFXEnabledStatus;
+
+        public delegate void OnChangeHapticsEnabledStatusEvent(bool status);
+        public static event OnChangeHapticsEnabledStatusEvent OnChangeHapticsEnabledStatus;
 
         public delegate void OnChangeInvertYEnabledStatusEvent(bool status);
         public static event OnChangeInvertYEnabledStatusEvent OnChangeInvertYEnabledStatus;
 
         public enum PlayerPrefKeys
         {
-            isInitialPlay,
-            isAudioEnabled,
-            invertYEnabled,
-            adsEnabled,
-            highScore,
-            firstLifeHighScore,
-            score,
+            isInitialPlay  = 1,
+            musicEnabled = 2,
+            sfxEnabled = 3,
+            hapticsEnabled = 4,
+            invertYEnabled = 5,
+            adsEnabled = 6,
+            highScore = 7,
+            score = 8,
         }
 
         #region Settings
-        [SerializeField] bool isAudioEnabled = true;
+        [SerializeField] bool musicEnabled = true;
+        [SerializeField] bool sfxEnabled = true;
+        [SerializeField] bool hapticsEnabled = true;
         [SerializeField] bool invertYEnabled = false;
 
-        public bool IsAudioEnabled { get => isAudioEnabled; set => isAudioEnabled = value; }
+        public bool MusicEnabled { get => musicEnabled; }
+        public bool SFXEnabled { get => sfxEnabled; }
+        public bool HapticsEnabled { get => hapticsEnabled; }
         public bool InvertYEnabled { get => invertYEnabled; }
         #endregion
 
         public override void Awake()
         {
             base.Awake();
-            
-            if (!PlayerPrefs.HasKey(PlayerPrefKeys.isAudioEnabled.ToString()))
-                PlayerPrefs.SetInt(PlayerPrefKeys.isAudioEnabled.ToString(), 1);
-            
-            if (!PlayerPrefs.HasKey(PlayerPrefKeys.invertYEnabled.ToString()))
-                PlayerPrefs.SetInt(PlayerPrefKeys.invertYEnabled.ToString(), 0);
+
+            SetPlayerPrefDefault(PlayerPrefKeys.musicEnabled, 1);
+            SetPlayerPrefDefault(PlayerPrefKeys.sfxEnabled, 1);
+            SetPlayerPrefDefault(PlayerPrefKeys.hapticsEnabled, 1);
+            SetPlayerPrefDefault(PlayerPrefKeys.invertYEnabled, 0);
 
             PlayerPrefs.Save();
 
-            isAudioEnabled = PlayerPrefs.GetInt(PlayerPrefKeys.isAudioEnabled.ToString()) == 1;
+            musicEnabled = PlayerPrefs.GetInt(PlayerPrefKeys.musicEnabled.ToString()) == 1;
+            sfxEnabled = PlayerPrefs.GetInt(PlayerPrefKeys.sfxEnabled.ToString()) == 1;
+            hapticsEnabled = PlayerPrefs.GetInt(PlayerPrefKeys.hapticsEnabled.ToString()) == 1;
             invertYEnabled = PlayerPrefs.GetInt(PlayerPrefKeys.invertYEnabled.ToString()) == 1;
 
             // Reset this everytime the player launches the game
@@ -53,14 +65,38 @@ namespace StarWriter.Core
         }
 
         /// <summary>
+        /// Toggles the Music on/off on options menu and pause menu panels
+        /// </summary>
+        public void ChangeMusicEnabledSetting()
+        {
+            musicEnabled = !musicEnabled;
+            PlayerPrefs.SetInt(PlayerPrefKeys.musicEnabled.ToString(), musicEnabled ? 1 : 0);
+            PlayerPrefs.Save();
+
+
+            OnChangeMusicEnabledStatus?.Invoke(musicEnabled);   //Event to toggle AudioSystem isAudioEnabled         
+        }
+
+        /// <summary>
         /// Toggles the Mute on/off on options menu and pause menu panels
         /// </summary>
-        public void ChangeAudioEnabledStatus()
+        public void ChangeSFXEnabledSetting()
         {
-            isAudioEnabled = !isAudioEnabled;
-            PlayerPrefs.SetInt(PlayerPrefKeys.isAudioEnabled.ToString(), isAudioEnabled ? 1 : 0);
+            sfxEnabled = !sfxEnabled;
+            PlayerPrefs.SetInt(PlayerPrefKeys.sfxEnabled.ToString(), sfxEnabled ? 1 : 0);
             PlayerPrefs.Save();
-            OnChangeAudioEnabledStatus?.Invoke(isAudioEnabled);   //Event to toggle AudioSystem isAudioEnabled         
+            OnChangeSFXEnabledStatus?.Invoke(sfxEnabled);     
+        }
+
+        /// <summary>
+        /// Toggles the Mute on/off on options menu and pause menu panels
+        /// </summary>
+        public void ChangeHapticsEnabledSetting()
+        {
+            hapticsEnabled = !hapticsEnabled;
+            PlayerPrefs.SetInt(PlayerPrefKeys.hapticsEnabled.ToString(), hapticsEnabled ? 1 : 0);
+            PlayerPrefs.Save();
+            OnChangeHapticsEnabledStatus?.Invoke(hapticsEnabled);      
         }
 
         /// <summary>
@@ -72,8 +108,11 @@ namespace StarWriter.Core
             PlayerPrefs.SetInt(PlayerPrefKeys.invertYEnabled.ToString(), invertYEnabled ? 1 : 0);
             PlayerPrefs.Save();
             OnChangeInvertYEnabledStatus?.Invoke(invertYEnabled);  // Event to toggle InputController isGryoEnabled
+        }
 
-            Debug.Log($"ChangeInvertYEnabledStatus: {invertYEnabled}");
+        void SetPlayerPrefDefault(PlayerPrefKeys key, int value)
+        {
+            if (!PlayerPrefs.HasKey(key.ToString())) PlayerPrefs.SetInt(key.ToString(), value);
         }
     }
 }

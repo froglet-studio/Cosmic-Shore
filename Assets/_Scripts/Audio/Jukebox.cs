@@ -19,13 +19,13 @@ namespace StarWriter.Core.Audio
 
         void OnEnable()
         {
-            GameSetting.OnChangeAudioEnabledStatus += OnChangeAudioEnabledStatus;
+            GameSetting.OnChangeMusicEnabledStatus += OnChangeAudioEnabledStatus;
             ShipExplosionHandler.onShipExplosionAnimationCompletion += OnDeathExplosionCompletion;
         }
 
         void OnDisable()
         {
-            GameSetting.OnChangeAudioEnabledStatus -= OnChangeAudioEnabledStatus;
+            GameSetting.OnChangeMusicEnabledStatus -= OnChangeAudioEnabledStatus;
             ShipExplosionHandler.onShipExplosionAnimationCompletion += OnDeathExplosionCompletion;
         }
 
@@ -38,7 +38,7 @@ namespace StarWriter.Core.Audio
 
         void Update()
         {
-            if (!audioSystem.IsAudioEnabled)
+            if (!audioSystem.MusicEnabled)
                 return;
 
             if (jukeboxIsOn && !audioSystem.IsMusicSourcePlaying())
