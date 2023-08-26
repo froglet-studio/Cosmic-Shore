@@ -382,11 +382,12 @@ namespace StarWriter.Core.IO
         {
             Touch touch = Input.touches[touchIndex];
 
-            if (touch.phase == TouchPhase.Began)
-            {
-                //joystickStart = (touchIndex == leftTouchIndex) ? leftInput : rightInput;
+            // We check for Vector2.zero since this is the default (i.e uninitialized) value for Vec2
+            // Otherwise, if we missed the TouchPhase.Began event (like before a minigame starts),
+            // we always end up with the joystick as a JoystickRadius long vector
+            // starting at the bottom left corner and pointing toward the touchposition
+            if (touch.phase == TouchPhase.Began || joystickStart == Vector2.zero)
                 joystickStart = touch.position;
-            }
 
             Vector2 offset = touch.position - joystickStart;
             Vector2 clampedOffset = Vector2.ClampMagnitude(offset, JoystickRadius); 

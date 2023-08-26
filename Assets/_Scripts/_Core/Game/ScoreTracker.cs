@@ -222,15 +222,15 @@ public class ScoreTracker : MonoBehaviour
         {
             case Teams.Green:
                 WinnerBannerImage.color = GreenTeamWinColor;
-                WinnerNameContainer.text = "Green Team Victory";
+                WinnerNameContainer.text = "Green Victory";
                 break;
             case Teams.Red:
                 WinnerBannerImage.color = RedTeamWinColor;
-                WinnerNameContainer.text = "Red Team Victory";
+                WinnerNameContainer.text = "Red Victory";
                 break;
             case Teams.Yellow:
                 WinnerBannerImage.color = YellowTeamWinColor;
-                WinnerNameContainer.text = "Yellow Team Victory";
+                WinnerNameContainer.text = "Gold Victory";
                 break;
         }
     }
