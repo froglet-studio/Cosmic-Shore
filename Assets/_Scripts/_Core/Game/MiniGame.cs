@@ -275,7 +275,7 @@ public class MiniGame : MonoBehaviour
         }
 
         ActivePlayer.transform.SetPositionAndRotation(PlayerOrigin.transform.position, PlayerOrigin.transform.rotation);
-        ActivePlayer.GetComponent<InputController>().PauseInput();
+        ActivePlayer.GetComponent<InputController>().Paused = true;
         ActivePlayer.Ship.Teleport(PlayerOrigin.transform);
         ActivePlayer.Ship.GetComponent<ShipTransformer>().Reset();
         ActivePlayer.Ship.TrailSpawner.PauseTrailSpawner();
@@ -326,7 +326,7 @@ public class MiniGame : MonoBehaviour
         CountdownDisplay.transform.localScale = Vector3.one;
         CountdownDisplay.gameObject.SetActive(false);
 
-        ActivePlayer.GetComponent<InputController>().PauseInput(false);
+        ActivePlayer.GetComponent<InputController>().Paused = false;
         ActivePlayer.Ship.TrailSpawner.ForceStartSpawningTrail();
         ActivePlayer.Ship.TrailSpawner.RestartTrailSpawnerAfterDelay(2f);
     }

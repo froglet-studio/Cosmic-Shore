@@ -7,56 +7,45 @@ namespace StarWriter.Core.IO
     public class InputController : MonoBehaviour
     {
         [SerializeField] GameCanvas gameCanvas;
-        [SerializeField] public bool AutoPilotEnabled = false;
+        [SerializeField] public bool AutoPilotEnabled;
+        [SerializeField] public bool Portrait;
+        [SerializeField] public bool SingleStickControls;
         [HideInInspector] public Ship ship;
-
-        float phoneFlipThreshold = .1f;
-        public bool PhoneFlipState;
-        public static ScreenOrientation currentOrientation;
-        public bool Portrait = false;
-        public bool SingleStickControls = false;
+        [HideInInspector] public static ScreenOrientation currentOrientation;
         ShipButtonPanel shipButtonPanel;
         GameObject rearView;
 
-        bool leftStickEffectsStarted = false;
-        bool rightStickEffectsStarted = false;
-        bool fullSpeedStraightEffectsStarted = false;
-        bool minimumSpeedStraightEffectsStarted = false;
-
-        int leftTouchIndex = 0, rightTouchIndex = 0;
-        bool oneFingerMode = false;
+        float phoneFlipThreshold = .1f;
+        bool PhoneFlipState;
+        bool leftStickEffectsStarted;
+        bool rightStickEffectsStarted;
+        bool fullSpeedStraightEffectsStarted;
+        bool minimumSpeedStraightEffectsStarted;
+        int leftTouchIndex, rightTouchIndex;
+        bool oneFingerMode;
         bool leftActive = true;
 
         [HideInInspector] public float XSum;
         [HideInInspector] public float YSum;
         [HideInInspector] public float XDiff;
         [HideInInspector] public float YDiff;
-
-        float JoystickRadius;
-        Vector2 RightJoystick = Vector2.zero;
-        Vector2 LeftJoystick = Vector2.zero;
-        Vector2 RightJoystickStart;
-        Vector2 LeftJoystickStart;
-
+        [HideInInspector] public bool Idle;
+        [HideInInspector] public bool Paused;
         [HideInInspector] public Vector2 RightJoystickHome;
         [HideInInspector] public Vector2 LeftJoystickHome;
         [HideInInspector] public Vector2 RightClampedPosition;
         [HideInInspector] public Vector2 LeftClampedPosition;
-
-        public bool Idle;
+        [HideInInspector] public bool isGyroEnabled;
+        [HideInInspector] public bool invertYEnabled;
+        Vector2 RightJoystickStart, LeftJoystickStart;
+        Vector2 RightJoystickPosition, LeftJoystickPosition;
+        Vector2 RightJoystickValue, LeftJoystickValue;
+        float JoystickRadius;
 
         Gyroscope gyro;
         Quaternion derivedCorrection;
-        float gyroInitializationAcceptableRange = .05f;
-
-        public bool Paused {  get => inputPaused; }
-        public bool isGyroEnabled = false;
-        bool invertYEnabled = false;
-        bool inputPaused;
-
-        Vector2 leftInput, rightInput;
-
         Quaternion inverseInitialRotation=new(0,0,0,0);
+        float gyroInitializationAcceptableRange = .05f;
 
         void OnEnable()
         {
@@ -77,8 +66,8 @@ namespace StarWriter.Core.IO
             }
 
             JoystickRadius = Screen.dpi;
-            leftInput = LeftClampedPosition = LeftJoystickHome = new Vector2(JoystickRadius, JoystickRadius);
-            rightInput = RightClampedPosition = RightJoystickHome = new Vector2(Screen.currentResolution.width - JoystickRadius, JoystickRadius);
+            LeftJoystickValue = LeftClampedPosition = LeftJoystickHome = new Vector2(JoystickRadius, JoystickRadius);
+            RightJoystickValue = RightClampedPosition = RightJoystickHome = new Vector2(Screen.currentResolution.width - JoystickRadius, JoystickRadius);
 
             gyro = Input.gyro;
             gyro.enabled = true;
@@ -111,7 +100,7 @@ namespace StarWriter.Core.IO
 
         void Update()
         {
-            if (PauseSystem.Paused || inputPaused) return;
+            if (PauseSystem.Paused || Paused) return;
 
             // Convert two finger touch into values for displacement, Speed, and ship animations
             ReceiveInput();
@@ -119,14 +108,13 @@ namespace StarWriter.Core.IO
 
         void ReceiveInput()
         {
-
             if (AutoPilotEnabled)
             {
                 XSum = ship.AutoPilot.XSum;
                 YSum = ship.AutoPilot.YSum;
                 XDiff = ship.AutoPilot.XDiff;
                 YDiff = ship.AutoPilot.YDiff;
-                CheckSpeedAndOrientation();
+                PerformSpeedAndDirectionalEffects();
             }
             else if (Gamepad.current != null)
             {
@@ -136,88 +124,22 @@ namespace StarWriter.Core.IO
                     rearView.SetActive(true);
                 }
 
-                leftInput.x = Gamepad.current.leftStick.x.ReadValue();
-                leftInput.y = Gamepad.current.leftStick.y.ReadValue();
-                rightInput.x = Gamepad.current.rightStick.x.ReadValue();
-                rightInput.y = Gamepad.current.rightStick.y.ReadValue();
+                LeftJoystickValue.x = Gamepad.current.leftStick.x.ReadValue();
+                LeftJoystickValue.y = Gamepad.current.leftStick.y.ReadValue();
+                RightJoystickValue.x = Gamepad.current.rightStick.x.ReadValue();
+                RightJoystickValue.y = Gamepad.current.rightStick.y.ReadValue();
 
-                XSum = Ease(rightInput.x + leftInput.x); 
-                YSum = -Ease(rightInput.y + leftInput.y); //negative is because joysitcks and unity axes don't agree
-                XDiff = (leftInput.x - rightInput.x + 2.1f) / 4.1f;
-                YDiff = Ease(rightInput.y - leftInput.y);
+                XSum = Ease(RightJoystickValue.x + LeftJoystickValue.x); 
+                YSum = -Ease(RightJoystickValue.y + LeftJoystickValue.y); //negative is because joysitcks and unity axes don't agree
+                XDiff = (LeftJoystickValue.x - RightJoystickValue.x + 2.1f) / 4.1f;
+                YDiff = Ease(RightJoystickValue.y - LeftJoystickValue.y);
 
                 if (invertYEnabled)
                     YSum *= -1;
 
-                if (Gamepad.current.leftShoulder.wasPressedThisFrame)
-                {
-                    Idle = true;
-                    ship.PerformShipControllerActions(InputEvents.IdleAction);
-                }
-                if (Gamepad.current.leftShoulder.wasReleasedThisFrame)
-                {
-                    Idle = false;
-                    ship.StopShipControllerActions(InputEvents.IdleAction);
-                }
+                ProcessGamePadButtons();
 
-                if (Gamepad.current.rightShoulder.wasPressedThisFrame && !PhoneFlipState)
-                {
-                    PhoneFlipState = true;
-                    ship.PerformShipControllerActions(InputEvents.FlipAction);
-                }
-                else if (Gamepad.current.rightShoulder.wasPressedThisFrame && PhoneFlipState)
-                {
-                    PhoneFlipState = false;
-                    ship.StopShipControllerActions(InputEvents.FlipAction);
-                }
-
-                if (Gamepad.current.leftTrigger.wasPressedThisFrame)
-                {
-                    ship.PerformShipControllerActions(InputEvents.LeftStickAction);
-                }
-                if (Gamepad.current.leftTrigger.wasReleasedThisFrame)
-                {
-                    ship.StopShipControllerActions(InputEvents.LeftStickAction);
-                }
-
-                if (Gamepad.current.rightTrigger.wasPressedThisFrame)
-                {
-                    ship.PerformShipControllerActions(InputEvents.RightStickAction);
-                }
-                if (Gamepad.current.rightTrigger.wasReleasedThisFrame)
-                {
-                    ship.StopShipControllerActions(InputEvents.RightStickAction);
-                }
-
-                if (Gamepad.current.xButton.wasPressedThisFrame)
-                {
-                    ship.PerformShipControllerActions(InputEvents.Button3Action);
-                }
-                if (Gamepad.current.xButton.wasReleasedThisFrame)
-                {
-                    ship.StopShipControllerActions(InputEvents.Button3Action);
-                }
-
-                if (Gamepad.current.aButton.wasPressedThisFrame)
-                {
-                    ship.PerformShipControllerActions(InputEvents.Button2Action);
-                }
-                if (Gamepad.current.aButton.wasReleasedThisFrame)
-                {
-                    ship.StopShipControllerActions(InputEvents.Button2Action);
-                }
-
-                if (Gamepad.current.bButton.wasPressedThisFrame)
-                {
-                    ship.PerformShipControllerActions(InputEvents.Button1Action);
-                }
-                if (Gamepad.current.bButton.wasReleasedThisFrame)
-                {
-                    ship.StopShipControllerActions(InputEvents.Button1Action);
-                }
-
-
-                CheckSpeedAndOrientation();
+                PerformSpeedAndDirectionalEffects();
             }
             else
             {
@@ -253,8 +175,8 @@ namespace StarWriter.Core.IO
                 {
                     if (Input.touchCount > 0)
                     {
-                        leftTouchIndex = Input.touchCount >= 2 ? GetClosestTouch(leftInput) : 0;
-                        HandleJoystick(ref LeftJoystickStart, leftTouchIndex, ref LeftJoystick, ref LeftClampedPosition);
+                        leftTouchIndex = Input.touchCount >= 2 ? GetClosestTouch(LeftJoystickValue) : 0;
+                        HandleJoystick(ref LeftJoystickStart, leftTouchIndex, ref LeftJoystickPosition, ref LeftClampedPosition);
                     }
                 }
                 else
@@ -266,13 +188,13 @@ namespace StarWriter.Core.IO
                         // If we have more than two touches, find the closest to each of the last touch positions we used
                         threeFingerFumble = true;
 
-                        leftTouchIndex = GetClosestTouch(leftInput);
-                        rightTouchIndex = GetClosestTouch(rightInput);
+                        leftTouchIndex = GetClosestTouch(LeftJoystickValue);
+                        rightTouchIndex = GetClosestTouch(RightJoystickValue);
                     }
 
                     if (Input.touchCount == 2 || threeFingerFumble)
                     {
-                        // If we didn't fat finger the phone, find the 
+                        // If we didn't fat finger the phone, fix a finger index
                         if (!threeFingerFumble)
                         {
                             if (Input.touches[0].position.x <= Input.touches[1].position.x)
@@ -287,11 +209,11 @@ namespace StarWriter.Core.IO
                             }
                         }
 
-                        leftInput = Input.touches[leftTouchIndex].position;
-                        rightInput = Input.touches[rightTouchIndex].position;
+                        LeftJoystickValue = Input.touches[leftTouchIndex].position;
+                        RightJoystickValue = Input.touches[rightTouchIndex].position;
 
-                        HandleJoystick(ref LeftJoystickStart, leftTouchIndex, ref LeftJoystick, ref LeftClampedPosition);
-                        HandleJoystick(ref RightJoystickStart, rightTouchIndex, ref RightJoystick, ref RightClampedPosition);
+                        HandleJoystick(ref LeftJoystickStart, leftTouchIndex, ref LeftJoystickPosition, ref LeftClampedPosition);
+                        HandleJoystick(ref RightJoystickStart, rightTouchIndex, ref RightJoystickPosition, ref RightClampedPosition);
 
                         if (leftStickEffectsStarted)
                         {
@@ -310,16 +232,16 @@ namespace StarWriter.Core.IO
                         oneFingerMode = true;
                         var position = Input.touches[0].position;
 
-                        if (Vector2.Distance(leftInput, position) < Vector2.Distance(rightInput, position))
+                        if (Vector2.Distance(LeftJoystickValue, position) < Vector2.Distance(RightJoystickValue, position))
                         {
                             if (!leftStickEffectsStarted)
                             {
                                 leftStickEffectsStarted = true;
                                 ship.PerformShipControllerActions(InputEvents.LeftStickAction);
                             }
-                            leftInput = position;
+                            LeftJoystickValue = position;
                             leftTouchIndex = 0;
-                            HandleJoystick(ref LeftJoystickStart, leftTouchIndex, ref LeftJoystick, ref LeftClampedPosition);
+                            HandleJoystick(ref LeftJoystickStart, leftTouchIndex, ref LeftJoystickPosition, ref LeftClampedPosition);
                             leftActive = true;
                         }
                         else
@@ -329,13 +251,11 @@ namespace StarWriter.Core.IO
                                 rightStickEffectsStarted = true;
                                 ship.PerformShipControllerActions(InputEvents.RightStickAction);
                             }
-                            rightInput = position;
+                            RightJoystickValue = position;
                             rightTouchIndex = 0;
-                            HandleJoystick(ref RightJoystickStart, rightTouchIndex, ref RightJoystick, ref RightClampedPosition);
+                            HandleJoystick(ref RightJoystickStart, rightTouchIndex, ref RightJoystickPosition, ref RightClampedPosition);
                             leftActive = false;
                         }
-
-                        //}
                     }
                     else oneFingerMode = false;
                 }
@@ -344,7 +264,7 @@ namespace StarWriter.Core.IO
                 if (Input.touchCount > 0)
                 {
                     Reparameterize();
-                    CheckSpeedAndOrientation();
+                    PerformSpeedAndDirectionalEffects();
 
                     if (Portrait)
                     {
@@ -362,7 +282,7 @@ namespace StarWriter.Core.IO
                     if (Portrait || ship.ShipStatus.ShowThreeButtonPanel)
                     {
                         shipButtonPanel.FadeInButtons();
-                        CheckSpeedAndOrientation();
+                        PerformSpeedAndDirectionalEffects();
                     }
                     else 
                     {
@@ -398,35 +318,33 @@ namespace StarWriter.Core.IO
 
         void Reparameterize()
         {
-            //Debug.Log($"RightJoystick {RightJoystick}, LeftJoystick {LeftJoystick}");
             if (oneFingerMode || SingleStickControls)
             {
                 if (leftActive)
                 {
-                    XSum = Ease(LeftJoystick.x);
-                    YSum = -Ease(LeftJoystick.y); //negative is because joysitcks and unity axes don't agree
+                    XSum = Ease(LeftJoystickPosition.x);
+                    YSum = -Ease(LeftJoystickPosition.y); //negative is because joysitcks and unity axes don't agree
                     XDiff = .5f;
                     YDiff = 0;
                 }
                 else
                 {
-                    XSum = Ease(RightJoystick.x);
-                    YSum = -Ease(RightJoystick.y); //negative is because joysitcks and unity axes don't agree
+                    XSum = Ease(RightJoystickPosition.x);
+                    YSum = -Ease(RightJoystickPosition.y); //negative is because joysitcks and unity axes don't agree
                     XDiff = .5f;
                     YDiff = 0;
                 }
             }
             else
             {
-                XSum = Ease(RightJoystick.x + LeftJoystick.x);
-                YSum = -Ease(RightJoystick.y + LeftJoystick.y); //negative is because joysitcks and unity axes don't agree
-                XDiff = (LeftJoystick.x - RightJoystick.x + 2.1f) / 4.1f;
-                YDiff = Ease(RightJoystick.y - LeftJoystick.y);
+                XSum = Ease(RightJoystickPosition.x + LeftJoystickPosition.x);
+                YSum = -Ease(RightJoystickPosition.y + LeftJoystickPosition.y); //negative is because joysitcks and unity axes don't agree
+                XDiff = (LeftJoystickPosition.x - RightJoystickPosition.x + 2.1f) / 4.1f;
+                YDiff = Ease(RightJoystickPosition.y - LeftJoystickPosition.y);
             }
 
             if (invertYEnabled)
                 YSum *= -1;
-
         }
 
         // TODO: move to centralized helper class
@@ -472,28 +390,22 @@ namespace StarWriter.Core.IO
             return input < 0 ? (Mathf.Cos(input) - 1) / 2 : -(Mathf.Cos(input) - 1) / 2;
         }
 
-        void CheckSpeedAndOrientation()
+        void PerformSpeedAndDirectionalEffects()
         {
             float threshold = .3f;
             float sumOfRotations = Mathf.Abs(YDiff) + Mathf.Abs(YSum) + Mathf.Abs(XSum);
             float DeviationFromFullSpeedStraight = (1 - XDiff) + sumOfRotations;
             float DeviationFromMinimumSpeedStraight = XDiff + sumOfRotations;
 
-            if (DeviationFromFullSpeedStraight < threshold)
+            if (DeviationFromFullSpeedStraight < threshold && !fullSpeedStraightEffectsStarted)
             {
-                if (!fullSpeedStraightEffectsStarted)
-                {
-                    fullSpeedStraightEffectsStarted = true;
-                    ship.PerformShipControllerActions(InputEvents.FullSpeedStraightAction);
-                }
+                fullSpeedStraightEffectsStarted = true;
+                ship.PerformShipControllerActions(InputEvents.FullSpeedStraightAction);
             }
-            else if (DeviationFromMinimumSpeedStraight < threshold)
+            else if (DeviationFromMinimumSpeedStraight < threshold && !minimumSpeedStraightEffectsStarted)
             {
-                if (!minimumSpeedStraightEffectsStarted)
-                {
-                    minimumSpeedStraightEffectsStarted = true;
-                    ship.PerformShipControllerActions(InputEvents.MinimumSpeedStraightAction);
-                }
+                minimumSpeedStraightEffectsStarted = true;
+                ship.PerformShipControllerActions(InputEvents.MinimumSpeedStraightAction);
             }
             else
             {
@@ -507,13 +419,77 @@ namespace StarWriter.Core.IO
                     minimumSpeedStraightEffectsStarted = false;
                     ship.StopShipControllerActions(InputEvents.MinimumSpeedStraightAction);
                 }
-
             }
         }
 
-        public void PauseInput(bool paused=true)
+        void ProcessGamePadButtons()
         {
-            inputPaused = paused;
+            if (Gamepad.current.leftShoulder.wasPressedThisFrame)
+            {
+                Idle = true;
+                ship.PerformShipControllerActions(InputEvents.IdleAction);
+            }
+            if (Gamepad.current.leftShoulder.wasReleasedThisFrame)
+            {
+                Idle = false;
+                ship.StopShipControllerActions(InputEvents.IdleAction);
+            }
+
+            if (Gamepad.current.rightShoulder.wasPressedThisFrame && !PhoneFlipState)
+            {
+                PhoneFlipState = true;
+                ship.PerformShipControllerActions(InputEvents.FlipAction);
+            }
+            else if (Gamepad.current.rightShoulder.wasPressedThisFrame && PhoneFlipState)
+            {
+                PhoneFlipState = false;
+                ship.StopShipControllerActions(InputEvents.FlipAction);
+            }
+
+            if (Gamepad.current.leftTrigger.wasPressedThisFrame)
+            {
+                ship.PerformShipControllerActions(InputEvents.LeftStickAction);
+            }
+            if (Gamepad.current.leftTrigger.wasReleasedThisFrame)
+            {
+                ship.StopShipControllerActions(InputEvents.LeftStickAction);
+            }
+
+            if (Gamepad.current.rightTrigger.wasPressedThisFrame)
+            {
+                ship.PerformShipControllerActions(InputEvents.RightStickAction);
+            }
+            if (Gamepad.current.rightTrigger.wasReleasedThisFrame)
+            {
+                ship.StopShipControllerActions(InputEvents.RightStickAction);
+            }
+
+            if (Gamepad.current.bButton.wasPressedThisFrame)
+            {
+                ship.PerformShipControllerActions(InputEvents.Button1Action);
+            }
+            if (Gamepad.current.bButton.wasReleasedThisFrame)
+            {
+                ship.StopShipControllerActions(InputEvents.Button1Action);
+            }
+
+            if (Gamepad.current.aButton.wasPressedThisFrame)
+            {
+                ship.PerformShipControllerActions(InputEvents.Button2Action);
+            }
+            if (Gamepad.current.aButton.wasReleasedThisFrame)
+            {
+                ship.StopShipControllerActions(InputEvents.Button2Action);
+            }
+
+            if (Gamepad.current.xButton.wasPressedThisFrame)
+            {
+                ship.PerformShipControllerActions(InputEvents.Button3Action);
+            }
+            if (Gamepad.current.xButton.wasReleasedThisFrame)
+            {
+                ship.StopShipControllerActions(InputEvents.Button3Action);
+            }
         }
 
         public void Button1Press() 
@@ -546,19 +522,10 @@ namespace StarWriter.Core.IO
             ship.StopShipControllerActions(InputEvents.Button3Action);
         }
 
-        public void SetPortrait(bool value)
+        public void SetPortrait(bool portrait)
         {
-            if (value)
-            {
-                //threeButtonPanel.FadeInButtons(); // TODO: make these event driven instead?
-                rearView.SetActive(true);
-            }
-            else
-            {
-                //threeButtonPanel.FadeOutButtons();
-                rearView.SetActive(false);
-            }
-            Portrait = value; 
+            rearView.SetActive(portrait);
+            Portrait = portrait; 
         }
 
         int GetClosestTouch(Vector2 target)
@@ -576,6 +543,5 @@ namespace StarWriter.Core.IO
             }
             return touchIndex;
         }
-
     }
 }
