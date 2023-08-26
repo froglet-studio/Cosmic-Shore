@@ -143,7 +143,7 @@ public class MiniGame : MonoBehaviour
         foreach (var turnMonitor in TurnMonitors)
             turnMonitor.ResumeTurn();
 
-        ScoreTracker.StartTurn(Players[activePlayerId].PlayerName);
+        ScoreTracker.StartTurn(Players[activePlayerId].PlayerName, Players[activePlayerId].Team);
 
         Debug.Log($"Player {activePlayerId + 1} Get Ready! {Time.time}");
     }

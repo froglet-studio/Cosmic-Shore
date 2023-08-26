@@ -36,6 +36,7 @@ public class ScoreTracker : MonoBehaviour
     List<TMP_Text> PlayerNameContainers = new();
     List<TMP_Text> PlayerScoreContainers = new();
     Dictionary<string, float> playerScores = new ();
+    Dictionary<string, Teams> playerTeams = new();
     string currentPlayerName;
     int turnsPlayed = 0;
     float turnStartTime;
@@ -55,16 +56,19 @@ public class ScoreTracker : MonoBehaviour
             var child = Scoreboard.transform.GetChild(i);
             Debug.Log($"init scoreboard name: {child.name}");
             Debug.Log($"init scoreboard child count: {child.transform.childCount}");
-            //Debug.Log($"init scoreboard: {child.transform.GetChild(0).name}");
             PlayerNameContainers.Add(child.transform.GetChild(0).GetComponent<TMP_Text>());
             PlayerScoreContainers.Add(child.transform.GetChild(1).GetComponent<TMP_Text>());
         }
     }
 
-    public virtual void StartTurn(string playerName)
+    public virtual void StartTurn(string playerName, Teams playerTeam)
     {
+        
         if (!playerScores.ContainsKey(playerName))
+        {
             playerScores.Add(playerName, 0);
+            playerTeams.Add(playerName, playerTeam);
+        }
 
         currentPlayerName = playerName;
         turnStartTime = Time.time;
@@ -194,12 +198,16 @@ public class ScoreTracker : MonoBehaviour
 
     public virtual void DisplayScores()
     {
-        //WinnerNameContainer.text = GetWinner();
-        for (var i = 0; i < playerScores.Keys.Count; i++)
+        List<LeaderboardEntry> scores = new List<LeaderboardEntry>();
+        foreach (var score in playerScores) {
+            scores.Add(new LeaderboardEntry(score.Key, (int) score.Value, ShipTypes.Manta));
+        }
+        scores.Sort((score1, score2) => score2.Score.CompareTo(score1.Score));
+
+        for (var i = 0; i < scores.Count; i++)
         {
-            string key = playerScores.Keys.Skip(i).Take(1).First();
-            PlayerNameContainers[i].text = key;
-            PlayerScoreContainers[i].text = playerScores[key].ToString();
+            PlayerNameContainers[i].text = scores[i].PlayerName;
+            PlayerScoreContainers[i].text = scores[i].Score.ToString();
         }
         for (var i = playerScores.Keys.Count; i<PlayerNameContainers.Count; i++)
         {
@@ -207,6 +215,23 @@ public class ScoreTracker : MonoBehaviour
             PlayerScoreContainers[i].text = "";
 
             PlayerScoreContainers[i].gameObject.SetActive(false);
+        }
+
+        var winner = GetWinner();
+        switch (playerTeams[winner])
+        {
+            case Teams.Green:
+                WinnerBannerImage.color = GreenTeamWinColor;
+                WinnerNameContainer.text = "Green Team Victory";
+                break;
+            case Teams.Red:
+                WinnerBannerImage.color = RedTeamWinColor;
+                WinnerNameContainer.text = "Red Team Victory";
+                break;
+            case Teams.Yellow:
+                WinnerBannerImage.color = YellowTeamWinColor;
+                WinnerNameContainer.text = "Yellow Team Victory";
+                break;
         }
     }
 }
