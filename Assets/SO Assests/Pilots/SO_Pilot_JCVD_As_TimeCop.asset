@@ -14,10 +14,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Name: JCVD
   CallSign: JCVD
-  Description: 
-  Image: {fileID: 21300000, guid: 15d4c0157372e564882ed7a7ea6b0f2b, type: 3}
-  Icon: {fileID: 0}
-  SelectedIcon: {fileID: 0}
+  Description: You can bet your damme ass he'll gonna get the job done.
+  Image: {fileID: 21300000, guid: 161e07fc5930fca4ebeccaa1257a4176, type: 3}
+  Icon: {fileID: 21300000, guid: 15d4c0157372e564882ed7a7ea6b0f2b, type: 3}
+  SelectedIcon: {fileID: 21300000, guid: 41c9f6e2ec44f0c458351500f1bfacdc, type: 3}
+  PrimaryElement: 4
   InitialMass: 0
   InitialCharge: 0
   InitialSpace: 0

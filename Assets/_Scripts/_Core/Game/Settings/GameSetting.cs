@@ -19,14 +19,14 @@ namespace StarWriter.Core
 
         public enum PlayerPrefKeys
         {
-            isInitialPlay  = 1,
-            musicEnabled = 2,
-            sfxEnabled = 3,
-            hapticsEnabled = 4,
-            invertYEnabled = 5,
-            adsEnabled = 6,
-            highScore = 7,
-            score = 8,
+            IsInitialPlay = 1,
+            MusicEnabled = 2,
+            SFXEnabled = 3,
+            HapticsEnabled = 4,
+            InvertYEnabled = 5,
+            AdsEnabled = 6,
+            HighScore = 7,
+            Score = 8,
         }
 
         #region Settings
@@ -45,20 +45,20 @@ namespace StarWriter.Core
         {
             base.Awake();
 
-            SetPlayerPrefDefault(PlayerPrefKeys.musicEnabled, 1);
-            SetPlayerPrefDefault(PlayerPrefKeys.sfxEnabled, 1);
-            SetPlayerPrefDefault(PlayerPrefKeys.hapticsEnabled, 1);
-            SetPlayerPrefDefault(PlayerPrefKeys.invertYEnabled, 0);
+            SetPlayerPrefDefault(PlayerPrefKeys.MusicEnabled, 1);
+            SetPlayerPrefDefault(PlayerPrefKeys.SFXEnabled, 1);
+            SetPlayerPrefDefault(PlayerPrefKeys.HapticsEnabled, 1);
+            SetPlayerPrefDefault(PlayerPrefKeys.InvertYEnabled, 0);
 
             PlayerPrefs.Save();
 
-            musicEnabled = PlayerPrefs.GetInt(PlayerPrefKeys.musicEnabled.ToString()) == 1;
-            sfxEnabled = PlayerPrefs.GetInt(PlayerPrefKeys.sfxEnabled.ToString()) == 1;
-            hapticsEnabled = PlayerPrefs.GetInt(PlayerPrefKeys.hapticsEnabled.ToString()) == 1;
-            invertYEnabled = PlayerPrefs.GetInt(PlayerPrefKeys.invertYEnabled.ToString()) == 1;
+            musicEnabled = PlayerPrefs.GetInt(PlayerPrefKeys.MusicEnabled.ToString()) == 1;
+            sfxEnabled = PlayerPrefs.GetInt(PlayerPrefKeys.SFXEnabled.ToString()) == 1;
+            hapticsEnabled = PlayerPrefs.GetInt(PlayerPrefKeys.HapticsEnabled.ToString()) == 1;
+            invertYEnabled = PlayerPrefs.GetInt(PlayerPrefKeys.InvertYEnabled.ToString()) == 1;
 
             // Reset this everytime the player launches the game
-            if (!PlayerPrefs.HasKey(PlayerPrefKeys.isInitialPlay.ToString()))
+            if (!PlayerPrefs.HasKey(PlayerPrefKeys.IsInitialPlay.ToString()))
             {
                 Debug.Log("First Try!");
             }
@@ -70,7 +70,7 @@ namespace StarWriter.Core
         public void ChangeMusicEnabledSetting()
         {
             musicEnabled = !musicEnabled;
-            PlayerPrefs.SetInt(PlayerPrefKeys.musicEnabled.ToString(), musicEnabled ? 1 : 0);
+            PlayerPrefs.SetInt(PlayerPrefKeys.MusicEnabled.ToString(), musicEnabled ? 1 : 0);
             PlayerPrefs.Save();
 
 
@@ -83,7 +83,7 @@ namespace StarWriter.Core
         public void ChangeSFXEnabledSetting()
         {
             sfxEnabled = !sfxEnabled;
-            PlayerPrefs.SetInt(PlayerPrefKeys.sfxEnabled.ToString(), sfxEnabled ? 1 : 0);
+            PlayerPrefs.SetInt(PlayerPrefKeys.SFXEnabled.ToString(), sfxEnabled ? 1 : 0);
             PlayerPrefs.Save();
             OnChangeSFXEnabledStatus?.Invoke(sfxEnabled);     
         }
@@ -94,7 +94,7 @@ namespace StarWriter.Core
         public void ChangeHapticsEnabledSetting()
         {
             hapticsEnabled = !hapticsEnabled;
-            PlayerPrefs.SetInt(PlayerPrefKeys.hapticsEnabled.ToString(), hapticsEnabled ? 1 : 0);
+            PlayerPrefs.SetInt(PlayerPrefKeys.HapticsEnabled.ToString(), hapticsEnabled ? 1 : 0);
             PlayerPrefs.Save();
             OnChangeHapticsEnabledStatus?.Invoke(hapticsEnabled);      
         }
@@ -105,7 +105,7 @@ namespace StarWriter.Core
         public void ChangeInvertYEnabledStatus()
         {
             invertYEnabled = !invertYEnabled;
-            PlayerPrefs.SetInt(PlayerPrefKeys.invertYEnabled.ToString(), invertYEnabled ? 1 : 0);
+            PlayerPrefs.SetInt(PlayerPrefKeys.InvertYEnabled.ToString(), invertYEnabled ? 1 : 0);
             PlayerPrefs.Save();
             OnChangeInvertYEnabledStatus?.Invoke(invertYEnabled);  // Event to toggle InputController isGryoEnabled
         }

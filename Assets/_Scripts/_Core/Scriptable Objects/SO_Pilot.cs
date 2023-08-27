@@ -10,6 +10,7 @@ public class SO_Pilot : ScriptableObject
     [SerializeField] public Sprite Image;
     [SerializeField] public Sprite Icon;
     [SerializeField] public Sprite SelectedIcon;
+    [SerializeField] public Element PrimaryElement;
     [SerializeField] public int InitialMass;
     [SerializeField] public int InitialCharge;
     [SerializeField] public int InitialSpace;

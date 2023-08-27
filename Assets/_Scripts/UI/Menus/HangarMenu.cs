@@ -7,24 +7,45 @@ using UnityEngine.UI;
 public class HangarMenu : MonoBehaviour
 {
     [SerializeField] SO_ShipList ShipList;
+
+    [SerializeField] Transform ShipSelectionContainer;
     [SerializeField] TMPro.TMP_Text SelectedShipName;
     [SerializeField] TMPro.TMP_Text SelectedShipDescription;
     [SerializeField] Image SelectedShipImage;
     [SerializeField] Image SelectedShipTrailImage;
+
+    [SerializeField] Transform AbilitySelectionContainer;
     [SerializeField] TMPro.TMP_Text SelectedAbilityName;
     [SerializeField] TMPro.TMP_Text SelectedAbilityDescription;
     [SerializeField] GameObject SelectedAbilityPreviewWindow;
 
-    [SerializeField] Transform ShipSelectionContainer;
-    [SerializeField] Transform AbilitySelectionContainer;
+    [SerializeField] Transform PilotSelectionContainer;
+    [SerializeField] TMPro.TMP_Text SelectedPilotName;
+    [SerializeField] TMPro.TMP_Text SelectedPilotDescription;
+    [SerializeField] Image SelectedPilotImage;
 
     List<SO_Ship> Ships;
     SO_Ship SelectedShip;
     SO_Pilot SelectedPilot;
     SO_ShipAbility SelectedAbility;
 
+    enum PlayerPrefKeys
+    {
+        SelectedShip,
+        SelectedPilot,
+        SelectedAbility,
+    }
+    void SetPlayerPrefDefault(PlayerPrefKeys key, int value)
+    {
+        if (!PlayerPrefs.HasKey(key.ToString())) PlayerPrefs.SetInt(key.ToString(), value);
+    }
+
     void Start()
     {
+        SetPlayerPrefDefault(PlayerPrefKeys.SelectedShip, 0);
+        SetPlayerPrefDefault(PlayerPrefKeys.SelectedPilot, 0);
+        SetPlayerPrefDefault(PlayerPrefKeys.SelectedAbility, 0);
+
         Ships = ShipList.ShipList;
         PopulateShipSelectionList();
     }
@@ -78,6 +99,32 @@ public class HangarMenu : MonoBehaviour
             StartCoroutine(SelectAbilityCoroutine(0));
     }
 
+    void PopulatePilotSelectionList()
+    {
+        if (PilotSelectionContainer == null) return;
+
+        // Deactivate all
+        for (var i = 0; i < PilotSelectionContainer.transform.childCount; i++)
+            PilotSelectionContainer.GetChild(i).gameObject.SetActive(false);
+
+        // Reactivate based on the number of abilities for the selected ship
+        var pilots = new List<SO_Pilot>() { SelectedShip.ChargePilot, SelectedShip.MassPilot, SelectedShip.SpacePilot, SelectedShip.TimePilot };
+        for (var i = 0; i < SelectedShip.Pilots.Count; i++)
+        {
+            var selectionIndex = i;
+            var pilot = pilots[i];
+            Debug.Log($"Populating Pilot Select List: {pilot.Name}");
+            var pilotSelection = PilotSelectionContainer.GetChild(i).gameObject;
+            pilotSelection.SetActive(true);
+            pilotSelection.GetComponent<Image>().sprite = pilot.Icon;
+            pilotSelection.GetComponent<Button>().onClick.RemoveAllListeners();
+            pilotSelection.GetComponent<Button>().onClick.AddListener(() => SelectPilot(selectionIndex));
+        }
+
+        StartCoroutine(SelectPilotCoroutine(0));
+    }
+
+
     void PopulateShipDetails()
     {
         Debug.Log($"Populating Ship Details List: {SelectedShip.Name}");
@@ -111,6 +158,18 @@ public class HangarMenu : MonoBehaviour
         }
     }
 
+    void PopulatePilotDetails()
+    {
+        Debug.Log($"Populating Pilot Details List: {SelectedPilot.Name}");
+        Debug.Log($"Populating Pilot Details List: {SelectedPilot.Description}");
+        Debug.Log($"Populating Pilot Details List: {SelectedPilot.Icon}");
+        Debug.Log($"Populating Pilot Details List: {SelectedPilot.Image}");
+
+        if (SelectedPilotName != null) SelectedPilotName.text = SelectedPilot.Name;
+        if (SelectedPilotDescription != null) SelectedPilotDescription.text = SelectedPilot.Description;
+        if (SelectedPilotImage != null) SelectedPilotImage.sprite = SelectedPilot.Image;
+    }
+
     public void SelectShip(int index)
     {
         Debug.Log($"SelectShip: {index}");
@@ -132,9 +191,16 @@ public class HangarMenu : MonoBehaviour
 
         // populate the games list with the one's games
         PopulateAbilitySelectionList();
+        PopulatePilotSelectionList();
     }
 
-    public void SelectPilot(int elementInt)
+    // TODO: P0 - pull this - maybe goes in mini game menu 
+    /* Sets which Pilot to play as */
+    /// <summary>
+    /// Set which Pilot to enter the game as 
+    /// </summary>
+    /// <param name="elementInt"></param>
+    public void ChoosePilot(int elementInt)
     {
         var element = (Element) elementInt;
         switch (element)
@@ -169,6 +235,32 @@ public class HangarMenu : MonoBehaviour
         AbilitySelectionContainer.GetChild(index).gameObject.GetComponent<Image>().sprite = SelectedAbility.SelectedIcon;
 
         PopulateAbilityDetails();
+    }
+
+    /* Selects the pilot in the UI for display */
+    /// <summary>
+    /// Select a pilot in the UI to display its meta data
+    /// </summary>
+    /// <param name="index">Index of the displayed pilot list</param>
+    public void SelectPilot(int index)
+    {
+        Debug.Log($"SelectPilot: {index}");
+
+        // Deselect them all
+        for (var i = 0; i < 4; i++)
+            PilotSelectionContainer.GetChild(i).gameObject.GetComponent<Image>().sprite = SelectedShip.Pilots[i].Icon;
+
+        // Select the one
+        SelectedPilot = SelectedShip.Pilots[index];
+        PilotSelectionContainer.GetChild(index).gameObject.GetComponent<Image>().sprite = SelectedPilot.SelectedIcon;
+
+        PopulatePilotDetails();
+    }
+
+    IEnumerator SelectPilotCoroutine(int index)
+    {
+        yield return new WaitForEndOfFrame();
+        SelectPilot(index);
     }
 
     IEnumerator SelectShipCoroutine(int index)

@@ -24,6 +24,11 @@ MonoBehaviour:
   MassPilot: {fileID: 11400000, guid: 2e5f4ffcc1432904db324d970ab221c4, type: 2}
   SpacePilot: {fileID: 11400000, guid: 33dfe353bacfe9741a371ea3deaba88e, type: 2}
   TimePilot: {fileID: 11400000, guid: 5ac362560a34d414e835db83e82daa08, type: 2}
+  Pilots:
+  - {fileID: 11400000, guid: 5ac362560a34d414e835db83e82daa08, type: 2}
+  - {fileID: 11400000, guid: 33dfe353bacfe9741a371ea3deaba88e, type: 2}
+  - {fileID: 11400000, guid: 6d520cd7eb8878b4aa2551e0591bc08d, type: 2}
+  - {fileID: 11400000, guid: 2e5f4ffcc1432904db324d970ab221c4, type: 2}
   Abilities:
   - {fileID: 11400000, guid: f9f41e3b69e020741878e22c46c8190c, type: 2}
   - {fileID: 11400000, guid: 049001867ddf0504c93f7a903f691ca4, type: 2}

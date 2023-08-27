@@ -5,9 +5,11 @@ using UnityEngine.UI;
 
 [CreateAssetMenu(fileName = "New Ship", menuName = "TailGlider/Ship", order = 1)]
 [System.Serializable]
-public class SO_Ship : ScriptableObject
+public class 
+    SO_Ship : ScriptableObject
 {
     [SerializeField] public ShipTypes Class;
+
     [SerializeField] public string Name;
     [SerializeField] public string Description;
     [SerializeField] public Sprite Icon;
@@ -18,6 +20,7 @@ public class SO_Ship : ScriptableObject
     [SerializeField] public SO_Pilot MassPilot;
     [SerializeField] public SO_Pilot SpacePilot;
     [SerializeField] public SO_Pilot TimePilot;
+    [SerializeField] public List<SO_Pilot> Pilots;
     [SerializeField] public List<SO_ShipAbility> Abilities;
     [SerializeField] public List<SO_MiniGame> MiniGames;
 }

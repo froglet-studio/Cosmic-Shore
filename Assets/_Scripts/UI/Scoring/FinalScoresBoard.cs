@@ -31,8 +31,8 @@ namespace StarWriter.Core
 
         private void OnGameOver()
         {
-            currentScore = PlayerPrefs.GetInt(PlayerPrefKeys.score.ToString());
-            highScore = PlayerPrefs.GetInt(PlayerPrefKeys.highScore.ToString());
+            currentScore = PlayerPrefs.GetInt(PlayerPrefKeys.Score.ToString());
+            highScore = PlayerPrefs.GetInt(PlayerPrefKeys.HighScore.ToString());
             DisplayCurrentScoreWithSprites();
             DisplayHighScoreWithSprites();
         }

@@ -14,8 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Name: Tomahawk
   CallSign: Tomahawk
-  Description: 
-  Image: {fileID: 21300000, guid: 729a100b8ad2f8145a1fcbe2ac19d42f, type: 3}
+  Description: Cause Billafalcon was already taken
+  Image: {fileID: 21300000, guid: 36d843333c8983047900532e41e0fd07, type: 3}
+  Icon: {fileID: 21300000, guid: 729a100b8ad2f8145a1fcbe2ac19d42f, type: 3}
+  SelectedIcon: {fileID: 21300000, guid: 3a6acf18a9bd0c4429220fb40f33af3a, type: 3}
+  PrimaryElement: 2
   InitialMass: 5
   InitialCharge: 0
-  InitialSpaceTime: 0
+  InitialSpace: 0
+  InitialTime: 0
