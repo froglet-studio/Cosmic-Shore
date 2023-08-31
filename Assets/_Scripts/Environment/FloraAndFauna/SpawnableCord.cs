@@ -1,7 +1,39 @@
 using StarWriter.Core;
+using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using UnityEngine;
 using UnityEngine.UIElements;
+
+
+public struct Cord
+{
+    public Queue<int> EnergizedQueue;
+    public Vector3[] Vertices;
+    public LineRenderer LineRendererInstance;
+    public Vector3[] Velocities; // Added for momentum
+
+    public Cord(int verticesCount)
+    {
+        EnergizedQueue = new Queue<int>();
+        Vertices = new Vector3[verticesCount];
+        LineRendererInstance = null; // This can be initialized elsewhere
+        Velocities = new Vector3[verticesCount];
+    }
+
+    // You can add methods related to the Cord behavior here, for example:
+    public void UpdateVertexPosition(int vertexIndex, Vector3 offset)
+    {
+        // Update position with momentum
+        Vertices[vertexIndex] += offset + Velocities[vertexIndex];
+
+        // Update velocity (basic momentum calculation, can be refined)
+        Velocities[vertexIndex] += offset;
+
+        // Damping (to ensure it doesn't keep moving forever)
+        Velocities[vertexIndex] *= 0.97f;
+    }
+}
 
 public class SpawnableCord : SpawnableAbstractBase
 {
@@ -14,39 +46,31 @@ public class SpawnableCord : SpawnableAbstractBase
     [SerializeField] float length = 150;
     static int ObjectsSpawned = 0;
 
-    List<List<Bone>> ListofBoneLists = new List<List<Bone>>();
-    List <LineRenderer> lineRenderers= new List<LineRenderer>();
+    List<Cord> Cords = new List<Cord>();
 
-    List<Bone> bones;
+    float equilibriumDistanceSqr;
+    float tolerance = .01f;
+
     GameObject container;
     LineRenderer lineRenderer = new();
-    int verticesPerBone = 1;
 
-
+    private void Start()
+    {
+        equilibriumDistanceSqr = Mathf.Pow(length / verticesCount, 2);
+    }
 
     public override GameObject Spawn()
     {
-        bones = new List<Bone>();
+        //List<Vector3> vertices;
+        
+
         container = new GameObject();
         container.name = "Cord" + ObjectsSpawned++;
 
+        Cord newCord = new Cord(verticesCount);
+
         var trail = new Trail();
         Vector3[] vertices = new Vector3[verticesCount];
-
-        // Create the bone structure
-        int bonesCount = verticesCount / verticesPerBone;
-        
-        Bone previousBone = null;
-        for (int i = 0; i <= bonesCount; i++)
-        {
-            Transform boneTransform = new GameObject("Bone" + i).transform;
-            boneTransform.SetParent(container.transform);
-            Bone bone = new Bone(boneTransform, previousBone);
-            Debug.Log($"bone {i}");
-            bones.Add(bone);
-            Debug.Log($"bonecount {bones.Count}");
-            previousBone = bone;
-        }
 
         var xc1 = Random.Range(4, 16);
         var xc2 = Random.Range(.2f, 2);
@@ -70,19 +94,13 @@ public class SpawnableCord : SpawnableAbstractBase
 
         for (int vertex = 0; vertex < verticesCount; vertex++)
         {
-            // Determine the influencing bone based on vertex position
-            Debug.Log($"vertex {vertex} vertex / verticesPerBone {vertex / verticesPerBone}");
-            Bone influencingBone = bones[vertex / verticesPerBone];
-
-            // Get position from the bone and adjust using the original logic if needed
-            
-
+           
             var t = (float)vertex / verticesCount * Mathf.PI * 12;
             var x = (Mathf.Sin(t) * xc1) + (Mathf.Sin(t * xc2 + xc3) * xc4);
             var y = (Mathf.Cos(t) * yc1) + (Mathf.Cos(t * yc2 + yc3) * yc4);
             var position = new Vector3(x, y, t * length / (Mathf.PI * 12));
 
-            influencingBone.Transform.position = position;
+            vertices[vertex] = position;
 
             lineRenderer.SetPosition(vertex, position);
 
@@ -94,45 +112,97 @@ public class SpawnableCord : SpawnableAbstractBase
                 var lookPosition = (block == 0) ? position : trail.GetBlock(block - 1).transform.position;
                 CreateBlock(position, lookPosition, container.name + "::BLOCK::" + block, trail, blockScale, healthBlock, container);
             } 
-
+             
         }
-
-        // Animate bones to create the sway effect
-        foreach (var bone in bones)
-        {
-            bone.Animate(Time.deltaTime);
-        }
-
-        ListofBoneLists.Add(bones);
-        lineRenderers.Add(lineRenderer);
+        newCord.LineRendererInstance = lineRenderer;
+        newCord.Vertices = vertices;
+        Cords.Add(newCord);
 
         trails.Add(trail);
         return container;
-        
+    }
+
+    void CheckForEnergy(int cord, int vertexIndex)
+    {
+        bool qued = false;
+
+        Vector3 previousVector = Cords[cord].Vertices[vertexIndex - 1] - Cords[cord].Vertices[vertexIndex];
+        float previousDistanceSqr = previousVector.sqrMagnitude;
+
+        Vector3 nextVector = Cords[cord].Vertices[vertexIndex + 1] - Cords[cord].Vertices[vertexIndex];
+        float nextDistanceSqr = nextVector.sqrMagnitude;
+
+        Vector3 offset = Vector3.zero;
+
+        if (previousDistanceSqr - equilibriumDistanceSqr > tolerance)
+        {
+            offset += previousVector;
+            if (vertexIndex > 1) Cords[cord].EnergizedQueue.Enqueue(vertexIndex - 1);
+            Cords[cord].EnergizedQueue.Enqueue(vertexIndex);
+            qued = true;  
+        }
+        else if (previousDistanceSqr - equilibriumDistanceSqr < -tolerance)
+        {
+            offset -= previousVector;
+            if (vertexIndex > 1) Cords[cord].EnergizedQueue.Enqueue(vertexIndex - 1);
+            Cords[cord].EnergizedQueue.Enqueue(vertexIndex);
+            qued = true;
+        }
+
+        if (nextDistanceSqr - equilibriumDistanceSqr > tolerance)
+        {
+            offset += nextVector;
+            if (vertexIndex < Cords[cord].Vertices.Length - 1) Cords[cord].EnergizedQueue.Enqueue(vertexIndex + 1);
+            if (!qued)
+            {
+                qued = true;
+                Cords[cord].EnergizedQueue.Enqueue(vertexIndex);
+            }
+        }
+        else if (nextDistanceSqr - equilibriumDistanceSqr < -tolerance)
+        {
+            offset -= nextVector;
+            if (vertexIndex < Cords[cord].Vertices.Length - 1) Cords[cord].EnergizedQueue.Enqueue(vertexIndex + 1);
+            if (!qued)
+            {
+                qued = true;
+                Cords[cord].EnergizedQueue.Enqueue(vertexIndex);
+            }
+        }
+
+        if (qued)
+        {
+            Cords[cord].UpdateVertexPosition(vertexIndex, offset * Time.deltaTime);
+            var newPosition = Cords[cord].Vertices[vertexIndex];
+            Cords[cord].LineRendererInstance.SetPosition(vertexIndex, newPosition);
+            if (vertexIndex % (verticesCount / blockCount) == 0)
+            {
+                var blockIndex = vertexIndex / (verticesCount / blockCount);
+                trails[cord].GetBlock(blockIndex).transform.localPosition = newPosition;
+            }
+        }
     }
 
     private void Update()
     {
- 
-        for (var i = 0; i < ListofBoneLists.Count; i++)
+        
+        for (var cord = 0; cord < Cords.Count; cord++)
         {
-            foreach (var bone in ListofBoneLists[i])
+            // Driven vertex is first
+            Cords[cord].Vertices[0] = 20 * Mathf.Sin((float)Time.frameCount / 100) * Vector3.forward;
+            Cords[cord].LineRendererInstance.SetPosition(0, Cords[cord].Vertices[0]);
+            //// check adjacent to driven
+            if (Mathf.Abs((Cords[cord].Vertices[1] - Cords[cord].Vertices[0]).sqrMagnitude - equilibriumDistanceSqr) > tolerance )
             {
-                bone.Animate(Time.deltaTime);
+                CheckForEnergy(cord, 1);
             }
-
-            // Update the vertex positions of the LineRenderer based on the bones' positions
-            for (int vertex = 0; vertex < verticesCount; vertex++)
+            //check the queue
+            int initialCount = Mathf.Min(Cords[cord].EnergizedQueue.Count, 20);
+            
+            for (int i = 0; i < initialCount; i++)
             {
-                Bone influencingBone = ListofBoneLists[i][vertex / verticesPerBone];
-                Vector3 position = influencingBone.Transform.position;
-                lineRenderers[i].SetPosition(vertex, position);
-                lineRenderers[i].widthCurve = lineRenderer.widthCurve;
-                if (vertex % (verticesCount / blockCount) == 0)
-                {
-                    var block = vertex / (verticesCount / blockCount);
-                    trails[i].GetBlock(block).transform.localPosition = position;
-                }
+                int item = Cords[cord].EnergizedQueue.Dequeue();
+                CheckForEnergy(cord, item);
             }
         }
     }

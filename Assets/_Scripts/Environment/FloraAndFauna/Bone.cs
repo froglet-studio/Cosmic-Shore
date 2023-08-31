@@ -1,45 +1,53 @@
 using UnityEngine;
 using System.Collections.Generic;
+using StarWriter.Utility.Tools;
 
-public class Bone
+public class Bone : MonoBehaviour 
 {
     public Transform Transform { get; private set; }
     public Bone Parent { get; private set; }
+    public int  Index { get; private set; }
     public List<Bone> Children { get; private set; } = new List<Bone>();
+    
 
-    private float animationSpeed = .4f;
-    private float animationAmplitude = .02f;
+    Vector3 offsetVector = Vector3.zero;
+    Vector3 targetPosition = Vector3.zero;
+    public bool dirty = true;
 
-    public Bone(Transform transform, Bone parent = null)
+    public Bone(Transform transform, int index, Bone parent = null)
     {
         this.Transform = transform;
         this.Parent = parent;
+        this.Index = index;
         if (parent != null)
         {
             parent.Children.Add(this);
         }
     }
 
-    public void Animate(float deltaTime)
+    private void Start()
     {
-        // Simple oscillation using sine function
-        float offset = Mathf.Sin(Time.time * animationSpeed) * animationAmplitude;
+        targetPosition = Transform.localPosition;
+        //if (Index == 5) LerpBone(Vector3.one * 10);
+    }
 
-        // If it's a child bone, the animation amplitude is decreased
-        if (Parent != null)
-        {
-            offset *= .8f;
-            //Transform.localPosition = Vector3.one*offset + Transform.localPosition ;
-        }
-
-        // Apply the offset to the bone's position
+    public void LerpBone(Vector3 position)
+    {
+        dirty = true;
         
+        StartCoroutine(Tools.LerpingCoroutine(Transform.localPosition.x, position.x, 3, (i) => { offsetVector.x = i; }));
+        StartCoroutine(Tools.LerpingCoroutine(Transform.localPosition.y, position.y, 3, (i) => { offsetVector.y = i; }));
+        StartCoroutine(Tools.LerpingCoroutine(Transform.localPosition.z, position.z, 3, (i) => { offsetVector.z = i; }));
 
-        // Animate the child bones
-        foreach (var child in Children)
-        {
-            child.Animate(deltaTime);
-        }
-
+        targetPosition = position;
+    }
+    
+    public void Animate()
+    {
+        //if (Parent != null && (Transform.localPosition - Parent.Transform.localPosition).sqrMagnitude > 2f) LerpBone((Parent.Transform.localPosition + Transform.localPosition) / 2);
+        //if (Children.Count > 0 && (Transform.localPosition - Children[0].Transform.localPosition).sqrMagnitude > 2f) LerpBone((Children[0].Transform.localPosition + Transform.localPosition) / 2);
+        if ((Transform.localPosition - targetPosition).sqrMagnitude < .1f) dirty = false;
+        else; //Transform.localPosition = offsetVector;
+        
     }
 }
