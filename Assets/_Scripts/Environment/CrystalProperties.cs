@@ -5,4 +5,5 @@ public struct CrystalProperties
     public int scoreAmount;
     public float tailLengthIncreaseAmount;
     public float speedBuffAmount;
+    public Element Element;
 }

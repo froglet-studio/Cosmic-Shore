@@ -182,7 +182,7 @@ namespace StarWriter.Core
                         AOEExplosion.MaxScale =  Mathf.Max(minExplosionScale, ResourceSystem.CurrentAmmo * maxExplosionScale);
                         break;
                     case CrystalImpactEffects.IncrementLevel:
-                        IncrementLevel();
+                        IncrementLevel(crystalProperties.Element);
                         break;
                     case CrystalImpactEffects.FillCharge:
                         ResourceSystem.ChangeBoostAmount(crystalProperties.fuelAmount);
@@ -387,7 +387,7 @@ namespace StarWriter.Core
             }
         }
 
-        void IncrementLevel()
+        public void IncrementLevel(Element element)
         {
             ResourceSystem.ChangeLevel(ResourceSystem.OneFuelUnit);
             UpdateLevel();

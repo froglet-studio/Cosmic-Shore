@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
+// TODO: P1 renamespace this
 namespace StarWriter.Core.HangerBuilder
 {
     public class Hangar : SingletonPersistent<Hangar>
@@ -16,6 +17,10 @@ namespace StarWriter.Core.HangerBuilder
         [SerializeField] ShipTypes FriendlyAIShipType = ShipTypes.Manta;
         [SerializeField] ShipTypes HostileAI1ShipType = ShipTypes.MantaAI;
         [SerializeField] ShipTypes HostileAI2ShipType = ShipTypes.Random;
+
+        [SerializeField] public SO_Pilot SoarPilot;
+        [SerializeField] public SO_Pilot SmashPilot;
+        [SerializeField] public SO_Pilot SportPilot;
 
         // TODO: P1 - clean this up
         [SerializeField] Material GreenTeamMaterial;

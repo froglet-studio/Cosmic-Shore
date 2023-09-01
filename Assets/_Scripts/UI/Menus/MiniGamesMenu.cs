@@ -41,7 +41,8 @@ public class MiniGamesMenu : MonoBehaviour
         for (var i = 0; i < DifficultyButtonContainer.transform.childCount; i++)
             DifficultyIcons.Add(DifficultyButtonContainer.transform.GetChild(i).gameObject.GetComponent<Image>().sprite);
 
-        PopulateShipSelectionList();
+        PopulateGameSelectionList();
+        //PopulateShipSelectionList();
     }
 
     IEnumerator SelectShipCoroutine(int index)
@@ -72,9 +73,10 @@ public class MiniGamesMenu : MonoBehaviour
 
         // notify the mini game engine that this is the ship to play
         MiniGame.PlayerShipType = SelectedShip.Class;
+        MiniGame.PlayerPilot = SelectedGame.Pilots[index];
 
         // populate the games list with the one's games
-        PopulateGameSelectionList();
+        //PopulateGameSelectionList();
     }
 
     List<Sprite> DifficultyIcons = new List<Sprite>();
@@ -85,11 +87,11 @@ public class MiniGamesMenu : MonoBehaviour
         Debug.Log($"SelectGame: {index}");
 
         // Deselect them all
-        for (var i = 0; i < SelectedShip.MiniGames.Count; i++)
-            GameSelectionContainer.GetChild(i).gameObject.GetComponent<Image>().sprite = SelectedShip.MiniGames[i].Icon;
+        for (var i = 0; i < Games.Count; i++)
+            GameSelectionContainer.GetChild(i).gameObject.GetComponent<Image>().sprite = Games[i].Icon;
 
         // Select the one
-        SelectedGame = SelectedShip.MiniGames[index];
+        SelectedGame = Games[index];
         GameSelectionContainer.GetChild(index).gameObject.GetComponent<Image>().sprite = SelectedGame.SelectedIcon;
 
         Debug.Log($"SelectGame, PlayerCountButtonContainer.transform.childCount: {PlayerCountButtonContainer.transform.childCount}");
@@ -119,6 +121,7 @@ public class MiniGamesMenu : MonoBehaviour
         SetDifficulty(1);
 
         PopulateGameDetails();
+        PopulateShipSelectionList();
     }
 
     public void PlaySelectedGame()
@@ -163,12 +166,13 @@ public class MiniGamesMenu : MonoBehaviour
             ShipSelectionContainer.GetChild(i).gameObject.SetActive(false);
 
         // Reactivate based on the number of ships
-        for (var i = 0; i < Ships.Count; i++)
+        for (var i = 0; i < SelectedGame.Pilots.Count; i++)
         {
             var selectionIndex = i;
-            var ship = Ships[i];
-            Debug.Log($"Populating Ship Select List: {ship.Name}");
-            var shipSelection = ShipSelectionContainer.GetChild(i).gameObject;//Instantiate(ShipSelectionTemplate);
+            var ship = SelectedGame.Pilots[i].Ship;
+
+            Debug.Log($"MiniGamesMenu - Populating Ship Select List: {ship.Name}");
+            var shipSelection = ShipSelectionContainer.GetChild(i).gameObject;
             shipSelection.SetActive(true);
             shipSelection.GetComponent<Image>().sprite = ship.Icon;
             shipSelection.GetComponent<Button>().onClick.RemoveAllListeners();
@@ -185,9 +189,9 @@ public class MiniGamesMenu : MonoBehaviour
             GameSelectionContainer.GetChild(i).gameObject.SetActive(false);
 
         // Reactivate based on the number of games for the given ship
-        for (var i = 0; i < SelectedShip.MiniGames.Count; i++) {
+        for (var i = 0; i < Games.Count; i++) {
             var selectionIndex = i;
-            var game = SelectedShip.MiniGames[i];
+            var game = Games[i];
             Debug.Log($"Populating Game Select List: {game.Name}");
             var gameSelection = GameSelectionContainer.GetChild(i).gameObject;
             gameSelection.SetActive(true);

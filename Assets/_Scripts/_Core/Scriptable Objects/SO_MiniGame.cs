@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.Video;
@@ -12,6 +13,7 @@ public class SO_MiniGame : ScriptableObject
     public Sprite Icon;
     public Sprite SelectedIcon;
     public VideoPlayer PreviewClip;
+    public List<SO_Pilot> Pilots;
     [Min(1)] public int MinPlayers = 1;
     [Range(1, 4)] public int MaxPlayers = 2;
     public string SceneName;

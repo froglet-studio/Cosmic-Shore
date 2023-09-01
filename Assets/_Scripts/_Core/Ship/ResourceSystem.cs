@@ -289,5 +289,24 @@ namespace StarWriter.Core
         {
             timeLevel = Math.Clamp(timeLevel + 1, 0, MaxTimeLevel);
         }
+
+        public void IncrementLevel(Element element)
+        {
+            switch (element)
+            {
+                case Element.Charge:
+                    IncrementChargeLevel();
+                    break;
+                case Element.Mass: 
+                    IncrementMassLevel();
+                    break;
+                case Element.Space:
+                    IncrementSpaceLevel();
+                    break;
+                case Element.Time:
+                    IncrementTimeLevel();
+                    break;
+            }
+        }
     }
 }
