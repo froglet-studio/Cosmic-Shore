@@ -409,12 +409,12 @@ namespace StarWriter.Core.IO
             }
             else
             {
-                if (fullSpeedStraightEffectsStarted)
+                if (fullSpeedStraightEffectsStarted && DeviationFromFullSpeedStraight > threshold)
                 {
                     fullSpeedStraightEffectsStarted = false;
                     ship.StopShipControllerActions(InputEvents.FullSpeedStraightAction);
                 }
-                if (minimumSpeedStraightEffectsStarted)
+                if (minimumSpeedStraightEffectsStarted && DeviationFromMinimumSpeedStraight < threshold)
                 {
                     minimumSpeedStraightEffectsStarted = false;
                     ship.StopShipControllerActions(InputEvents.MinimumSpeedStraightAction);

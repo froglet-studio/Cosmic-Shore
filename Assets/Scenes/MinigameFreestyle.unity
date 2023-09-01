@@ -757,14 +757,14 @@ MonoBehaviour:
   - 1
   - 1
   - 1
-  - 1
+  - 0
   Seed: 0
   parent: {fileID: 0}
   origin: {x: 0, y: 0, z: 0}
   StraightLineLength: 0
   DifficultyAngle: 0
   InitializeOnStart: 0
-  numberOfSegments: 1000
+  numberOfSegments: 200
 --- !u!1 &1078953702
 GameObject:
   m_ObjectHideFlags: 0
@@ -812,10 +812,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ActivePlayerScoreDisplay: {fileID: 0}
-  TimePlayedScoreMultiplier: 1
   ScoringMode: 2
   GolfRules: 0
   GameCanvas: {fileID: 547474317}
+  TimePlayedScoreMultiplier: 1
+  VolumeNormalizationQuotient: 145.65
 --- !u!114 &1078953708
 MonoBehaviour:
   m_ObjectHideFlags: 0
