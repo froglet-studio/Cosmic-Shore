@@ -4,13 +4,12 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.Serialization;
 using UnityEngine.UI;
 
 public class MiniGamesMenu : MonoBehaviour
 {
     [SerializeField] List<SO_MiniGame> Games;
-    [SerializeField] SO_ShipList ShipList;
-    
     [SerializeField] TMPro.TMP_Text SelectedGameName;
     [SerializeField] TMPro.TMP_Text SelectedGameDescription;
     [SerializeField] GameObject SelectedGamePreviewWindow;
@@ -20,10 +19,12 @@ public class MiniGamesMenu : MonoBehaviour
     [SerializeField] Transform ShipSelectionContainer;
     [SerializeField] Transform GameSelectionContainer;
     [SerializeField] GameObject PlayerCountButtonContainer;
-    [SerializeField] GameObject DifficultyButtonContainer;
+    [FormerlySerializedAs("DifficultyButtonContainer")]
+    [SerializeField] GameObject IntensityButtonContainer;
 
-
-    List<SO_Ship> Ships;
+    List<Sprite> IntensityIcons = new();
+    List<Sprite> PlayerCountIcons = new();
+    //List<SO_Ship> Ships;
     SO_Ship SelectedShip;
     SO_MiniGame SelectedGame;
     int PlayerCount;
@@ -33,13 +34,13 @@ public class MiniGamesMenu : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        Ships = ShipList.ShipList;
+        //Ships = ShipList.ShipList;
 
         for (var i = 0; i < PlayerCountButtonContainer.transform.childCount; i++)
             PlayerCountIcons.Add(PlayerCountButtonContainer.transform.GetChild(i).gameObject.GetComponent<Image>().sprite);
 
-        for (var i = 0; i < DifficultyButtonContainer.transform.childCount; i++)
-            DifficultyIcons.Add(DifficultyButtonContainer.transform.GetChild(i).gameObject.GetComponent<Image>().sprite);
+        for (var i = 0; i < IntensityButtonContainer.transform.childCount; i++)
+            IntensityIcons.Add(IntensityButtonContainer.transform.GetChild(i).gameObject.GetComponent<Image>().sprite);
 
         PopulateGameSelectionList();
         //PopulateShipSelectionList();
@@ -61,26 +62,20 @@ public class MiniGamesMenu : MonoBehaviour
     {
         Debug.Log($"SelectShip: {index}");
         Debug.Log($"ShipSelectionContainer.childCount: {ShipSelectionContainer.childCount}");
-        Debug.Log($"Ships.Count: {Ships.Count}");
+        Debug.Log($"Ships.Count: {SelectedGame.Pilots.Count}");
 
         // Deselect them all
-        for (var i = 0; i < Ships.Count; i++)
-            ShipSelectionContainer.GetChild(i).gameObject.GetComponent<Image>().sprite = Ships[i].Icon;
+        for (var i = 0; i < SelectedGame.Pilots.Count; i++)
+            ShipSelectionContainer.GetChild(i).gameObject.GetComponent<Image>().sprite = SelectedGame.Pilots[i].Ship.Icon;
 
         // Select the one
-        SelectedShip = Ships[index];
+        SelectedShip = SelectedGame.Pilots[index].Ship;
         ShipSelectionContainer.GetChild(index).gameObject.GetComponent<Image>().sprite = SelectedShip.SelectedIcon;
 
         // notify the mini game engine that this is the ship to play
         MiniGame.PlayerShipType = SelectedShip.Class;
         MiniGame.PlayerPilot = SelectedGame.Pilots[index];
-
-        // populate the games list with the one's games
-        //PopulateGameSelectionList();
     }
-
-    List<Sprite> DifficultyIcons = new List<Sprite>();
-    List<Sprite> PlayerCountIcons = new List<Sprite>();
 
     public void SelectGame(int index)
     {
@@ -112,11 +107,11 @@ public class MiniGamesMenu : MonoBehaviour
 
         // TODO: this is kludgy
         //DifficultyButtonContainer.transform.GetChild(0).gameObject.GetComponent<Image>().sprite = DifficultyButtonContainer.transform.GetChild(0).gameObject.GetComponent<Button>().spriteState.selectedSprite;
-        for (var i = 0; i < DifficultyButtonContainer.transform.childCount; i++)
+        for (var i = 0; i < IntensityButtonContainer.transform.childCount; i++)
         {
             var difficulty = i + 1;
-            DifficultyButtonContainer.transform.GetChild(i).gameObject.GetComponent<Button>().onClick.RemoveAllListeners();
-            DifficultyButtonContainer.transform.GetChild(i).gameObject.GetComponent<Button>().onClick.AddListener(() => SetDifficulty(difficulty));
+            IntensityButtonContainer.transform.GetChild(i).gameObject.GetComponent<Button>().onClick.RemoveAllListeners();
+            IntensityButtonContainer.transform.GetChild(i).gameObject.GetComponent<Button>().onClick.AddListener(() => SetDifficulty(difficulty));
         }
         SetDifficulty(1);
 
@@ -148,10 +143,10 @@ public class MiniGamesMenu : MonoBehaviour
         Debug.Log($"SetDifficulty: {difficulty}");
         DifficultyLevel = difficulty;
 
-        for (var i = 0; i < DifficultyButtonContainer.transform.childCount; i++)
-            DifficultyButtonContainer.transform.GetChild(i).gameObject.GetComponent<Image>().sprite = DifficultyIcons[i];
+        for (var i = 0; i < IntensityButtonContainer.transform.childCount; i++)
+            IntensityButtonContainer.transform.GetChild(i).gameObject.GetComponent<Image>().sprite = IntensityIcons[i];
 
-        DifficultyButtonContainer.transform.GetChild(difficulty - 1).gameObject.GetComponent<Image>().sprite = DifficultyButtonContainer.transform.GetChild(difficulty - 1).gameObject.GetComponent<Button>().spriteState.selectedSprite;
+        IntensityButtonContainer.transform.GetChild(difficulty - 1).gameObject.GetComponent<Image>().sprite = IntensityButtonContainer.transform.GetChild(difficulty - 1).gameObject.GetComponent<Button>().spriteState.selectedSprite;
 
         Hangar.Instance.SetAiDifficultyLevel(difficulty);
 

@@ -34,7 +34,7 @@ public class SpawnableDartBoard : SpawnableAbstractBase
     void CreateRings()
     {
         TrailBlock trailBlock;
-        Player player;
+        Teams team;
         container = new GameObject();
         container.name = "SpawnedDartBoard";
 
@@ -43,15 +43,23 @@ public class SpawnableDartBoard : SpawnableAbstractBase
             trails.Add(new Trail());
             for (int block = 0; block < blockCount * ring; block++)
             {
-                if ((block / ring + ring/3) % 2 == 0)// || (block / ring) % 6 == 1 || (block / ring) % 6 == 2) 
-                { trailBlock = greenTrailBlock; player = PlayerOne; }
-                else { trailBlock = redTrailBlock; player = PlayerTwo; }
-                CreateRingBlock(block, 0, 0, 0, trails[ring-1], ring, trailBlock, player); // old value for phase = ring % 2 * .5f
+                if ( (block / ring + ring/3) % 2 == 0) // || (block / ring) % 6 == 1 || (block / ring) % 6 == 2) 
+                { 
+                    trailBlock = greenTrailBlock;
+                    team = Teams.Green; 
+                }
+                else 
+                { 
+                    trailBlock = redTrailBlock; 
+                    team = Teams.Red;
+                }
+                CreateRingBlock(block, 0, 0, 0, trails[ring-1], ring, trailBlock, team); // old value for phase = ring % 2 * .5f
             }
         }
     }
 
-    void CreateRingBlock(int i, float phase, float tilt, float sweep, Trail trail, int ring, TrailBlock trailBlock, Player player)
+    //void CreateRingBlock(int i, float phase, float tilt, float sweep, Trail trail, int ring, TrailBlock trailBlock, Player player)
+    void CreateRingBlock(int i, float phase, float tilt, float sweep, Trail trail, int ring, TrailBlock trailBlock, Teams team)
     {
         var position = transform.position +
                              ring * ringThickness * Mathf.Cos(((i + phase) / (blockCount * ring)) * 2 * Mathf.PI) * transform.right +
@@ -60,15 +68,16 @@ public class SpawnableDartBoard : SpawnableAbstractBase
         CreateBlock(position, position + tilt * ringThickness * transform.forward, "::SpawnableDartBoard::" + Time.time + "::" + i, trail,
             new Vector3(((Mathf.PI / 3f) * ringThickness) - (gap / (2 * ring)), // blockwidth 
                         (ringCount - ring) * ringThickness/3f, // dartboard thickness
-                         ringThickness - (gap/5f)), trailBlock, player); //annulus thickness
+                         ringThickness - (gap/5f)), trailBlock, team); //annulus thickness
     }
 
-    void CreateBlock(Vector3 position, Vector3 lookPosition, string blockId, Trail trail, Vector3 scale, TrailBlock trailBlock, Player player)
+    //void CreateBlock(Vector3 position, Vector3 lookPosition, string blockId, Trail trail, Vector3 scale, TrailBlock trailBlock, Player player)
+    void CreateBlock(Vector3 position, Vector3 lookPosition, string blockId, Trail trail, Vector3 scale, TrailBlock trailBlock, Teams team)
     {
         var Block = Instantiate(trailBlock);
-        Block.Team = player.Team;
-        Block.ownerId = player.PlayerUUID;
-        Block.PlayerName = player.PlayerName;
+        Block.Team = team;
+        //Block.ownerId = player.PlayerUUID;
+        //Block.PlayerName = player.PlayerName;
         Block.transform.SetPositionAndRotation(position, Quaternion.LookRotation(lookPosition - transform.position, transform.forward));
         Block.transform.SetParent(container.transform, false);
         Block.ID = blockId;

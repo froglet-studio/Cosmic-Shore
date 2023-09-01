@@ -260,7 +260,7 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 0}
+      - m_Target: {fileID: 818204652}
         m_TargetAssemblyTypeName: StarWriter.Core.UI.MainMenu, Assembly-CSharp
         m_MethodName: OnClickSoar
         m_Mode: 1
@@ -789,7 +789,7 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 0}
+      - m_Target: {fileID: 818204652}
         m_TargetAssemblyTypeName: StarWriter.Core.UI.MainMenu, Assembly-CSharp
         m_MethodName: OnClickSport
         m_Mode: 1
@@ -1537,7 +1537,7 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 0}
+      - m_Target: {fileID: 818204652}
         m_TargetAssemblyTypeName: StarWriter.Core.UI.MainMenu, Assembly-CSharp
         m_MethodName: OnClickSmash
         m_Mode: 1
@@ -1906,7 +1906,7 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 0}
+      - m_Target: {fileID: 818204652}
         m_TargetAssemblyTypeName: StarWriter.Core.UI.MainMenu, Assembly-CSharp
         m_MethodName: OnClickSmash
         m_Mode: 1
@@ -2275,7 +2275,7 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 0}
+      - m_Target: {fileID: 818204652}
         m_TargetAssemblyTypeName: StarWriter.Core.UI.MainMenu, Assembly-CSharp
         m_MethodName: OnClickSoar
         m_Mode: 1
@@ -3908,8 +3908,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 961d59d9b69fd4f4db30229de0f202bf, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  miniGamesMenu: {fileID: 0}
-  DebugFirstAppLaunch: 0
+  DebugFirstAppLaunch: 1
   FirstAppLaunchScreen: {fileID: 948949973}
   NavBar: {fileID: 0}
 --- !u!1 &8981368959581090238
