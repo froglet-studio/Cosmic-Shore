@@ -24,13 +24,13 @@ public struct Cord
     // You can add methods related to the Cord behavior here, for example:
     public void UpdateVertexPosition(int vertexIndex, Vector3 offset)
     {
-        // Update position with momentum
-        Vertices[vertexIndex] += offset + Velocities[vertexIndex];
+        // add momentum
+        Vertices[vertexIndex] += offset + 2*Velocities[vertexIndex];
 
-        // Update velocity (basic momentum calculation, can be refined)
+        // conserve momentum
         Velocities[vertexIndex] += offset;
 
-        // Damping (to ensure it doesn't keep moving forever)
+        // Dampen momentum
         Velocities[vertexIndex] *= 0.97f;
     }
 }
@@ -189,12 +189,12 @@ public class SpawnableCord : SpawnableAbstractBase
         for (var cord = 0; cord < Cords.Count; cord++)
         {
             // Driven vertex is first
-            Cords[cord].Vertices[0] = 20 * Mathf.Sin((float)Time.frameCount / 100) * Vector3.forward;
-            Cords[cord].LineRendererInstance.SetPosition(0, Cords[cord].Vertices[0]);
+            Cords[cord].Vertices[50] = 20 * Mathf.Sin((float)Time.frameCount / 100) * Vector3.forward;
+            Cords[cord].LineRendererInstance.SetPosition(0, Cords[cord].Vertices[10]);
             //// check adjacent to driven
-            if (Mathf.Abs((Cords[cord].Vertices[1] - Cords[cord].Vertices[0]).sqrMagnitude - equilibriumDistanceSqr) > tolerance )
+            if (Mathf.Abs((Cords[cord].Vertices[51] - Cords[cord].Vertices[50]).sqrMagnitude - equilibriumDistanceSqr) > tolerance )
             {
-                CheckForEnergy(cord, 1);
+                CheckForEnergy(cord, 51);
             }
             //check the queue
             int initialCount = Mathf.Min(Cords[cord].EnergizedQueue.Count, 20);
