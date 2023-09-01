@@ -20,6 +20,9 @@ MonoBehaviour:
   SelectedIcon: {fileID: 21300000, guid: ff915aad644c07144a1d02cc4723b015, type: 3}
   PreviewClip: {fileID: 241334157148977051, guid: f48cd1df8d808014c8a8f4db1258d202,
     type: 3}
+  Pilots:
+  - {fileID: 11400000, guid: 6d520cd7eb8878b4aa2551e0591bc08d, type: 2}
+  - {fileID: 11400000, guid: 33dfe353bacfe9741a371ea3deaba88e, type: 2}
   MinPlayers: 1
   MaxPlayers: 1
   SceneName: MinigameCellularDuel

@@ -38,24 +38,6 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/MinigameCellularDuel.unity
     guid: a0793cb7cf4069b44ba82acfddb04f11
-  - enabled: 0
-    path: Assets/Scenes/Game_HighScore.unity
-    guid: 5e8d9932a4d84a1488c2dad96c8135dd
-  - enabled: 0
-    path: Assets/Scenes/Game_TestDesign.unity
-    guid: 511a0c2e48fb1fe43bfc4155eb90a9b2
-  - enabled: 0
-    path: Assets/Scenes/Game_TestControl.unity
-    guid: 205f64d457e811f4bac76d6502465124
-  - enabled: 0
-    path: Assets/Scenes/Game_TestNodeSurface.unity
-    guid: c951f5a21e4ddd140b5c17c124c31a16
-  - enabled: 0
-    path: Assets/Scenes/Game_TestWarp.unity
-    guid: 0897c1cf0786c314996a6e5364771a7d
-  - enabled: 1
-    path: Assets/Scenes/Ship Poly Benchmarking.unity
-    guid: 7b59fef9cf3129749a45d61c0996c8b5
   - enabled: 1
     path: Assets/Scenes/MinigameCellularBrawl2v2.unity
     guid: 78219fe3cb3c96b44a9e146ced331089
