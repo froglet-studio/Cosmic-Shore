@@ -1175,7 +1175,7 @@ MonoBehaviour:
   TrailSpawner: {fileID: 874579555101021522}
   ShipController: {fileID: 0}
   AutoPilot: {fileID: 0}
-  ShipData: {fileID: 0}
+  ShipStatus: {fileID: 0}
   nearFieldSkimmer: {fileID: 874579554510349383}
   OrientationHandle: {fileID: 1087614488730427270}
   shipGeometries:
@@ -1233,6 +1233,7 @@ MonoBehaviour:
   farCamDistance: -16
   AOEExplosionMaterial: {fileID: 0}
   AOEConicExplosionMaterial: {fileID: 0}
+  SkimmerMaterial: {fileID: 0}
 --- !u!114 &6964962696344697388
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1358,7 +1359,12 @@ MonoBehaviour:
   YDiff: 0
   raycastHeight: 2
   raycastWidth: 2
-  autoPilotEnabled: 0
+  AutoPilotEnabled: 0
+  LookingAtCrystal: 0
+  ram: 0
+  useAbility: 0
+  abilityCooldown: 0
+  ability: {fileID: 0}
   CrystalTransform: {fileID: 0}
   flowFieldData: {fileID: 0}
 --- !u!114 &5510672214890313987
@@ -1430,6 +1436,7 @@ MonoBehaviour:
   Stationary: 0
   ElevatedAmmoGain: 0
   ChargedBoostCharge: 1
+  AutoPilotEnabled: 0
   Attached: 0
   AttachedTrailBlock: {fileID: 0}
   GunsActive: 0

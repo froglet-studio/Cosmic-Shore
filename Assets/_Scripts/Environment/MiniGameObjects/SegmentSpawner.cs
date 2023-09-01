@@ -56,6 +56,7 @@ public class SegmentSpawner : MonoBehaviour
                 Destroy(block);
 
         NukeTheTrails();
+        
 
         normalizeWeights();
 
@@ -71,7 +72,7 @@ public class SegmentSpawner : MonoBehaviour
     public void NukeTheTrails()
     {
         trails.Clear();
-
+        spawnedItemCount = 0;
         if (SpawnedSegmentContainer == null) return;
 
         foreach (Transform child in SpawnedSegmentContainer.transform)
