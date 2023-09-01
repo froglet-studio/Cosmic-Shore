@@ -13,6 +13,7 @@ public struct Cord
     public LineRenderer LineRendererInstance;
     public Vector3[] Velocities; // Added for momentum
 
+
     public Cord(int verticesCount)
     {
         EnergizedQueue = new Queue<int>();
@@ -25,13 +26,13 @@ public struct Cord
     public void UpdateVertexPosition(int vertexIndex, Vector3 offset)
     {
         // add momentum
-        Vertices[vertexIndex] += offset + 2*Velocities[vertexIndex];
+        Vertices[vertexIndex] += offset + .5f*Velocities[vertexIndex];
 
         // conserve momentum
         Velocities[vertexIndex] += offset;
 
         // Dampen momentum
-        Velocities[vertexIndex] *= 0.97f;
+        Velocities[vertexIndex] *= 0.85f;
     }
 }
 
@@ -189,15 +190,17 @@ public class SpawnableCord : SpawnableAbstractBase
         for (var cord = 0; cord < Cords.Count; cord++)
         {
             // Driven vertex is first
-            Cords[cord].Vertices[50] = 20 * Mathf.Sin((float)Time.frameCount / 100) * Vector3.forward;
-            Cords[cord].LineRendererInstance.SetPosition(0, Cords[cord].Vertices[10]);
+            int drivenIndex = 15;
+            float amplitude = 20;
+            Cords[cord].Vertices[drivenIndex] = amplitude * Mathf.Sin((float)Time.frameCount / 100) * Vector3.forward;
+            Cords[cord].LineRendererInstance.SetPosition(drivenIndex, Cords[cord].Vertices[drivenIndex]);
             //// check adjacent to driven
-            if (Mathf.Abs((Cords[cord].Vertices[51] - Cords[cord].Vertices[50]).sqrMagnitude - equilibriumDistanceSqr) > tolerance )
+            if (Mathf.Abs((Cords[cord].Vertices[drivenIndex + 1] - Cords[cord].Vertices[drivenIndex]).sqrMagnitude - equilibriumDistanceSqr) > tolerance )
             {
-                CheckForEnergy(cord, 51);
+                CheckForEnergy(cord, drivenIndex + 1);
             }
             //check the queue
-            int initialCount = Mathf.Min(Cords[cord].EnergizedQueue.Count, 20);
+            int initialCount = Mathf.Min(Cords[cord].EnergizedQueue.Count, 300);
             
             for (int i = 0; i < initialCount; i++)
             {

@@ -347,7 +347,16 @@ namespace StarWriter.Core
                 return;
 
             foreach (var shipGeometry in shipGeometries)
-                shipGeometry.GetComponent<MeshRenderer>().material = ShipMaterial;
+            {
+                if (shipGeometry.GetComponent<SkinnedMeshRenderer>() != null) 
+                {
+                    var materials = shipGeometry.GetComponent<SkinnedMeshRenderer>().materials;
+                    materials[2] = ShipMaterial;
+                    shipGeometry.GetComponent<SkinnedMeshRenderer>().materials = materials;
+                }
+                else shipGeometry.GetComponent<MeshRenderer>().material = ShipMaterial;
+            }
+
         }
 
         //

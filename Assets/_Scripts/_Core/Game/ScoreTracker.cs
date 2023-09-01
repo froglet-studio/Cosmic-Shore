@@ -21,10 +21,14 @@ public class ScoreTracker : MonoBehaviour
     [HideInInspector] public TMP_Text ActivePlayerScoreDisplay;
 
     // Magic number to give more precision to time tracking as an integer value
-    [SerializeField] int TimePlayedScoreMultiplier = 1000;
+    
     [SerializeField] ScoringModes ScoringMode;
     [SerializeField] bool GolfRules;
     [HideInInspector] public GameCanvas GameCanvas;
+
+    [Header("Optional Configuration")]
+    [SerializeField] float TimePlayedScoreMultiplier = 1000f;
+    [SerializeField] float VolumeNormalizationQuotient = 145.65f;
 
     VerticalLayoutGroup Scoreboard;
     TMP_Text WinnerNameContainer;
@@ -86,7 +90,7 @@ public class ScoreTracker : MonoBehaviour
             {
                 case ScoringModes.HostileVolumeDestroyed:
                     if (StatsManager.Instance.playerStats.ContainsKey(currentPlayerName))
-                        score = playerScores[currentPlayerName] + StatsManager.Instance.playerStats[currentPlayerName].hostileVolumeDestroyed;
+                        score = playerScores[currentPlayerName] + StatsManager.Instance.playerStats[currentPlayerName].hostileVolumeDestroyed / VolumeNormalizationQuotient;
                     break;
                 case ScoringModes.VolumeCreated:
                     if (StatsManager.Instance.playerStats.ContainsKey(currentPlayerName))
@@ -127,7 +131,7 @@ public class ScoreTracker : MonoBehaviour
         {
             case ScoringModes.HostileVolumeDestroyed:
                 if (StatsManager.Instance.playerStats.ContainsKey(currentPlayerName))
-                    playerScores[currentPlayerName] += StatsManager.Instance.playerStats[currentPlayerName].volumeDestroyed;
+                    playerScores[currentPlayerName] += StatsManager.Instance.playerStats[currentPlayerName].volumeDestroyed / VolumeNormalizationQuotient;
                 StatsManager.Instance.ResetStats();
                 break;
             case ScoringModes.VolumeCreated:

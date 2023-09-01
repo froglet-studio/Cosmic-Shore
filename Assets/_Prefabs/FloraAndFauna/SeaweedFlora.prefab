@@ -56,7 +56,7 @@ MonoBehaviour:
   StraightLineLength: 100
   DifficultyAngle: 90
   InitializeOnStart: 1
-  numberOfSegments: 3
+  numberOfSegments: 1
 --- !u!1 &5127249480477956767
 GameObject:
   m_ObjectHideFlags: 0
@@ -106,7 +106,7 @@ MonoBehaviour:
   blockScale: {x: 3, y: 15, z: 1}
   lineMaterial: {fileID: 0}
   blockCount: 8
-  verticesCount: 100
+  verticesCount: 50
   length: 100
 --- !u!1 &6774738432424273872
 GameObject:
