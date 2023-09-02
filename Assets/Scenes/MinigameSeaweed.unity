@@ -1518,30 +1518,6 @@ Transform:
     type: 3}
   m_PrefabInstance: {fileID: 641529686}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &651298577 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 750320515283051588, guid: 494deef066b46a24a9b5226c4203833c,
-    type: 3}
-  m_PrefabInstance: {fileID: 1059225105}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
---- !u!114 &680398256 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 750320515314836783, guid: 494deef066b46a24a9b5226c4203833c,
-    type: 3}
-  m_PrefabInstance: {fileID: 1059225105}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1001 &719254185
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -3026,12 +3002,9 @@ MonoBehaviour:
   ActivePlayerScoreDisplay: {fileID: 2142481257}
   ScoringMode: 2
   GolfRules: 0
-  WinnerNameContainer: {fileID: 2087197976}
-  PlayerNameContainers:
-  - {fileID: 680398256}
-  PlayerScoreContainers:
-  - {fileID: 651298577}
+  GameCanvas: {fileID: 0}
   TimePlayedScoreMultiplier: 1
+  VolumeNormalizationQuotient: 145.65
 --- !u!114 &1078953708
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3044,9 +3017,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e50774bfa84874243a429c7097d42f36, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  StatDump: {fileID: 0}
   EndOfRoundStatContainers: []
-  WinnerText: {fileID: 0}
   nodeGame: 0
 --- !u!114 &1078953710
 MonoBehaviour:
@@ -3061,37 +3032,23 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   gameMode: 7
-  HUD: {fileID: 1420184493}
-  playerPrefab: {fileID: 1649340654}
+  NumberOfRounds: 1
   TurnMonitors: []
   ScoreTracker: {fileID: 1078953707}
-  AllowedShipTypes: 0100000002000000030000000400000009000000
-  NumberOfRounds: 1
+  GameCanvas: {fileID: 0}
+  playerPrefab: {fileID: 1649340654}
   PlayerOrigin: {fileID: 1192541910}
-  EndGameScreen: {fileID: 1059225107}
   ActivePlayer: {fileID: 0}
-  Countdown3: {fileID: 21300000, guid: f2202bfb9f07ec64d9cf9db6946d63bd, type: 3}
-  Countdown2: {fileID: 21300000, guid: 5bf5264d128e5d44c8f089e6ee61d206, type: 3}
-  Countdown1: {fileID: 21300000, guid: e349453ab9bba76458c019322f48e341, type: 3}
-  Countdown0: {fileID: 21300000, guid: 989d86426e9e0bd45a6b8c70d4443c33, type: 3}
+  Countdown3: {fileID: 21300000, guid: d930e6627cfa54e44bfcafde136ddb2f, type: 3}
+  Countdown2: {fileID: 21300000, guid: 63576b00b6277364caa9551fac9568cd, type: 3}
+  Countdown1: {fileID: 21300000, guid: dc92b9b5ae6760c40a727554bffd81a1, type: 3}
+  Countdown0: {fileID: 21300000, guid: 626c8dff36296a24099f550ae99caa89, type: 3}
   CountdownGrowScale: 1.5
   Crystal: {fileID: 1568959833}
   CrystalStartPosition: {x: 0, y: 0, z: -120}
   SegmentSpawner: {fileID: 1020381236}
   numberOfSegments: 10
   straightLineLength: 400
---- !u!114 &1081073957 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 1720411787076151334, guid: 491eb8350c5c6ab45a8b291192f9891a,
-    type: 3}
-  m_PrefabInstance: {fileID: 1720411787443196605}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: aead6eeaf9c47d84ca22d47ef6d17fd6, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1 &1082554870
 GameObject:
   m_ObjectHideFlags: 0
@@ -3319,12 +3276,12 @@ PrefabInstance:
         type: 3}
       propertyPath: onValueChanged.m_PersistentCalls.m_Calls.Array.data[1].m_Target
       value: 
-      objectReference: {fileID: 1189210873}
+      objectReference: {fileID: 0}
     - target: {fileID: 5395622961041479215, guid: 58dbda2a7cc479e4091d2abacbfd4d94,
         type: 3}
       propertyPath: onValueChanged.m_PersistentCalls.m_Calls.Array.data[2].m_Target
       value: 
-      objectReference: {fileID: 1189210874}
+      objectReference: {fileID: 0}
     - target: {fileID: 5395622961041479215, guid: 58dbda2a7cc479e4091d2abacbfd4d94,
         type: 3}
       propertyPath: onValueChanged.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
@@ -3879,18 +3836,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1188336692}
   m_CullTransparentMesh: 1
---- !u!1 &1189210873 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 3279706058311991819, guid: 58dbda2a7cc479e4091d2abacbfd4d94,
-    type: 3}
-  m_PrefabInstance: {fileID: 1129947265}
-  m_PrefabAsset: {fileID: 0}
---- !u!1 &1189210874 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 5883875573434693042, guid: 58dbda2a7cc479e4091d2abacbfd4d94,
-    type: 3}
-  m_PrefabInstance: {fileID: 1129947265}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1192541910
 GameObject:
   m_ObjectHideFlags: 0
@@ -5046,18 +4991,6 @@ RectTransform:
     type: 3}
   m_PrefabInstance: {fileID: 1720411787443196605}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &1420184493 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 1720411786157758736, guid: 491eb8350c5c6ab45a8b291192f9891a,
-    type: 3}
-  m_PrefabInstance: {fileID: 1720411787443196605}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1720411787443196606}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: aa08588b33df93c4fb866d88d19a5a42, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1 &1450883832
 GameObject:
   m_ObjectHideFlags: 0
@@ -5443,7 +5376,7 @@ PrefabInstance:
         type: 3}
       propertyPath: threeButtonPanel
       value: 
-      objectReference: {fileID: 1081073957}
+      objectReference: {fileID: 0}
     - target: {fileID: 2151207714166088012, guid: 8a9d12e43096881468feb22e39e9fbeb,
         type: 3}
       propertyPath: playerName
@@ -6463,18 +6396,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2026189433}
   m_CullTransparentMesh: 1
---- !u!114 &2087197976 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 750320516382177409, guid: 494deef066b46a24a9b5226c4203833c,
-    type: 3}
-  m_PrefabInstance: {fileID: 1059225105}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1 &2091254370
 GameObject:
   m_ObjectHideFlags: 0

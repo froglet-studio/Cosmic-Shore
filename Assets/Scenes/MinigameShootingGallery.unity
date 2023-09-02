@@ -659,12 +659,6 @@ RectTransform:
     type: 3}
   m_PrefabInstance: {fileID: 627644234}
   m_PrefabAsset: {fileID: 0}
---- !u!1 &627644236 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 750320515651948985, guid: 494deef066b46a24a9b5226c4203833c,
-    type: 3}
-  m_PrefabInstance: {fileID: 627644234}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &641529686
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1016,17 +1010,9 @@ MonoBehaviour:
   ActivePlayerScoreDisplay: {fileID: 0}
   ScoringMode: 0
   GolfRules: 0
-  WinnerNameContainer: {fileID: 0}
-  PlayerNameContainers:
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  PlayerScoreContainers:
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
+  GameCanvas: {fileID: 0}
+  TimePlayedScoreMultiplier: 1000
+  VolumeNormalizationQuotient: 145.65
 --- !u!114 &1078953708
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1039,9 +1025,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e50774bfa84874243a429c7097d42f36, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  StatDump: {fileID: 0}
   EndOfRoundStatContainers: []
-  WinnerText: {fileID: 0}
   nodeGame: 0
 --- !u!114 &1078953709
 MonoBehaviour:
@@ -1055,21 +1039,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 865ea29904676e74c87a52cc251d86ec, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  HUD: {fileID: 1665162032}
-  playerPrefab: {fileID: 1649340654}
+  gameMode: 4
+  NumberOfRounds: 1
   TurnMonitors:
   - {fileID: 1078953703}
   ScoreTracker: {fileID: 1078953707}
-  AllowedShipTypes: 04000000
-  NumberOfRounds: 1
+  GameCanvas: {fileID: 0}
+  playerPrefab: {fileID: 1649340654}
   PlayerOrigin: {fileID: 1192541910}
-  EndGameScreen: {fileID: 627644236}
   ActivePlayer: {fileID: 0}
-  gameMode: 4
-  Countdown3: {fileID: 21300000, guid: f2202bfb9f07ec64d9cf9db6946d63bd, type: 3}
-  Countdown2: {fileID: 21300000, guid: 5bf5264d128e5d44c8f089e6ee61d206, type: 3}
-  Countdown1: {fileID: 21300000, guid: e349453ab9bba76458c019322f48e341, type: 3}
-  Countdown0: {fileID: 21300000, guid: 989d86426e9e0bd45a6b8c70d4443c33, type: 3}
+  Countdown3: {fileID: 21300000, guid: d930e6627cfa54e44bfcafde136ddb2f, type: 3}
+  Countdown2: {fileID: 21300000, guid: 63576b00b6277364caa9551fac9568cd, type: 3}
+  Countdown1: {fileID: 21300000, guid: dc92b9b5ae6760c40a727554bffd81a1, type: 3}
+  Countdown0: {fileID: 21300000, guid: 626c8dff36296a24099f550ae99caa89, type: 3}
   CountdownGrowScale: 1.5
   Crystal: {fileID: 1568959833}
   CrystalStartPosition: {x: 0, y: 0, z: -120}
@@ -1735,7 +1717,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b5d3599573f5d3348865c8d5efe8c29f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  numberOfSegments: 1
   spawnableSegments:
   - {fileID: 675029770}
   - {fileID: 1440938882}
@@ -1746,10 +1727,12 @@ MonoBehaviour:
   - 0.75
   - 0.2
   Seed: 0
-  InitializeOnStart: 0
+  parent: {fileID: 0}
   origin: {x: 0, y: 0, z: 0}
   StraightLineLength: 400
   DifficultyAngle: 90
+  InitializeOnStart: 0
+  numberOfSegments: 1
 --- !u!114 &1568959833 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 6588436222817790495, guid: fced5b15da3ad1d41b4e3b7385609e37,
@@ -2153,18 +2136,6 @@ RectTransform:
     type: 3}
   m_PrefabInstance: {fileID: 1665162030}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &1665162032 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 1720411786157758736, guid: 491eb8350c5c6ab45a8b291192f9891a,
-    type: 3}
-  m_PrefabInstance: {fileID: 1665162030}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: aa08588b33df93c4fb866d88d19a5a42, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1001 &1901873740
 PrefabInstance:
   m_ObjectHideFlags: 0

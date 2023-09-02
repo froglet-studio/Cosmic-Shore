@@ -462,6 +462,7 @@ MonoBehaviour:
     scoreAmount: 1
     tailLengthIncreaseAmount: 0
     speedBuffAmount: 3.5
+    Element: 0
   sphereRadius: 400
   SpentCrystalPrefab: {fileID: 8491596592871572304, guid: f39596c98ed9d644a834f2fa27ec90ca,
     type: 3}
@@ -472,7 +473,6 @@ MonoBehaviour:
   AOEPrefab: {fileID: 0}
   maxExplosionScale: 0
   AOEExplosionMaterial: {fileID: 0}
-  element: 0
 --- !u!82 &430359315
 AudioSource:
   m_ObjectHideFlags: 0
@@ -7156,10 +7156,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ActivePlayerScoreDisplay: {fileID: 0}
-  TimePlayedScoreMultiplier: 1000
   ScoringMode: 6
   GolfRules: 0
   GameCanvas: {fileID: 0}
+  TimePlayedScoreMultiplier: 1000
+  VolumeNormalizationQuotient: 145.65
 --- !u!114 &1527998409
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7210,10 +7211,10 @@ MonoBehaviour:
   playerPrefab: {fileID: 433663843}
   PlayerOrigin: {fileID: 1984950343}
   ActivePlayer: {fileID: 0}
-  Countdown3: {fileID: 21300000, guid: f2202bfb9f07ec64d9cf9db6946d63bd, type: 3}
-  Countdown2: {fileID: 21300000, guid: 5bf5264d128e5d44c8f089e6ee61d206, type: 3}
-  Countdown1: {fileID: 21300000, guid: e349453ab9bba76458c019322f48e341, type: 3}
-  Countdown0: {fileID: 21300000, guid: 989d86426e9e0bd45a6b8c70d4443c33, type: 3}
+  Countdown3: {fileID: 21300000, guid: d930e6627cfa54e44bfcafde136ddb2f, type: 3}
+  Countdown2: {fileID: 21300000, guid: 63576b00b6277364caa9551fac9568cd, type: 3}
+  Countdown1: {fileID: 21300000, guid: dc92b9b5ae6760c40a727554bffd81a1, type: 3}
+  Countdown0: {fileID: 21300000, guid: 626c8dff36296a24099f550ae99caa89, type: 3}
   CountdownGrowScale: 1.5
 --- !u!1 &1829578212
 GameObject:
