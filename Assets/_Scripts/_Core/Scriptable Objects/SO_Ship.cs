@@ -1,12 +1,10 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Serialization;
-using UnityEngine.UI;
 
-[CreateAssetMenu(fileName = "New Ship", menuName = "TailGlider/Ship", order = 1)]
+[CreateAssetMenu(fileName = "New Ship", menuName = "CosmicShore/Ship", order = 1)]
 [System.Serializable]
-public class 
-    SO_Ship : ScriptableObject
+public class SO_Ship : ScriptableObject
 {
     [SerializeField] public ShipTypes Class;
 
@@ -15,11 +13,9 @@ public class
     [SerializeField] public Sprite Icon;
     [SerializeField] public Sprite SelectedIcon;
     [SerializeField] public Sprite PreviewImage;
-    [SerializeField] public SO_Pilot ChargePilot;
-    [SerializeField] public SO_Pilot MassPilot;
-    [SerializeField] public SO_Pilot SpacePilot;
-    [SerializeField] public SO_Pilot TimePilot;
-    [SerializeField] public List<SO_Pilot> Pilots;
+    [SerializeField] public Sprite TrailPreviewImage;
     [SerializeField] public List<SO_ShipAbility> Abilities;
-    [SerializeField] public List<SO_MiniGame> MiniGames;
+    [SerializeField] public List<SO_Pilot> Pilots;
+    [FormerlySerializedAs("MiniGames")]
+    [SerializeField] public List<SO_MiniGame> TrainingGames;
 }

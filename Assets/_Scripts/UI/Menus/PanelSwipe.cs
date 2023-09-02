@@ -1,3 +1,4 @@
+using StarWriter.Core;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -70,6 +71,11 @@ public class PanelSwipe : MonoBehaviour, IDragHandler, IEndDragHandler {
 
         if (ScreenIndex == currentScreen)
             return;
+
+        if (ScreenIndex == HOME)
+            GameManager.UnPauseGame();
+        else
+            GameManager.PauseGame();
 
         Vector3 newLocation = new Vector3(-ScreenIndex * Screen.width, 0, 0);
         panelLocation = newLocation;
@@ -146,7 +152,7 @@ public class PanelSwipe : MonoBehaviour, IDragHandler, IEndDragHandler {
         float t = 0f;
         while (t <= 1.0)
         {
-            t += Time.deltaTime / seconds;
+            t += Time.unscaledDeltaTime / seconds;
             transform.position = Vector3.Lerp(startpos, endpos, Mathf.SmoothStep(0f, 1f, t));
             yield return null;
         }

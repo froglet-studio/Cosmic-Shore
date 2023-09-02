@@ -1,5 +1,4 @@
 using StarWriter.Core.HangerBuilder;
-using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -24,18 +23,12 @@ public class MiniGamesMenu : MonoBehaviour
 
     List<Sprite> IntensityIcons = new();
     List<Sprite> PlayerCountIcons = new();
-    //List<SO_Ship> Ships;
     SO_Ship SelectedShip;
     SO_MiniGame SelectedGame;
-    int PlayerCount;
-    int DifficultyLevel;
-
 
     // Start is called before the first frame update
     void Start()
     {
-        //Ships = ShipList.ShipList;
-
         for (var i = 0; i < PlayerCountButtonContainer.transform.childCount; i++)
             PlayerCountIcons.Add(PlayerCountButtonContainer.transform.GetChild(i).gameObject.GetComponent<Image>().sprite);
 
@@ -43,7 +36,6 @@ public class MiniGamesMenu : MonoBehaviour
             IntensityIcons.Add(IntensityButtonContainer.transform.GetChild(i).gameObject.GetComponent<Image>().sprite);
 
         PopulateGameSelectionList();
-        //PopulateShipSelectionList();
     }
 
     IEnumerator SelectShipCoroutine(int index)
@@ -94,7 +86,6 @@ public class MiniGamesMenu : MonoBehaviour
         // Setup player count and difficulty buttons
 
         // TODO: this is kludgy
-        //PlayerCountButtonContainer.transform.GetChild(0).gameObject.GetComponent<Image>().sprite = PlayerCountButtonContainer.transform.GetChild(0).gameObject.GetComponent<Button>().spriteState.selectedSprite;
         for (var i = 0; i < PlayerCountButtonContainer.transform.childCount; i++)
         {
             Debug.Log($"SelectGame - SelectedGame.MaxPlayers:{SelectedGame.MaxPlayers}, i:{i}, i < SelectedGame.MaxPlayers:{i < SelectedGame.MaxPlayers}");
@@ -106,7 +97,6 @@ public class MiniGamesMenu : MonoBehaviour
         SetPlayerCount(1);
 
         // TODO: this is kludgy
-        //DifficultyButtonContainer.transform.GetChild(0).gameObject.GetComponent<Image>().sprite = DifficultyButtonContainer.transform.GetChild(0).gameObject.GetComponent<Button>().spriteState.selectedSprite;
         for (var i = 0; i < IntensityButtonContainer.transform.childCount; i++)
         {
             var difficulty = i + 1;
@@ -127,7 +117,6 @@ public class MiniGamesMenu : MonoBehaviour
     public void SetPlayerCount(int playerCount)
     {
         Debug.Log($"SetPlayerCount: {playerCount}");
-        PlayerCount = playerCount;
 
         for (var i = 0; i < PlayerCountButtonContainer.transform.childCount; i++)
             PlayerCountButtonContainer.transform.GetChild(i).gameObject.GetComponent<Image>().sprite = PlayerCountIcons[i];
@@ -141,7 +130,6 @@ public class MiniGamesMenu : MonoBehaviour
     public void SetDifficulty(int difficulty)
     {
         Debug.Log($"SetDifficulty: {difficulty}");
-        DifficultyLevel = difficulty;
 
         for (var i = 0; i < IntensityButtonContainer.transform.childCount; i++)
             IntensityButtonContainer.transform.GetChild(i).gameObject.GetComponent<Image>().sprite = IntensityIcons[i];

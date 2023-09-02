@@ -250,25 +250,27 @@ MonoBehaviour:
   ResourceSystem: {fileID: 0}
   Name: Dolphin
   ShipType: 2
-  TrailSpawner: {fileID: 874579555101021522}
+  TrailSpawner: {fileID: 874579555101021522, guid: 3cc1c31e8138b6448ae4264dd90d24ac,
+    type: 3}
   ShipController: {fileID: 0}
   AutoPilot: {fileID: 0}
   ShipStatus: {fileID: 0}
-  nearFieldSkimmer: {fileID: 874579554510349383}
-  OrientationHandle: {fileID: 1087614488730427270}
+  nearFieldSkimmer: {fileID: 874579554510349383, guid: 3cc1c31e8138b6448ae4264dd90d24ac,
+    type: 3}
+  OrientationHandle: {fileID: 1087614488730427270, guid: 3cc1c31e8138b6448ae4264dd90d24ac,
+    type: 3}
   shipGeometries:
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  head: {fileID: 0}
+  - {fileID: 3575141614157162765, guid: 3cc1c31e8138b6448ae4264dd90d24ac, type: 3}
+  - {fileID: 4295492772103483139, guid: 3cc1c31e8138b6448ae4264dd90d24ac, type: 3}
+  - {fileID: 4171567068332236364, guid: 3cc1c31e8138b6448ae4264dd90d24ac, type: 3}
+  - {fileID: 6514610936837954762, guid: 3cc1c31e8138b6448ae4264dd90d24ac, type: 3}
+  - {fileID: 1486522702244643102, guid: 3cc1c31e8138b6448ae4264dd90d24ac, type: 3}
+  - {fileID: 8694205063691012957, guid: 3cc1c31e8138b6448ae4264dd90d24ac, type: 3}
+  - {fileID: 1952334436257575078, guid: 3cc1c31e8138b6448ae4264dd90d24ac, type: 3}
+  - {fileID: 409797623915275520, guid: 3cc1c31e8138b6448ae4264dd90d24ac, type: 3}
+  - {fileID: 7104959138418958368, guid: 3cc1c31e8138b6448ae4264dd90d24ac, type: 3}
+  - {fileID: 6083787949041995376, guid: 3cc1c31e8138b6448ae4264dd90d24ac, type: 3}
+  - {fileID: 1476543139751871415, guid: 3cc1c31e8138b6448ae4264dd90d24ac, type: 3}
   AOEPrefab: {fileID: 9218889541719856748, guid: 2ae56847c6f549948a71f41eaf59f749,
     type: 3}
   farFieldSkimmer: {fileID: 0}
@@ -279,18 +281,32 @@ MonoBehaviour:
   blockChargeChange: 0
   boostMultiplier: 0
   boostFuelAmount: 0
+  inputEventShipActions:
+  - InputEvent: 2
+    ShipActions:
+    - {fileID: 1321571284989493840, guid: 3cc1c31e8138b6448ae4264dd90d24ac, type: 3}
+    - {fileID: 512306600173285592, guid: 3cc1c31e8138b6448ae4264dd90d24ac, type: 3}
+    - {fileID: 4734135289798570143, guid: 3cc1c31e8138b6448ae4264dd90d24ac, type: 3}
+  - InputEvent: 1
+    ShipActions:
+    - {fileID: 1321571284989493840, guid: 3cc1c31e8138b6448ae4264dd90d24ac, type: 3}
+    - {fileID: 512306600173285592, guid: 3cc1c31e8138b6448ae4264dd90d24ac, type: 3}
+    - {fileID: 4734135289798570143, guid: 3cc1c31e8138b6448ae4264dd90d24ac, type: 3}
+  - InputEvent: 3
+    ShipActions:
+    - {fileID: 2525174765376973701, guid: 3cc1c31e8138b6448ae4264dd90d24ac, type: 3}
   maxSpeedStraightActions: []
   minSpeedStraightActions: []
   leftStickShipActions:
-  - {fileID: 1321571284989493840}
-  - {fileID: 512306600173285592}
-  - {fileID: 4734135289798570143}
+  - {fileID: 1321571284989493840, guid: 3cc1c31e8138b6448ae4264dd90d24ac, type: 3}
+  - {fileID: 512306600173285592, guid: 3cc1c31e8138b6448ae4264dd90d24ac, type: 3}
+  - {fileID: 4734135289798570143, guid: 3cc1c31e8138b6448ae4264dd90d24ac, type: 3}
   rightStickShipActions:
-  - {fileID: 1321571284989493840}
-  - {fileID: 512306600173285592}
-  - {fileID: 4734135289798570143}
+  - {fileID: 1321571284989493840, guid: 3cc1c31e8138b6448ae4264dd90d24ac, type: 3}
+  - {fileID: 512306600173285592, guid: 3cc1c31e8138b6448ae4264dd90d24ac, type: 3}
+  - {fileID: 4734135289798570143, guid: 3cc1c31e8138b6448ae4264dd90d24ac, type: 3}
   flipShipActions:
-  - {fileID: 2525174765376973701}
+  - {fileID: 2525174765376973701, guid: 3cc1c31e8138b6448ae4264dd90d24ac, type: 3}
   idleShipActions: []
   button1ShipActions: []
   button2ShipActions: []

@@ -1,3 +1,4 @@
+using StarWriter.Core;
 using StarWriter.Core.IO;
 using System.Collections;
 using System.Collections.Generic;
@@ -50,6 +51,8 @@ public class MiniGame : MonoBehaviour
         foreach (var turnMonitor in TurnMonitors)
             if (turnMonitor is TimeBasedTurnMonitor tbtMonitor)
                 tbtMonitor.display = HUD.RoundTimeDisplay;
+
+        GameManager.UnPauseGame();
     }
 
     protected virtual void Start()

@@ -4102,24 +4102,6 @@ PrefabInstance:
       propertyPath: m_Name
       value: Hangar
       objectReference: {fileID: 0}
-    - target: {fileID: 302356026468653294, guid: fdbd97f79a7aec14f8fadd5589780a74,
-        type: 3}
-      propertyPath: SoarPilot
-      value: 
-      objectReference: {fileID: 11400000, guid: 5ac362560a34d414e835db83e82daa08,
-        type: 2}
-    - target: {fileID: 302356026468653294, guid: fdbd97f79a7aec14f8fadd5589780a74,
-        type: 3}
-      propertyPath: SmashPilot
-      value: 
-      objectReference: {fileID: 11400000, guid: 6d520cd7eb8878b4aa2551e0591bc08d,
-        type: 2}
-    - target: {fileID: 302356026468653294, guid: fdbd97f79a7aec14f8fadd5589780a74,
-        type: 3}
-      propertyPath: SportPilot
-      value: 
-      objectReference: {fileID: 11400000, guid: 6d520cd7eb8878b4aa2551e0591bc08d,
-        type: 2}
     - target: {fileID: 302356026468653295, guid: fdbd97f79a7aec14f8fadd5589780a74,
         type: 3}
       propertyPath: m_RootOrder
@@ -6460,6 +6442,10 @@ PrefabInstance:
       propertyPath: NavBar
       value: 
       objectReference: {fileID: 1111146380}
+    - target: {fileID: 818204652, guid: 73d007d94e8ef054880244540d18db25, type: 3}
+      propertyPath: DebugFirstAppLaunch
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 8981368958740257785, guid: 73d007d94e8ef054880244540d18db25,
         type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target

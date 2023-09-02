@@ -3,7 +3,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.Video;
 
-[CreateAssetMenu(fileName = "New MiniGame", menuName = "TailGlider/MiniGame", order = 0)]
+[CreateAssetMenu(fileName = "New MiniGame", menuName = "CosmicShore/MiniGame", order = 0)]
 [System.Serializable]
 public class SO_MiniGame : ScriptableObject
 {

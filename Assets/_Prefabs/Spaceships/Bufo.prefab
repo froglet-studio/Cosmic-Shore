@@ -1043,7 +1043,6 @@ MonoBehaviour:
   - {fileID: 7868440465732788152}
   - {fileID: 1652545777288694586}
   - {fileID: 3907232763667441001}
-  head: {fileID: 0}
   AOEPrefab: {fileID: 0}
   farFieldSkimmer: {fileID: 0}
   crystalImpactEffects: 0b00000003000000
@@ -1053,6 +1052,16 @@ MonoBehaviour:
   blockChargeChange: 0
   boostMultiplier: 2
   boostFuelAmount: 0
+  inputEventShipActions:
+  - InputEvent: 6
+    ShipActions:
+    - {fileID: 1635180674948911687}
+  - InputEvent: 7
+    ShipActions:
+    - {fileID: 8019026085058197081}
+  - InputEvent: 8
+    ShipActions:
+    - {fileID: 7682765118055047933}
   maxSpeedStraightActions: []
   minSpeedStraightActions: []
   leftStickShipActions: []
@@ -1081,6 +1090,7 @@ MonoBehaviour:
   farCamDistance: -50
   AOEExplosionMaterial: {fileID: 0}
   AOEConicExplosionMaterial: {fileID: 0}
+  SkimmerMaterial: {fileID: 0}
 --- !u!114 &6964962696344697388
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1186,7 +1196,12 @@ MonoBehaviour:
   YDiff: 0
   raycastHeight: 2
   raycastWidth: 2
-  autoPilotEnabled: 0
+  AutoPilotEnabled: 0
+  LookingAtCrystal: 0
+  ram: 0
+  useAbility: 0
+  abilityCooldown: 0
+  ability: {fileID: 0}
   CrystalTransform: {fileID: 0}
   flowFieldData: {fileID: 0}
 --- !u!114 &7279892912462638078

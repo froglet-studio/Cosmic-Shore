@@ -1382,7 +1382,6 @@ MonoBehaviour:
   - {fileID: 2680414608666913828}
   - {fileID: 5564509299452962279}
   - {fileID: 4183365116208841285}
-  head: {fileID: 0}
   AOEPrefab: {fileID: 2728798890556433942, guid: f5ecfb9923155a84c860975d559b2714,
     type: 3}
   farFieldSkimmer: {fileID: 3138628630497430536}
@@ -1393,6 +1392,13 @@ MonoBehaviour:
   blockChargeChange: 0
   boostMultiplier: 2
   boostFuelAmount: 0
+  inputEventShipActions:
+  - InputEvent: 2
+    ShipActions:
+    - {fileID: 867704553499413969}
+  - InputEvent: 1
+    ShipActions:
+    - {fileID: 867704553499413969}
   maxSpeedStraightActions: []
   minSpeedStraightActions: []
   leftStickShipActions:

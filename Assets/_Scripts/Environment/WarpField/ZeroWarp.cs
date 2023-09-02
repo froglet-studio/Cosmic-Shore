@@ -1,10 +1,9 @@
-using System.Collections.Generic;
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "ZeroWarpData", menuName = "TailGlider/Warp/ZeroWarp", order = 10)]
-[System.Serializable] public class ZeroWarp : WarpFieldSO
+[CreateAssetMenu(fileName = "ZeroWarpData", menuName = "CosmicShore/Warp/ZeroWarp", order = 30)]
+[System.Serializable]
+public class ZeroWarp : WarpFieldSO
 {
-
     public ZeroWarp()
     {
         fieldThickness = 200;

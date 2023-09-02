@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "New Ship List", menuName = "TailGlider/ShipList", order = 10)]
+[CreateAssetMenu(fileName = "New Ship List", menuName = "CosmicShore/ShipList", order = 12)]
 [System.Serializable]
 public class SO_ShipList : ScriptableObject
 {

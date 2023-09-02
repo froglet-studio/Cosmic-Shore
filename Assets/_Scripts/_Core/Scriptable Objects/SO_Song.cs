@@ -1,18 +1,11 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "New Song", menuName = "TailGlider/Song", order = 5)]
+[CreateAssetMenu(fileName = "New Song", menuName = "CosmicShore/Song", order = 20)]
 public class SO_Song : ScriptableObject
 {
-    [SerializeField]
-    private AudioClip clip;
-    
-    [SerializeField]
-    private string decription;
-    [SerializeField]
-    private string author;
-    
+    [SerializeField] AudioClip clip;
+    [SerializeField] string decription;
+    [SerializeField] string author;
 
     public string Decription { get => decription; set => decription = value; }
     public string Author { get => author; set => author = value; }

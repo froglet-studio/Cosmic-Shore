@@ -108,11 +108,10 @@ public class HangarMenu : MonoBehaviour
             PilotSelectionContainer.GetChild(i).gameObject.SetActive(false);
 
         // Reactivate based on the number of abilities for the selected ship
-        var pilots = new List<SO_Pilot>() { SelectedShip.ChargePilot, SelectedShip.MassPilot, SelectedShip.SpacePilot, SelectedShip.TimePilot };
         for (var i = 0; i < SelectedShip.Pilots.Count; i++)
         {
             var selectionIndex = i;
-            var pilot = pilots[i];
+            var pilot = SelectedShip.Pilots[i];
             Debug.Log($"Populating Pilot Select List: {pilot.Name}");
             var pilotSelection = PilotSelectionContainer.GetChild(i).gameObject;
             pilotSelection.SetActive(true);
@@ -192,34 +191,6 @@ public class HangarMenu : MonoBehaviour
         // populate the games list with the one's games
         PopulateAbilitySelectionList();
         PopulatePilotSelectionList();
-    }
-
-    // TODO: P0 - pull this - maybe goes in mini game menu 
-    /* Sets which Pilot to play as */
-    /// <summary>
-    /// Set which Pilot to enter the game as 
-    /// </summary>
-    /// <param name="elementInt"></param>
-    public void ChoosePilot(int elementInt)
-    {
-        var element = (Element) elementInt;
-        switch (element)
-        {
-            case Element.Charge:
-                SelectedPilot = SelectedShip.ChargePilot;
-                break;
-            case Element.Mass:
-                SelectedPilot = SelectedShip.MassPilot;
-                break;
-            case Element.Space:
-                SelectedPilot = SelectedShip.SpacePilot;
-                break;
-            case Element.Time:
-                SelectedPilot = SelectedShip.TimePilot;
-                break;
-        }
-
-        Hangar.Instance.SetPlayerPilot(SelectedPilot);
     }
 
     public void SelectAbility(int index)

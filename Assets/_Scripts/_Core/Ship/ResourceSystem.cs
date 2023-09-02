@@ -205,6 +205,10 @@ namespace StarWriter.Core
         /*
          * TODO: we may want to move everything below this line to a new component
          */
+
+        public delegate void OnChargeLevelChange();
+        public event OnChargeLevelChange onChargeLevelChange;
+
         [HideInInspector] public ResourceDisplay ChargeLevelDisplay;
         [HideInInspector] public ResourceDisplay MassLevelDisplay;
         [HideInInspector] public ResourceDisplay SpaceLevelDisplay;
@@ -231,6 +235,8 @@ namespace StarWriter.Core
 
                 if (ChargeLevelDisplay != null)
                     ChargeLevelDisplay.UpdateDisplay(chargeLevel);
+
+                onChargeLevelChange?.Invoke();
             }
         }
         public int MassLevel
@@ -242,6 +248,8 @@ namespace StarWriter.Core
 
                 if (MassLevelDisplay != null)
                     MassLevelDisplay.UpdateDisplay(massLevel);
+
+
             }
         }
         public int SpaceLevel

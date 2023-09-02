@@ -1,10 +1,9 @@
-﻿using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 
-[CreateAssetMenu(fileName = "ZeroFlowData", menuName = "TailGlider/Flow/ZeroFlow", order = 10)]
-[System.Serializable] public class ZeroFlow : FlowFieldSO
+[CreateAssetMenu(fileName = "ZeroFlowData", menuName = "CosmicShore/Flow/ZeroFlow", order = 30)]
+[System.Serializable] 
+public class ZeroFlow : FlowFieldSO
 {
-
     public ZeroFlow()
     {
         fieldThickness = 200;
@@ -18,6 +17,3 @@ using UnityEngine;
         return Vector3.zero;
     }
 }
-
-// v.x = 5.*exp(-pow(p.y/2.-10.,2.)/10.)-5.*exp(-pow(p.y/2.+10.,2.)/10.);
-//v.y = -5.* exp(-pow(p.x - 10., 2.) / 10.) + 5.* exp(-pow(p.x + 10., 2.) / 10.);

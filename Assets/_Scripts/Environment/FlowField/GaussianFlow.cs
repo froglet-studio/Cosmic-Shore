@@ -1,9 +1,10 @@
-﻿using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 
-[CreateAssetMenu(fileName = "GaussianFlowData", menuName = "TailGlider/Flow/GaussianFlow", order = 10)]
-[System.Serializable] public class GaussianFlow : FlowFieldSO
+[CreateAssetMenu(fileName = "GaussianFlowData", menuName = "CosmicShore/Flow/GaussianFlow", order = 30)]
+[System.Serializable]
+public class GaussianFlow : FlowFieldSO
 {
+    public float sigma = 100;
 
     public GaussianFlow()
     {
@@ -11,12 +12,7 @@ using UnityEngine;
         fieldWidth = 200;
         fieldHeight = 700;
         fieldMax = .7f;
-        
     }
-
-    public float sigma = 100;
-    
-
 
     override public Vector3 FlowVector(Transform node)
     {
@@ -34,6 +30,3 @@ using UnityEngine;
         //else return Vector3.zero;
     }
 }
-
-// v.x = 5.*exp(-pow(p.y/2.-10.,2.)/10.)-5.*exp(-pow(p.y/2.+10.,2.)/10.);
-//v.y = -5.* exp(-pow(p.x - 10., 2.) / 10.) + 5.* exp(-pow(p.x + 10., 2.) / 10.);

@@ -274,11 +274,11 @@ GameObject:
   - component: {fileID: 5928382658856804067}
   - component: {fileID: 6964962696344697388}
   - component: {fileID: 874579555101021522}
-  - component: {fileID: 874579555101021523}
   - component: {fileID: 874579555101021527}
   - component: {fileID: 3440187540988767646}
   - component: {fileID: 1435252848482629424}
   - component: {fileID: 6293426128044408357}
+  - component: {fileID: 6441696348568773771}
   m_Layer: 0
   m_Name: MenuManta
   m_TagString: Untagged
@@ -333,40 +333,25 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 909fb5cbbca8c4549b5a9df56d837e55, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  trail: {fileID: 4563009547826722997, guid: 21757137a3002b64096be5813c054a5d, type: 3}
+  trailBlock: {fileID: 0}
   skimmer: {fileID: 0}
+  waitTillOutsideSkimmer: 1
+  shielded: 0
   offset: 0
   initialWavelength: 5
   minWavelength: 1
   gap: 1
-  trailLength: 40
+  InnerDimensions: {x: 0, y: 0, z: 0}
   defaultWaitTime: 0.5
   waitTime: 0.5
   startDelay: 2
   warp: 0
+  spawnerEnabled: 1
   MaxNearbyBlockCount: 10
   minBlockScale: 1
   maxBlockScale: 4
---- !u!114 &874579555101021523
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6417075533431866457}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9846c9cd6cfac424797ca640ebcb7a04, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  InputSpeed: 1
-  SpeedMultiplier: 1
-  Speed: 0
-  Boosting: 0
-  BoostDecaying: 0
-  Drifting: 0
-  VelocityDirection: {x: 0, y: 0, z: 0}
-  blockRotation: {x: 0, y: 0, z: 0, w: 0}
+  XScaler: 1
+  YScaler: 1
 --- !u!114 &874579555101021527
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -379,50 +364,58 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a273abd40c7104c4392188723ab929d6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  impactProperties: []
+  cameraManager: {fileID: 0}
+  InputController: {fileID: 0}
+  ResourceSystem: {fileID: 0}
   Name: GreenMantaAI
   ShipType: 6
+  TrailSpawner: {fileID: 874579555101021522}
+  ShipController: {fileID: 0}
+  AutoPilot: {fileID: 0}
+  ShipStatus: {fileID: 0}
   nearFieldSkimmer: {fileID: 874579554510349383}
-  farFieldSkimmer: {fileID: 0}
   OrientationHandle: {fileID: 4343935266849732334}
-  AOEPrefab: {fileID: 2728798890556433942, guid: 4a855af160021d241b8c1ac70cf2d792,
-    type: 3}
   shipGeometries:
   - {fileID: 7989725769420682486}
   - {fileID: 956471339697806072}
   - {fileID: 2306761366267364778}
-  TrailSpawner: {fileID: 874579555101021522}
-  head: {fileID: 0}
+  AOEPrefab: {fileID: 2728798890556433942, guid: 4a855af160021d241b8c1ac70cf2d792,
+    type: 3}
+  farFieldSkimmer: {fileID: 0}
   crystalImpactEffects: 0500000006000000
-  trailBlockImpactEffects: 03000000
-  boostMultiplier: 4
-  boostFuelAmount: -0.01
-  rotationScaler: 130
-  rotationThrottleScaler: 0
   minExplosionScale: 100
   maxExplosionScale: 500
-  blockFuelChange: 0.1
-  closeCamDistance: 0
-  farCamDistance: 0
-  cameraGrowthRate: 1
-  cameraShrinkRate: 1
+  trailBlockImpactEffects: 03000000
+  blockChargeChange: 0
+  boostMultiplier: 4
+  boostFuelAmount: -0.01
+  maxSpeedStraightActions: []
+  minSpeedStraightActions: []
+  leftStickShipActions: []
+  rightStickShipActions: []
+  flipShipActions: []
+  idleShipActions: []
+  button1ShipActions: []
+  button2ShipActions: []
+  button3ShipActions: []
+  LevelEffects: 
+  minGap: 1
+  maxGap: 1
   minFarFieldSkimmerScale: 100
   maxFarFieldSkimmerScale: 200
   minNearFieldSkimmerScale: 15
   maxNearFieldSkimmerScale: 100
-  skimmerGrowthRate: 1
-  skimmerShrinkRate: 1
-  minGap: 1
-  maxGap: 1
-  throttle: 50
-  BoostDecayGrowthRate: 0.03
-  MaxBoostDecay: 10
-  fullSpeedStraightEffects: 
-  rightStickEffects: 
-  leftStickEffects: 
-  flipEffects: 
-  idleEffects: 
-  controlOverrides: 
-  inputController: {fileID: 0}
+  minProjectileScale: 1
+  maxProjectileScale: 10
+  minProjectileBlockScale: {x: 1.5, y: 1.5, z: 3}
+  maxProjectileBlockScale: {x: 1.5, y: 1.5, z: 30}
+  ControlOverrides: 
+  closeCamDistance: 0
+  farCamDistance: 0
+  AOEExplosionMaterial: {fileID: 0}
+  AOEConicExplosionMaterial: {fileID: 0}
+  SkimmerMaterial: {fileID: 0}
 --- !u!114 &3440187540988767646
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -435,16 +428,31 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a58bf4fb65afa704194fe9e28e67d58d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  DifficultyLevel: 0
-  defaultThrottle: 30
-  defaultLerp: 40
-  throttleIncrease: 5
-  lerpIncrease: 17
+  SkillLevel: 0
+  defaultThrottleHigh: 0.6
+  defaultThrottleLow: 0.6
+  defaultAggressivenessHigh: 0.035
+  defaultAggressivenessLow: 0.035
+  throttleIncreaseHigh: 0.001
+  throttleIncreaseLow: 0.001
+  avoidanceHigh: 2.5
+  avoidanceLow: 2.5
+  aggressivenessIncreaseHigh: 0.001
+  aggressivenessIncreaseLow: 0.001
   throttle: 0
-  lerp: 0
-  avoidance: 23
+  aggressiveness: 0
+  XSum: 0
+  YSum: 0
+  XDiff: 0
+  YDiff: 0
   raycastHeight: 2
   raycastWidth: 2
+  AutoPilotEnabled: 0
+  LookingAtCrystal: 0
+  ram: 0
+  useAbility: 0
+  abilityCooldown: 0
+  ability: {fileID: 0}
   CrystalTransform: {fileID: 0}
   flowFieldData: {fileID: 0}
 --- !u!114 &1435252848482629424
@@ -459,11 +467,37 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 737294a573670f74389a7af68df314d5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  maxCharge: 1
-  initialCharge: 1
+  Resources: 
+  usesBoost: 0
+  usesLevels: 0
+  usesAmmo: 0
+  usesCharge: 0
+  gainsAmmo: 0
+  ammoGainRate: 0.01
+  elevatedAmmoGainRate: 0.03
+  maxBoost: 1
+  initialBoost: 1
   maxLevel: 1
   initialLevel: 0
+  maxAmmo: 1
+  initialAmmo: 1
+  maxCharge: 1
+  initialCharge: 1
+  BoostDisplay: {fileID: 0}
+  LevelDisplay: {fileID: 0}
+  AmmoDisplay: {fileID: 0}
   ChargeDisplay: {fileID: 0}
+  MassDisplay: {fileID: 0}
+  SpaceDisplay: {fileID: 0}
+  TimeDisplay: {fileID: 0}
+  ChargeLevelDisplay: {fileID: 0}
+  MassLevelDisplay: {fileID: 0}
+  SpaceLevelDisplay: {fileID: 0}
+  TimeLevelDisplay: {fileID: 0}
+  InitialChargeLevel: 0
+  InitialMassLevel: 0
+  InitialSpaceLevel: 0
+  InitialTimeLevel: 0
 --- !u!114 &6293426128044408357
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -476,13 +510,46 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 46ca128b16ccbfd42be69beb8b52be77, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  brakeThreshold: 0.65
+  lerpAmount: 2
+  smallLerpAmount: 0.7
   Fusilage: {fileID: 6031211562208651239}
   LeftWing: {fileID: 8620160303732317513}
   RightWing: {fileID: 4377882507933526056}
+  ThrusterTopRight: {fileID: 0}
+  ThrusterTopLeft: {fileID: 0}
+  ThrusterBottomLeft: {fileID: 0}
+  ThrusterBottomRight: {fileID: 0}
   animationScaler: 25
   yawAnimationScaler: 80
-  lerpAmount: 2
-  smallLerpAmount: 0.7
+--- !u!114 &6441696348568773771
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 61d08a99952fdc44d96f926228873c0c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  Speed: 0
+  Boosting: 0
+  ChargedBoostDischarging: 0
+  Drifting: 0
+  Portrait: 0
+  ShowThreeButtonPanel: 0
+  LiveProjectiles: 0
+  Stationary: 0
+  ElevatedAmmoGain: 0
+  ChargedBoostCharge: 1
+  AutoPilotEnabled: 0
+  Attached: 0
+  AttachedTrailBlock: {fileID: 0}
+  GunsActive: 0
+  Course: {x: 0, y: 0, z: 1}
+  blockRotation: {x: 0, y: 0, z: 0, w: 0}
 --- !u!1 &7989725769420682486
 GameObject:
   m_ObjectHideFlags: 0

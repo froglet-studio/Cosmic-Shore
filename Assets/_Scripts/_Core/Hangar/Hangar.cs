@@ -22,39 +22,12 @@ namespace StarWriter.Core.HangerBuilder
         [SerializeField] public SO_Pilot SmashPilot;
         [SerializeField] public SO_Pilot SportPilot;
 
-        // TODO: P1 - clean this up
-        [SerializeField] Material GreenTeamMaterial;
-        [SerializeField] Material RedTeamMaterial;
-        [SerializeField] Material BlueTeamMaterial;
-        [SerializeField] Material YellowTeamMaterial;
-        [SerializeField] Material GreenTeamBlockMaterial;
-        [SerializeField] Material RedTeamBlockMaterial;
-        [SerializeField] Material BlueTeamBlockMaterial;
-        [SerializeField] Material YellowTeamBlockMaterial;
-        [SerializeField] Material GreenTeamShieldedBlockMaterial;
-        [SerializeField] Material RedTeamShieldedBlockMaterial;
-        [SerializeField] Material BlueTeamShieldedBlockMaterial;
-        [SerializeField] Material YellowTeamShieldedBlockMaterial;
-        [SerializeField] Material GreenTeamAOEExplosionMaterial;
-        [SerializeField] Material RedTeamAOEExplosionMaterial;
-        [SerializeField] Material BlueTeamAOEExplosionMaterial;
-        [SerializeField] Material YellowTeamAOEExplosionMaterial;
-        [SerializeField] Material GreenTeamAOEConicExplosionMaterial;
-        [SerializeField] Material RedTeamAOEConicExplosionMaterial;
-        [SerializeField] Material BlueTeamAOEConicExplosionMaterial;
-        [SerializeField] Material YellowTeamAOEConicExplosionMaterial;
-        [SerializeField] Material GreenTeamSkimmerMaterial;
-        [SerializeField] Material RedTeamSkimmerMaterial;
-        [SerializeField] Material BlueTeamSkimmerMaterial;
-        [SerializeField] Material YellowTeamSkimmerMaterial;
+        [SerializeField] SO_MaterialSet GreenTeamMaterialSet;
+        [SerializeField] SO_MaterialSet RedTeamMaterialSet;
+        [SerializeField] SO_MaterialSet BlueTeamMaterialSet;
+        [SerializeField] SO_MaterialSet GoldTeamMaterialSet;
 
-        Dictionary<Teams, Material> TeamsMaterials;
-        Dictionary<Teams, Material> TeamBlockMaterials;
-        Dictionary<Teams, Material> TeamShieldedBlockMaterials;
-        Dictionary<Teams, Material> TeamAOEExplosionMaterials;
-        Dictionary<Teams, Material> TeamAOEConicExplosionMaterials;
-        Dictionary<Teams, Material> TeamSkimmerMaterials;
-
+        Dictionary<Teams, SO_MaterialSet> TeamMaterialSets;
         Dictionary<string, Ship> ships = new();
         Dictionary<ShipTypes, Ship> shipTypeMap = new();
 
@@ -102,47 +75,12 @@ namespace StarWriter.Core.HangerBuilder
             if (PlayerPrefs.HasKey(SelectedShipPlayerPrefKey))
                 PlayerShipType = (ShipTypes) PlayerPrefs.GetInt(SelectedShipPlayerPrefKey);
 
-            TeamsMaterials = new Dictionary<Teams, Material>() {
-                { Teams.Green, GreenTeamMaterial },
-                { Teams.Red,   RedTeamMaterial },
-                { Teams.Blue,  BlueTeamMaterial },
-                { Teams.Yellow,  YellowTeamMaterial },
-                { Teams.Unassigned,  BlueTeamMaterial },
-            };
-            TeamBlockMaterials = new Dictionary<Teams, Material>() {
-                { Teams.Green, GreenTeamBlockMaterial },
-                { Teams.Red,   RedTeamBlockMaterial },
-                { Teams.Blue,  BlueTeamBlockMaterial },
-                { Teams.Yellow,  YellowTeamBlockMaterial },
-                { Teams.Unassigned,  BlueTeamBlockMaterial },
-            };
-            TeamShieldedBlockMaterials = new Dictionary<Teams, Material>() {
-                { Teams.Green, GreenTeamShieldedBlockMaterial },
-                { Teams.Red,   RedTeamShieldedBlockMaterial},
-                { Teams.Blue,  BlueTeamShieldedBlockMaterial},
-                { Teams.Yellow, YellowTeamShieldedBlockMaterial},
-                { Teams.Unassigned,  BlueTeamShieldedBlockMaterial},
-            };
-            TeamAOEExplosionMaterials = new Dictionary<Teams, Material>() {
-                { Teams.Green, GreenTeamAOEExplosionMaterial },
-                { Teams.Red,   RedTeamAOEExplosionMaterial },
-                { Teams.Blue,  BlueTeamAOEExplosionMaterial },
-                { Teams.Yellow,  YellowTeamAOEExplosionMaterial },
-                { Teams.Unassigned,  BlueTeamAOEExplosionMaterial },
-            };
-            TeamAOEConicExplosionMaterials = new Dictionary<Teams, Material>() {
-                { Teams.Green, GreenTeamAOEConicExplosionMaterial },
-                { Teams.Red,   RedTeamAOEConicExplosionMaterial },
-                { Teams.Blue,  BlueTeamAOEConicExplosionMaterial },
-                { Teams.Yellow,  YellowTeamAOEConicExplosionMaterial },
-                { Teams.Unassigned,  BlueTeamAOEConicExplosionMaterial },
-            };
-            TeamSkimmerMaterials = new Dictionary<Teams, Material>() {
-                { Teams.Green, GreenTeamSkimmerMaterial },
-                { Teams.Red,   RedTeamSkimmerMaterial },
-                { Teams.Blue,  BlueTeamSkimmerMaterial },
-                { Teams.Yellow,  YellowTeamSkimmerMaterial },
-                { Teams.Unassigned,  BlueTeamSkimmerMaterial },
+            TeamMaterialSets = new() {
+                { Teams.Green, GreenTeamMaterialSet },
+                { Teams.Red,   RedTeamMaterialSet },
+                { Teams.Blue,  BlueTeamMaterialSet },
+                { Teams.Yellow,  GoldTeamMaterialSet },
+                { Teams.Unassigned,  BlueTeamMaterialSet },
             };
 
             if (PlayerTeam == Teams.None)
@@ -178,12 +116,12 @@ namespace StarWriter.Core.HangerBuilder
             if (PlayerPilot != null)
                 ship.SetPilot(PlayerPilot);
 
-            ship.SetShipMaterial(TeamsMaterials[team]);
-            ship.SetBlockMaterial(TeamBlockMaterials[team]);
-            ship.SetShieldedBlockMaterial(TeamShieldedBlockMaterials[team]);
-            ship.SetAOEExplosionMaterial(TeamAOEExplosionMaterials[team]);
-            ship.SetAOEConicExplosionMaterial(TeamAOEConicExplosionMaterials[team]);
-            ship.SetSkimmerMaterial(TeamSkimmerMaterials[team]);
+            ship.SetShipMaterial(TeamMaterialSets[team].ShipMaterial);
+            ship.SetBlockMaterial(TeamMaterialSets[team].BlockMaterial);
+            ship.SetShieldedBlockMaterial(TeamMaterialSets[team].ShieldedBlockMaterial);
+            ship.SetAOEExplosionMaterial(TeamMaterialSets[team].AOEExplosionMaterial);
+            ship.SetAOEConicExplosionMaterial(TeamMaterialSets[team].AOEConicExplosionMaterial);
+            ship.SetSkimmerMaterial(TeamMaterialSets[team].SkimmerMaterial);
 
             SelectedShip = ship;
 
@@ -212,12 +150,12 @@ namespace StarWriter.Core.HangerBuilder
             }
 
             Ship ship = Instantiate(shipTypeMap[shipType]);
-            ship.SetShipMaterial(TeamsMaterials[team]);
-            ship.SetBlockMaterial(TeamBlockMaterials[team]);
-            ship.SetShieldedBlockMaterial(TeamShieldedBlockMaterials[team]);
-            ship.SetAOEExplosionMaterial(TeamAOEExplosionMaterials[team]);
-            ship.SetAOEConicExplosionMaterial(TeamAOEConicExplosionMaterials[team]);
-            ship.SetSkimmerMaterial(TeamSkimmerMaterials[team]);
+            ship.SetShipMaterial(TeamMaterialSets[team].ShipMaterial);
+            ship.SetBlockMaterial(TeamMaterialSets[team].BlockMaterial);
+            ship.SetShieldedBlockMaterial(TeamMaterialSets[team].ShieldedBlockMaterial);
+            ship.SetAOEExplosionMaterial(TeamMaterialSets[team].AOEExplosionMaterial);
+            ship.SetAOEConicExplosionMaterial(TeamMaterialSets[team].AOEConicExplosionMaterial);
+            ship.SetSkimmerMaterial(TeamMaterialSets[team].SkimmerMaterial);
 
             AIPilot pilot = ship.GetComponent<AIPilot>();
             pilot.SkillLevel = ((float)AIDifficultyLevel-1) / 3; // this assumes that levels remain from 1-4
@@ -233,12 +171,12 @@ namespace StarWriter.Core.HangerBuilder
 
         public Material GetTeamBlockMaterial(Teams team)
         {
-            return TeamBlockMaterials[team];
+            return TeamMaterialSets[team].BlockMaterial;
         }
         
         public Material GetTeamShieldedBlockMaterial(Teams team)
         {
-            return TeamShieldedBlockMaterials[team];
+            return TeamMaterialSets[team].ShieldedBlockMaterial;
         }
     }
 }

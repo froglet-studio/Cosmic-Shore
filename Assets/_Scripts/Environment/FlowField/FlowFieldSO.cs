@@ -1,10 +1,9 @@
-﻿using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 
-[CreateAssetMenu(fileName = "DefaultFlowData", menuName = "TailGlider/Flow/EllipticalFlow", order = 10)]
-[System.Serializable] public class FlowFieldSO : ScriptableObject 
+[CreateAssetMenu(fileName = "DefaultFlowData", menuName = "CosmicShore/Flow/EllipticalFlow", order = 30)]
+[System.Serializable] 
+public class FlowFieldSO : ScriptableObject 
 {
-
     public int fieldThickness;
     public int fieldWidth;
     public int fieldHeight;
@@ -18,7 +17,6 @@ using UnityEngine;
         fieldMax = .7f;
     }
 
-
     virtual public Vector3 FlowVector(Transform node)
     {
         if ((Mathf.Pow(node.position.x, 2) / Mathf.Pow(fieldWidth, 2)) + (Mathf.Pow(node.position.y, 2) / Mathf.Pow(fieldHeight, 2)) < 1)
@@ -31,4 +29,3 @@ using UnityEngine;
         else return Vector3.zero;
     }
 }
-                    

@@ -685,12 +685,12 @@ GameObject:
   - component: {fileID: 5928382658856804067}
   - component: {fileID: 6964962696344697388}
   - component: {fileID: 874579555101021522}
-  - component: {fileID: 874579555101021523}
   - component: {fileID: 874579555101021527}
   - component: {fileID: 3440187540988767646}
   - component: {fileID: 1435252848482629424}
   - component: {fileID: 1871436205027819587}
   - component: {fileID: 2903335905544140420}
+  - component: {fileID: 6441696348568773771}
   m_Layer: 0
   m_Name: DolphinAI
   m_TagString: Untagged
@@ -765,33 +765,6 @@ MonoBehaviour:
   maxBlockScale: 1
   XScaler: 1
   YScaler: 1
---- !u!114 &874579555101021523
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6417075533431866457}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9846c9cd6cfac424797ca640ebcb7a04, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  Speed: 0
-  Boosting: 0
-  BoostCharging: 0
-  BoostDecaying: 0
-  Drifting: 0
-  Portrait: 0
-  ShowThreeButtonPanel: 0
-  LiveProjectiles: 0
-  Stationary: 0
-  ElevatedAmmoGain: 0
-  Attached: 0
-  AttachedTrailBlock: {fileID: 0}
-  GunsActive: 1
-  Course: {x: 0, y: 0, z: 0}
-  blockRotation: {x: 0, y: 0, z: 0, w: 0}
 --- !u!114 &874579555101021527
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -813,7 +786,7 @@ MonoBehaviour:
   TrailSpawner: {fileID: 874579555101021522}
   ShipController: {fileID: 0}
   AutoPilot: {fileID: 0}
-  ShipData: {fileID: 0}
+  ShipStatus: {fileID: 0}
   nearFieldSkimmer: {fileID: 874579554510349383}
   OrientationHandle: {fileID: 2897121333247873258}
   shipGeometries:
@@ -825,7 +798,6 @@ MonoBehaviour:
   - {fileID: 3743426984857614330}
   - {fileID: 1463393096304612524}
   - {fileID: 8211653562881954920}
-  head: {fileID: 0}
   AOEPrefab: {fileID: 2728798890556433942, guid: 1e7bdf4a7500d4a48a31ef634447e563,
     type: 3}
   farFieldSkimmer: {fileID: 0}
@@ -861,6 +833,7 @@ MonoBehaviour:
   farCamDistance: 0
   AOEExplosionMaterial: {fileID: 0}
   AOEConicExplosionMaterial: {fileID: 0}
+  SkimmerMaterial: {fileID: 0}
 --- !u!114 &3440187540988767646
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -892,7 +865,12 @@ MonoBehaviour:
   YDiff: 0
   raycastHeight: 2
   raycastWidth: 2
-  autoPilotEnabled: 1
+  AutoPilotEnabled: 0
+  LookingAtCrystal: 0
+  ram: 0
+  useAbility: 0
+  abilityCooldown: 0
+  ability: {fileID: 0}
   CrystalTransform: {fileID: 0}
   flowFieldData: {fileID: 0}
 --- !u!114 &1435252848482629424
@@ -979,13 +957,38 @@ MonoBehaviour:
   ThrottleScaler: 50
   DefaultMinimumSpeed: 10
   DefaultThrottleScaler: 50
-  BoostDecay: 1
-  MaxBoostDecay: 10
-  BoostDecayGrowthRate: 0.03
   PitchScaler: 130
   YawScaler: 130
   RollScaler: 130
   RotationThrottleScaler: 0
+--- !u!114 &6441696348568773771
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 61d08a99952fdc44d96f926228873c0c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  Speed: 0
+  Boosting: 0
+  ChargedBoostDischarging: 0
+  Drifting: 0
+  Portrait: 0
+  ShowThreeButtonPanel: 0
+  LiveProjectiles: 0
+  Stationary: 0
+  ElevatedAmmoGain: 0
+  ChargedBoostCharge: 1
+  AutoPilotEnabled: 0
+  Attached: 0
+  AttachedTrailBlock: {fileID: 0}
+  GunsActive: 0
+  Course: {x: 0, y: 0, z: 1}
+  blockRotation: {x: 0, y: 0, z: 0, w: 0}
 --- !u!1 &7056368880709611073
 GameObject:
   m_ObjectHideFlags: 0

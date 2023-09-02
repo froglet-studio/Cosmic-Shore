@@ -455,6 +455,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d83c4d9a1b2407d4790cb6b65a698b7f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  BoostChargeRate: 0.33
+  BoostDischargeRate: 0.25
+  MaxBoostCharge: 10
 --- !u!1 &2877688561880709149
 GameObject:
   m_ObjectHideFlags: 0
@@ -809,11 +812,11 @@ GameObject:
   - component: {fileID: 874579555101021527}
   - component: {fileID: 6964962696344697388}
   - component: {fileID: 874579555101021522}
-  - component: {fileID: 874579555101021523}
   - component: {fileID: 1435252848482629424}
   - component: {fileID: 1871436205027819587}
   - component: {fileID: 3440187540988767646}
   - component: {fileID: 3472521546628908041}
+  - component: {fileID: 6441696348568773771}
   m_Layer: 0
   m_Name: OldDolphin
   m_TagString: Player_Ship
@@ -856,22 +859,27 @@ MonoBehaviour:
   ResourceSystem: {fileID: 0}
   Name: Dolphin
   ShipType: 2
-  TrailSpawner: {fileID: 874579555101021522}
+  TrailSpawner: {fileID: 874579555101021522, guid: 3cc1c31e8138b6448ae4264dd90d24ac,
+    type: 3}
   ShipController: {fileID: 0}
   AutoPilot: {fileID: 0}
-  ShipData: {fileID: 0}
-  nearFieldSkimmer: {fileID: 874579554510349383}
-  OrientationHandle: {fileID: 1087614488730427270}
+  ShipStatus: {fileID: 0}
+  nearFieldSkimmer: {fileID: 874579554510349383, guid: 3cc1c31e8138b6448ae4264dd90d24ac,
+    type: 3}
+  OrientationHandle: {fileID: 1087614488730427270, guid: 3cc1c31e8138b6448ae4264dd90d24ac,
+    type: 3}
   shipGeometries:
-  - {fileID: 4662679416581426262}
-  - {fileID: 8921444315668696485}
-  - {fileID: 7640717969865516594}
-  - {fileID: 744850128600491525}
-  - {fileID: 2877688561880709149}
-  - {fileID: 3743426984857614330}
-  - {fileID: 1463393096304612524}
-  - {fileID: 8211653562881954920}
-  head: {fileID: 0}
+  - {fileID: 3575141614157162765, guid: 3cc1c31e8138b6448ae4264dd90d24ac, type: 3}
+  - {fileID: 4295492772103483139, guid: 3cc1c31e8138b6448ae4264dd90d24ac, type: 3}
+  - {fileID: 4171567068332236364, guid: 3cc1c31e8138b6448ae4264dd90d24ac, type: 3}
+  - {fileID: 6514610936837954762, guid: 3cc1c31e8138b6448ae4264dd90d24ac, type: 3}
+  - {fileID: 1486522702244643102, guid: 3cc1c31e8138b6448ae4264dd90d24ac, type: 3}
+  - {fileID: 8694205063691012957, guid: 3cc1c31e8138b6448ae4264dd90d24ac, type: 3}
+  - {fileID: 1952334436257575078, guid: 3cc1c31e8138b6448ae4264dd90d24ac, type: 3}
+  - {fileID: 409797623915275520, guid: 3cc1c31e8138b6448ae4264dd90d24ac, type: 3}
+  - {fileID: 7104959138418958368, guid: 3cc1c31e8138b6448ae4264dd90d24ac, type: 3}
+  - {fileID: 6083787949041995376, guid: 3cc1c31e8138b6448ae4264dd90d24ac, type: 3}
+  - {fileID: 1476543139751871415, guid: 3cc1c31e8138b6448ae4264dd90d24ac, type: 3}
   AOEPrefab: {fileID: 9218889541719856748, guid: 2ae56847c6f549948a71f41eaf59f749,
     type: 3}
   farFieldSkimmer: {fileID: 0}
@@ -882,18 +890,32 @@ MonoBehaviour:
   blockChargeChange: 0
   boostMultiplier: 0
   boostFuelAmount: 0
+  inputEventShipActions:
+  - InputEvent: 2
+    ShipActions:
+    - {fileID: 1321571284989493840, guid: 3cc1c31e8138b6448ae4264dd90d24ac, type: 3}
+    - {fileID: 512306600173285592, guid: 3cc1c31e8138b6448ae4264dd90d24ac, type: 3}
+    - {fileID: 4734135289798570143, guid: 3cc1c31e8138b6448ae4264dd90d24ac, type: 3}
+  - InputEvent: 1
+    ShipActions:
+    - {fileID: 1321571284989493840, guid: 3cc1c31e8138b6448ae4264dd90d24ac, type: 3}
+    - {fileID: 512306600173285592, guid: 3cc1c31e8138b6448ae4264dd90d24ac, type: 3}
+    - {fileID: 4734135289798570143, guid: 3cc1c31e8138b6448ae4264dd90d24ac, type: 3}
+  - InputEvent: 3
+    ShipActions:
+    - {fileID: 2525174765376973701, guid: 3cc1c31e8138b6448ae4264dd90d24ac, type: 3}
   maxSpeedStraightActions: []
   minSpeedStraightActions: []
   leftStickShipActions:
-  - {fileID: 1321571284989493840}
-  - {fileID: 512306600173285592}
-  - {fileID: 4734135289798570143}
+  - {fileID: 1321571284989493840, guid: 3cc1c31e8138b6448ae4264dd90d24ac, type: 3}
+  - {fileID: 512306600173285592, guid: 3cc1c31e8138b6448ae4264dd90d24ac, type: 3}
+  - {fileID: 4734135289798570143, guid: 3cc1c31e8138b6448ae4264dd90d24ac, type: 3}
   rightStickShipActions:
-  - {fileID: 1321571284989493840}
-  - {fileID: 512306600173285592}
-  - {fileID: 4734135289798570143}
+  - {fileID: 1321571284989493840, guid: 3cc1c31e8138b6448ae4264dd90d24ac, type: 3}
+  - {fileID: 512306600173285592, guid: 3cc1c31e8138b6448ae4264dd90d24ac, type: 3}
+  - {fileID: 4734135289798570143, guid: 3cc1c31e8138b6448ae4264dd90d24ac, type: 3}
   flipShipActions:
-  - {fileID: 2525174765376973701}
+  - {fileID: 2525174765376973701, guid: 3cc1c31e8138b6448ae4264dd90d24ac, type: 3}
   idleShipActions: []
   button1ShipActions: []
   button2ShipActions: []
@@ -909,11 +931,12 @@ MonoBehaviour:
   maxProjectileScale: 10
   minProjectileBlockScale: {x: 1.5, y: 1.5, z: 3}
   maxProjectileBlockScale: {x: 1.5, y: 1.5, z: 30}
-  ControlOverrides: 0300000004000000
-  closeCamDistance: -5
-  farCamDistance: -20
+  ControlOverrides: 0400000003000000
+  closeCamDistance: -8
+  farCamDistance: -16
   AOEExplosionMaterial: {fileID: 0}
   AOEConicExplosionMaterial: {fileID: 0}
+  SkimmerMaterial: {fileID: 0}
 --- !u!114 &6964962696344697388
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -965,33 +988,6 @@ MonoBehaviour:
   maxBlockScale: 5
   XScaler: 1
   YScaler: 1
---- !u!114 &874579555101021523
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6417075533431866457}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9846c9cd6cfac424797ca640ebcb7a04, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  Speed: 0
-  Boosting: 0
-  BoostCharging: 0
-  BoostDecaying: 0
-  Drifting: 0
-  Portrait: 0
-  ShowThreeButtonPanel: 0
-  LiveProjectiles: 0
-  Stationary: 0
-  ElevatedAmmoGain: 0
-  Attached: 0
-  AttachedTrailBlock: {fileID: 0}
-  GunsActive: 1
-  Course: {x: 0, y: 0, z: 0}
-  blockRotation: {x: 0, y: 0, z: 0, w: 0}
 --- !u!114 &1435252848482629424
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1091,7 +1087,12 @@ MonoBehaviour:
   YDiff: 0
   raycastHeight: 2
   raycastWidth: 2
-  autoPilotEnabled: 0
+  AutoPilotEnabled: 0
+  LookingAtCrystal: 0
+  ram: 0
+  useAbility: 0
+  abilityCooldown: 0
+  ability: {fileID: 0}
   CrystalTransform: {fileID: 0}
   flowFieldData: {fileID: 0}
 --- !u!114 &3472521546628908041
@@ -1110,13 +1111,38 @@ MonoBehaviour:
   ThrottleScaler: 0
   DefaultMinimumSpeed: 10
   DefaultThrottleScaler: 50
-  BoostDecay: 1
-  MaxBoostDecay: 6
-  BoostDecayGrowthRate: 0.03
   PitchScaler: 200
   YawScaler: 200
   RollScaler: 200
   RotationThrottleScaler: 0
+--- !u!114 &6441696348568773771
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 61d08a99952fdc44d96f926228873c0c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  Speed: 0
+  Boosting: 0
+  ChargedBoostDischarging: 0
+  Drifting: 0
+  Portrait: 0
+  ShowThreeButtonPanel: 0
+  LiveProjectiles: 0
+  Stationary: 0
+  ElevatedAmmoGain: 0
+  ChargedBoostCharge: 1
+  AutoPilotEnabled: 0
+  Attached: 0
+  AttachedTrailBlock: {fileID: 0}
+  GunsActive: 0
+  Course: {x: 0, y: 0, z: 1}
+  blockRotation: {x: 0, y: 0, z: 0, w: 0}
 --- !u!1 &6999220331312364478
 GameObject:
   m_ObjectHideFlags: 0

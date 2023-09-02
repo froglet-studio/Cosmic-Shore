@@ -1,6 +1,6 @@
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "Spike Spiegel", menuName = "TailGlider/Pilot", order = 1)]
+[CreateAssetMenu(fileName = "Spike Spiegel", menuName = "CosmicShore/Pilot", order = 2)]
 [System.Serializable]
 public class SO_Pilot : ScriptableObject
 {

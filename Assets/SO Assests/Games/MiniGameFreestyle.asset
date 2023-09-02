@@ -21,8 +21,9 @@ MonoBehaviour:
   PreviewClip: {fileID: 241334157148977051, guid: 5c86136010666914fbccc6959d9e1157,
     type: 3}
   Pilots:
-  - {fileID: 11400000, guid: 5ac362560a34d414e835db83e82daa08, type: 2}
-  - {fileID: 11400000, guid: 6d520cd7eb8878b4aa2551e0591bc08d, type: 2}
+  - {fileID: 11400000, guid: 15f7cf9ff064a6746a1b3432455a787b, type: 2}
+  - {fileID: 11400000, guid: 0d57b8e9eb4fb7a4b8db5456bb5f3530, type: 2}
+  - {fileID: 11400000, guid: f39381eaab68c5444b4d8846877fe5c7, type: 2}
   MinPlayers: 1
   MaxPlayers: 1
   SceneName: MinigameFreestyle

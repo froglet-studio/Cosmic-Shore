@@ -1,10 +1,9 @@
-﻿using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 
-[CreateAssetMenu(fileName = "EllipticalFlowData", menuName = "TailGlider/Flow/EllipticalFlow", order = 10)]
-[System.Serializable] public class EllipticalFlow : FlowFieldSO
+[CreateAssetMenu(fileName = "EllipticalFlowData", menuName = "CosmicShore/Flow/EllipticalFlow", order = 30)]
+[System.Serializable] 
+public class EllipticalFlow : FlowFieldSO
 {
-
     public EllipticalFlow()
     {
         fieldThickness = 200;
@@ -12,8 +11,6 @@ using UnityEngine;
         fieldHeight = 700;
         fieldMax = .7f;
     }
-
-
 
     override public Vector3 FlowVector(Transform node)
     {
@@ -26,5 +23,4 @@ using UnityEngine;
         }
         else return Vector3.zero;
     }
-}
-                    
+}                 

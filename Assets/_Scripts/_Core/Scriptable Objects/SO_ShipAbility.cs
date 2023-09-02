@@ -1,8 +1,7 @@
 using UnityEngine;
-using UnityEngine.UI;
 using UnityEngine.Video;
 
-[CreateAssetMenu(fileName = "New Ability", menuName = "TailGlider/ShipAbility", order = 2)]
+[CreateAssetMenu(fileName = "New Ability", menuName = "CosmicShore/ShipAbility", order = 4)]
 public class SO_ShipAbility : ScriptableObject
 {
     [SerializeField] public ShipActions Action;

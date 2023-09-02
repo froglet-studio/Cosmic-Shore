@@ -1,9 +1,17 @@
 using StarWriter.Core.IO;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
 namespace StarWriter.Core
 {
+    [Serializable]
+    public struct InputEventShipActionMapping
+    {
+        public InputEvents InputEvent;
+        public List<ShipActionAbstractBase> ShipActions;
+    }
+
     [RequireComponent(typeof(ResourceSystem))]
     [RequireComponent(typeof(TrailSpawner))]
     [RequireComponent(typeof(ShipStatus))]
@@ -26,14 +34,13 @@ namespace StarWriter.Core
         [SerializeField] Skimmer nearFieldSkimmer;
         [SerializeField] GameObject OrientationHandle;
         [SerializeField] public List<GameObject> shipGeometries;
-        [SerializeField] GameObject head;
 
         [Header("Optional Ship Components")]
         [SerializeField] GameObject AOEPrefab;
         [SerializeField] Skimmer farFieldSkimmer;
 
         [Header("Environment Interactions")]
-        public List<CrystalImpactEffects> crystalImpactEffects;
+        [SerializeField] public List<CrystalImpactEffects> crystalImpactEffects;
         [ShowIf(CrystalImpactEffects.AreaOfEffectExplosion)] [SerializeField] float minExplosionScale = 50;
         [ShowIf(CrystalImpactEffects.AreaOfEffectExplosion)] [SerializeField] float maxExplosionScale = 400;
 
@@ -41,20 +48,11 @@ namespace StarWriter.Core
         [SerializeField] float blockChargeChange;
 
         [Header("Configuration")]
-        public float boostMultiplier = 4f; // TODO: Move to ShipController
-        public float boostFuelAmount = -.01f; 
+        [SerializeField] public float boostMultiplier = 4f; // TODO: Move to ShipController
+        [SerializeField] public float boostFuelAmount = -.01f;
 
-        [SerializeField] List<ShipActionAbstractBase> maxSpeedStraightActions;
-        [SerializeField] List<ShipActionAbstractBase> minSpeedStraightActions;
-        [SerializeField] List<ShipActionAbstractBase> leftStickShipActions;
-        [SerializeField] List<ShipActionAbstractBase> rightStickShipActions;
-        [SerializeField] List<ShipActionAbstractBase> flipShipActions;
-        [SerializeField] List<ShipActionAbstractBase> idleShipActions;
-        [SerializeField] List<ShipActionAbstractBase> button1ShipActions;
-        [SerializeField] List<ShipActionAbstractBase> button2ShipActions;
-        [SerializeField] List<ShipActionAbstractBase> button3ShipActions;
-
-        Dictionary<InputEvents, List<ShipActionAbstractBase>> ShipControlActions;
+        [SerializeField] List<InputEventShipActionMapping> inputEventShipActions;
+        Dictionary<InputEvents, List<ShipActionAbstractBase>> ShipControlActions = new();
 
         [Header("Passive Effects")]
         public List<ShipLevelEffects> LevelEffects;
@@ -72,16 +70,16 @@ namespace StarWriter.Core
         [ShowIf(ShipLevelEffects.ScaleProjectileBlocks)] [SerializeField] Vector3 minProjectileBlockScale = new Vector3(1.5f, 1.5f, 3f);
         [ShowIf(ShipLevelEffects.ScaleProjectileBlocks)] [SerializeField] Vector3 maxProjectileBlockScale = new Vector3(1.5f, 1.5f, 30f);
 
-        public List<ShipControlOverrides> ControlOverrides;
+        [SerializeField] public List<ShipControlOverrides> ControlOverrides;
         [SerializeField] float closeCamDistance;
         [SerializeField] float farCamDistance;
 
+        Dictionary<InputEvents, float> abilityStartTimes = new();
         Material ShipMaterial;
-        public Material AOEExplosionMaterial;
-        public Material AOEConicExplosionMaterial;
-        public Material SkimmerMaterial;
+        [HideInInspector] public Material AOEExplosionMaterial;
+        [HideInInspector] public Material AOEConicExplosionMaterial;
+        [HideInInspector] public Material SkimmerMaterial;
         float speedModifierDuration = 2f;
-        float abilityStartTime;
         SO_Pilot pilot;
 
         Teams team;
@@ -126,17 +124,11 @@ namespace StarWriter.Core
             foreach (var shipGeometry in shipGeometries)
                 shipGeometry.AddComponent<ShipGeometry>().Ship = this;
 
-            ShipControlActions = new Dictionary<InputEvents, List<ShipActionAbstractBase>> {
-                { InputEvents.FullSpeedStraightAction, maxSpeedStraightActions },
-                { InputEvents.MinimumSpeedStraightAction, minSpeedStraightActions },
-                { InputEvents.LeftStickAction, leftStickShipActions },
-                { InputEvents.RightStickAction, rightStickShipActions },
-                { InputEvents.FlipAction, flipShipActions },
-                { InputEvents.IdleAction, idleShipActions },
-                { InputEvents.Button1Action, button1ShipActions },
-                { InputEvents.Button2Action, button2ShipActions },
-                { InputEvents.Button3Action, button3ShipActions },
-            };
+            foreach (var inputEventShipAction in inputEventShipActions)
+                if (!ShipControlActions.ContainsKey(inputEventShipAction.InputEvent))
+                    ShipControlActions.Add(inputEventShipAction.InputEvent, inputEventShipAction.ShipActions);
+                else
+                    ShipControlActions[inputEventShipAction.InputEvent].AddRange(inputEventShipAction.ShipActions);
 
             foreach (var key in ShipControlActions.Keys)
                 foreach (var shipAction in ShipControlActions[key])
@@ -145,19 +137,19 @@ namespace StarWriter.Core
 
         void ApplyShipControlOverrides(List<ShipControlOverrides> controlOverrides)
         {
+            // Ship controls are only relevant for human pilots
+            if (AutoPilot.AutoPilotEnabled)
+                return;
+
             foreach (ShipControlOverrides effect in controlOverrides)
             {
                 switch (effect)
                 {
                     case ShipControlOverrides.CloseCam:
-                        if (AutoPilot.AutoPilotEnabled) break;
                         cameraManager.CloseCamDistance = closeCamDistance;
-                        //cameraManager.SetNormalizedCameraDistance(0);
                         break;
                     case ShipControlOverrides.FarCam:
-                        if (AutoPilot.AutoPilotEnabled) break;
                         cameraManager.FarCamDistance = farCamDistance;
-                        //cameraManager.SetNormalizedCameraDistance(1);
                         break;
                 }
             }
@@ -246,23 +238,33 @@ namespace StarWriter.Core
             }
         }
 
+
         public void PerformShipControllerActions(InputEvents controlType)
         {
-            abilityStartTime = Time.time;
-            var shipControlActions = ShipControlActions[controlType];
-            foreach (var action in shipControlActions)
-                action.StartAction();
+            if (!abilityStartTimes.ContainsKey(controlType))
+                abilityStartTimes.Add(controlType, Time.time);
+            else
+                abilityStartTimes[controlType] = Time.time;
+
+            if (ShipControlActions.ContainsKey(controlType))
+            {
+                var shipControlActions = ShipControlActions[controlType];
+                foreach (var action in shipControlActions)
+                    action.StartAction();
+            }
         }
 
         public void StopShipControllerActions(InputEvents controlType)
         {
-            // TODO: p1 ability activation tracking doesn't work - needs to have separate time keeping for each control type
             if (StatsManager.Instance != null)
-                StatsManager.Instance.AbilityActivated(Team, player.PlayerName, controlType, Time.time-abilityStartTime);
+                StatsManager.Instance.AbilityActivated(Team, player.PlayerName, controlType, Time.time-abilityStartTimes[controlType]);
 
-            var shipControlActions = ShipControlActions[controlType];
-            foreach (var action in shipControlActions)
-                action.StopAction();
+            if (ShipControlActions.ContainsKey(controlType))
+            {
+                var shipControlActions = ShipControlActions[controlType];
+                foreach (var action in shipControlActions)
+                    action.StopAction();
+            }
         }
 
         public void ToggleCollision(bool enabled)
@@ -340,7 +342,6 @@ namespace StarWriter.Core
             farFieldSkimmer?.gameObject.SetActive(false);
         }
 
-
         void ApplyShipMaterial()
         {
             if (ShipMaterial == null)
@@ -356,7 +357,6 @@ namespace StarWriter.Core
                 }
                 else shipGeometry.GetComponent<MeshRenderer>().material = ShipMaterial;
             }
-
         }
 
         //

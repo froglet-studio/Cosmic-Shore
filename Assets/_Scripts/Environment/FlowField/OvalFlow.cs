@@ -1,17 +1,15 @@
-﻿using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 
-[CreateAssetMenu(fileName = "OvalFlowData", menuName = "TailGlider/Flow/OvalFlow", order = 10)]
-[System.Serializable] public class OvalFlow : FlowFieldSO
+[CreateAssetMenu(fileName = "OvalFlowData", menuName = "CosmicShore/Flow/OvalFlow", order = 30)]
+[System.Serializable] 
+public class OvalFlow : FlowFieldSO
 {
-
     public OvalFlow()
     {
         fieldThickness = 200;
         fieldWidth = 200;
         fieldHeight = 700;
         fieldMax = .7f;
-        
     }
 
     override public Vector3 FlowVector(Transform node)
@@ -25,7 +23,6 @@ using UnityEngine;
             float Ptheta = Mathf.Atan2(node.position.y, node.position.x - StraightLength); //divide y by aspect twice to get the flow pointed with the tangent.
 
             float Vr = Gaussian(Pr, fieldThickness, (fieldWidth - 2 * fieldThickness));
-            //float Vr = Mathf.Exp(-Mathf.Pow(Pr - (fieldWidth - twoSigma), 2) / twoSigmaSquared);
             float Vtheta = Ptheta + Mathf.PI / 2;
 
             float Zdecay = Gaussian(node.position.z, fieldThickness, 0);
@@ -45,7 +42,4 @@ using UnityEngine;
         float twoSigmaSquared = 2 * Mathf.Pow(sigma, 2);
         return Mathf.Exp(-Mathf.Pow(input - distance, 2) / twoSigmaSquared);
     }
-
-
 }
-
