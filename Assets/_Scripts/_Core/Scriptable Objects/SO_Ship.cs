@@ -14,7 +14,6 @@ public class
     [SerializeField] public string Description;
     [SerializeField] public Sprite Icon;
     [SerializeField] public Sprite SelectedIcon;
-    [SerializeField] public Sprite TrailPreviewImage;
     [SerializeField] public Sprite PreviewImage;
     [SerializeField] public SO_Pilot ChargePilot;
     [SerializeField] public SO_Pilot MassPilot;
