@@ -12,6 +12,8 @@ namespace StarWriter.UI
     {
         //[SerializeField] GameMenu gameMenu;
         [SerializeField] GameObject MiniGameHUD;
+        [SerializeField] GameObject MainMenuButton;
+        [SerializeField] GameObject ResumeButton;
 
         GameManager gameManager;
         GameSetting gameSetting;

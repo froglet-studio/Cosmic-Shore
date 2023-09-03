@@ -13,6 +13,7 @@ namespace StarWriter.Core.Audio
     {
         #region Fields
         [SerializeField] AudioMixer masterMixer;
+        [SerializeField] AudioSource sfxSource;
         [SerializeField] AudioSource musicSource1;
         [SerializeField] AudioSource musicSource2;
         [SerializeField] float musicVolume = .1f;
@@ -166,6 +167,12 @@ namespace StarWriter.Core.Audio
         }
 
         public void PlaySFXClip(AudioClip audioClip, AudioSource sfxSource)
+        {
+            sfxSource.volume = SFXVolume;
+            sfxSource.PlayOneShot(audioClip);
+        }
+
+        public void PlaySFXClip(AudioClip audioClip)
         {
             sfxSource.volume = SFXVolume;
             sfxSource.PlayOneShot(audioClip);

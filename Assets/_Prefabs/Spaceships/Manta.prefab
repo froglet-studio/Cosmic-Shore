@@ -1399,17 +1399,6 @@ MonoBehaviour:
   - InputEvent: 1
     ShipActions:
     - {fileID: 867704553499413969}
-  maxSpeedStraightActions: []
-  minSpeedStraightActions: []
-  leftStickShipActions:
-  - {fileID: 867704553499413969}
-  rightStickShipActions:
-  - {fileID: 867704553499413969}
-  flipShipActions: []
-  idleShipActions: []
-  button1ShipActions: []
-  button2ShipActions: []
-  button3ShipActions: []
   LevelEffects: 
   minGap: 0
   maxGap: 0
@@ -1427,6 +1416,11 @@ MonoBehaviour:
   AOEExplosionMaterial: {fileID: 0}
   AOEConicExplosionMaterial: {fileID: 0}
   SkimmerMaterial: {fileID: 0}
+  LevelEffectParameterMappings:
+  - Element: 1
+    LevelEffect: 1
+    Min: 0
+    Max: 10
 --- !u!114 &874579555101021522
 MonoBehaviour:
   m_ObjectHideFlags: 0

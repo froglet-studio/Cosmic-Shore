@@ -1,5 +1,7 @@
 using StarWriter.Core;
+using StarWriter.Core.Audio;
 using StarWriter.Core.IO;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -15,11 +17,12 @@ public class MiniGame : MonoBehaviour
     [SerializeField] GameCanvas GameCanvas;
     [SerializeField] Player playerPrefab;
     [SerializeField] GameObject PlayerOrigin;
-
+    
     protected Button ReadyButton;
     protected GameObject EndGameScreen;
     protected MiniGameHUD HUD;
     protected List<Player> Players;
+    protected CountdownTimer countdownTimer;
 
     List<Teams> PlayerTeams = new() { Teams.Green, Teams.Red, Teams.Yellow };
     List<string> PlayerNames = new() { "PlayerOne", "PlayerTwo", "PlayerThree" };
@@ -46,7 +49,7 @@ public class MiniGame : MonoBehaviour
         EndGameScreen = GameCanvas.EndGameScreen;
         HUD = GameCanvas.MiniGameHUD;
         ReadyButton = HUD.ReadyButton;
-        CountdownDisplay = HUD.CountdownDisplay;
+        countdownTimer = HUD.CountdownTimer;
         ScoreTracker.GameCanvas = GameCanvas;
         foreach (var turnMonitor in TurnMonitors)
             if (turnMonitor is TimeBasedTurnMonitor tbtMonitor)
@@ -99,7 +102,15 @@ public class MiniGame : MonoBehaviour
     public void OnReadyClicked()
     {
         ReadyButton.gameObject.SetActive(false);
-        StartCoroutine(CountdownCoroutine());
+
+        countdownTimer.BeginCountdown(() =>
+        {
+            StartTurn();
+
+            ActivePlayer.GetComponent<InputController>().Paused = false;
+            ActivePlayer.Ship.TrailSpawner.ForceStartSpawningTrail();
+            ActivePlayer.Ship.TrailSpawner.RestartTrailSpawnerAfterDelay(2f);
+        });
     }
 
     public virtual void StartNewGame()
@@ -294,46 +305,5 @@ public class MiniGame : MonoBehaviour
             ReadyButton.gameObject.SetActive(true);
         else
             OnReadyClicked();
-    }
-
-    // TODO: P1 make the countdown timer its own monobehavior
-    Image CountdownDisplay;
-    [SerializeField] Sprite Countdown3;
-    [SerializeField] Sprite Countdown2;
-    [SerializeField] Sprite Countdown1;
-    [SerializeField] Sprite Countdown0;
-    [SerializeField] float CountdownGrowScale = 1.5f;
-
-    IEnumerator CountdownDigitCoroutine(Sprite digit)
-    {
-        var elapsedTime = 0f;
-        CountdownDisplay.transform.localScale = Vector3.one;
-        CountdownDisplay.sprite = digit;
-
-        while (elapsedTime < 1)
-        {
-            elapsedTime += Time.deltaTime;
-            CountdownDisplay.transform.localScale = Vector3.one + (Vector3.one * ((CountdownGrowScale - 1) * elapsedTime));
-            yield return null;
-        }
-    }
-
-    IEnumerator CountdownCoroutine()
-    {
-        CountdownDisplay.gameObject.SetActive(true);
-
-        yield return StartCoroutine(CountdownDigitCoroutine(Countdown3));
-        yield return StartCoroutine(CountdownDigitCoroutine(Countdown2));
-        yield return StartCoroutine(CountdownDigitCoroutine(Countdown1));
-        yield return StartCoroutine(CountdownDigitCoroutine(Countdown0));
-
-        StartTurn();
-
-        CountdownDisplay.transform.localScale = Vector3.one;
-        CountdownDisplay.gameObject.SetActive(false);
-
-        ActivePlayer.GetComponent<InputController>().Paused = false;
-        ActivePlayer.Ship.TrailSpawner.ForceStartSpawningTrail();
-        ActivePlayer.Ship.TrailSpawner.RestartTrailSpawnerAfterDelay(2f);
     }
 }

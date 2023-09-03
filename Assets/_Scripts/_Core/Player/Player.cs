@@ -88,7 +88,6 @@ public class Player : MonoBehaviour
             ship.ResourceSystem.BoostDisplay = GameCanvas.ResourceDisplayGroup.BoostDisplay;
             ship.ResourceSystem.AmmoDisplay = GameCanvas.ResourceDisplayGroup.AmmoDisplay;
             ship.ResourceSystem.ChargeDisplay = GameCanvas.ResourceDisplayGroup.ChargeDisplay;
-            ship.ResourceSystem.LevelDisplay = GameCanvas.ResourceDisplayGroup.LevelDisplay;
             ship.ResourceSystem.ChargeLevelDisplay = GameCanvas.ResourceDisplayGroup.ChargeLevelDisplay;
             ship.ResourceSystem.MassLevelDisplay = GameCanvas.ResourceDisplayGroup.MassLevelDisplay;
             ship.ResourceSystem.SpaceLevelDisplay = GameCanvas.ResourceDisplayGroup.SpaceLevelDisplay;

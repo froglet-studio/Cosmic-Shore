@@ -93,6 +93,8 @@ public class MiniGamesMenu : MonoBehaviour
             PlayerCountButtonContainer.transform.GetChild(i).gameObject.SetActive(i < SelectedGame.MaxPlayers);
             PlayerCountButtonContainer.transform.GetChild(i).gameObject.GetComponent<Button>().onClick.RemoveAllListeners();
             PlayerCountButtonContainer.transform.GetChild(i).gameObject.GetComponent<Button>().onClick.AddListener(() => SetPlayerCount(playerCount));
+            PlayerCountButtonContainer.transform.GetChild(i).gameObject.GetComponent<Button>().onClick.AddListener(() => PlayerCountButtonContainer.GetComponent<MenuAudio>().PlayAudio());
+
         }
         SetPlayerCount(1);
 
@@ -101,9 +103,10 @@ public class MiniGamesMenu : MonoBehaviour
         {
             var difficulty = i + 1;
             IntensityButtonContainer.transform.GetChild(i).gameObject.GetComponent<Button>().onClick.RemoveAllListeners();
-            IntensityButtonContainer.transform.GetChild(i).gameObject.GetComponent<Button>().onClick.AddListener(() => SetDifficulty(difficulty));
+            IntensityButtonContainer.transform.GetChild(i).gameObject.GetComponent<Button>().onClick.AddListener(() => SetIntensity(difficulty));
+            IntensityButtonContainer.transform.GetChild(i).gameObject.GetComponent<Button>().onClick.AddListener(() => IntensityButtonContainer.GetComponent<MenuAudio>().PlayAudio());
         }
-        SetDifficulty(1);
+        SetIntensity(1);
 
         PopulateGameDetails();
         PopulateShipSelectionList();
@@ -127,7 +130,7 @@ public class MiniGamesMenu : MonoBehaviour
         MiniGame.NumberOfPlayers = playerCount;
     }
 
-    public void SetDifficulty(int difficulty)
+    public void SetIntensity(int difficulty)
     {
         Debug.Log($"SetDifficulty: {difficulty}");
 
@@ -160,6 +163,7 @@ public class MiniGamesMenu : MonoBehaviour
             shipSelection.GetComponent<Image>().sprite = ship.Icon;
             shipSelection.GetComponent<Button>().onClick.RemoveAllListeners();
             shipSelection.GetComponent<Button>().onClick.AddListener(() => SelectShip(selectionIndex));
+            shipSelection.GetComponent<Button>().onClick.AddListener(() => ShipSelectionContainer.GetComponent<MenuAudio>().PlayAudio());
         }
 
         StartCoroutine(SelectShipCoroutine(0));

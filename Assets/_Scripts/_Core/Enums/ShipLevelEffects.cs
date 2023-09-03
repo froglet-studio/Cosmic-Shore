@@ -4,6 +4,7 @@ public enum ShipLevelEffects
 {
     ScaleGap = 1,
     ScaleProjectiles = 2,
-    ScaleProjectileBlocks = 3,
-    ScaleSkimmers = 4,
+    ScaleShieldDecay = 3,
+    ScaleNearFieldSkimmer = 4,
+    ScaleFarFieldSkimmer = 5,
 }

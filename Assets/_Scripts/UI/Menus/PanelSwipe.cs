@@ -7,14 +7,14 @@ using UnityEngine.InputSystem.LowLevel;
 
 public class PanelSwipe : MonoBehaviour, IDragHandler, IEndDragHandler {
 
-    
-    public float percentThreshold = 0.2f; // Sensitivity of swipe detector. Smaller number = more sensitive
-    public float easing = 0.5f; // Makes the transition less jarring
-    public int currentScreen; // Keeps track of how many screens you have in the menu system. From 0 to 4, home = 2
 
-    public GameObject Ship_Select;
-    public GameObject Minigame_Settings;
-    public GameObject Coming_Soon;
+    [SerializeField] float percentThreshold = 0.2f; // Sensitivity of swipe detector. Smaller number = more sensitive
+    [SerializeField] float easing = 0.5f; // Makes the transition less jarring
+    [SerializeField] int currentScreen; // Keeps track of how many screens you have in the menu system. From 0 to 4, home = 2
+
+    [SerializeField] GameObject Ship_Select;
+    [SerializeField] GameObject Minigame_Settings;
+    [SerializeField] GameObject Coming_Soon;
     
     [SerializeField] Transform NavBar;
 
@@ -82,6 +82,7 @@ public class PanelSwipe : MonoBehaviour, IDragHandler, IEndDragHandler {
 
         if (animate)
         {
+            GetComponent<MenuAudio>().PlayAudio();
             if (navigateCoroutine != null)
                 StopCoroutine(navigateCoroutine);
             navigateCoroutine = StartCoroutine(SmoothMove(transform.position, newLocation, easing));

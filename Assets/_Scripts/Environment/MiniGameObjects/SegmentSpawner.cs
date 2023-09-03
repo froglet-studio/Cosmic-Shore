@@ -48,7 +48,11 @@ public class SegmentSpawner : MonoBehaviour
 
     public void Initialize()
     {
-        if (Seed != 0) random = new System.Random(Seed);
+        if (Seed != 0)
+        {
+            random = new System.Random(Seed);
+            Random.InitState(Seed);
+        }
 
         // Clear out last run
         foreach (Trail trail in trails)
@@ -87,8 +91,6 @@ public class SegmentSpawner : MonoBehaviour
                 spawned.transform.SetPositionAndRotation(Random.insideUnitSphere * sphereRadius + origin + transform.position, Random.rotation);
                 return;
             case PositioningScheme.SphereSurface:
-                
-
                 spawned.transform.position = Quaternion.Euler(0, 0, random.Next(spawnedItemCount * (360/ numberOfSegments), spawnedItemCount * (360 / numberOfSegments) + 20)) *
                     (Quaternion.Euler(0, random.Next(Mathf.Max(DifficultyAngle - 20, 40), Mathf.Max(DifficultyAngle + 20, 40)), 0) *
                     (sphereRadius * Vector3.forward)) + origin + transform.position;

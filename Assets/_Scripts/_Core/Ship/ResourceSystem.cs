@@ -9,7 +9,6 @@ namespace StarWriter.Core
     {
         [SerializeField] List<ResourceType> Resources;
         [SerializeField] bool usesBoost;
-        [SerializeField] bool usesLevels;
         [SerializeField] bool usesAmmo;
         [SerializeField] bool usesCharge;
 
@@ -38,32 +37,6 @@ namespace StarWriter.Core
 
                 if (BoostDisplay != null)
                     BoostDisplay.UpdateDisplay(currentBoost);
-            }
-        }
-
-        [Tooltip("Max level from 0-1")]
-        [SerializeField]
-        [Range(0, 1)]
-        float maxLevel = 1f;
-
-        [Tooltip("Initial level from 0-1")]
-        [SerializeField]
-        [Range(0, 1)]
-        float initialLevel = 0f;
-
-        float currentLevel;
-
-        public float MaxLevel {  get { return maxLevel; } }
-
-        public float CurrentLevel
-        {
-            get => currentLevel;
-            private set
-            {
-                currentLevel = value;
-
-                if (LevelDisplay != null)
-                    LevelDisplay.UpdateDisplay(currentLevel);
             }
         }
 
@@ -120,7 +93,6 @@ namespace StarWriter.Core
         }
 
         [HideInInspector] public ResourceDisplay BoostDisplay;
-        [HideInInspector] public ResourceDisplay LevelDisplay;
         [HideInInspector] public ResourceDisplay AmmoDisplay;
         [HideInInspector] public ResourceDisplay ChargeDisplay;
         [HideInInspector] public ResourceDisplay MassDisplay;
@@ -150,7 +122,6 @@ namespace StarWriter.Core
             Reset();
             
             BoostDisplay?.gameObject.SetActive(usesBoost);
-            LevelDisplay?.gameObject.SetActive(usesLevels);
             AmmoDisplay?.gameObject.SetActive(usesAmmo);
             ChargeDisplay?.gameObject.SetActive(usesCharge);
         }
@@ -158,7 +129,6 @@ namespace StarWriter.Core
         public void Reset()
         {
             ResetBoost();
-            ResetLevel();
             ResetAmmo();
             ResetCharge();
         }
@@ -166,10 +136,6 @@ namespace StarWriter.Core
         public void ResetBoost()
         {
             CurrentBoost = initialBoost;
-        }
-        public void ResetLevel()
-        {
-            CurrentLevel = initialLevel;
         }
         public void ResetAmmo()
         {
@@ -184,11 +150,6 @@ namespace StarWriter.Core
         public void ChangeBoostAmount(float amount)
         {
             CurrentBoost = Mathf.Clamp(currentBoost + amount, 0, maxBoost);
-        }
-
-        public void ChangeLevel(float amount)
-        {
-            CurrentLevel = Mathf.Clamp(currentLevel + amount, 0, maxLevel);
         }
 
         public void ChangeAmmoAmount(float amount)
@@ -213,20 +174,20 @@ namespace StarWriter.Core
         [HideInInspector] public ResourceDisplay MassLevelDisplay;
         [HideInInspector] public ResourceDisplay SpaceLevelDisplay;
         [HideInInspector] public ResourceDisplay TimeLevelDisplay;
-        const int MaxChargeLevel = 10;
-        const int MaxMassLevel = 10;
-        const int MaxSpaceLevel = 10;
-        const int MaxTimeLevel = 10;
-        public int InitialChargeLevel = 0;
-        public int InitialMassLevel = 0;
-        public int InitialSpaceLevel = 0;
-        public int InitialTimeLevel = 0;
-        int chargeLevel;
-        int massLevel;
-        int spaceLevel;
-        int timeLevel;
+        const float MaxChargeLevel = 1;
+        const float MaxMassLevel = 1;
+        const float MaxSpaceLevel = 1;
+        const float MaxTimeLevel = 1;
+        public float InitialChargeLevel = 0;
+        public float InitialMassLevel = 0;
+        public float InitialSpaceLevel = 0;
+        public float InitialTimeLevel = 0;
+        float chargeLevel;
+        float massLevel;
+        float spaceLevel;
+        float timeLevel;
 
-        public int ChargeLevel
+        public float ChargeLevel
         {
             get => chargeLevel;
             private set
@@ -239,7 +200,7 @@ namespace StarWriter.Core
                 onChargeLevelChange?.Invoke();
             }
         }
-        public int MassLevel
+        public float MassLevel
         {
             get => massLevel;
             private set
@@ -248,11 +209,9 @@ namespace StarWriter.Core
 
                 if (MassLevelDisplay != null)
                     MassLevelDisplay.UpdateDisplay(massLevel);
-
-
             }
         }
-        public int SpaceLevel
+        public float SpaceLevel
         {
             get => spaceLevel;
             private set
@@ -263,7 +222,7 @@ namespace StarWriter.Core
                     SpaceLevelDisplay.UpdateDisplay(spaceLevel);
             }
         }
-        public int TimeLevel
+        public float TimeLevel
         {
             get => timeLevel;
             private set
@@ -297,6 +256,22 @@ namespace StarWriter.Core
         {
             timeLevel = Math.Clamp(timeLevel + 1, 0, MaxTimeLevel);
         }
+        public void AdjustChargeLevel(float amount)
+        {
+            chargeLevel = Math.Clamp(chargeLevel + amount, 0, MaxChargeLevel);
+        }
+        public void AdjustMassLevel(float amount)
+        {
+            massLevel = Math.Clamp(massLevel + amount, 0, MaxMassLevel);
+        }
+        public void AdjustSpaceLevel(float amount)
+        {
+            spaceLevel = Math.Clamp(spaceLevel + amount, 0, MaxSpaceLevel);
+        }
+        public void AdjustTimeLevel(float amount)
+        {
+            timeLevel = Math.Clamp(timeLevel + amount, 0, MaxTimeLevel);
+        }
 
         public void IncrementLevel(Element element)
         {
@@ -313,6 +288,25 @@ namespace StarWriter.Core
                     break;
                 case Element.Time:
                     IncrementTimeLevel();
+                    break;
+            }
+        }
+
+        public void ChangeLevel(Element element, float amount)
+        {
+            switch (element)
+            {
+                case Element.Charge:
+                    AdjustChargeLevel(amount);
+                    break;
+                case Element.Mass:
+                    AdjustMassLevel(amount);
+                    break;
+                case Element.Space:
+                    AdjustSpaceLevel(amount);
+                    break;
+                case Element.Time:
+                    AdjustTimeLevel(amount);
                     break;
             }
         }

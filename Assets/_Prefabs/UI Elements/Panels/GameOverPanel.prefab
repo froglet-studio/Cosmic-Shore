@@ -854,6 +854,7 @@ GameObject:
   - component: {fileID: 750320515659381796}
   - component: {fileID: 750320515659381797}
   - component: {fileID: 750320515659381802}
+  - component: {fileID: 3424489621492348486}
   m_Layer: 5
   m_Name: PlayAgainButton
   m_TagString: Untagged
@@ -975,6 +976,18 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
+      - m_Target: {fileID: 3424489621492348486}
+        m_TargetAssemblyTypeName: MenuAudio, Assembly-CSharp
+        m_MethodName: PlayAudio
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &750320515659381802
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -988,6 +1001,19 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   activationButton: 6
+--- !u!114 &3424489621492348486
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 750320515659381800}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 698f3492214843a49b922c5c64f54760, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  audioClip: {fileID: 8300000, guid: fa765e4ec173f0548a67dec9f46d8dc2, type: 3}
 --- !u!1 &750320515670582839
 GameObject:
   m_ObjectHideFlags: 0

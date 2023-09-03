@@ -2,6 +2,7 @@ using StarWriter.Core.IO;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using static UnityEditor.Rendering.FilterWindow;
 
 namespace StarWriter.Core
 {
@@ -10,6 +11,15 @@ namespace StarWriter.Core
     {
         public InputEvents InputEvent;
         public List<ShipActionAbstractBase> ShipActions;
+    }
+
+    [Serializable]
+    public struct LevelEffectParameterMapping
+    {
+        public Element Element;
+        public ShipLevelEffects LevelEffect;
+        public float Min;
+        public float Max;
     }
 
     [RequireComponent(typeof(ResourceSystem))]
@@ -56,20 +66,6 @@ namespace StarWriter.Core
 
         [Header("Passive Effects")]
         public List<ShipLevelEffects> LevelEffects;
-        
-        [ShowIf(ShipLevelEffects.ScaleGap)] [SerializeField] float minGap = 0;
-        [ShowIf(ShipLevelEffects.ScaleGap)] [SerializeField] float maxGap = 0;
-        [ShowIf(ShipLevelEffects.ScaleSkimmers)] [SerializeField] float minFarFieldSkimmerScale = 100;
-        [ShowIf(ShipLevelEffects.ScaleSkimmers)] [SerializeField] float maxFarFieldSkimmerScale = 200;
-        [SerializeField] float minNearFieldSkimmerScale = 15;
-        [SerializeField] float maxNearFieldSkimmerScale = 100;
-
-        // TODO: move these into GunShipController
-        [ShowIf(ShipLevelEffects.ScaleProjectiles)] [SerializeField] float minProjectileScale = 1;
-        [ShowIf(ShipLevelEffects.ScaleProjectiles)] [SerializeField] float maxProjectileScale = 10;
-        [ShowIf(ShipLevelEffects.ScaleProjectileBlocks)] [SerializeField] Vector3 minProjectileBlockScale = new Vector3(1.5f, 1.5f, 3f);
-        [ShowIf(ShipLevelEffects.ScaleProjectileBlocks)] [SerializeField] Vector3 maxProjectileBlockScale = new Vector3(1.5f, 1.5f, 30f);
-
         [SerializeField] public List<ShipControlOverrides> ControlOverrides;
         [SerializeField] float closeCamDistance;
         [SerializeField] float farCamDistance;
@@ -224,9 +220,6 @@ namespace StarWriter.Core
                     case TrailBlockImpactEffects.ChangeBoost:
                         ResourceSystem.ChangeBoostAmount(blockChargeChange);
                         break;
-                    case TrailBlockImpactEffects.DecrementLevel:
-                        DecrementLevel();
-                        break;
                     case TrailBlockImpactEffects.Attach:
                         Attach(trailBlockProperties.trailBlock);
                         ShipStatus.GunsActive = true;
@@ -282,6 +275,10 @@ namespace StarWriter.Core
             ResourceSystem.InitialTimeLevel = this.pilot.InitialTime;
 
             ResourceSystem.InitializeElementLevels();
+            UpdateLevel(Element.Charge);
+            UpdateLevel(Element.Mass);
+            UpdateLevel(Element.Space);
+            UpdateLevel(Element.Time);
         }
 
         public void SetShipMaterial(Material material)
@@ -371,70 +368,100 @@ namespace StarWriter.Core
             }
         }
 
+        [SerializeField] List<LevelEffectParameterMapping> LevelEffectParameterMappings;
+
         //
         // level up and down
         //
-        void UpdateLevel()
+        void UpdateLevel(Element element)
         {
-            foreach (ShipLevelEffects effect in LevelEffects)
+            foreach(var levelEffectParameterMapping in LevelEffectParameterMappings)
             {
-                switch (effect)
+                if (levelEffectParameterMapping.Element == element)
                 {
-                    case ShipLevelEffects.ScaleSkimmers:
-                        ScaleSkimmersWithLevel();
-                        break;
-                    case ShipLevelEffects.ScaleGap:
-                        ScaleGapWithLevel();
-                        break;
-                    case ShipLevelEffects.ScaleProjectiles:
-                        ScaleProjectilesWithLevel();
-                        break;
-                    case ShipLevelEffects.ScaleProjectileBlocks:
-                        ScaleProjectileBlocksWithLevel();
-                        break;
+                    ApplyShipEffect(levelEffectParameterMapping);
                 }
             }
         }
 
+        void ApplyShipEffect(LevelEffectParameterMapping parameterMapping)
+        {
+            float currentLevel = 0;
+            switch (parameterMapping.Element)
+            {
+                case Element.Charge:
+                    currentLevel = ResourceSystem.ChargeLevel;
+                    break;
+                case Element.Mass:
+                    currentLevel = ResourceSystem.MassLevel;
+                    break;
+                case Element.Space:
+                    currentLevel = ResourceSystem.SpaceLevel;
+                    break;
+                case Element.Time:
+                    currentLevel = ResourceSystem.TimeLevel;
+                    break;
+            }
+            switch(parameterMapping.LevelEffect)
+            {
+                case ShipLevelEffects.ScaleNearFieldSkimmer:
+                    ScaleNearFieldSkimmerWithLevel(currentLevel, parameterMapping);
+                    break;
+                case ShipLevelEffects.ScaleFarFieldSkimmer:
+                    ScaleFarFieldSkimmerWithLevel(currentLevel, parameterMapping);
+                    break;
+                case ShipLevelEffects.ScaleGap:
+                    ScaleGapWithLevel(currentLevel, parameterMapping);
+                    break;
+                case ShipLevelEffects.ScaleProjectiles:
+                    ScaleProjectilesWithLevel(currentLevel, parameterMapping);
+                    break;
+                case ShipLevelEffects.ScaleShieldDecay:
+                    ScaleShieldDecayWithLevel(currentLevel, parameterMapping);
+                    break;
+            }
+        }
+
+        // TODO: P0 - WIP
         public void IncrementLevel(Element element)
         {
-            ResourceSystem.ChangeLevel(ResourceSystem.OneFuelUnit);
-            UpdateLevel();
+            ResourceSystem.IncrementLevel(element);
+            UpdateLevel(element);
         }
 
-        void DecrementLevel()
+        public void AdjustLevel(Element element, float amount)
         {
-            ResourceSystem.ChangeLevel(-ResourceSystem.OneFuelUnit);
-            UpdateLevel();
+            ResourceSystem.ChangeLevel(element, amount);
+            UpdateLevel(element);
         }
 
-        void ScaleSkimmersWithLevel()
+        void ScaleNearFieldSkimmerWithLevel(float currentLevel, LevelEffectParameterMapping parameterMapping)
         {
             if (nearFieldSkimmer != null)
-                nearFieldSkimmer.transform.localScale = Vector3.one * (minNearFieldSkimmerScale + ((ResourceSystem.CurrentLevel / ResourceSystem.MaxLevel) * (maxNearFieldSkimmerScale - minNearFieldSkimmerScale)));
-            if (farFieldSkimmer != null)
-                farFieldSkimmer.transform.localScale = Vector3.one * (maxFarFieldSkimmerScale - ((ResourceSystem.CurrentLevel / ResourceSystem.MaxLevel) * (maxFarFieldSkimmerScale - minFarFieldSkimmerScale)));
+                nearFieldSkimmer.transform.localScale = Vector3.one * (parameterMapping.Min + (currentLevel * (parameterMapping.Max - parameterMapping.Min)));
         }
-        void ScaleGapWithLevel()
+        void ScaleFarFieldSkimmerWithLevel(float currentLevel, LevelEffectParameterMapping parameterMapping)
         {
-            TrailSpawner.gap = maxGap - ((ResourceSystem.CurrentLevel / ResourceSystem.MaxLevel) * (maxGap - minGap));
+            if (farFieldSkimmer != null)
+                farFieldSkimmer.transform.localScale = Vector3.one * (parameterMapping.Max - (currentLevel * (parameterMapping.Max - parameterMapping.Min)));
+        }
+        void ScaleGapWithLevel(float currentLevel, LevelEffectParameterMapping parameterMapping)
+        {
+            TrailSpawner.gap = parameterMapping.Max - (currentLevel * (parameterMapping.Max - parameterMapping.Min));
         }
 
-        void ScaleProjectilesWithLevel()
+        void ScaleProjectilesWithLevel(float currentLevel, LevelEffectParameterMapping parameterMapping)
         {
             // TODO: 
             if (ShipController is GunShipController controller)
-                controller.ProjectileScale = minProjectileScale + ((ResourceSystem.CurrentLevel / ResourceSystem.MaxLevel) * (maxProjectileScale - minProjectileScale));
+                controller.ProjectileScale = parameterMapping.Min + (currentLevel * (parameterMapping.Max - parameterMapping.Min));
             else
                 Debug.LogWarning("Trying to scale projectile of ShipTransformer that is not a GunShipController");
         }
 
-        void ScaleProjectileBlocksWithLevel()
+        void ScaleShieldDecayWithLevel(float currentLevel, LevelEffectParameterMapping parameterMapping)
         {
-            if (ShipController is GunShipController controller)
-                controller.BlockScale = minProjectileBlockScale + ((ResourceSystem.CurrentLevel / ResourceSystem.MaxLevel) * (maxProjectileBlockScale - minProjectileBlockScale));
-            else
-                Debug.LogWarning("Trying to scale projectile block of ShipTransformer that is not a GunShipController");
+            
         }
     }
 }

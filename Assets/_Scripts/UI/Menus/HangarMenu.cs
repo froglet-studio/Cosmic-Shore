@@ -69,6 +69,7 @@ public class HangarMenu : MonoBehaviour
             shipSelection.GetComponent<Image>().sprite = ship.Icon;
             shipSelection.GetComponent<Button>().onClick.RemoveAllListeners();
             shipSelection.GetComponent<Button>().onClick.AddListener(() => SelectShip(selectionIndex));
+            shipSelection.GetComponent<Button>().onClick.AddListener(() => ShipSelectionContainer.GetComponent<MenuAudio>().PlayAudio());
         }
 
         StartCoroutine(SelectShipCoroutine(0));

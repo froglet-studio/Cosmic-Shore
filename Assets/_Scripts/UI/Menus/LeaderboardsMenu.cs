@@ -4,6 +4,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
+[RequireComponent(typeof(MenuAudio))]
 public class LeaderboardsMenu : MonoBehaviour
 {
     Dictionary<MiniGames, List<LeaderboardEntry>> LeaderboardEntries;
@@ -68,6 +69,7 @@ public class LeaderboardsMenu : MonoBehaviour
             gameSelection.GetComponent<Image>().sprite = game.Icon;
             gameSelection.GetComponent<Button>().onClick.RemoveAllListeners();
             gameSelection.GetComponent<Button>().onClick.AddListener(() => SelectGame(selectionIndex));
+            gameSelection.GetComponent<Button>().onClick.AddListener(() => GetComponent<MenuAudio>().PlayAudio());
         }
 
         StartCoroutine(SelectGameCoroutine(0));

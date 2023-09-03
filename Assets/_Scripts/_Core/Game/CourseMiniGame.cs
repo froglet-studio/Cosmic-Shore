@@ -1,4 +1,5 @@
 using UnityEngine;
+
 public class CourseMiniGame : MiniGame
 {
     [SerializeField] Crystal Crystal;
@@ -6,7 +7,6 @@ public class CourseMiniGame : MiniGame
     [SerializeField] SegmentSpawner SegmentSpawner;
     [SerializeField] int numberOfSegments = 10;
     [SerializeField] int straightLineLength = 400;
-
 
     public static new ShipTypes PlayerShipType = ShipTypes.Shark;
 
