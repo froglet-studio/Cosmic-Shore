@@ -21,6 +21,6 @@ MonoBehaviour:
   Ship: {fileID: 11400000, guid: ec97e344adb08f847a8f7649ab79088e, type: 2}
   PrimaryElement: 1
   InitialMass: 0
-  InitialCharge: 5
+  InitialCharge: 0.5
   InitialSpace: 0
   InitialTime: 0
