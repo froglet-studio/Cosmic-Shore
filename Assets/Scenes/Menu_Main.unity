@@ -1783,7 +1783,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 0.59607846, g: 0.67058825, b: 0.93333334, a: 1}
+  m_Color: {r: 0.9187516, g: 0.4009434, b: 1, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -2440,7 +2440,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 0.59607846, g: 0.67058825, b: 0.93333334, a: 1}
+  m_Color: {r: 0.21568628, g: 0.3882353, b: 1, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -2879,7 +2879,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 0.59607846, g: 0.67058825, b: 0.93333334, a: 1}
+  m_Color: {r: 1, g: 0.30980393, b: 0.9647059, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -5417,6 +5417,23 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 2285373006402348681, guid: 5b71118fa5475184c9ed0f3af4ab8b3f,
+        type: 3}
+      propertyPath: m_fontAsset
+      value: 
+      objectReference: {fileID: 11400000, guid: 6ab8eca0e6e2b7c4a8a495d9afae2053,
+        type: 2}
+    - target: {fileID: 2285373006402348681, guid: 5b71118fa5475184c9ed0f3af4ab8b3f,
+        type: 3}
+      propertyPath: m_sharedMaterial
+      value: 
+      objectReference: {fileID: 3995749905058258831, guid: 6ab8eca0e6e2b7c4a8a495d9afae2053,
+        type: 2}
+    - target: {fileID: 2285373006402348681, guid: 5b71118fa5475184c9ed0f3af4ab8b3f,
+        type: 3}
+      propertyPath: m_hasFontAssetChanged
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 2285373006474502810, guid: 5b71118fa5475184c9ed0f3af4ab8b3f,
         type: 3}
       propertyPath: m_AnchorMax.y
@@ -7098,13 +7115,13 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Sprite
       value: 
-      objectReference: {fileID: 21300000, guid: afd9e1c368ca7b745809086edaac50e7,
+      objectReference: {fileID: 21300000, guid: f6d378046d245dc40856bcf5e1077200,
         type: 3}
     - target: {fileID: 7420700290237912320, guid: 207ccb21bb29d1d4b8f9ec8cc0d76ab1,
         type: 3}
       propertyPath: m_Sprite
       value: 
-      objectReference: {fileID: 21300000, guid: afd9e1c368ca7b745809086edaac50e7,
+      objectReference: {fileID: 21300000, guid: f6d378046d245dc40856bcf5e1077200,
         type: 3}
     - target: {fileID: 7647353014034606830, guid: 207ccb21bb29d1d4b8f9ec8cc0d76ab1,
         type: 3}
