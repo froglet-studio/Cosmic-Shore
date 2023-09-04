@@ -508,7 +508,7 @@ SkinnedMeshRenderer:
   m_Materials:
   - {fileID: 2100000, guid: 54e78ce17120fe641904833c11bc1210, type: 2}
   - {fileID: 2100000, guid: 923d366546007394ea6c8aaff6a06863, type: 2}
-  - {fileID: 2100000, guid: 061dc7be7b899a2449754e57e864fbf3, type: 2}
+  - {fileID: 2100000, guid: 539a8c65974bf0b48aae77d83884c13b, type: 2}
   - {fileID: 2100000, guid: 99f64c48ac212f744a3fffd9d4eee770, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
@@ -551,7 +551,11 @@ SkinnedMeshRenderer:
   - {fileID: 8997425640202576112}
   - {fileID: 5798525600549448751}
   - {fileID: 5571582515015820382}
-  m_BlendShapeWeights: []
+  m_BlendShapeWeights:
+  - 100
+  - 100
+  - 100
+  - 100
   m_RootBone: {fileID: 4769814507153169321}
   m_AABB:
     m_Center: {x: 0.000514213, y: -0.0048629097, z: -0.001187378}
@@ -856,7 +860,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   SkinnedMeshRenderer: {fileID: 7720489361082621337}
-  UseNewAnimations: 1
+  SaveNewPositions: 0
+  UseShapeKeys: 0
   brakeThreshold: 0.65
   lerpAmount: 2
   smallLerpAmount: 0.7

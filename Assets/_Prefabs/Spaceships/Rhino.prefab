@@ -66,7 +66,7 @@ MeshRenderer:
   m_RendererPriority: 0
   m_Materials:
   - {fileID: 2100000, guid: 54e78ce17120fe641904833c11bc1210, type: 2}
-  - {fileID: 76534212252852256, guid: 4a586f927b9527f469c6d95a0ac32051, type: 3}
+  - {fileID: 2100000, guid: 539a8c65974bf0b48aae77d83884c13b, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -183,7 +183,7 @@ MeshRenderer:
   m_RendererPriority: 0
   m_Materials:
   - {fileID: 2100000, guid: 54e78ce17120fe641904833c11bc1210, type: 2}
-  - {fileID: 76534212252852256, guid: 4a586f927b9527f469c6d95a0ac32051, type: 3}
+  - {fileID: 2100000, guid: 539a8c65974bf0b48aae77d83884c13b, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -418,7 +418,7 @@ MeshRenderer:
   m_RendererPriority: 0
   m_Materials:
   - {fileID: 2100000, guid: 54e78ce17120fe641904833c11bc1210, type: 2}
-  - {fileID: 76534212252852256, guid: 4a586f927b9527f469c6d95a0ac32051, type: 3}
+  - {fileID: 2100000, guid: 539a8c65974bf0b48aae77d83884c13b, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -628,7 +628,7 @@ MeshRenderer:
   m_RendererPriority: 0
   m_Materials:
   - {fileID: 2100000, guid: 54e78ce17120fe641904833c11bc1210, type: 2}
-  - {fileID: 76534212252852256, guid: 4a586f927b9527f469c6d95a0ac32051, type: 3}
+  - {fileID: 2100000, guid: 539a8c65974bf0b48aae77d83884c13b, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -838,7 +838,7 @@ MeshRenderer:
   m_RendererPriority: 0
   m_Materials:
   - {fileID: 2100000, guid: 54e78ce17120fe641904833c11bc1210, type: 2}
-  - {fileID: 2100000, guid: 99f64c48ac212f744a3fffd9d4eee770, type: 2}
+  - {fileID: 2100000, guid: 539a8c65974bf0b48aae77d83884c13b, type: 2}
   - {fileID: 2100000, guid: 923d366546007394ea6c8aaff6a06863, type: 2}
   - {fileID: 2100000, guid: 99f64c48ac212f744a3fffd9d4eee770, type: 2}
   m_StaticBatchInfo:
@@ -1061,10 +1061,15 @@ MonoBehaviour:
   inputEventShipActions:
   - InputEvent: 0
     ShipActions:
-    - {fileID: 1315493734959331551}
-    - {fileID: 6430648885380261475}
-    - {fileID: 5565916779484709519}
     - {fileID: 7881301509579309438}
+    - {fileID: 6430648885380261475}
+    - {fileID: 1315493734959331551}
+    - {fileID: 5565916779484709519}
+  MassAbilityTarget: {fileID: 7881301509579309438}
+  ChargeAbilityTarget: {fileID: 6430648885380261475}
+  SpaceAbilityTarget: {fileID: 0}
+  TimeAbilityTarget: {fileID: 0}
+  ChargeAbility2Target: {fileID: 5565916779484709519}
   LevelEffects: 
   ControlOverrides: 0400000003000000
   closeCamDistance: -20
@@ -1072,7 +1077,19 @@ MonoBehaviour:
   AOEExplosionMaterial: {fileID: 0}
   AOEConicExplosionMaterial: {fileID: 0}
   SkimmerMaterial: {fileID: 0}
-  LevelEffectParameterMappings: []
+  LevelEffectParameterMappings:
+  - Element: 2
+    LevelEffect: 6
+    Min: 2
+    Max: 8
+  - Element: 1
+    LevelEffect: 7
+    Min: 8
+    Max: 2
+  - Element: 1
+    LevelEffect: 10
+    Min: 8
+    Max: 2
 --- !u!114 &6964962696344697388
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1215,7 +1232,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   SkinnedMeshRenderer: {fileID: 0}
-  UseNewAnimations: 0
+  SaveNewPositions: 0
+  UseShapeKeys: 0
   brakeThreshold: 0.65
   lerpAmount: 2
   smallLerpAmount: 0.7

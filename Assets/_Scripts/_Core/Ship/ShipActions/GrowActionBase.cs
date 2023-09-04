@@ -1,7 +1,7 @@
 ﻿using System.Collections;
 using UnityEngine;
 
-public class GrowActionBase : ShipActionAbstractBase
+public class GrowActionBase : LevelAwareShipActionAbstractBase
 {
     [SerializeField] protected float minSize;
     [SerializeField] protected float maxSize;
@@ -54,5 +54,23 @@ public class GrowActionBase : ShipActionAbstractBase
             yield return null;
         }
         target.transform.localScale = minSize * Vector3.one;
+    }
+
+    public override void SetLevelParameter(Element element, float amount)
+    {
+        switch (element)
+        {
+            case Element.Charge:
+                shrinkRate = amount;
+                break;
+            case Element.Mass:
+                maxSize = amount;
+                break;
+            case Element.Space:
+                break;
+            case Element.Time:
+                break;
+        }
+        
     }
 }

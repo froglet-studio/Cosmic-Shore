@@ -64,6 +64,13 @@ namespace StarWriter.Core
         [SerializeField] List<InputEventShipActionMapping> inputEventShipActions;
         Dictionary<InputEvents, List<ShipActionAbstractBase>> ShipControlActions = new();
 
+        [Header("Leveling Targets")]
+        [SerializeField] LevelAwareShipActionAbstractBase MassAbilityTarget;
+        [SerializeField] LevelAwareShipActionAbstractBase ChargeAbilityTarget;
+        [SerializeField] LevelAwareShipActionAbstractBase SpaceAbilityTarget;
+        [SerializeField] LevelAwareShipActionAbstractBase TimeAbilityTarget;
+        [SerializeField] LevelAwareShipActionAbstractBase ChargeAbility2Target;
+
         [Header("Passive Effects")]
         public List<ShipLevelEffects> LevelEffects;
         [SerializeField] public List<ShipControlOverrides> ControlOverrides;
@@ -440,6 +447,22 @@ namespace StarWriter.Core
                 case ShipLevelEffects.ScaleShieldDecay:
                     ScaleShieldDecayWithLevel(currentLevel, parameterMapping);
                     break;
+                case ShipLevelEffects.ScaleMassAbility:
+                    ScaleMassAbilityWithLevel(currentLevel, parameterMapping);
+                    break;
+                case ShipLevelEffects.ScaleChargeAbility:
+                    ScaleMassAbilityWithLevel(currentLevel, parameterMapping);
+                    break;
+                case ShipLevelEffects.ScaleSpaceAbility:
+                    ScaleMassAbilityWithLevel(currentLevel, parameterMapping);
+                    break;
+                case ShipLevelEffects.ScaleTimeAbility:
+                    ScaleMassAbilityWithLevel(currentLevel, parameterMapping);
+                    break;
+                case ShipLevelEffects.ScaleChargeAbility2:
+                    ScaleMassAbilityWithLevel(currentLevel, parameterMapping);
+                    break;
+
             }
         }
 
@@ -483,6 +506,32 @@ namespace StarWriter.Core
         void ScaleShieldDecayWithLevel(float currentLevel, LevelEffectParameterMapping parameterMapping)
         {
             
+        }
+
+        void ScaleMassAbilityWithLevel(float currentLevel, LevelEffectParameterMapping parameterMapping)
+        {
+            Debug.Log($"Current Level: {currentLevel}");
+            MassAbilityTarget.SetLevelParameter(Element.Mass, parameterMapping.Max - (currentLevel * (parameterMapping.Max - parameterMapping.Min)));
+        }
+        void ScaleChargeAbilityWithLevel(float currentLevel, LevelEffectParameterMapping parameterMapping)
+        {
+            Debug.Log($"Current Level: {currentLevel}");
+            ChargeAbilityTarget.SetLevelParameter(Element.Charge, parameterMapping.Max - (currentLevel * (parameterMapping.Max - parameterMapping.Min)));
+        }
+        void ScaleSpaceAbilityWithLevel(float currentLevel, LevelEffectParameterMapping parameterMapping)
+        {
+            Debug.Log($"Current Level: {currentLevel}");
+            SpaceAbilityTarget.SetLevelParameter(Element.Space, parameterMapping.Max - (currentLevel * (parameterMapping.Max - parameterMapping.Min)));
+        }
+        void ScaleTimeAbilityWithLevel(float currentLevel, LevelEffectParameterMapping parameterMapping)
+        {
+            Debug.Log($"Current Level: {currentLevel}");
+            TimeAbilityTarget.SetLevelParameter(Element.Time, parameterMapping.Max - (currentLevel * (parameterMapping.Max - parameterMapping.Min)));
+        }
+        void ScaleChargeAbility2WithLevel(float currentLevel, LevelEffectParameterMapping parameterMapping)
+        {
+            Debug.Log($"Current Level: {currentLevel}");
+            ChargeAbility2Target.SetLevelParameter(Element.Charge, parameterMapping.Max - (currentLevel * (parameterMapping.Max - parameterMapping.Min)));
         }
     }
 }

@@ -7,4 +7,10 @@ public enum ShipLevelEffects
     ScaleShieldDecay = 3,
     ScaleNearFieldSkimmer = 4,
     ScaleFarFieldSkimmer = 5,
+    ScaleMassAbility = 6,
+    ScaleChargeAbility = 7,
+    ScaleSpaceAbility = 8,
+    ScaleTimeAbility = 9,
+    ScaleChargeAbility2 = 10
+
 }

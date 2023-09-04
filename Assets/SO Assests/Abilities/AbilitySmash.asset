@@ -13,9 +13,10 @@ MonoBehaviour:
   m_Name: AbilitySmash
   m_EditorClassIdentifier: 
   Action: 2
-  Name: Smash
-  Description: Flying full speed and straight will cause your forcefield to grow
-    and your camera to provide greater visibility. Destroy mass to earn fuel.
+  Name: Berserk
+  Description: Flying full speed and straight will cause your forcefield to grow,
+    your camera to provide greater visibility, and your trail to grow. Destroy mass
+    to earn fuel.
   Icon: {fileID: 21300000, guid: 377abf4d2118f4f488b8bff68e4f713c, type: 3}
   SelectedIcon: {fileID: 21300000, guid: 8093884ca2f1a2949ab8da9e1212d255, type: 3}
   PreviewClip: {fileID: 2096801853598961014, guid: 95e0820abc65d8a45af1a85872c3eccc,

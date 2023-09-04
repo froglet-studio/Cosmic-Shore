@@ -21,7 +21,7 @@ MonoBehaviour:
   PreviewClip: {fileID: 241334157148977051, guid: bce3acfd8a554e942bc4f1903e25eb07,
     type: 3}
   Pilots:
-  - {fileID: 11400000, guid: 6d520cd7eb8878b4aa2551e0591bc08d, type: 2}
+  - {fileID: 11400000, guid: 50d61f2148b39544095d668e3d74de9c, type: 2}
   - {fileID: 11400000, guid: 87b2a6ade75e4aa499cbc046a33f4f21, type: 2}
   MinPlayers: 1
   MaxPlayers: 3

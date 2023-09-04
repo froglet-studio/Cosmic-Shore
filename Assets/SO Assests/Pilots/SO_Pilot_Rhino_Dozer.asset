@@ -12,15 +12,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ce7474d4aed9d704ea0001a2338c0784, type: 3}
   m_Name: SO_Pilot_Rhino_Dozer
   m_EditorClassIdentifier: 
-  Name: Dozer
+  Name: Dozer - The Mass Rhino
   CallSign: Dozer
-  Description: Some pilots dodge and weave; Dozer clears a path
+  Description: Boosting the biggest blocks of the bunch                                
+    "Some pilots dodge and weave; Dozer clears a path"
   Image: {fileID: 21300000, guid: 161e07fc5930fca4ebeccaa1257a4176, type: 3}
   Icon: {fileID: 21300000, guid: 729a100b8ad2f8145a1fcbe2ac19d42f, type: 3}
   SelectedIcon: {fileID: 21300000, guid: 3a6acf18a9bd0c4429220fb40f33af3a, type: 3}
   Ship: {fileID: 11400000, guid: ec97e344adb08f847a8f7649ab79088e, type: 2}
-  PrimaryElement: 4
-  InitialMass: 5
+  PrimaryElement: 2
+  InitialMass: 0.5
   InitialCharge: 0
   InitialSpace: 0
   InitialTime: 0

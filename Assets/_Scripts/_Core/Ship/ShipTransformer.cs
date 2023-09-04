@@ -173,7 +173,7 @@ public class ShipTransformer : MonoBehaviour
 
         if (shipData.Drifting)
         {
-            ship.GetComponent<TrailSpawner>().SetDotProduct(Vector3.Dot(shipData.Course, transform.forward));
+            ship.GetComponent<TrailSpawner>().SetDotProduct(Vector3.Dot(shipData.Course, transform.forward)); // TODO: move this to it's own ability
         }
         else
         {

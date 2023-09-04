@@ -12,8 +12,8 @@ public class SO_Pilot : ScriptableObject
     [SerializeField] public Sprite SelectedIcon;
     [SerializeField] public SO_Ship Ship;
     [SerializeField] public Element PrimaryElement;
-    [SerializeField] public int InitialMass;
-    [SerializeField] public int InitialCharge;
-    [SerializeField] public int InitialSpace;
-    [SerializeField] public int InitialTime;
+    [SerializeField] public float InitialMass;
+    [SerializeField] public float InitialCharge;
+    [SerializeField] public float InitialSpace;
+    [SerializeField] public float InitialTime;
 }
