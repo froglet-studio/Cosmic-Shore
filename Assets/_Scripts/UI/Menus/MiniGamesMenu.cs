@@ -185,6 +185,7 @@ public class MiniGamesMenu : MonoBehaviour
             gameSelection.GetComponent<Image>().sprite = game.Icon;
             gameSelection.GetComponent<Button>().onClick.RemoveAllListeners();
             gameSelection.GetComponent<Button>().onClick.AddListener(() => SelectGame(selectionIndex));
+            gameSelection.GetComponent<Button>().onClick.AddListener(() => GameSelectionContainer.GetComponent<MenuAudio>().PlayAudio());
         }
 
         StartCoroutine(SelectGameCoroutine(0));

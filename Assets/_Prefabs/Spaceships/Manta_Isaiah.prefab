@@ -1534,7 +1534,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 46ca128b16ccbfd42be69beb8b52be77, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  UseNewAnimations: 0
+  SkinnedMeshRenderer: {fileID: 294782850484102842}
+  UseNewAnimations: 1
   brakeThreshold: 0.65
   lerpAmount: 2
   smallLerpAmount: 0.7
@@ -1549,7 +1550,6 @@ MonoBehaviour:
   ThrusterTopLeft: {fileID: 6207385369198803544}
   ThrusterBottomLeft: {fileID: 4361035735461382822}
   ThrusterBottomRight: {fileID: 9195870423300008347}
-  SkinnedMeshRenderer: {fileID: 294782850484102842}
   animationScaler: 25
   yawAnimationScaler: 20
 --- !u!114 &7686683633640807837
