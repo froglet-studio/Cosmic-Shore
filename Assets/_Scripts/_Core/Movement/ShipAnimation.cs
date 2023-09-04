@@ -9,7 +9,8 @@ public abstract class ShipAnimation : MonoBehaviour
     protected InputController inputController;
 
     [SerializeField] public SkinnedMeshRenderer SkinnedMeshRenderer;
-    [SerializeField] bool UseNewAnimations; // TODO: remove after all models have shape keys support
+    [SerializeField] bool SaveNewPositions; // TODO: remove after all models have shape keys support
+    [SerializeField] bool UseShapeKeys; // TODO: remove after all models have shape keys support
     [SerializeField] protected float brakeThreshold = .65f;
     [SerializeField] protected float lerpAmount = 2f;
     [SerializeField] protected float smallLerpAmount = .7f;
@@ -41,7 +42,7 @@ public abstract class ShipAnimation : MonoBehaviour
     protected abstract void PerformShipAnimations(float YSum, float XSum, float YDiff, float XDiff);
     protected virtual void Idle()
     {
-        if (UseNewAnimations)
+        if (SaveNewPositions)
         {
             for (var i = 0; i < Transforms.Count; i++)
                 ResetAnimation(Transforms[i], InitialRotations[i]);
@@ -90,7 +91,7 @@ public abstract class ShipAnimation : MonoBehaviour
 
     public virtual void UpdateShapeKey(Element element, float percent)
     {
-        if (!UseNewAnimations) return;
+        if (!UseShapeKeys) return;
 
         var index = 0;
         switch(element)

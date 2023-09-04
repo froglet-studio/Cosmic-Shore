@@ -92,14 +92,25 @@ public class RiptideAnimation : ShipAnimation
         var pitchScalar = pitch * exaggeratedAnimationScaler;
         var yawScalar = yaw * exaggeratedAnimationScaler;
         var rollScalar = roll * exaggeratedAnimationScaler;
-        
-        foreach (var part in animationTransforms)
-            AnimatePart(part, pitchScalar, yawScalar, rollScalar, thrusterPosition);
+
+
+        for (int partIndex = 0; partIndex < animationTransforms.Count; partIndex++) 
+        {
+             AnimatePart(animationTransforms[partIndex], pitchScalar, yawScalar, rollScalar, thrusterPosition, InitialRotations[partIndex]);
+        }
+            
     }
 
     void AnimatePart(Transform part, float pitch, float yaw, float roll, Vector3 position)
     {
         base.AnimatePart(part, pitch, yaw, roll);
+
+        part.localPosition = Vector3.Lerp(part.localPosition, position, lerpAmount * Time.deltaTime);
+    }
+
+    void AnimatePart(Transform part, float pitch, float yaw, float roll, Vector3 position, Quaternion InitialRotation)
+    {
+        base.AnimatePart(part, pitch, roll, yaw, InitialRotation);
 
         part.localPosition = Vector3.Lerp(part.localPosition, position, lerpAmount * Time.deltaTime);
     }
@@ -117,5 +128,12 @@ public class RiptideAnimation : ShipAnimation
         Transforms.Add(ThrusterBottomLeft);
         Transforms.Add(ThrusterLeft);
         Transforms.Add(ThrusterTopLeft);
+
+        InitialRotations.Add(ThrusterTopRight.localRotation);
+        InitialRotations.Add(ThrusterRight.localRotation);
+        InitialRotations.Add(ThrusterBottomRight.localRotation);
+        InitialRotations.Add(ThrusterBottomLeft.localRotation);
+        InitialRotations.Add(ThrusterLeft.localRotation);
+        InitialRotations.Add(ThrusterTopLeft.localRotation);
     }
 }
