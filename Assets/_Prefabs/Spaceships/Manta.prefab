@@ -506,10 +506,10 @@ SkinnedMeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: -7501213079140947745, guid: 77a38b23d33b195469fe407e2207bbdf, type: 3}
-  - {fileID: -2297780506565644298, guid: 77a38b23d33b195469fe407e2207bbdf, type: 3}
-  - {fileID: 76534212252852256, guid: 77a38b23d33b195469fe407e2207bbdf, type: 3}
-  - {fileID: -1267073853079261747, guid: 77a38b23d33b195469fe407e2207bbdf, type: 3}
+  - {fileID: 2100000, guid: 54e78ce17120fe641904833c11bc1210, type: 2}
+  - {fileID: 2100000, guid: 923d366546007394ea6c8aaff6a06863, type: 2}
+  - {fileID: 2100000, guid: 061dc7be7b899a2449754e57e864fbf3, type: 2}
+  - {fileID: 2100000, guid: 99f64c48ac212f744a3fffd9d4eee770, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -697,6 +697,13 @@ MonoBehaviour:
   OrientationHandle: {fileID: 1878660672777590133}
   shipGeometries:
   - {fileID: 5691083765198909859}
+  - {fileID: 7006514261138449697}
+  - {fileID: 1815102489639903026}
+  - {fileID: 8912034820902656382}
+  - {fileID: 6675130274311316141}
+  - {fileID: 7696976320636676308}
+  - {fileID: 1376376450048088127}
+  - {fileID: 6988205045896376628}
   AOEPrefab: {fileID: 2728798890556433942, guid: f5ecfb9923155a84c860975d559b2714,
     type: 3}
   farFieldSkimmer: {fileID: 3138628630497430536}
@@ -860,7 +867,7 @@ MonoBehaviour:
   ThrusterTopLeft: {fileID: 6568354364218703309}
   ThrusterBottomLeft: {fileID: 7992807412611599177}
   ThrusterBottomRight: {fileID: 8105609640698425209}
-  smallAnimationScaler: 30
+  smallAnimationScaler: 27
   mediumAnimationScaler: 30
   bigAnimationScaler: 60
 --- !u!114 &7686683633640807837

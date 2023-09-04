@@ -25,38 +25,38 @@ class MantaAnimation : ShipAnimation
 
         AnimatePart(LeftWing,
                     pitch * mediumAnimationScaler,
-                    -(throttle - yaw) * bigAnimationScaler,
-                    -(roll + pitch) * smallAnimationScaler,
+                    (-throttle + yaw) * bigAnimationScaler,
+                    (-roll - pitch) * smallAnimationScaler,
                     InitialRotations[1]);
 
         AnimatePart(RightWing,
-                    0 * mediumAnimationScaler,
+                    pitch * mediumAnimationScaler,
                     (throttle + yaw) * bigAnimationScaler,
-                    -(roll - pitch) * smallAnimationScaler,
+                    (-roll + pitch) * smallAnimationScaler,
                     InitialRotations[2]);
 
         AnimatePart(ThrusterBottomLeft,
-                    0 * mediumAnimationScaler,
+                    pitch * mediumAnimationScaler,
                     yaw * mediumAnimationScaler,
-                    (-roll - (throttle)) * smallAnimationScaler,
+                    (-roll - throttle) * smallAnimationScaler,
                     InitialRotations[5]);
 
         AnimatePart(ThrusterTopRight,
-                    0 * mediumAnimationScaler,
+                    pitch * mediumAnimationScaler,
                     yaw * mediumAnimationScaler,
-                    (-roll  -  (throttle)) * smallAnimationScaler,
+                    (-roll - throttle) * smallAnimationScaler,
                     InitialRotations[4]);
 
         AnimatePart(ThrusterTopLeft,
-                    0 * mediumAnimationScaler,
+                    pitch * mediumAnimationScaler,
                     (yaw) * mediumAnimationScaler,
-                    (-roll +  (throttle)) * smallAnimationScaler,
+                    (-roll + throttle) * smallAnimationScaler,
                     InitialRotations[3]);
 
         AnimatePart(ThrusterBottomRight,
-                    0 * mediumAnimationScaler,
+                    pitch * mediumAnimationScaler,
                     (yaw) * mediumAnimationScaler,
-                    (-roll + (throttle)) * smallAnimationScaler,
+                    (-roll + throttle) * smallAnimationScaler,
                     InitialRotations[6]);
 
     }
