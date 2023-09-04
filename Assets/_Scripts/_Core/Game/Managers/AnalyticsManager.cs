@@ -1,4 +1,5 @@
 using Firebase;
+using Firebase.Analytics;
 using StarWriter.Utility.Singleton;
 
 public class AnalyticsManager : SingletonPersistent<AnalyticsManager>
@@ -37,10 +38,41 @@ public class AnalyticsManager : SingletonPersistent<AnalyticsManager>
         }
     }
 
+    public void LogGamePlayStart(MiniGames mode, ShipTypes ship, int playerCount, int intensity)
+    {
+        if (analyticsEnabled)
+        {
+            Parameter[] parameters =
+            {
+                new Parameter(FirebaseAnalytics.ParameterLevel, mode.ToString()),
+                new Parameter(FirebaseAnalytics.ParameterCharacter, ship.ToString()),
+                new Parameter("PlayerCount", playerCount),
+                new Parameter("Intensity", intensity),
+            };
+            Firebase.Analytics.FirebaseAnalytics.LogEvent(Firebase.Analytics.FirebaseAnalytics.EventLevelStart, parameters);
+        }
+    }
+
+    public void LogGamePlayEnd(MiniGames mode, ShipTypes ship, int playerCount, int intensity, int highScore)
+    {
+        if (analyticsEnabled)
+        {
+            Parameter[] parameters =
+            {
+                new Parameter(FirebaseAnalytics.ParameterLevel, mode.ToString()),
+                new Parameter(FirebaseAnalytics.ParameterCharacter, ship.ToString()),
+                new Parameter("PlayerCount", playerCount),
+                new Parameter("Intensity", intensity),
+                new Parameter("HighScore", highScore),
+            };
+            Firebase.Analytics.FirebaseAnalytics.LogEvent(Firebase.Analytics.FirebaseAnalytics.EventLevelEnd, parameters);
+        }
+    }
+
     void Initialize()
     {
-        // TODO: keeping analytics disabled for now until we get FireBase working on iOS
-        /*
+
+#if UNITY_ANDROID  // TODO: keeping analytics disabled on iOS for now until we resolve dependency issues
         Firebase.FirebaseApp.CheckAndFixDependenciesAsync().ContinueWith(task =>
         {
             var dependencyStatus = task.Result;
@@ -57,6 +89,7 @@ public class AnalyticsManager : SingletonPersistent<AnalyticsManager>
                   "Could not resolve all Firebase dependencies: {0}", dependencyStatus));
             }
         });
-        */
+        /**/
+#endif
     }
 }

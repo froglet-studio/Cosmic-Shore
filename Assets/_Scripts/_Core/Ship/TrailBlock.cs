@@ -31,7 +31,7 @@ namespace StarWriter.Core
         BoxCollider blockCollider;
         Teams team;
         public Teams Team { get => team; set => team = value; }
-        string playerName;
+        string playerName = "Unassigned";
         public string PlayerName { get => playerName; set => playerName = value; }
 
         protected virtual void Start()

@@ -20,8 +20,7 @@ MonoBehaviour:
   PreviewClip: {fileID: 2096801853598961014, guid: e838c42bdbc409946944368a0ac2d38d,
     type: 3}
   Pilots:
-  - {fileID: 11400000, guid: 6ea494af7f39c7a43b023140ffdf2e68, type: 2}
-  - {fileID: 11400000, guid: 6ea494af7f39c7a43b023140ffdf2e68, type: 2}
-  MinPlayers: 1
-  MaxPlayers: 3
+  - {fileID: 11400000, guid: 15f7cf9ff064a6746a1b3432455a787b, type: 2}
+  MinPlayers: 2
+  MaxPlayers: 2
   SceneName: MinigameDolphinDarts

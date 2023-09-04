@@ -47,7 +47,7 @@ public class Bone : MonoBehaviour
         //if (Parent != null && (Transform.localPosition - Parent.Transform.localPosition).sqrMagnitude > 2f) LerpBone((Parent.Transform.localPosition + Transform.localPosition) / 2);
         //if (Children.Count > 0 && (Transform.localPosition - Children[0].Transform.localPosition).sqrMagnitude > 2f) LerpBone((Children[0].Transform.localPosition + Transform.localPosition) / 2);
         if ((Transform.localPosition - targetPosition).sqrMagnitude < .1f) dirty = false;
-        else; //Transform.localPosition = offsetVector;
+        // else; Transform.localPosition = offsetVector;
         
     }
 }

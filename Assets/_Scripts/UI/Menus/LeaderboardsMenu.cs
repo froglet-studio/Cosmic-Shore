@@ -13,22 +13,18 @@ public class LeaderboardsMenu : MonoBehaviour
     [SerializeField] Transform GameSelectionContainer;
     [SerializeField] GameObject HighScoresContainer;
 
-    List<SO_MiniGame> Games;
+    List<SO_MiniGame> Games = new();
     SO_MiniGame SelectedGame;
 
     // Start is called before the first frame update
     void Start()
     {
-        Games = GameList.GameList;
-
         // TODO: Reconsider this implementation for avoiding displaying Freestyle on the scoreboard
-        foreach (var game in Games) {
-            if (game.Mode == MiniGames.Freestyle)
-            {
-                Games.Remove(game);
-                break;
-            }
-        }
+        // Copy the game list, but skip Freestyle -- IMPORTANT to copy the list so we don't modify the SO
+        foreach (var game in GameList.GameList)
+            if (game.Mode != MiniGames.Freestyle)
+                Games.Add(game);
+
         LeaderboardEntries = LeaderboardDataAccessor.Load();
         PopulateGameSelectionList();
     }

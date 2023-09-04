@@ -10,16 +10,19 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe040efad3307fb449b6b72ad15362da, type: 3}
-  m_Name: MiniGameFlightSchool
+  m_Name: MiniGameElimination
   m_EditorClassIdentifier: 
   Mode: 1
-  Name: FlightSchool
-  Description: What you do before going to Flight Club
+  Name: Elimination
+  Description: How many turns can you survive without hitting a block? Last ship
+    standing wins
   Icon: {fileID: 21300000, guid: 3393ef5bcc756364d98dc478fc0fe52b, type: 3}
   SelectedIcon: {fileID: 21300000, guid: b734e1a473e014c4198c58f6c02b894d, type: 3}
   PreviewClip: {fileID: 3312024567346999270, guid: 51aa26330ad783b4d9f1d54a91583c41,
     type: 3}
-  Pilots: []
+  Pilots:
+  - {fileID: 11400000, guid: 0d57b8e9eb4fb7a4b8db5456bb5f3530, type: 2}
+  - {fileID: 11400000, guid: f39381eaab68c5444b4d8846877fe5c7, type: 2}
   MinPlayers: 1
-  MaxPlayers: 4
+  MaxPlayers: 3
   SceneName: MinigameFlightSchool

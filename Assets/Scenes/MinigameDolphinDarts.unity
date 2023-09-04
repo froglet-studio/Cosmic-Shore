@@ -466,7 +466,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0a66c9f1814dd7a49a173c0f8d502ce0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  duration: 15
+  duration: 10
   display: {fileID: 0}
 --- !u!4 &1078953705
 Transform:
@@ -504,11 +504,6 @@ MonoBehaviour:
   playerPrefab: {fileID: 1649340654}
   PlayerOrigin: {fileID: 1192541910}
   ActivePlayer: {fileID: 0}
-  Countdown3: {fileID: 21300000, guid: d930e6627cfa54e44bfcafde136ddb2f, type: 3}
-  Countdown2: {fileID: 21300000, guid: 63576b00b6277364caa9551fac9568cd, type: 3}
-  Countdown1: {fileID: 21300000, guid: dc92b9b5ae6760c40a727554bffd81a1, type: 3}
-  Countdown0: {fileID: 21300000, guid: 626c8dff36296a24099f550ae99caa89, type: 3}
-  CountdownGrowScale: 1.5
   DartBoard: {fileID: 1344816199}
   Crystal: {fileID: 1568959833}
   CrystalStartPosition: {x: 0, y: 0, z: 0}
@@ -937,6 +932,18 @@ Transform:
     type: 3}
   m_PrefabInstance: {fileID: 1309816786}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &1309816788 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 3197094124088707225, guid: cb702179ff5b42f41a3521ccd59e6934,
+    type: 3}
+  m_PrefabInstance: {fileID: 1309816786}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 349be5718d2f4654f95293618dd77a71, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1001 &1313201258
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -944,11 +951,6 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 0}
     m_Modifications:
-    - target: {fileID: 5497835173863578960, guid: 65bf1ed35b752374ca46ae214710e41c,
-        type: 3}
-      propertyPath: m_Enabled
-      value: 1
-      objectReference: {fileID: 0}
     - target: {fileID: 5497835173863578963, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: m_Name
@@ -1125,8 +1127,6 @@ MonoBehaviour:
   ringCount: 18
   ringThickness: 8
   gap: 15
-  PlayerOne: {fileID: 1649340654}
-  PlayerTwo: {fileID: 0}
   dartBoardRadius: 100
 --- !u!1 &1471404062
 GameObject:
@@ -1137,6 +1137,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1471404063}
+  - component: {fileID: 1471404064}
   m_Layer: 0
   m_Name: Environment
   m_TagString: Untagged
@@ -1166,6 +1167,20 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 3
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1471404064
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1471404062}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f330c08a1e7665643adcc232c0cffef9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  Nodes:
+  - {fileID: 1309816788}
 --- !u!114 &1568959833 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 6588436222817790495, guid: fced5b15da3ad1d41b4e3b7385609e37,

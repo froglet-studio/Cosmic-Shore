@@ -195,6 +195,36 @@ public class ScoreTracker : MonoBehaviour
             return maxKey;
     }
 
+    public virtual int GetHighScore()
+    {
+        bool minTie;
+        bool maxTie;
+        float minScore = float.MaxValue;
+        float maxScore = float.MinValue;
+        string minKey = "";
+        string maxKey = "";
+        foreach (var key in playerScores.Keys)
+        {
+            if (playerScores[key] <= minScore)
+            {
+                minTie = playerScores[key] == minScore;
+                minScore = playerScores[key];
+                minKey = key;
+            }
+            if (playerScores[key] >= maxScore)
+            {
+                maxTie = playerScores[key] == maxScore;
+                maxScore = playerScores[key];
+                maxKey = key;
+            }
+        }
+
+        if (GolfRules)
+            return (int)minScore;
+        else
+            return (int)maxScore;
+    }
+
     public virtual int GetScore(string playerName) 
     {
         return (int) playerScores[playerName];

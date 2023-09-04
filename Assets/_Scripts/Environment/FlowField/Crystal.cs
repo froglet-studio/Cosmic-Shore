@@ -35,7 +35,6 @@ public class Crystal : NodeItem
 
     protected virtual void Start()
     {
-
         collisions = new List<Collider>();
         AddSelfToNode();
     }

@@ -140,6 +140,7 @@ public class MiniGame : MonoBehaviour
 
     void StartGame()
     {
+        AnalyticsManager.Instance.LogGamePlayStart(gameMode, PlayerShipType, NumberOfPlayers, DifficultyLevel);
         gameRunning = true;
         Debug.Log($"MiniGame.StartGame, ... {Time.time}");
         EndGameScreen.SetActive(false);
@@ -206,6 +207,7 @@ public class MiniGame : MonoBehaviour
         gameRunning = false;
         EndGameScreen.SetActive(true);
         ScoreTracker.DisplayScores();
+        AnalyticsManager.Instance.LogGamePlayEnd(gameMode, PlayerShipType, NumberOfPlayers, DifficultyLevel, ScoreTracker.GetHighScore());
     }
 
     void UpdateLeaderboardEntries()

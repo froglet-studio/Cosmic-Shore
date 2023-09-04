@@ -8,7 +8,7 @@ using UnityEngine.UI;
 
 public class MiniGamesMenu : MonoBehaviour
 {
-    [SerializeField] List<SO_MiniGame> Games;
+    [SerializeField] SO_GameList GameList;
     [SerializeField] TMPro.TMP_Text SelectedGameName;
     [SerializeField] TMPro.TMP_Text SelectedGameDescription;
     [SerializeField] GameObject SelectedGamePreviewWindow;
@@ -74,11 +74,11 @@ public class MiniGamesMenu : MonoBehaviour
         Debug.Log($"SelectGame: {index}");
 
         // Deselect them all
-        for (var i = 0; i < Games.Count; i++)
-            GameSelectionContainer.GetChild(i).gameObject.GetComponent<Image>().sprite = Games[i].Icon;
+        for (var i = 0; i < GameList.GameList.Count; i++)
+            GameSelectionContainer.GetChild(i).gameObject.GetComponent<Image>().sprite = GameList.GameList[i].Icon;
 
         // Select the one
-        SelectedGame = Games[index];
+        SelectedGame = GameList.GameList[index];
         GameSelectionContainer.GetChild(index).gameObject.GetComponent<Image>().sprite = SelectedGame.SelectedIcon;
 
         Debug.Log($"SelectGame, PlayerCountButtonContainer.transform.childCount: {PlayerCountButtonContainer.transform.childCount}");
@@ -176,9 +176,9 @@ public class MiniGamesMenu : MonoBehaviour
             GameSelectionContainer.GetChild(i).gameObject.SetActive(false);
 
         // Reactivate based on the number of games for the given ship
-        for (var i = 0; i < Games.Count; i++) {
+        for (var i = 0; i < GameList.GameList.Count; i++) {
             var selectionIndex = i;
-            var game = Games[i];
+            var game = GameList.GameList[i];
             Debug.Log($"Populating Game Select List: {game.Name}");
             var gameSelection = GameSelectionContainer.GetChild(i).gameObject;
             gameSelection.SetActive(true);
