@@ -862,7 +862,7 @@ MonoBehaviour:
   ThrusterBottomRight: {fileID: 8105609640698425209}
   smallAnimationScaler: 30
   mediumAnimationScaler: 30
-  bigAnimationScaler: 70
+  bigAnimationScaler: 60
 --- !u!114 &7686683633640807837
 MonoBehaviour:
   m_ObjectHideFlags: 0
