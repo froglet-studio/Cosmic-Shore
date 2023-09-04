@@ -94,6 +94,7 @@ public class HangarMenu : MonoBehaviour
             abilitySelection.GetComponent<Image>().sprite = ability.Icon;
             abilitySelection.GetComponent<Button>().onClick.RemoveAllListeners();
             abilitySelection.GetComponent<Button>().onClick.AddListener(() => SelectAbility(selectionIndex));
+            abilitySelection.GetComponent<Button>().onClick.AddListener(() => AbilitySelectionContainer.GetComponent<MenuAudio>().PlayAudio());
         }
 
         if (SelectedShip.Abilities.Count > 0)
@@ -119,6 +120,7 @@ public class HangarMenu : MonoBehaviour
             pilotSelection.GetComponent<Image>().sprite = pilot.Icon;
             pilotSelection.GetComponent<Button>().onClick.RemoveAllListeners();
             pilotSelection.GetComponent<Button>().onClick.AddListener(() => SelectPilot(selectionIndex));
+            pilotSelection.GetComponent<Button>().onClick.AddListener(() => PilotSelectionContainer.GetComponent<MenuAudio>().PlayAudio());
         }
 
         StartCoroutine(SelectPilotCoroutine(0));

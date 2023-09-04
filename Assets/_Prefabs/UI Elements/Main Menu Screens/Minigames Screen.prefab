@@ -133,6 +133,7 @@ GameObject:
   - component: {fileID: 4125016651311633802}
   - component: {fileID: 4125016651311633801}
   - component: {fileID: 4125016651311633800}
+  - component: {fileID: 727755002}
   m_Layer: 5
   m_Name: Play Button
   m_TagString: Untagged
@@ -254,6 +255,31 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
+      - m_Target: {fileID: 727755002}
+        m_TargetAssemblyTypeName: MenuAudio, Assembly-CSharp
+        m_MethodName: PlayAudio
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+--- !u!114 &727755002
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4125016651311633806}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 698f3492214843a49b922c5c64f54760, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  audioClip: {fileID: 8300000, guid: fa765e4ec173f0548a67dec9f46d8dc2, type: 3}
 --- !u!1 &4125016651318066795
 GameObject:
   m_ObjectHideFlags: 0
@@ -266,6 +292,7 @@ GameObject:
   - component: {fileID: 4125016651318066791}
   - component: {fileID: 4125016651318066790}
   - component: {fileID: 4125016651318066789}
+  - component: {fileID: 1387743637}
   m_Layer: 5
   m_Name: Return Button
   m_TagString: Untagged
@@ -387,6 +414,31 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
+      - m_Target: {fileID: 1387743637}
+        m_TargetAssemblyTypeName: MenuAudio, Assembly-CSharp
+        m_MethodName: PlayAudio
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+--- !u!114 &1387743637
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4125016651318066795}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 698f3492214843a49b922c5c64f54760, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  audioClip: {fileID: 8300000, guid: 9c121fe3b6252f94a993398bf795ddb7, type: 3}
 --- !u!1 &4125016651326947150
 GameObject:
   m_ObjectHideFlags: 0
@@ -558,11 +610,11 @@ RectTransform:
   m_Father: {fileID: 4125016652223644499}
   m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 1, y: 0}
-  m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: -60.000004, y: -95}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: 60, y: -95.00003}
   m_SizeDelta: {x: 136, y: -190}
-  m_Pivot: {x: 1, y: 1}
+  m_Pivot: {x: 0, y: 1}
 --- !u!114 &4125016651385585438
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -790,6 +842,7 @@ GameObject:
   m_Component:
   - component: {fileID: 4125016651435336975}
   - component: {fileID: 4125016651435336968}
+  - component: {fileID: 130509179}
   m_Layer: 5
   m_Name: Game List
   m_TagString: Untagged
@@ -848,6 +901,19 @@ MonoBehaviour:
   m_ChildScaleWidth: 1
   m_ChildScaleHeight: 1
   m_ReverseArrangement: 0
+--- !u!114 &130509179
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4125016651435336974}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 698f3492214843a49b922c5c64f54760, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  audioClip: {fileID: 8300000, guid: bcbe43895a970184ab80a7c2a7915290, type: 3}
 --- !u!1 &4125016651535182479
 GameObject:
   m_ObjectHideFlags: 0
@@ -1064,6 +1130,7 @@ GameObject:
   - component: {fileID: 4125016651680862143}
   - component: {fileID: 4125016651680862142}
   - component: {fileID: 4125016651680862141}
+  - component: {fileID: 602852649}
   m_Layer: 5
   m_Name: Next Button
   m_TagString: Untagged
@@ -1185,6 +1252,31 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 1
         m_CallState: 2
+      - m_Target: {fileID: 602852649}
+        m_TargetAssemblyTypeName: MenuAudio, Assembly-CSharp
+        m_MethodName: PlayAudio
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 1
+        m_CallState: 2
+--- !u!114 &602852649
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4125016651680862115}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 698f3492214843a49b922c5c64f54760, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  audioClip: {fileID: 8300000, guid: bd7b64db48580b94fbf2cfbab2b5516c, type: 3}
 --- !u!1 &4125016651713773695
 GameObject:
   m_ObjectHideFlags: 0
@@ -2831,7 +2923,7 @@ GameObject:
   m_Component:
   - component: {fileID: 4125016652132284349}
   m_Layer: 5
-  m_Name: Difficulty
+  m_Name: Intensity
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -3486,6 +3578,7 @@ GameObject:
   - component: {fileID: 4125016652457109018}
   - component: {fileID: 4125016652457109019}
   - component: {fileID: 4125016652457109012}
+  - component: {fileID: 135629941}
   m_Layer: 5
   m_Name: Player Number
   m_TagString: Untagged
@@ -3557,6 +3650,19 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_HorizontalFit: 0
   m_VerticalFit: 1
+--- !u!114 &135629941
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4125016652457109017}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 698f3492214843a49b922c5c64f54760, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  audioClip: {fileID: 8300000, guid: f2d0017919067fd419186fdb020a08f5, type: 3}
 --- !u!1 &4125016652470069291
 GameObject:
   m_ObjectHideFlags: 0
@@ -3858,11 +3964,11 @@ RectTransform:
   m_Father: {fileID: 4125016652223644499}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 60, y: -95}
+  m_AnchorMin: {x: 1, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
+  m_AnchoredPosition: {x: -60, y: -95}
   m_SizeDelta: {x: 136, y: -145}
-  m_Pivot: {x: 0, y: 1}
+  m_Pivot: {x: 1, y: 1}
 --- !u!1 &4125016652633828731
 GameObject:
   m_ObjectHideFlags: 0
@@ -4615,6 +4721,7 @@ GameObject:
   - component: {fileID: 4125016652905225042}
   - component: {fileID: 4125016652905225043}
   - component: {fileID: 4125016652905225068}
+  - component: {fileID: 2052774777}
   m_Layer: 5
   m_Name: Ships
   m_TagString: Untagged
@@ -4687,6 +4794,19 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_HorizontalFit: 0
   m_VerticalFit: 1
+--- !u!114 &2052774777
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4125016652905225041}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 698f3492214843a49b922c5c64f54760, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  audioClip: {fileID: 8300000, guid: f2d0017919067fd419186fdb020a08f5, type: 3}
 --- !u!1 &4125016653002371593
 GameObject:
   m_ObjectHideFlags: 0
@@ -5364,6 +5484,7 @@ GameObject:
   - component: {fileID: 4125016653223871692}
   - component: {fileID: 4125016653223871693}
   - component: {fileID: 4125016653223871694}
+  - component: {fileID: 219651226}
   m_Layer: 5
   m_Name: Difficulty Select
   m_TagString: Untagged
@@ -5435,6 +5556,19 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_HorizontalFit: 0
   m_VerticalFit: 1
+--- !u!114 &219651226
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4125016653223871539}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 698f3492214843a49b922c5c64f54760, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  audioClip: {fileID: 8300000, guid: f2d0017919067fd419186fdb020a08f5, type: 3}
 --- !u!1 &4125016653325624113
 GameObject:
   m_ObjectHideFlags: 0
@@ -5460,7 +5594,7 @@ RectTransform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4125016653325624113}
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -5499,8 +5633,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: de0489feb2583f34cb62e8fe745d111b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Games: []
-  ShipList: {fileID: 11400000, guid: 17dcd58a38dad2a498afe518e6a0bb58, type: 2}
+  Games:
+  - {fileID: 11400000, guid: c5f6d2d7142557647b39c30f48495c67, type: 2}
+  - {fileID: 11400000, guid: 176e63d5800dcf147b46497fd88e0fea, type: 2}
+  - {fileID: 11400000, guid: 3537310ecbdad2e449bbca31d2aa8599, type: 2}
+  - {fileID: 11400000, guid: 27f7ec1e006fb3a4cbb91572e943cf67, type: 2}
   SelectedGameName: {fileID: 4125016651535182473}
   SelectedGameDescription: {fileID: 4125016653002371595}
   SelectedGamePreviewWindow: {fileID: 4125016652505042584}
@@ -5510,4 +5647,4 @@ MonoBehaviour:
   ShipSelectionContainer: {fileID: 4125016652905225042}
   GameSelectionContainer: {fileID: 4125016651435336975}
   PlayerCountButtonContainer: {fileID: 4125016652457109017}
-  DifficultyButtonContainer: {fileID: 4125016653223871539}
+  IntensityButtonContainer: {fileID: 4125016653223871539}

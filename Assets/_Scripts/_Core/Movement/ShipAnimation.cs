@@ -90,6 +90,8 @@ public abstract class ShipAnimation : MonoBehaviour
 
     public virtual void UpdateShapeKey(Element element, float percent)
     {
+        if (!UseNewAnimations) return;
+
         var index = 0;
         switch(element)
         {
