@@ -22,5 +22,5 @@ MonoBehaviour:
   PrimaryElement: 2
   InitialMass: 0
   InitialCharge: 0
-  InitialSpace: 5
+  InitialSpace: 0.5
   InitialTime: 0

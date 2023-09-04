@@ -20,7 +20,7 @@ MonoBehaviour:
   SelectedIcon: {fileID: 21300000, guid: 3a6acf18a9bd0c4429220fb40f33af3a, type: 3}
   Ship: {fileID: 11400000, guid: c0f30e9f09616874780edc0a375ce686, type: 2}
   PrimaryElement: 2
-  InitialMass: 5
+  InitialMass: 0.5
   InitialCharge: 0
   InitialSpace: 0
   InitialTime: 0
