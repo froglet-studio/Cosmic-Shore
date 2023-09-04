@@ -1,5 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
 using StarWriter.Core;
 using UnityEngine;
 
@@ -16,19 +14,7 @@ public class SpawnableDartBoard : SpawnableAbstractBase
     [SerializeField] float ringThickness = 5f;
     [SerializeField] float gap = 6;
 
-    public Player PlayerOne;
-    public Player PlayerTwo;
-
-    //dartboard position
     public float dartBoardRadius = 100;
-
-    void Start()
-    {
-        // TODO these should be injected by the game
-        PlayerOne.Team = Teams.Green;
-        PlayerTwo.Team = Teams.Red;
-
-    }
 
 
     void CreateRings()

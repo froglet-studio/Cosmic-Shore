@@ -9,7 +9,7 @@ public abstract class ShipAnimation : MonoBehaviour
     protected InputController inputController;
 
     [SerializeField] public SkinnedMeshRenderer SkinnedMeshRenderer;
-    [SerializeField] bool UseNewAnimations;
+    [SerializeField] bool UseNewAnimations; // TODO: remove after all models have shape keys support
     [SerializeField] protected float brakeThreshold = .65f;
     [SerializeField] protected float lerpAmount = 2f;
     [SerializeField] protected float smallLerpAmount = .7f;
