@@ -80,7 +80,7 @@ public abstract class ShipAnimation : MonoBehaviour
 
     protected virtual void AnimatePart(Transform part, float pitch, float yaw, float roll, Quaternion initialRotation)
     {
-        var targetRotation = initialRotation * Quaternion.Euler(pitch, roll, yaw);
+        var targetRotation = Quaternion.Euler(pitch, roll, yaw) * initialRotation;
 
         part.localRotation = Quaternion.Lerp(
                                     part.localRotation,
