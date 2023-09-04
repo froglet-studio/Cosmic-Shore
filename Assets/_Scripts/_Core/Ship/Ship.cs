@@ -375,7 +375,23 @@ namespace StarWriter.Core
         //
         void UpdateLevel(Element element)
         {
-            foreach(var levelEffectParameterMapping in LevelEffectParameterMappings)
+            switch (element)
+            {
+                case Element.Charge:
+                    GetComponent<ShipAnimation>().UpdateShapeKey(element, ResourceSystem.ChargeLevel);
+                    break;
+                case Element.Mass:
+                    GetComponent<ShipAnimation>().UpdateShapeKey(element, ResourceSystem.MassLevel);
+                    break;
+                case Element.Space:
+                    GetComponent<ShipAnimation>().UpdateShapeKey(element, ResourceSystem.SpaceLevel);
+                    break;
+                case Element.Time:
+                    GetComponent<ShipAnimation>().UpdateShapeKey(element, ResourceSystem.TimeLevel);
+                    break;
+            }
+            
+            foreach (var levelEffectParameterMapping in LevelEffectParameterMappings)
             {
                 if (levelEffectParameterMapping.Element == element)
                 {

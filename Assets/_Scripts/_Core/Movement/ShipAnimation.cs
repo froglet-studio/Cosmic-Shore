@@ -8,11 +8,14 @@ public abstract class ShipAnimation : MonoBehaviour
 {
     protected InputController inputController;
 
+    [SerializeField] public SkinnedMeshRenderer SkinnedMeshRenderer;
+    [SerializeField] bool UseNewAnimations;
     [SerializeField] protected float brakeThreshold = .65f;
     [SerializeField] protected float lerpAmount = 2f;
     [SerializeField] protected float smallLerpAmount = .7f;
 
-    protected List<Transform> Transforms = new(); // TODO: use this to populate the ship geometries on ship.cs 
+    protected List<Transform> Transforms = new(); // TODO: use this to populate the ship geometries on ship.cs
+    protected List<Quaternion> InitialRotations = new(); // TODO: use this to populate the ship geometries on ship.cs
 
     protected virtual void Start()
     {
@@ -38,8 +41,16 @@ public abstract class ShipAnimation : MonoBehaviour
     protected abstract void PerformShipAnimations(float YSum, float XSum, float YDiff, float XDiff);
     protected virtual void Idle()
     {
-        foreach (Transform transform in Transforms)
-            ResetAnimation(transform);
+        if (UseNewAnimations)
+        {
+            for (var i = 0; i < Transforms.Count; i++)
+                ResetAnimation(Transforms[i], InitialRotations[i]);
+        }
+        else
+        {
+            foreach (Transform transform in Transforms)
+                ResetAnimation(transform);
+        }
     }
 
     protected virtual float Brake(float throttle)
@@ -52,6 +63,11 @@ public abstract class ShipAnimation : MonoBehaviour
         part.localRotation = Quaternion.Lerp(part.localRotation, Quaternion.identity, smallLerpAmount * Time.deltaTime);
     }
 
+    protected virtual void ResetAnimation(Transform part, Quaternion resetQuaternion)
+    {
+        part.localRotation = Quaternion.Lerp(part.localRotation, resetQuaternion, smallLerpAmount * Time.deltaTime);
+    }
+
     protected virtual void AnimatePart(Transform part, float pitch, float yaw, float roll)
     {
         var targetRotation = Quaternion.Euler(pitch, yaw, roll);
@@ -60,5 +76,28 @@ public abstract class ShipAnimation : MonoBehaviour
                                     part.localRotation,
                                     targetRotation,
                                     lerpAmount * Time.deltaTime);
+    }
+
+    protected virtual void AnimatePart(Transform part, float pitch, float yaw, float roll, Quaternion initialRotation)
+    {
+        var targetRotation = initialRotation * Quaternion.Euler(pitch, roll, yaw);
+
+        part.localRotation = Quaternion.Lerp(
+                                    part.localRotation,
+                                    targetRotation,
+                                    lerpAmount * Time.deltaTime);
+    }
+
+    public virtual void UpdateShapeKey(Element element, float percent)
+    {
+        var index = 0;
+        switch(element)
+        {
+            case Element.Mass:   index = 0; break;
+            case Element.Charge: index = 1; break;
+            case Element.Space:  index = 2; break;
+            case Element.Time:   index = 3; break;
+        }
+        SkinnedMeshRenderer.SetBlendShapeWeight(index, percent);
     }
 }
