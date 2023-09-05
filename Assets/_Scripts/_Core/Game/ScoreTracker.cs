@@ -131,7 +131,7 @@ public class ScoreTracker : MonoBehaviour
         {
             case ScoringModes.HostileVolumeDestroyed:
                 if (StatsManager.Instance.playerStats.ContainsKey(currentPlayerName))
-                    playerScores[currentPlayerName] += StatsManager.Instance.playerStats[currentPlayerName].volumeDestroyed / VolumeNormalizationQuotient;
+                    playerScores[currentPlayerName] += StatsManager.Instance.playerStats[currentPlayerName].hostileVolumeDestroyed / VolumeNormalizationQuotient;
                 StatsManager.Instance.ResetStats();
                 break;
             case ScoringModes.VolumeCreated:
