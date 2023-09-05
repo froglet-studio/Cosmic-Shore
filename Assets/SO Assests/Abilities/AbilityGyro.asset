@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Action: 5
   Name: Gyro
-  Description: Gyro
+  Description: Flip your phone around to engage monoscopic VR.
   Icon: {fileID: 21300000, guid: 0cc6e2a2018ce2d43a02078b739adf9b, type: 3}
   SelectedIcon: {fileID: 21300000, guid: 05f57a7e0ecfb734e8262ab0be0076ab, type: 3}
   PreviewClip: {fileID: 2096801853598961014, guid: e838c42bdbc409946944368a0ac2d38d,
