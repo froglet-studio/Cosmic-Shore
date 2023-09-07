@@ -50,7 +50,6 @@ public class AndroidIAPExample : MonoBehaviour, IDetailedStoreListener
                     }
                     Debug.Log("   DefaultStackId: " + item.DefaultStackId);
                     Debug.Log("   Id: " + item.Id);
-                    //Debug.Log("   Price Options: " + item.PriceOptions.Prices[0]);
                 }
 
                 inventoryItemReference.StackId = catalogItems[0].DefaultStackId;
@@ -175,8 +174,9 @@ public class AndroidIAPExample : MonoBehaviour, IDetailedStoreListener
     }
 
     // This is invoked manually on Start to initiate login ops
-    private void Login()
+    void Login()
     {
+#if (UNITY_ANDROID || UNITY_EDITOR)
         // Login with Android ID
         PlayFabClientAPI.LoginWithAndroidDeviceID(new LoginWithAndroidDeviceIDRequest()
         {
@@ -186,15 +186,33 @@ public class AndroidIAPExample : MonoBehaviour, IDetailedStoreListener
             Debug.Log($"Logged in: {result.PlayFabId}");
             // Refresh available items
             RefreshIAPItems();
-            PlayerId = result.EntityToken.Entity.Id;// result.PlayFabId;
+            PlayerId = result.EntityToken.Entity.Id; // result.PlayFabId;
             m_AuthenticationContext = result.AuthenticationContext;
-            SessionTicket = result.SessionTicket;
-            EntityToken = result.EntityToken.EntityToken;
             EntityType = result.EntityToken.Entity.Type;
             Debug.Log($"Entity Type: {EntityType}");
             Debug.Log($"PlayerId: {PlayerId}");
             GrantShards();
         }, error => Debug.LogError(error.GenerateErrorReport()));
+#endif
+#if UNITY_IOS
+        PlayFabClientAPI.LoginWithIOSDeviceID(new LoginWithIOSDeviceIDRequest()
+        {
+            CreateAccount = true,
+            DeviceId = SystemInfo.deviceUniqueIdentifier
+            //iOSDeviceId = SystemInfo.deviceUniqueIdentifier
+        }, result => {
+            Debug.Log($"Logged in: {result.PlayFabId}");
+            // Refresh available items
+            RefreshIAPItems();
+            PlayerId = result.EntityToken.Entity.Id; // result.PlayFabId;
+            m_AuthenticationContext = result.AuthenticationContext;
+            EntityType = result.EntityToken.Entity.Type;
+            Debug.Log($"Entity Type: {EntityType}");
+            Debug.Log($"PlayerId: {PlayerId}");
+            GrantShards();
+        }, error => Debug.LogError(error.GenerateErrorReport()));
+#endif
+
     }
 
     private void RefreshIAPItems()
