@@ -552,10 +552,10 @@ SkinnedMeshRenderer:
   - {fileID: 5798525600549448751}
   - {fileID: 5571582515015820382}
   m_BlendShapeWeights:
-  - 100
-  - 100
-  - 100
-  - 100
+  - 0
+  - 0
+  - 0
+  - 0
   m_RootBone: {fileID: 4769814507153169321}
   m_AABB:
     m_Center: {x: 0.000514213, y: -0.0048629097, z: -0.001187378}
@@ -725,6 +725,11 @@ MonoBehaviour:
   - InputEvent: 1
     ShipActions:
     - {fileID: 867704553499413969}
+  MassAbilityTarget: {fileID: 0}
+  ChargeAbilityTarget: {fileID: 0}
+  SpaceAbilityTarget: {fileID: 0}
+  TimeAbilityTarget: {fileID: 0}
+  ChargeAbility2Target: {fileID: 0}
   LevelEffects: 
   ControlOverrides: 0300000004000000
   closeCamDistance: -3.5

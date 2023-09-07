@@ -129,6 +129,8 @@ public class RiptideAnimation : ShipAnimation
         Transforms.Add(ThrusterLeft);
         Transforms.Add(ThrusterTopLeft);
 
+        InitialRotations.Add(NoseTop.localRotation);
+        InitialRotations.Add(NoseBottom.localRotation);
         InitialRotations.Add(ThrusterTopRight.localRotation);
         InitialRotations.Add(ThrusterRight.localRotation);
         InitialRotations.Add(ThrusterBottomRight.localRotation);
