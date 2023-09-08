@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 6678124231473903038}
   - component: {fileID: 6678124231473903024}
   m_Layer: 5
-  m_Name: RearView
+  m_Name: Pip
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
