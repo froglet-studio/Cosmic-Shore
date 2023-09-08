@@ -1884,6 +1884,11 @@ MonoBehaviour:
   - InputEvent: 3
     ShipActions:
     - {fileID: 2525174765376973701}
+  MassAbilityTarget: {fileID: 0}
+  ChargeAbilityTarget: {fileID: 0}
+  SpaceAbilityTarget: {fileID: 0}
+  TimeAbilityTarget: {fileID: 0}
+  ChargeAbility2Target: {fileID: 0}
   LevelEffects: 
   ControlOverrides: 0400000003000000
   closeCamDistance: -8

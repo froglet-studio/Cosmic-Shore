@@ -18,6 +18,9 @@ public class PanelSwipe : MonoBehaviour, IDragHandler, IEndDragHandler {
     
     [SerializeField] Transform NavBar;
 
+    [SerializeField] LayoutGroupAccordion RecordsAccordion;
+    [SerializeField] LayoutGroupAccordion RecordsScoresAccordion;
+
     Vector3 panelLocation;
     Coroutine navigateCoroutine;
 
@@ -76,6 +79,14 @@ public class PanelSwipe : MonoBehaviour, IDragHandler, IEndDragHandler {
             GameManager.UnPauseGame();
         else
             GameManager.PauseGame();
+
+        if (ScreenIndex == RECORDS)
+        {
+            RecordsAccordion.Collapse();
+            RecordsAccordion.Expand();
+            RecordsScoresAccordion.Collapse();
+            RecordsScoresAccordion.Expand();
+        }
 
         Vector3 newLocation = new Vector3(-ScreenIndex * Screen.width, 0, 0);
         panelLocation = newLocation;
