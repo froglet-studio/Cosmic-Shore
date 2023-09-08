@@ -22,6 +22,7 @@ MonoBehaviour:
     type: 3}
   Pilots:
   - {fileID: 11400000, guid: 5ac362560a34d414e835db83e82daa08, type: 2}
+  - {fileID: 11400000, guid: 47ecdb78312b0be4d8785da5ebaced42, type: 2}
   MinPlayers: 1
   MaxPlayers: 3
   SceneName: MinigameBlockBandit

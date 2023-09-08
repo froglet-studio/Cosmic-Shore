@@ -23,6 +23,8 @@ MonoBehaviour:
   Pilots:
   - {fileID: 11400000, guid: 6d520cd7eb8878b4aa2551e0591bc08d, type: 2}
   - {fileID: 11400000, guid: 33dfe353bacfe9741a371ea3deaba88e, type: 2}
+  - {fileID: 11400000, guid: 15f7cf9ff064a6746a1b3432455a787b, type: 2}
+  - {fileID: 11400000, guid: 47ecdb78312b0be4d8785da5ebaced42, type: 2}
   MinPlayers: 1
   MaxPlayers: 1
   SceneName: MinigameCellularDuel
