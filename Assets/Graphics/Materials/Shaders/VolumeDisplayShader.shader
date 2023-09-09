@@ -135,13 +135,13 @@ Shader"Custom/VolumeDisplayShader"
                     distanceToInnerEdge = dist - (maxDist - _Radius1);
                     segmentColor = _Color1;
                 }
-                else if (angle < twoThirdsOfCircle && dist <= maxDist - _GapThickness * scaleFactor && dist > maxDist - _Radius2)
+                else if (angle < twoThirdsOfCircle && angle > thirdOfCircle && dist <= maxDist - _GapThickness * scaleFactor && dist > maxDist - _Radius2)
                 {
                     distanceToDivider = min(angle - thirdOfCircle, twoThirdsOfCircle - angle);
                     distanceToInnerEdge = dist - (maxDist - _Radius2);
                     segmentColor = _Color2;
                 }
-                else if (dist <= maxDist - _GapThickness * scaleFactor && dist > maxDist - _Radius3)
+                else if (angle > twoThirdsOfCircle && dist <= maxDist - _GapThickness * scaleFactor && dist > maxDist - _Radius3)
                 {
                     distanceToDivider = min(angle - twoThirdsOfCircle, 6.28318530718 - angle);
                     distanceToInnerEdge = dist - (maxDist - _Radius3);

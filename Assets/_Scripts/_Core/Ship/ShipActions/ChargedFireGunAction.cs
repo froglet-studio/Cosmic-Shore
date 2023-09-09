@@ -81,7 +81,7 @@ public class ChargedFireGunAction : ShipActionAbstractBase
                 else inheritedVelocity = shipData.Course;
 
                 // TODO: WIP magic numbers
-                gun.FireGun(projectileContainer.transform, 90, inheritedVelocity * shipData.Speed, ProjectileScale*charge, BlockScale * 2, true, float.MaxValue, charge);
+                gun.FireGun(projectileContainer.transform, 90, inheritedVelocity * shipData.Speed, ProjectileScale*charge, true, float.MaxValue, charge);
                 StartCheckProjectiles();
             }
 

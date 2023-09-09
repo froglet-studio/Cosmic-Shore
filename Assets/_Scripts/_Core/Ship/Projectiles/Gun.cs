@@ -15,19 +15,15 @@ namespace StarWriter.Core
         bool onCooldown = false;
         Trail trail = new();
 
-
-        [SerializeField] TrailBlock trailBlock;
-        Material blockMaterial;
         ShipStatus shipData;
 
         private void Start()
         {
-            blockMaterial = Ship.GetComponent<TrailSpawner>().GetBlockMaterial();
             shipData = Ship.GetComponent<ShipStatus>();
         }
 
         public void FireGun(Transform containerTransform, float speed, Vector3 inheritedVelocity, 
-            float projectileScale, Vector3 blockScale, bool ignoreCooldown = false, float projectileTime = 3, float charge = 0)
+            float projectileScale, bool ignoreCooldown = false, float projectileTime = 3, float charge = 0)
         {
             if (onCooldown && !ignoreCooldown)
                 return;
@@ -44,7 +40,7 @@ namespace StarWriter.Core
             projectile.Ship = Ship;
             if (projectile is ExplodableProjectile) ((ExplodableProjectile)projectile).Charge = charge;
 
-            StartCoroutine(MoveProjectileCoroutine(projectile, blockScale, projectileTime));
+            StartCoroutine(MoveProjectileCoroutine(projectile, projectileTime));
             StartCoroutine(CooldownCoroutine());
         }
 
@@ -54,53 +50,7 @@ namespace StarWriter.Core
             onCooldown = false;
         }
 
-        void CreateBlock(Vector3 position, Transform lookAtTarget, string ownerId, Vector3 blockScale)
-        {
-            Vector3 distance;
-            Vector3 lookAtVector;
-            
-            
-            var Block = Instantiate(trailBlock);
-            if (trail.TrailList.Count == 0) 
-            { 
-                lookAtVector = Vector3.zero;
-                distance = Vector3.one; 
-            }
-            else 
-            {
-                lookAtVector = lookAtTarget.position - ((Block.InnerDimensions.z / 2) * lookAtTarget.forward);
-                distance = lookAtVector - position; 
-            }
-
-            Block.Team = Team;
-            Block.ownerId = Ship.Player.PlayerUUID;
-            Block.PlayerName = Ship.Player.PlayerName;
-            Block.GetComponent<MeshRenderer>().material = blockMaterial;
-            Block.ID = Block.ownerId + ownerId;
-            Block.Trail = trail;
-            trail.Add(Block);
-            Block.transform.parent = TrailSpawner.TrailContainer.transform;
-
-            float span = distance.magnitude;
-            float SqrtDistance = Mathf.Sqrt(span);
-            Block.InnerDimensions = new Vector3(blockScale.x / SqrtDistance,
-                                                blockScale.y / SqrtDistance,
-                                                blockScale.z * span);
-            //Block.InnerDimensions = new Vector3(.5f, .5f, 1);
-
-
-
-            Debug.Log($"block scale: {blockScale} --- position:{position} ");
-            //if (trail.TrailList.Count == 1) { Block.transform.position = position; return; }
-            Block.transform.position = (position + lookAtVector)/2;//centerOfCurvaturePosition + Quaternion.AngleAxis(i, outOfPlaneVector) * (-distanceFromPreviousBlockToCurveCenter);
-            Block.transform.LookAt(lookAtVector, transform.up);
-            Debug.Log($"bullet trail count: {trail.TrailList.Count}");
-            //}
-            
-        }
-
-
-        IEnumerator MoveProjectileCoroutine(Projectile projectile, Vector3 blockScale, float projectileTime)
+        IEnumerator MoveProjectileCoroutine(Projectile projectile, float projectileTime)
         {
             var elapsedTime = 0f;
             var velocity = projectile.Velocity;
@@ -117,27 +67,6 @@ namespace StarWriter.Core
                 projectile.transform.position += velocity * Time.deltaTime;
                 yield return null;
             }
-
-            //Transform lookAtTarget;
-            //if (trail.TrailList.Count == 0) lookAtTarget = Ship.transform;
-            //else lookAtTarget = trail.TrailList[trail.TrailList.Count - 1].transform;
-
-            //if (shipData.LayingBulletTrail)
-            //{
-            //    CreateBlock(projectile.transform.position, lookAtTarget, "::projectile::" + Time.time, blockScale);
-            //}
-            //else if (trail.TrailList.Count < 7 && trail.TrailList.Count != 0)
-            //{
-            //    foreach (TrailBlock trailBlock in trail.TrailList)
-            //    {
-            //        Destroy(trailBlock.gameObject);
-            //    }
-            //    trail = new();
-            //}
-            //else if (trail.TrailList.Count > 0)
-            //{
-            //    trail = new();
-            //}
 
             Destroy(projectile.gameObject);
         }
