@@ -13,12 +13,12 @@ public class DetonateProjectilesAction : ShipActionAbstractBase
     }
     public override void StartAction()
     {
-        gun.Detonate = true;
+        gun.Detonate();
     }
 
     public override void StopAction()
     {
-        gun.Detonate = false;
+        
     }
 
 

@@ -13,7 +13,8 @@ public enum TrailBlockImpactEffects
     DecrementLevel = 8,
     Attach = 9,
     ChangeAmmo = 10,
-    Shield = 11
+    Shield = 11,
+    Stop = 12
 }
 
 /*

@@ -7,7 +7,6 @@ namespace StarWriter.Core
     {
         [SerializeField] GameObject projectilePrefab;
 
-        public bool Detonate = false;
         public float projectileTime = 2;
         public float firePeriod = .2f;
         public Teams Team;
@@ -16,12 +15,14 @@ namespace StarWriter.Core
         Trail trail = new();
 
         ShipStatus shipData;
+        public Coroutine MoveCoroutine;
 
         private void Start()
         {
             shipData = Ship.GetComponent<ShipStatus>();
         }
 
+        Projectile projectile;
         public void FireGun(Transform containerTransform, float speed, Vector3 inheritedVelocity, 
             float projectileScale, bool ignoreCooldown = false, float projectileTime = 3, float charge = 0)
         {
@@ -30,7 +31,7 @@ namespace StarWriter.Core
 
             onCooldown = true;
 
-            var projectile = Instantiate(projectilePrefab).GetComponent<Projectile>();
+            projectile = Instantiate(projectilePrefab).GetComponent<Projectile>();
             projectile.transform.rotation = Quaternion.LookRotation(transform.forward);
             projectile.transform.position = transform.position + projectile.transform.forward * 5;
             projectile.transform.localScale = projectileScale * Vector3.one;
@@ -40,7 +41,7 @@ namespace StarWriter.Core
             projectile.Ship = Ship;
             if (projectile is ExplodableProjectile) ((ExplodableProjectile)projectile).Charge = charge;
 
-            StartCoroutine(MoveProjectileCoroutine(projectile, projectileTime));
+            projectile.LaunchProjectile(projectileTime);
             StartCoroutine(CooldownCoroutine());
         }
 
@@ -50,25 +51,10 @@ namespace StarWriter.Core
             onCooldown = false;
         }
 
-        IEnumerator MoveProjectileCoroutine(Projectile projectile, float projectileTime)
+        public void Detonate()
         {
-            var elapsedTime = 0f;
-            var velocity = projectile.Velocity;
-            
-            while (elapsedTime < projectileTime)
-            {
-                if (projectile == null) yield break;
-                if (Detonate)
-                {
-                    Destroy(projectile.gameObject);
-                    yield break;
-                }
-                elapsedTime += Time.deltaTime;              
-                projectile.transform.position += velocity * Time.deltaTime;
-                yield return null;
-            }
-
-            Destroy(projectile.gameObject);
+            projectile.Detonate();
         }
+       
     }
 }

@@ -1,5 +1,7 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+
 
 namespace StarWriter.Core
 {
@@ -8,8 +10,26 @@ namespace StarWriter.Core
         public Vector3 Velocity;
         public Teams Team;
         public Ship Ship;
+
         [SerializeField] List<TrailBlockImpactEffects> trailBlockImpactEffects;
         [SerializeField] List<ShipImpactEffects> shipImpactEffects;
+
+        [SerializeField] bool drawLine = false;
+        private LineRenderer lineRenderer;
+
+        private void Start()
+        {
+            lineRenderer = gameObject.AddComponent<LineRenderer>();
+            lineRenderer.material = new Material(Shader.Find("Sprites/Default"));
+            lineRenderer.startColor = lineRenderer.endColor = Color.green;
+            lineRenderer.startWidth = lineRenderer.endWidth = 0.1f;
+            lineRenderer.positionCount = 2;
+            lineRenderer.SetPosition(0, new Vector3(0, 0, 0));
+            lineRenderer.SetPosition(1, new Vector3(0, 0, 2.5f));
+            lineRenderer.useWorldSpace = false;
+          
+
+        }
 
         protected virtual void OnTriggerEnter(Collider other)
         {
@@ -45,6 +65,9 @@ namespace StarWriter.Core
                     case TrailBlockImpactEffects.Shield:
                         trailBlockProperties.trailBlock.ActivateShield(.5f);
                         break;
+                    case TrailBlockImpactEffects.Stop:
+                        StopCoroutine(moveCoroutine);
+                        break;
                 }
             }
         }
@@ -74,6 +97,34 @@ namespace StarWriter.Core
                         break;
                 }
             }
+        }
+
+        public void LaunchProjectile(float projectileTime)
+        {
+            moveCoroutine = StartCoroutine(MoveProjectileCoroutine(projectileTime));
+        }
+
+        Coroutine moveCoroutine;
+
+        public IEnumerator MoveProjectileCoroutine(float projectileTime)
+        {
+            var elapsedTime = 0f;
+    
+
+            while (elapsedTime < projectileTime)
+            {
+                elapsedTime += Time.deltaTime;
+                transform.position += Velocity * Time.deltaTime;
+                yield return null;
+            }
+
+            Destroy(gameObject);
+        }
+
+        public void Detonate()
+        {
+            StopCoroutine(moveCoroutine);
+            Destroy(gameObject);
         }
 
     }

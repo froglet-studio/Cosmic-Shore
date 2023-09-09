@@ -107,9 +107,9 @@ Material:
     - _OuterGlowIntensity: 1
     - _Parallax: 0.005
     - _QueueOffset: 0
-    - _Radius1: 0.286
-    - _Radius2: 0.078
-    - _Radius3: 0.256
+    - _Radius1: 0.5
+    - _Radius2: 0.5
+    - _Radius3: 0.75
     - _ReceiveShadows: 1
     - _RedRadius: 0.22
     - _Smoothness: 0.5

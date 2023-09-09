@@ -27,7 +27,7 @@ public class ChargedFireGunAction : ShipActionAbstractBase
     }
     public override void StartAction()
     {
-        if (shipData.LiveProjectiles) gun.Detonate = true;
+        if (shipData.LiveProjectiles) gun.Detonate();
         else gainCharge = StartCoroutine(GainChargeCoroutine());
     }
 
@@ -66,12 +66,12 @@ public class ChargedFireGunAction : ShipActionAbstractBase
 
     public override void StopAction()
     {
-        if (gun.Detonate) { gun.Detonate = false; }
-        else
+        if (gainCharge != null)
         {
+            StopCoroutine(gainCharge);
             charge = Mathf.Clamp(charge, 0, 1);
             ammoCost = charge;
-            if (gainCharge != null) StopCoroutine(gainCharge);
+
             if (resourceSystem.CurrentAmmo > ammoCost)
             {
                 resourceSystem.ChangeAmmoAmount(-ammoCost);
@@ -81,7 +81,7 @@ public class ChargedFireGunAction : ShipActionAbstractBase
                 else inheritedVelocity = shipData.Course;
 
                 // TODO: WIP magic numbers
-                gun.FireGun(projectileContainer.transform, 90, inheritedVelocity * shipData.Speed, ProjectileScale*charge, true, float.MaxValue, charge);
+                gun.FireGun(projectileContainer.transform, 90, inheritedVelocity * shipData.Speed, ProjectileScale * charge, true, float.MaxValue, charge);
                 StartCheckProjectiles();
             }
 

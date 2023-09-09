@@ -38,6 +38,7 @@ public class FireBarrageAction : ShipActionAbstractBase
         shipData = ship.GetComponent<ShipStatus>();
         resourceSystem = ship.ResourceSystem;
     }
+
     public override void StartAction()
     {
         if (resourceSystem.CurrentAmmo > ammoCost)
@@ -45,13 +46,14 @@ public class FireBarrageAction : ShipActionAbstractBase
             resourceSystem.ChangeAmmoAmount(-ammoCost);
 
             Vector3 inheritedVelocity;
-            if (shipData.Attached) inheritedVelocity = gunContainer.transform.forward;
-            else inheritedVelocity = shipData.Course;
+            
 
             // TODO: WIP magic numbers
             foreach (var gun in guns)
             {
-                gun.FireGun(projectileContainer.transform, 90, inheritedVelocity * shipData.Speed, ProjectileScale, true, 3f);
+                if (shipData.Attached) inheritedVelocity = gun.transform.forward;
+                else inheritedVelocity = shipData.Course;
+                gun.FireGun(projectileContainer.transform, 10, inheritedVelocity * shipData.Speed, ProjectileScale, true, 3f);
             }
         }
     }
