@@ -867,8 +867,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   SkinnedMeshRenderer: {fileID: 7720489361082621337}
-  SaveNewPositions: 0
-  UseShapeKeys: 0
+  SaveNewPositions: 1
+  UseShapeKeys: 1
   brakeThreshold: 0.65
   lerpAmount: 2
   smallLerpAmount: 0.7
@@ -1460,7 +1460,7 @@ PrefabInstance:
     - target: {fileID: 3871656146975291679, guid: 81c88c993c8145242944a0c29bcc05cc,
         type: 3}
       propertyPath: m_LocalPosition.z
-      value: -250
+      value: -100
       objectReference: {fileID: 0}
     - target: {fileID: 3871656146975291679, guid: 81c88c993c8145242944a0c29bcc05cc,
         type: 3}
@@ -1505,7 +1505,7 @@ PrefabInstance:
     - target: {fileID: 6438405858820119684, guid: 81c88c993c8145242944a0c29bcc05cc,
         type: 3}
       propertyPath: field of view
-      value: 120.00001
+      value: 90
       objectReference: {fileID: 0}
     - target: {fileID: 6438405858820119684, guid: 81c88c993c8145242944a0c29bcc05cc,
         type: 3}
