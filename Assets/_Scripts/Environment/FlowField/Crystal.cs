@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 using StarWriter.Core;
+using StarWriter.Core.IO;
 using StarWriter.Core.Audio;
 using System;
 
@@ -91,6 +92,11 @@ public class Crystal : NodeItem
         if (shipImpactEffects)
         {
             ship.PerformCrystalImpactEffects(crystalProperties);
+            if (ship.TryGetComponent<AIPilot>(out var aiPilot))
+            {
+                aiPilot.aggressiveness = aiPilot.defaultAggressiveness;
+                aiPilot.throttle = aiPilot.defaultThrottle;
+            }
         }
 
         //

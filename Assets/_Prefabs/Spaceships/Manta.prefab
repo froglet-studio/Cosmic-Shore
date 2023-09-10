@@ -788,7 +788,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a58bf4fb65afa704194fe9e28e67d58d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  SkillLevel: 0
+  SkillLevel: 0.5
   defaultThrottleHigh: 0.9
   defaultThrottleLow: 0.2
   defaultAggressivenessHigh: 0.09
@@ -810,6 +810,7 @@ MonoBehaviour:
   AutoPilotEnabled: 0
   LookingAtCrystal: 0
   ram: 0
+  drift: 0
   useAbility: 1
   abilityCooldown: 5
   ability: {fileID: 867704553499413969}

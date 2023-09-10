@@ -7,7 +7,6 @@ public enum CrystalImpactEffects
     GainOneThirdMaxAmmo = 3,
     Boost = 5,
     AreaOfEffectExplosion = 6,
-    ResetAggression = 7,
     IncrementLevel = 8,
     PlayFakeCrystalHaptics = 9,
     ReduceSpeed = 10,
