@@ -192,13 +192,6 @@ namespace StarWriter.Core
                     case CrystalImpactEffects.GainOneThirdMaxAmmo:
                         ResourceSystem.ChangeAmmoAmount(ResourceSystem.MaxAmmo/3f);
                         break;
-                    case CrystalImpactEffects.ResetAggression:
-                        if (gameObject.TryGetComponent<AIPilot>(out var aiPilot))
-                        {
-                            aiPilot.aggressiveness = aiPilot.defaultAggressiveness;
-                            aiPilot.throttle = aiPilot.defaultThrottle;
-                        }
-                        break;
                 }
             }
         }
