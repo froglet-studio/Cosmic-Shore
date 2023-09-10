@@ -13,6 +13,7 @@ public class FireBarrageAction : ShipActionAbstractBase
     ShipStatus shipData;
     GameObject projectileContainer;
     [SerializeField] float ammoCost = .03f;
+    bool inherit = false;
 
     public float ProjectileScale = 1f;
 
@@ -51,9 +52,13 @@ public class FireBarrageAction : ShipActionAbstractBase
             // TODO: WIP magic numbers
             foreach (var gun in guns)
             {
-                if (shipData.Attached) inheritedVelocity = gun.transform.forward;
-                else inheritedVelocity = shipData.Course;
-                gun.FireGun(projectileContainer.transform, 10, inheritedVelocity * shipData.Speed, ProjectileScale, true, 3f);
+                if (inherit)
+                {
+                    if (shipData.Attached) inheritedVelocity = gun.transform.forward;
+                    else inheritedVelocity = shipData.Course;
+                }
+                else inheritedVelocity = Vector3.zero;
+                gun.FireGun(projectileContainer.transform, 7, inheritedVelocity * shipData.Speed, ProjectileScale, true, 3f);
             }
         }
     }

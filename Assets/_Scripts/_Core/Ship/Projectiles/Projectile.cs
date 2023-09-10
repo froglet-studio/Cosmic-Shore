@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq.Expressions;
 using UnityEngine;
 
 
@@ -15,20 +16,24 @@ namespace StarWriter.Core
         [SerializeField] List<ShipImpactEffects> shipImpactEffects;
 
         [SerializeField] bool drawLine = false;
-        private LineRenderer lineRenderer;
+        [SerializeField] float startLength = 1f;
+        [SerializeField] float growthRate = 1.0f;
+        [SerializeField] Material spikeMaterial;
+        LineRenderer lineRenderer;
 
         private void Start()
         {
-            lineRenderer = gameObject.AddComponent<LineRenderer>();
-            lineRenderer.material = new Material(Shader.Find("Sprites/Default"));
-            lineRenderer.startColor = lineRenderer.endColor = Color.green;
-            lineRenderer.startWidth = lineRenderer.endWidth = 0.1f;
-            lineRenderer.positionCount = 2;
-            lineRenderer.SetPosition(0, new Vector3(0, 0, 0));
-            lineRenderer.SetPosition(1, new Vector3(0, 0, 2.5f));
-            lineRenderer.useWorldSpace = false;
-          
-
+            if (drawLine) 
+            {
+                lineRenderer = gameObject.AddComponent<LineRenderer>();
+                lineRenderer.material = new Material(spikeMaterial);
+                lineRenderer.startColor = lineRenderer.endColor = Color.green;
+                lineRenderer.startWidth = lineRenderer.endWidth = 0.1f;
+                lineRenderer.positionCount = 2;
+                lineRenderer.SetPosition(0, new Vector3(0, 0, 0));
+                lineRenderer.SetPosition(1, new Vector3(0, 0, startLength));
+                lineRenderer.useWorldSpace = false;
+            }
         }
 
         protected virtual void OnTriggerEnter(Collider other)
@@ -110,11 +115,12 @@ namespace StarWriter.Core
         {
             var elapsedTime = 0f;
     
-
+            if (drawLine) yield return new WaitUntil(() => lineRenderer != null);
             while (elapsedTime < projectileTime)
             {
+                if (drawLine) lineRenderer.SetPosition(1, new Vector3(0,0, elapsedTime * growthRate));
                 elapsedTime += Time.deltaTime;
-                transform.position += Velocity * Time.deltaTime;
+                transform.position += Velocity * Time.deltaTime * Mathf.Cos(elapsedTime*Mathf.PI/(2*projectileTime));
                 yield return null;
             }
 
