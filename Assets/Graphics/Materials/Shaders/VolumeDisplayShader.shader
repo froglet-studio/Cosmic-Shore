@@ -128,6 +128,9 @@ Shader"Custom/VolumeDisplayShader"
 
                 float thirdOfCircle = 2.09439510239; // 2*pi/3
                 float twoThirdsOfCircle = 4.18879020478; // 4*pi/3
+    
+                // Adjust the distanceToDivider by scaling with the distance from the center
+    
 
                 if (angle < thirdOfCircle && dist <= maxDist - _GapThickness * scaleFactor && dist > maxDist - _Radius1)
                 {
@@ -151,7 +154,9 @@ Shader"Custom/VolumeDisplayShader"
                 {
                     return fixed4(0, 0, 0, 0);
                 }
-
+                
+                distanceToDivider = distanceToDivider * dist;
+    
                 float outerArcStrength = _ArcGlowIntensity * ComputeGlowStrength(distanceToOuterEdge, _ArcGlowDistance);
                 float innerArcStrength = ComputeGlowStrength(distanceToInnerEdge, _ArcGlowDistance);
                 float dividerStrength = ComputeGlowStrength(distanceToDivider, _DividerThickness / 2.0);
