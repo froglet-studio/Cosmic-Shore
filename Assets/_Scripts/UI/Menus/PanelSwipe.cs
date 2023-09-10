@@ -1,5 +1,7 @@
 using StarWriter.Core;
+using System;
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
@@ -7,6 +9,22 @@ using UnityEngine.InputSystem.LowLevel;
 
 public class PanelSwipe : MonoBehaviour, IDragHandler, IEndDragHandler {
 
+    public enum MenuScreens
+    {
+        STORE = 0,
+        RECORDS = 1,
+        HOME = 2,
+        HANGAR = 3,
+        ARCADE = 4,
+        OPTIONS = 5,
+    }
+
+    [Serializable]
+    public struct ScreenAnimator
+    {
+        public MenuScreens Screen;
+        public MenuAnimator Animator;
+    }
 
     [SerializeField] float percentThreshold = 0.2f; // Sensitivity of swipe detector. Smaller number = more sensitive
     [SerializeField] float easing = 0.5f; // Makes the transition less jarring
@@ -17,18 +35,16 @@ public class PanelSwipe : MonoBehaviour, IDragHandler, IEndDragHandler {
     [SerializeField] GameObject Coming_Soon;
     
     [SerializeField] Transform NavBar;
-
-    [SerializeField] LayoutGroupAccordion RecordsAccordion;
-    [SerializeField] LayoutGroupAccordion RecordsScoresAccordion;
+    [SerializeField] List<ScreenAnimator> NavigateToScreenAnimations;
 
     Vector3 panelLocation;
     Coroutine navigateCoroutine;
 
-    const int OPTIONS = 0;
-    const int RECORDS = 1;
-    const int HOME = 2;
-    const int HANGAR = 3;
-    const int ARCADE = 4;
+    const int STORE   = (int)MenuScreens.STORE;
+    const int RECORDS = (int)MenuScreens.RECORDS;
+    const int HOME    = (int)MenuScreens.HOME;
+    const int HANGAR  = (int)MenuScreens.HANGAR;
+    const int ARCADE  = (int)MenuScreens.ARCADE;
     
     void Start()
     {
@@ -65,6 +81,7 @@ public class PanelSwipe : MonoBehaviour, IDragHandler, IEndDragHandler {
             // Reset back to current screen
             if (navigateCoroutine != null)
                 StopCoroutine(navigateCoroutine);
+
             navigateCoroutine = StartCoroutine(SmoothMove(transform.position, panelLocation, easing));
         }
     }
@@ -80,13 +97,21 @@ public class PanelSwipe : MonoBehaviour, IDragHandler, IEndDragHandler {
         else
             GameManager.PauseGame();
 
+        foreach (var screenAnimation in NavigateToScreenAnimations)
+        {
+            if ((int)screenAnimation.Screen == ScreenIndex)
+            {
+                screenAnimation.Animator.Animate();
+            }
+        }
+
+        /*
         if (ScreenIndex == RECORDS)
         {
-            RecordsAccordion.Collapse();
-            RecordsAccordion.Expand();
-            RecordsScoresAccordion.Collapse();
-            RecordsScoresAccordion.Expand();
+            RecordsAccordion.Animate();
+            RecordsScoresAccordion.Animate();
         }
+        */
 
         Vector3 newLocation = new Vector3(-ScreenIndex * Screen.width, 0, 0);
         panelLocation = newLocation;
@@ -108,7 +133,7 @@ public class PanelSwipe : MonoBehaviour, IDragHandler, IEndDragHandler {
 
     public void OnClickOptionsMenuButton()
     {
-        NavigateTo(OPTIONS);
+        NavigateTo(STORE);
     }
     public void OnClickRecords()
     {
