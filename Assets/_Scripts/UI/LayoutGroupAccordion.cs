@@ -1,7 +1,6 @@
 using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
-using UnityEngine.UIElements.Experimental;
 
 public class LayoutGroupAccordion : MenuAnimator
 {
@@ -16,6 +15,7 @@ public class LayoutGroupAccordion : MenuAnimator
 
     public override void Animate()
     {
+        Debug.Log("Animating: " + gameObject.name);
         Collapse();
         base.Animate();
     }
