@@ -22,6 +22,9 @@ public class LayoutGroupAccordion : MenuAnimator
 
     protected override IEnumerator AnimateCoroutine()
     {
+        // Was getting nested graphic rebuild loop errors under certain conditions. with this, we will just wait one frame to begin the animation
+        yield return new WaitForEndOfFrame();
+
         var elapsed = 0f;
         while (elapsed < Duration)
         {

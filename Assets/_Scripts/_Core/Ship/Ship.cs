@@ -136,7 +136,6 @@ namespace StarWriter.Core
             foreach (var key in ShipControlActions.Keys)
                 foreach (var shipAction in ShipControlActions[key])
                     shipAction.Ship = this;
-            player.GameCanvas.MiniGameHUD.SetPipActive(pip);
         }
 
         void ApplyShipControlOverrides(List<ShipControlOverrides> controlOverrides)
@@ -144,6 +143,8 @@ namespace StarWriter.Core
             // Ship controls are only relevant for human pilots
             if (AutoPilot.AutoPilotEnabled)
                 return;
+
+            player.GameCanvas.MiniGameHUD.SetPipActive(pip);
 
             foreach (ShipControlOverrides effect in controlOverrides)
             {

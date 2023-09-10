@@ -151,7 +151,7 @@ public class MiniGamesMenu : MonoBehaviour
         // Deactivate All
         for (var i = 0; i < ShipSelectionContainer.childCount; i++)
             ShipSelectionContainer.GetChild(i).gameObject.SetActive(false);
-
+        
         // Reactivate based on the number of ships
         for (var i = 0; i < SelectedGame.Pilots.Count; i++)
         {
@@ -165,9 +165,9 @@ public class MiniGamesMenu : MonoBehaviour
             shipSelection.GetComponent<Button>().onClick.RemoveAllListeners();
             shipSelection.GetComponent<Button>().onClick.AddListener(() => SelectShip(selectionIndex));
             shipSelection.GetComponent<Button>().onClick.AddListener(() => ShipSelectionContainer.GetComponent<MenuAudio>().PlayAudio());
-            ShipSelectAnimator.Animate();
         }
 
+        ShipSelectAnimator.Animate();
         StartCoroutine(SelectShipCoroutine(0));
     }
 
