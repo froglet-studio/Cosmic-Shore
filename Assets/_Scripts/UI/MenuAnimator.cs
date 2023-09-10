@@ -79,7 +79,6 @@ public abstract class MenuAnimator : MonoBehaviour
             case EasingType.InOutCubic:
                 return Easing.InOutCubic(t);
 
-            // TODO: review with Garrett
             case EasingType.InPower:
                 return Easing.InPower(t, 2);
 
