@@ -20,6 +20,7 @@ public class MiniGamesMenu : MonoBehaviour
     [SerializeField] GameObject PlayerCountButtonContainer;
     [FormerlySerializedAs("DifficultyButtonContainer")]
     [SerializeField] GameObject IntensityButtonContainer;
+    [SerializeField] MenuAnimator ShipSelectAnimator;
 
     List<Sprite> IntensityIcons = new();
     List<Sprite> PlayerCountIcons = new();
@@ -150,7 +151,7 @@ public class MiniGamesMenu : MonoBehaviour
         // Deactivate All
         for (var i = 0; i < ShipSelectionContainer.childCount; i++)
             ShipSelectionContainer.GetChild(i).gameObject.SetActive(false);
-
+        
         // Reactivate based on the number of ships
         for (var i = 0; i < SelectedGame.Pilots.Count; i++)
         {
@@ -166,6 +167,7 @@ public class MiniGamesMenu : MonoBehaviour
             shipSelection.GetComponent<Button>().onClick.AddListener(() => ShipSelectionContainer.GetComponent<MenuAudio>().PlayAudio());
         }
 
+        ShipSelectAnimator.Animate();
         StartCoroutine(SelectShipCoroutine(0));
     }
 

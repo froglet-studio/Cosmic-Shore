@@ -1,5 +1,8 @@
+using System.Collections;
 using System.Collections.Generic;
+using System.Linq.Expressions;
 using UnityEngine;
+
 
 namespace StarWriter.Core
 {
@@ -8,8 +11,30 @@ namespace StarWriter.Core
         public Vector3 Velocity;
         public Teams Team;
         public Ship Ship;
+
         [SerializeField] List<TrailBlockImpactEffects> trailBlockImpactEffects;
         [SerializeField] List<ShipImpactEffects> shipImpactEffects;
+
+        [SerializeField] bool drawLine = false;
+        [SerializeField] float startLength = 1f;
+        [SerializeField] float growthRate = 1.0f;
+        [SerializeField] Material spikeMaterial;
+        LineRenderer lineRenderer;
+
+        private void Start()
+        {
+            if (drawLine) 
+            {
+                lineRenderer = gameObject.AddComponent<LineRenderer>();
+                lineRenderer.material = new Material(spikeMaterial);
+                lineRenderer.startColor = lineRenderer.endColor = Color.green;
+                lineRenderer.startWidth = lineRenderer.endWidth = 0.1f;
+                lineRenderer.positionCount = 2;
+                lineRenderer.SetPosition(0, new Vector3(0, 0, 0));
+                lineRenderer.SetPosition(1, new Vector3(0, 0, startLength));
+                lineRenderer.useWorldSpace = false;
+            }
+        }
 
         protected virtual void OnTriggerEnter(Collider other)
         {
@@ -45,6 +70,9 @@ namespace StarWriter.Core
                     case TrailBlockImpactEffects.Shield:
                         trailBlockProperties.trailBlock.ActivateShield(.5f);
                         break;
+                    case TrailBlockImpactEffects.Stop:
+                        StopCoroutine(moveCoroutine);
+                        break;
                 }
             }
         }
@@ -74,6 +102,35 @@ namespace StarWriter.Core
                         break;
                 }
             }
+        }
+
+        public void LaunchProjectile(float projectileTime)
+        {
+            moveCoroutine = StartCoroutine(MoveProjectileCoroutine(projectileTime));
+        }
+
+        Coroutine moveCoroutine;
+
+        public IEnumerator MoveProjectileCoroutine(float projectileTime)
+        {
+            var elapsedTime = 0f;
+    
+            if (drawLine) yield return new WaitUntil(() => lineRenderer != null);
+            while (elapsedTime < projectileTime)
+            {
+                if (drawLine) lineRenderer.SetPosition(1, new Vector3(0,0, elapsedTime * growthRate));
+                elapsedTime += Time.deltaTime;
+                transform.position += Velocity * Time.deltaTime * Mathf.Cos(elapsedTime*Mathf.PI/(2*projectileTime));
+                yield return null;
+            }
+
+            Destroy(gameObject);
+        }
+
+        public void Detonate()
+        {
+            StopCoroutine(moveCoroutine);
+            Destroy(gameObject);
         }
 
     }

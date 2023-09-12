@@ -59,6 +59,7 @@ namespace StarWriter.Core
         [Header("Configuration")]
         [SerializeField] public float boostMultiplier = 4f; // TODO: Move to ShipController
         [SerializeField] public float boostFuelAmount = -.01f;
+        [SerializeField] bool pip = false;
 
         [SerializeField] List<InputEventShipActionMapping> inputEventShipActions;
         Dictionary<InputEvents, List<ShipActionAbstractBase>> ShipControlActions = new();
@@ -143,6 +144,8 @@ namespace StarWriter.Core
             if (AutoPilot.AutoPilotEnabled)
                 return;
 
+            player.GameCanvas.MiniGameHUD.SetPipActive(pip);
+
             foreach (ShipControlOverrides effect in controlOverrides)
             {
                 switch (effect)
@@ -189,13 +192,6 @@ namespace StarWriter.Core
                         break;
                     case CrystalImpactEffects.GainOneThirdMaxAmmo:
                         ResourceSystem.ChangeAmmoAmount(ResourceSystem.MaxAmmo/3f);
-                        break;
-                    case CrystalImpactEffects.ResetAggression:
-                        if (gameObject.TryGetComponent<AIPilot>(out var aiPilot))
-                        {
-                            aiPilot.aggressiveness = aiPilot.defaultAggressiveness;
-                            aiPilot.throttle = aiPilot.defaultThrottle;
-                        }
                         break;
                 }
             }

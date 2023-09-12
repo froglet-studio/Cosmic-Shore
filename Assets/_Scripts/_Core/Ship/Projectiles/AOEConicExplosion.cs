@@ -5,7 +5,7 @@ using UnityEngine.UIElements;
 
 public class AOEConicExplosion : AOEExplosion
 {
-    [SerializeField] float height = 800; //maybe pull from node diameter
+    [SerializeField] float height = 800; // TODO: maybe pull from node diameter
     GameObject coneContainer;
     Vector3 containerPosition;
     Quaternion containerRotation;
@@ -19,6 +19,7 @@ public class AOEConicExplosion : AOEExplosion
         coneContainer.transform.SetPositionAndRotation(containerPosition, containerRotation);
         transform.SetParent(coneContainer.transform, false);
         MaxScaleVector = new Vector3(MaxScale, MaxScale, height);
+        speed = height / (ExplosionDuration*4);
     }
 
     protected override IEnumerator ExplodeCoroutine()

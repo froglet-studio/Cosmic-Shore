@@ -18,7 +18,7 @@ public class AnalyticsManager : SingletonPersistent<AnalyticsManager>
     {
         if (analyticsEnabled)
         {
-            Firebase.Analytics.FirebaseAnalytics.LogEvent(Firebase.Analytics.FirebaseAnalytics.EventLevelStart);
+            FirebaseAnalytics.LogEvent(FirebaseAnalytics.EventLevelStart);
         }
     }
 
@@ -26,7 +26,7 @@ public class AnalyticsManager : SingletonPersistent<AnalyticsManager>
     {
         if (analyticsEnabled)
         {
-            Firebase.Analytics.FirebaseAnalytics.LogEvent(Firebase.Analytics.FirebaseAnalytics.EventAdImpression);
+            FirebaseAnalytics.LogEvent(FirebaseAnalytics.EventAdImpression);
         }
     }
 
@@ -34,7 +34,7 @@ public class AnalyticsManager : SingletonPersistent<AnalyticsManager>
     {
         if (analyticsEnabled)
         {
-            Firebase.Analytics.FirebaseAnalytics.LogEvent(Firebase.Analytics.FirebaseAnalytics.EventAppOpen);
+            FirebaseAnalytics.LogEvent(FirebaseAnalytics.EventAppOpen);
         }
     }
 
@@ -49,7 +49,7 @@ public class AnalyticsManager : SingletonPersistent<AnalyticsManager>
                 new Parameter("PlayerCount", playerCount),
                 new Parameter("Intensity", intensity),
             };
-            Firebase.Analytics.FirebaseAnalytics.LogEvent(Firebase.Analytics.FirebaseAnalytics.EventLevelStart, parameters);
+            FirebaseAnalytics.LogEvent(FirebaseAnalytics.EventLevelStart, parameters);
         }
     }
 
@@ -65,27 +65,26 @@ public class AnalyticsManager : SingletonPersistent<AnalyticsManager>
                 new Parameter("Intensity", intensity),
                 new Parameter("HighScore", highScore),
             };
-            Firebase.Analytics.FirebaseAnalytics.LogEvent(Firebase.Analytics.FirebaseAnalytics.EventLevelEnd, parameters);
+            FirebaseAnalytics.LogEvent(FirebaseAnalytics.EventLevelEnd, parameters);
         }
     }
 
     void Initialize()
     {
-
 #if UNITY_ANDROID  // TODO: keeping analytics disabled on iOS for now until we resolve dependency issues
-        Firebase.FirebaseApp.CheckAndFixDependenciesAsync().ContinueWith(task =>
+        FirebaseApp.CheckAndFixDependenciesAsync().ContinueWith(task =>
         {
             var dependencyStatus = task.Result;
-            if (dependencyStatus == Firebase.DependencyStatus.Available)
+            if (dependencyStatus == DependencyStatus.Available)
             {
-                app = Firebase.FirebaseApp.DefaultInstance;
+                app = FirebaseApp.DefaultInstance;
                 
                 analyticsEnabled = true;
                 LogAppOpen();
             }
             else
             {
-                UnityEngine.Debug.LogError(System.String.Format(
+                UnityEngine.Debug.LogError(string.Format(
                   "Could not resolve all Firebase dependencies: {0}", dependencyStatus));
             }
         });

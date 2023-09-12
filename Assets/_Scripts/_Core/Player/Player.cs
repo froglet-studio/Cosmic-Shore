@@ -10,7 +10,7 @@ public class Player : MonoBehaviour
     [SerializeField] string playerUUID;
     [SerializeField] Ship ship;
     [SerializeField] GameObject shipContainer;
-    [SerializeField] GameCanvas GameCanvas;
+    [SerializeField] public GameCanvas GameCanvas;
 
     public static Player ActivePlayer;
 

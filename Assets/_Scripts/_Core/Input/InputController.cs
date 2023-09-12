@@ -13,7 +13,6 @@ namespace StarWriter.Core.IO
         [HideInInspector] public Ship ship;
         [HideInInspector] public static ScreenOrientation currentOrientation;
         ShipButtonPanel shipButtonPanel;
-        GameObject rearView;
 
         float phoneFlipThreshold = .1f;
         bool PhoneFlipState;
@@ -62,7 +61,6 @@ namespace StarWriter.Core.IO
             if (gameCanvas != null)
             {
                 shipButtonPanel = gameCanvas.ShipButtonPanel;
-                rearView = gameCanvas.RearView;
             }
 
             JoystickRadius = Screen.dpi;
@@ -121,7 +119,6 @@ namespace StarWriter.Core.IO
                 if (ship.ShipStatus.ShowThreeButtonPanel)
                 {
                     shipButtonPanel.FadeInButtons();
-                    rearView.SetActive(true);
                 }
 
                 LeftJoystickValue.x = Gamepad.current.leftStick.x.ReadValue();
@@ -524,7 +521,6 @@ namespace StarWriter.Core.IO
 
         public void SetPortrait(bool portrait)
         {
-            rearView.SetActive(portrait);
             Portrait = portrait; 
         }
 

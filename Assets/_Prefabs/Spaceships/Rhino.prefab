@@ -1058,6 +1058,7 @@ MonoBehaviour:
   blockChargeChange: 0
   boostMultiplier: 6
   boostFuelAmount: -0.015
+  pip: 0
   inputEventShipActions:
   - InputEvent: 0
     ShipActions:
@@ -1153,9 +1154,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a58bf4fb65afa704194fe9e28e67d58d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  SkillLevel: 0
+  SkillLevel: 0.5
   defaultThrottleHigh: 0.9
-  defaultThrottleLow: 0.1
+  defaultThrottleLow: 0.4
   defaultAggressivenessHigh: 0.04
   defaultAggressivenessLow: 0.01
   throttleIncreaseHigh: 0.002
@@ -1175,6 +1176,7 @@ MonoBehaviour:
   AutoPilotEnabled: 0
   LookingAtCrystal: 0
   ram: 1
+  drift: 0
   useAbility: 0
   abilityCooldown: 0
   ability: {fileID: 0}

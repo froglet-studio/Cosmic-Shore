@@ -48,8 +48,9 @@ namespace StarWriter.Core.IO
         [SerializeField] float raycastWidth;
 
         public bool AutoPilotEnabled;
-        public bool LookingAtCrystal = false;
-        public bool ram = false;
+        [SerializeField] bool LookingAtCrystal = false;
+        [SerializeField] bool ram = false;
+        [SerializeField] bool drift = false;
 
         [SerializeField] bool useAbility = false;
         [SerializeField] float abilityCooldown;
@@ -162,7 +163,7 @@ namespace StarWriter.Core.IO
                 Vector3 distance = CrystalTransform.position - transform.position;
 
                 Vector3 desiredDirection = distance.normalized;
-                LookingAtCrystal = Vector3.Dot(desiredDirection, transform.forward) >= .9;
+                LookingAtCrystal = Vector3.Dot(desiredDirection, shipData.Course) >= .91;
 
                 if (distance.magnitude < float.Epsilon) // Avoid division by zero
                     return;
@@ -182,9 +183,12 @@ namespace StarWriter.Core.IO
 
                 float angle = Mathf.Asin(Mathf.Clamp(combinedLocalCrossProduct.magnitude * aggressiveness / Mathf.Min(distance.magnitude, maxDistance * 10), -1f, 1f)) * Mathf.Rad2Deg;
 
-                YSum = Mathf.Clamp(angle * combinedLocalCrossProduct.x, -1, 1);
-                XSum = Mathf.Clamp(angle * combinedLocalCrossProduct.y, -1, 1);
-                YDiff = Mathf.Clamp(angle * combinedLocalCrossProduct.z, -1, 1);
+                if (LookingAtCrystal && drift) shipData.Drifting = true; 
+                else shipData.Drifting = false;
+
+                YSum = (LookingAtCrystal && drift) ? .1f : Mathf.Clamp(angle * combinedLocalCrossProduct.x, -1, 1);
+                XSum = (LookingAtCrystal && drift) ? .3f : Mathf.Clamp(angle * combinedLocalCrossProduct.y, -1, 1);
+                YDiff = (LookingAtCrystal && drift) ? .05f :Mathf.Clamp(angle * combinedLocalCrossProduct.z, -1, 1);
                 ///get better
                 aggressiveness += aggressivenessIncrease * Time.deltaTime;
                 throttle += throttleIncrease * Time.deltaTime;
