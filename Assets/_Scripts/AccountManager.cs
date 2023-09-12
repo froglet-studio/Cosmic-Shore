@@ -5,21 +5,39 @@ using UnityEngine;
 using System.Collections.Generic;
 using System.Collections;
 using Newtonsoft.Json;
+using UnityEngine.Serialization;
 
+/// <summary>
+/// Authentication methods
+/// Authentication methods references: https://api.playfab.com/documentation/client#Authentication
+/// </summary>
+public enum AuthMethods
+{
+    Default,
+    Anonymous,
+    PlayFabLogin,
+    EmailLogin,
+    Register
+}
+
+/// <summary>
+/// Account Manager
+/// Manages anonymous, recoverable login and account register and Account Unlink
+/// </summary>
 public class AccountManager : SingletonPersistent<AccountManager>
 {
 
-    public delegate void OnLoginSuccessEvent();
-    public static event OnLoginSuccessEvent onLoginSuccess;
+    public delegate void LoginSuccessEvent();
+    public static event LoginSuccessEvent OnOnLoginSuccess;
 
     public static string PlayerId;
-    public static string PlayFabId;
+    private static string _playFabId;
     public static PlayFabAuthenticationContext AuthenticationContext;
     public static string EntityType;
     static List<string> Adjectives;
     static List<string> Nouns;
 
-    [SerializeField] TMPro.TMP_Text DisplayName;
+    [SerializeField] private TMPro.TMP_Text displayName;
  
     public static string PlayerDisplayName = "";
 
@@ -33,7 +51,7 @@ public class AccountManager : SingletonPersistent<AccountManager>
             (UpdateUserTitleDisplayNameResult result) =>
             {
                 PlayerDisplayName = result.DisplayName;
-                DisplayName.text = result.DisplayName;
+                displayName.text = result.DisplayName;
             },
             (PlayFabError error) =>
             {
@@ -42,7 +60,7 @@ public class AccountManager : SingletonPersistent<AccountManager>
         );
     }
 
-    public void GenerateRandomDisplayName()
+    private void GenerateRandomDisplayName()
     {
         int adjectiveIndex = Random.Range(0, Adjectives.Count);
         string adjective = Adjectives[adjectiveIndex];
@@ -58,44 +76,20 @@ public class AccountManager : SingletonPersistent<AccountManager>
     {
         return PlayerDisplayName;
     }
-
-    public void SetRandomDisplayName()
-    {
-        int adjectiveIndex = Random.Range(0, Adjectives.Count);
-        string adjective = Adjectives[adjectiveIndex];
-        int nounIndex = Random.Range(0, Nouns.Count);
-        string noun = Nouns[nounIndex];
-
-        string name = adjective + noun;
-        Debug.Log($"Display Name: {name}");
-    }
-
-    void Start()
-    {
-        StartCoroutine(DoTheThingsCoroutine());
-    }
-
-    IEnumerator DoTheThingsCoroutine()
-    {
-        Login();
-
-        yield return new WaitForSeconds(1);
-
-        LoadPlayerProfile();
-    }
+    
 
     void LoadPlayerProfile()
     {
         PlayFab.PlayFabClientAPI.GetPlayerProfile(
             new PlayFab.ClientModels.GetPlayerProfileRequest()
             {
-                PlayFabId = PlayFabId,
+                PlayFabId = _playFabId,
             },
             result =>
             {
                 Debug.Log($"Load Player Profile: {result.PlayerProfile.DisplayName}");
-                if (DisplayName != null)
-                    DisplayName.text = result.PlayerProfile.DisplayName;
+                if (displayName != null)
+                    displayName.text = result.PlayerProfile.DisplayName;
             },
             error =>
             {
@@ -138,12 +132,26 @@ public class AccountManager : SingletonPersistent<AccountManager>
         );
     }
 
-    void Login()
+    public void AnonymousLogin()
     {
         if (AuthenticationContext != null)
+        {
+            Debug.LogError("No authentication context provided.");
             return;
+        }
 
-#if (UNITY_ANDROID || UNITY_EDITOR)
+#if UNITY_ANDROID && !UNITY_EDITOR
+        AndroidLogin();
+        
+#elif UNITY_IOS || UNITY_IPHONE && !UNITY_EDITOR
+        IOSLogin();
+#else
+        CustomIDLogin();
+#endif
+    }
+
+    private void AndroidLogin()
+    {
         PlayFabClientAPI.LoginWithAndroidDeviceID(
             new LoginWithAndroidDeviceIDRequest()
             {
@@ -152,23 +160,121 @@ public class AccountManager : SingletonPersistent<AccountManager>
             }, 
             result =>
             {
-                
-                PlayerId = result.EntityToken.Entity.Id;
-                PlayFabId = result.PlayFabId;
                 AuthenticationContext = result.AuthenticationContext;
-                EntityType = result.EntityToken.Entity.Type;
-                Debug.Log($"Logged in: {result.PlayFabId}");
-                Debug.Log($"Entity Type: {EntityType}");
-                Debug.Log($"PlayerId: {PlayerId}");
+                Debug.Log("Logged in with Android.");
+                
+                Debug.Log($"Play Fab Id: {AuthenticationContext.PlayFabId}");
+                Debug.Log($"Entity Type: {AuthenticationContext.EntityType}");
+                Debug.Log($"Entity Id: {AuthenticationContext.EntityId}");
+                Debug.Log($"Session Ticket: {AuthenticationContext.ClientSessionTicket}");
 
-                onLoginSuccess?.Invoke();
-                LoadTitleData();
+                OnOnLoginSuccess?.Invoke();
             }, 
             error =>
             {
                 Debug.LogError(error.GenerateErrorReport());
             }
         );
+    }
+
+    private void IOSLogin()
+    {
+        PlayFabClientAPI.LoginWithIOSDeviceID(
+            new LoginWithIOSDeviceIDRequest()
+            {
+                CreateAccount = true,
+                DeviceId = SystemInfo.deviceUniqueIdentifier
+            }, (result) =>
+            {
+                AuthenticationContext = result.AuthenticationContext;
+                Debug.Log("Logged in with IOS.");
+                Debug.Log($"Play Fab Id: {AuthenticationContext.PlayFabId}");
+                Debug.Log($"Entity Type: {AuthenticationContext.EntityType}");
+                Debug.Log($"Entity Id: {AuthenticationContext.EntityId}");
+                Debug.Log($"Session Ticket: {AuthenticationContext.ClientSessionTicket}");
+                
+                OnOnLoginSuccess?.Invoke();
+            }, (error) =>
+            {
+                Debug.LogError(error.GenerateErrorReport());
+            }
+            );
+    }
+
+    private void CustomIDLogin()
+    {
+        PlayFabClientAPI.LoginWithCustomID(
+            new LoginWithCustomIDRequest()
+            {
+                CreateAccount = true,
+                CustomId = SystemInfo.deviceUniqueIdentifier
+            }, (result) =>
+            {
+                AuthenticationContext = result.AuthenticationContext;
+                Debug.Log("Logged in with Custom ID.");
+                Debug.Log($"Play Fab Id: {AuthenticationContext.PlayFabId}");
+                Debug.Log($"Entity Type: {AuthenticationContext.EntityType}");
+                Debug.Log($"Entity Id: {AuthenticationContext.EntityId}");
+                Debug.Log($"Session Ticket: {AuthenticationContext.ClientSessionTicket}");
+                
+                OnOnLoginSuccess?.Invoke();
+            }, (error) =>
+            {
+                Debug.LogError(error.GenerateErrorReport());
+            }
+            );
+    }
+
+    public void UnlinkAnonymousLogin()
+    {
+#if UNITY_ANDROID && !UNITY_EDITOR
+        UnlinkAndroidLogin();
+#elif UNITY_IPHONE || UNITY_IOS && !UNITY_EDITOR
+        UnlinkIOSLogin();
+#else
+        UnlinkCustomIDLogin();
 #endif
+    }
+
+    private void UnlinkAndroidLogin()
+    {
+        PlayFabClientAPI.UnlinkAndroidDeviceID(new UnlinkAndroidDeviceIDRequest()
+        {
+            AndroidDeviceId = SystemInfo.deviceUniqueIdentifier
+        }, (result) =>
+        {
+            Debug.Log("Android Device Unlinked.");
+        }, (error) =>
+        {
+            Debug.LogError(error.GenerateErrorReport());
+        });
+    }
+
+    private void UnlinkIOSLogin()
+    {
+        PlayFabClientAPI.UnlinkIOSDeviceID(new UnlinkIOSDeviceIDRequest()
+        {
+            DeviceId = SystemInfo.deviceUniqueIdentifier
+        }, (result) =>
+        {
+            Debug.Log("IOS Device Unlinked.");
+        }, (error) =>
+        {
+            Debug.LogError(error.GenerateErrorReport());
+        });
+    }
+
+    private void UnlinkCustomIDLogin()
+    {
+        PlayFabClientAPI.UnlinkCustomID(new UnlinkCustomIDRequest()
+        {
+            CustomId = SystemInfo.deviceUniqueIdentifier
+        }, (result) =>
+        {
+            Debug.Log("Custom Device Unlinked.");
+        }, (error) =>
+        {
+            Debug.LogError(error.GenerateErrorReport());
+        });
     }
 }
