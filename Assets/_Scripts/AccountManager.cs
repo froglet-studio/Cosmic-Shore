@@ -68,8 +68,6 @@ public class AccountManager : SingletonPersistent<AccountManager>
 
         string name = adjective + noun;
         Debug.Log($"Display Name: {name}");
-
-
     }
 
     void Start()
@@ -96,6 +94,8 @@ public class AccountManager : SingletonPersistent<AccountManager>
             result =>
             {
                 Debug.Log($"Load Player Profile: {result.PlayerProfile.DisplayName}");
+                if (DisplayName != null)
+                    DisplayName.text = result.PlayerProfile.DisplayName;
             },
             error =>
             {
