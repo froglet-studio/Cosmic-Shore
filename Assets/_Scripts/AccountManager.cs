@@ -1,11 +1,15 @@
+using System;
 using StarWriter.Utility.Singleton;
 using PlayFab;
 using PlayFab.ClientModels;
 using UnityEngine;
 using System.Collections.Generic;
-using System.Collections;
+using System.Security;
+using JetBrains.Annotations;
 using Newtonsoft.Json;
-using UnityEngine.Serialization;
+using Unity.Collections.LowLevel.Unsafe;
+using Random = UnityEngine.Random;
+
 
 /// <summary>
 /// Authentication methods
@@ -29,18 +33,17 @@ public class AccountManager : SingletonPersistent<AccountManager>
 
     public delegate void LoginSuccessEvent();
     public static event LoginSuccessEvent OnOnLoginSuccess;
-
-    public static string PlayerId;
-    private static string _playFabId;
-    public static PlayFabAuthenticationContext AuthenticationContext;
-    public static string EntityType;
-    static List<string> Adjectives;
-    static List<string> Nouns;
-
-    [SerializeField] private TMPro.TMP_Text displayName;
- 
-    public static string PlayerDisplayName = "";
     
+    public static PlayFabAuthenticationContext AuthenticationContext;
+
+    private static List<string> _adjectives;
+    private static List<string> _nouns;
+
+    private void Start()
+    {
+        AnonymousLogin();
+    }
+
     /// <summary>
     /// Anonymous Login
     /// Manages anonymous, recoverable login and account register and Account Unlink
@@ -49,7 +52,7 @@ public class AccountManager : SingletonPersistent<AccountManager>
     {
         if (AuthenticationContext != null)
         {
-            Debug.LogWarning("Authentication context information exists.");
+            Debug.LogWarning("Authentication context information exists.\n You are already logged in.");
             return;
         }
 
@@ -114,6 +117,10 @@ public class AccountManager : SingletonPersistent<AccountManager>
             );
     }
 
+    /// <summary>
+    /// Custom ID Login
+    /// For now custom ID login is used on PC
+    /// </summary>
     private void CustomIDLogin()
     {
         PlayFabClientAPI.LoginWithCustomID(
@@ -138,17 +145,80 @@ public class AccountManager : SingletonPersistent<AccountManager>
             );
     }
 
-    public void SetPlayerDisplayName(string playerName)
+    public void OnEmailLogin()
     {
-        PlayFab.PlayFabClientAPI.UpdateUserTitleDisplayName(
-            new PlayFab.ClientModels.UpdateUserTitleDisplayNameRequest()
+        var email = "yeah@froglet.studio";
+        var chars = new[] { 't', 'h', 'i', 's' };
+        var password = new SecureString();
+        foreach (var c in chars)
+        {
+            password.AppendChar(c);
+        }
+        
+        EmailLogin(email, password);
+    }
+
+    /// <summary>
+    /// Email Login
+    /// Make sure password stays in memory no longer than necessary
+    /// </summary>
+    private void EmailLogin([NotNull] string email, [NotNull] SecureString password)
+    {
+        if (email == null) throw new ArgumentNullException(nameof(email));
+        if (password == null) throw new ArgumentNullException(nameof(password));
+        PlayFabClientAPI.LoginWithEmailAddress(
+            new LoginWithEmailAddressRequest()
+            {
+                TitleId = PlayFabSettings.TitleId,
+                Email = email,
+                Password = password.ToString()
+            },
+            (result) =>
+            {
+                AuthenticationContext = result.AuthenticationContext;
+                password?.Dispose();
+                Debug.Log("Logged in with email.");
+                PlayFabClientAPI.GetAccountInfo(
+                    new GetAccountInfoRequest()
+                    {
+                        Email = email,
+                        PlayFabId = AuthenticationContext.PlayFabId
+                    },
+                    (GetAccountInfoResult result) =>
+                    {
+                        Debug.Log($"PlayFab ID: {result.AccountInfo.PlayFabId}");
+                        Debug.Log($"Player email retrieved: {result.AccountInfo.PrivateInfo.Email}");
+                    }, null);
+            },
+            (error)=>
+                    {
+                        Debug.Log(error.GenerateErrorReport());
+                    }
+            );
+    }
+
+    /// <summary>
+    /// Update player display name with random generated one
+    /// Can be tested by clicking Generate Random Name button
+    /// </summary>
+    public void OnUpdateNewPlayerTitleName()
+    {
+        var displayName = GenerateRandomDisplayName();
+        UpdatePlayerTitleDisplayName(displayName);
+    }
+    
+
+    private void UpdatePlayerTitleDisplayName(string playerName)
+    {
+        playerName = string.IsNullOrEmpty(playerName) ? GenerateRandomDisplayName() : playerName;
+        PlayFabClientAPI.UpdateUserTitleDisplayName(
+            new UpdateUserTitleDisplayNameRequest()
             {
                 DisplayName = playerName
             },
             (UpdateUserTitleDisplayNameResult result) =>
             {
-                PlayerDisplayName = result.DisplayName;
-                displayName.text = result.DisplayName;
+                Debug.Log($"Updated player display name to {result.DisplayName}");
             },
             (PlayFabError error) =>
             {
@@ -157,36 +227,36 @@ public class AccountManager : SingletonPersistent<AccountManager>
         );
     }
 
-    private void GenerateRandomDisplayName()
+    private string GenerateRandomDisplayName()
     {
-        int adjectiveIndex = Random.Range(0, Adjectives.Count);
-        string adjective = Adjectives[adjectiveIndex];
-        int nounIndex = Random.Range(0, Nouns.Count);
-        string noun = Nouns[nounIndex];
+        var adjectiveIndex = Random.Range(0, _adjectives.Count);
+        var adjective = _adjectives[adjectiveIndex];
+        var nounIndex = Random.Range(0, _nouns.Count);
+        var noun = _nouns[nounIndex];
 
-        string name = adjective + noun;
-        Debug.Log($"Display Name: {name}");
-        SetPlayerDisplayName(name);
+        var name = $"{adjective} {noun}";
+        Debug.Log($"Random Generated Name: {name}");
+        return name;
     }
-
-    public string GetPlayerDisplayName()
-    {
-        return PlayerDisplayName;
-    }
+    
     
 
     public void LoadPlayerProfile()
     {
+        if (AuthenticationContext == null)
+        {
+            Debug.LogWarning("Not logged in.");
+            return;
+        }
+        
         PlayFab.PlayFabClientAPI.GetPlayerProfile(
-            new PlayFab.ClientModels.GetPlayerProfileRequest()
+            new GetPlayerProfileRequest()
             {
-                PlayFabId = _playFabId,
+                PlayFabId = AuthenticationContext?.PlayFabId,
             },
             result =>
             {
                 Debug.Log($"Load Player Profile: {result.PlayerProfile.DisplayName}");
-                if (displayName != null)
-                    displayName.text = result.PlayerProfile.DisplayName;
             },
             error =>
             {
@@ -195,8 +265,17 @@ public class AccountManager : SingletonPersistent<AccountManager>
         );
     }
 
+    /// <summary>
+    /// Load Player Title Name Random Generate List from Content -> Title Data
+    /// </summary>
     public void LoadTitleData()
     {
+        if (AuthenticationContext == null)
+        {
+            Debug.LogWarning("Not logged in.");
+            return;
+        }
+        
         PlayFabClientAPI.GetTitleData(
             new GetTitleDataRequest()
             {
@@ -206,7 +285,7 @@ public class AccountManager : SingletonPersistent<AccountManager>
             {
                 foreach (var item in result.Data.Keys)
                 {
-                    Debug.Log(item);
+                    Debug.Log($"Player data key: {item}");
                 }
                 if (result.Data == null || !result.Data.ContainsKey("DefaultDisplayNameAdjectives"))
                     Debug.Log("No DefaultDisplayNameAdjectives");
@@ -216,9 +295,9 @@ public class AccountManager : SingletonPersistent<AccountManager>
                     Debug.Log("DefaultDisplayNameNouns: " + result.Data["DefaultDisplayNameNouns"]);
                     //string jsonString = "[\"String1\", \"String2\", \"String3\"]";
                     //var deserialized = JsonConvert.DeserializeObject(result.Data);
-                    Adjectives = new(JsonConvert.DeserializeObject<string[]>(result.Data["DefaultDisplayNameAdjectives"]));
+                    _adjectives = new(JsonConvert.DeserializeObject<string[]>(result.Data["DefaultDisplayNameAdjectives"]));
 
-                    Nouns = new(JsonConvert.DeserializeObject<string[]>(result.Data["DefaultDisplayNameNouns"]));
+                    _nouns = new(JsonConvert.DeserializeObject<string[]>(result.Data["DefaultDisplayNameNouns"]));
                 }
             },
             error =>
@@ -228,7 +307,13 @@ public class AccountManager : SingletonPersistent<AccountManager>
             }
         );
     }
-
+    
+    /// <summary>
+    /// Unlink Anonymous Login
+    /// Unlink based on the device unique identifier
+    /// Can be tested on Unlink Anonymous Login button
+    /// Reframe from clicking on it too much, it will abandon the anonymous account, next time login will create a whole new account.
+    /// </summary>
     public void UnlinkAnonymousLogin()
     {
 #if UNITY_ANDROID && !UNITY_EDITOR

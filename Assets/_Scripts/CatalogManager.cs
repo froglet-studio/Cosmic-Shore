@@ -65,8 +65,8 @@ public class CatalogManager : SingletonPersistent<CatalogManager>
                     },
                     Entity = new EntityKey
                     {
-                        Id = AccountManager.PlayerId,
-                        Type = AccountManager.EntityType
+                        Id = AccountManager.AuthenticationContext.PlayFabId,
+                        Type = AccountManager.AuthenticationContext.EntityType
                     }
                 },
                 response =>
@@ -178,8 +178,8 @@ public class CatalogManager : SingletonPersistent<CatalogManager>
                 },
                 Entity = new()
                 {
-                    Id = AccountManager.PlayerId,
-                    Type = AccountManager.EntityType
+                    Id = AccountManager.AuthenticationContext.PlayFabId,
+                    Type = AccountManager.AuthenticationContext.EntityType
                 },
                 PriceAmounts = new List<PurchasePriceAmount>
                 {
