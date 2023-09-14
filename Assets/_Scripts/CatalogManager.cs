@@ -22,7 +22,7 @@ public class CatalogManager : SingletonPersistent<CatalogManager>
         PlayFabEconomyAPI.SearchItems(
             new()
             {
-                AuthenticationContext = AccountManager.AuthenticationContext,
+                // AuthenticationContext = AccountManager.AuthenticationContext,
                 Filter = "ContentType eq 'Vessel' and tags/any(t: t eq 'Rhino')"
             },
             response =>
@@ -57,7 +57,7 @@ public class CatalogManager : SingletonPersistent<CatalogManager>
             PlayFabEconomyAPI.AddInventoryItems(
                 new AddInventoryItemsRequest()
                 {
-                    AuthenticationContext = AccountManager.AuthenticationContext,
+                    // AuthenticationContext = AccountManager.AuthenticationContext,
                     Amount = 100,
                     Item = new InventoryItemReference
                     {
@@ -65,8 +65,8 @@ public class CatalogManager : SingletonPersistent<CatalogManager>
                     },
                     Entity = new EntityKey
                     {
-                        Id = AccountManager.AuthenticationContext.PlayFabId,
-                        Type = AccountManager.AuthenticationContext.EntityType
+                        // Id = AccountManager.AuthenticationContext.PlayFabId,
+                        // Type = AccountManager.AuthenticationContext.EntityType
                     }
                 },
                 response =>
@@ -90,7 +90,7 @@ public class CatalogManager : SingletonPersistent<CatalogManager>
         PlayFabEconomyAPI.GetInventoryItems(
             new GetInventoryItemsRequest
             {
-                AuthenticationContext = AccountManager.AuthenticationContext,
+                // AuthenticationContext = AccountManager.AuthenticationContext,
             },
             response =>
             {
@@ -169,7 +169,7 @@ public class CatalogManager : SingletonPersistent<CatalogManager>
         PlayFabEconomyAPI.PurchaseInventoryItems(
             new()
             {
-                AuthenticationContext = AccountManager.AuthenticationContext,
+                // AuthenticationContext = AccountManager.AuthenticationContext,
 
                 Amount = 1,
                 Item = new() 
@@ -178,8 +178,8 @@ public class CatalogManager : SingletonPersistent<CatalogManager>
                 },
                 Entity = new()
                 {
-                    Id = AccountManager.AuthenticationContext.PlayFabId,
-                    Type = AccountManager.AuthenticationContext.EntityType
+                    // Id = AccountManager.AuthenticationContext.PlayFabId,
+                    // Type = AccountManager.AuthenticationContext.EntityType
                 },
                 PriceAmounts = new List<PurchasePriceAmount>
                 {

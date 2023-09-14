@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.Security;
 using JetBrains.Annotations;
 using Newtonsoft.Json;
-using Unity.Collections.LowLevel.Unsafe;
 using Random = UnityEngine.Random;
 
 
@@ -34,7 +33,11 @@ public class AccountManager : SingletonPersistent<AccountManager>
     public delegate void LoginSuccessEvent();
     public static event LoginSuccessEvent OnOnLoginSuccess;
     
-    public static PlayFabAuthenticationContext AuthenticationContext;
+    // Authentication context can be stored in scriptable object because in editor mode it's allowed to do so
+    // But in deployment build the data in scriptable object does not persist
+    // Authentication methods are best to talk to the server constantly for data security
+    // Data stored locally would introduce data insecurity
+    // public static PlayFabAuthenticationContext AuthenticationContext;
 
     private static List<string> _adjectives;
     private static List<string> _nouns;
@@ -50,11 +53,11 @@ public class AccountManager : SingletonPersistent<AccountManager>
     /// </summary>
     public void AnonymousLogin()
     {
-        if (AuthenticationContext != null)
-        {
-            Debug.LogWarning("Authentication context information exists.\n You are already logged in.");
-            return;
-        }
+        // if (AuthenticationContext != null)
+        // {
+        //     Debug.LogWarning("Authentication context information exists.\n You are already logged in.");
+        //     return;
+        // }
 
 #if UNITY_ANDROID && !UNITY_EDITOR
         AndroidLogin();
@@ -76,13 +79,13 @@ public class AccountManager : SingletonPersistent<AccountManager>
             }, 
             result =>
             {
-                AuthenticationContext = result.AuthenticationContext;
+                var authenticationContext = result.AuthenticationContext;
                 Debug.Log("Logged in with Android.");
                 
-                Debug.Log($"Play Fab Id: {AuthenticationContext.PlayFabId}");
-                Debug.Log($"Entity Type: {AuthenticationContext.EntityType}");
-                Debug.Log($"Entity Id: {AuthenticationContext.EntityId}");
-                Debug.Log($"Session Ticket: {AuthenticationContext.ClientSessionTicket}");
+                Debug.Log($"Play Fab Id: {authenticationContext.PlayFabId}");
+                Debug.Log($"Entity Type: {authenticationContext.EntityType}");
+                Debug.Log($"Entity Id: {authenticationContext.EntityId}");
+                Debug.Log($"Session Ticket: {authenticationContext.ClientSessionTicket}");
 
                 OnOnLoginSuccess?.Invoke();
             }, 
@@ -102,12 +105,12 @@ public class AccountManager : SingletonPersistent<AccountManager>
                 DeviceId = SystemInfo.deviceUniqueIdentifier
             }, (result) =>
             {
-                AuthenticationContext = result.AuthenticationContext;
+                var authenticationContext = result.AuthenticationContext;
                 Debug.Log("Logged in with IOS.");
-                Debug.Log($"Play Fab Id: {AuthenticationContext.PlayFabId}");
-                Debug.Log($"Entity Type: {AuthenticationContext.EntityType}");
-                Debug.Log($"Entity Id: {AuthenticationContext.EntityId}");
-                Debug.Log($"Session Ticket: {AuthenticationContext.ClientSessionTicket}");
+                Debug.Log($"Play Fab Id: {authenticationContext.PlayFabId}");
+                Debug.Log($"Entity Type: {authenticationContext.EntityType}");
+                Debug.Log($"Entity Id: {authenticationContext.EntityId}");
+                Debug.Log($"Session Ticket: {authenticationContext.ClientSessionTicket}");
                 
                 OnOnLoginSuccess?.Invoke();
             }, (error) =>
@@ -130,12 +133,12 @@ public class AccountManager : SingletonPersistent<AccountManager>
                 CustomId = SystemInfo.deviceUniqueIdentifier
             }, (result) =>
             {
-                AuthenticationContext = result.AuthenticationContext;
+                var authenticationContext = result.AuthenticationContext;
                 Debug.Log("Logged in with Custom ID.");
-                Debug.Log($"Play Fab Id: {AuthenticationContext.PlayFabId}");
-                Debug.Log($"Entity Type: {AuthenticationContext.EntityType}");
-                Debug.Log($"Entity Id: {AuthenticationContext.EntityId}");
-                Debug.Log($"Session Ticket: {AuthenticationContext.ClientSessionTicket}");
+                Debug.Log($"Play Fab Id: {authenticationContext.PlayFabId}");
+                Debug.Log($"Entity Type: {authenticationContext.EntityType}");
+                Debug.Log($"Entity Id: {authenticationContext.EntityId}");
+                Debug.Log($"Session Ticket: {authenticationContext.ClientSessionTicket}");
                 
                 OnOnLoginSuccess?.Invoke();
             }, (error) =>
@@ -145,21 +148,20 @@ public class AccountManager : SingletonPersistent<AccountManager>
             );
     }
 
+    /// <summary>
+    /// Email Login
+    /// Can be tested with Email Login button
+    /// </summary>
     public void OnEmailLogin()
     {
         var email = "yeah@froglet.studio";
-        var chars = new[] { 't', 'h', 'i', 's' };
-        var password = new SecureString();
-        foreach (var c in chars)
-        {
-            password.AppendChar(c);
-        }
         
-        EmailLogin(email, password);
+        
+        EmailLogin(email, GetPassword());
     }
 
     /// <summary>
-    /// Email Login
+    /// Email Login logic
     /// Make sure password stays in memory no longer than necessary
     /// </summary>
     private void EmailLogin([NotNull] string email, [NotNull] SecureString password)
@@ -175,14 +177,14 @@ public class AccountManager : SingletonPersistent<AccountManager>
             },
             (result) =>
             {
-                AuthenticationContext = result.AuthenticationContext;
+                var authenticationContext = result.AuthenticationContext;
                 password?.Dispose();
                 Debug.Log("Logged in with email.");
                 PlayFabClientAPI.GetAccountInfo(
                     new GetAccountInfoRequest()
                     {
                         Email = email,
-                        PlayFabId = AuthenticationContext.PlayFabId
+                        PlayFabId = authenticationContext.PlayFabId
                     },
                     (GetAccountInfoResult result) =>
                     {
@@ -197,6 +199,51 @@ public class AccountManager : SingletonPersistent<AccountManager>
             );
     }
 
+    /// <summary>
+    /// Update player display name with random generated one
+    /// Can be tested by clicking Generate Random Name button
+    /// </summary>
+    public void OnRegisterWithEmail()
+    {
+        var email = "yeah@froglet.studio";
+        // This is a test for email register, we can worry about it linking device later
+        // AnonymousLogin();
+        RegisterWithEmail(email, GetPassword());
+    }
+
+    private void RegisterWithEmail(string email, SecureString password)
+    {
+
+        PlayFabClientAPI.AddUsernamePassword(
+            new AddUsernamePasswordRequest()
+            {
+                Username = GenerateRandomDisplayName(),
+                Email = email,
+                Password = password.ToString()
+            }, (result) =>
+            {
+                Debug.Log("Register with email succeeded.");
+                Debug.Log($"Playfab ID {result.Username}");
+            }, (error) =>
+            {
+                Debug.Log(error.GenerateErrorReport());
+            }
+        );
+
+    }
+
+    private SecureString GetPassword()
+    {
+        const string chars = "This is not password.";
+        var password = new SecureString();
+        foreach (var c in chars)
+        {
+            password.AppendChar(c);
+        }
+
+        return password;
+    }
+    
     /// <summary>
     /// Update player display name with random generated one
     /// Can be tested by clicking Generate Random Name button
@@ -241,18 +288,22 @@ public class AccountManager : SingletonPersistent<AccountManager>
     
     
 
+    /// <summary>
+    /// Load Player Profile
+    /// Can be tested on Load Player Data
+    /// </summary>
     public void LoadPlayerProfile()
     {
-        if (AuthenticationContext == null)
-        {
-            Debug.LogWarning("Not logged in.");
-            return;
-        }
+        // if (AuthenticationContext == null)
+        // {
+        //     Debug.LogWarning("Not logged in.");
+        //     return;
+        // }
         
         PlayFab.PlayFabClientAPI.GetPlayerProfile(
             new GetPlayerProfileRequest()
             {
-                PlayFabId = AuthenticationContext?.PlayFabId,
+                PlayFabId = GenerateRandomDisplayName(),
             },
             result =>
             {
@@ -270,16 +321,10 @@ public class AccountManager : SingletonPersistent<AccountManager>
     /// </summary>
     public void LoadTitleData()
     {
-        if (AuthenticationContext == null)
-        {
-            Debug.LogWarning("Not logged in.");
-            return;
-        }
-        
         PlayFabClientAPI.GetTitleData(
             new GetTitleDataRequest()
             {
-                AuthenticationContext = AuthenticationContext,
+                // AuthenticationContext = AuthenticationContext,
             },
             result =>
             {
@@ -323,7 +368,6 @@ public class AccountManager : SingletonPersistent<AccountManager>
 #else
         UnlinkCustomIDLogin();
 #endif
-        AuthenticationContext = null;
     }
 
     private void UnlinkAndroidLogin()
