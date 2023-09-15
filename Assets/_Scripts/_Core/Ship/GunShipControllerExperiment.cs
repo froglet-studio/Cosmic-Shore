@@ -112,16 +112,16 @@ public class GunShipControllerExperiment : ShipTransformer
         if (resourceSystem.CurrentAmmo > resourceSystem.MaxAmmo / 10f)
         {
             resourceSystem.ChangeAmmoAmount(-resourceSystem.MaxAmmo / 10f);
-            topGun.FireGun(player.transform, 30, shipData.Course * shipData.Speed, ProjectileScale * 15, BlockScale * 2, true, 5f);
+            topGun.FireGun(player.transform, 30, shipData.Course * shipData.Speed, ProjectileScale * 15, true, 5f);
         } 
     }
 
     void Fire()
     {
         //resourceSystem.ChangeAmmoAmount(uuid, chargeDepletionRate * Time.deltaTime); // TODO: this should probably be an amount not a rate. let the gun cooldown handle delta time, but then there is asymmetry with the recharge rate . . . 
-        topGun.FireGun(player.transform, 30, shipData.Course * shipData.Speed, ProjectileScale, BlockScale);
-        leftGun.FireGun(player.transform, 30, shipData.Course * shipData.Speed, ProjectileScale, BlockScale);
-        rightGun.FireGun(player.transform, 30, shipData.Course * shipData.Speed, ProjectileScale, BlockScale);
+        topGun.FireGun(player.transform, 30, shipData.Course * shipData.Speed, ProjectileScale);
+        leftGun.FireGun(player.transform, 30, shipData.Course * shipData.Speed, ProjectileScale);
+        rightGun.FireGun(player.transform, 30, shipData.Course * shipData.Speed, ProjectileScale);
     }
 
     void Slide()

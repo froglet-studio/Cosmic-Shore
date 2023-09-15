@@ -8,7 +8,6 @@ public class GameCanvas : MonoBehaviour
     [SerializeField] public MiniGameHUD MiniGameHUD;
     [SerializeField] public ShipButtonPanel ShipButtonPanel;
     [SerializeField] public ResourceDisplayGroup ResourceDisplayGroup;
-    [SerializeField] public GameObject RearView;
     [SerializeField] public GameObject EndGameScreen;
 
     [Header("Scoring UI")]

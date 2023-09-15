@@ -17,5 +17,5 @@ public class SO_Ship : ScriptableObject
     [SerializeField] public List<SO_ShipAbility> Abilities;
     [SerializeField] public List<SO_Pilot> Pilots;
     [FormerlySerializedAs("MiniGames")]
-    [SerializeField] public List<SO_MiniGame> TrainingGames;
+    [SerializeField] public List<SO_ArcadeGame> TrainingGames;
 }

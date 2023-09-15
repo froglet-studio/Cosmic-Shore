@@ -9,4 +9,12 @@ public class MiniGameHUD : MonoBehaviour
     public Image CountdownDisplay;
     public Button ReadyButton;
     public CountdownTimer CountdownTimer;
+    [SerializeField] GameObject Pip;
+
+
+    public void SetPipActive(bool active)
+    {
+        Pip.SetActive(active);
+    }
 }
+

@@ -5,5 +5,5 @@ using UnityEngine;
 [System.Serializable]
 public class SO_GameList : ScriptableObject
 {
-    public List<SO_MiniGame> GameList;
+    public List<SO_ArcadeGame> GameList;
 }
