@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Newtonsoft.Json;
 using UnityEngine;
@@ -30,7 +31,7 @@ namespace _Scripts._Core.Playfab_Models
         /// Set Player Display Name
         /// Update player display name, we can assume the account is already created here
         /// </summary>
-        public void SetPlayerDisplayName(string displayName)
+        public void SetPlayerDisplayName(string displayName, Action callback = null)
         {
             PlayFabClientAPI.UpdateUserTitleDisplayName(
                 new UpdateUserTitleDisplayNameRequest()
