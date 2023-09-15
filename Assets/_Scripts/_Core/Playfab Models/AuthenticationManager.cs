@@ -14,8 +14,9 @@ namespace _Scripts._Core.Playfab_Models
         public static PlayerAccount PlayerAccount;
         public static PlayerProfile PlayerProfile;
         
-        public delegate void LoginSuccessEvent();
-        public static event LoginSuccessEvent OnLoginSuccess;
+        // public delegate void LoginSuccessEvent();
+        // public static event LoginSuccessEvent OnLoginSuccess;
+        public static EventHandler<LoginResult> OnLoginSuccess;
 
         public delegate void LoginErrorEvent();
 
@@ -184,20 +185,24 @@ namespace _Scripts._Core.Playfab_Models
                 );
         }
 
-        private void HandleLoginSuccess(LoginResult loginResult)
+        private void HandleLoginSuccess(LoginResult loginResult = null)
         {
             PlayerAccount = PlayerAccount ?? new PlayerAccount();
-            PlayerAccount.PlayFabId = loginResult.PlayFabId;
-            PlayerAccount.AuthContext = loginResult.AuthenticationContext;
-            PlayerAccount.IsNewlyCreated = loginResult.NewlyCreated;
-            Debug.Log("Logged in with Android.");
-                    
-            Debug.Log($"Play Fab Id: {PlayerAccount.PlayFabId}");
-            Debug.Log($"Entity Type: {PlayerAccount.AuthContext.EntityType}");
-            Debug.Log($"Entity Id: {PlayerAccount.AuthContext.EntityId}");
-            Debug.Log($"Session Ticket: {PlayerAccount.AuthContext.ClientSessionTicket}");
+            if (loginResult != null)
+            {
+                PlayerAccount.PlayFabId = loginResult.PlayFabId;
+                PlayerAccount.AuthContext = loginResult.AuthenticationContext;
+                PlayerAccount.IsNewlyCreated = loginResult.NewlyCreated;
+                Debug.Log("Logged in with Android.");
 
-            OnLoginSuccess?.Invoke();
+                Debug.Log($"Play Fab Id: {PlayerAccount.PlayFabId}");
+                Debug.Log($"Entity Type: {PlayerAccount.AuthContext.EntityType}");
+                Debug.Log($"Entity Id: {PlayerAccount.AuthContext.EntityId}");
+                Debug.Log($"Session Ticket: {PlayerAccount.AuthContext.ClientSessionTicket}");
+
+
+                OnLoginSuccess?.Invoke(this, loginResult);
+            }
         }
 
         private void HandleLoginError(PlayFabError loginError)
