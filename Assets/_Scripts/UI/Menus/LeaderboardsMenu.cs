@@ -13,8 +13,8 @@ public class LeaderboardsMenu : MonoBehaviour
     [SerializeField] Transform GameSelectionContainer;
     [SerializeField] GameObject HighScoresContainer;
 
-    List<SO_MiniGame> Games = new();
-    SO_MiniGame SelectedGame;
+    List<SO_ArcadeGame> Games = new();
+    SO_ArcadeGame SelectedGame;
 
     // Start is called before the first frame update
     void Start()
