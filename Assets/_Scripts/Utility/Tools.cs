@@ -18,6 +18,17 @@ namespace StarWriter.Utility.Tools
             }
         }
 
+        public static IEnumerator LerpingCoroutine(Vector3 getCurrent, Vector3 newValue, float duration, Action<Vector3> replacementMethod)
+        {
+            float elapsedTime = 0;
+            while (elapsedTime < duration)
+            {
+                elapsedTime += Time.deltaTime;
+                replacementMethod(Vector3.Lerp(getCurrent, newValue, elapsedTime / duration));
+                yield return null;
+            }
+        }
+
         public IEnumerator LateStart(float seconds, string functionName)
         {
             yield return new WaitForSeconds(seconds);

@@ -119,7 +119,6 @@ MonoBehaviour:
   MiniGameHUD: {fileID: 5497835174634480091}
   ShipButtonPanel: {fileID: 193289751561833888}
   ResourceDisplayGroup: {fileID: 6580864480803218294}
-  RearView: {fileID: 2169239178018152565}
   EndGameScreen: {fileID: 5054612726784394718}
   Scoreboard: {fileID: 5054612727353841854}
   WinnerNameContainer: {fileID: 5054612727513607398}
@@ -761,6 +760,21 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 5497835173863578975}
     m_Modifications:
+    - target: {fileID: 1567114930600279961, guid: 491eb8350c5c6ab45a8b291192f9891a,
+        type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1567114930600279961, guid: 491eb8350c5c6ab45a8b291192f9891a,
+        type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1567114930600279961, guid: 491eb8350c5c6ab45a8b291192f9891a,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 1720411786157758737, guid: 491eb8350c5c6ab45a8b291192f9891a,
         type: 3}
       propertyPath: m_Pivot.x
@@ -921,6 +935,46 @@ PrefabInstance:
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[2].m_Arguments.m_ObjectArgumentAssemblyTypeName
       value: UnityEngine.Object, UnityEngine
       objectReference: {fileID: 0}
+    - target: {fileID: 1720411786918787523, guid: 491eb8350c5c6ab45a8b291192f9891a,
+        type: 3}
+      propertyPath: m_Material
+      value: 
+      objectReference: {fileID: 2100000, guid: 818593555994e214ea75fcbb04d3558b, type: 2}
+    - target: {fileID: 1720411786918787523, guid: 491eb8350c5c6ab45a8b291192f9891a,
+        type: 3}
+      propertyPath: m_RaycastPadding.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1720411786918787523, guid: 491eb8350c5c6ab45a8b291192f9891a,
+        type: 3}
+      propertyPath: m_RaycastPadding.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1720411786918787527, guid: 491eb8350c5c6ab45a8b291192f9891a,
+        type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.9659258
+      objectReference: {fileID: 0}
+    - target: {fileID: 1720411786918787527, guid: 491eb8350c5c6ab45a8b291192f9891a,
+        type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1720411786918787527, guid: 491eb8350c5c6ab45a8b291192f9891a,
+        type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1720411786918787527, guid: 491eb8350c5c6ab45a8b291192f9891a,
+        type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0.2588191
+      objectReference: {fileID: 0}
+    - target: {fileID: 1720411786918787527, guid: 491eb8350c5c6ab45a8b291192f9891a,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 30
+      objectReference: {fileID: 0}
     - target: {fileID: 1720411787054395008, guid: 491eb8350c5c6ab45a8b291192f9891a,
         type: 3}
       propertyPath: m_Name
@@ -930,6 +984,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Name
       value: RoundTimeAndPauseButton
+      objectReference: {fileID: 0}
+    - target: {fileID: 2593846398354087464, guid: 491eb8350c5c6ab45a8b291192f9891a,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 3973401074881798019, guid: 491eb8350c5c6ab45a8b291192f9891a,
         type: 3}
@@ -945,6 +1004,26 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Name
       value: ShipButtonPanel
+      objectReference: {fileID: 0}
+    - target: {fileID: 5023401565743585469, guid: 491eb8350c5c6ab45a8b291192f9891a,
+        type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5023401565743585469, guid: 491eb8350c5c6ab45a8b291192f9891a,
+        type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5023401565743585469, guid: 491eb8350c5c6ab45a8b291192f9891a,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5023401565743585470, guid: 491eb8350c5c6ab45a8b291192f9891a,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6808243731128720952, guid: 491eb8350c5c6ab45a8b291192f9891a,
         type: 3}
@@ -978,18 +1057,28 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   fadeDuration: 0.2
---- !u!1 &2169239178018152565 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 5023401565743585470, guid: 491eb8350c5c6ab45a8b291192f9891a,
-    type: 3}
-  m_PrefabInstance: {fileID: 6605683967492913355}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1 &5497835174443352335 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 1720411786918787524, guid: 491eb8350c5c6ab45a8b291192f9891a,
     type: 3}
   m_PrefabInstance: {fileID: 6605683967492913355}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &5414762558272939624
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5497835174443352335}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ab5bb3a7e3f94a54c9f2436c5d375c16, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  Color1Radius: 0
+  Color2Radius: 0
+  Color3Radius: 0
+  upperBound: 300000
 --- !u!114 &8690805308010432246
 MonoBehaviour:
   m_ObjectHideFlags: 0

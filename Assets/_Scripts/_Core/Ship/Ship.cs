@@ -140,11 +140,10 @@ namespace StarWriter.Core
 
         void ApplyShipControlOverrides(List<ShipControlOverrides> controlOverrides)
         {
+
             // Ship controls are only relevant for human pilots
             if (AutoPilot.AutoPilotEnabled)
                 return;
-
-            player.GameCanvas.MiniGameHUD.SetPipActive(pip);
 
             foreach (ShipControlOverrides effect in controlOverrides)
             {
