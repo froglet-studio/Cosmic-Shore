@@ -116,7 +116,7 @@ namespace StarWriter.Core.IO
             }
             else if (Gamepad.current != null)
             {
-                if (ship.ShipStatus.ShowThreeButtonPanel)
+                if (ship != null && ship.ShipStatus.ShowThreeButtonPanel)
                 {
                     shipButtonPanel.FadeInButtons();
                 }

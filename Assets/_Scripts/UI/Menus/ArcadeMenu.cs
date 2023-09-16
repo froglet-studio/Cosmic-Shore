@@ -6,7 +6,7 @@ using UnityEngine.SceneManagement;
 using UnityEngine.Serialization;
 using UnityEngine.UI;
 
-public class MiniGamesMenu : MonoBehaviour
+public class ArcadeMenu : MonoBehaviour
 {
     [SerializeField] SO_GameList GameList;
     [SerializeField] TMPro.TMP_Text SelectedGameName;
@@ -25,7 +25,7 @@ public class MiniGamesMenu : MonoBehaviour
     List<Sprite> IntensityIcons = new();
     List<Sprite> PlayerCountIcons = new();
     SO_Ship SelectedShip;
-    SO_MiniGame SelectedGame;
+    SO_ArcadeGame SelectedGame;
 
     // Start is called before the first frame update
     void Start()
