@@ -3,21 +3,22 @@ using PlayFab.EconomyModels;
 using StarWriter.Utility.Singleton;
 using System.Collections.Generic;
 using UnityEngine;
+using PlayFab.ClientModels;
+using _Scripts._Core.Playfab_Models;
 
 public class CatalogManager : SingletonPersistent<CatalogManager>
 {
     // Items list, configurable via inspector
-    static List<CatalogItem> CatalogItems;
-    static List<CatalogItem> InventoryItems;
-
+    static List<PlayFab.EconomyModels.CatalogItem> CatalogItems;
+    static List<PlayFab.EconomyModels.CatalogItem> InventoryItems;
 
     // Bootstrap the whole thing
     public void Start()
     {
-        AccountManager.OnOnLoginSuccess += LoadCatalog;
+        AuthenticationManager.OnLoginSuccess += LoadCatalog;
     }
 
-    void LoadCatalog()
+    void LoadCatalog(object sender, LoginResult result)
     {
         PlayFabEconomyAPI.SearchItems(
             new()
@@ -31,14 +32,11 @@ public class CatalogManager : SingletonPersistent<CatalogManager>
                 Debug.Log(CatalogItems);
                 foreach (var item in CatalogItems)
                 {
-                    Debug.Log("   Title: " + item.Title);
-                    Debug.Log("   Content Type: " + item.ContentType);
+                    Debug.Log("   CatalogManager - Id: " + item.Id);
+                    Debug.Log("   CatalogManager - Title: " + item.Title);
+                    Debug.Log("   CatalogManager - Content Type: " + item.ContentType);
                     foreach (var description in item.Description.Values)
-                    {
-                        Debug.Log("   Description: " + description);
-                    }
-                    Debug.Log("   DefaultStackId: " + item.DefaultStackId);
-                    Debug.Log("   Id: " + item.Id);
+                        Debug.Log("   CatalogManager - Description: " + description);                    
                 }
             },
             error => 
@@ -63,18 +61,18 @@ public class CatalogManager : SingletonPersistent<CatalogManager>
                     {
                         Id = CatalogItems[i].Id
                     },
-                    Entity = new EntityKey
+                    Entity = new PlayFab.EconomyModels.EntityKey()
                     {
-                        // Id = AccountManager.AuthenticationContext.PlayFabId,
-                        // Type = AccountManager.AuthenticationContext.EntityType
+                        Id = AuthenticationManager.PlayerAccount.AuthContext.EntityId,
+                        Type = AuthenticationManager.PlayerAccount.AuthContext.EntityType
                     }
                 },
                 response =>
                 {
-                    Debug.Log("OnAddInventoryItemSuccess");
+                    Debug.Log("CatalogManager - OnAddInventoryItemSuccess");
                     foreach (var transactionId in response.TransactionIds)
                     {
-                        Debug.Log($"transaction id: {transactionId}");
+                        Debug.Log($"CatalogManager - transaction id: {transactionId}");
                     }
                 },
                 error =>
@@ -94,7 +92,7 @@ public class CatalogManager : SingletonPersistent<CatalogManager>
             },
             response =>
             {
-                Debug.Log("GetInventoryItemsResponse: " + response.Items);
+                Debug.Log("CatalogManager - GetInventoryItemsResponse: " + response.Items);
 
                 List<string> itemIds = new();
                 foreach (var item in response.Items)
@@ -113,15 +111,15 @@ public class CatalogManager : SingletonPersistent<CatalogManager>
 
                         foreach (var item in response.Items)
                         {
-                            Debug.Log("   Id: " + item.Id);
+                            Debug.Log("   CatalogManager - Id: " + item.Id);
                             foreach (var key in item.Title.Keys)
                             {
-                                Debug.Log("   Title Key: " + key);
-                                Debug.Log("   Title: " + item.Title[key]);
+                                Debug.Log("   CatalogManager - Title Key: " + key);
+                                Debug.Log("   CatalogManager - Title: " + item.Title[key]);
                             }
-                            Debug.Log("   Type: " + item.Type);
-                            Debug.Log("   Image Count: " + item.Images.Count);
-                            Debug.Log("   Content Type: " + item.ContentType);
+                            Debug.Log("   CatalogManager - Type: " + item.Type);
+                            Debug.Log("   CatalogManager - Image Count: " + item.Images.Count);
+                            Debug.Log("   CatalogManager - Content Type: " + item.ContentType);
                         }
                     },
                     error =>
@@ -145,15 +143,15 @@ public class CatalogManager : SingletonPersistent<CatalogManager>
             },
             (GetItemResponse response) =>
             {
-                Debug.Log("   Id: " + response.Item.Id);
+                Debug.Log("   CatalogManager - Id: " + response.Item.Id);
                 foreach (var key in response.Item.Title.Keys)
                 {
-                    Debug.Log("   Title Key: " + key);
-                    Debug.Log("   Title: " + response.Item.Title[key]);
+                    Debug.Log("   CatalogManager - Title Key: " + key);
+                    Debug.Log("   CatalogManager - Title: " + response.Item.Title[key]);
                 }
-                Debug.Log("   Type: " + response.Item.Type);
-                Debug.Log("   Image Count: " + response.Item.Images.Count);
-                Debug.Log("   Content Type: " + response.Item.ContentType);
+                Debug.Log("   CatalogManager - Type: " + response.Item.Type);
+                Debug.Log("   CatalogManager - Image Count: " + response.Item.Images.Count);
+                Debug.Log("   CatalogManager - Content Type: " + response.Item.ContentType);
             },
             (PlayFabError error) =>
             {
@@ -192,7 +190,7 @@ public class CatalogManager : SingletonPersistent<CatalogManager>
             },
             response =>
             {
-                Debug.Log("Successfully purchased Tomahawk");
+                Debug.Log("CatalogManager - Successfully purchased Tomahawk");
             },
             error =>
             {

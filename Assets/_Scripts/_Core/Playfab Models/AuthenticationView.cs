@@ -2,35 +2,38 @@ using System.Collections;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using static _Scripts._Core.Playfab_Models.AuthenticationManager;
 
 namespace _Scripts._Core.Playfab_Models
 {
     public class AuthenticationView : MonoBehaviour
     {
         [Header("Player Display Name")]
-        [SerializeField] private TMP_InputField displayNameInputField;
-        [SerializeField] private Button setDisplayNameButton;
-        [SerializeField] private TMP_Text displayNameResultMessage;
-        [SerializeField] private string displayNameDefaultText;
+        [SerializeField] TMP_InputField displayNameInputField;
+        [SerializeField] Button setDisplayNameButton;
+        [SerializeField] TMP_Text displayNameResultMessage;
+        [SerializeField] string displayNameDefaultText;
 
         [Header("Email Register and Login")] 
-        [SerializeField] private TMP_InputField emailInputField;
-        [SerializeField] private TMP_InputField passwordField;
-        [SerializeField] private Button registerButton;
-        [SerializeField] private Button loginButton;
-        
+        [SerializeField] TMP_InputField emailInputField;
+        [SerializeField] TMP_InputField passwordField;
+        [SerializeField] Button registerButton;
+        [SerializeField] Button loginButton;
         
         // Start is called before the first frame update
-        private void Start()
+        void Start()
         {
-            AuthenticationManager.Instance.AnonymousLogin();
-            
-            
             // Subscribe Button OnClick Events
             setDisplayNameButton.onClick.AddListener(SetPlayerNameButton_OnClicked);
-            
+
             // Set default player display name
             displayNameResultMessage.text = displayNameDefaultText;
+
+            // This one is secret secret
+            if (passwordField != null )
+                passwordField.contentType = TMP_InputField.ContentType.Password;
+
+            AuthenticationManager.OnProfileLoaded += InitializePlayerDisplayNameView;
         }
 
         public string RandomGenerateName()
@@ -41,51 +44,68 @@ namespace _Scripts._Core.Playfab_Models
             var adj_index = random.Next(adjectives.Count);
             var noun_index = random.Next(nouns.Count);
             var displayName = $"{adjectives[adj_index]} {nouns[noun_index]}";
-            Debug.Log($"Generated display name: {displayName}");
+            
+            Debug.Log($"AuthenticationView - Generated display name: {displayName}");
+            
             return displayName;
         }
 
-        IEnumerator GenerateName()
+        IEnumerator AssignRandomNameCoroutine()
         {
             AuthenticationManager.Instance.LoadRandomNameList();
+
             yield return new WaitUntil(() => AuthenticationManager.Adjectives != null);
+            
             displayNameInputField.text = RandomGenerateName();
-            AuthenticationManager.Instance.SetPlayerDisplayName(displayNameInputField.text, SettingPlayerDisplayName);
         } 
 
         public void SetPlayerNameButton_OnClicked()
         {
-            // Input null or empty string check
-            if (string.IsNullOrEmpty(displayNameInputField.text))
-            {   
-                // Waiting for the result
-                StartCoroutine(GenerateName());
-                
-                // TODO: a spinning icon in the ui here would be great
-            }
-            else
+            displayNameResultMessage.gameObject.SetActive(false);
+
+            if (!CheckDisplayNameLength(displayNameInputField.text))
+                return;
+
+            AuthenticationManager.Instance.SetPlayerDisplayName(displayNameInputField.text, UpdatePlayerDisplayNameView);
+
+            // TODO: a spinning icon in the ui here would be great
+
+            Debug.Log($"Current player display name: {displayNameInputField.text}");
+        }
+
+        public void GenerateRandomNameButton_OnClicked()
+        {
+            // TODO: a spinning icon in the ui here would be great
+
+            StartCoroutine(AssignRandomNameCoroutine());
+        }
+
+        bool CheckDisplayNameLength(string displayName)
+        {
+            if (displayName.Length > 25 || displayName.Length < 3)
             {
-                AuthenticationManager.Instance.SetPlayerDisplayName(displayNameInputField.text, SettingPlayerDisplayName);
+                displayNameResultMessage.text = "Display name must be between 3 and 25 characters long";
+                displayNameResultMessage.gameObject.SetActive(true);
                 
-                Debug.Log($"Current player display name: {displayNameInputField.text}");
+                return false;
             }
-            
-            // TODO: Input length check, name length should be between 5 to 40
-            
-            // var displayNameText = displayNameInputField.text;
-            
+
+            return true;
         }
 
-        private void CheckDisplayNameLength(string displayName)
+        void UpdatePlayerDisplayNameView()
         {
-            // if(displayName.Length>)
-        }
-
-        private void SettingPlayerDisplayName()
-        {
-            Debug.Log("Setting Player Display Name.");
+            Debug.Log("Successfully Set Player Display Name.");
             displayNameResultMessage.text = "Success";
             displayNameResultMessage.gameObject.SetActive(true);
+        }
+
+        void InitializePlayerDisplayNameView()
+        {
+            displayNameResultMessage.text = "Display Name Loaded";
+            displayNameResultMessage.gameObject.SetActive(true);
+
+            displayNameInputField.text = AuthenticationManager.PlayerProfile.DisplayName;
         }
     }
 }

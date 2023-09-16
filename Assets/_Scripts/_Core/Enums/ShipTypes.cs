@@ -2,6 +2,7 @@
 // Always assign a static numeric value to your enum types
 public enum ShipTypes
 {
+    Any = -1,
     Random = 0,
     Manta = 1,
     Dolphin = 2,
