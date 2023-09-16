@@ -47,7 +47,7 @@ namespace StarWriter.Core
         [Header("Optional Ship Components")]
         [SerializeField] GameObject AOEPrefab;
         [SerializeField] Skimmer farFieldSkimmer;
-        [SerializeField] Camera pipCamera;
+
 
         [Header("Environment Interactions")]
         [SerializeField] public List<CrystalImpactEffects> crystalImpactEffects;
