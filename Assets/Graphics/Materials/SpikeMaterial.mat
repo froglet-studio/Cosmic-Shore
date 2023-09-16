@@ -89,14 +89,18 @@ Material:
     - _DetailNormalMapScale: 1
     - _DstBlend: 0
     - _EdgeGlow: 0.992
+    - _EndFadeDistance: 1
     - _EnvironmentReflections: 1
     - _GlossMapScale: 0
     - _Glossiness: 0
     - _GlossyReflections: 0
     - _GlowAmount: 2
+    - _LineWidth: 2.08
     - _MaxWidth: 0.5
     - _Metallic: 0
+    - _NumberOfPulses: 4
     - _OcclusionStrength: 1
+    - _OverlayIntensity: 0.549
     - _Parallax: 0.005
     - _QueueOffset: 0
     - _ReceiveShadows: 1
@@ -108,15 +112,21 @@ Material:
     - _SpikeFrequency: 2.62
     - _SpikeHeight: 0.944
     - _SrcBlend: 1
+    - _StartFadeDistance: 0
     - _Surface: 0
-    - _WaveAmplitude: 0.222
-    - _WaveFrequency: 1.29
+    - _WaveAmplitude: 0.423
+    - _WaveFrequency: 5.35
     - _WorkflowMode: 1
     - _ZWrite: 1
     m_Colors:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
-    - _Color: {r: 0.13646607, g: 0.793634, b: 0.8679245, a: 1}
+    - _BlendColor: {r: 0.043137252, g: 0.12783879, b: 1, a: 1}
+    - _Color: {r: 0.48576605, g: 0.9245283, b: 0.058146335, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
+    - _PulseAmplitudes: {r: 1, g: 2, b: 3, a: 4}
+    - _PulseColors: {r: 0.9365196, g: 0, b: 1, a: 1}
+    - _PulseFrequencies: {r: 1, g: 2, b: 3, a: 4}
+    - _PulseSpeeds: {r: 1, g: 2, b: 3, a: 4}
     - _SpecColor: {r: 0.19999996, g: 0.19999996, b: 0.19999996, a: 1}
   m_BuildTextureStacks: []
 --- !u!114 &7041783479967312137
