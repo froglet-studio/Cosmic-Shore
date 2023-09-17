@@ -237,7 +237,7 @@ public partial class @ControlsManagerAsset: IInputActionCollection2, IDisposable
                 {
                     ""name"": ""down"",
                     ""id"": ""258bd536-60fb-422f-8fe1-b2bd8b530bb5"",
-                    ""path"": ""<Gamepad>/leftStick/down"",
+                    ""path"": ""<Gamepad>/rightStick/down"",
                     ""interactions"": """",
                     ""processors"": """",
                     ""groups"": ""Gamepad"",
@@ -248,7 +248,7 @@ public partial class @ControlsManagerAsset: IInputActionCollection2, IDisposable
                 {
                     ""name"": ""left"",
                     ""id"": ""2b8aecb0-fa42-4675-86ad-545c3ff67da6"",
-                    ""path"": ""<Gamepad>/leftStick/left"",
+                    ""path"": ""<Gamepad>/rightStick/left"",
                     ""interactions"": """",
                     ""processors"": """",
                     ""groups"": ""Gamepad"",
@@ -259,7 +259,7 @@ public partial class @ControlsManagerAsset: IInputActionCollection2, IDisposable
                 {
                     ""name"": ""right"",
                     ""id"": ""f55e0ceb-c4f0-436b-8b15-5b381ef73851"",
-                    ""path"": ""<Gamepad>/leftStick/right"",
+                    ""path"": ""<Gamepad>/rightStick/right"",
                     ""interactions"": """",
                     ""processors"": """",
                     ""groups"": ""Gamepad"",
