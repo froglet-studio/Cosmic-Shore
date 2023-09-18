@@ -23,7 +23,7 @@ public class CatalogManager : SingletonPersistent<CatalogManager>
         PlayFabEconomyAPI.SearchItems(
             new()
             {
-                // AuthenticationContext = AccountManager.AuthenticationContext,
+                AuthenticationContext = AuthenticationManager.PlayerAccount.AuthContext,
                 Filter = "ContentType eq 'Vessel' and tags/any(t: t eq 'Rhino')"
             },
             response =>

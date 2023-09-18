@@ -5,7 +5,6 @@ using UnityEngine;
 public class SO_Pilot : ScriptableObject
 {
     [SerializeField] public string Name;
-    [SerializeField] public string CallSign;
     [SerializeField] public string Description;
     [SerializeField] public Sprite Image;
     [SerializeField] public Sprite Icon;

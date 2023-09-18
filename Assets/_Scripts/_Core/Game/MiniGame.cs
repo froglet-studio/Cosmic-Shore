@@ -115,7 +115,7 @@ public class MiniGame : MonoBehaviour
 
     public virtual void StartNewGame()
     {
-        Debug.Log($"Playing as {PlayerPilot.CallSign} - \"{PlayerPilot.Description}\"");
+        Debug.Log($"Playing as {PlayerPilot.Name} - \"{PlayerPilot.Description}\"");
         if (PauseSystem.Paused) PauseSystem.TogglePauseGame();
 
         RemainingPlayers = new();
