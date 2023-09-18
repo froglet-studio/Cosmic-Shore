@@ -2,12 +2,13 @@ using System.Collections;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using static _Scripts._Core.Playfab_Models.AuthenticationManager;
 
 namespace _Scripts._Core.Playfab_Models
 {
     public class AuthenticationView : MonoBehaviour
     {
+        [SerializeField] GameObject BusyIndicator;
+
         [Header("Player Display Name")]
         [SerializeField] TMP_InputField displayNameInputField;
         [SerializeField] Button setDisplayNameButton;
@@ -19,6 +20,7 @@ namespace _Scripts._Core.Playfab_Models
         [SerializeField] TMP_InputField passwordField;
         [SerializeField] Button registerButton;
         [SerializeField] Button loginButton;
+        
         
         // Start is called before the first frame update
         void Start()
@@ -57,6 +59,7 @@ namespace _Scripts._Core.Playfab_Models
             yield return new WaitUntil(() => AuthenticationManager.Adjectives != null);
             
             displayNameInputField.text = RandomGenerateName();
+            BusyIndicator.SetActive(false);
         } 
 
         public void SetPlayerNameButton_OnClicked()
@@ -68,14 +71,14 @@ namespace _Scripts._Core.Playfab_Models
 
             AuthenticationManager.Instance.SetPlayerDisplayName(displayNameInputField.text, UpdatePlayerDisplayNameView);
 
-            // TODO: a spinning icon in the ui here would be great
+            BusyIndicator.SetActive(true);
 
             Debug.Log($"Current player display name: {displayNameInputField.text}");
         }
 
         public void GenerateRandomNameButton_OnClicked()
         {
-            // TODO: a spinning icon in the ui here would be great
+            BusyIndicator.SetActive(true);
 
             StartCoroutine(AssignRandomNameCoroutine());
         }
@@ -96,16 +99,20 @@ namespace _Scripts._Core.Playfab_Models
         void UpdatePlayerDisplayNameView()
         {
             Debug.Log("Successfully Set Player Display Name.");
+
             displayNameResultMessage.text = "Success";
             displayNameResultMessage.gameObject.SetActive(true);
+            BusyIndicator.SetActive(false);
         }
 
         void InitializePlayerDisplayNameView()
         {
-            displayNameResultMessage.text = "Display Name Loaded";
-            displayNameResultMessage.gameObject.SetActive(true);
+            BusyIndicator.SetActive(false);
 
             displayNameInputField.text = AuthenticationManager.PlayerProfile.DisplayName;
+
+            displayNameResultMessage.text = "Display Name Loaded";
+            displayNameResultMessage.gameObject.SetActive(true);
         }
     }
 }
