@@ -1,4 +1,6 @@
 using System.Collections;
+using System.Security;
+using PlayFab;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -35,8 +37,113 @@ namespace _Scripts._Core.Playfab_Models
             if (passwordField != null )
                 passwordField.contentType = TMP_InputField.ContentType.Password;
 
+            if (emailInputField != null)
+                emailInputField.contentType = TMP_InputField.ContentType.EmailAddress;
+
             AuthenticationManager.OnProfileLoaded += InitializePlayerDisplayNameView;
         }
+
+        #region Email and Password Login
+
+        /// <summary>
+        /// Get password (Obviously)
+        /// Transit password to secured string, for very secure security
+        /// </summary>
+        SecureString GetPassword(string password)
+        {
+            var passwordSecure = new SecureString();
+            foreach (var c in password)
+            {
+                passwordSecure.AppendChar(c);
+            }
+
+            return passwordSecure;
+        }
+
+        /// <summary>
+        /// Register Response Error Handler
+        /// Handles error responses upon account registration
+        /// </summary>
+        private void RegisterResponseHandler(PlayFabError error)
+        {
+            if (error == null)
+            {
+                Debug.Log("Register Success.");
+            }
+
+            switch (error.Error)
+            {
+                case PlayFabErrorCode.DuplicateEmail:
+                    Debug.Log("Duplicated Email.");
+                    break;
+                case PlayFabErrorCode.ConnectionError:
+                    Debug.Log("Not connected to Internet.");
+                    break;
+                default:
+                    Debug.Log("Unknown nightmare.");
+                    break;
+            }
+        }
+        
+        /// <summary>
+        /// Login Response Error Handler
+        /// Handles error responses upon account login
+        /// </summary>
+        private void LoginResponseHandler(PlayFabError error)
+        {
+            if (error == null)
+            {
+                Debug.Log("Login Success.");
+            }
+
+            switch (error.Error)
+            {
+                case PlayFabErrorCode.InvalidEmailAddress:
+                    Debug.Log("Invalid email address.");
+                    break;
+                case PlayFabErrorCode.InvalidAccount:
+                    Debug.Log("Invalid Account.");
+                    break;
+                case PlayFabErrorCode.InvalidPassword:
+                    Debug.Log("Invalid Password.");
+                    break;
+                case PlayFabErrorCode.ConnectionError:
+                    Debug.Log("Not connected to Internet.");
+                    break;
+                default:
+                    Debug.Log("Unknown nightmare.");
+                    break;
+            }
+        }
+        
+        /// <summary>
+        /// Update player display name with random generated one
+        /// Can be tested by clicking Generate Random Name button
+        /// </summary>
+        public void RegisterButton_OnClick()
+        {
+            var email = emailInputField.text;
+            var password = passwordField.text;
+            // This is a test for email register, we can worry about it linking device later
+            // AnonymousLogin();
+            AuthenticationManager.Instance.RegisterWithEmail(email, GetPassword(password), RegisterResponseHandler);
+        }
+        
+        /// <summary>
+        /// Email Login
+        /// Can be tested with Email Login button
+        /// </summary>
+        public void LoginButton_OnClick()
+        {
+            var email = emailInputField.text;
+            var password = passwordField.text;
+
+            AuthenticationManager.Instance.EmailLogin(email, GetPassword(password), LoginResponseHandler);
+        }
+
+        #endregion
+
+        #region Player Profile
 
         public string RandomGenerateName()
         {
@@ -114,5 +221,8 @@ namespace _Scripts._Core.Playfab_Models
             displayNameResultMessage.text = "Display Name Loaded";
             displayNameResultMessage.gameObject.SetActive(true);
         }
+
+        #endregion
+        
     }
 }
