@@ -7,7 +7,6 @@ using PlayFab.ClientModels;
 using StarWriter.Utility.Singleton;
 using System.Security;
 using JetBrains.Annotations;
-using PlayFab.SharedModels;
 
 namespace _Scripts._Core.Playfab_Models
 {
@@ -41,6 +40,25 @@ namespace _Scripts._Core.Playfab_Models
 
         public static List<string> Adjectives;
         public static List<string> Nouns;
+
+        private const string PlayerGuid = "PlayerGuid";
+        private const string RememberPlayerLogin = "RememberPlayerLogin";
+
+        public bool RememberLogin
+        {
+            get => PlayerPrefs.GetInt(RememberPlayerLogin, 0) != 0;
+            set => PlayerPrefs.SetInt(RememberPlayerLogin, value? 1:0);
+        }
+        
+        private string LoginId
+        {
+            get => PlayerPrefs.GetString(PlayerGuid, "");
+            set
+            {
+                var guid = value ?? Guid.NewGuid().ToString();
+                PlayerPrefs.SetString(PlayerGuid, guid);
+            }
+        }
 
         void Start()
         {
@@ -323,14 +341,14 @@ namespace _Scripts._Core.Playfab_Models
                 },
                 (result) =>
                 {
-                    var authenticationContext = result.AuthenticationContext;
+                    PlayerAccount.AuthContext = result.AuthenticationContext;
                     password?.Dispose();
                     Debug.Log("Logged in with email.");
                     PlayFabClientAPI.GetAccountInfo(
                         new GetAccountInfoRequest()
                         {
                             Email = email,
-                            PlayFabId = authenticationContext.PlayFabId
+                            PlayFabId = PlayerAccount.AuthContext.PlayFabId
                         },
                         (GetAccountInfoResult result) =>
                         {
@@ -346,19 +364,38 @@ namespace _Scripts._Core.Playfab_Models
                 );
         }
 
-        
+        /// <summary>
+        /// Email Registration
+        /// Make sure password stays in memory no longer than necessary
+        /// </summary>
         public void RegisterWithEmail(string email, SecureString password, Action<PlayFabError> resultCallback)
         {
-            PlayFabClientAPI.AddUsernamePassword(
-                new AddUsernamePasswordRequest()
+            PlayFabClientAPI.LoginWithEmailAddress(
+                new LoginWithEmailAddressRequest()
                 {
-                    Username = email,
+                    // Username = email,
+                    TitleId = PlayFabSettings.TitleId,
                     Email = email,
                     Password = password.ToString()
+                    
                 }, (result) =>
                 {
+                    PlayerAccount.PlayFabId = result.PlayFabId;
+                    PlayerAccount.AuthContext = result.AuthenticationContext;
+                    if (RememberLogin)
+                    {
+                        LoginId = Guid.NewGuid().ToString();
+                        PlayFabClientAPI.LinkCustomID(
+                            new LinkCustomIDRequest()
+                            {
+                                CustomId = LoginId,
+                                ForceLink = true
+                            },
+                            null, null
+                            );
+                    }
                     Debug.Log("Register with email succeeded.");
-                    Debug.Log($"Playfab ID {result.Username}");
+                    Debug.Log($"Playfab ID {result.PlayFabId}");
                 }, (error) =>
                 {
                     Debug.Log(error.GenerateErrorReport());
