@@ -22,6 +22,46 @@ public class LeaderboardManager : SingletonPersistent<LeaderboardManager>
         }
     }
 
+    string OfflineStatsFileName = "offline_stats.data";
+    string CachedLeaderboardFileNamePrefix = "leaderboard_";
+
+    bool online = false;
+
+    void ComeOnline()
+    {
+        online = true;
+        ReportAndFlushOfflineStatistics();
+    }
+
+    void GoOffline()
+    {
+        online = false;
+    }
+
+    void OnEnable()
+    {
+        NetworkMonitor.NetworkConnectionFound += ComeOnline;
+        NetworkMonitor.NetworkConnectionLost += GoOffline;
+    }
+
+    void OnDisable()
+    {
+        NetworkMonitor.NetworkConnectionFound -= ComeOnline;
+        NetworkMonitor.NetworkConnectionLost -= GoOffline;
+    }
+
+    void ReportAndFlushOfflineStatistics()
+    {
+        
+        var dataAccessor = new DataAccessor(OfflineStatsFileName);
+        var offlineStatistics = dataAccessor.Load<List<StatisticUpdate>>();
+        if (offlineStatistics.Count > 0)
+        {
+            UpdatePlayerStatistic(offlineStatistics);
+            dataAccessor.Flush();
+        }
+    }
+
     public void UpdateGameplayStatistic(MiniGames gameMode, ShipTypes shipType, int intensity, List<int> scores)
     {
         // Build list of statistics to update
@@ -45,7 +85,6 @@ public class LeaderboardManager : SingletonPersistent<LeaderboardManager>
             });
         }
         UpdatePlayerStatistic(stats, new Dictionary<string, string>() { { "Intensity", intensity.ToString() } });
-
     }
 
     public string GetGameplayStatKey(MiniGames gameMode, ShipTypes shipType)
@@ -64,23 +103,34 @@ public class LeaderboardManager : SingletonPersistent<LeaderboardManager>
 
     void UpdatePlayerStatistic(List<StatisticUpdate> stats, Dictionary<string, string> customTags)
     {
-        customTags.Add("BuildNumber", Application.buildGUID);
-        PlayFabClientAPI.UpdatePlayerStatistics(
-            new()
-            {
-                AuthenticationContext = AuthenticationManager.PlayerAccount.AuthContext,
-                CustomTags = customTags,
-                Statistics = stats,
-            },
-            response => 
-            {
-                Debug.Log("UpdatePlayerStatistic success: " + response.ToString());
-            },
-            error => 
-            {
-                Debug.Log("UpdatePlayerStatistic failure: " + error.GenerateErrorReport());
-            }
-        );
+        if (online)
+        {
+            customTags.Add("BuildNumber", Application.buildGUID);
+            PlayFabClientAPI.UpdatePlayerStatistics(
+                new()
+                {
+                    AuthenticationContext = AuthenticationManager.PlayerAccount.AuthContext,
+                    CustomTags = customTags,
+                    Statistics = stats,
+                },
+                response =>
+                {
+                    Debug.Log("UpdatePlayerStatistic success: " + response.ToString());
+                },
+                error =>
+                {
+                    Debug.Log("UpdatePlayerStatistic failure: " + error.GenerateErrorReport());
+                }
+            );
+        }
+        else
+        {
+            // TODO: custom tags lost
+            var dataAccessor = new DataAccessor(OfflineStatsFileName);
+            var offlineStatistics = dataAccessor.Load<List<StatisticUpdate>>();
+            offlineStatistics.AddRange(stats);
+            dataAccessor.Save(offlineStatistics);
+        }
     }
 
     public delegate void LoadLeaderboardCallBack(List<LeaderboardEntryV2> entries);
@@ -92,31 +142,49 @@ public class LeaderboardManager : SingletonPersistent<LeaderboardManager>
 
     public void FetchLeaderboard(string leaderboardName, Dictionary<string, string> customTags, LoadLeaderboardCallBack callback)
     {
-        PlayFabClientAPI.GetLeaderboardAroundPlayer(
-            new GetLeaderboardAroundPlayerRequest()
-            {
-                AuthenticationContext = AuthenticationManager.PlayerAccount.AuthContext,
-                StatisticName = leaderboardName,
-                CustomTags = customTags,
-            },
-            response =>
-            {
-                List<LeaderboardEntryV2> entries = new List<LeaderboardEntryV2>();
-                foreach (var entry in response.Leaderboard)
+        if (online)
+        {
+            PlayFabClientAPI.GetLeaderboardAroundPlayer(
+                new GetLeaderboardAroundPlayerRequest()
                 {
-                    entries.Add(new LeaderboardEntryV2(entry.Profile.DisplayName, entry.StatValue, entry.Position));
+                    AuthenticationContext = AuthenticationManager.PlayerAccount.AuthContext,
+                    StatisticName = leaderboardName,
+                    CustomTags = customTags,
+                },
+                response =>
+                {
+                    List<LeaderboardEntryV2> entries = new List<LeaderboardEntryV2>();
+                    foreach (var entry in response.Leaderboard)
+                    {
+                        entries.Add(new LeaderboardEntryV2(entry.Profile.DisplayName, entry.StatValue, entry.Position));
+                    }
+
+                    callback(entries);
+
+                    var dataAccessor = new DataAccessor(GetLeaderboardFileName(leaderboardName));
+                    dataAccessor.Save(entries);
+
+                    Debug.Log("UpdatePlayerStatistic success: " + response.ToString());
+                },
+                error =>
+                {
+                    Debug.Log("UpdatePlayerStatistic failure: " + error.GenerateErrorReport());
                 }
-
-                callback(entries);
-
-                Debug.Log("UpdatePlayerStatistic success: " + response.ToString());
-            },
-            error =>
-            {
-                Debug.Log("UpdatePlayerStatistic failure: " + error.GenerateErrorReport());
-            }
-        );
+            );
+        }
+        else
+        {
+            var dataAccessor = new DataAccessor(GetLeaderboardFileName(leaderboardName));
+            var cachedLeaderboard = dataAccessor.Load<List<LeaderboardEntryV2>>();
+            callback(cachedLeaderboard);
+        }
     }
+
+    string GetLeaderboardFileName(string leaderboardName)
+    {
+        return CachedLeaderboardFileNamePrefix + leaderboardName + ".data";
+    }
+
 
     /*
     public void RequestLeaderboard()

@@ -1,7 +1,6 @@
 using UnityEngine;
 using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
-using System.Runtime.Serialization;
 using Newtonsoft.Json;
 using System.Text;
 using System;
@@ -100,5 +99,13 @@ class DataAccessor
         }
 
         return Data;
+    }
+
+    public void Flush()
+    {
+        if (File.Exists(FilePath))
+        {
+            File.Delete(FilePath);
+        }
     }
 }

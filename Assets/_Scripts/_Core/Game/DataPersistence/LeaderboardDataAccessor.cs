@@ -1,7 +1,4 @@
-
-
 using System.Collections.Generic;
-using UnityEngine.UIElements;
 
 public class LeaderboardDataAccessor
 {
@@ -19,13 +16,13 @@ public class LeaderboardDataAccessor
         else
             Leaderboard.Add(mode, leaderboard);
 
-        DataAccessor dataAccessor = new DataAccessor(SaveFileName);
+        DataAccessor dataAccessor = new(SaveFileName);
         dataAccessor.Save(Leaderboard);
     }
 
     public static Dictionary<MiniGames, List<LeaderboardEntry>> Load()
     {
-        DataAccessor dataAccessor = new DataAccessor(SaveFileName);
+        DataAccessor dataAccessor = new(SaveFileName);
         Leaderboard = dataAccessor.Load<Dictionary<MiniGames, List<LeaderboardEntry>>>();
         return Leaderboard;
     }
