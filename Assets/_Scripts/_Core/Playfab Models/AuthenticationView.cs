@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Security;
 using PlayFab;
+using PlayFab.ClientModels;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -77,6 +78,7 @@ namespace _Scripts._Core.Playfab_Models
             
             AuthenticationManager.Instance.AnonymousLogin();
             AuthenticationManager.LoginSuccess += AuthenticationManager.Instance.LoadPlayerProfile;
+            // AuthenticationManager.LoginError +=
 
             AuthenticationManager.OnProfileLoaded += InitializePlayerDisplayNameView;
         }
@@ -113,6 +115,39 @@ namespace _Scripts._Core.Playfab_Models
             }
 
             return passwordSecure;
+        }
+
+        private void HandleAnonymousLoginError(PlayFabError error)
+        {
+            if (error == null)
+            {
+                Debug.Log("Anonymous login success.");
+                emailLoginResultMessage.text = "Anonymous login success.";
+                return;
+            }
+
+            switch (error.Error)
+            {
+                case PlayFabErrorCode.ConnectionError:
+                    Debug.Log("Connection issues.");
+                    emailLoginResultMessage.text = "Connection issues.";
+                    break;
+                case PlayFabErrorCode.InvalidAccount:
+                    Debug.Log("Invalid Account.");
+                    emailLoginResultMessage.text = "Invalid Account.";
+                    break;
+                case PlayFabErrorCode.AccountDeleted:
+                    Debug.Log("Account deleted.");
+                    emailLoginResultMessage.text = "Account deleted.";
+                    break;
+                default:
+                    Debug.Log("Unknown nightmare.");
+                    Debug.Log(error.ErrorMessage);
+                    Debug.Log(error.ErrorDetails);
+                    Debug.Log(error.Error.ToString());
+                    emailLoginResultMessage.text = "Unknown nightmare.";
+                    break;
+            }
         }
 
         /// <summary>
@@ -185,6 +220,9 @@ namespace _Scripts._Core.Playfab_Models
                     break;
                 default:
                     Debug.Log("Unknown nightmare.");
+                    Debug.Log(error.ErrorMessage);
+                    Debug.Log(error.ErrorDetails);
+                    Debug.Log(error.Error.ToString());
                     emailLoginResultMessage.text = "Unknown nightmare.";
                     break;
             }
@@ -284,8 +322,11 @@ namespace _Scripts._Core.Playfab_Models
             return true;
         }
 
-        void UpdatePlayerDisplayNameView()
+        void UpdatePlayerDisplayNameView(UpdateUserTitleDisplayNameResult result)
         {
+            if (result == null)
+                return;
+            
             Debug.Log("Successfully Set Player Display Name.");
 
             displayNameResultMessage.text = "Success";

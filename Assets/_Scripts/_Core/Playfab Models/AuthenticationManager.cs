@@ -7,6 +7,7 @@ using PlayFab.ClientModels;
 using StarWriter.Utility.Singleton;
 using System.Security;
 using JetBrains.Annotations;
+using PlayFab.SharedModels;
 
 namespace _Scripts._Core.Playfab_Models
 {
@@ -51,7 +52,7 @@ namespace _Scripts._Core.Playfab_Models
         /// Set Player Display Name
         /// Update player display name, we can assume the account is already created here
         /// </summary>
-        public void SetPlayerDisplayName(string displayName, Action callback = null)
+        public void SetPlayerDisplayName(string displayName, Action<UpdateUserTitleDisplayNameResult> callback = null)
         {
             PlayFabClientAPI.UpdateUserTitleDisplayName(
                 new UpdateUserTitleDisplayNameRequest()
@@ -64,7 +65,7 @@ namespace _Scripts._Core.Playfab_Models
 
                     PlayerAccount.PlayerDisplayName = result.DisplayName;
                     PlayerProfile.DisplayName = result.DisplayName;
-                    callback?.Invoke();
+                    callback?.Invoke(result);
                 }, 
                 (error) =>
                 {
@@ -73,10 +74,6 @@ namespace _Scripts._Core.Playfab_Models
             );
         }
 
-        // void LoadProfileAfterLogin(object sender,  LoginResult result) 
-        // {
-        //     LoadPlayerProfile();
-        // }
 
         /// <summary>
         /// Load Player Profile
