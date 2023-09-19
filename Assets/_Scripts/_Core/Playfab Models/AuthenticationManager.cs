@@ -28,12 +28,9 @@ namespace _Scripts._Core.Playfab_Models
         public static PlayerAccount PlayerAccount;
         public static PlayerProfile PlayerProfile;
         
-        // public delegate void LoginSuccessEvent();
-        // public static event LoginSuccessEvent OnLoginSuccess;
-        public static EventHandler<LoginResult> OnLoginSuccess;
-
-        public delegate void LoginErrorEvent();
-        public static event LoginErrorEvent OnLoginError;
+        public static EventHandler<LoginResult> LoginSuccess;
+ 
+        public static EventHandler<PlayFabError> LoginError;
 
         public delegate void ProfileLoaded();
         public static event ProfileLoaded OnProfileLoaded;
@@ -41,29 +38,13 @@ namespace _Scripts._Core.Playfab_Models
         public static List<string> Adjectives;
         public static List<string> Nouns;
 
-        private const string PlayerGuid = "PlayerGuid";
-        private const string RememberPlayerLogin = "RememberPlayerLogin";
-
-        public bool RememberLogin
-        {
-            get => PlayerPrefs.GetInt(RememberPlayerLogin, 0) != 0;
-            set => PlayerPrefs.SetInt(RememberPlayerLogin, value? 1:0);
-        }
+        public static PlayerSession PlayerSession;
         
-        private string LoginId
-        {
-            get => PlayerPrefs.GetString(PlayerGuid, "");
-            set
-            {
-                var guid = value ?? Guid.NewGuid().ToString();
-                PlayerPrefs.SetString(PlayerGuid, guid);
-            }
-        }
 
         void Start()
         {
-            AuthenticationManager.Instance.AnonymousLogin();
-            OnLoginSuccess += LoadProfileAfterLogin;
+            // AuthenticationManager.Instance.AnonymousLogin();
+            // OnLoginSuccess += LoadProfileAfterLogin;
         }
 
         /// <summary>
@@ -92,16 +73,16 @@ namespace _Scripts._Core.Playfab_Models
             );
         }
 
-        void LoadProfileAfterLogin(object sender,  LoginResult result) 
-        {
-            LoadPlayerProfile();
-        }
+        // void LoadProfileAfterLogin(object sender,  LoginResult result) 
+        // {
+        //     LoadPlayerProfile();
+        // }
 
         /// <summary>
         /// Load Player Profile
         /// Load player profile using Playfab Id and return player display name
         /// </summary>
-        public void LoadPlayerProfile()
+        public void LoadPlayerProfile(object sender,  LoginResult result)
         {
             PlayFabClientAPI.GetPlayerProfile(
                 new GetPlayerProfileRequest()
@@ -242,20 +223,20 @@ namespace _Scripts._Core.Playfab_Models
                 PlayerAccount.AuthContext = loginResult.AuthenticationContext;
                 PlayerAccount.IsNewlyCreated = loginResult.NewlyCreated;
 
-                Debug.Log($"AuthenticationManager - Logged in - Newly Created: {loginResult.NewlyCreated}");
+                Debug.Log($"AuthenticationManager - Logged in - Newly Created: {loginResult.NewlyCreated.ToString()}");
                 Debug.Log($"AuthenticationManager - Play Fab Id: {PlayerAccount.PlayFabId}");
                 Debug.Log($"AuthenticationManager - Entity Type: {PlayerAccount.AuthContext.EntityType}");
                 Debug.Log($"AuthenticationManager - Entity Id: {PlayerAccount.AuthContext.EntityId}");
                 Debug.Log($"AuthenticationManager - Session Ticket: {PlayerAccount.AuthContext.ClientSessionTicket}");
 
-                OnLoginSuccess?.Invoke(this, loginResult);
+                LoginSuccess?.Invoke(this, loginResult);
             }
         }
 
-        void HandleLoginError(PlayFabError loginError)
+        void HandleLoginError(PlayFabError loginError = null)
         {
             Debug.LogError("AuthenticationManager - " + loginError.GenerateErrorReport());
-            OnLoginError?.Invoke();
+            LoginError?.Invoke(this, loginError);
         }
 
 
@@ -350,7 +331,7 @@ namespace _Scripts._Core.Playfab_Models
                             Email = email,
                             PlayFabId = PlayerAccount.AuthContext.PlayFabId
                         },
-                        (GetAccountInfoResult result) =>
+                        (result) =>
                         {
                             Debug.Log($"PlayFab ID: {result.AccountInfo.PlayFabId}");
                             Debug.Log($"Player email retrieved: {result.AccountInfo.PrivateInfo.Email}");
@@ -368,34 +349,37 @@ namespace _Scripts._Core.Playfab_Models
         /// Email Registration
         /// Make sure password stays in memory no longer than necessary
         /// </summary>
-        public void RegisterWithEmail(string email, SecureString password, Action<PlayFabError> resultCallback)
+        public void RegisterWithEmail(string email, SecureString password, Action<PlayFabError> resultCallback = null)
         {
-            PlayFabClientAPI.LoginWithEmailAddress(
-                new LoginWithEmailAddressRequest()
+            // Silent login first, if successful continue logging in with the anonymous account by adding username, email and password
+            AnonymousLogin();
+            PlayFabClientAPI.AddUsernamePassword(
+                new AddUsernamePasswordRequest()
                 {
-                    // Username = email,
-                    TitleId = PlayFabSettings.TitleId,
+                    // Username is required for registering an account
+                    Username = string.IsNullOrEmpty(PlayerAccount.Username)? email: PlayerAccount.Username,
                     Email = email,
                     Password = password.ToString()
                     
-                }, (result) =>
+                }, (AddUsernamePasswordResult result) =>
                 {
-                    PlayerAccount.PlayFabId = result.PlayFabId;
-                    PlayerAccount.AuthContext = result.AuthenticationContext;
-                    if (RememberLogin)
+                    PlayerAccount.Username = result.Username;
+                    if (PlayerSession.IsRemembered)
                     {
-                        LoginId = Guid.NewGuid().ToString();
+                        // If the session is asked to be remembered, replace the custom id with newly generated Guid
+                        PlayerSession.LoginId = Guid.NewGuid().ToString();
                         PlayFabClientAPI.LinkCustomID(
                             new LinkCustomIDRequest()
                             {
-                                CustomId = LoginId,
-                                ForceLink = true
+                                CustomId = PlayerSession.LoginId,
+                                // True if another user is already linked to the custom ID, unlink the other user and re-link.
+                                ForceLink = PlayerSession.IsForceLink
                             },
                             null, null
                             );
                     }
                     Debug.Log("Register with email succeeded.");
-                    Debug.Log($"Playfab ID {result.PlayFabId}");
+                    Debug.Log($"Player username {result.Username}");
                 }, (error) =>
                 {
                     Debug.Log(error.GenerateErrorReport());

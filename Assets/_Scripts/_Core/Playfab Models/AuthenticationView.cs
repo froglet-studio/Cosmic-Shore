@@ -17,14 +17,19 @@ namespace _Scripts._Core.Playfab_Models
         [SerializeField] TMP_Text displayNameResultMessage;
         [SerializeField] string displayNameDefaultText;
 
-        [Header("Email Register and Login")]
-        [SerializeField] TMP_Text registerEmailResultMessage;
+        [Header("Email Login")]
         [SerializeField] TMP_Text emailLoginResultMessage;
-        [SerializeField] TMP_InputField emailInputField;
-        [SerializeField] TMP_InputField passwordField;
-        [SerializeField] Button registerButton;
+        [SerializeField] TMP_InputField emailLoginInputField;
+        [SerializeField] TMP_InputField passwordLoginField;
         [SerializeField] Button loginButton;
+        [SerializeField] Toggle stayLoggedInToggle;
         
+        [Header("Email Login")]
+        [SerializeField] TMP_Text registerEmailResultMessage;
+        [SerializeField] TMP_InputField usernameRegisterInputField;
+        [SerializeField] TMP_InputField emailRegisterInputField;
+        [SerializeField] TMP_InputField passwordRegisterInputField;
+        [SerializeField] Button registerButton;
         
         // Start is called before the first frame update
         void Start()
@@ -34,18 +39,44 @@ namespace _Scripts._Core.Playfab_Models
 
             // Set default player display name
             displayNameResultMessage.text = displayNameDefaultText;
-
+            
+            // Email login input field initialization
             // This one is secret secret
-            if (passwordField != null )
-                passwordField.contentType = TMP_InputField.ContentType.Password;
-
-
-            if (emailInputField != null)
+            if (passwordLoginField != null )
+                passwordLoginField.contentType = TMP_InputField.ContentType.Password;
+            
+            if (emailLoginInputField != null)
             {
-                emailInputField.contentType = TMP_InputField.ContentType.EmailAddress;
-                emailInputField.characterValidation = TMP_InputField.CharacterValidation.EmailAddress;
-                emailInputField.onEndEdit.AddListener(OnEndEdit);
+                emailLoginInputField.contentType = TMP_InputField.ContentType.EmailAddress;
+                emailLoginInputField.characterValidation = TMP_InputField.CharacterValidation.EmailAddress;
+                emailLoginInputField.onEndEdit.AddListener(OnEndEdit);
             }
+
+            if (stayLoggedInToggle != null)
+            {
+                stayLoggedInToggle.onValueChanged.AddListener(delegate { StayLoggedIn_OnToggled(stayLoggedInToggle.isOn);});
+            }
+
+            if (loginButton != null)
+                loginButton.onClick.AddListener(LoginButton_OnClick);
+            
+            
+            // Account register input fields initialization
+            if (passwordRegisterInputField != null)
+                passwordRegisterInputField.contentType = TMP_InputField.ContentType.Password;
+
+            if (emailRegisterInputField != null)  
+            {
+                emailRegisterInputField.contentType = TMP_InputField.ContentType.EmailAddress;
+                emailRegisterInputField.characterValidation = TMP_InputField.CharacterValidation.EmailAddress;
+                emailRegisterInputField.onEndEdit.AddListener(OnEndEdit);
+            }
+            
+            if(registerButton!=null)
+                registerButton.onClick.AddListener(RegisterButton_OnClick);
+            
+            AuthenticationManager.Instance.AnonymousLogin();
+            AuthenticationManager.LoginSuccess += AuthenticationManager.Instance.LoadPlayerProfile;
 
             AuthenticationManager.OnProfileLoaded += InitializePlayerDisplayNameView;
         }
@@ -59,6 +90,15 @@ namespace _Scripts._Core.Playfab_Models
         }
 
         #region Email and Password Login
+
+        /// <summary>
+        /// Stay Logged in Listener Event
+        /// If
+        /// </summary>
+        void StayLoggedIn_OnToggled(bool isOn)
+        {
+            AuthenticationManager.PlayerSession.IsRemembered = isOn;
+        }
 
         /// <summary>
         /// Get password (Obviously)
@@ -156,8 +196,8 @@ namespace _Scripts._Core.Playfab_Models
         /// </summary>
         public void RegisterButton_OnClick()
         {
-            var email = emailInputField.text;
-            var password = passwordField.text;
+            var email = emailRegisterInputField.text;
+            var password = passwordRegisterInputField.text;
 
             if (!EmailValidator.IsValidEmail(email))
             {
@@ -176,8 +216,8 @@ namespace _Scripts._Core.Playfab_Models
         /// </summary>
         public void LoginButton_OnClick()
         {
-            var email = emailInputField.text;
-            var password = passwordField.text;
+            var email = emailLoginInputField.text;
+            var password = passwordLoginField.text;
 
             AuthenticationManager.Instance.EmailLogin(email, GetPassword(password), LoginResponseHandler);
         }

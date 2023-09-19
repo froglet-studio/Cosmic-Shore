@@ -15,7 +15,7 @@ public class CatalogManager : SingletonPersistent<CatalogManager>
     // Bootstrap the whole thing
     public void Start()
     {
-        AuthenticationManager.OnLoginSuccess += LoadCatalog;
+        AuthenticationManager.LoginSuccess += LoadCatalog;
     }
 
     void LoadCatalog(object sender, LoginResult result)
