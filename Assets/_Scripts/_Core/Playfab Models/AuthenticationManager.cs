@@ -306,9 +306,6 @@ namespace _Scripts._Core.Playfab_Models
 
         #region WIP Email Login
 
-
-        
-
         /// <summary>
         /// Email Login logic
         /// Make sure password stays in memory no longer than necessary
@@ -352,11 +349,10 @@ namespace _Scripts._Core.Playfab_Models
         
         public void RegisterWithEmail(string email, SecureString password, Action<PlayFabError> resultCallback)
         {
-
             PlayFabClientAPI.AddUsernamePassword(
                 new AddUsernamePasswordRequest()
                 {
-                    Username = "Tim",
+                    Username = email,
                     Email = email,
                     Password = password.ToString()
                 }, (result) =>
@@ -369,7 +365,6 @@ namespace _Scripts._Core.Playfab_Models
                     resultCallback?.Invoke(error);
                 }
             );
-
         }
         
         #endregion
