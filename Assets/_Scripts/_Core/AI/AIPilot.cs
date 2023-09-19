@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System;
 using System.Collections;
 using UnityEngine.UIElements;
+using UnityEngine.SocialPlatforms;
 
 namespace StarWriter.Core.IO
 {
@@ -64,7 +65,7 @@ namespace StarWriter.Core.IO
             TopLeft,
         };
 
-        ShipStatus shipData;
+        ShipStatus shipStatus;
         Ship ship;
 
         float lastPitchTarget;
@@ -146,7 +147,7 @@ namespace StarWriter.Core.IO
             }
             aggressiveness = defaultAggressiveness;
             throttle = defaultThrottle;
-            shipData = GetComponent<ShipStatus>();
+            shipStatus = GetComponent<ShipStatus>();
 
             CornerBehaviors = new Dictionary<Corner, AvoidanceBehavior>() {
                 { Corner.TopRight, new AvoidanceBehavior (raycastWidth, raycastHeight, Clockwise, Vector3.zero ) },
@@ -165,54 +166,61 @@ namespace StarWriter.Core.IO
             if (AutoPilotEnabled)
             {
                 if (useAbility) StartCoroutine(UseAbilityCoroutine(ability));
-                Vector3 distance = CrystalTransform.position - transform.position;
 
+                var targetPosition = CrystalTransform.position;
+                Vector3 currentDirection = shipStatus.Course;
+                distance = targetPosition - transform.position;
                 Vector3 desiredDirection = distance.normalized;
-                LookingAtCrystal = Vector3.Dot(desiredDirection, shipData.Course) >= .93;
+
+                LookingAtCrystal = Vector3.Dot(desiredDirection, shipStatus.Course) >= .93;
                 if (LookingAtCrystal && drift)
                 {
-                    shipData.Drifting = true;
+                    shipStatus.Drifting = true;
                     desiredDirection *= -1;
                 }
-                else shipData.Drifting = false;
+                else shipStatus.Drifting = false;
 
                 if (distance.magnitude < float.Epsilon) // Avoid division by zero
                     return;
 
-                Vector3 combinedAdjustment = Vector3.zero;
-                Dictionary<Corner, Vector3> obstacleDirections = new Dictionary<Corner, Vector3>();
+                Vector3 combinedLocalCrossProduct = Vector3.zero;
+                float sqrMagnitude = distance.sqrMagnitude;
+                //float combinedRoll;
+                Vector3 crossProduct = Vector3.Cross(shipStatus.Course, desiredDirection);
+                Vector3 localCrossProduct = transform.InverseTransformDirection(crossProduct);
+                combinedLocalCrossProduct += localCrossProduct;
 
+                //foreach (Corner corner in Enum.GetValues(typeof(Corner)))
+                //{
+                //    var behavior = CornerBehaviors[corner];
+                //    Vector3 laserHitDirection = ShootLaser(behavior.width * transform.right + behavior.height * transform.up);                   
+                //    if (laserHitDirection.magnitude >= maxDistance * .9f) // No obstacle detected
+                //        return;
 
-                foreach (Corner corner in Enum.GetValues(typeof(Corner)))
-                {
-                    var behavior = CornerBehaviors[corner];
-                    Vector3 laserHitDirection = ShootLaser(behavior.width * transform.right + behavior.height * transform.up);
-                    float scaledAvoidance = Mathf.Clamp(avoidance / laserHitDirection.sqrMagnitude, -1, 1);
-                    Vector3 adjustment = CalculatePitchAndYawAdjustments(desiredDirection, laserHitDirection, scaledAvoidance);
-                    combinedAdjustment += adjustment;
+                //    float dotProduct = Vector3.Dot(desiredDirection, laserHitDirection.normalized);
+                //    if (dotProduct > .2f) // Obstacle is in the direction we want to move
+                //    {
+                //        sqrMagnitude = Mathf.Min(sqrMagnitude, laserHitDirection.magnitude);
+                //        float clampedAvoidance = Mathf.Clamp(-avoidance / laserHitDirection.sqrMagnitude, -3, 3f);
+                //        crossProduct = Vector3.Cross(shipStatus.Course, laserHitDirection);
+                //        localCrossProduct = transform.InverseTransformDirection(crossProduct);
+                //        combinedLocalCrossProduct += localCrossProduct * clampedAvoidance;
+                //    }
+                    
+                //}
+                float angle = Mathf.Asin(Mathf.Clamp(combinedLocalCrossProduct.sqrMagnitude * aggressiveness * 12 / Mathf.Min(sqrMagnitude, maxDistance), -1f, 1f)) * Mathf.Rad2Deg;
 
-                    obstacleDirections[corner] = laserHitDirection;
-                }
+                YSum = Mathf.Clamp(angle * combinedLocalCrossProduct.x, -1, 1);
+                XSum = Mathf.Clamp(angle * combinedLocalCrossProduct.y, -1, 1);
+                YDiff = Mathf.Clamp(angle * combinedLocalCrossProduct.y, -1, 1);
 
-                combinedAdjustment.x = -Mathf.Clamp(combinedAdjustment.x*4  / Mathf.Min(distance.magnitude, maxDistance), -1, 1); // Pitch
-                combinedAdjustment.y = Mathf.Clamp(combinedAdjustment.y*4  / Mathf.Min(distance.magnitude, maxDistance), -1, 1); // Yaw
-
-                // Roll adjustment
-                float rollAdjustment = CalculateRollAdjustment(obstacleDirections);
-                //combinedAdjustment.z = Mathf.Clamp(rollAdjustment, -1, 1); // Roll
-
-                XSum = combinedAdjustment.x;
-                YSum = combinedAdjustment.y;
-                YDiff = Mathf.Clamp(CalculateRollAdjustment(obstacleDirections), -1, 1);
                 XDiff = (LookingAtCrystal && ram) ? 1 : Mathf.Clamp(throttle, 0, 1);
 
                 ///get better
                 aggressiveness += aggressivenessIncrease * Time.deltaTime;
                 throttle += throttleIncrease * Time.deltaTime;
             }
-
         }
-
 
         Vector3 ShootLaser(Vector3 position)
         {
@@ -227,29 +235,6 @@ namespace StarWriter.Core.IO
                 return transform.forward * maxDistance - (transform.position + position);
             }
         }
-
-        Vector3 CalculatePitchAndYawAdjustments(Vector3 originalDirection, Vector3 obstacleDirection, float avoidanceFactor)
-        {
-            Vector3 adjustment = Vector3.zero;
-
-            // Primary objective adjustments
-            adjustment.y = Vector3.Dot(originalDirection, transform.right);   // Yaw
-            adjustment.x = Vector3.Dot(originalDirection, transform.up);    // Pitch
-
-            //if (obstacleDirection != Vector3.zero) // If obstacle detected
-            //{
-            //    float dotProduct = Vector3.Dot(originalDirection, obstacleDirection.normalized);
-            //    if (dotProduct > 0.2) // Obstacle is in the desired direction or slightly off-course
-            //    {
-            //        // Calculate obstacle-based yaw and pitch adjustments
-            //        adjustment.y += Vector3.Dot(obstacleDirection, transform.right) * avoidanceFactor;   // Yaw
-            //        adjustment.x += Vector3.Dot(obstacleDirection, transform.up) * avoidanceFactor;     // Pitch
-            //    }
-            //}
-
-            return adjustment;
-        }
-
 
         float CalculateRollAdjustment(Dictionary<Corner, Vector3> obstacleDirections)
         {

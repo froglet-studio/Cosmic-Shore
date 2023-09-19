@@ -1051,7 +1051,6 @@ MonoBehaviour:
   AOEPrefab: {fileID: 2728798890556433942, guid: d568a14301490e54280955b50673f884,
     type: 3}
   farFieldSkimmer: {fileID: 0}
-  pipCamera: {fileID: 0}
   crystalImpactEffects: 0100000006000000
   minExplosionScale: 400
   maxExplosionScale: 400
@@ -1158,8 +1157,8 @@ MonoBehaviour:
   SkillLevel: 0.3
   defaultThrottleHigh: 0.6
   defaultThrottleLow: 0.3
-  defaultAggressivenessHigh: 0.07
-  defaultAggressivenessLow: 0.03
+  defaultAggressivenessHigh: 0.02
+  defaultAggressivenessLow: 0.005
   throttleIncreaseHigh: 0.002
   throttleIncreaseLow: 0.0005
   avoidanceHigh: -2.5
