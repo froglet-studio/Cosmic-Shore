@@ -7,6 +7,7 @@ using PlayFab.ClientModels;
 using StarWriter.Utility.Singleton;
 using System.Security;
 using JetBrains.Annotations;
+using PlayFab.SharedModels;
 
 namespace _Scripts._Core.Playfab_Models
 {
@@ -306,22 +307,13 @@ namespace _Scripts._Core.Playfab_Models
         #region WIP Email Login
 
 
-        /// <summary>
-        /// Email Login
-        /// Can be tested with Email Login button
-        /// </summary>
-        public void OnEmailLogin()
-        {
-            var email = "yeah@froglet.studio";
-
-            EmailLogin(email, GetPassword());
-        }
+        
 
         /// <summary>
         /// Email Login logic
         /// Make sure password stays in memory no longer than necessary
         /// </summary>
-        private void EmailLogin([NotNull] string email, [NotNull] SecureString password)
+        public void EmailLogin([NotNull] string email, [NotNull] SecureString password, Action<PlayFabError> resultCallback)
         {
             if (email == null) throw new ArgumentNullException(nameof(email));
             if (password == null) throw new ArgumentNullException(nameof(password));
@@ -352,23 +344,13 @@ namespace _Scripts._Core.Playfab_Models
                 (error) =>
                 {
                     Debug.Log(error.GenerateErrorReport());
+                    resultCallback?.Invoke(error);
                 }
                 );
         }
 
-        /// <summary>
-        /// Update player display name with random generated one
-        /// Can be tested by clicking Generate Random Name button
-        /// </summary>
-        public void OnRegisterWithEmail()
-        {
-            var email = "yeah@froglet.studio";
-            // This is a test for email register, we can worry about it linking device later
-            // AnonymousLogin();
-            RegisterWithEmail(email, GetPassword());
-        }
-
-        void RegisterWithEmail(string email, SecureString password)
+        
+        public void RegisterWithEmail(string email, SecureString password, Action<PlayFabError> resultCallback)
         {
 
             PlayFabClientAPI.AddUsernamePassword(
@@ -384,22 +366,12 @@ namespace _Scripts._Core.Playfab_Models
                 }, (error) =>
                 {
                     Debug.Log(error.GenerateErrorReport());
+                    resultCallback?.Invoke(error);
                 }
             );
 
         }
-
-        SecureString GetPassword()
-        {
-            const string chars = "very secure";
-            var password = new SecureString();
-            foreach (var c in chars)
-            {
-                password.AppendChar(c);
-            }
-
-            return password;
-        }
+        
         #endregion
     }
 }
