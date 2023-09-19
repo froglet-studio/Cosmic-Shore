@@ -17,7 +17,9 @@ namespace _Scripts._Core.Playfab_Models
         [SerializeField] TMP_Text displayNameResultMessage;
         [SerializeField] string displayNameDefaultText;
 
-        [Header("Email Register and Login")] 
+        [Header("Email Register and Login")]
+        [SerializeField] TMP_Text registerEmailResultMessage;
+        [SerializeField] TMP_Text emailLoginResultMessage;
         [SerializeField] TMP_InputField emailInputField;
         [SerializeField] TMP_InputField passwordField;
         [SerializeField] Button registerButton;
@@ -37,10 +39,23 @@ namespace _Scripts._Core.Playfab_Models
             if (passwordField != null )
                 passwordField.contentType = TMP_InputField.ContentType.Password;
 
+
             if (emailInputField != null)
+            {
                 emailInputField.contentType = TMP_InputField.ContentType.EmailAddress;
+                emailInputField.characterValidation = TMP_InputField.CharacterValidation.EmailAddress;
+                emailInputField.onEndEdit.AddListener(OnEndEdit);
+            }
 
             AuthenticationManager.OnProfileLoaded += InitializePlayerDisplayNameView;
+        }
+
+        void OnEndEdit(string text)
+        {
+            if (!EmailValidator.IsValidEmail(text))
+            {
+                registerEmailResultMessage.text = "Invalid Email Address";
+            }
         }
 
         #region Email and Password Login
@@ -69,18 +84,30 @@ namespace _Scripts._Core.Playfab_Models
             if (error == null)
             {
                 Debug.Log("Register Success.");
+                registerEmailResultMessage.text = "Register Success.";
+                return;
             }
 
             switch (error.Error)
             {
                 case PlayFabErrorCode.DuplicateEmail:
                     Debug.Log("Duplicated Email.");
+                    registerEmailResultMessage.text = "Duplicated Email.";
+                    break;
+                case PlayFabErrorCode.EmailAddressNotAvailable:
+                    Debug.Log("Email Address is already in use.");
+                    registerEmailResultMessage.text = "Email Address is already in use.";
                     break;
                 case PlayFabErrorCode.ConnectionError:
                     Debug.Log("Not connected to Internet.");
+                    registerEmailResultMessage.text = "Not connected to Internet.";
                     break;
                 default:
                     Debug.Log("Unknown nightmare.");
+                    Debug.Log(error.ErrorMessage);
+                    Debug.Log(error.ErrorDetails);
+                    Debug.Log(error.Error.ToString());
+                    registerEmailResultMessage.text = "Unknown nightmare.";
                     break;
             }
         }
@@ -94,24 +121,31 @@ namespace _Scripts._Core.Playfab_Models
             if (error == null)
             {
                 Debug.Log("Login Success.");
+                emailLoginResultMessage.text = "Login Success.";
+                return;
             }
 
             switch (error.Error)
             {
                 case PlayFabErrorCode.InvalidEmailAddress:
                     Debug.Log("Invalid email address.");
+                    emailLoginResultMessage.text = "Invalid email address.";
                     break;
                 case PlayFabErrorCode.InvalidAccount:
                     Debug.Log("Invalid Account.");
+                    emailLoginResultMessage.text = "Invalid Account.";
                     break;
                 case PlayFabErrorCode.InvalidPassword:
                     Debug.Log("Invalid Password.");
+                    emailLoginResultMessage.text = "Invalid Password.";
                     break;
                 case PlayFabErrorCode.ConnectionError:
                     Debug.Log("Not connected to Internet.");
+                    emailLoginResultMessage.text = "Not connected to Internet.";
                     break;
                 default:
                     Debug.Log("Unknown nightmare.");
+                    emailLoginResultMessage.text = "Unknown nightmare.";
                     break;
             }
         }
@@ -124,6 +158,13 @@ namespace _Scripts._Core.Playfab_Models
         {
             var email = emailInputField.text;
             var password = passwordField.text;
+
+            if (!EmailValidator.IsValidEmail(email))
+            {
+                registerEmailResultMessage.text = "Invalid Email Address";
+                return;
+            }
+
             // This is a test for email register, we can worry about it linking device later
             // AnonymousLogin();
             AuthenticationManager.Instance.RegisterWithEmail(email, GetPassword(password), RegisterResponseHandler);
