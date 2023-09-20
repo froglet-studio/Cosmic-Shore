@@ -9,12 +9,13 @@ public class NetworkMonitor : SingletonPersistent<NetworkMonitor>
     public delegate void NetworkConnectionFoundEvent();
     public static event NetworkConnectionFoundEvent NetworkConnectionFound;
 
+    [SerializeField] bool forceOffline;
     bool _connected;
 
     // Update is called once per frame
     void Update()
     {
-        if (Application.internetReachability == NetworkReachability.NotReachable)
+        if (Application.internetReachability == NetworkReachability.NotReachable || forceOffline)
         {
             if (_connected)
             {

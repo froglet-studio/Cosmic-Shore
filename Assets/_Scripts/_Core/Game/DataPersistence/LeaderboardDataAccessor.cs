@@ -50,7 +50,7 @@ public class LeaderboardDataAccessor
             }
         },
         {
-            MiniGames.FlightSchool, new List<LeaderboardEntry>()
+            MiniGames.Elimination, new List<LeaderboardEntry>()
             {
                 new LeaderboardEntry("Spades",  10, ShipTypes.Dolphin),
                 new LeaderboardEntry("Siren",   20, ShipTypes.GunManta),

@@ -22,19 +22,21 @@ public class LeaderboardManager : SingletonPersistent<LeaderboardManager>
         }
     }
 
-    string OfflineStatsFileName = "offline_stats.data";
-    string CachedLeaderboardFileNamePrefix = "leaderboard_";
+    readonly string OfflineStatsFileName = "offline_stats.data";
+    readonly string CachedLeaderboardFileNamePrefix = "leaderboard_";
 
     bool online = false;
 
     void ComeOnline()
     {
+        Debug.Log("LeaderboardManager - ComeOnline");
         online = true;
         ReportAndFlushOfflineStatistics();
     }
 
     void GoOffline()
     {
+        Debug.Log("LeaderboardManager - GoOffline");
         online = false;
     }
 
@@ -42,21 +44,25 @@ public class LeaderboardManager : SingletonPersistent<LeaderboardManager>
     {
         NetworkMonitor.NetworkConnectionFound += ComeOnline;
         NetworkMonitor.NetworkConnectionLost += GoOffline;
+        AuthenticationManager.OnProfileLoaded += ReportAndFlushOfflineStatistics;
     }
 
     void OnDisable()
     {
         NetworkMonitor.NetworkConnectionFound -= ComeOnline;
         NetworkMonitor.NetworkConnectionLost -= GoOffline;
+        AuthenticationManager.OnProfileLoaded -= ReportAndFlushOfflineStatistics;
     }
 
     void ReportAndFlushOfflineStatistics()
     {
-        
+        Debug.Log("LeaderboardManager - ReportAndFlushOfflineStatistics");
         var dataAccessor = new DataAccessor(OfflineStatsFileName);
         var offlineStatistics = dataAccessor.Load<List<StatisticUpdate>>();
+        
         if (offlineStatistics.Count > 0)
         {
+            Debug.Log($"LeaderboardManager - StatCount:{offlineStatistics.Count}");
             UpdatePlayerStatistic(offlineStatistics);
             dataAccessor.Flush();
         }
@@ -105,6 +111,7 @@ public class LeaderboardManager : SingletonPersistent<LeaderboardManager>
     {
         if (online)
         {
+            Debug.Log($"LeaderboardManager.UpdatePlayerStatistic - online");
             customTags.Add("BuildNumber", Application.buildGUID);
             PlayFabClientAPI.UpdatePlayerStatistics(
                 new()
@@ -125,6 +132,7 @@ public class LeaderboardManager : SingletonPersistent<LeaderboardManager>
         }
         else
         {
+            Debug.Log($"LeaderboardManager.UpdatePlayerStatistic - offline");
             // TODO: custom tags lost
             var dataAccessor = new DataAccessor(OfflineStatsFileName);
             var offlineStatistics = dataAccessor.Load<List<StatisticUpdate>>();

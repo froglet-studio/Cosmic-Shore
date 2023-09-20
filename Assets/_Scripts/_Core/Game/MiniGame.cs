@@ -15,7 +15,7 @@ public class MiniGame : MonoBehaviour
     [SerializeField] GameCanvas GameCanvas;
     [SerializeField] Player playerPrefab;
     [SerializeField] GameObject PlayerOrigin;
-    [SerializeField] bool UsePlayFab;
+    [SerializeField] bool UsePlayFab = true;
 
     protected Button ReadyButton;
     protected GameObject EndGameScreen;

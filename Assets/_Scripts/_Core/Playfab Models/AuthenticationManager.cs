@@ -43,8 +43,8 @@ namespace _Scripts._Core.Playfab_Models
 
         void Start()
         {
-            // AuthenticationManager.Instance.AnonymousLogin();
-            // OnLoginSuccess += LoadProfileAfterLogin;
+            LoginSuccess += LoadPlayerProfile;
+            AnonymousLogin();
         }
 
         /// <summary>
