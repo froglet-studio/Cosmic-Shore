@@ -3,7 +3,7 @@
 public enum MiniGames
 {
     Random = 0,
-    FlightSchool = 1,
+    Elimination = 1,
     Rampage = 2,
     Darts = 3,
     ShootingGallery = 4,

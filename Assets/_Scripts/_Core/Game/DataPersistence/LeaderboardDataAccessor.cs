@@ -1,5 +1,3 @@
-
-
 using System.Collections.Generic;
 
 public class LeaderboardDataAccessor
@@ -18,13 +16,13 @@ public class LeaderboardDataAccessor
         else
             Leaderboard.Add(mode, leaderboard);
 
-        DataAccessor dataAccessor = new DataAccessor(SaveFileName);
+        DataAccessor dataAccessor = new(SaveFileName);
         dataAccessor.Save(Leaderboard);
     }
 
     public static Dictionary<MiniGames, List<LeaderboardEntry>> Load()
     {
-        DataAccessor dataAccessor = new DataAccessor(SaveFileName);
+        DataAccessor dataAccessor = new(SaveFileName);
         Leaderboard = dataAccessor.Load<Dictionary<MiniGames, List<LeaderboardEntry>>>();
         return Leaderboard;
     }
@@ -52,7 +50,7 @@ public class LeaderboardDataAccessor
             }
         },
         {
-            MiniGames.FlightSchool, new List<LeaderboardEntry>()
+            MiniGames.Elimination, new List<LeaderboardEntry>()
             {
                 new LeaderboardEntry("Spades",  10, ShipTypes.Dolphin),
                 new LeaderboardEntry("Siren",   20, ShipTypes.GunManta),
