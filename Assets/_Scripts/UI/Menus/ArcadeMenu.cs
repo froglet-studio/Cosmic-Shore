@@ -1,3 +1,4 @@
+using StarWriter.Core.Favoriting;
 using StarWriter.Core.HangerBuilder;
 using System.Collections;
 using System.Collections.Generic;
@@ -5,9 +6,16 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.Serialization;
 using UnityEngine.UI;
+using StarWriter.Core.Favoriting;
 
 public class ArcadeMenu : MonoBehaviour
 {
+    // Favorite Settings
+    int activeIntensity = 0;
+    int activePlayerCount = 0;
+    int activeShipTypeEnumValue =0;
+    int activeMiniGameEnumValue =0;
+
     [SerializeField] SO_GameList GameList;
     [SerializeField] TMPro.TMP_Text SelectedGameName;
     [SerializeField] TMPro.TMP_Text SelectedGameDescription;
@@ -218,4 +226,35 @@ public class ArcadeMenu : MonoBehaviour
         preview = Instantiate(SelectedGame.PreviewClip);
         preview.transform.SetParent(SelectedGamePreviewWindow2.transform, false);
     }
+
+    #region Favorites
+    // Sets Intensity
+    public void OnButtonPressedChangeActiveIntensity(int newIntensity)
+    {
+        activeIntensity = newIntensity;
+    }
+    // Sets Player Count
+    public void OnButtonPressedChangeActivePlayerCount(int newPlayerCount)
+    {
+        activePlayerCount = newPlayerCount;
+    }
+    // Sets Ship Type
+    public void OnButtonPressedChangeActiveShipTypeEnumValue(int newShipTypeEnumValue)
+    {
+        activeShipTypeEnumValue = newShipTypeEnumValue;
+    }
+    // Sets MiniGame
+    public void OnButtonPressedChangeaActiveMiniGameEnumValue(int newMiniGameEnumValue)
+    {
+        activeMiniGameEnumValue = newMiniGameEnumValue; 
+    }
+
+    // Sends Current Favorite Info to Favorite System
+    public void OnStarButtonPressed()
+    {
+        FavoriteSystem favorite = new FavoriteSystem();
+        favorite.AttemptToAddFavorite(activeIntensity, activePlayerCount, activeShipTypeEnumValue, activeMiniGameEnumValue);
+    }
+    // TODo maybe Set active favorite a top priority Favorite for drop down sorting
+    #endregion
 }

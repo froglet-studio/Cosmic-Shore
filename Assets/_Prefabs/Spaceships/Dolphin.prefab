@@ -1863,6 +1863,7 @@ MonoBehaviour:
   AOEPrefab: {fileID: 9218889541719856748, guid: 2ae56847c6f549948a71f41eaf59f749,
     type: 3}
   farFieldSkimmer: {fileID: 0}
+  pipCamera: {fileID: 0}
   crystalImpactEffects: 0b0000000600000002000000
   minExplosionScale: 200
   maxExplosionScale: 800
@@ -2009,7 +2010,7 @@ MonoBehaviour:
   throttleIncreaseLow: 0.001
   avoidanceHigh: 2.5
   avoidanceLow: 2.5
-  aggressivenessIncreaseHigh: 0.003
+  aggressivenessIncreaseHigh: 0.01
   aggressivenessIncreaseLow: 0.001
   throttle: 0
   aggressiveness: 0.1

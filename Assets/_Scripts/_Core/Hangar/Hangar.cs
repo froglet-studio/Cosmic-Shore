@@ -3,6 +3,7 @@ using StarWriter.Utility.Singleton;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 // TODO: P1 renamespace this
 namespace StarWriter.Core.HangerBuilder
@@ -160,6 +161,8 @@ namespace StarWriter.Core.HangerBuilder
             AIPilot pilot = ship.GetComponent<AIPilot>();
             pilot.SkillLevel = ((float)AIDifficultyLevel-1) / 3; // this assumes that levels remain from 1-4
             pilot.AutoPilotEnabled = true;
+            //player.GameCanvas.MiniGameHUD.SetPipActive(pip);
+            //pipCamera.gameObject.SetActive(pip);
 
             return ship;
         }
