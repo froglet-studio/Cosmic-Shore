@@ -2,7 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.InputSystem;
+
 
 namespace StarWriter.Core.CloutSystem
 {
@@ -13,7 +13,7 @@ namespace StarWriter.Core.CloutSystem
 
 
         // Dictionary to store clout value with a ref to a string key "ShipType_Element_CloutType"
-        private Dictionary<string, VesselClout> vesselClouts = new Dictionary<string, VesselClout>();
+        private Dictionary<string, Clout> Clouts = new Dictionary<string, Clout>();
 
         private void Start()
         {
@@ -25,17 +25,17 @@ namespace StarWriter.Core.CloutSystem
             int playerCloutValue = minCloutValue;  //TODO get player clout from server or save file
             playerCloutValue = Math.Clamp(playerCloutValue, minCloutValue, maxCloutValue);
 
-            vesselClouts.Clear();
+            Clouts.Clear();
             foreach (ShipTypes ship in Enum.GetValues(typeof(ShipTypes)))
             {
                 foreach (Element element in Enum.GetValues(typeof(ShipTypes)))
                 {
                     foreach (CloutType cloutType in Enum.GetValues(typeof(CloutType)))
                     {
-                        VesselClout vesselClout = new VesselClout(ship, element, cloutType, playerCloutValue);
+                        Clout clout = new Clout(ship, element, cloutType, playerCloutValue);
 
                         string key = CreateKey(ship, element, cloutType);
-                        vesselClouts.Add(key, vesselClout);
+                        Clouts.Add(key, clout);
                     }
                 }
 
@@ -43,21 +43,21 @@ namespace StarWriter.Core.CloutSystem
 
         }
 
-        // Adds or Removes clout value to a VesselClout 
+        // Adds or Removes clout value
         public void AddClout(ShipTypes ship, Element element, CloutType cloutType, int amountToAdd)
         {
             string key = CreateKey(ship, element, cloutType);
-            if (vesselClouts.ContainsKey(key))
+            if (Clouts.ContainsKey(key))
             {
-                vesselClouts.TryGetValue(key, out VesselClout oldVesselClout);
+                Clouts.TryGetValue(key, out Clout oldVesselClout);
                 int oldValue = oldVesselClout.GetValue();                                                           
                 int newValue = oldValue + amountToAdd;
                 
-                VesselClout newVesselClout = new VesselClout(ship, element, cloutType, newValue);
-                vesselClouts.Add(key, newVesselClout);
+                Clout newClout = new Clout(ship, element, cloutType, newValue);
+                Clouts.Add(key, newClout);
             }
         }
-
+        // Gets clout value
         public int GetCloutValue(ShipTypes ship, Element element, CloutType cloutType)
         {
             int value = 0;
@@ -65,6 +65,7 @@ namespace StarWriter.Core.CloutSystem
             return value;
         }
 
+        // Creates a clouts dictionary key and returns it
         private string CreateKey(ShipTypes ship, Element element, CloutType cloutType)
         {
             string d = "_";
