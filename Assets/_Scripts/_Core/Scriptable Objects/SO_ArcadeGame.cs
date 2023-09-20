@@ -1,11 +1,10 @@
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UI;
 using UnityEngine.Video;
 
-[CreateAssetMenu(fileName = "New MiniGame", menuName = "CosmicShore/MiniGame", order = 0)]
+[CreateAssetMenu(fileName = "New ArcadeGame", menuName = "CosmicShore/ArcadeGame", order = 0)]
 [System.Serializable]
-public class SO_MiniGame : ScriptableObject
+public class SO_ArcadeGame : ScriptableObject
 {
     public MiniGames Mode;
     public string Name;

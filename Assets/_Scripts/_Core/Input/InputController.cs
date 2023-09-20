@@ -24,6 +24,8 @@ namespace StarWriter.Core.IO
         bool oneFingerMode;
         bool leftActive = true;
 
+        const float piOverFour = 0.785f; 
+
         [HideInInspector] public float XSum;
         [HideInInspector] public float YSum;
         [HideInInspector] public float XDiff;
@@ -116,23 +118,17 @@ namespace StarWriter.Core.IO
             }
             else if (Gamepad.current != null)
             {
-                if (ship.ShipStatus.ShowThreeButtonPanel)
+                if (ship != null && ship.ShipStatus.ShowThreeButtonPanel)
                 {
                     shipButtonPanel.FadeInButtons();
                 }
 
-                LeftJoystickValue.x = Gamepad.current.leftStick.x.ReadValue();
-                LeftJoystickValue.y = Gamepad.current.leftStick.y.ReadValue();
-                RightJoystickValue.x = Gamepad.current.rightStick.x.ReadValue();
-                RightJoystickValue.y = Gamepad.current.rightStick.y.ReadValue();
+                LeftJoystickPosition.x = Gamepad.current.leftStick.x.ReadValue();
+                LeftJoystickPosition.y = Gamepad.current.leftStick.y.ReadValue();
+                RightJoystickPosition.x = Gamepad.current.rightStick.x.ReadValue();
+                RightJoystickPosition.y = Gamepad.current.rightStick.y.ReadValue();
 
-                XSum = Ease(RightJoystickValue.x + LeftJoystickValue.x); 
-                YSum = -Ease(RightJoystickValue.y + LeftJoystickValue.y); //negative is because joysitcks and unity axes don't agree
-                XDiff = (LeftJoystickValue.x - RightJoystickValue.x + 2.1f) / 4.1f;
-                YDiff = Ease(RightJoystickValue.y - LeftJoystickValue.y);
-
-                if (invertYEnabled)
-                    YSum *= -1;
+                Reparameterize();
 
                 ProcessGamePadButtons();
 
@@ -384,7 +380,7 @@ namespace StarWriter.Core.IO
 
         float Ease(float input)
         {
-            return input < 0 ? (Mathf.Cos(input) - 1) / 2 : -(Mathf.Cos(input) - 1) / 2;
+            return input < 0 ? (Mathf.Cos(input* piOverFour) - 1) : -(Mathf.Cos(input* piOverFour) - 1); // the inflection point when fed a value of two which is the maximum input.
         }
 
         void PerformSpeedAndDirectionalEffects()

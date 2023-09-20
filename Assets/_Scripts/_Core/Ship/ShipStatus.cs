@@ -36,6 +36,6 @@ namespace StarWriter.Core
             GunsActive = false;
             Course = transform.forward;
             ChargedBoostCharge = 1f;
-    }
+        }
     }
 }

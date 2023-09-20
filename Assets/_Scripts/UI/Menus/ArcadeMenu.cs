@@ -8,7 +8,7 @@ using UnityEngine.Serialization;
 using UnityEngine.UI;
 using StarWriter.Core.Favoriting;
 
-public class MiniGamesMenu : MonoBehaviour
+public class ArcadeMenu : MonoBehaviour
 {
     // Favorite Settings
     int activeIntensity = 0;
@@ -33,7 +33,7 @@ public class MiniGamesMenu : MonoBehaviour
     List<Sprite> IntensityIcons = new();
     List<Sprite> PlayerCountIcons = new();
     SO_Ship SelectedShip;
-    SO_MiniGame SelectedGame;
+    SO_ArcadeGame SelectedGame;
 
     // Start is called before the first frame update
     void Start()
