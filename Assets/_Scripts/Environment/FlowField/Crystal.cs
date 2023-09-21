@@ -69,6 +69,14 @@ public class Crystal : NodeItem
                 case CrystalImpactEffects.ReduceSpeed:
                     ship.ShipController.ModifyThrottle(.1f, 3);  // TODO: Magic numbers
                     break;
+                case CrystalImpactEffects.AreaOfEffectExplosion:
+                    var AOEExplosion = Instantiate(AOEPrefab).GetComponent<AOEExplosion>();
+                    AOEExplosion.Material = AOEExplosionMaterial;
+                    AOEExplosion.Team = Team;
+                    AOEExplosion.Ship = ship;
+                    AOEExplosion.SetPositionAndRotation(transform.position, transform.rotation);
+                    AOEExplosion.MaxScale = maxExplosionScale;
+                    break;
             }
         }
     }

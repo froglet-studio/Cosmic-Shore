@@ -201,7 +201,7 @@ public class MiniGame : MonoBehaviour
 
         // TODO: cleanup after migration
         if (UsePlayFab)
-            LeaderboardManager.Instance.UpdateGameplayStatistic(gameMode, PlayerShipType, DifficultyLevel, ScoreTracker.GetScores());
+            LeaderboardManager.Instance.UpdateGameplayStatistic(gameMode, PlayerShipType, IntensityLevel, ScoreTracker.GetScores());
         else
             UpdateLeaderboardEntries();
 
