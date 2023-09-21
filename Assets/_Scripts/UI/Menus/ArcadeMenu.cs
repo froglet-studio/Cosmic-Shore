@@ -6,7 +6,6 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.Serialization;
 using UnityEngine.UI;
-using StarWriter.Core.Favoriting;
 
 public class ArcadeMenu : MonoBehaviour
 {
@@ -110,9 +109,9 @@ public class ArcadeMenu : MonoBehaviour
         // TODO: this is kludgy
         for (var i = 0; i < IntensityButtonContainer.transform.childCount; i++)
         {
-            var difficulty = i + 1;
+            var intensity = i + 1;
             IntensityButtonContainer.transform.GetChild(i).gameObject.GetComponent<Button>().onClick.RemoveAllListeners();
-            IntensityButtonContainer.transform.GetChild(i).gameObject.GetComponent<Button>().onClick.AddListener(() => SetIntensity(difficulty));
+            IntensityButtonContainer.transform.GetChild(i).gameObject.GetComponent<Button>().onClick.AddListener(() => SetIntensity(intensity));
             IntensityButtonContainer.transform.GetChild(i).gameObject.GetComponent<Button>().onClick.AddListener(() => IntensityButtonContainer.GetComponent<MenuAudio>().PlayAudio());
         }
         SetIntensity(1);
@@ -139,19 +138,19 @@ public class ArcadeMenu : MonoBehaviour
         MiniGame.NumberOfPlayers = playerCount;
     }
 
-    public void SetIntensity(int difficulty)
+    public void SetIntensity(int intensity)
     {
-        Debug.Log($"SetDifficulty: {difficulty}");
+        Debug.Log($"ArcadeMenu - SetIntensity: {intensity}");
 
         for (var i = 0; i < IntensityButtonContainer.transform.childCount; i++)
             IntensityButtonContainer.transform.GetChild(i).gameObject.GetComponent<Image>().sprite = IntensityIcons[i];
 
-        IntensityButtonContainer.transform.GetChild(difficulty - 1).gameObject.GetComponent<Image>().sprite = IntensityButtonContainer.transform.GetChild(difficulty - 1).gameObject.GetComponent<Button>().spriteState.selectedSprite;
+        IntensityButtonContainer.transform.GetChild(intensity - 1).gameObject.GetComponent<Image>().sprite = IntensityButtonContainer.transform.GetChild(intensity - 1).gameObject.GetComponent<Button>().spriteState.selectedSprite;
 
-        Hangar.Instance.SetAiDifficultyLevel(difficulty);
+        Hangar.Instance.SetAiDifficultyLevel(intensity);
 
         // notify the mini game engine that this is the difficulty
-        MiniGame.IntensityLevel = difficulty;
+        MiniGame.IntensityLevel = intensity;
     }
 
     void PopulateShipSelectionList()
@@ -175,7 +174,7 @@ public class ArcadeMenu : MonoBehaviour
             shipSelection.GetComponent<Button>().onClick.AddListener(() => ShipSelectionContainer.GetComponent<MenuAudio>().PlayAudio());
         }
 
-        ShipSelectAnimator.Animate();
+        ShipSelectAnimator?.Animate();
         StartCoroutine(SelectShipCoroutine(0));
     }
 
