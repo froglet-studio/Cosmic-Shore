@@ -13,8 +13,8 @@ public class ArcadeMenu : MonoBehaviour
     // Favorite Settings
     int activeIntensity = 0;
     int activePlayerCount = 0;
-    int activeShipTypeEnumValue =0;
-    int activeMiniGameEnumValue =0;
+    ShipTypes activeShipType =0;
+    MiniGames activeGameMode =0;
 
     [SerializeField] SO_GameList GameList;
     [SerializeField] TMPro.TMP_Text SelectedGameName;
@@ -239,21 +239,21 @@ public class ArcadeMenu : MonoBehaviour
         activePlayerCount = newPlayerCount;
     }
     // Sets Ship Type
-    public void OnButtonPressedChangeActiveShipTypeEnumValue(int newShipTypeEnumValue)
+    public void OnButtonPressedChangeActiveShipTypeEnumValue(ShipTypes shipType)
     {
-        activeShipTypeEnumValue = newShipTypeEnumValue;
+        activeShipType = shipType;
     }
     // Sets MiniGame
-    public void OnButtonPressedChangeaActiveMiniGameEnumValue(int newMiniGameEnumValue)
+    public void OnButtonPressedChangeaActiveMiniGameEnumValue(MiniGames gameMode)
     {
-        activeMiniGameEnumValue = newMiniGameEnumValue; 
+        activeGameMode = gameMode; 
     }
 
     // Sends Current Favorite Info to Favorite System
     public void OnStarButtonPressed()
     {
         FavoriteSystem favorite = new FavoriteSystem();
-        favorite.AttemptToAddFavorite(activeIntensity, activePlayerCount, activeShipTypeEnumValue, activeMiniGameEnumValue);
+        favorite.AttemptToAddFavorite(activeIntensity, activePlayerCount, activeShipType, activeGameMode);
     }
     // TODo maybe Set active favorite a top priority Favorite for drop down sorting
     #endregion
