@@ -1,8 +1,6 @@
 using System.Collections.Generic;
-using System.Linq;
 using TMPro;
 using UnityEngine;
-using UnityEngine.InputSystem.HID;
 using UnityEngine.UI;
 
 public enum ScoringModes
@@ -163,6 +161,15 @@ public class ScoreTracker : MonoBehaviour
                 StatsManager.Instance.ResetStats();
                 break;
         }
+    }
+
+    public List<int> GetScores()
+    {
+        var scores = new List<int>();
+        foreach (var score in playerScores.Values)
+            scores.Add((int) score);
+        
+        return scores;
     }
 
     public virtual string GetWinner()

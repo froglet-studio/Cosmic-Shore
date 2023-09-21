@@ -1,7 +1,5 @@
 using StarWriter.Core;
-using StarWriter.Core.Audio;
 using StarWriter.Core.IO;
-using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -17,13 +15,13 @@ public class MiniGame : MonoBehaviour
     [SerializeField] GameCanvas GameCanvas;
     [SerializeField] Player playerPrefab;
     [SerializeField] GameObject PlayerOrigin;
+    [SerializeField] bool UsePlayFab = true;
 
     protected Button ReadyButton;
     protected GameObject EndGameScreen;
     protected MiniGameHUD HUD;
     protected List<Player> Players;
     protected CountdownTimer countdownTimer;
-
 
     List<Teams> PlayerTeams = new() { Teams.Green, Teams.Red, Teams.Yellow };
     List<string> PlayerNames = new() { "PlayerOne", "PlayerTwo", "PlayerThree" };
@@ -116,7 +114,7 @@ public class MiniGame : MonoBehaviour
 
     public virtual void StartNewGame()
     {
-        Debug.Log($"Playing as {PlayerPilot.CallSign} - \"{PlayerPilot.Description}\"");
+        Debug.Log($"Playing as {PlayerPilot.Name} - \"{PlayerPilot.Description}\"");
         if (PauseSystem.Paused) PauseSystem.TogglePauseGame();
 
         RemainingPlayers = new();
@@ -201,7 +199,11 @@ public class MiniGame : MonoBehaviour
         foreach (var player in Players)
             Debug.Log($"MiniGame.EndGame - Player Score: {ScoreTracker.GetScore(player.PlayerName)} ");
 
-        UpdateLeaderboardEntries();
+        // TODO: cleanup after migration
+        if (UsePlayFab)
+            LeaderboardManager.Instance.UpdateGameplayStatistic(gameMode, PlayerShipType, DifficultyLevel, ScoreTracker.GetScores());
+        else
+            UpdateLeaderboardEntries();
 
         CameraManager.Instance.SetEndCameraActive();
         PauseSystem.TogglePauseGame();
@@ -209,38 +211,6 @@ public class MiniGame : MonoBehaviour
         EndGameScreen.SetActive(true);
         ScoreTracker.DisplayScores();
         AnalyticsManager.Instance.LogGamePlayEnd(gameMode, PlayerShipType, NumberOfPlayers, IntensityLevel, ScoreTracker.GetHighScore());
-    }
-
-    void UpdateLeaderboardEntries()
-    {
-        // Update leaderboard stats
-        var leaderboardDictionary = LeaderboardDataAccessor.Load();
-        List<LeaderboardEntry> leaderboardEntries;
-        if (leaderboardDictionary.ContainsKey(gameMode))
-            leaderboardEntries = leaderboardDictionary[gameMode];
-        else
-            leaderboardEntries = LeaderboardDataAccessor.LeaderboardEntriesDefault[gameMode];
-
-        
-        foreach (var entry in leaderboardEntries)
-            Debug.Log($"LeaderboardEntries: {entry.PlayerName}, {entry.Score}");
-
-        // For each score in score tracker, check to see if it belongs on leaderboard.
-        // iterate over highest score first,
-        // compare against lowest score first in a loop
-        foreach (var player in Players)
-        {
-            Debug.Log($"MiniGame.EndGame - Player Score: {ScoreTracker.GetScore(player.PlayerName)} ");
-            leaderboardEntries.Add(new LeaderboardEntry(player.PlayerName, ScoreTracker.GetScore(player.PlayerName), PlayerShipType));
-        }
-
-        leaderboardEntries.Sort((score1, score2) => score2.Score.CompareTo(score1.Score));
-        leaderboardEntries.RemoveRange(5, leaderboardEntries.Count - 5);
-
-        foreach (var entry in leaderboardEntries)
-            Debug.Log($"LeaderboardEntries: {entry.PlayerName}, {entry.Score}");
-
-        LeaderboardDataAccessor.Save(gameMode, leaderboardEntries);
     }
 
     void LoopActivePlayerIndex()
@@ -285,7 +255,7 @@ public class MiniGame : MonoBehaviour
     protected virtual void SetupTurn()
     {
         ReadyNextPlayer();
-        
+
         // Wait for player ready before activating turn monitor (only really relevant for time based monitor)
         foreach (var turnMonitor in TurnMonitors)
         {
@@ -308,5 +278,36 @@ public class MiniGame : MonoBehaviour
             ReadyButton.gameObject.SetActive(true);
         else
             OnReadyClicked();
+    }
+
+    void UpdateLeaderboardEntries()
+    {
+        // Update leaderboard stats
+        var leaderboardDictionary = LeaderboardDataAccessor.Load();
+        List<LeaderboardEntry> leaderboardEntries = new();
+        if (leaderboardDictionary.ContainsKey(gameMode))
+            leaderboardEntries = leaderboardDictionary[gameMode];
+        else if (LeaderboardDataAccessor.LeaderboardEntriesDefault.ContainsKey(gameMode))
+            leaderboardEntries = LeaderboardDataAccessor.LeaderboardEntriesDefault[gameMode];
+
+        foreach (var entry in leaderboardEntries)
+            Debug.Log($"LeaderboardEntries: {entry.PlayerName}, {entry.Score}");
+
+        // For each score in score tracker, check to see if it belongs on leaderboard.
+        // iterate over highest score first,
+        // compare against lowest score first in a loop
+        foreach (var player in Players)
+        {
+            Debug.Log($"MiniGame.EndGame - Player Score: {ScoreTracker.GetScore(player.PlayerName)} ");
+            leaderboardEntries.Add(new LeaderboardEntry(player.PlayerName, ScoreTracker.GetScore(player.PlayerName), PlayerShipType));
+        }
+
+        leaderboardEntries.Sort((score1, score2) => score2.Score.CompareTo(score1.Score));
+        leaderboardEntries.RemoveRange(5, leaderboardEntries.Count - 5);
+
+        foreach (var entry in leaderboardEntries)
+            Debug.Log($"LeaderboardEntries: {entry.PlayerName}, {entry.Score}");
+
+        LeaderboardDataAccessor.Save(gameMode, leaderboardEntries);
     }
 }
