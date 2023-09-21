@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using StarWriter.Core;
 using StarWriter.Core.IO;
 using StarWriter.Core.Audio;
-using System;
 
 public class Crystal : NodeItem
 {
@@ -48,9 +47,8 @@ public class Crystal : NodeItem
     protected virtual void Update()
     {
         if (collisions.Count > 0 && collisions[0] != null)
-        {
             Collide(collisions[0]);
-        }
+
         collisions.Clear();
     }
 
@@ -69,6 +67,14 @@ public class Crystal : NodeItem
                 case CrystalImpactEffects.ReduceSpeed:
                     ship.ShipController.ModifyThrottle(.1f, 3);  // TODO: Magic numbers
                     break;
+                case CrystalImpactEffects.AreaOfEffectExplosion:
+                    var AOEExplosion = Instantiate(AOEPrefab).GetComponent<AOEExplosion>();
+                    AOEExplosion.Material = AOEExplosionMaterial;
+                    AOEExplosion.Team = Team;
+                    AOEExplosion.Ship = ship;
+                    AOEExplosion.SetPositionAndRotation(transform.position, transform.rotation);
+                    AOEExplosion.MaxScale = maxExplosionScale;
+                    break;
             }
         }
     }
@@ -77,14 +83,11 @@ public class Crystal : NodeItem
     {
         Ship ship;
         if (IsShip(other.gameObject))
-        {
             ship = other.GetComponent<ShipGeometry>().Ship;
-        }
         else if (IsProjectile(other.gameObject))
-        {
             ship = other.GetComponent<Projectile>().Ship;   // TODO: does this mean ships can shoot the crystal to collect it?
-        }
-        else return;
+        else 
+            return;
 
         //
         // Do the ship specific crystal stuff

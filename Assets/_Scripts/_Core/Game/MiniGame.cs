@@ -1,5 +1,4 @@
 using StarWriter.Core;
-using StarWriter.Core.Audio;
 using StarWriter.Core.IO;
 using System;
 using System.Collections;
@@ -17,7 +16,9 @@ public class MiniGame : MonoBehaviour
     [SerializeField] GameCanvas GameCanvas;
     [SerializeField] Player playerPrefab;
     [SerializeField] GameObject PlayerOrigin;
-    
+    [SerializeField] bool UsePlayFab = true;
+    [SerializeField] float EndOfTurnDelay = 0f;
+
     protected Button ReadyButton;
     protected GameObject EndGameScreen;
     protected MiniGameHUD HUD;
@@ -29,7 +30,7 @@ public class MiniGame : MonoBehaviour
 
     // Configuration set by player
     public static int NumberOfPlayers = 2;
-    public static int DifficultyLevel = 1;
+    public static int IntensityLevel = 1;
     public static ShipTypes PlayerShipType = ShipTypes.Dolphin;
     public static SO_Pilot PlayerPilot;
 
@@ -115,7 +116,7 @@ public class MiniGame : MonoBehaviour
 
     public virtual void StartNewGame()
     {
-        Debug.Log($"Playing as {PlayerPilot.CallSign} - \"{PlayerPilot.Description}\"");
+        Debug.Log($"Playing as {PlayerPilot.Name} - \"{PlayerPilot.Description}\"");
         if (PauseSystem.Paused) PauseSystem.TogglePauseGame();
 
         RemainingPlayers = new();
@@ -140,7 +141,7 @@ public class MiniGame : MonoBehaviour
 
     void StartGame()
     {
-        AnalyticsManager.Instance.LogGamePlayStart(gameMode, PlayerShipType, NumberOfPlayers, DifficultyLevel);
+        AnalyticsManager.Instance.LogGamePlayStart(gameMode, PlayerShipType, NumberOfPlayers, IntensityLevel);
         gameRunning = true;
         Debug.Log($"MiniGame.StartGame, ... {Time.time}");
         EndGameScreen.SetActive(false);
@@ -167,6 +168,18 @@ public class MiniGame : MonoBehaviour
 
     public virtual void EndTurn() // TODO: this needs to be public?
     {
+        StartCoroutine(EndTurnCoroutine());
+    }
+
+    IEnumerator EndTurnCoroutine()
+    {
+        foreach (var turnMonitor in TurnMonitors)
+            turnMonitor.PauseTurn();
+        ActivePlayer.GetComponent<InputController>().Paused = true;
+        ActivePlayer.Ship.TrailSpawner.PauseTrailSpawner();
+
+        yield return new WaitForSeconds(EndOfTurnDelay);
+        
         TurnsTakenThisRound++;
 
         ScoreTracker.EndTurn();
@@ -200,46 +213,18 @@ public class MiniGame : MonoBehaviour
         foreach (var player in Players)
             Debug.Log($"MiniGame.EndGame - Player Score: {ScoreTracker.GetScore(player.PlayerName)} ");
 
-        UpdateLeaderboardEntries();
+        // TODO: cleanup after migration
+        if (UsePlayFab)
+            LeaderboardManager.Instance.UpdateGameplayStatistic(gameMode, PlayerShipType, IntensityLevel, ScoreTracker.GetScores());
+        else
+            UpdateLeaderboardEntries();
 
         CameraManager.Instance.SetEndCameraActive();
         PauseSystem.TogglePauseGame();
         gameRunning = false;
         EndGameScreen.SetActive(true);
         ScoreTracker.DisplayScores();
-        AnalyticsManager.Instance.LogGamePlayEnd(gameMode, PlayerShipType, NumberOfPlayers, DifficultyLevel, ScoreTracker.GetHighScore());
-    }
-
-    void UpdateLeaderboardEntries()
-    {
-        // Update leaderboard stats
-        var leaderboardDictionary = LeaderboardDataAccessor.Load();
-        List<LeaderboardEntry> leaderboardEntries;
-        if (leaderboardDictionary.ContainsKey(gameMode))
-            leaderboardEntries = leaderboardDictionary[gameMode];
-        else
-            leaderboardEntries = LeaderboardDataAccessor.LeaderboardEntriesDefault[gameMode];
-
-        
-        foreach (var entry in leaderboardEntries)
-            Debug.Log($"LeaderboardEntries: {entry.PlayerName}, {entry.Score}");
-
-        // For each score in score tracker, check to see if it belongs on leaderboard.
-        // iterate over highest score first,
-        // compare against lowest score first in a loop
-        foreach (var player in Players)
-        {
-            Debug.Log($"MiniGame.EndGame - Player Score: {ScoreTracker.GetScore(player.PlayerName)} ");
-            leaderboardEntries.Add(new LeaderboardEntry(player.PlayerName, ScoreTracker.GetScore(player.PlayerName), PlayerShipType));
-        }
-
-        leaderboardEntries.Sort((score1, score2) => score2.Score.CompareTo(score1.Score));
-        leaderboardEntries.RemoveRange(5, leaderboardEntries.Count - 5);
-
-        foreach (var entry in leaderboardEntries)
-            Debug.Log($"LeaderboardEntries: {entry.PlayerName}, {entry.Score}");
-
-        LeaderboardDataAccessor.Save(gameMode, leaderboardEntries);
+        AnalyticsManager.Instance.LogGamePlayEnd(gameMode, PlayerShipType, NumberOfPlayers, IntensityLevel, ScoreTracker.GetHighScore());
     }
 
     void LoopActivePlayerIndex()
@@ -307,5 +292,67 @@ public class MiniGame : MonoBehaviour
             ReadyButton.gameObject.SetActive(true);
         else
             OnReadyClicked();
+    }
+
+    void UpdateLeaderboardEntries()
+    {
+        // Update leaderboard stats
+        var leaderboardDictionary = LeaderboardDataAccessor.Load();
+        List<LeaderboardEntry> leaderboardEntries = new();
+        if (leaderboardDictionary.ContainsKey(gameMode))
+            leaderboardEntries = leaderboardDictionary[gameMode];
+        else if (LeaderboardDataAccessor.LeaderboardEntriesDefault.ContainsKey(gameMode))
+            leaderboardEntries = LeaderboardDataAccessor.LeaderboardEntriesDefault[gameMode];
+
+        foreach (var entry in leaderboardEntries)
+            Debug.Log($"LeaderboardEntries: {entry.PlayerName}, {entry.Score}");
+
+        // For each score in score tracker, check to see if it belongs on leaderboard.
+        // iterate over highest score first,
+        // compare against lowest score first in a loop
+        foreach (var player in Players)
+        {
+            Debug.Log($"MiniGame.EndGame - Player Score: {ScoreTracker.GetScore(player.PlayerName)} ");
+            leaderboardEntries.Add(new LeaderboardEntry(player.PlayerName, ScoreTracker.GetScore(player.PlayerName), PlayerShipType));
+        }
+
+        leaderboardEntries.Sort((score1, score2) => score2.Score.CompareTo(score1.Score));
+        leaderboardEntries.RemoveRange(5, leaderboardEntries.Count - 5);
+
+        foreach (var entry in leaderboardEntries)
+            Debug.Log($"LeaderboardEntries: {entry.PlayerName}, {entry.Score}");
+
+        LeaderboardDataAccessor.Save(gameMode, leaderboardEntries);
+    }
+
+    static List<TimedCallback> TimedCallbacks = new();
+
+    public static void ClearTimedCallbacks()
+    {
+        TimedCallbacks.Clear();
+    }
+
+    public static void AddTimedCallback(float invokeAfterSeconds, Action callback)
+    {
+        TimedCallbacks.Add(new (invokeAfterSeconds, callback));
+    }
+
+    IEnumerator TimedCallbackCoroutine(float invokeAfterSeconds, Action callback)
+    {
+        yield return new WaitForSeconds(invokeAfterSeconds);
+
+        callback?.Invoke();
+    }
+
+    struct TimedCallback
+    {
+        public float invokeAfterSeconds;
+        public Action callback;
+
+        public TimedCallback(float invokeAfterSeconds, Action callback)
+        {
+            this.invokeAfterSeconds = invokeAfterSeconds;
+            this.callback = callback;
+        }
     }
 }

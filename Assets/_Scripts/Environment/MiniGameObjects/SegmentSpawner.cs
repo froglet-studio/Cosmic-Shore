@@ -7,12 +7,13 @@ public enum PositioningScheme
 {
     SphereUniform = 0,
     SphereSurface = 1,
-    StraightLine = 2,
+    StraightLineRandomOrientation = 2,
     KinkyLine = 3,
     CurvyLine = 4,
     ToroidSurface = 5,
     Cubic = 6,
-    SphereEmanating = 7
+    SphereEmanating = 7,
+    StraightLineConstantRotation = 8
 }
 
 public class SegmentSpawner : MonoBehaviour
@@ -24,13 +25,14 @@ public class SegmentSpawner : MonoBehaviour
     [SerializeField] public int Seed;
     [SerializeField] Transform parent;
     
-    [SerializeField] Vector3 origin = Vector3.zero;
+    [SerializeField] public Vector3 origin = Vector3.zero;
     GameObject SpawnedSegmentContainer;
     List<Trail> trails = new();
     System.Random random = new();
     int spawnedItemCount;
     float sphereRadius = 250f;
     public float StraightLineLength = 400f;
+    public float RotationAmount = 10f;
     [HideInInspector] public int DifficultyAngle = 90;
 
     [SerializeField] bool InitializeOnStart;
@@ -104,8 +106,8 @@ public class SegmentSpawner : MonoBehaviour
                     (sphereRadius * Vector3.forward)) + origin + transform.position;
                 spawned.transform.LookAt(Vector3.zero);
                 return;
-            case PositioningScheme.StraightLine:
-                spawned.transform.position = new Vector3(0, 0, spawnedItemCount*StraightLineLength) + origin + transform.position;
+            case PositioningScheme.StraightLineRandomOrientation:
+                spawned.transform.position = new Vector3(0, 0, spawnedItemCount * StraightLineLength) + origin + transform.position;
                 spawned.transform.Rotate(Vector3.forward, (float)random.NextDouble() * 180);
                 return;
             case PositioningScheme.Cubic:
@@ -121,6 +123,10 @@ public class SegmentSpawner : MonoBehaviour
             case PositioningScheme.SphereEmanating:
                 spawned.transform.SetPositionAndRotation(origin + transform.position, Random.rotation);
                 break;
+            case PositioningScheme.StraightLineConstantRotation:
+                spawned.transform.position = new Vector3(0, 0, spawnedItemCount * StraightLineLength) + origin + transform.position;
+                spawned.transform.Rotate(Vector3.forward, spawnedItemCount * RotationAmount);
+                return;
 
         }
     }

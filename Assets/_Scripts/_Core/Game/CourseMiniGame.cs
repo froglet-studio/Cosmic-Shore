@@ -14,7 +14,7 @@ public class CourseMiniGame : MiniGame
     {
         base.Start();
         SegmentSpawner.Seed = new System.Random().Next();
-        numberOfSegments = numberOfSegments * DifficultyLevel;
+        numberOfSegments = numberOfSegments * IntensityLevel;
     }
 
     protected override void SetupTurn()
@@ -22,7 +22,7 @@ public class CourseMiniGame : MiniGame
         base.SetupTurn();
 
         SegmentSpawner.numberOfSegments = numberOfSegments;
-        SegmentSpawner.StraightLineLength = straightLineLength / DifficultyLevel;
+        SegmentSpawner.StraightLineLength = straightLineLength / IntensityLevel;
 
         TrailSpawner.NukeTheTrails();
         Crystal.transform.position = CrystalStartPosition;
