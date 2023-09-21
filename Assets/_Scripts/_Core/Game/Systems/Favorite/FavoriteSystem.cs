@@ -116,7 +116,7 @@ namespace StarWriter.Core.Favoriting
         {
             MiniGame.PlayerShipType = (ShipTypes)activeFavorite.ShipType;
             MiniGame.PlayerPilot = Hangar.Instance.SoarPilot;
-            MiniGame.DifficultyLevel = (int)activeFavorite.Intensity;
+            MiniGame.IntensityLevel = (int)activeFavorite.Intensity;
             MiniGame.NumberOfPlayers = (int)activeFavorite.PlayerCount;
 
             SceneManager.LoadScene("MinigameFreestyle");
