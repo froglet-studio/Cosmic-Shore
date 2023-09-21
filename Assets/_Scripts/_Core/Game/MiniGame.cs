@@ -1,5 +1,6 @@
 using StarWriter.Core;
 using StarWriter.Core.IO;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -16,6 +17,7 @@ public class MiniGame : MonoBehaviour
     [SerializeField] Player playerPrefab;
     [SerializeField] GameObject PlayerOrigin;
     [SerializeField] bool UsePlayFab = true;
+    [SerializeField] float EndOfTurnDelay = 0f;
 
     protected Button ReadyButton;
     protected GameObject EndGameScreen;
@@ -166,6 +168,18 @@ public class MiniGame : MonoBehaviour
 
     public virtual void EndTurn() // TODO: this needs to be public?
     {
+        StartCoroutine(EndTurnCoroutine());
+    }
+
+    IEnumerator EndTurnCoroutine()
+    {
+        foreach (var turnMonitor in TurnMonitors)
+            turnMonitor.PauseTurn();
+        ActivePlayer.GetComponent<InputController>().Paused = true;
+        ActivePlayer.Ship.TrailSpawner.PauseTrailSpawner();
+
+        yield return new WaitForSeconds(EndOfTurnDelay);
+        
         TurnsTakenThisRound++;
 
         ScoreTracker.EndTurn();
@@ -309,5 +323,36 @@ public class MiniGame : MonoBehaviour
             Debug.Log($"LeaderboardEntries: {entry.PlayerName}, {entry.Score}");
 
         LeaderboardDataAccessor.Save(gameMode, leaderboardEntries);
+    }
+
+    static List<TimedCallback> TimedCallbacks = new();
+
+    public static void ClearTimedCallbacks()
+    {
+        TimedCallbacks.Clear();
+    }
+
+    public static void AddTimedCallback(float invokeAfterSeconds, Action callback)
+    {
+        TimedCallbacks.Add(new (invokeAfterSeconds, callback));
+    }
+
+    IEnumerator TimedCallbackCoroutine(float invokeAfterSeconds, Action callback)
+    {
+        yield return new WaitForSeconds(invokeAfterSeconds);
+
+        callback?.Invoke();
+    }
+
+    struct TimedCallback
+    {
+        public float invokeAfterSeconds;
+        public Action callback;
+
+        public TimedCallback(float invokeAfterSeconds, Action callback)
+        {
+            this.invokeAfterSeconds = invokeAfterSeconds;
+            this.callback = callback;
+        }
     }
 }

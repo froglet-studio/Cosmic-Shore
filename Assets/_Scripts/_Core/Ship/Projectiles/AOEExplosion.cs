@@ -52,8 +52,8 @@ namespace StarWriter.Core
                     trailBlock.ActivateShield(2f);
                     return;
                 }
-                if (devastating) trailBlock.Devastate(impactVector, Team, Ship.Player.PlayerName);
-                else trailBlock.Explode(impactVector, Team, Ship.Player.PlayerName);
+                
+                trailBlock.Explode(impactVector, Team, Ship.Player.PlayerName, devastating);
             }
             if (other.TryGetComponent<ShipGeometry>(out var shipGeometry))
             {

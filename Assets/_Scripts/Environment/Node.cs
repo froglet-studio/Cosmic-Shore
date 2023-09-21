@@ -101,8 +101,17 @@ public class Node : MonoBehaviour
     {
         get
         {
-            if (!enabled || !teamVolumes.ContainsKey(Teams.Green) || !teamVolumes.ContainsKey(Teams.Red))
+            if (!enabled)
                 return Teams.None;
+
+            if (!teamVolumes.ContainsKey(Teams.Green) && !teamVolumes.ContainsKey(Teams.Red))
+                return Teams.None;
+
+            if (!teamVolumes.ContainsKey(Teams.Red) && teamVolumes[Teams.Green] > volumeControlThreshold)
+                return Teams.Green;
+
+            if (!teamVolumes.ContainsKey(Teams.Green) && teamVolumes[Teams.Red] > volumeControlThreshold)
+                return Teams.Red;
 
             if (teamVolumes[Teams.Green] < volumeControlThreshold && teamVolumes[Teams.Red] < volumeControlThreshold)
                 return Teams.None;

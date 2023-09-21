@@ -172,39 +172,9 @@ namespace StarWriter.Core
             }
         }
 
-        // destroy shielded blocks and make them unrestorable
-        public void Devastate(Vector3 impactVector, Teams team, string playerName)
+        public void Explode(Vector3 impactVector, Teams team, string playerName, bool devastate=false)
         {
-            // We don't destroy the trail blocks, we keep the objects around so they maintain the list structure
-            gameObject.GetComponent<BoxCollider>().enabled = false;
-            gameObject.GetComponent<MeshRenderer>().enabled = false;
-
-            // Make exploding block
-            var explodingBlock = Instantiate(FossilBlock);
-            explodingBlock.transform.position = transform.position;
-            explodingBlock.transform.localEulerAngles = transform.localEulerAngles;
-            explodingBlock.transform.localScale = transform.localScale;
-            explodingBlock.transform.parent = fossilBlockContainer.transform;
-            explodingBlock.GetComponent<Renderer>().material = new Material(explodingMaterial);
-            explodingBlock.GetComponent<BlockImpact>().HandleImpact(impactVector, team);
-
-            destroyed = true;
-            devastated = true;
-
-            if (StatsManager.Instance != null)
-                StatsManager.Instance.BlockDestroyed(team, playerName, TrailBlockProperties);
-
-            if (NodeControlManager.Instance != null)
-                NodeControlManager.Instance.RemoveBlock(team, playerName, TrailBlockProperties);
-            //Trail.TrailList.Remove(this);
-
-            //Destroy(gameObject);
-        }
-
-
-        public void Explode(Vector3 impactVector, Teams team, string playerName)
-        {
-            if (Shielded)
+            if (Shielded && !devastate)
             {
                 DeactivateShield();
                 return;
@@ -224,6 +194,7 @@ namespace StarWriter.Core
             explodingBlock.GetComponent<BlockImpact>().HandleImpact(impactVector, team);
 
             destroyed = true;
+            devastated = devastate;
 
             if (StatsManager.Instance != null)
                 StatsManager.Instance.BlockDestroyed(team, playerName, TrailBlockProperties);
