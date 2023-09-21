@@ -2,6 +2,7 @@ using _Scripts._Core.Playfab_Models;
 using PlayFab;
 using PlayFab.ClientModels;
 using StarWriter.Utility.Singleton;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -56,10 +57,17 @@ public class LeaderboardManager : SingletonPersistent<LeaderboardManager>
 
     void ReportAndFlushOfflineStatistics()
     {
+        StartCoroutine(ReportAndFlushStatisticsCoroutine());
+    }
+
+    IEnumerator ReportAndFlushStatisticsCoroutine()
+    {
+        yield return new WaitUntil(() => AuthenticationManager.PlayerAccount != null);
+
         Debug.Log("LeaderboardManager - ReportAndFlushOfflineStatistics");
         var dataAccessor = new DataAccessor(OfflineStatsFileName);
         var offlineStatistics = dataAccessor.Load<List<StatisticUpdate>>();
-        
+
         if (offlineStatistics.Count > 0)
         {
             Debug.Log($"LeaderboardManager - StatCount:{offlineStatistics.Count}");

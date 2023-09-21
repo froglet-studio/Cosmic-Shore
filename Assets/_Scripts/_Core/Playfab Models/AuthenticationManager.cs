@@ -79,7 +79,7 @@ namespace _Scripts._Core.Playfab_Models
         /// Load Player Profile
         /// Load player profile using Playfab Id and return player display name
         /// </summary>
-        public void LoadPlayerProfile(object sender,  LoginResult result)
+        public void LoadPlayerProfile(object sender, LoginResult result)
         {
             PlayFabClientAPI.GetPlayerProfile(
                 new GetPlayerProfileRequest()
@@ -102,6 +102,7 @@ namespace _Scripts._Core.Playfab_Models
                 (error) =>
                 {
                     Debug.LogError(error.GenerateErrorReport());
+                    Debug.Log($"AuthenticationManager - PlayFabId = {PlayerAccount.PlayFabId}");
                 }
             );
         }

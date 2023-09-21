@@ -7245,6 +7245,8 @@ MonoBehaviour:
   GameCanvas: {fileID: 69216807}
   playerPrefab: {fileID: 433663843}
   PlayerOrigin: {fileID: 1984950343}
+  UsePlayFab: 1
+  EndOfTurnDelay: 0
   ActivePlayer: {fileID: 0}
 --- !u!1 &1829578212
 GameObject:

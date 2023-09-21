@@ -1,8 +1,8 @@
+using StarWriter.Core.HangerBuilder;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-
 
 namespace StarWriter.Core.CloutSystem
 {
@@ -18,6 +18,23 @@ namespace StarWriter.Core.CloutSystem
         private void Start()
         {
             PopulateDefaultDictionary();
+            Test();
+        }
+        void Test() 
+        {
+            //adding clout
+            AddClout(ShipTypes.Manta, Element.Charge, CloutType.Sport, 20);
+
+            //getting clout value
+            GetCloutValue(ShipTypes.Manta, Element.Charge, CloutType.Sport); //a changed dictionary entry
+
+            GetCloutValue(ShipTypes.Bufo, Element.Charge, CloutType.Sport); // a default dictionary entry
+
+            //removing clout
+            AddClout(ShipTypes.Manta, Element.Charge, CloutType.Sport, -20);
+
+            int MCSValue = GetCloutValue(ShipTypes.Manta, Element.Charge, CloutType.Sport);
+            Debug.Log("Manta - Charge - Sport : Value = " + MCSValue);
 
         }
         void PopulateDefaultDictionary()
@@ -54,7 +71,12 @@ namespace StarWriter.Core.CloutSystem
                 int newValue = oldValue + amountToAdd;
                 
                 Clout newClout = new Clout(ship, element, cloutType, newValue);
-                Clouts.Add(key, newClout);
+                Clouts[key] = newClout;
+
+            }
+            else
+            {
+                Clouts.Add(key, new Clout(ship, element, cloutType, amountToAdd));
             }
         }
         // Gets clout value
@@ -65,13 +87,13 @@ namespace StarWriter.Core.CloutSystem
             return value;
         }
 
-        // Creates a clouts dictionary key and returns it
+        // Creates a clouts dictionary key and returns it 
         private string CreateKey(ShipTypes ship, Element element, CloutType cloutType)
         {
             string d = "_";
-            string key = ((Enum.GetValues(typeof(ShipTypes)).ToString()) + d + (Enum.GetValues(typeof(ShipTypes)).ToString()) + d + (Enum.GetValues(typeof(CloutType)).ToString()));
-            return key;
+            return string.Join(d, ship.ToString(), element.ToString(), cloutType.ToString());
         }
+        
     }
 }
 
