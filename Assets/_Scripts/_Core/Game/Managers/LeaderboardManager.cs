@@ -6,8 +6,16 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+/// <summary>
+/// Leaderboard Manager
+/// Handles online and offline leaderboard stats
+/// </summary>
 public class LeaderboardManager : SingletonPersistent<LeaderboardManager>
 {
+    /// <summary>
+    /// Leaderboard Entry struct
+    /// Has members: Position(Rank), Score and Player Display Name
+    /// </summary>
     [System.Serializable]
     public struct LeaderboardEntryV2
     {
@@ -23,11 +31,17 @@ public class LeaderboardManager : SingletonPersistent<LeaderboardManager>
         }
     }
 
+    // Offline local data file name
     readonly string OfflineStatsFileName = "offline_stats.data";
+    // Local storage data prefix
     readonly string CachedLeaderboardFileNamePrefix = "leaderboard_";
 
     bool online = false;
 
+    /// <summary>
+    /// Come Online
+    /// Turn Online status on, upload and clear local leaderboard stats.
+    /// </summary>
     void ComeOnline()
     {
         Debug.Log("LeaderboardManager - ComeOnline");
@@ -35,12 +49,20 @@ public class LeaderboardManager : SingletonPersistent<LeaderboardManager>
         ReportAndFlushOfflineStatistics();
     }
 
+    /// <summary>
+    /// Go Offline
+    /// Turn Online status off
+    /// </summary>
     void GoOffline()
     {
         Debug.Log("LeaderboardManager - GoOffline");
         online = false;
     }
 
+    /// <summary>
+    /// On Enabling Leaderboard Manager
+    /// Register network status detection and local data upload delegates
+    /// </summary>
     void OnEnable()
     {
         NetworkMonitor.NetworkConnectionFound += ComeOnline;
@@ -48,6 +70,10 @@ public class LeaderboardManager : SingletonPersistent<LeaderboardManager>
         AuthenticationManager.OnProfileLoaded += ReportAndFlushOfflineStatistics;
     }
 
+    /// <summary>
+    /// On Disable Leaderboard Manager
+    /// Unregister network status detection and local data upload delegates
+    /// </summary>
     void OnDisable()
     {
         NetworkMonitor.NetworkConnectionFound -= ComeOnline;
@@ -55,11 +81,19 @@ public class LeaderboardManager : SingletonPersistent<LeaderboardManager>
         AuthenticationManager.OnProfileLoaded -= ReportAndFlushOfflineStatistics;
     }
 
+    /// <summary>
+    /// Report and Flush Offline Stats Wrapper
+    /// Start local data uploading and clearing coroutine 
+    /// </summary>
     void ReportAndFlushOfflineStatistics()
     {
         StartCoroutine(ReportAndFlushStatisticsCoroutine());
     }
 
+    /// <summary>
+    /// Report and Flush Offline Stats Coroutine
+    /// Local data uploading and clearing coroutine logic 
+    /// </summary>
     IEnumerator ReportAndFlushStatisticsCoroutine()
     {
         yield return new WaitUntil(() => AuthenticationManager.PlayerAccount != null);
@@ -76,13 +110,17 @@ public class LeaderboardManager : SingletonPersistent<LeaderboardManager>
         }
     }
 
+    /// <summary>
+    /// Update Gameplay Stats
+    /// Upload game mode, ship type, intensity level and scores to memory
+    /// </summary>
     public void UpdateGameplayStatistic(MiniGames gameMode, ShipTypes shipType, int intensity, List<int> scores)
     {
         // Build list of statistics to update
         // One entry for each score for specific game mode/ship combination
         // One entry for each score for game mode any ship
 
-        Debug.Log($"UpdateGamplayStats - gameMode:{gameMode}, shipType:{shipType}, intensity:{intensity}, score0:{scores[0]}");
+        Debug.Log($"UpdateGameplayStats - gameMode:{gameMode}, shipType:{shipType}, intensity:{intensity}, score0:{scores[0]}");
         List<StatisticUpdate> stats = new List<StatisticUpdate>();
 
         foreach (var score in scores)
@@ -101,6 +139,10 @@ public class LeaderboardManager : SingletonPersistent<LeaderboardManager>
         UpdatePlayerStatistic(stats, new Dictionary<string, string>() { { "Intensity", intensity.ToString() } });
     }
 
+    /// <summary>
+    /// Get Gameplay Stats Key
+    /// Combines game mode and ship type as search key, and return it.
+    /// </summary>
     public string GetGameplayStatKey(MiniGames gameMode, ShipTypes shipType)
     {
         var statKey = gameMode.ToString().ToUpper() + "_" + shipType.ToString().ToUpper();
@@ -110,11 +152,19 @@ public class LeaderboardManager : SingletonPersistent<LeaderboardManager>
         return statKey;
     }
 
+    /// <summary>
+    /// Update Player Stats - First Time
+    /// Update player stats when first time populating a new dictionary.
+    /// </summary>
     void UpdatePlayerStatistic(List<StatisticUpdate> stats)
     {
         UpdatePlayerStatistic(stats, new());
     }
 
+    /// <summary>
+    /// Update Player Stats - Aggregate
+    /// Update player stats to an existing dictionary.
+    /// </summary>
     void UpdatePlayerStatistic(List<StatisticUpdate> stats, Dictionary<string, string> customTags)
     {
         if (online)
@@ -141,7 +191,7 @@ public class LeaderboardManager : SingletonPersistent<LeaderboardManager>
         else
         {
             Debug.Log($"LeaderboardManager.UpdatePlayerStatistic - offline");
-            // TODO: custom tags lost
+            // TODO: custom tags lost?
             var dataAccessor = new DataAccessor(OfflineStatsFileName);
             var offlineStatistics = dataAccessor.Load<List<StatisticUpdate>>();
             offlineStatistics.AddRange(stats);
@@ -149,13 +199,25 @@ public class LeaderboardManager : SingletonPersistent<LeaderboardManager>
         }
     }
 
+    /// <summary>
+    /// Load Leaderboard callback delegate
+    /// Handles newly added leaderboard stats
+    /// </summary>
     public delegate void LoadLeaderboardCallBack(List<LeaderboardEntryV2> entries);
 
+    /// <summary>
+    /// Fetch Leaderboard Stats - First Time
+    /// Add new entries to a leaderboard and offer data handler 
+    /// </summary>
     public void FetchLeaderboard(string leaderboardName, LoadLeaderboardCallBack callback)
     {
         FetchLeaderboard(leaderboardName, new(), callback);
     }
 
+    /// <summary>
+    /// Fetch Leaderboard Stats - Aggregate
+    /// Add stats in memory to leaderboard and offer data handler
+    /// </summary>
     public void FetchLeaderboard(string leaderboardName, Dictionary<string, string> customTags, LoadLeaderboardCallBack callback)
     {
         if (online)
@@ -196,6 +258,10 @@ public class LeaderboardManager : SingletonPersistent<LeaderboardManager>
         }
     }
 
+    /// <summary>
+    /// Get Leaderboard File Name
+    /// Takes leaderboard Name and return leaderboard data file in local storage.
+    /// </summary>
     string GetLeaderboardFileName(string leaderboardName)
     {
         return CachedLeaderboardFileNamePrefix + leaderboardName + ".data";
