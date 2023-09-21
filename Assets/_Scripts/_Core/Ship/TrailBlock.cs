@@ -7,7 +7,6 @@ namespace StarWriter.Core
     public class TrailBlock : MonoBehaviour
     {
         [SerializeField] GameObject FossilBlock;
-        [SerializeField] Material explodingMaterial;
         [SerializeField] public TrailBlockProperties TrailBlockProperties;
         [SerializeField] float growthRate = .5f;
         public GameObject ParticleEffect; // TODO: move this so it references the Team to retrieve the effect.
@@ -167,13 +166,13 @@ namespace StarWriter.Core
                 // Check again because the ship may have attached as part of it's block impact effects
                 if (!ship.GetComponent<ShipStatus>().Attached)
                 {
-                    Explode(impactVector, ship.Team, ship.Player.PlayerName);
+                    Explode(impactVector, ship.Player.PlayerName);
                 }
             }
         }
 
         // destroy shielded blocks and make them unrestorable
-        public void Devastate(Vector3 impactVector, Teams team, string playerName)
+        public void Devastate(Vector3 impactVector, string playerName)
         {
             // We don't destroy the trail blocks, we keep the objects around so they maintain the list structure
             gameObject.GetComponent<BoxCollider>().enabled = false;
@@ -185,8 +184,8 @@ namespace StarWriter.Core
             explodingBlock.transform.localEulerAngles = transform.localEulerAngles;
             explodingBlock.transform.localScale = transform.localScale;
             explodingBlock.transform.parent = fossilBlockContainer.transform;
-            explodingBlock.GetComponent<Renderer>().material = new Material(explodingMaterial);
-            explodingBlock.GetComponent<BlockImpact>().HandleImpact(impactVector, team);
+            explodingBlock.GetComponent<Renderer>().material = new Material(Hangar.Instance.GetTeamExplodingBlockMaterial(team));
+            explodingBlock.GetComponent<BlockImpact>().HandleImpact(impactVector);
 
             destroyed = true;
             devastated = true;
@@ -202,7 +201,7 @@ namespace StarWriter.Core
         }
 
 
-        public void Explode(Vector3 impactVector, Teams team, string playerName)
+        public void Explode(Vector3 impactVector, string playerName)
         {
             if (Shielded)
             {
@@ -220,8 +219,8 @@ namespace StarWriter.Core
             explodingBlock.transform.localEulerAngles = transform.localEulerAngles;
             explodingBlock.transform.localScale = transform.localScale;
             explodingBlock.transform.parent = fossilBlockContainer.transform;
-            explodingBlock.GetComponent<Renderer>().material = new Material(explodingMaterial);
-            explodingBlock.GetComponent<BlockImpact>().HandleImpact(impactVector, team);
+            explodingBlock.GetComponent<Renderer>().material = new Material(Hangar.Instance.GetTeamExplodingBlockMaterial(team));
+            explodingBlock.GetComponent<BlockImpact>().HandleImpact(impactVector);
 
             destroyed = true;
 
