@@ -5,10 +5,11 @@ using PlayFab.ClientModels;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+//using UnityEngine.UIElements;
 
 namespace _Scripts._Core.Playfab_Models
 {
-    public class AuthenticationView : MonoBehaviour
+    public class ProfileMenu : MonoBehaviour
     {
         [SerializeField] GameObject BusyIndicator;
 
@@ -17,21 +18,27 @@ namespace _Scripts._Core.Playfab_Models
         [SerializeField] Button setDisplayNameButton;
         [SerializeField] TMP_Text displayNameResultMessage;
         [SerializeField] string displayNameDefaultText;
+        [SerializeField] float SuccessMessageFadeAfterSeconds = 2f;
+        [SerializeField] float SuccessMessageFadeDurationSeconds = 3f;
+
+        Color SuccessMessageOriginalColor;
 
         [Header("Email Login")]
+        [SerializeField] bool ShowEmailLogin;
         [SerializeField] TMP_Text emailLoginResultMessage;
         [SerializeField] TMP_InputField emailLoginInputField;
         [SerializeField] TMP_InputField passwordLoginField;
         [SerializeField] Button loginButton;
         [SerializeField] Toggle stayLoggedInToggle;
-        
+
         [Header("Email Linking")]
+        [SerializeField] bool ShowEmailLinking;
         [SerializeField] TMP_Text registerEmailResultMessage;
         [SerializeField] TMP_InputField usernameRegisterInputField;
         [SerializeField] TMP_InputField emailRegisterInputField;
         [SerializeField] TMP_InputField passwordRegisterInputField;
         [SerializeField] Button registerButton;
-        
+
         // Start is called before the first frame update
         void Start()
         {
@@ -40,50 +47,57 @@ namespace _Scripts._Core.Playfab_Models
 
             // Set default player display name
             displayNameResultMessage.text = displayNameDefaultText;
-            
+            SuccessMessageOriginalColor = displayNameResultMessage.color;
+
+            if (ShowEmailLogin)
+                InitializeEmailLogin();
+
+            if (ShowEmailLinking)
+                InitializeEmailLinking();
+
+            AuthenticationManager.LoginSuccess += AuthenticationManager.Instance.LoadPlayerProfile;
+            AuthenticationManager.OnProfileLoaded += InitializePlayerDisplayNameView;
+            AuthenticationManager.Instance.AnonymousLogin();
+        }
+
+        void InitializeEmailLinking()
+        {
+            // Account register input fields initialization
+            if (emailRegisterInputField != null)
+            {
+                emailRegisterInputField.contentType = TMP_InputField.ContentType.EmailAddress;
+                emailRegisterInputField.characterValidation = TMP_InputField.CharacterValidation.EmailAddress;
+                emailRegisterInputField.onEndEdit.AddListener(OnEmailInputEndEdit);
+            }
+
+            if (passwordRegisterInputField != null)
+                passwordRegisterInputField.contentType = TMP_InputField.ContentType.Password; // This one is secret secret
+
+            if (registerButton != null)
+                registerButton.onClick.AddListener(RegisterButton_OnClick);
+        }
+
+        void InitializeEmailLogin()
+        {
             // Email login input field initialization
-            // This one is secret secret
-            if (passwordLoginField != null )
-                passwordLoginField.contentType = TMP_InputField.ContentType.Password;
-            
             if (emailLoginInputField != null)
             {
                 emailLoginInputField.contentType = TMP_InputField.ContentType.EmailAddress;
                 emailLoginInputField.characterValidation = TMP_InputField.CharacterValidation.EmailAddress;
-                emailLoginInputField.onEndEdit.AddListener(OnEndEdit);
+                emailLoginInputField.onEndEdit.AddListener(OnEmailInputEndEdit);
             }
 
-            if (stayLoggedInToggle != null)
-            {
-                stayLoggedInToggle.onValueChanged.AddListener(delegate { StayLoggedIn_OnToggled(stayLoggedInToggle.isOn);});
-            }
+            if (passwordLoginField != null)
+                passwordLoginField.contentType = TMP_InputField.ContentType.Password; // This one is secret secret
 
             if (loginButton != null)
                 loginButton.onClick.AddListener(LoginButton_OnClick);
-            
-            
-            // Account register input fields initialization
-            if (passwordRegisterInputField != null)
-                passwordRegisterInputField.contentType = TMP_InputField.ContentType.Password;
 
-            if (emailRegisterInputField != null)  
-            {
-                emailRegisterInputField.contentType = TMP_InputField.ContentType.EmailAddress;
-                emailRegisterInputField.characterValidation = TMP_InputField.CharacterValidation.EmailAddress;
-                emailRegisterInputField.onEndEdit.AddListener(OnEndEdit);
-            }
-            
-            if(registerButton!=null)
-                registerButton.onClick.AddListener(RegisterButton_OnClick);
-            
-            AuthenticationManager.Instance.AnonymousLogin();
-            AuthenticationManager.LoginSuccess += AuthenticationManager.Instance.LoadPlayerProfile;
-            // AuthenticationManager.LoginError +=
-
-            AuthenticationManager.OnProfileLoaded += InitializePlayerDisplayNameView;
+            if (stayLoggedInToggle != null)
+                stayLoggedInToggle.onValueChanged.AddListener(delegate { StayLoggedIn_OnToggled(stayLoggedInToggle.isOn); });
         }
 
-        void OnEndEdit(string text)
+        void OnEmailInputEndEdit(string text)
         {
             if (!EmailValidator.IsValidEmail(text))
             {
@@ -186,7 +200,7 @@ namespace _Scripts._Core.Playfab_Models
                     break;
             }
         }
-        
+
         /// <summary>
         /// Login Response Error Handler
         /// Handles error responses upon account login
@@ -227,7 +241,7 @@ namespace _Scripts._Core.Playfab_Models
                     break;
             }
         }
-        
+
         /// <summary>
         /// Update player display name with random generated one
         /// Can be tested by clicking Generate Random Name button
@@ -247,7 +261,7 @@ namespace _Scripts._Core.Playfab_Models
             // AnonymousLogin();
             AuthenticationManager.Instance.RegisterWithEmail(email, GetPassword(password), RegisterResponseHandler);
         }
-        
+
         /// <summary>
         /// Email Login
         /// Can be tested with Email Login button
@@ -272,9 +286,9 @@ namespace _Scripts._Core.Playfab_Models
             var adj_index = random.Next(adjectives.Count);
             var noun_index = random.Next(nouns.Count);
             var displayName = $"{adjectives[adj_index]} {nouns[noun_index]}";
-            
+
             Debug.Log($"AuthenticationView - Generated display name: {displayName}");
-            
+
             return displayName;
         }
 
@@ -283,10 +297,11 @@ namespace _Scripts._Core.Playfab_Models
             AuthenticationManager.Instance.LoadRandomNameList();
 
             yield return new WaitUntil(() => AuthenticationManager.Adjectives != null);
-            
+
             displayNameInputField.text = RandomGenerateName();
+            FocusDisplayNameInputField();
             BusyIndicator.SetActive(false);
-        } 
+        }
 
         public void SetPlayerNameButton_OnClicked()
         {
@@ -315,7 +330,7 @@ namespace _Scripts._Core.Playfab_Models
             {
                 displayNameResultMessage.text = "Display name must be between 3 and 25 characters long";
                 displayNameResultMessage.gameObject.SetActive(true);
-                
+
                 return false;
             }
 
@@ -326,10 +341,11 @@ namespace _Scripts._Core.Playfab_Models
         {
             if (result == null)
                 return;
-            
+
             Debug.Log("Successfully Set Player Display Name.");
 
             displayNameResultMessage.text = "Success";
+            StartCoroutine(FadeMessageCoroutine());
             displayNameResultMessage.gameObject.SetActive(true);
             BusyIndicator.SetActive(false);
         }
@@ -337,14 +353,43 @@ namespace _Scripts._Core.Playfab_Models
         void InitializePlayerDisplayNameView()
         {
             BusyIndicator.SetActive(false);
-
             displayNameInputField.text = AuthenticationManager.PlayerProfile.DisplayName;
 
-            displayNameResultMessage.text = "Display Name Loaded";
             displayNameResultMessage.gameObject.SetActive(true);
         }
 
+        public void FocusDisplayNameInputField()
+        {
+            displayNameInputField.Select();
+            StartCoroutine(DeSelectCoroutine());
+        }
+
+        IEnumerator DeSelectCoroutine()
+        {
+            // Yes, this is wacky, but you have to wait for the next frame to not auto select the name
+            // I think the blinking cursor at the end of the line is kinda cool
+            yield return null;
+            displayNameInputField.MoveTextEnd(false);
+            displayNameInputField.ActivateInputField();
+            displayNameInputField.caretPosition = displayNameInputField.text.Length;
+        }
+
+        IEnumerator FadeMessageCoroutine()
+        {
+            yield return new WaitForSeconds(SuccessMessageFadeAfterSeconds);
+
+            var elapsed = 0f;
+            while (elapsed < SuccessMessageFadeDurationSeconds)
+            {
+                displayNameResultMessage.color = new Color(SuccessMessageOriginalColor.r, SuccessMessageOriginalColor.g, SuccessMessageOriginalColor.b, 1-(elapsed/ SuccessMessageFadeDurationSeconds));
+                yield return null;
+                elapsed += Time.unscaledDeltaTime;
+            }
+
+            displayNameResultMessage.text = "";
+            displayNameResultMessage.color = SuccessMessageOriginalColor;
+        }
+
         #endregion
-        
     }
 }
