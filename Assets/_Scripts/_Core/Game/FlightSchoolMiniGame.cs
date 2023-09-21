@@ -18,7 +18,12 @@ public class FlightSchoolMiniGame : MiniGame
         Crystal.SetOrigin(CrystalStartPosition);
 
         SegmentSpawner.Seed = new System.Random().Next();
+        SegmentSpawner.numberOfSegments = IntensityLevel * 2 - 1;
+        SegmentSpawner.origin.z = -(IntensityLevel - 1) * SegmentSpawner.StraightLineLength;
+
         SegmentSpawner.Initialize();
+
+        
     }
 
     protected override void Update()
@@ -57,7 +62,7 @@ public class FlightSchoolMiniGame : MiniGame
     protected override void SetupTurn()
     {
         base.SetupTurn();
-        
+        Crystal.transform.position = CrystalStartPosition;
         ActivePlayer.Ship.DisableSkimmer();
 
         StatsManager.Instance.ResetStats(); // TODO: this belongs in the EliminationMonitor

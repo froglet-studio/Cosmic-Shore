@@ -30,7 +30,7 @@ public class MiniGame : MonoBehaviour
 
     // Configuration set by player
     public static int NumberOfPlayers = 2;
-    public static int DifficultyLevel = 1;
+    public static int IntensityLevel = 1;
     public static ShipTypes PlayerShipType = ShipTypes.Dolphin;
     public static SO_Pilot PlayerPilot;
 
@@ -141,7 +141,7 @@ public class MiniGame : MonoBehaviour
 
     void StartGame()
     {
-        AnalyticsManager.Instance.LogGamePlayStart(gameMode, PlayerShipType, NumberOfPlayers, DifficultyLevel);
+        AnalyticsManager.Instance.LogGamePlayStart(gameMode, PlayerShipType, NumberOfPlayers, IntensityLevel);
         gameRunning = true;
         Debug.Log($"MiniGame.StartGame, ... {Time.time}");
         EndGameScreen.SetActive(false);
@@ -215,7 +215,7 @@ public class MiniGame : MonoBehaviour
 
         // TODO: cleanup after migration
         if (UsePlayFab)
-            LeaderboardManager.Instance.UpdateGameplayStatistic(gameMode, PlayerShipType, DifficultyLevel, ScoreTracker.GetScores());
+            LeaderboardManager.Instance.UpdateGameplayStatistic(gameMode, PlayerShipType, IntensityLevel, ScoreTracker.GetScores());
         else
             UpdateLeaderboardEntries();
 
@@ -224,7 +224,7 @@ public class MiniGame : MonoBehaviour
         gameRunning = false;
         EndGameScreen.SetActive(true);
         ScoreTracker.DisplayScores();
-        AnalyticsManager.Instance.LogGamePlayEnd(gameMode, PlayerShipType, NumberOfPlayers, DifficultyLevel, ScoreTracker.GetHighScore());
+        AnalyticsManager.Instance.LogGamePlayEnd(gameMode, PlayerShipType, NumberOfPlayers, IntensityLevel, ScoreTracker.GetHighScore());
     }
 
     void LoopActivePlayerIndex()

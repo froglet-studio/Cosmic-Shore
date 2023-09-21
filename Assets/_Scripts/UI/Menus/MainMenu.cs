@@ -36,7 +36,7 @@ namespace StarWriter.Core.UI
         {
             MiniGame.PlayerShipType = ShipTypes.Manta;
             MiniGame.PlayerPilot = Hangar.Instance.SoarPilot;
-            MiniGame.DifficultyLevel = 1;
+            MiniGame.IntensityLevel = 1;
             MiniGame.NumberOfPlayers = 1;
 
             SceneManager.LoadScene("MinigameFreestyle");
@@ -45,7 +45,7 @@ namespace StarWriter.Core.UI
         {
             MiniGame.PlayerShipType = ShipTypes.Shark;
             MiniGame.PlayerPilot = Hangar.Instance.SmashPilot;
-            MiniGame.DifficultyLevel = 1;
+            MiniGame.IntensityLevel = 1;
             MiniGame.NumberOfPlayers = 1;
 
             SceneManager.LoadScene("MinigameFreestyle");
@@ -54,7 +54,7 @@ namespace StarWriter.Core.UI
         {
             MiniGame.PlayerShipType = ShipTypes.Manta;
             MiniGame.PlayerPilot = Hangar.Instance.SportPilot;
-            MiniGame.DifficultyLevel = 1;
+            MiniGame.IntensityLevel = 1;
             MiniGame.NumberOfPlayers = 1;
 
             SceneManager.LoadScene("MinigameCellularBrawl2v2");

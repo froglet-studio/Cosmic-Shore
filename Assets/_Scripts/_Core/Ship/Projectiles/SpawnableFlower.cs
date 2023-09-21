@@ -42,7 +42,7 @@ public class SpawnableFlower : SpawnableAbstractBase
     {
         trails.Add(new Trail());
         var origin = (lastTwoBlocks[0].transform.position + lastTwoBlocks[1].transform.position) / 2;
-        var maxGap = Mathf.Abs(lastTwoBlocks[0].transform.localScale.x - (blockScale.x / 2f));
+        var maxGap = 2;//Mathf.Abs(lastTwoBlocks[0].transform.localScale.x - (blockScale.x / 2f));
 
         var angle = 30;
         for (int i = angle; i <= 180; i += angle)
