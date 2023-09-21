@@ -7,7 +7,6 @@ namespace StarWriter.Core
     public class TrailBlock : MonoBehaviour
     {
         [SerializeField] GameObject FossilBlock;
-        [SerializeField] Material explodingMaterial;
         [SerializeField] public TrailBlockProperties TrailBlockProperties;
         [SerializeField] float growthRate = .5f;
         public GameObject ParticleEffect; // TODO: move this so it references the Team to retrieve the effect.
@@ -167,12 +166,12 @@ namespace StarWriter.Core
                 // Check again because the ship may have attached as part of it's block impact effects
                 if (!ship.GetComponent<ShipStatus>().Attached)
                 {
-                    Explode(impactVector, ship.Team, ship.Player.PlayerName);
+                    Explode(impactVector, ship.Player.PlayerName);
                 }
             }
         }
 
-        public void Explode(Vector3 impactVector, Teams team, string playerName, bool devastate=false)
+        public void Explode(Vector3 impactVector, string playerName, bool devastate=false)
         {
             if (Shielded && !devastate)
             {
@@ -190,8 +189,8 @@ namespace StarWriter.Core
             explodingBlock.transform.localEulerAngles = transform.localEulerAngles;
             explodingBlock.transform.localScale = transform.localScale;
             explodingBlock.transform.parent = fossilBlockContainer.transform;
-            explodingBlock.GetComponent<Renderer>().material = new Material(explodingMaterial);
-            explodingBlock.GetComponent<BlockImpact>().HandleImpact(impactVector, team);
+            explodingBlock.GetComponent<Renderer>().material = new Material(Hangar.Instance.GetTeamExplodingBlockMaterial(team));
+            explodingBlock.GetComponent<BlockImpact>().HandleImpact(impactVector);
 
             destroyed = true;
             devastated = devastate;

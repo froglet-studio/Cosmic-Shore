@@ -1,33 +1,22 @@
 using System.Collections;
 using UnityEngine;
+using StarWriter.Core.HangerBuilder;
 
 public class BlockImpact : MonoBehaviour
 {
-    public void HandleImpact(Vector3 velocity, Teams team)
+    public void HandleImpact(Vector3 velocity)
     {
-        StartCoroutine(ImpactCoroutine(velocity, team));
+        StartCoroutine(ImpactCoroutine(velocity));
     }
+    Material material;
 
-    private IEnumerator ImpactCoroutine(Vector3 velocity, Teams team)
+    private IEnumerator ImpactCoroutine(Vector3 velocity)
     {
         
         Vector3 distance = Vector3.zero;
 
-        Material material = GetComponent<MeshRenderer>().material;
+        material = gameObject.GetComponent<MeshRenderer>().material;
 
-        if (team == Teams.Green) { 
-            material.SetFloat("_playerHit", 1); 
-        }
-        else
-        {
-            if (team == Teams.Red) 
-            {   
-                material.SetFloat("_playerHit", 0); material.SetFloat("_redHit", 1);
-            }
-            else {
-                material.SetFloat("_playerHit", 0); material.SetFloat("_redHit", 0); 
-            }
-        }
         var initialPosition = transform.position;
         var maxDuration = 7;
         var duration = 0f;

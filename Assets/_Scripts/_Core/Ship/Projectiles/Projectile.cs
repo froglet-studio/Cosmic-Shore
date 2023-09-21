@@ -62,7 +62,7 @@ namespace StarWriter.Core
                 switch (effect)
                 {
                     case TrailBlockImpactEffects.DeactivateTrailBlock:
-                        trailBlockProperties.trailBlock.Explode(Velocity, Team, Ship.Player.PlayerName);
+                        trailBlockProperties.trailBlock.Explode(Velocity, Ship.Player.PlayerName);
                         break;
                     case TrailBlockImpactEffects.Steal:
                         trailBlockProperties.trailBlock.Steal(Ship.Player.PlayerName, Team);

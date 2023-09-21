@@ -176,6 +176,11 @@ namespace StarWriter.Core.HangerBuilder
         {
             return TeamMaterialSets[team].BlockMaterial;
         }
+
+        public Material GetTeamExplodingBlockMaterial(Teams team)
+        {
+            return TeamMaterialSets[team].ExplodingBlockMaterial;
+        }
         
         public Material GetTeamShieldedBlockMaterial(Teams team)
         {
