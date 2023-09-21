@@ -143,7 +143,7 @@ public class ArcadeMenu : MonoBehaviour
         Hangar.Instance.SetAiDifficultyLevel(difficulty);
 
         // notify the mini game engine that this is the difficulty
-        MiniGame.DifficultyLevel = difficulty;
+        MiniGame.IntensityLevel = difficulty;
     }
 
     void PopulateShipSelectionList()

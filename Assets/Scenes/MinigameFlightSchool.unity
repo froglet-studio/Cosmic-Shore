@@ -580,16 +580,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   spawnableSegments:
   - {fileID: 2095540615}
-  positioningScheme: 2
+  positioningScheme: 8
   spawnSegmentWeights:
   - 1
   Seed: 0
   parent: {fileID: 0}
-  origin: {x: 0, y: 0, z: 0}
-  StraightLineLength: 400
+  origin: {x: 0, y: 0, z: -50}
+  StraightLineLength: 30
+  RotationAmount: 20
   DifficultyAngle: 90
   InitializeOnStart: 0
-  numberOfSegments: 1
+  numberOfSegments: 17
 --- !u!4 &822875972 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 8200116291734656446, guid: cb702179ff5b42f41a3521ccd59e6934,
@@ -685,6 +686,7 @@ MonoBehaviour:
   GameCanvas: {fileID: 1142622547}
   playerPrefab: {fileID: 1649340654}
   PlayerOrigin: {fileID: 1192541910}
+  nextRoundWaitTime: 1
   ActivePlayer: {fileID: 0}
   Crystal: {fileID: 1568959833}
   CrystalStartPosition: {x: 0, y: 0, z: 240}
@@ -916,7 +918,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0a66c9f1814dd7a49a173c0f8d502ce0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  duration: 20
+  duration: 12
   display: {fileID: 0}
 --- !u!4 &1375943528
 Transform:

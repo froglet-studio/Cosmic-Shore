@@ -17,19 +17,20 @@ public class MiniGame : MonoBehaviour
     [SerializeField] GameCanvas GameCanvas;
     [SerializeField] Player playerPrefab;
     [SerializeField] GameObject PlayerOrigin;
-    
+
     protected Button ReadyButton;
     protected GameObject EndGameScreen;
     protected MiniGameHUD HUD;
     protected List<Player> Players;
     protected CountdownTimer countdownTimer;
 
+
     List<Teams> PlayerTeams = new() { Teams.Green, Teams.Red, Teams.Yellow };
     List<string> PlayerNames = new() { "PlayerOne", "PlayerTwo", "PlayerThree" };
 
     // Configuration set by player
     public static int NumberOfPlayers = 2;
-    public static int DifficultyLevel = 1;
+    public static int IntensityLevel = 1;
     public static ShipTypes PlayerShipType = ShipTypes.Dolphin;
     public static SO_Pilot PlayerPilot;
 
@@ -140,7 +141,7 @@ public class MiniGame : MonoBehaviour
 
     void StartGame()
     {
-        AnalyticsManager.Instance.LogGamePlayStart(gameMode, PlayerShipType, NumberOfPlayers, DifficultyLevel);
+        AnalyticsManager.Instance.LogGamePlayStart(gameMode, PlayerShipType, NumberOfPlayers, IntensityLevel);
         gameRunning = true;
         Debug.Log($"MiniGame.StartGame, ... {Time.time}");
         EndGameScreen.SetActive(false);
@@ -207,7 +208,7 @@ public class MiniGame : MonoBehaviour
         gameRunning = false;
         EndGameScreen.SetActive(true);
         ScoreTracker.DisplayScores();
-        AnalyticsManager.Instance.LogGamePlayEnd(gameMode, PlayerShipType, NumberOfPlayers, DifficultyLevel, ScoreTracker.GetHighScore());
+        AnalyticsManager.Instance.LogGamePlayEnd(gameMode, PlayerShipType, NumberOfPlayers, IntensityLevel, ScoreTracker.GetHighScore());
     }
 
     void UpdateLeaderboardEntries()
@@ -284,7 +285,7 @@ public class MiniGame : MonoBehaviour
     protected virtual void SetupTurn()
     {
         ReadyNextPlayer();
-
+        
         // Wait for player ready before activating turn monitor (only really relevant for time based monitor)
         foreach (var turnMonitor in TurnMonitors)
         {

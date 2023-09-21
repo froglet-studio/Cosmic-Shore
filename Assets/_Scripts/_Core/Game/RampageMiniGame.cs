@@ -22,7 +22,7 @@ public class RampageMiniGame : MiniGame
         base.SetupTurn();
 
         SegmentSpawner.numberOfSegments = 20;
-        spawnableEllipsoid.maxlength = spawnableEllipsoid.maxwidth = spawnableEllipsoid.maxheight = maxSize * DifficultyLevel / maxDifficulty;
+        spawnableEllipsoid.maxlength = spawnableEllipsoid.maxwidth = spawnableEllipsoid.maxheight = maxSize * IntensityLevel / maxDifficulty;
 
         TrailSpawner.NukeTheTrails();
         Crystal.transform.position = CrystalStartPosition;

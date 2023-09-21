@@ -10,10 +10,9 @@ GameObject:
   m_Component:
   - component: {fileID: 1050704211038875701}
   - component: {fileID: 7095398317472191918}
-  - component: {fileID: 2156708817621852432}
   - component: {fileID: 1810460465791943441}
   m_Layer: 0
-  m_Name: RearViewCamera
+  m_Name: PipCamera
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -77,14 +76,6 @@ Camera:
   m_OcclusionCulling: 1
   m_StereoConvergence: 10
   m_StereoSeparation: 0.022
---- !u!81 &2156708817621852432
-AudioListener:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3669588834454630396}
-  m_Enabled: 1
 --- !u!114 &1810460465791943441
 MonoBehaviour:
   m_ObjectHideFlags: 0

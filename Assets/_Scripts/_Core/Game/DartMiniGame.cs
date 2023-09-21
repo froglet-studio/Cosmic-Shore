@@ -12,7 +12,7 @@ public class DartMiniGame : MiniGame
         base.Start();
 
         SegmentSpawner.Seed = new System.Random().Next();
-        SegmentSpawner.DifficultyAngle = DifficultyLevel * (140 / 4); // (180 - random buffer - dartbard arclength) / (max difficulty level)
+        SegmentSpawner.DifficultyAngle = IntensityLevel * (140 / 4); // (180 - random buffer - dartbard arclength) / (max difficulty level)
         SegmentSpawner.Initialize();
     }
 
