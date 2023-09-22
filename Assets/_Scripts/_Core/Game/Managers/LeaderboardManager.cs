@@ -267,11 +267,14 @@ public class LeaderboardManager : SingletonPersistent<LeaderboardManager>
     {
         return CachedLeaderboardFileNamePrefix + leaderboardName + ".data";
     }
-    
+
+    #region Request Leaderboard
+
     /// <summary>
-    /// Get Leaderboard By Mini Game and Ship Type 
+    /// Get Leaderboard By leaderboard name
     /// Fetches leaderboard data by name (aggregation of mini game and ship type name)
-    /// Takes front end leaderboard name and callback 
+    /// Takes front end leaderboard name and callback
+    /// Might be good to add error handler
     /// </summary>
     public void RequestLeaderboard(string leaderboardName, LoadLeaderboardCallBack callback)
     {
@@ -292,21 +295,55 @@ public class LeaderboardManager : SingletonPersistent<LeaderboardManager>
     /// Handle Leaderboard Data
     /// For now displaying leaderboard data in the console, let callback handle leaderboard data
     /// </summary>
-    private void HandleLeaderboardData(GetLeaderboardResult result, LoadLeaderboardCallBack callback)
+    void HandleLeaderboardData(GetLeaderboardResult result, LoadLeaderboardCallBack callback)
     {
+        // result null check, nothing to display
+        if (result == null)
+            return;
+        
         // The result doesn't return with leaderboard name, BLOCKBANDIT_ANY is a placeholder
         Debug.Log($"Leaderboard Manger - BLOCKBANDIT_ANY");
         // Store relevant data in leaderboard entry struct
-        var leaderboardEntryV2s = new List<LeaderboardEntryV2>();
+        var leaderboardEntry = new List<LeaderboardEntryV2>();
         foreach (var entry in result.Leaderboard)
         {
             Debug.Log($"Leaderboard Manager - BLOCKBANDIT_ANY display name: {entry.DisplayName} score: {entry.StatValue.ToString()} position: {entry.Position.ToString()}");
-            leaderboardEntryV2s.Add(new LeaderboardEntryV2(entry.DisplayName, entry.StatValue, entry.Position));
+            leaderboardEntry.Add(new LeaderboardEntryV2(entry.DisplayName, entry.StatValue, entry.Position));
         }
         // Let callback handle leaderboard data
-        callback(leaderboardEntryV2s);
+        callback(leaderboardEntry);
         Debug.Log($"Leaderboard Manager - BLOCKBANDIT_ANY board version: {result.Version.ToString()}");
     }
-    
+
+    #endregion
+
+    #region Request Friend Leaderboard
+
+    /// <summary>
+    /// Request Friend Leaderboard By leaderboard name
+    /// Fetches friend leaderboard data by name (aggregation of mini game and ship type name)
+    /// Takes front end leaderboard name and callback
+    /// Might be good to add error handler
+    /// </summary>
+    public void RequestFriendLeaderboard(string leaderboardName, LoadLeaderboardCallBack callback)
+    {
+        PlayFabClientAPI.GetFriendLeaderboard(
+            new GetFriendLeaderboardRequest(
+            {
+                StatisticName = leaderboardName,
+                // Start position is required in request friend leaderboard request
+                StartPosition = 0,
+                // Not required, set default as 20 for now
+                MaxResultsCount = 20,
+            }, (result) => HandleLeaderboardData(result, callback),
+            (error) =>
+            {
+                // TODO: add error handler
+                Debug.Log(error.GenerateErrorReport());
+            }
+        );
+    }
+
+    #endregion
     
 }
