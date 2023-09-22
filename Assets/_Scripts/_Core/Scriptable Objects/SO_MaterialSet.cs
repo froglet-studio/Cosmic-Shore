@@ -6,6 +6,7 @@ public class SO_MaterialSet : ScriptableObject
 {
     [SerializeField] public Material ShipMaterial;
     [SerializeField] public Material BlockMaterial;
+    [SerializeField] public Material CrystalMaterial;
     [SerializeField] public Material ExplodingBlockMaterial;
     [SerializeField] public Material ShieldedBlockMaterial;
     [SerializeField] public Material AOEExplosionMaterial;

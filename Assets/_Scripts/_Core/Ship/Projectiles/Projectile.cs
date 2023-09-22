@@ -14,6 +14,8 @@ namespace StarWriter.Core
 
         [SerializeField] List<TrailBlockImpactEffects> trailBlockImpactEffects;
         [SerializeField] List<ShipImpactEffects> shipImpactEffects;
+        [SerializeField] List<CrystalImpactEffects> crystalImpactEffects;
+
 
         [SerializeField] bool drawLine = false;
         [SerializeField] float startLength = 1f;
@@ -99,6 +101,31 @@ namespace StarWriter.Core
                         break;
                     case ShipImpactEffects.Stun:
                         shipGeometry.Ship.ShipController.ModifyThrottle(.1f, 10);
+                        break;
+                }
+            }
+        }
+
+        public void PerformCrystalImpactEffects(CrystalProperties crystalProperties)
+        {
+            if (StatsManager.Instance != null)
+                StatsManager.Instance.CrystalCollected(this.Ship, crystalProperties);
+
+            foreach (CrystalImpactEffects effect in crystalImpactEffects)
+            {
+                switch (effect)
+                {
+                    case CrystalImpactEffects.PlayHaptics:
+                        if (!Ship.ShipStatus.AutoPilotEnabled) HapticController.PlayCrystalImpactHaptics();
+                        break;
+                    //case CrystalImpactEffects.AreaOfEffectExplosion:
+                    //    var AOEExplosion = Instantiate(AOEPrefab).GetComponent<AOEExplosion>();
+                    //    AOEExplosion.Ship = this;
+                    //    AOEExplosion.SetPositionAndRotation(transform.position, transform.rotation);
+                    //    AOEExplosion.MaxScale = Mathf.Max(minExplosionScale, ResourceSystem.CurrentAmmo * maxExplosionScale);
+                    //    break;
+                    case CrystalImpactEffects.StealCrystal:
+                        crystalProperties.crystal.Steal(Team, 7f);
                         break;
                 }
             }

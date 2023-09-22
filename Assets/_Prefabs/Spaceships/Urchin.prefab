@@ -501,9 +501,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 35a4e5dfc7064254cb27fc78eefb05a0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  projectilePrefab: {fileID: 7877928849292311340, guid: 8d80761fade24204c8bf81c8fe6e4e42,
+  projectilePrefab: {fileID: 7877928849292311340, guid: 91785557e68aa4b44902085e98aff6cc,
     type: 3}
-  projectileTime: 3
+  projectileTime: 4
   firePeriod: 0.1
   Team: 1
   Ship: {fileID: 874579555101021527}
@@ -1800,9 +1800,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 35a4e5dfc7064254cb27fc78eefb05a0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  projectilePrefab: {fileID: 7877928849292311340, guid: 8d80761fade24204c8bf81c8fe6e4e42,
+  projectilePrefab: {fileID: 7877928849292311340, guid: 91785557e68aa4b44902085e98aff6cc,
     type: 3}
-  projectileTime: 3
+  projectileTime: 4
   firePeriod: 0.1
   Team: 1
   Ship: {fileID: 874579555101021527}
@@ -2447,7 +2447,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2317700572bfe8f47a5240c73200eaac, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  pipCamera: {fileID: 0}
+  pipCamera: {fileID: 7901702142089743579}
+  mirrored: 0
 --- !u!1 &6529595402500225743
 GameObject:
   m_ObjectHideFlags: 0
@@ -3246,6 +3247,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1050704211038875701, guid: 637acd3ede086ed45b23959a02b1c534,
         type: 3}
+      propertyPath: m_LocalScale.x
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1050704211038875701, guid: 637acd3ede086ed45b23959a02b1c534,
+        type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
       objectReference: {fileID: 0}
@@ -3257,7 +3263,7 @@ PrefabInstance:
     - target: {fileID: 1050704211038875701, guid: 637acd3ede086ed45b23959a02b1c534,
         type: 3}
       propertyPath: m_LocalPosition.z
-      value: -40
+      value: -70
       objectReference: {fileID: 0}
     - target: {fileID: 1050704211038875701, guid: 637acd3ede086ed45b23959a02b1c534,
         type: 3}
@@ -3304,6 +3310,12 @@ PrefabInstance:
 --- !u!4 &93255075322718528 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 1050704211038875701, guid: 637acd3ede086ed45b23959a02b1c534,
+    type: 3}
+  m_PrefabInstance: {fileID: 1143798953417267573}
+  m_PrefabAsset: {fileID: 0}
+--- !u!20 &7901702142089743579 stripped
+Camera:
+  m_CorrespondingSourceObject: {fileID: 7095398317472191918, guid: 637acd3ede086ed45b23959a02b1c534,
     type: 3}
   m_PrefabInstance: {fileID: 1143798953417267573}
   m_PrefabAsset: {fileID: 0}

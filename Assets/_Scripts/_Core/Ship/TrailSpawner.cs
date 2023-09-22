@@ -202,11 +202,9 @@ public class TrailSpawner : MonoBehaviour
         Block.Index = trail.TrailList.IndexOf(Block);
         Block.ID = ownerId + "::" + spawnedTrailCount++;
         
-
         if (Block.warp)
             wavelength = shards.GetComponent<WarpFieldData>().HybridVector(Block.transform).magnitude * initialWavelength;
 
-        
     }
 
     Vector3 VectorDivision(Vector3 Vector1, Vector3 Vector2) // TODO: move to tools

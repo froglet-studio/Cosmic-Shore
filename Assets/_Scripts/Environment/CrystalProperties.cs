@@ -1,6 +1,7 @@
 ﻿[System.Serializable]
 public struct CrystalProperties
 {
+    public Crystal crystal;
     public float fuelAmount;
     public int scoreAmount;
     public float tailLengthIncreaseAmount;

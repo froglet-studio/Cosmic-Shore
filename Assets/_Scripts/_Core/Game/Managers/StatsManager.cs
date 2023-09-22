@@ -117,6 +117,42 @@ public class StatsManager : Singleton<StatsManager>
         playerStats[restoringPlayerName] = roundStats;
     }
 
+    //public void BlockVolumeModified(Teams modifiedTeam, string stealingPlayerName, TrailBlockProperties modifiedTrailBlockProperties)
+    //{
+    //    if (!RecordStats)
+    //        return;
+    //    MaybeCreateDictionaryEntries(modifiedTeam, stealingPlayerName);
+    //    MaybeCreateDictionaryEntries(modifiedTrailBlockProperties.trailBlock.Team, modifiedTrailBlockProperties.trailBlock.PlayerName);
+
+    //    //// Team Stealing Stats
+    //    //var roundStats = teamStats[stealingTeam];
+    //    //roundStats.blocksStolen++;
+    //    //roundStats.blocksRemaining++;
+    //    //roundStats.volumeStolen += stolenTrailBlockProperties.volume;
+    //    //roundStats.volumeRemaining += stolenTrailBlockProperties.volume;
+    //    //teamStats[stealingTeam] = roundStats;
+
+    //    //// Player Stealing Stats
+    //    //roundStats = playerStats[stealingPlayerName];
+    //    //roundStats.blocksStolen++;
+    //    //roundStats.blocksRemaining++;
+    //    //roundStats.volumeStolen += stolenTrailBlockProperties.volume;
+    //    //roundStats.volumeRemaining += stolenTrailBlockProperties.volume;
+    //    //playerStats[stealingPlayerName] = roundStats;
+
+    //    //// Team Remaining
+    //    //roundStats = teamStats[stolenTrailBlockProperties.trailBlock.Team];
+    //    //roundStats.blocksRemaining--;
+    //    //roundStats.volumeRemaining -= stolenTrailBlockProperties.volume;
+    //    //teamStats[stolenTrailBlockProperties.trailBlock.Team] = roundStats;
+
+    //    //// Player Remaining
+    //    //roundStats = playerStats[stolenTrailBlockProperties.trailBlock.PlayerName];
+    //    //roundStats.blocksRemaining--;
+    //    //roundStats.volumeRemaining -= stolenTrailBlockProperties.volume;
+    //    //playerStats[stolenTrailBlockProperties.trailBlock.PlayerName] = roundStats;
+    //}
+
     public void BlockStolen(Teams stealingTeam, string stealingPlayerName, TrailBlockProperties stolenTrailBlockProperties)
     {
         if (!RecordStats)

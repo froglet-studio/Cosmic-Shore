@@ -11,4 +11,5 @@ public enum CrystalImpactEffects
     PlayFakeCrystalHaptics = 9,
     ReduceSpeed = 10,
     PlayHaptics = 11,
+    StealCrystal = 12
 }

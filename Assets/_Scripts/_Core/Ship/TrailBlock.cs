@@ -9,13 +9,14 @@ namespace StarWriter.Core
         [SerializeField] GameObject FossilBlock;
         [SerializeField] public TrailBlockProperties TrailBlockProperties;
         [SerializeField] float growthRate = .5f;
+        [SerializeField] Vector3 growthVector = new Vector3(0, 0, 0);
         public GameObject ParticleEffect; // TODO: move this so it references the Team to retrieve the effect.
         public string ownerId;  // TODO: is the ownerId the player name? I hope it is.
         public float waitTime = .6f;
         public bool destroyed = false;
         public bool devastated = false;
         public string ID;
-        public Vector3 InnerDimensions;
+        public Vector3 InnerDimensions; // set from editor scale
         public int Index;
         public bool Shielded = false;
         public float Volume { get => outerDimensions.x * outerDimensions.y * outerDimensions.z; }
@@ -24,7 +25,7 @@ namespace StarWriter.Core
         GameObject shards;
         public Trail Trail;
 
-        Vector3 outerDimensions;
+        Vector3 outerDimensions; // defines volume
         static GameObject fossilBlockContainer;
         MeshRenderer meshRenderer;
         BoxCollider blockCollider;
@@ -101,15 +102,15 @@ namespace StarWriter.Core
         //    var DefaultTransformScale = InnerDimensions;
         //    var size = 1;
 
-        //    if (warp)
-        //        DefaultTransformScale *= shards.GetComponent<WarpFieldData>().HybridVector(transform).magnitude;
+        //    //if (warp)
+        //    //    DefaultTransformScale *= shards.GetComponent<WarpFieldData>().HybridVector(transform).magnitude;
 
         //    transform.localScale = DefaultTransformScale * size;
 
         //    while (size < 1 + amount)
         //    {
         //        transform.localScale = DefaultTransformScale * size;
-        //        size += growthRate * Time.deltaTime;
+        //        //size += growthRate * Time.deltaTime;
 
         //        yield return null;
         //    }
@@ -122,10 +123,18 @@ namespace StarWriter.Core
         //        NodeControlManager.Instance.AddBlock(team, playerName, TrailBlockProperties);
         //}
 
-        public void Grow(float amount)
-        {
-            //StartCoroutine(GrowBlockCoroutine(amount));// TODO: start a block scaling coroutine that updates inner dimensions and volume tracking stats
-        }
+        //Coroutine SizeChangeCoroutine;
+
+        //public void Grow()
+        //{
+        //    //StopCoroutine
+        //    //StartCoroutine(GrowBlockCoroutine(growthVector));
+        //}
+
+        //public void Grow(float amount)
+        //{
+        //    StartCoroutine(GrowBlockCoroutine(amount));// TODO: start a block scaling coroutine that updates inner dimensions and volume tracking stats
+        //}
 
 
 

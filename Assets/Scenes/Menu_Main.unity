@@ -604,6 +604,7 @@ MonoBehaviour:
   Team: -1
   ItemType: 1
   crystalProperties:
+    crystal: {fileID: 194708249}
     fuelAmount: 0.5
     scoreAmount: 1
     tailLengthIncreaseAmount: 0
