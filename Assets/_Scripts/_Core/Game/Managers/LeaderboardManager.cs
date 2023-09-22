@@ -267,27 +267,34 @@ public class LeaderboardManager : SingletonPersistent<LeaderboardManager>
     {
         return CachedLeaderboardFileNamePrefix + leaderboardName + ".data";
     }
-
-
     
-    public void RequestLeaderboard()
+    /// <summary>
+    /// Get Leaderboard By Mini Game and Ship Type 
+    /// Fetch leaderboard data by name (aggregation of mini game and ship type name)
+    /// Should take front end mini game and ship type data to here
+    /// </summary>
+    public void RequestLeaderboard(MiniGames miniGame, ShipTypes shipTypes)
     {
-        var statisticName = "BLOCKBANDIT_ANY";
         PlayFabClientAPI.GetLeaderboard(new GetLeaderboardRequest
             {
-                StatisticName = statisticName,
+                StatisticName = GetGameplayStatKey(miniGame, shipTypes),
                 StartPosition = 0,
                 MaxResultsCount = 10
             },
-            (GetLeaderboardResult result) => DisplayLeaderboard(result),
+            (GetLeaderboardResult result) => HandleLeaderboardData(result),
             (error) =>
             {
                 Debug.Log(error.GenerateErrorReport());
             });
     }
 
-    private void DisplayLeaderboard(GetLeaderboardResult result)
+    /// <summary>
+    /// Handle Leaderboard Data
+    /// For now displaying leaderboard data in the console
+    /// </summary>
+    private void HandleLeaderboardData(GetLeaderboardResult result)
     {
+        // The result doesn't return with leaderboard name, BLOCKBANDIT_ANY is a placeholder
         Debug.Log($"Leaderboard Manger - BLOCKBANDIT_ANY");
         var leaderboardEntryV2s = new List<LeaderboardEntryV2>();
         foreach (var entry in result.Leaderboard)

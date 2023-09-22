@@ -10,7 +10,7 @@ namespace _Scripts._Core.Playfab_Models
         private void Start()
         {
             // LeaderboardManager.Instance
-            GetLeaderboardButton.onClick.AddListener(LeaderboardManager.Instance.RequestLeaderboard);
+            // GetLeaderboardButton.onClick.AddListener(LeaderboardManager.Instance.RequestLeaderboard);
         }
     }
 }
