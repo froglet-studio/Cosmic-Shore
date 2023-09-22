@@ -342,6 +342,10 @@ namespace _Scripts._Core.Playfab_Models
                 }
                 );
         }
+        
+        #endregion
+
+        #region WIP Email Username Register
 
         /// <summary>
         /// Email Registration

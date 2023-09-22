@@ -5,6 +5,7 @@ using StarWriter.Utility.Singleton;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SocialPlatforms.Impl;
 
 /// <summary>
 /// Leaderboard Manager
@@ -268,15 +269,34 @@ public class LeaderboardManager : SingletonPersistent<LeaderboardManager>
     }
 
 
-    /*
+    
     public void RequestLeaderboard()
     {
+        var statisticName = "BLOCKBANDIT_ANY";
         PlayFabClientAPI.GetLeaderboard(new GetLeaderboardRequest
-        {
-            StatisticName = "HighScore",
-            StartPosition = 0,
-            MaxResultsCount = 10
-        }, result => DisplayLeaderboard(result), FailureCallback);
+            {
+                StatisticName = statisticName,
+                StartPosition = 0,
+                MaxResultsCount = 10
+            },
+            (GetLeaderboardResult result) => DisplayLeaderboard(result),
+            (error) =>
+            {
+                Debug.Log(error.GenerateErrorReport());
+            });
     }
-    */
+
+    private void DisplayLeaderboard(GetLeaderboardResult result)
+    {
+        Debug.Log($"Leaderboard Manger - BLOCKBANDIT_ANY");
+        var leaderboardEntryV2s = new List<LeaderboardEntryV2>();
+        foreach (var entry in result.Leaderboard)
+        {
+            Debug.Log($"Leaderboard Manager - BLOCKBANDIT_ANY display name: {entry.DisplayName} score: {entry.StatValue.ToString()} position: {entry.Position.ToString()}");
+            leaderboardEntryV2s.Add(new LeaderboardEntryV2(entry.DisplayName, entry.StatValue, entry.Position));
+        }
+        Debug.Log($"Leaderboard Manager - BLOCKBANDIT_ANY board version: {result.Version.ToString()}");
+    }
+    
+    
 }
