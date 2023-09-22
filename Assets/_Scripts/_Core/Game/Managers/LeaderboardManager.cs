@@ -270,18 +270,18 @@ public class LeaderboardManager : SingletonPersistent<LeaderboardManager>
     
     /// <summary>
     /// Get Leaderboard By Mini Game and Ship Type 
-    /// Fetch leaderboard data by name (aggregation of mini game and ship type name)
-    /// Should take front end mini game and ship type data to here
+    /// Fetches leaderboard data by name (aggregation of mini game and ship type name)
+    /// Takes front end leaderboard name and callback 
     /// </summary>
-    public void RequestLeaderboard(MiniGames miniGame, ShipTypes shipTypes)
+    public void RequestLeaderboard(string leaderboardName, LoadLeaderboardCallBack callback)
     {
         PlayFabClientAPI.GetLeaderboard(new GetLeaderboardRequest
             {
-                StatisticName = GetGameplayStatKey(miniGame, shipTypes),
+                StatisticName = leaderboardName,
                 StartPosition = 0,
                 MaxResultsCount = 10
             },
-            (GetLeaderboardResult result) => HandleLeaderboardData(result),
+            (GetLeaderboardResult result) => HandleLeaderboardData(result, callback),
             (error) =>
             {
                 Debug.Log(error.GenerateErrorReport());
@@ -290,18 +290,21 @@ public class LeaderboardManager : SingletonPersistent<LeaderboardManager>
 
     /// <summary>
     /// Handle Leaderboard Data
-    /// For now displaying leaderboard data in the console
+    /// For now displaying leaderboard data in the console, let callback handle leaderboard data
     /// </summary>
-    private void HandleLeaderboardData(GetLeaderboardResult result)
+    private void HandleLeaderboardData(GetLeaderboardResult result, LoadLeaderboardCallBack callback)
     {
         // The result doesn't return with leaderboard name, BLOCKBANDIT_ANY is a placeholder
         Debug.Log($"Leaderboard Manger - BLOCKBANDIT_ANY");
+        // Store relevant data in leaderboard entry struct
         var leaderboardEntryV2s = new List<LeaderboardEntryV2>();
         foreach (var entry in result.Leaderboard)
         {
             Debug.Log($"Leaderboard Manager - BLOCKBANDIT_ANY display name: {entry.DisplayName} score: {entry.StatValue.ToString()} position: {entry.Position.ToString()}");
             leaderboardEntryV2s.Add(new LeaderboardEntryV2(entry.DisplayName, entry.StatValue, entry.Position));
         }
+        // Let callback handle leaderboard data
+        callback(leaderboardEntryV2s);
         Debug.Log($"Leaderboard Manager - BLOCKBANDIT_ANY board version: {result.Version.ToString()}");
     }
     
