@@ -328,7 +328,7 @@ public class LeaderboardManager : SingletonPersistent<LeaderboardManager>
     public void RequestFriendLeaderboard(string leaderboardName, LoadLeaderboardCallBack callback)
     {
         PlayFabClientAPI.GetFriendLeaderboard(
-            new GetFriendLeaderboardRequest(
+            new GetFriendLeaderboardRequest
             {
                 StatisticName = leaderboardName,
                 // Start position is required in request friend leaderboard request
