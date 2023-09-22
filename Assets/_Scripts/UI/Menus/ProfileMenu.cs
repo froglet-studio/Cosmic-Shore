@@ -2,6 +2,7 @@ using System.Collections;
 using System.Security;
 using PlayFab;
 using PlayFab.ClientModels;
+using StarWriter.Core.Audio;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -20,6 +21,7 @@ namespace _Scripts._Core.Playfab_Models
         [SerializeField] string displayNameDefaultText;
         [SerializeField] float SuccessMessageFadeAfterSeconds = 2f;
         [SerializeField] float SuccessMessageFadeDurationSeconds = 3f;
+        [SerializeField] AudioClip TypingAudio;
 
         Color SuccessMessageOriginalColor;
 
@@ -278,7 +280,7 @@ namespace _Scripts._Core.Playfab_Models
 
         #region Player Profile
 
-        public string RandomGenerateName()
+        public string GenerateRandomName()
         {
             var adjectives = AuthenticationManager.Adjectives;
             var nouns = AuthenticationManager.Nouns;
@@ -298,9 +300,19 @@ namespace _Scripts._Core.Playfab_Models
 
             yield return new WaitUntil(() => AuthenticationManager.Adjectives != null);
 
-            displayNameInputField.text = RandomGenerateName();
-            FocusDisplayNameInputField();
+            displayNameInputField.placeholder.gameObject.SetActive(false);
             BusyIndicator.SetActive(false);
+
+            var name = GenerateRandomName();
+            for (var i=0; i<=name.Length; i++)
+            {
+                displayNameInputField.text = name.Substring(0, i);
+                AudioSystem.Instance.PlaySFXClip(TypingAudio);
+                yield return new WaitForSeconds(.1f);
+            }
+
+            displayNameInputField.placeholder.gameObject.SetActive(true);
+            FocusDisplayNameInputField();
         }
 
         public void SetPlayerNameButton_OnClicked()
@@ -321,8 +333,13 @@ namespace _Scripts._Core.Playfab_Models
         {
             BusyIndicator.SetActive(true);
 
-            StartCoroutine(AssignRandomNameCoroutine());
+            if (AssignRandomNameRunningCoroutine != null)
+                StopCoroutine(AssignRandomNameRunningCoroutine);
+
+            AssignRandomNameRunningCoroutine = StartCoroutine(AssignRandomNameCoroutine());
         }
+
+        Coroutine AssignRandomNameRunningCoroutine;
 
         bool CheckDisplayNameLength(string displayName)
         {

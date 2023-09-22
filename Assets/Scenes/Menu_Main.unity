@@ -1517,6 +1517,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2164318500404863266, guid: 3359aa2761eaa0b42a3c40caad560514,
         type: 3}
+      propertyPath: TypingAudio
+      value: 
+      objectReference: {fileID: 8300000, guid: 85366fdabea234ddd9999943eebca0ee, type: 3}
+    - target: {fileID: 2164318500404863266, guid: 3359aa2761eaa0b42a3c40caad560514,
+        type: 3}
       propertyPath: setDisplayNameButton
       value: 
       objectReference: {fileID: 435380511}
@@ -1575,6 +1580,16 @@ PrefabInstance:
         type: 3}
       propertyPath: m_AnchoredPosition.y
       value: -5
+      objectReference: {fileID: 0}
+    - target: {fileID: 3174207602944321548, guid: 3359aa2761eaa0b42a3c40caad560514,
+        type: 3}
+      propertyPath: m_SizeDelta.x
+      value: -22
+      objectReference: {fileID: 0}
+    - target: {fileID: 3174207602944321548, guid: 3359aa2761eaa0b42a3c40caad560514,
+        type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 11
       objectReference: {fileID: 0}
     - target: {fileID: 3237784930728286172, guid: 3359aa2761eaa0b42a3c40caad560514,
         type: 3}
