@@ -21,7 +21,7 @@ public class TrailSpawner : MonoBehaviour
     float wavelength;
 
     public float gap;
-    public Vector3 InnerDimensions;
+    public Vector3 TargetScale;
 
     public int TrailLength { get { return trail.TrailList.Count; } }
     [SerializeField] float defaultWaitTime = .5f;
@@ -180,9 +180,9 @@ public class TrailSpawner : MonoBehaviour
     void CreateBlock(float halfGap, Trail trail)
     {
         var Block = Instantiate(trailBlock);
-        Block.InnerDimensions = new Vector3(trailBlock.transform.localScale.x * XScaler / 2f - Mathf.Abs(halfGap), trailBlock.transform.localScale.y * YScaler, trailBlock.transform.localScale.z * ZScaler);
-        InnerDimensions = Block.InnerDimensions;
-        Block.transform.SetPositionAndRotation(transform.position - shipData.Course * offset + ship.transform.right * (Block.InnerDimensions.x/2f + Mathf.Abs(halfGap)) * (halfGap / Mathf.Abs(halfGap)), shipData.blockRotation);
+        Block.TargetScale = new Vector3(trailBlock.transform.localScale.x * XScaler / 2f - Mathf.Abs(halfGap), trailBlock.transform.localScale.y * YScaler, trailBlock.transform.localScale.z * ZScaler);
+        TargetScale = Block.TargetScale;
+        Block.transform.SetPositionAndRotation(transform.position - shipData.Course * offset + ship.transform.right * (Block.TargetScale.x/2f + Mathf.Abs(halfGap)) * (halfGap / Mathf.Abs(halfGap)), shipData.blockRotation);
         Block.transform.parent = TrailContainer.transform;
         if (waitTillOutsideSkimmer) Block.waitTime = (skimmer.transform.localScale.z + TrailZScale) / ship.GetComponent<ShipStatus>().Speed;
         Block.ownerId = ship.Player.PlayerUUID;
@@ -195,7 +195,7 @@ public class TrailSpawner : MonoBehaviour
             Block.Shielded = true;
         }
         else Block.GetComponent<MeshRenderer>().material = blockMaterial;
-        Block.GetComponent<BoxCollider>().size = Vector3.one + VectorDivision((Vector3)blockMaterial.GetVector("_spread"), Block.InnerDimensions);
+        Block.GetComponent<BoxCollider>().size = Vector3.one + VectorDivision((Vector3)blockMaterial.GetVector("_spread"), Block.TargetScale);
         Block.Trail = trail;
 
         trail.Add(Block);
@@ -229,8 +229,8 @@ public class TrailSpawner : MonoBehaviour
                 if (gap == 0)
                 {
                     var Block = Instantiate(trailBlock);
-                    Block.InnerDimensions = new Vector3(trailBlock.transform.localScale.x * XScaler, trailBlock.transform.localScale.y * YScaler, trailBlock.transform.localScale.z * ZScaler);
-                    InnerDimensions = Block.InnerDimensions;
+                    Block.TargetScale = new Vector3(trailBlock.transform.localScale.x * XScaler, trailBlock.transform.localScale.y * YScaler, trailBlock.transform.localScale.z * ZScaler);
+                    TargetScale = Block.TargetScale;
                     Block.transform.SetPositionAndRotation(transform.position - shipData.Course * offset, shipData.blockRotation);
                     Block.transform.parent = TrailContainer.transform;
                     Block.waitTime = (skimmer.transform.localScale.z + TrailZScale) / ship.GetComponent<ShipStatus>().Speed;

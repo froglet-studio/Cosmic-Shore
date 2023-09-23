@@ -33,11 +33,6 @@ public class SpawnableFlower : SpawnableAbstractBase
         return container;
     }
 
-    public void SetBlockDimensions(Vector3 InnerDimensions)
-    {
-        blockScale = InnerDimensions;
-    }
-
     void SeedBlocks(List<TrailBlock> lastTwoBlocks, GameObject container)
     {
         trails.Add(new Trail());
@@ -109,7 +104,7 @@ public class SpawnableFlower : SpawnableAbstractBase
         Block.transform.SetPositionAndRotation(position, Quaternion.LookRotation(lookPosition, up));
         //Block.GetComponent<MeshRenderer>().material = material;
         Block.ID = /*Block.ownerId +*/ ownerId + position;
-        Block.InnerDimensions = blockScale;
+        Block.TargetScale = blockScale;
         Block.Trail = trail;
         trail.Add(Block);
         Block.transform.SetParent(container.transform, false);

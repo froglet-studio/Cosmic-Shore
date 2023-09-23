@@ -116,8 +116,8 @@ public class GunShipController : ShipTransformer
 
         if (shipData.AttachedTrailBlock.Team == ship.Team)
         {
-            //shipData.AttachedTrailBlock.Grow(4);
-            shipData.AttachedTrailBlock.ActivateShield();
+            shipData.AttachedTrailBlock.Grow();
+            //shipData.AttachedTrailBlock.ActivateShield();
         }
         else shipData.AttachedTrailBlock.Steal(ship.Player.PlayerName, ship.Team);
     }

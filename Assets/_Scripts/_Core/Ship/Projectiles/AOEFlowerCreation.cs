@@ -25,7 +25,7 @@ public class AOEFlowerCreation : AOEBlockCreation
             {
                 count++;
                 currentPosition++;
-                SetBlockDimensions(Ship.TrailSpawner.InnerDimensions);
+                SetBlockDimensions(Ship.TrailSpawner.TargetScale);
                 SeedBlocks(Ship.TrailSpawner.GetLastTwoBlocks());
             }
             yield return null;

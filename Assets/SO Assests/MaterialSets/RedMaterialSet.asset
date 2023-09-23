@@ -14,6 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ShipMaterial: {fileID: 2100000, guid: b0e105431956f1b40b8ef19fbde85b3b, type: 2}
   BlockMaterial: {fileID: 2100000, guid: 6a9bda8b03d768b49af63226292fa2c6, type: 2}
+  CrystalMaterial: {fileID: 2100000, guid: 8360939aa81c8fc48832cf3b0a9540ea, type: 2}
   ExplodingBlockMaterial: {fileID: 2100000, guid: b864b8d0a0bb035479ac5a3c2fe425bd,
     type: 2}
   ShieldedBlockMaterial: {fileID: 2100000, guid: 295e1410f47fecd499c48b814aeb09a0,

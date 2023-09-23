@@ -76,7 +76,7 @@ class UrchinAnimation : ShipAnimation
         else
         {
             AnimatePart(Body,
-                -pitch * animationScaler,
+                pitch * animationScaler,
                 yaw * animationScaler,
                 roll * animationScaler);
         }
@@ -84,32 +84,32 @@ class UrchinAnimation : ShipAnimation
 
 
         AnimatePart(LeftGun,
-                    -pitch * animationScaler,
+                    pitch * animationScaler,
                     yaw * animationScaler,
                     roll * animationScaler);
 
         AnimatePart(RightGun,
-                    -pitch * animationScaler,
+                    pitch * animationScaler,
                     yaw * animationScaler,
                     roll * animationScaler);
 
         AnimatePart(JetBottomLeft,
-                -pitch * animationScaler,
+                pitch * animationScaler,
                 yaw * animationScaler,
                 roll * animationScaler);
 
         AnimatePart(JetBottomRight,
-                -pitch * animationScaler,
+                pitch * animationScaler,
                 yaw * animationScaler,
                 roll * animationScaler);
 
         AnimatePart(JetTopLeft,
-                -pitch * animationScaler,
+                pitch * animationScaler,
                 yaw * animationScaler,
                 roll * animationScaler);
 
         AnimatePart(JetTopRight,
-                -pitch * animationScaler,
+                pitch * animationScaler,
                 yaw * animationScaler,
                 roll * animationScaler);
 

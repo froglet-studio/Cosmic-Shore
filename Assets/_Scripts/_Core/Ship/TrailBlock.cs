@@ -1,6 +1,7 @@
 ﻿using StarWriter.Core.HangerBuilder;
 using System.Collections;
 using UnityEngine;
+using UnityEngine.PlayerLoop;
 
 namespace StarWriter.Core
 {
@@ -8,15 +9,19 @@ namespace StarWriter.Core
     {
         [SerializeField] GameObject FossilBlock;
         [SerializeField] public TrailBlockProperties TrailBlockProperties;
-        [SerializeField] float growthRate = .5f;
-        [SerializeField] Vector3 growthVector = new Vector3(0, 0, 0);
+
+        float growthRate = .01f;
+        [SerializeField] Vector3 growthVector = new Vector3(0, 2, 0);
+        [SerializeField] Vector3 maxScale = new Vector3 (10, 10, 10);
+        [SerializeField] Vector3 minScale = new Vector3 (.5f, .5f, .5f);
+        public Vector3 TargetScale;
+
         public GameObject ParticleEffect; // TODO: move this so it references the Team to retrieve the effect.
         public string ownerId;  // TODO: is the ownerId the player name? I hope it is.
         public float waitTime = .6f;
         public bool destroyed = false;
         public bool devastated = false;
         public string ID;
-        public Vector3 InnerDimensions; // set from editor scale
         public int Index;
         public bool Shielded = false;
         public float Volume { get => outerDimensions.x * outerDimensions.y * outerDimensions.z; }
@@ -27,7 +32,10 @@ namespace StarWriter.Core
 
         Vector3 outerDimensions; // defines volume
         static GameObject fossilBlockContainer;
+
         MeshRenderer meshRenderer;
+        Vector3 spread;
+
         BoxCollider blockCollider;
         Teams team;
         public Teams Team { get => team; set => team = value; }
@@ -51,10 +59,11 @@ namespace StarWriter.Core
             blockCollider = GetComponent<BoxCollider>();
             blockCollider.enabled = false;
 
-            var spread = (Vector3) meshRenderer.material.GetVector("_spread");
-            outerDimensions = InnerDimensions + 2 * spread;
+            spread = (Vector3) meshRenderer.material.GetVector("_spread");
 
-            TrailBlockProperties.volume = outerDimensions.x * outerDimensions.y * outerDimensions.z;
+            UpdateVolume();
+            transform.localScale = Vector3.one * Mathf.Epsilon;
+            
             TrailBlockProperties.position = transform.position;
             TrailBlockProperties.trailBlock = this;
             TrailBlockProperties.Index = Index;
@@ -66,6 +75,12 @@ namespace StarWriter.Core
             if (Shielded) ActivateShield();
         }
 
+        void UpdateVolume()
+        {
+            outerDimensions = TargetScale + 2 * spread;
+            TrailBlockProperties.volume = outerDimensions.x * outerDimensions.y * outerDimensions.z;
+        }
+
         IEnumerator CreateBlockCoroutine()
         {
             yield return new WaitForSeconds(waitTime);
@@ -73,20 +88,7 @@ namespace StarWriter.Core
             meshRenderer.enabled = true;
             blockCollider.enabled = true;
 
-            var DefaultTransformScale = InnerDimensions;
-            var size = 0.01f;
-
-            if (warp) 
-                DefaultTransformScale *= shards.GetComponent<WarpFieldData>().HybridVector(transform).magnitude;
-            
-            transform.localScale = DefaultTransformScale * size;
-
-            while (size < 1)
-            {
-                size = Mathf.Clamp(size + growthRate * Time.deltaTime, 0, 1);
-                transform.localScale = DefaultTransformScale * size;
-                yield return null;
-            }
+            StartCoroutine(SizeChangeCoroutine());
 
             //Add block to team score when created
             if (StatsManager.Instance != null)
@@ -96,68 +98,49 @@ namespace StarWriter.Core
                 NodeControlManager.Instance.AddBlock(team, playerName, TrailBlockProperties);
         }
 
-        //IEnumerator GrowBlockCoroutine(float amount)
-        //{
+        Coroutine sizeChangeCoroutine;
+        IEnumerator SizeChangeCoroutine()
+        {
+            float sqrDistance = (TargetScale - transform.localScale).sqrMagnitude;
 
-        //    var DefaultTransformScale = InnerDimensions;
-        //    var size = 1;
+            while (sqrDistance > .001f)
+            {
+                transform.localScale = Vector3.Lerp(transform.localScale, TargetScale, Mathf.Clamp(growthRate * Time.deltaTime * sqrDistance,0,.2f));
+                sqrDistance = (TargetScale - transform.localScale).sqrMagnitude;
+                yield return null;
+            }
+        }
 
-        //    //if (warp)
-        //    //    DefaultTransformScale *= shards.GetComponent<WarpFieldData>().HybridVector(transform).magnitude;
+        public void ChangeSize()
+        {
+            
 
-        //    transform.localScale = DefaultTransformScale * size;
+            TargetScale.x = Mathf.Clamp(TargetScale.x, minScale.x, maxScale.x);
+            TargetScale.y = Mathf.Clamp(TargetScale.y, minScale.y, maxScale.y);
+            TargetScale.z = Mathf.Clamp(TargetScale.z, minScale.z, maxScale.z);
 
-        //    while (size < 1 + amount)
-        //    {
-        //        transform.localScale = DefaultTransformScale * size;
-        //        //size += growthRate * Time.deltaTime;
+            var oldVolume = TrailBlockProperties.volume;
+            UpdateVolume();
+            var deltaVolume = TrailBlockProperties.volume - oldVolume;
 
-        //        yield return null;
-        //    }
+            if (StatsManager.Instance != null) StatsManager.Instance.BlockVolumeModified(deltaVolume, TrailBlockProperties);
+            if (sizeChangeCoroutine != null) StartCoroutine(SizeChangeCoroutine());
+        }
 
-        //    // Add block to team score when created
-        //    if (StatsManager.Instance != null)
-        //        StatsManager.Instance.BlockCreated(team, playerName, TrailBlockProperties);
+        public void Grow(float amount = 1)
+        {
+            Grow(amount * growthVector);
+        }
 
-        //    if (NodeControlManager.Instance != null)
-        //        NodeControlManager.Instance.AddBlock(team, playerName, TrailBlockProperties);
-        //}
+        public void Grow(Vector3 growthVector)
+        {
+            TargetScale += growthVector;
 
-        //Coroutine SizeChangeCoroutine;
+            if (TargetScale.x > maxScale.x || TargetScale.y > maxScale.y || TargetScale.z > maxScale.z)
+                ActivateShield();
 
-        //public void Grow()
-        //{
-        //    //StopCoroutine
-        //    //StartCoroutine(GrowBlockCoroutine(growthVector));
-        //}
-
-        //public void Grow(float amount)
-        //{
-        //    StartCoroutine(GrowBlockCoroutine(amount));// TODO: start a block scaling coroutine that updates inner dimensions and volume tracking stats
-        //}
-
-
-
-        //void ApplyScaleModifiers()
-        //{
-        //    float accumulatedSpeedModification = 1;
-        //    for (int i = ScaleModifiers.Count - 1; i >= 0; i--)
-        //    {
-        //        var modifier = ScaleModifiers[i];
-        //        modifier.elapsedTime += Time.deltaTime;
-        //        ScaleModifiers[i] = modifier;
-
-        //        if (modifier.elapsedTime >= modifier.duration)
-        //            ScaleModifiers.RemoveAt(i);
-        //        else
-        //            accumulatedSpeedModification *= Mathf.Lerp(modifier.initialValue, 1f, modifier.elapsedTime / modifier.duration);
-        //    }
-
-        //    accumulatedSpeedModification = Mathf.Min(accumulatedSpeedModification, scaleModifiersModifierMax);
-        //    ship.shipData.SpeedMultiplier = accumulatedSpeedModification;
-        //}
-
-
+            ChangeSize();
+        }
 
         // TODO: none of the collision detection should be on the trailblock
         void OnTriggerEnter(Collider other)
