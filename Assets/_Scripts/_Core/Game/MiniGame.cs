@@ -166,7 +166,7 @@ public class MiniGame : MonoBehaviour
         Debug.Log($"Player {activePlayerId + 1} Get Ready! {Time.time}");
     }
 
-    public virtual void EndTurn() // TODO: this needs to be public?
+    protected virtual void EndTurn()
     {
         StartCoroutine(EndTurnCoroutine());
     }

@@ -279,6 +279,11 @@ public class StatsManager : Singleton<StatsManager>
         playerStats = new Dictionary<string, RoundStats>();
     }
 
+    public void AddPlayer(Teams team, string playerName)
+    {
+        MaybeCreateDictionaryEntries(team, playerName);
+    }
+
     // TODO: p1 - we probably want a UI class that talks to the stats managar and updates the UI rather than doing it in here directly
     void OutputRoundStats()
     {

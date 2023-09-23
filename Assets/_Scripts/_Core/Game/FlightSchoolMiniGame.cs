@@ -41,7 +41,7 @@ public class FlightSchoolMiniGame : MiniGame
         }
     }
 
-    public override void EndTurn() // TODO: this needs to be public?
+    protected override void EndTurn()
     {
         foreach (var turnMonitor in TurnMonitors)
         {
