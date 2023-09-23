@@ -147,7 +147,7 @@ namespace _Scripts._Core.Playfab_Models
         }
         #endregion
 
-        #region AnonymousLogin
+        #region Anonymous Login
         
         /// <summary>
         /// Anonymous Login
@@ -252,24 +252,26 @@ namespace _Scripts._Core.Playfab_Models
         /// Can be tested on Unlink Anonymous Login button
         /// Reframe from clicking on it too much, it will abandon the anonymous account, next time login will create a whole new account.
         /// </summary>
-        public void UnlinkAnonymousLogin()
+        public void UnlinkCustomID()
         {
 #if UNITY_ANDROID && !UNITY_EDITOR
-        UnlinkAndroidLogin();
+        UnlinkAndroidCustomId();
 #elif UNITY_IPHONE || UNITY_IOS && !UNITY_EDITOR
-        UnlinkIOSLogin();
+        UnlinkIOSCustomId();
 #else
-            UnlinkCustomIDLogin();
+            UnlinkCustomId();
 #endif
         }
 
-        private void UnlinkAndroidLogin()
+        private void UnlinkAndroidCustomId()
         {
             PlayFabClientAPI.UnlinkAndroidDeviceID(new UnlinkAndroidDeviceIDRequest()
             {
-                AndroidDeviceId = SystemInfo.deviceUniqueIdentifier
+                AndroidDeviceId = PlayerSession.IsRemembered? PlayerSession.LoginId : SystemInfo.deviceUniqueIdentifier
             }, (result) =>
             {
+                if(PlayerSession.IsRemembered)
+                    PlayerSession.ForgetMe();
                 Debug.Log("Android Device Unlinked.");
             }, (error) =>
             {
@@ -277,13 +279,15 @@ namespace _Scripts._Core.Playfab_Models
             });
         }
 
-        private void UnlinkIOSLogin()
+        private void UnlinkIOSCustomId()
         {
             PlayFabClientAPI.UnlinkIOSDeviceID(new UnlinkIOSDeviceIDRequest()
             {
-                DeviceId = SystemInfo.deviceUniqueIdentifier
+                DeviceId = PlayerSession.IsRemembered? PlayerSession.LoginId : SystemInfo.deviceUniqueIdentifier
             }, (result) =>
             {
+                if(PlayerSession.IsRemembered)
+                    PlayerSession.ForgetMe();
                 Debug.Log("IOS Device Unlinked.");
             }, (error) =>
             {
@@ -291,13 +295,16 @@ namespace _Scripts._Core.Playfab_Models
             });
         }
 
-        private void UnlinkCustomIDLogin()
+        private void UnlinkCustomId()
         {
             PlayFabClientAPI.UnlinkCustomID(new UnlinkCustomIDRequest()
             {
-                CustomId = SystemInfo.deviceUniqueIdentifier
+                
+                CustomId = PlayerSession.IsRemembered? PlayerSession.LoginId : SystemInfo.deviceUniqueIdentifier
             }, (result) =>
             {
+                if(PlayerSession.IsRemembered)
+                    PlayerSession.ForgetMe();
                 Debug.Log("Custom Device Unlinked.");
             }, (error) =>
             {
@@ -357,7 +364,7 @@ namespace _Scripts._Core.Playfab_Models
         /// Email Registration
         /// Make sure password stays in memory no longer than necessary
         /// </summary>
-        public void RegisterWithEmail(string email, SecureString password, Action<PlayFabError> resultCallback = null)
+        public void RegisterWithEmail([NotNull] string email, [NotNull] SecureString password, Action<PlayFabError> resultCallback = null)
         {
             // Silent login first, if successful continue logging in with the anonymous account by adding username, email and password
             AnonymousLogin();
@@ -379,7 +386,7 @@ namespace _Scripts._Core.Playfab_Models
                         PlayFabClientAPI.LinkCustomID(
                             new LinkCustomIDRequest()
                             {
-                                CustomId = PlayerSession.LoginId,
+                                CustomId = PlayerSession.IsRemembered? PlayerSession.LoginId : SystemInfo.deviceUniqueIdentifier,
                                 // True if another user is already linked to the custom ID, unlink the other user and re-link.
                                 ForceLink = PlayerSession.IsForceLink
                             },
