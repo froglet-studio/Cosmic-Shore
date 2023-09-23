@@ -8,6 +8,8 @@ public class CrystalCollisionTurnMonitor : TurnMonitor
 
     public override bool CheckForEndOfTurn()
     {
+        if (paused) return false;
+
         if (!StatsManager.Instance.playerStats.ContainsKey(Game.ActivePlayer.PlayerName))
             return false;
 

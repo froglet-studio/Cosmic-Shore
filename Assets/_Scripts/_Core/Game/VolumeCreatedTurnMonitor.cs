@@ -6,6 +6,8 @@ public class VolumeCreatedTurnMonitor : TurnMonitor
     [SerializeField] MiniGame Game;
     public override bool CheckForEndOfTurn()
     {
+        if (paused) return false;
+
         return Amount >= StatsManager.Instance.playerStats[Game.ActivePlayer.PlayerName].volumeCreated;
     }
 

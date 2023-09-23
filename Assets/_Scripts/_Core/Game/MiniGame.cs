@@ -179,7 +179,7 @@ public class MiniGame : MonoBehaviour
         ActivePlayer.Ship.TrailSpawner.PauseTrailSpawner();
 
         yield return new WaitForSeconds(EndOfTurnDelay);
-        
+
         TurnsTakenThisRound++;
 
         ScoreTracker.EndTurn();

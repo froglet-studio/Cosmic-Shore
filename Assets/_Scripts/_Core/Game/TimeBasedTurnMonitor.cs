@@ -9,6 +9,8 @@ public class TimeBasedTurnMonitor : TurnMonitor
 
     public override bool CheckForEndOfTurn()
     {
+        if (paused) return false;
+
         return elapsedTime > duration;
     }
 

@@ -1,4 +1,42 @@
 {
-  "DefaultDisplayNameAdjectives": "[     \"Cosmic\",     \"Lunar\",     \"Solar\",     \"Stellar\",     \"Galactic\",     \"Nebular\",     \"Quantum\",     \"Void\",     \"Celestial\",     \"Pulsar\",     \"Astral\",     \"Meteoric\",     \"Radiant\",     \"Dark\",     \"Infinite\",     \"Azure\",     \"Crimson\",     \"Golden\",     \"Silvery\",     \"Emerald\",     \"Cobalt\",     \"Ruby\",     \"Amber\",     \"Jade\",     \"Sapphire\",     \"Onyx\",     \"Pearl\",     \"Bronze\",     \"Platinum\",     \"Diamond\",     \"Fire\",     \"Ice\",     \"Thunder\",     \"Shadow\",     \"Light\",     \"Stone\",     \"Wind\",     \"Aqua\",     \"Mystic\",     \"Terra\",     \"Electro\",     \"Metal\",     \"Ether\",     \"Plasma\",     \"Gravity\"   ] ",
-  "DefaultDisplayNameNouns": "[     \"Voyager\",     \"Hunter\",     \"Drifter\",     \"Pioneer\",     \"Nomad\",     \"Explorer\",     \"Marauder\",     \"Navigator\",     \"Guardian\",     \"Pathfinder\",     \"Sentinel\",     \"Raider\",     \"Harbinger\",     \"Enigma\",     \"Wanderer\",     \"Star\",     \"Meteor\",     \"Comet\",     \"Pulsar\",     \"Quasar\",     \"Nebula\",     \"Galaxy\",     \"Aurora\",     \"Orbit\",     \"Constellation\",     \"Vortex\",     \"Eclipse\",     \"Cluster\",     \"Singularity\",     \"Supernova\",     \"Lynx\",     \"Falcon\",     \"Dragon\",     \"Phoenix\",     \"Wolf\",     \"Griffin\",     \"Serpent\",     \"Tiger\",     \"Leviathan\",     \"Raven\",     \"Manticore\",     \"Chimera\",     \"Pegasus\",     \"Panther\",     \"Basilisk\"   ] "
+  "DefaultDisplayNameAdjectives": [
+    "Cosmic", "Lunar", "Solar", "Stellar", "Galactic",
+    "Nebular", "Quantum", "Void", "Celestial", "Pulsar",
+    "Astral", "Meteoric", "Radiant", "Dark", "Infinite",
+    "Azure", "Crimson", "Golden", "Silvery", "Emerald",
+    "Cobalt", "Ruby", "Amber", "Jade", "Sapphire",
+    "Onyx", "Pearl", "Bronze", "Platinum", "Diamond",
+    "Fire", "Ice", "Thunder", "Shadow", "Light",
+    "Stone", "Wind", "Aqua", "Mystic", "Terra",
+    "Electro", "Metal", "Ether", "Plasma", "Gravity",
+    "Spectral", "Twilight", "Zenith", "Abyssal", "Solaris",
+    "CosmicRay", "Eclipse", "Zephyr", "Ion", "Nova",
+    "Astro", "Genesis", "Warp", "Orbital", "Vortex",
+    "Rift", "Mirage", "Polaris", "Photon", "Hyper",
+    "Ethereal", "Aurora", "Arcane", "Mythic", "Ignis",
+    "Nimbus", "QuantumLeap", "Magenta", "Cyan", "Chartreuse",
+    "Sepia", "Viridian", "Amethyst", "Ultramarine", "Saffron",
+    "RoseGold", "Midnight", "Sunfire", "Tempest", "Marine",
+    "Fuchsia", "Ochre", "Lavender", "Unknown"
+  ],
+  "DefaultDisplayNameNouns": [
+    "Voyager", "Hunter", "Drifter", "Pioneer", "Nomad",
+    "Explorer", "Marauder", "Navigator", "Guardian", "Pathfinder",
+    "Sentinel", "Raider", "Harbinger", "Enigma", "Wanderer",
+    "Star", "Meteor", "Comet", "Pulsar", "Quasar",
+    "Nebula", "Galaxy", "Aurora", "Constellation",
+    "Vortex", "Eclipse", "Cluster", "Singularity", "Supernova",
+    "Lynx", "Falcon", "Dragon", "Phoenix", "Wolf",
+    "Griffin", "Serpent", "Tiger", "Leviathan", "Raven",
+    "Manticore", "Chimera", "Pegasus", "Panther", "Basilisk",
+    "Wayfarer", "Corsair", "Oracle", "Sage", "Dynamo",
+    "Cavalier", "Alchemist", "Magus", "Sorcerer", "Paladin",
+    "Valkyrie", "Ronin", "Samurai", "Tempest", "Jester",
+    "Virtuoso", "Scribe", "Prodigy", "Maestro", "Warden",
+    "Templar", "Mystic", "Cipher", "Paragon", "Lancer",
+    "Baron", "Admiral", "Dreadnought", "Zealot", "Outrider",
+    "Shaman", "Titan", "Knight", "Aviator", "Gunslinger",
+    "Berserker", "Behemoth", "Gargoyle", "Minotaur", "Harpy",
+    "Kraken", "Nymph", "Satyr", "Nightmare", "Chief"
+  ]
 }
