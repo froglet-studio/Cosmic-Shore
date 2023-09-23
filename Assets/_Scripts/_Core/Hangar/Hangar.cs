@@ -16,7 +16,7 @@ namespace StarWriter.Core.HangerBuilder
         [SerializeField] SO_Pilot PlayerPilot;  // Serialized for inspection in hierarchy
         [SerializeField] ShipTypes PlayerShipType = ShipTypes.Random;
         [SerializeField] ShipTypes FriendlyAIShipType = ShipTypes.Manta;
-        [SerializeField] ShipTypes HostileAI1ShipType = ShipTypes.MantaAI;
+        [SerializeField] ShipTypes HostileAI1ShipType = ShipTypes.Manta;
         [SerializeField] ShipTypes HostileAI2ShipType = ShipTypes.Random;
 
         [SerializeField] public SO_Pilot SoarPilot;
@@ -161,8 +161,6 @@ namespace StarWriter.Core.HangerBuilder
             AIPilot pilot = ship.GetComponent<AIPilot>();
             pilot.SkillLevel = ((float)AIDifficultyLevel-1) / 3; // this assumes that levels remain from 1-4
             pilot.AutoPilotEnabled = true;
-            //player.GameCanvas.MiniGameHUD.SetPipActive(pip);
-            //pipCamera.gameObject.SetActive(pip);
 
             return ship;
         }

@@ -8,7 +8,7 @@ public class RampageMiniGame : MiniGame
     int maxDifficulty = 4;
     float maxSize = 100;
 
-    public static new ShipTypes PlayerShipType = ShipTypes.Shark;
+    public static new ShipTypes PlayerShipType = ShipTypes.Rhino;
 
     protected override void Start()
     {

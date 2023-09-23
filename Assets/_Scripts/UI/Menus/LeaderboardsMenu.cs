@@ -1,4 +1,4 @@
-using PlayFab.ClientModels;
+using _Scripts._Core.Playfab_Models;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -10,10 +10,8 @@ using static LeaderboardManager;
 [RequireComponent(typeof(MenuAudio))]
 public class LeaderboardsMenu : MonoBehaviour
 {
-    Dictionary<MiniGames, List<LeaderboardEntry>> LeaderboardEntries;
     List<LeaderboardEntryV2> LeaderboardEntriesV2;
 
-    [SerializeField] bool UsePlayfab = true;
     [SerializeField] SO_GameList GameList;
     [SerializeField] Transform GameSelectionContainer;
     [SerializeField] GameObject HighScoresContainer;
@@ -33,13 +31,7 @@ public class LeaderboardsMenu : MonoBehaviour
             if (game.Mode != MiniGames.Freestyle)
                 Games.Add(game);
 
-        if (!UsePlayfab)
-            LeaderboardEntries = LeaderboardDataAccessor.Load();
-
-        if (UsePlayfab)
-        {
-            //AccountManager.onLoginSuccess += TestFetch;
-        }
+        AuthenticationManager.OnProfileLoaded += FetchLeaderboard;
 
         ShipClassSelection.onValueChanged.AddListener(SelectShipType);
 
@@ -48,8 +40,6 @@ public class LeaderboardsMenu : MonoBehaviour
 
     void FetchLeaderboard()
     {
-        //LeaderboardManager.Instance.FetchLeaderboard(LeaderboardManager.Instance.GetGameplayStatKey(SelectedGameMode, SelectedShipType), OnFetchLeaderboard);
-
         LeaderboardManager.Instance.FetchLeaderboard(
             LeaderboardManager.Instance.GetGameplayStatKey(SelectedGameMode, SelectedShipType),
             new() { { "Intensity", "1" } },
@@ -76,13 +66,13 @@ public class LeaderboardsMenu : MonoBehaviour
 
     void PopulateShipClassSelectionDropdown()
     {
-        var options = new List<TMP_Dropdown.OptionData>();
-        options.Add(new TMP_Dropdown.OptionData("All"));
+        var options = new List<TMP_Dropdown.OptionData> { new TMP_Dropdown.OptionData("Any") };
         foreach (var pilot in SelectedGame.Pilots)
             options.Add(new TMP_Dropdown.OptionData(pilot.Ship.Class.ToString()));
 
         ShipClassSelection.options = options;
         ShipClassSelection.value = 0;
+        SelectShipType(0);
     }
 
     public void SelectShipType(int optionValue)
@@ -91,7 +81,6 @@ public class LeaderboardsMenu : MonoBehaviour
         SelectedShipType = Enum.Parse<ShipTypes>(shiptypeName);
 
         FetchLeaderboard();
-        
     }
 
     public void SelectGame(int index)
@@ -104,6 +93,7 @@ public class LeaderboardsMenu : MonoBehaviour
 
         // Select the one
         SelectedGame = Games[index];
+        SelectedGameMode = SelectedGame.Mode;
         GameSelectionContainer.GetChild(index).gameObject.GetComponent<Image>().sprite = SelectedGame.SelectedIcon;
         PopulateShipClassSelectionDropdown();
     }
@@ -133,49 +123,17 @@ public class LeaderboardsMenu : MonoBehaviour
     void PopulateGameHighScores()
     {
         Debug.Log($"PopulateGameHighScores: {SelectedGame.Name}");
-
         
-        if (UsePlayfab)
+        for (var i = 0; i < HighScoresContainer.transform.childCount; i++)
+            HighScoresContainer.transform.GetChild(i).gameObject.SetActive(false);
+
+        for (var i = 0; i < LeaderboardEntriesV2.Count; i++)
         {
-            for (var i = 0; i < HighScoresContainer.transform.childCount; i++)
-                HighScoresContainer.transform.GetChild(i).gameObject.SetActive(false);
-
-            for (var i = 0; i < LeaderboardEntriesV2.Count; i++)
-            {
-                var score = LeaderboardEntriesV2[i];
-                HighScoresContainer.transform.GetChild(i).GetChild(0).GetComponent<TMP_Text>().text = score.DisplayName;
-                HighScoresContainer.transform.GetChild(i).GetChild(1).GetComponent<TMP_Text>().text = score.Score.ToString();
-                //HighScoresContainer.transform.GetChild(i).GetChild(2).GetComponent<TMP_Text>().text = score.ShipType.ToString();
-                HighScoresContainer.transform.GetChild(i).gameObject.SetActive(true);
-            }
+            var score = LeaderboardEntriesV2[i];
+            HighScoresContainer.transform.GetChild(i).GetChild(0).GetComponent<TMP_Text>().text = (score.Position+1).ToString();
+            HighScoresContainer.transform.GetChild(i).GetChild(1).GetComponent<TMP_Text>().text = score.DisplayName;
+            HighScoresContainer.transform.GetChild(i).GetChild(2).GetComponent<TMP_Text>().text = score.Score.ToString();
+            HighScoresContainer.transform.GetChild(i).gameObject.SetActive(true);
         }
-        else
-        {
-            List<LeaderboardEntry> highScores;
-            if (!LeaderboardEntries.ContainsKey(SelectedGame.Mode))
-            {
-                highScores = LeaderboardDataAccessor.LeaderboardEntriesDefault[SelectedGame.Mode];
-                LeaderboardDataAccessor.Save(SelectedGame.Mode, highScores);
-            }
-            else
-                highScores = LeaderboardEntries[SelectedGame.Mode];
-
-            // TODO: need reverse sort for golf mode
-            highScores.Sort((score1, score2) => score2.Score.CompareTo(score1.Score));
-
-            for (var i = 0; i < HighScoresContainer.transform.childCount; i++)
-                HighScoresContainer.transform.GetChild(i).gameObject.SetActive(false);
-
-            for (var i = 0; i < highScores.Count; i++)
-            {
-                var score = highScores[i];
-                HighScoresContainer.transform.GetChild(i).GetChild(0).GetComponent<TMP_Text>().text = score.PlayerName;
-                HighScoresContainer.transform.GetChild(i).GetChild(1).GetComponent<TMP_Text>().text = score.Score.ToString();
-                HighScoresContainer.transform.GetChild(i).GetChild(2).GetComponent<TMP_Text>().text = score.ShipType.ToString();
-                HighScoresContainer.transform.GetChild(i).gameObject.SetActive(true);
-            }
-        }
-        
-
     }
 }

@@ -16,7 +16,6 @@ public class MiniGame : MonoBehaviour
     [SerializeField] GameCanvas GameCanvas;
     [SerializeField] Player playerPrefab;
     [SerializeField] GameObject PlayerOrigin;
-    [SerializeField] bool UsePlayFab = true;
     [SerializeField] float EndOfTurnDelay = 0f;
 
     protected Button ReadyButton;
@@ -29,7 +28,7 @@ public class MiniGame : MonoBehaviour
     List<string> PlayerNames = new() { "PlayerOne", "PlayerTwo", "PlayerThree" };
 
     // Configuration set by player
-    public static int NumberOfPlayers = 2;
+    public static int NumberOfPlayers = 2;  // TODO: P1 - support excluding single player games (e.g for elimination)
     public static int IntensityLevel = 1;
     public static ShipTypes PlayerShipType = ShipTypes.Dolphin;
     public static SO_Pilot PlayerPilot;
@@ -213,11 +212,7 @@ public class MiniGame : MonoBehaviour
         foreach (var player in Players)
             Debug.Log($"MiniGame.EndGame - Player Score: {ScoreTracker.GetScore(player.PlayerName)} ");
 
-        // TODO: cleanup after migration
-        if (UsePlayFab)
-            LeaderboardManager.Instance.UpdateGameplayStatistic(gameMode, PlayerShipType, IntensityLevel, ScoreTracker.GetScores());
-        else
-            UpdateLeaderboardEntries();
+        LeaderboardManager.Instance.ReportGameplayStatistic(gameMode, PlayerShipType, IntensityLevel, ScoreTracker.GetHighScore());
 
         CameraManager.Instance.SetEndCameraActive();
         PauseSystem.TogglePauseGame();
@@ -294,36 +289,12 @@ public class MiniGame : MonoBehaviour
             OnReadyClicked();
     }
 
-    void UpdateLeaderboardEntries()
-    {
-        // Update leaderboard stats
-        var leaderboardDictionary = LeaderboardDataAccessor.Load();
-        List<LeaderboardEntry> leaderboardEntries = new();
-        if (leaderboardDictionary.ContainsKey(gameMode))
-            leaderboardEntries = leaderboardDictionary[gameMode];
-        else if (LeaderboardDataAccessor.LeaderboardEntriesDefault.ContainsKey(gameMode))
-            leaderboardEntries = LeaderboardDataAccessor.LeaderboardEntriesDefault[gameMode];
 
-        foreach (var entry in leaderboardEntries)
-            Debug.Log($"LeaderboardEntries: {entry.PlayerName}, {entry.Score}");
 
-        // For each score in score tracker, check to see if it belongs on leaderboard.
-        // iterate over highest score first,
-        // compare against lowest score first in a loop
-        foreach (var player in Players)
-        {
-            Debug.Log($"MiniGame.EndGame - Player Score: {ScoreTracker.GetScore(player.PlayerName)} ");
-            leaderboardEntries.Add(new LeaderboardEntry(player.PlayerName, ScoreTracker.GetScore(player.PlayerName), PlayerShipType));
-        }
 
-        leaderboardEntries.Sort((score1, score2) => score2.Score.CompareTo(score1.Score));
-        leaderboardEntries.RemoveRange(5, leaderboardEntries.Count - 5);
-
-        foreach (var entry in leaderboardEntries)
-            Debug.Log($"LeaderboardEntries: {entry.PlayerName}, {entry.Score}");
-
-        LeaderboardDataAccessor.Save(gameMode, leaderboardEntries);
-    }
+    /// <summary>
+    /// TODO: WIP - Allow for timed events to happen during game play
+    /// </summary>
 
     static List<TimedCallback> TimedCallbacks = new();
 

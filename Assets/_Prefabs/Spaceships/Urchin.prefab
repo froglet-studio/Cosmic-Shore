@@ -2185,7 +2185,7 @@ MonoBehaviour:
   cameraManager: {fileID: 0}
   InputController: {fileID: 0}
   ResourceSystem: {fileID: 0}
-  Name: Blip
+  Name: Urchin
   ShipType: 4
   TrailSpawner: {fileID: 874579555101021522}
   ShipController: {fileID: 0}

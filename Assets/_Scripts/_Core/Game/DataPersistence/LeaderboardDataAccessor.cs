@@ -35,16 +35,16 @@ public class LeaderboardDataAccessor
                 new LeaderboardEntry("Siren",   10, ShipTypes.Manta),
                 new LeaderboardEntry("Fenrys",  20, ShipTypes.Dolphin),
                 new LeaderboardEntry("Gradies", 30, ShipTypes.Dolphin),
-                new LeaderboardEntry("Igarus",  40, ShipTypes.Shark),
-                new LeaderboardEntry("Spades",  50, ShipTypes.Shark)
+                new LeaderboardEntry("Igarus",  40, ShipTypes.Rhino),
+                new LeaderboardEntry("Spades",  50, ShipTypes.Rhino)
             }
         },
         {
             MiniGames.Rampage, new List<LeaderboardEntry>()
             {
                 new LeaderboardEntry("Gradies", 10, ShipTypes.Dolphin),
-                new LeaderboardEntry("Spades",  20, ShipTypes.Shark),
-                new LeaderboardEntry("Fenrys",  30, ShipTypes.Shark),
+                new LeaderboardEntry("Spades",  20, ShipTypes.Rhino),
+                new LeaderboardEntry("Fenrys",  30, ShipTypes.Rhino),
                 new LeaderboardEntry("Igarus",  40, ShipTypes.Manta),
                 new LeaderboardEntry("Siren",   50, ShipTypes.Manta)
             }
@@ -53,50 +53,50 @@ public class LeaderboardDataAccessor
             MiniGames.Elimination, new List<LeaderboardEntry>()
             {
                 new LeaderboardEntry("Spades",  10, ShipTypes.Dolphin),
-                new LeaderboardEntry("Siren",   20, ShipTypes.GunManta),
+                new LeaderboardEntry("Siren",   20, ShipTypes.Urchin),
                 new LeaderboardEntry("Gradies", 30, ShipTypes.Manta),
-                new LeaderboardEntry("Fenrys",  40, ShipTypes.Shark),
-                new LeaderboardEntry("Igarus",  50, ShipTypes.Shark),
+                new LeaderboardEntry("Fenrys",  40, ShipTypes.Rhino),
+                new LeaderboardEntry("Igarus",  50, ShipTypes.Rhino),
             }
         },
         {
             MiniGames.ShootingGallery, new List<LeaderboardEntry>()
             {
                 new LeaderboardEntry("Spades",  10, ShipTypes.Dolphin),
-                new LeaderboardEntry("Siren",   20, ShipTypes.GunManta),
+                new LeaderboardEntry("Siren",   20, ShipTypes.Urchin),
                 new LeaderboardEntry("Igarus",  30, ShipTypes.Manta),
-                new LeaderboardEntry("Fenrys",  40, ShipTypes.Shark),
-                new LeaderboardEntry("Gradies", 50, ShipTypes.Shark),
+                new LeaderboardEntry("Fenrys",  40, ShipTypes.Rhino),
+                new LeaderboardEntry("Gradies", 50, ShipTypes.Rhino),
             }
         },
         {
             MiniGames.DriftCourse, new List<LeaderboardEntry>()
             {
                 new LeaderboardEntry("Igarus",  10, ShipTypes.Dolphin),
-                new LeaderboardEntry("Siren",   20, ShipTypes.GunManta),
+                new LeaderboardEntry("Siren",   20, ShipTypes.Urchin),
                 new LeaderboardEntry("Spades",  30, ShipTypes.Manta),
-                new LeaderboardEntry("Gradies", 40, ShipTypes.Shark),
-                new LeaderboardEntry("Fenrys",  50, ShipTypes.Shark),
+                new LeaderboardEntry("Gradies", 40, ShipTypes.Rhino),
+                new LeaderboardEntry("Fenrys",  50, ShipTypes.Rhino),
             }
         },
         {
             MiniGames.BlockBandit, new List<LeaderboardEntry>()
             {
                 new LeaderboardEntry("Igarus",  10, ShipTypes.Dolphin),
-                new LeaderboardEntry("Gradies", 20, ShipTypes.GunManta),
+                new LeaderboardEntry("Gradies", 20, ShipTypes.Urchin),
                 new LeaderboardEntry("Spades",  30, ShipTypes.Manta),
-                new LeaderboardEntry("Siren",   40, ShipTypes.Shark),
-                new LeaderboardEntry("Fenrys",  50, ShipTypes.Shark),
+                new LeaderboardEntry("Siren",   40, ShipTypes.Rhino),
+                new LeaderboardEntry("Fenrys",  50, ShipTypes.Rhino),
             }
         },
         {
             MiniGames.CellularDuel, new List<LeaderboardEntry>()
             {
                 new LeaderboardEntry("Igarus",  10, ShipTypes.Dolphin),
-                new LeaderboardEntry("Gradies", 20, ShipTypes.GunManta),
+                new LeaderboardEntry("Gradies", 20, ShipTypes.Urchin),
                 new LeaderboardEntry("Spades",  30, ShipTypes.Manta),
-                new LeaderboardEntry("Siren",   40, ShipTypes.Shark),
-                new LeaderboardEntry("Fenrys",  50, ShipTypes.Shark),
+                new LeaderboardEntry("Siren",   40, ShipTypes.Rhino),
+                new LeaderboardEntry("Fenrys",  50, ShipTypes.Rhino),
             }
         },
     };
