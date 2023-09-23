@@ -66,7 +66,12 @@ public class LeaderboardsMenu : MonoBehaviour
 
     void PopulateShipClassSelectionDropdown()
     {
-        var options = new List<TMP_Dropdown.OptionData> { new TMP_Dropdown.OptionData("Any") };
+        var options = new List<TMP_Dropdown.OptionData>();
+
+        // Only add "Any" selection if there is more than one vessel class available
+        if (SelectedGame.Pilots.Count > 1)
+            options.Add(new TMP_Dropdown.OptionData("Any"));
+        
         foreach (var pilot in SelectedGame.Pilots)
             options.Add(new TMP_Dropdown.OptionData(pilot.Ship.Class.ToString()));
 
