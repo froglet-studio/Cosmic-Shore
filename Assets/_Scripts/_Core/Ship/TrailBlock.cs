@@ -44,20 +44,19 @@ namespace StarWriter.Core
 
         protected virtual void Start()
         {
-            if (warp) shards = GameObject.FindGameObjectWithTag("field");
+            if (warp)
+                shards = GameObject.FindGameObjectWithTag("field");
 
             if (fossilBlockContainer == null)
-            {
-                fossilBlockContainer = new GameObject();
-                fossilBlockContainer.name = "FossilBlockContainer";
-            }
-
-            meshRenderer = GetComponent<MeshRenderer>();
-            if (team != Teams.Unassigned) gameObject.GetComponent<MeshRenderer>().material = Hangar.Instance.GetTeamBlockMaterial(team);
-            meshRenderer.enabled = false;
+                fossilBlockContainer = new GameObject { name = "FossilBlockContainer" };
 
             blockCollider = GetComponent<BoxCollider>();
             blockCollider.enabled = false;
+
+            meshRenderer = GetComponent<MeshRenderer>();
+            if (team != Teams.Unassigned)
+                meshRenderer.material = Hangar.Instance.GetTeamBlockMaterial(team);
+            meshRenderer.enabled = false;
 
             spread = (Vector3) meshRenderer.material.GetVector("_spread");
 
@@ -161,12 +160,12 @@ namespace StarWriter.Core
                 // Check again because the ship may have attached as part of it's block impact effects
                 if (!ship.GetComponent<ShipStatus>().Attached)
                 {
-                    Explode(impactVector, ship.Player.PlayerName);
+                    Explode(impactVector, ship.Team, ship.Player.PlayerName);
                 }
             }
         }
 
-        public void Explode(Vector3 impactVector, string playerName, bool devastate=false)
+        public void Explode(Vector3 impactVector, Teams team, string playerName, bool devastate=false)
         {
             if (Shielded && !devastate)
             {
@@ -184,7 +183,7 @@ namespace StarWriter.Core
             explodingBlock.transform.localEulerAngles = transform.localEulerAngles;
             explodingBlock.transform.localScale = transform.localScale;
             explodingBlock.transform.parent = fossilBlockContainer.transform;
-            explodingBlock.GetComponent<Renderer>().material = new Material(Hangar.Instance.GetTeamExplodingBlockMaterial(team));
+            explodingBlock.GetComponent<Renderer>().material = new Material(Hangar.Instance.GetTeamExplodingBlockMaterial(this.team));
             explodingBlock.GetComponent<BlockImpact>().HandleImpact(impactVector);
 
             destroyed = true;

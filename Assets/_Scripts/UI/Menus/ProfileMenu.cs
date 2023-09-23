@@ -308,7 +308,7 @@ namespace _Scripts._Core.Playfab_Models
             {
                 displayNameInputField.text = name.Substring(0, i);
                 AudioSystem.Instance.PlaySFXClip(TypingAudio);
-                yield return new WaitForSeconds(.1f);
+                yield return new WaitForSeconds(.075f);
             }
 
             displayNameInputField.placeholder.gameObject.SetActive(true);

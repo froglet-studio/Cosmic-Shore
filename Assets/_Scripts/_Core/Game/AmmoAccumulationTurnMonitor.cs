@@ -7,6 +7,8 @@ public class AmmoAccumulationTurnMonitor : TurnMonitor
 
     public override bool CheckForEndOfTurn()
     {
+        if (paused) return false;
+
         return Game.ActivePlayer.Ship.ResourceSystem.CurrentAmmo / Game.ActivePlayer.Ship.ResourceSystem.MaxAmmo > percent / 100;
     }
 

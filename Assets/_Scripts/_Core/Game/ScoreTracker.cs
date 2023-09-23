@@ -40,6 +40,7 @@ public class ScoreTracker : MonoBehaviour
     Dictionary<string, float> playerScores = new ();
     Dictionary<string, Teams> playerTeams = new();
     string currentPlayerName;
+    Teams currentPlayerTeam;
     int turnsPlayed = 0;
     float turnStartTime;
 
@@ -65,7 +66,6 @@ public class ScoreTracker : MonoBehaviour
 
     public virtual void StartTurn(string playerName, Teams playerTeam)
     {
-        
         if (!playerScores.ContainsKey(playerName))
         {
             playerScores.Add(playerName, 0);
@@ -73,6 +73,7 @@ public class ScoreTracker : MonoBehaviour
         }
 
         currentPlayerName = playerName;
+        currentPlayerTeam = playerTeam;
         turnStartTime = Time.time;
     }
 
@@ -161,6 +162,9 @@ public class ScoreTracker : MonoBehaviour
                 StatsManager.Instance.ResetStats();
                 break;
         }
+
+        foreach (var playerTeam in playerTeams) // Add all the players back into the reset stats dictionary so the score will update at the start of the player's turn
+            StatsManager.Instance.AddPlayer(playerTeam.Value, playerTeam.Key);
     }
 
     public List<int> GetScores()

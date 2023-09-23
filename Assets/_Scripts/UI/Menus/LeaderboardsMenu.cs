@@ -1,4 +1,5 @@
 using PlayFab.ClientModels;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
@@ -12,13 +13,15 @@ public class LeaderboardsMenu : MonoBehaviour
     Dictionary<MiniGames, List<LeaderboardEntry>> LeaderboardEntries;
     List<LeaderboardEntryV2> LeaderboardEntriesV2;
 
-    [SerializeField] bool UsePlayfab;
+    [SerializeField] bool UsePlayfab = true;
     [SerializeField] SO_GameList GameList;
     [SerializeField] Transform GameSelectionContainer;
     [SerializeField] GameObject HighScoresContainer;
+    [SerializeField] TMP_Dropdown ShipClassSelection;
 
     List<SO_ArcadeGame> Games = new();
     SO_ArcadeGame SelectedGame;
+    MiniGames SelectedGameMode = MiniGames.BlockBandit;
     ShipTypes SelectedShipType = ShipTypes.Any;
 
     // Start is called before the first frame update
@@ -38,18 +41,21 @@ public class LeaderboardsMenu : MonoBehaviour
             //AccountManager.onLoginSuccess += TestFetch;
         }
 
+        ShipClassSelection.onValueChanged.AddListener(SelectShipType);
+
         PopulateGameSelectionList();
     }
 
-    void TestFetch(LoginResult loginResult)
+    void FetchLeaderboard()
     {
-        LeaderboardManager.Instance.FetchLeaderboard(LeaderboardManager.Instance.GetGameplayStatKey(MiniGames.BlockBandit, ShipTypes.Manta), OnFetchLeaderboard);
+        //LeaderboardManager.Instance.FetchLeaderboard(LeaderboardManager.Instance.GetGameplayStatKey(SelectedGameMode, SelectedShipType), OnFetchLeaderboard);
 
         LeaderboardManager.Instance.FetchLeaderboard(
-            LeaderboardManager.Instance.GetGameplayStatKey(MiniGames.BlockBandit, ShipTypes.Manta),
+            LeaderboardManager.Instance.GetGameplayStatKey(SelectedGameMode, SelectedShipType),
             new() { { "Intensity", "1" } },
             OnFetchLeaderboard);
     }
+
     void OnFetchLeaderboard(List<LeaderboardEntryV2> results)
     {
         Debug.Log("OnFetchLeaderboard");
@@ -57,6 +63,9 @@ public class LeaderboardsMenu : MonoBehaviour
         {
             Debug.Log($"Leaderboard Result - {result.Position} | {result.DisplayName} | {result.Score}");
         }
+
+        LeaderboardEntriesV2 = results;
+        PopulateGameHighScores();
     }
 
     IEnumerator SelectGameCoroutine(int index)
@@ -65,9 +74,24 @@ public class LeaderboardsMenu : MonoBehaviour
         SelectGame(index);
     }
 
-    public void SelectShipType(int shipType)
+    void PopulateShipClassSelectionDropdown()
     {
+        var options = new List<TMP_Dropdown.OptionData>();
+        options.Add(new TMP_Dropdown.OptionData("All"));
+        foreach (var pilot in SelectedGame.Pilots)
+            options.Add(new TMP_Dropdown.OptionData(pilot.Ship.Class.ToString()));
 
+        ShipClassSelection.options = options;
+        ShipClassSelection.value = 0;
+    }
+
+    public void SelectShipType(int optionValue)
+    {
+        var shiptypeName = ShipClassSelection.options[optionValue].text;
+        SelectedShipType = Enum.Parse<ShipTypes>(shiptypeName);
+
+        FetchLeaderboard();
+        
     }
 
     public void SelectGame(int index)
@@ -81,7 +105,7 @@ public class LeaderboardsMenu : MonoBehaviour
         // Select the one
         SelectedGame = Games[index];
         GameSelectionContainer.GetChild(index).gameObject.GetComponent<Image>().sprite = SelectedGame.SelectedIcon;
-        PopulateGameHighScores();
+        PopulateShipClassSelectionDropdown();
     }
 
     void PopulateGameSelectionList()
@@ -110,15 +134,24 @@ public class LeaderboardsMenu : MonoBehaviour
     {
         Debug.Log($"PopulateGameHighScores: {SelectedGame.Name}");
 
-        List<LeaderboardEntry> highScores;
+        
         if (UsePlayfab)
         {
-            highScores = LeaderboardEntries[SelectedGame.Mode];
-            
-            //highScores = LeaderboardManager.
+            for (var i = 0; i < HighScoresContainer.transform.childCount; i++)
+                HighScoresContainer.transform.GetChild(i).gameObject.SetActive(false);
+
+            for (var i = 0; i < LeaderboardEntriesV2.Count; i++)
+            {
+                var score = LeaderboardEntriesV2[i];
+                HighScoresContainer.transform.GetChild(i).GetChild(0).GetComponent<TMP_Text>().text = score.DisplayName;
+                HighScoresContainer.transform.GetChild(i).GetChild(1).GetComponent<TMP_Text>().text = score.Score.ToString();
+                //HighScoresContainer.transform.GetChild(i).GetChild(2).GetComponent<TMP_Text>().text = score.ShipType.ToString();
+                HighScoresContainer.transform.GetChild(i).gameObject.SetActive(true);
+            }
         }
         else
         {
+            List<LeaderboardEntry> highScores;
             if (!LeaderboardEntries.ContainsKey(SelectedGame.Mode))
             {
                 highScores = LeaderboardDataAccessor.LeaderboardEntriesDefault[SelectedGame.Mode];
@@ -126,21 +159,23 @@ public class LeaderboardsMenu : MonoBehaviour
             }
             else
                 highScores = LeaderboardEntries[SelectedGame.Mode];
+
+            // TODO: need reverse sort for golf mode
+            highScores.Sort((score1, score2) => score2.Score.CompareTo(score1.Score));
+
+            for (var i = 0; i < HighScoresContainer.transform.childCount; i++)
+                HighScoresContainer.transform.GetChild(i).gameObject.SetActive(false);
+
+            for (var i = 0; i < highScores.Count; i++)
+            {
+                var score = highScores[i];
+                HighScoresContainer.transform.GetChild(i).GetChild(0).GetComponent<TMP_Text>().text = score.PlayerName;
+                HighScoresContainer.transform.GetChild(i).GetChild(1).GetComponent<TMP_Text>().text = score.Score.ToString();
+                HighScoresContainer.transform.GetChild(i).GetChild(2).GetComponent<TMP_Text>().text = score.ShipType.ToString();
+                HighScoresContainer.transform.GetChild(i).gameObject.SetActive(true);
+            }
         }
         
-        // TODO: need reverse sort for golf mode
-        highScores.Sort( (score1,score2) => score2.Score.CompareTo(score1.Score));
 
-        for (var i = 0; i < HighScoresContainer.transform.childCount; i++)
-            HighScoresContainer.transform.GetChild(i).gameObject.SetActive(false);
-
-        for (var i = 0; i < highScores.Count; i++)
-        {
-            var score = highScores[i];
-            HighScoresContainer.transform.GetChild(i).GetChild(0).GetComponent<TMP_Text>().text = score.PlayerName;
-            HighScoresContainer.transform.GetChild(i).GetChild(1).GetComponent<TMP_Text>().text = score.Score.ToString();
-            HighScoresContainer.transform.GetChild(i).GetChild(2).GetComponent<TMP_Text>().text = score.ShipType.ToString();
-            HighScoresContainer.transform.GetChild(i).gameObject.SetActive(true);
-        }
     }
 }
