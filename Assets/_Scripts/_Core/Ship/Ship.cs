@@ -13,6 +13,13 @@ namespace StarWriter.Core
     }
 
     [Serializable]
+    public struct ResourceEventShipActionMapping
+    {
+        public ResourceEvents ResourceEvent;
+        public List<ShipActionAbstractBase> ClassActions;
+    }
+
+    [Serializable]
     public struct LevelEffectParameterMapping
     {
         public Element Element;
@@ -65,6 +72,9 @@ namespace StarWriter.Core
         [SerializeField] List<InputEventShipActionMapping> inputEventShipActions;
         Dictionary<InputEvents, List<ShipActionAbstractBase>> ShipControlActions = new();
 
+        [SerializeField] List<ResourceEventShipActionMapping> resourceEventClassActions;
+        Dictionary<ResourceEvents, List<ShipActionAbstractBase>> ClassResourceActions = new();
+
         [Header("Leveling Targets")]
         [SerializeField] LevelAwareShipActionAbstractBase MassAbilityTarget;
         [SerializeField] LevelAwareShipActionAbstractBase ChargeAbilityTarget;
@@ -78,7 +88,10 @@ namespace StarWriter.Core
         [SerializeField] float closeCamDistance;
         [SerializeField] float farCamDistance;
 
-        Dictionary<InputEvents, float> abilityStartTimes = new();
+        
+        Dictionary<InputEvents, float> inputAbilityStartTimes = new();
+        Dictionary<ResourceEvents, float> resourceAbilityStartTimes = new();
+
         Material ShipMaterial;
         [HideInInspector] public Material AOEExplosionMaterial;
         [HideInInspector] public Material AOEConicExplosionMaterial;
@@ -137,8 +150,18 @@ namespace StarWriter.Core
             foreach (var key in ShipControlActions.Keys)
                 foreach (var shipAction in ShipControlActions[key])
                     shipAction.Ship = this;
-        }
+            
+            foreach (var resourceEventClassAction in resourceEventClassActions)
+                if (!ClassResourceActions.ContainsKey(resourceEventClassAction.ResourceEvent))
+                    ClassResourceActions.Add(resourceEventClassAction.ResourceEvent, resourceEventClassAction.ClassActions);
+                else
+                    ClassResourceActions[resourceEventClassAction.ResourceEvent].AddRange(resourceEventClassAction.ClassActions);
 
+            foreach (var key in ClassResourceActions.Keys)
+                foreach (var classAction in ClassResourceActions[key])
+                    classAction.Ship = this;
+        }
+        
         void ApplyShipControlOverrides(List<ShipControlOverrides> controlOverrides)
         {
 
@@ -236,10 +259,10 @@ namespace StarWriter.Core
 
         public void PerformShipControllerActions(InputEvents controlType)
         {
-            if (!abilityStartTimes.ContainsKey(controlType))
-                abilityStartTimes.Add(controlType, Time.time);
+            if (!inputAbilityStartTimes.ContainsKey(controlType))
+                inputAbilityStartTimes.Add(controlType, Time.time);
             else
-                abilityStartTimes[controlType] = Time.time;
+                inputAbilityStartTimes[controlType] = Time.time;
 
             if (ShipControlActions.ContainsKey(controlType))
             {
@@ -252,12 +275,40 @@ namespace StarWriter.Core
         public void StopShipControllerActions(InputEvents controlType)
         {
             if (StatsManager.Instance != null)
-                StatsManager.Instance.AbilityActivated(Team, player.PlayerName, controlType, Time.time-abilityStartTimes[controlType]);
+                StatsManager.Instance.AbilityActivated(Team, player.PlayerName, controlType, Time.time-inputAbilityStartTimes[controlType]);
 
             if (ShipControlActions.ContainsKey(controlType))
             {
                 var shipControlActions = ShipControlActions[controlType];
                 foreach (var action in shipControlActions)
+                    action.StopAction();
+            }
+        }
+
+        public void PerformClassResourceActions(ResourceEvents resourceEvent)
+        {
+            if (!resourceAbilityStartTimes.ContainsKey(resourceEvent))
+                resourceAbilityStartTimes.Add(resourceEvent, Time.time);
+            else
+                resourceAbilityStartTimes[resourceEvent] = Time.time;
+
+            if (ClassResourceActions.ContainsKey(resourceEvent))
+            {
+                var classResourceActions = ClassResourceActions[resourceEvent];
+                foreach (var action in classResourceActions)
+                    action.StartAction();
+            }
+        }
+
+        public void StopClassResourceActions(ResourceEvents resourceEvent)
+        {
+            //if (StatsManager.Instance != null)
+            //    StatsManager.Instance.AbilityActivated(Team, player.PlayerName, resourceEvent, Time.time-inputAbilityStartTimes[controlType]);
+
+            if (ClassResourceActions.ContainsKey(resourceEvent))
+            {
+                var classResourceActions = ClassResourceActions[resourceEvent];
+                foreach (var action in classResourceActions)
                     action.StopAction();
             }
         }

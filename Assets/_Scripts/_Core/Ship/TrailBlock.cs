@@ -98,9 +98,10 @@ namespace StarWriter.Core
                 NodeControlManager.Instance.AddBlock(team, playerName, TrailBlockProperties);
         }
 
-        Coroutine sizeChangeCoroutine;
+        bool isSizeChangeActive = false;
         IEnumerator SizeChangeCoroutine()
         {
+            isSizeChangeActive = true;
             float sqrDistance = (TargetScale - transform.localScale).sqrMagnitude;
 
             while (sqrDistance > .001f)
@@ -109,12 +110,11 @@ namespace StarWriter.Core
                 sqrDistance = (TargetScale - transform.localScale).sqrMagnitude;
                 yield return null;
             }
+            isSizeChangeActive = false;
         }
 
         public void ChangeSize()
         {
-            
-
             TargetScale.x = Mathf.Clamp(TargetScale.x, minScale.x, maxScale.x);
             TargetScale.y = Mathf.Clamp(TargetScale.y, minScale.y, maxScale.y);
             TargetScale.z = Mathf.Clamp(TargetScale.z, minScale.z, maxScale.z);
@@ -124,7 +124,10 @@ namespace StarWriter.Core
             var deltaVolume = TrailBlockProperties.volume - oldVolume;
 
             if (StatsManager.Instance != null) StatsManager.Instance.BlockVolumeModified(deltaVolume, TrailBlockProperties);
-            if (sizeChangeCoroutine != null) StartCoroutine(SizeChangeCoroutine());
+            if (!isSizeChangeActive)
+            {
+                StartCoroutine(SizeChangeCoroutine());
+            }
         }
 
         public void Grow(float amount = 1)

@@ -31,7 +31,7 @@ public class FireGunAction : ShipActionAbstractBase
             else inheritedVelocity = shipData.Course;
 
             // TODO: WIP magic numbers
-            gun.FireGun(projectileContainer.transform, 90, inheritedVelocity * shipData.Speed, ProjectileScale, true, 3f);
+            gun.FireGun(projectileContainer.transform, 90, inheritedVelocity * shipData.Speed, ProjectileScale, true, 3f,0,FiringPatterns.DoubleHexRing);
         }
     }
 

@@ -177,6 +177,54 @@ Transform:
   m_Father: {fileID: 8692499942825081117}
   m_RootOrder: 3
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &795854875705255018
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4278604752710722623}
+  - component: {fileID: 7925097207517337182}
+  m_Layer: 0
+  m_Name: EnergizeAction
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &4278604752710722623
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 795854875705255018}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: -0.28527343, y: 0.13758913, z: 0.15116724}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 4369262321157730261}
+  m_RootOrder: 5
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &7925097207517337182
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 795854875705255018}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2076124a554bc894db13293a6ed81de1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  duration: 5
+  cooldown: 5
+  fireActions:
+  - {fileID: 1210579706855675657}
 --- !u!1 &1307237778802482981
 GameObject:
   m_ObjectHideFlags: 0
@@ -2013,6 +2061,8 @@ MonoBehaviour:
   gunContainer: {fileID: 7748113003568908110}
   ammoCost: 0
   ProjectileScale: 5
+  FiringPattern: 0
+  speed: 7
 --- !u!1 &6027786489863838685
 GameObject:
   m_ObjectHideFlags: 0
@@ -2178,6 +2228,10 @@ MonoBehaviour:
     - {fileID: 6274364622300635993}
     - {fileID: 1288807427476124847}
     - {fileID: 1210579706855675657}
+  resourceEventClassActions:
+  - ResourceEvent: 0
+    ClassActions:
+    - {fileID: 7925097207517337182}
   MassAbilityTarget: {fileID: 0}
   ChargeAbilityTarget: {fileID: 0}
   SpaceAbilityTarget: {fileID: 0}
@@ -2231,7 +2285,7 @@ MonoBehaviour:
   initialWavelength: 10
   minWavelength: 7
   gap: 1
-  InnerDimensions: {x: 0, y: 0, z: 0}
+  TargetScale: {x: 0, y: 0, z: 0}
   defaultWaitTime: 0.5
   waitTime: 0.5
   startDelay: 2
@@ -2606,6 +2660,7 @@ Transform:
   - {fileID: 2682141685163518091}
   - {fileID: 6252452194101444014}
   - {fileID: 866771351676624094}
+  - {fileID: 4278604752710722623}
   m_Father: {fileID: 5928382658856804067}
   m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}

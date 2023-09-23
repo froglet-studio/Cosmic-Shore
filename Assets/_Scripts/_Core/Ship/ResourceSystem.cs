@@ -155,6 +155,7 @@ namespace StarWriter.Core
         public void ChangeAmmoAmount(float amount)
         {
             CurrentAmmo = Mathf.Clamp(currentAmmo + amount, 0, maxAmmo);
+            if (CurrentAmmo == maxAmmo) GetComponent<Ship>().PerformClassResourceActions(ResourceEvents.MaxAmmo);
         }
         
         public void ChangeChargeAmount(float amount)
@@ -162,6 +163,10 @@ namespace StarWriter.Core
             CurrentCharge = Mathf.Clamp(currentCharge + amount, 0, maxCharge);
         }
 
+        void MaxAmmoEffects()
+        {
+
+        }
 
         /*
          * TODO: we may want to move everything below this line to a new component

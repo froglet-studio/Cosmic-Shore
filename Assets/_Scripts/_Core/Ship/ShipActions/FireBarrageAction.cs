@@ -15,7 +15,13 @@ public class FireBarrageAction : ShipActionAbstractBase
     [SerializeField] float ammoCost = .03f;
     bool inherit = false;
 
+    
+    float projectileTime = 3;
+
     public float ProjectileScale = 1f;
+
+    public FiringPatterns FiringPattern = FiringPatterns.single;
+    public float speed = 7;
 
     void CopyValues<T>(T from, T to)
     {
@@ -25,7 +31,6 @@ public class FireBarrageAction : ShipActionAbstractBase
 
     void Start()
     {
-        
         var gunTemplate = gunContainer.GetComponent<Gun>();
         foreach (var child in gunContainer.GetComponentsInChildren<Transform>()) 
         {
@@ -47,19 +52,22 @@ public class FireBarrageAction : ShipActionAbstractBase
             resourceSystem.ChangeAmmoAmount(-ammoCost);
 
             Vector3 inheritedVelocity;
-            
 
-            // TODO: WIP magic numbers
-            foreach (var gun in guns)
+            if (resourceSystem.CurrentAmmo > ammoCost)
             {
-                if (inherit)
+                // TODO: WIP magic numbers
+                foreach (var gun in guns)
                 {
-                    if (shipData.Attached) inheritedVelocity = gun.transform.forward;
-                    else inheritedVelocity = shipData.Course;
+                    if (inherit)
+                    {
+                        if (shipData.Attached) inheritedVelocity = gun.transform.forward;
+                        else inheritedVelocity = shipData.Course;
+                    }
+                    else inheritedVelocity = Vector3.zero;
+                    gun.FireGun(projectileContainer.transform, speed, inheritedVelocity * shipData.Speed, ProjectileScale, true, projectileTime, 0, FiringPattern);
                 }
-                else inheritedVelocity = Vector3.zero;
-                gun.FireGun(projectileContainer.transform, 7, inheritedVelocity * shipData.Speed, ProjectileScale, true, 3f);
             }
+             
         }
     }
 

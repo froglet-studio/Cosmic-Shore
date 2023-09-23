@@ -1,8 +1,16 @@
 using System.Collections;
+using System.Runtime.InteropServices.WindowsRuntime;
 using UnityEngine;
 
 namespace StarWriter.Core
 {
+    public enum FiringPatterns
+    {
+        single = 0,
+        HexRing = 1,
+        DoubleHexRing = 2
+    }
+
     public class Gun : MonoBehaviour
     {
         [SerializeField] GameObject projectilePrefab;
@@ -13,6 +21,7 @@ namespace StarWriter.Core
         public Ship Ship;
         bool onCooldown = false;
         Trail trail = new();
+        float sideLength = 2;
 
         ShipStatus shipData;
         public Coroutine MoveCoroutine;
@@ -23,27 +32,64 @@ namespace StarWriter.Core
         }
 
         Projectile projectile;
-        public void FireGun(Transform containerTransform, float speed, Vector3 inheritedVelocity, 
-            float projectileScale, bool ignoreCooldown = false, float projectileTime = 3, float charge = 0)
+
+        public void FireGun(Transform containerTransform, float speed, Vector3 inheritedVelocity,
+            float projectileScale, bool ignoreCooldown = false, float projectileTime = 3, float charge = 0, FiringPatterns firingPattern = FiringPatterns.single)
         {
             if (onCooldown && !ignoreCooldown)
                 return;
 
             onCooldown = true;
 
-            projectile = Instantiate(projectilePrefab).GetComponent<Projectile>();
-            projectile.transform.rotation = Quaternion.LookRotation(transform.forward);
-            projectile.transform.position = transform.position + projectile.transform.forward * 5;
-            projectile.transform.localScale = projectileScale * Vector3.one;
-            projectile.transform.parent = containerTransform;
-            projectile.Velocity = projectile.transform.forward * speed + inheritedVelocity;
-            projectile.Team = Team;
-            projectile.Ship = Ship;
-            if (projectile is ExplodableProjectile) ((ExplodableProjectile)projectile).Charge = charge;
+            switch (firingPattern)
+            {
+                case FiringPatterns.single:
+                    FireProjectile(Vector3.zero);
+                    break;
 
-            projectile.LaunchProjectile(projectileTime);
+                case FiringPatterns.HexRing:
+                    FireProjectile(Vector3.zero); // Center
+                    for (int i = 0; i < 6; i++)
+                    {
+                        Vector3 offset = Quaternion.Euler(0, 60 * i, 0) * transform.right * sideLength;
+                        FireProjectile(offset);
+                    }
+                    break;
+
+                case FiringPatterns.DoubleHexRing:
+                    FireProjectile(Vector3.zero); // Center
+
+                    for (int i = 0; i < 6; i++)
+                    {
+                        Vector3 innerOffset = Quaternion.Euler(0, 0, 60 * i) * transform.right * sideLength;
+                        FireProjectile(innerOffset); // Inner hexagon
+
+                        Vector3 outerOffset = innerOffset * 2; // Outer hexagon corners
+                        FireProjectile(outerOffset);
+
+                        Vector3 midpointOffset = Quaternion.Euler(0, 0, 30 + 60 * i) * transform.right * sideLength * 2;
+                        FireProjectile(midpointOffset); // Outer hexagon midpoint
+                    }
+                    break;
+            }
+
+            void FireProjectile(Vector3 offset)
+            {
+                Projectile projectileInstance = Instantiate(projectilePrefab, transform.position + Quaternion.LookRotation(transform.forward) * offset, Quaternion.LookRotation(transform.forward)).GetComponent<Projectile>();
+                projectileInstance.transform.localScale = projectileScale * Vector3.one;
+                projectileInstance.transform.parent = containerTransform;
+                projectileInstance.Velocity = transform.forward * speed + inheritedVelocity;
+                projectileInstance.Team = Team;
+                projectileInstance.Ship = Ship;
+                if (projectileInstance is ExplodableProjectile) ((ExplodableProjectile)projectileInstance).Charge = charge;
+
+                projectileInstance.LaunchProjectile(projectileTime);
+            }
+
             StartCoroutine(CooldownCoroutine());
         }
+
+        
 
         IEnumerator CooldownCoroutine()
         {
