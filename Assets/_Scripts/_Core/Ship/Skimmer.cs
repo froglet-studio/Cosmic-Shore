@@ -53,7 +53,7 @@ namespace StarWriter.Core
                         if (!ship.ShipStatus.AutoPilotEnabled) HapticController.PlayBlockCollisionHaptics();
                         break;
                     case TrailBlockImpactEffects.DeactivateTrailBlock:
-                        trailBlockProperties.trailBlock.Explode(ship.transform.forward * ship.GetComponent<ShipStatus>().Speed, Player.PlayerName);
+                        trailBlockProperties.trailBlock.Explode(ship.transform.forward * ship.GetComponent<ShipStatus>().Speed, team, Player.PlayerName);
                         break;
                     case TrailBlockImpactEffects.Steal:
                         //Debug.Log($"steal: playername {Player.PlayerName} team: {team}");
