@@ -48,6 +48,8 @@ namespace _Scripts._Core.Playfab_Models
             AnonymousLogin();
         }
 
+        #region Player Profile
+        
         /// <summary>
         /// Set Player Display Name
         /// Update player display name, we can assume the account is already created here
@@ -143,7 +145,9 @@ namespace _Scripts._Core.Playfab_Models
                 }
             );
         }
+        #endregion
 
+        #region AnonymousLogin
         
         /// <summary>
         /// Anonymous Login
@@ -225,6 +229,8 @@ namespace _Scripts._Core.Playfab_Models
                 Debug.Log($"AuthenticationManager - Play Fab Id: {PlayerAccount.PlayFabId}");
                 Debug.Log($"AuthenticationManager - Entity Type: {PlayerAccount.AuthContext.EntityType}");
                 Debug.Log($"AuthenticationManager - Entity Id: {PlayerAccount.AuthContext.EntityId}");
+                // Get it when we need to use postman for testing requests
+                // Debug.Log($"AuthenticationManager - Entity Token: {loginResult.AuthenticationContext.EntityToken}");
                 Debug.Log($"AuthenticationManager - Session Ticket: {PlayerAccount.AuthContext.ClientSessionTicket}");
 
                 LoginSuccess?.Invoke(this, loginResult);
@@ -236,7 +242,7 @@ namespace _Scripts._Core.Playfab_Models
             Debug.LogError("AuthenticationManager - " + loginError.GenerateErrorReport());
             LoginError?.Invoke(this, loginError);
         }
-
+        #endregion
 
         #region Unlinking
 
@@ -342,6 +348,10 @@ namespace _Scripts._Core.Playfab_Models
                 }
                 );
         }
+        
+        #endregion
+
+        #region WIP Email Username Register
 
         /// <summary>
         /// Email Registration

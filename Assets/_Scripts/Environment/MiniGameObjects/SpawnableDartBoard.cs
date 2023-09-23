@@ -67,7 +67,7 @@ public class SpawnableDartBoard : SpawnableAbstractBase
         Block.transform.SetPositionAndRotation(position, Quaternion.LookRotation(lookPosition - transform.position, transform.forward));
         Block.transform.SetParent(container.transform, false);
         Block.ID = blockId;
-        Block.InnerDimensions = scale;
+        Block.TargetScale = scale;
         Block.Trail = trail;
         trail.Add(Block);
     }

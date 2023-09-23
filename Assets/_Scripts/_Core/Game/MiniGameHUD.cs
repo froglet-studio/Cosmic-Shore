@@ -11,10 +11,10 @@ public class MiniGameHUD : MonoBehaviour
     public CountdownTimer CountdownTimer;
     [SerializeField] GameObject Pip;
 
-
-    public void SetPipActive(bool active)
+    public void SetPipActive(bool active, bool mirrored)
     {
         Pip.SetActive(active);
+        Pip.GetComponent<PipUI>().SetMirrored(mirrored);
     }
 }
 

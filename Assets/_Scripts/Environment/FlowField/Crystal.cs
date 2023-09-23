@@ -1,8 +1,10 @@
 using UnityEngine;
 using System.Collections.Generic;
 using StarWriter.Core;
+using StarWriter.Core.HangerBuilder;
 using StarWriter.Core.IO;
 using StarWriter.Core.Audio;
+using System.Collections;
 
 public class Crystal : NodeItem
 {
@@ -16,7 +18,8 @@ public class Crystal : NodeItem
     [SerializeField] public float sphereRadius = 100;
     [SerializeField] protected GameObject SpentCrystalPrefab;
     [SerializeField] protected GameObject CrystalModel; 
-    [SerializeField] protected Material material;
+    [SerializeField] protected Material explodingMaterial;
+    [SerializeField] protected Material defaultMaterial;
     [SerializeField] protected bool shipImpactEffects = true;
     #endregion
 
@@ -82,28 +85,49 @@ public class Crystal : NodeItem
     protected virtual void Collide(Collider other)
     {
         Ship ship;
+        Projectile projectile;
         if (IsShip(other.gameObject))
+        {
+            //
+            // Do the ship specific crystal stuff
+            //
             ship = other.GetComponent<ShipGeometry>().Ship;
+            if (Team == Teams.None || Team == ship.Team)
+            {
+                if (shipImpactEffects)
+                {
+                    ship.PerformCrystalImpactEffects(crystalProperties);
+                    if (ship.TryGetComponent<AIPilot>(out var aiPilot))
+                    {
+                        aiPilot.aggressiveness = aiPilot.defaultAggressiveness;
+                        aiPilot.throttle = aiPilot.defaultThrottle;
+                    }
+                }
+            }
+        }
         else if (IsProjectile(other.gameObject))
-            ship = other.GetComponent<Projectile>().Ship;   // TODO: does this mean ships can shoot the crystal to collect it?
+        {
+            ship = other.GetComponent<Projectile>().Ship;
+            projectile = other.GetComponent<Projectile>();
+            if (shipImpactEffects)
+            {
+                projectile.PerformCrystalImpactEffects(crystalProperties);
+                if (ship.TryGetComponent<AIPilot>(out var aiPilot))
+                {
+                    aiPilot.aggressiveness = aiPilot.defaultAggressiveness;
+                    aiPilot.throttle = aiPilot.defaultThrottle;
+                }
+            }
+            return;
+        } 
         else 
             return;
 
-        //
-        // Do the ship specific crystal stuff
-        //
-        if (shipImpactEffects)
-        {
-            ship.PerformCrystalImpactEffects(crystalProperties);
-            if (ship.TryGetComponent<AIPilot>(out var aiPilot))
-            {
-                aiPilot.aggressiveness = aiPilot.defaultAggressiveness;
-                aiPilot.throttle = aiPilot.defaultThrottle;
-            }
-        }
+     
+        
 
         //
-        // Do the crystal stuff that always happens (ship independent)
+        // Do the crystal stuff that always happens (ship/projectile independent)
         //
         PerformCrystalImpactEffects(crystalProperties, ship);
 
@@ -121,7 +145,7 @@ public class Crystal : NodeItem
 
     protected void Explode(Ship ship)
     {
-        tempMaterial = new Material(material);
+        tempMaterial = new Material(explodingMaterial);
         var spentCrystal = Instantiate(SpentCrystalPrefab);
         spentCrystal.transform.position = transform.position;
         spentCrystal.transform.localEulerAngles = transform.localEulerAngles;
@@ -152,5 +176,19 @@ public class Crystal : NodeItem
     public void SetOrigin(Vector3 origin)
     {
         this.origin = origin;
+    }
+
+    public void Steal(Teams team, float duration)
+    {
+        Team = team;
+        CrystalModel.GetComponent<MeshRenderer>().material = Hangar.Instance.GetTeamCrystalMaterial(team);
+        StartCoroutine(DecayingTheftCoroutine(duration));
+    }
+
+    IEnumerator DecayingTheftCoroutine(float duration)
+    {
+        yield return new WaitForSeconds(duration);
+        Team = Teams.None;
+        CrystalModel.GetComponent<MeshRenderer>().material = defaultMaterial;
     }
 }

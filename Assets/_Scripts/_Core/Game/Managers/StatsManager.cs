@@ -117,6 +117,28 @@ public class StatsManager : Singleton<StatsManager>
         playerStats[restoringPlayerName] = roundStats;
     }
 
+    public void BlockVolumeModified(float volume, TrailBlockProperties modifiedTrailBlockProperties)
+    {
+        if (!RecordStats)
+            return;
+
+        MaybeCreateDictionaryEntries(modifiedTrailBlockProperties.trailBlock.Team, modifiedTrailBlockProperties.trailBlock.PlayerName);
+
+        // TODO: add Team modifying Stats separately for growth/shrink & friendly/hostyile
+
+        // TODO: add Player modifying Stats separately for growth/shrink & friendly/hostyile
+
+        // Team Remaining
+        var roundStats = teamStats[modifiedTrailBlockProperties.trailBlock.Team];
+        roundStats.volumeRemaining += volume;
+        teamStats[modifiedTrailBlockProperties.trailBlock.Team] = roundStats;
+
+        // Player Remaining
+        roundStats = playerStats[modifiedTrailBlockProperties.trailBlock.PlayerName];
+        roundStats.volumeRemaining += volume;
+        playerStats[modifiedTrailBlockProperties.trailBlock.PlayerName] = roundStats;
+    }
+
     public void BlockStolen(Teams stealingTeam, string stealingPlayerName, TrailBlockProperties stolenTrailBlockProperties)
     {
         if (!RecordStats)

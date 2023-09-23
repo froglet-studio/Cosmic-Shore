@@ -70,7 +70,7 @@ public class ShootingGalleryMiniGame : MiniGame
         Block.PlayerName = ActivePlayer.PlayerName;
         Block.transform.SetPositionAndRotation(position, Quaternion.LookRotation(lookPosition - transform.position, transform.forward));
         Block.ID = Block.ownerId + position;
-        Block.InnerDimensions = blockScale;
+        Block.TargetScale = blockScale;
         Block.Trail = trail;
         trail.Add(Block);
         return Block;

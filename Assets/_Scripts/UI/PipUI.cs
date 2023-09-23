@@ -8,15 +8,23 @@ public class PipUI : MonoBehaviour
 {
 
     bool isSmall = true;
+    public bool mirrored = true;
 
-    [SerializeField] Vector3 smallScale = new Vector3(-1, 1, 1);
-    [SerializeField] Vector3 largeScale = new Vector3(-2, 2, 1);
+    [SerializeField] Vector3 smallScale = new Vector3(1, 1, 1);
+    [SerializeField] Vector3 largeScale = new Vector3(2, 2, 1);
     [SerializeField] Vector3 smallPosition = new Vector3(0, 445, 0);
     [SerializeField] Vector3 largePosition = new Vector3(0, 375, 0);
 
 
     private void Start()
     {
+        SetMirrored(mirrored);
+    }
+
+    public void SetMirrored(bool mirrored)
+    {
+        if (mirrored) smallScale = new Vector3(-smallScale.x, smallScale.y, smallScale.z);
+        if (mirrored) largeScale = new Vector3(-largeScale.x, largeScale.y, largeScale.z);
         ((RectTransform)transform).localScale = smallScale;
         ((RectTransform)transform).localPosition = smallPosition;
     }

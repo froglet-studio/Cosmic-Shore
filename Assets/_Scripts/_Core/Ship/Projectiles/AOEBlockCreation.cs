@@ -51,7 +51,7 @@ public class AOEBlockCreation : AOEExplosion
         Block.transform.SetPositionAndRotation(position, Quaternion.LookRotation(forward, up));
         Block.GetComponent<MeshRenderer>().material = blockMaterial;
         Block.ID = Block.ownerId + ownerId + position;  
-        Block.InnerDimensions = blockScale;
+        Block.TargetScale = blockScale;
         Block.transform.parent = TrailSpawner.TrailContainer.transform;
         Block.Trail = trail;
         if (shielded) Block.Shielded = true;

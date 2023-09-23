@@ -80,6 +80,7 @@ MonoBehaviour:
   Ship: {fileID: 0}
   trailBlockImpactEffects: 070000000c000000
   shipImpactEffects: 020000000300000001000000
+  crystalImpactEffects: 0c000000
   drawLine: 1
   startLength: 1
   growthRate: 1

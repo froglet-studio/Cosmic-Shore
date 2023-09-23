@@ -32,7 +32,7 @@ public abstract class SpawnableAbstractBase : MonoBehaviour
         Block.transform.SetPositionAndRotation(position, Quaternion.LookRotation(lookPosition - position));
         Block.transform.SetParent(container.transform, false);
         Block.ID = blockId;
-        Block.InnerDimensions = scale;
+        Block.TargetScale = scale;
         Block.Trail = trail;
         trail.Add(Block);
     }
