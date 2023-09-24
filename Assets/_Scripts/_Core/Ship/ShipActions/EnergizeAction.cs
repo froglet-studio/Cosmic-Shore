@@ -8,8 +8,13 @@ public class EnergizeAction : ShipActionAbstractBase
     [SerializeField] float duration;
     [SerializeField] float cooldown;
     [SerializeField] List<FireBarrageAction> fireActions;
-    float fastSpeed = 90;
+
+    float fastSpeed = 70;
     float slowSpeed = 7;
+
+    float longDuration = 6;
+    float shortDuration = 3;
+    
     bool onCooldown = false;
 
     public override void StartAction()
@@ -25,21 +30,36 @@ public class EnergizeAction : ShipActionAbstractBase
     IEnumerator EnergizeCoroutine()
     {
         onCooldown = true;
+
+        // upgrade
         foreach (FireBarrageAction fireaction in fireActions)
         {
-            fireaction.FiringPattern = FiringPatterns.HexRing;
+            fireaction.FiringPattern = FiringPatterns.DoubleHexRing;
             fireaction.speed = fastSpeed;
+            //fireaction.projectileTime = longDuration;
         }
 
+        // wait for player to fire
+        while (Ship.ResourceSystem.CurrentAmmo == Ship.ResourceSystem.MaxAmmo)
+        {
+            yield return null;
+        }
+
+        // last a duration
         yield return new WaitForSeconds(duration);
 
+        // return to default values TODO: retrieve defaults
         foreach (FireBarrageAction fireaction in fireActions)
         {
             fireaction.FiringPattern = FiringPatterns.single;
             fireaction.speed = slowSpeed;
+            //fireaction.projectileTime = shortDuration;
         }
 
+        // start Cooldown timer
         yield return new WaitForSeconds(cooldown);
+
+        // go off cooldown
         onCooldown = false;
     }
 }
