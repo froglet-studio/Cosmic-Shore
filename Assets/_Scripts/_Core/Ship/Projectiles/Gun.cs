@@ -15,13 +15,12 @@ namespace StarWriter.Core
     {
         [SerializeField] GameObject projectilePrefab;
 
-        public float projectileTime = 2;
         public float firePeriod = .2f;
         public Teams Team;
         public Ship Ship;
         bool onCooldown = false;
         Trail trail = new();
-        float sideLength = 2;
+        float sideLength = 3;
 
         ShipStatus shipData;
         public Coroutine MoveCoroutine;
@@ -75,7 +74,10 @@ namespace StarWriter.Core
 
             void FireProjectile(Vector3 offset)
             {
-                Projectile projectileInstance = Instantiate(projectilePrefab, transform.position + Quaternion.LookRotation(transform.forward) * offset, Quaternion.LookRotation(transform.forward)).GetComponent<Projectile>();
+                Projectile projectileInstance = Instantiate(projectilePrefab,
+                    transform.position + Quaternion.LookRotation(transform.forward) * offset, // position
+                    Quaternion.LookRotation(transform.forward) // rotation
+                    ).GetComponent<Projectile>();
                 projectileInstance.transform.localScale = projectileScale * Vector3.one;
                 projectileInstance.transform.parent = containerTransform;
                 projectileInstance.Velocity = transform.forward * speed + inheritedVelocity;

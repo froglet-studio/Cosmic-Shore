@@ -16,12 +16,13 @@ public class FireBarrageAction : ShipActionAbstractBase
     bool inherit = false;
 
     
-    float projectileTime = 3;
+    
 
-    public float ProjectileScale = 1f;
+    float ProjectileScale = 1f;
 
     public FiringPatterns FiringPattern = FiringPatterns.single;
     public float speed = 7;
+    public float projectileTime = 3;
 
     void CopyValues<T>(T from, T to)
     {

@@ -731,6 +731,7 @@ MonoBehaviour:
   - InputEvent: 4
     ShipActions:
     - {fileID: 5096403877754360922}
+  resourceEventClassActions: []
   MassAbilityTarget: {fileID: 0}
   ChargeAbilityTarget: {fileID: 0}
   SpaceAbilityTarget: {fileID: 0}
@@ -765,7 +766,7 @@ MonoBehaviour:
   initialWavelength: 10
   minWavelength: 1
   gap: 18
-  InnerDimensions: {x: 0, y: 0, z: 0}
+  TargetScale: {x: 0, y: 0, z: 0}
   defaultWaitTime: 0.5
   waitTime: 0.5
   startDelay: 2
@@ -944,6 +945,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   pipCamera: {fileID: 1507913478050007905}
+  mirrored: 0
 --- !u!1 &6675130274311316141
 GameObject:
   m_ObjectHideFlags: 0
