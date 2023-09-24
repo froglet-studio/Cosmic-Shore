@@ -32,6 +32,11 @@ namespace _Scripts._Core.Playfab_Models
 
         // A flag that notifies player if they want to be force linked with current session (the session on the other device will be disconnected)
         public bool IsForceLink { get; set; }
-        
+
+        public void ForgetMe()
+        {
+            PlayerPrefs.DeleteKey(PlayerGuid);
+            PlayerPrefs.DeleteKey(RememberLogin);
+        }
     }
 }
