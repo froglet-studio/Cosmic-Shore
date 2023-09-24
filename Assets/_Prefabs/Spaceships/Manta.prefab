@@ -636,12 +636,12 @@ GameObject:
   m_Component:
   - component: {fileID: 5928382658856804067}
   - component: {fileID: 874579555101021527}
-  - component: {fileID: 874579555101021522}
   - component: {fileID: 6441696348568773771}
-  - component: {fileID: 3440187540988767646}
-  - component: {fileID: 1435252848482629424}
-  - component: {fileID: 6293426128044408357}
   - component: {fileID: 7686683633640807837}
+  - component: {fileID: 874579555101021522}
+  - component: {fileID: 1435252848482629424}
+  - component: {fileID: 3440187540988767646}
+  - component: {fileID: 6293426128044408357}
   - component: {fileID: 5086360743770514783}
   m_Layer: 0
   m_Name: Manta
@@ -745,6 +745,54 @@ MonoBehaviour:
   AOEConicExplosionMaterial: {fileID: 0}
   SkimmerMaterial: {fileID: 0}
   LevelEffectParameterMappings: []
+--- !u!114 &6441696348568773771
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 61d08a99952fdc44d96f926228873c0c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  Speed: 0
+  Boosting: 0
+  ChargedBoostDischarging: 0
+  Drifting: 0
+  Portrait: 0
+  ShowThreeButtonPanel: 0
+  LiveProjectiles: 0
+  Stationary: 0
+  ElevatedAmmoGain: 0
+  ChargedBoostCharge: 1
+  AutoPilotEnabled: 0
+  Attached: 0
+  AttachedTrailBlock: {fileID: 0}
+  GunsActive: 0
+  Course: {x: 0, y: 0, z: 1}
+  blockRotation: {x: 0, y: 0, z: 0, w: 0}
+--- !u!114 &7686683633640807837
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 95baa921cf22958449a3143749d5e0e3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  MinimumSpeed: 0
+  ThrottleScaler: 0
+  DefaultMinimumSpeed: 10
+  DefaultThrottleScaler: 62
+  PitchScaler: 40
+  YawScaler: 20
+  RollScaler: 50
+  RotationThrottleScaler: 0
 --- !u!114 &874579555101021522
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -777,7 +825,7 @@ MonoBehaviour:
   maxBlockScale: 3
   XScaler: 1
   YScaler: 1
---- !u!114 &6441696348568773771
+--- !u!114 &1435252848482629424
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -786,25 +834,36 @@ MonoBehaviour:
   m_GameObject: {fileID: 6417075533431866457}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 61d08a99952fdc44d96f926228873c0c, type: 3}
+  m_Script: {fileID: 11500000, guid: 737294a573670f74389a7af68df314d5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Speed: 0
-  Boosting: 0
-  ChargedBoostDischarging: 0
-  Drifting: 0
-  Portrait: 0
-  ShowThreeButtonPanel: 0
-  LiveProjectiles: 0
-  Stationary: 0
-  ElevatedAmmoGain: 0
-  ChargedBoostCharge: 1
-  AutoPilotEnabled: 0
-  Attached: 0
-  AttachedTrailBlock: {fileID: 0}
-  GunsActive: 0
-  Course: {x: 0, y: 0, z: 1}
-  blockRotation: {x: 0, y: 0, z: 0, w: 0}
+  Resources: 
+  usesBoost: 0
+  usesAmmo: 1
+  usesCharge: 0
+  gainsAmmo: 0
+  ammoGainRate: 0.1
+  elevatedAmmoGainRate: 0.03
+  maxBoost: 1
+  initialBoost: 1
+  maxAmmo: 1
+  initialAmmo: 0.392
+  maxCharge: 1
+  initialCharge: 1
+  BoostDisplay: {fileID: 0}
+  AmmoDisplay: {fileID: 0}
+  ChargeDisplay: {fileID: 0}
+  MassDisplay: {fileID: 0}
+  SpaceDisplay: {fileID: 0}
+  TimeDisplay: {fileID: 0}
+  ChargeLevelDisplay: {fileID: 0}
+  MassLevelDisplay: {fileID: 0}
+  SpaceLevelDisplay: {fileID: 0}
+  TimeLevelDisplay: {fileID: 0}
+  InitialChargeLevel: 0
+  InitialMassLevel: 0
+  InitialSpaceLevel: 0
+  InitialTimeLevel: 0
 --- !u!114 &3440187540988767646
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -845,45 +904,6 @@ MonoBehaviour:
   ability: {fileID: 867704553499413969}
   CrystalTransform: {fileID: 0}
   flowFieldData: {fileID: 0}
---- !u!114 &1435252848482629424
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6417075533431866457}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 737294a573670f74389a7af68df314d5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  Resources: 
-  usesBoost: 0
-  usesAmmo: 1
-  usesCharge: 0
-  gainsAmmo: 0
-  ammoGainRate: 0.1
-  elevatedAmmoGainRate: 0.03
-  maxBoost: 1
-  initialBoost: 1
-  maxAmmo: 1
-  initialAmmo: 0.392
-  maxCharge: 1
-  initialCharge: 1
-  BoostDisplay: {fileID: 0}
-  AmmoDisplay: {fileID: 0}
-  ChargeDisplay: {fileID: 0}
-  MassDisplay: {fileID: 0}
-  SpaceDisplay: {fileID: 0}
-  TimeDisplay: {fileID: 0}
-  ChargeLevelDisplay: {fileID: 0}
-  MassLevelDisplay: {fileID: 0}
-  SpaceLevelDisplay: {fileID: 0}
-  TimeLevelDisplay: {fileID: 0}
-  InitialChargeLevel: 0
-  InitialMassLevel: 0
-  InitialSpaceLevel: 0
-  InitialTimeLevel: 0
 --- !u!114 &6293426128044408357
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -912,26 +932,6 @@ MonoBehaviour:
   smallAnimationScaler: 27
   mediumAnimationScaler: 30
   bigAnimationScaler: 60
---- !u!114 &7686683633640807837
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6417075533431866457}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 95baa921cf22958449a3143749d5e0e3, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  MinimumSpeed: 0
-  ThrottleScaler: 0
-  DefaultMinimumSpeed: 10
-  DefaultThrottleScaler: 62
-  PitchScaler: 40
-  YawScaler: 20
-  RollScaler: 50
-  RotationThrottleScaler: 0
 --- !u!114 &5086360743770514783
 MonoBehaviour:
   m_ObjectHideFlags: 0

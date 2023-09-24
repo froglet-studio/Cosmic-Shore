@@ -67,7 +67,6 @@ namespace StarWriter.Core
         [Header("Configuration")]
         [SerializeField] public float boostMultiplier = 4f; // TODO: Move to ShipController
         [SerializeField] public float boostFuelAmount = -.01f;
-        [SerializeField] bool pip = false;
 
         [SerializeField] List<InputEventShipActionMapping> inputEventShipActions;
         Dictionary<InputEvents, List<ShipActionAbstractBase>> ShipControlActions = new();
@@ -543,7 +542,7 @@ namespace StarWriter.Core
         void ScaleProjectilesWithLevel(float currentLevel, LevelEffectParameterMapping parameterMapping)
         {
             // TODO: 
-            if (ShipController is GunShipController controller)
+            if (ShipController is GunShipTransformer controller)
                 controller.ProjectileScale = parameterMapping.Min + (currentLevel * (parameterMapping.Max - parameterMapping.Min));
             else
                 Debug.LogWarning("Trying to scale projectile of ShipTransformer that is not a GunShipController");

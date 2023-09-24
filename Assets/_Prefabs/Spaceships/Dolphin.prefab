@@ -1793,13 +1793,12 @@ GameObject:
   m_Component:
   - component: {fileID: 5928382658856804067}
   - component: {fileID: 874579555101021527}
-  - component: {fileID: 6964962696344697388}
+  - component: {fileID: 6441696348568773771}
+  - component: {fileID: 3472521546628908041}
   - component: {fileID: 874579555101021522}
   - component: {fileID: 1435252848482629424}
   - component: {fileID: 3440187540988767646}
   - component: {fileID: 5510672214890313987}
-  - component: {fileID: 3472521546628908041}
-  - component: {fileID: 6441696348568773771}
   m_Layer: 0
   m_Name: Dolphin
   m_TagString: Player_Ship
@@ -1863,7 +1862,6 @@ MonoBehaviour:
   AOEPrefab: {fileID: 9218889541719856748, guid: 2ae56847c6f549948a71f41eaf59f749,
     type: 3}
   farFieldSkimmer: {fileID: 0}
-  pipCamera: {fileID: 0}
   crystalImpactEffects: 0b0000000600000002000000
   minExplosionScale: 200
   maxExplosionScale: 800
@@ -1886,6 +1884,7 @@ MonoBehaviour:
   - InputEvent: 3
     ShipActions:
     - {fileID: 2525174765376973701}
+  resourceEventClassActions: []
   MassAbilityTarget: {fileID: 0}
   ChargeAbilityTarget: {fileID: 0}
   SpaceAbilityTarget: {fileID: 0}
@@ -1899,25 +1898,54 @@ MonoBehaviour:
   AOEConicExplosionMaterial: {fileID: 0}
   SkimmerMaterial: {fileID: 0}
   LevelEffectParameterMappings: []
---- !u!114 &6964962696344697388
+--- !u!114 &6441696348568773771
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6417075533431866457}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: eda23b53f3524b74ab4795a9c7e3abac, type: 3}
+  m_Script: {fileID: 11500000, guid: 61d08a99952fdc44d96f926228873c0c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  explodableParts:
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  explosiveMaterial: {fileID: 2100000, guid: cbf0164b1addfee43a45e430c464b6fd, type: 2}
-  maxExplosionRadius: 500
-  explosionRate: 120
+  Speed: 0
+  Boosting: 0
+  ChargedBoostDischarging: 0
+  Drifting: 0
+  Portrait: 0
+  ShowThreeButtonPanel: 0
+  LiveProjectiles: 0
+  Stationary: 0
+  ElevatedAmmoGain: 0
+  ChargedBoostCharge: 1
+  AutoPilotEnabled: 0
+  Attached: 0
+  AttachedTrailBlock: {fileID: 0}
+  GunsActive: 0
+  Course: {x: 0, y: 0, z: 1}
+  blockRotation: {x: 0, y: 0, z: 0, w: 0}
+--- !u!114 &3472521546628908041
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 95baa921cf22958449a3143749d5e0e3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  MinimumSpeed: 0
+  ThrottleScaler: 0
+  DefaultMinimumSpeed: 10
+  DefaultThrottleScaler: 60
+  PitchScaler: 180
+  YawScaler: 180
+  RollScaler: 180
+  RotationThrottleScaler: 0
 --- !u!114 &874579555101021522
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1939,7 +1967,7 @@ MonoBehaviour:
   initialWavelength: 12
   minWavelength: 6
   gap: 1
-  InnerDimensions: {x: 0, y: 0, z: 0}
+  TargetScale: {x: 0, y: 0, z: 0}
   defaultWaitTime: 0.5
   waitTime: 0.5
   startDelay: 2
@@ -2059,54 +2087,6 @@ MonoBehaviour:
   ThrusterBottomLeft: {fileID: 9149645231041287468}
   ThrusterLeft: {fileID: 2822716781848117340}
   ThrusterTopLeft: {fileID: 1720307654034401823}
---- !u!114 &3472521546628908041
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6417075533431866457}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 95baa921cf22958449a3143749d5e0e3, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  MinimumSpeed: 0
-  ThrottleScaler: 0
-  DefaultMinimumSpeed: 10
-  DefaultThrottleScaler: 60
-  PitchScaler: 180
-  YawScaler: 180
-  RollScaler: 180
-  RotationThrottleScaler: 0
---- !u!114 &6441696348568773771
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6417075533431866457}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 61d08a99952fdc44d96f926228873c0c, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  Speed: 0
-  Boosting: 0
-  ChargedBoostDischarging: 0
-  Drifting: 0
-  Portrait: 0
-  ShowThreeButtonPanel: 0
-  LiveProjectiles: 0
-  Stationary: 0
-  ElevatedAmmoGain: 0
-  ChargedBoostCharge: 1
-  AutoPilotEnabled: 0
-  Attached: 0
-  AttachedTrailBlock: {fileID: 0}
-  GunsActive: 0
-  Course: {x: 0, y: 0, z: 1}
-  blockRotation: {x: 0, y: 0, z: 0, w: 0}
 --- !u!1 &6999220331312364478
 GameObject:
   m_ObjectHideFlags: 0

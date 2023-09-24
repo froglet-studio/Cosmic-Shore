@@ -36,14 +36,12 @@ public class CameraManager : SingletonPersistent<CameraManager>
     private void OnEnable()
     {
         GameManager.onPlayGame += SetupGamePlayCameras;
-        DeathEvents.OnDeathBegin += SetDeathCameraActive;
         GameManager.onGameOver += SetEndCameraActive;
     }
 
     void OnDisable()
     {
         GameManager.onPlayGame -= SetupGamePlayCameras;
-        DeathEvents.OnDeathBegin -= SetDeathCameraActive;
         GameManager.onGameOver -= SetEndCameraActive;
     }
 

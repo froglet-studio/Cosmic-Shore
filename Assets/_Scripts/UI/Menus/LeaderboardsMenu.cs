@@ -58,26 +58,10 @@ public class LeaderboardsMenu : MonoBehaviour
         PopulateGameHighScores();
     }
 
-    IEnumerator SelectGameCoroutine(int index)
+    IEnumerator SelectShipTypeCoroutine(int index)
     {
-        yield return new WaitForEndOfFrame();
-        SelectGame(index);
-    }
-
-    void PopulateShipClassSelectionDropdown()
-    {
-        var options = new List<TMP_Dropdown.OptionData>();
-
-        // Only add "Any" selection if there is more than one vessel class available
-        if (SelectedGame.Pilots.Count > 1)
-            options.Add(new TMP_Dropdown.OptionData("Any"));
-        
-        foreach (var pilot in SelectedGame.Pilots)
-            options.Add(new TMP_Dropdown.OptionData(pilot.Ship.Class.ToString()));
-
-        ShipClassSelection.options = options;
-        ShipClassSelection.value = 0;
-        SelectShipType(0);
+        yield return new WaitUntil(() => AuthenticationManager.PlayerAccount != null);
+        SelectShipType(index);
     }
 
     public void SelectShipType(int optionValue)
@@ -86,6 +70,12 @@ public class LeaderboardsMenu : MonoBehaviour
         SelectedShipType = Enum.Parse<ShipTypes>(shiptypeName);
 
         FetchLeaderboard();
+    }
+
+    IEnumerator SelectGameCoroutine(int index)
+    {
+        yield return new WaitForEndOfFrame();
+        SelectGame(index);
     }
 
     public void SelectGame(int index)
@@ -123,6 +113,22 @@ public class LeaderboardsMenu : MonoBehaviour
         }
 
         StartCoroutine(SelectGameCoroutine(0));
+    }
+
+    void PopulateShipClassSelectionDropdown()
+    {
+        var options = new List<TMP_Dropdown.OptionData>();
+
+        // Only add "Any" selection if there is more than one vessel class available
+        if (SelectedGame.Pilots.Count > 1)
+            options.Add(new TMP_Dropdown.OptionData("Any"));
+
+        foreach (var pilot in SelectedGame.Pilots)
+            options.Add(new TMP_Dropdown.OptionData(pilot.Ship.Class.ToString()));
+
+        ShipClassSelection.options = options;
+        ShipClassSelection.value = 0;
+        StartCoroutine(SelectShipTypeCoroutine(0));
     }
 
     void PopulateGameHighScores()

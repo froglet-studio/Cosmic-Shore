@@ -106,7 +106,7 @@ namespace StarWriter.Core
             if (newAttachedBlockIndex != attachedBlockIndex) 
             {
                 attachedBlockIndex = newAttachedBlockIndex;
-                ((GunShipController)ship.ShipController).FinalBlockSlideEffects(); 
+                ((GunShipTransformer)ship.ShipController).FinalBlockSlideEffects(); 
             }
             shipData.Course = course;
             

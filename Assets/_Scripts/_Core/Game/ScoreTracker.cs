@@ -20,7 +20,7 @@ public class ScoreTracker : MonoBehaviour
 
     // Magic number to give more precision to time tracking as an integer value
     
-    [SerializeField] ScoringModes ScoringMode;
+    [SerializeField] public ScoringModes ScoringMode;
     [SerializeField] bool GolfRules;
     [HideInInspector] public GameCanvas GameCanvas;
 

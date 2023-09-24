@@ -42,7 +42,6 @@ namespace StarWriter.Core
             AdsManager.AdShowComplete += OnAdShowComplete;
             AdsManager.AdShowFailure += OnAdShowFailure;
             AdvertisementMenu.onDeclineAd += EndGame;
-            ShipExplosionHandler.onShipExplosionAnimationCompletion += OnExplosionCompletion;
         }
 
         void OnDisable()
@@ -50,7 +49,6 @@ namespace StarWriter.Core
             AdsManager.AdShowComplete -= OnAdShowComplete;
             AdsManager.AdShowFailure -= OnAdShowFailure;
             AdvertisementMenu.onDeclineAd -= EndGame;
-            ShipExplosionHandler.onShipExplosionAnimationCompletion -= OnExplosionCompletion;
         }
 
         // TODO: should this live somewhere else?
