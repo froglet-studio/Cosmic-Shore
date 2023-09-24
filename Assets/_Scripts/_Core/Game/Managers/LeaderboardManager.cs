@@ -115,29 +115,28 @@ public class LeaderboardManager : SingletonPersistent<LeaderboardManager>
     /// Update Gameplay Stats
     /// Upload game mode, ship type, intensity level and scores to memory
     /// </summary>
-    public void UpdateGameplayStatistic(MiniGames gameMode, ShipTypes shipType, int intensity, List<int> scores)
+    public void ReportGameplayStatistic(MiniGames gameMode, ShipTypes shipType, int intensity, int score)
     {
         // Build list of statistics to update
         // One entry for each score for specific game mode/ship combination
         // One entry for each score for game mode any ship
 
-        Debug.Log($"UpdateGameplayStats - gameMode:{gameMode}, shipType:{shipType}, intensity:{intensity}, score0:{scores[0]}");
-        List<StatisticUpdate> stats = new List<StatisticUpdate>();
-
-        foreach (var score in scores)
+        Debug.Log($"UpdateGameplayStats - gameMode:{gameMode}, shipType:{shipType}, intensity:{intensity}, score:{score}");
+        List<StatisticUpdate> stats = new()
         {
-            stats.Add(new StatisticUpdate() {
+            new StatisticUpdate()
+            {
                 StatisticName = GetGameplayStatKey(gameMode, shipType),
                 Value = score
-            });
-
-            stats.Add(new StatisticUpdate()
+            },
+            new StatisticUpdate()
             {
                 StatisticName = GetGameplayStatKey(gameMode, ShipTypes.Any),
                 Value = score
-            });
-        }
-        UpdatePlayerStatistic(stats, new Dictionary<string, string>() { { "Intensity", intensity.ToString() } });
+            }
+        };
+
+        ReportPlayerStatistic(stats, new Dictionary<string, string>() { { "Intensity", intensity.ToString() } });
     }
 
     /// <summary>
@@ -159,14 +158,14 @@ public class LeaderboardManager : SingletonPersistent<LeaderboardManager>
     /// </summary>
     void UpdatePlayerStatistic(List<StatisticUpdate> stats)
     {
-        UpdatePlayerStatistic(stats, new());
+        ReportPlayerStatistic(stats, new());
     }
 
     /// <summary>
     /// Update Player Stats - Aggregate
     /// Update player stats to an existing dictionary.
     /// </summary>
-    void UpdatePlayerStatistic(List<StatisticUpdate> stats, Dictionary<string, string> customTags)
+    void ReportPlayerStatistic(List<StatisticUpdate> stats, Dictionary<string, string> customTags)
     {
         if (online)
         {

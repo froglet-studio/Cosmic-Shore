@@ -8,7 +8,7 @@ public class CourseMiniGame : MiniGame
     [SerializeField] int numberOfSegments = 10;
     [SerializeField] int straightLineLength = 400;
 
-    public static new ShipTypes PlayerShipType = ShipTypes.Shark;
+    public static new ShipTypes PlayerShipType = ShipTypes.Rhino;
 
     protected override void Start()
     {

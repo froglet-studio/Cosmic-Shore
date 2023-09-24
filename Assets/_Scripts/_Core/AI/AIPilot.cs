@@ -168,7 +168,7 @@ namespace StarWriter.Core.IO
                 if (useAbility) StartCoroutine(UseAbilityCoroutine(ability));
 
                 var targetPosition = CrystalTransform.position;
-                Vector3 currentDirection = shipStatus.Course;
+                //Vector3 currentDirection = shipStatus.Course;
                 distance = targetPosition - transform.position;
                 Vector3 desiredDirection = distance.normalized;
 

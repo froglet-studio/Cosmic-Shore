@@ -637,11 +637,11 @@ GameObject:
   - component: {fileID: 5928382658856804067}
   - component: {fileID: 874579555101021527}
   - component: {fileID: 874579555101021522}
+  - component: {fileID: 6441696348568773771}
   - component: {fileID: 3440187540988767646}
   - component: {fileID: 1435252848482629424}
   - component: {fileID: 6293426128044408357}
   - component: {fileID: 7686683633640807837}
-  - component: {fileID: 6441696348568773771}
   - component: {fileID: 5086360743770514783}
   m_Layer: 0
   m_Name: Manta
@@ -693,7 +693,7 @@ MonoBehaviour:
   cameraManager: {fileID: 0}
   InputController: {fileID: 0}
   ResourceSystem: {fileID: 0}
-  Name: GreenManta
+  Name: Manta
   ShipType: 1
   TrailSpawner: {fileID: 874579555101021522}
   ShipController: {fileID: 0}
@@ -777,6 +777,34 @@ MonoBehaviour:
   maxBlockScale: 3
   XScaler: 1
   YScaler: 1
+--- !u!114 &6441696348568773771
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 61d08a99952fdc44d96f926228873c0c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  Speed: 0
+  Boosting: 0
+  ChargedBoostDischarging: 0
+  Drifting: 0
+  Portrait: 0
+  ShowThreeButtonPanel: 0
+  LiveProjectiles: 0
+  Stationary: 0
+  ElevatedAmmoGain: 0
+  ChargedBoostCharge: 1
+  AutoPilotEnabled: 0
+  Attached: 0
+  AttachedTrailBlock: {fileID: 0}
+  GunsActive: 0
+  Course: {x: 0, y: 0, z: 1}
+  blockRotation: {x: 0, y: 0, z: 0, w: 0}
 --- !u!114 &3440187540988767646
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -904,34 +932,6 @@ MonoBehaviour:
   YawScaler: 20
   RollScaler: 50
   RotationThrottleScaler: 0
---- !u!114 &6441696348568773771
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6417075533431866457}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 61d08a99952fdc44d96f926228873c0c, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  Speed: 0
-  Boosting: 0
-  ChargedBoostDischarging: 0
-  Drifting: 0
-  Portrait: 0
-  ShowThreeButtonPanel: 0
-  LiveProjectiles: 0
-  Stationary: 0
-  ElevatedAmmoGain: 0
-  ChargedBoostCharge: 1
-  AutoPilotEnabled: 0
-  Attached: 0
-  AttachedTrailBlock: {fileID: 0}
-  GunsActive: 0
-  Course: {x: 0, y: 0, z: 1}
-  blockRotation: {x: 0, y: 0, z: 0, w: 0}
 --- !u!114 &5086360743770514783
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -6,11 +6,7 @@ public enum ShipTypes
     Random = 0,
     Manta = 1,
     Dolphin = 2,
-    Shark = 3,
-    GunManta = 4,
-    KnifeFish = 5,
-    MantaAI = 6,
-    DolphinAI = 7,
-    SharkAI = 8,
-    Bufo = 9
+    Rhino = 3,
+    Urchin = 4,
+    Grizzly = 5
 }

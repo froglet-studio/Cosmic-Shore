@@ -43,7 +43,7 @@ namespace StarWriter.Core.UI
         }
         public void OnClickSmash()
         {
-            MiniGame.PlayerShipType = ShipTypes.Shark;
+            MiniGame.PlayerShipType = ShipTypes.Rhino;
             MiniGame.PlayerPilot = Hangar.Instance.SmashPilot;
             MiniGame.IntensityLevel = 1;
             MiniGame.NumberOfPlayers = 1;

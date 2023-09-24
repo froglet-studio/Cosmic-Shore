@@ -28,7 +28,7 @@ namespace StarWriter.Core.CloutSystem
             //getting clout value
             GetCloutValue(ShipTypes.Manta, Element.Charge, CloutType.Sport); //a changed dictionary entry
 
-            GetCloutValue(ShipTypes.Bufo, Element.Charge, CloutType.Sport); // a default dictionary entry
+            GetCloutValue(ShipTypes.Grizzly, Element.Charge, CloutType.Sport); // a default dictionary entry
 
             //removing clout
             AddClout(ShipTypes.Manta, Element.Charge, CloutType.Sport, -20);

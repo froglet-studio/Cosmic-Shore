@@ -8,7 +8,7 @@ public class ShootingGalleryMiniGame : MiniGame
     [SerializeField] Vector3 CrystalStartPosition;
     [SerializeField] SegmentSpawner SegmentSpawner;
 
-    public static new ShipTypes PlayerShipType = ShipTypes.GunManta;
+    public static new ShipTypes PlayerShipType = ShipTypes.Urchin;
 
     protected override void Start()
     {

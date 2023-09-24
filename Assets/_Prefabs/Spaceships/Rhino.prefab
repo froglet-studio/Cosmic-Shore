@@ -1034,7 +1034,7 @@ MonoBehaviour:
   cameraManager: {fileID: 0}
   InputController: {fileID: 0}
   ResourceSystem: {fileID: 0}
-  Name: Shark
+  Name: Rhino
   ShipType: 3
   TrailSpawner: {fileID: 874579555101021522}
   ShipController: {fileID: 0}
@@ -1066,6 +1066,7 @@ MonoBehaviour:
     - {fileID: 6430648885380261475}
     - {fileID: 1315493734959331551}
     - {fileID: 5565916779484709519}
+  resourceEventClassActions: []
   MassAbilityTarget: {fileID: 7881301509579309438}
   ChargeAbilityTarget: {fileID: 6430648885380261475}
   SpaceAbilityTarget: {fileID: 0}
@@ -1131,7 +1132,7 @@ MonoBehaviour:
   initialWavelength: 5
   minWavelength: 1
   gap: 2
-  InnerDimensions: {x: 0, y: 0, z: 0}
+  TargetScale: {x: 0, y: 0, z: 0}
   defaultWaitTime: 0.8
   waitTime: 0.5
   startDelay: 2
