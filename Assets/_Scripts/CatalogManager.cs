@@ -11,19 +11,36 @@ public class CatalogManager : SingletonPersistent<CatalogManager>
     // Items list, configurable via inspector
     static List<PlayFab.EconomyModels.CatalogItem> CatalogItems;
     static List<PlayFab.EconomyModels.CatalogItem> InventoryItems;
+    PlayFabEconomyInstanceAPI playFabEconomyInstanceAPI;
 
     // Bootstrap the whole thing
     public void Start()
     {
+        AuthenticationManager.LoginSuccess += InitializePlayFabEconomyAPI;
         AuthenticationManager.LoginSuccess += LoadCatalog;
     }
 
+    #region Initialize PlayFab Economy API with Auth Context
+
+    void InitializePlayFabEconomyAPI(object sender, LoginResult result)
+    {
+        playFabEconomyInstanceAPI = new PlayFabEconomyInstanceAPI(AuthenticationManager.PlayerAccount.AuthContext);
+    }
+
+    #endregion
+
+    #region Catalog Operations
+    
+    /// <summary>
+    /// Load Catalog Items
+    /// Get all catalog items
+    /// </summary>
     void LoadCatalog(object sender, LoginResult result)
     {
-        PlayFabEconomyAPI.SearchItems(
+        playFabEconomyInstanceAPI.SearchItems(
             new()
             {
-                AuthenticationContext = AuthenticationManager.PlayerAccount.AuthContext,
+                // AuthenticationContext = AuthenticationManager.PlayerAccount.AuthContext,
                 Filter = "ContentType eq 'Vessel' and tags/any(t: t eq 'Rhino')"
             },
             response =>
@@ -45,33 +62,43 @@ public class CatalogManager : SingletonPersistent<CatalogManager>
             }
         );
     }
+    
+    
+    #endregion
 
+    #region Inventory Operations
+    
     // TODO: Add title data key of starting catalog item ids
 
-    void GrantStartingInventory()
+    /// <summary>
+    /// Grant Starting Inventory Item Quantity
+    /// Nothing magical here, default item quantity is 100
+    /// </summary>
+    void GrantStartingInventory(int amount = 100)
     {
         for (int i = 0; i < CatalogItems.Count; i++)
         {
-            PlayFabEconomyAPI.AddInventoryItems(
+            playFabEconomyInstanceAPI.AddInventoryItems(
                 new AddInventoryItemsRequest()
                 {
                     // AuthenticationContext = AccountManager.AuthenticationContext,
-                    Amount = 100,
+                    Amount = amount,
                     Item = new InventoryItemReference
                     {
                         Id = CatalogItems[i].Id
-                    },
-                    Entity = new PlayFab.EconomyModels.EntityKey()
-                    {
-                        Id = AuthenticationManager.PlayerAccount.AuthContext.EntityId,
-                        Type = AuthenticationManager.PlayerAccount.AuthContext.EntityType
                     }
+                    // Entity = new PlayFab.EconomyModels.EntityKey()
+                    // {
+                    //     Id = AuthenticationManager.PlayerAccount.AuthContext.EntityId,
+                    //     Type = AuthenticationManager.PlayerAccount.AuthContext.EntityType
+                    // }
                 },
                 response =>
                 {
                     Debug.Log("CatalogManager - OnAddInventoryItemSuccess");
                     foreach (var transactionId in response.TransactionIds)
                     {
+                        // Transaction ID is the ascending order of the players transaction
                         Debug.Log($"CatalogManager - transaction id: {transactionId}");
                     }
                 },
@@ -83,9 +110,13 @@ public class CatalogManager : SingletonPersistent<CatalogManager>
         }
     }
 
+    /// <summary>
+    /// Load All Inventory Items
+    /// Get a list of inventory item ids and request each item's detail via Get Items Request 
+    /// </summary>
     void LoadInventory()
     {
-        PlayFabEconomyAPI.GetInventoryItems(
+        playFabEconomyInstanceAPI.GetInventoryItems(
             new GetInventoryItemsRequest
             {
                 // AuthenticationContext = AccountManager.AuthenticationContext,
@@ -100,7 +131,7 @@ public class CatalogManager : SingletonPersistent<CatalogManager>
                     itemIds.Add(item.Id);
                 }
 
-                PlayFabEconomyAPI.GetItems(
+                playFabEconomyInstanceAPI.GetItems(
                     new GetItemsRequest()
                     {
                         Ids = itemIds
@@ -134,9 +165,13 @@ public class CatalogManager : SingletonPersistent<CatalogManager>
         );
     }
 
+    /// <summary>
+    /// Get Inventory Item
+    /// Request inventory item by item id
+    /// </summary>
     public void GetInventoryItem(string inventoryItemId)
     {
-        PlayFabEconomyAPI.GetItem(
+        playFabEconomyInstanceAPI.GetItem(
             new GetItemRequest()
             {
                 Id = inventoryItemId
@@ -160,37 +195,80 @@ public class CatalogManager : SingletonPersistent<CatalogManager>
         );
     }
 
-    public void BuyTomahawk()
+    /// <summary>
+    /// Add Items to Inventory
+    /// Add shinny new stuff!
+    /// </summary>
+    public void AddInventoryItem(int amount)
     {
-        string tomahawkId = "1fc47256-60e1-4976-b66e-71feb8e56372";
-        string shardId = "017bbd32-c4f7-486b-ab86-f899fda1f4ca";
-        PlayFabEconomyAPI.PurchaseInventoryItems(
+        foreach (var item in InventoryItems)
+        {
+            playFabEconomyInstanceAPI.AddInventoryItems(
+                new AddInventoryItemsRequest()
+                {
+                    Amount = amount,
+                    Item = new InventoryItemReference
+                    {
+                        Id = item.Id,
+                        StackId = item.DefaultStackId
+                    }
+                    // Entity = new PlayFab.EconomyModels.EntityKey
+                    // {
+                    //     Id = AuthenticationManager.PlayerAccount.PlayFabId,
+                    //     Type = AuthenticationManager.PlayerAccount.AuthContext.EntityType
+                    // }
+                }, (result) =>
+                {
+                    var name = nameof(CatalogManager);
+                    Debug.Log($"{name} - add inventory item success.");
+                    Debug.Log($"{name} - add inventory item id: {item.Id}");
+                    // Etag can be used for multiple sources or users to modify the same item simultaneously without conflict
+                    Debug.Log($"{name} - add inventory item etag: {result.ETag}");
+                    Debug.Log($"{name} - add inventory item idempotency id: {result.IdempotencyId}");
+                }, (error) =>
+                {
+                    Debug.Log(error.GenerateErrorReport());
+                }
+            );
+        }
+        
+    }
+    
+
+    /// <summary>
+    /// Purchase Item
+    /// Buy in-game item with virtual currency (Shards)
+    /// </summary>
+    public void PurchaseItem(string itemId, string currencyId, int itemAmount, int currencyAmount)
+    {
+        
+        playFabEconomyInstanceAPI.PurchaseInventoryItems(
             new()
             {
                 // AuthenticationContext = AccountManager.AuthenticationContext,
 
-                Amount = 1,
+                Amount = itemAmount,
                 Item = new() 
                 { 
-                    Id = tomahawkId
+                    Id = itemId
                 },
-                Entity = new()
-                {
-                    // Id = AccountManager.AuthenticationContext.PlayFabId,
-                    // Type = AccountManager.AuthenticationContext.EntityType
-                },
+                // Entity = new()
+                // {
+                //     // Id = AccountManager.AuthenticationContext.PlayFabId,
+                //     // Type = AccountManager.AuthenticationContext.EntityType
+                // },
                 PriceAmounts = new List<PurchasePriceAmount>
                 {
                     new PurchasePriceAmount() 
                     { 
-                        ItemId = shardId, 
-                        Amount = 10 
+                        ItemId = currencyId, 
+                        Amount = currencyAmount 
                     }
                 },
             },
             response =>
             {
-                Debug.Log("CatalogManager - Successfully purchased Tomahawk");
+                Debug.Log($"CatalogManager - Successfully purchased {itemId}");
             },
             error =>
             {
@@ -198,4 +276,16 @@ public class CatalogManager : SingletonPersistent<CatalogManager>
             }
         );
     }
+
+    /// <summary>
+    /// Purchase Item Test
+    /// Buy a test vessel using shards, the amount of shards should be the exact price tag on the test vessel shards
+    /// </summary>
+    public void PurchaseItemTest()
+    {
+        string vesselId = "aaf7670c-96a2-46d8-9489-0d971c6dc742";
+        string shardId = "88be4041-cc48-4231-8595-d440b371d015";
+        PurchaseItem(vesselId, shardId, 1, 5);
+    }
+    #endregion
 }
