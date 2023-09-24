@@ -22,6 +22,11 @@ public class CatalogManager : SingletonPersistent<CatalogManager>
 
     #region Initialize PlayFab Economy API with Auth Context
 
+    /// <summary>
+    /// Load Catalog Items
+    /// Instantiate PlayFab Economy API with auth context
+    /// Querying catalog and inventory item don't need to fetch auth context from Authentication manager everytime.
+    /// </summary>
     void InitializePlayFabEconomyAPI(object sender, LoginResult result)
     {
         playFabEconomyInstanceAPI = new PlayFabEconomyInstanceAPI(AuthenticationManager.PlayerAccount.AuthContext);
@@ -87,11 +92,6 @@ public class CatalogManager : SingletonPersistent<CatalogManager>
                     {
                         Id = CatalogItems[i].Id
                     }
-                    // Entity = new PlayFab.EconomyModels.EntityKey()
-                    // {
-                    //     Id = AuthenticationManager.PlayerAccount.AuthContext.EntityId,
-                    //     Type = AuthenticationManager.PlayerAccount.AuthContext.EntityType
-                    // }
                 },
                 response =>
                 {
@@ -197,7 +197,7 @@ public class CatalogManager : SingletonPersistent<CatalogManager>
 
     /// <summary>
     /// Add Items to Inventory
-    /// Add shinny new stuff!
+    /// Add shinny new stuff! Any type of item from currency to vessel and ship upgrades
     /// </summary>
     public void AddInventoryItem(int amount)
     {
@@ -212,11 +212,6 @@ public class CatalogManager : SingletonPersistent<CatalogManager>
                         Id = item.Id,
                         StackId = item.DefaultStackId
                     }
-                    // Entity = new PlayFab.EconomyModels.EntityKey
-                    // {
-                    //     Id = AuthenticationManager.PlayerAccount.PlayFabId,
-                    //     Type = AuthenticationManager.PlayerAccount.AuthContext.EntityType
-                    // }
                 }, (result) =>
                 {
                     var name = nameof(CatalogManager);
@@ -276,16 +271,6 @@ public class CatalogManager : SingletonPersistent<CatalogManager>
             }
         );
     }
-
-    /// <summary>
-    /// Purchase Item Test
-    /// Buy a test vessel using shards, the amount of shards should be the exact price tag on the test vessel shards
-    /// </summary>
-    public void PurchaseItemTest()
-    {
-        string vesselId = "aaf7670c-96a2-46d8-9489-0d971c6dc742";
-        string shardId = "88be4041-cc48-4231-8595-d440b371d015";
-        PurchaseItem(vesselId, shardId, 1, 5);
-    }
+    
     #endregion
 }
