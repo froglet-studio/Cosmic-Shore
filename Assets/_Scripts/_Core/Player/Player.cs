@@ -11,33 +11,16 @@ public class Player : MonoBehaviour
     [SerializeField] Ship ship;
     [SerializeField] GameObject shipContainer;
     [SerializeField] public GameCanvas GameCanvas;
+    [SerializeField] public ShipTypes defaultShip = ShipTypes.Dolphin;
 
     public static Player ActivePlayer;
-
 
     public Teams Team;
     public string PlayerName { get => playerName; set => playerName = value; }
     public string PlayerUUID { get => playerUUID; set => playerUUID = value; }
     public Ship Ship { get => ship; }
 
-    [SerializeField] public ShipTypes defaultShip = ShipTypes.Dolphin;
-
     GameManager gameManager;
-
-    void SetupAIShip(Ship shipInstance)
-    {
-        shipInstance.transform.SetParent(shipContainer.transform, false);
-        shipInstance.GetComponent<AIPilot>().enabled = true;
-
-        var inputController = GetComponent<InputController>();
-        inputController.ship = shipInstance;
-
-        ship = shipInstance.GetComponent<Ship>();
-        ship.Team = Team;
-        ship.Player = this;
-
-        gameManager.WaitOnAILoading(ship.GetComponent<AIPilot>());
-    }
 
     void Start()
     {
@@ -84,6 +67,7 @@ public class Player : MonoBehaviour
             ship = shipInstance.GetComponent<Ship>();
             ship.Team = Team;
             ship.Player = this;
+
             // TODO: P1 do we want to refactor to just give the resource system a display group?
             ship.ResourceSystem.BoostDisplay = GameCanvas.ResourceDisplayGroup.BoostDisplay;
             ship.ResourceSystem.AmmoDisplay = GameCanvas.ResourceDisplayGroup.AmmoDisplay;
@@ -92,6 +76,24 @@ public class Player : MonoBehaviour
             ship.ResourceSystem.MassLevelDisplay = GameCanvas.ResourceDisplayGroup.MassLevelDisplay;
             ship.ResourceSystem.SpaceLevelDisplay = GameCanvas.ResourceDisplayGroup.SpaceLevelDisplay;
             ship.ResourceSystem.TimeLevelDisplay = GameCanvas.ResourceDisplayGroup.TimeLevelDisplay;
+        }
+
+        void SetupAIShip(Ship shipInstance)
+        {
+            Debug.Log($"Player - SetupAIShip - playerName: {playerName}");
+
+            shipInstance.transform.SetParent(shipContainer.transform, false);
+            shipInstance.GetComponent<AIPilot>().enabled = true;
+
+            var inputController = GetComponent<InputController>();
+            inputController.ship = shipInstance;
+
+            ship = shipInstance.GetComponent<Ship>();
+            ship.Team = Team;
+            ship.Player = this;
+            ship.InputController = inputController;
+
+            gameManager.WaitOnAILoading(ship.GetComponent<AIPilot>());
         }
     }
 }

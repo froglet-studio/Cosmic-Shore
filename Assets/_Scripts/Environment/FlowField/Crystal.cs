@@ -123,9 +123,6 @@ public class Crystal : NodeItem
         else 
             return;
 
-     
-        
-
         //
         // Do the crystal stuff that always happens (ship/projectile independent)
         //
@@ -137,7 +134,7 @@ public class Crystal : NodeItem
 
         // Move the Crystal
         StartCoroutine(CrystalModel.GetComponent<FadeIn>().FadeInCoroutine());
-        transform.SetPositionAndRotation(UnityEngine.Random.insideUnitSphere * sphereRadius + origin, UnityEngine.Random.rotation);
+        transform.SetPositionAndRotation(Random.insideUnitSphere * sphereRadius + origin, UnityEngine.Random.rotation);
         OnCrystalMove?.Invoke();
 
         UpdateSelfWithNode();

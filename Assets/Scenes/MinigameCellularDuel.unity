@@ -493,6 +493,7 @@ MonoBehaviour:
   Team: -1
   ItemType: 1
   crystalProperties:
+    crystal: {fileID: 0}
     fuelAmount: 1
     scoreAmount: 1
     tailLengthIncreaseAmount: 0
@@ -502,7 +503,8 @@ MonoBehaviour:
   SpentCrystalPrefab: {fileID: 8491596592871572304, guid: f39596c98ed9d644a834f2fa27ec90ca,
     type: 3}
   CrystalModel: {fileID: 7244393970774794917}
-  material: {fileID: 2100000, guid: 383f21e8586fd7243a19e1d0f26110d0, type: 2}
+  explodingMaterial: {fileID: 2100000, guid: 383f21e8586fd7243a19e1d0f26110d0, type: 2}
+  defaultMaterial: {fileID: 2100000, guid: 383f21e8586fd7243a19e1d0f26110d0, type: 2}
   shipImpactEffects: 1
   crystalImpactEffects: 
   AOEPrefab: {fileID: 0}
@@ -7245,7 +7247,6 @@ MonoBehaviour:
   GameCanvas: {fileID: 69216807}
   playerPrefab: {fileID: 433663843}
   PlayerOrigin: {fileID: 1984950343}
-  UsePlayFab: 1
   EndOfTurnDelay: 0
   ActivePlayer: {fileID: 0}
 --- !u!1 &1829578212
@@ -7457,12 +7458,12 @@ PrefabInstance:
     - target: {fileID: 5247650485044281852, guid: 061f308768b5b564bbb0f130d1a8f02e,
         type: 3}
       propertyPath: m_LocalRotation.w
-      value: 0.014161362
+      value: 0.014161397
       objectReference: {fileID: 0}
     - target: {fileID: 5247650485044281852, guid: 061f308768b5b564bbb0f130d1a8f02e,
         type: 3}
       propertyPath: m_LocalRotation.x
-      value: 0.00019546723
+      value: 0.00019546802
       objectReference: {fileID: 0}
     - target: {fileID: 5247650485044281852, guid: 061f308768b5b564bbb0f130d1a8f02e,
         type: 3}
@@ -7472,7 +7473,7 @@ PrefabInstance:
     - target: {fileID: 5247650485044281852, guid: 061f308768b5b564bbb0f130d1a8f02e,
         type: 3}
       propertyPath: m_LocalRotation.z
-      value: -0.013800159
+      value: -0.013800179
       objectReference: {fileID: 0}
     - target: {fileID: 5247650485044281852, guid: 061f308768b5b564bbb0f130d1a8f02e,
         type: 3}
