@@ -17,6 +17,7 @@ public class CatalogManager : SingletonPersistent<CatalogManager>
     // Bootstrap the whole thing
     public void Start()
     {
+        _playerInventory ??= new PlayerInventory();
         AuthenticationManager.OnLoginSuccess += InitializePlayFabEconomyAPI;
         AuthenticationManager.OnLoginSuccess += LoadCatalog;
         AuthenticationManager.OnLoginSuccess += LoadInventory;
@@ -100,7 +101,7 @@ public class CatalogManager : SingletonPersistent<CatalogManager>
                 },
                 response =>
                 {
-                    Debug.Log("CatalogManager - OnAddInventoryItemSuccess");
+                    Debug.Log("CatalogManager - On Add Inventory Item Success");
                     foreach (var transactionId in response.TransactionIds)
                     {
                         // Transaction ID is the ascending order of the players transaction
@@ -119,7 +120,7 @@ public class CatalogManager : SingletonPersistent<CatalogManager>
     /// Load All Inventory Items
     /// Get a list of inventory item ids and request each item's detail via Get Items Request 
     /// </summary>
-    void LoadInventory()
+    public void LoadInventory()
     {
         playFabEconomyInstanceAPI.GetInventoryItems(
             new GetInventoryItemsRequest
@@ -127,7 +128,7 @@ public class CatalogManager : SingletonPersistent<CatalogManager>
             },
             response =>
             {
-                Debug.Log("CatalogManager - GetInventoryItemsResponse: " + response.Items);
+                Debug.Log("CatalogManager - Get Inventory Items success.");
 
                 _playerInventory.InventoryItems = response.Items;
 
@@ -183,16 +184,17 @@ public class CatalogManager : SingletonPersistent<CatalogManager>
             playFabEconomyInstanceAPI.AddInventoryItems(
                 new AddInventoryItemsRequest()
                 {
-                    Amount = amount,
-                    Item = itemReference
+                    Item = itemReference,
+                    Amount = amount
                 }, (result) =>
                 {
                     var name = nameof(CatalogManager);
                     Debug.Log($"{name} - add inventory item success.");
-                    Debug.Log($"{name} - add inventory item id: {itemReference.Id}");
+                    Debug.Log($"{name} - add inventory item id: {itemReference.Id} amount: {amount.ToString()}");
                     // Etag can be used for multiple sources or users to modify the same item simultaneously without conflict
-                    Debug.Log($"{name} - add inventory item etag: {result.ETag}");
-                    Debug.Log($"{name} - add inventory item idempotency id: {result.IdempotencyId}");
+                    // Debug.Log($"{name} - add inventory item etag: {result.ETag}");
+                    // Debug.Log($"{name} - add inventory item idempotency id: {result.IdempotencyId}");
+                    LoadInventory();
                 }, (error) =>
                 {
                     Debug.Log(error.GenerateErrorReport());
