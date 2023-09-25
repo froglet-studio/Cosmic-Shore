@@ -56,12 +56,6 @@ namespace StarWriter.Core
             sfxEnabled = PlayerPrefs.GetInt(PlayerPrefKeys.SFXEnabled.ToString()) == 1;
             hapticsEnabled = PlayerPrefs.GetInt(PlayerPrefKeys.HapticsEnabled.ToString()) == 1;
             invertYEnabled = PlayerPrefs.GetInt(PlayerPrefKeys.InvertYEnabled.ToString()) == 1;
-
-            // Reset this everytime the player launches the game
-            if (!PlayerPrefs.HasKey(PlayerPrefKeys.IsInitialPlay.ToString()))
-            {
-                Debug.Log("First Try!");
-            }
         }
 
         /// <summary>

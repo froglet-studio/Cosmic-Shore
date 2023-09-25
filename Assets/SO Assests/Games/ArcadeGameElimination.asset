@@ -25,4 +25,4 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 6d520cd7eb8878b4aa2551e0591bc08d, type: 2}
   MinPlayers: 2
   MaxPlayers: 3
-  SceneName: MinigameFlightSchool
+  SceneName: MinigameElimination

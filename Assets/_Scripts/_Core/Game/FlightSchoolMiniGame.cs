@@ -20,10 +20,7 @@ public class FlightSchoolMiniGame : MiniGame
         SegmentSpawner.Seed = new System.Random().Next();
         SegmentSpawner.numberOfSegments = IntensityLevel * 2 - 1;
         SegmentSpawner.origin.z = -(IntensityLevel - 1) * SegmentSpawner.StraightLineLength;
-
         SegmentSpawner.Initialize();
-
-        
     }
 
     protected override void Update()

@@ -21,19 +21,17 @@ namespace StarWriter.Core
         protected static GameObject container;
 
         protected Material material;
-        Teams team;
-        Ship ship;
         [HideInInspector] public Material Material { get { return material; } set { material = new Material(value); } }
-        [HideInInspector] public Teams Team { get => team; set => team = value; }
-        [HideInInspector] public Ship Ship { get => ship; set => ship = value; }
+        [HideInInspector] public Teams Team;
+        [HideInInspector] public Ship Ship;
 
         protected virtual void Start()
         {
             speed = MaxScale / ExplosionDuration; // TODO: use the easing of the explosion to change this over time
             if (container == null) container = new GameObject("AOEContainer");
 
-            if (team == Teams.Unassigned)
-                team = Ship.Team;
+            if (Team == Teams.Unassigned)
+                Team = Ship.Team;
             if (material == null) 
                 material = new Material(Ship.AOEExplosionMaterial);
             transform.SetParent(container.transform, false); // SetParent with false to take container's world position
@@ -102,7 +100,7 @@ namespace StarWriter.Core
                         shipGeometry.Ship.ShipController.SpinShip(impactVector);
                         break;
                     case ShipImpactEffects.Knockback:
-                        if (shipGeometry.Ship.Team == team)
+                        if (shipGeometry.Ship.Team == Team)
                         {
                             shipGeometry.Ship.ShipController.ModifyVelocity(impactVector * 100, 2);
                             shipGeometry.Ship.ShipController.ModifyThrottle(1.012f, 6);
