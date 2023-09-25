@@ -16,7 +16,7 @@ namespace StarWriter.Core
         [SerializeField] List<ShipImpactEffects> shipImpactEffects;
         [SerializeField] List<CrystalImpactEffects> crystalImpactEffects;
 
-
+        
         [SerializeField] bool drawLine = false;
         [SerializeField] float startLength = 1f;
         [SerializeField] float growthRate = 1.0f;
@@ -30,11 +30,13 @@ namespace StarWriter.Core
                 lineRenderer = gameObject.AddComponent<LineRenderer>();
                 lineRenderer.material = new Material(spikeMaterial);
                 lineRenderer.startColor = lineRenderer.endColor = Color.green;
-                lineRenderer.startWidth = lineRenderer.endWidth = 0.1f;
+                lineRenderer.startWidth = .2f;
+                lineRenderer.endWidth = Mathf.Epsilon;
                 lineRenderer.positionCount = 2;
                 lineRenderer.SetPosition(0, new Vector3(0, 0, 0));
                 lineRenderer.SetPosition(1, new Vector3(0, 0, startLength));
                 lineRenderer.useWorldSpace = false;
+
             }
         }
 
@@ -145,7 +147,16 @@ namespace StarWriter.Core
             if (drawLine) yield return new WaitUntil(() => lineRenderer != null);
             while (elapsedTime < projectileTime)
             {
-                if (drawLine) lineRenderer.SetPosition(1, new Vector3(0,0, elapsedTime * growthRate));
+                if (drawLine)
+                {
+                    Vector3 worldStartPoint = transform.TransformPoint(new Vector3(0, 0, 0));
+                    Vector3 worldEndPoint = transform.TransformPoint(new Vector3(0, 0, elapsedTime * growthRate));
+
+                    lineRenderer.material.SetVector("_StartPoint", worldStartPoint);
+                    lineRenderer.material.SetVector("_EndPoint", worldEndPoint);
+
+                    lineRenderer.SetPosition(1, new Vector3(0, 0, elapsedTime * growthRate));
+                }
                 elapsedTime += Time.deltaTime;
                 transform.position += Velocity * Time.deltaTime * Mathf.Cos(elapsedTime*Mathf.PI/(2*projectileTime));
                 yield return null;

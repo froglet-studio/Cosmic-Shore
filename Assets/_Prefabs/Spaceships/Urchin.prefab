@@ -551,7 +551,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   projectilePrefab: {fileID: 7877928849292311340, guid: 91785557e68aa4b44902085e98aff6cc,
     type: 3}
-  projectileTime: 4
   firePeriod: 0.1
   Team: 1
   Ship: {fileID: 874579555101021527}
@@ -679,7 +678,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   gun: {fileID: 7480786212238001713}
   ammoCost: 0.03
-  ProjectileScale: 10
+  ProjectileScale: 1
   BlockScale: {x: 4, y: 4, z: 1}
 --- !u!1 &2323831624999812778
 GameObject:
@@ -758,7 +757,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   gun: {fileID: 1896180257573412121}
   ammoCost: 0.03
-  ProjectileScale: 10
+  ProjectileScale: 1
   BlockScale: {x: 4, y: 4, z: 1}
 --- !u!1 &3009779053630328212
 GameObject:
@@ -1850,7 +1849,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   projectilePrefab: {fileID: 7877928849292311340, guid: 91785557e68aa4b44902085e98aff6cc,
     type: 3}
-  projectileTime: 4
   firePeriod: 0.1
   Team: 1
   Ship: {fileID: 874579555101021527}
@@ -2060,9 +2058,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   gunContainer: {fileID: 7748113003568908110}
   ammoCost: 0
-  ProjectileScale: 5
   FiringPattern: 0
   speed: 7
+  projectileTime: 3
 --- !u!1 &6027786489863838685
 GameObject:
   m_ObjectHideFlags: 0
@@ -2740,7 +2738,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   projectilePrefab: {fileID: 7877928849292311340, guid: 91785557e68aa4b44902085e98aff6cc,
     type: 3}
-  projectileTime: 2
   firePeriod: 0.2
   Team: 1
   Ship: {fileID: 874579555101021527}

@@ -79,7 +79,10 @@ Material:
     m_Ints: []
     m_Floats:
     - _AlphaClip: 0
+    - _ArcGlowDistance: 0.05
+    - _ArcGlowIntensity: 0.05
     - _Blend: 0
+    - _BorderThickness: 0.05
     - _BumpScale: 1
     - _ClearCoatMask: 0
     - _ClearCoatSmoothness: 0
@@ -87,22 +90,31 @@ Material:
     - _Cutoff: 0.5
     - _DetailAlbedoMapScale: 1
     - _DetailNormalMapScale: 1
+    - _DividerThickness: 0.01
     - _DstBlend: 0
     - _EdgeGlow: 0.992
     - _EndFadeDistance: 1
     - _EnvironmentReflections: 1
+    - _GapThickness: 0.05
     - _GlossMapScale: 0
     - _Glossiness: 0
     - _GlossyReflections: 0
     - _GlowAmount: 2
+    - _InnerGlowDistance: 0.05
+    - _InnerGlowIntensity: 0.5
     - _LineWidth: 5
     - _MaxWidth: 0.5
     - _Metallic: 0
     - _NumberOfPulses: 4
     - _OcclusionStrength: 1
+    - _OuterGlowDistance: 0.05
+    - _OuterGlowIntensity: 0.5
     - _OverlayIntensity: 0.653
     - _Parallax: 0.005
     - _QueueOffset: 0
+    - _Radius1: 0.5
+    - _Radius2: 0.5
+    - _Radius3: 0.5
     - _ReceiveShadows: 1
     - _RotationSpeed: 2.76
     - _ScrollSpeed: 1.27
@@ -120,14 +132,20 @@ Material:
     - _ZWrite: 1
     m_Colors:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
-    - _BlendColor: {r: 0.043137252, g: 0.12783879, b: 1, a: 1}
+    - _BlendColor: {r: 0.8721652, g: 0.043137252, b: 1, a: 1}
     - _Color: {r: 0.09778087, g: 0.8574979, b: 0.9716981, a: 1}
+    - _Color0: {r: 0, g: 0.6752841, b: 0.745283, a: 0.4117647}
+    - _Color1: {r: 0, g: 0.0808227, b: 1, a: 0.078431375}
+    - _Color2: {r: 0, g: 1, b: 0, a: 1}
+    - _Color3: {r: 0, g: 0, b: 1, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
+    - _EndPoint: {r: 1, g: 1, b: 1, a: 1}
     - _PulseAmplitudes: {r: 1, g: 2, b: 3, a: 4}
     - _PulseColors: {r: 0.9365196, g: 0, b: 1, a: 1}
     - _PulseFrequencies: {r: 1, g: 2, b: 3, a: 4}
     - _PulseSpeeds: {r: 1, g: 2, b: 3, a: 4}
     - _SpecColor: {r: 0.19999996, g: 0.19999996, b: 0.19999996, a: 1}
+    - _StartPoint: {r: 0, g: 0, b: 0, a: 1}
   m_BuildTextureStacks: []
 --- !u!114 &7041783479967312137
 MonoBehaviour:

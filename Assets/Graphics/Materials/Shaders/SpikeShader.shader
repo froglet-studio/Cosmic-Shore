@@ -1,15 +1,21 @@
-Shader "Custom/LineFresnelShader"
+Shader "Custom/ViewAngleBasedColorBlendHDR"
 {
     Properties
     {
-        _Color ("Main Color", Color) = (1, 1, 1, 1)
-        _BlendColor ("Blend Color", Color) = (0, 0, 0, 1)
-        _OverlayIntensity ("Overlay Intensity", Range(0, 1)) = 0.5
+        _Color0 ("Color when parallel", Color) = (1, 0, 0, 1)
+        _Color1 ("Color when perpendicular", Color) = (0, 0, 1, 1)
+        _StartPoint ("Line Start Point", Vector) = (0, 0, 0, 0)
+        _EndPoint ("Line End Point", Vector) = (1, 1, 1, 1)
+        _Brightness ("Brightness", Range(1, 10)) = 1
     }
 
     SubShader
     {
-        Tags { "RenderType"="Opaque" }
+        Tags { "RenderType"="Transparent" "Queue"="Transparent" }
+        LOD 100
+
+        Blend SrcAlpha OneMinusSrcAlpha // Standard transparency
+        ZWrite Off // Turn off Z-writing
 
         Pass
         {
@@ -21,38 +27,35 @@ Shader "Custom/LineFresnelShader"
             struct appdata
             {
                 float4 vertex : POSITION;
-                float4 otherVertex : TEXCOORD1; // The other endpoint of the line
             };
 
             struct v2f
             {
+                float3 viewDir : TEXCOORD0;
                 float4 vertex : SV_POSITION;
-                float3 viewPos : TEXCOORD0;
-                float3 viewOtherPos : TEXCOORD1;
             };
 
-            float4 _Color;
-            float4 _BlendColor;
-            float _OverlayIntensity;
+            float4 _StartPoint;
+            float4 _EndPoint;
+            float4 _Color0;
+            float4 _Color1;
+            float _Brightness;
 
-            v2f vert(appdata v)
+            v2f vert (appdata v)
             {
                 v2f o;
-                o.viewPos = mul(UNITY_MATRIX_V, mul(unity_ObjectToWorld, v.vertex)).xyz;
-                o.viewOtherPos = mul(UNITY_MATRIX_V, mul(unity_ObjectToWorld, v.otherVertex)).xyz;
                 o.vertex = UnityObjectToClipPos(v.vertex);
+                o.viewDir = normalize(_WorldSpaceCameraPos - v.vertex.xyz);
                 return o;
             }
 
-            half4 frag(v2f i) : SV_Target
+            half4 frag (v2f i) : SV_Target
             {
-                float3 viewDirection = -normalize(i.viewPos);
-                float3 lineDirection = normalize(i.viewOtherPos - i.viewPos);
-    
-                float fresnelValue = abs(dot(lineDirection, viewDirection));
+                float3 lineDir = normalize(_EndPoint.xyz - _StartPoint.xyz);
+                float angleCosine = abs(dot(lineDir, i.viewDir));
 
-                half4 col = lerp(_BlendColor, _Color, fresnelValue);
-                return col;
+                half4 blendedColor = lerp(_Color1, _Color0, angleCosine);
+                return blendedColor * _Brightness; // Multiply by brightness factor for HDR
             }
             ENDCG
         }

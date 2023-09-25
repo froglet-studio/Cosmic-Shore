@@ -21,6 +21,7 @@ namespace StarWriter.Core
         bool onCooldown = false;
         Trail trail = new();
         float sideLength = 3;
+        float barrelLength = 3;
 
         ShipStatus shipData;
         public Coroutine MoveCoroutine;
@@ -75,7 +76,7 @@ namespace StarWriter.Core
             void FireProjectile(Vector3 offset)
             {
                 Projectile projectileInstance = Instantiate(projectilePrefab,
-                    transform.position + Quaternion.LookRotation(transform.forward) * offset, // position
+                    transform.position + Quaternion.LookRotation(transform.forward) * offset + (transform.forward*barrelLength), // position
                     Quaternion.LookRotation(transform.forward) // rotation
                     ).GetComponent<Projectile>();
                 projectileInstance.transform.localScale = projectileScale * Vector3.one;

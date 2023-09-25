@@ -82,6 +82,6 @@ MonoBehaviour:
   shipImpactEffects: 020000000300000001000000
   crystalImpactEffects: 0c000000
   drawLine: 1
-  startLength: 1
-  growthRate: 1
+  startLength: 0
+  growthRate: 10
   spikeMaterial: {fileID: 2100000, guid: 77e1afb46629cc7469cfccbdae90a628, type: 2}
