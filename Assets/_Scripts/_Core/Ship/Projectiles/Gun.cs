@@ -1,5 +1,4 @@
 using System.Collections;
-using System.Runtime.InteropServices.WindowsRuntime;
 using UnityEngine;
 
 namespace StarWriter.Core
@@ -19,17 +18,10 @@ namespace StarWriter.Core
         public Teams Team;
         public Ship Ship;
         bool onCooldown = false;
-        Trail trail = new();
         float sideLength = 3;
         float barrelLength = 3;
 
-        ShipStatus shipData;
         public Coroutine MoveCoroutine;
-
-        private void Start()
-        {
-            shipData = Ship.GetComponent<ShipStatus>();
-        }
 
         Projectile projectile;
 
@@ -84,6 +76,11 @@ namespace StarWriter.Core
                 projectileInstance.Velocity = transform.forward * speed + inheritedVelocity;
                 projectileInstance.Team = Team;
                 projectileInstance.Ship = Ship;
+                if (projectileInstance.TryGetComponent(out Gun projectileGun))
+                {
+                    projectileGun.Team = Team;
+                    projectileGun.Ship = Ship;
+                }
                 if (projectileInstance is ExplodableProjectile) ((ExplodableProjectile)projectileInstance).Charge = charge;
 
                 projectileInstance.LaunchProjectile(projectileTime);

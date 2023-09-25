@@ -83,6 +83,7 @@ Material:
     - _ArcGlowIntensity: 0.05
     - _Blend: 0
     - _BorderThickness: 0.05
+    - _Brightness: 1.3
     - _BumpScale: 1
     - _ClearCoatMask: 0
     - _ClearCoatSmoothness: 0

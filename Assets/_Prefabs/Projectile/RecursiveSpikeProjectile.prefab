@@ -14,7 +14,7 @@ GameObject:
   - component: {fileID: 7632677803272750685}
   - component: {fileID: 1297648438941979789}
   m_Layer: 12
-  m_Name: SpikeProjectile
+  m_Name: RecursiveSpikeProjectile
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -79,7 +79,7 @@ MonoBehaviour:
   Velocity: {x: 0, y: 0, z: 0}
   Team: 0
   Ship: {fileID: 0}
-  trailBlockImpactEffects: 070000000c0000000d000000
+  trailBlockImpactEffects: 070000000d000000
   shipImpactEffects: 020000000300000001000000
   crystalImpactEffects: 0c000000
   drawLine: 1
@@ -98,7 +98,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 98da7727309795245ada6cbb0c6aee22, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  projectilePrefab: {fileID: 7877928849292311340, guid: 536aac0d472ed994a8849b3091f51b14,
+  projectilePrefab: {fileID: 7877928849292311340, guid: 91785557e68aa4b44902085e98aff6cc,
     type: 3}
   firePeriod: 0.2
   Team: 0

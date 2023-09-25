@@ -14,7 +14,8 @@ public enum TrailBlockImpactEffects
     Attach = 9,
     ChangeAmmo = 10,
     Shield = 11,
-    Stop = 12
+    Stop = 12,
+    Fire = 13,
 }
 
 /*

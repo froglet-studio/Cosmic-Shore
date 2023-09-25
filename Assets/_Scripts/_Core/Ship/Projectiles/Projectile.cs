@@ -77,6 +77,9 @@ namespace StarWriter.Core
                     case TrailBlockImpactEffects.Stop:
                         StopCoroutine(moveCoroutine);
                         break;
+                    case TrailBlockImpactEffects.Fire:
+                        GetComponent<LoadedGun>().FireGun();
+                        break;
                 }
             }
         }

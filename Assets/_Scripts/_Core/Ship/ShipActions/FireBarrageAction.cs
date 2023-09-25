@@ -15,9 +15,6 @@ public class FireBarrageAction : ShipActionAbstractBase
     [SerializeField] float ammoCost = .03f;
     bool inherit = false;
 
-    
-    
-
     float ProjectileScale = 1f;
 
     public FiringPatterns FiringPattern = FiringPatterns.single;
