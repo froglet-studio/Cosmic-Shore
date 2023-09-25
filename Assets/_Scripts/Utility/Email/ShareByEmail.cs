@@ -1,5 +1,4 @@
 using UnityEngine;
-using System.Collections;
 
 namespace StarWriter.Utility.Email
 {
@@ -9,16 +8,16 @@ namespace StarWriter.Utility.Email
         public string text = "";    //Content of email
         public string recipient = "support@frogletgames.zendesk.com"; // Recipient of email's addresses 
 
-        public ShareByEmail(string subject, string Content, string recipient) 
+        public ShareByEmail(string subject, string text, string recipient) 
         { 
             this.subject = subject;
-            this.text = Content;
+            this.text = text;
             this.recipient = recipient;
         }
 
         public void SendEmail()
         {
-            NativeShare nativeShare = new NativeShare();
+            NativeShare nativeShare = new();
 
             // Set email
             nativeShare.AddEmailRecipient(recipient);
@@ -31,7 +30,6 @@ namespace StarWriter.Utility.Email
 
         public void SendEmailwithAttachment(string attachmentPath)
         {
-
             NativeShare nativeShare = new NativeShare();
 
             // Set email
@@ -53,6 +51,3 @@ namespace StarWriter.Utility.Email
         }
     }
 }
-
-
-

@@ -3,7 +3,7 @@ using StarWriter.Core;
 using System.Collections.Generic;
 using System.Collections;
 
-public class SingleStickController : ShipTransformer
+public class SingleStickShipTransformer : ShipTransformer
 {
     [SerializeField] Gun topGun;
 

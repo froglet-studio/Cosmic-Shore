@@ -5,7 +5,6 @@ using StarWriter.Utility.Singleton;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.SocialPlatforms.Impl;
 
 /// <summary>
 /// Leaderboard Manager

@@ -1,7 +1,7 @@
 using UnityEngine;
 using StarWriter.Core;
 
-public class GunShipController : ShipTransformer
+public class GunShipTransformer : ShipTransformer
 {
     [SerializeField] TrailFollower trailFollower;
     [SerializeField] float rechargeRate = .1f;

@@ -184,11 +184,12 @@ public class TrailSpawner : MonoBehaviour
         TargetScale = Block.TargetScale;
         Block.transform.SetPositionAndRotation(transform.position - shipData.Course * offset + ship.transform.right * (Block.TargetScale.x/2f + Mathf.Abs(halfGap)) * (halfGap / Mathf.Abs(halfGap)), shipData.blockRotation);
         Block.transform.parent = TrailContainer.transform;
-        if (waitTillOutsideSkimmer) Block.waitTime = (skimmer.transform.localScale.z + TrailZScale) / ship.GetComponent<ShipStatus>().Speed;
         Block.ownerId = ship.Player.PlayerUUID;
         Block.PlayerName = ship.Player.PlayerName;
         Block.Team = ship.Team;
         Block.warp = warp;
+        if (waitTillOutsideSkimmer) 
+            Block.waitTime = (skimmer.transform.localScale.z + TrailZScale) / ship.GetComponent<ShipStatus>().Speed;
         if (shielded)
         {
             Block.GetComponent<MeshRenderer>().material = shieldedBlockMaterial;

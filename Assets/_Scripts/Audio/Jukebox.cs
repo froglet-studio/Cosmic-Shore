@@ -20,13 +20,11 @@ namespace StarWriter.Core.Audio
         void OnEnable()
         {
             GameSetting.OnChangeMusicEnabledStatus += OnChangeAudioEnabledStatus;
-            ShipExplosionHandler.onShipExplosionAnimationCompletion += OnDeathExplosionCompletion;
         }
 
         void OnDisable()
         {
             GameSetting.OnChangeMusicEnabledStatus -= OnChangeAudioEnabledStatus;
-            ShipExplosionHandler.onShipExplosionAnimationCompletion += OnDeathExplosionCompletion;
         }
 
         void Start()

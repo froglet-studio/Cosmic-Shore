@@ -15,6 +15,9 @@ public class CourseMiniGame : MiniGame
         base.Start();
         SegmentSpawner.Seed = new System.Random().Next();
         numberOfSegments = numberOfSegments * IntensityLevel;
+
+        if (PlayerShipType == ShipTypes.Rhino)
+            ScoreTracker.ScoringMode = ScoringModes.HostileVolumeDestroyed;
     }
 
     protected override void SetupTurn()

@@ -77,6 +77,7 @@ public class Crystal : NodeItem
                     AOEExplosion.Ship = ship;
                     AOEExplosion.SetPositionAndRotation(transform.position, transform.rotation);
                     AOEExplosion.MaxScale = maxExplosionScale;
+                    AOEExplosion.AnonymousExplosion = true;
                     break;
             }
         }

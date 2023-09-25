@@ -5,19 +5,10 @@ namespace Scenes.TestInput
 {
     public class ControlsManager : MonoBehaviour
     {
-        public delegate void InputEvent(Vector2 leftJoyStickVector2, Vector2 rightJoyStickVector2);
-
-        public static event InputEvent OnInputReceived;
-
-        private Vector2 inputSum;
-        private Vector2 inputDiff;
-
         private ControlsManagerAsset controlsManagerAsset;
 
         private Vector2 leftJoyStickVector2;
         private Vector2 rightJoyStickVector2 ;
-
-        // [SerializeField] private GameObject sphere;
 
         private void OnEnable()
         {
@@ -44,14 +35,5 @@ namespace Scenes.TestInput
             rightJoyStickVector2 = rightVector2;
             Debug.Log($"Right joystick x: {rightJoyStickVector2.x} y: {rightJoyStickVector2.y}");
         }
-        
-
-        // private void Update()
-        // {
-        //     // OnLeftControlsPerformed();
-        //     // OnRightControlsPerformed();
-        //     // CalculatingSums();
-        //     // CalculatingDiffs();
-        // }
     }
 }

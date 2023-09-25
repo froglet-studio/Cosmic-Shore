@@ -93,7 +93,6 @@ class DataAccessor
         else
         {
             // File does not exist
-            Debug.LogWarning("Save file not found in " + FilePath);
             Data = new T();
             return Data;
         }
