@@ -148,12 +148,12 @@ public class CatalogManager : SingletonPersistent<CatalogManager>
     /// Get Inventory Item
     /// Request inventory item by item id
     /// </summary>
-    public void GetInventoryItem(InventoryItem inventoryItem)
+    public void GetInventoryItem(InventoryItemReference itemReference)
     {
         playFabEconomyInstanceAPI.GetItem(
             new GetItemRequest()
             {
-                Id = inventoryItem.Id
+                Id = itemReference.Id
             },
             (GetItemResponse response) =>
             {
@@ -178,22 +178,18 @@ public class CatalogManager : SingletonPersistent<CatalogManager>
     /// Add Items to Inventory
     /// Add shinny new stuff! Any type of item from currency to vessel and ship upgrades
     /// </summary>
-    public void AddInventoryItem(CatalogItem item, int amount)
+    public void AddInventoryItem(InventoryItemReference itemReference, int amount)
     {
             playFabEconomyInstanceAPI.AddInventoryItems(
                 new AddInventoryItemsRequest()
                 {
                     Amount = amount,
-                    Item = new InventoryItemReference
-                    {
-                        Id = item.Id,
-                        StackId = item.DefaultStackId
-                    }
+                    Item = itemReference
                 }, (result) =>
                 {
                     var name = nameof(CatalogManager);
                     Debug.Log($"{name} - add inventory item success.");
-                    Debug.Log($"{name} - add inventory item id: {item.Id}");
+                    Debug.Log($"{name} - add inventory item id: {itemReference.Id}");
                     // Etag can be used for multiple sources or users to modify the same item simultaneously without conflict
                     Debug.Log($"{name} - add inventory item etag: {result.ETag}");
                     Debug.Log($"{name} - add inventory item idempotency id: {result.IdempotencyId}");
@@ -202,10 +198,7 @@ public class CatalogManager : SingletonPersistent<CatalogManager>
                     Debug.Log(error.GenerateErrorReport());
                 }
             );
-        
-        
     }
-    
     
     
     // public void 
@@ -248,9 +241,6 @@ public class CatalogManager : SingletonPersistent<CatalogManager>
             }
         );
     }
-
-
-    
     
     #endregion
 }
