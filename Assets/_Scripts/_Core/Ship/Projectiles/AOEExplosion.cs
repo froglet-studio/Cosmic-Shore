@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -24,6 +24,7 @@ namespace StarWriter.Core
         [HideInInspector] public Material Material { get { return material; } set { material = new Material(value); } }
         [HideInInspector] public Teams Team;
         [HideInInspector] public Ship Ship;
+        [HideInInspector] public bool AnonymousExplosion;
 
         protected virtual void Start()
         {
@@ -51,7 +52,10 @@ namespace StarWriter.Core
                     return;
                 }
                 
-                trailBlock.Explode(impactVector, Ship.Team, Ship.Player.PlayerName, devastating);
+                if (AnonymousExplosion)
+                    trailBlock.Explode(impactVector, Teams.None, "🔥GuyFawkes🔥", devastating);
+                else
+                    trailBlock.Explode(impactVector, Ship.Team, Ship.Player.PlayerName, devastating);
             }
             if (other.TryGetComponent<ShipGeometry>(out var shipGeometry))
             {
