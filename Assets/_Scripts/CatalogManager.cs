@@ -3,21 +3,25 @@ using PlayFab.EconomyModels;
 using StarWriter.Utility.Singleton;
 using System.Collections.Generic;
 using UnityEngine;
-using PlayFab.ClientModels;
 using _Scripts._Core.Playfab_Models;
 
 public class CatalogManager : SingletonPersistent<CatalogManager>
 {
     // Items list, configurable via inspector
-    static List<PlayFab.EconomyModels.CatalogItem> CatalogItems;
-    static List<PlayFab.EconomyModels.CatalogItem> InventoryItems;
+    // static List<PlayFab.EconomyModels.CatalogItem> CatalogItems;
+    // static List<PlayFab.EconomyModels..CatalogItem> InventoryItems;
+    private static PlayerInventory _playerInventory; 
+    
     PlayFabEconomyInstanceAPI playFabEconomyInstanceAPI;
 
     // Bootstrap the whole thing
     public void Start()
     {
-        AuthenticationManager.LoginSuccess += InitializePlayFabEconomyAPI;
-        AuthenticationManager.LoginSuccess += LoadCatalog;
+        AuthenticationManager.OnLoginSuccess += InitializePlayFabEconomyAPI;
+        AuthenticationManager.OnLoginSuccess += LoadCatalog;
+        AuthenticationManager.OnLoginSuccess += LoadInventory;
+        AuthenticationManager.OnRegisterSuccess += GrantStartingInventory;
+
     }
 
     #region Initialize PlayFab Economy API with Auth Context
@@ -27,7 +31,7 @@ public class CatalogManager : SingletonPersistent<CatalogManager>
     /// Instantiate PlayFab Economy API with auth context
     /// Querying catalog and inventory item don't need to fetch auth context from Authentication manager everytime.
     /// </summary>
-    void InitializePlayFabEconomyAPI(object sender, LoginResult result)
+    void InitializePlayFabEconomyAPI()
     {
         playFabEconomyInstanceAPI = new PlayFabEconomyInstanceAPI(AuthenticationManager.PlayerAccount.AuthContext);
     }
@@ -40,7 +44,7 @@ public class CatalogManager : SingletonPersistent<CatalogManager>
     /// Load Catalog Items
     /// Get all catalog items
     /// </summary>
-    void LoadCatalog(object sender, LoginResult result)
+    void LoadCatalog()
     {
         playFabEconomyInstanceAPI.SearchItems(
             new()
@@ -50,13 +54,13 @@ public class CatalogManager : SingletonPersistent<CatalogManager>
             },
             response =>
             {
-                CatalogItems = response.Items;
-                Debug.Log(CatalogItems);
-                foreach (var item in CatalogItems)
+                _playerInventory.CatalogItems = response.Items;
+                Debug.Log(_playerInventory.CatalogItems);
+                foreach (var item in _playerInventory.CatalogItems)
                 {
-                    Debug.Log("   CatalogManager - Id: " + item.Id);
-                    Debug.Log("   CatalogManager - Title: " + item.Title);
-                    Debug.Log("   CatalogManager - Content Type: " + item.ContentType);
+                    Debug.Log("   CatalogManager - Inventory Id: " + item.Id);
+                    Debug.Log("   CatalogManager - Inventory Title: " + item.Title);
+                    Debug.Log("   CatalogManager - Inventory Content Type: " + item.ContentType);
                     foreach (var description in item.Description.Values)
                         Debug.Log("   CatalogManager - Description: " + description);                    
                 }
@@ -77,11 +81,12 @@ public class CatalogManager : SingletonPersistent<CatalogManager>
 
     /// <summary>
     /// Grant Starting Inventory Item Quantity
-    /// Nothing magical here, default item quantity is 100
+    /// Nothing magical here, default item quantity is 100, Granted when player created their account.
     /// </summary>
-    void GrantStartingInventory(int amount = 100)
+    void GrantStartingInventory()
     {
-        for (int i = 0; i < CatalogItems.Count; i++)
+        const int amount = 100;
+        foreach (var item in _playerInventory.CatalogItems)
         {
             playFabEconomyInstanceAPI.AddInventoryItems(
                 new AddInventoryItemsRequest()
@@ -90,7 +95,7 @@ public class CatalogManager : SingletonPersistent<CatalogManager>
                     Amount = amount,
                     Item = new InventoryItemReference
                     {
-                        Id = CatalogItems[i].Id
+                        Id = item.Id
                     }
                 },
                 response =>
@@ -119,44 +124,18 @@ public class CatalogManager : SingletonPersistent<CatalogManager>
         playFabEconomyInstanceAPI.GetInventoryItems(
             new GetInventoryItemsRequest
             {
-                // AuthenticationContext = AccountManager.AuthenticationContext,
             },
             response =>
             {
                 Debug.Log("CatalogManager - GetInventoryItemsResponse: " + response.Items);
 
-                List<string> itemIds = new();
-                foreach (var item in response.Items)
+                _playerInventory.InventoryItems = response.Items;
+
+                foreach (var item in _playerInventory.InventoryItems)
                 {
-                    itemIds.Add(item.Id);
+                    var name = nameof(CatalogManager);
+                    Debug.Log($"{name} - GetInventoryItems - id: {item.Id} type: {item.Type} amount: {item.Amount.ToString()}");
                 }
-
-                playFabEconomyInstanceAPI.GetItems(
-                    new GetItemsRequest()
-                    {
-                        Ids = itemIds
-                    },
-                    response =>
-                    {
-                        InventoryItems = response.Items;
-
-                        foreach (var item in response.Items)
-                        {
-                            Debug.Log("   CatalogManager - Id: " + item.Id);
-                            foreach (var key in item.Title.Keys)
-                            {
-                                Debug.Log("   CatalogManager - Title Key: " + key);
-                                Debug.Log("   CatalogManager - Title: " + item.Title[key]);
-                            }
-                            Debug.Log("   CatalogManager - Type: " + item.Type);
-                            Debug.Log("   CatalogManager - Image Count: " + item.Images.Count);
-                            Debug.Log("   CatalogManager - Content Type: " + item.ContentType);
-                        }
-                    },
-                    error =>
-                    {
-                        Debug.LogError(error.GenerateErrorReport());
-                    });
             },
             error =>
             {
@@ -169,12 +148,12 @@ public class CatalogManager : SingletonPersistent<CatalogManager>
     /// Get Inventory Item
     /// Request inventory item by item id
     /// </summary>
-    public void GetInventoryItem(string inventoryItemId)
+    public void GetInventoryItem(InventoryItem inventoryItem)
     {
         playFabEconomyInstanceAPI.GetItem(
             new GetItemRequest()
             {
-                Id = inventoryItemId
+                Id = inventoryItem.Id
             },
             (GetItemResponse response) =>
             {
@@ -199,10 +178,8 @@ public class CatalogManager : SingletonPersistent<CatalogManager>
     /// Add Items to Inventory
     /// Add shinny new stuff! Any type of item from currency to vessel and ship upgrades
     /// </summary>
-    public void AddInventoryItem(int amount)
+    public void AddInventoryItem(CatalogItem item, int amount)
     {
-        foreach (var item in InventoryItems)
-        {
             playFabEconomyInstanceAPI.AddInventoryItems(
                 new AddInventoryItemsRequest()
                 {
@@ -225,10 +202,17 @@ public class CatalogManager : SingletonPersistent<CatalogManager>
                     Debug.Log(error.GenerateErrorReport());
                 }
             );
-        }
+        
         
     }
     
+    
+    
+    // public void 
+    
+    #endregion
+
+    #region In-game Purchases
 
     /// <summary>
     /// Purchase Item
@@ -240,18 +224,11 @@ public class CatalogManager : SingletonPersistent<CatalogManager>
         playFabEconomyInstanceAPI.PurchaseInventoryItems(
             new()
             {
-                // AuthenticationContext = AccountManager.AuthenticationContext,
-
                 Amount = itemAmount,
                 Item = new() 
                 { 
                     Id = itemId
                 },
-                // Entity = new()
-                // {
-                //     // Id = AccountManager.AuthenticationContext.PlayFabId,
-                //     // Type = AccountManager.AuthenticationContext.EntityType
-                // },
                 PriceAmounts = new List<PurchasePriceAmount>
                 {
                     new PurchasePriceAmount() 
@@ -271,6 +248,9 @@ public class CatalogManager : SingletonPersistent<CatalogManager>
             }
         );
     }
+
+
+    
     
     #endregion
 }

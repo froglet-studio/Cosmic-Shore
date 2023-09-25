@@ -57,7 +57,7 @@ namespace _Scripts._Core.Playfab_Models
             if (ShowEmailLinking)
                 InitializeEmailLinking();
 
-            AuthenticationManager.LoginSuccess += AuthenticationManager.Instance.LoadPlayerProfile;
+            AuthenticationManager.OnLoginSuccess += AuthenticationManager.Instance.LoadPlayerProfile;
             AuthenticationManager.OnProfileLoaded += InitializePlayerDisplayNameView;
             AuthenticationManager.Instance.AnonymousLogin();
         }

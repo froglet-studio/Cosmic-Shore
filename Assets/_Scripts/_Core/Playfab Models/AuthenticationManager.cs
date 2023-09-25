@@ -29,12 +29,14 @@ namespace _Scripts._Core.Playfab_Models
         public static PlayerAccount PlayerAccount;
         public static PlayerProfile PlayerProfile;
         
-        public static EventHandler<LoginResult> LoginSuccess;
+        public static event Action OnLoginSuccess;
  
-        public static EventHandler<PlayFabError> LoginError;
+        public static event Action OnLoginError;
 
-        public delegate void ProfileLoaded();
-        public static event ProfileLoaded OnProfileLoaded;
+        // public delegate void ProfileLoaded();
+        public static event Action OnProfileLoaded;
+
+        public static event Action OnRegisterSuccess;
 
         public static List<string> Adjectives;
         public static List<string> Nouns;
@@ -44,7 +46,7 @@ namespace _Scripts._Core.Playfab_Models
 
         void Start()
         {
-            LoginSuccess += LoadPlayerProfile;
+            OnLoginSuccess += LoadPlayerProfile;
             AnonymousLogin();
         }
 
@@ -81,7 +83,7 @@ namespace _Scripts._Core.Playfab_Models
         /// Load Player Profile
         /// Load player profile using Playfab Id and return player display name
         /// </summary>
-        public void LoadPlayerProfile(object sender, LoginResult result)
+        public void LoadPlayerProfile()
         {
             PlayFabClientAPI.GetPlayerProfile(
                 new GetPlayerProfileRequest()
@@ -233,14 +235,14 @@ namespace _Scripts._Core.Playfab_Models
                 // Debug.Log($"AuthenticationManager - Entity Token: {loginResult.AuthenticationContext.EntityToken}");
                 Debug.Log($"AuthenticationManager - Session Ticket: {PlayerAccount.AuthContext.ClientSessionTicket}");
 
-                LoginSuccess?.Invoke(this, loginResult);
+                OnLoginSuccess?.Invoke();
             }
         }
 
         void HandleLoginError(PlayFabError loginError = null)
         {
             Debug.LogError("AuthenticationManager - " + loginError.GenerateErrorReport());
-            LoginError?.Invoke(this, loginError);
+            OnLoginError?.Invoke();
         }
         #endregion
 
@@ -395,6 +397,7 @@ namespace _Scripts._Core.Playfab_Models
                     }
                     Debug.Log("Register with email succeeded.");
                     Debug.Log($"Player username {result.Username}");
+                    OnRegisterSuccess?.Invoke();
                 }, (error) =>
                 {
                     Debug.Log(error.GenerateErrorReport());

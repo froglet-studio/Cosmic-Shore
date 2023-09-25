@@ -21,4 +21,9 @@ public class CatalogView : MonoBehaviour
         string shardId = "88be4041-cc48-4231-8595-d440b371d015";
         CatalogManager.Instance.PurchaseItem(vesselId, shardId, 1, 5);
     }
+
+    private void AddShards()
+    {
+        
+    }
 }
