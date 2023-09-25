@@ -77,7 +77,7 @@ namespace _Scripts._Core.Playfab_Models
                 registerButton.onClick.AddListener(RegisterButton_OnClick);
             
             AuthenticationManager.Instance.AnonymousLogin();
-            AuthenticationManager.LoginSuccess += AuthenticationManager.Instance.LoadPlayerProfile;
+            AuthenticationManager.OnLoginSuccess += AuthenticationManager.Instance.LoadPlayerProfile;
             // AuthenticationManager.LoginError +=
 
             AuthenticationManager.OnProfileLoaded += InitializePlayerDisplayNameView;
