@@ -18,15 +18,13 @@ MonoBehaviour:
     mess with me.
   Icon: {fileID: 21300000, guid: 58f6744284bd6794c8f14386e31d98f2, type: 3}
   SelectedIcon: {fileID: 21300000, guid: a374e365e51fe7544ac1c022615542aa, type: 3}
-  TrailPreviewImage: {fileID: 21300000, guid: 8916b4a40c60d2c4380856e1d00f5ff4, type: 3}
   PreviewImage: {fileID: 21300000, guid: 992f171df4560e64c96343061dd90ff3, type: 3}
-  ChargePilot: {fileID: 11400000, guid: 6d520cd7eb8878b4aa2551e0591bc08d, type: 2}
-  MassPilot: {fileID: 11400000, guid: 2e5f4ffcc1432904db324d970ab221c4, type: 2}
-  SpacePilot: {fileID: 11400000, guid: 33dfe353bacfe9741a371ea3deaba88e, type: 2}
-  TimePilot: {fileID: 11400000, guid: 5ac362560a34d414e835db83e82daa08, type: 2}
+  TrailPreviewImage: {fileID: 21300000, guid: 8916b4a40c60d2c4380856e1d00f5ff4, type: 3}
+  CardSilohoutte: {fileID: 21300000, guid: 8916b4a40c60d2c4380856e1d00f5ff4, type: 3}
   Abilities:
   - {fileID: 11400000, guid: bf4c23aad32b0f4489dbc09db593aab4, type: 2}
-  MiniGames:
+  Pilots: []
+  TrainingGames:
   - {fileID: 11400000, guid: 812851e4603217c469662dc3cb9c6d93, type: 2}
   - {fileID: 11400000, guid: 3537310ecbdad2e449bbca31d2aa8599, type: 2}
   - {fileID: 11400000, guid: 70027ed9adfa2b54e9a16c3228ac7e7e, type: 2}

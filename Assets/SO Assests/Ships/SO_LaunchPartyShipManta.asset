@@ -20,6 +20,7 @@ MonoBehaviour:
   SelectedIcon: {fileID: 21300000, guid: 4dc09966e540a9c4c8bb466918fe43e9, type: 3}
   PreviewImage: {fileID: 21300000, guid: b3fe0f4b92e2cf74b830808e3f8d88fc, type: 3}
   TrailPreviewImage: {fileID: 21300000, guid: 2e75f6670391025489d30c8361fb8de3, type: 3}
+  CardSilohoutte: {fileID: 21300000, guid: 2e75f6670391025489d30c8361fb8de3, type: 3}
   Abilities:
   - {fileID: 11400000, guid: cf4c7963673545946af80618f5a52917, type: 2}
   - {fileID: 11400000, guid: 260209c83d5be594a81043ebceea8ddf, type: 2}
