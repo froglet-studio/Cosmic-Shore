@@ -24,8 +24,7 @@ public class LoadoutCard : MonoBehaviour
     [SerializeField] Image PlayerCountImage;
     [SerializeField] Image IntensityImage;
 
-    /*[HideInInspector]*/ public LoadoutStruct loadout; // Show in inspector while underdevelopment for debuging
-
+    /*[HideInInspector]*/ public LoadoutStruct loadout; // Show in inspector while underdevelopment for debugging
 
     [SerializeField] Sprite[] PlayerCountImages = new Sprite[4];
     [SerializeField] Sprite[] IntensityImages = new Sprite[4];
@@ -40,8 +39,6 @@ public class LoadoutCard : MonoBehaviour
         ShipImage.sprite = ship.TrailPreviewImage;
 
         PlayerCountImage.sprite = PlayerCountImages[loadout.PlayerCount - 1];
-
         IntensityImage.sprite = IntensityImages[loadout.Intensity - 1];
     }
-
 }

@@ -1,7 +1,7 @@
 using StarWriter.Core;
 
 
-public class StopGunsAction : ShipActionAbstractBase
+public class StopGunsAction : ShipAction
 {
     ShipStatus shipData;
 

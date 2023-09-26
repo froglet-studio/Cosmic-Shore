@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class SpinAroundAction : ShipActionAbstractBase
+public class SpinAroundAction : ShipAction
 {
     
     public override void StartAction()

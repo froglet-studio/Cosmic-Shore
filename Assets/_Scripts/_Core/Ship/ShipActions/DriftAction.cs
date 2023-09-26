@@ -1,6 +1,6 @@
 using StarWriter.Core;
 
-public class DriftAction : ShipActionAbstractBase
+public class DriftAction : ShipAction
 {
     ShipStatus shipData;
 

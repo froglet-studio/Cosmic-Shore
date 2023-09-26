@@ -1,6 +1,6 @@
 using StarWriter.Core;
 
-public class BoostAction : ShipActionAbstractBase
+public class BoostAction : ShipAction
 {
     ShipStatus shipData;
 

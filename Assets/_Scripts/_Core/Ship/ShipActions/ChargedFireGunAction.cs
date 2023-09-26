@@ -2,7 +2,7 @@ using StarWriter.Core;
 using System.Collections;
 using UnityEngine;
 
-public class ChargedFireGunAction : ShipActionAbstractBase
+public class ChargedFireGunAction : ShipAction
 {
     // TODO: WIP gun firing needs to be reworked
     [SerializeField] Gun gun;

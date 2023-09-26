@@ -9,14 +9,14 @@ namespace StarWriter.Core
     public struct InputEventShipActionMapping
     {
         public InputEvents InputEvent;
-        public List<ShipActionAbstractBase> ShipActions;
+        public List<ShipAction> ShipActions;
     }
 
     [Serializable]
     public struct ResourceEventShipActionMapping
     {
         public ResourceEvents ResourceEvent;
-        public List<ShipActionAbstractBase> ClassActions;
+        public List<ShipAction> ClassActions;
     }
 
     [Serializable]
@@ -69,10 +69,10 @@ namespace StarWriter.Core
         [SerializeField] public float boostFuelAmount = -.01f;
 
         [SerializeField] List<InputEventShipActionMapping> inputEventShipActions;
-        Dictionary<InputEvents, List<ShipActionAbstractBase>> ShipControlActions = new();
+        Dictionary<InputEvents, List<ShipAction>> ShipControlActions = new();
 
         [SerializeField] List<ResourceEventShipActionMapping> resourceEventClassActions;
-        Dictionary<ResourceEvents, List<ShipActionAbstractBase>> ClassResourceActions = new();
+        Dictionary<ResourceEvents, List<ShipAction>> ClassResourceActions = new();
 
         [Header("Leveling Targets")]
         [SerializeField] LevelAwareShipActionAbstractBase MassAbilityTarget;

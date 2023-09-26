@@ -1,7 +1,7 @@
 using StarWriter.Core;
 using UnityEngine;
 
-public abstract class ShipActionAbstractBase : MonoBehaviour
+public abstract class ShipAction : MonoBehaviour
 {
     protected Ship ship;
     public Ship Ship { get => ship; set => ship = value; }

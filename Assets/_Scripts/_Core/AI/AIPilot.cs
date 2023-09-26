@@ -55,7 +55,7 @@ namespace StarWriter.Core.IO
 
         [SerializeField] bool useAbility = false;
         [SerializeField] float abilityCooldown;
-        [SerializeField] ShipActionAbstractBase ability;
+        [SerializeField] ShipAction ability;
 
         enum Corner 
         {
@@ -250,7 +250,7 @@ namespace StarWriter.Core.IO
         }
 
 
-        IEnumerator UseAbilityCoroutine(ShipActionAbstractBase action) 
+        IEnumerator UseAbilityCoroutine(ShipAction action) 
         {
             while (useAbility)
             {

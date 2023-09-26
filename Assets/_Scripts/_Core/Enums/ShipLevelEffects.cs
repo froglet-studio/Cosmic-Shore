@@ -12,5 +12,4 @@ public enum ShipLevelEffects
     ScaleSpaceAbility = 8,
     ScaleTimeAbility = 9,
     ScaleChargeAbility2 = 10
-
 }

@@ -2,7 +2,7 @@ using StarWriter.Core;
 using System.Collections;
 using UnityEngine;
 
-public class ChargeBoostAction : ShipActionAbstractBase
+public class ChargeBoostAction : ShipAction
 {
     bool BoostCharging;
     [SerializeField] float BoostChargeRate = .33f;

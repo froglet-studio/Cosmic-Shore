@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class GhostAction : ShipActionAbstractBase
+public class GhostAction : ShipAction
 {
     [SerializeField] float maxDuration;
     List<GameObject> shipGeometries;
