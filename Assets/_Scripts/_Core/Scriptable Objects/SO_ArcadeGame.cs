@@ -11,6 +11,7 @@ public class SO_ArcadeGame : ScriptableObject
     public string Description;
     public Sprite Icon;
     public Sprite SelectedIcon;
+    public Sprite CardBackground;
     public VideoPlayer PreviewClip;
     public List<SO_Pilot> Pilots;
     [Min(1)] public int MinPlayers = 1;

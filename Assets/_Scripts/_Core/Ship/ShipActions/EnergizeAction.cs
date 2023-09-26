@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using StarWriter.Core;
 
-public class EnergizeAction : ShipActionAbstractBase
+public class EnergizeAction : ShipAction
 {
     [SerializeField] float duration;
     [SerializeField] float cooldown;

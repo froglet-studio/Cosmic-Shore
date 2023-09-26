@@ -1,7 +1,7 @@
 using StarWriter.Core;
 using UnityEngine;
 
-public class DropDecoyAction : ShipActionAbstractBase
+public class DropDecoyAction : ShipAction
 {
     [SerializeField] float decoysPerFullAmmo = 3;
     [SerializeField] float dropForwardDistance = 40;

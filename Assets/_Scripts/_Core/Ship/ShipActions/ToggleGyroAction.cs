@@ -1,6 +1,6 @@
 using StarWriter.Core.IO;
 
-public class ToggleGyroAction : ShipActionAbstractBase
+public class ToggleGyroAction : ShipAction
 {
     InputController inputController;
 

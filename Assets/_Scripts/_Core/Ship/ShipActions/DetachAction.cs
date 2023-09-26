@@ -1,6 +1,6 @@
 using StarWriter.Core;
 
-public class DetachAction : ShipActionAbstractBase
+public class DetachAction : ShipAction
 {
     ShipStatus shipData;
 
