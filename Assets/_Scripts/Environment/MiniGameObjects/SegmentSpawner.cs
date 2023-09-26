@@ -62,7 +62,6 @@ public class SegmentSpawner : MonoBehaviour
                 Destroy(block);
 
         NukeTheTrails();
-        
 
         normalizeWeights();
 

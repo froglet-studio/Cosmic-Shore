@@ -7,8 +7,9 @@ public class CourseMiniGame : MiniGame
     [SerializeField] SegmentSpawner SegmentSpawner;
     [SerializeField] int numberOfSegments = 10;
     [SerializeField] int straightLineLength = 400;
+    [SerializeField] bool ResetTrails = true;
 
-    public static new ShipTypes PlayerShipType = ShipTypes.Rhino;
+    //public static virtual ShipTypes PlayerShipType = ShipTypes.Rhino;
 
     protected override void Start()
     {
@@ -18,18 +19,32 @@ public class CourseMiniGame : MiniGame
 
         if (PlayerShipType == ShipTypes.Rhino)
             ScoreTracker.ScoringMode = ScoringModes.HostileVolumeDestroyed;
+
+        if (!ResetTrails)
+        {
+            SegmentSpawner.numberOfSegments = numberOfSegments;
+            SegmentSpawner.StraightLineLength = straightLineLength / IntensityLevel;
+
+            TrailSpawner.NukeTheTrails();
+            Crystal.transform.position = CrystalStartPosition;
+
+            SegmentSpawner.Initialize();
+        }
     }
 
     protected override void SetupTurn()
     {
         base.SetupTurn();
 
-        SegmentSpawner.numberOfSegments = numberOfSegments;
-        SegmentSpawner.StraightLineLength = straightLineLength / IntensityLevel;
+        if (ResetTrails)
+        {
+            SegmentSpawner.numberOfSegments = numberOfSegments;
+            SegmentSpawner.StraightLineLength = straightLineLength / IntensityLevel;
 
-        TrailSpawner.NukeTheTrails();
-        Crystal.transform.position = CrystalStartPosition;
+            TrailSpawner.NukeTheTrails();
+            Crystal.transform.position = CrystalStartPosition;
 
-        SegmentSpawner.Initialize();
+            SegmentSpawner.Initialize();
+        }
     }
 }
