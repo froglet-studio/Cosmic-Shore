@@ -940,7 +940,7 @@ MonoBehaviour:
   SegmentSpawner: {fileID: 1020381236}
   numberOfSegments: 10
   straightLineLength: 400
-  ResetTrails: 1
+  ResetTrails: 0
 --- !u!4 &1180410982 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 6454128237993233764, guid: 4a855af160021d241b8c1ac70cf2d792,
