@@ -10,13 +10,14 @@ namespace StarWriter.Core
         [Header("Projectile Configuration")]
         [SerializeField] float speed = 20;
         [SerializeField] float projectileTime = 3;
-        [SerializeField] FiringPatterns firingPattern = FiringPatterns.DoubleHexRing;
+        [SerializeField] FiringPatterns firingPattern = FiringPatterns.Spherical;
+        [SerializeField] int energy;
 
         public void FireGun()
         {
             GameObject Container = new GameObject();
             Container.transform.parent = transform;
-            FireGun(Container.transform, speed, Vector3.zero, 1, true, projectileTime, 0, firingPattern); // charge could be used to limit recursion depth
+            FireGun(Container.transform, speed, Vector3.zero, 1, true, projectileTime, 0, firingPattern, energy); // charge could be used to limit recursion depth
         }
 
         //public void FireGun(Transform containerTransform, float speed, Vector3 inheritedVelocity,

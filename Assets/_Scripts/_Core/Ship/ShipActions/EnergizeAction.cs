@@ -34,9 +34,9 @@ public class EnergizeAction : ShipActionAbstractBase
         // upgrade
         foreach (FireBarrageAction fireaction in fireActions)
         {
-            fireaction.FiringPattern = FiringPatterns.DoubleHexRing;
+            fireaction.Energy = 2;
             fireaction.speed = fastSpeed;
-            //fireaction.projectileTime = longDuration;
+            fireaction.projectileTime = longDuration;
         }
 
         // wait for player to fire
@@ -51,9 +51,9 @@ public class EnergizeAction : ShipActionAbstractBase
         // return to default values TODO: retrieve defaults
         foreach (FireBarrageAction fireaction in fireActions)
         {
-            fireaction.FiringPattern = FiringPatterns.single;
+            fireaction.Energy = 0;
             fireaction.speed = slowSpeed;
-            //fireaction.projectileTime = shortDuration;
+            fireaction.projectileTime = shortDuration;
         }
 
         // start Cooldown timer

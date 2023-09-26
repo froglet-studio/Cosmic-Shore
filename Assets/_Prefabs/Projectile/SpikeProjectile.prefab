@@ -84,7 +84,7 @@ MonoBehaviour:
   crystalImpactEffects: 0c000000
   drawLine: 1
   startLength: 0
-  growthRate: 10
+  growthRate: 7
   spikeMaterial: {fileID: 2100000, guid: 77e1afb46629cc7469cfccbdae90a628, type: 2}
 --- !u!114 &1297648438941979789
 MonoBehaviour:
@@ -104,5 +104,6 @@ MonoBehaviour:
   Team: 0
   Ship: {fileID: 0}
   speed: 20
-  projectileTime: 4
+  projectileTime: 3
   firingPattern: 1
+  energy: 2

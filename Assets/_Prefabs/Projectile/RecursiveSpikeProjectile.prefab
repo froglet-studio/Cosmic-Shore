@@ -104,5 +104,6 @@ MonoBehaviour:
   Team: 0
   Ship: {fileID: 0}
   speed: 20
-  projectileTime: 5
+  projectileTime: 3
   firingPattern: 1
+  energy: 2

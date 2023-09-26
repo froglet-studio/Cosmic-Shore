@@ -17,7 +17,8 @@ public class FireBarrageAction : ShipActionAbstractBase
 
     float ProjectileScale = 1f;
 
-    public FiringPatterns FiringPattern = FiringPatterns.single;
+    public FiringPatterns FiringPattern = FiringPatterns.Default;
+    public int Energy = 0;
     public float speed = 7;
     public float projectileTime = 3;
 
@@ -62,7 +63,7 @@ public class FireBarrageAction : ShipActionAbstractBase
                         else inheritedVelocity = shipData.Course;
                     }
                     else inheritedVelocity = Vector3.zero;
-                    gun.FireGun(projectileContainer.transform, speed, inheritedVelocity * shipData.Speed, ProjectileScale, true, projectileTime, 0, FiringPattern);
+                    gun.FireGun(projectileContainer.transform, speed, inheritedVelocity * shipData.Speed, ProjectileScale, true, projectileTime, 0, FiringPattern, Energy);
                 }
             }
              
