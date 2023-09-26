@@ -42,7 +42,7 @@ namespace StarWriter.Core
                             new Vector3(-1, -1, 1),
                             new Vector3(-1, 1, -1),
                             new Vector3(1, -1, -1)
-        };
+                        };
 
                         foreach (Vector3 v in tetrahedralVertices)
                         {
@@ -67,6 +67,7 @@ namespace StarWriter.Core
 
                             Vector3 direction = new Vector3(x, y, z);
                             Vector3 offset = direction * sideLength;
+                            transform.LookAt(-offset); //just guessing here
                             FireProjectile(containerTransform, speed, inheritedVelocity, projectileScale, offset, direction, projectileTime, charge);
                         }
                     }
@@ -93,7 +94,7 @@ namespace StarWriter.Core
 
                                 for (int i = 0; i < projectilesInThisRing; i++)
                                 {
-                                    Vector3 offset = Quaternion.Euler(0, angleIncrement * i, 0) * transform.right * sideLength * (ring);
+                                    Vector3 offset = Quaternion.Euler(0, 0, ring%2*30 + angleIncrement * i) * transform.right * sideLength * ring;
                                     FireProjectile(containerTransform, speed, inheritedVelocity, projectileScale, offset, projectileTime, charge);
                                 }
                             }

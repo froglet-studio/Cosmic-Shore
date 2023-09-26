@@ -103,14 +103,17 @@ namespace StarWriter.Core
             isSizeChangeActive = true;
             float sqrDistance = (TargetScale - transform.localScale).sqrMagnitude;
 
-            while (sqrDistance > .001f)
+            while (sqrDistance > .05f)
             {
-                transform.localScale = Vector3.Lerp(transform.localScale, TargetScale, Mathf.Clamp(growthRate * Time.deltaTime * sqrDistance,0,.2f));
+                transform.localScale = Vector3.Lerp(transform.localScale, TargetScale, Mathf.Clamp(growthRate * Time.deltaTime * sqrDistance,.05f,.2f));
                 sqrDistance = (TargetScale - transform.localScale).sqrMagnitude;
                 yield return null;
             }
+            transform.localScale = TargetScale;
             isSizeChangeActive = false;
         }
+
+
 
         public void ChangeSize()
         {
