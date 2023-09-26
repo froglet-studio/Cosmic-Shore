@@ -17,6 +17,7 @@ public class MiniGame : MonoBehaviour
     [SerializeField] Player playerPrefab;
     [SerializeField] GameObject PlayerOrigin;
     [SerializeField] float EndOfTurnDelay = 0f;
+    [SerializeField] bool EnableTrails = true;
 
     protected Button ReadyButton;
     protected GameObject EndGameScreen;
@@ -108,8 +109,12 @@ public class MiniGame : MonoBehaviour
             StartTurn();
 
             ActivePlayer.GetComponent<InputController>().Paused = false;
-            ActivePlayer.Ship.TrailSpawner.ForceStartSpawningTrail();
-            ActivePlayer.Ship.TrailSpawner.RestartTrailSpawnerAfterDelay(2f);
+
+            if (EnableTrails)
+            {
+                ActivePlayer.Ship.TrailSpawner.ForceStartSpawningTrail();
+                ActivePlayer.Ship.TrailSpawner.RestartTrailSpawnerAfterDelay(2f);
+            }
         });
     }
 
