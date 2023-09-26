@@ -6745,7 +6745,7 @@
     "m_Type": "UnityEditor.ShaderGraph.Vector3MaterialSlot",
     "m_ObjectId": "ec8939d7e429405a96cd49688eed8710",
     "m_Id": 0,
-    "m_DisplayName": "Spread",
+    "m_DisplayName": "spread",
     "m_SlotType": 1,
     "m_Hidden": false,
     "m_ShaderOutputName": "Out",
@@ -6968,10 +6968,10 @@
     "m_Guid": {
         "m_GuidSerialized": "a3278d5d-d969-4ffb-b30c-b901ccb380cb"
     },
-    "m_Name": "Spread",
+    "m_Name": "spread",
     "m_DefaultRefNameVersion": 1,
-    "m_RefNameGeneratedByDisplayName": "Spread",
-    "m_DefaultReferenceName": "_Spread",
+    "m_RefNameGeneratedByDisplayName": "spread",
+    "m_DefaultReferenceName": "_spread",
     "m_OverrideReferenceName": "",
     "m_GeneratePropertyBlock": true,
     "m_UseCustomSlotLabel": false,

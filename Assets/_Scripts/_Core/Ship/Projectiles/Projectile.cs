@@ -146,19 +146,19 @@ namespace StarWriter.Core
         public IEnumerator MoveProjectileCoroutine(float projectileTime)
         {
             var elapsedTime = 0f;
-    
+            
             if (drawLine) yield return new WaitUntil(() => lineRenderer != null);
             while (elapsedTime < projectileTime)
             {
                 if (drawLine)
                 {
-                    Vector3 worldStartPoint = transform.TransformPoint(new Vector3(0, 0, 0));
-                    Vector3 worldEndPoint = transform.TransformPoint(new Vector3(0, 0, elapsedTime * growthRate));
-
+                    var stretchedPoint = new Vector3(0, 0, elapsedTime * growthRate);
+                    Vector3 worldStartPoint = transform.TransformPoint(Vector3.zero);
+                    Vector3 worldEndPoint = transform.TransformPoint(stretchedPoint);
                     lineRenderer.material.SetVector("_StartPoint", worldStartPoint);
                     lineRenderer.material.SetVector("_EndPoint", worldEndPoint);
 
-                    lineRenderer.SetPosition(1, new Vector3(0, 0, elapsedTime * growthRate));
+                    lineRenderer.SetPosition(1, stretchedPoint);
                 }
                 elapsedTime += Time.deltaTime;
                 transform.position += Velocity * Time.deltaTime * Mathf.Cos(elapsedTime*Mathf.PI/(2*projectileTime));

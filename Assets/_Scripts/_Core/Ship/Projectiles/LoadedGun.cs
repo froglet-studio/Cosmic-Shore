@@ -16,7 +16,7 @@ namespace StarWriter.Core
         {
             GameObject Container = new GameObject();
             Container.transform.parent = transform;
-            FireGun(Container.transform, speed, Vector3.zero, 1, true, 0, projectileTime, firingPattern); // charge could be used to limit recursion depth
+            FireGun(Container.transform, speed, Vector3.zero, 1, true, projectileTime, 0, firingPattern); // charge could be used to limit recursion depth
         }
 
         //public void FireGun(Transform containerTransform, float speed, Vector3 inheritedVelocity,

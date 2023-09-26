@@ -79,7 +79,7 @@ MonoBehaviour:
   Velocity: {x: 0, y: 0, z: 0}
   Team: 0
   Ship: {fileID: 0}
-  trailBlockImpactEffects: 070000000d000000
+  trailBlockImpactEffects: 070000000c0000000d000000
   shipImpactEffects: 020000000300000001000000
   crystalImpactEffects: 0c000000
   drawLine: 1
@@ -104,5 +104,5 @@ MonoBehaviour:
   Team: 0
   Ship: {fileID: 0}
   speed: 20
-  projectileTime: 3
+  projectileTime: 5
   firingPattern: 1
