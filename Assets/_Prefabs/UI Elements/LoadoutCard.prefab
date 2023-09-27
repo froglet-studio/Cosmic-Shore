@@ -324,26 +324,23 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   AllGames: {fileID: 11400000, guid: 23306534ee610414c99a9b7bf3d92995, type: 2}
   AllShips: {fileID: 11400000, guid: 17dcd58a38dad2a498afe518e6a0bb58, type: 2}
+  PlusIconBackground: {fileID: 0}
+  PlayerCountImages:
+  - {fileID: 21300000, guid: 07205673909bc0c4f8d9e8a64907e11c, type: 3}
+  - {fileID: 21300000, guid: d552fb82b7f4f914aa227da14a04d6f1, type: 3}
+  - {fileID: 21300000, guid: a9744f48307442b47afd3e83e3363269, type: 3}
+  - {fileID: 21300000, guid: 14d9a911e980a2d45adde296e79333a7, type: 3}
+  IntensityImages:
+  - {fileID: 21300000, guid: bad67e207683855419a7d9277ac78379, type: 3}
+  - {fileID: 21300000, guid: f1a7b4a23312d0642bba77293e5bc36b, type: 3}
+  - {fileID: 21300000, guid: ec405f6d75b79354c9c595a08f1373cd, type: 3}
+  - {fileID: 21300000, guid: 9f9080244252f03408987e8467af4944, type: 3}
   GameTitle: {fileID: 7333658894977171526}
   BackgroundImage: {fileID: 7333658894665721387}
   ShipImage: {fileID: 7333658894366165628}
   PlayerCountImage: {fileID: 7333658894727405050}
   IntensityImage: {fileID: 7333658894091363871}
-  loadout:
-    Intensity: 1
-    PlayerCount: 2
-    ShipClass: 1
-    GameMode: 5
-  PlayerCountImages:
-  - {fileID: 21300000, guid: e349453ab9bba76458c019322f48e341, type: 3}
-  - {fileID: 21300000, guid: 5bf5264d128e5d44c8f089e6ee61d206, type: 3}
-  - {fileID: 21300000, guid: f2202bfb9f07ec64d9cf9db6946d63bd, type: 3}
-  - {fileID: 21300000, guid: 9fdd387a0f6872e428e8961d19eece6b, type: 3}
-  IntensityImages:
-  - {fileID: 21300000, guid: 626c8dff36296a24099f550ae99caa89, type: 3}
-  - {fileID: 21300000, guid: dc92b9b5ae6760c40a727554bffd81a1, type: 3}
-  - {fileID: 21300000, guid: 63576b00b6277364caa9551fac9568cd, type: 3}
-  - {fileID: 21300000, guid: d930e6627cfa54e44bfcafde136ddb2f, type: 3}
+  Index: 0
 --- !u!1 &7333658894727405048
 GameObject:
   m_ObjectHideFlags: 0

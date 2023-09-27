@@ -1,5 +1,6 @@
 using StarWriter.Core.Favoriting;
 using StarWriter.Core.HangerBuilder;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -9,34 +10,39 @@ using UnityEngine.UI;
 
 public class ArcadeMenu : MonoBehaviour
 {
-    // Favorite Settings
-    int activeIntensity = 0;
-    int activePlayerCount = 0;
-    ShipTypes activeShipType =0;
-    MiniGames activeGameMode =0;
+    
 
     [SerializeField] SO_GameList GameList;
+
     [SerializeField] TMPro.TMP_Text SelectedGameName;
     [SerializeField] TMPro.TMP_Text SelectedGameDescription;
     [SerializeField] GameObject SelectedGamePreviewWindow;
+
     [SerializeField] TMPro.TMP_Text SelectedGameName2;
     [SerializeField] TMPro.TMP_Text SelectedGameDescription2;
     [SerializeField] GameObject SelectedGamePreviewWindow2;
-    [SerializeField] Transform ShipSelectionContainer;
-    [SerializeField] Transform GameSelectionContainer;
-    [SerializeField] GameObject PlayerCountButtonContainer;
+
+    [SerializeField] Transform ShipSelectionContainer; //
+    [SerializeField] Transform GameSelectionContainer; //
+
+    [SerializeField] GameObject PlayerCountButtonContainer; //
+
     [FormerlySerializedAs("DifficultyButtonContainer")]
-    [SerializeField] GameObject IntensityButtonContainer;
+    [SerializeField] GameObject IntensityButtonContainer; //
+
     [SerializeField] MenuAnimator ShipSelectAnimator;
 
-    List<Sprite> IntensityIcons = new();
-    List<Sprite> PlayerCountIcons = new();
-    SO_Ship SelectedShip;
-    SO_ArcadeGame SelectedGame;
+    List<Sprite> IntensityIcons = new(); //
+    List<Sprite> PlayerCountIcons = new(); //
+    SO_Ship SelectedShip;//
+    SO_ArcadeGame SelectedGame;//
+  
 
     // Start is called before the first frame update
     void Start()
     {
+        LoadoutSystem.Init();
+
         for (var i = 0; i < PlayerCountButtonContainer.transform.childCount; i++)
             PlayerCountIcons.Add(PlayerCountButtonContainer.transform.GetChild(i).gameObject.GetComponent<Image>().sprite);
 
@@ -226,34 +232,7 @@ public class ArcadeMenu : MonoBehaviour
         preview.transform.SetParent(SelectedGamePreviewWindow2.transform, false);
     }
 
-    #region Favorites
-    // Sets Intensity
-    public void OnButtonPressedChangeActiveIntensity(int newIntensity)
-    {
-        activeIntensity = newIntensity;
-    }
-    // Sets Player Count
-    public void OnButtonPressedChangeActivePlayerCount(int newPlayerCount)
-    {
-        activePlayerCount = newPlayerCount;
-    }
-    // Sets Ship Type
-    public void OnButtonPressedChangeActiveShipTypeEnumValue(ShipTypes shipType)
-    {
-        activeShipType = shipType;
-    }
-    // Sets MiniGame
-    public void OnButtonPressedChangeaActiveMiniGameEnumValue(MiniGames gameMode)
-    {
-        activeGameMode = gameMode; 
-    }
+    
 
-    // Sends Current Favorite Info to Favorite System
-    public void OnStarButtonPressed()
-    {
-        FavoriteSystem favorite = new FavoriteSystem();
-        favorite.AttemptToAddFavorite(activeIntensity, activePlayerCount, activeShipType, activeGameMode);
-    }
-    // TODo maybe Set active favorite a top priority Favorite for drop down sorting
-    #endregion
+
 }
