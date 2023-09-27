@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq.Expressions;
 using UnityEngine;
+using static UnityEditor.Experimental.GraphView.Port;
 
 
 namespace StarWriter.Core
@@ -157,6 +158,7 @@ namespace StarWriter.Core
                     Vector3 worldEndPoint = transform.TransformPoint(stretchedPoint);
                     lineRenderer.material.SetVector("_StartPoint", worldStartPoint);
                     lineRenderer.material.SetVector("_EndPoint", worldEndPoint);
+                    lineRenderer.material.SetFloat("_Opacity", 1 - Mathf.Pow(elapsedTime/projectileTime,4));
 
                     lineRenderer.SetPosition(1, stretchedPoint);
                 }

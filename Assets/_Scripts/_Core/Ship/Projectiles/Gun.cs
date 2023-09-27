@@ -67,7 +67,6 @@ namespace StarWriter.Core
 
                             Vector3 direction = new Vector3(x, y, z);
                             Vector3 offset = direction * sideLength;
-                            transform.LookAt(-offset); //just guessing here
                             FireProjectile(containerTransform, speed, inheritedVelocity, projectileScale, offset, direction, projectileTime, charge);
                         }
                     }
@@ -118,7 +117,7 @@ namespace StarWriter.Core
         {
             Projectile projectileInstance = Instantiate(projectilePrefab,
                 transform.position + Quaternion.LookRotation(transform.forward) * offset + (transform.forward * barrelLength), // position
-                Quaternion.LookRotation(transform.forward) // rotation
+                Quaternion.LookRotation(normalizedVelocity) // rotation
                 ).GetComponent<Projectile>();
             projectileInstance.transform.localScale = projectileScale * Vector3.one;
             projectileInstance.transform.parent = containerTransform;

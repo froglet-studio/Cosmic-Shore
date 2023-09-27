@@ -7,6 +7,7 @@ Shader "Custom/ViewAngleBasedColorBlendHDR"
         _StartPoint ("Line Start Point", Vector) = (0, 0, 0, 0)
         _EndPoint ("Line End Point", Vector) = (1, 1, 1, 1)
         _Brightness ("Brightness", Range(1, 10)) = 1
+        _Opacity ("Opacity", Range(0, 1)) = 1
     }
 
     SubShader
@@ -40,6 +41,7 @@ Shader "Custom/ViewAngleBasedColorBlendHDR"
             float4 _Color0;
             float4 _Color1;
             float _Brightness;
+            float _Opacity;
 
             v2f vert (appdata v)
             {
@@ -55,6 +57,7 @@ Shader "Custom/ViewAngleBasedColorBlendHDR"
                 float angleCosine = abs(dot(lineDir, i.viewDir));
 
                 half4 blendedColor = lerp(_Color1, _Color0, angleCosine);
+                blendedColor.a *= _Opacity; // Adjust the alpha value using the opacity
                 return blendedColor * _Brightness; // Multiply by brightness factor for HDR
             }
             ENDCG
