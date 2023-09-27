@@ -48,7 +48,6 @@ public class LoadoutMenu : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-       LoadoutSystem. 
     }
 
     #region Loadouts
