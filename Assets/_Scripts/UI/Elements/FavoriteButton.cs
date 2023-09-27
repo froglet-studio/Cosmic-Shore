@@ -10,9 +10,9 @@ namespace StarWriter.UI
     public class FavoriteButton : MonoBehaviour
     {
         UnityEngine.UI.Button favoriteStar;
-        public Favorite currentFavoriteSelected;
+        public Loadout currentFavoriteSelected;
 
-        FavoriteSystem favoriteSystem = new FavoriteSystem();
+        LoadoutSystem favoriteSystem = new LoadoutSystem();
 
 
         // Start is called before the first frame update
@@ -28,8 +28,8 @@ namespace StarWriter.UI
         }
         public void OnFavoritesButtonPressed()
         {
-            //favoriteSystem.FavoriteExists();
-            //favoriteSystem.AddFavorite(currentFavoriteSelected);
+            //loadoutSystem.LoadoutExists();
+            //loadoutSystem.AddFavorite(currentFavoriteSelected);
         }
 
     }
