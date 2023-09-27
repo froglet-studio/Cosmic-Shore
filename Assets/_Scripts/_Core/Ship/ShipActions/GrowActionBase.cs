@@ -1,7 +1,7 @@
 ﻿using System.Collections;
 using UnityEngine;
 
-public class GrowActionBase : LevelAwareShipActionAbstractBase
+public class GrowActionBase : LevelAwareShipAction
 {
     [SerializeField] protected float minSize;
     [SerializeField] protected float maxSize;

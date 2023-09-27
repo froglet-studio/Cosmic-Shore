@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class ZoomOutAction : LevelAwareShipActionAbstractBase
+public class ZoomOutAction : LevelAwareShipAction
 {
     [SerializeField] public float ZoomOutRate;
     [SerializeField] public float ZoomInRate;

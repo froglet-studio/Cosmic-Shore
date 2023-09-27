@@ -75,11 +75,11 @@ namespace StarWriter.Core
         Dictionary<ResourceEvents, List<ShipAction>> ClassResourceActions = new();
 
         [Header("Leveling Targets")]
-        [SerializeField] LevelAwareShipActionAbstractBase MassAbilityTarget;
-        [SerializeField] LevelAwareShipActionAbstractBase ChargeAbilityTarget;
-        [SerializeField] LevelAwareShipActionAbstractBase SpaceAbilityTarget;
-        [SerializeField] LevelAwareShipActionAbstractBase TimeAbilityTarget;
-        [SerializeField] LevelAwareShipActionAbstractBase ChargeAbility2Target;
+        [SerializeField] LevelAwareShipAction MassAbilityTarget;
+        [SerializeField] LevelAwareShipAction ChargeAbilityTarget;
+        [SerializeField] LevelAwareShipAction SpaceAbilityTarget;
+        [SerializeField] LevelAwareShipAction TimeAbilityTarget;
+        [SerializeField] LevelAwareShipAction ChargeAbility2Target;
 
         [Header("Passive Effects")]
         public List<ShipLevelEffects> LevelEffects;
@@ -507,7 +507,6 @@ namespace StarWriter.Core
                 case ShipLevelEffects.ScaleChargeAbility2:
                     ScaleMassAbilityWithLevel(currentLevel, parameterMapping);
                     break;
-
             }
         }
 

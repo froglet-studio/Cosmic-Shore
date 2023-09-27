@@ -23,6 +23,7 @@ public class LoadoutCard : MonoBehaviour
     Loadout loadout;
     void Start()
     {
+        loadout = new Loadout(2, 4, ShipTypes.Manta, MiniGames.BlockBandit);
         UpdateCardView();
     }
 
