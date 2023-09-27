@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using static LoadoutCard;
 
 public struct Loadout
 {
@@ -29,62 +30,51 @@ public struct Loadout
 }
 namespace StarWriter.Core.Favoriting
 {
-    public class LoadoutSystem : MonoBehaviour
+    public static class LoadoutSystem
     {
-        int loadoutIndex = 0;
+        static int loadoutIndex = 0;
 
-        Loadout activeLoadout = new();
+        static Loadout activeLoadout;
 
-        List<Loadout> loadouts;
-        void Start()
-        {
-            loadouts = new List<Loadout>();
+        static List<Loadout> loadouts;
+ 
+        public static void Init()
+        {            
+            loadouts = new List<Loadout>()          
+            {
+            new Loadout() { Intensity=1, PlayerCount=1, GameMode=MiniGames.BlockBandit, ShipType=ShipTypes.Manta},
+            new Loadout() { Intensity=1, PlayerCount=1, GameMode=MiniGames.BlockBandit, ShipType=ShipTypes.Manta},
+            new Loadout() { Intensity=1, PlayerCount=1, GameMode=MiniGames.BlockBandit, ShipType=ShipTypes.Manta},
+            new Loadout() { Intensity=1, PlayerCount=1, GameMode=MiniGames.BlockBandit, ShipType=ShipTypes.Manta}
+            };
             activeLoadout = loadouts[0];
         }
-
-        public bool CheckLoadoutsExist(int idx)
+        public static bool CheckLoadoutsExist(int idx)
         {
             return loadouts.Count > idx;
         }
 
-        /*public void ResetAllLoadouts()
-        {
-            int intensity = 1; int playerCount = 1; int shipType = 1; int gameMode = 1;
-
-            for (int i = 0; i < 4; i++)
-            {                
-                Loadout loadout = new Loadout(intensity, playerCount, (ShipTypes)shipType, (MiniGames)gameMode);
-                loadouts.Add(loadout);
-                Debug.Log("Loaded loadout " + loadout.ToString() + " currently " + loadouts.Count + "loadouts");
-                intensity++;
-                playerCount++;
-                shipType++;
-                gameMode++;
-            }
-            
-        }*/
-
-        public Loadout GetActiveLoadout()
+        public static Loadout GetActiveLoadout()
         {
             return activeLoadout;
         }
 
-        public Loadout GetLoadout(int idx)
+        public static Loadout GetLoadout(int idx)
         {
             return loadouts[idx];
         }
 
-        public List<Loadout> GetFullListOfLoadouts()
+        public static List<Loadout> GetFullListOfLoadouts()
         {
             return loadouts;
         }
-        public int GetActiveLoadoutsIndex()    //Loadout Select Buttions set index 1-4
+        public static int GetActiveLoadoutsIndex()    //Loadout Select Buttions set index 1-4
         {
             return loadoutIndex;
         }
         
 
-        public void SetCurrentlySelectedLoadout(Loadout loadout, int loadoutIndex)
+        public static void SetCurrentlySelectedLoadout(Loadout loadout, int loadoutIndex)
         {
             int idx = loadoutIndex--;  //change 1-4 to 0-3
             idx = Mathf.Clamp(idx, 0, loadouts.Count);
@@ -92,7 +82,7 @@ namespace StarWriter.Core.Favoriting
         }
 
         
-        public void SetActiveLoadoutIndex(int loadoutIndex) 
+        public static void SetActiveLoadoutIndex(int loadoutIndex) 
         {
             Debug.Log("Loadout Index changed to " + loadoutIndex);
 

@@ -13,7 +13,7 @@ public class TestPanelLoadout : MonoBehaviour
     public TMP_Text player_Count_Text;
     public TMP_Text active_Index_Text;
 
-    public LoadoutSystem loadoutSystem;
+   /* public LoadoutSystem loadoutSystem;
 
     private void LateUpdate()
     { 
@@ -28,5 +28,5 @@ public class TestPanelLoadout : MonoBehaviour
         intensity_Text.text= loadout.Intensity.ToString();
         player_Count_Text.text = loadout.PlayerCount.ToString();
 
-    }
+    }*/
 }

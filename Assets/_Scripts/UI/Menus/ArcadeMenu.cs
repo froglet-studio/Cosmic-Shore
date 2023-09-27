@@ -10,30 +10,6 @@ using UnityEngine.UI;
 
 public class ArcadeMenu : MonoBehaviour
 {
-    [SerializeField] GameObject loadout0;
-    [SerializeField] GameObject loadout1;
-    [SerializeField] GameObject loadout2;
-    [SerializeField] GameObject loadout3;
-
-    [SerializeField] GameObject shipSelection;
-    [SerializeField] GameObject gameModeSelection;
-
-    [SerializeField] GameObject IntensitySelect0;
-    [SerializeField] GameObject IntensitySelect1;
-    [SerializeField] GameObject IntensitySelect2;
-    [SerializeField] GameObject IntensitySelect3;
-
-    [SerializeField] GameObject PlayerCountSelect0;
-    [SerializeField] GameObject PlayerCountSelect1;
-    [SerializeField] GameObject PlayerCountSelect2;
-    [SerializeField] GameObject PlayerCountSelect3;
-
-    // Loadout Settings
-    int maxLoadoutSlots = 4;
-    int activeIntensity = 0;
-    int activePlayerCount = 0;
-    ShipTypes activeShipType =0;
-    MiniGames activeGameMode =0;
     
 
     [SerializeField] SO_GameList GameList;
@@ -54,15 +30,12 @@ public class ArcadeMenu : MonoBehaviour
     List<Sprite> PlayerCountIcons = new();
     SO_Ship SelectedShip;
     SO_ArcadeGame SelectedGame;
-
-    [SerializeField] LoadoutSystem loadoutSystem;
-   
+  
 
     // Start is called before the first frame update
     void Start()
     {
-
-        
+        LoadoutSystem.Init();
 
         for (var i = 0; i < PlayerCountButtonContainer.transform.childCount; i++)
             PlayerCountIcons.Add(PlayerCountButtonContainer.transform.GetChild(i).gameObject.GetComponent<Image>().sprite);
@@ -253,127 +226,7 @@ public class ArcadeMenu : MonoBehaviour
         preview.transform.SetParent(SelectedGamePreviewWindow2.transform, false);
     }
 
-    #region Loadouts
-
-    void PopulateLoadoutSelectionList()
-    {
-        for (int i = 0; i < maxLoadoutSlots; i++)
-        {
-            if (loadoutSystem.CheckLoadoutsExist(i))
-            {
-                DisplayLoadout(i);
-            }
-            else
-            {
-                //Show + or empty slot
-            }
-        }
-        
-
-    }
-    void DisplayLoadout(int idx)
-    {
-        List<Loadout> temploadoutslist = loadoutSystem.GetFullListOfLoadouts();
-        Loadout loadout = temploadoutslist[idx];
-
-        List<GameObject> LoadoutBuilds = new List<GameObject>();
-        LoadoutBuilds.Clear();
-        LoadoutBuilds.Add(loadout0);
-        LoadoutBuilds.Add(loadout1);
-        LoadoutBuilds.Add(loadout2);
-        LoadoutBuilds.Add(loadout3);
-
-        //load gamemode
-        Debug.Log(loadout.GameMode);
-        //LoadoutBuilds[idx].GetComponentInChildren
-        //load shiptype
-        Debug.Log(loadout.ShipType);
-        //load intensity
-        Debug.Log(loadout.Intensity);
-        //load playercount
-        Debug.Log(loadout.PlayerCount);
-    }
-    // Sets Intensity
-    public void OnClickedChangeActiveIntensity(int newIntensity)
-    {
-        SetIntensity(newIntensity);
-        activeIntensity = newIntensity;
-        Debug.Log("Intensity changed to " + newIntensity);
-        UpdateActiveLoadOut();
-    }
-    // Sets Player Count
-    public void OnClickChangeActivePlayerCount(int newPlayerCount)
-    {
-        SetPlayerCount(newPlayerCount);
-        activePlayerCount = newPlayerCount;
-        UpdateActiveLoadOut();
-    }
-
-    // Sets ShipTypes
-    public void OnClickGotoNextEnum(bool gotoNext)
-    {
-        int ShipTypesCount = Enum.GetNames(typeof(ShipTypes)).Length;
-        if (!gotoNext)   //Decrease to next
-        {            
-            activeShipType--;
-            if(activeShipType < 0)
-            {
-                activeShipType = (ShipTypes)ShipTypesCount;
-            }
-        }
-        else
-        {
-            activeShipType++;    //Increase to next
-            if (activeShipType > (ShipTypes)ShipTypesCount)
-            {
-                activeShipType = 0;
-            }
-        }
-        Debug.Log("Active Ship Type is " + activeShipType);
-        UpdateActiveLoadOut();
-    }
-  
-    // Sets MiniGames
-    public void OnClickGotoNextGameMode(bool gotoNext)
-    {
-        int gameModesCount = Enum.GetNames(typeof(MiniGames)).Length;
-        if (!gotoNext)   //Decrease to next
-        {
-            activeGameMode--;
-            if (activeGameMode <= 0)
-            {
-                activeGameMode = (MiniGames)gameModesCount;
-            }
-        }
-        else
-        {
-            activeGameMode++;    //Increase to next
-            if (activeGameMode >= (MiniGames)gameModesCount)
-            {
-                activeGameMode = 0;
-            }
-        }
-        Debug.Log("Active Game Mode is " + activeGameMode);
-        UpdateActiveLoadOut();
-    }
-    // Changes the loadout index
-    public void OnClickLoadOutButton(int loadoutIndex)
-    {
-        loadoutSystem.SetActiveLoadoutIndex(loadoutIndex);
-    }
-
-    void UpdateActiveLoadOut()
-    {
-        Loadout loadout = new Loadout();
-        loadout.Intensity = activeIntensity;
-        loadout.PlayerCount = activePlayerCount;
-        loadout.ShipType = activeShipType;
-        loadout.GameMode = activeGameMode;
-
-        loadoutSystem.SetCurrentlySelectedLoadout(loadout, loadoutSystem.GetActiveLoadoutsIndex());
-    }
-
-    #endregion
+    
 
 
 }

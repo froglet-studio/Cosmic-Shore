@@ -6,39 +6,51 @@ using UnityEngine.UI;
 
 public class LoadoutCard : MonoBehaviour
 {
-    [Serializable]
-    public struct LoadoutStruct
-    {
-        public int Intensity;
-        public int PlayerCount;
-        public ShipTypes ShipClass;
-        public MiniGames GameMode;
-    }
-
+    [Header("Resources")]
     [SerializeField] SO_GameList AllGames;
     [SerializeField] SO_ShipList AllShips;
+    [SerializeField] Sprite PlusIconBackground;
+    [SerializeField] Sprite[] PlayerCountImages = new Sprite[4];
+    [SerializeField] Sprite[] IntensityImages = new Sprite[4];
 
+    [Header("Placeholder Locations")]
     [SerializeField] TMP_Text GameTitle;
     [SerializeField] Image BackgroundImage;
     [SerializeField] Image ShipImage;
     [SerializeField] Image PlayerCountImage;
     [SerializeField] Image IntensityImage;
-
-    /*[HideInInspector]*/ public LoadoutStruct loadout; // Show in inspector while underdevelopment for debugging
-
-    [SerializeField] Sprite[] PlayerCountImages = new Sprite[4];
-    [SerializeField] Sprite[] IntensityImages = new Sprite[4];
-
+    [SerializeField] int Index;
+    Loadout loadout;
     void Start()
+    {
+        UpdateCardView();
+    }
+
+    public void SetLoadout(Loadout loadout)
+    {
+        this.loadout = loadout;
+        UpdateCardView();
+    }
+
+    void UpdateCardView()
     {
         SO_ArcadeGame game = AllGames.GameList.Where(x => x.Mode == loadout.GameMode).FirstOrDefault();
         GameTitle.text = game.Name;
         BackgroundImage.sprite = game.CardBackground;
 
-        SO_Ship ship = AllShips.ShipList.Where(x => x.Class == loadout.ShipClass).FirstOrDefault();
-        ShipImage.sprite = ship.TrailPreviewImage;
+        SO_Ship ship = AllShips.ShipList.Where(x => x.Class == loadout.ShipType).FirstOrDefault();
+        ShipImage.sprite = ship.CardSilohoutte;
 
         PlayerCountImage.sprite = PlayerCountImages[loadout.PlayerCount - 1];
         IntensityImage.sprite = IntensityImages[loadout.Intensity - 1];
     }
+
+    public void OnCardClicked()
+    {
+        // Add highlight boarder
+
+        // Set active and show details
+        //LoadoutView.ExpandLoadout(Index);
+    }
 }
+
