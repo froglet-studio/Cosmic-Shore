@@ -18,25 +18,26 @@ public class GameCard : MonoBehaviour
     [SerializeField] Image LockImage;
     [SerializeField] int Index;
 
+    MiniGames gameMode;
     public MiniGames GameMode 
     {
-        get { return GameMode; }
+        get { return gameMode; }
         set
         {
-            GameMode = value;
+            gameMode = value;
             UpdateCardView();
         }
     }
 
     void Start()
     {
-        GameMode = MiniGames.BlockBandit;
+        gameMode = MiniGames.BlockBandit;
         UpdateCardView();
     }
 
     void UpdateCardView()
     {
-        SO_ArcadeGame game = AllGames.GameList.Where(x => x.Mode == GameMode).FirstOrDefault();
+        SO_ArcadeGame game = AllGames.GameList.Where(x => x.Mode == gameMode).FirstOrDefault();
         GameTitle.text = game.Name;
         BackgroundImage.sprite = game.CardBackground;
 
@@ -54,6 +55,6 @@ public class GameCard : MonoBehaviour
         // Set active and show details
         //LoadoutView.ExpandLoadout(Index);
 
-        Debug.Log($"GameCard - Clicked: Gamemode: {GameMode}");
+        Debug.Log($"GameCard - Clicked: Gamemode: {gameMode}");
     }
 }

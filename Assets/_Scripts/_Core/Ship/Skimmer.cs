@@ -125,7 +125,6 @@ namespace StarWriter.Core
             if (other.TryGetComponent<ShipGeometry>(out var shipGeometry))
             {
                 PerformShipImpactEffects(shipGeometry);
-                Debug.Log("ship impact");
             }
             if (other.TryGetComponent<TrailBlock>(out var trailBlock) && (affectSelf || trailBlock.Team != team))
             {

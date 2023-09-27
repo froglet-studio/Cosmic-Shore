@@ -77,7 +77,7 @@ public class ExploreMenu : MonoBehaviour
             gameCard.gameObject.SetActive(true);
         }
 
-        StartCoroutine(SelectGameCoroutine(0));
+        //StartCoroutine(SelectGameCoroutine(0));
     }
 
     void PopulateGameDetails()
@@ -135,8 +135,8 @@ public class ExploreMenu : MonoBehaviour
         Debug.Log($"SelectGame: {index}");
 
         // Deselect them all
-        for (var i = 0; i < GameList.GameList.Count; i++)
-            GameSelectionGrid.GetChild(i).gameObject.GetComponent<Image>().sprite = GameList.GameList[i].Icon;
+        //for (var i = 0; i < GameList.GameList.Count; i++)
+        //    GameSelectionGrid.GetChild(i).gameObject.GetComponent<Image>().sprite = GameList.GameList[i].Icon;
 
         // Select the one
         SelectedGame = GameList.GameList[index];
