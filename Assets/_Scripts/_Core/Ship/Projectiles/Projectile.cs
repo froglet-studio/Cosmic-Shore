@@ -158,7 +158,7 @@ namespace StarWriter.Core
                     Vector3 worldEndPoint = transform.TransformPoint(stretchedPoint);
                     lineRenderer.material.SetVector("_StartPoint", worldStartPoint);
                     lineRenderer.material.SetVector("_EndPoint", worldEndPoint);
-                    lineRenderer.material.SetFloat("_Opacity", 1 - Mathf.Pow(elapsedTime/projectileTime,4));
+                    lineRenderer.material.SetFloat("_Opacity", 1 - Mathf.Pow(elapsedTime/projectileTime,4)); // TODO: optimize out the 4th power
 
                     lineRenderer.SetPosition(1, stretchedPoint);
                 }
