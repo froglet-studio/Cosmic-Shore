@@ -3,7 +3,7 @@ using StarWriter.Core;
 using System.Collections.Generic;
 using UnityEngine.UIElements;
 
-class UrchinAnimationContoller : ShipAnimation
+class MantaAnimationContoller : ShipAnimation
 {
 
     [SerializeField] Animator animator;
@@ -11,20 +11,16 @@ class UrchinAnimationContoller : ShipAnimation
     protected override void Start()
     {
         base.Start();
-        
-    }
-
-    protected override void Update()
-    {
-        base.Update();
-
-       
     }
 
     protected override void PerformShipAnimations(float pitch, float yaw, float roll, float throttle)
     {
 
-        animator.SetFloat("speed", throttle);
+        animator.SetFloat("pitch", pitch*10);
+        animator.SetFloat("yaw", yaw*10);
+        animator.SetFloat("roll", roll*10);
+        animator.SetFloat("throttle", throttle*10);
+        animator.SetFloat("Blend", 1);
     }
 
     protected override void AssignTransforms()
