@@ -55,7 +55,6 @@ namespace StarWriter.Core
         [SerializeField] GameObject AOEPrefab;
         [SerializeField] Skimmer farFieldSkimmer;
 
-
         [Header("Environment Interactions")]
         [SerializeField] public List<CrystalImpactEffects> crystalImpactEffects;
         [ShowIf(CrystalImpactEffects.AreaOfEffectExplosion)] [SerializeField] float minExplosionScale = 50;

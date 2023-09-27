@@ -119,7 +119,7 @@ BlendTree:
     m_DirectBlendParameter: Blend
     m_Mirror: 0
   - serializedVersion: 2
-    m_Motion: {fileID: -721875957892904936, guid: 7c324ef5b6621f84b894d9474c05ec3b,
+    m_Motion: {fileID: -8679543024212152096, guid: 7c324ef5b6621f84b894d9474c05ec3b,
       type: 3}
     m_Threshold: 0.6666667
     m_Position: {x: 10, y: 0}
@@ -128,7 +128,7 @@ BlendTree:
     m_DirectBlendParameter: Blend
     m_Mirror: 0
   - serializedVersion: 2
-    m_Motion: {fileID: -8679543024212152096, guid: 7c324ef5b6621f84b894d9474c05ec3b,
+    m_Motion: {fileID: -721875957892904936, guid: 7c324ef5b6621f84b894d9474c05ec3b,
       type: 3}
     m_Threshold: 1
     m_Position: {x: -10, y: 0}
@@ -136,8 +136,8 @@ BlendTree:
     m_CycleOffset: 0
     m_DirectBlendParameter: Blend
     m_Mirror: 0
-  m_BlendParameter: roll
-  m_BlendParameterY: throttle
+  m_BlendParameter: Roll
+  m_BlendParameterY: Throttle
   m_MinThreshold: 0
   m_MaxThreshold: 1
   m_UseAutomaticThresholds: 1
@@ -284,10 +284,34 @@ AnimatorController:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: New Animator Controller
+  m_Name: MantaAnimatorController
   serializedVersion: 5
   m_AnimatorParameters:
   - m_Name: Blend
+    m_Type: 1
+    m_DefaultFloat: 0
+    m_DefaultInt: 0
+    m_DefaultBool: 0
+    m_Controller: {fileID: 9100000}
+  - m_Name: Pitch
+    m_Type: 1
+    m_DefaultFloat: 0
+    m_DefaultInt: 0
+    m_DefaultBool: 0
+    m_Controller: {fileID: 9100000}
+  - m_Name: Yaw
+    m_Type: 1
+    m_DefaultFloat: 0
+    m_DefaultInt: 0
+    m_DefaultBool: 0
+    m_Controller: {fileID: 9100000}
+  - m_Name: Roll
+    m_Type: 1
+    m_DefaultFloat: 0
+    m_DefaultInt: 0
+    m_DefaultBool: 0
+    m_Controller: {fileID: 9100000}
+  - m_Name: Throttle
     m_Type: 1
     m_DefaultFloat: 0
     m_DefaultInt: 0
@@ -315,7 +339,7 @@ BlendTree:
   m_Name: BlendTree
   m_Childs:
   - serializedVersion: 2
-    m_Motion: {fileID: 3804817242277331963, guid: 7c324ef5b6621f84b894d9474c05ec3b,
+    m_Motion: {fileID: 6212661447819486376, guid: 7c324ef5b6621f84b894d9474c05ec3b,
       type: 3}
     m_Threshold: 0
     m_Position: {x: 0, y: 10}
@@ -324,7 +348,7 @@ BlendTree:
     m_DirectBlendParameter: Blend
     m_Mirror: 0
   - serializedVersion: 2
-    m_Motion: {fileID: 6212661447819486376, guid: 7c324ef5b6621f84b894d9474c05ec3b,
+    m_Motion: {fileID: 3804817242277331963, guid: 7c324ef5b6621f84b894d9474c05ec3b,
       type: 3}
     m_Threshold: 0.25
     m_Position: {x: 0, y: -10}
@@ -350,18 +374,10 @@ BlendTree:
     m_CycleOffset: 0
     m_DirectBlendParameter: Blend
     m_Mirror: 0
-  - serializedVersion: 2
-    m_Motion: {fileID: 0}
-    m_Threshold: 1
-    m_Position: {x: 0, y: 0}
-    m_TimeScale: 1
-    m_CycleOffset: 0
-    m_DirectBlendParameter: Blend
-    m_Mirror: 0
-  m_BlendParameter: yaw
-  m_BlendParameterY: pitch
+  m_BlendParameter: Yaw
+  m_BlendParameterY: Pitch
   m_MinThreshold: 0
-  m_MaxThreshold: 1
+  m_MaxThreshold: 0.75
   m_UseAutomaticThresholds: 1
   m_NormalizedBlendValues: 0
   m_BlendType: 3
@@ -471,14 +487,14 @@ AnimatorStateMachine:
   m_ChildStates:
   - serializedVersion: 1
     m_State: {fileID: -7407348079967575313}
-    m_Position: {x: 90, y: 350, z: 0}
+    m_Position: {x: 600, y: 20, z: 0}
   m_ChildStateMachines: []
   m_AnyStateTransitions: []
   m_EntryTransitions: []
   m_StateMachineTransitions: {}
   m_StateMachineBehaviours: []
-  m_AnyStatePosition: {x: -290, y: 200, z: 0}
-  m_EntryPosition: {x: -220, y: 710, z: 0}
-  m_ExitPosition: {x: 680, y: 340, z: 0}
+  m_AnyStatePosition: {x: 620, y: 160, z: 0}
+  m_EntryPosition: {x: 890, y: 30, z: 0}
+  m_ExitPosition: {x: 870, y: 160, z: 0}
   m_ParentStateMachinePosition: {x: 800, y: 20, z: 0}
   m_DefaultState: {fileID: -7407348079967575313}

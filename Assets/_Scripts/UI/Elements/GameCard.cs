@@ -3,6 +3,7 @@ using System.Linq;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using static Cinemachine.CinemachineTriggerAction.ActionSettings;
 
 public class GameCard : MonoBehaviour
 {
@@ -16,17 +17,20 @@ public class GameCard : MonoBehaviour
     [SerializeField] Image BackgroundImage;
     [SerializeField] Image LockImage;
     [SerializeField] int Index;
-    public MiniGames GameMode { get; private set; }
+
+    public MiniGames GameMode 
+    {
+        get { return GameMode; }
+        set
+        {
+            GameMode = value;
+            UpdateCardView();
+        }
+    }
 
     void Start()
     {
         GameMode = MiniGames.BlockBandit;
-        UpdateCardView();
-    }
-
-    public void SetGameMode(MiniGames gameMode)
-    {
-        GameMode = gameMode;
         UpdateCardView();
     }
 
