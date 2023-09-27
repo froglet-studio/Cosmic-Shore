@@ -3,14 +3,15 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 public class LoadoutMenu : MonoBehaviour
 {
-    /*[SerializeField] GameObject loadout0;
+    [SerializeField] GameObject loadout0;
     [SerializeField] GameObject loadout1;
     [SerializeField] GameObject loadout2;
     [SerializeField] GameObject loadout3;
-
+    /*
     [SerializeField] GameObject shipSelection;
     [SerializeField] GameObject gameModeSelection;
 
@@ -24,6 +25,19 @@ public class LoadoutMenu : MonoBehaviour
     [SerializeField] GameObject PlayerCountSelect2;
     [SerializeField] GameObject PlayerCountSelect3;*/
 
+    [SerializeField] Transform ShipSelectionContainer; //
+    [SerializeField] Transform GameSelectionContainer; //
+
+    [SerializeField] GameObject PlayerCountButtonContainer; //
+
+    [FormerlySerializedAs("DifficultyButtonContainer")]
+    [SerializeField] GameObject IntensityButtonContainer; //
+
+    List<Sprite> IntensityIcons = new(); //
+    List<Sprite> PlayerCountIcons = new(); //
+    SO_Ship SelectedShip;//
+    SO_ArcadeGame SelectedGame;//
+
     // Loadout Settings
     int maxLoadoutSlots = 4;
     int activeIntensity = 0;
@@ -34,7 +48,7 @@ public class LoadoutMenu : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        
+       LoadoutSystem. 
     }
 
     #region Loadouts

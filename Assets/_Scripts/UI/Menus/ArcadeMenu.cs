@@ -13,23 +13,29 @@ public class ArcadeMenu : MonoBehaviour
     
 
     [SerializeField] SO_GameList GameList;
+
     [SerializeField] TMPro.TMP_Text SelectedGameName;
     [SerializeField] TMPro.TMP_Text SelectedGameDescription;
     [SerializeField] GameObject SelectedGamePreviewWindow;
+
     [SerializeField] TMPro.TMP_Text SelectedGameName2;
     [SerializeField] TMPro.TMP_Text SelectedGameDescription2;
     [SerializeField] GameObject SelectedGamePreviewWindow2;
-    [SerializeField] Transform ShipSelectionContainer;
-    [SerializeField] Transform GameSelectionContainer;
-    [SerializeField] GameObject PlayerCountButtonContainer;
+
+    [SerializeField] Transform ShipSelectionContainer; //
+    [SerializeField] Transform GameSelectionContainer; //
+
+    [SerializeField] GameObject PlayerCountButtonContainer; //
+
     [FormerlySerializedAs("DifficultyButtonContainer")]
-    [SerializeField] GameObject IntensityButtonContainer;
+    [SerializeField] GameObject IntensityButtonContainer; //
+
     [SerializeField] MenuAnimator ShipSelectAnimator;
 
-    List<Sprite> IntensityIcons = new();
-    List<Sprite> PlayerCountIcons = new();
-    SO_Ship SelectedShip;
-    SO_ArcadeGame SelectedGame;
+    List<Sprite> IntensityIcons = new(); //
+    List<Sprite> PlayerCountIcons = new(); //
+    SO_Ship SelectedShip;//
+    SO_ArcadeGame SelectedGame;//
   
 
     // Start is called before the first frame update
