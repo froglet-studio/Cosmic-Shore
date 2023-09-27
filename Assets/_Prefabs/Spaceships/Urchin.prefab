@@ -3159,6 +3159,7 @@ GameObject:
   - component: {fileID: 874579555101021522}
   - component: {fileID: 1435252848482629424}
   - component: {fileID: 3440187540988767646}
+  - component: {fileID: 2680463359456452957}
   - component: {fileID: 4005043449782909879}
   - component: {fileID: 7081412522392871879}
   - component: {fileID: 8607513911732901166}
@@ -3426,7 +3427,7 @@ MonoBehaviour:
   ability: {fileID: 0}
   CrystalTransform: {fileID: 0}
   flowFieldData: {fileID: 0}
---- !u!114 &4005043449782909879
+--- !u!114 &2680463359456452957
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -3434,6 +3435,25 @@ MonoBehaviour:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6417075533431866457}
   m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2116872444dccfd43a29513c3af008b7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  SkinnedMeshRenderer: {fileID: 0}
+  SaveNewPositions: 0
+  UseShapeKeys: 0
+  brakeThreshold: 0.65
+  lerpAmount: 2
+  smallLerpAmount: 0.7
+  animator: {fileID: 6795854866240994547}
+--- !u!114 &4005043449782909879
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 858d27e97e36b394593e6f2fe8c73f06, type: 3}
   m_Name: 
