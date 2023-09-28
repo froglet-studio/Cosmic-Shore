@@ -18,18 +18,18 @@ MonoBehaviour:
     all this energy to charge up to a big '
   Icon: {fileID: 21300000, guid: 22b7c955b46672a4caefae280d308a70, type: 3}
   SelectedIcon: {fileID: 21300000, guid: 2334e51a9e8aba44291c927e1e42bd9d, type: 3}
-  TrailPreviewImage: {fileID: 21300000, guid: 08960a7a149292543b89ed3e6c09025c, type: 3}
   PreviewImage: {fileID: 21300000, guid: 2b8d9fc7f5ac2ef4797aff544e892206, type: 3}
-  ChargePilot: {fileID: 11400000, guid: 6d520cd7eb8878b4aa2551e0591bc08d, type: 2}
-  MassPilot: {fileID: 11400000, guid: 2e5f4ffcc1432904db324d970ab221c4, type: 2}
-  SpacePilot: {fileID: 11400000, guid: 33dfe353bacfe9741a371ea3deaba88e, type: 2}
-  TimePilot: {fileID: 11400000, guid: 5ac362560a34d414e835db83e82daa08, type: 2}
+  TrailPreviewImage: {fileID: 21300000, guid: 08960a7a149292543b89ed3e6c09025c, type: 3}
+  CardSilohoutte: {fileID: 21300000, guid: 9355147c95bb1ed4192bdd8d8e21654a, type: 3}
+  CardSilohoutteActive: {fileID: 21300000, guid: c07463db6e8244c45b639760efd18f9e,
+    type: 3}
   Abilities:
   - {fileID: 11400000, guid: d074e7db0642624469d142a9f9fe28f1, type: 2}
   - {fileID: 11400000, guid: e2772bd51facc0a45a6baa711d576d73, type: 2}
   - {fileID: 11400000, guid: 81e1cc30914b65e48b7551479143a005, type: 2}
   - {fileID: 11400000, guid: 8fbab90eb61d9b8429305c20fe9eb239, type: 2}
-  MiniGames:
+  Pilots: []
+  TrainingGames:
   - {fileID: 11400000, guid: 812851e4603217c469662dc3cb9c6d93, type: 2}
   - {fileID: 11400000, guid: 27f7ec1e006fb3a4cbb91572e943cf67, type: 2}
   - {fileID: 11400000, guid: 0e0c6bb9767e73b49b03c5eb7917f57a, type: 2}
