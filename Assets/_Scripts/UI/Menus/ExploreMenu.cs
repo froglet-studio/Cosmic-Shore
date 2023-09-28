@@ -1,3 +1,4 @@
+using StarWriter.Core;
 using StarWriter.Core.HangerBuilder;
 using System.Collections;
 using System.Collections.Generic;
@@ -90,7 +91,7 @@ public class ExploreMenu : MonoBehaviour
         // Set Game Detail Meta Data
         SelectedGameName.text = SelectedGame.Name;
         SelectedGameDescription.text = SelectedGame.Description;
-        AllowedPlayerCountText.text = SelectedGame.MinPlayers + "-" + SelectedGame.MaxPlayers;
+        //AllowedPlayerCountText.text = SelectedGame.MinPlayers + "-" + SelectedGame.MaxPlayers;
 
         // TODO: reconsider how we load the video
         // Load Preview Video
@@ -102,6 +103,39 @@ public class ExploreMenu : MonoBehaviour
     }
     void PopulateShipSelectionList()
     {
+        for (var i = 0; i < ShipSelectionGrid.childCount; i++)
+        {
+            Debug.Log($"MiniGamesMenu - Populating Ship Select List: {i}");
+            var shipSelectionRow = ShipSelectionGrid.transform.GetChild(i);
+            for (var j = 0; j < shipSelectionRow.transform.childCount; j++)
+            {
+                Debug.Log($"MiniGamesMenu - Populating Ship Select List: {i},{j}");
+                var selectionIndex = (i * 3) + j;
+                var shipSelection = shipSelectionRow.transform.GetChild(j).gameObject;
+                if (selectionIndex < SelectedGame.Pilots.Count)
+                {
+                    var ship = SelectedGame.Pilots[selectionIndex].Ship;
+
+                    Debug.Log($"MiniGamesMenu - Populating Ship Select List: {ship.Name}");
+                    
+                    shipSelection.SetActive(true);
+                    shipSelection.GetComponent<Image>().sprite = ship.Icon;
+                    shipSelection.GetComponent<Button>().onClick.RemoveAllListeners();
+                    shipSelection.GetComponent<Button>().onClick.AddListener(() => SelectShip(selectionIndex));
+                    shipSelection.GetComponent<Button>().onClick.AddListener(() => ShipSelectionGrid.GetComponent<MenuAudio>().PlayAudio());
+
+                }
+                else
+                {
+                    // Deactive remaining
+                    shipSelection.SetActive(false);
+                }
+
+                
+                //GameCards.Add(shipSelectionRow.GetChild(j).GetComponent<GameCard>());
+            }
+        }
+        /*
         // Deactivate All
         for (var i = 0; i < ShipSelectionGrid.childCount; i++)
             ShipSelectionGrid.GetChild(i).gameObject.SetActive(false);
@@ -109,17 +143,18 @@ public class ExploreMenu : MonoBehaviour
         // Reactivate based on the number of ships
         for (var i = 0; i < SelectedGame.Pilots.Count; i++)
         {
-            var selectionIndex = i;
+            var shipIndex = i;
             var ship = SelectedGame.Pilots[i].Ship;
 
             Debug.Log($"MiniGamesMenu - Populating Ship Select List: {ship.Name}");
-            var shipSelection = ShipSelectionGrid.GetChild(i).gameObject;
-            shipSelection.SetActive(true);
-            shipSelection.GetComponent<Image>().sprite = ship.Icon;
-            shipSelection.GetComponent<Button>().onClick.RemoveAllListeners();
-            shipSelection.GetComponent<Button>().onClick.AddListener(() => SelectShip(selectionIndex));
-            shipSelection.GetComponent<Button>().onClick.AddListener(() => ShipSelectionGrid.GetComponent<MenuAudio>().PlayAudio());
+            var shipButton = ShipSelectionGrid.GetChild(i).gameObject;
+            shipButton.SetActive(true);
+            shipButton.GetComponent<Image>().sprite = ship.Icon;
+            shipButton.GetComponent<Button>().onClick.RemoveAllListeners();
+            shipButton.GetComponent<Button>().onClick.AddListener(() => SelectShip(shipIndex));
+            shipButton.GetComponent<Button>().onClick.AddListener(() => ShipSelectionGrid.GetComponent<MenuAudio>().PlayAudio());
         }
+        */
 
         StartCoroutine(SelectShipCoroutine(0));
     }
@@ -140,7 +175,8 @@ public class ExploreMenu : MonoBehaviour
 
         // Select the one
         SelectedGame = GameList.GameList[index];
-        GameSelectionGrid.GetChild(index).gameObject.GetComponent<Image>().sprite = SelectedGame.SelectedIcon;
+        //GameSelectionGrid.GetChild(index).gameObject.GetComponent<Image>().sprite = SelectedGame.SelectedIcon;
+        //GameCards[index].Select();
 
         Debug.Log($"SelectGame, PlayerCountButtonContainer.transform.childCount: {PlayerCountButtonContainer.transform.childCount}");
 
@@ -186,13 +222,34 @@ public class ExploreMenu : MonoBehaviour
         Debug.Log($"ShipSelectionContainer.childCount: {ShipSelectionGrid.childCount}");
         Debug.Log($"Ships.Count: {SelectedGame.Pilots.Count}");
 
-        // Deselect them all
-        for (var i = 0; i < SelectedGame.Pilots.Count; i++)
-            ShipSelectionGrid.GetChild(i).gameObject.GetComponent<Image>().sprite = SelectedGame.Pilots[i].Ship.Icon;
-
-        // Select the one
         SelectedShip = SelectedGame.Pilots[index].Ship;
-        ShipSelectionGrid.GetChild(index).gameObject.GetComponent<Image>().sprite = SelectedShip.SelectedIcon;
+
+        for (var i = 0; i < ShipSelectionGrid.childCount; i++)
+        {
+            var shipSelectionRow = ShipSelectionGrid.GetChild(i);
+            for (var j = 0; j < shipSelectionRow.childCount; j++)
+            {
+                var shipIndex = (i * 3) + j;
+                var shipButton = shipSelectionRow.GetChild(j).gameObject;
+
+                if (shipIndex == index)
+                {
+                    var ship = SelectedGame.Pilots[shipIndex].Ship;
+                    shipButton.GetComponent<Image>().sprite = ship.SelectedIcon;
+                }
+                else if (shipIndex < SelectedGame.Pilots.Count)
+                {
+                    var ship = SelectedGame.Pilots[shipIndex].Ship;
+                    shipButton.GetComponent<Image>().sprite = ship.Icon;
+                }
+                //else
+                //{
+                //    shipButton.SetActive(false);
+                //}
+
+                //GameCards.Add(shipSelectionRow.GetChild(j).GetComponent<GameCard>());
+            }
+        }
 
         // notify the mini game engine that this is the ship to play
         MiniGame.PlayerShipType = SelectedShip.Class;
@@ -204,6 +261,7 @@ public class ExploreMenu : MonoBehaviour
         Debug.Log($"SetPlayerCount: {playerCount}");
 
         for (var i = 0; i < PlayerCountButtonContainer.transform.childCount; i++)
+            //PlayerCountButtonContainer.transform.GetChild(i).gameObject.GetComponent<Image>().sprite = PlayerCountIcons[i];
             PlayerCountButtonContainer.transform.GetChild(i).gameObject.GetComponent<Image>().sprite = PlayerCountIcons[i];
 
         PlayerCountButtonContainer.transform.GetChild(playerCount - 1).gameObject.GetComponent<Image>().sprite = PlayerCountButtonContainer.transform.GetChild(playerCount - 1).gameObject.GetComponent<Button>().spriteState.selectedSprite;
