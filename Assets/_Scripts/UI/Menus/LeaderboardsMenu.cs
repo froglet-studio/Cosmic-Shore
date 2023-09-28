@@ -1,4 +1,5 @@
 using _Scripts._Core.Playfab_Models;
+using StarWriter.Core;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -12,12 +13,11 @@ public class LeaderboardsMenu : MonoBehaviour
 {
     List<LeaderboardEntryV2> LeaderboardEntriesV2;
 
-    [SerializeField] SO_GameList GameList;
     [SerializeField] Transform GameSelectionContainer;
     [SerializeField] GameObject HighScoresContainer;
     [SerializeField] TMP_Dropdown ShipClassSelection;
 
-    List<SO_ArcadeGame> Games = new();
+    List<SO_ArcadeGame> LeaderboardEligibleGames = new();
     SO_ArcadeGame SelectedGame;
     MiniGames SelectedGameMode = MiniGames.BlockBandit;
     ShipTypes SelectedShipType = ShipTypes.Any;
@@ -27,9 +27,9 @@ public class LeaderboardsMenu : MonoBehaviour
     {
         // TODO: Reconsider this implementation for avoiding displaying Freestyle on the scoreboard
         // Copy the game list, but skip Freestyle -- IMPORTANT to copy the list so we don't modify the SO
-        foreach (var game in GameList.GameList)
+        foreach (var game in GameManager.Instance.AllGames.GameList)
             if (game.Mode != MiniGames.Freestyle)
-                Games.Add(game);
+                LeaderboardEligibleGames.Add(game);
 
         AuthenticationManager.OnProfileLoaded += FetchLeaderboard;
 
@@ -83,11 +83,11 @@ public class LeaderboardsMenu : MonoBehaviour
         Debug.Log($"SelectGame: {index}");
 
         // Deselect them all
-        for (var i = 0; i < Games.Count; i++)
-            GameSelectionContainer.GetChild(i).gameObject.GetComponent<Image>().sprite = Games[i].Icon;
+        for (var i = 0; i < LeaderboardEligibleGames.Count; i++)
+            GameSelectionContainer.GetChild(i).gameObject.GetComponent<Image>().sprite = LeaderboardEligibleGames[i].Icon;
 
         // Select the one
-        SelectedGame = Games[index];
+        SelectedGame = LeaderboardEligibleGames[index];
         SelectedGameMode = SelectedGame.Mode;
         GameSelectionContainer.GetChild(index).gameObject.GetComponent<Image>().sprite = SelectedGame.SelectedIcon;
         PopulateShipClassSelectionDropdown();
@@ -100,10 +100,11 @@ public class LeaderboardsMenu : MonoBehaviour
             GameSelectionContainer.GetChild(i).gameObject.SetActive(false);
 
         // Reactivate based on the number of games for the given ship
-        for (var i = 0; i < Games.Count; i++) {
+        for (var i = 0; i < LeaderboardEligibleGames.Count; i++) {
             var selectionIndex = i;
-            var game = Games[i];
+            var game = LeaderboardEligibleGames[i];
             Debug.Log($"Populating Game Select List: {game.Name}");
+
             var gameSelection = GameSelectionContainer.GetChild(i).gameObject;
             gameSelection.SetActive(true);
             gameSelection.GetComponent<Image>().sprite = game.Icon;

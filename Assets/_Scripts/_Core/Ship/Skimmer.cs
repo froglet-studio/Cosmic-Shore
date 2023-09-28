@@ -174,19 +174,24 @@ namespace StarWriter.Core
         float minMatureBlockDistance = Mathf.Infinity;
 
         void FixedUpdate()
-        {   
-            if (notifyNearbyBlockCount)
-            {
-                var normalizedDistance = Mathf.Clamp(Mathf.InverseLerp(15f, transform.localScale.x/2, minMatureBlockDistance), 0,1);
-
-                ship.TrailSpawner.SetNormalizedXScale(normalizedDistance);
-
-                if (cameraManager != null && !ship.ShipStatus.AutoPilotEnabled) 
-                    cameraManager.SetNormalizedCloseCameraDistance(normalizedDistance);
-
-                minMatureBlockDistance = Mathf.Infinity;
-            }
+        {
+            DetectTrailDistance();
         }
+
+        void DetectTrailDistance()
+        {
+            if (!notifyNearbyBlockCount) return;
+            
+            var normalizedDistance = Mathf.Clamp(Mathf.InverseLerp(15f, transform.localScale.x/2, minMatureBlockDistance), 0,1);
+
+            ship.TrailSpawner.SetNormalizedXScale(normalizedDistance);
+
+            if (cameraManager != null && !ship.ShipStatus.AutoPilotEnabled) 
+                cameraManager.SetNormalizedCloseCameraDistance(normalizedDistance);
+
+            minMatureBlockDistance = Mathf.Infinity;
+        }
+        
 
         IEnumerator DisplaySkimParticleEffectCoroutine(TrailBlock trailBlock)
         {

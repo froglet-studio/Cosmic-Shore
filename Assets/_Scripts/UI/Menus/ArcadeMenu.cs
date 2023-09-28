@@ -1,4 +1,3 @@
-using StarWriter.Core.Favoriting;
 using StarWriter.Core.HangerBuilder;
 using System;
 using System.Collections;
@@ -12,16 +11,16 @@ public class ArcadeMenu : MonoBehaviour
 {
     
 
-    [SerializeField] SO_GameList GameList;
+    //[SerializeField] SO_GameList GameList;
 
-    [SerializeField] TMPro.TMP_Text SelectedGameName;
+    /*[SerializeField] TMPro.TMP_Text SelectedGameName;
     [SerializeField] TMPro.TMP_Text SelectedGameDescription;
     [SerializeField] GameObject SelectedGamePreviewWindow;
 
     [SerializeField] TMPro.TMP_Text SelectedGameName2;
     [SerializeField] TMPro.TMP_Text SelectedGameDescription2;
     [SerializeField] GameObject SelectedGamePreviewWindow2;
-
+*/
     [SerializeField] Transform ShipSelectionContainer; //
     [SerializeField] Transform GameSelectionContainer; //
 
@@ -30,7 +29,7 @@ public class ArcadeMenu : MonoBehaviour
     [FormerlySerializedAs("DifficultyButtonContainer")]
     [SerializeField] GameObject IntensityButtonContainer; //
 
-    [SerializeField] MenuAnimator ShipSelectAnimator;
+    //[SerializeField] MenuAnimator ShipSelectAnimator;
 
     List<Sprite> IntensityIcons = new(); //
     List<Sprite> PlayerCountIcons = new(); //
@@ -41,32 +40,41 @@ public class ArcadeMenu : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        LoadoutSystem.Init();
+        /*SO_ArcadeGame game = AllGames.GameList.Where(x => x.Mode == loadout.GameMode).FirstOrDefault();
+        GameTitle.text = game.Name;
+        BackgroundImage.sprite = game.CardBackground;
 
+        SO_Ship ship = AllShips.ShipList.Where(x => x.Class == loadout.ShipType).FirstOrDefault();
+        ShipImage.sprite = ship.TrailPreviewImage;
+
+        PlayerCountImage.sprite = PlayerCountImages[loadout.PlayerCount - 1];
+        IntensityImage.sprite = IntensityImages[loadout.Intensity - 1];*/
+
+        /*// Adds player count button images
         for (var i = 0; i < PlayerCountButtonContainer.transform.childCount; i++)
             PlayerCountIcons.Add(PlayerCountButtonContainer.transform.GetChild(i).gameObject.GetComponent<Image>().sprite);
-
+        // Adds intensity button images
         for (var i = 0; i < IntensityButtonContainer.transform.childCount; i++)
-            IntensityIcons.Add(IntensityButtonContainer.transform.GetChild(i).gameObject.GetComponent<Image>().sprite);
+            IntensityIcons.Add(IntensityButtonContainer.transform.GetChild(i).gameObject.GetComponent<Image>().sprite);*/
 
-        PopulateGameSelectionList();
+        //PopulateGameSelectionList();
     }
 
-    IEnumerator SelectShipCoroutine(int index)
+    /*IEnumerator SelectShipCoroutine(int index) //TODO leave on arcade?
     {
         yield return new WaitForEndOfFrame();
         SelectShip(index);
     }
 
-    IEnumerator SelectGameCoroutine(int index)
+    IEnumerator SelectGameCoroutine(int index) //TODO leave on arcade?
     {
         yield return new WaitForEndOfFrame();
         SelectGame(index);
-    }
+    }*/
 
-    public void SelectShip(int index)
+    public void SelectShip(int index) //TODO leave on arcade?
     {
-        Debug.Log($"SelectShip: {index}");
+        /*Debug.Log($"SelectShip: {index}");
         Debug.Log($"ShipSelectionContainer.childCount: {ShipSelectionContainer.childCount}");
         Debug.Log($"Ships.Count: {SelectedGame.Pilots.Count}");
 
@@ -80,12 +88,12 @@ public class ArcadeMenu : MonoBehaviour
 
         // notify the mini game engine that this is the ship to play
         MiniGame.PlayerShipType = SelectedShip.Class;
-        MiniGame.PlayerPilot = SelectedGame.Pilots[index];
+        MiniGame.PlayerPilot = SelectedGame.Pilots[index];*/
     }
 
-    public void SelectGame(int index)
+    public void SelectGame(int index) //TODO leave on arcade?
     {
-        Debug.Log($"SelectGame: {index}");
+        /*Debug.Log($"SelectGame: {index}");
 
         // Deselect them all
         for (var i = 0; i < GameList.GameList.Count; i++)
@@ -110,10 +118,10 @@ public class ArcadeMenu : MonoBehaviour
             PlayerCountButtonContainer.transform.GetChild(i).gameObject.GetComponent<Button>().onClick.AddListener(() => PlayerCountButtonContainer.GetComponent<MenuAudio>().PlayAudio());
 
         }
-        SetPlayerCount(1);
+        SetPlayerCount(1);*/
 
         // TODO: this is kludgy
-        for (var i = 0; i < IntensityButtonContainer.transform.childCount; i++)
+       /* for (var i = 0; i < IntensityButtonContainer.transform.childCount; i++)
         {
             var intensity = i + 1;
             IntensityButtonContainer.transform.GetChild(i).gameObject.GetComponent<Button>().onClick.RemoveAllListeners();
@@ -123,17 +131,17 @@ public class ArcadeMenu : MonoBehaviour
         SetIntensity(1);
 
         PopulateGameDetails();
-        PopulateShipSelectionList();
+        PopulateShipSelectionList();*/
     }
 
-    public void PlaySelectedGame()
+    public void PlaySelectedGame() 
     {
-        SceneManager.LoadScene(SelectedGame.SceneName);
+        //SceneManager.LoadScene(SelectedGame.SceneName);
     }
 
-    public void SetPlayerCount(int playerCount)
+    public void SetPlayerCount(int playerCount) 
     {
-        Debug.Log($"SetPlayerCount: {playerCount}");
+        /*Debug.Log($"SetPlayerCount: {playerCount}");
 
         for (var i = 0; i < PlayerCountButtonContainer.transform.childCount; i++)
             PlayerCountButtonContainer.transform.GetChild(i).gameObject.GetComponent<Image>().sprite = PlayerCountIcons[i];
@@ -141,27 +149,27 @@ public class ArcadeMenu : MonoBehaviour
         PlayerCountButtonContainer.transform.GetChild(playerCount - 1).gameObject.GetComponent<Image>().sprite = PlayerCountButtonContainer.transform.GetChild(playerCount - 1).gameObject.GetComponent<Button>().spriteState.selectedSprite;
 
         // notify the mini game engine that this is the number of players
-        MiniGame.NumberOfPlayers = playerCount;
+        MiniGame.NumberOfPlayers = playerCount;*/
     }
 
-    public void SetIntensity(int intensity)
+    public void SetIntensity(int intensity) 
     {
-        Debug.Log($"ArcadeMenu - SetIntensity: {intensity}");
+        /*Debug.Log($"ArcadeMenu - SetIntensity: {intensity}");
 
         for (var i = 0; i < IntensityButtonContainer.transform.childCount; i++)
             IntensityButtonContainer.transform.GetChild(i).gameObject.GetComponent<Image>().sprite = IntensityIcons[i];
 
         IntensityButtonContainer.transform.GetChild(intensity - 1).gameObject.GetComponent<Image>().sprite = IntensityButtonContainer.transform.GetChild(intensity - 1).gameObject.GetComponent<Button>().spriteState.selectedSprite;
 
-        Hangar.Instance.SetAiDifficultyLevel(intensity);
+        Hangar.Instance.SetAiDifficultyLevel(intensity);// minigame handles on launch
 
         // notify the mini game engine that this is the difficulty
-        MiniGame.IntensityLevel = intensity;
+        MiniGame.IntensityLevel = intensity;*/
     }
 
-    void PopulateShipSelectionList()
+    void PopulateShipSelectionList() 
     {
-        // Deactivate All
+        /*// Deactivate All
         for (var i = 0; i < ShipSelectionContainer.childCount; i++)
             ShipSelectionContainer.GetChild(i).gameObject.SetActive(false);
         
@@ -181,10 +189,10 @@ public class ArcadeMenu : MonoBehaviour
         }
 
         ShipSelectAnimator?.Animate();
-        StartCoroutine(SelectShipCoroutine(0));
+        StartCoroutine(SelectShipCoroutine(0));*/
     }
 
-    void PopulateGameSelectionList()
+    /*void PopulateGameSelectionList()  
     {
         // Deactivate All
         for (var i = 0; i < GameSelectionContainer.transform.childCount; i++)
@@ -197,29 +205,31 @@ public class ArcadeMenu : MonoBehaviour
             Debug.Log($"Populating Game Select List: {game.Name}");
             var gameSelection = GameSelectionContainer.GetChild(i).gameObject;
             gameSelection.SetActive(true);
-            gameSelection.GetComponent<Image>().sprite = game.Icon;
+
+            gameSelection.GetComponent<Image>().sprite = game.CardBackground;
+
             gameSelection.GetComponent<Button>().onClick.RemoveAllListeners();
             gameSelection.GetComponent<Button>().onClick.AddListener(() => SelectGame(selectionIndex));
             gameSelection.GetComponent<Button>().onClick.AddListener(() => GameSelectionContainer.GetComponent<MenuAudio>().PlayAudio());
-        }
+        }*/
 
-        StartCoroutine(SelectGameCoroutine(0));
-    }
+        //StartCoroutine(SelectGameCoroutine(0));
+   // }
 
-    void PopulateGameDetails()
+    /*void PopulateGameDetails() 
     {
         Debug.Log($"Populating Game Details List: {SelectedGame.Name}");
         Debug.Log($"Populating Game Details List: {SelectedGame.Description}");
         Debug.Log($"Populating Game Details List: {SelectedGame.Icon}");
         Debug.Log($"Populating Game Details List: {SelectedGame.PreviewClip}");
-
-        SelectedGameName.text = SelectedGame.Name;
-        SelectedGameDescription.text= SelectedGame.Description;
+*/
+        //SelectedGameName.text = SelectedGame.Name;
+        //SelectedGameDescription.text= SelectedGame.Description;
         
-        for (var i=2; i< SelectedGamePreviewWindow.transform.childCount; i++)
-            Destroy(SelectedGamePreviewWindow.transform.GetChild(i).gameObject);
+        //for (var i=2; i< SelectedGamePreviewWindow.transform.childCount; i++)
+            //Destroy(SelectedGamePreviewWindow.transform.GetChild(i).gameObject);
 
-        var preview = Instantiate(SelectedGame.PreviewClip);
+       /* var preview = Instantiate(SelectedGame.PreviewClip);
         preview.transform.SetParent(SelectedGamePreviewWindow.transform, false);
 
         SelectedGameName2.text = SelectedGame.Name;
@@ -229,8 +239,8 @@ public class ArcadeMenu : MonoBehaviour
             Destroy(SelectedGamePreviewWindow2.transform.GetChild(i).gameObject);
 
         preview = Instantiate(SelectedGame.PreviewClip);
-        preview.transform.SetParent(SelectedGamePreviewWindow2.transform, false);
-    }
+        preview.transform.SetParent(SelectedGamePreviewWindow2.transform, false);*/
+    //}
 
     
 

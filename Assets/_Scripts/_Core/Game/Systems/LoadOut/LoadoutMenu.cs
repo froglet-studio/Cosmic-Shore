@@ -1,142 +1,195 @@
-using StarWriter.Core.Favoriting;
+using StarWriter.Core.HangerBuilder;
 using System;
-using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
+using TMPro;
 using UnityEngine;
-using UnityEngine.Serialization;
+using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 
-public class LoadoutMenu : MonoBehaviour
+namespace StarWriter.Core.LoadoutFavoriting
 {
-    [SerializeField] GameObject loadout0;
-    [SerializeField] GameObject loadout1;
-    [SerializeField] GameObject loadout2;
-    [SerializeField] GameObject loadout3;
-    /*
-    [SerializeField] GameObject shipSelection;
-    [SerializeField] GameObject gameModeSelection;
-
-    [SerializeField] GameObject IntensitySelect0;
-    [SerializeField] GameObject IntensitySelect1;
-    [SerializeField] GameObject IntensitySelect2;
-    [SerializeField] GameObject IntensitySelect3;
-
-    [SerializeField] GameObject PlayerCountSelect0;
-    [SerializeField] GameObject PlayerCountSelect1;
-    [SerializeField] GameObject PlayerCountSelect2;
-    [SerializeField] GameObject PlayerCountSelect3;*/
-
-    [SerializeField] Transform ShipSelectionContainer; //
-    [SerializeField] Transform GameSelectionContainer; //
-
-    [SerializeField] GameObject PlayerCountButtonContainer; //
-
-    [FormerlySerializedAs("DifficultyButtonContainer")]
-    [SerializeField] GameObject IntensityButtonContainer; //
-
-    List<Sprite> IntensityIcons = new(); //
-    List<Sprite> PlayerCountIcons = new(); //
-    SO_Ship SelectedShip;//
-    SO_ArcadeGame SelectedGame;//
-
-    // Loadout Settings
-    int maxLoadoutSlots = 4;
-    int activeIntensity = 0;
-    int activePlayerCount = 0;
-    ShipTypes activeShipType = 0;
-    MiniGames activeGameMode = 0;
-
-    // Start is called before the first frame update
-    void Start()
+    public class LoadoutMenu : MonoBehaviour
     {
-    }
+        [SerializeField] SO_GameList AllGames;
+        [SerializeField] SO_ShipList AllShips;
+        [SerializeField] List<LoadoutCard> CardList = new(4);
+        [SerializeField] Image[] GameModeImages = new Image[4];
+        [SerializeField] Image ShipClassImage;
+        [SerializeField] TMP_Text ShipTitle;
+        [SerializeField] TMP_Text GameTitle;
 
-    #region Loadouts
+        List<SO_Ship> availableShips = new List<SO_Ship>();
 
-    void PopulateLoadoutSelectionList()
-    {
+        int selectedShipIndex;
+        int selectedGameIndex;
 
+        // Current Loadout Settings
+        int activeIntensity = 0;
+        int activePlayerCount = 0;
+        ShipTypes activeShipType = 0;
+        MiniGames activeGameMode = 0;
 
-    }
-    
-    // Sets Intensity
-    public void OnClickedChangeActiveIntensity(int newIntensity)
-    {
-        //SetIntensity(newIntensity);
-        activeIntensity = newIntensity;
-        Debug.Log("Intensity changed to " + newIntensity);
-        UpdateActiveLoadOut();
-    }
-    // Sets Player Count
-    public void OnClickChangeActivePlayerCount(int newPlayerCount)
-    {
-        //SetPlayerCount(newPlayerCount);
-        activePlayerCount = newPlayerCount;
-        UpdateActiveLoadOut();
-    }
-
-    // Sets ShipTypes
-    public void OnClickGotoNextEnum(bool gotoNext)
-    {
-        int ShipTypesCount = Enum.GetNames(typeof(ShipTypes)).Length;
-        if (!gotoNext)   //Decrease to next
+        void Start()
         {
-            activeShipType--;
-            if (activeShipType < 0)
-            {
-                activeShipType = (ShipTypes)ShipTypesCount;
-            }
+            LoadoutSystem.Init();
+            PopulateLoadoutCards();
         }
-        else
+
+        // Populates the Loadout Card Containers with info from LoadoutSystem
+        void PopulateLoadoutCards()
         {
-            activeShipType++;    //Increase to next
-            if (activeShipType > (ShipTypes)ShipTypesCount)
+            for (int i = 0; i < CardList.Count; i++)
             {
-                activeShipType = 0;
+                CardList[i].SetLoadoutCard(LoadoutSystem.GetLoadout(i));
+                CardList[i].SetLoadoutMenu(this);
             }
-        }
-        Debug.Log("Active Ship Type is " + activeShipType);
-        UpdateActiveLoadOut();
-    }
 
-    // Sets MiniGames
-    public void OnClickGotoNextGameMode(bool gotoNext)
-    {
-        int gameModesCount = Enum.GetNames(typeof(MiniGames)).Length;
-        if (!gotoNext)   //Decrease to next
+            CardList[0].Select();
+        }
+
+        public void SelectLoadout(int index)
         {
-            activeGameMode--;
-            if (activeGameMode <= 0)
-            {
-                activeGameMode = (MiniGames)gameModesCount;
-            }
+            CardList[LoadoutSystem.GetActiveLoadoutIndex()].Deselect();
+
+            var loadout = CardList[index].GetLoadout();
+
+            if (loadout.Uninitialized())
+                loadout = new Loadout() { Intensity = 1, PlayerCount = 1, GameMode = MiniGames.BlockBandit, ShipType = ShipTypes.Manta };
+
+            activeIntensity = loadout.Intensity;
+            activePlayerCount = loadout.PlayerCount;
+            activeShipType = loadout.ShipType;
+            activeGameMode = loadout.GameMode;
+
+            selectedGameIndex = AllGames.GameList.IndexOf(AllGames.GameList.Where(x => x.Mode == activeGameMode).FirstOrDefault());
+            selectedShipIndex = AllShips.ShipList.IndexOf(AllShips.ShipList.Where(x => x.Class == activeShipType).FirstOrDefault());
+
+            Debug.Log($"LoadoutMenu - SelectLoadout - selectedGameIndex:{selectedGameIndex}, selectedShipIndex:{selectedShipIndex}");
+
+            UpdateGameMode();
+            UpdateShipClass();
+
+            /*
+            GameTitle.text = activeGameMode.ToString();
+            ShipTitle.text = activeShipType.ToString();
+
+            ShipClassImage.sprite = AllShips.ShipList[selectedShipIndex].CardSilohoutte;
+            foreach (var image in GameModeImages)
+                image.sprite = AllGames.GameList[selectedGameIndex].CardBackground;
+
+            availableShips = new List<SO_Ship>();
+            foreach (var pilot in AllGames.GameList[selectedGameIndex].Pilots)
+                availableShips.Add(pilot.Ship);
+            */
+
+            LoadoutSystem.SetActiveLoadoutIndex(index);
         }
-        else
+
+        //  Play Button press gets loadout and sends to game
+        public void OnClickPlayButton() 
         {
-            activeGameMode++;    //Increase to next
-            if (activeGameMode >= (MiniGames)gameModesCount)
-            {
-                activeGameMode = 0;
-            }
+            Loadout loadoutToPlay = LoadoutSystem.GetActiveLoadout();
+
+            SO_ArcadeGame game_SO = AllGames.GameList.Where(x => x.Mode == loadoutToPlay.GameMode).FirstOrDefault();
+
+            MiniGame.PlayerShipType = loadoutToPlay.ShipType;
+            MiniGame.PlayerPilot = Hangar.Instance.SoarPilot; //TODO change to Element?
+            MiniGame.IntensityLevel = loadoutToPlay.Intensity;
+            MiniGame.NumberOfPlayers = loadoutToPlay.PlayerCount;
+            SceneManager.LoadScene(game_SO.SceneName);
         }
-        Debug.Log("Active Game Mode is " + activeGameMode);
-        UpdateActiveLoadOut();
-    }
-    // Changes the loadout index
-    public void OnClickLoadOutButton(int loadoutIndex)
-    {
-        LoadoutSystem.SetActiveLoadoutIndex(loadoutIndex);
-    }
 
-    void UpdateActiveLoadOut()
-    {
-        Loadout loadout = new Loadout();
-        loadout.Intensity = activeIntensity;
-        loadout.PlayerCount = activePlayerCount;
-        loadout.ShipType = activeShipType;
-        loadout.GameMode = activeGameMode;
+        // Sets ShipTypes
+        public void OnClickChangeClass(bool goingUp)
+        {
+            int iter = goingUp ? -1 : 1;
 
-        LoadoutSystem.SetCurrentlySelectedLoadout(loadout, LoadoutSystem.GetActiveLoadoutsIndex());
+            selectedShipIndex = selectedShipIndex + iter;
+            if (selectedShipIndex < 0) selectedShipIndex = availableShips.Count() - 1;
+            if (selectedShipIndex >= availableShips.Count()) selectedShipIndex = 0;
+
+            UpdateShipClass();
+            UpdateActiveLoadOut();
+        }
+
+        void UpdateShipClass()
+        {
+            activeShipType = availableShips[selectedShipIndex].Class;
+            ShipTitle.text = activeShipType.ToString();
+            ShipClassImage.sprite = availableShips[selectedShipIndex].CardSilohoutte;
+
+            Debug.Log("Active Ship Type is " + activeShipType);
+        }
+
+        // Sets MiniGames
+        public void OnClickChangeGameMode(bool goingUp)
+        {
+            int iter = goingUp ? -1 : 1;
+
+            selectedGameIndex = selectedGameIndex + iter;
+            if (selectedGameIndex < 0) selectedGameIndex = AllGames.GameList.Count() - 1;
+            if (selectedGameIndex >= AllGames.GameList.Count()) selectedGameIndex = 0;
+
+            UpdateGameMode();
+            UpdateActiveLoadOut();
+        }
+
+        void UpdateGameMode()
+        {
+            activeGameMode = AllGames.GameList[selectedGameIndex].Mode;
+            GameTitle.text = activeGameMode.ToString();
+            foreach (var image in GameModeImages)
+                image.sprite = AllGames.GameList[selectedGameIndex].CardBackground;
+
+            availableShips = new List<SO_Ship>();
+            foreach (var pilot in AllGames.GameList[selectedGameIndex].Pilots)
+                availableShips.Add(pilot.Ship);
+
+            // If selected ship is not available, fall back to zero
+            if (!availableShips.Contains(AllShips.ShipList.Where(x => x.Class == activeShipType).FirstOrDefault()))
+            {
+                selectedShipIndex = 0;
+                UpdateShipClass();
+            }
+
+
+            // TODO: Disable unavailable player count options, if selected player count is unavailable fall back to 1
+
+            Debug.Log("LoadoutMenu - OnClickChangeGameMode - Active Game Mode is " + activeGameMode);
+        }
+
+        // Sets Intensity
+        public void OnClickedChangeActiveIntensity(int newIntensity)
+        {
+            Debug.Log("LoadoutMenu - OnClickedChangeActiveIntensity - Intensity changed to " + newIntensity);
+
+            activeIntensity = newIntensity;
+
+            UpdateActiveLoadOut();
+        }
+
+        // Sets Player Count
+        public void OnClickChangeActivePlayerCount(int newPlayerCount)
+        {
+            Debug.Log("LoadoutMenu - OnClickChangeActivePlayerCount - PlayerCount changed to " + newPlayerCount);
+
+            activePlayerCount = newPlayerCount;
+            UpdateActiveLoadOut();
+        }
+
+        void UpdateActiveLoadOut()
+        {
+            Loadout loadout = new Loadout();
+            loadout.Intensity = activeIntensity;
+            loadout.PlayerCount = activePlayerCount;
+            loadout.ShipType = activeShipType;
+            loadout.GameMode = activeGameMode;
+
+            int idx = LoadoutSystem.GetActiveLoadoutIndex();
+
+            LoadoutSystem.SetLoadout(loadout, idx);
+            CardList[idx].SetLoadoutCard(loadout);
+        }
     }
-
-    #endregion
 }

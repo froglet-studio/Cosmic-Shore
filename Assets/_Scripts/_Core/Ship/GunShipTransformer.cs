@@ -33,7 +33,7 @@ public class GunShipTransformer : ShipTransformer
             if (!ship.InputController.AutoPilotEnabled && cameraManager != null)
             {
                 cameraManager.SetNormalizedCloseCameraDistance(1);
-                Debug.Log("camera now set to 1");
+                Debug.Log("camera distance now set to 1");
             }
         }
         else if (!shipData.Attached && attached)
@@ -42,7 +42,7 @@ public class GunShipTransformer : ShipTransformer
             if (!ship.InputController.AutoPilotEnabled && cameraManager != null)
             {
                 cameraManager.SetNormalizedCloseCameraDistance(0);
-                Debug.Log("camera now set to 0");
+                Debug.Log("camera distance now set to 0");
             }
         }
 

@@ -60,31 +60,6 @@ namespace StarWriter.Core.UI
             SceneManager.LoadScene("MinigameCellularBrawl2v2");
         }
 
-        public void OnClickPlayGame()
-        {
-            gameManager.OnClickPlayButton();
-        }
-        public void OnClickGameModeOne()
-        {
-            gameManager.OnClickTestGameModeOne();
-        }
-        public void OnClickGameModeTwo()
-        {
-            gameManager.OnClickTestGameModeTwo();
-        }
-        public void OnClickGameModeThree()
-        {
-            gameManager.OnClickTestGameModeThree();
-        }
-        public void OnClickGameModeFour()
-        {
-            gameManager.OnClickTestGameModeFour();
-        }
-        public void OnClickGameTestDesign()
-        {
-            gameManager.OnClickGameTestDesign();
-        }
-
         bool FirstAppLaunchExperience()
         {
             Debug.Log("MainMenu.cs first app launch");
