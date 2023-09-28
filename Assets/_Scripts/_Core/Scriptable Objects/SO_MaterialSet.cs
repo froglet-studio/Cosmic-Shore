@@ -11,5 +11,6 @@ public class SO_MaterialSet : ScriptableObject
     [SerializeField] public Material ShieldedBlockMaterial;
     [SerializeField] public Material AOEExplosionMaterial;
     [SerializeField] public Material AOEConicExplosionMaterial;
+    [SerializeField] public Material SpikeMaterial;
     [SerializeField] public Material SkimmerMaterial;
 }

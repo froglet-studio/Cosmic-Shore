@@ -11,7 +11,7 @@ namespace StarWriter.Core
 
     public class Gun : MonoBehaviour
     {
-        [SerializeField] GameObject projectilePrefab;
+        [SerializeField] protected GameObject projectilePrefab;
 
         public float firePeriod = .2f;
         public Teams Team;
@@ -23,6 +23,11 @@ namespace StarWriter.Core
         public Coroutine MoveCoroutine;
 
         Projectile projectile;
+
+        private void Start()
+        {
+            Team = Ship.Team;
+        }
 
         public void FireGun(Transform containerTransform, float speed, Vector3 inheritedVelocity,
             float projectileScale, bool ignoreCooldown = false, float projectileTime = 3, float charge = 0, FiringPatterns firingPattern = FiringPatterns.Default, int energy = 0)
@@ -52,7 +57,7 @@ namespace StarWriter.Core
                     }
                     else // Golden Spiral method for spherical pattern
                     {
-                        int points = 10 * (int)energy; // Example scaling factor
+                        int points = 4 * ((int)energy + 1); // 
                         float phi = Mathf.PI * (3 - Mathf.Sqrt(5)); // Golden angle
 
                         for (int i = 0; i < points; i++)
@@ -67,7 +72,6 @@ namespace StarWriter.Core
 
                             Vector3 direction = new Vector3(x, y, z);
                             Vector3 offset = direction * sideLength;
-                            transform.LookAt(-offset); //just guessing here
                             FireProjectile(containerTransform, speed, inheritedVelocity, projectileScale, offset, direction, projectileTime, charge);
                         }
                     }
@@ -118,13 +122,14 @@ namespace StarWriter.Core
         {
             Projectile projectileInstance = Instantiate(projectilePrefab,
                 transform.position + Quaternion.LookRotation(transform.forward) * offset + (transform.forward * barrelLength), // position
-                Quaternion.LookRotation(transform.forward) // rotation
+                Quaternion.LookRotation(normalizedVelocity) // rotation
                 ).GetComponent<Projectile>();
             projectileInstance.transform.localScale = projectileScale * Vector3.one;
             projectileInstance.transform.parent = containerTransform;
             projectileInstance.Velocity = normalizedVelocity * speed + inheritedVelocity;
             projectileInstance.Team = Team;
             projectileInstance.Ship = Ship;
+            projectileInstance.ProjectileTime = projectileTime;
             if (projectileInstance.TryGetComponent(out Gun projectileGun))
             {
                 projectileGun.Team = Team;
@@ -132,7 +137,6 @@ namespace StarWriter.Core
             }
             if (projectileInstance is ExplodableProjectile) ((ExplodableProjectile)projectileInstance).Charge = charge;
 
-            projectileInstance.LaunchProjectile(projectileTime);
         }
 
         IEnumerator CooldownCoroutine()

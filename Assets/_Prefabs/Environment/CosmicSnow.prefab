@@ -47,7 +47,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Crystal: {fileID: 0}
   snow: {fileID: 639495420572631487}
-  nodesPerSide: 5
+  crystalSize: {x: 500, y: 500, z: 500}
+  shardDistance: 100
+  lookAt: 0
+  targetAxis: {x: 0, y: 0, z: 0}
+  newOrigin: {x: 0, y: 0, z: 0}
 --- !u!1 &639495420572631487
 GameObject:
   m_ObjectHideFlags: 0

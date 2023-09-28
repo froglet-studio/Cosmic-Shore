@@ -18,7 +18,7 @@ GameObject:
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
-  m_StaticEditorFlags: 62
+  m_StaticEditorFlags: 2147483647
   m_IsActive: 1
 --- !u!4 &5222650486365209692
 Transform:
@@ -112,7 +112,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   FossilBlock: {fileID: 5776304996075792891, guid: bd8a259abee95ec4895562e6bb8aae76,
     type: 3}
-  explodingMaterial: {fileID: 2100000, guid: 186855228d11e2c4cac0ea081d911c3d, type: 2}
   TrailBlockProperties:
     position: {x: 0, y: 0, z: 0}
     volume: 0
@@ -121,7 +120,10 @@ MonoBehaviour:
     Index: 0
     Shielded: 0
     TimeCreated: 0
-  growthRate: 1
+  growthVector: {x: 0, y: 2, z: 0}
+  maxScale: {x: 10, y: 10, z: 10}
+  minScale: {x: 0.5, y: 0.5, z: 0.5}
+  TargetScale: {x: 0, y: 0, z: 0}
   ParticleEffect: {fileID: 3706253519474275301, guid: 2d5ef26f11cfb824fa85b6f5cd632c79,
     type: 3}
   ownerId: 
@@ -129,7 +131,6 @@ MonoBehaviour:
   destroyed: 0
   devastated: 0
   ID: 
-  InnerDimensions: {x: 0, y: 0, z: 0}
   Index: 0
   Shielded: 0
   warp: 0

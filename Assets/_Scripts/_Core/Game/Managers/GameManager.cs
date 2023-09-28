@@ -1,7 +1,6 @@
 using StarWriter.Core.IO;
 using StarWriter.Utility.Singleton;
 using UnityEngine;
-using UnityEngine.Advertisements;
 using UnityEngine.SceneManagement;
 
 // TODO: P1 - some work needs to be done to unify this with the MiniGame engine managers
@@ -19,37 +18,17 @@ namespace StarWriter.Core
         public delegate void OnGameOverEvent();
         public static event OnGameOverEvent onGameOver;
 
+        [SerializeField] public SO_GameList AllGames;
+        [SerializeField] public SO_ShipList AllShips;
+
         /* Singleton References */
         static CameraManager cameraManager;
-        AnalyticsManager analyticsManager;
 
         int deathCount = 0;
         public int DeathCount { get { return deathCount; } }
 
         [Header("Scene Names")]
         static string mainMenuScene = "Menu_Main";
-        [SerializeField] string gameTestModeZeroGameScene = "Game_HighScore";
-        [SerializeField] string gameTestModeOneGameScene = "Game_TestModeOne";
-        [SerializeField] string gameTestModeTwoGameScene = "Game_TestNodeInterior";
-        [SerializeField] string gameTestModeThreeGameScene = "Game_TestModeThree";
-        [SerializeField] string gameTestModeFourGameScene = "Game_TestModeFour";
-        [SerializeField] string gameTestDesign = "Game_TestDesign";
-        [SerializeField] string hangarScene = "Hangar";
-        [SerializeField] string tutorialGameScene = "Game_Tutorial";
-
-        void OnEnable()
-        {
-            AdsManager.AdShowComplete += OnAdShowComplete;
-            AdsManager.AdShowFailure += OnAdShowFailure;
-            AdvertisementMenu.onDeclineAd += EndGame;
-        }
-
-        void OnDisable()
-        {
-            AdsManager.AdShowComplete -= OnAdShowComplete;
-            AdsManager.AdShowFailure -= OnAdShowFailure;
-            AdvertisementMenu.onDeclineAd -= EndGame;
-        }
 
         // TODO: should this live somewhere else?
         // In order to support the splash screen always showing in the correct orientation, we use this method as a work around.
@@ -63,69 +42,6 @@ namespace StarWriter.Core
         void Start()
         {
             cameraManager = CameraManager.Instance;
-            analyticsManager = AnalyticsManager.Instance;
-        }
-
-        public void OnClickTutorialButton()
-        {
-            UnPauseGame();
-            SceneManager.LoadScene(tutorialGameScene);
-        }
-
-        public void OnClickPlayButton() //TODO make this general so you pass in the load scene
-        {
-            EnterGame(gameTestModeZeroGameScene);
-        }
-
-        public void OnClickTestGameModeOne()
-        {
-            EnterGame(gameTestModeOneGameScene);
-        }
-
-        public void OnClickTestGameModeTwo()
-        {
-            EnterGame(gameTestModeTwoGameScene);
-        }
-
-        public void OnClickTestGameModeThree()
-        {
-            EnterGame(gameTestModeThreeGameScene);
-        }
-
-        public void OnClickTestGameModeFour()
-        {
-            EnterGame(gameTestModeFourGameScene);
-        }
-
-        public void OnClickGameTestDesign()
-        {
-            EnterGame(gameTestDesign);
-        }
-
-        public void OnClickHangar()
-        {
-            SceneManager.LoadScene(hangarScene);
-        }
-
-        void EnterGame(string scenename)
-        {
-            deathCount = 0;
-            analyticsManager.LogLevelStart();
-            UnPauseGame();
-            SceneManager.LoadScene(scenename);
-        }
-
-        void OnExplosionCompletion()
-        {
-            Debug.Log("GameManager.Death");
-
-            PauseGame();
-
-            deathCount++;
-            onDeath?.Invoke();
-
-            if (deathCount >= 2)
-                EndGame();
         }
 
         public static void EndGame()
@@ -172,32 +88,9 @@ namespace StarWriter.Core
 
         public void WaitOnAILoading(AIPilot aiPilot)
         {
-            // TODO: elemental crystals, FindObjectOfType may no work anymore for this
+            // TODO: P1 elemental crystals, FindObjectOfType may no work anymore for this
             aiPilot.CrystalTransform = FindObjectOfType<Crystal>().transform;
             aiPilot.flowFieldData = FindObjectOfType<FlowFieldData>();
-        }
-
-        public void OnAdShowComplete(string adUnitId, UnityAdsShowCompletionState showCompletionState)
-        {
-            Debug.Log("GameManager.OnAdShowComplete");
-            Screen.orientation = ScreenOrientation.LandscapeLeft;
-
-            if (showCompletionState.Equals(UnityAdsShowCompletionState.COMPLETED))
-            {
-                Debug.Log("Unity Ads Rewarded Ad Completed. Extending game.");
-
-            }
-            if (showCompletionState.Equals(UnityAdsShowCompletionState.SKIPPED))
-            {
-                Debug.Log("Unity Ads Rewarded Ad SKIPPED due to ad failure. Extending game.");
-
-            }
-        }
-
-        public void OnAdShowFailure(string adUnitId, UnityAdsShowError error, string message)
-        {
-            // Give them the benefit of the doubt and just pass through to the ad completion logic
-            OnAdShowComplete(adUnitId, UnityAdsShowCompletionState.SKIPPED);
         }
     }
 }

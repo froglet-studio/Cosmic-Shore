@@ -224,7 +224,61 @@ MonoBehaviour:
   duration: 5
   cooldown: 5
   fireActions:
-  - {fileID: 1210579706855675657}
+  - {fileID: 6274364622300635993}
+  - {fileID: 1288807427476124847}
+--- !u!1 &1189492708410417601
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 7183476141361029552}
+  - component: {fileID: 6795854866240994547}
+  m_Layer: 0
+  m_Name: Animation
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &7183476141361029552
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1189492708410417601}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 3397189760217659071}
+  m_RootOrder: 2
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!95 &6795854866240994547
+Animator:
+  serializedVersion: 5
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1189492708410417601}
+  m_Enabled: 1
+  m_Avatar: {fileID: 0}
+  m_Controller: {fileID: 9100000, guid: f922b4ddeaa211f498ff3a539e6ce230, type: 2}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_WarningMessage: 
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
 --- !u!1 &1307237778802482981
 GameObject:
   m_ObjectHideFlags: 0
@@ -549,7 +603,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 35a4e5dfc7064254cb27fc78eefb05a0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  projectilePrefab: {fileID: 7877928849292311340, guid: 91785557e68aa4b44902085e98aff6cc,
+  projectilePrefab: {fileID: 6475208383231727548, guid: c34f9e79837e1e548873b8be1e1b1271,
     type: 3}
   firePeriod: 0.1
   Team: 1
@@ -628,6 +682,7 @@ Transform:
   m_Children:
   - {fileID: 93255075322718528}
   - {fileID: 282447970148362685}
+  - {fileID: 7183476141361029552}
   - {fileID: 6871072789186117683}
   m_Father: {fileID: 5928382658856804067}
   m_RootOrder: 0
@@ -679,7 +734,9 @@ MonoBehaviour:
   gun: {fileID: 7480786212238001713}
   ammoCost: 0.03
   ProjectileScale: 1
-  BlockScale: {x: 4, y: 4, z: 1}
+  Energy: 0
+  Speed: 7
+  ProjectileTime: 1.5
 --- !u!1 &2323831624999812778
 GameObject:
   m_ObjectHideFlags: 0
@@ -758,7 +815,9 @@ MonoBehaviour:
   gun: {fileID: 1896180257573412121}
   ammoCost: 0.03
   ProjectileScale: 1
-  BlockScale: {x: 4, y: 4, z: 1}
+  Energy: 0
+  Speed: 7
+  ProjectileTime: 1.5
 --- !u!1 &3009779053630328212
 GameObject:
   m_ObjectHideFlags: 0
@@ -1847,7 +1906,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 35a4e5dfc7064254cb27fc78eefb05a0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  projectilePrefab: {fileID: 7877928849292311340, guid: 91785557e68aa4b44902085e98aff6cc,
+  projectilePrefab: {fileID: 6475208383231727548, guid: c34f9e79837e1e548873b8be1e1b1271,
     type: 3}
   firePeriod: 0.1
   Team: 1
@@ -2059,6 +2118,7 @@ MonoBehaviour:
   gunContainer: {fileID: 7748113003568908110}
   ammoCost: 0
   FiringPattern: 0
+  Energy: 0
   speed: 7
   projectileTime: 3
 --- !u!1 &6027786489863838685
@@ -2207,14 +2267,13 @@ MonoBehaviour:
   AOEPrefab: {fileID: 2728798890556433942, guid: 4a855af160021d241b8c1ac70cf2d792,
     type: 3}
   farFieldSkimmer: {fileID: 0}
-  crystalImpactEffects: 0b0000000800000003000000
+  crystalImpactEffects: 0b0000000d000000
   minExplosionScale: 50
   maxExplosionScale: 500
   trailBlockImpactEffects: 0000000009000000
   blockChargeChange: 0
   boostMultiplier: 2
   boostFuelAmount: 0
-  pip: 0
   inputEventShipActions:
   - InputEvent: 2
     ShipActions:
@@ -2716,10 +2775,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 35a4e5dfc7064254cb27fc78eefb05a0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  projectilePrefab: {fileID: 7877928849292311340, guid: 91785557e68aa4b44902085e98aff6cc,
+  projectilePrefab: {fileID: 6475208383231727548, guid: c34f9e79837e1e548873b8be1e1b1271,
     type: 3}
   firePeriod: 0.2
-  Team: 1
+  Team: -1
   Ship: {fileID: 874579555101021527}
 --- !u!1 &7835283986601519113
 GameObject:
@@ -2876,7 +2935,7 @@ Transform:
   - {fileID: 3169492700597220149}
   - {fileID: 440112524701344820}
   m_Father: {fileID: 3397189760217659071}
-  m_RootOrder: 2
+  m_RootOrder: 3
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!33 &3923488362017318379
 MeshFilter:

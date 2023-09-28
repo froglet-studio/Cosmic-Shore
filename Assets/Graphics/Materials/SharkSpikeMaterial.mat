@@ -21,7 +21,7 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: SharkSpikeMaterial
-  m_Shader: {fileID: -6465566751694194690, guid: c3a1c67a6ce8e5641a19cc1b273abbda,
+  m_Shader: {fileID: -6465566751694194690, guid: 85c2251bbb0f9b746807624041e02ff3,
     type: 3}
   m_ValidKeywords: []
   m_InvalidKeywords:
@@ -29,7 +29,7 @@ Material:
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
-  m_CustomRenderQueue: 3000
+  m_CustomRenderQueue: -1
   stringTagMap: {}
   disabledShaderPasses: []
   m_SavedProperties:
@@ -105,7 +105,7 @@ Material:
     - _DetailNormalMapScale: 1
     - _DstBlend: 10
     - _EnvironmentReflections: 1
-    - _Float: 1
+    - _Float: 0.65
     - _Fresenel_Power: 0.07
     - _Fresnel_Border_Size: 5.2
     - _Fresnel_Edge_Width: -3.4
@@ -115,6 +115,7 @@ Material:
     - _GlossyReflections: 0
     - _Metallic: 0
     - _OcclusionStrength: 1
+    - _Opacity: 1
     - _Parallax: 0.005
     - _QueueControl: 0
     - _QueueOffset: 0
@@ -130,7 +131,7 @@ Material:
     - _ZWriteControl: 0
     m_Colors:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
-    - _Color: {r: 1, g: 1, b: 1, a: 1}
+    - _Color: {r: 0, g: 0.077060185, b: 0.8392157, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
     - _Main_Color: {r: 0.1331024, g: 1.059274, b: 0.9095334, a: 0}
     - _Outer_Color: {r: 0.615599, g: 0.099826865, b: 1.0204524, a: 0}

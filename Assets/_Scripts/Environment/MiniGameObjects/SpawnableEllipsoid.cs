@@ -1,4 +1,5 @@
 using StarWriter.Core;
+using UnityEditor;
 using UnityEngine;
 
 public class SpawnableEllipsoid : SpawnableAbstractBase
@@ -20,13 +21,13 @@ public class SpawnableEllipsoid : SpawnableAbstractBase
         GameObject container = new GameObject();
         container.name = "Ellipsoid" + SegmentsSpawned++;
 
-        length = ((float)rng.Next(1,100))/100* maxlength;
+        length = ((float)rng.Next(1,100)) / 100* maxlength;
         width = ((float)rng.Next(1, 100)) / 100 * maxwidth;
         height = ((float)rng.Next(1, 100)) / 100 * maxheight;
 
-        var trail1 = new Trail();
-        var trail2 = new Trail();
-        var trail3 = new Trail();
+        var trail1 = new Trail(true);
+        var trail2 = new Trail(true);
+        var trail3 = new Trail(true);
 
         int blockCount = 30;
         for (int block = 0; block < blockCount; block++)
@@ -61,8 +62,8 @@ public class SpawnableEllipsoid : SpawnableAbstractBase
         }
 
         trails.Add(trail1);
-        trails.Add(trail1);
-        trails.Add(trail1);
+        trails.Add(trail2);
+        trails.Add(trail3);
         return container;
     }
 }
