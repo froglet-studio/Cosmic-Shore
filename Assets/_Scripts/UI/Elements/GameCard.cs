@@ -1,9 +1,7 @@
-using System;
 using System.Linq;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using static Cinemachine.CinemachineTriggerAction.ActionSettings;
 
 public class GameCard : MonoBehaviour
 {
@@ -31,7 +29,9 @@ public class GameCard : MonoBehaviour
 
     void Start()
     {
-        gameMode = MiniGames.BlockBandit;
+        if (gameMode == MiniGames.Random)
+            gameMode = MiniGames.BlockBandit;
+
         UpdateCardView();
     }
 
@@ -40,12 +40,8 @@ public class GameCard : MonoBehaviour
         SO_ArcadeGame game = AllGames.GameList.Where(x => x.Mode == gameMode).FirstOrDefault();
         GameTitle.text = game.Name;
         BackgroundImage.sprite = game.CardBackground;
-
-        if (Locked)
-        {
-            LockImage.sprite = LockIcon;
-            LockImage.gameObject.SetActive(true);
-        }
+        LockImage.sprite = LockIcon;
+        LockImage.gameObject.SetActive(Locked);
     }
 
     public void OnCardClicked()

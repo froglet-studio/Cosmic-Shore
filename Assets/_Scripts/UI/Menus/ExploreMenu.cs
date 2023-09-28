@@ -1,4 +1,3 @@
-using StarWriter.Core;
 using StarWriter.Core.HangerBuilder;
 using System.Collections;
 using System.Collections.Generic;
@@ -67,11 +66,11 @@ public class ExploreMenu : MonoBehaviour
             var selectionIndex = i;
             var game = GameList.GameList[i];
 
-            Debug.Log($"Populating Game Select List: {game.Name}");
+            Debug.Log($"ExploreMenu - Populating Game Select List: {game.Name}");
             
             var gameCard = GameCards[i];
             gameCard.GameMode = game.Mode;
-            gameCard.Locked = i % 3 == 0;  // TODO: pull this from somewhere real
+            gameCard.Locked = (i % 3 == 0);  // TODO: pull this from somewhere real
             gameCard.GetComponent<Button>().onClick.RemoveAllListeners();
             gameCard.GetComponent<Button>().onClick.AddListener(() => SelectGame(selectionIndex));
             gameCard.GetComponent<Button>().onClick.AddListener(() => GameSelectionGrid.GetComponent<MenuAudio>().PlayAudio());
