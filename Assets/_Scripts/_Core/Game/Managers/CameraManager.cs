@@ -101,7 +101,7 @@ public class CameraManager : SingletonPersistent<CameraManager>
 
         activeCamera.Priority = activePriority;
 
-        if (activeCamera == closeCamera) ResetCloseCameraToNeutral(2);
+        if (activeCamera == closeCamera) SetNormalizedCloseCameraDistance(0);
     }
 
     void ClipPlaneAndOffsetLerper(float normalizedDistance)
