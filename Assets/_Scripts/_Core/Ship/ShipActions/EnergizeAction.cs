@@ -5,63 +5,44 @@ using StarWriter.Core;
 
 public class EnergizeAction : ShipAction
 {
-    [SerializeField] float duration;
-    [SerializeField] float cooldown;
     [SerializeField] List<FireGunAction> fireActions;
 
+    [SerializeField] float Speed = 70;
+    float defaultSpeed;
 
+    [SerializeField] float ProjectileTime = 6;
+    float defaultProjectileTime;
 
-    float fastSpeed = 70;
-    float slowSpeed = 7;
+    [SerializeField] int Energy = 1;
+    int defaultEnergy;
 
-    float longDuration = 6;
-    float shortDuration = 3;
-    
-    bool onCooldown = false;
+    private void Start()
+    {
+        var firstGun = fireActions[0];
+
+        defaultSpeed = firstGun.Speed;
+        defaultProjectileTime = firstGun.ProjectileTime;
+        defaultEnergy = firstGun.Energy;
+
+    }
 
     public override void StartAction()
     {
-        if (!onCooldown) StartCoroutine(EnergizeCoroutine());
+            foreach (FireGunAction fireaction in fireActions)
+            {
+                if (fireaction.Energy < Energy) fireaction.Energy = Energy;
+                if (fireaction.Speed < Speed) fireaction.Speed = Speed;
+                if (fireaction.ProjectileTime < ProjectileTime) fireaction.ProjectileTime = ProjectileTime;
+            }
     }
 
     public override void StopAction()
     {
-       
-    }
-
-    IEnumerator EnergizeCoroutine()
-    {
-        onCooldown = true;
-
-        // upgrade
         foreach (FireGunAction fireaction in fireActions)
         {
-            fireaction.Energy = 1;
-            fireaction.Speed = fastSpeed;
-            fireaction.ProjectileTime = longDuration;
+            fireaction.Energy = defaultEnergy;
+            fireaction.Speed = defaultSpeed;
+            fireaction.ProjectileTime = defaultProjectileTime;
         }
-
-        // wait for player to fire
-        while (Ship.ResourceSystem.CurrentAmmo == Ship.ResourceSystem.MaxAmmo)
-        {
-            yield return null;
-        }
-
-        // last a duration
-        yield return new WaitForSeconds(duration);
-
-        // return to default values TODO: retrieve defaults
-        foreach (FireGunAction fireaction in fireActions)
-        {
-            fireaction.Energy = 0;
-            fireaction.Speed = slowSpeed;
-            fireaction.ProjectileTime = shortDuration;
-        }
-
-        // start Cooldown timer
-        yield return new WaitForSeconds(cooldown);
-
-        // go off cooldown
-        onCooldown = false;
     }
 }

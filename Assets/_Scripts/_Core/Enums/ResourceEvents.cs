@@ -1,4 +1,5 @@
 public enum ResourceEvents
 {
-    MaxAmmo = 0,
+    AboveThreeQuartersAmmo = 0,
+    AboveHalfAmmo = 1,
 }

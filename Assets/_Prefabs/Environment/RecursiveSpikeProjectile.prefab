@@ -63,7 +63,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 038f6acb5d3f67f428b08ad82f555522, type: 2}
+  - {fileID: 2100000, guid: 77e1afb46629cc7469cfccbdae90a628, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -121,10 +121,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   projectilePrefab: {fileID: 6475208383231727548, guid: c34f9e79837e1e548873b8be1e1b1271,
     type: 3}
+  energizedProjectilePrefab: {fileID: 6475208383231727548, guid: ee0d967e7e55a604aadfa29c4425067e,
+    type: 3}
+  superEnergizedProjectilePrefab: {fileID: 6475208383231727548, guid: 18cb2ff3ac0090b47b8a02d287f46314,
+    type: 3}
   firePeriod: 0.2
   Team: 0
   Ship: {fileID: 0}
-  speed: 20
-  projectileTime: 3
+  speed: 40
+  projectileTime: 2
   firingPattern: 1
-  energy: 2
+  energy: 0

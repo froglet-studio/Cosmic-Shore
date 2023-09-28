@@ -300,7 +300,7 @@ namespace StarWriter.Core
                     action.StartAction();
             }
         }
-
+     
         public void StopClassResourceActions(ResourceEvents resourceEvent)
         {
             //if (StatsManager.Instance != null)
