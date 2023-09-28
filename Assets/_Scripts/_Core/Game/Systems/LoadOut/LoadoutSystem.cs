@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using static LoadoutCard;
+using static StarWriter.Core.LoadoutFavoriting.LoadoutCard;
 
 public struct Loadout
 {
@@ -28,24 +28,24 @@ public struct Loadout
         return Intensity + "_" + PlayerCount + "_" + ShipType + "_" + GameMode ;
     }
 }
-namespace StarWriter.Core.Favoriting
+namespace StarWriter.Core.LoadoutFavoriting
 {
     public static class LoadoutSystem
     {
         static int loadoutIndex = 0;
 
-        static Loadout activeLoadout;
+        static global::Loadout activeLoadout;
 
-        static List<Loadout> loadouts;
+        static List<global::Loadout> loadouts;
  
         public static void Init()
-        {            
-            loadouts = new List<Loadout>()          
+        {
+            loadouts = new List<global::Loadout>()          
             {
-            new Loadout() { Intensity=1, PlayerCount=1, GameMode=MiniGames.BlockBandit, ShipType=ShipTypes.Manta},
-            new Loadout() { Intensity=1, PlayerCount=1, GameMode=MiniGames.BlockBandit, ShipType=ShipTypes.Manta},
-            new Loadout() { Intensity=1, PlayerCount=1, GameMode=MiniGames.BlockBandit, ShipType=ShipTypes.Manta},
-            new Loadout() { Intensity=1, PlayerCount=1, GameMode=MiniGames.BlockBandit, ShipType=ShipTypes.Manta}
+            new global::Loadout() { Intensity=1, PlayerCount=1, GameMode= MiniGames.BlockBandit, ShipType= ShipTypes.Manta},
+            new global::Loadout() { Intensity=1, PlayerCount=1, GameMode= MiniGames.BlockBandit, ShipType= ShipTypes.Manta},
+            new global::Loadout() { Intensity=1, PlayerCount=1, GameMode= MiniGames.BlockBandit, ShipType= ShipTypes.Manta},
+            new global::Loadout() { Intensity=1, PlayerCount=1, GameMode= MiniGames.BlockBandit, ShipType= ShipTypes.Manta}
             };
             activeLoadout = loadouts[0];
         }
@@ -54,17 +54,17 @@ namespace StarWriter.Core.Favoriting
             return loadouts.Count > idx;
         }
 
-        public static Loadout GetActiveLoadout()
+        public static global::Loadout GetActiveLoadout()
         {
             return activeLoadout;
         }
 
-        public static Loadout GetLoadout(int idx)
+        public static global::Loadout GetLoadout(int idx)
         {
             return loadouts[idx];
         }
 
-        public static List<Loadout> GetFullListOfLoadouts()
+        public static List<global::Loadout> GetFullListOfLoadouts()
         {
             return loadouts;
         }
@@ -74,7 +74,7 @@ namespace StarWriter.Core.Favoriting
         }
         
 
-        public static void SetCurrentlySelectedLoadout(Loadout loadout, int loadoutIndex)
+        public static void SetCurrentlySelectedLoadout(global::Loadout loadout, int loadoutIndex)
         {
             int idx = loadoutIndex--;  //change 1-4 to 0-3
             idx = Mathf.Clamp(idx, 0, loadouts.Count);

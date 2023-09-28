@@ -1,4 +1,4 @@
-using StarWriter.Core.Favoriting;
+using StarWriter.Core.LoadoutFavoriting;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -44,15 +44,7 @@ public class LoadoutContainer : MonoBehaviour
     void Start()
     {
        
-        /*SO_ArcadeGame game = AllGames.GameList.Where(x => x.Mode == loadout.GameMode).FirstOrDefault();
-        GameTitle.text = game.Name;
-        BackgroundImage.sprite = game.CardBackground;
-
-        SO_Ship ship = AllShips.ShipList.Where(x => x.Class == loadout.ShipType).FirstOrDefault();
-        ShipImage.sprite = ship.TrailPreviewImage;
-
-        PlayerCountImage.sprite = PlayerCountImages[loadout.PlayerCount - 1];
-        IntensityImage.sprite = IntensityImages[loadout.Intensity - 1];*/
+        
     }
 
 

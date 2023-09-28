@@ -1,143 +1,184 @@
-using StarWriter.Core.Favoriting;
+using PlayFab.ClientModels;
+using StarWriter.Core.HangerBuilder;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.Serialization;
 
-public class LoadoutMenu : MonoBehaviour
+namespace StarWriter.Core.LoadoutFavoriting
 {
-    [SerializeField] GameObject loadout0;
-    [SerializeField] GameObject loadout1;
-    [SerializeField] GameObject loadout2;
-    [SerializeField] GameObject loadout3;
-    /*
-    [SerializeField] GameObject shipSelection;
-    [SerializeField] GameObject gameModeSelection;
-
-    [SerializeField] GameObject IntensitySelect0;
-    [SerializeField] GameObject IntensitySelect1;
-    [SerializeField] GameObject IntensitySelect2;
-    [SerializeField] GameObject IntensitySelect3;
-
-    [SerializeField] GameObject PlayerCountSelect0;
-    [SerializeField] GameObject PlayerCountSelect1;
-    [SerializeField] GameObject PlayerCountSelect2;
-    [SerializeField] GameObject PlayerCountSelect3;*/
-
-    [SerializeField] Transform ShipSelectionContainer; //
-    [SerializeField] Transform GameSelectionContainer; //
-
-    [SerializeField] GameObject PlayerCountButtonContainer; //
-
-    [FormerlySerializedAs("DifficultyButtonContainer")]
-    [SerializeField] GameObject IntensityButtonContainer; //
-
-    List<Sprite> IntensityIcons = new(); //
-    List<Sprite> PlayerCountIcons = new(); //
-    SO_Ship SelectedShip;//
-    SO_ArcadeGame SelectedGame;//
-
-    // Loadout Settings
-    int maxLoadoutSlots = 4;
-    int activeIntensity = 0;
-    int activePlayerCount = 0;
-    ShipTypes activeShipType = 0;
-    MiniGames activeGameMode = 0;
-
-    // Start is called before the first frame update
-    void Start()
+    public class LoadoutMenu : MonoBehaviour
     {
-       LoadoutSystem. 
-    }
+        [SerializeField] SO_GameList GameList;
 
-    #region Loadouts
+        //Loadout Cards
+        [SerializeField] GameObject loadout0;
+        [SerializeField] GameObject loadout1;
+        [SerializeField] GameObject loadout2;
+        [SerializeField] GameObject loadout3;
 
-    void PopulateLoadoutSelectionList()
-    {
+        List<Sprite> IntensityIcons = new(); //
+        List<Sprite> PlayerCountIcons = new(); //
+        SO_Ship SelectedShip;//
+        SO_ArcadeGame SelectedGame;//
+
+        [SerializeField] SO_GameList AllGames;
+        [SerializeField] SO_ShipList AllShips;
 
 
-    }
-    
-    // Sets Intensity
-    public void OnClickedChangeActiveIntensity(int newIntensity)
-    {
-        //SetIntensity(newIntensity);
-        activeIntensity = newIntensity;
-        Debug.Log("Intensity changed to " + newIntensity);
-        UpdateActiveLoadOut();
-    }
-    // Sets Player Count
-    public void OnClickChangeActivePlayerCount(int newPlayerCount)
-    {
-        //SetPlayerCount(newPlayerCount);
-        activePlayerCount = newPlayerCount;
-        UpdateActiveLoadOut();
-    }
+        /*[SerializeField] Transform ShipSelectionContainer; // TODO operate button event in code
+        [SerializeField] Transform GameSelectionContainer; //
 
-    // Sets ShipTypes
-    public void OnClickGotoNextEnum(bool gotoNext)
-    {
-        int ShipTypesCount = Enum.GetNames(typeof(ShipTypes)).Length;
-        if (!gotoNext)   //Decrease to next
+        [SerializeField] GameObject PlayerCountButtonContainer; //
+
+        [FormerlySerializedAs("DifficultyButtonContainer")]
+        [SerializeField] GameObject IntensityButtonContainer; //*/
+
+        // Loadout Settings
+        int activeIntensity = 0;
+        int activePlayerCount = 0;
+        ShipTypes activeShipType = 0;
+        MiniGames activeGameMode = 0;
+
+        // Start is called before the first frame update
+        void Start()
         {
-            activeShipType--;
-            if (activeShipType < 0)
-            {
-                activeShipType = (ShipTypes)ShipTypesCount;
-            }
+            
+            LoadoutSystem.Init();
+            PopulateLoadoutCards();
         }
-        else
+
+
+        // Populates the Loadout Card Containers with info from LoadoutSystem
+        void PopulateLoadoutCards()
         {
-            activeShipType++;    //Increase to next
-            if (activeShipType > (ShipTypes)ShipTypesCount)
-            {
-                activeShipType = 0;
-            }
+            loadout0.GetComponent<LoadoutCard>().SetLoadoutCard(LoadoutSystem.GetLoadout(0));
+            loadout1.GetComponent<LoadoutCard>().SetLoadoutCard(LoadoutSystem.GetLoadout(1));
+            loadout2.GetComponent<LoadoutCard>().SetLoadoutCard(LoadoutSystem.GetLoadout(2));
+            loadout3.GetComponent<LoadoutCard>().SetLoadoutCard(LoadoutSystem.GetLoadout(3));
         }
-        Debug.Log("Active Ship Type is " + activeShipType);
-        UpdateActiveLoadOut();
-    }
 
-    // Sets MiniGames
-    public void OnClickGotoNextGameMode(bool gotoNext)
-    {
-        int gameModesCount = Enum.GetNames(typeof(MiniGames)).Length;
-        if (!gotoNext)   //Decrease to next
+
+        // Changes the loadout index
+        public void OnClickLoadOutButton(int loadoutIndex)
         {
-            activeGameMode--;
-            if (activeGameMode <= 0)
-            {
-                activeGameMode = (MiniGames)gameModesCount;
-            }
+            LoadoutSystem.SetActiveLoadoutIndex(loadoutIndex);
         }
-        else
+
+        //  Play Button press gets loadout and sends to game
+        public void OnClickPlayButton() 
         {
-            activeGameMode++;    //Increase to next
-            if (activeGameMode >= (MiniGames)gameModesCount)
-            {
-                activeGameMode = 0;
-            }
+            Loadout loadoutToPlay = LoadoutSystem.GetActiveLoadout();
+
+            SO_ArcadeGame game_SO = AllGames.GameList.Where(x => x.Mode == loadoutToPlay.GameMode).FirstOrDefault();
+
+            MiniGame.PlayerShipType = loadoutToPlay.ShipType;
+            MiniGame.PlayerPilot = Hangar.Instance.SoarPilot; //TODO change to Element?
+            MiniGame.IntensityLevel = loadoutToPlay.Intensity;
+            MiniGame.NumberOfPlayers = loadoutToPlay.PlayerCount;
+            SceneManager.LoadScene(game_SO.SceneName);
+
         }
-        Debug.Log("Active Game Mode is " + activeGameMode);
-        UpdateActiveLoadOut();
-    }
-    // Changes the loadout index
-    public void OnClickLoadOutButton(int loadoutIndex)
-    {
-        LoadoutSystem.SetActiveLoadoutIndex(loadoutIndex);
-    }
 
-    void UpdateActiveLoadOut()
-    {
-        Loadout loadout = new Loadout();
-        loadout.Intensity = activeIntensity;
-        loadout.PlayerCount = activePlayerCount;
-        loadout.ShipType = activeShipType;
-        loadout.GameMode = activeGameMode;
+        // Sets ShipTypes
+        public void OnClickChangeClass(bool goingUp)
+        {
+            int ShipTypesCount = Enum.GetNames(typeof(ShipTypes)).Length;
+            if (!goingUp)   //Decrease to next enum
+            {
+                activeShipType--;
+                if (activeShipType < 0)
+                {
+                    activeShipType = (ShipTypes)ShipTypesCount;
+                    //loadout0.GetComponentInChildren<Image>().sprite
+                }
+            }
+            else
+            {
+                activeShipType++;    //Increase to next
+                if (activeShipType > (ShipTypes)ShipTypesCount)
+                {
+                    activeShipType = 0;
+                }
+            }
+            Debug.Log("Active Ship Type is " + activeShipType);
+            UpdateActiveLoadOut();
+        }
 
-        LoadoutSystem.SetCurrentlySelectedLoadout(loadout, LoadoutSystem.GetActiveLoadoutsIndex());
+        // Sets MiniGames
+        public void OnClickChangeGameMode(bool goingUp)
+        {
+            int gameModesCount = Enum.GetNames(typeof(MiniGames)).Length;
+            if (!goingUp)   //Decrease to next
+            {
+                activeGameMode--;
+                if (activeGameMode <= 0)
+                {
+                    activeGameMode = (MiniGames)gameModesCount;
+                }
+            }
+            else
+            {
+                activeGameMode++;    //Increase to next
+                if (activeGameMode >= (MiniGames)gameModesCount)
+                {
+                    activeGameMode = 0;
+                }
+            }
+            Debug.Log("Active Game Mode is " + activeGameMode);
+            UpdateActiveLoadOut();
+        }
+
+        // Sets Intensity
+        public void OnClickedChangeActiveIntensity(int newIntensity)
+        {
+
+            //arcadeMenu.SetIntensity(newIntensity);
+            activeIntensity = newIntensity;
+            Debug.Log("Intensity changed to " + newIntensity);
+            UpdateActiveLoadOut();
+        }
+        // Sets Player Count
+        public void OnClickChangeActivePlayerCount(int newPlayerCount)
+        {
+            //arcadeMenu.SetPlayerCount(newPlayerCount);
+            activePlayerCount = newPlayerCount;
+            UpdateActiveLoadOut();
+        }
+        void UpdateActiveLoadOut()
+        {
+            Loadout loadout = new Loadout();
+            loadout.Intensity = activeIntensity;
+            loadout.PlayerCount = activePlayerCount;
+            loadout.ShipType = activeShipType;
+            loadout.GameMode = activeGameMode;
+
+            int idx = LoadoutSystem.GetActiveLoadoutsIndex();
+
+            LoadoutSystem.SetCurrentlySelectedLoadout(loadout, idx);
+            UpdateLoadoutCard(loadout, idx);
+
+        }
+
+        void UpdateLoadoutCard(Loadout loadout, int idx)
+        {
+            switch (idx)
+            {
+                case 0: { loadout0.GetComponent<LoadoutCard>().SetLoadoutCard(loadout); break; }
+                case 1: { loadout0.GetComponent<LoadoutCard>().SetLoadoutCard(loadout); break; }
+                case 2: { loadout0.GetComponent<LoadoutCard>().SetLoadoutCard(loadout); break; }
+                case 3: { loadout0.GetComponent<LoadoutCard>().SetLoadoutCard(loadout); break; }
+                default:
+                    Debug.Log("Error updating card");
+                    break;
+            }
+
+        }
+
+
     }
-
-    #endregion
 }
+
