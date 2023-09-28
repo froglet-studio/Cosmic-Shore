@@ -7,7 +7,9 @@ public class EnergizeAction : ShipAction
 {
     [SerializeField] float duration;
     [SerializeField] float cooldown;
-    [SerializeField] List<FireBarrageAction> fireActions;
+    [SerializeField] List<FireGunAction> fireActions;
+
+
 
     float fastSpeed = 70;
     float slowSpeed = 7;
@@ -32,11 +34,11 @@ public class EnergizeAction : ShipAction
         onCooldown = true;
 
         // upgrade
-        foreach (FireBarrageAction fireaction in fireActions)
+        foreach (FireGunAction fireaction in fireActions)
         {
-            fireaction.Energy = 2;
-            fireaction.speed = fastSpeed;
-            fireaction.projectileTime = longDuration;
+            fireaction.Energy = 1;
+            fireaction.Speed = fastSpeed;
+            fireaction.ProjectileTime = longDuration;
         }
 
         // wait for player to fire
@@ -49,11 +51,11 @@ public class EnergizeAction : ShipAction
         yield return new WaitForSeconds(duration);
 
         // return to default values TODO: retrieve defaults
-        foreach (FireBarrageAction fireaction in fireActions)
+        foreach (FireGunAction fireaction in fireActions)
         {
             fireaction.Energy = 0;
-            fireaction.speed = slowSpeed;
-            fireaction.projectileTime = shortDuration;
+            fireaction.Speed = slowSpeed;
+            fireaction.ProjectileTime = shortDuration;
         }
 
         // start Cooldown timer

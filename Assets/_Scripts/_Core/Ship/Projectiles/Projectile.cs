@@ -17,7 +17,8 @@ namespace StarWriter.Core
         [SerializeField] List<ShipImpactEffects> shipImpactEffects;
         [SerializeField] List<CrystalImpactEffects> crystalImpactEffects;
 
-        
+        public float ProjectileTime;
+
         [SerializeField] bool drawLine = false;
         [SerializeField] float startLength = 1f;
         [SerializeField] float growthRate = 1.0f;
@@ -26,6 +27,7 @@ namespace StarWriter.Core
 
         private void Start()
         {
+            
             if (drawLine) 
             {
                 transform.localScale = new Vector3(.4f,.4f,2);
@@ -33,6 +35,8 @@ namespace StarWriter.Core
                 meshRenderer.material = Hangar.Instance.GetTeamSpikeMaterial(Team);
                 meshRenderer.material.SetFloat("_Opacity", .5f);
             }
+
+            LaunchProjectile(ProjectileTime);
         }
 
         protected virtual void OnTriggerEnter(Collider other)
@@ -75,7 +79,7 @@ namespace StarWriter.Core
                         trailBlockProperties.trailBlock.ActivateShield(.5f);
                         break;
                     case TrailBlockImpactEffects.Stop:
-                        StopCoroutine(moveCoroutine);
+                        if (moveCoroutine != null) StopCoroutine(moveCoroutine);
                         break;
                     case TrailBlockImpactEffects.Fire:
                         GetComponent<LoadedGun>().FireGun();
@@ -106,6 +110,9 @@ namespace StarWriter.Core
                         break;
                     case ShipImpactEffects.Stun:
                         shipGeometry.Ship.ShipController.ModifyThrottle(.1f, 10);
+                        break;
+                    case ShipImpactEffects.Charm:
+                        shipGeometry.Ship.TrailSpawner.Charm(Ship, 7);
                         break;
                 }
             }
@@ -158,6 +165,7 @@ namespace StarWriter.Core
                 {
                     if (Physics.Raycast(transform.position, transform.forward, out RaycastHit hit, moveDistance.magnitude))
                     {
+                        transform.position = hit.point;
                         HandleCollision(hit.collider);
                     }
 

@@ -23,4 +23,5 @@ MonoBehaviour:
     type: 2}
   AOEConicExplosionMaterial: {fileID: 2100000, guid: bb6be751b7625924898df5f4bfe10630,
     type: 2}
+  SpikeMaterial: {fileID: 2100000, guid: 038f6acb5d3f67f428b08ad82f555522, type: 2}
   SkimmerMaterial: {fileID: 2100000, guid: 8d6a9cc182227b54e87b708033928a03, type: 2}

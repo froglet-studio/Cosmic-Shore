@@ -12,7 +12,9 @@ public class FireGunAction : ShipAction
     [SerializeField] float ammoCost = .03f;
 
     public float ProjectileScale = 1f;
-    public Vector3 BlockScale = new(4f, 4f, 1f);
+    public float Energy = 0;
+    public float Speed = 7;
+    public float ProjectileTime = 1.5f;
 
     void Start()
     {

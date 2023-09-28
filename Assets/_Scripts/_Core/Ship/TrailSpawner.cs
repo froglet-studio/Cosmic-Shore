@@ -3,6 +3,8 @@ using StarWriter.Utility.Tools;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using StarWriter.Core.HangerBuilder;
+
 
 [RequireComponent(typeof(Ship))]
 public class TrailSpawner : MonoBehaviour
@@ -235,8 +237,8 @@ public class TrailSpawner : MonoBehaviour
                     Block.transform.SetPositionAndRotation(transform.position - shipData.Course * offset, shipData.blockRotation);
                     Block.transform.parent = TrailContainer.transform;
                     Block.waitTime = (skimmer.transform.localScale.z + TrailZScale) / ship.GetComponent<ShipStatus>().Speed;
-                    Block.ownerId = ship.Player.PlayerUUID;
-                    Block.PlayerName = ship.Player.PlayerName;
+                    Block.ownerId = isCharmed ? tempShip.Player.PlayerUUID : ship.Player.PlayerUUID;
+                    Block.PlayerName = isCharmed ? tempShip.Player.PlayerName : ship.Player.PlayerName;
                     Block.Team = ship.Team;
                     Block.warp = warp;
                     Block.GetComponent<MeshRenderer>().material = blockMaterial;
@@ -258,7 +260,26 @@ public class TrailSpawner : MonoBehaviour
             yield return new WaitForSeconds(Mathf.Clamp(wavelength / shipData.Speed,0,3f));
         }
     }
+
+    bool isCharmed = false;
+    Ship tempShip;
     
+    public void Charm(Ship ship, float duration)
+    {
+        tempShip = ship;
+        SetBlockMaterial(Hangar.Instance.GetTeamBlockMaterial(ship.Team));
+        StartCoroutine(CharmCoroutine(duration));
+    }
+
+    IEnumerator CharmCoroutine(float duration) 
+    {
+        isCharmed = true;
+        yield return new WaitForSeconds(duration);
+        SetBlockMaterial(Hangar.Instance.GetTeamBlockMaterial(ship.Team));
+        isCharmed = false;
+    }
+
+
     public static void NukeTheTrails()
     {
         if (TrailContainer == null) return;
