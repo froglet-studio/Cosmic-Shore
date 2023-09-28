@@ -158,4 +158,29 @@ public class AdsManager : MonoBehaviour, IUnityAdsInitializationListener, IUnity
                 break;
         }
     }
+
+    /*
+    public void OnAdShowComplete(string adUnitId, UnityAdsShowCompletionState showCompletionState)
+    {
+        Debug.Log("GameManager.OnAdShowComplete");
+        Screen.orientation = ScreenOrientation.LandscapeLeft;
+
+        if (showCompletionState.Equals(UnityAdsShowCompletionState.COMPLETED))
+        {
+            Debug.Log("Unity Ads Rewarded Ad Completed. Extending game.");
+
+        }
+        if (showCompletionState.Equals(UnityAdsShowCompletionState.SKIPPED))
+        {
+            Debug.Log("Unity Ads Rewarded Ad SKIPPED due to ad failure. Extending game.");
+
+        }
+    }
+
+    public void OnAdShowFailure(string adUnitId, UnityAdsShowError error, string message)
+    {
+        // Give them the benefit of the doubt and just pass through to the ad completion logic
+        OnAdShowComplete(adUnitId, UnityAdsShowCompletionState.SKIPPED);
+    }
+    */
 }
