@@ -214,6 +214,9 @@ namespace StarWriter.Core
                     case CrystalImpactEffects.GainOneThirdMaxAmmo:
                         ResourceSystem.ChangeAmmoAmount(ResourceSystem.MaxAmmo/3f);
                         break;
+                    case CrystalImpactEffects.GainFullAmmo:
+                        ResourceSystem.ChangeAmmoAmount(ResourceSystem.MaxAmmo);
+                        break;
                 }
             }
         }

@@ -6,5 +6,6 @@ public enum ShipImpactEffects
     PlayHaptics = 1,
     SpinAround = 2,
     Knockback = 3,
-    Stun,
+    Stun = 4,
+    Charm = 5
 }

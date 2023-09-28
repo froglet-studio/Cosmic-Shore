@@ -57,7 +57,7 @@ namespace StarWriter.Core
                     }
                     else // Golden Spiral method for spherical pattern
                     {
-                        int points = 10 * (int)energy; // Example scaling factor
+                        int points = 4 * ((int)energy + 1); // 
                         float phi = Mathf.PI * (3 - Mathf.Sqrt(5)); // Golden angle
 
                         for (int i = 0; i < points; i++)
@@ -129,6 +129,7 @@ namespace StarWriter.Core
             projectileInstance.Velocity = normalizedVelocity * speed + inheritedVelocity;
             projectileInstance.Team = Team;
             projectileInstance.Ship = Ship;
+            projectileInstance.ProjectileTime = projectileTime;
             if (projectileInstance.TryGetComponent(out Gun projectileGun))
             {
                 projectileGun.Team = Team;
@@ -136,7 +137,6 @@ namespace StarWriter.Core
             }
             if (projectileInstance is ExplodableProjectile) ((ExplodableProjectile)projectileInstance).Charge = charge;
 
-            projectileInstance.LaunchProjectile(projectileTime);
         }
 
         IEnumerator CooldownCoroutine()

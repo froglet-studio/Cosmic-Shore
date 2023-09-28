@@ -224,7 +224,8 @@ MonoBehaviour:
   duration: 5
   cooldown: 5
   fireActions:
-  - {fileID: 1210579706855675657}
+  - {fileID: 6274364622300635993}
+  - {fileID: 1288807427476124847}
 --- !u!1 &1189492708410417601
 GameObject:
   m_ObjectHideFlags: 0
@@ -733,7 +734,9 @@ MonoBehaviour:
   gun: {fileID: 7480786212238001713}
   ammoCost: 0.03
   ProjectileScale: 1
-  BlockScale: {x: 4, y: 4, z: 1}
+  Energy: 0
+  Speed: 7
+  ProjectileTime: 1.5
 --- !u!1 &2323831624999812778
 GameObject:
   m_ObjectHideFlags: 0
@@ -812,7 +815,9 @@ MonoBehaviour:
   gun: {fileID: 1896180257573412121}
   ammoCost: 0.03
   ProjectileScale: 1
-  BlockScale: {x: 4, y: 4, z: 1}
+  Energy: 0
+  Speed: 7
+  ProjectileTime: 1.5
 --- !u!1 &3009779053630328212
 GameObject:
   m_ObjectHideFlags: 0
@@ -2262,7 +2267,7 @@ MonoBehaviour:
   AOEPrefab: {fileID: 2728798890556433942, guid: 4a855af160021d241b8c1ac70cf2d792,
     type: 3}
   farFieldSkimmer: {fileID: 0}
-  crystalImpactEffects: 0b0000000800000003000000
+  crystalImpactEffects: 0b0000000d000000
   minExplosionScale: 50
   maxExplosionScale: 500
   trailBlockImpactEffects: 0000000009000000

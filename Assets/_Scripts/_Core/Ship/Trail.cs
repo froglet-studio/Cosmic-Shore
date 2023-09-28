@@ -28,6 +28,7 @@ namespace StarWriter.Core
         {
             trailBlockIndices.Add(block, TrailList.Count);
             TrailList.Add(block);
+            block.Index = block.TrailBlockProperties.Index = trailBlockIndices.Count;
         }
 
         public int GetBlockIndex(TrailBlock block)

@@ -150,10 +150,10 @@ Material:
     - _Color1: {r: 0, g: 0.0808227, b: 1, a: 0.078431375}
     - _Color2: {r: 0, g: 1, b: 0, a: 1}
     - _Color3: {r: 0, g: 0, b: 1, a: 1}
-    - _DarkColor: {r: 0.22241017, g: 0.023199212, b: 0.3207547, a: 1}
+    - _DarkColor: {r: 0.023529408, g: 0.030630529, b: 0.32156864, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
     - _EndPoint: {r: 1, g: 1, b: 1, a: 1}
-    - _LightColor: {r: 0.85882354, g: 0, b: 0.84116465, a: 0}
+    - _LightColor: {r: 0.7987421, g: 0.8133202, b: 1, a: 0}
     - _PulseAmplitudes: {r: 1, g: 2, b: 3, a: 4}
     - _PulseColors: {r: 0.9365196, g: 0, b: 1, a: 1}
     - _PulseFrequencies: {r: 1, g: 2, b: 3, a: 4}

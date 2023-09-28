@@ -14,7 +14,7 @@ GameObject:
   - component: {fileID: 1201988239403529503}
   - component: {fileID: 2041598876230712726}
   m_Layer: 12
-  m_Name: Recursive3DSpike
+  m_Name: SpikeProjectile
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -63,7 +63,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 038f6acb5d3f67f428b08ad82f555522, type: 2}
+  - {fileID: 2100000, guid: 77e1afb46629cc7469cfccbdae90a628, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -100,7 +100,7 @@ MonoBehaviour:
   Velocity: {x: 0, y: 0, z: 0}
   Team: 0
   Ship: {fileID: 0}
-  trailBlockImpactEffects: 070000000c0000000d000000
+  trailBlockImpactEffects: 0c000000070000000d000000
   shipImpactEffects: 
   crystalImpactEffects: 0c000000
   drawLine: 1
@@ -118,7 +118,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 98da7727309795245ada6cbb0c6aee22, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  projectilePrefab: {fileID: 6475208383231727548, guid: c34f9e79837e1e548873b8be1e1b1271,
+  projectilePrefab: {fileID: 6475208383231727548, guid: bdc9e621fd0e936439183623d291ef7b,
     type: 3}
   firePeriod: 0.2
   Team: 0

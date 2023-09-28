@@ -8341,6 +8341,21 @@ PrefabInstance:
       propertyPath: m_Name
       value: 3 Selection Button
       objectReference: {fileID: 0}
+    - target: {fileID: 9069104889778295498, guid: 97398b4eb5152ac479289bd857de2b43,
+        type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 9069104889778295498, guid: 97398b4eb5152ac479289bd857de2b43,
+        type: 3}
+      propertyPath: m_AnchorMin.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 9069104889778295498, guid: 97398b4eb5152ac479289bd857de2b43,
+        type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 9094849705380154584, guid: 97398b4eb5152ac479289bd857de2b43,
         type: 3}
       propertyPath: m_AnchorMax.x
