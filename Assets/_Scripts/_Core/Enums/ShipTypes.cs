@@ -8,5 +8,5 @@ public enum ShipTypes
     Dolphin = 2,
     Rhino = 3,
     Urchin = 4,
-    Grizzly = 5
+    Grizzly = 5,
 }

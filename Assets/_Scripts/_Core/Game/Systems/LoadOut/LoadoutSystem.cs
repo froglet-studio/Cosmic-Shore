@@ -1,13 +1,6 @@
-using StarWriter.Core.CloutSystem;
-using StarWriter.Core.HangerBuilder;
-using StarWriter.Utility.Singleton;
-using System;
-using System.Collections;
 using System.Collections.Generic;
-using Unity.Mathematics;
 using UnityEngine;
-using UnityEngine.SceneManagement;
-using static StarWriter.Core.LoadoutFavoriting.LoadoutCard;
+using static LeaderboardManager;
 
 public struct Loadout
 {
@@ -23,30 +16,53 @@ public struct Loadout
         ShipType = shipType;
         GameMode = gameMode;
     }
-    public override string ToString()
+    public override readonly string ToString()
     {
         return Intensity + "_" + PlayerCount + "_" + ShipType + "_" + GameMode ;
     }
+
+    public readonly bool Uninitialized()
+    {
+        return Intensity == 0 && PlayerCount == 0 && ShipType == ShipTypes.Random && GameMode == MiniGames.Random;
+    }
 }
+
 namespace StarWriter.Core.LoadoutFavoriting
 {
     public static class LoadoutSystem
     {
-        static int loadoutIndex = 0;
+        static int ActiveLoadoutIndex = 0;
 
-        static global::Loadout activeLoadout;
+        static Loadout activeLoadout;
 
-        static List<global::Loadout> loadouts;
+        static List<Loadout> loadouts;
  
         public static void Init()
         {
-            loadouts = new List<global::Loadout>()          
+            var dataAccessor = new DataAccessor("loadouts.data");
+            loadouts = dataAccessor.Load<List<Loadout>>();
+
+            if (loadouts.Count == 0)
             {
-            new global::Loadout() { Intensity=1, PlayerCount=1, GameMode= MiniGames.BlockBandit, ShipType= ShipTypes.Manta},
-            new global::Loadout() { Intensity=1, PlayerCount=1, GameMode= MiniGames.BlockBandit, ShipType= ShipTypes.Manta},
-            new global::Loadout() { Intensity=1, PlayerCount=1, GameMode= MiniGames.BlockBandit, ShipType= ShipTypes.Manta},
-            new global::Loadout() { Intensity=1, PlayerCount=1, GameMode= MiniGames.BlockBandit, ShipType= ShipTypes.Manta}
+                loadouts = new List<Loadout>()
+                {
+                    new Loadout() { Intensity=1, PlayerCount=1, GameMode= MiniGames.BlockBandit, ShipType= ShipTypes.Manta},
+                    new Loadout() { Intensity=0, PlayerCount=0, GameMode= MiniGames.Random, ShipType= ShipTypes.Random},
+                    new Loadout() { Intensity=0, PlayerCount=0, GameMode= MiniGames.Random, ShipType= ShipTypes.Random},
+                    new Loadout() { Intensity=0, PlayerCount=0, GameMode= MiniGames.Random, ShipType= ShipTypes.Random},
+                };
+                dataAccessor.Save<List<Loadout>>(loadouts);
+            }
+
+            /*
+            loadouts = new List<Loadout>()          
+            {
+                new Loadout() { Intensity=1, PlayerCount=1, GameMode= MiniGames.BlockBandit, ShipType= ShipTypes.Manta},
+                new Loadout() { Intensity=1, PlayerCount=1, GameMode= MiniGames.BlockBandit, ShipType= ShipTypes.Manta},
+                new Loadout() { Intensity=1, PlayerCount=1, GameMode= MiniGames.BlockBandit, ShipType= ShipTypes.Manta},
+                new Loadout() { Intensity=1, PlayerCount=1, GameMode= MiniGames.BlockBandit, ShipType= ShipTypes.Manta}
             };
+            */
             activeLoadout = loadouts[0];
         }
         public static bool CheckLoadoutsExist(int idx)
@@ -54,45 +70,47 @@ namespace StarWriter.Core.LoadoutFavoriting
             return loadouts.Count > idx;
         }
 
-        public static global::Loadout GetActiveLoadout()
+        public static Loadout GetActiveLoadout()
         {
             return activeLoadout;
         }
 
-        public static global::Loadout GetLoadout(int idx)
+        public static Loadout GetLoadout(int idx)
         {
             return loadouts[idx];
         }
 
-        public static List<global::Loadout> GetFullListOfLoadouts()
+        public static List<Loadout> GetFullListOfLoadouts()
         {
             return loadouts;
         }
-        public static int GetActiveLoadoutsIndex()    //Loadout Select Buttions set index 1-4
+
+        public static int GetActiveLoadoutIndex()
         {
-            return loadoutIndex;
+            return ActiveLoadoutIndex;
+        }
+
+        public static void SetCurrentlySelectedLoadout(Loadout loadout)
+        {
+            SetLoadout(loadout, ActiveLoadoutIndex);
+        }
+
+        public static void SetLoadout(Loadout loadout, int index)
+        {
+            index = Mathf.Clamp(index, 0, loadouts.Count-1);
+            loadouts[index] = loadout;
+
+            var dataAccessor = new DataAccessor("loadouts.data");
+            dataAccessor.Save<List<Loadout>>(loadouts);
         }
         
-
-        public static void SetCurrentlySelectedLoadout(global::Loadout loadout, int loadoutIndex)
+        public static void SetActiveLoadoutIndex(int index) 
         {
-            int idx = loadoutIndex--;  //change 1-4 to 0-3
-            idx = Mathf.Clamp(idx, 0, loadouts.Count);
-            loadouts[idx] = loadout;
+            Debug.Log("Loadout Index changed to " + index);
+
+            index = Mathf.Clamp(index, 0, loadouts.Count-1);
+            ActiveLoadoutIndex = index;
+            activeLoadout = loadouts[index];
         }
-
-        
-        public static void SetActiveLoadoutIndex(int loadoutIndex) 
-        {
-            Debug.Log("Loadout Index changed to " + loadoutIndex);
-
-            int idx = loadoutIndex--;  //change 1-4 to 0-3
-            idx = Mathf.Clamp(idx, 0, loadouts.Count);            
-            activeLoadout = loadouts[idx];
-        }
-
     }
 }
-
-
-
