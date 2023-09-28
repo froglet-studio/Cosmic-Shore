@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq.Expressions;
 using UnityEngine;
-using static UnityEditor.Experimental.GraphView.Port;
+using StarWriter.Core.HangerBuilder;
 
 
 namespace StarWriter.Core
@@ -21,27 +21,26 @@ namespace StarWriter.Core
         [SerializeField] bool drawLine = false;
         [SerializeField] float startLength = 1f;
         [SerializeField] float growthRate = 1.0f;
-        [SerializeField] Material spikeMaterial;
-        LineRenderer lineRenderer;
+
+        MeshRenderer meshRenderer;
 
         private void Start()
         {
             if (drawLine) 
             {
-                lineRenderer = gameObject.AddComponent<LineRenderer>();
-                lineRenderer.material = new Material(spikeMaterial);
-                lineRenderer.startColor = lineRenderer.endColor = Color.green;
-                lineRenderer.startWidth = .2f;
-                lineRenderer.endWidth = Mathf.Epsilon;
-                lineRenderer.positionCount = 2;
-                lineRenderer.SetPosition(0, new Vector3(0, 0, 0));
-                lineRenderer.SetPosition(1, new Vector3(0, 0, startLength));
-                lineRenderer.useWorldSpace = false;
-
+                transform.localScale = new Vector3(.4f,.4f,2);
+                meshRenderer = gameObject.GetComponent<MeshRenderer>();
+                meshRenderer.material = Hangar.Instance.GetTeamSpikeMaterial(Team);
+                meshRenderer.material.SetFloat("_Opacity", .5f);
             }
         }
 
         protected virtual void OnTriggerEnter(Collider other)
+        {
+           HandleCollision(other);
+        }
+
+        void HandleCollision(Collider other)
         {
             if (other.TryGetComponent<TrailBlock>(out var trailBlock))
             {
@@ -147,26 +146,33 @@ namespace StarWriter.Core
         public IEnumerator MoveProjectileCoroutine(float projectileTime)
         {
             var elapsedTime = 0f;
-            
-            if (drawLine) yield return new WaitUntil(() => lineRenderer != null);
             while (elapsedTime < projectileTime)
             {
+                Debug.Log($"during elapsedTime {elapsedTime}");
+                // Calculate movement for this frame
+                Vector3 moveDistance = Velocity * Time.deltaTime * Mathf.Cos(elapsedTime * Mathf.PI / (2 * projectileTime));
+                Vector3 nextPosition = transform.position + moveDistance;
+
+                // Only check for raycasting collisions if drawLine is true
                 if (drawLine)
                 {
-                    var stretchedPoint = new Vector3(0, 0, elapsedTime * growthRate);
-                    Vector3 worldStartPoint = transform.TransformPoint(Vector3.zero);
-                    Vector3 worldEndPoint = transform.TransformPoint(stretchedPoint);
-                    lineRenderer.material.SetVector("_StartPoint", worldStartPoint);
-                    lineRenderer.material.SetVector("_EndPoint", worldEndPoint);
-                    lineRenderer.material.SetFloat("_Opacity", 1 - Mathf.Pow(elapsedTime/projectileTime,4)); // TODO: optimize out the 4th power
+                    if (Physics.Raycast(transform.position, transform.forward, out RaycastHit hit, moveDistance.magnitude))
+                    {
+                        HandleCollision(hit.collider);
+                    }
 
-                    lineRenderer.SetPosition(1, stretchedPoint);
+                    var stretchedPoint = new Vector3(.5f, .5f, elapsedTime * growthRate);
+                    var percentRemaining = elapsedTime / projectileTime;
+                    if (percentRemaining > .9) meshRenderer.material.SetFloat("_Opacity", 1 - Mathf.Pow(percentRemaining, 4));
+                    //transform.localScale = stretchedPoint;
                 }
+
+                // Move the projectile to the next position
+                transform.position = nextPosition;
+
                 elapsedTime += Time.deltaTime;
-                transform.position += Velocity * Time.deltaTime * Mathf.Cos(elapsedTime*Mathf.PI/(2*projectileTime));
                 yield return null;
             }
-
             Destroy(gameObject);
         }
 

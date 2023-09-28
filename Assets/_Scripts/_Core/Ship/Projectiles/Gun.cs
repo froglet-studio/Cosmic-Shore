@@ -11,7 +11,7 @@ namespace StarWriter.Core
 
     public class Gun : MonoBehaviour
     {
-        [SerializeField] GameObject projectilePrefab;
+        [SerializeField] protected GameObject projectilePrefab;
 
         public float firePeriod = .2f;
         public Teams Team;
@@ -23,6 +23,11 @@ namespace StarWriter.Core
         public Coroutine MoveCoroutine;
 
         Projectile projectile;
+
+        private void Start()
+        {
+            Team = Ship.Team;
+        }
 
         public void FireGun(Transform containerTransform, float speed, Vector3 inheritedVelocity,
             float projectileScale, bool ignoreCooldown = false, float projectileTime = 3, float charge = 0, FiringPatterns firingPattern = FiringPatterns.Default, int energy = 0)

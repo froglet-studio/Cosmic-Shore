@@ -12,10 +12,16 @@ namespace StarWriter.Core
         [SerializeField] float projectileTime = 3;
         [SerializeField] FiringPatterns firingPattern = FiringPatterns.Spherical;
         [SerializeField] int energy;
+        //Vector3 scale;
+
+        private void Start()
+        {
+            //scale = projectilePrefab.transform.localScale;
+        }
 
         public void FireGun()
         {
-            FireGun(transform, speed, Vector3.zero, 1, true, projectileTime, 0, firingPattern, energy); // charge could be used to limit recursion depth
+            FireGun(Ship.Player.transform, speed, Vector3.zero, 1, true, projectileTime, 0, firingPattern, energy); // charge could be used to limit recursion depth
         }
 
         //public void FireGun(Transform containerTransform, float speed, Vector3 inheritedVelocity,

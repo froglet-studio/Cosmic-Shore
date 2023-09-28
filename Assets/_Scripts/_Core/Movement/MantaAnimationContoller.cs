@@ -5,7 +5,6 @@ using UnityEngine.UIElements;
 
 class MantaAnimationContoller : ShipAnimation
 {
-
     [SerializeField] Animator animator;
 
     protected override void Start()

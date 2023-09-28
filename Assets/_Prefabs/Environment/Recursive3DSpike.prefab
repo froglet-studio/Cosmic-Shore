@@ -1,6 +1,6 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!1 &5776304996075792891
+--- !u!1 &6475208383231727548
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -8,62 +8,62 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 5222650486365209692}
-  - component: {fileID: 1981306459138289011}
-  - component: {fileID: 7076137217386601628}
-  - component: {fileID: 6724784892155022458}
-  - component: {fileID: 4563009547826722997}
-  m_Layer: 0
-  m_Name: UrchinBlock
+  - component: {fileID: 2938687952803957673}
+  - component: {fileID: -5754084199372789682}
+  - component: {fileID: -7511558181221131132}
+  - component: {fileID: 1201988239403529503}
+  - component: {fileID: 2041598876230712726}
+  m_Layer: 12
+  m_Name: Recursive3DSpike
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
-  m_StaticEditorFlags: 2147483647
+  m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &5222650486365209692
+--- !u!4 &2938687952803957673
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5776304996075792891}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 5, y: 1.5, z: 6}
+  m_GameObject: {fileID: 6475208383231727548}
+  m_LocalRotation: {x: 0.000000021855694, y: 0, z: -0, w: 1}
+  m_LocalPosition: {x: -0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 5}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!33 &1981306459138289011
+--- !u!33 &-5754084199372789682
 MeshFilter:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5776304996075792891}
-  m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
---- !u!23 &7076137217386601628
+  m_GameObject: {fileID: 6475208383231727548}
+  m_Mesh: {fileID: -5493726671624683310, guid: 73e4860aaa536f24e9bee9d6accb9b43, type: 3}
+--- !u!23 &-7511558181221131132
 MeshRenderer:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5776304996075792891}
+  m_GameObject: {fileID: 6475208383231727548}
   m_Enabled: 1
-  m_CastShadows: 0
+  m_CastShadows: 1
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
   m_StaticShadowCaster: 0
   m_MotionVectors: 1
-  m_LightProbeUsage: 0
+  m_LightProbeUsage: 1
   m_ReflectionProbeUsage: 1
   m_RayTracingMode: 2
   m_RayTraceProcedural: 0
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 5140ec1c42866e849927f442d5965f7f, type: 2}
+  - {fileID: 2100000, guid: 038f6acb5d3f67f428b08ad82f555522, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -85,52 +85,45 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!65 &6724784892155022458
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5776304996075792891}
-  m_Material: {fileID: 0}
-  m_IsTrigger: 1
-  m_Enabled: 1
-  serializedVersion: 2
-  m_Size: {x: 1.05, y: 1.05, z: 1.05}
-  m_Center: {x: 0, y: 0, z: 0}
---- !u!114 &4563009547826722997
+--- !u!114 &1201988239403529503
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5776304996075792891}
+  m_GameObject: {fileID: 6475208383231727548}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f366d272ab4f79e419d678fc6ca23512, type: 3}
+  m_Script: {fileID: 11500000, guid: 0abdb3ebc3c413846859b59615823360, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  FossilBlock: {fileID: 5776304996075792891, guid: bd8a259abee95ec4895562e6bb8aae76,
+  Velocity: {x: 0, y: 0, z: 0}
+  Team: 0
+  Ship: {fileID: 0}
+  trailBlockImpactEffects: 070000000c0000000d000000
+  shipImpactEffects: 
+  crystalImpactEffects: 0c000000
+  drawLine: 1
+  startLength: 0
+  growthRate: 3
+--- !u!114 &2041598876230712726
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6475208383231727548}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 98da7727309795245ada6cbb0c6aee22, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  projectilePrefab: {fileID: 6475208383231727548, guid: c34f9e79837e1e548873b8be1e1b1271,
     type: 3}
-  TrailBlockProperties:
-    position: {x: 0, y: 0, z: 0}
-    volume: 0
-    speedDebuffAmount: 0
-    trailBlock: {fileID: 0}
-    Index: 0
-    Shielded: 0
-    TimeCreated: 0
-  growthVector: {x: 0, y: 2, z: 0}
-  maxScale: {x: 10, y: 10, z: 10}
-  minScale: {x: 0.5, y: 0.5, z: 0.5}
-  TargetScale: {x: 0, y: 0, z: 0}
-  ParticleEffect: {fileID: 3706253519474275301, guid: e0864f60c97232b4aa8943a83e70de0a,
-    type: 3}
-  ownerId: 
-  waitTime: 0.1
-  destroyed: 0
-  devastated: 0
-  ID: 
-  Index: 0
-  Shielded: 0
-  warp: 0
+  firePeriod: 0.2
+  Team: 0
+  Ship: {fileID: 0}
+  speed: 20
+  projectileTime: 3
+  firingPattern: 1
+  energy: 2
