@@ -56,7 +56,7 @@ ModelImporter:
       name: Armature.002|cut
       takeName: Armature.002|cut
       internalID: 2905659382556172114
-      firstFrame: 20
+      firstFrame: 19
       lastFrame: 20
       wrapMode: 0
       orientationOffsetY: 0
@@ -85,7 +85,7 @@ ModelImporter:
       name: Armature.002|pitch down
       takeName: Armature.002|pitch down
       internalID: 6212661447819486376
-      firstFrame: 20
+      firstFrame: 19
       lastFrame: 20
       wrapMode: 0
       orientationOffsetY: 0
@@ -114,7 +114,7 @@ ModelImporter:
       name: Armature.002|pitch up
       takeName: Armature.002|pitch up
       internalID: 3804817242277331963
-      firstFrame: 20
+      firstFrame: 19
       lastFrame: 20
       wrapMode: 0
       orientationOffsetY: 0
@@ -143,7 +143,7 @@ ModelImporter:
       name: Armature.002|roll right
       takeName: Armature.002|roll right
       internalID: -721875957892904936
-      firstFrame: 20
+      firstFrame: 19
       lastFrame: 20
       wrapMode: 0
       orientationOffsetY: 0
@@ -172,7 +172,7 @@ ModelImporter:
       name: Armature.002|roll left
       takeName: Armature.002|roll left
       internalID: -8679543024212152096
-      firstFrame: 20
+      firstFrame: 19
       lastFrame: 20
       wrapMode: 0
       orientationOffsetY: 0
@@ -201,7 +201,7 @@ ModelImporter:
       name: Armature.002|speeddown
       takeName: Armature.002|speeddown
       internalID: 1932594824745245842
-      firstFrame: 20
+      firstFrame: 19
       lastFrame: 20
       wrapMode: 0
       orientationOffsetY: 0
@@ -230,7 +230,7 @@ ModelImporter:
       name: Armature.002|speedup
       takeName: Armature.002|speedup
       internalID: -7942830232961210933
-      firstFrame: 20
+      firstFrame: 19
       lastFrame: 20
       wrapMode: 0
       orientationOffsetY: 0
@@ -259,7 +259,7 @@ ModelImporter:
       name: Armature.002|yaw left
       takeName: Armature.002|yaw left
       internalID: -6953860090002917003
-      firstFrame: 20
+      firstFrame: 19
       lastFrame: 20
       wrapMode: 0
       orientationOffsetY: 0
@@ -288,7 +288,7 @@ ModelImporter:
       name: Armature.002|yaw right
       takeName: Armature.002|yaw right
       internalID: -6822812431335815528
-      firstFrame: 20
+      firstFrame: 19
       lastFrame: 20
       wrapMode: 0
       orientationOffsetY: 0

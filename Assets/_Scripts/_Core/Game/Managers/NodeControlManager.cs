@@ -65,7 +65,7 @@ public class NodeControlManager : Singleton<NodeControlManager>
         }
     }
 
-    public void AddBlock(Teams team, string playerName, TrailBlockProperties blockProperties)
+    public void AddBlock(Teams team, TrailBlockProperties blockProperties)
     {
         foreach (var node in Nodes)
         {
@@ -77,13 +77,38 @@ public class NodeControlManager : Singleton<NodeControlManager>
         }
     }
 
-    public void RemoveBlock(Teams team, string playerName, TrailBlockProperties blockProperties)
+    public void RemoveBlock(Teams team, TrailBlockProperties blockProperties)
     {
         foreach (var node in Nodes)
         {
             if (node.ContainsPosition(blockProperties.position))
             {
                 node.ChangeVolume(team, -blockProperties.volume);
+                break;
+            }
+        }
+    }
+
+    public void StealBlock(Teams team, TrailBlockProperties blockProperties)
+    {
+        foreach (var node in Nodes)
+        {
+            if (node.ContainsPosition(blockProperties.position))
+            {
+                node.ChangeVolume(team, blockProperties.volume);
+                node.ChangeVolume(blockProperties.trailBlock.Team, -blockProperties.volume);
+                break;
+            }
+        }
+    }
+
+    public void RestoreBlock(Teams team, TrailBlockProperties blockProperties)
+    {
+        foreach (var node in Nodes)
+        {
+            if (node.ContainsPosition(blockProperties.position))
+            {
+                node.ChangeVolume(team, blockProperties.volume);
                 break;
             }
         }

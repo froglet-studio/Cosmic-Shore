@@ -12,6 +12,7 @@ namespace _Scripts._Core.Playfab_Models
     {
         // A dictionary of catalog items
         public List<CatalogItem> CatalogItems { get; set; }
+
         // A dictionary of inventory items and their quantity
         public List<InventoryItem> InventoryItems { get; set; }
     }

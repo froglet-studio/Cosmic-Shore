@@ -94,7 +94,7 @@ namespace StarWriter.Core
                 StatsManager.Instance.BlockCreated(team, playerName, TrailBlockProperties);
 
             if (NodeControlManager.Instance != null)
-                NodeControlManager.Instance.AddBlock(team, playerName, TrailBlockProperties);
+                NodeControlManager.Instance.AddBlock(team, TrailBlockProperties);
         }
 
         bool isSizeChangeActive = false;
@@ -196,7 +196,7 @@ namespace StarWriter.Core
                 StatsManager.Instance.BlockDestroyed(team, playerName, TrailBlockProperties);
 
             if (NodeControlManager.Instance != null)
-                NodeControlManager.Instance.RemoveBlock(team, playerName, TrailBlockProperties);
+                NodeControlManager.Instance.RemoveBlock(team, TrailBlockProperties);
         }
 
         public void DeactivateShield()
@@ -242,8 +242,7 @@ namespace StarWriter.Core
                     StatsManager.Instance.BlockStolen(team, playerName, TrailBlockProperties);
 
                 if (NodeControlManager.Instance != null)
-                    //NodeControlManager.Instance.RemoveBlock(team, playerName, TrailBlockProperties);
-                    Debug.Log("TODO: Notify NodeControlManager that a block was stolen");
+                    NodeControlManager.Instance.StealBlock(team, TrailBlockProperties);
 
                 this.team = team;
                 this.playerName = playerName;
@@ -261,8 +260,7 @@ namespace StarWriter.Core
                     StatsManager.Instance.BlockRestored(team, playerName, TrailBlockProperties);
 
                 if (NodeControlManager.Instance != null)
-                    //NodeControlManager.Instance.RemoveBlock(team, playerName, TrailBlockProperties);
-                    Debug.Log("TODO: Notify NodeControlManager that a block was restored");
+                    NodeControlManager.Instance.RestoreBlock(team, TrailBlockProperties);
 
                 gameObject.GetComponent<BoxCollider>().enabled = true;
                 gameObject.GetComponent<MeshRenderer>().enabled = true;

@@ -1,7 +1,4 @@
 using UnityEngine;
-using StarWriter.Core;
-using System.Collections.Generic;
-using UnityEngine.UIElements;
 
 class MantaAnimationContoller : ShipAnimation
 {
@@ -14,16 +11,21 @@ class MantaAnimationContoller : ShipAnimation
 
     protected override void PerformShipAnimations(float pitch, float yaw, float roll, float throttle)
     {
-
-        animator.SetFloat("pitch", pitch*10);
-        animator.SetFloat("yaw", yaw*10);
-        animator.SetFloat("roll", roll*10);
-        animator.SetFloat("throttle", throttle*10);
+        animator.SetFloat("Pitch", pitch*10);
+        animator.SetFloat("Yaw", yaw*10);
+        animator.SetFloat("Roll", roll*10);
+        animator.SetFloat("Throttle", throttle*10);
         animator.SetFloat("Blend", 1);
     }
 
-    protected override void AssignTransforms()
+    protected override void Idle()
     {
-        throw new System.NotImplementedException();
+        animator.SetFloat("Pitch", 0);
+        animator.SetFloat("Yaw", 0);
+        animator.SetFloat("Roll", 0);
+        animator.SetFloat("Throttle", 0);
+        animator.SetFloat("Blend", 1);
     }
+
+    protected override void AssignTransforms(){ /* NOOP Abstract Implementation */ }
 }

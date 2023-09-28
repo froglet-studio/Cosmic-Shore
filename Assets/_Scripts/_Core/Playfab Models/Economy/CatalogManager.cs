@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using _Scripts._Core.Playfab_Models;
 using JetBrains.Annotations;
+using CosmicShore;
 
 public class CatalogManager : SingletonPersistent<CatalogManager>
 {
@@ -148,12 +149,13 @@ public class CatalogManager : SingletonPersistent<CatalogManager>
     /// Get Inventory Item
     /// Request inventory item by item id
     /// </summary>
-    public void GetInventoryItem([NotNull] InventoryItemReference itemReference)
+    //public void GetInventoryItem([NotNull] InventoryItemReference itemReference)
+    public void GetInventoryItem([NotNull] VirtualItem virtualItem)
     {
         _playFabEconomyInstanceAPI.GetItem(
             new GetItemRequest()
             {
-                Id = itemReference.Id
+                Id = virtualItem.Id
             },
             (GetItemResponse response) =>
             {
@@ -178,18 +180,19 @@ public class CatalogManager : SingletonPersistent<CatalogManager>
     /// Add Items to Inventory
     /// Add shinny new stuff! Any type of item from currency to vessel and ship upgrades
     /// </summary>
-    public void AddInventoryItem([NotNull] InventoryItemReference itemReference, int amount)
+    //public void AddInventoryItem([NotNull] InventoryItemReference itemReference, int amount)
+    public void AddInventoryItem([NotNull] VirtualItem virtualItem, int amount)
     {
         _playFabEconomyInstanceAPI.AddInventoryItems(
                 new AddInventoryItemsRequest()
                 {
-                    Item = itemReference,
+                    Item = new InventoryItemReference() { Id = virtualItem.Id },
                     Amount = amount
                 }, (result) =>
                 {
                     var name = nameof(CatalogManager);
                     Debug.Log($"{name} - add inventory item success.");
-                    Debug.Log($"{name} - add inventory item id: {itemReference.Id} amount: {amount.ToString()}");
+                    Debug.Log($"{name} - add inventory item id: {virtualItem.Id} amount: {amount.ToString()}");
                     // Etag can be used for multiple sources or users to modify the same item simultaneously without conflict
                     // Debug.Log($"{name} - add inventory item etag: {result.ETag}");
                     // Debug.Log($"{name} - add inventory item idempotency id: {result.IdempotencyId}");
