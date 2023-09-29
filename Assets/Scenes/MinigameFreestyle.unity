@@ -560,7 +560,7 @@ PrefabInstance:
     - target: {fileID: 6588436222817790470, guid: fced5b15da3ad1d41b4e3b7385609e37,
         type: 3}
       propertyPath: m_Layer
-      value: 2
+      value: 9
       objectReference: {fileID: 0}
     - target: {fileID: 6588436222817790470, guid: fced5b15da3ad1d41b4e3b7385609e37,
         type: 3}
@@ -762,6 +762,7 @@ MonoBehaviour:
   parent: {fileID: 0}
   origin: {x: 0, y: 0, z: 0}
   StraightLineLength: 0
+  RotationAmount: 10
   DifficultyAngle: 0
   InitializeOnStart: 0
   numberOfSegments: 200
@@ -850,17 +851,15 @@ MonoBehaviour:
   GameCanvas: {fileID: 547474317}
   playerPrefab: {fileID: 1649340654}
   PlayerOrigin: {fileID: 1192541910}
+  EndOfTurnDelay: 0
+  EnableTrails: 1
   ActivePlayer: {fileID: 0}
-  Countdown3: {fileID: 21300000, guid: d930e6627cfa54e44bfcafde136ddb2f, type: 3}
-  Countdown2: {fileID: 21300000, guid: 63576b00b6277364caa9551fac9568cd, type: 3}
-  Countdown1: {fileID: 21300000, guid: dc92b9b5ae6760c40a727554bffd81a1, type: 3}
-  Countdown0: {fileID: 21300000, guid: 626c8dff36296a24099f550ae99caa89, type: 3}
-  CountdownGrowScale: 1.5
   Crystal: {fileID: 1568959833}
   CrystalStartPosition: {x: 0, y: 0, z: -120}
   SegmentSpawner: {fileID: 1020381236}
   numberOfSegments: 30
   straightLineLength: 400
+  ResetTrails: 1
 --- !u!4 &1180410982 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 6454128237993233764, guid: 4a855af160021d241b8c1ac70cf2d792,

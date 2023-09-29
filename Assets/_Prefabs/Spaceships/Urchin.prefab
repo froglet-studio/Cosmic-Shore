@@ -787,7 +787,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   gun: {fileID: 7480786212238001713}
-  ammoCost: 0.03
+  ammoCost: 0.025
   ProjectileScale: 1
   Energy: 1
   Speed: 80
@@ -868,7 +868,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   gun: {fileID: 1896180257573412121}
-  ammoCost: 0.03
+  ammoCost: 0.025
   ProjectileScale: 1
   Energy: 1
   Speed: 80
@@ -2358,7 +2358,7 @@ MonoBehaviour:
   LevelEffects: 02000000
   ControlOverrides: 0400000003000000
   closeCamDistance: -3
-  farCamDistance: -6
+  farCamDistance: -15
   AOEExplosionMaterial: {fileID: 0}
   AOEConicExplosionMaterial: {fileID: 0}
   SkimmerMaterial: {fileID: 0}
@@ -3462,7 +3462,7 @@ PrefabInstance:
     - target: {fileID: 3669588834454630396, guid: 637acd3ede086ed45b23959a02b1c534,
         type: 3}
       propertyPath: m_Name
-      value: RearViewCamera
+      value: FarViewCamera
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 637acd3ede086ed45b23959a02b1c534, type: 3}

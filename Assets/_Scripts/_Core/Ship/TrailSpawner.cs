@@ -186,9 +186,9 @@ public class TrailSpawner : MonoBehaviour
         TargetScale = Block.TargetScale;
         Block.transform.SetPositionAndRotation(transform.position - shipData.Course * offset + ship.transform.right * (Block.TargetScale.x/2f + Mathf.Abs(halfGap)) * (halfGap / Mathf.Abs(halfGap)), shipData.blockRotation);
         Block.transform.parent = TrailContainer.transform;
-        Block.ownerId = ship.Player.PlayerUUID;
-        Block.PlayerName = ship.Player.PlayerName;
-        Block.Team = ship.Team;
+        Block.ownerId = isCharmed ? tempShip.Player.PlayerUUID : ship.Player.PlayerUUID;
+        Block.PlayerName = isCharmed ? tempShip.Player.PlayerName : ship.Player.PlayerName;
+        Block.Team = isCharmed ? tempShip.Team : ship.Team;
         Block.warp = warp;
         if (waitTillOutsideSkimmer) 
             Block.waitTime = (skimmer.transform.localScale.z + TrailZScale) / ship.GetComponent<ShipStatus>().Speed;
@@ -239,7 +239,7 @@ public class TrailSpawner : MonoBehaviour
                     Block.waitTime = (skimmer.transform.localScale.z + TrailZScale) / ship.GetComponent<ShipStatus>().Speed;
                     Block.ownerId = isCharmed ? tempShip.Player.PlayerUUID : ship.Player.PlayerUUID;
                     Block.PlayerName = isCharmed ? tempShip.Player.PlayerName : ship.Player.PlayerName;
-                    Block.Team = ship.Team;
+                    Block.Team = isCharmed ? tempShip.Team : ship.Team;
                     Block.warp = warp;
                     Block.GetComponent<MeshRenderer>().material = blockMaterial;
                     Block.Index = spawnedTrailCount;
@@ -267,7 +267,9 @@ public class TrailSpawner : MonoBehaviour
     public void Charm(Ship ship, float duration)
     {
         tempShip = ship;
+        Debug.Log($"charming ship: {ship}");
         SetBlockMaterial(Hangar.Instance.GetTeamBlockMaterial(ship.Team));
+        SetShieldedBlockMaterial(Hangar.Instance.GetTeamShieldedBlockMaterial(ship.Team));
         StartCoroutine(CharmCoroutine(duration));
     }
 
@@ -276,6 +278,7 @@ public class TrailSpawner : MonoBehaviour
         isCharmed = true;
         yield return new WaitForSeconds(duration);
         SetBlockMaterial(Hangar.Instance.GetTeamBlockMaterial(ship.Team));
+        SetShieldedBlockMaterial(Hangar.Instance.GetTeamShieldedBlockMaterial(ship.Team));
         isCharmed = false;
     }
 

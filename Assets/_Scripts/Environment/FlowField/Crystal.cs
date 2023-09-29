@@ -14,7 +14,7 @@ public class Crystal : NodeItem
     #endregion
 
     #region Inspector Fields
-    [SerializeField] protected CrystalProperties crystalProperties;
+    [SerializeField] public CrystalProperties crystalProperties;
     [SerializeField] public float sphereRadius = 100;
     [SerializeField] protected GameObject SpentCrystalPrefab;
     [SerializeField] protected GameObject CrystalModel; 
@@ -89,9 +89,6 @@ public class Crystal : NodeItem
         Projectile projectile;
         if (IsShip(other.gameObject))
         {
-            //
-            // Do the ship specific crystal stuff
-            //
             ship = other.GetComponent<ShipGeometry>().Ship;
             if (Team == Teams.None || Team == ship.Team)
             {
@@ -105,24 +102,27 @@ public class Crystal : NodeItem
                     }
                 }
             }
+            else return;
         }
         else if (IsProjectile(other.gameObject))
         {
             ship = other.GetComponent<Projectile>().Ship;
             projectile = other.GetComponent<Projectile>();
-            if (shipImpactEffects)
+            if (Team == Teams.None || Team == ship.Team)
             {
-                projectile.PerformCrystalImpactEffects(crystalProperties);
-                if (ship.TryGetComponent<AIPilot>(out var aiPilot))
+                if (shipImpactEffects)
                 {
-                    aiPilot.aggressiveness = aiPilot.defaultAggressiveness;
-                    aiPilot.throttle = aiPilot.defaultThrottle;
+                    projectile.PerformCrystalImpactEffects(crystalProperties);
+                    if (ship.TryGetComponent<AIPilot>(out var aiPilot))
+                    {
+                        aiPilot.aggressiveness = aiPilot.defaultAggressiveness;
+                        aiPilot.throttle = aiPilot.defaultThrottle;
+                    }
                 }
             }
-            return;
+            else return;
         } 
-        else 
-            return;
+        else return;
 
         //
         // Do the crystal stuff that always happens (ship/projectile independent)
