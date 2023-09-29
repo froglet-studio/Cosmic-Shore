@@ -101,7 +101,7 @@ MonoBehaviour:
   Team: 0
   Ship: {fileID: 0}
   trailBlockImpactEffects: 0c000000070000000d000000
-  shipImpactEffects: 
+  shipImpactEffects: 05000000
   crystalImpactEffects: 0c000000
   ProjectileTime: 0
   drawLine: 1

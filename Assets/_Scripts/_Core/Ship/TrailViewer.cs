@@ -10,6 +10,7 @@ public class TrailViewer : MonoBehaviour
     public int radiusInBlocks = 5;
     private TrailFollower trailFollower;
     private LineRenderer lineRenderer;
+    [SerializeField] Material trailViewerMaterial;
     private Trail attachedTrail;
 
     List<TrailBlock> transparentBlocks = new();
@@ -21,8 +22,7 @@ public class TrailViewer : MonoBehaviour
     {
         trailFollower = GetComponent<TrailFollower>();
         lineRenderer = gameObject.AddComponent<LineRenderer>();
-        lineRenderer.material = new Material(Shader.Find("Sprites/Default"));
-        lineRenderer.startColor = lineRenderer.endColor = Color.green;
+        lineRenderer.material = trailViewerMaterial;
         lineRenderer.startWidth = lineRenderer.endWidth = 0.1f;
     }
 

@@ -39,7 +39,7 @@ public class FireBarrageAction : ShipAction
             child.LookAt(gunContainer.transform);
             child.Rotate(0, 180, 0);
         }
-        projectileContainer = new GameObject($"{ship.Player.PlayerName}_Projectiles");
+        projectileContainer = new GameObject($"{ship.Player.PlayerName}_BarrageProjectiles");
         shipData = ship.GetComponent<ShipStatus>();
         resourceSystem = ship.ResourceSystem;
     }

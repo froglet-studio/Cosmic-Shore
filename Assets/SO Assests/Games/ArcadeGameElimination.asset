@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Mode: 1
   Name: Elimination
-  Description: How many turns can you survive without hitting a block? Last ship
-    standing wins
+  Description: DON'T PLAY 1 PLAYER. Get the crystal in time without hitting a block
+    or get eliminated.
   Icon: {fileID: 21300000, guid: 3393ef5bcc756364d98dc478fc0fe52b, type: 3}
   SelectedIcon: {fileID: 21300000, guid: b734e1a473e014c4198c58f6c02b894d, type: 3}
   CardBackground: {fileID: 21300000, guid: b5b9538f2e3a8c24d9a9f5219064fcdc, type: 3}
@@ -23,7 +23,7 @@ MonoBehaviour:
     type: 3}
   Pilots:
   - {fileID: 11400000, guid: 5ac362560a34d414e835db83e82daa08, type: 2}
-  - {fileID: 11400000, guid: 6d520cd7eb8878b4aa2551e0591bc08d, type: 2}
+  - {fileID: 11400000, guid: 42800aad95708bc488da7eed56ecc146, type: 2}
   MinPlayers: 2
   MaxPlayers: 3
   SceneName: MinigameElimination

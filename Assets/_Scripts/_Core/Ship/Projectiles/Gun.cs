@@ -19,8 +19,8 @@ namespace StarWriter.Core
         public Teams Team;
         public Ship Ship;
         bool onCooldown = false;
-        float sideLength = 3;
-        float barrelLength = 3;
+        float sideLength = 2;
+        float barrelLength = 4;
 
         public Coroutine MoveCoroutine;
 
@@ -61,7 +61,7 @@ namespace StarWriter.Core
                     {
                         int points = 4 * ((int)energy + 1); // 
                         float phi = Mathf.PI * (3 - Mathf.Sqrt(5)); // Golden angle
-
+                        var randomRotation = Random.rotation;
                         for (int i = 0; i < points; i++)
                         {
                             float y = 1 - (i / (float)(points - 1)) * 2; // y goes from 1 to -1
@@ -72,7 +72,7 @@ namespace StarWriter.Core
                             float x = Mathf.Cos(theta) * radius;
                             float z = Mathf.Sin(theta) * radius;
 
-                            Vector3 direction = new Vector3(x, y, z);
+                            Vector3 direction = randomRotation * (new Vector3(x, y, z));
                             Vector3 offset = direction * sideLength;
                             FireProjectile(containerTransform, speed, inheritedVelocity, projectileScale, offset, direction, projectileTime, charge);
                         }

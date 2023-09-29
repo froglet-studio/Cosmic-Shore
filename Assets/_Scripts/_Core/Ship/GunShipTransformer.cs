@@ -77,8 +77,9 @@ public class GunShipTransformer : ShipTransformer
     }
     void SlideActions()
     {
-        // TODO: should this be pulled out as an action type?          
-        resourceSystem.ChangeAmmoAmount(rechargeRate * Time.deltaTime);
+        // TODO: should this be pulled out as an action type?
+        if (trailFollower.AttachedTrailBlock.Shielded) resourceSystem.ChangeAmmoAmount(rechargeRate * 2 * Time.deltaTime);
+        else resourceSystem.ChangeAmmoAmount(rechargeRate * Time.deltaTime);
     }
 
     public void FinalBlockSlideEffects()
@@ -91,7 +92,6 @@ public class GunShipTransformer : ShipTransformer
         if (shipData.AttachedTrailBlock.Team == ship.Team)
         {
             shipData.AttachedTrailBlock.Grow();
-            //shipData.AttachedTrailBlock.ActivateShield();
         }
         else shipData.AttachedTrailBlock.Steal(ship.Player.PlayerName, ship.Team);
     }

@@ -24,10 +24,11 @@ MonoBehaviour:
   CardSilohoutteActive: {fileID: 21300000, guid: d88eff3a88254e041bbd91f7b126eeae,
     type: 3}
   Abilities:
+  - {fileID: 11400000, guid: 59a526f543aa82b43920bafb7fb8684d, type: 2}
+  - {fileID: 11400000, guid: 9608a8095e3294548aa8e9da3bd634a0, type: 2}
   - {fileID: 11400000, guid: bf4c23aad32b0f4489dbc09db593aab4, type: 2}
+  - {fileID: 11400000, guid: d28b6b5c008786c4998fb0cec02ab5bc, type: 2}
   Pilots: []
   TrainingGames:
-  - {fileID: 11400000, guid: 812851e4603217c469662dc3cb9c6d93, type: 2}
-  - {fileID: 11400000, guid: 3537310ecbdad2e449bbca31d2aa8599, type: 2}
   - {fileID: 11400000, guid: 70027ed9adfa2b54e9a16c3228ac7e7e, type: 2}
   - {fileID: 11400000, guid: c5f6d2d7142557647b39c30f48495c67, type: 2}

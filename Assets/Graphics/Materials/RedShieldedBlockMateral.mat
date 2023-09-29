@@ -177,9 +177,9 @@ Material:
     m_Colors:
     - _BASE_COLOR: {r: 1, g: 1, b: 1, a: 1}
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
-    - _BrightColor: {r: 0.776431, g: 0, b: 2.1185474, a: 1}
+    - _BrightColor: {r: 0.33606675, g: 0.052359466, b: 2.0812953, a: 1}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
-    - _DarkColor: {r: 0.025490196, g: 0, b: 0.06666667, a: 1}
+    - _DarkColor: {r: 0.04295963, g: 0, b: 0.2735849, a: 1}
     - _EMISSION_COLOR: {r: 0, g: 0, b: 0, a: 0}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
     - _REFLECTIONS_COLOR: {r: 1, g: 1, b: 1, a: 1}

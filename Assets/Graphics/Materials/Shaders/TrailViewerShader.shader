@@ -48,21 +48,21 @@ Shader "Custom/ViewAngleBasedColorBlendHDR"
 
             v2f vert (appdata v)
             {
-                // v2f o;
-                // o.vertex = UnityObjectToClipPos(v.vertex);
-                // o.worldPos = mul(unity_ObjectToWorld, v.vertex).xyz;  // Compute world position
-                // o.viewDir = normalize(_WorldSpaceCameraPos - o.worldPos);
-                // return o;
+                v2f o;
+                o.vertex = UnityObjectToClipPos(v.vertex);
+                o.worldPos = mul(unity_ObjectToWorld, v.vertex).xyz;  // Compute world position
+                o.viewDir = normalize(_WorldSpaceCameraPos - o.worldPos);
+                return o;
             }
 
             half4 frag (v2f i) : SV_Target
             {
-                // float3 lineDir = normalize(ddx(i.worldPos) + ddy(i.worldPos));
+                float3 lineDir = normalize(ddx(i.worldPos) + ddy(i.worldPos));
 
-                // float angleCosine = abs(dot(lineDir, i.viewDir));
-                // half4 blendedColor = lerp(_Color1, _Color0, angleCosine);
-                // blendedColor.a *= _Opacity;
-                // return blendedColor * _Brightness;
+                float angleCosine = abs(dot(lineDir, i.viewDir));
+                half4 blendedColor = lerp(_Color1, _Color0, angleCosine);
+                blendedColor.a *= _Opacity;
+                return blendedColor * _Brightness;
                 return _Color0;
             }
             ENDCG

@@ -63,7 +63,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 77e1afb46629cc7469cfccbdae90a628, type: 2}
+  - {fileID: 2100000, guid: 038f6acb5d3f67f428b08ad82f555522, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -101,7 +101,7 @@ MonoBehaviour:
   Team: 0
   Ship: {fileID: 0}
   trailBlockImpactEffects: 0c000000070000000d000000
-  shipImpactEffects: 
+  shipImpactEffects: 05000000
   crystalImpactEffects: 0c000000
   ProjectileTime: 0
   drawLine: 1

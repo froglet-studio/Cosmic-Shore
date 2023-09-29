@@ -758,7 +758,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &866771351676624094
 Transform:
   m_ObjectHideFlags: 0
@@ -787,7 +787,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   gun: {fileID: 7480786212238001713}
-  ammoCost: 0.03
+  ammoCost: 0.025
   ProjectileScale: 1
   Energy: 1
   Speed: 80
@@ -868,7 +868,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   gun: {fileID: 1896180257573412121}
-  ammoCost: 0.03
+  ammoCost: 0.05
   ProjectileScale: 1
   Energy: 1
   Speed: 80
@@ -2341,7 +2341,6 @@ MonoBehaviour:
   - InputEvent: 1
     ShipActions:
     - {fileID: 6274364622300635993}
-    - {fileID: 1288807427476124847}
     - {fileID: 1210579706855675657}
   resourceEventClassActions:
   - ResourceEvent: 0
@@ -2358,7 +2357,7 @@ MonoBehaviour:
   LevelEffects: 02000000
   ControlOverrides: 0400000003000000
   closeCamDistance: -3
-  farCamDistance: -6
+  farCamDistance: -15
   AOEExplosionMaterial: {fileID: 0}
   AOEConicExplosionMaterial: {fileID: 0}
   SkimmerMaterial: {fileID: 0}
@@ -2588,6 +2587,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   TransparentMaterial: {fileID: 2100000, guid: cc4ffbaa55bcb9b4494cfdc9d19d1214, type: 2}
   radiusInBlocks: 5
+  trailViewerMaterial: {fileID: 2100000, guid: d9c5732e6a43fbd40b2c9fe615ed746e, type: 2}
 --- !u!114 &4235613159111207255
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3461,7 +3461,7 @@ PrefabInstance:
     - target: {fileID: 3669588834454630396, guid: 637acd3ede086ed45b23959a02b1c534,
         type: 3}
       propertyPath: m_Name
-      value: RearViewCamera
+      value: FarViewCamera
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 637acd3ede086ed45b23959a02b1c534, type: 3}

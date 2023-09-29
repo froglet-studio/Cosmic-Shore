@@ -434,7 +434,7 @@ GameObject:
   - component: {fileID: 430359309}
   - component: {fileID: 430359314}
   - component: {fileID: 430359315}
-  m_Layer: 2
+  m_Layer: 9
   m_Name: Crystal
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -493,7 +493,7 @@ MonoBehaviour:
   Team: -1
   ItemType: 1
   crystalProperties:
-    crystal: {fileID: 0}
+    crystal: {fileID: 430359314}
     fuelAmount: 1
     scoreAmount: 1
     tailLengthIncreaseAmount: 0
@@ -7248,6 +7248,7 @@ MonoBehaviour:
   playerPrefab: {fileID: 433663843}
   PlayerOrigin: {fileID: 1984950343}
   EndOfTurnDelay: 0
+  EnableTrails: 1
   ActivePlayer: {fileID: 0}
 --- !u!1 &1829578212
 GameObject:
@@ -7458,12 +7459,12 @@ PrefabInstance:
     - target: {fileID: 5247650485044281852, guid: 061f308768b5b564bbb0f130d1a8f02e,
         type: 3}
       propertyPath: m_LocalRotation.w
-      value: 0.014161397
+      value: 0.014161362
       objectReference: {fileID: 0}
     - target: {fileID: 5247650485044281852, guid: 061f308768b5b564bbb0f130d1a8f02e,
         type: 3}
       propertyPath: m_LocalRotation.x
-      value: 0.00019546802
+      value: 0.00019546723
       objectReference: {fileID: 0}
     - target: {fileID: 5247650485044281852, guid: 061f308768b5b564bbb0f130d1a8f02e,
         type: 3}
@@ -7473,7 +7474,7 @@ PrefabInstance:
     - target: {fileID: 5247650485044281852, guid: 061f308768b5b564bbb0f130d1a8f02e,
         type: 3}
       propertyPath: m_LocalRotation.z
-      value: -0.013800179
+      value: -0.013800159
       objectReference: {fileID: 0}
     - target: {fileID: 5247650485044281852, guid: 061f308768b5b564bbb0f130d1a8f02e,
         type: 3}
@@ -7970,6 +7971,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Name
       value: TrucatedOctahedron
+      objectReference: {fileID: 0}
+    - target: {fileID: 2448508127246415652, guid: a089e5ab0159cc54aa784d6ebf15d2e4,
+        type: 3}
+      propertyPath: m_Layer
+      value: 9
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: a089e5ab0159cc54aa784d6ebf15d2e4, type: 3}
