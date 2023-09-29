@@ -61,6 +61,7 @@ namespace StarWriter.Core.LoadoutFavoriting
                 ShipImage.gameObject.SetActive(false);
                 PlayerCountImage.gameObject.SetActive(false);
                 IntensityImage.gameObject.SetActive(false);
+                BackgroundImage.preserveAspect = true;
             }
             else
             {  
@@ -78,6 +79,8 @@ namespace StarWriter.Core.LoadoutFavoriting
                 ShipImage.gameObject.SetActive(true);
                 PlayerCountImage.gameObject.SetActive(true);
                 IntensityImage.gameObject.SetActive(true);
+
+                BackgroundImage.preserveAspect = false;
             }
         }
 

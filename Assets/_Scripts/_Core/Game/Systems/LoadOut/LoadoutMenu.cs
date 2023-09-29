@@ -23,6 +23,7 @@ namespace StarWriter.Core.LoadoutFavoriting
         [SerializeField] Image[] IntensityBorders = new Image[4];
 
         [SerializeField] Color SelectedColor;
+        [SerializeField] Color DisabledColor;
 
         List<SO_Ship> availableShips = new List<SO_Ship>();
 
@@ -152,13 +153,14 @@ namespace StarWriter.Core.LoadoutFavoriting
 
         void UpdateGameMode()
         {
-            activeGameMode = AllGames.GameList[selectedGameIndex].Mode;
-            GameTitle.text = AllGames.GameList[selectedGameIndex].Name;
+            var selectedGame = AllGames.GameList[selectedGameIndex];
+            activeGameMode = selectedGame.Mode;
+            GameTitle.text = selectedGame.Name;
             foreach (var image in GameModeImages)
-                image.sprite = AllGames.GameList[selectedGameIndex].CardBackground;
+                image.sprite = selectedGame.CardBackground;
 
             availableShips = new List<SO_Ship>();
-            foreach (var pilot in AllGames.GameList[selectedGameIndex].Pilots)
+            foreach (var pilot in selectedGame.Pilots)
                 availableShips.Add(pilot.Ship);
 
             // If selected ship is not available, fall back to zero
@@ -168,8 +170,7 @@ namespace StarWriter.Core.LoadoutFavoriting
                 UpdateShipClass();
             }
             UpdateShipClass();
-
-            // TODO: Disable unavailable player count options, if selected player count is unavailable fall back to 1
+            UpdatePlayerCountColors();
 
             Debug.Log("LoadoutMenu - OnClickChangeGameMode - Active Game Mode is " + activeGameMode);
         }
@@ -181,6 +182,20 @@ namespace StarWriter.Core.LoadoutFavoriting
 
             activeIntensity = newIntensity;
 
+            for (var i = 0; i < 4; i++)
+            {
+                if (i != activeIntensity-1)
+                {
+                    IntensityOptions[i].color = Color.white;
+                    IntensityBorders[i].color = Color.white;
+                }
+                else
+                {
+                    IntensityOptions[i].color = SelectedColor;
+                    IntensityBorders[i].color = SelectedColor;
+                }
+            }
+
             UpdateActiveLoadOut();
         }
 
@@ -190,7 +205,66 @@ namespace StarWriter.Core.LoadoutFavoriting
             Debug.Log("LoadoutMenu - OnClickChangeActivePlayerCount - PlayerCount changed to " + newPlayerCount);
 
             activePlayerCount = newPlayerCount;
+
+            UpdatePlayerCountColors();
+
+            /*
+            for (var i = 0; i < 4; i++)
+            {
+                if (i != activePlayerCount-1)
+                {
+                    if (PlayerCountOptions[i].GetComponent<Button>().enabled)
+                    {
+                        PlayerCountOptions[i].color = Color.white;
+                        PlayerCountBorders[i].color = Color.white;
+                    }
+                }
+                else
+                {
+                    PlayerCountOptions[i].color = SelectedColor;
+                    PlayerCountBorders[i].color = SelectedColor;
+                }
+            }*/
+
             UpdateActiveLoadOut();
+        }
+
+        void UpdatePlayerCountColors()
+        {
+            var selectedGame = AllGames.GameList[selectedGameIndex];
+
+            if (activePlayerCount < selectedGame.MinPlayers)
+                activePlayerCount = selectedGame.MinPlayers;
+
+            if (activePlayerCount > selectedGame.MaxPlayers)
+                activePlayerCount = selectedGame.MaxPlayers;
+
+            for (var i = 0; i < 4; i++)
+            {
+                PlayerCountOptions[i].GetComponent<Button>().enabled = true;
+                if (i != activePlayerCount - 1)
+                {
+                    PlayerCountOptions[i].color = Color.white;
+                    PlayerCountBorders[i].color = Color.white;
+                }
+                else
+                {
+                    PlayerCountOptions[i].color = SelectedColor;
+                    PlayerCountBorders[i].color = SelectedColor;
+                }
+            }
+            for (var i = selectedGame.MaxPlayers; i < 4; i++)
+            {
+                PlayerCountOptions[i].GetComponent<Button>().enabled = false;
+                PlayerCountOptions[i].color = DisabledColor;
+                PlayerCountBorders[i].color = DisabledColor;
+            }
+            for (var i = selectedGame.MinPlayers; i > 1; i--)
+            {
+                PlayerCountOptions[i-2].GetComponent<Button>().enabled = false;
+                PlayerCountOptions[i-2].color = DisabledColor;
+                PlayerCountBorders[i-2].color = DisabledColor;
+            }
         }
 
         void UpdateActiveLoadOut()

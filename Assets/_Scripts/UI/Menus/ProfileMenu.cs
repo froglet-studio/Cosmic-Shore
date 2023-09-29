@@ -22,6 +22,7 @@ namespace _Scripts._Core.Playfab_Models
         [SerializeField] float SuccessMessageFadeAfterSeconds = 2f;
         [SerializeField] float SuccessMessageFadeDurationSeconds = 3f;
         [SerializeField] AudioClip TypingAudio;
+        [SerializeField] bool FocusDisplayNameInputFieldEnabled;
 
         Color SuccessMessageOriginalColor;
 
@@ -311,6 +312,8 @@ namespace _Scripts._Core.Playfab_Models
                 yield return new WaitForSeconds(.075f);
             }
 
+            displayNameInputField.text = name;
+
             displayNameInputField.placeholder.gameObject.SetActive(true);
             FocusDisplayNameInputField();
         }
@@ -377,8 +380,11 @@ namespace _Scripts._Core.Playfab_Models
 
         public void FocusDisplayNameInputField()
         {
-            displayNameInputField.Select();
-            StartCoroutine(DeSelectCoroutine());
+            if (FocusDisplayNameInputFieldEnabled)
+            {
+                displayNameInputField.Select();
+                StartCoroutine(DeSelectCoroutine());
+            }
         }
 
         IEnumerator DeSelectCoroutine()

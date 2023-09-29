@@ -16,7 +16,7 @@ public class PanelSwipe : MonoBehaviour, IDragHandler, IEndDragHandler {
         HOME = 2,
         HANGAR = 3,
         ARCADE = 4,
-        OPTIONS = 5,
+        //OPTIONS = 5,
     }
 
     [Serializable]
@@ -31,7 +31,6 @@ public class PanelSwipe : MonoBehaviour, IDragHandler, IEndDragHandler {
     [SerializeField] int currentScreen; // Keeps track of how many screens you have in the menu system. From 0 to 4, home = 2
 
     [SerializeField] GameObject Ship_Select;
-    [SerializeField] GameObject Minigame_Settings;
     [SerializeField] GameObject Coming_Soon;
     
     [SerializeField] Transform NavBar;
@@ -168,7 +167,6 @@ public class PanelSwipe : MonoBehaviour, IDragHandler, IEndDragHandler {
     void DeactiveSubpages()
     {
         Ship_Select.SetActive(false);
-        Minigame_Settings.SetActive(false);
         Coming_Soon.SetActive(false);
     }
     void UpdateNavBar(int index)
