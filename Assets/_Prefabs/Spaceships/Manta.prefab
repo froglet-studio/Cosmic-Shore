@@ -367,7 +367,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &1758863986445633205
 Transform:
   m_ObjectHideFlags: 0
@@ -1002,7 +1002,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &4654619225693715100
 Transform:
   m_ObjectHideFlags: 0
@@ -1323,13 +1323,13 @@ MonoBehaviour:
   nearFieldSkimmer: {fileID: 874579554510349383}
   OrientationHandle: {fileID: 1878660672777590133}
   shipGeometries:
-  - {fileID: 7418954139309595168}
-  - {fileID: 7848666020481338935}
-  - {fileID: 1544118385115188249}
-  - {fileID: 1627815179389789574}
-  - {fileID: 4112585668668430811}
-  - {fileID: 718813643571874445}
-  - {fileID: 1268059162178506852}
+  - {fileID: 7006514261138449697}
+  - {fileID: 1815102489639903026}
+  - {fileID: 8912034820902656382}
+  - {fileID: 6675130274311316141}
+  - {fileID: 7696976320636676308}
+  - {fileID: 1376376450048088127}
+  - {fileID: 5691083765198909859}
   AOEPrefab: {fileID: 2728798890556433942, guid: f5ecfb9923155a84c860975d559b2714,
     type: 3}
   farFieldSkimmer: {fileID: 3138628630497430536}
@@ -1530,7 +1530,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6417075533431866457}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 2116872444dccfd43a29513c3af008b7, type: 3}
   m_Name: 
@@ -1549,7 +1549,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6417075533431866457}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 46ca128b16ccbfd42be69beb8b52be77, type: 3}
   m_Name: 
@@ -1563,10 +1563,10 @@ MonoBehaviour:
   Fusilage: {fileID: 4769814507153169321}
   LeftWing: {fileID: 8786154189335303190}
   RightWing: {fileID: 5571582515015820382}
-  ThrusterTopRight: {fileID: 3826399654488929778}
-  ThrusterTopLeft: {fileID: 4914929835960420503}
-  ThrusterBottomLeft: {fileID: 4976498111122554688}
-  ThrusterBottomRight: {fileID: 8997425640202576112}
+  ThrusterTopRight: {fileID: 8105609640698425209}
+  ThrusterTopLeft: {fileID: 7992807412611599177}
+  ThrusterBottomLeft: {fileID: 6568354364218703309}
+  ThrusterBottomRight: {fileID: 8043265874885454852}
   smallAnimationScaler: 27
   mediumAnimationScaler: 30
   bigAnimationScaler: 60
