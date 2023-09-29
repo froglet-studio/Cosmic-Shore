@@ -51,10 +51,10 @@ namespace StarWriter.Core
                             new Vector3(1, -1, -1)
                         };
 
-                        foreach (Vector3 v in tetrahedralVertices)
+                        foreach (Vector3 direction in tetrahedralVertices)
                         {
-                            Vector3 offset = v.normalized * sideLength;
-                            FireProjectile(containerTransform, speed, inheritedVelocity, projectileScale, offset, v.normalized, projectileTime, charge);
+                            Vector3 offset = direction.normalized * sideLength;
+                            FireProjectile(containerTransform, speed, inheritedVelocity, projectileScale, offset, direction.normalized, projectileTime, charge);
                         }
                     }
                     else // Golden Spiral method for spherical pattern
