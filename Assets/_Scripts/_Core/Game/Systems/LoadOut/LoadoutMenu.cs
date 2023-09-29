@@ -1,5 +1,4 @@
 using StarWriter.Core.HangerBuilder;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using TMPro;
@@ -18,6 +17,12 @@ namespace StarWriter.Core.LoadoutFavoriting
         [SerializeField] Image ShipClassImage;
         [SerializeField] TMP_Text ShipTitle;
         [SerializeField] TMP_Text GameTitle;
+        [SerializeField] Image[] PlayerCountOptions = new Image[4];
+        [SerializeField] Image[] PlayerCountBorders = new Image[4];
+        [SerializeField] Image[] IntensityOptions = new Image[4];
+        [SerializeField] Image[] IntensityBorders = new Image[4];
+
+        [SerializeField] Color SelectedColor;
 
         List<SO_Ship> availableShips = new List<SO_Ship>();
 
@@ -34,6 +39,7 @@ namespace StarWriter.Core.LoadoutFavoriting
         {
             LoadoutSystem.Init();
             PopulateLoadoutCards();
+            CardList[0].Select();
         }
 
         // Populates the Loadout Card Containers with info from LoadoutSystem
@@ -44,44 +50,51 @@ namespace StarWriter.Core.LoadoutFavoriting
                 CardList[i].SetLoadoutCard(LoadoutSystem.GetLoadout(i));
                 CardList[i].SetLoadoutMenu(this);
             }
-
-            CardList[0].Select();
         }
 
         public void SelectLoadout(int index)
         {
-            CardList[LoadoutSystem.GetActiveLoadoutIndex()].Deselect();
+            for (int i = 0; i < CardList.Count; i++)
+                if (i != index) 
+                    CardList[i].Deselect();
 
             var loadout = CardList[index].GetLoadout();
 
+            Debug.Log($"LoadoutMenu - SelectLoadout - loadout:{loadout}");
+
+            // Default load out for building a new one
             if (loadout.Uninitialized())
                 loadout = new Loadout() { Intensity = 1, PlayerCount = 1, GameMode = MiniGames.BlockBandit, ShipType = ShipTypes.Manta };
 
+            // Load values from loadout
             activeIntensity = loadout.Intensity;
             activePlayerCount = loadout.PlayerCount;
             activeShipType = loadout.ShipType;
             activeGameMode = loadout.GameMode;
 
+            // Clear out player select and intensity selections
+            for (int i = 0; i < 4; i++)
+            {
+                PlayerCountOptions[i].color = Color.white;
+                PlayerCountBorders[i].color = Color.white;
+                IntensityOptions[i].color = Color.white;
+                IntensityBorders[i].color = Color.white;
+            }
+
+            // Highlight selected values for player count and intensity
+            PlayerCountOptions[activePlayerCount-1].color = SelectedColor;
+            PlayerCountBorders[activePlayerCount-1].color = SelectedColor;
+            IntensityOptions[activeIntensity-1].color = SelectedColor;
+            IntensityBorders[activeIntensity-1].color = SelectedColor;
+
+            // 
             selectedGameIndex = AllGames.GameList.IndexOf(AllGames.GameList.Where(x => x.Mode == activeGameMode).FirstOrDefault());
-            selectedShipIndex = AllShips.ShipList.IndexOf(AllShips.ShipList.Where(x => x.Class == activeShipType).FirstOrDefault());
+            UpdateGameMode();
+            selectedShipIndex = availableShips.IndexOf(AllShips.ShipList.Where(x => x.Class == activeShipType).FirstOrDefault());
 
             Debug.Log($"LoadoutMenu - SelectLoadout - selectedGameIndex:{selectedGameIndex}, selectedShipIndex:{selectedShipIndex}");
 
-            UpdateGameMode();
-            UpdateShipClass();
-
-            /*
-            GameTitle.text = activeGameMode.ToString();
-            ShipTitle.text = activeShipType.ToString();
-
-            ShipClassImage.sprite = AllShips.ShipList[selectedShipIndex].CardSilohoutte;
-            foreach (var image in GameModeImages)
-                image.sprite = AllGames.GameList[selectedGameIndex].CardBackground;
-
-            availableShips = new List<SO_Ship>();
-            foreach (var pilot in AllGames.GameList[selectedGameIndex].Pilots)
-                availableShips.Add(pilot.Ship);
-            */
+            
 
             LoadoutSystem.SetActiveLoadoutIndex(index);
         }
@@ -115,8 +128,10 @@ namespace StarWriter.Core.LoadoutFavoriting
 
         void UpdateShipClass()
         {
+            Debug.Log("SelectedShipIndex is " + selectedShipIndex);
+
             activeShipType = availableShips[selectedShipIndex].Class;
-            ShipTitle.text = activeShipType.ToString();
+            ShipTitle.text = availableShips[selectedShipIndex].Name;
             ShipClassImage.sprite = availableShips[selectedShipIndex].CardSilohoutte;
 
             Debug.Log("Active Ship Type is " + activeShipType);
@@ -138,7 +153,7 @@ namespace StarWriter.Core.LoadoutFavoriting
         void UpdateGameMode()
         {
             activeGameMode = AllGames.GameList[selectedGameIndex].Mode;
-            GameTitle.text = activeGameMode.ToString();
+            GameTitle.text = AllGames.GameList[selectedGameIndex].Name;
             foreach (var image in GameModeImages)
                 image.sprite = AllGames.GameList[selectedGameIndex].CardBackground;
 
@@ -152,7 +167,7 @@ namespace StarWriter.Core.LoadoutFavoriting
                 selectedShipIndex = 0;
                 UpdateShipClass();
             }
-
+            UpdateShipClass();
 
             // TODO: Disable unavailable player count options, if selected player count is unavailable fall back to 1
 

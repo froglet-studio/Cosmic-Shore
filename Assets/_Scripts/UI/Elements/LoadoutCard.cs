@@ -14,7 +14,7 @@ namespace StarWriter.Core.LoadoutFavoriting
         [SerializeField] Sprite[] PlayerCountImages = new Sprite[4];
         [SerializeField] Sprite[] IntensityImages = new Sprite[4];
         [SerializeField] Color DeselectedColor = Color.white;
-        [SerializeField] Color SelectedColor = Color.white;
+        [SerializeField] Color SelectedColor;
 
         [Header("Placeholder Locations")]
         [SerializeField] TMP_Text GameTitle;
@@ -31,7 +31,6 @@ namespace StarWriter.Core.LoadoutFavoriting
         {
             BorderImage.color = DeselectedColor;
             GameTitle.color = DeselectedColor;
-            loadout = new Loadout(2, 4, ShipTypes.Manta, MiniGames.BlockBandit);
             UpdateCardView();
         }
 
@@ -58,6 +57,10 @@ namespace StarWriter.Core.LoadoutFavoriting
                 // Show the + icon background
                 Debug.Log($"No loadout for card: {Index}");
                 BackgroundImage.sprite = PlusIconBackground;
+                GameTitle.gameObject.SetActive(false);
+                ShipImage.gameObject.SetActive(false);
+                PlayerCountImage.gameObject.SetActive(false);
+                IntensityImage.gameObject.SetActive(false);
             }
             else
             {  
@@ -70,6 +73,11 @@ namespace StarWriter.Core.LoadoutFavoriting
 
                 PlayerCountImage.sprite = PlayerCountImages[loadout.PlayerCount - 1];
                 IntensityImage.sprite = IntensityImages[loadout.Intensity - 1];
+
+                GameTitle.gameObject.SetActive(true);
+                ShipImage.gameObject.SetActive(true);
+                PlayerCountImage.gameObject.SetActive(true);
+                IntensityImage.gameObject.SetActive(true);
             }
         }
 
