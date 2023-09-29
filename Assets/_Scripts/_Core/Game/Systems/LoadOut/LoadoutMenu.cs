@@ -207,25 +207,6 @@ namespace StarWriter.Core.LoadoutFavoriting
             activePlayerCount = newPlayerCount;
 
             UpdatePlayerCountColors();
-
-            /*
-            for (var i = 0; i < 4; i++)
-            {
-                if (i != activePlayerCount-1)
-                {
-                    if (PlayerCountOptions[i].GetComponent<Button>().enabled)
-                    {
-                        PlayerCountOptions[i].color = Color.white;
-                        PlayerCountBorders[i].color = Color.white;
-                    }
-                }
-                else
-                {
-                    PlayerCountOptions[i].color = SelectedColor;
-                    PlayerCountBorders[i].color = SelectedColor;
-                }
-            }*/
-
             UpdateActiveLoadOut();
         }
 

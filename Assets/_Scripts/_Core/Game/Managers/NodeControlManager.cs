@@ -17,6 +17,18 @@ public class NodeControlManager : Singleton<NodeControlManager>
         return null;
     }
 
+    public Node GetNearestNode(Vector3 position)
+    {
+        var minPosition = Mathf.Infinity;
+        var result = Nodes[0];
+
+        foreach (var node in Nodes)
+            if (Vector3.SqrMagnitude(position - node.transform.position) < minPosition)
+                result = node;
+
+        return result;
+    }
+
     void OnEnable()
     {
         GameManager.onDeath += OutputNodeControl;

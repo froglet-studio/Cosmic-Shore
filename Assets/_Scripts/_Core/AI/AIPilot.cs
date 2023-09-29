@@ -111,8 +111,8 @@ namespace StarWriter.Core.IO
             Debug.Log($"NodeContentUpdated - transform.position: {transform.position}");
             var activeNode = NodeControlManager.Instance.GetNodeByPosition(transform.position);
 
-            // TODO: null checks
-            //CrystalTransform = activeNode.GetClosestItem(transform.position).transform;
+            if (activeNode == null)
+                activeNode = NodeControlManager.Instance.GetNearestNode(transform.position);
 
             var nodeItems = activeNode.GetItems();
             float MinDistance = Mathf.Infinity;
