@@ -758,7 +758,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &866771351676624094
 Transform:
   m_ObjectHideFlags: 0
@@ -2341,7 +2341,6 @@ MonoBehaviour:
   - InputEvent: 1
     ShipActions:
     - {fileID: 6274364622300635993}
-    - {fileID: 1288807427476124847}
     - {fileID: 1210579706855675657}
   resourceEventClassActions:
   - ResourceEvent: 0
