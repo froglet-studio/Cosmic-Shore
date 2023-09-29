@@ -868,7 +868,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   gun: {fileID: 1896180257573412121}
-  ammoCost: 0.025
+  ammoCost: 0.05
   ProjectileScale: 1
   Energy: 1
   Speed: 80
