@@ -2588,6 +2588,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   TransparentMaterial: {fileID: 2100000, guid: cc4ffbaa55bcb9b4494cfdc9d19d1214, type: 2}
   radiusInBlocks: 5
+  trailViewerMaterial: {fileID: 2100000, guid: d9c5732e6a43fbd40b2c9fe615ed746e, type: 2}
 --- !u!114 &4235613159111207255
 MonoBehaviour:
   m_ObjectHideFlags: 0
