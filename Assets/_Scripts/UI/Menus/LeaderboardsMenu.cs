@@ -28,7 +28,7 @@ public class LeaderboardsMenu : MonoBehaviour
         // TODO: Reconsider this implementation for avoiding displaying Freestyle on the scoreboard
         // Copy the game list, but skip Freestyle -- IMPORTANT to copy the list so we don't modify the SO
         foreach (var game in GameManager.Instance.AllGames.GameList)
-            if (game.Mode != MiniGames.Freestyle)
+            if (game.Mode != MiniGames.Freestyle && game.Mode != MiniGames.Elimination)
                 LeaderboardEligibleGames.Add(game);
 
         AuthenticationManager.OnProfileLoaded += FetchLeaderboard;
