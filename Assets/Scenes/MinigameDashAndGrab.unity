@@ -668,7 +668,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e3eb622f0a3e72d468bc87ffe5af52da, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  gameMode: 2
+  gameMode: 9
   NumberOfRounds: 1
   TurnMonitors:
   - {fileID: 1078953703}

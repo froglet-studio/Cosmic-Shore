@@ -119,6 +119,7 @@ public class LeaderboardManager : SingletonPersistent<LeaderboardManager>
         // Build list of statistics to update
         // One entry for each score for specific game mode/ship combination
         // One entry for each score for game mode any ship
+        // One entry to count how many times people have played a given game with a given ship
 
         Debug.Log($"UpdateGameplayStats - gameMode:{gameMode}, shipType:{shipType}, intensity:{intensity}, score:{score}");
         List<StatisticUpdate> stats = new()
@@ -132,6 +133,11 @@ public class LeaderboardManager : SingletonPersistent<LeaderboardManager>
             {
                 StatisticName = GetGameplayStatKey(gameMode, ShipTypes.Any),
                 Value = score
+            },
+            new StatisticUpdate()
+            {
+                StatisticName = GetGameplayStatKey(gameMode, shipType) + "_PlayCount",
+                Value = 1
             }
         };
 

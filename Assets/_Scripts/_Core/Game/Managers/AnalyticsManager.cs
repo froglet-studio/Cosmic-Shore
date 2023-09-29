@@ -1,10 +1,10 @@
-using Firebase;
-using Firebase.Analytics;
+//using Firebase;
+//using Firebase.Analytics;
 using StarWriter.Utility.Singleton;
 
 public class AnalyticsManager : SingletonPersistent<AnalyticsManager>
 {
-    private FirebaseApp app;
+    //private FirebaseApp app;
 
     private bool analyticsEnabled = false;
 
@@ -18,7 +18,7 @@ public class AnalyticsManager : SingletonPersistent<AnalyticsManager>
     {
         if (analyticsEnabled)
         {
-            FirebaseAnalytics.LogEvent(FirebaseAnalytics.EventLevelStart);
+            //FirebaseAnalytics.LogEvent(FirebaseAnalytics.EventLevelStart);
         }
     }
 
@@ -26,7 +26,7 @@ public class AnalyticsManager : SingletonPersistent<AnalyticsManager>
     {
         if (analyticsEnabled)
         {
-            FirebaseAnalytics.LogEvent(FirebaseAnalytics.EventAdImpression);
+            //FirebaseAnalytics.LogEvent(FirebaseAnalytics.EventAdImpression);
         }
     }
 
@@ -34,7 +34,7 @@ public class AnalyticsManager : SingletonPersistent<AnalyticsManager>
     {
         if (analyticsEnabled)
         {
-            FirebaseAnalytics.LogEvent(FirebaseAnalytics.EventAppOpen);
+            //FirebaseAnalytics.LogEvent(FirebaseAnalytics.EventAppOpen);
         }
     }
 
@@ -42,6 +42,7 @@ public class AnalyticsManager : SingletonPersistent<AnalyticsManager>
     {
         if (analyticsEnabled)
         {
+            /*
             Parameter[] parameters =
             {
                 new Parameter(FirebaseAnalytics.ParameterLevel, mode.ToString()),
@@ -50,6 +51,7 @@ public class AnalyticsManager : SingletonPersistent<AnalyticsManager>
                 new Parameter("Intensity", intensity),
             };
             FirebaseAnalytics.LogEvent(FirebaseAnalytics.EventLevelStart, parameters);
+            */
         }
     }
 
@@ -57,6 +59,7 @@ public class AnalyticsManager : SingletonPersistent<AnalyticsManager>
     {
         if (analyticsEnabled)
         {
+            /*
             Parameter[] parameters =
             {
                 new Parameter(FirebaseAnalytics.ParameterLevel, mode.ToString()),
@@ -66,11 +69,13 @@ public class AnalyticsManager : SingletonPersistent<AnalyticsManager>
                 new Parameter("HighScore", highScore),
             };
             FirebaseAnalytics.LogEvent(FirebaseAnalytics.EventLevelEnd, parameters);
+            */
         }
     }
 
     void Initialize()
     {
+        /*
 #if UNITY_ANDROID  // TODO: keeping analytics disabled on iOS for now until we resolve dependency issues
         FirebaseApp.CheckAndFixDependenciesAsync().ContinueWith(task =>
         {
@@ -88,7 +93,7 @@ public class AnalyticsManager : SingletonPersistent<AnalyticsManager>
                   "Could not resolve all Firebase dependencies: {0}", dependencyStatus));
             }
         });
-        /**/
 #endif
+        */
     }
 }
