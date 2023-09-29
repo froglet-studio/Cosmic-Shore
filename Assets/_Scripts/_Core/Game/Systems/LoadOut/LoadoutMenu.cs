@@ -92,6 +92,7 @@ namespace StarWriter.Core.LoadoutFavoriting
             selectedGameIndex = AllGames.GameList.IndexOf(AllGames.GameList.Where(x => x.Mode == activeGameMode).FirstOrDefault());
             UpdateGameMode();
             selectedShipIndex = availableShips.IndexOf(AllShips.ShipList.Where(x => x.Class == activeShipType).FirstOrDefault());
+            UpdateShipClass();
 
             Debug.Log($"LoadoutMenu - SelectLoadout - selectedGameIndex:{selectedGameIndex}, selectedShipIndex:{selectedShipIndex}");
 
@@ -171,7 +172,6 @@ namespace StarWriter.Core.LoadoutFavoriting
                 UpdateShipClass();
             }
 
-            UpdateShipClass();
             UpdatePlayerCountColors();
 
             Debug.Log("LoadoutMenu - OnClickChangeGameMode - Active Game Mode is " + activeGameMode);
