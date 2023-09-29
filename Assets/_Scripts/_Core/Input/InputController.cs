@@ -311,30 +311,30 @@ namespace StarWriter.Core.IO
 
         void Reparameterize()
         {
-            if (oneFingerMode || SingleStickControls)
-            {
-                if (leftActive)
-                {
-                    XSum = Ease(LeftJoystickPosition.x);
-                    YSum = -Ease(LeftJoystickPosition.y); //negative is because joysitcks and unity axes don't agree
-                    XDiff = .5f;
-                    YDiff = 0;
-                }
-                else
-                {
-                    XSum = Ease(RightJoystickPosition.x);
-                    YSum = -Ease(RightJoystickPosition.y); //negative is because joysitcks and unity axes don't agree
-                    XDiff = .5f;
-                    YDiff = 0;
-                }
-            }
-            else
-            {
+            //if (oneFingerMode || SingleStickControls)
+            //{
+            //    if (leftActive)
+            //    {
+            //        XSum = Ease(LeftJoystickPosition.x);
+            //        YSum = -Ease(LeftJoystickPosition.y); //negative is because joysitcks and unity axes don't agree
+            //        XDiff = .5f;
+            //        YDiff = 0;
+            //    }
+            //    else
+            //    {
+            //        XSum = Ease(RightJoystickPosition.x);
+            //        YSum = -Ease(RightJoystickPosition.y); //negative is because joysitcks and unity axes don't agree
+            //        XDiff = .5f;
+            //        YDiff = 0;
+            //    }
+            //}
+            //else
+            //{
                 XSum = Ease(RightJoystickPosition.x + LeftJoystickPosition.x);
                 YSum = -Ease(RightJoystickPosition.y + LeftJoystickPosition.y); //negative is because joysitcks and unity axes don't agree
                 XDiff = (LeftJoystickPosition.x - RightJoystickPosition.x + 2.1f) / 4.1f;
                 YDiff = Ease(RightJoystickPosition.y - LeftJoystickPosition.y);
-            }
+            //}
 
             if (invertYEnabled)
                 YSum *= -1;
