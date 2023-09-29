@@ -22,6 +22,6 @@ MonoBehaviour:
     type: 3}
   Pilots:
   - {fileID: 11400000, guid: 42800aad95708bc488da7eed56ecc146, type: 2}
-  MinPlayers: 2
+  MinPlayers: 1
   MaxPlayers: 2
   SceneName: MinigameDolphinDarts

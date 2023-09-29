@@ -11,5 +11,6 @@ public enum MiniGames
     DriftCourse = 6,
     Freestyle = 7,
     CellularDuel = 8,
-    DashAndGrab
+    DashAndGrab = 9,
+    CellularBrawl = 10,
 }

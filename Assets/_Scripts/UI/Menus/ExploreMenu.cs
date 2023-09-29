@@ -70,7 +70,7 @@ public class ExploreMenu : MonoBehaviour
             
             var gameCard = GameCards[i];
             gameCard.GameMode = game.Mode;
-            gameCard.Locked = (i % 3 == 0);  // TODO: pull this from somewhere real
+            gameCard.Locked = false; //(i % 3 == 0);  // TODO: pull this from somewhere real
             gameCard.GetComponent<Button>().onClick.RemoveAllListeners();
             gameCard.GetComponent<Button>().onClick.AddListener(() => SelectGame(selectionIndex));
             gameCard.GetComponent<Button>().onClick.AddListener(() => GameSelectionGrid.GetComponent<MenuAudio>().PlayAudio());
@@ -154,13 +154,13 @@ public class ExploreMenu : MonoBehaviour
         {
             Debug.Log($"SelectGame - SelectedGame.MaxPlayers:{SelectedGame.MaxPlayers}, i:{i}, i < SelectedGame.MaxPlayers:{i < SelectedGame.MaxPlayers}");
             var playerCount = i + 1;
-            PlayerCountButtonContainer.transform.GetChild(i).gameObject.SetActive(i < SelectedGame.MaxPlayers);
+            PlayerCountButtonContainer.transform.GetChild(i).gameObject.SetActive(i < SelectedGame.MaxPlayers && i >= SelectedGame.MinPlayers-1);
             PlayerCountButtonContainer.transform.GetChild(i).gameObject.GetComponent<Button>().onClick.RemoveAllListeners();
             PlayerCountButtonContainer.transform.GetChild(i).gameObject.GetComponent<Button>().onClick.AddListener(() => SetPlayerCount(playerCount));
             PlayerCountButtonContainer.transform.GetChild(i).gameObject.GetComponent<Button>().onClick.AddListener(() => PlayerCountButtonContainer.GetComponent<MenuAudio>().PlayAudio());
-
         }
-        SetPlayerCount(1);
+        SetPlayerCount(SelectedGame.MinPlayers);
+
 
         // TODO: this is kludgy
         for (var i = 0; i < IntensityButtonContainer.transform.childCount; i++)

@@ -95,8 +95,6 @@ namespace StarWriter.Core.LoadoutFavoriting
 
             Debug.Log($"LoadoutMenu - SelectLoadout - selectedGameIndex:{selectedGameIndex}, selectedShipIndex:{selectedShipIndex}");
 
-            
-
             LoadoutSystem.SetActiveLoadoutIndex(index);
         }
 
@@ -130,6 +128,9 @@ namespace StarWriter.Core.LoadoutFavoriting
         void UpdateShipClass()
         {
             Debug.Log("SelectedShipIndex is " + selectedShipIndex);
+
+            if (selectedShipIndex < 0) selectedShipIndex = availableShips.Count() - 1;
+            if (selectedShipIndex >= availableShips.Count()) selectedShipIndex = 0;
 
             activeShipType = availableShips[selectedShipIndex].Class;
             ShipTitle.text = availableShips[selectedShipIndex].Name;
@@ -169,6 +170,7 @@ namespace StarWriter.Core.LoadoutFavoriting
                 selectedShipIndex = 0;
                 UpdateShipClass();
             }
+
             UpdateShipClass();
             UpdatePlayerCountColors();
 
