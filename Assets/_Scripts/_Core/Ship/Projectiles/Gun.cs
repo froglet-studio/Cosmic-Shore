@@ -12,6 +12,8 @@ namespace StarWriter.Core
     public class Gun : MonoBehaviour
     {
         [SerializeField] protected GameObject projectilePrefab;
+        [SerializeField] protected GameObject energizedProjectilePrefab;
+        [SerializeField] protected GameObject superEnergizedProjectilePrefab;
 
         public float firePeriod = .2f;
         public Teams Team;
@@ -49,10 +51,10 @@ namespace StarWriter.Core
                             new Vector3(1, -1, -1)
                         };
 
-                        foreach (Vector3 v in tetrahedralVertices)
+                        foreach (Vector3 direction in tetrahedralVertices)
                         {
-                            Vector3 offset = v.normalized * sideLength;
-                            FireProjectile(containerTransform, speed, inheritedVelocity, projectileScale, offset, v.normalized, projectileTime, charge);
+                            Vector3 offset = direction.normalized * sideLength;
+                            FireProjectile(containerTransform, speed, inheritedVelocity, projectileScale, offset, direction.normalized, projectileTime, charge);
                         }
                     }
                     else // Golden Spiral method for spherical pattern
@@ -77,30 +79,23 @@ namespace StarWriter.Core
                     }
                     break;
                 default: // Using default to cover single, HexRing, and DoubleHexRing as a single unified pattern
-
-                    if (energy == 0)
+      
+                    for (int ring = 0; ring <= energy; ring++)
                     {
-                        FireProjectile(containerTransform, speed, inheritedVelocity, projectileScale, Vector3.zero, projectileTime, charge);
-                    }
-                    else
-                    {
-                        for (int ring = 0; ring < energy; ring++)
+                        // Center point only for the first ring
+                        if (ring == 0)
                         {
-                            // Center point only for the first ring
-                            if (ring == 0)
-                            {
-                                FireProjectile(containerTransform, speed, inheritedVelocity, projectileScale, Vector3.zero, projectileTime, charge);
-                            }
-                            else
-                            {
-                                int projectilesInThisRing = 6 * (ring); // This scales the number of projectiles with the ring number
-                                float angleIncrement = 360f / projectilesInThisRing;
+                            FireProjectile(containerTransform, speed, inheritedVelocity, projectileScale, Vector3.zero, projectileTime, charge);
+                        }
+                        else
+                        {
+                            int projectilesInThisRing = 6 * (ring); // This scales the number of projectiles with the ring number
+                            float angleIncrement = 360f / projectilesInThisRing;
 
-                                for (int i = 0; i < projectilesInThisRing; i++)
-                                {
-                                    Vector3 offset = Quaternion.Euler(0, 0, ring%2*30 + angleIncrement * i) * transform.right * sideLength * ring;
-                                    FireProjectile(containerTransform, speed, inheritedVelocity, projectileScale, offset, projectileTime, charge);
-                                }
+                            for (int i = 0; i < projectilesInThisRing; i++)
+                            {
+                                Vector3 offset = Quaternion.Euler(0, 0, ring%2 * 30 + angleIncrement * i) * transform.right * sideLength * ring;
+                                FireProjectile(containerTransform, speed, inheritedVelocity, projectileScale, offset, projectileTime, charge);
                             }
                         }
                     }
@@ -111,16 +106,20 @@ namespace StarWriter.Core
         }
 
         void FireProjectile(Transform containerTransform, float speed, Vector3 inheritedVelocity,
-           float projectileScale, Vector3 offset, float projectileTime = 3, float charge = 0)
+           float projectileScale, Vector3 offset, float projectileTime = 3, float charge = 0, int energy = 0)
         {
             FireProjectile(containerTransform, speed, inheritedVelocity,
-            projectileScale, offset, transform.forward, projectileTime, charge);
+            projectileScale, offset, transform.forward, projectileTime, charge, energy);
         }
 
         void FireProjectile(Transform containerTransform, float speed, Vector3 inheritedVelocity,
-            float projectileScale, Vector3 offset, Vector3 normalizedVelocity, float projectileTime = 3, float charge = 0)
+            float projectileScale, Vector3 offset, Vector3 normalizedVelocity, float projectileTime = 3, float charge = 0, int energy = 0)
         {
-            Projectile projectileInstance = Instantiate(projectilePrefab,
+            GameObject prefab;
+            if (energy > 1) prefab = energizedProjectilePrefab;
+            else if (energy > 0) prefab = superEnergizedProjectilePrefab;
+            else prefab = energizedProjectilePrefab;
+            Projectile projectileInstance = Instantiate(prefab,
                 transform.position + Quaternion.LookRotation(transform.forward) * offset + (transform.forward * barrelLength), // position
                 Quaternion.LookRotation(normalizedVelocity) // rotation
                 ).GetComponent<Projectile>();

@@ -9,7 +9,7 @@ namespace StarWriter.Core
     {
         [Header("Projectile Configuration")]
         [SerializeField] float speed = 20;
-        [SerializeField] float projectileTime = 3;
+        [SerializeField] float projectileTime = 1.5f;
         [SerializeField] FiringPatterns firingPattern = FiringPatterns.Spherical;
         [SerializeField] int energy;
         //Vector3 scale;

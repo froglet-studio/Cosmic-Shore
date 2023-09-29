@@ -12,13 +12,14 @@ public class FireGunAction : ShipAction
     [SerializeField] float ammoCost = .03f;
 
     public float ProjectileScale = 1f;
-    public float Energy = 0;
-    public float Speed = 7;
-    public float ProjectileTime = 1.5f;
+    public int Energy = 0;
+    public float Speed = 90;
+    public float ProjectileTime = 3f;
 
     void Start()
     {
         projectileContainer = new GameObject($"{ship.Player.PlayerName}_Projectiles");
+        projectileContainer.transform.parent = ship.Player.transform;
         shipData = ship.GetComponent<ShipStatus>();
         resourceSystem = ship.ResourceSystem;
     }
@@ -33,7 +34,7 @@ public class FireGunAction : ShipAction
             else inheritedVelocity = shipData.Course;
 
             // TODO: WIP magic numbers
-            gun.FireGun(projectileContainer.transform, 90, inheritedVelocity * shipData.Speed, ProjectileScale, true, 3f, 0, FiringPatterns.Default, 2);
+            gun.FireGun(projectileContainer.transform, Speed, inheritedVelocity * shipData.Speed, ProjectileScale, true, ProjectileTime, 0, FiringPatterns.Default, Energy);
         }
     }
 
@@ -41,6 +42,4 @@ public class FireGunAction : ShipAction
     {
 
     }
-
-
 }

@@ -155,17 +155,26 @@ namespace StarWriter.Core
         public void ChangeAmmoAmount(float amount)
         {
             CurrentAmmo = Mathf.Clamp(currentAmmo + amount, 0, maxAmmo);
-            if (CurrentAmmo == maxAmmo) GetComponent<Ship>().PerformClassResourceActions(ResourceEvents.MaxAmmo);
+            if (CurrentAmmo >= maxAmmo * .75f)
+            {
+                GetComponent<Ship>().StopClassResourceActions(ResourceEvents.AboveHalfAmmo);
+                GetComponent<Ship>().PerformClassResourceActions(ResourceEvents.AboveThreeQuartersAmmo);
+            }
+            else if (CurrentAmmo >= maxAmmo * .5f)
+            {
+                GetComponent<Ship>().StopClassResourceActions(ResourceEvents.AboveThreeQuartersAmmo);
+                GetComponent<Ship>().PerformClassResourceActions(ResourceEvents.AboveHalfAmmo);
+            }
+            else
+            {
+                GetComponent<Ship>().StopClassResourceActions(ResourceEvents.AboveThreeQuartersAmmo);
+                GetComponent<Ship>().StopClassResourceActions(ResourceEvents.AboveHalfAmmo);
+            }
         }
         
         public void ChangeChargeAmount(float amount)
         {
             CurrentCharge = Mathf.Clamp(currentCharge + amount, 0, maxCharge);
-        }
-
-        void MaxAmmoEffects()
-        {
-
         }
 
         /*

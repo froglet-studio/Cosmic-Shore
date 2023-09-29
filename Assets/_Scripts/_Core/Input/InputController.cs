@@ -225,7 +225,7 @@ namespace StarWriter.Core.IO
                         oneFingerMode = true;
                         var position = Input.touches[0].position;
 
-                        if (Vector2.Distance(LeftJoystickValue, position) > Vector2.Distance(RightJoystickValue, position))
+                        if (Vector2.Distance(LeftJoystickValue, position) < Vector2.Distance(RightJoystickValue, position))
                         {
                             if (!leftStickEffectsStarted)
                             {

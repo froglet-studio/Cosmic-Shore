@@ -207,7 +207,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 4369262321157730261}
-  m_RootOrder: 5
+  m_RootOrder: 3
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &7925097207517337182
 MonoBehaviour:
@@ -221,11 +221,62 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2076124a554bc894db13293a6ed81de1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  duration: 5
-  cooldown: 5
   fireActions:
   - {fileID: 6274364622300635993}
   - {fileID: 1288807427476124847}
+  Speed: 80
+  ProjectileTime: 5
+  Energy: 2
+--- !u!1 &844950697262508074
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2163426589809774150}
+  - component: {fileID: 2464282780648543733}
+  m_Layer: 0
+  m_Name: SuperEnergizeAction
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2163426589809774150
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 844950697262508074}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: -0.28527343, y: 0.13758913, z: 0.15116724}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 4369262321157730261}
+  m_RootOrder: 4
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2464282780648543733
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 844950697262508074}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2076124a554bc894db13293a6ed81de1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  fireActions:
+  - {fileID: 6274364622300635993}
+  - {fileID: 1288807427476124847}
+  Speed: 80
+  ProjectileTime: 5
+  Energy: 3
 --- !u!1 &1189492708410417601
 GameObject:
   m_ObjectHideFlags: 0
@@ -605,6 +656,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   projectilePrefab: {fileID: 6475208383231727548, guid: c34f9e79837e1e548873b8be1e1b1271,
     type: 3}
+  energizedProjectilePrefab: {fileID: 6475208383231727548, guid: ee0d967e7e55a604aadfa29c4425067e,
+    type: 3}
+  superEnergizedProjectilePrefab: {fileID: 6475208383231727548, guid: 18cb2ff3ac0090b47b8a02d287f46314,
+    type: 3}
   firePeriod: 0.1
   Team: 1
   Ship: {fileID: 874579555101021527}
@@ -717,7 +772,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 4369262321157730261}
-  m_RootOrder: 4
+  m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &1288807427476124847
 MonoBehaviour:
@@ -734,9 +789,9 @@ MonoBehaviour:
   gun: {fileID: 7480786212238001713}
   ammoCost: 0.03
   ProjectileScale: 1
-  Energy: 0
-  Speed: 7
-  ProjectileTime: 1.5
+  Energy: 1
+  Speed: 80
+  ProjectileTime: 5
 --- !u!1 &2323831624999812778
 GameObject:
   m_ObjectHideFlags: 0
@@ -798,7 +853,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 4369262321157730261}
-  m_RootOrder: 2
+  m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &6274364622300635993
 MonoBehaviour:
@@ -815,9 +870,9 @@ MonoBehaviour:
   gun: {fileID: 1896180257573412121}
   ammoCost: 0.03
   ProjectileScale: 1
-  Energy: 0
-  Speed: 7
-  ProjectileTime: 1.5
+  Energy: 1
+  Speed: 80
+  ProjectileTime: 5
 --- !u!1 &3009779053630328212
 GameObject:
   m_ObjectHideFlags: 0
@@ -1908,6 +1963,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   projectilePrefab: {fileID: 6475208383231727548, guid: c34f9e79837e1e548873b8be1e1b1271,
     type: 3}
+  energizedProjectilePrefab: {fileID: 6475208383231727548, guid: ee0d967e7e55a604aadfa29c4425067e,
+    type: 3}
+  superEnergizedProjectilePrefab: {fileID: 6475208383231727548, guid: 18cb2ff3ac0090b47b8a02d287f46314,
+    type: 3}
   firePeriod: 0.1
   Team: 1
   Ship: {fileID: 874579555101021527}
@@ -2286,6 +2345,9 @@ MonoBehaviour:
     - {fileID: 1210579706855675657}
   resourceEventClassActions:
   - ResourceEvent: 0
+    ClassActions:
+    - {fileID: 2464282780648543733}
+  - ResourceEvent: 1
     ClassActions:
     - {fileID: 7925097207517337182}
   MassAbilityTarget: {fileID: 0}
@@ -2693,11 +2755,12 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 810011472255819337}
-  - {fileID: 4930516772036578814}
   - {fileID: 2682141685163518091}
-  - {fileID: 6252452194101444014}
   - {fileID: 866771351676624094}
   - {fileID: 4278604752710722623}
+  - {fileID: 2163426589809774150}
+  - {fileID: 4930516772036578814}
+  - {fileID: 6252452194101444014}
   m_Father: {fileID: 5928382658856804067}
   m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -2776,6 +2839,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   projectilePrefab: {fileID: 6475208383231727548, guid: c34f9e79837e1e548873b8be1e1b1271,
+    type: 3}
+  energizedProjectilePrefab: {fileID: 6475208383231727548, guid: ee0d967e7e55a604aadfa29c4425067e,
+    type: 3}
+  superEnergizedProjectilePrefab: {fileID: 6475208383231727548, guid: 18cb2ff3ac0090b47b8a02d287f46314,
     type: 3}
   firePeriod: 0.2
   Team: -1
@@ -3110,7 +3177,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 4369262321157730261}
-  m_RootOrder: 3
+  m_RootOrder: 6
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &1126185006839345975
 MonoBehaviour:
@@ -3279,7 +3346,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 4369262321157730261}
-  m_RootOrder: 1
+  m_RootOrder: 5
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &7338352758135203095
 MonoBehaviour:

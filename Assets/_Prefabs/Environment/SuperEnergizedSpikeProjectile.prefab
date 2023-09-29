@@ -14,7 +14,7 @@ GameObject:
   - component: {fileID: 1201988239403529503}
   - component: {fileID: 2041598876230712726}
   m_Layer: 12
-  m_Name: SpikeProjectile
+  m_Name: SuperEnergizedSpikeProjectile
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -119,16 +119,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 98da7727309795245ada6cbb0c6aee22, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  projectilePrefab: {fileID: 6475208383231727548, guid: bdc9e621fd0e936439183623d291ef7b,
+  projectilePrefab: {fileID: 6475208383231727548, guid: c34f9e79837e1e548873b8be1e1b1271,
     type: 3}
   energizedProjectilePrefab: {fileID: 6475208383231727548, guid: ee0d967e7e55a604aadfa29c4425067e,
     type: 3}
-  superEnergizedProjectilePrefab: {fileID: 6475208383231727548, guid: 18cb2ff3ac0090b47b8a02d287f46314,
+  superEnergizedProjectilePrefab: {fileID: 6475208383231727548, guid: ee0d967e7e55a604aadfa29c4425067e,
     type: 3}
   firePeriod: 0.2
   Team: 0
   Ship: {fileID: 0}
-  speed: 40
+  speed: 80
   projectileTime: 2
   firingPattern: 1
-  energy: 0
+  energy: 2
