@@ -2406,9 +2406,9 @@ MonoBehaviour:
   ThrottleScaler: 0
   DefaultMinimumSpeed: 0
   DefaultThrottleScaler: 40
-  PitchScaler: 160
-  YawScaler: 160
-  RollScaler: 160
+  PitchScaler: 90
+  YawScaler: 90
+  RollScaler: 90
   RotationThrottleScaler: 0
   trailFollower: {fileID: 7081412522392871879}
   rechargeRate: 0.1

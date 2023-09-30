@@ -1869,7 +1869,6 @@ MonoBehaviour:
   blockChargeChange: 0
   boostMultiplier: 0
   boostFuelAmount: 0
-  pip: 0
   inputEventShipActions:
   - InputEvent: 2
     ShipActions:
@@ -1942,9 +1941,9 @@ MonoBehaviour:
   ThrottleScaler: 0
   DefaultMinimumSpeed: 10
   DefaultThrottleScaler: 60
-  PitchScaler: 180
-  YawScaler: 180
-  RollScaler: 180
+  PitchScaler: 120
+  YawScaler: 120
+  RollScaler: 120
   RotationThrottleScaler: 0
 --- !u!114 &874579555101021522
 MonoBehaviour:
