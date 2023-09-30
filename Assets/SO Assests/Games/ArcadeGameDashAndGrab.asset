@@ -18,7 +18,7 @@ MonoBehaviour:
   Icon: {fileID: 21300000, guid: dc00c750147354844a98cbed2de847f7, type: 3}
   SelectedIcon: {fileID: 21300000, guid: 04d8b62f9ed3fe04c8bc2c967cce7a9e, type: 3}
   CardBackground: {fileID: 21300000, guid: 587d2203114c8004c9985d0112c89585, type: 3}
-  PreviewClip: {fileID: 241334157148977051, guid: bce3acfd8a554e942bc4f1903e25eb07,
+  PreviewClip: {fileID: 241334157148977051, guid: 9d2d88f52b2131f419722eec012eb6fe,
     type: 3}
   Pilots:
   - {fileID: 11400000, guid: 47ecdb78312b0be4d8785da5ebaced42, type: 2}
