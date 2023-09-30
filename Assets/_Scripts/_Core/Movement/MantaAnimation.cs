@@ -37,26 +37,26 @@ class MantaAnimation : ShipAnimation
 
         AnimatePart(ThrusterBottomLeft,
                     pitch * mediumAnimationScaler,
-                    yaw * mediumAnimationScaler,
-                    (-roll - throttle) * smallAnimationScaler,
+                    -yaw * mediumAnimationScaler,
+                    (-roll + throttle) * smallAnimationScaler,
                     InitialRotations[5]);
 
         AnimatePart(ThrusterTopRight,
                     pitch * mediumAnimationScaler,
-                    yaw * mediumAnimationScaler,
-                    (-roll - throttle) * smallAnimationScaler,
+                    -yaw * mediumAnimationScaler,
+                    (-roll + throttle) * smallAnimationScaler,
                     InitialRotations[4]);
 
         AnimatePart(ThrusterTopLeft,
                     pitch * mediumAnimationScaler,
-                    (yaw) * mediumAnimationScaler,
-                    (-roll + throttle) * smallAnimationScaler,
+                    -(yaw) * mediumAnimationScaler,
+                    (-roll - throttle) * smallAnimationScaler,
                     InitialRotations[3]);
 
         AnimatePart(ThrusterBottomRight,
                     pitch * mediumAnimationScaler,
-                    (yaw) * mediumAnimationScaler,
-                    (-roll + throttle) * smallAnimationScaler,
+                    -(yaw) * mediumAnimationScaler,
+                    (-roll - throttle) * smallAnimationScaler,
                     InitialRotations[6]);
 
     }
