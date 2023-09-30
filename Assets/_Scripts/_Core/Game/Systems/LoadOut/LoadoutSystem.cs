@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using UnityEngine;
-using static LeaderboardManager;
 
 public struct Loadout
 {
@@ -54,15 +53,6 @@ namespace StarWriter.Core.LoadoutFavoriting
                 dataAccessor.Save<List<Loadout>>(loadouts);
             }
 
-            /*
-            loadouts = new List<Loadout>()          
-            {
-                new Loadout() { Intensity=1, PlayerCount=1, GameMode= MiniGames.BlockBandit, ShipType= ShipTypes.Manta},
-                new Loadout() { Intensity=1, PlayerCount=1, GameMode= MiniGames.BlockBandit, ShipType= ShipTypes.Manta},
-                new Loadout() { Intensity=1, PlayerCount=1, GameMode= MiniGames.BlockBandit, ShipType= ShipTypes.Manta},
-                new Loadout() { Intensity=1, PlayerCount=1, GameMode= MiniGames.BlockBandit, ShipType= ShipTypes.Manta}
-            };
-            */
             activeLoadout = loadouts[0];
         }
         public static bool CheckLoadoutsExist(int idx)
@@ -99,6 +89,8 @@ namespace StarWriter.Core.LoadoutFavoriting
         {
             index = Mathf.Clamp(index, 0, loadouts.Count-1);
             loadouts[index] = loadout;
+            if (index == ActiveLoadoutIndex)
+                activeLoadout = loadouts[index];
 
             var dataAccessor = new DataAccessor("loadouts.data");
             dataAccessor.Save<List<Loadout>>(loadouts);

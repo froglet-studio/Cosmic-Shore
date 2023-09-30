@@ -260,6 +260,7 @@ namespace StarWriter.Core.LoadoutFavoriting
 
             int idx = LoadoutSystem.GetActiveLoadoutIndex();
 
+            
             LoadoutSystem.SetLoadout(loadout, idx);
             CardList[idx].SetLoadoutCard(loadout);
         }
