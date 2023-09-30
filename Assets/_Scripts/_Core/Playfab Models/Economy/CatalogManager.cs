@@ -213,7 +213,7 @@ public class CatalogManager : SingletonPersistent<CatalogManager>
 
     /// <summary>
     /// Purchase Item
-    /// Buy in-game item with virtual currency (Shards)
+    /// Buy in-game item with virtual currency (Shards, Crystals)
     /// </summary>
     public void PurchaseItem(string itemId, string currencyId, int itemAmount, int currencyAmount)
     {
