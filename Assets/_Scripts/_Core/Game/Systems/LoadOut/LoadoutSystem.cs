@@ -1,5 +1,9 @@
+using _Scripts._Core.Playfab_Models;
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
+using UnityEngine.Rendering.Universal;
 
 public struct Loadout
 {
@@ -26,6 +30,18 @@ public struct Loadout
     }
 }
 
+public struct ArcadeGameLoadout
+{
+    public Loadout Loadout;
+    public MiniGames GameMode;
+
+    public ArcadeGameLoadout(MiniGames gameMode, Loadout loadout)
+    {
+        GameMode = gameMode;
+        Loadout = loadout;
+    }
+}
+
 namespace StarWriter.Core.LoadoutFavoriting
 {
     public static class LoadoutSystem
@@ -35,7 +51,12 @@ namespace StarWriter.Core.LoadoutFavoriting
         static Loadout activeLoadout;
 
         static List<Loadout> loadouts;
- 
+
+        static List<ArcadeGameLoadout> gameLoadouts;
+
+        const string GameLoadoutsSaveFileName = "game_loadouts.data";
+
+
         public static void Init()
         {
             var dataAccessor = new DataAccessor("loadouts.data");
@@ -52,6 +73,9 @@ namespace StarWriter.Core.LoadoutFavoriting
                 };
                 dataAccessor.Save<List<Loadout>>(loadouts);
             }
+
+            dataAccessor = new DataAccessor(GameLoadoutsSaveFileName);
+            gameLoadouts = dataAccessor.Load<List<ArcadeGameLoadout>>();
 
             activeLoadout = loadouts[0];
         }
@@ -83,6 +107,40 @@ namespace StarWriter.Core.LoadoutFavoriting
         public static void SetCurrentlySelectedLoadout(Loadout loadout)
         {
             SetLoadout(loadout, ActiveLoadoutIndex);
+        }
+
+        public static ArcadeGameLoadout LoadGameLoadout(MiniGames mode)
+        {
+            for (var i = 0; i < gameLoadouts.Count; i++)
+            {
+                if (gameLoadouts[i].GameMode == mode)
+                {
+                    return gameLoadouts[i];
+                }
+            }
+
+            return new ArcadeGameLoadout(mode, new Loadout(0, 0, 0, 0));
+        }
+
+        public static void SaveGameLoadOut(MiniGames mode, Loadout loadout)
+        {
+            var gameLoadout = new ArcadeGameLoadout(mode, loadout);
+            var found = false;
+            for (var i=0; i<gameLoadouts.Count; i++)
+            {
+                if (gameLoadouts[i].GameMode == mode)
+                {
+                    gameLoadouts[i] = gameLoadout;
+                    found = true;
+                    break;
+                } 
+            }
+
+            if (!found)
+                gameLoadouts.Add(gameLoadout);
+
+            var dataAccessor = new DataAccessor(GameLoadoutsSaveFileName);
+            dataAccessor.Save<List<ArcadeGameLoadout>>(gameLoadouts);
         }
 
         public static void SetLoadout(Loadout loadout, int index)

@@ -1,4 +1,6 @@
+using StarWriter.Core;
 using StarWriter.Core.HangerBuilder;
+using StarWriter.Core.LoadoutFavoriting;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -32,6 +34,7 @@ public class ExploreMenu : MonoBehaviour
 
     void Start()
     {
+        LoadoutSystem.Init();
         PopulateGameSelectionList();
         ShowGameSelectionView();
     }
@@ -101,8 +104,12 @@ public class ExploreMenu : MonoBehaviour
         preview.GetComponent<RectTransform>().sizeDelta = new Vector2(352, 172);
         preview.transform.SetParent(SelectedGamePreviewWindow.transform, false);
     }
-    void PopulateShipSelectionList()
+    void PopulateShipSelectionList(ShipTypes shipClass=ShipTypes.Any)
     {
+        Debug.Log($"MiniGamesMenu - Populating Ship Select List - shipClass: {shipClass}");
+
+        var selectedShipIndex = 0;
+
         for (var i = 0; i < ShipSelectionGrid.childCount; i++)
         {
             Debug.Log($"MiniGamesMenu - Populating Ship Select List: {i}");
@@ -115,6 +122,9 @@ public class ExploreMenu : MonoBehaviour
                 if (selectionIndex < SelectedGame.Pilots.Count)
                 {
                     var ship = SelectedGame.Pilots[selectionIndex].Ship;
+
+                    if (ship.Class == shipClass)
+                        selectedShipIndex = selectionIndex;
 
                     Debug.Log($"MiniGamesMenu - Populating Ship Select List: {ship.Name}");
                     
@@ -133,7 +143,7 @@ public class ExploreMenu : MonoBehaviour
             }
         }
 
-        StartCoroutine(SelectShipCoroutine(0));
+        StartCoroutine(SelectShipCoroutine(selectedShipIndex));
     }
 
     IEnumerator SelectGameCoroutine(int index)
@@ -149,6 +159,8 @@ public class ExploreMenu : MonoBehaviour
 
         SelectedGame = GameList.GameList[index];
 
+        var loadout = LoadoutSystem.LoadGameLoadout(SelectedGame.Mode).Loadout;
+
         // TODO: this is kludgy
         for (var i = 0; i < PlayerCountButtonContainer.transform.childCount; i++)
         {
@@ -159,7 +171,7 @@ public class ExploreMenu : MonoBehaviour
             PlayerCountButtonContainer.transform.GetChild(i).gameObject.GetComponent<Button>().onClick.AddListener(() => SetPlayerCount(playerCount));
             PlayerCountButtonContainer.transform.GetChild(i).gameObject.GetComponent<Button>().onClick.AddListener(() => PlayerCountButtonContainer.GetComponent<MenuAudio>().PlayAudio());
         }
-        SetPlayerCount(SelectedGame.MinPlayers);
+        SetPlayerCount(loadout.PlayerCount == 0 ? SelectedGame.MinPlayers : loadout.PlayerCount);
 
 
         // TODO: this is kludgy
@@ -170,10 +182,10 @@ public class ExploreMenu : MonoBehaviour
             IntensityButtonContainer.transform.GetChild(i).gameObject.GetComponent<Button>().onClick.AddListener(() => SetIntensity(intensity));
             IntensityButtonContainer.transform.GetChild(i).gameObject.GetComponent<Button>().onClick.AddListener(() => IntensityButtonContainer.GetComponent<MenuAudio>().PlayAudio());
         }
-        SetIntensity(1);
+        SetIntensity(loadout.Intensity == 0 ? 1 : loadout.Intensity);
 
         PopulateGameDetails();
-        PopulateShipSelectionList();
+        PopulateShipSelectionList(loadout.ShipType);
         ShowGameDetailView();
     }
 
@@ -248,6 +260,8 @@ public class ExploreMenu : MonoBehaviour
 
     public void PlaySelectedGame()
     {
+        LoadoutSystem.SaveGameLoadOut(SelectedGame.Mode, new Loadout(MiniGame.IntensityLevel, MiniGame.NumberOfPlayers, MiniGame.PlayerShipType, SelectedGame.Mode));
+
         SceneManager.LoadScene(SelectedGame.SceneName);
     }
 }
