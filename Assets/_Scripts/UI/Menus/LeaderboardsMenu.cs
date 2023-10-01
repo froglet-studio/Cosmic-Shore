@@ -143,9 +143,32 @@ public class LeaderboardsMenu : MonoBehaviour
         {
             var score = LeaderboardEntriesV2[i];
             HighScoresContainer.transform.GetChild(i).GetChild(0).GetComponent<TMP_Text>().text = (score.Position+1).ToString();
-            HighScoresContainer.transform.GetChild(i).GetChild(1).GetComponent<TMP_Text>().text = score.DisplayName;
+            if (string.IsNullOrEmpty(score.DisplayName))
+            {
+                HighScoresContainer.transform.GetChild(i).GetChild(1).GetComponent<TMP_Text>().text = "[NAMELESS PILOT]";
+                HighScoresContainer.transform.GetChild(i).GetChild(1).GetComponent<TMP_Text>().fontSize = 14;
+            }
+            else
+            {
+                HighScoresContainer.transform.GetChild(i).GetChild(1).GetComponent<TMP_Text>().text = score.DisplayName;
+                HighScoresContainer.transform.GetChild(i).GetChild(1).GetComponent<TMP_Text>().fontSize = 18;
+            }
             HighScoresContainer.transform.GetChild(i).GetChild(2).GetComponent<TMP_Text>().text = score.Score.ToString();
             HighScoresContainer.transform.GetChild(i).gameObject.SetActive(true);
+
+            // Highlight the player's score
+            if (score.PlayerId == AuthenticationManager.PlayerAccount.PlayFabId)
+            {
+                HighScoresContainer.transform.GetChild(i).GetChild(0).GetComponent<TMP_Text>().color = new Color(.1f, .7f, .7f);
+                HighScoresContainer.transform.GetChild(i).GetChild(1).GetComponent<TMP_Text>().color = new Color(.1f, .7f, .7f);
+                HighScoresContainer.transform.GetChild(i).GetChild(2).GetComponent<TMP_Text>().color = new Color(.1f, .7f, .7f);
+            }
+            else
+            {
+                HighScoresContainer.transform.GetChild(i).GetChild(0).GetComponent<TMP_Text>().color = Color.white;
+                HighScoresContainer.transform.GetChild(i).GetChild(1).GetComponent<TMP_Text>().color = Color.white;
+                HighScoresContainer.transform.GetChild(i).GetChild(2).GetComponent<TMP_Text>().color = Color.white;
+            }
         }
     }
 }
