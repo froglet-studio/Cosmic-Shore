@@ -135,6 +135,7 @@ namespace StarWriter.Core
                 projectileGun.Ship = Ship;
             }
             if (projectileInstance is ExplodableProjectile) ((ExplodableProjectile)projectileInstance).Charge = charge;
+            projectile = projectileInstance;
 
         }
 

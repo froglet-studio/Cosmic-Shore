@@ -76,17 +76,17 @@ public class ChargedFireGunAction : ShipAction
             {
                 resourceSystem.ChangeAmmoAmount(-ammoCost);
 
-                Vector3 inheritedVelocity;
-                if (shipData.Attached || shipData.Stationary) inheritedVelocity = transform.forward;
-                else inheritedVelocity = shipData.Course;
+                Vector3 inheritedDirection;
+                if (shipData.Attached || shipData.Stationary) inheritedDirection = transform.forward;
+                else inheritedDirection = shipData.Course;
 
                 // TODO: WIP magic numbers
-                gun.FireGun(projectileContainer.transform, 90, inheritedVelocity * shipData.Speed, ProjectileScale * charge, true, float.MaxValue, charge);
+                gun.FireGun(projectileContainer.transform, 90, inheritedDirection * shipData.Speed, ProjectileScale * charge, true, float.MaxValue, charge);
                 StartCheckProjectiles();
             }
 
             charge = 0;
-            resourceSystem.ResetCharge();
+            //resourceSystem.ResetCharge();
         }
     }
 }

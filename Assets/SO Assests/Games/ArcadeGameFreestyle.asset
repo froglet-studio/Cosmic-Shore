@@ -26,6 +26,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 0d57b8e9eb4fb7a4b8db5456bb5f3530, type: 2}
   - {fileID: 11400000, guid: f39381eaab68c5444b4d8846877fe5c7, type: 2}
   - {fileID: 11400000, guid: 47ecdb78312b0be4d8785da5ebaced42, type: 2}
+  - {fileID: 11400000, guid: 2a99fbadf46af70429b2a511a47c9e8b, type: 2}
   MinPlayers: 1
   MaxPlayers: 1
   SceneName: MinigameFreestyle
