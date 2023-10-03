@@ -1363,6 +1363,7 @@ MonoBehaviour:
   AOEExplosionMaterial: {fileID: 0}
   AOEConicExplosionMaterial: {fileID: 0}
   SkimmerMaterial: {fileID: 0}
+  ElementStats: []
   LevelEffectParameterMappings: []
 --- !u!114 &6441696348568773771
 MonoBehaviour:
