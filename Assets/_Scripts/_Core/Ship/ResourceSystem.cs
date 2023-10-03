@@ -97,6 +97,9 @@ namespace StarWriter.Core
                 ChangeAmmoAmount(Time.deltaTime * elevatedAmmoGainRate);
             else if (gainsAmmo)
                 ChangeAmmoAmount(Time.deltaTime * ammoGainRate);
+
+            if (ChargeLevel != ChargeTestHarness)
+                ChargeLevel = ChargeTestHarness;
         }
 
         public void Reset()
@@ -176,6 +179,9 @@ namespace StarWriter.Core
         float massLevel;
         float spaceLevel;
         float timeLevel;
+        const int MaxLevel = 10;
+
+        [SerializeField] float ChargeTestHarness;
 
         public float ChargeLevel
         {
@@ -187,7 +193,7 @@ namespace StarWriter.Core
                 if (ChargeLevelDisplay != null)
                     ChargeLevelDisplay.UpdateDisplay(chargeLevel);
 
-                OnElementLevelChange?.Invoke(Element.Charge, Mathf.FloorToInt(chargeLevel));
+                OnElementLevelChange?.Invoke(Element.Charge, Mathf.FloorToInt(chargeLevel * MaxLevel));
             }
         }
         public float MassLevel
@@ -200,7 +206,7 @@ namespace StarWriter.Core
                 if (MassLevelDisplay != null)
                     MassLevelDisplay.UpdateDisplay(massLevel);
 
-                OnElementLevelChange?.Invoke(Element.Mass, Mathf.FloorToInt(massLevel));
+                OnElementLevelChange?.Invoke(Element.Mass, Mathf.FloorToInt(massLevel * MaxLevel));
             }
         }
         public float SpaceLevel
@@ -213,7 +219,7 @@ namespace StarWriter.Core
                 if (SpaceLevelDisplay != null)
                     SpaceLevelDisplay.UpdateDisplay(spaceLevel);
 
-                OnElementLevelChange?.Invoke(Element.Space, Mathf.FloorToInt(spaceLevel));
+                OnElementLevelChange?.Invoke(Element.Space, Mathf.FloorToInt(spaceLevel * MaxLevel));
             }
         }
 
@@ -227,7 +233,7 @@ namespace StarWriter.Core
                 if (TimeLevelDisplay != null)
                     TimeLevelDisplay.UpdateDisplay(timeLevel);
 
-                OnElementLevelChange?.Invoke(Element.Time, Mathf.FloorToInt(timeLevel));
+                OnElementLevelChange?.Invoke(Element.Time, Mathf.FloorToInt(timeLevel * MaxLevel));
             }
         }
 

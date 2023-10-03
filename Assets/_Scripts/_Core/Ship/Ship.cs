@@ -478,20 +478,8 @@ namespace StarWriter.Core
                 case ShipLevelEffects.ScaleProjectiles:
                     ScaleProjectilesWithLevel(currentLevel, parameterMapping);
                     break;
-                case ShipLevelEffects.ScaleMassAbility:
-                    ScaleMassAbilityWithLevel(currentLevel, parameterMapping);
-                    break;
                 case ShipLevelEffects.ScaleChargeAbility:
-                    ScaleMassAbilityWithLevel(currentLevel, parameterMapping);
-                    break;
-                case ShipLevelEffects.ScaleSpaceAbility:
-                    ScaleMassAbilityWithLevel(currentLevel, parameterMapping);
-                    break;
-                case ShipLevelEffects.ScaleTimeAbility:
-                    ScaleMassAbilityWithLevel(currentLevel, parameterMapping);
-                    break;
-                case ShipLevelEffects.ScaleChargeAbility2:
-                    ScaleMassAbilityWithLevel(currentLevel, parameterMapping);
+                    ScaleChargeAbilityWithLevel(currentLevel, parameterMapping);
                     break;
             }
         }
@@ -521,9 +509,9 @@ namespace StarWriter.Core
                 Debug.LogWarning("Trying to scale projectile of ShipTransformer that is not a GunShipController");
         }
 
-        void ScaleMassAbilityWithLevel(float currentLevel, LevelEffectParameterMapping parameterMapping)
+        void ScaleChargeAbilityWithLevel(float currentLevel, LevelEffectParameterMapping parameterMapping)
         {
-            Debug.Log($"Current Level: {currentLevel}");
+            Debug.Log($"ScaleChargeAbilityWithLevel - Current Level: {currentLevel}");
             MassAbilityTarget.SetLevelParameter(Element.Mass, parameterMapping.Max - (currentLevel * (parameterMapping.Max - parameterMapping.Min)));
         }
     }
