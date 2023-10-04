@@ -22,10 +22,12 @@ public class LeaderboardManager : SingletonPersistent<LeaderboardManager>
         public int Position;
         public int Score;
         public string DisplayName;
+        public string PlayerId;
 
-        public LeaderboardEntryV2(string displayName, int score, int position)
+        public LeaderboardEntryV2(string displayName, string playerId, int score, int position)
         {
             DisplayName = displayName;
+            PlayerId = playerId;
             Score = score;
             Position = position;
         }
@@ -239,7 +241,7 @@ public class LeaderboardManager : SingletonPersistent<LeaderboardManager>
                     List<LeaderboardEntryV2> entries = new List<LeaderboardEntryV2>();
                     foreach (var entry in response.Leaderboard)
                     {
-                        entries.Add(new LeaderboardEntryV2(entry.Profile.DisplayName, entry.StatValue, entry.Position));
+                        entries.Add(new LeaderboardEntryV2(entry.Profile.DisplayName, entry.PlayFabId, entry.StatValue, entry.Position));
                     }
 
                     callback(entries);
@@ -312,7 +314,7 @@ public class LeaderboardManager : SingletonPersistent<LeaderboardManager>
         foreach (var entry in result.Leaderboard)
         {
             Debug.Log($"Leaderboard Manager - BLOCKBANDIT_ANY display name: {entry.DisplayName} score: {entry.StatValue.ToString()} position: {entry.Position.ToString()}");
-            leaderboardEntry.Add(new LeaderboardEntryV2(entry.DisplayName, entry.StatValue, entry.Position));
+            leaderboardEntry.Add(new LeaderboardEntryV2(entry.DisplayName, entry.PlayFabId, entry.StatValue, entry.Position));
         }
         // Let callback handle leaderboard data
         callback(leaderboardEntry);

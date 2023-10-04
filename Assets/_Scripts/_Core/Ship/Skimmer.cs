@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace StarWriter.Core
 {
-    public class Skimmer : MonoBehaviour
+    public class Skimmer : ElementalShipComponent
     {
         [SerializeField] List<TrailBlockImpactEffects> blockImpactEffects;
         [SerializeField] List<SkimmerStayEffects> blockStayEffects;
@@ -15,14 +15,14 @@ namespace StarWriter.Core
         [SerializeField] float chargeAmount;
         [SerializeField] float MultiSkimMultiplier = 0f;
         [SerializeField] bool notifyNearbyBlockCount;
-
-        Material material;
-        [SerializeField] bool visible = false;
+        [SerializeField] bool visible;
+        [SerializeField] ElementalFloat Scale = new ElementalFloat(1);
         
         [HideInInspector] public Ship ship;
         [HideInInspector] public Player Player;
         [HideInInspector] public Teams team;
-        
+
+        float appliedScale;
         ResourceSystem resourceSystem;
 
         Dictionary<string, float> skimStartTimes = new();
@@ -36,9 +36,19 @@ namespace StarWriter.Core
             cameraManager = CameraManager.Instance;
             if (ship != null)
             {
+                BindElementalFloats(ship);
                 resourceSystem = ship.GetComponent<ResourceSystem>();
                 if (visible)
-                    material = new Material(ship.SkimmerMaterial);
+                    GetComponent<MeshRenderer>().material = new Material(ship.SkimmerMaterial);
+            }
+        }
+
+        void Update()
+        {
+            if (appliedScale != Scale.Value)
+            {
+                appliedScale = Scale.Value;
+                transform.localScale = Vector3.one * appliedScale;
             }
         }
 

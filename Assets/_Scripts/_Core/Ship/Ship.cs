@@ -1,6 +1,7 @@
 using StarWriter.Core.IO;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace StarWriter.Core
@@ -85,7 +86,6 @@ namespace StarWriter.Core
         [SerializeField] public List<ShipControlOverrides> ControlOverrides;
         [SerializeField] float closeCamDistance;
         [SerializeField] float farCamDistance;
-
         
         Dictionary<InputEvents, float> inputAbilityStartTimes = new();
         Dictionary<ResourceEvents, float> resourceAbilityStartTimes = new();
@@ -127,6 +127,9 @@ namespace StarWriter.Core
             ShipController = GetComponent<ShipTransformer>();
             TrailSpawner = GetComponent<TrailSpawner>();
             ShipStatus = GetComponent<ShipStatus>();
+
+            // TODO: P1 GOES AWAY
+            ResourceSystem.OnElementLevelChange += UpdateLevel;
         }
 
         void Start()
@@ -181,6 +184,28 @@ namespace StarWriter.Core
             }
         }
 
+        [Serializable] public struct ElementStat
+        {
+            public string StatName;
+            public Element Element;
+
+            public ElementStat(string statname, Element element)
+            {
+                StatName = statname;
+                Element = element;
+            }
+        }
+
+        [SerializeField] List<ElementStat> ElementStats = new List<ElementStat>();
+        public void NotifyElementalFloatBinding(string statName, Element element)
+        {
+            Debug.Log($"Ship.NotifyShipStatBinding - statName:{statName}, element:{element}");
+            if (!ElementStats.Where(x => x.StatName == statName).Any())
+                ElementStats.Add(new ElementStat(statName, element));
+            
+            Debug.Log($"Ship.NotifyShipStatBinding - ElementStats.Count:{ElementStats.Count}");
+        }
+
         public void PerformCrystalImpactEffects(CrystalProperties crystalProperties)
         {
             if (StatsManager.Instance != null)
@@ -200,7 +225,7 @@ namespace StarWriter.Core
                         AOEExplosion.MaxScale =  Mathf.Max(minExplosionScale, ResourceSystem.CurrentAmmo * maxExplosionScale);
                         break;
                     case CrystalImpactEffects.IncrementLevel:
-                        IncrementLevel(crystalProperties.Element);
+                        ResourceSystem.IncrementLevel(crystalProperties.Element);
                         break;
                     case CrystalImpactEffects.FillCharge:
                         ResourceSystem.ChangeBoostAmount(crystalProperties.fuelAmount);
@@ -329,10 +354,6 @@ namespace StarWriter.Core
             ResourceSystem.InitialTimeLevel = this.pilot.InitialTime;
 
             ResourceSystem.InitializeElementLevels();
-            UpdateLevel(Element.Charge);
-            UpdateLevel(Element.Mass);
-            UpdateLevel(Element.Space);
-            UpdateLevel(Element.Time);
         }
 
         public void SetShipMaterial(Material material)
@@ -432,51 +453,17 @@ namespace StarWriter.Core
         //
         // level up and down
         //
-        void UpdateLevel(Element element)
+        void UpdateLevel(Element element, int level)
         {
-            switch (element)
-            {
-                case Element.Charge:
-                    GetComponent<ShipAnimation>().UpdateShapeKey(element, ResourceSystem.ChargeLevel);
-                    break;
-                case Element.Mass:
-                    GetComponent<ShipAnimation>().UpdateShapeKey(element, ResourceSystem.MassLevel);
-                    break;
-                case Element.Space:
-                    GetComponent<ShipAnimation>().UpdateShapeKey(element, ResourceSystem.SpaceLevel);
-                    break;
-                case Element.Time:
-                    GetComponent<ShipAnimation>().UpdateShapeKey(element, ResourceSystem.TimeLevel);
-                    break;
-            }
-            
+            // TODO: P1 GOES AWAY
             foreach (var levelEffectParameterMapping in LevelEffectParameterMappings)
-            {
                 if (levelEffectParameterMapping.Element == element)
-                {
-                    ApplyShipEffect(levelEffectParameterMapping);
-                }
-            }
+                    ApplyShipEffect(levelEffectParameterMapping, level);
         }
 
-        void ApplyShipEffect(LevelEffectParameterMapping parameterMapping)
+        // TODO: P1 GOES AWAY
+        void ApplyShipEffect(LevelEffectParameterMapping parameterMapping, int currentLevel)
         {
-            float currentLevel = 0;
-            switch (parameterMapping.Element)
-            {
-                case Element.Charge:
-                    currentLevel = ResourceSystem.ChargeLevel;
-                    break;
-                case Element.Mass:
-                    currentLevel = ResourceSystem.MassLevel;
-                    break;
-                case Element.Space:
-                    currentLevel = ResourceSystem.SpaceLevel;
-                    break;
-                case Element.Time:
-                    currentLevel = ResourceSystem.TimeLevel;
-                    break;
-            }
             switch(parameterMapping.LevelEffect)
             {
                 case ShipLevelEffects.ScaleNearFieldSkimmer:
@@ -491,40 +478,13 @@ namespace StarWriter.Core
                 case ShipLevelEffects.ScaleProjectiles:
                     ScaleProjectilesWithLevel(currentLevel, parameterMapping);
                     break;
-                case ShipLevelEffects.ScaleShieldDecay:
-                    ScaleShieldDecayWithLevel(currentLevel, parameterMapping);
-                    break;
-                case ShipLevelEffects.ScaleMassAbility:
-                    ScaleMassAbilityWithLevel(currentLevel, parameterMapping);
-                    break;
                 case ShipLevelEffects.ScaleChargeAbility:
-                    ScaleMassAbilityWithLevel(currentLevel, parameterMapping);
-                    break;
-                case ShipLevelEffects.ScaleSpaceAbility:
-                    ScaleMassAbilityWithLevel(currentLevel, parameterMapping);
-                    break;
-                case ShipLevelEffects.ScaleTimeAbility:
-                    ScaleMassAbilityWithLevel(currentLevel, parameterMapping);
-                    break;
-                case ShipLevelEffects.ScaleChargeAbility2:
-                    ScaleMassAbilityWithLevel(currentLevel, parameterMapping);
+                    ScaleChargeAbilityWithLevel(currentLevel, parameterMapping);
                     break;
             }
         }
 
-        // TODO: P0 - WIP
-        public void IncrementLevel(Element element)
-        {
-            ResourceSystem.IncrementLevel(element);
-            UpdateLevel(element);
-        }
-
-        public void AdjustLevel(Element element, float amount)
-        {
-            ResourceSystem.ChangeLevel(element, amount);
-            UpdateLevel(element);
-        }
-
+        // TODO: P1 GOES AWAY
         void ScaleNearFieldSkimmerWithLevel(float currentLevel, LevelEffectParameterMapping parameterMapping)
         {
             if (nearFieldSkimmer != null)
@@ -549,35 +509,10 @@ namespace StarWriter.Core
                 Debug.LogWarning("Trying to scale projectile of ShipTransformer that is not a GunShipController");
         }
 
-        void ScaleShieldDecayWithLevel(float currentLevel, LevelEffectParameterMapping parameterMapping)
-        {
-            
-        }
-
-        void ScaleMassAbilityWithLevel(float currentLevel, LevelEffectParameterMapping parameterMapping)
-        {
-            Debug.Log($"Current Level: {currentLevel}");
-            MassAbilityTarget.SetLevelParameter(Element.Mass, parameterMapping.Max - (currentLevel * (parameterMapping.Max - parameterMapping.Min)));
-        }
         void ScaleChargeAbilityWithLevel(float currentLevel, LevelEffectParameterMapping parameterMapping)
         {
-            Debug.Log($"Current Level: {currentLevel}");
-            ChargeAbilityTarget.SetLevelParameter(Element.Charge, parameterMapping.Max - (currentLevel * (parameterMapping.Max - parameterMapping.Min)));
-        }
-        void ScaleSpaceAbilityWithLevel(float currentLevel, LevelEffectParameterMapping parameterMapping)
-        {
-            Debug.Log($"Current Level: {currentLevel}");
-            SpaceAbilityTarget.SetLevelParameter(Element.Space, parameterMapping.Max - (currentLevel * (parameterMapping.Max - parameterMapping.Min)));
-        }
-        void ScaleTimeAbilityWithLevel(float currentLevel, LevelEffectParameterMapping parameterMapping)
-        {
-            Debug.Log($"Current Level: {currentLevel}");
-            TimeAbilityTarget.SetLevelParameter(Element.Time, parameterMapping.Max - (currentLevel * (parameterMapping.Max - parameterMapping.Min)));
-        }
-        void ScaleChargeAbility2WithLevel(float currentLevel, LevelEffectParameterMapping parameterMapping)
-        {
-            Debug.Log($"Current Level: {currentLevel}");
-            ChargeAbility2Target.SetLevelParameter(Element.Charge, parameterMapping.Max - (currentLevel * (parameterMapping.Max - parameterMapping.Min)));
+            Debug.Log($"ScaleChargeAbilityWithLevel - Current Level: {currentLevel}");
+            MassAbilityTarget.SetLevelParameter(Element.Mass, parameterMapping.Max - (currentLevel * (parameterMapping.Max - parameterMapping.Min)));
         }
     }
 }

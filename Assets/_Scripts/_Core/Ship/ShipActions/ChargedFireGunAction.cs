@@ -38,7 +38,7 @@ public class ChargedFireGunAction : ShipAction
         {
             yield return new WaitForSeconds(chargePeriod);
             charge += chargePerSecond * chargePeriod;
-            resourceSystem.ChangeChargeAmount(chargePerSecond * chargePeriod);
+            resourceSystem.ChangeEnergyAmount(chargePerSecond * chargePeriod);
         }
     }
 
@@ -63,7 +63,6 @@ public class ChargedFireGunAction : ShipAction
         checkProjectiles = StartCoroutine(CheckProjectiles());
     }
 
-
     public override void StopAction()
     {
         if (gainCharge != null)
@@ -86,7 +85,7 @@ public class ChargedFireGunAction : ShipAction
             }
 
             charge = 0;
-            //resourceSystem.ResetCharge();
+            resourceSystem.ResetEnergy();
         }
     }
 }

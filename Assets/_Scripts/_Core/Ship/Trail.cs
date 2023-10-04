@@ -15,10 +15,7 @@ namespace StarWriter.Core
             this.isLoop = isLoop;
 
             // TODO: maybe circular list is not needed
-            if (isLoop)
-                TrailList = new List<TrailBlock>();
-            else
-                TrailList = new List<TrailBlock>();
+            TrailList = isLoop ? new CircularList<TrailBlock>() : new List<TrailBlock>();
             
 
             trailBlockIndices = new Dictionary<TrailBlock, int>();

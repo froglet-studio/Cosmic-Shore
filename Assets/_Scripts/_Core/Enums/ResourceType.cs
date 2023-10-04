@@ -5,12 +5,11 @@ namespace StarWriter.Core
 {
     public enum ResourceType
     {
-        Charge = 0,
-        Ammunition = 1,
-        Boost = 2,
-        Level = 3,
-        Mass = 4,
-        Space = 5,
-        Time = 6,
+        Mass = 1,
+        Charge = 2,
+        Space = 3,
+        Time = 4,
+        Boost = 5,
+        Ammunition = 6,
     }
 }

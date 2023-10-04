@@ -71,7 +71,7 @@ public class Player : MonoBehaviour
             // TODO: P1 do we want to refactor to just give the resource system a display group?
             ship.ResourceSystem.BoostDisplay = GameCanvas.ResourceDisplayGroup.BoostDisplay;
             ship.ResourceSystem.AmmoDisplay = GameCanvas.ResourceDisplayGroup.AmmoDisplay;
-            ship.ResourceSystem.ChargeDisplay = GameCanvas.ResourceDisplayGroup.ChargeDisplay;
+            ship.ResourceSystem.EnergyDisplay = GameCanvas.ResourceDisplayGroup.ChargeDisplay;
             ship.ResourceSystem.ChargeLevelDisplay = GameCanvas.ResourceDisplayGroup.ChargeLevelDisplay;
             ship.ResourceSystem.MassLevelDisplay = GameCanvas.ResourceDisplayGroup.MassLevelDisplay;
             ship.ResourceSystem.SpaceLevelDisplay = GameCanvas.ResourceDisplayGroup.SpaceLevelDisplay;

@@ -1,33 +1,16 @@
 using System;
 using UnityEngine;
 using System.Collections;
-using System.Collections.Generic;
 
 namespace StarWriter.Core
 {
-    public class ResourceSystem : MonoBehaviour
+    public class ResourceSystem : ElementalShipComponent
     {
-        [SerializeField] List<ResourceType> Resources;
+        [Header("Boost")]
         [SerializeField] bool usesBoost;
-        [SerializeField] bool usesAmmo;
-        [SerializeField] bool usesCharge;
-
-        [SerializeField] bool gainsAmmo = false;
-        [SerializeField] float ammoGainRate = .01f;
-        [SerializeField] float elevatedAmmoGainRate = .03f;
-
-        [Tooltip("Max boost level from 0-1")]
-        [SerializeField]
-        [Range(0, 1)]
-        float maxBoost = 1f;
-
-        [Tooltip("Initial boost level from 0-1")]
-        [SerializeField]
-        [Range(0, 1)]
-        float initialBoost = 1f;
-
+        [SerializeField] [Range(0, 1)] float initialBoost = 1f;
+        [SerializeField] [Range(0, 1)] float maxBoost = 1f;
         float currentBoost;
-
         public float CurrentBoost
         {
             get => currentBoost;
@@ -40,20 +23,14 @@ namespace StarWriter.Core
             }
         }
 
-        [Tooltip("Max ammo level from 0-1")]
-        [SerializeField]
-        [Range(0, 1)]
-        float maxAmmo = 1f;
-
-        [Tooltip("Initial boost level from 0-1")]
-        [SerializeField]
-        [Range(0, 1)]
-        float initialAmmo = 1f;
-
+        [Header("Ammo")]
+        [SerializeField] bool usesAmmo;
+        [SerializeField] bool gainsAmmo;
+        [SerializeField] float ammoGainRate = .01f;
+        [SerializeField] float elevatedAmmoGainRate = .03f;
+        [SerializeField] [Range(0, 1)] float initialAmmo = 1f;
+        [SerializeField] [Range(0, 1)] float maxAmmo = 1f;
         float currentAmmo;
-
-        public float MaxAmmo { get { return maxAmmo; } }
-
         public float CurrentAmmo
         {
             get => currentAmmo;
@@ -65,39 +42,33 @@ namespace StarWriter.Core
                     AmmoDisplay.UpdateDisplay(currentAmmo);
             }
         }
+        public float MaxAmmo { get { return maxAmmo; } }
 
-        [Tooltip("Max ammo level from 0-1")]
-        [SerializeField]
-        [Range(0, 1)]
-        float maxCharge = 1f;
-
-        [Tooltip("Initial boost level from 0-1")]
-        [SerializeField]
-        [Range(0, 1)]
-        float initialCharge = 1f;
-
-        float currentCharge;
-
-        public float MaxCharge { get { return maxCharge; } }
-
-        public float CurrentCharge
+        [Header("Energy")]
+        [SerializeField] bool usesEnergy;
+        [SerializeField] [Range(0, 1)] float maxEnergy = 1f;
+        [SerializeField] [Range(0, 1)] float initialEnergy = 1f;
+        float currentEnergy;
+        public float CurrentEnergy
         {
-            get => currentCharge;
+            get => currentEnergy;
             private set
             {
-                currentCharge = value;
+                currentEnergy = value;
 
-                if (ChargeDisplay != null)
-                    ChargeDisplay.UpdateDisplay(currentCharge);
+                if (EnergyDisplay != null)
+                    EnergyDisplay.UpdateDisplay(currentEnergy);
             }
         }
+        public float MaxEnergy { get { return maxEnergy; } }
 
-        [HideInInspector] public ResourceDisplay BoostDisplay;
-        [HideInInspector] public ResourceDisplay AmmoDisplay;
         [HideInInspector] public ResourceDisplay ChargeDisplay;
         [HideInInspector] public ResourceDisplay MassDisplay;
         [HideInInspector] public ResourceDisplay SpaceDisplay;
         [HideInInspector] public ResourceDisplay TimeDisplay;
+        [HideInInspector] public ResourceDisplay EnergyDisplay;
+        [HideInInspector] public ResourceDisplay BoostDisplay;
+        [HideInInspector] public ResourceDisplay AmmoDisplay;
 
         public static readonly float OneFuelUnit = 1 / 10f;
         ShipStatus shipData;
@@ -109,12 +80,6 @@ namespace StarWriter.Core
             StartCoroutine(LateStart());
         }
 
-        void Update()
-        {
-            if (shipData.ElevatedAmmoGain) ChangeAmmoAmount(Time.deltaTime * elevatedAmmoGainRate);
-            else if (gainsAmmo) ChangeAmmoAmount(Time.deltaTime * ammoGainRate);
-        }
-
         IEnumerator LateStart()
         {
             yield return new WaitForSeconds(.2f);
@@ -123,14 +88,25 @@ namespace StarWriter.Core
             
             BoostDisplay?.gameObject.SetActive(usesBoost);
             AmmoDisplay?.gameObject.SetActive(usesAmmo);
-            ChargeDisplay?.gameObject.SetActive(usesCharge);
+            EnergyDisplay?.gameObject.SetActive(usesEnergy);
+        }
+
+        void Update()
+        {
+            if (shipData.ElevatedAmmoGain)
+                ChangeAmmoAmount(Time.deltaTime * elevatedAmmoGainRate);
+            else if (gainsAmmo)
+                ChangeAmmoAmount(Time.deltaTime * ammoGainRate);
+
+            if (ChargeLevel != ChargeTestHarness)
+                ChargeLevel = ChargeTestHarness;
         }
 
         public void Reset()
         {
             ResetBoost();
             ResetAmmo();
-            ResetCharge();
+            ResetEnergy();
         }
 
         public void ResetBoost()
@@ -142,9 +118,9 @@ namespace StarWriter.Core
             CurrentAmmo = initialAmmo;
         }
 
-        public void ResetCharge()
+        public void ResetEnergy()
         {
-            CurrentCharge = initialCharge;
+            CurrentEnergy = initialEnergy;
         }
 
         public void ChangeBoostAmount(float amount)
@@ -152,6 +128,7 @@ namespace StarWriter.Core
             CurrentBoost = Mathf.Clamp(currentBoost + amount, 0, maxBoost);
         }
 
+        // TODO: Revisit
         public void ChangeAmmoAmount(float amount)
         {
             CurrentAmmo = Mathf.Clamp(currentAmmo + amount, 0, maxAmmo);
@@ -172,17 +149,19 @@ namespace StarWriter.Core
             }
         }
         
-        public void ChangeChargeAmount(float amount)
+        public void ChangeEnergyAmount(float amount)
         {
-            CurrentCharge = Mathf.Clamp(currentCharge + amount, 0, maxCharge);
+            CurrentEnergy = Mathf.Clamp(currentEnergy + amount, 0, maxEnergy);
         }
 
-        /*
-         * TODO: we may want to move everything below this line to a new component
-         */
 
-        public delegate void OnChargeLevelChange();
-        public event OnChargeLevelChange onChargeLevelChange;
+
+        /********************************/
+        /*  ELEMENTAL LEVELS STUFF HERE */
+        /********************************/
+
+        public delegate void ElementLevelChange(Element element, int level);
+        public event ElementLevelChange OnElementLevelChange;
 
         [HideInInspector] public ResourceDisplay ChargeLevelDisplay;
         [HideInInspector] public ResourceDisplay MassLevelDisplay;
@@ -200,6 +179,9 @@ namespace StarWriter.Core
         float massLevel;
         float spaceLevel;
         float timeLevel;
+        const int MaxLevel = 10;
+
+        [SerializeField] float ChargeTestHarness;
 
         public float ChargeLevel
         {
@@ -211,7 +193,7 @@ namespace StarWriter.Core
                 if (ChargeLevelDisplay != null)
                     ChargeLevelDisplay.UpdateDisplay(chargeLevel);
 
-                onChargeLevelChange?.Invoke();
+                OnElementLevelChange?.Invoke(Element.Charge, Mathf.FloorToInt(chargeLevel * MaxLevel));
             }
         }
         public float MassLevel
@@ -223,6 +205,8 @@ namespace StarWriter.Core
 
                 if (MassLevelDisplay != null)
                     MassLevelDisplay.UpdateDisplay(massLevel);
+
+                OnElementLevelChange?.Invoke(Element.Mass, Mathf.FloorToInt(massLevel * MaxLevel));
             }
         }
         public float SpaceLevel
@@ -234,8 +218,11 @@ namespace StarWriter.Core
 
                 if (SpaceLevelDisplay != null)
                     SpaceLevelDisplay.UpdateDisplay(spaceLevel);
+
+                OnElementLevelChange?.Invoke(Element.Space, Mathf.FloorToInt(spaceLevel * MaxLevel));
             }
         }
+
         public float TimeLevel
         {
             get => timeLevel;
@@ -245,8 +232,11 @@ namespace StarWriter.Core
 
                 if (TimeLevelDisplay != null)
                     TimeLevelDisplay.UpdateDisplay(timeLevel);
+
+                OnElementLevelChange?.Invoke(Element.Time, Mathf.FloorToInt(timeLevel * MaxLevel));
             }
         }
+
         public void InitializeElementLevels()
         {
             chargeLevel = InitialChargeLevel;
@@ -254,37 +244,22 @@ namespace StarWriter.Core
             spaceLevel = InitialSpaceLevel;
             timeLevel = InitialTimeLevel;
         }
-        public void IncrementChargeLevel()
+
+        public int GetLevel(Element element)
         {
-            chargeLevel = Math.Clamp(chargeLevel + 1, 0, MaxChargeLevel);
-        }
-        public void IncrementMassLevel()
-        {
-            massLevel = Math.Clamp(massLevel + 1, 0, MaxMassLevel);
-        }
-        public void IncrementSpaceLevel()
-        {
-            spaceLevel = Math.Clamp(spaceLevel + 1, 0, MaxSpaceLevel);
-        }
-        public void IncrementTimeLevel()
-        {
-            timeLevel = Math.Clamp(timeLevel + 1, 0, MaxTimeLevel);
-        }
-        public void AdjustChargeLevel(float amount)
-        {
-            chargeLevel = Math.Clamp(chargeLevel + amount, 0, MaxChargeLevel);
-        }
-        public void AdjustMassLevel(float amount)
-        {
-            massLevel = Math.Clamp(massLevel + amount, 0, MaxMassLevel);
-        }
-        public void AdjustSpaceLevel(float amount)
-        {
-            spaceLevel = Math.Clamp(spaceLevel + amount, 0, MaxSpaceLevel);
-        }
-        public void AdjustTimeLevel(float amount)
-        {
-            timeLevel = Math.Clamp(timeLevel + amount, 0, MaxTimeLevel);
+            switch (element)
+            {
+                case Element.Charge:
+                    return Mathf.FloorToInt(chargeLevel);
+                case Element.Mass:
+                    return Mathf.FloorToInt(massLevel);
+                case Element.Space:
+                    return Mathf.FloorToInt(spaceLevel);
+                case Element.Time:
+                    return Mathf.FloorToInt(timeLevel);
+            }
+
+            return 0;
         }
 
         public void IncrementLevel(Element element)
@@ -292,21 +267,21 @@ namespace StarWriter.Core
             switch (element)
             {
                 case Element.Charge:
-                    IncrementChargeLevel();
+                    AdjustChargeLevel(1);
                     break;
-                case Element.Mass: 
-                    IncrementMassLevel();
+                case Element.Mass:
+                    AdjustMassLevel(1);
                     break;
                 case Element.Space:
-                    IncrementSpaceLevel();
+                    AdjustSpaceLevel(1);
                     break;
                 case Element.Time:
-                    IncrementTimeLevel();
+                    AdjustTimeLevel(1);
                     break;
             }
         }
 
-        public void ChangeLevel(Element element, float amount)
+        public void AdjustLevel(Element element, float amount)
         {
             switch (element)
             {
@@ -323,6 +298,22 @@ namespace StarWriter.Core
                     AdjustTimeLevel(amount);
                     break;
             }
+        }
+        void AdjustChargeLevel(float amount)
+        {
+            chargeLevel = Math.Clamp(chargeLevel + amount, 0, MaxChargeLevel);
+        }
+        void AdjustMassLevel(float amount)
+        {
+            massLevel = Math.Clamp(massLevel + amount, 0, MaxMassLevel);
+        }
+        void AdjustSpaceLevel(float amount)
+        {
+            spaceLevel = Math.Clamp(spaceLevel + amount, 0, MaxSpaceLevel);
+        }
+        void AdjustTimeLevel(float amount)
+        {
+            timeLevel = Math.Clamp(timeLevel + amount, 0, MaxTimeLevel);
         }
     }
 }

@@ -21,6 +21,7 @@ public abstract class ShipAnimation : MonoBehaviour
     protected virtual void Start()
     {
         inputController = GetComponent<Ship>().InputController;
+        GetComponent<Ship>().ResourceSystem.OnElementLevelChange += UpdateShapeKey;
 
         AssignTransforms();
     }
@@ -89,7 +90,7 @@ public abstract class ShipAnimation : MonoBehaviour
                                     lerpAmount * Time.deltaTime);
     }
 
-    public virtual void UpdateShapeKey(Element element, float percent)
+    public virtual void UpdateShapeKey(Element element, int level)
     {
         if (!UseShapeKeys) return;
 
@@ -101,6 +102,6 @@ public abstract class ShipAnimation : MonoBehaviour
             case Element.Space:  index = 2; break;
             case Element.Time:   index = 3; break;
         }
-        SkinnedMeshRenderer.SetBlendShapeWeight(index, percent);
+        SkinnedMeshRenderer.SetBlendShapeWeight(index, level/10f);
     }
 }
