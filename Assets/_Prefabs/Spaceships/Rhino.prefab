@@ -514,7 +514,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ZoomOutRate: 8
-  ZoomInRate: 8
+  ZoomInRate:
+    Value: 8
+    Min: 20
+    Max: 4
+    element: 1
 --- !u!1 &2713893070599933473
 GameObject:
   m_ObjectHideFlags: 0
@@ -732,7 +736,7 @@ MonoBehaviour:
   growRate: 8
   shrinkRate:
     Value: 8
-    Min: 10
+    Min: 20
     Max: 4
     element: 1
   target: {fileID: 2695624631939139826}
@@ -1074,7 +1078,7 @@ MonoBehaviour:
     - {fileID: 5565916779484709519}
   resourceEventClassActions: []
   MassAbilityTarget: {fileID: 0}
-  ChargeAbilityTarget: {fileID: 6430648885380261475}
+  ChargeAbilityTarget: {fileID: 0}
   SpaceAbilityTarget: {fileID: 0}
   TimeAbilityTarget: {fileID: 0}
   ChargeAbility2Target: {fileID: 0}
@@ -1086,19 +1090,6 @@ MonoBehaviour:
   AOEConicExplosionMaterial: {fileID: 0}
   SkimmerMaterial: {fileID: 0}
   ElementStats: []
-  LevelEffectParameterMappings:
-  - Element: 2
-    LevelEffect: 6
-    Min: 2
-    Max: 8
-  - Element: 1
-    LevelEffect: 7
-    Min: 8
-    Max: 2
-  - Element: 1
-    LevelEffect: 10
-    Min: 8
-    Max: 2
 --- !u!114 &6441696348568773771
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1417,7 +1408,7 @@ PrefabInstance:
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
       propertyPath: Scale.Max
-      value: 30
+      value: 20
       objectReference: {fileID: 0}
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
@@ -1447,7 +1438,12 @@ PrefabInstance:
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
       propertyPath: Scale.element
-      value: 1
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
+      propertyPath: blockStayEffects.Array.size
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}

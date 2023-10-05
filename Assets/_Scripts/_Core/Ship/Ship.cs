@@ -20,14 +20,14 @@ namespace StarWriter.Core
         public List<ShipAction> ClassActions;
     }
 
-    [Serializable]
-    public struct LevelEffectParameterMapping
-    {
-        public Element Element;
-        public ShipLevelEffects LevelEffect;
-        public float Min;
-        public float Max;
-    }
+    //[Serializable]
+    //public struct LevelEffectParameterMapping
+    //{
+    //    public Element Element;
+    //    public ShipLevelEffects LevelEffect;
+    //    public float Min;
+    //    public float Max;
+    //}
 
     [RequireComponent(typeof(ResourceSystem))]
     [RequireComponent(typeof(TrailSpawner))]
@@ -129,7 +129,7 @@ namespace StarWriter.Core
             ShipStatus = GetComponent<ShipStatus>();
 
             // TODO: P1 GOES AWAY
-            ResourceSystem.OnElementLevelChange += UpdateLevel;
+            //ResourceSystem.OnElementLevelChange += UpdateLevel;
         }
 
         void Start()
@@ -448,71 +448,71 @@ namespace StarWriter.Core
             }
         }
 
-        [SerializeField] List<LevelEffectParameterMapping> LevelEffectParameterMappings;
+        //[SerializeField] List<LevelEffectParameterMapping> LevelEffectParameterMappings;
 
         //
         // level up and down
         //
-        void UpdateLevel(Element element, int level)
-        {
-            // TODO: P1 GOES AWAY
-            foreach (var levelEffectParameterMapping in LevelEffectParameterMappings)
-                if (levelEffectParameterMapping.Element == element)
-                    ApplyShipEffect(levelEffectParameterMapping, level);
-        }
+        //void UpdateLevel(Element element, int level)
+        //{
+        //    // TODO: P1 GOES AWAY
+        //    foreach (var levelEffectParameterMapping in LevelEffectParameterMappings)
+        //        if (levelEffectParameterMapping.Element == element)
+        //            ApplyShipEffect(levelEffectParameterMapping, level);
+        //}
 
-        // TODO: P1 GOES AWAY
-        void ApplyShipEffect(LevelEffectParameterMapping parameterMapping, int currentLevel)
-        {
-            switch(parameterMapping.LevelEffect)
-            {
-                case ShipLevelEffects.ScaleNearFieldSkimmer:
-                    ScaleNearFieldSkimmerWithLevel(currentLevel, parameterMapping);
-                    break;
-                case ShipLevelEffects.ScaleFarFieldSkimmer:
-                    ScaleFarFieldSkimmerWithLevel(currentLevel, parameterMapping);
-                    break;
-                case ShipLevelEffects.ScaleGap:
-                    ScaleGapWithLevel(currentLevel, parameterMapping);
-                    break;
-                case ShipLevelEffects.ScaleProjectiles:
-                    ScaleProjectilesWithLevel(currentLevel, parameterMapping);
-                    break;
-                case ShipLevelEffects.ScaleChargeAbility:
-                    ScaleChargeAbilityWithLevel(currentLevel, parameterMapping);
-                    break;
-            }
-        }
+        //// TODO: P1 GOES AWAY
+        //void ApplyShipEffect(LevelEffectParameterMapping parameterMapping, int currentLevel)
+        //{
+        //    switch(parameterMapping.LevelEffect)
+        //    {
+        //        case ShipLevelEffects.ScaleNearFieldSkimmer:
+        //            ScaleNearFieldSkimmerWithLevel(currentLevel, parameterMapping);
+        //            break;
+        //        case ShipLevelEffects.ScaleFarFieldSkimmer:
+        //            ScaleFarFieldSkimmerWithLevel(currentLevel, parameterMapping);
+        //            break;
+        //        case ShipLevelEffects.ScaleGap:
+        //            ScaleGapWithLevel(currentLevel, parameterMapping);
+        //            break;
+        //        case ShipLevelEffects.ScaleProjectiles:
+        //            ScaleProjectilesWithLevel(currentLevel, parameterMapping);
+        //            break;
+        //        case ShipLevelEffects.ScaleChargeAbility:
+        //            ScaleChargeAbilityWithLevel(currentLevel, parameterMapping);
+        //            break;
+        //    }
+        //}
 
-        // TODO: P1 GOES AWAY
-        void ScaleNearFieldSkimmerWithLevel(float currentLevel, LevelEffectParameterMapping parameterMapping)
-        {
-            if (nearFieldSkimmer != null)
-                nearFieldSkimmer.transform.localScale = Vector3.one * (parameterMapping.Min + (currentLevel * (parameterMapping.Max - parameterMapping.Min)));
-        }
-        void ScaleFarFieldSkimmerWithLevel(float currentLevel, LevelEffectParameterMapping parameterMapping)
-        {
-            if (farFieldSkimmer != null)
-                farFieldSkimmer.transform.localScale = Vector3.one * (parameterMapping.Max - (currentLevel * (parameterMapping.Max - parameterMapping.Min)));
-        }
-        void ScaleGapWithLevel(float currentLevel, LevelEffectParameterMapping parameterMapping)
-        {
-            TrailSpawner.gap = parameterMapping.Max - (currentLevel * (parameterMapping.Max - parameterMapping.Min));
-        }
+        //// TODO: P1 GOES AWAY
+        //void ScaleNearFieldSkimmerWithLevel(float currentLevel, LevelEffectParameterMapping parameterMapping)
+        //{
+        //    if (nearFieldSkimmer != null)
+        //        nearFieldSkimmer.transform.localScale = Vector3.one * (parameterMapping.Min + (currentLevel * (parameterMapping.Max - parameterMapping.Min)));
+        //}
+        //void ScaleFarFieldSkimmerWithLevel(float currentLevel, LevelEffectParameterMapping parameterMapping)
+        //{
+        //    if (farFieldSkimmer != null)
+        //        farFieldSkimmer.transform.localScale = Vector3.one * (parameterMapping.Max - (currentLevel * (parameterMapping.Max - parameterMapping.Min)));
+        //}
+        //void ScaleGapWithLevel(float currentLevel, LevelEffectParameterMapping parameterMapping)
+        //{
+        //    TrailSpawner.gap = parameterMapping.Max - (currentLevel * (parameterMapping.Max - parameterMapping.Min));
+        //}
 
-        void ScaleProjectilesWithLevel(float currentLevel, LevelEffectParameterMapping parameterMapping)
-        {
-            // TODO: 
-            if (ShipController is GunShipTransformer controller)
-                controller.ProjectileScale = parameterMapping.Min + (currentLevel * (parameterMapping.Max - parameterMapping.Min));
-            else
-                Debug.LogWarning("Trying to scale projectile of ShipTransformer that is not a GunShipController");
-        }
+        //void ScaleProjectilesWithLevel(float currentLevel, LevelEffectParameterMapping parameterMapping)
+        //{
+        //    // TODO: 
+        //    if (ShipController is GunShipTransformer controller)
+        //        controller.ProjectileScale = parameterMapping.Min + (currentLevel * (parameterMapping.Max - parameterMapping.Min));
+        //    else
+        //        Debug.LogWarning("Trying to scale projectile of ShipTransformer that is not a GunShipController");
+        //}
 
-        void ScaleChargeAbilityWithLevel(float currentLevel, LevelEffectParameterMapping parameterMapping)
-        {
-            Debug.Log($"ScaleChargeAbilityWithLevel - Current Level: {currentLevel}");
-            MassAbilityTarget.SetLevelParameter(Element.Mass, parameterMapping.Max - (currentLevel * (parameterMapping.Max - parameterMapping.Min)));
-        }
+        //void ScaleChargeAbilityWithLevel(float currentLevel, LevelEffectParameterMapping parameterMapping)
+        //{
+        //    Debug.Log($"ScaleChargeAbilityWithLevel - Current Level: {currentLevel}");
+        //    MassAbilityTarget.SetLevelParameter(Element.Mass, parameterMapping.Max - (currentLevel * (parameterMapping.Max - parameterMapping.Min)));
+        //}
     }
 }

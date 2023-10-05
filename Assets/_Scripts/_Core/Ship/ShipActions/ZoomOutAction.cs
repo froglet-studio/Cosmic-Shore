@@ -1,9 +1,9 @@
 using UnityEngine;
 
-public class ZoomOutAction : LevelAwareShipAction
+public class ZoomOutAction : ShipAction
 {
     [SerializeField] public float ZoomOutRate;
-    [SerializeField] public float ZoomInRate;
+    [SerializeField] public ElementalFloat ZoomInRate;
 
     public override void StartAction()
     {
@@ -12,22 +12,7 @@ public class ZoomOutAction : LevelAwareShipAction
 
     public override void StopAction()
     {
-        if (!ship.ShipStatus.AutoPilotEnabled) ship.cameraManager.ResetCloseCameraToNeutral(ZoomInRate);
+        if (!ship.ShipStatus.AutoPilotEnabled) ship.cameraManager.ResetCloseCameraToNeutral(ZoomInRate.Value);
     }
 
-    public override void SetLevelParameter(Element element, float amount)
-    {
-        switch (element)
-        {
-            case Element.Charge:
-                ZoomOutRate = amount;
-                break;
-            case Element.Mass:
-                break;
-            case Element.Space:
-                break;
-            case Element.Time:
-                break;
-        }
-    }
 }
