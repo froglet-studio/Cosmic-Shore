@@ -6,8 +6,9 @@ namespace StarWriter.Utility.Email
     {
         public string subject = ""; //Subject line of email
         public string text = "";    //Content of email
-        public string recipient = "support@frogletgames.zendesk.com"; // Recipient of email's addresses 
+        public string recipient = "support@frogletgames.zendesk.com"; // Default Recipient of email's addresses 
 
+        
         public ShareByEmail(string subject, string text, string recipient) 
         { 
             this.subject = subject;
