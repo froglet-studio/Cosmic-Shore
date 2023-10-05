@@ -4,13 +4,14 @@ using UnityEngine;
 
 public class ColorPaletteManager : MonoBehaviour
 {
-    [SerializeField]
-    SO_Color_Palette defaultColorPalette;
+    public Dictionary<string, Material> materials;
 
-    [SerializeField] List<SO_Color_Palette> AllColorPalettes;
-    [SerializeField] List<SO_Color_Palette> Color_Palettes;
+    [SerializeField] List<Material> materialsList;
 
-    //TODO Vnext Add List<SO_Color_Palette> UnlockedColorPalettes maybe in the store or on a auth server
+    //[SerializeField] List<SO_Color_Palette> AllColorPalettes;
+    [SerializeField] List<SO_Color_Palette> AvailableColorPalettes;
+
+    [SerializeField] SO_Color_Palette defaultColorPalette;
 
     private SO_Color_Palette activeColorPalette;
 
@@ -20,18 +21,27 @@ public class ColorPaletteManager : MonoBehaviour
         //TODO if(no saved favorite.ColorPalette
         activeColorPalette = defaultColorPalette;
     }
-    public void SetActiveColorPalette(Loadout favorite)
+    public void SetActiveColorPalette(SO_Color_Palette sO_Color_Palette)
     {
-        //activeColorPalette = favorite.ColorPlaette;
+        activeColorPalette = sO_Color_Palette;
     }
-    public void SetActiveColorPalette(SO_Color_Palette colorPalette)
-    {
-        activeColorPalette = colorPalette;
-    }
+
     public SO_Color_Palette GetActiveColorPalette()
     {
         return activeColorPalette;
     }
 
-    //TODO Unlock palettes from the store
+    private void SetAllMaterialColors()
+    {
+        Material material = GetComponent<Material>();
+        //material.SetColor(AvailableColorPalettes[i].)
+    }
+
+    public Material GetTeamMaterial(float teamNum)
+    {
+        string key = "Team" + teamNum.ToString();
+        Material newMaterial = materials[key];
+
+        return newMaterial;
+    }
 }

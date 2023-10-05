@@ -9,15 +9,27 @@ namespace StarWriter.Utility.Reports
     {
         public GameObject bugReportPopUpWindow;
         public Button sendButton;
+        public Button returnButton;
         public TMP_InputField subjectInputField;
         public TMP_InputField contentsInputField;
-        public string recipient = "support@frogletgames.zendesk.com";  //for support reporting though Zendesk
+        [SerializeField] string recipient = "support@frogletgames.zendesk.com";  //for support reporting though Zendesk
 
-        public void OnButtonPushedBugReportPopUp()
+        private void LateUpdate()
+        {
+            WaitOnInputFields();
+        }
+
+        public void OnButtonPushedEnableBugReportPopUp()
         {
             bugReportPopUpWindow.SetActive(true);
+            sendButton.enabled = false;
         }
-        
+        public void OnButtonPushedDisableBugReportPopUp()
+        {
+            bugReportPopUpWindow.SetActive(false);
+        }
+
+
         public void OnButtonPushedSendBugReport()
         {
             ShareByEmail shareByEmail = new ShareByEmail(subjectInputField.text, contentsInputField.text, recipient);
@@ -25,6 +37,16 @@ namespace StarWriter.Utility.Reports
 
             bugReportPopUpWindow.SetActive(false);
             sendButton.enabled = false;
+        }
+
+        public void WaitOnInputFields()
+        {
+            if(subjectInputField.text == "" || contentsInputField.text == "")
+            {
+                sendButton.enabled = false;
+                return;
+            }
+            sendButton.enabled = true;
         }
     }
 }
