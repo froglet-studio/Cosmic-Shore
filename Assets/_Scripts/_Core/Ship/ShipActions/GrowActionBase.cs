@@ -1,12 +1,12 @@
 ﻿using System.Collections;
 using UnityEngine;
 
-public class GrowActionBase : LevelAwareShipAction
+public class GrowActionBase : ShipAction
 {
     [SerializeField] protected float minSize;
     [SerializeField] protected float maxSize;
     [SerializeField] protected float growRate;
-    [SerializeField] protected float shrinkRate;
+    [SerializeField] protected ElementalFloat shrinkRate = new ElementalFloat(1);
     [SerializeField] protected GameObject target;
 
     protected Coroutine returnToNeutralCoroutine;
@@ -50,27 +50,9 @@ public class GrowActionBase : LevelAwareShipAction
     {
         while (target.transform.localScale.z > minSize)
         {
-            target.transform.localScale -= Time.deltaTime * shrinkRate * Vector3.one;
+            target.transform.localScale -= Time.deltaTime * shrinkRate.Value * Vector3.one;
             yield return null;
         }
         target.transform.localScale = minSize * Vector3.one;
-    }
-
-    public override void SetLevelParameter(Element element, float amount)
-    {
-        switch (element)
-        {
-            case Element.Charge:
-                shrinkRate = amount;
-                break;
-            case Element.Mass:
-                maxSize = amount;
-                break;
-            case Element.Space:
-                break;
-            case Element.Time:
-                break;
-        }
-        
     }
 }

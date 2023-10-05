@@ -19,9 +19,9 @@ public class GrowTrailAction : GrowActionBase
         var spawner = target.GetComponent<TrailSpawner>();
         while (ship.TrailSpawner.YScaler > minSize)
         {
-            spawner.YScaler -= Time.deltaTime * shrinkRate;
-            spawner.XScaler -= Time.deltaTime * shrinkRate;
-            spawner.gap -= Time.deltaTime * shrinkRate * 2;
+            spawner.YScaler -= Time.deltaTime * shrinkRate.Value;
+            spawner.XScaler -= Time.deltaTime * shrinkRate.Value;
+            spawner.gap -= Time.deltaTime * shrinkRate.Value * 2;
             yield return null;
         }
     }

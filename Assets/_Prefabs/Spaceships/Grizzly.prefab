@@ -1093,6 +1093,7 @@ MonoBehaviour:
   Boosting: 0
   ChargedBoostDischarging: 0
   Drifting: 0
+  Turret: 0
   Portrait: 0
   ShowThreeButtonPanel: 1
   LiveProjectiles: 0
@@ -1181,7 +1182,7 @@ MonoBehaviour:
   elevatedAmmoGainRate: 0.05
   initialAmmo: 1
   maxAmmo: 1
-  usesEnergy: 0
+  usesEnergy: 1
   maxEnergy: 1
   initialEnergy: 1
   ChargeDisplay: {fileID: 0}

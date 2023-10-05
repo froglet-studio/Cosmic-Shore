@@ -562,7 +562,11 @@ MonoBehaviour:
   minSize: 1
   maxSize: 3
   growRate: 3
-  shrinkRate: 3
+  shrinkRate:
+    Value: 1
+    Min: 0
+    Max: 0
+    element: 0
   target: {fileID: 6417075533431866457}
 --- !u!1 &3947427428015649370
 GameObject:
@@ -726,7 +730,11 @@ MonoBehaviour:
   minSize: 20
   maxSize: 80
   growRate: 8
-  shrinkRate: 8
+  shrinkRate:
+    Value: 8
+    Min: 10
+    Max: 4
+    element: 1
   target: {fileID: 2695624631939139826}
 --- !u!1 &4954660229079137265
 GameObject:
@@ -1065,11 +1073,11 @@ MonoBehaviour:
     - {fileID: 1315493734959331551}
     - {fileID: 5565916779484709519}
   resourceEventClassActions: []
-  MassAbilityTarget: {fileID: 7881301509579309438}
+  MassAbilityTarget: {fileID: 0}
   ChargeAbilityTarget: {fileID: 6430648885380261475}
   SpaceAbilityTarget: {fileID: 0}
   TimeAbilityTarget: {fileID: 0}
-  ChargeAbility2Target: {fileID: 5565916779484709519}
+  ChargeAbility2Target: {fileID: 0}
   LevelEffects: 
   ControlOverrides: 0400000003000000
   closeCamDistance: -20
@@ -1107,6 +1115,7 @@ MonoBehaviour:
   Boosting: 0
   ChargedBoostDischarging: 0
   Drifting: 0
+  Turret: 0
   Portrait: 0
   ShowThreeButtonPanel: 0
   LiveProjectiles: 0
