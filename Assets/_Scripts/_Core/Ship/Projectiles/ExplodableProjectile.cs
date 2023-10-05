@@ -14,7 +14,7 @@ namespace StarWriter.Core
             var AOEExplosion = Instantiate(AOEPrefab).GetComponent<AOEExplosion>();
             AOEExplosion.Ship = Ship;
             AOEExplosion.SetPositionAndRotation(transform.position, transform.rotation);
-            AOEExplosion.MaxScale = (Charge * (maxExplosionScale - minExplosionScale)) + minExplosionScale; 
+            AOEExplosion.MaxScale = (Charge * (maxExplosionScale - minExplosionScale)) + minExplosionScale;
         }
     }
 }

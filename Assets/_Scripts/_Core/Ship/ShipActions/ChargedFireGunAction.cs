@@ -9,7 +9,7 @@ public class ChargedFireGunAction : ShipAction
     [SerializeField] float chargePerSecond = 1;
 
     ResourceSystem resourceSystem;
-    ShipStatus shipData;
+    ShipStatus shipStatus;
     GameObject projectileContainer;
     float ammoCost;
 
@@ -22,12 +22,12 @@ public class ChargedFireGunAction : ShipAction
     void Start()
     {
         projectileContainer = new GameObject($"{ship.Player.PlayerName}_Projectiles");
-        shipData = ship.GetComponent<ShipStatus>();
+        shipStatus = ship.GetComponent<ShipStatus>();
         resourceSystem = ship.ResourceSystem;
     }
     public override void StartAction()
     {
-        if (shipData.LiveProjectiles) gun.Detonate();
+        if (shipStatus.LiveProjectiles) gun.Detonate();
         else gainCharge = StartCoroutine(GainChargeCoroutine());
     }
 
@@ -48,11 +48,10 @@ public class ChargedFireGunAction : ShipAction
     {
         while (projectileContainer.GetComponentsInChildren<Projectile>().Length > 0)
         {
-            shipData.LiveProjectiles = true;
+            shipStatus.LiveProjectiles = true;
             yield return null;
         }
-
-        shipData.LiveProjectiles = false;
+        shipStatus.LiveProjectiles = false;
     }
 
     void StartCheckProjectiles()
@@ -65,7 +64,7 @@ public class ChargedFireGunAction : ShipAction
 
     public override void StopAction()
     {
-        if (gainCharge != null)
+        if (charge != 0)
         {
             StopCoroutine(gainCharge);
             charge = Mathf.Clamp(charge, 0, 1);
@@ -76,16 +75,16 @@ public class ChargedFireGunAction : ShipAction
                 resourceSystem.ChangeAmmoAmount(-ammoCost);
 
                 Vector3 inheritedDirection;
-                if (shipData.Attached || shipData.Stationary) inheritedDirection = transform.forward;
-                else inheritedDirection = shipData.Course;
+                if (shipStatus.Attached || shipStatus.Stationary) inheritedDirection = transform.forward;
+                else inheritedDirection = shipStatus.Course;
 
                 // TODO: WIP magic numbers
-                gun.FireGun(projectileContainer.transform, 90, inheritedDirection * shipData.Speed, ProjectileScale * charge, true, float.MaxValue, charge);
+                gun.FireGun(projectileContainer.transform, 90, inheritedDirection * shipStatus.Speed, ProjectileScale * charge, true, float.MaxValue, charge);
                 StartCheckProjectiles();
             }
 
             charge = 0;
-            resourceSystem.ResetEnergy();
+            //resourceSystem.ResetEnergy();
         }
     }
 }

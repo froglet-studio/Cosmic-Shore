@@ -30,6 +30,7 @@ namespace StarWriter.Core.IO
         [HideInInspector] public float YSum;
         [HideInInspector] public float XDiff;
         [HideInInspector] public float YDiff;
+
         [HideInInspector] public bool Idle;
         [HideInInspector] public bool Paused;
         [HideInInspector] public Vector2 RightJoystickHome;
@@ -39,7 +40,7 @@ namespace StarWriter.Core.IO
         [HideInInspector] public bool isGyroEnabled;
         [HideInInspector] public bool invertYEnabled;
         Vector2 RightJoystickStart, LeftJoystickStart;
-        Vector2 RightJoystickPosition, LeftJoystickPosition;
+        [HideInInspector] public Vector2 RightJoystickPosition, LeftJoystickPosition;
         Vector2 RightJoystickValue, LeftJoystickValue;
         float JoystickRadius;
 

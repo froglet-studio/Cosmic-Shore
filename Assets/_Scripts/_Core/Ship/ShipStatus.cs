@@ -10,6 +10,7 @@ namespace StarWriter.Core
         public bool Boosting = false;
         public bool ChargedBoostDischarging = false;
         public bool Drifting = false;
+        public bool Turret = false;
         public bool Portrait = false;
         public bool ShowThreeButtonPanel = false;
         public bool LiveProjectiles = false;

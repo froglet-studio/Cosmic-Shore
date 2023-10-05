@@ -236,6 +236,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
+  - {fileID: 8136160970913695100}
   - {fileID: 282447970148362685}
   - {fileID: 4212487309909106204}
   m_Father: {fileID: 5928382658856804067}
@@ -326,7 +327,7 @@ Transform:
   - {fileID: 7231711063342619480}
   - {fileID: 2886768247551816212}
   m_Father: {fileID: 3397189760217659071}
-  m_RootOrder: 1
+  m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!33 &7971854155354396167
 MeshFilter:
@@ -984,6 +985,7 @@ GameObject:
   - component: {fileID: 1435252848482629424}
   - component: {fileID: 3440187540988767646}
   - component: {fileID: 7279892912462638078}
+  - component: {fileID: 5714887067551010065}
   m_Layer: 0
   m_Name: Grizzly
   m_TagString: Player_Ship
@@ -1043,7 +1045,7 @@ MonoBehaviour:
   - {fileID: 1652545777288694586}
   AOEPrefab: {fileID: 0}
   farFieldSkimmer: {fileID: 0}
-  crystalImpactEffects: 0b00000003000000
+  crystalImpactEffects: 0b0000000d000000
   minExplosionScale: 50
   maxExplosionScale: 500
   trailBlockImpactEffects: 0000000003000000
@@ -1073,6 +1075,7 @@ MonoBehaviour:
   AOEExplosionMaterial: {fileID: 0}
   AOEConicExplosionMaterial: {fileID: 0}
   SkimmerMaterial: {fileID: 0}
+  ElementStats: []
   LevelEffectParameterMappings: []
 --- !u!114 &6441696348568773771
 MonoBehaviour:
@@ -1169,25 +1172,25 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 737294a573670f74389a7af68df314d5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Resources: 
   usesBoost: 0
+  initialBoost: 1
+  maxBoost: 1
   usesAmmo: 1
-  usesCharge: 1
   gainsAmmo: 1
   ammoGainRate: 0.02
   elevatedAmmoGainRate: 0.05
-  maxBoost: 1
-  initialBoost: 1
-  maxAmmo: 1
   initialAmmo: 1
-  maxCharge: 1
-  initialCharge: 0
-  BoostDisplay: {fileID: 0}
-  AmmoDisplay: {fileID: 0}
+  maxAmmo: 1
+  usesEnergy: 0
+  maxEnergy: 1
+  initialEnergy: 1
   ChargeDisplay: {fileID: 0}
   MassDisplay: {fileID: 0}
   SpaceDisplay: {fileID: 0}
   TimeDisplay: {fileID: 0}
+  EnergyDisplay: {fileID: 0}
+  BoostDisplay: {fileID: 0}
+  AmmoDisplay: {fileID: 0}
   ChargeLevelDisplay: {fileID: 0}
   MassLevelDisplay: {fileID: 0}
   SpaceLevelDisplay: {fileID: 0}
@@ -1196,6 +1199,7 @@ MonoBehaviour:
   InitialMassLevel: 0
   InitialSpaceLevel: 0
   InitialTimeLevel: 0
+  ChargeTestHarness: 0
 --- !u!114 &3440187540988767646
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1261,6 +1265,20 @@ MonoBehaviour:
   ThrusterBottomLeft: {fileID: 5779807336682455925}
   BottomWing: {fileID: 7678595967868367213}
   ThrusterTopLeft: {fileID: 8897785412424212353}
+--- !u!114 &5714887067551010065
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2317700572bfe8f47a5240c73200eaac, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  pipCamera: {fileID: 2020499466214858983}
+  mirrored: 1
 --- !u!1 &6878347770711062259
 GameObject:
   m_ObjectHideFlags: 0
@@ -1542,7 +1560,7 @@ PrefabInstance:
     - target: {fileID: 7231566422788689087, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
       propertyPath: m_RootOrder
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 7231566422788689087, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
@@ -1659,3 +1677,84 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f35ad70dcbb4e3b47af654e91d9387f8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!1001 &9114628833701524809
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    m_TransformParent: {fileID: 3397189760217659071}
+    m_Modifications:
+    - target: {fileID: 1050704211038875701, guid: 637acd3ede086ed45b23959a02b1c534,
+        type: 3}
+      propertyPath: m_RootOrder
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1050704211038875701, guid: 637acd3ede086ed45b23959a02b1c534,
+        type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1050704211038875701, guid: 637acd3ede086ed45b23959a02b1c534,
+        type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1050704211038875701, guid: 637acd3ede086ed45b23959a02b1c534,
+        type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 25
+      objectReference: {fileID: 0}
+    - target: {fileID: 1050704211038875701, guid: 637acd3ede086ed45b23959a02b1c534,
+        type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1050704211038875701, guid: 637acd3ede086ed45b23959a02b1c534,
+        type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1050704211038875701, guid: 637acd3ede086ed45b23959a02b1c534,
+        type: 3}
+      propertyPath: m_LocalRotation.y
+      value: -1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1050704211038875701, guid: 637acd3ede086ed45b23959a02b1c534,
+        type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1050704211038875701, guid: 637acd3ede086ed45b23959a02b1c534,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1050704211038875701, guid: 637acd3ede086ed45b23959a02b1c534,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: -180
+      objectReference: {fileID: 0}
+    - target: {fileID: 1050704211038875701, guid: 637acd3ede086ed45b23959a02b1c534,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3669588834454630396, guid: 637acd3ede086ed45b23959a02b1c534,
+        type: 3}
+      propertyPath: m_Name
+      value: PipCamera
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 637acd3ede086ed45b23959a02b1c534, type: 3}
+--- !u!20 &2020499466214858983 stripped
+Camera:
+  m_CorrespondingSourceObject: {fileID: 7095398317472191918, guid: 637acd3ede086ed45b23959a02b1c534,
+    type: 3}
+  m_PrefabInstance: {fileID: 9114628833701524809}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &8136160970913695100 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 1050704211038875701, guid: 637acd3ede086ed45b23959a02b1c534,
+    type: 3}
+  m_PrefabInstance: {fileID: 9114628833701524809}
+  m_PrefabAsset: {fileID: 0}
