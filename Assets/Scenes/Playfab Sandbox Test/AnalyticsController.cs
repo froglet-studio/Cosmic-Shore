@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using _Scripts._Core.Playfab_Models;
 using PlayFab;
@@ -9,6 +10,7 @@ public class AnalyticsController : SingletonPersistent<AnalyticsController>
 {
     static PlayFabDataInstanceAPI _playFabDataInstanceAPI;
     private static PlayFabClientInstanceAPI _playFabClientInstanceAPI;
+    public static Action<PlayFabError> GeneratingErrorReport;
 
     private void Start()
     {
@@ -60,10 +62,7 @@ public class AnalyticsController : SingletonPersistent<AnalyticsController>
                 {
                     Debug.Log($"{nameof(AnalyticsController)} - {nameof(GetUserData)} - key: {pair.Key} value: {pair.Value.Value}");
                 }
-            }, (error) =>
-            {
-                Debug.LogError(error.GenerateErrorReport());
-            });
+            }, HandleErrorReport);
     }
 
     /// <summary>
@@ -86,10 +85,7 @@ public class AnalyticsController : SingletonPersistent<AnalyticsController>
                 };
                 
                 Debug.Log($"{nameof(AnalyticsController)} - {nameof(SetUserData)} success.");
-            }, (error) =>
-            {
-                Debug.LogError(error.GenerateErrorReport());
-            });
+            }, HandleErrorReport);
     }
 
     /// <summary>
@@ -106,9 +102,43 @@ public class AnalyticsController : SingletonPersistent<AnalyticsController>
             {
                 if (result == null) return;
                 Debug.Log($"{nameof(AnalyticsController)} - {nameof(DeleteUserDataByKeys)} data successfully deleted by keys.");
-            }, (error) =>
+            }, HandleErrorReport);
+    }
+
+    /// <summary>
+    /// Get User Read Only Data By Keys
+    /// <param name="readOnlyKeys"> User data read only key list</param>
+    /// </summary>
+    public void GetUserReadOnlyData(in List<string> readOnlyKeys)
+    {
+        _playFabClientInstanceAPI.GetUserReadOnlyData(
+            new GetUserDataRequest()
             {
-                Debug.LogError(error.GenerateErrorReport());
-            });
+                Keys = readOnlyKeys
+            }, (result) =>
+            {
+                if (result == null)
+                {
+                    Debug.LogWarning($"{nameof(AnalyticsController)} - {nameof(GetUserReadOnlyData)} - Unable to retrieve data or no data available");
+                    return;
+                };
+                
+                Debug.Log($"{nameof(AnalyticsController)} - {nameof(GetUserReadOnlyData)} success.");
+            }, HandleErrorReport
+            );
+    }
+    
+    public void 
+
+    /// <summary>
+    /// Handle PlayFab Error Report
+    /// Generate error report and raise the event
+    /// <param name="error"> PlayFab Error</param>
+    /// </summary>
+    private void HandleErrorReport(PlayFabError error = null)
+    {
+        if (error == null) return;
+        Debug.LogError(error.GenerateErrorReport());
+        GeneratingErrorReport.Invoke(error);
     }
 }
