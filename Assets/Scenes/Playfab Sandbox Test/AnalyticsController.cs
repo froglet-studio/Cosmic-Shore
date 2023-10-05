@@ -127,8 +127,27 @@ public class AnalyticsController : SingletonPersistent<AnalyticsController>
             }, HandleErrorReport
             );
     }
-    
-    public void 
+
+    /// <summary>
+    /// Send Player Event
+    /// Send player event given event name, custom data body, optional custom tags and timestamp
+    /// <param name="playerEvent"> Player Event</param>
+    /// </summary>
+    public void SendPlayerEvent(in PlayerEvent playerEvent)
+    {
+        _playFabClientInstanceAPI.WritePlayerEvent(
+            new WriteClientPlayerEventRequest()
+            {
+                Body = playerEvent.Body,
+                CustomTags = playerEvent.CustomTag,
+                EventName = playerEvent.EventName,
+                Timestamp = playerEvent.Timestamp
+            }, (result) =>
+            {
+                if (result == null) return;
+                Debug.Log($"{nameof(AnalyticsController)} - {nameof(SendPlayerEvent)} success.");
+            },HandleErrorReport);
+    }
 
     /// <summary>
     /// Handle PlayFab Error Report
