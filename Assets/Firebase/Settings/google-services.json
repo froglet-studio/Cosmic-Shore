@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "919482784353",
+    "project_id": "cosmic-shore",
+    "storage_bucket": "cosmic-shore.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:919482784353:android:4ebe8f3720101069f6a820",
+        "android_client_info": {
+          "package_name": "com.FrogletGames.TailGlider"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCp_K3kr2rmOS9be7CUdE0ibLnwKB7rczM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
