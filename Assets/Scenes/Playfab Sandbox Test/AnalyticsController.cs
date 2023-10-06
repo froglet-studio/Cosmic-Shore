@@ -1,26 +1,33 @@
 using System;
 using System.Collections.Generic;
 using _Scripts._Core.Playfab_Models;
+using _Scripts._Core.Playfab_Models.Event_Models;
 using PlayFab;
 using PlayFab.ClientModels;
+using PlayFab.EventsModels;
 using StarWriter.Utility.Singleton;
 using UnityEngine;
+using EntityKey = PlayFab.EventsModels.EntityKey;
 
 public class AnalyticsController : SingletonPersistent<AnalyticsController>
 {
     static PlayFabDataInstanceAPI _playFabDataInstanceAPI;
     private static PlayFabClientInstanceAPI _playFabClientInstanceAPI;
+    private static PlayFabEventsInstanceAPI _playFabEventsInstanceAPI;
     public static Action<PlayFabError> GeneratingErrorReport;
 
     private void Start()
     {
         // Load Player Client Instance API
         AuthenticationManager.OnLoginSuccess += InitializePlayerClientInstanceAPI;
+        AuthenticationManager.OnLoginSuccess += InitializeEventsInstanceAPI;
     }
 
     private void OnDisable()
     {
+        AuthenticationManager.OnLoginSuccess -= InitializeEventsInstanceAPI;
         AuthenticationManager.OnLoginSuccess -= InitializePlayerClientInstanceAPI;
+        
     }
 
     #region API Instance Initialization
@@ -38,6 +45,11 @@ public class AnalyticsController : SingletonPersistent<AnalyticsController>
     private void InitializePlayerClientInstanceAPI()
     {
         _playFabClientInstanceAPI ??= new PlayFabClientInstanceAPI(AuthenticationManager.PlayerAccount.AuthContext);
+    }
+
+    private void InitializeEventsInstanceAPI()
+    {
+        _playFabEventsInstanceAPI ??= new PlayFabEventsInstanceAPI(AuthenticationManager.PlayerAccount.AuthContext);
     }
     #endregion
 
@@ -162,11 +174,12 @@ public class AnalyticsController : SingletonPersistent<AnalyticsController>
 }
     #endregion
 
-    #region Event Handling
+    #region PlayStream Event Handling
     
     /// <summary>
     /// Send Player Event
     /// Send player event given event name, custom data body, optional custom tags and timestamp
+    /// Player event will show up in data explore after certain amount of time, meaning it's not real time data.
     /// <param name="playerEvent"> Player Event</param>
     /// </summary>
     public void SendPlayerEvent(in PlayerEvent playerEvent)
@@ -182,10 +195,37 @@ public class AnalyticsController : SingletonPersistent<AnalyticsController>
             {
                 if (result == null) return;
                 Debug.Log($"{nameof(AnalyticsController)} - {nameof(SendPlayerEvent)} success.");
+                Debug.Log($"{nameof(AnalyticsController)} - {nameof(SendPlayerEvent)} - event id: {result.EventId}");
             },HandleErrorReport);
     }
-    
-    // public void 
+
+    /// <summary>
+    /// Write PlayStream Events
+    /// Write a collection of PlayStream Events to PlayFab data storage.
+    /// <param name="playStreamEvents"> PlayStream Events</param>
+    /// </summary>
+    public void WritePlayStreamEvents(in PlayStreamEvents playStreamEvents)
+    {
+        _playFabEventsInstanceAPI.WriteEvents(
+            new WriteEventsRequest()
+            {
+                Events = playStreamEvents.EventContents,
+                CustomTags = playStreamEvents.CustomTags
+            }, (result) =>
+            {
+                if (result == null)
+                {
+                    Debug.LogWarning($"{nameof(AnalyticsController)} - {nameof(WritePlayStreamEvents)} no result.");
+                    return;
+                }
+
+                foreach (var eventId in result.AssignedEventIds)
+                {
+                    Debug.LogWarning($"{nameof(AnalyticsController)} - {nameof(WritePlayStreamEvents)} - assigned event id: {eventId}.");
+                }
+            },HandleErrorReport
+            );
+    }
     
     #endregion
 
