@@ -23,6 +23,7 @@ public class AnalyticsController : SingletonPersistent<AnalyticsController>
         AuthenticationManager.OnLoginSuccess -= InitializePlayerClientInstanceAPI;
     }
 
+    #region API Instance Initialization
     /// <summary>
     /// Initialize Player Data Instance API, not used right now, it manages entity data file upload and download
     /// </summary>
@@ -38,7 +39,9 @@ public class AnalyticsController : SingletonPersistent<AnalyticsController>
     {
         _playFabClientInstanceAPI ??= new PlayFabClientInstanceAPI(AuthenticationManager.PlayerAccount.AuthContext);
     }
-    
+    #endregion
+
+    #region User Data Operations
     /// <summary>
     /// Get User Customized Data
     /// <param name="keys"> User data key list</param>
@@ -104,7 +107,11 @@ public class AnalyticsController : SingletonPersistent<AnalyticsController>
                 Debug.Log($"{nameof(AnalyticsController)} - {nameof(DeleteUserDataByKeys)} data successfully deleted by keys.");
             }, HandleErrorReport);
     }
+    #endregion
 
+    // Read only data can no longer be updated via API requests, they can only be configured in PlayFab dashboard
+    #region Read Only Data Operations
+    
     /// <summary>
     /// Get User Read Only Data By Keys
     /// <param name="readOnlyKeys"> User data read only key list</param>
@@ -123,11 +130,40 @@ public class AnalyticsController : SingletonPersistent<AnalyticsController>
                     return;
                 };
                 
-                Debug.Log($"{nameof(AnalyticsController)} - {nameof(GetUserReadOnlyData)} success.");
+                Debug.Log($"{nameof(AnalyticsController)} - {nameof(GetUserReadOnlyData)} - success.");
+                foreach (var data in result.Data)
+                {
+                    Debug.Log($"{nameof(AnalyticsController)} - {nameof(GetUserReadOnlyData)} - key: {data.Key} value: {data.Value.Value}");
+                }
             }, HandleErrorReport
-            );
+        );
     }
 
+    /// <summary>
+    /// Get User Publisher Read Only Data By Keys
+    /// <param name="readOnlyKeys"> User publisher data read only key list</param>
+    /// </summary>
+    public void GetPublisherReadOnlyData(in List<string> readOnlyKeys)
+    {
+        _playFabClientInstanceAPI.GetUserPublisherReadOnlyData(
+            new GetUserDataRequest()
+            {
+                Keys = readOnlyKeys,
+                PlayFabId = AuthenticationManager.PlayerAccount.PlayFabId
+            }, (result) =>
+            {
+                if (result == null) return;
+                Debug.Log($"{nameof(AnalyticsController)} - {nameof(GetPublisherReadOnlyData)} - success.");
+                foreach (var data in result.Data)
+                {
+                    Debug.Log($"{nameof(AnalyticsController)} - {nameof(GetPublisherReadOnlyData)} - key: {data.Key} value: {data.Value.Value}");
+                }
+            },HandleErrorReport);
+}
+    #endregion
+
+    #region Event Handling
+    
     /// <summary>
     /// Send Player Event
     /// Send player event given event name, custom data body, optional custom tags and timestamp
@@ -139,7 +175,7 @@ public class AnalyticsController : SingletonPersistent<AnalyticsController>
             new WriteClientPlayerEventRequest()
             {
                 Body = playerEvent.Body,
-                CustomTags = playerEvent.CustomTag,
+                CustomTags = playerEvent.CustomTags,
                 EventName = playerEvent.EventName,
                 Timestamp = playerEvent.Timestamp
             }, (result) =>
@@ -148,7 +184,15 @@ public class AnalyticsController : SingletonPersistent<AnalyticsController>
                 Debug.Log($"{nameof(AnalyticsController)} - {nameof(SendPlayerEvent)} success.");
             },HandleErrorReport);
     }
+    
+    // public void 
+    
+    #endregion
 
+
+
+    #region Error Handling
+    
     /// <summary>
     /// Handle PlayFab Error Report
     /// Generate error report and raise the event
@@ -158,6 +202,8 @@ public class AnalyticsController : SingletonPersistent<AnalyticsController>
     {
         if (error == null) return;
         Debug.LogError(error.GenerateErrorReport());
-        GeneratingErrorReport.Invoke(error);
+        GeneratingErrorReport?.Invoke(error);
     }
+    
+    #endregion
 }
