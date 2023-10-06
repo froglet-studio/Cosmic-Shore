@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Security;
 using PlayFab;
@@ -42,6 +43,8 @@ namespace _Scripts._Core.Playfab_Models
         [SerializeField] TMP_InputField passwordRegisterInputField;
         [SerializeField] Button registerButton;
 
+        Action SummoningProfileMenu;
+
         // Start is called before the first frame update
         void Start()
         {
@@ -63,6 +66,19 @@ namespace _Scripts._Core.Playfab_Models
             AuthenticationManager.Instance.AnonymousLogin();
         }
 
+        #region OnEnable and OnDisable Override
+        void OnEnable()
+        {
+            LoadDisplayNameUponEnable();
+        }
+
+        private void OnDisable()
+        {
+            UnloadDisplayNameUponDisable();
+        }
+        #endregion
+
+        #region Email Input Field Operations
         void InitializeEmailLinking()
         {
             // Account register input fields initialization
@@ -107,12 +123,13 @@ namespace _Scripts._Core.Playfab_Models
                 registerEmailResultMessage.text = "Invalid Email Address";
             }
         }
-
+        #endregion
+            
         #region Email and Password Login
 
         /// <summary>
-        /// Stay Logged in Listener Event
-        /// If
+        /// Stay Logged in Event 
+        /// Update stay logged in stats
         /// </summary>
         void StayLoggedIn_OnToggled(bool isOn)
         {
@@ -134,6 +151,12 @@ namespace _Scripts._Core.Playfab_Models
             return passwordSecure;
         }
 
+        
+        /// <summary>
+        /// Handle Anonymous Login Error
+        /// Handling anonymous login errors - Connection Error, Invalid Account , Account Deleted and the others.
+        /// <param name="PlayFabError"> PlayFab Error</param>
+        /// </summary>
         private void HandleAnonymousLoginError(PlayFabError error)
         {
             if (error == null)
@@ -170,6 +193,7 @@ namespace _Scripts._Core.Playfab_Models
         /// <summary>
         /// Register Response Error Handler
         /// Handles error responses upon account registration
+        /// <param name="PlayFabError"> PlayFab Error</param>
         /// </summary>
         private void RegisterResponseHandler(PlayFabError error)
         {
@@ -207,6 +231,7 @@ namespace _Scripts._Core.Playfab_Models
         /// <summary>
         /// Login Response Error Handler
         /// Handles error responses upon account login
+        /// <param name="PlayFabError"> PlayFab Error</param>
         /// </summary>
         private void LoginResponseHandler(PlayFabError error)
         {
@@ -281,7 +306,34 @@ namespace _Scripts._Core.Playfab_Models
 
         #region Player Profile
 
-        public string GenerateRandomName()
+        /// <summary>
+        /// Load Player Display Name Upon Enable
+        /// Load player display name to the display name input field upon profile menu enable
+        /// </summary>
+        void LoadDisplayNameUponEnable()
+        {
+            if (SummoningProfileMenu == null)
+            {
+                SummoningProfileMenu += InitializePlayerDisplayNameView;
+                SummoningProfileMenu.Invoke();
+            }
+        }
+
+        /// <summary>
+        /// Unload Player Display Name Upon Disable
+        /// Unload player display name to the display name input field upon profile menu disable
+        /// </summary>
+        void UnloadDisplayNameUponDisable()
+        {
+            if (SummoningProfileMenu == null) return;
+            SummoningProfileMenu -= InitializePlayerDisplayNameView;
+        }
+        
+        /// <summary>
+        /// Generate Random Name
+        /// Retrieve preset adjectives and nouns that was retrieved in memory and combine them randomly
+        /// </summary>
+        string GenerateRandomName()
         {
             var adjectives = AuthenticationManager.Adjectives;
             var nouns = AuthenticationManager.Nouns;
@@ -295,6 +347,10 @@ namespace _Scripts._Core.Playfab_Models
             return displayName;
         }
 
+        /// <summary>
+        /// Assign Random Name (Coroutine)
+        /// Assign random generated name to display name input field
+        /// </summary>
         IEnumerator AssignRandomNameCoroutine()
         {
             AuthenticationManager.Instance.LoadRandomNameList();
@@ -317,8 +373,12 @@ namespace _Scripts._Core.Playfab_Models
             displayNameInputField.placeholder.gameObject.SetActive(true);
             FocusDisplayNameInputField();
         }
-
-        public void SetPlayerNameButton_OnClicked()
+        
+        /// <summary>
+        /// Set Player Name Button On Click 
+        /// Setting Player Name Event for the button on click listener
+        /// </summary>
+        private void SetPlayerNameButton_OnClicked()
         {
             displayNameResultMessage.gameObject.SetActive(false);
 
@@ -332,6 +392,10 @@ namespace _Scripts._Core.Playfab_Models
             Debug.Log($"Current player display name: {displayNameInputField.text}");
         }
 
+        /// <summary>
+        /// Generate Random Name Button OnClick Event 
+        /// Generate random name on button click 
+        /// </summary>
         public void GenerateRandomNameButton_OnClicked()
         {
             BusyIndicator.SetActive(true);
@@ -344,6 +408,10 @@ namespace _Scripts._Core.Playfab_Models
 
         Coroutine AssignRandomNameRunningCoroutine;
 
+        /// <summary>
+        /// Check Display Name Length
+        /// PlayFab constraints display name within 3 to 25 characters, this is a check for display name length.
+        /// </summary>
         bool CheckDisplayNameLength(string displayName)
         {
             if (displayName.Length > 25 || displayName.Length < 3)
@@ -357,6 +425,10 @@ namespace _Scripts._Core.Playfab_Models
             return true;
         }
 
+        /// <summary>
+        /// Update Player Display View
+        /// PlayFab constraints display name within 3 to 25 characters, this is a check for display name length.
+        /// </summary>
         void UpdatePlayerDisplayNameView(UpdateUserTitleDisplayNameResult result)
         {
             if (result == null)
@@ -370,6 +442,10 @@ namespace _Scripts._Core.Playfab_Models
             BusyIndicator.SetActive(false);
         }
 
+        /// <summary>
+        /// Initialize Player Display Name View
+        /// PlayFab constraints display name within 3 to 25 characters, this is a check for display name length.
+        /// </summary>
         void InitializePlayerDisplayNameView()
         {
             BusyIndicator.SetActive(false);
@@ -378,25 +454,38 @@ namespace _Scripts._Core.Playfab_Models
             displayNameResultMessage.gameObject.SetActive(true);
         }
 
+        /// <summary>
+        /// Focus Display Name Input Field
+        /// Automatically set the cursor to display name input field and De-select it afterward
+        /// </summary>
         public void FocusDisplayNameInputField()
         {
             if (FocusDisplayNameInputFieldEnabled)
             {
                 displayNameInputField.Select();
-                StartCoroutine(DeSelectCoroutine());
+                StartCoroutine(DeSelectInputFieldCoroutine());
             }
         }
 
-        IEnumerator DeSelectCoroutine()
+        /// <summary>
+        /// De-select Input Field (Coroutine)
+        /// De-select input field after a frame
+        /// </summary>
+        IEnumerator DeSelectInputFieldCoroutine()
         {
             // Yes, this is wacky, but you have to wait for the next frame to not auto select the name
             // I think the blinking cursor at the end of the line is kinda cool
+            // Yes, it is cool - Echo
             yield return null;
             displayNameInputField.MoveTextEnd(false);
             displayNameInputField.ActivateInputField();
             displayNameInputField.caretPosition = displayNameInputField.text.Length;
         }
 
+        /// <summary>
+        /// Fade Massage Coroutine
+        /// Fade massage coroutine tool, the default duration for fading is 3s for now.
+        /// </summary>
         IEnumerator FadeMessageCoroutine()
         {
             yield return new WaitForSeconds(SuccessMessageFadeAfterSeconds);
