@@ -199,9 +199,12 @@ namespace StarWriter.Core
                 NodeControlManager.Instance.RemoveBlock(team, TrailBlockProperties);
         }
 
+        
+
         public void DeactivateShield()
         {
-            StartCoroutine(LerpBlockMaterialProperties(Hangar.Instance.GetTeamBlockMaterial(team)));
+            if (lerpBlockMaterialPropertiesCoroutine != null) StopCoroutine(lerpBlockMaterialPropertiesCoroutine);
+            StartCoroutine(LerpBlockMaterialPropertiesCoroutine(Hangar.Instance.GetTeamBlockMaterial(team)));
             StartCoroutine(DeactivateShieldCoroutine(1));
             // TODO: need stats
         }
@@ -217,7 +220,8 @@ namespace StarWriter.Core
         {
             Shielded = true;
             TrailBlockProperties.Shielded = true;
-            StartCoroutine(LerpBlockMaterialProperties(Hangar.Instance.GetTeamShieldedBlockMaterial(team)));
+            if (lerpBlockMaterialPropertiesCoroutine != null) StopCoroutine(lerpBlockMaterialPropertiesCoroutine);
+            StartCoroutine(LerpBlockMaterialPropertiesCoroutine(Hangar.Instance.GetTeamShieldedBlockMaterial(team)));
             // TODO: need stats
         }
 
@@ -235,7 +239,8 @@ namespace StarWriter.Core
             DeactivateShield();
         }
 
-        IEnumerator LerpBlockMaterialProperties(Material targetMaterial, float lerpDuration = .8f)
+        Coroutine lerpBlockMaterialPropertiesCoroutine;
+        IEnumerator LerpBlockMaterialPropertiesCoroutine(Material targetMaterial, float lerpDuration = .8f)
         {
             Material tempMaterial = new Material(meshRenderer.material);
             meshRenderer.material = tempMaterial;
@@ -283,7 +288,8 @@ namespace StarWriter.Core
                 this.team = team;
                 this.playerName = playerName;
 
-                StartCoroutine(LerpBlockMaterialProperties(Hangar.Instance.GetTeamBlockMaterial(team)));
+                if (lerpBlockMaterialPropertiesCoroutine != null) StopCoroutine(lerpBlockMaterialPropertiesCoroutine);
+                StartCoroutine(LerpBlockMaterialPropertiesCoroutine(Hangar.Instance.GetTeamBlockMaterial(team)));
             } 
         }
 
