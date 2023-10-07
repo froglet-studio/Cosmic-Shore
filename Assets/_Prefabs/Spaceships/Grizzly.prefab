@@ -47,7 +47,6 @@ MonoBehaviour:
   gun: {fileID: 2353136872146328024}
   chargePerSecond: 0.4
   ProjectileScale: 30
-  BlockScale: {x: 4, y: 4, z: 1}
 --- !u!1 &1187085259217856650
 GameObject:
   m_ObjectHideFlags: 0
@@ -1181,7 +1180,7 @@ MonoBehaviour:
   maxAmmo: 1
   usesEnergy: 1
   maxEnergy: 1
-  initialEnergy: 1
+  initialEnergy: 0.01
   ChargeDisplay: {fileID: 0}
   MassDisplay: {fileID: 0}
   SpaceDisplay: {fileID: 0}

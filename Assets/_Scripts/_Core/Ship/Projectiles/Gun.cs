@@ -145,7 +145,12 @@ namespace StarWriter.Core
             onCooldown = false;
         }
 
-        public void Detonate()
+        public void StopProjectile()
+        {
+            projectile.Stop();
+        }
+
+        public void DetonateProjectile()
         {
             projectile.Detonate();
         }

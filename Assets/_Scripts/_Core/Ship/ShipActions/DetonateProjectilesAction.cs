@@ -13,7 +13,7 @@ public class DetonateProjectilesAction : ShipAction
     }
     public override void StartAction()
     {
-        gun.Detonate();
+        gun.DetonateProjectile();
     }
 
     public override void StopAction()

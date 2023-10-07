@@ -191,6 +191,11 @@ namespace StarWriter.Core
             Destroy(gameObject);
         }
 
+        public void Stop() 
+        {
+            StopCoroutine(moveCoroutine);
+        }
+
         public void Detonate()
         {
             StopCoroutine(moveCoroutine);
