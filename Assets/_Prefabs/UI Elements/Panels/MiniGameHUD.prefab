@@ -1835,6 +1835,36 @@ PrefabInstance:
       propertyPath: m_Color.a
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 424204884051128556, guid: fe865d309fab2f44cb225e312d612ddb,
+        type: 3}
+      propertyPath: m_LocalScale.x
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 424204884051128556, guid: fe865d309fab2f44cb225e312d612ddb,
+        type: 3}
+      propertyPath: m_LocalScale.y
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 424204884051128556, guid: fe865d309fab2f44cb225e312d612ddb,
+        type: 3}
+      propertyPath: m_LocalScale.z
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 760882304117970541, guid: fe865d309fab2f44cb225e312d612ddb,
+        type: 3}
+      propertyPath: m_LocalScale.x
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 760882304117970541, guid: fe865d309fab2f44cb225e312d612ddb,
+        type: 3}
+      propertyPath: m_LocalScale.y
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 760882304117970541, guid: fe865d309fab2f44cb225e312d612ddb,
+        type: 3}
+      propertyPath: m_LocalScale.z
+      value: 2
+      objectReference: {fileID: 0}
     - target: {fileID: 3792388166272916900, guid: fe865d309fab2f44cb225e312d612ddb,
         type: 3}
       propertyPath: m_Color.a
@@ -1844,6 +1874,21 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Name
       value: ThreeButtonPanel
+      objectReference: {fileID: 0}
+    - target: {fileID: 7298863058573260977, guid: fe865d309fab2f44cb225e312d612ddb,
+        type: 3}
+      propertyPath: m_LocalScale.x
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 7298863058573260977, guid: fe865d309fab2f44cb225e312d612ddb,
+        type: 3}
+      propertyPath: m_LocalScale.y
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 7298863058573260977, guid: fe865d309fab2f44cb225e312d612ddb,
+        type: 3}
+      propertyPath: m_LocalScale.z
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 7959117657231009637, guid: fe865d309fab2f44cb225e312d612ddb,
         type: 3}

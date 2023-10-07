@@ -1108,7 +1108,7 @@ MonoBehaviour:
   Drifting: 0
   Turret: 0
   Portrait: 0
-  ShowThreeButtonPanel: 0
+  SingleStickControls: 0
   LiveProjectiles: 0
   Stationary: 0
   ElevatedAmmoGain: 0
