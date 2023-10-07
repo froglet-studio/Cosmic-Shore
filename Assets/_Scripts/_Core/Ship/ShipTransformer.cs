@@ -34,9 +34,9 @@ public class ShipTransformer : MonoBehaviour
     List<ShipVelocityModifier> VelocityModifiers = new();
     float speedModifierMax = 6f;
     float velocityModifierMax = 100;
-    float throttleMultiplier = 1;
+    protected float throttleMultiplier = 1;
     public float SpeedMultiplier { get { return throttleMultiplier; } }
-    Vector3 velocityShift = Vector3.zero;
+    protected Vector3 velocityShift = Vector3.zero;
 
 
     protected virtual void Start()
@@ -87,7 +87,7 @@ public class ShipTransformer : MonoBehaviour
         MoveShip();
     }
 
-    protected void RotateShip()
+    protected virtual void RotateShip()
     {
         
         if (inputController != null)
@@ -141,11 +141,10 @@ public class ShipTransformer : MonoBehaviour
                             transform.right) * accumulatedRotation;
     }
 
-    protected virtual void Yaw()  
+    protected virtual void Yaw()  // TODO: test replacing these AngleAxis calls with eulerangles
     {
         accumulatedRotation = Quaternion.AngleAxis(
-                            inputController.XSum * (speed * RotationThrottleScaler + YawScaler) *
-                                (Screen.currentResolution.width / Screen.currentResolution.height) * Time.deltaTime,
+                            inputController.XSum * (speed * RotationThrottleScaler + YawScaler)  * Time.deltaTime,
                             transform.up) * accumulatedRotation;
     }
 

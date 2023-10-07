@@ -1076,7 +1076,6 @@ MonoBehaviour:
   AOEConicExplosionMaterial: {fileID: 0}
   SkimmerMaterial: {fileID: 0}
   ElementStats: []
-  LevelEffectParameterMappings: []
 --- !u!114 &6441696348568773771
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1095,7 +1094,7 @@ MonoBehaviour:
   Drifting: 0
   Turret: 0
   Portrait: 0
-  ShowThreeButtonPanel: 1
+  SingleStickControls: 0
   LiveProjectiles: 0
   Stationary: 0
   ElevatedAmmoGain: 0
@@ -1123,12 +1122,10 @@ MonoBehaviour:
   DefaultMinimumSpeed: 0
   DefaultThrottleScaler: 50
   PitchScaler: 100
-  YawScaler: 100
-  RollScaler: 100
+  YawScaler: 30
+  RollScaler: 80
   RotationThrottleScaler: 0
-  topGun: {fileID: 2353136872146328024}
-  ProjectileScale: 1
-  BlockScale: {x: 4, y: 4, z: 0.4}
+  lookScalar: 90
 --- !u!114 &874579555101021522
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1146,12 +1143,12 @@ MonoBehaviour:
   skimmer: {fileID: 874579554510349383}
   waitTillOutsideSkimmer: 1
   shielded: 1
-  offset: 0
+  offset: 5
   initialWavelength: 13
   minWavelength: 11
   gap: 10
   TargetScale: {x: 0, y: 0, z: 0}
-  defaultWaitTime: 0.5
+  defaultWaitTime: 1
   waitTime: 0.5
   startDelay: 2
   warp: 0

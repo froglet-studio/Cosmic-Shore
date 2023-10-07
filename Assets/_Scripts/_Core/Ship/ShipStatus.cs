@@ -12,7 +12,7 @@ namespace StarWriter.Core
         public bool Drifting = false;
         public bool Turret = false;
         public bool Portrait = false;
-        public bool ShowThreeButtonPanel = false;
+        public bool SingleStickControls = false;
         public bool LiveProjectiles = false;
         public bool Stationary = false;
         public bool ElevatedAmmoGain = false;

@@ -8,7 +8,6 @@ public class ChargedFireGunAction : ShipAction
     [SerializeField] Gun gun;
     [SerializeField] float chargePerSecond = 1;
 
-    ResourceSystem resourceSystem;
     ShipStatus shipStatus;
     GameObject projectileContainer;
     float ammoCost;
@@ -19,11 +18,11 @@ public class ChargedFireGunAction : ShipAction
     float charge = 0;
     Coroutine gainCharge;
 
-    void Start()
+    protected override void Start()
     {
+        base.Start();
         projectileContainer = new GameObject($"{ship.Player.PlayerName}_Projectiles");
         shipStatus = ship.GetComponent<ShipStatus>();
-        resourceSystem = ship.ResourceSystem;
     }
     public override void StartAction()
     {
