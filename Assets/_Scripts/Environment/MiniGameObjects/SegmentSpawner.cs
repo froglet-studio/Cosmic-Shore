@@ -30,7 +30,7 @@ public class SegmentSpawner : MonoBehaviour
     List<Trail> trails = new();
     System.Random random = new();
     int spawnedItemCount;
-    float sphereRadius = 250f;
+    public float SphereRadius = 250f;
     public float StraightLineLength = 400f;
     public float RotationAmount = 10f;
     [HideInInspector] public int DifficultyAngle = 90;
@@ -89,12 +89,12 @@ public class SegmentSpawner : MonoBehaviour
         switch (positioningScheme)
         {
             case PositioningScheme.SphereUniform:
-                spawned.transform.SetPositionAndRotation(Random.insideUnitSphere * sphereRadius + origin + transform.position, Random.rotation);
+                spawned.transform.SetPositionAndRotation(Random.insideUnitSphere * SphereRadius + origin + transform.position, Random.rotation);
                 return;
             case PositioningScheme.SphereSurface:
                 spawned.transform.position = Quaternion.Euler(0, 0, random.Next(spawnedItemCount * (360/ numberOfSegments), spawnedItemCount * (360 / numberOfSegments) + 20)) *
                     (Quaternion.Euler(0, random.Next(Mathf.Max(DifficultyAngle - 20, 40), Mathf.Max(DifficultyAngle + 20, 40)), 0) *
-                    (sphereRadius * Vector3.forward)) + origin + transform.position;
+                    (SphereRadius * Vector3.forward)) + origin + transform.position;
                 spawned.transform.LookAt(Vector3.zero);
                 return;
             case PositioningScheme.ToroidSurface:
@@ -102,7 +102,7 @@ public class SegmentSpawner : MonoBehaviour
                 int toroidDifficultyAngle = 90;
                 spawned.transform.position = Quaternion.Euler(0, 0, random.Next(spawnedItemCount * (360 / numberOfSegments), spawnedItemCount * (360 / numberOfSegments) + 20)) *
                     (Quaternion.Euler(0, random.Next(Mathf.Max(toroidDifficultyAngle - 20, 40), Mathf.Max(toroidDifficultyAngle - 20, 40)), 0) *
-                    (sphereRadius * Vector3.forward)) + origin + transform.position;
+                    (SphereRadius * Vector3.forward)) + origin + transform.position;
                 spawned.transform.LookAt(Vector3.zero);
                 return;
             case PositioningScheme.StraightLineRandomOrientation:

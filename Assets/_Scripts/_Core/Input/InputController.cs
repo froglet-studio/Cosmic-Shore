@@ -39,8 +39,9 @@ namespace StarWriter.Core.IO
         [HideInInspector] public bool isGyroEnabled;
         [HideInInspector] public bool invertYEnabled;
         Vector2 RightJoystickStart, LeftJoystickStart;
-        [HideInInspector] public Vector2 RightJoystickPosition, LeftJoystickPosition;
+        Vector2 RightJoystickPosition, LeftJoystickPosition;
         Vector2 RightJoystickValue, LeftJoystickValue;
+        [HideInInspector] public Vector2 EasedRightJoystickPosition, EasedLeftJoystickPosition;
         float JoystickRadius;
 
         Gyroscope gyro;
@@ -282,6 +283,9 @@ namespace StarWriter.Core.IO
 
         void Reparameterize()
         {
+            EasedRightJoystickPosition = new Vector2(Ease(2 * RightJoystickPosition.x), Ease(2 * RightJoystickPosition.y));
+            EasedLeftJoystickPosition = new Vector2(Ease(2 * LeftJoystickPosition.x), Ease(2 * LeftJoystickPosition.y));
+
             XSum = Ease(RightJoystickPosition.x + LeftJoystickPosition.x);
             YSum = -Ease(RightJoystickPosition.y + LeftJoystickPosition.y); //negative is because joysitcks and unity axes don't agree
             XDiff = (LeftJoystickPosition.x - RightJoystickPosition.x + 2.1f) / 4.1f;

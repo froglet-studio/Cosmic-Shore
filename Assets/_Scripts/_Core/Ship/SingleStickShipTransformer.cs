@@ -25,27 +25,27 @@ public class SingleStickShipTransformer : ShipTransformer
     protected override void Pitch() // These need to not use *= because quaternions are not commutative
     {
         accumulatedRotation = Quaternion.AngleAxis(
-                            -inputController.LeftJoystickPosition.y * (speed * RotationThrottleScaler + PitchScaler) * Time.deltaTime,
+                            -inputController.EasedLeftJoystickPosition.y * (speed * RotationThrottleScaler + PitchScaler) * Time.deltaTime,
                             courseTransform.right) * accumulatedRotation;
         additionalRotation = Quaternion.AngleAxis(
-                            -inputController.RightJoystickPosition.y * lookScalar,
+                            -inputController.EasedRightJoystickPosition.y * lookScalar,
                             courseTransform.right) * additionalRotation;
     }
 
     protected override void Yaw()
     {
         accumulatedRotation = Quaternion.AngleAxis(
-                            inputController.LeftJoystickPosition.x * (speed * RotationThrottleScaler + YawScaler) * Time.deltaTime,
+                            inputController.EasedLeftJoystickPosition.x * (speed * RotationThrottleScaler + YawScaler) * Time.deltaTime,
                             courseTransform.up) * accumulatedRotation;
         additionalRotation = Quaternion.AngleAxis(
-                            inputController.RightJoystickPosition.x * lookScalar,
+                            inputController.EasedRightJoystickPosition.x * lookScalar,
                             courseTransform.up) * additionalRotation;
     }
 
     protected override void Roll()
     {
         accumulatedRotation = Quaternion.AngleAxis(
-                            -inputController.LeftJoystickPosition.x * (speed * RotationThrottleScaler + RollScaler) * Time.deltaTime, //use roll scaler to adjust the banking into turns
+                            -inputController.EasedLeftJoystickPosition.x * (speed * RotationThrottleScaler + RollScaler) * Time.deltaTime, //use roll scaler to adjust the banking into turns
                             transform.forward) * accumulatedRotation;
     }
 

@@ -1142,7 +1142,7 @@ MonoBehaviour:
   skimmer: {fileID: 874579554510349383}
   waitTillOutsideSkimmer: 1
   shielded: 1
-  offset: 5
+  offset: 20
   initialWavelength: 13
   minWavelength: 11
   gap: 10
