@@ -7,10 +7,6 @@ public class DetonateProjectilesAction : ShipAction
     [SerializeField] Gun gun;
 
 
-    void Start()
-    {
-
-    }
     public override void StartAction()
     {
         gun.DetonateProjectile();

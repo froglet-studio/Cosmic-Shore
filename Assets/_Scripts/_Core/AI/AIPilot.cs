@@ -165,7 +165,7 @@ namespace StarWriter.Core.IO
         {
             if (AutoPilotEnabled)
             {
-                if (useAbility) StartCoroutine(UseAbilityCoroutine(ability));
+                //if (useAbility) StartCoroutine(UseAbilityCoroutine(ability));
 
                 var targetPosition = CrystalTransform.position;
                 //Vector3 currentDirection = shipStatus.Course;
