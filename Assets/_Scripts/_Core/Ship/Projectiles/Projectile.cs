@@ -1,9 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq.Expressions;
 using UnityEngine;
 using StarWriter.Core.HangerBuilder;
-
 
 namespace StarWriter.Core
 {
@@ -20,7 +18,6 @@ namespace StarWriter.Core
         public float ProjectileTime;
 
         [SerializeField] bool drawLine = false;
-        [SerializeField] float startLength = 1f;
         [SerializeField] float growthRate = 1.0f;
 
         MeshRenderer meshRenderer;

@@ -20,8 +20,6 @@ namespace StarWriter.Core.IO
         bool fullSpeedStraightEffectsStarted;
         bool minimumSpeedStraightEffectsStarted;
         int leftTouchIndex, rightTouchIndex;
-        bool oneFingerMode;
-        bool leftActive = true;
 
         const float piOverFour = 0.785f; 
 
@@ -206,7 +204,6 @@ namespace StarWriter.Core.IO
 
                     if (Input.touchCount == 1)
                     {
-                        oneFingerMode = true;
                         var position = Input.touches[0].position;
 
                         if (Vector2.Distance(LeftJoystickValue, position) < Vector2.Distance(RightJoystickValue, position))
@@ -219,7 +216,6 @@ namespace StarWriter.Core.IO
                             LeftJoystickValue = position;
                             leftTouchIndex = 0;
                             HandleJoystick(ref LeftJoystickStart, leftTouchIndex, ref LeftJoystickPosition, ref LeftClampedPosition);
-                            leftActive = true;
                         }
                         else
                         {
@@ -231,10 +227,8 @@ namespace StarWriter.Core.IO
                             RightJoystickValue = position;
                             rightTouchIndex = 0;
                             HandleJoystick(ref RightJoystickStart, rightTouchIndex, ref RightJoystickPosition, ref RightClampedPosition);
-                            leftActive = false;
                         }
                     }
-                    else oneFingerMode = false;
                 }
                 
 
