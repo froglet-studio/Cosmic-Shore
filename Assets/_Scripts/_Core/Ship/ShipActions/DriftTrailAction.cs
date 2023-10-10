@@ -27,7 +27,7 @@ public class DriftTrailAction : ShipAction
         while (true) 
         {
             trailSpawner.SetDotProduct(Vector3.Dot(ship.ShipStatus.Course, ship.transform.forward));
-            yield return null;
+            yield return new WaitForSeconds(.1f);
         }
     }
 }

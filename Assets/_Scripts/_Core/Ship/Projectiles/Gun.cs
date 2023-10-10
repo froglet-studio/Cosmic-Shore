@@ -59,7 +59,7 @@ namespace StarWriter.Core
                     }
                     else // Golden Spiral method for spherical pattern
                     {
-                        int points = 4 * ((int)energy + 1); // 
+                        int points = 2 * ((int)energy + 3); // 
                         float phi = Mathf.PI * (3 - Mathf.Sqrt(5)); // Golden angle
                         var randomRotation = Random.rotation;
                         for (int i = 0; i < points; i++)
