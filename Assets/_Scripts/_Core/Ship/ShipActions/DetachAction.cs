@@ -4,7 +4,7 @@ public class DetachAction : ShipAction
 {
     ShipStatus shipData;
 
-    void Start()
+    protected override void Start()
     {
         shipData = ship.GetComponent<ShipStatus>();
     }
@@ -19,5 +19,6 @@ public class DetachAction : ShipAction
 
     public override void StopAction()
     {
+        // Implementing Abstract Method
     }
 }

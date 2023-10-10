@@ -4,7 +4,7 @@ public class BoostAction : ShipAction
 {
     ShipStatus shipData;
 
-    void Start()
+    protected override void Start()
     {
         shipData = ship.GetComponent<ShipStatus>();
     }

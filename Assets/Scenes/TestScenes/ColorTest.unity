@@ -5305,18 +5305,6 @@ ParticleSystem:
         m_PostInfinity: 2
         m_RotationOrder: 4
     vectorLabel1_3: W
---- !u!114 &167511420 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 750320515264027683, guid: 494deef066b46a24a9b5226c4203833c,
-    type: 3}
-  m_PrefabInstance: {fileID: 1059225105}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1 &201432916
 GameObject:
   m_ObjectHideFlags: 0
@@ -5432,18 +5420,6 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 201432916}
   m_Mesh: {fileID: 6388583096387020055, guid: 6de7004ad6cf28a47964cd1efc25590b, type: 3}
---- !u!114 &251025445 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 750320515910971141, guid: 494deef066b46a24a9b5226c4203833c,
-    type: 3}
-  m_PrefabInstance: {fileID: 1059225105}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1 &252954790
 GameObject:
   m_ObjectHideFlags: 0
@@ -5764,18 +5740,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 283290508}
   m_CullTransparentMesh: 1
---- !u!114 &285921441 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 750320515315825282, guid: 494deef066b46a24a9b5226c4203833c,
-    type: 3}
-  m_PrefabInstance: {fileID: 1059225105}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!4 &412244125 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 7231566422788689087, guid: 6540c78597c2dcc468123b270169fc44,
@@ -11164,30 +11128,6 @@ Transform:
     type: 3}
   m_PrefabInstance: {fileID: 641529686}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &651298577 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 750320515283051588, guid: 494deef066b46a24a9b5226c4203833c,
-    type: 3}
-  m_PrefabInstance: {fileID: 1059225105}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
---- !u!114 &680398256 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 750320515314836783, guid: 494deef066b46a24a9b5226c4203833c,
-    type: 3}
-  m_PrefabInstance: {fileID: 1059225105}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1001 &719254185
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -11424,7 +11364,6 @@ GameObject:
   - component: {fileID: 735765820}
   - component: {fileID: 735765819}
   - component: {fileID: 735765818}
-  - component: {fileID: 735765817}
   - component: {fileID: 735765816}
   m_Layer: 5
   m_Name: Replay Button
@@ -11466,22 +11405,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   activationButton: 7
---- !u!114 &735765817
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 735765814}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6814330515934fb4a9ab5e810e146b88, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  snsShare: {fileID: 0}
-  screenshotButton: {fileID: 0}
-  replayButton: {fileID: 0}
-  toggleObject: {fileID: 735765814}
 --- !u!114 &735765818
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -11958,18 +11881,6 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 871182669}
   m_Mesh: {fileID: 6388583096387020055, guid: 6de7004ad6cf28a47964cd1efc25590b, type: 3}
---- !u!114 &897021113 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 750320516025525672, guid: 494deef066b46a24a9b5226c4203833c,
-    type: 3}
-  m_PrefabInstance: {fileID: 1059225105}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1 &958014519
 GameObject:
   m_ObjectHideFlags: 0
@@ -12168,17 +12079,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b5d3599573f5d3348865c8d5efe8c29f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  numberOfSegments: 1
   spawnableSegments:
   - {fileID: 2091254371}
   positioningScheme: 2
   spawnSegmentWeights:
   - 1
   Seed: 0
-  InitializeOnStart: 0
+  parent: {fileID: 0}
   origin: {x: 0, y: 0, z: 500}
+  SphereRadius: 250
   StraightLineLength: 400
+  RotationAmount: 10
   DifficultyAngle: 90
+  InitializeOnStart: 0
+  numberOfSegments: 1
 --- !u!1 &1036794943
 GameObject:
   m_ObjectHideFlags: 0
@@ -12525,28 +12439,6 @@ RectTransform:
     type: 3}
   m_PrefabInstance: {fileID: 1059225105}
   m_PrefabAsset: {fileID: 0}
---- !u!1 &1059225107 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 750320515651948985, guid: 494deef066b46a24a9b5226c4203833c,
-    type: 3}
-  m_PrefabInstance: {fileID: 1059225105}
-  m_PrefabAsset: {fileID: 0}
---- !u!114 &1059225110
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1059225107}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6814330515934fb4a9ab5e810e146b88, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  snsShare: {fileID: 0}
-  screenshotButton: {fileID: 0}
-  replayButton: {fileID: 0}
-  toggleObject: {fileID: 0}
 --- !u!1 &1078953702
 GameObject:
   m_ObjectHideFlags: 0
@@ -12611,17 +12503,9 @@ MonoBehaviour:
   ActivePlayerScoreDisplay: {fileID: 2142481257}
   ScoringMode: 5
   GolfRules: 0
-  WinnerNameContainer: {fileID: 2087197976}
-  PlayerNameContainers:
-  - {fileID: 680398256}
-  - {fileID: 167511420}
-  - {fileID: 1237319500}
-  - {fileID: 1222639747}
-  PlayerScoreContainers:
-  - {fileID: 651298577}
-  - {fileID: 897021113}
-  - {fileID: 251025445}
-  - {fileID: 285921441}
+  GameCanvas: {fileID: 0}
+  TimePlayedScoreMultiplier: 1000
+  VolumeNormalizationQuotient: 145.65
 --- !u!114 &1078953708
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -12634,9 +12518,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e50774bfa84874243a429c7097d42f36, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  StatDump: {fileID: 0}
   EndOfRoundStatContainers: []
-  WinnerText: {fileID: 0}
   nodeGame: 0
 --- !u!114 &1078953710
 MonoBehaviour:
@@ -12650,25 +12532,23 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2caefb27e1b37a9419bcf832339b9f10, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  HUD: {fileID: 1420184493}
-  playerPrefab: {fileID: 1649340654}
+  gameMode: 0
+  NumberOfRounds: 1
   TurnMonitors:
   - {fileID: 1078953703}
   ScoreTracker: {fileID: 1078953707}
-  AllowedShipTypes: 
-  NumberOfRounds: 1
+  GameCanvas: {fileID: 0}
+  playerPrefab: {fileID: 1649340654}
   PlayerOrigin: {fileID: 1192541910}
-  EndGameScreen: {fileID: 1059225107}
+  EndOfTurnDelay: 0
+  EnableTrails: 1
   ActivePlayer: {fileID: 0}
-  Countdown3: {fileID: 21300000, guid: f2202bfb9f07ec64d9cf9db6946d63bd, type: 3}
-  Countdown2: {fileID: 21300000, guid: 5bf5264d128e5d44c8f089e6ee61d206, type: 3}
-  Countdown1: {fileID: 21300000, guid: e349453ab9bba76458c019322f48e341, type: 3}
-  Countdown0: {fileID: 21300000, guid: 989d86426e9e0bd45a6b8c70d4443c33, type: 3}
-  CountdownGrowScale: 1.5
   Crystal: {fileID: 1568959833}
   CrystalStartPosition: {x: 0, y: 0, z: -120}
   SegmentSpawner: {fileID: 1020381236}
   numberOfSegments: 10
+  straightLineLength: 400
+  ResetTrails: 1
 --- !u!1 &1082554870
 GameObject:
   m_ObjectHideFlags: 0
@@ -13322,30 +13202,6 @@ Transform:
   m_Father: {fileID: 1471404063}
   m_RootOrder: 4
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1222639747 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 750320515223190370, guid: 494deef066b46a24a9b5226c4203833c,
-    type: 3}
-  m_PrefabInstance: {fileID: 1059225105}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
---- !u!114 &1237319500 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 750320516014708762, guid: 494deef066b46a24a9b5226c4203833c,
-    type: 3}
-  m_PrefabInstance: {fileID: 1059225105}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1 &1238217037
 GameObject:
   m_ObjectHideFlags: 0
@@ -14197,18 +14053,6 @@ RectTransform:
     type: 3}
   m_PrefabInstance: {fileID: 1720411787443196605}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &1420184493 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 1720411786157758736, guid: 491eb8350c5c6ab45a8b291192f9891a,
-    type: 3}
-  m_PrefabInstance: {fileID: 1720411787443196605}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: aa08588b33df93c4fb866d88d19a5a42, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1 &1435618545
 GameObject:
   m_ObjectHideFlags: 0
@@ -14902,12 +14746,12 @@ PrefabInstance:
     - target: {fileID: 5247650485044281852, guid: 061f308768b5b564bbb0f130d1a8f02e,
         type: 3}
       propertyPath: m_LocalPosition.y
-      value: 7.4383693
+      value: 7.4579606
       objectReference: {fileID: 0}
     - target: {fileID: 5247650485044281852, guid: 061f308768b5b564bbb0f130d1a8f02e,
         type: 3}
       propertyPath: m_LocalPosition.z
-      value: 269.99142
+      value: 270
       objectReference: {fileID: 0}
     - target: {fileID: 5247650485044281852, guid: 061f308768b5b564bbb0f130d1a8f02e,
         type: 3}
@@ -15392,18 +15236,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!114 &2087197976 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 750320516382177409, guid: 494deef066b46a24a9b5226c4203833c,
-    type: 3}
-  m_PrefabInstance: {fileID: 1059225105}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1 &2091254370
 GameObject:
   m_ObjectHideFlags: 0
@@ -15569,7 +15401,7 @@ MonoBehaviour:
   TrailSpawner: {fileID: 874579554236054799}
   ShipController: {fileID: 0}
   AutoPilot: {fileID: 0}
-  ShipData: {fileID: 0}
+  ShipStatus: {fileID: 0}
   nearFieldSkimmer: {fileID: 2102723185}
   OrientationHandle: {fileID: 1878660672434552104}
   shipGeometries:
@@ -15580,7 +15412,6 @@ MonoBehaviour:
   - {fileID: 2680414609059955833}
   - {fileID: 5564509300150422970}
   - {fileID: 4183365115899357720}
-  head: {fileID: 0}
   AOEPrefab: {fileID: 2728798890556433942, guid: f5ecfb9923155a84c860975d559b2714,
     type: 3}
   farFieldSkimmer: {fileID: 412244126}
@@ -15591,60 +15422,21 @@ MonoBehaviour:
   blockChargeChange: 0
   boostMultiplier: 2
   boostFuelAmount: 0
-  maxSpeedStraightActions: []
-  minSpeedStraightActions: []
-  leftStickShipActions:
-  - {fileID: 867704552785241484}
-  rightStickShipActions:
-  - {fileID: 867704552785241484}
-  flipShipActions: []
-  idleShipActions: []
-  button1ShipActions: []
-  button2ShipActions: []
-  button3ShipActions: []
+  inputEventShipActions: []
+  resourceEventClassActions: []
+  MassAbilityTarget: {fileID: 0}
+  ChargeAbilityTarget: {fileID: 0}
+  SpaceAbilityTarget: {fileID: 0}
+  TimeAbilityTarget: {fileID: 0}
+  ChargeAbility2Target: {fileID: 0}
   LevelEffects: 
-  minGap: 0
-  maxGap: 0
-  minFarFieldSkimmerScale: 200
-  maxFarFieldSkimmerScale: 200
-  minNearFieldSkimmerScale: 15
-  maxNearFieldSkimmerScale: 100
-  minProjectileScale: 1
-  maxProjectileScale: 10
-  minProjectileBlockScale: {x: 1.5, y: 1.5, z: 3}
-  maxProjectileBlockScale: {x: 1.5, y: 1.5, z: 30}
   ControlOverrides: 0300000004000000
   closeCamDistance: -2.5
   farCamDistance: -100
   AOEExplosionMaterial: {fileID: 0}
   AOEConicExplosionMaterial: {fileID: 0}
---- !u!114 &874579554236054798
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6417075533726362628}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9846c9cd6cfac424797ca640ebcb7a04, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  Speed: 0
-  Boosting: 0
-  BoostCharging: 0
-  BoostDecaying: 0
-  Drifting: 0
-  Portrait: 0
-  ShowThreeButtonPanel: 0
-  LiveProjectiles: 0
-  Stationary: 0
-  ElevatedAmmoGain: 0
-  Attached: 0
-  AttachedTrailBlock: {fileID: 0}
-  GunsActive: 1
-  Course: {x: 0, y: 0, z: 0}
-  blockRotation: {x: 0, y: 0, z: 0, w: 0}
+  SkimmerMaterial: {fileID: 0}
+  ElementStats: []
 --- !u!114 &874579554236054799
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -15666,7 +15458,7 @@ MonoBehaviour:
   initialWavelength: 10
   minWavelength: 1
   gap: 12
-  InnerDimensions: {x: 0, y: 0, z: 0}
+  TargetScale: {x: 0, y: 0, z: 0}
   defaultWaitTime: 0.5
   waitTime: 0.5
   startDelay: 2
@@ -15769,29 +15561,25 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 737294a573670f74389a7af68df314d5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Resources: 
   usesBoost: 0
-  usesLevels: 0
+  initialBoost: 1
+  maxBoost: 1
   usesAmmo: 1
-  usesCharge: 0
   gainsAmmo: 0
   ammoGainRate: 0.1
   elevatedAmmoGainRate: 0.03
-  maxBoost: 1
-  initialBoost: 1
-  maxLevel: 1
-  initialLevel: 0
-  maxAmmo: 1
   initialAmmo: 0.392
-  maxCharge: 1
-  initialCharge: 1
-  BoostDisplay: {fileID: 0}
-  LevelDisplay: {fileID: 0}
-  AmmoDisplay: {fileID: 0}
+  maxAmmo: 1
+  usesEnergy: 0
+  maxEnergy: 1
+  initialEnergy: 1
   ChargeDisplay: {fileID: 0}
   MassDisplay: {fileID: 0}
   SpaceDisplay: {fileID: 0}
   TimeDisplay: {fileID: 0}
+  EnergyDisplay: {fileID: 0}
+  BoostDisplay: {fileID: 0}
+  AmmoDisplay: {fileID: 0}
   ChargeLevelDisplay: {fileID: 0}
   MassLevelDisplay: {fileID: 0}
   SpaceLevelDisplay: {fileID: 0}
@@ -15800,6 +15588,7 @@ MonoBehaviour:
   InitialMassLevel: 0
   InitialSpaceLevel: 0
   InitialTimeLevel: 0
+  ChargeTestHarness: 0
 --- !u!23 &1536866752013746923
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -16385,7 +16174,13 @@ MonoBehaviour:
   YDiff: 0
   raycastHeight: 2
   raycastWidth: 2
-  autoPilotEnabled: 0
+  AutoPilotEnabled: 0
+  LookingAtCrystal: 0
+  ram: 0
+  drift: 0
+  useAbility: 0
+  abilityCooldown: 0
+  ability: {fileID: 0}
   CrystalTransform: {fileID: 0}
   flowFieldData: {fileID: 0}
 --- !u!65 &3506876890827341462
@@ -21563,6 +21358,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 46ca128b16ccbfd42be69beb8b52be77, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  SkinnedMeshRenderer: {fileID: 0}
+  SaveNewPositions: 0
+  UseShapeKeys: 0
   brakeThreshold: 0.65
   lerpAmount: 2
   smallLerpAmount: 0.7
@@ -21573,8 +21371,9 @@ MonoBehaviour:
   ThrusterTopLeft: {fileID: 6207385368956736005}
   ThrusterBottomLeft: {fileID: 4361035736374797051}
   ThrusterBottomRight: {fileID: 9195870423525605830}
-  animationScaler: 25
-  yawAnimationScaler: 80
+  smallAnimationScaler: 10
+  mediumAnimationScaler: 30
+  bigAnimationScaler: 45
 --- !u!1 &6417075533726362628
 GameObject:
   m_ObjectHideFlags: 0
@@ -21585,13 +21384,12 @@ GameObject:
   m_Component:
   - component: {fileID: 5928382659736401598}
   - component: {fileID: 874579554236054794}
-  - component: {fileID: 6964962696570229361}
   - component: {fileID: 874579554236054799}
-  - component: {fileID: 874579554236054798}
   - component: {fileID: 3440187540140623299}
   - component: {fileID: 1435252849263910765}
   - component: {fileID: 6293426127699252856}
   - component: {fileID: 7686683632843011520}
+  - component: {fileID: 7686683632843011521}
   m_Layer: 0
   m_Name: Manta
   m_TagString: Player_Ship
@@ -21615,25 +21413,6 @@ Transform:
   m_Father: {fileID: 1471404063}
   m_RootOrder: 8
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &6964962696570229361
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6417075533726362628}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: eda23b53f3524b74ab4795a9c7e3abac, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  explodableParts:
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  explosiveMaterial: {fileID: 2100000, guid: cbf0164b1addfee43a45e430c464b6fd, type: 2}
-  maxExplosionRadius: 300
-  explosionRate: 120
 --- !u!23 &7054913316173259096
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -21859,13 +21638,39 @@ MonoBehaviour:
   ThrottleScaler: 0
   DefaultMinimumSpeed: 10
   DefaultThrottleScaler: 62
-  BoostDecay: 1
-  MaxBoostDecay: 10
-  BoostDecayGrowthRate: 0.03
   PitchScaler: 90
   YawScaler: 60
   RollScaler: 90
   RotationThrottleScaler: 0
+--- !u!114 &7686683632843011521
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533726362628}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 61d08a99952fdc44d96f926228873c0c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  Speed: 0
+  Boosting: 0
+  ChargedBoostDischarging: 0
+  Drifting: 0
+  Turret: 0
+  Portrait: 0
+  SingleStickControls: 0
+  LiveProjectiles: 0
+  Stationary: 0
+  ElevatedAmmoGain: 0
+  ChargedBoostCharge: 1
+  AutoPilotEnabled: 0
+  Attached: 0
+  AttachedTrailBlock: {fileID: 0}
+  GunsActive: 0
+  Course: {x: 0, y: 0, z: 1}
+  blockRotation: {x: 0, y: 0, z: 0, w: 0}
 --- !u!1 &7850473781317762109
 GameObject:
   m_ObjectHideFlags: 0

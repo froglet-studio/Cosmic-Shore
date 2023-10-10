@@ -1,7 +1,5 @@
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using StarWriter.Core;
 
 public class EnergizeAction : ShipAction
 {
@@ -16,7 +14,7 @@ public class EnergizeAction : ShipAction
     [SerializeField] int Energy = 1;
     int defaultEnergy;
 
-    private void Start()
+    protected override void Start()
     {
         var firstGun = fireActions[0];
 
