@@ -23,7 +23,7 @@ public class SpawnablePumpkin : SpawnableEllipsoid
         width = ((float)rng.Next(25, 100)) / 100 * maxwidth;
         //height = ((float)rng.Next(1, 100)) / 100 * maxheight;
 
-        int blockCount = 20;
+        int blockCount = 15;
 
         int periods = 12; // Number of cycles of the k pattern
         int totalCurveCount = 4 * periods;

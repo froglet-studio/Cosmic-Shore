@@ -264,7 +264,7 @@ namespace StarWriter.Core
                 tempMaterial.SetColor("_DarkColor", Color.Lerp(startColor2, targetColor2, t));
                 tempMaterial.SetVector("_spread", Vector3.Lerp(startVector, targetVector, t));
 
-                yield return null;
+                yield return new WaitForSeconds(.05f);
             }
 
             meshRenderer.material = targetMaterial;

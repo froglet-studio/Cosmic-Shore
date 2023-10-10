@@ -2033,7 +2033,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a58bf4fb65afa704194fe9e28e67d58d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  SkillLevel: 0.5
+  SkillLevel: 1
   defaultThrottleHigh: 0.8
   defaultThrottleLow: 0.4
   defaultAggressivenessHigh: 0.1
