@@ -27,12 +27,16 @@ public class CatalogManager : SingletonPersistent<CatalogManager>
     #region Initialize PlayFab Economy API with Auth Context
 
     /// <summary>
-    /// Load Catalog Items
+    /// Initialize PlayFab Economy API
     /// Instantiate PlayFab Economy API with auth context
-    /// Querying catalog and inventory item don't need to fetch auth context from Authentication manager everytime.
     /// </summary>
     void InitializePlayFabEconomyAPI()
     {
+        if (AuthenticationManager.PlayerAccount.AuthContext == null)
+        {
+            Debug.LogWarning($"Current Player has not logged in yet.");
+            return;
+        }
         // Null check for PlayFab Economy API instance
         _playFabEconomyInstanceAPI??= new PlayFabEconomyInstanceAPI(AuthenticationManager.PlayerAccount.AuthContext);
     }
