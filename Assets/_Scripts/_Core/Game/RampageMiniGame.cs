@@ -7,6 +7,7 @@ public class RampageMiniGame : MiniGame
     [SerializeField] SpawnableEllipsoid spawnableEllipsoid;
     int maxDifficulty = 4;
     float maxSize = 100;
+    float maxSphereRadius = 250;
 
     public static new ShipTypes PlayerShipType = ShipTypes.Rhino;
 
@@ -21,11 +22,13 @@ public class RampageMiniGame : MiniGame
     {
         base.SetupTurn();
 
-        SegmentSpawner.numberOfSegments = 20;
+        SegmentSpawner.SphereRadius = maxSphereRadius * IntensityLevel;
         spawnableEllipsoid.maxlength = spawnableEllipsoid.maxwidth = spawnableEllipsoid.maxheight = maxSize * IntensityLevel / maxDifficulty;
+        
 
         TrailSpawner.NukeTheTrails();
         Crystal.transform.position = CrystalStartPosition;
+
 
         SegmentSpawner.Initialize();
     }

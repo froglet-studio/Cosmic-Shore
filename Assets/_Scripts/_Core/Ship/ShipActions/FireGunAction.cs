@@ -6,7 +6,7 @@ public class FireGunAction : ShipAction
     // TODO: WIP gun firing needs to be reworked
     [SerializeField] Gun gun;
 
-    ResourceSystem resourceSystem;
+
     ShipStatus shipData;
     GameObject projectileContainer;
     [SerializeField] float ammoCost = .03f;
@@ -16,12 +16,12 @@ public class FireGunAction : ShipAction
     public float Speed = 90;
     public float ProjectileTime = 3f;
 
-    void Start()
+    protected override void Start()
     {
+        base.Start();
         projectileContainer = new GameObject($"{ship.Player.PlayerName}_Projectiles");
         projectileContainer.transform.parent = ship.Player.transform;
         shipData = ship.GetComponent<ShipStatus>();
-        resourceSystem = ship.ResourceSystem;
     }
     public override void StartAction()
     {

@@ -11,17 +11,7 @@ public class AdvertisementMenu : MonoBehaviour
     public delegate void OnDeclineAdEvent();
     public static event OnDeclineAdEvent onDeclineAd;
 
-    private void OnEnable()
-    {
-        GameManager.onDeath += ShowIncentivizedAdPanel;
-    }
-
-    private void OnDisable()
-    {
-        GameManager.onDeath -= ShowIncentivizedAdPanel;
-    }
-
-    private void Awake()
+    void Awake()
     {
         watchAdButton.gameObject.SetActive(true);
         declineAdButton.gameObject.SetActive(true);
@@ -38,11 +28,10 @@ public class AdvertisementMenu : MonoBehaviour
         onDeclineAd?.Invoke();
     }
 
-    private void ShowIncentivizedAdPanel()
+    void ShowIncentivizedAdPanel()
     {
         if (GameManager.Instance.DeathCount < 2)
         {
-
             adsManager.LoadAd();
             watchAdButton.gameObject.SetActive(true);
             declineAdButton.gameObject.SetActive(true);

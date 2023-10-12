@@ -420,7 +420,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &675029769
 Transform:
   m_ObjectHideFlags: 0
@@ -557,6 +557,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 675029769}
+  - {fileID: 1638204689}
   m_Father: {fileID: 1471404063}
   m_RootOrder: 6
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -667,7 +668,7 @@ MonoBehaviour:
   Crystal: {fileID: 1568959833}
   CrystalStartPosition: {x: 0, y: 0, z: -120}
   SegmentSpawner: {fileID: 1471404064}
-  spawnableEllipsoid: {fileID: 675029770}
+  spawnableEllipsoid: {fileID: 1638204688}
 --- !u!4 &1180410982 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 6454128237993233764, guid: 4a855af160021d241b8c1ac70cf2d792,
@@ -1126,17 +1127,20 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   spawnableSegments:
   - {fileID: 675029770}
+  - {fileID: 1638204688}
   positioningScheme: 0
   spawnSegmentWeights:
+  - 0
   - 1
   Seed: 0
   parent: {fileID: 0}
   origin: {x: 0, y: 0, z: 0}
+  SphereRadius: 250
   StraightLineLength: 400
   RotationAmount: 10
   DifficultyAngle: 90
   InitializeOnStart: 0
-  numberOfSegments: 1
+  numberOfSegments: 7
 --- !u!114 &1471404065
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1300,6 +1304,55 @@ Transform:
     type: 3}
   m_PrefabInstance: {fileID: 719254185}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &1638204687
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1638204689}
+  - component: {fileID: 1638204688}
+  m_Layer: 0
+  m_Name: SpawnablePumpkin
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1638204688
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1638204687}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 69a1007f6489dbb4c806a5274f3e7d17, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  trailBlock: {fileID: 4563009547826722997, guid: ed6f72639ff50df48a391f3a7b926042,
+    type: 3}
+  maxlength: 10
+  maxwidth: 10
+  maxheight: 10
+--- !u!4 &1638204689
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1638204687}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1020381235}
+  m_RootOrder: 1
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &1649340653
 PrefabInstance:
   m_ObjectHideFlags: 0

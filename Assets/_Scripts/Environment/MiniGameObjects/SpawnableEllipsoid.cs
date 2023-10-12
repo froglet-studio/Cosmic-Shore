@@ -4,14 +4,14 @@ using UnityEngine;
 
 public class SpawnableEllipsoid : SpawnableAbstractBase
 {
-    [SerializeField] TrailBlock trailBlock;
+    [SerializeField] protected TrailBlock trailBlock;
     public float maxlength;
     public float maxwidth;
     public float maxheight;
 
-    float length;
-    float width;
-    float height;
+    protected float length;
+    protected float width;
+    protected float height;
     
 
     static int SegmentsSpawned = 0;
@@ -38,7 +38,7 @@ public class SpawnableEllipsoid : SpawnableAbstractBase
             var position = new Vector3(x, y, 0);
             var lookPosition = position;
             if (block != 0) lookPosition = trail1.GetBlock(block - 1).transform.position;
-            CreateBlock(position, lookPosition, container.name + "::BLOCK1::" + block, trail1, trailBlock.transform.localScale, trailBlock, container);
+            CreateBlock(position, lookPosition, container.name + "::BLOCK1::" + block, trail1, trailBlock.transform.localScale, trailBlock, container, Teams.Green);
         }
         for (int block = 0; block < blockCount; block++)
         {
@@ -48,7 +48,7 @@ public class SpawnableEllipsoid : SpawnableAbstractBase
             var position = new Vector3(x, 0, z);
             var lookPosition = position;
             if (block != 0) lookPosition = trail2.GetBlock(block - 1).transform.position;
-            CreateBlock(position, lookPosition, container.name + "::BLOCK2::" + block, trail2, trailBlock.transform.localScale, trailBlock, container);
+            CreateBlock(position, lookPosition, container.name + "::BLOCK2::" + block, trail2, trailBlock.transform.localScale, trailBlock, container, Teams.Red);
         }
         for (int block = 0; block < blockCount; block++)
         {
@@ -58,7 +58,7 @@ public class SpawnableEllipsoid : SpawnableAbstractBase
             var position = new Vector3(0, y, z);
             var lookPosition = position;
             if (block != 0) lookPosition = trail3.GetBlock(block - 1).transform.position;
-            CreateBlock(position, lookPosition, container.name + "::BLOCK3::" + block, trail3, trailBlock.transform.localScale, trailBlock, container);
+            CreateBlock(position, lookPosition, container.name + "::BLOCK3::" + block, trail3, trailBlock.transform.localScale, trailBlock, container, Teams.Yellow);
         }
 
         trails.Add(trail1);

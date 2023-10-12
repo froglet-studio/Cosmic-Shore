@@ -8,12 +8,8 @@ public class DropDecoyAction : ShipAction
     [SerializeField] float dropRadiusMinRange = 40;
     [SerializeField] float dropRadiusMaxRange = 60;
     [SerializeField] FakeCrystal decoy;
-    ResourceSystem resourceSystem;
 
-    void Start()
-    {
-        resourceSystem = ship.ResourceSystem;
-    }
+
     public override void StartAction()
     {
         if (resourceSystem.CurrentAmmo > resourceSystem.MaxAmmo / decoysPerFullAmmo)

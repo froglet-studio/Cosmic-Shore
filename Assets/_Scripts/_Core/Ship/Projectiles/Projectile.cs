@@ -1,9 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq.Expressions;
 using UnityEngine;
 using StarWriter.Core.HangerBuilder;
-
 
 namespace StarWriter.Core
 {
@@ -20,7 +18,6 @@ namespace StarWriter.Core
         public float ProjectileTime;
 
         [SerializeField] bool drawLine = false;
-        [SerializeField] float startLength = 1f;
         [SerializeField] float growthRate = 1.0f;
 
         MeshRenderer meshRenderer;
@@ -162,7 +159,6 @@ namespace StarWriter.Core
             var elapsedTime = 0f;
             while (elapsedTime < projectileTime)
             {
-                Debug.Log($"during elapsedTime {elapsedTime}");
                 // Calculate movement for this frame
                 Vector3 moveDistance = Velocity * Time.deltaTime * Mathf.Cos(elapsedTime * Mathf.PI / (2 * projectileTime));
                 Vector3 nextPosition = transform.position + moveDistance;
@@ -189,6 +185,11 @@ namespace StarWriter.Core
                 yield return null;
             }
             Destroy(gameObject);
+        }
+
+        public void Stop() 
+        {
+            StopCoroutine(moveCoroutine);
         }
 
         public void Detonate()

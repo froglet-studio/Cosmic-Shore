@@ -1173,10 +1173,10 @@ SkinnedMeshRenderer:
   - {fileID: 5798525600549448751}
   - {fileID: 5571582515015820382}
   m_BlendShapeWeights:
-  - 0
-  - 0
-  - 0
-  - 0
+  - 100
+  - 100
+  - 100
+  - 100
   m_RootBone: {fileID: 4769814507153169321}
   m_AABB:
     m_Center: {x: 0.000514213, y: -0.0048629097, z: -0.001187378}
@@ -1382,7 +1382,7 @@ MonoBehaviour:
   Drifting: 0
   Turret: 0
   Portrait: 0
-  ShowThreeButtonPanel: 0
+  SingleStickControls: 0
   LiveProjectiles: 0
   Stationary: 0
   ElevatedAmmoGain: 0
@@ -2375,6 +2375,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
+      propertyPath: Scale.Value
+      value: 70
+      objectReference: {fileID: 0}
+    - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
       propertyPath: skimVisualFX
       value: 0
       objectReference: {fileID: 0}
@@ -2502,6 +2507,16 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
+      propertyPath: Scale.Max
+      value: 30
+      objectReference: {fileID: 0}
+    - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
+      propertyPath: Scale.Min
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
       propertyPath: affectSelf
       value: 0
       objectReference: {fileID: 0}
@@ -2512,13 +2527,18 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
+      propertyPath: Scale.Value
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
       propertyPath: skimVisualFX
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
       propertyPath: Scale.element
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}

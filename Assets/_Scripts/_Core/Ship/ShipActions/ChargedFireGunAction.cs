@@ -8,36 +8,32 @@ public class ChargedFireGunAction : ShipAction
     [SerializeField] Gun gun;
     [SerializeField] float chargePerSecond = 1;
 
-    ResourceSystem resourceSystem;
     ShipStatus shipStatus;
     GameObject projectileContainer;
-    float ammoCost;
+
 
     public float ProjectileScale = 1f;
-    public Vector3 BlockScale = new(4f, 4f, 1f); // TODO: Get rid of the need for this.
-    
-    float charge = 0;
-    Coroutine gainCharge;
 
-    void Start()
+    Coroutine gainEnergy;
+
+    protected override void Start()
     {
+        base.Start();
         projectileContainer = new GameObject($"{ship.Player.PlayerName}_Projectiles");
         shipStatus = ship.GetComponent<ShipStatus>();
-        resourceSystem = ship.ResourceSystem;
     }
     public override void StartAction()
     {
-        if (shipStatus.LiveProjectiles) gun.Detonate();
-        else gainCharge = StartCoroutine(GainChargeCoroutine());
+        if (shipStatus.LiveProjectiles) gun.StopProjectile();
+        else gainEnergy = StartCoroutine(GainEnergyCoroutine());
     }
 
-    IEnumerator GainChargeCoroutine()
+    IEnumerator GainEnergyCoroutine()
     {
         var chargePeriod = .1f;
-        while (charge<1)
+        while (resourceSystem.CurrentEnergy < resourceSystem.MaxEnergy)
         {
             yield return new WaitForSeconds(chargePeriod);
-            charge += chargePerSecond * chargePeriod;
             resourceSystem.ChangeEnergyAmount(chargePerSecond * chargePeriod);
         }
     }
@@ -64,27 +60,26 @@ public class ChargedFireGunAction : ShipAction
 
     public override void StopAction()
     {
-        if (charge != 0)
+        if (shipStatus.LiveProjectiles) gun.DetonateProjectile();
+        else 
         {
-            StopCoroutine(gainCharge);
-            charge = Mathf.Clamp(charge, 0, 1);
-            ammoCost = charge;
+            StopCoroutine(gainEnergy);
 
-            if (resourceSystem.CurrentAmmo > ammoCost)
+            if (resourceSystem.CurrentAmmo > resourceSystem.CurrentEnergy)
             {
-                resourceSystem.ChangeAmmoAmount(-ammoCost);
+                resourceSystem.ChangeAmmoAmount(-resourceSystem.CurrentEnergy);
 
                 Vector3 inheritedDirection;
                 if (shipStatus.Attached || shipStatus.Stationary) inheritedDirection = transform.forward;
                 else inheritedDirection = shipStatus.Course;
 
                 // TODO: WIP magic numbers
-                gun.FireGun(projectileContainer.transform, 90, inheritedDirection * shipStatus.Speed, ProjectileScale * charge, true, float.MaxValue, charge);
+                gun.FireGun(projectileContainer.transform, 90, inheritedDirection * shipStatus.Speed, ProjectileScale * resourceSystem.CurrentEnergy, true, float.MaxValue, resourceSystem.CurrentEnergy);
                 StartCheckProjectiles();
             }
 
-            charge = 0;
-            //resourceSystem.ResetEnergy();
+            resourceSystem.ResetEnergy();
         }
+        
     }
 }

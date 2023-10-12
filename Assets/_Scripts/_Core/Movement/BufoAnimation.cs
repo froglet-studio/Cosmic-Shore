@@ -43,11 +43,11 @@ class BufoAnimation : ShipAnimation
         var yawScalar = yaw * exaggeratedAnimationScalar;
         var rollScalar = roll * exaggeratedAnimationScalar;
 
-        AnimatePart(Fusilage, pitch * animationScalar, yaw * animationScalar, roll * animationScalar);
+        AnimatePart(Fusilage, pitch * animationScalar, yaw * animationScalar, 0);
         //AnimatePart(Turret, pitchScalar * .7f, yawScalar, rollScalar);
 
         foreach (var part in new List<Transform>() { ThrusterTopRight, TopWing, ThrusterBottomRight, ThrusterBottomLeft, BottomWing, ThrusterTopLeft })
-            AnimatePart(part, pitchScalar, yawScalar, rollScalar);
+            AnimatePart(part, pitchScalar, yawScalar, -yawScalar);
     }
 
     protected override void AnimatePart(Transform part, float pitch, float yaw, float roll)

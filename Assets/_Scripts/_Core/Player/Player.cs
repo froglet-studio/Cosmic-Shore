@@ -65,6 +65,7 @@ public class Player : MonoBehaviour
             GetComponent<InputController>().ship = shipInstance;
             
             ship = shipInstance.GetComponent<Ship>();
+            GameCanvas.MiniGameHUD.ship = ship;
             ship.Team = Team;
             ship.Player = this;
 

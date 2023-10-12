@@ -10,7 +10,7 @@ public class ShipTransformer : MonoBehaviour
 
     #region Ship
     protected Ship ship;
-    protected ShipStatus shipData;
+    protected ShipStatus shipStatus;
     protected ResourceSystem resourceSystem;
     #endregion
 
@@ -34,15 +34,15 @@ public class ShipTransformer : MonoBehaviour
     List<ShipVelocityModifier> VelocityModifiers = new();
     float speedModifierMax = 6f;
     float velocityModifierMax = 100;
-    float throttleMultiplier = 1;
+    protected float throttleMultiplier = 1;
     public float SpeedMultiplier { get { return throttleMultiplier; } }
-    Vector3 velocityShift = Vector3.zero;
+    protected Vector3 velocityShift = Vector3.zero;
 
 
     protected virtual void Start()
     {
         ship = GetComponent<Ship>();
-        shipData = ship.GetComponent<ShipStatus>();
+        shipStatus = ship.GetComponent<ShipStatus>();
         resourceSystem = ship.GetComponent<ResourceSystem>();
 
         MinimumSpeed = DefaultMinimumSpeed;
@@ -57,7 +57,7 @@ public class ShipTransformer : MonoBehaviour
         ThrottleScaler = DefaultThrottleScaler;
         accumulatedRotation = transform.rotation;
         resourceSystem.Reset();
-        shipData.Reset();
+        shipStatus.Reset();
     }
 
     protected virtual void Update()
@@ -72,14 +72,14 @@ public class ShipTransformer : MonoBehaviour
                 return;
 
             RotateShip();
-            shipData.blockRotation = transform.rotation;
+            shipStatus.blockRotation = transform.rotation;
 
-            if (shipData.Stationary)
+            if (shipStatus.Stationary)
                 return;
         }
 
         RotateShip();
-        shipData.blockRotation = transform.rotation;
+        shipStatus.blockRotation = transform.rotation;
 
         ApplyThrottleModifiers();
         ApplyVelocityModifiers();
@@ -87,7 +87,7 @@ public class ShipTransformer : MonoBehaviour
         MoveShip();
     }
 
-    protected void RotateShip()
+    protected virtual void RotateShip()
     {
         
         if (inputController != null)
@@ -141,11 +141,10 @@ public class ShipTransformer : MonoBehaviour
                             transform.right) * accumulatedRotation;
     }
 
-    protected virtual void Yaw()  
+    protected virtual void Yaw()  // TODO: test replacing these AngleAxis calls with eulerangles
     {
         accumulatedRotation = Quaternion.AngleAxis(
-                            inputController.XSum * (speed * RotationThrottleScaler + YawScaler) *
-                                (Screen.currentResolution.width / Screen.currentResolution.height) * Time.deltaTime,
+                            inputController.XSum * (speed * RotationThrottleScaler + YawScaler)  * Time.deltaTime,
                             transform.up) * accumulatedRotation;
     }
 
@@ -159,28 +158,25 @@ public class ShipTransformer : MonoBehaviour
     protected virtual void MoveShip()
     {
         float boostAmount = 1f;
-        if (shipData.Boosting && resourceSystem.CurrentBoost > 0) // TODO: if we run out of fuel while full speed and straight the ship data still thinks we are boosting
+        if (shipStatus.Boosting && resourceSystem.CurrentBoost > 0) // TODO: if we run out of fuel while full speed and straight the ship data still thinks we are boosting
         {
             boostAmount = ship.boostMultiplier;
             resourceSystem.ChangeBoostAmount(ship.boostFuelAmount);
         }
-        if (shipData.ChargedBoostDischarging) boostAmount *= shipData.ChargedBoostCharge;
+        if (shipStatus.ChargedBoostDischarging) boostAmount *= shipStatus.ChargedBoostCharge;
         if (inputController != null)
         speed = Mathf.Lerp(speed, inputController.XDiff * ThrottleScaler * boostAmount + MinimumSpeed, lerpAmount * Time.deltaTime);
 
         speed *= throttleMultiplier;
-        shipData.Speed = speed;
+        shipStatus.Speed = speed;
 
-        if (shipData.Drifting)
+
+        if (!shipStatus.Drifting)
         {
-            ship.GetComponent<TrailSpawner>().SetDotProduct(Vector3.Dot(shipData.Course, transform.forward)); // TODO: move this to it's own ability
-        }
-        else
-        {
-            shipData.Course = transform.forward;
+            shipStatus.Course = transform.forward;
         }
 
-        transform.position += (speed * shipData.Course + velocityShift) * Time.deltaTime;
+        transform.position += (speed * shipStatus.Course + velocityShift) * Time.deltaTime;
     }
 
     public void ModifyThrottle(float amount, float duration)

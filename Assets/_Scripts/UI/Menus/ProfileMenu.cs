@@ -449,7 +449,8 @@ namespace _Scripts._Core.Playfab_Models
         void InitializePlayerDisplayNameView()
         {
             BusyIndicator.SetActive(false);
-            displayNameInputField.text = AuthenticationManager.PlayerProfile.DisplayName;
+            if(!string.IsNullOrEmpty(AuthenticationManager.PlayerProfile.DisplayName))
+                displayNameInputField.text = AuthenticationManager.PlayerProfile.DisplayName;
 
             displayNameResultMessage.gameObject.SetActive(true);
         }

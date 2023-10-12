@@ -14,8 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Mode: 1
   Name: Elimination
-  Description: DON'T PLAY 1 PLAYER. Get the crystal in time without hitting a block
-    or get eliminated.
+  Description: Get the crystal in time without hitting a block or get eliminated.
   Icon: {fileID: 21300000, guid: 3393ef5bcc756364d98dc478fc0fe52b, type: 3}
   SelectedIcon: {fileID: 21300000, guid: b734e1a473e014c4198c58f6c02b894d, type: 3}
   CardBackground: {fileID: 21300000, guid: b5b9538f2e3a8c24d9a9f5219064fcdc, type: 3}

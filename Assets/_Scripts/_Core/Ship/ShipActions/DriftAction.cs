@@ -4,8 +4,9 @@ public class DriftAction : ShipAction
 {
     ShipStatus shipData;
 
-    void Start()
+    protected override void Start()
     {
+        base.Start();
         shipData = ship.GetComponent<ShipStatus>();
     }
     public override void StartAction()

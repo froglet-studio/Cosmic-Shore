@@ -199,19 +199,29 @@ namespace StarWriter.Core
                 NodeControlManager.Instance.RemoveBlock(team, TrailBlockProperties);
         }
 
+        
+
         public void DeactivateShield()
         {
+            if (lerpBlockMaterialPropertiesCoroutine != null) StopCoroutine(lerpBlockMaterialPropertiesCoroutine);
+            StartCoroutine(LerpBlockMaterialPropertiesCoroutine(Hangar.Instance.GetTeamBlockMaterial(team)));
+            StartCoroutine(DeactivateShieldCoroutine(1));
+            // TODO: need stats
+        }
+
+        IEnumerator DeactivateShieldCoroutine(float duration)
+        {
+            yield return new WaitForSeconds(duration);
             Shielded = false;
             TrailBlockProperties.Shielded = false;
-            gameObject.GetComponent<MeshRenderer>().material = Hangar.Instance.GetTeamBlockMaterial(team);
-            // TODO: need stats
         }
 
         public void ActivateShield()
         {
             Shielded = true;
             TrailBlockProperties.Shielded = true;
-            gameObject.GetComponent<MeshRenderer>().material = Hangar.Instance.GetTeamShieldedBlockMaterial(team);
+            if (lerpBlockMaterialPropertiesCoroutine != null) StopCoroutine(lerpBlockMaterialPropertiesCoroutine);
+            StartCoroutine(LerpBlockMaterialPropertiesCoroutine(Hangar.Instance.GetTeamShieldedBlockMaterial(team)));
             // TODO: need stats
         }
 
@@ -227,6 +237,37 @@ namespace StarWriter.Core
             yield return new WaitForSeconds(duration);
             
             DeactivateShield();
+        }
+
+        Coroutine lerpBlockMaterialPropertiesCoroutine;
+        IEnumerator LerpBlockMaterialPropertiesCoroutine(Material targetMaterial, float lerpDuration = .8f)
+        {
+            Material tempMaterial = new Material(meshRenderer.material);
+            meshRenderer.material = tempMaterial;
+
+            Color startColor1 = tempMaterial.GetColor("_BrightColor");
+            Color startColor2 = tempMaterial.GetColor("_DarkColor");
+            Vector3 startVector = tempMaterial.GetVector("_spread");
+
+            Color targetColor1 = targetMaterial.GetColor("_BrightColor");
+            Color targetColor2 = targetMaterial.GetColor("_DarkColor");
+            Vector3 targetVector = targetMaterial.GetVector("_spread");
+
+            float elapsedTime = 0.0f;
+
+            while (elapsedTime < lerpDuration)
+            {
+                elapsedTime += Time.deltaTime;
+                float t = Mathf.Clamp01(elapsedTime / lerpDuration);
+
+                tempMaterial.SetColor("_BrightColor", Color.Lerp(startColor1, targetColor1, t));
+                tempMaterial.SetColor("_DarkColor", Color.Lerp(startColor2, targetColor2, t));
+                tempMaterial.SetVector("_spread", Vector3.Lerp(startVector, targetVector, t));
+
+                yield return new WaitForSeconds(.05f);
+            }
+
+            meshRenderer.material = targetMaterial;
         }
 
         public void Steal(string playerName, Teams team)
@@ -247,7 +288,8 @@ namespace StarWriter.Core
                 this.team = team;
                 this.playerName = playerName;
 
-                gameObject.GetComponent<MeshRenderer>().material = Hangar.Instance.GetTeamBlockMaterial(team);
+                if (lerpBlockMaterialPropertiesCoroutine != null) StopCoroutine(lerpBlockMaterialPropertiesCoroutine);
+                StartCoroutine(LerpBlockMaterialPropertiesCoroutine(Hangar.Instance.GetTeamBlockMaterial(team)));
             } 
         }
 

@@ -19,7 +19,7 @@ public class ShipButtonPanel : MonoBehaviour
         {
             originalColors[i] = buttonImages[i].color;
         }
-        FadeOutButtons();
+        FadeInButtons();
     }    
 
     public void FadeOutButtons()

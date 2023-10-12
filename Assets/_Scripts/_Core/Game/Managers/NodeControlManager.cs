@@ -31,13 +31,11 @@ public class NodeControlManager : Singleton<NodeControlManager>
 
     void OnEnable()
     {
-        GameManager.onDeath += OutputNodeControl;
         GameManager.onGameOver += OutputNodeControl;
     }
 
     void OnDisable()
     {
-        GameManager.onDeath -= OutputNodeControl;
         GameManager.onGameOver -= OutputNodeControl;
     }
 
