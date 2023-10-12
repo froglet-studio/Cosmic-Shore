@@ -791,7 +791,11 @@ MonoBehaviour:
   ProjectileScale: 1
   Energy: 1
   Speed: 80
-  ProjectileTime: 5
+  ProjectileTime:
+    Value: 5
+    Min: 4
+    Max: 8
+    element: 3
 --- !u!1 &2323831624999812778
 GameObject:
   m_ObjectHideFlags: 0
@@ -872,7 +876,11 @@ MonoBehaviour:
   ProjectileScale: 1
   Energy: 1
   Speed: 80
-  ProjectileTime: 5
+  ProjectileTime:
+    Value: 5
+    Min: 4
+    Max: 8
+    element: 3
 --- !u!1 &3009779053630328212
 GameObject:
   m_ObjectHideFlags: 0
@@ -2380,7 +2388,7 @@ MonoBehaviour:
   Drifting: 0
   Turret: 0
   Portrait: 0
-  ShowThreeButtonPanel: 0
+  SingleStickControls: 0
   LiveProjectiles: 0
   Stationary: 0
   ElevatedAmmoGain: 0
@@ -2406,7 +2414,11 @@ MonoBehaviour:
   MinimumSpeed: 0
   ThrottleScaler: 0
   DefaultMinimumSpeed: 0
-  DefaultThrottleScaler: 40
+  DefaultThrottleScaler:
+    Value: 40
+    Min: 0
+    Max: 0
+    element: 0
   PitchScaler: 90
   YawScaler: 90
   RollScaler: 90

@@ -19,7 +19,7 @@ public class EnergizeAction : ShipAction
         var firstGun = fireActions[0];
 
         defaultSpeed = firstGun.Speed;
-        defaultProjectileTime = firstGun.ProjectileTime;
+        defaultProjectileTime = firstGun.ProjectileTime.Value;
         defaultEnergy = firstGun.Energy;
 
     }
@@ -30,7 +30,7 @@ public class EnergizeAction : ShipAction
             {
                 if (fireaction.Energy < Energy) fireaction.Energy = Energy;
                 if (fireaction.Speed < Speed) fireaction.Speed = Speed;
-                if (fireaction.ProjectileTime < ProjectileTime) fireaction.ProjectileTime = ProjectileTime;
+                if (fireaction.ProjectileTime.Value < ProjectileTime) fireaction.ProjectileTime.Value = ProjectileTime;
             }
     }
 
@@ -40,7 +40,7 @@ public class EnergizeAction : ShipAction
         {
             fireaction.Energy = defaultEnergy;
             fireaction.Speed = defaultSpeed;
-            fireaction.ProjectileTime = defaultProjectileTime;
+            fireaction.ProjectileTime.Value = defaultProjectileTime;
         }
     }
 }
