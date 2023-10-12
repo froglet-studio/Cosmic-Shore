@@ -1,10 +1,10 @@
 using StarWriter.Core;
-
+using StarWriter.Core.IO;
 public class ToggleTurretModeAction : ShipAction
 {
     ShipStatus shipData;
 
-    protected override void Start()
+    void Start()
     {
         shipData = ship.ShipStatus;
     }

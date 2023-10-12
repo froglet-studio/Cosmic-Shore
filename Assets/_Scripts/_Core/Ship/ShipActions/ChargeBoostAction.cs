@@ -10,7 +10,7 @@ public class ChargeBoostAction : ShipAction
     [SerializeField] float MaxBoostCharge = 10;
     ShipStatus shipData;
 
-    protected override void Start()
+    void Start()
     {
         shipData = ship.GetComponent<ShipStatus>();
     }

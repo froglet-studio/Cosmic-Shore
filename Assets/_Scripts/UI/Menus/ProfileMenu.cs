@@ -449,15 +449,7 @@ namespace _Scripts._Core.Playfab_Models
         void InitializePlayerDisplayNameView()
         {
             BusyIndicator.SetActive(false);
-            
-            if (AuthenticationManager.PlayerProfile == null)
-            {
-                Debug.LogWarning("Player profile has not yet loaded.");
-                return;
-            }
-            
-            if(!string.IsNullOrEmpty(AuthenticationManager.PlayerProfile.DisplayName))
-                displayNameInputField.text = AuthenticationManager.PlayerProfile.DisplayName;
+            displayNameInputField.text = AuthenticationManager.PlayerProfile.DisplayName;
 
             displayNameResultMessage.gameObject.SetActive(true);
         }

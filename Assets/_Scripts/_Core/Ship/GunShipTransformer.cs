@@ -8,7 +8,6 @@ public class GunShipTransformer : ShipTransformer
 
     public float ProjectileScale = 1f;
     public Vector3 BlockScale = new(4f, 4f, 1f);
-    [SerializeField] ElementalFloat growthAmount = new ElementalFloat(1);
 
     bool moveForward = true;
     bool attached = false;
@@ -28,16 +27,16 @@ public class GunShipTransformer : ShipTransformer
 
     protected override void MoveShip()
     {
-        if (shipStatus.Attached && !attached)
+        if (shipData.Attached && !attached)
         {
-            trailFollower.Attach(shipStatus.AttachedTrailBlock);
+            trailFollower.Attach(shipData.AttachedTrailBlock);
             if (!ship.InputController.AutoPilotEnabled && cameraManager != null)
             {
                 cameraManager.SetNormalizedCloseCameraDistance(1);
                 Debug.Log("camera distance now set to 1");
             }
         }
-        else if (!shipStatus.Attached && attached)
+        else if (!shipData.Attached && attached)
         {
             trailFollower.Detach();
             if (!ship.InputController.AutoPilotEnabled && cameraManager != null)
@@ -47,7 +46,7 @@ public class GunShipTransformer : ShipTransformer
             }
         }
 
-        attached = shipStatus.Attached;
+        attached = shipData.Attached;
 
         if (attached)
             Slide();
@@ -63,7 +62,7 @@ public class GunShipTransformer : ShipTransformer
 
         var throttle = (inputController.XDiff - zeroPosition)/(1 - zeroPosition);
 
-        if (Vector3.Dot(transform.forward, shipStatus.Course) < lookThreshold && throttle > 0)
+        if (Vector3.Dot(transform.forward, shipData.Course) < lookThreshold && throttle > 0)
              moveForward = !moveForward;
 
         if ((moveForward && throttle > 0) || (!moveForward && throttle < 0))
@@ -85,15 +84,15 @@ public class GunShipTransformer : ShipTransformer
 
     public void FinalBlockSlideEffects()
     {
-        shipStatus.AttachedTrailBlock = trailFollower.AttachedTrailBlock;
+        shipData.AttachedTrailBlock = trailFollower.AttachedTrailBlock;
 
-        if (shipStatus.AttachedTrailBlock.destroyed)
-            shipStatus.AttachedTrailBlock.Restore();
+        if (shipData.AttachedTrailBlock.destroyed)
+            shipData.AttachedTrailBlock.Restore();
 
-        if (shipStatus.AttachedTrailBlock.Team == ship.Team)
+        if (shipData.AttachedTrailBlock.Team == ship.Team)
         {
-            shipStatus.AttachedTrailBlock.Grow(growthAmount.Value);
+            shipData.AttachedTrailBlock.Grow();
         }
-        else shipStatus.AttachedTrailBlock.Steal(ship.Player.PlayerName, ship.Team);
+        else shipData.AttachedTrailBlock.Steal(ship.Player.PlayerName, ship.Team);
     }
 }

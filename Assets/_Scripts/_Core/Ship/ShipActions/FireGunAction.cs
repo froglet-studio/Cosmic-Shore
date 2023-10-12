@@ -6,21 +6,22 @@ public class FireGunAction : ShipAction
     // TODO: WIP gun firing needs to be reworked
     [SerializeField] Gun gun;
 
+    ResourceSystem resourceSystem;
     ShipStatus shipData;
-    [SerializeField] GameObject projectileContainer;
+    GameObject projectileContainer;
     [SerializeField] float ammoCost = .03f;
 
     public float ProjectileScale = 1f;
     public int Energy = 0;
     public float Speed = 90;
-    public ElementalFloat ProjectileTime = new ElementalFloat(3f);
+    public float ProjectileTime = 3f;
 
-    protected override void Start()
+    void Start()
     {
-        base.Start();
-        //projectileContainer = new GameObject($"{ship.Player.PlayerName}_Projectiles");
+        projectileContainer = new GameObject($"{ship.Player.PlayerName}_Projectiles");
         projectileContainer.transform.parent = ship.Player.transform;
         shipData = ship.GetComponent<ShipStatus>();
+        resourceSystem = ship.ResourceSystem;
     }
     public override void StartAction()
     {
@@ -33,7 +34,7 @@ public class FireGunAction : ShipAction
             else inheritedVelocity = shipData.Course;
 
             // TODO: WIP magic numbers
-            gun.FireGun(projectileContainer.transform, Speed, inheritedVelocity * shipData.Speed, ProjectileScale, true, ProjectileTime.Value, 0, FiringPatterns.Default, Energy);
+            gun.FireGun(projectileContainer.transform, Speed, inheritedVelocity * shipData.Speed, ProjectileScale, true, ProjectileTime, 0, FiringPatterns.Default, Energy);
         }
     }
 

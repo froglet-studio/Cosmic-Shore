@@ -66,3 +66,12 @@ crashlytics-build.properties
 /ProjectSettings/BurstAotSettings_StandaloneWindows.json
 /Recordings
 /Assets/Graphics/Materials/Shaders/DitheringVolumeDisplayShader.shader.meta
+
+### Firebase ###
+.idea
+**/node_modules/*
+**/.firebaserc
+
+### Firebase Patch ###
+.runtimeconfig.json
+.firebase/

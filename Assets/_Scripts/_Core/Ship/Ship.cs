@@ -161,26 +161,6 @@ namespace StarWriter.Core
             foreach (var key in ClassResourceActions.Keys)
                 foreach (var classAction in ClassResourceActions[key])
                     classAction.Ship = this;
-
-            if (ShipControlActions.ContainsKey(InputEvents.Button1Action))
-            {
-                Player.GameCanvas.MiniGameHUD.SetButtonActive(!CheckIfUsingGamepad(), 1);
-            }
-
-            if (ShipControlActions.ContainsKey(InputEvents.Button2Action))
-            {
-                Player.GameCanvas.MiniGameHUD.SetButtonActive(!CheckIfUsingGamepad(), 2);
-            }
-
-            if (ShipControlActions.ContainsKey(InputEvents.Button3Action))
-            {
-                Player.GameCanvas.MiniGameHUD.SetButtonActive(!CheckIfUsingGamepad(), 3);
-            }
-        }
-
-        bool CheckIfUsingGamepad()
-        {
-            return UnityEngine.InputSystem.Gamepad.current != null;
         }
         
         void ApplyShipControlOverrides(List<ShipControlOverrides> controlOverrides)
@@ -468,5 +448,71 @@ namespace StarWriter.Core
             }
         }
 
+        //[SerializeField] List<LevelEffectParameterMapping> LevelEffectParameterMappings;
+
+        //
+        // level up and down
+        //
+        //void UpdateLevel(Element element, int level)
+        //{
+        //    // TODO: P1 GOES AWAY
+        //    foreach (var levelEffectParameterMapping in LevelEffectParameterMappings)
+        //        if (levelEffectParameterMapping.Element == element)
+        //            ApplyShipEffect(levelEffectParameterMapping, level);
+        //}
+
+        //// TODO: P1 GOES AWAY
+        //void ApplyShipEffect(LevelEffectParameterMapping parameterMapping, int currentLevel)
+        //{
+        //    switch(parameterMapping.LevelEffect)
+        //    {
+        //        case ShipLevelEffects.ScaleNearFieldSkimmer:
+        //            ScaleNearFieldSkimmerWithLevel(currentLevel, parameterMapping);
+        //            break;
+        //        case ShipLevelEffects.ScaleFarFieldSkimmer:
+        //            ScaleFarFieldSkimmerWithLevel(currentLevel, parameterMapping);
+        //            break;
+        //        case ShipLevelEffects.ScaleGap:
+        //            ScaleGapWithLevel(currentLevel, parameterMapping);
+        //            break;
+        //        case ShipLevelEffects.ScaleProjectiles:
+        //            ScaleProjectilesWithLevel(currentLevel, parameterMapping);
+        //            break;
+        //        case ShipLevelEffects.ScaleChargeAbility:
+        //            ScaleChargeAbilityWithLevel(currentLevel, parameterMapping);
+        //            break;
+        //    }
+        //}
+
+        //// TODO: P1 GOES AWAY
+        //void ScaleNearFieldSkimmerWithLevel(float currentLevel, LevelEffectParameterMapping parameterMapping)
+        //{
+        //    if (nearFieldSkimmer != null)
+        //        nearFieldSkimmer.transform.localScale = Vector3.one * (parameterMapping.Min + (currentLevel * (parameterMapping.Max - parameterMapping.Min)));
+        //}
+        //void ScaleFarFieldSkimmerWithLevel(float currentLevel, LevelEffectParameterMapping parameterMapping)
+        //{
+        //    if (farFieldSkimmer != null)
+        //        farFieldSkimmer.transform.localScale = Vector3.one * (parameterMapping.Max - (currentLevel * (parameterMapping.Max - parameterMapping.Min)));
+        //}
+        //void ScaleGapWithLevel(float currentLevel, LevelEffectParameterMapping parameterMapping)
+        //{
+        //    TrailSpawner.gap = parameterMapping.Max - (currentLevel * (parameterMapping.Max - parameterMapping.Min));
+        //}
+
+        //void ScaleProjectilesWithLevel(float currentLevel, LevelEffectParameterMapping parameterMapping)
+        //{
+        //    // TODO: 
+        //    if (ShipController is GunShipTransformer controller)
+        //        controller.ProjectileScale = parameterMapping.Min + (currentLevel * (parameterMapping.Max - parameterMapping.Min));
+        //    else
+        //        Debug.LogWarning("Trying to scale projectile of ShipTransformer that is not a GunShipController");
+        //}
+
+        //void ScaleChargeAbilityWithLevel(float currentLevel, LevelEffectParameterMapping parameterMapping)
+        //{
+        //    Debug.Log($"ScaleChargeAbilityWithLevel - Current Level: {currentLevel}");
+        //    MassAbilityTarget.SetLevelParameter(Element.Mass, parameterMapping.Max - (currentLevel * (parameterMapping.Max - parameterMapping.Min)));
+        //}
     }
 }

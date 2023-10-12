@@ -4,7 +4,7 @@ public class ToggleGyroAction : ShipAction
 {
     InputController inputController;
 
-    protected override void Start()
+    void Start()
     {
         inputController = ship.InputController;
     }

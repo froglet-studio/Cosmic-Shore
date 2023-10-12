@@ -1,7 +1,9 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq.Expressions;
 using UnityEngine;
 using StarWriter.Core.HangerBuilder;
+
 
 namespace StarWriter.Core
 {
@@ -17,7 +19,8 @@ namespace StarWriter.Core
 
         public float ProjectileTime;
 
-        [SerializeField] bool spike = false;
+        [SerializeField] bool drawLine = false;
+        [SerializeField] float startLength = 1f;
         [SerializeField] float growthRate = 1.0f;
 
         MeshRenderer meshRenderer;
@@ -25,13 +28,15 @@ namespace StarWriter.Core
         private void Start()
         {
             
-            if (spike) 
+            if (drawLine) 
             {
                 transform.localScale = new Vector3(.4f,.4f,2);
                 meshRenderer = gameObject.GetComponent<MeshRenderer>();
                 meshRenderer.material = Hangar.Instance.GetTeamSpikeMaterial(Team);
                 meshRenderer.material.SetFloat("_Opacity", .5f);
             }
+
+            LaunchProjectile(ProjectileTime);
         }
 
         protected virtual void OnTriggerEnter(Collider other)
@@ -81,7 +86,7 @@ namespace StarWriter.Core
                         trailBlockProperties.trailBlock.ActivateShield(.5f);
                         break;
                     case TrailBlockImpactEffects.Stop:
-                        Stop();
+                        if (moveCoroutine != null) StopCoroutine(moveCoroutine);
                         break;
                     case TrailBlockImpactEffects.Fire:
                         GetComponent<LoadedGun>().FireGun();
@@ -147,11 +152,6 @@ namespace StarWriter.Core
 
         public void LaunchProjectile(float projectileTime)
         {
-            if (spike)
-            {
-                transform.localScale = new Vector3(.4f, .4f, 2);
-                GetComponent<MeshRenderer>().material.SetFloat("_Opacity", .5f);
-            }
             moveCoroutine = StartCoroutine(MoveProjectileCoroutine(projectileTime));
         }
 
@@ -162,12 +162,13 @@ namespace StarWriter.Core
             var elapsedTime = 0f;
             while (elapsedTime < projectileTime)
             {
+                Debug.Log($"during elapsedTime {elapsedTime}");
                 // Calculate movement for this frame
                 Vector3 moveDistance = Velocity * Time.deltaTime * Mathf.Cos(elapsedTime * Mathf.PI / (2 * projectileTime));
                 Vector3 nextPosition = transform.position + moveDistance;
 
-                // Only check for raycasting collisions if spike is true
-                if (spike)
+                // Only check for raycasting collisions if drawLine is true
+                if (drawLine)
                 {
                     if (Physics.Raycast(transform.position, transform.forward, out RaycastHit hit, moveDistance.magnitude))
                     {
@@ -187,12 +188,13 @@ namespace StarWriter.Core
                 elapsedTime += Time.deltaTime;
                 yield return null;
             }
-            GetComponentInParent<PoolManager>().ReturnToPool(gameObject, gameObject.tag);
+            Destroy(gameObject);
         }
 
-        public void Stop() 
+        public void Detonate()
         {
-            if (moveCoroutine != null) StopCoroutine(moveCoroutine);
+            StopCoroutine(moveCoroutine);
+            Destroy(gameObject);
         }
 
     }

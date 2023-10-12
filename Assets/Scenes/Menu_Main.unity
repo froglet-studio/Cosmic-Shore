@@ -3943,6 +3943,7 @@ MonoBehaviour:
   gameCanvas: {fileID: 0}
   AutoPilotEnabled: 0
   Portrait: 0
+  SingleStickControls: 0
   ship: {fileID: 0}
   XSum: 0
   YSum: 0
@@ -3956,8 +3957,6 @@ MonoBehaviour:
   LeftClampedPosition: {x: 0, y: 0}
   isGyroEnabled: 0
   invertYEnabled: 0
-  EasedRightJoystickPosition: {x: 0, y: 0}
-  EasedLeftJoystickPosition: {x: 0, y: 0}
 --- !u!1001 &1540374932
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -5080,6 +5079,7 @@ MonoBehaviour:
   gameCanvas: {fileID: 0}
   AutoPilotEnabled: 0
   Portrait: 0
+  SingleStickControls: 0
   ship: {fileID: 0}
   XSum: 0
   YSum: 0
@@ -5093,8 +5093,6 @@ MonoBehaviour:
   LeftClampedPosition: {x: 0, y: 0}
   isGyroEnabled: 0
   invertYEnabled: 0
-  EasedRightJoystickPosition: {x: 0, y: 0}
-  EasedLeftJoystickPosition: {x: 0, y: 0}
 --- !u!1 &1981450501
 GameObject:
   m_ObjectHideFlags: 0
@@ -5796,21 +5794,6 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Name
       value: Hangar
-      objectReference: {fileID: 0}
-    - target: {fileID: 302356026468653294, guid: fdbd97f79a7aec14f8fadd5589780a74,
-        type: 3}
-      propertyPath: AIDifficultyLevel
-      value: 4
-      objectReference: {fileID: 0}
-    - target: {fileID: 302356026468653294, guid: fdbd97f79a7aec14f8fadd5589780a74,
-        type: 3}
-      propertyPath: FriendlyAIShipType
-      value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 302356026468653294, guid: fdbd97f79a7aec14f8fadd5589780a74,
-        type: 3}
-      propertyPath: HostileAI2ShipType
-      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 302356026468653294, guid: fdbd97f79a7aec14f8fadd5589780a74,
         type: 3}

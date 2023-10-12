@@ -24,7 +24,6 @@ MonoBehaviour:
   Pilots:
   - {fileID: 11400000, guid: 6d520cd7eb8878b4aa2551e0591bc08d, type: 2}
   - {fileID: 11400000, guid: 42800aad95708bc488da7eed56ecc146, type: 2}
-  - {fileID: 11400000, guid: 2a99fbadf46af70429b2a511a47c9e8b, type: 2}
   MinPlayers: 1
   MaxPlayers: 3
   SceneName: MinigameRampage

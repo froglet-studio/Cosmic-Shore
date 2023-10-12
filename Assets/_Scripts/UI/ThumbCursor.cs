@@ -28,7 +28,7 @@ public class ThumbCursor : MonoBehaviour
         yield return new WaitUntil(() => Player.ActivePlayer != null && Player.ActivePlayer.Ship != null && Player.ActivePlayer.Ship.InputController != null);
 
         if (!Player.ActivePlayer.Ship.ShipStatus.AutoPilotEnabled)
-            gameObject.SetActive(Gamepad.current == null && (Left || !Player.ActivePlayer.Ship.ShipStatus.SingleStickControls));
+            gameObject.SetActive(Gamepad.current == null && (Left || !Player.ActivePlayer.Ship.InputController.SingleStickControls));
 
         initialized = true;
     }

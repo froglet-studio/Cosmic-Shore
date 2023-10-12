@@ -566,7 +566,6 @@ Transform:
   - {fileID: 2129549985540703972}
   - {fileID: 1435369514694552076}
   - {fileID: 3256409779543827908}
-  - {fileID: 5031555105458054786}
   m_Father: {fileID: 5928382658856804067}
   m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -615,8 +614,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   BoostChargeRate: 0.5
-  BoostDischargeRate: 0.3
-  MaxBoostCharge: 10
+  BoostDischargeRate: 0.2
+  MaxBoostCharge: 20
 --- !u!1 &2794760492430465044
 GameObject:
   m_ObjectHideFlags: 0
@@ -1876,13 +1875,11 @@ MonoBehaviour:
     - {fileID: 1321571284989493840}
     - {fileID: 512306600173285592}
     - {fileID: 4734135289798570143}
-    - {fileID: 3521154205896523080}
   - InputEvent: 1
     ShipActions:
     - {fileID: 1321571284989493840}
     - {fileID: 512306600173285592}
     - {fileID: 4734135289798570143}
-    - {fileID: 3521154205896523080}
   - InputEvent: 3
     ShipActions:
     - {fileID: 2525174765376973701}
@@ -1899,7 +1896,7 @@ MonoBehaviour:
   AOEExplosionMaterial: {fileID: 0}
   AOEConicExplosionMaterial: {fileID: 0}
   SkimmerMaterial: {fileID: 0}
-  ElementStats: []
+  LevelEffectParameterMappings: []
 --- !u!114 &6441696348568773771
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1916,9 +1913,8 @@ MonoBehaviour:
   Boosting: 0
   ChargedBoostDischarging: 0
   Drifting: 0
-  Turret: 0
   Portrait: 0
-  SingleStickControls: 0
+  ShowThreeButtonPanel: 0
   LiveProjectiles: 0
   Stationary: 0
   ElevatedAmmoGain: 0
@@ -1993,29 +1989,25 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 737294a573670f74389a7af68df314d5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  Resources: 
   usesBoost: 1
-  initialBoost: 0
-  maxBoost: 1
   usesAmmo: 1
+  usesCharge: 0
   gainsAmmo: 0
-  ammoGainRate:
-    Value: 0.1
-    Min: 0.1
-    Max: 1.4
-    element: 1
+  ammoGainRate: 0.1
   elevatedAmmoGainRate: 0.03
-  initialAmmo: 1
+  maxBoost: 1
+  initialBoost: 0
   maxAmmo: 1
-  usesEnergy: 0
-  maxEnergy: 1
-  initialEnergy: 1
+  initialAmmo: 1
+  maxCharge: 1
+  initialCharge: 1
+  BoostDisplay: {fileID: 0}
+  AmmoDisplay: {fileID: 0}
   ChargeDisplay: {fileID: 0}
   MassDisplay: {fileID: 0}
   SpaceDisplay: {fileID: 0}
   TimeDisplay: {fileID: 0}
-  EnergyDisplay: {fileID: 0}
-  BoostDisplay: {fileID: 0}
-  AmmoDisplay: {fileID: 0}
   ChargeLevelDisplay: {fileID: 0}
   MassLevelDisplay: {fileID: 0}
   SpaceLevelDisplay: {fileID: 0}
@@ -2024,7 +2016,6 @@ MonoBehaviour:
   InitialMassLevel: 0
   InitialSpaceLevel: 0
   InitialTimeLevel: 0
-  ChargeTestHarness: 0
 --- !u!114 &3440187540988767646
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2037,7 +2028,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a58bf4fb65afa704194fe9e28e67d58d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  SkillLevel: 1
+  SkillLevel: 0.5
   defaultThrottleHigh: 0.8
   defaultThrottleLow: 0.4
   defaultAggressivenessHigh: 0.1
@@ -2340,50 +2331,6 @@ BoxCollider:
   serializedVersion: 2
   m_Size: {x: 0.18150973, y: 0.13097954, z: 0.41014862}
   m_Center: {x: -0.46808228, y: 0.0145966215, z: -0.21738467}
---- !u!1 &8487080726055942009
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 5031555105458054786}
-  - component: {fileID: 3521154205896523080}
-  m_Layer: 0
-  m_Name: DriftTrailAction
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &5031555105458054786
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8487080726055942009}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 4382069933912690101}
-  m_RootOrder: 4
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &3521154205896523080
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8487080726055942009}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 919d0da9b89dabe43b5e92e4aaeb6525, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1 &8505644733191910074
 GameObject:
   m_ObjectHideFlags: 0
@@ -2429,11 +2376,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ZoomOutRate: 5
-  ZoomInRate:
-    Value: 5
-    Min: 0
-    Max: 0
-    element: 0
+  ZoomInRate: 5
 --- !u!1001 &7471713358279828738
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -2508,23 +2451,8 @@ PrefabInstance:
       objectReference: {fileID: 874579555101021527}
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
-      propertyPath: Scale.Max
-      value: 30
-      objectReference: {fileID: 0}
-    - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
-        type: 3}
-      propertyPath: Scale.Min
-      value: 30
-      objectReference: {fileID: 0}
-    - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
-        type: 3}
       propertyPath: fuelAmount
       value: 0.0002
-      objectReference: {fileID: 0}
-    - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
-        type: 3}
-      propertyPath: Scale.Value
-      value: 30
       objectReference: {fileID: 0}
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}

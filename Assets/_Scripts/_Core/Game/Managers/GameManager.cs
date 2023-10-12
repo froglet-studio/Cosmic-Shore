@@ -12,6 +12,9 @@ namespace StarWriter.Core
         public delegate void OnPlayGameEvent();
         public static event OnPlayGameEvent onPlayGame;
 
+        public delegate void OnDeathEvent();
+        public static event OnDeathEvent onDeath;
+
         public delegate void OnGameOverEvent();
         public static event OnGameOverEvent onGameOver;
 
