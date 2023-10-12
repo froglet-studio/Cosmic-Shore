@@ -2,7 +2,7 @@
 //using Firebase.Analytics;
 using StarWriter.Utility.Singleton;
 
-public class AnalyticsManager : SingletonPersistent<AnalyticsManager>
+public class FirebaseAnalytics : SingletonPersistent<FirebaseAnalytics>
 {
     //private FirebaseApp app;
 
