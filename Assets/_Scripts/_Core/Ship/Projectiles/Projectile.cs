@@ -2,6 +2,8 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using StarWriter.Core.HangerBuilder;
+using UnityEditor.EditorTools;
+using System.ComponentModel;
 
 namespace StarWriter.Core
 {
@@ -17,7 +19,7 @@ namespace StarWriter.Core
 
         public float ProjectileTime;
 
-        [SerializeField] bool drawLine = false;
+        [SerializeField] bool spike = false;
         [SerializeField] float growthRate = 1.0f;
 
         MeshRenderer meshRenderer;
@@ -25,7 +27,7 @@ namespace StarWriter.Core
         private void Start()
         {
             
-            if (drawLine) 
+            if (spike) 
             {
                 transform.localScale = new Vector3(.4f,.4f,2);
                 meshRenderer = gameObject.GetComponent<MeshRenderer>();
@@ -83,7 +85,7 @@ namespace StarWriter.Core
                         trailBlockProperties.trailBlock.ActivateShield(.5f);
                         break;
                     case TrailBlockImpactEffects.Stop:
-                        if (moveCoroutine != null) StopCoroutine(moveCoroutine);
+                        Stop();
                         break;
                     case TrailBlockImpactEffects.Fire:
                         GetComponent<LoadedGun>().FireGun();
@@ -149,6 +151,11 @@ namespace StarWriter.Core
 
         public void LaunchProjectile(float projectileTime)
         {
+            if (spike)
+            {
+                transform.localScale = new Vector3(.4f, .4f, 2);
+                GetComponent<MeshRenderer>().material.SetFloat("_Opacity", .5f);
+            }
             moveCoroutine = StartCoroutine(MoveProjectileCoroutine(projectileTime));
         }
 
@@ -163,8 +170,8 @@ namespace StarWriter.Core
                 Vector3 moveDistance = Velocity * Time.deltaTime * Mathf.Cos(elapsedTime * Mathf.PI / (2 * projectileTime));
                 Vector3 nextPosition = transform.position + moveDistance;
 
-                // Only check for raycasting collisions if drawLine is true
-                if (drawLine)
+                // Only check for raycasting collisions if spike is true
+                if (spike)
                 {
                     if (Physics.Raycast(transform.position, transform.forward, out RaycastHit hit, moveDistance.magnitude))
                     {
@@ -184,18 +191,12 @@ namespace StarWriter.Core
                 elapsedTime += Time.deltaTime;
                 yield return null;
             }
-            Destroy(gameObject);
+            GetComponentInParent<PoolManager>().ReturnToPool(gameObject, gameObject.tag);
         }
 
         public void Stop() 
         {
-            StopCoroutine(moveCoroutine);
-        }
-
-        public void Detonate()
-        {
-            StopCoroutine(moveCoroutine);
-            Destroy(gameObject);
+            if (moveCoroutine != null) StopCoroutine(moveCoroutine);
         }
 
     }

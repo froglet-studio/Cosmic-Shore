@@ -9,7 +9,7 @@ public class ChargedFireGunAction : ShipAction
     [SerializeField] float chargePerSecond = 1;
 
     ShipStatus shipStatus;
-    GameObject projectileContainer;
+    [SerializeField] GameObject projectileContainer;
 
 
     public float ProjectileScale = 1f;
@@ -19,7 +19,7 @@ public class ChargedFireGunAction : ShipAction
     protected override void Start()
     {
         base.Start();
-        projectileContainer = new GameObject($"{ship.Player.PlayerName}_Projectiles");
+        //projectileContainer = new GameObject($"{ship.Player.PlayerName}_Projectiles");
         shipStatus = ship.GetComponent<ShipStatus>();
     }
     public override void StartAction()

@@ -9,7 +9,7 @@ public class FireBarrageAction : ShipAction
     [SerializeField] GameObject gunContainer;
     List<Gun> guns = new();
     ShipStatus shipData;
-    GameObject projectileContainer;
+    [SerializeField] GameObject projectileContainer;
     [SerializeField] float ammoCost = .03f;
     bool inherit = false;
 
@@ -39,7 +39,7 @@ public class FireBarrageAction : ShipAction
             child.LookAt(gunContainer.transform);
             child.Rotate(0, 180, 0);
         }
-        projectileContainer = new GameObject($"{ship.Player.PlayerName}_BarrageProjectiles");
+        //projectileContainer = new GameObject($"{ship.Player.PlayerName}_BarrageProjectiles");
         shipData = ship.GetComponent<ShipStatus>();
     }
 

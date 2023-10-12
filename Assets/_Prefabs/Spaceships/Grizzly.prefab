@@ -1,5 +1,55 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
+--- !u!1 &5056069476813135
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 7248850907257131658}
+  - component: {fileID: 9024969078112185245}
+  m_Layer: 0
+  m_Name: ProjectilePool
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &7248850907257131658
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5056069476813135}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 3397189760217659071}
+  m_RootOrder: 3
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &9024969078112185245
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5056069476813135}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 86da7e09f78ffc846ae810b412ab9951, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ship: {fileID: 874579555101021527}
+  pools:
+  - tag: Projectile
+    prefab: {fileID: 7877928849292311340, guid: 40caad35706c5244ea955f96abb24774,
+      type: 3}
+    size: 1
 --- !u!1 &1034863810764821312
 GameObject:
   m_ObjectHideFlags: 0
@@ -46,6 +96,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   gun: {fileID: 2353136872146328024}
   chargePerSecond: 0.4
+  projectileContainer: {fileID: 5056069476813135}
   ProjectileScale: 30
 --- !u!1 &1187085259217856650
 GameObject:
@@ -238,6 +289,7 @@ Transform:
   - {fileID: 8136160970913695100}
   - {fileID: 282447970148362685}
   - {fileID: 4212487309909106204}
+  - {fileID: 7248850907257131658}
   m_Father: {fileID: 5928382658856804067}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -653,12 +705,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 35a4e5dfc7064254cb27fc78eefb05a0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  projectilePrefab: {fileID: 7877928849292311340, guid: 40caad35706c5244ea955f96abb24774,
-    type: 3}
-  energizedProjectilePrefab: {fileID: 7877928849292311340, guid: 40caad35706c5244ea955f96abb24774,
-    type: 3}
-  superEnergizedProjectilePrefab: {fileID: 7877928849292311340, guid: 40caad35706c5244ea955f96abb24774,
-    type: 3}
   firePeriod: 0.2
   Team: 0
   Ship: {fileID: 874579555101021527}
@@ -1175,7 +1221,6 @@ MonoBehaviour:
   usesAmmo: 1
   gainsAmmo: 1
   ammoGainRate: 0.02
-  elevatedAmmoGainRate: 0.05
   initialAmmo: 1
   maxAmmo: 1
   usesEnergy: 1

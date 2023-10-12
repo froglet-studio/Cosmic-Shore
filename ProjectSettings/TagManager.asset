@@ -10,6 +10,9 @@ TagManager:
   - blue
   - field
   - ActionCamera
+  - Projectile
+  - EnergizedProjectile
+  - SuperEnergizedProjectile
   layers:
   - Default
   - TransparentFX

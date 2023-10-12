@@ -27,7 +27,6 @@ namespace StarWriter.Core
         [SerializeField] bool usesAmmo;
         [SerializeField] bool gainsAmmo;
         [SerializeField] float ammoGainRate = .01f;
-        [SerializeField] float elevatedAmmoGainRate = .03f;
         [SerializeField] [Range(0, 1)] float initialAmmo = 1f;
         [SerializeField] [Range(0, 1)] float maxAmmo = 1f;
         float currentAmmo;
@@ -94,7 +93,7 @@ namespace StarWriter.Core
         void Update()
         {
             if (shipData.ElevatedAmmoGain)
-                ChangeAmmoAmount(Time.deltaTime * elevatedAmmoGainRate);
+                ChangeAmmoAmount(Time.deltaTime * ammoGainRate * 2);
             else if (gainsAmmo)
                 ChangeAmmoAmount(Time.deltaTime * ammoGainRate);
 

@@ -15,7 +15,7 @@ GameObject:
   - component: {fileID: 2041598876230712726}
   m_Layer: 12
   m_Name: SpikeProjectile
-  m_TagString: Untagged
+  m_TagString: Projectile
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -104,8 +104,7 @@ MonoBehaviour:
   shipImpactEffects: 05000000
   crystalImpactEffects: 0c000000
   ProjectileTime: 0
-  drawLine: 1
-  startLength: 0
+  spike: 1
   growthRate: 3
 --- !u!114 &2041598876230712726
 MonoBehaviour:
@@ -119,12 +118,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 98da7727309795245ada6cbb0c6aee22, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  projectilePrefab: {fileID: 6475208383231727548, guid: bdc9e621fd0e936439183623d291ef7b,
-    type: 3}
-  energizedProjectilePrefab: {fileID: 6475208383231727548, guid: ee0d967e7e55a604aadfa29c4425067e,
-    type: 3}
-  superEnergizedProjectilePrefab: {fileID: 6475208383231727548, guid: 18cb2ff3ac0090b47b8a02d287f46314,
-    type: 3}
   firePeriod: 0.2
   Team: 0
   Ship: {fileID: 0}

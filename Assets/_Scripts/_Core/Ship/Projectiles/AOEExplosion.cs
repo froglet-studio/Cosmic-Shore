@@ -107,7 +107,7 @@ namespace StarWriter.Core
                         if (shipGeometry.Ship.Team == Team)
                         {
                             shipGeometry.Ship.ShipController.ModifyVelocity(impactVector * 100, 2);
-                            shipGeometry.Ship.ShipController.ModifyThrottle(1.012f, 6);
+                            shipGeometry.Ship.ShipController.ModifyThrottle(1.012f, 6); // TODO: the magic number here is needed for the Time Grizzly
                         }
                         else shipGeometry.Ship.ShipController.ModifyVelocity(impactVector * 100, 3);
                         //shipGeometry.Ship.transform.localPosition += impactVector / 2f;

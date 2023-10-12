@@ -654,12 +654,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 35a4e5dfc7064254cb27fc78eefb05a0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  projectilePrefab: {fileID: 6475208383231727548, guid: c34f9e79837e1e548873b8be1e1b1271,
-    type: 3}
-  energizedProjectilePrefab: {fileID: 6475208383231727548, guid: ee0d967e7e55a604aadfa29c4425067e,
-    type: 3}
-  superEnergizedProjectilePrefab: {fileID: 6475208383231727548, guid: 18cb2ff3ac0090b47b8a02d287f46314,
-    type: 3}
   firePeriod: 0.1
   Team: 1
   Ship: {fileID: 874579555101021527}
@@ -739,6 +733,7 @@ Transform:
   - {fileID: 282447970148362685}
   - {fileID: 7183476141361029552}
   - {fileID: 6871072789186117683}
+  - {fileID: 5527495753754459338}
   m_Father: {fileID: 5928382658856804067}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -787,6 +782,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   gun: {fileID: 7480786212238001713}
+  projectileContainer: {fileID: 0}
   ammoCost: 0.025
   ProjectileScale: 1
   Energy: 1
@@ -868,6 +864,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   gun: {fileID: 1896180257573412121}
+  projectileContainer: {fileID: 6876789912878056936}
   ammoCost: 0.05
   ProjectileScale: 1
   Energy: 1
@@ -1961,12 +1958,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 35a4e5dfc7064254cb27fc78eefb05a0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  projectilePrefab: {fileID: 6475208383231727548, guid: c34f9e79837e1e548873b8be1e1b1271,
-    type: 3}
-  energizedProjectilePrefab: {fileID: 6475208383231727548, guid: ee0d967e7e55a604aadfa29c4425067e,
-    type: 3}
-  superEnergizedProjectilePrefab: {fileID: 6475208383231727548, guid: 18cb2ff3ac0090b47b8a02d287f46314,
-    type: 3}
   firePeriod: 0.1
   Team: 1
   Ship: {fileID: 874579555101021527}
@@ -2175,6 +2166,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   gunContainer: {fileID: 7748113003568908110}
+  projectileContainer: {fileID: 6876789912878056936}
   ammoCost: 0
   FiringPattern: 0
   Energy: 0
@@ -2361,7 +2353,7 @@ MonoBehaviour:
   AOEExplosionMaterial: {fileID: 0}
   AOEConicExplosionMaterial: {fileID: 0}
   SkimmerMaterial: {fileID: 0}
-  LevelEffectParameterMappings: []
+  ElementStats: []
 --- !u!114 &6441696348568773771
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2378,8 +2370,9 @@ MonoBehaviour:
   Boosting: 0
   ChargedBoostDischarging: 0
   Drifting: 0
+  Turret: 0
   Portrait: 0
-  ShowThreeButtonPanel: 0
+  SingleStickControls: 0
   LiveProjectiles: 0
   Stationary: 0
   ElevatedAmmoGain: 0
@@ -2414,6 +2407,11 @@ MonoBehaviour:
   rechargeRate: 0.1
   ProjectileScale: 1
   BlockScale: {x: 4, y: 4, z: 0.4}
+  growthAmount:
+    Value: 1
+    Min: 0.6
+    Max: 1.2
+    element: 2
 --- !u!114 &874579555101021522
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2458,25 +2456,24 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 737294a573670f74389a7af68df314d5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Resources: 
   usesBoost: 0
+  initialBoost: 1
+  maxBoost: 1
   usesAmmo: 1
-  usesCharge: 0
   gainsAmmo: 0
   ammoGainRate: 0.3
-  elevatedAmmoGainRate: 0.03
-  maxBoost: 1
-  initialBoost: 1
-  maxAmmo: 1
   initialAmmo: 1
-  maxCharge: 1
-  initialCharge: 1
-  BoostDisplay: {fileID: 0}
-  AmmoDisplay: {fileID: 0}
+  maxAmmo: 1
+  usesEnergy: 0
+  maxEnergy: 1
+  initialEnergy: 1
   ChargeDisplay: {fileID: 0}
   MassDisplay: {fileID: 0}
   SpaceDisplay: {fileID: 0}
   TimeDisplay: {fileID: 0}
+  EnergyDisplay: {fileID: 0}
+  BoostDisplay: {fileID: 0}
+  AmmoDisplay: {fileID: 0}
   ChargeLevelDisplay: {fileID: 0}
   MassLevelDisplay: {fileID: 0}
   SpaceLevelDisplay: {fileID: 0}
@@ -2485,6 +2482,7 @@ MonoBehaviour:
   InitialMassLevel: 0
   InitialSpaceLevel: 0
   InitialTimeLevel: 0
+  ChargeTestHarness: 0
 --- !u!114 &3440187540988767646
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2726,6 +2724,64 @@ Transform:
   m_Father: {fileID: 8692499942825081117}
   m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &6876789912878056936
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 5527495753754459338}
+  - component: {fileID: 8775451008463966977}
+  m_Layer: 0
+  m_Name: ProjectilePool
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &5527495753754459338
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6876789912878056936}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 3397189760217659071}
+  m_RootOrder: 4
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &8775451008463966977
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6876789912878056936}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 86da7e09f78ffc846ae810b412ab9951, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ship: {fileID: 874579555101021527}
+  pools:
+  - tag: Projectile
+    prefab: {fileID: 6475208383231727548, guid: c34f9e79837e1e548873b8be1e1b1271,
+      type: 3}
+    size: 500
+  - tag: EnergizedProjectile
+    prefab: {fileID: 6475208383231727548, guid: ee0d967e7e55a604aadfa29c4425067e,
+      type: 3}
+    size: 500
+  - tag: SuperEnergizedProjectile
+    prefab: {fileID: 6475208383231727548, guid: 18cb2ff3ac0090b47b8a02d287f46314,
+      type: 3}
+    size: 500
 --- !u!1 &6878347770711062259
 GameObject:
   m_ObjectHideFlags: 0
@@ -2838,12 +2894,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 35a4e5dfc7064254cb27fc78eefb05a0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  projectilePrefab: {fileID: 6475208383231727548, guid: c34f9e79837e1e548873b8be1e1b1271,
-    type: 3}
-  energizedProjectilePrefab: {fileID: 6475208383231727548, guid: ee0d967e7e55a604aadfa29c4425067e,
-    type: 3}
-  superEnergizedProjectilePrefab: {fileID: 6475208383231727548, guid: 18cb2ff3ac0090b47b8a02d287f46314,
-    type: 3}
   firePeriod: 0.2
   Team: -1
   Ship: {fileID: 874579555101021527}

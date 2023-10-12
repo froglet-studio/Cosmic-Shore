@@ -18,7 +18,7 @@ GameObject:
   - component: {fileID: 8504388981194176713}
   m_Layer: 12
   m_Name: ExplodableProjectile
-  m_TagString: Untagged
+  m_TagString: Projectile
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -4844,8 +4844,7 @@ MonoBehaviour:
   shipImpactEffects: 040000000300000002000000
   crystalImpactEffects: 
   ProjectileTime: 0
-  drawLine: 0
-  startLength: 1
+  spike: 0
   growthRate: 1
   AOEPrefab: {fileID: 5915562654621825366, guid: 23f98261be8a7e345ab09f0504d8a76f,
     type: 3}

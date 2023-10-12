@@ -8,6 +8,7 @@ public class GunShipTransformer : ShipTransformer
 
     public float ProjectileScale = 1f;
     public Vector3 BlockScale = new(4f, 4f, 1f);
+    [SerializeField] ElementalFloat growthAmount = new ElementalFloat(1);
 
     bool moveForward = true;
     bool attached = false;
@@ -91,7 +92,7 @@ public class GunShipTransformer : ShipTransformer
 
         if (shipStatus.AttachedTrailBlock.Team == ship.Team)
         {
-            shipStatus.AttachedTrailBlock.Grow();
+            shipStatus.AttachedTrailBlock.Grow(growthAmount.Value);
         }
         else shipStatus.AttachedTrailBlock.Steal(ship.Player.PlayerName, ship.Team);
     }

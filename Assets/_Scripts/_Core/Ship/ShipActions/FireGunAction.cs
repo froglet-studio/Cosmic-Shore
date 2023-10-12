@@ -6,9 +6,8 @@ public class FireGunAction : ShipAction
     // TODO: WIP gun firing needs to be reworked
     [SerializeField] Gun gun;
 
-
     ShipStatus shipData;
-    GameObject projectileContainer;
+    [SerializeField] GameObject projectileContainer;
     [SerializeField] float ammoCost = .03f;
 
     public float ProjectileScale = 1f;
@@ -19,7 +18,7 @@ public class FireGunAction : ShipAction
     protected override void Start()
     {
         base.Start();
-        projectileContainer = new GameObject($"{ship.Player.PlayerName}_Projectiles");
+        //projectileContainer = new GameObject($"{ship.Player.PlayerName}_Projectiles");
         projectileContainer.transform.parent = ship.Player.transform;
         shipData = ship.GetComponent<ShipStatus>();
     }
