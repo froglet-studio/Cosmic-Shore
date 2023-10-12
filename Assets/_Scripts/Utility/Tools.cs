@@ -46,5 +46,17 @@ namespace StarWriter.Utility.Tools
             }
         }
 
+        /// <summary>
+        /// Min Max Association
+        /// A tool to uniform min max value association
+        /// <param name="min">Min - Lower bound</param>
+        /// <param name="max">Max - Upper bound - reference</param>
+        /// </summary>
+        public void MinMaxAssociation(int min, out int max)
+        {
+            // Currently max is twice as min value
+            max = 2 * min;
+            // TODO: we can change the association later if we find a better formula.
+        }
     }
 }
