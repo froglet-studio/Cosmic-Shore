@@ -34,8 +34,6 @@ namespace StarWriter.Core
                 meshRenderer.material = Hangar.Instance.GetTeamSpikeMaterial(Team);
                 meshRenderer.material.SetFloat("_Opacity", .5f);
             }
-
-            LaunchProjectile(ProjectileTime);
         }
 
         protected virtual void OnTriggerEnter(Collider other)
