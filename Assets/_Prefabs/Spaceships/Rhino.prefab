@@ -564,7 +564,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   minSize: 1
-  maxSize: 3
+  maxSize:
+    Value: 3
+    Min: 2
+    Max: 4
+    element: 2
   growRate: 3
   shrinkRate:
     Value: 1
@@ -732,7 +736,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   minSize: 20
-  maxSize: 80
+  maxSize:
+    Value: 80
+    Min: 0
+    Max: 0
+    element: 0
   growRate: 8
   shrinkRate:
     Value: 8
@@ -1134,7 +1142,11 @@ MonoBehaviour:
   MinimumSpeed: 0
   ThrottleScaler: 0
   DefaultMinimumSpeed: 10
-  DefaultThrottleScaler: 50
+  DefaultThrottleScaler:
+    Value: 50
+    Min: 40
+    Max: 60
+    element: 4
   PitchScaler: 70
   YawScaler: 70
   RollScaler: 70
@@ -1188,7 +1200,11 @@ MonoBehaviour:
   maxBoost: 1
   usesAmmo: 0
   gainsAmmo: 0
-  ammoGainRate: 0.01
+  ammoGainRate:
+    Value: 0.01
+    Min: 0
+    Max: 0
+    element: 0
   elevatedAmmoGainRate: 0.03
   initialAmmo: 1
   maxAmmo: 1

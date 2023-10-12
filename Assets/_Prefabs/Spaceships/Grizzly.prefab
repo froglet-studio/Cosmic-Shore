@@ -1220,7 +1220,12 @@ MonoBehaviour:
   maxBoost: 1
   usesAmmo: 1
   gainsAmmo: 1
-  ammoGainRate: 0.02
+  ammoGainRate:
+    Value: 0.02
+    Min: 0
+    Max: 0
+    element: 0
+  elevatedAmmoGainRate: 0.05
   initialAmmo: 1
   maxAmmo: 1
   usesEnergy: 1

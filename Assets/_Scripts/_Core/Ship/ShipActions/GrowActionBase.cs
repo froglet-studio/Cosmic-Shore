@@ -4,7 +4,7 @@ using UnityEngine;
 public class GrowActionBase : ShipAction
 {
     [SerializeField] protected float minSize;
-    [SerializeField] protected float maxSize;
+    [SerializeField] protected ElementalFloat maxSize;
     [SerializeField] protected float growRate;
     [SerializeField] protected ElementalFloat shrinkRate = new ElementalFloat(1);
     [SerializeField] protected GameObject target;
@@ -39,7 +39,7 @@ public class GrowActionBase : ShipAction
 
     protected virtual IEnumerator GrowCoroutine()
     {
-        while (growing && target.transform.localScale.z < maxSize)
+        while (growing && target.transform.localScale.z < maxSize.Value)
         {
             target.transform.localScale += Time.deltaTime * growRate * Vector3.one;
             yield return null;

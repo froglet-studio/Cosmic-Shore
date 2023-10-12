@@ -13,7 +13,7 @@ public class FireGunAction : ShipAction
     public float ProjectileScale = 1f;
     public int Energy = 0;
     public float Speed = 90;
-    public float ProjectileTime = 3f;
+    public ElementalFloat ProjectileTime = new ElementalFloat(3f);
 
     protected override void Start()
     {
@@ -33,7 +33,7 @@ public class FireGunAction : ShipAction
             else inheritedVelocity = shipData.Course;
 
             // TODO: WIP magic numbers
-            gun.FireGun(projectileContainer.transform, Speed, inheritedVelocity * shipData.Speed, ProjectileScale, true, ProjectileTime, 0, FiringPatterns.Default, Energy);
+            gun.FireGun(projectileContainer.transform, Speed, inheritedVelocity * shipData.Speed, ProjectileScale, true, ProjectileTime.Value, 0, FiringPatterns.Default, Energy);
         }
     }
 
