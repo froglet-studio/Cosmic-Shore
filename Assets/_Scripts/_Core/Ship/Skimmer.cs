@@ -158,7 +158,7 @@ namespace StarWriter.Core
                     minMatureBlockDistance = Mathf.Min(minMatureBlockDistance, distance);
 
                 // start with a baseline fuel amount the ranges from 0-1 depending on proximity of the skimmer to the trail block
-                var fuel = chargeAmount * (1 - (distance / transform.localScale.x)); // x is arbitrary, just need radius of skimmer
+                var fuel = chargeAmount * (1 - (distance / transform.localScale.x));
 
                 // apply decay
                 fuel *= Mathf.Min(0, (skimDecayDuration - (Time.time - skimStartTimes[trailBlock.ID])) / skimDecayDuration);

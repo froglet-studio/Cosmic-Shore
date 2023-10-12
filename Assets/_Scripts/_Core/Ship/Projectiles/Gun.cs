@@ -11,6 +11,10 @@ namespace StarWriter.Core
 
     public class Gun : MonoBehaviour
     {
+        [SerializeField] protected GameObject projectilePrefab;
+        [SerializeField] protected GameObject energizedProjectilePrefab;
+        [SerializeField] protected GameObject superEnergizedProjectilePrefab;
+
         public float firePeriod = .2f;
         public Teams Team;
         public Ship Ship;
@@ -55,10 +59,9 @@ namespace StarWriter.Core
                     }
                     else // Golden Spiral method for spherical pattern
                     {
-                        int points = 2 * ((int)energy + 3); // 
+                        int points = 4 * ((int)energy + 1); // 
                         float phi = Mathf.PI * (3 - Mathf.Sqrt(5)); // Golden angle
                         var randomRotation = Random.rotation;
-                        energy--;
                         for (int i = 0; i < points; i++)
                         {
                             float y = 1 - (i / (float)(points - 1)) * 2; // y goes from 1 to -1
@@ -71,7 +74,7 @@ namespace StarWriter.Core
 
                             Vector3 direction = randomRotation * (new Vector3(x, y, z));
                             Vector3 offset = direction * sideLength;
-                            FireProjectile(containerTransform, speed, inheritedVelocity, projectileScale, offset, direction, projectileTime, charge, energy);
+                            FireProjectile(containerTransform, speed, inheritedVelocity, projectileScale, offset, direction, projectileTime, charge);
                         }
                     }
                     break;
@@ -82,7 +85,7 @@ namespace StarWriter.Core
                         // Center point only for the first ring
                         if (ring == 0)
                         {
-                            FireProjectile(containerTransform, speed, inheritedVelocity, projectileScale, Vector3.zero, projectileTime, charge, energy);
+                            FireProjectile(containerTransform, speed, inheritedVelocity, projectileScale, Vector3.zero, projectileTime, charge);
                         }
                         else
                         {
@@ -92,7 +95,7 @@ namespace StarWriter.Core
                             for (int i = 0; i < projectilesInThisRing; i++)
                             {
                                 Vector3 offset = Quaternion.Euler(0, 0, ring%2 * 30 + angleIncrement * i) * transform.right * sideLength * ring;
-                                FireProjectile(containerTransform, speed, inheritedVelocity, projectileScale, offset, projectileTime, charge, energy);
+                                FireProjectile(containerTransform, speed, inheritedVelocity, projectileScale, offset, projectileTime, charge);
                             }
                         }
                     }
@@ -112,18 +115,20 @@ namespace StarWriter.Core
         void FireProjectile(Transform containerTransform, float speed, Vector3 inheritedVelocity,
             float projectileScale, Vector3 offset, Vector3 normalizedVelocity, float projectileTime = 3, float charge = 0, int energy = 0)
         {
- 
-            Projectile projectileInstance = containerTransform.GetComponent<PoolManager>().SpawnFromPool(GetPoolTag(energy),
-            transform.position + Quaternion.LookRotation(transform.forward) * offset + (transform.forward * barrelLength), // position
-            Quaternion.LookRotation(normalizedVelocity) // rotation
-            ).GetComponent<Projectile>();
-
-
+            GameObject prefab;
+            if (energy > 1) prefab = energizedProjectilePrefab;
+            else if (energy > 0) prefab = superEnergizedProjectilePrefab;
+            else prefab = energizedProjectilePrefab;
+            Projectile projectileInstance = Instantiate(prefab,
+                transform.position + Quaternion.LookRotation(transform.forward) * offset + (transform.forward * barrelLength), // position
+                Quaternion.LookRotation(normalizedVelocity) // rotation
+                ).GetComponent<Projectile>();
             projectileInstance.transform.localScale = projectileScale * Vector3.one;
             projectileInstance.transform.parent = containerTransform;
             projectileInstance.Velocity = normalizedVelocity * speed + inheritedVelocity;
             projectileInstance.Team = Team;
             projectileInstance.Ship = Ship;
+            projectileInstance.ProjectileTime = projectileTime;
             if (projectileInstance.TryGetComponent(out Gun projectileGun))
             {
                 projectileGun.Team = Team;
@@ -131,14 +136,7 @@ namespace StarWriter.Core
             }
             if (projectileInstance is ExplodableProjectile) ((ExplodableProjectile)projectileInstance).Charge = charge;
             projectile = projectileInstance;
-            projectile.LaunchProjectile(projectileTime);
-        }
 
-        private string GetPoolTag(int energy)
-        {
-            if (energy > 1) return "SuperEnergizedProjectile";
-            else if (energy > 0) return "EnergizedProjectile";
-            else return "Projectile";
         }
 
         IEnumerator CooldownCoroutine()
@@ -147,14 +145,9 @@ namespace StarWriter.Core
             onCooldown = false;
         }
 
-        public void StopProjectile()
+        public void Detonate()
         {
-            projectile.Stop();
-        }
-
-        public void DetonateProjectile()
-        {
-            if (projectile is ExplodableProjectile) ((ExplodableProjectile)projectile).Detonate();
+            projectile.Detonate();
         }
        
     }

@@ -2,7 +2,8 @@ using UnityEngine;
 using System.Collections.Generic;
 using System;
 using System.Collections;
-
+using UnityEngine.UIElements;
+using UnityEngine.SocialPlatforms;
 
 namespace StarWriter.Core.IO
 {
@@ -164,23 +165,20 @@ namespace StarWriter.Core.IO
         {
             if (AutoPilotEnabled)
             {
-                //if (useAbility) StartCoroutine(UseAbilityCoroutine(ability));
+                if (useAbility) StartCoroutine(UseAbilityCoroutine(ability));
 
                 var targetPosition = CrystalTransform.position;
                 //Vector3 currentDirection = shipStatus.Course;
                 distance = targetPosition - transform.position;
                 Vector3 desiredDirection = distance.normalized;
 
-                LookingAtCrystal = Vector3.Dot(desiredDirection, shipStatus.Course) >= .9f;
-                if (LookingAtCrystal && drift && !shipStatus.Drifting)
+                LookingAtCrystal = Vector3.Dot(desiredDirection, shipStatus.Course) >= .93;
+                if (LookingAtCrystal && drift)
                 {
-                    shipStatus.Course = desiredDirection;
-                    ship.PerformShipControllerActions(InputEvents.LeftStickAction);
+                    shipStatus.Drifting = true;
                     desiredDirection *= -1;
                 }
-                else if (LookingAtCrystal && shipStatus.Drifting) desiredDirection *= -1;
-                else if (shipStatus.Drifting) ship.StopShipControllerActions(InputEvents.LeftStickAction);
-                
+                else shipStatus.Drifting = false;
 
                 if (distance.magnitude < float.Epsilon) // Avoid division by zero
                     return;
@@ -188,7 +186,7 @@ namespace StarWriter.Core.IO
                 Vector3 combinedLocalCrossProduct = Vector3.zero;
                 float sqrMagnitude = distance.sqrMagnitude;
                 //float combinedRoll;
-                Vector3 crossProduct = Vector3.Cross(transform.forward, desiredDirection);
+                Vector3 crossProduct = Vector3.Cross(shipStatus.Course, desiredDirection);
                 Vector3 localCrossProduct = transform.InverseTransformDirection(crossProduct);
                 combinedLocalCrossProduct += localCrossProduct;
 

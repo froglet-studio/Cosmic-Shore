@@ -1,10 +1,11 @@
 using StarWriter.Core;
 
+
 public class StopGunsAction : ShipAction
 {
     ShipStatus shipData;
 
-    protected override void Start()
+    void Start()
     {
         shipData = ship.GetComponent<ShipStatus>();
     }

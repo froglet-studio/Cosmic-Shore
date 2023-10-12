@@ -5,7 +5,7 @@ public class GrowTrailAction : GrowActionBase
     protected override IEnumerator GrowCoroutine()
     {
         var spawner = target.GetComponent<TrailSpawner>();
-        while (growing && spawner.YScaler < maxSize.Value)
+        while (growing && spawner.YScaler < maxSize)
         {
             spawner.YScaler += Time.deltaTime * growRate;
             spawner.XScaler += Time.deltaTime * growRate;

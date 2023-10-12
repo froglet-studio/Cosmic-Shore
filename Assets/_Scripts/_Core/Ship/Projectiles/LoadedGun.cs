@@ -21,7 +21,7 @@ namespace StarWriter.Core
 
         public void FireGun()
         {
-            FireGun(transform.parent, speed, Vector3.zero, 1, true, projectileTime, 0, firingPattern, energy); 
+            FireGun(Ship.Player.transform, speed, Vector3.zero, 1, true, projectileTime, 0, firingPattern, energy); // charge could be used to limit recursion depth
         }
 
         //public void FireGun(Transform containerTransform, float speed, Vector3 inheritedVelocity,

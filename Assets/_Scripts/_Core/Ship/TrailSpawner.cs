@@ -81,11 +81,13 @@ public class TrailSpawner : MonoBehaviour
 
     private void OnEnable()
     {
+        GameManager.onDeath += PauseTrailSpawner;
         GameManager.onGameOver += RestartAITrailSpawnerAfterDelay;
     }
 
     private void OnDisable()
     {
+        GameManager.onDeath -= PauseTrailSpawner;
         GameManager.onGameOver -= RestartAITrailSpawnerAfterDelay;
     }
 

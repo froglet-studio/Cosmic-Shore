@@ -1,5 +1,7 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using StarWriter.Core;
 
 public class EnergizeAction : ShipAction
 {
@@ -14,12 +16,12 @@ public class EnergizeAction : ShipAction
     [SerializeField] int Energy = 1;
     int defaultEnergy;
 
-    protected override void Start()
+    private void Start()
     {
         var firstGun = fireActions[0];
 
         defaultSpeed = firstGun.Speed;
-        defaultProjectileTime = firstGun.ProjectileTime.Value;
+        defaultProjectileTime = firstGun.ProjectileTime;
         defaultEnergy = firstGun.Energy;
 
     }
@@ -30,7 +32,7 @@ public class EnergizeAction : ShipAction
             {
                 if (fireaction.Energy < Energy) fireaction.Energy = Energy;
                 if (fireaction.Speed < Speed) fireaction.Speed = Speed;
-                if (fireaction.ProjectileTime.Value < ProjectileTime) fireaction.ProjectileTime.Value = ProjectileTime;
+                if (fireaction.ProjectileTime < ProjectileTime) fireaction.ProjectileTime = ProjectileTime;
             }
     }
 
@@ -40,7 +42,7 @@ public class EnergizeAction : ShipAction
         {
             fireaction.Energy = defaultEnergy;
             fireaction.Speed = defaultSpeed;
-            fireaction.ProjectileTime.Value = defaultProjectileTime;
+            fireaction.ProjectileTime = defaultProjectileTime;
         }
     }
 }

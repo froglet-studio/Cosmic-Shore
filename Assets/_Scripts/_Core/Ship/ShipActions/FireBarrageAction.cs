@@ -8,8 +8,10 @@ public class FireBarrageAction : ShipAction
     // TODO: WIP gun firing needs to be reworked
     [SerializeField] GameObject gunContainer;
     List<Gun> guns = new();
+
+    ResourceSystem resourceSystem;
     ShipStatus shipData;
-    [SerializeField] GameObject projectileContainer;
+    GameObject projectileContainer;
     [SerializeField] float ammoCost = .03f;
     bool inherit = false;
 
@@ -26,10 +28,8 @@ public class FireBarrageAction : ShipAction
         JsonUtility.FromJsonOverwrite(json, to);
     }
 
-
-    protected override void Start()
+    void Start()
     {
-        base.Start();
         var gunTemplate = gunContainer.GetComponent<Gun>();
         foreach (var child in gunContainer.GetComponentsInChildren<Transform>()) 
         {
@@ -39,8 +39,9 @@ public class FireBarrageAction : ShipAction
             child.LookAt(gunContainer.transform);
             child.Rotate(0, 180, 0);
         }
-        //projectileContainer = new GameObject($"{ship.Player.PlayerName}_BarrageProjectiles");
+        projectileContainer = new GameObject($"{ship.Player.PlayerName}_BarrageProjectiles");
         shipData = ship.GetComponent<ShipStatus>();
+        resourceSystem = ship.ResourceSystem;
     }
 
     public override void StartAction()

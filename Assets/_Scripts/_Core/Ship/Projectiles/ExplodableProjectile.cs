@@ -9,13 +9,12 @@ namespace StarWriter.Core
         [SerializeField] float maxExplosionScale;
         public float Charge = 0;
 
-        public void Detonate()
+        public void OnDestroy()
         {
-            GetComponentInParent<PoolManager>().ReturnToPool(gameObject, gameObject.tag);
             var AOEExplosion = Instantiate(AOEPrefab).GetComponent<AOEExplosion>();
             AOEExplosion.Ship = Ship;
             AOEExplosion.SetPositionAndRotation(transform.position, transform.rotation);
-            AOEExplosion.MaxScale = Mathf.Lerp(minExplosionScale, maxExplosionScale, Charge);
+            AOEExplosion.MaxScale = (Charge * (maxExplosionScale - minExplosionScale)) + minExplosionScale;
         }
     }
 }

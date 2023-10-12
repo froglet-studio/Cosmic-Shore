@@ -10,12 +10,12 @@ public abstract class ShipAction : ElementalShipComponent
     public abstract void StartAction();
     public abstract void StopAction();
 
-    virtual protected void Start()
+    void Start()
     {
         if (ship != null)
         {
             BindElementalFloats(ship);
-            resourceSystem = ship.ResourceSystem;
+            resourceSystem = ship.GetComponent<ResourceSystem>();
         }
     }
 }

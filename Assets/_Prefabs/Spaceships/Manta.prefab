@@ -1173,10 +1173,10 @@ SkinnedMeshRenderer:
   - {fileID: 5798525600549448751}
   - {fileID: 5571582515015820382}
   m_BlendShapeWeights:
-  - 100
-  - 100
-  - 100
-  - 100
+  - 0
+  - 0
+  - 0
+  - 0
   m_RootBone: {fileID: 4769814507153169321}
   m_AABB:
     m_Center: {x: 0.000514213, y: -0.0048629097, z: -0.001187378}
@@ -1364,6 +1364,7 @@ MonoBehaviour:
   AOEConicExplosionMaterial: {fileID: 0}
   SkimmerMaterial: {fileID: 0}
   ElementStats: []
+  LevelEffectParameterMappings: []
 --- !u!114 &6441696348568773771
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1380,9 +1381,8 @@ MonoBehaviour:
   Boosting: 0
   ChargedBoostDischarging: 0
   Drifting: 0
-  Turret: 0
   Portrait: 0
-  SingleStickControls: 0
+  ShowThreeButtonPanel: 0
   LiveProjectiles: 0
   Stationary: 0
   ElevatedAmmoGain: 0
@@ -1457,29 +1457,25 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 737294a573670f74389a7af68df314d5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  Resources: 
   usesBoost: 0
-  initialBoost: 1
-  maxBoost: 1
   usesAmmo: 1
+  usesCharge: 0
   gainsAmmo: 0
-  ammoGainRate:
-    Value: 0.1
-    Min: 0
-    Max: 0
-    element: 0
+  ammoGainRate: 0.1
   elevatedAmmoGainRate: 0.03
-  initialAmmo: 0.392
+  maxBoost: 1
+  initialBoost: 1
   maxAmmo: 1
-  usesEnergy: 0
-  maxEnergy: 1
-  initialEnergy: 1
+  initialAmmo: 0.392
+  maxCharge: 1
+  initialCharge: 1
+  BoostDisplay: {fileID: 0}
+  AmmoDisplay: {fileID: 0}
   ChargeDisplay: {fileID: 0}
   MassDisplay: {fileID: 0}
   SpaceDisplay: {fileID: 0}
   TimeDisplay: {fileID: 0}
-  EnergyDisplay: {fileID: 0}
-  BoostDisplay: {fileID: 0}
-  AmmoDisplay: {fileID: 0}
   ChargeLevelDisplay: {fileID: 0}
   MassLevelDisplay: {fileID: 0}
   SpaceLevelDisplay: {fileID: 0}
@@ -1488,7 +1484,6 @@ MonoBehaviour:
   InitialMassLevel: 0
   InitialSpaceLevel: 0
   InitialTimeLevel: 0
-  ChargeTestHarness: 0
 --- !u!114 &3440187540988767646
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2375,11 +2370,6 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
-      propertyPath: Scale.Value
-      value: 70
-      objectReference: {fileID: 0}
-    - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
-        type: 3}
       propertyPath: skimVisualFX
       value: 0
       objectReference: {fileID: 0}
@@ -2507,16 +2497,6 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
-      propertyPath: Scale.Max
-      value: 30
-      objectReference: {fileID: 0}
-    - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
-        type: 3}
-      propertyPath: Scale.Min
-      value: 10
-      objectReference: {fileID: 0}
-    - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
-        type: 3}
       propertyPath: affectSelf
       value: 0
       objectReference: {fileID: 0}
@@ -2527,17 +2507,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
-      propertyPath: Scale.Value
-      value: 10
-      objectReference: {fileID: 0}
-    - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
-        type: 3}
       propertyPath: skimVisualFX
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
-        type: 3}
-      propertyPath: Scale.element
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,

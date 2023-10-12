@@ -117,7 +117,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   MiniGameHUD: {fileID: 5497835174634480091}
-  ShipButtonPanel: {fileID: 0}
+  ShipButtonPanel: {fileID: 193289751561833888}
   ResourceDisplayGroup: {fileID: 6580864480803218294}
   EndGameScreen: {fileID: 5054612726784394718}
   Scoreboard: {fileID: 5054612727353841854}
@@ -1038,6 +1038,25 @@ PrefabInstance:
     m_RemovedComponents:
     - {fileID: 1720411787076151334, guid: 491eb8350c5c6ab45a8b291192f9891a, type: 3}
   m_SourcePrefab: {fileID: 100100000, guid: 491eb8350c5c6ab45a8b291192f9891a, type: 3}
+--- !u!1 &1744901367451909457 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 4871549121619035546, guid: 491eb8350c5c6ab45a8b291192f9891a,
+    type: 3}
+  m_PrefabInstance: {fileID: 6605683967492913355}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &193289751561833888
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1744901367451909457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2b8da44617edbf24b80739c2345a17f4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  fadeDuration: 0.2
 --- !u!1 &5497835174443352335 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 1720411786918787524, guid: 491eb8350c5c6ab45a8b291192f9891a,

@@ -1,7 +1,6 @@
 using System;
 using UnityEngine;
 using System.Collections;
-using UnityEngine.Serialization;
 
 namespace StarWriter.Core
 {
@@ -27,8 +26,8 @@ namespace StarWriter.Core
         [Header("Ammo")]
         [SerializeField] bool usesAmmo;
         [SerializeField] bool gainsAmmo;
-        [FormerlySerializedAs("AmmoGainRate2")]
-        [SerializeField] ElementalFloat ammoGainRate = new ElementalFloat(0.01f);
+        [SerializeField] float ammoGainRate = .01f;
+        [SerializeField] float elevatedAmmoGainRate = .03f;
         [SerializeField] [Range(0, 1)] float initialAmmo = 1f;
         [SerializeField] [Range(0, 1)] float maxAmmo = 1f;
         float currentAmmo;
@@ -95,9 +94,9 @@ namespace StarWriter.Core
         void Update()
         {
             if (shipData.ElevatedAmmoGain)
-                ChangeAmmoAmount(Time.deltaTime * ammoGainRate.Value * 2);
+                ChangeAmmoAmount(Time.deltaTime * elevatedAmmoGainRate);
             else if (gainsAmmo)
-                ChangeAmmoAmount(Time.deltaTime * ammoGainRate.Value);
+                ChangeAmmoAmount(Time.deltaTime * ammoGainRate);
 
             if (ChargeLevel != ChargeTestHarness)
                 ChargeLevel = ChargeTestHarness;

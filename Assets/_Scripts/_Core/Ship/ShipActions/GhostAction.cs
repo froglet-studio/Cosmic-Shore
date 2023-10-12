@@ -9,7 +9,7 @@ public class GhostAction : ShipAction
 
     Coroutine intangibilityCoroutine;
 
-    protected override void Start()
+    void Start()
     {
         shipGeometries = ship.shipGeometries;
     }
