@@ -202,15 +202,15 @@ public class AnalyticsController : SingletonPersistent<AnalyticsController>
     /// <summary>
     /// Write PlayStream Events
     /// Write a collection of PlayStream Events to PlayFab data storage.
-    /// <param name="playStreamEvents"> PlayStream Events</param>
+    /// <param name="eventsModel"> PlayStream Events</param>
     /// </summary>
-    public void WritePlayStreamEvents(in PlayStreamEvents playStreamEvents)
+    public void WritePlayStreamEvents(in EventsModel eventsModel)
     {
         _playFabEventsInstanceAPI.WriteEvents(
             new WriteEventsRequest()
             {
-                Events = playStreamEvents.EventContents,
-                CustomTags = playStreamEvents.CustomTags
+                Events = eventsModel.EventContents,
+                CustomTags = eventsModel.CustomTags
             }, (result) =>
             {
                 if (result == null)
