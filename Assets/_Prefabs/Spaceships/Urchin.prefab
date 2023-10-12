@@ -2361,7 +2361,7 @@ MonoBehaviour:
   AOEExplosionMaterial: {fileID: 0}
   AOEConicExplosionMaterial: {fileID: 0}
   SkimmerMaterial: {fileID: 0}
-  LevelEffectParameterMappings: []
+  ElementStats: []
 --- !u!114 &6441696348568773771
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2378,6 +2378,7 @@ MonoBehaviour:
   Boosting: 0
   ChargedBoostDischarging: 0
   Drifting: 0
+  Turret: 0
   Portrait: 0
   ShowThreeButtonPanel: 0
   LiveProjectiles: 0
@@ -2458,25 +2459,29 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 737294a573670f74389a7af68df314d5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Resources: 
   usesBoost: 0
-  usesAmmo: 1
-  usesCharge: 0
-  gainsAmmo: 0
-  ammoGainRate: 0.3
-  elevatedAmmoGainRate: 0.03
-  maxBoost: 1
   initialBoost: 1
-  maxAmmo: 1
+  maxBoost: 1
+  usesAmmo: 1
+  gainsAmmo: 0
+  ammoGainRate:
+    Value: 0.3
+    Min: 0.3
+    Max: 1.3
+    element: 1
+  elevatedAmmoGainRate: 0.03
   initialAmmo: 1
-  maxCharge: 1
-  initialCharge: 1
-  BoostDisplay: {fileID: 0}
-  AmmoDisplay: {fileID: 0}
+  maxAmmo: 1
+  usesEnergy: 0
+  maxEnergy: 1
+  initialEnergy: 1
   ChargeDisplay: {fileID: 0}
   MassDisplay: {fileID: 0}
   SpaceDisplay: {fileID: 0}
   TimeDisplay: {fileID: 0}
+  EnergyDisplay: {fileID: 0}
+  BoostDisplay: {fileID: 0}
+  AmmoDisplay: {fileID: 0}
   ChargeLevelDisplay: {fileID: 0}
   MassLevelDisplay: {fileID: 0}
   SpaceLevelDisplay: {fileID: 0}
@@ -2485,6 +2490,7 @@ MonoBehaviour:
   InitialMassLevel: 0
   InitialSpaceLevel: 0
   InitialTimeLevel: 0
+  ChargeTestHarness: 0
 --- !u!114 &3440187540988767646
 MonoBehaviour:
   m_ObjectHideFlags: 0

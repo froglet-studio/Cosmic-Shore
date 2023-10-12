@@ -1076,7 +1076,6 @@ MonoBehaviour:
   AOEConicExplosionMaterial: {fileID: 0}
   SkimmerMaterial: {fileID: 0}
   ElementStats: []
-  LevelEffectParameterMappings: []
 --- !u!114 &6441696348568773771
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1178,7 +1177,11 @@ MonoBehaviour:
   maxBoost: 1
   usesAmmo: 1
   gainsAmmo: 1
-  ammoGainRate: 0.02
+  ammoGainRate:
+    Value: 0.02
+    Min: 0
+    Max: 0
+    element: 0
   elevatedAmmoGainRate: 0.05
   initialAmmo: 1
   maxAmmo: 1
