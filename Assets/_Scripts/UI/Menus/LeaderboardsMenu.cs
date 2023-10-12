@@ -136,6 +136,14 @@ public class LeaderboardsMenu : MonoBehaviour
     {
         Debug.Log($"PopulateGameHighScores: {SelectedGame.Name}");
         
+        // High Scores Container null check
+        if (HighScoresContainer == null)
+        {
+            Debug.LogWarning($"{nameof(HighScoresContainer)} game object destroyed.");
+            return;
+        }
+            
+         
         for (var i = 0; i < HighScoresContainer.transform.childCount; i++)
             HighScoresContainer.transform.GetChild(i).gameObject.SetActive(false);
 
