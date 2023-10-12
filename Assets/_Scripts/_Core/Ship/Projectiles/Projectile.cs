@@ -2,8 +2,6 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using StarWriter.Core.HangerBuilder;
-using UnityEditor.EditorTools;
-using System.ComponentModel;
 
 namespace StarWriter.Core
 {
