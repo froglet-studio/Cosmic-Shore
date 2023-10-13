@@ -86,6 +86,7 @@ namespace _Scripts._Core.Firebase.Controller
         /// </summary>
         private void CheckIOSDependencies()
         {
+            // TODO: check out how to resolve dependencies for iOS
             FirebaseApp.CheckDependenciesAsync().ContinueWith(
                 checkTask =>
                 {
