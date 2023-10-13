@@ -1,48 +1,51 @@
 //using Firebase;
 //using Firebase.Analytics;
+
 using StarWriter.Utility.Singleton;
 
-public class FirebaseAnalytics : SingletonPersistent<FirebaseAnalytics>
+namespace _Scripts._Core.Firebase.Controller
 {
-    //private FirebaseApp app;
-
-    private bool analyticsEnabled = false;
-
-    public override void Awake()
+    public class FirebaseAnalytics : SingletonPersistent<FirebaseAnalytics>
     {
-        base.Awake();
-        Initialize();
-    }
+        //private FirebaseApp app;
 
-    public void LogLevelStart()
-    {
-        if (analyticsEnabled)
+        private bool analyticsEnabled = false;
+
+        public override void Awake()
         {
-            //FirebaseAnalytics.LogEvent(FirebaseAnalytics.EventLevelStart);
+            base.Awake();
+            Initialize();
         }
-    }
 
-    public void LogAdImpression()
-    {
-        if (analyticsEnabled)
+        public void LogLevelStart()
         {
-            //FirebaseAnalytics.LogEvent(FirebaseAnalytics.EventAdImpression);
+            if (analyticsEnabled)
+            {
+                //FirebaseAnalytics.LogEvent(FirebaseAnalytics.EventLevelStart);
+            }
         }
-    }
 
-    public void LogAppOpen()
-    {
-        if (analyticsEnabled)
+        public void LogAdImpression()
         {
-            //FirebaseAnalytics.LogEvent(FirebaseAnalytics.EventAppOpen);
+            if (analyticsEnabled)
+            {
+                //FirebaseAnalytics.LogEvent(FirebaseAnalytics.EventAdImpression);
+            }
         }
-    }
 
-    public void LogGamePlayStart(MiniGames mode, ShipTypes ship, int playerCount, int intensity)
-    {
-        if (analyticsEnabled)
+        public void LogAppOpen()
         {
-            /*
+            if (analyticsEnabled)
+            {
+                //FirebaseAnalytics.LogEvent(FirebaseAnalytics.EventAppOpen);
+            }
+        }
+
+        public void LogGamePlayStart(MiniGames mode, ShipTypes ship, int playerCount, int intensity)
+        {
+            if (analyticsEnabled)
+            {
+                /*
             Parameter[] parameters =
             {
                 new Parameter(FirebaseAnalytics.ParameterLevel, mode.ToString()),
@@ -52,14 +55,14 @@ public class FirebaseAnalytics : SingletonPersistent<FirebaseAnalytics>
             };
             FirebaseAnalytics.LogEvent(FirebaseAnalytics.EventLevelStart, parameters);
             */
+            }
         }
-    }
 
-    public void LogGamePlayEnd(MiniGames mode, ShipTypes ship, int playerCount, int intensity, int highScore)
-    {
-        if (analyticsEnabled)
+        public void LogGamePlayEnd(MiniGames mode, ShipTypes ship, int playerCount, int intensity, int highScore)
         {
-            /*
+            if (analyticsEnabled)
+            {
+                /*
             Parameter[] parameters =
             {
                 new Parameter(FirebaseAnalytics.ParameterLevel, mode.ToString()),
@@ -70,12 +73,12 @@ public class FirebaseAnalytics : SingletonPersistent<FirebaseAnalytics>
             };
             FirebaseAnalytics.LogEvent(FirebaseAnalytics.EventLevelEnd, parameters);
             */
+            }
         }
-    }
 
-    void Initialize()
-    {
-        /*
+        void Initialize()
+        {
+            /*
 #if UNITY_ANDROID  // TODO: keeping analytics disabled on iOS for now until we resolve dependency issues
         FirebaseApp.CheckAndFixDependenciesAsync().ContinueWith(task =>
         {
@@ -95,5 +98,7 @@ public class FirebaseAnalytics : SingletonPersistent<FirebaseAnalytics>
         });
 #endif
         */
+        }
+    
     }
 }

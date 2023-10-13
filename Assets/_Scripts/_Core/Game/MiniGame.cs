@@ -3,6 +3,7 @@ using StarWriter.Core.IO;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using _Scripts._Core.Firebase.Controller;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
