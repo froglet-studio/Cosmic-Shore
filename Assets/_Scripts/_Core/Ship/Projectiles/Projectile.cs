@@ -2,8 +2,6 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using StarWriter.Core.HangerBuilder;
-using UnityEditor.EditorTools;
-using System.ComponentModel;
 
 namespace StarWriter.Core
 {
@@ -34,8 +32,6 @@ namespace StarWriter.Core
                 meshRenderer.material = Hangar.Instance.GetTeamSpikeMaterial(Team);
                 meshRenderer.material.SetFloat("_Opacity", .5f);
             }
-
-            LaunchProjectile(ProjectileTime);
         }
 
         protected virtual void OnTriggerEnter(Collider other)

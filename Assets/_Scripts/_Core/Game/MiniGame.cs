@@ -3,6 +3,7 @@ using StarWriter.Core.IO;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using _Scripts._Core.Firebase.Controller;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -145,7 +146,7 @@ public class MiniGame : MonoBehaviour
 
     void StartGame()
     {
-        AnalyticsManager.Instance.LogGamePlayStart(gameMode, PlayerShipType, NumberOfPlayers, IntensityLevel);
+        FirebaseAnalytics.Instance.LogGamePlayStart(gameMode, PlayerShipType, NumberOfPlayers, IntensityLevel);
         gameRunning = true;
         Debug.Log($"MiniGame.StartGame, ... {Time.time}");
         EndGameScreen.SetActive(false);
@@ -224,7 +225,7 @@ public class MiniGame : MonoBehaviour
         gameRunning = false;
         EndGameScreen.SetActive(true);
         ScoreTracker.DisplayScores();
-        AnalyticsManager.Instance.LogGamePlayEnd(gameMode, PlayerShipType, NumberOfPlayers, IntensityLevel, ScoreTracker.GetHighScore());
+        FirebaseAnalytics.Instance.LogGamePlayEnd(gameMode, PlayerShipType, NumberOfPlayers, IntensityLevel, ScoreTracker.GetHighScore());
     }
 
     void LoopActivePlayerIndex()

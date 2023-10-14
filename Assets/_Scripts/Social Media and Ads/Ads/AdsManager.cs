@@ -1,3 +1,4 @@
+using _Scripts._Core.Firebase.Controller;
 using UnityEngine;
 using UnityEngine.Advertisements;
 
@@ -15,7 +16,7 @@ public class AdsManager : MonoBehaviour, IUnityAdsInitializationListener, IUnity
     private string _adUnitId; // These will fall back to android for unsupported platforms
     private string _gameId;
 
-    AnalyticsManager analyticsManager;
+    FirebaseAnalytics _firebaseAnalytics;
 
     public delegate void OnAdInitializationComplete();
     public static event OnAdInitializationComplete AdInitializationComplete;
@@ -37,7 +38,7 @@ public class AdsManager : MonoBehaviour, IUnityAdsInitializationListener, IUnity
     void Awake()
     {
         Initialize();
-        analyticsManager = AnalyticsManager.Instance;
+        _firebaseAnalytics = FirebaseAnalytics.Instance;
     }
 
     public void Initialize()
@@ -69,7 +70,7 @@ public class AdsManager : MonoBehaviour, IUnityAdsInitializationListener, IUnity
     {
         if (_skipAdForDevelopment)
         {
-            analyticsManager.LogAdImpression();
+            _firebaseAnalytics.LogAdImpression();
             OnUnityAdsShowComplete(_adUnitId, UnityAdsShowCompletionState.COMPLETED);
             return;
         }
