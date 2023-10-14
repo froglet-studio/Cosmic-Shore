@@ -21,7 +21,6 @@ public class CatalogManager : SingletonPersistent<CatalogManager>
         AuthenticationManager.OnLoginSuccess += LoadCatalog;
         AuthenticationManager.OnLoginSuccess += LoadInventory;
         AuthenticationManager.OnRegisterSuccess += GrantStartingInventory;
-
     }
 
     #region Initialize PlayFab Economy API with Auth Context

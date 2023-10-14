@@ -1,24 +1,8 @@
-//using PlayFab.EconomyModels;
-using System.Collections.Generic;
 using System;
+using System.Collections.Generic;
 
 namespace CosmicShore
 {
-    [Serializable]
-    public class Inventory
-    {
-        public const string VesselContentType = "Vessel";
-        public const string ShipContentType = "Ship";
-        public const string GameContentType = "Game";
-        public const string ShardContentType = "Shard";
-        public const string UpgradeContentType = "Upgrade";
-
-        public List<VirtualItem> Vessels;
-        public List<VirtualItem> Ships;
-        public List<VirtualItem> Games;
-        public List<VirtualItem> Shards;
-    }
-
     [Serializable]
     public class VirtualItem
     {
@@ -62,18 +46,5 @@ namespace CosmicShore
         /// </summary>
         public string Type;
         public int Quantity;
-    }
-
-    [Serializable]
-    public class ItemPrice
-    {
-        /// <summary>
-        /// The amount of the price.
-        /// </summary>
-        public int Amount;
-        /// <summary>
-        /// The Item Id of the price.
-        /// </summary>
-        public string ItemId;
     }
 }

@@ -17,14 +17,14 @@ public class LeaderboardManager : SingletonPersistent<LeaderboardManager>
     /// Has members: Position(Rank), Score and Player Display Name
     /// </summary>
     [System.Serializable]
-    public struct LeaderboardEntryV2
+    public struct LeaderboardEntry
     {
         public int Position;
         public int Score;
         public string DisplayName;
         public string PlayerId;
 
-        public LeaderboardEntryV2(string displayName, string playerId, int score, int position)
+        public LeaderboardEntry(string displayName, string playerId, int score, int position)
         {
             DisplayName = displayName;
             PlayerId = playerId;
@@ -210,7 +210,7 @@ public class LeaderboardManager : SingletonPersistent<LeaderboardManager>
     /// Load Leaderboard callback delegate
     /// Handles newly added leaderboard stats
     /// </summary>
-    public delegate void LoadLeaderboardCallBack(List<LeaderboardEntryV2> entries);
+    public delegate void LoadLeaderboardCallBack(List<LeaderboardEntry> entries);
 
     /// <summary>
     /// Fetch Leaderboard Stats - First Time
@@ -238,10 +238,10 @@ public class LeaderboardManager : SingletonPersistent<LeaderboardManager>
                 },
                 response =>
                 {
-                    List<LeaderboardEntryV2> entries = new List<LeaderboardEntryV2>();
+                    List<LeaderboardEntry> entries = new List<LeaderboardEntry>();
                     foreach (var entry in response.Leaderboard)
                     {
-                        entries.Add(new LeaderboardEntryV2(entry.Profile.DisplayName, entry.PlayFabId, entry.StatValue, entry.Position));
+                        entries.Add(new LeaderboardEntry(entry.Profile.DisplayName, entry.PlayFabId, entry.StatValue, entry.Position));
                     }
 
                     callback(entries);
@@ -260,7 +260,7 @@ public class LeaderboardManager : SingletonPersistent<LeaderboardManager>
         else
         {
             var dataAccessor = new DataAccessor(GetLeaderboardFileName(leaderboardName));
-            var cachedLeaderboard = dataAccessor.Load<List<LeaderboardEntryV2>>();
+            var cachedLeaderboard = dataAccessor.Load<List<LeaderboardEntry>>();
             callback(cachedLeaderboard);
         }
     }
@@ -310,11 +310,11 @@ public class LeaderboardManager : SingletonPersistent<LeaderboardManager>
         // The result doesn't return with leaderboard name, BLOCKBANDIT_ANY is a placeholder
         Debug.Log($"Leaderboard Manger - BLOCKBANDIT_ANY");
         // Store relevant data in leaderboard entry struct
-        var leaderboardEntry = new List<LeaderboardEntryV2>();
+        var leaderboardEntry = new List<LeaderboardEntry>();
         foreach (var entry in result.Leaderboard)
         {
             Debug.Log($"Leaderboard Manager - BLOCKBANDIT_ANY display name: {entry.DisplayName} score: {entry.StatValue.ToString()} position: {entry.Position.ToString()}");
-            leaderboardEntry.Add(new LeaderboardEntryV2(entry.DisplayName, entry.PlayFabId, entry.StatValue, entry.Position));
+            leaderboardEntry.Add(new LeaderboardEntry(entry.DisplayName, entry.PlayFabId, entry.StatValue, entry.Position));
         }
         // Let callback handle leaderboard data
         callback(leaderboardEntry);

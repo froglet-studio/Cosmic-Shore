@@ -6,12 +6,11 @@ using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using static LeaderboardManager;
 
 [RequireComponent(typeof(MenuAudio))]
 public class LeaderboardsMenu : MonoBehaviour
 {
-    List<LeaderboardEntryV2> LeaderboardEntriesV2;
+    List<LeaderboardManager.LeaderboardEntry> LeaderboardEntriesV2;
 
     [SerializeField] Transform GameSelectionContainer;
     [SerializeField] GameObject HighScoresContainer;
@@ -46,7 +45,7 @@ public class LeaderboardsMenu : MonoBehaviour
             OnFetchLeaderboard);
     }
 
-    void OnFetchLeaderboard(List<LeaderboardEntryV2> results)
+    void OnFetchLeaderboard(List<LeaderboardManager.LeaderboardEntry> results)
     {
         Debug.Log("OnFetchLeaderboard");
         foreach (var result in results)
