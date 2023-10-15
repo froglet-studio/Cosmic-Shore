@@ -5,7 +5,7 @@ using StarWriter.Utility.Singleton;
 
 namespace _Scripts._Core.Firebase.Controller
 {
-    public class FirebaseAnalytics : SingletonPersistent<FirebaseAnalytics>
+    public class FirebaseAnalyticsController : SingletonPersistent<FirebaseAnalyticsController>
     {
         //private FirebaseApp app;
 

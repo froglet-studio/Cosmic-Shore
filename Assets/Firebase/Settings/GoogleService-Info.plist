@@ -26,5 +26,7 @@
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
 	<string>1:919482784353:ios:05a883e4ab05974df6a820</string>
+	<key>DATABASE_URL</key>
+	<string>https://cosmic-shore-default-rtdb.firebaseio.com</string>
 </dict>
 </plist>

@@ -1,10 +1,10 @@
 <?xml version='1.0' encoding='utf-8'?>
-<resources xmlns:tools="http://schemas.android.com/tools" tools:keep="@string/gcm_defaultSenderId,@string/google_storage_bucket,@string/project_id,@string/google_api_key,@string/google_crash_reporting_api_key,@string/google_app_id,@string/default_web_client_id">
-  <string name="gcm_defaultSenderId" translatable="false">1028136157719</string>
-  <string name="google_storage_bucket" translatable="false">starwriter-7486e.appspot.com</string>
-  <string name="project_id" translatable="false">starwriter-7486e</string>
-  <string name="google_api_key" translatable="false">AIzaSyDiv4IXCVegN_Ps9ouyxJBvaL-WMLKJ1oU</string>
-  <string name="google_crash_reporting_api_key" translatable="false">AIzaSyDiv4IXCVegN_Ps9ouyxJBvaL-WMLKJ1oU</string>
-  <string name="google_app_id" translatable="false">1:1028136157719:android:f8556683eae0c1aba8d252</string>
-  <string name="default_web_client_id" translatable="false">1028136157719-pdbcddkvtqdqndav5jarm28cge4annho.apps.googleusercontent.com</string>
+<resources xmlns:tools="http://schemas.android.com/tools" tools:keep="@string/firebase_database_url,@string/gcm_defaultSenderId,@string/google_storage_bucket,@string/project_id,@string/google_api_key,@string/google_crash_reporting_api_key,@string/google_app_id">
+  <string name="firebase_database_url" translatable="false">https://cosmic-shore-default-rtdb.firebaseio.com</string>
+  <string name="gcm_defaultSenderId" translatable="false">919482784353</string>
+  <string name="google_storage_bucket" translatable="false">cosmic-shore.appspot.com</string>
+  <string name="project_id" translatable="false">cosmic-shore</string>
+  <string name="google_api_key" translatable="false">AIzaSyCp_K3kr2rmOS9be7CUdE0ibLnwKB7rczM</string>
+  <string name="google_crash_reporting_api_key" translatable="false">AIzaSyCp_K3kr2rmOS9be7CUdE0ibLnwKB7rczM</string>
+  <string name="google_app_id" translatable="false">1:919482784353:android:4ebe8f3720101069f6a820</string>
 </resources>
