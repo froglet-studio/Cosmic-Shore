@@ -11,19 +11,6 @@ using PlayFab.SharedModels;
 
 namespace _Scripts._Core.Playfab_Models
 {
-    /// <summary>
-    /// Authentication methods
-    /// Authentication methods references: https://api.playfab.com/documentation/client#Authentication
-    /// </summary>
-    public enum AuthMethods
-    {
-        Default,
-        Anonymous,
-        PlayFabLogin,
-        EmailLogin,
-        Register
-    }
-
     public class AuthenticationManager : SingletonPersistent<AuthenticationManager>
     {
         public static PlayerAccount PlayerAccount;
