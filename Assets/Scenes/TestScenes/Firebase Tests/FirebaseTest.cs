@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Firebase;
 using Firebase.Analytics;
 using Firebase.Auth;
+using Firebase.Extensions;
 using StarWriter.Utility.Singleton;
 using UnityEngine;
 using UnityEngine.Assertions;
@@ -40,13 +41,99 @@ namespace Scenes.TestScenes.Firebase_Tests
             // await CheckFixAndAuth();// Crashes Unity, don't recommend
             // StartCoroutine(DoTheThing());// Doesn't quite work
             // QueueActions(); // works as well
-            AnonymousLogin(); // works, only returns user id, no user name (of course it's not set)
-            
+            // AnonymousLogin(); // works, only returns user id, no user name (of course it's not set)
+            // AnonymousLoginWithCustomToken(); // system device id cannot be used as uid, not correct format
+            // CreateAccountEmailPassword(); // works for once, the second time running will return duplicated account error
+            LoginWithEmailPassword();
         }
 
         private void Update()
         {
             // UpdateWithAction();
+        }
+
+        private void LoginWithEmailPassword()
+        {
+            var email = "echo@froglet.studio";
+            var password = "this is super secure.";
+            _auth = FirebaseAuth.DefaultInstance;
+            _auth.SignInWithEmailAndPasswordAsync(email, password).ContinueWith(
+                loginTask =>
+                {
+                    if (loginTask.IsCanceled)
+                    {
+                        Debug.LogError("Login with email password canceled.");
+                        return;
+                    }
+
+                    if (loginTask.IsFaulted)
+                    {
+                        Debug.LogErrorFormat("Email login error: {0}", loginTask.Exception.Message);
+                        return;
+                    }
+
+                    var result = loginTask.Result;
+                    if (result != null)
+                        Debug.LogFormat("You've logged in with {0} {1} {2}", result.User.UserId, result.User.Email,
+                            result.User.IsEmailVerified.ToString());
+                });
+        }
+
+        private void CreateAccountEmailPassword()
+        {
+            var email = "echo@froglet.studio";
+            var password = "this is super secure.";
+            var displayName = "Unknown Nightmare";
+            _auth = FirebaseAuth.DefaultInstance;
+            _auth.CreateUserWithEmailAndPasswordAsync(email, password).ContinueWith(
+                createAccountTask =>
+                {
+                    if (createAccountTask.IsCanceled)
+                    {
+                        Debug.LogError("The create account with email and password is canceled");
+                        return;
+                    }
+
+                    if (createAccountTask.IsFaulted)
+                    {
+                        Debug.LogError(
+                                $"Error encountered when login with custom token. {createAccountTask.Exception.Message}");
+                        return;
+                    }
+                
+                    var result = createAccountTask.Result;
+                    // result.User.UpdateUserProfileAsync(updateTask =>
+                    // {
+                    //     updateTask
+                    // })
+                    if(result!=null)
+                        Debug.LogFormat("You've logged in with {0} {1} {2}", result.User.UserId, result.User.Email, result.User.IsEmailVerified.ToString());
+                }
+            );
+        }
+
+        private void AnonymousLoginWithCustomToken()
+        {
+            _auth = FirebaseAuth.DefaultInstance;
+            _auth.SignInWithCustomTokenAsync(SystemInfo.deviceUniqueIdentifier).ContinueWithOnMainThread(
+                task =>
+                {
+                    if (task.IsCanceled)
+                    {
+                        Debug.LogError("The custom token login is canceled");
+                        return;
+                    }
+
+                    if (task.IsFaulted)
+                    {
+                        Debug.LogError($"Error encountered when login with custom token. {task.Exception}");
+                        return;
+                    }
+
+                    var result = task.Result;
+                    if(result!=null)
+                        Debug.LogFormat("User signed in successfully: {0} - {1}", result.User.DisplayName, result.User.UserId);
+                });
         }
 
         private void AnonymousLogin()
