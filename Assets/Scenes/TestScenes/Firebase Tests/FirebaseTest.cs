@@ -29,6 +29,7 @@ namespace Scenes.TestScenes.Firebase_Tests
         private FirebaseAuth _auth;
 
         private FirebaseApp _app;
+        private FirebaseUser _user;
         public UnityEvent FirebaseInitialized = new();
 
         private Queue<Action> _actionQueue = new();
@@ -44,12 +45,39 @@ namespace Scenes.TestScenes.Firebase_Tests
             // AnonymousLogin(); // works, only returns user id, no user name (of course it's not set)
             // AnonymousLoginWithCustomToken(); // system device id cannot be used as uid, not correct format
             // CreateAccountEmailPassword(); // works for once, the second time running will return duplicated account error
-            LoginWithEmailPassword();
+            // LoginWithEmailPassword(); // works with existing account
+            ChangeAuthState();// works but OnAuthStateChanged executed twice
         }
 
         private void Update()
         {
             // UpdateWithAction();
+        }
+
+        private void ChangeAuthState()
+        {
+            _auth = FirebaseAuth.DefaultInstance;
+            _user = null;
+            _auth.StateChanged += OnAuthStateChanged;
+            OnAuthStateChanged(this, null);
+        }
+
+        private void OnDestroy()
+        {
+            _auth.StateChanged -= OnAuthStateChanged;
+            Debug.Log("Firebase auth cleans up.");
+        }
+
+        private void OnAuthStateChanged(object sender, EventArgs eventArgs)
+        {
+            if (_auth.CurrentUser == null)
+            {
+                Debug.LogWarning("Not logged in.");
+                return;
+            }
+            _user = _auth.CurrentUser;
+            Debug.LogFormat("Current user: id {0} name {1} email {2}", 
+                _user.UserId, _user.DisplayName, _user.Email);
         }
 
         private void LoginWithEmailPassword()
