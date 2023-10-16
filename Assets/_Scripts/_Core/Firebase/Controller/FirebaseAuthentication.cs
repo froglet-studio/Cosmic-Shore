@@ -59,11 +59,12 @@ namespace _Scripts._Core.Firebase.Controller
         /// </summary>
         private void AuthenticateDefault()
         {
-            #if UNITY_EDITOR
-            _devAuthentication = FirebaseAuth.DefaultInstance;
-            #else
+            // #if UNITY_EDITOR
+            // _devAuthentication = FirebaseAuth.DefaultInstance;
+            // #else
+            // _userAuthentication = FirebaseAuth.DefaultInstance;
+            // #endif
             _userAuthentication = FirebaseAuth.DefaultInstance;
-            #endif
             AuthenticateDefault(_firebaseAuthMethods);
         }
 

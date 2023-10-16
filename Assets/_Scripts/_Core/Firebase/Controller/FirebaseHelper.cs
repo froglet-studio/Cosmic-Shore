@@ -52,30 +52,18 @@ namespace _Scripts._Core.Firebase.Controller
         /// </summary>
         private void CheckAndroidDependencies()
         {
-            FirebaseApp.CheckDependenciesAsync().ContinueWith(
-                checkTask =>
+            FirebaseApp.CheckAndFixDependenciesAsync().ContinueWith(
+                fixTask =>
                 {
-                    _dependencyStatus = checkTask.Result;
-                    if (_dependencyStatus != DependencyStatus.Available)
-                    {
-                        return FirebaseApp.FixDependenciesAsync().ContinueWith(
-                            fixTask => FirebaseApp.CheckDependenciesAsync()).Unwrap();
-                    }
-                    else
-                    {
-                        return checkTask;
-                    }
-                }).Unwrap().ContinueWith(
-                resultTask =>
-                {
-                    _dependencyStatus = resultTask.Result;
+                    _dependencyStatus = fixTask.Result;
                     if (_dependencyStatus == DependencyStatus.Available)
                     {
+                        Debug.Log("Dependency resolved, now proceed with Firebase");
                         OnDependencyResolved?.Invoke(null, null);
                     }
                     else
                     {
-                        Debug.LogError($"Unable to resolve all Firebase Android dependencies: {_dependencyStatus}");
+                        Debug.LogWarning("Firebase dependency not resolved.");
                     }
                 });
         }
@@ -87,30 +75,18 @@ namespace _Scripts._Core.Firebase.Controller
         private void CheckIOSDependencies()
         {
             // TODO: check out how to resolve dependencies for iOS
-            FirebaseApp.CheckDependenciesAsync().ContinueWith(
-                checkTask =>
+            FirebaseApp.CheckAndFixDependenciesAsync().ContinueWith(
+                fixTask =>
                 {
-                    _dependencyStatus = checkTask.Result;
-                    if (_dependencyStatus != DependencyStatus.Available)
-                    {
-                        return FirebaseApp.FixDependenciesAsync().ContinueWith(
-                            fixTask => FirebaseApp.CheckDependenciesAsync()).Unwrap();
-                    }
-                    else
-                    {
-                        return checkTask;
-                    }
-                }).Unwrap().ContinueWith(
-                resultTask =>
-                {
-                    _dependencyStatus = resultTask.Result;
+                    _dependencyStatus = fixTask.Result;
                     if (_dependencyStatus == DependencyStatus.Available)
                     {
+                        Debug.Log("Dependency resolved, now proceed with Firebase");
                         OnDependencyResolved?.Invoke(null, null);
                     }
                     else
                     {
-                        Debug.LogError($"Unable to resolve all Firebase iOS dependencies: {_dependencyStatus}");
+                        Debug.LogWarning("Firebase dependency not resolved.");
                     }
                 });
         }
