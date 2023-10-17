@@ -46,12 +46,88 @@ namespace Scenes.TestScenes.Firebase_Tests
             // AnonymousLoginWithCustomToken(); // system device id cannot be used as uid, not correct format
             // CreateAccountEmailPassword(); // works for once, the second time running will return duplicated account error
             // LoginWithEmailPassword(); // works with existing account
-            ChangeAuthState();// works but OnAuthStateChanged executed twice
+            // ChangeAuthState();// works but OnAuthStateChanged executed twice
+            
+            // UpdateUserProfile(); // After updating with new information the user profile can query updated info
+            // SetUserEmail(); // This doesn't work right now USE_AUTH_EMULATOR not set
+            // GetUserProviderProfile(); // the same result above
+            // GetUserProfile(); // The default instance will remember the previous login without having to manually login
         }
 
         private void Update()
         {
             // UpdateWithAction();
+        }
+
+        private void SetUserEmail()
+        {
+            var email = "echo_update@froglet.studios";
+            _auth = FirebaseAuth.DefaultInstance;
+            var user = _auth.CurrentUser;
+
+            user?.UpdateEmailAsync(email).ContinueWithOnMainThread(
+                updateEmailTask =>
+                {
+                    if (updateEmailTask.IsCanceled) return;
+                    if (updateEmailTask.IsFaulted) return;
+
+                    Debug.Log("Your email is successfully updated.");
+                });
+        }
+
+        private void UpdateUserProfile()
+        {
+            _auth = FirebaseAuth.DefaultInstance;
+            var user = _auth.CurrentUser;
+            if (user == null) return;
+
+            var profile = new UserProfile
+            {
+                DisplayName = "echoness",
+                PhotoUrl = new Uri("https://example.com/jane-q-user/profile.jpg")
+            };
+
+            user.UpdateUserProfileAsync(profile).ContinueWith(
+                updateTask =>
+                {
+                    if (updateTask.IsCanceled)
+                    {
+                        Debug.LogError("Updating profile was canceled.");
+                        return;
+                    }
+
+                    if (updateTask.IsFaulted)
+                    {
+                        Debug.LogErrorFormat("Updating profile encountered an error {0}", updateTask.Exception.Message);
+                        return;
+                    }
+
+                    Debug.Log("My glorious profile updated successfully.");
+                });
+        }
+
+        private void GetUserProviderProfile()
+        {
+            _auth = FirebaseAuth.DefaultInstance;
+            if (_auth.CurrentUser == null) return;
+            
+            var user = _auth.CurrentUser;
+            
+            foreach (var profile in user.ProviderData)
+            {
+                Debug.LogFormat("Current profile name: {0} email: {1} uid: {2} photo url: {3}", 
+                    profile.DisplayName, profile.Email, profile.UserId, profile.PhotoUrl);
+            }
+        }
+
+        private void GetUserProfile()
+        {
+            _auth = FirebaseAuth.DefaultInstance;
+            if (_auth == null) return;
+
+            var user = _auth.CurrentUser;
+            
+            Debug.LogFormat("Current user name: {0} email: {1} uid: {2}", user.DisplayName, user.Email, user.UserId);
         }
 
         private void ChangeAuthState()
@@ -65,6 +141,7 @@ namespace Scenes.TestScenes.Firebase_Tests
         private void OnDestroy()
         {
             _auth.StateChanged -= OnAuthStateChanged;
+            _auth = null;
             Debug.Log("Firebase auth cleans up.");
         }
 
@@ -111,7 +188,7 @@ namespace Scenes.TestScenes.Firebase_Tests
         {
             var email = "echo@froglet.studio";
             var password = "this is super secure.";
-            var displayName = "Unknown Nightmare";
+            // var displayName = "Unknown Nightmare";
             _auth = FirebaseAuth.DefaultInstance;
             _auth.CreateUserWithEmailAndPasswordAsync(email, password).ContinueWith(
                 createAccountTask =>
