@@ -24,20 +24,26 @@ namespace Scenes.TestScenes.Firebase_Tests
         public override bool keepWaiting => !Task.IsCanceled;
         public Task Task { get; }
     }
-    public class FirebaseTest : SingletonPersistent<FirebaseTest>
+    public class FirebaseAuthTest : SingletonPersistent<FirebaseAuthTest>
     {
-        private FirebaseAuth _auth;
-
-        private FirebaseApp _app;
-        private FirebaseUser _user;
-        public UnityEvent FirebaseInitialized = new();
+        [HideInInspector] public UnityEvent FirebaseInitialized = new();
 
         private Queue<Action> _actionQueue = new();
+        
+        // Firebase instances   
+        private FirebaseAuth _auth;
+        private FirebaseApp _app;
+        private FirebaseUser _user;
+        
         private void Start()
         {
+            // _auth = FirebaseAuth.DefaultInstance;
+            //
+            // _user = _auth.CurrentUser;
+            // if (_user == null) return;
             // CheckAndFixDependencies();
             // CheckAndFixAlt();
-            // AuthAfterDependencyCheck(); // works dandy
+            AuthAfterDependencyCheck(); // works dandy
             // GetSuccesses(); // works
             // await CheckFixAndAuth();// Crashes Unity, don't recommend
             // StartCoroutine(DoTheThing());// Doesn't quite work
@@ -46,27 +52,161 @@ namespace Scenes.TestScenes.Firebase_Tests
             // AnonymousLoginWithCustomToken(); // system device id cannot be used as uid, not correct format
             // CreateAccountEmailPassword(); // works for once, the second time running will return duplicated account error
             // LoginWithEmailPassword(); // works with existing account
-            ChangeAuthState();// works but OnAuthStateChanged executed twice
+            // ChangeAuthState();// works but OnAuthStateChanged executed twice
+            
+            // UpdateUserProfile(); // After updating with new information the user profile can query updated info
+            // SetUserEmail(); // This doesn't work right now USE_AUTH_EMULATOR not set
+            // GetUserProviderProfile(); // the same result above
+            // GetUserProfile(); // The default instance will remember the previous login without having to manually login
+            // SendUserVerification(); // It works and an email was sent to the email account
+            // IsUserEmailVerified();// But after clicking on the verification link, the email is not verified until logging in again
+            // UpdatePassword(); // The password wasn't updated // TODO: write another scenario to test it out.
+            
         }
 
         private void Update()
         {
             // UpdateWithAction();
         }
+        
+        private void OnEnable()
+        {
+            // FirebaseInitialized.AddListener(OnFirebaseInitialized);
+        }
+
+        private void OnDisable()
+        {
+            // FirebaseInitialized.RemoveListener(OnFirebaseInitialized);
+            FirebaseInitialized.RemoveAllListeners();
+        }
+        
+        private void OnDestroy()
+        {
+            // _auth.StateChanged -= OnAuthStateChanged;
+            SignOutUser();
+            Debug.Log("Firebase auth signed out and cleaned up.");
+        }
+
+        private void SignOutUser()
+        {
+            // TODO: use this method in OnDestroy or OnDisabled.
+            _auth?.SignOut();
+            _auth = null;
+        }
+
+        private void ResetPassword()
+        {
+            
+        }
+        
+        private void UpdatePassword()
+        {
+            string newPassword = "Ultra-secure.";
+            _user?.UpdatePasswordAsync(newPassword).ContinueWith(
+                updateTask =>
+                {
+                    if (updateTask.IsCanceled || updateTask.IsCanceled)
+                    {
+                        Debug.LogErrorFormat("Error in updating password {0}", updateTask.Exception.Message);
+                        return;
+                    }
+
+                    Debug.Log("Password updated.");
+                });
+        }
+
+        private void IsUserEmailVerified()
+        {
+
+            Debug.LogFormat("Current user email {0} verification status: {1}", 
+                _user.Email, _user.IsEmailVerified?"Verified":"Not verified");
+        }
+        
+
+        private void SendUserVerification()
+        {
+            
+            Debug.LogFormat("Current user email: {0}", _user.Email);
+            
+            _user.SendEmailVerificationAsync().ContinueWith(sendTask =>
+            {
+                if (sendTask.IsCanceled || sendTask.IsFaulted)
+                {
+                    Debug.LogErrorFormat("Something is wrong here, dah. {0}", sendTask.Exception.Message);
+                    return;
+                }
+
+                Debug.Log("Verification email sent.");
+
+            });
+        }
+
+        private void SetUserEmail()
+        {
+            var email = "echo_update@froglet.studios";
+
+            _user?.UpdateEmailAsync(email).ContinueWithOnMainThread(
+                updateEmailTask =>
+                {
+                    if (updateEmailTask.IsCanceled) {
+                        return;}
+                    if (updateEmailTask.IsFaulted) return;
+
+                    Debug.Log("Your email is successfully updated.");
+                });
+        }
+
+        private void UpdateUserProfile()
+        {
+
+            var profile = new UserProfile
+            {
+                DisplayName = "echoness",
+                PhotoUrl = new Uri("https://example.com/jane-q-user/profile.jpg")
+            };
+
+            _user.UpdateUserProfileAsync(profile).ContinueWith(
+                updateTask =>
+                {
+                    if (updateTask.IsCanceled)
+                    {
+                        Debug.LogError("Updating profile was canceled.");
+                        return;
+                    }
+
+                    if (updateTask.IsFaulted)
+                    {
+                        Debug.LogErrorFormat("Updating profile encountered an error {0}", updateTask.Exception.Message);
+                        return;
+                    }
+
+                    Debug.Log("My glorious profile updated successfully.");
+                });
+        }
+
+        private void GetUserProviderProfile()
+        {
+            
+            foreach (var profile in _user.ProviderData)
+            {
+                Debug.LogFormat("Current profile name: {0} email: {1} uid: {2} photo url: {3}", 
+                    profile.DisplayName, profile.Email, profile.UserId, profile.PhotoUrl);
+            }
+        }
+
+        private void GetUserProfile()
+        {
+            
+            Debug.LogFormat("Current user name: {0} email: {1} uid: {2}", _user.DisplayName, _user.Email, _user.UserId);
+        }
 
         private void ChangeAuthState()
         {
-            _auth = FirebaseAuth.DefaultInstance;
-            _user = null;
-            _auth.StateChanged += OnAuthStateChanged;
-            OnAuthStateChanged(this, null);
+            // _auth.StateChanged += OnAuthStateChanged;
+            // OnAuthStateChanged(this, null);
         }
 
-        private void OnDestroy()
-        {
-            _auth.StateChanged -= OnAuthStateChanged;
-            Debug.Log("Firebase auth cleans up.");
-        }
+        
 
         private void OnAuthStateChanged(object sender, EventArgs eventArgs)
         {
@@ -84,7 +224,6 @@ namespace Scenes.TestScenes.Firebase_Tests
         {
             var email = "echo@froglet.studio";
             var password = "this is super secure.";
-            _auth = FirebaseAuth.DefaultInstance;
             _auth.SignInWithEmailAndPasswordAsync(email, password).ContinueWith(
                 loginTask =>
                 {
@@ -111,8 +250,7 @@ namespace Scenes.TestScenes.Firebase_Tests
         {
             var email = "echo@froglet.studio";
             var password = "this is super secure.";
-            var displayName = "Unknown Nightmare";
-            _auth = FirebaseAuth.DefaultInstance;
+
             _auth.CreateUserWithEmailAndPasswordAsync(email, password).ContinueWith(
                 createAccountTask =>
                 {
@@ -130,10 +268,6 @@ namespace Scenes.TestScenes.Firebase_Tests
                     }
                 
                     var result = createAccountTask.Result;
-                    // result.User.UpdateUserProfileAsync(updateTask =>
-                    // {
-                    //     updateTask
-                    // })
                     if(result!=null)
                         Debug.LogFormat("You've logged in with {0} {1} {2}", result.User.UserId, result.User.Email, result.User.IsEmailVerified.ToString());
                 }
@@ -142,7 +276,6 @@ namespace Scenes.TestScenes.Firebase_Tests
 
         private void AnonymousLoginWithCustomToken()
         {
-            _auth = FirebaseAuth.DefaultInstance;
             _auth.SignInWithCustomTokenAsync(SystemInfo.deviceUniqueIdentifier).ContinueWithOnMainThread(
                 task =>
                 {
@@ -166,8 +299,6 @@ namespace Scenes.TestScenes.Firebase_Tests
 
         private void AnonymousLogin()
         {
-            _auth = FirebaseAuth.DefaultInstance;
-
             _auth.SignInAnonymouslyAsync().ContinueWith(
                 task =>
                 {
@@ -219,7 +350,6 @@ namespace Scenes.TestScenes.Firebase_Tests
             {
                 Assert.IsNull(fixTask.Exception);
                 Debug.Log("Authenticating");
-                _auth = FirebaseAuth.DefaultInstance;
                 _auth.SignInAnonymouslyAsync().ContinueWith(authTask =>
                 {
                     EnqueueAction(() =>
@@ -240,7 +370,6 @@ namespace Scenes.TestScenes.Firebase_Tests
             yield return new YieldTask(FirebaseApp.CheckAndFixDependenciesAsync());
             
             Debug.Log("Authenticating");
-            _auth = FirebaseAuth.DefaultInstance;
             yield return new YieldTask(_auth.SignInAnonymouslyAsync());
             
             Debug.Log("Welcome!");
@@ -257,7 +386,6 @@ namespace Scenes.TestScenes.Firebase_Tests
             await FirebaseApp.CheckAndFixDependenciesAsync();
             
             Debug.Log("Authenticating...");
-            _auth = FirebaseAuth.DefaultInstance;
             await _auth.SignInAnonymouslyAsync();
             
             Debug.Log("Signed in!");
@@ -276,16 +404,7 @@ namespace Scenes.TestScenes.Firebase_Tests
             Debug.Log($"Successes after {successes}");
         }
 
-        private void OnEnable()
-        {
-            FirebaseInitialized.AddListener(OnFirebaseInitialized);
-        }
-
-        private void OnDisable()
-        {
-            // FirebaseInitialized.RemoveListener(OnFirebaseInitialized);
-            FirebaseInitialized.RemoveAllListeners();
-        }
+        
 
         private void CheckAndFixDependencies()
         {
@@ -295,8 +414,7 @@ namespace Scenes.TestScenes.Firebase_Tests
                 {
                     Assert.IsNull(fixTask.Exception);
                     Debug.Log("Authenticating");
-                    var auth = FirebaseAuth.DefaultInstance;
-                    auth.SignInAnonymouslyAsync().ContinueWith(
+                    _auth.SignInAnonymouslyAsync().ContinueWith(
                         authTask =>
                         {
                             Debug.Log("Starting anonymous login.");
@@ -307,7 +425,7 @@ namespace Scenes.TestScenes.Firebase_Tests
                             PlayerPrefs.SetInt("Successes", ++successes);
                             Debug.Log($"Successes after {successes}");
                             
-                            auth.SignOut();
+                            _auth.SignOut();
                             Debug.Log("Signed Out.");
                         }, taskScheduler);
                 });
@@ -328,7 +446,33 @@ namespace Scenes.TestScenes.Firebase_Tests
             var dependencyResult = await FirebaseApp.CheckAndFixDependenciesAsync();
             if (dependencyResult == DependencyStatus.Available)
             {
+                _app = FirebaseApp.DefaultInstance;
+                if(_app == null) Debug.LogError("Firebase app instance is not initialized.");
+                
                 _auth = FirebaseAuth.DefaultInstance;
+                await _auth.SignInAnonymouslyAsync().ContinueWith(
+                    authTask =>
+                    {
+                        if (authTask.IsCanceled || authTask.IsFaulted)
+                        {
+                            Debug.LogErrorFormat("Failed to login anonymously. {0}", authTask.Exception.Message);
+                            return;
+                        }
+
+                        var result = authTask.Result;
+                        if(result != null)
+                            Debug.LogFormat("Firebase Auth test - current user: uid - {0} name - {1} email - {2}", 
+                                result.User.UserId, result.User.DisplayName, result.User.Email);
+                    }
+                );
+                _user = _auth.CurrentUser;
+                if (_user == null)
+                {
+                    Debug.Log("User not logged in.");
+                    return;
+                }
+                // Debug.LogFormat("Firebase Auth test - current user: uid - {0} name - {1} email - {2}", 
+                //     _user.UserId, _user.DisplayName, _user.Email);
                 FirebaseInitialized?.Invoke();
             }
             else
