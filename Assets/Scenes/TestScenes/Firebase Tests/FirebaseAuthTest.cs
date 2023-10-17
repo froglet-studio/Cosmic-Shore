@@ -24,24 +24,26 @@ namespace Scenes.TestScenes.Firebase_Tests
         public override bool keepWaiting => !Task.IsCanceled;
         public Task Task { get; }
     }
-    public class FirebaseTest : SingletonPersistent<FirebaseTest>
+    public class FirebaseAuthTest : SingletonPersistent<FirebaseAuthTest>
     {
-        private FirebaseAuth _auth;
-
-        private FirebaseApp _app;
-        private FirebaseUser _user;
-        public UnityEvent FirebaseInitialized = new();
+        [HideInInspector] public UnityEvent FirebaseInitialized = new();
 
         private Queue<Action> _actionQueue = new();
+        
+        // Firebase instances   
+        private FirebaseAuth _auth;
+        private FirebaseApp _app;
+        private FirebaseUser _user;
+        
         private void Start()
         {
-            _auth = FirebaseAuth.DefaultInstance;
-
-            _user = _auth.CurrentUser;
-            if (_user == null) return;
+            // _auth = FirebaseAuth.DefaultInstance;
+            //
+            // _user = _auth.CurrentUser;
+            // if (_user == null) return;
             // CheckAndFixDependencies();
             // CheckAndFixAlt();
-            // AuthAfterDependencyCheck(); // works dandy
+            AuthAfterDependencyCheck(); // works dandy
             // GetSuccesses(); // works
             // await CheckFixAndAuth();// Crashes Unity, don't recommend
             // StartCoroutine(DoTheThing());// Doesn't quite work
@@ -59,20 +61,43 @@ namespace Scenes.TestScenes.Firebase_Tests
             // SendUserVerification(); // It works and an email was sent to the email account
             // IsUserEmailVerified();// But after clicking on the verification link, the email is not verified until logging in again
             // UpdatePassword(); // The password wasn't updated // TODO: write another scenario to test it out.
+            
         }
 
         private void Update()
         {
             // UpdateWithAction();
         }
+        
+        private void OnEnable()
+        {
+            // FirebaseInitialized.AddListener(OnFirebaseInitialized);
+        }
+
+        private void OnDisable()
+        {
+            // FirebaseInitialized.RemoveListener(OnFirebaseInitialized);
+            FirebaseInitialized.RemoveAllListeners();
+        }
+        
+        private void OnDestroy()
+        {
+            // _auth.StateChanged -= OnAuthStateChanged;
+            SignOutUser();
+            Debug.Log("Firebase auth signed out and cleaned up.");
+        }
 
         private void SignOutUser()
         {
             // TODO: use this method in OnDestroy or OnDisabled.
             _auth?.SignOut();
+            _auth = null;
         }
-        
-        
+
+        private void ResetPassword()
+        {
+            
+        }
         
         private void UpdatePassword()
         {
@@ -177,16 +202,11 @@ namespace Scenes.TestScenes.Firebase_Tests
 
         private void ChangeAuthState()
         {
-            _auth.StateChanged += OnAuthStateChanged;
-            OnAuthStateChanged(this, null);
+            // _auth.StateChanged += OnAuthStateChanged;
+            // OnAuthStateChanged(this, null);
         }
 
-        private void OnDestroy()
-        {
-            _auth.StateChanged -= OnAuthStateChanged;
-            _auth = null;
-            Debug.Log("Firebase auth cleans up.");
-        }
+        
 
         private void OnAuthStateChanged(object sender, EventArgs eventArgs)
         {
@@ -384,16 +404,7 @@ namespace Scenes.TestScenes.Firebase_Tests
             Debug.Log($"Successes after {successes}");
         }
 
-        private void OnEnable()
-        {
-            FirebaseInitialized.AddListener(OnFirebaseInitialized);
-        }
-
-        private void OnDisable()
-        {
-            // FirebaseInitialized.RemoveListener(OnFirebaseInitialized);
-            FirebaseInitialized.RemoveAllListeners();
-        }
+        
 
         private void CheckAndFixDependencies()
         {
@@ -435,7 +446,33 @@ namespace Scenes.TestScenes.Firebase_Tests
             var dependencyResult = await FirebaseApp.CheckAndFixDependenciesAsync();
             if (dependencyResult == DependencyStatus.Available)
             {
+                _app = FirebaseApp.DefaultInstance;
+                if(_app == null) Debug.LogError("Firebase app instance is not initialized.");
+                
                 _auth = FirebaseAuth.DefaultInstance;
+                await _auth.SignInAnonymouslyAsync().ContinueWith(
+                    authTask =>
+                    {
+                        if (authTask.IsCanceled || authTask.IsFaulted)
+                        {
+                            Debug.LogErrorFormat("Failed to login anonymously. {0}", authTask.Exception.Message);
+                            return;
+                        }
+
+                        var result = authTask.Result;
+                        if(result != null)
+                            Debug.LogFormat("Firebase Auth test - current user: uid - {0} name - {1} email - {2}", 
+                                result.User.UserId, result.User.DisplayName, result.User.Email);
+                    }
+                );
+                _user = _auth.CurrentUser;
+                if (_user == null)
+                {
+                    Debug.Log("User not logged in.");
+                    return;
+                }
+                // Debug.LogFormat("Firebase Auth test - current user: uid - {0} name - {1} email - {2}", 
+                //     _user.UserId, _user.DisplayName, _user.Email);
                 FirebaseInitialized?.Invoke();
             }
             else
