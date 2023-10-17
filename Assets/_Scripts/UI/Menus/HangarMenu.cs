@@ -126,7 +126,6 @@ public class HangarMenu : MonoBehaviour
         StartCoroutine(SelectPilotCoroutine(0));
     }
 
-
     void PopulateShipDetails()
     {
         Debug.Log($"Populating Ship Details List: {SelectedShip.Name}");

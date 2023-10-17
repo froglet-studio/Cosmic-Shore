@@ -12,7 +12,6 @@ public class NetworkMonitor : SingletonPersistent<NetworkMonitor>
     [SerializeField] bool forceOffline;
     bool _connected;
 
-    // Update is called once per frame
     void Update()
     {
         if (Application.internetReachability == NetworkReachability.NotReachable || forceOffline)
