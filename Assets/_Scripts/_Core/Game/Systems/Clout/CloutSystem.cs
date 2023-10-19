@@ -1,4 +1,6 @@
+using StarWriter.Core.HangerBuilder;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -9,15 +11,15 @@ namespace StarWriter.Core.CloutSystem
         int minCloutValue = 0;
         int maxCloutValue = 999;
 
-        // Dictionary to store clout value with a ref to a string key "ShipType_Element_CloutType"
-        Dictionary<string, Clout> Clouts = new();
 
-        void Start()
+        // Dictionary to store clout value with a ref to a string key "ShipType_Element_CloutType"
+        private Dictionary<string, Clout> Clouts = new Dictionary<string, Clout>();
+
+        private void Start()
         {
             PopulateDefaultDictionary();
             Test();
         }
-
         void Test() 
         {
             //adding clout
@@ -35,10 +37,9 @@ namespace StarWriter.Core.CloutSystem
             Debug.Log("Manta - Charge - Sport : Value = " + MCSValue);
 
         }
-
         void PopulateDefaultDictionary()
         {
-            int playerCloutValue = minCloutValue;  // TODO get player clout from server or save file
+            int playerCloutValue = minCloutValue;  //TODO get player clout from server or save file
             playerCloutValue = Math.Clamp(playerCloutValue, minCloutValue, maxCloutValue);
 
             Clouts.Clear();
@@ -54,7 +55,9 @@ namespace StarWriter.Core.CloutSystem
                         Clouts.Add(key, clout);
                     }
                 }
+
             }
+
         }
 
         // Adds or Removes clout value
@@ -76,7 +79,6 @@ namespace StarWriter.Core.CloutSystem
                 Clouts.Add(key, new Clout(ship, element, cloutType, amountToAdd));
             }
         }
-
         // Gets clout value
         public int GetCloutValue(ShipTypes ship, Element element, CloutType cloutType)
         {
@@ -94,3 +96,16 @@ namespace StarWriter.Core.CloutSystem
         
     }
 }
+
+       
+
+
+
+
+
+
+    
+
+   
+
+

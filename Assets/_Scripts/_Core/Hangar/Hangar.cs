@@ -3,6 +3,7 @@ using StarWriter.Utility.Singleton;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 // TODO: P1 renamespace this
 namespace StarWriter.Core.HangerBuilder

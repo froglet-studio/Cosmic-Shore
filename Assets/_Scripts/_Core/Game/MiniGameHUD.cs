@@ -1,7 +1,9 @@
 using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using StarWriter.Core;
+
 
 public class MiniGameHUD : MonoBehaviour
 {
@@ -68,3 +70,4 @@ public class MiniGameHUD : MonoBehaviour
         ship.StopShipControllerActions(InputEvents.Button3Action);
     }
 }
+

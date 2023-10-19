@@ -1,5 +1,46 @@
+using _Scripts._Core.Playfab_Models;
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
+using UnityEngine.Rendering.Universal;
+
+public struct Loadout
+{
+    public int Intensity;
+    public int PlayerCount;
+    public ShipTypes ShipType;
+    public MiniGames GameMode;
+
+    public Loadout(int intensity, int playerCount, ShipTypes shipType, MiniGames gameMode)
+    {
+        Intensity = intensity;
+        PlayerCount = playerCount;
+        ShipType = shipType;
+        GameMode = gameMode;
+    }
+    public override readonly string ToString()
+    {
+        return Intensity + "_" + PlayerCount + "_" + ShipType + "_" + GameMode ;
+    }
+
+    public readonly bool Uninitialized()
+    {
+        return Intensity == 0 && PlayerCount == 0 && ShipType == ShipTypes.Random && GameMode == MiniGames.Random;
+    }
+}
+
+public struct ArcadeGameLoadout
+{
+    public Loadout Loadout;
+    public MiniGames GameMode;
+
+    public ArcadeGameLoadout(MiniGames gameMode, Loadout loadout)
+    {
+        GameMode = gameMode;
+        Loadout = loadout;
+    }
+}
 
 namespace StarWriter.Core.LoadoutFavoriting
 {
@@ -99,7 +140,7 @@ namespace StarWriter.Core.LoadoutFavoriting
                 gameLoadouts.Add(gameLoadout);
 
             var dataAccessor = new DataAccessor(GameLoadoutsSaveFileName);
-            dataAccessor.Save(gameLoadouts);
+            dataAccessor.Save<List<ArcadeGameLoadout>>(gameLoadouts);
         }
 
         public static void SetLoadout(Loadout loadout, int index)
@@ -110,7 +151,7 @@ namespace StarWriter.Core.LoadoutFavoriting
                 activeLoadout = loadouts[index];
 
             var dataAccessor = new DataAccessor("loadouts.data");
-            dataAccessor.Save(loadouts);
+            dataAccessor.Save<List<Loadout>>(loadouts);
         }
         
         public static void SetActiveLoadoutIndex(int index) 
