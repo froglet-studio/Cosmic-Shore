@@ -70,7 +70,7 @@ public class AdsManager : MonoBehaviour, IUnityAdsInitializationListener, IUnity
     {
         if (_skipAdForDevelopment)
         {
-            _firebaseAnalyticsController.LogAdImpression();
+            _firebaseAnalyticsController.LogEventAdImpression();
             OnUnityAdsShowComplete(_adUnitId, UnityAdsShowCompletionState.COMPLETED);
             return;
         }

@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using Firebase;
 using StarWriter.Utility.Singleton;
 using UnityEngine;
+using UnityEngine.Events;
 
 namespace _Scripts._Core.Firebase.Controller
 {
@@ -12,7 +13,7 @@ namespace _Scripts._Core.Firebase.Controller
         private static DependencyStatus _dependencyStatus;
     
         // public event when all dependency resolved 
-        public static event EventHandler OnDependencyResolved; 
+        public static UnityEvent DependencyResolved; 
     
         // Start is called before the first frame update
         void Start()
@@ -59,11 +60,11 @@ namespace _Scripts._Core.Firebase.Controller
                     if (_dependencyStatus == DependencyStatus.Available)
                     {
                         Debug.Log("Dependency resolved, now proceed with Firebase");
-                        OnDependencyResolved?.Invoke(null, null);
+                        DependencyResolved?.Invoke();
                     }
                     else
                     {
-                        Debug.LogWarning("Firebase dependency not resolved.");
+                        Debug.LogErrorFormat("Firebase dependency not resolved. {0}", _dependencyStatus);
                     }
                 });
         }
@@ -82,11 +83,11 @@ namespace _Scripts._Core.Firebase.Controller
                     if (_dependencyStatus == DependencyStatus.Available)
                     {
                         Debug.Log("Dependency resolved, now proceed with Firebase");
-                        OnDependencyResolved?.Invoke(null, null);
+                        DependencyResolved?.Invoke();
                     }
                     else
                     {
-                        Debug.LogWarning("Firebase dependency not resolved.");
+                        Debug.LogErrorFormat("Firebase dependency not resolved. {0}", _dependencyStatus);
                     }
                 });
         }
