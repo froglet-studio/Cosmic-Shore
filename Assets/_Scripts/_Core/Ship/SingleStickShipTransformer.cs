@@ -65,7 +65,6 @@ public class SingleStickShipTransformer : ShipTransformer
         additionalRotation = Quaternion.identity;
 
         shipStatus.Course = courseTransform.forward;
-        Debug.Log($"shipData.Course {shipStatus.Course} Transform.forward {transform.forward}");
     }
 
     protected override void MoveShip()
