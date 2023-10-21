@@ -146,7 +146,7 @@ public class MiniGame : MonoBehaviour
 
     void StartGame()
     {
-        FirebaseAnalyticsController.Instance.LogGamePlayStart(gameMode, PlayerShipType, NumberOfPlayers, IntensityLevel);
+        FirebaseAnalyticsController.Instance.LogEventMiniGameStart(gameMode, PlayerShipType, NumberOfPlayers, IntensityLevel);
         gameRunning = true;
         Debug.Log($"MiniGame.StartGame, ... {Time.time}");
         EndGameScreen.SetActive(false);
@@ -225,7 +225,7 @@ public class MiniGame : MonoBehaviour
         gameRunning = false;
         EndGameScreen.SetActive(true);
         ScoreTracker.DisplayScores();
-        FirebaseAnalyticsController.Instance.LogGamePlayEnd(gameMode, PlayerShipType, NumberOfPlayers, IntensityLevel, ScoreTracker.GetHighScore());
+        FirebaseAnalyticsController.Instance.LogEventMiniGameEnd(gameMode, PlayerShipType, NumberOfPlayers, IntensityLevel, ScoreTracker.GetHighScore());
     }
 
     void LoopActivePlayerIndex()
