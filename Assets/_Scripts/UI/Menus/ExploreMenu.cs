@@ -1,4 +1,3 @@
-using StarWriter.Core;
 using StarWriter.Core.HangerBuilder;
 using StarWriter.Core.LoadoutFavoriting;
 using System.Collections;
@@ -119,9 +118,9 @@ public class ExploreMenu : MonoBehaviour
                 Debug.Log($"MiniGamesMenu - Populating Ship Select List: {i},{j}");
                 var selectionIndex = (i * 3) + j;
                 var shipSelection = shipSelectionRow.transform.GetChild(j).gameObject;
-                if (selectionIndex < SelectedGame.Pilots.Count)
+                if (selectionIndex < SelectedGame.Vessels.Count)
                 {
-                    var ship = SelectedGame.Pilots[selectionIndex].Ship;
+                    var ship = SelectedGame.Vessels[selectionIndex].Ship;
 
                     if (ship.Class == shipClass)
                         selectedShipIndex = selectionIndex;
@@ -199,9 +198,9 @@ public class ExploreMenu : MonoBehaviour
     {
         Debug.Log($"SelectShip: {index}");
         Debug.Log($"ShipSelectionContainer.childCount: {ShipSelectionGrid.childCount}");
-        Debug.Log($"Ships.Count: {SelectedGame.Pilots.Count}");
+        Debug.Log($"Ships.Count: {SelectedGame.Vessels.Count}");
 
-        SelectedShip = SelectedGame.Pilots[index].Ship;
+        SelectedShip = SelectedGame.Vessels[index].Ship;
 
         for (var i = 0; i < ShipSelectionGrid.childCount; i++)
         {
@@ -213,12 +212,12 @@ public class ExploreMenu : MonoBehaviour
 
                 if (shipIndex == index)
                 {
-                    var ship = SelectedGame.Pilots[shipIndex].Ship;
+                    var ship = SelectedGame.Vessels[shipIndex].Ship;
                     shipButton.GetComponent<Image>().sprite = ship.CardSilohoutteActive;
                 }
-                else if (shipIndex < SelectedGame.Pilots.Count)
+                else if (shipIndex < SelectedGame.Vessels.Count)
                 {
-                    var ship = SelectedGame.Pilots[shipIndex].Ship;
+                    var ship = SelectedGame.Vessels[shipIndex].Ship;
                     shipButton.GetComponent<Image>().sprite = ship.CardSilohoutte;
                 }
             }
@@ -226,7 +225,7 @@ public class ExploreMenu : MonoBehaviour
 
         // notify the mini game engine that this is the ship to play
         MiniGame.PlayerShipType = SelectedShip.Class;
-        MiniGame.PlayerPilot = SelectedGame.Pilots[index];
+        MiniGame.PlayerVessel = SelectedGame.Vessels[index];
     }
 
     public void SetPlayerCount(int playerCount)

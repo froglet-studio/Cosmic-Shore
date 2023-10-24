@@ -2,11 +2,11 @@ public struct Squad
 {
     //public ShipTypes SquadLeaderClass;
     //public Element SquadLeaderElement;
-    public SO_Pilot SquadLeader;
-    public SO_Pilot RogueOne;
-    public SO_Pilot RogueTwo;
+    public SO_Vessel SquadLeader;
+    public SO_Vessel RogueOne;
+    public SO_Vessel RogueTwo;
 
-    public Squad(SO_Pilot leader, SO_Pilot rogueOne,  SO_Pilot rogueTwo)
+    public Squad(SO_Vessel leader, SO_Vessel rogueOne,  SO_Vessel rogueTwo)
     {
         SquadLeader = leader;
         RogueOne = rogueOne;

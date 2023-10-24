@@ -33,7 +33,7 @@ public class MiniGame : MonoBehaviour
     public static int NumberOfPlayers = 2;  // TODO: P1 - support excluding single player games (e.g for elimination)
     public static int IntensityLevel = 1;
     public static ShipTypes PlayerShipType = ShipTypes.Dolphin;
-    public static SO_Pilot PlayerPilot;
+    public static SO_Vessel PlayerVessel;
 
     // Game State Tracking
     protected int TurnsTakenThisRound = 0;
@@ -121,7 +121,7 @@ public class MiniGame : MonoBehaviour
 
     public virtual void StartNewGame()
     {
-        Debug.Log($"Playing as {PlayerPilot.Name} - \"{PlayerPilot.Description}\"");
+        Debug.Log($"Playing as {PlayerVessel.Name} - \"{PlayerVessel.Description}\"");
         if (PauseSystem.Paused) PauseSystem.TogglePauseGame();
 
         RemainingPlayers = new();
@@ -284,7 +284,7 @@ public class MiniGame : MonoBehaviour
         ActivePlayer.Ship.GetComponent<ShipTransformer>().Reset();
         ActivePlayer.Ship.TrailSpawner.PauseTrailSpawner();
         ActivePlayer.Ship.ResourceSystem.Reset();
-        ActivePlayer.Ship.SetPilot(PlayerPilot);
+        ActivePlayer.Ship.SetVessel(PlayerVessel);
 
         CameraManager.Instance.SetupGamePlayCameras(ActivePlayer.Ship.transform);
 

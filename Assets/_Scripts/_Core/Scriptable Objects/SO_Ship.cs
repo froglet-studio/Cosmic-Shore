@@ -17,7 +17,7 @@ public class SO_Ship : ScriptableObject
     [SerializeField] public Sprite CardSilohoutte;
     [SerializeField] public Sprite CardSilohoutteActive;
     [SerializeField] public List<SO_ShipAbility> Abilities;
-    [SerializeField] public List<SO_Pilot> Pilots;
+    [SerializeField] public List<SO_Vessel> Vessels;
     [FormerlySerializedAs("MiniGames")]
     [SerializeField] public List<SO_ArcadeGame> TrainingGames;
 }

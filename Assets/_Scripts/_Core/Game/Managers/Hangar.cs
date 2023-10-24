@@ -3,6 +3,7 @@ using StarWriter.Utility.Singleton;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 using UnityEngine.Rendering;
 
 // TODO: P1 renamespace this
@@ -13,15 +14,19 @@ namespace StarWriter.Core.HangerBuilder
         Teams AITeam;
 
         [SerializeField] Teams PlayerTeam = Teams.Green;
-        [SerializeField] SO_Pilot PlayerPilot;  // Serialized for inspection in hierarchy
+        [FormerlySerializedAs("PlayerPilot")]
+        [SerializeField] SO_Vessel PlayerVessel;  // Serialized for inspection in hierarchy
         [SerializeField] ShipTypes PlayerShipType = ShipTypes.Random;
         [SerializeField] ShipTypes FriendlyAIShipType = ShipTypes.Manta;
         [SerializeField] ShipTypes HostileAI1ShipType = ShipTypes.Manta;
         [SerializeField] ShipTypes HostileAI2ShipType = ShipTypes.Random;
 
-        [SerializeField] public SO_Pilot SoarPilot;
-        [SerializeField] public SO_Pilot SmashPilot;
-        [SerializeField] public SO_Pilot SportPilot;
+        [FormerlySerializedAs("SoarPilot")]
+        [SerializeField] public SO_Vessel SoarVessel;
+        [FormerlySerializedAs("SmashPilot")]
+        [SerializeField] public SO_Vessel SmashVessel;
+        [FormerlySerializedAs("SportPilot")]
+        [SerializeField] public SO_Vessel SportVessel;
 
         [SerializeField] SO_MaterialSet GreenTeamMaterialSet;
         [SerializeField] SO_MaterialSet RedTeamMaterialSet;
@@ -49,9 +54,9 @@ namespace StarWriter.Core.HangerBuilder
             HostileAI1ShipType = (ShipTypes)shipType;
         }
 
-        public void SetPlayerPilot(SO_Pilot pilot)
+        public void SetPlayerVessel(SO_Vessel vessel)
         {
-            PlayerPilot = pilot;
+            PlayerVessel = vessel;
         }
 
         public ShipTypes GetPlayerShip()
@@ -114,8 +119,8 @@ namespace StarWriter.Core.HangerBuilder
         {
             Ship ship = Instantiate(shipTypeMap[shipType]);
 
-            if (PlayerPilot != null)
-                ship.SetPilot(PlayerPilot);
+            if (PlayerVessel != null)
+                ship.SetVessel(PlayerVessel);
 
             ship.SetShipMaterial(TeamMaterialSets[team].ShipMaterial);
             ship.SetBlockMaterial(TeamMaterialSets[team].BlockMaterial);

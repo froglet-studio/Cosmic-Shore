@@ -35,7 +35,7 @@ namespace StarWriter.Core.UI
         public void OnClickSoar()
         {
             MiniGame.PlayerShipType = ShipTypes.Manta;
-            MiniGame.PlayerPilot = Hangar.Instance.SoarPilot;
+            MiniGame.PlayerVessel = Hangar.Instance.SoarVessel;
             MiniGame.IntensityLevel = 1;
             MiniGame.NumberOfPlayers = 1;
 
@@ -44,7 +44,7 @@ namespace StarWriter.Core.UI
         public void OnClickSmash()
         {
             MiniGame.PlayerShipType = ShipTypes.Rhino;
-            MiniGame.PlayerPilot = Hangar.Instance.SmashPilot;
+            MiniGame.PlayerVessel = Hangar.Instance.SmashVessel;
             MiniGame.IntensityLevel = 1;
             MiniGame.NumberOfPlayers = 1;
 
@@ -53,7 +53,7 @@ namespace StarWriter.Core.UI
         public void OnClickSport()
         {
             MiniGame.PlayerShipType = ShipTypes.Manta;
-            MiniGame.PlayerPilot = Hangar.Instance.SportPilot;
+            MiniGame.PlayerVessel = Hangar.Instance.SportVessel;
             MiniGame.IntensityLevel = 1;
             MiniGame.NumberOfPlayers = 1;
 

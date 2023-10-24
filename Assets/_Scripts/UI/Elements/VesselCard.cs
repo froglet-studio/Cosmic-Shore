@@ -15,8 +15,8 @@ public class VesselCard : MonoBehaviour
     [SerializeField] Image LockImage;
     [SerializeField] int Index;
 
-    SO_Pilot vessel;
-    public SO_Pilot Vessel
+    SO_Vessel vessel;
+    public SO_Vessel Vessel
     {
         get { return vessel; }
         set

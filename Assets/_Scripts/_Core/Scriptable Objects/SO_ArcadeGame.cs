@@ -13,7 +13,7 @@ public class SO_ArcadeGame : ScriptableObject
     public Sprite SelectedIcon;
     public Sprite CardBackground;
     public VideoPlayer PreviewClip;
-    public List<SO_Pilot> Pilots;
+    public List<SO_Vessel> Vessels;
     [Min(1)] public int MinPlayers = 1;
     [Range(1, 4)] public int MaxPlayers = 2;
     public string SceneName;
