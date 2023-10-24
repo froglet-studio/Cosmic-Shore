@@ -5,12 +5,12 @@ using UnityEngine.UI;
 public class VesselCard : MonoBehaviour
 {
     [Header("Resources")]
-    [SerializeField] SO_GameList AllGames;
     [SerializeField] Sprite LockIcon;
     [SerializeField] public bool Locked;
 
     [Header("Placeholder Locations")]
     [SerializeField] TMP_Text VesselName;
+    [SerializeField] Image BorderImage;
     [SerializeField] Image BackgroundImage;
     [SerializeField] Image LockImage;
     [SerializeField] int Index;
@@ -26,6 +26,8 @@ public class VesselCard : MonoBehaviour
         }
     }
 
+    public SquadMenu SquadMenu;
+
     void Start()
     {
         UpdateCardView();
@@ -33,20 +35,30 @@ public class VesselCard : MonoBehaviour
 
     void UpdateCardView()
     {
+        if (vessel == null) return;
+
         //SO_ArcadeGame game = AllGames.GameList.Where(x => x.Mode == gameMode).FirstOrDefault();
-        //GameTitle.text = game.Name;
-        //BackgroundImage.sprite = game.CardBackground;
-        //LockImage.sprite = LockIcon;
-        //LockImage.gameObject.SetActive(Locked);
+        VesselName.text = vessel.Name;
+        BackgroundImage.sprite = vessel.Image;
+        LockImage.sprite = LockIcon;
+        LockImage.gameObject.SetActive(Locked);
     }
 
     public void OnCardClicked()
     {
-        // Add highlight boarder
+        Debug.Log($"VesselCard - Clicked: Vessel Name: { vessel.Name }");
 
-        // Set active and show details
-        //LoadoutView.ExpandLoadout(Index);
+        if (SquadMenu != null)
+        {
+            SquadMenu.AssignVessel(vessel);
+        }
 
-        //Debug.Log($"GameCard - Clicked: Gamemode: {gameMode}");
+        // Add highlight border
+        BorderImage.color = Color.yellow;
+    }
+
+    public void OnUpgradeButtonClicked()
+    {
+
     }
 }
