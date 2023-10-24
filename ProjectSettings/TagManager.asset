@@ -13,6 +13,8 @@ TagManager:
   - Projectile
   - EnergizedProjectile
   - SuperEnergizedProjectile
+  - FancyCam
+  - Fauna
   layers:
   - Default
   - TransparentFX

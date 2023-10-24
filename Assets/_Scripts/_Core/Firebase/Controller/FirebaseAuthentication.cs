@@ -28,7 +28,7 @@ namespace _Scripts._Core.Firebase.Controller
             _firebaseAuthMethods = AuthMethods.Default;
             
             // Initialize authentication instance upon dependency resolved
-            FirebaseHelper.OnDependencyResolved += OnDependencyResolved;
+            FirebaseHelper.DependencyResolved.AddListener(OnDependencyResolved);
         }
 
         /// <summary>
@@ -38,7 +38,7 @@ namespace _Scripts._Core.Firebase.Controller
         private void OnDisable()
         {
             _firebaseAuthMethods = AuthMethods.Default;
-            FirebaseHelper.OnDependencyResolved -= OnDependencyResolved;
+            FirebaseHelper.DependencyResolved.RemoveListener(OnDependencyResolved);
         }
 
         /// <summary>
@@ -47,7 +47,7 @@ namespace _Scripts._Core.Firebase.Controller
         /// <param name="sender">sender</param>
         /// <param name="eventArgs">event args</param>
         /// </summary>
-        private void OnDependencyResolved(object sender, EventArgs eventArgs)
+        private void OnDependencyResolved()
         {
             _firebaseAuthMethods = AuthMethods.Anonymous;
             AuthenticateDefault();

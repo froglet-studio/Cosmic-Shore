@@ -1,104 +1,173 @@
-//using Firebase;
-//using Firebase.Analytics;
-
+using System.Collections.Generic;
+using Firebase;
+using Firebase.Analytics;
+using JetBrains.Annotations;
 using StarWriter.Utility.Singleton;
+using UnityEngine;
 
 namespace _Scripts._Core.Firebase.Controller
 {
     public class FirebaseAnalyticsController : SingletonPersistent<FirebaseAnalyticsController>
     {
-        //private FirebaseApp app;
+        private bool _analyticsEnabled = false;
+        private FirebaseApp _app;
+        private Dictionary<string, object?> serviceDict;
 
-        private bool analyticsEnabled = false;
-
-        public override void Awake()
+        #region Firebase Analytics Controller Initialization and Enabling
+        
+        private void OnEnable()
         {
-            base.Awake();
-            Initialize();
+            FirebaseHelper.DependencyResolved.AddListener(InitializeFirebaseAnalytics);
         }
 
-        public void LogLevelStart()
+        private void OnDisable()
         {
-            if (analyticsEnabled)
-            {
-                //FirebaseAnalytics.LogEvent(FirebaseAnalytics.EventLevelStart);
-            }
+            FirebaseHelper.DependencyResolved.RemoveListener(InitializeFirebaseAnalytics);
+            _analyticsEnabled = false;
+        }
+        
+        /// <summary>
+        /// Initialize Firebase Analytics
+        /// </summary>
+        private void InitializeFirebaseAnalytics()
+        {
+            // Firebase analytics initialization
+            _app = FirebaseApp.DefaultInstance;
+            
+            // Enable Firebase Analytics Data Collection TODO: ask player consent for data collection
+            FirebaseAnalytics.SetAnalyticsCollectionEnabled(true);
+            
+            // Set User Id on device unique identifier
+            FirebaseAnalytics.SetUserId(SystemInfo.deviceUniqueIdentifier);
+            
+            // Set analytics enabled true
+            _analyticsEnabled = true;
+            
+            //Also log app open upon initialization
+            LogEventAppOpen();
+            Debug.Log("Firebase Analytics Controller running...");
+        }
+        
+        #endregion
+
+        #region Analytics Tooling For Unity Services
+
+        private void MappingDictionary()
+        {
+            // TODO: generalise mapping dictionary for Unity Services
+        }
+        
+
+        #endregion
+        #region Ad Measurement
+
+        /// <summary>
+        /// Log Event Add Impression
+        /// </summary>
+        public void LogEventAdImpression()
+        {
+            if (!_analyticsEnabled) return;
+            
+            FirebaseAnalytics.LogEvent(FirebaseAnalytics.EventAdImpression);
+            Debug.Log("Firebase logged add impression.");
         }
 
-        public void LogAdImpression()
+        #endregion
+
+        #region Application Events
+        /// <summary>
+        /// Log Event App Open
+        /// </summary>
+        private void LogEventAppOpen()
         {
-            if (analyticsEnabled)
-            {
-                //FirebaseAnalytics.LogEvent(FirebaseAnalytics.EventAdImpression);
-            }
+            if (!_analyticsEnabled) return;
+            
+            FirebaseAnalytics.LogEvent(FirebaseAnalytics.EventAppOpen);
+            Debug.Log("Firebase logged App Open.");
         }
 
-        public void LogAppOpen()
+        /// <summary>
+        /// Log Event Screen View
+        /// </summary>
+        public void LogEventScreenView()
         {
-            if (analyticsEnabled)
-            {
-                //FirebaseAnalytics.LogEvent(FirebaseAnalytics.EventAppOpen);
-            }
+            if (!_analyticsEnabled) return;
+            FirebaseAnalytics.LogEvent(FirebaseAnalytics.EventScreenView);
+            Debug.Log("Firebase logged Screen View Event");
         }
 
-        public void LogGamePlayStart(MiniGames mode, ShipTypes ship, int playerCount, int intensity)
+        #endregion
+
+        #region Mini Game Events
+        
+        /// <summary>
+        /// Log Event Mini Game Start
+        /// </summary>
+        /// <param name="mode"></param>
+        /// <param name="ship"></param>
+        /// <param name="playerCount"></param>
+        /// <param name="intensity"></param>
+        public void LogEventMiniGameStart(MiniGames mode, ShipTypes ship, int playerCount, int intensity)
         {
-            if (analyticsEnabled)
-            {
-                /*
-            Parameter[] parameters =
-            {
-                new Parameter(FirebaseAnalytics.ParameterLevel, mode.ToString()),
+            if (!_analyticsEnabled) return;
+            
+            // Event parameters for Firebase
+            var parameters = new[] {
+                new Parameter(FirebaseAnalytics.ParameterLevel, nameof(MiniGames)),
+                new Parameter(FirebaseAnalytics.ParameterLevelName, mode.ToString()),
                 new Parameter(FirebaseAnalytics.ParameterCharacter, ship.ToString()),
-                new Parameter("PlayerCount", playerCount),
-                new Parameter("Intensity", intensity),
+                new Parameter("mini_game_player_count", playerCount),
+                new Parameter("mini_game_intensity", intensity),
             };
+            
+            // Event dictionary for Unity Analytics Service
+            var dict = new Dictionary<string, object?>
+            {
+                { FirebaseAnalytics.ParameterLevel, nameof(MiniGames) },
+                { FirebaseAnalytics.ParameterLevelName, mode.ToString()},
+                { FirebaseAnalytics.ParameterCharacter, ship.ToString()},
+                { "mini_game_player_count", playerCount},
+                { "mini_game_intensity", intensity}
+            };
+            
+            // Log event in Firebase
             FirebaseAnalytics.LogEvent(FirebaseAnalytics.EventLevelStart, parameters);
-            */
-            }
+            Debug.LogFormat("{0} - {1} - Firebase logged mini game start stats.", nameof(FirebaseAnalyticsController), nameof(LogEventMiniGameStart));
+            
+            // Log event in Unity Analytics
+            UnityAnalytics.Instance.LogFirebaseEvents(FirebaseAnalytics.EventLevelStart, dict);
+            Debug.LogFormat("{0} - {1} - Unity Service logged mini game start stats.", nameof(FirebaseAnalyticsController), nameof(LogEventMiniGameStart));
+            
         }
 
-        public void LogGamePlayEnd(MiniGames mode, ShipTypes ship, int playerCount, int intensity, int highScore)
+        /// <summary>
+        /// Log Event Mini Game End
+        /// </summary>
+        /// <param name="mode">Mini Game Mode</param>
+        /// <param name="ship">Ship Type</param>
+        /// <param name="playerCount">Player Count</param>
+        /// <param name="intensity">Intensity</param>
+        /// <param name="highScore">HighScore</param>
+        public void LogEventMiniGameEnd(MiniGames mode, ShipTypes ship, int playerCount, int intensity, int highScore)
         {
-            if (analyticsEnabled)
-            {
-                /*
-            Parameter[] parameters =
-            {
-                new Parameter(FirebaseAnalytics.ParameterLevel, mode.ToString()),
+            if (!_analyticsEnabled) return;
+            
+            
+            var parameters = new [] {
+                new Parameter(FirebaseAnalytics.ParameterLevel, nameof(MiniGames)),
+                new Parameter(FirebaseAnalytics.ParameterLevelName, mode.ToString()),
                 new Parameter(FirebaseAnalytics.ParameterCharacter, ship.ToString()),
-                new Parameter("PlayerCount", playerCount),
-                new Parameter("Intensity", intensity),
-                new Parameter("HighScore", highScore),
+                new Parameter("mini_game_player_count", playerCount),
+                new Parameter("mini_game_intensity", intensity),
+                new Parameter(FirebaseAnalytics.ParameterScore, highScore)
             };
+            
             FirebaseAnalytics.LogEvent(FirebaseAnalytics.EventLevelEnd, parameters);
-            */
-            }
+            Debug.Log("Firebase logged mini game end stats.");
+            
         }
 
-        void Initialize()
-        {
-            /*
-#if UNITY_ANDROID  // TODO: keeping analytics disabled on iOS for now until we resolve dependency issues
-        FirebaseApp.CheckAndFixDependenciesAsync().ContinueWith(task =>
-        {
-            var dependencyStatus = task.Result;
-            if (dependencyStatus == DependencyStatus.Available)
-            {
-                app = FirebaseApp.DefaultInstance;
-                
-                analyticsEnabled = true;
-                LogAppOpen();
-            }
-            else
-            {
-                UnityEngine.Debug.LogError(string.Format(
-                  "Could not resolve all Firebase dependencies: {0}", dependencyStatus));
-            }
-        });
-#endif
-        */
-        }
+        #endregion
     
     }
 }
