@@ -1,6 +1,10 @@
+using System.Collections.Generic;
+using JetBrains.Annotations;
 using StarWriter.Utility.Singleton;
+using Unity.Services.Analytics;
 using Unity.Services.Core;
 using UnityEngine;
+using UnityEngine.Analytics;
 
 namespace _Scripts._Core.Firebase.Controller
 {
@@ -54,7 +58,14 @@ namespace _Scripts._Core.Firebase.Controller
         /// </summary>
         private void SetUserId()
         {
+            if (!_isConnected) return;
+            
             UnityServices.ExternalUserId = SystemInfo.deviceUniqueIdentifier;
+        }
+
+        public void LogFirebaseEvents(in string eventName, [ItemCanBeNull] in Dictionary<string, object> dict)
+        {
+            AnalyticsService.Instance.CustomData(eventName, dict);
         }
     }
 }

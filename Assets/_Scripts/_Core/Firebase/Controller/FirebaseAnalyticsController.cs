@@ -1,5 +1,7 @@
+using System.Collections.Generic;
 using Firebase;
 using Firebase.Analytics;
+using JetBrains.Annotations;
 using StarWriter.Utility.Singleton;
 using UnityEngine;
 
@@ -9,6 +11,7 @@ namespace _Scripts._Core.Firebase.Controller
     {
         private bool _analyticsEnabled = false;
         private FirebaseApp _app;
+        private Dictionary<string, object?> serviceDict;
 
         #region Firebase Analytics Controller Initialization and Enabling
         
@@ -47,6 +50,15 @@ namespace _Scripts._Core.Firebase.Controller
         
         #endregion
 
+        #region Analytics Tooling For Unity Services
+
+        private void MappingDictionary()
+        {
+            // TODO: generalise mapping dictionary for Unity Services
+        }
+        
+
+        #endregion
         #region Ad Measurement
 
         /// <summary>
@@ -98,7 +110,8 @@ namespace _Scripts._Core.Firebase.Controller
         public void LogEventMiniGameStart(MiniGames mode, ShipTypes ship, int playerCount, int intensity)
         {
             if (!_analyticsEnabled) return;
-
+            
+            // Event parameters for Firebase
             var parameters = new[] {
                 new Parameter(FirebaseAnalytics.ParameterLevel, nameof(MiniGames)),
                 new Parameter(FirebaseAnalytics.ParameterLevelName, mode.ToString()),
@@ -107,8 +120,23 @@ namespace _Scripts._Core.Firebase.Controller
                 new Parameter("mini_game_intensity", intensity),
             };
             
+            // Event dictionary for Unity Analytics Service
+            var dict = new Dictionary<string, object?>
+            {
+                { FirebaseAnalytics.ParameterLevel, nameof(MiniGames) },
+                { FirebaseAnalytics.ParameterLevelName, mode.ToString()},
+                { FirebaseAnalytics.ParameterCharacter, ship.ToString()},
+                { "mini_game_player_count", playerCount},
+                { "mini_game_intensity", intensity}
+            };
+            
+            // Log event in Firebase
             FirebaseAnalytics.LogEvent(FirebaseAnalytics.EventLevelStart, parameters);
-            Debug.Log("Firebase logged mini game start stats.");
+            Debug.LogFormat("{0} - {1} - Firebase logged mini game start stats.", nameof(FirebaseAnalyticsController), nameof(LogEventMiniGameStart));
+            
+            // Log event in Unity Analytics
+            UnityAnalytics.Instance.LogFirebaseEvents(FirebaseAnalytics.EventLevelStart, dict);
+            Debug.LogFormat("{0} - {1} - Unity Service logged mini game start stats.", nameof(FirebaseAnalyticsController), nameof(LogEventMiniGameStart));
             
         }
 
