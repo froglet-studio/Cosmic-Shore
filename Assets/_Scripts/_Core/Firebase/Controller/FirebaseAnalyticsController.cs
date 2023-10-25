@@ -17,12 +17,12 @@ namespace _Scripts._Core.Firebase.Controller
         
         private void OnEnable()
         {
-            FirebaseHelper.DependencyResolved.AddListener(InitializeFirebaseAnalytics);
+            FirebaseHelper.DependencyResolved?.AddListener(InitializeFirebaseAnalytics);
         }
 
         private void OnDisable()
         {
-            FirebaseHelper.DependencyResolved.RemoveListener(InitializeFirebaseAnalytics);
+            FirebaseHelper.DependencyResolved?.RemoveListener(InitializeFirebaseAnalytics);
             _analyticsEnabled = false;
         }
         
