@@ -1,3 +1,4 @@
+using System;
 using StarWriter.Core.HangerBuilder;
 using System.Collections;
 using System.Collections.Generic;
@@ -104,10 +105,10 @@ public class HangarMenu : MonoBehaviour
         {
             var selectionIndex = i;
             var vessel = SelectedShip.Vessels[i];
-            Debug.Log($"Populating Vessel Select List: {vessel.Name}");
+            Debug.Log($"Populating Vessel Select List: {vessel?.Name}");
             var vesselSelection = VesselSelectionContainer.GetChild(i).gameObject;
             vesselSelection.SetActive(true);
-            vesselSelection.GetComponent<Image>().sprite = vessel.Icon;
+            vesselSelection.GetComponent<Image>().sprite = vessel?.Icon;
             vesselSelection.GetComponent<Button>().onClick.RemoveAllListeners();
             vesselSelection.GetComponent<Button>().onClick.AddListener(() => SelectPilot(selectionIndex));
             vesselSelection.GetComponent<Button>().onClick.AddListener(() => VesselSelectionContainer.GetComponent<MenuAudio>().PlayAudio());
@@ -203,23 +204,40 @@ public class HangarMenu : MonoBehaviour
     /* Selects the vessel in the UI for display */
     /// <summary>
     /// Select a vessel in the UI to display its meta data
+    /// TODO: Add UI Vessel Assets for Urchin and Bufo when they are available
     /// </summary>
     /// <param name="index">Index of the displayed vessel list</param>
     public void SelectPilot(int index)
     {
         Debug.Log($"SelectVessel: {index}");
 
-        // Deselect them all
-        for (var i = 0; i < 4; i++)
-            VesselSelectionContainer.GetChild(i).gameObject.GetComponent<Image>().sprite = SelectedShip.Vessels[i].Icon;
+        try
+        {
+            // Deselect them all
+            for (var i = 0; i < 4; i++)
+                VesselSelectionContainer.GetChild(i).gameObject.GetComponent<Image>().sprite =
+                    SelectedShip.Vessels[i].Icon;
 
-        // Select the one
-        SelectedVessel = SelectedShip.Vessels[index];
-        VesselSelectionContainer.GetChild(index).gameObject.GetComponent<Image>().sprite = SelectedVessel.SelectedIcon;
+            // Select the one
+            SelectedVessel = SelectedShip.Vessels[index];
+            VesselSelectionContainer.GetChild(index).gameObject.GetComponent<Image>().sprite =
+                SelectedVessel.SelectedIcon;
+        }
+        catch (ArgumentOutOfRangeException argumentOutOfRangeException)
+        {
+            Debug.LogWarningFormat("{0} - {1} - The ship lacks vessel assets. Please add them. {2}", nameof(HangarMenu),
+                nameof(SelectPilot), argumentOutOfRangeException.Message);
+        }
+        catch (NullReferenceException nullReferenceException)
+        {
+            Debug.LogWarningFormat("{0} - {1} - The ship lacks vessel assets. Please add them. {2}", nameof(HangarMenu),
+                nameof(SelectPilot), nullReferenceException.Message);
+        }
 
         PopulateVesselDetails();
     }
 
+    
     IEnumerator SelectVesselCoroutine(int index)
     {
         yield return new WaitForEndOfFrame();
