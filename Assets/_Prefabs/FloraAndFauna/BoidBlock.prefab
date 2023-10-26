@@ -19,7 +19,7 @@ GameObject:
   m_TagString: Fauna
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
-  m_StaticEditorFlags: 126
+  m_StaticEditorFlags: 0
   m_IsActive: 1
 --- !u!4 &2499831012863165758
 Transform:
@@ -64,7 +64,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 052ad6cedfeeddc4fb21fcb46fc2606e, type: 2}
+  - {fileID: 2100000, guid: 80af0fed05f82884aaf443b0bcc8af5f, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -148,12 +148,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   cohesionRadius: 30
-  behaviorUpdateRate: 1.3
-  separationRadius: 20
-  separationWeight: 3
+  behaviorUpdateRate: 3
+  separationRadius: 15
+  separationWeight: 5
   alignmentWeight: 1
-  cohesionWeight: 4
-  goalWeight: 20
+  cohesionWeight: 5
+  goalWeight: 1
   minSpeed: 10
   maxSpeed: 15
   goal: {fileID: 0}

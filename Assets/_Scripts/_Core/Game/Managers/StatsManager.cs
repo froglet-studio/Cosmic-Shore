@@ -2,6 +2,7 @@ using Newtonsoft.Json;
 using StarWriter.Core;
 using StarWriter.Utility.Singleton;
 using System.Collections.Generic;
+using System.Linq;
 using TMPro;
 using UnityEngine;
 
@@ -283,6 +284,22 @@ public class StatsManager : Singleton<StatsManager>
     {
         MaybeCreateDictionaryEntries(team, playerName);
     }
+
+    public float GetTotalVolume()
+    {
+        return teamStats.Values.Sum(stats => stats.volumeRemaining);
+    }
+
+    public Vector4 GetTeamVolumes()
+    {
+        float greenVolume = teamStats.ContainsKey(Teams.Green) ? teamStats[Teams.Green].volumeRemaining : 0;
+        float redVolume = teamStats.ContainsKey(Teams.Red) ? teamStats[Teams.Red].volumeRemaining : 0;
+        float blueVolume = teamStats.ContainsKey(Teams.Blue) ? teamStats[Teams.Blue].volumeRemaining : 0;
+        float yellowVolume = teamStats.ContainsKey(Teams.Yellow) ? teamStats[Teams.Yellow].volumeRemaining : 0;
+
+        return new Vector4(greenVolume, redVolume, blueVolume, yellowVolume);
+    }
+
 
     // TODO: p1 - we probably want a UI class that talks to the stats managar and updates the UI rather than doing it in here directly
     void OutputRoundStats()

@@ -1,0 +1,119 @@
+#pragma kernel CSMain
+
+#define ENTITY_TYPE_BOID 0
+#define ENTITY_TYPE_BLOCK 1
+#define COHESION_RADIUS 100.0f
+#define SEPARATION_RADIUS 6.0f
+#define EXPLOSION_RADIUS 2.0f
+#define GRID_SIZE 10.0f // Size of each cell in the grid
+#define MAX_ENTITIES_PER_CELL 50 // Max number of entities in each cell
+
+struct Entity 
+{
+    int type;
+    float3 position;
+    float3 velocity;
+    float3 goalDirection;
+    int explodeFlag; // 0 for no explosion, 1 for explosion
+    float4 teamWeights;
+    int team;
+};
+
+// Buffers
+StructuredBuffer<Entity> entityBufferRead;
+RWStructuredBuffer<Entity> entityBufferWrite;
+groupshared Entity cellEntities[MAX_ENTITIES_PER_CELL]; // Shared memory for entities in the current cell
+
+[numthreads(32, 1, 1)]
+void CSMain (uint3 id : SV_DispatchThreadID) 
+{
+
+Entity currentEntity = entityBufferRead[id.x];
+currentEntity.position += float3 (0,1,0);
+entityBufferWrite[id.x] = currentEntity;
+
+    if (currentEntity.type == ENTITY_TYPE_BOID) {
+        for (int i = 0; i < entityBufferRead.Length; i++) {
+            Entity otherEntity = entityBufferRead[i];
+            
+            if (otherEntity.type == ENTITY_TYPE_BLOCK) 
+            {
+                int teamIndex = min(max(otherEntity.team, 0), 3); // Ensure teamIndex is between 0 and 3
+                float weight = currentEntity.teamWeights[teamIndex];
+
+                float3 directionToBlock = otherEntity.position - currentEntity.position;
+                float distance = length(directionToBlock);
+                
+                if (distance < EXPLOSION_RADIUS) 
+                {
+                    otherEntity.explodeFlag = 1;
+                    entityBufferWrite[i] = otherEntity;
+                } 
+                //else 
+                //{
+                //    currentEntity.goalDirection += normalize(directionToBlock) * weight;
+                //}
+            }
+        }
+
+        // Calculate cell index based on position
+        int3 cellIndex = (int3)(currentEntity.position / GRID_SIZE);
+
+        // Load entities from this cell and neighboring cells into shared memory
+        int cellEntityCount = 0;
+        for (int i = 0; i < entityBufferRead.Length; i++) {
+            Entity otherEntity = entityBufferRead[i];
+            int3 otherCellIndex = (int3)(otherEntity.position / GRID_SIZE);
+            if (all(abs(cellIndex - otherCellIndex) <= 1) && cellEntityCount < MAX_ENTITIES_PER_CELL) {
+                cellEntities[cellEntityCount++] = otherEntity;
+            }
+        }
+
+        // Boid interaction logics
+        float3 cohesion = float3(0, 0, 0);
+        float3 alignment = float3(0, 0, 0);
+        float3 separation = float3(0, 0, 0);
+        int neighborsCount = 0;
+
+        for (int i = 0; i < cellEntityCount; i++) {
+            Entity otherEntity = cellEntities[i];
+            
+            if (otherEntity.type == ENTITY_TYPE_BOID) {
+                float distance = length(currentEntity.position - otherEntity.position);
+
+                if (distance < COHESION_RADIUS) {
+                    cohesion += otherEntity.position;
+                    alignment += otherEntity.velocity;
+                    neighborsCount++;
+
+                    if (distance < SEPARATION_RADIUS) {
+                        separation += currentEntity.position - otherEntity.position;
+                    }
+                }
+            }
+        }
+
+        if (neighborsCount > 0) {
+            cohesion /= neighborsCount;
+            alignment /= neighborsCount;
+            if (length(separation) > 0.0001) {
+                separation = normalize(separation);
+            }
+            if (length(cohesion - currentEntity.position) > 0.0001) {
+                cohesion = normalize(cohesion - currentEntity.position);
+            }
+            if (length(alignment) > 0.0001) {
+                alignment = normalize(alignment);
+            }
+        }
+
+        float3 desiredVelocity = (cohesion) + (alignment) + separation + (currentEntity.goalDirection);
+        if (length(desiredVelocity) > 0.0001) {
+            currentEntity.velocity = normalize(desiredVelocity);
+        }
+        
+        currentEntity.position += currentEntity.velocity;
+ 
+    }
+    entityBufferWrite[id.x] = currentEntity;
+}

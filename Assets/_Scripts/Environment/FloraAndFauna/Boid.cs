@@ -1,12 +1,13 @@
-using StarWriter.Core;
-using System.Collections.Generic;
 using UnityEngine;
+using System.Collections;
+using System.Collections.Generic;
+using StarWriter.Core;
 
 public class Boid : MonoBehaviour
 {
     [Header("Detection Settings")]
-    public float cohesionRadius = 10.0f; 
-    public float behaviorUpdateRate = 0.2f;
+    public float cohesionRadius = 10.0f;
+    public float behaviorUpdateRate = 1.5f;
     public float separationRadius = 5f;
 
     [Header("Behavior Weights")]
@@ -26,11 +27,28 @@ public class Boid : MonoBehaviour
     private Vector3 currentVelocity;
     private Vector3 desiredDirection;
 
+    private BoidManager boidManager;
+    private TrailBlock trailBlock;
+    private List<Collider> separatedBoids = new List<Collider>();
+
     private void Start()
     {
+        boidManager = GetComponentInParent<BoidManager>();
+        trailBlock = GetComponent<TrailBlock>();
         currentVelocity = transform.forward * Random.Range(minSpeed, maxSpeed);
         float initialDelay = normalizedIndex * behaviorUpdateRate;
-        InvokeRepeating("CalculateBehavior", initialDelay, behaviorUpdateRate);
+        StartCoroutine(CalculateBehaviorCoroutine(initialDelay));
+    }
+
+    IEnumerator CalculateBehaviorCoroutine(float initialDelay)
+    {
+        yield return new WaitForSeconds(initialDelay);
+
+        while (true)
+        {
+            CalculateBehavior();
+            yield return new WaitForSeconds(behaviorUpdateRate);
+        }
     }
 
     void CalculateBehavior()
@@ -38,37 +56,49 @@ public class Boid : MonoBehaviour
         Vector3 separation = Vector3.zero;
         Vector3 alignment = Vector3.zero;
         Vector3 cohesion = Vector3.zero;
-        Vector3 goalDirection = goal ? (goal.position - transform.position).normalized : Vector3.zero;
+        Vector3 goalDirection = goal ? (goal.position - transform.position) : Vector3.zero;
+        Vector3 blockAttraction = Vector3.zero;
 
         float averageSpeed = 0.0f;
-        List<Collider> separatedBoids = new();
+        separatedBoids.Clear();
         Collider[] boidsInVicinity = Physics.OverlapSphere(transform.position, cohesionRadius);
+
         foreach (Collider collider in boidsInVicinity)
         {
-            
+            if (collider.gameObject == gameObject) continue;
+
+            Boid otherBoid = collider.GetComponent<Boid>();
+            TrailBlock otherTrailBlock = collider.GetComponent<TrailBlock>();
 
             Vector3 diff = transform.position - collider.transform.position;
             float distance = diff.magnitude;
-            if (collider.gameObject != gameObject && collider.gameObject.GetComponent<TrailBlock>())
-            {
-                cohesion += collider.transform.position;
-                alignment += collider.transform.forward;
-            }
 
-            if (distance < GetComponent<BoxCollider>().size.magnitude*2 && collider.gameObject.GetComponent<TrailBlock>() && !collider.CompareTag("Fauna"))
+            if (otherBoid)
             {
-                collider.gameObject.GetComponent<TrailBlock>().Explode(currentVelocity, Teams.None, "Boid", true);
+                float weight = 1; // Placeholder for potential weight logic
+                cohesion += -diff.normalized * weight / distance;
+                alignment += collider.transform.forward;
+
+                if (distance < separationRadius)
+                {
+                    separatedBoids.Add(collider);
+                    separation += diff.normalized / distance;
+                    averageSpeed += currentVelocity.magnitude;
+                }
             }
-            else if (collider.gameObject != gameObject && collider.CompareTag("Fauna"))
+            else if (otherTrailBlock)
             {
-                separatedBoids.Add(collider);
-                separation += diff.normalized / distance;
-                Boid boidScript = collider.gameObject.GetComponent<Boid>();
-                averageSpeed += boidScript.currentVelocity.magnitude;
+                float blockWeight = boidManager.Weights[(int)otherTrailBlock.Team - 1];
+                blockAttraction += -diff.normalized * blockWeight / distance;
+
+                if (distance < GetComponent<BoxCollider>().size.magnitude * 3)
+                {
+                    otherTrailBlock.Explode(currentVelocity, Teams.None, "Boid", true);
+                }
             }
         }
 
-        int totalBoids = boidsInVicinity.Length - 1; // Subtracting 1 to exclude the current boid
+        int totalBoids = boidsInVicinity.Length - 1;
 
         if (totalBoids > 0)
         {
@@ -78,16 +108,25 @@ public class Boid : MonoBehaviour
 
         averageSpeed = separatedBoids.Count > 0 ? averageSpeed / separatedBoids.Count : currentVelocity.magnitude;
 
-        desiredDirection = (separation * separationWeight + alignment * alignmentWeight + cohesion * cohesionWeight + goalDirection * goalWeight).normalized;
+        desiredDirection = ((separation * separationWeight) + (alignment * alignmentWeight) + (cohesion * cohesionWeight) + (goalDirection * goalWeight) + blockAttraction).normalized;
         currentVelocity = desiredDirection * Mathf.Clamp(averageSpeed, minSpeed, maxSpeed);
     }
 
+
+    bool destroyed;
     void Update()
     {
+        if (destroyed) return;
+
+        if (trailBlock.destroyed)
+        {
+            destroyed = true;
+            StopAllCoroutines();
+            return;
+        }
+
         transform.position += currentVelocity * Time.deltaTime;
         Quaternion desiredRotation = Quaternion.LookRotation(currentVelocity.normalized);
-        var angle = Vector3.Angle(currentVelocity.normalized, transform.forward);
-        transform.rotation = Quaternion.RotateTowards(transform.rotation, desiredRotation, angle * Time.deltaTime);
+        transform.rotation = Quaternion.Slerp(transform.rotation, desiredRotation, Time.deltaTime);
     }
-
 }

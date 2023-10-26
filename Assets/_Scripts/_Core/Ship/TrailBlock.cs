@@ -1,7 +1,6 @@
 ﻿using StarWriter.Core.HangerBuilder;
 using System.Collections;
 using UnityEngine;
-using UnityEngine.PlayerLoop;
 
 namespace StarWriter.Core
 {
@@ -58,7 +57,7 @@ namespace StarWriter.Core
                 meshRenderer.material = Hangar.Instance.GetTeamBlockMaterial(team);
             meshRenderer.enabled = false;
 
-            spread = (Vector3) meshRenderer.material.GetVector("_spread");
+            spread = (Vector3) meshRenderer.material.GetVector("_Spread");
 
             UpdateVolume();
             transform.localScale = Vector3.one * Mathf.Epsilon;
@@ -247,11 +246,11 @@ namespace StarWriter.Core
 
             Color startColor1 = tempMaterial.GetColor("_BrightColor");
             Color startColor2 = tempMaterial.GetColor("_DarkColor");
-            Vector3 startVector = tempMaterial.GetVector("_spread");
+            Vector3 startVector = tempMaterial.GetVector("_Spread");
 
             Color targetColor1 = targetMaterial.GetColor("_BrightColor");
             Color targetColor2 = targetMaterial.GetColor("_DarkColor");
-            Vector3 targetVector = targetMaterial.GetVector("_spread");
+            Vector3 targetVector = targetMaterial.GetVector("_Spread");
 
             float elapsedTime = 0.0f;
 
@@ -262,7 +261,7 @@ namespace StarWriter.Core
 
                 tempMaterial.SetColor("_BrightColor", Color.Lerp(startColor1, targetColor1, t));
                 tempMaterial.SetColor("_DarkColor", Color.Lerp(startColor2, targetColor2, t));
-                tempMaterial.SetVector("_spread", Vector3.Lerp(startVector, targetVector, t));
+                tempMaterial.SetVector("_Spread", Vector3.Lerp(startVector, targetVector, t));
 
                 yield return null;//new WaitForSeconds(.05f);
             }

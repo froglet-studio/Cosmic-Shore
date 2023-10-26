@@ -196,7 +196,7 @@ public class TrailSpawner : MonoBehaviour
             Block.Shielded = true;
         }
         else Block.GetComponent<MeshRenderer>().material = blockMaterial;
-        Block.GetComponent<BoxCollider>().size = Vector3.one + VectorDivision((Vector3)blockMaterial.GetVector("_spread"), Block.TargetScale);
+        Block.GetComponent<BoxCollider>().size = Vector3.one + VectorDivision((Vector3)blockMaterial.GetVector("_Spread"), Block.TargetScale);
         Block.Trail = trail;
 
         trail.Add(Block);
