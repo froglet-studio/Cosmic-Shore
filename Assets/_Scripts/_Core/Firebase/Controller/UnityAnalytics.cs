@@ -89,14 +89,28 @@ namespace _Scripts._Core.Firebase.Controller
         /// </summary>
         private void SetUserId()
         {
-            if (!_isConnected) return;
-            
+            if (!_isConnected || !_isConsented) return;
             UnityServices.ExternalUserId = SystemInfo.deviceUniqueIdentifier;
         }
 
+        /// <summary>
+        /// Log Firebase Events
+        /// </summary>
+        /// <param name="eventName">Event Name</param>
+        /// <param name="dict">Event Parameters and Values</param>
         public void LogFirebaseEvents(in string eventName, [ItemCanBeNull] in Dictionary<string, object> dict)
         {
             AnalyticsService.Instance.CustomData(eventName, dict);
+        }
+
+        /// <summary>
+        /// Force Upload Data 
+        /// Force upload data to Unity Analytics Services if network detected and is user consented
+        /// </summary>
+        public void ForceUploadData()
+        {
+            if (!_isConnected || !_isConsented) return;
+            AnalyticsService.Instance.Flush();
         }
     }
 }
