@@ -4,17 +4,18 @@ using StarWriter.Utility.Singleton;
 using Unity.Services.Analytics;
 using Unity.Services.Core;
 using UnityEngine;
-using UnityEngine.Analytics;
 
 namespace _Scripts._Core.Firebase.Controller
 {
     public class UnityAnalytics : SingletonPersistent<UnityAnalytics>
     {
-        
+        private bool _isConsented = true;
         private bool _isConnected = true;
         // Start is called before the first frame update
-        void Start()
+        async void Start()
         {
+            await UnityServices.InitializeAsync();
+            AskForConsents();
             SetUserId();
         }
 
@@ -28,6 +29,36 @@ namespace _Scripts._Core.Firebase.Controller
         {
             NetworkMonitor.NetworkConnectionFound -= OnNetworkEnabled;
             NetworkMonitor.NetworkConnectionLost -= OnNetworkDisabled;
+        }
+
+        /// <summary>
+        /// Ask For Consents - Async
+        /// Ask User consents for data collection
+        /// </summary>
+        private async void AskForConsents()
+        {
+            try
+            {
+                var consents = await AnalyticsService.Instance.CheckForRequiredConsents();
+
+                if (consents.Count != 0)
+                {
+                    var legislation = consents[0];
+
+                    // TODO: raise event asking user for consent here
+
+
+                    // Get consent from user and provide based on user decision here
+                    AnalyticsService.Instance.ProvideOptInConsent(legislation, _isConsented);
+                }
+                // If consent is denied just opt the user out
+                AnalyticsService.Instance.OptOut();
+            }
+            catch (ConsentCheckException e)
+            {
+                Debug.LogWarningFormat("{0} - {1} - Handling consent error {2}", nameof(UnityAnalytics), nameof(AskForConsents), e.InnerException?.Message);
+            }
+            
         }
 
         /// <summary>
