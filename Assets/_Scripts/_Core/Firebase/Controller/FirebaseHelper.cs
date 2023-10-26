@@ -13,8 +13,8 @@ namespace _Scripts._Core.Firebase.Controller
         private static DependencyStatus _dependencyStatus;
     
         // public event when all dependency resolved 
-        public static UnityEvent DependencyResolved; 
-    
+        public static UnityEvent DependencyResolved;
+
         // Start is called before the first frame update
         void Start()
         {

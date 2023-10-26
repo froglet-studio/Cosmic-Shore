@@ -95,7 +95,7 @@ namespace StarWriter.Core
         [HideInInspector] public Material AOEConicExplosionMaterial;
         [HideInInspector] public Material SkimmerMaterial;
         float speedModifierDuration = 2f;
-        SO_Pilot pilot;
+        SO_Vessel vessel;
 
         Teams team;
         public Teams Team 
@@ -365,13 +365,13 @@ namespace StarWriter.Core
                 collider.enabled = enabled;
         }
 
-        public void SetPilot(SO_Pilot pilot)
+        public void SetVessel(SO_Vessel vessel)
         {
-            this.pilot = pilot;
-            ResourceSystem.InitialChargeLevel = this.pilot.InitialCharge;
-            ResourceSystem.InitialMassLevel = this.pilot.InitialMass;
-            ResourceSystem.InitialSpaceLevel = this.pilot.InitialSpace;
-            ResourceSystem.InitialTimeLevel = this.pilot.InitialTime;
+            this.vessel = vessel;
+            ResourceSystem.InitialChargeLevel = this.vessel.InitialCharge;
+            ResourceSystem.InitialMassLevel = this.vessel.InitialMass;
+            ResourceSystem.InitialSpaceLevel = this.vessel.InitialSpace;
+            ResourceSystem.InitialTimeLevel = this.vessel.InitialTime;
 
             ResourceSystem.InitializeElementLevels();
         }

@@ -20,7 +20,7 @@ MonoBehaviour:
   CardBackground: {fileID: 21300000, guid: b5b9538f2e3a8c24d9a9f5219064fcdc, type: 3}
   PreviewClip: {fileID: 3312024567346999270, guid: 51aa26330ad783b4d9f1d54a91583c41,
     type: 3}
-  Pilots:
+  Vessels:
   - {fileID: 11400000, guid: 5ac362560a34d414e835db83e82daa08, type: 2}
   - {fileID: 11400000, guid: 42800aad95708bc488da7eed56ecc146, type: 2}
   MinPlayers: 2

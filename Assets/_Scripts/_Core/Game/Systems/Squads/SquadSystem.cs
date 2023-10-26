@@ -3,10 +3,10 @@ using System.Linq;
 
 public static class SquadSystem
 {
-    public static List<SO_Pilot> PilotList;
-    public static SO_Pilot DefaultLeader;
-    public static SO_Pilot DefaultRogueOne;
-    public static SO_Pilot DefaultRogueTwo;
+    public static List<SO_Vessel> VesselList;
+    public static SO_Vessel DefaultLeader;
+    public static SO_Vessel DefaultRogueOne;
+    public static SO_Vessel DefaultRogueTwo;
     static Squad Squad;
 
     const string SquadSaveFileName = "squad.data";
@@ -39,31 +39,31 @@ public static class SquadSystem
 
     public static void SetSquadLeader(ShipTypes shipClass, Element element)
     {
-        Squad.SquadLeader = PilotList.Where(x => x.PrimaryElement == element && x.Ship.Class == shipClass).FirstOrDefault();
+        Squad.SquadLeader = VesselList.Where(x => x.PrimaryElement == element && x.Ship.Class == shipClass).FirstOrDefault();
     }
 
-    public static void SetSquadLeader(SO_Pilot pilot)
+    public static void SetSquadLeader(SO_Vessel vessel)
     {
-        Squad.SquadLeader = pilot;
+        Squad.SquadLeader = vessel;
     }
 
     public static void SetRogueOne(ShipTypes shipClass, Element element)
     {
-        Squad.RogueOne = PilotList.Where(x => x.PrimaryElement == element && x.Ship.Class == shipClass).FirstOrDefault();
+        Squad.RogueOne = VesselList.Where(x => x.PrimaryElement == element && x.Ship.Class == shipClass).FirstOrDefault();
     }
 
-    public static void SetRogueOne(SO_Pilot pilot)
+    public static void SetRogueOne(SO_Vessel vessel)
     {
-        Squad.RogueOne = pilot;
+        Squad.RogueOne = vessel;
     }
 
     public static void SetRogueTwo(ShipTypes shipClass, Element element)
     {
-        Squad.RogueTwo= PilotList.Where(x => x.PrimaryElement == element && x.Ship.Class == shipClass).FirstOrDefault();
+        Squad.RogueTwo= VesselList.Where(x => x.PrimaryElement == element && x.Ship.Class == shipClass).FirstOrDefault();
     }
 
-    public static void SetRogueTwo(SO_Pilot pilot)
+    public static void SetRogueTwo(SO_Vessel vessel)
     {
-        Squad.RogueTwo= pilot;
+        Squad.RogueTwo= vessel;
     }
 }
