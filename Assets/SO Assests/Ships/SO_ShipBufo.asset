@@ -18,10 +18,10 @@ MonoBehaviour:
     mess with me.
   Icon: {fileID: 21300000, guid: 720f23b964da1e948927d1b2b7c1c5a9, type: 3}
   SelectedIcon: {fileID: 21300000, guid: 3236299f467e7004fbfab2b0d07e6280, type: 3}
-  PreviewImage: {fileID: 21300000, guid: 53ec4e0cd18fe31459a95671bc19ba7c, type: 3}
+  PreviewImage: {fileID: 21300000, guid: eab8ab57cb3ceef43b60ce237123c5ac, type: 3}
   TrailPreviewImage: {fileID: 21300000, guid: 8916b4a40c60d2c4380856e1d00f5ff4, type: 3}
-  CardSilohoutte: {fileID: 21300000, guid: df5f61b3485693a49a4052f88b613129, type: 3}
-  CardSilohoutteActive: {fileID: 21300000, guid: 53ec4e0cd18fe31459a95671bc19ba7c,
+  CardSilohoutte: {fileID: 21300000, guid: 5462fd738d8582544aac2d25239412ca, type: 3}
+  CardSilohoutteActive: {fileID: 21300000, guid: eab8ab57cb3ceef43b60ce237123c5ac,
     type: 3}
   Abilities:
   - {fileID: 11400000, guid: bf4c23aad32b0f4489dbc09db593aab4, type: 2}
