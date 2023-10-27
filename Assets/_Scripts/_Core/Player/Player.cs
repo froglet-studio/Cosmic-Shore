@@ -62,9 +62,9 @@ public class Player : MonoBehaviour
             shipInstance.transform.SetParent(shipContainer.transform, false);
             shipInstance.GetComponent<AIPilot>().enabled = false;
 
-            GetComponent<InputController>().ship = shipInstance;
+            ship = shipInstance;
+            GetComponent<InputController>().ship = ship;
             
-            ship = shipInstance.GetComponent<Ship>();
             GameCanvas.MiniGameHUD.ship = ship;
             ship.Team = Team;
             ship.Player = this;
