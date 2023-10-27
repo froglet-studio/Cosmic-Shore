@@ -93,7 +93,7 @@ public class Boid : MonoBehaviour
 
                 if (distance < GetComponent<BoxCollider>().size.magnitude * 3)
                 {
-                    otherTrailBlock.Explode(currentVelocity, Teams.None, "Boid", true);
+                    otherTrailBlock.Explode(currentVelocity, Teams.Yellow, "Boid", true);
                 }
             }
         }

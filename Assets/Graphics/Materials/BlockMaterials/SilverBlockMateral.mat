@@ -7,7 +7,7 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: BlueBlockMateral
+  m_Name: SilverBlockMateral
   m_Shader: {fileID: -6465566751694194690, guid: bf8c159f627e64b439094797bff88611,
     type: 3}
   m_ValidKeywords: []
@@ -178,9 +178,9 @@ Material:
     m_Colors:
     - _BASE_COLOR: {r: 1, g: 1, b: 1, a: 1}
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
-    - _BrightColor: {r: 0.5828848, g: 0.67113554, b: 1.5193229, a: 0.9411765}
+    - _BrightColor: {r: 1.4525905, g: 1.4977323, b: 1.9327354, a: 0.9411765}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
-    - _DarkColor: {r: 0, g: 0, b: 0.9150943, a: 1}
+    - _DarkColor: {r: 0.1333808, g: 0.1333808, b: 0.1509434, a: 1}
     - _EMISSION_COLOR: {r: 0, g: 0, b: 0, a: 0}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
     - _REFLECTIONS_COLOR: {r: 1, g: 1, b: 1, a: 1}

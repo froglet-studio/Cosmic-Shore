@@ -27,7 +27,7 @@ namespace StarWriter.Core
             
             if (spike) 
             {
-                transform.localScale = new Vector3(.4f,.4f,2);
+                //transform.localScale = new Vector3(.4f,.4f,2);
                 meshRenderer = gameObject.GetComponent<MeshRenderer>();
                 meshRenderer.material = Hangar.Instance.GetTeamSpikeMaterial(Team);
                 meshRenderer.material.SetFloat("_Opacity", .5f);
@@ -81,7 +81,9 @@ namespace StarWriter.Core
                         trailBlockProperties.trailBlock.ActivateShield(.5f);
                         break;
                     case TrailBlockImpactEffects.Stop:
-                        Stop();
+
+                        if (!trailBlockProperties.trailBlock.GetComponent<Boid>()) Stop();
+                        else GetComponentInParent<PoolManager>().ReturnToPool(gameObject, gameObject.tag);
                         break;
                     case TrailBlockImpactEffects.Fire:
                         GetComponent<LoadedGun>().FireGun();

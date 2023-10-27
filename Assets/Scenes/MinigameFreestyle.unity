@@ -2036,5 +2036,10 @@ PrefabInstance:
       propertyPath: globalGoal
       value: 
       objectReference: {fileID: 1568959836}
+    - target: {fileID: 8812619448024686939, guid: 14b7fddb8e30aa541a092201bc80b848,
+        type: 3}
+      propertyPath: numberOfBoids
+      value: 500
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 14b7fddb8e30aa541a092201bc80b848, type: 3}
