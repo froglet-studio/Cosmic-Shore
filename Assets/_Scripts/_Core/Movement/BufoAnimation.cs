@@ -13,8 +13,8 @@ class BufoAnimation : ShipAnimation
     [SerializeField] Transform BottomWing;
     [SerializeField] Transform ThrusterTopLeft;    
 
-    const float animationScalar = 32f;
-    const float exaggeratedAnimationScalar = 1.4f * animationScalar;
+    const float animationScalar = 82f;
+    const float exaggeratedAnimationScalar = 1.05f * animationScalar;
 
     ShipStatus shipData;
 

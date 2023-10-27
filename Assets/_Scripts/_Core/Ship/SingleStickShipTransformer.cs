@@ -27,9 +27,9 @@ public class SingleStickShipTransformer : ShipTransformer
         accumulatedRotation = Quaternion.AngleAxis(
                             -inputController.EasedLeftJoystickPosition.y * (speed * RotationThrottleScaler + PitchScaler) * Time.deltaTime,
                             courseTransform.right) * accumulatedRotation;
-        additionalRotation = Quaternion.AngleAxis(
-                            -inputController.EasedRightJoystickPosition.y * lookScalar,
-                            courseTransform.right) * additionalRotation;
+        //additionalRotation = Quaternion.AngleAxis(
+        //                    -inputController.EasedRightJoystickPosition.y * lookScalar,
+        //                    courseTransform.right) * additionalRotation;
     }
 
     protected override void Yaw()
@@ -37,9 +37,9 @@ public class SingleStickShipTransformer : ShipTransformer
         accumulatedRotation = Quaternion.AngleAxis(
                             inputController.EasedLeftJoystickPosition.x * (speed * RotationThrottleScaler + YawScaler) * Time.deltaTime,
                             courseTransform.up) * accumulatedRotation;
-        additionalRotation = Quaternion.AngleAxis(
-                            inputController.EasedRightJoystickPosition.x * lookScalar,
-                            courseTransform.up) * additionalRotation;
+        //additionalRotation = Quaternion.AngleAxis(
+        //                    inputController.EasedRightJoystickPosition.x * lookScalar,
+        //                    courseTransform.up) * additionalRotation;
     }
 
     protected override void Roll()
