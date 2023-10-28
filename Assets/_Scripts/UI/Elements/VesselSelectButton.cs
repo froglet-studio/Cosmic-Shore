@@ -2,25 +2,22 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class VesselCard : MonoBehaviour
+public class VesselSelectButton : MonoBehaviour
 {
     [Header("Resources")]
-    [SerializeField] Sprite LockIcon;
     [SerializeField] Sprite MassBackground;
     [SerializeField] Sprite ChargeBackground;
     [SerializeField] Sprite SpaceBackground;
     [SerializeField] Sprite TimeBackground;
     [SerializeField] Color ActiveBorderColor = new Color(1f, .5f, .25f);
     [SerializeField] Color InActiveBorderColor = Color.white;
-    [SerializeField] public bool Locked;
 
     [Header("Placeholder Locations")]
     [SerializeField] TMP_Text VesselName;
     [SerializeField] Image BorderImage;
     [SerializeField] Image BackgroundImage;
     [SerializeField] Image VesselImage;
-    [SerializeField] Image LockImage;
-    [SerializeField] public int Index;  // Serialized for debugging
+    //[SerializeField] int Index;
 
     SO_Vessel vessel;
     public SO_Vessel Vessel
@@ -29,28 +26,25 @@ public class VesselCard : MonoBehaviour
         set
         {
             vessel = value;
-            UpdateCardView();
+            UpdateButtonView();
         }
     }
 
-    public SquadMenu SquadMenu;
+    //public SquadMenu SquadMenu;
 
     void Start()
     {
-        UpdateCardView();
-        GetComponent<Button>().onClick.RemoveAllListeners();
-        GetComponent<Button>().onClick.AddListener(OnCardClicked);
+        UpdateButtonView();
     }
 
-    void UpdateCardView()
+
+    void UpdateButtonView()
     {
         if (vessel == null) return;
 
         //SO_ArcadeGame game = AllGames.GameList.Where(x => x.Mode == gameMode).FirstOrDefault();
-        VesselName.text = vessel.Name;
+        //VesselName.text = vessel.Name;
         VesselImage.sprite = vessel.Image;
-        LockImage.sprite = LockIcon;
-        LockImage.gameObject.SetActive(Locked);
 
         switch (vessel.PrimaryElement)
         {
@@ -61,7 +55,6 @@ public class VesselCard : MonoBehaviour
                 BackgroundImage.sprite = ChargeBackground;
                 break;
             case Element.Space:
-
                 BackgroundImage.sprite = SpaceBackground;
                 break;
             case Element.Time:
@@ -70,23 +63,30 @@ public class VesselCard : MonoBehaviour
         }
     }
 
-    public void Active(bool active = true)
+    public void Active(bool active=true)
     {
-        BorderImage.color = active ? ActiveBorderColor : InActiveBorderColor;
+        BackgroundImage.color = active ? ActiveBorderColor : InActiveBorderColor;
+        VesselName.color = active ? ActiveBorderColor : InActiveBorderColor;
+        VesselImage.sprite = active ? vessel.Ship.CardSilohoutteActive : vessel.Ship.CardSilohoutte;
     }
 
+    /*
     public void OnCardClicked()
     {
-        Debug.Log($"VesselCard - Clicked: Vessel Name: { vessel.Name }");
+        Debug.Log($"VesselCard - Clicked: Vessel Name: {vessel.Name}");
 
         if (SquadMenu != null)
         {
-            SquadMenu.AssignVessel(this);
+            SquadMenu.AssignVessel(vessel);
         }
+
+        // Add highlight border
+        BorderImage.color = Color.yellow;
     }
 
     public void OnUpgradeButtonClicked()
     {
 
     }
+    */
 }

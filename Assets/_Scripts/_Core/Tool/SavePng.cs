@@ -14,7 +14,7 @@ namespace CosmicShore
         public Texture2D SquareAspectQuestionMarkTexture;
         public Texture2D WideAspectBorderTexture;
         public Texture2D WideAspectQuestionMarkTexture;
-        public Color SilhouetteColor = new Color(.25f, .25f, .25f);
+        public Color SilhouetteColor = new Color(.95f, .95f, .95f);
 
         public enum Aspect
         {
@@ -111,7 +111,6 @@ namespace CosmicShore
                 {
                     var alpha = texColors[i].a;
                     texColors[i] = new Color(SilhouetteColor.r, SilhouetteColor.g, SilhouetteColor.b, alpha);
-                    //texColors[i].a = alpha;
                 }
             }
 

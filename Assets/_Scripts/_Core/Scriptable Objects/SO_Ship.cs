@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Serialization;
 
 [CreateAssetMenu(fileName = "New Ship", menuName = "CosmicShore/Ship", order = 1)]
 [System.Serializable]
@@ -18,6 +17,5 @@ public class SO_Ship : ScriptableObject
     [SerializeField] public Sprite CardSilohoutteActive;
     [SerializeField] public List<SO_ShipAbility> Abilities;
     [SerializeField] public List<SO_Vessel> Vessels;
-    [FormerlySerializedAs("MiniGames")]
     [SerializeField] public List<SO_ArcadeGame> TrainingGames;
 }

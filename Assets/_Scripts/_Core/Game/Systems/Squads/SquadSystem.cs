@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using static UnityEditor.Rendering.FilterWindow;
 
 public static class SquadSystem
 {
@@ -23,7 +24,7 @@ public static class SquadSystem
         }
     }
 
-    public static Squad GetSquad()
+    public static Squad LoadSquad()
     {
         if (Squad.Equals(default(Squad)))
             Init();
@@ -37,33 +38,57 @@ public static class SquadSystem
         dataAccessor.Save(Squad);
     }
 
+    public static SO_Vessel SquadLeader
+    {
+        get { return VesselList.Where(x => x.PrimaryElement == Squad.SquadLeaderElement && x.Ship.Class == Squad.SquadLeaderClass).FirstOrDefault(); }
+    }
+
+    public static SO_Vessel RogueOne
+    {
+        get { return VesselList.Where(x => x.PrimaryElement == Squad.RogueOneElement && x.Ship.Class == Squad.RogueOneClass).FirstOrDefault(); }
+    }
+
+    public static SO_Vessel RogueTwo
+    {
+        get { return VesselList.Where(x => x.PrimaryElement == Squad.RogueTwoElement && x.Ship.Class == Squad.RogueTwoClass).FirstOrDefault(); }
+    }
+
     public static void SetSquadLeader(ShipTypes shipClass, Element element)
     {
-        Squad.SquadLeader = VesselList.Where(x => x.PrimaryElement == element && x.Ship.Class == shipClass).FirstOrDefault();
+        Squad.SquadLeaderElement = element;
+        Squad.SquadLeaderClass = shipClass;
+        //Squad.SquadLeader = VesselList.Where(x => x.PrimaryElement == element && x.Ship.Class == shipClass).FirstOrDefault();
     }
 
     public static void SetSquadLeader(SO_Vessel vessel)
     {
-        Squad.SquadLeader = vessel;
+        Squad.SquadLeaderElement = vessel.PrimaryElement;
+        Squad.SquadLeaderClass = vessel.Ship.Class;
     }
 
     public static void SetRogueOne(ShipTypes shipClass, Element element)
     {
-        Squad.RogueOne = VesselList.Where(x => x.PrimaryElement == element && x.Ship.Class == shipClass).FirstOrDefault();
+        Squad.RogueOneElement = element;
+        Squad.RogueOneClass = shipClass;
+        //Squad.RogueOne = VesselList.Where(x => x.PrimaryElement == element && x.Ship.Class == shipClass).FirstOrDefault();
     }
 
     public static void SetRogueOne(SO_Vessel vessel)
     {
-        Squad.RogueOne = vessel;
+        Squad.RogueOneElement = vessel.PrimaryElement;
+        Squad.RogueOneClass = vessel.Ship.Class;
     }
 
     public static void SetRogueTwo(ShipTypes shipClass, Element element)
     {
-        Squad.RogueTwo= VesselList.Where(x => x.PrimaryElement == element && x.Ship.Class == shipClass).FirstOrDefault();
+        Squad.RogueTwoElement = element;
+        Squad.RogueTwoClass = shipClass;
+        //Squad.RogueTwo= VesselList.Where(x => x.PrimaryElement == element && x.Ship.Class == shipClass).FirstOrDefault();
     }
 
     public static void SetRogueTwo(SO_Vessel vessel)
     {
-        Squad.RogueTwo= vessel;
+        Squad.RogueTwoElement = vessel.PrimaryElement;
+        Squad.RogueTwoClass = vessel.Ship.Class;
     }
 }

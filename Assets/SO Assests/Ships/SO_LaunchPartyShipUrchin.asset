@@ -28,7 +28,11 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 9608a8095e3294548aa8e9da3bd634a0, type: 2}
   - {fileID: 11400000, guid: bf4c23aad32b0f4489dbc09db593aab4, type: 2}
   - {fileID: 11400000, guid: d28b6b5c008786c4998fb0cec02ab5bc, type: 2}
-  Pilots: []
+  Vessels:
+  - {fileID: 11400000, guid: 4706b17aa5898e5459d1b4f6ea80427d, type: 2}
+  - {fileID: 11400000, guid: 880b85fe77b99a043adcd9e5a8581dce, type: 2}
+  - {fileID: 11400000, guid: c5a63d8c9653074438ea2afe68ef4c6e, type: 2}
+  - {fileID: 11400000, guid: 2b86b35afc992374797f5b08207a0041, type: 2}
   TrainingGames:
   - {fileID: 11400000, guid: 812851e4603217c469662dc3cb9c6d93, type: 2}
   - {fileID: 11400000, guid: 3537310ecbdad2e449bbca31d2aa8599, type: 2}

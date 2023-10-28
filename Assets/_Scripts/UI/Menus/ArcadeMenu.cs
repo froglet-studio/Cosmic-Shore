@@ -1,11 +1,5 @@
-using StarWriter.Core.HangerBuilder;
 using StarWriter.Core.LoadoutFavoriting;
-using System;
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.SceneManagement;
-using UnityEngine.Serialization;
 using UnityEngine.UI;
 
 public class ArcadeMenu : MonoBehaviour
