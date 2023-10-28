@@ -15,11 +15,11 @@ MonoBehaviour:
   Name: Strider
   Description: Where others stumble, Strider strides
   Image: {fileID: 21300000, guid: a89a335fa1c02f745ba93948c9b7ee32, type: 3}
-  Icon: {fileID: 21300000, guid: 61df7223f7a78f04ea466409593f0cc2, type: 3}
-  SelectedIcon: {fileID: 21300000, guid: cf372d398ead0c94baa08a49078b3d6e, type: 3}
+  Icon: {fileID: 21300000, guid: 3ad7640785837564a9e0793b85cc0917, type: 3}
+  SelectedIcon: {fileID: 21300000, guid: 9fa211ac124cc964aaf984b86b455504, type: 3}
   Ship: {fileID: 11400000, guid: b0e6ec5495dbfb6419332830d585f364, type: 2}
-  PrimaryElement: 1
+  PrimaryElement: 3
   InitialMass: 0
-  InitialCharge: 0.5
-  InitialSpace: 0
+  InitialCharge: 0
+  InitialSpace: 0.5
   InitialTime: 0

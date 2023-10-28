@@ -16,8 +16,8 @@ MonoBehaviour:
   Description: Biggest sheild size                                                                 
     "The immovable object and the irresistible force"
   Image: {fileID: 21300000, guid: 8f39e706a42293d409b555b6ad47386b, type: 3}
-  Icon: {fileID: 21300000, guid: 5a2eaf0a05e3a1a4981382c56f47b0a4, type: 3}
-  SelectedIcon: {fileID: 21300000, guid: f891eac8a4e23514f8896ba0e34647cc, type: 3}
+  Icon: {fileID: 21300000, guid: 3ad7640785837564a9e0793b85cc0917, type: 3}
+  SelectedIcon: {fileID: 21300000, guid: 9fa211ac124cc964aaf984b86b455504, type: 3}
   Ship: {fileID: 11400000, guid: ec97e344adb08f847a8f7649ab79088e, type: 2}
   PrimaryElement: 3
   InitialMass: 0
