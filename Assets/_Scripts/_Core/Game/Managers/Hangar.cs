@@ -4,7 +4,6 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Serialization;
-using UnityEngine.Rendering;
 
 // TODO: P1 renamespace this
 namespace StarWriter.Core.HangerBuilder
@@ -18,8 +17,10 @@ namespace StarWriter.Core.HangerBuilder
         [SerializeField] SO_Vessel PlayerVessel;  // Serialized for inspection in hierarchy
         [SerializeField] ShipTypes PlayerShipType = ShipTypes.Random;
         [SerializeField] ShipTypes FriendlyAIShipType = ShipTypes.Manta;
-        [SerializeField] ShipTypes HostileAI1ShipType = ShipTypes.Manta;
+        [SerializeField] ShipTypes FriendlyAI2ShipType = ShipTypes.Manta;
+        [SerializeField] ShipTypes HostileAI1ShipType = ShipTypes.Random;
         [SerializeField] ShipTypes HostileAI2ShipType = ShipTypes.Random;
+        [SerializeField] ShipTypes HostileAI3ShipType = ShipTypes.Random;
 
         [FormerlySerializedAs("SoarPilot")]
         [SerializeField] public SO_Vessel SoarVessel;
@@ -103,16 +104,23 @@ namespace StarWriter.Core.HangerBuilder
 
             AITeam = PlayerTeam == Teams.Green ? Teams.Red : Teams.Green;
         }
-        public Ship LoadPlayerShip()
+        public Ship LoadPlayerShip(bool useSquad=false)
         {
-            if (PlayerShipType == ShipTypes.Random)
+            if (useSquad)
             {
-                Array values = Enum.GetValues(typeof(ShipTypes));
-                System.Random random = new System.Random();
-                PlayerShipType = (ShipTypes)values.GetValue(random.Next(values.Length));
+                return LoadPlayerShip(SquadSystem.SquadLeader.Ship.Class, PlayerTeam);
             }
+            else
+            {
+                if (PlayerShipType == ShipTypes.Random)
+                {
+                    Array values = Enum.GetValues(typeof(ShipTypes));
+                    System.Random random = new System.Random();
+                    PlayerShipType = (ShipTypes)values.GetValue(random.Next(values.Length));
+                }
 
-            return LoadPlayerShip(PlayerShipType, PlayerTeam);
+                return LoadPlayerShip(PlayerShipType, PlayerTeam);
+            }
         }
 
         public Ship LoadPlayerShip(ShipTypes shipType, Teams team)
@@ -138,6 +146,16 @@ namespace StarWriter.Core.HangerBuilder
         {
             return LoadAIShip(FriendlyAIShipType, PlayerTeam);
         }
+        public Ship LoadSquadMateOne()
+        {
+            SquadSystem.LoadSquad();
+            return LoadAIShip(SquadSystem.RogueOne.Ship.Class, PlayerTeam, SquadSystem.RogueOne);
+        }
+        public Ship LoadSquadMateTwo()
+        {
+            SquadSystem.LoadSquad();
+            return LoadAIShip(SquadSystem.RogueTwo.Ship.Class, PlayerTeam, SquadSystem.RogueTwo);
+        }
         public Ship LoadHostileAI1Ship()
         {
             return LoadAIShip(HostileAI1ShipType, AITeam);
@@ -146,7 +164,11 @@ namespace StarWriter.Core.HangerBuilder
         {
             return LoadAIShip(HostileAI2ShipType, AITeam);
         }
-        public Ship LoadAIShip(ShipTypes shipType, Teams team)
+        public Ship LoadHostileAI3Ship()
+        {
+            return LoadAIShip(HostileAI3ShipType, AITeam);
+        }
+        public Ship LoadAIShip(ShipTypes shipType, Teams team, SO_Vessel vessel=null)
         {
             if (shipType == ShipTypes.Random)
             {
@@ -156,6 +178,8 @@ namespace StarWriter.Core.HangerBuilder
             }
 
             Ship ship = Instantiate(shipTypeMap[shipType]);
+            if (vessel != null)
+                ship.SetVessel(vessel);
             ship.SetShipMaterial(TeamMaterialSets[team].ShipMaterial);
             ship.SetBlockMaterial(TeamMaterialSets[team].BlockMaterial);
             ship.SetShieldedBlockMaterial(TeamMaterialSets[team].ShieldedBlockMaterial);
