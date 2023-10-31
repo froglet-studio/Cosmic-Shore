@@ -10,16 +10,16 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ce7474d4aed9d704ea0001a2338c0784, type: 3}
-  m_Name: SO_Vessel_Dolphin_Riptide
+  m_Name: SO_Vessel_Dolphin_Time
   m_EditorClassIdentifier: 
-  Name: Riptide
-  Description: Shift the tides of battle
+  Name: Maestro - The Time Dolphin
+  Description: Maestro keeps time in a vast cosmic symphony
   Image: {fileID: 21300000, guid: c07463db6e8244c45b639760efd18f9e, type: 3}
-  Icon: {fileID: 21300000, guid: d6f9eb2dde69a054c9c37da418122f8b, type: 3}
-  SelectedIcon: {fileID: 21300000, guid: a6b8a653326c7a847a7cbdeba6dd0220, type: 3}
+  Icon: {fileID: 21300000, guid: a47176ccaecda5542a6966cb54af58c4, type: 3}
+  SelectedIcon: {fileID: 21300000, guid: 6f167082b7a6fca4784e8cf91c729077, type: 3}
   Ship: {fileID: 11400000, guid: c0f30e9f09616874780edc0a375ce686, type: 2}
-  PrimaryElement: 1
+  PrimaryElement: 4
   InitialMass: 0
-  InitialCharge: 0.5
+  InitialCharge: 0
   InitialSpace: 0
-  InitialTime: 0
+  InitialTime: 0.5

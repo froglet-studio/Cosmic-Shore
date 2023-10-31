@@ -10,16 +10,17 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ce7474d4aed9d704ea0001a2338c0784, type: 3}
-  m_Name: SO_Vessel_Dolphin_Slingshot
+  m_Name: SO_Vessel_Dolphin_Space
   m_EditorClassIdentifier: 
-  Name: Slingshot
-  Description: Drifters gonna drift
+  Name: Echo - The Space Dolphin
+  Description: Reaping the greatest rewards from the biggest risks                       
+    "If you're gonna scream, scream LOUD!!!"
   Image: {fileID: 21300000, guid: c07463db6e8244c45b639760efd18f9e, type: 3}
-  Icon: {fileID: 21300000, guid: 2633c4726a4723c4e834a208d4202059, type: 3}
-  SelectedIcon: {fileID: 21300000, guid: e43468afa384aa74cb35084710d7a613, type: 3}
+  Icon: {fileID: 21300000, guid: 3ad7640785837564a9e0793b85cc0917, type: 3}
+  SelectedIcon: {fileID: 21300000, guid: 9fa211ac124cc964aaf984b86b455504, type: 3}
   Ship: {fileID: 11400000, guid: c0f30e9f09616874780edc0a375ce686, type: 2}
-  PrimaryElement: 2
-  InitialMass: 0.5
+  PrimaryElement: 3
+  InitialMass: 0
   InitialCharge: 0
-  InitialSpace: 0
+  InitialSpace: 0.5
   InitialTime: 0

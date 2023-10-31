@@ -27,6 +27,7 @@ public class HangarMenu : MonoBehaviour
     [SerializeField] TMPro.TMP_Text SelectedVesselName;
     [FormerlySerializedAs("SelectedPilotDescription")]
     [SerializeField] TMPro.TMP_Text SelectedVesselDescription;
+    [SerializeField] TMPro.TMP_Text SelectedVesselFlavor;
     [FormerlySerializedAs("SelectedPilotImage")]
     [SerializeField] Image SelectedVesselImage;
 
@@ -157,8 +158,9 @@ public class HangarMenu : MonoBehaviour
         Debug.Log($"Populating Vessel Details List: {SelectedVessel.Icon}");
         Debug.Log($"Populating Vessel Details List: {SelectedVessel.Image}");
 
-        if (SelectedVesselName != null) SelectedVesselName.text = SelectedVessel.Name;
+        if (SelectedVesselName != null) SelectedVesselName.text = SelectedVessel.Name + " - The " + SelectedVessel.PrimaryElement.ToString() + " " + SelectedVessel.Ship.Name;
         if (SelectedVesselDescription != null) SelectedVesselDescription.text = SelectedVessel.Description;
+        if (SelectedVesselFlavor != null) SelectedVesselFlavor.text = SelectedVessel.Flavor;
         if (SelectedVesselImage != null) SelectedVesselImage.sprite = SelectedVessel.Image;
     }
 
