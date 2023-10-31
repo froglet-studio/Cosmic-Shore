@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0309a5343d820c14abd73b35f6fa50f1, type: 3}
-  m_Name: SO_LaunchPartyShipRhino
+  m_Name: SO_Class_Rhino
   m_EditorClassIdentifier: 
   Class: 3
   Name: Rhino
@@ -29,8 +29,8 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 3a6e98f71229bf04ca1312735eb68c85, type: 2}
   - {fileID: 11400000, guid: 4ddfb75e3a79e4c458ed98d3cbf0b03e, type: 2}
   Vessels:
-  - {fileID: 11400000, guid: e7b8074c970cd954fae8e2f4497037ff, type: 2}
   - {fileID: 11400000, guid: 50d61f2148b39544095d668e3d74de9c, type: 2}
+  - {fileID: 11400000, guid: e7b8074c970cd954fae8e2f4497037ff, type: 2}
   - {fileID: 11400000, guid: 6ee8c375aa521834d939fa197d667159, type: 2}
   - {fileID: 11400000, guid: 04ba107a63ea9c14dab56a557a3ef18e, type: 2}
   TrainingGames:

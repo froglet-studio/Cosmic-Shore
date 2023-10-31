@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ce7474d4aed9d704ea0001a2338c0784, type: 3}
-  m_Name: SO_Vessel_Rhino_Dozer
+  m_Name: SO_Vessel_Rhino_Mass
   m_EditorClassIdentifier: 
   Name: Dozer - The Mass Rhino
   Description: Boosting the biggest blocks of the bunch                                

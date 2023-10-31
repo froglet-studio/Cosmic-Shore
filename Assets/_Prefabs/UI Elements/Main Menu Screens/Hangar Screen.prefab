@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 3268813917206920521}
   - component: {fileID: 7836835877306910486}
   m_Layer: 5
-  m_Name: Pilot 1
+  m_Name: Vessel 1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -133,7 +133,7 @@ GameObject:
   - component: {fileID: 4880467086224049387}
   - component: {fileID: 3666527349557933105}
   m_Layer: 5
-  m_Name: Pilots Toggle
+  m_Name: Vessels Toggle
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -364,14 +364,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 0, g: 0, b: 0, a: 1}
+  m_Color: {r: 0, g: 0, b: 0, a: 0.003921569}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: df57fed132e9eba448cfb8d87788318c, type: 3}
+  m_Sprite: {fileID: 0}
   m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -546,7 +546,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &8693558663925596178
 RectTransform:
   m_ObjectHideFlags: 0
@@ -582,7 +582,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1233237109911503333}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
   m_Name: 
@@ -617,7 +617,7 @@ GameObject:
   - component: {fileID: 541156865767688450}
   - component: {fileID: 2804341018562098203}
   m_Layer: 5
-  m_Name: Text (TMP)
+  m_Name: VesselName
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -706,6 +706,142 @@ MonoBehaviour:
   m_fontSizeMin: 18
   m_fontSizeMax: 72
   m_fontStyle: 0
+  m_HorizontalAlignment: 1
+  m_VerticalAlignment: 256
+  m_textAlignment: 65535
+  m_characterSpacing: 0
+  m_wordSpacing: 0
+  m_lineSpacing: 0
+  m_lineSpacingMax: 0
+  m_paragraphSpacing: 0
+  m_charWidthMaxAdj: 0
+  m_enableWordWrapping: 1
+  m_wordWrappingRatios: 0.4
+  m_overflowMode: 0
+  m_linkedTextComponent: {fileID: 0}
+  parentLinkedComponent: {fileID: 0}
+  m_enableKerning: 1
+  m_enableExtraPadding: 0
+  checkPaddingRequired: 0
+  m_isRichText: 1
+  m_parseCtrlCharacters: 1
+  m_isOrthographic: 1
+  m_isCullingEnabled: 0
+  m_horizontalMapping: 0
+  m_verticalMapping: 0
+  m_uvLineOffset: 0
+  m_geometrySortingOrder: 0
+  m_IsTextObjectScaleStatic: 0
+  m_VertexBufferAutoSizeReduction: 0
+  m_useMaxVisibleDescender: 1
+  m_pageToDisplay: 1
+  m_margin: {x: 0, y: 0, z: 0, w: 0}
+  m_isUsingLegacyAnimationComponent: 0
+  m_isVolumetricText: 0
+  m_hasFontAssetChanged: 0
+  m_baseMaterial: {fileID: 0}
+  m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!1 &1642689316102929921
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 5031966190157744723}
+  - component: {fileID: 1194512166114980505}
+  - component: {fileID: 1263029042598448137}
+  m_Layer: 5
+  m_Name: Vessel Flavor
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &5031966190157744723
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1642689316102929921}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 6732857243737100296}
+  m_RootOrder: 2
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 1, y: 1}
+  m_AnchoredPosition: {x: 0, y: -280}
+  m_SizeDelta: {x: 0, y: 60}
+  m_Pivot: {x: 0, y: 1}
+--- !u!222 &1194512166114980505
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1642689316102929921}
+  m_CullTransparentMesh: 1
+--- !u!114 &1263029042598448137
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1642689316102929921}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Material: {fileID: 0}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_RaycastTarget: 1
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
+  m_Maskable: 1
+  m_OnCullStateChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  m_text: Fun quote of selected ship
+  m_isRightToLeft: 0
+  m_fontAsset: {fileID: 11400000, guid: 75d46a6cf4abc8540b44baeb93d143e1, type: 2}
+  m_sharedMaterial: {fileID: 8263796281911598170, guid: 75d46a6cf4abc8540b44baeb93d143e1,
+    type: 2}
+  m_fontSharedMaterials: []
+  m_fontMaterial: {fileID: 0}
+  m_fontMaterials: []
+  m_fontColor32:
+    serializedVersion: 2
+    rgba: 4294967295
+  m_fontColor: {r: 1, g: 1, b: 1, a: 1}
+  m_enableVertexGradient: 0
+  m_colorMode: 3
+  m_fontColorGradient:
+    topLeft: {r: 1, g: 1, b: 1, a: 1}
+    topRight: {r: 1, g: 1, b: 1, a: 1}
+    bottomLeft: {r: 1, g: 1, b: 1, a: 1}
+    bottomRight: {r: 1, g: 1, b: 1, a: 1}
+  m_fontColorGradientPreset: {fileID: 0}
+  m_spriteAsset: {fileID: 0}
+  m_tintAllSprites: 0
+  m_StyleSheet: {fileID: 0}
+  m_TextStyleHashCode: -1183493901
+  m_overrideHtmlColors: 0
+  m_faceColor:
+    serializedVersion: 2
+    rgba: 4294967295
+  m_fontSize: 14
+  m_fontSizeBase: 14
+  m_fontWeight: 400
+  m_enableAutoSizing: 0
+  m_fontSizeMin: 18
+  m_fontSizeMax: 72
+  m_fontStyle: 2
   m_HorizontalAlignment: 1
   m_VerticalAlignment: 256
   m_textAlignment: 65535
@@ -881,14 +1017,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 1, g: 1, b: 1, a: 0}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 2f3e59fa31f58384c8c53b3aa1bc3f00, type: 3}
+  m_Sprite: {fileID: 0}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -970,8 +1106,9 @@ MonoBehaviour:
   ChargeBackground: {fileID: 21300000, guid: d6f9eb2dde69a054c9c37da418122f8b, type: 3}
   SpaceBackground: {fileID: 21300000, guid: 3ad7640785837564a9e0793b85cc0917, type: 3}
   TimeBackground: {fileID: 21300000, guid: a47176ccaecda5542a6966cb54af58c4, type: 3}
-  ActiveBorderColor: {r: 1, g: 0.5, b: 0.25, a: 1}
+  ActiveBorderColor: {r: 1, g: 0.78039217, b: 0.41960785, a: 1}
   InActiveBorderColor: {r: 1, g: 1, b: 1, a: 1}
+  VesselName: {fileID: 7894805279378020013}
   BorderImage: {fileID: 2591428497348798986}
   BackgroundImage: {fileID: 5449956606087690071}
   VesselImage: {fileID: 8642464181719225434}
@@ -987,7 +1124,7 @@ GameObject:
   - component: {fileID: 3157175424165253707}
   - component: {fileID: 7894805279378020013}
   m_Layer: 5
-  m_Name: Text (TMP)
+  m_Name: VesselName
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1175,14 +1312,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 1, g: 1, b: 1, a: 0}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 2f3e59fa31f58384c8c53b3aa1bc3f00, type: 3}
+  m_Sprite: {fileID: 0}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -1264,8 +1401,9 @@ MonoBehaviour:
   ChargeBackground: {fileID: 21300000, guid: d6f9eb2dde69a054c9c37da418122f8b, type: 3}
   SpaceBackground: {fileID: 21300000, guid: 3ad7640785837564a9e0793b85cc0917, type: 3}
   TimeBackground: {fileID: 21300000, guid: a47176ccaecda5542a6966cb54af58c4, type: 3}
-  ActiveBorderColor: {r: 1, g: 0.5, b: 0.25, a: 1}
+  ActiveBorderColor: {r: 1, g: 0.78039217, b: 0.41960785, a: 1}
   InActiveBorderColor: {r: 1, g: 1, b: 1, a: 1}
+  VesselName: {fileID: 2591860439899594580}
   BorderImage: {fileID: 6953469703025325244}
   BackgroundImage: {fileID: 3340771674263544556}
   VesselImage: {fileID: 4548669778967349322}
@@ -1282,7 +1420,7 @@ GameObject:
   - component: {fileID: 7577518664883959992}
   - component: {fileID: 4478989572537285684}
   m_Layer: 5
-  m_Name: Pilot 5
+  m_Name: Vessel 5
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1530,14 +1668,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 0.5019608, b: 0.21960784, a: 1}
+  m_Color: {r: 1, g: 1, b: 1, a: 0}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 2f3e59fa31f58384c8c53b3aa1bc3f00, type: 3}
+  m_Sprite: {fileID: 0}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -1619,8 +1757,9 @@ MonoBehaviour:
   ChargeBackground: {fileID: 21300000, guid: d6f9eb2dde69a054c9c37da418122f8b, type: 3}
   SpaceBackground: {fileID: 21300000, guid: 3ad7640785837564a9e0793b85cc0917, type: 3}
   TimeBackground: {fileID: 21300000, guid: a47176ccaecda5542a6966cb54af58c4, type: 3}
-  ActiveBorderColor: {r: 1, g: 0.5, b: 0.25, a: 1}
+  ActiveBorderColor: {r: 1, g: 0.78039217, b: 0.41960785, a: 1}
   InActiveBorderColor: {r: 1, g: 1, b: 1, a: 1}
+  VesselName: {fileID: 2804341018562098203}
   BorderImage: {fileID: 8493853505481729883}
   BackgroundImage: {fileID: 6558184895917104428}
   VesselImage: {fileID: 1655575296749659204}
@@ -1638,7 +1777,7 @@ GameObject:
   - component: {fileID: 6717473891047098344}
   - component: {fileID: 8638533164657648353}
   m_Layer: 5
-  m_Name: Pilot 6
+  m_Name: Vessel 6
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1780,7 +1919,7 @@ GameObject:
   - component: {fileID: 3655287357792149199}
   - component: {fileID: 7507219800074996820}
   m_Layer: 5
-  m_Name: Pilot 2
+  m_Name: Vessel 2
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1920,7 +2059,7 @@ GameObject:
   - component: {fileID: 3964216668882253484}
   - component: {fileID: 8165891775077782017}
   m_Layer: 5
-  m_Name: Pilot Description
+  m_Name: Vessel Description
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1944,7 +2083,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: 0, y: -220}
-  m_SizeDelta: {x: 0, y: 120}
+  m_SizeDelta: {x: 0, y: 60}
   m_Pivot: {x: 0, y: 1}
 --- !u!222 &3964216668882253484
 CanvasRenderer:
@@ -2132,7 +2271,7 @@ GameObject:
   - component: {fileID: 7618779203927089088}
   - component: {fileID: 2591860439899594580}
   m_Layer: 5
-  m_Name: Text (TMP)
+  m_Name: VesselName
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2311,7 +2450,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5638987880061759709}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
   m_Name: 
@@ -2324,7 +2463,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: e2fd98522b263ae43ac90eed9887589e, type: 3}
+  m_Sprite: {fileID: 0}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -2480,7 +2619,7 @@ GameObject:
   - component: {fileID: 6958966256916233081}
   - component: {fileID: 3207897442515928275}
   m_Layer: 5
-  m_Name: Pilots
+  m_Name: Vessels
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2581,7 +2720,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6143165819090954722}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
   m_Name: 
@@ -2693,7 +2832,7 @@ GameObject:
   - component: {fileID: 3776279820804915246}
   - component: {fileID: 5098949717524290645}
   m_Layer: 5
-  m_Name: Pilot Name
+  m_Name: Vessel Name
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -3353,7 +3492,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &7647353014150865252
 RectTransform:
   m_ObjectHideFlags: 0
@@ -3571,7 +3710,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &7647353014213788083
 RectTransform:
   m_ObjectHideFlags: 0
@@ -6070,7 +6209,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &7647353015707023426
 RectTransform:
   m_ObjectHideFlags: 0
@@ -6147,7 +6286,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &7647353015744632290
 RectTransform:
   m_ObjectHideFlags: 0
@@ -6904,6 +7043,7 @@ MonoBehaviour:
   VesselSelectionContainer: {fileID: 6958966256916233081}
   SelectedVesselName: {fileID: 5098949717524290645}
   SelectedVesselDescription: {fileID: 8165891775077782017}
+  SelectedVesselFlavor: {fileID: 1263029042598448137}
   SelectedVesselImage: {fileID: 7658097893583140}
 --- !u!1 &7719955909281570854
 GameObject:
@@ -6919,7 +7059,7 @@ GameObject:
   - component: {fileID: 1799520135308438006}
   - component: {fileID: 3403314688575431214}
   m_Layer: 5
-  m_Name: Pilot 4
+  m_Name: Vessel 4
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -7059,7 +7199,7 @@ GameObject:
   - component: {fileID: 3469879445225537856}
   - component: {fileID: 7658097893583140}
   m_Layer: 5
-  m_Name: Pilot Image
+  m_Name: Vessel Image
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -7079,6 +7219,7 @@ RectTransform:
   m_Children:
   - {fileID: 7263498946575853434}
   - {fileID: 4412029180411998575}
+  - {fileID: 5031966190157744723}
   m_Father: {fileID: 6336786692533202747}
   m_RootOrder: 3
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -7259,7 +7400,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8393590430335992844}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
   m_Name: 
@@ -7675,7 +7816,7 @@ GameObject:
   - component: {fileID: 3993098086498131826}
   - component: {fileID: 7489346136709341343}
   m_Layer: 5
-  m_Name: Pilot 3
+  m_Name: Vessel 3
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
