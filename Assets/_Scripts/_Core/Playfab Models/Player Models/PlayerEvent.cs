@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace _Scripts._Core.Playfab_Models
+namespace _Scripts._Core.Playfab_Models.Player_Models
 {
     public class PlayerEvent
     {

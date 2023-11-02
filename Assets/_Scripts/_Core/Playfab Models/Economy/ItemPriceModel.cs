@@ -1,9 +1,9 @@
 using System;
 
-namespace CosmicShore
+namespace _Scripts._Core.Playfab_Models.Economy
 {
 	[Serializable]
-    public class ItemPrice
+    public class ItemPriceModel
     {
         /// <summary>
         /// The amount of the price.

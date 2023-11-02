@@ -1,3 +1,4 @@
+using _Scripts._Core.Playfab_Models.Economy;
 using UnityEngine;
 using UnityEngine.UI;
 using CosmicShore;
@@ -33,7 +34,7 @@ public class CatalogView : MonoBehaviour
     /// </summary>
     private void AddShardsTest()
     {
-        var inventoryItemRef = new VirtualItem() { Id = ShardId };
+        var inventoryItemRef = new VirtualItemModel() { Id = ShardId };
         CatalogManager.Instance.AddInventoryItem(inventoryItemRef, amount);
         // RefreshInventory();
     }

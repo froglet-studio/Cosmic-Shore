@@ -1,15 +1,15 @@
 using System;
 using System.Collections.Generic;
+using System.Security;
+using _Scripts._Core.Playfab_Models.Player_Models;
+using JetBrains.Annotations;
 using Newtonsoft.Json;
-using UnityEngine;
 using PlayFab;
 using PlayFab.ClientModels;
 using StarWriter.Utility.Singleton;
-using System.Security;
-using JetBrains.Annotations;
-using PlayFab.SharedModels;
+using UnityEngine;
 
-namespace _Scripts._Core.Playfab_Models
+namespace _Scripts._Core.Playfab_Models.Authentication
 {
     public class AuthenticationManager : SingletonPersistent<AuthenticationManager>
     {

@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Security;
+using _Scripts._Core.Playfab_Models.Authentication;
 using PlayFab;
 using PlayFab.ClientModels;
 using StarWriter.Core.Audio;

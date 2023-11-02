@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using PlayFab.EconomyModels;
 
-namespace _Scripts._Core.Playfab_Models
+namespace _Scripts._Core.Playfab_Models.Player_Models
 {
     /// <summary>
     /// Player Inventory
