@@ -12,15 +12,31 @@ public class ChargeBoostAction : ShipAction
 
     protected override void Start()
     {
-        shipData = ship.GetComponent<ShipStatus>();
+        GetShipStatus();
+    }
+
+    private void GetShipStatus()
+    {
+        if(!TryGetComponent(out shipData))
+        {
+            Debug.LogWarningFormat("{0} - {1} - {2}", nameof(ChargeBoostAction), nameof(GetShipStatus), "ship status is null, but still trying to get it.");
+            shipData = shipData = ship.GetComponent<ShipStatus>();
+        }
     }
 
     void Update()
     {
+        BoostCharge();
+    }
+
+    private void BoostCharge()
+    {
         if (BoostCharging)
         {
-            Debug.Log("charging boost");
-            if(shipData != null) shipData.ChargedBoostCharge += BoostChargeRate * Time.deltaTime;
+            Debug.LogFormat("{0} - {1} - charging boost", nameof(ChargeBoostAction), nameof(BoostCharge));
+            
+            if(shipData != null)  shipData.ChargedBoostCharge += BoostChargeRate * Time.deltaTime;
+
             ship.ResourceSystem.ChangeBoostAmount(BoostChargeRate * Time.deltaTime);
         }
     }
@@ -36,13 +52,16 @@ public class ChargeBoostAction : ShipAction
         StartChargedBoost();
     }
 
-    public void StartChargedBoost()
+    private void StartChargedBoost()
     {
+        // if (DischargeBoostCoroutine() == null) return;
         StartCoroutine(DischargeBoostCoroutine());
     }
 
     IEnumerator DischargeBoostCoroutine()
     {
+        // TODO: figure out how to get ship data component here so that it is not null
+        
         shipData.ChargedBoostDischarging = true;
         while (shipData.ChargedBoostCharge > 1)
         {
@@ -52,6 +71,7 @@ public class ChargeBoostAction : ShipAction
         }
         shipData.ChargedBoostCharge = 1;
         shipData.ChargedBoostDischarging = false;
+        
         ship.ResourceSystem.ChangeBoostAmount(-ship.ResourceSystem.CurrentBoost);
     }
 }

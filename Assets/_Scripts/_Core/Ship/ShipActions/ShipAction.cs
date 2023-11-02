@@ -10,12 +10,21 @@ public abstract class ShipAction : ElementalShipComponent
     public abstract void StartAction();
     public abstract void StopAction();
 
-    virtual protected void Start()
+    protected virtual void Start()
+    {
+        InitializeShipAttributes();
+    }
+
+    private void InitializeShipAttributes()
     {
         if (ship != null)
         {
             BindElementalFloats(ship);
             resourceSystem = ship.ResourceSystem;
+        }
+        else
+        {
+            Debug.LogErrorFormat("{0} - {1} - {2}", nameof(ShipAction), nameof(InitializeShipAttributes), "ship instance is null.");
         }
     }
 }
