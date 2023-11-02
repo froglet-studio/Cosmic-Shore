@@ -449,7 +449,10 @@ namespace _Scripts._Core.Playfab_Models
         /// </summary>
         void InitializePlayerDisplayNameView()
         {
-            BusyIndicator.SetActive(false);
+            if (BusyIndicator != null)
+            {
+                BusyIndicator.SetActive(false);
+            }
             
             if (AuthenticationManager.PlayerProfile == null)
             {
