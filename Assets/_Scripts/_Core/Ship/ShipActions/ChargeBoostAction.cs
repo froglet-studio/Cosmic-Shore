@@ -20,7 +20,7 @@ public class ChargeBoostAction : ShipAction
         if (BoostCharging)
         {
             Debug.Log("charging boost");
-            shipData.ChargedBoostCharge += BoostChargeRate * Time.deltaTime;
+            if(shipData != null) shipData.ChargedBoostCharge += BoostChargeRate * Time.deltaTime;
             ship.ResourceSystem.ChangeBoostAmount(BoostChargeRate * Time.deltaTime);
         }
     }
