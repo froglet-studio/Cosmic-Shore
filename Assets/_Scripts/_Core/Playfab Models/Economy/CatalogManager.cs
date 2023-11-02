@@ -1,3 +1,4 @@
+using System;
 using PlayFab;
 using PlayFab.EconomyModels;
 using StarWriter.Utility.Singleton;
@@ -21,6 +22,14 @@ public class CatalogManager : SingletonPersistent<CatalogManager>
         AuthenticationManager.OnLoginSuccess += LoadCatalog;
         AuthenticationManager.OnLoginSuccess += LoadInventory;
         AuthenticationManager.OnRegisterSuccess += GrantStartingInventory;
+    }
+
+    public void OnDestroy()
+    {
+        AuthenticationManager.OnLoginSuccess -= InitializePlayFabEconomyAPI;
+        AuthenticationManager.OnLoginSuccess -= LoadCatalog;
+        AuthenticationManager.OnLoginSuccess -= LoadInventory;
+        AuthenticationManager.OnRegisterSuccess -= GrantStartingInventory;
     }
 
     #region Initialize PlayFab Economy API with Auth Context
@@ -69,10 +78,7 @@ public class CatalogManager : SingletonPersistent<CatalogManager>
                         Debug.Log("   CatalogManager - Description: " + description);                    
                 }
             },
-            error => 
-            { 
-                Debug.Log(error.ErrorDetails); 
-            }
+            HandleErrorReport
         );
     }
     
@@ -111,10 +117,7 @@ public class CatalogManager : SingletonPersistent<CatalogManager>
                         Debug.Log($"CatalogManager - transaction id: {transactionId}");
                     }
                 },
-                error =>
-                {
-                    Debug.LogError(error.GenerateErrorReport());
-                }
+                HandleErrorReport
             );
         }
     }
@@ -141,10 +144,7 @@ public class CatalogManager : SingletonPersistent<CatalogManager>
                     Debug.Log($"{name} - GetInventoryItems - id: {item.Id} type: {item.Type} amount: {item.Amount.ToString()}");
                 }
             },
-            error =>
-            {
-                Debug.LogError(error.GenerateErrorReport());
-            }
+            HandleErrorReport
         );
     }
 
@@ -172,10 +172,7 @@ public class CatalogManager : SingletonPersistent<CatalogManager>
                 Debug.Log("   CatalogManager - Image Count: " + response.Item.Images.Count);
                 Debug.Log("   CatalogManager - Content Type: " + response.Item.ContentType);
             },
-            (PlayFabError error) =>
-            {
-                Debug.LogError(error.GenerateErrorReport());
-            }
+            HandleErrorReport
         );
     }
 
@@ -200,10 +197,7 @@ public class CatalogManager : SingletonPersistent<CatalogManager>
                     // Debug.Log($"{name} - add inventory item etag: {result.ETag}");
                     // Debug.Log($"{name} - add inventory item idempotency id: {result.IdempotencyId}");
                     LoadInventory();
-                }, (error) =>
-                {
-                    Debug.Log(error.GenerateErrorReport());
-                }
+                }, HandleErrorReport
             );
     }
     
@@ -242,12 +236,21 @@ public class CatalogManager : SingletonPersistent<CatalogManager>
             {
                 Debug.Log($"CatalogManager - Successfully purchased {itemId}");
             },
-            error =>
-            {
-                Debug.LogError(error.GenerateErrorReport());
-            }
+            HandleErrorReport
         );
     }
     
+    #endregion
+    
+    #region Situation Handling
+
+    /// <summary>
+    /// Handle Error Report
+    /// </summary>
+    /// <param name="error">PlayFab Error</param>
+    private void HandleErrorReport(PlayFabError error)
+    {
+        Debug.LogErrorFormat("{0} - {1}", nameof(CatalogManager), error.ErrorMessage);
+    }
     #endregion
 }
