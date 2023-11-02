@@ -36,7 +36,7 @@ namespace StarWriter.Core.IO
         [HideInInspector] public Vector2 LeftClampedPosition;
         [HideInInspector] public bool isGyroEnabled;
         [HideInInspector] public bool invertYEnabled;
-        Vector2 RightJoystickStart, LeftJoystickStart;
+        public Vector2 RightJoystickStart, LeftJoystickStart;
         Vector2 RightJoystickPosition, LeftJoystickPosition;
         Vector2 RightJoystickValue, LeftJoystickValue;
         [HideInInspector] public Vector2 EasedRightJoystickPosition, EasedLeftJoystickPosition;
@@ -216,6 +216,7 @@ namespace StarWriter.Core.IO
                             LeftJoystickValue = position;
                             leftTouchIndex = 0;
                             HandleJoystick(ref LeftJoystickStart, leftTouchIndex, ref LeftJoystickPosition, ref LeftClampedPosition);
+                            LeftJoystickPosition = Vector3.Lerp(LeftJoystickPosition, Vector3.zero, 7 * Time.deltaTime);
                         }
                         else
                         {
@@ -227,6 +228,7 @@ namespace StarWriter.Core.IO
                             RightJoystickValue = position;
                             rightTouchIndex = 0;
                             HandleJoystick(ref RightJoystickStart, rightTouchIndex, ref RightJoystickPosition, ref RightClampedPosition);
+                            LeftJoystickPosition = Vector3.Lerp(LeftJoystickPosition, Vector3.zero, 7*Time.deltaTime);
                         }
                     }
                 }
