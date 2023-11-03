@@ -14,11 +14,7 @@ namespace StarWriter.Core
         public Trail(bool isLoop = false)
         {
             this.isLoop = isLoop;
-
-            // TODO: maybe circular list is not needed
             TrailList = new List<TrailBlock>();
-            
-
             trailBlockIndices = new Dictionary<TrailBlock, int>();
         }
 
@@ -35,7 +31,9 @@ namespace StarWriter.Core
         }
 
         /// <summary>
-        /// 
+        /// Look Ahead
+        /// Looking ahead of the trail
+        /// // TODO: Could use some generalized methods because Look Ahead logically similar to Project method
         /// </summary>
         /// <param name="index"></param>
         /// <param name="lerp"></param>
@@ -48,11 +46,11 @@ namespace StarWriter.Core
             var distanceTravelled = 0f;
             
             var trailListCount = TrailList.Count;
-            index = IndexSafetyCheck(index, trailListCount);
+            (index, incrementor) = IndexSafetyCheck(index, incrementor,trailListCount);
             var currentBlock = TrailList[index];
             
             var nextIndex = index + incrementor;
-            nextIndex = IndexSafetyCheck(nextIndex, trailListCount);
+            (nextIndex, incrementor) = IndexSafetyCheck(nextIndex, incrementor,trailListCount);
             var nextBlock = TrailList[nextIndex];
             
             var lookAheadBlocks = new List<TrailBlock> { currentBlock };
@@ -67,16 +65,18 @@ namespace StarWriter.Core
                 
                 // Get current block
                 index += incrementor;
-                index = IndexSafetyCheck(index, trailListCount);
+                (index, incrementor) = IndexSafetyCheck(index, incrementor, trailListCount);
+                // Debug.LogWarningFormat("{0} - {1} - {2}: {3}", nameof(Trail), nameof(LookAhead), nameof(index), index.ToString());
                 currentBlock = TrailList[index];
                 
                 // Detect direction and change incrementor
-                if(!isLoop) incrementor += -1;
+                // if(!isLoop) incrementor *= -1;
 
+                // Get the next block
                 nextIndex = index + incrementor;
-                nextIndex = IndexSafetyCheck(nextIndex, trailListCount);
+                (nextIndex, incrementor) = IndexSafetyCheck(nextIndex, incrementor,trailListCount);
                 nextBlock = TrailList[nextIndex];
-                
+                // Debug.LogWarningFormat("{0} - {1} - {2}: {3}", nameof(Trail), nameof(LookAhead), nameof(nextIndex),nextIndex.ToString());
                
                 
                 distanceToNextBlock = Vector3.Magnitude(nextBlock.transform.position - currentBlock.transform.position);
@@ -86,7 +86,8 @@ namespace StarWriter.Core
         }
 
         /// <summary>
-        /// 
+        /// Project on Trail
+        /// // TODO: Please give a more descriptive name to the method if possible
         /// </summary>
         /// <param name="startIndex"></param>
         /// <param name="initialLerp">Percent progress between current block and next block along direction</param>
@@ -103,11 +104,11 @@ namespace StarWriter.Core
             var distanceTravelled = 0f;
             var trailListCount = TrailList.Count;
 
-            startIndex = IndexSafetyCheck(startIndex, trailListCount);
+            (startIndex, incrementor) = IndexSafetyCheck(startIndex, incrementor,trailListCount);
             var currentBlock = TrailList[startIndex];
             
             var nextIndex = startIndex + incrementor;
-            nextIndex = IndexSafetyCheck(nextIndex, trailListCount);
+            (nextIndex, incrementor) = IndexSafetyCheck(nextIndex, incrementor , trailListCount);
             var nextBlock = TrailList[nextIndex];
             
             //Debug.Log($"Project: {currentBlock.transform.position},{nextBlock.transform.position}");
@@ -121,15 +122,17 @@ namespace StarWriter.Core
                 
                 // Get the current block
                 startIndex += incrementor;
-                startIndex = IndexSafetyCheck(startIndex, trailListCount);
+                (startIndex, incrementor) = IndexSafetyCheck(startIndex, incrementor, trailListCount);
+                // Debug.LogWarningFormat("{0} - {1} - {2}: {3}", nameof(Trail), nameof(Project), nameof(startIndex),startIndex.ToString());
                 
                 // Detect next block's direction
-                if(!isLoop) incrementor *= -1;
+                // if(!isLoop) incrementor *= -1;
                 
                 // Get the next block
                 nextIndex += incrementor;
-                nextIndex = IndexSafetyCheck(nextIndex, trailListCount);
+                (nextIndex, incrementor) = IndexSafetyCheck(nextIndex, incrementor,trailListCount);
                 nextBlock = TrailList[nextIndex];
+                // Debug.LogWarningFormat("{0} - {1} - {2}: {3}", nameof(Trail), nameof(Project), nameof(nextIndex),nextIndex.ToString());
                 
                 
                 // Calculate distance to the next block
@@ -140,24 +143,47 @@ namespace StarWriter.Core
             var overflow = distanceTravelled - distance;
 
             // OUT PARAMETERS
-            heading = (nextBlock.transform.position - currentBlock.transform.position).normalized;
+            var nextPosition = nextBlock.transform.position;
+            var currentPosition = currentBlock.transform.position;
+            
+            heading = (nextPosition - currentPosition).normalized;
             endIndex = startIndex;
-            finalLerp = 1 - (overflow / (currentBlock.transform.position - nextBlock.transform.position).magnitude);
+            finalLerp = 1 - (overflow / (currentPosition - nextPosition).magnitude);
             outDirection = (TrailFollowerDirection) incrementor;
 
-            return Vector3.Lerp(currentBlock.transform.position, nextBlock.transform.position, finalLerp);
+            return Vector3.Lerp(currentPosition, nextPosition, finalLerp);
         }
 
-        private int IndexSafetyCheck(int index, int maxRange)
+        /// <summary>
+        /// Index Safety Check
+        /// Make sure the index is not out of range
+        /// </summary>
+        /// <param name="index">Block index on trail</param>
+        /// <param name="maxRange">The maximum trail list range</param>
+        /// <returns></returns>
+        private (int, int) IndexSafetyCheck(int index, int incrementor, in int maxRange)
         {
-            index %= maxRange;
+            // This makes sure the index is not out of maximum range
+            if (index >= maxRange)
+            {
+                index %= maxRange;
+                // If the trail is not looping, change the ship's direction
+                if (!isLoop) incrementor *= -1;
+            }
+            
+            // When index is less than 0
             if (index < 0)
             {
+                // If the trail is looping, connect the tail block's index to current index
                 if (isLoop) index += maxRange;
-                // TODO: fix bouncing between nearby two block when isLoop true
-                else index *= -1;
+                // If the trail is not looping, change ship direction and reset index to start
+                else {incrementor *= -1;
+                    index = 0;
+                }
             }
-            return index;
+            // if(index >= maxRange)
+            
+            return (index, incrementor);
         }
 
         // TODO: bounds checking
@@ -165,53 +191,6 @@ namespace StarWriter.Core
         {
             if (blockIndex < 0) return TrailList[0];
             return TrailList[blockIndex];
-        }
-    }
-
-    class CircularList<T> : List<T>
-    {
-        int Index;
-
-        public CircularList() : this(0) { }
-
-        public CircularList(int index)
-        {
-            if (index < 0 || index >= Count)
-                throw new Exception(string.Format("Index must between {0} and {1}, index was {2}", 0, Count, index));
-
-            Index = index;
-        }
-
-        public T Current()
-        {
-            return this[Index];
-        }
-
-        public T Next()
-        {
-            Index++;
-            Index %= Count;
-
-            return this[Index];
-        }
-
-        public T Previous()
-        {
-            Index--;
-            if (Index < 0)
-                Index = Count - 1;
-
-            return this[Index];
-        }
-
-        public void Reset()
-        {
-            Index = 0;
-        }
-
-        public void MoveToEnd()
-        {
-            Index = Count - 1;
         }
     }
 }

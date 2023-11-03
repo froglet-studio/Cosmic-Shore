@@ -54,7 +54,7 @@ namespace StarWriter.Core
             attachedTrail = null;
         }
 
-        public void Move()
+        public void RideTheTrail()
         {
             if (!IsAttached) return;
 
