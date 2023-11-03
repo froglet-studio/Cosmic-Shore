@@ -47,12 +47,16 @@ public class ThumbCursor : MonoBehaviour
                 leftTouch = Player.ActivePlayer.Ship.InputController.LeftClampedPosition;
                 transform.position = Vector2.Lerp(transform.position, leftTouch, .2f);
                 image.sprite = ActiveImage;
+                //image.transform.localScale = (Player.ActivePlayer.Ship.InputController.LeftJoystickStart              //makes circles grow as they get close to perimeter
+                //    - Player.ActivePlayer.Ship.InputController.LeftClampedPosition).magnitude * .025f * Vector3.one;
             }
             else
             {
                 rightTouch = Player.ActivePlayer.Ship.InputController.RightClampedPosition;
                 transform.position = Vector2.Lerp(transform.position, rightTouch, .2f);
                 image.sprite = ActiveImage;
+                //image.transform.localScale = (Player.ActivePlayer.Ship.InputController.RightJoystickStart
+                //    - Player.ActivePlayer.Ship.InputController.RightClampedPosition).magnitude * .025f * Vector3.one;
             }
         }
     }

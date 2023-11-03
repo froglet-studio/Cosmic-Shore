@@ -6,7 +6,8 @@ namespace StarWriter.Core
 {
     public class Trail
     {
-        readonly bool isLoop;
+        // TODO: fix bouncing between nearby two block when isLoop true
+        bool isLoop;
         public List<TrailBlock> TrailList { get; }
         Dictionary<TrailBlock, int> trailBlockIndices;
 
@@ -43,10 +44,17 @@ namespace StarWriter.Core
         /// <returns></returns>
         public List<TrailBlock> LookAhead(int index, float lerp, TrailFollowerDirection direction, float distance)
         {
-            int incrementor = (int) direction;   // Fun bit of cleverness, enum forward is 1 and backward is -1
+            var incrementor = (int) direction;   // Fun bit of cleverness, enum forward is 1 and backward is -1
             var distanceTravelled = 0f;
+            
+            var trailListCount = TrailList.Count;
+            index = IndexSafetyCheck(index, trailListCount);
             var currentBlock = TrailList[index];
-            var nextBlock = TrailList[index + incrementor];
+            
+            var nextIndex = index + incrementor;
+            nextIndex = IndexSafetyCheck(nextIndex, trailListCount);
+            var nextBlock = TrailList[nextIndex];
+            
             var lookAheadBlocks = new List<TrailBlock> { currentBlock };
 
             var distanceToNextBlock = Vector3.Magnitude(nextBlock.transform.position - currentBlock.transform.position) * (1 - lerp);
@@ -56,21 +64,21 @@ namespace StarWriter.Core
                 distanceTravelled += distanceToNextBlock;
 
                 lookAheadBlocks.Add(nextBlock);
-
+                
+                // Get current block
                 index += incrementor;
-                if (index >= TrailList.Count || index <= 0) // End of trail encountered
-                {
-                    if (isLoop)
-                        index %= TrailList.Count;
-                    else
-                        incrementor *= -1;
-                }
-
-                //Debug.Log($"LookAhead - index:{index}, incrementor:{incrementor}, TrailList.Count:{TrailList.Count}, isLoop:{isLoop}");
-
+                index = IndexSafetyCheck(index, trailListCount);
                 currentBlock = TrailList[index];
-                nextBlock = TrailList[index + incrementor];
+                
+                // Detect direction and change incrementor
+                if(!isLoop) incrementor += -1;
 
+                nextIndex = index + incrementor;
+                nextIndex = IndexSafetyCheck(nextIndex, trailListCount);
+                nextBlock = TrailList[nextIndex];
+                
+               
+                
                 distanceToNextBlock = Vector3.Magnitude(nextBlock.transform.position - currentBlock.transform.position);
             }
 
@@ -93,9 +101,15 @@ namespace StarWriter.Core
         {
             int incrementor = (int)direction;   // Fun bit of cleverness, enum forward is 1 and backward is -1
             var distanceTravelled = 0f;
-            var currentBlock = TrailList[startIndex];
-            var nextBlock = TrailList[startIndex + incrementor];
+            var trailListCount = TrailList.Count;
 
+            startIndex = IndexSafetyCheck(startIndex, trailListCount);
+            var currentBlock = TrailList[startIndex];
+            
+            var nextIndex = startIndex + incrementor;
+            nextIndex = IndexSafetyCheck(nextIndex, trailListCount);
+            var nextBlock = TrailList[nextIndex];
+            
             //Debug.Log($"Project: {currentBlock.transform.position},{nextBlock.transform.position}");
 
             var distanceToNextBlock = Vector3.Magnitude(nextBlock.transform.position - currentBlock.transform.position) * (1 - initialLerp);
@@ -105,19 +119,20 @@ namespace StarWriter.Core
             while (distanceTravelled < distance)
             {
                 
-
+                // Get the current block
                 startIndex += incrementor;
-                if (startIndex >= TrailList.Count - 1 || startIndex <= 0) // End of trail encountered
-                {
-                    if (isLoop)
-                        startIndex %= TrailList.Count;
-                    else
-                        incrementor *= -1;
-                }
-
-                currentBlock = TrailList[startIndex];
-                nextBlock = TrailList[startIndex + incrementor];
-
+                startIndex = IndexSafetyCheck(startIndex, trailListCount);
+                
+                // Detect next block's direction
+                if(!isLoop) incrementor *= -1;
+                
+                // Get the next block
+                nextIndex += incrementor;
+                nextIndex = IndexSafetyCheck(nextIndex, trailListCount);
+                nextBlock = TrailList[nextIndex];
+                
+                
+                // Calculate distance to the next block
                 distanceToNextBlock = Vector3.Magnitude(nextBlock.transform.position - currentBlock.transform.position);
                 distanceTravelled += distanceToNextBlock;
             }
@@ -131,6 +146,18 @@ namespace StarWriter.Core
             outDirection = (TrailFollowerDirection) incrementor;
 
             return Vector3.Lerp(currentBlock.transform.position, nextBlock.transform.position, finalLerp);
+        }
+
+        private int IndexSafetyCheck(int index, int maxRange)
+        {
+            index %= maxRange;
+            if (index < 0)
+            {
+                if (isLoop) index += maxRange;
+                // TODO: fix bouncing between nearby two block when isLoop true
+                else index *= -1;
+            }
+            return index;
         }
 
         // TODO: bounds checking

@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Security;
+using _Scripts._Core.Playfab_Models.Authentication;
 using PlayFab;
 using PlayFab.ClientModels;
 using StarWriter.Core.Audio;
@@ -448,7 +449,10 @@ namespace _Scripts._Core.Playfab_Models
         /// </summary>
         void InitializePlayerDisplayNameView()
         {
-            BusyIndicator.SetActive(false);
+            if (BusyIndicator != null)
+            {
+                BusyIndicator.SetActive(false);
+            }
             
             if (AuthenticationManager.PlayerProfile == null)
             {

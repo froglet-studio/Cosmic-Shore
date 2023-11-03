@@ -41,6 +41,7 @@ public class SpawnablePumpkin : SpawnableEllipsoid
 
         for (int cardioidIndex = 0; cardioidIndex < totalCurveCount; cardioidIndex++)
         {
+            // TODO: fix bouncing between nearby two block when isLoop true, please see Trail.cs
             var trail = new Trail(true);
             trails.Add(trail);
 
