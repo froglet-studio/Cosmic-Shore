@@ -5,6 +5,7 @@ using StarWriter.Core.HangerBuilder;
 using StarWriter.Core.IO;
 using StarWriter.Core.Audio;
 using System.Collections;
+using _Scripts._Core.Input;
 
 public class Crystal : NodeItem
 {
@@ -65,7 +66,7 @@ public class Crystal : NodeItem
             switch (effect)
             {
                 case CrystalImpactEffects.PlayFakeCrystalHaptics:   // TODO: P1 need to merge haptics and take an enum to determine which on to play
-                    if (!ship.ShipStatus.AutoPilotEnabled) HapticController.PlayFakeCrystalImpactHaptics();
+                    if (!ship.ShipStatus.AutoPilotEnabled) HapticController.PlayHaptic(HapticType.CrystalCollision);//.PlayFakeCrystalImpactHaptics();
                     break;
                 case CrystalImpactEffects.ReduceSpeed:
                     ship.ShipController.ModifyThrottle(.1f, 3);  // TODO: Magic numbers

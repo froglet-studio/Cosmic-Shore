@@ -1,4 +1,6 @@
-﻿namespace StarWriter.Core
+﻿using _Scripts._Core.Input;
+
+namespace StarWriter.Core
 {
     public class HapticEffect : IImpactEffect
     {
