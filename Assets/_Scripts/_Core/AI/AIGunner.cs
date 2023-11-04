@@ -1,3 +1,4 @@
+using _Scripts._Core.Ship.Projectiles;
 using UnityEngine;
 
 namespace StarWriter.Core.AI

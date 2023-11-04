@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using StarWriter.Core;
 using System;
 using System.Linq;
+using _Scripts._Core.Ship;
 
 public class TrailViewer : MonoBehaviour
 {

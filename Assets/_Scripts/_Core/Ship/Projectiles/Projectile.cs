@@ -1,16 +1,18 @@
 using System.Collections;
 using System.Collections.Generic;
 using _Scripts._Core.Input;
-using UnityEngine;
+using _Scripts.Environment.FlowField;
+using StarWriter.Core;
 using StarWriter.Core.HangerBuilder;
+using UnityEngine;
 
-namespace StarWriter.Core
+namespace _Scripts._Core.Ship.Projectiles
 {
     public class Projectile : MonoBehaviour
     {
         public Vector3 Velocity;
         public Teams Team;
-        public Ship Ship;
+        public StarWriter.Core.Ship Ship;
 
         [SerializeField] List<TrailBlockImpactEffects> trailBlockImpactEffects;
         [SerializeField] List<ShipImpactEffects> shipImpactEffects;

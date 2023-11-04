@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using _Scripts._Core.Input;
+using _Scripts._Core.Ship.Projectiles;
 using UnityEngine;
 
 namespace StarWriter.Core

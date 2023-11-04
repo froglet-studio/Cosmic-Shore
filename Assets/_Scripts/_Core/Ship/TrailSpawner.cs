@@ -2,6 +2,7 @@
 using StarWriter.Utility.Tools;
 using System.Collections;
 using System.Collections.Generic;
+using _Scripts._Core.Ship;
 using UnityEngine;
 using StarWriter.Core.HangerBuilder;
 

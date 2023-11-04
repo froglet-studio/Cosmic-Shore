@@ -1,5 +1,6 @@
 using StarWriter.Core;
 using System.Collections;
+using _Scripts._Core.Ship.Projectiles;
 using UnityEngine;
 
 public class ChargedFireGunAction : ShipAction

@@ -1,5 +1,6 @@
 ﻿using StarWriter.Core.HangerBuilder;
 using System.Collections;
+using _Scripts._Core.Ship;
 using UnityEngine;
 
 namespace StarWriter.Core
