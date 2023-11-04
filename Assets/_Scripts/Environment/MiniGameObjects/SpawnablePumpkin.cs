@@ -8,10 +8,11 @@ namespace _Scripts.Environment.MiniGameObjects
     {
         static int SegmentsSpawned = 0;
         private bool isLooping = false;
+        private GameObject container;
 
         public override GameObject Spawn()
         {
-            GameObject container = CreatePumpkinContainer();
+            container = CreatePumpkinContainer();
             int blockCount = 15;
             int totalCurveCount = 4 * 12; // 4 cycles of a pattern with 12 periods
             List<Trail> trails = new List<Trail>();
@@ -39,8 +40,10 @@ namespace _Scripts.Environment.MiniGameObjects
 
         private GameObject CreatePumpkinContainer()
         {
-            GameObject container = new GameObject();
-            container.name = "Pumpkin" + SegmentsSpawned++;
+            container = new GameObject
+            {
+                name = "Pumpkin" + SegmentsSpawned++
+            };
             return container;
         }
 
@@ -69,9 +72,12 @@ namespace _Scripts.Environment.MiniGameObjects
         private float GetKModulationValue(int cardioidIndex)
         {
             int modValue = cardioidIndex % 4;
-            return modValue == 0 || modValue == 3 ? 0f :
-                   modValue == 1 || modValue == 2 ? 0.08f :
-                   0.16f;
+            return modValue switch
+            {
+                0 or 3 => 0f,
+                1 or 2 => 0.08f,
+                _ => 0.16f
+            };
         }
 
         private void CreateBlocksForTrail(Trail trail, int blockCount, float pumpkinWidth, float curveScale, float zOffset, float sizeMultiplier, float rotationAngle, GameObject container)
