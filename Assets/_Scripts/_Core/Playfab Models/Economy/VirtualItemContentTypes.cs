@@ -1,8 +1,8 @@
 namespace _Scripts._Core.Playfab_Models.Economy
 {
-    public enum ContentTypes
+    public enum VirtualItemContentTypes
     {
-        Game,
+        MiniGame,
         ShipClass,
         Vessel,
         VesselShard,

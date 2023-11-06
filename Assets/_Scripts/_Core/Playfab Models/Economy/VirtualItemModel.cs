@@ -47,6 +47,6 @@ namespace _Scripts._Core.Playfab_Models.Economy
         /// subscription.
         /// </summary>
         public string Type;
-        public int Quantity;
+        public int Amount;
     }
 }
