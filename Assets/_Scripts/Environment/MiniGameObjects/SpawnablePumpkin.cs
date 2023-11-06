@@ -13,24 +13,24 @@ namespace _Scripts.Environment.MiniGameObjects
         public override GameObject Spawn()
         {
             container = CreatePumpkinContainer();
-            int blockCount = 15;
-            int totalCurveCount = 4 * 12; // 4 cycles of a pattern with 12 periods
-            List<Trail> trails = new List<Trail>();
+            var blockCount = 15;
+            var totalCurveCount = 4 * 12; // 4 cycles of a pattern with 12 periods
+            var trails = new List<Trail>();
 
-            float pumpkinWidth = SetPumpkinWidth();
-            float curveScale = pumpkinWidth;
-            float zOffset = pumpkinWidth / 2.5f;
-            float kHome = SetKHome();
+            var pumpkinWidth = SetPumpkinWidth();
+            var curveScale = pumpkinWidth;
+            var zOffset = pumpkinWidth / 2.5f;
+            var kHome = SetKHome();
 
-            for (int cardioidIndex = 0; cardioidIndex < totalCurveCount; cardioidIndex++)
+            for (var cardioidIndex = 0; cardioidIndex < totalCurveCount; cardioidIndex++)
             {
-                Trail trail = CreateTrail(trails);
+                var trail = CreateTrail(trails);
 
-                float rotationAngle = CalculateRotationAngle(cardioidIndex, totalCurveCount);
-                float kModulation = GetKModulationValue(cardioidIndex);
+                var rotationAngle = CalculateRotationAngle(cardioidIndex, totalCurveCount);
+                var kModulation = GetKModulationValue(cardioidIndex);
 
-                float k = kHome + kModulation;
-                float sizeMultiplier = 1 - k;
+                var k = kHome + kModulation;
+                var sizeMultiplier = 1 - k;
 
                 CreateBlocksForTrail(trail, blockCount, pumpkinWidth, curveScale, zOffset, sizeMultiplier, rotationAngle, container);
             }
@@ -71,7 +71,7 @@ namespace _Scripts.Environment.MiniGameObjects
 
         private float GetKModulationValue(int cardioidIndex)
         {
-            int modValue = cardioidIndex % 4;
+            var modValue = cardioidIndex % 4;
             return modValue switch
             {
                 0 or 3 => 0f,
@@ -82,19 +82,19 @@ namespace _Scripts.Environment.MiniGameObjects
 
         private void CreateBlocksForTrail(Trail trail, int blockCount, float pumpkinWidth, float curveScale, float zOffset, float sizeMultiplier, float rotationAngle, GameObject container)
         {
-            for (int block = 0; block < blockCount; block++)
+            for (var block = 0; block < blockCount; block++)
             {
-                float t = ((float)block / (float)blockCount) * Mathf.PI;
+                var t = ((float)block / (float)blockCount) * Mathf.PI;
 
-                float z = sizeMultiplier * curveScale * (2 * Mathf.Cos(t) - 0.5f * Mathf.Cos(3 * t));
-                float y = 0;
-                float x = zOffset + sizeMultiplier * curveScale * (2 * Mathf.Sin(t) - 0.5f * Mathf.Sin(3 * t));
+                var z = sizeMultiplier * curveScale * (2 * Mathf.Cos(t) - 0.5f * Mathf.Cos(3 * t));
+                //float y = 0;
+                var x = zOffset + sizeMultiplier * curveScale * (2 * Mathf.Sin(t) - 0.5f * Mathf.Sin(3 * t));
 
-                float rotatedX = x * Mathf.Cos(rotationAngle) - y * Mathf.Sin(rotationAngle);
-                float rotatedY = x * Mathf.Sin(rotationAngle) + y * Mathf.Cos(rotationAngle);
+                var rotatedX = x * Mathf.Cos(rotationAngle);// - y * Mathf.Sin(rotationAngle);
+                var rotatedY = x * Mathf.Sin(rotationAngle);// + y * Mathf.Cos(rotationAngle);
 
-                Vector3 position = new Vector3(rotatedX, rotatedY, z);
-                Vector3 lookPosition = position;
+                var position = new Vector3(rotatedX, rotatedY, z);
+                var lookPosition = position;
 
                 if (block != 0)
                 {
