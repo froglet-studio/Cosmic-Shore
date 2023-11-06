@@ -1,4 +1,5 @@
 using System.Collections;
+using _Scripts._Core.Ship.Projectiles;
 using StarWriter.Core;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -13,7 +14,7 @@ public class AOEConicExplosion : AOEExplosion
     protected override void Start()
     {
         base.Start();
-        material = new Material(Ship.AOEConicExplosionMaterial);
+        Material = new Material(Ship.AOEConicExplosionMaterial);
         coneContainer = new GameObject("ExplosionCone");
         coneContainer.transform.SetParent(container.transform, false);
         coneContainer.transform.SetPositionAndRotation(containerPosition, containerRotation);

@@ -1,5 +1,6 @@
 using StarWriter.Core;
 using System;
+using _Scripts._Core.Ship;
 using UnityEngine;
 
 public class SpawnableBatman : SpawnableAbstractBase

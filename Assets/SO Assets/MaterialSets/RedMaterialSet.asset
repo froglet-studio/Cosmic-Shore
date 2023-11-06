@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 403a9ec95489766418f75b3a7c2eb21c, type: 3}
+  m_Name: RedMaterialSet
+  m_EditorClassIdentifier: 
+  ShipMaterial: {fileID: 2100000, guid: b0e105431956f1b40b8ef19fbde85b3b, type: 2}
+  BlockMaterial: {fileID: 2100000, guid: 6a9bda8b03d768b49af63226292fa2c6, type: 2}
+  CrystalMaterial: {fileID: 2100000, guid: 8360939aa81c8fc48832cf3b0a9540ea, type: 2}
+  ExplodingBlockMaterial: {fileID: 2100000, guid: b864b8d0a0bb035479ac5a3c2fe425bd,
+    type: 2}
+  ShieldedBlockMaterial: {fileID: 2100000, guid: 295e1410f47fecd499c48b814aeb09a0,
+    type: 2}
+  AOEExplosionMaterial: {fileID: 2100000, guid: 36ee0116158df2c438f8a0b13ef1ad49,
+    type: 2}
+  AOEConicExplosionMaterial: {fileID: 2100000, guid: bb6be751b7625924898df5f4bfe10630,
+    type: 2}
+  SpikeMaterial: {fileID: 2100000, guid: 038f6acb5d3f67f428b08ad82f555522, type: 2}
+  SkimmerMaterial: {fileID: 2100000, guid: 8d6a9cc182227b54e87b708033928a03, type: 2}

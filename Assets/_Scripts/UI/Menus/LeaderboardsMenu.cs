@@ -3,6 +3,8 @@ using StarWriter.Core;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using _Scripts._Core.Playfab_Models.Authentication;
+using _Scripts._Core.Playfab_Models.PlayStream;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;

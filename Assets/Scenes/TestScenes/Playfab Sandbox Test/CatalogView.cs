@@ -1,3 +1,4 @@
+using _Scripts._Core.Playfab_Models.Economy;
 using UnityEngine;
 using UnityEngine.UI;
 using CosmicShore;
@@ -24,7 +25,7 @@ public class CatalogView : MonoBehaviour
     private void PurchaseItemTest()
     {
         
-        CatalogManager.Instance.PurchaseItem(VesselId, ShardId, 1, 5);
+        // CatalogManager.Instance.PurchaseItem(VesselId, ShardId, 1, 5);
     }
 
     /// <summary>
@@ -33,7 +34,7 @@ public class CatalogView : MonoBehaviour
     /// </summary>
     private void AddShardsTest()
     {
-        var inventoryItemRef = new VirtualItem() { Id = ShardId };
+        var inventoryItemRef = new VirtualItemModel() { Id = ShardId };
         CatalogManager.Instance.AddInventoryItem(inventoryItemRef, amount);
         // RefreshInventory();
     }
@@ -44,6 +45,6 @@ public class CatalogView : MonoBehaviour
     /// </summary>
     private void RefreshInventory()
     {
-        CatalogManager.Instance.LoadInventory();
+        CatalogManager.Instance.LoadPlayerInventory();
     }
 }

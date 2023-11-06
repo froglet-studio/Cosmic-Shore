@@ -1,10 +1,14 @@
+using _Scripts._Core.Ship;
 using StarWriter.Core;
 using UnityEditor;
 using UnityEngine;
 
 public class SpawnableEllipsoid : SpawnableAbstractBase
 {
+    [Header("Trail")]
     [SerializeField] protected TrailBlock trailBlock;
+    
+    [Header("Spawnable Properties")]
     public float maxlength;
     public float maxwidth;
     public float maxheight;

@@ -2,6 +2,7 @@ using UnityEngine;
 using System.Collections;
 using StarWriter.Core;
 using System.Collections.Generic;
+using _Scripts._Core.Ship;
 
 public class BoidManager : MonoBehaviour
 {

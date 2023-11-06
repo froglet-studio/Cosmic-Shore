@@ -1,6 +1,9 @@
 using System.Collections;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using Gamepad = UnityEngine.InputSystem.Gamepad;
+using Gyroscope = UnityEngine.Gyroscope;
+using TouchPhase = UnityEngine.TouchPhase;
 
 namespace StarWriter.Core.IO
 {
@@ -36,7 +39,7 @@ namespace StarWriter.Core.IO
         [HideInInspector] public Vector2 LeftClampedPosition;
         [HideInInspector] public bool isGyroEnabled;
         [HideInInspector] public bool invertYEnabled;
-        Vector2 RightJoystickStart, LeftJoystickStart;
+        public Vector2 RightJoystickStart, LeftJoystickStart;
         Vector2 RightJoystickPosition, LeftJoystickPosition;
         Vector2 RightJoystickValue, LeftJoystickValue;
         [HideInInspector] public Vector2 EasedRightJoystickPosition, EasedLeftJoystickPosition;
@@ -63,8 +66,10 @@ namespace StarWriter.Core.IO
             LeftJoystickValue = LeftClampedPosition = LeftJoystickHome = new Vector2(JoystickRadius, JoystickRadius);
             RightJoystickValue = RightClampedPosition = RightJoystickHome = new Vector2(Screen.currentResolution.width - JoystickRadius, JoystickRadius);
 
+            // Enable Input gyro and then give the value to the local properties, otherwise it will only give null value
+            Input.gyro.enabled = true;
             gyro = Input.gyro;
-            gyro.enabled = true;
+            
             StartCoroutine(GyroInitializationCoroutine());
             invertYEnabled = GameSetting.Instance.InvertYEnabled;       
         }
@@ -216,17 +221,24 @@ namespace StarWriter.Core.IO
                             LeftJoystickValue = position;
                             leftTouchIndex = 0;
                             HandleJoystick(ref LeftJoystickStart, leftTouchIndex, ref LeftJoystickPosition, ref LeftClampedPosition);
+                            LeftJoystickPosition = Vector3.Lerp(LeftJoystickPosition, Vector3.zero, 7 * Time.deltaTime);
                         }
                         else
                         {
                             if (!rightStickEffectsStarted)
                             {
                                 rightStickEffectsStarted = true;
-                                ship.PerformShipControllerActions(InputEvents.RightStickAction);
+                                // if (ship == null)
+                                // {
+                                //     Debug.LogWarningFormat("{0} - {1} - {2}", nameof(InputController), nameof(ReceiveInput), "ship object is null.");
+                                // }
+                                if(ship != null)
+                                    ship.PerformShipControllerActions(InputEvents.RightStickAction);
                             }
                             RightJoystickValue = position;
                             rightTouchIndex = 0;
                             HandleJoystick(ref RightJoystickStart, rightTouchIndex, ref RightJoystickPosition, ref RightClampedPosition);
+                            LeftJoystickPosition = Vector3.Lerp(LeftJoystickPosition, Vector3.zero, 7*Time.deltaTime);
                         }
                     }
                 }
@@ -313,6 +325,24 @@ namespace StarWriter.Core.IO
 
         public Quaternion GetGyroRotation()
         {
+            // if (Input.gyro == null)
+            // {
+            //     Debug.LogWarningFormat("{0} - {1} - {2}", 
+            //         nameof(InputController), nameof(GetGyroRotation), "input gyro is null");
+            // }
+            // if(gyro.attitude == null)
+            //     Debug.LogWarningFormat("{0} - {1} - {2}: {3}", 
+            //         nameof(InputController), nameof(GetGyroRotation), nameof(inverseInitialRotation), inverseInitialRotation.ToString());
+            // if(inverseInitialRotation == null)
+            //     Debug.LogWarningFormat("{0} - {1} - {2}: {3}", 
+            //         nameof(InputController), nameof(GetGyroRotation), nameof(inverseInitialRotation), inverseInitialRotation.ToString());
+            // if(GyroQuaternionToUnityQuaternion(gyro.attitude) == null)
+            //     Debug.LogWarningFormat("{0} - {1} - {2}: {3}", 
+            //         nameof(InputController), nameof(GetGyroRotation), "GyroQuaternionToUnityQuaternion(gyro.attitude)", GyroQuaternionToUnityQuaternion(gyro.attitude).ToString());
+            // if(derivedCorrection == null)
+            //     Debug.LogWarningFormat("{0} - {1} - {2}: {3}", 
+            //         nameof(InputController), nameof(GetGyroRotation), nameof(derivedCorrection), derivedCorrection.ToString());
+            
             return inverseInitialRotation * GyroQuaternionToUnityQuaternion(gyro.attitude) * derivedCorrection;
         }
 

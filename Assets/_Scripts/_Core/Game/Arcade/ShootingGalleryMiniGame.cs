@@ -1,5 +1,7 @@
 using StarWriter.Core;
 using System.Collections.Generic;
+using _Scripts._Core.Ship;
+using _Scripts.Environment.FlowField;
 using UnityEngine;
 
 public class ShootingGalleryMiniGame : MiniGame

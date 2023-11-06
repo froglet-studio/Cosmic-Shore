@@ -1,18 +1,19 @@
 using System.Collections;
-using System.Collections.Generic;
-using StarWriter.Core;
 using UnityEngine;
 
-public class AOEBlockSpawner : AOEBlockCreation
+namespace _Scripts._Core.Ship.Projectiles
 {
-    [SerializeField] SpawnableAbstractBase spawnable;
-
-    protected override IEnumerator ExplodeCoroutine()
+    public class AOEBlockSpawner : AOEBlockCreation
     {
-        yield return new WaitForSeconds(ExplosionDelay);
+        [SerializeField] SpawnableAbstractBase spawnable;
 
-        spawnable.Spawn().transform.SetPositionAndRotation(Ship.transform.position,Ship.transform.rotation);
+        protected override IEnumerator ExplodeCoroutine()
+        {
+            yield return new WaitForSeconds(ExplosionDelay);
 
-        yield return new WaitForEndOfFrame();
+            spawnable.Spawn().transform.SetPositionAndRotation(Ship.transform.position,Ship.transform.rotation);
+
+            yield return new WaitForEndOfFrame();
+        }
     }
 }

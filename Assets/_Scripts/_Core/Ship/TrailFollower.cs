@@ -1,3 +1,4 @@
+using _Scripts._Core.Ship;
 using UnityEngine;
 
 namespace StarWriter.Core
@@ -54,7 +55,7 @@ namespace StarWriter.Core
             attachedTrail = null;
         }
 
-        public void Move()
+        public void RideTheTrail()
         {
             if (!IsAttached) return;
 

@@ -6,7 +6,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace _Scripts._Core.Playfab_Models
+namespace _Scripts._Core.Playfab_Models.Authentication
 {
     public class AuthenticationView : MonoBehaviour
     {
