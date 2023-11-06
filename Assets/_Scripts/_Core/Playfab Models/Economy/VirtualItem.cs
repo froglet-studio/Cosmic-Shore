@@ -31,7 +31,7 @@ namespace CosmicShore
         /// The item references associated with this item. For example, the items in a Bundle/Store/Subscription. Every item can
         /// have up to 50 item references.
         /// </summary>
-        public List<VirtualItem> BundleContents;
+        public List<VirtualItem> BundleContents;    // TODO: reconsider including this in VirtualItem
         /// <summary>
         /// The prices the item can be purchased for.
         /// </summary>
