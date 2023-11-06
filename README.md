@@ -20,16 +20,19 @@ It’s your game and you can play it your way, with genre-crossing Classes and e
 ### Create
 
 ![Create](./README-images/image.png)
+
 Every HyperSea-worthy vessel is capable of enhancing its colored mass output. Pacifying or controlling biomes is only possible if your color is the majority of mass in the biome. Producing mass is the fundamental way to win a majority and refuel along your journey.
 
 ### Disrupt
 
 ![Disrupt](./README-images/image-1.png)
+
 Every vessel is also equipped with the ability to destroy, steal, shrink or otherwise disrupt other colors of mass. Filling populated biomes with additional mass can make them more hostile. Sometimes reducing hostile mass is your only option.
 
 ### Maneuver
 
 ![Alt text](./README-images/image-9.png)
+
 Maneuvering through the HyperSea is usually a thrilling delight. Knowing where and when to create your own or disrupt enemy mass is pivotal to victory. Each vessel has its own unique abilities to get where they need to be or otherwise extend their reach.
 
 GET THE CRYSTAL (2-4 PLAYERS)
@@ -55,7 +58,7 @@ A stepping stone to our future dreams of a multi-biome esport, Duel for the Cell
 
 ## New Features
 
-![New Features](./README-images/tail-glider.gif)
+![New Features](./README-images/cosmic-shore.gif)
 
 - [x] Feature complete ships: Manta, Dolphin, Rhino.
 - [x] Player controllable Urchin and Grizzly.
