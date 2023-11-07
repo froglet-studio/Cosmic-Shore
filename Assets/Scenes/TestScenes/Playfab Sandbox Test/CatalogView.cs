@@ -7,14 +7,18 @@ using UnityEngine.Serialization;
 
 public class CatalogView : MonoBehaviour
 {
+    [Header("Test Buttons")]
     [SerializeField] private Button purchaseVesselButton;
     [SerializeField] private Button grantStartingItemsButton;
     [SerializeField] private Button loadCatalogItemsButton;
     [SerializeField] private Button loadInventoryButton;
+    
+    // test strings
     const string MantaShipUpgrade1Id = "6b5264af-4645-4aaa-8228-3b35ed379585";
     const string MantaShipUpgrade2Id = "806f1840-a0de-4463-8b56-4b43b07c3d5a";
     const string VesselShardId = "06bcebb1-dc41-49a8-82b0-96a15ced7c1c";
-    [SerializeField] private int amount = 100;
+    
+    
     
     // Start is called before the first frame update
     void Start()
