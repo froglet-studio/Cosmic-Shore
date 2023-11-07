@@ -1,21 +1,28 @@
+using System.Collections.Generic;
 using _Scripts._Core.Playfab_Models.Economy;
 using UnityEngine;
 using UnityEngine.UI;
 using CosmicShore;
+using UnityEngine.Serialization;
 
 public class CatalogView : MonoBehaviour
 {
     [SerializeField] private Button purchaseVesselButton;
-    [SerializeField] private Button addShardsButton;
-    const string VesselId = "aaf7670c-96a2-46d8-9489-0d971c6dc742";
-    const string ShardId = "88be4041-cc48-4231-8595-d440b371d015";
+    [SerializeField] private Button grantStartingItemsButton;
+    [SerializeField] private Button loadCatalogItemsButton;
+    [SerializeField] private Button loadInventoryButton;
+    const string MantaShipUpgrade1Id = "6b5264af-4645-4aaa-8228-3b35ed379585";
+    const string MantaShipUpgrade2Id = "806f1840-a0de-4463-8b56-4b43b07c3d5a";
+    const string VesselShardId = "06bcebb1-dc41-49a8-82b0-96a15ced7c1c";
     [SerializeField] private int amount = 100;
     
     // Start is called before the first frame update
     void Start()
     {
         purchaseVesselButton.onClick.AddListener(PurchaseItemTest);
-        addShardsButton.onClick.AddListener(AddShardsTest);
+        grantStartingItemsButton.onClick.AddListener(GrantStartingInventoryTest);
+        loadCatalogItemsButton.onClick.AddListener(GetCatalogItemsTest);
+        loadInventoryButton.onClick.AddListener(LoadInventoryTest);
     }
     
     /// <summary>
@@ -24,26 +31,45 @@ public class CatalogView : MonoBehaviour
     /// </summary>
     private void PurchaseItemTest()
     {
-        
-        // CatalogManager.Instance.PurchaseItem(VesselId, ShardId, 1, 5);
+        var vesselShard = new VirtualItemModel{Id = VesselShardId, Amount = 5};
+        var mantaSpaceUpgrade1 = new VirtualItemModel { Id = MantaShipUpgrade1Id, Amount = 1 };
+        CatalogManager.Instance.PurchaseItem(vesselShard, mantaSpaceUpgrade1);
     }
 
     /// <summary>
-    /// Add Currency (Shards) Test
-    /// Add shards to player inventory
+    /// Grant Starting Inventory Item Quantity (With starting items)
+    /// Experimental method - should be handled by 
+    /// Nothing magical here, default item quantity is 100, Granted when player created their account.
     /// </summary>
-    private void AddShardsTest()
+    private void GrantStartingInventoryTest()
     {
-        var inventoryItemRef = new VirtualItemModel() { Id = ShardId };
-        CatalogManager.Instance.AddInventoryItem(inventoryItemRef, amount);
-        // RefreshInventory();
+        // For now it's 100 vessel shards
+        var vesselShard = new VirtualItemModel
+        {
+            Id = VesselShardId,
+            ContentType = nameof(VirtualItemContentTypes.VesselShard),
+            Amount = 100
+        };
+        var startingItems = new List<VirtualItemModel> { vesselShard };
+        CatalogManager.Instance.GrantStartingInventory(startingItems);
+    }
+
+    /// <summary>
+    /// Get Catalog Items Test
+    /// </summary>
+    private void GetCatalogItemsTest()
+    {
+        // var filter = "ContentType eq 'Vessel' and tags/any(t: t eq 'Rhino')";
+        
+        // Default filter is "", which means load without filter
+        CatalogManager.Instance.LoadCatalogItems();
     }
     
     /// <summary>
     /// Refresh Inventory
     /// Update to see the contents inside player inventory
     /// </summary>
-    private void RefreshInventory()
+    private void LoadInventoryTest()
     {
         CatalogManager.Instance.LoadPlayerInventory();
     }
