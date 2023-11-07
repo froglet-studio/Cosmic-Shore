@@ -124,8 +124,7 @@ namespace StarWriter.Core
             
             if (skimVisualFX && (affectSelf || trailBlock.Team != team)) 
             {
-                if(DisplaySkimParticleEffectCoroutine(trailBlock) != null)
-                    StartCoroutine(DisplaySkimParticleEffectCoroutine(trailBlock));
+                StartCoroutine(DisplaySkimParticleEffectCoroutine(trailBlock));
             }
 
             if (skimStartTimes.ContainsKey(trailBlock.ID)) return;
@@ -235,7 +234,7 @@ namespace StarWriter.Core
 
         IEnumerator DisplaySkimParticleEffectCoroutine(TrailBlock trailBlock)
         {
-            if(trailBlock == null) yield return null;
+            if(trailBlock == null) yield break;
             var particle = Instantiate(trailBlock.ParticleEffect);
             particle.transform.parent = trailBlock.transform;
 
