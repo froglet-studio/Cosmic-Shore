@@ -1,3 +1,4 @@
+using _Scripts.Environment.FlowField;
 using UnityEngine;
 
 public class SnowChanger : MonoBehaviour
@@ -25,19 +26,18 @@ public class SnowChanger : MonoBehaviour
 
     void OnEnable()
     {
-        global::Crystal.OnCrystalMove += ChangeSnowSize;
+        global::_Scripts.Environment.FlowField.Crystal.OnCrystalMove += ChangeSnowSize;
     }
 
     void OnDisable()
     {
-        global::Crystal.OnCrystalMove -= ChangeSnowSize;
+        global::_Scripts.Environment.FlowField.Crystal.OnCrystalMove -= ChangeSnowSize;
     }
 
     void Start()
     {
         // TODO: this should be injected by the node, but that's not working at the moment :/
-        if (newOrigin != null) origin = newOrigin;
-        else origin = transform.parent.position;
+        origin = newOrigin;
 
         shardsX = (int)(crystalSize.x / shardDistance);
         shardsY = (int)(crystalSize.y / shardDistance);
@@ -53,8 +53,7 @@ public class SnowChanger : MonoBehaviour
             {
                 for (int z = -shardsZ; z <= shardsZ; z++)
                 {
-                    GameObject tempSnow = Instantiate(snow);
-                    tempSnow.transform.SetParent(transform, true);
+                    GameObject tempSnow = Instantiate(snow, transform, true);
                     tempSnow.transform.localScale = Vector3.one * nodeScaler;
                     tempSnow.transform.position = origin + new Vector3(x * shardDistance + Random.Range(-shardDistance / 2, shardDistance / 2),
                                                                        y * shardDistance + Random.Range(-shardDistance / 2, shardDistance / 2),

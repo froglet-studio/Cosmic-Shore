@@ -25,7 +25,7 @@ public class CatalogView : MonoBehaviour
     private void PurchaseItemTest()
     {
         
-        CatalogManager.Instance.PurchaseItem(VesselId, ShardId, 1, 5);
+        // CatalogManager.Instance.PurchaseItem(VesselId, ShardId, 1, 5);
     }
 
     /// <summary>
@@ -45,6 +45,6 @@ public class CatalogView : MonoBehaviour
     /// </summary>
     private void RefreshInventory()
     {
-        CatalogManager.Instance.LoadInventory();
+        CatalogManager.Instance.LoadPlayerInventory();
     }
 }

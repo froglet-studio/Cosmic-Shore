@@ -2,6 +2,8 @@ using StarWriter.Core.IO;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using _Scripts._Core.Input;
+using _Scripts._Core.Ship.Projectiles;
 using UnityEngine;
 
 namespace StarWriter.Core
@@ -236,7 +238,7 @@ namespace StarWriter.Core
                 switch (effect)
                 {
                     case CrystalImpactEffects.PlayHaptics:
-                        if (!ShipStatus.AutoPilotEnabled) HapticController.PlayCrystalImpactHaptics();
+                        if (!ShipStatus.AutoPilotEnabled) HapticController.PlayHaptic(HapticType.CrystalCollision);//.PlayCrystalImpactHaptics();
                         break;
                     case CrystalImpactEffects.AreaOfEffectExplosion:
                         var AOEExplosion = Instantiate(AOEPrefab).GetComponent<AOEExplosion>();
@@ -273,7 +275,7 @@ namespace StarWriter.Core
                 switch (effect)
                 {
                     case TrailBlockImpactEffects.PlayHaptics:
-                        if (!ShipStatus.AutoPilotEnabled) HapticController.PlayBlockCollisionHaptics();
+                        if (!ShipStatus.AutoPilotEnabled) HapticController.PlayHaptic(HapticType.BlockCollision);//.PlayBlockCollisionHaptics();
                         break;
                     case TrailBlockImpactEffects.DrainHalfAmmo:
                         ResourceSystem.ChangeAmmoAmount(-ResourceSystem.CurrentAmmo / 2f);

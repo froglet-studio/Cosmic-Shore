@@ -1,3 +1,4 @@
+using _Scripts._Core.Ship;
 using UnityEngine;
 
 namespace StarWriter.Core
