@@ -29,7 +29,7 @@ public class BoidManager : MonoBehaviour
             Vector3 spawnPosition = transform.position + Random.insideUnitSphere * spawnRadius;
             Boid newBoid = Instantiate(boidPrefab, spawnPosition, Quaternion.identity);
             newBoid.transform.SetParent(transform);
-            var block = newBoid.GetComponent<TrailBlock>();
+            var block = newBoid.GetComponentInChildren<TrailBlock>();
 
             if (globalGoal)
             {
@@ -38,7 +38,7 @@ public class BoidManager : MonoBehaviour
 
             boidTrail.Add(block);
             block.Team = Teams.Blue;
-            newBoid.GetComponent<TrailBlock>().Trail = boidTrail;
+            block.Trail = boidTrail;
             
             newBoid.normalizedIndex = (float)i / numberOfBoids;
         }

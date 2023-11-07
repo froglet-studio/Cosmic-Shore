@@ -14,7 +14,8 @@ namespace StarWriter.Core
         [SerializeField] bool affectSelf = true;
         [SerializeField] float chargeAmount;
         [SerializeField] float MultiSkimMultiplier = 0f;
-        [SerializeField] bool notifyNearbyBlockCount;
+        [SerializeField] bool notifyNearbyBlockCount = false;
+        [SerializeField] bool alignWithTrail = false;
         [SerializeField] bool visible;
         [SerializeField] ElementalFloat Scale = new ElementalFloat(1);
         
@@ -154,8 +155,12 @@ namespace StarWriter.Core
 
                 float distance = Vector3.Distance(transform.position, other.transform.position);
 
-                if (trailBlock.ownerId != ship.Player.PlayerUUID || Time.time - trailBlock.TrailBlockProperties.TimeCreated > 5)
+                if (trailBlock.ownerId != ship.Player.PlayerUUID && Time.time - trailBlock.TrailBlockProperties.TimeCreated > 5)
+                {
                     minMatureBlockDistance = Mathf.Min(minMatureBlockDistance, distance);
+                    minMatureBlock = trailBlock;
+                }
+                    
 
                 // start with a baseline fuel amount the ranges from 0-1 depending on proximity of the skimmer to the trail block
                 var fuel = chargeAmount * (1 - (distance / transform.localScale.x)); // x is arbitrary, just need radius of skimmer
@@ -182,10 +187,12 @@ namespace StarWriter.Core
 
 
         float minMatureBlockDistance = Mathf.Infinity;
+        TrailBlock minMatureBlock;
 
         void FixedUpdate()
         {
             DetectTrailDistance();
+            Trailalign();
         }
 
         void DetectTrailDistance()
@@ -201,7 +208,29 @@ namespace StarWriter.Core
 
             minMatureBlockDistance = Mathf.Infinity;
         }
-        
+
+        void Trailalign()
+        {
+            if (!alignWithTrail || !minMatureBlock) return;
+
+            var distanceWeight = ComputeGaussian(minMatureBlockDistance, transform.localScale.x/2, transform.localScale.x );
+            var directionWeight = Vector3.Dot(ship.transform.forward, minMatureBlock.transform.forward);
+
+            ship.ShipTransformer.GentleSpinShip(minMatureBlock.transform.forward * directionWeight, (directionWeight * distanceWeight)*.1f);
+
+            if (minMatureBlockDistance < transform.localScale.x / 2)
+                ship.ShipTransformer.ModifyVelocity(-(minMatureBlock.transform.position - transform.position).normalized * distanceWeight * Mathf.Abs(directionWeight) *2, .1f);
+            else ship.ShipTransformer.ModifyVelocity((minMatureBlock.transform.position - transform.position).normalized * distanceWeight * Mathf.Abs(directionWeight) *2, .1f);
+            ship.ShipStatus.Boosting = true;
+            ship.boostMultiplier = 1 + (distanceWeight * Mathf.Abs(directionWeight));
+            minMatureBlock = null;
+        }
+
+        // Function to compute the Gaussian value at a given x
+        public static float ComputeGaussian(float x, float b, float c)
+        {
+            return Mathf.Exp(-Mathf.Pow(x - b, 2) / (2 * c * c));
+        }
 
         IEnumerator DisplaySkimParticleEffectCoroutine(TrailBlock trailBlock)
         {

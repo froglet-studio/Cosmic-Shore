@@ -68,7 +68,7 @@ public class Crystal : NodeItem
                     if (!ship.ShipStatus.AutoPilotEnabled) HapticController.PlayFakeCrystalImpactHaptics();
                     break;
                 case CrystalImpactEffects.ReduceSpeed:
-                    ship.ShipController.ModifyThrottle(.1f, 3);  // TODO: Magic numbers
+                    ship.ShipTransformer.ModifyThrottle(.1f, 3);  // TODO: Magic numbers
                     break;
                 case CrystalImpactEffects.AreaOfEffectExplosion:
                     var AOEExplosion = Instantiate(AOEPrefab).GetComponent<AOEExplosion>();

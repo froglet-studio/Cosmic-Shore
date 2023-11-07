@@ -34,7 +34,7 @@ public class Boid : MonoBehaviour
     private void Start()
     {
         boidManager = GetComponentInParent<BoidManager>();
-        trailBlock = GetComponent<TrailBlock>();
+        trailBlock = GetComponentInChildren<TrailBlock>();
         currentVelocity = transform.forward * Random.Range(minSpeed, maxSpeed);
         float initialDelay = normalizedIndex * behaviorUpdateRate;
         StartCoroutine(CalculateBehaviorCoroutine(initialDelay));
@@ -65,9 +65,9 @@ public class Boid : MonoBehaviour
 
         foreach (Collider collider in boidsInVicinity)
         {
-            if (collider.gameObject == gameObject) continue;
+            if (collider.gameObject == GetComponentInChildren<BoxCollider>().gameObject) continue;
 
-            Boid otherBoid = collider.GetComponent<Boid>();
+            Boid otherBoid = collider.GetComponentInParent<Boid>();
             TrailBlock otherTrailBlock = collider.GetComponent<TrailBlock>();
 
             Vector3 diff = transform.position - collider.transform.position;
@@ -91,9 +91,9 @@ public class Boid : MonoBehaviour
                 float blockWeight = boidManager.Weights[(int)otherTrailBlock.Team - 1];
                 blockAttraction += -diff.normalized * blockWeight / distance;
 
-                if (distance < GetComponent<BoxCollider>().size.magnitude * 3)
+                if (distance < GetComponentInChildren<BoxCollider>().size.magnitude * 3)
                 {
-                    otherTrailBlock.Explode(currentVelocity, Teams.Yellow, "Boid", true);
+                    otherTrailBlock.Explode(currentVelocity, Teams.Blue, "Boid", true);
                 }
             }
         }
@@ -122,6 +122,8 @@ public class Boid : MonoBehaviour
         {
             destroyed = true;
             StopAllCoroutines();
+            Instantiate(GetComponentInChildren<Crystal>().gameObject, transform.position, Quaternion.identity);
+            Destroy(gameObject);
             return;
         }
 

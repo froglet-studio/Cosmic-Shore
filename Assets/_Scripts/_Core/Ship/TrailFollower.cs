@@ -76,7 +76,7 @@ namespace StarWriter.Core
             var distanceToNextBlock = Vector3.Magnitude(nextBlock.transform.position - currentBlock.transform.position) * (1-percentTowardNextBlock);
             var speedToNextBlock = Throttle * GetTerrainAwareBlockSpeed(currentBlock);
             
-            speedToNextBlock *= ship.ShipController.SpeedMultiplier;
+            speedToNextBlock *= ship.ShipTransformer.SpeedMultiplier;
             shipData.Speed = speedToNextBlock;
 
             var timeToNextBlock = distanceToNextBlock / speedToNextBlock;
@@ -91,7 +91,7 @@ namespace StarWriter.Core
                 
                 distanceToNextBlock = Vector3.Magnitude(nextBlock.transform.position - currentBlock.transform.position);
                 speedToNextBlock = Throttle * GetTerrainAwareBlockSpeed(currentBlock);
-                speedToNextBlock *= ship.ShipController.SpeedMultiplier;
+                speedToNextBlock *= ship.ShipTransformer.SpeedMultiplier;
                 shipData.Speed = speedToNextBlock;
 
                 timeToNextBlock = distanceToNextBlock / speedToNextBlock;
@@ -106,7 +106,7 @@ namespace StarWriter.Core
             if (newAttachedBlockIndex != attachedBlockIndex) 
             {
                 attachedBlockIndex = newAttachedBlockIndex;
-                ((GunShipTransformer)ship.ShipController).FinalBlockSlideEffects(); 
+                ((GunShipTransformer)ship.ShipTransformer).FinalBlockSlideEffects(); 
             }
             shipData.Course = course;
             

@@ -45,7 +45,7 @@ namespace StarWriter.Core
 
         [Header("Ship Components")]
         [HideInInspector] public TrailSpawner TrailSpawner;
-        [HideInInspector] public ShipTransformer ShipController;
+        [HideInInspector] public ShipTransformer ShipTransformer;
         [HideInInspector] public AIPilot AutoPilot;
         [HideInInspector] public ShipStatus ShipStatus;
         [SerializeField] Skimmer nearFieldSkimmer;
@@ -124,7 +124,7 @@ namespace StarWriter.Core
         void Awake()
         {
             ResourceSystem = GetComponent<ResourceSystem>();
-            ShipController = GetComponent<ShipTransformer>();
+            ShipTransformer = GetComponent<ShipTransformer>();
             TrailSpawner = GetComponent<TrailSpawner>();
             ShipStatus = GetComponent<ShipStatus>();
 
@@ -251,7 +251,7 @@ namespace StarWriter.Core
                         ResourceSystem.ChangeBoostAmount(crystalProperties.fuelAmount);
                         break;
                     case CrystalImpactEffects.Boost:
-                        ShipController.ModifyThrottle(crystalProperties.speedBuffAmount, 4 * speedModifierDuration);
+                        ShipTransformer.ModifyThrottle(crystalProperties.speedBuffAmount, 4 * speedModifierDuration);
                         break;
                     case CrystalImpactEffects.DrainAmmo:
                         ResourceSystem.ChangeAmmoAmount(-ResourceSystem.CurrentAmmo);
@@ -279,14 +279,14 @@ namespace StarWriter.Core
                         ResourceSystem.ChangeAmmoAmount(-ResourceSystem.CurrentAmmo / 2f);
                         break;
                     case TrailBlockImpactEffects.DebuffSpeed:
-                        ShipController.ModifyThrottle(trailBlockProperties.speedDebuffAmount, speedModifierDuration);
+                        ShipTransformer.ModifyThrottle(trailBlockProperties.speedDebuffAmount, speedModifierDuration);
                         break;
                     case TrailBlockImpactEffects.DeactivateTrailBlock:
                         break;
                     case TrailBlockImpactEffects.ActivateTrailBlock:
                         break;
                     case TrailBlockImpactEffects.OnlyBuffSpeed:
-                        if (trailBlockProperties.speedDebuffAmount > 1) ShipController.ModifyThrottle(trailBlockProperties.speedDebuffAmount, speedModifierDuration);
+                        if (trailBlockProperties.speedDebuffAmount > 1) ShipTransformer.ModifyThrottle(trailBlockProperties.speedDebuffAmount, speedModifierDuration);
                         break;
                     case TrailBlockImpactEffects.ChangeBoost:
                         ResourceSystem.ChangeBoostAmount(blockChargeChange);
