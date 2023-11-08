@@ -16,7 +16,7 @@ namespace StarWriter.Core
         [SerializeField] float chargeAmount;
         [SerializeField] float MultiSkimMultiplier = 0f;
         [SerializeField] bool notifyNearbyBlockCount = false;
-        [SerializeField] bool alignWithTrail = false;
+        [SerializeField] bool speedTubes = false;
         [SerializeField] bool visible;
         [SerializeField] ElementalFloat Scale = new ElementalFloat(1);
         
@@ -215,18 +215,20 @@ namespace StarWriter.Core
 
         void Trailalign()
         {
-            if (!alignWithTrail || !minMatureBlock) return;
+            if (!speedTubes || !minMatureBlock) return;
 
-            var distanceWeight = ComputeGaussian(minMatureBlockDistance, transform.localScale.x/2, transform.localScale.x );
+            var distanceWeight = ComputeGaussian(minMatureBlockDistance, transform.localScale.x/4, transform.localScale.x/20 );
             var directionWeight = Vector3.Dot(ship.transform.forward, minMatureBlock.transform.forward);
 
-            ship.ShipTransformer.GentleSpinShip(minMatureBlock.transform.forward * directionWeight, (directionWeight * distanceWeight)*.1f);
+            //ship.ShipTransformer.GentleSpinShip(minMatureBlock.transform.forward * directionWeight, (directionWeight * distanceWeight)*.1f);
 
-            if (minMatureBlockDistance < transform.localScale.x / 2)
-                ship.ShipTransformer.ModifyVelocity(-(minMatureBlock.transform.position - transform.position).normalized * distanceWeight * Mathf.Abs(directionWeight) *2, .1f);
-            else ship.ShipTransformer.ModifyVelocity((minMatureBlock.transform.position - transform.position).normalized * distanceWeight * Mathf.Abs(directionWeight) *2, .1f);
+            //if (minMatureBlockDistance < transform.localScale.x / 2)
+            //    ship.ShipTransformer.ModifyVelocity(-(minMatureBlock.transform.position - transform.position).normalized * distanceWeight * Mathf.Abs(directionWeight) *2, .1f);
+            //else ship.ShipTransformer.ModifyVelocity((minMatureBlock.transform.position - transform.position).normalized * distanceWeight * Mathf.Abs(directionWeight) *2, .1f);
             ship.ShipStatus.Boosting = true;
-            ship.boostMultiplier = 1 + (distanceWeight * Mathf.Abs(directionWeight));
+            ship.boostMultiplier = 1 + (3*(distanceWeight * Mathf.Abs(directionWeight)));
+            ship.ResourceSystem.ChangeAmmoAmount(-ship.ResourceSystem.CurrentBoost+.1f);
+            ship.ResourceSystem.ChangeAmmoAmount(distanceWeight * Mathf.Abs(directionWeight));
             minMatureBlock = null;
         }
 

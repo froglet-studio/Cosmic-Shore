@@ -300,6 +300,12 @@ namespace StarWriter.Core
                     case TrailBlockImpactEffects.ChangeAmmo:
                         ResourceSystem.ChangeAmmoAmount(blockChargeChange);
                         break;
+                    case TrailBlockImpactEffects.Bounce:
+                        var cross = Vector3.Cross(transform.forward, trailBlockProperties.trailBlock.transform.forward);
+                        var normal = Quaternion.AngleAxis(90, cross) * trailBlockProperties.trailBlock.transform.forward;
+                        var reflect = Vector3.Reflect(transform.forward, normal);
+                        ShipTransformer.GentleSpinShip(reflect, 1);
+                        break;
                 }
             }
         }
