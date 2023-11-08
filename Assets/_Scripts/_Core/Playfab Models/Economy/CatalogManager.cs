@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using _Scripts._Core.Playfab_Models.Authentication;
 using JetBrains.Annotations;
@@ -10,6 +11,8 @@ namespace _Scripts._Core.Playfab_Models.Economy
 {
     public class CatalogManager : SingletonPersistent<CatalogManager>
     {
+        public static event Action<PlayFabError> OnGettingPlayFabErrors;
+        
         private static InventoryModel _playerInventory; 
     
         static PlayFabEconomyInstanceAPI _playFabEconomyInstanceAPI;
@@ -131,6 +134,10 @@ namespace _Scripts._Core.Playfab_Models.Economy
             }
         }
 
+        /// <summary>
+        /// On Granting Starting Inventory
+        /// </summary>
+        /// <param name="response">Add Inventory Items Response</param>
         private void OnGrantStartingInventory(AddInventoryItemsResponse response)
         {
             if (response == null)
@@ -139,11 +146,7 @@ namespace _Scripts._Core.Playfab_Models.Economy
                 return;
             }
             Debug.Log("CatalogManager - On Add Inventory Item Success.");
-            foreach (var transactionId in response.TransactionIds)
-            {
-                // Transaction ID is the ascending order of the players transaction
-                Debug.Log($"CatalogManager - transaction id: {transactionId}");
-            }
+            Debug.LogFormat("CatalogManager - transaction ids: {0}", string.Join(",", response.TransactionIds));
         }
         
 
@@ -162,6 +165,10 @@ namespace _Scripts._Core.Playfab_Models.Economy
             );
         }
 
+        /// <summary>
+        /// On Loading Player Inventory
+        /// </summary>
+        /// <param name="response">Get Inventory Items Response</param>
         private void OnLoadingPlayerInventory(GetInventoryItemsResponse response)
         {
             if (response == null || response.Items?.Count == 0)
@@ -175,7 +182,7 @@ namespace _Scripts._Core.Playfab_Models.Economy
             foreach (var item in response.Items)
             {
                 var name = nameof(CatalogManager);
-                Debug.LogFormat("{0} - {1}: id: {2} amount: {3} loaded.", nameof(CatalogManager), nameof(OnLoadingCatalogItems), item.Id, item.Amount.ToString());
+                Debug.LogFormat("{0} - {1}: id: {2} amount: {3} content type: {4} loaded.", nameof(CatalogManager), nameof(OnLoadingCatalogItems), item.Id, item.Amount.ToString(), item.Type);
             }
         }
 
@@ -196,6 +203,10 @@ namespace _Scripts._Core.Playfab_Models.Economy
             );
         }
 
+        /// <summary>
+        /// On Loading Player Inventory
+        /// </summary>
+        /// <param name="response">Get Item Response</param>
         private void OnLoadingPlayerInventory(GetItemResponse response)
         {
             if (response == null)
@@ -216,9 +227,7 @@ namespace _Scripts._Core.Playfab_Models.Economy
                 Debug.Log("   CatalogManager - Title Key: " + key);
                 Debug.Log("   CatalogManager - Title: " + response.Item.Title[key]);
             }
-            Debug.Log("   CatalogManager - Type: " + response.Item.Type);
-            Debug.Log("   CatalogManager - Image Count: " + response.Item.Images.Count);
-            Debug.Log("   CatalogManager - Content Type: " + response.Item.ContentType);
+            Debug.LogFormat("   CatalogManager - Type: {0} Image Count: {1} Content Type: {2} ", response.Item.Type, response.Item.Images.Count.ToString(), response.Item.ContentType);
         }
 
         /// <summary>
@@ -263,7 +272,7 @@ namespace _Scripts._Core.Playfab_Models.Economy
         /// </summary>
         public void PurchaseItem([NotNull] VirtualItemModel item, [NotNull] VirtualItemModel currency)
         {
-        
+            // The currency calculation for currency should be done before passing shard to purchase inventory API, otherwise it will get "Invalid Request" error.
             _playFabEconomyInstanceAPI.PurchaseInventoryItems(
                 new()
                 {
@@ -299,7 +308,9 @@ namespace _Scripts._Core.Playfab_Models.Economy
         /// <param name="error">PlayFab Error</param>
         private void HandleErrorReport(PlayFabError error)
         {
-            Debug.LogErrorFormat("{0} - {1}", nameof(CatalogManager), error.ErrorMessage);
+            OnGettingPlayFabErrors?.Invoke(error);
+            // Keep the error message here if there will be unit tests.
+            Debug.LogErrorFormat("{0} - error code: {1} message: {2}", nameof(CatalogManager), error.Error, error.ErrorMessage);
         }
         #endregion
     }
