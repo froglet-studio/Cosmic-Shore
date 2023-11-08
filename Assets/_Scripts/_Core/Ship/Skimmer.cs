@@ -139,19 +139,23 @@ namespace StarWriter.Core
                 PerformShipImpactEffects(shipGeometry);
             }
 
-            if (!other.TryGetComponent<TrailBlock>(out var trailBlock) ||
-                (!affectSelf && trailBlock.Team == team)) return;
-            StartSkim(trailBlock);
-            PerformBlockImpactEffects(trailBlock.TrailBlockProperties);
+            if (other.TryGetComponent<TrailBlock>(out var trailBlock) && (affectSelf || trailBlock.Team != team))
+            {
+                StartSkim(trailBlock);
+                PerformBlockImpactEffects(trailBlock.TrailBlockProperties);
+            }
         }
 
         void OnTriggerStay(Collider other)
         {
             float skimDecayDuration = 1;
 
-            if (!other.TryGetComponent<TrailBlock>(out var trailBlock) ||
-                (!affectSelf && trailBlock.Team == team)) return;
-            if(!skimStartTimes.ContainsKey(trailBlock.ID))   // Occasionally, seeing a KeyNotFoundException, so maybe we miss the OnTriggerEnter event (note: always seems to be for AOE blocks)
+            if (!other.TryGetComponent<TrailBlock>(out var trailBlock)) return;
+            
+            if (trailBlock.Team == team && !affectSelf) return;
+            
+            // Occasionally, seeing a KeyNotFoundException, so maybe we miss the OnTriggerEnter event (note: always seems to be for AOE blocks)
+            if(!skimStartTimes.ContainsKey(trailBlock.ID))   
                 StartSkim(trailBlock);
 
             float distance = Vector3.Distance(transform.position, other.transform.position);
