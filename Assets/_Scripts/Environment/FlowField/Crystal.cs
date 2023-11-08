@@ -69,7 +69,7 @@ namespace _Scripts.Environment.FlowField
                 switch (effect)
                 {
                     case CrystalImpactEffects.PlayFakeCrystalHaptics:   // TODO: P1 need to merge haptics and take an enum to determine which on to play
-                        if (!ship.ShipStatus.AutoPilotEnabled) HapticController.PlayHaptic(HapticType.CrystalCollision);//.PlayFakeCrystalImpactHaptics();
+                        if (!ship.ShipStatus.AutoPilotEnabled) HapticController.PlayHaptic(HapticType.FakeCrystalCollision);//.PlayFakeCrystalImpactHaptics();
                         break;
                     case CrystalImpactEffects.ReduceSpeed:
                         ship.ShipTransformer.ModifyThrottle(.1f, 3);  // TODO: Magic numbers
