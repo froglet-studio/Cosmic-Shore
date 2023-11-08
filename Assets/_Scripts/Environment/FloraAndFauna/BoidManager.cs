@@ -27,8 +27,8 @@ public class BoidManager : MonoBehaviour
         Weights = new List<float> { 1, 1, 1, 1 };
         for (int i = 0; i < numberOfBoids; i++)
         {
-            Vector3 spawnPosition = transform.position + Random.insideUnitSphere * spawnRadius;
-            Boid newBoid = Instantiate(boidPrefab, spawnPosition, Quaternion.identity);
+            Vector3 spawnPosition = transform.position + (spawnRadius * (Quaternion.AngleAxis(Random.Range(0, 360), Vector3.forward) * Vector3.right));
+            Boid newBoid = Instantiate(boidPrefab, spawnPosition, Quaternion.LookRotation(Vector3.Cross(spawnPosition,Vector3.forward)));
             newBoid.transform.SetParent(transform);
             var block = newBoid.GetComponentInChildren<TrailBlock>();
 

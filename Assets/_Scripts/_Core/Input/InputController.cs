@@ -39,7 +39,7 @@ namespace StarWriter.Core.IO
         [HideInInspector] public Vector2 LeftClampedPosition;
         [HideInInspector] public bool isGyroEnabled;
         [HideInInspector] public bool invertYEnabled;
-        public Vector2 RightJoystickStart, LeftJoystickStart;
+        [HideInInspector] public Vector2 RightJoystickStart, LeftJoystickStart;
         Vector2 RightJoystickPosition, LeftJoystickPosition;
         Vector2 RightJoystickValue, LeftJoystickValue;
         [HideInInspector] public Vector2 EasedRightJoystickPosition, EasedLeftJoystickPosition;

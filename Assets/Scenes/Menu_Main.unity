@@ -5999,7 +5999,7 @@ PrefabInstance:
     - target: {fileID: 302356026468653294, guid: fdbd97f79a7aec14f8fadd5589780a74,
         type: 3}
       propertyPath: ShipPrefabs.Array.size
-      value: 5
+      value: 6
       objectReference: {fileID: 0}
     - target: {fileID: 302356026468653294, guid: fdbd97f79a7aec14f8fadd5589780a74,
         type: 3}
@@ -6035,7 +6035,7 @@ PrefabInstance:
         type: 3}
       propertyPath: ShipPrefabs.Array.data[5]
       value: 
-      objectReference: {fileID: 874579555101021527, guid: 569a1dc27b1f75543a7c975f2ac03364,
+      objectReference: {fileID: 874579555101021527, guid: 31cd97d0f057e9e4b8355c7f7e86bd42,
         type: 3}
     - target: {fileID: 302356026468653294, guid: fdbd97f79a7aec14f8fadd5589780a74,
         type: 3}
@@ -19760,6 +19760,18 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 921072166}
     m_Modifications:
+    - target: {fileID: 880563373, guid: 207ccb21bb29d1d4b8f9ec8cc0d76ab1, type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 880563373, guid: 207ccb21bb29d1d4b8f9ec8cc0d76ab1, type: 3}
+      propertyPath: m_AnchorMin.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 880563373, guid: 207ccb21bb29d1d4b8f9ec8cc0d76ab1, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 600253799127135695, guid: 207ccb21bb29d1d4b8f9ec8cc0d76ab1,
         type: 3}
       propertyPath: m_AnchorMax.y
