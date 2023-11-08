@@ -120,16 +120,16 @@ namespace StarWriter.Core
 
         void StartSkim(TrailBlock trailBlock)
         {
+            if (trailBlock == null) return;
+            
             if (skimVisualFX && (affectSelf || trailBlock.Team != team)) 
             {
                 StartCoroutine(DisplaySkimParticleEffectCoroutine(trailBlock));
             }
 
-            if (!skimStartTimes.ContainsKey(trailBlock.ID))
-            {
-                activelySkimmingBlockCount++;
-                skimStartTimes.Add(trailBlock.ID, Time.time);
-            }
+            if (skimStartTimes.ContainsKey(trailBlock.ID)) return;
+            activelySkimmingBlockCount++;
+            skimStartTimes.Add(trailBlock.ID, Time.time);
         }
 
         void OnTriggerEnter(Collider other)
@@ -138,43 +138,46 @@ namespace StarWriter.Core
             {
                 PerformShipImpactEffects(shipGeometry);
             }
+
             if (other.TryGetComponent<TrailBlock>(out var trailBlock) && (affectSelf || trailBlock.Team != team))
             {
                 StartSkim(trailBlock);
                 PerformBlockImpactEffects(trailBlock.TrailBlockProperties);
-            }   
+            }
         }
 
         void OnTriggerStay(Collider other)
         {
             float skimDecayDuration = 1;
 
-            if (other.TryGetComponent<TrailBlock>(out var trailBlock) && (affectSelf || trailBlock.Team != team))
+            if (!other.TryGetComponent<TrailBlock>(out var trailBlock)) return;
+            
+            if (trailBlock.Team == team && !affectSelf) return;
+            
+            // Occasionally, seeing a KeyNotFoundException, so maybe we miss the OnTriggerEnter event (note: always seems to be for AOE blocks)
+            if(!skimStartTimes.ContainsKey(trailBlock.ID))   
+                StartSkim(trailBlock);
+
+            float distance = Vector3.Distance(transform.position, other.transform.position);
+
+            if (trailBlock.ownerId != ship.Player.PlayerUUID && Time.time - trailBlock.TrailBlockProperties.TimeCreated > 5)
             {
-                if(!skimStartTimes.ContainsKey(trailBlock.ID))   // Occasionally, seeing a KeyNotFoundException, so maybe we miss the OnTriggerEnter event (note: always seems to be for AOE blocks)
-                    StartSkim(trailBlock);
-
-                float distance = Vector3.Distance(transform.position, other.transform.position);
-
-                if (trailBlock.ownerId != ship.Player.PlayerUUID && Time.time - trailBlock.TrailBlockProperties.TimeCreated > 5)
-                {
-                    minMatureBlockDistance = Mathf.Min(minMatureBlockDistance, distance);
-                    minMatureBlock = trailBlock;
-                }
+                minMatureBlockDistance = Mathf.Min(minMatureBlockDistance, distance);
+                minMatureBlock = trailBlock;
+            }
                     
 
-                // start with a baseline fuel amount the ranges from 0-1 depending on proximity of the skimmer to the trail block
-                var fuel = chargeAmount * (1 - (distance / transform.localScale.x)); // x is arbitrary, just need radius of skimmer
+            // start with a baseline fuel amount the ranges from 0-1 depending on proximity of the skimmer to the trail block
+            var fuel = chargeAmount * (1 - (distance / transform.localScale.x)); // x is arbitrary, just need radius of skimmer
 
-                // apply decay
-                fuel *= Mathf.Min(0, (skimDecayDuration - (Time.time - skimStartTimes[trailBlock.ID])) / skimDecayDuration);
+            // apply decay
+            fuel *= Mathf.Min(0, (skimDecayDuration - (Time.time - skimStartTimes[trailBlock.ID])) / skimDecayDuration);
 
-                // apply multiskim multiplier
-                fuel += (activelySkimmingBlockCount * MultiSkimMultiplier);
+            // apply multiskim multiplier
+            fuel += (activelySkimmingBlockCount * MultiSkimMultiplier);
 
-                // grant the fuel
-                PerformBlockStayEffects(fuel);
-            }
+            // grant the fuel
+            PerformBlockStayEffects(fuel);
         }
 
         void OnTriggerExit(Collider other)
@@ -235,6 +238,7 @@ namespace StarWriter.Core
 
         IEnumerator DisplaySkimParticleEffectCoroutine(TrailBlock trailBlock)
         {
+            if(trailBlock == null) yield break;
             var particle = Instantiate(trailBlock.ParticleEffect);
             particle.transform.parent = trailBlock.transform;
 
