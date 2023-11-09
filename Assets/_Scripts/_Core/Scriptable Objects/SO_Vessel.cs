@@ -7,6 +7,7 @@ public class SO_Vessel : ScriptableObject
     [SerializeField] public string Name;
     [SerializeField] public string Description;
     [SerializeField] public string Flavor;
+    [SerializeField] public string Behavior;
     [SerializeField] public Sprite Image;
     [SerializeField] public Sprite Icon;
     [SerializeField] public Sprite SelectedIcon;

@@ -44,6 +44,9 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/MinigameDashAndGrab.unity
     guid: 9b2bfb506e15d33478bb4f9f1593af50
+  - enabled: 1
+    path: Assets/Scenes/Minigame_DriftTunnel.unity
+    guid: ca7742125ed904f48854dcbad84939fd
   m_configObjects:
     com.unity.adaptiveperformance.loader_settings: {fileID: 11400000, guid: 274754c57f99f5144be86c9d1014705b,
       type: 2}
