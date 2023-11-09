@@ -31,6 +31,14 @@ namespace _Scripts.Utility.Tools
             EditorSceneManager.OpenScene("Assets/Scenes/Tools/Recording Studio.unity", OpenSceneMode.Single);
             Debug.LogFormat("{0} - {1} - Opening Tail Glider Recording Studio.", nameof(TailGliderTools), nameof(OpenRecordingStudio));
         }
+        
+        [MenuItem("FrogletTools/PlayFabSandbox", false, -1)]
+        private static void OpenPlayFabSandbox()
+        {
+            // Open the Photo Booth in the Editor (do not enter Play Mode)
+            EditorSceneManager.OpenScene($"Assets/Scenes/TestScenes/Playfab Sandbox Test/Playfab Sandbox.unity", OpenSceneMode.Single);
+            Debug.LogFormat("{0} - {1} - Opening PlayFab Test Sandbox.", nameof(TailGliderTools), nameof(OpenPlayFabSandbox));
+        }
     }
 }
 

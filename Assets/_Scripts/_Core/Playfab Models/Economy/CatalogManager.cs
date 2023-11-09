@@ -79,11 +79,9 @@ namespace _Scripts._Core.Playfab_Models.Economy
         /// On Loading Catalog Items Callback
         /// Load catalog items to local memory
         /// </summary>
-        /// <param name="response"></param>
+        /// <param name="response">Search Items Response</param>
         private void OnLoadingCatalogItems(SearchItemsResponse response)
         {
-            // _playerInventory.CatalogItems = response.Items;
-
             if (response == null)
             {
                 Debug.LogWarningFormat("{0} - {1}: Unable to get catalog item.", nameof(CatalogManager), nameof(OnLoadingCatalogItems));
@@ -181,7 +179,6 @@ namespace _Scripts._Core.Playfab_Models.Economy
 
             foreach (var item in response.Items)
             {
-                var name = nameof(CatalogManager);
                 Debug.LogFormat("{0} - {1}: id: {2} amount: {3} content type: {4} loaded.", nameof(CatalogManager), nameof(OnLoadingCatalogItems), item.Id, item.Amount.ToString(), item.Type);
             }
         }
