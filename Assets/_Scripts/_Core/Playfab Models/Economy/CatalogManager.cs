@@ -71,7 +71,7 @@ namespace _Scripts._Core.Playfab_Models.Economy
             _playFabEconomyInstanceAPI.SearchItems(
                 new()
                 {
-                    Filter = filter//
+                    Filter = filter
                 },
                 OnLoadingCatalogItems,
                 HandleErrorReport
@@ -126,7 +126,7 @@ namespace _Scripts._Core.Playfab_Models.Economy
                         Amount = virtualItem.Amount,
                         Item = new InventoryItemReference
                         {
-                            Id = virtualItem.Id
+                            Id = virtualItem.ItemId
                         }
                     },
                     OnGrantStartingInventory,
@@ -196,7 +196,7 @@ namespace _Scripts._Core.Playfab_Models.Economy
             _playFabEconomyInstanceAPI.GetItem(
                 new GetItemRequest()
                 {
-                    Id = virtualItemModel.Id
+                    Id = virtualItemModel.ItemId
                 },
                 OnLoadingPlayerInventory,
                 HandleErrorReport
@@ -240,7 +240,7 @@ namespace _Scripts._Core.Playfab_Models.Economy
             _playFabEconomyInstanceAPI.AddInventoryItems(
                 new AddInventoryItemsRequest()
                 {
-                    Item = new InventoryItemReference() { Id = virtualItemModel.Id },
+                    Item = new InventoryItemReference() { Id = virtualItemModel.ItemId },
                     Amount = virtualItemModel.Amount
                 }, (result) =>
                 {
@@ -254,7 +254,6 @@ namespace _Scripts._Core.Playfab_Models.Economy
                     // Etag can be used for multiple sources or users to modify the same item simultaneously without conflict
                     // Debug.Log($"{name} - add inventory item etag: {result.ETag}");
                     // Debug.Log($"{name} - add inventory item idempotency id: {result.IdempotencyId}");
-                    LoadPlayerInventory();
                 }, HandleErrorReport
             );
         }
@@ -321,7 +320,7 @@ namespace _Scripts._Core.Playfab_Models.Economy
         /// Purchase Item
         /// Buy in-game item with virtual currency (Shards, Crystals)
         /// </summary>
-        public void PurchaseItem([NotNull] VirtualItemModel item, [NotNull] VirtualItemModel currency)
+        public void PurchaseItem([NotNull] VirtualItemModel item, [NotNull] ItemPriceModel price)
         {
             // The currency calculation for currency should be done before passing shard to purchase inventory API, otherwise it will get "Invalid Request" error.
             _playFabEconomyInstanceAPI.PurchaseInventoryItems(
@@ -330,14 +329,14 @@ namespace _Scripts._Core.Playfab_Models.Economy
                     Amount = item.Amount,
                     Item = new() 
                     { 
-                        Id = item.Id
+                        Id = item.ItemId
                     },
                     PriceAmounts = new List<PurchasePriceAmount>
                     {
                         new PurchasePriceAmount() 
                         { 
-                            ItemId = currency.Id, 
-                            Amount = currency.Amount 
+                            ItemId = price.ItemId, 
+                            Amount = price.Amount 
                         }
                     },
                 },
