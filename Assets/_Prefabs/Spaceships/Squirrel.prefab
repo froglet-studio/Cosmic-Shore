@@ -1280,15 +1280,15 @@ MonoBehaviour:
   - {fileID: 7696976320636676308}
   - {fileID: 1376376450048088127}
   - {fileID: 5691083765198909859}
-  AOEPrefab: {fileID: 2728798890556433942, guid: f5ecfb9923155a84c860975d559b2714,
+  AOEPrefab: {fileID: 2728798890556433942, guid: 4a855af160021d241b8c1ac70cf2d792,
     type: 3}
   farFieldSkimmer: {fileID: 0}
   crystalImpactEffects: 060000000b000000
-  minExplosionScale: 50
-  maxExplosionScale: 500
+  minExplosionScale: 100
+  maxExplosionScale: 200
   trailBlockImpactEffects: 0e000000
   blockChargeChange: 0
-  boostMultiplier: 2
+  boostMultiplier: 3
   boostFuelAmount: 0
   inputEventShipActions: []
   resourceEventClassActions: []
@@ -2268,6 +2268,12 @@ PrefabInstance:
       objectReference: {fileID: 874579555101021527}
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
+      propertyPath: AOEPrefab
+      value: 
+      objectReference: {fileID: 2728798890556433942, guid: bdb355fdad94b1442ae09bb64ed1ad14,
+        type: 3}
+    - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
       propertyPath: fuelAmount
       value: 0
       objectReference: {fileID: 0}
@@ -2304,7 +2310,12 @@ PrefabInstance:
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
       propertyPath: shipImpactEffects.Array.size
-      value: 0
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
+      propertyPath: shipImpactEffects.Array.data[0]
+      value: 6
       objectReference: {fileID: 0}
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
