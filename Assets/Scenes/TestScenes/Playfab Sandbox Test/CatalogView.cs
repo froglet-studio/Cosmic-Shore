@@ -38,23 +38,30 @@ namespace Scenes.TestScenes.Playfab_Sandbox_Test
         {
             vesselDataAccessor ??= new VesselDataAccessor();
             vesselDataList ??= new List<VesselData>();
-            
+        }
+
+        private void OnEnable()
+        {
             purchaseVesselButton.onClick.AddListener(PurchaseUpgradeTest);
             grantStartingItemsButton.onClick.AddListener(GrantStartingInventoryTest);
             loadCatalogItemsButton.onClick.AddListener(GetCatalogItemsTest);
             loadInventoryButton.onClick.AddListener(LoadInventoryTest);
             loadVesselDataButton.onClick.AddListener(LoadVesselDataTest);
             purchaseShardsButton.onClick.AddListener(PurchaseShardsWithCrystalTest);
-        }
-
-        private void OnEnable()
-        {
+            
             CatalogManager.OnGettingPlayFabErrors += ProcessCatalogErrors;
         }
 
         private void OnDisable()
         {
             CatalogManager.OnGettingPlayFabErrors -= ProcessCatalogErrors;
+            
+            purchaseVesselButton.onClick.RemoveListener(PurchaseUpgradeTest);
+            grantStartingItemsButton.onClick.RemoveListener(GrantStartingInventoryTest);
+            loadCatalogItemsButton.onClick.RemoveListener(GetCatalogItemsTest);
+            loadInventoryButton.onClick.RemoveListener(LoadInventoryTest);
+            loadVesselDataButton.onClick.RemoveListener(LoadVesselDataTest);
+            purchaseShardsButton.onClick.RemoveListener(PurchaseShardsWithCrystalTest);
         }
 
         /// <summary>
@@ -195,8 +202,9 @@ namespace Scenes.TestScenes.Playfab_Sandbox_Test
                 case PlayFabErrorCode.AccountDeleted:
                     Debug.LogError("Your account is deleted :(");
                     break;
-                
-                
+                case PlayFabErrorCode.AccountBanned:
+                    Debug.LogError("Your account is banned :(");
+                    break;
                 
                 default:
                     Debug.LogError("Unknown Nightmare under store or inventory operations.");
