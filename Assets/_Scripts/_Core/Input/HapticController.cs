@@ -2,86 +2,77 @@ using Lofelt.NiceVibrations;
 using StarWriter.Core;
 using UnityEngine;
 
-public enum HapticType
+namespace _Scripts._Core.Input
 {
-    None = 0,
-    ButtonPress = 1,
-    BlockCollision = 2,
-    ShipCollision = 3,
-    CystalCollision = 4,
-    DecoyCollision = 5,
-}
-
-public class HapticController : MonoBehaviour
-{
-    static HapticPatterns.PresetType ButtonPattern = HapticPatterns.PresetType.LightImpact;
-    static HapticPatterns.PresetType CrystalCollisionPattern = HapticPatterns.PresetType.MediumImpact;
-    static HapticPatterns.PresetType BlockCollisionPattern = HapticPatterns.PresetType.Success;
-    static HapticPatterns.PresetType ShipCollisionPattern = HapticPatterns.PresetType.HeavyImpact;
-    static HapticPatterns.PresetType FakeCrystalCollisionPattern = HapticPatterns.PresetType.HeavyImpact;
-
-    public static void PlayPreset(int option)
+    /// <summary>
+    /// Haptic Type
+    /// Abstract Haptic Patterns to Haptic Types in the game.
+    /// </summary>
+    public enum HapticType
     {
-        if (!GameSetting.Instance.HapticsEnabled)
-            return;
-
-        HapticPatterns.PlayPreset((HapticPatterns.PresetType) option);
+        None = 0,
+        ButtonPress = 1,
+        BlockCollision = 2,
+        ShipCollision = 3,
+        CrystalCollision = 4,
+        FakeCrystalCollision = 5,
     }
 
-    public static void PlayHaptic(HapticType type)
+    public class HapticController : MonoBehaviour
     {
-        if (!GameSetting.Instance.HapticsEnabled)
-            return;
-
-        switch (type)
+        /// <summary>
+        /// Play Haptic
+        /// Play haptic pattern presets when haptics are enabled.
+        /// </summary>
+        /// <param name="type">Haptic type</param>
+        public static void PlayHaptic(HapticType type)
         {
-            case HapticType.ButtonPress:
-                PlayButtonPressHaptics();
-                break;
-            case HapticType.BlockCollision:
-                PlayBlockCollisionHaptics();
-                break;
-            case HapticType.ShipCollision:
-                PlayShipCollisionHaptics();
-                break;
-            case HapticType.CystalCollision:
-                PlayCrystalImpactHaptics();
-                break;
-            case HapticType.DecoyCollision:
-                PlayFakeCrystalImpactHaptics();
-                break;
+            if (!GameSetting.Instance.HapticsEnabled)
+                return;
+
+            var pattern = GetPatternForHapticType(type);
+            
+            HapticPatterns.PlayPreset(pattern);
+            /*
+            haptic preset notes:
+
+            0, 1, 4, 8  = would good for UI use - feedback for correct input on tutorial
+            2, 5, 7 - might be good for running through stuff (positive)
+            3 - Not in use (negative) crash? odd pattern - I wouldn't use it unless its going to match an animation cause it might seem out of place otherwise
+
+            5 - Crystal
+            4 - UI
+            6 - crash into blocks - intense (negative feedback)
+            */
+            
+        }
+
+        /// <summary>
+        /// Get Pattern For Haptic Type
+        /// Returns mapped Haptic Patterns
+        /// </summary>
+        /// <param name="type">Haptic Type</param>
+        /// <returns></returns>
+        private static HapticPatterns.PresetType GetPatternForHapticType(HapticType type)
+        {
+            switch (type)
+            {
+                case HapticType.ButtonPress:
+                    return HapticPatterns.PresetType.LightImpact;
+                case HapticType.BlockCollision:
+                    return HapticPatterns.PresetType.Success;
+                case HapticType.ShipCollision:
+                    return HapticPatterns.PresetType.HeavyImpact;
+                case HapticType.CrystalCollision:
+                    return HapticPatterns.PresetType.MediumImpact;
+                case HapticType.FakeCrystalCollision:
+                    return HapticPatterns.PresetType.HeavyImpact;
+                case HapticType.None:
+                    return HapticPatterns.PresetType.None;
+                default:
+                    Debug.LogErrorFormat("{0} - {1} - Unsupported haptic types.", nameof(HapticController), nameof(GetPatternForHapticType));
+                    return HapticPatterns.PresetType.None; // Return Failure for unsupported haptic types
+            }
         }
     }
-
-    public static void PlayButtonPressHaptics()
-    {
-        PlayPreset((int)ButtonPattern);
-    }
-    public static void PlayCrystalImpactHaptics()
-    {
-        PlayPreset((int) CrystalCollisionPattern);
-    }
-    public static void PlayBlockCollisionHaptics()
-    {
-        PlayPreset((int) BlockCollisionPattern);
-    }
-    public static void PlayShipCollisionHaptics()
-    {
-        PlayPreset((int) ShipCollisionPattern);
-    }
-    public static void PlayFakeCrystalImpactHaptics()
-    {
-        PlayPreset((int) FakeCrystalCollisionPattern);
-    }
 }
-/*
-haptic preset notes:
-
-0, 1, 4, 8  = would good for UI use - feedback for correct input on tutorial
-2, 5, 7 - might be good for running through stuff (positive)
-3 - Not in use (negative) crash? odd pattern - I wouldn't use it unless its going to match an animation cause it might seem out of place otherwise
-
-5 - Crystal
-4 - UI
-6 - crash into blocks - intense (negative feedback) 
-*/

@@ -72,7 +72,7 @@ public class GunShipTransformer : ShipTransformer
             trailFollower.SetDirection(TrailFollowerDirection.Backward);
 
         trailFollower.Throttle = Mathf.Abs(throttle);
-        trailFollower.Move();
+        trailFollower.RideTheTrail();
 
         SlideActions();
     }

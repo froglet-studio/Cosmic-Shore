@@ -103,14 +103,14 @@ public class ShipTransformer : MonoBehaviour
                 transform.rotation = Quaternion.Lerp(
                                             transform.rotation,
                                             accumulatedRotation * inputController.GetGyroRotation(),
-                                            lerpAmount);
+                                            lerpAmount * Time.deltaTime);
             }
             else
             {
                 transform.rotation = Quaternion.Lerp(
                                             transform.rotation,
                                             accumulatedRotation,
-                                            lerpAmount);
+                                            lerpAmount * Time.deltaTime);
             }
         }
         else
@@ -118,7 +118,7 @@ public class ShipTransformer : MonoBehaviour
             transform.rotation = Quaternion.Lerp(
                                         transform.rotation,
                                         accumulatedRotation,
-                                        lerpAmount);
+                                        lerpAmount * Time.deltaTime);
         }
     }
 
@@ -132,6 +132,11 @@ public class ShipTransformer : MonoBehaviour
     public void SpinShip(Vector3 newDirection)
     {
         transform.localRotation = Quaternion.LookRotation(newDirection);
+    }
+
+    public void GentleSpinShip(Vector3 newDirection, Vector3 newUp, float amount)
+    {
+        accumulatedRotation = Quaternion.Lerp(accumulatedRotation, Quaternion.LookRotation(newDirection,ship.transform.up), amount);
     }
 
     protected virtual void Pitch() // These need to not use *= because quaternions are not commutative
@@ -195,8 +200,10 @@ public class ShipTransformer : MonoBehaviour
 
             if (modifier.elapsedTime >= modifier.duration)
                 ThrottleModifiers.RemoveAt(i);
-            else
+            else if (modifier.initialValue < 1) // multiplicative for debuff and additive for buff 
                 accumulatedThrottleModification *= Mathf.Lerp(modifier.initialValue, 1f, modifier.elapsedTime / modifier.duration);
+            else
+                accumulatedThrottleModification += Mathf.Lerp(modifier.initialValue - 1, 0f, modifier.elapsedTime / modifier.duration);
         }
 
         accumulatedThrottleModification = Mathf.Min(accumulatedThrottleModification, speedModifierMax);

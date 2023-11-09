@@ -2,6 +2,8 @@ using StarWriter.Core.IO;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using _Scripts._Core.Input;
+using _Scripts._Core.Ship.Projectiles;
 using UnityEngine;
 
 namespace StarWriter.Core
@@ -45,7 +47,7 @@ namespace StarWriter.Core
 
         [Header("Ship Components")]
         [HideInInspector] public TrailSpawner TrailSpawner;
-        [HideInInspector] public ShipTransformer ShipController;
+        [HideInInspector] public ShipTransformer ShipTransformer;
         [HideInInspector] public AIPilot AutoPilot;
         [HideInInspector] public ShipStatus ShipStatus;
         [SerializeField] Skimmer nearFieldSkimmer;
@@ -124,7 +126,7 @@ namespace StarWriter.Core
         void Awake()
         {
             ResourceSystem = GetComponent<ResourceSystem>();
-            ShipController = GetComponent<ShipTransformer>();
+            ShipTransformer = GetComponent<ShipTransformer>();
             TrailSpawner = GetComponent<TrailSpawner>();
             ShipStatus = GetComponent<ShipStatus>();
 
@@ -236,13 +238,13 @@ namespace StarWriter.Core
                 switch (effect)
                 {
                     case CrystalImpactEffects.PlayHaptics:
-                        if (!ShipStatus.AutoPilotEnabled) HapticController.PlayCrystalImpactHaptics();
+                        if (!ShipStatus.AutoPilotEnabled) HapticController.PlayHaptic(HapticType.CrystalCollision);//.PlayCrystalImpactHaptics();
                         break;
                     case CrystalImpactEffects.AreaOfEffectExplosion:
                         var AOEExplosion = Instantiate(AOEPrefab).GetComponent<AOEExplosion>();
                         AOEExplosion.Ship = this;
                         AOEExplosion.SetPositionAndRotation(transform.position, transform.rotation);
-                        AOEExplosion.MaxScale =  Mathf.Max(minExplosionScale, ResourceSystem.CurrentAmmo * maxExplosionScale);
+                        AOEExplosion.MaxScale =  Mathf.Lerp(minExplosionScale, maxExplosionScale, ResourceSystem.CurrentAmmo);
                         break;
                     case CrystalImpactEffects.IncrementLevel:
                         ResourceSystem.IncrementLevel(crystalProperties.Element);
@@ -251,7 +253,7 @@ namespace StarWriter.Core
                         ResourceSystem.ChangeBoostAmount(crystalProperties.fuelAmount);
                         break;
                     case CrystalImpactEffects.Boost:
-                        ShipController.ModifyThrottle(crystalProperties.speedBuffAmount, 4 * speedModifierDuration);
+                        ShipTransformer.ModifyThrottle(crystalProperties.speedBuffAmount, 4 * speedModifierDuration);
                         break;
                     case CrystalImpactEffects.DrainAmmo:
                         ResourceSystem.ChangeAmmoAmount(-ResourceSystem.CurrentAmmo);
@@ -273,20 +275,20 @@ namespace StarWriter.Core
                 switch (effect)
                 {
                     case TrailBlockImpactEffects.PlayHaptics:
-                        if (!ShipStatus.AutoPilotEnabled) HapticController.PlayBlockCollisionHaptics();
+                        if (!ShipStatus.AutoPilotEnabled) HapticController.PlayHaptic(HapticType.BlockCollision);//.PlayBlockCollisionHaptics();
                         break;
                     case TrailBlockImpactEffects.DrainHalfAmmo:
                         ResourceSystem.ChangeAmmoAmount(-ResourceSystem.CurrentAmmo / 2f);
                         break;
                     case TrailBlockImpactEffects.DebuffSpeed:
-                        ShipController.ModifyThrottle(trailBlockProperties.speedDebuffAmount, speedModifierDuration);
+                        ShipTransformer.ModifyThrottle(trailBlockProperties.speedDebuffAmount, speedModifierDuration);
                         break;
                     case TrailBlockImpactEffects.DeactivateTrailBlock:
                         break;
                     case TrailBlockImpactEffects.ActivateTrailBlock:
                         break;
                     case TrailBlockImpactEffects.OnlyBuffSpeed:
-                        if (trailBlockProperties.speedDebuffAmount > 1) ShipController.ModifyThrottle(trailBlockProperties.speedDebuffAmount, speedModifierDuration);
+                        if (trailBlockProperties.speedDebuffAmount > 1) ShipTransformer.ModifyThrottle(trailBlockProperties.speedDebuffAmount, speedModifierDuration);
                         break;
                     case TrailBlockImpactEffects.ChangeBoost:
                         ResourceSystem.ChangeBoostAmount(blockChargeChange);
@@ -297,6 +299,13 @@ namespace StarWriter.Core
                         break;
                     case TrailBlockImpactEffects.ChangeAmmo:
                         ResourceSystem.ChangeAmmoAmount(blockChargeChange);
+                        break;
+                    case TrailBlockImpactEffects.Bounce:
+                        var cross = Vector3.Cross(transform.forward, trailBlockProperties.trailBlock.transform.forward);
+                        var normal = Quaternion.AngleAxis(90, cross) * trailBlockProperties.trailBlock.transform.forward;
+                        var reflect = Vector3.Reflect(transform.forward, normal);
+                        var up = Quaternion.AngleAxis(90, cross) * reflect;
+                        ShipTransformer.GentleSpinShip(reflect, up, 1);
                         break;
                 }
             }

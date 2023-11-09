@@ -33,7 +33,7 @@ namespace _Scripts._Core.Playfab_Models.Economy
         /// The item references associated with this item. For example, the items in a Bundle/Store/Subscription. Every item can
         /// have up to 50 item references.
         /// </summary>
-        public List<VirtualItemModel> BundleContents;
+        public List<VirtualItemModel> BundleContents;    // TODO: reconsider including this in VirtualItem
         /// <summary>
         /// The prices the item can be purchased for.
         /// </summary>
@@ -47,6 +47,6 @@ namespace _Scripts._Core.Playfab_Models.Economy
         /// subscription.
         /// </summary>
         public string Type;
-        public int Quantity;
+        public int Amount;
     }
 }

@@ -1,6 +1,7 @@
+using StarWriter.Core;
 using UnityEngine;
 
-namespace StarWriter.Core
+namespace _Scripts._Core.Ship.Projectiles
 {
     public class ExplodableProjectile : Projectile
     {

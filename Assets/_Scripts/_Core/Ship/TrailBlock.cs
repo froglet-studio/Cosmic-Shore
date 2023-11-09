@@ -1,42 +1,51 @@
 ﻿using StarWriter.Core.HangerBuilder;
 using System.Collections;
+using _Scripts._Core.Ship;
 using UnityEngine;
 
 namespace StarWriter.Core
 {
     public class TrailBlock : MonoBehaviour
     {
+        [Header("Trail Block Properties")]
+        static GameObject fossilBlockContainer;
         [SerializeField] GameObject FossilBlock;
         [SerializeField] public TrailBlockProperties TrailBlockProperties;
-
-        float growthRate = .01f;
-        [SerializeField] Vector3 growthVector = new Vector3(0, 2, 0);
-        [SerializeField] Vector3 maxScale = new Vector3 (10, 10, 10);
-        [SerializeField] Vector3 minScale = new Vector3 (.5f, .5f, .5f);
-        public Vector3 TargetScale;
-
         public GameObject ParticleEffect; // TODO: move this so it references the Team to retrieve the effect.
-        public string ownerId;  // TODO: is the ownerId the player name? I hope it is.
+        public Trail Trail;
+
+        [Header("Trail Block Volume")]
+        [SerializeField] Vector3 minScale = new Vector3 (.5f, .5f, .5f);
+        [SerializeField] Vector3 maxScale = new Vector3 (10, 10, 10);
+        public Vector3 TargetScale;
+        Vector3 outerDimensions; // defines volume
+        [SerializeField] Vector3 growthVector = new Vector3(0, 2, 0);
+        public float Volume { get => outerDimensions.x * outerDimensions.y * outerDimensions.z; }
+        float growthRate = .01f;
+
+        [Header("Trail Block Status")]
         public float waitTime = .6f;
         public bool destroyed = false;
         public bool devastated = false;
         public string ID;
         public int Index;
         public bool Shielded = false;
-        public float Volume { get => outerDimensions.x * outerDimensions.y * outerDimensions.z; }
-
         public bool warp = false;
+
+
+        [Header("Game Rewards")]
         GameObject shards;
-        public Trail Trail;
-
-        Vector3 outerDimensions; // defines volume
-        static GameObject fossilBlockContainer;
-
+        
+        // Shader related properties
         MeshRenderer meshRenderer;
         Vector3 spread;
 
+        // Trail physics components
         BoxCollider blockCollider;
+        
+        [Header("Team Ownership on the Block")]
         Teams team;
+        public string ownerId;  // TODO: is the ownerId the player name? I hope it is.
         public Teams Team { get => team; set => team = value; }
         string playerName = "Unassigned";
         public string PlayerName { get => playerName; set => playerName = value; }
@@ -61,16 +70,21 @@ namespace StarWriter.Core
 
             UpdateVolume();
             transform.localScale = Vector3.one * Mathf.Epsilon;
-            
+
+            InitializeTrailBlockProperties();
+
+            StartCoroutine(CreateBlockCoroutine());
+            if (Shielded) ActivateShield();
+        }
+
+        private void InitializeTrailBlockProperties()
+        {
             TrailBlockProperties.position = transform.position;
             TrailBlockProperties.trailBlock = this;
             TrailBlockProperties.Index = Index;
             TrailBlockProperties.Trail = Trail;
             TrailBlockProperties.Shielded = Shielded;
             TrailBlockProperties.TimeCreated = Time.time;
-
-            StartCoroutine(CreateBlockCoroutine());
-            if (Shielded) ActivateShield();
         }
 
         void UpdateVolume()

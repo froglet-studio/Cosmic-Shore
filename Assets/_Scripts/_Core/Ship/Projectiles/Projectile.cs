@@ -1,15 +1,18 @@
 using System.Collections;
 using System.Collections.Generic;
-using UnityEngine;
+using _Scripts._Core.Input;
+using _Scripts.Environment.FlowField;
+using StarWriter.Core;
 using StarWriter.Core.HangerBuilder;
+using UnityEngine;
 
-namespace StarWriter.Core
+namespace _Scripts._Core.Ship.Projectiles
 {
     public class Projectile : MonoBehaviour
     {
         public Vector3 Velocity;
         public Teams Team;
-        public Ship Ship;
+        public StarWriter.Core.Ship Ship;
 
         [SerializeField] List<TrailBlockImpactEffects> trailBlockImpactEffects;
         [SerializeField] List<ShipImpactEffects> shipImpactEffects;
@@ -103,17 +106,17 @@ namespace StarWriter.Core
                         shipGeometry.Ship.TrailSpawner.RestartTrailSpawnerAfterDelay(10);
                         break;
                     case ShipImpactEffects.PlayHaptics:
-                        if (!shipGeometry.Ship.ShipStatus.AutoPilotEnabled) HapticController.PlayShipCollisionHaptics();
+                        if (!shipGeometry.Ship.ShipStatus.AutoPilotEnabled) HapticController.PlayHaptic(HapticType.ShipCollision);//.PlayShipCollisionHaptics();
                         break;
                     case ShipImpactEffects.SpinAround:
                         shipGeometry.Ship.transform.localRotation = Quaternion.LookRotation(Velocity);
                         break;
                     case ShipImpactEffects.Knockback:
                         //shipGeometry.Ship.transform.localPosition += Velocity/2f;
-                        shipGeometry.Ship.ShipController.ModifyVelocity(Velocity * 100,2);
+                        shipGeometry.Ship.ShipTransformer.ModifyVelocity(Velocity * 100,2);
                         break;
                     case ShipImpactEffects.Stun:
-                        shipGeometry.Ship.ShipController.ModifyThrottle(.1f, 10);
+                        shipGeometry.Ship.ShipTransformer.ModifyThrottle(.1f, 10);
                         break;
                     case ShipImpactEffects.Charm:
                         shipGeometry.Ship.TrailSpawner.Charm(Ship, 7);
@@ -132,7 +135,7 @@ namespace StarWriter.Core
                 switch (effect)
                 {
                     case CrystalImpactEffects.PlayHaptics:
-                        if (!Ship.ShipStatus.AutoPilotEnabled) HapticController.PlayCrystalImpactHaptics();
+                        if (!Ship.ShipStatus.AutoPilotEnabled) HapticController.PlayHaptic(HapticType.CrystalCollision);//.PlayCrystalImpactHaptics();
                         break;
                     //case CrystalImpactEffects.AreaOfEffectExplosion:
                     //    var AOEExplosion = Instantiate(AOEPrefab).GetComponent<AOEExplosion>();

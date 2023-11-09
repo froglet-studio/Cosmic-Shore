@@ -7,5 +7,6 @@ public enum ShipImpactEffects
     SpinAround = 2,
     Knockback = 3,
     Stun = 4,
-    Charm = 5
+    Charm = 5,
+    AreaOfEffectExplosion = 6
 }

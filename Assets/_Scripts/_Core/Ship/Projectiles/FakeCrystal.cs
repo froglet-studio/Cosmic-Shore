@@ -1,38 +1,42 @@
-using UnityEngine;
+using _Scripts.Environment.FlowField;
 using StarWriter.Core;
+using UnityEngine;
 
-public class FakeCrystal : Crystal
+namespace _Scripts._Core.Ship.Projectiles
 {
-    [SerializeField] Material blueCrystalMaterial;
-    //[SerializeField] GameObject CrystalGeometry;
-    public bool isplayer = false;
-
-    protected override void Start()
+    public class FakeCrystal : Crystal
     {
-        base.Start();
-        if (isplayer) GetComponentInChildren<MeshRenderer>().material = blueCrystalMaterial;
-    }
+        [SerializeField] Material blueCrystalMaterial;
+        //[SerializeField] GameObject CrystalGeometry;
+        public bool isplayer = false;
+
+        protected override void Start()
+        {
+            base.Start();
+            if (isplayer) GetComponentInChildren<MeshRenderer>().material = blueCrystalMaterial;
+        }
 
 
-    protected override void Collide(Collider other)
-    {
-        if (!IsShip(other.gameObject) && !IsProjectile(other.gameObject))
-            return;
+        protected override void Collide(Collider other)
+        {
+            if (!IsShip(other.gameObject) && !IsProjectile(other.gameObject))
+                return;
 
-        Ship ship = IsShip(other.gameObject) ? other.GetComponent<ShipGeometry>().Ship : other.GetComponent<Projectile>().Ship;
+            StarWriter.Core.Ship ship = IsShip(other.gameObject) ? other.GetComponent<ShipGeometry>().Ship : other.GetComponent<Projectile>().Ship;
         
-        // TODO: use a different material if the fake crystal is on your team
-        if (ship.Team == Team)
-            return;
+            // TODO: use a different material if the fake crystal is on your team
+            if (ship.Team == Team)
+                return;
 
-        PerformCrystalImpactEffects(crystalProperties, ship);
+            PerformCrystalImpactEffects(crystalProperties, ship);
 
-        Explode(ship);
+            Explode(ship);
 
-        PlayExplosionAudio();
+            PlayExplosionAudio();
 
-        RemoveSelfFromNode();
+            RemoveSelfFromNode();
 
-        Destroy(gameObject);
+            Destroy(gameObject);
+        }
     }
 }
