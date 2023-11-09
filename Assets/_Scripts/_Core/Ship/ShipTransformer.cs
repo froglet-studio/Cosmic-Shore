@@ -134,7 +134,7 @@ public class ShipTransformer : MonoBehaviour
         transform.localRotation = Quaternion.LookRotation(newDirection);
     }
 
-    public void GentleSpinShip(Vector3 newDirection, float amount)
+    public void GentleSpinShip(Vector3 newDirection, Vector3 newUp, float amount)
     {
         accumulatedRotation = Quaternion.Lerp(accumulatedRotation, Quaternion.LookRotation(newDirection,ship.transform.up), amount);
     }

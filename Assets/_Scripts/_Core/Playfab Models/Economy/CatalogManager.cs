@@ -11,12 +11,15 @@ namespace _Scripts._Core.Playfab_Models.Economy
 {
     public class CatalogManager : SingletonPersistent<CatalogManager>
     {
+        // Public events
         public static event Action<PlayFabError> OnGettingPlayFabErrors;
+        public static event Action<List<string>> OnGettingInvCollectionIds;
         
-        private static InventoryModel _playerInventory; 
-    
+        // PlayFab Economy API instance
         static PlayFabEconomyInstanceAPI _playFabEconomyInstanceAPI;
-
+        
+        // Player inventory and items
+        private static InventoryModel _playerInventory; 
         private static string _shardId;
 
         // Bootstrap the whole thing
@@ -79,11 +82,9 @@ namespace _Scripts._Core.Playfab_Models.Economy
         /// On Loading Catalog Items Callback
         /// Load catalog items to local memory
         /// </summary>
-        /// <param name="response"></param>
+        /// <param name="response">Search Items Response</param>
         private void OnLoadingCatalogItems(SearchItemsResponse response)
         {
-            // _playerInventory.CatalogItems = response.Items;
-
             if (response == null)
             {
                 Debug.LogWarningFormat("{0} - {1}: Unable to get catalog item.", nameof(CatalogManager), nameof(OnLoadingCatalogItems));
@@ -181,7 +182,6 @@ namespace _Scripts._Core.Playfab_Models.Economy
 
             foreach (var item in response.Items)
             {
-                var name = nameof(CatalogManager);
                 Debug.LogFormat("{0} - {1}: id: {2} amount: {3} content type: {4} loaded.", nameof(CatalogManager), nameof(OnLoadingCatalogItems), item.Id, item.Amount.ToString(), item.Type);
             }
         }
@@ -258,9 +258,60 @@ namespace _Scripts._Core.Playfab_Models.Economy
                 }, HandleErrorReport
             );
         }
-    
-    
-        // public void 
+
+        /// <summary>
+        /// Remove All Inventory Items
+        /// </summary>
+        /// <param name="collectionId">Collection Id</param>
+        public void DeleteInventoryCollection(string collectionId)
+        {
+            _playFabEconomyInstanceAPI.DeleteInventoryCollection(
+                new DeleteInventoryCollectionRequest()
+                {
+                    CollectionId = collectionId
+                }, (response) =>
+                {
+                    if (response == null)
+                    {
+                        Debug.LogWarningFormat("{0} - {1} No responses when removing all inventory collections.", nameof(CatalogManager), nameof(DeleteInventoryCollection));
+                        return;
+                    }
+                    Debug.LogFormat("{0} - {1} All inventory collections removed.", nameof(CatalogManager), nameof(DeleteInventoryCollection));
+                },
+                HandleErrorReport
+                );
+        }
+
+        /// <summary>
+        /// Get Inventory Collection Ids
+        /// </summary>
+        public void GetInventoryCollectionIds()
+        {
+            //Get Inventory Collection Ids. Up to 50 Ids can be returned at once.
+            //You can use continuation tokens to paginate through results that return greater than the limit.
+            //It can take a few seconds for new collection Ids to show up.
+            _playFabEconomyInstanceAPI.GetInventoryCollectionIds(
+                new GetInventoryCollectionIdsRequest()
+                {
+                }, (response) =>
+                {
+                    if (response == null)
+                    {
+                        Debug.LogWarningFormat("{0} - {1} No responses.", nameof(CatalogManager), nameof(GetInventoryCollectionIds));
+                        return;
+                    }
+
+                    if (response.CollectionIds == null)
+                    {
+                        Debug.LogWarningFormat("{0} - {1} No inventory collection ids returned.", nameof(CatalogManager), nameof(GetInventoryCollectionIds));
+                        return;
+                    }
+                    OnGettingInvCollectionIds?.Invoke(response.CollectionIds);
+                },
+                HandleErrorReport
+                );
+        }
+        
     
         #endregion
 

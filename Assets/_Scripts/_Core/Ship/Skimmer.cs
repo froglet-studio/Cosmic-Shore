@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using _Scripts._Core.Input;
 using UnityEngine;
+using _Scripts._Core.Ship.Projectiles;
 
 namespace StarWriter.Core
 {
@@ -23,6 +24,9 @@ namespace StarWriter.Core
         [HideInInspector] public Ship ship;
         [HideInInspector] public Player Player;
         [HideInInspector] public Teams team;
+
+        [Header("Optional Skimmer Components")]
+        [SerializeField] GameObject AOEPrefab;
 
         float appliedScale;
         ResourceSystem resourceSystem;
@@ -97,6 +101,12 @@ namespace StarWriter.Core
                         break;
                     case ShipImpactEffects.PlayHaptics:
                         if (!ship.ShipStatus.AutoPilotEnabled) HapticController.PlayHaptic(HapticType.ShipCollision);//.PlayShipCollisionHaptics();
+                        break;
+                    case ShipImpactEffects.AreaOfEffectExplosion:
+                        var AOEExplosion = Instantiate(AOEPrefab).GetComponent<AOEExplosion>();
+                        AOEExplosion.Ship = ship;
+                        AOEExplosion.SetPositionAndRotation(transform.position, transform.rotation);
+                        AOEExplosion.MaxScale = ship.ShipStatus.Speed - shipGeometry.Ship.ShipStatus.Speed;
                         break;
                 }
             }
@@ -226,7 +236,7 @@ namespace StarWriter.Core
             //    ship.ShipTransformer.ModifyVelocity(-(minMatureBlock.transform.position - transform.position).normalized * distanceWeight * Mathf.Abs(directionWeight) *2, .1f);
             //else ship.ShipTransformer.ModifyVelocity((minMatureBlock.transform.position - transform.position).normalized * distanceWeight * Mathf.Abs(directionWeight) *2, .1f);
             ship.ShipStatus.Boosting = true;
-            ship.boostMultiplier = 1 + (3*(distanceWeight * Mathf.Abs(directionWeight)));
+            ship.boostMultiplier = 1 + (4*(distanceWeight * Mathf.Abs(directionWeight)));
             ship.ResourceSystem.ChangeAmmoAmount(-ship.ResourceSystem.CurrentBoost+.1f);
             ship.ResourceSystem.ChangeAmmoAmount(distanceWeight * Mathf.Abs(directionWeight));
             minMatureBlock = null;

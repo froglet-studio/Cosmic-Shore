@@ -244,7 +244,7 @@ namespace StarWriter.Core
                         var AOEExplosion = Instantiate(AOEPrefab).GetComponent<AOEExplosion>();
                         AOEExplosion.Ship = this;
                         AOEExplosion.SetPositionAndRotation(transform.position, transform.rotation);
-                        AOEExplosion.MaxScale =  Mathf.Max(minExplosionScale, ResourceSystem.CurrentAmmo * maxExplosionScale);
+                        AOEExplosion.MaxScale =  Mathf.Lerp(minExplosionScale, maxExplosionScale, ResourceSystem.CurrentAmmo);
                         break;
                     case CrystalImpactEffects.IncrementLevel:
                         ResourceSystem.IncrementLevel(crystalProperties.Element);
@@ -304,7 +304,8 @@ namespace StarWriter.Core
                         var cross = Vector3.Cross(transform.forward, trailBlockProperties.trailBlock.transform.forward);
                         var normal = Quaternion.AngleAxis(90, cross) * trailBlockProperties.trailBlock.transform.forward;
                         var reflect = Vector3.Reflect(transform.forward, normal);
-                        ShipTransformer.GentleSpinShip(reflect, 1);
+                        var up = Quaternion.AngleAxis(90, cross) * reflect;
+                        ShipTransformer.GentleSpinShip(reflect, up, 1);
                         break;
                 }
             }

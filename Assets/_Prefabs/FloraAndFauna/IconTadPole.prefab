@@ -136,7 +136,7 @@ MonoBehaviour:
   separationWeight: 12
   alignmentWeight: 2
   cohesionWeight: 1
-  goalWeight: 1
+  goalWeight: 0.3
   minSpeed: 10
   maxSpeed: 15
   goal: {fileID: 0}
