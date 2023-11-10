@@ -59,7 +59,7 @@ public class SingleStickShipTransformer : ShipTransformer
             Pitch();
         }
 
-        courseTransform.rotation = Quaternion.Lerp(courseTransform.rotation, accumulatedRotation, lerpAmount);
+        courseTransform.rotation = Quaternion.Lerp(courseTransform.rotation, accumulatedRotation, lerpAmount * Time.deltaTime);
         transform.rotation = Quaternion.Lerp(transform.rotation, additionalRotation * accumulatedRotation, Time.deltaTime);
 
         additionalRotation = Quaternion.identity;

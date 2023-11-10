@@ -113,10 +113,10 @@ namespace _Scripts._Core.Ship.Projectiles
                         break;
                     case ShipImpactEffects.Knockback:
                         //shipGeometry.Ship.transform.localPosition += Velocity/2f;
-                        shipGeometry.Ship.ShipController.ModifyVelocity(Velocity * 100,2);
+                        shipGeometry.Ship.ShipTransformer.ModifyVelocity(Velocity * 100,2);
                         break;
                     case ShipImpactEffects.Stun:
-                        shipGeometry.Ship.ShipController.ModifyThrottle(.1f, 10);
+                        shipGeometry.Ship.ShipTransformer.ModifyThrottle(.1f, 10);
                         break;
                     case ShipImpactEffects.Charm:
                         shipGeometry.Ship.TrailSpawner.Charm(Ship, 7);

@@ -1,6 +1,6 @@
+using System;
 using System.Collections.Generic;
 using _Scripts._Core.Playfab_Models.Authentication;
-using _Scripts._Core.Playfab_Models.Player_Models;
 using JetBrains.Annotations;
 using PlayFab;
 using PlayFab.EconomyModels;
@@ -11,26 +11,33 @@ namespace _Scripts._Core.Playfab_Models.Economy
 {
     public class CatalogManager : SingletonPersistent<CatalogManager>
     {
-        private static PlayerInventory _playerInventory; 
-    
+        // Public events
+        public static event Action<PlayFabError> OnGettingPlayFabErrors;
+        public static event Action<List<string>> OnGettingInvCollectionIds;
+        
+        // PlayFab Economy API instance
         static PlayFabEconomyInstanceAPI _playFabEconomyInstanceAPI;
+        
+        // Player inventory and items
+        private static InventoryModel _playerInventory; 
+        private static string _shardId;
 
         // Bootstrap the whole thing
         public void Start()
         {
-            _playerInventory ??= new PlayerInventory();
+            _playerInventory ??= new InventoryModel();
             AuthenticationManager.OnLoginSuccess += InitializePlayFabEconomyAPI;
-            AuthenticationManager.OnLoginSuccess += LoadCatalog;
-            AuthenticationManager.OnLoginSuccess += LoadInventory;
-            AuthenticationManager.OnRegisterSuccess += GrantStartingInventory;
+            // AuthenticationManager.OnLoginSuccess += LoadCatalogItems;
+            AuthenticationManager.OnLoginSuccess += LoadPlayerInventory;
+            // AuthenticationManager.OnRegisterSuccess += GrantStartingInventory;
         }
 
         public void OnDestroy()
         {
             AuthenticationManager.OnLoginSuccess -= InitializePlayFabEconomyAPI;
-            AuthenticationManager.OnLoginSuccess -= LoadCatalog;
-            AuthenticationManager.OnLoginSuccess -= LoadInventory;
-            AuthenticationManager.OnRegisterSuccess -= GrantStartingInventory;
+            // AuthenticationManager.OnLoginSuccess -= LoadCatalogItems;
+            AuthenticationManager.OnLoginSuccess -= LoadPlayerInventory;
+            // AuthenticationManager.OnRegisterSuccess -= GrantStartingInventory;
         }
 
         #region Initialize PlayFab Economy API with Auth Context
@@ -39,7 +46,7 @@ namespace _Scripts._Core.Playfab_Models.Economy
         /// Initialize PlayFab Economy API
         /// Instantiate PlayFab Economy API with auth context
         /// </summary>
-        void InitializePlayFabEconomyAPI()
+        static void InitializePlayFabEconomyAPI()
         {
             if (AuthenticationManager.PlayerAccount.AuthContext == null)
             {
@@ -48,6 +55,7 @@ namespace _Scripts._Core.Playfab_Models.Economy
             }
             // Null check for PlayFab Economy API instance
             _playFabEconomyInstanceAPI??= new PlayFabEconomyInstanceAPI(AuthenticationManager.PlayerAccount.AuthContext);
+            Debug.LogFormat("{0} - {1}: PlayFab Economy API initialized.", nameof(CatalogManager), nameof(OnLoadingCatalogItems));
         }
 
         #endregion
@@ -58,95 +66,124 @@ namespace _Scripts._Core.Playfab_Models.Economy
         /// Load Catalog Items
         /// Get all catalog items
         /// </summary>
-        void LoadCatalog()
+        public void LoadCatalogItems(in string filter = "")
         {
             _playFabEconomyInstanceAPI.SearchItems(
                 new()
                 {
-                    // AuthenticationContext = AuthenticationManager.PlayerAccount.AuthContext,
-                    Filter = "ContentType eq 'Vessel' and tags/any(t: t eq 'Rhino')"
+                    Filter = filter
                 },
-                response =>
-                {
-                    _playerInventory.CatalogItems = response.Items;
-                    Debug.Log(_playerInventory.CatalogItems);
-                    foreach (var item in _playerInventory.CatalogItems)
-                    {
-                        Debug.Log("   CatalogManager - Inventory Id: " + item.Id);
-                        Debug.Log("   CatalogManager - Inventory Title: " + item.Title);
-                        Debug.Log("   CatalogManager - Inventory Content Type: " + item.ContentType);
-                        foreach (var description in item.Description.Values)
-                            Debug.Log("   CatalogManager - Description: " + description);                    
-                    }
-                },
+                OnLoadingCatalogItems,
                 HandleErrorReport
             );
+        }
+
+        /// <summary>
+        /// On Loading Catalog Items Callback
+        /// Load catalog items to local memory
+        /// </summary>
+        /// <param name="response">Search Items Response</param>
+        private void OnLoadingCatalogItems(SearchItemsResponse response)
+        {
+            if (response == null)
+            {
+                Debug.LogWarningFormat("{0} - {1}: Unable to get catalog item.", nameof(CatalogManager), nameof(OnLoadingCatalogItems));
+                return;
+            }
+
+            if (response.Items.Count == 0)
+            {
+                Debug.LogWarningFormat("{0} - {1}: No catalog items are available.", nameof(CatalogManager), nameof(OnLoadingCatalogItems));
+                return;
+            }
+            
+            Debug.LogFormat("{0} - {1}: Catalog items Loaded.", nameof(CatalogManager), nameof(OnLoadingCatalogItems));
+            foreach (var item in response.Items)
+            {
+                Debug.LogFormat("   CatalogManager - Inventory Id: {0} title: {1} content type: {2}", item.Id, item.Title, item.ContentType);
+                Debug.LogFormat("   CatalogManager - tags: {0}", string.Join(",", item.Tags));
+            }
         }
     
     
         #endregion
 
         #region Inventory Operations
-    
-        // TODO: Add title data key of starting catalog item ids
 
         /// <summary>
-        /// Grant Starting Inventory Item Quantity
-        /// Nothing magical here, default item quantity is 100, Granted when player created their account.
+        /// Grant Starting Inventory
         /// </summary>
-        void GrantStartingInventory()
+        /// <param name="startingItems">Starting Items List</param>
+        public void GrantStartingInventory(in List<VirtualItemModel> startingItems)
         {
-            const int amount = 100;
-            foreach (var item in _playerInventory.CatalogItems)
+            // const int amount = 100;
+            foreach (var virtualItem in startingItems)
             {
                 _playFabEconomyInstanceAPI.AddInventoryItems(
                     new AddInventoryItemsRequest()
                     {
                         // AuthenticationContext = AccountManager.AuthenticationContext,
-                        Amount = amount,
+                        Amount = virtualItem.Amount,
                         Item = new InventoryItemReference
                         {
-                            Id = item.Id
+                            Id = virtualItem.ItemId
                         }
                     },
-                    response =>
-                    {
-                        Debug.Log("CatalogManager - On Add Inventory Item Success");
-                        foreach (var transactionId in response.TransactionIds)
-                        {
-                            // Transaction ID is the ascending order of the players transaction
-                            Debug.Log($"CatalogManager - transaction id: {transactionId}");
-                        }
-                    },
+                    OnGrantStartingInventory,
                     HandleErrorReport
                 );
             }
         }
 
         /// <summary>
+        /// On Granting Starting Inventory
+        /// </summary>
+        /// <param name="response">Add Inventory Items Response</param>
+        private void OnGrantStartingInventory(AddInventoryItemsResponse response)
+        {
+            if (response == null)
+            {
+                Debug.LogWarningFormat("{0} - {1}: Unable to get catalog item or no inventory items are available.", nameof(CatalogManager), nameof(OnGrantStartingInventory));
+                return;
+            }
+            Debug.Log("CatalogManager - On Add Inventory Item Success.");
+            Debug.LogFormat("CatalogManager - transaction ids: {0}", string.Join(",", response.TransactionIds));
+        }
+        
+
+        /// <summary>
         /// Load All Inventory Items
         /// Get a list of inventory item ids and request each item's detail via Get Items Request 
         /// </summary>
-        public void LoadInventory()
+        public void LoadPlayerInventory()
         {
             _playFabEconomyInstanceAPI.GetInventoryItems(
                 new GetInventoryItemsRequest
                 {
                 },
-                response =>
-                {
-                    Debug.Log("CatalogManager - Get Inventory Items success.");
-
-                    _playerInventory.InventoryItems = response.Items;
-
-                    foreach (var item in _playerInventory.InventoryItems)
-                    {
-                        var name = nameof(CatalogManager);
-                        Debug.Log($"{name} - GetInventoryItems - id: {item.Id} type: {item.Type} amount: {item.Amount.ToString()}");
-                    }
-                },
+                OnLoadingPlayerInventory,
                 HandleErrorReport
             );
+        }
+
+        /// <summary>
+        /// On Loading Player Inventory
+        /// </summary>
+        /// <param name="response">Get Inventory Items Response</param>
+        private void OnLoadingPlayerInventory(GetInventoryItemsResponse response)
+        {
+            if (response == null || response.Items?.Count == 0)
+            {
+                Debug.LogWarningFormat("{0} - {1}: Unable to get catalog item or no inventory items are available.", nameof(CatalogManager), nameof(OnLoadingCatalogItems));
+                return;
+            }
+            
+            Debug.Log("CatalogManager - Get Inventory Items success.");
+
+            foreach (var item in response.Items)
+            {
+                Debug.LogFormat("{0} - {1}: id: {2} amount: {3} content type: {4} loaded.", nameof(CatalogManager), nameof(OnLoadingCatalogItems), item.Id, item.Amount.ToString(), item.Type);
+            }
         }
 
         /// <summary>
@@ -154,27 +191,43 @@ namespace _Scripts._Core.Playfab_Models.Economy
         /// Request inventory item by item id
         /// </summary>
         //public void GetInventoryItem([NotNull] InventoryItemReference itemReference)
-        public void GetInventoryItem([NotNull] VirtualItemModel virtualItemModel)
+        public void GetInventoryItem([NotNull] in VirtualItemModel virtualItemModel)
         {
             _playFabEconomyInstanceAPI.GetItem(
                 new GetItemRequest()
                 {
-                    Id = virtualItemModel.Id
+                    Id = virtualItemModel.ItemId
                 },
-                (GetItemResponse response) =>
-                {
-                    Debug.Log("   CatalogManager - Id: " + response.Item.Id);
-                    foreach (var key in response.Item.Title.Keys)
-                    {
-                        Debug.Log("   CatalogManager - Title Key: " + key);
-                        Debug.Log("   CatalogManager - Title: " + response.Item.Title[key]);
-                    }
-                    Debug.Log("   CatalogManager - Type: " + response.Item.Type);
-                    Debug.Log("   CatalogManager - Image Count: " + response.Item.Images.Count);
-                    Debug.Log("   CatalogManager - Content Type: " + response.Item.ContentType);
-                },
+                OnLoadingPlayerInventory,
                 HandleErrorReport
             );
+        }
+
+        /// <summary>
+        /// On Loading Player Inventory
+        /// </summary>
+        /// <param name="response">Get Item Response</param>
+        private void OnLoadingPlayerInventory(GetItemResponse response)
+        {
+            if (response == null)
+            {
+                Debug.LogWarningFormat("{0} - {1}: no response on adding inventory item.", nameof(CatalogManager), nameof(GetInventoryItem));
+                return;
+            }
+
+            if (response.Item == null)
+            {
+                Debug.LogWarningFormat("{0} - {1}: no inventory item.", nameof(CatalogManager), nameof(GetInventoryItem));
+                return;
+            }
+                    
+            Debug.Log("   CatalogManager - Id: " + response.Item.Id);
+            foreach (var key in response.Item.Title.Keys)
+            {
+                Debug.Log("   CatalogManager - Title Key: " + key);
+                Debug.Log("   CatalogManager - Title: " + response.Item.Title[key]);
+            }
+            Debug.LogFormat("   CatalogManager - Type: {0} Image Count: {1} Content Type: {2} ", response.Item.Type, response.Item.Images.Count.ToString(), response.Item.ContentType);
         }
 
         /// <summary>
@@ -182,28 +235,82 @@ namespace _Scripts._Core.Playfab_Models.Economy
         /// Add shinny new stuff! Any type of item from currency to vessel and ship upgrades
         /// </summary>
         //public void AddInventoryItem([NotNull] InventoryItemReference itemReference, int amount)
-        public void AddInventoryItem([NotNull] VirtualItemModel virtualItemModel, int amount)
+        public void AddInventoryItem([NotNull] VirtualItemModel virtualItemModel)
         {
             _playFabEconomyInstanceAPI.AddInventoryItems(
                 new AddInventoryItemsRequest()
                 {
-                    Item = new InventoryItemReference() { Id = virtualItemModel.Id },
-                    Amount = amount
+                    Item = new InventoryItemReference() { Id = virtualItemModel.ItemId },
+                    Amount = virtualItemModel.Amount
                 }, (result) =>
                 {
-                    var name = nameof(CatalogManager);
-                    Debug.Log($"{name} - add inventory item success.");
-                    Debug.Log($"{name} - add inventory item id: {virtualItemModel.Id} amount: {amount.ToString()}");
+                    if(result == null)
+                    {
+                        Debug.LogWarningFormat("{0} - {1}: no result.", nameof(CatalogManager), nameof(AddInventoryItem));
+                        return;
+                    }
+
+                    Debug.LogFormat("{0} - {1}: item added to player inventory.", nameof(CatalogManager), nameof(AddInventoryItem));
                     // Etag can be used for multiple sources or users to modify the same item simultaneously without conflict
                     // Debug.Log($"{name} - add inventory item etag: {result.ETag}");
                     // Debug.Log($"{name} - add inventory item idempotency id: {result.IdempotencyId}");
-                    LoadInventory();
                 }, HandleErrorReport
             );
         }
-    
-    
-        // public void 
+
+        /// <summary>
+        /// Remove All Inventory Items
+        /// </summary>
+        /// <param name="collectionId">Collection Id</param>
+        public void DeleteInventoryCollection(string collectionId)
+        {
+            _playFabEconomyInstanceAPI.DeleteInventoryCollection(
+                new DeleteInventoryCollectionRequest()
+                {
+                    CollectionId = collectionId
+                }, (response) =>
+                {
+                    if (response == null)
+                    {
+                        Debug.LogWarningFormat("{0} - {1} No responses when removing all inventory collections.", nameof(CatalogManager), nameof(DeleteInventoryCollection));
+                        return;
+                    }
+                    Debug.LogFormat("{0} - {1} All inventory collections removed.", nameof(CatalogManager), nameof(DeleteInventoryCollection));
+                },
+                HandleErrorReport
+                );
+        }
+
+        /// <summary>
+        /// Get Inventory Collection Ids
+        /// </summary>
+        public void GetInventoryCollectionIds()
+        {
+            //Get Inventory Collection Ids. Up to 50 Ids can be returned at once.
+            //You can use continuation tokens to paginate through results that return greater than the limit.
+            //It can take a few seconds for new collection Ids to show up.
+            _playFabEconomyInstanceAPI.GetInventoryCollectionIds(
+                new GetInventoryCollectionIdsRequest()
+                {
+                }, (response) =>
+                {
+                    if (response == null)
+                    {
+                        Debug.LogWarningFormat("{0} - {1} No responses.", nameof(CatalogManager), nameof(GetInventoryCollectionIds));
+                        return;
+                    }
+
+                    if (response.CollectionIds == null)
+                    {
+                        Debug.LogWarningFormat("{0} - {1} No inventory collection ids returned.", nameof(CatalogManager), nameof(GetInventoryCollectionIds));
+                        return;
+                    }
+                    OnGettingInvCollectionIds?.Invoke(response.CollectionIds);
+                },
+                HandleErrorReport
+                );
+        }
+        
     
         #endregion
 
@@ -213,29 +320,29 @@ namespace _Scripts._Core.Playfab_Models.Economy
         /// Purchase Item
         /// Buy in-game item with virtual currency (Shards, Crystals)
         /// </summary>
-        public void PurchaseItem(string itemId, string currencyId, int itemAmount, int currencyAmount)
+        public void PurchaseItem([NotNull] VirtualItemModel item, [NotNull] ItemPriceModel price)
         {
-        
+            // The currency calculation for currency should be done before passing shard to purchase inventory API, otherwise it will get "Invalid Request" error.
             _playFabEconomyInstanceAPI.PurchaseInventoryItems(
                 new()
                 {
-                    Amount = itemAmount,
+                    Amount = item.Amount,
                     Item = new() 
                     { 
-                        Id = itemId
+                        Id = item.ItemId
                     },
                     PriceAmounts = new List<PurchasePriceAmount>
                     {
                         new PurchasePriceAmount() 
                         { 
-                            ItemId = currencyId, 
-                            Amount = currencyAmount 
+                            ItemId = price.ItemId, 
+                            Amount = price.Amount 
                         }
                     },
                 },
                 response =>
                 {
-                    Debug.Log($"CatalogManager - Successfully purchased {itemId}");
+                    Debug.Log($"CatalogManager - Purchase success.");
                 },
                 HandleErrorReport
             );
@@ -251,7 +358,9 @@ namespace _Scripts._Core.Playfab_Models.Economy
         /// <param name="error">PlayFab Error</param>
         private void HandleErrorReport(PlayFabError error)
         {
-            Debug.LogErrorFormat("{0} - {1}", nameof(CatalogManager), error.ErrorMessage);
+            OnGettingPlayFabErrors?.Invoke(error);
+            // Keep the error message here if there will be unit tests.
+            Debug.LogErrorFormat("{0} - error code: {1} message: {2}", nameof(CatalogManager), error.Error, error.ErrorMessage);
         }
         #endregion
     }
