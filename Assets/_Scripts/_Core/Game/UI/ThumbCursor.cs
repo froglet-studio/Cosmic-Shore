@@ -5,7 +5,7 @@ using UnityEngine.InputSystem;
 
 public class ThumbCursor : MonoBehaviour
 {
-    [SerializeField] bool Left;
+    [SerializeField] bool LeftThumb;
     [SerializeField] Vector2 offset;
     [SerializeField] Sprite InactiveImage;
     [SerializeField] Sprite ActiveImage;
@@ -28,7 +28,7 @@ public class ThumbCursor : MonoBehaviour
         yield return new WaitUntil(() => Player.ActivePlayer != null && Player.ActivePlayer.Ship != null && Player.ActivePlayer.Ship.InputController != null);
 
         if (!Player.ActivePlayer.Ship.ShipStatus.AutoPilotEnabled)
-            gameObject.SetActive(Gamepad.current == null && (Left || !Player.ActivePlayer.Ship.ShipStatus.SingleStickControls));
+            gameObject.SetActive(Gamepad.current == null && (LeftThumb || !Player.ActivePlayer.Ship.ShipStatus.SingleStickControls));
 
         initialized = true;
     }
@@ -39,10 +39,10 @@ public class ThumbCursor : MonoBehaviour
         {
             if (Input.touches.Length == 0)
             {
-                transform.position = Left ? Vector2.Lerp(transform.position, Player.ActivePlayer.Ship.InputController.LeftJoystickHome, .2f) : Vector2.Lerp(transform.position, Player.ActivePlayer.Ship.InputController.RightJoystickHome, .2f);
+                transform.position = LeftThumb ? Vector2.Lerp(transform.position, Player.ActivePlayer.Ship.InputController.LeftJoystickHome, .2f) : Vector2.Lerp(transform.position, Player.ActivePlayer.Ship.InputController.RightJoystickHome, .2f);
                 image.sprite = InactiveImage;
             }
-            else if (Left)
+            else if (LeftThumb)
             {
                 leftTouch = Player.ActivePlayer.Ship.InputController.LeftClampedPosition;
                 transform.position = Vector2.Lerp(transform.position, leftTouch, .2f);

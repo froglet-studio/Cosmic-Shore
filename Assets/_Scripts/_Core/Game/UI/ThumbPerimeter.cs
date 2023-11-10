@@ -6,7 +6,7 @@ using UnityEngine.UI;
 
 public class ThumbPerimeter : MonoBehaviour
 {
-    [SerializeField] bool Left;
+    [SerializeField] bool LeftThumb;
     [SerializeField] bool LeftPerimeterActive;
     [SerializeField] bool RightPerimeterActive;
     [SerializeField] float leftPerimeterScaler = 2; //scale to max radius
@@ -16,7 +16,6 @@ public class ThumbPerimeter : MonoBehaviour
     [SerializeField] Sprite ActivePerimeterImage;
     [SerializeField] Player player;
 
-    //Image touchImage;
     Image perimeterImage;
 
     bool initialized;
@@ -35,7 +34,7 @@ public class ThumbPerimeter : MonoBehaviour
         yield return new WaitUntil(() => Player.ActivePlayer != null && Player.ActivePlayer.Ship != null && Player.ActivePlayer.Ship.InputController != null);
 
         if (!Player.ActivePlayer.Ship.ShipStatus.AutoPilotEnabled)
-            gameObject.SetActive(Gamepad.current == null && (Left || !Player.ActivePlayer.Ship.ShipStatus.SingleStickControls));
+            gameObject.SetActive(Gamepad.current == null && (LeftThumb || !Player.ActivePlayer.Ship.ShipStatus.SingleStickControls));
 
         initialized = true;
     }
@@ -54,7 +53,7 @@ public class ThumbPerimeter : MonoBehaviour
             }
             else if (Input.touches.Length > 0)
             {
-                if (Left)
+                if (LeftThumb)
                 {
 
                     // check if left perimeter is active
