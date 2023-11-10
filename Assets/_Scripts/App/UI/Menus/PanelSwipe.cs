@@ -91,6 +91,12 @@ public class PanelSwipe : MonoBehaviour, IDragHandler, IEndDragHandler {
         if (ScreenIndex == currentScreen)
             return;
 
+        if (ScreenIndex == ARCADE)
+            UserActionMonitor.Instance.CompleteAction(UserActionType.ViewArcadeMenu);
+
+        if (ScreenIndex == HANGAR)
+            UserActionMonitor.Instance.CompleteAction(UserActionType.ViewHangarMenu);
+
         if (ScreenIndex == HOME)
             GameManager.UnPauseGame();
         else

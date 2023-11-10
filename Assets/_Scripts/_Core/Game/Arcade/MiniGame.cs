@@ -221,6 +221,11 @@ public class MiniGame : MonoBehaviour
 
         LeaderboardManager.Instance.ReportGameplayStatistic(gameMode, PlayerShipType, IntensityLevel, ScoreTracker.GetHighScore());
 
+        UserActionMonitor.Instance.CompleteAction(new UserAction(
+                UserActionType.PlayGame, 
+                ScoreTracker.GetHighScore(), 
+                UserAction.GetGameplayUserActionLabel(gameMode, PlayerShipType, IntensityLevel)));
+
         CameraManager.Instance.SetEndCameraActive();
         PauseSystem.TogglePauseGame();
         gameRunning = false;
@@ -296,13 +301,9 @@ public class MiniGame : MonoBehaviour
             OnReadyClicked();
     }
 
-
-
-
     /// <summary>
     /// TODO: WIP - Allow for timed events to happen during game play
     /// </summary>
-
     static List<TimedCallback> TimedCallbacks = new();
 
     public static void ClearTimedCallbacks()
