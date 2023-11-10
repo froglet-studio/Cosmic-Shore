@@ -1,17 +1,10 @@
 using UnityEngine;
-using StarWriter.Core;
-using System.Collections.Generic;
-using System.Collections;
-using Unity.Mathematics;
-
-
 
 public class SingleStickShipTransformer : ShipTransformer
 {
     Quaternion additionalRotation = Quaternion.identity;
     GameObject courseObject;
     Transform courseTransform;
-    [SerializeField] float lookScalar = 90;
 
     protected override void Start()
     {

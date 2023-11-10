@@ -1,9 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
-using _Scripts._Core.Ship;
 using UnityEngine;
 using StarWriter.Core;
-using UnityEngine;
 
 namespace _Scripts._Core.Ship.Projectiles
 {

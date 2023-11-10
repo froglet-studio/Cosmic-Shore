@@ -17,7 +17,6 @@ namespace StarWriter.Core.HangerBuilder
         [SerializeField] SO_Vessel PlayerVessel;  // Serialized for inspection in hierarchy
         [SerializeField] ShipTypes PlayerShipType = ShipTypes.Random;
         [SerializeField] ShipTypes FriendlyAIShipType = ShipTypes.Manta;
-        [SerializeField] ShipTypes FriendlyAI2ShipType = ShipTypes.Manta;
         [SerializeField] ShipTypes HostileAI1ShipType = ShipTypes.Random;
         [SerializeField] ShipTypes HostileAI2ShipType = ShipTypes.Random;
         [SerializeField] ShipTypes HostileAI3ShipType = ShipTypes.Random;
