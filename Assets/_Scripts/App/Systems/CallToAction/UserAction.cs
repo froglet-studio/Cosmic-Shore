@@ -1,13 +1,19 @@
-public enum UserAction
+[System.Serializable]
+public class UserAction
 {
-    // Arcade Related -- 100s
-    ViewArcadeMenu = 100,
-    ViewArcadeLoadoutMenu = 101,
-    ViewArcadeExploreMenu = 102,
+    public UserActionType ActionType;
+    public int Value;
+    public string Label;
 
-    // Store Related - 200s
-    ViewStoreMenu = 200,
+    public UserAction(UserActionType actionType, int value=1, string label="")
+    {
+        ActionType = actionType;
+        Value = value;
+        Label = label;
+     }
 
-    // Hangar Related - 300s
-    ViewHangarMenu = 300
+    public static string GetGameplayUserActionLabel(MiniGames gameMode, ShipTypes shipType, int intensity)
+    {
+        return $"{gameMode}_{shipType}_{intensity}";
+    }
 }

@@ -1,4 +1,4 @@
-public enum CallToActionTargetID
+public enum CallToActionTargetType
 {
     // Arcade Related -- 100s
     ArcadeMenu = 100,

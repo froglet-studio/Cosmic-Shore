@@ -6,11 +6,11 @@ using UnityEngine;
 public class CallToActionSystem : SingletonPersistent<CallToActionSystem>
 {
     [SerializeField] bool TestMode;
-    List<CallToActionTargetID> ActiveTargets = new ();
-    Dictionary<CallToActionTargetID, int> ActiveDependencyTargets = new (); // 
+    List<CallToActionTargetType> ActiveTargets = new ();
+    Dictionary<CallToActionTargetType, int> ActiveDependencyTargets = new (); // 
     List<CallToAction> ActiveCallsToAction = new ();
-    Dictionary<CallToActionTargetID, Action> CallToActionActivatedCallbacks = new();
-    Dictionary<CallToActionTargetID, Action> CallToActionDismissedCallbacks = new();
+    Dictionary<CallToActionTargetType, Action> CallToActionActivatedCallbacks = new();
+    Dictionary<CallToActionTargetType, Action> CallToActionDismissedCallbacks = new();
 
     void Start()
     {
@@ -53,14 +53,14 @@ public class CallToActionSystem : SingletonPersistent<CallToActionSystem>
             CallToActionActivatedCallbacks[call.CallToActionTargetID]?.Invoke();
     }
 
-    public void RegisterCallToActionTarget(CallToActionTargetID targetId, Action OnCallToActionActive, Action OnCallToActionDismissed)
+    public void RegisterCallToActionTarget(CallToActionTargetType targetId, Action OnCallToActionActive, Action OnCallToActionDismissed)
     {
         Debug.Log($"{nameof(RegisterCallToActionTarget)}: {targetId}");
         CallToActionActivatedCallbacks.Add(targetId, OnCallToActionActive);
         CallToActionDismissedCallbacks.Add(targetId, OnCallToActionDismissed);
     }
 
-    public bool IsCallToActionTargetActive(CallToActionTargetID targetId)
+    public bool IsCallToActionTargetActive(CallToActionTargetType targetId)
     {
         return ActiveTargets.Contains(targetId) || ActiveDependencyTargets.ContainsKey(targetId);
     }
@@ -70,8 +70,8 @@ public class CallToActionSystem : SingletonPersistent<CallToActionSystem>
         if (TestMode)
         {
             // Add in a test notification for the arcade menu
-            AddCallToAction(new CallToAction(CallToActionTargetID.HangarMenu, UserAction.ViewHangarMenu));
-            AddCallToAction(new CallToAction(CallToActionTargetID.ArcadeLoadoutMenu, UserAction.ViewArcadeLoadoutMenu, new List<CallToActionTargetID>() { CallToActionTargetID.ArcadeMenu }));
+            //AddCallToAction(new CallToAction(CallToActionTargetType.HangarMenu, UserActionType.ViewHangarMenu));
+            AddCallToAction(new CallToAction(CallToActionTargetType.ArcadeLoadoutMenu, UserActionType.ViewArcadeLoadoutMenu, new List<CallToActionTargetType>() { CallToActionTargetType.ArcadeMenu }));
         }
 
         // TODO: Go to server and get real calls to action
@@ -89,7 +89,7 @@ public class CallToActionSystem : SingletonPersistent<CallToActionSystem>
         List<CallToAction> matchingCalls = new();
         foreach (var call in ActiveCallsToAction)
         {
-            if (call.CompletionUserAction == action)
+            if (call.CompletionUserAction == action.ActionType)
             {
                 matchingCalls.Add(call);
 

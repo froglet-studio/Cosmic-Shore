@@ -1,4 +1,5 @@
 using StarWriter.Utility.Singleton;
+using System;
 
 public class UserActionMonitor : SingletonPersistent<UserActionMonitor>
 {
@@ -8,5 +9,10 @@ public class UserActionMonitor : SingletonPersistent<UserActionMonitor>
     public void CompleteAction(UserAction action)
     {
         OnUserActionCompleted?.Invoke(action);
+    }
+
+    public void CompleteAction(UserActionType actionType)
+    {
+        CompleteAction(new UserAction(actionType));
     }
 }

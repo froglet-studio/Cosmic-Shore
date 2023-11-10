@@ -2,7 +2,7 @@ using UnityEngine;
 
 public class CallToActionTarget : MonoBehaviour
 {
-    [SerializeField] CallToActionTargetID TargetID;
+    [SerializeField] CallToActionTargetType TargetID;
     [SerializeField] GameObject ActiveIndicator;
 
     void Start()

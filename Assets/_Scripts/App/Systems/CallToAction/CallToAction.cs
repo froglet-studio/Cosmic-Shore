@@ -1,12 +1,14 @@
+using System;
 using System.Collections.Generic;
 
+[Serializable]
 public class CallToAction
 {
-    public CallToActionTargetID CallToActionTargetID { get; set; }
-    public UserAction CompletionUserAction { get; set; }
-    public List<CallToActionTargetID> DependencyTargetIDs { get; set; }
+    public CallToActionTargetType CallToActionTargetID;
+    public UserActionType CompletionUserAction;
+    public List<CallToActionTargetType> DependencyTargetIDs;
 
-    public CallToAction(CallToActionTargetID callToActionTargetID, UserAction completionUserAction, List<CallToActionTargetID> dependencyTargets=null)
+    public CallToAction(CallToActionTargetType callToActionTargetID, UserActionType completionUserAction, List<CallToActionTargetType> dependencyTargets=null)
     {
         CallToActionTargetID = callToActionTargetID;
         CompletionUserAction = completionUserAction;

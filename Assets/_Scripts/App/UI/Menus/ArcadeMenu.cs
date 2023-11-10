@@ -17,9 +17,9 @@ public class ArcadeMenu : MonoBehaviour
     public void ToggleView(bool loadout)
     {
         if (loadout)
-            UserActionMonitor.Instance.CompleteAction(UserAction.ViewArcadeLoadoutMenu);
+            UserActionMonitor.Instance.CompleteAction(UserActionType.ViewArcadeLoadoutMenu);
         else
-            UserActionMonitor.Instance.CompleteAction(UserAction.ViewArcadeExploreMenu);
+            UserActionMonitor.Instance.CompleteAction(UserActionType.ViewArcadeExploreMenu);
 
         loadoutMenu.gameObject.SetActive(loadout);
         exploreMenu.gameObject.SetActive(!loadout);
