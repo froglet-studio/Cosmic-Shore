@@ -11,7 +11,7 @@ namespace _Scripts._Core.Playfab_Models.Economy
         /// <summary>
         /// The unique ID of the item.
         /// </summary>
-        public string Id;
+        public string ItemId;
         /// <summary>
         /// The name of the item
         /// </summary>
@@ -33,7 +33,9 @@ namespace _Scripts._Core.Playfab_Models.Economy
         /// The item references associated with this item. For example, the items in a Bundle/Store/Subscription. Every item can
         /// have up to 50 item references.
         /// </summary>
-        public List<VirtualItemModel> BundleContents;    // TODO: reconsider including this in VirtualItem
+        /// // TODO: reconsider including this in VirtualItem
+        /// // TODO: could use an item id list instead of the items?
+        public List<VirtualItemModel> BundleContents;    
         /// <summary>
         /// The prices the item can be purchased for.
         /// </summary>
