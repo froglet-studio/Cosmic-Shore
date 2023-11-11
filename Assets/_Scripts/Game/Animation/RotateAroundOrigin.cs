@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace CosmicShore.Movement
+namespace CosmicShore.Game.Animation
 {
     public class RotateAroundOrigin : MonoBehaviour
     {
@@ -10,7 +10,6 @@ namespace CosmicShore.Movement
         void Update()
         {
             float speedT = speed * Time.deltaTime;
-            //transform.Rotate(rotationDirection.x * speedT, rotationDirection.y * speedT, rotationDirection.z * speedT);
             transform.position = Quaternion.Euler(rotationDirection.x * speedT, rotationDirection.y * speedT, rotationDirection.z * speedT) * transform.position;
         }
     }

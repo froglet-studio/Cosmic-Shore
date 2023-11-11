@@ -1,7 +1,7 @@
 using UnityEngine;
-using Gamepad = UnityEngine.InputSystem.Gamepad;
+using UnityEngine.InputSystem;
 
-namespace CosmicShore.Movement
+namespace CosmicShore.Game.Animation
 {
     public class Pan : MonoBehaviour
     {
@@ -19,10 +19,8 @@ namespace CosmicShore.Movement
             if (spinning)
             {
                 float speedT = speed * Time.deltaTime;
-                //transform.Rotate(rotationDirection.x * speedT, rotationDirection.y * speedT, rotationDirection.z * speedT);
                 transform.Rotate(rotationDirection.x * speedT, rotationDirection.y * speedT, rotationDirection.z * speedT);
             }
-            
         }
     }
 }
