@@ -1,11 +1,11 @@
+using CosmicShore.App.Systems.Audio;
+using CosmicShore.Core;
+using CosmicShore.Core.HangerBuilder;
+using CosmicShore._Core.Input;
+using CosmicShore.Core.IO;
+using CosmicShore._Core.Ship.Projectiles;
 using System.Collections;
 using System.Collections.Generic;
-using CosmicShore._Core.Input;
-using CosmicShore._Core.Ship.Projectiles;
-using CosmicShore.Core;
-using CosmicShore.Core.Audio;
-using CosmicShore.Core.HangerBuilder;
-using CosmicShore.Core.IO;
 using UnityEngine;
 
 namespace CosmicShore.Environment.FlowField

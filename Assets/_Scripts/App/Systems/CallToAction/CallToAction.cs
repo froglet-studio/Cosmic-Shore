@@ -1,21 +1,25 @@
+using CosmicShore.App.Systems.UserActions;
 using System;
 using System.Collections.Generic;
 
-[Serializable]
-public class CallToAction
+namespace CosmicShore.App.Systems.CallToAction
 {
-    public CallToActionTargetType CallToActionTargetID;
-    public UserActionType CompletionUserAction;
-    public List<CallToActionTargetType> DependencyTargetIDs;
-
-    public CallToAction(CallToActionTargetType callToActionTargetID, UserActionType completionUserAction, List<CallToActionTargetType> dependencyTargets=null)
+    [Serializable]
+    public class CallToAction
     {
-        CallToActionTargetID = callToActionTargetID;
-        CompletionUserAction = completionUserAction;
+        public CallToActionTargetType CallToActionTargetID;
+        public UserActionType CompletionUserAction;
+        public List<CallToActionTargetType> DependencyTargetIDs;
 
-        if (dependencyTargets != null)
-            DependencyTargetIDs = dependencyTargets;
-        else
-            DependencyTargetIDs = new ();
+        public CallToAction(CallToActionTargetType callToActionTargetID, UserActionType completionUserAction, List<CallToActionTargetType> dependencyTargets = null)
+        {
+            CallToActionTargetID = callToActionTargetID;
+            CompletionUserAction = completionUserAction;
+
+            if (dependencyTargets != null)
+                DependencyTargetIDs = dependencyTargets;
+            else
+                DependencyTargetIDs = new();
+        }
     }
 }

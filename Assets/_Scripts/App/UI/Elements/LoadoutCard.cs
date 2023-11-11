@@ -1,9 +1,11 @@
+using CosmicShore.App.Systems.Loadout;
+using CosmicShore.App.UI.Menus;
 using System.Linq;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace CosmicShore.Core.LoadoutFavoriting
+namespace CosmicShore.App.UI.Elements
 {
     public class LoadoutCard : MonoBehaviour
     {

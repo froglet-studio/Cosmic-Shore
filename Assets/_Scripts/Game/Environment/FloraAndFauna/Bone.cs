@@ -1,6 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
-using CosmicShore.Utility.Tools;
+using CosmicShore.Utility;
 
 public class Bone : MonoBehaviour 
 {
@@ -35,9 +35,9 @@ public class Bone : MonoBehaviour
     {
         dirty = true;
         
-        StartCoroutine(Tools.LerpingCoroutine(Transform.localPosition.x, position.x, 3, (i) => { offsetVector.x = i; }));
-        StartCoroutine(Tools.LerpingCoroutine(Transform.localPosition.y, position.y, 3, (i) => { offsetVector.y = i; }));
-        StartCoroutine(Tools.LerpingCoroutine(Transform.localPosition.z, position.z, 3, (i) => { offsetVector.z = i; }));
+        StartCoroutine(LerpUtilities.LerpingCoroutine(Transform.localPosition.x, position.x, 3, (i) => { offsetVector.x = i; }));
+        StartCoroutine(LerpUtilities.LerpingCoroutine(Transform.localPosition.y, position.y, 3, (i) => { offsetVector.y = i; }));
+        StartCoroutine(LerpUtilities.LerpingCoroutine(Transform.localPosition.z, position.z, 3, (i) => { offsetVector.z = i; }));
 
         targetPosition = position;
     }

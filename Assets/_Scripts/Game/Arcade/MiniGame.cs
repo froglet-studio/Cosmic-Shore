@@ -8,6 +8,7 @@ using CosmicShore._Core.Playfab_Models.PlayStream;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using CosmicShore.App.Systems.UserActions;
 
 public class MiniGame : MonoBehaviour
 {
@@ -221,7 +222,7 @@ public class MiniGame : MonoBehaviour
 
         LeaderboardManager.Instance.ReportGameplayStatistic(gameMode, PlayerShipType, IntensityLevel, ScoreTracker.GetHighScore());
 
-        UserActionMonitor.Instance.CompleteAction(new UserAction(
+        UserActionSystem.Instance.CompleteAction(new UserAction(
                 UserActionType.PlayGame, 
                 ScoreTracker.GetHighScore(), 
                 UserAction.GetGameplayUserActionLabel(gameMode, PlayerShipType, IntensityLevel)));

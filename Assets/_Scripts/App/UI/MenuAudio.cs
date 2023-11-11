@@ -1,12 +1,15 @@
-using CosmicShore.Core.Audio;
+using CosmicShore.App.Systems.Audio;
 using UnityEngine;
 
-public class MenuAudio : MonoBehaviour
+namespace CosmicShore.App.UI
 {
-    [SerializeField] AudioClip audioClip;
-
-    public void PlayAudio()
+    public class MenuAudio : MonoBehaviour
     {
-        AudioSystem.Instance.PlaySFXClip(audioClip);
+        [SerializeField] AudioClip audioClip;
+
+        public void PlayAudio()
+        {
+            AudioSystem.Instance.PlaySFXClip(audioClip);
+        }
     }
 }

@@ -2,68 +2,71 @@ using System.Collections;
 using TMPro;
 using UnityEngine;
 
-public class ModalWindowManager : MonoBehaviour
+namespace CosmicShore.App.UI
 {
-    [Header("Resources")]
-    public TextMeshProUGUI windowTitle;
-    public TextMeshProUGUI windowDescription;
-
-    [Header("Settings")]
-    public bool sharpAnimations = false;
-    public bool useCustomTexts = false;
-    public string titleText = "Title";
-    [TextArea] public string descriptionText = "Description here";
-
-    Animator mWindowAnimator;
-    bool isOn = false;
-
-    void Start()
+    public class ModalWindowManager : MonoBehaviour
     {
-        mWindowAnimator = gameObject.GetComponent<Animator>();
+        [Header("Resources")]
+        public TextMeshProUGUI windowTitle;
+        public TextMeshProUGUI windowDescription;
 
-        if (useCustomTexts == false)
+        [Header("Settings")]
+        public bool sharpAnimations = false;
+        public bool useCustomTexts = false;
+        public string titleText = "Title";
+        [TextArea] public string descriptionText = "Description here";
+
+        Animator mWindowAnimator;
+        bool isOn = false;
+
+        void Start()
         {
-            windowTitle.text = titleText;
-            windowDescription.text = descriptionText;
+            mWindowAnimator = gameObject.GetComponent<Animator>();
+
+            if (useCustomTexts == false)
+            {
+                windowTitle.text = titleText;
+                windowDescription.text = descriptionText;
+            }
+
+            gameObject.SetActive(false);
         }
 
-        gameObject.SetActive(false);
-    }
-
-    public void ModalWindowIn()
-    {
-        StopCoroutine("DisableWindow");
-        gameObject.SetActive(true);
-
-        if (isOn == false)
+        public void ModalWindowIn()
         {
-            if (sharpAnimations == false)
-                mWindowAnimator.CrossFade("Window In", 0.1f);
-            else
-                mWindowAnimator.Play("Window In");
+            StopCoroutine("DisableWindow");
+            gameObject.SetActive(true);
 
-            isOn = true;
-        }
-    }
+            if (isOn == false)
+            {
+                if (sharpAnimations == false)
+                    mWindowAnimator.CrossFade("Window In", 0.1f);
+                else
+                    mWindowAnimator.Play("Window In");
 
-    public void ModalWindowOut()
-    {
-        if (isOn == true)
-        {
-            if (sharpAnimations == false)
-                mWindowAnimator.CrossFade("Window Out", 0.1f);
-            else
-                mWindowAnimator.Play("Window Out");
-
-            isOn = false;
+                isOn = true;
+            }
         }
 
-        StartCoroutine("DisableWindow");
-    }
+        public void ModalWindowOut()
+        {
+            if (isOn == true)
+            {
+                if (sharpAnimations == false)
+                    mWindowAnimator.CrossFade("Window Out", 0.1f);
+                else
+                    mWindowAnimator.Play("Window Out");
 
-    IEnumerator DisableWindow()
-    {
-        yield return new WaitForSeconds(0.5f);
-        gameObject.SetActive(false);
+                isOn = false;
+            }
+
+            StartCoroutine("DisableWindow");
+        }
+
+        IEnumerator DisableWindow()
+        {
+            yield return new WaitForSeconds(0.5f);
+            gameObject.SetActive(false);
+        }
     }
 }

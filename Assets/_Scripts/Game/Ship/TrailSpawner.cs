@@ -1,11 +1,10 @@
 ﻿using CosmicShore.Core;
-using CosmicShore.Utility.Tools;
+using CosmicShore.Core.HangerBuilder;
+using CosmicShore._Core.Ship;
+using CosmicShore.Utility;
 using System.Collections;
 using System.Collections.Generic;
-using CosmicShore._Core.Ship;
 using UnityEngine;
-using CosmicShore.Core.HangerBuilder;
-
 
 [RequireComponent(typeof(Ship))]
 public class TrailSpawner : MonoBehaviour
@@ -139,7 +138,7 @@ public class TrailSpawner : MonoBehaviour
     void XLerper(float newXScaler)
     {
         if (lerper != null) StopCoroutine(lerper);
-        lerper = StartCoroutine(Tools.LerpingCoroutine(XScaler, newXScaler, 1.5f, (i) => { XScaler = i; }));
+        lerper = StartCoroutine(LerpUtilities.LerpingCoroutine(XScaler, newXScaler, 1.5f, (i) => { XScaler = i; }));
     }
 
     public void SetDotProduct(float amount)

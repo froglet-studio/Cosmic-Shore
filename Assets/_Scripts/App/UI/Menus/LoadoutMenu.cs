@@ -1,3 +1,5 @@
+using CosmicShore.App.Systems.Loadout;
+using CosmicShore.App.UI.Elements;
 using CosmicShore.Core.HangerBuilder;
 using System.Collections.Generic;
 using System.Linq;
@@ -6,7 +8,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
-namespace CosmicShore.Core.LoadoutFavoriting
+namespace CosmicShore.App.UI.Menus
 {
     public class LoadoutMenu : MonoBehaviour
     {

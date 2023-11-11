@@ -1,4 +1,5 @@
 ﻿using System.Collections;
+using CosmicShore.Core;
 using CosmicShore.Utility.Singleton;
 using UnityEngine;
 using UnityEngine.Audio;
@@ -6,7 +7,7 @@ using UnityEngine.Audio;
 /// <summary>
 /// Audio System to contain audio methods accessed by other classes
 /// </summary>
-namespace CosmicShore.Core.Audio
+namespace CosmicShore.App.Systems.Audio
 {
     [DefaultExecutionOrder(-1)]
     public class AudioSystem : SingletonPersistent<AudioSystem>

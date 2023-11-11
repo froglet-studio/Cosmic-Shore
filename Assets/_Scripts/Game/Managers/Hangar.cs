@@ -1,3 +1,4 @@
+using CosmicShore.App.Systems.Squads;
 using CosmicShore.Core.IO;
 using CosmicShore.Utility.Singleton;
 using System;

@@ -2,7 +2,7 @@ using Cinemachine;
 using CosmicShore.Core;
 using CosmicShore.Core.HangerBuilder;
 using CosmicShore.Utility.Singleton;
-using CosmicShore.Utility.Tools;
+using CosmicShore.Utility;
 using System.Collections;
 using UnityEngine;
 
@@ -111,7 +111,7 @@ public class CameraManager : SingletonPersistent<CameraManager>
         if (lerper != null) 
             StopCoroutine(lerper);
         
-        lerper = StartCoroutine(Tools.LerpingCoroutine((transposer.m_FollowOffset.z - CloseCamDistance) / (FarCamDistance - CloseCamDistance),
+        lerper = StartCoroutine(LerpUtilities.LerpingCoroutine((transposer.m_FollowOffset.z - CloseCamDistance) / (FarCamDistance - CloseCamDistance),
             normalizedDistance, 1.5f, (i) =>
             {
                 vCam.m_Lens.NearClipPlane = (FarCamClipPlane - CloseCamClipPlane) * i + CloseCamClipPlane;

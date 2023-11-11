@@ -1,8 +1,5 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UIElements;
-using CosmicShore.Utility.Tools;
+using CosmicShore.Utility;
 
 public class PipUI : MonoBehaviour
 {
@@ -37,13 +34,13 @@ public class PipUI : MonoBehaviour
         // negative x is to get the mirror image without loosing the raycast target. the y values are whack and we don't know why.
         if (isSmall)
         {
-            StartCoroutine(Tools.LerpingCoroutine(((RectTransform)transform).localScale, smallScale, .5f, (i) => { ((RectTransform)transform).localScale = i;}));
-            StartCoroutine(Tools.LerpingCoroutine(((RectTransform)transform).localPosition, smallPosition, .5f, (i) => { ((RectTransform)transform).localPosition = i; }));
+            StartCoroutine(LerpUtilities.LerpingCoroutine(((RectTransform)transform).localScale, smallScale, .5f, (i) => { ((RectTransform)transform).localScale = i;}));
+            StartCoroutine(LerpUtilities.LerpingCoroutine(((RectTransform)transform).localPosition, smallPosition, .5f, (i) => { ((RectTransform)transform).localPosition = i; }));
         }
         else
         {
-            StartCoroutine(Tools.LerpingCoroutine(((RectTransform)transform).localScale, largeScale, .5f, (i) => { ((RectTransform)transform).localScale = i; }));
-            StartCoroutine(Tools.LerpingCoroutine(((RectTransform)transform).localPosition, largePosition, .5f, (i) => { ((RectTransform)transform).localPosition = i; }));
+            StartCoroutine(LerpUtilities.LerpingCoroutine(((RectTransform)transform).localScale, largeScale, .5f, (i) => { ((RectTransform)transform).localScale = i; }));
+            StartCoroutine(LerpUtilities.LerpingCoroutine(((RectTransform)transform).localPosition, largePosition, .5f, (i) => { ((RectTransform)transform).localPosition = i; }));
         }
         
     }
