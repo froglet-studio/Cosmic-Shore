@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
-using StarWriter.Core;
+using CosmicShore.Core;
 using System.Collections;
 
 public class PoolManager : MonoBehaviour

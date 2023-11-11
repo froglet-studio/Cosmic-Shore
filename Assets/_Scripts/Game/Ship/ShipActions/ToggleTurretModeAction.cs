@@ -1,4 +1,4 @@
-using StarWriter.Core;
+using CosmicShore.Core;
 
 public class ToggleTurretModeAction : ShipAction
 {

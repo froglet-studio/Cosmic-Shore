@@ -1,10 +1,10 @@
 using System.Collections;
 using System.Collections.Generic;
-using _Scripts._Core.Input;
+using CosmicShore._Core.Input;
 using UnityEngine;
-using _Scripts._Core.Ship.Projectiles;
+using CosmicShore._Core.Ship.Projectiles;
 
-namespace StarWriter.Core
+namespace CosmicShore.Core
 {
     public class Skimmer : ElementalShipComponent
     {

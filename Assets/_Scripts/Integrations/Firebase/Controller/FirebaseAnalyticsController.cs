@@ -1,10 +1,10 @@
 using System.Collections.Generic;
 using Firebase;
 using Firebase.Analytics;
-using StarWriter.Utility.Singleton;
+using CosmicShore.Utility.Singleton;
 using UnityEngine;
 
-namespace _Scripts._Core.Firebase.Controller
+namespace CosmicShore._Core.Firebase.Controller
 {
     public class FirebaseAnalyticsController : SingletonPersistent<FirebaseAnalyticsController>
     {

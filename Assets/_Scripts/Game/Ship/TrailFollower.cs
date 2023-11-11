@@ -1,7 +1,7 @@
-using _Scripts._Core.Ship;
+using CosmicShore._Core.Ship;
 using UnityEngine;
 
-namespace StarWriter.Core
+namespace CosmicShore.Core
 {
     // TODO: move to enum folder
     public enum TrailFollowerDirection

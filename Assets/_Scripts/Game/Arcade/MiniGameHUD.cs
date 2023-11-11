@@ -2,7 +2,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
-using StarWriter.Core;
+using CosmicShore.Core;
 
 
 public class MiniGameHUD : MonoBehaviour

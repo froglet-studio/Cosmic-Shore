@@ -1,8 +1,8 @@
 using UnityEngine;
 using System.Collections;
-using StarWriter.Core;
+using CosmicShore.Core;
 using System.Collections.Generic;
-using _Scripts._Core.Ship;
+using CosmicShore._Core.Ship;
 
 public class BoidManager : MonoBehaviour
 {

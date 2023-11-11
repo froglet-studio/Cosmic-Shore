@@ -1,4 +1,4 @@
-using StarWriter.Core.IO;
+using CosmicShore.Core.IO;
 
 public class ToggleGyroAction : ShipAction
 {

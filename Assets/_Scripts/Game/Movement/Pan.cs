@@ -1,7 +1,7 @@
 using UnityEngine;
 using Gamepad = UnityEngine.InputSystem.Gamepad;
 
-namespace StarWriter.Movement
+namespace CosmicShore.Movement
 {
     public class Pan : MonoBehaviour
     {

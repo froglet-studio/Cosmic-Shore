@@ -1,5 +1,5 @@
 using System;
-using StarWriter.Core.HangerBuilder;
+using CosmicShore.Core.HangerBuilder;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;

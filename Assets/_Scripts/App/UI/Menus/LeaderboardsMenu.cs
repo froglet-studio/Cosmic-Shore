@@ -1,10 +1,10 @@
-using _Scripts._Core.Playfab_Models;
-using StarWriter.Core;
+using CosmicShore._Core.Playfab_Models;
+using CosmicShore.Core;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using _Scripts._Core.Playfab_Models.Authentication;
-using _Scripts._Core.Playfab_Models.PlayStream;
+using CosmicShore._Core.Playfab_Models.Authentication;
+using CosmicShore._Core.Playfab_Models.PlayStream;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;

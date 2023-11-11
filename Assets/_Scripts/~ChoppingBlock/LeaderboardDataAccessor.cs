@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace _Scripts._Core.Game.DataPersistence
+namespace CosmicShore._Core.Game.DataPersistence
 {
     public class LeaderboardDataAccessor
     {

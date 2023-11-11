@@ -1,4 +1,4 @@
-using _Scripts.Environment.FlowField;
+using CosmicShore.Environment.FlowField;
 using UnityEngine;
 
 public class SnowChanger : MonoBehaviour
@@ -26,12 +26,12 @@ public class SnowChanger : MonoBehaviour
 
     void OnEnable()
     {
-        global::_Scripts.Environment.FlowField.Crystal.OnCrystalMove += ChangeSnowSize;
+        global::CosmicShore.Environment.FlowField.Crystal.OnCrystalMove += ChangeSnowSize;
     }
 
     void OnDisable()
     {
-        global::_Scripts.Environment.FlowField.Crystal.OnCrystalMove -= ChangeSnowSize;
+        global::CosmicShore.Environment.FlowField.Crystal.OnCrystalMove -= ChangeSnowSize;
     }
 
     void Start()

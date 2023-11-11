@@ -1,5 +1,5 @@
-using StarWriter.Core;
-using StarWriter.Utility.Singleton;
+using CosmicShore.Core;
+using CosmicShore.Utility.Singleton;
 using System.Collections.Generic;
 using UnityEngine;
 

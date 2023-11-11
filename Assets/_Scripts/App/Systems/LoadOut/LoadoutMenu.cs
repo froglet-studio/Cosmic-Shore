@@ -1,4 +1,4 @@
-using StarWriter.Core.HangerBuilder;
+using CosmicShore.Core.HangerBuilder;
 using System.Collections.Generic;
 using System.Linq;
 using TMPro;
@@ -6,7 +6,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
-namespace StarWriter.Core.LoadoutFavoriting
+namespace CosmicShore.Core.LoadoutFavoriting
 {
     public class LoadoutMenu : MonoBehaviour
     {

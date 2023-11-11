@@ -1,8 +1,8 @@
 using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
-using StarWriter.Core;
-using _Scripts.Environment.FlowField;
+using CosmicShore.Core;
+using CosmicShore.Environment.FlowField;
 
 public class Boid : MonoBehaviour
 {

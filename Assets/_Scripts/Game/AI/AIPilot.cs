@@ -4,7 +4,7 @@ using System;
 using System.Collections;
 
 
-namespace StarWriter.Core.IO
+namespace CosmicShore.Core.IO
 {
     public class AIPilot : MonoBehaviour
     {

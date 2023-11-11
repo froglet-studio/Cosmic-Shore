@@ -1,9 +1,7 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using _Scripts._Core.Playfab_Models;
-using _Scripts._Core.Playfab_Models.Player_Models;
-using _Scripts._Core.Playfab_Models.PlayStream;
+using CosmicShore._Core.Playfab_Models.Player_Models;
+using CosmicShore._Core.Playfab_Models.PlayStream;
 using UnityEngine;
 using UnityEngine.UI;
 

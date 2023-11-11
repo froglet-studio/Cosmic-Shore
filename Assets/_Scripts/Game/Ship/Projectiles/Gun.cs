@@ -1,7 +1,7 @@
 using System.Collections;
 using UnityEngine;
 
-namespace _Scripts._Core.Ship.Projectiles
+namespace CosmicShore._Core.Ship.Projectiles
 {
     public enum FiringPatterns
     {
@@ -13,7 +13,7 @@ namespace _Scripts._Core.Ship.Projectiles
     {
         public float firePeriod = .2f;
         public Teams Team;
-        public StarWriter.Core.Ship Ship;
+        public CosmicShore.Core.Ship Ship;
         bool onCooldown = false;
         float sideLength = 2;
         float barrelLength = 4;

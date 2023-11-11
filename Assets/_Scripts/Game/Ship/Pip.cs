@@ -1,4 +1,4 @@
-using StarWriter.Core;
+using CosmicShore.Core;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;

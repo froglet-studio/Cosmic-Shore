@@ -7,7 +7,7 @@ using Firebase;
 using Firebase.Analytics;
 using Firebase.Auth;
 using Firebase.Extensions;
-using StarWriter.Utility.Singleton;
+using CosmicShore.Utility.Singleton;
 using UnityEngine;
 using UnityEngine.Assertions;
 using UnityEngine.Events;

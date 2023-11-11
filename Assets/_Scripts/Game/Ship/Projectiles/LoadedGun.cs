@@ -1,10 +1,10 @@
 using System.Collections;
 using System.ComponentModel;
 using System.Runtime.InteropServices.WindowsRuntime;
-using _Scripts._Core.Ship.Projectiles;
+using CosmicShore._Core.Ship.Projectiles;
 using UnityEngine;
 
-namespace StarWriter.Core
+namespace CosmicShore.Core
 {
     public class LoadedGun : Gun
     {

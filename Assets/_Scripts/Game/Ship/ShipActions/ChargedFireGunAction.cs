@@ -1,6 +1,6 @@
-using StarWriter.Core;
+using CosmicShore.Core;
 using System.Collections;
-using _Scripts._Core.Ship.Projectiles;
+using CosmicShore._Core.Ship.Projectiles;
 using UnityEngine;
 
 public class ChargedFireGunAction : ShipAction

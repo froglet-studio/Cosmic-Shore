@@ -1,7 +1,7 @@
 using UnityEngine;
-using StarWriter.Core;
+using CosmicShore.Core;
 
-namespace StarWriter.Core.UI
+namespace CosmicShore.Core.UI
 {
     public class PauseButton : MonoBehaviour
     {

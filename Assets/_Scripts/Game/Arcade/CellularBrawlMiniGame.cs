@@ -1,4 +1,4 @@
-using StarWriter.Core.HangerBuilder;
+using CosmicShore.Core.HangerBuilder;
 
 public class CellularBrawlMiniGame : MiniGame
 {

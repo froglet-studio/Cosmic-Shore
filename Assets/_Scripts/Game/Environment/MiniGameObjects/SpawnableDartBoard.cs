@@ -1,5 +1,5 @@
-using _Scripts._Core.Ship;
-using StarWriter.Core;
+using CosmicShore._Core.Ship;
+using CosmicShore.Core;
 using UnityEngine;
 
 public class SpawnableDartBoard : SpawnableAbstractBase

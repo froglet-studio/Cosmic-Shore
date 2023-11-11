@@ -3,7 +3,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace StarWriter.Core.LoadoutFavoriting
+namespace CosmicShore.Core.LoadoutFavoriting
 {
     public class LoadoutCard : MonoBehaviour
     {

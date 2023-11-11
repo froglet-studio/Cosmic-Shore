@@ -1,4 +1,4 @@
-using StarWriter.Core.LoadoutFavoriting;
+using CosmicShore.Core.LoadoutFavoriting;
 using UnityEngine;
 using UnityEngine.UI;
 

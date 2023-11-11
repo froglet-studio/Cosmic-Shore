@@ -1,10 +1,10 @@
-using StarWriter.Core;
-using StarWriter.Core.IO;
+using CosmicShore.Core;
+using CosmicShore.Core.IO;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using _Scripts._Core.Firebase.Controller;
-using _Scripts._Core.Playfab_Models.PlayStream;
+using CosmicShore._Core.Firebase.Controller;
+using CosmicShore._Core.Playfab_Models.PlayStream;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;

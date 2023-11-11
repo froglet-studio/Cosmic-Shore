@@ -1,5 +1,5 @@
-using StarWriter.Core.HangerBuilder;
-using StarWriter.Core.LoadoutFavoriting;
+using CosmicShore.Core.HangerBuilder;
+using CosmicShore.Core.LoadoutFavoriting;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;

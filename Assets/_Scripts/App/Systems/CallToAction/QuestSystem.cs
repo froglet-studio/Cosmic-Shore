@@ -1,5 +1,5 @@
-using _Scripts._Core.Playfab_Models.Economy;
-using StarWriter.Utility.Singleton;
+using CosmicShore._Core.Playfab_Models.Economy;
+using CosmicShore.Utility.Singleton;
 using System;
 using System.Collections.Generic;
 using UnityEngine;

@@ -1,4 +1,4 @@
-namespace _Scripts._Core.Enums
+namespace CosmicShore._Core.Enums
 {
     public enum Vessels
     {

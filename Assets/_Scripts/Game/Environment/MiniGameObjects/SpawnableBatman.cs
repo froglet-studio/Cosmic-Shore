@@ -1,6 +1,6 @@
-using StarWriter.Core;
+using CosmicShore.Core;
 using System;
-using _Scripts._Core.Ship;
+using CosmicShore._Core.Ship;
 using UnityEngine;
 
 public class SpawnableBatman : SpawnableAbstractBase

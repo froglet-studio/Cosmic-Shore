@@ -1,9 +1,9 @@
 using UnityEngine;
 using System.Collections.Generic;
-using StarWriter.Core;
+using CosmicShore.Core;
 using System;
 using System.Linq;
-using _Scripts._Core.Ship;
+using CosmicShore._Core.Ship;
 
 public class TrailViewer : MonoBehaviour
 {

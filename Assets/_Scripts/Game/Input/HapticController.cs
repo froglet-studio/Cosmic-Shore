@@ -1,8 +1,8 @@
 using Lofelt.NiceVibrations;
-using StarWriter.Core;
+using CosmicShore.Core;
 using UnityEngine;
 
-namespace _Scripts._Core.Input
+namespace CosmicShore._Core.Input
 {
     /// <summary>
     /// Haptic Type

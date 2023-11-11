@@ -1,8 +1,8 @@
 using Cinemachine;
-using StarWriter.Core;
-using StarWriter.Core.HangerBuilder;
-using StarWriter.Utility.Singleton;
-using StarWriter.Utility.Tools;
+using CosmicShore.Core;
+using CosmicShore.Core.HangerBuilder;
+using CosmicShore.Utility.Singleton;
+using CosmicShore.Utility.Tools;
 using System.Collections;
 using UnityEngine;
 

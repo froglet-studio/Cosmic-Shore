@@ -1,7 +1,7 @@
 using System.Collections;
 using UnityEngine;
 
-namespace _Scripts._Core.Ship.Projectiles
+namespace CosmicShore._Core.Ship.Projectiles
 {
     public class AOEBlockSpawner : AOEBlockCreation
     {

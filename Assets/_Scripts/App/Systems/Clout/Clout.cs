@@ -1,4 +1,4 @@
-namespace StarWriter.Core.CloutSystem
+namespace CosmicShore.Core.CloutSystem
 {
     /// <summary>
     /// Clout is a measurement of you succuss using a ship/element combo in a specific game 

@@ -1,4 +1,4 @@
-using _Scripts.Environment.FlowField;
+using CosmicShore.Environment.FlowField;
 using UnityEngine;
 
 public class DartMiniGame : MiniGame

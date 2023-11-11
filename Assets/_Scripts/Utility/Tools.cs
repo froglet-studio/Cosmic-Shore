@@ -3,7 +3,7 @@ using System.Collections;
 using System.Reflection;
 using UnityEngine;
 
-namespace StarWriter.Utility.Tools
+namespace CosmicShore.Utility.Tools
 {
     public struct Tools
     {

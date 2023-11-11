@@ -1,6 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
-using StarWriter.Utility.Tools;
+using CosmicShore.Utility.Tools;
 
 public class Bone : MonoBehaviour 
 {

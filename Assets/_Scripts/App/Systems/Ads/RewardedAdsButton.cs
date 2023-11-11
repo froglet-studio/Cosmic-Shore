@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.Advertisements;
-using StarWriter.Core;
+using CosmicShore.Core;
 
 public class RewardedAdsButton : MonoBehaviour
 {

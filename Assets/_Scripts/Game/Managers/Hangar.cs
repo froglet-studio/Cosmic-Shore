@@ -1,12 +1,12 @@
-using StarWriter.Core.IO;
-using StarWriter.Utility.Singleton;
+using CosmicShore.Core.IO;
+using CosmicShore.Utility.Singleton;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Serialization;
 
 // TODO: P1 renamespace this
-namespace StarWriter.Core.HangerBuilder
+namespace CosmicShore.Core.HangerBuilder
 {
     public class Hangar : SingletonPersistent<Hangar>
     {

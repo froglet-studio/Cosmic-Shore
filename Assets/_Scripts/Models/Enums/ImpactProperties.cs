@@ -1,6 +1,6 @@
-using StarWriter.Core;
+using CosmicShore.Core;
 using System;
-using _Scripts._Core.Input;
+using CosmicShore._Core.Input;
 
 [Serializable]
 public struct ImpactProperties

@@ -1,9 +1,9 @@
 using UnityEngine;
-using StarWriter.Utility.Email;
+using CosmicShore.Utility.Email;
 using UnityEngine.UI;
 using TMPro;
 
-namespace StarWriter.Utility.Reports
+namespace CosmicShore.Utility.Reports
 {
     public class SendBugReport : MonoBehaviour
     {

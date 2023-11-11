@@ -1,7 +1,7 @@
-using StarWriter.Utility.Singleton;
+using CosmicShore.Utility.Singleton;
 using UnityEngine;
 
-namespace StarWriter.Core
+namespace CosmicShore.Core
 {
     public class GameSetting : SingletonPersistent<GameSetting>
     {

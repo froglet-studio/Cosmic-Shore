@@ -1,4 +1,4 @@
-namespace _Scripts._Core.Playfab_Models.Event_Models
+namespace CosmicShore._Core.Playfab_Models.Event_Models
 {
     /// <summary>
     /// Authentication methods

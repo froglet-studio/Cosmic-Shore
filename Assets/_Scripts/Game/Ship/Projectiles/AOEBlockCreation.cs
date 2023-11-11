@@ -1,11 +1,10 @@
 using System.Collections;
 using System.Collections.Generic;
-using _Scripts._Core.Ship;
-using StarWriter.Core;
-using StarWriter.Core.HangerBuilder;
+using CosmicShore.Core;
+using CosmicShore.Core.HangerBuilder;
 using UnityEngine;
 
-namespace _Scripts._Core.Ship.Projectiles
+namespace CosmicShore._Core.Ship.Projectiles
 {
     public class AOEBlockCreation : AOEExplosion
     {

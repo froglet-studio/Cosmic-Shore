@@ -1,7 +1,7 @@
-using StarWriter.Core;
+using CosmicShore.Core;
 using UnityEngine;
 
-namespace _Scripts._Core.Ship.Projectiles
+namespace CosmicShore._Core.Ship.Projectiles
 {
     public class ExplodableProjectile : Projectile
     {

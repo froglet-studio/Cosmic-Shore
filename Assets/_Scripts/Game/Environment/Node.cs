@@ -1,6 +1,6 @@
-﻿using StarWriter.Core.IO;
+﻿using CosmicShore.Core.IO;
 using System.Collections.Generic;
-using _Scripts.Environment.FlowField;
+using CosmicShore.Environment.FlowField;
 using UnityEngine;
 
 public class Node : MonoBehaviour

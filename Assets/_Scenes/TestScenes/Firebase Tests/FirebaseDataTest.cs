@@ -1,7 +1,7 @@
 using System;
 using System.Collections;
 using Firebase;
-using StarWriter.Utility.Singleton;
+using CosmicShore.Utility.Singleton;
 using Firebase.Analytics;
 using UnityEngine;
 

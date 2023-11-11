@@ -1,11 +1,11 @@
 using System.Collections.Generic;
 using JetBrains.Annotations;
-using StarWriter.Utility.Singleton;
+using CosmicShore.Utility.Singleton;
 using Unity.Services.Analytics;
 using Unity.Services.Core;
 using UnityEngine;
 
-namespace _Scripts._Core.Firebase.Controller
+namespace CosmicShore._Core.Firebase.Controller
 {
     public class UnityAnalytics : SingletonPersistent<UnityAnalytics>
     {

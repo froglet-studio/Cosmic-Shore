@@ -1,6 +1,6 @@
-﻿using _Scripts._Core.Input;
+﻿using CosmicShore._Core.Input;
 
-namespace StarWriter.Core
+namespace CosmicShore.Core
 {
     public class HapticEffect : IImpactEffect
     {

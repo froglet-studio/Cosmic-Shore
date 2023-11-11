@@ -1,8 +1,8 @@
-﻿using StarWriter.Core.HangerBuilder;
+﻿using CosmicShore.Core.HangerBuilder;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-namespace StarWriter.Core.UI
+namespace CosmicShore.Core.UI
 {
     /// <summary>
     /// Provides high level functionality to panels in the main menu scene

@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-namespace StarWriter.Core
+namespace CosmicShore.Core
 {
     [System.Serializable]
     public class ShipStatus : MonoBehaviour

@@ -1,6 +1,6 @@
 using System.Collections;
-using _Scripts._Core.Ship.Projectiles;
-using StarWriter.Core;
+using CosmicShore._Core.Ship.Projectiles;
+using CosmicShore.Core;
 using UnityEngine;
 using UnityEngine.UIElements;
 

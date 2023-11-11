@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements;
-using StarWriter.Utility.Tools;
+using CosmicShore.Utility.Tools;
 
 public class PipUI : MonoBehaviour
 {

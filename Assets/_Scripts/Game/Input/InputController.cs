@@ -5,7 +5,7 @@ using Gamepad = UnityEngine.InputSystem.Gamepad;
 using Gyroscope = UnityEngine.Gyroscope;
 using TouchPhase = UnityEngine.TouchPhase;
 
-namespace StarWriter.Core.IO
+namespace CosmicShore.Core.IO
 {
     public class InputController : MonoBehaviour
     {

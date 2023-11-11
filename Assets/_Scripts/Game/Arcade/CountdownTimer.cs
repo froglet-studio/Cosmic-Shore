@@ -1,4 +1,4 @@
-using StarWriter.Core.Audio;
+using CosmicShore.Core.Audio;
 using System;
 using System.Collections;
 using UnityEngine;

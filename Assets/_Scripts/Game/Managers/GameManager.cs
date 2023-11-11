@@ -1,11 +1,11 @@
-using _Scripts.Environment.FlowField;
-using StarWriter.Core.IO;
-using StarWriter.Utility.Singleton;
+using CosmicShore.Environment.FlowField;
+using CosmicShore.Core.IO;
+using CosmicShore.Utility.Singleton;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
 // TODO: P1 - some work needs to be done to unify this with the MiniGame engine managers
-namespace StarWriter.Core
+namespace CosmicShore.Core
 {
     [DefaultExecutionOrder(0)]
     public class GameManager : SingletonPersistent<GameManager>

@@ -1,12 +1,12 @@
 using UnityEngine;
-using StarWriter.Core;
+using CosmicShore.Core;
 
 /// <summary>
 /// Displays and controls toggles and buttons on the Pause Menu Panel
 /// </summary>
 
 // TODO: P1 - Need to unify this menu code with Main Menu Code
-namespace StarWriter.UI
+namespace CosmicShore.UI
 {
     public class PauseMenu : MonoBehaviour
     {

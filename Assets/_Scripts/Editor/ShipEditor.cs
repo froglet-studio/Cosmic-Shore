@@ -2,7 +2,7 @@
 using UnityEditor;
 using System.Reflection;
 
-namespace StarWriter.Core
+namespace CosmicShore.Core
 {
     [CustomEditor(typeof(Ship))]
     public class ShipEditor : Editor

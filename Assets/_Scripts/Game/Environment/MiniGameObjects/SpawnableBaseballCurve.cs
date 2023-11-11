@@ -1,4 +1,4 @@
-using StarWriter.Core;
+using CosmicShore.Core;
 using UnityEngine;
 
 public class SpawnableBaseballCurve : SpawnableAbstractBase

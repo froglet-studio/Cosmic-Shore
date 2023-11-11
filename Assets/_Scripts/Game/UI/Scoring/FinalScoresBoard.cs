@@ -1,12 +1,12 @@
 using UnityEngine;
 using System.Collections.Generic;
 using UnityEngine.UI;
-using static StarWriter.Core.GameSetting;
+using static CosmicShore.Core.GameSetting;
 
 /// <summary>
 /// Controls the final SinglePlayerScore and high SinglePlayerScore display panel
 /// </summary>
-namespace StarWriter.Core
+namespace CosmicShore.Core
 {
     public class FinalScoresBoard : MonoBehaviour
     {

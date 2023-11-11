@@ -1,4 +1,4 @@
-using _Scripts._Core.Playfab_Models;
+using CosmicShore._Core.Playfab_Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -42,7 +42,7 @@ public struct ArcadeGameLoadout
     }
 }
 
-namespace StarWriter.Core.LoadoutFavoriting
+namespace CosmicShore.Core.LoadoutFavoriting
 {
     public static class LoadoutSystem
     {

@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace StarWriter.Core.IO
+namespace CosmicShore.Core.IO
 {
 
     [RequireComponent(typeof(RectTransform))]

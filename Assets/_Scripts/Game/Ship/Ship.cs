@@ -1,12 +1,12 @@
-using StarWriter.Core.IO;
+using CosmicShore.Core.IO;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using _Scripts._Core.Input;
-using _Scripts._Core.Ship.Projectiles;
+using CosmicShore._Core.Input;
+using CosmicShore._Core.Ship.Projectiles;
 using UnityEngine;
 
-namespace StarWriter.Core
+namespace CosmicShore.Core
 {
     [Serializable]
     public struct InputEventShipActionMapping

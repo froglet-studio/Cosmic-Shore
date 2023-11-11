@@ -1,6 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
-using StarWriter.Core;
+using CosmicShore.Core;
 
 public class AdvertisementMenu : MonoBehaviour
 {

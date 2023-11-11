@@ -1,10 +1,10 @@
-﻿using StarWriter.Core;
-using StarWriter.Utility.Tools;
+﻿using CosmicShore.Core;
+using CosmicShore.Utility.Tools;
 using System.Collections;
 using System.Collections.Generic;
-using _Scripts._Core.Ship;
+using CosmicShore._Core.Ship;
 using UnityEngine;
-using StarWriter.Core.HangerBuilder;
+using CosmicShore.Core.HangerBuilder;
 
 
 [RequireComponent(typeof(Ship))]

@@ -1,5 +1,5 @@
 using UnityEngine;
-using StarWriter.Core;
+using CosmicShore.Core;
 using TMPro;
 
 // TODO: namespace

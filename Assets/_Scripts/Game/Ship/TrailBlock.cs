@@ -1,9 +1,9 @@
-﻿using StarWriter.Core.HangerBuilder;
+﻿using CosmicShore.Core.HangerBuilder;
 using System.Collections;
-using _Scripts._Core.Ship;
+using CosmicShore._Core.Ship;
 using UnityEngine;
 
-namespace StarWriter.Core
+namespace CosmicShore.Core
 {
     public class TrailBlock : MonoBehaviour
     {

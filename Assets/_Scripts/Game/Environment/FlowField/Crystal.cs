@@ -1,14 +1,14 @@
 using System.Collections;
 using System.Collections.Generic;
-using _Scripts._Core.Input;
-using _Scripts._Core.Ship.Projectiles;
-using StarWriter.Core;
-using StarWriter.Core.Audio;
-using StarWriter.Core.HangerBuilder;
-using StarWriter.Core.IO;
+using CosmicShore._Core.Input;
+using CosmicShore._Core.Ship.Projectiles;
+using CosmicShore.Core;
+using CosmicShore.Core.Audio;
+using CosmicShore.Core.HangerBuilder;
+using CosmicShore.Core.IO;
 using UnityEngine;
 
-namespace _Scripts.Environment.FlowField
+namespace CosmicShore.Environment.FlowField
 {
     public class Crystal : NodeItem
     {

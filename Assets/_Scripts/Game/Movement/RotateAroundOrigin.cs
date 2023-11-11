@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace StarWriter.Movement
+namespace CosmicShore.Movement
 {
     public class RotateAroundOrigin : MonoBehaviour
     {

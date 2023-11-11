@@ -1,4 +1,4 @@
-﻿namespace StarWriter.Core
+﻿namespace CosmicShore.Core
 {
     public interface IImpactEffect
     {

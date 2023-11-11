@@ -1,8 +1,8 @@
 using System.Collections.Generic;
-using _Scripts._Core.Ship;
+using CosmicShore._Core.Ship;
 using UnityEngine;
 
-namespace _Scripts.Environment.MiniGameObjects
+namespace CosmicShore.Environment.MiniGameObjects
 {
     public class SpawnablePumpkin : SpawnableEllipsoid
     {

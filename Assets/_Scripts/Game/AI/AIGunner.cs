@@ -1,7 +1,7 @@
-using _Scripts._Core.Ship.Projectiles;
+using CosmicShore._Core.Ship.Projectiles;
 using UnityEngine;
 
-namespace StarWriter.Core.AI
+namespace CosmicShore.Core.AI
 {
     public class AIGunner : MonoBehaviour
     {

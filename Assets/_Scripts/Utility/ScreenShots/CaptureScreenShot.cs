@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace StarWriter.Utility.ScreenShots
+namespace CosmicShore.Utility.ScreenShots
 {
     public class CaptureScreenShot : MonoBehaviour
     {

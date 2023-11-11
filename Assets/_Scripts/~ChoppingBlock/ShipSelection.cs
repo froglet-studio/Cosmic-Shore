@@ -1,4 +1,4 @@
-using StarWriter.Core.HangerBuilder;
+using CosmicShore.Core.HangerBuilder;
 using TMPro;
 using UnityEngine;
 

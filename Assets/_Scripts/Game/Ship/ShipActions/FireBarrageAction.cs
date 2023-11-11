@@ -1,8 +1,8 @@
 using System.Collections;
 using System.Collections.Generic;
-using _Scripts._Core.Ship.Projectiles;
+using CosmicShore._Core.Ship.Projectiles;
 using UnityEngine;
-using StarWriter.Core;
+using CosmicShore.Core;
 
 public class FireBarrageAction : ShipAction
 {

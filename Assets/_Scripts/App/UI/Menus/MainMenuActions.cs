@@ -1,5 +1,5 @@
 using UnityEngine;
-using StarWriter.Core;
+using CosmicShore.Core;
 
 public class MainMenuActions : MonoBehaviour
 {

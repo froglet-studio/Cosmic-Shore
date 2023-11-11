@@ -1,15 +1,15 @@
 using System;
 using System.Collections.Generic;
-using _Scripts._Core.Playfab_Models.Authentication;
-using _Scripts._Core.Playfab_Models.Event_Models;
-using _Scripts._Core.Playfab_Models.Player_Models;
+using CosmicShore._Core.Playfab_Models.Authentication;
+using CosmicShore._Core.Playfab_Models.Event_Models;
+using CosmicShore._Core.Playfab_Models.Player_Models;
 using PlayFab;
 using PlayFab.ClientModels;
 using PlayFab.EventsModels;
-using StarWriter.Utility.Singleton;
+using CosmicShore.Utility.Singleton;
 using UnityEngine;
 
-namespace _Scripts._Core.Playfab_Models.PlayStream
+namespace CosmicShore._Core.Playfab_Models.PlayStream
 {
     public class AnalyticsController : SingletonPersistent<AnalyticsController>
     {

@@ -1,8 +1,8 @@
-using StarWriter.Core;
+using CosmicShore.Core;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
-using _Scripts._Core.Ship;
+using CosmicShore._Core.Ship;
 using UnityEngine;
 using UnityEngine.UIElements;
 

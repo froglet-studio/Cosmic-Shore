@@ -3,7 +3,7 @@ using UnityEngine;
 using System.Collections;
 using UnityEngine.Serialization;
 
-namespace StarWriter.Core
+namespace CosmicShore.Core
 {
     public class ResourceSystem : ElementalShipComponent
     {

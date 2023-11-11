@@ -1,18 +1,18 @@
 using System.Collections;
 using System.Collections.Generic;
-using _Scripts._Core.Input;
-using _Scripts.Environment.FlowField;
-using StarWriter.Core;
-using StarWriter.Core.HangerBuilder;
+using CosmicShore._Core.Input;
+using CosmicShore.Environment.FlowField;
+using CosmicShore.Core;
+using CosmicShore.Core.HangerBuilder;
 using UnityEngine;
 
-namespace _Scripts._Core.Ship.Projectiles
+namespace CosmicShore._Core.Ship.Projectiles
 {
     public class Projectile : MonoBehaviour
     {
         public Vector3 Velocity;
         public Teams Team;
-        public StarWriter.Core.Ship Ship;
+        public CosmicShore.Core.Ship Ship;
 
         [SerializeField] List<TrailBlockImpactEffects> trailBlockImpactEffects;
         [SerializeField] List<ShipImpactEffects> shipImpactEffects;

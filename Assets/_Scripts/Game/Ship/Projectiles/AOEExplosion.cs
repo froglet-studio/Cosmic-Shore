@@ -1,10 +1,10 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
-using _Scripts._Core.Input;
-using StarWriter.Core;
+using CosmicShore._Core.Input;
+using CosmicShore.Core;
 using UnityEngine;
 
-namespace _Scripts._Core.Ship.Projectiles
+namespace CosmicShore._Core.Ship.Projectiles
 {
     public class AOEExplosion : MonoBehaviour
     {
@@ -30,7 +30,7 @@ namespace _Scripts._Core.Ship.Projectiles
         // Material and Team
         [HideInInspector] public Material Material { get; set; }
         [HideInInspector] public Teams Team;
-        [HideInInspector] public StarWriter.Core.Ship Ship;
+        [HideInInspector] public CosmicShore.Core.Ship Ship;
         [HideInInspector] public bool AnonymousExplosion;
 
         protected virtual void Start()

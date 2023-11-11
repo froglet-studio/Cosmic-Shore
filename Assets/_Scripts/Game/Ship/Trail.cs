@@ -1,8 +1,8 @@
 using System.Collections.Generic;
-using StarWriter.Core;
+using CosmicShore.Core;
 using UnityEngine;
 
-namespace _Scripts._Core.Ship
+namespace CosmicShore._Core.Ship
 {
     public class Trail
     {

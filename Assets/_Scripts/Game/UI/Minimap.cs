@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace StarWriter.Core
+namespace CosmicShore.Core
 {
     public class Minimap : MonoBehaviour
     {

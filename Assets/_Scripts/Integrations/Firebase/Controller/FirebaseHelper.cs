@@ -1,11 +1,11 @@
 using System;
 using System.Threading.Tasks;
 using Firebase;
-using StarWriter.Utility.Singleton;
+using CosmicShore.Utility.Singleton;
 using UnityEngine;
 using UnityEngine.Events;
 
-namespace _Scripts._Core.Firebase.Controller
+namespace CosmicShore._Core.Firebase.Controller
 {
     public class FirebaseHelper : SingletonPersistent<FirebaseHelper>
     {

@@ -1,8 +1,8 @@
 using System.Collections.Generic;
-using StarWriter.Core;
+using CosmicShore.Core;
 using UnityEngine;
 
-namespace _Scripts._Core.Ship.Projectiles
+namespace CosmicShore._Core.Ship.Projectiles
 {
     public class SpawnableFlower : SpawnableAbstractBase
     {
@@ -16,10 +16,10 @@ namespace _Scripts._Core.Ship.Projectiles
 
         Material material;
         Teams team;
-        StarWriter.Core.Ship ship;
+        CosmicShore.Core.Ship ship;
         public Material Material { get { return material; } set { material = new Material(value); } }
         public Teams Team { get => team; set => team = value; }
-        public StarWriter.Core.Ship Ship { get => ship; set => ship = value; }
+        public CosmicShore.Core.Ship Ship { get => ship; set => ship = value; }
 
         public override GameObject Spawn()
         {

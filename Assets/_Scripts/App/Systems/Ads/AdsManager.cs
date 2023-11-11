@@ -1,6 +1,7 @@
-using _Scripts._Core.Firebase.Controller;
+using CosmicShore._Core.Firebase.Controller;
 using UnityEngine;
 using UnityEngine.Advertisements;
+
 
 public class AdsManager : MonoBehaviour, IUnityAdsInitializationListener, IUnityAdsLoadListener, IUnityAdsShowListener
 {

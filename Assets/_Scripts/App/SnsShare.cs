@@ -1,7 +1,7 @@
 using System.Collections;
 using UnityEngine.UI;
 using UnityEngine;
-using StarWriter.Core.IO;
+using CosmicShore.Core.IO;
 
 /// <summary>
 /// Requires Native Share to function in Unity
