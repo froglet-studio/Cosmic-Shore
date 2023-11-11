@@ -47,6 +47,11 @@ namespace _Scripts._Core.Input
             
         }
 
+        public static void PlayConstant(float amplitude, float frequency, float duration)
+        {
+            HapticPatterns.PlayConstant(amplitude, frequency, duration);
+        }
+
         /// <summary>
         /// Get Pattern For Haptic Type
         /// Returns mapped Haptic Patterns

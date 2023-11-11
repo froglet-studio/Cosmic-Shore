@@ -25,9 +25,6 @@ namespace StarWriter.Core
         [HideInInspector] public Player Player;
         [HideInInspector] public Teams team;
 
-        [Header("Optional Skimmer Components")]
-        [SerializeField] GameObject AOEPrefab;
-
         float appliedScale;
         ResourceSystem resourceSystem;
 
@@ -36,6 +33,10 @@ namespace StarWriter.Core
 
         public int activelySkimmingBlockCount = 0;
         public int ActivelySkimmingBlockCount { get { return activelySkimmingBlockCount; } }
+
+        [Header("Optional Skimmer Components")]
+        [SerializeField] GameObject AOEPrefab;
+        [SerializeField] float AOEPeriod;
 
         void Start()
         {
@@ -103,13 +104,26 @@ namespace StarWriter.Core
                         if (!ship.ShipStatus.AutoPilotEnabled) HapticController.PlayHaptic(HapticType.ShipCollision);//.PlayShipCollisionHaptics();
                         break;
                     case ShipImpactEffects.AreaOfEffectExplosion:
-                        var AOEExplosion = Instantiate(AOEPrefab).GetComponent<AOEExplosion>();
-                        AOEExplosion.Ship = ship;
-                        AOEExplosion.SetPositionAndRotation(transform.position, transform.rotation);
-                        AOEExplosion.MaxScale = ship.ShipStatus.Speed - shipGeometry.Ship.ShipStatus.Speed;
+                        if (!onCoolDown)
+                        {
+                            var AOEExplosion = Instantiate(AOEPrefab).GetComponent<AOEExplosion>();
+                            AOEExplosion.Ship = ship;
+                            AOEExplosion.SetPositionAndRotation(transform.position, transform.rotation);
+                            AOEExplosion.MaxScale = ship.ShipStatus.Speed - shipGeometry.Ship.ShipStatus.Speed;
+                            StartCoroutine(CooldownCoroutine(AOEPeriod));
+                        }
                         break;
                 }
             }
+        }
+
+
+        bool onCoolDown = false;
+        IEnumerator CooldownCoroutine(float Period)
+        {
+            onCoolDown = true;
+            yield return new WaitForSeconds(Period);
+            onCoolDown = false;
         }
 
         void PerformBlockStayEffects(float chargeAmount)
@@ -170,7 +184,7 @@ namespace StarWriter.Core
 
             float distance = Vector3.Distance(transform.position, other.transform.position);
 
-            if (trailBlock.ownerId != ship.Player.PlayerUUID && Time.time - trailBlock.TrailBlockProperties.TimeCreated > 5)
+            if (trailBlock.ownerId != ship.Player.PlayerUUID || Time.time - trailBlock.TrailBlockProperties.TimeCreated > 3)
             {
                 minMatureBlockDistance = Mathf.Min(minMatureBlockDistance, distance);
                 minMatureBlock = trailBlock;
@@ -220,26 +234,35 @@ namespace StarWriter.Core
             if (cameraManager != null && !ship.ShipStatus.AutoPilotEnabled) 
                 cameraManager.SetNormalizedCloseCameraDistance(normalizedDistance);
 
-            minMatureBlockDistance = Mathf.Infinity;
+            if (!speedTubes) minMatureBlockDistance = Mathf.Infinity;
         }
 
         void Trailalign()
         {
             if (!speedTubes || !minMatureBlock) return;
 
-            var distanceWeight = ComputeGaussian(minMatureBlockDistance, transform.localScale.x/4, transform.localScale.x/20 );
+            var distanceWeight = ComputeGaussian(minMatureBlockDistance, transform.localScale.x/4, transform.localScale.x/10 );
             var directionWeight = Vector3.Dot(ship.transform.forward, minMatureBlock.transform.forward);
+            var combinedWeight = distanceWeight * Mathf.Abs(directionWeight);
 
-            //ship.ShipTransformer.GentleSpinShip(minMatureBlock.transform.forward * directionWeight, (directionWeight * distanceWeight)*.1f);
+            ship.ShipTransformer.GentleSpinShip(minMatureBlock.transform.forward, ship.transform.up, (directionWeight * distanceWeight)*.001f);
 
-            //if (minMatureBlockDistance < transform.localScale.x / 2)
-            //    ship.ShipTransformer.ModifyVelocity(-(minMatureBlock.transform.position - transform.position).normalized * distanceWeight * Mathf.Abs(directionWeight) *2, .1f);
-            //else ship.ShipTransformer.ModifyVelocity((minMatureBlock.transform.position - transform.position).normalized * distanceWeight * Mathf.Abs(directionWeight) *2, .1f);
+            if (minMatureBlockDistance < transform.localScale.x / 4)
+                ship.ShipTransformer.ModifyVelocity(-(minMatureBlock.transform.position - transform.position).normalized * distanceWeight * Mathf.Abs(directionWeight)/10, .05f);
+            else ship.ShipTransformer.ModifyVelocity((minMatureBlock.transform.position - transform.position).normalized * distanceWeight * Mathf.Abs(directionWeight)/10, .05f);
+
             ship.ShipStatus.Boosting = true;
-            ship.boostMultiplier = 1 + (4*(distanceWeight * Mathf.Abs(directionWeight)));
-            ship.ResourceSystem.ChangeAmmoAmount(-ship.ResourceSystem.CurrentBoost+.1f);
-            ship.ResourceSystem.ChangeAmmoAmount(distanceWeight * Mathf.Abs(directionWeight));
+            ship.boostMultiplier = 1 + (4*combinedWeight);
+
+            ship.ResourceSystem.ChangeAmmoAmount(-ship.ResourceSystem.CurrentBoost);
+            ship.ResourceSystem.ChangeAmmoAmount(combinedWeight);
+
+            ship.ShipTransformer.PitchScaler = ship.ShipTransformer.YawScaler = 40 * (1-combinedWeight);
+
             minMatureBlock = null;
+            minMatureBlockDistance = Mathf.Infinity;
+
+            HapticController.PlayConstant(combinedWeight, combinedWeight, .1f);
         }
 
         // Function to compute the Gaussian value at a given x
