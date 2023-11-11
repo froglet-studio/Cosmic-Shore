@@ -1,7 +1,5 @@
 using System;
 using System.Collections.Generic;
-using CosmicShore;
-using UnityEngine.Serialization;
 
 namespace _Scripts._Core.Playfab_Models.Economy
 {
