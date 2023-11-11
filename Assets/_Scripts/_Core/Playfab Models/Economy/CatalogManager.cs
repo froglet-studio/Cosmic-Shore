@@ -258,7 +258,7 @@ namespace _Scripts._Core.Playfab_Models.Economy
                 new GetInventoryItemsRequest
                 {
                 },
-                OnLoadingPlayerInventory,
+                OnGettingInventoryItems,
                 HandleErrorReport
             );
         }
@@ -267,11 +267,11 @@ namespace _Scripts._Core.Playfab_Models.Economy
         /// On Loading Player Inventory
         /// </summary>
         /// <param name="response">Get Inventory Items Response</param>
-        private void OnLoadingPlayerInventory(GetInventoryItemsResponse response)
+        private void OnGettingInventoryItems(GetInventoryItemsResponse response)
         {
             if (response == null || response.Items?.Count == 0)
             {
-                Debug.LogWarningFormat("{0} - {1}: Unable to get catalog item or no inventory items are available.", nameof(CatalogManager), nameof(OnLoadingCatalogItems));
+                Debug.LogWarningFormat("{0} - {1}: Unable to get catalog item or no inventory items are available.", nameof(CatalogManager), nameof(OnGettingInventoryItems));
                 return;
             }
             
@@ -279,7 +279,7 @@ namespace _Scripts._Core.Playfab_Models.Economy
 
             foreach (var item in response.Items)
             {
-                Debug.LogFormat("{0} - {1}: id: {2} amount: {3} content type: {4} loaded.", nameof(CatalogManager), nameof(OnLoadingCatalogItems), item.Id, item.Amount.ToString(), item.Type);
+                Debug.LogFormat("{0} - {1}: id: {2} amount: {3} content type: {4} loaded.", nameof(CatalogManager), nameof(OnGettingInventoryItems), item.Id, item.Amount.ToString(), item.Type);
             }
         }
 
@@ -288,14 +288,14 @@ namespace _Scripts._Core.Playfab_Models.Economy
         /// Request inventory item by item id
         /// </summary>
         //public void GetInventoryItem([NotNull] InventoryItemReference itemReference)
-        public void GetInventoryItem([NotNull] in VirtualItemModel virtualItemModel)
+        public void GetCatalogItem([NotNull] in VirtualItemModel virtualItemModel)
         {
             _playFabEconomyInstanceAPI.GetItem(
                 new GetItemRequest()
                 {
                     Id = virtualItemModel.ItemId
                 },
-                OnLoadingPlayerInventory,
+                OnGettingCatalogItem,
                 HandleErrorReport
             );
         }
@@ -304,17 +304,17 @@ namespace _Scripts._Core.Playfab_Models.Economy
         /// On Loading Player Inventory
         /// </summary>
         /// <param name="response">Get Item Response</param>
-        private void OnLoadingPlayerInventory(GetItemResponse response)
+        private void OnGettingCatalogItem(GetItemResponse response)
         {
             if (response == null)
             {
-                Debug.LogWarningFormat("{0} - {1}: no response on adding inventory item.", nameof(CatalogManager), nameof(GetInventoryItem));
+                Debug.LogWarningFormat("{0} - {1}: no response on adding inventory item.", nameof(CatalogManager), nameof(OnGettingCatalogItem));
                 return;
             }
 
             if (response.Item == null)
             {
-                Debug.LogWarningFormat("{0} - {1}: no inventory item.", nameof(CatalogManager), nameof(GetInventoryItem));
+                Debug.LogWarningFormat("{0} - {1}: no inventory item.", nameof(CatalogManager), nameof(OnGettingCatalogItem));
                 return;
             }
                     
