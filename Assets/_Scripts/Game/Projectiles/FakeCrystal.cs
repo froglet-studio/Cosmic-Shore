@@ -2,7 +2,7 @@ using CosmicShore.Environment.FlowField;
 using CosmicShore.Core;
 using UnityEngine;
 
-namespace CosmicShore._Core.Ship.Projectiles
+namespace CosmicShore.Game.Projectiles
 {
     public class FakeCrystal : Crystal
     {

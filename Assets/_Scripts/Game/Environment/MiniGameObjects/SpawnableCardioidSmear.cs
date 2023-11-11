@@ -1,4 +1,4 @@
-using CosmicShore._Core.Ship;
+using CosmicShore.Game.Ship;
 using CosmicShore.Core;
 using UnityEditor;
 using UnityEngine;

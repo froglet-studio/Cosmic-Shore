@@ -2,7 +2,7 @@ using UnityEngine;
 using System.Collections;
 using CosmicShore.Core;
 using System.Collections.Generic;
-using CosmicShore._Core.Ship;
+using CosmicShore.Game.Ship;
 
 public class BoidManager : MonoBehaviour
 {

@@ -1,6 +1,7 @@
 using CosmicShore.App.Systems.Loadout;
 using CosmicShore.App.UI.Elements;
 using CosmicShore.Core.HangerBuilder;
+using CosmicShore.Game.Arcade;
 using System.Collections.Generic;
 using System.Linq;
 using TMPro;

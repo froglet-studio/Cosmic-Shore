@@ -2,9 +2,10 @@ using System.Collections;
 using System.Collections.Generic;
 using CosmicShore.Core;
 using CosmicShore.Core.HangerBuilder;
+using CosmicShore.Game.Ship;
 using UnityEngine;
 
-namespace CosmicShore._Core.Ship.Projectiles
+namespace CosmicShore.Game.Projectiles
 {
     public class AOEBlockCreation : AOEExplosion
     {

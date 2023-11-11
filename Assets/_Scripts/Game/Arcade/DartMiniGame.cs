@@ -1,27 +1,30 @@
 using CosmicShore.Environment.FlowField;
 using UnityEngine;
 
-public class DartMiniGame : MiniGame
+namespace CosmicShore.Game.Arcade
 {
-    [SerializeField] SpawnableDartBoard DartBoard;
-    [SerializeField] Crystal Crystal;
-    [SerializeField] Vector3 CrystalStartPosition;
-    [SerializeField] SegmentSpawner SegmentSpawner;
-
-    protected override void Start()
+    public class DartMiniGame : MiniGame
     {
-        base.Start();
+        [SerializeField] SpawnableDartBoard DartBoard;
+        [SerializeField] Crystal Crystal;
+        [SerializeField] Vector3 CrystalStartPosition;
+        [SerializeField] SegmentSpawner SegmentSpawner;
 
-        SegmentSpawner.Seed = new System.Random().Next();
-        SegmentSpawner.DifficultyAngle = IntensityLevel * (140 / 4); // (180 - random buffer - dartbard arclength) / (max difficulty level)
-        SegmentSpawner.Initialize();
-    }
+        protected override void Start()
+        {
+            base.Start();
 
-    protected override void SetupTurn()
-    {
-        base.SetupTurn();
+            SegmentSpawner.Seed = new System.Random().Next();
+            SegmentSpawner.DifficultyAngle = IntensityLevel * (140 / 4); // (180 - random buffer - dartbard arclength) / (max difficulty level)
+            SegmentSpawner.Initialize();
+        }
 
-        TrailSpawner.NukeTheTrails();
-        Crystal.transform.position = CrystalStartPosition;
+        protected override void SetupTurn()
+        {
+            base.SetupTurn();
+
+            TrailSpawner.NukeTheTrails();
+            Crystal.transform.position = CrystalStartPosition;
+        }
     }
 }

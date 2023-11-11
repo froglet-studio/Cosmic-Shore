@@ -3,8 +3,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using CosmicShore._Core.Input;
-using CosmicShore._Core.Ship.Projectiles;
 using UnityEngine;
+using CosmicShore.Game.AI;
+using CosmicShore.Game.Projectiles;
 
 namespace CosmicShore.Core
 {
@@ -21,15 +22,6 @@ namespace CosmicShore.Core
         public ResourceEvents ResourceEvent;
         public List<ShipAction> ClassActions;
     }
-
-    //[Serializable]
-    //public struct LevelEffectParameterMapping
-    //{
-    //    public Element Element;
-    //    public ShipLevelEffects LevelEffect;
-    //    public float Min;
-    //    public float Max;
-    //}
 
     [RequireComponent(typeof(ResourceSystem))]
     [RequireComponent(typeof(TrailSpawner))]

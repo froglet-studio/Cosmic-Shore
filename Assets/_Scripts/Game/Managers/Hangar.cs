@@ -1,5 +1,5 @@
 using CosmicShore.App.Systems.Squads;
-using CosmicShore.Core.IO;
+using CosmicShore.Game.AI;
 using CosmicShore.Utility.Singleton;
 using System;
 using System.Collections.Generic;

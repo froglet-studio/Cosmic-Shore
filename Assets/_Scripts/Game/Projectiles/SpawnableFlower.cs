@@ -1,12 +1,12 @@
 using System.Collections.Generic;
 using CosmicShore.Core;
+using CosmicShore.Game.Ship;
 using UnityEngine;
 
-namespace CosmicShore._Core.Ship.Projectiles
+namespace CosmicShore.Game.Projectiles
 {
     public class SpawnableFlower : SpawnableAbstractBase
     {
-
         [SerializeField] List<TrailBlock> lastTwoBlocks;
         [SerializeField] protected TrailBlock trailBlock;
         [SerializeField] Vector3 blockScale = new Vector3(20f, 10f, 5f);
@@ -16,10 +16,8 @@ namespace CosmicShore._Core.Ship.Projectiles
 
         Material material;
         Teams team;
-        CosmicShore.Core.Ship ship;
         public Material Material { get { return material; } set { material = new Material(value); } }
         public Teams Team { get => team; set => team = value; }
-        public CosmicShore.Core.Ship Ship { get => ship; set => ship = value; }
 
         public override GameObject Spawn()
         {

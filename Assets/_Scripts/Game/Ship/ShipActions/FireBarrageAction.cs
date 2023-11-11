@@ -1,6 +1,5 @@
-using System.Collections;
 using System.Collections.Generic;
-using CosmicShore._Core.Ship.Projectiles;
+using CosmicShore.Game.Projectiles;
 using UnityEngine;
 using CosmicShore.Core;
 
@@ -26,7 +25,6 @@ public class FireBarrageAction : ShipAction
         var json = JsonUtility.ToJson(from);
         JsonUtility.FromJsonOverwrite(json, to);
     }
-
 
     protected override void Start()
     {
@@ -74,6 +72,4 @@ public class FireBarrageAction : ShipAction
     {
 
     }
-
-
 }

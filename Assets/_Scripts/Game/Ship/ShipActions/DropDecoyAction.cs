@@ -1,5 +1,4 @@
-using CosmicShore._Core.Ship.Projectiles;
-using CosmicShore.Core;
+using CosmicShore.Game.Projectiles;
 using UnityEngine;
 
 public class DropDecoyAction : ShipAction
@@ -9,7 +8,6 @@ public class DropDecoyAction : ShipAction
     [SerializeField] float dropRadiusMinRange = 40;
     [SerializeField] float dropRadiusMaxRange = 60;
     [SerializeField] FakeCrystal decoy;
-
 
     public override void StartAction()
     {

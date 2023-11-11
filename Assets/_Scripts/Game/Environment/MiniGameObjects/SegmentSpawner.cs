@@ -1,6 +1,5 @@
 using System.Collections.Generic;
-using CosmicShore._Core.Ship;
-using CosmicShore.Core;
+using CosmicShore.Game.Ship;
 using UnityEngine;
 
 // TODO: P1 move to enums folder

@@ -1,6 +1,6 @@
 ﻿using CosmicShore.Core;
 using CosmicShore.Core.HangerBuilder;
-using CosmicShore._Core.Ship;
+using CosmicShore.Game.Ship;
 using CosmicShore.Utility;
 using System.Collections;
 using System.Collections.Generic;

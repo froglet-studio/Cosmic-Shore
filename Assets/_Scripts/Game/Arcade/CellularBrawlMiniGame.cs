@@ -1,12 +1,15 @@
 using CosmicShore.App.Systems.Squads;
 using CosmicShore.Core.HangerBuilder;
 
-public class CellularBrawlMiniGame : MiniGame
+namespace CosmicShore.Game.Arcade
 {
-    protected override void Start()
+    public class CellularBrawlMiniGame : MiniGame
     {
-        base.Start();
-        Hangar.Instance.SetPlayerVessel(SquadSystem.SquadLeader);
-        Players[0].defaultShip = SquadSystem.SquadLeader.Ship.Class;
+        protected override void Start()
+        {
+            base.Start();
+            Hangar.Instance.SetPlayerVessel(SquadSystem.SquadLeader);
+            Players[0].defaultShip = SquadSystem.SquadLeader.Ship.Class;
+        }
     }
 }

@@ -1,68 +1,71 @@
 using CosmicShore.Environment.FlowField;
 using UnityEngine;
 
-public class FlightSchoolMiniGame : MiniGame
+namespace CosmicShore.Game.Arcade
 {
-    [SerializeField] Crystal Crystal;
-    [SerializeField] Vector3 CrystalStartPosition;
-    [SerializeField] Vector3 CrystalStartScale = Vector3.one;
-    [SerializeField] SegmentSpawner SegmentSpawner;
-
-    public static new ShipTypes PlayerShipType = ShipTypes.Manta;
-
-    protected override void Start()
+    public class FlightSchoolMiniGame : MiniGame
     {
-        base.Start();
+        [SerializeField] Crystal Crystal;
+        [SerializeField] Vector3 CrystalStartPosition;
+        [SerializeField] Vector3 CrystalStartScale = Vector3.one;
+        [SerializeField] SegmentSpawner SegmentSpawner;
 
-        Crystal.transform.position = CrystalStartPosition;
-        Crystal.transform.localScale = CrystalStartScale;
-        Crystal.SetOrigin(CrystalStartPosition);
+        public static new ShipTypes PlayerShipType = ShipTypes.Manta;
 
-        SegmentSpawner.Seed = new System.Random().Next();
-        SegmentSpawner.numberOfSegments = IntensityLevel * 2 - 1;
-        SegmentSpawner.origin.z = -(IntensityLevel - 1) * SegmentSpawner.StraightLineLength;
-        SegmentSpawner.Initialize();
-    }
-
-    protected override void Update()
-    {
-        base.Update();
-
-        if (!gameRunning) return;
-
-        // TODO: pull this out into an "EliminationMonitor" class
-        // if any volume was destroyed, there must have been a collision
-        if (StatsManager.Instance.playerStats.ContainsKey(ActivePlayer.PlayerName) && StatsManager.Instance.playerStats[ActivePlayer.PlayerName].volumeDestroyed > 0)
+        protected override void Start()
         {
-            EliminateActivePlayer();
-            EndTurn();
+            base.Start();
+
+            Crystal.transform.position = CrystalStartPosition;
+            Crystal.transform.localScale = CrystalStartScale;
+            Crystal.SetOrigin(CrystalStartPosition);
+
+            SegmentSpawner.Seed = new System.Random().Next();
+            SegmentSpawner.numberOfSegments = IntensityLevel * 2 - 1;
+            SegmentSpawner.origin.z = -(IntensityLevel - 1) * SegmentSpawner.StraightLineLength;
+            SegmentSpawner.Initialize();
         }
-    }
 
-    protected override void EndTurn()
-    {
-        foreach (var turnMonitor in TurnMonitors)
+        protected override void Update()
         {
-            if (turnMonitor is TimeBasedTurnMonitor timeMonitor)
+            base.Update();
+
+            if (!gameRunning) return;
+
+            // TODO: pull this out into an "EliminationMonitor" class
+            // if any volume was destroyed, there must have been a collision
+            if (StatsManager.Instance.playerStats.ContainsKey(ActivePlayer.PlayerName) && StatsManager.Instance.playerStats[ActivePlayer.PlayerName].volumeDestroyed > 0)
             {
-                if (timeMonitor.CheckForEndOfTurn()) 
-                {
-                    EliminateActivePlayer();
-                    base.EndTurn();
-                    return;
-                }
+                EliminateActivePlayer();
+                EndTurn();
             }
         }
-        
-        base.EndTurn();
-    }
 
-    protected override void SetupTurn()
-    {
-        base.SetupTurn();
-        Crystal.transform.position = CrystalStartPosition;
-        ActivePlayer.Ship.DisableSkimmer();
+        protected override void EndTurn()
+        {
+            foreach (var turnMonitor in TurnMonitors)
+            {
+                if (turnMonitor is TimeBasedTurnMonitor timeMonitor)
+                {
+                    if (timeMonitor.CheckForEndOfTurn())
+                    {
+                        EliminateActivePlayer();
+                        base.EndTurn();
+                        return;
+                    }
+                }
+            }
 
-        StatsManager.Instance.ResetStats(); // TODO: this belongs in the EliminationMonitor
+            base.EndTurn();
+        }
+
+        protected override void SetupTurn()
+        {
+            base.SetupTurn();
+            Crystal.transform.position = CrystalStartPosition;
+            ActivePlayer.Ship.DisableSkimmer();
+
+            StatsManager.Instance.ResetStats(); // TODO: this belongs in the EliminationMonitor
+        }
     }
 }

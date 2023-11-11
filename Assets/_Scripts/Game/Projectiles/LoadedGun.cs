@@ -1,10 +1,6 @@
-using System.Collections;
-using System.ComponentModel;
-using System.Runtime.InteropServices.WindowsRuntime;
-using CosmicShore._Core.Ship.Projectiles;
 using UnityEngine;
 
-namespace CosmicShore.Core
+namespace CosmicShore.Game.Projectiles
 {
     public class LoadedGun : Gun
     {

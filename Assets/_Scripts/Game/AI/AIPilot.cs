@@ -1,10 +1,9 @@
 using UnityEngine;
 using System.Collections.Generic;
-using System;
 using System.Collections;
+using CosmicShore.Core;
 
-
-namespace CosmicShore.Core.IO
+namespace CosmicShore.Game.AI
 {
     public class AIPilot : MonoBehaviour
     {
@@ -65,7 +64,7 @@ namespace CosmicShore.Core.IO
         };
 
         ShipStatus shipStatus;
-        Ship ship;
+        CosmicShore.Core.Ship ship;
 
         float lastPitchTarget;
         float lastYawTarget;
@@ -138,7 +137,7 @@ namespace CosmicShore.Core.IO
         void Start()
         {
             maxDistanceSquared = maxDistance * maxDistance;
-            ship = GetComponent<Ship>();
+            ship = GetComponent<CosmicShore.Core.Ship>();
             if (AutoPilotEnabled)
             {
                 ship.InputController.AutoPilotEnabled = true;

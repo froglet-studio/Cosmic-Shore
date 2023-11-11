@@ -1,4 +1,4 @@
-namespace CosmicShore._Core.Playfab_Models.Economy
+namespace CosmicShore._Core.Playfab.Economy
 {
     public enum VirtualItemContentTypes
     {

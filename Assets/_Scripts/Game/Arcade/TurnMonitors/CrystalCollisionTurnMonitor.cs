@@ -1,25 +1,27 @@
-using CosmicShore.Core;
 using UnityEngine;
 
-public class CrystalCollisionTurnMonitor : TurnMonitor
+namespace CosmicShore.Game.Arcade
 {
-    [SerializeField] int CrystalCollisions;
-    [SerializeField] MiniGame Game;
-
-    public override bool CheckForEndOfTurn()
+    public class CrystalCollisionTurnMonitor : TurnMonitor
     {
-        if (paused) return false;
+        [SerializeField] int CrystalCollisions;
+        [SerializeField] MiniGame Game;
 
-        if (!StatsManager.Instance.playerStats.ContainsKey(Game.ActivePlayer.PlayerName))
-            return false;
+        public override bool CheckForEndOfTurn()
+        {
+            if (paused) return false;
 
-        return StatsManager.Instance.playerStats[Game.ActivePlayer.PlayerName].crystalsCollected >= CrystalCollisions;
-    }
+            if (!StatsManager.Instance.playerStats.ContainsKey(Game.ActivePlayer.PlayerName))
+                return false;
 
-    public override void NewTurn(string playerName)
-    {
-        StatsManager.Instance.ResetStats();
+            return StatsManager.Instance.playerStats[Game.ActivePlayer.PlayerName].crystalsCollected >= CrystalCollisions;
+        }
 
-        // TODO: perhaps coerce stats manager to create an entry for the player here
+        public override void NewTurn(string playerName)
+        {
+            StatsManager.Instance.ResetStats();
+
+            // TODO: perhaps coerce stats manager to create an entry for the player here
+        }
     }
 }

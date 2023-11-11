@@ -1,5 +1,5 @@
-using CosmicShore._Core.Ship.Projectiles;
 using CosmicShore.Core;
+using CosmicShore.Game.Projectiles;
 using UnityEngine;
 
 public class FireGunAction : ShipAction

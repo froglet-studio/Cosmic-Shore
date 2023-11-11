@@ -2,8 +2,9 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using CosmicShore.Core;
+using CosmicShore.Game.Ship;
 
-namespace CosmicShore._Core.Ship.Projectiles
+namespace CosmicShore.Game.Projectiles
 {
     public class AOEFlowerCreation : AOEBlockCreation
     {

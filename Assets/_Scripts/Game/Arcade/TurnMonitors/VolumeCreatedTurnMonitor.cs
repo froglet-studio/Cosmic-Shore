@@ -1,18 +1,21 @@
 using UnityEngine;
 
-public class VolumeCreatedTurnMonitor : TurnMonitor
+namespace CosmicShore.Game.Arcade
 {
-    [SerializeField] float Amount;
-    [SerializeField] MiniGame Game;
-    public override bool CheckForEndOfTurn()
+    public class VolumeCreatedTurnMonitor : TurnMonitor
     {
-        if (paused) return false;
+        [SerializeField] float Amount;
+        [SerializeField] MiniGame Game;
+        public override bool CheckForEndOfTurn()
+        {
+            if (paused) return false;
 
-        return Amount >= StatsManager.Instance.playerStats[Game.ActivePlayer.PlayerName].volumeCreated;
-    }
+            return Amount >= StatsManager.Instance.playerStats[Game.ActivePlayer.PlayerName].volumeCreated;
+        }
 
-    public override void NewTurn(string playerName)
-    {
-        StatsManager.Instance.ResetStats();
+        public override void NewTurn(string playerName)
+        {
+            StatsManager.Instance.ResetStats();
+        }
     }
 }

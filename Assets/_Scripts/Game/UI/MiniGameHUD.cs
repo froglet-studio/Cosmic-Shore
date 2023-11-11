@@ -1,9 +1,8 @@
+using CosmicShore.Core;
+using CosmicShore.Game.Arcade;
 using TMPro;
 using UnityEngine;
-using UnityEngine.EventSystems;
 using UnityEngine.UI;
-using CosmicShore.Core;
-
 
 public class MiniGameHUD : MonoBehaviour
 {
@@ -70,4 +69,3 @@ public class MiniGameHUD : MonoBehaviour
         ship.StopShipControllerActions(InputEvents.Button3Action);
     }
 }
-

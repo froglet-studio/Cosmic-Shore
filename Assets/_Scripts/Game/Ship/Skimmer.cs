@@ -1,8 +1,8 @@
+using CosmicShore._Core.Input;
+using CosmicShore.Game.Projectiles;
 using System.Collections;
 using System.Collections.Generic;
-using CosmicShore._Core.Input;
 using UnityEngine;
-using CosmicShore._Core.Ship.Projectiles;
 
 namespace CosmicShore.Core
 {

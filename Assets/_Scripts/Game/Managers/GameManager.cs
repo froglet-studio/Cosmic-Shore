@@ -1,5 +1,5 @@
 using CosmicShore.Environment.FlowField;
-using CosmicShore.Core.IO;
+using CosmicShore.Game.AI; // TODO: code smell that this namespace needs to be included here
 using CosmicShore.Utility.Singleton;
 using UnityEngine;
 using UnityEngine.SceneManagement;

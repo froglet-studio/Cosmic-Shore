@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace CosmicShore._Core.Playfab_Models.Economy
+namespace CosmicShore._Core.Playfab.Economy
 {
     [Serializable]
     public class InventoryModel

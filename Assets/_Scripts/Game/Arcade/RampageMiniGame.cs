@@ -1,36 +1,40 @@
 using CosmicShore.Environment.FlowField;
 using UnityEngine;
-public class RampageMiniGame : MiniGame
+
+namespace CosmicShore.Game.Arcade
 {
-    [SerializeField] Crystal Crystal;
-    [SerializeField] Vector3 CrystalStartPosition;
-    [SerializeField] SegmentSpawner SegmentSpawner;
-    [SerializeField] SpawnableEllipsoid spawnableEllipsoid;
-    int maxDifficulty = 4;
-    float maxSize = 100;
-    float maxSphereRadius = 250;
-
-    public static new ShipTypes PlayerShipType = ShipTypes.Rhino;
-
-    protected override void Start()
+    public class RampageMiniGame : MiniGame
     {
-        base.Start();
+        [SerializeField] Crystal Crystal;
+        [SerializeField] Vector3 CrystalStartPosition;
+        [SerializeField] SegmentSpawner SegmentSpawner;
+        [SerializeField] SpawnableEllipsoid spawnableEllipsoid;
+        int maxDifficulty = 4;
+        float maxSize = 100;
+        float maxSphereRadius = 250;
 
-        SegmentSpawner.Seed = new System.Random().Next();
-    }
+        public static new ShipTypes PlayerShipType = ShipTypes.Rhino;
 
-    protected override void SetupTurn()
-    {
-        base.SetupTurn();
+        protected override void Start()
+        {
+            base.Start();
 
-        SegmentSpawner.SphereRadius = maxSphereRadius * IntensityLevel;
-        spawnableEllipsoid.maxlength = spawnableEllipsoid.maxwidth = spawnableEllipsoid.maxheight = maxSize * IntensityLevel / maxDifficulty;
-        
+            SegmentSpawner.Seed = new System.Random().Next();
+        }
 
-        TrailSpawner.NukeTheTrails();
-        Crystal.transform.position = CrystalStartPosition;
+        protected override void SetupTurn()
+        {
+            base.SetupTurn();
+
+            SegmentSpawner.SphereRadius = maxSphereRadius * IntensityLevel;
+            spawnableEllipsoid.maxlength = spawnableEllipsoid.maxwidth = spawnableEllipsoid.maxheight = maxSize * IntensityLevel / maxDifficulty;
 
 
-        SegmentSpawner.Initialize();
+            TrailSpawner.NukeTheTrails();
+            Crystal.transform.position = CrystalStartPosition;
+
+
+            SegmentSpawner.Initialize();
+        }
     }
 }

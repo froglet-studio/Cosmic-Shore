@@ -1,51 +1,54 @@
 using CosmicShore.Environment.FlowField;
 using UnityEngine;
 
-public class CourseMiniGame : MiniGame
+namespace CosmicShore.Game.Arcade
 {
-    [SerializeField] Crystal Crystal;
-    [SerializeField] Vector3 CrystalStartPosition;
-    [SerializeField] SegmentSpawner SegmentSpawner;
-    [SerializeField] int numberOfSegments = 10;
-    [SerializeField] int straightLineLength = 400;
-    [SerializeField] bool ResetTrails = true;
-
-    //public static virtual ShipTypes PlayerShipType = ShipTypes.Rhino;
-
-    protected override void Start()
+    public class CourseMiniGame : MiniGame
     {
-        base.Start();
-        SegmentSpawner.Seed = new System.Random().Next();
-        numberOfSegments = numberOfSegments * IntensityLevel;
+        [SerializeField] Crystal Crystal;
+        [SerializeField] Vector3 CrystalStartPosition;
+        [SerializeField] SegmentSpawner SegmentSpawner;
+        [SerializeField] int numberOfSegments = 10;
+        [SerializeField] int straightLineLength = 400;
+        [SerializeField] bool ResetTrails = true;
 
-        if (PlayerShipType == ShipTypes.Rhino)
-            ScoreTracker.ScoringMode = ScoringModes.HostileVolumeDestroyed;
+        //public static virtual ShipTypes PlayerShipType = ShipTypes.Rhino;
 
-        if (!ResetTrails)
+        protected override void Start()
         {
-            SegmentSpawner.numberOfSegments = numberOfSegments;
-            SegmentSpawner.StraightLineLength = straightLineLength / IntensityLevel;
+            base.Start();
+            SegmentSpawner.Seed = new System.Random().Next();
+            numberOfSegments = numberOfSegments * IntensityLevel;
 
-            TrailSpawner.NukeTheTrails();
-            Crystal.transform.position = CrystalStartPosition;
+            if (PlayerShipType == ShipTypes.Rhino)
+                ScoreTracker.ScoringMode = ScoringModes.HostileVolumeDestroyed;
 
-            SegmentSpawner.Initialize();
+            if (!ResetTrails)
+            {
+                SegmentSpawner.numberOfSegments = numberOfSegments;
+                SegmentSpawner.StraightLineLength = straightLineLength / IntensityLevel;
+
+                TrailSpawner.NukeTheTrails();
+                Crystal.transform.position = CrystalStartPosition;
+
+                SegmentSpawner.Initialize();
+            }
         }
-    }
 
-    protected override void SetupTurn()
-    {
-        base.SetupTurn();
-
-        if (ResetTrails)
+        protected override void SetupTurn()
         {
-            SegmentSpawner.numberOfSegments = numberOfSegments;
-            SegmentSpawner.StraightLineLength = straightLineLength / IntensityLevel;
+            base.SetupTurn();
 
-            TrailSpawner.NukeTheTrails();
-            Crystal.transform.position = CrystalStartPosition;
+            if (ResetTrails)
+            {
+                SegmentSpawner.numberOfSegments = numberOfSegments;
+                SegmentSpawner.StraightLineLength = straightLineLength / IntensityLevel;
 
-            SegmentSpawner.Initialize();
+                TrailSpawner.NukeTheTrails();
+                Crystal.transform.position = CrystalStartPosition;
+
+                SegmentSpawner.Initialize();
+            }
         }
     }
 }

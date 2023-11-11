@@ -2,7 +2,7 @@ using CosmicShore.Core;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
-using CosmicShore._Core.Ship;
+using CosmicShore.Game.Ship;
 using UnityEngine;
 using UnityEngine.UIElements;
 

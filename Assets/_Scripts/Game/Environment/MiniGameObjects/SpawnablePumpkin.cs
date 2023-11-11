@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using CosmicShore._Core.Ship;
+using CosmicShore.Game.Ship;
 using UnityEngine;
 
 namespace CosmicShore.Environment.MiniGameObjects

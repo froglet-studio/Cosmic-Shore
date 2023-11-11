@@ -1,6 +1,6 @@
 using CosmicShore.Core;
 using System.Collections;
-using CosmicShore._Core.Ship.Projectiles;
+using CosmicShore.Game.Projectiles;
 using UnityEngine;
 
 public class ChargedFireGunAction : ShipAction

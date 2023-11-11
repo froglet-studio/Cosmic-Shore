@@ -1,4 +1,4 @@
-using CosmicShore._Core.Playfab_Models.Economy;
+using CosmicShore._Core.Playfab.Economy;
 using CosmicShore.App.Systems.CallToAction;
 using CosmicShore.App.Systems.UserActions;
 using CosmicShore.Utility.Singleton;

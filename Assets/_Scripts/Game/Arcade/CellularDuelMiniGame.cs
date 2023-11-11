@@ -1,1 +1,4 @@
-public class CellularDuelMiniGame : MiniGame {}
+namespace CosmicShore.Game.Arcade
+{
+    public class CellularDuelMiniGame : MiniGame { }
+}

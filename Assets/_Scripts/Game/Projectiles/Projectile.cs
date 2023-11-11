@@ -6,7 +6,7 @@ using CosmicShore.Core;
 using CosmicShore.Core.HangerBuilder;
 using UnityEngine;
 
-namespace CosmicShore._Core.Ship.Projectiles
+namespace CosmicShore.Game.Projectiles
 {
     public class Projectile : MonoBehaviour
     {
@@ -25,9 +25,8 @@ namespace CosmicShore._Core.Ship.Projectiles
 
         MeshRenderer meshRenderer;
 
-        private void Start()
+        void Start()
         {
-            
             if (spike) 
             {
                 //transform.localScale = new Vector3(.4f,.4f,2);

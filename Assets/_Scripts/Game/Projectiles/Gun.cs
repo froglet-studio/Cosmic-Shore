@@ -1,7 +1,7 @@
 using System.Collections;
 using UnityEngine;
 
-namespace CosmicShore._Core.Ship.Projectiles
+namespace CosmicShore.Game.Projectiles
 {
     public enum FiringPatterns
     {

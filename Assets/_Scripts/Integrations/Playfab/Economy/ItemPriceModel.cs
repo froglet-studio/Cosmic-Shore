@@ -1,6 +1,6 @@
 using System;
 
-namespace CosmicShore._Core.Playfab_Models.Economy
+namespace CosmicShore._Core.Playfab.Economy
 {
 	[Serializable]
     public class ItemPriceModel

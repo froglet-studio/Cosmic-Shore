@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using CosmicShore._Core.Enums;
-using CosmicShore._Core.Playfab_Models.Economy;
-using CosmicShore._Core.Playfab_Models.Player_Models;
+using CosmicShore._Core.Playfab.Economy;
+using CosmicShore._Core.Playfab.Player_Models;
 using PlayFab;
 using UnityEngine;
 using UnityEngine.UI;

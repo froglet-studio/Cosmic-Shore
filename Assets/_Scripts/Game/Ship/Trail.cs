@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using CosmicShore.Core;
 using UnityEngine;
 
-namespace CosmicShore._Core.Ship
+namespace CosmicShore.Game.Ship
 {
     public class Trail
     {

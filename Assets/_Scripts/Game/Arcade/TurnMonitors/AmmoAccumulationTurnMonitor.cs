@@ -1,18 +1,21 @@
 using UnityEngine;
 
-public class AmmoAccumulationTurnMonitor : TurnMonitor
+namespace CosmicShore.Game.Arcade
 {
-    [SerializeField] float percent;
-    [SerializeField] MiniGame Game;
-
-    public override bool CheckForEndOfTurn()
+    public class AmmoAccumulationTurnMonitor : TurnMonitor
     {
-        if (paused) return false;
+        [SerializeField] float percent;
+        [SerializeField] MiniGame Game;
 
-        return Game.ActivePlayer.Ship.ResourceSystem.CurrentAmmo / Game.ActivePlayer.Ship.ResourceSystem.MaxAmmo > percent / 100;
-    }
+        public override bool CheckForEndOfTurn()
+        {
+            if (paused) return false;
 
-    public override void NewTurn(string playerName)
-    {
+            return Game.ActivePlayer.Ship.ResourceSystem.CurrentAmmo / Game.ActivePlayer.Ship.ResourceSystem.MaxAmmo > percent / 100;
+        }
+
+        public override void NewTurn(string playerName)
+        {
+        }
     }
 }
