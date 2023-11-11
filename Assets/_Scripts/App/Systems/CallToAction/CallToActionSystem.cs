@@ -56,8 +56,10 @@ public class CallToActionSystem : SingletonPersistent<CallToActionSystem>
     public void RegisterCallToActionTarget(CallToActionTargetType targetId, Action OnCallToActionActive, Action OnCallToActionDismissed)
     {
         Debug.Log($"{nameof(RegisterCallToActionTarget)}: {targetId}");
-        CallToActionActivatedCallbacks.Add(targetId, OnCallToActionActive);
-        CallToActionDismissedCallbacks.Add(targetId, OnCallToActionDismissed);
+        if (!CallToActionActivatedCallbacks.ContainsKey(targetId))
+            CallToActionActivatedCallbacks.Add(targetId, OnCallToActionActive);
+        if (!CallToActionDismissedCallbacks.ContainsKey(targetId))
+            CallToActionDismissedCallbacks.Add(targetId, OnCallToActionDismissed);
     }
 
     public bool IsCallToActionTargetActive(CallToActionTargetType targetId)
