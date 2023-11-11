@@ -2,6 +2,7 @@ using System;
 using UnityEngine;
 using System.Collections;
 using UnityEngine.Serialization;
+using CosmicShore.Game.UI;
 
 namespace CosmicShore.Core
 {

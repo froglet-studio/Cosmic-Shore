@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-namespace CosmicShore.Core.IO
+namespace CosmicShore.Game.IO
 {
     public class PhoneFlipDetector : MonoBehaviour
     {

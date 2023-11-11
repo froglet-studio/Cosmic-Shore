@@ -1,6 +1,7 @@
-﻿using CosmicShore.Game.IO;
+﻿using CosmicShore.Core;
+using CosmicShore.Game.IO;
 
-namespace CosmicShore.Core
+namespace CosmicShore.Void
 {
     public class HapticEffect : IImpactEffect
     {

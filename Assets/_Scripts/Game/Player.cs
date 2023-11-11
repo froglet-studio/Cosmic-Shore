@@ -3,6 +3,7 @@ using CosmicShore.Core;
 using CosmicShore.Core.HangerBuilder;
 using CosmicShore.Game.IO;
 using CosmicShore.Game.AI;
+using CosmicShore.Game.UI;
 
 [System.Serializable]
 public class Player : MonoBehaviour

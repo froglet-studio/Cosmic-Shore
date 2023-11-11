@@ -12,7 +12,7 @@ namespace CosmicShore.Game.Projectiles
     {
         public Vector3 Velocity;
         public Teams Team;
-        public CosmicShore.Core.Ship Ship;
+        public Ship Ship;
 
         [SerializeField] List<TrailBlockImpactEffects> trailBlockImpactEffects;
         [SerializeField] List<ShipImpactEffects> shipImpactEffects;

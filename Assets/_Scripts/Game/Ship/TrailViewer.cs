@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using CosmicShore.Core;
 using System;
 using System.Linq;
-using CosmicShore.Game.Ship;
+
 
 public class TrailViewer : MonoBehaviour
 {

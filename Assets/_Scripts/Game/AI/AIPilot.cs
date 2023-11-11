@@ -64,7 +64,7 @@ namespace CosmicShore.Game.AI
         };
 
         ShipStatus shipStatus;
-        CosmicShore.Core.Ship ship;
+        Ship ship;
 
         float lastPitchTarget;
         float lastYawTarget;
@@ -137,7 +137,7 @@ namespace CosmicShore.Game.AI
         void Start()
         {
             maxDistanceSquared = maxDistance * maxDistance;
-            ship = GetComponent<CosmicShore.Core.Ship>();
+            ship = GetComponent<Ship>();
             if (AutoPilotEnabled)
             {
                 ship.InputController.AutoPilotEnabled = true;

@@ -1,6 +1,6 @@
 using CosmicShore.Core;
 using System;
-using CosmicShore.Game.Ship;
+
 using UnityEngine;
 
 public class SpawnableBatman : SpawnableAbstractBase

@@ -2,7 +2,6 @@ using UnityEngine;
 using System.Collections;
 using CosmicShore.Core;
 using System.Collections.Generic;
-using CosmicShore.Game.Ship;
 
 public class BoidManager : MonoBehaviour
 {
@@ -81,7 +80,6 @@ public class BoidManager : MonoBehaviour
             }
 
             CalculateTeamWeights();
-
         }
     }
 }

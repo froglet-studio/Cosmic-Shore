@@ -1,11 +1,6 @@
 using CosmicShore.Core;
-using System.Collections;
 using System.Collections.Generic;
-using System.IO;
-using CosmicShore.Game.Ship;
 using UnityEngine;
-using UnityEngine.UIElements;
-
 
 public struct Cord
 {
@@ -13,7 +8,6 @@ public struct Cord
     public Vector3[] Vertices;
     public LineRenderer LineRendererInstance;
     public Vector3[] Velocities; // Added for momentum
-
 
     public Cord(int verticesCount)
     {

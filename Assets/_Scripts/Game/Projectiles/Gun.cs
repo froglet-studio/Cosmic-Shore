@@ -1,3 +1,4 @@
+using CosmicShore.Core;
 using System.Collections;
 using UnityEngine;
 
@@ -13,7 +14,7 @@ namespace CosmicShore.Game.Projectiles
     {
         public float firePeriod = .2f;
         public Teams Team;
-        public CosmicShore.Core.Ship Ship;
+        public Ship Ship;
         bool onCooldown = false;
         float sideLength = 2;
         float barrelLength = 4;

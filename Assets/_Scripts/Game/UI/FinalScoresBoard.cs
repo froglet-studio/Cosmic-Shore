@@ -1,12 +1,12 @@
 using UnityEngine;
 using System.Collections.Generic;
 using UnityEngine.UI;
-using static CosmicShore.Core.GameSetting;
+using CosmicShore.Core;
 
 /// <summary>
 /// Controls the final SinglePlayerScore and high SinglePlayerScore display panel
 /// </summary>
-namespace CosmicShore.Core
+namespace CosmicShore.Game.UI
 {
     public class FinalScoresBoard : MonoBehaviour
     {
@@ -31,8 +31,8 @@ namespace CosmicShore.Core
 
         private void OnGameOver()
         {
-            currentScore = PlayerPrefs.GetInt(PlayerPrefKeys.Score.ToString());
-            highScore = PlayerPrefs.GetInt(PlayerPrefKeys.HighScore.ToString());
+            currentScore = PlayerPrefs.GetInt(GameSetting.PlayerPrefKeys.Score.ToString());
+            highScore = PlayerPrefs.GetInt(GameSetting.PlayerPrefKeys.HighScore.ToString());
             DisplayCurrentScoreWithSprites();
             DisplayHighScoreWithSprites();
         }

@@ -1,6 +1,6 @@
 ﻿using CosmicShore.Core.HangerBuilder;
 using System.Collections;
-using CosmicShore.Game.Ship;
+
 using UnityEngine;
 
 namespace CosmicShore.Core

@@ -4,6 +4,7 @@ using CosmicShore.Core;
 using Gamepad = UnityEngine.InputSystem.Gamepad;
 using Gyroscope = UnityEngine.Gyroscope;
 using TouchPhase = UnityEngine.TouchPhase;
+using CosmicShore.Game.UI;
 
 namespace CosmicShore.Game.IO
 {
@@ -12,9 +13,8 @@ namespace CosmicShore.Game.IO
         [SerializeField] GameCanvas gameCanvas;
         [HideInInspector] public bool AutoPilotEnabled;
         [SerializeField] public bool Portrait;
-        [HideInInspector] public CosmicShore.Core.Ship ship;
+        [HideInInspector] public Ship ship;
         [HideInInspector] public static ScreenOrientation currentOrientation;
-
 
         float phoneFlipThreshold = .1f;
         bool PhoneFlipState;

@@ -10,7 +10,7 @@ namespace CosmicShore.Game.AI
         [SerializeField] GameObject gunMount;
 
         public Teams Team;
-        public CosmicShore.Core.Ship Ship;
+        public Ship Ship;
         
         void Start()
         {

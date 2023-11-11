@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using CosmicShore.Core;
 using CosmicShore.Core.HangerBuilder;
-using CosmicShore.Game.Ship;
+
 using UnityEngine;
 
 namespace CosmicShore.Game.Projectiles

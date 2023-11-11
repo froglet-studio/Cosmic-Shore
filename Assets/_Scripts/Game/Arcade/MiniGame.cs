@@ -9,6 +9,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using CosmicShore.App.Systems.UserActions;
+using CosmicShore.Game.UI;
 
 namespace CosmicShore.Game.Arcade
 {

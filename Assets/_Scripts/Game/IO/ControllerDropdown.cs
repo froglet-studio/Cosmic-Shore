@@ -2,34 +2,37 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-[RequireComponent(typeof(TMP_Dropdown))]
-public class ControllerDropdown : MonoBehaviour
+namespace CosmicShore.Game.IO
 {
-    TMP_Dropdown dropdown;
-
-    void Start()
+    [RequireComponent(typeof(TMP_Dropdown))]
+    public class ControllerDropdown : MonoBehaviour
     {
-        dropdown= GetComponent<TMP_Dropdown>();
-    }
+        TMP_Dropdown dropdown;
 
-
-    void Update()
-    {
-        if (Gamepad.current != null)
+        void Start()
         {
-            if (Gamepad.current.dpad.up.wasPressedThisFrame)
-                Up();
-            if (Gamepad.current.dpad.down.wasPressedThisFrame)
-                Down();
+            dropdown = GetComponent<TMP_Dropdown>();
         }
-    }
 
-    void Up()
-    {
-        dropdown.value = (dropdown.value - 1) % dropdown.options.Count;
-    }
-    void Down()
-    {
-        dropdown.value = (dropdown.value + 1) % dropdown.options.Count;
+
+        void Update()
+        {
+            if (Gamepad.current != null)
+            {
+                if (Gamepad.current.dpad.up.wasPressedThisFrame)
+                    Up();
+                if (Gamepad.current.dpad.down.wasPressedThisFrame)
+                    Down();
+            }
+        }
+
+        void Up()
+        {
+            dropdown.value = (dropdown.value - 1) % dropdown.options.Count;
+        }
+        void Down()
+        {
+            dropdown.value = (dropdown.value + 1) % dropdown.options.Count;
+        }
     }
 }
