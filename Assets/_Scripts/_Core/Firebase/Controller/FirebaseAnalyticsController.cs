@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using Firebase;
 using Firebase.Analytics;
-using JetBrains.Annotations;
 using StarWriter.Utility.Singleton;
 using UnityEngine;
 

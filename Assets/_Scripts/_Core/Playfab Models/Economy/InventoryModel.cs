@@ -8,6 +8,8 @@ namespace _Scripts._Core.Playfab_Models.Economy
     {
         // Vessels
         public List<VirtualItemModel> Vessels;
+        // Vessel Upgrades
+        public List<VirtualItemModel> VesselUpgrades;
         // Ships
         public List<VirtualItemModel> Ships;
         // MiniGames

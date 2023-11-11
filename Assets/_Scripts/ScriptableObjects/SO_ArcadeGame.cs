@@ -17,4 +17,5 @@ public class SO_ArcadeGame : ScriptableObject
     [Min(1)] public int MinPlayers = 1;
     [Range(1, 4)] public int MaxPlayers = 2;
     public string SceneName;
+    public CallToActionTargetType CallToActionTargetType;
 }

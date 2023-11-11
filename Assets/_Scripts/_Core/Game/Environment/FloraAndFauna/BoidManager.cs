@@ -17,7 +17,6 @@ public class BoidManager : MonoBehaviour
     public float goalUpdateInterval = 5f;
 
     private Vector3 goalPos;
-    private float goalUpdateTimer = 0f;
     public List<float> Weights;
 
     Trail boidTrail = new();

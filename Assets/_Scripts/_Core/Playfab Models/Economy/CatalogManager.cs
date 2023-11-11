@@ -17,8 +17,9 @@ namespace _Scripts._Core.Playfab_Models.Economy
         
         // PlayFab Economy API instance
         static PlayFabEconomyInstanceAPI _playFabEconomyInstanceAPI;
-        
+
         // Player inventory and items
+        public static InventoryModel catalog;
         private static InventoryModel _playerInventory; 
         private static string _shardId;
 
@@ -27,7 +28,7 @@ namespace _Scripts._Core.Playfab_Models.Economy
         {
             _playerInventory ??= new InventoryModel();
             AuthenticationManager.OnLoginSuccess += InitializePlayFabEconomyAPI;
-            // AuthenticationManager.OnLoginSuccess += LoadCatalogItems;
+            AuthenticationManager.OnLoginSuccess += LoadAllCatalogItems;
             AuthenticationManager.OnLoginSuccess += LoadPlayerInventory;
             // AuthenticationManager.OnRegisterSuccess += GrantStartingInventory;
         }
@@ -35,7 +36,7 @@ namespace _Scripts._Core.Playfab_Models.Economy
         public void OnDestroy()
         {
             AuthenticationManager.OnLoginSuccess -= InitializePlayFabEconomyAPI;
-            // AuthenticationManager.OnLoginSuccess -= LoadCatalogItems;
+            AuthenticationManager.OnLoginSuccess -= LoadAllCatalogItems;
             AuthenticationManager.OnLoginSuccess -= LoadPlayerInventory;
             // AuthenticationManager.OnRegisterSuccess -= GrantStartingInventory;
         }
@@ -61,12 +62,22 @@ namespace _Scripts._Core.Playfab_Models.Economy
         #endregion
 
         #region Catalog Operations
-    
+
+
         /// <summary>
         /// Load Catalog Items
         /// Get all catalog items
         /// </summary>
-        public void LoadCatalogItems(in string filter = "")
+        public void LoadAllCatalogItems()
+        {
+            LoadCatalogItems();
+        }
+
+        /// <summary>
+        /// Load Catalog Items
+        /// Get all catalog items
+        /// </summary>
+        public void LoadCatalogItems(string filter = "")
         {
             _playFabEconomyInstanceAPI.SearchItems(
                 new()
@@ -98,17 +109,103 @@ namespace _Scripts._Core.Playfab_Models.Economy
             }
             
             Debug.LogFormat("{0} - {1}: Catalog items Loaded.", nameof(CatalogManager), nameof(OnLoadingCatalogItems));
+            catalog = new()
+            {
+                VesselShards = new(),
+                Ships = new(),
+                Vessels = new(),
+                MiniGames = new()
+            };
+
             foreach (var item in response.Items)
             {
                 Debug.LogFormat("   CatalogManager - Inventory Id: {0} title: {1} content type: {2}", item.Id, item.Title, item.ContentType);
                 Debug.LogFormat("   CatalogManager - tags: {0}", string.Join(",", item.Tags));
+                Debug.LogFormat("   CatalogManager - Type: {0}", item.Type);
+                Debug.LogFormat("   CatalogManager - ContentType: {0}", item.ContentType);
+                var converted = PlayfabToCosmicShoreVirtualItem(item);
+                switch (converted.ContentType)
+                {
+                    case "ShipClass":
+                        Debug.Log("Adding Ship");
+                        catalog.Ships.Add(converted);
+                        break;
+                    case "VesselShard":
+                        Debug.Log("Adding Shard");
+                        catalog.VesselShards.Add(converted);
+                        break;
+                    case "VesselUpgrade":
+                        Debug.Log("Adding Upgrade");
+                        catalog.VesselUpgrades.Add(converted);
+                        break;
+                    case "Game":
+                        Debug.Log("Adding Game");
+                        catalog.MiniGames.Add(converted);
+                        break;
+                }
             }
         }
-    
-    
+
         #endregion
 
         #region Inventory Operations
+        /// <summary>
+        /// Grant Starting Inventory
+        /// </summary>
+        /// <param name="startingItems">Starting Items List</param>
+        public void GrantShards(int amount, ShipTypes shipClass, Element element)
+        {
+            string shardItemId = "";
+            Debug.Log($"VesselShard Length: {catalog.VesselShards.Count}");
+            foreach (var vesselShard in catalog.VesselShards)
+            {
+                Debug.Log($"Next Vessel: {vesselShard.Name}");
+                foreach (var tag in vesselShard.Tags)
+                    Debug.Log($"VesselShard Tags: {tag}");
+
+                if (vesselShard.Tags.Contains(shipClass.ToString()) && vesselShard.Tags.Contains(element.ToString()))
+                {
+                    Debug.Log($"Found matching Vessel Shard");
+                    shardItemId = vesselShard.ItemId;
+                    break;
+                }
+            }
+
+            if (string.IsNullOrEmpty(shardItemId))
+            {
+                Debug.LogError($"{nameof(CatalogManager)}.{nameof(GrantShards)} - Error Granting Shards. No matching vessel shard found in catalog - shipClass:{shipClass}, element:{element}");
+                return;
+            }
+
+            _playFabEconomyInstanceAPI.AddInventoryItems(
+                new AddInventoryItemsRequest()
+                {
+                    // AuthenticationContext = AccountManager.AuthenticationContext,
+                    Amount = amount,
+                    Item = new InventoryItemReference
+                    {
+                        Id = shardItemId
+                    }
+                },
+                OnGrantShards,
+                HandleErrorReport
+            );
+        }
+
+        /// <summary>
+        /// On Granting Starting Inventory
+        /// </summary>
+        /// <param name="response">Add Inventory Items Response</param>
+        private void OnGrantShards(AddInventoryItemsResponse response)
+        {
+            if (response == null)
+            {
+                Debug.LogWarningFormat($"{nameof(CatalogManager)}.{nameof(OnGrantShards)}: received a null response.");
+                return;
+            }
+            Debug.Log("CatalogManager - On grant Shards Success.");
+            Debug.LogFormat("CatalogManager - transaction ids: {0}", string.Join(",", response.TransactionIds));
+        }
 
         /// <summary>
         /// Grant Starting Inventory
@@ -161,7 +258,7 @@ namespace _Scripts._Core.Playfab_Models.Economy
                 new GetInventoryItemsRequest
                 {
                 },
-                OnLoadingPlayerInventory,
+                OnGettingInventoryItems,
                 HandleErrorReport
             );
         }
@@ -170,11 +267,11 @@ namespace _Scripts._Core.Playfab_Models.Economy
         /// On Loading Player Inventory
         /// </summary>
         /// <param name="response">Get Inventory Items Response</param>
-        private void OnLoadingPlayerInventory(GetInventoryItemsResponse response)
+        private void OnGettingInventoryItems(GetInventoryItemsResponse response)
         {
             if (response == null || response.Items?.Count == 0)
             {
-                Debug.LogWarningFormat("{0} - {1}: Unable to get catalog item or no inventory items are available.", nameof(CatalogManager), nameof(OnLoadingCatalogItems));
+                Debug.LogWarningFormat("{0} - {1}: Unable to get catalog item or no inventory items are available.", nameof(CatalogManager), nameof(OnGettingInventoryItems));
                 return;
             }
             
@@ -182,7 +279,7 @@ namespace _Scripts._Core.Playfab_Models.Economy
 
             foreach (var item in response.Items)
             {
-                Debug.LogFormat("{0} - {1}: id: {2} amount: {3} content type: {4} loaded.", nameof(CatalogManager), nameof(OnLoadingCatalogItems), item.Id, item.Amount.ToString(), item.Type);
+                Debug.LogFormat("{0} - {1}: id: {2} amount: {3} content type: {4} loaded.", nameof(CatalogManager), nameof(OnGettingInventoryItems), item.Id, item.Amount.ToString(), item.Type);
             }
         }
 
@@ -191,14 +288,14 @@ namespace _Scripts._Core.Playfab_Models.Economy
         /// Request inventory item by item id
         /// </summary>
         //public void GetInventoryItem([NotNull] InventoryItemReference itemReference)
-        public void GetInventoryItem([NotNull] in VirtualItemModel virtualItemModel)
+        public void GetCatalogItem([NotNull] in VirtualItemModel virtualItemModel)
         {
             _playFabEconomyInstanceAPI.GetItem(
                 new GetItemRequest()
                 {
                     Id = virtualItemModel.ItemId
                 },
-                OnLoadingPlayerInventory,
+                OnGettingCatalogItem,
                 HandleErrorReport
             );
         }
@@ -207,17 +304,17 @@ namespace _Scripts._Core.Playfab_Models.Economy
         /// On Loading Player Inventory
         /// </summary>
         /// <param name="response">Get Item Response</param>
-        private void OnLoadingPlayerInventory(GetItemResponse response)
+        private void OnGettingCatalogItem(GetItemResponse response)
         {
             if (response == null)
             {
-                Debug.LogWarningFormat("{0} - {1}: no response on adding inventory item.", nameof(CatalogManager), nameof(GetInventoryItem));
+                Debug.LogWarningFormat("{0} - {1}: no response on adding inventory item.", nameof(CatalogManager), nameof(OnGettingCatalogItem));
                 return;
             }
 
             if (response.Item == null)
             {
-                Debug.LogWarningFormat("{0} - {1}: no inventory item.", nameof(CatalogManager), nameof(GetInventoryItem));
+                Debug.LogWarningFormat("{0} - {1}: no inventory item.", nameof(CatalogManager), nameof(OnGettingCatalogItem));
                 return;
             }
                     
@@ -347,9 +444,34 @@ namespace _Scripts._Core.Playfab_Models.Economy
                 HandleErrorReport
             );
         }
-    
+
         #endregion
-    
+
+        #region Model Conversion
+        ItemPriceModel PlayfabToCosmicShorePrice(CatalogPriceOptions price)
+        {
+            ItemPriceModel itemPrice = new();
+            itemPrice.ItemId = price.Prices[0].Amounts[0].ItemId;
+            itemPrice.Amount = price.Prices[0].Amounts[0].Amount;
+            return itemPrice;
+        }
+        VirtualItemModel PlayfabToCosmicShoreVirtualItem(CatalogItem catalogItem)
+        {
+            VirtualItemModel virtualItem = new();
+            virtualItem.ItemId = catalogItem.Id;
+            Debug.Log($"catalogItem.Title[\"NEUTRAL\"]: {catalogItem.Title["NEUTRAL"]}");
+            virtualItem.Name = catalogItem.Title["NEUTRAL"];
+            virtualItem.Description = catalogItem.Description["NEUTRAL"];
+            virtualItem.ContentType = catalogItem.ContentType;
+            //virtualItem.BundleContents = catalogItem.Contents;
+            //virtualItem.priceModel = PlayfabToCosmicShorePrice(catalogItem.PriceOptions);
+            virtualItem.Tags = catalogItem.Tags;
+            virtualItem.Type = catalogItem.Type;
+            //virtualItem.Amount = catalogItem.PriceOptions.Prices[0].Amounts[0].
+            return virtualItem;
+        }
+        #endregion
+
         #region Situation Handling
 
         /// <summary>
