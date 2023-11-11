@@ -1,4 +1,4 @@
-using CosmicShore.Core.IO;
+using CosmicShore.Game.IO;
 
 public class ToggleGyroAction : ShipAction
 {

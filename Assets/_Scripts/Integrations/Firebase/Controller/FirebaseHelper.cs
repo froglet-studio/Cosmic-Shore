@@ -5,7 +5,7 @@ using CosmicShore.Utility.Singleton;
 using UnityEngine;
 using UnityEngine.Events;
 
-namespace CosmicShore._Core.Firebase.Controller
+namespace CosmicShore.Integrations.Firebase.Controller
 {
     public class FirebaseHelper : SingletonPersistent<FirebaseHelper>
     {

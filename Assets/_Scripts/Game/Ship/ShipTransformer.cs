@@ -1,7 +1,7 @@
 using System.Collections;
 using UnityEngine;
 using CosmicShore.Core;
-using CosmicShore.Core.IO;
+using CosmicShore.Game.IO;
 using System.Collections.Generic;
 
 public class ShipTransformer : MonoBehaviour

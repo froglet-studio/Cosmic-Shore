@@ -4,7 +4,7 @@ using Firebase.Analytics;
 using CosmicShore.Utility.Singleton;
 using UnityEngine;
 
-namespace CosmicShore._Core.Firebase.Controller
+namespace CosmicShore.Integrations.Firebase.Controller
 {
     public class FirebaseAnalyticsController : SingletonPersistent<FirebaseAnalyticsController>
     {

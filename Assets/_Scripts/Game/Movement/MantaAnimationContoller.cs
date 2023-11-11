@@ -1,3 +1,4 @@
+using CosmicShore.Game.IO;
 using UnityEngine;
 
 class MantaAnimationContoller : ShipAnimation

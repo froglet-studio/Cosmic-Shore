@@ -1,5 +1,5 @@
 using CosmicShore.App.Systems.Audio;
-using CosmicShore._Core.Playfab.Authentication;
+using CosmicShore.Integrations.Playfab.Authentication;
 using PlayFab;
 using PlayFab.ClientModels;
 using System;

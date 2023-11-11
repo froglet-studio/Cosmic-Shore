@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace CosmicShore._Core.Playfab.Economy
+namespace CosmicShore.Integrations.Playfab.Economy
 {
     [Serializable]
     public class VirtualItemModel

@@ -1,4 +1,4 @@
-using CosmicShore._Core.Firebase.Controller;
+using CosmicShore.Integrations.Firebase.Controller;
 using UnityEngine;
 using UnityEngine.Advertisements;
 

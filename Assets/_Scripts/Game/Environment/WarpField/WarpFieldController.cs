@@ -1,5 +1,5 @@
 using UnityEngine;
-using CosmicShore.Core.IO;
+using CosmicShore.Game.IO;
 
 // TODO: P1 remove this class
 public class WarpFieldController : MonoBehaviour

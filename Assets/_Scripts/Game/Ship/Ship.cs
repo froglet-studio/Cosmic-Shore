@@ -1,8 +1,7 @@
-using CosmicShore.Core.IO;
+using CosmicShore.Game.IO;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using CosmicShore._Core.Input;
 using UnityEngine;
 using CosmicShore.Game.AI;
 using CosmicShore.Game.Projectiles;

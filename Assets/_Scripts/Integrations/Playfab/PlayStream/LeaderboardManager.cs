@@ -1,12 +1,12 @@
 using System.Collections;
 using System.Collections.Generic;
-using CosmicShore._Core.Playfab.Authentication;
+using CosmicShore.Integrations.Playfab.Authentication;
 using PlayFab;
 using PlayFab.ClientModels;
 using CosmicShore.Utility.Singleton;
 using UnityEngine;
 
-namespace CosmicShore._Core.Playfab.PlayStream
+namespace CosmicShore.Integrations.Playfab.PlayStream
 {
     /// <summary>
     /// Leaderboard Manager

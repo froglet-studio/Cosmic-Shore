@@ -1,8 +1,8 @@
-using Lofelt.NiceVibrations;
 using CosmicShore.Core;
+using Lofelt.NiceVibrations;
 using UnityEngine;
 
-namespace CosmicShore._Core.Input
+namespace CosmicShore.Game.IO
 {
     /// <summary>
     /// Haptic Type

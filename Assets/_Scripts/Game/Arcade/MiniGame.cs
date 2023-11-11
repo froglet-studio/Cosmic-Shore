@@ -1,10 +1,10 @@
 using CosmicShore.Core;
-using CosmicShore.Core.IO;
+using CosmicShore.Game.IO;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using CosmicShore._Core.Firebase.Controller;
-using CosmicShore._Core.Playfab.PlayStream;
+using CosmicShore.Integrations.Firebase.Controller;
+using CosmicShore.Integrations.Playfab.PlayStream;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;

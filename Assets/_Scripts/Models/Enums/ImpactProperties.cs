@@ -1,6 +1,6 @@
 using CosmicShore.Core;
 using System;
-using CosmicShore._Core.Input;
+using CosmicShore.Game.IO;
 
 [Serializable]
 public struct ImpactProperties

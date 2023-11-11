@@ -1,6 +1,6 @@
 using PlayFab;
 
-namespace CosmicShore._Core.Playfab.Player_Models
+namespace CosmicShore.Integrations.Playfab.Player_Models
 {
     public class PlayerAccount{
         // Player Master ID in PlayFab

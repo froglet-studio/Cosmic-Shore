@@ -1,18 +1,18 @@
 using System.Collections;
 using UnityEngine;
-using UnityEngine.InputSystem;
+using CosmicShore.Core;
 using Gamepad = UnityEngine.InputSystem.Gamepad;
 using Gyroscope = UnityEngine.Gyroscope;
 using TouchPhase = UnityEngine.TouchPhase;
 
-namespace CosmicShore.Core.IO
+namespace CosmicShore.Game.IO
 {
     public class InputController : MonoBehaviour
     {
         [SerializeField] GameCanvas gameCanvas;
         [HideInInspector] public bool AutoPilotEnabled;
         [SerializeField] public bool Portrait;
-        [HideInInspector] public Ship ship;
+        [HideInInspector] public CosmicShore.Core.Ship ship;
         [HideInInspector] public static ScreenOrientation currentOrientation;
 
 

@@ -1,4 +1,4 @@
-﻿using CosmicShore._Core.Input;
+﻿using CosmicShore.Game.IO;
 
 namespace CosmicShore.Core
 {

@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 using CosmicShore.Core;
 using CosmicShore.Core.HangerBuilder;
-using CosmicShore.Core.IO;
+using CosmicShore.Game.IO;
 using CosmicShore.Game.AI;
 
 [System.Serializable]

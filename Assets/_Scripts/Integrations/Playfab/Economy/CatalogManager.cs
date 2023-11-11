@@ -1,13 +1,13 @@
 using System;
 using System.Collections.Generic;
-using CosmicShore._Core.Playfab.Authentication;
+using CosmicShore.Integrations.Playfab.Authentication;
 using JetBrains.Annotations;
 using PlayFab;
 using PlayFab.EconomyModels;
 using CosmicShore.Utility.Singleton;
 using UnityEngine;
 
-namespace CosmicShore._Core.Playfab.Economy
+namespace CosmicShore.Integrations.Playfab.Economy
 {
     public class CatalogManager : SingletonPersistent<CatalogManager>
     {

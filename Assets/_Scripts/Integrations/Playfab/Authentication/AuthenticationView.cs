@@ -6,7 +6,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace CosmicShore._Core.Playfab.Authentication
+namespace CosmicShore.Integrations.Playfab.Authentication
 {
     public class AuthenticationView : MonoBehaviour
     {

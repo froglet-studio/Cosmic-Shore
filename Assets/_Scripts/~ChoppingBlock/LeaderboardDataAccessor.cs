@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 
-namespace CosmicShore._Core.Game.DataPersistence
-{
+
     public class LeaderboardDataAccessor
     {
         static readonly string SaveFileName = "Leaderboard.data";
@@ -100,19 +99,3 @@ namespace CosmicShore._Core.Game.DataPersistence
             },
         };
     }
-
-    [System.Serializable]
-    public struct LeaderboardEntry
-    {
-        public string PlayerName;
-        public int Score;
-        public ShipTypes ShipType;
-
-        public LeaderboardEntry(string playerName, int score, ShipTypes shipType)
-        {
-            PlayerName = playerName;
-            Score = score;
-            ShipType = shipType;
-        }
-    }
-}

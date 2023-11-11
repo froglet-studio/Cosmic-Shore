@@ -1,10 +1,10 @@
 using System;
 using Firebase.Auth;
 using CosmicShore.Utility.Singleton;
-using CosmicShore._Core.Playfab.Event_Models;
+using CosmicShore.Integrations.Playfab.Event_Models;
 using UnityEngine;
 
-namespace CosmicShore._Core.Firebase.Controller
+namespace CosmicShore.Integrations.Firebase.Controller
 {
     public class FirebaseAuthentication : SingletonPersistent<FirebaseAuthentication>
     {
