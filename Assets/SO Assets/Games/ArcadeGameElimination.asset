@@ -26,3 +26,4 @@ MonoBehaviour:
   MinPlayers: 2
   MaxPlayers: 3
   SceneName: MinigameElimination
+  CallToActionTargetType: 405

@@ -244,5 +244,10 @@ namespace Scenes.TestScenes.Playfab_Sandbox_Test
             
             }
         }
+
+        public void GrantShards()
+        {
+            CatalogManager.Instance.GrantShards(20, ShipTypes.Manta, Element.Space);
+        }
     }
 }

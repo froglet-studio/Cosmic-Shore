@@ -76,6 +76,7 @@ public class ExploreMenu : MonoBehaviour
             gameCard.GetComponent<Button>().onClick.RemoveAllListeners();
             gameCard.GetComponent<Button>().onClick.AddListener(() => SelectGame(selectionIndex));
             gameCard.GetComponent<Button>().onClick.AddListener(() => GameSelectionGrid.GetComponent<MenuAudio>().PlayAudio());
+            gameCard.GetComponent<CallToActionTarget>().TargetID = game.CallToActionTargetType;
             gameCard.gameObject.SetActive(true);
         }
 

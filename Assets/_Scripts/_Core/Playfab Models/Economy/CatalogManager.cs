@@ -112,6 +112,7 @@ namespace _Scripts._Core.Playfab_Models.Economy
             catalog = new()
             {
                 VesselShards = new(),
+                VesselUpgrades = new(),
                 Ships = new(),
                 Vessels = new(),
                 MiniGames = new()

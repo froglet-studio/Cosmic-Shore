@@ -31,3 +31,4 @@ MonoBehaviour:
   MinPlayers: 1
   MaxPlayers: 1
   SceneName: MinigameFreestyle
+  CallToActionTargetType: 409

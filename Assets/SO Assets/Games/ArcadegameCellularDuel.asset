@@ -31,3 +31,4 @@ MonoBehaviour:
   MinPlayers: 1
   MaxPlayers: 1
   SceneName: MinigameCellularDuel
+  CallToActionTargetType: 410
