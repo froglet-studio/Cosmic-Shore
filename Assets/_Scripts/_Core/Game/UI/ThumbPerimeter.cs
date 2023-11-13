@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using UnityEngine.UI;
+using Image = UnityEngine.UI.Image;
 
 public class ThumbPerimeter : MonoBehaviour
 {
@@ -23,7 +23,7 @@ public class ThumbPerimeter : MonoBehaviour
     void Start()
     {
         
-        perimeterImage = GetComponentInChildren<Image>();
+        perimeterImage = GetComponent<Image>();
         perimeterImage.sprite = InactivePerimeterImage;
         StartCoroutine(InitializeCoroutine());
     }
