@@ -760,6 +760,23 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 5497835173863578975}
     m_Modifications:
+    - target: {fileID: 1065415826062172286, guid: 491eb8350c5c6ab45a8b291192f9891a,
+        type: 3}
+      propertyPath: LeftThumb
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1065415826062172286, guid: 491eb8350c5c6ab45a8b291192f9891a,
+        type: 3}
+      propertyPath: ActivePerimeterImage
+      value: 
+      objectReference: {fileID: 21300000, guid: b7bc99663cf783b4681d8105a370a53f,
+        type: 3}
+    - target: {fileID: 1141962577704619619, guid: 491eb8350c5c6ab45a8b291192f9891a,
+        type: 3}
+      propertyPath: m_Sprite
+      value: 
+      objectReference: {fileID: 21300000, guid: b7bc99663cf783b4681d8105a370a53f,
+        type: 3}
     - target: {fileID: 1567114930600279961, guid: 491eb8350c5c6ab45a8b291192f9891a,
         type: 3}
       propertyPath: m_LocalRotation.w
@@ -985,16 +1002,95 @@ PrefabInstance:
       propertyPath: m_Name
       value: RoundTimeAndPauseButton
       objectReference: {fileID: 0}
+    - target: {fileID: 1832948870290915877, guid: 491eb8350c5c6ab45a8b291192f9891a,
+        type: 3}
+      propertyPath: m_Color.a
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1832948870290915877, guid: 491eb8350c5c6ab45a8b291192f9891a,
+        type: 3}
+      propertyPath: m_Color.b
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1832948870290915877, guid: 491eb8350c5c6ab45a8b291192f9891a,
+        type: 3}
+      propertyPath: m_Color.g
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1832948870290915877, guid: 491eb8350c5c6ab45a8b291192f9891a,
+        type: 3}
+      propertyPath: m_Color.r
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1832948870290915877, guid: 491eb8350c5c6ab45a8b291192f9891a,
+        type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2359923522257096972, guid: 491eb8350c5c6ab45a8b291192f9891a,
+        type: 3}
+      propertyPath: ActivePerimeterImage
+      value: 
+      objectReference: {fileID: 21300000, guid: b7bc99663cf783b4681d8105a370a53f,
+        type: 3}
+    - target: {fileID: 2436499169362673425, guid: 491eb8350c5c6ab45a8b291192f9891a,
+        type: 3}
+      propertyPath: m_Sprite
+      value: 
+      objectReference: {fileID: 21300000, guid: b7bc99663cf783b4681d8105a370a53f,
+        type: 3}
     - target: {fileID: 2593846398354087464, guid: 491eb8350c5c6ab45a8b291192f9891a,
         type: 3}
       propertyPath: m_IsActive
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 3762308139720187643, guid: 491eb8350c5c6ab45a8b291192f9891a,
+        type: 3}
+      propertyPath: m_Color.a
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3762308139720187643, guid: 491eb8350c5c6ab45a8b291192f9891a,
+        type: 3}
+      propertyPath: m_Color.b
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3762308139720187643, guid: 491eb8350c5c6ab45a8b291192f9891a,
+        type: 3}
+      propertyPath: m_Color.g
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3762308139720187643, guid: 491eb8350c5c6ab45a8b291192f9891a,
+        type: 3}
+      propertyPath: m_Color.r
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3762308139720187643, guid: 491eb8350c5c6ab45a8b291192f9891a,
+        type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3843785505216184931, guid: 491eb8350c5c6ab45a8b291192f9891a,
+        type: 3}
+      propertyPath: ActiveImage
+      value: 
+      objectReference: {fileID: 21300000, guid: 2f3e59fa31f58384c8c53b3aa1bc3f00,
+        type: 3}
     - target: {fileID: 3973401074881798019, guid: 491eb8350c5c6ab45a8b291192f9891a,
         type: 3}
       propertyPath: m_AnchoredPosition.y
       value: -120
       objectReference: {fileID: 0}
+    - target: {fileID: 4409531301090949927, guid: 491eb8350c5c6ab45a8b291192f9891a,
+        type: 3}
+      propertyPath: LeftThumb
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4409531301090949927, guid: 491eb8350c5c6ab45a8b291192f9891a,
+        type: 3}
+      propertyPath: ActiveImage
+      value: 
+      objectReference: {fileID: 21300000, guid: 2f3e59fa31f58384c8c53b3aa1bc3f00,
+        type: 3}
     - target: {fileID: 4675538134498312791, guid: 491eb8350c5c6ab45a8b291192f9891a,
         type: 3}
       propertyPath: m_Name
@@ -1025,6 +1121,11 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 6619365032587072504, guid: 491eb8350c5c6ab45a8b291192f9891a,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 6808243731128720952, guid: 491eb8350c5c6ab45a8b291192f9891a,
         type: 3}
       propertyPath: m_Name
@@ -1034,6 +1135,16 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Name
       value: RightCursor
+      objectReference: {fileID: 0}
+    - target: {fileID: 8490845028896498314, guid: 491eb8350c5c6ab45a8b291192f9891a,
+        type: 3}
+      propertyPath: m_Name
+      value: Left Thumb Perimeter
+      objectReference: {fileID: 0}
+    - target: {fileID: 8490845028896498314, guid: 491eb8350c5c6ab45a8b291192f9891a,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents:
     - {fileID: 1720411787076151334, guid: 491eb8350c5c6ab45a8b291192f9891a, type: 3}

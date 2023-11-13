@@ -1,8 +1,9 @@
-﻿using StarWriter.Core.HangerBuilder;
+﻿using CosmicShore.Core.HangerBuilder;
+using CosmicShore.Game.Arcade;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-namespace StarWriter.Core.UI
+namespace CosmicShore.App.UI.Menus
 {
     /// <summary>
     /// Provides high level functionality to panels in the main menu scene
@@ -18,12 +19,9 @@ namespace StarWriter.Core.UI
             FirstAppLaunch
         }
 
-        GameManager gameManager;
-
         public void Start()
         {
             Debug.Log("MainMenu.cs start");
-            gameManager = GameManager.Instance;
 
             if (FirstAppLaunchExperience())
             {

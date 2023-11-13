@@ -4,7 +4,7 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 
-namespace _Scripts.Utility.Tools
+namespace CosmicShore.Utility.Tools
 {
     public class TailGliderTools : Editor
     {

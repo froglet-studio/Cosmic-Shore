@@ -1,7 +1,7 @@
-using StarWriter.Core;
+using CosmicShore.Core;
 using UnityEngine;
 
-namespace StarWriter.UI
+namespace CosmicShore.App.UI.Elements
 {
     public class ToggleSynchronizer : MonoBehaviour
     {

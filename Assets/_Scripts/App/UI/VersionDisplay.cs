@@ -1,7 +1,7 @@
 using UnityEngine;
 using TMPro;
 
-namespace StarWriter.UI
+namespace CosmicShore.App.UI
 {
     public class VersionDisplay : MonoBehaviour
     {

@@ -1,8 +1,9 @@
 using System.Collections.Generic;
-using StarWriter.Utility.Singleton;
+using CosmicShore.Core;
+using CosmicShore.Utility.Singleton;
 using UnityEngine;
 
-namespace StarWriter.Core.Audio
+namespace CosmicShore.App.Systems.Audio
 {
     public class Jukebox : SingletonPersistent<Jukebox>
     {

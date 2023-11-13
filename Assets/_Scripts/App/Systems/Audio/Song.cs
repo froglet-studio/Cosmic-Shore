@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace StarWriter.Core.Audio
+namespace CosmicShore.App.Systems.Audio
 {
     public class Song
     {

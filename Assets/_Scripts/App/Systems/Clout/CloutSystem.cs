@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace StarWriter.Core.CloutSystem
+namespace CosmicShore.App.Systems.Clout
 {
     public class CloutSystem : MonoBehaviour
     {

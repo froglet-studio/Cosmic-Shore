@@ -48,9 +48,17 @@ MonoBehaviour:
   MaxScale: 200
   ExplosionDuration: 2
   ExplosionDelay: 0.2
+  shipImpactEffects: 
+  affectSelf: 0
+  destructive: 1
+  devastating: 0
+  Team: 0
+  Ship: {fileID: 0}
+  AnonymousExplosion: 0
   trailBlock: {fileID: 4563009547826722997, guid: 053064d82123e8b49bfb29870b5c0715,
     type: 3}
+  blockScale: {x: 5, y: 3, z: 1}
+  shielded: 0
   blockCount: 8
   ringCount: 3
-  radius: 15
-  blockScale: {x: 10, y: 5, z: 2}
+  radius: 10

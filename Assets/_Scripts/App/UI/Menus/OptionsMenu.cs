@@ -1,22 +1,25 @@
-using StarWriter.Core;
+using CosmicShore.Core;
 using UnityEngine;
 
-public class OptionsMenu : MonoBehaviour
+namespace CosmicShore.App.UI.Menus
 {
-    public void ToggleMusicEnabledSetting()
+    public class OptionsMenu : MonoBehaviour
     {
-        GameSetting.Instance.ChangeMusicEnabledSetting();
-    }
-    public void ToggleSFXEnabledSetting()
-    {
-        GameSetting.Instance.ChangeSFXEnabledSetting();
-    }
-    public void ToggleHapticEnabledSetting()
-    {
-        GameSetting.Instance.ChangeHapticsEnabledSetting();
-    }
-    public void ToggleInvertYEnabledSetting()
-    {
-        GameSetting.Instance.ChangeInvertYEnabledStatus();
+        public void ToggleMusicEnabledSetting()
+        {
+            GameSetting.Instance.ChangeMusicEnabledSetting();
+        }
+        public void ToggleSFXEnabledSetting()
+        {
+            GameSetting.Instance.ChangeSFXEnabledSetting();
+        }
+        public void ToggleHapticEnabledSetting()
+        {
+            GameSetting.Instance.ChangeHapticsEnabledSetting();
+        }
+        public void ToggleInvertYEnabledSetting()
+        {
+            GameSetting.Instance.ChangeInvertYEnabledStatus();
+        }
     }
 }

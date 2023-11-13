@@ -3,54 +3,57 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class GameCard : MonoBehaviour
+namespace CosmicShore.App.UI.Elements
 {
-    [Header("Resources")]
-    [SerializeField] SO_GameList AllGames;
-    [SerializeField] Sprite LockIcon;
-    [SerializeField] public bool Locked;
-
-    [Header("Placeholder Locations")]
-    [SerializeField] TMP_Text GameTitle;
-    [SerializeField] Image BackgroundImage;
-    [SerializeField] Image LockImage;
-    [SerializeField] int Index;
-
-    MiniGames gameMode;
-    public MiniGames GameMode 
+    public class GameCard : MonoBehaviour
     {
-        get { return gameMode; }
-        set
+        [Header("Resources")]
+        [SerializeField] SO_GameList AllGames;
+        [SerializeField] Sprite LockIcon;
+        [SerializeField] public bool Locked;
+
+        [Header("Placeholder Locations")]
+        [SerializeField] TMP_Text GameTitle;
+        [SerializeField] Image BackgroundImage;
+        [SerializeField] Image LockImage;
+        [SerializeField] int Index;
+
+        MiniGames gameMode;
+        public MiniGames GameMode
         {
-            gameMode = value;
+            get { return gameMode; }
+            set
+            {
+                gameMode = value;
+                UpdateCardView();
+            }
+        }
+
+        void Start()
+        {
+            if (gameMode == MiniGames.Random)
+                gameMode = MiniGames.BlockBandit;
+
             UpdateCardView();
         }
-    }
 
-    void Start()
-    {
-        if (gameMode == MiniGames.Random)
-            gameMode = MiniGames.BlockBandit;
+        void UpdateCardView()
+        {
+            SO_ArcadeGame game = AllGames.GameList.Where(x => x.Mode == gameMode).FirstOrDefault();
+            GameTitle.text = game.Name;
+            BackgroundImage.sprite = game.CardBackground;
+            LockImage.sprite = LockIcon;
+            LockImage.gameObject.SetActive(Locked);
+        }
 
-        UpdateCardView();
-    }
+        public void OnCardClicked()
+        {
+            // Add highlight boarder
 
-    void UpdateCardView()
-    {
-        SO_ArcadeGame game = AllGames.GameList.Where(x => x.Mode == gameMode).FirstOrDefault();
-        GameTitle.text = game.Name;
-        BackgroundImage.sprite = game.CardBackground;
-        LockImage.sprite = LockIcon;
-        LockImage.gameObject.SetActive(Locked);
-    }
+            // Set active and show details
+            //LoadoutView.ExpandLoadout(Index);
 
-    public void OnCardClicked()
-    {
-        // Add highlight boarder
-
-        // Set active and show details
-        //LoadoutView.ExpandLoadout(Index);
-
-        Debug.Log($"GameCard - Clicked: Gamemode: {gameMode}");
+            Debug.Log($"GameCard - Clicked: Gamemode: {gameMode}");
+        }
     }
 }

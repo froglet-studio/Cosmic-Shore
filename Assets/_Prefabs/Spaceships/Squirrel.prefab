@@ -1284,7 +1284,7 @@ MonoBehaviour:
     type: 3}
   farFieldSkimmer: {fileID: 0}
   crystalImpactEffects: 060000000b000000
-  minExplosionScale: 100
+  minExplosionScale: 200
   maxExplosionScale: 200
   trailBlockImpactEffects: 0e000000
   blockChargeChange: 0
@@ -1355,7 +1355,7 @@ MonoBehaviour:
     Max: 0
     element: 0
   PitchScaler: 40
-  YawScaler: 20
+  YawScaler: 40
   RollScaler: 50
   RotationThrottleScaler: 0
 --- !u!114 &874579555101021522
@@ -2266,6 +2266,11 @@ PrefabInstance:
       propertyPath: ship
       value: 
       objectReference: {fileID: 874579555101021527}
+    - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
+      propertyPath: AOEPeriod
+      value: 3
+      objectReference: {fileID: 0}
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
       propertyPath: AOEPrefab

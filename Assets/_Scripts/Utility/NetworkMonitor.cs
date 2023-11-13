@@ -1,4 +1,4 @@
-using StarWriter.Utility.Singleton;
+using CosmicShore.Utility.Singleton;
 using UnityEngine;
 
 public class NetworkMonitor : SingletonPersistent<NetworkMonitor>
