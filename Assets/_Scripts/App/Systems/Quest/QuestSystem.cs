@@ -12,8 +12,8 @@ namespace CosmicShore.App.Systems.Quests
     {
         [SerializeField] Quest TestQuest;
         [SerializeField] Quest TestQuest2;
-        Dictionary<UserAction, List<Quest>> ActiveQuests = new();
-        List<Quest> CompletedQuests;
+        Dictionary<string, List<Quest>> ActiveQuests = new();
+        List<Quest> CompletedQuests = new();
 
         void Start()
         {
@@ -43,21 +43,21 @@ namespace CosmicShore.App.Systems.Quests
 
         public void RemoveQuest(Quest quest)
         {
-            if (!ActiveQuests.ContainsKey(quest.CompletionAction))
+            if (!ActiveQuests.ContainsKey(quest.CompletionAction.Label))
                 return;
 
-            ActiveQuests[quest.CompletionAction].Remove(quest);
+            ActiveQuests[quest.CompletionAction.Label].Remove(quest);
 
-            if (ActiveQuests[quest.CompletionAction].Count == 0)
-                ActiveQuests.Remove(quest.CompletionAction);
+            if (ActiveQuests[quest.CompletionAction.Label].Count == 0)
+                ActiveQuests.Remove(quest.CompletionAction.Label);
         }
 
         public void AddQuest(Quest quest)
         {
-            if (ActiveQuests.ContainsKey(quest.CompletionAction))
-                ActiveQuests[quest.CompletionAction].Add(quest);
+            if (ActiveQuests.ContainsKey(quest.CompletionAction.Label))
+                ActiveQuests[quest.CompletionAction.Label].Add(quest);
             else
-                ActiveQuests.Add(quest.CompletionAction, new List<Quest>() { quest });
+                ActiveQuests.Add(quest.CompletionAction.Label, new List<Quest>() { quest });
 
             CallToActionSystem.Instance.AddCallToAction(quest.CallToAction);
         }
@@ -71,14 +71,18 @@ namespace CosmicShore.App.Systems.Quests
         void UpdateQuestProgressOnUserActionCompleted(UserAction action)
         {
             Debug.LogWarning($"{nameof(UpdateQuestProgressOnUserActionCompleted)}: {action.ActionType}");
+            Debug.LogWarning($"ActiveQuests.Count:{ActiveQuests.Count}, ActiveQuests.ContainsKey(action): {ActiveQuests.ContainsKey(action.Label)}");
+            foreach (var quest in ActiveQuests)
+                Debug.LogWarning($"ActiveQuests.Key: {quest.Key}");
 
             if (ActiveQuests.Count <= 0) return;
-            if (!ActiveQuests.ContainsKey(action)) return;
+            if (!ActiveQuests.ContainsKey(action.Label)) return;
 
-            foreach (var quest in ActiveQuests[action])
+            foreach (var quest in ActiveQuests[action.Label])
             {
                 if (action.ActionType == UserActionType.PlayGame)
                 {
+                    
                     // Analyze label and see if it matches
 
 

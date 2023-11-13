@@ -1,3 +1,5 @@
+using UnityEngine;
+
 namespace CosmicShore.App.Systems.UserActions
 {
     [System.Serializable]
@@ -11,11 +13,12 @@ namespace CosmicShore.App.Systems.UserActions
         {
             ActionType = actionType;
             Value = value;
-            Label = label;
+            Label = string.IsNullOrEmpty(label) ? ActionType.ToString() : label;
         }
 
         public static string GetGameplayUserActionLabel(MiniGames gameMode, ShipTypes shipType, int intensity)
         {
+            Debug.LogWarning($"GetGameplayUserActionLabel: {gameMode}_{shipType}_{intensity}");
             return $"{gameMode}_{shipType}_{intensity}";
         }
     }

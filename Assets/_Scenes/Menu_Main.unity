@@ -1426,7 +1426,7 @@ MonoBehaviour:
       CompletionUserAction: 300
       DependencyTargetIDs: 
     CompletionAction:
-      ActionType: 400
+      ActionType: 300
       Value: 2000
       Label: 
     ActionCount: 1
@@ -1439,14 +1439,14 @@ MonoBehaviour:
   TestQuest2:
     Title: Bottlenose Bullseye
     Description: Score 2000 In Dolphin Darts
-    ShardValue: 7
+    ShardValue: 17
     CallToAction:
-      CallToActionTargetID: 0
-      CompletionUserAction: 0
-      DependencyTargetIDs: 
+      CallToActionTargetID: 403
+      CompletionUserAction: 110
+      DependencyTargetIDs: 6400000066000000
     CompletionAction:
-      ActionType: 0
-      Value: 0
+      ActionType: 400
+      Value: 2000
       Label: 
     ActionCount: 1
     ActionQuantity: 0
