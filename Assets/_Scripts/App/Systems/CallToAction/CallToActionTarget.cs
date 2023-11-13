@@ -1,30 +1,33 @@
 using UnityEngine;
 
-public class CallToActionTarget : MonoBehaviour
+namespace CosmicShore.App.Systems.CallToAction
 {
-    [SerializeField] CallToActionTargetType TargetID;
-    [SerializeField] GameObject ActiveIndicator;
-
-    void Start()
+    public class CallToActionTarget : MonoBehaviour
     {
-        CallToActionSystem.Instance.RegisterCallToActionTarget(TargetID, WhenDutyCalls, WhenTheCallHasBeenAnswered);
+        [SerializeField] public CallToActionTargetType TargetID;
+        [SerializeField] GameObject ActiveIndicator;
 
-        if (AmIActive())
-            WhenDutyCalls();
-    }
+        void Start()
+        {
+            CallToActionSystem.Instance.RegisterCallToActionTarget(TargetID, WhenDutyCalls, WhenTheCallHasBeenAnswered);
 
-    void WhenDutyCalls()
-    {
-        ActiveIndicator.SetActive(true);
-    }
+            if (AmIActive())
+                WhenDutyCalls();
+        }
 
-    void WhenTheCallHasBeenAnswered()
-    {
-        ActiveIndicator.SetActive(false);
-    }
-    
-    bool AmIActive()
-    {
-        return CallToActionSystem.Instance.IsCallToActionTargetActive(TargetID);
+        void WhenDutyCalls()
+        {
+            ActiveIndicator.SetActive(true);
+        }
+
+        void WhenTheCallHasBeenAnswered()
+        {
+            ActiveIndicator.SetActive(false);
+        }
+
+        bool AmIActive()
+        {
+            return CallToActionSystem.Instance.IsCallToActionTargetActive(TargetID);
+        }
     }
 }

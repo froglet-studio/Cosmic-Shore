@@ -1,6 +1,6 @@
 using System.Collections;
 using UnityEngine;
-using StarWriter.Core.HangerBuilder;
+using CosmicShore.Core.HangerBuilder;
 
 public class BlockImpact : MonoBehaviour
 {

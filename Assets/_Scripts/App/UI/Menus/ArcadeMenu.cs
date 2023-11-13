@@ -1,27 +1,30 @@
-using StarWriter.Core.LoadoutFavoriting;
+using CosmicShore.App.Systems.UserActions;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class ArcadeMenu : MonoBehaviour
+namespace CosmicShore.App.UI.Menus
 {
-    [SerializeField] ExploreMenu exploreMenu;
-    [SerializeField] LoadoutMenu loadoutMenu;
-    [SerializeField] Toggle LoadoutButton;
-    [SerializeField] Toggle ExploreButton;
-
-    void Start()
+    public class ArcadeMenu : MonoBehaviour
     {
-        LoadoutButton.Select();
-    }
+        [SerializeField] ExploreMenu exploreMenu;
+        [SerializeField] LoadoutMenu loadoutMenu;
+        [SerializeField] Toggle LoadoutButton;
+        [SerializeField] Toggle ExploreButton;
 
-    public void ToggleView(bool loadout)
-    {
-        if (loadout)
-            UserActionMonitor.Instance.CompleteAction(UserActionType.ViewArcadeLoadoutMenu);
-        else
-            UserActionMonitor.Instance.CompleteAction(UserActionType.ViewArcadeExploreMenu);
+        void Start()
+        {
+            LoadoutButton.Select();
+        }
 
-        loadoutMenu.gameObject.SetActive(loadout);
-        exploreMenu.gameObject.SetActive(!loadout);
+        public void ToggleView(bool loadout)
+        {
+            if (loadout)
+                UserActionSystem.Instance.CompleteAction(UserActionType.ViewArcadeLoadoutMenu);
+            else
+                UserActionSystem.Instance.CompleteAction(UserActionType.ViewArcadeExploreMenu);
+
+            loadoutMenu.gameObject.SetActive(loadout);
+            exploreMenu.gameObject.SetActive(!loadout);
+        }
     }
 }

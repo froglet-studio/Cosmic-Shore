@@ -6,46 +6,46 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/Scenes/Menu_Main.unity
+    path: Assets/_Scenes/Menu_Main.unity
     guid: 102d08d71236a7342a94518fff75949c
   - enabled: 1
-    path: Assets/Scenes/TestScenes/Legacy/Game_TestNodeInterior.unity
+    path: Assets/_Scenes/TestScenes/Legacy/Game_TestNodeInterior.unity
     guid: 920ffcc6282de7f4ba58fa8c03466701
   - enabled: 1
-    path: Assets/Scenes/Tools/Recording Studio.unity
+    path: Assets/_Scenes/Tools/Recording Studio.unity
     guid: 24dd4d7af8c78a14199bc0ab37b17d37
   - enabled: 1
-    path: Assets/Scenes/MinigameDolphinDarts.unity
+    path: Assets/_Scenes/MinigameDolphinDarts.unity
     guid: 6197568b1ea35f94a812815c41df57e1
   - enabled: 1
-    path: Assets/Scenes/MinigameElimination.unity
+    path: Assets/_Scenes/MinigameElimination.unity
     guid: c7bc1993712d2734593d1d4e50b01dcb
   - enabled: 1
-    path: Assets/Scenes/MinigameRampage.unity
+    path: Assets/_Scenes/MinigameRampage.unity
     guid: edd6d49bdc48a024191b7be414b3a994
   - enabled: 1
-    path: Assets/Scenes/MinigameShootingGallery.unity
+    path: Assets/_Scenes/MinigameShootingGallery.unity
     guid: 3c3b1e401c6162547b78d787ab28640c
   - enabled: 1
-    path: Assets/Scenes/TestScenes/ColorTest.unity
+    path: Assets/_Scenes/TestScenes/ColorTest.unity
     guid: 608ee7a6fb653984e8456f57d82fb67e
   - enabled: 1
-    path: Assets/Scenes/MinigameDriftCourse.unity
+    path: Assets/_Scenes/MinigameDriftCourse.unity
     guid: 6425f480a5e05034ba9c772941d8b3e0
   - enabled: 1
-    path: Assets/Scenes/MinigameFreestyle.unity
+    path: Assets/_Scenes/MinigameFreestyle.unity
     guid: 6f71535b00043c345b3216d994f22499
   - enabled: 1
-    path: Assets/Scenes/MinigameBlockBandit.unity
+    path: Assets/_Scenes/MinigameBlockBandit.unity
     guid: ab6402f21daa97944b25e308c2a26008
   - enabled: 1
-    path: Assets/Scenes/MinigameCellularDuel.unity
+    path: Assets/_Scenes/MinigameCellularDuel.unity
     guid: a0793cb7cf4069b44ba82acfddb04f11
   - enabled: 1
-    path: Assets/Scenes/MinigameCellularBrawl2v2.unity
+    path: Assets/_Scenes/MinigameCellularBrawl2v2.unity
     guid: 78219fe3cb3c96b44a9e146ced331089
   - enabled: 1
-    path: Assets/Scenes/MinigameDashAndGrab.unity
+    path: Assets/_Scenes/MinigameDashAndGrab.unity
     guid: 9b2bfb506e15d33478bb4f9f1593af50
   - enabled: 0
     path: Assets/Scenes/Minigame_DriftTunnel.unity

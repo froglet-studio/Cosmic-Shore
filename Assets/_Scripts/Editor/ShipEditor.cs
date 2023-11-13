@@ -1,11 +1,12 @@
 ﻿using System;
 using UnityEditor;
 using System.Reflection;
+using CosmicShore.Core;
 
-namespace StarWriter.Core
+namespace CosmicShore.Editor
 {
     [CustomEditor(typeof(Ship))]
-    public class ShipEditor : Editor
+    public class ShipEditor : UnityEditor.Editor
     {
         public override void OnInspectorGUI()
         {

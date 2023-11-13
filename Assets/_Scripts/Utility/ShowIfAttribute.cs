@@ -1,7 +1,7 @@
 ﻿using System;
 using UnityEngine;
 
-namespace StarWriter.Core
+namespace CosmicShore.Core
 {
     [AttributeUsage(AttributeTargets.Field, AllowMultiple = false, Inherited = true)]
     public class ShowIfAttribute : PropertyAttribute

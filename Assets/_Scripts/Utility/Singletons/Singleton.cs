@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace StarWriter.Utility.Singleton
+namespace CosmicShore.Utility.Singleton
 {
     /// <remarks>
     /// Creates a Singleton GameObject which is NOT persistent thru scenes

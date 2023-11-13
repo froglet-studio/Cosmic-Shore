@@ -2,39 +2,42 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class LayoutGroupAccordion : MenuAnimator
+namespace CosmicShore.App.UI
 {
-    [SerializeField] float CollapsedSpacing = -26f;
-    [SerializeField] float ExpandedSpacing = 12f;
-    [SerializeField] VerticalLayoutGroup layoutGroup;
-
-    public void Collapse()
+    public class LayoutGroupAccordion : MenuAnimator
     {
-        layoutGroup.spacing = CollapsedSpacing;
-    }
+        [SerializeField] float CollapsedSpacing = -26f;
+        [SerializeField] float ExpandedSpacing = 12f;
+        [SerializeField] VerticalLayoutGroup layoutGroup;
 
-    public override void Animate()
-    {
-        Debug.Log("Animating: " + gameObject.name);
-        Collapse();
-        base.Animate();
-    }
-
-    protected override IEnumerator AnimateCoroutine()
-    {
-        // HACK ALERT
-        // Was getting nested graphic rebuild loop errors under certain conditions. with this, we will just wait a few frame to begin the animation
-        yield return new WaitForEndOfFrame();
-        yield return new WaitForEndOfFrame();
-        yield return new WaitForEndOfFrame();
-
-        var elapsed = 0f;
-        while (elapsed < Duration)
+        public void Collapse()
         {
-            elapsed += Time.unscaledDeltaTime;
+            layoutGroup.spacing = CollapsedSpacing;
+        }
 
-            layoutGroup.spacing = Mathf.Lerp(CollapsedSpacing, ExpandedSpacing, Ease(easingType, elapsed / Duration));
-            yield return null;
+        public override void Animate()
+        {
+            Debug.Log("Animating: " + gameObject.name);
+            Collapse();
+            base.Animate();
+        }
+
+        protected override IEnumerator AnimateCoroutine()
+        {
+            // HACK ALERT
+            // Was getting nested graphic rebuild loop errors under certain conditions. with this, we will just wait a few frame to begin the animation
+            yield return new WaitForEndOfFrame();
+            yield return new WaitForEndOfFrame();
+            yield return new WaitForEndOfFrame();
+
+            var elapsed = 0f;
+            while (elapsed < Duration)
+            {
+                elapsed += Time.unscaledDeltaTime;
+
+                layoutGroup.spacing = Mathf.Lerp(CollapsedSpacing, ExpandedSpacing, Ease(easingType, elapsed / Duration));
+                yield return null;
+            }
         }
     }
 }

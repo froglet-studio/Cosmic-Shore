@@ -1,12 +1,13 @@
 ﻿using System.Collections;
-using StarWriter.Utility.Singleton;
+using CosmicShore.Core;
+using CosmicShore.Utility.Singleton;
 using UnityEngine;
 using UnityEngine.Audio;
 
 /// <summary>
 /// Audio System to contain audio methods accessed by other classes
 /// </summary>
-namespace StarWriter.Core.Audio
+namespace CosmicShore.App.Systems.Audio
 {
     [DefaultExecutionOrder(-1)]
     public class AudioSystem : SingletonPersistent<AudioSystem>

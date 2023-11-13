@@ -1,27 +1,30 @@
 using UnityEngine;
 using UnityEngine.UI;
 
-public class SwitchToggle : MonoBehaviour
+namespace CosmicShore.App.UI.Elements
 {
-    [SerializeField] RectTransform handleRectTransform;
-
-    Toggle toggle;
-    Vector3 handleDisplacement = new Vector3(20,0,0);
-    
-    void Awake()
+    public class SwitchToggle : MonoBehaviour
     {
-        toggle = GetComponent<Toggle>();
-        toggle.onValueChanged.AddListener(Toggled);
-    }
+        [SerializeField] RectTransform handleRectTransform;
 
-    public void Toggled(bool status)
-    {
-        int sign = status ? 1 : -1;
-        handleRectTransform.localPosition += sign * handleDisplacement;
-    }
+        Toggle toggle;
+        Vector3 handleDisplacement = new Vector3(20, 0, 0);
 
-    private void OnDestroy()
-    {
-        toggle.onValueChanged.RemoveListener(Toggled);
+        void Awake()
+        {
+            toggle = GetComponent<Toggle>();
+            toggle.onValueChanged.AddListener(Toggled);
+        }
+
+        public void Toggled(bool status)
+        {
+            int sign = status ? 1 : -1;
+            handleRectTransform.localPosition += sign * handleDisplacement;
+        }
+
+        private void OnDestroy()
+        {
+            toggle.onValueChanged.RemoveListener(Toggled);
+        }
     }
 }

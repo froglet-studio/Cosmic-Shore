@@ -1,16 +1,15 @@
+using CosmicShore.App.Systems.Audio;
+using CosmicShore.Integrations.Playfab.Authentication;
+using PlayFab;
+using PlayFab.ClientModels;
 using System;
 using System.Collections;
 using System.Security;
-using _Scripts._Core.Playfab_Models.Authentication;
-using PlayFab;
-using PlayFab.ClientModels;
-using StarWriter.Core.Audio;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-//using UnityEngine.UIElements;
 
-namespace _Scripts._Core.Playfab_Models
+namespace CosmicShore.App.UI.Menus
 {
     public class ProfileMenu : MonoBehaviour
     {
