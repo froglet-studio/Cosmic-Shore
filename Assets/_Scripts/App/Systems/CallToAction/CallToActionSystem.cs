@@ -59,10 +59,14 @@ namespace CosmicShore.App.Systems.CTA
         public void RegisterCallToActionTarget(CallToActionTargetType targetId, Action OnCallToActionActive, Action OnCallToActionDismissed)
         {
             Debug.Log($"{nameof(RegisterCallToActionTarget)}: {targetId}");
-            if (!CallToActionActivatedCallbacks.ContainsKey(targetId))
-                CallToActionActivatedCallbacks.Add(targetId, OnCallToActionActive);
-            if (!CallToActionDismissedCallbacks.ContainsKey(targetId))
-                CallToActionDismissedCallbacks.Add(targetId, OnCallToActionDismissed);
+            // Reset Call to action callbacks if reissued
+            if (CallToActionActivatedCallbacks.ContainsKey(targetId))
+                CallToActionActivatedCallbacks.Remove(targetId);
+            if (CallToActionDismissedCallbacks.ContainsKey(targetId))
+                CallToActionDismissedCallbacks.Remove(targetId);
+
+            CallToActionDismissedCallbacks.Add(targetId, OnCallToActionDismissed);
+            CallToActionActivatedCallbacks.Add(targetId, OnCallToActionActive);
         }
 
         public bool IsCallToActionTargetActive(CallToActionTargetType targetId)
