@@ -267,12 +267,12 @@ namespace CosmicShore.Core
             {
                 skimStartTimes.Remove(trailBlock.ID);
                 activelySkimmingBlockCount--;
-            }
+            
 
-            LineRenderer lineRenderer = trailBlock.GetComponent<LineRenderer>();
-            if (lineRenderer != null)
-            {
-                Destroy(lineRenderer);
+                if (trailBlock.TryGetComponent<LineRenderer>(out var lineRenderer))
+                {
+                    Destroy(lineRenderer);
+                }
             }
         }
 
