@@ -49,6 +49,8 @@ namespace CosmicShore.Game.IO
 
         public static void PlayConstant(float amplitude, float frequency, float duration)
         {
+            if (!GameSetting.Instance.HapticsEnabled)
+                return;
             HapticPatterns.PlayConstant(amplitude, frequency, duration);
         }
 

@@ -166,17 +166,10 @@ namespace CosmicShore.Core
             if (IsShip(other.gameObject))
             {
                 var ship = other.GetComponent<ShipGeometry>().Ship;
-                var impactVector = ship.transform.forward * ship.GetComponent<ShipStatus>().Speed;
 
                 if (!ship.GetComponent<ShipStatus>().Attached)
                 {
                     ship.PerformTrailBlockImpactEffects(TrailBlockProperties);
-                }
-
-                // Check again because the ship may have attached as part of it's block impact effects
-                if (!ship.GetComponent<ShipStatus>().Attached)
-                {
-                    Explode(impactVector, ship.Team, ship.Player.PlayerName);
                 }
             }
         }

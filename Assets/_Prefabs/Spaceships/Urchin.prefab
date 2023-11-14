@@ -2304,7 +2304,7 @@ MonoBehaviour:
   Name: Urchin
   ShipType: 4
   TrailSpawner: {fileID: 874579555101021522}
-  ShipController: {fileID: 0}
+  ShipTransformer: {fileID: 0}
   AutoPilot: {fileID: 0}
   ShipStatus: {fileID: 0}
   nearFieldSkimmer: {fileID: 874579554510349383}
@@ -2444,7 +2444,7 @@ MonoBehaviour:
   offset: 0
   initialWavelength: 10
   minWavelength: 7
-  gap: 1
+  Gap: 1
   TargetScale: {x: 0, y: 0, z: 0}
   defaultWaitTime: 0.5
   waitTime: 0.5
@@ -2456,6 +2456,7 @@ MonoBehaviour:
   maxBlockScale: 1
   XScaler: 1
   YScaler: 1
+  ZScaler: 1
 --- !u!114 &1435252848482629424
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2478,7 +2479,6 @@ MonoBehaviour:
     Min: 0.3
     Max: 1.3
     element: 1
-  elevatedAmmoGainRate: 0.03
   initialAmmo: 1
   maxAmmo: 1
   usesEnergy: 0
@@ -2787,16 +2787,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ship: {fileID: 874579555101021527}
   pools:
-  - tag: Projectile
-    prefab: {fileID: 6475208383231727548, guid: c34f9e79837e1e548873b8be1e1b1271,
+  - prefab: {fileID: 6475208383231727548, guid: c34f9e79837e1e548873b8be1e1b1271,
       type: 3}
     size: 500
-  - tag: EnergizedProjectile
-    prefab: {fileID: 6475208383231727548, guid: ee0d967e7e55a604aadfa29c4425067e,
+  - prefab: {fileID: 6475208383231727548, guid: ee0d967e7e55a604aadfa29c4425067e,
       type: 3}
     size: 500
-  - tag: SuperEnergizedProjectile
-    prefab: {fileID: 6475208383231727548, guid: 18cb2ff3ac0090b47b8a02d287f46314,
+  - prefab: {fileID: 6475208383231727548, guid: 18cb2ff3ac0090b47b8a02d287f46314,
       type: 3}
     size: 500
 --- !u!1 &6878347770711062259

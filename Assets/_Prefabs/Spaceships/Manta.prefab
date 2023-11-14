@@ -1317,7 +1317,7 @@ MonoBehaviour:
   Name: Manta
   ShipType: 1
   TrailSpawner: {fileID: 874579555101021522}
-  ShipController: {fileID: 0}
+  ShipTransformer: {fileID: 0}
   AutoPilot: {fileID: 0}
   ShipStatus: {fileID: 0}
   nearFieldSkimmer: {fileID: 874579554510349383}
@@ -1329,22 +1329,19 @@ MonoBehaviour:
   - {fileID: 6675130274311316141}
   - {fileID: 7696976320636676308}
   - {fileID: 1376376450048088127}
-  - {fileID: 5691083765198909859}
+  - {fileID: 6988205045896376628}
   AOEPrefab: {fileID: 2728798890556433942, guid: f5ecfb9923155a84c860975d559b2714,
     type: 3}
   farFieldSkimmer: {fileID: 3138628630497430536}
   crystalImpactEffects: 06000000030000000b000000
   minExplosionScale: 50
   maxExplosionScale: 500
-  trailBlockImpactEffects: 02000000
+  trailBlockImpactEffects: 020000000f000000
   blockChargeChange: 0
   boostMultiplier: 2
   boostFuelAmount: 0
   inputEventShipActions:
-  - InputEvent: 2
-    ShipActions:
-    - {fileID: 867704553499413969}
-  - InputEvent: 1
+  - InputEvent: 8
     ShipActions:
     - {fileID: 867704553499413969}
   - InputEvent: 4
@@ -1359,7 +1356,7 @@ MonoBehaviour:
   LevelEffects: 
   ControlOverrides: 0300000004000000
   closeCamDistance: -3.5
-  farCamDistance: -15
+  farCamDistance: -17
   AOEExplosionMaterial: {fileID: 0}
   AOEConicExplosionMaterial: {fileID: 0}
   SkimmerMaterial: {fileID: 0}
@@ -1388,6 +1385,7 @@ MonoBehaviour:
   ElevatedAmmoGain: 0
   ChargedBoostCharge: 1
   AutoPilotEnabled: 0
+  AlignmentEnabled: 0
   Attached: 0
   AttachedTrailBlock: {fileID: 0}
   GunsActive: 0
@@ -1437,7 +1435,8 @@ MonoBehaviour:
   offset: 0
   initialWavelength: 10
   minWavelength: 1
-  gap: 18
+  Gap: 18
+  MinimumGap: 1
   TargetScale: {x: 0, y: 0, z: 0}
   defaultWaitTime: 0.5
   waitTime: 0.5
@@ -1449,6 +1448,7 @@ MonoBehaviour:
   maxBlockScale: 3
   XScaler: 1
   YScaler: 1
+  ZScaler: 1
 --- !u!114 &1435252848482629424
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2379,7 +2379,7 @@ PrefabInstance:
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
       propertyPath: Scale.Value
-      value: 70
+      value: 175
       objectReference: {fileID: 0}
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
@@ -2395,6 +2395,16 @@ PrefabInstance:
         type: 3}
       propertyPath: notifyNearbyBlockCount
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
+      propertyPath: blockStayEffects.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
+      propertyPath: blockStayEffects.Array.data[0]
+      value: 5
       objectReference: {fileID: 0}
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
@@ -2546,12 +2556,17 @@ PrefabInstance:
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
       propertyPath: blockImpactEffects.Array.size
-      value: 2
+      value: 3
       objectReference: {fileID: 0}
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
       propertyPath: blockImpactEffects.Array.data[0]
       value: 7
+      objectReference: {fileID: 0}
+    - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
+      propertyPath: blockImpactEffects.Array.data[2]
+      value: 16
       objectReference: {fileID: 0}
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}

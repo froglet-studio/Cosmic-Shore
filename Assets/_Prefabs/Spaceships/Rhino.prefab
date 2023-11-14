@@ -352,7 +352,7 @@ Transform:
   - {fileID: 3337163778756290160}
   - {fileID: 7290237123723737518}
   m_Father: {fileID: 5928382658856804067}
-  m_RootOrder: 1
+  m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2131910783175408860
 GameObject:
@@ -576,6 +576,10 @@ MonoBehaviour:
     Max: 0
     element: 0
   target: {fileID: 6417075533431866457}
+  XWeight: 1
+  YWeight: 1
+  ZWeight: 0
+  GapWeight: -1
 --- !u!1 &3947427428015649370
 GameObject:
   m_ObjectHideFlags: 0
@@ -827,7 +831,7 @@ Transform:
   - {fileID: 80135517945020363}
   - {fileID: 256364102959889829}
   m_Father: {fileID: 5928382658856804067}
-  m_RootOrder: 2
+  m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!33 &8076053172158216518
 MeshFilter:
@@ -1032,8 +1036,8 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 3930926120077726301}
-  - {fileID: 320384695113571315}
   - {fileID: 5169072473205323491}
+  - {fileID: 320384695113571315}
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -1056,7 +1060,7 @@ MonoBehaviour:
   Name: Rhino
   ShipType: 3
   TrailSpawner: {fileID: 874579555101021522}
-  ShipController: {fileID: 0}
+  ShipTransformer: {fileID: 0}
   AutoPilot: {fileID: 0}
   ShipStatus: {fileID: 0}
   nearFieldSkimmer: {fileID: 874579554510349383}
@@ -1073,7 +1077,7 @@ MonoBehaviour:
   crystalImpactEffects: 0100000006000000
   minExplosionScale: 400
   maxExplosionScale: 400
-  trailBlockImpactEffects: 
+  trailBlockImpactEffects: 0f000000
   blockChargeChange: 0
   boostMultiplier: 6
   boostFuelAmount: -0.015
@@ -1122,6 +1126,7 @@ MonoBehaviour:
   ElevatedAmmoGain: 0
   ChargedBoostCharge: 1
   AutoPilotEnabled: 0
+  AlignmentEnabled: 0
   Attached: 0
   AttachedTrailBlock: {fileID: 0}
   GunsActive: 0
@@ -1171,7 +1176,7 @@ MonoBehaviour:
   offset: 0
   initialWavelength: 5
   minWavelength: 1
-  gap: 2
+  Gap: 2
   TargetScale: {x: 0, y: 0, z: 0}
   defaultWaitTime: 0.8
   waitTime: 0.5
@@ -1183,6 +1188,7 @@ MonoBehaviour:
   maxBlockScale: 1
   XScaler: 1
   YScaler: 1
+  ZScaler: 1
 --- !u!114 &1435252848482629424
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1205,7 +1211,6 @@ MonoBehaviour:
     Min: 0
     Max: 0
     element: 0
-  elevatedAmmoGainRate: 0.03
   initialAmmo: 1
   maxAmmo: 1
   usesEnergy: 0
@@ -1226,7 +1231,7 @@ MonoBehaviour:
   InitialMassLevel: 0
   InitialSpaceLevel: 0
   InitialTimeLevel: 0
-  ChargeTestHarness: 1
+  ChargeTestHarness: 0.5
 --- !u!114 &3440187540988767646
 MonoBehaviour:
   m_ObjectHideFlags: 0

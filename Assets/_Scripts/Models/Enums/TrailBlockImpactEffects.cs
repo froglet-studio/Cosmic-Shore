@@ -16,7 +16,9 @@ public enum TrailBlockImpactEffects
     Shield = 11,
     Stop = 12,
     Fire = 13,
-    Bounce = 14
+    Bounce = 14,
+    Explode = 15,
+    FX =16
 }
 
 /*

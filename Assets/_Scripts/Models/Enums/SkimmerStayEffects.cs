@@ -3,5 +3,13 @@
 public enum SkimmerStayEffects
 {
     ChangeBoost = 1,
-    ChangeAmmo = 2
+    ChangeAmmo = 2,
+    FX = 3,
+    Boost = 4,
+    ScaleTrailAndCamera = 5,
+    Align = 6,
+    VizualizeDistance = 7,
+    ScalePitchAndYaw = 8,
+    ScaleHapticWithDistance = 9,
+    ScaleGap = 10
 }

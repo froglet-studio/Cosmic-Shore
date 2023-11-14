@@ -3,6 +3,7 @@ using CosmicShore.Game.Projectiles;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using static UnityEditor.ShaderGraph.Internal.KeywordDependentCollection;
 
 namespace CosmicShore.Core
 {
@@ -12,12 +13,9 @@ namespace CosmicShore.Core
         [SerializeField] List<SkimmerStayEffects> blockStayEffects;
         [SerializeField] List<ShipImpactEffects> shipImpactEffects;
         [SerializeField] float particleDurationAtSpeedOne = 300f;
-        [SerializeField] bool skimVisualFX = true;
         [SerializeField] bool affectSelf = true;
         [SerializeField] float chargeAmount;
         [SerializeField] float MultiSkimMultiplier = 0f;
-        [SerializeField] bool notifyNearbyBlockCount = false;
-        [SerializeField] bool speedTubes = false;
         [SerializeField] bool visible;
         [SerializeField] ElementalFloat Scale = new ElementalFloat(1);
         
@@ -37,6 +35,22 @@ namespace CosmicShore.Core
         [Header("Optional Skimmer Components")]
         [SerializeField] GameObject AOEPrefab;
         [SerializeField] float AOEPeriod;
+        [SerializeField] private Material lineMaterial;
+
+
+        float minMatureBlockDistance = Mathf.Infinity;
+        TrailBlock minMatureBlock;
+        float fuel = 0;
+
+        float distanceWeight;
+        float directionWeight;
+
+        float sweetSpot;
+        float FWHM;
+        float sigma;
+        float radius;
+
+        float initialGap;
 
         void Start()
         {
@@ -48,6 +62,12 @@ namespace CosmicShore.Core
                 if (visible)
                     GetComponent<MeshRenderer>().material = new Material(ship.SkimmerMaterial);
             }
+
+            sweetSpot = transform.localScale.x / 4;
+            FWHM = transform.localScale.x / 4; //Full Width at Half Max
+            sigma = FWHM / 2.355f;
+            radius = transform.localScale.x / 2;
+            initialGap = ship.TrailSpawner.Gap;
         }
 
         void Update()
@@ -70,7 +90,7 @@ namespace CosmicShore.Core
                         if (!ship.ShipStatus.AutoPilotEnabled) HapticController.PlayHaptic(HapticType.BlockCollision);//.PlayBlockCollisionHaptics();
                         break;
                     case TrailBlockImpactEffects.DeactivateTrailBlock:
-                        trailBlockProperties.trailBlock.Explode(ship.transform.forward * ship.GetComponent<ShipStatus>().Speed, team, Player.PlayerName);
+                        trailBlockProperties.trailBlock.Explode(ship.ShipStatus.Course * ship.ShipStatus.Speed, team, Player.PlayerName);
                         break;
                     case TrailBlockImpactEffects.Steal:
                         //Debug.Log($"steal: playername {Player.PlayerName} team: {team}");
@@ -81,6 +101,9 @@ namespace CosmicShore.Core
                         break;
                     case TrailBlockImpactEffects.ChangeAmmo:
                         resourceSystem.ChangeAmmoAmount(chargeAmount + (activelySkimmingBlockCount * MultiSkimMultiplier));
+                        break;
+                    case TrailBlockImpactEffects.FX:
+                        StartCoroutine(DisplaySkimParticleEffectCoroutine(trailBlockProperties.trailBlock));
                         break;
                         // This is actually redundant with Skimmer's built in "Fuel Amount" variable
                         //case TrailBlockImpactEffects.ChangeFuel:
@@ -104,14 +127,13 @@ namespace CosmicShore.Core
                         if (!ship.ShipStatus.AutoPilotEnabled) HapticController.PlayHaptic(HapticType.ShipCollision);//.PlayShipCollisionHaptics();
                         break;
                     case ShipImpactEffects.AreaOfEffectExplosion:
-                        if (!onCoolDown)
-                        {
-                            var AOEExplosion = Instantiate(AOEPrefab).GetComponent<AOEExplosion>();
-                            AOEExplosion.Ship = ship;
-                            AOEExplosion.SetPositionAndRotation(transform.position, transform.rotation);
-                            AOEExplosion.MaxScale = ship.ShipStatus.Speed - shipGeometry.Ship.ShipStatus.Speed;
-                            StartCoroutine(CooldownCoroutine(AOEPeriod));
-                        }
+                        if (onCoolDown || shipGeometry.Ship.Team == team) break;
+
+                        var AOEExplosion = Instantiate(AOEPrefab).GetComponent<AOEExplosion>();
+                        AOEExplosion.Ship = ship;
+                        AOEExplosion.SetPositionAndRotation(transform.position, transform.rotation);
+                        AOEExplosion.MaxScale = ship.ShipStatus.Speed - shipGeometry.Ship.ShipStatus.Speed;
+                        StartCoroutine(CooldownCoroutine(AOEPeriod));
                         break;
                 }
             }
@@ -126,17 +148,38 @@ namespace CosmicShore.Core
             onCoolDown = false;
         }
 
-        void PerformBlockStayEffects(float chargeAmount)
+        void PerformBlockStayEffects(float combinedWeight)
         {
             foreach (SkimmerStayEffects effect in blockStayEffects)
             {
                 switch (effect)
                 {
                     case SkimmerStayEffects.ChangeBoost:
-                        resourceSystem.ChangeBoostAmount(chargeAmount);
+                        resourceSystem.ChangeBoostAmount(fuel);
                         break;
                     case SkimmerStayEffects.ChangeAmmo:
-                        resourceSystem.ChangeAmmoAmount(chargeAmount);
+                        resourceSystem.ChangeAmmoAmount(fuel);
+                        break;
+                    case SkimmerStayEffects.Boost:
+                        Boost(combinedWeight);
+                        break;
+                    case SkimmerStayEffects.ScaleTrailAndCamera:
+                        ScaleTrailAndCamera();
+                        break;
+                    case SkimmerStayEffects.VizualizeDistance:
+                        VizualizeDistance(combinedWeight);
+                        break;
+                    case SkimmerStayEffects.ScaleHapticWithDistance:
+                        ScaleHapticWithDistance(combinedWeight);
+                        break;
+                    case SkimmerStayEffects.ScalePitchAndYaw:
+                        ScalePitchAndYaw(combinedWeight);
+                        break;
+                    case SkimmerStayEffects.Align:
+                        if (ship.ShipStatus.AlignmentEnabled) AlignAndNudge(combinedWeight);
+                        break;
+                    case SkimmerStayEffects.ScaleGap:
+                        ScaleGap(combinedWeight);
                         break;
                 }
             }
@@ -145,11 +188,6 @@ namespace CosmicShore.Core
         void StartSkim(TrailBlock trailBlock)
         {
             if (trailBlock == null) return;
-            
-            if (skimVisualFX && (affectSelf || trailBlock.Team != team)) 
-            {
-                StartCoroutine(DisplaySkimParticleEffectCoroutine(trailBlock));
-            }
 
             if (skimStartTimes.ContainsKey(trailBlock.ID)) return;
             activelySkimmingBlockCount++;
@@ -184,24 +222,43 @@ namespace CosmicShore.Core
 
             float distance = Vector3.Distance(transform.position, other.transform.position);
 
-            if (trailBlock.ownerId != ship.Player.PlayerUUID || Time.time - trailBlock.TrailBlockProperties.TimeCreated > 3)
+            if (trailBlock.ownerId != ship.Player.PlayerUUID || Time.time - trailBlock.TrailBlockProperties.TimeCreated > 7)
             {
                 minMatureBlockDistance = Mathf.Min(minMatureBlockDistance, distance);
-                minMatureBlock = trailBlock;
+                if (distance == minMatureBlockDistance) minMatureBlock = trailBlock;
             }
-                    
+
+            if (!trailBlock.GetComponent<LineRenderer>() && ship.ShipStatus.AlignmentEnabled)
+            {
+                CreateLineRendererAroundBlock(trailBlock);
+
+                var lineRenderer = trailBlock.GetComponent<LineRenderer>();
+                AdjustOpacity(lineRenderer, distance);
+            }
+
 
             // start with a baseline fuel amount the ranges from 0-1 depending on proximity of the skimmer to the trail block
-            var fuel = chargeAmount * (1 - (distance / transform.localScale.x)); // x is arbitrary, just need radius of skimmer
+            fuel = chargeAmount * (1 - (distance / transform.localScale.x)); // x is arbitrary, just need radius of skimmer
 
             // apply decay
             fuel *= Mathf.Min(0, (skimDecayDuration - (Time.time - skimStartTimes[trailBlock.ID])) / skimDecayDuration);
 
             // apply multiskim multiplier
             fuel += (activelySkimmingBlockCount * MultiSkimMultiplier);
+        }
 
-            // grant the fuel
-            PerformBlockStayEffects(fuel);
+        private void FixedUpdate()
+        {
+            if (minMatureBlock)
+            {
+                distanceWeight = ComputeGaussian(minMatureBlockDistance, sweetSpot, sigma);
+                directionWeight = Vector3.Dot(ship.transform.forward, minMatureBlock.transform.forward);
+                var combinedWeight = distanceWeight * Mathf.Abs(directionWeight);
+                PerformBlockStayEffects(combinedWeight);
+            }
+            minMatureBlock = null;
+            minMatureBlockDistance = Mathf.Infinity;
+            fuel = 0;
         }
 
         void OnTriggerExit(Collider other)
@@ -211,58 +268,60 @@ namespace CosmicShore.Core
                 skimStartTimes.Remove(trailBlock.ID);
                 activelySkimmingBlockCount--;
             }
+
+            LineRenderer lineRenderer = trailBlock.GetComponent<LineRenderer>();
+            if (lineRenderer != null)
+            {
+                Destroy(lineRenderer);
+            }
         }
 
-
-        float minMatureBlockDistance = Mathf.Infinity;
-        TrailBlock minMatureBlock;
-
-        void FixedUpdate()
+        void ScaleTrailAndCamera()
         {
-            DetectTrailDistance();
-            Trailalign();
-        }
-
-        void DetectTrailDistance()
-        {
-            if (!notifyNearbyBlockCount) return;
-            
-            var normalizedDistance = Mathf.Clamp(Mathf.InverseLerp(15f, transform.localScale.x/2, minMatureBlockDistance), 0,1);
+            var normalizedDistance = Mathf.Clamp(Mathf.InverseLerp(15f, radius, minMatureBlockDistance), 0,1);
 
             ship.TrailSpawner.SetNormalizedXScale(normalizedDistance);
 
             if (cameraManager != null && !ship.ShipStatus.AutoPilotEnabled) 
                 cameraManager.SetNormalizedCloseCameraDistance(normalizedDistance);
-
-            if (!speedTubes) minMatureBlockDistance = Mathf.Infinity;
         }
 
-        void Trailalign()
+        void ScaleGap(float combinedWeight)
         {
-            if (!speedTubes || !minMatureBlock) return;
+            ship.TrailSpawner.Gap = Mathf.Lerp(initialGap, ship.TrailSpawner.MinimumGap, combinedWeight);
+        }
 
-            var distanceWeight = ComputeGaussian(minMatureBlockDistance, transform.localScale.x/4, transform.localScale.x/10 );
-            var directionWeight = Vector3.Dot(ship.transform.forward, minMatureBlock.transform.forward);
-            var combinedWeight = distanceWeight * Mathf.Abs(directionWeight);
+        void AlignAndNudge(float combinedWeight)  // unused but ready to put in the flip phone effect for squirrel
+        {
+            //align
+            ship.ShipTransformer.GentleSpinShip(minMatureBlock.transform.forward * directionWeight, ship.transform.up, combinedWeight * Time.deltaTime);
 
-            ship.ShipTransformer.GentleSpinShip(minMatureBlock.transform.forward, ship.transform.up, (directionWeight * distanceWeight)*.001f);
+            //nudge
+            if (minMatureBlockDistance < sweetSpot)
+                ship.ShipTransformer.ModifyVelocity(-(minMatureBlock.transform.position - transform.position).normalized * distanceWeight * Mathf.Abs(directionWeight), Time.deltaTime * 10);
+            else ship.ShipTransformer.ModifyVelocity((minMatureBlock.transform.position - transform.position).normalized * distanceWeight * Mathf.Abs(directionWeight), Time.deltaTime * 10);
+        }
 
-            if (minMatureBlockDistance < transform.localScale.x / 4)
-                ship.ShipTransformer.ModifyVelocity(-(minMatureBlock.transform.position - transform.position).normalized * distanceWeight * Mathf.Abs(directionWeight)/10, .05f);
-            else ship.ShipTransformer.ModifyVelocity((minMatureBlock.transform.position - transform.position).normalized * distanceWeight * Mathf.Abs(directionWeight)/10, .05f);
-
-            ship.ShipStatus.Boosting = true;
-            ship.boostMultiplier = 1 + (4*combinedWeight);
-
+        void VizualizeDistance(float combinedWeight)
+        {
             ship.ResourceSystem.ChangeAmmoAmount(-ship.ResourceSystem.CurrentBoost);
             ship.ResourceSystem.ChangeAmmoAmount(combinedWeight);
+        }
 
-            ship.ShipTransformer.PitchScaler = ship.ShipTransformer.YawScaler = 40 * (1-combinedWeight);
+        void ScalePitchAndYaw(float combinedWeight)
+        {
+            ship.ShipTransformer.PitchScaler = ship.ShipTransformer.YawScaler = 40 * (1 + (.5f*combinedWeight));
+        }
 
-            minMatureBlock = null;
-            minMatureBlockDistance = Mathf.Infinity;
+        void ScaleHapticWithDistance(float combinedWeight)
+        {
+            if (!ship.ShipStatus.AutoPilotEnabled) HapticController.PlayConstant(combinedWeight/3, combinedWeight/3, Time.deltaTime);
+        }
 
-            HapticController.PlayConstant(combinedWeight, combinedWeight, .1f);
+        void Boost(float combinedWeight)
+        {
+            ship.ShipStatus.Boosting = true;
+            ship.boostMultiplier = 1 + (2.5f * combinedWeight);
         }
 
         // Function to compute the Gaussian value at a given x
@@ -293,5 +352,44 @@ namespace CosmicShore.Core
 
             Destroy(particle);
         }
+
+        private void CreateLineRendererAroundBlock(TrailBlock trailBlock)
+        {
+            var lineRenderer = trailBlock.gameObject.AddComponent<LineRenderer>();
+            lineRenderer.material = new Material(lineMaterial);
+            lineRenderer.startWidth = 0.05f;
+            lineRenderer.endWidth = 0.05f;
+            lineRenderer.useWorldSpace = true;
+
+            DrawCircle(lineRenderer, trailBlock.transform, sweetSpot); // radius can be adjusted
+        }
+
+        private void DrawCircle(LineRenderer lineRenderer, Transform blockTransform, float radius)
+        {
+            int segments = 40;
+            lineRenderer.positionCount = segments + 1;
+
+            Vector3 forward = blockTransform.forward;
+            Vector3 up = blockTransform.up;
+            Vector3 right = blockTransform.right;
+
+            for (int i = 0; i <= segments; i++)
+            {
+                float angle = i * Mathf.PI * 2f / segments;
+                Vector3 localPosition = (Mathf.Cos(angle) * right + Mathf.Sin(angle) * up) * radius;
+                Vector3 worldPosition = blockTransform.position + localPosition;
+                lineRenderer.SetPosition(i, worldPosition);
+            }
+        }
+
+
+
+        private void AdjustOpacity(LineRenderer lineRenderer, float distance)
+        {
+            float opacity = .3f - .2f*(distance / radius); // Closer blocks are less transparent
+            lineRenderer.material.SetFloat("_Opacity", opacity);
+        }
+
+
     }
 }

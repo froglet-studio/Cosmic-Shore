@@ -46,8 +46,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ship: {fileID: 874579555101021527}
   pools:
-  - tag: Projectile
-    prefab: {fileID: 7877928849292311340, guid: 40caad35706c5244ea955f96abb24774,
+  - prefab: {fileID: 7877928849292311340, guid: 40caad35706c5244ea955f96abb24774,
       type: 3}
     size: 1
 --- !u!1 &1034863810764821312
@@ -1075,7 +1074,7 @@ MonoBehaviour:
   Name: Grizzly
   ShipType: 5
   TrailSpawner: {fileID: 874579555101021522}
-  ShipController: {fileID: 0}
+  ShipTransformer: {fileID: 0}
   AutoPilot: {fileID: 0}
   ShipStatus: {fileID: 0}
   nearFieldSkimmer: {fileID: 874579554510349383}
@@ -1093,7 +1092,7 @@ MonoBehaviour:
   crystalImpactEffects: 0b0000000d000000
   minExplosionScale: 50
   maxExplosionScale: 500
-  trailBlockImpactEffects: 0000000003000000
+  trailBlockImpactEffects: 00000000030000000f000000
   blockChargeChange: 0
   boostMultiplier: 2
   boostFuelAmount: 0
@@ -1165,12 +1164,15 @@ MonoBehaviour:
   MinimumSpeed: 10
   ThrottleScaler: 50
   DefaultMinimumSpeed: 0
-  DefaultThrottleScaler: 35
+  DefaultThrottleScaler:
+    Value: 50
+    Min: 0
+    Max: 0
+    element: 0
   PitchScaler: 50
   YawScaler: 15
   RollScaler: 40
   RotationThrottleScaler: 0
-  lookScalar: 90
 --- !u!114 &874579555101021522
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1191,7 +1193,7 @@ MonoBehaviour:
   offset: 20
   initialWavelength: 13
   minWavelength: 11
-  gap: 10
+  Gap: 17
   TargetScale: {x: 0, y: 0, z: 0}
   defaultWaitTime: 1
   waitTime: 0.5
@@ -1203,6 +1205,7 @@ MonoBehaviour:
   maxBlockScale: 1
   XScaler: 1
   YScaler: 1
+  ZScaler: 1
 --- !u!114 &1435252848482629424
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1225,7 +1228,6 @@ MonoBehaviour:
     Min: 0
     Max: 0
     element: 0
-  elevatedAmmoGainRate: 0.05
   initialAmmo: 1
   maxAmmo: 1
   usesEnergy: 1

@@ -298,6 +298,9 @@ namespace CosmicShore.Core
                         var up = Quaternion.AngleAxis(90, cross) * reflect;
                         ShipTransformer.GentleSpinShip(reflect, up, 1);
                         break;
+                    case TrailBlockImpactEffects.Explode:
+                        trailBlockProperties.trailBlock.Explode(ShipStatus.Course * ShipStatus.Speed, Team, Player.PlayerName);
+                        break;
                 }
             }
         }

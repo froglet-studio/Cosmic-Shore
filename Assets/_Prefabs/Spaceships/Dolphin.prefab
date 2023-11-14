@@ -1843,7 +1843,7 @@ MonoBehaviour:
   Name: Dolphin
   ShipType: 2
   TrailSpawner: {fileID: 874579555101021522}
-  ShipController: {fileID: 0}
+  ShipTransformer: {fileID: 0}
   AutoPilot: {fileID: 0}
   ShipStatus: {fileID: 0}
   nearFieldSkimmer: {fileID: 874579554510349383}
@@ -1866,7 +1866,7 @@ MonoBehaviour:
   crystalImpactEffects: 0b0000000600000002000000
   minExplosionScale: 200
   maxExplosionScale: 800
-  trailBlockImpactEffects: 00000000010000000300000002000000
+  trailBlockImpactEffects: 0000000001000000020000000f000000
   blockChargeChange: 0
   boostMultiplier: 0
   boostFuelAmount: 0
@@ -1924,6 +1924,7 @@ MonoBehaviour:
   ElevatedAmmoGain: 0
   ChargedBoostCharge: 1
   AutoPilotEnabled: 0
+  AlignmentEnabled: 0
   Attached: 0
   AttachedTrailBlock: {fileID: 0}
   GunsActive: 0
@@ -1944,10 +1945,14 @@ MonoBehaviour:
   MinimumSpeed: 0
   ThrottleScaler: 0
   DefaultMinimumSpeed: 10
-  DefaultThrottleScaler: 60
-  PitchScaler: 120
-  YawScaler: 120
-  RollScaler: 120
+  DefaultThrottleScaler:
+    Value: 50
+    Min: 0
+    Max: 0
+    element: 0
+  PitchScaler: 110
+  YawScaler: 110
+  RollScaler: 110
   RotationThrottleScaler: 0
 --- !u!114 &874579555101021522
 MonoBehaviour:
@@ -1969,7 +1974,8 @@ MonoBehaviour:
   offset: 0
   initialWavelength: 12
   minWavelength: 6
-  gap: 1
+  Gap: 1
+  MinimumGap: 1
   TargetScale: {x: 0, y: 0, z: 0}
   defaultWaitTime: 0.5
   waitTime: 0.5
@@ -1981,6 +1987,7 @@ MonoBehaviour:
   maxBlockScale: 8
   XScaler: 1
   YScaler: 1
+  ZScaler: 1
 --- !u!114 &1435252848482629424
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2003,7 +2010,6 @@ MonoBehaviour:
     Min: 0.1
     Max: 1.4
     element: 1
-  elevatedAmmoGainRate: 0.03
   initialAmmo: 1
   maxAmmo: 1
   usesEnergy: 0
@@ -2538,7 +2544,17 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
+      propertyPath: blockStayEffects.Array.size
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
       propertyPath: blockImpactEffects.Array.size
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
+      propertyPath: blockStayEffects.Array.data[0]
       value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,

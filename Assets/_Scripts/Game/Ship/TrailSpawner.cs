@@ -22,7 +22,8 @@ public class TrailSpawner : MonoBehaviour
 
     float wavelength;
 
-    public float gap;
+    public float Gap;
+    public float MinimumGap = 1;
     public Vector3 TargetScale;
 
     public int TrailLength { get { return trail.TrailList.Count; } }
@@ -121,7 +122,7 @@ public class TrailSpawner : MonoBehaviour
     
     public float XScaler = 1;
     public float YScaler = 1;
-    float ZScaler = 1;
+    public float ZScaler = 1;
     float Xscale;
     Coroutine lerper;
 
@@ -227,7 +228,7 @@ public class TrailSpawner : MonoBehaviour
         {
             if (Time.deltaTime < .1f && spawnerEnabled && !shipData.Attached && shipData.Speed > .01f)
             {
-                if (gap == 0)
+                if (Gap == 0)
                 {
                     var Block = Instantiate(trailBlock);
                     Block.TargetScale = new Vector3(trailBlock.transform.localScale.x * XScaler, trailBlock.transform.localScale.y * YScaler, trailBlock.transform.localScale.z * ZScaler);
@@ -251,8 +252,8 @@ public class TrailSpawner : MonoBehaviour
                 }
                 else
                 {
-                    CreateBlock(gap / 2, trail);
-                    CreateBlock(-gap / 2, trail2);
+                    CreateBlock(Gap / 2, trail);
+                    CreateBlock(-Gap / 2, trail2);
                 } 
             }
             yield return new WaitForSeconds(Mathf.Clamp(wavelength / shipData.Speed,0,3f));
