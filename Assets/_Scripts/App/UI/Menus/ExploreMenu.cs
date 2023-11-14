@@ -1,4 +1,4 @@
-using CosmicShore.App.Systems.CallToAction;
+using CosmicShore.App.Systems.CTA;
 using CosmicShore.App.Systems.Loadout;
 using CosmicShore.App.UI.Elements;
 using CosmicShore.Core.HangerBuilder;

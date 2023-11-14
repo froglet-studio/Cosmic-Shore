@@ -1,5 +1,5 @@
 using CosmicShore.Integrations.Playfab.Economy;
-using CosmicShore.App.Systems.CallToAction;
+using CosmicShore.App.Systems.CTA;
 using CosmicShore.App.Systems.UserActions;
 using CosmicShore.Utility.Singleton;
 using System;
@@ -34,8 +34,8 @@ namespace CosmicShore.App.Systems.Quests
 
             // Mark Granted
             quest.RewardGranted = true;
-            quest.Completed = true;
-            quest.TimeCompleted = DateTime.Now;
+
+            quest.CompleteQuest();
 
             RemoveQuest(quest);
             CompletedQuests.Add(quest);

@@ -1,4 +1,4 @@
-using CosmicShore.App.Systems.CallToAction;
+using CosmicShore.App.Systems.CTA;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Video;

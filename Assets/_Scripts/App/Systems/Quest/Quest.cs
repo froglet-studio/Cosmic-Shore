@@ -1,4 +1,4 @@
-using CosmicShore.App.Systems.CallToAction;
+using CosmicShore.App.Systems.CTA;
 using CosmicShore.App.Systems.UserActions;
 using System;
 using UnityEngine;
@@ -12,7 +12,7 @@ namespace CosmicShore.App.Systems.Quests
         public string Title;
         public string Description;
         public int ShardValue;
-        public CallToAction.CallToAction CallToAction;
+        public CTA.CallToAction CallToAction;
 
         /* Satisfaction Requirements */
         public UserAction CompletionAction;
@@ -27,6 +27,20 @@ namespace CosmicShore.App.Systems.Quests
         [HideInInspector] public bool Completed;
         [HideInInspector] public bool RewardGranted;
         [HideInInspector] public DateTime TimeCompleted;
+
+        public delegate void OnCompleted();
+        public event OnCompleted OnQuestCompleted;
+
+        public int GetInvocationCount()
+        {
+            return (int) OnQuestCompleted?.GetInvocationList().Length;
+        }
+        public void CompleteQuest()
+        {
+            Completed = true;
+            TimeCompleted = DateTime.Now;
+            OnQuestCompleted?.Invoke();
+        }
 
         //[NonSerialized] public Sprite Icon; //---- Sprite is not a serializable type
         /*public Quest(QuestScriptableObject questScriptableObject)

@@ -2,7 +2,7 @@ using CosmicShore.App.Systems.UserActions;
 using System;
 using System.Collections.Generic;
 
-namespace CosmicShore.App.Systems.CallToAction
+namespace CosmicShore.App.Systems.CTA
 {
     [Serializable]
     public class CallToAction

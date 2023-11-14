@@ -17,5 +17,8 @@ namespace CosmicShore.App.Systems.UserActions
 
         // Game Related - 400s
         PlayGame = 400,
+
+
+        /*********** ADDED BY WILL *************/
     }
 }

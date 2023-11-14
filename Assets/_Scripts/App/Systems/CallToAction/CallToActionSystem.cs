@@ -4,7 +4,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace CosmicShore.App.Systems.CallToAction
+namespace CosmicShore.App.Systems.CTA
 {
     public class CallToActionSystem : SingletonPersistent<CallToActionSystem>
     {

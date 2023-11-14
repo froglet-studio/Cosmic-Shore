@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace CosmicShore.App.Systems.CallToAction
+namespace CosmicShore.App.Systems.CTA
 {
     public class CallToActionTarget : MonoBehaviour
     {

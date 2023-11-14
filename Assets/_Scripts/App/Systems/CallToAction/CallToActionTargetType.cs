@@ -1,4 +1,4 @@
-namespace CosmicShore.App.Systems.CallToAction
+namespace CosmicShore.App.Systems.CTA
 {
     public enum CallToActionTargetType
     {
@@ -26,5 +26,10 @@ namespace CosmicShore.App.Systems.CallToAction
         PlayGameCellularDuel = 410,
         PlayGameCellularBrawl = 411,
         PlayGameDashAndGrab = 412,
+
+
+
+        /*********** ADDED BY WILL *************/
+
     }
 }
