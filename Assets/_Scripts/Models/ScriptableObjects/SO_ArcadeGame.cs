@@ -1,4 +1,5 @@
 using CosmicShore.App.Systems.CTA;
+using CosmicShore.App.Systems.UserActions;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Video;
@@ -19,4 +20,6 @@ public class SO_ArcadeGame : ScriptableObject
     [Range(1, 4)] public int MaxPlayers = 2;
     public string SceneName;
     public CallToActionTargetType CallToActionTargetType;
+    public UserActionType ViewUserAction;
+    public UserActionType PlayUserAction;
 }

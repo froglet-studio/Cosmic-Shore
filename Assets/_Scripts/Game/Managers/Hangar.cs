@@ -156,9 +156,10 @@ namespace CosmicShore.Core.HangerBuilder
             SquadSystem.LoadSquad();
             return LoadAIShip(SquadSystem.RogueTwo.Ship.Class, PlayerTeam, SquadSystem.RogueTwo);
         }
-        public Ship LoadHostileAI1Ship()
+        public Ship LoadHostileAI1Ship(Teams Team)
         {
-            return LoadAIShip(HostileAI1ShipType, AITeam);
+            //return LoadAIShip(HostileAI1ShipType, AITeam);
+            return LoadAIShip(HostileAI1ShipType, Team);
         }
         public Ship LoadHostileAI2Ship()
         {

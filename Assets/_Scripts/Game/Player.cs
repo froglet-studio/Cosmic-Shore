@@ -33,7 +33,7 @@ public class Player : MonoBehaviour
         switch (playerName)
         {
             case "HostileOne":
-                SetupAIShip(Hangar.Instance.LoadHostileAI1Ship());
+                SetupAIShip(Hangar.Instance.LoadHostileAI1Ship(Team));
                 break;
             case "HostileTwo":
                 SetupAIShip(Hangar.Instance.LoadHostileAI2Ship());

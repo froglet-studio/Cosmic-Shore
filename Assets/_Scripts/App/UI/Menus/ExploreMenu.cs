@@ -1,5 +1,6 @@
 using CosmicShore.App.Systems.CTA;
 using CosmicShore.App.Systems.Loadout;
+using CosmicShore.App.Systems.UserActions;
 using CosmicShore.App.UI.Elements;
 using CosmicShore.Core.HangerBuilder;
 using CosmicShore.Game.Arcade;
@@ -53,6 +54,8 @@ namespace CosmicShore.App.UI.Menus
         {
             GameSelectionView.SetActive(false);
             GameDetailView.SetActive(true);
+
+            UserActionSystem.Instance.CompleteAction(SelectedGame.ViewUserAction);
         }
         void PopulateGameSelectionList()
         {

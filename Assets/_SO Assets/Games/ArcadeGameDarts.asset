@@ -27,3 +27,5 @@ MonoBehaviour:
   MaxPlayers: 2
   SceneName: MinigameDolphinDarts
   CallToActionTargetType: 403
+  ViewUserAction: 110
+  PlayUserAction: 0
