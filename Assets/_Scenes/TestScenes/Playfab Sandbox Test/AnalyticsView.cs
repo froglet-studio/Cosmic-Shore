@@ -34,7 +34,9 @@ public class AnalyticsView : MonoBehaviour
 
     void OnGetUserData()
     {
-        List<string> keyList = new List<string>(userData.Keys);
+        // var keyList = new List<string>(userData.Keys);
+        var keyList = new List<string> { "hi" };
+        Debug.Log("I did something right?");
         AnalyticsController.Instance.GetUserData(keyList);
     }
 
@@ -45,7 +47,8 @@ public class AnalyticsView : MonoBehaviour
 
     void OnDeleteData()
     {
-        List<string> keysToRemove = new List<string>(userData.Keys);
+        // List<string> keysToRemove = new List<string>(userData.Keys);
+        var keysToRemove = new List<string> { "hi" };
         AnalyticsController.Instance.DeleteUserDataByKeys(keysToRemove);
     }
 
