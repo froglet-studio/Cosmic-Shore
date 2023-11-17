@@ -76,11 +76,7 @@ namespace CosmicShore.Integrations.Playfab.Player_Models
                     }
                     
                     Debug.Log($"LoadShardData - Custom Data: {result.CustomData}");
-                },
-                (error) =>
-                {
-                    Debug.LogError($"LoadShardData: {error.ErrorMessage}");
-                }
+                },HandleErrorReport
             );
         }
 
@@ -114,22 +110,81 @@ namespace CosmicShore.Integrations.Playfab.Player_Models
                     }
 
                     Debug.Log($"LoadClout - Custom Data: {result.CustomData}");
-                },
-                (error) =>
-                {
-                    Debug.LogError($"LoadClout: {error.ErrorMessage}");
-                }
+                },HandleErrorReport
             );
         }
 
         public void UpdatePlayerShardData(Dictionary<ShipTypes, ShardData> playerShardData)
         {
-
+            InitializePlayerClientInstanceAPI();
+     
+            Dictionary<string, string> shardData = new();
+            foreach (var key in playerShardData.Keys)
+            {
+                shardData.Add(key.ToString(), playerShardData[key].ToString());
+            }
+            
+            _playFabClientInstanceAPI.UpdateUserData(
+                new UpdateUserDataRequest()
+                {
+                    Data = shardData,
+                    Permission = UserDataPermission.Public
+                }, (result) =>
+                {
+                    if (result == null)
+                    {
+                        Debug.LogWarning($"{nameof(PlayerDataController)} - {nameof(UpdatePlayerShardData)} - Unable to retrieve data or no data available");
+                        return;
+                    };
+                
+                    Debug.Log($"{nameof(PlayerDataController)} - {nameof(UpdatePlayerShardData)} success.");
+                },HandleErrorReport
+                );
         }
 
         public void UpdatePlayerClout(Dictionary<ShipTypes, int> playerClout)
         {
+            InitializePlayerClientInstanceAPI();
+            
+            Dictionary<string, string> cloutData = new();
+            foreach (var key in playerClout.Keys)
+            {
+                cloutData.Add(key.ToString(), playerClout[key].ToString());
+            }
+            
+            _playFabClientInstanceAPI.UpdateUserData(
+                new UpdateUserDataRequest()
+                {
+                    Data = cloutData,
+                    Permission = UserDataPermission.Public
+                }, (result) =>
+                {
+                    if (result == null)
+                    {
+                        Debug.LogWarning($"{nameof(PlayerDataController)} - {nameof(UpdatePlayerClout)} - Unable to retrieve data or no data available");
+                        return;
+                    };
+                
+                    Debug.Log($"{nameof(PlayerDataController)} - {nameof(UpdatePlayerClout)} success.");
+                },HandleErrorReport
+                );
 
         }
+        
+        #region Error Handling
+    
+        /// <summary>
+        /// Handle PlayFab Error Report
+        /// Generate error report and raise the event
+        /// <param name="error"> PlayFab Error</param>
+        /// </summary>
+        private void HandleErrorReport(PlayFabError error = null)
+        {
+            if (error == null) return;
+            Debug.LogError(error.GenerateErrorReport());
+            // GeneratingErrorReport?.Invoke(error);
+        }
+    
+        #endregion
     }
 }
