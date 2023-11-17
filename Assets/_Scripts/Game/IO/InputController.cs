@@ -39,8 +39,9 @@ namespace CosmicShore.Game.IO
         [HideInInspector] public Vector2 LeftClampedPosition;
         [HideInInspector] public bool isGyroEnabled;
         [HideInInspector] public bool invertYEnabled;
+        [HideInInspector] public bool OneTouchLeft;
         [HideInInspector] public Vector2 RightJoystickStart, LeftJoystickStart;
-        Vector2 RightJoystickPosition, LeftJoystickPosition;
+        [HideInInspector] public Vector2 RightNormalizedJoystickPosition, LeftNormalizedJoystickPosition;
         Vector2 RightJoystickValue, LeftJoystickValue;
         [HideInInspector] public Vector2 EasedRightJoystickPosition, EasedLeftJoystickPosition;
         float JoystickRadius;
@@ -119,10 +120,10 @@ namespace CosmicShore.Game.IO
             {
 
 
-                LeftJoystickPosition.x = Gamepad.current.leftStick.x.ReadValue();
-                LeftJoystickPosition.y = Gamepad.current.leftStick.y.ReadValue();
-                RightJoystickPosition.x = Gamepad.current.rightStick.x.ReadValue();
-                RightJoystickPosition.y = Gamepad.current.rightStick.y.ReadValue();
+                LeftNormalizedJoystickPosition.x = Gamepad.current.leftStick.x.ReadValue();
+                LeftNormalizedJoystickPosition.y = Gamepad.current.leftStick.y.ReadValue();
+                RightNormalizedJoystickPosition.x = Gamepad.current.rightStick.x.ReadValue();
+                RightNormalizedJoystickPosition.y = Gamepad.current.rightStick.y.ReadValue();
 
                 Reparameterize();
 
@@ -192,8 +193,8 @@ namespace CosmicShore.Game.IO
                         LeftJoystickValue = Input.touches[leftTouchIndex].position;
                         RightJoystickValue = Input.touches[rightTouchIndex].position;
 
-                        HandleJoystick(ref LeftJoystickStart, leftTouchIndex, ref LeftJoystickPosition, ref LeftClampedPosition);
-                        HandleJoystick(ref RightJoystickStart, rightTouchIndex, ref RightJoystickPosition, ref RightClampedPosition);
+                        HandleJoystick(ref LeftJoystickStart, leftTouchIndex, ref LeftNormalizedJoystickPosition, ref LeftClampedPosition);
+                        HandleJoystick(ref RightJoystickStart, rightTouchIndex, ref RightNormalizedJoystickPosition, ref RightClampedPosition);
 
                         if (leftStickEffectsStarted)
                         {
@@ -220,8 +221,9 @@ namespace CosmicShore.Game.IO
                             }
                             LeftJoystickValue = position;
                             leftTouchIndex = 0;
-                            HandleJoystick(ref LeftJoystickStart, leftTouchIndex, ref LeftJoystickPosition, ref LeftClampedPosition);
-                            LeftJoystickPosition = Vector3.Lerp(LeftJoystickPosition, Vector3.zero, 7 * Time.deltaTime);
+                            OneTouchLeft = true;
+                            HandleJoystick(ref LeftJoystickStart, leftTouchIndex, ref LeftNormalizedJoystickPosition, ref LeftClampedPosition);
+                            LeftNormalizedJoystickPosition = Vector3.Lerp(LeftNormalizedJoystickPosition, Vector3.zero, 7 * Time.deltaTime);
                         }
                         else
                         {
@@ -237,8 +239,9 @@ namespace CosmicShore.Game.IO
                             }
                             RightJoystickValue = position;
                             rightTouchIndex = 0;
-                            HandleJoystick(ref RightJoystickStart, rightTouchIndex, ref RightJoystickPosition, ref RightClampedPosition);
-                            LeftJoystickPosition = Vector3.Lerp(LeftJoystickPosition, Vector3.zero, 7*Time.deltaTime);
+                            OneTouchLeft = false;
+                            HandleJoystick(ref RightJoystickStart, rightTouchIndex, ref RightNormalizedJoystickPosition, ref RightClampedPosition);
+                            LeftNormalizedJoystickPosition = Vector3.Lerp(LeftNormalizedJoystickPosition, Vector3.zero, 7*Time.deltaTime);
                         }
                     }
                 }
@@ -289,13 +292,13 @@ namespace CosmicShore.Game.IO
 
         void Reparameterize()
         {
-            EasedRightJoystickPosition = new Vector2(Ease(2 * RightJoystickPosition.x), Ease(2 * RightJoystickPosition.y));
-            EasedLeftJoystickPosition = new Vector2(Ease(2 * LeftJoystickPosition.x), Ease(2 * LeftJoystickPosition.y));
+            EasedRightJoystickPosition = new Vector2(Ease(2 * RightNormalizedJoystickPosition.x), Ease(2 * RightNormalizedJoystickPosition.y));
+            EasedLeftJoystickPosition = new Vector2(Ease(2 * LeftNormalizedJoystickPosition.x), Ease(2 * LeftNormalizedJoystickPosition.y));
 
-            XSum = Ease(RightJoystickPosition.x + LeftJoystickPosition.x);
-            YSum = -Ease(RightJoystickPosition.y + LeftJoystickPosition.y); //negative is because joysitcks and unity axes don't agree
-            XDiff = (LeftJoystickPosition.x - RightJoystickPosition.x + 2.1f) / 4.1f;
-            YDiff = Ease(RightJoystickPosition.y - LeftJoystickPosition.y);
+            XSum = Ease(RightNormalizedJoystickPosition.x + LeftNormalizedJoystickPosition.x);
+            YSum = -Ease(RightNormalizedJoystickPosition.y + LeftNormalizedJoystickPosition.y); //negative is because joysitcks and unity axes don't agree
+            XDiff = (LeftNormalizedJoystickPosition.x - RightNormalizedJoystickPosition.x + 2.1f) / 4.1f;
+            YDiff = Ease(RightNormalizedJoystickPosition.y - LeftNormalizedJoystickPosition.y);
 
             if (invertYEnabled)
                 YSum *= -1;
