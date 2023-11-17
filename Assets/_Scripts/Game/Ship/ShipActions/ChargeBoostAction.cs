@@ -33,7 +33,7 @@ public class ChargeBoostAction : ShipAction
     {
         if (BoostCharging)
         {
-            Debug.LogFormat("{0} - {1} - charging boost", nameof(ChargeBoostAction), nameof(BoostCharge));
+            //Debug.LogFormat("{0} - {1} - charging boost", nameof(ChargeBoostAction), nameof(BoostCharge));
             
             if(shipData != null)  shipData.ChargedBoostCharge += BoostChargeRate * Time.deltaTime;
 

@@ -30,10 +30,14 @@ public class Boid : MonoBehaviour
 
     private BoidManager boidManager;
     private TrailBlock trailBlock;
+    private Crystal crystal;
+    [SerializeField] Material activeCrystalMaterial;
+
     private List<Collider> separatedBoids = new List<Collider>();
 
     private void Start()
     {
+        crystal = GetComponentInChildren<Crystal>();
         boidManager = GetComponentInParent<BoidManager>();
         trailBlock = GetComponentInChildren<TrailBlock>();
         currentVelocity = transform.forward * Random.Range(minSpeed, maxSpeed);
@@ -113,23 +117,27 @@ public class Boid : MonoBehaviour
         currentVelocity = desiredDirection * Mathf.Clamp(averageSpeed, minSpeed, maxSpeed);
     }
 
-
-    bool destroyed;
     void Update()
     {
-        if (destroyed) return;
 
-        if (trailBlock.destroyed)
+        if (trailBlock.destroyed && !crystal.enabled)
         {
-            destroyed = true;
-            StopAllCoroutines();
-            Instantiate(GetComponentInChildren<Crystal>().gameObject, transform.position, Quaternion.identity);
-            Destroy(gameObject);
-            return;
+            crystal.gameObject.GetComponent<SphereCollider>().enabled = true;
+            crystal.enabled = true;
+
+            crystal.GetComponentInChildren<SkinnedMeshRenderer>().material = activeCrystalMaterial; // TODO: make a crytal material set that this pulls from using the element 
         }
 
+        //
+        //    StopAllCoroutines();
+        //    Instantiate(GetComponentInChildren<Crystal>().gameObject, transform.position, Quaternion.identity);
+        //    Destroy(gameObject);
+        //    return;
+        //
+
         transform.position += currentVelocity * Time.deltaTime;
-        Quaternion desiredRotation = Quaternion.LookRotation(currentVelocity.normalized);
+
+        Quaternion desiredRotation = currentVelocity != Vector3.zero ? Quaternion.LookRotation(currentVelocity.normalized) : transform.rotation;
         transform.rotation = Quaternion.Slerp(transform.rotation, desiredRotation, Time.deltaTime);
     }
 }

@@ -40,9 +40,19 @@ namespace CosmicShore.Environment.FlowField
         protected Material tempMaterial;
         List<Collider> collisions;
 
-        protected virtual void Start()
+        protected virtual void Awake()
         {
             collisions = new List<Collider>();
+            
+        }
+
+        protected virtual void Start()
+        {
+            AddSelfToNode();
+        }
+
+        protected virtual void OnEnable()
+        {
             AddSelfToNode();
         }
 
@@ -82,6 +92,9 @@ namespace CosmicShore.Environment.FlowField
                         AOEExplosion.SetPositionAndRotation(transform.position, transform.rotation);
                         AOEExplosion.MaxScale = maxExplosionScale;
                         AOEExplosion.AnonymousExplosion = true;
+                        break;
+                    case CrystalImpactEffects.IncrementLevel: // TODO: add amount based on crystal scale
+                        ship.ResourceSystem.IncrementLevel(crystalProperties.Element);
                         break;
                 }
             }

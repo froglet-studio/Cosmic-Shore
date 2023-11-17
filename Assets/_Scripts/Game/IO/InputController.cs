@@ -142,7 +142,7 @@ namespace CosmicShore.Game.IO
                     {
                         PhoneFlipState = false;
                         ship.StopShipControllerActions(InputEvents.FlipAction);
-                        ship.FlipShipRightsideUp();
+                        //ship.FlipShipRightsideUp();
 
                         currentOrientation = ScreenOrientation.LandscapeLeft;
 
@@ -152,7 +152,7 @@ namespace CosmicShore.Game.IO
                     {
                         PhoneFlipState = true;
                         ship.PerformShipControllerActions(InputEvents.FlipAction);
-                        ship.FlipShipUpsideDown(); // TODO make shipAction
+                        //ship.FlipShipUpsideDown(); // TODO make shipAction
 
                         currentOrientation = ScreenOrientation.LandscapeRight;
 

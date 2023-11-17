@@ -130,17 +130,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 19b38987ca9e2974083abe50717ed186, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  cohesionRadius: 30
+  cohesionRadius: 20
   behaviorUpdateRate: 3
   separationRadius: 15
-  separationWeight: 8
-  alignmentWeight: 1
-  cohesionWeight: 5
-  goalWeight: 1
+  separationWeight: 12
+  alignmentWeight: 2
+  cohesionWeight: 1
+  goalWeight: 0.3
   minSpeed: 10
   maxSpeed: 15
   goal: {fileID: 0}
   normalizedIndex: 0
+  activeCrystalMaterial: {fileID: 2100000, guid: 18c297a89c0d43e46bd4ea5bd6143ffb,
+    type: 2}
 --- !u!1 &5453519119934356950
 GameObject:
   m_ObjectHideFlags: 0

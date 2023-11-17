@@ -3,7 +3,6 @@ using CosmicShore.Game.Projectiles;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using static UnityEditor.ShaderGraph.Internal.KeywordDependentCollection;
 
 namespace CosmicShore.Core
 {
@@ -36,6 +35,8 @@ namespace CosmicShore.Core
         [SerializeField] GameObject AOEPrefab;
         [SerializeField] float AOEPeriod;
         [SerializeField] private Material lineMaterial;
+        [SerializeField] private GameObject markerPrefab;
+
 
 
         float minMatureBlockDistance = Mathf.Infinity;
@@ -228,14 +229,21 @@ namespace CosmicShore.Core
                 if (distance == minMatureBlockDistance) minMatureBlock = trailBlock;
             }
 
-            if (!trailBlock.GetComponent<LineRenderer>() && ship.ShipStatus.AlignmentEnabled)
+            if (!trailBlock.GetComponent<LineRenderer>() && ship.ShipStatus.AlignmentEnabled) // TODO: ditch line renderer
             {
                 CreateLineRendererAroundBlock(trailBlock);
 
                 var lineRenderer = trailBlock.GetComponent<LineRenderer>();
-                AdjustOpacity(lineRenderer, distance);
+                //AdjustOpacity(lineRenderer, distance);
             }
 
+            foreach (Transform child in trailBlock.transform)
+            {
+                if (child.gameObject.CompareTag("Shard")) // Make sure to tag your marker prefabs
+                {
+                    AdjustOpacity(child.gameObject, distance);
+                }
+            }
 
             // start with a baseline fuel amount the ranges from 0-1 depending on proximity of the skimmer to the trail block
             fuel = chargeAmount * (1 - (distance / transform.localScale.x)); // x is arbitrary, just need radius of skimmer
@@ -273,6 +281,15 @@ namespace CosmicShore.Core
                 {
                     Destroy(lineRenderer);
                 }
+
+                foreach (Transform child in trailBlock.transform)
+                {
+                    if (child.gameObject.CompareTag("Shard")) // Make sure to tag your marker prefabs
+                    {
+                        Destroy(child.gameObject);
+                    }
+                }
+
             }
         }
 
@@ -321,7 +338,7 @@ namespace CosmicShore.Core
         void Boost(float combinedWeight)
         {
             ship.ShipStatus.Boosting = true;
-            ship.boostMultiplier = 1 + (2.5f * combinedWeight);
+            ship.boostMultiplier = 1 + (2 * combinedWeight);
         }
 
         // Function to compute the Gaussian value at a given x
@@ -366,8 +383,8 @@ namespace CosmicShore.Core
 
         private void DrawCircle(LineRenderer lineRenderer, Transform blockTransform, float radius)
         {
-            int segments = 40;
-            lineRenderer.positionCount = segments + 1;
+            int segments = 20;
+            //lineRenderer.positionCount = segments + 1;
 
             Vector3 forward = blockTransform.forward;
             Vector3 up = blockTransform.up;
@@ -378,16 +395,22 @@ namespace CosmicShore.Core
                 float angle = i * Mathf.PI * 2f / segments;
                 Vector3 localPosition = (Mathf.Cos(angle) * right + Mathf.Sin(angle) * up) * radius;
                 Vector3 worldPosition = blockTransform.position + localPosition;
-                lineRenderer.SetPosition(i, worldPosition);
+                //lineRenderer.SetPosition(i, worldPosition);
+
+                GameObject marker = Instantiate(markerPrefab, worldPosition, Quaternion.LookRotation(forward, localPosition));
+                marker.transform.parent = blockTransform; // Optional: Make the marker a child of the block
             }
         }
 
-
-
         private void AdjustOpacity(LineRenderer lineRenderer, float distance)
         {
-            float opacity = .3f - .2f*(distance / radius); // Closer blocks are less transparent
+            float opacity = .01f - .01f*(distance / radius); // Closer blocks are less transparent
             lineRenderer.material.SetFloat("_Opacity", opacity);
+        }
+        private void AdjustOpacity(GameObject marker, float distance)
+        {
+            float opacity = .1f - .1f*(distance / radius); // Closer blocks are less transparent
+            marker.GetComponent<MeshRenderer>().material.SetFloat("_Opacity", opacity);
         }
 
 

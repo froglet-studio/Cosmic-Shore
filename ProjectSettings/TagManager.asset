@@ -15,6 +15,7 @@ TagManager:
   - SuperEnergizedProjectile
   - FancyCam
   - Fauna
+  - Shard
   layers:
   - Default
   - TransparentFX
