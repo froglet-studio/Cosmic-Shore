@@ -2,28 +2,35 @@ Shader "Custom/SpreadFresnelShader"
 {
     Properties
     {
-        _BrightColor ("Bright Color", Color) = (1,1,1,1)
-        _DarkColor ("Dark Color", Color) = (0,0,0,1)
+        [HDR]_BrightColor ("Bright Color", Color) = (1,1,1,1)
+        [HDR]_DarkColor ("Dark Color", Color) = (0,0,0,1)
         _Spread ("Spread", Vector) = (1,1,1,0)
         _FresnelPower ("Fresnel Power", Range(1, 10)) = 5
     }
 
     SubShader
     {
-        Tags { "RenderType"="Opaque" }
-        
+            Tags
+        {
+            "RenderPipeline"="UniversalPipeline"
+            "RenderType"="Opaque"
+            "UniversalMaterialType" = "Unlit"
+            "Queue"="Geometry"
+            "ShaderGraphShader"="true"
+            "ShaderGraphTargetId"="UniversalUnlitSubTarget"
+        }
         Pass
         {
             Name "CustomPass"
-            Cull Off 
+            Cull Off
+            ZWrite On
 
             CGPROGRAM
             #pragma vertex vert
             #pragma fragment frag
             #pragma target 3.0
-            #include "UnityCG.cginc"
 
-            
+            #include "UnityCG.cginc"
 
             struct appdata
             {
@@ -54,7 +61,6 @@ Shader "Custom/SpreadFresnelShader"
                 o.worldPos = mul(unity_ObjectToWorld, v.vertex).xyz;
                 return o;
             }
-
 
             half4 frag (v2f i) : SV_Target
             {

@@ -1332,7 +1332,7 @@ MonoBehaviour:
   maxExplosionScale: 300
   trailBlockImpactEffects: 0e00000000000000
   blockChargeChange: 0
-  boostMultiplier: 3
+  boostMultiplier: 0
   boostFuelAmount: 0
   inputEventShipActions:
   - InputEvent: 3
@@ -1376,7 +1376,7 @@ MonoBehaviour:
   ElevatedAmmoGain: 0
   ChargedBoostCharge: 1
   AutoPilotEnabled: 0
-  AlignmentEnabled: 0
+  AlignmentEnabled: 1
   Attached: 0
   AttachedTrailBlock: {fileID: 0}
   GunsActive: 0
@@ -1398,12 +1398,12 @@ MonoBehaviour:
   ThrottleScaler: 0
   DefaultMinimumSpeed: 0
   DefaultThrottleScaler:
-    Value: 40
+    Value: 50
     Min: 0
     Max: 0
     element: 0
-  PitchScaler: 40
-  YawScaler: 40
+  PitchScaler: 50
+  YawScaler: 50
   RollScaler: 50
   RotationThrottleScaler: 0
 --- !u!114 &874579555101021522
@@ -2348,6 +2348,12 @@ PrefabInstance:
       propertyPath: lineMaterial
       value: 
       objectReference: {fileID: 2100000, guid: d9c5732e6a43fbd40b2c9fe615ed746e, type: 2}
+    - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
+      propertyPath: markerPrefab
+      value: 
+      objectReference: {fileID: 6475208383231727548, guid: 6e66b0bdeebab72409ac0032a3a1d2c0,
+        type: 3}
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
       propertyPath: skimVisualFX

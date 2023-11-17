@@ -238,7 +238,7 @@ namespace CosmicShore.Core
                         AOEExplosion.MaxScale =  Mathf.Lerp(minExplosionScale, maxExplosionScale, ResourceSystem.CurrentAmmo);
                         break;
                     case CrystalImpactEffects.IncrementLevel:
-                        ResourceSystem.IncrementLevel(crystalProperties.Element);
+                        ResourceSystem.IncrementLevel(crystalProperties.Element); // TODO: consider removing here and leaving this up to the crystals
                         break;
                     case CrystalImpactEffects.FillCharge:
                         ResourceSystem.ChangeBoostAmount(crystalProperties.fuelAmount);
@@ -294,9 +294,10 @@ namespace CosmicShore.Core
                     case TrailBlockImpactEffects.Bounce:
                         var cross = Vector3.Cross(transform.forward, trailBlockProperties.trailBlock.transform.forward);
                         var normal = Quaternion.AngleAxis(90, cross) * trailBlockProperties.trailBlock.transform.forward;
-                        var reflect = Vector3.Reflect(transform.forward, normal);
-                        var up = Quaternion.AngleAxis(90, cross) * reflect;
-                        ShipTransformer.GentleSpinShip(reflect, up, 1);
+                        var reflectForward = Vector3.Reflect(transform.forward, normal);
+                        var reflectUp = Vector3.Reflect(transform.up, normal);
+                        ShipTransformer.GentleSpinShip(reflectForward, reflectUp, 1);
+                        ShipTransformer.ModifyVelocity((transform.position - trailBlockProperties.trailBlock.transform.position).normalized * 5 , Time.deltaTime * 15);
                         break;
                     case TrailBlockImpactEffects.Explode:
                         trailBlockProperties.trailBlock.Explode(ShipStatus.Course * ShipStatus.Speed, Team, Player.PlayerName);

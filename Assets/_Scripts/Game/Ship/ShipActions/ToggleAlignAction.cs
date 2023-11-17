@@ -11,11 +11,11 @@ public class ToggleAlignAction : ShipAction
     }
     public override void StartAction()
     {
-        shipData.AlignmentEnabled = true;
+        shipData.AlignmentEnabled = false;
     }
 
     public override void StopAction()
     {
-        shipData.AlignmentEnabled = false;
+        shipData.AlignmentEnabled = true;
     }
 }
