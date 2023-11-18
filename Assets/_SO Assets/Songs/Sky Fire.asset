@@ -12,6 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7f1971bc9ba07254695003955755b55e, type: 3}
   m_Name: Sky Fire
   m_EditorClassIdentifier: 
-  clip: {fileID: 8300000, guid: ab7275388d45739439b22d5bc2d0ac5c, type: 3}
+  clip: {fileID: 8300000, guid: fef5c68132d8bbb47880260babe7cefa, type: 3}
   decription: 
   author: 
