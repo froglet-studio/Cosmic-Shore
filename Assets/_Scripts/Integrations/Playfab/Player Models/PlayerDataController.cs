@@ -34,7 +34,13 @@ namespace CosmicShore.Integrations.Playfab.Player_Models
 
         void InitializePlayerClientInstanceAPI()
         {
-            _playFabClientInstanceAPI ??= new PlayFabClientInstanceAPI(AuthenticationManager.PlayerAccount.AuthContext);
+            // Change API instance upon auth context changes
+            if(_playFabClientInstanceAPI?.authenticationContext!= AuthenticationManager.PlayerAccount.AuthContext)
+                _playFabClientInstanceAPI = new PlayFabClientInstanceAPI(AuthenticationManager.PlayerAccount.AuthContext);
+            
+            // Make API instance singleton
+            else
+                _playFabClientInstanceAPI ??= new PlayFabClientInstanceAPI(AuthenticationManager.PlayerAccount.AuthContext);
         }
 
         void Start()
