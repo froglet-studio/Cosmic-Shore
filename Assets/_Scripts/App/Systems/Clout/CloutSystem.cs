@@ -6,91 +6,86 @@ namespace CosmicShore.App.Systems.Clout
 {
     public class CloutSystem : MonoBehaviour
     {
-        int minCloutValue = 0;
-        int maxCloutValue = 999;
-
         // Dictionary to store clout value with a ref to a string key "ShipType_Element_CloutType"
-        Dictionary<string, Clout> Clouts = new Dictionary<string, Clout>();
+        Dictionary<ShipTypes, int> shipClouts;
+        public int MasterCloutValue { get; private set; } = 0;
+
+        const int MinCloutValue = 0;
+        const int MaxCloutValue = 999;
 
         void Start()
         {
-            PopulateDefaultDictionary();
+            // Populate Default player clout value is 0
+            PopulateShipClouts();
             Test();
         }
-
-        void Test() 
+        
+        void PopulateShipClouts(int playerCloutValue = MinCloutValue)
         {
-            //adding clout
-            AddClout(ShipTypes.Manta, Element.Charge, CloutType.Sport, 20);
+            shipClouts = new();
+            playerCloutValue = Math.Clamp(playerCloutValue, MinCloutValue, MaxCloutValue);
 
-            //getting clout value
-            GetCloutValue(ShipTypes.Manta, Element.Charge, CloutType.Sport); //a changed dictionary entry
-
-            GetCloutValue(ShipTypes.Grizzly, Element.Charge, CloutType.Sport); // a default dictionary entry
-
-            //removing clout
-            AddClout(ShipTypes.Manta, Element.Charge, CloutType.Sport, -20);
-
-            int MCSValue = GetCloutValue(ShipTypes.Manta, Element.Charge, CloutType.Sport);
-            Debug.Log("Manta - Charge - Sport : Value = " + MCSValue);
-
-        }
-
-        void PopulateDefaultDictionary()
-        {
-            int playerCloutValue = minCloutValue;  //TODO get player clout from server or save file
-            playerCloutValue = Math.Clamp(playerCloutValue, minCloutValue, maxCloutValue);
-
-            Clouts.Clear();
+            shipClouts.Clear();
             foreach (ShipTypes ship in Enum.GetValues(typeof(ShipTypes)))
             {
-                foreach (Element element in Enum.GetValues(typeof(ShipTypes)))
-                {
-                    foreach (CloutType cloutType in Enum.GetValues(typeof(CloutType)))
-                    {
-                        Clout clout = new Clout(ship, element, cloutType, playerCloutValue);
-
-                        string key = CreateKey(ship, element, cloutType);
-                        Clouts.Add(key, clout);
-                    }
-                }
+                shipClouts.Add(ship, playerCloutValue);
             }
         }
 
         // Adds or Removes clout value
-        public void AddClout(ShipTypes ship, Element element, CloutType cloutType, int amountToAdd)
+        public void AccumulateShipClout(ShipTypes ship, int playerCloutValue = 0)
         {
-            string key = CreateKey(ship, element, cloutType);
-            if (Clouts.ContainsKey(key))
+            // Adding to master Clout
+            MasterCloutValue += playerCloutValue;
+            MasterCloutValue = Math.Clamp(MasterCloutValue, MinCloutValue, MaxCloutValue);
+            
+            if (shipClouts == null)
             {
-                Clouts.TryGetValue(key, out Clout oldVesselClout);
-                int oldValue = oldVesselClout.GetValue();                                                           
-                int newValue = oldValue + amountToAdd;
-                
-                Clout newClout = new Clout(ship, element, cloutType, newValue);
-                Clouts[key] = newClout;
+                PopulateShipClouts();
+            };
 
-            }
+            if (shipClouts.TryGetValue(ship, out var previousCloutValue))
+            {
+                shipClouts[ship] = Math.Clamp(previousCloutValue + playerCloutValue, MinCloutValue, MaxCloutValue);
+            }                                                           
             else
             {
-                Clouts.Add(key, new Clout(ship, element, cloutType, amountToAdd));
+                shipClouts.Add(ship, Math.Clamp(playerCloutValue,MinCloutValue, MaxCloutValue));
             }
         }
 
         // Gets clout value
-        public int GetCloutValue(ShipTypes ship, Element element, CloutType cloutType)
+        public int GetShipCloutValue(ShipTypes ship)
         {
-            int value = 0;
+            var value = MinCloutValue;
+            
+            if (shipClouts == null) return value;
 
+            if (shipClouts.TryGetValue(ship, out value))
+            {
+                return value;
+            }
+            
             return value;
         }
-
-        // Creates a clouts dictionary key and returns it 
-        private string CreateKey(ShipTypes ship, Element element, CloutType cloutType)
-        {
-            string d = "_";
-            return string.Join(d, ship.ToString(), element.ToString(), cloutType.ToString());
-        }
         
+        
+        void Test() 
+        {
+            //adding clout
+            AccumulateShipClout(ShipTypes.Manta, 20);
+
+            //getting clout value
+            GetShipCloutValue(ShipTypes.Manta); //a changed dictionary entry
+
+            GetShipCloutValue(ShipTypes.Grizzly); // a default dictionary entry
+
+            //removing clout
+            AccumulateShipClout(ShipTypes.Manta, -20);
+
+            int mcsValue = GetShipCloutValue(ShipTypes.Manta);
+            Debug.Log("Manta - Charge - Sport : Value = " + mcsValue);
+
+        }
     }
 }
