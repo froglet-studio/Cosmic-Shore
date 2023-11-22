@@ -132,9 +132,9 @@ namespace CosmicShore.Integrations.Playfab.Player_Models
             // Get ship clout values
             if (data.TryGetValue(ShipCloutKey, out var shipCloutRecord))
             {
-                playerClout.shipClouts = (Dictionary<ShipTypes, int>)JsonConvert.DeserializeObject(shipCloutRecord.Value, typeof(Dictionary<ShipTypes, int>));
-                Debug.Log($"LoadClout - CloutData.Keys: {playerClout.shipClouts.Keys.Count}");
-                Debug.Log($"LoadClout - CloutData[Dolphin]: {playerClout.shipClouts[ShipTypes.Dolphin]}");
+                playerClout.ShipClouts = (Dictionary<ShipTypes, int>)JsonConvert.DeserializeObject(shipCloutRecord.Value, typeof(Dictionary<ShipTypes, int>));
+                Debug.Log($"LoadClout - CloutData.Keys: {playerClout.ShipClouts.Keys.Count}");
+                Debug.Log($"LoadClout - CloutData[Dolphin]: {playerClout.ShipClouts[ShipTypes.Dolphin]}");
             }
             
             // 
@@ -174,7 +174,7 @@ namespace CosmicShore.Integrations.Playfab.Player_Models
             Dictionary<string, string> cloutData = new()
             {
                 {MasterCloutKey, playerClout.MasterCloutValue.ToString()},
-                {ShipCloutKey, JsonConvert.SerializeObject(playerClout.shipClouts)}
+                {ShipCloutKey, JsonConvert.SerializeObject(playerClout.ShipClouts)}
             };
 
             _playFabClientInstanceAPI.UpdateUserData(
