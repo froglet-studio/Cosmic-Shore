@@ -8,6 +8,6 @@ namespace CosmicShore.App.Systems.Clout
     public struct Clout
     {
         public int MasterCloutValue { get; set; }
-        public Dictionary<ShipTypes, int> shipClouts { get; set; }
+        public Dictionary<ShipTypes, int> ShipClouts { get; set; }
     }
 }
