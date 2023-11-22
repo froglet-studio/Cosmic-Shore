@@ -1,8 +1,11 @@
-﻿using CosmicShore.Integrations.Playfab.Authentication;
+﻿using System;
+using CosmicShore.Integrations.Playfab.Authentication;
 using CosmicShore.Utility.Singleton;
 using PlayFab;
 using PlayFab.ClientModels;
 using System.Collections.Generic;
+using System.Linq;
+using CosmicShore.App.Systems.Clout;
 using UnityEngine;
 using Newtonsoft.Json;
 
@@ -27,12 +30,21 @@ namespace CosmicShore.Integrations.Playfab.Player_Models
     public class PlayerDataController : SingletonPersistent<PlayerDataController>
     {
         const string ShardDataKey = "Shards";
-        const string CloutKey = "Clout";
+        const string ShipCloutKey = "ShipClout";
+        private const string MasterCloutKey = "MasterClout";
+        
         static PlayFabClientInstanceAPI _playFabClientInstanceAPI;
-        public Dictionary<ShipTypes, ShardData> PlayerShardData;
-        public Dictionary<ShipTypes, int> PlayerClout;
-
-        void InitializePlayerClientInstanceAPI()
+        
+        // Shard data
+        [HideInInspector] public Dictionary<ShipTypes, ShardData> PlayerShardData;
+        
+        // Clout data
+        Clout playerClout;
+        
+        // Clout related event
+        public static event Action<Clout> OnLoadingPlayerClout;
+        
+        static void InitializePlayerClientInstanceAPI()
         {
             // Change API instance upon auth context changes
             if(_playFabClientInstanceAPI?.authenticationContext!= AuthenticationManager.PlayerAccount.AuthContext)
@@ -89,47 +101,54 @@ namespace CosmicShore.Integrations.Playfab.Player_Models
         void LoadClout()
         {
             InitializePlayerClientInstanceAPI();
-
             _playFabClientInstanceAPI.GetUserData(
                 new GetUserDataRequest()
                 {
                     PlayFabId = AuthenticationManager.PlayerAccount.PlayFabId,
-                    Keys = new List<string> { CloutKey }
-                },
-                (result) =>
-                {
-                    Debug.Log($"LoadClout - Data: {result.Data}");
-                    Debug.Log($"LoadClout - Data.Keys: {result.Data.Keys.Count}");
-                    foreach (var key in result.Data.Keys)
-                    {
-                        Debug.Log($"LoadClout - Data: Key:{key}, Value:{result.Data[key]}");
-                        Debug.Log($"LoadClout - Data: json:{result.Data[key].ToJson()}");
-                        Debug.Log($"LoadClout - Data: Value:{result.Data[key].Value}");
-
-                        PlayerClout = (Dictionary<ShipTypes, int>)JsonConvert.DeserializeObject(result.Data[key].Value, typeof(Dictionary<ShipTypes, int>));
-
-                        Debug.Log($"LoadClout - CloutData.Keys: {PlayerClout.Keys.Count}");
-                        Debug.Log($"LoadClout - CloutData[Dolphin]: {PlayerClout[ShipTypes.Dolphin]}");
-
-                        foreach (var key2 in PlayerClout.Keys)
-                            Debug.Log($"LoadClout - shardData.ShipShardData.Keys: {key2}");
-                    }
-
-                    Debug.Log($"LoadClout - Custom Data: {result.CustomData}");
-                },HandleErrorReport
+                    Keys = new List<string> { ShipCloutKey, MasterCloutKey }
+                },OnLoadingClout
+                ,HandleErrorReport
             );
+        }
+
+        void OnLoadingClout(GetUserDataResult result)
+        {
+            if (result == null || result.Data?.Count == 0)
+            {
+                Debug.Log($"LoadClout - Nothing to see here.");
+                return;
+            }
+
+            var data = result.Data;
+            
+            Debug.Log($"LoadClout - Data.Keys: {data.Keys.Count}");
+            
+            // Get player master clout value
+            if (data.TryGetValue(MasterCloutKey, out var masterCloutRecord))
+            {
+                playerClout.MasterCloutValue = (int)JsonConvert.DeserializeObject(masterCloutRecord.Value, typeof(int))!;
+            }
+            
+            // Get ship clout values
+            if (data.TryGetValue(ShipCloutKey, out var shipCloutRecord))
+            {
+                playerClout.shipClouts = (Dictionary<ShipTypes, int>)JsonConvert.DeserializeObject(shipCloutRecord.Value, typeof(Dictionary<ShipTypes, int>));
+                Debug.Log($"LoadClout - CloutData.Keys: {playerClout.shipClouts.Keys.Count}");
+                Debug.Log($"LoadClout - CloutData[Dolphin]: {playerClout.shipClouts[ShipTypes.Dolphin]}");
+            }
+            
+            // 
+            OnLoadingPlayerClout?.Invoke(playerClout);
+
+            Debug.Log($"LoadClout - Player Clout loaded");
         }
 
         public void UpdatePlayerShardData(Dictionary<ShipTypes, ShardData> playerShardData)
         {
             InitializePlayerClientInstanceAPI();
      
-            Dictionary<string, string> shardData = new();
-            foreach (var key in playerShardData.Keys)
-            {
-                shardData.Add(key.ToString(), playerShardData[key].ToString());
-            }
-            
+            Dictionary<string, string> shardData = playerShardData.Keys.ToDictionary(key => key.ToString(), key => playerShardData[key].ToString());
+
             _playFabClientInstanceAPI.UpdateUserData(
                 new UpdateUserDataRequest()
                 {
@@ -148,16 +167,16 @@ namespace CosmicShore.Integrations.Playfab.Player_Models
                 );
         }
 
-        public void UpdatePlayerClout(Dictionary<ShipTypes, int> playerClout)
+        public void UpdatePlayerClout(Clout playerClout)
         {
             InitializePlayerClientInstanceAPI();
-            
-            Dictionary<string, string> cloutData = new();
-            foreach (var key in playerClout.Keys)
+
+            Dictionary<string, string> cloutData = new()
             {
-                cloutData.Add(key.ToString(), playerClout[key].ToString());
-            }
-            
+                {MasterCloutKey, playerClout.MasterCloutValue.ToString()},
+                {ShipCloutKey, JsonConvert.SerializeObject(playerClout.shipClouts)}
+            };
+
             _playFabClientInstanceAPI.UpdateUserData(
                 new UpdateUserDataRequest()
                 {
@@ -167,15 +186,16 @@ namespace CosmicShore.Integrations.Playfab.Player_Models
                 {
                     if (result == null)
                     {
-                        Debug.LogWarning($"{nameof(PlayerDataController)} - {nameof(UpdatePlayerClout)} - Unable to retrieve data or no data available");
+                        Debug.LogWarning(
+                            $"{nameof(PlayerDataController)} - {nameof(UpdatePlayerClout)} - Unable to retrieve data or no data available");
                         return;
-                    };
-                
-                    Debug.Log($"{nameof(PlayerDataController)} - {nameof(UpdatePlayerClout)} success.");
-                },HandleErrorReport
-                );
+                    }
 
+                    Debug.Log($"{nameof(PlayerDataController)} - {nameof(UpdatePlayerClout)} success.");
+                },
+                HandleErrorReport);
         }
+
         
         #region Error Handling
     
