@@ -1,96 +1,138 @@
 using System;
-using System.Collections.Generic;
+using CosmicShore.Integrations.Playfab.Player_Models;
 using UnityEngine;
 
 namespace CosmicShore.App.Systems.Clout
 {
     public class CloutSystem : MonoBehaviour
     {
-        int minCloutValue = 0;
-        int maxCloutValue = 999;
+        // Player clout model
+        public static Clout PlayerClout;
 
-        // Dictionary to store clout value with a ref to a string key "ShipType_Element_CloutType"
-        Dictionary<string, Clout> Clouts = new Dictionary<string, Clout>();
+        // Min and Max Value
+        const int MinCloutValue = 0;
+        const int MaxCloutValue = 999;
+        
+        // Clout related event
+        public static event Action<Clout> OnUpdatingMasterClout;
+        
+        // Network condition
+        private bool isConnected;
 
-        void Start()
+        private void OnEnable()
         {
-            PopulateDefaultDictionary();
-            Test();
+            // Events that talking to PlayFab
+            PlayerDataController.OnLoadingPlayerClout += PopulatePlayerClouts;
+            OnUpdatingMasterClout += PlayerDataController.Instance.UpdatePlayerClout;
+            
+            // Network detector
+            NetworkMonitor.NetworkConnectionFound += SetOnline;
+            NetworkMonitor.NetworkConnectionLost += SetOffline;
+            
+            // John's test method
+            if(isConnected) Test();
         }
 
-        void Test() 
+        private void OnDisable()
         {
-            //adding clout
-            AddClout(ShipTypes.Manta, Element.Charge, CloutType.Sport, 20);
-
-            //getting clout value
-            GetCloutValue(ShipTypes.Manta, Element.Charge, CloutType.Sport); //a changed dictionary entry
-
-            GetCloutValue(ShipTypes.Grizzly, Element.Charge, CloutType.Sport); // a default dictionary entry
-
-            //removing clout
-            AddClout(ShipTypes.Manta, Element.Charge, CloutType.Sport, -20);
-
-            int MCSValue = GetCloutValue(ShipTypes.Manta, Element.Charge, CloutType.Sport);
-            Debug.Log("Manta - Charge - Sport : Value = " + MCSValue);
-
+            // Events that talking to PlayFab
+            OnUpdatingMasterClout -= PlayerDataController.Instance.UpdatePlayerClout;
+            PlayerDataController.OnLoadingPlayerClout -= PopulatePlayerClouts;
+            
+            // Network detector
+            NetworkMonitor.NetworkConnectionFound -= SetOnline;
+            NetworkMonitor.NetworkConnectionLost -= SetOffline;
         }
 
-        void PopulateDefaultDictionary()
+        void SetOnline()
         {
-            int playerCloutValue = minCloutValue;  //TODO get player clout from server or save file
-            playerCloutValue = Math.Clamp(playerCloutValue, minCloutValue, maxCloutValue);
+            isConnected = true;
+        }
 
-            Clouts.Clear();
-            foreach (ShipTypes ship in Enum.GetValues(typeof(ShipTypes)))
-            {
-                foreach (Element element in Enum.GetValues(typeof(ShipTypes)))
-                {
-                    foreach (CloutType cloutType in Enum.GetValues(typeof(CloutType)))
-                    {
-                        Clout clout = new Clout(ship, element, cloutType, playerCloutValue);
+        void SetOffline()
+        {
+            isConnected = false;
+        }
 
-                        string key = CreateKey(ship, element, cloutType);
-                        Clouts.Add(key, clout);
-                    }
-                }
-            }
+        void PopulatePlayerClouts(Clout playerClout)
+        {
+            PlayerClout = playerClout;
         }
 
         // Adds or Removes clout value
-        public void AddClout(ShipTypes ship, Element element, CloutType cloutType, int amountToAdd)
+        public void UpdateShipClout(ShipTypes shipType, int cloutValue)
         {
-            string key = CreateKey(ship, element, cloutType);
-            if (Clouts.ContainsKey(key))
+            if (!isConnected) return;
+            
+            // Check if ship clout is null, if yes give a new instance
+            if (PlayerClout.ShipClouts == null)
             {
-                Clouts.TryGetValue(key, out Clout oldVesselClout);
-                int oldValue = oldVesselClout.GetValue();                                                           
-                int newValue = oldValue + amountToAdd;
-                
-                Clout newClout = new Clout(ship, element, cloutType, newValue);
-                Clouts[key] = newClout;
-
+                PlayerClout.ShipClouts = new();
             }
+            
+            // Get new value into the ship clout
+            if (PlayerClout.ShipClouts.TryGetValue(shipType, out var previousCloutValue))
+            {
+                PlayerClout.ShipClouts[shipType] = Math.Clamp(previousCloutValue + cloutValue, MinCloutValue, MaxCloutValue);
+            }                                                           
             else
             {
-                Clouts.Add(key, new Clout(ship, element, cloutType, amountToAdd));
+                PlayerClout.ShipClouts.Add(shipType, Math.Clamp(cloutValue,MinCloutValue, MaxCloutValue));
             }
+            
+            // Calculate the master player clout value
+            CalculateMasterClout();
+            
+            // Let the other systems handle the player clout data upon updates
+            OnUpdatingMasterClout?.Invoke(PlayerClout);
+        }
+
+        private void CalculateMasterClout()
+        {
+            if (!isConnected) return;
+            
+            if (PlayerClout.ShipClouts == null) return;
+
+            foreach (var value in PlayerClout.ShipClouts.Values)
+            {
+                PlayerClout.MasterCloutValue += value;
+            }
+            
+            PlayerClout.MasterCloutValue = Math.Clamp(PlayerClout.MasterCloutValue, MinCloutValue, MaxCloutValue);
         }
 
         // Gets clout value
-        public int GetCloutValue(ShipTypes ship, Element element, CloutType cloutType)
+        public int GetShipCloutValue(ShipTypes ship)
         {
-            int value = 0;
+            var value = MinCloutValue;
+            
+            if (PlayerClout.ShipClouts == null) return value;
 
+            if (PlayerClout.ShipClouts.TryGetValue(ship, out value))
+            {
+                return value;
+            }
+            
             return value;
         }
-
-        // Creates a clouts dictionary key and returns it 
-        private string CreateKey(ShipTypes ship, Element element, CloutType cloutType)
-        {
-            string d = "_";
-            return string.Join(d, ship.ToString(), element.ToString(), cloutType.ToString());
-        }
         
+        
+        void Test() 
+        {
+            //adding clout
+            UpdateShipClout(ShipTypes.Manta, 20);
+
+            //getting clout value
+            GetShipCloutValue(ShipTypes.Manta); //a changed dictionary entry
+
+            GetShipCloutValue(ShipTypes.Grizzly); // a default dictionary entry
+
+            //removing clout
+            UpdateShipClout(ShipTypes.Manta, -20);
+
+            int mcsValue = GetShipCloutValue(ShipTypes.Manta);
+            Debug.Log("Manta - Charge - Sport : Value = " + mcsValue);
+
+        }
     }
 }
