@@ -30,16 +30,20 @@ public class Boid : MonoBehaviour
 
     private BoidManager boidManager;
     private TrailBlock trailBlock;
+    private BoxCollider BlockCollider;
     private Crystal crystal;
     [SerializeField] Material activeCrystalMaterial;
 
     private List<Collider> separatedBoids = new List<Collider>();
+
+    //Collider[] boidsInVicinity = new Collider[100];
 
     private void Start()
     {
         crystal = GetComponentInChildren<Crystal>();
         boidManager = GetComponentInParent<BoidManager>();
         trailBlock = GetComponentInChildren<TrailBlock>();
+        BlockCollider = GetComponentInChildren<BoxCollider>();
         currentVelocity = transform.forward * Random.Range(minSpeed, maxSpeed);
         float initialDelay = normalizedIndex * behaviorUpdateRate;
         StartCoroutine(CalculateBehaviorCoroutine(initialDelay));
@@ -56,6 +60,7 @@ public class Boid : MonoBehaviour
         }
     }
 
+
     void CalculateBehavior()
     {
         Vector3 separation = Vector3.zero;
@@ -66,17 +71,24 @@ public class Boid : MonoBehaviour
 
         float averageSpeed = 0.0f;
         separatedBoids.Clear();
-        Collider[] boidsInVicinity = Physics.OverlapSphere(transform.position, cohesionRadius);
 
-        foreach (Collider collider in boidsInVicinity)
+        //LayerMask
+        var boidsInVicinity = Physics.OverlapSphere(transform.position, cohesionRadius);
+        var ColliderCount = boidsInVicinity.Length;
+        //var ColliderCount = Physics.OverlapSphereNonAlloc(transform.position, cohesionRadius, boidsInVicinity, LayerMask.NameToLayer("TrailBlocks"));
+        Debug.Log($"Boid: ColliderCount {ColliderCount}");
+        for (int i = 0; i < ColliderCount; i++)
         {
-            if (collider.gameObject == GetComponentInChildren<BoxCollider>().gameObject) continue;
+            Collider collider = boidsInVicinity[i];
+
+            if (collider.gameObject == BlockCollider.gameObject) continue;
 
             Boid otherBoid = collider.GetComponentInParent<Boid>();
             TrailBlock otherTrailBlock = collider.GetComponent<TrailBlock>();
 
             Vector3 diff = transform.position - collider.transform.position;
             float distance = diff.magnitude;
+            if (distance == 0) continue;
 
             if (otherBoid)
             {
@@ -96,7 +108,7 @@ public class Boid : MonoBehaviour
                 float blockWeight = boidManager.Weights[(int)otherTrailBlock.Team - 1];
                 blockAttraction += -diff.normalized * blockWeight / distance;
 
-                if (distance < GetComponentInChildren<BoxCollider>().size.magnitude * 3)
+                if (distance < BlockCollider.size.magnitude * 3)
                 {
                     otherTrailBlock.Explode(currentVelocity, Teams.Blue, "Boid", true);
                 }
@@ -127,6 +139,7 @@ public class Boid : MonoBehaviour
 
             crystal.GetComponentInChildren<SkinnedMeshRenderer>().material = activeCrystalMaterial; // TODO: make a crytal material set that this pulls from using the element 
         }
+
 
         //
         //    StopAllCoroutines();

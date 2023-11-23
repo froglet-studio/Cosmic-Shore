@@ -252,7 +252,7 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Materials.Array.data[0]
       value: 
-      objectReference: {fileID: 2100000, guid: 383f21e8586fd7243a19e1d0f26110d0, type: 2}
+      objectReference: {fileID: 2100000, guid: 5e879a2421d4e0a4f9607f2ae12b7217, type: 2}
     - target: {fileID: 2346576036425758005, guid: a089e5ab0159cc54aa784d6ebf15d2e4,
         type: 3}
       propertyPath: MutonMaterial
