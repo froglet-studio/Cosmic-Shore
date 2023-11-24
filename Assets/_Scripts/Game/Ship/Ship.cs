@@ -419,6 +419,14 @@ namespace CosmicShore.Core
                 newUpgrade.upgradeLevel = upgradeLevel;
                 VesselUpgrades.TryAdd(element, newUpgrade);
             }
+
+            #if UNITY_EDITOR
+            foreach (var upgrade in VesselUpgrades)
+            {
+                Debug.LogFormat("{0} - {1}: element: {2} upgrade level: {3}", nameof(VesselUpgrades), nameof(UpdateLevel), upgrade.Key, upgrade.Value.upgradeLevel.ToString());
+            }
+            #endif
+            
         }
 
         public void SetShipMaterial(Material material)
