@@ -1,6 +1,8 @@
 #nullable enable
 using System;
 using System.Collections.Generic;
+using CosmicShore.App.Systems.CTA;
+using CosmicShore.App.Systems.UserActions;
 using Firebase;
 using Firebase.Analytics;
 using CosmicShore.Utility.Singleton;
@@ -20,11 +22,13 @@ namespace CosmicShore.Integrations.Firebase.Controller
         private void OnEnable()
         {
             FirebaseHelper.DependencyResolved += InitializeFirebaseAnalytics;
+            UserActionSystem.Instance.OnUserActionCompleted += LogEventUserCompleteAction;
         }
 
         private void OnDisable()
         {
             FirebaseHelper.DependencyResolved -= InitializeFirebaseAnalytics;
+            UserActionSystem.Instance.OnUserActionCompleted -= LogEventUserCompleteAction;
             _analyticsEnabled = false;
         }
         
@@ -101,6 +105,25 @@ namespace CosmicShore.Integrations.Firebase.Controller
             
             FirebaseAnalytics.LogEvent(FirebaseAnalytics.EventScreenView); 
             Debug.Log("Firebase logged Screen View Event");
+        }
+
+        #endregion
+
+        #region UI Action Events
+
+        public void LogEventUserCompleteAction(UserAction action)
+        {
+            if (!_analyticsEnabled) return;
+
+            var parameters = new[]
+            {
+                new Parameter("user_action_completed", action.Label),
+                new Parameter("user_action_type", action.ActionType.ToString()),
+                new Parameter("user_action_value", action.Value)
+            };
+            
+            FirebaseAnalytics.LogEvent(FirebaseAnalytics.EventScreenView, parameters);
+            Debug.LogFormat("{0} - {1} - Firebase logged.", nameof(FirebaseAnalyticsController), nameof(LogEventUserCompleteAction));
         }
 
         #endregion
