@@ -13,7 +13,7 @@ namespace CosmicShore.Integrations.Firebase.Controller
         private static DependencyStatus _dependencyStatus;
     
         // public event when all dependency resolved 
-        public static UnityEvent DependencyResolved;
+        public static event Action DependencyResolved;
 
         // Start is called before the first frame update
         void Start()

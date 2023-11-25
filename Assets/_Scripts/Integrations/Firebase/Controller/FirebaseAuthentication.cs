@@ -28,7 +28,7 @@ namespace CosmicShore.Integrations.Firebase.Controller
             _firebaseAuthMethods = AuthMethods.Default;
             
             // Initialize authentication instance upon dependency resolved
-            FirebaseHelper.DependencyResolved.AddListener(OnDependencyResolved);
+            FirebaseHelper.DependencyResolved += OnDependencyResolved;
         }
 
         /// <summary>
@@ -38,7 +38,7 @@ namespace CosmicShore.Integrations.Firebase.Controller
         private void OnDisable()
         {
             _firebaseAuthMethods = AuthMethods.Default;
-            FirebaseHelper.DependencyResolved.RemoveListener(OnDependencyResolved);
+            FirebaseHelper.DependencyResolved -= OnDependencyResolved;
         }
 
         /// <summary>
