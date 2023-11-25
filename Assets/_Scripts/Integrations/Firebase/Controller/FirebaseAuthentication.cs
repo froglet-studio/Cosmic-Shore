@@ -17,6 +17,7 @@ namespace CosmicShore.Integrations.Firebase.Controller
         private AuthMethods _firebaseAuthMethods;
         private string email;
         private string password;
+        private FirebaseHelper _firebaseHelper = new();
 
         /// <summary>
         /// On Enable
@@ -28,7 +29,7 @@ namespace CosmicShore.Integrations.Firebase.Controller
             _firebaseAuthMethods = AuthMethods.Default;
             
             // Initialize authentication instance upon dependency resolved
-            FirebaseHelper.DependencyResolved += OnDependencyResolved;
+            _firebaseHelper.DependencyResolved += OnDependencyResolved;
         }
 
         /// <summary>
@@ -38,7 +39,7 @@ namespace CosmicShore.Integrations.Firebase.Controller
         private void OnDisable()
         {
             _firebaseAuthMethods = AuthMethods.Default;
-            FirebaseHelper.DependencyResolved -= OnDependencyResolved;
+            _firebaseHelper.DependencyResolved -= OnDependencyResolved;
         }
 
         /// <summary>
