@@ -14,6 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Name: Grizzly Mass
   Description: FLAVOR TEXT HERE
+  Flavor: sdfd
+  Behavior: sfdfdf
   Image: {fileID: 21300000, guid: eab8ab57cb3ceef43b60ce237123c5ac, type: 3}
   Icon: {fileID: 21300000, guid: 2633c4726a4723c4e834a208d4202059, type: 3}
   SelectedIcon: {fileID: 21300000, guid: e43468afa384aa74cb35084710d7a613, type: 3}

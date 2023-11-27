@@ -14,6 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Name: Grizzly Time
   Description: FLAVOR TEXT HERE
+  Flavor: sdff
+  Behavior: sdfdf
   Image: {fileID: 21300000, guid: eab8ab57cb3ceef43b60ce237123c5ac, type: 3}
   Icon: {fileID: 21300000, guid: a47176ccaecda5542a6966cb54af58c4, type: 3}
   SelectedIcon: {fileID: 21300000, guid: 6f167082b7a6fca4784e8cf91c729077, type: 3}

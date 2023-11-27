@@ -14,6 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Name: Urchin Space
   Description: FLAVOR TEXT HERE
+  Flavor: sfds
+  Behavior: sdfds
   Image: {fileID: 21300000, guid: d88eff3a88254e041bbd91f7b126eeae, type: 3}
   Icon: {fileID: 21300000, guid: 3ad7640785837564a9e0793b85cc0917, type: 3}
   SelectedIcon: {fileID: 21300000, guid: 9fa211ac124cc964aaf984b86b455504, type: 3}
