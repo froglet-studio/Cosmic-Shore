@@ -13,6 +13,7 @@ namespace CosmicShore.Core.HangerBuilder
     {
         Teams AITeam;
 
+        [Header("Ship Type Settings")]
         [SerializeField] Teams PlayerTeam = Teams.Green;
         [FormerlySerializedAs("PlayerPilot")]
         [SerializeField] SO_Vessel PlayerVessel;  // Serialized for inspection in hierarchy
@@ -22,6 +23,7 @@ namespace CosmicShore.Core.HangerBuilder
         [SerializeField] ShipTypes HostileAI2ShipType = ShipTypes.Random;
         [SerializeField] ShipTypes HostileAI3ShipType = ShipTypes.Random;
 
+        [Header("Vessel Settings")]
         [FormerlySerializedAs("SoarPilot")]
         [SerializeField] public SO_Vessel SoarVessel;
         [FormerlySerializedAs("SmashPilot")]
@@ -29,6 +31,7 @@ namespace CosmicShore.Core.HangerBuilder
         [FormerlySerializedAs("SportPilot")]
         [SerializeField] public SO_Vessel SportVessel;
 
+        [Header("Material Settings")]
         [SerializeField] SO_MaterialSet GreenTeamMaterialSet;
         [SerializeField] SO_MaterialSet RedTeamMaterialSet;
         [SerializeField] SO_MaterialSet BlueTeamMaterialSet;

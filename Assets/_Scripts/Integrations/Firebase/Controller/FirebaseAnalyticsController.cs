@@ -1,4 +1,8 @@
+#nullable enable
+using System;
 using System.Collections.Generic;
+using CosmicShore.App.Systems.CTA;
+using CosmicShore.App.Systems.UserActions;
 using Firebase;
 using Firebase.Analytics;
 using CosmicShore.Utility.Singleton;
@@ -8,21 +12,88 @@ namespace CosmicShore.Integrations.Firebase.Controller
 {
     public class FirebaseAnalyticsController : SingletonPersistent<FirebaseAnalyticsController>
     {
-        private bool _analyticsEnabled = false;
-        private FirebaseApp _app;
-        private Dictionary<string, object?> serviceDict;
+        private static bool _analyticsEnabled = true;
+        private static DependencyStatus _dependencyStatus = DependencyStatus.Available;
+        public delegate void DependencyResolved();
 
+        public static event DependencyResolved OnDependnecyResolved;
+        private FirebaseApp _app;
+        
         #region Firebase Analytics Controller Initialization and Enabling
         
-        private void OnEnable()
+        private void Start()
         {
-            FirebaseHelper.DependencyResolved?.AddListener(InitializeFirebaseAnalytics);
+            CheckDependencies();
+            OnDependnecyResolved += InitializeFirebaseAnalytics;
+            UserActionSystem.Instance.OnUserActionCompleted += LogEventUserCompleteAction;
         }
 
         private void OnDisable()
         {
-            FirebaseHelper.DependencyResolved?.RemoveListener(InitializeFirebaseAnalytics);
+            OnDependnecyResolved -= InitializeFirebaseAnalytics;
+            UserActionSystem.Instance.OnUserActionCompleted -= LogEventUserCompleteAction;
             _analyticsEnabled = false;
+        }
+
+
+        /// <summary>
+        /// Check Dependencies
+        /// Check for necessary dependencies and try to resolve them for Android and IOS
+        /// </summary>
+        private void CheckDependencies()
+        {
+#if UNITY_ANDROID
+            CheckAndroidDependencies();
+#endif
+        
+#if UNITY_IOS
+            CheckIOSDependencies();
+#endif
+        }
+
+        /// <summary>
+        /// Check Android Dependencies 
+        /// Check for necessary dependencies and try to resolve them for Android
+        /// </summary>
+        private void CheckAndroidDependencies()
+        {
+            FirebaseApp.CheckAndFixDependenciesAsync().ContinueWith(
+                fixTask =>
+                {
+                    _dependencyStatus = fixTask.Result;
+                    if (_dependencyStatus == DependencyStatus.Available)
+                    {
+                        Debug.Log("Dependency resolved, now proceed with Firebase");
+                        OnDependnecyResolved?.Invoke();
+                    }
+                    else
+                    {
+                        Debug.LogErrorFormat("Firebase dependency not resolved. {0}", _dependencyStatus);
+                    }
+                });
+        }
+
+        /// <summary>
+        /// Check iOS Dependencies 
+        /// Check for necessary dependencies and try to resolve them for iOS
+        /// </summary>
+        private void CheckIOSDependencies()
+        {
+            // TODO: check out how to resolve dependencies for iOS
+            FirebaseApp.CheckAndFixDependenciesAsync().ContinueWith(
+                fixTask =>
+                {
+                    _dependencyStatus = fixTask.Result;
+                    if (_dependencyStatus == DependencyStatus.Available)
+                    {
+                        Debug.Log("Dependency resolved, now proceed with Firebase");
+                        OnDependnecyResolved?.Invoke();
+                    }
+                    else
+                    {
+                        Debug.LogErrorFormat("Firebase dependency not resolved. {0}", _dependencyStatus);
+                    }
+                });
         }
         
         /// <summary>
@@ -41,6 +112,9 @@ namespace CosmicShore.Integrations.Firebase.Controller
             
             // Set analytics enabled true
             _analyticsEnabled = true;
+            
+            // Set default session duration values.
+            FirebaseAnalytics.SetSessionTimeoutDuration(new TimeSpan(0, 30, 0));
             
             //Also log app open upon initialization
             LogEventAppOpen();
@@ -63,7 +137,7 @@ namespace CosmicShore.Integrations.Firebase.Controller
         /// <summary>
         /// Log Event Add Impression
         /// </summary>
-        public void LogEventAdImpression()
+        public static void LogEventAdImpression()
         {
             if (!_analyticsEnabled) return;
             
@@ -87,12 +161,33 @@ namespace CosmicShore.Integrations.Firebase.Controller
 
         /// <summary>
         /// Log Event Screen View
+        /// Actually it's automatically logging event screen view
         /// </summary>
         public void LogEventScreenView()
         {
             if (!_analyticsEnabled) return;
-            FirebaseAnalytics.LogEvent(FirebaseAnalytics.EventScreenView);
+            
+            FirebaseAnalytics.LogEvent(FirebaseAnalytics.EventScreenView); 
             Debug.Log("Firebase logged Screen View Event");
+        }
+
+        #endregion
+
+        #region UI Action Events
+
+        public void LogEventUserCompleteAction(UserAction action)
+        {
+            if (!_analyticsEnabled) return;
+
+            var parameters = new[]
+            {
+                new Parameter("user_action_completed", action.Label),
+                new Parameter("user_action_type", action.ActionType.ToString()),
+                new Parameter("user_action_value", action.Value)
+            };
+            
+            FirebaseAnalytics.LogEvent(FirebaseAnalytics.EventScreenView, parameters);
+            Debug.LogFormat("{0} - {1} - event: {2} logged.", nameof(FirebaseAnalyticsController), nameof(LogEventUserCompleteAction), action.Label);
         }
 
         #endregion
@@ -106,7 +201,7 @@ namespace CosmicShore.Integrations.Firebase.Controller
         /// <param name="ship"></param>
         /// <param name="playerCount"></param>
         /// <param name="intensity"></param>
-        public void LogEventMiniGameStart(MiniGames mode, ShipTypes ship, int playerCount, int intensity)
+        public static void LogEventMiniGameStart(MiniGames mode, ShipTypes ship, int playerCount, int intensity)
         {
             if (!_analyticsEnabled) return;
             
@@ -119,23 +214,23 @@ namespace CosmicShore.Integrations.Firebase.Controller
                 new Parameter("mini_game_intensity", intensity),
             };
             
-            // Event dictionary for Unity Analytics Service
-            var dict = new Dictionary<string, object?>
-            {
-                { FirebaseAnalytics.ParameterLevel, nameof(MiniGames) },
-                { FirebaseAnalytics.ParameterLevelName, mode.ToString()},
-                { FirebaseAnalytics.ParameterCharacter, ship.ToString()},
-                { "mini_game_player_count", playerCount},
-                { "mini_game_intensity", intensity}
-            };
+            // // Event dictionary for Unity Analytics Service
+            // var dict = new Dictionary<string, object?>
+            // {
+            //     { FirebaseAnalytics.ParameterLevel, nameof(MiniGames) },
+            //     { FirebaseAnalytics.ParameterLevelName, mode.ToString()},
+            //     { FirebaseAnalytics.ParameterCharacter, ship.ToString()},
+            //     { "mini_game_player_count", playerCount},
+            //     { "mini_game_intensity", intensity}
+            // };
             
             // Log event in Firebase
             FirebaseAnalytics.LogEvent(FirebaseAnalytics.EventLevelStart, parameters);
             Debug.LogFormat("{0} - {1} - Firebase logged mini game start stats.", nameof(FirebaseAnalyticsController), nameof(LogEventMiniGameStart));
             
             // Log event in Unity Analytics
-            UnityAnalytics.Instance.LogFirebaseEvents(FirebaseAnalytics.EventLevelStart, dict);
-            Debug.LogFormat("{0} - {1} - Unity Service logged mini game start stats.", nameof(FirebaseAnalyticsController), nameof(LogEventMiniGameStart));
+            // UnityAnalytics.Instance.LogFirebaseEvents(FirebaseAnalytics.EventLevelStart, dict);
+            // Debug.LogFormat("{0} - {1} - Unity Service logged mini game start stats.", nameof(FirebaseAnalyticsController), nameof(LogEventMiniGameStart));
             
         }
 
@@ -147,11 +242,11 @@ namespace CosmicShore.Integrations.Firebase.Controller
         /// <param name="playerCount">Player Count</param>
         /// <param name="intensity">Intensity</param>
         /// <param name="highScore">HighScore</param>
-        public void LogEventMiniGameEnd(MiniGames mode, ShipTypes ship, int playerCount, int intensity, int highScore)
+        public static void LogEventMiniGameEnd(MiniGames mode, ShipTypes ship, int playerCount, int intensity, int highScore)
         {
             if (!_analyticsEnabled) return;
             
-            
+            // Event parameters for Firebase
             var parameters = new [] {
                 new Parameter(FirebaseAnalytics.ParameterLevel, nameof(MiniGames)),
                 new Parameter(FirebaseAnalytics.ParameterLevelName, mode.ToString()),
@@ -163,7 +258,6 @@ namespace CosmicShore.Integrations.Firebase.Controller
             
             FirebaseAnalytics.LogEvent(FirebaseAnalytics.EventLevelEnd, parameters);
             Debug.Log("Firebase logged mini game end stats.");
-            
         }
 
         #endregion

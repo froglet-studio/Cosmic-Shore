@@ -5,6 +5,8 @@ using System.Linq;
 using UnityEngine;
 using CosmicShore.Game.AI;
 using CosmicShore.Game.Projectiles;
+using CosmicShore.Integrations.Enums;
+using CosmicShore.Models.ScriptableObjects;
 
 namespace CosmicShore.Core
 {
@@ -88,7 +90,27 @@ namespace CosmicShore.Core
         [HideInInspector] public Material AOEConicExplosionMaterial;
         [HideInInspector] public Material SkimmerMaterial;
         float speedModifierDuration = 2f;
+        
+        // Vessel and vessel upgrade properties
         SO_Vessel vessel;
+
+        private Dictionary<Element, SO_VesselUpgrade> _vesselUpgrades;
+        public Dictionary<Element, SO_VesselUpgrade> VesselUpgrades
+        {
+            get => _vesselUpgrades;
+            set
+            {
+                _vesselUpgrades = value;
+
+                if (_vesselUpgrades != null)
+                {
+                    UpdateLevel(Element.Charge, ResourceSystem.GetLevel(Element.Charge));
+                    UpdateLevel(Element.Time, ResourceSystem.GetLevel(Element.Time));
+                    UpdateLevel(Element.Mass, ResourceSystem.GetLevel(Element.Mass));
+                    UpdateLevel(Element.Space, ResourceSystem.GetLevel(Element.Space));
+                }
+            }
+        }
 
         Teams team;
         public Teams Team 
@@ -122,7 +144,7 @@ namespace CosmicShore.Core
             ShipStatus = GetComponent<ShipStatus>();
 
             // TODO: P1 GOES AWAY
-            //ResourceSystem.OnElementLevelChange += UpdateLevel;
+            ResourceSystem.OnElementLevelChange += UpdateLevel;
         }
 
         void Start()
@@ -378,6 +400,33 @@ namespace CosmicShore.Core
             ResourceSystem.InitialTimeLevel = this.vessel.InitialTime;
 
             ResourceSystem.InitializeElementLevels();
+        }
+
+        public void UpdateLevel(Element element, int upgradeLevel)
+        {
+            if (VesselUpgrades == null) VesselUpgrades = new();
+            
+            if (VesselUpgrades.ContainsKey(element))
+            {
+                VesselUpgrades[element].element = element;
+                VesselUpgrades[element].upgradeLevel = upgradeLevel;
+            }
+            else
+            {
+                // TODO: preset individual upgrade properties such as name, description, icon etc based on upgrade properties.
+                var newUpgrade = ScriptableObject.CreateInstance<SO_VesselUpgrade>();
+                newUpgrade.element = element;
+                newUpgrade.upgradeLevel = upgradeLevel;
+                VesselUpgrades.TryAdd(element, newUpgrade);
+            }
+
+            #if UNITY_EDITOR
+            foreach (var upgrade in VesselUpgrades)
+            {
+                Debug.LogFormat("{0} - {1}: element: {2} upgrade level: {3}", nameof(VesselUpgrades), nameof(UpdateLevel), upgrade.Key, upgrade.Value.upgradeLevel.ToString());
+            }
+            #endif
+            
         }
 
         public void SetShipMaterial(Material material)

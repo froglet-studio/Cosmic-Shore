@@ -50,6 +50,14 @@ namespace CosmicShore.Game.Arcade
         protected List<int> RemainingPlayers = new();
         [HideInInspector] public Player ActivePlayer;
         protected bool gameRunning;
+        
+        // Firebase analytics events
+        public delegate void MiniGameStart(MiniGames mode, ShipTypes ship, int playerCount, int intensity);
+        public static event MiniGameStart OnMiniGameStart;
+
+        public delegate void MiniGameEnd(MiniGames mode, ShipTypes ship, int playerCount, int intensity, int highScore);
+
+        public static event MiniGameEnd OnMiniGameEnd;
 
         protected virtual void Awake()
         {
@@ -84,6 +92,18 @@ namespace CosmicShore.Game.Arcade
 
             // Give other objects a few moments to start
             StartCoroutine(StartNewGameCoroutine());
+        }
+
+        protected virtual void OnEnable()
+        {
+            OnMiniGameStart += FirebaseAnalyticsController.LogEventMiniGameStart;
+            OnMiniGameEnd += FirebaseAnalyticsController.LogEventMiniGameEnd;
+        }
+        
+        protected virtual void OnDisable()
+        {
+            OnMiniGameStart -= FirebaseAnalyticsController.LogEventMiniGameStart;
+            OnMiniGameEnd -= FirebaseAnalyticsController.LogEventMiniGameEnd;
         }
 
         IEnumerator StartNewGameCoroutine()
@@ -151,11 +171,11 @@ namespace CosmicShore.Game.Arcade
 
         void StartGame()
         {
-            FirebaseAnalyticsController.Instance.LogEventMiniGameStart(gameMode, PlayerShipType, NumberOfPlayers, IntensityLevel);
             gameRunning = true;
             Debug.Log($"MiniGame.StartGame, ... {Time.time}");
             EndGameScreen.SetActive(false);
             RoundsPlayedThisGame = 0;
+            OnMiniGameStart?.Invoke(gameMode, PlayerShipType, NumberOfPlayers, IntensityLevel);
             StartRound();
         }
 
@@ -235,7 +255,7 @@ namespace CosmicShore.Game.Arcade
             gameRunning = false;
             EndGameScreen.SetActive(true);
             ScoreTracker.DisplayScores();
-            FirebaseAnalyticsController.Instance.LogEventMiniGameEnd(gameMode, PlayerShipType, NumberOfPlayers, IntensityLevel, ScoreTracker.GetHighScore());
+            OnMiniGameEnd?.Invoke(gameMode, PlayerShipType, NumberOfPlayers, IntensityLevel, ScoreTracker.GetHighScore());
         }
 
         void LoopActivePlayerIndex()

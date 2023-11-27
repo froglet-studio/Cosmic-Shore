@@ -1,3 +1,4 @@
+using System;
 using CosmicShore.Integrations.Firebase.Controller;
 using UnityEngine;
 using UnityEngine.Advertisements;
@@ -43,6 +44,16 @@ namespace CosmicShore.App.Systems.Ads
             _firebaseAnalyticsController = FirebaseAnalyticsController.Instance;
         }
 
+        private void OnEnable()
+        {
+            AdLoaded += FirebaseAnalyticsController.LogEventAdImpression;
+        }
+
+        private void OnDisable()
+        {
+            AdLoaded -= FirebaseAnalyticsController.LogEventAdImpression;
+        }
+
         public void Initialize()
         {
             // Default to android settings
@@ -72,7 +83,6 @@ namespace CosmicShore.App.Systems.Ads
         {
             if (_skipAdForDevelopment)
             {
-                _firebaseAnalyticsController.LogEventAdImpression();
                 OnUnityAdsShowComplete(_adUnitId, UnityAdsShowCompletionState.COMPLETED);
                 return;
             }

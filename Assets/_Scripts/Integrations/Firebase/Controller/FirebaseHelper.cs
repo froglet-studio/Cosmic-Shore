@@ -7,16 +7,16 @@ using UnityEngine.Events;
 
 namespace CosmicShore.Integrations.Firebase.Controller
 {
-    public class FirebaseHelper : SingletonPersistent<FirebaseHelper>
+    public class FirebaseHelper
     {
         // Firebase dependency status flag, mark as available when dependencies are resolved
         private static DependencyStatus _dependencyStatus;
     
         // public event when all dependency resolved 
-        public static UnityEvent DependencyResolved;
+        public event Action DependencyResolved;
 
         // Start is called before the first frame update
-        void Start()
+        public void Start()
         {
             InitializeDependencyStatus();
             CheckDependencies();
