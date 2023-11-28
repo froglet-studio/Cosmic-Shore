@@ -11,7 +11,7 @@ namespace CosmicShore.Game.UI
         
         [SerializeField] bool LeftThumb;
         bool PerimeterActive = false;
-        [SerializeField] float Scaler = 3.5f; //scale to max radius
+        [SerializeField] float Scaler = 3f; //scale to max radius
 
         [SerializeField] Sprite ActivePerimeterImage;
         [SerializeField] Player player;
@@ -22,13 +22,12 @@ namespace CosmicShore.Game.UI
 
         bool initialized;
 
-        Vector2 leftTouch, rightTouch;
+        Vector2 leftStartPosition, rightStartPosition;
         InputController controller;
 
         void Start()
         {
-            controller = Player.ActivePlayer.Ship.InputController;
-            image = GetComponentInChildren<Image>();
+            image = GetComponent<Image>();
             image.sprite = ActivePerimeterImage;
             //set Image color alpha
             color.a = 0;
@@ -40,11 +39,13 @@ namespace CosmicShore.Game.UI
         IEnumerator InitializeCoroutine()
         {
             yield return new WaitUntil(() => Player.ActivePlayer != null && Player.ActivePlayer.Ship != null && Player.ActivePlayer.Ship.InputController != null);
-
+            bool isActive = Gamepad.current == null && (LeftThumb || !Player.ActivePlayer.Ship.ShipStatus.SingleStickControls);
             if (!Player.ActivePlayer.Ship.ShipStatus.AutoPilotEnabled)
-                gameObject.SetActive(Gamepad.current == null && (LeftThumb || !Player.ActivePlayer.Ship.ShipStatus.SingleStickControls));
-
-            initialized = true;
+            {
+                gameObject.SetActive(isActive);
+                controller = Player.ActivePlayer.Ship.InputController;
+                initialized = isActive;
+            }               
         }
 
         void Update()
@@ -53,70 +54,53 @@ namespace CosmicShore.Game.UI
             {
                 if (Input.touches.Length == 0)
                 {
+                    Debug.Log("ThumbPerimeter no touchy");
                     //set Image color alpha
                     color.a = 0;
                     image.color = color;
-                    if (PerimeterActive)
-                    {
-                        PerimeterActive = false;
-                    }
+                    //if (PerimeterActive)
+                    //{
+                    //    PerimeterActive = false;
+                    //}
                 }
 
                 else
                 {
+                    Debug.Log("ThumbPerimeter touchy");
                     float normalizedJoystickDistance;
+                    float angle;
+                    Vector2 normalizedJoystickPosition;
                     if (Input.touches.Length == 1)
                     {
                         PerimeterActive = controller.OneTouchLeft == LeftThumb;
                     }                  
                     if (LeftThumb)
                     {
-
-                        // check if left perimeter is active
-                        if (!PerimeterActive)
-                        {
-                            PerimeterActive = true;
-                            leftTouch = Player.ActivePlayer.Ship.InputController.LeftJoystickStart;
-                            transform.position = leftTouch;
-                        }
-                        normalizedJoystickDistance = controller.LeftNormalizedJoystickPosition.magnitude;
+                        transform.position = controller.LeftJoystickStart;
+                        normalizedJoystickPosition = controller.LeftNormalizedJoystickPosition;
                     }
                     else
                     {
-                        // check if right perimeter is active
-                        if (!PerimeterActive)
-                        {
-                            PerimeterActive = true;
-                            rightTouch = Player.ActivePlayer.Ship.InputController.RightJoystickStart;
-                            transform.position = rightTouch;
-
-                        }
-                        normalizedJoystickDistance = controller.RightNormalizedJoystickPosition.magnitude;
+                        transform.position = controller.RightJoystickStart;
+                        normalizedJoystickPosition = controller.RightNormalizedJoystickPosition;
                     }
+                    normalizedJoystickDistance = normalizedJoystickPosition.magnitude;
+
                     image.rectTransform.localScale = Vector2.one * Scaler;
                     image.sprite = ActivePerimeterImage;
                     //set Image color alpha
                    
-                    color.a = normalizedJoystickDistance;
+                    color.a = normalizedJoystickDistance - .5f;
                     image.color = color;
+                    alpha = color.a;
 
-                    alpha = color.a; //testing only
+                    angle = Vector3.Angle(normalizedJoystickPosition, Vector2.up);
+
+                    transform.rotation = Vector2.Dot(normalizedJoystickPosition, Vector2.right) < 0 ?
+                        Quaternion.Euler(0, 0, angle) :
+                        Quaternion.Euler(0, 0, -angle);   
                 }
-                
-
-               
-
-
             }
-        }
-        public Vector2 GetLeftPerimeterOrgin()
-        {
-            return leftTouch;
-        }
-
-        public Vector2 GetRightPerimeterOrgin()
-        {
-            return rightTouch;
         }
     }
 }

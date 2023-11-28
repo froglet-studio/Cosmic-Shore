@@ -1546,7 +1546,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7e8857163aa2d554f9fb029d2d6fa70a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Left: 1
+  LeftThumb: 1
   offset: {x: 0, y: 0}
   InactiveImage: {fileID: 0}
   ActiveImage: {fileID: 0}
@@ -1640,7 +1640,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7e8857163aa2d554f9fb029d2d6fa70a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Left: 0
+  LeftThumb: 0
   offset: {x: 0, y: 0}
   InactiveImage: {fileID: 0}
   ActiveImage: {fileID: 0}
@@ -1762,7 +1762,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 331210325881566758, guid: 1fc9864af4de1df4e978de4c64e8f630,
         type: 3}
-      propertyPath: Left
+      propertyPath: LeftThumb
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 5214197888031722573, guid: 1fc9864af4de1df4e978de4c64e8f630,

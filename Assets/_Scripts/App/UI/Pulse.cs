@@ -7,9 +7,9 @@ namespace CosmicShore
 {
     public class Pulse : MonoBehaviour
     {
-        [SerializeField] Image image;
+        Image image;
         [SerializeField] float angularFrequency = 1.5f; //frequency / (2 * PI)
-        [SerializeField] float alphaFloor = .4f;
+        [SerializeField] float alphaFloor = 0f;
 
         void Start()
         {

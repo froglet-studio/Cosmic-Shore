@@ -223,7 +223,7 @@ namespace CosmicShore.Game.IO
                             leftTouchIndex = 0;
                             OneTouchLeft = true;
                             HandleJoystick(ref LeftJoystickStart, leftTouchIndex, ref LeftNormalizedJoystickPosition, ref LeftClampedPosition);
-                            LeftNormalizedJoystickPosition = Vector3.Lerp(LeftNormalizedJoystickPosition, Vector3.zero, 7 * Time.deltaTime);
+                            RightNormalizedJoystickPosition = Vector3.Lerp(RightNormalizedJoystickPosition, Vector3.zero, 7 * Time.deltaTime);
                         }
                         else
                         {

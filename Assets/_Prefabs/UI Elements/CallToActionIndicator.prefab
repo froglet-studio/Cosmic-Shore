@@ -90,3 +90,5 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   image: {fileID: 0}
+  angularFrequency: 1.5
+  alphaFloor: 0.2

@@ -61,7 +61,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_RaycastTarget: 1
+  m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
@@ -89,12 +89,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5ef6e9b090d5bcc4e90b4df153a43473, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Left: 0
-  LeftPerimeterActive: 0
-  RightPerimeterActive: 0
-  leftPerimeterScaler: 2
-  rightPerimeterScaler: 2
-  InactivePerimeterImage: {fileID: 0}
-  ActivePerimeterImage: {fileID: 21300000, guid: b7bc99663cf783b4681d8105a370a53f,
+  LeftThumb: 0
+  Scaler: 4.35
+  ActivePerimeterImage: {fileID: 21300000, guid: 3f032d14d5d2b9443b152721ab82b2a9,
     type: 3}
   player: {fileID: 0}
+  alpha: 0
