@@ -9,7 +9,7 @@ using CosmicShore.App.Systems.Clout;
 using UnityEngine;
 using Newtonsoft.Json;
 
-namespace CosmicShore.Integrations.Playfab.Player_Models
+namespace CosmicShore.Integrations.Playfab.PlayStream
 {
     public struct ShardData
     {
@@ -29,7 +29,7 @@ namespace CosmicShore.Integrations.Playfab.Player_Models
 
     public class PlayerDataController : SingletonPersistent<PlayerDataController>
     {
-        const string ShardDataKey = "Shards";
+        const string VesselKnowledgeKey = "VesselKnowledge";
         const string ShipCloutKey = "ShipClout";
         private const string MasterCloutKey = "MasterClout";
         
@@ -57,11 +57,11 @@ namespace CosmicShore.Integrations.Playfab.Player_Models
 
         void Start()
         {
-            AuthenticationManager.OnLoginSuccess += LoadShardData;
+            AuthenticationManager.OnLoginSuccess += LoadVesselKnowledgeData;
             AuthenticationManager.OnLoginSuccess += LoadClout;
         }
 
-        void LoadShardData()
+        void LoadVesselKnowledgeData()
         {
             InitializePlayerClientInstanceAPI();
 
@@ -69,7 +69,7 @@ namespace CosmicShore.Integrations.Playfab.Player_Models
                 new GetUserDataRequest()
                 {
                     PlayFabId = AuthenticationManager.PlayerAccount.PlayFabId,
-                    Keys = new List<string> { ShardDataKey }
+                    Keys = new List<string> { VesselKnowledgeKey }
                 },
                 (result) =>
                 {

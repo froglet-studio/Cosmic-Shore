@@ -76,8 +76,8 @@ namespace Scenes.TestScenes.Playfab_Sandbox_Test
         {
             // The currency calculation for currency should be done before passing shard to purchase inventory API, otherwise it will get "Invalid Request" error.
             // testing upgrade 1 purchasing
-            var vesselShard1 = new ItemPriceModel{ ItemId = VesselShardId, Amount = 5};
-            var mantaSpaceUpgrade1 = new VirtualItemModel { ItemId = MantaShipUpgrade1Id, ContentType = nameof(Vessels.Space), Amount = 1 };
+            var vesselShard1 = new ItemPrice{ ItemId = VesselShardId, Amount = 5};
+            var mantaSpaceUpgrade1 = new VirtualItem { ItemId = MantaShipUpgrade1Id, ContentType = nameof(Vessels.Space), Amount = 1 };
             
             // Parameter order note: item first, currency second
             CatalogManager.Instance.PurchaseItem(mantaSpaceUpgrade1, vesselShard1);
@@ -88,8 +88,8 @@ namespace Scenes.TestScenes.Playfab_Sandbox_Test
             // TODO: Should have ship upgrade level detection here, if level 1 upgrade is not purchased, you can't buy level 2 or higher.
         
             // testing upgrade 2 purchasing
-            var vesselShard2 = new ItemPriceModel{ItemId = VesselShardId, Amount = 10};
-            var mantaSpaceUpgrade2 = new VirtualItemModel { ItemId = MantaShipUpgrade2Id, Amount = 1 };
+            var vesselShard2 = new ItemPrice{ItemId = VesselShardId, Amount = 10};
+            var mantaSpaceUpgrade2 = new VirtualItem { ItemId = MantaShipUpgrade2Id, Amount = 1 };
  
             CatalogManager.Instance.PurchaseItem(mantaSpaceUpgrade2, vesselShard2);
             SaveVesselData(Vessels.Space, MantaShipUpgrade2Id, 2 );
@@ -103,8 +103,8 @@ namespace Scenes.TestScenes.Playfab_Sandbox_Test
         /// </summary>
         private void PurchaseShardsWithCrystalTest()
         {
-            var shardPrice = new ItemPriceModel { ItemId = CrystalId, Amount = 1 };
-            var vesselShards = new VirtualItemModel { ItemId = VesselShardId, Amount = 10 };
+            var shardPrice = new ItemPrice { ItemId = CrystalId, Amount = 1 };
+            var vesselShards = new VirtualItem { ItemId = VesselShardId, Amount = 10 };
 
             
             CatalogManager.Instance.PurchaseItem(vesselShards, shardPrice);
@@ -118,19 +118,19 @@ namespace Scenes.TestScenes.Playfab_Sandbox_Test
         private void GrantStartingInventoryTest()
         {
             // For now it's 100 vessel shards
-            var vesselShard = new VirtualItemModel
+            var vesselShard = new VirtualItem
             {
                 ItemId = VesselShardId,
                 ContentType = nameof(VirtualItemContentTypes.VesselShard),
                 Amount = 100
             };
-            var crystals = new VirtualItemModel
+            var crystals = new VirtualItem
             {
                 ItemId = CrystalId,
                 ContentType = "Currency",
                 Amount = 10
             };
-            var startingItems = new List<VirtualItemModel> { vesselShard, crystals };
+            var startingItems = new List<VirtualItem> { vesselShard, crystals };
             CatalogManager.Instance.GrantStartingInventory(startingItems);
         }
 

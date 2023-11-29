@@ -7,14 +7,14 @@ namespace CosmicShore.Integrations.Playfab.Economy
     public class InventoryModel
     {
         // Vessels
-        public List<VirtualItemModel> Vessels;
+        public List<VirtualItem> Vessels;
         // Vessel Upgrades
-        public List<VirtualItemModel> VesselUpgrades;
+        public List<VirtualItem> VesselUpgrades;
         // Ships
-        public List<VirtualItemModel> Ships;
+        public List<VirtualItem> Ships;
         // MiniGames
-        public List<VirtualItemModel> MiniGames;
+        public List<VirtualItem> MiniGames;
         // Shards already has Quantity, 
-        public List<VirtualItemModel> VesselShards;
+        public List<VirtualItem> VesselShards;
     }
 }

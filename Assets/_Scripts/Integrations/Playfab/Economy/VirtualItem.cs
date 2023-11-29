@@ -1,10 +1,11 @@
 using System;
 using System.Collections.Generic;
+using UnityEngine.Serialization;
 
 namespace CosmicShore.Integrations.Playfab.Economy
 {
     [Serializable]
-    public class VirtualItemModel
+    public class VirtualItem
     {
         /// <summary>
         /// The unique ID of the item.
@@ -33,11 +34,11 @@ namespace CosmicShore.Integrations.Playfab.Economy
         /// </summary>
         /// // TODO: reconsider including this in VirtualItem
         /// // TODO: could use an item id list instead of the items?
-        public List<VirtualItemModel> BundleContents;    
+        public List<VirtualItem> BundleContents;    
         /// <summary>
         /// The prices the item can be purchased for.
         /// </summary>
-        public ItemPriceModel priceModel;
+        [FormerlySerializedAs("priceModel")] public ItemPrice price;
         /// <summary>
         /// The list of tags that are associated with this item. Up to 32 tags can be added to an item.
         /// </summary>

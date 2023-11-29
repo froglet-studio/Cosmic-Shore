@@ -3,7 +3,7 @@ using System;
 namespace CosmicShore.Integrations.Playfab.Economy
 {
 	[Serializable]
-    public class ItemPriceModel
+    public class ItemPrice
     {
         /// <summary>
         /// The Item Id of the price.

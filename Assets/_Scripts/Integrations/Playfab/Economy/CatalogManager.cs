@@ -212,7 +212,7 @@ namespace CosmicShore.Integrations.Playfab.Economy
         /// Grant Starting Inventory
         /// </summary>
         /// <param name="startingItems">Starting Items List</param>
-        public void GrantStartingInventory(in List<VirtualItemModel> startingItems)
+        public void GrantStartingInventory(in List<VirtualItem> startingItems)
         {
             // const int amount = 100;
             foreach (var virtualItem in startingItems)
@@ -289,12 +289,12 @@ namespace CosmicShore.Integrations.Playfab.Economy
         /// Request inventory item by item id
         /// </summary>
         //public void GetInventoryItem([NotNull] InventoryItemReference itemReference)
-        public void GetCatalogItem([NotNull] in VirtualItemModel virtualItemModel)
+        public void GetCatalogItem([NotNull] in VirtualItem virtualItem)
         {
             _playFabEconomyInstanceAPI.GetItem(
                 new GetItemRequest()
                 {
-                    Id = virtualItemModel.ItemId
+                    Id = virtualItem.ItemId
                 },
                 OnGettingCatalogItem,
                 HandleErrorReport
@@ -333,13 +333,13 @@ namespace CosmicShore.Integrations.Playfab.Economy
         /// Add shinny new stuff! Any type of item from currency to vessel and ship upgrades
         /// </summary>
         //public void AddInventoryItem([NotNull] InventoryItemReference itemReference, int amount)
-        public void AddInventoryItem([NotNull] VirtualItemModel virtualItemModel)
+        public void AddInventoryItem([NotNull] VirtualItem virtualItem)
         {
             _playFabEconomyInstanceAPI.AddInventoryItems(
                 new AddInventoryItemsRequest()
                 {
-                    Item = new InventoryItemReference() { Id = virtualItemModel.ItemId },
-                    Amount = virtualItemModel.Amount
+                    Item = new InventoryItemReference() { Id = virtualItem.ItemId },
+                    Amount = virtualItem.Amount
                 }, (result) =>
                 {
                     if(result == null)
@@ -418,7 +418,7 @@ namespace CosmicShore.Integrations.Playfab.Economy
         /// Purchase Item
         /// Buy in-game item with virtual currency (Shards, Crystals)
         /// </summary>
-        public void PurchaseItem([NotNull] VirtualItemModel item, [NotNull] ItemPriceModel price)
+        public void PurchaseItem([NotNull] VirtualItem item, [NotNull] ItemPrice price)
         {
             // The currency calculation for currency should be done before passing shard to purchase inventory API, otherwise it will get "Invalid Request" error.
             _playFabEconomyInstanceAPI.PurchaseInventoryItems(
@@ -449,16 +449,16 @@ namespace CosmicShore.Integrations.Playfab.Economy
         #endregion
 
         #region Model Conversion
-        ItemPriceModel PlayfabToCosmicShorePrice(CatalogPriceOptions price)
+        ItemPrice PlayfabToCosmicShorePrice(CatalogPriceOptions price)
         {
-            ItemPriceModel itemPrice = new();
+            ItemPrice itemPrice = new();
             itemPrice.ItemId = price.Prices[0].Amounts[0].ItemId;
             itemPrice.Amount = price.Prices[0].Amounts[0].Amount;
             return itemPrice;
         }
-        VirtualItemModel PlayfabToCosmicShoreVirtualItem(CatalogItem catalogItem)
+        VirtualItem PlayfabToCosmicShoreVirtualItem(CatalogItem catalogItem)
         {
-            VirtualItemModel virtualItem = new();
+            VirtualItem virtualItem = new();
             virtualItem.ItemId = catalogItem.Id;
             Debug.Log($"catalogItem.Title[\"NEUTRAL\"]: {catalogItem.Title["NEUTRAL"]}");
             virtualItem.Name = catalogItem.Title["NEUTRAL"];

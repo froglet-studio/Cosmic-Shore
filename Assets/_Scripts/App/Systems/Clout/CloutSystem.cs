@@ -1,6 +1,6 @@
 using System;
-using CosmicShore.Integrations.Playfab.Player_Models;
 using UnityEngine;
+using CosmicShore.Integrations.Playfab.PlayStream;
 
 namespace CosmicShore.App.Systems.Clout
 {

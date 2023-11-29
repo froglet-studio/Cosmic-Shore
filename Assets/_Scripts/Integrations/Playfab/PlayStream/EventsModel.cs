@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using PlayFab.EventsModels;
 
-namespace CosmicShore.Integrations.Playfab.Event_Models
+namespace CosmicShore.Integrations.Playfab.PlayStream
 {
     public class EventsModel
     {
