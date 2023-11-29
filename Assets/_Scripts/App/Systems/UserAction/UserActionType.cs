@@ -14,6 +14,9 @@ namespace CosmicShore.App.Systems.UserActions
 
         // Hangar Related - 300s
         ViewHangarMenu = 300,
+        ViewShipManta = 310,
+        ViewShipRhino = 311,
+        ViewShipSquirrel = 312,
 
         // Game Related - 400s
         PlayGame = 400,

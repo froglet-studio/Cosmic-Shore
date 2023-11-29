@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace CosmicShore.Models.ScriptableObjects
 {
@@ -6,7 +7,7 @@ namespace CosmicShore.Models.ScriptableObjects
     [System.Serializable]
     public class SO_VesselUpgrade : ScriptableObject
     {
-        [SerializeField] public string name;
+        [SerializeField] public string vesselName;
         [SerializeField] public string description;
         [SerializeField] public Sprite image;
         [SerializeField] public Sprite icon;
