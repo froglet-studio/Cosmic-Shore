@@ -3,7 +3,6 @@ using CosmicShore.Utility.Singleton;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Serialization;
 
 namespace CosmicShore.App.Systems.CTA
 {
@@ -38,6 +37,7 @@ namespace CosmicShore.App.Systems.CTA
 
             foreach (var targetId in call.DependencyTargetIDs)
             {
+                // This one don't use TryGetValue because the value in the key-value pair should be incremented.
                 if (ActiveDependencyTargets.ContainsKey(targetId))
                 {
                     ActiveDependencyTargets[targetId]++;
@@ -46,20 +46,21 @@ namespace CosmicShore.App.Systems.CTA
                 {
                     ActiveDependencyTargets.Add(targetId, 1);
 
-                    // Notify anyone interested
-                    if (CallToActionActivatedCallbacks.ContainsKey(targetId))
-                        CallToActionActivatedCallbacks[targetId]?.Invoke();
+                    // Notify anyone interested 
+                    // TryGetValue is faster, reference: https://stackoverflow.com/questions/9382681/what-is-more-efficient-dictionary-trygetvalue-or-containskeyitem
+                    if(CallToActionActivatedCallbacks.TryGetValue(targetId, out var callback))
+                        callback?.Invoke();
                 }
             }
 
             // Notify anyone interested
-            if (CallToActionActivatedCallbacks.ContainsKey(call.CallToActionTargetID))
-                CallToActionActivatedCallbacks[call.CallToActionTargetID]?.Invoke();
+            if(CallToActionActivatedCallbacks.TryGetValue(call.CallToActionTargetID, out var target))
+                target?.Invoke();
         }
 
         public void RegisterCallToActionTarget(CallToActionTargetType targetId, Action OnCallToActionActive, Action OnCallToActionDismissed)
         {
-            Debug.Log($"{nameof(RegisterCallToActionTarget)}: {targetId}");
+            Debug.Log($"{nameof(CallToActionSystem)} - {nameof(RegisterCallToActionTarget)}: {targetId}");
             // Reset Call to action callbacks if reissued
             if (CallToActionActivatedCallbacks.ContainsKey(targetId))
                 CallToActionActivatedCallbacks.Remove(targetId);
@@ -95,7 +96,7 @@ namespace CosmicShore.App.Systems.CTA
         /// <param name="action"></param>
         void ResolveCallsToActionOnUserActionCompleted(UserAction action)
         {
-            Debug.Log($"{nameof(ResolveCallsToActionOnUserActionCompleted)}: {action}");
+            Debug.Log($"{nameof(CallToActionSystem)} - {nameof(ResolveCallsToActionOnUserActionCompleted)}: {action}");
             List<CallToAction> matchingCalls = new();
             foreach (var call in ActiveCallsToAction)
             {
@@ -103,7 +104,9 @@ namespace CosmicShore.App.Systems.CTA
                 {
                     matchingCalls.Add(call);
 
-                    Debug.Log($"{nameof(ResolveCallsToActionOnUserActionCompleted)}: CompletionActionMatch - action:{action}, targetId:{call.CallToActionTargetID}");
+                    Debug.Log($"{nameof(CallToActionSystem)} - " +
+                              $"{nameof(ResolveCallsToActionOnUserActionCompleted)}: " +
+                              $"CompletionActionMatch - action:{action}, targetId:{call.CallToActionTargetID}");
 
                     // 1) Notify all CallToAction targets listening for this action to dismiss their indicators & remove from ActiveTargets list.
                     ActiveTargets.Remove(call.CallToActionTargetID);
@@ -116,7 +119,8 @@ namespace CosmicShore.App.Systems.CTA
                     // 2) Decrement Dependency Counter if necessary and Notify DependencyTarget if counter reaches zero
                     foreach (var targetId in call.DependencyTargetIDs)
                     {
-                        Debug.Log($"{nameof(ResolveCallsToActionOnUserActionCompleted)}: DependencyActionMatch - action:{action}, targetId:{targetId}");
+                        Debug.Log($"{nameof(CallToActionSystem)} - {nameof(ResolveCallsToActionOnUserActionCompleted)}: " +
+                                  $"DependencyActionMatch - action:{action}, targetId:{targetId}");
 
                         ActiveDependencyTargets[targetId]--;
                         if (ActiveDependencyTargets[targetId] == 0)
@@ -124,7 +128,18 @@ namespace CosmicShore.App.Systems.CTA
                             ActiveDependencyTargets.Remove(targetId);
                             if (!IsCallToActionTargetActive(targetId))
                             {
-                                CallToActionDismissedCallbacks[targetId]?.Invoke();
+                                if(CallToActionDismissedCallbacks.TryGetValue(targetId,out var callback))
+                                // CallToActionDismissedCallbacks[targetId]?.Invoke();
+                                {
+                                    callback?.Invoke();
+                                }
+                                else
+                                {
+                                    Debug.LogWarningFormat("{0} - {1} {2} is not registered in {3}",
+                                        nameof(CallToActionSystem),
+                                        nameof(ResolveCallsToActionOnUserActionCompleted),
+                                        targetId, nameof(CallToActionDismissedCallbacks));
+                                }
                                 CallToActionDismissedCallbacks.Remove(targetId);
                             }
                         }

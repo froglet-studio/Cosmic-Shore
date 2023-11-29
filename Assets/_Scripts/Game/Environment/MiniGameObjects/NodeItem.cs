@@ -27,26 +27,38 @@ public class NodeItem : MonoBehaviour
     {
         if (NodeControlManager.Instance == null)
         {
-            Debug.LogErrorFormat("{0} - {1} - {2} is not instantiated yet. Would be good to attach it somewhere?", nameof(NodeItem), nameof(AddSelfToNode), nameof(NodeControlManager));
+            Debug.LogWarningFormat("{0} - {1} - {2} is not instantiated yet.", nameof(NodeItem), nameof(AddSelfToNode), nameof(NodeControlManager));
         }
-        NodeControlManager.Instance.AddItem(this);
+        else
+        {
+            NodeControlManager.Instance.AddItem(this);
+        }
+        
     }
 
     public void RemoveSelfFromNode()
     {
         if (NodeControlManager.Instance == null)
         {
-            Debug.LogErrorFormat("{0} - {1} - {2} is not instantiated yet. Would be good to attach it somewhere?", nameof(NodeItem), nameof(RemoveSelfFromNode), nameof(NodeControlManager));
+            Debug.LogWarningFormat("{0} - {1} - {2} is not instantiated yet.", nameof(NodeItem), nameof(RemoveSelfFromNode), nameof(NodeControlManager));
         }
-        NodeControlManager.Instance.RemoveItem(this);
+        else
+        {
+            NodeControlManager.Instance.RemoveItem(this);
+        }
+        
     }
 
     public void UpdateSelfWithNode()
     {
         if (NodeControlManager.Instance == null)
         {
-            Debug.LogErrorFormat("{0} - {1} - {2} is not instantiated yet. Would be good to attach it somewhere?", nameof(NodeItem), nameof(UpdateSelfWithNode), nameof(NodeControlManager));
+            Debug.LogWarningFormat("{0} - {1} - {2} is not instantiated yet.", nameof(NodeItem), nameof(UpdateSelfWithNode), nameof(NodeControlManager));
         }
-        NodeControlManager.Instance.UpdateItem(this);
+        else
+        {
+            NodeControlManager.Instance.UpdateItem(this);
+        }
+        
     }
 }
