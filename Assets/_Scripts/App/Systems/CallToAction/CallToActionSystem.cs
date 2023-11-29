@@ -3,12 +3,13 @@ using CosmicShore.Utility.Singleton;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace CosmicShore.App.Systems.CTA
 {
     public class CallToActionSystem : SingletonPersistent<CallToActionSystem>
     {
-        [SerializeField] bool TestMode;
+        [SerializeField] bool testMode;
         List<CallToActionTargetType> ActiveTargets = new();
         Dictionary<CallToActionTargetType, int> ActiveDependencyTargets = new(); // 
         List<CallToAction> ActiveCallsToAction = new();
@@ -76,7 +77,7 @@ namespace CosmicShore.App.Systems.CTA
 
         void LoadCallsToAction()
         {
-            if (TestMode)
+            if (testMode)
             {
                 // Add in a test notification for the arcade menu
                 //AddCallToAction(new CallToAction(CallToActionTargetType.HangarMenu, UserActionType.ViewHangarMenu));

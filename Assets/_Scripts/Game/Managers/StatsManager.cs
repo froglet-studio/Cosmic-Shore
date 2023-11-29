@@ -266,11 +266,9 @@ public class StatsManager : Singleton<StatsManager>
 
     void MaybeCreateDictionaryEntries(Teams team, string playerName)
     {
-        if (!teamStats.ContainsKey(team))
-            teamStats.Add(team, new RoundStats());
+        teamStats.TryAdd(team, new RoundStats());
 
-        if (!playerStats.ContainsKey(playerName))
-            playerStats.Add(playerName, new RoundStats());
+        playerStats.TryAdd(playerName, new RoundStats());
     }
 
     public void ResetStats()
@@ -292,10 +290,10 @@ public class StatsManager : Singleton<StatsManager>
 
     public Vector4 GetTeamVolumes()
     {
-        float greenVolume = teamStats.ContainsKey(Teams.Green) ? teamStats[Teams.Green].volumeRemaining : 0;
-        float redVolume = teamStats.ContainsKey(Teams.Red) ? teamStats[Teams.Red].volumeRemaining : 0;
-        float blueVolume = teamStats.ContainsKey(Teams.Blue) ? teamStats[Teams.Blue].volumeRemaining : 0;
-        float yellowVolume = teamStats.ContainsKey(Teams.Yellow) ? teamStats[Teams.Yellow].volumeRemaining : 0;
+        var greenVolume = teamStats.TryGetValue(Teams.Green, out var teamStat) ? teamStat.volumeRemaining : 0;
+        var redVolume = teamStats.TryGetValue(Teams.Red, out teamStat) ? teamStat.volumeRemaining : 0;
+        var blueVolume = teamStats.TryGetValue(Teams.Blue, out teamStat) ? teamStat.volumeRemaining : 0;
+        var yellowVolume = teamStats.TryGetValue(Teams.Yellow, out teamStat) ? teamStat.volumeRemaining : 0;
 
         return new Vector4(greenVolume, redVolume, blueVolume, yellowVolume);
     }

@@ -31,7 +31,7 @@ namespace CosmicShore.Integrations.Firebase.Controller
         private void OnDisable()
         {
             OnDependnecyResolved -= InitializeFirebaseAnalytics;
-            UserActionSystem.Instance.OnUserActionCompleted -= LogEventUserCompleteAction;
+            if(UserActionSystem.Instance) UserActionSystem.Instance.OnUserActionCompleted -= LogEventUserCompleteAction;
             _analyticsEnabled = false;
         }
 
