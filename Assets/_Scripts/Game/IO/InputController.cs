@@ -39,6 +39,7 @@ namespace CosmicShore.Game.IO
         [HideInInspector] public Vector2 LeftClampedPosition;
         [HideInInspector] public bool isGyroEnabled;
         [HideInInspector] public bool invertYEnabled;
+        [HideInInspector] public bool invertThrottleEnabled;
         [HideInInspector] public bool OneTouchLeft;
         [HideInInspector] public Vector2 RightJoystickStart, LeftJoystickStart;
         [HideInInspector] public Vector2 RightNormalizedJoystickPosition, LeftNormalizedJoystickPosition;
@@ -54,11 +55,13 @@ namespace CosmicShore.Game.IO
         void OnEnable()
         {
             GameSetting.OnChangeInvertYEnabledStatus += OnToggleInvertY;
+            GameSetting.OnChangeInvertThrottleEnabledStatus += OnToggleInvertThrottle;
         }
 
         void OnDisable()
         {
             GameSetting.OnChangeInvertYEnabledStatus -= OnToggleInvertY;
+            GameSetting.OnChangeInvertThrottleEnabledStatus -= OnToggleInvertThrottle;
         }
 
         void Start()
@@ -73,6 +76,7 @@ namespace CosmicShore.Game.IO
             
             StartCoroutine(GyroInitializationCoroutine());
             invertYEnabled = GameSetting.Instance.InvertYEnabled;       
+            invertYEnabled = GameSetting.Instance.InvertThrottleEnabled;       
         }
 
         IEnumerator GyroInitializationCoroutine()
@@ -297,11 +301,13 @@ namespace CosmicShore.Game.IO
 
             XSum = Ease(RightNormalizedJoystickPosition.x + LeftNormalizedJoystickPosition.x);
             YSum = -Ease(RightNormalizedJoystickPosition.y + LeftNormalizedJoystickPosition.y); //negative is because joysitcks and unity axes don't agree
-            XDiff = (LeftNormalizedJoystickPosition.x - RightNormalizedJoystickPosition.x + 2.1f) / 4.1f;
+            XDiff = (RightNormalizedJoystickPosition.x - LeftNormalizedJoystickPosition.x + 2) / 4;
             YDiff = Ease(RightNormalizedJoystickPosition.y - LeftNormalizedJoystickPosition.y);
 
             if (invertYEnabled)
                 YSum *= -1;
+            if (invertThrottleEnabled)
+                YDiff = 1 - YDiff;
         }
 
         // TODO: move to centralized helper class
@@ -358,6 +364,13 @@ namespace CosmicShore.Game.IO
             Debug.Log($"InputController.OnToggleInvertY - status: {status}");
 
             invertYEnabled = status;
+        }
+
+        void OnToggleInvertThrottle(bool status)
+        {
+            Debug.Log($"InputController.OnToggleInvertThrottle - status: {status}");
+
+            invertThrottleEnabled = status;
         }
 
         float Ease(float input)

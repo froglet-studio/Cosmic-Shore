@@ -17,6 +17,9 @@ namespace CosmicShore.Core
         public delegate void OnChangeInvertYEnabledStatusEvent(bool status);
         public static event OnChangeInvertYEnabledStatusEvent OnChangeInvertYEnabledStatus;
 
+        public delegate void OnChangeInvertThrottleEnabledStatusEvent(bool status);
+        public static event OnChangeInvertYEnabledStatusEvent OnChangeInvertThrottleEnabledStatus;
+
         public enum PlayerPrefKeys
         {
             IsInitialPlay = 1,
@@ -27,6 +30,7 @@ namespace CosmicShore.Core
             AdsEnabled = 6,
             HighScore = 7,
             Score = 8,
+            InvertThrottleEnabled = 9
         }
 
         #region Settings
@@ -34,11 +38,13 @@ namespace CosmicShore.Core
         [SerializeField] bool sfxEnabled = true;
         [SerializeField] bool hapticsEnabled = true;
         [SerializeField] bool invertYEnabled = false;
+        [SerializeField] bool invertThrottleEnabled = false;
 
         public bool MusicEnabled { get => musicEnabled; }
         public bool SFXEnabled { get => sfxEnabled; }
         public bool HapticsEnabled { get => hapticsEnabled; }
         public bool InvertYEnabled { get => invertYEnabled; }
+        public bool InvertThrottleEnabled { get => invertThrottleEnabled; }
         #endregion
 
         public override void Awake()
@@ -102,6 +108,14 @@ namespace CosmicShore.Core
             PlayerPrefs.SetInt(PlayerPrefKeys.InvertYEnabled.ToString(), invertYEnabled ? 1 : 0);
             PlayerPrefs.Save();
             OnChangeInvertYEnabledStatus?.Invoke(invertYEnabled);  // Event to toggle InputController isGryoEnabled
+        }
+        
+        public void ChangeInvertThrottleEnabledStatus()
+        {
+            invertThrottleEnabled = !invertThrottleEnabled;
+            PlayerPrefs.SetInt(PlayerPrefKeys.InvertThrottleEnabled.ToString(), invertThrottleEnabled ? 1 : 0);
+            PlayerPrefs.Save();
+            OnChangeInvertThrottleEnabledStatus?.Invoke(invertThrottleEnabled);
         }
 
         void SetPlayerPrefDefault(PlayerPrefKeys key, int value)
