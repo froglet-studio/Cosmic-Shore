@@ -1,4 +1,6 @@
+using CosmicShore.Core;
 using CosmicShore.Game.IO;
+using System;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -21,14 +23,32 @@ namespace CosmicShore.Game.UI
         Color color = Color.white;
 
         bool initialized;
+        bool imageEnabled = true;
 
         Vector2 leftStartPosition, rightStartPosition;
         InputController controller;
+
+        private void OnEnable()
+        {
+            GameSetting.OnChangeJoystickVisualsStatus += OnToggleJoystickVisuals;
+        }
+
+        private void OnDisable()
+        {
+            GameSetting.OnChangeJoystickVisualsStatus -= OnToggleJoystickVisuals;
+        }
+
+        private void OnToggleJoystickVisuals(bool status)
+        {
+            Debug.Log($"GameSettings.OnChangeJoystickVisualsStatus - status: {status}");
+            imageEnabled = status;
+        }
 
         void Start()
         {
             image = GetComponent<Image>();
             image.sprite = ActivePerimeterImage;
+            imageEnabled = GameSetting.Instance.JoystickVisualsEnabled;
             //set Image color alpha
             color.a = 0;
             image.color = color;
@@ -50,6 +70,8 @@ namespace CosmicShore.Game.UI
 
         void Update()
         {
+            if(!imageEnabled) { return; }
+
             if (initialized && !Player.ActivePlayer.Ship.ShipStatus.AutoPilotEnabled)
             {
                 if (Input.touches.Length == 0)
