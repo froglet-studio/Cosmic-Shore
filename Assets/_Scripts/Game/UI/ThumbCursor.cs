@@ -2,6 +2,8 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.InputSystem;
+using CosmicShore.Core;
+using System;
 
 namespace CosmicShore.Game.UI
 {
@@ -15,7 +17,24 @@ namespace CosmicShore.Game.UI
 
         Image image;
         bool initialized;
+        bool imageEnabled = true;
         Vector2 leftTouch, rightTouch;
+
+        private void OnEnable()
+        {
+            GameSetting.OnChangeJoystickVisualsStatus += OnToggleJoystickVisuals;
+        }
+
+        private void OnDisable()
+        {
+            GameSetting.OnChangeJoystickVisualsStatus -= OnToggleJoystickVisuals;
+        }
+
+        private void OnToggleJoystickVisuals(bool status)
+        {
+            Debug.Log($"GameSettings.OnChangeJoystickVisualsStatus - status: {status}");
+            imageEnabled = status;
+        }
 
         void Start()
         {
@@ -37,6 +56,7 @@ namespace CosmicShore.Game.UI
 
         void Update()
         {
+
             if (initialized && !Player.ActivePlayer.Ship.ShipStatus.AutoPilotEnabled)
             {
                 if (Input.touches.Length == 0)
@@ -48,7 +68,8 @@ namespace CosmicShore.Game.UI
                 {
                     leftTouch = Player.ActivePlayer.Ship.InputController.LeftClampedPosition;
                     transform.position = Vector2.Lerp(transform.position, leftTouch, .2f);
-                    image.sprite = ActiveImage;
+                    imageEnabled = true ? image.sprite = ActiveImage : image.sprite = InactiveImage;
+                    
                     //image.transform.localScale = (Player.ActivePlayer.Ship.InputController.LeftJoystickStart              //makes circles grow as they get close to perimeter
                     //    - Player.ActivePlayer.Ship.InputController.LeftClampedPosition).magnitude * .025f * Vector3.one;
                 }
@@ -56,7 +77,7 @@ namespace CosmicShore.Game.UI
                 {
                     rightTouch = Player.ActivePlayer.Ship.InputController.RightClampedPosition;
                     transform.position = Vector2.Lerp(transform.position, rightTouch, .2f);
-                    image.sprite = ActiveImage;
+                    imageEnabled = true ? image.sprite = ActiveImage : image.sprite = InactiveImage;
                     //image.transform.localScale = (Player.ActivePlayer.Ship.InputController.RightJoystickStart
                     //    - Player.ActivePlayer.Ship.InputController.RightClampedPosition).magnitude * .025f * Vector3.one;
                 }
