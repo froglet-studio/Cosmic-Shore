@@ -17,7 +17,7 @@ public class SO_ArcadeGame : ScriptableObject
     public VideoPlayer PreviewClip;
     public List<SO_Vessel> Vessels;
     [Min(1)] public int MinPlayers = 1;
-    [Range(1, 4)] public int MaxPlayers = 2;
+    [Range(1, 3)] public int MaxPlayers = 2;
     public string SceneName;
     public CallToActionTargetType CallToActionTargetType;
     public UserActionType ViewUserAction;

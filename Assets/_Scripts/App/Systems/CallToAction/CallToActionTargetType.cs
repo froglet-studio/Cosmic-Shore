@@ -29,6 +29,8 @@ namespace CosmicShore.App.Systems.CTA
         PlayGameCellularDuel = 410,
         PlayGameCellularBrawl = 411,
         PlayGameDashAndGrab = 412,
+        PlayGameDriftCourse = 413,
+
 
 
 
