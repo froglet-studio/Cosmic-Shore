@@ -54,19 +54,12 @@ namespace CosmicShore.Game.UI
             {
                 if (Input.touches.Length == 0)
                 {
-                    Debug.Log("ThumbPerimeter no touchy");
-                    //set Image color alpha
                     color.a = 0;
                     image.color = color;
-                    //if (PerimeterActive)
-                    //{
-                    //    PerimeterActive = false;
-                    //}
                 }
 
                 else
                 {
-                    Debug.Log("ThumbPerimeter touchy");
                     float normalizedJoystickDistance;
                     float angle;
                     Vector2 normalizedJoystickPosition;

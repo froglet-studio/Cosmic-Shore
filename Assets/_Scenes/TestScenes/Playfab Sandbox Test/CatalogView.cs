@@ -77,12 +77,12 @@ namespace Scenes.TestScenes.Playfab_Sandbox_Test
             // The currency calculation for currency should be done before passing shard to purchase inventory API, otherwise it will get "Invalid Request" error.
             // testing upgrade 1 purchasing
             var vesselShard1 = new ItemPrice{ ItemId = VesselShardId, Amount = 5};
-            var mantaSpaceUpgrade1 = new VirtualItem { ItemId = MantaShipUpgrade1Id, ContentType = nameof(Vessels.Space), Amount = 1 };
+            var mantaSpaceUpgrade1 = new VirtualItem { ItemId = MantaShipUpgrade1Id, ContentType = nameof(VesselLevel.Upgrade3), Amount = 1 };
             
             // Parameter order note: item first, currency second
             CatalogManager.Instance.PurchaseItem(mantaSpaceUpgrade1, vesselShard1);
 
-            SaveVesselData(Vessels.Space, MantaShipUpgrade1Id, 1 );
+            SaveVesselData(VesselLevel.Upgrade3, MantaShipUpgrade1Id, 1 );
             Debug.LogFormat("{0} - {1}: vessel info {2} saved to local storage.", nameof(CatalogView), nameof(PurchaseUpgradeTest), nameof(mantaSpaceUpgrade1)); 
             
             // TODO: Should have ship upgrade level detection here, if level 1 upgrade is not purchased, you can't buy level 2 or higher.
@@ -92,7 +92,7 @@ namespace Scenes.TestScenes.Playfab_Sandbox_Test
             var mantaSpaceUpgrade2 = new VirtualItem { ItemId = MantaShipUpgrade2Id, Amount = 1 };
  
             CatalogManager.Instance.PurchaseItem(mantaSpaceUpgrade2, vesselShard2);
-            SaveVesselData(Vessels.Space, MantaShipUpgrade2Id, 2 );
+            SaveVesselData(VesselLevel.Upgrade3, MantaShipUpgrade2Id, 2 );
             Debug.LogFormat("{0} - {1}: vessel info {2} saved to local storage.", nameof(CatalogView), nameof(PurchaseUpgradeTest), nameof(mantaSpaceUpgrade2));
             LoadVesselData();
         }
@@ -121,7 +121,7 @@ namespace Scenes.TestScenes.Playfab_Sandbox_Test
             var vesselShard = new VirtualItem
             {
                 ItemId = VesselShardId,
-                ContentType = nameof(VirtualItemContentTypes.VesselShard),
+                ContentType = nameof(VirtualItemContentTypes.VesselKnowledge),
                 Amount = 100
             };
             var crystals = new VirtualItem
@@ -157,14 +157,14 @@ namespace Scenes.TestScenes.Playfab_Sandbox_Test
         /// <summary>
         /// Save Vessel Data (Working)
         /// </summary>
-        /// <param name="vessel">Vessel</param>
+        /// <param name="vesselLevel">Vessel</param>
         /// <param name="vesselId">Vessel ID</param>
         /// <param name="upgradeLevel">Upgrade Level</param>
-        private void SaveVesselData(Vessels vessel, string vesselId, int upgradeLevel)
+        private void SaveVesselData(VesselLevel vesselLevel, string vesselId, int upgradeLevel)
         {
             VesselData vesselData = new(vesselId, upgradeLevel);
             vesselDataList.Add(vesselData);
-            vesselDataAccessor.Save(vessel, vesselDataList);
+            vesselDataAccessor.Save(vesselLevel, vesselDataList);
         }
         
         /// <summary>
@@ -247,7 +247,7 @@ namespace Scenes.TestScenes.Playfab_Sandbox_Test
 
         public void GrantShards()
         {
-            CatalogManager.Instance.GrantShards(20, ShipTypes.Manta, Element.Space);
+            CatalogManager.Instance.GrantVesselKnowledge(20, ShipTypes.Manta, Element.Space);
         }
     }
 }

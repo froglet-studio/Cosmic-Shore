@@ -12,18 +12,18 @@ namespace CosmicShore.Integrations.Playfab.Player_Models
     {
         private static readonly string VesselDataFileName = "VesselData.data";
 
-        static Dictionary<Vessels, List<VesselData>> VesselUpgradeLevels;
+        static Dictionary<VesselLevel, List<VesselData>> VesselUpgradeLevels;
 
         /// <summary>
         /// Save Vessel Data
         /// </summary>
         /// <param name="shipTypes">Ship Types</param>
         /// <param name="vesselDataList">Vessel Data List</param>
-        public void Save(Vessels vessel, List<VesselData> vesselDataList)
+        public void Save(VesselLevel vesselLevel, List<VesselData> vesselDataList)
         {
             VesselUpgradeLevels??= Load();
 
-            VesselUpgradeLevels[vessel] = vesselDataList;
+            VesselUpgradeLevels[vesselLevel] = vesselDataList;
 
             DataAccessor dataAccessor = new(VesselDataFileName);
             dataAccessor.Save(VesselUpgradeLevels);
@@ -33,10 +33,10 @@ namespace CosmicShore.Integrations.Playfab.Player_Models
         /// Load Vessel Data
         /// </summary>
         /// <returns>Dictionary of Ship Types and Vessel Data List</returns>
-        public Dictionary<Vessels, List<VesselData>> Load()
+        public Dictionary<VesselLevel, List<VesselData>> Load()
         {
             DataAccessor dataAccessor = new(VesselDataFileName);
-            return dataAccessor.Load<Dictionary<Vessels, List<VesselData>>>();
+            return dataAccessor.Load<Dictionary<VesselLevel, List<VesselData>>>();
         }
         
         // TODO: other functions that will help load the data to the front-end

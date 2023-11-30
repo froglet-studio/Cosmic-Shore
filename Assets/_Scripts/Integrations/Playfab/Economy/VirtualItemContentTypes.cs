@@ -5,7 +5,8 @@ namespace CosmicShore.Integrations.Playfab.Economy
         MiniGame,
         ShipClass,
         Vessel,
-        VesselShard,
-        VesselUpgrade
+        VesselKnowledge,
+        VesselUpgrade,
+        Crystal
     }
 }
