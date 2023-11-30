@@ -70,7 +70,7 @@ namespace CosmicShore.Game.Arcade
             var Block = Instantiate(trailBlock);
             Block.Team = ActivePlayer.Team;
             Block.ownerId = ActivePlayer.PlayerUUID;
-            Block.PlayerName = ActivePlayer.PlayerName;
+            Block.Player = ActivePlayer;
             Block.transform.SetPositionAndRotation(position, Quaternion.LookRotation(lookPosition - transform.position, transform.forward));
             Block.ID = Block.ownerId + position;
             Block.TargetScale = blockScale;

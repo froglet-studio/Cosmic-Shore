@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using CosmicShore.Core;
 using CosmicShore.Environment.FlowField;
+using CosmicShore.Core.HangerBuilder;
 
 public class Boid : MonoBehaviour
 {
@@ -108,9 +109,9 @@ public class Boid : MonoBehaviour
                 float blockWeight = boidManager.Weights[(int)otherTrailBlock.Team - 1];
                 blockAttraction += -diff.normalized * blockWeight / distance;
 
-                if (distance < BlockCollider.size.magnitude * 3)
+                if (distance < BlockCollider.size.magnitude * 3 && otherTrailBlock.Team != trailBlock.Team)
                 {
-                    otherTrailBlock.Explode(currentVelocity, Teams.Blue, "Boid", true);
+                    otherTrailBlock.Explode(currentVelocity, trailBlock.Team, trailBlock.PlayerName + " boid", true);
                 }
             }
         }
@@ -134,19 +135,20 @@ public class Boid : MonoBehaviour
 
         if (trailBlock.destroyed && !crystal.enabled)
         {
+            crystal.transform.parent = boidManager.transform;
             crystal.gameObject.GetComponent<SphereCollider>().enabled = true;
             crystal.enabled = true;
 
-            crystal.GetComponentInChildren<SkinnedMeshRenderer>().material = activeCrystalMaterial; // TODO: make a crytal material set that this pulls from using the element 
+            crystal.GetComponentInChildren<SkinnedMeshRenderer>().material = activeCrystalMaterial; // TODO: make a crytal material set that this pulls from using the element
+            StopAllCoroutines();
+            Destroy(gameObject);
+            return;
         }
 
-
-        //
-        //    StopAllCoroutines();
-        //    Instantiate(GetComponentInChildren<Crystal>().gameObject, transform.position, Quaternion.identity);
-        //    Destroy(gameObject);
-        //    return;
-        //
+        if (trailBlock.Team != Teams.Blue)
+        {
+            goal = trailBlock.Player.Ship.transform; // make event driven
+        }
 
         transform.position += currentVelocity * Time.deltaTime;
 

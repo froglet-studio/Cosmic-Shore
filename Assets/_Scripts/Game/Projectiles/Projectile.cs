@@ -77,7 +77,7 @@ namespace CosmicShore.Game.Projectiles
                         trailBlockProperties.trailBlock.Explode(Velocity, Ship.Team, Ship.Player.PlayerName);
                         break;
                     case TrailBlockImpactEffects.Steal:
-                        trailBlockProperties.trailBlock.Steal(Ship.Player.PlayerName, Team);
+                        trailBlockProperties.trailBlock.Steal(Ship.Player, Team);
                         break;
                     case TrailBlockImpactEffects.Shield:
                         trailBlockProperties.trailBlock.ActivateShield(.5f);
