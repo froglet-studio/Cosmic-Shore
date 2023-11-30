@@ -52,6 +52,8 @@ namespace CosmicShore.Core
         public bool HapticsEnabled { get => hapticsEnabled; }
         public bool InvertYEnabled { get => invertYEnabled; }
         public bool InvertThrottleEnabled { get => invertThrottleEnabled; }
+
+        public bool JoystickVisualsEnabled { get => joystickVisualsEnabled; }
         #endregion
 
         public override void Awake()

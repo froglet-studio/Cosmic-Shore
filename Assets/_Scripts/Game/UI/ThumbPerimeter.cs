@@ -48,6 +48,7 @@ namespace CosmicShore.Game.UI
         {
             image = GetComponent<Image>();
             image.sprite = ActivePerimeterImage;
+            imageEnabled = GameSetting.Instance.JoystickVisualsEnabled;
             //set Image color alpha
             color.a = 0;
             image.color = color;

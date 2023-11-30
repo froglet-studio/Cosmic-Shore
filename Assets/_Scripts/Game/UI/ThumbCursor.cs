@@ -40,6 +40,7 @@ namespace CosmicShore.Game.UI
         {
             image = GetComponent<Image>();
             image.sprite = InactiveImage;
+            imageEnabled = GameSetting.Instance.JoystickVisualsEnabled;
             StartCoroutine(InitializeCoroutine());
         }
 
