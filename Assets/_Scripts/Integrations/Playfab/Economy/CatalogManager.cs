@@ -125,7 +125,7 @@ namespace CosmicShore.Integrations.Playfab.Economy
                 Debug.LogFormat("   CatalogManager - tags: {0}", string.Join(",", item.Tags));
                 Debug.LogFormat("   CatalogManager - Type: {0}", item.Type);
                 Debug.LogFormat("   CatalogManager - ContentType: {0}", item.ContentType);
-                var converted = PlayfabToCosmicShoreVirtualItem(item);
+                var converted = PlayFabToCosmicShoreVirtualItem(item);
                 AddToInventory(item.ContentType, converted);
             }
         }
@@ -159,7 +159,7 @@ namespace CosmicShore.Integrations.Playfab.Economy
                     Catalog.Crystals.Add(item);
                     break;
                 default:
-                    Debug.LogWarningFormat("{0} - {1} - Item Content Type not supported.", nameof(CatalogManager), nameof(AddToInventory));
+                    Debug.LogWarningFormat("{0} - {1} - {2} Item Content Type not related to player inventory items, such as Stores and Subscriptions.", nameof(CatalogManager), nameof(AddToInventory), contentType);
                     break;
             }
         }
@@ -464,7 +464,7 @@ namespace CosmicShore.Integrations.Playfab.Economy
         #endregion
 
         #region Model Conversion
-        ItemPrice PlayfabToCosmicShorePrice(CatalogPriceOptions price)
+        ItemPrice PlayFabToCosmicShorePrice(CatalogPriceOptions price)
         {
             ItemPrice itemPrice = new();
             itemPrice.ItemId = price.Prices[0].Amounts[0].ItemId;
@@ -472,13 +472,13 @@ namespace CosmicShore.Integrations.Playfab.Economy
             return itemPrice;
         }
         
-        VirtualItem PlayfabToCosmicShoreVirtualItem(CatalogItem catalogItem)
+        VirtualItem PlayFabToCosmicShoreVirtualItem(CatalogItem catalogItem)
         {
             VirtualItem virtualItem = new();
             virtualItem.ItemId = catalogItem.Id;
             Debug.Log($"catalogItem.Title[\"NEUTRAL\"]: {catalogItem.Title["NEUTRAL"]}");
             virtualItem.Name = catalogItem.Title["NEUTRAL"];
-            virtualItem.Description = catalogItem.Description["NEUTRAL"];
+            virtualItem.Description = catalogItem.Description.TryGetValue("NEUTRAL",out var description)? description : "No Description";
             virtualItem.ContentType = catalogItem.ContentType;
             //virtualItem.BundleContents = catalogItem.Contents;
             //virtualItem.priceModel = PlayfabToCosmicShorePrice(catalogItem.PriceOptions);
