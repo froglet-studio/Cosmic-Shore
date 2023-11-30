@@ -24,6 +24,7 @@ namespace CosmicShore.Game.Arcade
         [SerializeField] GameObject PlayerOrigin;
         [SerializeField] float EndOfTurnDelay = 0f;
         [SerializeField] bool EnableTrails = true;
+        [SerializeField] ShipTypes DefaultPlayerShipType = ShipTypes.Dolphin;
 
         protected Button ReadyButton;
         protected GameObject EndGameScreen;
@@ -37,7 +38,20 @@ namespace CosmicShore.Game.Arcade
         // Configuration set by player
         public static int NumberOfPlayers = 2;  // TODO: P1 - support excluding single player games (e.g for elimination)
         public static int IntensityLevel = 1;
-        public static ShipTypes PlayerShipType = ShipTypes.Dolphin;
+        static ShipTypes playerShipType = ShipTypes.Dolphin;
+        static bool playerShipTypeInitialized;
+        public static ShipTypes PlayerShipType
+        {
+            get 
+            { 
+                return playerShipType; 
+            }
+            set 
+            { 
+                playerShipType = value;
+                playerShipTypeInitialized = true;
+            }
+        }
         public static SO_Vessel PlayerVessel;
 
         // Game State Tracking
@@ -79,7 +93,7 @@ namespace CosmicShore.Game.Arcade
             for (var i = 0; i < NumberOfPlayers; i++)
             {
                 Players.Add(Instantiate(playerPrefab));
-                Players[i].defaultShip = PlayerShipType;
+                Players[i].defaultShip = playerShipTypeInitialized ? PlayerShipType : DefaultPlayerShipType;
                 Players[i].Team = PlayerTeams[i];
                 Players[i].PlayerName = PlayerNames[i];
                 Players[i].PlayerUUID = PlayerNames[i];
