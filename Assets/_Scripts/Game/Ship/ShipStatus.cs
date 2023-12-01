@@ -19,6 +19,7 @@ namespace CosmicShore.Core
         public float ChargedBoostCharge = 1f;
         public bool AutoPilotEnabled = false;
         public bool AlignmentEnabled = false;
+        public bool Slowed = false;
 
         public bool Attached = false;
         public TrailBlock AttachedTrailBlock;
@@ -38,6 +39,7 @@ namespace CosmicShore.Core
             GunsActive = false;
             Course = transform.forward;
             ChargedBoostCharge = 1f;
+            Slowed = false;
         }
     }
 }

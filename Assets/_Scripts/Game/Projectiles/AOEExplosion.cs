@@ -129,7 +129,8 @@ namespace CosmicShore.Game.Projectiles
                         //shipGeometry.Ship.transform.localPosition += impactVector / 2f;
                         break;
                     case ShipImpactEffects.Stun:
-                        shipGeometry.Ship.ShipTransformer.ModifyThrottle(.1f, 2);
+                        shipGeometry.Ship.ShipTransformer.ModifyThrottle(.6f, 5);
+                        
                         break;
                 }
             }

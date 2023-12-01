@@ -10,7 +10,7 @@ namespace CosmicShore.Game.Arcade
         {
             if (paused) return false;
 
-            return Amount >= StatsManager.Instance.playerStats[Game.ActivePlayer.PlayerName].volumeCreated;
+            return Amount < StatsManager.Instance.playerStats[Game.ActivePlayer.PlayerName].volumeCreated;
         }
 
         public override void NewTurn(string playerName)

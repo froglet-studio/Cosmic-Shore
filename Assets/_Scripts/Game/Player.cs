@@ -47,6 +47,9 @@ public class Player : MonoBehaviour
             case "SquadMateTwo":
                 SetupAIShip(Hangar.Instance.LoadSquadMateTwo());
                 break;
+            case "HostileManta":
+                SetupAIShip(Hangar.Instance.LoadHostileManta());
+                break;
             case "PlayerOne":
             case "PlayerTwo":
             case "PlayerThree":

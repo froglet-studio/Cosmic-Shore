@@ -199,9 +199,15 @@ public class ShipTransformer : MonoBehaviour
             ThrottleModifiers[i] = modifier;
 
             if (modifier.elapsedTime >= modifier.duration)
+            {
                 ThrottleModifiers.RemoveAt(i);
+                if (ThrottleModifiers.Count == 0) shipStatus.Slowed = false; //this does not cover the case where someones last modifier is positive but there are no more slowed mods
+            }
             else if (modifier.initialValue < 1) // multiplicative for debuff and additive for buff 
+            {
                 accumulatedThrottleModification *= Mathf.Lerp(modifier.initialValue, 1f, modifier.elapsedTime / modifier.duration);
+                shipStatus.Slowed = true;
+            }
             else
                 accumulatedThrottleModification += Mathf.Lerp(modifier.initialValue - 1, 0f, modifier.elapsedTime / modifier.duration);
         }
