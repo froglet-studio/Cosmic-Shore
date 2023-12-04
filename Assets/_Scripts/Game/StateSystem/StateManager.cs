@@ -36,12 +36,12 @@ namespace CosmicShore.Game.StateSystem
             }
         }
 
-        public void TransitionToState(TState StateKey)
+        public void TransitionToState(TState stateKey)
         {
             // Set transitioning to true, state update happens every frame, using a flag to guard it against unnecessary updates
             IsTransitioningState = true;
             CurrentState.ExitState();
-            CurrentState = States[StateKey];
+            CurrentState = States[stateKey];
             CurrentState.EnterState();
             IsTransitioningState = false;
         }
