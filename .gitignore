@@ -9,6 +9,7 @@
 /[Bb]uilds/
 /[Bb]in/
 /[Ll]ogs/
+/[CurrentBuild]*/
 /[Mm]emoryCaptures/
 /[Uu]ser[Ss]ettings/
 /UserSettings/
@@ -60,6 +61,7 @@ sysinfo.txt
 # Builds
 *.apk
 *.unitypackage
+[CurrentBuild]*.txt
 
 # Crashlytics generated file
 crashlytics-build.properties
