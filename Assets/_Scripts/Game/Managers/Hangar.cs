@@ -42,6 +42,8 @@ namespace CosmicShore.Core.HangerBuilder
         Dictionary<string, Ship> ships = new();
         Dictionary<ShipTypes, Ship> shipTypeMap = new();
 
+        [HideInInspector] public List<Transform> SlowedShipTransforms = new();
+
         [SerializeField] public List<Ship> ShipPrefabs;
 
         readonly string SelectedShipPlayerPrefKey = "SelectedShip";

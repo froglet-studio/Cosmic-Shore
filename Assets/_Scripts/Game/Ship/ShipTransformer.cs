@@ -3,6 +3,7 @@ using UnityEngine;
 using CosmicShore.Core;
 using CosmicShore.Game.IO;
 using System.Collections.Generic;
+using CosmicShore.Core.HangerBuilder;
 
 public class ShipTransformer : MonoBehaviour
 {
@@ -201,18 +202,28 @@ public class ShipTransformer : MonoBehaviour
             if (modifier.elapsedTime >= modifier.duration)
             {
                 ThrottleModifiers.RemoveAt(i);
-                if (ThrottleModifiers.Count == 0) shipStatus.Slowed = false; //this does not cover the case where someones last modifier is positive but there are no more slowed mods
+                if (ThrottleModifiers.Count == 0)
+                {
+                    shipStatus.Slowed = false;
+                    Hangar.Instance.SlowedShipTransforms.Remove(transform);
+                }
             }
             else if (modifier.initialValue < 1) // multiplicative for debuff and additive for buff 
             {
                 accumulatedThrottleModification *= Mathf.Lerp(modifier.initialValue, 1f, modifier.elapsedTime / modifier.duration);
                 shipStatus.Slowed = true;
+                Hangar.Instance.SlowedShipTransforms.Add(transform);
             }
             else
                 accumulatedThrottleModification += Mathf.Lerp(modifier.initialValue - 1, 0f, modifier.elapsedTime / modifier.duration);
         }
 
         accumulatedThrottleModification = Mathf.Min(accumulatedThrottleModification, speedModifierMax);
+        if (accumulatedThrottleModification < 0f)
+        {
+            shipStatus.Slowed = false;
+            Hangar.Instance.SlowedShipTransforms.Remove(transform);
+        }
         throttleMultiplier = Mathf.Max(accumulatedThrottleModification, 0) ;
     }
 

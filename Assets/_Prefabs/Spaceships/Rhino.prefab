@@ -1016,6 +1016,7 @@ GameObject:
   - component: {fileID: 1435252848482629424}
   - component: {fileID: 3440187540988767646}
   - component: {fileID: 3496801340156507927}
+  - component: {fileID: 4344415799986800916}
   m_Layer: 0
   m_Name: Rhino
   m_TagString: Player_Ship
@@ -1127,6 +1128,7 @@ MonoBehaviour:
   ChargedBoostCharge: 1
   AutoPilotEnabled: 0
   AlignmentEnabled: 0
+  Slowed: 0
   Attached: 0
   AttachedTrailBlock: {fileID: 0}
   GunsActive: 0
@@ -1177,6 +1179,7 @@ MonoBehaviour:
   initialWavelength: 5
   minWavelength: 1
   Gap: 2
+  MinimumGap: 1
   TargetScale: {x: 0, y: 0, z: 0}
   defaultWaitTime: 0.8
   waitTime: 0.5
@@ -1297,6 +1300,19 @@ MonoBehaviour:
   RightEngine: {fileID: 790223602894738820}
   animationScaler: 25
   yawAnimationScaler: 80
+--- !u!114 &4344415799986800916
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e2b2fc27f243834da1f923916ab85ee, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  trailViewerMaterial: {fileID: 2100000, guid: d9c5732e6a43fbd40b2c9fe615ed746e, type: 2}
 --- !u!1 &7569251362483239328
 GameObject:
   m_ObjectHideFlags: 0
@@ -1389,17 +1405,17 @@ PrefabInstance:
     - target: {fileID: 7231566422788689087, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
       propertyPath: m_LocalRotation.x
-      value: -0
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7231566422788689087, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
       propertyPath: m_LocalRotation.y
-      value: -0
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7231566422788689087, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
       propertyPath: m_LocalRotation.z
-      value: -0
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7231566422788689087, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
