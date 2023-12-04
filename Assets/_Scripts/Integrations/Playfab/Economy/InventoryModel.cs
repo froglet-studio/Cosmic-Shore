@@ -25,7 +25,7 @@ namespace CosmicShore.Integrations.Playfab.Economy
         public List<VirtualItem> MiniGames;
 
 
-        // Vessel Knowledge goes to player data 
+        // Vessel Knowledge
         public List<VirtualItem> VesselKnowledge;
     }
 }

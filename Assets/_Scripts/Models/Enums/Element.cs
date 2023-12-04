@@ -4,5 +4,5 @@
     Charge = 1,
     Mass = 2,
     Space = 3,
-    Time = 4,
+    Time = 4
 }
