@@ -177,19 +177,22 @@ namespace CosmicShore.Core
                 foreach (var classAction in ClassResourceActions[key])
                     classAction.Ship = this;
 
-            if (ShipControlActions.ContainsKey(InputEvents.Button1Action))
+            if (!ShipStatus.AutoPilotEnabled)
             {
-                Player.GameCanvas.MiniGameHUD.SetButtonActive(!CheckIfUsingGamepad(), 1);
-            }
+                if (ShipControlActions.ContainsKey(InputEvents.Button1Action))
+                {
+                    Player.GameCanvas.MiniGameHUD.SetButtonActive(!CheckIfUsingGamepad(), 1);
+                }
 
-            if (ShipControlActions.ContainsKey(InputEvents.Button2Action))
-            {
-                Player.GameCanvas.MiniGameHUD.SetButtonActive(!CheckIfUsingGamepad(), 2);
-            }
+                if (ShipControlActions.ContainsKey(InputEvents.Button2Action))
+                {
+                    Player.GameCanvas.MiniGameHUD.SetButtonActive(!CheckIfUsingGamepad(), 2);
+                }
 
-            if (ShipControlActions.ContainsKey(InputEvents.Button3Action))
-            {
-                Player.GameCanvas.MiniGameHUD.SetButtonActive(!CheckIfUsingGamepad(), 3);
+                if (ShipControlActions.ContainsKey(InputEvents.Button3Action))
+                {
+                    Player.GameCanvas.MiniGameHUD.SetButtonActive(!CheckIfUsingGamepad(), 3);
+                }
             }
         }
 
