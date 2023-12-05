@@ -28,4 +28,4 @@ MonoBehaviour:
   SceneName: MinigameDriftCourse
   CallToActionTargetType: 413
   ViewUserAction: 0
-  PlayUserAction: 0
+  PlayUserAction: 400
