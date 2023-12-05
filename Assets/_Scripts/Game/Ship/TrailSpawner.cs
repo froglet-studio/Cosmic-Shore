@@ -186,7 +186,7 @@ public class TrailSpawner : MonoBehaviour
         Block.transform.SetPositionAndRotation(transform.position - shipData.Course * offset + ship.transform.right * (Block.TargetScale.x/2f + Mathf.Abs(halfGap)) * (halfGap / Mathf.Abs(halfGap)), shipData.blockRotation);
         Block.transform.parent = TrailContainer.transform;
         Block.ownerId = isCharmed ? tempShip.Player.PlayerUUID : ship.Player.PlayerUUID;
-        Block.PlayerName = isCharmed ? tempShip.Player.PlayerName : ship.Player.PlayerName;
+        Block.Player = isCharmed ? tempShip.Player : ship.Player;
         Block.Team = isCharmed ? tempShip.Team : ship.Team;
         Block.warp = warp;
         if (waitTillOutsideSkimmer) 
@@ -237,7 +237,7 @@ public class TrailSpawner : MonoBehaviour
                     Block.transform.parent = TrailContainer.transform;
                     Block.waitTime = (skimmer.transform.localScale.z + TrailZScale) / ship.GetComponent<ShipStatus>().Speed;
                     Block.ownerId = isCharmed ? tempShip.Player.PlayerUUID : ship.Player.PlayerUUID;
-                    Block.PlayerName = isCharmed ? tempShip.Player.PlayerName : ship.Player.PlayerName;
+                    Block.Player = isCharmed ? tempShip.Player : ship.Player;
                     Block.Team = isCharmed ? tempShip.Team : ship.Team;
                     Block.warp = warp;
                     Block.GetComponent<MeshRenderer>().material = blockMaterial;

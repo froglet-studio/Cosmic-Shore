@@ -29,7 +29,6 @@ public abstract class SpawnableAbstractBase : MonoBehaviour
         var Block = Instantiate(trailBlock);
         Block.Team = team;
         Block.ownerId = "public";
-        Block.PlayerName = "";
         Block.transform.SetPositionAndRotation(position, Quaternion.LookRotation(lookPosition - position));
         Block.transform.SetParent(container.transform, false);
         Block.ID = blockId;

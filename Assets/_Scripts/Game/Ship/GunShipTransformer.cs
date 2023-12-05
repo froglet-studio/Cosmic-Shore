@@ -94,6 +94,6 @@ public class GunShipTransformer : ShipTransformer
         {
             shipStatus.AttachedTrailBlock.Grow(growthAmount.Value);
         }
-        else shipStatus.AttachedTrailBlock.Steal(ship.Player.PlayerName, ship.Team);
+        else shipStatus.AttachedTrailBlock.Steal(ship.Player, ship.Team);
     }
 }

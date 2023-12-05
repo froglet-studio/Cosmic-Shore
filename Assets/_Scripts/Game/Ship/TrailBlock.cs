@@ -47,8 +47,8 @@ namespace CosmicShore.Core
         Teams team;
         public string ownerId;  // TODO: is the ownerId the player name? I hope it is.
         public Teams Team { get => team; set => team = value; }
-        string playerName = "Unassigned";
-        public string PlayerName { get => playerName; set => playerName = value; }
+        public Player Player;
+        public string PlayerName { get => Player ? Player.PlayerName : ""; }
 
         protected virtual void Start()
         {
@@ -104,7 +104,7 @@ namespace CosmicShore.Core
 
             //Add block to team score when created
             if (StatsManager.Instance != null)
-                StatsManager.Instance.BlockCreated(team, playerName, TrailBlockProperties);
+                StatsManager.Instance.BlockCreated(team, PlayerName, TrailBlockProperties);
 
             if (NodeControlManager.Instance != null)
                 NodeControlManager.Instance.AddBlock(team, TrailBlockProperties);
@@ -276,7 +276,7 @@ namespace CosmicShore.Core
             meshRenderer.material = targetMaterial;
         }
 
-        public void Steal(string playerName, Teams team)
+        public void Steal(Player player, Teams team)
         {
             if (this.team != team)
             {
@@ -286,13 +286,13 @@ namespace CosmicShore.Core
                     return;
                 }
                 if (StatsManager.Instance != null)
-                    StatsManager.Instance.BlockStolen(team, playerName, TrailBlockProperties);
+                    StatsManager.Instance.BlockStolen(team, player.PlayerName, TrailBlockProperties);
 
                 if (NodeControlManager.Instance != null)
                     NodeControlManager.Instance.StealBlock(team, TrailBlockProperties);
 
                 this.team = team;
-                this.playerName = playerName;
+                Player = player;
 
                 if (lerpBlockMaterialPropertiesCoroutine != null) StopCoroutine(lerpBlockMaterialPropertiesCoroutine);
                 StartCoroutine(LerpBlockMaterialPropertiesCoroutine(Hangar.Instance.GetTeamBlockMaterial(team)));
@@ -305,7 +305,7 @@ namespace CosmicShore.Core
             {
                 Debug.Log("Restoring trailBlock block");
                 if (StatsManager.Instance != null)
-                    StatsManager.Instance.BlockRestored(team, playerName, TrailBlockProperties);
+                    StatsManager.Instance.BlockRestored(team, PlayerName, TrailBlockProperties);
 
                 if (NodeControlManager.Instance != null)
                     NodeControlManager.Instance.RestoreBlock(team, TrailBlockProperties);

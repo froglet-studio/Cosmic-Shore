@@ -83,6 +83,8 @@ namespace CosmicShore.Game.Arcade
             foreach (var turnMonitor in TurnMonitors)
                 if (turnMonitor is TimeBasedTurnMonitor tbtMonitor)
                     tbtMonitor.display = HUD.RoundTimeDisplay;
+                else if (turnMonitor is HostileVolumeCreatedTurnMonitor hvtMonitor) // TODO: consolidate with above
+                    hvtMonitor.display = HUD.RoundTimeDisplay;
 
             GameManager.UnPauseGame();
         }

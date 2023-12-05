@@ -22,6 +22,7 @@ namespace CosmicShore.Core.HangerBuilder
         [SerializeField] ShipTypes HostileAI1ShipType = ShipTypes.Random;
         [SerializeField] ShipTypes HostileAI2ShipType = ShipTypes.Random;
         [SerializeField] ShipTypes HostileAI3ShipType = ShipTypes.Random;
+        ShipTypes HostileMantaShipType = ShipTypes.Manta;
 
         [Header("Vessel Settings")]
         [FormerlySerializedAs("SoarPilot")]
@@ -40,6 +41,9 @@ namespace CosmicShore.Core.HangerBuilder
         Dictionary<Teams, SO_MaterialSet> TeamMaterialSets;
         Dictionary<string, Ship> ships = new();
         Dictionary<ShipTypes, Ship> shipTypeMap = new();
+
+        // HashSet has only one same value in one set
+        [HideInInspector] public HashSet<Transform> SlowedShipTransforms = new();
 
         [SerializeField] public List<Ship> ShipPrefabs;
 
@@ -171,6 +175,10 @@ namespace CosmicShore.Core.HangerBuilder
         public Ship LoadHostileAI3Ship()
         {
             return LoadAIShip(HostileAI3ShipType, AITeam);
+        }
+        public Ship LoadHostileManta()
+        {
+            return LoadAIShip(HostileMantaShipType, AITeam);
         }
         public Ship LoadAIShip(ShipTypes shipType, Teams team, SO_Vessel vessel=null)
         {

@@ -20,6 +20,11 @@ namespace CosmicShore.Core
         public delegate void OnChangeInvertThrottleEnabledStatusEvent(bool status);
         public static event OnChangeInvertYEnabledStatusEvent OnChangeInvertThrottleEnabledStatus;
 
+        public delegate void OnChangeJoystickVisualsStatusEvent(bool status);
+        public static event OnChangeJoystickVisualsStatusEvent OnChangeJoystickVisualsStatus;
+
+
+
         public enum PlayerPrefKeys
         {
             IsInitialPlay = 1,
@@ -30,8 +35,9 @@ namespace CosmicShore.Core
             AdsEnabled = 6,
             HighScore = 7,
             Score = 8,
-            InvertThrottleEnabled = 9
-        }
+            InvertThrottleEnabled = 9,
+            JoystickVisualsEnabled = 10
+    }
 
         #region Settings
         [SerializeField] bool musicEnabled = true;
@@ -39,12 +45,15 @@ namespace CosmicShore.Core
         [SerializeField] bool hapticsEnabled = true;
         [SerializeField] bool invertYEnabled = false;
         [SerializeField] bool invertThrottleEnabled = false;
+        [SerializeField] bool joystickVisualsEnabled = true;
 
         public bool MusicEnabled { get => musicEnabled; }
         public bool SFXEnabled { get => sfxEnabled; }
         public bool HapticsEnabled { get => hapticsEnabled; }
         public bool InvertYEnabled { get => invertYEnabled; }
         public bool InvertThrottleEnabled { get => invertThrottleEnabled; }
+
+        public bool JoystickVisualsEnabled { get => joystickVisualsEnabled; }
         #endregion
 
         public override void Awake()
@@ -116,6 +125,14 @@ namespace CosmicShore.Core
             PlayerPrefs.SetInt(PlayerPrefKeys.InvertThrottleEnabled.ToString(), invertThrottleEnabled ? 1 : 0);
             PlayerPrefs.Save();
             OnChangeInvertThrottleEnabledStatus?.Invoke(invertThrottleEnabled);
+        }
+
+        public void ChangeJoystickVisualsStatus()
+        {
+            joystickVisualsEnabled = !joystickVisualsEnabled;
+            PlayerPrefs.SetInt(PlayerPrefKeys.JoystickVisualsEnabled.ToString(), joystickVisualsEnabled ? 1 :0);
+            PlayerPrefs.Save();
+            OnChangeJoystickVisualsStatus?.Invoke(joystickVisualsEnabled);
         }
 
         void SetPlayerPrefDefault(PlayerPrefKeys key, int value)

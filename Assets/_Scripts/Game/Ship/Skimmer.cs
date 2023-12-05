@@ -95,7 +95,7 @@ namespace CosmicShore.Core
                         break;
                     case TrailBlockImpactEffects.Steal:
                         //Debug.Log($"steal: playername {Player.PlayerName} team: {team}");
-                        trailBlockProperties.trailBlock.Steal(Player.PlayerName, team);
+                        trailBlockProperties.trailBlock.Steal(Player, team);
                         break;
                     case TrailBlockImpactEffects.ChangeBoost:
                         resourceSystem.ChangeBoostAmount((chargeAmount * trailBlockProperties.volume) + (activelySkimmingBlockCount * MultiSkimMultiplier));

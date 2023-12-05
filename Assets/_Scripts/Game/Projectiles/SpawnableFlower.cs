@@ -99,7 +99,6 @@ namespace CosmicShore.Game.Projectiles
             //Block.ownerId = Ship.Player.PlayerUUID;
             //Block.PlayerName = Ship.Player.PlayerName;
             Block.ownerId = "public";
-            Block.PlayerName = "";
             Block.transform.SetPositionAndRotation(position, Quaternion.LookRotation(lookPosition, up));
             //Block.GetComponent<MeshRenderer>().material = material;
             Block.ID = /*Block.ownerId +*/ ownerId + position;

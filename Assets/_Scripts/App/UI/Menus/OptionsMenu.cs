@@ -21,5 +21,9 @@ namespace CosmicShore.App.UI.Menus
         {
             GameSetting.Instance.ChangeInvertYEnabledStatus();
         }
+        public void ToggleJoystickVisualsEnabledSetting()
+        {
+            GameSetting.Instance.ChangeJoystickVisualsStatus();
+        }
     }
 }

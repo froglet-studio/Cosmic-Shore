@@ -59,7 +59,7 @@ namespace CosmicShore.Game.Projectiles
             var block = Instantiate(trailBlock);
             block.Team = Team;
             block.ownerId = Ship.Player.PlayerUUID;
-            block.PlayerName = Ship.Player.PlayerName;
+            block.Player = Ship.Player;
             block.transform.SetPositionAndRotation(position, Quaternion.LookRotation(forward, up));
             block.GetComponent<MeshRenderer>().material = blockMaterial;
             block.ID = block.ownerId + ownerId + position;  
