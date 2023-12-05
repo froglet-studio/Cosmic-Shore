@@ -43,7 +43,7 @@ namespace CosmicShore.Core.HangerBuilder
         Dictionary<ShipTypes, Ship> shipTypeMap = new();
 
         // HashSet has only one same value in one set
-        [HideInInspector] public HashSet<Transform> SlowedShipTransforms = new();
+        [HideInInspector] public HashSet<Transform> SlowedShipTransforms = new(); // TODO: move to node
 
         [SerializeField] public List<Ship> ShipPrefabs;
 

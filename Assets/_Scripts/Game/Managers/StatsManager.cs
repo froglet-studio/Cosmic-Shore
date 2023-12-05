@@ -32,6 +32,22 @@ public class StatsManager : Singleton<StatsManager>
         playerStats[ship.Player.PlayerName] = roundStats;
     }
 
+    public void SkimmerShipCollision(Ship skimmingShip, Ship ship)
+    {
+        if (!RecordStats)
+            return;
+
+        MaybeCreateDictionaryEntries(skimmingShip.Team, skimmingShip.Player.PlayerName);
+
+        var roundStats = teamStats[skimmingShip.Team];
+        roundStats.skimmerShipCollisions++;
+        teamStats[skimmingShip.Team] = roundStats;
+
+        roundStats = playerStats[skimmingShip.Player.PlayerName];
+        roundStats.skimmerShipCollisions++;
+        playerStats[skimmingShip.Player.PlayerName] = roundStats;
+    }
+
     public void BlockCreated(Teams creatingTeam, string creatingPlayerName, TrailBlockProperties createdTrailBlockProperties)
     {
         if (!RecordStats)

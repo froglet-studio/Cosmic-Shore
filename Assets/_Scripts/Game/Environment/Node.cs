@@ -16,6 +16,7 @@ public class Node : MonoBehaviour
     List<AIPilot> AIPilots = new List<AIPilot>();
     int itemsAdded;
 
+
     void Start()
     {
         teamVolumes.Add(Teams.Green, 0);

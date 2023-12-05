@@ -116,6 +116,8 @@ namespace CosmicShore.Core
 
         void PerformShipImpactEffects(ShipGeometry shipGeometry)
         {
+            if (StatsManager.Instance != null)
+                StatsManager.Instance.SkimmerShipCollision(ship, shipGeometry.Ship);
             foreach (ShipImpactEffects effect in shipImpactEffects)
             {
                 switch (effect)
@@ -229,7 +231,8 @@ namespace CosmicShore.Core
                 if (distance == minMatureBlockDistance) minMatureBlock = trailBlock;
             }
 
-            if (!trailBlock.GetComponent<LineRenderer>() && ship.ShipStatus.AlignmentEnabled) // TODO: ditch line renderer
+            if (!trailBlock.GetComponent<LineRenderer>() && ship.ShipStatus.AlignmentEnabled
+                && Player.ActivePlayer && Player.ActivePlayer.Ship == ship) // TODO: ditch line renderer
             {
                 CreateLineRendererAroundBlock(trailBlock);
 

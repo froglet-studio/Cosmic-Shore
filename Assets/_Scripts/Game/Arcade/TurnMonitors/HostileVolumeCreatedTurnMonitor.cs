@@ -1,5 +1,4 @@
 using UnityEngine;
-using TMPro;
 using System.Collections;
 
 namespace CosmicShore.Game.Arcade
@@ -8,7 +7,6 @@ namespace CosmicShore.Game.Arcade
     {
         [SerializeField] float Amount;
         [SerializeField] MiniGame Game;
-        [HideInInspector] public TMP_Text display;
         Core.RoundStats volumeStat;
 
         private void Start()
@@ -41,8 +39,8 @@ namespace CosmicShore.Game.Arcade
 
         private void Update()
         {
-            if (display != null && StatsManager.Instance.teamStats.ContainsKey(Teams.Red))
-                display.text = ((int)((Amount - StatsManager.Instance.teamStats[Teams.Red].volumeCreated) / 145.65)).ToString();
+            if (Display != null && StatsManager.Instance.teamStats.ContainsKey(Teams.Red))
+                Display.text = ((int)((Amount - StatsManager.Instance.teamStats[Teams.Red].volumeCreated) / 145.65)).ToString();
         }
     }
 }

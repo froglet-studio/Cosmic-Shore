@@ -82,9 +82,11 @@ namespace CosmicShore.Game.Arcade
             ScoreTracker.GameCanvas = GameCanvas;
             foreach (var turnMonitor in TurnMonitors)
                 if (turnMonitor is TimeBasedTurnMonitor tbtMonitor)
-                    tbtMonitor.display = HUD.RoundTimeDisplay;
+                    tbtMonitor.Display = HUD.RoundTimeDisplay;
                 else if (turnMonitor is HostileVolumeCreatedTurnMonitor hvtMonitor) // TODO: consolidate with above
-                    hvtMonitor.display = HUD.RoundTimeDisplay;
+                    hvtMonitor.Display = HUD.RoundTimeDisplay;
+                else if (turnMonitor is ShipCollisionTurnMonitor scMonitor) // TODO: consolidate with above
+                    scMonitor.Display = HUD.RoundTimeDisplay;
 
             GameManager.UnPauseGame();
         }

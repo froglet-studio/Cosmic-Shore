@@ -43,7 +43,6 @@ namespace CosmicShore.Environment.FlowField
         protected virtual void Awake()
         {
             collisions = new List<Collider>();
-            
         }
 
         protected virtual void Start()
@@ -71,8 +70,8 @@ namespace CosmicShore.Environment.FlowField
 
         public void PerformCrystalImpactEffects(CrystalProperties crystalProperties, Ship ship)
         {
-            if (StatsManager.Instance != null)
-                StatsManager.Instance.CrystalCollected(ship, crystalProperties);
+            //if (StatsManager.Instance != null)
+            //    StatsManager.Instance.CrystalCollected(ship, crystalProperties);  // commenting this out because it looks redundant. delete after testing. 
 
             foreach (CrystalImpactEffects effect in crystalImpactEffects)
             {

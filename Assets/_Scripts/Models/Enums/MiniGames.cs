@@ -14,4 +14,5 @@ public enum MiniGames
     DashAndGrab = 9,
     CellularBrawl = 10,
     Denial = 11,
+    CatNMouse = 12,
 }
