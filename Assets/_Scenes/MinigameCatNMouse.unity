@@ -339,7 +339,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 430359307}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0.6}
+  m_LocalPosition: {x: 0, y: 0.2, z: 0.6}
   m_LocalScale: {x: 0.024999999, y: 0.024999999, z: 0.024999999}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -6524,7 +6524,7 @@ PrefabInstance:
     - target: {fileID: 9106189021102876761, guid: 32cc35a6605af014c926743312133238,
         type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0
+      value: -40
       objectReference: {fileID: 0}
     - target: {fileID: 9106189021102876761, guid: 32cc35a6605af014c926743312133238,
         type: 3}
@@ -6663,12 +6663,6 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 8597243262904744741, guid: 8b8886c5e424ace48980294a663d65a3,
     type: 3}
   m_PrefabInstance: {fileID: 556684753}
-  m_PrefabAsset: {fileID: 0}
---- !u!4 &1112354537 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 6334507936303315541, guid: 32cc35a6605af014c926743312133238,
-    type: 3}
-  m_PrefabInstance: {fileID: 451321388}
   m_PrefabAsset: {fileID: 0}
 --- !u!1001 &1156664488
 PrefabInstance:
@@ -7096,7 +7090,7 @@ MonoBehaviour:
   ScoringMode: 2
   GolfRules: 1
   GameCanvas: {fileID: 0}
-  TimePlayedScoreMultiplier: 1
+  TimePlayedScoreMultiplier: 10
   VolumeNormalizationQuotient: 145.65
 --- !u!4 &1527998410
 Transform:
@@ -7153,7 +7147,7 @@ MonoBehaviour:
   Display: {fileID: 0}
   Collisions: 1
   Game: {fileID: 1527998411}
-  hostileShip: {fileID: 1112354537}
+  hostileShip: {fileID: 1360556390}
 --- !u!1 &1829578212
 GameObject:
   m_ObjectHideFlags: 0

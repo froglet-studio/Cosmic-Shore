@@ -15,6 +15,18 @@ EditorBuildSettings:
     path: Assets/_Scenes/Tools/Recording Studio.unity
     guid: 24dd4d7af8c78a14199bc0ab37b17d37
   - enabled: 1
+    path: Assets/_Scenes/MinigameCatNMouse.unity
+    guid: 7c96c2e0191410b4195d294d6205569c
+  - enabled: 1
+    path: Assets/_Scenes/MinigameSlipNStride.unity
+    guid: 309d1ff4cb0ddbd499fa0eab2474c236
+  - enabled: 1
+    path: Assets/_Scenes/MinigamePumpNDump.unity
+    guid: 1b053c09e59743c46aa0fac15789efd2
+  - enabled: 1
+    path: Assets/_Scenes/MinigameMasterExploder.unity
+    guid: b2abfc44b4bae994fa8c45f9fe87fb28
+  - enabled: 1
     path: Assets/_Scenes/MinigameDolphinDarts.unity
     guid: 6197568b1ea35f94a812815c41df57e1
   - enabled: 1
@@ -31,7 +43,7 @@ EditorBuildSettings:
     guid: 608ee7a6fb653984e8456f57d82fb67e
   - enabled: 1
     path: Assets/_Scenes/MinigameDriftCourse.unity
-    guid: 6425f480a5e05034ba9c772941d8b3e0
+    guid: 12d8fa37d337f1e48a3b5f028a01cb87
   - enabled: 1
     path: Assets/_Scenes/MinigameFreestyle.unity
     guid: 6f71535b00043c345b3216d994f22499
@@ -44,9 +56,6 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/_Scenes/MinigameDenial.unity
     guid: 1fdeb06d41efdd846944913993ffc627
-  - enabled: 1
-    path: Assets/_Scenes/MinigameCatNMouse.unity
-    guid: 7c96c2e0191410b4195d294d6205569c
   - enabled: 1
     path: Assets/_Scenes/MinigameCellularBrawl2v2.unity
     guid: 78219fe3cb3c96b44a9e146ced331089

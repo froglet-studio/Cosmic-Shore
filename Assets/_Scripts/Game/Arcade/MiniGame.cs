@@ -80,10 +80,12 @@ namespace CosmicShore.Game.Arcade
             ReadyButton = HUD.ReadyButton;
             countdownTimer = HUD.CountdownTimer;
             ScoreTracker.GameCanvas = GameCanvas;
+    
+
             foreach (var turnMonitor in TurnMonitors)
                 if (turnMonitor is TimeBasedTurnMonitor tbtMonitor)
                     tbtMonitor.Display = HUD.RoundTimeDisplay;
-                else if (turnMonitor is HostileVolumeCreatedTurnMonitor hvtMonitor) // TODO: consolidate with above
+                else if (turnMonitor is VolumeCreatedTurnMonitor hvtMonitor) // TODO: consolidate with above
                     hvtMonitor.Display = HUD.RoundTimeDisplay;
                 else if (turnMonitor is ShipCollisionTurnMonitor scMonitor) // TODO: consolidate with above
                     scMonitor.Display = HUD.RoundTimeDisplay;

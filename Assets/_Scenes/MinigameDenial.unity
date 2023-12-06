@@ -7251,6 +7251,7 @@ MonoBehaviour:
   EnableTrails: 1
   DefaultPlayerShipType: 3
   ActivePlayer: {fileID: 0}
+  hostilePilot: {fileID: 0}
 --- !u!114 &1527998412
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7263,9 +7264,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f53f22b510fd9d94a85455203670ec06, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  Display: {fileID: 0}
   Amount: 80000
   Game: {fileID: 1527998411}
-  display: {fileID: 0}
+  hostileVolume: 1
 --- !u!1 &1829578212
 GameObject:
   m_ObjectHideFlags: 0

@@ -32,9 +32,17 @@ namespace CosmicShore.App.Systems.CTA
         PlayGameDashAndGrab = 412,
         PlayGameDriftCourse = 413,
         PlayGameDenial = 414,
-        PlayGameCatNMouse = 415
-
-
+        PlayGameCatNMouse = 415,
+        PlayGameStripNStride = 416,
+        PlayGamePumpNDump = 417,
+        PlayGameMasterExploder = 418,
+        PlayGameSoar = 419,
+        PlayGameObstacleCoarse = 420,
+        PlayGameDistraction = 421,
+        PlayGameRhinoRun = 422,
+        PlayGameKickinMass = 423,
+        PlayGameSidewinder = 424,
+        PlayGameMultipass = 425
 
 
         /*********** ADDED BY WILL *************/

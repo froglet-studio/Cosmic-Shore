@@ -10,8 +10,10 @@ namespace CosmicShore.Game.Arcade
         [SerializeField] SegmentSpawner SegmentSpawner;
         [SerializeField] SpawnableEllipsoid spawnableEllipsoid;
         int maxDifficulty = 4;
-        float maxSize = 100;
-        float maxSphereRadius = 250;
+        [SerializeField] float maxSize = 100;
+        [SerializeField] float maxSphereRadius = 100;
+        [SerializeField] int initialSegments = 100;
+        [SerializeField] int intensitySegments = 50;
 
         public static new ShipTypes PlayerShipType = ShipTypes.Rhino;
 
@@ -27,6 +29,7 @@ namespace CosmicShore.Game.Arcade
             base.SetupTurn();
 
             SegmentSpawner.SphereRadius = maxSphereRadius * IntensityLevel;
+            SegmentSpawner.numberOfSegments = initialSegments + (intensitySegments * (IntensityLevel-1));
             spawnableEllipsoid.maxlength = spawnableEllipsoid.maxwidth = spawnableEllipsoid.maxheight = maxSize * IntensityLevel / maxDifficulty;
 
 

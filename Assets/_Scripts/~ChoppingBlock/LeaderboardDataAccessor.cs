@@ -68,7 +68,7 @@ using System.Collections.Generic;
                 }
             },
             {
-                MiniGames.DriftCourse, new List<LeaderboardEntry>()
+                MiniGames.RiskyDriftness, new List<LeaderboardEntry>()
                 {
                     new LeaderboardEntry("Igarus",  10, ShipTypes.Dolphin),
                     new LeaderboardEntry("Siren",   20, ShipTypes.Urchin),
