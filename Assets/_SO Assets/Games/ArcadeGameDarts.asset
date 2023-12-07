@@ -13,19 +13,18 @@ MonoBehaviour:
   m_Name: ArcadeGameDarts
   m_EditorClassIdentifier: 
   Mode: 3
-  Name: Dolphin Darts
-  Description: Who doesn't like throwing dolphins?
+  Name: Darts
+  Description: Drift into the crystal to take three shots on three boards
   Icon: {fileID: 21300000, guid: 827310f6fd2e7444ba1937bd64bd2f98, type: 3}
   SelectedIcon: {fileID: 21300000, guid: 05e517fd0a54810488bbca3247c585c9, type: 3}
   CardBackground: {fileID: 21300000, guid: 44b72f2e4acf3e54184c55795ee52d6e, type: 3}
   PreviewClip: {fileID: 2096801853598961014, guid: e838c42bdbc409946944368a0ac2d38d,
     type: 3}
   Vessels:
-  - {fileID: 11400000, guid: 42800aad95708bc488da7eed56ecc146, type: 2}
-  - {fileID: 11400000, guid: 2a99fbadf46af70429b2a511a47c9e8b, type: 2}
+  - {fileID: 11400000, guid: 0a4c60bd3907e4d48885fb5ef9188dcd, type: 2}
   MinPlayers: 1
   MaxPlayers: 2
-  SceneName: MinigameDolphinDarts
+  SceneName: MinigameDarts
   CallToActionTargetType: 403
   ViewUserAction: 110
   PlayUserAction: 0

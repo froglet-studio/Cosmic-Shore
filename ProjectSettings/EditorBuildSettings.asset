@@ -8,7 +8,7 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/_Scenes/Menu_Main.unity
     guid: 102d08d71236a7342a94518fff75949c
-  - enabled: 1
+  - enabled: 0
     path: Assets/_Scenes/TestScenes/Legacy/Game_TestNodeInterior.unity
     guid: 920ffcc6282de7f4ba58fa8c03466701
   - enabled: 1
@@ -27,7 +27,25 @@ EditorBuildSettings:
     path: Assets/_Scenes/MinigameMasterExploder.unity
     guid: b2abfc44b4bae994fa8c45f9fe87fb28
   - enabled: 1
-    path: Assets/_Scenes/MinigameDolphinDarts.unity
+    path: Assets/_Scenes/MinigameSoar.unity
+    guid: dea31fb303aaf2a439c848e50489591d
+  - enabled: 1
+    path: Assets/_Scenes/MinigameObstacleCourse.unity
+    guid: fec6e27c87985bb4d8fb4252cf8b73a4
+  - enabled: 1
+    path: Assets/_Scenes/MinigameDistraction.unity
+    guid: d822a183b11715640bf56103534dcb38
+  - enabled: 1
+    path: Assets/_Scenes/MinigameBlockBandit.unity
+    guid: ab6402f21daa97944b25e308c2a26008
+  - enabled: 1
+    path: Assets/_Scenes/MinigameSidewinder.unity
+    guid: c5473cb1250864445b94b03c981e089f
+  - enabled: 1
+    path: Assets/_Scenes/MinigameRiskyDriftness.unity
+    guid: 12d8fa37d337f1e48a3b5f028a01cb87
+  - enabled: 1
+    path: Assets/_Scenes/MinigameDarts.unity
     guid: 6197568b1ea35f94a812815c41df57e1
   - enabled: 1
     path: Assets/_Scenes/MinigameElimination.unity
@@ -42,14 +60,8 @@ EditorBuildSettings:
     path: Assets/_Scenes/TestScenes/ColorTest.unity
     guid: 608ee7a6fb653984e8456f57d82fb67e
   - enabled: 1
-    path: Assets/_Scenes/MinigameDriftCourse.unity
-    guid: 12d8fa37d337f1e48a3b5f028a01cb87
-  - enabled: 1
     path: Assets/_Scenes/MinigameFreestyle.unity
     guid: 6f71535b00043c345b3216d994f22499
-  - enabled: 1
-    path: Assets/_Scenes/MinigameBlockBandit.unity
-    guid: ab6402f21daa97944b25e308c2a26008
   - enabled: 1
     path: Assets/_Scenes/MinigameCellularDuel.unity
     guid: a0793cb7cf4069b44ba82acfddb04f11

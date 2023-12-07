@@ -1,7 +1,13 @@
+using CosmicShore.Core;
 using System.Collections;
 using UnityEngine;
 public class DriftTrailAction : ShipAction
 {
+    #region Events
+    public delegate void ChangeDriftAltitude(float dotproduct);
+    public event ChangeDriftAltitude OnChangeDriftAltitude;
+    #endregion
+
     TrailSpawner trailSpawner;
 
     protected override void Start()
@@ -17,8 +23,9 @@ public class DriftTrailAction : ShipAction
 
     public override void StopAction()
     {
-        StopCoroutine(UpdateDotProductCoroutine());
+        StopAllCoroutines();
         trailSpawner.SetDotProduct(1);
+        if (!ship.ShipStatus.AutoPilotEnabled) OnChangeDriftAltitude?.Invoke(1);
     }
 
 
@@ -26,8 +33,13 @@ public class DriftTrailAction : ShipAction
     {
         while (true) 
         {
-            trailSpawner.SetDotProduct(Vector3.Dot(ship.ShipStatus.Course, ship.transform.forward));
+            var driftAltitude = Vector3.Dot(ship.ShipStatus.Course, ship.transform.forward);
+            if (!ship.ShipStatus.AutoPilotEnabled) OnChangeDriftAltitude?.Invoke(driftAltitude);
+            trailSpawner.SetDotProduct(driftAltitude);
             yield return new WaitForSeconds(.1f);
         }
     }
+
+
+
 }

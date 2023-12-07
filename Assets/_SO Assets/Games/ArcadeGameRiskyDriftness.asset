@@ -10,10 +10,10 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe040efad3307fb449b6b72ad15362da, type: 3}
-  m_Name: ArcadeGameDriftCourse
+  m_Name: ArcadeGameRiskyDriftness
   m_EditorClassIdentifier: 
   Mode: 6
-  Name: Drift Course
+  Name: Risky Driftness
   Description: 'See how fast you can fill your Energy by drifting as close as you
     can to the zigzag trail '
   Icon: {fileID: 21300000, guid: 735c0e18d396f9e44ae83b165805dc30, type: 3}
@@ -25,7 +25,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: ebc2b317ba4ed9249bf4370c10d68dac, type: 2}
   MinPlayers: 1
   MaxPlayers: 3
-  SceneName: MinigameDriftCourse
+  SceneName: MinigameRiskyDriftness
   CallToActionTargetType: 413
   ViewUserAction: 0
   PlayUserAction: 400
