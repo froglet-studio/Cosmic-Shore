@@ -73,7 +73,7 @@ namespace CosmicShore.App.UI.Menus
                 }
             }
 
-            for (var i = 0; i < GameList.GameList.Count; i++)
+            for (var i = 0; i < GameCards.Count; i++)
             {
                 var selectionIndex = i;
                 var game = GameList.GameList[i];
