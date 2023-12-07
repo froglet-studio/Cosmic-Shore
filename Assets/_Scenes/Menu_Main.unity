@@ -460,6 +460,41 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 8474620292676099548, guid: 4d964da34a0cb934c8efc736f2eae833,
+        type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8474620292676099548, guid: 4d964da34a0cb934c8efc736f2eae833,
+        type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Mode
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8474620292676099548, guid: 4d964da34a0cb934c8efc736f2eae833,
+        type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
+      value: 
+      objectReference: {fileID: 2070959929}
+    - target: {fileID: 8474620292676099548, guid: 4d964da34a0cb934c8efc736f2eae833,
+        type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_CallState
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 8474620292676099548, guid: 4d964da34a0cb934c8efc736f2eae833,
+        type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
+      value: ClaimDailyReward_OnClick
+      objectReference: {fileID: 0}
+    - target: {fileID: 8474620292676099548, guid: 4d964da34a0cb934c8efc736f2eae833,
+        type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
+      value: CosmicShore.App.Ui.Menus.StoreMenu, Assembly-CSharp
+      objectReference: {fileID: 0}
+    - target: {fileID: 8474620292676099548, guid: 4d964da34a0cb934c8efc736f2eae833,
+        type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Arguments.m_ObjectArgumentAssemblyTypeName
+      value: UnityEngine.Object, UnityEngine
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 4d964da34a0cb934c8efc736f2eae833, type: 3}
 --- !u!1001 &42482810
@@ -3964,7 +3999,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 831429478}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 2070959929}
+        m_TargetAssemblyTypeName: CosmicShore.App.Ui.Menus.StoreMenu, Assembly-CSharp
+        m_MethodName: BuyShip_OnClick
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &831429478
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6245,7 +6292,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 1316065908}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 2070959929}
+        m_TargetAssemblyTypeName: CosmicShore.App.Ui.Menus.StoreMenu, Assembly-CSharp
+        m_MethodName: BuyMiniGame_OnClick
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &1316065908
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6782,7 +6841,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 1512731288}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 2070959929}
+        m_TargetAssemblyTypeName: CosmicShore.App.Ui.Menus.StoreMenu, Assembly-CSharp
+        m_MethodName: BuyVesselUpgrade_OnClick
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &1512731288
 MonoBehaviour:
   m_ObjectHideFlags: 0

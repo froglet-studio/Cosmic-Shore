@@ -22,17 +22,9 @@ namespace CosmicShore.App.Ui.Menus
         // Upon claiming daily reward, the button non-clickable here on the menu
         // (Back-end) Notify the server for cool down time
         private bool _isDailyRewardClaimed = false;
+        
 
-        private void Start()
-        {
-            // TODO: Not sure why the button instance is null upon summoning store menu 
-            claimDailyRewardButton.onClick.AddListener(ClaimDailyReward_OnClick);
-            buyShipButton.onClick.AddListener(BuyShip_OnClick);
-            buyMiniGameButton.onClick.AddListener(BuyMiniGame_OnClick);
-            buyVesselUpgradeButton.onClick.AddListener(BuyVesselUpgrade_OnClick);
-        }
-
-        private void ClaimDailyReward_OnClick()
+        public void ClaimDailyReward_OnClick()
         {
             if (!_isDailyRewardClaimed)
             {
@@ -50,19 +42,19 @@ namespace CosmicShore.App.Ui.Menus
             
         }
 
-        private void BuyShip_OnClick()
+        public void BuyShip_OnClick()
         {
             Debug.LogFormat("{0} - {1} buying a ship - urchine.", nameof(StoreMenu), nameof(BuyShip_OnClick));
             // TODO: back-end buy ship 
         }
 
-        private void BuyMiniGame_OnClick()
+        public void BuyMiniGame_OnClick()
         {
             Debug.LogFormat("{0} - {1} buying a mini game.", nameof(StoreMenu), nameof(BuyMiniGame_OnClick));
             // TODO: back-end buy mini game
         }
 
-        void BuyVesselUpgrade_OnClick()
+        public void BuyVesselUpgrade_OnClick()
         {
             Debug.LogFormat("{0} - {1} buying a vessel upgrade.", nameof(StoreMenu), nameof(BuyVesselUpgrade_OnClick));
             // TODO: back-end buy a vessel upgrade.
