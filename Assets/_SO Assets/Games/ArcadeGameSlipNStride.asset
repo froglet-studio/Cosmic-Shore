@@ -21,7 +21,7 @@ MonoBehaviour:
   PreviewClip: {fileID: 3312024567346999270, guid: 51aa26330ad783b4d9f1d54a91583c41,
     type: 3}
   Vessels:
-  - {fileID: 11400000, guid: 83f99cf219c1bdf43b51c94855ee2328, type: 2}
+  - {fileID: 11400000, guid: b997308bc8cf75249adf9ca2126a3789, type: 2}
   MinPlayers: 1
   MaxPlayers: 3
   SceneName: MinigameSlipNStride

@@ -25,6 +25,9 @@ namespace CosmicShore.Core
             }
         }
 
+        public delegate void AmmoUpdateDelegate(float currentAmmo);
+        public event AmmoUpdateDelegate OnAmmoChange;
+
         [Header("Ammo")]
         [SerializeField] bool usesAmmo;
         [SerializeField] bool gainsAmmo;
@@ -41,7 +44,10 @@ namespace CosmicShore.Core
                 currentAmmo = value;
 
                 if (AmmoDisplay != null)
+                {
                     AmmoDisplay.UpdateDisplay(currentAmmo);
+                    OnAmmoChange?.Invoke(currentAmmo);
+                }
             }
         }
         public float MaxAmmo { get { return maxAmmo; } }

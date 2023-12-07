@@ -19,7 +19,7 @@ public enum MiniGames
     PumpNDump = 14,
     MasterExploder = 15,
     Soar = 16,
-    ObstacleCoarse = 17,
+    ObstacleCourse = 17,
     Distraction = 18,
     RhinoRun = 19,
     KickinMass = 20,

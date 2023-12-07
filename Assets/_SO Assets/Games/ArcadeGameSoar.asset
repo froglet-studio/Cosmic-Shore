@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe040efad3307fb449b6b72ad15362da, type: 3}
+  m_Name: ArcadeGameSoar
+  m_EditorClassIdentifier: 
+  Mode: 16
+  Name: Soar
+  Description: Avoid all Mass to produce mass as quick as you can.
+  Icon: {fileID: 21300000, guid: 3393ef5bcc756364d98dc478fc0fe52b, type: 3}
+  SelectedIcon: {fileID: 21300000, guid: b734e1a473e014c4198c58f6c02b894d, type: 3}
+  CardBackground: {fileID: 21300000, guid: b5b9538f2e3a8c24d9a9f5219064fcdc, type: 3}
+  PreviewClip: {fileID: 3312024567346999270, guid: 51aa26330ad783b4d9f1d54a91583c41,
+    type: 3}
+  Vessels:
+  - {fileID: 11400000, guid: a981eacc512e2184793612525df189a3, type: 2}
+  MinPlayers: 1
+  MaxPlayers: 3
+  SceneName: MinigameSoar
+  CallToActionTargetType: 419
+  ViewUserAction: 0
+  PlayUserAction: 0

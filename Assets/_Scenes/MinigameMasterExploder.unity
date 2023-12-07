@@ -719,6 +719,8 @@ MonoBehaviour:
   spawnableEllipsoid: {fileID: 1638204688}
   maxSize: 100
   maxSphereRadius: 250
+  initialSegments: 200
+  intensitySegments: 50
 --- !u!4 &1180410982 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 6454128237993233764, guid: 4a855af160021d241b8c1ac70cf2d792,
@@ -1231,7 +1233,7 @@ MonoBehaviour:
   spawnSegmentWeights:
   - 5
   - 0.5
-  - 5
+  - 15
   - 1
   Seed: 0
   parent: {fileID: 0}

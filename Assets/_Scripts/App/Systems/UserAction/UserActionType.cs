@@ -6,7 +6,7 @@ namespace CosmicShore.App.Systems.UserActions
         ViewArcadeMenu = 100,
         ViewArcadeLoadoutMenu = 101,
         ViewArcadeExploreMenu = 102,
-        ViewArcadeGameDolphinDarts = 110,
+        ViewArcadeGameDarts = 110,
         ViewArcadeGameRampage = 111,
 
         // Store Related - 200s
