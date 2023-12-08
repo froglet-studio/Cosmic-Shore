@@ -23,11 +23,18 @@ namespace CosmicShore.Integrations.Playfab.Economy
         /// The client-defined type of the item.
         /// </summary>
         public string ContentType;
+
         /// <summary>
         /// The images associated with this item. Images can be thumbnails or screenshots. Up to 100 images can be added to an item.
         /// Only .png, .jpg, .gif, and .bmp file types can be uploaded
         /// </summary>
         // public List<Image> Images;
+        
+        /// <summary>
+        /// Economy categories in PlayFab, such as Items, Currency, UGC, etc.
+        /// </summary>
+        public string Categories;
+        
         /// <summary>
         /// The item references associated with this item. For example, the items in a Bundle/Store/Subscription. Every item can
         /// have up to 50 item references.

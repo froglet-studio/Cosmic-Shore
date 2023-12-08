@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using CosmicShore.Integrations.Playfab.Authentication;
 using PlayFab;
 using PlayFab.ClientModels;
@@ -180,13 +181,14 @@ namespace CosmicShore.Integrations.Playfab.PlayStream
             {
                 Debug.Log($"LeaderboardManager.UpdatePlayerStatistic - online");
                 customTags.Add("BuildNumber", Application.buildGUID);
+
+                var request = new UpdatePlayerStatisticsRequest();
+                request.AuthenticationContext = AuthenticationManager.PlayerAccount.AuthContext;
+                request.CustomTags = customTags;
+                request.Statistics = stats;
+                
                 PlayFabClientAPI.UpdatePlayerStatistics(
-                    new()
-                    {
-                        AuthenticationContext = AuthenticationManager.PlayerAccount.AuthContext,
-                        CustomTags = customTags,
-                        Statistics = stats,
-                    },
+                    request,
                     response =>
                     {
                         Debug.Log("UpdatePlayerStatistic success: " + response.ToString());
@@ -231,20 +233,22 @@ namespace CosmicShore.Integrations.Playfab.PlayStream
         {
             if (online)
             {
+                var request = new GetLeaderboardAroundPlayerRequest();
+                request.AuthenticationContext = AuthenticationManager.PlayerAccount.AuthContext;
+                request.StatisticName = leaderboardName;
+                request.CustomTags = customTags;
+                
                 PlayFabClientAPI.GetLeaderboardAroundPlayer(
-                    new GetLeaderboardAroundPlayerRequest()
-                    {
-                        AuthenticationContext = AuthenticationManager.PlayerAccount.AuthContext,
-                        StatisticName = leaderboardName,
-                        CustomTags = customTags,
-                    },
+                    request,
                     response =>
                     {
-                        List<LeaderboardEntry> entries = new List<LeaderboardEntry>();
-                        foreach (var entry in response.Leaderboard)
-                        {
-                            entries.Add(new LeaderboardEntry(entry.Profile.DisplayName, entry.PlayFabId, entry.StatValue, entry.Position));
-                        }
+                        var entries = response.Leaderboard
+                            .Select(entry => new LeaderboardEntry(
+                                entry.Profile.DisplayName, 
+                                entry.PlayFabId, 
+                                entry.StatValue, 
+                                entry.Position))
+                            .ToList();
 
                         callback(entries);
 

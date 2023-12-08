@@ -121,7 +121,7 @@ namespace Scenes.TestScenes.Playfab_Sandbox_Test
             var vesselShard = new VirtualItem
             {
                 ItemId = VesselShardId,
-                ContentType = nameof(VirtualItemContentTypes.VesselKnowledge),
+                ContentType = nameof(ContentTypes.VesselKnowledge),
                 Amount = 100
             };
             var crystals = new VirtualItem
@@ -247,7 +247,8 @@ namespace Scenes.TestScenes.Playfab_Sandbox_Test
 
         public void GrantShards()
         {
-            CatalogManager.Instance.GrantVesselKnowledge(20, ShipTypes.Manta, Element.Space);
+            // TODO: Update vessel knowledge via PlayerDataController
+            // CatalogManager.Instance.GrantVesselKnowledge(20, ShipTypes.Manta, Element.Space);
         }
     }
 }
