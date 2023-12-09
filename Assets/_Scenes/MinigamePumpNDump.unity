@@ -814,12 +814,12 @@ MonoBehaviour:
   Seed: 0
   parent: {fileID: 0}
   origin: {x: 0, y: 0, z: 500}
-  SphereRadius: 250
-  StraightLineLength: 400
+  Radius: 250
+  StraightLineLength: 900
   RotationAmount: 10
   DifficultyAngle: 90
-  InitializeOnStart: 0
-  numberOfSegments: 1
+  InitializeOnStart: 1
+  numberOfSegments: 10
 --- !u!1 &1078953702
 GameObject:
   m_ObjectHideFlags: 0
@@ -914,9 +914,13 @@ MonoBehaviour:
   Crystal: {fileID: 1568959833}
   CrystalStartPosition: {x: 0, y: 0, z: -120}
   SegmentSpawner: {fileID: 1020381236}
-  numberOfSegments: 10
-  straightLineLength: 400
-  ResetTrails: 0
+  numberOfSegments: 50
+  straightLineLength: 900
+  ResetTrails: 1
+  ScaleCrystalPositionWithIntensity: 0
+  ScaleLengthWithIntensity: 0
+  ScaleNumberOfSegmentsWithIntensity: 0
+  helix: {fileID: 2091254371}
 --- !u!114 &1078953711
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1955,7 +1959,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   trailBlock: {fileID: 4563009547826722997, guid: 2a19c011ad2d54641ad144fbe33d3586,
     type: 3}
-  scale: {x: 1, y: 1, z: 5}
+  scale: {x: 3, y: 3, z: 6}
+  firstOrderRadius: 0.4
+  secondOrderRadius: 0.4
 --- !u!4 &2091254372
 Transform:
   m_ObjectHideFlags: 0

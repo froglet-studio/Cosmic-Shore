@@ -48,6 +48,7 @@ namespace CosmicShore.Core
         [SerializeField] public List<GameObject> shipGeometries;
 
         [Header("Optional Ship Components")]
+        [SerializeField] Silhouette Silhouette;
         [SerializeField] GameObject AOEPrefab;
         [SerializeField] Skimmer farFieldSkimmer;
 
@@ -441,6 +442,11 @@ namespace CosmicShore.Core
         public void SetBlockMaterial(Material material)
         {
             TrailSpawner.SetBlockMaterial(material);
+        }
+
+        public void SetBlockSilhouettePrefab(GameObject prefab)
+        {
+            if (Silhouette) Silhouette.SetBlockPrefab(prefab);
         }
 
         public void SetShieldedBlockMaterial(Material material)

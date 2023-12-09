@@ -33,11 +33,11 @@ EditorBuildSettings:
     path: Assets/_Scenes/MinigameObstacleCourse.unity
     guid: fec6e27c87985bb4d8fb4252cf8b73a4
   - enabled: 1
-    path: Assets/_Scenes/MinigameDistraction.unity
-    guid: d822a183b11715640bf56103534dcb38
-  - enabled: 1
     path: Assets/_Scenes/MinigameBlockBandit.unity
     guid: ab6402f21daa97944b25e308c2a26008
+  - enabled: 1
+    path: Assets/_Scenes/MinigameDistraction.unity
+    guid: d822a183b11715640bf56103534dcb38
   - enabled: 1
     path: Assets/_Scenes/MinigameSidewinder.unity
     guid: c5473cb1250864445b94b03c981e089f

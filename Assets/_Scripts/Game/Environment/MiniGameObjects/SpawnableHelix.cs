@@ -7,6 +7,8 @@ public class SpawnableHelix : SpawnableAbstractBase
     [SerializeField] TrailBlock trailBlock;
     [SerializeField] Vector3 scale;
     static int ObjectsSpawned = 0;
+    [SerializeField] public float firstOrderRadius = 1;
+    [SerializeField] public float secondOrderRadius = 1;
 
     public override GameObject Spawn()
     {
@@ -27,8 +29,8 @@ public class SpawnableHelix : SpawnableAbstractBase
         for (int block = 0; block < blockCount; block++)
         {
             var t = block / blockCount * Mathf.PI * 12;
-            var x = (Mathf.Sin(t) * xc1) + (Mathf.Sin(t*xc2 + xc3) * xc4);
-            var y = (Mathf.Cos(t) * yc1) + (Mathf.Cos(t*yc2 + yc3) * yc4);
+            var x = firstOrderRadius * (Mathf.Sin(t) * xc1) + (secondOrderRadius * (Mathf.Sin(t*xc2 + xc3) * xc4));
+            var y = firstOrderRadius * (Mathf.Cos(t) * yc1) + (secondOrderRadius * (Mathf.Cos(t*yc2 + yc3) * yc4));
             var position = new Vector3(x, y, t*30f);
             var lookPosition = (block == 0) ? position : trail.GetBlock(block - 1).transform.position;
             CreateBlock(position, lookPosition, container.name + "::BLOCK::" + block, trail, scale, trailBlock, container);

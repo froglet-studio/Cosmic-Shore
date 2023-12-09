@@ -448,7 +448,7 @@ PrefabInstance:
     - target: {fileID: 6588436222817790493, guid: fced5b15da3ad1d41b4e3b7385609e37,
         type: 3}
       propertyPath: m_LocalPosition.x
-      value: 0
+      value: 200
       objectReference: {fileID: 0}
     - target: {fileID: 6588436222817790493, guid: fced5b15da3ad1d41b4e3b7385609e37,
         type: 3}
@@ -458,7 +458,7 @@ PrefabInstance:
     - target: {fileID: 6588436222817790493, guid: fced5b15da3ad1d41b4e3b7385609e37,
         type: 3}
       propertyPath: m_LocalPosition.z
-      value: 400
+      value: 1000
       objectReference: {fileID: 0}
     - target: {fileID: 6588436222817790493, guid: fced5b15da3ad1d41b4e3b7385609e37,
         type: 3}
@@ -585,18 +585,18 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   spawnableSegments:
   - {fileID: 857195441}
-  positioningScheme: 0
+  positioningScheme: 9
   spawnSegmentWeights:
   - 1
   Seed: 0
   parent: {fileID: 0}
-  origin: {x: 0, y: 0, z: -50}
-  SphereRadius: 250
-  StraightLineLength: 30
+  origin: {x: 0, y: 0, z: -800}
+  Radius: 150
+  StraightLineLength: 4
   RotationAmount: 20
   DifficultyAngle: 90
   InitializeOnStart: 1
-  numberOfSegments: 30
+  numberOfSegments: 100
 --- !u!4 &822875972 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 8200116291734656446, guid: cb702179ff5b42f41a3521ccd59e6934,
@@ -650,6 +650,8 @@ MonoBehaviour:
   trailBlock: {fileID: 4563009547826722997, guid: ed9defc56162b4b4588e61c20984b6d9,
     type: 3}
   scale: {x: 7, y: 7, z: 5}
+  firstOrderRadius: 0.2
+  secondOrderRadius: 0.3
 --- !u!1 &1078953702
 GameObject:
   m_ObjectHideFlags: 0
@@ -738,15 +740,16 @@ MonoBehaviour:
   playerPrefab: {fileID: 1649340654}
   PlayerOrigin: {fileID: 1192541910}
   EndOfTurnDelay: 0
-  EnableTrails: 0
+  EnableTrails: 1
   DefaultPlayerShipType: 6
   ActivePlayer: {fileID: 0}
   Crystal: {fileID: 1568959833}
-  CrystalStartPosition: {x: 0, y: 0, z: 600}
-  SegmentSpawner: {fileID: 0}
-  numberOfSegments: 10
-  straightLineLength: 400
+  CrystalStartPosition: {x: 50, y: 0, z: 250}
+  SegmentSpawner: {fileID: 781179373}
+  numberOfSegments: 50
+  straightLineLength: 30
   ResetTrails: 1
+  ScaleCrystalPositionWithIntensity: 1
 --- !u!114 &1078953710
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -762,6 +765,7 @@ MonoBehaviour:
   Display: {fileID: 0}
   CrystalCollisions: 1
   Game: {fileID: 1078953709}
+  hostileCollection: 0
 --- !u!1001 &1142622546
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -917,7 +921,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1192541910}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: -400}
+  m_LocalPosition: {x: -300, y: 0, z: -800}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

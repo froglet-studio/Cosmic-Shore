@@ -11,6 +11,11 @@ namespace CosmicShore.Game.Arcade
         [SerializeField] int numberOfSegments = 10;
         [SerializeField] int straightLineLength = 400;
         [SerializeField] bool ResetTrails = true;
+        [SerializeField] bool ScaleCrystalPositionWithIntensity = false; 
+        [SerializeField] bool ScaleLengthWithIntensity = true;
+        [SerializeField] bool ScaleNumberOfSegmentsWithIntensity = true;
+        [SerializeField] SpawnableHelix helix;
+
 
         //public static virtual ShipTypes PlayerShipType = ShipTypes.Rhino;
 
@@ -18,20 +23,16 @@ namespace CosmicShore.Game.Arcade
         {
             base.Start();
             SegmentSpawner.Seed = new System.Random().Next();
-            numberOfSegments = numberOfSegments * IntensityLevel;
+            if (ScaleNumberOfSegmentsWithIntensity) numberOfSegments = numberOfSegments * IntensityLevel;
 
             if (PlayerShipType == ShipTypes.Rhino)
                 ScoreTracker.ScoringMode = ScoringModes.HostileVolumeDestroyed;
 
+            if (helix) helix.firstOrderRadius = helix.secondOrderRadius = IntensityLevel / 3f;
+
             if (!ResetTrails)
             {
-                SegmentSpawner.numberOfSegments = numberOfSegments;
-                SegmentSpawner.StraightLineLength = straightLineLength / IntensityLevel;
-
-                TrailSpawner.NukeTheTrails();
-                Crystal.transform.position = CrystalStartPosition;
-
-                SegmentSpawner.Initialize();
+                InitializeTrails();
             }
         }
 
@@ -41,14 +42,20 @@ namespace CosmicShore.Game.Arcade
 
             if (ResetTrails)
             {
-                SegmentSpawner.numberOfSegments = numberOfSegments;
-                SegmentSpawner.StraightLineLength = straightLineLength / IntensityLevel;
-
-                TrailSpawner.NukeTheTrails();
-                Crystal.transform.position = CrystalStartPosition;
-
-                SegmentSpawner.Initialize();
+                InitializeTrails();
             }
+        }
+
+        void InitializeTrails()
+        {
+            if (ScaleNumberOfSegmentsWithIntensity) SegmentSpawner.numberOfSegments = numberOfSegments;
+            if (ScaleLengthWithIntensity) SegmentSpawner.StraightLineLength = straightLineLength / IntensityLevel;
+
+            TrailSpawner.NukeTheTrails();
+            if (ScaleCrystalPositionWithIntensity) Crystal.transform.position = IntensityLevel * CrystalStartPosition;
+            else Crystal.transform.position = CrystalStartPosition;
+
+            SegmentSpawner.Initialize();
         }
     }
 }

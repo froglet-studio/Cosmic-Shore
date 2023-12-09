@@ -5,10 +5,14 @@ using CosmicShore.Utility;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 [RequireComponent(typeof(Ship))]
 public class TrailSpawner : MonoBehaviour
 {
+    public delegate void BlockCreationHandler(float xShift, float wavelength, float scaleX, float scaleZ);
+    public event BlockCreationHandler OnBlockCreated;
+
     [SerializeField] TrailBlock trailBlock;
     [SerializeField] Skimmer skimmer;
 
@@ -19,8 +23,9 @@ public class TrailSpawner : MonoBehaviour
 
     [SerializeField] float initialWavelength = 4f;
     [SerializeField] float minWavelength = 1f;
+    public float MinWaveLength {get { return minWavelength; } }
 
-    float wavelength;
+float wavelength;
 
     public float Gap;
     public float MinimumGap = 1;
@@ -183,7 +188,8 @@ public class TrailSpawner : MonoBehaviour
         var Block = Instantiate(trailBlock);
         Block.TargetScale = new Vector3(trailBlock.transform.localScale.x * XScaler / 2f - Mathf.Abs(halfGap), trailBlock.transform.localScale.y * YScaler, trailBlock.transform.localScale.z * ZScaler);
         TargetScale = Block.TargetScale;
-        Block.transform.SetPositionAndRotation(transform.position - shipData.Course * offset + ship.transform.right * (Block.TargetScale.x/2f + Mathf.Abs(halfGap)) * (halfGap / Mathf.Abs(halfGap)), shipData.blockRotation);
+        float xShift = (Block.TargetScale.x / 2f + Mathf.Abs(halfGap)) * (halfGap / Mathf.Abs(halfGap));
+        Block.transform.SetPositionAndRotation(transform.position - shipData.Course * offset + ship.transform.right * xShift, shipData.blockRotation);
         Block.transform.parent = TrailContainer.transform;
         Block.ownerId = isCharmed ? tempShip.Player.PlayerUUID : ship.Player.PlayerUUID;
         Block.Player = isCharmed ? tempShip.Player : ship.Player;
@@ -200,6 +206,7 @@ public class TrailSpawner : MonoBehaviour
         Block.GetComponent<BoxCollider>().size = Vector3.one + VectorDivision((Vector3)blockMaterial.GetVector("_Spread"), Block.TargetScale);
         Block.Trail = trail;
 
+        OnBlockCreated?.Invoke(xShift, wavelength, Block.TargetScale.x, Block.TargetScale.z);
         trail.Add(Block);
         Block.Index = trail.TrailList.IndexOf(Block);
         Block.ID = ownerId + "::" + spawnedTrailCount++;

@@ -55,7 +55,7 @@ public class ChargeBoostAction : ShipAction
     private void StartChargedBoost()
     {
         // if (DischargeBoostCoroutine() == null) return;
-        StartCoroutine(DischargeBoostCoroutine());
+        if (shipData) StartCoroutine(DischargeBoostCoroutine());
     }
 
     IEnumerator DischargeBoostCoroutine()

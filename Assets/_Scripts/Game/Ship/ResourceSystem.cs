@@ -9,7 +9,7 @@ namespace CosmicShore.Core
     public class ResourceSystem : ElementalShipComponent
     {
         [Header("Boost")]
-        [SerializeField] bool usesBoost;
+        [SerializeField] bool displayBoost;
         [SerializeField] [Range(0, 1)] float initialBoost = 1f;
         [SerializeField] [Range(0, 1)] float maxBoost = 1f;
         float currentBoost;
@@ -29,7 +29,7 @@ namespace CosmicShore.Core
         public event AmmoUpdateDelegate OnAmmoChange;
 
         [Header("Ammo")]
-        [SerializeField] bool usesAmmo;
+        [SerializeField] bool displayAmmo;
         [SerializeField] bool gainsAmmo;
         [FormerlySerializedAs("AmmoGainRate2")]
         [SerializeField] ElementalFloat ammoGainRate = new ElementalFloat(0.01f);
@@ -46,14 +46,14 @@ namespace CosmicShore.Core
                 if (AmmoDisplay != null)
                 {
                     AmmoDisplay.UpdateDisplay(currentAmmo);
-                    OnAmmoChange?.Invoke(currentAmmo);
                 }
+                OnAmmoChange?.Invoke(currentAmmo);
             }
         }
         public float MaxAmmo { get { return maxAmmo; } }
 
         [Header("Energy")]
-        [SerializeField] bool usesEnergy;
+        [SerializeField] bool displayEnergy;
         [SerializeField] [Range(0, 1)] float maxEnergy = 1f;
         [SerializeField] [Range(0, 1)] float initialEnergy = 1f;
         float currentEnergy;
@@ -92,11 +92,11 @@ namespace CosmicShore.Core
         {
             yield return new WaitForSeconds(.2f);
 
-            Reset();
+            //Reset();
             
-            BoostDisplay?.gameObject.SetActive(usesBoost);
-            AmmoDisplay?.gameObject.SetActive(usesAmmo);
-            EnergyDisplay?.gameObject.SetActive(usesEnergy);
+            BoostDisplay?.gameObject.SetActive(displayBoost);
+            AmmoDisplay?.gameObject.SetActive(displayAmmo);
+            EnergyDisplay?.gameObject.SetActive(displayEnergy);
         }
 
         void Update()

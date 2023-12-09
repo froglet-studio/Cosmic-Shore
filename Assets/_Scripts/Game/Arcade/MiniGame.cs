@@ -218,6 +218,9 @@ namespace CosmicShore.Game.Arcade
 
         protected virtual void EndTurn()
         {
+            Silhouette silhouette;
+            Player.ActivePlayer.Ship.TryGetComponent<Silhouette>(out silhouette);
+            silhouette.Clear();
             StartCoroutine(EndTurnCoroutine());
         }
 
@@ -315,6 +318,8 @@ namespace CosmicShore.Game.Arcade
                 Debug.Log($"PlayerUUID: {player.PlayerUUID}");
                 player.gameObject.SetActive(player.PlayerUUID == ActivePlayer.PlayerUUID);
             }
+
+            Player.ActivePlayer = ActivePlayer;
         }
 
         protected virtual void SetupTurn()
