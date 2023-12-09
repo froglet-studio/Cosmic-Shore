@@ -11,21 +11,15 @@ namespace CosmicShore.Integrations.Playfab.Economy
 
         // Vessels
         public List<VirtualItem> Vessels;
-
-
+        
         // Vessel Upgrades
         public List<VirtualItem> VesselUpgrades;
-
-
+        
         // Ships
         public List<VirtualItem> Ships;
-
-
+        
         // MiniGames
         public List<VirtualItem> MiniGames;
 
-
-        // Vessel Knowledge
-        // public List<VirtualItem> VesselKnowledge;
     }
 }
