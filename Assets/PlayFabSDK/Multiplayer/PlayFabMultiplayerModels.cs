@@ -94,7 +94,8 @@ namespace PlayFab.MultiplayerModels
         WestUs2,
         CentralIndia,
         UaeNorth,
-        UkSouth
+        UkSouth,
+        SwedenCentral
     }
 
     public enum AzureVmFamily
@@ -1115,7 +1116,7 @@ namespace PlayFab.MultiplayerModels
         /// </summary>
         public Dictionary<string,string> CustomTags;
         /// <summary>
-        /// The private key-value pairs which are only visible to members of the lobby. At most 30 key-value pairs may be stored
+        /// The private key-value pairs which are visible to all entities in the lobby. At most 30 key-value pairs may be stored
         /// here, keys are limited to 30 characters and values to 1000. The total size of all lobbyData values may not exceed 4096
         /// bytes. Keys are case sensitive.
         /// </summary>
@@ -1645,6 +1646,18 @@ namespace PlayFab.MultiplayerModels
         /// The relative weight of this rule compared to others.
         /// </summary>
         public double Weight;
+    }
+
+    public enum DirectPeerConnectivityOptions
+    {
+        None,
+        SamePlatformType,
+        DifferentPlatformType,
+        AnyPlatformType,
+        SameEntityLoginProvider,
+        DifferentEntityLoginProvider,
+        AnyEntityLoginProvider,
+        AnyPlatformTypeAndEntityLoginProvider
     }
 
     [Serializable]
@@ -2689,7 +2702,7 @@ namespace PlayFab.MultiplayerModels
         public uint MaxPlayers;
         /// <summary>
         /// The private key-value pairs used by the member to communicate information to other members and the owner. Visible to all
-        /// members of the lobby. At most 30 key-value pairs may be stored here, keys are limited to 30 characters and values to
+        /// entities in the lobby. At most 30 key-value pairs may be stored here, keys are limited to 30 characters and values to
         /// 1000. The total size of all memberData values may not exceed 4096 bytes. Keys are case sensitive.
         /// </summary>
         public Dictionary<string,string> MemberData;
@@ -2732,7 +2745,7 @@ namespace PlayFab.MultiplayerModels
         public Dictionary<string,string> CustomTags;
         /// <summary>
         /// The private key-value pairs used by the member to communicate information to other members and the owner. Visible to all
-        /// members of the lobby. At most 30 key-value pairs may be stored here, keys are limited to 30 characters and values to
+        /// entities in the lobby. At most 30 key-value pairs may be stored here, keys are limited to 30 characters and values to
         /// 1000. The total size of all memberData values may not exceed 4096 bytes.Keys are case sensitive.
         /// </summary>
         public Dictionary<string,string> MemberData;
@@ -3092,11 +3105,27 @@ namespace PlayFab.MultiplayerModels
         /// The container images we want to list tags for.
         /// </summary>
         public string ImageName;
+        /// <summary>
+        /// The page size for the request.
+        /// </summary>
+        public int? PageSize;
+        /// <summary>
+        /// The skip token for the paged request.
+        /// </summary>
+        public string SkipToken;
     }
 
     [Serializable]
     public class ListContainerImageTagsResponse : PlayFabResultCommon
     {
+        /// <summary>
+        /// The page size on the response.
+        /// </summary>
+        public int PageSize;
+        /// <summary>
+        /// The skip token for the paged response.
+        /// </summary>
+        public string SkipToken;
         /// <summary>
         /// The list of tags for a particular container image.
         /// </summary>
@@ -3806,6 +3835,65 @@ namespace PlayFab.MultiplayerModels
     }
 
     [Serializable]
+    public class PartyInvitationConfiguration : PlayFabBaseModel
+    {
+        /// <summary>
+        /// The list of PlayFab EntityKeys that the invitation allows to authenticate into the network. If this list is empty, all
+        /// users are allowed to authenticate using the invitation's identifier. This list may contain no more than 1024 items.
+        /// </summary>
+        public List<EntityKey> EntityKeys;
+        /// <summary>
+        /// The invite identifier for this party. If this value is specified, it must be no longer than 127 characters.
+        /// </summary>
+        public string Identifier;
+        /// <summary>
+        /// Controls which participants can revoke this invite.
+        /// </summary>
+        public string Revocability;
+    }
+
+    public enum PartyInvitationRevocability
+    {
+        Creator,
+        Anyone
+    }
+
+    [Serializable]
+    public class PartyNetworkConfiguration : PlayFabBaseModel
+    {
+        /// <summary>
+        /// Controls whether and how to support direct peer-to-peer connection attempts among devices in the network.
+        /// </summary>
+        public string DirectPeerConnectivityOptions;
+        /// <summary>
+        /// The maximum number of devices allowed to connect to the network. Must be between 1 and 32, inclusive.
+        /// </summary>
+        public uint MaxDevices;
+        /// <summary>
+        /// The maximum number of devices allowed per user. Must be greater than 0.
+        /// </summary>
+        public uint MaxDevicesPerUser;
+        /// <summary>
+        /// The maximum number of endpoints allowed per device. Must be between 0 and 32, inclusive.
+        /// </summary>
+        public uint MaxEndpointsPerDevice;
+        /// <summary>
+        /// The maximum number of unique users allowed in the network. Must be greater than 0.
+        /// </summary>
+        public uint MaxUsers;
+        /// <summary>
+        /// The maximum number of users allowed per device. Must be between 1 and 8, inclusive.
+        /// </summary>
+        public uint MaxUsersPerDevice;
+        /// <summary>
+        /// An optionally-specified configuration for the initial invitation for this party. If not provided, default configuration
+        /// values will be used: a title-unique invitation identifier will be generated, the revocability will be Anyone, and the
+        /// EntityID list will be empty.
+        /// </summary>
+        public PartyInvitationConfiguration PartyInvitationConfiguration;
+    }
+
+    [Serializable]
     public class Port : PlayFabBaseModel
     {
         /// <summary>
@@ -4076,6 +4164,50 @@ namespace PlayFab.MultiplayerModels
         /// The virtual machine ID that the multiplayer server is located on.
         /// </summary>
         public string VmId;
+    }
+
+    /// <summary>
+    /// Requests a party session from a particular set of builds if build alias params is provided, in any of the given
+    /// preferred regions.
+    /// </summary>
+    [Serializable]
+    public class RequestPartyServiceRequest : PlayFabRequestCommon
+    {
+        /// <summary>
+        /// The optional custom tags associated with the request (e.g. build number, external trace identifiers, etc.).
+        /// </summary>
+        public Dictionary<string,string> CustomTags;
+        /// <summary>
+        /// The network configuration for this request.
+        /// </summary>
+        public PartyNetworkConfiguration NetworkConfiguration;
+        /// <summary>
+        /// A guid string party ID created track the party session over its life.
+        /// </summary>
+        public string PartyId;
+        /// <summary>
+        /// The preferred regions to request a party session from. The party service will iterate through the regions in the
+        /// specified order and allocate a party session from the first one that is available.
+        /// </summary>
+        public List<string> PreferredRegions;
+    }
+
+    [Serializable]
+    public class RequestPartyServiceResponse : PlayFabResultCommon
+    {
+        /// <summary>
+        /// The invitation identifier supplied in the PartyInvitationConfiguration, or the PlayFab-generated guid if none was
+        /// supplied.
+        /// </summary>
+        public string InvitationId;
+        /// <summary>
+        /// The guid string party ID of the party session.
+        /// </summary>
+        public string PartyId;
+        /// <summary>
+        /// A base-64 encoded string containing the serialized network descriptor for this party.
+        /// </summary>
+        public string SerializedNetworkDescriptor;
     }
 
     /// <summary>
@@ -4748,7 +4880,7 @@ namespace PlayFab.MultiplayerModels
         /// </summary>
         public Dictionary<string,string> CustomTags;
         /// <summary>
-        /// The private key-value pairs which are only visible to members of the lobby. Optional. Sets or updates key-value pairs on
+        /// The private key-value pairs which are visible to all entities in the lobby. Optional. Sets or updates key-value pairs on
         /// the lobby. Only the current lobby owner can set lobby data. Keys may be an arbitrary string of at most 30 characters.
         /// The total size of all lobbyData values may not exceed 4096 bytes. Values are not individually limited. There can be up
         /// to 30 key-value pairs stored here. Keys are case sensitive.
@@ -4771,9 +4903,9 @@ namespace PlayFab.MultiplayerModels
         /// <summary>
         /// The private key-value pairs used by the member to communicate information to other members and the owner. Optional. Sets
         /// or updates new key-value pairs on the caller's member data. New keys will be added with their values and existing keys
-        /// will be updated with the new values. Visible to all members of the lobby. At most 30 key-value pairs may be stored here,
-        /// keys are limited to 30 characters and values to 1000. The total size of all memberData values may not exceed 4096 bytes.
-        /// Keys are case sensitive. Servers cannot specifiy this.
+        /// will be updated with the new values. Visible to all entities in the lobby. At most 30 key-value pairs may be stored
+        /// here, keys are limited to 30 characters and values to 1000. The total size of all memberData values may not exceed 4096
+        /// bytes. Keys are case sensitive. Servers cannot specifiy this.
         /// </summary>
         public Dictionary<string,string> MemberData;
         /// <summary>
@@ -4830,6 +4962,10 @@ namespace PlayFab.MultiplayerModels
         /// The optional custom tags associated with the request (e.g. build number, external trace identifiers, etc.).
         /// </summary>
         public Dictionary<string,string> CustomTags;
+        /// <summary>
+        /// Forces the certificate renewal if the certificate already exists. Default is false
+        /// </summary>
+        public bool? ForceUpdate;
         /// <summary>
         /// The game certificate to upload.
         /// </summary>

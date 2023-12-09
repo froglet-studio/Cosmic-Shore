@@ -30,7 +30,8 @@ namespace CosmicShore.App.Systems.Quests
             Debug.LogWarning($"{nameof(QuestSystem)}.{nameof(CompleteQuest)} - Quest Completed - Shards to issue: {quest.ShardValue}");
 
             // Grant Reward
-            CatalogManager.Instance.GrantVesselKnowledge(quest.ShardValue, ShipTypes.Manta, Element.Space);
+            // TODO: Look for PlayerDataController
+            // CatalogManager.Instance.GrantVesselKnowledge(quest.ShardValue, ShipTypes.Manta, Element.Space);
 
             // Mark Granted
             quest.RewardGranted = true;

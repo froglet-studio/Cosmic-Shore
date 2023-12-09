@@ -1,6 +1,6 @@
 namespace CosmicShore.Integrations.Playfab.Economy
 {
-    public enum VirtualItemContentTypes
+    public enum ContentTypes
     {
         MiniGame,
         ShipClass,

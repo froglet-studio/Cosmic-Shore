@@ -45,11 +45,9 @@ namespace CosmicShore.Integrations.Playfab.Authentication
         /// </summary>
         public void SetPlayerDisplayName(string displayName, Action<UpdateUserTitleDisplayNameResult> callback = null)
         {
-            PlayFabClientAPI.UpdateUserTitleDisplayName(
-                new UpdateUserTitleDisplayNameRequest()
-                {
-                    DisplayName = displayName
-                },
+            var request = new UpdateUserTitleDisplayNameRequest();
+            request.DisplayName = displayName;
+            PlayFabClientAPI.UpdateUserTitleDisplayName(request,
                 (result) =>
                 {
                     Debug.Log($"AuthenticationManager - Successful updated player display name: {PlayerAccount.PlayerDisplayName}");
@@ -72,11 +70,10 @@ namespace CosmicShore.Integrations.Playfab.Authentication
         /// </summary>
         public void LoadPlayerProfile()
         {
-            PlayFabClientAPI.GetPlayerProfile(
-                new GetPlayerProfileRequest()
-                {
-                    PlayFabId = PlayerAccount.PlayFabId
-                }, 
+            var request = new GetPlayerProfileRequest();
+            request.PlayFabId = PlayerAccount.PlayFabId;
+            
+            PlayFabClientAPI.GetPlayerProfile(request, 
                 (result) =>
                 {
                     // The result will get publisher id, title id, player id (also called playfab id in other requests) and display name

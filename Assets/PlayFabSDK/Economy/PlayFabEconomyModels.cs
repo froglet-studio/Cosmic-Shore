@@ -1671,7 +1671,7 @@ namespace PlayFab.EconomyModels
         /// <summary>
         /// The amount of the item.
         /// </summary>
-        public int? Amount;
+        public int Amount;
         /// <summary>
         /// Game specific properties for display purposes. This is an arbitrary JSON blob. The Display Properties field has a 1000
         /// byte limit.
@@ -2104,7 +2104,8 @@ namespace PlayFab.EconomyModels
         /// </summary>
         public EntityKey Entity;
         /// <summary>
-        /// Xbox Token used for delegated business partner authentication.
+        /// Xbox Token used for delegated business partner authentication. Token provided by the Xbox Live SDK method
+        /// GetTokenAndSignatureAsync("POST", "https://playfabapi.com/", "").
         /// </summary>
         public string XboxToken;
     }

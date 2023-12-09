@@ -24,6 +24,7 @@ namespace CosmicShore.App.UI.Menus
         MiniGames SelectedGameMode = MiniGames.BlockBandit;
         ShipTypes SelectedShipType = ShipTypes.Any;
 
+        int _displayCount;
         // Start is called before the first frame update
         void Start()
         {
@@ -32,6 +33,10 @@ namespace CosmicShore.App.UI.Menus
             foreach (var game in GameManager.Instance.AllGames.GameList)
                 if (game.Mode != MiniGames.Freestyle && game.Mode != MiniGames.Elimination)
                     LeaderboardEligibleGames.Add(game);
+
+            var gamesCount = LeaderboardEligibleGames.Count;
+            var containerCount = GameSelectionContainer.childCount;
+            _displayCount = Math.Min(gamesCount, containerCount);
 
             AuthenticationManager.OnProfileLoaded += FetchLeaderboard;
 
@@ -85,7 +90,7 @@ namespace CosmicShore.App.UI.Menus
             Debug.Log($"SelectGame: {index}");
 
             // Deselect them all
-            for (var i = 0; i < LeaderboardEligibleGames.Count; i++)
+            for (var i = 0; i < _displayCount; i++)
                 GameSelectionContainer.GetChild(i).gameObject.GetComponent<Image>().sprite = LeaderboardEligibleGames[i].Icon;
 
             // Select the one
@@ -102,18 +107,27 @@ namespace CosmicShore.App.UI.Menus
                 GameSelectionContainer.GetChild(i).gameObject.SetActive(false);
 
             // Reactivate based on the number of games for the given ship
-            for (var i = 0; i < LeaderboardEligibleGames.Count; i++)
+            for (var i = 0; i < _displayCount; i++)
             {
                 var selectionIndex = i;
                 var game = LeaderboardEligibleGames[i];
                 Debug.Log($"Populating Game Select List: {game.Name}");
 
-                var gameSelection = GameSelectionContainer.GetChild(i).gameObject;
-                gameSelection.SetActive(true);
-                gameSelection.GetComponent<Image>().sprite = game.Icon;
-                gameSelection.GetComponent<Button>().onClick.RemoveAllListeners();
-                gameSelection.GetComponent<Button>().onClick.AddListener(() => SelectGame(selectionIndex));
-                gameSelection.GetComponent<Button>().onClick.AddListener(() => GetComponent<MenuAudio>().PlayAudio());
+                try
+                {
+                    var gameSelection = GameSelectionContainer.GetChild(i).gameObject;
+                    gameSelection.SetActive(true);
+                    gameSelection.GetComponent<Image>().sprite = game.Icon;
+                    gameSelection.GetComponent<Button>().onClick.RemoveAllListeners();
+                    gameSelection.GetComponent<Button>().onClick.AddListener(() => SelectGame(selectionIndex));
+                    gameSelection.GetComponent<Button>().onClick
+                        .AddListener(() => GetComponent<MenuAudio>().PlayAudio());
+                }
+                catch (UnityException outOfBoundException)
+                {
+                    Debug.LogWarningFormat("{0} Leaderboard entries are more than the UI selections can handle, please add more game selections for them./n See error: {1}", nameof(LeaderboardsMenu), outOfBoundException.Message);
+                }
+                
             }
 
             StartCoroutine(SelectGameCoroutine(0));

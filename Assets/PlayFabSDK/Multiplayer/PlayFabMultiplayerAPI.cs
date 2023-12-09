@@ -10,6 +10,8 @@ namespace PlayFab
     /// <summary>
     /// API methods for managing multiplayer servers. API methods for managing parties. The lobby service helps players group
     /// together to play multiplayer games. It is often used as a rendezvous point for players to share connection information.
+    /// The TrueSkill service helps titles to estimate a player's skill based on their match results. The player skill values
+    /// from this service are commonly used by a matchmaking service to provide players with balanced matches.
     /// </summary>
     public static partial class PlayFabMultiplayerAPI
     {
@@ -897,6 +899,19 @@ namespace PlayFab
 
 
             PlayFabHttp.MakeApiCall("/MultiplayerServer/RequestMultiplayerServer", request, AuthType.EntityToken, resultCallback, errorCallback, customData, extraHeaders, context, callSettings);
+        }
+
+        /// <summary>
+        /// Request a party session.
+        /// </summary>
+        public static void RequestPartyService(RequestPartyServiceRequest request, Action<RequestPartyServiceResponse> resultCallback, Action<PlayFabError> errorCallback, object customData = null, Dictionary<string, string> extraHeaders = null)
+        {
+            var context = (request == null ? null : request.AuthenticationContext) ?? PlayFabSettings.staticPlayer;
+            var callSettings = PlayFabSettings.staticSettings;
+            if (!context.IsEntityLoggedIn()) throw new PlayFabException(PlayFabExceptionCode.NotLoggedIn,"Must be logged in to call this method");
+
+
+            PlayFabHttp.MakeApiCall("/Party/RequestPartyService", request, AuthType.EntityToken, resultCallback, errorCallback, customData, extraHeaders, context, callSettings);
         }
 
         /// <summary>
