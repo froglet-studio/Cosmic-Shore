@@ -48,6 +48,7 @@ namespace CosmicShore.Core
         [SerializeField] public List<GameObject> shipGeometries;
 
         [Header("Optional Ship Components")]
+        [SerializeField] Silhouette Silhouette;
         [SerializeField] GameObject AOEPrefab;
         [SerializeField] Skimmer farFieldSkimmer;
 
@@ -177,19 +178,22 @@ namespace CosmicShore.Core
                 foreach (var classAction in ClassResourceActions[key])
                     classAction.Ship = this;
 
-            if (ShipControlActions.ContainsKey(InputEvents.Button1Action))
+            if (!ShipStatus.AutoPilotEnabled)
             {
-                Player.GameCanvas.MiniGameHUD.SetButtonActive(!CheckIfUsingGamepad(), 1);
-            }
+                if (ShipControlActions.ContainsKey(InputEvents.Button1Action))
+                {
+                    Player.GameCanvas.MiniGameHUD.SetButtonActive(!CheckIfUsingGamepad(), 1);
+                }
 
-            if (ShipControlActions.ContainsKey(InputEvents.Button2Action))
-            {
-                Player.GameCanvas.MiniGameHUD.SetButtonActive(!CheckIfUsingGamepad(), 2);
-            }
+                if (ShipControlActions.ContainsKey(InputEvents.Button2Action))
+                {
+                    Player.GameCanvas.MiniGameHUD.SetButtonActive(!CheckIfUsingGamepad(), 2);
+                }
 
-            if (ShipControlActions.ContainsKey(InputEvents.Button3Action))
-            {
-                Player.GameCanvas.MiniGameHUD.SetButtonActive(!CheckIfUsingGamepad(), 3);
+                if (ShipControlActions.ContainsKey(InputEvents.Button3Action))
+                {
+                    Player.GameCanvas.MiniGameHUD.SetButtonActive(!CheckIfUsingGamepad(), 3);
+                }
             }
         }
 
@@ -438,6 +442,11 @@ namespace CosmicShore.Core
         public void SetBlockMaterial(Material material)
         {
             TrailSpawner.SetBlockMaterial(material);
+        }
+
+        public void SetBlockSilhouettePrefab(GameObject prefab)
+        {
+            if (Silhouette) Silhouette.SetBlockPrefab(prefab);
         }
 
         public void SetShieldedBlockMaterial(Material material)

@@ -20,7 +20,7 @@ public class ChargeBoostAction : ShipAction
         if(!TryGetComponent(out shipData))
         {
             Debug.LogWarningFormat("{0} - {1} - {2}", nameof(ChargeBoostAction), nameof(GetShipStatus), "ship status is null, but still trying to get it.");
-            shipData = shipData = ship.GetComponent<ShipStatus>();
+            shipData = ship.GetComponent<ShipStatus>();
         }
     }
 
@@ -55,7 +55,7 @@ public class ChargeBoostAction : ShipAction
     private void StartChargedBoost()
     {
         // if (DischargeBoostCoroutine() == null) return;
-        StartCoroutine(DischargeBoostCoroutine());
+        if (shipData) StartCoroutine(DischargeBoostCoroutine());
     }
 
     IEnumerator DischargeBoostCoroutine()

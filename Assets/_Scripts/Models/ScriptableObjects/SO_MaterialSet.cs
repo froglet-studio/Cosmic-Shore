@@ -10,6 +10,7 @@ public class SO_MaterialSet : ScriptableObject
     [SerializeField] public Material ExplodingBlockMaterial;
     [SerializeField] public Material ShieldedBlockMaterial;
     [SerializeField] public Material DangerousBlockMaterial;
+    [SerializeField] public GameObject BlockSilhouettePrefab;
     [SerializeField] public Material AOEExplosionMaterial;
     [SerializeField] public Material AOEConicExplosionMaterial;
     [SerializeField] public Material SpikeMaterial;

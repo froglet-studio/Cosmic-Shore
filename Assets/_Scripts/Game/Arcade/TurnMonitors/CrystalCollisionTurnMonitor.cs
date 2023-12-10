@@ -6,6 +6,7 @@ namespace CosmicShore.Game.Arcade
     {
         [SerializeField] int CrystalCollisions;
         [SerializeField] MiniGame Game;
+        [SerializeField] bool hostileCollection;
 
         public override bool CheckForEndOfTurn()
         {

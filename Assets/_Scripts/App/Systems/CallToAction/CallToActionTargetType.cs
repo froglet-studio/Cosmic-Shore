@@ -13,6 +13,7 @@ namespace CosmicShore.App.Systems.CTA
 
         // Hangar Related - 300s
         HangarMenu = 300,
+        HangarMenuOverviewButton = 301,
         HangarShipManta = 310,
         HangarShipRhino = 311,
         HangarShipSquirrel = 312,
@@ -20,7 +21,7 @@ namespace CosmicShore.App.Systems.CTA
         // Game Play - 400s
         PlayGameSport = 401,
         PlayGameMission = 402,
-        PlayGameDolphinDarts = 403,
+        PlayGameDarts = 403,
         PlayGameRampage = 404,
         PlayGameElimination = 405,
         PlayGameCosmicDrift = 406,
@@ -30,10 +31,19 @@ namespace CosmicShore.App.Systems.CTA
         PlayGameCellularDuel = 410,
         PlayGameCellularBrawl = 411,
         PlayGameDashAndGrab = 412,
-        PlayGameDriftCourse = 413,
+        PlayGameRiskyDriftness = 413,
         PlayGameDenial = 414,
-
-
+        PlayGameCatNMouse = 415,
+        PlayGameStripNStride = 416,
+        PlayGamePumpNDump = 417,
+        PlayGameMasterExploder = 418,
+        PlayGameSoar = 419,
+        PlayGameObstacleCourse = 420,
+        PlayGameDistraction = 421,
+        PlayGameRhinoRun = 422,
+        PlayGameKickinMass = 423,
+        PlayGameSidewinder = 424,
+        PlayGameMultipass = 425
 
 
         /*********** ADDED BY WILL *************/

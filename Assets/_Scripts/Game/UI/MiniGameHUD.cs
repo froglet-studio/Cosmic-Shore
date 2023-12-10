@@ -13,7 +13,9 @@ namespace CosmicShore.Game.UI
         public Image CountdownDisplay;
         public Button ReadyButton;
         public CountdownTimer CountdownTimer;
-        [SerializeField] GameObject Pip;
+        [SerializeField] GameObject pip;
+        [SerializeField] GameObject silhouette;
+        [SerializeField] GameObject trailDisplay;
         [SerializeField] GameObject button1;
         [SerializeField] GameObject button2;
         [SerializeField] GameObject button3;
@@ -21,8 +23,20 @@ namespace CosmicShore.Game.UI
 
         public void SetPipActive(bool active, bool mirrored)
         {
-            Pip.SetActive(active);
-            Pip.GetComponent<PipUI>().SetMirrored(mirrored);
+            pip.SetActive(active);
+            pip.GetComponent<PipUI>().SetMirrored(mirrored);
+        }
+
+        public GameObject SetSilhouetteActive(bool active)
+        {
+            silhouette.SetActive(active);
+            return silhouette;
+        }
+
+        public GameObject SetTrailDisplayActive(bool active)
+        {
+            trailDisplay.SetActive(active);
+            return trailDisplay;
         }
 
         public void SetButtonActive(bool active, int number)

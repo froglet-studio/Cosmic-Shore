@@ -1,4 +1,3 @@
-using TMPro;
 using UnityEngine;
 
 namespace CosmicShore.Game.Arcade
@@ -6,7 +5,6 @@ namespace CosmicShore.Game.Arcade
     public class TimeBasedTurnMonitor : TurnMonitor
     {
         [SerializeField] float duration;
-        [HideInInspector] public TMP_Text display;
         float elapsedTime;
 
         public override bool CheckForEndOfTurn()
@@ -27,8 +25,8 @@ namespace CosmicShore.Game.Arcade
 
             elapsedTime += Time.deltaTime;
 
-            if (display != null)
-                display.text = ((int)duration - (int)elapsedTime).ToString();
+            if (Display != null)
+                Display.text = ((int)duration - (int)elapsedTime).ToString();
         }
     }
 }

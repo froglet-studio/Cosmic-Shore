@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using UnityEngine.Serialization;
 
 namespace CosmicShore.Integrations.Playfab.Economy
 {
@@ -23,22 +22,29 @@ namespace CosmicShore.Integrations.Playfab.Economy
         /// The client-defined type of the item.
         /// </summary>
         public string ContentType;
+
         /// <summary>
         /// The images associated with this item. Images can be thumbnails or screenshots. Up to 100 images can be added to an item.
         /// Only .png, .jpg, .gif, and .bmp file types can be uploaded
         /// </summary>
         // public List<Image> Images;
+        
+        /// <summary>
+        /// Economy categories in PlayFab, such as Items, Currency, UGC, etc.
+        /// </summary>
+        public string Categories;
+        
         /// <summary>
         /// The item references associated with this item. For example, the items in a Bundle/Store/Subscription. Every item can
         /// have up to 50 item references.
         /// </summary>
         /// // TODO: reconsider including this in VirtualItem
-        /// // TODO: could use an item id list instead of the items?
-        public List<VirtualItem> BundleContents;    
+        /// // TODO: could use an item id list instead of the items? Answer: bundles have their own categories.
+        // public List<VirtualItem> BundleContents;    
         /// <summary>
-        /// The prices the item can be purchased for.
+        /// The prices the item can be purchased for. One item can have multiple price tags (purchasing conditions)
         /// </summary>
-        [FormerlySerializedAs("priceModel")] public ItemPrice price;
+        public List<ItemPrice> Price;
         /// <summary>
         /// The list of tags that are associated with this item. Up to 32 tags can be added to an item.
         /// </summary>
@@ -48,6 +54,7 @@ namespace CosmicShore.Integrations.Playfab.Economy
         /// subscription.
         /// </summary>
         public string Type;
+        // This member goes to Inventory Item, 
         public int Amount;
     }
 }

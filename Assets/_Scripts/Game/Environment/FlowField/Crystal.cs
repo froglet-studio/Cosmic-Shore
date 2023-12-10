@@ -43,7 +43,6 @@ namespace CosmicShore.Environment.FlowField
         protected virtual void Awake()
         {
             collisions = new List<Collider>();
-            
         }
 
         protected virtual void Start()
@@ -71,9 +70,6 @@ namespace CosmicShore.Environment.FlowField
 
         public void PerformCrystalImpactEffects(CrystalProperties crystalProperties, Ship ship)
         {
-            if (StatsManager.Instance != null)
-                StatsManager.Instance.CrystalCollected(ship, crystalProperties);
-
             foreach (CrystalImpactEffects effect in crystalImpactEffects)
             {
                 switch (effect)
@@ -118,6 +114,8 @@ namespace CosmicShore.Environment.FlowField
                             aiPilot.throttle = aiPilot.defaultThrottle;
                         }
                     }
+                    else if (StatsManager.Instance != null)
+                        StatsManager.Instance.CrystalCollected(ship, crystalProperties);
                 }
                 else return;
             }
@@ -136,6 +134,8 @@ namespace CosmicShore.Environment.FlowField
                             aiPilot.throttle = aiPilot.defaultThrottle;
                         }
                     }
+                    else if (StatsManager.Instance != null)
+                        StatsManager.Instance.CrystalCollected(ship, crystalProperties);
                 }
                 else return;
             } 

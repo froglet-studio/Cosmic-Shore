@@ -32,10 +32,11 @@ namespace CosmicShore.Core
         // In order to support the splash screen always showing in the correct orientation, we use this method as a work around.
         // In the build settings, we set orientation to AutoRotate, then lock to LandscapeLeft as the app is launching here.
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSplashScreen)]
-        static void AutoRun()
+
+        /*static void AutoRun()
         {
-            Screen.orientation = ScreenOrientation.LandscapeLeft;
-        }
+            Screen.orientation = ScreenOrientation.LandscapeLeft; //I think this is old code
+        }*/
 
         void Start()
         {

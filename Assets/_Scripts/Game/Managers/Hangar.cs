@@ -43,7 +43,7 @@ namespace CosmicShore.Core.HangerBuilder
         Dictionary<ShipTypes, Ship> shipTypeMap = new();
 
         // HashSet has only one same value in one set
-        [HideInInspector] public HashSet<Transform> SlowedShipTransforms = new();
+        [HideInInspector] public HashSet<Transform> SlowedShipTransforms = new(); // TODO: move to node
 
         [SerializeField] public List<Ship> ShipPrefabs;
 
@@ -139,6 +139,7 @@ namespace CosmicShore.Core.HangerBuilder
 
             ship.SetShipMaterial(TeamMaterialSets[team].ShipMaterial);
             ship.SetBlockMaterial(TeamMaterialSets[team].BlockMaterial);
+            ship.SetBlockSilhouettePrefab(TeamMaterialSets[team].BlockSilhouettePrefab);
             ship.SetShieldedBlockMaterial(TeamMaterialSets[team].ShieldedBlockMaterial);
             ship.SetAOEExplosionMaterial(TeamMaterialSets[team].AOEExplosionMaterial);
             ship.SetAOEConicExplosionMaterial(TeamMaterialSets[team].AOEConicExplosionMaterial);
@@ -194,6 +195,7 @@ namespace CosmicShore.Core.HangerBuilder
                 ship.SetVessel(vessel);
             ship.SetShipMaterial(TeamMaterialSets[team].ShipMaterial);
             ship.SetBlockMaterial(TeamMaterialSets[team].BlockMaterial);
+            ship.SetBlockSilhouettePrefab(TeamMaterialSets[team].BlockSilhouettePrefab);
             ship.SetShieldedBlockMaterial(TeamMaterialSets[team].ShieldedBlockMaterial);
             ship.SetAOEExplosionMaterial(TeamMaterialSets[team].AOEExplosionMaterial);
             ship.SetAOEConicExplosionMaterial(TeamMaterialSets[team].AOEConicExplosionMaterial);
@@ -214,6 +216,11 @@ namespace CosmicShore.Core.HangerBuilder
         public Material GetTeamBlockMaterial(Teams team)
         {
             return TeamMaterialSets[team].BlockMaterial;
+        }
+
+        public GameObject GetTeamBlockSilhouettePrefab(Teams team)
+        {
+            return TeamMaterialSets[team].BlockSilhouettePrefab;
         }
 
         public Material GetTeamCrystalMaterial(Teams team)

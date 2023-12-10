@@ -13,7 +13,8 @@ public enum PositioningScheme
     ToroidSurface = 5,
     Cubic = 6,
     SphereEmanating = 7,
-    StraightLineConstantRotation = 8
+    StraightLineConstantRotation = 8,
+    CylinderSurfaceWithAngle = 9,
 }
 
 public class SegmentSpawner : MonoBehaviour
@@ -30,7 +31,7 @@ public class SegmentSpawner : MonoBehaviour
     List<Trail> trails = new();
     System.Random random = new();
     int spawnedItemCount;
-    public float SphereRadius = 250f;
+    public float Radius = 250f;
     public float StraightLineLength = 400f;
     public float RotationAmount = 10f;
     [HideInInspector] public int DifficultyAngle = 90;
@@ -89,12 +90,12 @@ public class SegmentSpawner : MonoBehaviour
         switch (positioningScheme)
         {
             case PositioningScheme.SphereUniform:
-                spawned.transform.SetPositionAndRotation(Random.insideUnitSphere * SphereRadius + origin + transform.position, Random.rotation);
+                spawned.transform.SetPositionAndRotation(Random.insideUnitSphere * Radius + origin + transform.position, Random.rotation);
                 return;
             case PositioningScheme.SphereSurface:
                 spawned.transform.position = Quaternion.Euler(0, 0, random.Next(spawnedItemCount * (360/ numberOfSegments), spawnedItemCount * (360 / numberOfSegments) + 20)) *
                     (Quaternion.Euler(0, random.Next(Mathf.Max(DifficultyAngle - 20, 40), Mathf.Max(DifficultyAngle + 20, 40)), 0) *
-                    (SphereRadius * Vector3.forward)) + origin + transform.position;
+                    (Radius * Vector3.forward)) + origin + transform.position;
                 spawned.transform.LookAt(Vector3.zero);
                 return;
             case PositioningScheme.ToroidSurface:
@@ -102,7 +103,7 @@ public class SegmentSpawner : MonoBehaviour
                 int toroidDifficultyAngle = 90;
                 spawned.transform.position = Quaternion.Euler(0, 0, random.Next(spawnedItemCount * (360 / numberOfSegments), spawnedItemCount * (360 / numberOfSegments) + 20)) *
                     (Quaternion.Euler(0, random.Next(Mathf.Max(toroidDifficultyAngle - 20, 40), Mathf.Max(toroidDifficultyAngle - 20, 40)), 0) *
-                    (SphereRadius * Vector3.forward)) + origin + transform.position;
+                    (Radius * Vector3.forward)) + origin + transform.position;
                 spawned.transform.LookAt(Vector3.zero);
                 return;
             case PositioningScheme.StraightLineRandomOrientation:
@@ -125,6 +126,13 @@ public class SegmentSpawner : MonoBehaviour
             case PositioningScheme.StraightLineConstantRotation:
                 spawned.transform.position = new Vector3(0, 0, spawnedItemCount * StraightLineLength) + origin + transform.position;
                 spawned.transform.Rotate(Vector3.forward, spawnedItemCount * RotationAmount);
+                return;
+            case PositioningScheme.CylinderSurfaceWithAngle:
+                spawned.transform.position = new Vector3(Radius * Mathf.Sin(spawnedItemCount),
+                                                         Radius * Mathf.Cos(spawnedItemCount),
+                                                         spawnedItemCount * StraightLineLength) + origin + transform.position;
+                spawned.transform.Rotate(Vector3.forward + (((float)random.NextDouble() - .4f) * Vector3.right)
+                                                         + (((float)random.NextDouble() - .4f) * Vector3.up), (float)random.NextDouble() * 180);
                 return;
 
         }

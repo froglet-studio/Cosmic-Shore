@@ -10,12 +10,11 @@ namespace CosmicShore.Game.Projectiles
         //[SerializeField] GameObject CrystalGeometry;
         public bool isplayer = false;
 
-        protected override void Awake()
+        protected override void Start()
         {
-            base.Awake();
+            base.Start();
             if (isplayer) GetComponentInChildren<MeshRenderer>().material = blueCrystalMaterial;
         }
-
 
         protected override void Collide(Collider other)
         {

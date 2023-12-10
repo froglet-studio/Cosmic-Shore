@@ -28,21 +28,18 @@ namespace CosmicShore
             target = null;
             lineRenderer.SetPosition(0, transform.position);
             lineRenderer.enabled = false;
-            if (Hangar.Instance.SlowedShipTransforms.Count > 0)
+            if (Hangar.Instance.SlowedShipTransforms.Count > 0 && Player.ActivePlayer && Player.ActivePlayer.Ship == ship)
             {
                 var distance = float.PositiveInfinity;
                 foreach (var shipTransform in Hangar.Instance.SlowedShipTransforms)
                 {
                     if (shipTransform == transform) continue;
-                    float tempDistance;
-                    if (shipTransform)
+                    float tempDistance;     
+                    tempDistance = (shipTransform.position - transform.position).magnitude;
+                    if (tempDistance < distance)
                     {
-                        tempDistance = (shipTransform.position - transform.position).magnitude;
-                        if (tempDistance < distance)
-                        {
-                            distance = tempDistance;
-                            target = shipTransform;
-                        }
+                        distance = tempDistance;
+                        target = shipTransform;
                     }
                 }
                 if (target != null)

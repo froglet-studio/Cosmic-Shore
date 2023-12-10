@@ -2,7 +2,6 @@ using CosmicShore.Utility.Singleton;
 
 namespace CosmicShore.App.Systems.UserActions
 {
-
     public class UserActionSystem : SingletonPersistent<UserActionSystem>
     {
         public delegate void UserActionCompleted(UserAction action);

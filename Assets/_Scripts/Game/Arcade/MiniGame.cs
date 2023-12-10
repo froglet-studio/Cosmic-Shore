@@ -80,11 +80,15 @@ namespace CosmicShore.Game.Arcade
             ReadyButton = HUD.ReadyButton;
             countdownTimer = HUD.CountdownTimer;
             ScoreTracker.GameCanvas = GameCanvas;
+    
+
             foreach (var turnMonitor in TurnMonitors)
                 if (turnMonitor is TimeBasedTurnMonitor tbtMonitor)
-                    tbtMonitor.display = HUD.RoundTimeDisplay;
-                else if (turnMonitor is HostileVolumeCreatedTurnMonitor hvtMonitor) // TODO: consolidate with above
-                    hvtMonitor.display = HUD.RoundTimeDisplay;
+                    tbtMonitor.Display = HUD.RoundTimeDisplay;
+                else if (turnMonitor is VolumeCreatedTurnMonitor hvtMonitor) // TODO: consolidate with above
+                    hvtMonitor.Display = HUD.RoundTimeDisplay;
+                else if (turnMonitor is ShipCollisionTurnMonitor scMonitor) // TODO: consolidate with above
+                    scMonitor.Display = HUD.RoundTimeDisplay;
 
             GameManager.UnPauseGame();
         }
@@ -214,6 +218,9 @@ namespace CosmicShore.Game.Arcade
 
         protected virtual void EndTurn()
         {
+            Silhouette silhouette;
+            Player.ActivePlayer.Ship.TryGetComponent<Silhouette>(out silhouette);
+            silhouette.Clear();
             StartCoroutine(EndTurnCoroutine());
         }
 
@@ -311,6 +318,8 @@ namespace CosmicShore.Game.Arcade
                 Debug.Log($"PlayerUUID: {player.PlayerUUID}");
                 player.gameObject.SetActive(player.PlayerUUID == ActivePlayer.PlayerUUID);
             }
+
+            Player.ActivePlayer = ActivePlayer;
         }
 
         protected virtual void SetupTurn()

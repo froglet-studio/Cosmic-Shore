@@ -18,6 +18,7 @@ namespace CosmicShore.Core
         public float friendlyVolumeDestroyed;
         public float hostileVolumeDestroyed;
         public int crystalsCollected;
+        public int skimmerShipCollisions;
         public float fullSpeedStraightAbilityActiveTime;
         public float rightStickAbilityActiveTime;
         public float leftStickAbilityActiveTime;
@@ -25,6 +26,7 @@ namespace CosmicShore.Core
         public float button1AbilityActiveTime;
         public float button2AbilityActiveTime;
         public float button3AbilityActiveTime;
+        
 
         public RoundStats(bool dummy = false)
         {
@@ -43,6 +45,7 @@ namespace CosmicShore.Core
             friendlyVolumeDestroyed = 0;
             hostileVolumeDestroyed = 0;
             crystalsCollected = 0;
+            skimmerShipCollisions = 0;
             fullSpeedStraightAbilityActiveTime = 0;
             rightStickAbilityActiveTime = 0;
             leftStickAbilityActiveTime = 0;

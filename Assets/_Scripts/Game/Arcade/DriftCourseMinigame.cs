@@ -28,7 +28,7 @@ namespace CosmicShore.Game.Arcade
         {
             base.SetupTurn();
 
-            SegmentSpawner.SphereRadius = maxSphereRadius * IntensityLevel;
+            SegmentSpawner.Radius = maxSphereRadius * IntensityLevel;
             spawnableEllipsoid.maxlength = spawnableEllipsoid.maxwidth = spawnableEllipsoid.maxheight = maxSize * IntensityLevel / maxDifficulty;
 
 

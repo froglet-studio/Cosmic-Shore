@@ -1144,6 +1144,8 @@ MonoBehaviour:
   ElevatedAmmoGain: 0
   ChargedBoostCharge: 1
   AutoPilotEnabled: 0
+  AlignmentEnabled: 0
+  Slowed: 0
   Attached: 0
   AttachedTrailBlock: {fileID: 0}
   GunsActive: 0
@@ -1194,6 +1196,7 @@ MonoBehaviour:
   initialWavelength: 13
   minWavelength: 11
   Gap: 17
+  MinimumGap: 1
   TargetScale: {x: 0, y: 0, z: 0}
   defaultWaitTime: 1
   waitTime: 0.5
@@ -1218,10 +1221,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 737294a573670f74389a7af68df314d5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  usesBoost: 0
+  displayBoost: 0
   initialBoost: 1
   maxBoost: 1
-  usesAmmo: 1
+  displayAmmo: 1
   gainsAmmo: 1
   ammoGainRate:
     Value: 0.02
@@ -1230,7 +1233,7 @@ MonoBehaviour:
     element: 0
   initialAmmo: 1
   maxAmmo: 1
-  usesEnergy: 1
+  displayEnergy: 1
   maxEnergy: 1
   initialEnergy: 0.01
   ChargeDisplay: {fileID: 0}

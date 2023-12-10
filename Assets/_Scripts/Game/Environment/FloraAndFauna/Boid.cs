@@ -77,7 +77,6 @@ public class Boid : MonoBehaviour
         var boidsInVicinity = Physics.OverlapSphere(transform.position, cohesionRadius);
         var ColliderCount = boidsInVicinity.Length;
         //var ColliderCount = Physics.OverlapSphereNonAlloc(transform.position, cohesionRadius, boidsInVicinity, LayerMask.NameToLayer("TrailBlocks"));
-        Debug.Log($"Boid: ColliderCount {ColliderCount}");
         for (int i = 0; i < ColliderCount; i++)
         {
             Collider collider = boidsInVicinity[i];
