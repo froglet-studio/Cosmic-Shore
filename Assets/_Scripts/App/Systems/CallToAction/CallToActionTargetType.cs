@@ -9,6 +9,7 @@ namespace CosmicShore.App.Systems.CTA
 
         // Store Related - 200s
         StoreMenu = 200,
+        ClickDailyReward = 201,
 
         // Hangar Related - 300s
         HangarMenu = 300,
