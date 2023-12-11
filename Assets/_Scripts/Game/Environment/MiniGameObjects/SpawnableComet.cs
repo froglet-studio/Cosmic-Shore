@@ -18,8 +18,11 @@ namespace CosmicShore
         #region Attributes for Explosion Parameters
         [Header("Block Parameters")]
         [SerializeField] int blockCount = 8;
-        [SerializeField] int ringCount = 3;
-        [SerializeField] float radius = 30f;
+
+        [SerializeField] int ringCountHead = 4;
+        [SerializeField] int ringCountTail = 9;
+        [SerializeField] float headRadius = 30; //y scaler
+        [SerializeField] float tailLength = 60f; //x scaler
         [SerializeField] Vector3 blockScale = Vector3.one;
         [SerializeField] Vector3 Orgin;
         #endregion
@@ -29,43 +32,47 @@ namespace CosmicShore
             GameObject container = new GameObject();
             container.name = "COMET" + CometsSpawned++;
 
+            
+
             var trail = new Trail();
             var position = new Vector3(Orgin.x, Orgin.y, Orgin.z);
 
-            for (int ring = 0; ring < ringCount; ring++)
+            //Head
+            for (int ring = 0; ring < ringCountHead; ring++) //ring = X value
             {
                 trails.Add(new Trail());
 
                 // Creates increasing hemisphere
                 for (int block = 0; block < blockCount; block++)
                 {
-                    CreateRingBlock(block, ring % 2 * 0.5f, ring / 2f + 1f, ring, -ring / 2f, trails[ring], container);
+                    float scale = Mathf.Sqrt(Mathf.Pow(headRadius, 2) - Mathf.Pow(ring, 2));   //y = sqrt(R^2 -X^2) scales the ring radius
+                    CreateRingBlock(block, ring % 2 * 0.5f, scale, ring, ring * headRadius/ringCountHead , trails[ring], container);
                 }
-                // Creates decreasing hemisphere  //TODO
-                for (int block = blockCount; block > blockCount; block--)
-                {
-                    CreateRingBlock(block, ring % 2 * 0.5f, ring / 2f + 1f, ring, -ring / 2f, trails[ring], container);
-                }
-                // Creates decreasing cone and  trail of the comet //TODO
-                CreateCone();
-  
             }
+            //Tail
+            for (int ring = ringCountHead; ring < ringCountTail; ring++) //ring = X value
+            {
+                trails.Add(new Trail());
 
+                // Creates increasing hemisphere
+                for (int block = 0; block < blockCount; block++)
+                {
+                    float scale = ring / 2f + 1f;
+
+                    CreateRingBlock(block, ring % 2 * 0.5f, scale, ring, ring * tailLength/ringCountTail + headRadius, trails[ring], container);
+                }
+            }
             return container;
         }
 
-        private void CreateCone()
+        //Phase (0-.5) offsets everyother ring
+        private void CreateRingBlock(int block, float phase, float scale, float tilt, float distanceTowardTail, Trail trail, GameObject container)
         {
-            throw new NotImplementedException();
-        }
+            var offset = scale * Mathf.Cos(((block + phase) / blockCount) * 2 * Mathf.PI) * transform.right +
+                         scale * Mathf.Sin(((block + phase) / blockCount) * 2 * Mathf.PI) * transform.up +
+                         distanceTowardTail * -transform.forward;
 
-        private void CreateRingBlock(int block, float phase, float scale, float tilt, float sweep, Trail trail, GameObject container)
-        {
-            var forwardDirection = transform.forward;
-            var offset = scale * radius * Mathf.Cos(((block + phase) / blockCount) * 2 * Mathf.PI) * transform.right +
-                         scale * radius * Mathf.Sin(((block + phase) / blockCount) * 2 * Mathf.PI) * transform.up +
-                         sweep * radius * forwardDirection;
-            CreateBlock(transform.position + offset, offset + tilt * radius * forwardDirection, forwardDirection, container.name + "::BLOCK::" + block, trail, blockScale, trailBlock, container);
+            CreateBlock(transform.position + offset, offset + tilt * headRadius * transform.forward, transform.forward, container.name + "::BLOCK::" + block, trail, blockScale, trailBlock, container);
         }
         void CreateBlock(Vector3 position, Vector3 lookPosition, Vector3 up, string blockId, Trail trail, Vector3 scale, TrailBlock trailBlock, GameObject container, Teams team = Teams.Blue)
         {
@@ -79,6 +86,8 @@ namespace CosmicShore
             Block.Trail = trail;
             trail.Add(Block);
         }
+
+        
 
     }
 }
