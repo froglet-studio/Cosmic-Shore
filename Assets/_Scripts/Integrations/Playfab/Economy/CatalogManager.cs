@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using CosmicShore.Integrations.Playfab.Authentication;
-using JetBrains.Annotations;
 using PlayFab;
 using PlayFab.EconomyModels;
 using CosmicShore.Utility.Singleton;
@@ -19,14 +18,14 @@ namespace CosmicShore.Integrations.Playfab.Economy
         static PlayFabEconomyInstanceAPI _playFabEconomyInstanceAPI;
 
         // Player inventory and items
-        public static InventoryModel Catalog;
-        private static InventoryModel _playerInventory; 
-        private static string _shardId;
+        public static StoreShelve StoreShelve;
+        private static Inventory _playerInventory; 
+        // private static string _shardId;
 
         // Bootstrap the whole thing
         public void Start()
         {
-            _playerInventory ??= new InventoryModel();
+            _playerInventory ??= new Inventory();
             AuthenticationManager.OnLoginSuccess += InitializePlayFabEconomyAPI;
             AuthenticationManager.OnLoginSuccess += LoadAllCatalogItems;
             AuthenticationManager.OnLoginSuccess += LoadPlayerInventory;
@@ -56,7 +55,7 @@ namespace CosmicShore.Integrations.Playfab.Economy
             }
             // Null check for PlayFab Economy API instance
             _playFabEconomyInstanceAPI??= new PlayFabEconomyInstanceAPI(AuthenticationManager.PlayerAccount.AuthContext);
-            Debug.LogFormat("{0} - {1}: PlayFab Economy API initialized.", nameof(CatalogManager), nameof(OnLoadingCatalogItems));
+            Debug.LogFormat("{0} - {1}: PlayFab Economy API initialized.", nameof(CatalogManager), nameof(InitializePlayFabEconomyAPI));
         }
 
         #endregion
@@ -79,11 +78,10 @@ namespace CosmicShore.Integrations.Playfab.Economy
         /// </summary>
         public void LoadCatalogItems(string filter = "")
         {
-            _playFabEconomyInstanceAPI.SearchItems(
-                new()
-                {
-                    Filter = filter
-                },
+            var request = new SearchItemsRequest();
+            request.Filter = filter;
+            
+            _playFabEconomyInstanceAPI.SearchItems(request,
                 OnLoadingCatalogItems,
                 HandleErrorReport
             );
@@ -104,19 +102,16 @@ namespace CosmicShore.Integrations.Playfab.Economy
 
             if (response.Items.Count == 0)
             {
-                Debug.LogWarningFormat("{0} - {1}: No catalog items are available.", nameof(CatalogManager), nameof(OnLoadingCatalogItems));
+                Debug.LogWarningFormat("{0} - {1}: No store items are available. Please check out PlayFab dashboard to fillout store items", nameof(CatalogManager), nameof(OnLoadingCatalogItems));
                 return;
             }
             
             Debug.LogFormat("{0} - {1}: Catalog items Loaded.", nameof(CatalogManager), nameof(OnLoadingCatalogItems));
-            Catalog = new()
+            StoreShelve = new()
             {
-                VesselKnowledge = new(),
-                VesselUpgrades = new(),
+                Crystals = new(),
                 Ships = new(),
-                Vessels = new(),
-                MiniGames = new(),
-                Crystals = new()
+                MiniGames = new()
             };
 
             foreach (var item in response.Items)
@@ -125,44 +120,31 @@ namespace CosmicShore.Integrations.Playfab.Economy
                 Debug.LogFormat("   CatalogManager - tags: {0}", string.Join(",", item.Tags));
                 Debug.LogFormat("   CatalogManager - Type: {0}", item.Type);
                 Debug.LogFormat("   CatalogManager - ContentType: {0}", item.ContentType);
-                var converted = PlayFabToCosmicShoreVirtualItem(item);
-                AddToInventory(item.ContentType, converted);
+                var converted = ConvertToStoreItem(item);
+                AddToStoreShelve(item.ContentType, converted);
             }
         }
 
-        private void AddToInventory(string contentType, VirtualItem item)
+        private void AddToStoreShelve(string contentType, VirtualItem item)
         {
             switch (contentType)
             {
-                case "Vessel":
-                    Debug.LogFormat("{0} - {1} - Adding Vessel",nameof(CatalogManager), nameof(AddToInventory));
-                    Catalog.Vessels.Add(item);
+                case "Crystal":
+                    StoreShelve.Crystals.Add(item);
                     break;
-                case "ShipClass":
-                    Debug.LogFormat("{0} - {1} - Adding Ship",nameof(CatalogManager), nameof(AddToInventory));
-                    Catalog.Ships.Add(item);
-                    break;
-                case "VesselKnowledge":
-                    Debug.LogFormat("{0} - {1} - Adding VesselKnowledge",nameof(CatalogManager), nameof(AddToInventory));
-                    Catalog.VesselKnowledge.Add(item);
-                    break;
-                case "VesselUpgrade":
-                    Debug.LogFormat("{0} - {1} - Adding Upgrade",nameof(CatalogManager), nameof(AddToInventory));
-                    Catalog.VesselUpgrades.Add(item);
+                case "Ship":
+                    StoreShelve.Ships.Add(item);
                     break;
                 case "MiniGame":
-                    Debug.LogFormat("{0} - {1} - Adding MiniGame",nameof(CatalogManager), nameof(AddToInventory));
-                    Catalog.MiniGames.Add(item);
-                    break;
-                case "Crystal":
-                    Debug.LogFormat("{0} - {1} - Adding Crystal",nameof(CatalogManager), nameof(AddToInventory));
-                    Catalog.Crystals.Add(item);
+                    StoreShelve.MiniGames.Add(item);
                     break;
                 default:
-                    Debug.LogWarningFormat("{0} - {1} - {2} Item Content Type not related to player inventory items, such as Stores and Subscriptions.", nameof(CatalogManager), nameof(AddToInventory), contentType);
+                    Debug.LogWarningFormat("CatalogManager - AddToStoreSelves: item content type is not part of the store.");
                     break;
             }
         }
+
+        
 
         #endregion
 
@@ -170,44 +152,41 @@ namespace CosmicShore.Integrations.Playfab.Economy
         /// <summary>
         /// Grant Vessel Knowledge
         /// </summary>
-        public void GrantVesselKnowledge(int amount, ShipTypes shipClass, Element element)
-        {
-            string shardItemId = "";
-            Debug.Log($"vessel Knowledge Length: {Catalog.VesselKnowledge.Count}");
-            foreach (var vesselKnowledge in Catalog.VesselKnowledge)
-            {
-                Debug.Log($"Next Vessel: {vesselKnowledge.Name}");
-                foreach (var tag in vesselKnowledge.Tags)
-                    Debug.Log($"vessel Knowledge Tags: {tag}");
-
-                if (vesselKnowledge.Tags.Contains(shipClass.ToString()) && vesselKnowledge.Tags.Contains(element.ToString()))
-                {
-                    Debug.Log($"Found matching Vessel Shard");
-                    shardItemId = vesselKnowledge.ItemId;
-                    break;
-                }
-            }
-
-            if (string.IsNullOrEmpty(shardItemId))
-            {
-                Debug.LogError($"{nameof(CatalogManager)}.{nameof(GrantVesselKnowledge)} - Error Granting Shards. No matching vessel shard found in catalog - shipClass:{shipClass}, element:{element}");
-                return;
-            }
-
-            _playFabEconomyInstanceAPI.AddInventoryItems(
-                new AddInventoryItemsRequest()
-                {
-                    // AuthenticationContext = AccountManager.AuthenticationContext,
-                    Amount = amount,
-                    Item = new InventoryItemReference
-                    {
-                        Id = shardItemId
-                    }
-                },
-                OnGrantShards,
-                HandleErrorReport
-            );
-        }
+        // TODO: vessel knowledge is now part of player data, not a store item. Should re-wire the API calls from PlayerDataController.
+        // public void GrantVesselKnowledge(int amount, ShipTypes shipClass, Element element)
+        // {
+        //     string shardItemId = "";
+        //     Debug.Log($"vessel Knowledge Length: {Catalog.VesselKnowledge.Count}");
+        //     foreach (var vesselKnowledge in Catalog.VesselKnowledge)
+        //     {
+        //         Debug.Log($"Next Vessel: {vesselKnowledge.Name}");
+        //         foreach (var tag in vesselKnowledge.Tags)
+        //             Debug.Log($"vessel Knowledge Tags: {tag}");
+        //
+        //         if (vesselKnowledge.Tags.Contains(shipClass.ToString()) && vesselKnowledge.Tags.Contains(element.ToString()))
+        //         {
+        //             Debug.Log($"Found matching Vessel Shard");
+        //             shardItemId = vesselKnowledge.ItemId;
+        //             break;
+        //         }
+        //     }
+        //
+        //     if (string.IsNullOrEmpty(shardItemId))
+        //     {
+        //         Debug.LogError($"{nameof(CatalogManager)}.{nameof(GrantVesselKnowledge)} - Error Granting Shards. No matching vessel shard found in catalog - shipClass:{shipClass}, element:{element}");
+        //         return;
+        //     }
+        //
+        //     var request = new AddInventoryItemsRequest();
+        //     request.Amount = amount;
+        //     request.Item = new InventoryItemReference() { Id = shardItemId };
+        //     
+        //     _playFabEconomyInstanceAPI.AddInventoryItems(
+        //         request,
+        //         OnGrantShards,
+        //         HandleErrorReport
+        //     );
+        // }
 
         /// <summary>
         /// On Grant Shards
@@ -228,21 +207,17 @@ namespace CosmicShore.Integrations.Playfab.Economy
         /// Grant Starting Inventory
         /// </summary>
         /// <param name="startingItems">Starting Items List</param>
-        public void GrantStartingInventory(in List<VirtualItem> startingItems)
+        public void GrantStartingInventory(List<VirtualItem> startingItems)
         {
+            var request = new AddInventoryItemsRequest();
             // const int amount = 100;
             foreach (var virtualItem in startingItems)
             {
+                request.Item = new() { Id = virtualItem.ItemId };
+                request.Amount = virtualItem.Amount;
+                
                 _playFabEconomyInstanceAPI.AddInventoryItems(
-                    new AddInventoryItemsRequest()
-                    {
-                        // AuthenticationContext = AccountManager.AuthenticationContext,
-                        Amount = virtualItem.Amount,
-                        Item = new InventoryItemReference
-                        {
-                            Id = virtualItem.ItemId
-                        }
-                    },
+                    request,
                     OnGrantStartingInventory,
                     HandleErrorReport
                 );
@@ -271,10 +246,10 @@ namespace CosmicShore.Integrations.Playfab.Economy
         /// </summary>
         public void LoadPlayerInventory()
         {
+            var request = new GetInventoryItemsRequest();
+            
             _playFabEconomyInstanceAPI.GetInventoryItems(
-                new GetInventoryItemsRequest
-                {
-                },
+                request,
                 OnGettingInventoryItems,
                 HandleErrorReport
             );
@@ -296,7 +271,41 @@ namespace CosmicShore.Integrations.Playfab.Economy
 
             foreach (var item in response.Items)
             {
-                Debug.LogFormat("{0} - {1}: id: {2} amount: {3} content type: {4} loaded.", nameof(CatalogManager), nameof(OnGettingInventoryItems), item.Id, item.Amount.ToString(), item.Type);
+                Debug.LogFormat("{0} - {1}: id: {2} amount: {3} content type: {4} loaded.", 
+                    nameof(CatalogManager), 
+                    nameof(OnGettingInventoryItems), 
+                    item.Id, item.Amount.ToString(), item.Type);
+                var virtualItem = ConvertToInventoryItem(item);
+            }
+        }
+        
+        private void AddToInventory(string contentType, VirtualItem item)
+        {
+            switch (contentType)
+            {
+                case "Vessel":
+                    Debug.LogFormat("{0} - {1} - Adding Vessel",nameof(CatalogManager), nameof(AddToInventory));
+                    _playerInventory.Vessels.Add(item);
+                    break;
+                case "ShipClass":
+                    Debug.LogFormat("{0} - {1} - Adding Ship",nameof(CatalogManager), nameof(AddToInventory));
+                    _playerInventory.Ships.Add(item);
+                    break;
+                case "VesselUpgrade":
+                    Debug.LogFormat("{0} - {1} - Adding Upgrade",nameof(CatalogManager), nameof(AddToInventory));
+                    _playerInventory.VesselUpgrades.Add(item);
+                    break;
+                case "MiniGame":
+                    Debug.LogFormat("{0} - {1} - Adding MiniGame",nameof(CatalogManager), nameof(AddToInventory));
+                    _playerInventory.MiniGames.Add(item);
+                    break;
+                case "Crystal":
+                    Debug.LogFormat("{0} - {1} - Adding Crystal",nameof(CatalogManager), nameof(AddToInventory));
+                    _playerInventory.Crystals.Add(item);
+                    break;
+                default:
+                    Debug.LogWarningFormat("{0} - {1} - {2} Item Content Type not related to player inventory items, such as Stores and Subscriptions.", nameof(CatalogManager), nameof(AddToInventory), contentType);
+                    break;
             }
         }
 
@@ -306,11 +315,10 @@ namespace CosmicShore.Integrations.Playfab.Economy
         /// <param name="virtualItem"></param>
         public void GetCatalogItem(VirtualItem virtualItem)
         {
+            var request = new GetItemRequest();
+            
             _playFabEconomyInstanceAPI.GetItem(
-                new GetItemRequest()
-                {
-                    Id = virtualItem.ItemId
-                },
+                request,
                 OnGettingCatalogItem,
                 HandleErrorReport
             );
@@ -348,27 +356,26 @@ namespace CosmicShore.Integrations.Playfab.Economy
         /// Add shinny new stuff! Any type of item from currency to vessel and ship upgrades
         /// </summary>
         //public void AddInventoryItem([NotNull] InventoryItemReference itemReference, int amount)
-        public void AddInventoryItem([NotNull] VirtualItem virtualItem)
+        public void AddInventoryItem(VirtualItem virtualItem)
         {
+            var request = new AddInventoryItemsRequest();
+            request.Item = new() { Id = virtualItem.ItemId };
+            
             _playFabEconomyInstanceAPI.AddInventoryItems(
-                new AddInventoryItemsRequest()
-                {
-                    Item = new InventoryItemReference() { Id = virtualItem.ItemId },
-                    Amount = virtualItem.Amount
-                }, (result) =>
-                {
-                    if(result == null)
-                    {
-                        Debug.LogWarningFormat("{0} - {1}: no result.", nameof(CatalogManager), nameof(AddInventoryItem));
-                        return;
-                    }
+                request,
+                OnAddingInventoryItem, 
+                HandleErrorReport);
+        }
 
-                    Debug.LogFormat("{0} - {1}: item added to player inventory.", nameof(CatalogManager), nameof(AddInventoryItem));
-                    // Etag can be used for multiple sources or users to modify the same item simultaneously without conflict
-                    // Debug.Log($"{name} - add inventory item etag: {result.ETag}");
-                    // Debug.Log($"{name} - add inventory item idempotency id: {result.IdempotencyId}");
-                }, HandleErrorReport
-            );
+        private void OnAddingInventoryItem(AddInventoryItemsResponse response)
+        {
+            if(response == null)
+            {
+                Debug.LogWarningFormat("{0} - {1}: no result.", nameof(CatalogManager), nameof(AddInventoryItem));
+                return;
+            }
+
+            Debug.LogFormat("{0} - {1}: item added to player inventory.", nameof(CatalogManager), nameof(AddInventoryItem));
         }
 
         /// <summary>
@@ -377,11 +384,12 @@ namespace CosmicShore.Integrations.Playfab.Economy
         /// <param name="collectionId">Collection Id</param>
         public void DeleteInventoryCollection(string collectionId)
         {
+            var request = new DeleteInventoryCollectionRequest();
+            request.CollectionId = collectionId;
+            
             _playFabEconomyInstanceAPI.DeleteInventoryCollection(
-                new DeleteInventoryCollectionRequest()
-                {
-                    CollectionId = collectionId
-                }, (response) =>
+                request, 
+                (response) =>
                 {
                     if (response == null)
                     {
@@ -402,26 +410,29 @@ namespace CosmicShore.Integrations.Playfab.Economy
             //Get Inventory Collection Ids. Up to 50 Ids can be returned at once.
             //You can use continuation tokens to paginate through results that return greater than the limit.
             //It can take a few seconds for new collection Ids to show up.
-            _playFabEconomyInstanceAPI.GetInventoryCollectionIds(
-                new GetInventoryCollectionIdsRequest()
-                {
-                }, (response) =>
-                {
-                    if (response == null)
-                    {
-                        Debug.LogWarningFormat("{0} - {1} No responses.", nameof(CatalogManager), nameof(GetInventoryCollectionIds));
-                        return;
-                    }
 
-                    if (response.CollectionIds == null)
-                    {
-                        Debug.LogWarningFormat("{0} - {1} No inventory collection ids returned.", nameof(CatalogManager), nameof(GetInventoryCollectionIds));
-                        return;
-                    }
-                    OnGettingInvCollectionIds?.Invoke(response.CollectionIds);
-                },
+            var request = new GetInventoryCollectionIdsRequest();
+            _playFabEconomyInstanceAPI.GetInventoryCollectionIds(
+                request,
+                OnGettingInventoryCollectionIds,
                 HandleErrorReport
                 );
+        }
+
+        private void OnGettingInventoryCollectionIds(GetInventoryCollectionIdsResponse response)
+        {
+            if (response == null)
+            {
+                Debug.LogWarningFormat("{0} - {1} No responses.", nameof(CatalogManager), nameof(GetInventoryCollectionIds));
+                return;
+            }
+
+            if (response.CollectionIds == null)
+            {
+                Debug.LogWarningFormat("{0} - {1} No inventory collection ids returned.", nameof(CatalogManager), nameof(GetInventoryCollectionIds));
+                return;
+            }
+            OnGettingInvCollectionIds?.Invoke(response.CollectionIds);
         }
         
     
@@ -433,7 +444,7 @@ namespace CosmicShore.Integrations.Playfab.Economy
         /// Purchase Item
         /// Buy in-game item with virtual currency (Shards, Crystals)
         /// </summary>
-        public void PurchaseItem([NotNull] VirtualItem item, [NotNull] ItemPrice price)
+        public void PurchaseItem(VirtualItem item, ItemPrice price)
         {
             // The currency calculation for currency should be done before passing item and price to purchase inventory item API, otherwise it will get "Invalid Request" error.
             _playFabEconomyInstanceAPI.PurchaseInventoryItems(
@@ -472,7 +483,7 @@ namespace CosmicShore.Integrations.Playfab.Economy
             return itemPrice;
         }
         
-        VirtualItem PlayFabToCosmicShoreVirtualItem(CatalogItem catalogItem)
+        VirtualItem ConvertToStoreItem(CatalogItem catalogItem)
         {
             VirtualItem virtualItem = new();
             virtualItem.ItemId = catalogItem.Id;
@@ -485,6 +496,16 @@ namespace CosmicShore.Integrations.Playfab.Economy
             virtualItem.Tags = catalogItem.Tags;
             virtualItem.Type = catalogItem.Type;
             //virtualItem.Amount = catalogItem.PriceOptions.Prices[0].Amounts[0].
+            return virtualItem;
+        }
+
+        VirtualItem ConvertToInventoryItem(InventoryItem item)
+        {
+            var virtualItem = new VirtualItem();
+            virtualItem.ItemId = item.Id;
+            virtualItem.Type = item.Type;
+            virtualItem.Amount = item.Amount;
+
             return virtualItem;
         }
         #endregion

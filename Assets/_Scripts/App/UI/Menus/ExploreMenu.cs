@@ -60,6 +60,7 @@ namespace CosmicShore.App.UI.Menus
         void PopulateGameSelectionList()
         {
             GameCards = new List<GameCard>();
+            CallToActionTarget target;
 
             // Deactivate all game cards and add them to the list of game cards
             for (var i = 0; i < GameSelectionGrid.transform.childCount; i++)
@@ -72,11 +73,11 @@ namespace CosmicShore.App.UI.Menus
                 }
             }
 
-            for (var i = 0; i < GameList.GameList.Count; i++)
+            for (var i = 0; i < GameCards.Count; i++)
             {
                 var selectionIndex = i;
                 var game = GameList.GameList[i];
-
+                
                 Debug.Log($"ExploreMenu - Populating Game Select List: {game.Name}");
 
                 var gameCard = GameCards[i];
@@ -85,7 +86,18 @@ namespace CosmicShore.App.UI.Menus
                 gameCard.GetComponent<Button>().onClick.RemoveAllListeners();
                 gameCard.GetComponent<Button>().onClick.AddListener(() => SelectGame(selectionIndex));
                 gameCard.GetComponent<Button>().onClick.AddListener(() => GameSelectionGrid.GetComponent<MenuAudio>().PlayAudio());
-                gameCard.GetComponent<CallToActionTarget>().TargetID = game.CallToActionTargetType;
+                
+                // gameCard.GetComponent<CallToActionTarget>().TargetID = game.CallToActionTargetType;
+                if (TryGetComponent(out target))
+                {
+                    target.TargetID = game.CallToActionTargetType;
+                }
+                else
+                {
+                    Debug.LogWarningFormat("{0} - The {1} game card does not have Call To Action Target Component. Please attach it.", 
+                        nameof(ExploreMenu), game.CallToActionTargetType.ToString());
+                }
+                
                 gameCard.gameObject.SetActive(true);
             }
 

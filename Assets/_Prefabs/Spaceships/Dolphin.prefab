@@ -600,7 +600,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 0c28a7fbd94282c4c8142dc0445618d2, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 8f9c1a5d63a68aa4d9d102b73ab648fe, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -1529,7 +1529,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: da9fb6a6f80b41b47b08c2ac9cb49113, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 49baf0e8b39131c4d85b0498069e73fa, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -2036,7 +2036,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 9f7d27dbc8221ba4abace5499dd2aa4e, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 26844ded430fb694baa7b1c0a7351b98, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -2124,6 +2124,7 @@ MonoBehaviour:
   - {fileID: 5739256229450364055}
   - {fileID: 4111049083201334103}
   - {fileID: 4175282931251547525}
+  Silhouette: {fileID: 6959572785868932314}
   AOEPrefab: {fileID: 9218889541719856748, guid: 2ae56847c6f549948a71f41eaf59f749,
     type: 3}
   farFieldSkimmer: {fileID: 0}
@@ -2265,10 +2266,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 737294a573670f74389a7af68df314d5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  usesBoost: 1
+  displayBoost: 1
   initialBoost: 0
   maxBoost: 1
-  usesAmmo: 1
+  displayAmmo: 0
   gainsAmmo: 0
   ammoGainRate:
     Value: 0.1
@@ -2277,7 +2278,7 @@ MonoBehaviour:
     element: 1
   initialAmmo: 0
   maxAmmo: 1
-  usesEnergy: 0
+  displayEnergy: 0
   maxEnergy: 1
   initialEnergy: 1
   ChargeDisplay: {fileID: 0}
@@ -2382,10 +2383,10 @@ MonoBehaviour:
   - {fileID: 6342508168091891684}
   - {fileID: 4573856470754406349}
   - {fileID: 2109664493357155099}
+  trailSpawner: {fileID: 874579555101021522}
   driftTrailAction: {fileID: 3521154205896523080}
-  TopJaw: {fileID: 4573856470754406349}
-  BottomJaw: {fileID: 2109664493357155099}
-  block: {fileID: 0}
+  topJaw: {fileID: 4573856470754406349}
+  bottomJaw: {fileID: 2109664493357155099}
   ship: {fileID: 874579555101021527}
 --- !u!1 &6999220331312364478
 GameObject:

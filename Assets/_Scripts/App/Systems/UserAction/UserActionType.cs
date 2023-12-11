@@ -11,6 +11,7 @@ namespace CosmicShore.App.Systems.UserActions
 
         // Store Related - 200s
         ViewStoreMenu = 200,
+        ClickDailyReward = 201,
 
         // Hangar Related - 300s
         ViewHangarMenu = 300,

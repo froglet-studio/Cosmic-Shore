@@ -15,6 +15,7 @@ namespace CosmicShore.Game.UI
         public CountdownTimer CountdownTimer;
         [SerializeField] GameObject pip;
         [SerializeField] GameObject silhouette;
+        [SerializeField] GameObject trailDisplay;
         [SerializeField] GameObject button1;
         [SerializeField] GameObject button2;
         [SerializeField] GameObject button3;
@@ -30,6 +31,12 @@ namespace CosmicShore.Game.UI
         {
             silhouette.SetActive(active);
             return silhouette;
+        }
+
+        public GameObject SetTrailDisplayActive(bool active)
+        {
+            trailDisplay.SetActive(active);
+            return trailDisplay;
         }
 
         public void SetButtonActive(bool active, int number)

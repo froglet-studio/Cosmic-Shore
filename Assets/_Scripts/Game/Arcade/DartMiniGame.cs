@@ -1,3 +1,4 @@
+using CosmicShore.Core.HangerBuilder;
 using CosmicShore.Environment.FlowField;
 using UnityEngine;
 
@@ -23,8 +24,14 @@ namespace CosmicShore.Game.Arcade
         {
             base.SetupTurn();
 
+            Silhouette silhouette;
+            ActivePlayer.Ship.TryGetComponent<Silhouette>(out silhouette);
+            silhouette.Clear();
+
             TrailSpawner.NukeTheTrails();
             Crystal.transform.position = CrystalStartPosition;
+            ActivePlayer.Ship.ResourceSystem.ChangeAmmoAmount(ActivePlayer.Ship.ResourceSystem.MaxAmmo);
         }
+
     }
 }
