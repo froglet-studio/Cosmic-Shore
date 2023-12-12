@@ -18,7 +18,7 @@ MonoBehaviour:
     can to the zigzag trail '
   Icon: {fileID: 21300000, guid: 735c0e18d396f9e44ae83b165805dc30, type: 3}
   SelectedIcon: {fileID: 21300000, guid: a0a884671f982ec41aa43688ff4c5c61, type: 3}
-  CardBackground: {fileID: 21300000, guid: 88a9b4cf2dc46a74a8f85cba135a5352, type: 3}
+  CardBackground: {fileID: 21300000, guid: 8232e087c5e0fee4fa59cdb880e64ca4, type: 3}
   PreviewClip: {fileID: 241334157148977051, guid: 5c86136010666914fbccc6959d9e1157,
     type: 3}
   Vessels:

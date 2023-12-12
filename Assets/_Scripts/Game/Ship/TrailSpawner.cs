@@ -10,7 +10,7 @@ using UnityEngine.UIElements;
 [RequireComponent(typeof(Ship))]
 public class TrailSpawner : MonoBehaviour
 {
-    public delegate void BlockCreationHandler(float xShift, float wavelength, float scaleX, float scaleZ);
+    public delegate void BlockCreationHandler(float xShift, float wavelength, float scaleX, float scaleY, float scaleZ);
     public event BlockCreationHandler OnBlockCreated;
 
     [SerializeField] TrailBlock trailBlock;
@@ -206,7 +206,7 @@ float wavelength;
         Block.GetComponent<BoxCollider>().size = Vector3.one + VectorDivision((Vector3)blockMaterial.GetVector("_Spread"), Block.TargetScale);
         Block.Trail = trail;
 
-        OnBlockCreated?.Invoke(xShift, wavelength, Block.TargetScale.x, Block.TargetScale.z);
+        OnBlockCreated?.Invoke(xShift, wavelength, Block.TargetScale.x, Block.TargetScale.y, Block.TargetScale.z);
         trail.Add(Block);
         Block.Index = trail.TrailList.IndexOf(Block);
         Block.ID = ownerId + "::" + spawnedTrailCount++;

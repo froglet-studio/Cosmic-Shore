@@ -37,7 +37,7 @@ namespace CosmicShore
             var trail = new Trail();
             var position = new Vector3(Orgin.x, Orgin.y, Orgin.z);
 
-            //Head
+            // Head //
             for (int ring = 0; ring < ringCountHead; ring++) //ring = X value
             {
                 trails.Add(new Trail());
@@ -45,21 +45,22 @@ namespace CosmicShore
                 // Creates increasing hemisphere
                 for (int block = 0; block < blockCount; block++)
                 {
-                    float scale = Mathf.Sqrt(Mathf.Pow(headRadius, 2) - Mathf.Pow(ring, 2));   //y = sqrt(R^2 -X^2) scales the ring radius
-                    CreateRingBlock(block, ring % 2 * 0.5f, scale, ring, ring * headRadius/ringCountHead , trails[ring], container);
+                    float scale = Mathf.Sqrt(Mathf.Pow(headRadius, 2) - Mathf.Pow(((ring / (float)ringCountHead) - 1) * headRadius, 2));   //y = sqrt(R^2 -X^2) scales the ring radius
+                    CreateRingBlock(block, ring % 2 * 0.5f, scale, -headRadius, ring * headRadius/ringCountHead , trails[ring], container);
                 }
             }
-            //Tail
-            for (int ring = ringCountHead; ring < ringCountTail; ring++) //ring = X value
+            // Tail //
+            for (int ring = ringCountHead; ring < ringCountTail + ringCountHead; ring++) //ring = X value
             {
                 trails.Add(new Trail());
 
                 // Creates increasing hemisphere
                 for (int block = 0; block < blockCount; block++)
                 {
-                    float scale = ring / 2f + 1f;
+                    float scale = (.5f*Mathf.Cos((ring - ringCountHead) / ((float)ringCountTail)*Mathf.PI) + .5f) * headRadius;
 
-                    CreateRingBlock(block, ring % 2 * 0.5f, scale, ring, ring * tailLength/ringCountTail + headRadius, trails[ring], container);
+                    CreateRingBlock(block, ring % 2 * 0.5f, scale,-headRadius - ((ring - ringCountHead) / (float)ringCountTail * tailLength),
+                        ((ring - ringCountHead) * tailLength / ringCountTail) + headRadius, trails[ring], container);
                 }
             }
             return container;
@@ -71,8 +72,9 @@ namespace CosmicShore
             var offset = scale * Mathf.Cos(((block + phase) / blockCount) * 2 * Mathf.PI) * transform.right +
                          scale * Mathf.Sin(((block + phase) / blockCount) * 2 * Mathf.PI) * transform.up +
                          distanceTowardTail * -transform.forward;
+            var tempBlockscale = new Vector3(blockScale.x * scale, blockScale.y, blockScale.z * scale);
 
-            CreateBlock(transform.position + offset, offset + tilt * headRadius * transform.forward, transform.forward, container.name + "::BLOCK::" + block, trail, blockScale, trailBlock, container);
+            CreateBlock(transform.position + offset, tilt * transform.forward - (offset + transform.position), transform.forward, container.name + "::BLOCK::" + block, trail, tempBlockscale, trailBlock, container);
         }
         void CreateBlock(Vector3 position, Vector3 lookPosition, Vector3 up, string blockId, Trail trail, Vector3 scale, TrailBlock trailBlock, GameObject container, Teams team = Teams.Blue)
         {

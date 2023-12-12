@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
+
 namespace CosmicShore
 {
     public class Silhouette : MonoBehaviour
@@ -21,8 +22,8 @@ namespace CosmicShore
             if (trailSpawner) trailSpawner.OnBlockCreated -= HandleBlockCreation;
         }
 
-        float worldToUIScale = 10;
-        float imageScale = 10;
+        float worldToUIScale = 2;
+        float imageScale = .02f;
 
         [SerializeField] List<GameObject> silhouetteParts = new List<GameObject>();
 
@@ -46,6 +47,7 @@ namespace CosmicShore
         Game.UI.MiniGameHUD hud;
         GameObject silhouetteContainer;
         Transform trailDisplayContainer;
+        [SerializeField] Vector3 sihouetteScale = Vector3.one;
 
         // Start is called before the first frame update
         void Start()
@@ -70,11 +72,15 @@ namespace CosmicShore
         }
 
         float dotProduct = .9999f;
+        bool flip;
 
         private void calculateDriftAngle(float dotProduct)
         {
-            foreach (var part in silhouetteParts) { part.gameObject.SetActive(!ship.AutoPilot.AutoPilotEnabled && Player.ActivePlayer == ship.Player); }
-            silhouetteContainer.transform.rotation = Quaternion.Euler(0, 0, Mathf.Acos(dotProduct-.0001f) * Mathf.Rad2Deg);
+            ShipStatus status = ship.ShipStatus;
+            flip = Vector3.Dot(transform.up, status.Course) > 0;
+            foreach (var part in silhouetteParts) { part.gameObject.SetActive(!ship.AutoPilot.AutoPilotEnabled && Player.ActivePlayer == ship.Player); } // TODO: why?
+            silhouetteContainer.transform.rotation = Quaternion.Euler(0, 0, (flip ? -1f : 1f) * Mathf.Acos(dotProduct-.0001f) * Mathf.Rad2Deg);
+
             this.dotProduct = dotProduct;// Acos hates 1
         }
 
@@ -90,9 +96,13 @@ namespace CosmicShore
 
         }
 
-        private void HandleBlockCreation(float xShift, float wavelength, float scaleX, float scaleZ)
+        private void HandleBlockCreation(float xShift, float wavelength, float scaleX, float scaleY, float scaleZ)
         {
-            UpdateBlockPool(xShift * worldToUIScale, wavelength * worldToUIScale, scaleX / imageScale, scaleZ / imageScale);
+            UpdateBlockPool(xShift * worldToUIScale * scaleY, wavelength * worldToUIScale * scaleY, scaleX * scaleY * imageScale, scaleZ * scaleY * imageScale); // VPS per unit speed is proportional to display area because gap doesn't matter and (x*y) * (z*y) / (wavelength*y) is proportional to volume/wavelength.
+
+            //silhouetteContainer.transform.localScale = imageScale * 2 * sihouetteScale * scaleY;
+            //silhouetteContainer.transform.localPosition = new Vector3(-scaleY * 80f,0,0);
+               
         }
 
         private void CalculatePoolSize()
@@ -137,7 +147,7 @@ namespace CosmicShore
                 }
                 if (driftTrailAction)
                 {
-                    blockPool[0, 0].transform.parent.localRotation = Quaternion.Euler(0, 0, Mathf.Acos(dotProduct - .0001f) * Mathf.Rad2Deg);
+                    blockPool[0, 0].transform.parent.localRotation = Quaternion.Euler(0, 0, (flip ? -1f : 1f) * Mathf.Acos(dotProduct - .0001f) * Mathf.Rad2Deg);
                 }
                 for (int i = poolSize - 1; i > 0; i--)
                 {
