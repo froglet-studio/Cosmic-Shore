@@ -39,8 +39,13 @@ public class SegmentSpawner : MonoBehaviour
     [SerializeField] bool InitializeOnStart;
     [SerializeField] public int numberOfSegments = 1;
 
+    Vector3 currentDisplacement;
+    Quaternion currentRotation;
+
     void Start()
     {
+        currentDisplacement = origin + transform.position;
+        currentRotation = Quaternion.identity;
         SpawnedSegmentContainer = new GameObject();
         SpawnedSegmentContainer.name = "SpawnedSegments";
 
@@ -97,6 +102,11 @@ public class SegmentSpawner : MonoBehaviour
                     (Quaternion.Euler(0, random.Next(Mathf.Max(DifficultyAngle - 20, 40), Mathf.Max(DifficultyAngle + 20, 40)), 0) *
                     (Radius * Vector3.forward)) + origin + transform.position;
                 spawned.transform.LookAt(Vector3.zero);
+                return;
+            case PositioningScheme.KinkyLine:                
+                Quaternion rotation;
+                spawned.transform.position = currentDisplacement += RandomVectorRotation(StraightLineLength * Vector3.forward, out rotation) ;
+                spawned.transform.rotation = currentRotation = rotation;
                 return;
             case PositioningScheme.ToroidSurface:
                 // TODO: this is not a torus, it's ripped from the sphere
@@ -160,5 +170,15 @@ public class SegmentSpawner : MonoBehaviour
 
         for (int i = 0; i < spawnSegmentWeights.Count; i++)
             spawnSegmentWeights[i] = spawnSegmentWeights[i] * (1 / totalWeight);
+    }
+
+    private Vector3 RandomVectorRotation(Vector3 vector, out Quaternion rotation)
+    {
+        float altitude = Random.Range(70, 90);
+        float azimuth = Random.Range(0, 360);
+
+        rotation = Quaternion.Euler(0f, 0f, azimuth) * Quaternion.Euler(0f, altitude, 0f);
+        Vector3 newVector = rotation * vector;
+        return newVector;
     }
 }

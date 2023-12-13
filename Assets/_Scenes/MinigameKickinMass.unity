@@ -808,7 +808,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   spawnableSegments:
   - {fileID: 1853102484}
-  positioningScheme: 0
+  positioningScheme: 3
   spawnSegmentWeights:
   - 1
   Seed: 0
@@ -818,7 +818,7 @@ MonoBehaviour:
   StraightLineLength: 100
   RotationAmount: 10
   DifficultyAngle: 90
-  InitializeOnStart: 1
+  InitializeOnStart: 0
   numberOfSegments: 0
 --- !u!1 &1078953702
 GameObject:
@@ -914,8 +914,8 @@ MonoBehaviour:
   Crystal: {fileID: 1568959833}
   CrystalStartPosition: {x: 0, y: 0, z: -120}
   SegmentSpawner: {fileID: 1020381236}
-  numberOfSegments: 3
-  straightLineLength: 100
+  numberOfSegments: 30
+  straightLineLength: 300
   ResetTrails: 0
   ScaleCrystalPositionWithIntensity: 0
   ScaleLengthWithIntensity: 1
@@ -1884,7 +1884,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   trailBlock: {fileID: 4563009547826722997, guid: 2a19c011ad2d54641ad144fbe33d3586,
     type: 3}
-  blockCount: 16
+  blockCount: 8
   ringCountHead: 8
   ringCountTail: 30
   headRadius: 24
