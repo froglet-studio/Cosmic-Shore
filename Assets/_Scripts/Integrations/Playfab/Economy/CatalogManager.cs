@@ -261,6 +261,7 @@ namespace CosmicShore.Integrations.Playfab.Economy
         /// <param name="response">Get Inventory Items Response</param>
         private void OnGettingInventoryItems(GetInventoryItemsResponse response)
         {
+            // If no inventory items no need to process the response.
             if (response == null || response.Items?.Count == 0)
             {
                 Debug.LogWarningFormat("{0} - {1}: Unable to get catalog item or no inventory items are available.", nameof(CatalogManager), nameof(OnGettingInventoryItems));
@@ -269,6 +270,10 @@ namespace CosmicShore.Integrations.Playfab.Economy
             
             Debug.Log("CatalogManager - Get Inventory Items success.");
 
+            // Clear out previous loaded inventory, make sure no duplicates.
+            ClearLocalInventoryOnLoading();
+
+            // Iterate through the response, convert PlayFab item to virtual item, and add to inventory
             foreach (var item in response.Items)
             {
                 Debug.LogFormat("{0} - {1}: id: {2} amount: {3} content type: {4} loaded.", 
@@ -276,12 +281,22 @@ namespace CosmicShore.Integrations.Playfab.Economy
                     nameof(OnGettingInventoryItems), 
                     item.Id, item.Amount.ToString(), item.Type);
                 var virtualItem = ConvertToInventoryItem(item);
+                AddToInventory(virtualItem);
             }
         }
-        
-        private void AddToInventory(string contentType, VirtualItem item)
+
+        private void ClearLocalInventoryOnLoading()
         {
-            switch (contentType)
+            _playerInventory.MiniGames.Clear();
+            _playerInventory.VesselUpgrades.Clear();
+            _playerInventory.Crystals.Clear();
+            _playerInventory.Ships.Clear();
+            _playerInventory.Vessels.Clear();
+        }
+        
+        private void AddToInventory(VirtualItem item)
+        {
+            switch (item.ContentType)
             {
                 case "Vessel":
                     Debug.LogFormat("{0} - {1} - Adding Vessel",nameof(CatalogManager), nameof(AddToInventory));
@@ -304,7 +319,7 @@ namespace CosmicShore.Integrations.Playfab.Economy
                     _playerInventory.Crystals.Add(item);
                     break;
                 default:
-                    Debug.LogWarningFormat("{0} - {1} - {2} Item Content Type not related to player inventory items, such as Stores and Subscriptions.", nameof(CatalogManager), nameof(AddToInventory), contentType);
+                    Debug.LogWarningFormat("{0} - {1} - {2} Item Content Type not related to player inventory items, such as Stores and Subscriptions.", nameof(CatalogManager), nameof(AddToInventory));
                     break;
             }
         }
