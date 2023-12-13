@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 241334157148977053}
   - component: {fileID: 241334157148977051}
   m_Layer: 5
-  m_Name: DuelForTheCellPreview_Prefab
+  m_Name: CatAndMousePreview_Prefab
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -82,7 +82,7 @@ VideoPlayer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 241334157148977055}
   m_Enabled: 1
-  m_VideoClip: {fileID: 32900000, guid: f7450006e4eb8d247964acaf66e5f262, type: 3}
+  m_VideoClip: {fileID: 32900000, guid: 6175dcd013dda614fa57eda67a19c67f, type: 3}
   m_TargetCameraAlpha: 1
   m_TargetCamera3DLayout: 0
   m_TargetCamera: {fileID: 0}
@@ -95,12 +95,14 @@ VideoPlayer:
   m_DataSource: 0
   m_PlaybackSpeed: 1
   m_AudioOutputMode: 0
-  m_TargetAudioSources: []
-  m_DirectAudioVolumes: []
+  m_TargetAudioSources:
+  - {fileID: 0}
+  m_DirectAudioVolumes:
+  - 1
   m_Url: 
-  m_EnabledAudioTracks: 
-  m_DirectAudioMutes: 
-  m_ControlledAudioTrackCount: 0
+  m_EnabledAudioTracks: 00
+  m_DirectAudioMutes: 00
+  m_ControlledAudioTrackCount: 1
   m_PlayOnAwake: 1
   m_SkipOnDrop: 0
   m_Looping: 1

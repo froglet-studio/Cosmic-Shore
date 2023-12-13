@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 241334157148977053}
   - component: {fileID: 241334157148977051}
   m_Layer: 5
-  m_Name: DuelForTheCellPreview_Prefab
+  m_Name: RhinoRunPreview_Prefab
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -82,7 +82,7 @@ VideoPlayer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 241334157148977055}
   m_Enabled: 1
-  m_VideoClip: {fileID: 32900000, guid: f7450006e4eb8d247964acaf66e5f262, type: 3}
+  m_VideoClip: {fileID: 32900000, guid: 3eee238ef2584d34aabc2d27c39c8003, type: 3}
   m_TargetCameraAlpha: 1
   m_TargetCamera3DLayout: 0
   m_TargetCamera: {fileID: 0}

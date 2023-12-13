@@ -18,7 +18,7 @@ MonoBehaviour:
     out
   Icon: {fileID: 21300000, guid: 3393ef5bcc756364d98dc478fc0fe52b, type: 3}
   SelectedIcon: {fileID: 21300000, guid: b734e1a473e014c4198c58f6c02b894d, type: 3}
-  CardBackground: {fileID: 21300000, guid: b5b9538f2e3a8c24d9a9f5219064fcdc, type: 3}
+  CardBackground: {fileID: 21300000, guid: 38913dbc8ac8b854183084fa635bd1d4, type: 3}
   PreviewClip: {fileID: 3312024567346999270, guid: 51aa26330ad783b4d9f1d54a91583c41,
     type: 3}
   Vessels:

@@ -18,7 +18,7 @@ MonoBehaviour:
     produce a burst of blocks as fast as you can
   Icon: {fileID: 21300000, guid: 1917088452678c8449563992f4132c7e, type: 3}
   SelectedIcon: {fileID: 21300000, guid: ff915aad644c07144a1d02cc4723b015, type: 3}
-  CardBackground: {fileID: 21300000, guid: 78575ccdc916fca45960791606e128c9, type: 3}
+  CardBackground: {fileID: 21300000, guid: 9add5f3a6ca94064c92d03c988cf3226, type: 3}
   PreviewClip: {fileID: 241334157148977051, guid: f48cd1df8d808014c8a8f4db1258d202,
     type: 3}
   Vessels:
