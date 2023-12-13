@@ -1717,7 +1717,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 25dd04a558b7f8947ad81c90dc14c5df, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  silhouetteParts: []
+  silhouetteParts:
+  - {fileID: 322268676704545573}
   trailSpawner: {fileID: 874579555101021522}
   driftTrailAction: {fileID: 0}
   topJaw: {fileID: 0}
