@@ -593,8 +593,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0a66c9f1814dd7a49a173c0f8d502ce0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  Display: {fileID: 0}
   duration: 45
-  display: {fileID: 0}
 --- !u!4 &1078953705
 Transform:
   m_ObjectHideFlags: 0
@@ -664,11 +664,16 @@ MonoBehaviour:
   PlayerOrigin: {fileID: 1192541910}
   EndOfTurnDelay: 0
   EnableTrails: 1
+  DefaultPlayerShipType: 2
   ActivePlayer: {fileID: 0}
   Crystal: {fileID: 1568959833}
   CrystalStartPosition: {x: 0, y: 0, z: -120}
   SegmentSpawner: {fileID: 1471404064}
   spawnableEllipsoid: {fileID: 1638204688}
+  maxSize: 30
+  maxSphereRadius: 200
+  initialSegments: 10
+  intensitySegments: 10
 --- !u!4 &1180410982 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 6454128237993233764, guid: 4a855af160021d241b8c1ac70cf2d792,
@@ -1135,12 +1140,12 @@ MonoBehaviour:
   Seed: 0
   parent: {fileID: 0}
   origin: {x: 0, y: 0, z: 0}
-  SphereRadius: 250
+  Radius: 30
   StraightLineLength: 400
   RotationAmount: 10
   DifficultyAngle: 90
   InitializeOnStart: 0
-  numberOfSegments: 7
+  numberOfSegments: 0
 --- !u!114 &1471404065
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1335,9 +1340,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   trailBlock: {fileID: 4563009547826722997, guid: ed6f72639ff50df48a391f3a7b926042,
     type: 3}
-  maxlength: 10
-  maxwidth: 10
-  maxheight: 10
+  maxlength: 2
+  maxwidth: 2
+  maxheight: 2
 --- !u!4 &1638204689
 Transform:
   m_ObjectHideFlags: 0

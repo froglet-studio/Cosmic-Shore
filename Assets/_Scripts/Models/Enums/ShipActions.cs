@@ -17,5 +17,9 @@ public enum ShipActions
     LayBulletTrail = 13,
     DropFakeCrystal = 14,
     StartGuns = 15,
-    Drift = 16
+    Drift = 16,
+    SpeedTubes = 17,
+    Bouncy = 18,
+    MachCone = 19,
+    ExplosiveAcorn = 20
 }

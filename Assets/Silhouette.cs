@@ -37,6 +37,7 @@ namespace CosmicShore
         // jaws //
         [SerializeField] GameObject topJaw;
         [SerializeField] GameObject bottomJaw;
+        [SerializeField] bool swingBlocks = false;
         #endregion
 
         GameObject blockPrefab; // Prefab for the blockImages
@@ -63,7 +64,6 @@ namespace CosmicShore
                     part.SetActive(true);
                 }
             }
-            if (!ship.AutoPilot.AutoPilotEnabled && trailSpawner) CalculatePoolSize();
         }
 
         public void SetBlockPrefab(GameObject block)
@@ -98,17 +98,17 @@ namespace CosmicShore
 
         private void HandleBlockCreation(float xShift, float wavelength, float scaleX, float scaleY, float scaleZ)
         {
-            UpdateBlockPool(xShift * worldToUIScale * scaleY, wavelength * worldToUIScale * scaleY, scaleX * scaleY * imageScale, scaleZ * scaleY * imageScale); // VPS per unit speed is proportional to display area because gap doesn't matter and (x*y) * (z*y) / (wavelength*y) is proportional to volume/wavelength.
-
-            //silhouetteContainer.transform.localScale = imageScale * 2 * sihouetteScale * scaleY;
-            //silhouetteContainer.transform.localPosition = new Vector3(-scaleY * 80f,0,0);
-               
-        }
-
-        private void CalculatePoolSize()
-        {
-            poolSize = Mathf.CeilToInt(((RectTransform)trailDisplayContainer).rect.width / (trailSpawner.MinWaveLength * worldToUIScale));
-            InitializeBlockPool();
+            if (!ship.AutoPilot.AutoPilotEnabled)
+            {
+                if (poolSize < 1)
+                {
+                    if (swingBlocks) poolSize = Mathf.CeilToInt(((RectTransform)trailDisplayContainer).rect.width / (trailSpawner.MinWaveLength * worldToUIScale));
+                    else poolSize = Mathf.CeilToInt(((RectTransform)trailDisplayContainer).rect.width / (trailSpawner.MinWaveLength * worldToUIScale * scaleY));
+                    InitializeBlockPool();
+                }
+                if (swingBlocks) UpdateBlockPool(xShift * (scaleY / 2) * worldToUIScale, wavelength * worldToUIScale, scaleX * scaleY * imageScale, scaleZ * imageScale);
+                else UpdateBlockPool(xShift * worldToUIScale * scaleY, wavelength * worldToUIScale * scaleY, scaleX * scaleY * imageScale, scaleZ * scaleY * imageScale); // VPS per unit speed is proportional to display area because gap doesn't matter and (x*y) * (z*y) / (wavelength*y) is proportional to volume/wavelength.
+            }
         }
 
         private void InitializeBlockPool()
@@ -123,6 +123,7 @@ namespace CosmicShore
                 {
                     GameObject newBlock = Instantiate(blockPrefab, silhouetteContainer.transform);
                     newBlock.transform.SetParent(tempContainer.transform, false);
+                    Debug.Log($"silhouette: {trailSpawner.MinWaveLength}");
                     newBlock.transform.parent.localPosition = new Vector3(-i * trailSpawner.MinWaveLength * worldToUIScale +
                         (((RectTransform)trailDisplayContainer).rect.width/2), 0, 0);
                     newBlock.transform.localPosition = new Vector3(0, j * 2 * trailSpawner.Gap - trailSpawner.Gap, 0);

@@ -591,12 +591,12 @@ MonoBehaviour:
   Seed: 0
   parent: {fileID: 0}
   origin: {x: 0, y: 0, z: -800}
-  Radius: 150
+  Radius: 100
   StraightLineLength: 4
   RotationAmount: 20
   DifficultyAngle: 90
-  InitializeOnStart: 1
-  numberOfSegments: 100
+  InitializeOnStart: 0
+  numberOfSegments: 0
 --- !u!4 &822875972 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 8200116291734656446, guid: cb702179ff5b42f41a3521ccd59e6934,
@@ -746,10 +746,13 @@ MonoBehaviour:
   Crystal: {fileID: 1568959833}
   CrystalStartPosition: {x: 50, y: 0, z: 250}
   SegmentSpawner: {fileID: 781179373}
-  numberOfSegments: 50
+  numberOfSegments: 30
   straightLineLength: 30
   ResetTrails: 1
   ScaleCrystalPositionWithIntensity: 1
+  ScaleLengthWithIntensity: 1
+  ScaleNumberOfSegmentsWithIntensity: 1
+  helix: {fileID: 0}
 --- !u!114 &1078953710
 MonoBehaviour:
   m_ObjectHideFlags: 0

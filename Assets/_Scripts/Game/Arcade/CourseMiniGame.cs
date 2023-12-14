@@ -28,7 +28,7 @@ namespace CosmicShore.Game.Arcade
             if (PlayerShipType == ShipTypes.Rhino)
                 ScoreTracker.ScoringMode = ScoringModes.HostileVolumeDestroyed;
 
-            if (helix) helix.firstOrderRadius = helix.secondOrderRadius = IntensityLevel / 3f;
+            if (helix) helix.firstOrderRadius = helix.secondOrderRadius = IntensityLevel / 1.3f;
 
             if (!ResetTrails)
             {

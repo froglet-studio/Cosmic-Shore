@@ -1715,6 +1715,7 @@ MonoBehaviour:
   topJaw: {fileID: 0}
   bottomJaw: {fileID: 0}
   ship: {fileID: 874579555101021527}
+  sihouetteScale: {x: 1, y: 1, z: 1}
 --- !u!1 &6675130274311316141
 GameObject:
   m_ObjectHideFlags: 0

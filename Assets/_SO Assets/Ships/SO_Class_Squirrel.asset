@@ -14,8 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Class: 6
   Name: Squirrel
-  Description: Soar with grace through open space on relaxing scouting missions,
-    or run a heist with a flyby. Either way you get to relax while helping your team.
+  Description: "Get in your flow and stay there. Leave the hard decisions to other
+    classes. You\u2019re here to bounce around and ride your tubes, with a wake of
+    creation and destruction wherever you go."
   Icon: {fileID: 21300000, guid: 7408f399d3569ad4a9bf07803ffc97b3, type: 3}
   SelectedIcon: {fileID: 21300000, guid: f48eeb886e0607842a30a3bad4ae2d20, type: 3}
   PreviewImage: {fileID: 21300000, guid: b3fe0f4b92e2cf74b830808e3f8d88fc, type: 3}
@@ -24,10 +25,10 @@ MonoBehaviour:
   CardSilohoutteActive: {fileID: 21300000, guid: a89a335fa1c02f745ba93948c9b7ee32,
     type: 3}
   Abilities:
-  - {fileID: 11400000, guid: cf4c7963673545946af80618f5a52917, type: 2}
-  - {fileID: 11400000, guid: 260209c83d5be594a81043ebceea8ddf, type: 2}
-  - {fileID: 11400000, guid: 2c4bb3cbbacfb02489a36a11aa4c3d1e, type: 2}
-  - {fileID: 11400000, guid: 094b4c0cea37d4a4fb02edf8122006d1, type: 2}
+  - {fileID: 11400000, guid: 200e28ab23d1c5d49ae077a93c79c387, type: 2}
+  - {fileID: 11400000, guid: b576710e788f4dd4883e6be348736384, type: 2}
+  - {fileID: 11400000, guid: c3a4ef83059cf574b8680f2d145dbd09, type: 2}
+  - {fileID: 11400000, guid: 112dccf5b2caf5e4fa81e73077e96997, type: 2}
   Vessels:
   - {fileID: 11400000, guid: 2e5f4ffcc1432904db324d970ab221c4, type: 2}
   - {fileID: 11400000, guid: 9e78c4ba90b2cf841b325a12353833dd, type: 2}
