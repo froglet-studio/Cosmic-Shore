@@ -2250,7 +2250,7 @@ MonoBehaviour:
   spawnerEnabled: 1
   MaxNearbyBlockCount: 10
   minBlockScale: 1
-  maxBlockScale: 8
+  maxBlockScale: 6
   XScaler: 1
   YScaler: 1
   ZScaler: 1
@@ -2387,7 +2387,9 @@ MonoBehaviour:
   driftTrailAction: {fileID: 3521154205896523080}
   topJaw: {fileID: 4573856470754406349}
   bottomJaw: {fileID: 2109664493357155099}
+  swingBlocks: 0
   ship: {fileID: 874579555101021527}
+  sihouetteScale: {x: 1, y: 1, z: 1}
 --- !u!1 &6999220331312364478
 GameObject:
   m_ObjectHideFlags: 0
