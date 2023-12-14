@@ -488,6 +488,11 @@ PrefabInstance:
       propertyPath: m_Name
       value: Flock
       objectReference: {fileID: 0}
+    - target: {fileID: 8812619448024686937, guid: 14b7fddb8e30aa541a092201bc80b848,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 8812619448024686939, guid: 14b7fddb8e30aa541a092201bc80b848,
         type: 3}
       propertyPath: boidPrefab
@@ -7029,10 +7034,26 @@ MonoBehaviour:
   LeftClampedPosition: {x: 0, y: 0}
   isGyroEnabled: 0
   invertYEnabled: 0
+  invertThrottleEnabled: 0
+  OneTouchLeft: 0
   RightJoystickStart: {x: 0, y: 0}
   LeftJoystickStart: {x: 0, y: 0}
+  RightNormalizedJoystickPosition: {x: 0, y: 0}
+  LeftNormalizedJoystickPosition: {x: 0, y: 0}
   EasedRightJoystickPosition: {x: 0, y: 0}
   EasedLeftJoystickPosition: {x: 0, y: 0}
+--- !u!114 &1360556390 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 9106189021102876755, guid: 32cc35a6605af014c926743312133238,
+    type: 3}
+  m_PrefabInstance: {fileID: 451321388}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1360556388}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9ca79d17578366e4f9cd2b19173ecab8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &1449494196
 GameObject:
   m_ObjectHideFlags: 0
@@ -7245,8 +7266,12 @@ MonoBehaviour:
   LeftClampedPosition: {x: 0, y: 0}
   isGyroEnabled: 0
   invertYEnabled: 0
+  invertThrottleEnabled: 0
+  OneTouchLeft: 0
   RightJoystickStart: {x: 0, y: 0}
   LeftJoystickStart: {x: 0, y: 0}
+  RightNormalizedJoystickPosition: {x: 0, y: 0}
+  LeftNormalizedJoystickPosition: {x: 0, y: 0}
   EasedRightJoystickPosition: {x: 0, y: 0}
   EasedLeftJoystickPosition: {x: 0, y: 0}
 --- !u!1 &1527998405
@@ -7299,8 +7324,8 @@ MonoBehaviour:
   ScoringMode: 6
   GolfRules: 0
   GameCanvas: {fileID: 0}
-  TimePlayedScoreMultiplier: 1000
-  VolumeNormalizationQuotient: 145.65
+  TimePlayedScoreMultiplier: 100
+  ScoreNormalizationQuotient: 145.65
 --- !u!114 &1527998409
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7313,8 +7338,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0a66c9f1814dd7a49a173c0f8d502ce0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  Display: {fileID: 0}
   duration: 120
-  display: {fileID: 0}
 --- !u!4 &1527998410
 Transform:
   m_ObjectHideFlags: 0
@@ -7352,7 +7377,9 @@ MonoBehaviour:
   PlayerOrigin: {fileID: 1984950343}
   EndOfTurnDelay: 0
   EnableTrails: 1
+  DefaultPlayerShipType: 2
   ActivePlayer: {fileID: 0}
+  hostilePilot: {fileID: 1360556390}
 --- !u!1 &1829578212
 GameObject:
   m_ObjectHideFlags: 0
@@ -7767,8 +7794,12 @@ MonoBehaviour:
   LeftClampedPosition: {x: 0, y: 0}
   isGyroEnabled: 0
   invertYEnabled: 0
+  invertThrottleEnabled: 0
+  OneTouchLeft: 0
   RightJoystickStart: {x: 0, y: 0}
   LeftJoystickStart: {x: 0, y: 0}
+  RightNormalizedJoystickPosition: {x: 0, y: 0}
+  LeftNormalizedJoystickPosition: {x: 0, y: 0}
   EasedRightJoystickPosition: {x: 0, y: 0}
   EasedLeftJoystickPosition: {x: 0, y: 0}
 --- !u!1001 &639495419634095581
