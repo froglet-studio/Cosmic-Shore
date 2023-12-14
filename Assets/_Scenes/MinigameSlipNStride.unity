@@ -649,7 +649,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   trailBlock: {fileID: 4563009547826722997, guid: ed9defc56162b4b4588e61c20984b6d9,
     type: 3}
-  scale: {x: 7, y: 7, z: 5}
+  scale: {x: 4, y: 4, z: 5}
   firstOrderRadius: 0.2
   secondOrderRadius: 0.3
 --- !u!1 &1078953702
@@ -704,7 +704,7 @@ MonoBehaviour:
   GolfRules: 1
   GameCanvas: {fileID: 0}
   TimePlayedScoreMultiplier: 10
-  VolumeNormalizationQuotient: 145.65
+  ScoreNormalizationQuotient: 145.65
 --- !u!114 &1078953708
 MonoBehaviour:
   m_ObjectHideFlags: 0

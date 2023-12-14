@@ -420,7 +420,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &675029769
 Transform:
   m_ObjectHideFlags: 0
@@ -528,6 +528,59 @@ GameObject:
     type: 3}
   m_PrefabInstance: {fileID: 719254185}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &766094130
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 766094131}
+  - component: {fileID: 766094132}
+  m_Layer: 0
+  m_Name: SpawnableComet
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &766094131
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 766094130}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1020381235}
+  m_RootOrder: 2
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &766094132
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 766094130}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a45fc00a01abd244ba53e392fc38b7cc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  trailBlock: {fileID: 4563009547826722997, guid: 34146ee2267ac224da1df0d1326f4563,
+    type: 3}
+  blockCount: 12
+  ringCountHead: 8
+  ringCountTail: 25
+  headRadius: 20
+  tailLength: 100
+  blockScale: {x: 0.2, y: 0.2, z: 0.4}
+  Orgin: {x: 0, y: 0, z: 0}
 --- !u!1 &1020381234
 GameObject:
   m_ObjectHideFlags: 0
@@ -558,6 +611,7 @@ Transform:
   m_Children:
   - {fileID: 675029769}
   - {fileID: 1638204689}
+  - {fileID: 766094131}
   m_Father: {fileID: 1471404063}
   m_RootOrder: 6
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -672,7 +726,7 @@ MonoBehaviour:
   spawnableEllipsoid: {fileID: 1638204688}
   maxSize: 30
   maxSphereRadius: 200
-  initialSegments: 10
+  initialSegments: 20
   intensitySegments: 10
 --- !u!4 &1180410982 stripped
 Transform:
@@ -1133,9 +1187,11 @@ MonoBehaviour:
   spawnableSegments:
   - {fileID: 675029770}
   - {fileID: 1638204688}
+  - {fileID: 766094132}
   positioningScheme: 0
   spawnSegmentWeights:
-  - 0
+  - 1
+  - 1
   - 1
   Seed: 0
   parent: {fileID: 0}
@@ -1340,8 +1396,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   trailBlock: {fileID: 4563009547826722997, guid: ed6f72639ff50df48a391f3a7b926042,
     type: 3}
-  maxlength: 2
-  maxwidth: 2
+  maxlength: 1
+  maxwidth: 1
   maxheight: 2
 --- !u!4 &1638204689
 Transform:

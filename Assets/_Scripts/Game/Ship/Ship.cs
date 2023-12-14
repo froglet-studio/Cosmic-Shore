@@ -408,6 +408,7 @@ namespace CosmicShore.Core
 
         public void UpdateLevel(Element element, int upgradeLevel)
         {
+            Debug.Log($"Ship: UpdateLevel: element{element}, upgradeLevel: {upgradeLevel}");
             if (VesselUpgrades == null) VesselUpgrades = new();
             
             if (VesselUpgrades.ContainsKey(element))

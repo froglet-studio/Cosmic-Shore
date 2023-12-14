@@ -28,9 +28,12 @@ public class Node : MonoBehaviour
 
     public void AddItem(NodeItem item)
     {
-        item.SetID(++itemsAdded);
-        NodeItems.Add(item.GetID(), item);
-        NotifyPilotsOfUpdates();
+        if (item.GetID() == 0)
+        {
+            item.SetID(++itemsAdded);
+            NodeItems.Add(item.GetID(), item);
+            NotifyPilotsOfUpdates();
+        }
     }
 
     public void RemoveItem(NodeItem item)

@@ -38,6 +38,7 @@ public class ElementalFloat
 
     void ScaleValueWithLevel(Element element, int level)
     {
+        Debug.Log($"Elemental Float: UpdateLevel: element{element}, level: {level}");
         if (element == this.element)
             Value = Mathf.Lerp(Min, Max, level / 10f);
     }

@@ -8,6 +8,6 @@ namespace CosmicShore.Game.Arcade
         TurnsPlayed = 3,
         VolumeStolen = 4,
         BlocksStolen = 5,
-        TeamVolumeRemaining = 6,
+        TeamVolumeDifference = 6,
     }
 }

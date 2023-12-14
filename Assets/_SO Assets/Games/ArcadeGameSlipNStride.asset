@@ -23,7 +23,7 @@ MonoBehaviour:
   Vessels:
   - {fileID: 11400000, guid: b997308bc8cf75249adf9ca2126a3789, type: 2}
   MinPlayers: 1
-  MaxPlayers: 3
+  MaxPlayers: 1
   SceneName: MinigameSlipNStride
   CallToActionTargetType: 416
   ViewUserAction: 0

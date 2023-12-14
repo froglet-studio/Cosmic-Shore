@@ -22,9 +22,9 @@ MonoBehaviour:
   PreviewClip: {fileID: 241334157148977051, guid: 4396864d799a6154bb82e5346ac0093b,
     type: 3}
   Vessels:
-  - {fileID: 11400000, guid: fc050e89d9973cf4ab7fa683bb1722b1, type: 2}
+  - {fileID: 11400000, guid: df141abf4cae3d44ab94be005b338f07, type: 2}
   MinPlayers: 1
-  MaxPlayers: 3
+  MaxPlayers: 1
   SceneName: MinigameRampage
   CallToActionTargetType: 404
   ViewUserAction: 0

@@ -18,7 +18,7 @@ namespace CosmicShore.Game.Arcade
 
         [Header("Optional Configuration")]
         [SerializeField] float TimePlayedScoreMultiplier = 1000f;
-        [SerializeField] float VolumeNormalizationQuotient = 145.65f;
+        [SerializeField] float ScoreNormalizationQuotient = 145.65f;
 
         VerticalLayoutGroup Scoreboard;
         TMP_Text WinnerNameContainer;
@@ -81,7 +81,7 @@ namespace CosmicShore.Game.Arcade
                 {
                     case ScoringModes.HostileVolumeDestroyed:
                         if (StatsManager.Instance.playerStats.ContainsKey(currentPlayerName))
-                            score = playerScores[currentPlayerName] + StatsManager.Instance.playerStats[currentPlayerName].hostileVolumeDestroyed / VolumeNormalizationQuotient;
+                            score = playerScores[currentPlayerName] + StatsManager.Instance.playerStats[currentPlayerName].hostileVolumeDestroyed / ScoreNormalizationQuotient;
                         break;
                     case ScoringModes.VolumeCreated:
                         if (StatsManager.Instance.playerStats.ContainsKey(currentPlayerName))
@@ -101,12 +101,12 @@ namespace CosmicShore.Game.Arcade
                         if (StatsManager.Instance.playerStats.ContainsKey(currentPlayerName))
                             score = playerScores[currentPlayerName] + StatsManager.Instance.playerStats[currentPlayerName].blocksStolen;
                         break;
-                    case ScoringModes.TeamVolumeRemaining:
+                    case ScoringModes.TeamVolumeDifference:
                         var teamStats = StatsManager.Instance.teamStats;  // TODO: Hardcoded player team to Green... reconsider
                         var greenVolume = teamStats.ContainsKey(Teams.Green) ? teamStats[Teams.Green].volumeRemaining : 0f;
                         var redVolume = teamStats.ContainsKey(Teams.Red) ? teamStats[Teams.Red].volumeRemaining : 0f;
 
-                        score = (greenVolume - redVolume);
+                        score = (greenVolume - redVolume) / ScoreNormalizationQuotient;
                         break;
                 }
 
@@ -122,7 +122,7 @@ namespace CosmicShore.Game.Arcade
             {
                 case ScoringModes.HostileVolumeDestroyed:
                     if (StatsManager.Instance.playerStats.ContainsKey(currentPlayerName))
-                        playerScores[currentPlayerName] += StatsManager.Instance.playerStats[currentPlayerName].hostileVolumeDestroyed / VolumeNormalizationQuotient;
+                        playerScores[currentPlayerName] += StatsManager.Instance.playerStats[currentPlayerName].hostileVolumeDestroyed / ScoreNormalizationQuotient;
                     StatsManager.Instance.ResetStats();
                     break;
                 case ScoringModes.VolumeCreated:
@@ -146,11 +146,11 @@ namespace CosmicShore.Game.Arcade
                         playerScores[currentPlayerName] += StatsManager.Instance.playerStats[currentPlayerName].blocksStolen;
                     StatsManager.Instance.ResetStats();
                     break;
-                case ScoringModes.TeamVolumeRemaining:
+                case ScoringModes.TeamVolumeDifference:
                     var teamStats = StatsManager.Instance.teamStats;
                     var greenVolume = teamStats.ContainsKey(Teams.Green) ? teamStats[Teams.Green].volumeRemaining : 0f;
                     var redVolume = teamStats.ContainsKey(Teams.Red) ? teamStats[Teams.Red].volumeRemaining : 0f;
-                    playerScores[currentPlayerName] = (greenVolume - redVolume);
+                    playerScores[currentPlayerName] = (greenVolume - redVolume) / ScoreNormalizationQuotient;
                     StatsManager.Instance.ResetStats();
                     break;
             }
