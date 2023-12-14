@@ -73,7 +73,7 @@ namespace CosmicShore.App.UI.Menus
                 }
             }
 
-            for (var i = 0; i < GameCards.Count; i++)
+            for (var i = 0; i < GameCards.Count && i < GameList.GameList.Count; i++)
             {
                 var selectionIndex = i;
                 var game = GameList.GameList[i];
@@ -195,15 +195,27 @@ namespace CosmicShore.App.UI.Menus
             SetPlayerCount(loadout.PlayerCount == 0 ? SelectedGame.MinPlayers : loadout.PlayerCount);
 
 
+            var theFonzColor = new Color(.66f, .66f, .66f); // #AAAAAA
             // TODO: this is kludgy
             for (var i = 0; i < IntensityButtonContainer.transform.childCount; i++)
             {
                 var intensity = i + 1;
                 IntensityButtonContainer.transform.GetChild(i).gameObject.GetComponent<Button>().onClick.RemoveAllListeners();
-                IntensityButtonContainer.transform.GetChild(i).gameObject.GetComponent<Button>().onClick.AddListener(() => SetIntensity(intensity));
-                IntensityButtonContainer.transform.GetChild(i).gameObject.GetComponent<Button>().onClick.AddListener(() => IntensityButtonContainer.GetComponent<MenuAudio>().PlayAudio());
+                if (intensity >= SelectedGame.MinIntensity && intensity <= SelectedGame.MaxIntensity)
+                {
+                    IntensityButtonContainer.transform.GetChild(i).gameObject.GetComponent<Button>().enabled = true;
+                    IntensityButtonContainer.transform.GetChild(i).gameObject.GetComponent<Image>().color = Color.white;
+                    IntensityButtonContainer.transform.GetChild(i).gameObject.GetComponent<Button>().onClick.AddListener(() => SetIntensity(intensity));
+                    IntensityButtonContainer.transform.GetChild(i).gameObject.GetComponent<Button>().onClick.AddListener(() => IntensityButtonContainer.GetComponent<MenuAudio>().PlayAudio());
+                }
+                else
+                {
+                    IntensityButtonContainer.transform.GetChild(i).gameObject.GetComponent<Button>().enabled = false;
+                    IntensityButtonContainer.transform.GetChild(i).gameObject.GetComponent<Image>().color = theFonzColor;
+                }
             }
-            SetIntensity(loadout.Intensity == 0 ? 1 : loadout.Intensity);
+            SetIntensity(loadout.Intensity == 0 ? SelectedGame.MinIntensity : loadout.Intensity);
+            SetIntensity(SelectedGame.MinIntensity);
 
             PopulateGameDetails();
             PopulateShipSelectionList(loadout.ShipType);

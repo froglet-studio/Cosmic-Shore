@@ -10,19 +10,18 @@ using static Cinemachine.CinemachineFreeLook;
 
 namespace CosmicShore
 {
-    public class SpawnableComet : SpawnableAbstractBase
+    public class SpawnableCylinder : SpawnableAbstractBase
     {
         [SerializeField] TrailBlock trailBlock;
-        static int CometsSpawned = 0;
+        static int CylindersSpawned = 0;
 
         #region Attributes for Explosion Parameters
         [Header("Block Parameters")]
-        [SerializeField] int blockCount = 8;
+        [SerializeField] int blockCount = 12;
 
-        [SerializeField] int ringCountHead = 4;
-        [SerializeField] int ringCountTail = 9;
-        [SerializeField] float headRadius = 30; //y scaler
-        [SerializeField] float tailLength = 60f; //x scaler
+        [SerializeField] int ringCount = 15;
+        [SerializeField] float radius = 30; //y scaler
+        [SerializeField] float height = 60f; //x scaler
         [SerializeField] Vector3 blockScale = Vector3.one;
         [SerializeField] Vector3 Orgin;
         #endregion
@@ -30,36 +29,29 @@ namespace CosmicShore
         public override GameObject Spawn()
         {
             GameObject container = new GameObject();
-            container.name = "COMET" + CometsSpawned++;
+            container.name = "COMET" + CylindersSpawned++;
 
             
 
             var trail = new Trail();
+     
 
-            // Head //
-            for (int ring = 0; ring < ringCountHead; ring++) //ring = X value
+            
+            // Cylinder //
+            for (int ring = 0; ring < ringCount; ring++) //ring = X value
             {
                 trails.Add(new Trail());
 
-                // Creates increasing hemisphere
+                // Creates ring
                 for (int block = 0; block < blockCount; block++)
                 {
-                    float scale = Mathf.Sqrt(Mathf.Pow(headRadius, 2) - Mathf.Pow(((ring / (float)ringCountHead) - 1) * headRadius, 2));   //y = sqrt(R^2 -X^2) scales the ring radius
-                    CreateRingBlock(block, ring % 2 * 0.5f, scale, -headRadius, ring * headRadius/ringCountHead , trails[ring], container);
-                }
-            }
-            // Tail //
-            for (int ring = ringCountHead; ring < ringCountTail + ringCountHead; ring++) //ring = X value
-            {
-                trails.Add(new Trail());
+                    float scale = (.5f*Mathf.Cos((ring) / - radius *((float)ringCount)*Mathf.PI) + .5f) * radius;
 
-                // Creates increasing hemisphere
-                for (int block = 0; block < blockCount; block++)
-                {
-                    float scale = (.5f*Mathf.Cos((ring - ringCountHead) / ((float)ringCountTail)*Mathf.PI) + .5f) * headRadius;
+                    CreateRingBlock(block, ring % 2 * 0.5f, scale, (ring) / (float)ringCount,
+                        ((ring) * height / ringCount) + radius, trails[ring], container);
 
-                    CreateRingBlock(block, ring % 2 * 0.5f, scale,-headRadius - ((ring - ringCountHead) / (float)ringCountTail * tailLength),
-                        ((ring - ringCountHead) * tailLength / ringCountTail) + headRadius, trails[ring], container);
+                    /*CreateRingBlock(block, ring % 2 * 0.5f, scale,-radius - ((ring) / (float)ringCount * height),
+                        ((ring) * height / ringCount) + radius, trails[ring], container);*/
                 }
             }
             return container;
@@ -68,8 +60,8 @@ namespace CosmicShore
         //Phase (0-.5) offsets everyother ring
         private void CreateRingBlock(int block, float phase, float scale, float tilt, float distanceTowardTail, Trail trail, GameObject container)
         {
-            var offset = scale * Mathf.Cos(((block + phase) / blockCount) * 2 * Mathf.PI) * transform.right +
-                         scale * Mathf.Sin(((block + phase) / blockCount) * 2 * Mathf.PI) * transform.up +
+            var offset = scale * radius *(((block + phase) / blockCount) * 2 * Mathf.PI) * transform.right +
+                         scale * radius * (((block + phase) / blockCount) * 2 * Mathf.PI) * transform.up +
                          distanceTowardTail * -transform.forward;
             var tempBlockscale = new Vector3(blockScale.x * scale, blockScale.y, blockScale.z * scale);
 
