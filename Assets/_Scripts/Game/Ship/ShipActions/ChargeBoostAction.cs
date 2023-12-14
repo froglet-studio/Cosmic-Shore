@@ -8,7 +8,7 @@ public class ChargeBoostAction : ShipAction
     [SerializeField] float BoostChargeRate = .33f;
     [SerializeField] float BoostDischargeRate = .25f;
     [SerializeField] float MaxBoostCharge = 10;
-    ShipStatus shipData;
+    ShipStatus shipStatus;
 
     protected override void Start()
     {
@@ -17,10 +17,10 @@ public class ChargeBoostAction : ShipAction
 
     private void GetShipStatus()
     {
-        if(!TryGetComponent(out shipData))
+        if(!TryGetComponent(out shipStatus))
         {
             Debug.LogWarningFormat("{0} - {1} - {2}", nameof(ChargeBoostAction), nameof(GetShipStatus), "ship status is null, but still trying to get it.");
-            shipData = ship.GetComponent<ShipStatus>();
+            shipStatus = ship.GetComponent<ShipStatus>();
         }
     }
 
@@ -35,7 +35,7 @@ public class ChargeBoostAction : ShipAction
         {
             //Debug.LogFormat("{0} - {1} - charging boost", nameof(ChargeBoostAction), nameof(BoostCharge));
             
-            if(shipData != null)  shipData.ChargedBoostCharge += BoostChargeRate * Time.deltaTime;
+            if(shipStatus != null)  shipStatus.ChargedBoostCharge += BoostChargeRate * Time.deltaTime;
 
             ship.ResourceSystem.ChangeBoostAmount(BoostChargeRate * Time.deltaTime);
         }
@@ -55,22 +55,22 @@ public class ChargeBoostAction : ShipAction
     private void StartChargedBoost()
     {
         // if (DischargeBoostCoroutine() == null) return;
-        if (shipData) StartCoroutine(DischargeBoostCoroutine());
+        if (shipStatus) StartCoroutine(DischargeBoostCoroutine());
     }
 
     IEnumerator DischargeBoostCoroutine()
     {
         // TODO: figure out how to get ship data component here so that it is not null
         
-        shipData.ChargedBoostDischarging = true;
-        while (shipData.ChargedBoostCharge > 1)
+        shipStatus.ChargedBoostDischarging = true;
+        while (shipStatus.ChargedBoostCharge > 1)
         {
-            shipData.ChargedBoostCharge = Mathf.Clamp(shipData.ChargedBoostCharge - Time.deltaTime * BoostDischargeRate, 1, MaxBoostCharge);
+            shipStatus.ChargedBoostCharge = Mathf.Clamp(shipStatus.ChargedBoostCharge - Time.deltaTime * BoostDischargeRate, 1, MaxBoostCharge);
             ship.ResourceSystem.ChangeBoostAmount(-Time.deltaTime * BoostDischargeRate);
             yield return null;
         }
-        shipData.ChargedBoostCharge = 1;
-        shipData.ChargedBoostDischarging = false;
+        shipStatus.ChargedBoostCharge = 1;
+        shipStatus.ChargedBoostDischarging = false;
         
         ship.ResourceSystem.ChangeBoostAmount(-ship.ResourceSystem.CurrentBoost);
     }

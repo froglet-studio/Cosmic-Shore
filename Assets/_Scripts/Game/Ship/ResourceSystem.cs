@@ -86,6 +86,8 @@ namespace CosmicShore.Core
             shipData = GetComponent<ShipStatus>();
 
             StartCoroutine(LateStart());
+
+            OnElementLevelChange?.Invoke(Element.Charge, Mathf.FloorToInt(chargeLevel * MaxLevel));
         }
 
         IEnumerator LateStart()

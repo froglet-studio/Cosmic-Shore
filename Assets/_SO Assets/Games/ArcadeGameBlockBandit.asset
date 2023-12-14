@@ -24,9 +24,9 @@ MonoBehaviour:
   Vessels:
   - {fileID: 11400000, guid: 83f99cf219c1bdf43b51c94855ee2328, type: 2}
   MinPlayers: 1
-  MaxPlayers: 3
-  MinIntensity: 3
-  MaxIntensity: 3
+  MaxPlayers: 1
+  MinIntensity: 2
+  MaxIntensity: 2
   SceneName: MinigameBlockBandit
   CallToActionTargetType: 407
   ViewUserAction: 0

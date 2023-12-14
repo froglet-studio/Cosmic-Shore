@@ -14,15 +14,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Class: 6
   Name: Squirrel
-  Description: "Get in your flow and stay there. Leave the hard decisions to other
-    classes. You\u2019re here to bounce around and ride your tubes, with a wake of
-    creation and destruction wherever you go."
+  Description: "Get in your flow and stay there. Hard decisions are for other classes.
+    You\u2019re here to bounce around and ride your tubes, leaving a wake of creation
+    and destruction."
   Icon: {fileID: 21300000, guid: 7408f399d3569ad4a9bf07803ffc97b3, type: 3}
   SelectedIcon: {fileID: 21300000, guid: f48eeb886e0607842a30a3bad4ae2d20, type: 3}
   PreviewImage: {fileID: 21300000, guid: b3fe0f4b92e2cf74b830808e3f8d88fc, type: 3}
   TrailPreviewImage: {fileID: 21300000, guid: 2e75f6670391025489d30c8361fb8de3, type: 3}
-  CardSilohoutte: {fileID: 21300000, guid: 20c2cf23262a5354a8f8a0808a3acea8, type: 3}
-  CardSilohoutteActive: {fileID: 21300000, guid: a89a335fa1c02f745ba93948c9b7ee32,
+  CardSilohoutte: {fileID: 21300000, guid: aa38057bfd4327b49b55f5ebbdeeda78, type: 3}
+  CardSilohoutteActive: {fileID: 21300000, guid: 63c7ed790b8907a45bedbf003d9979af,
     type: 3}
   Abilities:
   - {fileID: 11400000, guid: 200e28ab23d1c5d49ae077a93c79c387, type: 2}
