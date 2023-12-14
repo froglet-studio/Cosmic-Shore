@@ -25,6 +25,8 @@ MonoBehaviour:
   - {fileID: 11400000, guid: df141abf4cae3d44ab94be005b338f07, type: 2}
   MinPlayers: 1
   MaxPlayers: 1
+  MinIntensity: 2
+  MaxIntensity: 2
   SceneName: MinigameRampage
   CallToActionTargetType: 404
   ViewUserAction: 0
