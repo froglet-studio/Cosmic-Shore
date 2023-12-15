@@ -18,7 +18,7 @@ namespace CosmicShore.App.Systems.UserActions
 
         public static string GetGameplayUserActionLabel(MiniGames gameMode, ShipTypes shipType, int intensity)
         {
-            Debug.LogWarning($"GetGameplayUserActionLabel: {gameMode}_{shipType}_{intensity}");
+            Debug.Log($"GetGameplayUserActionLabel: {gameMode}_{shipType}_{intensity}");
             return $"{gameMode}_{shipType}_{intensity}";
         }
     }

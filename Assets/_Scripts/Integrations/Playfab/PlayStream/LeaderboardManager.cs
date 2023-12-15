@@ -119,12 +119,16 @@ namespace CosmicShore.Integrations.Playfab.PlayStream
         /// Update Gameplay Stats
         /// Upload game mode, ship type, intensity level and scores to memory
         /// </summary>
-        public void ReportGameplayStatistic(MiniGames gameMode, ShipTypes shipType, int intensity, int score)
+        public void ReportGameplayStatistic(MiniGames gameMode, ShipTypes shipType, int intensity, int score, bool golfScoring)
         {
             // Build list of statistics to update
             // One entry for each score for specific game mode/ship combination
             // One entry for each score for game mode any ship
             // One entry to count how many times people have played a given game with a given ship
+
+            // Playfab does not support reverse sort for leaderboards... take the negative to figure out the position, then flip it again when displaying the score
+            if (golfScoring)
+                score *= -1;
 
             Debug.Log($"UpdateGameplayStats - gameMode:{gameMode}, shipType:{shipType}, intensity:{intensity}, score:{score}");
             List<StatisticUpdate> stats = new()

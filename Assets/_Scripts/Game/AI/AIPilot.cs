@@ -134,15 +134,19 @@ namespace CosmicShore.Game.AI
             CrystalTransform = closestItem == null ? activeNode.transform : closestItem.transform;
         }
 
-        void Start()
+        void Awake()
         {
-            maxDistanceSquared = maxDistance * maxDistance;
             ship = GetComponent<Ship>();
             if (AutoPilotEnabled)
             {
                 ship.InputController.AutoPilotEnabled = true;
                 ship.ShipStatus.AutoPilotEnabled = true;
             }
+        }
+
+        void Start()
+        {
+            maxDistanceSquared = maxDistance * maxDistance;
             aggressiveness = defaultAggressiveness;
             throttle = defaultThrottle;
             shipStatus = GetComponent<ShipStatus>();
@@ -156,7 +160,6 @@ namespace CosmicShore.Game.AI
 
             var activeNode = NodeControlManager.Instance.GetNodeByPosition(transform.position);
             activeNode.RegisterForUpdates(this);
-
         }
 
         void Update()

@@ -13,7 +13,7 @@ namespace CosmicShore.Game.Arcade
         // Magic number to give more precision to time tracking as an integer value
 
         [SerializeField] public ScoringModes ScoringMode;
-        [SerializeField] bool GolfRules;
+        [SerializeField] public bool GolfRules;
         [HideInInspector] public GameCanvas GameCanvas;
 
         [Header("Optional Configuration")]
