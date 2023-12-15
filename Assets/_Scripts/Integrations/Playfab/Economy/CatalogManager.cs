@@ -319,7 +319,7 @@ namespace CosmicShore.Integrations.Playfab.Economy
                     _playerInventory.Crystals.Add(item);
                     break;
                 default:
-                    Debug.LogWarningFormat("{0} - {1} - {2} Item Content Type not related to player inventory items, such as Stores and Subscriptions.", nameof(CatalogManager), nameof(AddToInventory));
+                    Debug.LogWarningFormat("{0} - {1} - Item Content Type not related to player inventory items, such as Stores and Subscriptions.", nameof(CatalogManager), nameof(AddToInventory));
                     break;
             }
         }

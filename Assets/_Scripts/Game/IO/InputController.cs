@@ -122,8 +122,6 @@ namespace CosmicShore.Game.IO
             }
             else if (Gamepad.current != null)
             {
-
-
                 LeftNormalizedJoystickPosition.x = Gamepad.current.leftStick.x.ReadValue();
                 LeftNormalizedJoystickPosition.y = Gamepad.current.leftStick.y.ReadValue();
                 RightNormalizedJoystickPosition.x = Gamepad.current.rightStick.x.ReadValue();

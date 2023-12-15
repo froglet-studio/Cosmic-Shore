@@ -52,7 +52,7 @@ namespace CosmicShore.Environment.FlowField
 
         protected virtual void OnEnable()
         {
-            AddSelfToNode();
+            //AddSelfToNode();
         }
 
         protected virtual void OnTriggerEnter(Collider other)

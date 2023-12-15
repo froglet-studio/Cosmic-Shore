@@ -27,6 +27,7 @@ namespace CosmicShore.Game.IO
         /// <param name="type">Haptic type</param>
         public static void PlayHaptic(HapticType type)
         {
+            Debug.Log($"PlayHaptic - HapticType:{type}");
             if (!GameSetting.Instance.HapticsEnabled)
                 return;
 

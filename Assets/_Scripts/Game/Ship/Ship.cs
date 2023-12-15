@@ -178,7 +178,7 @@ namespace CosmicShore.Core
                 foreach (var classAction in ClassResourceActions[key])
                     classAction.Ship = this;
 
-            if (!ShipStatus.AutoPilotEnabled)
+            if (!AutoPilot.AutoPilotEnabled)
             {
                 if (ShipControlActions.ContainsKey(InputEvents.Button1Action))
                 {

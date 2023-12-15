@@ -448,7 +448,7 @@ PrefabInstance:
     - target: {fileID: 6588436222817790493, guid: fced5b15da3ad1d41b4e3b7385609e37,
         type: 3}
       propertyPath: m_LocalPosition.x
-      value: 200
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6588436222817790493, guid: fced5b15da3ad1d41b4e3b7385609e37,
         type: 3}
@@ -591,7 +591,7 @@ MonoBehaviour:
   Seed: 0
   parent: {fileID: 0}
   origin: {x: 0, y: 0, z: -800}
-  Radius: 100
+  Radius: 60
   StraightLineLength: 4
   RotationAmount: 20
   DifficultyAngle: 90
@@ -652,7 +652,7 @@ MonoBehaviour:
   scale: {x: 4, y: 4, z: 10}
   firstOrderRadius: 0.2
   secondOrderRadius: 0.3
-  blockCount: 75
+  blockCount: 70
 --- !u!1 &1078953702
 GameObject:
   m_ObjectHideFlags: 0
@@ -745,9 +745,9 @@ MonoBehaviour:
   DefaultPlayerShipType: 6
   ActivePlayer: {fileID: 0}
   Crystal: {fileID: 1568959833}
-  CrystalStartPosition: {x: 50, y: 0, z: 250}
+  CrystalStartPosition: {x: 0, y: 0, z: 300}
   SegmentSpawner: {fileID: 781179373}
-  numberOfSegments: 25
+  numberOfSegments: 20
   straightLineLength: 30
   ResetTrails: 1
   ScaleCrystalPositionWithIntensity: 1
@@ -925,7 +925,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1192541910}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -300, y: 0, z: -800}
+  m_LocalPosition: {x: 0, y: 0, z: -800}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1414,12 +1414,12 @@ PrefabInstance:
     - target: {fileID: 5247650485044281852, guid: 061f308768b5b564bbb0f130d1a8f02e,
         type: 3}
       propertyPath: m_LocalRotation.w
-      value: 0.014161397
+      value: 0.014161362
       objectReference: {fileID: 0}
     - target: {fileID: 5247650485044281852, guid: 061f308768b5b564bbb0f130d1a8f02e,
         type: 3}
       propertyPath: m_LocalRotation.x
-      value: 0.00019546802
+      value: 0.00019546723
       objectReference: {fileID: 0}
     - target: {fileID: 5247650485044281852, guid: 061f308768b5b564bbb0f130d1a8f02e,
         type: 3}
@@ -1429,7 +1429,7 @@ PrefabInstance:
     - target: {fileID: 5247650485044281852, guid: 061f308768b5b564bbb0f130d1a8f02e,
         type: 3}
       propertyPath: m_LocalRotation.z
-      value: -0.013800179
+      value: -0.013800159
       objectReference: {fileID: 0}
     - target: {fileID: 5247650485044281852, guid: 061f308768b5b564bbb0f130d1a8f02e,
         type: 3}

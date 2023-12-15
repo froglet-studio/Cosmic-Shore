@@ -134,18 +134,10 @@ namespace CosmicShore.Game.AI
             CrystalTransform = closestItem == null ? activeNode.transform : closestItem.transform;
         }
 
-        void Awake()
-        {
-            ship = GetComponent<Ship>();
-            if (AutoPilotEnabled)
-            {
-                ship.InputController.AutoPilotEnabled = true;
-                ship.ShipStatus.AutoPilotEnabled = true;
-            }
-        }
-
         void Start()
         {
+            ship = GetComponent<Ship>();
+
             maxDistanceSquared = maxDistance * maxDistance;
             aggressiveness = defaultAggressiveness;
             throttle = defaultThrottle;
@@ -166,6 +158,9 @@ namespace CosmicShore.Game.AI
         {
             if (AutoPilotEnabled)
             {
+                ship.InputController.AutoPilotEnabled = true;
+                ship.ShipStatus.AutoPilotEnabled = true;
+
                 //if (useAbility) StartCoroutine(UseAbilityCoroutine(ability));
 
                 var targetPosition = CrystalTransform.position;
