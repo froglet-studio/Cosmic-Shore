@@ -18,7 +18,7 @@ public class SpawnableHelix : SpawnableAbstractBase
 
         var trail = new Trail();
 
-        blockCount = 150;
+        //blockCount = 150;
         var xc1 = Random.Range(4, 16);
         var xc2 = Random.Range(.2f, 2);
         var xc3 = Random.Range(-5, 5);
