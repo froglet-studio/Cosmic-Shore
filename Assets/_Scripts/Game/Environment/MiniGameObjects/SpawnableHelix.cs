@@ -9,6 +9,7 @@ public class SpawnableHelix : SpawnableAbstractBase
     static int ObjectsSpawned = 0;
     [SerializeField] public float firstOrderRadius = 1;
     [SerializeField] public float secondOrderRadius = 1;
+    [SerializeField] float blockCount = 150;
 
     public override GameObject Spawn()
     {
@@ -17,7 +18,7 @@ public class SpawnableHelix : SpawnableAbstractBase
 
         var trail = new Trail();
 
-        float blockCount = 150;
+        blockCount = 150;
         var xc1 = Random.Range(4, 16);
         var xc2 = Random.Range(.2f, 2);
         var xc3 = Random.Range(-5, 5);
