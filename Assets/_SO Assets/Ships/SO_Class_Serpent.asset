@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0309a5343d820c14abd73b35f6fa50f1, type: 3}
+  m_Name: SO_Class_Serpent
+  m_EditorClassIdentifier: 
+  Class: 7
+  Name: Serpent
+  Description: Make those walls
+  Icon: {fileID: 21300000, guid: 3a6fc9befce30444884fe8912d237f2e, type: 3}
+  SelectedIcon: {fileID: 21300000, guid: 4dc09966e540a9c4c8bb466918fe43e9, type: 3}
+  PreviewImage: {fileID: 21300000, guid: b3fe0f4b92e2cf74b830808e3f8d88fc, type: 3}
+  TrailPreviewImage: {fileID: 21300000, guid: 2e75f6670391025489d30c8361fb8de3, type: 3}
+  CardSilohoutte: {fileID: 21300000, guid: 20c2cf23262a5354a8f8a0808a3acea8, type: 3}
+  CardSilohoutteActive: {fileID: 21300000, guid: a89a335fa1c02f745ba93948c9b7ee32,
+    type: 3}
+  Abilities:
+  - {fileID: 11400000, guid: cf4c7963673545946af80618f5a52917, type: 2}
+  - {fileID: 11400000, guid: 260209c83d5be594a81043ebceea8ddf, type: 2}
+  - {fileID: 11400000, guid: 2c4bb3cbbacfb02489a36a11aa4c3d1e, type: 2}
+  - {fileID: 11400000, guid: 094b4c0cea37d4a4fb02edf8122006d1, type: 2}
+  Vessels:
+  - {fileID: 11400000, guid: 0faece9fdfd892447bb8c90529873511, type: 2}
+  - {fileID: 11400000, guid: 7d2c8f9dc64f5e54ab64e0a134800169, type: 2}
+  - {fileID: 11400000, guid: afe308c5fbc1dc14a9ee07e455cdb2c6, type: 2}
+  - {fileID: 11400000, guid: f306b7034eb199b48986c56a2b76825d, type: 2}
+  TrainingGames:
+  - {fileID: 11400000, guid: dae692490d41dda488bf199e4fdb30af, type: 2}
+  - {fileID: 11400000, guid: 176e63d5800dcf147b46497fd88e0fea, type: 2}
+  - {fileID: 11400000, guid: c5f6d2d7142557647b39c30f48495c67, type: 2}
