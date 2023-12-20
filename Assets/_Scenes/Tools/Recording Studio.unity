@@ -871,6 +871,11 @@ PrefabInstance:
       propertyPath: m_Name
       value: SkyboxModel
       objectReference: {fileID: 0}
+    - target: {fileID: 1922600126866330691, guid: 8b8886c5e424ace48980294a663d65a3,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 8597243262904744741, guid: 8b8886c5e424ace48980294a663d65a3,
         type: 3}
       propertyPath: m_RootOrder
@@ -990,18 +995,18 @@ MonoBehaviour:
   positioningScheme: 0
   spawnSegmentWeights:
   - 1
-  - 5
-  - 1
+  - 0
+  - 0
   - 0
   Seed: 0
   parent: {fileID: 0}
   origin: {x: 0, y: 0, z: 0}
-  SphereRadius: 250
+  Radius: 250
   StraightLineLength: 0
-  RotationAmount: 10
+  RotationAmount: 0
   DifficultyAngle: 0
   InitializeOnStart: 1
-  numberOfSegments: 300
+  numberOfSegments: 30
 --- !u!1 &1078953702
 GameObject:
   m_ObjectHideFlags: 0
@@ -1053,7 +1058,7 @@ MonoBehaviour:
   GolfRules: 0
   GameCanvas: {fileID: 547474317}
   TimePlayedScoreMultiplier: 1
-  VolumeNormalizationQuotient: 145.65
+  ScoreNormalizationQuotient: 145.65
 --- !u!114 &1078953708
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1097,6 +1102,10 @@ MonoBehaviour:
   numberOfSegments: 30
   straightLineLength: 400
   ResetTrails: 1
+  ScaleCrystalPositionWithIntensity: 0
+  ScaleLengthWithIntensity: 1
+  ScaleNumberOfSegmentsWithIntensity: 1
+  helix: {fileID: 0}
 --- !u!4 &1165850849 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 8812619448024686936, guid: 14b7fddb8e30aa541a092201bc80b848,
@@ -1947,7 +1956,7 @@ PrefabInstance:
     - target: {fileID: 2151207714166088012, guid: 8a9d12e43096881468feb22e39e9fbeb,
         type: 3}
       propertyPath: defaultShip
-      value: 2
+      value: 6
       objectReference: {fileID: 0}
     - target: {fileID: 2151207714166088012, guid: 8a9d12e43096881468feb22e39e9fbeb,
         type: 3}
@@ -2378,6 +2387,8 @@ MonoBehaviour:
   trailBlock: {fileID: 4563009547826722997, guid: 2a19c011ad2d54641ad144fbe33d3586,
     type: 3}
   scale: {x: 1, y: 1, z: 5}
+  firstOrderRadius: 1
+  secondOrderRadius: 1
 --- !u!4 &2091254372
 Transform:
   m_ObjectHideFlags: 0
@@ -2463,7 +2474,7 @@ PrefabInstance:
     - target: {fileID: 8812619448024686937, guid: 14b7fddb8e30aa541a092201bc80b848,
         type: 3}
       propertyPath: m_IsActive
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8812619448024686939, guid: 14b7fddb8e30aa541a092201bc80b848,
         type: 3}

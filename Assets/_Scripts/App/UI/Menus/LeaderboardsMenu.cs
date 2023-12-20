@@ -167,6 +167,10 @@ namespace CosmicShore.App.UI.Menus
             for (var i = 0; i < LeaderboardEntriesV2.Count; i++)
             {
                 var score = LeaderboardEntriesV2[i];
+
+                if (SelectedGame.GolfScoring)
+                    score.Score *= -1;
+
                 HighScoresContainer.transform.GetChild(i).GetChild(0).GetComponent<TMP_Text>().text = (score.Position + 1).ToString();
                 if (string.IsNullOrEmpty(score.DisplayName))
                 {

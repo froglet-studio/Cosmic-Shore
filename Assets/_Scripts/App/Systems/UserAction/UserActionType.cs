@@ -2,6 +2,8 @@ namespace CosmicShore.App.Systems.UserActions
 {
     public enum UserActionType
     {
+        None = -1,
+
         // Arcade Related -- 100s
         ViewArcadeMenu = 100,
         ViewArcadeLoadoutMenu = 101,

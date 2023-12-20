@@ -60,6 +60,8 @@ namespace CosmicShore.App.UI.Menus
 
         bool FirstAppLaunchExperience()
         {
+            return false;
+
             Debug.Log("MainMenu.cs first app launch");
             if (DebugFirstAppLaunch)
             {

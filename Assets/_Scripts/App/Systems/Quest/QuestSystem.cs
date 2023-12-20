@@ -27,7 +27,7 @@ namespace CosmicShore.App.Systems.Quests
 
         public void CompleteQuest(Quest quest)
         {
-            Debug.LogWarning($"{nameof(QuestSystem)}.{nameof(CompleteQuest)} - Quest Completed - Shards to issue: {quest.ShardValue}");
+            Debug.Log($"{nameof(QuestSystem)}.{nameof(CompleteQuest)} - Quest Completed - Shards to issue: {quest.ShardValue}");
 
             // Grant Reward
             // TODO: Look for PlayerDataController
@@ -71,10 +71,10 @@ namespace CosmicShore.App.Systems.Quests
         /// <param name="action"></param>
         void UpdateQuestProgressOnUserActionCompleted(UserAction action)
         {
-            Debug.LogWarning($"{nameof(UpdateQuestProgressOnUserActionCompleted)}: {action.ActionType}");
-            Debug.LogWarning($"ActiveQuests.Count:{ActiveQuests.Count}, ActiveQuests.ContainsKey(action): {ActiveQuests.ContainsKey(action.Label)}");
+            Debug.Log($"{nameof(UpdateQuestProgressOnUserActionCompleted)}: {action.ActionType}");
+            Debug.Log($"ActiveQuests.Count:{ActiveQuests.Count}, ActiveQuests.ContainsKey(action): {ActiveQuests.ContainsKey(action.Label)}");
             foreach (var quest in ActiveQuests)
-                Debug.LogWarning($"ActiveQuests.Key: {quest.Key}");
+                Debug.Log($"ActiveQuests.Key: {quest.Key}");
 
             if (ActiveQuests.Count <= 0) return;
             if (!ActiveQuests.ContainsKey(action.Label)) return;
@@ -90,7 +90,7 @@ namespace CosmicShore.App.Systems.Quests
                     if (TestQuest.CompletionAction.Value <= action.Value)
                         CompleteQuest(TestQuest);
                     else
-                        Debug.LogWarning($"Score not high enough: {action.Value}");
+                        Debug.Log($"Score not high enough: {action.Value}");
 
                 }
                 else

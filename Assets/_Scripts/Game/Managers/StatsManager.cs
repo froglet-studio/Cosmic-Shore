@@ -345,22 +345,22 @@ public class StatsManager : Singleton<StatsManager>
         }
         statsString += "</mspace=4.5px>";
 
-        Debug.LogWarning(statsString.ToString());
-        Debug.LogWarning(JsonConvert.SerializeObject(playerStats, Formatting.Indented));
-        Debug.LogWarning(JsonConvert.SerializeObject(teamStats, Formatting.Indented));
+        Debug.Log(statsString.ToString());
+        Debug.Log(JsonConvert.SerializeObject(playerStats, Formatting.Indented));
+        Debug.Log(JsonConvert.SerializeObject(teamStats, Formatting.Indented));
 
         int i = 0;
         foreach (var team in teamStats.Keys)
         {
             var container = EndOfRoundStatContainers[i];
-            Debug.LogWarning($"Team Stats - Team:{team}");
+            Debug.Log($"Team Stats - Team:{team}");
             i++;
         }
 
         i = 0;
         foreach (var player in playerStats.Keys)
         {
-            Debug.LogWarning($"PlayerStats - Player:{player}");
+            Debug.Log($"PlayerStats - Player:{player}");
 
             var container = EndOfRoundStatContainers[i];
             container.transform.GetChild(0).GetComponent<TMP_Text>().text = player;

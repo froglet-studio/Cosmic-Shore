@@ -2,6 +2,8 @@ namespace CosmicShore.App.Systems.CTA
 {
     public enum CallToActionTargetType
     {
+        None = -1,
+
         // Arcade Related -- 100s
         ArcadeMenu = 100,
         ArcadeLoadoutMenu = 101,

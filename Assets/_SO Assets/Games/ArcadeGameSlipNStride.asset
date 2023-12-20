@@ -15,13 +15,14 @@ MonoBehaviour:
   Mode: 13
   Name: Slip'n'Stride
   Description: Switch between trail sweet spots to find the optimal path to the crystal
-  Icon: {fileID: 21300000, guid: 3393ef5bcc756364d98dc478fc0fe52b, type: 3}
-  SelectedIcon: {fileID: 21300000, guid: b734e1a473e014c4198c58f6c02b894d, type: 3}
+  Icon: {fileID: 21300000, guid: d7304af54e4930545a2bafd4c4b193f1, type: 3}
+  SelectedIcon: {fileID: 21300000, guid: 9842120c8e297c64d8e6e9bed82feeb5, type: 3}
   CardBackground: {fileID: 21300000, guid: bd7a8cdc016c46b48ac0e048f42cf948, type: 3}
   PreviewClip: {fileID: 241334157148977051, guid: b2779f5eadc28b4429d1fcb4d5f9f731,
     type: 3}
   Vessels:
   - {fileID: 11400000, guid: b997308bc8cf75249adf9ca2126a3789, type: 2}
+  GolfScoring: 1
   MinPlayers: 1
   MaxPlayers: 1
   MinIntensity: 2

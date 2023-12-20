@@ -17,8 +17,8 @@ MonoBehaviour:
   Description: "Get in your flow and stay there. Hard decisions are for other classes.
     You\u2019re here to bounce around and ride your tubes, leaving a wake of creation
     and destruction."
-  Icon: {fileID: 21300000, guid: 7408f399d3569ad4a9bf07803ffc97b3, type: 3}
-  SelectedIcon: {fileID: 21300000, guid: f48eeb886e0607842a30a3bad4ae2d20, type: 3}
+  Icon: {fileID: 21300000, guid: dd6c440b915dfcd40a98efb3cb1c9901, type: 3}
+  SelectedIcon: {fileID: 21300000, guid: 8bdd9284e6bf03042a483085576fe13a, type: 3}
   PreviewImage: {fileID: 21300000, guid: b3fe0f4b92e2cf74b830808e3f8d88fc, type: 3}
   TrailPreviewImage: {fileID: 21300000, guid: 2e75f6670391025489d30c8361fb8de3, type: 3}
   CardSilohoutte: {fileID: 21300000, guid: aa38057bfd4327b49b55f5ebbdeeda78, type: 3}

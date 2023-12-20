@@ -82,7 +82,7 @@ namespace CosmicShore.App.Systems.CTA
             {
                 // Add in a test notification for the arcade menu
                 //AddCallToAction(new CallToAction(CallToActionTargetType.HangarMenu, UserActionType.ViewHangarMenu));
-                AddCallToAction(new CallToAction(CallToActionTargetType.ArcadeLoadoutMenu, UserActionType.ViewArcadeLoadoutMenu, new List<CallToActionTargetType>() { CallToActionTargetType.ArcadeMenu }));
+                //AddCallToAction(new CallToAction(CallToActionTargetType.ArcadeLoadoutMenu, UserActionType.ViewArcadeLoadoutMenu, new List<CallToActionTargetType>() { CallToActionTargetType.ArcadeMenu }));
             }
 
             // TODO: Go to server and get real calls to action
