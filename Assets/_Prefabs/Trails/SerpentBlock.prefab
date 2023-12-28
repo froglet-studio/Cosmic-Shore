@@ -14,7 +14,6 @@ GameObject:
   - component: {fileID: 6724784892155022458}
   - component: {fileID: 4563009547826722997}
   - component: {fileID: 6865974451839549218}
-  - component: {fileID: 2891925687100462769}
   m_Layer: 0
   m_Name: SerpentBlock
   m_TagString: Untagged
@@ -144,27 +143,15 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5776304996075792891}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ca5b7b07910bd714c8f2c88c70b1f30a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   isActive: 0
-  BondSiteA: {x: 0, y: 0, z: 0}
-  BondSiteB: {x: 0, y: 0, z: 0}
-  BondSiteC: {x: 0, y: 0, z: 0}
-  SiteAIsEmpty: 1
-  SiteBIsEmpty: 1
-  SiteCIsEmpty: 1
---- !u!114 &2891925687100462769
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5776304996075792891}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5fe0c5c96410dc349b776189824c111b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  RightMate: {fileID: 0}
+  LeftMate: {fileID: 0}
+  TopIsBonded: 0
+  RightIsBonded: 0
+  BottomIsBonded: 0
+  LeftIsBonded: 0
