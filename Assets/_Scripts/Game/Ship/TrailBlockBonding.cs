@@ -1,12 +1,20 @@
 using CosmicShore.Core;
 using System.Collections;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 
 namespace CosmicShore
 {
+    public struct TrailBlockBondingAndIsRight
+    {
+        public TrailBlockBonding trailBlockBonding;
+        public bool isRight;
+    }
+
     public class TrailBlockBonding : MonoBehaviour
     {
+        public bool isActive = false;
         private Vector3 scale; // Scale of the TrailBlock
         private Vector3 BondSiteTop;
         private Vector3 BondSiteRight;
@@ -19,36 +27,81 @@ namespace CosmicShore
         private Vector3 globalBondSiteBottom;
         private Vector3 globalBondSiteLeft; 
 
-        private TrailBlockBonding closestMate;
-        private bool isBonded = false;
-        private float snapDistance = 0.1f;
-        float separationDistance = 1f;// Threshold distance to snap into position
+        public TrailBlockBondingAndIsRight TopMate;
+        public TrailBlockBonding RightMate;
+        public TrailBlockBondingAndIsRight BottomMate;
+        public TrailBlockBonding LeftMate;
+
+        public bool TopIsBonded = false;
+        public bool RightIsBonded = false;         
+        public bool BottomIsBonded = false;
+        public bool LeftIsBonded = false;
+
+        public HashSet<TrailBlockBonding> MateList = new(); 
+
+        private float snapDistance = 2f;
+        float separationDistance = 6f;// Threshold distance to snap into position
 
         void Start()
         {
-            scale = GetComponent<TrailBlock>().TargetScale;
+            TrailBlock trailBlock = GetComponent<TrailBlock>();
+            if (trailBlock.Trail.TrailList.Count%10 == 0) isActive = true;
+            scale = trailBlock.TargetScale;
             CalculateBondSites();
             CalculateGlobalBondSites();
         }
 
         void FixedUpdate()
         {
-            if (!isBonded)
+            if (!isActive) return;
+            if (TopMate.trailBlockBonding == null)
             {
-                closestMate = FindClosestMate();
-                if (closestMate != null)
+                TopMate = FindClosestMate(globalBondSiteTop); 
+                
+                if (TopMate.trailBlockBonding)
                 {
-                    //MoveTowardsMate(closestMate);
-                    //RotateTowardsMate(closestMate);
-                    CalculateGlobalBondSites(); // Update global bond sites after movement and rotation
-
-                    if (IsCloseEnoughToSnap(closestMate))
-                    {
-                        //SnapToPosition(closestMate);
-                        isBonded = true;
-                        CalculateGlobalBondSites(); // Update again after snapping
-                    }
+                    if (TopMate.isRight) TopMate.trailBlockBonding.RightMate = this;
+                    else TopMate.trailBlockBonding.LeftMate = this;
+                    MateList.Add(TopMate.trailBlockBonding);
+                    TopMate.trailBlockBonding.MateList.Add(this);
                 }
+
+
+                //if (TopMate.trailBlockBonding != null)
+                //{
+                //    TopIsBonded = true;
+
+                //    //if (IsCloseEnoughToSnap(closestMate))
+                //    //{
+                //    //    SnapToPosition(closestMate);
+                //    //    topIsBonded = true;
+                //    //    CalculateGlobalBondSites(); // Update again after snapping
+                //    //}
+                //}
+            }
+            else
+            {
+                MoveTowardsMate(TopMate, globalBondSiteTop);
+                RotateTowardsMate(TopMate);
+                CalculateGlobalBondSites();
+            }
+
+            if (BottomMate.trailBlockBonding == null)
+            {
+                BottomMate = FindClosestMate(globalBondSiteBottom);
+                if (BottomMate.trailBlockBonding)
+                {
+                    if (BottomMate.isRight) BottomMate.trailBlockBonding.RightMate = this;
+                    else BottomMate.trailBlockBonding.LeftMate = this;
+                    MateList.Add(BottomMate.trailBlockBonding);
+                    BottomMate.trailBlockBonding.MateList.Add(this);
+                }
+            }
+            else
+            {
+                MoveTowardsMate(BottomMate, globalBondSiteBottom);
+                RotateTowardsMate(BottomMate);
+                CalculateGlobalBondSites();
             }
         }
 
@@ -60,8 +113,7 @@ namespace CosmicShore
             BondSiteTop = ((scale.y/2) + separationDistance) * transform.up;
             BondSiteRight = ((scale.y / 2) - (scale.x/2)) * transform.up + (((scale.x/2) + separationDistance) * transform.right);
             BondSiteBottom = -((scale.y / 2) + separationDistance) * transform.up;
-            BondSiteLeft = -((scale.y / 2) - (scale.x / 2)) * transform.up - (((scale.x/2) + separationDistance) * transform.right);
-            // If you need BondSiteC, add its calculation here
+            BondSiteLeft = -(((scale.y / 2) - (scale.x / 2)) * transform.up) - ((scale.x/2) + separationDistance) * transform.right;
         }
         void CalculateGlobalBondSites()
         {
@@ -71,37 +123,96 @@ namespace CosmicShore
             globalBondSiteLeft = transform.position + transform.TransformDirection(BondSiteLeft);
         }
 
-        private TrailBlockBonding FindClosestMate()
+
+        // this method so if checks if this is in each struct in the list
+        private bool IsMate(TrailBlockBonding mateComponent)
+        {
+            return mateComponent.MateList.Count > 0;
+        }
+
+
+        // this method generalize both of the methods above
+        private TrailBlockBondingAndIsRight FindClosestMate(Vector3 bondSite)
         {
             float closestDistance = float.MaxValue;
             TrailBlockBonding closest = null;
-
-            foreach (var potentialMate in Physics.OverlapSphere(globalBondSiteTop, 10)) // Adjust radius as needed
+            bool isRight = false;
+            var colliders = Physics.OverlapSphere(bondSite, 20); // Adjust radius as needed
+            if (colliders.Length < 50) return new TrailBlockBondingAndIsRight { trailBlockBonding = null, isRight = false };
+            foreach (var potentialMate in colliders) // Adjust radius as needed
             {
                 var mateComponent = potentialMate.GetComponent<TrailBlockBonding>();
-                if (mateComponent != null && mateComponent != this && !mateComponent.isBonded)
+
+                if (mateComponent != null && mateComponent != this && !IsMate(mateComponent))
                 {
-                    float distance = Vector3.Distance(globalBondSiteTop, mateComponent.globalBondSiteRight);
-                    if (distance < closestDistance)
+                    if (!mateComponent.RightIsBonded)
                     {
-                        closestDistance = distance;
-                        closest = mateComponent;
+                        float distance = Vector3.Distance(bondSite, mateComponent.globalBondSiteRight);
+                        if (distance < closestDistance)
+                        {
+                            closestDistance = distance;
+                            closest = mateComponent;
+                            isRight = true;
+                        }
+                    }
+                    if (!mateComponent.LeftIsBonded)
+                    {
+                        float distance = Vector3.Distance(bondSite, mateComponent.globalBondSiteLeft);
+                        if (distance < closestDistance)
+                        {
+                            closestDistance = distance;
+                            closest = mateComponent;
+                            isRight = false;
+                        }
                     }
                 }
             }
-            return closest;
+            if (closest)
+            {
+                if (!closest.RightIsBonded) closest.RightIsBonded = isRight;
+                if (!closest.LeftIsBonded) closest.LeftIsBonded = !isRight;
+            }
+            // this returns a TrailBlockBondingAndIsRight with the closest and the isRight bool
+            return new TrailBlockBondingAndIsRight { trailBlockBonding = closest, isRight = isRight };
         }
 
-        private void MoveTowardsMate(TrailBlockBonding mate)
+        // this method returns a bool that is true if TopMate is not null and is equal to the mateComponent
+        private bool IsTopMate(TrailBlockBonding mateComponent)
         {
-            Vector3 directionToMate = mate.globalBondSiteRight - globalBondSiteTop;
-            transform.position += directionToMate.normalized * Time.deltaTime; // Adjust speed as needed
+            //Debug.Log($"TrailBlockBonding: TopMate {TopMate.trailBlockBonding != null && TopMate.trailBlockBonding.Equals(mateComponent)}");
+            return TopMate.trailBlockBonding != null && TopMate.trailBlockBonding.Equals(mateComponent); 
         }
 
-        private void RotateTowardsMate(TrailBlockBonding mate)
+        // now for bottom mate
+        private bool IsBottomMate(TrailBlockBonding mateComponent)
         {
-            Vector3 directionToMate = mate.globalBondSiteRight - globalBondSiteTop;
-            Quaternion targetRotation = Quaternion.LookRotation(directionToMate);
+            //Debug.Log($"TrailBlockBonding: BottomMate {BottomMate.trailBlockBonding != null && BottomMate.trailBlockBonding.Equals(mateComponent)}");
+            return BottomMate.trailBlockBonding != null && BottomMate.trailBlockBonding.Equals(mateComponent);
+        }
+
+        // this method is a generalized version of MoveTowardsMate()
+        private void MoveTowardsMate(TrailBlockBondingAndIsRight mate, Vector3 bondSite)
+        {
+            Vector3 directionToMate;
+            if (mate.isRight) directionToMate = mate.trailBlockBonding.globalBondSiteRight - bondSite;
+            else directionToMate = mate.trailBlockBonding.globalBondSiteLeft - bondSite;
+            if (directionToMate.sqrMagnitude < snapDistance)
+            {
+                isActive = false;
+                mate.trailBlockBonding.isActive = false;
+
+            }
+            //transform.position += directionToMate * Time.deltaTime; // Adjust speed as needed
+            mate.trailBlockBonding.transform.position -= directionToMate * Time.deltaTime; // Adjust speed as needed
+            mate.trailBlockBonding.isActive = true;                                                                               
+        }
+
+        private void RotateTowardsMate(TrailBlockBondingAndIsRight mate)
+        {
+            int signRight = mate.isRight ? -1 : 1;
+            int signTop = IsTopMate(mate.trailBlockBonding) ? 1 : -1;
+            Quaternion targetRotation = Quaternion.LookRotation(mate.trailBlockBonding.transform.forward, signRight * signTop * mate.trailBlockBonding.transform.right);
+            //var angle = Quaternion.Angle(transform.rotation, targetRotation);
             transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime); // Adjust rotation speed as needed
         }
 
