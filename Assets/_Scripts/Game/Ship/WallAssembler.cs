@@ -22,7 +22,7 @@ namespace CosmicShore
 
     public class WallAssembler : MonoBehaviour
     {
-        int wallDepth = 0;
+
         public bool IsActive = false;
         private Vector3 scale; // Scale of the TrailBlock
         private Vector3 BondSiteTop;
@@ -35,78 +35,111 @@ namespace CosmicShore
         private Vector3 globalBondSiteBottom;
         private Vector3 globalBondSiteLeft;
 
-        public BondMate TopMate;
-        public WallAssembler RightMate;
-        public BondMate BottomMate;
-        public WallAssembler LeftMate;
+        [HideInInspector] public BondMate TopMate;
+        [HideInInspector] public WallAssembler RightMate;
+        [HideInInspector] public BondMate BottomMate;
+        [HideInInspector] public WallAssembler LeftMate;
 
-        public bool TopIsBonded = false;
-        public bool RightIsBonded = false;
-        public bool BottomIsBonded = false;
-        public bool LeftIsBonded = false;
+        [HideInInspector] public bool TopIsBonded = false;
+        [HideInInspector] public bool RightIsBonded = false;
+        [HideInInspector] public bool BottomIsBonded = false;
+        [HideInInspector] public bool LeftIsBonded = false;
 
-        public HashSet<WallAssembler> MateList = new();
+        [HideInInspector] public HashSet<WallAssembler> MateList = new();
+        TrailBlock trailBlock;
 
-        private float snapDistance = .1f;
+        private float snapDistance = .2f;
         float separationDistance = 1f;// Threshold distance to snap into position
+        [SerializeField] int activeInterval = 100;
+        [SerializeField] int colliderTheshold = 25;
+        [SerializeField] float radius = 40f;
 
         void Start()
         {
-            TrailBlock trailBlock = GetComponent<TrailBlock>();
-            if (trailBlock.Trail.TrailList.Count % 10 == 0) IsActive = true;
+            trailBlock = GetComponent<TrailBlock>();
+            if (trailBlock.Trail.TrailList.Count % activeInterval == 0)
+            {
+                StartCoroutine(LookForMates());
+                trailBlock.ActivateShield();
+            }
             scale = trailBlock.TargetScale;
             CalculateBondSites();
             CalculateGlobalBondSites();
         }
 
-        void FixedUpdate()
+        public void StartBonding()
         {
-            if (!IsActive) return;
-            if (TopMate.Mate == null)
-            {
-                TopMate = FindClosestMate(globalBondSiteTop, SiteType.Top);
+            StartCoroutine(LookForMates());
+        }
 
-                if (TopMate.Mate)
+        IEnumerator LookForMates()
+        {
+            while (true)
+            {
+                yield return new WaitForSeconds(3f);
+                if (TopMate.Mate == null)
                 {
-                    TopMate.Mate.RightMate = this;
-                    MateList.Add(TopMate.Mate);
-                    TopMate.Mate.MateList.Add(this);
-                }
-            }
-            else
-            {
-                RotateMate(TopMate);
-                MoveMateToSite(TopMate, globalBondSiteTop);
-            }
+                    TopMate = FindClosestMate(globalBondSiteTop, SiteType.Top);
 
-            if (BottomMate.Mate == null)
-            {
-                BottomMate = FindClosestMate(globalBondSiteBottom, SiteType.Bottom);
-                if (BottomMate.Mate)
+                    if (TopMate.Mate)
+                    {
+                        TopMate.Mate.RightMate = this;
+                        MateList.Add(TopMate.Mate);
+                        TopMate.Mate.MateList.Add(this);
+                        updateTopMate = StartCoroutine(UpdateTopMate());
+                    }
+                }
+                if (BottomMate.Mate == null)
                 {
-                    BottomMate.Mate.LeftMate = this;
-                    MateList.Add(BottomMate.Mate);
-                    BottomMate.Mate.MateList.Add(this);
+                    BottomMate = FindClosestMate(globalBondSiteBottom, SiteType.Bottom);
+                    if (BottomMate.Mate)
+                    {
+                        BottomMate.Mate.LeftMate = this;
+                        MateList.Add(BottomMate.Mate);
+                        BottomMate.Mate.MateList.Add(this);
+                        updateBottomMate = StartCoroutine(UpdateBottomMate());
+                    }
                 }
-            }
-            else
-            {
-                RotateMate(BottomMate);
-                MoveMateToSite(BottomMate, globalBondSiteBottom);
-            }
+                if (TopIsBonded && BottomIsBonded)
+                {
+                    //Debug.Log("Bonded Top and Bottom");
+                    StopAllCoroutines();
+                    trailBlock.Grow();
+                    if (TopMate.Mate.MateList.Count < 2) TopMate.Mate.StartBonding();
+                    if (BottomMate.Mate.MateList.Count < 2) BottomMate.Mate.StartBonding();
 
-            if (TopIsBonded && BottomIsBonded)
-            {
-                Debug.Log("Bonded Top and Bottom");
-                IsActive = false;
-                TopMate.Mate.IsActive = true;
-                BottomMate.Mate.IsActive = true;
-                TopMate.Mate.wallDepth = wallDepth + 1;
-                BottomMate.Mate.wallDepth = wallDepth + 1;
+                }
             }
         }
 
-        // Rest of the script remains the same
+        Coroutine updateTopMate;
+        IEnumerator UpdateTopMate()
+        {
+            while (true)
+            {
+                yield return null;
+                if (TopMate.Mate != null)
+                {
+                    RotateMate(TopMate);
+                    MoveMateToSite(TopMate, globalBondSiteTop);
+                }
+            }
+        }
+
+        Coroutine updateBottomMate;
+        IEnumerator UpdateBottomMate()
+        {
+            while (true)
+            {
+                yield return null;
+
+                if (BottomMate.Mate != null)
+                {
+                    RotateMate(BottomMate);
+                    MoveMateToSite(BottomMate, globalBondSiteBottom);
+                }
+            }
+        }
 
         void CalculateBondSites()
         {
@@ -118,10 +151,15 @@ namespace CosmicShore
         }
         public void CalculateGlobalBondSites()
         {
-            globalBondSiteTop = transform.position + transform.TransformDirection(BondSiteTop);
-            globalBondSiteRight = transform.position + transform.TransformDirection(BondSiteRight);
-            globalBondSiteBottom = transform.position + transform.TransformDirection(BondSiteBottom);
-            globalBondSiteLeft = transform.position + transform.TransformDirection(BondSiteLeft);
+            BondSiteTop = ((scale.y / 2) + separationDistance) * transform.up;
+            BondSiteRight = ((scale.y / 2) - (scale.x / 2)) * transform.up + (((scale.x / 2) + separationDistance) * transform.right);
+            BondSiteBottom = -((scale.y / 2) + separationDistance) * transform.up;
+            BondSiteLeft = -(((scale.y / 2) - (scale.x / 2)) * transform.up) - ((scale.x / 2) + separationDistance) * transform.right;
+
+            globalBondSiteTop = transform.position + BondSiteTop;
+            globalBondSiteRight = transform.position + BondSiteRight;
+            globalBondSiteBottom = transform.position + BondSiteBottom;
+            globalBondSiteLeft = transform.position + BondSiteLeft;
         }
 
 
@@ -131,43 +169,61 @@ namespace CosmicShore
             return mateComponent.MateList == null ? false : mateComponent.MateList.Count > 0;
         }
 
+        public void ClearMateLists() 
+        {
+            foreach (var mate in MateList)
+            {
+                mate.MateList.Remove(this);
+                mate.ClearMateLists();
+            }
+            MateList.Clear();
+        }
+
         // this method generalize both of the methods above
         private BondMate FindClosestMate(Vector3 bondSite, SiteType siteType)
         {
             float closestDistance = float.MaxValue;
             WallAssembler closest = null;
             SiteType bondee = SiteType.Right;
-            var colliders = Physics.OverlapSphere(bondSite, 20); // Adjust radius as needed
-            if (colliders.Length < 50) return new BondMate { Mate = null};
+            var colliders = Physics.OverlapSphere(bondSite, radius); // Adjust radius as needed
+            if (colliders.Length < colliderTheshold) return new BondMate { Mate = null};
             foreach (var potentialMate in colliders) // Adjust radius as needed
             {
-                var mateComponent = potentialMate.GetComponent<WallAssembler>();
-                if (mateComponent.wallDepth > wallDepth)
+                WallAssembler mateComponent = potentialMate.GetComponent<WallAssembler>();
+                if (mateComponent == null) //continue;
                 {
-                    IsActive = false;
-                    return new BondMate { Mate = null };
+                    var trailBlock = potentialMate.GetComponent<TrailBlock>();
+                    if (trailBlock != null)
+                    {
+                        trailBlock.TargetScale = scale;
+                        trailBlock.ChangeSize();
+                        trailBlock.Steal(this.trailBlock.Player, this.trailBlock.Team);
+                        mateComponent = trailBlock.transform.gameObject.AddComponent<WallAssembler>();
+                    }
+                    else continue;
                 }
-                if (mateComponent != null && IsMate(mateComponent) && mateComponent != this)
+
+                if (IsMate(mateComponent) && mateComponent != this)
                 {
-                    if (Vector3.Distance(bondSite, mateComponent.globalBondSiteRight) < snapDistance)
-                    {
-                        Debug.Log("ReFound MateRight");
-                        return new BondMate { Mate = mateComponent, Substrate = siteType, Bondee = SiteType.Right};
-                    }
-                    if (Vector3.Distance(bondSite, mateComponent.globalBondSiteLeft) < snapDistance)
-                    {
-                        Debug.Log("ReFound MateLeft");
-                        return new BondMate { Mate = mateComponent, Substrate = siteType, Bondee = SiteType.Left };
-                    }
+                if (Vector3.Distance(bondSite, mateComponent.globalBondSiteRight) < snapDistance)
+                {
+                    //Debug.Log("ReFound MateRight");
+                    return new BondMate { Mate = mateComponent, Substrate = siteType, Bondee = SiteType.Right };
                 }
-                else if (mateComponent != null && mateComponent != this)
+                if (Vector3.Distance(bondSite, mateComponent.globalBondSiteLeft) < snapDistance)
+                {
+                    //Debug.Log("ReFound MateLeft");
+                    return new BondMate { Mate = mateComponent, Substrate = siteType, Bondee = SiteType.Left };
+                }
+                }
+                if (!IsMate(mateComponent) && mateComponent != this)
                 {
                     if (siteType == SiteType.Top)
                     {
                         float distance = Vector3.Distance(bondSite, mateComponent.globalBondSiteRight);
                         if (distance < closestDistance)
                         {
-                            Debug.Log("Found MateRight");
+                            //Debug.Log("Found MateRight");
                             closestDistance = distance;
                             closest = mateComponent;
                             bondee = SiteType.Right;
@@ -178,7 +234,7 @@ namespace CosmicShore
                         float distance = Vector3.Distance(bondSite, mateComponent.globalBondSiteLeft);
                         if (distance < closestDistance)
                         {
-                            Debug.Log("Found MateLeft");
+                            //Debug.Log("Found MateLeft");
                             closestDistance = distance;
                             closest = mateComponent;
                             bondee = SiteType.Left;
@@ -186,30 +242,35 @@ namespace CosmicShore
                     }
                 }
             }
-            //if (closest)
-            //{
-            //    if (!closest.RightIsBonded) closest.RightIsBonded = isRight;
-            //    if (!closest.LeftIsBonded) closest.LeftIsBonded = !isRight;
-            //}
-            // this returns a TrailBlockBondingAndIsRight with the closest and the isRight bool
             return new BondMate { Mate = closest, Substrate = siteType,  Bondee = bondee };
         }
-
-        // this method is a generalized version of MoveTowardsMate()
+  
         private void MoveMateToSite(BondMate mate, Vector3 bondSite)
         {
-            var initialPosition = mate.Bondee == SiteType.Right ? mate.Mate.globalBondSiteRight : mate.Mate.globalBondSiteLeft;
-            var directionToMate = bondSite - initialPosition;
-            if (directionToMate.sqrMagnitude < snapDistance)
             {
-                Debug.Log("Snapped");
-                //mate.Mate.IsActive = true;
-                if (mate.Substrate == SiteType.Top) TopIsBonded = true;
-                else if (mate.Substrate == SiteType.Bottom) BottomIsBonded = true;
+                var initialPosition = mate.Bondee == SiteType.Right ? mate.Mate.globalBondSiteRight : mate.Mate.globalBondSiteLeft;
+                var directionToMate = bondSite - initialPosition;
+                if (directionToMate.sqrMagnitude < snapDistance)
+                {
+                    //Debug.Log("Snapped");
+                    SnapRotateMate(mate);
+                    CalculateBondSites();
+                    mate.Mate.transform.position = bondSite - (mate.Bondee == SiteType.Right ? mate.Mate.BondSiteRight : mate.Mate.BondSiteLeft);
+                    if (mate.Substrate == SiteType.Top)
+                    {
+                        StopCoroutine(updateTopMate);
+                        TopIsBonded = true;
+                    }
+                    else if (mate.Substrate == SiteType.Bottom)
+                    {
+                        StopCoroutine(updateBottomMate);
+                        BottomIsBonded = true;
+                    }
+                }
+                mate.Mate.transform.position += directionToMate * Time.deltaTime;
+                mate.Mate.CalculateGlobalBondSites();
+                CalculateGlobalBondSites();
             }
-            mate.Mate.transform.position += directionToMate * Time.deltaTime;
-            mate.Mate.CalculateGlobalBondSites();
-            CalculateGlobalBondSites();
         }
 
         private void RotateMate(BondMate mate)
@@ -223,24 +284,15 @@ namespace CosmicShore
             CalculateGlobalBondSites();
         }
 
-        private bool IsCloseEnoughToSnap(WallAssembler mate)
+        private void SnapRotateMate(BondMate mate)
         {
-            return Vector3.Distance(globalBondSiteTop, mate.globalBondSiteRight) < snapDistance;
+            int signRight = mate.Bondee == SiteType.Right ? 1 : -1;
+            int signTop = mate.Substrate == SiteType.Top ? 1 : -1;
+            Quaternion targetRotation = Quaternion.LookRotation(transform.forward, signRight * signTop * transform.right);
+            mate.Mate.transform.rotation = targetRotation;
+            mate.Mate.CalculateGlobalBondSites();
+            CalculateGlobalBondSites();
         }
 
-        private void SnapToPosition(WallAssembler mate)
-        {
-            // Ensure directionToMate is not a zero vector
-            Vector3 directionToMate = mate.globalBondSiteRight - globalBondSiteTop;
-            if (directionToMate != Vector3.zero)
-            {
-                // Correctly position the block taking into account the local offset and separation
-                transform.position = mate.globalBondSiteRight - transform.TransformDirection(BondSiteTop);
-                transform.rotation = Quaternion.LookRotation(directionToMate);
-
-                // Update the global positions of the bond sites
-                CalculateGlobalBondSites();
-            }
-        }
     }
 }
