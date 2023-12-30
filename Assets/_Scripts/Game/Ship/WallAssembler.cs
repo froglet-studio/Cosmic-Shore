@@ -5,25 +5,25 @@ using UnityEngine;
 
 namespace CosmicShore
 {
-    public struct BondMate
-    {
-        public WallAssembler Mate;
-        public SiteType Substrate;
-        public SiteType Bondee;
-    }
-
-    public enum SiteType
-    {
-        Top,
-        Right,
-        Bottom,
-        Left
-    }
 
     public class WallAssembler : MonoBehaviour
     {
+        public struct BondMate
+        {
+            public WallAssembler Mate;
+            public SiteType Substrate;
+            public SiteType Bondee;
+        }
 
-        public bool IsActive = false;
+        public enum SiteType
+        {
+            Top,
+            Right,
+            Bottom,
+            Left
+        }
+
+        //public bool IsActive = false;
         private Vector3 scale; // Scale of the TrailBlock
         private Vector3 BondSiteTop;
         private Vector3 BondSiteRight;
@@ -49,19 +49,13 @@ namespace CosmicShore
         TrailBlock trailBlock;
 
         private float snapDistance = .2f;
-        float separationDistance = 1f;// Threshold distance to snap into position
-        [SerializeField] int activeInterval = 100;
+        float separationDistance = 2f;
         [SerializeField] int colliderTheshold = 25;
         [SerializeField] float radius = 40f;
 
         void Start()
         {
             trailBlock = GetComponent<TrailBlock>();
-            if (trailBlock.Trail.TrailList.Count % activeInterval == 0)
-            {
-                StartCoroutine(LookForMates());
-                trailBlock.ActivateShield();
-            }
             scale = trailBlock.TargetScale;
             CalculateBondSites();
             CalculateGlobalBondSites();
