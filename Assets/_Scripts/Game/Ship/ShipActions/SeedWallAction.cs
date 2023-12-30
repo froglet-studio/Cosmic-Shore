@@ -22,7 +22,9 @@ namespace CosmicShore
             if (resourceSystem.CurrentAmmo > resourceSystem.MaxAmmo / enhancementsPerFullAmmo)
             {
                resourceSystem.ChangeAmmoAmount(-resourceSystem.MaxAmmo / enhancementsPerFullAmmo);
-               spawner.Trail.TrailList[spawner.Trail.TrailList.Count-1].gameObject.GetComponent<WallAssembler>().StartBonding();
+                var trailBlock = spawner.Trail.TrailList[spawner.Trail.TrailList.Count - 1].gameObject;
+                trailBlock.AddComponent<WallAssembler>();
+                trailBlock.GetComponent<WallAssembler>().StartBonding();
             }
         }
 

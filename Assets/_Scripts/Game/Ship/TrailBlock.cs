@@ -16,10 +16,10 @@ namespace CosmicShore.Core
 
         [Header("Trail Block Volume")]
         [SerializeField] Vector3 minScale = new Vector3 (.5f, .5f, .5f);
-        [SerializeField] Vector3 maxScale = new Vector3 (10, 10, 10);
+        [SerializeField] public Vector3 maxScale = new Vector3 (10, 10, 10);
         public Vector3 TargetScale;
         Vector3 outerDimensions; // defines volume
-        [SerializeField] Vector3 growthVector = new Vector3(0, 2, 0);
+        [SerializeField] public Vector3 growthVector = new Vector3(0, 2, 0);
         public float Volume { get => outerDimensions.x * outerDimensions.y * outerDimensions.z; }
         float growthRate = .01f;
 

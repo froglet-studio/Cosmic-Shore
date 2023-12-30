@@ -145,10 +145,7 @@ namespace CosmicShore
         }
         public void CalculateGlobalBondSites()
         {
-            BondSiteTop = ((scale.y / 2) + separationDistance) * transform.up;
-            BondSiteRight = ((scale.y / 2) - (scale.x / 2)) * transform.up + (((scale.x / 2) + separationDistance) * transform.right);
-            BondSiteBottom = -((scale.y / 2) + separationDistance) * transform.up;
-            BondSiteLeft = -(((scale.y / 2) - (scale.x / 2)) * transform.up) - ((scale.x / 2) + separationDistance) * transform.right;
+            CalculateBondSites();
 
             globalBondSiteTop = transform.position + BondSiteTop;
             globalBondSiteRight = transform.position + BondSiteRight;
@@ -161,16 +158,6 @@ namespace CosmicShore
         private bool IsMate(WallAssembler mateComponent)
         {
             return mateComponent.MateList == null ? false : mateComponent.MateList.Count > 0;
-        }
-
-        public void ClearMateLists() 
-        {
-            foreach (var mate in MateList)
-            {
-                mate.MateList.Remove(this);
-                mate.ClearMateLists();
-            }
-            MateList.Clear();
         }
 
         // this method generalize both of the methods above
@@ -189,7 +176,15 @@ namespace CosmicShore
                     var trailBlock = potentialMate.GetComponent<TrailBlock>();
                     if (trailBlock != null)
                     {
+                        Boid boid = trailBlock.GetComponentInParent<Boid>();
+                        if (boid != null)
+                        {
+                            trailBlock.transform.parent = this.trailBlock.transform.parent;
+                            boid.isKilled = true;
+                        }
                         trailBlock.TargetScale = scale;
+                        trailBlock.maxScale = this.trailBlock.maxScale;
+                        trailBlock.growthVector = this.trailBlock.growthVector;
                         trailBlock.ChangeSize();
                         trailBlock.Steal(this.trailBlock.Player, this.trailBlock.Team);
                         mateComponent = trailBlock.transform.gameObject.AddComponent<WallAssembler>();

@@ -13,7 +13,6 @@ GameObject:
   - component: {fileID: 7076137217386601628}
   - component: {fileID: 6724784892155022458}
   - component: {fileID: 4563009547826722997}
-  - component: {fileID: 6865974451839549218}
   m_Layer: 0
   m_Name: SerpentBlock
   m_TagString: Untagged
@@ -136,23 +135,3 @@ MonoBehaviour:
   warp: 0
   ownerId: 
   Player: {fileID: 0}
---- !u!114 &6865974451839549218
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5776304996075792891}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ca5b7b07910bd714c8f2c88c70b1f30a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  RightMate: {fileID: 0}
-  LeftMate: {fileID: 0}
-  TopIsBonded: 0
-  RightIsBonded: 0
-  BottomIsBonded: 0
-  LeftIsBonded: 0
-  colliderTheshold: 0
-  radius: 40

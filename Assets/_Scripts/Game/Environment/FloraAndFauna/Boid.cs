@@ -28,6 +28,9 @@ public class Boid : MonoBehaviour
 
     private Vector3 currentVelocity;
     private Vector3 desiredDirection;
+    Quaternion desiredRotation;
+
+    public bool isKilled = false;
 
     private BoidManager boidManager;
     private TrailBlock trailBlock;
@@ -127,16 +130,17 @@ public class Boid : MonoBehaviour
 
         desiredDirection = ((separation * separationWeight) + (alignment * alignmentWeight) + (cohesion * cohesionWeight) + (goalDirection * goalWeight) + blockAttraction).normalized;
         currentVelocity = desiredDirection * Mathf.Clamp(averageSpeed, minSpeed, maxSpeed);
+        desiredRotation = currentVelocity != Vector3.zero ? Quaternion.LookRotation(currentVelocity.normalized) : transform.rotation;
     }
 
     void Update()
     {
 
-        if (trailBlock.destroyed && !crystal.enabled)
+        if ((trailBlock.destroyed || isKilled) && !crystal.enabled) // TODO: still need the crystal check?
         {
             crystal.transform.parent = boidManager.transform;
             crystal.gameObject.GetComponent<SphereCollider>().enabled = true;
-            crystal.enabled = true;
+            crystal.enabled = true; 
 
             crystal.GetComponentInChildren<SkinnedMeshRenderer>().material = activeCrystalMaterial; // TODO: make a crytal material set that this pulls from using the element
             StopAllCoroutines();
@@ -150,8 +154,6 @@ public class Boid : MonoBehaviour
         }
 
         transform.position += currentVelocity * Time.deltaTime;
-
-        Quaternion desiredRotation = currentVelocity != Vector3.zero ? Quaternion.LookRotation(currentVelocity.normalized) : transform.rotation;
         transform.rotation = Quaternion.Slerp(transform.rotation, desiredRotation, Time.deltaTime);
     }
 }
