@@ -30,6 +30,7 @@ namespace CosmicShore.Core
         public string ID;
         public int Index;
         public bool Shielded = false;
+        public bool IsSuperShielded = false;
         public bool warp = false;
 
 
@@ -176,9 +177,9 @@ namespace CosmicShore.Core
 
         public void Explode(Vector3 impactVector, Teams team, string playerName, bool devastate=false)
         {
-            if (Shielded && !devastate)
+            if ((Shielded && !devastate) || IsSuperShielded)
             {
-                DeactivateShield();
+                DeactivateShields();
                 return;
             }
 
@@ -207,19 +208,21 @@ namespace CosmicShore.Core
 
         
 
-        public void DeactivateShield()
+        public void DeactivateShields()
         {
             if (lerpBlockMaterialPropertiesCoroutine != null) StopCoroutine(lerpBlockMaterialPropertiesCoroutine);
             StartCoroutine(LerpBlockMaterialPropertiesCoroutine(Hangar.Instance.GetTeamBlockMaterial(team)));
-            StartCoroutine(DeactivateShieldCoroutine(1));
+            StartCoroutine(DeactivateShieldsCoroutine(1));
             // TODO: need stats
         }
 
-        IEnumerator DeactivateShieldCoroutine(float duration)
+        IEnumerator DeactivateShieldsCoroutine(float duration)
         {
             yield return new WaitForSeconds(duration);
             Shielded = false;
+            IsSuperShielded = false;
             TrailBlockProperties.Shielded = false;
+            TrailBlockProperties.IsSuperShielded = false;
         }
 
         public void ActivateShield()
@@ -229,6 +232,14 @@ namespace CosmicShore.Core
             if (lerpBlockMaterialPropertiesCoroutine != null) StopCoroutine(lerpBlockMaterialPropertiesCoroutine);
             StartCoroutine(LerpBlockMaterialPropertiesCoroutine(Hangar.Instance.GetTeamShieldedBlockMaterial(team)));
             // TODO: need stats
+        }
+
+        public void ActivateSuperShield()
+        {
+            IsSuperShielded = true;
+            TrailBlockProperties.IsSuperShielded = true;
+            if (lerpBlockMaterialPropertiesCoroutine != null) StopCoroutine(lerpBlockMaterialPropertiesCoroutine);
+            StartCoroutine(LerpBlockMaterialPropertiesCoroutine(Hangar.Instance.GetTeamSuperShieldedBlockMaterial(team)));
         }
 
         public void ActivateShield(float duration)
@@ -242,7 +253,7 @@ namespace CosmicShore.Core
 
             yield return new WaitForSeconds(duration);
             
-            DeactivateShield();
+            DeactivateShields();
         }
 
         Coroutine lerpBlockMaterialPropertiesCoroutine;
@@ -280,9 +291,9 @@ namespace CosmicShore.Core
         {
             if (this.team != team)
             {
-                if (Shielded)
+                if (Shielded || IsSuperShielded)
                 {
-                    DeactivateShield();
+                    DeactivateShields();
                     return;
                 }
                 if (StatsManager.Instance != null)

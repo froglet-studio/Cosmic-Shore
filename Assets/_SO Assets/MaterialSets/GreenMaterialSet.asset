@@ -19,6 +19,8 @@ MonoBehaviour:
     type: 2}
   ShieldedBlockMaterial: {fileID: 2100000, guid: d8eecfb8be075a44991cdede59d8e0f1,
     type: 2}
+  SuperShieldedBlockMaterial: {fileID: 2100000, guid: 5ac89be3c0ba79946bc5a2a7ebace90d,
+    type: 2}
   DangerousBlockMaterial: {fileID: 0}
   BlockSilhouettePrefab: {fileID: 8156872032051993332, guid: 5d38f65bc3c39384fbfaa3ffbc665c99,
     type: 3}

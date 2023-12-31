@@ -13,6 +13,7 @@ namespace CosmicShore.Core
         public int Index;
         public Trail Trail;
         public bool Shielded;
+        public bool IsSuperShielded;
         public float TimeCreated;
     }
 }

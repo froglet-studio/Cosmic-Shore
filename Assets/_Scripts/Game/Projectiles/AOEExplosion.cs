@@ -62,6 +62,11 @@ namespace CosmicShore.Game.Projectiles
 
             if (other.TryGetComponent<TrailBlock>(out var trailBlock))
             {
+                if ((trailBlock.Team != Team || affectSelf) && trailBlock.IsSuperShielded)
+                {
+                    trailBlock.DeactivateShields();
+                    Destroy(gameObject);
+                } 
                 if ((trailBlock.Team == Team && !affectSelf) || !destructive)
                 {
                     trailBlock.ActivateShield(2f);
