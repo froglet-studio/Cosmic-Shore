@@ -66,6 +66,27 @@ namespace CosmicShore
             StartCoroutine(LookForMates());
         }
 
+        public void ClearMateList()
+        {
+            foreach (var mate in MateList)
+            {
+                mate.MateList.Remove(this);
+            }
+            MateList.Clear();
+            TopIsBonded = false;
+            RightIsBonded = false;
+            BottomIsBonded = false;
+            LeftIsBonded = false;
+        }
+
+        public void ReplaceMateList(WallAssembler newWallAssembler)
+        {
+            foreach (var mate in MateList)
+            {
+                mate.MateList.Add(newWallAssembler);
+            }
+        }
+
         IEnumerator LookForMates()
         {
             while (true)
@@ -200,13 +221,20 @@ namespace CosmicShore
 
                 if (IsMate(mateComponent) && mateComponent != this)
                 {
-                    if (Vector3.Distance(bondSite, mateComponent.globalBondSiteRight) < snapDistance)
+                    if (Vector3.Distance(transform.position, mateComponent.transform.position) < snapDistance
+                        && mateComponent.TrailBlock.TrailBlockProperties.TimeCreated > TrailBlock.TrailBlockProperties.TimeCreated) 
+                    {
+                        mateComponent.StopAllCoroutines();
+                        mateComponent.ReplaceMateList(this);
+                        mateComponent.ClearMateList();
+                    }
+                    if (siteType == SiteType.Top && (bondSite - mateComponent.globalBondSiteRight).sqrMagnitude < snapDistance)
                     {
                         //Debug.Log("ReFound MateRight");
                         mateComponent.TrailBlock.ActivateSuperShield();
                         return new BondMate { Mate = mateComponent, Substrate = siteType, Bondee = SiteType.Right };
                     }
-                    if (Vector3.Distance(bondSite, mateComponent.globalBondSiteLeft) < snapDistance)
+                    if (siteType == SiteType.Bottom && (bondSite - mateComponent.globalBondSiteLeft).sqrMagnitude < snapDistance)
                     {
                         //Debug.Log("ReFound MateLeft");
                         mateComponent.TrailBlock.ActivateSuperShield();
@@ -217,7 +245,7 @@ namespace CosmicShore
                 {
                     if (siteType == SiteType.Top)
                     {
-                        float distance = Vector3.Distance(bondSite, mateComponent.globalBondSiteRight);
+                        float distance = (bondSite - mateComponent.globalBondSiteRight).sqrMagnitude;
                         if (distance < closestDistance)
                         {
                             //Debug.Log("Found MateRight");
@@ -228,7 +256,7 @@ namespace CosmicShore
                     }
                     else if (siteType == SiteType.Bottom)
                     {
-                        float distance = Vector3.Distance(bondSite, mateComponent.globalBondSiteLeft);
+                        float distance = (bondSite - mateComponent.globalBondSiteLeft).sqrMagnitude;
                         if (distance < closestDistance)
                         {
                             //Debug.Log("Found MateLeft");
