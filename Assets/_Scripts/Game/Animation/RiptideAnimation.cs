@@ -27,7 +27,7 @@ namespace CosmicShore.Game.Animation
         const float exaggeratedAnimationScaler = 3 * animationScaler;
 
         static Vector3 defaultThrusterPosition = new(0, .15f, -1.7f);
-        Vector3 backwardThrusterPosition = defaultThrusterPosition - new Vector3(0, 0, 0);  //TODO: P1 this is pointless
+        Vector3 backwardThrusterPosition = defaultThrusterPosition;
         Vector3 defaultWingPosition = Vector3.zero;
         Vector3 forwardWingPosition = new(0, 0, 2.3f);
 

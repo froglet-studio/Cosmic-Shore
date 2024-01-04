@@ -341,7 +341,7 @@ namespace CosmicShore.Game.Arcade
             ActivePlayer.Ship.ResourceSystem.Reset();
             ActivePlayer.Ship.SetVessel(PlayerVessel);
 
-            CameraManager.Instance.SetupGamePlayCameras(ActivePlayer.Ship.transform);
+            CameraManager.Instance.SetupGamePlayCameras(ActivePlayer.Ship.FollowTarget);
 
             // For single player games, don't require the extra button press
             if (Players.Count > 1)

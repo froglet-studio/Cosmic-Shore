@@ -1646,6 +1646,7 @@ GameObject:
   - component: {fileID: 6293426128044408357}
   - component: {fileID: 5086360743770514783}
   - component: {fileID: 2731003324702047408}
+  - component: {fileID: 705402283976800655}
   m_Layer: 0
   m_Name: Serpent
   m_TagString: Player_Ship
@@ -1717,6 +1718,8 @@ MonoBehaviour:
   AOEPrefab: {fileID: 2728798890556433942, guid: f5ecfb9923155a84c860975d559b2714,
     type: 3}
   farFieldSkimmer: {fileID: 3138628630497430536}
+  ShipCameraCustomizer: {fileID: 0}
+  FollowTarget: {fileID: 0}
   crystalImpactEffects: 030000000b000000
   minExplosionScale: 50
   maxExplosionScale: 500
@@ -1738,9 +1741,9 @@ MonoBehaviour:
   TimeAbilityTarget: {fileID: 0}
   ChargeAbility2Target: {fileID: 0}
   LevelEffects: 
-  ControlOverrides: 0300000004000000
-  closeCamDistance: -75
-  farCamDistance: -80
+  ControlOverrides: 
+  closeCamDistance: 0
+  farCamDistance: 0
   AOEExplosionMaterial: {fileID: 0}
   AOEConicExplosionMaterial: {fileID: 0}
   SkimmerMaterial: {fileID: 0}
@@ -2027,6 +2030,24 @@ MonoBehaviour:
   swingBlocks: 0
   ship: {fileID: 874579555101021527}
   sihouetteScale: {x: 1, y: 1, z: 1}
+--- !u!114 &705402283976800655
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b96f650bef98662419511c3dfd7f388e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ControlOverrides: 03000000
+  closeCamDistance: -75
+  farCamDistance: 0
+  FollowTarget: {fileID: 0}
+  FollowTargetPosition: {x: 0, y: 0, z: 0}
+  isOrthographic: 0
 --- !u!1 &6675130274311316141
 GameObject:
   m_ObjectHideFlags: 0

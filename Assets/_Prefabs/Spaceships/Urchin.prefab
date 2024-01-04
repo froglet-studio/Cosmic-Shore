@@ -2261,6 +2261,7 @@ GameObject:
   - component: {fileID: 7081412522392871879}
   - component: {fileID: 8607513911732901166}
   - component: {fileID: 4235613159111207255}
+  - component: {fileID: 8233249704035529933}
   m_Layer: 0
   m_Name: Urchin
   m_TagString: Player_Ship
@@ -2323,9 +2324,12 @@ MonoBehaviour:
   - {fileID: 4981221834739771465}
   - {fileID: 3973492122190050347}
   - {fileID: 7835283986601519113}
+  Silhouette: {fileID: 0}
   AOEPrefab: {fileID: 2728798890556433942, guid: 4a855af160021d241b8c1ac70cf2d792,
     type: 3}
   farFieldSkimmer: {fileID: 0}
+  ShipCameraCustomizer: {fileID: 0}
+  FollowTarget: {fileID: 0}
   crystalImpactEffects: 0b0000000d000000
   minExplosionScale: 50
   maxExplosionScale: 500
@@ -2620,6 +2624,24 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   pipCamera: {fileID: 7901702142089743579}
   mirrored: 0
+--- !u!114 &8233249704035529933
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b96f650bef98662419511c3dfd7f388e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ControlOverrides: 0300000004000000
+  closeCamDistance: -3
+  farCamDistance: -15
+  FollowTarget: {fileID: 0}
+  FollowTargetPosition: {x: 0, y: 0, z: 0}
+  isOrthographic: 0
 --- !u!1 &6529595402500225743
 GameObject:
   m_ObjectHideFlags: 0

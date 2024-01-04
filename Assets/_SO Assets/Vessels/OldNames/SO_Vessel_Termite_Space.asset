@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ce7474d4aed9d704ea0001a2338c0784, type: 3}
-  m_Name: SO_Vessel_Serpent_Space
+  m_Name: SO_Vessel_Termite_Space
   m_EditorClassIdentifier: 
   Name: Condor
   Description: Can skim from further away than anyone else.
@@ -19,7 +19,7 @@ MonoBehaviour:
   Image: {fileID: 21300000, guid: a89a335fa1c02f745ba93948c9b7ee32, type: 3}
   Icon: {fileID: 21300000, guid: 3ad7640785837564a9e0793b85cc0917, type: 3}
   SelectedIcon: {fileID: 21300000, guid: 9fa211ac124cc964aaf984b86b455504, type: 3}
-  Ship: {fileID: 11400000, guid: 8a288448ab55edc46ac841a5f2e53d83, type: 2}
+  Ship: {fileID: 11400000, guid: 4fa06071d8c862e48a8f8f07ac78379d, type: 2}
   PrimaryElement: 3
   InitialMass: 0
   InitialCharge: 0
