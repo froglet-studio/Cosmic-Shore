@@ -110,8 +110,9 @@ namespace CosmicShore.Core
             if (NodeControlManager.Instance != null)
                 NodeControlManager.Instance.AddBlock(team, TrailBlockProperties);
 
-            if (StateTracker.Instance != null)
-                StateTracker.Instance.AddBlock(team, TrailBlockProperties);
+            // TODO: State tracker should go to mini games
+            // if (StateTracker.Instance != null)
+            //     StateTracker.Instance.AddBlock(TrailBlockProperties);
         }
 
         bool isSizeChangeActive = false;
@@ -208,8 +209,9 @@ namespace CosmicShore.Core
             if (NodeControlManager.Instance != null)
                 NodeControlManager.Instance.RemoveBlock(team, TrailBlockProperties);
 
-            if (StateTracker.Instance != null)
-                StateTracker.Instance.RemoveBlock(team, TrailBlockProperties);
+            // TODO: State track should go to mini games
+            // if (StateTracker.Instance != null)
+            //     StateTracker.Instance.RemoveBlock(TrailBlockProperties);
 
         }
 
