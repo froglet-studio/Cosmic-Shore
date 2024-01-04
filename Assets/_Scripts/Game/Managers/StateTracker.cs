@@ -81,7 +81,6 @@ namespace CosmicShore
             {
                 _gameState[miniGame].Remove(trailBlock);
             }
-            return gameState;
         }
 
         // this removes a block from the state
