@@ -2063,6 +2063,7 @@ GameObject:
   - component: {fileID: 3440187540988767646}
   - component: {fileID: 5510672214890313987}
   - component: {fileID: 6959572785868932314}
+  - component: {fileID: 5302681132313811143}
   m_Layer: 0
   m_Name: Dolphin
   m_TagString: Player_Ship
@@ -2128,6 +2129,8 @@ MonoBehaviour:
   AOEPrefab: {fileID: 9218889541719856748, guid: 2ae56847c6f549948a71f41eaf59f749,
     type: 3}
   farFieldSkimmer: {fileID: 0}
+  ShipCameraCustomizer: {fileID: 0}
+  FollowTarget: {fileID: 0}
   crystalImpactEffects: 0b0000000600000002000000
   minExplosionScale: 200
   maxExplosionScale: 800
@@ -2158,9 +2161,9 @@ MonoBehaviour:
   TimeAbilityTarget: {fileID: 0}
   ChargeAbility2Target: {fileID: 0}
   LevelEffects: 
-  ControlOverrides: 0400000003000000
-  closeCamDistance: -8
-  farCamDistance: -16
+  ControlOverrides: 
+  closeCamDistance: 0
+  farCamDistance: 0
   AOEExplosionMaterial: {fileID: 0}
   AOEConicExplosionMaterial: {fileID: 0}
   SkimmerMaterial: {fileID: 0}
@@ -2390,6 +2393,24 @@ MonoBehaviour:
   swingBlocks: 0
   ship: {fileID: 874579555101021527}
   sihouetteScale: {x: 1, y: 1, z: 1}
+--- !u!114 &5302681132313811143
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b96f650bef98662419511c3dfd7f388e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ControlOverrides: 0400000003000000
+  closeCamDistance: -8
+  farCamDistance: -16
+  FollowTarget: {fileID: 0}
+  FollowTargetPosition: {x: 0, y: 0, z: 0}
+  isOrthographic: 0
 --- !u!1 &6999220331312364478
 GameObject:
   m_ObjectHideFlags: 0

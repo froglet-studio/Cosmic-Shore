@@ -23,6 +23,9 @@ public class CameraManager : SingletonPersistent<CameraManager>
     // Drift stuff
     bool zoomingOut;
 
+    public bool FollowOverride = false;
+    public bool isOrthographic = false;
+
     public float CloseCamDistance;
     public float FarCamDistance;
 
@@ -47,6 +50,8 @@ public class CameraManager : SingletonPersistent<CameraManager>
 
     void Start()
     {
+        vCam = closeCamera.VirtualCameraGameObject.GetComponent<CinemachineVirtualCamera>();
+
         OnMainMenu();
     }
 
@@ -57,7 +62,7 @@ public class CameraManager : SingletonPersistent<CameraManager>
 
     public void SetupGamePlayCameras()
     {
-        playerFollowTarget = Hangar.Instance.SelectedShip.transform;
+        playerFollowTarget = FollowOverride ? Hangar.Instance.SelectedShip.ShipCameraCustomizer.FollowTarget : Hangar.Instance.SelectedShip.transform;
         closeCamera.LookAt = deathCamera.LookAt = playerFollowTarget;
         closeCamera.Follow = deathCamera.Follow = playerFollowTarget;
         
@@ -92,6 +97,7 @@ public class CameraManager : SingletonPersistent<CameraManager>
 
     void SetActiveCamera(CinemachineVirtualCameraBase activeCamera)
     {
+        Orthographic(isOrthographic);
         Debug.Log($"SetActiveCamera {activeCamera.Name}");
 
         mainMenuCamera.Priority = inactivePriority;
@@ -121,13 +127,18 @@ public class CameraManager : SingletonPersistent<CameraManager>
 
     public void SetNormalizedCloseCameraDistance(float normalizedDistance)
     {
-        vCam = closeCamera.VirtualCameraGameObject.GetComponent<CinemachineVirtualCamera>();
         transposer = vCam.GetCinemachineComponent<CinemachineTransposer>();
 
         if (transposer.m_FollowOffset != new Vector3(0, 0, normalizedDistance))
         {
             ClipPlaneAndOffsetLerper(normalizedDistance);
         }  
+    }
+
+    void Orthographic(bool isOrthographic)
+    {   
+        vCam.m_Lens.Orthographic = isOrthographic;
+        vCam.m_Lens.OrthographicSize = 1300;
     }
 
     public void ZoomCloseCameraOut(float growthRate)
@@ -143,7 +154,6 @@ public class CameraManager : SingletonPersistent<CameraManager>
 
     IEnumerator ZoomOutCloseCameraCoroutine(float growthRate)
     {
-        var vCam = closeCamera.VirtualCameraGameObject.GetComponent<CinemachineVirtualCamera>();
         var transposer = vCam.GetCinemachineComponent<CinemachineTransposer>();
 
         while (zoomingOut && transposer.m_FollowOffset.z > FarCamDistance)
@@ -166,7 +176,6 @@ public class CameraManager : SingletonPersistent<CameraManager>
 
     IEnumerator ReturnCloseCameraToNeutralCoroutine(float shrinkRate)
     {
-        var vCam = closeCamera.VirtualCameraGameObject.GetComponent<CinemachineVirtualCamera>();
         var transposer = vCam.GetCinemachineComponent<CinemachineTransposer>();
 
         while (transposer.m_FollowOffset.z <= CloseCamDistance)
