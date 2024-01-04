@@ -10,33 +10,36 @@ namespace CosmicShore
     {
         [SerializeField] TrailBlock trailBlock;
 
-        struct StateDiff
+        private static readonly string StateSaveFileName = "MiniGameState.data";
+        private static DataAccessor _stateData;
+        public class StateDiff
         {
-            public HashSet<BlockState> addSet;
-            public HashSet<BlockState> removeSet;
+            public HashSet<BlockState> AddSet { get; set; }
+            public HashSet<BlockState> RemoveSet { get; set; }
         }
 
-        struct BlockState
+        public struct BlockState
         {
             public BlockState(Vector3 position, Quaternion rotation, Vector3 scale, Teams team)
             {
-                this.position = position;
-                this.rotation = rotation;
-                this.scale = scale;
-                this.team = team;
+                _position = position;
+                _rotation = rotation;
+                _scale = scale;
+                _team = team;
             }
-            public Vector3 position;
-            public Quaternion rotation;
-            public Vector3 scale;
-            public Teams team;
+            private Vector3 _position;
+            private Quaternion _rotation;
+            private Vector3 _scale;
+            private Teams _team;
         }
 
-        HashSet<BlockState> gameState;
-        StateDiff stateDiff;
+        Dictionary<MiniGames,HashSet<BlockState>> _gameState;
+        // Dictionary<MiniGames, StateDiff> _stateDiffs;
+        private StateDiff _stateDiff;
 
 
         // this is used to capture the current state so it is ready to be saved
-        HashSet<BlockState> CaptureState()
+        public Dictionary<MiniGames,HashSet<BlockState>> CaptureState(MiniGames miniGame)
         {
             var colliders = Physics.OverlapSphere(Vector3.zero, 10000f);
             foreach (var collider in colliders)
@@ -45,67 +48,59 @@ namespace CosmicShore
                 if (trailBlock != null)
                 {
                     var transform = trailBlock.transform;
-                    gameState.Add(new BlockState(transform.position, transform.rotation, transform.localScale, trailBlock.Team));
+                    _gameState[miniGame].Add(new BlockState(transform.position, transform.rotation, transform.localScale, trailBlock.Team));
                 }
             }
-            return gameState;
+            return _gameState;
         }
 
         // this loads from a previously saved state
-        void LoadState(HashSet<BlockState> newState)
+        Dictionary<MiniGames, HashSet<BlockState>> LoadState()
         {
-            // TODO: load previous file to gameState
-            
-            foreach (var blockState in gameState)
-            {
-                var Block = Instantiate(trailBlock);
-                Block.transform.position = blockState.position;
-                Block.transform.rotation = blockState.rotation;
-                Block.transform.localScale = blockState.scale;
-                Block.Team = blockState.team;
-            }
+            _stateData ??= new(StateSaveFileName);
 
-            // TODO: if no file to load, load default state
-
+            return _stateData.Load<Dictionary<MiniGames, HashSet<BlockState>>>();
         }
 
         // this is used to save a new captured state
-        private void SaveState()
+        private void SaveState(MiniGames miniGame)
         {
-            // TODO: If file doesn't exist
-            gameState = CaptureState();
-            // TODO: then save state to new file
-            // TODO: else update existing file with the following diff
-            gameState = CalculateNewState(gameState, stateDiff);
+            _gameState ??= LoadState();
+            _gameState = CaptureState(miniGame);
+            CalculateNewState(miniGame);
         }
 
-        HashSet<BlockState> CalculateNewState(HashSet<BlockState> gameState, StateDiff diff)
+        void CalculateNewState(MiniGames miniGame)
         {
             
-            foreach (var trailBlock in diff.addSet)
+            foreach (var trailBlock in _stateDiff.AddSet)
             {
-                gameState.Add(trailBlock);
+                _gameState[miniGame].Add(trailBlock);
             }
-            foreach (var trailBlock in diff.removeSet)
+            foreach (var trailBlock in _stateDiff.RemoveSet)
             {
-                gameState.Remove(trailBlock);
+                _gameState[miniGame].Remove(trailBlock);
             }
             return gameState;
         }
 
         // this removes a block from the state
-        public void RemoveBlock(Teams team, TrailBlockProperties trailBlockProperties)
+        public void RemoveBlock(TrailBlockProperties trailBlockProperties, MiniGames miniGame)
         {
             var transform = trailBlockProperties.trailBlock.transform;
-            stateDiff.removeSet.Add(new BlockState(transform.position, transform.rotation, transform.localScale, trailBlockProperties.trailBlock.Team));
+            _stateDiff.RemoveSet.Add(new BlockState(transform.position, transform.rotation, transform.localScale, trailBlockProperties.trailBlock.Team));
         }
 
         // this adds a block to the state
-        public void AddBlock(Teams team, TrailBlockProperties trailBlockProperties)
+        public void AddBlock(TrailBlockProperties trailBlockProperties, MiniGames miniGame)
         {
             var transform = trailBlockProperties.trailBlock.transform;
-            stateDiff.addSet.Add(new BlockState(transform.position, transform.rotation, transform.localScale, trailBlockProperties.trailBlock.Team));
+            _stateDiff.AddSet.Add(new BlockState(transform.position, transform.rotation, transform.localScale, trailBlockProperties.trailBlock.Team));
         }
 
+        public void Clear()
+        {
+            _stateData.Flush();
+        }
     }
 }
