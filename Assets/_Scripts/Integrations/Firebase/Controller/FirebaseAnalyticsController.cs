@@ -181,9 +181,9 @@ namespace CosmicShore.Integrations.Firebase.Controller
 
             var parameters = new[]
             {
-                new Parameter("user_action_completed", action.Label),
-                new Parameter("user_action_type", action.ActionType.ToString()),
-                new Parameter("user_action_value", action.Value)
+                new Parameter(FirebaseAnalytics.ParameterContent, action.Label),
+                new Parameter(FirebaseAnalytics.ParameterContentType, action.ActionType.ToString()),
+                new Parameter(FirebaseAnalytics.ParameterValue, action.Value)
             };
             
             FirebaseAnalytics.LogEvent(FirebaseAnalytics.EventScreenView, parameters);
@@ -210,8 +210,8 @@ namespace CosmicShore.Integrations.Firebase.Controller
                 new Parameter(FirebaseAnalytics.ParameterLevel, nameof(MiniGames)),
                 new Parameter(FirebaseAnalytics.ParameterLevelName, mode.ToString()),
                 new Parameter(FirebaseAnalytics.ParameterCharacter, ship.ToString()),
-                new Parameter("mini_game_player_count", playerCount),
-                new Parameter("mini_game_intensity", intensity),
+                new Parameter(FirebaseAnalytics.ParameterQuantity, playerCount),
+                new Parameter(FirebaseAnalytics.ParameterIndex, intensity)
             };
             
             // // Event dictionary for Unity Analytics Service
@@ -251,8 +251,8 @@ namespace CosmicShore.Integrations.Firebase.Controller
                 new Parameter(FirebaseAnalytics.ParameterLevel, nameof(MiniGames)),
                 new Parameter(FirebaseAnalytics.ParameterLevelName, mode.ToString()),
                 new Parameter(FirebaseAnalytics.ParameterCharacter, ship.ToString()),
-                new Parameter("mini_game_player_count", playerCount),
-                new Parameter("mini_game_intensity", intensity),
+                new Parameter(FirebaseAnalytics.ParameterQuantity, playerCount),
+                new Parameter(FirebaseAnalytics.ParameterIndex, intensity),
                 new Parameter(FirebaseAnalytics.ParameterScore, highScore)
             };
             
