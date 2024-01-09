@@ -8,7 +8,7 @@ namespace CosmicShore.Integrations.ZenJect
         public override void InstallBindings()
         {
             BaseInstaller.Install(Container);
-            Container.BindInstance(SceneSettings.ShipState);
+            Container.BindInstance(SceneSettings);
         }
     }
 }

@@ -1,4 +1,5 @@
 using System;
+using CosmicShore.Integrations.ZenJect;
 using UnityEngine;
 using Zenject;
 using ILogger = NLog.ILogger;
@@ -9,6 +10,8 @@ namespace CosmicShore.Integrations.Loxodon.NLog
     public class NLogger : MonoBehaviour
     {
         [Inject] private ILogger _log;
+
+        [Inject] private Settings _settings;
         // Start is called before the first frame update
         private void Start()
         {
@@ -24,7 +27,7 @@ namespace CosmicShore.Integrations.Loxodon.NLog
                 case 0:
                     if (_log.IsDebugEnabled)
                     {
-                        _log.Debug("This is NLog debug test.frame count: {0}", Time.frameCount);
+                        _log.Debug("This is NLog debug test.frame count: {0} ship state: {1}", Time.frameCount, _settings.ShipState);
                     }
                     break;
                 case 1:
