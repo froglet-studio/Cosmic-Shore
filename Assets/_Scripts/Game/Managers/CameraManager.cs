@@ -5,6 +5,7 @@ using CosmicShore.Utility.Singleton;
 using CosmicShore.Utility;
 using System.Collections;
 using UnityEngine;
+using CosmicShore;
 
 public class CameraManager : SingletonPersistent<CameraManager>
 {
@@ -136,9 +137,13 @@ public class CameraManager : SingletonPersistent<CameraManager>
     }
 
     void Orthographic(bool isOrthographic)
-    {   
+    {
+        PostProcessingManager.Instance.Orthographic(isOrthographic);
         vCam.m_Lens.Orthographic = isOrthographic;
         vCam.m_Lens.OrthographicSize = 1300;
+
+        Transform LookAtTarget = isOrthographic ? new GameObject().transform : playerFollowTarget;
+        vCam.LookAt = LookAtTarget;
     }
 
     public void ZoomCloseCameraOut(float growthRate)

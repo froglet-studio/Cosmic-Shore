@@ -2099,6 +2099,7 @@ MonoBehaviour:
   LeftJoystickStart: {x: 0, y: 0}
   RightNormalizedJoystickPosition: {x: 0, y: 0}
   LeftNormalizedJoystickPosition: {x: 0, y: 0}
+  SingleTouchValue: {x: 0, y: 0}
   EasedRightJoystickPosition: {x: 0, y: 0}
   EasedLeftJoystickPosition: {x: 0, y: 0}
 --- !u!4 &293691743 stripped
@@ -7041,6 +7042,7 @@ MonoBehaviour:
   LeftJoystickStart: {x: 0, y: 0}
   RightNormalizedJoystickPosition: {x: 0, y: 0}
   LeftNormalizedJoystickPosition: {x: 0, y: 0}
+  SingleTouchValue: {x: 0, y: 0}
   EasedRightJoystickPosition: {x: 0, y: 0}
   EasedLeftJoystickPosition: {x: 0, y: 0}
 --- !u!1 &1539600233 stripped
@@ -8625,6 +8627,7 @@ MonoBehaviour:
   LeftJoystickStart: {x: 0, y: 0}
   RightNormalizedJoystickPosition: {x: 0, y: 0}
   LeftNormalizedJoystickPosition: {x: 0, y: 0}
+  SingleTouchValue: {x: 0, y: 0}
   EasedRightJoystickPosition: {x: 0, y: 0}
   EasedLeftJoystickPosition: {x: 0, y: 0}
 --- !u!1 &1981450501

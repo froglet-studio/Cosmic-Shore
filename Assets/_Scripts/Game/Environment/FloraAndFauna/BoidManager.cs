@@ -32,7 +32,8 @@ public class BoidManager : MonoBehaviour
 
             if (globalGoal)
             {
-                newBoid.goal = globalGoal;
+                newBoid.Goal = globalGoal;
+                newBoid.DefaultGoal = globalGoal;
             }
 
             boidTrail.Add(block);

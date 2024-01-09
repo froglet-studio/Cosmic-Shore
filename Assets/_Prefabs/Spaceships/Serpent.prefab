@@ -1726,14 +1726,14 @@ MonoBehaviour:
   trailBlockImpactEffects: 0f000000
   blockChargeChange: 0
   boostMultiplier: 4
-  boostFuelAmount: 0
+  boostFuelAmount: 0.2
   inputEventShipActions:
   - InputEvent: 6
     ShipActions:
-    - {fileID: 6378036342495326916}
+    - {fileID: 4272400135030423314}
   - InputEvent: 7
     ShipActions:
-    - {fileID: 4272400135030423314}
+    - {fileID: 6378036342495326916}
   resourceEventClassActions: []
   MassAbilityTarget: {fileID: 0}
   ChargeAbilityTarget: {fileID: 0}
@@ -1741,7 +1741,6 @@ MonoBehaviour:
   TimeAbilityTarget: {fileID: 0}
   ChargeAbility2Target: {fileID: 0}
   LevelEffects: 
-  ControlOverrides: 
   closeCamDistance: 0
   farCamDistance: 0
   AOEExplosionMaterial: {fileID: 0}
@@ -1767,6 +1766,7 @@ MonoBehaviour:
   Turret: 0
   Portrait: 0
   SingleStickControls: 0
+  CommandStickControls: 0
   LiveProjectiles: 0
   Stationary: 0
   ElevatedAmmoGain: 0
@@ -1873,7 +1873,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 737294a573670f74389a7af68df314d5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  displayBoost: 0
+  displayBoost: 1
+  gainsBoost: 1
+  boostGainRate:
+    Value: 0.01
+    Min: 0
+    Max: 0
+    element: 1
   initialBoost: 1
   maxBoost: 1
   displayAmmo: 1

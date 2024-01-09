@@ -32,6 +32,8 @@ namespace CosmicShore.Core
         public bool Shielded = false;
         public bool IsSuperShielded = false;
         public bool warp = false;
+        public bool IsSmallest = false;
+        public bool IsLargest = false;
 
 
         [Header("Game Rewards")]
@@ -123,7 +125,7 @@ namespace CosmicShore.Core
 
             while (sqrDistance > .05f)
             {
-                transform.localScale = Vector3.Lerp(transform.localScale, TargetScale, Mathf.Clamp(growthRate * Time.deltaTime * sqrDistance,.05f,.2f));
+                transform.localScale = Vector3.Lerp(transform.localScale, TargetScale, Mathf.Clamp(growthRate * Time.deltaTime * sqrDistance, .05f, .2f));
                 sqrDistance = (TargetScale - transform.localScale).sqrMagnitude;
                 yield return null;
             }
@@ -131,10 +133,14 @@ namespace CosmicShore.Core
             isSizeChangeActive = false;
         }
 
-
-
         public void ChangeSize()
         {
+            if (TargetScale.x > maxScale.x || TargetScale.y > maxScale.y || TargetScale.z > maxScale.z)
+                ActivateShield();
+                IsLargest = true;
+            if (TargetScale.x < minScale.x || TargetScale.y < minScale.y || TargetScale.z < minScale.z)
+                IsSmallest = true;
+
             TargetScale.x = Mathf.Clamp(TargetScale.x, minScale.x, maxScale.x);
             TargetScale.y = Mathf.Clamp(TargetScale.y, minScale.y, maxScale.y);
             TargetScale.z = Mathf.Clamp(TargetScale.z, minScale.z, maxScale.z);
@@ -159,8 +165,6 @@ namespace CosmicShore.Core
         {
             TargetScale += growthVector;
 
-            if (TargetScale.x > maxScale.x || TargetScale.y > maxScale.y || TargetScale.z > maxScale.z)
-                ActivateShield();
 
             ChangeSize();
         }

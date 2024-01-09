@@ -10,6 +10,8 @@ namespace CosmicShore.Core
     {
         [Header("Boost")]
         [SerializeField] bool displayBoost;
+        [SerializeField] bool gainsBoost;
+        [SerializeField] float boostGainRate = .1f;
         [SerializeField] [Range(0, 1)] float initialBoost = 1f;
         [SerializeField] [Range(0, 1)] float maxBoost = 1f;
         float currentBoost;
@@ -31,7 +33,7 @@ namespace CosmicShore.Core
         [Header("Ammo")]
         [SerializeField] bool displayAmmo;
         [SerializeField] bool gainsAmmo;
-        [FormerlySerializedAs("AmmoGainRate2")]
+        [FormerlySerializedAs("AmmoGainRate2")] // TODO: Remove this line
         [SerializeField] ElementalFloat ammoGainRate = new ElementalFloat(0.01f);
         [SerializeField] [Range(0, 1)] float initialAmmo = 1f;
         [SerializeField] [Range(0, 1)] float maxAmmo = 1f;
@@ -75,7 +77,7 @@ namespace CosmicShore.Core
         [HideInInspector] public ResourceDisplay SpaceDisplay;
         [HideInInspector] public ResourceDisplay TimeDisplay;
         [HideInInspector] public ResourceDisplay EnergyDisplay;
-        [HideInInspector] public ResourceDisplay BoostDisplay;
+        [HideInInspector] public ResourceButton BoostDisplay;
         [HideInInspector] public ResourceDisplay AmmoDisplay;
 
         public static readonly float OneFuelUnit = 1 / 10f;
@@ -107,6 +109,8 @@ namespace CosmicShore.Core
                 ChangeAmmoAmount(Time.deltaTime * ammoGainRate.Value * 2);
             else if (gainsAmmo)
                 ChangeAmmoAmount(Time.deltaTime * ammoGainRate.Value);
+            else if (gainsBoost)
+                ChangeBoostAmount(Time.deltaTime * boostGainRate);
 
             if (ChargeLevel != ChargeTestHarness)
                 ChargeLevel = ChargeTestHarness;

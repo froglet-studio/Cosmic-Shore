@@ -133,14 +133,18 @@ MonoBehaviour:
   cohesionRadius: 20
   behaviorUpdateRate: 3
   separationRadius: 15
+  trailBlockInteractionRadius: 15
   separationWeight: 12
   alignmentWeight: 2
   cohesionWeight: 1
   goalWeight: 0.3
   minSpeed: 10
   maxSpeed: 15
-  goal: {fileID: 0}
+  Goal: {fileID: 0}
+  DefaultGoal: {fileID: 0}
   normalizedIndex: 0
+  isKilled: 0
+  collisionEffects: 01000000
   activeCrystalMaterial: {fileID: 2100000, guid: 18c297a89c0d43e46bd4ea5bd6143ffb,
     type: 2}
 --- !u!1 &5453519119934356950
@@ -262,6 +266,7 @@ MonoBehaviour:
     trailBlock: {fileID: 2653840049866075288}
     Index: 0
     Shielded: 0
+    IsSuperShielded: 0
     TimeCreated: 0
   ParticleEffect: {fileID: 3706253519474275301, guid: a8ae8dc22c65f554ea8bb6e1bf2458f1,
     type: 3}
@@ -275,8 +280,12 @@ MonoBehaviour:
   ID: 
   Index: 0
   Shielded: 0
+  IsSuperShielded: 0
   warp: 0
+  IsSmallest: 0
+  IsLargest: 0
   ownerId: 
+  Player: {fileID: 0}
 --- !u!1001 &3944060919072626709
 PrefabInstance:
   m_ObjectHideFlags: 0

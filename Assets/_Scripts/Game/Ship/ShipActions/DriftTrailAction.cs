@@ -36,7 +36,7 @@ public class DriftTrailAction : ShipAction
             var driftAltitude = Vector3.Dot(ship.ShipStatus.Course, ship.transform.forward);
             if (!ship.ShipStatus.AutoPilotEnabled) OnChangeDriftAltitude?.Invoke(driftAltitude);
             trailSpawner.SetDotProduct(driftAltitude);
-            yield return new WaitForSeconds(.1f);
+            yield return new WaitForSeconds(.05f);
         }
     }
 

@@ -13,6 +13,7 @@ namespace CosmicShore.Core
         public bool Turret = false;
         public bool Portrait = false;
         public bool SingleStickControls = false;
+        public bool CommandStickControls = false;
         public bool LiveProjectiles = false;
         public bool Stationary = false;
         public bool ElevatedAmmoGain = false;

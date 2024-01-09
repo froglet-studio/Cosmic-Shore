@@ -46,7 +46,7 @@ namespace CosmicShore
         [HideInInspector] public bool LeftIsBonded = false;
 
         [HideInInspector] public HashSet<WallAssembler> MateList = new();
-        public TrailBlock TrailBlock;
+        public TrailBlock WallBlock;
 
         private float snapDistance = .2f;
         float separationDistance = 2f;
@@ -55,8 +55,8 @@ namespace CosmicShore
 
         void Start()
         {
-            TrailBlock = GetComponent<TrailBlock>();
-            scale = TrailBlock.TargetScale;
+            WallBlock = GetComponent<TrailBlock>();
+            scale = WallBlock.TargetScale;
             CalculateBondSites();
             CalculateGlobalBondSites();
         }
@@ -91,7 +91,7 @@ namespace CosmicShore
         {
             while (true)
             {
-                if (TrailBlock == null)
+                if (WallBlock == null)
                 {
                     yield return new WaitForSeconds(1f);
                     continue;
@@ -125,7 +125,7 @@ namespace CosmicShore
                 {
                     //Debug.Log("Bonded Top and Bottom");
                     StopAllCoroutines();
-                    TrailBlock.Grow();
+                    WallBlock.Grow();
                     if (TopMate.Mate.MateList.Count < 2) TopMate.Mate.StartBonding();
                     if (BottomMate.Mate.MateList.Count < 2) BottomMate.Mate.StartBonding();
 
@@ -206,14 +206,14 @@ namespace CosmicShore
                         Boid boid = trailBlock.GetComponentInParent<Boid>();
                         if (boid != null)
                         {
-                            trailBlock.transform.parent = TrailBlock.transform.parent;
+                            trailBlock.transform.parent = WallBlock.transform.parent;
                             boid.isKilled = true;
                         }
                         trailBlock.TargetScale = scale;
-                        trailBlock.maxScale = TrailBlock.maxScale;
-                        trailBlock.growthVector = TrailBlock.growthVector;
+                        trailBlock.maxScale = WallBlock.maxScale;
+                        trailBlock.growthVector = WallBlock.growthVector;
+                        trailBlock.Steal(WallBlock.Player, WallBlock.Team);
                         trailBlock.ChangeSize();
-                        trailBlock.Steal(TrailBlock.Player, TrailBlock.Team);
                         mateComponent = trailBlock.transform.gameObject.AddComponent<WallAssembler>();
                     }
                     else continue;
@@ -222,7 +222,7 @@ namespace CosmicShore
                 if (IsMate(mateComponent) && mateComponent != this)
                 {
                     if (Vector3.Distance(transform.position, mateComponent.transform.position) < snapDistance
-                        && mateComponent.TrailBlock.TrailBlockProperties.TimeCreated > TrailBlock.TrailBlockProperties.TimeCreated) 
+                        && mateComponent.WallBlock.TrailBlockProperties.TimeCreated > WallBlock.TrailBlockProperties.TimeCreated) 
                     {
                         mateComponent.StopAllCoroutines();
                         mateComponent.ReplaceMateList(this);
@@ -231,13 +231,13 @@ namespace CosmicShore
                     if (siteType == SiteType.Top && (bondSite - mateComponent.globalBondSiteRight).sqrMagnitude < snapDistance)
                     {
                         //Debug.Log("ReFound MateRight");
-                        mateComponent.TrailBlock.ActivateSuperShield();
+                        mateComponent.WallBlock.ActivateSuperShield();
                         return new BondMate { Mate = mateComponent, Substrate = siteType, Bondee = SiteType.Right };
                     }
                     if (siteType == SiteType.Bottom && (bondSite - mateComponent.globalBondSiteLeft).sqrMagnitude < snapDistance)
                     {
                         //Debug.Log("ReFound MateLeft");
-                        mateComponent.TrailBlock.ActivateSuperShield();
+                        mateComponent.WallBlock.ActivateSuperShield();
                         return new BondMate { Mate = mateComponent, Substrate = siteType, Bondee = SiteType.Left };
                     }
                 }

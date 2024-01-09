@@ -5,7 +5,7 @@ namespace CosmicShore.Game.UI
     public class ResourceDisplayGroup : MonoBehaviour
     {
         [Header("HUD Containers")]
-        public ResourceDisplay BoostDisplay;
+        public ResourceButton BoostDisplay;
         public ResourceDisplay AmmoDisplay;
         public ResourceDisplay ChargeDisplay;
         public ResourceDisplay LevelDisplay;

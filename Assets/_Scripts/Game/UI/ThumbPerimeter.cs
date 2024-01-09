@@ -59,7 +59,7 @@ namespace CosmicShore.Game.UI
         IEnumerator InitializeCoroutine()
         {
             yield return new WaitUntil(() => Player.ActivePlayer != null && Player.ActivePlayer.Ship != null && Player.ActivePlayer.Ship.InputController != null);
-            bool isActive = Gamepad.current == null && (LeftThumb || !Player.ActivePlayer.Ship.ShipStatus.SingleStickControls);
+            bool isActive = Gamepad.current == null && !Player.ActivePlayer.Ship.ShipStatus.CommandStickControls && (LeftThumb || !Player.ActivePlayer.Ship.ShipStatus.SingleStickControls);
             if (!Player.ActivePlayer.Ship.ShipStatus.AutoPilotEnabled)
             {
                 gameObject.SetActive(isActive);
