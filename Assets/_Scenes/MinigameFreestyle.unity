@@ -781,7 +781,7 @@ MonoBehaviour:
   Seed: 0
   parent: {fileID: 0}
   origin: {x: 0, y: 0, z: 0}
-  SphereRadius: 250
+  Radius: 250
   StraightLineLength: 0
   RotationAmount: 10
   DifficultyAngle: 0
@@ -838,7 +838,7 @@ MonoBehaviour:
   GolfRules: 0
   GameCanvas: {fileID: 547474317}
   TimePlayedScoreMultiplier: 1
-  VolumeNormalizationQuotient: 145.65
+  ScoreNormalizationQuotient: 145.65
 --- !u!114 &1078953708
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -874,6 +874,7 @@ MonoBehaviour:
   PlayerOrigin: {fileID: 1192541910}
   EndOfTurnDelay: 0
   EnableTrails: 1
+  DefaultPlayerShipType: 2
   ActivePlayer: {fileID: 0}
   Crystal: {fileID: 1568959833}
   CrystalStartPosition: {x: 0, y: 0, z: -120}
@@ -881,6 +882,10 @@ MonoBehaviour:
   numberOfSegments: 30
   straightLineLength: 400
   ResetTrails: 1
+  ScaleCrystalPositionWithIntensity: 0
+  ScaleLengthWithIntensity: 1
+  ScaleNumberOfSegmentsWithIntensity: 1
+  helix: {fileID: 0}
 --- !u!4 &1165850849 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 8812619448024686936, guid: 14b7fddb8e30aa541a092201bc80b848,
@@ -1949,6 +1954,9 @@ MonoBehaviour:
   trailBlock: {fileID: 4563009547826722997, guid: 2a19c011ad2d54641ad144fbe33d3586,
     type: 3}
   scale: {x: 1, y: 1, z: 5}
+  firstOrderRadius: 1
+  secondOrderRadius: 1
+  blockCount: 150
 --- !u!4 &2091254372
 Transform:
   m_ObjectHideFlags: 0
@@ -2035,7 +2043,7 @@ PrefabInstance:
         type: 3}
       propertyPath: boidPrefab
       value: 
-      objectReference: {fileID: 5945480239701989318, guid: 7d4171ad12a55d04d867f23e585985e6,
+      objectReference: {fileID: 5945480239701989318, guid: 7d86f1e90ac6e4a4e921e366eb115026,
         type: 3}
     - target: {fileID: 8812619448024686939, guid: 14b7fddb8e30aa541a092201bc80b848,
         type: 3}

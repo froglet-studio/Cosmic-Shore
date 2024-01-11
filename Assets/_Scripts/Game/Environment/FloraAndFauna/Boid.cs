@@ -5,29 +5,42 @@ using CosmicShore.Core;
 using CosmicShore.Environment.FlowField;
 using CosmicShore.Core.HangerBuilder;
 
+public enum BoidCollisionEffects
+{
+    Attach = 0,
+    Explode = 1,
+}
+
 public class Boid : MonoBehaviour
 {
     [Header("Detection Settings")]
-    public float cohesionRadius = 10.0f;
-    public float behaviorUpdateRate = 1.5f;
-    public float separationRadius = 5f;
+    [SerializeField] float cohesionRadius = 10.0f;
+    [SerializeField] float behaviorUpdateRate = 1.5f;
+    [SerializeField] float separationRadius = 5f;
+    [SerializeField ] float trailBlockInteractionRadius = 10f;
 
     [Header("Behavior Weights")]
-    public float separationWeight = 1.5f;
-    public float alignmentWeight = 1.0f;
-    public float cohesionWeight = 1.0f;
-    public float goalWeight = 1.0f;
+    [SerializeField] float separationWeight = 1.5f;
+    [SerializeField] float alignmentWeight = 1.0f;
+    [SerializeField] float cohesionWeight = 1.0f;
+    [SerializeField] float goalWeight = 1.0f;
 
     [Header("Speed Settings")]
-    public float minSpeed = 2.0f;
-    public float maxSpeed = 5.0f;
+    [SerializeField] float minSpeed = 2.0f;
+    [SerializeField] float maxSpeed = 5.0f;
 
     [Header("Goal Settings")]
-    public Transform goal;
+    public Transform Goal;
+    public Transform DefaultGoal;
     public float normalizedIndex;
 
     private Vector3 currentVelocity;
     private Vector3 desiredDirection;
+    Quaternion desiredRotation;
+
+    public bool isKilled = false;
+
+    [SerializeField] List<BoidCollisionEffects> collisionEffects;
 
     private BoidManager boidManager;
     private TrailBlock trailBlock;
@@ -38,6 +51,9 @@ public class Boid : MonoBehaviour
     private List<Collider> separatedBoids = new List<Collider>();
 
     //Collider[] boidsInVicinity = new Collider[100];
+
+    bool attached = false;
+    [SerializeField] bool hasCrystal = true;
 
     private void Start()
     {
@@ -64,10 +80,17 @@ public class Boid : MonoBehaviour
 
     void CalculateBehavior()
     {
+        if (attached)
+        {
+            desiredDirection = (Goal.position - transform.position).normalized;
+            currentVelocity = desiredDirection * Mathf.Clamp(currentVelocity.magnitude, minSpeed, maxSpeed);
+            desiredRotation = currentVelocity != Vector3.zero ? Quaternion.LookRotation(currentVelocity.normalized) : transform.rotation;
+            return;
+        }
         Vector3 separation = Vector3.zero;
         Vector3 alignment = Vector3.zero;
         Vector3 cohesion = Vector3.zero;
-        Vector3 goalDirection = goal ? (goal.position - transform.position) : Vector3.zero;
+        Vector3 goalDirection = Goal ? (Goal.position - transform.position) : Vector3.zero;
         Vector3 blockAttraction = Vector3.zero;
 
         float averageSpeed = 0.0f;
@@ -108,9 +131,29 @@ public class Boid : MonoBehaviour
                 float blockWeight = boidManager.Weights[(int)otherTrailBlock.Team - 1];
                 blockAttraction += -diff.normalized * blockWeight / distance;
 
-                if (distance < BlockCollider.size.magnitude * 3 && otherTrailBlock.Team != trailBlock.Team)
+                if (distance < trailBlockInteractionRadius && otherTrailBlock.Team != trailBlock.Team)
                 {
-                    otherTrailBlock.Explode(currentVelocity, trailBlock.Team, trailBlock.PlayerName + " boid", true);
+                    foreach (var effect in collisionEffects)
+                    {
+                        switch (effect)
+                        {
+                            case BoidCollisionEffects.Attach:
+                                
+                                if (!otherTrailBlock.IsSmallest)
+                                {
+                                    attached = true;
+                                    Goal = otherTrailBlock.transform;
+                                    otherTrailBlock.Grow(-1);
+                                    trailBlock.Grow(1);
+                                    if (trailBlock.IsLargest) AddToMound();
+                                }
+                                else Goal = DefaultGoal;
+                                break;
+                            case BoidCollisionEffects.Explode:
+                                otherTrailBlock.Explode(currentVelocity, trailBlock.Team, trailBlock.PlayerName + " boid", true);
+                                break;
+                        }
+                    }
                 }
             }
         }
@@ -127,16 +170,25 @@ public class Boid : MonoBehaviour
 
         desiredDirection = ((separation * separationWeight) + (alignment * alignmentWeight) + (cohesion * cohesionWeight) + (goalDirection * goalWeight) + blockAttraction).normalized;
         currentVelocity = desiredDirection * Mathf.Clamp(averageSpeed, minSpeed, maxSpeed);
+        desiredRotation = currentVelocity != Vector3.zero ? Quaternion.LookRotation(currentVelocity.normalized) : transform.rotation;
+    }
+
+    void AddToMound()
+    {
+        attached = false;
+        var newblock = Instantiate(trailBlock, transform.position, transform.rotation, boidManager.transform);
+        newblock.Team = trailBlock.Team;
+        trailBlock.Grow(-3);
     }
 
     void Update()
     {
 
-        if (trailBlock.destroyed && !crystal.enabled)
+        if ((trailBlock.destroyed || isKilled) && hasCrystal && !crystal.enabled) // TODO: still need the crystal check?
         {
             crystal.transform.parent = boidManager.transform;
             crystal.gameObject.GetComponent<SphereCollider>().enabled = true;
-            crystal.enabled = true;
+            crystal.enabled = true; 
 
             crystal.GetComponentInChildren<SkinnedMeshRenderer>().material = activeCrystalMaterial; // TODO: make a crytal material set that this pulls from using the element
             StopAllCoroutines();
@@ -144,14 +196,12 @@ public class Boid : MonoBehaviour
             return;
         }
 
-        if (trailBlock.Team != Teams.Blue)
-        {
-            goal = trailBlock.Player.Ship.transform; // make event driven
-        }
+        //if (trailBlock.Team != Teams.Blue)
+        //{
+        //    goal = trailBlock.Player.Ship.transform; // TODO: unccomment and make event driven and commander friendly
+        //}
 
         transform.position += currentVelocity * Time.deltaTime;
-
-        Quaternion desiredRotation = currentVelocity != Vector3.zero ? Quaternion.LookRotation(currentVelocity.normalized) : transform.rotation;
-        transform.rotation = Quaternion.Slerp(transform.rotation, desiredRotation, Time.deltaTime);
+        transform.rotation = Quaternion.Lerp(transform.rotation, desiredRotation, Time.deltaTime);
     }
 }

@@ -242,5 +242,10 @@ namespace CosmicShore.Core.HangerBuilder
         {
             return TeamMaterialSets[team].ShieldedBlockMaterial;
         }
+        
+        public Material GetTeamSuperShieldedBlockMaterial(Teams team)
+        {
+            return TeamMaterialSets[team].SuperShieldedBlockMaterial;
+        }
     }
 }

@@ -1367,6 +1367,7 @@ GameObject:
   - component: {fileID: 6293426128044408357}
   - component: {fileID: 5086360743770514783}
   - component: {fileID: 6013884537839217096}
+  - component: {fileID: 6989089190155014109}
   m_Layer: 0
   m_Name: Squirrel
   m_TagString: Player_Ship
@@ -1438,6 +1439,8 @@ MonoBehaviour:
   AOEPrefab: {fileID: 2728798890556433942, guid: 4a855af160021d241b8c1ac70cf2d792,
     type: 3}
   farFieldSkimmer: {fileID: 0}
+  ShipCameraCustomizer: {fileID: 0}
+  FollowTarget: {fileID: 0}
   crystalImpactEffects: 060000000b000000
   minExplosionScale: 300
   maxExplosionScale: 300
@@ -1456,9 +1459,9 @@ MonoBehaviour:
   TimeAbilityTarget: {fileID: 0}
   ChargeAbility2Target: {fileID: 0}
   LevelEffects: 
-  ControlOverrides: 0300000004000000
-  closeCamDistance: -3.5
-  farCamDistance: -15
+  ControlOverrides: 
+  closeCamDistance: 0
+  farCamDistance: 0
   AOEExplosionMaterial: {fileID: 0}
   AOEConicExplosionMaterial: {fileID: 0}
   SkimmerMaterial: {fileID: 0}
@@ -1717,6 +1720,24 @@ MonoBehaviour:
   swingBlocks: 0
   ship: {fileID: 874579555101021527}
   sihouetteScale: {x: 1, y: 1, z: 1}
+--- !u!114 &6989089190155014109
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b96f650bef98662419511c3dfd7f388e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ControlOverrides: 03000000
+  closeCamDistance: -3.5
+  farCamDistance: 0
+  FollowTarget: {fileID: 0}
+  FollowTargetPosition: {x: 0, y: 0, z: 0}
+  isOrthographic: 0
 --- !u!1 &6675130274311316141
 GameObject:
   m_ObjectHideFlags: 0

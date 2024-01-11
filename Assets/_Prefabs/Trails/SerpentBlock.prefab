@@ -13,7 +13,6 @@ GameObject:
   - component: {fileID: 7076137217386601628}
   - component: {fileID: 6724784892155022458}
   - component: {fileID: 4563009547826722997}
-  - component: {fileID: 6865974451839549218}
   m_Layer: 0
   m_Name: SerpentBlock
   m_TagString: Untagged
@@ -30,7 +29,7 @@ Transform:
   m_GameObject: {fileID: 5776304996075792891}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 3, y: 3, z: 1}
+  m_LocalScale: {x: 2, y: 6, z: 0.5}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
@@ -124,9 +123,9 @@ MonoBehaviour:
   ParticleEffect: {fileID: 3706253519474275301, guid: 2d5ef26f11cfb824fa85b6f5cd632c79,
     type: 3}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
-  maxScale: {x: 10, y: 10, z: 10}
+  maxScale: {x: 4.4, y: 8.4, z: 0.5}
   TargetScale: {x: 0, y: 0, z: 0}
-  growthVector: {x: 0, y: 2, z: 0}
+  growthVector: {x: 2.5, y: 2.5, z: 0}
   waitTime: 0.5
   destroyed: 0
   devastated: 0
@@ -136,19 +135,3 @@ MonoBehaviour:
   warp: 0
   ownerId: 
   Player: {fileID: 0}
---- !u!114 &6865974451839549218
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5776304996075792891}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ca5b7b07910bd714c8f2c88c70b1f30a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  isActive: 0
-  BondSiteA: {x: 0, y: 0, z: 0}
-  BondSiteB: {x: 0, y: 0, z: 0}
-  BondSiteC: {x: 0, y: 0, z: 0}

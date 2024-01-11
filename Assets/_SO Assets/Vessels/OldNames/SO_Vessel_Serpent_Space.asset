@@ -19,7 +19,7 @@ MonoBehaviour:
   Image: {fileID: 21300000, guid: a89a335fa1c02f745ba93948c9b7ee32, type: 3}
   Icon: {fileID: 21300000, guid: 3ad7640785837564a9e0793b85cc0917, type: 3}
   SelectedIcon: {fileID: 21300000, guid: 9fa211ac124cc964aaf984b86b455504, type: 3}
-  Ship: {fileID: 11400000, guid: b0e6ec5495dbfb6419332830d585f364, type: 2}
+  Ship: {fileID: 11400000, guid: 8a288448ab55edc46ac841a5f2e53d83, type: 2}
   PrimaryElement: 3
   InitialMass: 0
   InitialCharge: 0

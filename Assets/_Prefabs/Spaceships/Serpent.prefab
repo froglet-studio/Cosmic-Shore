@@ -149,9 +149,9 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 808689176682098569}
-  - component: {fileID: 867704553499413969}
+  - component: {fileID: 6378036342495326916}
   m_Layer: 0
-  m_Name: DropDecoyAction
+  m_Name: SeedWallAction
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -172,7 +172,7 @@ Transform:
   m_Father: {fileID: 8075578658670966254}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &867704553499413969
+--- !u!114 &6378036342495326916
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -181,14 +181,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 477942985372925436}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b5e32b0be2767fc45a0f5d685b466496, type: 3}
+  m_Script: {fileID: 11500000, guid: 00051fc31a8bda44da5a081740a530a2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  decoysPerFullAmmo: 3
-  dropForwardDistance: 40
-  dropRadiusMinRange: 40
-  dropRadiusMaxRange: 60
-  decoy: {fileID: 8379901470580388096, guid: f7e728a0fa445ed41bc8c1c565fa3f21, type: 3}
+  enhancementsPerFullAmmo: 3
 --- !u!1 &555723467741174050
 GameObject:
   m_ObjectHideFlags: 0
@@ -876,6 +872,50 @@ Transform:
   m_Father: {fileID: 6068010778840748695}
   m_RootOrder: 3
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &3062687464665182224
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 5248301459994666056}
+  - component: {fileID: 4272400135030423314}
+  m_Layer: 0
+  m_Name: BoostAction
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &5248301459994666056
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3062687464665182224}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 8075578658670966254}
+  m_RootOrder: 2
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &4272400135030423314
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3062687464665182224}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a731e767698ec5948b84919808aa176e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &3154927268608993227
 GameObject:
   m_ObjectHideFlags: 0
@@ -1243,7 +1283,7 @@ Transform:
   m_GameObject: {fileID: 5328843749263180189}
   m_LocalRotation: {x: 0, y: 0, z: 1, w: 0.00000004371139}
   m_LocalPosition: {x: -0, y: 0.0046851295, z: -0.00000231}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 3.05, y: 1, z: 6}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 2206581757034755619}
@@ -1597,6 +1637,7 @@ GameObject:
   - component: {fileID: 5928382658856804067}
   - component: {fileID: 874579555101021527}
   - component: {fileID: 6441696348568773771}
+  - component: {fileID: 8900747579718772804}
   - component: {fileID: 7686683633640807837}
   - component: {fileID: 874579555101021522}
   - component: {fileID: 1435252848482629424}
@@ -1605,6 +1646,7 @@ GameObject:
   - component: {fileID: 6293426128044408357}
   - component: {fileID: 5086360743770514783}
   - component: {fileID: 2731003324702047408}
+  - component: {fileID: 705402283976800655}
   m_Layer: 0
   m_Name: Serpent
   m_TagString: Player_Ship
@@ -1676,14 +1718,22 @@ MonoBehaviour:
   AOEPrefab: {fileID: 2728798890556433942, guid: f5ecfb9923155a84c860975d559b2714,
     type: 3}
   farFieldSkimmer: {fileID: 3138628630497430536}
-  crystalImpactEffects: 06000000030000000b000000
+  ShipCameraCustomizer: {fileID: 0}
+  FollowTarget: {fileID: 0}
+  crystalImpactEffects: 030000000b000000
   minExplosionScale: 50
   maxExplosionScale: 500
   trailBlockImpactEffects: 0f000000
   blockChargeChange: 0
-  boostMultiplier: 2
-  boostFuelAmount: 0
-  inputEventShipActions: []
+  boostMultiplier: 4
+  boostFuelAmount: 0.2
+  inputEventShipActions:
+  - InputEvent: 6
+    ShipActions:
+    - {fileID: 4272400135030423314}
+  - InputEvent: 7
+    ShipActions:
+    - {fileID: 6378036342495326916}
   resourceEventClassActions: []
   MassAbilityTarget: {fileID: 0}
   ChargeAbilityTarget: {fileID: 0}
@@ -1691,9 +1741,8 @@ MonoBehaviour:
   TimeAbilityTarget: {fileID: 0}
   ChargeAbility2Target: {fileID: 0}
   LevelEffects: 
-  ControlOverrides: 0300000004000000
-  closeCamDistance: -75
-  farCamDistance: -80
+  closeCamDistance: 0
+  farCamDistance: 0
   AOEExplosionMaterial: {fileID: 0}
   AOEConicExplosionMaterial: {fileID: 0}
   SkimmerMaterial: {fileID: 0}
@@ -1717,6 +1766,7 @@ MonoBehaviour:
   Turret: 0
   Portrait: 0
   SingleStickControls: 0
+  CommandStickControls: 0
   LiveProjectiles: 0
   Stationary: 0
   ElevatedAmmoGain: 0
@@ -1729,7 +1779,7 @@ MonoBehaviour:
   GunsActive: 0
   Course: {x: 0, y: 0, z: 1}
   blockRotation: {x: 0, y: 0, z: 0, w: 0}
---- !u!114 &7686683633640807837
+--- !u!114 &8900747579718772804
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1737,6 +1787,30 @@ MonoBehaviour:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6417075533431866457}
   m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b6b54993a316e0041b4bf5981190ac67, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  MinimumSpeed: 10
+  ThrottleScaler: 50
+  DefaultMinimumSpeed: 10
+  DefaultThrottleScaler:
+    Value: 40
+    Min: 0
+    Max: 0
+    element: 0
+  PitchScaler: 60
+  YawScaler: 40
+  RollScaler: 15
+  RotationThrottleScaler: 0
+--- !u!114 &7686683633640807837
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 95baa921cf22958449a3143749d5e0e3, type: 3}
   m_Name: 
@@ -1773,7 +1847,7 @@ MonoBehaviour:
   offset: 0
   initialWavelength: 2
   minWavelength: 2
-  Gap: 0.5
+  Gap: 0
   MinimumGap: 1
   TargetScale: {x: 0, y: 0, z: 0}
   defaultWaitTime: 0.2
@@ -1799,11 +1873,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 737294a573670f74389a7af68df314d5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  displayBoost: 0
+  displayBoost: 1
+  gainsBoost: 1
+  boostGainRate:
+    Value: 0.01
+    Min: 0
+    Max: 0
+    element: 1
   initialBoost: 1
   maxBoost: 1
   displayAmmo: 1
-  gainsAmmo: 0
+  gainsAmmo: 1
   ammoGainRate:
     Value: 0.1
     Min: 0
@@ -1867,7 +1947,7 @@ MonoBehaviour:
   drift: 0
   useAbility: 1
   abilityCooldown: 5
-  ability: {fileID: 867704553499413969}
+  ability: {fileID: 0}
   CrystalTransform: {fileID: 0}
   flowFieldData: {fileID: 0}
 --- !u!114 &6776027772320837218
@@ -1956,6 +2036,24 @@ MonoBehaviour:
   swingBlocks: 0
   ship: {fileID: 874579555101021527}
   sihouetteScale: {x: 1, y: 1, z: 1}
+--- !u!114 &705402283976800655
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b96f650bef98662419511c3dfd7f388e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ControlOverrides: 03000000
+  closeCamDistance: -75
+  farCamDistance: 0
+  FollowTarget: {fileID: 0}
+  FollowTargetPosition: {x: 0, y: 0, z: 0}
+  isOrthographic: 0
 --- !u!1 &6675130274311316141
 GameObject:
   m_ObjectHideFlags: 0
@@ -2409,6 +2507,7 @@ Transform:
   m_Children:
   - {fileID: 808689176682098569}
   - {fileID: 5213705592260359948}
+  - {fileID: 5248301459994666056}
   m_Father: {fileID: 5928382658856804067}
   m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -2469,7 +2568,7 @@ Transform:
   m_GameObject: {fileID: 8153112052561705718}
   m_LocalRotation: {x: 0, y: 0, z: 1, w: 0.00000004371139}
   m_LocalPosition: {x: -0, y: 0.01, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 0.66, y: 1, z: 0.48}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 507090512925898101}

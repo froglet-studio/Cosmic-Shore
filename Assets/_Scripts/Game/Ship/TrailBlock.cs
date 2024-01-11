@@ -16,10 +16,10 @@ namespace CosmicShore.Core
 
         [Header("Trail Block Volume")]
         [SerializeField] Vector3 minScale = new Vector3 (.5f, .5f, .5f);
-        [SerializeField] Vector3 maxScale = new Vector3 (10, 10, 10);
+        [SerializeField] public Vector3 maxScale = new Vector3 (10, 10, 10);
         public Vector3 TargetScale;
         Vector3 outerDimensions; // defines volume
-        [SerializeField] Vector3 growthVector = new Vector3(0, 2, 0);
+        [SerializeField] public Vector3 growthVector = new Vector3(0, 2, 0);
         public float Volume { get => outerDimensions.x * outerDimensions.y * outerDimensions.z; }
         float growthRate = .01f;
 
@@ -30,7 +30,10 @@ namespace CosmicShore.Core
         public string ID;
         public int Index;
         public bool Shielded = false;
+        public bool IsSuperShielded = false;
         public bool warp = false;
+        public bool IsSmallest = false;
+        public bool IsLargest = false;
 
 
         [Header("Game Rewards")]
@@ -108,6 +111,10 @@ namespace CosmicShore.Core
 
             if (NodeControlManager.Instance != null)
                 NodeControlManager.Instance.AddBlock(team, TrailBlockProperties);
+
+            // TODO: State tracker should go to mini games
+            // if (StateTracker.Instance != null)
+            //     StateTracker.Instance.AddBlock(TrailBlockProperties);
         }
 
         bool isSizeChangeActive = false;
@@ -118,7 +125,7 @@ namespace CosmicShore.Core
 
             while (sqrDistance > .05f)
             {
-                transform.localScale = Vector3.Lerp(transform.localScale, TargetScale, Mathf.Clamp(growthRate * Time.deltaTime * sqrDistance,.05f,.2f));
+                transform.localScale = Vector3.Lerp(transform.localScale, TargetScale, Mathf.Clamp(growthRate * Time.deltaTime * sqrDistance, .05f, .2f));
                 sqrDistance = (TargetScale - transform.localScale).sqrMagnitude;
                 yield return null;
             }
@@ -126,10 +133,14 @@ namespace CosmicShore.Core
             isSizeChangeActive = false;
         }
 
-
-
         public void ChangeSize()
         {
+            if (TargetScale.x > maxScale.x || TargetScale.y > maxScale.y || TargetScale.z > maxScale.z)
+                ActivateShield();
+                IsLargest = true;
+            if (TargetScale.x < minScale.x || TargetScale.y < minScale.y || TargetScale.z < minScale.z)
+                IsSmallest = true;
+
             TargetScale.x = Mathf.Clamp(TargetScale.x, minScale.x, maxScale.x);
             TargetScale.y = Mathf.Clamp(TargetScale.y, minScale.y, maxScale.y);
             TargetScale.z = Mathf.Clamp(TargetScale.z, minScale.z, maxScale.z);
@@ -154,8 +165,6 @@ namespace CosmicShore.Core
         {
             TargetScale += growthVector;
 
-            if (TargetScale.x > maxScale.x || TargetScale.y > maxScale.y || TargetScale.z > maxScale.z)
-                ActivateShield();
 
             ChangeSize();
         }
@@ -176,9 +185,9 @@ namespace CosmicShore.Core
 
         public void Explode(Vector3 impactVector, Teams team, string playerName, bool devastate=false)
         {
-            if (Shielded && !devastate)
+            if ((Shielded && !devastate) || IsSuperShielded)
             {
-                DeactivateShield();
+                DeactivateShields();
                 return;
             }
 
@@ -203,23 +212,30 @@ namespace CosmicShore.Core
 
             if (NodeControlManager.Instance != null)
                 NodeControlManager.Instance.RemoveBlock(team, TrailBlockProperties);
+
+            // TODO: State track should go to mini games
+            // if (StateTracker.Instance != null)
+            //     StateTracker.Instance.RemoveBlock(TrailBlockProperties);
+
         }
 
         
 
-        public void DeactivateShield()
+        public void DeactivateShields()
         {
             if (lerpBlockMaterialPropertiesCoroutine != null) StopCoroutine(lerpBlockMaterialPropertiesCoroutine);
             StartCoroutine(LerpBlockMaterialPropertiesCoroutine(Hangar.Instance.GetTeamBlockMaterial(team)));
-            StartCoroutine(DeactivateShieldCoroutine(1));
+            StartCoroutine(DeactivateShieldsCoroutine(1));
             // TODO: need stats
         }
 
-        IEnumerator DeactivateShieldCoroutine(float duration)
+        IEnumerator DeactivateShieldsCoroutine(float duration)
         {
             yield return new WaitForSeconds(duration);
             Shielded = false;
+            IsSuperShielded = false;
             TrailBlockProperties.Shielded = false;
+            TrailBlockProperties.IsSuperShielded = false;
         }
 
         public void ActivateShield()
@@ -229,6 +245,14 @@ namespace CosmicShore.Core
             if (lerpBlockMaterialPropertiesCoroutine != null) StopCoroutine(lerpBlockMaterialPropertiesCoroutine);
             StartCoroutine(LerpBlockMaterialPropertiesCoroutine(Hangar.Instance.GetTeamShieldedBlockMaterial(team)));
             // TODO: need stats
+        }
+
+        public void ActivateSuperShield()
+        {
+            IsSuperShielded = true;
+            TrailBlockProperties.IsSuperShielded = true;
+            if (lerpBlockMaterialPropertiesCoroutine != null) StopCoroutine(lerpBlockMaterialPropertiesCoroutine);
+            StartCoroutine(LerpBlockMaterialPropertiesCoroutine(Hangar.Instance.GetTeamSuperShieldedBlockMaterial(team)));
         }
 
         public void ActivateShield(float duration)
@@ -242,7 +266,7 @@ namespace CosmicShore.Core
 
             yield return new WaitForSeconds(duration);
             
-            DeactivateShield();
+            DeactivateShields();
         }
 
         Coroutine lerpBlockMaterialPropertiesCoroutine;
@@ -280,9 +304,9 @@ namespace CosmicShore.Core
         {
             if (this.team != team)
             {
-                if (Shielded)
+                if (Shielded || IsSuperShielded)
                 {
-                    DeactivateShield();
+                    DeactivateShields();
                     return;
                 }
                 if (StatsManager.Instance != null)

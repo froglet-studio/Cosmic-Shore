@@ -50,7 +50,7 @@ namespace CosmicShore.Game.UI
             yield return new WaitUntil(() => Player.ActivePlayer != null && Player.ActivePlayer.Ship != null && Player.ActivePlayer.Ship.InputController != null);
 
             if (!Player.ActivePlayer.Ship.ShipStatus.AutoPilotEnabled)
-                gameObject.SetActive(Gamepad.current == null && (LeftThumb || !Player.ActivePlayer.Ship.ShipStatus.SingleStickControls));
+                gameObject.SetActive(Gamepad.current == null && !Player.ActivePlayer.Ship.ShipStatus.CommandStickControls && (LeftThumb || !Player.ActivePlayer.Ship.ShipStatus.SingleStickControls));
 
             initialized = true;
         }

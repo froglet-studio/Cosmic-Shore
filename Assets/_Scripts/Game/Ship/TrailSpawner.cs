@@ -25,13 +25,13 @@ public class TrailSpawner : MonoBehaviour
     [SerializeField] float minWavelength = 1f;
     public float MinWaveLength {get { return minWavelength; } }
 
-float wavelength;
+    float wavelength;
 
     public float Gap;
     public float MinimumGap = 1;
     public Vector3 TargetScale;
 
-    public int TrailLength { get { return trail.TrailList.Count; } }
+    public int TrailLength { get { return Trail.TrailList.Count; } }
     [SerializeField] float defaultWaitTime = .5f;
     
     public float waitTime = .5f;  // Time until the trail block appears - camera dependent
@@ -39,7 +39,7 @@ float wavelength;
 
     int spawnedTrailCount;
 
-    Trail trail = new();
+    public Trail Trail = new();
     Trail trail2 = new();
 
     Material blockMaterial;
@@ -72,7 +72,7 @@ float wavelength;
         return new List<TrailBlock>
         {
             // ^1 is the hat operator for index of last element
-            trail.TrailList[^1],
+            Trail.TrailList[^1],
             trail2.TrailList[^1]
         };
     }
@@ -250,16 +250,16 @@ float wavelength;
                     Block.GetComponent<MeshRenderer>().material = blockMaterial;
                     Block.Index = spawnedTrailCount;
                     Block.ID = ownerId + "::" + spawnedTrailCount++;
-                    Block.Trail = trail;
+                    Block.Trail = Trail;
 
                     if (Block.warp)
                         wavelength = shards.GetComponent<WarpFieldData>().HybridVector(Block.transform).magnitude * initialWavelength;
 
-                    trail.Add(Block);
+                    Trail.Add(Block);
                 }
                 else
                 {
-                    CreateBlock(Gap / 2, trail);
+                    CreateBlock(Gap / 2, Trail);
                     CreateBlock(-Gap / 2, trail2);
                 } 
             }

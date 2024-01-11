@@ -10,5 +10,6 @@ public enum ShipTypes
     Urchin = 4,
     Grizzly = 5,
     Squirrel = 6,
-    Serpent = 7
+    Serpent = 7,
+    Termite = 8,
 }

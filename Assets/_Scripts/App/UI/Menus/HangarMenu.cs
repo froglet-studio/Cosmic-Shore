@@ -2,6 +2,7 @@ using CosmicShore.Core.HangerBuilder;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Serialization;
 using UnityEngine.UI;
@@ -37,6 +38,7 @@ namespace CosmicShore.App.UI.Menus
         SO_Ship SelectedShip;
         SO_Vessel SelectedVessel;
         SO_ShipAbility SelectedAbility;
+        private int _legitShipCount;
 
         void Start()
         {
@@ -48,12 +50,15 @@ namespace CosmicShore.App.UI.Menus
         {
             if (ShipSelectionContainer == null) return;
 
+            // Get legitimate ship counts
+            _legitShipCount = math.min(ShipSelectionContainer.childCount, Ships.Count);
+            
             // Deactivate all
             for (var i = 0; i < ShipSelectionContainer.childCount; i++)
                 ShipSelectionContainer.GetChild(i).gameObject.SetActive(false);
 
             // Reactivate based on the number of ships
-            for (var i = 0; i < Ships.Count; i++)
+            for (var i = 0; i < _legitShipCount; i++)
             {
                 var selectionIndex = i;
                 var ship = Ships[i];

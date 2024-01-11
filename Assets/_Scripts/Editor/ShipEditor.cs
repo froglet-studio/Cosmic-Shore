@@ -26,7 +26,6 @@ namespace CosmicShore.Editor
                         typeof(ShowIfAttribute));
 
                     if (showIfControlOverrideAttribute == null 
-                        || shipScript.ControlOverrides.Contains(showIfControlOverrideAttribute.ControlOverride)
                         || shipScript.LevelEffects.Contains(showIfControlOverrideAttribute.LevelEffect)
                         || shipScript.crystalImpactEffects.Contains(showIfControlOverrideAttribute.CrystalImpactEffect))
                     {

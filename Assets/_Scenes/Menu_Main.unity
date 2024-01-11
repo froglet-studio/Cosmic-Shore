@@ -2099,6 +2099,7 @@ MonoBehaviour:
   LeftJoystickStart: {x: 0, y: 0}
   RightNormalizedJoystickPosition: {x: 0, y: 0}
   LeftNormalizedJoystickPosition: {x: 0, y: 0}
+  SingleTouchValue: {x: 0, y: 0}
   EasedRightJoystickPosition: {x: 0, y: 0}
   EasedLeftJoystickPosition: {x: 0, y: 0}
 --- !u!4 &293691743 stripped
@@ -7041,6 +7042,7 @@ MonoBehaviour:
   LeftJoystickStart: {x: 0, y: 0}
   RightNormalizedJoystickPosition: {x: 0, y: 0}
   LeftNormalizedJoystickPosition: {x: 0, y: 0}
+  SingleTouchValue: {x: 0, y: 0}
   EasedRightJoystickPosition: {x: 0, y: 0}
   EasedLeftJoystickPosition: {x: 0, y: 0}
 --- !u!1 &1539600233 stripped
@@ -8625,6 +8627,7 @@ MonoBehaviour:
   LeftJoystickStart: {x: 0, y: 0}
   RightNormalizedJoystickPosition: {x: 0, y: 0}
   LeftNormalizedJoystickPosition: {x: 0, y: 0}
+  SingleTouchValue: {x: 0, y: 0}
   EasedRightJoystickPosition: {x: 0, y: 0}
   EasedLeftJoystickPosition: {x: 0, y: 0}
 --- !u!1 &1981450501
@@ -9457,7 +9460,7 @@ PrefabInstance:
     - target: {fileID: 302356026468653294, guid: fdbd97f79a7aec14f8fadd5589780a74,
         type: 3}
       propertyPath: ShipPrefabs.Array.size
-      value: 6
+      value: 8
       objectReference: {fileID: 0}
     - target: {fileID: 302356026468653294, guid: fdbd97f79a7aec14f8fadd5589780a74,
         type: 3}
@@ -9499,13 +9502,13 @@ PrefabInstance:
         type: 3}
       propertyPath: ShipPrefabs.Array.data[6]
       value: 
-      objectReference: {fileID: 874579555101021527, guid: 569a1dc27b1f75543a7c975f2ac03364,
+      objectReference: {fileID: 874579555101021527, guid: 779e5b08e6fd7bc48b335c3b67e26f3b,
         type: 3}
     - target: {fileID: 302356026468653294, guid: fdbd97f79a7aec14f8fadd5589780a74,
         type: 3}
       propertyPath: ShipPrefabs.Array.data[7]
       value: 
-      objectReference: {fileID: 874579555101021527, guid: 569a1dc27b1f75543a7c975f2ac03364,
+      objectReference: {fileID: 874579555101021527, guid: 2d5833ab632135248959e37cc8aef2be,
         type: 3}
     - target: {fileID: 302356026468653295, guid: fdbd97f79a7aec14f8fadd5589780a74,
         type: 3}

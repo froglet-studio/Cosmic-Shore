@@ -5,11 +5,7 @@ namespace CosmicShore.Core
 {
     public enum ResourceType
     {
-        Mass = 1,
-        Charge = 2,
-        Space = 3,
-        Time = 4,
-        Boost = 5,
-        Ammunition = 6,
+        Gauge = 0,
+        Item = 1,
     }
 }

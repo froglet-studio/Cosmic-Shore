@@ -51,10 +51,12 @@ namespace CosmicShore.Core
         [SerializeField] Silhouette Silhouette;
         [SerializeField] GameObject AOEPrefab;
         [SerializeField] Skimmer farFieldSkimmer;
+        [SerializeField] public ShipCameraCustomizer ShipCameraCustomizer;
+        [SerializeField] public Transform FollowTarget;
 
         [Header("Environment Interactions")]
         [SerializeField] public List<CrystalImpactEffects> crystalImpactEffects;
-        [ShowIf(CrystalImpactEffects.AreaOfEffectExplosion)] [SerializeField] float minExplosionScale = 50;
+        [ShowIf(CrystalImpactEffects.AreaOfEffectExplosion)] [SerializeField] float minExplosionScale = 50; // TODO: depricate "ShowIf" once we adopt modularity
         [ShowIf(CrystalImpactEffects.AreaOfEffectExplosion)] [SerializeField] float maxExplosionScale = 400;
 
         [SerializeField] List<TrailBlockImpactEffects> trailBlockImpactEffects;
@@ -79,7 +81,6 @@ namespace CosmicShore.Core
 
         [Header("Passive Effects")]
         public List<ShipLevelEffects> LevelEffects;
-        [SerializeField] public List<ShipControlOverrides> ControlOverrides;
         [SerializeField] float closeCamDistance;
         [SerializeField] float farCamDistance;
         
@@ -153,7 +154,7 @@ namespace CosmicShore.Core
             cameraManager = CameraManager.Instance;
             InputController = player.GetComponent<InputController>();
             AutoPilot = GetComponent<AIPilot>();
-            ApplyShipControlOverrides(ControlOverrides);
+            if (!FollowTarget) FollowTarget = transform;
 
             foreach (var shipGeometry in shipGeometries)
                 shipGeometry.AddComponent<ShipGeometry>().Ship = this;
@@ -202,26 +203,6 @@ namespace CosmicShore.Core
             return UnityEngine.InputSystem.Gamepad.current != null;
         }
         
-        void ApplyShipControlOverrides(List<ShipControlOverrides> controlOverrides)
-        {
-
-            // Ship controls are only relevant for human pilots
-            if (AutoPilot.AutoPilotEnabled)
-                return;
-
-            foreach (ShipControlOverrides effect in controlOverrides)
-            {
-                switch (effect)
-                {
-                    case ShipControlOverrides.CloseCam:
-                        cameraManager.CloseCamDistance = closeCamDistance;
-                        break;
-                    case ShipControlOverrides.FarCam:
-                        cameraManager.FarCamDistance = farCamDistance;
-                        break;
-                }
-            }
-        }
 
         [Serializable] public struct ElementStat
         {
