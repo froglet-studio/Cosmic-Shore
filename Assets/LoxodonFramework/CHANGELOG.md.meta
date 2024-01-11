@@ -1,5 +1,9 @@
 fileFormatVersion: 2
+<<<<<<< HEAD:Assets/LoxodonFramework/CHANGELOG.md.meta
 guid: 88671dbc3b457f4479681b4a0cd0adf0
+=======
+guid: 98afaf3341e45994c86d581fdd011f08
+>>>>>>> Add Editor Tool for creating MiniGames and a template:Assets/_Scenes/MiniGames/Template/MinigameTemplate.unity.meta
 DefaultImporter:
   externalObjects: {}
   userData: 
