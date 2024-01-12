@@ -111,7 +111,7 @@ namespace CosmicShore.App.UI.Menus
             {
                 var selectionIndex = i;
                 var game = LeaderboardEligibleGames[i];
-                Debug.Log($"Populating Game Select List: {game.Name}");
+                Debug.Log($"Populating Game Select List: {game.DisplayName}");
 
                 try
                 {
@@ -151,7 +151,7 @@ namespace CosmicShore.App.UI.Menus
 
         void PopulateGameHighScores()
         {
-            Debug.Log($"PopulateGameHighScores: {SelectedGame.Name}");
+            Debug.Log($"PopulateGameHighScores: {SelectedGame.DisplayName}");
 
             // High Scores Container null check
             if (HighScoresContainer == null)

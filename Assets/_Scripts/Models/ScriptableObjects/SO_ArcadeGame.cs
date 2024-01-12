@@ -9,7 +9,7 @@ using UnityEngine.Video;
 public class SO_ArcadeGame : ScriptableObject
 {
     public MiniGames Mode;
-    public string Name;
+    public string DisplayName;
     public string Description;
     public Sprite Icon;
     public Sprite SelectedIcon;

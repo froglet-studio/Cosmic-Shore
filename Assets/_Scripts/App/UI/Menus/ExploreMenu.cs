@@ -78,7 +78,7 @@ namespace CosmicShore.App.UI.Menus
                 var selectionIndex = i;
                 var game = GameList.GameList[i];
                 
-                Debug.Log($"ExploreMenu - Populating Game Select List: {game.Name}");
+                Debug.Log($"ExploreMenu - Populating Game Select List: {game.DisplayName}");
 
                 var gameCard = GameCards[i];
                 gameCard.GameMode = game.Mode;
@@ -106,13 +106,13 @@ namespace CosmicShore.App.UI.Menus
 
         void PopulateGameDetails()
         {
-            Debug.Log($"Populating Game Details List: {SelectedGame.Name}");
+            Debug.Log($"Populating Game Details List: {SelectedGame.DisplayName}");
             Debug.Log($"Populating Game Details List: {SelectedGame.Description}");
             Debug.Log($"Populating Game Details List: {SelectedGame.Icon}");
             Debug.Log($"Populating Game Details List: {SelectedGame.PreviewClip}");
 
             // Set Game Detail Meta Data
-            SelectedGameName.text = SelectedGame.Name;
+            SelectedGameName.text = SelectedGame.DisplayName;
             SelectedGameDescription.text = SelectedGame.Description;
             //AllowedPlayerCountText.text = SelectedGame.MinPlayers + "-" + SelectedGame.MaxPlayers;
 

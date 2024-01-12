@@ -40,7 +40,7 @@ namespace CosmicShore.App.UI.Elements
         void UpdateCardView()
         {
             SO_ArcadeGame game = AllGames.GameList.Where(x => x.Mode == gameMode).FirstOrDefault();
-            GameTitle.text = game.Name;
+            GameTitle.text = game.DisplayName;
             BackgroundImage.sprite = game.CardBackground;
             LockImage.sprite = LockIcon;
             LockImage.gameObject.SetActive(Locked);

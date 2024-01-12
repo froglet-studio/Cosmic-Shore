@@ -160,7 +160,7 @@ namespace CosmicShore.App.UI.Menus
         {
             var selectedGame = AllGames.GameList[selectedGameIndex];
             activeGameMode = selectedGame.Mode;
-            GameTitle.text = selectedGame.Name;
+            GameTitle.text = selectedGame.DisplayName;
             foreach (var image in GameModeImages)
                 image.sprite = selectedGame.CardBackground;
 
