@@ -295,6 +295,13 @@
         "com.unity.render-pipelines.core": "12.1.11"
       }
     },
+    "jp.hadashikick.vcontainer": {
+      "version": "https://github.com/hadashiA/VContainer.git?path=VContainer/Assets/VContainer#1.14.0",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {},
+      "hash": "d37fb21ba4d17f3a80effdc8119d985d8d150ebe"
+    },
     "com.unity.modules.ai": {
       "version": "1.0.0",
       "depth": 0,
