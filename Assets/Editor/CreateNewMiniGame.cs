@@ -7,17 +7,17 @@ using UnityEngine.SceneManagement;
 
 namespace CosmicShore
 {
-    
+
     public class CreateNewMiniGame : EditorWindow
     {
-        
+
 
         //[SerializeProperty]
         bool manta = false;
         bool rhino = false;
         bool squirrel = false;
         bool urchin = false;
-        
+
         string sceneTemplatePath = "Assets/_Scenes/MiniGames/Template/MiniGameTemplate.unity";
         string sceneSavePath = "Assets/_Scenes/MiniGames/_New/";
         string newMiniGameName = string.Empty;
@@ -28,7 +28,7 @@ namespace CosmicShore
         {
             // This method is called when the user selects the menu item in the Editor          
             EditorWindow wnd = GetWindow<CreateNewMiniGame>();
-            
+
             wnd.titleContent = new GUIContent("MiniGame Editor Window");
 
             // Limit size of the window
@@ -68,11 +68,11 @@ namespace CosmicShore
             EditorGUILayout.Space();
 
             EditorGUILayout.Space();
-            if (GUILayout.Button("Create MiniGame")) 
+
             {
                 CloneScene();
             }
-            
+
             //Clones MiniGame Template
             void CloneScene()
             {
@@ -90,7 +90,7 @@ namespace CosmicShore
                 AssetDatabase.CopyAsset(sceneTemplatePath, newPath);
 
                 // Load the newly copied scene
-                
+
                 Scene newScene = EditorSceneManager.OpenScene(newPath, OpenSceneMode.Additive);
 
                 // Set the new scene as the active scene
