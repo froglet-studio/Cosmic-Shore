@@ -48,6 +48,8 @@ namespace CosmicShore.App.Systems.Audio
                 musicEnabled = GameSetting.Instance.MusicEnabled;
             }
             sfxEnabled = GameSetting.Instance.SFXEnabled;
+            ChangeMusicLevel(GameSetting.Instance.MusicLevel);
+            ChangeSFXLevel(GameSetting.Instance.SFXLevel);
 
             ChangeMusicEnabledStatus(musicEnabled);
         }
@@ -56,6 +58,8 @@ namespace CosmicShore.App.Systems.Audio
         {
             GameSetting.OnChangeMusicEnabledStatus += ChangeMusicEnabledStatus;
             GameSetting.OnChangeSFXEnabledStatus += ChangeSFXEnabledStatus;
+            GameSetting.OnChangeMusicLevel += ChangeMusicLevel;
+            GameSetting.OnChangeSFXLevel += ChangeSFXLevel;
         }
 
         void OnDisable()
@@ -74,6 +78,19 @@ namespace CosmicShore.App.Systems.Audio
         void ChangeSFXEnabledStatus(bool status)
         {
             sfxEnabled = status;
+        }
+
+        void ChangeMusicLevel(float level)
+        {
+            Debug.Log($"ChangeMusicLevel: {level}, {level/5f}");
+            musicVolume = level / 5f;   // max .2 -- default max volume is too high
+            musicSource1.volume = musicVolume;
+            musicSource2.volume = musicVolume;
+        }
+
+        void ChangeSFXLevel(float level)
+        {
+            sfxVolume = level / 5f;   // max .2 -- default max volume is too high
         }
 
         public void PlayMusicClip(AudioClip audioClip)

@@ -9,6 +9,19 @@ namespace CosmicShore.App.UI.Menus
         {
             GameSetting.Instance.ChangeMusicEnabledSetting();
         }
+        public void AdjustMusicLevel(float level)
+        {
+            Debug.Log($"Music Level: {level}");
+            GameSetting.Instance.SetMusicLevel(level);
+        }
+        public void AdjustSFXLevel(float level)
+        {
+            GameSetting.Instance.SetSFXLevel(level);
+        }
+        public void AdjustHapticsLevel(float level)
+        {
+            GameSetting.Instance.SetHapticsLevel(level);
+        }
         public void ToggleSFXEnabledSetting()
         {
             GameSetting.Instance.ChangeSFXEnabledSetting();
@@ -20,6 +33,10 @@ namespace CosmicShore.App.UI.Menus
         public void ToggleInvertYEnabledSetting()
         {
             GameSetting.Instance.ChangeInvertYEnabledStatus();
+        }
+        public void ToggleInvertThrottleEnabledSetting()
+        {
+            GameSetting.Instance.ChangeInvertThrottleEnabledStatus();
         }
         public void ToggleJoystickVisualsEnabledSetting()
         {
