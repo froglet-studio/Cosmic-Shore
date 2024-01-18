@@ -11,15 +11,15 @@ using System;
     TODO Add "Class"ClassSO to Hangar in Main_menu scene
     TODO Add to SO_Class and SO_AllShips  DO we need both? and should we rename to SO_AllClasses
 
-    TODO For all 4 Elements create "ElementClass"TrainingGameSO
+    For all 4 Elements create "ElementClass"TrainingGameSO
     TODO For all 4 Elements append AllGamesSO with "ElementClass"TrainingGameSO
 
     TODO For all 4 Elements create "ElementClass"TrainingScene (formally MiniGames) 
     TODO For all 4 Elements create "ElementClass"TrainingVesselSO with 1 Element maxed out
 
-    TODO For all 4 Elements create "ElementClass"UpgradeVesselSO
+    For all 4 Elements create "ElementClass"UpgradeVesselSO
     
-    TODO Create one "Class"FreestyleVesselSO
+     Create one "Class"FreestyleVesselSO
     TODO Add to Freestyle Game SO
  
  */
@@ -29,14 +29,15 @@ namespace CosmicShore
     public class CreateNewClass : EditorWindow
     {
         string newClassName = string.Empty;
+        string newClassSOName = string.Empty;
 
         List<string> elements = new List<string>() { "Time", "Mass", "Charge", "Space" };
 
 
-        string classSavePath = "Assets/_SO_Assets/_TEMP/";  //TODO /Class/_New/" or finalized folder
+        /*string classSavePath = "Assets/_SO_Assets/_TEMP/";  //TODO /Class/_New/" or finalized folder
         string trainingVesselSavePath = "Assets/_SO_Assets/_TEMP/";  //TODO /Vessel/Training/_New/" or finalized folder
         string UpgradeVesselSavePath = "Assets/_SO_Assets/_TEMP/";  //TODO /Vessel/Upgrade/_New/" or finalized folder
-        string FreestyleVesselSavePath = "Assets/_SO_Assets/_TEMP/";  //TODO /Vessel/Freestyle/_New/" or finalized folder
+        string FreestyleVesselSavePath = "Assets/_SO_Assets/_TEMP/";  //TODO /Vessel/Freestyle/_New/" or finalized folder*/
 
         #region Scriptable Objects
         // Class SO
@@ -121,8 +122,9 @@ namespace CosmicShore
 
             if (GUILayout.Button("Create Class"))
             {
+                newClassSOName = newClassName + "ClassSO";
                 // Create a ClassSO asset
-                newClassSO = ScriptableObjectEditor.CreateClassScriptableObject(newClassName);
+                newClassSO = ScriptableObjectEditor.CreateClassScriptableObject(newClassSOName);
 
                 if (newClassSO != null)
                 {
@@ -138,10 +140,10 @@ namespace CosmicShore
                 }
 
                 // Create a TrainingVesselSO assets
-                string training = "training";
                 for (int idx = 0; idx < elements.Count; idx++)
                 {
-                    TrainingVessels[idx] = ScriptableObjectEditor.CreateVesselScriptableObject(newClassName, elements[idx]); //Send string training also
+                    string newTrainingVesselName = elements[idx].ToString() + newClassName + "TrainingSO";
+                    TrainingVessels[idx] = ScriptableObjectEditor.CreateVesselScriptableObject(newTrainingVesselName, elements[idx], true, newClassSOName); //Send string training also
 
                     if (TrainingVessels[idx] != null)
                     {
@@ -156,7 +158,8 @@ namespace CosmicShore
                 // Create a UpgradeVesselSO assets
                 for (int idx = 0; idx < elements.Count; idx++)
                 {
-                    UpgradeVessels[idx] = ScriptableObjectEditor.CreateVesselScriptableObject(newClassName, elements[idx]); //Send string Upgrade also
+                    string newUpgradeVesselName = elements[idx].ToString() + newClassName + "UpgradeSO";
+                    UpgradeVessels[idx] = ScriptableObjectEditor.CreateVesselScriptableObject(newUpgradeVesselName, elements[idx], false, newClassSOName); //Send string Upgrade also
 
                     if (UpgradeVessels[idx] != null)
                     {
@@ -169,7 +172,8 @@ namespace CosmicShore
                     }
                 }
                 // Create a FreestyleVesselSO assets
-                newFreestyleVesselSO_1 = ScriptableObjectEditor.CreateFreestyleVesselScriptableObject(name);
+                string newFreestyleVesselName = newClassName + "FreestyleSO";
+                newFreestyleVesselSO_1 = ScriptableObjectEditor.CreateFreestyleVesselScriptableObject(newFreestyleVesselName);
 
                 if (newFreestyleVesselSO_1 != null)
                 {
@@ -186,7 +190,7 @@ namespace CosmicShore
 
     public class ScriptableObjectEditor
     {
-        
+
         public static SO_Ship CreateClassScriptableObject(string name)
         {
             // Create an instance of the ScriptableObject
@@ -205,17 +209,46 @@ namespace CosmicShore
             return AssetDatabase.LoadAssetAtPath<SO_Ship>(assetPath);
         }
 
-        public static SO_Vessel CreateVesselScriptableObject(string name,string element)
+        public static SO_Vessel CreateVesselScriptableObject(string name,string element, bool training, string classSOName)
         {
             // Create an instance of the ScriptableObject
             SO_Vessel VesselSO = SO_Vessel.CreateInstance<SO_Vessel>();
 
-            // Set the value of the ScriptableObject
-            string assetName = element + name;
-            VesselSO.name = assetName;                                            //TODO add values?  use List elements and not element
+            // Set the values of the ScriptableObject
+            VesselSO.name = name;                                            //Sets File Name
+            VesselSO.Name = name;                                            //Sets Display Name
+
+            string classSOAssetPath = "Assets/_SO_Assets/_TEMP/" + classSOName + ".asset"; //TODO
+            VesselSO.Ship = AssetDatabase.LoadAssetAtPath<SO_Ship>(classSOAssetPath); //Sets ClassSO
+
+            switch (element)                                                  //Sets Elements
+            {
+                case "Mass":
+                    VesselSO.PrimaryElement = Element.Mass;
+                    if (training) { VesselSO.InitialMass = 1; }                            
+                    break;
+
+                case "Charge":
+                    VesselSO.PrimaryElement = Element.Charge;
+                    if (training) { VesselSO.InitialCharge = 1; }                 
+                    break;
+
+                case "Space":
+                    VesselSO.PrimaryElement = Element.Space;
+                    if (training) { VesselSO.InitialSpace = 1; }
+                    break;
+
+                case "Time":
+                    VesselSO.PrimaryElement = Element.Time;
+                    if (training) { VesselSO.InitialTime = 1; }                    
+                    break;
+                    //default: 
+                    //Debug.Log("Element not found while creating VesselSO.");
+            }
+
 
             // Save the asset to the "Assets" directory
-            string assetPath = "Assets/_SO_Assets/_TEMP/" + element + name + ".asset"; //TODO
+            string assetPath = "Assets/_SO_Assets/_TEMP/" + name + ".asset"; //TODO
             AssetDatabase.CreateAsset(VesselSO, assetPath);
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
@@ -230,7 +263,14 @@ namespace CosmicShore
             SO_Vessel VesselSO = SO_Vessel.CreateInstance<SO_Vessel>();
 
             // Set the value of the ScriptableObject
-            VesselSO.name = name;                                            //TODO add values?  
+            VesselSO.name = name;                                            //Sets File Name 
+            VesselSO.Name = name;                                            //Sets Display Name
+            //VesselSO.PrimaryElement =                                      //TODO set all elements to max
+            
+            VesselSO.InitialMass = 1;
+            VesselSO.InitialCharge = 1;
+            VesselSO.InitialSpace = 1;
+            VesselSO.InitialTime = 1;
 
             // Save the asset to the "Assets" directory
             string assetPath = "Assets/_SO_Assets/_TEMP/" + name + ".asset"; //TODO
@@ -240,6 +280,6 @@ namespace CosmicShore
 
             // Return a reference to the created asset
             return AssetDatabase.LoadAssetAtPath<SO_Vessel>(assetPath);
-        }
+        }       
     }
 }
