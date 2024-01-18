@@ -141,7 +141,7 @@ namespace CosmicShore
                 yield return null;
                 if (TopMate.Mate != null)
                 {
-                    RotateMate(TopMate);
+                    RotateMate(TopMate, false);
                     MoveMateToSite(TopMate, globalBondSiteTop);
                 }
             }
@@ -156,7 +156,7 @@ namespace CosmicShore
 
                 if (BottomMate.Mate != null)
                 {
-                    RotateMate(BottomMate);
+                    RotateMate(BottomMate, false);
                     MoveMateToSite(BottomMate, globalBondSiteBottom);
                 }
             }
@@ -278,7 +278,7 @@ namespace CosmicShore
                 if (directionToMate.sqrMagnitude < snapDistance)
                 {
                     //Debug.Log("Snapped");
-                    SnapRotateMate(mate);
+                    RotateMate(mate, true);
                     CalculateBondSites();
                     mate.Mate.transform.position = bondSite - (mate.Bondee == SiteType.Right ? mate.Mate.BondSiteRight : mate.Mate.BondSiteLeft);
                     if (mate.Substrate == SiteType.Top)
@@ -297,23 +297,15 @@ namespace CosmicShore
                 CalculateGlobalBondSites();
             }
         }
-
-        private void RotateMate(BondMate mate)
+        
+        private void RotateMate(BondMate mate, bool isSnapping)
         {
             int signRight = mate.Bondee == SiteType.Right ? 1 : -1;
             int signTop = mate.Substrate == SiteType.Top ? 1 : -1;
             Quaternion targetRotation = Quaternion.LookRotation(transform.forward, signRight * signTop * transform.right);
-            mate.Mate.transform.rotation = Quaternion.Slerp(mate.Mate.transform.rotation, targetRotation, Time.deltaTime); // Adjust rotation speed as needed
-            mate.Mate.CalculateGlobalBondSites();
-            CalculateGlobalBondSites();
-        }
-
-        private void SnapRotateMate(BondMate mate)
-        {
-            int signRight = mate.Bondee == SiteType.Right ? 1 : -1;
-            int signTop = mate.Substrate == SiteType.Top ? 1 : -1;
-            Quaternion targetRotation = Quaternion.LookRotation(transform.forward, signRight * signTop * transform.right);
-            mate.Mate.transform.rotation = targetRotation;
+            mate.Mate.transform.rotation = isSnapping? 
+                targetRotation : 
+                Quaternion.Slerp(mate.Mate.transform.rotation, targetRotation, Time.deltaTime); // Adjust rotation speed as needed
             mate.Mate.CalculateGlobalBondSites();
             CalculateGlobalBondSites();
         }
