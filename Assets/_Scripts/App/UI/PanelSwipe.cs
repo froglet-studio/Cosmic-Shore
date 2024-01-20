@@ -16,11 +16,10 @@ namespace CosmicShore.App.UI
         public enum MenuScreens
         {
             STORE = 0,
-            RECORDS = 1,
+            Port = 1,
             HOME = 2,
             HANGAR = 3,
             ARCADE = 4,
-            //OPTIONS = 5,
         }
 
         [Serializable]
@@ -44,7 +43,7 @@ namespace CosmicShore.App.UI
         Coroutine navigateCoroutine;
 
         const int STORE = (int)MenuScreens.STORE;
-        const int RECORDS = (int)MenuScreens.RECORDS;
+        const int RECORDS = (int)MenuScreens.Port;
         const int HOME = (int)MenuScreens.HOME;
         const int HANGAR = (int)MenuScreens.HANGAR;
         const int ARCADE = (int)MenuScreens.ARCADE;
