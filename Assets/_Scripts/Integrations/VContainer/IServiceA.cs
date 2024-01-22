@@ -2,6 +2,7 @@
 {
     public interface IServiceA
     {
+        string Message { get; set; }
         void Call();
     }
 }

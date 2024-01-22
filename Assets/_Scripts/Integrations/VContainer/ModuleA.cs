@@ -20,7 +20,7 @@ namespace CosmicShore.Integrations.VContainer
         {
             Debug.Log("Module A is calling test service A.");
             _testServiceA.Call();
-            Debug.Log("Module B is calling test service B.");
+            Debug.Log("Module A is calling test service B.");
             _testServiceB.Call();
             Debug.Log($"{_testComponentA.name} started from Module A.");
         }
