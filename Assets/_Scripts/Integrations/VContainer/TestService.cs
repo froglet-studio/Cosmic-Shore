@@ -1,12 +1,20 @@
+using System;
 using UnityEngine;
 
 namespace CosmicShore.Integrations.VContainer
 {
-    public class TestService
+    public class TestService : IService, IDisposable
     {
-        public void TestService1()
+        string _serviceName = "Test Service Name";
+        public void Call()
         {
-            Debug.Log("TestService.TestService1() is called.");
+            Debug.Log("TestService.Call() is called.");
+        }
+
+        public void Dispose()
+        {
+            Debug.Log("service name disposed.");
+            _serviceName = string.Empty;
         }
     }
 }
