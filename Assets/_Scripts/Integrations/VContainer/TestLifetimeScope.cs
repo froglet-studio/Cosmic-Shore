@@ -46,6 +46,10 @@ namespace CosmicShore.Integrations.VContainer
             builder.RegisterInstance(testSettings.cameraSettings);
             builder.RegisterInstance(testSettings.actorSettings);
             
+            // Register collections
+            builder.Register<IVehicle, Car>(Lifetime.Scoped);
+            builder.Register<IVehicle, Truck>(Lifetime.Scoped);
+            
             // Use registered entry point with a group
             builder.UseEntryPoints(Lifetime.Singleton, entryPoints =>
             {
@@ -53,6 +57,7 @@ namespace CosmicShore.Integrations.VContainer
                 entryPoints.Add<TestModuleA>();
                 entryPoints.Add<TestMessenger>();
                 entryPoints.Add<TestModuleB>();
+                entryPoints.Add<Highway>();
                 // entryPoints.Add<TestRuntimePresenter>();
             });
             
