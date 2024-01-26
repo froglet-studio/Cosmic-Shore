@@ -2,14 +2,7 @@
 
 namespace CosmicShore.Integrations.VContainer
 {
-    public interface IModel
-    {
-        int Id { get; set; }
-        string Name { get; set; }
-        DateTime StartDate { get; set; }
-    }
-
-    public class TestModelA : IModel
+    public class TestModelA : IModelA
     {
         public int Id { get; set; }
         public string Name { get; set; }

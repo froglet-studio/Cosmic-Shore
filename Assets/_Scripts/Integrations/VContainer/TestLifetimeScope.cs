@@ -24,10 +24,12 @@ namespace CosmicShore.Integrations.VContainer
             // }, Lifetime.Singleton);
             
             builder.Register<IServiceB, TestServiceB>(Lifetime.Singleton);
+            builder.Register<IServiceC, TestServiceC>(Lifetime.Singleton);
+            // builder.Register<IModelC, ModelC>(Lifetime.Transient);
             builder.RegisterComponent(testComponentA);
             builder.RegisterComponent(testMenu);
 
-            builder.Register<IModel>(_ =>
+            builder.Register<IModelA>(_ =>
             {
                 return new TestModelA{Id = 11, Name = "Mario", StartDate = DateTime.Today};
             }, Lifetime.Scoped);
@@ -36,13 +38,16 @@ namespace CosmicShore.Integrations.VContainer
                 return new TestModelB();
             }, Lifetime.Scoped);
 
+            builder.Register<TestFactory>(Lifetime.Singleton);
+            // builder.RegisterFactory<int, TestModelA>(x => new TestRuntimePresenter(x));
 
             // Use registered entry point with a group
             builder.UseEntryPoints(Lifetime.Singleton, entryPoints =>
             {
                 entryPoints.Add<TestPresenter>().AsSelf();
-                entryPoints.Add<ModuleA>();
+                entryPoints.Add<TestModuleA>();
                 entryPoints.Add<TestMessenger>();
+                // entryPoints.Add<TestRuntimePresenter>();
             });
             
             builder.RegisterEntryPointExceptionHandler(ex =>

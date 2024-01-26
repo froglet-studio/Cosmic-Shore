@@ -7,21 +7,21 @@ namespace CosmicShore.Integrations.VContainer
     {
         
         public string Message { get; set; } = "Message from A";
-        public IModel TestModelA { get; private set; }
+        public IModelA TestModelAA { get; private set; }
         private IModelB _testModelB;
 
-        public TestServiceA(IModel testModelA)
+        public TestServiceA(IModelA testModelAA)
         {
-            TestModelA = testModelA;
+            TestModelAA = testModelAA;
             _testModelB = new TestModelB();
         }
         public void Call()
         {
             Debug.Log("TestServiceA.Call() is called.");
             Debug.Log($"TestServiceA.Call() is having test model a - " +
-                      $"id: {TestModelA.Id} " +
-                      $"name: {TestModelA.Name} " +
-                      $"start date: {TestModelA.StartDate}");
+                      $"id: {TestModelAA.Id} " +
+                      $"name: {TestModelAA.Name} " +
+                      $"start date: {TestModelAA.StartDate}");
         }
 
         public IModelB ProvideModelB()
@@ -32,7 +32,7 @@ namespace CosmicShore.Integrations.VContainer
         public void Dispose()
         {
             Message = string.Empty;
-            TestModelA = null;
+            TestModelAA = null;
         }
     }
 }
