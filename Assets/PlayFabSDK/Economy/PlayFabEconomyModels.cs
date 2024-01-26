@@ -1671,7 +1671,7 @@ namespace PlayFab.EconomyModels
         /// <summary>
         /// The amount of the item.
         /// </summary>
-        public int Amount;
+        public int? Amount;
         /// <summary>
         /// Game specific properties for display purposes. This is an arbitrary JSON blob. The Display Properties field has a 1000
         /// byte limit.
