@@ -2,16 +2,17 @@ using System.Threading;
 using Loxodon.Framework.Messaging;
 using UnityEngine;
 using System.Threading.Tasks;
+using VContainer.Unity;
 
 namespace CosmicShore.Integrations.Loxodon.MVVM
 {
-    public class TestMessenger : MonoBehaviour
+    public class TestMessenger : IStartable
     {
         public IMessenger Messager { get; } = new Messenger();
         private ISubscription<TestMessage> _syncMessage;
         private ISubscription<TestMessage> _asyncMessage;
 
-        private void Start()
+        public void Start()
         {
             _syncMessage = Messager.Subscribe<TestMessage>(OnSendingMessage);
             _asyncMessage = Messager.Subscribe<TestMessage>(OnSendingMessageAsync)
