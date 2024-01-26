@@ -10,6 +10,7 @@ namespace CosmicShore.Integrations.VContainer
     {
         [SerializeField] TestMenu testMenu;
         [SerializeField] private TestComponentA testComponentA;
+        [SerializeField] private TestSettings testSettings;
         protected override void Configure(IContainerBuilder builder)
         {
             // builder.RegisterEntryPoint<TestPresenter>();
@@ -41,12 +42,17 @@ namespace CosmicShore.Integrations.VContainer
             builder.Register<TestFactory>(Lifetime.Singleton);
             // builder.RegisterFactory<int, TestModelA>(x => new TestRuntimePresenter(x));
 
+            // Register scriptable objects
+            builder.RegisterInstance(testSettings.cameraSettings);
+            builder.RegisterInstance(testSettings.actorSettings);
+            
             // Use registered entry point with a group
             builder.UseEntryPoints(Lifetime.Singleton, entryPoints =>
             {
                 entryPoints.Add<TestPresenter>().AsSelf();
                 entryPoints.Add<TestModuleA>();
                 entryPoints.Add<TestMessenger>();
+                entryPoints.Add<TestModuleB>();
                 // entryPoints.Add<TestRuntimePresenter>();
             });
             

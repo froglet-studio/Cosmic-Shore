@@ -889,3 +889,4 @@ MonoBehaviour:
   - {fileID: 6417075533431866457, guid: 920c06d41c62d1f4482a2f80e793bbf8, type: 3}
   testMenu: {fileID: 839128289}
   testComponentA: {fileID: 596079189}
+  testSettings: {fileID: 11400000, guid: 54f13dcc6e97ef940972b612cd25a7da, type: 2}

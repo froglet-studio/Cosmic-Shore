@@ -17,5 +17,7 @@ namespace CosmicShore.Integrations.VContainer
             _message = serviceA.Message;
             Debug.Log($"TestComponentA Initializes message from Service A :{_message}");
         }
+        
+        
     }
 }
