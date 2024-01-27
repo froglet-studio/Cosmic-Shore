@@ -57,7 +57,6 @@ namespace CosmicShore
         {
             WallBlock = GetComponent<TrailBlock>();
             scale = WallBlock.TargetScale;
-            CalculateBondSites();
             CalculateGlobalBondSites();
         }
 
@@ -275,6 +274,10 @@ namespace CosmicShore
             {
                 var initialPosition = mate.Bondee == SiteType.Right ? mate.Mate.globalBondSiteRight : mate.Mate.globalBondSiteLeft;
                 var directionToMate = bondSite - initialPosition;
+                
+                CalculateGlobalBondSites();
+                mate.Mate.transform.position += directionToMate * Time.deltaTime;
+                mate.Mate.CalculateGlobalBondSites();
                 if (directionToMate.sqrMagnitude < snapDistance)
                 {
                     //Debug.Log("Snapped");
@@ -292,9 +295,7 @@ namespace CosmicShore
                         BottomIsBonded = true;
                     }
                 }
-                mate.Mate.transform.position += directionToMate * Time.deltaTime;
-                mate.Mate.CalculateGlobalBondSites();
-                CalculateGlobalBondSites();
+                
             }
         }
         
