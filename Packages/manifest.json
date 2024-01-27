@@ -21,10 +21,13 @@
     "com.unity.services.analytics": "4.4.2",
     "com.unity.services.relay": "1.0.5",
     "com.unity.test-framework": "1.1.33",
-    "com.unity.textmeshpro": "3.0.6",
+    "com.unity.textmeshpro": "3.0.7",
     "com.unity.timeline": "1.6.5",
     "com.unity.ugui": "1.0.0",
     "com.unity.visualeffectgraph": "12.1.11",
+    "com.vovgou.loxodon-framework": "https://github.com/vovgou/loxodon-framework.git?path=Loxodon.Framework/Assets/LoxodonFramework",
+    "com.vovgou.loxodon-framework-nlog": "2.6.4",
+    "com.vovgou.loxodon-framework-textformatting": "2.6.4",
     "jp.hadashikick.vcontainer": "https://github.com/hadashiA/VContainer.git?path=VContainer/Assets/VContainer#1.14.0",
     "com.unity.modules.ai": "1.0.0",
     "com.unity.modules.androidjni": "1.0.0",
@@ -57,5 +60,16 @@
     "com.unity.modules.vr": "1.0.0",
     "com.unity.modules.wind": "1.0.0",
     "com.unity.modules.xr": "1.0.0"
-  }
+  },
+  "scopedRegistries": [
+    {
+      "name": "package.openupm.com",
+      "url": "https://package.openupm.com",
+      "scopes": [
+        "com.vovgou.loxodon-framework",
+        "com.vovgou.loxodon-framework-nlog",
+        "com.vovgou.loxodon-framework-textformatting"
+      ]
+    }
+  ]
 }

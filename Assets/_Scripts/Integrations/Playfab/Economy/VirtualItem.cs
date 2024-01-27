@@ -55,6 +55,6 @@ namespace CosmicShore.Integrations.Playfab.Economy
         /// </summary>
         public string Type;
         // This member goes to Inventory Item, 
-        public int Amount;
+        public int? Amount;
     }
 }

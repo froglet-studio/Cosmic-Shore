@@ -309,7 +309,7 @@
       "url": "https://packages.unity.com"
     },
     "com.unity.textmeshpro": {
-      "version": "3.0.6",
+      "version": "3.0.7",
       "depth": 0,
       "source": "registry",
       "dependencies": {
@@ -357,6 +357,31 @@
         "com.unity.shadergraph": "12.1.11",
         "com.unity.render-pipelines.core": "12.1.11"
       }
+    },
+    "com.vovgou.loxodon-framework": {
+      "version": "https://github.com/vovgou/loxodon-framework.git?path=Loxodon.Framework/Assets/LoxodonFramework",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {},
+      "hash": "49ce197cc565448092cca0128416f2dc255aa343"
+    },
+    "com.vovgou.loxodon-framework-nlog": {
+      "version": "2.6.4",
+      "depth": 0,
+      "source": "registry",
+      "dependencies": {
+        "com.vovgou.loxodon-framework": "2.6.4"
+      },
+      "url": "https://package.openupm.com"
+    },
+    "com.vovgou.loxodon-framework-textformatting": {
+      "version": "2.6.4",
+      "depth": 0,
+      "source": "registry",
+      "dependencies": {
+        "com.vovgou.loxodon-framework": "2.6.4"
+      },
+      "url": "https://package.openupm.com"
     },
     "jp.hadashikick.vcontainer": {
       "version": "https://github.com/hadashiA/VContainer.git?path=VContainer/Assets/VContainer#1.14.0",
