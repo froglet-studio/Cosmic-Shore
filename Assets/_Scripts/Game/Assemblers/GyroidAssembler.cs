@@ -1,4 +1,5 @@
 using CosmicShore.Core;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEditor;
@@ -616,20 +617,16 @@ namespace CosmicShore
 
         //public bool IsActive = false;
         private Vector3 scale; // Scale of the TrailBlock
-        private Vector3 BondSiteTopLeft;
-        private Vector3 BondSiteTopRight;
-        private Vector3 BondSiteBottomLeft;
-        private Vector3 BondSiteBottomRight;
 
         private Vector3 globalBondSiteTopLeft;// Global position of Bond Site A
         private Vector3 globalBondSiteTopRight;// Global position of Bond Site B
         private Vector3 globalBondSiteBottomLeft;
         private Vector3 globalBondSiteBottomRight;
 
-        [HideInInspector] public GyroidAssembler TopLeftMate;
+        [HideInInspector] public GyroidBondMate TopLeftMate;
         [HideInInspector] public GyroidBondMate TopRightMate;
         [HideInInspector] public GyroidBondMate BottomLeftMate;
-        [HideInInspector] public GyroidAssembler BottomRightMate;
+        [HideInInspector] public GyroidBondMate BottomRightMate;
 
         [HideInInspector] public bool TopLeftIsBonded = false;
         [HideInInspector] public bool TopRightIsBonded = false;
@@ -640,8 +637,8 @@ namespace CosmicShore
         public TrailBlock GyroidBlock;
         public GyroidBlockType BlockType = GyroidBlockType.AB;
 
-        private float snapDistance = 3f;
-        float separationDistance = 2f;
+        private float snapDistance = 7f;
+        float separationDistance = 5f;
         [SerializeField] int colliderTheshold = 1;
         [SerializeField] float radius = 40f;
 
@@ -649,7 +646,6 @@ namespace CosmicShore
         {
             GyroidBlock = GetComponent<TrailBlock>();
             scale = GyroidBlock.TargetScale;
-            CalculateGlobalBondSites();
         }
 
         public void StartBonding()
@@ -699,6 +695,34 @@ namespace CosmicShore
             throw new System.Exception($"GyroidBondMateData not found for blockType: {blockType} and siteType: {siteType}");
         }
 
+        void PrepareMate(GyroidBondMate bondMate)
+        {
+            if (bondMate.Mate)
+            {
+                bondMate.Mate.BlockType = bondMate.BlockType;
+
+                switch (bondMate.Bondee)
+                {
+                    case CornerSiteType.TopLeft:
+                        bondMate.Mate.TopLeftMate = CreateGyroidBondMate(this, bondMate.BlockType, CornerSiteType.TopLeft);
+                        break;
+                    case CornerSiteType.TopRight:
+                        bondMate.Mate.TopRightMate = CreateGyroidBondMate(this, bondMate.BlockType, CornerSiteType.TopRight);
+                        break;
+                    case CornerSiteType.BottomLeft:
+                        bondMate.Mate.BottomLeftMate = CreateGyroidBondMate(this, bondMate.BlockType, CornerSiteType.BottomLeft);
+                        break;
+                    case CornerSiteType.BottomRight:
+                        bondMate.Mate.BottomRightMate = CreateGyroidBondMate(this, bondMate.BlockType, CornerSiteType.BottomRight);
+                        break;
+                }
+                MateList.Add(bondMate.Mate);
+                bondMate.Mate.MateList.Add(this);
+                Coroutine coroutine = StartCoroutine(UpdateMate(bondMate));
+                updateCoroutineDict[bondMate] = coroutine;
+            }
+        }   
+
         IEnumerator LookForMates()
         {
             while (true)
@@ -710,30 +734,14 @@ namespace CosmicShore
                 }
                 if (TopRightMate.Mate == null)
                 {
-                    TopRightMate = FindClosestMate(globalBondSiteTopRight, CornerSiteType.TopRight);
-                    if (TopRightMate.Mate)
-                    {
-                        TopRightMate.Mate.BlockType = GyroidBondMateDataContainer.GetBondMateData(BlockType, CornerSiteType.TopRight).BlockType;
-                        if (TopRightMate.isTail) TopRightMate.Mate.BottomRightMate = this;
-                        else TopRightMate.Mate.TopLeftMate = this;
-                        MateList.Add(TopRightMate.Mate);
-                        TopRightMate.Mate.MateList.Add(this);
-                        updateTopRightMate = StartCoroutine(UpdateTopMate());
-                    }
+                    TopRightMate = FindClosestMate(CalculateGlobalBondSite(CornerSiteType.TopRight), CornerSiteType.TopRight);
+                    PrepareMate(TopRightMate);
                 }
                 yield return new WaitForSeconds(1f);
                 if (BottomLeftMate.Mate == null)
                 {
-                    BottomLeftMate = FindClosestMate(globalBondSiteBottomLeft, CornerSiteType.BottomLeft);
-                    if (BottomLeftMate.Mate)
-                    {
-                        BottomLeftMate.Mate.BlockType = GyroidBondMateDataContainer.GetBondMateData(BlockType, CornerSiteType.BottomLeft).BlockType;
-                        if (BottomLeftMate.isTail) BottomLeftMate.Mate.BottomRightMate = this;
-                        else BottomLeftMate.Mate.TopLeftMate = this; 
-                        MateList.Add(BottomLeftMate.Mate);
-                        BottomLeftMate.Mate.MateList.Add(this);
-                        updateBottomLeftMate = StartCoroutine(UpdateBottomMate());
-                    }
+                    BottomLeftMate = FindClosestMate(CalculateGlobalBondSite(CornerSiteType.BottomLeft), CornerSiteType.BottomLeft);
+                    PrepareMate(BottomLeftMate);
                 }
                 yield return new WaitForSeconds(1f);
                 if (TopRightIsBonded && BottomLeftIsBonded)
@@ -748,53 +756,67 @@ namespace CosmicShore
             }
         }
 
-        Coroutine updateTopRightMate;
-        IEnumerator UpdateTopMate()
+        Dictionary<GyroidBondMate, Coroutine> updateCoroutineDict = new Dictionary<GyroidBondMate, Coroutine>();
+
+        IEnumerator UpdateMate(GyroidBondMate bondMate)
         {
             while (true)
             {
                 yield return null;
-                if (TopRightMate.Mate != null)
+                if (bondMate.Mate != null)
                 {
-                    RotateMate(TopRightMate, false);
-                    MoveMateToSite(TopRightMate, globalBondSiteTopRight);
+                    MoveMateToSite(bondMate, CalculateGlobalBondSite(bondMate.Substrate));
+                    RotateMate(bondMate, false);
                 }
             }
         }
 
-        Coroutine updateBottomLeftMate;
-        IEnumerator UpdateBottomMate()
+        // Helper method to calculate local bond site
+        Vector3 CalculateBondSite(CornerSiteType site)
         {
-            while (true)
+            return GyroidBondMateDataContainer.GetBondMateData(BlockType, site).DeltaPosition * separationDistance;
+        }
+
+        // Helper method to convert local position to global position
+        private Vector3 CalculateGlobalPosition(Vector3 localPosition)
+        {
+            return localPosition.x * transform.right + localPosition.y * transform.up + localPosition.z * transform.forward + transform.position;
+        }
+
+        // Method with switch case to update and return a specific global bond site
+        public Vector3 CalculateGlobalBondSite(CornerSiteType site)
+        {
+            Vector3 localBondSite = CalculateBondSite(site);
+            Vector3 globalBondSite;
+
+            switch (site)
             {
-                yield return null;
+                case CornerSiteType.TopLeft:
+                    globalBondSiteTopLeft = CalculateGlobalPosition(localBondSite);
+                    globalBondSite = globalBondSiteTopLeft;
+                    break;
 
-                if (BottomLeftMate.Mate != null)
-                {
-                    RotateMate(BottomLeftMate, false);
-                    MoveMateToSite(BottomLeftMate, globalBondSiteBottomLeft);
-                }
+                case CornerSiteType.TopRight:
+                    globalBondSiteTopRight = CalculateGlobalPosition(localBondSite);
+                    globalBondSite = globalBondSiteTopRight;
+                    break;
+
+                case CornerSiteType.BottomLeft:
+                    globalBondSiteBottomLeft = CalculateGlobalPosition(localBondSite);
+                    globalBondSite = globalBondSiteBottomLeft;
+                    break;
+
+                case CornerSiteType.BottomRight:
+                    globalBondSiteBottomRight = CalculateGlobalPosition(localBondSite);
+                    globalBondSite = globalBondSiteBottomRight;
+                    break;
+
+                default:
+                    throw new ArgumentException("Invalid corner site type");
             }
-        }
 
-        void CalculateBondSites()
-        {
-            // Using the bond site calculations from WallAssembler
-            BondSiteTopLeft = GyroidBondMateDataContainer.GetBondMateData(BlockType, CornerSiteType.TopLeft).DeltaPosition * 5 ;
-            BondSiteTopRight = GyroidBondMateDataContainer.GetBondMateData(BlockType, CornerSiteType.TopRight).DeltaPosition * 5;
-            BondSiteBottomLeft = GyroidBondMateDataContainer.GetBondMateData(BlockType, CornerSiteType.BottomLeft).DeltaPosition * 5;
-            BondSiteBottomRight = GyroidBondMateDataContainer.GetBondMateData(BlockType, CornerSiteType.BottomRight).DeltaPosition * 5;
+            return globalBondSite;
         }
-        public void CalculateGlobalBondSites()
-        {
-            CalculateBondSites();
-
-            globalBondSiteTopLeft = BondSiteTopLeft.x * transform.right + BondSiteTopLeft.y * transform.up + BondSiteTopLeft.z * transform.forward + transform.position;
-            globalBondSiteTopRight = BondSiteTopRight.x * transform.right + BondSiteTopRight.y * transform.up + BondSiteTopRight.z * transform.forward + transform.position;
-            globalBondSiteBottomLeft = BondSiteBottomLeft.x * transform.right + BondSiteBottomLeft.y * transform.up + BondSiteBottomLeft.z * transform.forward + transform.position;
-            globalBondSiteBottomRight = BondSiteBottomRight.x * transform.right + BondSiteBottomRight.y * transform.up + BondSiteBottomRight.z * transform.forward + transform.position;
-        }
-
 
         // this method so if checks if this is in each struct in the list
         private bool IsMate(GyroidAssembler mateComponent)
@@ -844,7 +866,7 @@ namespace CosmicShore
                         && mateComponent.GyroidBlock.TrailBlockProperties.TimeCreated > GyroidBlock.TrailBlockProperties.TimeCreated)
                     {
                         mateComponent.StopAllCoroutines();
-                        mateComponent.ReplaceMateList(this);
+                        //mateComponent.ReplaceMateList(this);
                         mateComponent.ClearMateList();
                     }
                     if ((bondSite - mateComponent.transform.position).sqrMagnitude < snapDistance)
@@ -869,7 +891,6 @@ namespace CosmicShore
             return CreateGyroidBondMate(closest, BlockType, siteType);
         }
 
-
         private void MoveMateToSite(GyroidBondMate mate, Vector3 bondSite)
         {
             {
@@ -880,38 +901,37 @@ namespace CosmicShore
                 {
                     //Debug.Log("Snapped");
                     RotateMate(mate, true);
-                    CalculateGlobalBondSites();
                     mate.Mate.transform.position = bondSite;
-                    if (mate.Substrate == CornerSiteType.TopRight)
+                    StopCoroutine(updateCoroutineDict[mate]);
+                    updateCoroutineDict.Remove(mate);
+                    switch (mate.Substrate)
                     {
-                        StopCoroutine(updateTopRightMate);
-                        TopRightIsBonded = true;
-                    }
-                    else if (mate.Substrate == CornerSiteType.BottomLeft)
-                    {
-                        StopCoroutine(updateBottomLeftMate);
-                        BottomLeftIsBonded = true;
-                    }
+                        case CornerSiteType.TopLeft:
+                            TopLeftIsBonded = true;
+                            break;
+                        case CornerSiteType.TopRight:
+                            TopRightIsBonded = true;
+                            break;
+                        case CornerSiteType.BottomLeft:
+                            BottomLeftIsBonded = true;
+                            break;
+                        case CornerSiteType.BottomRight:
+                            BottomRightIsBonded = true;
+                            break;
+                    }   
                 }
                 else mate.Mate.transform.position += directionToMate * Time.deltaTime;
-                mate.Mate.CalculateGlobalBondSites();
-                CalculateGlobalBondSites();
             }
         }
 
         private void RotateMate(GyroidBondMate mate, bool isSnapping)
         {
             Quaternion targetRotation = Quaternion.LookRotation(mate.DeltaForward.x * transform.right + mate.DeltaForward.y * transform.up + mate.DeltaForward.z * transform.forward + transform.forward,
-                                                                mate.DeltaUp.x * transform.right + mate.DeltaUp.y * transform.up + mate.DeltaUp.z * transform.up + transform.up);
+                                                                mate.DeltaUp.x * transform.right + mate.DeltaUp.y * transform.up + mate.DeltaUp.z * transform.up + transform.up);  // TODO: pull this into setup, so it is only called once.
             mate.Mate.transform.rotation = isSnapping ?
                 targetRotation :
                 Quaternion.Lerp(mate.Mate.transform.rotation, targetRotation, Time.deltaTime); // Adjust rotation speed as needed
-            mate.Mate.CalculateGlobalBondSites();
-            CalculateGlobalBondSites();
         }
-
     }
-
-
 }
 
