@@ -5,6 +5,7 @@ using PlayFab.ClientModels;
 using System;
 using System.Collections;
 using System.Security;
+using CosmicShore.Utility.ClassExtensions;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -462,6 +463,7 @@ namespace CosmicShore.App.UI.Menus
             if(!string.IsNullOrEmpty(AuthenticationManager.PlayerProfile.DisplayName))
                 displayNameInputField.text = AuthenticationManager.PlayerProfile.DisplayName;
 
+            if (displayNameResultMessage == null) return;
             displayNameResultMessage.gameObject.SetActive(true);
         }
 
