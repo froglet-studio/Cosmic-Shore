@@ -24,6 +24,7 @@ MonoBehaviour:
   Vessels:
   - {fileID: 11400000, guid: 5ac362560a34d414e835db83e82daa08, type: 2}
   - {fileID: 11400000, guid: 47ecdb78312b0be4d8785da5ebaced42, type: 2}
+  - {fileID: 11400000, guid: 93969af9015d6d347848a9231cb52743, type: 2}
   GolfScoring: 0
   MinPlayers: 1
   MaxPlayers: 1

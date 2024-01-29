@@ -37114,17 +37114,22 @@ PrefabInstance:
     - target: {fileID: 302356026468653294, guid: fdbd97f79a7aec14f8fadd5589780a74,
         type: 3}
       propertyPath: FriendlyAIShipType
-      value: 7
+      value: 3
       objectReference: {fileID: 0}
     - target: {fileID: 302356026468653294, guid: fdbd97f79a7aec14f8fadd5589780a74,
         type: 3}
       propertyPath: HostileAI1ShipType
-      value: 1
+      value: 7
       objectReference: {fileID: 0}
     - target: {fileID: 302356026468653294, guid: fdbd97f79a7aec14f8fadd5589780a74,
         type: 3}
       propertyPath: HostileAI2ShipType
-      value: 6
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 302356026468653294, guid: fdbd97f79a7aec14f8fadd5589780a74,
+        type: 3}
+      propertyPath: HostileAI3ShipType
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 302356026468653294, guid: fdbd97f79a7aec14f8fadd5589780a74,
         type: 3}
