@@ -637,8 +637,8 @@ namespace CosmicShore
         public TrailBlock GyroidBlock;
         public GyroidBlockType BlockType = GyroidBlockType.BC;
 
-        private float snapDistance = 5f;
-        float separationDistance = 4f;
+        private float snapDistance = .3f;
+        float separationDistance = 3f;
         [SerializeField] int colliderTheshold = 1;
         [SerializeField] float radius = 40f;
 

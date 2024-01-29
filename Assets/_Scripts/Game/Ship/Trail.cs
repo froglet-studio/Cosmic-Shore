@@ -116,10 +116,13 @@ namespace CosmicShore.Core
             var overflow = distanceTravelled - distance;
             var nextPosition = nextBlock.transform.position;
             var currentPosition = currentBlock.transform.position;
-
-            heading = (nextPosition - currentPosition).normalized;
+            Vector3 blockGap = nextPosition - currentPosition;
+           
+            heading = (blockGap).normalized;
             endIndex = startIndex;
-            finalLerp = 1 - (overflow / (currentPosition - nextPosition).magnitude);
+            //finalLerp = 1 - (overflow / (currentPosition - nextPosition).magnitude);
+            finalLerp = 1 - overflow / blockGap.magnitude;
+
             outDirection = (TrailFollowerDirection)incrementor;
 
             return Vector3.Lerp(currentPosition, nextPosition, finalLerp);

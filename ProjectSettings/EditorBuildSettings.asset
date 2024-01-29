@@ -74,7 +74,7 @@ EditorBuildSettings:
   - enabled: 0
     path: Assets/_Scenes/MinigameCellularBrawl2v2.unity
     guid: 78219fe3cb3c96b44a9e146ced331089
-  - enabled: 0
+  - enabled: 1
     path: Assets/_Scenes/MinigameDashAndGrab.unity
     guid: 9b2bfb506e15d33478bb4f9f1593af50
   m_configObjects:

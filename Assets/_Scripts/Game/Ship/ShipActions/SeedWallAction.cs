@@ -24,8 +24,8 @@ namespace CosmicShore
             {
                 resourceSystem.ChangeAmmoAmount(-resourceSystem.MaxAmmo / enhancementsPerFullAmmo);
                 var trailBlock = spawner.Trail.TrailList.Last().gameObject;
-                trailBlock.AddComponent<WallAssembler>();
-                trailBlock.GetComponent<WallAssembler>().StartBonding();
+                trailBlock.AddComponent<GyroidAssembler>();
+                trailBlock.GetComponent<GyroidAssembler>().StartBonding();
             }
         }
 

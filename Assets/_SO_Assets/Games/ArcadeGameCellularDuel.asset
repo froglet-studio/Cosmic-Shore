@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: ArcadeGameCellularDuel
   m_EditorClassIdentifier: 
   Mode: 8
-  Name: Cellular Duel
+  DisplayName: 
   Description: Engage in a tug-of-war to gain control over the contested cell. Player
     with the most mass wins.
   Icon: {fileID: 21300000, guid: 1917088452678c8449563992f4132c7e, type: 3}
@@ -23,6 +23,8 @@ MonoBehaviour:
     type: 3}
   Vessels:
   - {fileID: 11400000, guid: 5ac362560a34d414e835db83e82daa08, type: 2}
+  - {fileID: 11400000, guid: 47ecdb78312b0be4d8785da5ebaced42, type: 2}
+  GolfScoring: 0
   MinPlayers: 1
   MaxPlayers: 1
   MinIntensity: 2
