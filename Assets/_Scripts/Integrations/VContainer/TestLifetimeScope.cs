@@ -1,5 +1,4 @@
 ﻿using System;
-using CosmicShore.Integrations.Loxodon.MVVM;
 using UnityEngine;
 using VContainer;
 using VContainer.Unity;
@@ -55,7 +54,6 @@ namespace CosmicShore.Integrations.VContainer
             {
                 entryPoints.Add<TestPresenter>().AsSelf();
                 entryPoints.Add<TestModuleA>();
-                entryPoints.Add<TestMessenger>();
                 entryPoints.Add<TestModuleB>();
                 entryPoints.Add<Highway>();
                 // entryPoints.Add<TestRuntimePresenter>();
