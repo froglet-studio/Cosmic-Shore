@@ -16,7 +16,7 @@ public class DropDecoyAction : ShipAction
             resourceSystem.ChangeAmmoAmount(-resourceSystem.MaxAmmo / decoysPerFullAmmo);
 
             var fake = Instantiate(decoy).GetComponent<FakeCrystal>();
-            if (Player.ActivePlayer.Ship == ship) fake.isplayer = true;
+            if (Player.ActivePlayer && Player.ActivePlayer.Ship == ship) fake.isplayer = true;
             fake.Team = ship.Team;
             fake.ItemType = ItemType.Debuff;
             fake.transform.position = ship.transform.position;

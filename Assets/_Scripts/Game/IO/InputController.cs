@@ -115,10 +115,19 @@ namespace CosmicShore.Game.IO
         {
             if (AutoPilotEnabled)
             {
-                XSum = ship.AutoPilot.XSum;
-                YSum = ship.AutoPilot.YSum;
-                XDiff = ship.AutoPilot.XDiff;
-                YDiff = ship.AutoPilot.YDiff;
+                if (ship.ShipStatus.SingleStickControls)
+                {
+                    EasedLeftJoystickPosition.x = ship.AutoPilot.X;
+                    EasedLeftJoystickPosition.y = ship.AutoPilot.Y;
+                }
+                else
+                {
+                    XSum = ship.AutoPilot.XSum;
+                    YSum = ship.AutoPilot.YSum;
+                    XDiff = ship.AutoPilot.XDiff;
+                    YDiff = ship.AutoPilot.YDiff;
+                }
+     
                 PerformSpeedAndDirectionalEffects();
             }
             else if (Gamepad.current != null)

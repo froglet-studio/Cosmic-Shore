@@ -37,6 +37,9 @@ namespace CosmicShore.Game.AI
         public float XDiff;
         public float YDiff;
 
+        public float X;
+        public float Y;
+
         [HideInInspector] public float defaultThrottle { get { return Mathf.Lerp(defaultThrottleLow, defaultThrottleHigh, SkillLevel); } }
         [HideInInspector] public float defaultAggressiveness { get { return Mathf.Lerp(defaultAggressivenessLow, defaultAggressivenessHigh, SkillLevel); } }
         float throttleIncrease { get { return Mathf.Lerp(throttleIncreaseLow, throttleIncreaseHigh, SkillLevel); } }
@@ -50,6 +53,7 @@ namespace CosmicShore.Game.AI
         [SerializeField] bool LookingAtCrystal = false;
         [SerializeField] bool ram = false;
         [SerializeField] bool drift = false;
+        [HideInInspector] public bool SingleStickControls = false;
 
         [SerializeField] bool useAbility = false;
         [SerializeField] float abilityCooldown;
@@ -75,10 +79,10 @@ namespace CosmicShore.Game.AI
         float maxDistanceSquared;
 
         // TODO: rename to 'TargetTransform'
-        public Transform CrystalTransform;
+        [HideInInspector] public Transform CrystalTransform;
         Vector3 distance;
 
-        public FlowFieldData flowFieldData;
+        [HideInInspector] public FlowFieldData flowFieldData;
 
         Dictionary<Corner, AvoidanceBehavior> CornerBehaviors;
 
@@ -152,6 +156,8 @@ namespace CosmicShore.Game.AI
 
             var activeNode = NodeControlManager.Instance.GetNodeByPosition(transform.position);
             activeNode.RegisterForUpdates(this);
+
+            if (useAbility) StartCoroutine(UseAbilityCoroutine(ability));
         }
 
         void Update()
@@ -160,8 +166,6 @@ namespace CosmicShore.Game.AI
             {
                 ship.InputController.AutoPilotEnabled = true;
                 ship.ShipStatus.AutoPilotEnabled = true;
-
-                //if (useAbility) StartCoroutine(UseAbilityCoroutine(ability));
 
                 var targetPosition = CrystalTransform.position;
                 //Vector3 currentDirection = shipStatus.Course;
@@ -209,11 +213,20 @@ namespace CosmicShore.Game.AI
                 //}
                 float angle = Mathf.Asin(Mathf.Clamp(combinedLocalCrossProduct.sqrMagnitude * aggressiveness * 12 / Mathf.Min(sqrMagnitude, maxDistance), -1f, 1f)) * Mathf.Rad2Deg;
 
-                YSum = Mathf.Clamp(angle * combinedLocalCrossProduct.x, -1, 1);
-                XSum = Mathf.Clamp(angle * combinedLocalCrossProduct.y, -1, 1);
-                YDiff = Mathf.Clamp(angle * combinedLocalCrossProduct.y, -1, 1);
+                if (SingleStickControls)
+                {
+                    X = Mathf.Clamp(angle * combinedLocalCrossProduct.y, -1, 1);
+                    Y = -Mathf.Clamp(angle * combinedLocalCrossProduct.x, -1, 1);
+                }
+                else
+                {
+                    YSum = Mathf.Clamp(angle * combinedLocalCrossProduct.x, -1, 1);
+                    XSum = Mathf.Clamp(angle * combinedLocalCrossProduct.y, -1, 1);
+                    YDiff = Mathf.Clamp(angle * combinedLocalCrossProduct.y, -1, 1);
 
-                XDiff = (LookingAtCrystal && ram) ? 1 : Mathf.Clamp(throttle, 0, 1);
+                    XDiff = (LookingAtCrystal && ram) ? 1 : Mathf.Clamp(throttle, 0, 1);
+                }
+             
 
                 ///get better
                 aggressiveness += aggressivenessIncrease * Time.deltaTime;

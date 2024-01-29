@@ -1,3 +1,4 @@
+using CosmicShore.Game.AI;
 using UnityEngine;
 
 public class SingleStickShipTransformer : ShipTransformer
@@ -10,7 +11,9 @@ public class SingleStickShipTransformer : ShipTransformer
     {
         base.Start();
         ship.ShipStatus.SingleStickControls = true;
-     
+        GetComponent<AIPilot>().SingleStickControls = true;
+
+
         courseObject = new GameObject("CourseObject");
         courseTransform = courseObject.transform;
     }

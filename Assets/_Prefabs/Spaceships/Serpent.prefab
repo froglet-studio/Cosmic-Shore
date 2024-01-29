@@ -1875,11 +1875,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   displayBoost: 1
   gainsBoost: 1
-  boostGainRate:
-    Value: 0.01
-    Min: 0
-    Max: 0
-    element: 1
+  boostGainRate: 0.1
   initialBoost: 1
   maxBoost: 1
   displayAmmo: 1
@@ -1925,7 +1921,7 @@ MonoBehaviour:
   SkillLevel: 0.3
   defaultThrottleHigh: 0.9
   defaultThrottleLow: 0.2
-  defaultAggressivenessHigh: 0.09
+  defaultAggressivenessHigh: 0.03
   defaultAggressivenessLow: 0.04
   throttleIncreaseHigh: 0.001
   throttleIncreaseLow: 0.0005
@@ -1939,15 +1935,18 @@ MonoBehaviour:
   YSum: 0
   XDiff: 0
   YDiff: 0
+  X: 0
+  Y: 0
   raycastHeight: 2
   raycastWidth: 2
   AutoPilotEnabled: 0
   LookingAtCrystal: 0
   ram: 0
   drift: 0
+  SingleStickControls: 0
   useAbility: 1
-  abilityCooldown: 5
-  ability: {fileID: 0}
+  abilityCooldown: 15
+  ability: {fileID: 6378036342495326916}
   CrystalTransform: {fileID: 0}
   flowFieldData: {fileID: 0}
 --- !u!114 &6776027772320837218
