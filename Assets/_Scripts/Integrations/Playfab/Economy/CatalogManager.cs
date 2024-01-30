@@ -149,9 +149,7 @@ namespace CosmicShore.Integrations.Playfab.Economy
         #endregion
 
         #region Inventory Operations
-        /// <summary>
-        /// Grant Vessel Knowledge
-        /// </summary>
+
         // TODO: vessel knowledge is now part of player data, not a store item. Should re-wire the API calls from PlayerDataController.
         // public void GrantVesselKnowledge(int amount, ShipTypes shipClass, Element element)
         // {

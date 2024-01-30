@@ -21,23 +21,23 @@ public class FancyCamController : MonoBehaviour
         {
             if (toggleKey.wasPressedThisFrame) isRotating = !isRotating;
 
-            if (isRotating) transform.Rotate(speed * Vector3.up * Time.deltaTime);
+            if (isRotating) transform.Rotate(Vector3.up * (speed * Time.deltaTime));
         }
 
         if (keyboardTranslation)
         {
-            if (Keyboard.current.wKey.isPressed) transform.Translate(speed * transform.forward * Time.deltaTime);
-            if (Keyboard.current.sKey.isPressed) transform.Translate(speed * -transform.forward * Time.deltaTime);
-            if (Keyboard.current.aKey.isPressed) transform.Translate(speed * -transform.right * Time.deltaTime);
-            if (Keyboard.current.dKey.isPressed) transform.Translate(speed * transform.right * Time.deltaTime);
-            if (Keyboard.current.qKey.isPressed) transform.Translate(speed * -transform.up * Time.deltaTime);
-            if (Keyboard.current.eKey.isPressed) transform.Translate(speed * transform.up * Time.deltaTime);
+            if (Keyboard.current.wKey.isPressed) transform.Translate(transform.forward * (speed * Time.deltaTime));
+            if (Keyboard.current.sKey.isPressed) transform.Translate(-transform.forward * (speed * Time.deltaTime));
+            if (Keyboard.current.aKey.isPressed) transform.Translate(-transform.right * (speed * Time.deltaTime));
+            if (Keyboard.current.dKey.isPressed) transform.Translate(transform.right * (speed * Time.deltaTime));
+            if (Keyboard.current.qKey.isPressed) transform.Translate(-transform.up * (speed * Time.deltaTime));
+            if (Keyboard.current.eKey.isPressed) transform.Translate(transform.up * (speed * Time.deltaTime));
         }
 
         if (mouseRotation)
         {
-            if (Mouse.current.leftButton.isPressed) transform.Rotate(speed * Vector3.up * Time.deltaTime * Mouse.current.delta.ReadValue().x);
-            if (Mouse.current.rightButton.isPressed) transform.Rotate(speed * Vector3.right * Time.deltaTime * Mouse.current.delta.ReadValue().y);
+            if (Mouse.current.leftButton.isPressed) transform.Rotate(Vector3.up * (speed * Time.deltaTime * Mouse.current.delta.ReadValue().x));
+            if (Mouse.current.rightButton.isPressed) transform.Rotate(Vector3.right * (speed * Time.deltaTime * Mouse.current.delta.ReadValue().y));
         }
 
         if (target != null && !gamepadTargetControls)

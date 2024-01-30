@@ -50,9 +50,9 @@ namespace CosmicShore.Integrations.Playfab.Authentication
             PlayFabClientAPI.UpdateUserTitleDisplayName(request,
                 (result) =>
                 {
-                    Debug.Log($"AuthenticationManager - Successful updated player display name: {PlayerAccount.PlayerDisplayName}");
+                    Debug.Log($"AuthenticationManager - Successful updated player display name: {PlayerAccount.DisplayName}");
 
-                    PlayerAccount.PlayerDisplayName = result.DisplayName;
+                    PlayerAccount.DisplayName = result.DisplayName;
                     PlayerProfile.DisplayName = result.DisplayName;
                     callback?.Invoke(result);
                 }, 
@@ -358,13 +358,13 @@ namespace CosmicShore.Integrations.Playfab.Authentication
                 new AddUsernamePasswordRequest()
                 {
                     // Username is required for registering an account
-                    Username = string.IsNullOrEmpty(PlayerAccount.Username)? email: PlayerAccount.Username,
+                    Username = string.IsNullOrEmpty(PlayerAccount.Email)? email: PlayerAccount.Email,
                     Email = email,
                     Password = password.ToString()
                     
                 }, (AddUsernamePasswordResult result) =>
                 {
-                    PlayerAccount.Username = result.Username;
+                    PlayerAccount.Email = result.Username;
                     if (PlayerSession.IsRemembered)
                     {
                         // If the session is asked to be remembered, replace the custom id with newly generated Guid
