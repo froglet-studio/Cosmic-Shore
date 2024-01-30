@@ -153,7 +153,7 @@ namespace CosmicShore
         }
 
 
-        void UpdateBondingStatus(BondMate mate, bool isBonded, ref int depth)
+        void UpdateBondingStatus(GyroidBondMate mate, bool isBonded, ref int depth)
         {
             if (isBonded && mate.Mate.MateList.Count < 2)
             {

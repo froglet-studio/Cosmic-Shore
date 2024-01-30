@@ -35,8 +35,9 @@ public class Boid : MonoBehaviour
     public Transform Goal;
     public Transform DefaultGoal;
     public float normalizedIndex;
-   
-    
+
+    [Header("Mound Settings")]
+    public Transform Mound;
 
     private Vector3 currentVelocity;
     private Vector3 desiredDirection;
@@ -48,7 +49,6 @@ public class Boid : MonoBehaviour
     [SerializeField] List<BoidCollisionEffects> collisionEffects;
 
 
-    public Transform Mound;
 
     private BoidManager boidManager;
     private TrailBlock trailBlock;
@@ -187,6 +187,7 @@ public class Boid : MonoBehaviour
     {
         attached = false;
         isTraveling = true;
+
         Goal = Mound;
         float scanRadius = 50f;
         while ((transform.position - Mound.position).sqrMagnitude > scanRadius)

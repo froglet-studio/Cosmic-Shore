@@ -14,6 +14,7 @@ public class BoidManager : MonoBehaviour
     public Transform globalGoal;
     public bool randomGoals = true;
     public float goalUpdateInterval = 5f;
+    public Transform Mound;
 
     private Vector3 goalPos;
     public List<float> Weights;
@@ -34,6 +35,10 @@ public class BoidManager : MonoBehaviour
             {
                 newBoid.Goal = globalGoal;
                 newBoid.DefaultGoal = globalGoal;
+            }
+            if (Mound)
+            {
+                newBoid.Mound = Mound;
             }
 
             boidTrail.Add(block);
