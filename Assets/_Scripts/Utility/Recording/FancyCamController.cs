@@ -5,7 +5,8 @@ using UnityEngine.InputSystem.Controls;
 public class FancyCamController : MonoBehaviour
 {
     [SerializeField] bool canRotate;
-    [SerializeField] bool keyboardControl;
+    [SerializeField] bool keyboardTranslation;
+    [SerializeField] bool mouseRotation;
     [SerializeField] bool gamepadTargetControls;
     [SerializeField] bool mouseTargetControls;
     bool isRotating = false;
@@ -23,7 +24,7 @@ public class FancyCamController : MonoBehaviour
             if (isRotating) transform.Rotate(speed * Vector3.up * Time.deltaTime);
         }
 
-        if (keyboardControl)
+        if (keyboardTranslation)
         {
             if (Keyboard.current.wKey.isPressed) transform.Translate(speed * transform.forward * Time.deltaTime);
             if (Keyboard.current.sKey.isPressed) transform.Translate(speed * -transform.forward * Time.deltaTime);
@@ -31,6 +32,12 @@ public class FancyCamController : MonoBehaviour
             if (Keyboard.current.dKey.isPressed) transform.Translate(speed * transform.right * Time.deltaTime);
             if (Keyboard.current.qKey.isPressed) transform.Translate(speed * -transform.up * Time.deltaTime);
             if (Keyboard.current.eKey.isPressed) transform.Translate(speed * transform.up * Time.deltaTime);
+        }
+
+        if (mouseRotation)
+        {
+            if (Mouse.current.leftButton.isPressed) transform.Rotate(speed * Vector3.up * Time.deltaTime * Mouse.current.delta.ReadValue().x);
+            if (Mouse.current.rightButton.isPressed) transform.Rotate(speed * Vector3.right * Time.deltaTime * Mouse.current.delta.ReadValue().y);
         }
 
         if (target != null && !gamepadTargetControls)
