@@ -2,7 +2,7 @@
 
 namespace CosmicShore
 {
-    public struct BondMate
+    public struct GyroidBondMate
     {
         public GyroidAssembler Mate;
         public CornerSiteType Substrate;
