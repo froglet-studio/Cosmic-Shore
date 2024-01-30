@@ -47,6 +47,8 @@ namespace CosmicShore
         [HideInInspector] public bool BottomRightIsBonded = false;
 
         [HideInInspector] public HashSet<GyroidAssembler> MateList = new();
+        [HideInInspector] public GyroidAssembler preferedBlock;
+
         public TrailBlock GyroidBlock;
         public GyroidBlockType BlockType = GyroidBlockType.BC;
 
@@ -64,6 +66,17 @@ namespace CosmicShore
         public void StartBonding()
         {
             StartCoroutine(LookForMates());
+        }
+
+        public void StartBonding(int depth)
+        {
+            StartCoroutine(LookForMates(depth));
+        }
+
+        public void AcceptBond()
+        {
+            GyroidBlock.ActivateSuperShield();
+            GyroidBlock.Grow();
         }
 
         public void ClearMateList()
@@ -139,9 +152,26 @@ namespace CosmicShore
             return true; // All active mates are bonded
         }
 
-        IEnumerator LookForMates()
+
+        void UpdateBondingStatus(BondMate mate, bool isBonded, ref int depth)
         {
-            bool[] activeMates = new bool[] { false, true, true, false };
+            if (isBonded && mate.Mate.MateList.Count < 2)
+            {
+                mate.Mate.StartBonding(--depth);
+                mate.Mate.gameObject.layer = LayerMask.NameToLayer("Mound");
+            }
+        }
+
+
+        IEnumerator LookForMates(int depth = -1)
+        {
+
+
+            bool[] activeMates = new bool[]               { false, true, true, false };
+            if (depth == 0) StopAllCoroutines();
+            //else if (depth == 1) activeMates = new bool[] { false, true, true, false };
+            //else if (depth == 2) activeMates = new bool[] { true, true, true, true };
+            //else if (depth == 3) activeMates = new bool[] { true, true, true, true };
 
             while (true)
             {
@@ -179,10 +209,12 @@ namespace CosmicShore
                     PrepareMate(BottomRightMate);
                 }
                 yield return new WaitForSeconds(1f);
-                if (TopLeftIsBonded && TopLeftMate.Mate.MateList.Count < 2) TopLeftMate.Mate.StartBonding();
-                if (TopRightIsBonded && TopRightMate.Mate.MateList.Count < 2) TopRightMate.Mate.StartBonding();
-                if (BottomLeftIsBonded && BottomLeftMate.Mate.MateList.Count < 2) BottomLeftMate.Mate.StartBonding();
-                if (BottomRightIsBonded && BottomRightMate.Mate.MateList.Count < 2) BottomRightMate.Mate.StartBonding();
+
+                
+                UpdateBondingStatus(TopLeftMate, TopLeftIsBonded, ref depth);
+                UpdateBondingStatus(TopRightMate, TopRightIsBonded, ref depth);
+                UpdateBondingStatus(BottomLeftMate, BottomLeftIsBonded, ref depth);
+                UpdateBondingStatus(BottomRightMate, BottomRightIsBonded, ref depth);
 
                 if (AreAllActiveMatesBonded(activeMates))
                 {
@@ -263,7 +295,14 @@ namespace CosmicShore
         // this method generalize both of the methods above
         private BondMate FindClosestMate(Vector3 bondSite, CornerSiteType siteType)
         {
-            float closestDistance = float.MaxValue;
+            if (preferedBlock)
+            {
+                var Mate = CreateGyroidBondMate(preferedBlock, BlockType, siteType); 
+                preferedBlock = null;
+                return Mate;
+            }
+
+                float closestDistance = float.MaxValue;
             GyroidAssembler closest = null;
             bool isTail = GyroidBondMateDataContainer.GetBondMateData(BlockType, siteType).isTail;
             CornerSiteType bondee = CornerSiteType.TopRight;

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using CosmicShore.Core;
 using CosmicShore.Environment.FlowField;
 using CosmicShore.Core.HangerBuilder;
+using CosmicShore;
 
 public enum BoidCollisionEffects
 {
@@ -29,18 +30,25 @@ public class Boid : MonoBehaviour
     [SerializeField] float minSpeed = 2.0f;
     [SerializeField] float maxSpeed = 5.0f;
 
+
     [Header("Goal Settings")]
     public Transform Goal;
     public Transform DefaultGoal;
     public float normalizedIndex;
+   
+    
 
     private Vector3 currentVelocity;
     private Vector3 desiredDirection;
     Quaternion desiredRotation;
 
     public bool isKilled = false;
+    bool isTraveling = false;
 
     [SerializeField] List<BoidCollisionEffects> collisionEffects;
+
+
+    public Transform Mound;
 
     private BoidManager boidManager;
     private TrailBlock trailBlock;
@@ -138,16 +146,18 @@ public class Boid : MonoBehaviour
                         switch (effect)
                         {
                             case BoidCollisionEffects.Attach:
-                                
-                                if (!otherTrailBlock.IsSmallest)
+                                if (!isTraveling)
                                 {
-                                    attached = true;
-                                    Goal = otherTrailBlock.transform;
-                                    otherTrailBlock.Grow(-1);
-                                    trailBlock.Grow(1);
-                                    if (trailBlock.IsLargest) AddToMound();
+                                    if (!otherTrailBlock.IsSmallest)
+                                    {
+                                        attached = true;
+                                        Goal = otherTrailBlock.transform;
+                                        otherTrailBlock.Grow(-1);
+                                        trailBlock.Grow(1);
+                                        if (trailBlock.IsLargest) StartCoroutine(AddToMoundCoroutine());
+                                    }
+                                    else Goal = DefaultGoal;
                                 }
-                                else Goal = DefaultGoal;
                                 break;
                             case BoidCollisionEffects.Explode:
                                 otherTrailBlock.Explode(currentVelocity, trailBlock.Team, trailBlock.PlayerName + " boid", true);
@@ -173,7 +183,35 @@ public class Boid : MonoBehaviour
         desiredRotation = currentVelocity != Vector3.zero ? Quaternion.LookRotation(currentVelocity.normalized) : transform.rotation;
     }
 
-    void AddToMound()
+    IEnumerator AddToMoundCoroutine()
+    {
+        attached = false;
+        isTraveling = true;
+        Goal = Mound;
+        float scanRadius = 50f;
+        while ((transform.position - Mound.position).sqrMagnitude > scanRadius)
+        {
+            yield return null;
+        }
+
+        Collider[] colliders = new Collider[0];
+        while (colliders.Length == 0)
+        {
+            colliders = Physics.OverlapSphere(transform.position, 1f, LayerMask.NameToLayer("TrailBlocks"));
+            yield return null;
+        }
+
+        var newBlock = Instantiate(trailBlock, transform.position, transform.rotation, boidManager.transform);
+        newBlock.Team = trailBlock.Team;
+        var gryoidBlock = newBlock.gameObject.AddComponent<GyroidAssembler>();
+        var nakedEdge = colliders[0].gameObject.GetComponent<GyroidAssembler>();
+        nakedEdge.preferedBlock = gryoidBlock;
+        nakedEdge.StartBonding(1);
+        isTraveling = false;
+        trailBlock.Grow(-3);
+    }
+
+    void Poop()
     {
         attached = false;
         var newblock = Instantiate(trailBlock, transform.position, transform.rotation, boidManager.transform);
