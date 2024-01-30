@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Security;
-using CosmicShore.Integrations.Playfab.Player_Models;
+using CosmicShore.Integrations.Playfab.PlayerModels;
 using JetBrains.Annotations;
 using Newtonsoft.Json;
 using PlayFab;

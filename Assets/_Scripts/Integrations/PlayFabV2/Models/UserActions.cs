@@ -4,7 +4,7 @@ using PlayFab.SharedModels;
 
 namespace CosmicShore
 {
-    public class UserRequests<TRequest, TResult> 
+    public class UserActions<TRequest, TResult> 
         where TRequest: PlayFabRequestCommon
         where TResult: PlayFabResultCommon
     {

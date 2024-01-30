@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using CosmicShore.Integrations.Playfab.Authentication;
 using CosmicShore.Integrations.Playfab.Event_Models;
-using CosmicShore.Integrations.Playfab.Player_Models;
+using CosmicShore.Integrations.Playfab.PlayerModels;
 using PlayFab;
 using PlayFab.ClientModels;
 using PlayFab.EventsModels;

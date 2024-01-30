@@ -1,6 +1,6 @@
 using System;
 
-namespace CosmicShore.Integrations.Playfab.Player_Models
+namespace CosmicShore.Integrations.Playfab.PlayerModels
 {
     /// <summary>
     /// Vessel Data

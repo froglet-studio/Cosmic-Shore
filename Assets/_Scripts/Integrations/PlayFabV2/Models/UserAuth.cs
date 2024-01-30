@@ -1,21 +1,10 @@
-using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+using PlayFab;
 
 namespace CosmicShore
 {
-    public class UserAuth : MonoBehaviour
+    public class UserAuth
     {
-        // Start is called before the first frame update
-        void Start()
-        {
-        
-        }
-
-        // Update is called once per frame
-        void Update()
-        {
-        
-        }
+        public string PlayFabId { get; set; }
+        public PlayFabAuthenticationContext Context { get; set; } 
     }
 }

@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using CosmicShore.Integrations.Enums;
 
-namespace CosmicShore.Integrations.Playfab.Player_Models
+namespace CosmicShore.Integrations.Playfab.PlayerModels
 {
     /// <summary>
     /// Vessel Data Accessor

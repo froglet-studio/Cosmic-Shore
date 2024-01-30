@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace CosmicShore.Integrations.Playfab.Player_Models
+namespace CosmicShore.Integrations.Playfab.PlayerModels
 {
     public class PlayerEvent
     {
