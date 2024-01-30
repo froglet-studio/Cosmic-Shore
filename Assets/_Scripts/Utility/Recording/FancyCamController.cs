@@ -6,13 +6,13 @@ public class FancyCamController : MonoBehaviour
 {
     [SerializeField] bool canRotate;
     [SerializeField] bool keyboardControl;
-    [SerializeField] bool gamepadControl;
-    [SerializeField] bool mouseControl;
-    [SerializeField] bool gamepadRotationControls;
+    [SerializeField] bool gamepadTargetControls;
+    [SerializeField] bool mouseTargetControls;
     bool isRotating = false;
     public float speed = 10;
-    public KeyControl toggleKey = UnityEngine.InputSystem.Keyboard.current.leftBracketKey;
+    public KeyControl toggleKey = Keyboard.current.leftBracketKey;
     public Transform target;
+    float followDistance = 10;
 
     void Update()
     {
@@ -33,49 +33,45 @@ public class FancyCamController : MonoBehaviour
             if (Keyboard.current.eKey.isPressed) transform.Translate(speed * transform.up * Time.deltaTime);
         }
 
-        if (gamepadControl)
-        {
-            if (Gamepad.current.leftStick.up.isPressed) transform.Translate(speed * transform.forward * Time.deltaTime);
-            if (Gamepad.current.leftStick.down.isPressed) transform.Translate(speed * -transform.forward * Time.deltaTime);
-            if (Gamepad.current.leftStick.left.isPressed) transform.Translate(speed * -transform.forward * Time.deltaTime);
-            if (Gamepad.current.leftStick.right.isPressed) transform.Translate(speed * transform.right * Time.deltaTime);
-            if (Gamepad.current.leftShoulder.isPressed) transform.Translate(speed * -transform.forward * Time.deltaTime);
-            if (Gamepad.current.rightShoulder.isPressed) transform.Translate(speed * transform.up * Time.deltaTime);
-        }
-
-        if (mouseControl)
-        {
-            if (Mouse.current.leftButton.isPressed) transform.Translate(speed * transform.forward * Time.deltaTime);
-            if (Mouse.current.rightButton.isPressed) transform.Translate(speed * -transform.forward * Time.deltaTime);
-            if (Mouse.current.middleButton.isPressed) transform.Translate(speed * -transform.right * Time.deltaTime);
-            if (Mouse.current.forwardButton.isPressed) transform.Translate(speed * transform.right * Time.deltaTime);
-            if (Mouse.current.backButton.isPressed) transform.Translate(speed * -transform.up * Time.deltaTime);
-            if (Mouse.current.scroll.y.ReadValue() > 0) transform.Translate(speed * transform.up * Time.deltaTime);
-            if (Mouse.current.scroll.y.ReadValue() < 0) transform.Translate(speed * -transform.forward * Time.deltaTime);
-        }
-
-        if (mouseControl && Mouse.current.leftButton.isPressed)
-        {
-            transform.Translate(speed * transform.forward * Time.deltaTime * Mouse.current.delta.ReadValue().y);
-            transform.Translate(speed * -transform.forward * Time.deltaTime * Mouse.current.delta.ReadValue().x);
-        }
-
-        if (target != null && !gamepadRotationControls)
+        if (target != null && !gamepadTargetControls)
         {
             transform.LookAt(target);
         }
 
-        if (gamepadRotationControls)
-        {
-            transform.Rotate(speed * transform.up * Time.deltaTime * Gamepad.current.rightStick.ReadValue().x);
-            transform.Rotate(speed * -transform.forward * Time.deltaTime * Gamepad.current.rightStick.ReadValue().y);
-        }
         // this code uses the left stick to move the camera toward a target and roll the camera
-        if (target != null && gamepadRotationControls)
+        if (target != null && gamepadTargetControls)
         {
             transform.LookAt(target);
-            transform.Translate(speed * transform.forward * Time.deltaTime * Gamepad.current.leftStick.ReadValue().y);
-            transform.Rotate(speed * transform.up * Time.deltaTime * Gamepad.current.leftStick.ReadValue().x);
+
+            followDistance += Gamepad.current.rightTrigger.ReadValue() * 10;
+            followDistance -= Gamepad.current.leftTrigger.ReadValue() * 10;
+            transform.position = Vector3.Lerp(transform.position, target.position - (transform.forward * followDistance), Time.deltaTime * 10);
+
+            transform.RotateAround(target.position, transform.forward, Gamepad.current.rightStick.ReadValue().x * speed * Time.deltaTime);
+
+            transform.RotateAround(target.position, transform.up, Gamepad.current.leftStick.ReadValue().x * speed * Time.deltaTime);
+            transform.RotateAround(target.position, transform.right, Gamepad.current.leftStick.ReadValue().y * speed * Time.deltaTime);
+
         }
+
+        // this code uses the mouse to move the camera toward a target and roll the camera
+        if (target != null && mouseTargetControls)
+        {
+            transform.LookAt(target);
+
+            followDistance += Mouse.current.scroll.ReadValue().y * 10;
+            transform.position = Vector3.Lerp(transform.position, target.position - (transform.forward * followDistance), Time.deltaTime * 10);
+
+            // this sets a condition that the mouse must be pressed switcch between x controlling roll and x controlling yaw
+            if (Mouse.current.leftButton.isPressed)
+            {
+                transform.RotateAround(target.position, transform.forward, Mouse.current.delta.ReadValue().x * speed * Time.deltaTime);
+            }
+            else transform.RotateAround(target.position, transform.up, Mouse.current.delta.ReadValue().x * speed * Time.deltaTime);
+
+            transform.RotateAround(target.position, transform.right, Mouse.current.delta.ReadValue().y * speed * Time.deltaTime);
+
+        }
+
     }
 }
