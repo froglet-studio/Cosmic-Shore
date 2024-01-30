@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using CosmicShore.Integrations.Playfab.Player_Models;
+using CosmicShore.Integrations.Playfab.PlayerModels;
 using CosmicShore.Integrations.Playfab.PlayStream;
 using UnityEngine;
 using UnityEngine.UI;
