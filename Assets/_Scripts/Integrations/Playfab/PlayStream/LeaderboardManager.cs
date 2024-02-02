@@ -101,7 +101,7 @@ namespace CosmicShore.Integrations.Playfab.PlayStream
         /// </summary>
         IEnumerator ReportAndFlushStatisticsCoroutine()
         {
-            yield return new WaitUntil(() => AuthenticationManager.PlayerAccount != null);
+            yield return new WaitUntil(() => AuthenticationManager.PlayFabAccount != null);
 
             Debug.Log("LeaderboardManager - ReportAndFlushOfflineStatistics");
             var dataAccessor = new DataAccessor(OfflineStatsFileName);
@@ -187,7 +187,7 @@ namespace CosmicShore.Integrations.Playfab.PlayStream
                 customTags.Add("BuildNumber", Application.buildGUID);
 
                 var request = new UpdatePlayerStatisticsRequest();
-                request.AuthenticationContext = AuthenticationManager.PlayerAccount.AuthContext;
+                request.AuthenticationContext = AuthenticationManager.PlayFabAccount.AuthContext;
                 request.CustomTags = customTags;
                 request.Statistics = stats;
                 
@@ -238,7 +238,7 @@ namespace CosmicShore.Integrations.Playfab.PlayStream
             if (online)
             {
                 var request = new GetLeaderboardAroundPlayerRequest();
-                request.AuthenticationContext = AuthenticationManager.PlayerAccount.AuthContext;
+                request.AuthenticationContext = AuthenticationManager.PlayFabAccount.AuthContext;
                 request.StatisticName = leaderboardName;
                 request.CustomTags = customTags;
                 

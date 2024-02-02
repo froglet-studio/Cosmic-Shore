@@ -34,14 +34,14 @@ namespace CosmicShore.Integrations.Playfab.Groups
         /// </summary>
         private void InitializeGroupsInstanceAPI()
         {
-            if (AuthenticationManager.PlayerAccount.AuthContext == null)
+            if (AuthenticationManager.PlayFabAccount.AuthContext == null)
             {
                 // TODO: raise event to for user authentication 
                 Debug.LogWarning($"Current Player has not logged in yet.");
                 return;
             }
 
-            _playFabGroupsInstanceAPI ??= new PlayFabGroupsInstanceAPI(AuthenticationManager.PlayerAccount.AuthContext);
+            _playFabGroupsInstanceAPI ??= new PlayFabGroupsInstanceAPI(AuthenticationManager.PlayFabAccount.AuthContext);
         }
     
         #endregion

@@ -2,9 +2,9 @@ using PlayFab;
 
 namespace CosmicShore
 {
-    public class UserAuth
+    public class PlayFabAuth
     {
-        public string PlayFabId { get; set; }
+        public string Id { get; set; }
         public PlayFabAuthenticationContext Context { get; set; } 
     }
 }

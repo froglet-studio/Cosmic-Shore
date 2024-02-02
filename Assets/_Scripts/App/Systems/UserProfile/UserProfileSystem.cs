@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace CosmicShore
 {
-    public class UserProfileHandler : MonoBehaviour
+    public class UserProfileSystem : MonoBehaviour
     {
         // Start is called before the first frame update
         void Start()
