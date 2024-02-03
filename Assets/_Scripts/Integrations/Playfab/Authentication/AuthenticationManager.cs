@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Security;
+using CosmicShore.App.Systems.UserJourney;
 using CosmicShore.Integrations.Playfab.PlayerModels;
 using CosmicShore.Integrations.PlayFabV2.Models;
 using JetBrains.Annotations;
@@ -64,6 +66,23 @@ namespace CosmicShore.Integrations.Playfab.Authentication
             );
         }
 
+        public void SePlayerAvatar(string avatarUrl)
+        {
+            var request = new UpdateAvatarUrlRequest();
+            request.ImageUrl = avatarUrl;
+            PlayFabClientAPI.UpdateAvatarUrl(
+                request,
+                result =>
+                {
+                    UserProfile.AvatarUrl = avatarUrl;
+                    Debug.Log("Authentication Manager - Successfully updated player avatar.");
+                },
+                error =>
+                {
+                    Debug.LogError(error.GenerateErrorReport());
+                });
+        }
+
 
         /// <summary>
         /// Load Player Profile
@@ -73,21 +92,29 @@ namespace CosmicShore.Integrations.Playfab.Authentication
         {
             var request = new GetPlayerProfileRequest();
             request.PlayFabId = PlayFabAccount.ID;
+            request.ProfileConstraints = new PlayerProfileViewConstraints
+            {
+                ShowDisplayName = true,
+                ShowAvatarUrl = true
+            };
             
             PlayFabClientAPI.GetPlayerProfile(request, 
-                (result) =>
+                result =>
                 {
                     // The result will get publisher id, title id, player id (also called playfab id in other requests) and display name
                     UserProfile.DisplayName = result.PlayerProfile.DisplayName;
-                    
                     // TODO: It might be good to retrieve player avatar url here 
+                    UserProfile.AvatarUrl =
+                        string.IsNullOrEmpty(result.PlayerProfile.AvatarUrl)
+                            ? result.PlayerProfile.AvatarUrl
+                            : AvatarLinks.Icons.First();
                     
                     Debug.Log("AuthenticationManager - Successfully retrieved player profile");
                     Debug.Log($"AuthenticationManager - Player id: {UserProfile.UniqueID}");
 
                     OnProfileLoaded?.Invoke();
                 },
-                (error) =>
+                error =>
                 {
                     Debug.LogError(error.GenerateErrorReport());
                     Debug.Log($"AuthenticationManager - PlayFabId = {PlayFabAccount.ID}");
@@ -204,7 +231,7 @@ namespace CosmicShore.Integrations.Playfab.Authentication
 
         void HandleLoginSuccess(LoginResult loginResult = null)
         {
-            PlayFabAccount = PlayFabAccount ?? new PlayFabAccount();
+            PlayFabAccount ??= new PlayFabAccount();
             if (loginResult != null)
             {
                 PlayFabAccount.ID = loginResult.PlayFabId;

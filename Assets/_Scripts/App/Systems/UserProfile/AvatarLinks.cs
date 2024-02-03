@@ -4,7 +4,7 @@ namespace CosmicShore.App.Systems.UserJourney
 {
     public class AvatarLinks
     {
-        public readonly List<string> Icons = new()
+        public static List<string> Icons = new()
         {
             "https://imgur.com/G3wn7b8",
             "https://imgur.com/eY9B0Ye",
