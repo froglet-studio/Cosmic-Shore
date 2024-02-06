@@ -2359,7 +2359,6 @@ MonoBehaviour:
   TimeAbilityTarget: {fileID: 0}
   ChargeAbility2Target: {fileID: 0}
   LevelEffects: 02000000
-  ControlOverrides: 0400000003000000
   closeCamDistance: -3
   farCamDistance: -15
   AOEExplosionMaterial: {fileID: 0}
@@ -2385,6 +2384,7 @@ MonoBehaviour:
   Turret: 0
   Portrait: 0
   SingleStickControls: 0
+  CommandStickControls: 0
   LiveProjectiles: 0
   Stationary: 0
   ElevatedAmmoGain: 0
@@ -2477,6 +2477,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   displayBoost: 0
+  gainsBoost: 0
+  boostGainRate: 0.1
   initialBoost: 1
   maxBoost: 1
   displayAmmo: 1
@@ -2536,12 +2538,15 @@ MonoBehaviour:
   YSum: 0
   XDiff: 0
   YDiff: 0
+  X: 0
+  Y: 0
   raycastHeight: 2
   raycastWidth: 2
   AutoPilotEnabled: 0
   LookingAtCrystal: 0
   ram: 0
   drift: 0
+  SingleStickControls: 0
   useAbility: 0
   abilityCooldown: 0
   ability: {fileID: 0}
