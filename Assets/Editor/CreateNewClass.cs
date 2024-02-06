@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
 using System;
+using CosmicShore.Core;
 
 /*
     get class name
@@ -30,6 +31,8 @@ namespace CosmicShore
     {
         string newClassName = string.Empty;
         string newClassSOName = string.Empty;
+
+        [SerializeField] GameObject classPrefab = null;
 
         List<string> elements = new List<string>() { "Time", "Mass", "Charge", "Space" };
 
@@ -119,6 +122,7 @@ namespace CosmicShore
             EditorGUILayout.Space();
             newClassName = EditorGUILayout.TextField("Class Name", newClassName);  
             EditorGUILayout.Space();
+            classPrefab = EditorGUILayout.ObjectField("Class Prefab", classPrefab, typeof(GameObject), false) as GameObject;
 
             if (GUILayout.Button("Create Class"))
             {
@@ -130,9 +134,19 @@ namespace CosmicShore
                 {
                     Debug.Log("Asset created and reference obtained: " + newClassSO.name);
 
-                    // Add the asset to the SO_ShipList
-                    string assetPath = "Assets/_SO_Assets/ships/" + name + ".asset"; //TODO
-                    //SO_ShipList SO_Classes = AssetDatabase.
+                    // TODO Add the asset to the SO_ShipList
+                    string assetPath = "Assets/_SO_Assets/ships/" + name + ".asset";                    //TODO
+                                                                                                        //SO_ShipList SO_Classes = AssetDatabase.
+                    if(classPrefab != null)
+                    {
+                        classPrefab.name = newClassSOName;
+                        Debug.Log("Asset created and reference obtained: " + classPrefab.name);
+                    }
+                    else
+                    {
+                        Debug.LogError("Failed to create class Prefab");
+                    }
+                      
                 }
                 else
                 {

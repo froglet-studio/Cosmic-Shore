@@ -1,7 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Security;
+using CosmicShore.App.Systems.UserJourney;
 using CosmicShore.Integrations.Playfab.PlayerModels;
+using CosmicShore.Integrations.PlayFabV2.Models;
 using JetBrains.Annotations;
 using Newtonsoft.Json;
 using PlayFab;
@@ -13,8 +16,9 @@ namespace CosmicShore.Integrations.Playfab.Authentication
 {
     public class AuthenticationManager : SingletonPersistent<AuthenticationManager>
     {
-        public static PlayerAccount PlayerAccount;
-        public static PlayerProfile PlayerProfile;
+        public static PlayFabAccount PlayFabAccount;
+        // public static PlayerProfile PlayerProfile;
+        public static UserProfile UserProfile;
         
         public static event Action OnLoginSuccess;
  
@@ -33,6 +37,7 @@ namespace CosmicShore.Integrations.Playfab.Authentication
 
         void Start()
         {
+            UserProfile ??= new UserProfile();
             OnLoginSuccess += LoadPlayerProfile;
             AnonymousLogin();
         }
@@ -50,10 +55,8 @@ namespace CosmicShore.Integrations.Playfab.Authentication
             PlayFabClientAPI.UpdateUserTitleDisplayName(request,
                 (result) =>
                 {
-                    Debug.Log($"AuthenticationManager - Successful updated player display name: {PlayerAccount.DisplayName}");
-
-                    PlayerAccount.DisplayName = result.DisplayName;
-                    PlayerProfile.DisplayName = result.DisplayName;
+                    Debug.Log($"AuthenticationManager - Successful updated player display name: {UserProfile.DisplayName}");
+                    UserProfile.DisplayName = result.DisplayName;
                     callback?.Invoke(result);
                 }, 
                 (error) =>
@@ -61,6 +64,23 @@ namespace CosmicShore.Integrations.Playfab.Authentication
                     Debug.LogError(error.GenerateErrorReport());
                 }
             );
+        }
+
+        public void SePlayerAvatar(string avatarUrl)
+        {
+            var request = new UpdateAvatarUrlRequest();
+            request.ImageUrl = avatarUrl;
+            PlayFabClientAPI.UpdateAvatarUrl(
+                request,
+                result =>
+                {
+                    UserProfile.AvatarUrl = avatarUrl;
+                    Debug.Log("Authentication Manager - Successfully updated player avatar.");
+                },
+                error =>
+                {
+                    Debug.LogError(error.GenerateErrorReport());
+                });
         }
 
 
@@ -71,26 +91,33 @@ namespace CosmicShore.Integrations.Playfab.Authentication
         public void LoadPlayerProfile()
         {
             var request = new GetPlayerProfileRequest();
-            request.PlayFabId = PlayerAccount.PlayFabId;
+            request.PlayFabId = PlayFabAccount.ID;
+            request.ProfileConstraints = new PlayerProfileViewConstraints
+            {
+                ShowDisplayName = true,
+                ShowAvatarUrl = true
+            };
             
             PlayFabClientAPI.GetPlayerProfile(request, 
-                (result) =>
+                result =>
                 {
                     // The result will get publisher id, title id, player id (also called playfab id in other requests) and display name
-                    PlayerProfile ??= new PlayerProfile();
-                    PlayerProfile.DisplayName = result.PlayerProfile.DisplayName;
-                    
+                    UserProfile.DisplayName = result.PlayerProfile.DisplayName;
                     // TODO: It might be good to retrieve player avatar url here 
+                    UserProfile.AvatarUrl =
+                        string.IsNullOrEmpty(result.PlayerProfile.AvatarUrl)
+                            ? result.PlayerProfile.AvatarUrl
+                            : AvatarLinks.Icons.First();
                     
                     Debug.Log("AuthenticationManager - Successfully retrieved player profile");
-                    Debug.Log($"AuthenticationManager - Player id: {PlayerProfile.DisplayName}");
+                    Debug.Log($"AuthenticationManager - Player id: {UserProfile.UniqueID}");
 
                     OnProfileLoaded?.Invoke();
                 },
-                (error) =>
+                error =>
                 {
                     Debug.LogError(error.GenerateErrorReport());
-                    Debug.Log($"AuthenticationManager - PlayFabId = {PlayerAccount.PlayFabId}");
+                    Debug.Log($"AuthenticationManager - PlayFabId = {PlayFabAccount.ID}");
                 }
             );
         }
@@ -110,7 +137,7 @@ namespace CosmicShore.Integrations.Playfab.Authentication
             PlayFabClientAPI.GetTitleData(
                 new GetTitleDataRequest()
                 {
-                    AuthenticationContext = PlayerAccount.AuthContext
+                    AuthenticationContext = PlayFabAccount.AuthContext
                 }, 
                 (result) =>
                 {
@@ -204,20 +231,20 @@ namespace CosmicShore.Integrations.Playfab.Authentication
 
         void HandleLoginSuccess(LoginResult loginResult = null)
         {
-            PlayerAccount = PlayerAccount ?? new PlayerAccount();
+            PlayFabAccount ??= new PlayFabAccount();
             if (loginResult != null)
             {
-                PlayerAccount.PlayFabId = loginResult.PlayFabId;
-                PlayerAccount.AuthContext = loginResult.AuthenticationContext;
-                PlayerAccount.IsNewlyCreated = loginResult.NewlyCreated;
+                PlayFabAccount.ID = loginResult.PlayFabId;
+                PlayFabAccount.AuthContext = loginResult.AuthenticationContext;
+                UserProfile.IsNewlyCreated = loginResult.NewlyCreated;
 
                 Debug.Log($"AuthenticationManager - Logged in - Newly Created: {loginResult.NewlyCreated.ToString()}");
-                Debug.Log($"AuthenticationManager - Play Fab Id: {PlayerAccount.PlayFabId}");
-                Debug.Log($"AuthenticationManager - Entity Type: {PlayerAccount.AuthContext.EntityType}");
-                Debug.Log($"AuthenticationManager - Entity Id: {PlayerAccount.AuthContext.EntityId}");
+                Debug.Log($"AuthenticationManager - Play Fab Id: {PlayFabAccount.ID}");
+                Debug.Log($"AuthenticationManager - Entity Type: {PlayFabAccount.AuthContext.EntityType}");
+                Debug.Log($"AuthenticationManager - Entity Id: {PlayFabAccount.AuthContext.EntityId}");
                 // Get it when we need to use postman for testing requests
                 // Debug.Log($"AuthenticationManager - Entity Token: {loginResult.AuthenticationContext.EntityToken}");
-                Debug.Log($"AuthenticationManager - Session Ticket: {PlayerAccount.AuthContext.ClientSessionTicket}");
+                Debug.Log($"AuthenticationManager - Session Ticket: {PlayFabAccount.AuthContext.ClientSessionTicket}");
 
                 OnLoginSuccess?.Invoke();
             }
@@ -319,14 +346,14 @@ namespace CosmicShore.Integrations.Playfab.Authentication
                 },
                 (result) =>
                 {
-                    PlayerAccount.AuthContext = result.AuthenticationContext;
+                    PlayFabAccount.AuthContext = result.AuthenticationContext;
                     password?.Dispose();
                     Debug.Log("Logged in with email.");
                     PlayFabClientAPI.GetAccountInfo(
                         new GetAccountInfoRequest()
                         {
                             Email = email,
-                            PlayFabId = PlayerAccount.AuthContext.PlayFabId
+                            PlayFabId = PlayFabAccount.AuthContext.PlayFabId
                         },
                         (result) =>
                         {
@@ -358,13 +385,13 @@ namespace CosmicShore.Integrations.Playfab.Authentication
                 new AddUsernamePasswordRequest()
                 {
                     // Username is required for registering an account
-                    Username = string.IsNullOrEmpty(PlayerAccount.Email)? email: PlayerAccount.Email,
+                    Username = string.IsNullOrEmpty(UserProfile.Email)? email: UserProfile.Email,
                     Email = email,
                     Password = password.ToString()
                     
                 }, (AddUsernamePasswordResult result) =>
                 {
-                    PlayerAccount.Email = result.Username;
+                    UserProfile.Email = result.Username;
                     if (PlayerSession.IsRemembered)
                     {
                         // If the session is asked to be remembered, replace the custom id with newly generated Guid

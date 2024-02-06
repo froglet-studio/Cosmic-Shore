@@ -338,7 +338,7 @@ namespace CosmicShore.Integrations.Playfab.Authentication
         {
             BusyIndicator.SetActive(false);
 
-            displayNameInputField.text = AuthenticationManager.PlayerProfile.DisplayName;
+            displayNameInputField.text = AuthenticationManager.UserProfile.DisplayName;
 
             displayNameResultMessage.text = "Display Name Loaded";
             displayNameResultMessage.gameObject.SetActive(true);

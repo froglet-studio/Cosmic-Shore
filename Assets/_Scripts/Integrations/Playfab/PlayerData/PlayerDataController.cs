@@ -47,12 +47,12 @@ namespace CosmicShore.Integrations.Playfab.PlayStream
         static void InitializePlayerClientInstanceAPI()
         {
             // Change API instance upon auth context changes
-            if(_playFabClientInstanceAPI?.authenticationContext!= AuthenticationManager.PlayerAccount.AuthContext)
-                _playFabClientInstanceAPI = new PlayFabClientInstanceAPI(AuthenticationManager.PlayerAccount.AuthContext);
+            if(_playFabClientInstanceAPI?.authenticationContext!= AuthenticationManager.PlayFabAccount.AuthContext)
+                _playFabClientInstanceAPI = new PlayFabClientInstanceAPI(AuthenticationManager.PlayFabAccount.AuthContext);
             
             // Make API instance singleton
             else
-                _playFabClientInstanceAPI ??= new PlayFabClientInstanceAPI(AuthenticationManager.PlayerAccount.AuthContext);
+                _playFabClientInstanceAPI ??= new PlayFabClientInstanceAPI(AuthenticationManager.PlayFabAccount.AuthContext);
         }
 
         void Start()
@@ -68,7 +68,7 @@ namespace CosmicShore.Integrations.Playfab.PlayStream
             _playFabClientInstanceAPI.GetUserData(
                 new GetUserDataRequest()
                 {
-                    PlayFabId = AuthenticationManager.PlayerAccount.PlayFabId,
+                    PlayFabId = AuthenticationManager.PlayFabAccount.ID,
                     Keys = new List<string> { VesselKnowledgeKey }
                 },
                 (result) =>
@@ -104,7 +104,7 @@ namespace CosmicShore.Integrations.Playfab.PlayStream
             _playFabClientInstanceAPI.GetUserData(
                 new GetUserDataRequest()
                 {
-                    PlayFabId = AuthenticationManager.PlayerAccount.PlayFabId,
+                    PlayFabId = AuthenticationManager.PlayFabAccount.ID,
                     Keys = new List<string> { ShipCloutKey, MasterCloutKey }
                 },OnLoadingClout
                 ,HandleErrorReport

@@ -26,13 +26,15 @@ namespace CosmicShore.Integrations.Playfab.PlayStream
             public int Score;
             public string DisplayName;
             public string PlayerId;
+            public string AvatarUrl;
 
-            public LeaderboardEntry(string displayName, string playerId, int score, int position)
+            public LeaderboardEntry(string displayName, string playerId, int score, int position, string avatarUrl)
             {
                 DisplayName = displayName;
                 PlayerId = playerId;
                 Score = score;
                 Position = position;
+                AvatarUrl = avatarUrl;
             }
         }
 
@@ -101,7 +103,7 @@ namespace CosmicShore.Integrations.Playfab.PlayStream
         /// </summary>
         IEnumerator ReportAndFlushStatisticsCoroutine()
         {
-            yield return new WaitUntil(() => AuthenticationManager.PlayerAccount != null);
+            yield return new WaitUntil(() => AuthenticationManager.PlayFabAccount != null);
 
             Debug.Log("LeaderboardManager - ReportAndFlushOfflineStatistics");
             var dataAccessor = new DataAccessor(OfflineStatsFileName);
@@ -187,7 +189,7 @@ namespace CosmicShore.Integrations.Playfab.PlayStream
                 customTags.Add("BuildNumber", Application.buildGUID);
 
                 var request = new UpdatePlayerStatisticsRequest();
-                request.AuthenticationContext = AuthenticationManager.PlayerAccount.AuthContext;
+                request.AuthenticationContext = AuthenticationManager.PlayFabAccount.AuthContext;
                 request.CustomTags = customTags;
                 request.Statistics = stats;
                 
@@ -238,9 +240,14 @@ namespace CosmicShore.Integrations.Playfab.PlayStream
             if (online)
             {
                 var request = new GetLeaderboardAroundPlayerRequest();
-                request.AuthenticationContext = AuthenticationManager.PlayerAccount.AuthContext;
+                request.AuthenticationContext = AuthenticationManager.PlayFabAccount.AuthContext;
                 request.StatisticName = leaderboardName;
                 request.CustomTags = customTags;
+                request.ProfileConstraints = new PlayerProfileViewConstraints()
+                {
+                    ShowDisplayName = true,
+                    ShowAvatarUrl = true
+                };
                 
                 PlayFabClientAPI.GetLeaderboardAroundPlayer(
                     request,
@@ -251,7 +258,8 @@ namespace CosmicShore.Integrations.Playfab.PlayStream
                                 entry.Profile.DisplayName, 
                                 entry.PlayFabId, 
                                 entry.StatValue, 
-                                entry.Position))
+                                entry.Position,
+                                entry.Profile.AvatarUrl))
                             .ToList();
 
                         callback(entries);
@@ -259,13 +267,9 @@ namespace CosmicShore.Integrations.Playfab.PlayStream
                         var dataAccessor = new DataAccessor(GetLeaderboardFileName(leaderboardName));
                         dataAccessor.Save(entries);
 
-                        Debug.Log("UpdatePlayerStatistic success: " + response.ToString());
+                        Debug.Log("UpdatePlayerStatistic success: " + response);
                     },
-                    error =>
-                    {
-                        Debug.Log("UpdatePlayerStatistic failure: " + error.GenerateErrorReport());
-                    }
-                );
+                    error => Debug.Log("UpdatePlayerStatistic failure: " + error.GenerateErrorReport()));
             }
             else
             {
@@ -294,17 +298,20 @@ namespace CosmicShore.Integrations.Playfab.PlayStream
         /// </summary>
         public void RequestLeaderboard(string leaderboardName, LoadLeaderboardCallBack callback)
         {
-            PlayFabClientAPI.GetLeaderboard(new GetLeaderboardRequest
-                {
-                    StatisticName = leaderboardName,
-                    StartPosition = 0,
-                    MaxResultsCount = 10
-                },
-                (GetLeaderboardResult result) => HandleLeaderboardData(result, callback),
-                (error) =>
-                {
-                    Debug.Log(error.GenerateErrorReport());
-                });
+            var request = new GetLeaderboardRequest();
+            request.StatisticName = leaderboardName;
+            request.StartPosition = 0;
+            request.MaxResultsCount = 10;
+            request.ProfileConstraints = new PlayerProfileViewConstraints
+            {
+                ShowDisplayName = true,
+                ShowAvatarUrl = true
+            };
+            PlayFabClientAPI.GetLeaderboard(
+                request,
+                result => HandleLeaderboardData(result, callback),
+                error => Debug.Log(error.GenerateErrorReport())
+                );
         }
 
         /// <summary>
@@ -324,7 +331,7 @@ namespace CosmicShore.Integrations.Playfab.PlayStream
             foreach (var entry in result.Leaderboard)
             {
                 Debug.Log($"Leaderboard Manager - BLOCKBANDIT_ANY display name: {entry.DisplayName} score: {entry.StatValue.ToString()} position: {entry.Position.ToString()}");
-                leaderboardEntry.Add(new LeaderboardEntry(entry.DisplayName, entry.PlayFabId, entry.StatValue, entry.Position));
+                leaderboardEntry.Add(new LeaderboardEntry(entry.DisplayName, entry.PlayFabId, entry.StatValue, entry.Position, entry.Profile.AvatarUrl));
             }
             // Let callback handle leaderboard data
             callback(leaderboardEntry);

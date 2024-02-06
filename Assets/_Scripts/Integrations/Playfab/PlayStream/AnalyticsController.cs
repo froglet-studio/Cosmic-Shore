@@ -38,7 +38,7 @@ namespace CosmicShore.Integrations.Playfab.PlayStream
         /// </summary>
         private void InitializePlayerDataInstanceAPI()
         {
-            _playFabDataInstanceAPI ??= new PlayFabDataInstanceAPI(AuthenticationManager.PlayerAccount.AuthContext);
+            _playFabDataInstanceAPI ??= new PlayFabDataInstanceAPI(AuthenticationManager.PlayFabAccount.AuthContext);
         }
     
         /// <summary>
@@ -46,12 +46,12 @@ namespace CosmicShore.Integrations.Playfab.PlayStream
         /// </summary>
         private void InitializePlayerClientInstanceAPI()
         {
-            _playFabClientInstanceAPI ??= new PlayFabClientInstanceAPI(AuthenticationManager.PlayerAccount.AuthContext);
+            _playFabClientInstanceAPI ??= new PlayFabClientInstanceAPI(AuthenticationManager.PlayFabAccount.AuthContext);
         }
 
         private void InitializeEventsInstanceAPI()
         {
-            _playFabEventsInstanceAPI ??= new PlayFabEventsInstanceAPI(AuthenticationManager.PlayerAccount.AuthContext);
+            _playFabEventsInstanceAPI ??= new PlayFabEventsInstanceAPI(AuthenticationManager.PlayFabAccount.AuthContext);
         }
         #endregion
 
@@ -65,7 +65,7 @@ namespace CosmicShore.Integrations.Playfab.PlayStream
             _playFabClientInstanceAPI.GetUserData(
                 new GetUserDataRequest()
                 {
-                    PlayFabId = AuthenticationManager.PlayerAccount.PlayFabId,
+                    PlayFabId = AuthenticationManager.PlayFabAccount.ID,
                     Keys = keys
                 }, (result) =>
                 {
@@ -163,7 +163,7 @@ namespace CosmicShore.Integrations.Playfab.PlayStream
                 new GetUserDataRequest()
                 {
                     Keys = readOnlyKeys,
-                    PlayFabId = AuthenticationManager.PlayerAccount.PlayFabId
+                    PlayFabId = AuthenticationManager.PlayFabAccount.ID
                 }, (result) =>
                 {
                     if (result == null) return;

@@ -67,7 +67,7 @@ namespace CosmicShore.App.UI.Menus
 
         IEnumerator SelectShipTypeCoroutine(int index)
         {
-            yield return new WaitUntil(() => AuthenticationManager.PlayerAccount != null);
+            yield return new WaitUntil(() => AuthenticationManager.PlayFabAccount != null);
             SelectShipType(index);
         }
 
@@ -186,7 +186,7 @@ namespace CosmicShore.App.UI.Menus
                 HighScoresContainer.transform.GetChild(i).gameObject.SetActive(true);
 
                 // Highlight the player's score
-                if (score.PlayerId == AuthenticationManager.PlayerAccount.PlayFabId)
+                if (score.PlayerId == AuthenticationManager.PlayFabAccount.ID)
                 {
                     HighScoresContainer.transform.GetChild(i).GetChild(0).GetComponent<TMP_Text>().color = new Color(.1f, .7f, .7f);
                     HighScoresContainer.transform.GetChild(i).GetChild(1).GetComponent<TMP_Text>().color = new Color(.1f, .7f, .7f);
