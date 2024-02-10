@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace CosmicShore.App.Systems.RewindSystem
 {
-    public abstract class RewindAbstract : MonoBehaviour
+    public abstract class RewindBase : MonoBehaviour
     {
         Rigidbody _rigidbody;
         Rigidbody2D _rigidbody2D;
