@@ -4,11 +4,11 @@ using UnityEngine;
 namespace CosmicShore.App.Systems.RewindSystem
 {
     public class CircularBuffer <T>
-    { 
-        T[] dataArray;
-        int bufferCurrentPosition = -1;
-        int bufferCapacity;
-        float howManyRecordsPerSecond;
+    {
+        private readonly T[] _dataStorage;
+        private int _currentIndex = -1;
+        private int _capacity;
+        private float _recordsPerSecond;
     
         /// <summary>
         /// Use circular buffer structure for time rewinding
@@ -17,9 +17,9 @@ namespace CosmicShore.App.Systems.RewindSystem
         {
             try
             {
-                howManyRecordsPerSecond = 1 / Time.fixedDeltaTime;
-                bufferCapacity = (int)(howManyRecordsPerSecond);
-                dataArray = new T[bufferCapacity];
+                _recordsPerSecond = 1 / Time.fixedDeltaTime;
+                _capacity = (int)_recordsPerSecond;
+                _dataStorage = new T[_capacity];
                 // RewindManager.BuffersRestore += MoveLastBufferPosition;
             }
             catch
@@ -36,15 +36,15 @@ namespace CosmicShore.App.Systems.RewindSystem
         {
             // if (RewindManager.Instance.TrackingEnabled)
             {
-                bufferCurrentPosition++;
-                if (bufferCurrentPosition >= bufferCapacity)
+                _currentIndex++;
+                if (_currentIndex >= _capacity)
                 {
-                    bufferCurrentPosition = 0;
-                    dataArray[bufferCurrentPosition] = val;
+                    _currentIndex = 0;
+                    _dataStorage[_currentIndex] = val;
                 }
                 else
                 {
-                    dataArray[bufferCurrentPosition] = val;
+                    _dataStorage[_currentIndex] = val;
                 }
             }
         }
@@ -54,7 +54,7 @@ namespace CosmicShore.App.Systems.RewindSystem
         /// <returns></returns>
         public T ReadLastValue()
         {
-            return dataArray[bufferCurrentPosition];
+            return _dataStorage[_currentIndex];
         }
     
         /// <summary>
@@ -64,25 +64,25 @@ namespace CosmicShore.App.Systems.RewindSystem
         /// <returns></returns>
         public T ReadFromBuffer(float seconds)
         {
-            return dataArray[CalculateIndex(seconds)];
+            return _dataStorage[CalculateIndex(seconds)];
         }
         private void MoveLastBufferPosition(float seconds)
         {
-            bufferCurrentPosition= CalculateIndex(seconds);    
+            _currentIndex= CalculateIndex(seconds);    
         }
         private int CalculateIndex(float seconds)
         {
             double secondsRound = Math.Round(seconds, 2);
-            int howManyBeforeLast = (int)(howManyRecordsPerSecond * secondsRound);
+            int howManyBeforeLast = (int)(_recordsPerSecond * secondsRound);
     
-            int moveBy = bufferCurrentPosition - howManyBeforeLast;
+            int moveBy = _currentIndex - howManyBeforeLast;
             if (moveBy < 0)
             {
-                return bufferCapacity + moveBy;
+                return _capacity + moveBy;
             }
             else
             {
-                return bufferCurrentPosition- howManyBeforeLast;
+                return _currentIndex- howManyBeforeLast;
             }
         }
     }

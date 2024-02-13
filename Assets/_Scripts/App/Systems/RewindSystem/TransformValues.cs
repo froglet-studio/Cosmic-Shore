@@ -4,13 +4,13 @@ using UnityEngine;
 namespace CosmicShore.App.Systems.RewindSystem
 {
     [Serializable]
-    public class ObjectData
+    public class TransformValues
     {
         public Vector3 Position;
-        public Vector3 Rotation;
+        public Quaternion Rotation;
         public Vector3 Scale;
 
-        public ObjectData(Vector3 position, Vector3 rotation, Vector3 scale)
+        public TransformValues(Vector3 position, Quaternion rotation, Vector3 scale)
         {
             Position = position;
             Rotation = rotation;

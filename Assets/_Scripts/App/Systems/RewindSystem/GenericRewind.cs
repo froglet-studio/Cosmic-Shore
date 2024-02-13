@@ -5,14 +5,9 @@ namespace CosmicShore.App.Systems.RewindSystem
     public class GenericRewind : RewindBase
     {
         [Tooltip("Tracking active state of the object that this script is attached to")]
-        [SerializeField]
-        private bool trackObjectActiveState;
+        [SerializeField] private bool trackObjectActiveState;
         [Tooltip("Tracking Position,Rotation and Scale")]
-        [SerializeField]
-        private bool trackTransform;
-        [SerializeField] private bool trackVelocity;
-        [SerializeField] private bool trackAnimator;
-        [SerializeField] private bool trackAudio;
+        [SerializeField] private bool trackTransform;
 
         [Tooltip("Enable checkbox on right side to track particles")]
         // [SerializeField] OptionalParticleSettings trackParticles;
@@ -23,14 +18,6 @@ namespace CosmicShore.App.Systems.RewindSystem
                 RestoreObjectActiveState(seconds);
             if (trackTransform)
                 RestoreTransform(seconds);
-            if (trackVelocity)
-                RestoreVelocity(seconds);
-            if (trackAnimator)
-                RestoreAnimator(seconds);
-            if (trackAudio)
-                RestoreAudio(seconds);
-            // if (trackParticles.Enabled)
-            //     RestoreParticles(seconds);       
         }
 
         public override void Track()
@@ -39,19 +26,7 @@ namespace CosmicShore.App.Systems.RewindSystem
                 TrackObjectActiveState();
             if (trackTransform)
                 TrackTransform();
-            if (trackVelocity)
-                TrackVelocity();
-            if (trackAnimator)
-                TrackAnimator();
-            if (trackAudio)
-                TrackAudio();
-            // if (trackParticles.Enabled)
-            //     TrackParticles();      
+  
         }
-        // private void Start()
-        // {
-            // if(trackParticles.Enabled)
-            //     InitializeParticles(trackParticles.Value);
-        // }
     }
 }

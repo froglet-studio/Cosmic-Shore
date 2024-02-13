@@ -130,7 +130,7 @@ namespace CosmicShore.App.Systems.RewindSystem
 
             Instance = this;
 
-            _rewindedObjects.ForEach(x => x.MainInit());
+            _rewindedObjects.ForEach(x => x.Init());
         }
         private void OnEnable()
         {
