@@ -1,7 +1,4 @@
-#nullable enable
 using System;
-using System.Collections.Generic;
-using CosmicShore.App.Systems.CTA;
 using CosmicShore.App.Systems.UserActions;
 using Firebase;
 using Firebase.Analytics;
@@ -16,21 +13,21 @@ namespace CosmicShore.Integrations.Firebase.Controller
         private static DependencyStatus _dependencyStatus = DependencyStatus.Available;
         public delegate void DependencyResolved();
 
-        public static event DependencyResolved OnDependnecyResolved;
-        private FirebaseApp _app;
+        public static event DependencyResolved OnDependencyResolved;
+        // private FirebaseApp _app;
         
         #region Firebase Analytics Controller Initialization and Enabling
         
         private void Start()
         {
             CheckDependencies();
-            OnDependnecyResolved += InitializeFirebaseAnalytics;
+            OnDependencyResolved += InitializeFirebaseAnalytics;
             UserActionSystem.Instance.OnUserActionCompleted += LogEventUserCompleteAction;
         }
 
         private void OnDisable()
         {
-            OnDependnecyResolved -= InitializeFirebaseAnalytics;
+            OnDependencyResolved -= InitializeFirebaseAnalytics;
             if(UserActionSystem.Instance) UserActionSystem.Instance.OnUserActionCompleted -= LogEventUserCompleteAction;
             _analyticsEnabled = false;
         }
@@ -64,7 +61,7 @@ namespace CosmicShore.Integrations.Firebase.Controller
                     if (_dependencyStatus == DependencyStatus.Available)
                     {
                         Debug.Log("Dependency resolved, now proceed with Firebase");
-                        OnDependnecyResolved?.Invoke();
+                        OnDependencyResolved?.Invoke();
                     }
                     else
                     {
@@ -87,7 +84,7 @@ namespace CosmicShore.Integrations.Firebase.Controller
                     if (_dependencyStatus == DependencyStatus.Available)
                     {
                         Debug.Log("Dependency resolved, now proceed with Firebase");
-                        OnDependnecyResolved?.Invoke();
+                        OnDependencyResolved?.Invoke();
                     }
                     else
                     {
@@ -102,7 +99,8 @@ namespace CosmicShore.Integrations.Firebase.Controller
         private void InitializeFirebaseAnalytics()
         {
             // Firebase analytics initialization
-            _app = FirebaseApp.DefaultInstance;
+            // _app = FirebaseApp.DefaultInstance;
+            // _app.Options.
             
             // Enable Firebase Analytics Data Collection TODO: ask player consent for data collection
             FirebaseAnalytics.SetAnalyticsCollectionEnabled(true);
