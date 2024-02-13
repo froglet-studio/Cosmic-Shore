@@ -8,7 +8,7 @@ namespace CosmicShore.App.Systems.RewindSystem
     {
         [SerializeField] private bool enabled;
 
-        public OptionalParticleSettings(bool enabled)
+        public OptionalParticleSettings(bool enabled = true)
         {
             this.enabled = enabled;
         }
