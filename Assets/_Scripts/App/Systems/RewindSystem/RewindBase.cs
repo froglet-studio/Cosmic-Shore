@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using CosmicShore.Utility.ClassExtensions;
+using UnityEngine;
 
 namespace CosmicShore.App.Systems.RewindSystem
 {
@@ -58,8 +59,7 @@ namespace CosmicShore.App.Systems.RewindSystem
         protected void RestoreTransform(float seconds)
         {
             var valuesToRead = _trackedTransforms.ReadFromBuffer(seconds);
-            transform.SetPositionAndRotation(valuesToRead.position, valuesToRead.rotation);
-            transform.localScale= valuesToRead.scale;
+            transform.SetFullProperties(valuesToRead.position, valuesToRead.rotation, valuesToRead.scale);
         }
         #endregion
 

@@ -12,17 +12,17 @@ namespace CosmicShore.App.Systems.RewindSystem
         /// Property defining how much into the past should be tracked. 
         /// You can edit this value to your preference
         /// </summary>
-        [field:SerializeField] public float HowManySecondsToTrack { get; private set; } = 12;
+        [field:SerializeField] public float TrackSeconds { get; private set; } = 12;
 
         /// <summary>
         /// This property returns how many seconds are currently available for rewind
         /// </summary>
-        public float HowManySecondsAvailableForRewind { get; private set; }
+        public float AvailableSeconds { get; private set; }
 
         /// <summary>
-        /// Tells you if scene is currently being rewinded
+        /// Tells you if scene is currently being rewound
         /// </summary>
-        public bool IsBeingRewinded { get; private set; } = false;
+        public bool IsRewound { get; private set; }
 
         /// <summary>
         /// Singleton instance of RewindManager
@@ -35,8 +35,8 @@ namespace CosmicShore.App.Systems.RewindSystem
         public bool TrackingEnabled { get; set; } = true;
 
 
-        float rewindSeconds = 0;
-        List<RewindBase> _rewindedObjects;
+        private float _rewindSeconds;
+        private List<RewindBase> _rewoundObjects;
 
         /// <summary>
         /// Call this method to rewind time by specified seconds instantly without snapshot preview. Usefull for one time instant rewinds.
@@ -44,7 +44,7 @@ namespace CosmicShore.App.Systems.RewindSystem
         /// <param name="seconds">Parameter defining how many seconds should object rewind to from now (Parameter must be >=0).</param>
         public void InstantRewindTimeBySeconds(float seconds)
         {
-            if(seconds>HowManySecondsAvailableForRewind)
+            if(seconds>AvailableSeconds)
             {
                 Debug.LogError("Not enough stored tracked value!!! Reaching on wrong index. Called rewind should be less than HowManySecondsAvailableForRewind property");
                 return;
@@ -54,8 +54,8 @@ namespace CosmicShore.App.Systems.RewindSystem
                 Debug.LogError("Parameter in RewindTimeBySeconds() must have positive value!!!");
                 return;
             }
-            _rewindedObjects.ForEach(x => x.Rewind(seconds));
-            HowManySecondsAvailableForRewind -= seconds;
+            _rewoundObjects.ForEach(x => x.Rewind(seconds));
+            AvailableSeconds -= seconds;
             BuffersRestore?.Invoke(seconds);
         }
         /// <summary>
@@ -65,13 +65,14 @@ namespace CosmicShore.App.Systems.RewindSystem
         /// <returns></returns>
         public void StartRewindTimeBySeconds(float seconds)
         {
-            if (IsBeingRewinded)
+            if (IsRewound)
                 Debug.LogError("The previous rewind must be stopped by calling StopRewindTimeBySeconds() before you start another rewind");
-        
-            CheckReachingOutOfBounds(seconds);
 
-            rewindSeconds = seconds;
-            IsBeingRewinded = true;
+            if (CheckReachingOutOfBounds(seconds))
+            {
+                _rewindSeconds = seconds;
+                IsRewound = true;
+            }
         }
 
         /// <summary>
@@ -80,48 +81,52 @@ namespace CosmicShore.App.Systems.RewindSystem
         /// <param name="seconds">Parameter defining how many seconds should the rewind preview move to (Parameter must be >=0)</param>
         public void SetTimeSecondsInRewind(float seconds)
         {
-            CheckReachingOutOfBounds(seconds);
-            rewindSeconds = seconds;
+            if (CheckReachingOutOfBounds(seconds))
+            {
+                _rewindSeconds = seconds;
+            }
         }
         /// <summary>
         /// Call this method to stop previewing rewind state and resume normal game flow
         /// </summary>
         public void StopRewindTimeBySeconds()
         {
-            if (!IsBeingRewinded)
+            if (!IsRewound)
                 Debug.LogError("Rewind must be started before you try to stop it. StartRewindTimeBySeconds() must be called first");
 
-            HowManySecondsAvailableForRewind -= rewindSeconds;
-            BuffersRestore?.Invoke(rewindSeconds);
-            IsBeingRewinded = false;
+            AvailableSeconds -= _rewindSeconds;
+            BuffersRestore?.Invoke(_rewindSeconds);
+            IsRewound = false;
         }
         /// <summary>
         /// Call if you want to restart the whole tracking system
         /// </summary>
         public void RestartTracking()
         {
-            if (IsBeingRewinded)
+            if (IsRewound)
                 StopRewindTimeBySeconds();
 
-            HowManySecondsAvailableForRewind = 0;
+            AvailableSeconds = 0;
             TrackingEnabled = true;
         }
-        private void CheckReachingOutOfBounds(float seconds)
+        private bool CheckReachingOutOfBounds(float seconds)
         {
-            if (Mathf.Round(seconds*100) > Mathf.Round(HowManySecondsAvailableForRewind*100))
+            if (Mathf.Round(seconds*100) > Mathf.Round(AvailableSeconds*100))
             {
                 Debug.LogError("Not enough stored tracked value!!! Reaching on wrong index. Called rewind should be less than HowManySecondsAvailableForRewind property");
-                return;
+                return false;
             }
             if (seconds < 0)
             {
                 Debug.LogError("Parameter in StartRewindTimeBySeconds() must have positive value!!!");
-                return;
+                return false;
             }
+
+            return true;
         }
         private void Awake()
         {
-            _rewindedObjects = FindObjectsOfType<RewindBase>().ToList();
+            _rewoundObjects = FindObjectsOfType<RewindBase>().ToList();
 
             if (Instance != null && Instance != this)
             {
@@ -130,30 +135,30 @@ namespace CosmicShore.App.Systems.RewindSystem
 
             Instance = this;
 
-            _rewindedObjects.ForEach(x => x.Init());
+            _rewoundObjects.ForEach(x => x.Init());
         }
         private void OnEnable()
         {
-            HowManySecondsAvailableForRewind = 0;
+            AvailableSeconds = 0;
         }
         private  void FixedUpdate()
         {   
-            if (IsBeingRewinded)
+            if (IsRewound)
             {
-                _rewindedObjects.ForEach(x => x.Rewind(rewindSeconds));
+                _rewoundObjects.ForEach(x => x.Rewind(_rewindSeconds));
             }
             else 
             {
-                _rewindedObjects.ForEach(x => x.Track());
+                _rewoundObjects.ForEach(x => x.Track());
 
                 if(TrackingEnabled)
-                    HowManySecondsAvailableForRewind = Mathf.Min(HowManySecondsAvailableForRewind + Time.fixedDeltaTime, HowManySecondsToTrack);
+                    AvailableSeconds = Mathf.Min(AvailableSeconds + Time.fixedDeltaTime, TrackSeconds);
             }
         }
 
         /// <summary>
         /// This action is not meant to be used by users. CircularBuffers listens to it
         /// </summary>
-        public static Action<float> BuffersRestore { get; set; }
+        public static Action<float> BuffersRestore { get; }
     }
 }
