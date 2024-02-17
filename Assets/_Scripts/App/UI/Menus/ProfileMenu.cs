@@ -9,6 +9,7 @@ using CosmicShore.Utility.ClassExtensions;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using VContainer;
 
 namespace CosmicShore.App.UI.Menus
 {
@@ -46,6 +47,8 @@ namespace CosmicShore.App.UI.Menus
 
         Action SummoningProfileMenu;
 
+        [Inject] private AuthenticationManager _authManager;
+
         // Start is called before the first frame update
         void Start()
         {
@@ -62,9 +65,9 @@ namespace CosmicShore.App.UI.Menus
             if (ShowEmailLinking)
                 InitializeEmailLinking();
 
-            AuthenticationManager.OnLoginSuccess += AuthenticationManager.Instance.LoadPlayerProfile;
-            AuthenticationManager.OnProfileLoaded += InitializePlayerDisplayNameView;
-            AuthenticationManager.Instance.AnonymousLogin();
+            // _authManager.OnLoginSuccess += _authManager.LoadPlayerProfile;
+            _authManager.OnProfileLoaded += InitializePlayerDisplayNameView;
+            // _authManager.AnonymousLogin();
         }
 
         #region OnEnable and OnDisable Override
@@ -134,7 +137,7 @@ namespace CosmicShore.App.UI.Menus
         /// </summary>
         void StayLoggedIn_OnToggled(bool isOn)
         {
-            AuthenticationManager.PlayerSession.IsRemembered = isOn;
+            _authManager.PlayerSession.IsRemembered = isOn;
         }
 
         /// <summary>
@@ -288,7 +291,7 @@ namespace CosmicShore.App.UI.Menus
 
             // This is a test for email register, we can worry about it linking device later
             // AnonymousLogin();
-            AuthenticationManager.Instance.RegisterWithEmail(email, GetPassword(password), RegisterResponseHandler);
+            _authManager.RegisterWithEmail(email, GetPassword(password), RegisterResponseHandler);
         }
 
         /// <summary>
@@ -300,7 +303,7 @@ namespace CosmicShore.App.UI.Menus
             var email = emailLoginInputField.text;
             var password = passwordLoginField.text;
 
-            AuthenticationManager.Instance.EmailLogin(email, GetPassword(password), LoginResponseHandler);
+            _authManager.EmailLogin(email, GetPassword(password), LoginResponseHandler);
         }
 
         #endregion
@@ -354,7 +357,7 @@ namespace CosmicShore.App.UI.Menus
         /// </summary>
         IEnumerator AssignRandomNameCoroutine()
         {
-            AuthenticationManager.Instance.LoadRandomNameList();
+            _authManager.LoadRandomNameList();
 
             yield return new WaitUntil(() => AuthenticationManager.Adjectives != null);
 
@@ -386,7 +389,7 @@ namespace CosmicShore.App.UI.Menus
             if (!CheckDisplayNameLength(displayNameInputField.text))
                 return;
 
-            AuthenticationManager.Instance.SetPlayerDisplayName(displayNameInputField.text, UpdatePlayerDisplayNameView);
+            _authManager.SetPlayerDisplayName(displayNameInputField.text, UpdatePlayerDisplayNameView);
 
             BusyIndicator.SetActive(true);
 
@@ -454,14 +457,14 @@ namespace CosmicShore.App.UI.Menus
                 BusyIndicator.SetActive(false);
             }
             
-            if (AuthenticationManager.UserProfile == null)
+            if (_authManager.UserProfile == null)
             {
                 Debug.LogWarning("Player profile has not yet loaded.");
                 return;
             }
             
-            if(!string.IsNullOrEmpty(AuthenticationManager.UserProfile.DisplayName))
-                displayNameInputField.text = AuthenticationManager.UserProfile.DisplayName;
+            if(!string.IsNullOrEmpty(_authManager.UserProfile.DisplayName))
+                displayNameInputField.text = _authManager.UserProfile.DisplayName;
 
             if (displayNameResultMessage == null) return;
             displayNameResultMessage.gameObject.SetActive(true);

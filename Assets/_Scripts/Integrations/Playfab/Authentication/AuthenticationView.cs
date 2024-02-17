@@ -5,6 +5,7 @@ using PlayFab.ClientModels;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using VContainer;
 
 namespace CosmicShore.Integrations.Playfab.Authentication
 {
@@ -31,7 +32,9 @@ namespace CosmicShore.Integrations.Playfab.Authentication
         [SerializeField] TMP_InputField emailRegisterInputField;
         [SerializeField] TMP_InputField passwordRegisterInputField;
         [SerializeField] Button registerButton;
-        
+
+        [Inject] private AuthenticationManager _authManager;
+
         // Start is called before the first frame update
         void Start()
         {
@@ -76,11 +79,11 @@ namespace CosmicShore.Integrations.Playfab.Authentication
             if(registerButton!=null)
                 registerButton.onClick.AddListener(RegisterButton_OnClick);
             
-            AuthenticationManager.Instance.AnonymousLogin();
-            AuthenticationManager.OnLoginSuccess += AuthenticationManager.Instance.LoadPlayerProfile;
+            _authManager.AnonymousLogin();
+            _authManager.OnLoginSuccess += _authManager.LoadPlayerProfile;
             // AuthenticationManager.LoginError +=
 
-            AuthenticationManager.OnProfileLoaded += InitializePlayerDisplayNameView;
+            _authManager.OnProfileLoaded += InitializePlayerDisplayNameView;
         }
 
         void OnEndEdit(string text)
@@ -99,7 +102,7 @@ namespace CosmicShore.Integrations.Playfab.Authentication
         /// </summary>
         void StayLoggedIn_OnToggled(bool isOn)
         {
-            AuthenticationManager.PlayerSession.IsRemembered = isOn;
+            _authManager.PlayerSession.IsRemembered = isOn;
         }
 
         /// <summary>
@@ -245,7 +248,7 @@ namespace CosmicShore.Integrations.Playfab.Authentication
 
             // This is a test for email register, we can worry about it linking device later
             // AnonymousLogin();
-            AuthenticationManager.Instance.RegisterWithEmail(email, GetPassword(password), RegisterResponseHandler);
+            _authManager.RegisterWithEmail(email, GetPassword(password), RegisterResponseHandler);
         }
         
         /// <summary>
@@ -257,7 +260,7 @@ namespace CosmicShore.Integrations.Playfab.Authentication
             var email = emailLoginInputField.text;
             var password = passwordLoginField.text;
 
-            AuthenticationManager.Instance.EmailLogin(email, GetPassword(password), LoginResponseHandler);
+            _authManager.EmailLogin(email, GetPassword(password), LoginResponseHandler);
         }
 
         #endregion
@@ -280,7 +283,7 @@ namespace CosmicShore.Integrations.Playfab.Authentication
 
         IEnumerator AssignRandomNameCoroutine()
         {
-            AuthenticationManager.Instance.LoadRandomNameList();
+            _authManager.LoadRandomNameList();
 
             yield return new WaitUntil(() => AuthenticationManager.Adjectives != null);
             
@@ -295,7 +298,7 @@ namespace CosmicShore.Integrations.Playfab.Authentication
             if (!CheckDisplayNameLength(displayNameInputField.text))
                 return;
 
-            AuthenticationManager.Instance.SetPlayerDisplayName(displayNameInputField.text, UpdatePlayerDisplayNameView);
+            _authManager.SetPlayerDisplayName(displayNameInputField.text, UpdatePlayerDisplayNameView);
 
             BusyIndicator.SetActive(true);
 
@@ -338,7 +341,7 @@ namespace CosmicShore.Integrations.Playfab.Authentication
         {
             BusyIndicator.SetActive(false);
 
-            displayNameInputField.text = AuthenticationManager.UserProfile.DisplayName;
+            displayNameInputField.text = _authManager.UserProfile.DisplayName;
 
             displayNameResultMessage.text = "Display Name Loaded";
             displayNameResultMessage.gameObject.SetActive(true);
