@@ -1,3 +1,4 @@
+using CosmicShore.App.UI.Menus;
 using CosmicShore.Integrations.Playfab.Authentication;
 using CosmicShore.Integrations.Playfab.Economy;
 using CosmicShore.Integrations.Playfab.Groups;
@@ -12,8 +13,11 @@ namespace CosmicShore
 {
     public class PlayFabLifeTimeScope : LifetimeScope
     {
+        // [SerializeField] private ProfileMenu profileMenu;
+        // [SerializeField] private LeaderboardsMenu leaderboardsMenu;
         protected override void Configure(IContainerBuilder builder)
         {
+            DontDestroyOnLoad(this);
             // PlayFab Authentication
             builder.Register<AuthenticationManager>(Lifetime.Singleton);
             builder.Register<PlayFabAccount>(Lifetime.Singleton);
@@ -36,6 +40,12 @@ namespace CosmicShore
             
             // PlayFab Analytics
             builder.Register<AnalyticsController>(Lifetime.Singleton);
+            
+            // Register Player Profile Menu
+            // builder.RegisterComponentInHierarchy<ProfileMenu>();
+            
+            // Register Leaderboards menu
+            // builder.RegisterComponentInHierarchy<LeaderboardsMenu>();
             
             builder.UseEntryPoints(Lifetime.Singleton, entryPoints =>
             {
