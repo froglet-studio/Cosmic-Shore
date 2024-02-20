@@ -17489,7 +17489,7 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 989920293}
-  m_LocalRotation: {x: 0.00019546723, y: 0.9998045, z: -0.013800159, w: 0.014161362}
+  m_LocalRotation: {x: 0.00019546802, y: 0.9998045, z: -0.013800179, w: 0.014161397}
   m_LocalPosition: {x: -7.650175, y: 7.4579606, z: 270}
   m_LocalScale: {x: 99.99999, y: 99.99999, z: 100}
   m_ConstrainProportionsScale: 0
@@ -26291,17 +26291,17 @@ PrefabInstance:
     - target: {fileID: 6085108597755193398, guid: ba70c0f3eb077d44b8a538982d02dadc,
         type: 3}
       propertyPath: m_LocalRotation.w
-      value: 0.014161362
+      value: 0.014161397
       objectReference: {fileID: 0}
     - target: {fileID: 6085108597755193398, guid: ba70c0f3eb077d44b8a538982d02dadc,
         type: 3}
       propertyPath: m_LocalRotation.x
-      value: 0.00019546723
+      value: 0.00019546802
       objectReference: {fileID: 0}
     - target: {fileID: 6085108597755193398, guid: ba70c0f3eb077d44b8a538982d02dadc,
         type: 3}
       propertyPath: m_LocalRotation.z
-      value: -0.013800159
+      value: -0.013800179
       objectReference: {fileID: 0}
     - target: {fileID: 8945163999947012178, guid: ba70c0f3eb077d44b8a538982d02dadc,
         type: 3}
@@ -36366,7 +36366,7 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 1470360878652550586}
+      - m_Target: {fileID: 0}
         m_TargetAssemblyTypeName: _Scripts._Core.Playfab_Models.ProfileMenu, Assembly-CSharp
         m_MethodName: GenerateRandomNameButton_OnClicked
         m_Mode: 1
@@ -36448,39 +36448,6 @@ RectTransform:
   m_AnchoredPosition: {x: 40, y: 0}
   m_SizeDelta: {x: 360, y: 182}
   m_Pivot: {x: 0, y: 0.5}
---- !u!114 &1470360878652550586
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5711891767123768366}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 98268bc5d9fc6454295f832b6b5e3e46, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  BusyIndicator: {fileID: 751803548738950900}
-  displayNameInputField: {fileID: 534255985320837892}
-  setDisplayNameButton: {fileID: 4059619928423313724}
-  displayNameResultMessage: {fileID: 8953176076398863496}
-  displayNameDefaultText: 
-  SuccessMessageFadeAfterSeconds: 2
-  SuccessMessageFadeDurationSeconds: 3
-  TypingAudio: {fileID: 8300000, guid: 85366fdabea234ddd9999943eebca0ee, type: 3}
-  FocusDisplayNameInputFieldEnabled: 0
-  ShowEmailLogin: 0
-  emailLoginResultMessage: {fileID: 0}
-  emailLoginInputField: {fileID: 0}
-  passwordLoginField: {fileID: 0}
-  loginButton: {fileID: 0}
-  stayLoggedInToggle: {fileID: 0}
-  ShowEmailLinking: 0
-  registerEmailResultMessage: {fileID: 0}
-  usernameRegisterInputField: {fileID: 0}
-  emailRegisterInputField: {fileID: 0}
-  passwordRegisterInputField: {fileID: 0}
-  registerButton: {fileID: 0}
 --- !u!114 &1479054768708391238
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -48769,7 +48736,6 @@ GameObject:
   - component: {fileID: 5711891767123768367}
   - component: {fileID: 5711891767123768365}
   - component: {fileID: 5711891767123768364}
-  - component: {fileID: 1470360878652550586}
   m_Layer: 5
   m_Name: Settings
   m_TagString: Untagged
