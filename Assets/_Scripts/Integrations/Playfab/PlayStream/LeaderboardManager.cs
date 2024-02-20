@@ -57,7 +57,7 @@ namespace CosmicShore.Integrations.Playfab.PlayStream
         {
             NetworkMonitor.NetworkConnectionFound += ComeOnline;
             NetworkMonitor.NetworkConnectionLost += GoOffline;
-            _authManager.OnProfileLoaded += ReportAndFlushOfflineStatistics;
+            _authManager.OnProfileLoaded += ReportAndFlushStatisticsAsync;
         }
 
         /// <summary>
@@ -67,7 +67,7 @@ namespace CosmicShore.Integrations.Playfab.PlayStream
         {
             NetworkMonitor.NetworkConnectionFound -= ComeOnline;
             NetworkMonitor.NetworkConnectionLost -= GoOffline;
-            _authManager.OnProfileLoaded -= ReportAndFlushOfflineStatistics;
+            _authManager.OnProfileLoaded -= ReportAndFlushStatisticsAsync;
         }
 
         // ReSharper disable Unity.PerformanceAnalysis
@@ -75,11 +75,11 @@ namespace CosmicShore.Integrations.Playfab.PlayStream
         /// Come Online
         /// Turn Online status on, upload and clear local leaderboard stats.
         /// </summary>
-        async void ComeOnline()
+        void ComeOnline()
         {
             Debug.Log("LeaderboardManager - ComeOnline");
             online = true;
-            ReportAndFlushOfflineStatistics();
+            ReportAndFlushStatisticsAsync();
         }
 
         /// <summary>
@@ -92,20 +92,15 @@ namespace CosmicShore.Integrations.Playfab.PlayStream
             online = false;
         }
 
-        // ReSharper disable Unity.PerformanceAnalysis
-        async void ReportAndFlushOfflineStatistics()
-        {
-            await ReportAndFlushStatisticsAsync();
-        }
 
         /// <summary>
         /// Report and Flush Offline Stats Coroutine
         /// Local data uploading and clearing coroutine logic 
         /// </summary>
-        private async Task ReportAndFlushStatisticsAsync()
+        private void ReportAndFlushStatisticsAsync()
         {
-            await Task.Run(() => new WaitUntil(() => _authManager.PlayFabAccount != null));
-
+            WaitForPlayFabAccountAsync();
+            
             Debug.Log("LeaderboardManager - ReportAndFlushOfflineStatistics");
             var dataAccessor = new DataAccessor(OfflineStatsFileName);
             var offlineStatistics = dataAccessor.Load<List<StatisticUpdate>>();
@@ -115,6 +110,14 @@ namespace CosmicShore.Integrations.Playfab.PlayStream
                 Debug.Log($"LeaderboardManager - StatCount:{offlineStatistics.Count}");
                 UpdatePlayerStatistic(offlineStatistics);
                 dataAccessor.Flush();
+            }
+        }
+
+        private async void WaitForPlayFabAccountAsync()
+        {
+            if (_authManager.PlayFabAccount == null)
+            {
+                await Task.Delay(100);
             }
         }
 
