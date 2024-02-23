@@ -115,7 +115,7 @@ namespace CosmicShore.Integrations.Playfab.PlayStream
 
         private async void WaitForPlayFabAccountAsync()
         {
-            if (_authManager.PlayFabAccount == null)
+            while (_authManager.PlayFabAccount == null)
             {
                 await Task.Delay(100);
             }
