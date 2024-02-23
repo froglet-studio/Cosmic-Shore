@@ -1,9 +1,7 @@
-using System.Collections;
 using UnityEngine;
 using CosmicShore.Core;
 using CosmicShore.Game.IO;
 using System.Collections.Generic;
-using CosmicShore.Core.HangerBuilder;
 
 public class ShipTransformer : MonoBehaviour
 {

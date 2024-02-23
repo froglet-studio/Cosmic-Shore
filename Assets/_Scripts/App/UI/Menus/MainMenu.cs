@@ -1,4 +1,4 @@
-﻿using CosmicShore.Core.HangerBuilder;
+﻿using CosmicShore.Core;
 using CosmicShore.Game.Arcade;
 using UnityEngine;
 using UnityEngine.SceneManagement;

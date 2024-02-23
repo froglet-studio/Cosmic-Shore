@@ -1,7 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using CosmicShore.Core;
-using CosmicShore.Core.HangerBuilder;
 
 using UnityEngine;
 

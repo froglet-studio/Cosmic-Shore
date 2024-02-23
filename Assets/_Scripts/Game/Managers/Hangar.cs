@@ -6,8 +6,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Serialization;
 
-// TODO: P1 renamespace this
-namespace CosmicShore.Core.HangerBuilder
+namespace CosmicShore.Core
 {
     public class Hangar : SingletonPersistent<Hangar>
     {
@@ -23,6 +22,13 @@ namespace CosmicShore.Core.HangerBuilder
         [SerializeField] ShipTypes HostileAI2ShipType = ShipTypes.Random;
         [SerializeField] ShipTypes HostileAI3ShipType = ShipTypes.Random;
         ShipTypes HostileMantaShipType = ShipTypes.Manta;
+
+        [SerializeField] List<ShipTypes> GreenTeamShipTypes = new List<ShipTypes>() { ShipTypes.Random, ShipTypes.Random, ShipTypes.Random };
+        [SerializeField] List<ShipTypes> RedTeamShipTypes = new List<ShipTypes>() { ShipTypes.Random, ShipTypes.Random, ShipTypes.Random };
+        [SerializeField] List<ShipTypes> GoldTeamShipTypes = new List<ShipTypes>() { ShipTypes.Random, ShipTypes.Random, ShipTypes.Random };
+
+        Dictionary<Teams, List<ShipTypes>> TeamShipTypes = new();
+
 
         [Header("Vessel Settings")]
         [FormerlySerializedAs("SoarPilot")]
@@ -56,10 +62,11 @@ namespace CosmicShore.Core.HangerBuilder
             PlayerPrefs.SetInt(SelectedShipPlayerPrefKey, shipType);
         }
 
-        public void SetAIShip(int shipType)
+        public void SetTeamShipType(Teams team, ShipTypes shipType, int slot=0)
         {
-            Debug.Log($"Hangar.SetAIShip: {(ShipTypes)shipType}");
-            HostileAI1ShipType = (ShipTypes)shipType;
+            Debug.Log($"Hangar.SetTeamShipType: shipType:{shipType}, team:{team}, slot:{slot}");
+
+            TeamShipTypes[team][slot] = shipType;
         }
 
         public void SetPlayerVessel(SO_Vessel vessel)
@@ -86,6 +93,10 @@ namespace CosmicShore.Core.HangerBuilder
         {
             base.Awake();
 
+            TeamShipTypes.Add(Teams.Green, GreenTeamShipTypes);
+            TeamShipTypes.Add(Teams.Red, RedTeamShipTypes);
+            TeamShipTypes.Add(Teams.Gold, GoldTeamShipTypes);
+
             if (PlayerPrefs.HasKey(SelectedShipPlayerPrefKey))
                 PlayerShipType = (ShipTypes) PlayerPrefs.GetInt(SelectedShipPlayerPrefKey);
 
@@ -93,7 +104,7 @@ namespace CosmicShore.Core.HangerBuilder
                 { Teams.Green, GreenTeamMaterialSet },
                 { Teams.Red,   RedTeamMaterialSet },
                 { Teams.Blue,  BlueTeamMaterialSet },
-                { Teams.Yellow,  GoldTeamMaterialSet },
+                { Teams.Gold,  GoldTeamMaterialSet },
                 { Teams.Unassigned,  BlueTeamMaterialSet },
             };
 
@@ -150,6 +161,11 @@ namespace CosmicShore.Core.HangerBuilder
             return ship;
         }
 
+        public Ship LoadShip(ShipTypes shipType, Teams team)
+        {
+            return LoadAIShip(shipType, team);
+        }
+
         public Ship LoadFriendlyAIShip()
         {
             return LoadAIShip(FriendlyAIShipType, PlayerTeam);
@@ -161,12 +177,12 @@ namespace CosmicShore.Core.HangerBuilder
         }
         public Ship LoadSquadMateTwo()
         {
-            SquadSystem.LoadSquad();
+            SquadSystem.LoadSquad(); 
             return LoadAIShip(SquadSystem.RogueTwo.Ship.Class, PlayerTeam, SquadSystem.RogueTwo);
         }
+
         public Ship LoadHostileAI1Ship(Teams Team)
         {
-            //return LoadAIShip(HostileAI1ShipType, AITeam);
             return LoadAIShip(HostileAI1ShipType, Team);
         }
         public Ship LoadHostileAI2Ship()

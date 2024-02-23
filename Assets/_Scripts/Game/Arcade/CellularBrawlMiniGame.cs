@@ -1,5 +1,5 @@
 using CosmicShore.App.Systems.Squads;
-using CosmicShore.Core.HangerBuilder;
+using CosmicShore.Core;
 
 namespace CosmicShore.Game.Arcade
 {

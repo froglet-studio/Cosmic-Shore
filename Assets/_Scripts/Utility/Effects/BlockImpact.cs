@@ -1,18 +1,17 @@
 using System.Collections;
 using UnityEngine;
-using CosmicShore.Core.HangerBuilder;
 
 public class BlockImpact : MonoBehaviour
 {
+    Material material;
+
     public void HandleImpact(Vector3 velocity)
     {
         StartCoroutine(ImpactCoroutine(velocity));
     }
-    Material material;
 
-    private IEnumerator ImpactCoroutine(Vector3 velocity)
+    IEnumerator ImpactCoroutine(Vector3 velocity)
     {
-        
         Vector3 distance = Vector3.zero;
 
         material = gameObject.GetComponent<MeshRenderer>().material;

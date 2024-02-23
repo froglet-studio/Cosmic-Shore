@@ -25,6 +25,7 @@ namespace CosmicShore.Game.Arcade
         [SerializeField] float EndOfTurnDelay = 0f;
         [SerializeField] bool EnableTrails = true;
         [SerializeField] ShipTypes DefaultPlayerShipType = ShipTypes.Dolphin;
+        [SerializeField] SO_Vessel DefaultPlayerVessel;
 
         protected Button ReadyButton;
         protected GameObject EndGameScreen;
@@ -32,11 +33,11 @@ namespace CosmicShore.Game.Arcade
         protected List<Player> Players;
         protected CountdownTimer countdownTimer;
 
-        List<Teams> PlayerTeams = new() { Teams.Green, Teams.Red, Teams.Yellow };
+        List<Teams> PlayerTeams = new() { Teams.Green, Teams.Red, Teams.Gold };
         List<string> PlayerNames = new() { "PlayerOne", "PlayerTwo", "PlayerThree" };
 
         // Configuration set by player
-        public static int NumberOfPlayers = 2;  // TODO: P1 - support excluding single player games (e.g for elimination)
+        public static int NumberOfPlayers = 1;  // TODO: P1 - support excluding single player games (e.g for elimination)
         public static int IntensityLevel = 1;
         static ShipTypes playerShipType = ShipTypes.Dolphin;
         static bool playerShipTypeInitialized;
@@ -80,7 +81,9 @@ namespace CosmicShore.Game.Arcade
             ReadyButton = HUD.ReadyButton;
             countdownTimer = HUD.CountdownTimer;
             ScoreTracker.GameCanvas = GameCanvas;
-    
+
+            if (PlayerVessel == null)
+                PlayerVessel = DefaultPlayerVessel;
 
             foreach (var turnMonitor in TurnMonitors)
                 if (turnMonitor is TimeBasedTurnMonitor tbtMonitor)
@@ -166,7 +169,7 @@ namespace CosmicShore.Game.Arcade
 
         public virtual void StartNewGame()
         {
-            Debug.Log($"Playing as {PlayerVessel.Name} - \"{PlayerVessel.Description}\"");
+            //Debug.Log($"Playing as {PlayerVessel.Name} - \"{PlayerVessel.Description}\"");
             if (PauseSystem.Paused) PauseSystem.TogglePauseGame();
 
             RemainingPlayers = new();

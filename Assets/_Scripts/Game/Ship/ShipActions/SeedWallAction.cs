@@ -1,9 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using CosmicShore.Game.Projectiles;
 using System.Linq;
-using CosmicShore.Utility.ClassExtensions;
 
 namespace CosmicShore
 {
@@ -29,9 +27,6 @@ namespace CosmicShore
             }
         }
 
-        public override void StopAction()
-        {
-
-        }
+        public override void StopAction() {}
     }
 }

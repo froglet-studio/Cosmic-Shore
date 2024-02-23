@@ -1,6 +1,5 @@
 using Cinemachine;
 using CosmicShore.Core;
-using CosmicShore.Core.HangerBuilder;
 using CosmicShore.Utility.Singleton;
 using CosmicShore.Utility;
 using System.Collections;

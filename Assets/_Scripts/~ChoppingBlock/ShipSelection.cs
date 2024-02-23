@@ -1,4 +1,4 @@
-using CosmicShore.Core.HangerBuilder;
+using CosmicShore.Core;
 using TMPro;
 using UnityEngine;
 

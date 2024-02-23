@@ -1,4 +1,3 @@
-using CosmicShore.Core.HangerBuilder;
 using CosmicShore.Environment.FlowField;
 using UnityEngine;
 
@@ -32,6 +31,5 @@ namespace CosmicShore.Game.Arcade
             Crystal.transform.position = CrystalStartPosition;
             ActivePlayer.Ship.ResourceSystem.ChangeAmmoAmount(ActivePlayer.Ship.ResourceSystem.MaxAmmo);
         }
-
     }
 }

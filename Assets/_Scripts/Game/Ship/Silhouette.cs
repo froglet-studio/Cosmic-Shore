@@ -1,9 +1,7 @@
 using CosmicShore.Core;
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-
 
 namespace CosmicShore
 {
@@ -176,6 +174,5 @@ namespace CosmicShore
             foreach (Transform t in trailDisplayContainer.transform) { t.gameObject.SetActive(false); }
             foreach (Transform t in silhouetteContainer.transform) { t.gameObject.SetActive(false); }
         }
-
     }
 }
