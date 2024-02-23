@@ -1,43 +1,56 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Security;
+using CosmicShore.App.Systems.UserJourney;
 using CosmicShore.Integrations.Playfab.PlayerModels;
 using CosmicShore.Integrations.PlayFabV2.Models;
 using JetBrains.Annotations;
 using Newtonsoft.Json;
 using PlayFab;
 using PlayFab.ClientModels;
-using CosmicShore.Utility.Singleton;
 using UnityEngine;
+using VContainer.Unity;
 
 namespace CosmicShore.Integrations.Playfab.Authentication
 {
-    public class AuthenticationManager : SingletonPersistent<AuthenticationManager>
+    public class AuthenticationManager : IInitializable, IDisposable
     {
-        public static PlayFabAccount PlayFabAccount;
+        public PlayFabAccount PlayFabAccount { get; set; }
         // public static PlayerProfile PlayerProfile;
-        public static UserProfile UserProfile;
+        public UserProfile UserProfile { get; set; }
+        public PlayerSession PlayerSession { get; set; }
         
-        public static event Action OnLoginSuccess;
+        public event Action OnLoginSuccess;
  
-        public static event Action OnLoginError;
+        public event Action OnLoginError;
 
         // public delegate void ProfileLoaded();
-        public static event Action OnProfileLoaded;
+        public event Action OnProfileLoaded;
 
-        public static event Action OnRegisterSuccess;
+        public event Action OnRegisterSuccess;
 
         public static List<string> Adjectives;
         public static List<string> Nouns;
-
-        public static PlayerSession PlayerSession;
         
-
-        void Start()
+        public AuthenticationManager(PlayFabAccount account, UserProfile profile, PlayerSession session)
         {
-            UserProfile ??= new UserProfile();
-            OnLoginSuccess += LoadPlayerProfile;
+            PlayFabAccount = account;
+            UserProfile = profile;
+            PlayerSession = session;
+        }
+        public void Initialize()
+        {
             AnonymousLogin();
+            OnLoginSuccess += LoadPlayerProfile;
+        }
+
+        public void Dispose()
+        {
+            PlayFabAccount = null;
+            UserProfile = null;
+            PlayerSession = null;
+            OnLoginSuccess -= LoadPlayerProfile;
         }
 
         #region Player Profile
@@ -64,6 +77,23 @@ namespace CosmicShore.Integrations.Playfab.Authentication
             );
         }
 
+        public void SePlayerAvatar(string avatarUrl)
+        {
+            var request = new UpdateAvatarUrlRequest();
+            request.ImageUrl = avatarUrl;
+            PlayFabClientAPI.UpdateAvatarUrl(
+                request,
+                result =>
+                {
+                    UserProfile.AvatarUrl = avatarUrl;
+                    Debug.Log("Authentication Manager - Successfully updated player avatar.");
+                },
+                error =>
+                {
+                    Debug.LogError(error.GenerateErrorReport());
+                });
+        }
+
 
         /// <summary>
         /// Load Player Profile
@@ -73,21 +103,29 @@ namespace CosmicShore.Integrations.Playfab.Authentication
         {
             var request = new GetPlayerProfileRequest();
             request.PlayFabId = PlayFabAccount.ID;
+            request.ProfileConstraints = new PlayerProfileViewConstraints
+            {
+                ShowDisplayName = true,
+                ShowAvatarUrl = true
+            };
             
             PlayFabClientAPI.GetPlayerProfile(request, 
-                (result) =>
+                result =>
                 {
                     // The result will get publisher id, title id, player id (also called playfab id in other requests) and display name
                     UserProfile.DisplayName = result.PlayerProfile.DisplayName;
-                    
                     // TODO: It might be good to retrieve player avatar url here 
+                    UserProfile.AvatarUrl =
+                        string.IsNullOrEmpty(result.PlayerProfile.AvatarUrl)
+                            ? result.PlayerProfile.AvatarUrl
+                            : AvatarLinks.Icons.First();
                     
                     Debug.Log("AuthenticationManager - Successfully retrieved player profile");
                     Debug.Log($"AuthenticationManager - Player id: {UserProfile.UniqueID}");
 
                     OnProfileLoaded?.Invoke();
                 },
-                (error) =>
+                error =>
                 {
                     Debug.LogError(error.GenerateErrorReport());
                     Debug.Log($"AuthenticationManager - PlayFabId = {PlayFabAccount.ID}");
@@ -204,7 +242,7 @@ namespace CosmicShore.Integrations.Playfab.Authentication
 
         void HandleLoginSuccess(LoginResult loginResult = null)
         {
-            PlayFabAccount = PlayFabAccount ?? new PlayFabAccount();
+            PlayFabAccount ??= new PlayFabAccount();
             if (loginResult != null)
             {
                 PlayFabAccount.ID = loginResult.PlayFabId;
@@ -391,5 +429,7 @@ namespace CosmicShore.Integrations.Playfab.Authentication
         }
         
         #endregion
+
+        
     }
 }

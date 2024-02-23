@@ -120,10 +120,10 @@ Material:
     - _ZWrite: 1
     m_Colors:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
-    - _BrightColor: {r: 0.60062885, g: 0.62639475, b: 1, a: 1}
+    - _BrightColor: {r: 0.21048416, g: 0.2160862, b: 0.31132078, a: 1}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
-    - _DarkColor: {r: 0, g: 0.0638926, b: 1, a: 1}
+    - _DarkColor: {r: 0, g: 0.015686275, b: 0.25, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
     - _SpecColor: {r: 0.19999996, g: 0.19999996, b: 0.19999996, a: 1}
-    - _Spread: {r: 0.2, g: 0.2, b: 0.2, a: 0}
+    - _Spread: {r: 0.01, g: 0.01, b: 0.01, a: 0}
   m_BuildTextureStacks: []

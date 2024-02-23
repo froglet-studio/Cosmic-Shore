@@ -137,11 +137,12 @@ MonoBehaviour:
   alignmentWeight: 2
   cohesionWeight: 1
   goalWeight: 0.3
-  minSpeed: 10
-  maxSpeed: 15
+  minSpeed: 20
+  maxSpeed: 25
   Goal: {fileID: 0}
   DefaultGoal: {fileID: 0}
   normalizedIndex: 0
+  Mound: {fileID: 0}
   isKilled: 0
   collisionEffects: 00000000
   activeCrystalMaterial: {fileID: 2100000, guid: 18c297a89c0d43e46bd4ea5bd6143ffb,
@@ -272,8 +273,8 @@ MonoBehaviour:
     type: 3}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   maxScale: {x: 10, y: 10, z: 10}
-  TargetScale: {x: 0.6, y: 0.6, z: 3}
-  growthVector: {x: 0, y: 2, z: 0}
+  TargetScale: {x: 2.5, y: 4, z: 1}
+  growthVector: {x: 2.5, y: 4, z: 0}
   waitTime: 0.1
   destroyed: 0
   devastated: 0

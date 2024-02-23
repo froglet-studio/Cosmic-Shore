@@ -118,9 +118,8 @@ namespace CosmicShore.Core
             var currentPosition = currentBlock.transform.position;
             Vector3 blockGap = nextPosition - currentPosition;
            
-            heading = (blockGap).normalized;
+            heading = blockGap.normalized;
             endIndex = startIndex;
-            //finalLerp = 1 - (overflow / (currentPosition - nextPosition).magnitude);
             finalLerp = 1 - overflow / blockGap.magnitude;
 
             outDirection = (TrailFollowerDirection)incrementor;

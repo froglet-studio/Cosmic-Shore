@@ -71,6 +71,7 @@ public class Boid : MonoBehaviour
         currentVelocity = transform.forward * Random.Range(minSpeed, maxSpeed);
         float initialDelay = normalizedIndex * behaviorUpdateRate;
         StartCoroutine(CalculateBehaviorCoroutine(initialDelay));
+        trailBlock.Team = Teams.Blue;
     }
 
     IEnumerator CalculateBehaviorCoroutine(float initialDelay)
@@ -135,7 +136,7 @@ public class Boid : MonoBehaviour
             }
             else if (otherTrailBlock)
             {
-                float blockWeight = boidManager.Weights[(int)otherTrailBlock.Team - 1];
+                float blockWeight = boidManager.Weights[Mathf.Abs((int)otherTrailBlock.Team-1)]; // TODO: this is a hack to get the team weight, need to make this more robust
                 blockAttraction += -diff.normalized * blockWeight / distance;
 
                 if (distance < trailBlockInteractionRadius && otherTrailBlock.Team != trailBlock.Team)
@@ -188,27 +189,58 @@ public class Boid : MonoBehaviour
         isTraveling = true;
 
         Goal = Mound;
-        float scanRadius = 50f;
-        while ((transform.position - Mound.position).sqrMagnitude > scanRadius)
-        {
-            yield return null;
-        }
+        float scanRadius = 30f;
+        //while ((transform.position - Mound.position).sqrMagnitude > scanRadius)
+        //{
+        //    yield return null;
+        //}
 
         Collider[] colliders = new Collider[0];
         while (colliders.Length == 0)
         {
-            colliders = Physics.OverlapSphere(transform.position, 1f, LayerMask.NameToLayer("TrailBlocks"));
+            int layerIndex = LayerMask.NameToLayer("Mound");
+            int layerMask = 1 << layerIndex;
+            colliders = Physics.OverlapSphere(transform.position, scanRadius, layerMask);
+
+            //colliders = Physics.OverlapSphere(transform.position, 1f, LayerMask.NameToLayer("Mound"));
+            GyroidAssembler nakedEdge = null;
+            Debug.Log($"colliders: {colliders.Length}");
+            foreach (var collider in colliders)
+            {
+                nakedEdge = collider.GetComponent<GyroidAssembler>();
+                if (nakedEdge && !nakedEdge.FullyBonded && nakedEdge.preferedBlocks.Count == 0 && (nakedEdge.IsBonded() || nakedEdge.isSeed))
+                {
+                    (var newBlock1, var gyroidBlock1) = NewBlock();
+                    nakedEdge.preferedBlocks.Enqueue(gyroidBlock1);
+                    gyroidBlock1.GyroidBlock = newBlock1;
+
+                    //(var newBlock2, var gyroidBlock2) = NewBlock();
+                    //nakedEdge.preferedBlocks.Enqueue(gyroidBlock2);
+                    //gyroidBlock2.GyroidBlock = newBlock2;
+
+                    nakedEdge.Depth = 1;
+                    nakedEdge.StartBonding();
+                    break;
+                }
+            }
+            if (!nakedEdge) colliders = new Collider[0];
             yield return null;
         }
 
-        var newBlock = Instantiate(trailBlock, transform.position, transform.rotation, boidManager.transform);
-        newBlock.Team = trailBlock.Team;
-        var gryoidBlock = newBlock.gameObject.AddComponent<GyroidAssembler>();
-        var nakedEdge = colliders[0].gameObject.GetComponent<GyroidAssembler>();
-        nakedEdge.preferedBlock = gryoidBlock;
-        nakedEdge.StartBonding(1);
         isTraveling = false;
         trailBlock.Grow(-3);
+    }
+
+    (TrailBlock, GyroidAssembler) NewBlock()
+    {
+        var newBlock = Instantiate(trailBlock, transform.position, transform.rotation, boidManager.transform);
+        newBlock.Team = trailBlock.Team;
+        newBlock.gameObject.layer = LayerMask.NameToLayer("Mound");
+        //var ID = GetInstanceID().ToString();                    
+        //Debug.Log($"ID of created : {ID}");
+        //newBlock.ID = ID;
+        var gyroidBlock = newBlock.gameObject.AddComponent<GyroidAssembler>();
+        return (newBlock,gyroidBlock);
     }
 
     void Poop()

@@ -1,13 +1,15 @@
 using System;
 using UnityEngine;
 using CosmicShore.Integrations.Playfab.PlayStream;
+using VContainer;
+using VContainer.Unity;
 
 namespace CosmicShore.App.Systems.Clout
 {
-    public class CloutSystem : MonoBehaviour
+    public class CloutSystem : IPostInitializable, IDisposable
     {
         // Player clout model
-        public static Clout PlayerClout;
+        public Clout PlayerClout;
 
         // Min and Max Value
         const int MinCloutValue = 0;
@@ -19,11 +21,18 @@ namespace CosmicShore.App.Systems.Clout
         // Network condition
         private bool isConnected;
 
-        private void OnEnable()
+        [Inject] private PlayerDataController _dataController;
+
+        public CloutSystem(PlayerDataController dataController)
+        {
+            _dataController = dataController;
+        }
+
+        public void PostInitialize()
         {
             // Events that talking to PlayFab
             PlayerDataController.OnLoadingPlayerClout += PopulatePlayerClouts;
-            OnUpdatingMasterClout += PlayerDataController.Instance.UpdatePlayerClout;
+            OnUpdatingMasterClout += _dataController.UpdatePlayerClout;
             
             // Network detector
             NetworkMonitor.NetworkConnectionFound += SetOnline;
@@ -33,10 +42,10 @@ namespace CosmicShore.App.Systems.Clout
             if(isConnected) Test();
         }
 
-        private void OnDisable()
+        public void Dispose()
         {
             // Events that talking to PlayFab
-            OnUpdatingMasterClout -= PlayerDataController.Instance.UpdatePlayerClout;
+            OnUpdatingMasterClout -= _dataController.UpdatePlayerClout;
             PlayerDataController.OnLoadingPlayerClout -= PopulatePlayerClouts;
             
             // Network detector

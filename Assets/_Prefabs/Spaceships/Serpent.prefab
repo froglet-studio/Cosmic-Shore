@@ -1945,7 +1945,7 @@ MonoBehaviour:
   drift: 0
   SingleStickControls: 0
   useAbility: 1
-  abilityCooldown: 200
+  abilityCooldown: 20
   ability: {fileID: 6378036342495326916}
   CrystalTransform: {fileID: 0}
   flowFieldData: {fileID: 0}

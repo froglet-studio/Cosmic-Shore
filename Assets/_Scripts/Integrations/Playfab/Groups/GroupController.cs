@@ -4,12 +4,12 @@ using CosmicShore.Integrations.Playfab.Authentication;
 using CosmicShore.Integrations.Playfab.Event_Models;
 using PlayFab;
 using PlayFab.GroupsModels;
-using CosmicShore.Utility.Singleton;
 using UnityEngine;
+using VContainer.Unity;
 
 namespace CosmicShore.Integrations.Playfab.Groups
 {
-    public class GroupController : SingletonPersistent<GroupController>
+    public class GroupController : IPostInitializable
     {
         // A public event interface for the Group front-end view
         public static event EventHandler<PlayFabError> OnErrorHandler;
@@ -20,10 +20,15 @@ namespace CosmicShore.Integrations.Playfab.Groups
         private static event EventHandler<GetGroupResponse> OnGettingGroup;
         // Local cache for group info
         private Dictionary<string, GroupModel> groups;
-    
-        private void Start()
+
+        private AuthenticationManager _authManager;
+        public GroupController(AuthenticationManager authManager)
         {
-            AuthenticationManager.OnLoginSuccess += InitializeGroupsInstanceAPI;
+            _authManager = authManager;
+        }
+        public void PostInitialize()
+        {
+            _authManager.OnLoginSuccess += InitializeGroupsInstanceAPI;
         }
 
         #region Initialize PlayFab Groups API with Auth Context
@@ -34,14 +39,14 @@ namespace CosmicShore.Integrations.Playfab.Groups
         /// </summary>
         private void InitializeGroupsInstanceAPI()
         {
-            if (AuthenticationManager.PlayFabAccount.AuthContext == null)
+            if (_authManager.PlayFabAccount.AuthContext == null)
             {
                 // TODO: raise event to for user authentication 
                 Debug.LogWarning($"Current Player has not logged in yet.");
                 return;
             }
 
-            _playFabGroupsInstanceAPI ??= new PlayFabGroupsInstanceAPI(AuthenticationManager.PlayFabAccount.AuthContext);
+            _playFabGroupsInstanceAPI ??= new PlayFabGroupsInstanceAPI(_authManager.PlayFabAccount.AuthContext);
         }
     
         #endregion

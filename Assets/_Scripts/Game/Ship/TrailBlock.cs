@@ -298,8 +298,11 @@ namespace CosmicShore.Core
                     DeactivateShields();
                     return;
                 }
+                string name;
+                if (player) name = player.PlayerName;
+                else name = "no name";
                 if (StatsManager.Instance != null)
-                    StatsManager.Instance.BlockStolen(team, player.PlayerName, TrailBlockProperties);
+                    StatsManager.Instance.BlockStolen(team, name, TrailBlockProperties);
 
                 if (NodeControlManager.Instance != null)
                     NodeControlManager.Instance.StealBlock(team, TrailBlockProperties);
