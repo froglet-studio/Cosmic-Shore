@@ -3,7 +3,7 @@ using CosmicShore.Core;
 
 public class GunShipTransformer : ShipTransformer
 {
-    [SerializeField] TrailFollower trailFollower;
+    BlockscapeFollower trailFollower;
     [SerializeField] float rechargeRate = .1f;
 
     public float ProjectileScale = 1f;
@@ -19,6 +19,7 @@ public class GunShipTransformer : ShipTransformer
     {
         base.Start();
         cameraManager = CameraManager.Instance;
+        trailFollower = GetComponent<BlockscapeFollower>();
     }
 
     protected override void Update()
@@ -66,10 +67,10 @@ public class GunShipTransformer : ShipTransformer
         if (Vector3.Dot(transform.forward, shipStatus.Course) < lookThreshold && throttle > 0)
              moveForward = !moveForward;
 
-        if ((moveForward && throttle > 0) || (!moveForward && throttle < 0))
-            trailFollower.SetDirection(TrailFollowerDirection.Forward);
-        else
-            trailFollower.SetDirection(TrailFollowerDirection.Backward);
+        //if ((moveForward && throttle > 0) || (!moveForward && throttle < 0))
+        //    trailFollower.SetDirection(TrailFollowerDirection.Forward);
+        //else
+        //    trailFollower.SetDirection(TrailFollowerDirection.Backward);
 
         trailFollower.Throttle = Mathf.Abs(throttle);
         trailFollower.RideTheTrail();

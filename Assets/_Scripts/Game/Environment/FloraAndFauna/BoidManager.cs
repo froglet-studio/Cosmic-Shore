@@ -34,12 +34,14 @@ public class BoidManager : MonoBehaviour
             if (globalGoal)
             {
                 newBoid.Goal = globalGoal;
-                newBoid.DefaultGoal = globalGoal;
+                
             }
             if (Mound)
             {
                 newBoid.Mound = Mound;
             }
+
+            newBoid.DefaultGoal = globalGoal;
 
             boidTrail.Add(block);
             block.Team = Teams.Blue;

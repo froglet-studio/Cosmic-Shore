@@ -30,7 +30,6 @@ public class Boid : MonoBehaviour
     [SerializeField] float minSpeed = 2.0f;
     [SerializeField] float maxSpeed = 5.0f;
 
-
     [Header("Goal Settings")]
     public Transform Goal;
     public Transform DefaultGoal;
@@ -47,8 +46,6 @@ public class Boid : MonoBehaviour
     bool isTraveling = false;
 
     [SerializeField] List<BoidCollisionEffects> collisionEffects;
-
-
 
     private BoidManager boidManager;
     private TrailBlock trailBlock;
@@ -85,7 +82,6 @@ public class Boid : MonoBehaviour
             yield return new WaitForSeconds(behaviorUpdateRate);
         }
     }
-
 
     void CalculateBehavior()
     {
@@ -229,6 +225,8 @@ public class Boid : MonoBehaviour
         }
 
         isTraveling = false;
+        trailBlock.IsLargest = false;
+        trailBlock.DeactivateShields();
         trailBlock.Grow(-3);
     }
 

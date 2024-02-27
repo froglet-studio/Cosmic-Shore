@@ -2600,6 +2600,71 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 1908788735463529607, guid: fe865d309fab2f44cb225e312d612ddb,
+        type: 3}
+      propertyPath: onBottomEdge
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1908788735463529607, guid: fe865d309fab2f44cb225e312d612ddb,
+        type: 3}
+      propertyPath: buttonPositions.Array.data[0].x
+      value: -290
+      objectReference: {fileID: 0}
+    - target: {fileID: 1908788735463529607, guid: fe865d309fab2f44cb225e312d612ddb,
+        type: 3}
+      propertyPath: buttonPositions.Array.data[0].y
+      value: -305
+      objectReference: {fileID: 0}
+    - target: {fileID: 1908788735463529607, guid: fe865d309fab2f44cb225e312d612ddb,
+        type: 3}
+      propertyPath: buttonPositions.Array.data[1].x
+      value: -473
+      objectReference: {fileID: 0}
+    - target: {fileID: 1908788735463529607, guid: fe865d309fab2f44cb225e312d612ddb,
+        type: 3}
+      propertyPath: buttonPositions.Array.data[1].y
+      value: -430
+      objectReference: {fileID: 0}
+    - target: {fileID: 1908788735463529607, guid: fe865d309fab2f44cb225e312d612ddb,
+        type: 3}
+      propertyPath: buttonPositions.Array.data[2].x
+      value: -660
+      objectReference: {fileID: 0}
+    - target: {fileID: 1908788735463529607, guid: fe865d309fab2f44cb225e312d612ddb,
+        type: 3}
+      propertyPath: buttonPositions.Array.data[2].y
+      value: -565
+      objectReference: {fileID: 0}
+    - target: {fileID: 1908788735463529607, guid: fe865d309fab2f44cb225e312d612ddb,
+        type: 3}
+      propertyPath: bottomEdgeButtonPositions.Array.data[0].x
+      value: -300
+      objectReference: {fileID: 0}
+    - target: {fileID: 1908788735463529607, guid: fe865d309fab2f44cb225e312d612ddb,
+        type: 3}
+      propertyPath: bottomEdgeButtonPositions.Array.data[0].y
+      value: -200
+      objectReference: {fileID: 0}
+    - target: {fileID: 1908788735463529607, guid: fe865d309fab2f44cb225e312d612ddb,
+        type: 3}
+      propertyPath: bottomEdgeButtonPositions.Array.data[1].x
+      value: -300
+      objectReference: {fileID: 0}
+    - target: {fileID: 1908788735463529607, guid: fe865d309fab2f44cb225e312d612ddb,
+        type: 3}
+      propertyPath: bottomEdgeButtonPositions.Array.data[1].y
+      value: -450
+      objectReference: {fileID: 0}
+    - target: {fileID: 1908788735463529607, guid: fe865d309fab2f44cb225e312d612ddb,
+        type: 3}
+      propertyPath: bottomEdgeButtonPositions.Array.data[2].x
+      value: -300
+      objectReference: {fileID: 0}
+    - target: {fileID: 1908788735463529607, guid: fe865d309fab2f44cb225e312d612ddb,
+        type: 3}
+      propertyPath: bottomEdgeButtonPositions.Array.data[2].y
+      value: -600
+      objectReference: {fileID: 0}
     - target: {fileID: 3792388166272916900, guid: fe865d309fab2f44cb225e312d612ddb,
         type: 3}
       propertyPath: m_Color.a

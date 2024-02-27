@@ -376,8 +376,8 @@ namespace CosmicShore
                             boid.isKilled = true;
                         }
                         trailBlock.TargetScale = scale;
-                        trailBlock.maxScale = GyroidBlock.maxScale;
-                        trailBlock.growthVector = GyroidBlock.growthVector;
+                        trailBlock.MaxScale = GyroidBlock.MaxScale;
+                        trailBlock.GrowthVector = GyroidBlock.GrowthVector;
                         trailBlock.Steal(GyroidBlock.Player, GyroidBlock.Team);
                         trailBlock.ChangeSize();
                         mateComponent = trailBlock.gameObject.AddComponent<GyroidAssembler>();

@@ -7255,7 +7255,7 @@ PrefabInstance:
     - target: {fileID: 9106189021102876753, guid: 32cc35a6605af014c926743312133238,
         type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 9106189021102876755, guid: 32cc35a6605af014c926743312133238,
         type: 3}
@@ -7476,7 +7476,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ea1f86e75b9f8534e97f42ce24675b5b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  gameMode: 8
+  gameMode: 23
   NumberOfRounds: 1
   TurnMonitors:
   - {fileID: 1527998409}
@@ -7698,12 +7698,12 @@ PrefabInstance:
     - target: {fileID: 5247650485044281852, guid: 061f308768b5b564bbb0f130d1a8f02e,
         type: 3}
       propertyPath: m_LocalRotation.w
-      value: 0.014161397
+      value: 0.014161362
       objectReference: {fileID: 0}
     - target: {fileID: 5247650485044281852, guid: 061f308768b5b564bbb0f130d1a8f02e,
         type: 3}
       propertyPath: m_LocalRotation.x
-      value: 0.00019546802
+      value: 0.00019546723
       objectReference: {fileID: 0}
     - target: {fileID: 5247650485044281852, guid: 061f308768b5b564bbb0f130d1a8f02e,
         type: 3}
@@ -7713,7 +7713,7 @@ PrefabInstance:
     - target: {fileID: 5247650485044281852, guid: 061f308768b5b564bbb0f130d1a8f02e,
         type: 3}
       propertyPath: m_LocalRotation.z
-      value: -0.013800179
+      value: -0.013800159
       objectReference: {fileID: 0}
     - target: {fileID: 5247650485044281852, guid: 061f308768b5b564bbb0f130d1a8f02e,
         type: 3}

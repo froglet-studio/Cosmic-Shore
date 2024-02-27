@@ -1621,6 +1621,7 @@ GameObject:
   - component: {fileID: 5086360743770514783}
   - component: {fileID: 2731003324702047408}
   - component: {fileID: 1302784739002126863}
+  - component: {fileID: 6793423672001803902}
   m_Layer: 0
   m_Name: Termite
   m_TagString: Player_Ship
@@ -1706,6 +1707,9 @@ MonoBehaviour:
     ShipActions:
     - {fileID: 0}
   - InputEvent: 7
+    ShipActions:
+    - {fileID: 0}
+  - InputEvent: 8
     ShipActions:
     - {fileID: 0}
   resourceEventClassActions: []
@@ -1909,12 +1913,15 @@ MonoBehaviour:
   YSum: 0
   XDiff: 0
   YDiff: 0
+  X: 0
+  Y: 0
   raycastHeight: 2
   raycastWidth: 2
   AutoPilotEnabled: 0
   LookingAtCrystal: 0
   ram: 0
   drift: 0
+  SingleStickControls: 0
   useAbility: 1
   abilityCooldown: 5
   ability: {fileID: 0}
@@ -2024,6 +2031,36 @@ MonoBehaviour:
   FollowTarget: {fileID: 8232734818493850012}
   FollowTargetPosition: {x: 0, y: 0, z: -1000}
   isOrthographic: 1
+--- !u!114 &6793423672001803902
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 62899f850307741f2a39c98a8b639597, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Actions: {fileID: 0}
+  m_NotificationBehavior: 0
+  m_UIInputModule: {fileID: 0}
+  m_DeviceLostEvent:
+    m_PersistentCalls:
+      m_Calls: []
+  m_DeviceRegainedEvent:
+    m_PersistentCalls:
+      m_Calls: []
+  m_ControlsChangedEvent:
+    m_PersistentCalls:
+      m_Calls: []
+  m_ActionEvents: []
+  m_NeverAutoSwitchControlSchemes: 0
+  m_DefaultControlScheme: 
+  m_DefaultActionMap: 
+  m_SplitScreenIndex: -1
+  m_Camera: {fileID: 0}
 --- !u!1 &6675130274311316141
 GameObject:
   m_ObjectHideFlags: 0

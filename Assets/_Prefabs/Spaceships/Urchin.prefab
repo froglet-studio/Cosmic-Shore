@@ -2258,6 +2258,7 @@ GameObject:
   - component: {fileID: 1435252848482629424}
   - component: {fileID: 3440187540988767646}
   - component: {fileID: 4005043449782909879}
+  - component: {fileID: 2048454636339882050}
   - component: {fileID: 7081412522392871879}
   - component: {fileID: 8607513911732901166}
   - component: {fileID: 4235613159111207255}
@@ -2421,7 +2422,6 @@ MonoBehaviour:
   YawScaler: 90
   RollScaler: 90
   RotationThrottleScaler: 0
-  trailFollower: {fileID: 7081412522392871879}
   rechargeRate: 0.1
   ProjectileScale: 1
   BlockScale: {x: 4, y: 4, z: 0.4}
@@ -2584,6 +2584,22 @@ MonoBehaviour:
   ShroudTopLeft: {fileID: 7025818160229434134}
   ShroudTopRight: {fileID: 4773132631387925858}
   animationScaler: 30
+--- !u!114 &2048454636339882050
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9749796518e2c6c41b49e71308afbb1c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  FriendlyTerrainSpeed: 150
+  HostileTerrainSpeed: 10
+  DestroyedTerrainSpeed: 10
+  Throttle: 0
 --- !u!114 &7081412522392871879
 MonoBehaviour:
   m_ObjectHideFlags: 0
