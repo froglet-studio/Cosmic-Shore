@@ -266,7 +266,7 @@ namespace CosmicShore.Game.Arcade
                     WinnerBannerImage.color = RedTeamWinColor;
                     WinnerNameContainer.text = "Red Victory";
                     break;
-                case Teams.Yellow:
+                case Teams.Gold:
                     WinnerBannerImage.color = YellowTeamWinColor;
                     WinnerNameContainer.text = "Gold Victory";
                     break;

@@ -9,37 +9,48 @@ using JetBrains.Annotations;
 using Newtonsoft.Json;
 using PlayFab;
 using PlayFab.ClientModels;
-using CosmicShore.Utility.Singleton;
 using UnityEngine;
+using VContainer.Unity;
 
 namespace CosmicShore.Integrations.Playfab.Authentication
 {
-    public class AuthenticationManager : SingletonPersistent<AuthenticationManager>
+    public class AuthenticationManager : IInitializable, IDisposable
     {
-        public static PlayFabAccount PlayFabAccount;
+        public PlayFabAccount PlayFabAccount { get; set; }
         // public static PlayerProfile PlayerProfile;
-        public static UserProfile UserProfile;
+        public UserProfile UserProfile { get; set; }
+        public PlayerSession PlayerSession { get; set; }
         
-        public static event Action OnLoginSuccess;
+        public event Action OnLoginSuccess;
  
-        public static event Action OnLoginError;
+        public event Action OnLoginError;
 
         // public delegate void ProfileLoaded();
-        public static event Action OnProfileLoaded;
+        public event Action OnProfileLoaded;
 
-        public static event Action OnRegisterSuccess;
+        public event Action OnRegisterSuccess;
 
         public static List<string> Adjectives;
         public static List<string> Nouns;
-
-        public static PlayerSession PlayerSession;
         
-
-        void Start()
+        public AuthenticationManager(PlayFabAccount account, UserProfile profile, PlayerSession session)
         {
-            UserProfile ??= new UserProfile();
-            OnLoginSuccess += LoadPlayerProfile;
+            PlayFabAccount = account;
+            UserProfile = profile;
+            PlayerSession = session;
+        }
+        public void Initialize()
+        {
             AnonymousLogin();
+            OnLoginSuccess += LoadPlayerProfile;
+        }
+
+        public void Dispose()
+        {
+            PlayFabAccount = null;
+            UserProfile = null;
+            PlayerSession = null;
+            OnLoginSuccess -= LoadPlayerProfile;
         }
 
         #region Player Profile
@@ -418,5 +429,7 @@ namespace CosmicShore.Integrations.Playfab.Authentication
         }
         
         #endregion
+
+        
     }
 }

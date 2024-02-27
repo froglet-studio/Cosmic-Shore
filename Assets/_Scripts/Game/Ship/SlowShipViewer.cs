@@ -1,28 +1,24 @@
-using CosmicShore.Core.HangerBuilder;
-using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
 using CosmicShore.Core;
+using UnityEngine;
 
 namespace CosmicShore
 {
     public class SlowShipViewer : MonoBehaviour
     {
-        Transform target;
-        private LineRenderer lineRenderer;
         [SerializeField] Material trailViewerMaterial;
+
+        LineRenderer lineRenderer;
         Ship ship;
-        // Start is called before the first frame update
+        Transform target;
+        
         void Start()
         {
             ship = GetComponent<Ship>();  
             lineRenderer = gameObject.AddComponent<LineRenderer>();
             lineRenderer.material = trailViewerMaterial;
             lineRenderer.startWidth = lineRenderer.endWidth = 0.1f;
-            
         }
 
-        // Update is called once per frame
         void Update()
         {
             target = null;

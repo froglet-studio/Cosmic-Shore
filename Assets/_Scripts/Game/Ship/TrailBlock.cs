@@ -1,6 +1,4 @@
-﻿using CosmicShore.Core.HangerBuilder;
-using System.Collections;
-
+﻿using System.Collections;
 using UnityEngine;
 
 namespace CosmicShore.Core
@@ -36,9 +34,6 @@ namespace CosmicShore.Core
         public bool IsLargest = false;
 
 
-        [Header("Game Rewards")]
-        GameObject shards;
-        
         // Shader related properties
         MeshRenderer meshRenderer;
         Vector3 spread;
@@ -55,9 +50,6 @@ namespace CosmicShore.Core
 
         protected virtual void Start()
         {
-            if (warp)
-                shards = GameObject.FindGameObjectWithTag("field");
-
             if (fossilBlockContainer == null)
                 fossilBlockContainer = new GameObject { name = "FossilBlockContainer" };
 
@@ -170,7 +162,6 @@ namespace CosmicShore.Core
         {
             TargetScale += growthVector;
 
-
             ChangeSize();
         }
 
@@ -223,8 +214,6 @@ namespace CosmicShore.Core
             //     StateTracker.Instance.RemoveBlock(TrailBlockProperties);
 
         }
-
-        
 
         public void DeactivateShields()
         {

@@ -1,6 +1,6 @@
 using CosmicShore.App.Systems.Loadout;
 using CosmicShore.App.UI.Elements;
-using CosmicShore.Core.HangerBuilder;
+using CosmicShore.Core;
 using CosmicShore.Game.Arcade;
 using System.Collections.Generic;
 using System.Linq;
@@ -24,7 +24,6 @@ namespace CosmicShore.App.UI.Menus
         [SerializeField] Image[] PlayerCountBorders = new Image[4];
         [SerializeField] Image[] IntensityOptions = new Image[4];
         [SerializeField] Image[] IntensityBorders = new Image[4];
-
         [SerializeField] Color SelectedColor;
         [SerializeField] Color DisabledColor;
 

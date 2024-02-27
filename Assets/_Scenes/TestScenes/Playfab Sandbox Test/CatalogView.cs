@@ -5,6 +5,7 @@ using CosmicShore.Integrations.Playfab.PlayerModels;
 using PlayFab;
 using UnityEngine;
 using UnityEngine.UI;
+using VContainer;
 
 namespace Scenes.TestScenes.Playfab_Sandbox_Test
 {
@@ -30,7 +31,8 @@ namespace Scenes.TestScenes.Playfab_Sandbox_Test
         const string MantaShipUpgrade2Id = "806f1840-a0de-4463-8b56-4b43b07c3d5a";
         const string VesselShardId = "06bcebb1-dc41-49a8-82b0-96a15ced7c1c";
         private const string CrystalId = "51392e05-9072-43a9-ae2d-4a3335dbf313";
-        
+
+        [Inject] private CatalogManager _catalogManager;
     
         // Start is called before the first frame update
         void Start()
@@ -80,7 +82,7 @@ namespace Scenes.TestScenes.Playfab_Sandbox_Test
             var mantaSpaceUpgrade1 = new VirtualItem { ItemId = MantaShipUpgrade1Id, ContentType = nameof(VesselLevel.Upgrade3), Amount = 1 };
             
             // Parameter order note: item first, currency second
-            CatalogManager.Instance.PurchaseItem(mantaSpaceUpgrade1, vesselShard1);
+            _catalogManager.PurchaseItem(mantaSpaceUpgrade1, vesselShard1);
 
             SaveVesselData(VesselLevel.Upgrade3, MantaShipUpgrade1Id, 1 );
             Debug.LogFormat("{0} - {1}: vessel info {2} saved to local storage.", nameof(CatalogView), nameof(PurchaseUpgradeTest), nameof(mantaSpaceUpgrade1)); 
@@ -91,7 +93,7 @@ namespace Scenes.TestScenes.Playfab_Sandbox_Test
             var vesselShard2 = new ItemPrice{ItemId = VesselShardId, Amount = 10};
             var mantaSpaceUpgrade2 = new VirtualItem { ItemId = MantaShipUpgrade2Id, Amount = 1 };
  
-            CatalogManager.Instance.PurchaseItem(mantaSpaceUpgrade2, vesselShard2);
+            _catalogManager.PurchaseItem(mantaSpaceUpgrade2, vesselShard2);
             SaveVesselData(VesselLevel.Upgrade3, MantaShipUpgrade2Id, 2 );
             Debug.LogFormat("{0} - {1}: vessel info {2} saved to local storage.", nameof(CatalogView), nameof(PurchaseUpgradeTest), nameof(mantaSpaceUpgrade2));
             LoadVesselData();
@@ -107,7 +109,7 @@ namespace Scenes.TestScenes.Playfab_Sandbox_Test
             var vesselShards = new VirtualItem { ItemId = VesselShardId, Amount = 10 };
 
             
-            CatalogManager.Instance.PurchaseItem(vesselShards, shardPrice);
+            _catalogManager.PurchaseItem(vesselShards, shardPrice);
         }
 
         /// <summary>
@@ -131,7 +133,7 @@ namespace Scenes.TestScenes.Playfab_Sandbox_Test
                 Amount = 10
             };
             var startingItems = new List<VirtualItem> { vesselShard, crystals };
-            CatalogManager.Instance.GrantStartingInventory(startingItems);
+            _catalogManager.GrantStartingInventory(startingItems);
         }
 
         /// <summary>
@@ -142,7 +144,7 @@ namespace Scenes.TestScenes.Playfab_Sandbox_Test
             // var filter = "ContentType eq 'Vessel' and tags/any(t: t eq 'Rhino')";
         
             // Default filter is "", which means load without filter
-            CatalogManager.Instance.LoadCatalogItems();
+            _catalogManager.LoadCatalogItems();
         }
     
         /// <summary>
@@ -151,7 +153,7 @@ namespace Scenes.TestScenes.Playfab_Sandbox_Test
         /// </summary>
         private void LoadInventoryTest()
         {
-            CatalogManager.Instance.LoadPlayerInventory();
+            _catalogManager.LoadPlayerInventory();
         }
 
         /// <summary>
@@ -189,7 +191,7 @@ namespace Scenes.TestScenes.Playfab_Sandbox_Test
         /// </summary>
         private void RemoveInventoryCollectionTest()
         {
-            CatalogManager.Instance.GetInventoryCollectionIds();
+            _catalogManager.GetInventoryCollectionIds();
             CatalogManager.OnGettingInvCollectionIds += RemoveInventoryCollection;
         }
 
@@ -202,7 +204,7 @@ namespace Scenes.TestScenes.Playfab_Sandbox_Test
             foreach (var id in collectionIds)
             {
                 Debug.LogFormat("{0} - {1} collection id: .", nameof(CatalogView), nameof(RemoveInventoryCollection));
-                CatalogManager.Instance.DeleteInventoryCollection(id);
+                _catalogManager.DeleteInventoryCollection(id);
             }
         }
 

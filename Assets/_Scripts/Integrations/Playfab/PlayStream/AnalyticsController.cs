@@ -8,27 +8,35 @@ using PlayFab.ClientModels;
 using PlayFab.EventsModels;
 using CosmicShore.Utility.Singleton;
 using UnityEngine;
+using VContainer.Unity;
 
 namespace CosmicShore.Integrations.Playfab.PlayStream
 {
-    public class AnalyticsController : SingletonPersistent<AnalyticsController>
+    public class AnalyticsController : IPostInitializable, IDisposable
     {
         static PlayFabDataInstanceAPI _playFabDataInstanceAPI;
         private static PlayFabClientInstanceAPI _playFabClientInstanceAPI;
         private static PlayFabEventsInstanceAPI _playFabEventsInstanceAPI;
         public static Action<PlayFabError> GeneratingErrorReport;
 
-        private void Start()
+        private AuthenticationManager _authManager;
+
+        public AnalyticsController(AuthenticationManager authManager)
         {
-            // Load Player Client Instance API
-            AuthenticationManager.OnLoginSuccess += InitializePlayerClientInstanceAPI;
-            AuthenticationManager.OnLoginSuccess += InitializeEventsInstanceAPI;
+            _authManager = authManager;
         }
 
-        private void OnDisable()
+        public void PostInitialize()
         {
-            AuthenticationManager.OnLoginSuccess -= InitializeEventsInstanceAPI;
-            AuthenticationManager.OnLoginSuccess -= InitializePlayerClientInstanceAPI;
+            // Load Player Client Instance API
+            _authManager.OnLoginSuccess += InitializePlayerClientInstanceAPI;
+            _authManager.OnLoginSuccess += InitializeEventsInstanceAPI;
+        }
+
+        public void Dispose()
+        {
+            _authManager.OnLoginSuccess -= InitializeEventsInstanceAPI;
+            _authManager.OnLoginSuccess -= InitializePlayerClientInstanceAPI;
         
         }
 
@@ -38,7 +46,7 @@ namespace CosmicShore.Integrations.Playfab.PlayStream
         /// </summary>
         private void InitializePlayerDataInstanceAPI()
         {
-            _playFabDataInstanceAPI ??= new PlayFabDataInstanceAPI(AuthenticationManager.PlayFabAccount.AuthContext);
+            _playFabDataInstanceAPI ??= new PlayFabDataInstanceAPI(_authManager.PlayFabAccount.AuthContext);
         }
     
         /// <summary>
@@ -46,12 +54,12 @@ namespace CosmicShore.Integrations.Playfab.PlayStream
         /// </summary>
         private void InitializePlayerClientInstanceAPI()
         {
-            _playFabClientInstanceAPI ??= new PlayFabClientInstanceAPI(AuthenticationManager.PlayFabAccount.AuthContext);
+            _playFabClientInstanceAPI ??= new PlayFabClientInstanceAPI(_authManager.PlayFabAccount.AuthContext);
         }
 
         private void InitializeEventsInstanceAPI()
         {
-            _playFabEventsInstanceAPI ??= new PlayFabEventsInstanceAPI(AuthenticationManager.PlayFabAccount.AuthContext);
+            _playFabEventsInstanceAPI ??= new PlayFabEventsInstanceAPI(_authManager.PlayFabAccount.AuthContext);
         }
         #endregion
 
@@ -65,7 +73,7 @@ namespace CosmicShore.Integrations.Playfab.PlayStream
             _playFabClientInstanceAPI.GetUserData(
                 new GetUserDataRequest()
                 {
-                    PlayFabId = AuthenticationManager.PlayFabAccount.ID,
+                    PlayFabId = _authManager.PlayFabAccount.ID,
                     Keys = keys
                 }, (result) =>
                 {
@@ -163,7 +171,7 @@ namespace CosmicShore.Integrations.Playfab.PlayStream
                 new GetUserDataRequest()
                 {
                     Keys = readOnlyKeys,
-                    PlayFabId = AuthenticationManager.PlayFabAccount.ID
+                    PlayFabId = _authManager.PlayFabAccount.ID
                 }, (result) =>
                 {
                     if (result == null) return;

@@ -1,4 +1,4 @@
-using CosmicShore.Core.HangerBuilder;
+using CosmicShore.Core;
 using System;
 using System.Collections;
 using System.Collections.Generic;

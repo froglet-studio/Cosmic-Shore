@@ -62,7 +62,7 @@ public class SpawnableEllipsoid : SpawnableAbstractBase
             var position = new Vector3(0, y, z);
             var lookPosition = position;
             if (block != 0) lookPosition = trail3.GetBlock(block - 1).transform.position;
-            CreateBlock(position, lookPosition, container.name + "::BLOCK3::" + block, trail3, trailBlock.transform.localScale, trailBlock, container, Teams.Yellow);
+            CreateBlock(position, lookPosition, container.name + "::BLOCK3::" + block, trail3, trailBlock.transform.localScale, trailBlock, container, Teams.Gold);
         }
 
         trails.Add(trail1);

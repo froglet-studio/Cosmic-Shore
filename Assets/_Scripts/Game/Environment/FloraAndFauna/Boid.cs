@@ -3,7 +3,6 @@ using System.Collections;
 using System.Collections.Generic;
 using CosmicShore.Core;
 using CosmicShore.Environment.FlowField;
-using CosmicShore.Core.HangerBuilder;
 using CosmicShore;
 
 public enum BoidCollisionEffects

@@ -1,11 +1,8 @@
 ﻿using CosmicShore.Core;
-using CosmicShore.Core.HangerBuilder;
-
 using CosmicShore.Utility;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UIElements;
 
 [RequireComponent(typeof(Ship))]
 public class TrailSpawner : MonoBehaviour
@@ -15,18 +12,14 @@ public class TrailSpawner : MonoBehaviour
 
     [SerializeField] TrailBlock trailBlock;
     [SerializeField] Skimmer skimmer;
-
     [SerializeField] bool waitTillOutsideSkimmer = true;
     [SerializeField] bool shielded = false;
-
-    public float offset = 0f;
-
     [SerializeField] float initialWavelength = 4f;
     [SerializeField] float minWavelength = 1f;
     public float MinWaveLength {get { return minWavelength; } }
 
     float wavelength;
-
+    public float offset = 0f;
     public float Gap;
     public float MinimumGap = 1;
     public Vector3 TargetScale;
@@ -40,7 +33,7 @@ public class TrailSpawner : MonoBehaviour
     int spawnedTrailCount;
 
     public Trail Trail = new();
-    Trail trail2 = new();
+    Trail Trail2 = new();
 
     Material blockMaterial;
     Material shieldedBlockMaterial;
@@ -73,7 +66,7 @@ public class TrailSpawner : MonoBehaviour
         {
             // ^1 is the hat operator for index of last element
             Trail.TrailList[^1],
-            trail2.TrailList[^1]
+            Trail2.TrailList[^1]
         };
     }
 
@@ -260,7 +253,7 @@ public class TrailSpawner : MonoBehaviour
                 else
                 {
                     CreateBlock(Gap / 2, Trail);
-                    CreateBlock(-Gap / 2, trail2);
+                    CreateBlock(-Gap / 2, Trail2);
                 } 
             }
             yield return new WaitForSeconds(Mathf.Clamp(wavelength / shipData.Speed,0,3f));

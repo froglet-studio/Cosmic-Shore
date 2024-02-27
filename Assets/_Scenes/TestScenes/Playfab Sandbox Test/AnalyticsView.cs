@@ -4,6 +4,7 @@ using CosmicShore.Integrations.Playfab.PlayerModels;
 using CosmicShore.Integrations.Playfab.PlayStream;
 using UnityEngine;
 using UnityEngine.UI;
+using VContainer;
 
 public class AnalyticsView : MonoBehaviour
 {
@@ -18,6 +19,8 @@ public class AnalyticsView : MonoBehaviour
     
     // private field
     private Dictionary<string, string> userData;
+
+    [Inject] private AnalyticsController _analyticsController;
 
     private void Start()
     {
@@ -37,19 +40,19 @@ public class AnalyticsView : MonoBehaviour
         // var keyList = new List<string>(userData.Keys);
         var keyList = new List<string> { "hi" };
         Debug.Log("I did something right?");
-        AnalyticsController.Instance.GetUserData(keyList);
+        _analyticsController.GetUserData(keyList);
     }
 
     void OnSetUserData()
     {
-        AnalyticsController.Instance.SetUserData(userData);
+        _analyticsController.SetUserData(userData);
     }
 
     void OnDeleteData()
     {
         // List<string> keysToRemove = new List<string>(userData.Keys);
         var keysToRemove = new List<string> { "hi" };
-        AnalyticsController.Instance.DeleteUserDataByKeys(keysToRemove);
+        _analyticsController.DeleteUserDataByKeys(keysToRemove);
     }
 
     void OnGeneratingPlayerEvent()
@@ -61,6 +64,6 @@ public class AnalyticsView : MonoBehaviour
             CustomTags = null,
             Timestamp = DateTime.Now
         };
-        AnalyticsController.Instance.SendPlayerEvent(playerEvent);
+        _analyticsController.SendPlayerEvent(playerEvent);
     }
 }

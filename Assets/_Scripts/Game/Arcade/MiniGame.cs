@@ -10,6 +10,7 @@ using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using CosmicShore.App.Systems.UserActions;
 using CosmicShore.Game.UI;
+using VContainer;
 
 namespace CosmicShore.Game.Arcade
 {
@@ -25,6 +26,7 @@ namespace CosmicShore.Game.Arcade
         [SerializeField] float EndOfTurnDelay = 0f;
         [SerializeField] bool EnableTrails = true;
         [SerializeField] ShipTypes DefaultPlayerShipType = ShipTypes.Dolphin;
+        [SerializeField] SO_Vessel DefaultPlayerVessel;
 
         protected Button ReadyButton;
         protected GameObject EndGameScreen;
@@ -32,14 +34,16 @@ namespace CosmicShore.Game.Arcade
         protected List<Player> Players;
         protected CountdownTimer countdownTimer;
 
-        List<Teams> PlayerTeams = new() { Teams.Green, Teams.Red, Teams.Yellow };
+        List<Teams> PlayerTeams = new() { Teams.Green, Teams.Red, Teams.Gold };
         List<string> PlayerNames = new() { "PlayerOne", "PlayerTwo", "PlayerThree" };
 
         // Configuration set by player
-        public static int NumberOfPlayers = 2;  // TODO: P1 - support excluding single player games (e.g for elimination)
+        public static int NumberOfPlayers = 1;  // TODO: P1 - support excluding single player games (e.g for elimination)
         public static int IntensityLevel = 1;
         static ShipTypes playerShipType = ShipTypes.Dolphin;
         static bool playerShipTypeInitialized;
+
+        [Inject] private LeaderboardManager _leaderboardManager;
         public static ShipTypes PlayerShipType
         {
             get 
@@ -80,7 +84,9 @@ namespace CosmicShore.Game.Arcade
             ReadyButton = HUD.ReadyButton;
             countdownTimer = HUD.CountdownTimer;
             ScoreTracker.GameCanvas = GameCanvas;
-    
+
+            if (PlayerVessel == null)
+                PlayerVessel = DefaultPlayerVessel;
 
             foreach (var turnMonitor in TurnMonitors)
                 if (turnMonitor is TimeBasedTurnMonitor tbtMonitor)
@@ -166,7 +172,7 @@ namespace CosmicShore.Game.Arcade
 
         public virtual void StartNewGame()
         {
-            Debug.Log($"Playing as {PlayerVessel.Name} - \"{PlayerVessel.Description}\"");
+            //Debug.Log($"Playing as {PlayerVessel.Name} - \"{PlayerVessel.Description}\"");
             if (PauseSystem.Paused) PauseSystem.TogglePauseGame();
 
             RemainingPlayers = new();
@@ -266,7 +272,7 @@ namespace CosmicShore.Game.Arcade
             foreach (var player in Players)
                 Debug.Log($"MiniGame.EndGame - Player Score: {ScoreTracker.GetScore(player.PlayerName)} ");
 
-            LeaderboardManager.Instance.ReportGameplayStatistic(gameMode, PlayerShipType, IntensityLevel, ScoreTracker.GetHighScore(), ScoreTracker.GolfRules);
+            _leaderboardManager.ReportGameplayStatistic(gameMode, PlayerShipType, IntensityLevel, ScoreTracker.GetHighScore(), ScoreTracker.GolfRules);
 
             UserActionSystem.Instance.CompleteAction(new UserAction(
                     UserActionType.PlayGame,

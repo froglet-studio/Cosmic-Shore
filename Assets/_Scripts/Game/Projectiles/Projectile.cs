@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using CosmicShore.Game.IO;
 using CosmicShore.Environment.FlowField;
 using CosmicShore.Core;
-using CosmicShore.Core.HangerBuilder;
 using UnityEngine;
 
 namespace CosmicShore.Game.Projectiles

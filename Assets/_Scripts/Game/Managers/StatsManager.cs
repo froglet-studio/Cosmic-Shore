@@ -309,7 +309,7 @@ public class StatsManager : Singleton<StatsManager>
         var greenVolume = teamStats.TryGetValue(Teams.Green, out var teamStat) ? teamStat.volumeRemaining : 0;
         var redVolume = teamStats.TryGetValue(Teams.Red, out teamStat) ? teamStat.volumeRemaining : 0;
         var blueVolume = teamStats.TryGetValue(Teams.Blue, out teamStat) ? teamStat.volumeRemaining : 0;
-        var yellowVolume = teamStats.TryGetValue(Teams.Yellow, out teamStat) ? teamStat.volumeRemaining : 0;
+        var yellowVolume = teamStats.TryGetValue(Teams.Gold, out teamStat) ? teamStat.volumeRemaining : 0;
 
         return new Vector4(greenVolume, redVolume, blueVolume, yellowVolume);
     }
