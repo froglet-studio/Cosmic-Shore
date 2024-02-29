@@ -10,7 +10,6 @@ using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using CosmicShore.App.Systems.UserActions;
 using CosmicShore.Game.UI;
-using VContainer;
 
 namespace CosmicShore.Game.Arcade
 {

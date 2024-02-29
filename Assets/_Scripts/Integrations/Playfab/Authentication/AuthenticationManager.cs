@@ -11,7 +11,6 @@ using Newtonsoft.Json;
 using PlayFab;
 using PlayFab.ClientModels;
 using UnityEngine;
-using VContainer.Unity;
 
 namespace CosmicShore.Integrations.Playfab.Authentication
 {

@@ -10,7 +10,6 @@ using CosmicShore.Utility.Singleton;
 using PlayFab;
 using PlayFab.ClientModels;
 using UnityEngine;
-using VContainer.Unity;
 
 namespace CosmicShore.Integrations.Playfab.PlayStream
 {

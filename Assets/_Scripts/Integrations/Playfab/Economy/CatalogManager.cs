@@ -5,7 +5,6 @@ using CosmicShore.Utility.Singleton;
 using PlayFab;
 using PlayFab.EconomyModels;
 using UnityEngine;
-using VContainer.Unity;
 
 namespace CosmicShore.Integrations.Playfab.Economy
 {
