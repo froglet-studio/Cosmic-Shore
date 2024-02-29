@@ -5,7 +5,6 @@ using CosmicShore.Integrations.PlayFabV2.Models;
 using CosmicShore.Utility.ClassExtensions;
 using PlayFab;
 using PlayFab.MultiplayerModels;
-using UnityEngine;
 using VContainer.Unity;
 
 namespace CosmicShore
@@ -24,7 +23,9 @@ namespace CosmicShore
         {
             if (_account.AuthContext == null)
             {
-                Debug.LogError("MatchMakingHandler - PostInitialize(): authentication failed or was not complete.");
+                this.LogErrorWithClassMethod(
+                    MethodBase.GetCurrentMethod()?.Name,
+                    "Authentication failed or was not complete.");
             }
         }
 
@@ -44,7 +45,10 @@ namespace CosmicShore
             
             PlayFabMultiplayerAPI.CreateLobby(request, 
                 OnCreatingLobby, 
-                error => { this.LogErrorWithClassMethod(MethodBase.GetCurrentMethod()?.Name, error.GenerateErrorReport());});
+                error => { 
+                    this.LogErrorWithClassMethod(
+                        MethodBase.GetCurrentMethod()?.Name, 
+                    error.GenerateErrorReport());});
         }
 
         private void OnCreatingLobby(CreateLobbyResult result)

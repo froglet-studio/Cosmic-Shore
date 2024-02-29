@@ -27,8 +27,8 @@ namespace CosmicShore.App.UI.Menus
 
         int _displayCount;
         // Start is called before the first frame update
-        [Inject] private AuthenticationManager _authManager;
-        [Inject] private LeaderboardManager _leaderboardManager;
+        // [Inject] private AuthenticationManager _authManager;
+        // [Inject] private LeaderboardManager _leaderboardManager;
         void Start()
         {
             // TODO: Reconsider this implementation for avoiding displaying Freestyle on the scoreboard
@@ -41,7 +41,7 @@ namespace CosmicShore.App.UI.Menus
             var containerCount = GameSelectionContainer.childCount;
             _displayCount = Math.Min(gamesCount, containerCount);
 
-            _authManager.OnProfileLoaded += FetchLeaderboard;
+            AuthenticationManager.OnProfileLoaded += FetchLeaderboard;
 
             ShipClassSelection.onValueChanged.AddListener(SelectShipType);
 
@@ -50,8 +50,8 @@ namespace CosmicShore.App.UI.Menus
 
         void FetchLeaderboard()
         {
-            _leaderboardManager.FetchLeaderboard(
-                _leaderboardManager.GetGameplayStatKey(SelectedGameMode, SelectedShipType),
+            LeaderboardManager.Instance.FetchLeaderboard(
+                LeaderboardManager.Instance.GetGameplayStatKey(SelectedGameMode, SelectedShipType),
                 new() { { "Intensity", "1" } },
                 OnFetchLeaderboard);
         }
@@ -70,7 +70,7 @@ namespace CosmicShore.App.UI.Menus
 
         IEnumerator SelectShipTypeCoroutine(int index)
         {
-            yield return new WaitUntil(() => _authManager.PlayFabAccount != null);
+            yield return new WaitUntil(() => AuthenticationManager.PlayFabAccount != null);
             SelectShipType(index);
         }
 
@@ -189,7 +189,7 @@ namespace CosmicShore.App.UI.Menus
                 HighScoresContainer.transform.GetChild(i).gameObject.SetActive(true);
 
                 // Highlight the player's score
-                if (score.PlayerId == _authManager.PlayFabAccount.ID)
+                if (score.PlayerId == AuthenticationManager.PlayFabAccount.ID)
                 {
                     HighScoresContainer.transform.GetChild(i).GetChild(0).GetComponent<TMP_Text>().color = new Color(.1f, .7f, .7f);
                     HighScoresContainer.transform.GetChild(i).GetChild(1).GetComponent<TMP_Text>().color = new Color(.1f, .7f, .7f);

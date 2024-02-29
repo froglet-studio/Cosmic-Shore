@@ -5,6 +5,7 @@ using System.Security;
 using CosmicShore.App.Systems.UserJourney;
 using CosmicShore.Integrations.Playfab.PlayerModels;
 using CosmicShore.Integrations.PlayFabV2.Models;
+using CosmicShore.Utility.Singleton;
 using JetBrains.Annotations;
 using Newtonsoft.Json;
 using PlayFab;
@@ -14,38 +15,39 @@ using VContainer.Unity;
 
 namespace CosmicShore.Integrations.Playfab.Authentication
 {
-    public class AuthenticationManager : IInitializable, IDisposable
+    public class AuthenticationManager : SingletonPersistent<AuthenticationManager>
     {
-        public PlayFabAccount PlayFabAccount { get; set; }
+        public static PlayFabAccount PlayFabAccount { get; set; } = new();
         // public static PlayerProfile PlayerProfile;
-        public UserProfile UserProfile { get; set; }
-        public PlayerSession PlayerSession { get; set; }
+        public static UserProfile UserProfile { get; set; } = new();
+        public static PlayerSession PlayerSession { get; set; } = new();
         
-        public event Action OnLoginSuccess;
+        public static event Action OnLoginSuccess;
  
-        public event Action OnLoginError;
+        public static event Action OnLoginError;
 
         // public delegate void ProfileLoaded();
-        public event Action OnProfileLoaded;
+        public static event Action OnProfileLoaded;
 
-        public event Action OnRegisterSuccess;
+        public static event Action OnRegisterSuccess;
 
         public static List<string> Adjectives;
         public static List<string> Nouns;
         
-        public AuthenticationManager(PlayFabAccount account, UserProfile profile, PlayerSession session)
+        // public AuthenticationManager(PlayFabAccount account, UserProfile profile, PlayerSession session)
+        // {
+        //     PlayFabAccount = account;
+        //     UserProfile = profile;
+        //     PlayerSession = session;
+        // }
+        public override void Awake()
         {
-            PlayFabAccount = account;
-            UserProfile = profile;
-            PlayerSession = session;
-        }
-        public void Initialize()
-        {
+            base.Awake();
             AnonymousLogin();
             OnLoginSuccess += LoadPlayerProfile;
         }
 
-        public void Dispose()
+        private void OnDestroy()
         {
             PlayFabAccount = null;
             UserProfile = null;
