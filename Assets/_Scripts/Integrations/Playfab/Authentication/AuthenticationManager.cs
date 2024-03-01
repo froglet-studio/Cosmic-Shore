@@ -42,11 +42,15 @@ namespace CosmicShore.Integrations.Playfab.Authentication
         public override void Awake()
         {
             base.Awake();
-            PlayFabAccount ??= new();
-            UserProfile ??= new();
-            PlayerSession ??= new();
             AnonymousLogin();
             OnLoginSuccess += LoadPlayerProfile;
+        }
+
+        private void OnEnable()
+        {
+            PlayFabAccount = new();
+            UserProfile = new();
+            PlayerSession = new();
         }
 
         private void OnDestroy()
