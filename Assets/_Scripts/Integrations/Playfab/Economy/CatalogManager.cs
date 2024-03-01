@@ -18,9 +18,9 @@ namespace CosmicShore.Integrations.Playfab.Economy
         static PlayFabEconomyInstanceAPI _playFabEconomyInstanceAPI;
 
         // Player inventory and items
-        public static StoreShelve StoreShelve { get; set; } = new();
+        public static StoreShelve StoreShelve { get; set; }
 
-        public static Inventory Inventory { get; set; } = new();
+        public static Inventory Inventory { get; set; }
         // private static string _shardId;
         
         private void Start()
@@ -286,6 +286,8 @@ namespace CosmicShore.Integrations.Playfab.Economy
 
         private void ClearLocalInventoryOnLoading()
         {
+            if (Inventory == null) return;
+            
             Inventory.MiniGames.Clear();
             Inventory.VesselUpgrades.Clear();
             Inventory.Crystals.Clear();

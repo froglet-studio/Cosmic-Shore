@@ -16,10 +16,10 @@ namespace CosmicShore.Integrations.Playfab.Authentication
 {
     public class AuthenticationManager : SingletonPersistent<AuthenticationManager>
     {
-        public static PlayFabAccount PlayFabAccount { get; set; } = new();
+        public static PlayFabAccount PlayFabAccount { get; private set; }
         // public static PlayerProfile PlayerProfile;
-        public static UserProfile UserProfile { get; set; } = new();
-        public static PlayerSession PlayerSession { get; set; } = new();
+        public static UserProfile UserProfile { get; private set; }
+        public static PlayerSession PlayerSession { get; private set; }
         
         public static event Action OnLoginSuccess;
  
@@ -42,6 +42,9 @@ namespace CosmicShore.Integrations.Playfab.Authentication
         public override void Awake()
         {
             base.Awake();
+            PlayFabAccount ??= new();
+            UserProfile ??= new();
+            PlayerSession ??= new();
             AnonymousLogin();
             OnLoginSuccess += LoadPlayerProfile;
         }
@@ -243,7 +246,8 @@ namespace CosmicShore.Integrations.Playfab.Authentication
 
         void HandleLoginSuccess(LoginResult loginResult = null)
         {
-            PlayFabAccount ??= new PlayFabAccount();
+            PlayFabAccount ??= new();
+            UserProfile ??= new();
             if (loginResult != null)
             {
                 PlayFabAccount.ID = loginResult.PlayFabId;
