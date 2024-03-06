@@ -279,8 +279,9 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1913135899670900210}
+  - component: {fileID: 4036397568059912136}
   m_Layer: 0
-  m_Name: GameObject
+  m_Name: QueenDronesShipAction
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -301,6 +302,22 @@ Transform:
   m_Father: {fileID: 8075578658670966254}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &4036397568059912136
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1024824663591968683}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f5201b55da114454fb81f0e2b825a9fd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  dronePrefab: {fileID: 5119337659833296837, guid: 7d86f1e90ac6e4a4e921e366eb115026,
+    type: 3}
+  Drones: 10
+  boidController: {fileID: 6886654747557243757}
 --- !u!1 &1175774180449032355
 GameObject:
   m_ObjectHideFlags: 0
@@ -859,6 +876,53 @@ Transform:
   m_Father: {fileID: 6068010778840748695}
   m_RootOrder: 3
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &2971127775736864927
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2258860348960597968}
+  - component: {fileID: 5475453453905430072}
+  m_Layer: 0
+  m_Name: DeployDronesAction
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2258860348960597968
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2971127775736864927}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 8075578658670966254}
+  m_RootOrder: 3
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &5475453453905430072
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2971127775736864927}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 873a9288e411a5744a5104ffed582d2c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  dronePrefab: {fileID: 5119337659833296837, guid: 7d86f1e90ac6e4a4e921e366eb115026,
+    type: 3}
+  boidController: {fileID: 6886654747557243757}
 --- !u!1 &3154927268608993227
 GameObject:
   m_ObjectHideFlags: 0
@@ -1232,6 +1296,60 @@ Transform:
   m_Father: {fileID: 6068010778840748695}
   m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &5030981866101263698
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3003876491313403470}
+  - component: {fileID: 6886654747557243757}
+  m_Layer: 0
+  m_Name: Swarm
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &3003876491313403470
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5030981866101263698}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: -2.8807473, y: 2.9971137, z: -12.544634}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5928382658856804067}
+  m_RootOrder: 3
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &6886654747557243757
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5030981866101263698}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6cb1c48a5ae1fb94f99ab553260697b7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  boidPrefab: {fileID: 5945480239701989318, guid: 7d86f1e90ac6e4a4e921e366eb115026,
+    type: 3}
+  numberOfBoids: 30
+  spawnRadius: 50
+  globalGoal: {fileID: 0}
+  randomGoals: 0
+  goalUpdateInterval: 5
+  Mound: {fileID: 0}
+  Weights: []
+  ship: {fileID: 874579555101021527}
 --- !u!1 &5328843749263180189
 GameObject:
   m_ObjectHideFlags: 0
@@ -1644,6 +1762,7 @@ Transform:
   - {fileID: 3397189760217659071}
   - {fileID: 8075578658670966254}
   - {fileID: 4894037493201937865}
+  - {fileID: 3003876491313403470}
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -1702,16 +1821,20 @@ MonoBehaviour:
   blockChargeChange: 0
   boostMultiplier: 4
   boostFuelAmount: 0
+  bottomEdgeButtons: 1
   inputEventShipActions:
   - InputEvent: 6
     ShipActions:
-    - {fileID: 0}
+    - {fileID: 4036397568059912136}
   - InputEvent: 7
     ShipActions:
-    - {fileID: 0}
-  - InputEvent: 8
+    - {fileID: 6983363122193091983}
+  - InputEvent: 10
     ShipActions:
-    - {fileID: 0}
+    - {fileID: 5318666300301087689}
+  - InputEvent: 9
+    ShipActions:
+    - {fileID: 5475453453905430072}
   resourceEventClassActions: []
   MassAbilityTarget: {fileID: 0}
   ChargeAbilityTarget: {fileID: 0}
@@ -1822,9 +1945,9 @@ MonoBehaviour:
   skimmer: {fileID: 874579554510349383}
   waitTillOutsideSkimmer: 0
   shielded: 0
-  offset: 0
   initialWavelength: 2
   minWavelength: 2
+  offset: 0
   Gap: 0
   MinimumGap: 1
   TargetScale: {x: 0, y: 0, z: 0}
@@ -1853,13 +1976,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   displayBoost: 0
   gainsBoost: 0
-  boostGainRate: 0.1
+  boostGainRate: 0
   initialBoost: 1
   maxBoost: 1
-  displayAmmo: 1
-  gainsAmmo: 1
+  displayAmmo: 0
+  gainsAmmo: 0
   ammoGainRate:
-    Value: 0.1
+    Value: 0
     Min: 0
     Max: 0
     element: 0
@@ -2360,6 +2483,53 @@ Transform:
   m_Father: {fileID: 6068010778840748695}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &7645085760857245475
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 5750756161584033559}
+  - component: {fileID: 5318666300301087689}
+  m_Layer: 0
+  m_Name: RecallDronesAction
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &5750756161584033559
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7645085760857245475}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 8075578658670966254}
+  m_RootOrder: 2
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &5318666300301087689
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7645085760857245475}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6099cb96b6830374f9c95328e72cbb2f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  dronePrefab: {fileID: 5119337659833296837, guid: 7d86f1e90ac6e4a4e921e366eb115026,
+    type: 3}
+  boidController: {fileID: 6886654747557243757}
 --- !u!1 &7696976320636676308
 GameObject:
   m_ObjectHideFlags: 0
@@ -2513,6 +2683,9 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1913135899670900210}
+  - {fileID: 4107875494585829370}
+  - {fileID: 5750756161584033559}
+  - {fileID: 2258860348960597968}
   m_Father: {fileID: 5928382658856804067}
   m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -2582,6 +2755,54 @@ Transform:
   m_Father: {fileID: 4769814507153169321}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &8291120574957176651
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4107875494585829370}
+  - component: {fileID: 6983363122193091983}
+  m_Layer: 0
+  m_Name: MoundDronesShipAction
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &4107875494585829370
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8291120574957176651}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 8075578658670966254}
+  m_RootOrder: 1
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &6983363122193091983
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8291120574957176651}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5e5935865d9a4e84d8f3a975211d461c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  dronePrefab: {fileID: 5119337659833296837, guid: 7d86f1e90ac6e4a4e921e366eb115026,
+    type: 3}
+  Drones: 5
+  boidController: {fileID: 6886654747557243757}
 --- !u!1 &8610620184134382547
 GameObject:
   m_ObjectHideFlags: 0

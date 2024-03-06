@@ -19,7 +19,7 @@ public class BoidManager : MonoBehaviour
     private Vector3 goalPos;
     public List<float> Weights;
 
-    Trail boidTrail = new();
+    public Trail boidTrail = new();
 
     private void Start()
     {

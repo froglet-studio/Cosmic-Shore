@@ -17,14 +17,16 @@ namespace CosmicShore.Game.IO
         [HideInInspector] public static ScreenOrientation currentOrientation;
 
         float phoneFlipThreshold = .1f;
-        bool PhoneFlipState;
+        bool phoneFlipState;
         bool leftStickEffectsStarted;
         bool rightStickEffectsStarted;
         bool fullSpeedStraightEffectsStarted;
         bool minimumSpeedStraightEffectsStarted;
         int leftTouchIndex, rightTouchIndex;
 
-        const float piOverFour = 0.785f; 
+        const float piOverFour = 0.785f;
+        float mapscaleX = 2f;
+        float mapscaleY = 2f;
 
         [HideInInspector] public float XSum;
         [HideInInspector] public float YSum;
@@ -45,8 +47,12 @@ namespace CosmicShore.Game.IO
         [HideInInspector] public Vector2 RightNormalizedJoystickPosition, LeftNormalizedJoystickPosition;
         Vector2 RightJoystickValue, LeftJoystickValue;
         public Vector2 SingleTouchValue;
+
+        public Vector3 ThreeDPosition { get; private set; }
+
         [HideInInspector] public Vector2 EasedRightJoystickPosition, EasedLeftJoystickPosition;
         float JoystickRadius;
+
 
         Gyroscope gyro;
         Quaternion derivedCorrection;
@@ -151,114 +157,128 @@ namespace CosmicShore.Game.IO
                 }
                 else if (Mathf.Abs(Input.acceleration.y) >= phoneFlipThreshold)
                 {
-                    if (Input.acceleration.y < 0 && PhoneFlipState)
+                    if (Input.acceleration.y < 0 && phoneFlipState)
                     {
-                        PhoneFlipState = false;
+                        phoneFlipState = false;
                         ship.StopShipControllerActions(InputEvents.FlipAction);
                         //ship.FlipShipRightsideUp();
 
                         currentOrientation = ScreenOrientation.LandscapeLeft;
 
-                        Debug.Log($"InputController Phone flip state change detected - new flip state: {PhoneFlipState}, acceleration.y: {Input.acceleration.y}");
+                        Debug.Log($"InputController Phone flip state change detected - new flip state: {phoneFlipState}, acceleration.y: {Input.acceleration.y}");
                     }
-                    else if (Input.acceleration.y > 0 && !PhoneFlipState)
+                    else if (Input.acceleration.y > 0 && !phoneFlipState)
                     {
-                        PhoneFlipState = true;
+                        phoneFlipState = true;
                         ship.PerformShipControllerActions(InputEvents.FlipAction);
                         //ship.FlipShipUpsideDown(); // TODO make shipAction
 
                         currentOrientation = ScreenOrientation.LandscapeRight;
 
-                        Debug.Log($"InputController Phone flip state change detected - new flip state: {PhoneFlipState}, acceleration.y: {Input.acceleration.y}");
+                        Debug.Log($"InputController Phone flip state change detected - new flip state: {phoneFlipState}, acceleration.y: {Input.acceleration.y}");
                     }
                 }
-                
+                  
+                var threeFingerFumble = false;
+                if (Input.touchCount >= 3)
                 {
-                    var threeFingerFumble = false;
-                    if (Input.touchCount >= 3)
+                    // Sub select the two best touch inputs here
+                    // If we have more than two touches, find the closest to each of the last touch positions we used
+                    threeFingerFumble = true;
+
+                    leftTouchIndex = GetClosestTouch(LeftJoystickValue);
+                    rightTouchIndex = GetClosestTouch(RightJoystickValue);
+                }
+
+                if (Input.touchCount == 2 || threeFingerFumble)
+                {
+                    // If we didn't fat finger the phone, fix a finger index
+                    if (!threeFingerFumble)
                     {
-                        // Sub select the two best touch inputs here
-                        // If we have more than two touches, find the closest to each of the last touch positions we used
-                        threeFingerFumble = true;
-
-                        leftTouchIndex = GetClosestTouch(LeftJoystickValue);
-                        rightTouchIndex = GetClosestTouch(RightJoystickValue);
-                    }
-
-                    if (Input.touchCount == 2 || threeFingerFumble)
-                    {
-                        // If we didn't fat finger the phone, fix a finger index
-                        if (!threeFingerFumble)
+                        if (Input.touches[0].position.x <= Input.touches[1].position.x)
                         {
-                            if (Input.touches[0].position.x <= Input.touches[1].position.x)
-                            {
-                                leftTouchIndex = 0;
-                                rightTouchIndex = 1;
-                            }
-                            else
-                            {
-                                leftTouchIndex = 1;
-                                rightTouchIndex = 0;
-                            }
-                        }
-
-                        LeftJoystickValue = Input.touches[leftTouchIndex].position;
-                        RightJoystickValue = Input.touches[rightTouchIndex].position;
-
-                        HandleJoystick(ref LeftJoystickStart, leftTouchIndex, ref LeftNormalizedJoystickPosition, ref LeftClampedPosition);
-                        HandleJoystick(ref RightJoystickStart, rightTouchIndex, ref RightNormalizedJoystickPosition, ref RightClampedPosition);
-
-                        if (leftStickEffectsStarted)
-                        {
-                            leftStickEffectsStarted = false;
-                            ship.StopShipControllerActions(InputEvents.LeftStickAction);
-                        }
-                        if (rightStickEffectsStarted)
-                        {
-                            rightStickEffectsStarted = false;
-                            ship.StopShipControllerActions(InputEvents.RightStickAction);
-                        }
-                    }
-
-                    if (Input.touchCount == 1)
-                    {
-                        var position = Input.touches[0].position;
-                        SingleTouchValue = position;
-
-                        if (Vector2.Distance(LeftJoystickValue, position) < Vector2.Distance(RightJoystickValue, position))
-                        {
-                            if (!leftStickEffectsStarted)
-                            {
-                                leftStickEffectsStarted = true;
-                                ship.PerformShipControllerActions(InputEvents.LeftStickAction);
-                            }
-                            LeftJoystickValue = position;
                             leftTouchIndex = 0;
-                            OneTouchLeft = true;
-                            HandleJoystick(ref LeftJoystickStart, leftTouchIndex, ref LeftNormalizedJoystickPosition, ref LeftClampedPosition);
-                            RightNormalizedJoystickPosition = Vector3.Lerp(RightNormalizedJoystickPosition, Vector3.zero, 7 * Time.deltaTime);
+                            rightTouchIndex = 1;
                         }
                         else
                         {
-                            if (!rightStickEffectsStarted)
-                            {
-                                rightStickEffectsStarted = true;
-                                // if (ship == null)
-                                // {
-                                //     Debug.LogWarningFormat("{0} - {1} - {2}", nameof(InputController), nameof(ReceiveInput), "ship object is null.");
-                                // }
-                                if(ship != null)
-                                    ship.PerformShipControllerActions(InputEvents.RightStickAction);
-                            }
-                            RightJoystickValue = position;
+                            leftTouchIndex = 1;
                             rightTouchIndex = 0;
-                            OneTouchLeft = false;
-                            HandleJoystick(ref RightJoystickStart, rightTouchIndex, ref RightNormalizedJoystickPosition, ref RightClampedPosition);
-                            LeftNormalizedJoystickPosition = Vector3.Lerp(LeftNormalizedJoystickPosition, Vector3.zero, 7*Time.deltaTime);
                         }
                     }
+
+                    LeftJoystickValue = Input.touches[leftTouchIndex].position;
+                    RightJoystickValue = Input.touches[rightTouchIndex].position;
+
+                    HandleJoystick(ref LeftJoystickStart, leftTouchIndex, ref LeftNormalizedJoystickPosition, ref LeftClampedPosition);
+                    HandleJoystick(ref RightJoystickStart, rightTouchIndex, ref RightNormalizedJoystickPosition, ref RightClampedPosition);
+
+                    if (leftStickEffectsStarted)
+                    {
+                        leftStickEffectsStarted = false;
+                        ship.StopShipControllerActions(InputEvents.LeftStickAction);
+                    }
+                    if (rightStickEffectsStarted)
+                    {
+                        rightStickEffectsStarted = false;
+                        ship.StopShipControllerActions(InputEvents.RightStickAction);
+                    }
                 }
-                
+
+                if (Input.touchCount == 1)
+                {
+                    var position = Input.touches[0].position;
+                    if (ship && ship.ShipStatus.CommandStickControls)
+                    {
+                        SingleTouchValue = position;
+                        var tempThreeDPosition = new Vector3((SingleTouchValue.x - Screen.width / 2) * mapscaleX, (SingleTouchValue.y - Screen.height / 2) * mapscaleY, 0);
+                        Debug.Log($"tempThreeDPosition: {tempThreeDPosition}; ship.transform.position: {ship.transform.position}");
+
+                        if (tempThreeDPosition.sqrMagnitude < 10000 & Input.touches[0].phase == TouchPhase.Began) // TODO: replace with nodeRadiusSquared
+                        {
+                            Debug.Log("PerformShipControllerActions(InputEvents.NodeTapAction);");
+                            ship.PerformShipControllerActions(InputEvents.NodeTapAction);
+                        }
+                        else if ((tempThreeDPosition - ship.transform.position).sqrMagnitude < 10000 & Input.touches[0].phase == TouchPhase.Began) // TODO: replace with shipSizeSquared
+                        {
+                            Debug.Log("PerformShipControllerActions(InputEvents.SelfTapAction);");
+                            ship.PerformShipControllerActions(InputEvents.SelfTapAction);
+                        }
+                        else ThreeDPosition = tempThreeDPosition;
+                    }
+
+                    if (Vector2.Distance(LeftJoystickValue, position) < Vector2.Distance(RightJoystickValue, position))
+                    {
+                        if (!leftStickEffectsStarted)
+                        {
+                            leftStickEffectsStarted = true;
+                            ship.PerformShipControllerActions(InputEvents.LeftStickAction);
+                        }
+                        LeftJoystickValue = position;
+                        leftTouchIndex = 0;
+                        OneTouchLeft = true;
+                        HandleJoystick(ref LeftJoystickStart, leftTouchIndex, ref LeftNormalizedJoystickPosition, ref LeftClampedPosition);
+                        RightNormalizedJoystickPosition = Vector3.Lerp(RightNormalizedJoystickPosition, Vector3.zero, 7 * Time.deltaTime);
+                    }
+                    else
+                    {
+                        if (!rightStickEffectsStarted)
+                        {
+                            rightStickEffectsStarted = true;
+                            // if (ship == null)
+                            // {
+                            //     Debug.LogWarningFormat("{0} - {1} - {2}", nameof(InputController), nameof(ReceiveInput), "ship object is null.");
+                            // }
+                            if(ship != null)
+                                ship.PerformShipControllerActions(InputEvents.RightStickAction);
+                        }
+                        RightJoystickValue = position;
+                        rightTouchIndex = 0;
+                        OneTouchLeft = false;
+                        HandleJoystick(ref RightJoystickStart, rightTouchIndex, ref RightNormalizedJoystickPosition, ref RightClampedPosition);
+                        LeftNormalizedJoystickPosition = Vector3.Lerp(LeftNormalizedJoystickPosition, Vector3.zero, 7*Time.deltaTime);
+                    }
+                }
 
                 if (Input.touchCount > 0)
                 {
@@ -432,14 +452,14 @@ namespace CosmicShore.Game.IO
                 ship.StopShipControllerActions(InputEvents.IdleAction);
             }
 
-            if (Gamepad.current.rightShoulder.wasPressedThisFrame && !PhoneFlipState)
+            if (Gamepad.current.rightShoulder.wasPressedThisFrame && !phoneFlipState)
             {
-                PhoneFlipState = true;
+                phoneFlipState = true;
                 ship.PerformShipControllerActions(InputEvents.FlipAction);
             }
-            else if (Gamepad.current.rightShoulder.wasPressedThisFrame && PhoneFlipState)
+            else if (Gamepad.current.rightShoulder.wasPressedThisFrame && phoneFlipState)
             {
-                PhoneFlipState = false;
+                phoneFlipState = false;
                 ship.StopShipControllerActions(InputEvents.FlipAction);
             }
 

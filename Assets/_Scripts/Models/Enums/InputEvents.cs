@@ -8,5 +8,7 @@ public enum InputEvents
     MinimumSpeedStraightAction = 5,
     Button1Action = 6,
     Button2Action = 7,
-    Button3Action = 8
+    Button3Action = 8,
+    NodeTapAction = 9,
+    SelfTapAction = 10,
 }

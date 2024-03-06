@@ -9,6 +9,9 @@ namespace CosmicShore.Game.UI
     public class MiniGameHUD : MonoBehaviour
     {
         public TMP_Text ScoreDisplay;
+        public TMP_Text LeftNumberDisplay;
+        public TMP_Text RightNumberDisplay;
+
         public TMP_Text RoundTimeDisplay;
         public Image CountdownDisplay;
         public Button ReadyButton;
@@ -40,7 +43,33 @@ namespace CosmicShore.Game.UI
             return trailDisplay;
         }
 
-        public void PositionButtonPanel(bool bottomEdge) // TODO: this should be conbined with SetButtonActive to make a configuration method
+        public void SetLeftNumberDisplay(int number)
+        {
+            if (number == 0)
+            {
+                LeftNumberDisplay.transform.parent.parent.gameObject.SetActive(false);
+            }
+            else
+            {
+                LeftNumberDisplay.transform.parent.parent.gameObject.SetActive(true);
+                LeftNumberDisplay.text = number.ToString();
+            }
+        }
+
+        public void SetRightNumberDisplay(int number)
+        {
+            if (number == 0)
+            {
+                RightNumberDisplay.transform.parent.parent.gameObject.SetActive(false);
+            }
+            else
+            {
+                RightNumberDisplay.transform.parent.parent.gameObject.SetActive(true);
+                RightNumberDisplay.text = number.ToString();
+            }
+        }
+
+        public void PositionButtonPanel(bool bottomEdge) // TODO: this should be combined with SetButtonActive to make a configuration method
         {
             buttonPanel.PositionButtons(bottomEdge);
         }
