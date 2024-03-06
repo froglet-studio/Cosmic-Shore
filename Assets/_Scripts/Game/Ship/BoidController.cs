@@ -68,7 +68,7 @@ namespace CosmicShore
                 ship.Player.GameCanvas.MiniGameHUD.SetLeftNumberDisplay(moundDrones.Count);
                 ship.Player.GameCanvas.MiniGameHUD.SetRightNumberDisplay(queenDrones.Count);
             }
-            else if (moundDrones.Count > 0)
+            else if (!toQueen && queenDrones.Count > 0)
             {
                 var drone = queenDrones[0];
                 drone.GetComponent<Boid>().Goal = globalGoal;
