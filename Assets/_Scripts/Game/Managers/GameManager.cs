@@ -19,25 +19,12 @@ namespace CosmicShore.Core
         [SerializeField] public SO_GameList AllGames;
         [SerializeField] public SO_ShipList AllShips;
 
-        /* Singleton References */
-        static CameraManager cameraManager;
-
         int deathCount = 0;
         public int DeathCount { get { return deathCount; } }
 
         [Header("Scene Names")]
         static string mainMenuScene = "Menu_Main";
-
-        // TODO: should this live somewhere else?
-        // In order to support the splash screen always showing in the correct orientation, we use this method as a work around.
-        // In the build settings, we set orientation to AutoRotate, then lock to LandscapeLeft as the app is launching here.
-        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSplashScreen)]
-        static
-
-        void Start()
-        {
-            cameraManager = CameraManager.Instance;
-        }
+        
 
         public static void EndGame()
         {
@@ -58,7 +45,7 @@ namespace CosmicShore.Core
         {
             SceneManager.LoadScene(mainMenuScene);
             UnPauseGame();
-            cameraManager.OnMainMenu();
+            CameraManager.Instance.OnMainMenu();
         }
 
         public static void UnPauseGame()

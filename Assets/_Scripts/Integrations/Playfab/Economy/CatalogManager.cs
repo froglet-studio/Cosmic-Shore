@@ -1,14 +1,14 @@
 using System;
 using System.Collections.Generic;
 using CosmicShore.Integrations.Playfab.Authentication;
+using CosmicShore.Utility.Singleton;
 using PlayFab;
 using PlayFab.EconomyModels;
 using UnityEngine;
-using VContainer.Unity;
 
 namespace CosmicShore.Integrations.Playfab.Economy
 {
-    public class CatalogManager : IPostInitializable, IDisposable
+    public class CatalogManager : SingletonPersistent<CatalogManager>
     {
         // Public events
         public static event Action<PlayFabError> OnGettingPlayFabErrors;
@@ -18,31 +18,24 @@ namespace CosmicShore.Integrations.Playfab.Economy
         static PlayFabEconomyInstanceAPI _playFabEconomyInstanceAPI;
 
         // Player inventory and items
-        public StoreShelve StoreShelve { get; set; }
-        public Inventory Inventory { get; set; }
+        public static StoreShelve StoreShelve { get; set; }
+
+        public static Inventory Inventory { get; set; }
         // private static string _shardId;
-
-        private AuthenticationManager _authManager;
-
-        public CatalogManager(AuthenticationManager authManager, StoreShelve store, Inventory inventory)
+        
+        private void Start()
         {
-            _authManager = authManager;
-            StoreShelve = store;
-            Inventory = inventory;
-        }
-        public void PostInitialize()
-        {
-            _authManager.OnLoginSuccess += InitializePlayFabEconomyAPI;
-            _authManager.OnLoginSuccess += LoadAllCatalogItems;
-            _authManager.OnLoginSuccess += LoadPlayerInventory;
+            AuthenticationManager.OnLoginSuccess += InitializePlayFabEconomyAPI;
+            AuthenticationManager.OnLoginSuccess += LoadAllCatalogItems;
+            AuthenticationManager.OnLoginSuccess += LoadPlayerInventory;
         }
 
 
-        public void Dispose()
+        public void OnDestroy()
         {
-            _authManager.OnLoginSuccess -= InitializePlayFabEconomyAPI;
-            _authManager.OnLoginSuccess -= LoadAllCatalogItems;
-            _authManager.OnLoginSuccess -= LoadPlayerInventory;
+            AuthenticationManager.OnLoginSuccess -= InitializePlayFabEconomyAPI;
+            AuthenticationManager.OnLoginSuccess -= LoadAllCatalogItems;
+            AuthenticationManager.OnLoginSuccess -= LoadPlayerInventory;
             StoreShelve = null;
             Inventory = null;
             // AuthenticationManager.OnRegisterSuccess -= GrantStartingInventory;
@@ -56,13 +49,13 @@ namespace CosmicShore.Integrations.Playfab.Economy
         /// </summary>
         void InitializePlayFabEconomyAPI()
         {
-            if (_authManager.PlayFabAccount.AuthContext == null)
+            if (AuthenticationManager.PlayFabAccount.AuthContext == null)
             {
                 Debug.LogWarning($"Current Player has not logged in yet.");
                 return;
             }
             // Null check for PlayFab Economy API instance
-            _playFabEconomyInstanceAPI??= new PlayFabEconomyInstanceAPI(_authManager.PlayFabAccount.AuthContext);
+            _playFabEconomyInstanceAPI??= new PlayFabEconomyInstanceAPI(AuthenticationManager.PlayFabAccount.AuthContext);
             Debug.LogFormat("{0} - {1}: PlayFab Economy API initialized.", nameof(CatalogManager), nameof(InitializePlayFabEconomyAPI));
         }
 
@@ -293,6 +286,8 @@ namespace CosmicShore.Integrations.Playfab.Economy
 
         private void ClearLocalInventoryOnLoading()
         {
+            if (Inventory == null) return;
+            
             Inventory.MiniGames.Clear();
             Inventory.VesselUpgrades.Clear();
             Inventory.Crystals.Clear();

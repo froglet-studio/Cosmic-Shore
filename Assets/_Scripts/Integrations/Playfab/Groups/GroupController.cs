@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using CosmicShore.Integrations.Playfab.Authentication;
 using CosmicShore.Integrations.Playfab.Event_Models;
+using CosmicShore.Utility.Singleton;
 using PlayFab;
 using PlayFab.GroupsModels;
 using UnityEngine;
@@ -9,7 +10,7 @@ using VContainer.Unity;
 
 namespace CosmicShore.Integrations.Playfab.Groups
 {
-    public class GroupController : IPostInitializable
+    public class GroupController : SingletonPersistent<GroupController>
     {
         // A public event interface for the Group front-end view
         public static event EventHandler<PlayFabError> OnErrorHandler;
@@ -21,14 +22,19 @@ namespace CosmicShore.Integrations.Playfab.Groups
         // Local cache for group info
         private Dictionary<string, GroupModel> groups;
 
-        private AuthenticationManager _authManager;
-        public GroupController(AuthenticationManager authManager)
+        // private AuthenticationManager _authManager;
+        // public GroupController(AuthenticationManager authManager)
+        // {
+        //     _authManager = authManager;
+        // }
+        private void Start()
         {
-            _authManager = authManager;
+             AuthenticationManager.OnLoginSuccess += InitializeGroupsInstanceAPI;
         }
-        public void PostInitialize()
+
+        private void OnDestroy()
         {
-            _authManager.OnLoginSuccess += InitializeGroupsInstanceAPI;
+            AuthenticationManager.OnLoginSuccess -= InitializeGroupsInstanceAPI;
         }
 
         #region Initialize PlayFab Groups API with Auth Context
@@ -39,14 +45,14 @@ namespace CosmicShore.Integrations.Playfab.Groups
         /// </summary>
         private void InitializeGroupsInstanceAPI()
         {
-            if (_authManager.PlayFabAccount.AuthContext == null)
+            if (AuthenticationManager.PlayFabAccount.AuthContext == null)
             {
                 // TODO: raise event to for user authentication 
                 Debug.LogWarning($"Current Player has not logged in yet.");
                 return;
             }
 
-            _playFabGroupsInstanceAPI ??= new PlayFabGroupsInstanceAPI(_authManager.PlayFabAccount.AuthContext);
+            _playFabGroupsInstanceAPI ??= new PlayFabGroupsInstanceAPI(AuthenticationManager.PlayFabAccount.AuthContext);
         }
     
         #endregion
