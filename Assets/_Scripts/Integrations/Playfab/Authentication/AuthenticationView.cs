@@ -5,7 +5,6 @@ using PlayFab.ClientModels;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using VContainer;
 
 namespace CosmicShore.Integrations.Playfab.Authentication
 {
@@ -78,8 +77,6 @@ namespace CosmicShore.Integrations.Playfab.Authentication
             
             if(registerButton!=null)
                 registerButton.onClick.AddListener(RegisterButton_OnClick);
-            
-            AuthenticationManager.Instance.AnonymousLogin();
 
             AuthenticationManager.OnProfileLoaded += InitializePlayerDisplayNameView;
         }

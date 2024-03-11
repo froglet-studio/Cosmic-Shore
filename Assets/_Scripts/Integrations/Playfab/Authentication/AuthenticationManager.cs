@@ -32,32 +32,23 @@ namespace CosmicShore.Integrations.Playfab.Authentication
 
         public static List<string> Adjectives;
         public static List<string> Nouns;
-        
-        // public AuthenticationManager(PlayFabAccount account, UserProfile profile, PlayerSession session)
-        // {
-        //     PlayFabAccount = account;
-        //     UserProfile = profile;
-        //     PlayerSession = session;
-        // }
+
         public override void Awake()
         {
             base.Awake();
+            PlayFabAccount = new();
+            UserProfile = new();
+            PlayerSession = new();
             AnonymousLogin();
-            OnLoginSuccess += LoadPlayerProfile;
         }
 
         private void OnEnable()
         {
-            PlayFabAccount = new();
-            UserProfile = new();
-            PlayerSession = new();
+            OnLoginSuccess += LoadPlayerProfile;
         }
 
         private void OnDestroy()
         {
-            PlayFabAccount = null;
-            UserProfile = null;
-            PlayerSession = null;
             OnLoginSuccess -= LoadPlayerProfile;
         }
 
