@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d0353a89b1f911e48b9e16bdc9f2e058, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  version: 5
+  version: 9
 --- !u!21 &2100000
 Material:
   serializedVersion: 8
@@ -23,6 +23,8 @@ Material:
   m_Name: FakeCrystalMaterial
   m_Shader: {fileID: -6465566751694194690, guid: 11986b08af564954bb111977a5cf4dac,
     type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
   m_ValidKeywords:
   - _SURFACE_TYPE_TRANSPARENT
   m_InvalidKeywords: []
@@ -34,6 +36,8 @@ Material:
     RenderType: Transparent
   disabledShaderPasses:
   - SHADOWCASTER
+  - MOTIONVECTORS
+  m_LockedProperties: 
   m_SavedProperties:
     serializedVersion: 3
     m_TexEnvs:
@@ -96,6 +100,7 @@ Material:
     m_Ints: []
     m_Floats:
     - _AlphaClip: 0
+    - _AlphaToMask: 0
     - _Blend: 0
     - _BumpScale: 1
     - _CastShadows: 0
@@ -128,6 +133,7 @@ Material:
     - _opacity: 1.0100001
     - _player: 1
     - _red: 0
+    - _spread: 0.15
     m_Colors:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
     - _BrightCrystalColor: {r: 0.13333334, g: 0.7490196, b: 0.05490196, a: 0.9411765}
@@ -139,3 +145,4 @@ Material:
     - _playerColor2: {r: 0.22745098, g: 0.63529414, b: 0.8, a: 0}
     - _velocity: {r: 0.05, g: 0.05, b: 0.05, a: 0}
   m_BuildTextureStacks: []
+  m_AllowLocking: 1

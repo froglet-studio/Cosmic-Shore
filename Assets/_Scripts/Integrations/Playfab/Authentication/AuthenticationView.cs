@@ -80,8 +80,6 @@ namespace CosmicShore.Integrations.Playfab.Authentication
                 registerButton.onClick.AddListener(RegisterButton_OnClick);
             
             AuthenticationManager.Instance.AnonymousLogin();
-            AuthenticationManager.OnLoginSuccess += AuthenticationManager.Instance.LoadPlayerProfile;
-            // AuthenticationManager.LoginError +=
 
             AuthenticationManager.OnProfileLoaded += InitializePlayerDisplayNameView;
         }
