@@ -4,6 +4,7 @@ using CosmicShore.Utility.Singleton;
 using Unity.Services.Analytics;
 using Unity.Services.Core;
 using UnityEngine;
+using Event = Unity.Services.Analytics.Event;
 
 namespace CosmicShore.Integrations.Firebase.Controller
 {
@@ -39,20 +40,14 @@ namespace CosmicShore.Integrations.Firebase.Controller
         {
             try
             {
-                var consents = await AnalyticsService.Instance.CheckForRequiredConsents();
+                await UnityServices.InitializeAsync();
 
-                if (consents.Count != 0)
+// Show UI element asking the user for their consent OR retrieve prior consent from storage //
+
+                if (_isConsented)
                 {
-                    var legislation = consents[0];
-
-                    // TODO: raise event asking user for consent here
-
-
-                    // Get consent from user and provide based on user decision here
-                    AnalyticsService.Instance.ProvideOptInConsent(legislation, _isConsented);
+                    AnalyticsService.Instance.StartDataCollection();
                 }
-                // If consent is denied just opt the user out
-                AnalyticsService.Instance.OptOut();
             }
             catch (ConsentCheckException e)
             {
@@ -98,9 +93,14 @@ namespace CosmicShore.Integrations.Firebase.Controller
         /// </summary>
         /// <param name="eventName">Event Name</param>
         /// <param name="dict">Event Parameters and Values</param>
-        public void LogFirebaseEvents(in string eventName, [ItemCanBeNull] in Dictionary<string, object> dict)
+        public void LogCustomEvent(Event e)
         {
-            AnalyticsService.Instance.CustomData(eventName, dict);
+            AnalyticsService.Instance.RecordEvent(e);
+        }
+
+        public void LogCustomEventByName(string eventName)
+        {
+            AnalyticsService.Instance.RecordEvent(eventName);
         }
 
         /// <summary>

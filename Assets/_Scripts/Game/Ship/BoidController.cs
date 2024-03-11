@@ -21,7 +21,7 @@ namespace CosmicShore
         void Start()
         {
         inputController = ship.InputController;
-        globalGoal = FindObjectOfType<Crystal>().transform;
+        globalGoal = FindAnyObjectByType<Crystal>().transform;
         container = new GameObject("BoidContainer");
         container.transform.SetParent(ship.Player.transform);
         }

@@ -60,7 +60,7 @@ namespace CosmicShore.App.UI
                 isOn = false;
             }
 
-            StartCoroutine("DisableWindow");
+            StartCoroutine(DisableWindow());
         }
 
         IEnumerator DisableWindow()

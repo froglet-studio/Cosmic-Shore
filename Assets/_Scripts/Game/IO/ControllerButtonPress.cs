@@ -15,7 +15,7 @@ namespace CosmicShore.Game.IO
         Button button;
         void Start()
         {
-            eventSystem = FindObjectOfType<EventSystem>();
+            eventSystem = FindAnyObjectByType<EventSystem>();
             button = GetComponent<Button>();
         }
 
