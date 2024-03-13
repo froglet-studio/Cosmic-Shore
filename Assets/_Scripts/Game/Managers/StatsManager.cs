@@ -16,7 +16,7 @@ public class StatsManager : Singleton<StatsManager>
 
     bool RecordStats = true;
 
-    public void CrystalCollected(Ship ship, CrystalProperties crystalProperties)
+    public void CrystalCollected(IShip ship, CrystalProperties crystalProperties)
     {
         if (!RecordStats)
             return;
@@ -32,7 +32,7 @@ public class StatsManager : Singleton<StatsManager>
         playerStats[ship.Player.PlayerName] = roundStats;
     }
 
-    public void SkimmerShipCollision(Ship skimmingShip, Ship ship)
+    public void SkimmerShipCollision(Ship skimmingShip, IShip ship)
     {
         if (!RecordStats)
             return;

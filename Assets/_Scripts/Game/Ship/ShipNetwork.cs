@@ -6,27 +6,12 @@ using UnityEngine;
 using CosmicShore.Game.AI;
 using CosmicShore.Game.Projectiles;
 using CosmicShore.Models.ScriptableObjects;
+using Unity.Netcode;
 
 namespace CosmicShore.Core
 {
-    [Serializable]
-    public struct InputEventShipActionMapping
-    {
-        public InputEvents InputEvent;
-        public List<ShipAction> ShipActions;
-    }
-
-    [Serializable]
-    public struct ResourceEventShipActionMapping
-    {
-        public ResourceEvents ResourceEvent;
-        public List<ShipAction> ClassActions;
-    }
-
-    [RequireComponent(typeof(ResourceSystem))]
-    [RequireComponent(typeof(TrailSpawner))]
-    [RequireComponent(typeof(ShipStatus))]
-    public class Ship : MonoBehaviour, IShip
+    
+    public class ShipNetwork : NetworkBehaviour, IShip
     {
         [SerializeField] List<ImpactProperties> impactProperties;
         public CameraManager CameraManager { get; private set; }
@@ -38,10 +23,10 @@ namespace CosmicShore.Core
         [SerializeField] public ShipTypes ShipType;
 
         [Header("Ship Components")]
-        public TrailSpawner TrailSpawner { get; private set; }
-        public ShipTransformer ShipTransformer { get; private set; }
-        public AIPilot AutoPilot { get; private set; }
-        public ShipStatus ShipStatus { get; private set; }
+        public TrailSpawner TrailSpawner {get; private set;}
+        public ShipTransformer ShipTransformer{get; private set;}
+        public AIPilot AutoPilot{get; private set;}
+        public ShipStatus ShipStatus{get; private set;}
         [SerializeField] Skimmer nearFieldSkimmer;
         [SerializeField] GameObject OrientationHandle;
         [SerializeField] public List<GameObject> shipGeometries;
@@ -514,6 +499,5 @@ namespace CosmicShore.Core
         }
 
         public List<GameObject> GetShipGeometries() => shipGeometries;
-
     }
 }

@@ -21,7 +21,7 @@ namespace CosmicShore.Game.Projectiles
             if (!IsShip(other.gameObject) && !IsProjectile(other.gameObject))
                 return;
 
-            Ship ship = IsShip(other.gameObject) ? other.GetComponent<ShipGeometry>().Ship : other.GetComponent<Projectile>().Ship;
+            var ship = IsShip(other.gameObject) ? other.GetComponent<ShipGeometry>().Ship : other.GetComponent<Projectile>().Ship;
         
             // TODO: use a different material if the fake crystal is on your team
             if (ship.Team == Team)

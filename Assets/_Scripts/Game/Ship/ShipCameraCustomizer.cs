@@ -21,7 +21,7 @@ namespace CosmicShore
         void Start()
         {
             ship = GetComponent<Ship>();
-            cameraManager = ship.cameraManager;
+            cameraManager = ship.CameraManager;
             cameraManager.isOrthographic = isOrthographic;
 
             ApplyShipControlOverrides(ControlOverrides);

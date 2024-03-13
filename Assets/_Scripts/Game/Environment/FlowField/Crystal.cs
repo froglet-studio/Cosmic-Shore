@@ -67,7 +67,7 @@ namespace CosmicShore.Environment.FlowField
             collisions.Clear();
         }
 
-        public void PerformCrystalImpactEffects(CrystalProperties crystalProperties, Ship ship)
+        public void PerformCrystalImpactEffects(CrystalProperties crystalProperties, IShip ship)
         {
             foreach (CrystalImpactEffects effect in crystalImpactEffects)
             {
@@ -97,7 +97,7 @@ namespace CosmicShore.Environment.FlowField
 
         protected virtual void Collide(Collider other)
         {
-            Ship ship;
+            IShip ship;
             Projectile projectile;
             if (IsShip(other.gameObject))
             {
@@ -107,7 +107,8 @@ namespace CosmicShore.Environment.FlowField
                     if (shipImpactEffects)
                     {
                         ship.PerformCrystalImpactEffects(crystalProperties);
-                        if (ship.TryGetComponent<AIPilot>(out var aiPilot))
+                        var aiPilot = ship.GetComponent<AIPilot>();
+                        if (aiPilot is not null)
                         {
                             aiPilot.aggressiveness = aiPilot.defaultAggressiveness;
                             aiPilot.throttle = aiPilot.defaultThrottle;
@@ -127,7 +128,8 @@ namespace CosmicShore.Environment.FlowField
                     if (shipImpactEffects)
                     {
                         projectile.PerformCrystalImpactEffects(crystalProperties);
-                        if (ship.TryGetComponent<AIPilot>(out var aiPilot))
+                        var aiPilot = ship.GetComponent<AIPilot>();
+                        if (aiPilot is not null)
                         {
                             aiPilot.aggressiveness = aiPilot.defaultAggressiveness;
                             aiPilot.throttle = aiPilot.defaultThrottle;
@@ -157,7 +159,7 @@ namespace CosmicShore.Environment.FlowField
             UpdateSelfWithNode();
         }
 
-        protected void Explode(Ship ship)
+        protected void Explode(IShip ship)
         {
             tempMaterial = new Material(explodingMaterial);
             var spentCrystal = Instantiate(SpentCrystalPrefab);

@@ -6,7 +6,7 @@ using UnityEngine;
 public class ElementalShipComponent : MonoBehaviour
 {
     readonly BindingFlags bindingFlags = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
-    public void BindElementalFloats(Ship ship)
+    public void BindElementalFloats(IShip ship)
     {
         Type thisType = GetType();
         FieldInfo[] fields = thisType.GetFields(bindingFlags);
