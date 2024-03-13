@@ -57163,7 +57163,7 @@ PrefabInstance:
     - target: {fileID: 4824822816498640280, guid: 74440c160d04cdd48b8670260f998bac,
         type: 3}
       propertyPath: m_ProtocolType
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 5593906622773524546, guid: 74440c160d04cdd48b8670260f998bac,
         type: 3}

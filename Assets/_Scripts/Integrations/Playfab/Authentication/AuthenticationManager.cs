@@ -40,11 +40,12 @@ namespace CosmicShore.Integrations.Playfab.Authentication
             UserProfile = new();
             PlayerSession = new();
             AnonymousLogin();
+            OnLoginSuccess += LoadPlayerProfile;
         }
 
         private void OnEnable()
         {
-            OnLoginSuccess += LoadPlayerProfile;
+            
         }
 
         private void OnDestroy()

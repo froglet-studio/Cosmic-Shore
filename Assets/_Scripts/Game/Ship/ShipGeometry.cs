@@ -4,6 +4,6 @@ namespace CosmicShore.Core
 {
     public class ShipGeometry : MonoBehaviour
     {
-        public IShip Ship;
+        public Ship Ship;
     }
 }

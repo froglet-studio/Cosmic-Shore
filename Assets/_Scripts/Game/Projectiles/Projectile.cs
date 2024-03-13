@@ -126,7 +126,7 @@ namespace CosmicShore.Game.Projectiles
         public void PerformCrystalImpactEffects(CrystalProperties crystalProperties)
         {
             if (StatsManager.Instance != null)
-                StatsManager.Instance.CrystalCollected(this.Ship, crystalProperties);
+                StatsManager.Instance.CrystalCollected(Ship, crystalProperties);
 
             foreach (CrystalImpactEffects effect in crystalImpactEffects)
             {

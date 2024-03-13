@@ -67,7 +67,7 @@ namespace CosmicShore.Environment.FlowField
             collisions.Clear();
         }
 
-        public void PerformCrystalImpactEffects(CrystalProperties crystalProperties, IShip ship)
+        public void PerformCrystalImpactEffects(CrystalProperties crystalProperties, Ship ship)
         {
             foreach (CrystalImpactEffects effect in crystalImpactEffects)
             {
@@ -97,7 +97,7 @@ namespace CosmicShore.Environment.FlowField
 
         protected virtual void Collide(Collider other)
         {
-            IShip ship;
+            Ship ship;
             Projectile projectile;
             if (IsShip(other.gameObject))
             {
@@ -159,7 +159,7 @@ namespace CosmicShore.Environment.FlowField
             UpdateSelfWithNode();
         }
 
-        protected void Explode(IShip ship)
+        protected void Explode(Ship ship)
         {
             tempMaterial = new Material(explodingMaterial);
             var spentCrystal = Instantiate(SpentCrystalPrefab);

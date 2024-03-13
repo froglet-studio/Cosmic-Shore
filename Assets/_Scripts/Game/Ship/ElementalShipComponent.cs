@@ -6,10 +6,10 @@ using UnityEngine;
 public class ElementalShipComponent : MonoBehaviour
 {
     readonly BindingFlags bindingFlags = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
-    public void BindElementalFloats(IShip ship)
+    public void BindElementalFloats(Ship ship)
     {
-        Type thisType = GetType();
-        FieldInfo[] fields = thisType.GetFields(bindingFlags);
+        var thisType = GetType();
+        var fields = thisType.GetFields(bindingFlags);
 
         // Find all ElementalFloat Fields
         foreach (FieldInfo fieldInfo in fields)

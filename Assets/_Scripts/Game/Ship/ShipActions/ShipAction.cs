@@ -5,8 +5,8 @@ public abstract class ShipAction : ElementalShipComponent
 {
     protected ResourceSystem resourceSystem;
 
-    protected IShip ship;
-    public IShip Ship { get => ship; set => ship = value; }
+    protected Ship ship;
+    public Ship Ship { get => ship; set => ship = value; }
     public abstract void StartAction();
     public abstract void StopAction();
 

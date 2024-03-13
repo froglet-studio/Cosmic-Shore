@@ -26,7 +26,7 @@ namespace CosmicShore.Core
     [RequireComponent(typeof(ResourceSystem))]
     [RequireComponent(typeof(TrailSpawner))]
     [RequireComponent(typeof(ShipStatus))]
-    public class Ship : MonoBehaviour, IShip
+    public class Ship : NetworkMonitor
     {
         [SerializeField] List<ImpactProperties> impactProperties;
         public CameraManager CameraManager { get; private set; }
