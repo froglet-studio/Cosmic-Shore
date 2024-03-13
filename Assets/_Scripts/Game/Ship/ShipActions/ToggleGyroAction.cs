@@ -1,3 +1,4 @@
+using CosmicShore.Core;
 using CosmicShore.Game.IO;
 
 public class ToggleGyroAction : ShipAction
@@ -6,7 +7,15 @@ public class ToggleGyroAction : ShipAction
 
     protected override void Start()
     {
-        if (ship.isActiveAndEnabled) inputController = ship.InputController;
+        if (ship == null)
+        {
+            ship = GetComponentInParent<Ship>();
+            if (ship == null)
+            {
+                ship = GetComponentInParent<ShipNetwork>();
+            }
+            inputController = ship.InputController;
+        }
     }
 
     public override void StartAction()
