@@ -6,6 +6,7 @@ using UnityEngine;
 using CosmicShore.Game.AI;
 using CosmicShore.Game.Projectiles;
 using CosmicShore.Models.ScriptableObjects;
+using Unity.Netcode;
 
 namespace CosmicShore.Core
 {
@@ -26,7 +27,7 @@ namespace CosmicShore.Core
     [RequireComponent(typeof(ResourceSystem))]
     [RequireComponent(typeof(TrailSpawner))]
     [RequireComponent(typeof(ShipStatus))]
-    public class Ship : NetworkMonitor
+    public class Ship : NetworkBehaviour
     {
         [SerializeField] List<ImpactProperties> impactProperties;
         public CameraManager CameraManager { get; private set; }
@@ -197,6 +198,11 @@ namespace CosmicShore.Core
                     Player.GameCanvas.MiniGameHUD.SetButtonActive(!CheckIfUsingGamepad(), 3);
                 }
             }
+        }
+
+        public override void OnNetworkSpawn()
+        {
+            // if(IsClient)
         }
 
         bool CheckIfUsingGamepad()
