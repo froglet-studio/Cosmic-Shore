@@ -25,7 +25,7 @@ namespace CosmicShore.Core
     }
 
 
-    public class Ship : NetworkBehaviour
+    public class Ship : MonoBehaviour
     {
         [SerializeField] List<ImpactProperties> impactProperties;
         public CameraManager CameraManager { get; private set; }
@@ -196,11 +196,6 @@ namespace CosmicShore.Core
                     Player.GameCanvas.MiniGameHUD.SetButtonActive(!CheckIfUsingGamepad(), 3);
                 }
             }
-        }
-
-        public override void OnNetworkSpawn()
-        {
-            // if(IsClient)
         }
 
         bool CheckIfUsingGamepad()

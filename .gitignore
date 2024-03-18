@@ -70,3 +70,13 @@ crashlytics-build.properties
 /ProjectSettings/BurstAotSettings_StandaloneWindows.json
 /Recordings
 /Assets/Graphics/Materials/Shaders/DitheringVolumeDisplayShader.shader.meta
+
+# coherence specific
+Assets/coherence/Footprint.cs*
+
+# ParrelSync extension to run multiple editor instances
+Assets/ParrelSync
+Assets/ParrelSync.meta
+mono_crash*.json
+
+//ParrelSync preferences
