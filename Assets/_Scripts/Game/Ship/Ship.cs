@@ -24,9 +24,7 @@ namespace CosmicShore.Core
         public List<ShipAction> ClassActions;
     }
 
-    [RequireComponent(typeof(ResourceSystem))]
-    [RequireComponent(typeof(TrailSpawner))]
-    [RequireComponent(typeof(ShipStatus))]
+
     public class Ship : NetworkBehaviour
     {
         [SerializeField] List<ImpactProperties> impactProperties;
