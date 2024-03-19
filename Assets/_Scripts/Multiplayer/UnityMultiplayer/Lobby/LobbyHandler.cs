@@ -80,7 +80,8 @@ namespace CosmicShore.Multiplayer.UnityMultiplayer.Lobby
             if (!AuthenticationService.Instance.IsSignedIn)
             {
                 await AuthenticationService.Instance.SignInAnonymouslyAsync();
-                _displayName = AuthenticationService.Instance.PlayerId;
+                _playerId = AuthenticationService.Instance.PlayerId;
+                _displayName = AuthenticationService.Instance.PlayerName;
             }
         }
 
