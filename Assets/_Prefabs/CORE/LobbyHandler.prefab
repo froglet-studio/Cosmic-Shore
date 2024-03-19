@@ -9,9 +9,9 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 429463611348575718}
-  - component: {fileID: 3456624198414642965}
+  - component: {fileID: 2215877227575582450}
   m_Layer: 0
-  m_Name: Relay
+  m_Name: LobbyHandler
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -32,7 +32,7 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &3456624198414642965
+--- !u!114 &2215877227575582450
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -44,3 +44,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 992e4652667f6cc4faf0eb88b477b289, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  lobbyName: Lobby
+  maxPlayers: 4
+  keyJoinCode: RelayJoinCode
+  isPrivate: 0
+  lobbyHeartbeatInterval: 20
+  lobbyPollInterval: 65
+  encryption: 0
