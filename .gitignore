@@ -70,3 +70,4 @@ crashlytics-build.properties
 /ProjectSettings/BurstAotSettings_StandaloneWindows.json
 /Recordings
 /Assets/Graphics/Materials/Shaders/DitheringVolumeDisplayShader.shader.meta
+/ProjectSettings/BurstAotSettings_StandaloneLinux64.json
