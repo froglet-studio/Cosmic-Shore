@@ -29,7 +29,6 @@ public class Boid : MonoBehaviour
     [SerializeField] float minSpeed = 2.0f;
     [SerializeField] float maxSpeed = 5.0f;
 
-
     [Header("Goal Settings")]
     public Transform Goal;
     public Transform DefaultGoal;
@@ -43,13 +42,13 @@ public class Boid : MonoBehaviour
     Quaternion desiredRotation;
 
     public bool isKilled = false;
+    public Teams Team = Teams.Blue;
+
     bool isTraveling = false;
 
     [SerializeField] List<BoidCollisionEffects> collisionEffects;
 
-
-
-    private BoidManager boidManager;
+    public BoidManager boidManager;
     private TrailBlock trailBlock;
     private BoxCollider BlockCollider;
     private Crystal crystal;
@@ -65,13 +64,13 @@ public class Boid : MonoBehaviour
     private void Start()
     {
         crystal = GetComponentInChildren<Crystal>();
-        boidManager = GetComponentInParent<BoidManager>();
+        if (!boidManager) boidManager = GetComponentInParent<BoidManager>();
         trailBlock = GetComponentInChildren<TrailBlock>();
         BlockCollider = GetComponentInChildren<BoxCollider>();
         currentVelocity = transform.forward * Random.Range(minSpeed, maxSpeed);
         float initialDelay = normalizedIndex * behaviorUpdateRate;
         StartCoroutine(CalculateBehaviorCoroutine(initialDelay));
-        trailBlock.Team = Teams.Blue;
+        trailBlock.Team = Team;
     }
 
     IEnumerator CalculateBehaviorCoroutine(float initialDelay)
@@ -84,7 +83,6 @@ public class Boid : MonoBehaviour
             yield return new WaitForSeconds(behaviorUpdateRate);
         }
     }
-
 
     void CalculateBehavior()
     {
@@ -136,6 +134,7 @@ public class Boid : MonoBehaviour
             }
             else if (otherTrailBlock)
             {
+                Debug.Log($"TrailBlock.Team {otherTrailBlock.Team}");
                 float blockWeight = boidManager.Weights[Mathf.Abs((int)otherTrailBlock.Team-1)]; // TODO: this is a hack to get the team weight, need to make this more robust
                 blockAttraction += -diff.normalized * blockWeight / distance;
 
@@ -228,6 +227,8 @@ public class Boid : MonoBehaviour
         }
 
         isTraveling = false;
+        trailBlock.IsLargest = false;
+        trailBlock.DeactivateShields();
         trailBlock.Grow(-3);
     }
 

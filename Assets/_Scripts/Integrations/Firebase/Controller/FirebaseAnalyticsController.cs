@@ -184,7 +184,7 @@ namespace CosmicShore.Integrations.Firebase.Controller
                 new Parameter(FirebaseAnalytics.ParameterValue, action.Value)
             };
             
-            FirebaseAnalytics.LogEvent(FirebaseAnalytics.EventScreenView, parameters);
+            FirebaseAnalytics.LogEvent("user_ui_action", parameters);
             Debug.LogFormat("{0} - {1} - event: {2} logged.", nameof(FirebaseAnalyticsController), nameof(LogEventUserCompleteAction), action.Label);
         }
 

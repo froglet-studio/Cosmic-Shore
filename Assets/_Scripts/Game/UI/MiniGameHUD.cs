@@ -9,6 +9,9 @@ namespace CosmicShore.Game.UI
     public class MiniGameHUD : MonoBehaviour
     {
         public TMP_Text ScoreDisplay;
+        public TMP_Text LeftNumberDisplay;
+        public TMP_Text RightNumberDisplay;
+
         public TMP_Text RoundTimeDisplay;
         public Image CountdownDisplay;
         public Button ReadyButton;
@@ -16,6 +19,7 @@ namespace CosmicShore.Game.UI
         [SerializeField] GameObject pip;
         [SerializeField] GameObject silhouette;
         [SerializeField] GameObject trailDisplay;
+        [SerializeField] ButtonPanel buttonPanel;
         [SerializeField] GameObject button1;
         [SerializeField] GameObject button2;
         [SerializeField] GameObject button3;
@@ -39,7 +43,38 @@ namespace CosmicShore.Game.UI
             return trailDisplay;
         }
 
-        public void SetButtonActive(bool active, int number)
+        public void SetLeftNumberDisplay(int number)
+        {
+            if (number == 0)
+            {
+                LeftNumberDisplay.transform.parent.parent.gameObject.SetActive(false);
+            }
+            else
+            {
+                LeftNumberDisplay.transform.parent.parent.gameObject.SetActive(true);
+                LeftNumberDisplay.text = number.ToString();
+            }
+        }
+
+        public void SetRightNumberDisplay(int number)
+        {
+            if (number == 0)
+            {
+                RightNumberDisplay.transform.parent.parent.gameObject.SetActive(false);
+            }
+            else
+            {
+                RightNumberDisplay.transform.parent.parent.gameObject.SetActive(true);
+                RightNumberDisplay.text = number.ToString();
+            }
+        }
+
+        public void PositionButtonPanel(bool bottomEdge) // TODO: this should be combined with SetButtonActive to make a configuration method
+        {
+            buttonPanel.PositionButtons(bottomEdge);
+        }
+
+        public void SetButtonActive(bool active, int number) // TODO: this should move to ButtonPanel
         {
             switch (number)
             {
@@ -55,7 +90,7 @@ namespace CosmicShore.Game.UI
             }
         }
 
-        public void PressButton1()
+        public void PressButton1() // TODO: this should move to ButtonPanel
         {
             ship.PerformShipControllerActions(InputEvents.Button1Action);
         }

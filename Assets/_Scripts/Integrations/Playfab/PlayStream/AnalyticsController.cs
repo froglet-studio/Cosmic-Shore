@@ -1,42 +1,40 @@
 using System;
 using System.Collections.Generic;
 using CosmicShore.Integrations.Playfab.Authentication;
-using CosmicShore.Integrations.Playfab.Event_Models;
 using CosmicShore.Integrations.Playfab.PlayerModels;
 using PlayFab;
 using PlayFab.ClientModels;
 using PlayFab.EventsModels;
 using CosmicShore.Utility.Singleton;
 using UnityEngine;
-using VContainer.Unity;
 
 namespace CosmicShore.Integrations.Playfab.PlayStream
 {
-    public class AnalyticsController : IPostInitializable, IDisposable
+    public class AnalyticsController : SingletonPersistent<AnalyticsController>
     {
         static PlayFabDataInstanceAPI _playFabDataInstanceAPI;
         private static PlayFabClientInstanceAPI _playFabClientInstanceAPI;
         private static PlayFabEventsInstanceAPI _playFabEventsInstanceAPI;
         public static Action<PlayFabError> GeneratingErrorReport;
 
-        private AuthenticationManager _authManager;
+        // private AuthenticationManager _authManager;
+        //
+        // public AnalyticsController(AuthenticationManager authManager)
+        // {
+        //     _authManager = authManager;
+        // }
 
-        public AnalyticsController(AuthenticationManager authManager)
-        {
-            _authManager = authManager;
-        }
-
-        public void PostInitialize()
+        private void Start()
         {
             // Load Player Client Instance API
-            _authManager.OnLoginSuccess += InitializePlayerClientInstanceAPI;
-            _authManager.OnLoginSuccess += InitializeEventsInstanceAPI;
+            AuthenticationManager.OnLoginSuccess += InitializePlayerClientInstanceAPI;
+            AuthenticationManager.OnLoginSuccess += InitializeEventsInstanceAPI;
         }
 
-        public void Dispose()
+        private void OnDestroy()
         {
-            _authManager.OnLoginSuccess -= InitializeEventsInstanceAPI;
-            _authManager.OnLoginSuccess -= InitializePlayerClientInstanceAPI;
+            AuthenticationManager.OnLoginSuccess -= InitializeEventsInstanceAPI;
+            AuthenticationManager.OnLoginSuccess -= InitializePlayerClientInstanceAPI;
         
         }
 
@@ -46,7 +44,7 @@ namespace CosmicShore.Integrations.Playfab.PlayStream
         /// </summary>
         private void InitializePlayerDataInstanceAPI()
         {
-            _playFabDataInstanceAPI ??= new PlayFabDataInstanceAPI(_authManager.PlayFabAccount.AuthContext);
+            _playFabDataInstanceAPI ??= new PlayFabDataInstanceAPI(AuthenticationManager.PlayFabAccount.AuthContext);
         }
     
         /// <summary>
@@ -54,12 +52,12 @@ namespace CosmicShore.Integrations.Playfab.PlayStream
         /// </summary>
         private void InitializePlayerClientInstanceAPI()
         {
-            _playFabClientInstanceAPI ??= new PlayFabClientInstanceAPI(_authManager.PlayFabAccount.AuthContext);
+            _playFabClientInstanceAPI ??= new PlayFabClientInstanceAPI(AuthenticationManager.PlayFabAccount.AuthContext);
         }
 
         private void InitializeEventsInstanceAPI()
         {
-            _playFabEventsInstanceAPI ??= new PlayFabEventsInstanceAPI(_authManager.PlayFabAccount.AuthContext);
+            _playFabEventsInstanceAPI ??= new PlayFabEventsInstanceAPI(AuthenticationManager.PlayFabAccount.AuthContext);
         }
         #endregion
 
@@ -73,7 +71,7 @@ namespace CosmicShore.Integrations.Playfab.PlayStream
             _playFabClientInstanceAPI.GetUserData(
                 new GetUserDataRequest()
                 {
-                    PlayFabId = _authManager.PlayFabAccount.ID,
+                    PlayFabId = AuthenticationManager.PlayFabAccount.ID,
                     Keys = keys
                 }, (result) =>
                 {
@@ -107,8 +105,8 @@ namespace CosmicShore.Integrations.Playfab.PlayStream
                     {
                         Debug.LogWarning($"{nameof(AnalyticsController)} - {nameof(SetUserData)} - Unable to retrieve data or no data available");
                         return;
-                    };
-                
+                    }
+
                     Debug.Log($"{nameof(AnalyticsController)} - {nameof(SetUserData)} success.");
                 }, HandleErrorReport);
         }
@@ -150,8 +148,8 @@ namespace CosmicShore.Integrations.Playfab.PlayStream
                     {
                         Debug.LogWarning($"{nameof(AnalyticsController)} - {nameof(GetUserReadOnlyData)} - Unable to retrieve data or no data available");
                         return;
-                    };
-                
+                    }
+
                     Debug.Log($"{nameof(AnalyticsController)} - {nameof(GetUserReadOnlyData)} - success.");
                     foreach (var data in result.Data)
                     {
@@ -171,7 +169,7 @@ namespace CosmicShore.Integrations.Playfab.PlayStream
                 new GetUserDataRequest()
                 {
                     Keys = readOnlyKeys,
-                    PlayFabId = _authManager.PlayFabAccount.ID
+                    PlayFabId = AuthenticationManager.PlayFabAccount.ID
                 }, (result) =>
                 {
                     if (result == null) return;

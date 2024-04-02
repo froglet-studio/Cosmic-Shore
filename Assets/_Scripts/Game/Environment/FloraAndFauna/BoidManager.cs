@@ -19,7 +19,7 @@ public class BoidManager : MonoBehaviour
     private Vector3 goalPos;
     public List<float> Weights;
 
-    Trail boidTrail = new();
+    public Trail boidTrail = new();
 
     private void Start()
     {
@@ -34,12 +34,14 @@ public class BoidManager : MonoBehaviour
             if (globalGoal)
             {
                 newBoid.Goal = globalGoal;
-                newBoid.DefaultGoal = globalGoal;
+                
             }
             if (Mound)
             {
                 newBoid.Mound = Mound;
             }
+
+            newBoid.DefaultGoal = globalGoal;
 
             boidTrail.Add(block);
             block.Team = Teams.Blue;

@@ -1,6 +1,7 @@
 using UnityEditor;
 using UnityEngine;
 
+#if UNITY_EDITOR
 namespace CosmicShore.App.Systems.RewindSystem
 {
     [CustomPropertyDrawer(typeof(OptionalParticleSettings))]
@@ -38,3 +39,4 @@ namespace CosmicShore.App.Systems.RewindSystem
         }
     }
 }
+#endif

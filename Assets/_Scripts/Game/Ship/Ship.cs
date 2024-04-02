@@ -65,6 +65,7 @@ namespace CosmicShore.Core
         [Header("Configuration")]
         [SerializeField] public float boostMultiplier = 4f; // TODO: Move to ShipController
         [SerializeField] public float boostFuelAmount = -.01f;
+        [SerializeField] bool bottomEdgeButtons = false;
 
         [SerializeField] List<InputEventShipActionMapping> inputEventShipActions;
         Dictionary<InputEvents, List<ShipAction>> ShipControlActions = new();
@@ -155,6 +156,7 @@ namespace CosmicShore.Core
             InputController = player.GetComponent<InputController>();
             AutoPilot = GetComponent<AIPilot>();
             if (!FollowTarget) FollowTarget = transform;
+            if (bottomEdgeButtons) Player.GameCanvas.MiniGameHUD.PositionButtonPanel(true);
 
             foreach (var shipGeometry in shipGeometries)
                 shipGeometry.AddComponent<ShipGeometry>().Ship = this;

@@ -495,6 +495,17 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 2267044654069565992, guid: 7d3c24f07511c2b449da87870cb86cce,
+        type: 3}
+      propertyPath: MainMenuSingletonPersistents.Array.size
+      value: 7
+      objectReference: {fileID: 0}
+    - target: {fileID: 2267044654069565992, guid: 7d3c24f07511c2b449da87870cb86cce,
+        type: 3}
+      propertyPath: MainMenuSingletonPersistents.Array.data[6]
+      value: 
+      objectReference: {fileID: 8074264055739845521, guid: 656cb297fa7eee642bf30a27718f0c59,
+        type: 3}
     - target: {fileID: 2267044654069565993, guid: 7d3c24f07511c2b449da87870cb86cce,
         type: 3}
       propertyPath: m_RootOrder
@@ -1496,6 +1507,7 @@ MonoBehaviour:
   EndOfTurnDelay: 0
   EnableTrails: 1
   DefaultPlayerShipType: 3
+  DefaultPlayerVessel: {fileID: 0}
   ActivePlayer: {fileID: 0}
   Crystal: {fileID: 1568959833}
   CrystalStartPosition: {x: 0, y: 0, z: -120}
@@ -1580,7 +1592,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 66cd5c1991d8494489b573e9019a70ea, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  game: {fileID: 1078953710}
   player: {fileID: 1649340654}
   specialCamera: {fileID: 1193881525}
 --- !u!114 &1193881525

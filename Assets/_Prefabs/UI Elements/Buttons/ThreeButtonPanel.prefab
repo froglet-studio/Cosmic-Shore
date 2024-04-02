@@ -591,6 +591,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 8666518134979662275}
+  - component: {fileID: 1908788735463529607}
   m_Layer: 5
   m_Name: ThreeButtonPanel
   m_TagString: Untagged
@@ -621,3 +622,28 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 220, y: 160}
   m_Pivot: {x: 1, y: 1}
+--- !u!114 &1908788735463529607
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6087487335082490849}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 74fb5430b1bf6c44f9ce490b63ea062d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  onBottomEdge: 0
+  buttonPositions:
+  - {x: 0, y: 0}
+  - {x: 0, y: 0}
+  - {x: 0, y: 0}
+  bottomEdgeButtonPositions:
+  - {x: 0, y: 0}
+  - {x: 0, y: 0}
+  - {x: 0, y: 0}
+  buttons:
+  - {fileID: 742722737849981286}
+  - {fileID: 1449616878181636833}
+  - {fileID: 1460938349587056028}

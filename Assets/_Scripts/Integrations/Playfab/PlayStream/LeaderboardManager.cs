@@ -1,12 +1,15 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 using CosmicShore.Integrations.Playfab.Authentication;
+using CosmicShore.Utility.ClassExtensions;
+using CosmicShore.Utility.Singleton;
 using PlayFab;
 using PlayFab.ClientModels;
 using UnityEngine;
-using VContainer.Unity;
 
 namespace CosmicShore.Integrations.Playfab.PlayStream
 {
@@ -14,13 +17,13 @@ namespace CosmicShore.Integrations.Playfab.PlayStream
     /// Leaderboard Manager
     /// Handles online and offline leaderboard stats
     /// </summary>
-    public class LeaderboardManager : IPostInitializable, IDisposable
+    public class LeaderboardManager : SingletonPersistent<LeaderboardManager>
     {
         /// <summary>
         /// Leaderboard Entry struct
         /// Has members: Position(Rank), Score and Player Display Name
         /// </summary>
-        [System.Serializable]
+        [Serializable]
         public struct LeaderboardEntry
         {
             public int Position;
@@ -40,34 +43,37 @@ namespace CosmicShore.Integrations.Playfab.PlayStream
         }
 
         // Offline local data file name
-        readonly string OfflineStatsFileName = "offline_stats.data";
+        private const string OfflineStatsFileName = "offline_stats.data";
+
         // Local storage data prefix
-        readonly string CachedLeaderboardFileNamePrefix = "leaderboard_";
+        private const string CachedLeaderboardFileNamePrefix = "leaderboard_";
 
-        bool online = false;
+        bool _online;
 
-        private AuthenticationManager _authManager;
+        // private AuthenticationManager _authManager;
 
-        public LeaderboardManager(AuthenticationManager authManager)
-        {
-            _authManager = authManager;
-        }
+        // public LeaderboardManager(AuthenticationManager authManager)
+        // {
+        //     _authManager = authManager;
+        // }
 
-        public void PostInitialize()
+        private void Start()
         {
             NetworkMonitor.NetworkConnectionFound += ComeOnline;
             NetworkMonitor.NetworkConnectionLost += GoOffline;
-            _authManager.OnProfileLoaded += ReportAndFlushStatisticsAsync;
+            AuthenticationManager.OnProfileLoaded += ReportAndFlushOfflineStatistics;
+            this.LogWithClassMethod(MethodBase.GetCurrentMethod()?.Name, "Initiated.");
         }
 
         /// <summary>
         /// Clear out all delegates
         /// </summary>
-        public void Dispose()
+        private void OnDestroy()
         {
             NetworkMonitor.NetworkConnectionFound -= ComeOnline;
             NetworkMonitor.NetworkConnectionLost -= GoOffline;
-            _authManager.OnProfileLoaded -= ReportAndFlushStatisticsAsync;
+            AuthenticationManager.OnProfileLoaded -= ReportAndFlushOfflineStatistics;
+            this.LogWithClassMethod(MethodBase.GetCurrentMethod()?.Name, "this instance is disposed.");
         }
 
         // ReSharper disable Unity.PerformanceAnalysis
@@ -78,8 +84,8 @@ namespace CosmicShore.Integrations.Playfab.PlayStream
         void ComeOnline()
         {
             Debug.Log("LeaderboardManager - ComeOnline");
-            online = true;
-            ReportAndFlushStatisticsAsync();
+            _online = true;
+            ReportAndFlushOfflineStatistics();
         }
 
         /// <summary>
@@ -89,17 +95,22 @@ namespace CosmicShore.Integrations.Playfab.PlayStream
         void GoOffline()
         {
             Debug.Log("LeaderboardManager - GoOffline");
-            online = false;
+            _online = false;
         }
 
+        // ReSharper disable Unity.PerformanceAnalysis
+        private void ReportAndFlushOfflineStatistics()
+        {
+            StartCoroutine(ReportAndFlushStatisticsCoroutine());
+        }
 
         /// <summary>
         /// Report and Flush Offline Stats Coroutine
         /// Local data uploading and clearing coroutine logic 
         /// </summary>
-        private void ReportAndFlushStatisticsAsync()
+        private IEnumerator ReportAndFlushStatisticsCoroutine()
         {
-            WaitForPlayFabAccountAsync();
+            yield return new WaitUntil(() => AuthenticationManager.PlayFabAccount != null);
             
             Debug.Log("LeaderboardManager - ReportAndFlushOfflineStatistics");
             var dataAccessor = new DataAccessor(OfflineStatsFileName);
@@ -115,7 +126,7 @@ namespace CosmicShore.Integrations.Playfab.PlayStream
 
         private async void WaitForPlayFabAccountAsync()
         {
-            if (_authManager.PlayFabAccount == null)
+            while (AuthenticationManager.PlayFabAccount == null)
             {
                 await Task.Delay(100);
             }
@@ -187,13 +198,13 @@ namespace CosmicShore.Integrations.Playfab.PlayStream
         /// </summary>
         void ReportPlayerStatistic(List<StatisticUpdate> stats, Dictionary<string, string> customTags)
         {
-            if (online)
+            if (_online)
             {
                 Debug.Log($"LeaderboardManager.UpdatePlayerStatistic - online");
                 customTags.Add("BuildNumber", Application.buildGUID);
 
                 var request = new UpdatePlayerStatisticsRequest();
-                request.AuthenticationContext = _authManager.PlayFabAccount.AuthContext;
+                request.AuthenticationContext = AuthenticationManager.PlayFabAccount.AuthContext;
                 request.CustomTags = customTags;
                 request.Statistics = stats;
                 
@@ -241,10 +252,10 @@ namespace CosmicShore.Integrations.Playfab.PlayStream
         /// </summary>
         public void FetchLeaderboard(string leaderboardName, Dictionary<string, string> customTags, LoadLeaderboardCallBack callback)
         {
-            if (online)
+            if (_online)
             {
                 var request = new GetLeaderboardAroundPlayerRequest();
-                request.AuthenticationContext = _authManager.PlayFabAccount.AuthContext;
+                request.AuthenticationContext = AuthenticationManager.PlayFabAccount.AuthContext;
                 request.StatisticName = leaderboardName;
                 request.CustomTags = customTags;
                 request.ProfileConstraints = new PlayerProfileViewConstraints()

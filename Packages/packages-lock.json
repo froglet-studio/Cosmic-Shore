@@ -87,7 +87,7 @@
       }
     },
     "com.unity.ide.rider": {
-      "version": "3.0.27",
+      "version": "3.0.28",
       "depth": 0,
       "source": "registry",
       "dependencies": {
@@ -325,7 +325,7 @@
       "url": "https://packages.unity.com"
     },
     "com.unity.textmeshpro": {
-      "version": "3.0.7",
+      "version": "3.0.8",
       "depth": 0,
       "source": "registry",
       "dependencies": {
@@ -384,12 +384,19 @@
         "com.unity.render-pipelines.core": "12.1.11"
       }
     },
-    "jp.hadashikick.vcontainer": {
-      "version": "https://github.com/hadashiA/VContainer.git?path=VContainer/Assets/VContainer#1.14.0",
+    "com.veriorpies.parrelsync": {
+      "version": "https://github.com/VeriorPies/ParrelSync.git?path=/ParrelSync",
       "depth": 0,
       "source": "git",
       "dependencies": {},
-      "hash": "d37fb21ba4d17f3a80effdc8119d985d8d150ebe"
+      "hash": "d1ef610e9fe3ad0b490cce91594449fc0af809a6"
+    },
+    "jp.hadashikick.vcontainer": {
+      "version": "https://github.com/hadashiA/VContainer.git?path=VContainer/Assets/VContainer#1.15.1",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {},
+      "hash": "4a23aa69588e7def4a21bfebc07107624c1c89fb"
     },
     "com.unity.modules.ai": {
       "version": "1.0.0",

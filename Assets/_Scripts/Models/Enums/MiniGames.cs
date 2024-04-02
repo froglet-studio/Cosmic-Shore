@@ -25,4 +25,5 @@ public enum MiniGames
     KickinMass = 20,
     Sidewinder = 21,
     Multipass = 22,
+    BotDuel = 23,
 }
