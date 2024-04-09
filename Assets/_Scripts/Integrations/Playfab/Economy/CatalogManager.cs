@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using CosmicShore.Integrations.Playfab.Authentication;
 using CosmicShore.Utility.Singleton;
 using PlayFab;
@@ -20,16 +21,17 @@ namespace CosmicShore.Integrations.Playfab.Economy
         static PlayFabEconomyInstanceAPI _playFabEconomyInstanceAPI;
 
         // Player inventory and items
-        public static StoreShelve StoreShelve { get; set; }
+        public static StoreShelve StoreShelve { get; private set; }
 
-        public static Inventory Inventory { get; set; }
+        public static Inventory Inventory { get; private set; } = new();
         // private static string _shardId;
 
-        private const string DailyRewardStoreID = "DailyRewards";
+        private const string DailyRewardStoreID = "63d59c05-2b86-4843-8e9b-61c07ab121ad";
         private const string ClaimDailyRewardTime = "ClaimDailyRewardTime";
         
         private void Start()
         {
+            StoreShelve = new() { Ships = new(), MiniGames = new(), Crystals = new(), DailyRewards = new() };
             AuthenticationManager.OnLoginSuccess += InitializePlayFabEconomyAPI;
             AuthenticationManager.OnLoginSuccess += LoadAllCatalogItems;
             AuthenticationManager.OnLoginSuccess += LoadPlayerInventory;
@@ -525,11 +527,12 @@ namespace CosmicShore.Integrations.Playfab.Economy
         /// </summary>
         private void GetDailyRewardStore()
         {
-            var request = new GetStoreItemsRequest{ StoreId = DailyRewardStoreID };
-            PlayFabClientAPI.GetStoreItems(request, OnGettingDailyRewardStore, HandleErrorReport);
+            var store = new StoreReference { Id = DailyRewardStoreID };
+            var request = new SearchItemsRequest{ Store = store };
+            _playFabEconomyInstanceAPI.SearchItems(request, OnGettingDailyRewardStore, HandleErrorReport);
         }
 
-        private void OnGettingDailyRewardStore(GetStoreItemsResult result)
+        private void OnGettingDailyRewardStore(SearchItemsResponse result)
         {
             if (result == null)
             {
@@ -537,11 +540,19 @@ namespace CosmicShore.Integrations.Playfab.Economy
                 return;
             }
 
-            foreach (var storeItem in result.Store)
+            foreach (var storeItem in result.Items)
             {
                 Debug.Log($"Catalog manager - OnGettingDailyRewardStore() - the store item is: " +
-                          $"id: {storeItem.ItemId}" +
-                          $"price: {storeItem.VirtualCurrencyPrices}");
+                          $"id: {storeItem.Id} " +
+                          $"title: {storeItem.Title.Values.FirstOrDefault()}");
+                StoreShelve.DailyRewards.Add(ConvertToStoreItem(storeItem));
+            }
+
+            foreach (var dailyReward in StoreShelve.DailyRewards)
+            {
+                Debug.Log($"Catalog manager - OnGettingDailyRewardStore() - the stored daily rewards is: " +
+                          $"id: {dailyReward.ItemId} " +
+                          $"title: {dailyReward.Name}");
             }
         }
 

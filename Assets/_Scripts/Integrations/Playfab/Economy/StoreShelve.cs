@@ -9,5 +9,7 @@ namespace CosmicShore.Integrations.Playfab.Economy
         public List<VirtualItem> Crystals;
         public List<VirtualItem> MiniGames;
         public List<VirtualItem> Ships;
+
+        public List<VirtualItem> DailyRewards;
     }
 }
