@@ -3,8 +3,10 @@ using System.Collections.Generic;
 using CosmicShore.Integrations.Playfab.Authentication;
 using CosmicShore.Utility.Singleton;
 using PlayFab;
+using PlayFab.ClientModels;
 using PlayFab.EconomyModels;
 using UnityEngine;
+using CatalogItem = PlayFab.EconomyModels.CatalogItem;
 
 namespace CosmicShore.Integrations.Playfab.Economy
 {
@@ -22,12 +24,17 @@ namespace CosmicShore.Integrations.Playfab.Economy
 
         public static Inventory Inventory { get; set; }
         // private static string _shardId;
+
+        private const string DailyRewardStoreID = "DailyRewards";
+        private const string ClaimDailyRewardTime = "ClaimDailyRewardTime";
         
         private void Start()
         {
             AuthenticationManager.OnLoginSuccess += InitializePlayFabEconomyAPI;
             AuthenticationManager.OnLoginSuccess += LoadAllCatalogItems;
             AuthenticationManager.OnLoginSuccess += LoadPlayerInventory;
+
+            AuthenticationManager.OnLoginSuccess += GetDailyRewardStore;
         }
 
 
@@ -36,6 +43,8 @@ namespace CosmicShore.Integrations.Playfab.Economy
             AuthenticationManager.OnLoginSuccess -= InitializePlayFabEconomyAPI;
             AuthenticationManager.OnLoginSuccess -= LoadAllCatalogItems;
             AuthenticationManager.OnLoginSuccess -= LoadPlayerInventory;
+            
+            AuthenticationManager.OnLoginSuccess -= GetDailyRewardStore;
             StoreShelve = null;
             Inventory = null;
             // AuthenticationManager.OnRegisterSuccess -= GrantStartingInventory;
@@ -485,6 +494,55 @@ namespace CosmicShore.Integrations.Playfab.Economy
                 },
                 HandleErrorReport
             );
+        }
+
+        /// <summary>
+        /// Get current time from the server
+        /// </summary>
+        private void GetCurrentTime()
+        {
+            var request = new GetTimeRequest();
+            PlayFabClientAPI.GetTime(request, OnGettingCurrentTime, HandleErrorReport);
+        }
+
+        private void OnGettingCurrentTime(GetTimeResult result)
+        {
+            if (result == null) return;
+            
+            Debug.Log($"Catalog manager - OnGettingCurrentTime() - The time is: {result.Time}");
+        }
+
+        /// <summary>
+        /// Claim Daily Reward
+        /// </summary>
+        public void ClaimDailyReward()
+        {
+            
+        }
+
+        /// <summary>
+        /// Get Daily Reward Store defined in PlayFab Economy
+        /// </summary>
+        private void GetDailyRewardStore()
+        {
+            var request = new GetStoreItemsRequest{ StoreId = DailyRewardStoreID };
+            PlayFabClientAPI.GetStoreItems(request, OnGettingDailyRewardStore, HandleErrorReport);
+        }
+
+        private void OnGettingDailyRewardStore(GetStoreItemsResult result)
+        {
+            if (result == null)
+            {
+                Debug.Log("Catalog manager - OnGettingDailyRewardStore() - no result.");
+                return;
+            }
+
+            foreach (var storeItem in result.Store)
+            {
+                Debug.Log($"Catalog manager - OnGettingDailyRewardStore() - the store item is: " +
+                          $"id: {storeItem.ItemId}" +
+                          $"price: {storeItem.VirtualCurrencyPrices}");
+            }
         }
 
         #endregion
