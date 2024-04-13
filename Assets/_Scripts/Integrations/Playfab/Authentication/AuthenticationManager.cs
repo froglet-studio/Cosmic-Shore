@@ -16,10 +16,9 @@ namespace CosmicShore.Integrations.Playfab.Authentication
 {
     public class AuthenticationManager : SingletonPersistent<AuthenticationManager>
     {
-        public static PlayFabAccount PlayFabAccount { get; private set; }
-        // public static PlayerProfile PlayerProfile;
-        public static UserProfile UserProfile { get; private set; }
-        public static PlayerSession PlayerSession { get; private set; }
+        public static PlayFabAccount PlayFabAccount { get; private set; } = new();
+        public static UserProfile UserProfile { get; private set; } = new();
+        public static PlayerSession PlayerSession { get; private set; } = new();
         
         public static event Action OnLoginSuccess;
  
@@ -33,24 +32,11 @@ namespace CosmicShore.Integrations.Playfab.Authentication
         public static List<string> Adjectives;
         public static List<string> Nouns;
         
-        // public AuthenticationManager(PlayFabAccount account, UserProfile profile, PlayerSession session)
-        // {
-        //     PlayFabAccount = account;
-        //     UserProfile = profile;
-        //     PlayerSession = session;
-        // }
         public override void Awake()
         {
             base.Awake();
             AnonymousLogin();
             OnLoginSuccess += LoadPlayerProfile;
-        }
-
-        private void OnEnable()
-        {
-            PlayFabAccount = new();
-            UserProfile = new();
-            PlayerSession = new();
         }
 
         private void OnDestroy()
@@ -72,13 +58,13 @@ namespace CosmicShore.Integrations.Playfab.Authentication
             var request = new UpdateUserTitleDisplayNameRequest();
             request.DisplayName = displayName;
             PlayFabClientAPI.UpdateUserTitleDisplayName(request,
-                (result) =>
+                result =>
                 {
                     Debug.Log($"AuthenticationManager - Successful updated player display name: {UserProfile.DisplayName}");
                     UserProfile.DisplayName = result.DisplayName;
                     callback?.Invoke(result);
                 }, 
-                (error) =>
+                error =>
                 {
                     Debug.LogError(error.GenerateErrorReport());
                 }
@@ -154,11 +140,11 @@ namespace CosmicShore.Integrations.Playfab.Authentication
             }
             
             PlayFabClientAPI.GetTitleData(
-                new GetTitleDataRequest()
+                new GetTitleDataRequest
                 {
                     AuthenticationContext = PlayFabAccount.AuthContext
                 }, 
-                (result) =>
+                result =>
                 {
                     if (result.Data != null)
                     {
@@ -401,15 +387,15 @@ namespace CosmicShore.Integrations.Playfab.Authentication
         {
             // Silent login first, if successful continue logging in with the anonymous account by adding username, email and password
             AnonymousLogin();
+            
+            var request = new AddUsernamePasswordRequest();
+            
+            request.Username = string.IsNullOrEmpty(UserProfile.Email) ? email : UserProfile.Email;
+            request.Email = email;
+            request.Password = password.ToString();
+            
             PlayFabClientAPI.AddUsernamePassword(
-                new AddUsernamePasswordRequest()
-                {
-                    // Username is required for registering an account
-                    Username = string.IsNullOrEmpty(UserProfile.Email)? email: UserProfile.Email,
-                    Email = email,
-                    Password = password.ToString()
-                    
-                }, (AddUsernamePasswordResult result) =>
+                request, result =>
                 {
                     UserProfile.Email = result.Username;
                     if (PlayerSession.IsRemembered)
@@ -417,7 +403,7 @@ namespace CosmicShore.Integrations.Playfab.Authentication
                         // If the session is asked to be remembered, replace the custom id with newly generated Guid
                         PlayerSession.LoginId = Guid.NewGuid().ToString();
                         PlayFabClientAPI.LinkCustomID(
-                            new LinkCustomIDRequest()
+                            new LinkCustomIDRequest
                             {
                                 CustomId = PlayerSession.IsRemembered? PlayerSession.LoginId : SystemInfo.deviceUniqueIdentifier,
                                 // True if another user is already linked to the custom ID, unlink the other user and re-link.

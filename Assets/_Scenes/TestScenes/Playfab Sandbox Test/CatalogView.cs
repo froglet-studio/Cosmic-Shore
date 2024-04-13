@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using CosmicShore.Integrations.Enums;
 using CosmicShore.Integrations.Playfab.Economy;
 using CosmicShore.Integrations.Playfab.PlayerModels;
+using CosmicShore.Integrations.Playfab.Utility;
 using PlayFab;
 using UnityEngine;
 using UnityEngine.UI;
@@ -51,14 +52,13 @@ namespace Scenes.TestScenes.Playfab_Sandbox_Test
             purchaseShardsButton.onClick.AddListener(PurchaseShardsWithCrystalTest);
             removeInvCollectionButton.onClick.AddListener(RemoveInventoryCollectionTest);
             
-            CatalogManager.OnGettingPlayFabErrors += ProcessCatalogErrors;
+            PlayFabUtility.GettingPlayFabErrors += ProcessCatalogErrors;
             
         }
 
         private void OnDisable()
         {
-            CatalogManager.OnGettingInvCollectionIds -= RemoveInventoryCollection;
-            CatalogManager.OnGettingPlayFabErrors -= ProcessCatalogErrors;
+            PlayFabUtility.GettingPlayFabErrors -= ProcessCatalogErrors;
             
             purchaseVesselButton.onClick.RemoveListener(PurchaseUpgradeTest);
             grantStartingItemsButton.onClick.RemoveListener(GrantStartingInventoryTest);
@@ -192,7 +192,6 @@ namespace Scenes.TestScenes.Playfab_Sandbox_Test
         private void RemoveInventoryCollectionTest()
         {
             _catalogManager.GetInventoryCollectionIds();
-            CatalogManager.OnGettingInvCollectionIds += RemoveInventoryCollection;
         }
 
         /// <summary>

@@ -1,10 +1,8 @@
-using System;
 using System.Collections.Generic;
-using System.Linq;
 using CosmicShore.Integrations.Playfab.Authentication;
+using CosmicShore.Integrations.Playfab.Utility;
 using CosmicShore.Utility.Singleton;
 using PlayFab;
-using PlayFab.ClientModels;
 using PlayFab.EconomyModels;
 using UnityEngine;
 using CatalogItem = PlayFab.EconomyModels.CatalogItem;
@@ -13,25 +11,23 @@ namespace CosmicShore.Integrations.Playfab.Economy
 {
     public class CatalogManager : SingletonPersistent<CatalogManager>
     {
-        // Public events
-        public static event Action<PlayFabError> OnGettingPlayFabErrors;
-        public static event Action<List<string>> OnGettingInvCollectionIds;
-        
         // PlayFab Economy API instance
         static PlayFabEconomyInstanceAPI _playFabEconomyInstanceAPI;
 
         // Player inventory and items
-        public static StoreShelve StoreShelve { get; private set; }
+        public static StoreShelve StoreShelve { get; private set; } = new();
 
         public static Inventory Inventory { get; private set; } = new();
         // private static string _shardId;
 
+        private int _dailyRewardIndex;
+
         private const string DailyRewardStoreID = "63d59c05-2b86-4843-8e9b-61c07ab121ad";
         private const string ClaimDailyRewardTime = "ClaimDailyRewardTime";
         
+        
         private void Start()
         {
-            StoreShelve = new() { Ships = new(), MiniGames = new(), Crystals = new(), DailyRewards = new() };
             AuthenticationManager.OnLoginSuccess += InitializePlayFabEconomyAPI;
             AuthenticationManager.OnLoginSuccess += LoadAllCatalogItems;
             AuthenticationManager.OnLoginSuccess += LoadPlayerInventory;
@@ -95,7 +91,7 @@ namespace CosmicShore.Integrations.Playfab.Economy
             
             _playFabEconomyInstanceAPI.SearchItems(request,
                 OnLoadingCatalogItems,
-                HandleErrorReport
+                PlayFabUtility.HandleErrorReport
             );
         }
 
@@ -121,9 +117,9 @@ namespace CosmicShore.Integrations.Playfab.Economy
             Debug.LogFormat("{0} - {1}: Catalog items Loaded.", nameof(CatalogManager), nameof(OnLoadingCatalogItems));
             StoreShelve = new()
             {
-                Crystals = new(),
-                Ships = new(),
-                MiniGames = new()
+                crystals = new(),
+                ships = new(),
+                miniGames = new()
             };
 
             foreach (var item in response.Items)
@@ -142,13 +138,13 @@ namespace CosmicShore.Integrations.Playfab.Economy
             switch (contentType)
             {
                 case "Crystal":
-                    StoreShelve.Crystals.Add(item);
+                    StoreShelve.crystals.Add(item);
                     break;
                 case "Ship":
-                    StoreShelve.Ships.Add(item);
+                    StoreShelve.ships.Add(item);
                     break;
                 case "MiniGame":
-                    StoreShelve.MiniGames.Add(item);
+                    StoreShelve.miniGames.Add(item);
                     break;
                 default:
                     Debug.LogWarningFormat("CatalogManager - AddToStoreSelves: item content type is not part of the store.");
@@ -229,7 +225,7 @@ namespace CosmicShore.Integrations.Playfab.Economy
                 _playFabEconomyInstanceAPI.AddInventoryItems(
                     request,
                     OnGrantStartingInventory,
-                    HandleErrorReport
+                    PlayFabUtility.HandleErrorReport
                 );
             }
         }
@@ -261,7 +257,7 @@ namespace CosmicShore.Integrations.Playfab.Economy
             _playFabEconomyInstanceAPI.GetInventoryItems(
                 request,
                 OnGettingInventoryItems,
-                HandleErrorReport
+                PlayFabUtility.HandleErrorReport
             );
         }
 
@@ -299,11 +295,11 @@ namespace CosmicShore.Integrations.Playfab.Economy
         {
             if (Inventory == null) return;
             
-            Inventory.MiniGames.Clear();
-            Inventory.VesselUpgrades.Clear();
-            Inventory.Crystals.Clear();
-            Inventory.Ships.Clear();
-            Inventory.Vessels.Clear();
+            Inventory.miniGames.Clear();
+            Inventory.vesselUpgrades.Clear();
+            Inventory.crystals.Clear();
+            Inventory.ships.Clear();
+            Inventory.vessels.Clear();
         }
         
         private void AddToInventory(VirtualItem item)
@@ -312,23 +308,23 @@ namespace CosmicShore.Integrations.Playfab.Economy
             {
                 case "Vessel":
                     Debug.LogFormat("{0} - {1} - Adding Vessel",nameof(CatalogManager), nameof(AddToInventory));
-                    Inventory.Vessels.Add(item);
+                    Inventory.vessels.Add(item);
                     break;
                 case "ShipClass":
                     Debug.LogFormat("{0} - {1} - Adding Ship",nameof(CatalogManager), nameof(AddToInventory));
-                    Inventory.Ships.Add(item);
+                    Inventory.ships.Add(item);
                     break;
                 case "VesselUpgrade":
                     Debug.LogFormat("{0} - {1} - Adding Upgrade",nameof(CatalogManager), nameof(AddToInventory));
-                    Inventory.VesselUpgrades.Add(item);
+                    Inventory.vesselUpgrades.Add(item);
                     break;
                 case "MiniGame":
                     Debug.LogFormat("{0} - {1} - Adding MiniGame",nameof(CatalogManager), nameof(AddToInventory));
-                    Inventory.MiniGames.Add(item);
+                    Inventory.miniGames.Add(item);
                     break;
                 case "Crystal":
                     Debug.LogFormat("{0} - {1} - Adding Crystal",nameof(CatalogManager), nameof(AddToInventory));
-                    Inventory.Crystals.Add(item);
+                    Inventory.crystals.Add(item);
                     break;
                 default:
                     Debug.LogWarningFormat("{0} - {1} - Item Content Type not related to player inventory items, such as Stores and Subscriptions.", nameof(CatalogManager), nameof(AddToInventory));
@@ -347,7 +343,7 @@ namespace CosmicShore.Integrations.Playfab.Economy
             _playFabEconomyInstanceAPI.GetItem(
                 request,
                 OnGettingCatalogItem,
-                HandleErrorReport
+                PlayFabUtility.HandleErrorReport
             );
         }
 
@@ -391,7 +387,7 @@ namespace CosmicShore.Integrations.Playfab.Economy
             _playFabEconomyInstanceAPI.AddInventoryItems(
                 request,
                 OnAddingInventoryItem, 
-                HandleErrorReport);
+                PlayFabUtility.HandleErrorReport);
         }
 
         private void OnAddingInventoryItem(AddInventoryItemsResponse response)
@@ -425,7 +421,7 @@ namespace CosmicShore.Integrations.Playfab.Economy
                     }
                     Debug.LogFormat("{0} - {1} All inventory collections removed.", nameof(CatalogManager), nameof(DeleteInventoryCollection));
                 },
-                HandleErrorReport
+                PlayFabUtility.HandleErrorReport
                 );
         }
 
@@ -442,7 +438,7 @@ namespace CosmicShore.Integrations.Playfab.Economy
             _playFabEconomyInstanceAPI.GetInventoryCollectionIds(
                 request,
                 OnGettingInventoryCollectionIds,
-                HandleErrorReport
+                PlayFabUtility.HandleErrorReport
                 );
         }
 
@@ -459,7 +455,7 @@ namespace CosmicShore.Integrations.Playfab.Economy
                 Debug.LogWarningFormat("{0} - {1} No inventory collection ids returned.", nameof(CatalogManager), nameof(GetInventoryCollectionIds));
                 return;
             }
-            OnGettingInvCollectionIds?.Invoke(response.CollectionIds);
+
         }
         
         #endregion
@@ -494,31 +490,19 @@ namespace CosmicShore.Integrations.Playfab.Economy
                 {
                     Debug.Log($"CatalogManager - Purchase success.");
                 },
-                HandleErrorReport
+                PlayFabUtility.HandleErrorReport
             );
         }
 
-        /// <summary>
-        /// Get current time from the server
-        /// </summary>
-        private void GetCurrentTime()
-        {
-            var request = new GetTimeRequest();
-            PlayFabClientAPI.GetTime(request, OnGettingCurrentTime, HandleErrorReport);
-        }
-
-        private void OnGettingCurrentTime(GetTimeResult result)
-        {
-            if (result == null) return;
-            
-            Debug.Log($"Catalog manager - OnGettingCurrentTime() - The time is: {result.Time}");
-        }
+        
 
         /// <summary>
         /// Claim Daily Reward
         /// </summary>
         public void ClaimDailyReward()
         {
+            if (StoreShelve.dailyRewards is null || StoreShelve.dailyRewards.Count == 0) return;
+            
             
         }
 
@@ -529,7 +513,7 @@ namespace CosmicShore.Integrations.Playfab.Economy
         {
             var store = new StoreReference { Id = DailyRewardStoreID };
             var request = new SearchItemsRequest{ Store = store };
-            _playFabEconomyInstanceAPI.SearchItems(request, OnGettingDailyRewardStore, HandleErrorReport);
+            _playFabEconomyInstanceAPI.SearchItems(request, OnGettingDailyRewardStore, PlayFabUtility.HandleErrorReport);
         }
 
         private void OnGettingDailyRewardStore(SearchItemsResponse result)
@@ -542,13 +526,10 @@ namespace CosmicShore.Integrations.Playfab.Economy
 
             foreach (var storeItem in result.Items)
             {
-                Debug.Log($"Catalog manager - OnGettingDailyRewardStore() - the store item is: " +
-                          $"id: {storeItem.Id} " +
-                          $"title: {storeItem.Title.Values.FirstOrDefault()}");
-                StoreShelve.DailyRewards.Add(ConvertToStoreItem(storeItem));
+                StoreShelve.dailyRewards.Add(ConvertToStoreItem(storeItem));
             }
 
-            foreach (var dailyReward in StoreShelve.DailyRewards)
+            foreach (var dailyReward in StoreShelve.dailyRewards)
             {
                 Debug.Log($"Catalog manager - OnGettingDailyRewardStore() - the stored daily rewards is: " +
                           $"id: {dailyReward.ItemId} " +
@@ -594,18 +575,18 @@ namespace CosmicShore.Integrations.Playfab.Economy
         }
         #endregion
 
-        #region Situation Handling
-
-        /// <summary>
-        /// Handle Error Report
-        /// </summary>
-        /// <param name="error">PlayFab Error</param>
-        private void HandleErrorReport(PlayFabError error)
-        {
-            OnGettingPlayFabErrors?.Invoke(error);
-            // Keep the error message here if there will be unit tests.
-            Debug.LogErrorFormat("{0} - error code: {1} message: {2}", nameof(CatalogManager), error.Error, error.ErrorMessage);
-        }
-        #endregion
+        // #region Situation Handling
+        //
+        // /// <summary>
+        // /// Handle Error Report
+        // /// </summary>
+        // /// <param name="error">PlayFab Error</param>
+        // private void HandleErrorReport(PlayFabError error)
+        // {
+        //     OnGettingPlayFabErrors?.Invoke(error);
+        //     // Keep the error message here if there will be unit tests.
+        //     Debug.LogErrorFormat("{0} - error code: {1} message: {2}", nameof(CatalogManager), error.Error, error.ErrorMessage);
+        // }
+        // #endregion
     }
 }
