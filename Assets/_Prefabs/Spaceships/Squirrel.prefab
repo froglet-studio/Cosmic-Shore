@@ -1448,8 +1448,15 @@ MonoBehaviour:
   blockChargeChange: 0
   boostMultiplier: 0
   boostFuelAmount: 0
+  bottomEdgeButtons: 0
   inputEventShipActions:
   - InputEvent: 3
+    ShipActions:
+    - {fileID: 1244531863877960553}
+  - InputEvent: 3
+    ShipActions:
+    - {fileID: 1244531863877960553}
+  - InputEvent: 7
     ShipActions:
     - {fileID: 1244531863877960553}
   resourceEventClassActions: []
@@ -1538,9 +1545,9 @@ MonoBehaviour:
   skimmer: {fileID: 708149374973573223}
   waitTillOutsideSkimmer: 0
   shielded: 0
-  offset: 0
   initialWavelength: 8
   minWavelength: 8
+  offset: 0
   Gap: 14
   MinimumGap: 1
   TargetScale: {x: 0, y: 0, z: 0}
@@ -1629,12 +1636,15 @@ MonoBehaviour:
   YSum: 0
   XDiff: 0
   YDiff: 0
+  X: 0
+  Y: 0
   raycastHeight: 2
   raycastWidth: 2
   AutoPilotEnabled: 0
   LookingAtCrystal: 0
   ram: 0
   drift: 0
+  SingleStickControls: 0
   useAbility: 0
   abilityCooldown: 5
   ability: {fileID: 0}

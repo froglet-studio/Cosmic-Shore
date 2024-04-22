@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0309a5343d820c14abd73b35f6fa50f1, type: 3}
   m_Name: FalconClassSO
   m_EditorClassIdentifier: 
-  Class: 0
+  Class: 9
   Name: 
   Description: 
   Icon: {fileID: 0}

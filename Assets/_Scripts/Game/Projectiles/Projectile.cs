@@ -13,6 +13,7 @@ namespace CosmicShore.Game.Projectiles
         public Teams Team;
         public Ship Ship;
 
+
         [SerializeField] List<TrailBlockImpactEffects> trailBlockImpactEffects;
         [SerializeField] List<ShipImpactEffects> shipImpactEffects;
         [SerializeField] List<CrystalImpactEffects> crystalImpactEffects;
@@ -21,6 +22,7 @@ namespace CosmicShore.Game.Projectiles
 
         [SerializeField] bool spike = false;
         [SerializeField] float growthRate = 1.0f;
+        [SerializeField] bool friendlyFire = false;
 
         MeshRenderer meshRenderer;
 
@@ -44,7 +46,7 @@ namespace CosmicShore.Game.Projectiles
         {
             if (other.TryGetComponent<TrailBlock>(out var trailBlock))
             {
-                if (trailBlock.Team == Team)
+                if (!friendlyFire && trailBlock.Team == Team)
                     return;
 
                 PerformTrailImpactEffects(trailBlock.TrailBlockProperties);

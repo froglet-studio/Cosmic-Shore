@@ -12,7 +12,7 @@ namespace CosmicShore
 {
     public class SpawnableCylinder : SpawnableAbstractBase
     {
-        [SerializeField] TrailBlock trailBlock;
+        [SerializeField] Core.TrailBlock trailBlock;
         static int CylindersSpawned = 0;
 
         #region Attributes for Explosion Parameters
@@ -67,7 +67,7 @@ namespace CosmicShore
 
             CreateBlock(transform.position + offset, tilt * transform.forward - (offset + transform.position), transform.forward, container.name + "::BLOCK::" + block, trail, tempBlockscale, trailBlock, container);
         }
-        void CreateBlock(Vector3 position, Vector3 lookPosition, Vector3 up, string blockId, Trail trail, Vector3 scale, TrailBlock trailBlock, GameObject container, Teams team = Teams.Blue)
+        void CreateBlock(Vector3 position, Vector3 lookPosition, Vector3 up, string blockId, Trail trail, Vector3 scale, Core.TrailBlock trailBlock, GameObject container, Teams team = Teams.Blue)
         {
             var Block = Instantiate(trailBlock);
             Block.Team = team;

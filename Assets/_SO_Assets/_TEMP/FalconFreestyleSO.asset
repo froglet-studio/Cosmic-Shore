@@ -19,8 +19,8 @@ MonoBehaviour:
   Image: {fileID: 0}
   Icon: {fileID: 0}
   SelectedIcon: {fileID: 0}
-  Ship: {fileID: 0}
-  PrimaryElement: 0
+  Ship: {fileID: 11400000, guid: 0e0265e1ba332cb4ba3ddd473190b351, type: 2}
+  PrimaryElement: 1
   InitialMass: 1
   InitialCharge: 1
   InitialSpace: 1
