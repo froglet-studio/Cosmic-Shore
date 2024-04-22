@@ -6,8 +6,9 @@ namespace CosmicShore.Integrations.Playfab.Economy
     [Serializable]
     public class StoreShelve
     {
-        public List<VirtualItem> Crystals;
-        public List<VirtualItem> MiniGames;
-        public List<VirtualItem> Ships;
+        public List<VirtualItem> crystals = new();
+        public List<VirtualItem> miniGames = new();
+        public List<VirtualItem> ships = new();
+        public List<VirtualItem> dailyRewards = new();
     }
 }
