@@ -6,10 +6,10 @@ using CosmicShore.Core;
 public class FireBarrageAction : ShipAction
 {
     // TODO: WIP gun firing needs to be reworked
-    [SerializeField] GameObject gunContainer;
+    [SerializeField] Gun gunContainer;
     List<Gun> guns = new();
     ShipStatus shipData;
-    [SerializeField] GameObject projectileContainer;
+    [SerializeField] PoolManager projectileContainer;
     [SerializeField] float ammoCost = .03f;
     bool inherit = false;
 

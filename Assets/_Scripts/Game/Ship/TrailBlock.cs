@@ -179,7 +179,7 @@ namespace CosmicShore.Core
             }
         }
 
-        public void Explode(Vector3 impactVector, Teams team, string playerName, bool devastate=false)
+        public virtual void Explode(Vector3 impactVector, Teams team, string playerName, bool devastate=false)
         {
             if ((Shielded && !devastate) || IsSuperShielded)
             {

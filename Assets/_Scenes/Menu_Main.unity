@@ -41018,7 +41018,7 @@ PrefabInstance:
     - target: {fileID: 302356026468653294, guid: fdbd97f79a7aec14f8fadd5589780a74,
         type: 3}
       propertyPath: ShipPrefabs.Array.size
-      value: 8
+      value: 9
       objectReference: {fileID: 0}
     - target: {fileID: 302356026468653294, guid: fdbd97f79a7aec14f8fadd5589780a74,
         type: 3}
@@ -41067,6 +41067,12 @@ PrefabInstance:
       propertyPath: ShipPrefabs.Array.data[7]
       value: 
       objectReference: {fileID: 874579555101021527, guid: 2d5833ab632135248959e37cc8aef2be,
+        type: 3}
+    - target: {fileID: 302356026468653294, guid: fdbd97f79a7aec14f8fadd5589780a74,
+        type: 3}
+      propertyPath: ShipPrefabs.Array.data[8]
+      value: 
+      objectReference: {fileID: 874579555101021527, guid: 633ae27c43a2006459b22e655df7ab4f,
         type: 3}
     - target: {fileID: 302356026468653295, guid: fdbd97f79a7aec14f8fadd5589780a74,
         type: 3}
@@ -58416,6 +58422,12 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 11400000, guid: 23306534ee610414c99a9b7bf3d92995,
         type: 2}
+    - target: {fileID: 5036209225001289746, guid: 6e26a254ab5fbd749a242ce2be20d667,
+        type: 3}
+      propertyPath: AllShips
+      value: 
+      objectReference: {fileID: 11400000, guid: 49c7c10ad2901c74589c28317a4eb17b,
+        type: 2}
     - target: {fileID: 5036209225001289759, guid: 6e26a254ab5fbd749a242ce2be20d667,
         type: 3}
       propertyPath: m_Name
@@ -69668,6 +69680,13 @@ MonoBehaviour:
   volumeControlThreshold: 100
   SnowChanger: {fileID: 1019533258}
   Crystal: {fileID: 194708249}
+  flora1: {fileID: 0}
+  flora2: {fileID: 0}
+  initialFaunaSpawnWaitTime: 10
+  spawnVolumeThreshold: 1
+  baseFaunaSpawnTime: 10
+  fauna1: {fileID: 0}
+  fauna2: {fileID: 0}
 --- !u!114 &6652868844536807278
 MonoBehaviour:
   m_ObjectHideFlags: 0

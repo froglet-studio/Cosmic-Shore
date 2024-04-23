@@ -332,6 +332,7 @@ namespace CosmicShore.Game.IO
 
             if (invertYEnabled)
                 YSum *= -1;
+                //EasedLeftJoystickPosition = new Vector2(EasedLeftJoystickPosition.x, -EasedLeftJoystickPosition.y);
             if (invertThrottleEnabled)
                 YDiff = 1 - YDiff;
         }
