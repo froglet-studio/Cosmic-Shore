@@ -1,10 +1,7 @@
-using Newtonsoft.Json.Linq;
 using System;
-using System.Collections;
 using System.Linq;
 using TMPro;
 using UnityEngine;
-using UnityEngine.PlayerLoop;
 using UnityEngine.UI;
 using Random = System.Random;
 
@@ -51,8 +48,6 @@ namespace CosmicShore.App.UI.Elements
 
             if (secondsUntilMidnight > 0)
             {
-                secondsUntilMidnight -= 1;
-
                 TimeSpan timespan = TimeSpan.FromSeconds(secondsUntilMidnight);
                 TimeRemaining.text = string.Format("Time left: {0:D2}:{1:D2}:{2:D2}",
                                 timespan.Hours,
