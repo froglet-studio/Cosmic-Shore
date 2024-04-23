@@ -1,61 +1,55 @@
-using CosmicShore.App.UI.Menus;
 using TMPro;
 using UnityEngine;
+using UnityEngine.Serialization;
 using UnityEngine.UI;
 
 namespace CosmicShore.App.UI.Elements
 {
-    public class VesselCard : MonoBehaviour
+    public class GuideSelectButton : MonoBehaviour
     {
         [Header("Resources")]
-        [SerializeField] Sprite LockIcon;
         [SerializeField] Sprite MassBackground;
         [SerializeField] Sprite ChargeBackground;
         [SerializeField] Sprite SpaceBackground;
         [SerializeField] Sprite TimeBackground;
         [SerializeField] Color ActiveBorderColor = new Color(1f, .5f, .25f);
         [SerializeField] Color InActiveBorderColor = Color.white;
-        [SerializeField] public bool Locked;
 
         [Header("Placeholder Locations")]
-        [SerializeField] TMP_Text VesselName;
+        [FormerlySerializedAs("VesselName")]
+        [SerializeField] TMP_Text GuideName;
         [SerializeField] Image BorderImage;
         [SerializeField] Image BackgroundImage;
-        [SerializeField] Image VesselImage;
-        [SerializeField] Image LockImage;
-        [SerializeField] public int Index;  // Serialized for debugging
+        [FormerlySerializedAs("VesselImage")]
+        [SerializeField] Image GuideImage;
+        //[SerializeField] int Index;
 
-        SO_Vessel vessel;
-        public SO_Vessel Vessel
+        SO_Guide guide;
+        public SO_Guide Guide
         {
-            get { return vessel; }
+            get { return guide; }
             set
             {
-                vessel = value;
-                UpdateCardView();
+                guide = value;
+                UpdateButtonView();
             }
         }
 
-        public SquadMenu SquadMenu;
+        //public SquadMenu SquadMenu;
 
         void Start()
         {
-            UpdateCardView();
-            GetComponent<Button>().onClick.RemoveAllListeners();
-            GetComponent<Button>().onClick.AddListener(OnCardClicked);
+            UpdateButtonView();
         }
 
-        void UpdateCardView()
+
+        void UpdateButtonView()
         {
-            if (vessel == null) return;
+            if (guide == null) return;
 
-            //SO_ArcadeGame game = AllGames.GameList.Where(x => x.Mode == gameMode).FirstOrDefault();
-            VesselName.text = vessel.Name;
-            VesselImage.sprite = vessel.Image;
-            LockImage.sprite = LockIcon;
-            LockImage.gameObject.SetActive(Locked);
+            GuideImage.sprite = guide.Image;
 
-            switch (vessel.PrimaryElement)
+            switch (guide.PrimaryElement)
             {
                 case Element.Mass:
                     BackgroundImage.sprite = MassBackground;
@@ -64,7 +58,6 @@ namespace CosmicShore.App.UI.Elements
                     BackgroundImage.sprite = ChargeBackground;
                     break;
                 case Element.Space:
-
                     BackgroundImage.sprite = SpaceBackground;
                     break;
                 case Element.Time:
@@ -75,22 +68,29 @@ namespace CosmicShore.App.UI.Elements
 
         public void Active(bool active = true)
         {
-            BorderImage.color = active ? ActiveBorderColor : InActiveBorderColor;
+            BackgroundImage.color = active ? ActiveBorderColor : InActiveBorderColor;
+            GuideName.color = active ? ActiveBorderColor : InActiveBorderColor;
+            GuideImage.sprite = active ? guide.Ship.CardSilohoutteActive : guide.Ship.CardSilohoutte;
         }
 
+        /*
         public void OnCardClicked()
         {
-            Debug.Log($"VesselCard - Clicked: Vessel Name: {vessel.Name}");
+            Debug.Log($"GuideCard - Clicked: Guide Name: {guide.Name}");
 
             if (SquadMenu != null)
             {
-                SquadMenu.AssignVessel(this);
+                SquadMenu.AssignGuide(guide);
             }
+
+            // Add highlight border
+            BorderImage.color = Color.yellow;
         }
 
         public void OnUpgradeButtonClicked()
         {
 
         }
+        */
     }
 }

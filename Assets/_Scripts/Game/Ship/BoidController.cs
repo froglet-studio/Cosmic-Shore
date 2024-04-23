@@ -1,4 +1,3 @@
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using CosmicShore.Core;
@@ -13,23 +12,15 @@ namespace CosmicShore
         [SerializeField] Ship ship;
         GameObject container;
 
-        float nodeRadiusSquared = 100f;
         List<GameObject> queenDrones = new List<GameObject>();
         List<GameObject> moundDrones = new List<GameObject>();
 
-        // Start is called before the first frame update
         void Start()
         {
-        inputController = ship.InputController;
-        globalGoal = FindObjectOfType<Crystal>().transform;
-        container = new GameObject("BoidContainer");
-        container.transform.SetParent(ship.Player.transform);
-        }
-
-        // Update is called once per frame
-        void Update()
-        {
-
+            inputController = ship.InputController;
+            globalGoal = FindObjectOfType<Crystal>().transform;
+            container = new GameObject("BoidContainer");
+            container.transform.SetParent(ship.Player.transform);
         }
 
         public void SpawnDrone(Transform goal, bool isQueenDrone)
@@ -52,8 +43,6 @@ namespace CosmicShore
                 moundDrones.Add(drone);
                 ship.Player.GameCanvas.MiniGameHUD.SetLeftNumberDisplay(moundDrones.Count);
             }
-
-            //ship.Player.GameCanvas.MiniGameHUD.SetLeftNumberDisplay(Drones);
         }
 
         public void TransferDrone(bool toQueen)
@@ -83,6 +72,5 @@ namespace CosmicShore
                 Debug.Log("No drones to transfer");
             }
         }
-
     }
 }

@@ -362,7 +362,7 @@ PrefabInstance:
     - target: {fileID: 467881319638333727, guid: 4d964da34a0cb934c8efc736f2eae833,
         type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 999353046713086232, guid: 4d964da34a0cb934c8efc736f2eae833,
         type: 3}
@@ -2042,7 +2042,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &80497629
 RectTransform:
   m_ObjectHideFlags: 0
@@ -16164,7 +16164,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &831429476
 RectTransform:
   m_ObjectHideFlags: 0
@@ -19966,7 +19966,7 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 989920293}
-  m_LocalRotation: {x: 0.00019546723, y: 0.9998045, z: -0.013800159, w: 0.014161362}
+  m_LocalRotation: {x: 0.00019546802, y: 0.9998045, z: -0.013800179, w: 0.014161397}
   m_LocalPosition: {x: -7.650175, y: 7.4579606, z: 270}
   m_LocalScale: {x: 99.99999, y: 99.99999, z: 100}
   m_ConstrainProportionsScale: 0
@@ -25602,7 +25602,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &1316065906
 RectTransform:
   m_ObjectHideFlags: 0
@@ -29116,7 +29116,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &1512731286
 RectTransform:
   m_ObjectHideFlags: 0
@@ -30246,17 +30246,17 @@ PrefabInstance:
     - target: {fileID: 6085108597755193398, guid: ba70c0f3eb077d44b8a538982d02dadc,
         type: 3}
       propertyPath: m_LocalRotation.w
-      value: 0.014161362
+      value: 0.014161397
       objectReference: {fileID: 0}
     - target: {fileID: 6085108597755193398, guid: ba70c0f3eb077d44b8a538982d02dadc,
         type: 3}
       propertyPath: m_LocalRotation.x
-      value: 0.00019546723
+      value: 0.00019546802
       objectReference: {fileID: 0}
     - target: {fileID: 6085108597755193398, guid: ba70c0f3eb077d44b8a538982d02dadc,
         type: 3}
       propertyPath: m_LocalRotation.z
-      value: -0.013800159
+      value: -0.013800179
       objectReference: {fileID: 0}
     - target: {fileID: 8945163999947012178, guid: ba70c0f3eb077d44b8a538982d02dadc,
         type: 3}
@@ -44472,10 +44472,10 @@ MonoBehaviour:
   ActiveBorderColor: {r: 1, g: 0.78039217, b: 0.41960785, a: 1}
   InActiveBorderColor: {r: 1, g: 1, b: 1, a: 1}
   Locked: 0
-  VesselName: {fileID: 7376446454690513749}
+  GuideName: {fileID: 7376446454690513749}
   BorderImage: {fileID: 7376446453622390160}
   BackgroundImage: {fileID: 9176592051413191302}
-  VesselImage: {fileID: 3633357128965245519}
+  GuideImage: {fileID: 3633357128965245519}
   LockImage: {fileID: 1170490054694044204}
   Index: 0
   SquadMenu: {fileID: 0}
@@ -56157,10 +56157,10 @@ MonoBehaviour:
   TimeBackground: {fileID: 21300000, guid: a47176ccaecda5542a6966cb54af58c4, type: 3}
   ActiveBorderColor: {r: 1, g: 0.78039217, b: 0.41960785, a: 1}
   InActiveBorderColor: {r: 1, g: 1, b: 1, a: 1}
-  VesselName: {fileID: 1789387555550276834}
+  GuideName: {fileID: 1789387555550276834}
   BorderImage: {fileID: 6580500180662847242}
   BackgroundImage: {fileID: 1545231604428050778}
-  VesselImage: {fileID: 291910193844403196}
+  GuideImage: {fileID: 291910193844403196}
 --- !u!222 &4264079634996537094
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -65156,10 +65156,10 @@ MonoBehaviour:
   TimeBackground: {fileID: 21300000, guid: a47176ccaecda5542a6966cb54af58c4, type: 3}
   ActiveBorderColor: {r: 1, g: 0.78039217, b: 0.41960785, a: 1}
   InActiveBorderColor: {r: 1, g: 1, b: 1, a: 1}
-  VesselName: {fileID: 2145411731449251757}
+  GuideName: {fileID: 2145411731449251757}
   BorderImage: {fileID: 5678255268484322541}
   BackgroundImage: {fileID: 6930573344520990362}
-  VesselImage: {fileID: 3302481184107436018}
+  GuideImage: {fileID: 3302481184107436018}
 --- !u!114 &5840560526582640159
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -65178,10 +65178,10 @@ MonoBehaviour:
   TimeBackground: {fileID: 21300000, guid: a47176ccaecda5542a6966cb54af58c4, type: 3}
   ActiveBorderColor: {r: 1, g: 0.78039217, b: 0.41960785, a: 1}
   InActiveBorderColor: {r: 1, g: 1, b: 1, a: 1}
-  VesselName: {fileID: 6242822807784973595}
+  GuideName: {fileID: 6242822807784973595}
   BorderImage: {fileID: 1791192038323182012}
   BackgroundImage: {fileID: 8110753673449571553}
-  VesselImage: {fileID: 5538652060001970156}
+  GuideImage: {fileID: 5538652060001970156}
 --- !u!224 &5840560526603374776
 RectTransform:
   m_ObjectHideFlags: 0
@@ -65884,7 +65884,7 @@ MonoBehaviour:
   SelectedAbilityName: {fileID: 5840560527832696885}
   SelectedAbilityDescription: {fileID: 5840560527308366474}
   SelectedAbilityPreviewWindow: {fileID: 5840560526676439552}
-  VesselSelectionContainer: {fileID: 6610786341563500751}
+  GuideSelectionContainer: {fileID: 0}
   SelectedVesselName: {fileID: 9074214585175863267}
   SelectedVesselDescription: {fileID: 5367761460334551479}
   SelectedVesselFlavor: {fileID: 3074309204041498559}
@@ -68085,10 +68085,10 @@ MonoBehaviour:
   ActiveBorderColor: {r: 1, g: 0.78039217, b: 0.41960785, a: 1}
   InActiveBorderColor: {r: 1, g: 1, b: 1, a: 1}
   Locked: 0
-  VesselName: {fileID: 2627676319331640270}
+  GuideName: {fileID: 2627676319331640270}
   BorderImage: {fileID: 2627676320400235787}
   BackgroundImage: {fileID: 4427261216676342301}
-  VesselImage: {fileID: 8089942990684433108}
+  GuideImage: {fileID: 8089942990684433108}
   LockImage: {fileID: 5915317339218895543}
   Index: 0
   SquadMenu: {fileID: 0}
@@ -75588,10 +75588,10 @@ MonoBehaviour:
   ActiveBorderColor: {r: 1, g: 0.78039217, b: 0.41960785, a: 1}
   InActiveBorderColor: {r: 1, g: 1, b: 1, a: 1}
   Locked: 0
-  VesselName: {fileID: 220347811403328682}
+  GuideName: {fileID: 220347811403328682}
   BorderImage: {fileID: 220347810332299887}
   BackgroundImage: {fileID: 1876169278845511033}
-  VesselImage: {fileID: 6286168370654291376}
+  GuideImage: {fileID: 6286168370654291376}
   LockImage: {fileID: 8461939747593711059}
   Index: 0
   SquadMenu: {fileID: 0}

@@ -3,11 +3,12 @@ using UnityEngine.Serialization;
 
 namespace CosmicShore.Models.ScriptableObjects
 {
-    [CreateAssetMenu(fileName = "Vessel Upgrade", menuName = "CosmicShore/VesselUpgrade", order = 30)]
+    [CreateAssetMenu(fileName = "Guide Upgrade", menuName = "CosmicShore/GuideUpgrade", order = 30)]
     [System.Serializable]
-    public class SO_VesselUpgrade : ScriptableObject
+    public class SO_GuideUpgrade : ScriptableObject
     {
-        [SerializeField] public string vesselName;
+        [FormerlySerializedAs("vesselName")]
+        [SerializeField] public string guideName;
         [SerializeField] public string description;
         [SerializeField] public Sprite image;
         [SerializeField] public Sprite icon;

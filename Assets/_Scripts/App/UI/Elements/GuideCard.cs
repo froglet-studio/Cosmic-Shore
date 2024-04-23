@@ -1,54 +1,64 @@
+using CosmicShore.App.UI.Menus;
 using TMPro;
 using UnityEngine;
+using UnityEngine.Serialization;
 using UnityEngine.UI;
 
 namespace CosmicShore.App.UI.Elements
 {
-    public class VesselSelectButton : MonoBehaviour
+    public class GuideCard : MonoBehaviour
     {
         [Header("Resources")]
+        [SerializeField] Sprite LockIcon;
         [SerializeField] Sprite MassBackground;
         [SerializeField] Sprite ChargeBackground;
         [SerializeField] Sprite SpaceBackground;
         [SerializeField] Sprite TimeBackground;
         [SerializeField] Color ActiveBorderColor = new Color(1f, .5f, .25f);
         [SerializeField] Color InActiveBorderColor = Color.white;
+        [SerializeField] public bool Locked;
 
         [Header("Placeholder Locations")]
-        [SerializeField] TMP_Text VesselName;
+        [FormerlySerializedAs("VesselName")]
+        [SerializeField] TMP_Text GuideName;
         [SerializeField] Image BorderImage;
         [SerializeField] Image BackgroundImage;
-        [SerializeField] Image VesselImage;
-        //[SerializeField] int Index;
+        [FormerlySerializedAs("VesselImage")]
+        [SerializeField] Image GuideImage;
+        [SerializeField] Image LockImage;
+        [SerializeField] public int Index;  // Serialized for debugging
 
-        SO_Vessel vessel;
-        public SO_Vessel Vessel
+        SO_Guide guide;
+        public SO_Guide Guide
         {
-            get { return vessel; }
+            get { return guide; }
             set
             {
-                vessel = value;
-                UpdateButtonView();
+                guide = value;
+                UpdateCardView();
             }
         }
 
-        //public SquadMenu SquadMenu;
+        public SquadMenu SquadMenu;
 
         void Start()
         {
-            UpdateButtonView();
+            UpdateCardView();
+            GetComponent<Button>().onClick.RemoveAllListeners();
+            GetComponent<Button>().onClick.AddListener(OnCardClicked);
         }
 
-
-        void UpdateButtonView()
+        void UpdateCardView()
         {
-            if (vessel == null) return;
+            if (guide == null) return;
 
             //SO_ArcadeGame game = AllGames.GameList.Where(x => x.Mode == gameMode).FirstOrDefault();
-            //VesselName.text = vessel.Name;
-            VesselImage.sprite = vessel.Image;
+            GuideName.text = guide.Name;
+            GuideImage.sprite = guide.Image;
+            LockImage.sprite = LockIcon;
+            LockImage.gameObject.SetActive(Locked);
 
-            switch (vessel.PrimaryElement)
+            switch (guide.PrimaryElement)
             {
                 case Element.Mass:
                     BackgroundImage.sprite = MassBackground;
@@ -57,6 +67,7 @@ namespace CosmicShore.App.UI.Elements
                     BackgroundImage.sprite = ChargeBackground;
                     break;
                 case Element.Space:
+
                     BackgroundImage.sprite = SpaceBackground;
                     break;
                 case Element.Time:
@@ -67,29 +78,22 @@ namespace CosmicShore.App.UI.Elements
 
         public void Active(bool active = true)
         {
-            BackgroundImage.color = active ? ActiveBorderColor : InActiveBorderColor;
-            VesselName.color = active ? ActiveBorderColor : InActiveBorderColor;
-            VesselImage.sprite = active ? vessel.Ship.CardSilohoutteActive : vessel.Ship.CardSilohoutte;
+            BorderImage.color = active ? ActiveBorderColor : InActiveBorderColor;
         }
 
-        /*
         public void OnCardClicked()
         {
-            Debug.Log($"VesselCard - Clicked: Vessel Name: {vessel.Name}");
+            Debug.Log($"GuideCard - Clicked: Guide Name: {guide.Name}");
 
             if (SquadMenu != null)
             {
-                SquadMenu.AssignVessel(vessel);
+                SquadMenu.AssignGuide(this);
             }
-
-            // Add highlight border
-            BorderImage.color = Color.yellow;
         }
 
         public void OnUpgradeButtonClicked()
         {
 
         }
-        */
     }
 }

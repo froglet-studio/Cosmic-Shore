@@ -1,8 +1,8 @@
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "Spike Spiegel", menuName = "CosmicShore/Vessel", order = 2)]
+[CreateAssetMenu(fileName = "Spike Spiegel", menuName = "CosmicShore/Guide", order = 2)]
 [System.Serializable]
-public class SO_Vessel : ScriptableObject
+public class SO_Guide : ScriptableObject
 {
     [SerializeField] public string Name;
     [SerializeField] public string Description;

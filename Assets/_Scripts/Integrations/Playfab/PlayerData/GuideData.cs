@@ -3,18 +3,18 @@ using System;
 namespace CosmicShore.Integrations.Playfab.PlayerModels
 {
     /// <summary>
-    /// Vessel Data
-    /// Maps vessel id and vessel upgrade level
+    /// guide Data
+    /// Maps guide id and guide upgrade level
     /// </summary>
     [Serializable]
-    public struct VesselData
+    public struct GuideData
     {
-        public string vesselId;
+        public string guideId;
         public int upgradeLevel;
 
-        public VesselData(string vesselId, int upgradeLevel)
+        public GuideData(string guideId, int upgradeLevel)
         {
-            this.vesselId = vesselId;
+            this.guideId = guideId;
             this.upgradeLevel = upgradeLevel;
         }
     }

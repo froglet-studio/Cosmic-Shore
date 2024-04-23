@@ -1,6 +1,6 @@
 namespace CosmicShore.Integrations.Enums
 {
-    public enum VesselLevel
+    public enum GuideLevel
     {
         // Keep upgrade 0 in case we need it
         Upgrade0 = 0,

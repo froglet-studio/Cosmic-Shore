@@ -94,18 +94,18 @@ namespace CosmicShore.Core
         [HideInInspector] public Material SkimmerMaterial;
         float speedModifierDuration = 2f;
         
-        // Vessel and vessel upgrade properties
-        SO_Vessel vessel;
+        // Guide and guide upgrade properties
+        SO_Guide guide;
 
-        private Dictionary<Element, SO_VesselUpgrade> _vesselUpgrades;
-        public Dictionary<Element, SO_VesselUpgrade> VesselUpgrades
+        private Dictionary<Element, SO_GuideUpgrade> _guideUpgrades;
+        public Dictionary<Element, SO_GuideUpgrade> GuideUpgrades
         {
-            get => _vesselUpgrades;
+            get => _guideUpgrades;
             set
             {
-                _vesselUpgrades = value;
+                _guideUpgrades = value;
 
-                if (_vesselUpgrades != null)
+                if (_guideUpgrades != null)
                 {
                     UpdateLevel(Element.Charge, ResourceSystem.GetLevel(Element.Charge));
                     UpdateLevel(Element.Time, ResourceSystem.GetLevel(Element.Time));
@@ -378,13 +378,13 @@ namespace CosmicShore.Core
                 collider.enabled = enabled;
         }
 
-        public void SetVessel(SO_Vessel vessel)
+        public void SetGuide(SO_Guide guide)
         {
-            this.vessel = vessel;
-            ResourceSystem.InitialChargeLevel = this.vessel.InitialCharge;
-            ResourceSystem.InitialMassLevel = this.vessel.InitialMass;
-            ResourceSystem.InitialSpaceLevel = this.vessel.InitialSpace;
-            ResourceSystem.InitialTimeLevel = this.vessel.InitialTime;
+            this.guide = guide;
+            ResourceSystem.InitialChargeLevel = this.guide.InitialCharge;
+            ResourceSystem.InitialMassLevel = this.guide.InitialMass;
+            ResourceSystem.InitialSpaceLevel = this.guide.InitialSpace;
+            ResourceSystem.InitialTimeLevel = this.guide.InitialTime;
 
             ResourceSystem.InitializeElementLevels();
         }
@@ -392,26 +392,26 @@ namespace CosmicShore.Core
         public void UpdateLevel(Element element, int upgradeLevel)
         {
             Debug.Log($"Ship: UpdateLevel: element{element}, upgradeLevel: {upgradeLevel}");
-            if (VesselUpgrades == null) VesselUpgrades = new();
+            if (GuideUpgrades == null) GuideUpgrades = new();
             
-            if (VesselUpgrades.ContainsKey(element))
+            if (GuideUpgrades.ContainsKey(element))
             {
-                VesselUpgrades[element].element = element;
-                VesselUpgrades[element].upgradeLevel = upgradeLevel;
+                GuideUpgrades[element].element = element;
+                GuideUpgrades[element].upgradeLevel = upgradeLevel;
             }
             else
             {
                 // TODO: preset individual upgrade properties such as name, description, icon etc based on upgrade properties.
-                var newUpgrade = ScriptableObject.CreateInstance<SO_VesselUpgrade>();
+                var newUpgrade = ScriptableObject.CreateInstance<SO_GuideUpgrade>();
                 newUpgrade.element = element;
                 newUpgrade.upgradeLevel = upgradeLevel;
-                VesselUpgrades.TryAdd(element, newUpgrade);
+                GuideUpgrades.TryAdd(element, newUpgrade);
             }
 
             #if UNITY_EDITOR
-            foreach (var upgrade in VesselUpgrades)
+            foreach (var upgrade in GuideUpgrades)
             {
-                Debug.LogFormat("{0} - {1}: element: {2} upgrade level: {3}", nameof(VesselUpgrades), nameof(UpdateLevel), upgrade.Key, upgrade.Value.upgradeLevel.ToString());
+                Debug.LogFormat("{0} - {1}: element: {2} upgrade level: {3}", nameof(GuideUpgrades), nameof(UpdateLevel), upgrade.Key, upgrade.Value.upgradeLevel.ToString());
             }
             #endif
             

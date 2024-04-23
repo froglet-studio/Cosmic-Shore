@@ -24,19 +24,20 @@ namespace CosmicShore.App.UI.Menus
         [SerializeField] TMPro.TMP_Text SelectedAbilityDescription;
         [SerializeField] GameObject SelectedAbilityPreviewWindow;
 
-        [FormerlySerializedAs("PilotSelectionContainer")]
-        [SerializeField] Transform VesselSelectionContainer;
-        [FormerlySerializedAs("SelectedPilotName")]
-        [SerializeField] TMPro.TMP_Text SelectedVesselName;
-        [FormerlySerializedAs("SelectedPilotDescription")]
-        [SerializeField] TMPro.TMP_Text SelectedVesselDescription;
-        [SerializeField] TMPro.TMP_Text SelectedVesselFlavor;
-        [FormerlySerializedAs("SelectedPilotImage")]
-        [SerializeField] Image SelectedVesselImage;
+        [FormerlySerializedAs("VesselSelectionContainer")]
+        [SerializeField] Transform GuideSelectionContainer;
+        [FormerlySerializedAs("SelectedVesselName")]
+        [SerializeField] TMPro.TMP_Text SelectedGuideName;
+        [FormerlySerializedAs("SelectedVesselDescription")]
+        [SerializeField] TMPro.TMP_Text SelectedGuideDescription;
+        [FormerlySerializedAs("SelectedVesselFlavor")]
+        [SerializeField] TMPro.TMP_Text SelectedGuideFlavor;
+        [FormerlySerializedAs("SelectedVesselImage")]
+        [SerializeField] Image SelectedGuideImage;
 
         List<SO_Ship> Ships;
         SO_Ship SelectedShip;
-        SO_Vessel SelectedVessel;
+        SO_Guide SelectedGuide;
         SO_ShipAbility SelectedAbility;
         private int _legitShipCount;
 
@@ -100,29 +101,29 @@ namespace CosmicShore.App.UI.Menus
                 StartCoroutine(SelectAbilityCoroutine(0));
         }
 
-        void PopulateVesselSelectionList()
+        void PopulateGuideSelectionList()
         {
-            if (VesselSelectionContainer == null) return;
+            if (GuideSelectionContainer == null) return;
 
             // Deactivate all
-            for (var i = 0; i < VesselSelectionContainer.transform.childCount; i++)
-                VesselSelectionContainer.GetChild(i).gameObject.SetActive(false);
+            for (var i = 0; i < GuideSelectionContainer.transform.childCount; i++)
+                GuideSelectionContainer.GetChild(i).gameObject.SetActive(false);
 
             // Reactivate based on the number of abilities for the selected ship
-            for (var i = 0; i < SelectedShip.Vessels.Count; i++)
+            for (var i = 0; i < SelectedShip.Guides.Count; i++)
             {
                 var selectionIndex = i;
-                var vessel = SelectedShip.Vessels[i];
-                Debug.Log($"Populating Vessel Select List: {vessel?.Name}");
-                var vesselSelection = VesselSelectionContainer.GetChild(i).gameObject;
-                vesselSelection.SetActive(true);
-                vesselSelection.GetComponent<Image>().sprite = vessel?.Icon;
-                vesselSelection.GetComponent<Button>().onClick.RemoveAllListeners();
-                vesselSelection.GetComponent<Button>().onClick.AddListener(() => SelectPilot(selectionIndex));
-                vesselSelection.GetComponent<Button>().onClick.AddListener(() => VesselSelectionContainer.GetComponent<MenuAudio>().PlayAudio());
+                var guide = SelectedShip.Guides[i];
+                Debug.Log($"Populating Guide Select List: {guide?.Name}");
+                var guideSelection = GuideSelectionContainer.GetChild(i).gameObject;
+                guideSelection.SetActive(true);
+                guideSelection.GetComponent<Image>().sprite = guide?.Icon;
+                guideSelection.GetComponent<Button>().onClick.RemoveAllListeners();
+                guideSelection.GetComponent<Button>().onClick.AddListener(() => SelectPilot(selectionIndex));
+                guideSelection.GetComponent<Button>().onClick.AddListener(() => GuideSelectionContainer.GetComponent<MenuAudio>().PlayAudio());
             }
 
-            StartCoroutine(SelectVesselCoroutine(0));
+            StartCoroutine(SelectGuideCoroutine(0));
         }
 
         void PopulateShipDetails()
@@ -158,17 +159,17 @@ namespace CosmicShore.App.UI.Menus
             }
         }
 
-        void PopulateVesselDetails()
+        void PopulateGuideDetails()
         {
-            Debug.Log($"Populating Vessel Details List: {SelectedVessel.Name}");
-            Debug.Log($"Populating Vessel Details List: {SelectedVessel.Description}");
-            Debug.Log($"Populating Vessel Details List: {SelectedVessel.Icon}");
-            Debug.Log($"Populating Vessel Details List: {SelectedVessel.Image}");
+            Debug.Log($"Populating Guide Details List: {SelectedGuide.Name}");
+            Debug.Log($"Populating Guide Details List: {SelectedGuide.Description}");
+            Debug.Log($"Populating Guide Details List: {SelectedGuide.Icon}");
+            Debug.Log($"Populating Guide Details List: {SelectedGuide.Image}");
 
-            if (SelectedVesselName != null) SelectedVesselName.text = SelectedVessel.Name + " - The " + SelectedVessel.PrimaryElement.ToString() + " " + SelectedVessel.Ship.Name;
-            if (SelectedVesselDescription != null) SelectedVesselDescription.text = SelectedVessel.Description;
-            if (SelectedVesselFlavor != null) SelectedVesselFlavor.text = SelectedVessel.Flavor;
-            if (SelectedVesselImage != null) SelectedVesselImage.sprite = SelectedVessel.Image;
+            if (SelectedGuideName != null) SelectedGuideName.text = SelectedGuide.Name + " - The " + SelectedGuide.PrimaryElement.ToString() + " " + SelectedGuide.Ship.Name;
+            if (SelectedGuideDescription != null) SelectedGuideDescription.text = SelectedGuide.Description;
+            if (SelectedGuideFlavor != null) SelectedGuideFlavor.text = SelectedGuide.Flavor;
+            if (SelectedGuideImage != null) SelectedGuideImage.sprite = SelectedGuide.Image;
         }
 
         public void SelectShip(int index)
@@ -192,7 +193,7 @@ namespace CosmicShore.App.UI.Menus
 
             // populate the games list with the one's games
             PopulateAbilitySelectionList();
-            PopulateVesselSelectionList();
+            PopulateGuideSelectionList();
         }
 
         public void SelectAbility(int index)
@@ -210,44 +211,44 @@ namespace CosmicShore.App.UI.Menus
             PopulateAbilityDetails();
         }
 
-        /* Selects the vessel in the UI for display */
+        /* Selects the Guide in the UI for display */
         /// <summary>
-        /// Select a vessel in the UI to display its meta data
-        /// TODO: Add UI Vessel Assets for Urchin and Bufo when they are available
+        /// Select a Guide in the UI to display its meta data
+        /// TODO: Add UI Guide Assets for Urchin and Bufo when they are available
         /// </summary>
-        /// <param name="index">Index of the displayed vessel list</param>
+        /// <param name="index">Index of the displayed Guide list</param>
         public void SelectPilot(int index)
         {
-            Debug.Log($"SelectVessel: {index}");
+            Debug.Log($"SelectGuide: {index}");
 
             try
             {
                 // Deselect them all
                 for (var i = 0; i < 4; i++)
-                    VesselSelectionContainer.GetChild(i).gameObject.GetComponent<Image>().sprite =
-                        SelectedShip.Vessels[i].Icon;
+                    GuideSelectionContainer.GetChild(i).gameObject.GetComponent<Image>().sprite =
+                        SelectedShip.Guides[i].Icon;
 
                 // Select the one
-                SelectedVessel = SelectedShip.Vessels[index];
-                VesselSelectionContainer.GetChild(index).gameObject.GetComponent<Image>().sprite =
-                    SelectedVessel.SelectedIcon;
+                SelectedGuide = SelectedShip.Guides[index];
+                GuideSelectionContainer.GetChild(index).gameObject.GetComponent<Image>().sprite =
+                    SelectedGuide.SelectedIcon;
             }
             catch (ArgumentOutOfRangeException argumentOutOfRangeException)
             {
-                Debug.LogWarningFormat("{0} - {1} - The ship lacks vessel assets. Please add them. {2}", nameof(HangarMenu),
+                Debug.LogWarningFormat("{0} - {1} - The ship lacks guide assets. Please add them. {2}", nameof(HangarMenu),
                     nameof(SelectPilot), argumentOutOfRangeException.Message);
             }
             catch (NullReferenceException nullReferenceException)
             {
-                Debug.LogWarningFormat("{0} - {1} - The ship lacks vessel assets. Please add them. {2}", nameof(HangarMenu),
+                Debug.LogWarningFormat("{0} - {1} - The ship lacks guide assets. Please add them. {2}", nameof(HangarMenu),
                     nameof(SelectPilot), nullReferenceException.Message);
             }
 
-            PopulateVesselDetails();
+            PopulateGuideDetails();
         }
 
 
-        IEnumerator SelectVesselCoroutine(int index)
+        IEnumerator SelectGuideCoroutine(int index)
         {
             yield return new WaitForEndOfFrame();
             SelectPilot(index);

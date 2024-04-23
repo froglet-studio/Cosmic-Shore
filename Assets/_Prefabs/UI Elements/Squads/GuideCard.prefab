@@ -319,7 +319,7 @@ GameObject:
   - component: {fileID: 335063192656628082}
   - component: {fileID: 578540046902210221}
   m_Layer: 5
-  m_Name: VesselCard
+  m_Name: GuideCard
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

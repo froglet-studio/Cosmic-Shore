@@ -12,11 +12,11 @@ namespace CosmicShore.App.Systems.Squads
         public ShipTypes RogueTwoClass;
         public Element RogueTwoElement;
 
-        //public SO_Vessel SquadLeader;
-        //public SO_Vessel RogueOne;
-        //public SO_Vessel RogueTwo;
+        //public SO_Guide SquadLeader;
+        //public SO_Guide RogueOne;
+        //public SO_Guide RogueTwo;
 
-        public Squad(SO_Vessel leader, SO_Vessel rogueOne, SO_Vessel rogueTwo)
+        public Squad(SO_Guide leader, SO_Guide rogueOne, SO_Guide rogueTwo)
         {
             SquadLeaderClass = leader.Ship.Class;
             SquadLeaderElement = leader.PrimaryElement;
