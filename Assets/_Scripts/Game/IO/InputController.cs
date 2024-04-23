@@ -232,16 +232,13 @@ namespace CosmicShore.Game.IO
                     {
                         SingleTouchValue = position;
                         var tempThreeDPosition = new Vector3((SingleTouchValue.x - Screen.width / 2) * mapscaleX, (SingleTouchValue.y - Screen.height / 2) * mapscaleY, 0);
-                        Debug.Log($"tempThreeDPosition: {tempThreeDPosition}; ship.transform.position: {ship.transform.position}");
 
                         if (tempThreeDPosition.sqrMagnitude < 10000 & Input.touches[0].phase == TouchPhase.Began) // TODO: replace with nodeRadiusSquared
                         {
-                            Debug.Log("PerformShipControllerActions(InputEvents.NodeTapAction);");
                             ship.PerformShipControllerActions(InputEvents.NodeTapAction);
                         }
                         else if ((tempThreeDPosition - ship.transform.position).sqrMagnitude < 10000 & Input.touches[0].phase == TouchPhase.Began) // TODO: replace with shipSizeSquared
                         {
-                            Debug.Log("PerformShipControllerActions(InputEvents.SelfTapAction);");
                             ship.PerformShipControllerActions(InputEvents.SelfTapAction);
                         }
                         else ThreeDPosition = tempThreeDPosition;
@@ -335,6 +332,7 @@ namespace CosmicShore.Game.IO
 
             if (invertYEnabled)
                 YSum *= -1;
+                //EasedLeftJoystickPosition = new Vector2(EasedLeftJoystickPosition.x, -EasedLeftJoystickPosition.y);
             if (invertThrottleEnabled)
                 YDiff = 1 - YDiff;
         }

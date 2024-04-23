@@ -1573,6 +1573,12 @@ MonoBehaviour:
   - InputEvent: 3
     ShipActions:
     - {fileID: 1244531863877960553}
+  - InputEvent: 3
+    ShipActions:
+    - {fileID: 1244531863877960553}
+  - InputEvent: 7
+    ShipActions:
+    - {fileID: 1244531863877960553}
   resourceEventClassActions: []
   MassAbilityTarget: {fileID: 0}
   ChargeAbilityTarget: {fileID: 0}

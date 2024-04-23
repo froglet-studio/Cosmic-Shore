@@ -1,18 +1,28 @@
+using CosmicShore;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Flora : MonoBehaviour
+public abstract class Flora : LifeForm
 {
-    // Start is called before the first frame update
-    void Start()
+
+    [SerializeField] protected float growPeriod = 3f;
+
+    public abstract void Grow();
+
+    protected override void Start()
     {
-        
+        base.Start();
+        StartCoroutine(GrowCoroutine());
     }
 
-    // Update is called once per frame
-    void Update()
+    IEnumerator GrowCoroutine()
     {
-        
+        while (true)
+        {
+            Grow();
+            yield return new WaitForSeconds(growPeriod);
+        }
     }
+
 }

@@ -2405,8 +2405,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ba960999146fec442a61056fef76d78d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  gunContainer: {fileID: 7748113003568908110}
-  projectileContainer: {fileID: 6876789912878056936}
+  gunContainer: {fileID: 896036331441717697}
+  projectileContainer: {fileID: 8775451008463966977}
   ammoCost: 0
   FiringPattern: 0
   Energy: 0

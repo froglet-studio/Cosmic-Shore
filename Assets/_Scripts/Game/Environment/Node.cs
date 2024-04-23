@@ -1,6 +1,8 @@
-﻿using System.Collections.Generic;
+﻿using System.Collections;
+using System.Collections.Generic;
 using CosmicShore.Environment.FlowField;
 using CosmicShore.Game.AI;
+using CosmicShore;
 using UnityEngine;
 
 public class Node : MonoBehaviour
@@ -9,6 +11,17 @@ public class Node : MonoBehaviour
     [SerializeField] float volumeControlThreshold = 100f;
     [SerializeField] SnowChanger SnowChanger;
     [SerializeField] Crystal Crystal;
+
+    [SerializeField] Flora flora1;
+    [SerializeField] Flora flora2;
+
+    [SerializeField] float initialFaunaSpawnWaitTime = 10f;
+    [SerializeField] float spawnVolumeThreshold = 1f;
+    [SerializeField] float baseFaunaSpawnTime = 10f;
+
+    [SerializeField] Worm fauna1;
+    [SerializeField] GameObject fauna2;
+
 
     Dictionary<Teams, float> teamVolumes = new Dictionary<Teams, float>();
 
@@ -24,6 +37,7 @@ public class Node : MonoBehaviour
 
         SnowChanger.SetOrigin(transform.position);
         Crystal.SetOrigin(transform.position);
+        if (fauna1) StartCoroutine(SpawnFauna(fauna1));
     }
 
     public void AddItem(NodeItem item)
@@ -129,5 +143,24 @@ public class Node : MonoBehaviour
             else
                 return Teams.Red;
         }
+    }
+
+    IEnumerator SpawnFauna(Worm fauna)
+    {
+        yield return new WaitForSeconds(initialFaunaSpawnWaitTime);
+        while (true)
+        {
+            var controllingVolume = GetTeamVolume(ControllingTeam);
+            if (controllingVolume > spawnVolumeThreshold)
+            {
+                yield return new WaitForSeconds(baseFaunaSpawnTime / controllingVolume);
+                var newFauna = Instantiate(fauna, transform.position, Quaternion.identity);
+                newFauna.target = GetClosestItem(transform.position).gameObject;
+            }
+            else
+            {
+                yield return null;
+            }
+        } 
     }
 }

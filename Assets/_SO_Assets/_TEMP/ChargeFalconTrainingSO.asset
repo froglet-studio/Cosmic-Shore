@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ce7474d4aed9d704ea0001a2338c0784, type: 3}
+  m_Name: ChargeFalconTrainingSO
+  m_EditorClassIdentifier: 
+  Name: ChargeFalconTrainingSO
+  Description: 
+  Flavor: 
+  Behavior: 
+  Image: {fileID: 0}
+  Icon: {fileID: 0}
+  SelectedIcon: {fileID: 0}
+  Ship: {fileID: 11400000, guid: 0e0265e1ba332cb4ba3ddd473190b351, type: 2}
+  PrimaryElement: 1
+  InitialMass: 0
+  InitialCharge: 1
+  InitialSpace: 0
+  InitialTime: 0
