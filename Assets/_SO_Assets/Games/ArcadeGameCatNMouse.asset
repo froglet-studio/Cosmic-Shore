@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: ArcadeGameCatNMouse
   m_EditorClassIdentifier: 
   Mode: 12
-  Name: Cat'n'Mouse
+  DisplayName: Cat N Mouse
   Description: Ride the surface of the Manta's trail tubes to catch the Manta and
     produce a burst of blocks as fast as you can
   Icon: {fileID: 21300000, guid: 1917088452678c8449563992f4132c7e, type: 3}
@@ -23,8 +23,11 @@ MonoBehaviour:
     type: 3}
   Vessels:
   - {fileID: 11400000, guid: 3df17f8484ee6b34592a9ed8a90c36b5, type: 2}
+  GolfScoring: 0
   MinPlayers: 1
   MaxPlayers: 3
+  MinIntensity: 1
+  MaxIntensity: 4
   SceneName: MinigameCatNMouse
   CallToActionTargetType: 415
   ViewUserAction: 0

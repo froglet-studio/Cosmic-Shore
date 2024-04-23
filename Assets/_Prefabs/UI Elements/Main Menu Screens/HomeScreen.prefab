@@ -3481,7 +3481,7 @@ GameObject:
   - component: {fileID: 8981368959571414275}
   - component: {fileID: 818204652}
   m_Layer: 5
-  m_Name: Main Menu Screen
+  m_Name: HomeScreen
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

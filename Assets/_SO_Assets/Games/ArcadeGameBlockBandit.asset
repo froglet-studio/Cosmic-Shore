@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: ArcadeGameBlockBandit
   m_EditorClassIdentifier: 
   Mode: 5
-  Name: Block Bandit
+  DisplayName: Block Bandit
   Description: Dodge, weave, and pilfer your way to the next biome. Whoever steals
     the most along the way wins.
   Icon: {fileID: 21300000, guid: ebb26aeda98ffe840ad60e7ab88c8a28, type: 3}
@@ -23,6 +23,7 @@ MonoBehaviour:
     type: 3}
   Vessels:
   - {fileID: 11400000, guid: 83f99cf219c1bdf43b51c94855ee2328, type: 2}
+  GolfScoring: 0
   MinPlayers: 1
   MaxPlayers: 1
   MinIntensity: 2

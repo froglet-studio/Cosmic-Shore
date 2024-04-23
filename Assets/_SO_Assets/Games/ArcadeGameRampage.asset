@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: ArcadeGameRampage
   m_EditorClassIdentifier: 
   Mode: 2
-  Name: Rampage
+  DisplayName: Rampage
   Description: Break, smash, and obliterate your way through the course, leaving
     a trail of galactic mayhem. Only the most devastating will emerge victorious.
   Icon: {fileID: 21300000, guid: 2f25d43091cd95b4ba63624192b69769, type: 3}
@@ -23,6 +23,7 @@ MonoBehaviour:
     type: 3}
   Vessels:
   - {fileID: 11400000, guid: df141abf4cae3d44ab94be005b338f07, type: 2}
+  GolfScoring: 0
   MinPlayers: 1
   MaxPlayers: 1
   MinIntensity: 2

@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: ArcadeGameBotDuel
   m_EditorClassIdentifier: 
   Mode: 23
-  DisplayName: 
+  DisplayName: Bot Duel
   Description: watch bots play each other
   Icon: {fileID: 21300000, guid: 8232e087c5e0fee4fa59cdb880e64ca4, type: 3}
   SelectedIcon: {fileID: 21300000, guid: ff915aad644c07144a1d02cc4723b015, type: 3}
