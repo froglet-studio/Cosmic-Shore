@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.02.00">
+	<object class="EncodableAsset" id="{5d68aae6-e326-4de0-8fc3-def4bd3d28e5}">
+		<property name="assetPath">
+			<value>Assets_Testing/crys_/Template_Crystals/crys_enemlayer_06_12/</value>
+		</property>
+		<relationship name="masterAssetFolder">
+			<destination>{921f1962-17ee-4315-8fb9-ef6616586a6e}</destination>
+		</relationship>
+	</object>
+</objects>

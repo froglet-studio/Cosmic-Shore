@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.02.00">
+	<object class="DataFile" id="{d16afeb0-51a9-4c64-ad31-7dcfd8c64c87}">
+		<property name="assetPath">
+			<value>Music/SECRET HIDE AWAY.ogg.meta</value>
+		</property>
+		<relationship name="masterAssetFolder">
+			<destination>{921f1962-17ee-4315-8fb9-ef6616586a6e}</destination>
+		</relationship>
+	</object>
+</objects>

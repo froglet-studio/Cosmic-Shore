@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.02.00">
+	<object class="MixerGroup" id="{5d196af1-43e4-42d0-982f-59d7f1831f54}">
+		<property name="name">
+			<value>Teammate</value>
+		</property>
+		<relationship name="effectChain">
+			<destination>{253753ae-c994-4a81-b803-f161f8243536}</destination>
+		</relationship>
+		<relationship name="panner">
+			<destination>{5ec417f3-c79a-484c-9fb0-4e3609152998}</destination>
+		</relationship>
+		<relationship name="output">
+			<destination>{f27ca79b-f929-4114-bb37-b456a8f25a77}</destination>
+		</relationship>
+	</object>
+	<object class="MixerBusEffectChain" id="{253753ae-c994-4a81-b803-f161f8243536}">
+		<relationship name="effects">
+			<destination>{dd3cbaee-a30c-4725-a0d0-ce864becb5d8}</destination>
+			<destination>{c653f997-a1bd-463b-a5c6-222eb0998aa3}</destination>
+			<destination>{0181d627-be46-4596-b03b-af20609e432a}</destination>
+		</relationship>
+	</object>
+	<object class="MixerBusPanner" id="{5ec417f3-c79a-484c-9fb0-4e3609152998}" />
+	<object class="MixerBusFader" id="{dd3cbaee-a30c-4725-a0d0-ce864becb5d8}" />
+	<object class="MultibandEqEffect" id="{c653f997-a1bd-463b-a5c6-222eb0998aa3}">
+		<property name="filterTypeA">
+			<value>8</value>
+		</property>
+		<property name="filterTypeB">
+			<value>7</value>
+		</property>
+		<property name="frequencyA">
+			<value>16460.6758</value>
+		</property>
+		<property name="qualityA">
+			<value>0.455827594</value>
+		</property>
+	</object>
+	<object class="CompressorEffect" id="{0181d627-be46-4596-b03b-af20609e432a}">
+		<relationship name="sidechains">
+			<destination>{4ac17493-d9ff-4881-816b-bd90b08e95e4}</destination>
+		</relationship>
+	</object>
+</objects>

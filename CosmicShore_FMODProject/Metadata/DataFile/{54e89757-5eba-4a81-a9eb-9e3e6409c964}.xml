@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.02.00">
+	<object class="DataFile" id="{54e89757-5eba-4a81-a9eb-9e3e6409c964}">
+		<property name="assetPath">
+			<value>Music/Full Quality MP3/DISORIENTED.mp3.meta</value>
+		</property>
+		<relationship name="masterAssetFolder">
+			<destination>{921f1962-17ee-4315-8fb9-ef6616586a6e}</destination>
+		</relationship>
+	</object>
+</objects>

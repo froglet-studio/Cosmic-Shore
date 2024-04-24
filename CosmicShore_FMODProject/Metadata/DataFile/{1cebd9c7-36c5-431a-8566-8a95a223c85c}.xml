@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.02.00">
+	<object class="DataFile" id="{1cebd9c7-36c5-431a-8566-8a95a223c85c}">
+		<property name="assetPath">
+			<value>Assets_Testing/crys_/Time_Crystals/crys_enem/peaks/crys_enemlayer_var3_MN1-002.wav.reapeaks</value>
+		</property>
+		<relationship name="masterAssetFolder">
+			<destination>{921f1962-17ee-4315-8fb9-ef6616586a6e}</destination>
+		</relationship>
+	</object>
+</objects>

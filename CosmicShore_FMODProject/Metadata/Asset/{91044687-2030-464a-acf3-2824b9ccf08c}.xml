@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.02.00">
+	<object class="EncodableAsset" id="{91044687-2030-464a-acf3-2824b9ccf08c}">
+		<property name="assetPath">
+			<value>Assets_Testing/crys_/Time_Crystals/crys_player/crys_player_time/Previous Versions/07_02/</value>
+		</property>
+		<relationship name="masterAssetFolder">
+			<destination>{921f1962-17ee-4315-8fb9-ef6616586a6e}</destination>
+		</relationship>
+	</object>
+</objects>

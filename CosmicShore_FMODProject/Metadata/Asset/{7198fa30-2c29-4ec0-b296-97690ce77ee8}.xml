@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.02.00">
+	<object class="EncodableAsset" id="{7198fa30-2c29-4ec0-b296-97690ce77ee8}">
+		<property name="assetPath">
+			<value>Assets_Testing/crys_/Template_Crystals/crys_teammate_normal/15_12/</value>
+		</property>
+		<relationship name="masterAssetFolder">
+			<destination>{921f1962-17ee-4315-8fb9-ef6616586a6e}</destination>
+		</relationship>
+	</object>
+</objects>

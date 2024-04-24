@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.02.00">
+	<object class="EncodableAsset" id="{91bf51ab-7933-449d-92ed-c67f15be40a8}">
+		<property name="assetPath">
+			<value>Assets_Testing/crys_/Charge_Crystals/crys_enem_charge/28_02/</value>
+		</property>
+		<relationship name="masterAssetFolder">
+			<destination>{921f1962-17ee-4315-8fb9-ef6616586a6e}</destination>
+		</relationship>
+	</object>
+</objects>

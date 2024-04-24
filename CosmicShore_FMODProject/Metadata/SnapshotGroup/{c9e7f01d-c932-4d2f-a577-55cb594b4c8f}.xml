@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.02.00">
+	<object class="SnapshotGroup" id="{c9e7f01d-c932-4d2f-a577-55cb594b4c8f}">
+		<property name="name">
+			<value>Menu</value>
+		</property>
+	</object>
+</objects>

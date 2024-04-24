@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.02.00">
+	<object class="EncodableAsset" id="{22ea8c8e-a931-4379-8d24-ec39eb82006f}">
+		<property name="assetPath">
+			<value>Assets_Testing/crys_/Space_Crystals/crys_player/28_03/</value>
+		</property>
+		<relationship name="masterAssetFolder">
+			<destination>{921f1962-17ee-4315-8fb9-ef6616586a6e}</destination>
+		</relationship>
+	</object>
+</objects>
