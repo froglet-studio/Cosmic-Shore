@@ -8,9 +8,12 @@ namespace CosmicShore
 {
     public class Spindle : MonoBehaviour
     {
-        void Start()
+        public GameObject cylinder;
+        public float Length = 1f;
+
+        void Awake()
         {
-            CheckForLife();
+            Length = cylinder.transform.localScale.y;
         }
 
         public void CheckForLife()
