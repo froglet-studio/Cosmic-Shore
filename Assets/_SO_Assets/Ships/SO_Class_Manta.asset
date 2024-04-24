@@ -16,8 +16,8 @@ MonoBehaviour:
   Name: Manta
   Description: Soar with grace through open space on relaxing scouting missions,
     or run a heist with a flyby. Either way you get to relax while helping your team.
-  Icon: {fileID: 21300000, guid: f89e8896a905f7545b3ec4ac618fc080, type: 3}
-  SelectedIcon: {fileID: 21300000, guid: 4349387bd17607d4d9e6bd32ff5d52b0, type: 3}
+  Icon: {fileID: 21300000, guid: a89a335fa1c02f745ba93948c9b7ee32, type: 3}
+  SelectedIcon: {fileID: 21300000, guid: c954b73f8623fb04a94f12ee1b89f2b3, type: 3}
   PreviewImage: {fileID: 21300000, guid: b3fe0f4b92e2cf74b830808e3f8d88fc, type: 3}
   TrailPreviewImage: {fileID: 21300000, guid: 2e75f6670391025489d30c8361fb8de3, type: 3}
   CardSilohoutte: {fileID: 21300000, guid: 20c2cf23262a5354a8f8a0808a3acea8, type: 3}

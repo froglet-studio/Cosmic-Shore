@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: ArcadeGameDarts
   m_EditorClassIdentifier: 
   Mode: 3
-  Name: Darts
+  DisplayName: Dolphin Darts
   Description: Drift into the crystal to take three shots on three boards
   Icon: {fileID: 21300000, guid: 827310f6fd2e7444ba1937bd64bd2f98, type: 3}
   SelectedIcon: {fileID: 21300000, guid: 05e517fd0a54810488bbca3247c585c9, type: 3}
@@ -22,6 +22,7 @@ MonoBehaviour:
     type: 3}
   Vessels:
   - {fileID: 11400000, guid: 0a4c60bd3907e4d48885fb5ef9188dcd, type: 2}
+  GolfScoring: 0
   MinPlayers: 1
   MaxPlayers: 1
   MinIntensity: 3

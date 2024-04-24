@@ -16,8 +16,8 @@ MonoBehaviour:
   Name: Rhino
   Description: Smash things with your face to gain boost and volume. Hunt down other
     players to stop them from making volume. Watch out for collateral damage.
-  Icon: {fileID: 21300000, guid: 95a1e60fb2272c7478ffb972290b679a, type: 3}
-  SelectedIcon: {fileID: 21300000, guid: 40cee28d3ea61524bbf2b970bc316597, type: 3}
+  Icon: {fileID: 21300000, guid: 8f39e706a42293d409b555b6ad47386b, type: 3}
+  SelectedIcon: {fileID: 21300000, guid: 3c40f23e80c23de41b904ad5f93bd769, type: 3}
   PreviewImage: {fileID: 21300000, guid: 1d50cd3184d75fe43acf5ace04e20554, type: 3}
   TrailPreviewImage: {fileID: 21300000, guid: 449a10c84f724994eb0401e2f1c3d7d4, type: 3}
   CardSilohoutte: {fileID: 21300000, guid: 5c78cbe8d6ee46745a30138ff74c9659, type: 3}

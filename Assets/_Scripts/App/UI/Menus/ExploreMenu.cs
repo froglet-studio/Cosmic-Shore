@@ -140,9 +140,9 @@ namespace CosmicShore.App.UI.Menus
                     Debug.Log($"MiniGamesMenu - Populating Ship Select List: {i},{j}");
                     var selectionIndex = (i * 3) + j;
                     var shipSelection = shipSelectionRow.transform.GetChild(j).gameObject;
-                    if (selectionIndex < SelectedGame.Vessels.Count)
+                    if (selectionIndex < SelectedGame.Guides.Count)
                     {
-                        var ship = SelectedGame.Vessels[selectionIndex].Ship;
+                        var ship = SelectedGame.Guides[selectionIndex].Ship;
 
                         if (ship.Class == shipClass)
                             selectedShipIndex = selectionIndex;
@@ -232,9 +232,9 @@ namespace CosmicShore.App.UI.Menus
         {
             Debug.Log($"SelectShip: {index}");
             Debug.Log($"ShipSelectionContainer.childCount: {ShipSelectionGrid.childCount}");
-            Debug.Log($"Ships.Count: {SelectedGame.Vessels.Count}");
+            Debug.Log($"Ships.Count: {SelectedGame.Guides.Count}");
 
-            SelectedShip = SelectedGame.Vessels[index].Ship;
+            SelectedShip = SelectedGame.Guides[index].Ship;
 
             for (var i = 0; i < ShipSelectionGrid.childCount; i++)
             {
@@ -246,12 +246,12 @@ namespace CosmicShore.App.UI.Menus
 
                     if (shipIndex == index)
                     {
-                        var ship = SelectedGame.Vessels[shipIndex].Ship;
+                        var ship = SelectedGame.Guides[shipIndex].Ship;
                         shipButton.GetComponent<Image>().sprite = ship.CardSilohoutteActive;
                     }
-                    else if (shipIndex < SelectedGame.Vessels.Count)
+                    else if (shipIndex < SelectedGame.Guides.Count)
                     {
-                        var ship = SelectedGame.Vessels[shipIndex].Ship;
+                        var ship = SelectedGame.Guides[shipIndex].Ship;
                         shipButton.GetComponent<Image>().sprite = ship.CardSilohoutte;
                     }
                 }
@@ -259,7 +259,7 @@ namespace CosmicShore.App.UI.Menus
 
             // notify the mini game engine that this is the ship to play
             MiniGame.PlayerShipType = SelectedShip.Class;
-            MiniGame.PlayerVessel = SelectedGame.Vessels[index];
+            MiniGame.PlayerGuide = SelectedGame.Guides[index];
         }
 
         public void SetPlayerCount(int playerCount)
