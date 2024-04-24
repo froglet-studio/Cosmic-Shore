@@ -1087,6 +1087,11 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 1471404063}
     m_Modifications:
+    - target: {fileID: 3187562052813566745, guid: 3c58c4dd53a6a2240acd7f7b81a3adb5,
+        type: 3}
+      propertyPath: cylinder
+      value: 
+      objectReference: {fileID: 2092534427}
     - target: {fileID: 5739209271613175231, guid: 3c58c4dd53a6a2240acd7f7b81a3adb5,
         type: 3}
       propertyPath: m_RootOrder
@@ -2796,6 +2801,12 @@ Transform:
   m_Father: {fileID: 1020381235}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &2092534427 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 4278471157551724445, guid: 3c58c4dd53a6a2240acd7f7b81a3adb5,
+    type: 3}
+  m_PrefabInstance: {fileID: 793373618}
+  m_PrefabAsset: {fileID: 0}
 --- !u!33 &1981306460292827490
 MeshFilter:
   m_ObjectHideFlags: 0

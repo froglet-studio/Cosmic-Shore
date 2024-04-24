@@ -1941,7 +1941,7 @@ MonoBehaviour:
   crystalImpactEffects: 030000000b000000
   minExplosionScale: 50
   maxExplosionScale: 500
-  trailBlockImpactEffects: 02000000
+  trailBlockImpactEffects: 020000000f000000
   blockChargeChange: 0
   boostMultiplier: 5
   boostFuelAmount: 0.2
