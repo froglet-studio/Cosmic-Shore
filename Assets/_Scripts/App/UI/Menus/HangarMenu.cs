@@ -39,9 +39,9 @@ namespace CosmicShore.App.UI.Menus
         SO_Ship SelectedShip;
         SO_Guide SelectedGuide;
         SO_ShipAbility SelectedAbility;
-        private int _legitShipCount;
+        int _legitShipCount;
 
-        void Start()
+        void Awake()
         {
             Ships = ShipList.ShipList;
             PopulateShipSelectionList();
