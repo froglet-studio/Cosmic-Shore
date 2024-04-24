@@ -158,28 +158,28 @@ namespace CosmicShore.Integrations.Playfab.Economy
 
         #region Inventory Operations
 
-        // TODO: vessel knowledge is now part of player data, not a store item. Should re-wire the API calls from PlayerDataController.
-        // public void GrantVesselKnowledge(int amount, ShipTypes shipClass, Element element)
+        // TODO: Guide knowledge is now part of player data, not a store item. Should re-wire the API calls from PlayerDataController.
+        // public void GrantGuideKnowledge(int amount, ShipTypes shipClass, Element element)
         // {
         //     string shardItemId = "";
-        //     Debug.Log($"vessel Knowledge Length: {Catalog.VesselKnowledge.Count}");
-        //     foreach (var vesselKnowledge in Catalog.VesselKnowledge)
+        //     Debug.Log($"Guide Knowledge Length: {Catalog.GuideKnowledge.Count}");
+        //     foreach (var guideKnowledge in Catalog.GuideKnowledge)
         //     {
-        //         Debug.Log($"Next Vessel: {vesselKnowledge.Name}");
-        //         foreach (var tag in vesselKnowledge.Tags)
-        //             Debug.Log($"vessel Knowledge Tags: {tag}");
+        //         Debug.Log($"Next Guide: {guideKnowledge.Name}");
+        //         foreach (var tag in guideKnowledge.Tags)
+        //             Debug.Log($"Guide Knowledge Tags: {tag}");
         //
-        //         if (vesselKnowledge.Tags.Contains(shipClass.ToString()) && vesselKnowledge.Tags.Contains(element.ToString()))
+        //         if (guideKnowledge.Tags.Contains(shipClass.ToString()) && guideKnowledge.Tags.Contains(element.ToString()))
         //         {
-        //             Debug.Log($"Found matching Vessel Shard");
-        //             shardItemId = vesselKnowledge.ItemId;
+        //             Debug.Log($"Found matching Guidew Shard");
+        //             shardItemId = guideKnowledge.ItemId;
         //             break;
         //         }
         //     }
         //
         //     if (string.IsNullOrEmpty(shardItemId))
         //     {
-        //         Debug.LogError($"{nameof(CatalogManager)}.{nameof(GrantVesselKnowledge)} - Error Granting Shards. No matching vessel shard found in catalog - shipClass:{shipClass}, element:{element}");
+        //         Debug.LogError($"{nameof(CatalogManager)}.{nameof(GrantGuideKnowledge)} - Error Granting Shards. No matching guide shard found in catalog - shipClass:{shipClass}, element:{element}");
         //         return;
         //     }
         //
@@ -296,27 +296,27 @@ namespace CosmicShore.Integrations.Playfab.Economy
             if (Inventory == null) return;
             
             Inventory.miniGames.Clear();
-            Inventory.vesselUpgrades.Clear();
+            Inventory.guideUpgrades.Clear();
             Inventory.crystals.Clear();
             Inventory.ships.Clear();
-            Inventory.vessels.Clear();
+            Inventory.guides.Clear();
         }
         
         private void AddToInventory(VirtualItem item)
         {
             switch (item.ContentType)
             {
-                case "Vessel":
-                    Debug.LogFormat("{0} - {1} - Adding Vessel",nameof(CatalogManager), nameof(AddToInventory));
-                    Inventory.vessels.Add(item);
+                case "Guide":
+                    Debug.LogFormat("{0} - {1} - Adding Guide",nameof(CatalogManager), nameof(AddToInventory));
+                    Inventory.guides.Add(item);
                     break;
                 case "ShipClass":
                     Debug.LogFormat("{0} - {1} - Adding Ship",nameof(CatalogManager), nameof(AddToInventory));
                     Inventory.ships.Add(item);
                     break;
-                case "VesselUpgrade":
+                case "GuideUpgrade":
                     Debug.LogFormat("{0} - {1} - Adding Upgrade",nameof(CatalogManager), nameof(AddToInventory));
-                    Inventory.vesselUpgrades.Add(item);
+                    Inventory.guideUpgrades.Add(item);
                     break;
                 case "MiniGame":
                     Debug.LogFormat("{0} - {1} - Adding MiniGame",nameof(CatalogManager), nameof(AddToInventory));
@@ -376,7 +376,7 @@ namespace CosmicShore.Integrations.Playfab.Economy
 
         /// <summary>
         /// Add Items to Inventory
-        /// Add shinny new stuff! Any type of item from currency to vessel and ship upgrades
+        /// Add shinny new stuff! Any type of item from currency to guide and ship upgrades
         /// </summary>
         //public void AddInventoryItem([NotNull] InventoryItemReference itemReference, int amount)
         public void AddInventoryItem(VirtualItem virtualItem)

@@ -1,6 +1,4 @@
-using System;
 using UnityEngine;
-using UnityEngine.Serialization;
 using UnityEngine.UI;
 
 namespace CosmicShore.App.Ui.Menus
@@ -16,8 +14,8 @@ namespace CosmicShore.App.Ui.Menus
         [Header("MiniGame Purchasing")] 
         [SerializeField] private Button buyMiniGameButton;
  
-        [Header("Vessel Upgrade Purchasing")] 
-        [SerializeField] private Button buyVesselUpgradeButton;
+        [Header("Guide Upgrade Purchasing")] 
+        [SerializeField] private Button buyGuideUpgradeButton;
 
         // Upon claiming daily reward, the button non-clickable here on the menu
         // (Back-end) Notify the server for cool down time
@@ -54,10 +52,10 @@ namespace CosmicShore.App.Ui.Menus
             // TODO: back-end buy mini game
         }
 
-        public void BuyVesselUpgrade_OnClick()
+        public void BuyGuideUpgrade_OnClick()
         {
-            Debug.LogFormat("{0} - {1} buying a vessel upgrade.", nameof(StoreMenu), nameof(BuyVesselUpgrade_OnClick));
-            // TODO: back-end buy a vessel upgrade.
+            Debug.LogFormat("{0} - {1} buying a guide upgrade.", nameof(StoreMenu), nameof(BuyGuideUpgrade_OnClick));
+            // TODO: back-end buy a guide upgrade.
         }
     }
 }

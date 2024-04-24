@@ -2,11 +2,11 @@ namespace CosmicShore.Integrations.Playfab.Economy
 {
     public enum ContentTypes
     {
-        MiniGame,
-        ShipClass,
-        Vessel,
-        VesselKnowledge,
-        VesselUpgrade,
-        Crystal
+        ShipClass = 1,
+        Guide = 2,
+        GuideKnowledge = 3,
+        GuideUpgrade = 4,
+        Crystal =5,
+        MiniGame = 6,
     }
 }

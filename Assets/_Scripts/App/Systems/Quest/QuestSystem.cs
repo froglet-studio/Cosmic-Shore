@@ -31,7 +31,7 @@ namespace CosmicShore.App.Systems.Quests
 
             // Grant Reward
             // TODO: Look for PlayerDataController
-            // CatalogManager.Instance.GrantVesselKnowledge(quest.ShardValue, ShipTypes.Manta, Element.Space);
+            // CatalogManager.Instance.GrantGuideKnowledge(quest.ShardValue, ShipTypes.Manta, Element.Space);
 
             // Mark Granted
             quest.RewardGranted = true;

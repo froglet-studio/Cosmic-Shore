@@ -2,94 +2,101 @@ using CosmicShore.App.Systems.Squads;
 using CosmicShore.App.UI.Elements;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 using UnityEngine.UI;
 
 namespace CosmicShore.App.UI.Menus
 {
     public class SquadMenu : MonoBehaviour
     {
-        [SerializeField] GameObject VesselSelectionGrid;
-        [SerializeField] HorizontalLayoutGroup VesselSelectionRowPrefab;
-        [SerializeField] VesselCard VesselCardPrefab;
-        [SerializeField] VesselSelectButton PlayerVesselButton;
-        [SerializeField] VesselSelectButton RogueOneVesselButton;
-        [SerializeField] VesselSelectButton RogueTwoVesselButton;
+        [FormerlySerializedAs("VesselSelectionGrid")]
+        [SerializeField] GameObject GuideSelectionGrid;
+        [FormerlySerializedAs("VesselSelectionRowPrefab")]
+        [SerializeField] HorizontalLayoutGroup GuideSelectionRowPrefab;
+        [FormerlySerializedAs("VesselCardPrefab")]
+        [SerializeField] GuideCard GuideCardPrefab;
+        [FormerlySerializedAs("PlayerVesselButton")]
+        [SerializeField] GuideSelectButton PlayerGuideButton;
+        [FormerlySerializedAs("RogueOneVesselButton")]
+        [SerializeField] GuideSelectButton RogueOneGuideButton;
+        [FormerlySerializedAs("RogueTwoVesselButton")]
+        [SerializeField] GuideSelectButton RogueTwoGuideButton;
 
         //[SerializeField] Inventory PlayerInventory;
         [SerializeField] SO_ShipList PlayerShips;
-        List<SO_Vessel> AllVessels = new();
-        List<VesselCard> VesselCards = new();
+        List<SO_Guide> AllGuides = new();
+        List<GuideCard> GuideCards = new();
 
         public int ActiveSquadMember = 0;
 
         void Start()
         {
-            // Populate Vessel Selection Grid
-            int vesselIndex = 0;
+            // Populate Guide Selection Grid
+            int guideIndex = 0;
             foreach (var ship in PlayerShips.ShipList)
             {
-                var row = Instantiate(VesselSelectionRowPrefab);
-                var vessels = new List<SO_Vessel>();
-                foreach (var vessel in ship.Vessels)
+                var row = Instantiate(GuideSelectionRowPrefab);
+                var guides = new List<SO_Guide>();
+                foreach (var guide in ship.Guides)
                 {
-                    vessels.Add(vessel);
-                    AllVessels.Add(vessel);
+                    guides.Add(guide);
+                    AllGuides.Add(guide);
                 }
-                vessels.Sort((x, y) => { return x.PrimaryElement < y.PrimaryElement ? 1 : -1; });
+                guides.Sort((x, y) => { return x.PrimaryElement < y.PrimaryElement ? 1 : -1; });
 
-                foreach (var vessel in vessels)
+                foreach (var guide in guides)
                 {
-                    var vesselCard = Instantiate(VesselCardPrefab);
-                    vesselCard.Vessel = vessel;
-                    vesselCard.transform.SetParent(row.transform, false);
-                    vesselCard.SquadMenu = this;
-                    vesselCard.Index = vesselIndex;
-                    VesselCards.Add(vesselCard);
-                    vesselIndex++;
+                    var guideCard = Instantiate(GuideCardPrefab);
+                    guideCard.Guide = guide;
+                    guideCard.transform.SetParent(row.transform, false);
+                    guideCard.SquadMenu = this;
+                    guideCard.Index = guideIndex;
+                    GuideCards.Add(guideCard);
+                    guideIndex++;
                 }
 
-                row.transform.SetParent(VesselSelectionGrid.transform, false);
+                row.transform.SetParent(GuideSelectionGrid.transform, false);
             }
 
             // Populate Squad Buttons
-            SquadSystem.VesselList = AllVessels;
-            SquadSystem.DefaultLeader = AllVessels[0];
-            SquadSystem.DefaultRogueOne = AllVessels[1];
-            SquadSystem.DefaultRogueTwo = AllVessels[2];
+            SquadSystem.GuideList = AllGuides;
+            SquadSystem.DefaultLeader = AllGuides[0];
+            SquadSystem.DefaultRogueOne = AllGuides[1];
+            SquadSystem.DefaultRogueTwo = AllGuides[2];
 
             Debug.Log($"SquadSystem.DefaultLeader: {SquadSystem.DefaultLeader}");
             Debug.Log($"SquadSystem.DefaultRogueOne: {SquadSystem.DefaultRogueOne}");
             Debug.Log($"SquadSystem.DefaultRogueTwo: {SquadSystem.DefaultRogueTwo}");
 
-            // Get player vessel and set vessel image for button. set player button active
+            // Get player guide and set guide image for button. set player button active
             var squad = SquadSystem.LoadSquad();
-            PlayerVesselButton.Vessel = SquadSystem.SquadLeader;
-            RogueOneVesselButton.Vessel = SquadSystem.RogueOne;
-            RogueTwoVesselButton.Vessel = SquadSystem.RogueTwo;
+            PlayerGuideButton.Guide = SquadSystem.SquadLeader;
+            RogueOneGuideButton.Guide = SquadSystem.RogueOne;
+            RogueTwoGuideButton.Guide = SquadSystem.RogueTwo;
             SetSquadLeaderAssignmentActive();
         }
 
-        public void AssignVessel(VesselCard vesselCard)
+        public void AssignGuide(GuideCard guideCard)
         {
-            SO_Vessel Vessel = vesselCard.Vessel;
-            foreach (var card in VesselCards)
+            SO_Guide guide = guideCard.Guide;
+            foreach (var card in GuideCards)
                 card.Active(false);
 
-            vesselCard.Active(true);
+            guideCard.Active(true);
 
             switch (ActiveSquadMember)
             {
                 case 0:
-                    SquadSystem.SetSquadLeader(Vessel);
-                    PlayerVesselButton.Vessel = Vessel;
+                    SquadSystem.SetSquadLeader(guide);
+                    PlayerGuideButton.Guide = guide;
                     break;
                 case 1:
-                    SquadSystem.SetRogueOne(Vessel);
-                    RogueOneVesselButton.Vessel = Vessel;
+                    SquadSystem.SetRogueOne(guide);
+                    RogueOneGuideButton.Guide = guide;
                     break;
                 default:
-                    SquadSystem.SetRogueTwo(Vessel);
-                    RogueTwoVesselButton.Vessel = Vessel;
+                    SquadSystem.SetRogueTwo(guide);
+                    RogueTwoGuideButton.Guide = guide;
                     break;
             }
 
@@ -100,9 +107,9 @@ namespace CosmicShore.App.UI.Menus
         {
             Debug.Log("SetSquadLeaderAssignmentActive");
             ActiveSquadMember = 0;
-            PlayerVesselButton.Active(true);
-            RogueOneVesselButton.Active(false);
-            RogueTwoVesselButton.Active(false);
+            PlayerGuideButton.Active(true);
+            RogueOneGuideButton.Active(false);
+            RogueTwoGuideButton.Active(false);
 
             UpdateCardGrid(SquadSystem.SquadLeader);
         }
@@ -110,9 +117,9 @@ namespace CosmicShore.App.UI.Menus
         {
             Debug.Log("SetRogueOneAssignmentActive");
             ActiveSquadMember = 1;
-            PlayerVesselButton.Active(false);
-            RogueOneVesselButton.Active(true);
-            RogueTwoVesselButton.Active(false);
+            PlayerGuideButton.Active(false);
+            RogueOneGuideButton.Active(true);
+            RogueTwoGuideButton.Active(false);
 
             UpdateCardGrid(SquadSystem.RogueOne);
         }
@@ -120,18 +127,18 @@ namespace CosmicShore.App.UI.Menus
         {
             Debug.Log("SetRogueTwoAssignmentActive");
             ActiveSquadMember = 2;
-            PlayerVesselButton.Active(false);
-            RogueOneVesselButton.Active(false);
-            RogueTwoVesselButton.Active(true);
+            PlayerGuideButton.Active(false);
+            RogueOneGuideButton.Active(false);
+            RogueTwoGuideButton.Active(true);
 
             UpdateCardGrid(SquadSystem.RogueTwo);
         }
 
-        void UpdateCardGrid(SO_Vessel activeVessel)
+        void UpdateCardGrid(SO_Guide activeGuide)
         {
-            foreach (var card in VesselCards)
+            foreach (var card in GuideCards)
             {
-                card.Active(card.Vessel == activeVessel);
+                card.Active(card.Guide == activeGuide);
 
             }
         }
