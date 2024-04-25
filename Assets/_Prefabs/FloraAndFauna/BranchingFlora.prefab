@@ -211,7 +211,7 @@ MonoBehaviour:
     type: 2}
   growPeriod: 3
   growthChance: 0.2
-  minBranchAngle: 20
+  minBranchAngle: -40
   maxBranchAngle: 40
   minBranches: 1
   maxBranches: 3
@@ -219,7 +219,7 @@ MonoBehaviour:
   maxBranchLengthMultiplier: 0.8
   maxDepth: 3
   maxTotalSpawnedObjects: 100
-  leafChance: 0.1
+  leafChance: -0.1
 --- !u!1001 &5588088495769702632
 PrefabInstance:
   m_ObjectHideFlags: 0

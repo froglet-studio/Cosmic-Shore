@@ -18,7 +18,7 @@ namespace CosmicShore
 
         public void CheckForLife()
         {
-            if (GetComponentInChildren<HealthBlock>() == null && GetComponentInParent<HealthBlock>() == null)
+            if (GetComponentInChildren<HealthBlock>() == null && GetComponentInChildren<Spindle>() == null)
             {
                 Evaporate();
             }

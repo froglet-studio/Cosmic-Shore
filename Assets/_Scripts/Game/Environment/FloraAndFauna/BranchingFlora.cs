@@ -18,6 +18,7 @@ namespace CosmicShore
         [SerializeField] int maxDepth = 10;
         [SerializeField] int maxTotalSpawnedObjects = 1000;
         [SerializeField] float leafChance = 0.05f;
+        [SerializeField] float leafChanceIncrement = 0.01f;
 
         HashSet<Branch> activeBranches = new HashSet<Branch>();
 
@@ -49,9 +50,16 @@ namespace CosmicShore
                     Branch newBranch = new Branch();
                     if (Random.value < leafChance)
                     {
-                        newBranch.gameObject = Instantiate(healthBlock, branch.gameObject.transform.position, branch.gameObject.transform.rotation).gameObject; // TODO: position and orient leaf
+                        Debug.Log("Leafing");
+                        newBranch.gameObject = Instantiate(healthBlock, branch.gameObject.transform.position + (spindle.cylinder.transform.localScale.y * branch.gameObject.transform.forward), branch.gameObject.transform.rotation).gameObject; // TODO: position and orient leaf
+                        newBranch.gameObject.transform.position = branch.depth < 1 ? branch.gameObject.transform.position + (spindle.cylinder.transform.localScale.y * branch.gameObject.transform.forward) :
+                                                                                               branch.gameObject.transform.position + (spindle.cylinder.transform.localScale.y / (branch.depth - 1) * branch.gameObject.transform.forward);
+                        newBranch.gameObject.transform.localScale = branch.depth == 0 ? spindle.transform.localScale :
+                                                                                         spindle.transform.localScale / branch.depth;
+                        newBranch.gameObject.transform.parent = branch.gameObject.transform;
                         newBranch.depth = branch.depth + 1;
                         spawnedItemCount++;
+                        AddHealthBlock(newBranch.gameObject.GetComponent<HealthBlock>());
                     }
                     else
                     {
@@ -76,8 +84,9 @@ namespace CosmicShore
                             newBranch.gameObject.transform.rotation = Quaternion.LookRotation(branchDirection);
                             newBranch.depth = branch.depth + 1;
                             spawnedItemCount++;
+                            AddSpindle(newBranch.gameObject.GetComponent<Spindle>());
                             newBranches.Add(newBranch);
-                            leafChance += 0.01f;
+                            leafChance += leafChanceIncrement;
                         }
                     }
                     branchesToRemove.Add(branch);

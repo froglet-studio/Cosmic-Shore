@@ -3,6 +3,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace CosmicShore
 {
@@ -23,11 +24,13 @@ namespace CosmicShore
         protected virtual void Start()
         {
             crystal = GetComponentInChildren<Crystal>();
+            node = NodeControlManager.Instance.GetNodeByPosition(transform.position);
         }
 
         public void AddHealthBlock(HealthBlock healthBlock)
         {
             healthBlocks.Add(healthBlock);
+            healthBlock.LifeForm = this;
         }
 
         public void AddSpindle(Spindle spindle)
@@ -40,6 +43,7 @@ namespace CosmicShore
             healthBlocks.Remove(healthBlock);
             CheckSpindles();
             CheckIfDead();
+            //Debug.Log("HealthBlocks: " + healthBlocks.Count);
         }
 
         void CheckSpindles()

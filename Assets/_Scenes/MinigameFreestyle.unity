@@ -1155,7 +1155,7 @@ PrefabInstance:
     - target: {fileID: 7514956980722975813, guid: 3c58c4dd53a6a2240acd7f7b81a3adb5,
         type: 3}
       propertyPath: maxDepth
-      value: 10
+      value: 100
       objectReference: {fileID: 0}
     - target: {fileID: 7514956980722975813, guid: 3c58c4dd53a6a2240acd7f7b81a3adb5,
         type: 3}
@@ -1166,6 +1166,16 @@ PrefabInstance:
         type: 3}
       propertyPath: growthChance
       value: 0.9
+      objectReference: {fileID: 0}
+    - target: {fileID: 7514956980722975813, guid: 3c58c4dd53a6a2240acd7f7b81a3adb5,
+        type: 3}
+      propertyPath: leafChanceIncrement
+      value: 0.001
+      objectReference: {fileID: 0}
+    - target: {fileID: 7514956980722975813, guid: 3c58c4dd53a6a2240acd7f7b81a3adb5,
+        type: 3}
+      propertyPath: maxTotalSpawnedObjects
+      value: 5000
       objectReference: {fileID: 0}
     - target: {fileID: 7514956980722975813, guid: 3c58c4dd53a6a2240acd7f7b81a3adb5,
         type: 3}
@@ -1462,7 +1472,7 @@ MonoBehaviour:
   EndOfTurnDelay: 0
   EnableTrails: 1
   DefaultPlayerShipType: 2
-  DefaultPlayerVessel: {fileID: 0}
+  DefaultPlayerGuide: {fileID: 0}
   ActivePlayer: {fileID: 0}
   Crystal: {fileID: 1568959833}
   CrystalStartPosition: {x: 0, y: 0, z: -120}

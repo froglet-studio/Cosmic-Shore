@@ -124,7 +124,7 @@ MonoBehaviour:
   ParticleEffect: {fileID: 0}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   MaxScale: {x: 10, y: 10, z: 10}
-  TargetScale: {x: 0, y: 0, z: 0}
+  TargetScale: {x: 1, y: 1, z: 3}
   GrowthVector: {x: 0, y: 2, z: 0}
   waitTime: 0.6
   destroyed: 0
