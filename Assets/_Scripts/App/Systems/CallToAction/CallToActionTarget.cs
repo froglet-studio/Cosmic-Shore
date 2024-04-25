@@ -17,7 +17,10 @@ namespace CosmicShore.App.Systems.CTA
 
         void WhenDutyCalls()
         {
-            ActiveIndicator.SetActive(true);
+            if (ActiveIndicator == null)
+                Debug.LogWarning($"CallToActionTarget does not have an ActiveIndicator set. GameObject Name: {gameObject.name}");
+            else
+                ActiveIndicator.SetActive(true);
         }
 
         void WhenTheCallHasBeenAnswered()
