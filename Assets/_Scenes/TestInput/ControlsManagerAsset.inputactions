@@ -1,5 +1,5 @@
 {
-    "name": "ControlsManager",
+    "name": "ControlsManagerAsset",
     "maps": [
         {
             "name": "PlayerControls",
