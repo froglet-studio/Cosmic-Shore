@@ -51,8 +51,8 @@ public class Boid : Fauna
     public BoidManager boidManager;
     private TrailBlock trailBlock;
     private BoxCollider BlockCollider;
-    private Crystal crystal;
-    [SerializeField] Material activeCrystalMaterial;
+    //private Crystal crystal;
+    //[SerializeField] Material activeCrystalMaterial;
 
     private List<Collider> separatedBoids = new List<Collider>();
 
