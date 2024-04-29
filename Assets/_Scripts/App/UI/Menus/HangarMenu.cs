@@ -4,7 +4,6 @@ using System.Collections;
 using System.Collections.Generic;
 using Unity.Mathematics;
 using UnityEngine;
-using UnityEngine.Serialization;
 using UnityEngine.UI;
 
 namespace CosmicShore.App.UI.Menus
@@ -12,28 +11,41 @@ namespace CosmicShore.App.UI.Menus
     public class HangarMenu : MonoBehaviour
     {
         [SerializeField] SO_ShipList ShipList;
-
         [SerializeField] Transform ShipSelectionContainer;
+        [SerializeField] NavLinkGroup TopNav;
+
+        [Header("Overview - Ship UI")]
+        [SerializeField] GameObject OverviewView;
+        [SerializeField] GameObject ShipDetailsPanel;
         [SerializeField] TMPro.TMP_Text SelectedShipName;
         [SerializeField] TMPro.TMP_Text SelectedShipDescription;
-        [SerializeField] Image SelectedShipImage;
-        [SerializeField] Image SelectedShipTrailImage;
+        [SerializeField] GameObject SelectedShipPreviewWindow;
+        [SerializeField] GameObject OverviewButton;
+        [SerializeField] Sprite OverviewButtonActiveSprite;
+        [SerializeField] Sprite OverviewButtonInactiveSprite;
 
+        [Header("Overview - Abilities UI")]
+        [SerializeField] GameObject AbilityDetailsPanel;
         [SerializeField] Transform AbilitySelectionContainer;
         [SerializeField] TMPro.TMP_Text SelectedAbilityName;
         [SerializeField] TMPro.TMP_Text SelectedAbilityDescription;
         [SerializeField] GameObject SelectedAbilityPreviewWindow;
 
-        [FormerlySerializedAs("VesselSelectionContainer")]
+        [Header("Guides UI")]
+        [SerializeField] GameObject GuidesView;
         [SerializeField] Transform GuideSelectionContainer;
-        [FormerlySerializedAs("SelectedVesselName")]
         [SerializeField] TMPro.TMP_Text SelectedGuideName;
-        [FormerlySerializedAs("SelectedVesselDescription")]
         [SerializeField] TMPro.TMP_Text SelectedGuideDescription;
-        [FormerlySerializedAs("SelectedVesselFlavor")]
         [SerializeField] TMPro.TMP_Text SelectedGuideFlavor;
-        [FormerlySerializedAs("SelectedVesselImage")]
         [SerializeField] Image SelectedGuideImage;
+
+        [Header("Training UI")]
+        [SerializeField] GameObject TrainingView;
+        [SerializeField] Transform GameSelectionContainer;
+        [SerializeField] Image ShipModelImage;
+        //[SerializeField] TMPro.TMP_Text SelectedGameName;
+        //[SerializeField] TMPro.TMP_Text SelectedGameDescription;
+        [SerializeField] GameObject SelectedGamePreviewWindow;
 
         List<SO_Ship> Ships;
         SO_Ship SelectedShip;
@@ -97,8 +109,11 @@ namespace CosmicShore.App.UI.Menus
                 abilitySelection.GetComponent<Button>().onClick.AddListener(() => AbilitySelectionContainer.GetComponent<MenuAudio>().PlayAudio());
             }
 
-            if (SelectedShip.Abilities.Count > 0)
-                StartCoroutine(SelectAbilityCoroutine(0));
+
+
+            StartCoroutine(SelectOverviewCoroutine());
+            //if (SelectedShip.Abilities.Count > 0)
+            //    StartCoroutine(SelectAbilityCoroutine(0));
         }
 
         void PopulateGuideSelectionList()
@@ -135,8 +150,10 @@ namespace CosmicShore.App.UI.Menus
 
             if (SelectedShipName != null) SelectedShipName.text = SelectedShip.Name;
             if (SelectedShipDescription != null) SelectedShipDescription.text = SelectedShip.Description;
-            if (SelectedShipImage != null) SelectedShipImage.sprite = SelectedShip.PreviewImage;
-            if (SelectedShipTrailImage != null) SelectedShipTrailImage.sprite = SelectedShip.TrailPreviewImage;
+            
+            var preview = Instantiate(SelectedShip.PreviewImage);
+            //preview.transform.SetParent(SelectedAbilityPreviewWindow.transform, false);
+            //TODO P0: Refactor Ship SO to have a preview clip
         }
 
         void PopulateAbilityDetails()
@@ -156,6 +173,8 @@ namespace CosmicShore.App.UI.Menus
 
                 var preview = Instantiate(SelectedAbility.PreviewClip);
                 preview.transform.SetParent(SelectedAbilityPreviewWindow.transform, false);
+                SelectedAbilityPreviewWindow.SetActive(true);
+                Canvas.ForceUpdateCanvases();
             }
         }
 
@@ -170,6 +189,11 @@ namespace CosmicShore.App.UI.Menus
             if (SelectedGuideDescription != null) SelectedGuideDescription.text = SelectedGuide.Description;
             if (SelectedGuideFlavor != null) SelectedGuideFlavor.text = SelectedGuide.Flavor;
             if (SelectedGuideImage != null) SelectedGuideImage.sprite = SelectedGuide.Image;
+        }
+
+        void PopulateTrainingDetails()
+        {
+
         }
 
         public void SelectShip(int index)
@@ -196,9 +220,25 @@ namespace CosmicShore.App.UI.Menus
             PopulateGuideSelectionList();
         }
 
+        public void SelectOverview()
+        {
+            // Deselect all Ability Icons
+            for (var i = 0; i < SelectedShip.Abilities.Count; i++)
+                AbilitySelectionContainer.GetChild(i).gameObject.GetComponent<Image>().sprite = SelectedShip.Abilities[i].Icon;
+
+            OverviewButton.GetComponent<Image>().sprite = OverviewButtonActiveSprite;
+
+            ShipDetailsPanel.SetActive(true);
+            AbilityDetailsPanel.SetActive(false);
+        }
+
         public void SelectAbility(int index)
         {
             Debug.Log($"SelectAbility: {index}");
+
+            OverviewButton.GetComponent<Image>().sprite = OverviewButtonInactiveSprite;
+            ShipDetailsPanel.SetActive(false);
+            AbilityDetailsPanel.SetActive(true);
 
             // Deselect them all
             for (var i = 0; i < SelectedShip.Abilities.Count; i++)
@@ -247,6 +287,12 @@ namespace CosmicShore.App.UI.Menus
             PopulateGuideDetails();
         }
 
+
+        IEnumerator SelectOverviewCoroutine()
+        {
+            yield return new WaitForEndOfFrame();
+            SelectOverview();
+        }
 
         IEnumerator SelectGuideCoroutine(int index)
         {

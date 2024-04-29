@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Name: Riptide
   Description: Fastest Energy gain rate in the game when skimming.
-  Flavor: dfsf
-  Behavior: dfdsfs
+  Flavor: '[Flavor text placeholder]'
+  Behavior: '[Behavior text placeholder]'
   Image: {fileID: 21300000, guid: c07463db6e8244c45b639760efd18f9e, type: 3}
   Icon: {fileID: 21300000, guid: d6f9eb2dde69a054c9c37da418122f8b, type: 3}
   SelectedIcon: {fileID: 21300000, guid: a6b8a653326c7a847a7cbdeba6dd0220, type: 3}

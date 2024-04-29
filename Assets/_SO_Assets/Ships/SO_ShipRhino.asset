@@ -28,7 +28,12 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 049001867ddf0504c93f7a903f691ca4, type: 2}
   - {fileID: 11400000, guid: 3a6e98f71229bf04ca1312735eb68c85, type: 2}
   - {fileID: 11400000, guid: 4ddfb75e3a79e4c458ed98d3cbf0b03e, type: 2}
-  Pilots: []
+  Guides:
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  TrainingProgression: {fileID: 0}
   TrainingGames:
   - {fileID: 11400000, guid: 812851e4603217c469662dc3cb9c6d93, type: 2}
   - {fileID: 11400000, guid: 3537310ecbdad2e449bbca31d2aa8599, type: 2}
