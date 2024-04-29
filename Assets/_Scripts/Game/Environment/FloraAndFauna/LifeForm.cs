@@ -16,8 +16,8 @@ namespace CosmicShore
         private List<HealthBlock> healthBlocks = new List<HealthBlock>();
         private List<Spindle> spindles = new List<Spindle>();
 
-        private Crystal crystal;
-        [SerializeField] Material activeCrystalMaterial; // TODO: make a crytal material set that pulls from the element
+        protected Crystal crystal;
+        [SerializeField] protected Material activeCrystalMaterial; // TODO: make a crytal material set that pulls from the element
         
         protected Node node;
 
