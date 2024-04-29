@@ -16,6 +16,8 @@ namespace CosmicShore
         [SerializeField] float maxBranchAngle = 40f;
         [SerializeField] int minBranches = 1; // don't set to 0
         [SerializeField] int maxBranches = 2;
+        [SerializeField] int minTrunks = 1;
+        [SerializeField] int maxTrunks = 1;
 
         [SerializeField] float minBranchLengthMultiplier = 0.6f;
         [SerializeField] float maxBranchLengthMultiplier = 0.8f;
@@ -25,6 +27,8 @@ namespace CosmicShore
         [SerializeField] float leafChanceIncrement = 0.01f;
 
         HashSet<Branch> activeBranches = new HashSet<Branch>();
+
+        [SerializeField] float plantRadius = 75f;
 
         struct Branch
         {
@@ -37,7 +41,22 @@ namespace CosmicShore
         protected override void Start()
         {
             base.Start();
-            activeBranches.Add(new Branch { gameObject = gameObject, depth = 0 });
+            activeBranches.Add(new Branch { gameObject = gameObject, depth = 0 }); // add trunk
+            SeedBranches(); // add more truncks
+            transform.rotation = Quaternion.LookRotation(node.GetCrystal().transform.position);
+        }
+
+        void SeedBranches()
+        {
+            for (int i = 0; i < Random.Range(minTrunks-1, maxTrunks-1); i++)
+            {
+                Branch branch = new Branch();
+                branch.gameObject = Instantiate(spindle, transform.position, transform.rotation).gameObject;
+                branch.gameObject.transform.rotation = RandomVectorRotation(0,180);
+                branch.gameObject.transform.parent = transform;
+                branch.depth = 0;
+                activeBranches.Add(branch);
+            }
         }
 
         public override void Grow()
@@ -55,7 +74,7 @@ namespace CosmicShore
                     {
                         newBranch.gameObject = Instantiate(healthBlock, branch.gameObject.transform.position + (spindle.cylinder.transform.localScale.y * branch.gameObject.transform.forward), branch.gameObject.transform.rotation).gameObject; // TODO: position and orient leaf
 
-                        OrientAndPositionBranch(ref newBranch, branch);
+                        ScaleAndPositionBranch(ref newBranch, branch);
                         AddHealthBlock(newBranch.gameObject.GetComponent<HealthBlock>());
                     }
                     else
@@ -64,15 +83,9 @@ namespace CosmicShore
                         for (int i = 0; i < numBranches; i++)
                         {
                             newBranch.gameObject = Instantiate(spindle, branch.gameObject.transform.position + (spindle.cylinder.transform.localScale.y * branch.gameObject.transform.forward), branch.gameObject.transform.rotation).gameObject;
-                            OrientAndPositionBranch(ref newBranch, branch);
+                            ScaleAndPositionBranch(ref newBranch, branch);
 
-                            float branchAngle = Random.Range(minBranchAngle, maxBranchAngle);
-                            float branchAngleRad = branchAngle * Mathf.Deg2Rad;
-                            Vector3 branchDirection = Quaternion.Euler(0f, branchAngleRad * Mathf.Rad2Deg, 0f) * (branch.gameObject.transform.forward);
-                            Quaternion branchRotation;
-                            RandomVectorRotation(branch.gameObject.transform.forward, out branchRotation);
-                            newBranch.gameObject.transform.rotation = branchRotation;
-                            //newBranch.gameObject.transform.rotation = Quaternion.LookRotation(branchDirection);
+                            newBranch.gameObject.transform.rotation = RandomVectorRotation(minBranchAngle, maxBranchAngle) * Quaternion.LookRotation(node.GetCrystal().transform.position); // crysaltropism
 
                             AddSpindle(newBranch.gameObject.GetComponent<Spindle>());
                             newBranches.Add(newBranch);
@@ -92,7 +105,12 @@ namespace CosmicShore
             activeBranches.UnionWith(newBranches);
         }
 
-        void OrientAndPositionBranch(ref Branch newBranch, Branch branch)
+        public override void Plant()
+        {
+            transform.position = node.GetCrystal().transform.position + (plantRadius * Random.onUnitSphere);
+        }
+
+        void ScaleAndPositionBranch(ref Branch newBranch, Branch branch)
         {
             newBranch.gameObject.transform.position = branch.depth <= 1 ? branch.gameObject.transform.position + (spindle.cylinder.transform.localScale.y * branch.gameObject.transform.forward) :
                                                                                                branch.gameObject.transform.position + (spindle.cylinder.transform.localScale.y / (branch.depth - 1) * branch.gameObject.transform.forward);
@@ -104,14 +122,13 @@ namespace CosmicShore
             spawnedItemCount++;
         }
 
-        private Vector3 RandomVectorRotation(Vector3 vector, out Quaternion rotation)
+        private Quaternion RandomVectorRotation(float minBranchAngle, float maxBranchAngle) // TODO: move to utility class
         {
             float altitude = Random.Range(minBranchAngle, maxBranchAngle);
             float azimuth = Random.Range(0f, 360f);
 
-            rotation = Quaternion.Euler(0f, 0f, azimuth) * Quaternion.Euler(altitude, 0f, 0f);
-            Vector3 newVector = rotation * vector;
-            return newVector;
+            Quaternion rotation = Quaternion.Euler(0f, 0f, azimuth) * Quaternion.Euler(altitude, 0f, 0f);
+            return rotation;
         }
     }
 }
