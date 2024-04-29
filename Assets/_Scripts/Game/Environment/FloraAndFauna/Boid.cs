@@ -11,7 +11,7 @@ public enum BoidCollisionEffects
     Explode = 1,
 }
 
-public class Boid : MonoBehaviour
+public class Boid : Fauna
 {
     [Header("Detection Settings")]
     [SerializeField] float cohesionRadius = 10.0f;
@@ -61,8 +61,9 @@ public class Boid : MonoBehaviour
     bool attached = false;
     [SerializeField] bool hasCrystal = true;
 
-    private void Start()
+    protected override void Start()
     {
+        base.Start();
         crystal = GetComponentInChildren<Crystal>();
         if (!boidManager) boidManager = GetComponentInParent<BoidManager>();
         trailBlock = GetComponentInChildren<TrailBlock>();
@@ -180,6 +181,11 @@ public class Boid : MonoBehaviour
         desiredDirection = ((separation * separationWeight) + (alignment * alignmentWeight) + (cohesion * cohesionWeight) + (goalDirection * goalWeight) + blockAttraction).normalized;
         currentVelocity = desiredDirection * Mathf.Clamp(averageSpeed, minSpeed, maxSpeed);
         desiredRotation = currentVelocity != Vector3.zero ? Quaternion.LookRotation(currentVelocity.normalized) : transform.rotation;
+    }
+
+    protected override void Spawn()
+    {
+        throw new System.NotImplementedException();
     }
 
     IEnumerator AddToMoundCoroutine()

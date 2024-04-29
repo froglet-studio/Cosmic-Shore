@@ -19,7 +19,7 @@ namespace CosmicShore
         private Crystal crystal;
         [SerializeField] Material activeCrystalMaterial; // TODO: make a crytal material set that pulls from the element
         
-        private Node node;
+        protected Node node;
 
         protected virtual void Start()
         {
