@@ -16,7 +16,7 @@ MonoBehaviour:
   Description: Slowest shield shrink rate in Class.
   Flavor: '[Flavor text placeholder]'
   Behavior: '[Behavior text placeholder]'
-  Image: {fileID: 21300000, guid: 8f39e706a42293d409b555b6ad47386b, type: 3}
+  Image: {fileID: 21300000, guid: d08470f594589f848951a9bf257b2889, type: 3}
   Icon: {fileID: 21300000, guid: d6f9eb2dde69a054c9c37da418122f8b, type: 3}
   SelectedIcon: {fileID: 21300000, guid: a6b8a653326c7a847a7cbdeba6dd0220, type: 3}
   Ship: {fileID: 11400000, guid: ec97e344adb08f847a8f7649ab79088e, type: 2}

@@ -16,7 +16,7 @@ MonoBehaviour:
   Description: Biggest max shield size in Class.
   Flavor: '[Flavor text placeholder]'
   Behavior: '[Behavior text placeholder]'
-  Image: {fileID: 21300000, guid: 8f39e706a42293d409b555b6ad47386b, type: 3}
+  Image: {fileID: 21300000, guid: d08470f594589f848951a9bf257b2889, type: 3}
   Icon: {fileID: 21300000, guid: 3ad7640785837564a9e0793b85cc0917, type: 3}
   SelectedIcon: {fileID: 21300000, guid: 9fa211ac124cc964aaf984b86b455504, type: 3}
   Ship: {fileID: 11400000, guid: ec97e344adb08f847a8f7649ab79088e, type: 2}
