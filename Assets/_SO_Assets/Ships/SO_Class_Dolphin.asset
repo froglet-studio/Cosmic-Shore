@@ -28,11 +28,12 @@ MonoBehaviour:
   - {fileID: 11400000, guid: e2772bd51facc0a45a6baa711d576d73, type: 2}
   - {fileID: 11400000, guid: 81e1cc30914b65e48b7551479143a005, type: 2}
   - {fileID: 11400000, guid: 8fbab90eb61d9b8429305c20fe9eb239, type: 2}
-  Vessels:
-  - {fileID: 11400000, guid: 87b2a6ade75e4aa499cbc046a33f4f21, type: 2}
+  Guides:
   - {fileID: 11400000, guid: 6ea494af7f39c7a43b023140ffdf2e68, type: 2}
+  - {fileID: 11400000, guid: 87b2a6ade75e4aa499cbc046a33f4f21, type: 2}
   - {fileID: 11400000, guid: 97e84fe1d18e3bf41ae2e9e76aae7968, type: 2}
   - {fileID: 11400000, guid: cd84065f43a0cfa4c8a3e562dcb03176, type: 2}
+  TrainingProgression: {fileID: 0}
   TrainingGames:
   - {fileID: 11400000, guid: dae692490d41dda488bf199e4fdb30af, type: 2}
   - {fileID: 11400000, guid: 27f7ec1e006fb3a4cbb91572e943cf67, type: 2}
