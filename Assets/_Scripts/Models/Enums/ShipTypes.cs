@@ -13,4 +13,5 @@ public enum ShipTypes
     Serpent = 7,
     Termite = 8,
     Falcon = 9,
+    Shrike = 10,
 }

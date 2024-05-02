@@ -18,7 +18,8 @@ namespace CosmicShore
 
         public void CheckForLife()
         {
-            if (GetComponentInChildren<HealthBlock>() == null && GetComponentInChildren<Spindle>() == null)
+            //Debug.Log($"Checking spindle for life: GetComponentsInChildren<HealthBlock>().length = {GetComponentsInChildren<HealthBlock>().Length} GetComponentsInChildren<Spindle>().Length = {GetComponentsInChildren<Spindle>().Length}");
+            if (GetComponentsInChildren<HealthBlock>().Length < 1 && GetComponentsInChildren<Spindle>().Length <= 1)
             {
                 Evaporate();
             }
