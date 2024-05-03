@@ -15,7 +15,7 @@ MonoBehaviour:
   Action: 2
   Name: Blitz
   Description: Temporarily disable an opponent's trail by crashing into them.
-  Icon: {fileID: 21300000, guid: 28ece425c4d02474e802223309bdbb11, type: 3}
-  SelectedIcon: {fileID: 21300000, guid: b5cb59b1677a4a04cb61561d8df57825, type: 3}
+  Icon: {fileID: 21300000, guid: 9578447745550f84f86ae103a335c7a2, type: 3}
+  SelectedIcon: {fileID: 21300000, guid: 7995cfadff2c9d9459e39cf6a4391fd8, type: 3}
   PreviewClip: {fileID: 2096801853598961014, guid: 1587a18fbd02f56408cdb3ae6b0312a3,
     type: 3}
