@@ -14,6 +14,7 @@ namespace CosmicShore.Utility.Singleton
             if (Instance == null)
             {
                 Instance = this as T;
+                Debug.Log($"SingletonPersistent: {gameObject.name}");
                 DontDestroyOnLoad(this);
             }
             else
