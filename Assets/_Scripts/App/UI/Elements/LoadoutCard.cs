@@ -54,7 +54,7 @@ namespace CosmicShore.App.UI.Elements
         {
             Debug.Log($"LoadoutCard.UpdateCardView - loadout: {loadout}");
 
-            if (loadout.Uninitialized())
+            if (!loadout.Initialized)
             {
                 // Show the + icon background
                 Debug.Log($"No loadout for card: {Index}");

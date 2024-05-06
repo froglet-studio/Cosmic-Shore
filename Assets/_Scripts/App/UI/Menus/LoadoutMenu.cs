@@ -66,7 +66,7 @@ namespace CosmicShore.App.UI.Menus
             Debug.Log($"LoadoutMenu - SelectLoadout - loadout:{loadout}");
 
             // Default load out for building a new one
-            if (loadout.Uninitialized())
+            if (!loadout.Initialized)
                 loadout = new Loadout() { Intensity = 1, PlayerCount = 1, GameMode = MiniGames.BlockBandit, ShipType = ShipTypes.Manta };
 
             // Load values from loadout

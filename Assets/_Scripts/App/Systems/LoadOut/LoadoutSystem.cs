@@ -30,7 +30,7 @@ namespace CosmicShore.App.Systems.Loadout
                     new Loadout() { Intensity=0, PlayerCount=0, GameMode= MiniGames.Random, ShipType= ShipTypes.Random},
                     new Loadout() { Intensity=0, PlayerCount=0, GameMode= MiniGames.Random, ShipType= ShipTypes.Random},
                 };
-                dataAccessor.Save<List<Loadout>>(loadouts);
+                dataAccessor.Save(loadouts);
             }
 
             dataAccessor = new DataAccessor(GameLoadoutsSaveFileName);
