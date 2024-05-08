@@ -2,8 +2,9 @@ using UnityEngine;
 using System.Collections;
 using CosmicShore.Core;
 using System.Collections.Generic;
+using CosmicShore;
 
-public class BoidManager : MonoBehaviour
+public class BoidManager : Population
 {
     [Header("Boid Settings")]
     public Boid boidPrefab;

@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe040efad3307fb449b6b72ad15362da, type: 3}
+  m_Name: ArcadeGameCurvatious
+  m_EditorClassIdentifier: 
+  Mode: 24
+  DisplayName: Curvatious
+  Description: curve your path to win
+  Icon: {fileID: 21300000, guid: ebb26aeda98ffe840ad60e7ab88c8a28, type: 3}
+  SelectedIcon: {fileID: 21300000, guid: 576d21301c622e9489beb58263f393cb, type: 3}
+  CardBackground: {fileID: 21300000, guid: 325ba2d27b2b2c24c9a6b06681eecbe5, type: 3}
+  PreviewClip: {fileID: 2096801853598961014, guid: 589795f7aad0ffa44a8c7b4846227143,
+    type: 3}
+  Guides:
+  - {fileID: 11400000, guid: 83f99cf219c1bdf43b51c94855ee2328, type: 2}
+  GolfScoring: 0
+  MinPlayers: 1
+  MaxPlayers: 1
+  MinIntensity: 2
+  MaxIntensity: 2
+  SceneName: MinigameCurvatious
+  CallToActionTargetType: 407
+  ViewUserAction: 0
+  PlayUserAction: 0

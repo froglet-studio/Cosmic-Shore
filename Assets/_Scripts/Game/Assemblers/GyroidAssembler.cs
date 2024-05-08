@@ -24,7 +24,7 @@ namespace CosmicShore
         EsD = 12,
     }
 
-    public class GyroidAssembler : MonoBehaviour
+    public class GyroidAssembler : Assembler
     {
         
 
@@ -52,7 +52,12 @@ namespace CosmicShore
 
         public TrailBlock GyroidBlock;
         public GyroidBlockType BlockType = GyroidBlockType.AB;
-        public int Depth = -1;
+        int depth = -1;
+        public override int Depth
+        {
+            get { return depth; }
+            set { depth = value; }
+        }
         public bool isSeed = false;
 
         private float snapDistance = .3f;
@@ -70,7 +75,7 @@ namespace CosmicShore
             }
         }
 
-        public void StartBonding()
+        public override void StartBonding()
         {
             StartCoroutine(LookForMatesCoroutine());
         }
@@ -160,9 +165,9 @@ namespace CosmicShore
         {
             if (isBonded && mate.Mate.MateList.Count < 2)
             {
-                if (Depth != 0 && preferedBlocks.Count == 0)
+                if (depth != 0 && preferedBlocks.Count == 0)
                 {
-                    mate.Mate.Depth = Depth;
+                    mate.Mate.depth = depth;
                     mate.Mate.StartBonding();
                 }
                 else
@@ -175,7 +180,7 @@ namespace CosmicShore
 
         IEnumerator LookForMatesCoroutine()
         {
-            Debug.Log($"GyroidAssembler LookForMates Depth: {Depth}");
+            Debug.Log($"GyroidAssembler LookForMates Depth: {depth}");
             bool[] activeMates = new bool[] { false, true, true, false };
             //if (depth == 0) StopAllCoroutines();
             //else if (depth == 1) activeMates = new bool[] { false, true, true, false };
@@ -191,7 +196,7 @@ namespace CosmicShore
                 }
                 yield return new WaitForSeconds(1f);
                 // TopLeftMate
-                if (Depth == 0)
+                if (depth == 0)
                 {
                     CleanupMates(activeMates);
                     break;
@@ -200,9 +205,9 @@ namespace CosmicShore
                 {
                     TopLeftMate = FindClosestMate(CalculateGlobalBondSite(CornerSiteType.TopLeft), CornerSiteType.TopLeft);
                     PrepareMate(TopLeftMate);
-                    Depth--;
+                    depth--;
                 }
-                if (Depth == 0)
+                if (depth == 0)
                 {
                     CleanupMates(activeMates);
                     break;
@@ -212,9 +217,9 @@ namespace CosmicShore
                 {
                     TopRightMate = FindClosestMate(CalculateGlobalBondSite(CornerSiteType.TopRight), CornerSiteType.TopRight);
                     PrepareMate(TopRightMate);
-                    Depth--;
+                    depth--;
                 }
-                if (Depth == 0)
+                if (depth == 0)
                 {
                     CleanupMates(activeMates);
                     break;
@@ -224,9 +229,9 @@ namespace CosmicShore
                 {
                     BottomLeftMate = FindClosestMate(CalculateGlobalBondSite(CornerSiteType.BottomLeft), CornerSiteType.BottomLeft);
                     PrepareMate(BottomLeftMate);
-                    Depth--;
+                    depth--;
                 }
-                if (Depth == 0)
+                if (depth == 0)
                 {
                     CleanupMates(activeMates);
                     break;
@@ -236,9 +241,9 @@ namespace CosmicShore
                 {
                     BottomRightMate = FindClosestMate(CalculateGlobalBondSite(CornerSiteType.BottomRight), CornerSiteType.BottomRight);
                     PrepareMate(BottomRightMate);
-                    Depth--;
+                    depth--;
                 }
-                if (Depth == 0)
+                if (depth == 0)
                 {
                     CleanupMates(activeMates);
                     break;
@@ -343,13 +348,13 @@ namespace CosmicShore
         {
             if (preferedBlocks.Count > 0)
             {
-                Debug.Log($"GyroidAssembler: Prefered Block, Depth: {Depth}");
+                Debug.Log($"GyroidAssembler: Prefered Block, Depth: {depth}");
                 var Mate = CreateGyroidBondMate(preferedBlocks.Dequeue(), BlockType, siteType); 
                 return Mate;
             }
             else
             {
-                Debug.Log($"GyroidAssembler: No Prefered Block, Depth: {Depth}");
+                Debug.Log($"GyroidAssembler: No Prefered Block, Depth: {depth}");
             }
 
             float closestDistance = float.MaxValue;

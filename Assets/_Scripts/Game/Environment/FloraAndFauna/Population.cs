@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace CosmicShore
 {
-    public class LifeFormManager : MonoBehaviour
+    public abstract class Population : MonoBehaviour
     {
         // Start is called before the first frame update
         void Start()

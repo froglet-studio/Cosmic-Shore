@@ -26,4 +26,5 @@ public enum MiniGames
     Sidewinder = 21,
     Multipass = 22,
     BotDuel = 23,
+    Curvatious = 24,
 }

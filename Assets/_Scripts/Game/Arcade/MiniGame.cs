@@ -95,6 +95,8 @@ namespace CosmicShore.Game.Arcade
                     hvtMonitor.Display = HUD.RoundTimeDisplay;
                 else if (turnMonitor is ShipCollisionTurnMonitor scMonitor) // TODO: consolidate with above
                     scMonitor.Display = HUD.RoundTimeDisplay;
+                else if (turnMonitor is DistanceTurnMonitor dtMonitor) // TODO: consolidate with above
+                    dtMonitor.Display = HUD.RoundTimeDisplay;
 
             GameManager.UnPauseGame();
         }
