@@ -48139,7 +48139,7 @@ PrefabInstance:
     - target: {fileID: 302356026468653294, guid: fdbd97f79a7aec14f8fadd5589780a74,
         type: 3}
       propertyPath: ShipPrefabs.Array.size
-      value: 9
+      value: 10
       objectReference: {fileID: 0}
     - target: {fileID: 302356026468653294, guid: fdbd97f79a7aec14f8fadd5589780a74,
         type: 3}
@@ -48194,6 +48194,12 @@ PrefabInstance:
       propertyPath: ShipPrefabs.Array.data[8]
       value: 
       objectReference: {fileID: 874579555101021527, guid: 633ae27c43a2006459b22e655df7ab4f,
+        type: 3}
+    - target: {fileID: 302356026468653294, guid: fdbd97f79a7aec14f8fadd5589780a74,
+        type: 3}
+      propertyPath: ShipPrefabs.Array.data[9]
+      value: 
+      objectReference: {fileID: 874579555101021527, guid: ae83e6dd3b718654db0175585a46edb2,
         type: 3}
     - target: {fileID: 302356026468653295, guid: fdbd97f79a7aec14f8fadd5589780a74,
         type: 3}

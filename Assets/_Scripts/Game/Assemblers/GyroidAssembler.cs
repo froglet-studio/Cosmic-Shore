@@ -68,10 +68,13 @@ namespace CosmicShore
         void Start()
         {
             GyroidBlock = GetComponent<TrailBlock>();
-            scale = GyroidBlock.TargetScale;
-            if (isSeed)
+            if (GyroidBlock)
             {
-                GyroidBlock.Team = Teams.Blue;
+                scale = GyroidBlock.TargetScale;
+                if (isSeed)
+                {
+                    GyroidBlock.Team = Teams.Blue;
+                }
             }
         }
 
