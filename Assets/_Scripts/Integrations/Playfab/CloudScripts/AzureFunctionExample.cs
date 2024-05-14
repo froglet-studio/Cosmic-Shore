@@ -9,30 +9,41 @@ namespace CosmicShore.Integrations.PlayFab.CloudScripts
 {
     public class AzureFunctionExample : MonoBehaviour
     {
+        private static string _entityId;
+        private static string _entityType;
         public void Start()
         {
+            AuthenticationManager.OnLoginSuccess += InitEntity;
             AuthenticationManager.OnLoginSuccess += CallHelloWorldCloudScript;
         }
 
         public void OnDisable()
         {
             AuthenticationManager.OnLoginSuccess -= CallHelloWorldCloudScript;
+            AuthenticationManager.OnLoginSuccess -= InitEntity;
         }
-        
-        private void 
+
+        private void InitEntity()
+        {
+            _entityId = AuthenticationManager.PlayFabAccount.AuthContext.EntityId;
+            _entityType = AuthenticationManager.PlayFabAccount.AuthContext.EntityType;
+        }
+
+        private void CallSaveRewardClaimTime()
+        {
+            
+        }
 
         private void CallHelloWorldCloudScript()
         {
-            var entityId = AuthenticationManager.PlayFabAccount.AuthContext.EntityId;
-            var entityType = AuthenticationManager.PlayFabAccount.AuthContext.EntityType;
-
+      
             var request =
                 new ExecuteFunctionRequest //Set this to true if you would like this call to show up in PlayStream
             {
                 Entity = new EntityKey
                 {
-                    Id = entityId, //Get this from when you logged in,
-                    Type = entityType //Get this from when you logged in
+                    Id = _entityId, //Get this from when you logged in,
+                    Type = _entityType //Get this from when you logged in
                 },
                 FunctionName = "HelloWorld", //This should be the name of your Azure Function that you created.
                 FunctionParameter = new Dictionary<string, object>
