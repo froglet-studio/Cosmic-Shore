@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
-using CosmicShore.Integrations.Playfab.PlayerModels;
-using CosmicShore.Integrations.Playfab.PlayStream;
+using CosmicShore.Integrations.PlayFab.PlayerModels;
+using CosmicShore.Integrations.PlayFab.PlayStream;
 using UnityEngine;
 using UnityEngine.UI;
 using VContainer;

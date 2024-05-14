@@ -2,7 +2,7 @@ using System.Collections;
 using NUnit.Framework;
 using UnityEngine.TestTools;
 
-namespace CosmicShore.Integrations.Playfab.PlayFabTests
+namespace CosmicShore.Integrations.PlayFab.PlayFabTests
 {
     public class PlayFabCatalogTests
     {

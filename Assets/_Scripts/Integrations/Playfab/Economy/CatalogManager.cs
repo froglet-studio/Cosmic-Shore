@@ -1,13 +1,13 @@
 using System.Collections.Generic;
-using CosmicShore.Integrations.Playfab.Authentication;
-using CosmicShore.Integrations.Playfab.Utility;
+using CosmicShore.Integrations.PlayFab.Authentication;
+using CosmicShore.Integrations.PlayFab.Utility;
 using CosmicShore.Utility.Singleton;
 using PlayFab;
 using PlayFab.EconomyModels;
 using UnityEngine;
 using CatalogItem = PlayFab.EconomyModels.CatalogItem;
 
-namespace CosmicShore.Integrations.Playfab.Economy
+namespace CosmicShore.Integrations.PlayFab.Economy
 {
     public class CatalogManager : SingletonPersistent<CatalogManager>
     {
@@ -208,7 +208,7 @@ namespace CosmicShore.Integrations.Playfab.Economy
             Debug.Log("CatalogManager - On grant Shards Success.");
             Debug.LogFormat("CatalogManager - transaction ids: {0}", string.Join(",", response.TransactionIds));
         }
-
+        
         /// <summary>
         /// Grant Starting Inventory
         /// </summary>

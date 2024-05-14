@@ -1,25 +1,27 @@
 using System.Collections.Generic;
-using CosmicShore.Integrations.Playfab.Authentication;
-using CosmicShore.Integrations.Playfab.Utility;
+using CosmicShore.Integrations.PlayFab.Authentication;
+using CosmicShore.Integrations.PlayFab.Utility;
 using PlayFab;
 using PlayFab.CloudScriptModels;
 using UnityEngine;
 
-namespace CosmicShore.Integrations.Playfab.CloudScripts
+namespace CosmicShore.Integrations.PlayFab.CloudScripts
 {
     public class AzureFunctionExample : MonoBehaviour
     {
         public void Start()
         {
-            AuthenticationManager.OnLoginSuccess += CallCloudScript;
+            AuthenticationManager.OnLoginSuccess += CallHelloWorldCloudScript;
         }
 
         public void OnDisable()
         {
-            AuthenticationManager.OnLoginSuccess -= CallCloudScript;
+            AuthenticationManager.OnLoginSuccess -= CallHelloWorldCloudScript;
         }
+        
+        private void 
 
-        private void CallCloudScript()
+        private void CallHelloWorldCloudScript()
         {
             var entityId = AuthenticationManager.PlayFabAccount.AuthContext.EntityId;
             var entityType = AuthenticationManager.PlayFabAccount.AuthContext.EntityType;

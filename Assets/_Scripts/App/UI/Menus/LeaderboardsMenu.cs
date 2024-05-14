@@ -1,6 +1,6 @@
 using CosmicShore.Core;
-using CosmicShore.Integrations.Playfab.Authentication;
-using CosmicShore.Integrations.Playfab.PlayStream;
+using CosmicShore.Integrations.PlayFab.Authentication;
+using CosmicShore.Integrations.PlayFab.PlayStream;
 using System;
 using System.Collections;
 using System.Collections.Generic;

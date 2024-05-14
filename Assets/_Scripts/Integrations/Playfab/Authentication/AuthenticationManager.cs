@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Security;
 using CosmicShore.App.Systems.UserJourney;
-using CosmicShore.Integrations.Playfab.PlayerModels;
+using CosmicShore.Integrations.PlayFab.PlayerModels;
 using CosmicShore.Integrations.PlayFabV2.Models;
 using CosmicShore.Utility.Singleton;
 using JetBrains.Annotations;
@@ -12,7 +12,7 @@ using PlayFab;
 using PlayFab.ClientModels;
 using UnityEngine;
 
-namespace CosmicShore.Integrations.Playfab.Authentication
+namespace CosmicShore.Integrations.PlayFab.Authentication
 {
     public class AuthenticationManager : SingletonPersistent<AuthenticationManager>
     {

@@ -1,6 +1,6 @@
 using System;
 
-namespace CosmicShore.Integrations.Playfab.PlayerModels
+namespace CosmicShore.Integrations.PlayFab.PlayerModels
 {
     /// <summary>
     /// guide Data

@@ -1,4 +1,4 @@
-namespace CosmicShore.Integrations.Playfab.Economy
+namespace CosmicShore.Integrations.PlayFab.Economy
 {
     public enum ContentTypes
     {

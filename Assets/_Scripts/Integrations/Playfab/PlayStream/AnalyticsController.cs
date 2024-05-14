@@ -1,14 +1,14 @@
 using System;
 using System.Collections.Generic;
-using CosmicShore.Integrations.Playfab.Authentication;
-using CosmicShore.Integrations.Playfab.PlayerModels;
+using CosmicShore.Integrations.PlayFab.Authentication;
+using CosmicShore.Integrations.PlayFab.PlayerModels;
 using PlayFab;
 using PlayFab.ClientModels;
 using PlayFab.EventsModels;
 using CosmicShore.Utility.Singleton;
 using UnityEngine;
 
-namespace CosmicShore.Integrations.Playfab.PlayStream
+namespace CosmicShore.Integrations.PlayFab.PlayStream
 {
     public class AnalyticsController : SingletonPersistent<AnalyticsController>
     {
