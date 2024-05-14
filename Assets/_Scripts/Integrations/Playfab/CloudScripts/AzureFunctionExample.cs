@@ -14,12 +14,12 @@ namespace CosmicShore.Integrations.PlayFab.CloudScripts
         public void Start()
         {
             AuthenticationManager.OnLoginSuccess += InitEntity;
-            AuthenticationManager.OnLoginSuccess += CallHelloWorldCloudScript;
+            AuthenticationManager.OnLoginSuccess += CallSaveRewardClaimTime;
         }
 
         public void OnDisable()
         {
-            AuthenticationManager.OnLoginSuccess -= CallHelloWorldCloudScript;
+            AuthenticationManager.OnLoginSuccess -= CallSaveRewardClaimTime;
             AuthenticationManager.OnLoginSuccess -= InitEntity;
         }
 
@@ -31,7 +31,30 @@ namespace CosmicShore.Integrations.PlayFab.CloudScripts
 
         private void CallSaveRewardClaimTime()
         {
+            var request =
+                new ExecuteFunctionRequest //Set this to true if you would like this call to show up in PlayStream
+                {
+                    Entity = new EntityKey
+                    {
+                        Id = _entityId, //Get this from when you logged in,
+                        Type = _entityType //Get this from when you logged in
+                    },
+                    FunctionName = "SaveRewardClaimTime", //This should be the name of your Azure Function that you created.
+                    GeneratePlayStreamEvent = false //Set this to true if you would like this call to show up in PlayStream
+                };
             
+            PlayFabCloudScriptAPI.ExecuteFunction(request, OnSaveRewardClaimTimeSuccess, PlayFabUtility.HandleErrorReport);
+        }
+
+        private void OnSaveRewardClaimTimeSuccess(ExecuteFunctionResult result)
+        {
+            if (result.FunctionResultTooLarge ?? false)
+            {
+                Debug.Log("Cloud script - This can happen if you exceed the limit that can be returned from an Azure Function, See PlayFab Limits Page for details.");
+                return;
+            }
+            Debug.Log($"Cloud script - The {result.FunctionName} function took {result.ExecutionTimeMilliseconds} to complete");
+            Debug.Log($"Cloud script - Result: {result.FunctionResult}");
         }
 
         private void CallHelloWorldCloudScript()
