@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace CosmicShore.Integrations.PlayFab.CloudScripts
 {
-    public class AzureFunctionExample : MonoBehaviour
+    public class DailyRewardHandler : MonoBehaviour
     {
         private static string _entityId;
         private static string _entityType;

@@ -5476,7 +5476,7 @@ GameObject:
   - component: {fileID: 1121268456}
   - component: {fileID: 1121268457}
   m_Layer: 0
-  m_Name: AzureFunctionExample
+  m_Name: DailyRewardHandler
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
