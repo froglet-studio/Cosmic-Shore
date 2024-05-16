@@ -9,7 +9,6 @@ namespace CosmicShore.Integrations.PlayFab.Utility
 {
     public class PlayFabUtility : SingletonPersistent<PlayFabUtility>
     {
-
         private static bool IsLogin => AuthenticationManager.PlayFabAccount.AuthContext is not null;
 
         public static Action<PlayFabError> GettingPlayFabErrors;
@@ -37,7 +36,7 @@ namespace CosmicShore.Integrations.PlayFab.Utility
         #region Situation Handling
 
         /// <summary>
-        /// Handle Error Report
+        /// Handle Error Report, for all the orther PlayFab integrations
         /// </summary>
         /// <param name="error">PlayFab Error</param>
         public static void HandleErrorReport(PlayFabError error)
