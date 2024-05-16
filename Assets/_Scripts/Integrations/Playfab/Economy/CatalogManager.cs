@@ -1,8 +1,10 @@
 using System.Collections.Generic;
+using System.Linq;
 using CosmicShore.Integrations.PlayFab.Authentication;
 using CosmicShore.Integrations.PlayFab.Utility;
 using CosmicShore.Utility.Singleton;
 using PlayFab;
+using PlayFab.ClientModels;
 using PlayFab.EconomyModels;
 using UnityEngine;
 using CatalogItem = PlayFab.EconomyModels.CatalogItem;
@@ -575,18 +577,63 @@ namespace CosmicShore.Integrations.PlayFab.Economy
         }
         #endregion
 
-        // #region Situation Handling
-        //
-        // /// <summary>
-        // /// Handle Error Report
-        // /// </summary>
-        // /// <param name="error">PlayFab Error</param>
-        // private void HandleErrorReport(PlayFabError error)
-        // {
-        //     OnGettingPlayFabErrors?.Invoke(error);
-        //     // Keep the error message here if there will be unit tests.
-        //     Debug.LogErrorFormat("{0} - error code: {1} message: {2}", nameof(CatalogManager), error.Error, error.ErrorMessage);
-        // }
-        // #endregion
+        #region Bundle Handling
+
+        public void GetBundles(string filter = "type eq 'bundle'")
+        {
+            var request = new SearchItemsRequest
+            {
+                Filter = filter
+            };
+            _playFabEconomyInstanceAPI.SearchItems(request, OnGetBundleSuccess, PlayFabUtility.HandleErrorReport);
+        }
+
+        private void OnGetBundleSuccess(SearchItemsResponse response)
+        {
+            if (response is null) {Debug.Log("CatalogManager.GetBundle() - no response");return;}
+
+            var items = string.Join(" ", response.Items.Select(i => i.ToString()));
+            Debug.Log($"CatalogManager.GetBundle() - {items}");
+        }
+        
+        public void PurchaseBundle(string bundleId, uint quantity)
+        {
+            const string annotation = "Bundle Purchase";
+            
+            var itemRequest = new ItemPurchaseRequest
+            {
+                ItemId = bundleId,
+                Quantity = quantity,
+                Annotation = annotation
+            };
+
+            var startPurchaseRequest = new StartPurchaseRequest { Items = { itemRequest } };
+            
+            PlayFabClientAPI.StartPurchase(startPurchaseRequest, OnPurchaseBundleSuccess, PlayFabUtility.HandleErrorReport);
+        }
+
+        private void OnPurchaseBundleSuccess(StartPurchaseResult result)
+        {
+            if (result is null) return;
+            
+            Debug.Log($"CatalogManager.PurchaseBundle() - {result.OrderId} remaining balance: {result.VirtualCurrencyBalances}");
+            PayBundle(result.OrderId);
+            
+        }
+
+        private void PayBundle(string orderId)
+        {
+            var payPurchaseRequest = new PayForPurchaseRequest { OrderId = orderId };
+            PlayFabClientAPI.PayForPurchase(payPurchaseRequest, OnPayBundleSuccess, PlayFabUtility.HandleErrorReport);
+        }
+
+        private void OnPayBundleSuccess(PayForPurchaseResult result)
+        {
+            if (result is null) return;
+            
+            Debug.Log($"CatalogManager.PayBundle() - {result.OrderId} purchase currency:{result.PurchaseCurrency} status:{result.Status}");
+        }
+        
+        #endregion
     }
 }
