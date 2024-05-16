@@ -26,8 +26,8 @@ namespace CosmicShore.Game.Arcade
         [SerializeField] float EndOfTurnDelay = 0f;
         [SerializeField] bool EnableTrails = true;
         [SerializeField] ShipTypes DefaultPlayerShipType = ShipTypes.Dolphin;
-        [FormerlySerializedAs("DefaultPlayerVessel")]
-        [SerializeField] SO_Guide DefaultPlayerGuide;
+        [FormerlySerializedAs("DefaultPlayerGuide")]
+        [SerializeField] SO_Guide DefaultPlayerCaptain;
 
         protected Button ReadyButton;
         protected GameObject EndGameScreen;
@@ -56,7 +56,7 @@ namespace CosmicShore.Game.Arcade
                 playerShipTypeInitialized = true;
             }
         }
-        public static SO_Guide PlayerGuide;
+        public static SO_Guide PlayerCaptain;
 
         // Game State Tracking
         protected int TurnsTakenThisRound = 0;
@@ -85,8 +85,11 @@ namespace CosmicShore.Game.Arcade
             countdownTimer = HUD.CountdownTimer;
             ScoreTracker.GameCanvas = GameCanvas;
 
-            if (PlayerGuide == null)
-                PlayerGuide = DefaultPlayerGuide;
+            if (DefaultPlayerCaptain == null)
+                Debug.LogError("No Default Captain Set - This scene will not be able to launch without going through the main menu. Please set DefaultPlayerCaptain of the minigame script.");
+
+            if (PlayerCaptain == null)
+                PlayerCaptain = DefaultPlayerCaptain;
 
             foreach (var turnMonitor in TurnMonitors)
                 if (turnMonitor is TimeBasedTurnMonitor tbtMonitor)
@@ -347,7 +350,7 @@ namespace CosmicShore.Game.Arcade
             ActivePlayer.Ship.GetComponent<ShipTransformer>().Reset();
             ActivePlayer.Ship.TrailSpawner.PauseTrailSpawner();
             ActivePlayer.Ship.ResourceSystem.Reset();
-            ActivePlayer.Ship.SetGuide(PlayerGuide);
+            ActivePlayer.Ship.SetGuide(PlayerCaptain);
 
             CameraManager.Instance.SetupGamePlayCameras(ActivePlayer.Ship.FollowTarget);
 
