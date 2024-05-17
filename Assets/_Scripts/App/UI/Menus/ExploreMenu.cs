@@ -60,7 +60,6 @@ namespace CosmicShore.App.UI.Menus
         void PopulateGameSelectionList()
         {
             GameCards = new List<GameCard>();
-            CallToActionTarget target;
 
             // Deactivate all game cards and add them to the list of game cards
             for (var i = 0; i < GameSelectionGrid.transform.childCount; i++)
@@ -88,7 +87,7 @@ namespace CosmicShore.App.UI.Menus
                 gameCard.GetComponent<Button>().onClick.AddListener(() => GameSelectionGrid.GetComponent<MenuAudio>().PlayAudio());
                 
                 // gameCard.GetComponent<CallToActionTarget>().TargetID = game.CallToActionTargetType;
-                if (TryGetComponent(out target))
+                if (gameCard.TryGetComponent(out CallToActionTarget target))
                 {
                     target.TargetID = game.CallToActionTargetType;
                 }
@@ -219,13 +218,13 @@ namespace CosmicShore.App.UI.Menus
             SelectCaptain(captain);
         }
 
-        public void SelectCaptain(SO_Guide captain)
+        public void SelectCaptain(SO_Guide selectedCaptain)
         {
-            Debug.Log($"SelectCaptain: {captain.Name}");
+            Debug.Log($"SelectCaptain: {selectedCaptain.Name}");
             Debug.Log($"ShipSelectionContainer.childCount: {ShipSelectionGrid.childCount}");
             Debug.Log($"Ships.Count: {SelectedGame.Guides.Count}");
 
-            SelectedShip = captain.Ship;
+            SelectedShip = selectedCaptain.Ship;
 
             for (var i = 0; i < ShipSelectionGrid.childCount; i++)
             {
@@ -235,17 +234,19 @@ namespace CosmicShore.App.UI.Menus
                     var shipIndex = (i * 3) + j;
                     var shipButton = shipSelectionRow.GetChild(j).gameObject;
 
+                    if (shipIndex >= SelectedGame.Guides.Count)
+                        continue;
                     
-                    if (SelectedGame.Guides[shipIndex] == captain)
-                        shipButton.GetComponent<Image>().sprite = captain.Ship.CardSilohoutteActive;
+                    if (SelectedGame.Guides[shipIndex] == selectedCaptain)
+                        shipButton.GetComponent<Image>().sprite = selectedCaptain.Ship.CardSilohoutteActive;
                     else if (shipIndex < SelectedGame.Guides.Count)
-                        shipButton.GetComponent<Image>().sprite = captain.Ship.CardSilohoutte;
+                        shipButton.GetComponent<Image>().sprite = SelectedGame.Guides[shipIndex].Ship.CardSilohoutte;
                 }
             }
 
             // notify the mini game engine that this is the ship to play
             MiniGame.PlayerShipType = SelectedShip.Class;
-            MiniGame.PlayerCaptain = captain;
+            MiniGame.PlayerCaptain = selectedCaptain;
         }
 
         public void SetPlayerCount(int playerCount)

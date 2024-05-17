@@ -9,9 +9,9 @@ public class FancyCamController : MonoBehaviour
     [SerializeField] bool mouseRotation;
     [SerializeField] bool gamepadTargetControls;
     [SerializeField] bool mouseTargetControls;
+    [SerializeField] Key RotationToggleKey = Key.LeftBracket;
     bool isRotating = false;
     public float speed = 10;
-    public KeyControl toggleKey = Keyboard.current.leftBracketKey;
     public Transform target;
     float followDistance = 10;
 
@@ -19,7 +19,7 @@ public class FancyCamController : MonoBehaviour
     {
         if (canRotate)
         {
-            if (toggleKey.wasPressedThisFrame) isRotating = !isRotating;
+            if (Keyboard.current[RotationToggleKey].wasPressedThisFrame) isRotating = !isRotating;
 
             if (isRotating) transform.Rotate(Vector3.up * (speed * Time.deltaTime));
         }
@@ -77,8 +77,6 @@ public class FancyCamController : MonoBehaviour
             else transform.RotateAround(target.position, transform.up, Mouse.current.delta.ReadValue().x * speed * Time.deltaTime);
 
             transform.RotateAround(target.position, transform.right, Mouse.current.delta.ReadValue().y * speed * Time.deltaTime);
-
         }
-
     }
 }
