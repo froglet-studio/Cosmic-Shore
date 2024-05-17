@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using CosmicShore.Integrations.PlayFab.Authentication;
@@ -20,7 +21,9 @@ namespace CosmicShore.Integrations.PlayFab.Economy
         public static StoreShelve StoreShelve { get; private set; } = new();
 
         public static Inventory Inventory { get; private set; } = new();
-        // private static string _shardId;
+
+        public static Dictionary<string, string> Bundles { get; private set; } = new();
+        public static event Action<string> OnGettingBundleId;
 
         private int _dailyRewardIndex;
 
@@ -581,24 +584,46 @@ namespace CosmicShore.Integrations.PlayFab.Economy
 
         public void GetBundles(string filter = "type eq 'bundle'")
         {
+            _playFabEconomyInstanceAPI ??=
+                new (AuthenticationManager.PlayFabAccount.AuthContext);
             var request = new SearchItemsRequest
             {
                 Filter = filter
             };
-            _playFabEconomyInstanceAPI.SearchItems(request, OnGetBundleSuccess, PlayFabUtility.HandleErrorReport);
+            _playFabEconomyInstanceAPI.SearchItems(request, OnGetBundlesSuccess, PlayFabUtility.HandleErrorReport);
         }
 
-        private void OnGetBundleSuccess(SearchItemsResponse response)
+        private void OnGetBundlesSuccess(SearchItemsResponse response)
         {
             if (response is null) {Debug.Log("CatalogManager.GetBundle() - no response");return;}
 
-            var items = string.Join(" ", response.Items.Select(i => i.ToString()));
-            Debug.Log($"CatalogManager.GetBundle() - {items}");
+            var items = string.Join(" bundle: ", response.Items.Select(i => i.Id.ToString() + " " + i.Title.Values.FirstOrDefault()));
+            Debug.Log($"CatalogManager.GetBundle() - bundle: {items}");
+
+            Bundles ??= new();
+            
+            foreach (var bundle in response.Items)
+            {
+                Bundles.TryAdd(bundle.Title.Values.FirstOrDefault() ?? "Nameless Bundle", bundle.Id);
+            }
+
+            string testBundleId;
+            Bundles.TryGetValue("Test Bundle", out testBundleId);
+            
+            if (string.IsNullOrEmpty(testBundleId)) {Debug.Log($"CatalogManager.GetBundle() - Test Bundle Id is not here");return;}
+            Debug.Log($"CatalogManager.GetBundles() - Test Bundle Id: {testBundleId}");
+            OnGettingBundleId?.Invoke(testBundleId);
         }
+        
         
         public void PurchaseBundle(string bundleId, uint quantity)
         {
             const string annotation = "Bundle Purchase";
+            
+            quantity = VerifyQuantity(quantity);
+            
+            _playFabEconomyInstanceAPI ??=
+                new(AuthenticationManager.PlayFabAccount.AuthContext);
             
             var itemRequest = new ItemPurchaseRequest
             {
@@ -607,7 +632,7 @@ namespace CosmicShore.Integrations.PlayFab.Economy
                 Annotation = annotation
             };
 
-            var startPurchaseRequest = new StartPurchaseRequest { Items = { itemRequest } };
+            var startPurchaseRequest = new StartPurchaseRequest { Items = new(){itemRequest} };
             
             PlayFabClientAPI.StartPurchase(startPurchaseRequest, OnPurchaseBundleSuccess, PlayFabUtility.HandleErrorReport);
         }
@@ -621,6 +646,11 @@ namespace CosmicShore.Integrations.PlayFab.Economy
             
         }
 
+        private static uint VerifyQuantity(uint quantity)
+        {
+            return quantity > 25 ? 25 : quantity;
+        }
+
         private void PayBundle(string orderId)
         {
             var payPurchaseRequest = new PayForPurchaseRequest { OrderId = orderId };
@@ -632,6 +662,8 @@ namespace CosmicShore.Integrations.PlayFab.Economy
             if (result is null) return;
             
             Debug.Log($"CatalogManager.PayBundle() - {result.OrderId} purchase currency:{result.PurchaseCurrency} status:{result.Status}");
+            var balance = string.Join(" ", result.VirtualCurrency.Select(i => i.Key + " " + i.Value));
+            Debug.Log($"CatalogManager.BayBundle() - current virtual currency balance: {balance}");
         }
         
         #endregion
