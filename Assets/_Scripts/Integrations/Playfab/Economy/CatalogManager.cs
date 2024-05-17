@@ -61,13 +61,8 @@ namespace CosmicShore.Integrations.PlayFab.Economy
         /// </summary>
         void InitializePlayFabEconomyAPI()
         {
-            if (AuthenticationManager.PlayFabAccount.AuthContext == null)
-            {
-                Debug.LogWarning($"Current Player has not logged in yet.");
-                return;
-            }
             // Null check for PlayFab Economy API instance
-            _playFabEconomyInstanceAPI??= new PlayFabEconomyInstanceAPI(AuthenticationManager.PlayFabAccount.AuthContext);
+            _playFabEconomyInstanceAPI ??= new (AuthenticationManager.PlayFabAccount.AuthContext);
             Debug.LogFormat("{0} - {1}: PlayFab Economy API initialized.", nameof(CatalogManager), nameof(InitializePlayFabEconomyAPI));
         }
 
