@@ -9,8 +9,7 @@ namespace CosmicShore.Integrations.PlayFab.CloudScripts
 {
     public class DailyRewardHandler : MonoBehaviour
     {
-        private static string _entityId;
-        private static string _entityType;
+        private static EntityKey _entity;
         public void Start()
         {
             AuthenticationManager.OnLoginSuccess += InitEntity;
@@ -23,22 +22,28 @@ namespace CosmicShore.Integrations.PlayFab.CloudScripts
             AuthenticationManager.OnLoginSuccess -= InitEntity;
         }
 
+        /// <summary>
+        /// Initialize entity key for cloud script authentication upon login
+        /// </summary>
         private void InitEntity()
         {
-            _entityId = AuthenticationManager.PlayFabAccount.AuthContext.EntityId;
-            _entityType = AuthenticationManager.PlayFabAccount.AuthContext.EntityType;
+            _entity = new()
+            {
+                Id = AuthenticationManager.PlayFabAccount.AuthContext.EntityId,
+                Type = AuthenticationManager.PlayFabAccount.AuthContext.EntityType
+            };
         }
 
+        /// <summary>
+        /// Execute SaveRewardClaimTime Azure Function
+        /// Returns UpdateUserInternalDataResult and nextClaimTime if request is successful.
+        /// </summary>
         private void CallSaveRewardClaimTime()
         {
             var request =
                 new ExecuteFunctionRequest //Set this to true if you would like this call to show up in PlayStream
                 {
-                    Entity = new EntityKey
-                    {
-                        Id = _entityId, //Get this from when you logged in,
-                        Type = _entityType //Get this from when you logged in
-                    },
+                    Entity = _entity,
                     FunctionName = "SaveRewardClaimTime", //This should be the name of your Azure Function that you created.
                     GeneratePlayStreamEvent = false //Set this to true if you would like this call to show up in PlayStream
                 };
@@ -57,17 +62,16 @@ namespace CosmicShore.Integrations.PlayFab.CloudScripts
             Debug.Log($"Cloud script - Result: {result.FunctionResult}");
         }
 
+        /// <summary>
+        /// A test script, nothing to see here.
+        /// </summary>
         private void CallHelloWorldCloudScript()
         {
       
             var request =
                 new ExecuteFunctionRequest //Set this to true if you would like this call to show up in PlayStream
             {
-                Entity = new EntityKey
-                {
-                    Id = _entityId, //Get this from when you logged in,
-                    Type = _entityType //Get this from when you logged in
-                },
+                Entity = _entity,
                 FunctionName = "HelloWorld", //This should be the name of your Azure Function that you created.
                 FunctionParameter = new Dictionary<string, object>
                     { { "inputValue", "Test" } }, //This is the data that you would want to pass into your function.
