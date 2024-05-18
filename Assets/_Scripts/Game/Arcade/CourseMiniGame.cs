@@ -48,7 +48,7 @@ namespace CosmicShore.Game.Arcade
 
         void InitializeTrails()
         {
-            if (ScaleNumberOfSegmentsWithIntensity) SegmentSpawner.numberOfSegments = numberOfSegments;
+            if (ScaleNumberOfSegmentsWithIntensity) SegmentSpawner.NumberOfSegments = numberOfSegments;
             if (ScaleLengthWithIntensity) SegmentSpawner.StraightLineLength = straightLineLength / IntensityLevel;
 
             TrailSpawner.NukeTheTrails();

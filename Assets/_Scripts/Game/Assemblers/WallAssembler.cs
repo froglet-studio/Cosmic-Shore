@@ -75,6 +75,11 @@ namespace CosmicShore
             StartCoroutine(LookForMates());
         }
 
+        public override void Grow()
+        {
+            
+        }
+
         public void ClearMateList()
         {
             foreach (var mate in MateList)

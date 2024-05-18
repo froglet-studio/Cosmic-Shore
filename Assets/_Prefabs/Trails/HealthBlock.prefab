@@ -13,6 +13,9 @@ GameObject:
   - component: {fileID: 7076137217386601628}
   - component: {fileID: 6724784892155022458}
   - component: {fileID: 6313579230210663873}
+  - component: {fileID: -3287662505976551490}
+  - component: {fileID: -3217072730611131612}
+  - component: {fileID: 5155936426592077713}
   m_Layer: 0
   m_Name: HealthBlock
   m_TagString: Untagged
@@ -139,3 +142,69 @@ MonoBehaviour:
   ownerId: 
   Player: {fileID: 0}
   LifeForm: {fileID: 0}
+--- !u!114 &-3287662505976551490
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5776304996075792891}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 78b38b59fbd004b44be891e09a685680, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  TopLeftIsBonded: 0
+  TopRightIsBonded: 0
+  BottomLeftIsBonded: 0
+  BottomRightIsBonded: 0
+  FullyBonded: 0
+  GyroidBlock: {fileID: 0}
+  BlockType: 1
+  isSeed: 0
+  colliderTheshold: 1
+  radius: 40
+--- !u!114 &-3217072730611131612
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5776304996075792891}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 78b38b59fbd004b44be891e09a685680, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  TopLeftIsBonded: 0
+  TopRightIsBonded: 0
+  BottomLeftIsBonded: 0
+  BottomRightIsBonded: 0
+  FullyBonded: 0
+  GyroidBlock: {fileID: 0}
+  BlockType: 1
+  isSeed: 0
+  colliderTheshold: 1
+  radius: 40
+--- !u!114 &5155936426592077713
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5776304996075792891}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 78b38b59fbd004b44be891e09a685680, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  TopLeftIsBonded: 0
+  TopRightIsBonded: 0
+  BottomLeftIsBonded: 0
+  BottomRightIsBonded: 0
+  FullyBonded: 0
+  GyroidBlock: {fileID: 0}
+  BlockType: 1
+  isSeed: 0
+  colliderTheshold: 1
+  radius: 40

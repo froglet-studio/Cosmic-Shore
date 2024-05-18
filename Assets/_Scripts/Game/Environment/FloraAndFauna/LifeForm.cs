@@ -12,6 +12,7 @@ namespace CosmicShore
 
         [SerializeField] protected HealthBlock healthBlock;
         [SerializeField] protected Spindle spindle;
+        [SerializeField] protected int minHealthBlocks = 0;
 
         private List<HealthBlock> healthBlocks = new List<HealthBlock>();
         private List<Spindle> spindles = new List<Spindle>();
@@ -56,7 +57,7 @@ namespace CosmicShore
 
         void CheckIfDead()
         {
-            if (healthBlocks.Count == 0)
+            if (healthBlocks.Count == minHealthBlocks)
             {
                 Die();
             }

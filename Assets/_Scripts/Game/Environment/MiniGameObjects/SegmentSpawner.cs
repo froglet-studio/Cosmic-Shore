@@ -38,7 +38,7 @@ public class SegmentSpawner : MonoBehaviour
     [HideInInspector] public int DifficultyAngle = 90;
 
     [SerializeField] bool InitializeOnStart;
-    [SerializeField] public int numberOfSegments = 1;
+    [SerializeField] public int NumberOfSegments = 1;
 
     Vector3 currentDisplacement;
     Quaternion currentRotation;
@@ -84,7 +84,7 @@ public class SegmentSpawner : MonoBehaviour
 
         normalizeWeights();
 
-        for (int i=0; i < numberOfSegments; i++)
+        for (int i=0; i < NumberOfSegments; i++)
         {
             var spawned = SpawnRandom();
             PositionSpawnedObject(spawned, positioningScheme);
@@ -111,7 +111,7 @@ public class SegmentSpawner : MonoBehaviour
                 spawned.transform.SetPositionAndRotation(Random.insideUnitSphere * Radius + origin + transform.position, Random.rotation);
                 return;
             case PositioningScheme.SphereSurface:
-                spawned.transform.position = Quaternion.Euler(0, 0, random.Next(spawnedItemCount * (360/ numberOfSegments), spawnedItemCount * (360 / numberOfSegments) + 20)) *
+                spawned.transform.position = Quaternion.Euler(0, 0, random.Next(spawnedItemCount * (360/ NumberOfSegments), spawnedItemCount * (360 / NumberOfSegments) + 20)) *
                     (Quaternion.Euler(0, random.Next(Mathf.Max(DifficultyAngle - 20, 40), Mathf.Max(DifficultyAngle + 20, 40)), 0) *
                     (Radius * Vector3.forward)) + origin + transform.position;
                 spawned.transform.LookAt(Vector3.zero);
@@ -124,7 +124,7 @@ public class SegmentSpawner : MonoBehaviour
             case PositioningScheme.ToroidSurface:
                 // TODO: this is not a torus, it's ripped from the sphere
                 int toroidDifficultyAngle = 90;
-                spawned.transform.position = Quaternion.Euler(0, 0, random.Next(spawnedItemCount * (360 / numberOfSegments), spawnedItemCount * (360 / numberOfSegments) + 20)) *
+                spawned.transform.position = Quaternion.Euler(0, 0, random.Next(spawnedItemCount * (360 / NumberOfSegments), spawnedItemCount * (360 / NumberOfSegments) + 20)) *
                     (Quaternion.Euler(0, random.Next(Mathf.Max(toroidDifficultyAngle - 20, 40), Mathf.Max(toroidDifficultyAngle - 20, 40)), 0) *
                     (Radius * Vector3.forward)) + origin + transform.position;
                 spawned.transform.LookAt(Vector3.zero);

@@ -90,6 +90,15 @@ namespace CosmicShore
         //    GyroidBlock.Grow();
         //}
 
+        public override void Grow()
+        {
+            Instantiate(GyroidBlock, transform.position, transform.rotation);
+            var newAssembler = ConvertBlock(GyroidBlock);
+            newAssembler.depth = depth - 1;
+            PrepareMate(newAssembler.TopRightMate);
+            Invoke("newAssembler.Grow()", 1);
+        }
+
         public void ClearMateList()
         {
             foreach (var mate in MateList)
@@ -102,6 +111,7 @@ namespace CosmicShore
             BottomLeftIsBonded = false;
             BottomRightIsBonded = false;
         }
+
 
         public GyroidBondMate CreateGyroidBondMate(GyroidAssembler mate, GyroidBlockType blockType, CornerSiteType siteType)
         {
@@ -276,13 +286,14 @@ namespace CosmicShore
 
         IEnumerator UpdateMate(GyroidBondMate gyroidBondMate)
         {
+            var targetRotation = CalculateRotation(gyroidBondMate);
             while (true)
             {
                 yield return null;
                 if (gyroidBondMate.Mate != null)
                 {
-                    MoveMateToSite(gyroidBondMate, CalculateGlobalBondSite(gyroidBondMate.Substrate));
-                    RotateMate(gyroidBondMate, false);
+                    MoveMateToSite(gyroidBondMate, targetRotation, CalculateGlobalBondSite(gyroidBondMate.Substrate));
+                    RotateMate(gyroidBondMate, targetRotation, false);
                 }
                 else Debug.Log("gyroidAssembler is trying to move a null mate");
             }
@@ -377,19 +388,7 @@ namespace CosmicShore
                     var trailBlock = potentialMate.GetComponent<TrailBlock>();
                     if (trailBlock != null)
                     {
-                        Boid boid = trailBlock.GetComponentInParent<Boid>();
-                        if (boid != null)
-                        {
-                            trailBlock.transform.parent = GyroidBlock.transform.parent;
-                            boid.isKilled = true;
-                        }
-                        trailBlock.TargetScale = scale;
-                        trailBlock.MaxScale = GyroidBlock.MaxScale;
-                        trailBlock.GrowthVector = GyroidBlock.GrowthVector;
-                        trailBlock.Steal(GyroidBlock.Player, GyroidBlock.Team);
-                        trailBlock.ChangeSize();
-                        mateComponent = trailBlock.gameObject.AddComponent<GyroidAssembler>();
-                        mateComponent.GyroidBlock = trailBlock;
+                        mateComponent = ConvertBlock(trailBlock);
                     }
                     else continue;
                 }
@@ -425,7 +424,25 @@ namespace CosmicShore
             return CreateGyroidBondMate(closest, BlockType, siteType);
         }
 
-        private void MoveMateToSite(GyroidBondMate mate, Vector3 bondSite)
+        GyroidAssembler ConvertBlock(TrailBlock trailBlock)
+        {
+            Boid boid = trailBlock.GetComponentInParent<Boid>();
+            if (boid != null)
+            {
+                trailBlock.transform.parent = GyroidBlock.transform.parent;
+                boid.isKilled = true;
+            }
+            trailBlock.TargetScale = scale;
+            trailBlock.MaxScale = GyroidBlock.MaxScale;
+            trailBlock.GrowthVector = GyroidBlock.GrowthVector;
+            trailBlock.Steal(GyroidBlock.Player, GyroidBlock.Team);
+            trailBlock.ChangeSize();
+            var mateComponent = trailBlock.gameObject.AddComponent<GyroidAssembler>();
+            mateComponent.GyroidBlock = trailBlock;
+            return mateComponent;
+        }
+
+        private void MoveMateToSite(GyroidBondMate mate, Quaternion targetRotation, Vector3 bondSite)
         {
             {
                 var initialPosition = mate.Mate.transform.position;
@@ -433,7 +450,7 @@ namespace CosmicShore
                 
                 if (directionToMate.sqrMagnitude < snapDistance)
                 {
-                    RotateMate(mate, true);
+                    RotateMate(mate, targetRotation, true);
                     mate.Mate.transform.position = bondSite;
                     StopCoroutine(updateCoroutineDict[mate]);
                     updateCoroutineDict.Remove(mate);
@@ -457,12 +474,16 @@ namespace CosmicShore
             }
         }
 
-        private void RotateMate(GyroidBondMate mate, bool isSnapping)
+        private Quaternion CalculateRotation(GyroidBondMate mate)
         {
             Quaternion targetRotation = Quaternion.LookRotation(mate.DeltaForward.x * transform.right + mate.DeltaForward.y * transform.up + mate.DeltaForward.z * transform.forward + transform.forward,
-                                                                mate.DeltaUp.x * transform.right + mate.DeltaUp.y * transform.up + mate.DeltaUp.z * transform.forward + transform.up);  // TODO: pull this into setup, so it is only called once.
-            mate.Mate.transform.rotation = isSnapping ?
-                targetRotation :
+                                                                mate.DeltaUp.x * transform.right + mate.DeltaUp.y * transform.up + mate.DeltaUp.z * transform.forward + transform.up);
+            return targetRotation;
+        }
+
+        private void RotateMate(GyroidBondMate mate, Quaternion targetRotation, bool isSnapping)
+        {
+            mate.Mate.transform.rotation = isSnapping ? targetRotation :
                 Quaternion.Lerp(mate.Mate.transform.rotation, targetRotation, Time.deltaTime); // Adjust rotation speed as needed
         }
     }
