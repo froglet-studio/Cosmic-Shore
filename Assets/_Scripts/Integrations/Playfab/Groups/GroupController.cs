@@ -1,14 +1,14 @@
 using System;
 using System.Collections.Generic;
-using CosmicShore.Integrations.Playfab.Authentication;
-using CosmicShore.Integrations.Playfab.Event_Models;
+using CosmicShore.Integrations.PlayFab.Authentication;
+using CosmicShore.Integrations.PlayFab.Event_Models;
 using CosmicShore.Utility.Singleton;
 using PlayFab;
 using PlayFab.GroupsModels;
 using UnityEngine;
 using VContainer.Unity;
 
-namespace CosmicShore.Integrations.Playfab.Groups
+namespace CosmicShore.Integrations.PlayFab.Groups
 {
     public class GroupController : SingletonPersistent<GroupController>
     {

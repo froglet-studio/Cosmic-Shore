@@ -1,10 +1,10 @@
 using System;
 using CosmicShore.App.UI.Menus;
-using CosmicShore.Integrations.Playfab.Authentication;
-using CosmicShore.Integrations.Playfab.Economy;
-using CosmicShore.Integrations.Playfab.Groups;
-using CosmicShore.Integrations.Playfab.PlayerModels;
-using CosmicShore.Integrations.Playfab.PlayStream;
+using CosmicShore.Integrations.PlayFab.Authentication;
+using CosmicShore.Integrations.PlayFab.Economy;
+using CosmicShore.Integrations.PlayFab.Groups;
+using CosmicShore.Integrations.PlayFab.PlayerModels;
+using CosmicShore.Integrations.PlayFab.PlayStream;
 using CosmicShore.Integrations.PlayFabV2.Models;
 using UnityEngine;
 using VContainer;

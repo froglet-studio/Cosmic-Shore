@@ -1,7 +1,7 @@
 using UnityEngine;
 using Button = UnityEngine.UI.Button;
 
-namespace CosmicShore.Integrations.Playfab
+namespace CosmicShore.Integrations.PlayFab
 {
     public class LeaderboardView : MonoBehaviour
     {

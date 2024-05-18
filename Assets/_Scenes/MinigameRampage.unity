@@ -724,6 +724,8 @@ MonoBehaviour:
   EndOfTurnDelay: 0
   EnableTrails: 1
   DefaultPlayerShipType: 2
+  DefaultPlayerCaptain: {fileID: 11400000, guid: 6d520cd7eb8878b4aa2551e0591bc08d,
+    type: 2}
   ActivePlayer: {fileID: 0}
   Crystal: {fileID: 1568959833}
   CrystalStartPosition: {x: 0, y: 0, z: -120}
@@ -1208,6 +1210,16 @@ MonoBehaviour:
   DifficultyAngle: 90
   InitializeOnStart: 0
   numberOfSegments: 0
+  branchProbability: 0.2
+  minBranchAngle: 20
+  maxBranchAngle: 20
+  minBranches: 1
+  maxBranches: 3
+  minBranchLengthMultiplier: 0.6
+  maxBranchLengthMultiplier: 0.8
+  maxDepth: 3
+  maxTotalSpawnedObjects: 100
+  branchPrefabs: []
 --- !u!114 &1471404065
 MonoBehaviour:
   m_ObjectHideFlags: 0

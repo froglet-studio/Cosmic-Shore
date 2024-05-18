@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Security;
 using CosmicShore.App.Systems.UserJourney;
-using CosmicShore.Integrations.Playfab.PlayerModels;
+using CosmicShore.Integrations.PlayFab.PlayerModels;
 using CosmicShore.Integrations.PlayFabV2.Models;
 using CosmicShore.Utility.Singleton;
 using JetBrains.Annotations;
@@ -12,7 +12,7 @@ using PlayFab;
 using PlayFab.ClientModels;
 using UnityEngine;
 
-namespace CosmicShore.Integrations.Playfab.Authentication
+namespace CosmicShore.Integrations.PlayFab.Authentication
 {
     public class AuthenticationManager : SingletonPersistent<AuthenticationManager>
     {
@@ -236,24 +236,21 @@ namespace CosmicShore.Integrations.Playfab.Authentication
 
         void HandleLoginSuccess(LoginResult loginResult = null)
         {
+            if (loginResult == null) return;
+            
             PlayFabAccount ??= new();
             UserProfile ??= new();
-            if (loginResult != null)
-            {
-                PlayFabAccount.ID = loginResult.PlayFabId;
-                PlayFabAccount.AuthContext = loginResult.AuthenticationContext;
-                UserProfile.IsNewlyCreated = loginResult.NewlyCreated;
+            
+            PlayFabAccount.ID = loginResult.PlayFabId;
+            PlayFabAccount.AuthContext = loginResult.AuthenticationContext;
+            UserProfile.IsNewlyCreated = loginResult.NewlyCreated;
 
-                Debug.Log($"AuthenticationManager - Logged in - Newly Created: {loginResult.NewlyCreated.ToString()}");
-                Debug.Log($"AuthenticationManager - Play Fab Id: {PlayFabAccount.ID}");
-                Debug.Log($"AuthenticationManager - Entity Type: {PlayFabAccount.AuthContext.EntityType}");
-                Debug.Log($"AuthenticationManager - Entity Id: {PlayFabAccount.AuthContext.EntityId}");
-                // Get it when we need to use postman for testing requests
-                // Debug.Log($"AuthenticationManager - Entity Token: {loginResult.AuthenticationContext.EntityToken}");
-                Debug.Log($"AuthenticationManager - Session Ticket: {PlayFabAccount.AuthContext.ClientSessionTicket}");
+            Debug.Log($"AuthenticationManager - Logged in - Newly Created: {loginResult.NewlyCreated.ToString()}");
+            Debug.Log($"AuthenticationManager - Play Fab Id: {PlayFabAccount.ID}");
+            Debug.Log($"AuthenticationManager - Entity Type: {PlayFabAccount.AuthContext.EntityType}");
+            Debug.Log($"AuthenticationManager - Entity Id: {PlayFabAccount.AuthContext.EntityId}");
 
-                OnLoginSuccess?.Invoke();
-            }
+            OnLoginSuccess?.Invoke();
         }
 
         void HandleLoginError(PlayFabError loginError = null)

@@ -60,7 +60,6 @@ namespace CosmicShore.App.UI.Menus
         void PopulateGameSelectionList()
         {
             GameCards = new List<GameCard>();
-            CallToActionTarget target;
 
             // Deactivate all game cards and add them to the list of game cards
             for (var i = 0; i < GameSelectionGrid.transform.childCount; i++)
@@ -84,11 +83,11 @@ namespace CosmicShore.App.UI.Menus
                 gameCard.GameMode = game.Mode;
                 gameCard.Locked = false; //(i % 3 == 0);  // TODO: pull this from somewhere real
                 gameCard.GetComponent<Button>().onClick.RemoveAllListeners();
-                gameCard.GetComponent<Button>().onClick.AddListener(() => SelectGame(selectionIndex));
+                gameCard.GetComponent<Button>().onClick.AddListener(() => SelectGame(game));
                 gameCard.GetComponent<Button>().onClick.AddListener(() => GameSelectionGrid.GetComponent<MenuAudio>().PlayAudio());
                 
                 // gameCard.GetComponent<CallToActionTarget>().TargetID = game.CallToActionTargetType;
-                if (TryGetComponent(out target))
+                if (gameCard.TryGetComponent(out CallToActionTarget target))
                 {
                     target.TargetID = game.CallToActionTargetType;
                 }
@@ -100,85 +99,11 @@ namespace CosmicShore.App.UI.Menus
                 
                 gameCard.gameObject.SetActive(true);
             }
-
-            //StartCoroutine(SelectGameCoroutine(0));
         }
 
-        void PopulateGameDetails()
+        public void SelectGame(SO_ArcadeGame selectedGame)
         {
-            Debug.Log($"Populating Game Details List: {SelectedGame.DisplayName}");
-            Debug.Log($"Populating Game Details List: {SelectedGame.Description}");
-            Debug.Log($"Populating Game Details List: {SelectedGame.Icon}");
-            Debug.Log($"Populating Game Details List: {SelectedGame.PreviewClip}");
-
-            // Set Game Detail Meta Data
-            SelectedGameName.text = SelectedGame.DisplayName;
-            SelectedGameDescription.text = SelectedGame.Description;
-            //AllowedPlayerCountText.text = SelectedGame.MinPlayers + "-" + SelectedGame.MaxPlayers;
-
-            // TODO: reconsider how we load the video
-            // Load Preview Video
-            for (var i = 0; i < SelectedGamePreviewWindow.transform.childCount; i++)
-                Destroy(SelectedGamePreviewWindow.transform.GetChild(i).gameObject);
-
-            var preview = Instantiate(SelectedGame.PreviewClip);
-            preview.GetComponent<RectTransform>().sizeDelta = new Vector2(352, 172);
-            preview.transform.SetParent(SelectedGamePreviewWindow.transform, false);
-        }
-        void PopulateShipSelectionList(ShipTypes shipClass = ShipTypes.Any)
-        {
-            Debug.Log($"MiniGamesMenu - Populating Ship Select List - shipClass: {shipClass}");
-
-            var selectedShipIndex = 0;
-
-            for (var i = 0; i < ShipSelectionGrid.childCount; i++)
-            {
-                Debug.Log($"MiniGamesMenu - Populating Ship Select List: {i}");
-                var shipSelectionRow = ShipSelectionGrid.transform.GetChild(i);
-                for (var j = 0; j < shipSelectionRow.transform.childCount; j++)
-                {
-                    Debug.Log($"MiniGamesMenu - Populating Ship Select List: {i},{j}");
-                    var selectionIndex = (i * 3) + j;
-                    var shipSelection = shipSelectionRow.transform.GetChild(j).gameObject;
-                    if (selectionIndex < SelectedGame.Guides.Count)
-                    {
-                        var ship = SelectedGame.Guides[selectionIndex].Ship;
-
-                        if (ship.Class == shipClass)
-                            selectedShipIndex = selectionIndex;
-
-                        Debug.Log($"MiniGamesMenu - Populating Ship Select List: {ship.Name}");
-
-                        shipSelection.SetActive(true);
-                        shipSelection.GetComponent<Image>().sprite = ship.CardSilohoutte;
-                        shipSelection.GetComponent<Button>().onClick.RemoveAllListeners();
-                        shipSelection.GetComponent<Button>().onClick.AddListener(() => SelectShip(selectionIndex));
-                        shipSelection.GetComponent<Button>().onClick.AddListener(() => ShipSelectionGrid.GetComponent<MenuAudio>().PlayAudio());
-
-                    }
-                    else
-                    {
-                        // Deactive remaining
-                        shipSelection.SetActive(false);
-                    }
-                }
-            }
-
-            StartCoroutine(SelectShipCoroutine(selectedShipIndex));
-        }
-
-        IEnumerator SelectGameCoroutine(int index)
-        {
-            yield return new WaitForEndOfFrame();
-            SelectGame(index);
-        }
-
-        public void SelectGame(int index)
-        {
-            Debug.Log($"SelectGame: {index}");
-            Debug.Log($"SelectGame, PlayerCountButtonContainer.transform.childCount: {PlayerCountButtonContainer.transform.childCount}");
-
-            SelectedGame = GameList.GameList[index];
+            SelectedGame = selectedGame;
 
             var loadout = LoadoutSystem.LoadGameLoadout(SelectedGame.Mode).Loadout;
 
@@ -193,7 +118,6 @@ namespace CosmicShore.App.UI.Menus
                 PlayerCountButtonContainer.transform.GetChild(i).gameObject.GetComponent<Button>().onClick.AddListener(() => PlayerCountButtonContainer.GetComponent<MenuAudio>().PlayAudio());
             }
             SetPlayerCount(loadout.PlayerCount == 0 ? SelectedGame.MinPlayers : loadout.PlayerCount);
-
 
             var theFonzColor = new Color(.66f, .66f, .66f); // #AAAAAA
             // TODO: this is kludgy
@@ -222,19 +146,85 @@ namespace CosmicShore.App.UI.Menus
             ShowGameDetailView();
         }
 
-        IEnumerator SelectShipCoroutine(int index)
+        void PopulateGameDetails()
         {
-            yield return new WaitForEndOfFrame();
-            SelectShip(index);
+            Debug.Log($"Populating Game Details List: {SelectedGame.DisplayName}");
+            Debug.Log($"Populating Game Details List: {SelectedGame.Description}");
+            Debug.Log($"Populating Game Details List: {SelectedGame.Icon}");
+            Debug.Log($"Populating Game Details List: {SelectedGame.PreviewClip}");
+
+            // Set Game Detail Meta Data
+            SelectedGameName.text = SelectedGame.DisplayName;
+            SelectedGameDescription.text = SelectedGame.Description;
+            //AllowedPlayerCountText.text = SelectedGame.MinPlayers + "-" + SelectedGame.MaxPlayers;
+
+            // TODO: reconsider how we load the video
+            // Load Preview Video
+            for (var i = 0; i < SelectedGamePreviewWindow.transform.childCount; i++)
+                Destroy(SelectedGamePreviewWindow.transform.GetChild(i).gameObject);
+
+            var preview = Instantiate(SelectedGame.PreviewClip);
+            preview.GetComponent<RectTransform>().sizeDelta = new Vector2(352, 172);
+            preview.transform.SetParent(SelectedGamePreviewWindow.transform, false);
         }
 
-        public void SelectShip(int index)
+        void PopulateShipSelectionList(ShipTypes shipClass = ShipTypes.Any)
         {
-            Debug.Log($"SelectShip: {index}");
+            Debug.Log($"MiniGamesMenu - Populating Ship Select List - shipClass: {shipClass}");
+
+            var selectedCaptain = SelectedGame.Guides[0];
+
+            for (var i = 0; i < ShipSelectionGrid.childCount; i++)
+            {
+                Debug.Log($"MiniGamesMenu - Populating Ship Select List: {i}");
+                var shipSelectionRow = ShipSelectionGrid.transform.GetChild(i);
+                for (var j = 0; j < shipSelectionRow.transform.childCount; j++)
+                {
+                    Debug.Log($"MiniGamesMenu - Populating Ship Select List: {i},{j}");
+                    var selectionIndex = (i * 3) + j;
+                    // TODO: convert this to take a CaptainCard prefab and instantiate one rather than using the placeholder objects
+                    var shipSelection = shipSelectionRow.transform.GetChild(j).gameObject;
+                    if (selectionIndex < SelectedGame.Guides.Count)
+                    {
+                        var ship = SelectedGame.Guides[selectionIndex].Ship;
+                        var captain = SelectedGame.Guides[selectionIndex];
+
+                        if (ship.Class == shipClass)
+                            selectedCaptain = captain;
+
+                        Debug.Log($"MiniGamesMenu - Populating Ship Select List: {ship.Name}");
+
+                        shipSelection.SetActive(true);
+                        shipSelection.GetComponent<Image>().sprite = captain.Ship.CardSilohoutte;
+                        shipSelection.GetComponent<Button>().onClick.RemoveAllListeners();
+                        shipSelection.GetComponent<Button>().onClick.AddListener(() => SelectCaptain(captain));
+                        shipSelection.GetComponent<Button>().onClick.AddListener(() => ShipSelectionGrid.GetComponent<MenuAudio>().PlayAudio());
+
+                    }
+                    else
+                    {
+                        // Deactive remaining
+                        shipSelection.SetActive(false);
+                    }
+                }
+            }
+
+            StartCoroutine(SelectCaptainCoroutine(SelectedGame.Guides[0]));
+        }
+
+        IEnumerator SelectCaptainCoroutine(SO_Guide captain)
+        {
+            yield return new WaitForEndOfFrame();
+            SelectCaptain(captain);
+        }
+
+        public void SelectCaptain(SO_Guide selectedCaptain)
+        {
+            Debug.Log($"SelectCaptain: {selectedCaptain.Name}");
             Debug.Log($"ShipSelectionContainer.childCount: {ShipSelectionGrid.childCount}");
             Debug.Log($"Ships.Count: {SelectedGame.Guides.Count}");
 
-            SelectedShip = SelectedGame.Guides[index].Ship;
+            SelectedShip = selectedCaptain.Ship;
 
             for (var i = 0; i < ShipSelectionGrid.childCount; i++)
             {
@@ -244,22 +234,19 @@ namespace CosmicShore.App.UI.Menus
                     var shipIndex = (i * 3) + j;
                     var shipButton = shipSelectionRow.GetChild(j).gameObject;
 
-                    if (shipIndex == index)
-                    {
-                        var ship = SelectedGame.Guides[shipIndex].Ship;
-                        shipButton.GetComponent<Image>().sprite = ship.CardSilohoutteActive;
-                    }
+                    if (shipIndex >= SelectedGame.Guides.Count)
+                        continue;
+                    
+                    if (SelectedGame.Guides[shipIndex] == selectedCaptain)
+                        shipButton.GetComponent<Image>().sprite = selectedCaptain.Ship.CardSilohoutteActive;
                     else if (shipIndex < SelectedGame.Guides.Count)
-                    {
-                        var ship = SelectedGame.Guides[shipIndex].Ship;
-                        shipButton.GetComponent<Image>().sprite = ship.CardSilohoutte;
-                    }
+                        shipButton.GetComponent<Image>().sprite = SelectedGame.Guides[shipIndex].Ship.CardSilohoutte;
                 }
             }
 
             // notify the mini game engine that this is the ship to play
             MiniGame.PlayerShipType = SelectedShip.Class;
-            MiniGame.PlayerGuide = SelectedGame.Guides[index];
+            MiniGame.PlayerCaptain = selectedCaptain;
         }
 
         public void SetPlayerCount(int playerCount)
@@ -267,7 +254,6 @@ namespace CosmicShore.App.UI.Menus
             Debug.Log($"SetPlayerCount: {playerCount}");
 
             for (var i = 0; i < PlayerCountButtonContainer.transform.childCount; i++)
-                //PlayerCountButtonContainer.transform.GetChild(i).gameObject.GetComponent<Image>().sprite = PlayerCountIcons[i];
                 PlayerCountButtonContainer.transform.GetChild(i).gameObject.GetComponent<Image>().sprite = PlayerCountIcons[i];
 
             PlayerCountButtonContainer.transform.GetChild(playerCount - 1).gameObject.GetComponent<Image>().sprite = PlayerCountButtonContainer.transform.GetChild(playerCount - 1).gameObject.GetComponent<Button>().spriteState.selectedSprite;

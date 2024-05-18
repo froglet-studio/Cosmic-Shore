@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using CosmicShore.Integrations.Enums;
 
-namespace CosmicShore.Integrations.Playfab.PlayerModels
+namespace CosmicShore.Integrations.PlayFab.PlayerModels
 {
     /// <summary>
     /// Guide Data Accessor

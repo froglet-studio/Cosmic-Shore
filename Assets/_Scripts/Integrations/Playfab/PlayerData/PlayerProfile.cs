@@ -1,4 +1,4 @@
-namespace CosmicShore.Integrations.Playfab.PlayerModels
+namespace CosmicShore.Integrations.PlayFab.PlayerModels
 {
     public class PlayerProfile
     {

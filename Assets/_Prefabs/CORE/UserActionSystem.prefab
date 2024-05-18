@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 8612500835039077531}
   - component: {fileID: 3111472263232909472}
   m_Layer: 0
-  m_Name: UserActionMonitor
+  m_Name: UserActionSystem
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

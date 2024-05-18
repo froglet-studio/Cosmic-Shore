@@ -109,7 +109,7 @@ namespace CosmicShore.App.UI.Menus
             SO_ArcadeGame game_SO = AllGames.GameList.Where(x => x.Mode == loadoutToPlay.GameMode).FirstOrDefault();
 
             MiniGame.PlayerShipType = loadoutToPlay.ShipType;
-            MiniGame.PlayerGuide = Hangar.Instance.SoarGuide; //TODO change to Element?
+            MiniGame.PlayerCaptain = Hangar.Instance.SoarGuide; //TODO change to Element?
             MiniGame.IntensityLevel = loadoutToPlay.Intensity;
             MiniGame.NumberOfPlayers = loadoutToPlay.PlayerCount;
             SceneManager.LoadScene(game_SO.SceneName);

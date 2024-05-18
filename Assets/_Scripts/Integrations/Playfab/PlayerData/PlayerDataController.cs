@@ -1,15 +1,15 @@
 ﻿using System;
-using CosmicShore.Integrations.Playfab.Authentication;
 using PlayFab;
 using PlayFab.ClientModels;
 using System.Collections.Generic;
 using System.Linq;
 using CosmicShore.App.Systems.Clout;
+using CosmicShore.Integrations.PlayFab.Authentication;
 using CosmicShore.Utility.Singleton;
 using UnityEngine;
 using Newtonsoft.Json;
 
-namespace CosmicShore.Integrations.Playfab.PlayStream
+namespace CosmicShore.Integrations.PlayFab.PlayStream
 {
     public struct ShardData
     {

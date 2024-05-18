@@ -1,6 +1,6 @@
 using System;
 using UnityEngine;
-using CosmicShore.Integrations.Playfab.PlayStream;
+using CosmicShore.Integrations.PlayFab.PlayStream;
 using VContainer;
 using VContainer.Unity;
 

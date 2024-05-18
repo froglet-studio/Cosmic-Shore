@@ -1,7 +1,7 @@
 using System;
 using Firebase.Auth;
 using CosmicShore.Utility.Singleton;
-using CosmicShore.Integrations.Playfab.Event_Models;
+using CosmicShore.Integrations.PlayFab.Event_Models;
 using UnityEngine;
 
 namespace CosmicShore.Integrations.Firebase.Controller

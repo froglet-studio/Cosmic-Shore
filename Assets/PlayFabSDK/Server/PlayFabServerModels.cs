@@ -273,10 +273,6 @@ namespace PlayFab.ServerModels
         /// </summary>
         public DateTime? Expires;
         /// <summary>
-        /// Whether or not the Microsoft family members are included in the ban.
-        /// </summary>
-        public bool? IncludeMicrosoftFamily;
-        /// <summary>
         /// The IP address on which the ban was applied. May affect multiple players.
         /// </summary>
         public string IPAddress;
@@ -288,6 +284,10 @@ namespace PlayFab.ServerModels
         /// The reason why this ban was applied.
         /// </summary>
         public string Reason;
+        /// <summary>
+        /// The family type of the suer that is included in the ban.
+        /// </summary>
+        public string UserFamilyType;
     }
 
     /// <summary>
@@ -301,10 +301,6 @@ namespace PlayFab.ServerModels
         /// </summary>
         public uint? DurationInHours;
         /// <summary>
-        /// Whether the Microsoft family members should be included in the ban. May affect multiple players.
-        /// </summary>
-        public bool? IncludeMicrosoftFamily;
-        /// <summary>
         /// IP address to be banned. May affect multiple players.
         /// </summary>
         public string IPAddress;
@@ -316,6 +312,10 @@ namespace PlayFab.ServerModels
         /// The reason for this ban. Maximum 140 characters.
         /// </summary>
         public string Reason;
+        /// <summary>
+        /// The family type of the user that should be included in the ban if applicable. May affect multiple players.
+        /// </summary>
+        public UserFamilyType? UserFamilyType;
     }
 
     /// <summary>
@@ -1995,6 +1995,12 @@ namespace PlayFab.ServerModels
         NoLinkedStatisticToLeaderboard,
         StatDefinitionAlreadyLinkedToLeaderboard,
         LinkingStatsNotAllowedForEntityType,
+        LeaderboardCountLimitExceeded,
+        LeaderboardSizeLimitExceeded,
+        LeaderboardDefinitionModificationNotAllowedWhileLinked,
+        StatisticDefinitionModificationNotAllowedWhileLinked,
+        LeaderboardUpdateNotAllowedWhileLinked,
+        CloudScriptAzureFunctionsEventHubRequestError,
         MatchmakingEntityInvalid,
         MatchmakingPlayerAttributesInvalid,
         MatchmakingQueueNotFound,
@@ -2195,29 +2201,52 @@ namespace PlayFab.ServerModels
         CopilotDisabled,
         CopilotInvalidRequest,
         TrueSkillUnauthorized,
-        TrueSkillBadRequest,
+        TrueSkillInvalidTitleId,
+        TrueSkillInvalidScenarioId,
+        TrueSkillInvalidModelId,
+        TrueSkillInvalidModelName,
+        TrueSkillInvalidPlayerIds,
+        TrueSkillInvalidEntityKey,
+        TrueSkillInvalidConditionKey,
+        TrueSkillInvalidConditionValue,
+        TrueSkillInvalidConditionAffinityWeight,
+        TrueSkillInvalidEventName,
+        TrueSkillMatchResultCreated,
         TrueSkillMatchResultAlreadySubmitted,
+        TrueSkillBadPlayerIdInMatchResult,
+        TrueSkillInvalidBotIdInMatchResult,
         TrueSkillDuplicatePlayerInMatchResult,
+        TrueSkillNoPlayerInMatchResultTeam,
+        TrueSkillPlayersInMatchResultExceedingLimit,
+        TrueSkillInvalidPreMatchPartyInMatchResult,
+        TrueSkillInvalidTimestampInMatchResult,
+        TrueSkillStartTimeMissingInMatchResult,
+        TrueSkillEndTimeMissingInMatchResult,
+        TrueSkillInvalidPlayerSecondsPlayedInMatchResult,
+        TrueSkillNoTeamInMatchResult,
+        TrueSkillNotEnoughTeamsInMatchResult,
         TrueSkillInvalidRanksInMatchResult,
         TrueSkillNoWinnerInMatchResult,
         TrueSkillMissingRequiredCondition,
         TrueSkillMissingRequiredEvent,
         TrueSkillUnknownEventName,
+        TrueSkillInvalidEventCount,
         TrueSkillUnknownConditionKey,
         TrueSkillUnknownConditionValue,
-        TrueSkillUnknownModelId,
-        TrueSkillNoPlayerInMatchResultTeam,
-        TrueSkillPlayersInMatchResultExceedingLimit,
-        TrueSkillInvalidPreMatchPartyInMatchResult,
-        TrueSkillInvalidTimestampInMatchResult,
-        TrueSkillInvalidPlayerSecondsPlayedInMatchResult,
-        TrueSkillNoTeamInMatchResult,
-        TrueSkillNotEnoughTeamsInMatchResult,
         TrueSkillScenarioConfigDoesNotExist,
+        TrueSkillUnknownModelId,
         TrueSkillNoModelInScenario,
         TrueSkillNotSupportedForTitle,
         TrueSkillModelIsNotActive,
         TrueSkillUnauthorizedToQueryOtherPlayerSkills,
+        TrueSkillInvalidMaxIterations,
+        TrueSkillEndTimeBeforeStartTime,
+        TrueSkillInvalidJobId,
+        TrueSkillInvalidMetadataId,
+        TrueSkillMissingBuildVerison,
+        TrueSkillJobAlreadyExists,
+        TrueSkillJobNotFound,
+        TrueSkillOperationCanceled,
         StateShareUnauthorized,
         StateShareStateNotFound,
         StateShareLinkNotFound
@@ -4361,6 +4390,42 @@ namespace PlayFab.ServerModels
         GooglePlayGames
     }
 
+    /// <summary>
+    /// If this is the first time a user has signed in with the PlayStation :tm: Network account and CreateAccount is set to
+    /// true, a new PlayFab account will be created and linked to the PlayStation :tm: Network account. In this case, no email
+    /// or username will be associated with the PlayFab account. Otherwise, if no PlayFab account is linked to the PlayStation
+    /// :tm: Network account, an error indicating this will be returned, so that the title can guide the user through creation
+    /// of a PlayFab account.
+    /// </summary>
+    [Serializable]
+    public class LoginWithPSNRequest : PlayFabRequestCommon
+    {
+        /// <summary>
+        /// Auth code provided by the PlayStation :tm: Network OAuth provider.
+        /// </summary>
+        public string AuthCode;
+        /// <summary>
+        /// Automatically create a PlayFab account if one is not currently linked to this ID.
+        /// </summary>
+        public bool? CreateAccount;
+        /// <summary>
+        /// The optional custom tags associated with the request (e.g. build number, external trace identifiers, etc.).
+        /// </summary>
+        public Dictionary<string,string> CustomTags;
+        /// <summary>
+        /// Flags for which pieces of info to return for the user.
+        /// </summary>
+        public GetPlayerCombinedInfoRequestParams InfoRequestParameters;
+        /// <summary>
+        /// Id of the PlayStation :tm: Network issuer environment. If null, defaults to production environment.
+        /// </summary>
+        public int? IssuerId;
+        /// <summary>
+        /// Redirect URI supplied to PlayStation :tm: Network when requesting an auth code
+        /// </summary>
+        public string RedirectUri;
+    }
+
     [Serializable]
     public class LoginWithServerCustomIdRequest : PlayFabRequestCommon
     {
@@ -6335,10 +6400,6 @@ namespace PlayFab.ServerModels
         /// </summary>
         public DateTime? Expires;
         /// <summary>
-        /// The updated decision to ban the Microsoft family members to be updated. Null for no change.
-        /// </summary>
-        public bool? IncludeMicrosoftFamily;
-        /// <summary>
         /// The updated IP address for the ban. Null for no change.
         /// </summary>
         public string IPAddress;
@@ -6350,6 +6411,10 @@ namespace PlayFab.ServerModels
         /// The updated reason for the ban to be updated. Maximum 140 characters. Null for no change.
         /// </summary>
         public string Reason;
+        /// <summary>
+        /// The updated family type of the user that should be included in the ban. Null for no change.
+        /// </summary>
+        public UserFamilyType? UserFamilyType;
     }
 
     /// <summary>
@@ -6799,6 +6864,13 @@ namespace PlayFab.ServerModels
         /// Facebook Instant Games ID
         /// </summary>
         public string FacebookInstantGamesId;
+    }
+
+    public enum UserFamilyType
+    {
+        None,
+        Xbox,
+        Steam
     }
 
     [Serializable]
