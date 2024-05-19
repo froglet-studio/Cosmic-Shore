@@ -51,6 +51,10 @@ namespace CosmicShore.Integrations.PlayFab.CloudScripts
             PlayFabCloudScriptAPI.ExecuteFunction(request, OnSaveRewardClaimTimeSuccess, PlayFabUtility.HandleErrorReport);
         }
 
+        /// <summary>
+        /// On Saving Daily Reward Claim Time Delegate
+        /// </summary>
+        /// <param name="result">ExecuteFunctionResult</param>
         private void OnSaveRewardClaimTimeSuccess(ExecuteFunctionResult result)
         {
             if (result.FunctionResultTooLarge ?? false)
