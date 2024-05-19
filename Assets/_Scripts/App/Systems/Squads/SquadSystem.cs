@@ -15,13 +15,12 @@ namespace CosmicShore.App.Systems.Squads
 
         public static void Init()
         {
-            var dataAccessor = new DataAccessor(SquadSaveFileName);
-            Squad = dataAccessor.Load<Squad>();
+            Squad = DataAccessor.Load<Squad>(SquadSaveFileName);
 
             if (Squad.Equals(default(Squad)))
             {
                 Squad = new Squad(DefaultLeader, DefaultRogueOne, DefaultRogueTwo);
-                dataAccessor.Save(Squad);
+                DataAccessor.Save(SquadSaveFileName, Squad);
             }
         }
 
@@ -35,8 +34,7 @@ namespace CosmicShore.App.Systems.Squads
 
         public static void SaveSquad()
         {
-            var dataAccessor = new DataAccessor(SquadSaveFileName);
-            dataAccessor.Save(Squad);
+            DataAccessor.Save(SquadSaveFileName, Squad);
         }
 
         public static SO_Guide SquadLeader

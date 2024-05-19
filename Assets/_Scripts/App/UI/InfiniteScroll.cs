@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -9,8 +10,9 @@ namespace CosmicShore
         [SerializeField] RectTransform viewPortTransform;
         [SerializeField] RectTransform contentPanelTransform;
         [SerializeField] VerticalLayoutGroup vlg;
+        [SerializeField] GameObject ContentContainer;
 
-        [SerializeField] RectTransform[] itemList;
+        List<RectTransform> itemList = new();
         [SerializeField] float SelectedItemHeight;
         [SerializeField] float minVelocity = 5f;
         [SerializeField] float enableSnapVelocity = 15f;
@@ -18,43 +20,58 @@ namespace CosmicShore
 
         Vector2 OldVelocity;
         bool isUpdated;
+        bool isInitialized = false;
         bool checkForSnap = false;
 
-        void Start()
+        public void Initialize(bool forceReInit=false)
         {
+            if (isInitialized && !forceReInit) return;
+
+            itemList.Clear();
             isUpdated = false;
             OldVelocity = Vector2.zero;
 
-            int itemsToAdd = itemList.Length; // Mathf.CeilToInt(viewPortTransform.rect.height / itemList[0].rect.height + vlg.spacing);
-
-            for (int i=0; i < itemsToAdd; i++)
+            foreach (Transform transform in ContentContainer.transform)
             {
-                RectTransform rt = Instantiate(itemList[i % itemList.Length], contentPanelTransform);
-                rt.name = rt.name.Replace("(Clone)", "");
+                if (transform.gameObject.activeInHierarchy)
+                    itemList.Add(transform.GetComponent<RectTransform>());
+            }
+            
+            int itemCount = itemList.Count;
+
+            for (int i=0; i < itemCount; i++)
+            {
+                RectTransform rt = Instantiate(itemList[i % itemCount ], contentPanelTransform);
+                rt.name = rt.name.Replace("(Clone)", "-pre");
                 rt.SetAsLastSibling();
             }
 
-            for (int i = 0; i < itemsToAdd; i++)
+            for (int i = 0; i < itemCount; i++)
             {
-                int index = itemList.Length - i - 1;
+                int index = itemCount - i - 1;
                 while (index < 0)
-                    index += itemList.Length;
+                    index += itemCount ;
 
                 RectTransform rt = Instantiate(itemList[index], contentPanelTransform);
-                rt.name = rt.name.Replace("(Clone)", "");
+                rt.name = rt.name.Replace("(Clone)", "-post");
                 rt.SetAsFirstSibling();
             }
 
-            Debug.Log($"InfiniteScroll - loop offset distance: {itemList.Length * (itemList[0].rect.height + vlg.spacing)}");
+            Debug.Log($"InfiniteScroll - loop offset distance: {itemCount * (itemList[0].rect.height + vlg.spacing)}");
             
             contentPanelTransform.localPosition = new Vector3(
                 contentPanelTransform.localPosition.x,
-                0 - (itemList[0].rect.height + vlg.spacing) * itemsToAdd,
+                0 - (itemList[0].rect.height + vlg.spacing) * itemCount,
                 contentPanelTransform.localPosition.z);
+
+            isInitialized = true;
         }
 
         void Update()
         {
+            if (!isInitialized)
+                return;
+
             if (isUpdated )
             {
                 isUpdated = false;
@@ -86,28 +103,28 @@ namespace CosmicShore
                 }
             }
             
-            if (contentPanelTransform.localPosition.y < itemList.Length * (itemList[0].rect.height + vlg.spacing))
+            if (contentPanelTransform.localPosition.y < itemList.Count * (itemList[0].rect.height + vlg.spacing))
             {
                 Debug.Log($"InfiniteScroll - contentPanelTransform.localPosition.y > 0: {contentPanelTransform.localPosition.y}");
                 Canvas.ForceUpdateCanvases();
                 OldVelocity = scrollRect.velocity;
                 contentPanelTransform.localPosition += new Vector3(
                     0,
-                    itemList.Length * (itemList[0].rect.height + vlg.spacing),
+                    itemList.Count * (itemList[0].rect.height + vlg.spacing),
                     0
                 );
                 isUpdated = true;
             }
             
 
-            if (contentPanelTransform.localPosition.y > 2 * (itemList.Length * (itemList[0].rect.height + vlg.spacing)))
+            if (contentPanelTransform.localPosition.y > 2 * (itemList.Count * (itemList[0].rect.height + vlg.spacing)))
             {
                 Debug.Log($"InfiniteScroll - contentPanelTransform.localPosition.y < 0: {contentPanelTransform.localPosition.y}");
                 Canvas.ForceUpdateCanvases();
                 OldVelocity = scrollRect.velocity;
                 contentPanelTransform.localPosition -= new Vector3(
                     0,
-                    itemList.Length * (itemList[0].rect.height + vlg.spacing),
+                    itemList.Count * (itemList[0].rect.height + vlg.spacing),
                     0
                 );
                 isUpdated = true;

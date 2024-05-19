@@ -11,7 +11,6 @@ namespace CosmicShore
         [SerializeField] TrailBlock trailBlock;
 
         private static readonly string StateSaveFileName = "MiniGameState.data";
-        private static DataAccessor _stateData;
         public class StateDiff
         {
             public HashSet<BlockState> AddSet { get; set; }
@@ -57,9 +56,7 @@ namespace CosmicShore
         // this loads from a previously saved state
         Dictionary<MiniGames, HashSet<BlockState>> LoadState()
         {
-            _stateData ??= new(StateSaveFileName);
-
-            return _stateData.Load<Dictionary<MiniGames, HashSet<BlockState>>>();
+            return DataAccessor.Load<Dictionary<MiniGames, HashSet<BlockState>>>(StateSaveFileName);
         }
 
         // this is used to save a new captured state
@@ -99,7 +96,7 @@ namespace CosmicShore
 
         public void Clear()
         {
-            _stateData.Flush();
+            DataAccessor.Flush(StateSaveFileName);
         }
     }
 }

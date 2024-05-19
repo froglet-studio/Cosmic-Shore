@@ -25,21 +25,23 @@ namespace CosmicShore.Integrations.PlayFab.Economy
         public static Dictionary<string, string> Bundles { get; private set; } = new();
         public static event Action<string> OnGettingBundleId;
 
-        private int _dailyRewardIndex;
+        int _dailyRewardIndex;
 
-        private const string DailyRewardStoreID = "63d59c05-2b86-4843-8e9b-61c07ab121ad";
-        private const string ClaimDailyRewardTime = "ClaimDailyRewardTime";
+        const string DailyRewardStoreID = "63d59c05-2b86-4843-8e9b-61c07ab121ad";
+        const string ClaimDailyRewardTime = "ClaimDailyRewardTime";
         
         
-        private void Start()
+        void Start()
         {
+            Debug.Log("CatalogManager.Start");
             AuthenticationManager.OnLoginSuccess += InitializePlayFabEconomyAPI;
             AuthenticationManager.OnLoginSuccess += LoadAllCatalogItems;
             AuthenticationManager.OnLoginSuccess += LoadPlayerInventory;
 
             AuthenticationManager.OnLoginSuccess += GetDailyRewardStore;
-        }
 
+            NetworkMonitor.NetworkConnectionLost += Inventory.LoadFromDisk;
+        }
 
         public void OnDestroy()
         {
@@ -48,6 +50,9 @@ namespace CosmicShore.Integrations.PlayFab.Economy
             AuthenticationManager.OnLoginSuccess -= LoadPlayerInventory;
             
             AuthenticationManager.OnLoginSuccess -= GetDailyRewardStore;
+
+            NetworkMonitor.NetworkConnectionLost -= Inventory.LoadFromDisk;
+
             StoreShelve = null;
             Inventory = null;
             // AuthenticationManager.OnRegisterSuccess -= GrantStartingInventory;
@@ -100,7 +105,7 @@ namespace CosmicShore.Integrations.PlayFab.Economy
         /// Load catalog items to local memory
         /// </summary>
         /// <param name="response">Search Items Response</param>
-        private void OnLoadingCatalogItems(SearchItemsResponse response)
+        void OnLoadingCatalogItems(SearchItemsResponse response)
         {
             if (response == null)
             {
@@ -133,7 +138,7 @@ namespace CosmicShore.Integrations.PlayFab.Economy
             }
         }
 
-        private void AddToStoreShelve(string contentType, VirtualItem item)
+        void AddToStoreShelve(string contentType, VirtualItem item)
         {
             switch (contentType)
             {
@@ -198,7 +203,7 @@ namespace CosmicShore.Integrations.PlayFab.Economy
         /// On Grant Shards
         /// </summary>
         /// <param name="response"></param>
-        private void OnGrantShards(AddInventoryItemsResponse response)
+        void OnGrantShards(AddInventoryItemsResponse response)
         {
             if (response == null)
             {
@@ -234,7 +239,7 @@ namespace CosmicShore.Integrations.PlayFab.Economy
         /// On Granting Starting Inventory
         /// </summary>
         /// <param name="response">Add Inventory Items Response</param>
-        private void OnGrantStartingInventory(AddInventoryItemsResponse response)
+        void OnGrantStartingInventory(AddInventoryItemsResponse response)
         {
             if (response == null)
             {
@@ -252,6 +257,7 @@ namespace CosmicShore.Integrations.PlayFab.Economy
         /// </summary>
         public void LoadPlayerInventory()
         {
+            Debug.Log("CatalogManager.LoadPlayerInventory");
             var request = new GetInventoryItemsRequest();
             
             _playFabEconomyInstanceAPI.GetInventoryItems(
@@ -265,8 +271,9 @@ namespace CosmicShore.Integrations.PlayFab.Economy
         /// On Loading Player Inventory
         /// </summary>
         /// <param name="response">Get Inventory Items Response</param>
-        private void OnGettingInventoryItems(GetInventoryItemsResponse response)
+        void OnGettingInventoryItems(GetInventoryItemsResponse response)
         {
+            Debug.Log("CatalogManager.OnGettingInventoryItems");
             // If no inventory items no need to process the response.
             if (response == null || response.Items?.Count == 0)
             {
@@ -289,38 +296,40 @@ namespace CosmicShore.Integrations.PlayFab.Economy
                 var virtualItem = ConvertToInventoryItem(item);
                 AddToInventory(virtualItem);
             }
+
+            Inventory.SaveToDisk();
         }
 
-        private void ClearLocalInventoryOnLoading()
+        void ClearLocalInventoryOnLoading()
         {
             if (Inventory == null) return;
             
-            Inventory.miniGames.Clear();
-            Inventory.guideUpgrades.Clear();
+            Inventory.games.Clear();
+            Inventory.captainUpgrades.Clear();
             Inventory.crystals.Clear();
-            Inventory.ships.Clear();
-            Inventory.guides.Clear();
+            Inventory.shipClasses.Clear();
+            Inventory.captains.Clear();
         }
         
-        private void AddToInventory(VirtualItem item)
+        void AddToInventory(VirtualItem item)
         {
             switch (item.ContentType)
             {
                 case "Guide":
                     Debug.LogFormat("{0} - {1} - Adding Guide",nameof(CatalogManager), nameof(AddToInventory));
-                    Inventory.guides.Add(item);
+                    Inventory.captains.Add(item);
                     break;
                 case "ShipClass":
                     Debug.LogFormat("{0} - {1} - Adding Ship",nameof(CatalogManager), nameof(AddToInventory));
-                    Inventory.ships.Add(item);
+                    Inventory.shipClasses.Add(item);
                     break;
                 case "GuideUpgrade":
                     Debug.LogFormat("{0} - {1} - Adding Upgrade",nameof(CatalogManager), nameof(AddToInventory));
-                    Inventory.guideUpgrades.Add(item);
+                    Inventory.captainUpgrades.Add(item);
                     break;
                 case "MiniGame":
                     Debug.LogFormat("{0} - {1} - Adding MiniGame",nameof(CatalogManager), nameof(AddToInventory));
-                    Inventory.miniGames.Add(item);
+                    Inventory.games.Add(item);
                     break;
                 case "Crystal":
                     Debug.LogFormat("{0} - {1} - Adding Crystal",nameof(CatalogManager), nameof(AddToInventory));

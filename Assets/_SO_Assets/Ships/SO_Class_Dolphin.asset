@@ -14,10 +14,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Class: 2
   Name: Dolphin
+  Summary: '[Placeholder Summary Text]'
   Description: 'Precision, drifting, sligshot, high-energy cannon, technical Get
     all this energy to charge up to a big '
   Icon: {fileID: 21300000, guid: c07463db6e8244c45b639760efd18f9e, type: 3}
   SelectedIcon: {fileID: 21300000, guid: 02f5fce2ffceabe4980869c3d0ac2709, type: 3}
+  PreviewClip: {fileID: 2096801853598961014, guid: 6b8d168238dc02149b26d1221d313893,
+    type: 3}
   PreviewImage: {fileID: 21300000, guid: 0cdee36486fec6e45a0d54e8998d722a, type: 3}
   TrailPreviewImage: {fileID: 21300000, guid: 08960a7a149292543b89ed3e6c09025c, type: 3}
   CardSilohoutte: {fileID: 21300000, guid: 9355147c95bb1ed4192bdd8d8e21654a, type: 3}

@@ -113,14 +113,13 @@ namespace CosmicShore.Integrations.PlayFab.PlayStream
             yield return new WaitUntil(() => AuthenticationManager.PlayFabAccount != null);
             
             Debug.Log("LeaderboardManager - ReportAndFlushOfflineStatistics");
-            var dataAccessor = new DataAccessor(OfflineStatsFileName);
-            var offlineStatistics = dataAccessor.Load<List<StatisticUpdate>>();
+            var offlineStatistics = DataAccessor.Load<List<StatisticUpdate>>(OfflineStatsFileName);
 
             if (offlineStatistics.Count > 0)
             {
                 Debug.Log($"LeaderboardManager - StatCount:{offlineStatistics.Count}");
                 UpdatePlayerStatistic(offlineStatistics);
-                dataAccessor.Flush();
+                DataAccessor.Flush(OfflineStatsFileName);
             }
         }
 
@@ -224,10 +223,9 @@ namespace CosmicShore.Integrations.PlayFab.PlayStream
             {
                 Debug.Log($"LeaderboardManager.UpdatePlayerStatistic - offline");
                 // TODO: custom tags lost?
-                var dataAccessor = new DataAccessor(OfflineStatsFileName);
-                var offlineStatistics = dataAccessor.Load<List<StatisticUpdate>>();
+                var offlineStatistics = DataAccessor.Load<List<StatisticUpdate>>(OfflineStatsFileName);
                 offlineStatistics.AddRange(stats);
-                dataAccessor.Save(offlineStatistics);
+                DataAccessor.Save(OfflineStatsFileName, offlineStatistics);
             }
         }
 
@@ -279,8 +277,7 @@ namespace CosmicShore.Integrations.PlayFab.PlayStream
 
                         callback(entries);
 
-                        var dataAccessor = new DataAccessor(GetLeaderboardFileName(leaderboardName));
-                        dataAccessor.Save(entries);
+                        DataAccessor.Save(GetLeaderboardFileName(leaderboardName), entries);
 
                         Debug.Log("UpdatePlayerStatistic success: " + response);
                     },
@@ -288,8 +285,7 @@ namespace CosmicShore.Integrations.PlayFab.PlayStream
             }
             else
             {
-                var dataAccessor = new DataAccessor(GetLeaderboardFileName(leaderboardName));
-                var cachedLeaderboard = dataAccessor.Load<List<LeaderboardEntry>>();
+                var cachedLeaderboard = DataAccessor.Load<List<LeaderboardEntry>>(GetLeaderboardFileName(leaderboardName));
                 callback(cachedLeaderboard);
             }
         }
