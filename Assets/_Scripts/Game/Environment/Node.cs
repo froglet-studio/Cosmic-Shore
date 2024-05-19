@@ -41,7 +41,7 @@ public class Node : MonoBehaviour
         Crystal.SetOrigin(transform.position);
         if (fauna1) StartCoroutine(SpawnFauna(fauna1));
         if (flora1) StartCoroutine(SpawnFlora(flora1));
-        if (flora2) StartCoroutine(SpawnFlora(flora1));
+        if (flora2) StartCoroutine(SpawnFlora(flora2));
     }
 
     public void AddItem(NodeItem item)

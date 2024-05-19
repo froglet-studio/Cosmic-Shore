@@ -517,6 +517,7 @@ namespace CosmicShore.Integrations.PlayFab.Economy
 
         /// <summary>
         /// Get Daily Reward Store defined in PlayFab Economy
+        /// TODO: Might need to put on the chopping block since daily reward contents are moved to bundles.
         /// </summary>
         private void GetDailyRewardStore()
         {
@@ -525,6 +526,11 @@ namespace CosmicShore.Integrations.PlayFab.Economy
             _playFabEconomyInstanceAPI.SearchItems(request, OnGettingDailyRewardStore, PlayFabUtility.HandleErrorReport);
         }
 
+        /// <summary>
+        /// On Successfully Getting Daily Reward Store
+        /// TODO: Might need to put on the chopping block since daily reward contents are moved to bundles.
+        /// </summary>
+        /// <param name="result"></param>
         private void OnGettingDailyRewardStore(SearchItemsResponse result)
         {
             if (result == null)
@@ -549,6 +555,12 @@ namespace CosmicShore.Integrations.PlayFab.Economy
         #endregion
 
         #region Model Conversion
+        /// <summary>
+        /// Convert PlayFab Price to Cosmic Shore Custom Price model
+        /// TODO: Should be put on model or a conversion services instead of Catalog Manager
+        /// </summary>
+        /// <param name="price"></param>
+        /// <returns></returns>
         ItemPrice PlayFabToCosmicShorePrice(CatalogPriceOptions price)
         {
             ItemPrice itemPrice = new();
@@ -557,6 +569,12 @@ namespace CosmicShore.Integrations.PlayFab.Economy
             return itemPrice;
         }
         
+        /// <summary>
+        /// Convert PlayFab Catalog Item To Cosmic Shore Virtual Item model
+        /// TODO: Should be put on model or a conversion services instead of Catalog Manager
+        /// </summary>
+        /// <param name="catalogItem"></param>
+        /// <returns></returns>
         VirtualItem ConvertToStoreItem(CatalogItem catalogItem)
         {
             VirtualItem virtualItem = new();
@@ -573,6 +591,12 @@ namespace CosmicShore.Integrations.PlayFab.Economy
             return virtualItem;
         }
 
+        /// <summary>
+        /// Convert PlayFab Inventory Item to Cosmic Shore Virtual Item model
+        /// TODO: Should be put on model or a conversion services instead of Catalog Manager
+        /// </summary>
+        /// <param name="item"></param>
+        /// <returns></returns>
         VirtualItem ConvertToInventoryItem(InventoryItem item)
         {
             var virtualItem = new VirtualItem();
@@ -586,6 +610,11 @@ namespace CosmicShore.Integrations.PlayFab.Economy
 
         #region Bundle Handling
 
+        /// <summary>
+        /// Get Bundles
+        /// Returns SeearchItemsResponse that contains bundle id if request is successful, title and other information.
+        /// </summary>
+        /// <param name="filter">A filter string to query PlayFab bundle information</param>
         public void GetBundles(string filter = "type eq 'bundle'")
         {
             _playFabEconomyInstanceAPI ??=
@@ -594,10 +623,16 @@ namespace CosmicShore.Integrations.PlayFab.Economy
             {
                 Filter = filter
             };
-            _playFabEconomyInstanceAPI.SearchItems(request, OnGetBundlesSuccess, PlayFabUtility.HandleErrorReport);
+            _playFabEconomyInstanceAPI.SearchItems(request, OnGettingBundlesSuccess, PlayFabUtility.HandleErrorReport);
         }
 
-        private void OnGetBundlesSuccess(SearchItemsResponse response)
+        /// <summary>
+        /// On Getting Bundle Success Delegate
+        /// Add bundle titles as keys and bundle ids as values to memory
+        /// Invoke an action "testBundleId" for testing purpose
+        /// </summary>
+        /// <param name="response">Search Item Response</param>
+        private void OnGettingBundlesSuccess(SearchItemsResponse response)
         {
             if (response is null) {Debug.Log("CatalogManager.GetBundle() - no response");return;}
 
@@ -614,12 +649,28 @@ namespace CosmicShore.Integrations.PlayFab.Economy
             string testBundleId;
             Bundles.TryGetValue("Test Bundle", out testBundleId);
             
+            // TODO: This one is for testing, can be changed to any bundle id you want later
             if (string.IsNullOrEmpty(testBundleId)) {Debug.Log($"CatalogManager.GetBundle() - Test Bundle Id is not here");return;}
             Debug.Log($"CatalogManager.GetBundles() - Test Bundle Id: {testBundleId}");
             OnGettingBundleId?.Invoke(testBundleId);
         }
-        
-        
+
+        // public void BuyBundle()
+        // {
+        //     _playFabEconomyInstanceAPI ??=
+        //         new(AuthenticationManager.PlayFabAccount.AuthContext);
+        //
+        //     // ItemPurchaseRequest;
+        //     // PurchaseItemRequest;
+        //     // AddInventoryItemsRequest;
+        //     // PurchaseInventoryItemsRequest;
+        //     // UpdateInventoryItemsRequest;
+        // }
+        /// <summary>
+        /// Purchase a bundle
+        /// </summary>
+        /// <param name="bundleId"></param>
+        /// <param name="quantity"></param>
         public void PurchaseBundle(string bundleId, uint quantity)
         {
             const string annotation = "Bundle Purchase";
@@ -641,6 +692,10 @@ namespace CosmicShore.Integrations.PlayFab.Economy
             PlayFabClientAPI.StartPurchase(startPurchaseRequest, OnPurchaseBundleSuccess, PlayFabUtility.HandleErrorReport);
         }
 
+        /// <summary>
+        /// On Purchasing Bundle Success
+        /// </summary>
+        /// <param name="result"></param>
         private void OnPurchaseBundleSuccess(StartPurchaseResult result)
         {
             if (result is null) return;
@@ -650,17 +705,31 @@ namespace CosmicShore.Integrations.PlayFab.Economy
             
         }
 
+        /// <summary>
+        /// A helper function to verify item quantity, if it exceeds 25, clamp to 25
+        /// </summary>
+        /// <param name="quantity"></param>
+        /// <returns></returns>
         private static uint VerifyQuantity(uint quantity)
         {
             return quantity > 25 ? 25 : quantity;
         }
 
+        /// <summary>
+        /// Pay For a Bundle
+        /// TODO: The bundle Id is not legit for purchase as an item, needs further investigation on how to handle bundles in PlayFab
+        /// </summary>
+        /// <param name="orderId"></param>
         private void PayBundle(string orderId)
         {
             var payPurchaseRequest = new PayForPurchaseRequest { OrderId = orderId };
             PlayFabClientAPI.PayForPurchase(payPurchaseRequest, OnPayBundleSuccess, PlayFabUtility.HandleErrorReport);
         }
 
+        /// <summary>
+        /// On Paying Bundle Success Delegate
+        /// </summary>
+        /// <param name="result"></param>
         private void OnPayBundleSuccess(PayForPurchaseResult result)
         {
             if (result is null) return;

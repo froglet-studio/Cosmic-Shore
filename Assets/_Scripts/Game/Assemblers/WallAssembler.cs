@@ -6,7 +6,7 @@ using UnityEngine;
 namespace CosmicShore
 {
 
-    public class WallAssembler : MonoBehaviour
+    public class WallAssembler : Assembler
     {
         public struct BondMate
         {
@@ -53,16 +53,31 @@ namespace CosmicShore
         [SerializeField] int colliderTheshold = 25;
         [SerializeField] float radius = 40f;
 
+        int depth = -1;
+        public override int Depth
+        {
+            get { return depth; }
+            set { depth = value; }
+        }
+
         void Start()
         {
             WallBlock = GetComponent<TrailBlock>();
-            scale = WallBlock.TargetScale;
-            CalculateGlobalBondSites();
+            if (WallBlock)
+            {
+                scale = WallBlock.TargetScale;
+                CalculateGlobalBondSites();
+            }
         }
 
-        public void StartBonding()
+        public override void StartBonding()
         {
             StartCoroutine(LookForMates());
+        }
+
+        public override void Grow()
+        {
+            
         }
 
         public void ClearMateList()

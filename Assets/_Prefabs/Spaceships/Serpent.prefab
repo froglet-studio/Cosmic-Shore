@@ -149,7 +149,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 808689176682098569}
-  - component: {fileID: 6378036342495326916}
+  - component: {fileID: 3362399389898013871}
   m_Layer: 0
   m_Name: SeedWallAction
   m_TagString: Untagged
@@ -168,11 +168,12 @@ Transform:
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children: []
+  m_Children:
+  - {fileID: 6152802953450880362}
   m_Father: {fileID: 8075578658670966254}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &6378036342495326916
+--- !u!114 &3362399389898013871
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -181,10 +182,12 @@ MonoBehaviour:
   m_GameObject: {fileID: 477942985372925436}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 00051fc31a8bda44da5a081740a530a2, type: 3}
+  m_Script: {fileID: 11500000, guid: c736bc4b5e4a48e4fad10bb37817bf34, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   enhancementsPerFullAmmo: 3
+  assembler: {fileID: 1077471832166960232}
+  depth: 50
 --- !u!1 &555723467741174050
 GameObject:
   m_ObjectHideFlags: 0
@@ -1723,17 +1726,18 @@ MonoBehaviour:
   crystalImpactEffects: 030000000b000000
   minExplosionScale: 50
   maxExplosionScale: 500
-  trailBlockImpactEffects: 0f000000
+  trailBlockImpactEffects: 0f00000000000000
   blockChargeChange: 0
   boostMultiplier: 4
   boostFuelAmount: 0.2
+  bottomEdgeButtons: 0
   inputEventShipActions:
   - InputEvent: 6
     ShipActions:
     - {fileID: 4272400135030423314}
   - InputEvent: 7
     ShipActions:
-    - {fileID: 6378036342495326916}
+    - {fileID: 3362399389898013871}
   resourceEventClassActions: []
   MassAbilityTarget: {fileID: 0}
   ChargeAbilityTarget: {fileID: 0}
@@ -1844,9 +1848,9 @@ MonoBehaviour:
   skimmer: {fileID: 874579554510349383}
   waitTillOutsideSkimmer: 0
   shielded: 0
-  offset: 0
   initialWavelength: 2
   minWavelength: 2
+  offset: 0
   Gap: 0
   MinimumGap: 1
   TargetScale: {x: 0, y: 0, z: 0}
@@ -1946,7 +1950,7 @@ MonoBehaviour:
   SingleStickControls: 0
   useAbility: 1
   abilityCooldown: 20
-  ability: {fileID: 6378036342495326916}
+  ability: {fileID: 0}
   CrystalTransform: {fileID: 0}
   flowFieldData: {fileID: 0}
 --- !u!114 &6776027772320837218
@@ -2053,6 +2057,59 @@ MonoBehaviour:
   FollowTarget: {fileID: 0}
   FollowTargetPosition: {x: 0, y: 0, z: 0}
   isOrthographic: 0
+--- !u!1 &6632570642610713347
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 6152802953450880362}
+  - component: {fileID: 1077471832166960232}
+  m_Layer: 0
+  m_Name: WallAssembler
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &6152802953450880362
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6632570642610713347}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 808689176682098569}
+  m_RootOrder: 0
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1077471832166960232
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6632570642610713347}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ca5b7b07910bd714c8f2c88c70b1f30a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  RightMate: {fileID: 0}
+  LeftMate: {fileID: 0}
+  TopIsBonded: 0
+  RightIsBonded: 0
+  BottomIsBonded: 0
+  LeftIsBonded: 0
+  WallBlock: {fileID: 0}
+  colliderTheshold: 25
+  radius: 40
 --- !u!1 &6675130274311316141
 GameObject:
   m_ObjectHideFlags: 0

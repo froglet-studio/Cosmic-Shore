@@ -26,7 +26,7 @@ namespace CosmicShore.Game.Arcade
 
             TrailSpawner.NukeTheTrails();
 
-            SegmentSpawner.numberOfSegments = 60;
+            SegmentSpawner.NumberOfSegments = 60;
             SegmentSpawner.Initialize();
 
             Crystal.transform.position = CrystalStartPosition;
