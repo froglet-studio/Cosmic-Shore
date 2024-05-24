@@ -6,7 +6,6 @@ using CosmicShore.Integrations.PlayFab.Utility;
 using PlayFab;
 using UnityEngine;
 using UnityEngine.UI;
-using VContainer;
 
 namespace Scenes.TestScenes.Playfab_Sandbox_Test
 {
@@ -24,8 +23,8 @@ namespace Scenes.TestScenes.Playfab_Sandbox_Test
         [SerializeField] private Button removeInvCollectionButton;
 
         // Vessel Data related instances
-        private static GuideDataAccessor guideDataAccessor;
-        private static List<GuideData> guideDataList;
+        private static GuideDataAccessor _guideDataAccessor;
+        private static List<GuideData> _guideDataList;
         
         // test strings
         const string MantaShipUpgrade1Id = "6b5264af-4645-4aaa-8228-3b35ed379585";
@@ -33,13 +32,13 @@ namespace Scenes.TestScenes.Playfab_Sandbox_Test
         const string ElementalCrystalId = "06bcebb1-dc41-49a8-82b0-96a15ced7c1c";
         private const string CrystalId = "51392e05-9072-43a9-ae2d-4a3335dbf313";
 
-        [Inject] private CatalogManager _catalogManager;
+        private static CatalogManager CatalogManager => CatalogManager.Instance;
     
         // Start is called before the first frame update
         void Start()
         {
-            guideDataAccessor ??= new GuideDataAccessor();
-            guideDataList ??= new List<GuideData>();
+            _guideDataAccessor ??= new GuideDataAccessor();
+            _guideDataList ??= new List<GuideData>();
         }
 
         private void OnEnable()
@@ -82,7 +81,7 @@ namespace Scenes.TestScenes.Playfab_Sandbox_Test
             var mantaSpaceUpgrade1 = new VirtualItem { ItemId = MantaShipUpgrade1Id, ContentType = nameof(GuideLevel.Upgrade3), Amount = 1 };
             
             // Parameter order note: item first, currency second
-            _catalogManager.PurchaseItem(mantaSpaceUpgrade1, elementalCrystal1);
+            CatalogManager.PurchaseItem(mantaSpaceUpgrade1, elementalCrystal1);
 
             SaveGuideData(GuideLevel.Upgrade3, MantaShipUpgrade1Id, 1 );
             Debug.LogFormat("{0} - {1}: vessel info {2} saved to local storage.", nameof(CatalogView), nameof(PurchaseUpgradeTest), nameof(mantaSpaceUpgrade1)); 
@@ -93,7 +92,7 @@ namespace Scenes.TestScenes.Playfab_Sandbox_Test
             var vesselShard2 = new ItemPrice{ItemId = ElementalCrystalId, Amount = 10};
             var mantaSpaceUpgrade2 = new VirtualItem { ItemId = MantaShipUpgrade2Id, Amount = 1 };
  
-            _catalogManager.PurchaseItem(mantaSpaceUpgrade2, vesselShard2);
+            CatalogManager.PurchaseItem(mantaSpaceUpgrade2, vesselShard2);
             SaveGuideData(GuideLevel.Upgrade3, MantaShipUpgrade2Id, 2 );
             Debug.LogFormat("{0} - {1}: vessel info {2} saved to local storage.", nameof(CatalogView), nameof(PurchaseUpgradeTest), nameof(mantaSpaceUpgrade2));
             LoadGuideData();
@@ -109,7 +108,7 @@ namespace Scenes.TestScenes.Playfab_Sandbox_Test
             var vesselShards = new VirtualItem { ItemId = ElementalCrystalId, Amount = 10 };
 
             
-            _catalogManager.PurchaseItem(vesselShards, shardPrice);
+            CatalogManager.PurchaseItem(vesselShards, shardPrice);
         }
 
         /// <summary>
@@ -133,7 +132,7 @@ namespace Scenes.TestScenes.Playfab_Sandbox_Test
                 Amount = 10
             };
             var startingItems = new List<VirtualItem> { vesselShard, crystals };
-            _catalogManager.GrantStartingInventory(startingItems);
+            CatalogManager.GrantStartingInventory(startingItems);
         }
 
         /// <summary>
@@ -144,7 +143,7 @@ namespace Scenes.TestScenes.Playfab_Sandbox_Test
             // var filter = "ContentType eq 'Vessel' and tags/any(t: t eq 'Rhino')";
         
             // Default filter is "", which means load without filter
-            _catalogManager.LoadCatalogItems();
+            CatalogManager.LoadCatalogItems();
         }
     
         /// <summary>
@@ -153,7 +152,7 @@ namespace Scenes.TestScenes.Playfab_Sandbox_Test
         /// </summary>
         private void LoadInventoryTest()
         {
-            _catalogManager.LoadPlayerInventory();
+            CatalogManager.LoadPlayerInventory();
         }
 
         /// <summary>
@@ -165,8 +164,8 @@ namespace Scenes.TestScenes.Playfab_Sandbox_Test
         private void SaveGuideData(GuideLevel guideLevel, string guideId, int upgradeLevel)
         {
             GuideData guideData = new(guideId, upgradeLevel);
-            guideDataList.Add(guideData);
-            guideDataAccessor.Save(guideLevel, guideDataList);
+            _guideDataList.Add(guideData);
+            _guideDataAccessor.Save(guideLevel, _guideDataList);
         }
         
         /// <summary>
@@ -174,7 +173,7 @@ namespace Scenes.TestScenes.Playfab_Sandbox_Test
         /// </summary>
         private void LoadGuideData()
         {
-            var guideUpgradeLevels = guideDataAccessor.Load();
+            var guideUpgradeLevels = _guideDataAccessor.Load();
             foreach (var level in guideUpgradeLevels)
             {
                 Debug.LogFormat("{0} - {1}: Guide: {2}  loaded.", nameof(CatalogView), nameof(PurchaseUpgradeTest), level.Key);
@@ -191,7 +190,7 @@ namespace Scenes.TestScenes.Playfab_Sandbox_Test
         /// </summary>
         private void RemoveInventoryCollectionTest()
         {
-            _catalogManager.GetInventoryCollectionIds();
+            CatalogManager.GetInventoryCollectionIds();
         }
 
         /// <summary>
@@ -203,7 +202,7 @@ namespace Scenes.TestScenes.Playfab_Sandbox_Test
             foreach (var id in collectionIds)
             {
                 Debug.LogFormat("{0} - {1} collection id: .", nameof(CatalogView), nameof(RemoveInventoryCollection));
-                _catalogManager.DeleteInventoryCollection(id);
+                CatalogManager.DeleteInventoryCollection(id);
             }
         }
 

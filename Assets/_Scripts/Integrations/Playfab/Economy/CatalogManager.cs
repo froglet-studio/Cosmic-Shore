@@ -23,13 +23,14 @@ namespace CosmicShore.Integrations.PlayFab.Economy
         public static Inventory Inventory { get; private set; } = new();
 
         public static Dictionary<string, string> Bundles { get; private set; } = new();
+        
+        // public delegate void GettingBundleIdEvent(string bundleId);
+        // public static event GettingBundleIdEvent OnGettingBundleId;
         public static event Action<string> OnGettingBundleId;
 
         int _dailyRewardIndex;
 
         const string DailyRewardStoreID = "63d59c05-2b86-4843-8e9b-61c07ab121ad";
-        const string ClaimDailyRewardTime = "ClaimDailyRewardTime";
-        
         
         void Start()
         {
@@ -650,22 +651,11 @@ namespace CosmicShore.Integrations.PlayFab.Economy
             Bundles.TryGetValue("Test Bundle", out testBundleId);
             
             // TODO: This one is for testing, can be changed to any bundle id you want later
-            if (string.IsNullOrEmpty(testBundleId)) {Debug.Log($"CatalogManager.GetBundle() - Test Bundle Id is not here");return;}
+            // if (string.IsNullOrEmpty(testBundleId)) {Debug.Log($"CatalogManager.GetBundle() - Test Bundle Id is not here");return;}
             Debug.Log($"CatalogManager.GetBundles() - Test Bundle Id: {testBundleId}");
             OnGettingBundleId?.Invoke(testBundleId);
         }
-
-        // public void BuyBundle()
-        // {
-        //     _playFabEconomyInstanceAPI ??=
-        //         new(AuthenticationManager.PlayFabAccount.AuthContext);
-        //
-        //     // ItemPurchaseRequest;
-        //     // PurchaseItemRequest;
-        //     // AddInventoryItemsRequest;
-        //     // PurchaseInventoryItemsRequest;
-        //     // UpdateInventoryItemsRequest;
-        // }
+        
         /// <summary>
         /// Purchase a bundle
         /// </summary>
