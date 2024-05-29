@@ -14,15 +14,18 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Class: 0
   Name: Random
+  Summary: '[Placeholder Summary Text]'
   Description: Roll the dice
   Icon: {fileID: 21300000, guid: 88020190113f0bb48b779ac6c1e4f467, type: 3}
   SelectedIcon: {fileID: 21300000, guid: d99f0b8a50d1ca646b2ae12a81d6f8b7, type: 3}
-  TrailPreviewImage: {fileID: 21300000, guid: ec56e21c3a9226c47816974bb0b6fd46, type: 3}
+  PreviewClip: {fileID: 2096801853598961014, guid: 6b8d168238dc02149b26d1221d313893,
+    type: 3}
   PreviewImage: {fileID: 6684065222803499413, guid: 3da05e9f66c9f254c8875335e7e9179e,
     type: 3}
-  ChargePilot: {fileID: 11400000, guid: 6d520cd7eb8878b4aa2551e0591bc08d, type: 2}
-  MassPilot: {fileID: 11400000, guid: 2e5f4ffcc1432904db324d970ab221c4, type: 2}
-  SpacePilot: {fileID: 11400000, guid: 33dfe353bacfe9741a371ea3deaba88e, type: 2}
-  TimePilot: {fileID: 11400000, guid: 5ac362560a34d414e835db83e82daa08, type: 2}
+  TrailPreviewImage: {fileID: 21300000, guid: ec56e21c3a9226c47816974bb0b6fd46, type: 3}
+  CardSilohoutte: {fileID: 0}
+  CardSilohoutteActive: {fileID: 0}
   Abilities: []
-  MiniGames: []
+  Guides: []
+  TrainingProgression: {fileID: 0}
+  TrainingGames: []

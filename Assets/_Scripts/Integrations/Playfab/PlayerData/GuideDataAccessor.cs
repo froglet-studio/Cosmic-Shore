@@ -25,8 +25,7 @@ namespace CosmicShore.Integrations.PlayFab.PlayerModels
 
             GuideUpgradeLevels[guideLevel] = guideDataList;
 
-            DataAccessor dataAccessor = new(GuideDataFileName);
-            dataAccessor.Save(GuideUpgradeLevels);
+            DataAccessor.Save(GuideDataFileName, GuideUpgradeLevels);
         }
 
         /// <summary>
@@ -35,8 +34,7 @@ namespace CosmicShore.Integrations.PlayFab.PlayerModels
         /// <returns>Dictionary of Ship Types and Guide Data List</returns>
         public Dictionary<GuideLevel, List<GuideData>> Load()
         {
-            DataAccessor dataAccessor = new(GuideDataFileName);
-            return dataAccessor.Load<Dictionary<GuideLevel, List<GuideData>>>();
+            return DataAccessor.Load<Dictionary<GuideLevel, List<GuideData>>>(GuideDataFileName);
         }
     }
 }

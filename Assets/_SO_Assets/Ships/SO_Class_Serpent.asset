@@ -14,9 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Class: 7
   Name: Serpent
+  Summary: '[Placeholder Summary Text]'
   Description: Make those walls
   Icon: {fileID: 21300000, guid: 3a6fc9befce30444884fe8912d237f2e, type: 3}
   SelectedIcon: {fileID: 21300000, guid: 4dc09966e540a9c4c8bb466918fe43e9, type: 3}
+  PreviewClip: {fileID: 2096801853598961014, guid: 6b8d168238dc02149b26d1221d313893,
+    type: 3}
   PreviewImage: {fileID: 21300000, guid: b3fe0f4b92e2cf74b830808e3f8d88fc, type: 3}
   TrailPreviewImage: {fileID: 21300000, guid: 2e75f6670391025489d30c8361fb8de3, type: 3}
   CardSilohoutte: {fileID: 21300000, guid: 20c2cf23262a5354a8f8a0808a3acea8, type: 3}
@@ -28,10 +31,10 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 2c4bb3cbbacfb02489a36a11aa4c3d1e, type: 2}
   - {fileID: 11400000, guid: 094b4c0cea37d4a4fb02edf8122006d1, type: 2}
   Guides:
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
+  - {fileID: 11400000, guid: 7d2c8f9dc64f5e54ab64e0a134800169, type: 2}
+  - {fileID: 11400000, guid: 0faece9fdfd892447bb8c90529873511, type: 2}
+  - {fileID: 11400000, guid: afe308c5fbc1dc14a9ee07e455cdb2c6, type: 2}
+  - {fileID: 11400000, guid: f306b7034eb199b48986c56a2b76825d, type: 2}
   TrainingProgression: {fileID: 0}
   TrainingGames:
   - {fileID: 11400000, guid: dae692490d41dda488bf199e4fdb30af, type: 2}

@@ -1,4 +1,5 @@
 using CosmicShore.App.Systems.UserActions;
+using CosmicShore.App.UI.Menus;
 using CosmicShore.Core;
 using System;
 using System.Collections;
@@ -39,6 +40,8 @@ namespace CosmicShore.App.UI
 
         [SerializeField] Transform NavBar;
         [SerializeField] List<ScreenAnimator> NavigateToScreenAnimations;
+
+        [SerializeField] HangarMenu HangarMenu;
 
         Vector3 panelLocation;
         Coroutine navigateCoroutine;
@@ -158,6 +161,7 @@ namespace CosmicShore.App.UI
         }
         public void OnClickHangarNav()
         {
+            HangarMenu.LoadView();
             NavigateTo(HANGAR);
         }
         public void OnClickArcadeNav()

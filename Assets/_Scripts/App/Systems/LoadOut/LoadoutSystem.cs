@@ -13,28 +13,33 @@ namespace CosmicShore.App.Systems.Loadout
 
         static List<ArcadeGameLoadout> gameLoadouts;
 
+        /// <summary>
+        /// Loadout configurations automatically saved as the last game play configuration
+        /// </summary>
         const string GameLoadoutsSaveFileName = "game_loadouts.data";
+        /// <summary>
+        /// Loadout configurations explicitly created by the player
+        /// </summary>
+        const string PlayerLoadoutsSaveFileName = "loadouts.data";
 
 
         public static void Init()
         {
-            var dataAccessor = new DataAccessor("loadouts.data");
-            loadouts = dataAccessor.Load<List<Loadout>>();
+            gameLoadouts = DataAccessor.Load<List<ArcadeGameLoadout>>(GameLoadoutsSaveFileName);
+            loadouts = DataAccessor.Load<List<Loadout>>(PlayerLoadoutsSaveFileName);
 
+            // Save file doesn't exist yet, let's make it
             if (loadouts.Count == 0)
             {
                 loadouts = new List<Loadout>()
                 {
-                    new Loadout() { Intensity=1, PlayerCount=1, GameMode= MiniGames.BlockBandit, ShipType= ShipTypes.Manta},
-                    new Loadout() { Intensity=0, PlayerCount=0, GameMode= MiniGames.Random, ShipType= ShipTypes.Random},
-                    new Loadout() { Intensity=0, PlayerCount=0, GameMode= MiniGames.Random, ShipType= ShipTypes.Random},
-                    new Loadout() { Intensity=0, PlayerCount=0, GameMode= MiniGames.Random, ShipType= ShipTypes.Random},
+                    new() { Intensity=1, PlayerCount=1, GameMode= MiniGames.BlockBandit, ShipType= ShipTypes.Manta},
+                    new() { Intensity=0, PlayerCount=0, GameMode= MiniGames.Random, ShipType= ShipTypes.Random},
+                    new() { Intensity=0, PlayerCount=0, GameMode= MiniGames.Random, ShipType= ShipTypes.Random},
+                    new() { Intensity=0, PlayerCount=0, GameMode= MiniGames.Random, ShipType= ShipTypes.Random},
                 };
-                dataAccessor.Save(loadouts);
+                DataAccessor.Save(PlayerLoadoutsSaveFileName, loadouts);
             }
-
-            dataAccessor = new DataAccessor(GameLoadoutsSaveFileName);
-            gameLoadouts = dataAccessor.Load<List<ArcadeGameLoadout>>();
 
             activeLoadout = loadouts[0];
         }
@@ -98,8 +103,7 @@ namespace CosmicShore.App.Systems.Loadout
             if (!found)
                 gameLoadouts.Add(gameLoadout);
 
-            var dataAccessor = new DataAccessor(GameLoadoutsSaveFileName);
-            dataAccessor.Save<List<ArcadeGameLoadout>>(gameLoadouts);
+            DataAccessor.Save(GameLoadoutsSaveFileName, gameLoadouts);
         }
 
         public static void SetLoadout(Loadout loadout, int index)
@@ -109,8 +113,7 @@ namespace CosmicShore.App.Systems.Loadout
             if (index == ActiveLoadoutIndex)
                 activeLoadout = loadouts[index];
 
-            var dataAccessor = new DataAccessor("loadouts.data");
-            dataAccessor.Save<List<Loadout>>(loadouts);
+            DataAccessor.Save(PlayerLoadoutsSaveFileName, loadouts);
         }
         
         public static void SetActiveLoadoutIndex(int index) 

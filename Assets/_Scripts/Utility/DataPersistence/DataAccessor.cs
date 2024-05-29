@@ -5,19 +5,30 @@ using Newtonsoft.Json;
 using System.Text;
 using System;
 
-class DataAccessor
+/// <summary>
+/// Serializes objects to binary and saves to disk
+/// </summary>
+static class DataAccessor
 {
-    public string FilePath { get; set; }
-
-    public DataAccessor(string fileName)
+    /// <summary>
+    /// Helper method to convert a filename into a full path
+    /// </summary>
+    /// <param name="fileName">Filename to convert to a full path</param>
+    /// <returns></returns>
+    static string GetFilePath(string fileName)
     {
-        FilePath = Application.persistentDataPath + "/" + fileName;
+        return Application.persistentDataPath + "/" + fileName;
     }
 
-    public void Save<T>(T data) where T : new()
+    /// <summary>
+    /// Save a serializable object of type T to disk
+    /// </summary>
+    /// <typeparam name="T">Generic type of a serializable object</typeparam>
+    /// <param name="fileName">Filename to store the serialized object into</param>
+    /// <param name="data">Instance of the object to save</param>
+    public static void Save<T>(string fileName, T data) where T : new ()
     {
-
-        using FileStream dataStream = new FileStream(FilePath, FileMode.Create);
+        using FileStream dataStream = new FileStream(GetFilePath(fileName), FileMode.Create);
         BinaryFormatter converter = new BinaryFormatter();
         //converter.Serialize(dataStream, data);
 
@@ -29,9 +40,16 @@ class DataAccessor
         dataStream.Close();
     }
 
-    public T Load<T>() where T : new()
+    /// <summary>
+    /// Load a serializable object of type T to disk
+    /// </summary>
+    /// <typeparam name="T">Generic type of a serializable object</typeparam>
+    /// <param name="fileName">Filename to store the serialized object into</param>
+    /// <returns>The deserialized object data loaded from disk</returns>
+    public static T Load<T>(string fileName) where T : new()
     {
         T Data;
+        string FilePath = GetFilePath(fileName);
 
         if (File.Exists(FilePath))
         {
@@ -100,11 +118,15 @@ class DataAccessor
         return Data;
     }
 
-    public void Flush()
+    /// <summary>
+    /// Nuke the saved file.
+    /// </summary>
+    /// <param name="fileName">File to nuke</param>
+    public static void Flush(string fileName)
     {
-        if (File.Exists(FilePath))
+        if (File.Exists(GetFilePath(fileName)))
         {
-            File.Delete(FilePath);
+            File.Delete(GetFilePath(fileName));
         }
     }
 }
