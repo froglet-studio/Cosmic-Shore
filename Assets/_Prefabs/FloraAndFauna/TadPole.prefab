@@ -61,7 +61,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: f6f50ae5e91889b48b0516fa146dc790, type: 2}
+  - {fileID: 2100000, guid: 4f44fa5c7514a2c45b5af7f45bc51acd, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -130,6 +130,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 19b38987ca9e2974083abe50717ed186, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  healthBlock: {fileID: 0}
+  spindle: {fileID: 0}
+  minHealthBlocks: 0
+  activeCrystalMaterial: {fileID: 2100000, guid: 18c297a89c0d43e46bd4ea5bd6143ffb,
+    type: 2}
+  healthBlockContainer: {fileID: 0}
+  aggression: 0
   cohesionRadius: 20
   behaviorUpdateRate: 3
   separationRadius: 15
@@ -143,10 +150,12 @@ MonoBehaviour:
   Goal: {fileID: 0}
   DefaultGoal: {fileID: 0}
   normalizedIndex: 0
+  Mound: {fileID: 0}
   isKilled: 0
+  Team: 3
   collisionEffects: 01000000
-  activeCrystalMaterial: {fileID: 2100000, guid: 18c297a89c0d43e46bd4ea5bd6143ffb,
-    type: 2}
+  boidManager: {fileID: 0}
+  hasCrystal: 1
 --- !u!1 &5453519119934356950
 GameObject:
   m_ObjectHideFlags: 0
@@ -271,9 +280,9 @@ MonoBehaviour:
   ParticleEffect: {fileID: 3706253519474275301, guid: a8ae8dc22c65f554ea8bb6e1bf2458f1,
     type: 3}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
-  maxScale: {x: 10, y: 10, z: 10}
+  MaxScale: {x: 10, y: 10, z: 10}
   TargetScale: {x: 0.6, y: 0.6, z: 3}
-  growthVector: {x: 0, y: 2, z: 0}
+  GrowthVector: {x: 0, y: 2, z: 0}
   waitTime: 0.1
   destroyed: 0
   devastated: 0

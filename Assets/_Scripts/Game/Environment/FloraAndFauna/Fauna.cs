@@ -6,21 +6,16 @@ namespace CosmicShore
 {
     public abstract class Fauna : LifeForm
     {
-
+        [SerializeField] GameObject healthBlockContainer;
         public float aggression; 
 
         protected abstract void Spawn();
 
-        // Start is called before the first frame update
-        void Start()
+        protected override void Start()
         {
-        
+            base.Start();
+            if (healthBlockContainer) healthBlockContainer.GetComponentsInChildren<HealthBlock>(healthBlocks);
         }
 
-        // Update is called once per frame
-        void Update()
-        {
-        
-        }
     }
 }

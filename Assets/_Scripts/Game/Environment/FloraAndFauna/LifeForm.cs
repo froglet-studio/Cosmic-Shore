@@ -14,7 +14,7 @@ namespace CosmicShore
         [SerializeField] protected Spindle spindle;
         [SerializeField] protected int minHealthBlocks = 0;
 
-        private List<HealthBlock> healthBlocks = new List<HealthBlock>();
+        protected List<HealthBlock> healthBlocks = new List<HealthBlock>();
         private List<Spindle> spindles = new List<Spindle>();
 
         protected Crystal crystal;
@@ -59,17 +59,28 @@ namespace CosmicShore
         {
             if (healthBlocks.Count == minHealthBlocks)
             {
-                Die();
+                StartCoroutine(DieCoroutine());
             }
+        }
+
+        IEnumerator DieCoroutine()
+        {
+            yield return new WaitForSeconds(1f);
+            Die();
+        }
+
+        void KillCrystal() // TODO: handle this with crystal.Activate()
+        {
+            crystal.transform.parent = node.transform; 
+            crystal.gameObject.GetComponent<SphereCollider>().enabled = true;
+            crystal.enabled = true;
+            crystal.GetComponentInChildren<SkinnedMeshRenderer>().material = activeCrystalMaterial; // TODO: make a crytal material set that this pulls from using the element
         }
 
         protected virtual void Die()
         {
-            crystal.transform.parent = node.transform; // TODO: handle this with crystal.Activate()
-            crystal.gameObject.GetComponent<SphereCollider>().enabled = true;
-            crystal.enabled = true;
+            KillCrystal(); // TODO: handle this with crystal.Activate()
 
-            crystal.GetComponentInChildren<SkinnedMeshRenderer>().material = activeCrystalMaterial; // TODO: make a crytal material set that this pulls from using the element
             StopAllCoroutines();
             Destroy(gameObject);
             return;
