@@ -1,3 +1,5 @@
+using UnityEngine;
+
 namespace CosmicShore
 {
     public abstract class Fauna : LifeForm
