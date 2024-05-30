@@ -52,10 +52,6 @@ namespace CosmicShore.Integrations.PlayFab.Economy
             AuthenticationManager.OnLoginSuccess -= GetDailyRewardStore;
 
             NetworkMonitor.NetworkConnectionLost -= Inventory.LoadFromDisk;
-
-            StoreShelve = null;
-            Inventory = null;
-            // AuthenticationManager.OnRegisterSuccess -= GrantStartingInventory;
         }
 
         #region Initialize PlayFab Economy API with Auth Context
