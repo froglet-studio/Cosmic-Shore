@@ -20,7 +20,7 @@ MonoBehaviour:
   CardBackground: {fileID: 21300000, guid: bd7a8cdc016c46b48ac0e048f42cf948, type: 3}
   PreviewClip: {fileID: 241334157148977051, guid: b2779f5eadc28b4429d1fcb4d5f9f731,
     type: 3}
-  Vessels:
+  Captains:
   - {fileID: 11400000, guid: b997308bc8cf75249adf9ca2126a3789, type: 2}
   GolfScoring: 1
   MinPlayers: 1

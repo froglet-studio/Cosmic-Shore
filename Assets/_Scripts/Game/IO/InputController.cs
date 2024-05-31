@@ -566,5 +566,10 @@ namespace CosmicShore.Game.IO
             }
             return touchIndex;
         }
+
+        public static bool UsingGamepad()
+        {
+            return Gamepad.current != null;
+        }
     }
 }

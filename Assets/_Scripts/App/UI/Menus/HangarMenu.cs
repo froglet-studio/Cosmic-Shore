@@ -1,11 +1,8 @@
 using CosmicShore.Core;
-using CosmicShore.Utility.ClassExtensions;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using Unity.Mathematics;
 using UnityEngine;
-using UnityEngine.Serialization;
 using UnityEngine.UI;
 
 namespace CosmicShore.App.UI.Menus
@@ -37,17 +34,14 @@ namespace CosmicShore.App.UI.Menus
         [SerializeField] GameObject SelectedAbilityPreviewWindow;
 
         [Header("Captains UI")]
-        [FormerlySerializedAs("GuidesView")]
         [SerializeField] GameObject CaptainsView;
-        [FormerlySerializedAs("SelectedGuideName")]
         [SerializeField] TMPro.TMP_Text SelectedCaptainName;
         [SerializeField] TMPro.TMP_Text SelectedCaptainElementLabel;
-        [FormerlySerializedAs("SelectedGuideFlavor")]
         [SerializeField] TMPro.TMP_Text SelectedCaptainQuote;
-        [FormerlySerializedAs("SelectedGuideImage")]
         [SerializeField] Image SelectedCaptainImage;
-        [FormerlySerializedAs("UpgradeSelectionContainer")]
         [SerializeField] Transform CaptainSelectionContainer;
+        [SerializeField] Sprite CaptainSelectButtonBorderSpriteSelected;
+        [SerializeField] Sprite CaptainSelectButtonBorderSpriteDeselected;
 
         [Header("Captains - Upgrades UI")]
         [SerializeField] TMPro.TMP_Text SelectedUpgradeDescription;
@@ -65,7 +59,7 @@ namespace CosmicShore.App.UI.Menus
 
         List<SO_Ship> Ships;
         SO_Ship SelectedShip;
-        SO_Guide SelectedCaptain;
+        SO_Captain SelectedCaptain;
         SO_ArcadeGame SelectedGame;
         SO_ShipAbility SelectedAbility;
         int _legitShipCount;
@@ -150,16 +144,17 @@ namespace CosmicShore.App.UI.Menus
                 CaptainSelectionContainer.GetChild(i).gameObject.SetActive(false);
 
             // Reactivate based on the number of abilities for the selected ship
-            for (var i = 0; i < SelectedShip.Guides.Count; i++)
+            for (var i = 0; i < SelectedShip.Captains.Count; i++)
             {
                 var selectionIndex = i;
-                var guide = SelectedShip.Guides[i];
-                Debug.Log($"Populating Guide Select List: {guide?.Name}");
+                var captain = SelectedShip.Captains[i];
+                Debug.Log($"Populating Captain Select List: {captain?.Name}");
                 var captainSelection = CaptainSelectionContainer.GetChild(i).gameObject;
                 captainSelection.SetActive(true);
-                captainSelection.GetComponent<Image>().sprite = guide?.Icon;
+                //captain.
+                captainSelection.GetComponent<Image>().sprite = captain?.Icon;
                 captainSelection.GetComponent<Button>().onClick.RemoveAllListeners();
-                captainSelection.GetComponent<Button>().onClick.AddListener(() => SelectPilot(selectionIndex));
+                captainSelection.GetComponent<Button>().onClick.AddListener(() => SelectCaptain(selectionIndex));
                 captainSelection.GetComponent<Button>().onClick.AddListener(() => CaptainSelectionContainer.GetComponent<MenuAudio>().PlayAudio());
             }
 
@@ -266,7 +261,7 @@ namespace CosmicShore.App.UI.Menus
             PopulateShipDetails();
 
             // populate the games list with the one's games
-            PopulateAbilitySelectionList(); //TODO: P0 - We no longer need to dynamically populate these event listeners since there is always a fixed number of abilities and captains now
+            PopulateAbilitySelectionList(); // TODO: P0 - We no longer need to dynamically populate these event listeners since there is always a fixed number of abilities and captains now
             PopulateCaptainSelectionList();
             StartCoroutine(SelectCaptainCoroutine(0));
         }
@@ -302,37 +297,44 @@ namespace CosmicShore.App.UI.Menus
             PopulateAbilityDetails();
         }
 
-        /* Selects the Guide in the UI for display */
+        /* Selects the Captain in the UI for display */
         /// <summary>
-        /// Select a Guide in the UI to display its meta data
-        /// TODO: Add UI Guide Assets for Urchin and Bufo when they are available
+        /// Select a Captain in the UI to display its meta data
+        /// TODO: Add UI Captain Assets for Urchin and Bufo when they are available
+        /// TODO: WIP Convert this UI element to a card
         /// </summary>
-        /// <param name="index">Index of the displayed Guide list</param>
-        public void SelectPilot(int index)
+        /// <param name="index">Index of the displayed Captain list</param>
+        public void SelectCaptain(int index)
         {
-            Debug.Log($"SelectGuide: {index}");
+            Debug.Log($"SelectCaptain: {index}");
 
             try
             {
                 // Deselect them all
                 for (var i = 0; i < 4; i++)
-                    CaptainSelectionContainer.GetChild(i).gameObject.GetComponent<Image>().sprite =
-                        SelectedShip.Guides[i].Icon;
+                {
+                    // Deselect the border image
+                    CaptainSelectionContainer.GetChild(i).gameObject.GetComponent<Image>().sprite = CaptainSelectButtonBorderSpriteDeselected;
+                    // Deselect the captains element image
+                    CaptainSelectionContainer.GetChild(i).GetChild(0).gameObject.GetComponent<Image>().sprite = SelectedShip.Captains[i].Icon;
+                    // TODO: WIP - adjust the above to use the so_element's upgrade level corresponding to the captains current upgrade status
+                }
 
-                // Select the one
-                SelectedCaptain = SelectedShip.Guides[index];
-                CaptainSelectionContainer.GetChild(index).gameObject.GetComponent<Image>().sprite =
-                    SelectedCaptain.SelectedIcon;
+                // Select the border image
+                // Select the captains element image
+                SelectedCaptain = SelectedShip.Captains[index];
+                CaptainSelectionContainer.GetChild(index).gameObject.GetComponent<Image>().sprite = CaptainSelectButtonBorderSpriteSelected;                
+                CaptainSelectionContainer.GetChild(index).GetChild(0).gameObject.GetComponent<Image>().sprite = SelectedCaptain.SelectedIcon;
             }
             catch (ArgumentOutOfRangeException argumentOutOfRangeException)
             {
-                Debug.LogWarningFormat("{0} - {1} - The ship lacks guide assets. Please add them. {2}", nameof(HangarMenu),
-                    nameof(SelectPilot), argumentOutOfRangeException.Message);
+                Debug.LogWarningFormat("{0} - {1} - The ship lacks captain assets. Please add them. {2}", nameof(HangarMenu),
+                    nameof(SelectCaptain), argumentOutOfRangeException.Message);
             }
             catch (NullReferenceException nullReferenceException)
             {
-                Debug.LogWarningFormat("{0} - {1} - The ship lacks guide assets. Please add them. {2}", nameof(HangarMenu),
-                    nameof(SelectPilot), nullReferenceException.Message);
+                Debug.LogWarningFormat("{0} - {1} - The ship lacks captain assets. Please add them. {2}", nameof(HangarMenu),
+                    nameof(SelectCaptain), nullReferenceException.Message);
             }
 
             PopulateCaptainDetails();
@@ -348,24 +350,22 @@ namespace CosmicShore.App.UI.Menus
             try
             {
                 // Deselect them all
-                for (var i = 0; i < 4; i++)
-                    GameSelectionContainer.GetChild(i).gameObject.GetComponent<Image>().sprite =
-                        SelectedShip.TrainingGames[i].Icon;
+                for (var i = 0; i < 2; i++)
+                    GameSelectionContainer.GetChild(i).gameObject.GetComponent<Image>().sprite = SelectedShip.Games[i].Icon;
 
                 // Select the one
-                SelectedGame = SelectedShip.TrainingGames[index];
-                GameSelectionContainer.GetChild(index).gameObject.GetComponent<Image>().sprite =
-                    SelectedGame.SelectedIcon;
+                SelectedGame = SelectedShip.Games[index];
+                GameSelectionContainer.GetChild(index).gameObject.GetComponent<Image>().sprite = SelectedGame.SelectedIcon;
             }
             catch (ArgumentOutOfRangeException argumentOutOfRangeException)
             {
                 Debug.LogWarningFormat("{0} - {1} - The ship lacks training games. Please add them. {2}", nameof(HangarMenu),
-                    nameof(SelectPilot), argumentOutOfRangeException.Message);
+                    nameof(SelectCaptain), argumentOutOfRangeException.Message);
             }
             catch (NullReferenceException nullReferenceException)
             {
                 Debug.LogWarningFormat("{0} - {1} - The ship lacks training games. Please add them. {2}", nameof(HangarMenu),
-                    nameof(SelectPilot), nullReferenceException.Message);
+                    nameof(SelectCaptain), nullReferenceException.Message);
             }
 
             PopulateTrainingGameDetails();
@@ -381,7 +381,7 @@ namespace CosmicShore.App.UI.Menus
         IEnumerator SelectCaptainCoroutine(int index)
         {
             yield return new WaitForEndOfFrame();
-            SelectPilot(index);
+            SelectCaptain(index);
         }
 
         IEnumerator SelectShipCoroutine(HangarShipSelectCard shipSelectCard)

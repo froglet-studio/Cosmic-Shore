@@ -5,6 +5,7 @@ using UnityEngine;
 [Serializable]
 public class ElementalFloat
 {
+    [SerializeField] public bool Enabled;
     [SerializeField] public float Value;
     [SerializeField] float Min;
     [SerializeField] float Max;
@@ -28,14 +29,15 @@ public class ElementalFloat
         {
             ship = value;
 
-            if (element != Element.None)
+            if (Enabled)
             {
-                ship.NotifyElementalFloatBinding(name, element);
+                ship.BindElementalFloat(name, element);
                 ship.ResourceSystem.OnElementLevelChange += ScaleValueWithLevel;
             }
         }
     }
 
+    // TODO: need to convert this to an exponential curve instead of linear
     void ScaleValueWithLevel(Element element, int level)
     {
         Debug.Log($"Elemental Float: UpdateLevel: element{element}, level: {level}");

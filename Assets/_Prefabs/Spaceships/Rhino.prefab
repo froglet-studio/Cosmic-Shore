@@ -591,6 +591,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ZoomOutRate: 8
   ZoomInRate:
+    Enabled: 1
     Value: 8
     Min: 20
     Max: 4
@@ -717,12 +718,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   minSize: 1
   maxSize:
+    Enabled: 1
     Value: 3
     Min: 2
     Max: 4
     element: 2
   growRate: 3
   shrinkRate:
+    Enabled: 0
     Value: 1
     Min: 0
     Max: 0
@@ -893,12 +896,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   minSize: 20
   maxSize:
+    Enabled: 0
     Value: 80
     Min: 0
     Max: 0
     element: 0
   growRate: 8
   shrinkRate:
+    Enabled: 1
     Value: 8
     Min: 20
     Max: 4
@@ -1274,6 +1279,7 @@ MonoBehaviour:
   blockChargeChange: 0
   boostMultiplier: 6
   boostFuelAmount: -0.015
+  bottomEdgeButtons: 0
   inputEventShipActions:
   - InputEvent: 0
     ShipActions:
@@ -1282,13 +1288,6 @@ MonoBehaviour:
     - {fileID: 1315493734959331551}
     - {fileID: 5565916779484709519}
   resourceEventClassActions: []
-  MassAbilityTarget: {fileID: 0}
-  ChargeAbilityTarget: {fileID: 0}
-  SpaceAbilityTarget: {fileID: 0}
-  TimeAbilityTarget: {fileID: 0}
-  ChargeAbility2Target: {fileID: 0}
-  LevelEffects: 
-  ControlOverrides: 0400000003000000
   closeCamDistance: -20
   farCamDistance: -80
   AOEExplosionMaterial: {fileID: 0}
@@ -1314,6 +1313,7 @@ MonoBehaviour:
   Turret: 0
   Portrait: 0
   SingleStickControls: 0
+  CommandStickControls: 0
   LiveProjectiles: 0
   Stationary: 0
   ElevatedAmmoGain: 0
@@ -1342,6 +1342,7 @@ MonoBehaviour:
   ThrottleScaler: 0
   DefaultMinimumSpeed: 10
   DefaultThrottleScaler:
+    Enabled: 1
     Value: 50
     Min: 40
     Max: 60
@@ -1367,9 +1368,9 @@ MonoBehaviour:
   skimmer: {fileID: 874579554510349383}
   waitTillOutsideSkimmer: 1
   shielded: 0
-  offset: 0
   initialWavelength: 5
   minWavelength: 5
+  offset: 0
   Gap: 2
   MinimumGap: 1
   TargetScale: {x: 0, y: 0, z: 0}
@@ -1397,11 +1398,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   displayBoost: 1
+  gainsBoost: 0
+  boostGainRate: 0.1
   initialBoost: 1
   maxBoost: 1
   displayAmmo: 0
   gainsAmmo: 0
   ammoGainRate:
+    Enabled: 0
     Value: 0.01
     Min: 0
     Max: 0
@@ -1456,12 +1460,15 @@ MonoBehaviour:
   YSum: 0
   XDiff: 0
   YDiff: 0
+  X: 0
+  Y: 0
   raycastHeight: 2
   raycastWidth: 2
   AutoPilotEnabled: 0
   LookingAtCrystal: 0
   ram: 1
   drift: 0
+  SingleStickControls: 0
   useAbility: 0
   abilityCooldown: 0
   ability: {fileID: 0}
@@ -1780,6 +1787,11 @@ PrefabInstance:
         type: 3}
       propertyPath: skimVisualFX
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
+      propertyPath: Scale.Enabled
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}

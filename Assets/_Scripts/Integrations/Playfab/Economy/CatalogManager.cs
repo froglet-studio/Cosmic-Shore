@@ -98,6 +98,8 @@ namespace CosmicShore.Integrations.PlayFab.Economy
                 OnLoadingCatalogItems,
                 PlayFabUtility.HandleErrorReport
             );
+
+
         }
 
         /// <summary>
@@ -123,8 +125,8 @@ namespace CosmicShore.Integrations.PlayFab.Economy
             StoreShelve = new()
             {
                 crystals = new(),
-                ships = new(),
-                miniGames = new()
+                classes = new(),
+                games = new()
             };
 
             foreach (var item in response.Items)
@@ -133,23 +135,31 @@ namespace CosmicShore.Integrations.PlayFab.Economy
                 Debug.LogFormat("   CatalogManager - tags: {0}", string.Join(",", item.Tags));
                 Debug.LogFormat("   CatalogManager - Type: {0}", item.Type);
                 Debug.LogFormat("   CatalogManager - ContentType: {0}", item.ContentType);
-                var converted = ConvertToStoreItem(item);
+                var converted = ConvertCatalogItemToVirtualItem(item);
                 AddToStoreShelve(item.ContentType, converted);
             }
         }
 
         void AddToStoreShelve(string contentType, VirtualItem item)
         {
+            StoreShelve.allItems.Add(item.ItemId, item);
+
             switch (contentType)
             {
                 case "Crystal":
-                    StoreShelve.crystals.Add(item);
+                    StoreShelve.crystals.Add(item.ItemId, item);
                     break;
-                case "Ship":
-                    StoreShelve.ships.Add(item);
+                case "Class":
+                    StoreShelve.classes.Add(item.ItemId, item);
                     break;
-                case "MiniGame":
-                    StoreShelve.miniGames.Add(item);
+                case "Game":
+                    StoreShelve.games.Add(item.ItemId, item);
+                    break;
+                case "Captain":
+                    StoreShelve.captains.Add(item.ItemId, item);
+                    break;
+                case "CaptainUpgrade":
+                    StoreShelve.captainUpgrades.Add(item.ItemId, item);
                     break;
                 default:
                     Debug.LogWarningFormat("CatalogManager - AddToStoreSelves: item content type is not part of the store.");
@@ -157,34 +167,34 @@ namespace CosmicShore.Integrations.PlayFab.Economy
             }
         }
 
-        
+
 
         #endregion
 
         #region Inventory Operations
 
-        // TODO: Guide knowledge is now part of player data, not a store item. Should re-wire the API calls from PlayerDataController.
-        // public void GrantGuideKnowledge(int amount, ShipTypes shipClass, Element element)
+        // TODO: Captain XP is now part of player data, not a store item. Should re-wire the API calls from PlayerDataController.
+        // public void GrantCaptainXP(int amount, ShipTypes shipClass, Element element)
         // {
         //     string shardItemId = "";
-        //     Debug.Log($"Guide Knowledge Length: {Catalog.GuideKnowledge.Count}");
-        //     foreach (var guideKnowledge in Catalog.GuideKnowledge)
+        //     Debug.Log($"Captain Knowledge Length: {Catalog.CaptainXP.Count}");
+        //     foreach (var captainXP in Catalog.CaptainXP)
         //     {
-        //         Debug.Log($"Next Guide: {guideKnowledge.Name}");
-        //         foreach (var tag in guideKnowledge.Tags)
-        //             Debug.Log($"Guide Knowledge Tags: {tag}");
+        //         Debug.Log($"Next Captain: {captainXP.Name}");
+        //         foreach (var tag in captainXP.Tags)
+        //             Debug.Log($"Captain Knowledge Tags: {tag}");
         //
-        //         if (guideKnowledge.Tags.Contains(shipClass.ToString()) && guideKnowledge.Tags.Contains(element.ToString()))
+        //         if (captainXP.Tags.Contains(shipClass.ToString()) && captainXP.Tags.Contains(element.ToString()))
         //         {
-        //             Debug.Log($"Found matching Guidew Shard");
-        //             shardItemId = guideKnowledge.ItemId;
+        //             Debug.Log($"Found matching Captain Shard");
+        //             shardItemId = captainXP.ItemId;
         //             break;
         //         }
         //     }
         //
         //     if (string.IsNullOrEmpty(shardItemId))
         //     {
-        //         Debug.LogError($"{nameof(CatalogManager)}.{nameof(GrantGuideKnowledge)} - Error Granting Shards. No matching guide shard found in catalog - shipClass:{shipClass}, element:{element}");
+        //         Debug.LogError($"{nameof(CatalogManager)}.{nameof(GrantCaptainXP)} - Error Granting Shards. No matching captain shard found in catalog - shipClass:{shipClass}, element:{element}");
         //         return;
         //     }
         //
@@ -293,7 +303,7 @@ namespace CosmicShore.Integrations.PlayFab.Economy
                     nameof(CatalogManager), 
                     nameof(OnGettingInventoryItems), 
                     item.Id, item.Amount.ToString(), item.Type);
-                var virtualItem = ConvertToInventoryItem(item);
+                var virtualItem = ConvertInventoryItemToVirtualItem(item);
                 AddToInventory(virtualItem);
             }
 
@@ -315,19 +325,19 @@ namespace CosmicShore.Integrations.PlayFab.Economy
         {
             switch (item.ContentType)
             {
-                case "Guide":
-                    Debug.LogFormat("{0} - {1} - Adding Guide",nameof(CatalogManager), nameof(AddToInventory));
+                case "Captain":
+                    Debug.LogFormat("{0} - {1} - Adding Captain", nameof(CatalogManager), nameof(AddToInventory));
                     Inventory.captains.Add(item);
                     break;
-                case "ShipClass":
+                case "Class":
                     Debug.LogFormat("{0} - {1} - Adding Ship",nameof(CatalogManager), nameof(AddToInventory));
                     Inventory.shipClasses.Add(item);
                     break;
-                case "GuideUpgrade":
+                case "CaptainUpgrade":
                     Debug.LogFormat("{0} - {1} - Adding Upgrade",nameof(CatalogManager), nameof(AddToInventory));
                     Inventory.captainUpgrades.Add(item);
                     break;
-                case "MiniGame":
+                case "Game":
                     Debug.LogFormat("{0} - {1} - Adding MiniGame",nameof(CatalogManager), nameof(AddToInventory));
                     Inventory.games.Add(item);
                     break;
@@ -385,7 +395,7 @@ namespace CosmicShore.Integrations.PlayFab.Economy
 
         /// <summary>
         /// Add Items to Inventory
-        /// Add shinny new stuff! Any type of item from currency to guide and ship upgrades
+        /// Add shinny new stuff! Any type of item from currency to captain and ship upgrades
         /// </summary>
         //public void AddInventoryItem([NotNull] InventoryItemReference itemReference, int amount)
         public void AddInventoryItem(VirtualItem virtualItem)
@@ -541,10 +551,11 @@ namespace CosmicShore.Integrations.PlayFab.Economy
 
             foreach (var storeItem in result.Items)
             {
-                StoreShelve.dailyRewards.Add(ConvertToStoreItem(storeItem));
+                StoreShelve.dailyRewards.Add(storeItem.Id, ConvertCatalogItemToVirtualItem(storeItem));
+                StoreShelve.allItems.Add(storeItem.Id, ConvertCatalogItemToVirtualItem(storeItem));
             }
 
-            foreach (var dailyReward in StoreShelve.dailyRewards)
+            foreach (var dailyReward in StoreShelve.dailyRewards.Values)
             {
                 Debug.Log($"Catalog manager - OnGettingDailyRewardStore() - the stored daily rewards is: " +
                           $"id: {dailyReward.ItemId} " +
@@ -575,13 +586,13 @@ namespace CosmicShore.Integrations.PlayFab.Economy
         /// </summary>
         /// <param name="catalogItem"></param>
         /// <returns></returns>
-        VirtualItem ConvertToStoreItem(CatalogItem catalogItem)
+        VirtualItem ConvertCatalogItemToVirtualItem(CatalogItem catalogItem)
         {
             VirtualItem virtualItem = new();
             virtualItem.ItemId = catalogItem.Id;
             Debug.Log($"catalogItem.Title[\"NEUTRAL\"]: {catalogItem.Title["NEUTRAL"]}");
             virtualItem.Name = catalogItem.Title["NEUTRAL"];
-            virtualItem.Description = catalogItem.Description.TryGetValue("NEUTRAL",out var description)? description : "No Description";
+            virtualItem.Description = catalogItem.Description.TryGetValue("NEUTRAL", out var description)? description : "No Description";
             virtualItem.ContentType = catalogItem.ContentType;
             //virtualItem.BundleContents = catalogItem.Contents;
             //virtualItem.priceModel = PlayfabToCosmicShorePrice(catalogItem.PriceOptions);
@@ -592,19 +603,15 @@ namespace CosmicShore.Integrations.PlayFab.Economy
         }
 
         /// <summary>
-        /// Convert PlayFab Inventory Item to Cosmic Shore Virtual Item model
+        /// Load Cosmic Shore Virtual Item details for the corresponding PlayFab Inventory Item by looking it up on the store shelf
+        /// We load it from the store shelf since PF's inventory API doesn't return all of the expected fields (e.g the item's name)
         /// TODO: Should be put on model or a conversion services instead of Catalog Manager
         /// </summary>
         /// <param name="item"></param>
         /// <returns></returns>
-        VirtualItem ConvertToInventoryItem(InventoryItem item)
+        VirtualItem ConvertInventoryItemToVirtualItem(InventoryItem item)
         {
-            var virtualItem = new VirtualItem();
-            virtualItem.ItemId = item.Id;
-            virtualItem.Type = item.Type;
-            virtualItem.Amount = item.Amount;
-
-            return virtualItem;
+            return StoreShelve.allItems[item.Id];
         }
         #endregion
 

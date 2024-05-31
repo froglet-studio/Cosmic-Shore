@@ -26,8 +26,7 @@ namespace CosmicShore.Game.Arcade
         [SerializeField] float EndOfTurnDelay = 0f;
         [SerializeField] bool EnableTrails = true;
         [SerializeField] ShipTypes DefaultPlayerShipType = ShipTypes.Dolphin;
-        [FormerlySerializedAs("DefaultPlayerGuide")]
-        [SerializeField] SO_Guide DefaultPlayerCaptain;
+        [SerializeField] SO_Captain DefaultPlayerCaptain;
 
         protected Button ReadyButton;
         protected GameObject EndGameScreen;
@@ -56,7 +55,7 @@ namespace CosmicShore.Game.Arcade
                 playerShipTypeInitialized = true;
             }
         }
-        public static SO_Guide PlayerCaptain;
+        public static SO_Captain PlayerCaptain;
 
         // Game State Tracking
         protected int TurnsTakenThisRound = 0;
@@ -177,7 +176,7 @@ namespace CosmicShore.Game.Arcade
 
         public virtual void StartNewGame()
         {
-            //Debug.Log($"Playing as {PlayerGuide.Name} - \"{PlayerGuide.Description}\"");
+            //Debug.Log($"Playing as {PlayerCaptain.Name} - \"{PlayerCaptain.Description}\"");
             if (PauseSystem.Paused) PauseSystem.TogglePauseGame();
 
             RemainingPlayers = new();
@@ -350,7 +349,7 @@ namespace CosmicShore.Game.Arcade
             ActivePlayer.Ship.GetComponent<ShipTransformer>().Reset();
             ActivePlayer.Ship.TrailSpawner.PauseTrailSpawner();
             ActivePlayer.Ship.ResourceSystem.Reset();
-            ActivePlayer.Ship.SetGuide(PlayerCaptain);
+            ActivePlayer.Ship.AssignCaptain(PlayerCaptain);
 
             CameraManager.Instance.SetupGamePlayCameras(ActivePlayer.Ship.FollowTarget);
 
