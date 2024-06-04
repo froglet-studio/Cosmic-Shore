@@ -14,8 +14,8 @@ namespace CosmicShore.App.Ui.Menus
         [Header("MiniGame Purchasing")] 
         [SerializeField] private Button buyMiniGameButton;
  
-        [Header("Guide Upgrade Purchasing")] 
-        [SerializeField] private Button buyGuideUpgradeButton;
+        [Header("Captain Upgrade Purchasing")] 
+        [SerializeField] private Button buyCaptainUpgradeButton;
 
         // Upon claiming daily reward, the button non-clickable here on the menu
         // (Back-end) Notify the server for cool down time
@@ -52,10 +52,10 @@ namespace CosmicShore.App.Ui.Menus
             // TODO: back-end buy mini game
         }
 
-        public void BuyGuideUpgrade_OnClick()
+        public void BuyCaptainUpgrade_OnClick()
         {
-            Debug.LogFormat("{0} - {1} buying a guide upgrade.", nameof(StoreMenu), nameof(BuyGuideUpgrade_OnClick));
-            // TODO: back-end buy a guide upgrade.
+            Debug.LogFormat("{0} - {1} buying a captain upgrade.", nameof(StoreMenu), nameof(BuyCaptainUpgrade_OnClick));
+            // TODO: back-end buy a captain upgrade.
         }
     }
 }

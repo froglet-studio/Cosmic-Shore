@@ -33,7 +33,7 @@ namespace CosmicShore.App.UI.Menus
         public void OnClickSoar()
         {
             MiniGame.PlayerShipType = ShipTypes.Manta;
-            MiniGame.PlayerCaptain = Hangar.Instance.SoarGuide;
+            MiniGame.PlayerCaptain = Hangar.Instance.SoarCaptain;
             MiniGame.IntensityLevel = 1;
             MiniGame.NumberOfPlayers = 1;
 
@@ -42,7 +42,7 @@ namespace CosmicShore.App.UI.Menus
         public void OnClickSmash()
         {
             MiniGame.PlayerShipType = ShipTypes.Rhino;
-            MiniGame.PlayerCaptain = Hangar.Instance.SmashGuide;
+            MiniGame.PlayerCaptain = Hangar.Instance.SmashCaptain;
             MiniGame.IntensityLevel = 1;
             MiniGame.NumberOfPlayers = 1;
 
@@ -51,7 +51,7 @@ namespace CosmicShore.App.UI.Menus
         public void OnClickSport()
         {
             MiniGame.PlayerShipType = ShipTypes.Manta;
-            MiniGame.PlayerCaptain = Hangar.Instance.SportGuide;
+            MiniGame.PlayerCaptain = Hangar.Instance.SportCaptain;
             MiniGame.IntensityLevel = 1;
             MiniGame.NumberOfPlayers = 1;
 

@@ -1,0 +1,43 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0309a5343d820c14abd73b35f6fa50f1, type: 3}
+  m_Name: SO_Class_Manta
+  m_EditorClassIdentifier: 
+  Class: 1
+  Name: Manta
+  Summary: '[Placeholder Summary Text]'
+  Description: Soar with grace through open space on relaxing scouting missions,
+    or run a heist with a flyby. Either way you get to relax while helping your team.
+  Icon: {fileID: 21300000, guid: a89a335fa1c02f745ba93948c9b7ee32, type: 3}
+  SelectedIcon: {fileID: 21300000, guid: c954b73f8623fb04a94f12ee1b89f2b3, type: 3}
+  PreviewClip: {fileID: 2096801853598961014, guid: 6b8d168238dc02149b26d1221d313893,
+    type: 3}
+  PreviewImage: {fileID: 21300000, guid: b3fe0f4b92e2cf74b830808e3f8d88fc, type: 3}
+  TrailPreviewImage: {fileID: 21300000, guid: 2e75f6670391025489d30c8361fb8de3, type: 3}
+  CardSilohoutte: {fileID: 21300000, guid: 20c2cf23262a5354a8f8a0808a3acea8, type: 3}
+  CardSilohoutteActive: {fileID: 21300000, guid: a89a335fa1c02f745ba93948c9b7ee32,
+    type: 3}
+  Abilities:
+  - {fileID: 11400000, guid: cf4c7963673545946af80618f5a52917, type: 2}
+  - {fileID: 11400000, guid: 260209c83d5be594a81043ebceea8ddf, type: 2}
+  - {fileID: 11400000, guid: 2c4bb3cbbacfb02489a36a11aa4c3d1e, type: 2}
+  - {fileID: 11400000, guid: 094b4c0cea37d4a4fb02edf8122006d1, type: 2}
+  Captains:
+  - {fileID: 11400000, guid: 9e78c4ba90b2cf841b325a12353833dd, type: 2}
+  - {fileID: 11400000, guid: 2e5f4ffcc1432904db324d970ab221c4, type: 2}
+  - {fileID: 11400000, guid: 91999ba83c66ea648bf137138a53bf91, type: 2}
+  - {fileID: 11400000, guid: c7f13de7121d9a040a68f9988580feb0, type: 2}
+  TrainingProgression: {fileID: 0}
+  TrainingGames:
+  - {fileID: 11400000, guid: dae692490d41dda488bf199e4fdb30af, type: 2}
+  - {fileID: 11400000, guid: 176e63d5800dcf147b46497fd88e0fea, type: 2}
+  - {fileID: 11400000, guid: c5f6d2d7142557647b39c30f48495c67, type: 2}

@@ -46,20 +46,20 @@ namespace CosmicShore
         // Class SO
         SO_Ship newClassSO;
         // Training Vessel SO
-        SO_Guide newTrainingVesselSO_1;
-        SO_Guide newTrainingVesselSO_2;
-        SO_Guide newTrainingVesselSO_3;
-        SO_Guide newTrainingVesselSO_4;
+        SO_Captain newTrainingVesselSO_1;
+        SO_Captain newTrainingVesselSO_2;
+        SO_Captain newTrainingVesselSO_3;
+        SO_Captain newTrainingVesselSO_4;
         // Upgrade Vessel SO
-        SO_Guide newUpgradeVesselSO_1;
-        SO_Guide newUpgradeVesselSO_2;
-        SO_Guide newUpgradeVesselSO_3;
-        SO_Guide newUpgradeVesselSO_4;
+        SO_Captain newUpgradeVesselSO_1;
+        SO_Captain newUpgradeVesselSO_2;
+        SO_Captain newUpgradeVesselSO_3;
+        SO_Captain newUpgradeVesselSO_4;
         // Freestyle Vessel SO
-        SO_Guide newFreestyleVesselSO_1;
+        SO_Captain newFreestyleVesselSO_1;
         //Lists of VesselSO's
-        List<SO_Guide> TrainingVessels = new List<SO_Guide>();
-        List<SO_Guide> UpgradeVessels = new List<SO_Guide>();
+        List<SO_Captain> TrainingVessels = new List<SO_Captain>();
+        List<SO_Captain> UpgradeVessels = new List<SO_Captain>();
         #endregion
 
         private void OnEnable()
@@ -82,22 +82,22 @@ namespace CosmicShore
         {
             
             // Create an empty instance of the Element_Class Training ScriptableObject
-            newTrainingVesselSO_1 = SO_Guide.CreateInstance<SO_Guide>();
-            newTrainingVesselSO_2 = SO_Guide.CreateInstance<SO_Guide>();
-            newTrainingVesselSO_3 = SO_Guide.CreateInstance<SO_Guide>();
-            newTrainingVesselSO_4 = SO_Guide.CreateInstance<SO_Guide>();
+            newTrainingVesselSO_1 = SO_Captain.CreateInstance<SO_Captain>();
+            newTrainingVesselSO_2 = SO_Captain.CreateInstance<SO_Captain>();
+            newTrainingVesselSO_3 = SO_Captain.CreateInstance<SO_Captain>();
+            newTrainingVesselSO_4 = SO_Captain.CreateInstance<SO_Captain>();
             TrainingVessels.Add(newTrainingVesselSO_1);TrainingVessels.Add(newTrainingVesselSO_2); TrainingVessels.Add(newTrainingVesselSO_3); TrainingVessels.Add(newTrainingVesselSO_4);
 
             
             // Create an empty instance of the Element_Class Upgrade ScriptableObject
-            newUpgradeVesselSO_1 = SO_Guide.CreateInstance<SO_Guide>();
-            newUpgradeVesselSO_2 = SO_Guide.CreateInstance<SO_Guide>();
-            newUpgradeVesselSO_3 = SO_Guide.CreateInstance<SO_Guide>();
-            newUpgradeVesselSO_4 = SO_Guide.CreateInstance<SO_Guide>();
+            newUpgradeVesselSO_1 = SO_Captain.CreateInstance<SO_Captain>();
+            newUpgradeVesselSO_2 = SO_Captain.CreateInstance<SO_Captain>();
+            newUpgradeVesselSO_3 = SO_Captain.CreateInstance<SO_Captain>();
+            newUpgradeVesselSO_4 = SO_Captain.CreateInstance<SO_Captain>();
             UpgradeVessels.Add(newUpgradeVesselSO_1); UpgradeVessels.Add(newUpgradeVesselSO_2); UpgradeVessels.Add(newUpgradeVesselSO_3); UpgradeVessels.Add(newUpgradeVesselSO_4);
 
             // Create an empty instance of the Element_Class Freestyle ScriptableObject
-            newFreestyleVesselSO_1 = SO_Guide.CreateInstance<SO_Guide>();
+            newFreestyleVesselSO_1 = SO_Captain.CreateInstance<SO_Captain>();
         }
 
         #endregion
@@ -223,10 +223,10 @@ namespace CosmicShore
             return AssetDatabase.LoadAssetAtPath<SO_Ship>(assetPath);
         }
 
-        public static SO_Guide CreateVesselScriptableObject(string name,string element, bool training, string classSOName)
+        public static SO_Captain CreateVesselScriptableObject(string name,string element, bool training, string classSOName)
         {
             // Create an instance of the ScriptableObject
-            SO_Guide VesselSO = SO_Guide.CreateInstance<SO_Guide>();
+            SO_Captain VesselSO = SO_Captain.CreateInstance<SO_Captain>();
 
             // Set the values of the ScriptableObject
             VesselSO.name = name;                                            //Sets File Name
@@ -268,13 +268,13 @@ namespace CosmicShore
             AssetDatabase.Refresh();
 
             // Return a reference to the created asset
-            return AssetDatabase.LoadAssetAtPath<SO_Guide>(assetPath);
+            return AssetDatabase.LoadAssetAtPath<SO_Captain>(assetPath);
         }
 
-        public static SO_Guide CreateFreestyleVesselScriptableObject(string name)
+        public static SO_Captain CreateFreestyleVesselScriptableObject(string name)
         {
             // Create an instance of the ScriptableObject
-            SO_Guide VesselSO = SO_Guide.CreateInstance<SO_Guide>();
+            SO_Captain VesselSO = SO_Captain.CreateInstance<SO_Captain>();
 
             // Set the value of the ScriptableObject
             VesselSO.name = name;                                            //Sets File Name 
@@ -293,7 +293,7 @@ namespace CosmicShore
             AssetDatabase.Refresh();
 
             // Return a reference to the created asset
-            return AssetDatabase.LoadAssetAtPath<SO_Guide>(assetPath);
+            return AssetDatabase.LoadAssetAtPath<SO_Captain>(assetPath);
         }       
     }
 }

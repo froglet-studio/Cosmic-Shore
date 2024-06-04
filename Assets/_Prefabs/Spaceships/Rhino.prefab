@@ -592,6 +592,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ZoomOutRate: 8
   ZoomInRate:
+    Enabled: 1
     Value: 8
     Min: 20
     Max: 4
@@ -718,12 +719,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   minSize: 1
   maxSize:
+    Enabled: 1
     Value: 3
     Min: 2
     Max: 4
     element: 2
   growRate: 3
   shrinkRate:
+    Enabled: 0
     Value: 1
     Min: 0
     Max: 0
@@ -894,12 +897,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   minSize: 20
   maxSize:
+    Enabled: 0
     Value: 80
     Min: 0
     Max: 0
     element: 0
   growRate: 8
   shrinkRate:
+    Enabled: 1
     Value: 8
     Min: 20
     Max: 4
@@ -1286,12 +1291,6 @@ MonoBehaviour:
     - {fileID: 1315493734959331551}
     - {fileID: 5565916779484709519}
   resourceEventClassActions: []
-  MassAbilityTarget: {fileID: 0}
-  ChargeAbilityTarget: {fileID: 0}
-  SpaceAbilityTarget: {fileID: 0}
-  TimeAbilityTarget: {fileID: 0}
-  ChargeAbility2Target: {fileID: 0}
-  LevelEffects: 
   closeCamDistance: -20
   farCamDistance: -80
   AOEExplosionMaterial: {fileID: 0}
@@ -1346,6 +1345,7 @@ MonoBehaviour:
   ThrottleScaler: 0
   DefaultMinimumSpeed: 10
   DefaultThrottleScaler:
+    Enabled: 1
     Value: 50
     Min: 40
     Max: 60
@@ -1408,6 +1408,7 @@ MonoBehaviour:
   displayAmmo: 0
   gainsAmmo: 0
   ammoGainRate:
+    Enabled: 0
     Value: 0.01
     Min: 0
     Max: 0
@@ -2134,6 +2135,11 @@ PrefabInstance:
         type: 3}
       propertyPath: skimVisualFX
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
+      propertyPath: Scale.Enabled
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}

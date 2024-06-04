@@ -29,7 +29,7 @@ namespace CosmicShore.Integrations.PlayFab.PlayStream
 
     public class PlayerDataController : SingletonPersistent<PlayerDataController>
     {
-        private const string GuideKnowledgeKey = "GuideKnowledge";
+        private const string CaptainXPKey = "CaptainXP";
         private const string ShipCloutKey = "ShipClout";
         private const string MasterCloutKey = "MasterClout";
         
@@ -53,13 +53,13 @@ namespace CosmicShore.Integrations.PlayFab.PlayStream
 
         private void Start()
         {
-            AuthenticationManager.OnLoginSuccess += LoadGuideKnowledgeData;
+            AuthenticationManager.OnLoginSuccess += LoadCaptainXPData;
             AuthenticationManager.OnLoginSuccess += LoadClout;
         }
 
         public void OnDestroy()
         {
-            AuthenticationManager.OnLoginSuccess -= LoadGuideKnowledgeData;
+            AuthenticationManager.OnLoginSuccess -= LoadCaptainXPData;
             AuthenticationManager.OnLoginSuccess -= LoadClout;
         }
         
@@ -75,7 +75,7 @@ namespace CosmicShore.Integrations.PlayFab.PlayStream
         }
 
 
-        void LoadGuideKnowledgeData()
+        void LoadCaptainXPData()
         {
             InitializePlayerClientInstanceAPI();
 
@@ -83,7 +83,7 @@ namespace CosmicShore.Integrations.PlayFab.PlayStream
                 new GetUserDataRequest
                 {
                     PlayFabId = AuthenticationManager.PlayFabAccount.ID,
-                    Keys = new List<string> { GuideKnowledgeKey }
+                    Keys = new List<string> { CaptainXPKey }
                 },
                 (result) =>
                 {

@@ -140,12 +140,12 @@ namespace CosmicShore.App.UI.Menus
         {
             var options = new List<TMP_Dropdown.OptionData>();
 
-            // Only add "Any" selection if there is more than one guide class available
-            if (SelectedGame.Guides.Count > 1)
+            // Only add "Any" selection if there is more than one captain class available
+            if (SelectedGame.Captains.Count > 1)
                 options.Add(new TMP_Dropdown.OptionData("Any"));
 
-            foreach (var guide in SelectedGame.Guides)
-                options.Add(new TMP_Dropdown.OptionData(guide.Ship.Class.ToString()));
+            foreach (var captain in SelectedGame.Captains)
+                options.Add(new TMP_Dropdown.OptionData(captain.Ship.Class.ToString()));
 
             ShipClassSelection.options = options;
             ShipClassSelection.value = 0;

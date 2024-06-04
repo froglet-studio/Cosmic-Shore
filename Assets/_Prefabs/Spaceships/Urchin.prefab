@@ -788,6 +788,7 @@ MonoBehaviour:
   Energy: 1
   Speed: 80
   ProjectileTime:
+    Enabled: 1
     Value: 5
     Min: 4
     Max: 8
@@ -874,6 +875,7 @@ MonoBehaviour:
   Energy: 1
   Speed: 80
   ProjectileTime:
+    Enabled: 1
     Value: 5
     Min: 4
     Max: 8
@@ -2355,12 +2357,6 @@ MonoBehaviour:
   - ResourceEvent: 1
     ClassActions:
     - {fileID: 7925097207517337182}
-  MassAbilityTarget: {fileID: 0}
-  ChargeAbilityTarget: {fileID: 0}
-  SpaceAbilityTarget: {fileID: 0}
-  TimeAbilityTarget: {fileID: 0}
-  ChargeAbility2Target: {fileID: 0}
-  LevelEffects: 02000000
   closeCamDistance: -3
   farCamDistance: -15
   AOEExplosionMaterial: {fileID: 0}
@@ -2415,6 +2411,7 @@ MonoBehaviour:
   ThrottleScaler: 0
   DefaultMinimumSpeed: 0
   DefaultThrottleScaler:
+    Enabled: 0
     Value: 40
     Min: 0
     Max: 0
@@ -2427,6 +2424,7 @@ MonoBehaviour:
   ProjectileScale: 1
   BlockScale: {x: 4, y: 4, z: 0.4}
   growthAmount:
+    Enabled: 1
     Value: 1
     Min: 0.6
     Max: 1.2
@@ -2485,6 +2483,7 @@ MonoBehaviour:
   displayAmmo: 1
   gainsAmmo: 0
   ammoGainRate:
+    Enabled: 1
     Value: 0.3
     Min: 0.3
     Max: 1.3
@@ -3668,6 +3667,11 @@ PrefabInstance:
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
       propertyPath: skimVisualFX
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
+      propertyPath: Scale.Enabled
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,

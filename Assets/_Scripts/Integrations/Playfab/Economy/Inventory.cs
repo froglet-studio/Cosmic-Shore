@@ -11,10 +11,10 @@ namespace CosmicShore.Integrations.PlayFab.Economy
         // Crystals - including Omni Crystals and Elemental Crystals
         public List<VirtualItem> crystals = new();
 
-        // Guides
+        // Captains
         public List<VirtualItem> captains = new();
-        
-        // Guide Upgrades
+
+        // Captain Upgrades
         public List<VirtualItem> captainUpgrades = new();
         
         // Ships
