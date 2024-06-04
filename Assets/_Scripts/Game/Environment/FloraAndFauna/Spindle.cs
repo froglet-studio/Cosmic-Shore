@@ -11,7 +11,7 @@ namespace CosmicShore
 
         void Awake()
         {
-            Length = cylinder.transform.localScale.y;
+            if (cylinder) Length = cylinder.transform.localScale.y;
         }
 
         public void CheckForLife()
@@ -31,8 +31,10 @@ namespace CosmicShore
             float animationSpeed = 1f;
             while (deathAnimation < 1f)
             {
-                meshRenderer.material.color = Color.Lerp(meshRenderer.material.color, Color.clear, 0.1f);
-                yield return new WaitForSeconds(0.1f);
+                meshRenderer.material.SetFloat("_DeathAnimation", deathAnimation);
+                deathAnimation += Time.deltaTime * animationSpeed;
+                //meshRenderer.material.color = Color.Lerp(meshRenderer.material.color, Color.clear, 0.1f);
+                yield return null;
             }
             Destroy(gameObject);
         }
