@@ -57,6 +57,7 @@ namespace CosmicShore.App.UI.Menus
 
             UserActionSystem.Instance.CompleteAction(SelectedGame.ViewUserAction);
         }
+
         void PopulateGameSelectionList()
         {
             GameCards = new List<GameCard>();
@@ -172,7 +173,7 @@ namespace CosmicShore.App.UI.Menus
         {
             Debug.Log($"MiniGamesMenu - Populating Ship Select List - shipClass: {shipClass}");
 
-            var selectedCaptain = SelectedGame.Guides[0];
+            var selectedCaptain = SelectedGame.Captains[0];
 
             for (var i = 0; i < ShipSelectionGrid.childCount; i++)
             {
@@ -184,10 +185,10 @@ namespace CosmicShore.App.UI.Menus
                     var selectionIndex = (i * 3) + j;
                     // TODO: convert this to take a CaptainCard prefab and instantiate one rather than using the placeholder objects
                     var shipSelection = shipSelectionRow.transform.GetChild(j).gameObject;
-                    if (selectionIndex < SelectedGame.Guides.Count)
+                    if (selectionIndex < SelectedGame.Captains.Count)
                     {
-                        var ship = SelectedGame.Guides[selectionIndex].Ship;
-                        var captain = SelectedGame.Guides[selectionIndex];
+                        var ship = SelectedGame.Captains[selectionIndex].Ship;
+                        var captain = SelectedGame.Captains[selectionIndex];
 
                         if (ship.Class == shipClass)
                             selectedCaptain = captain;
@@ -209,20 +210,20 @@ namespace CosmicShore.App.UI.Menus
                 }
             }
 
-            StartCoroutine(SelectCaptainCoroutine(SelectedGame.Guides[0]));
+            StartCoroutine(SelectCaptainCoroutine(SelectedGame.Captains[0]));
         }
 
-        IEnumerator SelectCaptainCoroutine(SO_Guide captain)
+        IEnumerator SelectCaptainCoroutine(SO_Captain captain)
         {
             yield return new WaitForEndOfFrame();
             SelectCaptain(captain);
         }
 
-        public void SelectCaptain(SO_Guide selectedCaptain)
+        public void SelectCaptain(SO_Captain selectedCaptain)
         {
             Debug.Log($"SelectCaptain: {selectedCaptain.Name}");
             Debug.Log($"ShipSelectionContainer.childCount: {ShipSelectionGrid.childCount}");
-            Debug.Log($"Ships.Count: {SelectedGame.Guides.Count}");
+            Debug.Log($"Ships.Count: {SelectedGame.Captains.Count}");
 
             SelectedShip = selectedCaptain.Ship;
 
@@ -234,13 +235,13 @@ namespace CosmicShore.App.UI.Menus
                     var shipIndex = (i * 3) + j;
                     var shipButton = shipSelectionRow.GetChild(j).gameObject;
 
-                    if (shipIndex >= SelectedGame.Guides.Count)
+                    if (shipIndex >= SelectedGame.Captains.Count)
                         continue;
                     
-                    if (SelectedGame.Guides[shipIndex] == selectedCaptain)
+                    if (SelectedGame.Captains[shipIndex] == selectedCaptain)
                         shipButton.GetComponent<Image>().sprite = selectedCaptain.Ship.CardSilohoutteActive;
-                    else if (shipIndex < SelectedGame.Guides.Count)
-                        shipButton.GetComponent<Image>().sprite = SelectedGame.Guides[shipIndex].Ship.CardSilohoutte;
+                    else if (shipIndex < SelectedGame.Captains.Count)
+                        shipButton.GetComponent<Image>().sprite = SelectedGame.Captains[shipIndex].Ship.CardSilohoutte;
                 }
             }
 

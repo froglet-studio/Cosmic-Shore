@@ -2,10 +2,9 @@ using CosmicShore.App.Systems.CTA;
 using CosmicShore.App.Systems.UserActions;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Serialization;
 using UnityEngine.Video;
 
-[CreateAssetMenu(fileName = "New ArcadeGame", menuName = "CosmicShore/ArcadeGame", order = 0)]
+[CreateAssetMenu(fileName = "New Game", menuName = "CosmicShore/Game/ArcadeGame", order = 0)]
 [System.Serializable]
 public class SO_ArcadeGame : ScriptableObject
 {
@@ -16,8 +15,7 @@ public class SO_ArcadeGame : ScriptableObject
     public Sprite SelectedIcon;
     public Sprite CardBackground;
     public VideoPlayer PreviewClip;
-    [FormerlySerializedAs("Vessels")]
-    public List<SO_Guide> Guides;
+    public List<SO_Captain> Captains;
     public bool GolfScoring;
     [Min(1)] public int MinPlayers = 1;
     [Range(1, 3)] public int MaxPlayers = 2;

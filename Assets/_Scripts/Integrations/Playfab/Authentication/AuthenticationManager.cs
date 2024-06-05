@@ -23,8 +23,7 @@ namespace CosmicShore.Integrations.PlayFab.Authentication
         public static event Action OnLoginSuccess;
  
         public static event Action OnLoginError;
-
-        // public delegate void ProfileLoaded();
+        
         public static event Action OnProfileLoaded;
 
         public static event Action OnRegisterSuccess;
@@ -35,15 +34,13 @@ namespace CosmicShore.Integrations.PlayFab.Authentication
         public override void Awake()
         {
             base.Awake();
+            
             AnonymousLogin();
             OnLoginSuccess += LoadPlayerProfile;
         }
 
         private void OnDestroy()
         {
-            PlayFabAccount = null;
-            UserProfile = null;
-            PlayerSession = null;
             OnLoginSuccess -= LoadPlayerProfile;
         }
 

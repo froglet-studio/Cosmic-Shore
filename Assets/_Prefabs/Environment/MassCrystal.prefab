@@ -52,7 +52,7 @@ SphereCollider:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6588436222817790470}
   m_Material: {fileID: 0}
-  m_IsTrigger: 0
+  m_IsTrigger: 1
   m_Enabled: 1
   serializedVersion: 2
   m_Radius: 1.2
@@ -72,21 +72,23 @@ MonoBehaviour:
   Team: -1
   ItemType: 1
   crystalProperties:
+    crystal: {fileID: 0}
     fuelAmount: 0.5
     scoreAmount: 1
     tailLengthIncreaseAmount: 0
     speedBuffAmount: 3.5
+    Element: 2
   sphereRadius: 170
   SpentCrystalPrefab: {fileID: 8491596592871572304, guid: f39596c98ed9d644a834f2fa27ec90ca,
     type: 3}
   CrystalModel: {fileID: 4604809919382375336}
-  material: {fileID: 2100000, guid: 383f21e8586fd7243a19e1d0f26110d0, type: 2}
+  explodingMaterial: {fileID: 2100000, guid: 5938017a58c6c9c419838aa20d31ed20, type: 2}
+  defaultMaterial: {fileID: 2100000, guid: 5938017a58c6c9c419838aa20d31ed20, type: 2}
   shipImpactEffects: 1
-  crystalImpactEffects: 
+  crystalImpactEffects: 08000000
   AOEPrefab: {fileID: 0}
   maxExplosionScale: 0
   AOEExplosionMaterial: {fileID: 0}
-  element: 2
 --- !u!82 &6588436222817790494
 AudioSource:
   m_ObjectHideFlags: 0
@@ -250,7 +252,7 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Materials.Array.data[0]
       value: 
-      objectReference: {fileID: 2100000, guid: 383f21e8586fd7243a19e1d0f26110d0, type: 2}
+      objectReference: {fileID: 2100000, guid: 5938017a58c6c9c419838aa20d31ed20, type: 2}
     - target: {fileID: 2346576036425758005, guid: a089e5ab0159cc54aa784d6ebf15d2e4,
         type: 3}
       propertyPath: MutonMaterial
