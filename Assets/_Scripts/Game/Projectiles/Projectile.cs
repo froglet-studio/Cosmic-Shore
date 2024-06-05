@@ -91,6 +91,10 @@ namespace CosmicShore.Game.Projectiles
                     case TrailBlockImpactEffects.Fire:
                         GetComponent<LoadedGun>().FireGun();
                         break;
+                    case TrailBlockImpactEffects.Explode:
+                        ((ExplodableProjectile)this).Detonate();
+                        break;
+
                 }
             }
         }
