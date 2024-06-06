@@ -24,6 +24,7 @@ namespace CosmicShore.Integrations.PlayFab.Economy
 
         public static Dictionary<string, string> Bundles { get; private set; } = new();
         public static event Action<string> OnGettingBundleId;
+        static event Action OnLoadCatalogSuccess;   // Use an event to prevent a race condition - Inventory Loading requires the full catalog to have been loaded
 
         int _dailyRewardIndex;
 
@@ -36,9 +37,8 @@ namespace CosmicShore.Integrations.PlayFab.Economy
             Debug.Log("CatalogManager.Start");
             AuthenticationManager.OnLoginSuccess += InitializePlayFabEconomyAPI;
             AuthenticationManager.OnLoginSuccess += LoadAllCatalogItems;
-            AuthenticationManager.OnLoginSuccess += LoadPlayerInventory;
-
-            AuthenticationManager.OnLoginSuccess += GetDailyRewardStore;
+            OnLoadCatalogSuccess += LoadPlayerInventory;
+            OnLoadCatalogSuccess += GetDailyRewardStore;
 
             NetworkMonitor.NetworkConnectionLost += Inventory.LoadFromDisk;
         }
@@ -47,9 +47,8 @@ namespace CosmicShore.Integrations.PlayFab.Economy
         {
             AuthenticationManager.OnLoginSuccess -= InitializePlayFabEconomyAPI;
             AuthenticationManager.OnLoginSuccess -= LoadAllCatalogItems;
-            AuthenticationManager.OnLoginSuccess -= LoadPlayerInventory;
-            
-            AuthenticationManager.OnLoginSuccess -= GetDailyRewardStore;
+            OnLoadCatalogSuccess -= LoadPlayerInventory;
+            OnLoadCatalogSuccess -= GetDailyRewardStore;
 
             NetworkMonitor.NetworkConnectionLost -= Inventory.LoadFromDisk;
         }
@@ -70,7 +69,6 @@ namespace CosmicShore.Integrations.PlayFab.Economy
         #endregion
 
         #region Catalog Operations
-
 
         /// <summary>
         /// Load Catalog Items
@@ -94,8 +92,6 @@ namespace CosmicShore.Integrations.PlayFab.Economy
                 OnLoadingCatalogItems,
                 PlayFabUtility.HandleErrorReport
             );
-
-
         }
 
         /// <summary>
@@ -134,6 +130,8 @@ namespace CosmicShore.Integrations.PlayFab.Economy
                 var converted = ConvertCatalogItemToVirtualItem(item);
                 AddToStoreShelve(item.ContentType, converted);
             }
+
+            OnLoadCatalogSuccess?.Invoke();
         }
 
         void AddToStoreShelve(string contentType, VirtualItem item)
@@ -548,7 +546,7 @@ namespace CosmicShore.Integrations.PlayFab.Economy
             foreach (var storeItem in result.Items)
             {
                 StoreShelve.dailyRewards.Add(storeItem.Id, ConvertCatalogItemToVirtualItem(storeItem));
-                StoreShelve.allItems.Add(storeItem.Id, ConvertCatalogItemToVirtualItem(storeItem));
+                StoreShelve.allItems.TryAdd(storeItem.Id, ConvertCatalogItemToVirtualItem(storeItem));  // Daily Reward may have already been added to all Items when loading the catalog
             }
 
             foreach (var dailyReward in StoreShelve.dailyRewards.Values)

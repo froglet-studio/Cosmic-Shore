@@ -7,8 +7,8 @@ namespace CosmicShore
     [System.Serializable]
     public class SO_TrainingGame : SO_ArcadeGame
     {
-        [SerializeField] public Element ElementOne;
-        [SerializeField] public Element ElementTwo;
+        [SerializeField] public SO_Element ElementOne;
+        [SerializeField] public SO_Element ElementTwo;
         public SO_QuestChain SO_QuestChain;
     }
 }

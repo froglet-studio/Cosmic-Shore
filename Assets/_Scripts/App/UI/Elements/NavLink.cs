@@ -1,31 +1,33 @@
 using UnityEngine;
 using UnityEngine.UI;
 using System.Collections;
+using UnityEngine.Serialization;
 
 namespace CosmicShore.App.UI
 {
     public class NavLink : MonoBehaviour
     {
-        [SerializeField] GameObject panel;
+        [FormerlySerializedAs("panel")]
+        [SerializeField] GameObject view;
         [SerializeField] Image activeImage;
         [SerializeField] Image inactiveImage;
         [SerializeField] float crossfadeDuration = 0.5f;
-        public NavLinkGroup navLinkGroup;
+        [HideInInspector] public NavGroup navGroup;
 
         Coroutine currentCrossfade;
 
         public void OnClick()
         {
-            navLinkGroup.ActivateLink(this);
+            navGroup.ActivateLink(this);
         }
 
-        public void SetActive(bool isActive)
+        public virtual void SetActive(bool isActive)
         {
             if (currentCrossfade != null)
                 StopCoroutine(currentCrossfade);
 
             currentCrossfade = StartCoroutine(CrossfadeImage(isActive));
-            panel.SetActive(isActive);
+            view.SetActive(isActive);
         }
 
         IEnumerator CrossfadeImage(bool isActive)

@@ -41,7 +41,9 @@ namespace CosmicShore.App.UI
         [SerializeField] Transform NavBar;
         [SerializeField] List<ScreenAnimator> NavigateToScreenAnimations;
 
+
         [SerializeField] HangarMenu HangarMenu;
+        [SerializeField] LeaderboardsMenu LeaderboardMenu;
 
         Vector3 panelLocation;
         Coroutine navigateCoroutine;
@@ -153,6 +155,7 @@ namespace CosmicShore.App.UI
         }
         public void OnClickPortNav()
         {
+            LeaderboardMenu.LoadView();
             NavigateTo(PORT);
         }
         public void OnClickHomeNav()

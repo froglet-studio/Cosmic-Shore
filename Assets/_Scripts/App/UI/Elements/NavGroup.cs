@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace CosmicShore.App.UI
 {
-    public class NavLinkGroup : MonoBehaviour
+    public class NavGroup : MonoBehaviour
     {
         public List<NavLink> navLinks;
 
@@ -18,7 +18,7 @@ namespace CosmicShore.App.UI
         void Start()
         {
             foreach (var link in navLinks)
-                link.navLinkGroup = this;
+                link.navGroup = this;
 
             if (navLinks.Count > 0)
                 ActivateLink(navLinks[0]);

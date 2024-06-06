@@ -13,7 +13,7 @@ namespace CosmicShore.App.UI.Menus
         [SerializeField] Transform ShipSelectionContainer;
         [SerializeField] InfiniteScroll ShipSelectionScrollView;
         [SerializeField] HangarShipSelectCard ShipSelectCardPrefab;
-        [SerializeField] NavLinkGroup TopNav;
+        [SerializeField] NavGroup TopNav;
 
         [Header("Overview - Ship UI")]
         [SerializeField] GameObject OverviewView;
@@ -53,7 +53,7 @@ namespace CosmicShore.App.UI.Menus
         [SerializeField] GameObject TrainingView;
         [SerializeField] Transform GameSelectionContainer;
         [SerializeField] Image ShipModelImage;
-        //[SerializeField] TMPro.TMP_Text SelectedGameName;
+        [SerializeField] TMPro.TMP_Text SelectedGameName;
         //[SerializeField] TMPro.TMP_Text SelectedGameDescription;
         [SerializeField] GameObject SelectedGamePreviewWindow;
 
@@ -64,18 +64,15 @@ namespace CosmicShore.App.UI.Menus
         SO_ShipAbility SelectedAbility;
         int _legitShipCount;
 
-        //void Awake()
-        //{
-        //    Ships = ShipList.ShipList;
-        //    PopulateShipSelectionList();
-        //}
-
         public void LoadView()
         {
             Ships = ShipList.ShipList;
             PopulateShipSelectionList();
         }
 
+        /// <summary>
+        /// Populates the list of ship buttons based using the SO_ShipList ShipList assigned to the menu
+        /// </summary>
         void PopulateShipSelectionList()
         {
             if (ShipSelectionContainer == null)
@@ -108,6 +105,9 @@ namespace CosmicShore.App.UI.Menus
             StartCoroutine(SelectShipCoroutine(ShipSelectionContainer.GetChild(0).gameObject.GetComponent<HangarShipSelectCard>()));
         }
 
+        /// <summary>
+        /// Populates the list of Ability Selection Buttons using the currently selected ship
+        /// </summary>
         void PopulateAbilitySelectionList()
         {
             if (AbilitySelectionContainer == null) return;
@@ -129,10 +129,6 @@ namespace CosmicShore.App.UI.Menus
                 abilitySelection.GetComponent<Button>().onClick.AddListener(() => SelectAbility(selectionIndex));
                 abilitySelection.GetComponent<Button>().onClick.AddListener(() => AbilitySelectionContainer.GetComponent<MenuAudio>().PlayAudio());
             }
-
-            StartCoroutine(SelectOverviewCoroutine());
-            //if (SelectedShip.Abilities.Count > 0)
-            //    StartCoroutine(SelectAbilityCoroutine(0));
         }
 
         void PopulateCaptainSelectionList()
@@ -221,7 +217,10 @@ namespace CosmicShore.App.UI.Menus
             Debug.Log($"Populating Training  Details List: {SelectedGame.PreviewClip}");
 
             if (ShipModelImage != null) ShipModelImage.sprite = SelectedGame.Icon;
-            //[SerializeField] TMPro.TMP_Text SelectedGameName;
+            SelectedGameName.text = SelectedGame.DisplayName;
+
+            // Show intensity Selection
+
             //[SerializeField] TMPro.TMP_Text SelectedGameDescription;
             if (SelectedGamePreviewWindow != null)
             {
@@ -241,8 +240,7 @@ namespace CosmicShore.App.UI.Menus
             Debug.Log($"ShipSelectionContainer.childCount: {ShipSelectionContainer.childCount}");
             Debug.Log($"Ships.Count: {Ships.Count}");
 
-            // Set all sprites to deselected - the selected card will activate it's own sprite
-            //for (var i = 0; i < Ships.Count; i++)
+            // set all sprites to deselected - the selected card will activate it's own sprite
             for (var i = 0; i < ShipSelectionContainer.childCount; i++)
             {
                 //ShipSelectionContainer.GetChild(i).gameObject.GetComponent<Image>().sprite = Ships[i].Icon;
@@ -258,12 +256,16 @@ namespace CosmicShore.App.UI.Menus
             // notify the mini game engine that this is the ship to play
             Hangar.Instance.SetPlayerShip((int)SelectedShip.Class);
 
+            // 
             PopulateShipDetails();
-
-            // populate the games list with the one's games
+            
+            // populate the abilities/overview views
             PopulateAbilitySelectionList(); // TODO: P0 - We no longer need to dynamically populate these event listeners since there is always a fixed number of abilities and captains now
+            StartCoroutine(SelectOverviewCoroutine());  // Select the default view in a coroutine so that it happens next frame - otherwise there is a draw order error
+
+            // populate the captain view
             PopulateCaptainSelectionList();
-            StartCoroutine(SelectCaptainCoroutine(0));
+            StartCoroutine(SelectCaptainCoroutine(0));  // Select the default view in a coroutine so that it happens next frame - otherwise there is a draw order error
         }
 
         public void SelectOverview()
@@ -343,19 +345,20 @@ namespace CosmicShore.App.UI.Menus
         /// <summary>
         /// </summary>
         /// <param name="index">Index of the displayed Game list</param>
-        public void SelectTrainingGame(int index)
+        //public void SelectTrainingGame(int index)
+        public void SelectTrainingGame(SO_TrainingGame game)
         {
-            Debug.Log($"SelectTainingGame: {index}");
+            Debug.Log($"SelectTainingGame: {game.DisplayName}");
 
             try
             {
                 // Deselect them all
                 for (var i = 0; i < 2; i++)
-                    GameSelectionContainer.GetChild(i).gameObject.GetComponent<Image>().sprite = SelectedShip.Games[i].Icon;
+                    GameSelectionContainer.GetChild(i).gameObject.GetComponent<HangarTrainingGameButton>().SetInactive();
 
                 // Select the one
-                SelectedGame = SelectedShip.Games[index];
-                GameSelectionContainer.GetChild(index).gameObject.GetComponent<Image>().sprite = SelectedGame.SelectedIcon;
+                SelectedGame = game;
+                //GameSelectionContainer.GetChild(i).gameObject.GetComponent<HangarTrainingGameButton>().SetInactive();
             }
             catch (ArgumentOutOfRangeException argumentOutOfRangeException)
             {
@@ -396,10 +399,10 @@ namespace CosmicShore.App.UI.Menus
             SelectAbility(index);
         }
 
-        IEnumerator SelectTrainingGameCoroutine(int index)
+        IEnumerator SelectTrainingGameCoroutine(SO_TrainingGame game)
         {
             yield return new WaitForEndOfFrame();
-            SelectTrainingGame(index);
+            SelectTrainingGame(game);
         }
     }
 }

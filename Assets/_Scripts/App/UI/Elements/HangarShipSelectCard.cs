@@ -44,9 +44,9 @@ namespace CosmicShore
         {
             Ship = ship;
             LockImage.enabled = !CatalogManager.Inventory.ContainsShipClass(ship.Name);
+            Debug.Log($"HangarShipSelectCard.AssignShipClass - LockImage.enabled: {LockImage.enabled}");
+            Debug.Log($"HangarShipSelectCard.AssignShipClass - !CatalogManager.Inventory.ContainsShipClass({ship.Name}): {!CatalogManager.Inventory.ContainsShipClass(ship.Name)}");
             ShipImage.sprite = ship.Icon;
-            //Button.onClick.RemoveAllListeners();
-            //Button.onClick.AddListener(() => Select());
         }
 
         public void Select()

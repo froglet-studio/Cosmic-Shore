@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security;
@@ -34,14 +35,22 @@ namespace CosmicShore.Integrations.PlayFab.Authentication
         public override void Awake()
         {
             base.Awake();
-            
-            AnonymousLogin();
+
+            //AnonymousLogin();
             OnLoginSuccess += LoadPlayerProfile;
+            StartCoroutine(LoginCoroutine());
         }
 
-        private void OnDestroy()
+        void OnDestroy()
         {
             OnLoginSuccess -= LoadPlayerProfile;
+        }
+
+        IEnumerator LoginCoroutine()
+        {
+            yield return new WaitForSeconds(1f);
+
+            AnonymousLogin();
         }
 
         #region Player Profile

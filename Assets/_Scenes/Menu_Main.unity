@@ -6066,6 +6066,7 @@ MonoBehaviour:
   TrainingView: {fileID: 0}
   GameSelectionContainer: {fileID: 0}
   ShipModelImage: {fileID: 0}
+  SelectedGameName: {fileID: 0}
   SelectedGamePreviewWindow: {fileID: 0}
 --- !u!1 &194708246
 GameObject:
@@ -25243,6 +25244,7 @@ MonoBehaviour:
   NavBar: {fileID: 1111146381}
   NavigateToScreenAnimations: []
   HangarMenu: {fileID: 5840560526924786829}
+  LeaderboardMenu: {fileID: 0}
   NavBarLine: {fileID: 2064121045}
   NavBarLineSprites:
   - {fileID: 21300000, guid: f4a59df5cc9555e409163fd7541f9524, type: 3}
@@ -27461,7 +27463,7 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 989920293}
-  m_LocalRotation: {x: 0.00019546802, y: 0.9998045, z: -0.013800179, w: 0.014161397}
+  m_LocalRotation: {x: 0.00019546723, y: 0.9998045, z: -0.013800159, w: 0.014161362}
   m_LocalPosition: {x: -7.650175, y: 7.4579606, z: 270}
   m_LocalScale: {x: 99.99999, y: 99.99999, z: 100}
   m_ConstrainProportionsScale: 0
@@ -41381,17 +41383,17 @@ PrefabInstance:
     - target: {fileID: 6085108597755193398, guid: ba70c0f3eb077d44b8a538982d02dadc,
         type: 3}
       propertyPath: m_LocalRotation.w
-      value: 0.014161397
+      value: 0.014161362
       objectReference: {fileID: 0}
     - target: {fileID: 6085108597755193398, guid: ba70c0f3eb077d44b8a538982d02dadc,
         type: 3}
       propertyPath: m_LocalRotation.x
-      value: 0.00019546802
+      value: 0.00019546723
       objectReference: {fileID: 0}
     - target: {fileID: 6085108597755193398, guid: ba70c0f3eb077d44b8a538982d02dadc,
         type: 3}
       propertyPath: m_LocalRotation.z
-      value: -0.013800179
+      value: -0.013800159
       objectReference: {fileID: 0}
     - target: {fileID: 8945163999947012178, guid: ba70c0f3eb077d44b8a538982d02dadc,
         type: 3}
@@ -68999,11 +69001,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3f31bbbd0ddad5648b3705a1a6408fdd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  panel: {fileID: 1957720459}
+  view: {fileID: 1957720459}
   activeImage: {fileID: 6761752757566875318}
   inactiveImage: {fileID: 7473156507499297300}
   crossfadeDuration: 0.5
-  navLinkGroup: {fileID: 5497407957322793862}
+  navGroup: {fileID: 0}
 --- !u!222 &4298663890053282116
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -76417,11 +76419,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3f31bbbd0ddad5648b3705a1a6408fdd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  panel: {fileID: 1810261737}
+  view: {fileID: 1810261737}
   activeImage: {fileID: 5840560527785866495}
   inactiveImage: {fileID: 5840560527617744888}
   crossfadeDuration: 0.5
-  navLinkGroup: {fileID: 5497407957322793862}
+  navGroup: {fileID: 0}
 --- !u!222 &5840560526117355728
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -76566,11 +76568,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3f31bbbd0ddad5648b3705a1a6408fdd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  panel: {fileID: 864826052}
+  view: {fileID: 864826052}
   activeImage: {fileID: 5840560525822493946}
   inactiveImage: {fileID: 5840560525890228356}
   crossfadeDuration: 0.5
-  navLinkGroup: {fileID: 5497407957322793862}
+  navGroup: {fileID: 0}
 --- !u!114 &5840560526137490003
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -77369,6 +77371,7 @@ MonoBehaviour:
   TrainingView: {fileID: 864826052}
   GameSelectionContainer: {fileID: 983087002}
   ShipModelImage: {fileID: 1552715470}
+  SelectedGameName: {fileID: 0}
   SelectedGamePreviewWindow: {fileID: 1787497996}
 --- !u!224 &5840560526936931224
 RectTransform:
@@ -77894,9 +77897,8 @@ MonoBehaviour:
   scrollRect: {fileID: 5840560527428797608}
   viewPortTransform: {fileID: 5840560526117355743}
   contentPanelTransform: {fileID: 5840560526580898136}
-  vlg: {fileID: 5840560526580898139}
+  verticalLayoutGroup: {fileID: 5840560526580898139}
   ContentContainer: {fileID: 5840560526580898137}
-  SelectedItemHeight: 0
   minVelocity: 5
   enableSnapVelocity: 15
 --- !u!224 &5840560527559023202

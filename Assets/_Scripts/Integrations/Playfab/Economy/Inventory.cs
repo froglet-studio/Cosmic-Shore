@@ -30,6 +30,7 @@ namespace CosmicShore.Integrations.PlayFab.Economy
 
         public void LoadFromDisk()
         {
+            Debug.Log("Inventory.LoadFromDisk");
             var tempInventory = DataAccessor.Load<Inventory>("inventory.data");
 
             crystals = tempInventory.crystals;
@@ -50,6 +51,7 @@ namespace CosmicShore.Integrations.PlayFab.Economy
             {
                 Debug.LogWarning($"Ship Class Item {item.Name}");
             }
+
             var count = shipClasses.Where(item => item.Name == shipName).Count();
             Debug.LogWarning($"ContainsShipClass {shipName}, Count: {count}");
             return count > 0;

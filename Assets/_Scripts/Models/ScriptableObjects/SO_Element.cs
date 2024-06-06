@@ -14,6 +14,11 @@ namespace CosmicShore
         [SerializeField] List<Sprite> ActiveIcons;
         [SerializeField] List<Sprite> InactiveIcons;
 
+        public Sprite GetFullIcon(bool active)
+        {
+            return GetIcon(5, active);
+        }
+
         public Sprite GetIcon(int level, bool active)
         {
             if (level < 0 || level > 5) throw new ArgumentException("Level must be between 0-5");
