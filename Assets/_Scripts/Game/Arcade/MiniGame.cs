@@ -85,7 +85,7 @@ namespace CosmicShore.Game.Arcade
             ScoreTracker.GameCanvas = GameCanvas;
 
             if (DefaultPlayerCaptain == null)
-                Debug.LogError("No Default Captain Set - This scene will not be able to launch without going through the main menu. Please set DefaultPlayerCaptain of the minigame script.");
+                Debug.LogWarning("No Default Captain Set - This scene will not be able to launch without going through the main menu. Please set DefaultPlayerCaptain of the minigame script.");
 
             if (PlayerCaptain == null)
                 PlayerCaptain = DefaultPlayerCaptain;

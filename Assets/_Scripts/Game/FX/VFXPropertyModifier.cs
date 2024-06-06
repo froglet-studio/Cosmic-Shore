@@ -3,9 +3,9 @@ using UnityEngine.VFX;
 
 public class VFXPropertyModifier : MonoBehaviour
 {
-    public VisualEffect visualEffect;
-    public string propertyName = "PropertyName";
-    public float propertyValue = 1.0f;
+    [SerializeField] VisualEffect visualEffect;
+    [SerializeField] string propertyName = "PropertyName";
+    [SerializeField] float propertyValue = 1.0f;
 
     private void Start()
     {
