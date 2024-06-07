@@ -1,13 +1,12 @@
 using CosmicShore.Integrations.Enums;
 using CosmicShore.Integrations.PlayFab.Economy;
-using CosmicShore.Integrations.PlayFab.PlayerModels;
 using CosmicShore.Integrations.PlayFab.Utility;
 using PlayFab;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace Scenes.TestScenes.Playfab_Sandbox_Test
+namespace Scenes.TestScenes.PlayfabSandboxTest
 {
     public class CatalogView : MonoBehaviour
     {
@@ -21,10 +20,7 @@ namespace Scenes.TestScenes.Playfab_Sandbox_Test
         [SerializeField] Button loadInventoryButton;
         [SerializeField] Button loadCaptainDataButton;
         [SerializeField] Button removeInvCollectionButton;
-
-        // Vessel Data related instances
-        private static GuideDataAccessor _guideDataAccessor;
-        private static List<GuideData> _guideDataList;
+        
         
         // test strings
         const string MantaShipUpgrade1Id = "6b5264af-4645-4aaa-8228-3b35ed379585";
@@ -33,12 +29,6 @@ namespace Scenes.TestScenes.Playfab_Sandbox_Test
         const string CrystalId = "51392e05-9072-43a9-ae2d-4a3335dbf313";
 
         private static CatalogManager CatalogManager => CatalogManager.Instance;
-    
-        void Start()
-        {
-            _guideDataAccessor ??= new GuideDataAccessor();
-            _guideDataList ??= new List<GuideData>();
-        }
 
         void OnEnable()
         {
@@ -90,11 +80,9 @@ namespace Scenes.TestScenes.Playfab_Sandbox_Test
             // testing upgrade 2 purchasing
             var captainShard2 = new ItemPrice{ItemId = ElementalCrystalId, Amount = 10};
             var mantaSpaceUpgrade2 = new VirtualItem { ItemId = MantaShipUpgrade2Id, Amount = 1 };
- 
-            CatalogManager.PurchaseItem(mantaSpaceUpgrade2, vesselShard2);
-            SaveGuideData(GuideLevel.Upgrade3, MantaShipUpgrade2Id, 2 );
+
             Debug.LogFormat("{0} - {1}: vessel info {2} saved to local storage.", nameof(CatalogView), nameof(PurchaseUpgradeTest), nameof(mantaSpaceUpgrade2));
-            LoadGuideData();
+
         }
         
         /// <summary>
@@ -105,9 +93,7 @@ namespace Scenes.TestScenes.Playfab_Sandbox_Test
         {
             var shardPrice = new ItemPrice { ItemId = CrystalId, Amount = 1 };
             var elementalCrystals = new VirtualItem { ItemId = ElementalCrystalId, Amount = 10 };
-
             
-            CatalogManager.PurchaseItem(vesselShards, shardPrice);
         }
 
         /// <summary>
@@ -130,8 +116,6 @@ namespace Scenes.TestScenes.Playfab_Sandbox_Test
                 ContentType = "Currency",
                 Amount = 10
             };
-            var startingItems = new List<VirtualItem> { vesselShard, crystals };
-            CatalogManager.GrantStartingInventory(startingItems);
         }
 
         /// <summary>
@@ -161,9 +145,6 @@ namespace Scenes.TestScenes.Playfab_Sandbox_Test
         /// <param name="captainId">Captain ID</param>
         void SaveCaptainData(CaptainLevel captainLevel, string captainId)
         {
-            GuideData guideData = new(guideId, upgradeLevel);
-            _guideDataList.Add(guideData);
-            _guideDataAccessor.Save(guideLevel, _guideDataList);
         }
         
         /// <summary>
@@ -171,15 +152,6 @@ namespace Scenes.TestScenes.Playfab_Sandbox_Test
         /// </summary>
         void LoadCaptainData()
         {
-            var guideUpgradeLevels = _guideDataAccessor.Load();
-            foreach (var level in guideUpgradeLevels)
-            {
-                Debug.LogFormat("{0} - {1}: Guide: {2}  loaded.", nameof(CatalogView), nameof(PurchaseUpgradeTest), level.Key);
-                foreach (var data in level.Value)
-                {
-                    Debug.LogFormat("{0} - {1}: Guide id: {2} upgrade level {3} loaded.", nameof(CatalogView), nameof(PurchaseUpgradeTest), data.guideId, data.upgradeLevel);
-                }
-            }
         }
         
         /// <summary>
