@@ -13,12 +13,12 @@ namespace CosmicShore.Integrations.PlayFab.CloudScripts
         public void Start()
         {
             AuthenticationManager.OnLoginSuccess += InitEntity;
-            AuthenticationManager.OnLoginSuccess += CallSaveRewardClaimTime;
+            // AuthenticationManager.OnLoginSuccess += CallSaveRewardClaimTime;
         }
 
         public void OnDisable()
         {
-            AuthenticationManager.OnLoginSuccess -= CallSaveRewardClaimTime;
+            // AuthenticationManager.OnLoginSuccess -= CallSaveRewardClaimTime;
             AuthenticationManager.OnLoginSuccess -= InitEntity;
         }
 
@@ -44,12 +44,14 @@ namespace CosmicShore.Integrations.PlayFab.CloudScripts
                 new ExecuteFunctionRequest //Set this to true if you would like this call to show up in PlayStream
                 {
                     Entity = _entity,
-                    FunctionName = "SaveRewardClaimTime", //This should be the name of your Azure Function that you created.
+                    FunctionName = "Claim", //This should be the name of your Azure Function that you created.
                     GeneratePlayStreamEvent = false //Set this to true if you would like this call to show up in PlayStream
                 };
             
             PlayFabCloudScriptAPI.ExecuteFunction(request, OnSaveRewardClaimTimeSuccess, PlayFabUtility.HandleErrorReport);
         }
+        
+        
 
         /// <summary>
         /// On Saving Daily Reward Claim Time Delegate
