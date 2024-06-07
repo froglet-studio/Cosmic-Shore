@@ -39,7 +39,7 @@ namespace CosmicShore.Integrations.PlayFab.CloudScripts
         /// Execute SaveRewardClaimTime Azure Function
         /// Returns UpdateUserInternalDataResult and nextClaimTime if request is successful.
         /// </summary>
-        private void CallSaveRewardClaimTime()
+        public void Claim()
         {
             var request =
                 new ExecuteFunctionRequest //Set this to true if you would like this call to show up in PlayStream

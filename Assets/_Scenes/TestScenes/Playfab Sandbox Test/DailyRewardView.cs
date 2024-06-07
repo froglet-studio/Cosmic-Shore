@@ -53,7 +53,10 @@ namespace CosmicShore.TestScenes.PlayfabSandboxTest
             GUILayout.Label(GetText(MenuSelection.DailyReward));
             GUILayout.Space(10);
             
-            AddButton(GetText(MenuSelection.DailyReward));
+            if (GUILayout.Button("Claim"))
+            {
+                _dailyRewardHandler.Claim();
+            }
             GUILayout.Space(10);
             
             AddButton(GetText(MenuSelection.RootMenu));
