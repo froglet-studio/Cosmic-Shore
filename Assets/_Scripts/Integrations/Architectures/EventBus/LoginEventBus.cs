@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using UnityEngine;
 using UnityEngine.Events;
 
 namespace CosmicShore.Integrations.Architectures.EventBus
@@ -10,7 +11,7 @@ namespace CosmicShore.Integrations.Architectures.EventBus
         Success, Fail, Other
     }
     
-    public class LoginEventBus
+    public class LoginEventBus: IDisposable
     {
         private static readonly IDictionary<LoginType, UnityEvent> Events =
             new Dictionary<LoginType, UnityEvent>();
@@ -43,6 +44,12 @@ namespace CosmicShore.Integrations.Architectures.EventBus
             {
                 currentEvent.Invoke();
             }
+        }
+
+        public void Dispose()
+        {
+            Events.Clear();
+            Debug.Log("LoginEventBus - Events cleared.");
         }
     }
 }
