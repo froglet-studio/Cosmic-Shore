@@ -7,7 +7,7 @@ namespace CosmicShore.Integrations.Architectures.EventBus
     [Serializable]
     public enum LoginType
     {
-        Anonymous, Email, Username, Other
+        Success, Fail, Other
     }
     
     public class LoginEventBus

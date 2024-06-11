@@ -1,7 +1,5 @@
 using System;
-using System.Security;
 using CosmicShore.Integrations.PlayFab.Authentication;
-using PlayFab;
 using UnityEngine;
 using UnityEngine.Events;
 
@@ -11,9 +9,17 @@ namespace CosmicShore.Integrations.Architectures.EventBus
     {
         // private static readonly LoginEventBus LoginEventBus = new();
         // Start is called before the first frame update
+        private static string _displayMessage = String.Empty;
+        private void OnEnable()
+        {
+            LoginEventBus.Subscribe(LoginType.Success, GetAction(LoginType.Success));
+            LoginEventBus.Subscribe(LoginType.Fail, GetAction(LoginType.Fail));
+        }
+
         private void OnDisable()
         {
-            LoginEventBus.Unsubscribe(LoginType.Anonymous, GetAction(LoginType.Anonymous));
+            LoginEventBus.Unsubscribe(LoginType.Success, GetAction(LoginType.Success));
+            LoginEventBus.Unsubscribe(LoginType.Fail, GetAction(LoginType.Fail));
         }
 
         private void OnGUI()
@@ -28,16 +34,21 @@ namespace CosmicShore.Integrations.Architectures.EventBus
 
         private void LoginWindow(int windowID)
         {
-            GUILayout.Label(GetText(LoginType.Anonymous));
+            GUILayout.Label("Who are you");
             GUILayout.Space(10);
-        }
 
-        private void AddButton(LoginType loginType)
-        {
-            if (GUILayout.Button(GetText(loginType)))
+            if (GUILayout.Button("Sign In"))
             {
-                // Do login stuff here
+                AuthenticationManager.Instance.AnonymousLogin();
             }
+            
+            GUILayout.Space(10);
+            
+            if (!string.IsNullOrEmpty(_displayMessage))
+            {
+                GUILayout.Label(_displayMessage);
+            }
+            
             GUILayout.Space(10);
         }
 
@@ -45,10 +56,8 @@ namespace CosmicShore.Integrations.Architectures.EventBus
         {
             return loginType switch
             {
-                LoginType.Anonymous => "Anonymous",
-                LoginType.Email => "Email Login",
-                LoginType.Username => "Username Login",
-                LoginType.Other => "Undefined Login",
+                LoginType.Success => "Successful logged in.",
+                LoginType.Fail => "Had problem logging in.",
                 _ => "Unknown Nightmare"
             };
         }
@@ -57,25 +66,25 @@ namespace CosmicShore.Integrations.Architectures.EventBus
         {
             return loginType switch
             {
-                LoginType.Anonymous => AnonymousLogin,
-                LoginType.Email => EmailLogin,
+                LoginType.Success => DisplayLoginMessage,
+                LoginType.Fail => DisplayErrorMessage,
                 _ => NoneAction
             };
         }
 
-        private static void AnonymousLogin()
+        private static void DisplayLoginMessage()
         {
-            Debug.Log("TestLoginUI - AnonymousLogin()");
+            _displayMessage = GetText(LoginType.Success);
         }
 
-        private static void EmailLogin()
+        private static void DisplayErrorMessage()
         {
-            Debug.Log("TestLoginUI - EmailLogin()");
+            _displayMessage = GetText(LoginType.Fail);
         }
 
         private static void NoneAction()
         {
-            Debug.Log("TestLoginUI - NoneAction()");
+            _displayMessage = GetText(LoginType.Other);
         }
     }
 }
