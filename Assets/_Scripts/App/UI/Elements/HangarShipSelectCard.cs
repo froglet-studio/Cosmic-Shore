@@ -2,7 +2,6 @@ using CosmicShore.App.Systems.CTA;
 using CosmicShore.App.UI;
 using CosmicShore.App.UI.Menus;
 using CosmicShore.Integrations.PlayFab.Economy;
-using System;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -11,7 +10,7 @@ namespace CosmicShore
     /// <summary>
     /// The UI card view for individual items in the ship selection nav bar of the hangar
     /// </summary>
-    public class HangarShipSelectCard : MonoBehaviour
+    public class HangarShipSelectCard : NavLink
     {
         /// <summary>
         /// The dynamic UI components of the card UI
@@ -26,7 +25,6 @@ namespace CosmicShore
         [SerializeField] float ActiveSize = 64;
         [SerializeField] float InactiveSize = 52;
 
-
         /// <summary>
         /// The sprites to use when the element is active or inactive within the list
         /// </summary>
@@ -35,7 +33,6 @@ namespace CosmicShore
         [SerializeField] Sprite InactiveBackgroundSprite;
         [SerializeField] Sprite ActiveLockSprite;
         [SerializeField] Sprite InactiveLockSprite;
-
 
         [HideInInspector] public HangarMenu HangarMenu;
         public SO_Ship Ship;

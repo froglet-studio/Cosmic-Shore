@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Security;
 using CosmicShore.App.Systems.UserJourney;
+using CosmicShore.Integrations.Architectures.EventBus;
 using CosmicShore.Integrations.PlayFab.PlayerModels;
 using CosmicShore.Integrations.PlayFabV2.Models;
 using CosmicShore.Utility.Singleton;
@@ -35,8 +36,7 @@ namespace CosmicShore.Integrations.PlayFab.Authentication
         public override void Awake()
         {
             base.Awake();
-
-            //AnonymousLogin();
+            
             OnLoginSuccess += LoadPlayerProfile;
             StartCoroutine(LoginCoroutine());
         }
@@ -230,7 +230,7 @@ namespace CosmicShore.Integrations.PlayFab.Authentication
         void CustomIDLogin()
         {
             PlayFabClientAPI.LoginWithCustomID(
-                new LoginWithCustomIDRequest()
+                new LoginWithCustomIDRequest
                 {
                     CreateAccount = true,
                     CustomId = SystemInfo.deviceUniqueIdentifier
@@ -257,12 +257,14 @@ namespace CosmicShore.Integrations.PlayFab.Authentication
             Debug.Log($"AuthenticationManager - Entity Id: {PlayFabAccount.AuthContext.EntityId}");
 
             OnLoginSuccess?.Invoke();
+            LoginEventBus.Publish(LoginType.Success);
         }
 
         void HandleLoginError(PlayFabError loginError = null)
         {
             Debug.LogError("AuthenticationManager - " + loginError.GenerateErrorReport());
             OnLoginError?.Invoke();
+            LoginEventBus.Publish(LoginType.Fail);
         }
         #endregion
 

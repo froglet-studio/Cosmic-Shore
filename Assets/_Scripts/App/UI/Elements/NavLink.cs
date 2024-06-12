@@ -8,7 +8,9 @@ namespace CosmicShore.App.UI
     public class NavLink : MonoBehaviour
     {
         [FormerlySerializedAs("panel")]
-        [SerializeField] GameObject view;
+        [FormerlySerializedAs("view")]
+        [SerializeField] public GameObject selectView;
+        [SerializeField] public View updateView;
         [SerializeField] Image activeImage;
         [SerializeField] Image inactiveImage;
         [SerializeField] float crossfadeDuration = 0.5f;
@@ -18,6 +20,7 @@ namespace CosmicShore.App.UI
 
         public void OnClick()
         {
+            Debug.LogError($"NavLink - OnClick");
             navGroup.ActivateLink(this);
         }
 
@@ -27,7 +30,6 @@ namespace CosmicShore.App.UI
                 StopCoroutine(currentCrossfade);
 
             currentCrossfade = StartCoroutine(CrossfadeImage(isActive));
-            view.SetActive(isActive);
         }
 
         IEnumerator CrossfadeImage(bool isActive)
