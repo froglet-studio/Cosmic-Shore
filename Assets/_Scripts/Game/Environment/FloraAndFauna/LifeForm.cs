@@ -15,7 +15,7 @@ namespace CosmicShore
         [SerializeField] protected int minHealthBlocks = 0;
 
         protected List<HealthBlock> healthBlocks = new List<HealthBlock>();
-        private List<Spindle> spindles = new List<Spindle>();
+        protected List<Spindle> spindles = new List<Spindle>();
 
         protected Crystal crystal;
         [SerializeField] protected Material activeCrystalMaterial; // TODO: make a crytal material set that pulls from the element
@@ -37,39 +37,30 @@ namespace CosmicShore
         public void AddSpindle(Spindle spindle)
         {
             spindles.Add(spindle);
+            spindle.LifeForm = this;
+        }
+
+        public void RemoveSpindle(Spindle spindle)
+        {
+            spindles.Remove(spindle);
         }
 
         public void RemoveHealthBlock(HealthBlock healthBlock)
         {
             healthBlocks.Remove(healthBlock);
-            CheckSpindles();
-            CheckIfDead();
-            //Debug.Log("HealthBlocks: " + healthBlocks.Count);
+            //CheckIfDead();
         }
 
-        void CheckSpindles()
+        public void CheckIfDead()
         {
-            foreach (Spindle spindle in spindles)
+            Debug.Log($"Lifeform.spindles.Count {spindles.Count}");
+            if (spindles.Count == 0)
             {
-                spindle.CheckForLife();
+                Die();
             }
         }
 
-        void CheckIfDead()
-        {
-            if (healthBlocks.Count == minHealthBlocks)
-            {
-                StartCoroutine(DieCoroutine());
-            }
-        }
-
-        IEnumerator DieCoroutine()
-        {
-            yield return new WaitForSeconds(1f);
-            Die();
-        }
-
-        void KillCrystal() // TODO: handle this with crystal.Activate()
+        void ActivateCrystal() // TODO: handle this with crystal.Activate()
         {
             crystal.transform.parent = node.transform; 
             crystal.gameObject.GetComponent<SphereCollider>().enabled = true;
@@ -79,11 +70,21 @@ namespace CosmicShore
 
         protected virtual void Die()
         {
-            KillCrystal(); // TODO: handle this with crystal.Activate()
-
+            ActivateCrystal(); // TODO: handle this with crystal.Activate()
             StopAllCoroutines();
+            StartCoroutine(DieCoroutine());
+        }
+
+        private IEnumerator DieCoroutine()
+        {
+            foreach (Spindle spindle in spindles)
+            {
+                spindle.EvaporateSpindle();
+            }
+
+            yield return new WaitForSeconds(1f);
+
             Destroy(gameObject);
-            return;
         }
     }
 }

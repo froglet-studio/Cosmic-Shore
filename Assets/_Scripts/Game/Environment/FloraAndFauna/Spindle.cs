@@ -8,6 +8,8 @@ namespace CosmicShore
         public GameObject cylinder;
         public GameObject renderedObject;
         public float Length = 1f;
+        Spindle parentSpindle;
+        public LifeForm LifeForm;
 
         void Awake()
         {
@@ -16,16 +18,22 @@ namespace CosmicShore
 
         public void CheckForLife()
         {
-            //Debug.Log($"Checking spindle for life: GetComponentsInChildren<HealthBlock>().length = {GetComponentsInChildren<HealthBlock>().Length} GetComponentsInChildren<Spindle>().Length = {GetComponentsInChildren<Spindle>().Length}");
-            if (GetComponentsInChildren<HealthBlock>().Length < 1 && GetComponentsInChildren<Spindle>().Length <= 1)
+            HealthBlock healthBlock;
+            healthBlock = GetComponentInChildren<HealthBlock>();
+            if ((!healthBlock || healthBlock && healthBlock.destroyed) && GetComponentsInChildren<Spindle>().Length <= 1)
             {
-                Debug.Log("Spindle.Evaporating");
-                StartCoroutine(Evaporate());
+                EvaporateSpindle();
             }
+        }
+
+        public void EvaporateSpindle()
+        {
+            StartCoroutine(Evaporate());
         }
 
         IEnumerator Evaporate()
         {
+            
             MeshRenderer meshRenderer = renderedObject.GetComponent<MeshRenderer>();
             float deathAnimation = 0f;
             float animationSpeed = 1f;
@@ -33,12 +41,19 @@ namespace CosmicShore
             {
                 meshRenderer.material.SetFloat("_DeathAnimation", deathAnimation);
                 deathAnimation += Time.deltaTime * animationSpeed;
-                //meshRenderer.material.color = Color.Lerp(meshRenderer.material.color, Color.clear, 0.1f);
                 yield return null;
             }
-            Destroy(gameObject);
+            transform.parent.TryGetComponent(out parentSpindle);
+            Destroy(gameObject);          
+        }
+
+
+        private void OnDestroy()
+        {
+            LifeForm.RemoveSpindle(this);
+            if (parentSpindle) parentSpindle.CheckForLife();
+            else LifeForm.CheckIfDead();
         }
 
     }
-
 }

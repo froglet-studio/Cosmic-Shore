@@ -72,6 +72,7 @@ public class Boid : Fauna
         float initialDelay = normalizedIndex * behaviorUpdateRate;
         StartCoroutine(CalculateBehaviorCoroutine(initialDelay));
         trailBlock.Team = Team;
+        AddSpindle(spindle);
     }
 
     IEnumerator CalculateBehaviorCoroutine(float initialDelay)

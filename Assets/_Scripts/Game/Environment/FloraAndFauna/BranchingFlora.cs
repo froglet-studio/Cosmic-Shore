@@ -41,14 +41,14 @@ namespace CosmicShore
         protected override void Start()
         {
             base.Start();
-            activeBranches.Add(new Branch { gameObject = gameObject, depth = 0 }); // add trunk
+            //activeBranches.Add(new Branch { gameObject = gameObject, depth = 0 }); // add trunk
             SeedBranches(); // add more truncks
             transform.rotation = Quaternion.LookRotation(node.GetCrystal().transform.position);
         }
 
         void SeedBranches()
         {
-            for (int i = 0; i < Random.Range(minTrunks-1, maxTrunks-1); i++)
+            for (int i = 0; i < Random.Range(minTrunks, maxTrunks); i++)
             {
                 Branch branch = new Branch();
                 branch.gameObject = Instantiate(spindle, transform.position, transform.rotation).gameObject;
@@ -56,6 +56,7 @@ namespace CosmicShore
                 branch.gameObject.transform.parent = transform;
                 branch.depth = 0;
                 activeBranches.Add(branch);
+                AddSpindle(branch.gameObject.GetComponent<Spindle>());
             }
         }
 
