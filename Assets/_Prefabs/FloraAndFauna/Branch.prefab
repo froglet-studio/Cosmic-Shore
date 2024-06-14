@@ -241,6 +241,5 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   cylinder: {fileID: 5796965144546681767}
-  renderedObject: {fileID: 2431877866608741047}
-  Length: 1
+  RenderedObject: {fileID: 2431877866608741047}
   LifeForm: {fileID: 0}

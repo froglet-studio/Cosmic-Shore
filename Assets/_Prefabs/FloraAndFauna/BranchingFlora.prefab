@@ -52,7 +52,7 @@ MonoBehaviour:
   activeCrystalMaterial: {fileID: 2100000, guid: 18c297a89c0d43e46bd4ea5bd6143ffb,
     type: 2}
   growPeriod: 2
-  PlantPeriod: 15
+  PlantPeriod: 3
   growthChance: 0.5
   minBranchAngle: -60
   maxBranchAngle: 60

@@ -6,15 +6,9 @@ namespace CosmicShore
     public class Spindle : MonoBehaviour
     {
         public GameObject cylinder;
-        public GameObject renderedObject;
-        public float Length = 1f;
+        public GameObject RenderedObject;
         Spindle parentSpindle;
         public LifeForm LifeForm;
-
-        void Awake()
-        {
-            if (cylinder) Length = cylinder.transform.localScale.y;
-        }
 
         private void Start()
         {
@@ -39,7 +33,7 @@ namespace CosmicShore
         IEnumerator EvaporateCoroutine()
         {
             
-            MeshRenderer meshRenderer = renderedObject.GetComponent<MeshRenderer>();
+            MeshRenderer meshRenderer = RenderedObject.GetComponent<MeshRenderer>();
             float deathAnimation = 0f;
             float animationSpeed = 1f;
             while (deathAnimation < 1f)
@@ -54,7 +48,7 @@ namespace CosmicShore
 
         IEnumerator CondenseCoroutine()
         {
-            Renderer Renderer = renderedObject.GetComponent<Renderer>();
+            Renderer Renderer = RenderedObject.GetComponent<Renderer>();
             float deathAnimation = 1f;
             float animationSpeed = 1f;
             while (deathAnimation > 0f)

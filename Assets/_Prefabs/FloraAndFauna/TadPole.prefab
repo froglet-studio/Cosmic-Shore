@@ -47,8 +47,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   cylinder: {fileID: 0}
-  renderedObject: {fileID: 2959431485097910194}
-  Length: 1
+  RenderedObject: {fileID: 2959431485097910194}
   LifeForm: {fileID: 5945480239701989318}
 --- !u!1 &2959431485097910194
 GameObject:
