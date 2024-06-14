@@ -62,10 +62,13 @@ namespace CosmicShore
 
         private void OnDestroy()
         {
-            LifeForm.RemoveSpindle(this);
-            if (parentSpindle) parentSpindle.CheckForLife();
-            else LifeForm.CheckIfDead();
+            // check if scene is still loaded
+            if (gameObject.scene.isLoaded)
+            {
+                LifeForm.RemoveSpindle(this);
+                if (parentSpindle) parentSpindle.CheckForLife();
+                else LifeForm.CheckIfDead();
+            }
         }
-
     }
 }

@@ -37,6 +37,12 @@ GameObject:
   - component: {fileID: 3278147979306357820}
   - component: {fileID: 7905841161624706281}
   - component: {fileID: 8732269191417351981}
+  - component: {fileID: -4986972258636661852}
+  - component: {fileID: 6970368180686095163}
+  - component: {fileID: -6937025617086730135}
+  - component: {fileID: -5550026688184090557}
+  - component: {fileID: 4647939800726779465}
+  - component: {fileID: -5360036921522444626}
   m_Layer: 0
   m_Name: HealthBlock
   m_TagString: Untagged
@@ -670,6 +676,138 @@ MonoBehaviour:
   colliderTheshold: 1
   radius: 40
 --- !u!114 &8732269191417351981
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5776304996075792891}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 78b38b59fbd004b44be891e09a685680, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  TopLeftIsBonded: 0
+  TopRightIsBonded: 0
+  BottomLeftIsBonded: 0
+  BottomRightIsBonded: 0
+  FullyBonded: 0
+  GyroidBlock: {fileID: 0}
+  BlockType: 1
+  isSeed: 0
+  colliderTheshold: 1
+  radius: 40
+--- !u!114 &-4986972258636661852
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5776304996075792891}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 78b38b59fbd004b44be891e09a685680, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  TopLeftIsBonded: 0
+  TopRightIsBonded: 0
+  BottomLeftIsBonded: 0
+  BottomRightIsBonded: 0
+  FullyBonded: 0
+  GyroidBlock: {fileID: 0}
+  BlockType: 1
+  isSeed: 0
+  colliderTheshold: 1
+  radius: 40
+--- !u!114 &6970368180686095163
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5776304996075792891}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 78b38b59fbd004b44be891e09a685680, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  TopLeftIsBonded: 0
+  TopRightIsBonded: 0
+  BottomLeftIsBonded: 0
+  BottomRightIsBonded: 0
+  FullyBonded: 0
+  GyroidBlock: {fileID: 0}
+  BlockType: 1
+  isSeed: 0
+  colliderTheshold: 1
+  radius: 40
+--- !u!114 &-6937025617086730135
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5776304996075792891}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 78b38b59fbd004b44be891e09a685680, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  TopLeftIsBonded: 0
+  TopRightIsBonded: 0
+  BottomLeftIsBonded: 0
+  BottomRightIsBonded: 0
+  FullyBonded: 0
+  GyroidBlock: {fileID: 0}
+  BlockType: 1
+  isSeed: 0
+  colliderTheshold: 1
+  radius: 40
+--- !u!114 &-5550026688184090557
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5776304996075792891}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 78b38b59fbd004b44be891e09a685680, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  TopLeftIsBonded: 0
+  TopRightIsBonded: 0
+  BottomLeftIsBonded: 0
+  BottomRightIsBonded: 0
+  FullyBonded: 0
+  GyroidBlock: {fileID: 0}
+  BlockType: 1
+  isSeed: 0
+  colliderTheshold: 1
+  radius: 40
+--- !u!114 &4647939800726779465
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5776304996075792891}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 78b38b59fbd004b44be891e09a685680, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  TopLeftIsBonded: 0
+  TopRightIsBonded: 0
+  BottomLeftIsBonded: 0
+  BottomRightIsBonded: 0
+  FullyBonded: 0
+  GyroidBlock: {fileID: 0}
+  BlockType: 1
+  isSeed: 0
+  colliderTheshold: 1
+  radius: 40
+--- !u!114 &-5360036921522444626
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
