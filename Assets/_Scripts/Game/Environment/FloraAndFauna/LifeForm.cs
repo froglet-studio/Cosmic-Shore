@@ -60,17 +60,9 @@ namespace CosmicShore
             }
         }
 
-        void ActivateCrystal() // TODO: handle this with crystal.Activate()
-        {
-            crystal.transform.parent = node.transform; 
-            crystal.gameObject.GetComponent<SphereCollider>().enabled = true;
-            crystal.enabled = true;
-            crystal.GetComponentInChildren<SkinnedMeshRenderer>().material = activeCrystalMaterial; // TODO: make a crytal material set that this pulls from using the element
-        }
-
         protected virtual void Die()
         {
-            ActivateCrystal(); // TODO: handle this with crystal.Activate()
+            crystal.ActivateCrystal(); // TODO: handle this with crystal.Activate()
             StopAllCoroutines();
             StartCoroutine(DieCoroutine());
         }

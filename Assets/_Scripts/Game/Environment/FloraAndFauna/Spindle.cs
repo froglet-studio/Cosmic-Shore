@@ -16,6 +16,11 @@ namespace CosmicShore
             if (cylinder) Length = cylinder.transform.localScale.y;
         }
 
+        private void Start()
+        {
+            StartCoroutine(CondenseCoroutine());
+        }
+
         public void CheckForLife()
         {
             HealthBlock healthBlock;
@@ -28,10 +33,10 @@ namespace CosmicShore
 
         public void EvaporateSpindle()
         {
-            StartCoroutine(Evaporate());
+            StartCoroutine(EvaporateCoroutine());
         }
 
-        IEnumerator Evaporate()
+        IEnumerator EvaporateCoroutine()
         {
             
             MeshRenderer meshRenderer = renderedObject.GetComponent<MeshRenderer>();
@@ -47,6 +52,19 @@ namespace CosmicShore
             Destroy(gameObject);          
         }
 
+        IEnumerator CondenseCoroutine()
+        {
+            Renderer Renderer = renderedObject.GetComponent<Renderer>();
+            float deathAnimation = 1f;
+            float animationSpeed = 1f;
+            while (deathAnimation > 0f)
+            {
+                Renderer.material.SetFloat("_DeathAnimation", deathAnimation);
+                deathAnimation -= Time.deltaTime * animationSpeed;
+                yield return null;
+            }
+            Renderer.material.SetFloat("_DeathAnimation", 0);
+        }
 
         private void OnDestroy()
         {

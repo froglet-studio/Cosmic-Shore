@@ -261,19 +261,6 @@ public class Boid : Fauna
 
     void Update()
     {
-
-        if ((trailBlock.destroyed || isKilled) && hasCrystal && !crystal.enabled) // TODO: still need the crystal check?
-        {
-            crystal.transform.parent = boidManager.transform;
-            crystal.gameObject.GetComponent<SphereCollider>().enabled = true;
-            crystal.enabled = true; 
-
-            crystal.GetComponentInChildren<SkinnedMeshRenderer>().material = activeCrystalMaterial; // TODO: make a crytal material set that this pulls from using the element
-            StopAllCoroutines();
-            Destroy(gameObject);
-            return;
-        }
-
         //if (trailBlock.Team != Teams.Blue)
         //{
         //    goal = trailBlock.Player.Ship.transform; // TODO: unccomment and make event driven and commander friendly

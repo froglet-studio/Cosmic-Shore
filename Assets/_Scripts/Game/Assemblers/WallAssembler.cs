@@ -217,11 +217,10 @@ namespace CosmicShore
                     var trailBlock = potentialMate.GetComponent<TrailBlock>();
                     if (trailBlock != null)
                     {
-                        Boid boid = trailBlock.GetComponentInParent<Boid>();
-                        if (boid != null)
+                        HealthBlock healthBlock = trailBlock.GetComponent<HealthBlock>();
+                        if (healthBlock != null)
                         {
-                            trailBlock.transform.parent = WallBlock.transform.parent;
-                            boid.isKilled = true;
+                            healthBlock.Reparent(WallBlock.transform.parent);
                         }
                         trailBlock.TargetScale = scale;
                         trailBlock.MaxScale = WallBlock.MaxScale;

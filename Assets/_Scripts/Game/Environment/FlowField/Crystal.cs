@@ -23,6 +23,7 @@ namespace CosmicShore.Environment.FlowField
         [SerializeField] protected GameObject CrystalModel; 
         [SerializeField] protected Material explodingMaterial;
         [SerializeField] protected Material defaultMaterial;
+        [SerializeField] protected Material inactiveCrystalMaterial;
         [SerializeField] protected bool shipImpactEffects = true;
         #endregion
 
@@ -192,10 +193,22 @@ namespace CosmicShore.Environment.FlowField
             this.origin = origin;
         }
 
+        public void ActivateCrystal() // TODO: handle this with crystal.Activate()
+        {
+            transform.parent = NodeControlManager.Instance.transform;
+            gameObject.GetComponent<SphereCollider>().enabled = true;
+            enabled = true;
+            GetComponentInChildren<Renderer>().material = inactiveCrystalMaterial; // TODO: make a crytal material set that this pulls from using the element
+            if (lerpCrystalMaterialCoroutine != null) StopCoroutine(lerpCrystalMaterialCoroutine);
+            lerpCrystalMaterialCoroutine = StartCoroutine(LerpCrystalMaterialCoroutine(defaultMaterial));
+        }
+
         public void Steal(Teams team, float duration)
         {
             Team = team;
-            CrystalModel.GetComponent<MeshRenderer>().material = Hangar.Instance.GetTeamCrystalMaterial(team);
+            CrystalModel.GetComponent<Renderer>().material = Hangar.Instance.GetTeamCrystalMaterial(team);
+            if (lerpCrystalMaterialCoroutine != null) StopCoroutine(lerpCrystalMaterialCoroutine);
+            lerpCrystalMaterialCoroutine = StartCoroutine(LerpCrystalMaterialCoroutine(Hangar.Instance.GetTeamCrystalMaterial(team)));
             StartCoroutine(DecayingTheftCoroutine(duration));
         }
 
@@ -203,7 +216,39 @@ namespace CosmicShore.Environment.FlowField
         {
             yield return new WaitForSeconds(duration);
             Team = Teams.None;
-            CrystalModel.GetComponent<MeshRenderer>().material = defaultMaterial;
+            CrystalModel.GetComponent<Renderer>().material = defaultMaterial;
+            if (lerpCrystalMaterialCoroutine != null) StopCoroutine(lerpCrystalMaterialCoroutine);
+            lerpCrystalMaterialCoroutine = StartCoroutine(LerpCrystalMaterialCoroutine(defaultMaterial));
+
         }
+
+        Coroutine lerpCrystalMaterialCoroutine;
+        IEnumerator LerpCrystalMaterialCoroutine(Material targetMaterial, float lerpDuration = 3f)
+        {
+            Material tempMaterial = new Material(CrystalModel.GetComponent<Renderer>().material);
+            CrystalModel.GetComponent<Renderer>().material = tempMaterial;
+
+            Color startColor1 = tempMaterial.GetColor("_BrightCrystalColor");
+            Color startColor2 = tempMaterial.GetColor("_DullCrystalColor");
+
+            Color targetColor1 = targetMaterial.GetColor("_BrightCrystalColor");
+            Color targetColor2 = targetMaterial.GetColor("_DullCrystalColor");
+
+            float elapsedTime = 0.0f;
+
+            while (elapsedTime < lerpDuration)
+            {
+                elapsedTime += Time.deltaTime;
+                float t = Mathf.Clamp01(elapsedTime / lerpDuration);
+
+                tempMaterial.SetColor("_BrightCrystalColor", Color.Lerp(startColor1, targetColor1, t));
+                tempMaterial.SetColor("_DullCrystalColor", Color.Lerp(startColor2, targetColor2, t));
+
+                yield return null;//new WaitForSeconds(.05f);
+            }
+
+            CrystalModel.GetComponent<Renderer>().material = targetMaterial;
+        }
+
     }
 }

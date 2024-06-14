@@ -426,17 +426,16 @@ namespace CosmicShore
 
         GyroidAssembler ConvertBlock(TrailBlock trailBlock)
         {
-            Boid boid = trailBlock.GetComponentInParent<Boid>();
-            if (boid != null)
+            HealthBlock healthBlock = trailBlock.GetComponent<HealthBlock>();
+            if (healthBlock != null)
             {
-                trailBlock.transform.parent = GyroidBlock.transform.parent;
-                boid.isKilled = true;
+                healthBlock.Reparent(GyroidBlock.transform.parent);
             }
-            trailBlock.TargetScale = scale;
-            trailBlock.MaxScale = GyroidBlock.MaxScale;
-            trailBlock.GrowthVector = GyroidBlock.GrowthVector;
-            trailBlock.Steal(GyroidBlock.Player, GyroidBlock.Team);
-            trailBlock.ChangeSize();
+            healthBlock.TargetScale = scale;
+            healthBlock.MaxScale = GyroidBlock.MaxScale;
+            healthBlock.GrowthVector = GyroidBlock.GrowthVector;
+            healthBlock.Steal(GyroidBlock.Player, GyroidBlock.Team);
+            healthBlock.ChangeSize();
             var mateComponent = trailBlock.gameObject.AddComponent<GyroidAssembler>();
             mateComponent.GyroidBlock = trailBlock;
             return mateComponent;
