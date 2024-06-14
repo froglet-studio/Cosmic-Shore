@@ -195,7 +195,7 @@ namespace CosmicShore.Environment.FlowField
 
         public void ActivateCrystal() // TODO: handle this with crystal.Activate()
         {
-            transform.parent = NodeControlManager.Instance.transform;
+            transform.parent = NodeControlManager.Instance.GetNearestNode().transform;
             gameObject.GetComponent<SphereCollider>().enabled = true;
             enabled = true;
             GetComponentInChildren<Renderer>().material = inactiveCrystalMaterial; // TODO: make a crytal material set that this pulls from using the element
