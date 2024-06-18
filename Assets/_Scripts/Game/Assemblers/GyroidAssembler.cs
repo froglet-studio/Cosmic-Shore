@@ -97,11 +97,48 @@ namespace CosmicShore
             trailBlock.TargetScale = scale;
             trailBlock.MaxScale = TrailBlock.MaxScale;
             trailBlock.GrowthVector = TrailBlock.GrowthVector;
-            var mateComponent = trailBlock.gameObject.GetComponent<GyroidAssembler>();
+
+            GyroidAssembler mateComponent = trailBlock.gameObject.GetComponent<GyroidAssembler>();
+            if (mateComponent == null)
+            {
+                mateComponent = trailBlock.gameObject.AddComponent<GyroidAssembler>();
+            }
             mateComponent.TrailBlock = trailBlock;
 
-            PrepareMate(mateComponent.TopRightMate);
+            // Update the GyroidBlockType based on the current block type
+            GyroidBlockType nextBlockType = GetNextBlockType();
+            mateComponent.BlockType = nextBlockType;
+
+            // Calculate the new position and rotation based on the bond mate data
+            GyroidBondMateData bondMateData = GyroidBondMateDataContainer.GetBondMateData(BlockType, CornerSiteType.TopRight);
+            Vector3 newPosition = transform.position + (bondMateData.DeltaPosition * separationDistance);
+            Quaternion newRotation = Quaternion.LookRotation(
+                bondMateData.DeltaForward.x * transform.right + bondMateData.DeltaForward.y * transform.up + bondMateData.DeltaForward.z * transform.forward,
+                bondMateData.DeltaUp.x * transform.right + bondMateData.DeltaUp.y * transform.up + bondMateData.DeltaUp.z * transform.forward
+            );
+
+            // Update the position and rotation of the TrailBlock
+            trailBlock.transform.position = newPosition;
+            trailBlock.transform.rotation = newRotation;
+
             return trailBlock;
+        }
+
+        private GyroidBlockType GetNextBlockType()
+        {
+            GyroidBlockType nextBlockType = GyroidBlockType.AB; // Default value
+
+            // Retrieve the bond mate data based on the current block type and the TopRight corner site
+            if (GyroidBondMateDataContainer.BondMateDataMap.TryGetValue((BlockType, CornerSiteType.TopRight), out var bondMateData))
+            {
+                nextBlockType = bondMateData.BlockType;
+            }
+            else
+            {
+                Debug.LogWarning($"Bond mate data not found for block type: {BlockType} and corner site: {CornerSiteType.TopRight}");
+            }
+
+            return nextBlockType;
         }
 
         public void ClearMateList()
