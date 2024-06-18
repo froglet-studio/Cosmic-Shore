@@ -16,5 +16,16 @@ namespace CosmicShore.Utility.ClassExtensions
             transform.SetPositionAndRotation(position, rotation);
             transform.localScale = scale;
         }
+        
+        /// <summary>
+        /// A helper method to convert local position to global position.
+        /// </summary>
+        /// <param name="transform">The Transform to call this method</param>
+        /// <param name="local">Vector3 local position</param>
+        /// <returns>Vector3 global position</returns>
+        public static Vector3 ToGlobal(this Transform transform, Vector3 local)
+        {
+            return local.x * transform.right + local.y * transform.up + local.z * transform.forward + transform.position;
+        }
     }
 }

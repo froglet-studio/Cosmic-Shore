@@ -2,7 +2,7 @@ using CosmicShore.Core;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using UnityEditor;
+using CosmicShore.Utility.ClassExtensions;
 using UnityEngine;
 
 namespace CosmicShore
@@ -329,28 +329,18 @@ namespace CosmicShore
         IEnumerator UpdateMate(GyroidBondMate gyroidBondMate)
         {
             var targetRotation = CalculateRotation(gyroidBondMate);
-            while (true)
+            while (gyroidBondMate.Mate)
             {
                 yield return null;
-                if (gyroidBondMate.Mate != null)
-                {
-                    MoveMateToSite(gyroidBondMate, targetRotation, CalculateGlobalBondSite(gyroidBondMate.Substrate));
-                    RotateMate(gyroidBondMate, targetRotation, false);
-                }
-                else Debug.Log("gyroidAssembler is trying to move a null mate");
+                MoveMateToSite(gyroidBondMate, targetRotation, CalculateGlobalBondSite(gyroidBondMate.Substrate));
+                RotateMate(gyroidBondMate, targetRotation, false);
             }
         }
-
+        
         // Helper method to calculate local bond site
         Vector3 CalculateBondSite(CornerSiteType site)
         {
             return GyroidBondMateDataContainer.GetBondMateData(BlockType, site).DeltaPosition * separationDistance;
-        }
-
-        // Helper method to convert local position to global position
-        private Vector3 CalculateGlobalPosition(Vector3 localPosition)
-        {
-            return localPosition.x * transform.right + localPosition.y * transform.up + localPosition.z * transform.forward + transform.position;
         }
 
         // Method with switch case to update and return a specific global bond site
@@ -362,22 +352,22 @@ namespace CosmicShore
             switch (site)
             {
                 case CornerSiteType.TopLeft:
-                    globalBondSiteTopLeft = CalculateGlobalPosition(localBondSite);
+                    globalBondSiteTopLeft = transform.ToGlobal(localBondSite);
                     globalBondSite = globalBondSiteTopLeft;
                     break;
 
                 case CornerSiteType.TopRight:
-                    globalBondSiteTopRight = CalculateGlobalPosition(localBondSite);
+                    globalBondSiteTopRight = transform.ToGlobal(localBondSite);
                     globalBondSite = globalBondSiteTopRight;
                     break;
 
                 case CornerSiteType.BottomLeft:
-                    globalBondSiteBottomLeft = CalculateGlobalPosition(localBondSite);
+                    globalBondSiteBottomLeft = transform.ToGlobal(localBondSite);
                     globalBondSite = globalBondSiteBottomLeft;
                     break;
 
                 case CornerSiteType.BottomRight:
-                    globalBondSiteBottomRight = CalculateGlobalPosition(localBondSite);
+                    globalBondSiteBottomRight = transform.ToGlobal(localBondSite);
                     globalBondSite = globalBondSiteBottomRight;
                     break;
 
@@ -391,7 +381,7 @@ namespace CosmicShore
         // this method so if checks if this is in each struct in the list
         private bool IsMate(GyroidAssembler mateComponent)
         {
-            return mateComponent.MateList == null ? false : mateComponent.MateList.Count > 0;
+            return mateComponent.MateList is { Count: > 0 };
         }
         // this checks IsMate and then checks each bond such as TopLeftIsBonded to see if it is bonded to anything i.e bonds > 0
         public bool IsBonded()
@@ -404,13 +394,13 @@ namespace CosmicShore
         {
             if (preferedBlocks.Count > 0)
             {
-                Debug.Log($"GyroidAssembler: Prefered Block, Depth: {depth}");
-                var Mate = CreateGyroidBondMate(preferedBlocks.Dequeue(), BlockType, siteType); 
-                return Mate;
+                Debug.Log($"GyroidAssembler: Preferred Block, Depth: {depth}");
+                var mate = CreateGyroidBondMate(preferedBlocks.Dequeue(), BlockType, siteType); 
+                return mate;
             }
             else
             {
-                Debug.Log($"GyroidAssembler: No Prefered Block, Depth: {depth}");
+                Debug.Log($"GyroidAssembler: No Preferred Block, Depth: {depth}");
             }
 
             float closestDistance = float.MaxValue;
@@ -459,6 +449,8 @@ namespace CosmicShore
                     {
                         closestDistance = sqrDistance;
                         closest = mateComponent;
+                        
+                        // TODO: bondee is not used anywhere.
                         bondee = isTail ? CornerSiteType.BottomRight : CornerSiteType.TopLeft;
                     }
                 }
