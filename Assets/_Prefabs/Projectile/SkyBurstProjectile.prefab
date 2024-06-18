@@ -4840,14 +4840,16 @@ MonoBehaviour:
   Velocity: {x: 0, y: 0, z: 0}
   Team: 0
   Ship: {fileID: 0}
+  ImpactOnEnd: 1
   trailBlockImpactEffects: 0f000000
   shipImpactEffects: 040000000300000002000000
   crystalImpactEffects: 
+  endEffects: 0f000000
   ProjectileTime: 0
   spike: 0
   growthRate: 1
-  friendlyFire: 0
-  AOEPrefab: {fileID: 6875622972764638977, guid: f5ecfb9923155a84c860975d559b2714,
+  friendlyFire: 1
+  AOEPrefab: {fileID: -6804145696766762189, guid: 2095ac49fc418ce40ae094cc104a8259,
     type: 3}
   minExplosionScale: 600
   maxExplosionScale: 600

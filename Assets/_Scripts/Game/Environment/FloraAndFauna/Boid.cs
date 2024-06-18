@@ -218,7 +218,7 @@ public class Boid : Fauna
                 {
                     (var newBlock1, var gyroidBlock1) = NewBlock();
                     nakedEdge.preferedBlocks.Enqueue(gyroidBlock1);
-                    gyroidBlock1.GyroidBlock = newBlock1;
+                    gyroidBlock1.TrailBlock = newBlock1;
 
                     //(var newBlock2, var gyroidBlock2) = NewBlock();
                     //nakedEdge.preferedBlocks.Enqueue(gyroidBlock2);

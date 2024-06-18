@@ -1,5 +1,4 @@
-using CosmicShore.Core;
-using System.Collections;
+
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -10,11 +9,6 @@ namespace CosmicShore
     /// </summary>
     public class AssembledFlora : Flora
     {
-        // TODO: we want to serialize a congifurable assembler, but currently only use the type
-        /// <summary>
-        /// The assembler that defines the growth pattern of this flora's health blocks and spindles
-        /// </summary>
-        [SerializeField] Assembler assemblerTemplate = new GyroidAssembler();
         /// <summary>
         /// The max recursion depth of the assembler
         /// </summary>
@@ -28,17 +22,98 @@ namespace CosmicShore
         /// </summary>
         Assembler assembler;
 
+        [SerializeField] int maxTotalSpawnedObjects = 1000;
+        [SerializeField] int maxDepth = 30;
+        HashSet<Branch> activeBranches = new HashSet<Branch>();
+
+        struct Branch
+        {
+            public GameObject gameObject;
+            public int depth;
+            public Assembler assembler;
+        }
+
+
+        private int spawnedItemCount = 0;
+
         public override void Grow()
         {
-            if (feeds) return; // if it feeds, it doesn't grow
-            assembler.Grow();
+            if (spawnedItemCount >= maxTotalSpawnedObjects) return;
+
+            List<Branch> newBranches = new List<Branch>();
+            List<Branch> branchesToRemove = new List<Branch>();
+
+            foreach (Branch branch in activeBranches)
+            {
+                if (branch.depth < maxDepth)
+                {
+                    Branch newBranch = new Branch();
+
+                    HealthBlock newHealthBlock = Instantiate(healthBlock, branch.gameObject.transform.position, branch.gameObject.transform.rotation);
+                    newHealthBlock.LifeForm = this;
+
+                    var newAssembler = branch.assembler.Grow(newHealthBlock).GetComponent<Assembler>();
+
+                    Spindle newSpindle = Instantiate(spindle, branch.gameObject.transform);
+                    newSpindle.LifeForm = this;
+
+                    // Position the spindle relative to the new health block/assembler transform
+                    newSpindle.transform.position = newAssembler.transform.position;
+                    newSpindle.transform.rotation = newAssembler.transform.rotation;
+
+                    // Parent the health block to the spindle
+                    newHealthBlock.transform.SetParent(newSpindle.transform, false);
+
+                    // Set the properties of the new branch
+                    newBranch.gameObject = newSpindle.gameObject;
+                    newBranch.assembler = newAssembler;
+                    newBranch.depth = branch.depth + 1;
+
+                    // Add the new branch to the list of new branches
+                    newBranches.Add(newBranch);
+
+                    // Remove the current branch from the active branches
+                    branchesToRemove.Add(branch);
+                }
+            }
+
+            // Remove the branches that have grown from the active branches list
+            foreach (Branch branch in branchesToRemove)
+            {
+                activeBranches.Remove(branch);
+            }
+
+            // Add the new branches to the active branches list
+            activeBranches.UnionWith(newBranches);
         }
 
         public override void Plant()
         {
-            assembler = healthBlock.gameObject.AddComponent(assemblerTemplate.GetType()) as Assembler;
-            assembler.Depth = depth;
-            if (feeds) assembler.StartBonding();
+            assembler = CreateNewAssembler();
+
+            if (feeds)
+            {
+                assembler.StartBonding();
+            }
+        }
+
+        public Assembler CreateNewAssembler()
+        {
+            Spindle newSpindle = Instantiate(spindle, transform);
+            newSpindle.LifeForm = this; 
+
+            HealthBlock newHealthBlock = Instantiate(healthBlock, transform.position, transform.rotation);
+            newHealthBlock.transform.SetParent(newSpindle.transform, false);
+            newHealthBlock.LifeForm = this;
+
+            Assembler newAssembler = newHealthBlock.GetComponent<Assembler>();
+            newAssembler.TrailBlock = newHealthBlock;
+            newAssembler.Spindle = newSpindle;
+            newAssembler.Depth = depth;
+
+            activeBranches.Add(new Branch { gameObject = newSpindle.gameObject, depth = 0, assembler = newAssembler });
+
+            return newAssembler;
         }
     }
 }

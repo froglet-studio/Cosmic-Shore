@@ -26,7 +26,7 @@ namespace CosmicShore
 
     public class GyroidAssembler : Assembler
     {
-        
+
 
         //public bool IsActive = false;
         private Vector3 scale; // Scale of the TrailBlock
@@ -50,7 +50,9 @@ namespace CosmicShore
         [HideInInspector] public HashSet<GyroidAssembler> MateList = new();
         [HideInInspector] public Queue<GyroidAssembler> preferedBlocks = new();
 
-        public TrailBlock GyroidBlock;
+        public override TrailBlock TrailBlock { get; set; }
+        public  override Spindle Spindle { get; set; }
+
         public GyroidBlockType BlockType = GyroidBlockType.AB;
         int depth = -1;
         public override int Depth
@@ -67,13 +69,13 @@ namespace CosmicShore
 
         void Start()
         {
-            GyroidBlock = GetComponent<TrailBlock>();
-            if (GyroidBlock)
+            TrailBlock = GetComponent<TrailBlock>();
+            if (TrailBlock)
             {
-                scale = GyroidBlock.TargetScale;
+                scale = TrailBlock.TargetScale;
                 if (isSeed)
                 {
-                    GyroidBlock.Team = Teams.Blue;
+                    TrailBlock.Team = Teams.Blue;
                 }
             }
         }
@@ -90,13 +92,16 @@ namespace CosmicShore
         //    GyroidBlock.Grow();
         //}
 
-        public override void Grow()
+        public override TrailBlock Grow(TrailBlock trailBlock)
         {
-            Instantiate(GyroidBlock, transform.position, transform.rotation);
-            var newAssembler = ConvertBlock(GyroidBlock);
-            newAssembler.depth = depth - 1;
-            PrepareMate(newAssembler.TopRightMate);
-            Invoke("newAssembler.Grow()", 1);
+            trailBlock.TargetScale = scale;
+            trailBlock.MaxScale = TrailBlock.MaxScale;
+            trailBlock.GrowthVector = TrailBlock.GrowthVector;
+            var mateComponent = trailBlock.gameObject.GetComponent<GyroidAssembler>();
+            mateComponent.TrailBlock = trailBlock;
+
+            PrepareMate(mateComponent.TopRightMate);
+            return trailBlock;
         }
 
         public void ClearMateList()
@@ -202,7 +207,7 @@ namespace CosmicShore
 
             while (true)
             {
-                if (GyroidBlock == null)
+                if (TrailBlock == null)
                 {
                     yield return new WaitForSeconds(1f);
                     continue;
@@ -277,7 +282,7 @@ namespace CosmicShore
             if (AreAllActiveMatesBonded(activeMates))
             {
                 StopAllCoroutines();
-                GyroidBlock.Grow();
+                TrailBlock.Grow();
                 FullyBonded = true;
             }
         }
@@ -399,7 +404,7 @@ namespace CosmicShore
                 {
                     
                     if (Vector3.SqrMagnitude(transform.position - mateComponent.transform.position) < snapDistance  //block younger and in this block's position then clear its mate list
-                        && mateComponent.GyroidBlock.TrailBlockProperties.TimeCreated > GyroidBlock.TrailBlockProperties.TimeCreated)
+                        && mateComponent.TrailBlock.TrailBlockProperties.TimeCreated > TrailBlock.TrailBlockProperties.TimeCreated)
                     {
                         mateComponent.StopAllCoroutines();
                         mateComponent.ClearMateList();
@@ -407,7 +412,7 @@ namespace CosmicShore
                     if (sqrDistance < snapDistance) // if block is  already  in position supershield it.
                     {
                         mateComponent.FullyBonded = true;
-                        mateComponent.GyroidBlock.ActivateSuperShield();
+                        mateComponent.TrailBlock.ActivateSuperShield();
                         return CreateGyroidBondMate(mateComponent, BlockType, siteType);
                     }
                 }
@@ -429,15 +434,15 @@ namespace CosmicShore
             HealthBlock healthBlock = trailBlock.GetComponent<HealthBlock>();
             if (healthBlock != null)
             {
-                healthBlock.Reparent(GyroidBlock.transform.parent);
+                healthBlock.Reparent(TrailBlock.transform.parent);
             }
             healthBlock.TargetScale = scale;
-            healthBlock.MaxScale = GyroidBlock.MaxScale;
-            healthBlock.GrowthVector = GyroidBlock.GrowthVector;
-            healthBlock.Steal(GyroidBlock.Player, GyroidBlock.Team);
+            healthBlock.MaxScale = TrailBlock.MaxScale;
+            healthBlock.GrowthVector = TrailBlock.GrowthVector;
+            healthBlock.Steal(TrailBlock.Player, TrailBlock.Team);
             healthBlock.ChangeSize();
             var mateComponent = trailBlock.gameObject.AddComponent<GyroidAssembler>();
-            mateComponent.GyroidBlock = trailBlock;
+            mateComponent.TrailBlock = trailBlock;
             return mateComponent;
         }
 
