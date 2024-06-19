@@ -10,7 +10,7 @@ namespace CosmicShore
     {
         [SerializeField] float enhancementsPerFullAmmo = 3;
         TrailSpawner spawner;
-        [SerializeField] Assembler assembler = new GyroidAssembler();
+        [SerializeField] Assembler assembler;
         [SerializeField] int depth = 50;
 
         protected override void Start()

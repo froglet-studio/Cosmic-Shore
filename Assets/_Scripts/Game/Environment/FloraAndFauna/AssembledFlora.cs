@@ -52,17 +52,27 @@ namespace CosmicShore
                     HealthBlock newHealthBlock = Instantiate(healthBlock, branch.gameObject.transform.position, branch.gameObject.transform.rotation);
                     newHealthBlock.LifeForm = this;
 
-                    var newAssembler = branch.assembler.Grow(newHealthBlock).GetComponent<Assembler>();
+                    newHealthBlock = (HealthBlock)branch.assembler.ProgramBlock(newHealthBlock);
+                    if (newHealthBlock == null)
+                    {
+                        Debug.Log("Assembler returned null health block");
+                        branchesToRemove.Add(branch);
+                        Destroy(newHealthBlock.gameObject);
+                        continue;
+                    }
+                    var newAssembler = newHealthBlock.GetComponent<Assembler>();
 
                     Spindle newSpindle = Instantiate(spindle, branch.gameObject.transform);
                     newSpindle.LifeForm = this;
 
                     // Position the spindle relative to the new health block/assembler transform
-                    newSpindle.transform.position = newAssembler.transform.position;
-                    newSpindle.transform.rotation = newAssembler.transform.rotation;
+                    newSpindle.transform.position = newHealthBlock.transform.position;
+                    newSpindle.transform.rotation = newHealthBlock.transform.rotation;
 
                     // Parent the health block to the spindle
                     newHealthBlock.transform.SetParent(newSpindle.transform, false);
+                    newHealthBlock.transform.localPosition = Vector3.zero;
+                    newHealthBlock.transform.localRotation = Quaternion.identity;
 
                     // Set the properties of the new branch
                     newBranch.gameObject = newSpindle.gameObject;
@@ -72,8 +82,11 @@ namespace CosmicShore
                     // Add the new branch to the list of new branches
                     newBranches.Add(newBranch);
 
-                    // Remove the current branch from the active branches
-                    branchesToRemove.Add(branch);
+                    if (branch.depth >= maxDepth || branch.assembler.FullyBonded)
+                    {
+                        // Remove the branch from the active branches
+                        branchesToRemove.Add(branch);
+                    }
                 }
             }
 
@@ -99,10 +112,10 @@ namespace CosmicShore
 
         public Assembler CreateNewAssembler()
         {
-            Spindle newSpindle = Instantiate(spindle, transform);
+            Spindle newSpindle = Instantiate(spindle, transform.position, transform.rotation, transform);
             newSpindle.LifeForm = this; 
 
-            HealthBlock newHealthBlock = Instantiate(healthBlock, transform.position, transform.rotation);
+            HealthBlock newHealthBlock = Instantiate(healthBlock, transform.position + Vector3.left*5, transform.rotation);
             newHealthBlock.transform.SetParent(newSpindle.transform, false);
             newHealthBlock.LifeForm = this;
 

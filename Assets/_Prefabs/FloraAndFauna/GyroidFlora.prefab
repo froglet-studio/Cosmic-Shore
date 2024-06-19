@@ -51,12 +51,12 @@ MonoBehaviour:
   minHealthBlocks: 5
   activeCrystalMaterial: {fileID: 2100000, guid: 18c297a89c0d43e46bd4ea5bd6143ffb,
     type: 2}
-  growPeriod: 3
-  PlantPeriod: 15
+  growPeriod: 1
+  PlantPeriod: 200
   depth: 0
   feeds: 0
   maxTotalSpawnedObjects: 1000
-  maxDepth: 30
+  maxDepth: 60
 --- !u!1001 &8186157953130318967
 PrefabInstance:
   m_ObjectHideFlags: 0

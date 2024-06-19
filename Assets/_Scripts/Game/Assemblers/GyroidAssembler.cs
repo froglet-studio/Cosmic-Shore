@@ -45,7 +45,8 @@ namespace CosmicShore
         [HideInInspector] public bool TopRightIsBonded = false;
         [HideInInspector] public bool BottomLeftIsBonded = false;
         [HideInInspector] public bool BottomRightIsBonded = false;
-        [HideInInspector] public bool FullyBonded = false;
+
+        public override bool FullyBonded { get; set; } = false;       
 
         [HideInInspector] public HashSet<GyroidAssembler> MateList = new();
         [HideInInspector] public Queue<GyroidAssembler> preferedBlocks = new();
@@ -92,53 +93,93 @@ namespace CosmicShore
         //    GyroidBlock.Grow();
         //}
 
-        public override TrailBlock Grow(TrailBlock trailBlock)
+        public override TrailBlock ProgramBlock(TrailBlock trailBlock)
         {
-            trailBlock.TargetScale = scale;
-            trailBlock.MaxScale = TrailBlock.MaxScale;
-            trailBlock.GrowthVector = TrailBlock.GrowthVector;
-
             GyroidAssembler mateComponent = trailBlock.gameObject.GetComponent<GyroidAssembler>();
             if (mateComponent == null)
             {
                 mateComponent = trailBlock.gameObject.AddComponent<GyroidAssembler>();
             }
-            mateComponent.TrailBlock = trailBlock;
 
-            // Update the GyroidBlockType based on the current block type
-            GyroidBlockType nextBlockType = GetNextBlockType();
-            mateComponent.BlockType = nextBlockType;
+            // Determine the corner site to grow from based on the availability of unmated sites
+            CornerSiteType growthSite = GetGrowthSite();
 
-            // Calculate the new position and rotation based on the bond mate data
-            GyroidBondMateData bondMateData = GyroidBondMateDataContainer.GetBondMateData(BlockType, CornerSiteType.TopRight);
-            Vector3 newPosition = transform.position + (bondMateData.DeltaPosition * separationDistance);
-            Quaternion newRotation = Quaternion.LookRotation(
-                bondMateData.DeltaForward.x * transform.right + bondMateData.DeltaForward.y * transform.up + bondMateData.DeltaForward.z * transform.forward,
-                bondMateData.DeltaUp.x * transform.right + bondMateData.DeltaUp.y * transform.up + bondMateData.DeltaUp.z * transform.forward
-            );
-
-            // Update the position and rotation of the TrailBlock
-            trailBlock.transform.position = newPosition;
-            trailBlock.transform.rotation = newRotation;
-
-            return trailBlock;
-        }
-
-        private GyroidBlockType GetNextBlockType()
-        {
-            GyroidBlockType nextBlockType = GyroidBlockType.AB; // Default value
-
-            // Retrieve the bond mate data based on the current block type and the TopRight corner site
-            if (GyroidBondMateDataContainer.BondMateDataMap.TryGetValue((BlockType, CornerSiteType.TopRight), out var bondMateData))
+            // Check if the block is fully bonded
+            if (growthSite == CornerSiteType.None)
             {
-                nextBlockType = bondMateData.BlockType;
+                // Set the FullyBonded flag to true
+                FullyBonded = true;
+                return null;
+            }
+
+            // Retrieve the bond mate data based on the current block type and the growth site
+            if (GyroidBondMateDataContainer.BondMateDataMap.TryGetValue((BlockType, growthSite), out var bondMateData))
+            {
+                // Update the GyroidBlockType based on the bond mate data
+                mateComponent.BlockType = bondMateData.BlockType;
+
+                // Calculate the new position and rotation based on the bond mate data
+                Vector3 newPosition = CalculateGlobalBondSite(bondMateData.Substrate);
+                Quaternion newRotation = CalculateRotation(CreateGyroidBondMate(this, BlockType, growthSite));
+
+                // Check if there is already a block at the new position using Physics.CheckBox
+                if (Physics.CheckBox(newPosition, trailBlock.transform.localScale / 2f))
+                {
+                    // Fill the bond site
+                    SetBondSiteStatus(growthSite, true);
+
+                    // Recursively call ProgramBlock to check for the next available growth site
+                    return ProgramBlock(trailBlock);
+                }
+
+                // Update the position and rotation of the TrailBlock
+                trailBlock.transform.position = newPosition;
+                trailBlock.transform.rotation = newRotation;
             }
             else
             {
-                Debug.LogWarning($"Bond mate data not found for block type: {BlockType} and corner site: {CornerSiteType.TopRight}");
+                Debug.LogWarning($"Bond mate data not found for block type: {BlockType} and corner site: {growthSite}");
             }
 
-            return nextBlockType;
+            // Set the FullyBonded flag based on the bond site statuses
+            FullyBonded = TopLeftIsBonded && TopRightIsBonded && BottomLeftIsBonded && BottomRightIsBonded;
+
+            mateComponent.TrailBlock = trailBlock;
+            return trailBlock;
+        }
+
+        private CornerSiteType GetGrowthSite()
+        {
+            // Check the availability of unmated sites and return the first available one
+            if (!TopRightIsBonded)
+                return CornerSiteType.TopRight;
+            else if (!TopLeftIsBonded)
+                return CornerSiteType.TopLeft;
+            else if (!BottomLeftIsBonded)
+                return CornerSiteType.BottomLeft;
+            else if (!BottomRightIsBonded)
+                return CornerSiteType.BottomRight;
+            else
+                return CornerSiteType.None; // Return None if all sites are bonded
+        }
+
+        private void SetBondSiteStatus(CornerSiteType site, bool isBonded)
+        {
+            switch (site)
+            {
+                case CornerSiteType.TopRight:
+                    TopRightIsBonded = isBonded;
+                    break;
+                case CornerSiteType.TopLeft:
+                    TopLeftIsBonded = isBonded;
+                    break;
+                case CornerSiteType.BottomLeft:
+                    BottomLeftIsBonded = isBonded;
+                    break;
+                case CornerSiteType.BottomRight:
+                    BottomRightIsBonded = isBonded;
+                    break;
+            }
         }
 
         public void ClearMateList()
@@ -465,11 +506,11 @@ namespace CosmicShore
             {
                 healthBlock.Reparent(TrailBlock.transform.parent);
             }
-            healthBlock.TargetScale = scale;
-            healthBlock.MaxScale = TrailBlock.MaxScale;
-            healthBlock.GrowthVector = TrailBlock.GrowthVector;
-            healthBlock.Steal(TrailBlock.Player, TrailBlock.Team);
-            healthBlock.ChangeSize();
+            trailBlock.TargetScale = scale;
+            trailBlock.MaxScale = TrailBlock.MaxScale;
+            trailBlock.GrowthVector = TrailBlock.GrowthVector;
+            trailBlock.Steal(TrailBlock.Player, TrailBlock.Team);
+            trailBlock.ChangeSize();
             var mateComponent = trailBlock.gameObject.AddComponent<GyroidAssembler>();
             mateComponent.TrailBlock = trailBlock;
             return mateComponent;

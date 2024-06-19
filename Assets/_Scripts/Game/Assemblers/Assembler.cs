@@ -8,7 +8,8 @@ namespace CosmicShore
         public abstract TrailBlock TrailBlock { get; set; }
         public abstract Spindle Spindle { get; set; }
 
-        public abstract TrailBlock Grow(TrailBlock trailBlock);
+        public abstract bool FullyBonded { get; set; }
+        public abstract TrailBlock ProgramBlock(TrailBlock trailBlock);
         public abstract void StartBonding();
         public abstract int Depth { get; set; }
     }

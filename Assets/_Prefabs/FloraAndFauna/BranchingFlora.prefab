@@ -66,7 +66,7 @@ MonoBehaviour:
   maxTotalSpawnedObjects: 5000
   leafChance: -0.1
   leafChanceIncrement: 0.001
-  plantRadius: 75
+  plantRadius: 90
 --- !u!1001 &5588088495769702632
 PrefabInstance:
   m_ObjectHideFlags: 0

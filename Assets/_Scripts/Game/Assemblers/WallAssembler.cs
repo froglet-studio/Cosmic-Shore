@@ -45,6 +45,8 @@ namespace CosmicShore
         [HideInInspector] public bool BottomIsBonded = false;
         [HideInInspector] public bool LeftIsBonded = false;
 
+        public override bool FullyBonded { get; set; } = false;
+
         [HideInInspector] public HashSet<WallAssembler> MateList = new();
         public override TrailBlock TrailBlock { get; set; }
         public override Spindle Spindle { get; set; }
@@ -76,7 +78,7 @@ namespace CosmicShore
             StartCoroutine(LookForMates());
         }
 
-        public override TrailBlock Grow(TrailBlock trailBlock)
+        public override TrailBlock ProgramBlock(TrailBlock trailBlock)
         {
             StartBonding();
             return trailBlock;

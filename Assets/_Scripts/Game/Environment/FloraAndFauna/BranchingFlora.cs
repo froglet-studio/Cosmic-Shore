@@ -86,7 +86,7 @@ namespace CosmicShore
                             newBranch.gameObject = Instantiate(spindle, branch.gameObject.transform.position + (spindle.cylinder.transform.localScale.y * branch.gameObject.transform.forward), branch.gameObject.transform.rotation).gameObject;
                             ScaleAndPositionBranch(ref newBranch, branch);
 
-                            newBranch.gameObject.transform.rotation = RandomVectorRotation(minBranchAngle, maxBranchAngle) * Quaternion.LookRotation(node.GetCrystal().transform.position); // crysaltropism
+                            newBranch.gameObject.transform.rotation = Quaternion.LookRotation(node.GetCrystal().transform.position - transform.position) * RandomVectorRotation(minBranchAngle, maxBranchAngle); // crysaltropism
 
                             AddSpindle(newBranch.gameObject.GetComponent<Spindle>());
                             newBranches.Add(newBranch);
