@@ -82,7 +82,7 @@ namespace CosmicShore
                     // Add the new branch to the list of new branches
                     newBranches.Add(newBranch);
 
-                    if (branch.depth >= maxDepth || branch.assembler.FullyBonded)
+                    if (branch.depth >= maxDepth || branch.assembler.IsFullyBonded())
                     {
                         // Remove the branch from the active branches
                         branchesToRemove.Add(branch);

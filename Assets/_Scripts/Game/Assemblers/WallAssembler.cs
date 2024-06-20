@@ -40,12 +40,12 @@ namespace CosmicShore
         [HideInInspector] public BondMate BottomMate;
         [HideInInspector] public WallAssembler LeftMate;
 
-        [HideInInspector] public bool TopIsBonded = false;
-        [HideInInspector] public bool RightIsBonded = false;
-        [HideInInspector] public bool BottomIsBonded = false;
-        [HideInInspector] public bool LeftIsBonded = false;
+        [HideInInspector] public bool TopIsBonded;
+        [HideInInspector] public bool RightIsBonded;
+        [HideInInspector] public bool BottomIsBonded;
+        [HideInInspector] public bool LeftIsBonded;
 
-        public override bool FullyBonded { get; set; } = false;
+        public override bool IsFullyBonded() => TopIsBonded && RightIsBonded && BottomIsBonded && LeftIsBonded;
 
         [HideInInspector] public HashSet<WallAssembler> MateList = new();
         public override TrailBlock TrailBlock { get; set; }
