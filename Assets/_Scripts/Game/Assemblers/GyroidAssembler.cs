@@ -8,6 +8,15 @@ using UnityEngine;
 namespace CosmicShore
 {
 
+    public struct GrowthInfo
+    {
+        public bool canGrow;
+        public Vector3 position;
+        public Quaternion rotation;
+        public Assembler assembler;
+        
+    }
+
     public enum GyroidBlockType
     {
         AB = 1,
@@ -93,14 +102,23 @@ namespace CosmicShore
         //    GyroidBlock.Grow();
         //}
 
-        public override TrailBlock ProgramBlock(TrailBlock trailBlock)
+
+
+        public override GrowthInfo ProgramBlock()
         {
-            GyroidAssembler mateComponent = trailBlock.gameObject.GetComponent<GyroidAssembler>();
-            if (mateComponent == null)
+            GrowthInfo growthInfo = GetGrowthInfo();
+
+            if (growthInfo.canGrow)
             {
-                mateComponent = trailBlock.gameObject.AddComponent<GyroidAssembler>();
+                // Set the FullyBonded flag based on the bond site statuses
+                FullyBonded = TopLeftIsBonded && TopRightIsBonded && BottomLeftIsBonded && BottomRightIsBonded;
             }
 
+            return growthInfo;
+        }
+
+        private GrowthInfo GetGrowthInfo()
+        {
             // Determine the corner site to grow from based on the availability of unmated sites
             CornerSiteType growthSite = GetGrowthSite();
 
@@ -109,43 +127,45 @@ namespace CosmicShore
             {
                 // Set the FullyBonded flag to true
                 FullyBonded = true;
-                return null;
+                return new GrowthInfo { canGrow = false };
             }
 
             // Retrieve the bond mate data based on the current block type and the growth site
             if (GyroidBondMateDataContainer.BondMateDataMap.TryGetValue((BlockType, growthSite), out var bondMateData))
             {
-                // Update the GyroidBlockType based on the bond mate data
-                mateComponent.BlockType = bondMateData.BlockType;
-
                 // Calculate the new position and rotation based on the bond mate data
                 Vector3 newPosition = CalculateGlobalBondSite(bondMateData.Substrate);
                 Quaternion newRotation = CalculateRotation(CreateGyroidBondMate(this, BlockType, growthSite));
 
                 // Check if there is already a block at the new position using Physics.CheckBox
-                if (Physics.CheckBox(newPosition, trailBlock.transform.localScale / 2f))
+                if (Physics.CheckBox(newPosition, TrailBlock.transform.localScale / 2f))
                 {
+                    Debug.Log("gyroidassembler: found something in growth site");
                     // Fill the bond site
                     SetBondSiteStatus(growthSite, true);
 
-                    // Recursively call ProgramBlock to check for the next available growth site
-                    return ProgramBlock(trailBlock);
+                    // Recursively call GetGrowthInfo to check for the next available growth site
+                    return GetGrowthInfo();
                 }
 
-                // Update the position and rotation of the TrailBlock
-                trailBlock.transform.position = newPosition;
-                trailBlock.transform.rotation = newRotation;
+                // Return the growth information
+                return new GrowthInfo
+                {
+                    canGrow = true,
+                    position = newPosition,
+                    rotation = newRotation,
+                    assembler = new GyroidAssembler
+                    {
+                        BlockType = bondMateData.BlockType,
+                        depth = depth - 1
+                    }
+                };
             }
             else
             {
                 Debug.LogWarning($"Bond mate data not found for block type: {BlockType} and corner site: {growthSite}");
+                return new GrowthInfo { canGrow = false };
             }
-
-            // Set the FullyBonded flag based on the bond site statuses
-            FullyBonded = TopLeftIsBonded && TopRightIsBonded && BottomLeftIsBonded && BottomRightIsBonded;
-
-            mateComponent.TrailBlock = trailBlock;
-            return trailBlock;
         }
 
         private CornerSiteType GetGrowthSite()
@@ -168,15 +188,19 @@ namespace CosmicShore
             switch (site)
             {
                 case CornerSiteType.TopRight:
+                    Debug.Log("gyroidassembler: setting top right bonded");
                     TopRightIsBonded = isBonded;
                     break;
                 case CornerSiteType.TopLeft:
+                    Debug.Log("gyroidassembler: setting top left bonded");
                     TopLeftIsBonded = isBonded;
                     break;
                 case CornerSiteType.BottomLeft:
+                    Debug.Log("gyroidassembler: setting bottom left bonded");
                     BottomLeftIsBonded = isBonded;
                     break;
                 case CornerSiteType.BottomRight:
+                    Debug.Log("gyroidassembler: setting bottom right bonded");
                     BottomRightIsBonded = isBonded;
                     break;
             }

@@ -13,6 +13,7 @@ namespace CosmicShore
         private void Start()
         {
             StartCoroutine(CondenseCoroutine());
+            if (LifeForm) LifeForm.AddSpindle(this);
         }
 
         public void CheckForLife()

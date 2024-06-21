@@ -26,15 +26,64 @@ namespace CosmicShore
         [SerializeField] int maxDepth = 30;
         HashSet<Branch> activeBranches = new HashSet<Branch>();
 
+        [SerializeField] float itemsPerGrow = 5;
+
         struct Branch
         {
             public GameObject gameObject;
             public int depth;
             public Assembler assembler;
+
+            public Branch(HealthBlock healthBlock)
+            {
+                gameObject = healthBlock.gameObject;
+                depth = 0;
+                assembler = healthBlock.GetComponent<Assembler>();
+            }
         }
 
-
         private int spawnedItemCount = 0;
+
+        protected override void Start()
+        {
+            base.Start();
+            //activeBranches.Add(new Branch { gameObject = gameObject, depth = 0 }); // add trunk
+            //SeedBranches(); // add more truncks
+        }
+
+        void SeedBranches()
+        {
+                Branch branch = new Branch();
+                branch.gameObject = Instantiate(spindle, transform.position, transform.rotation).gameObject;
+                branch.gameObject.transform.parent = transform;
+                AddSpindle(branch.gameObject.GetComponent<Spindle>());
+                branch.depth = 0;
+                activeBranches.Add(branch);
+                
+            
+        }
+
+        public static class AssemblerFactory
+        {
+            public static Assembler CreateAssembler(GameObject gameObject, GrowthInfo growthInfo)
+            {
+                if (growthInfo.assembler is GyroidAssembler gyroidAssembler)
+                {
+                    var newAssembler = gameObject.AddComponent<GyroidAssembler>();
+                    // Copy properties from growthInfo.assembler to newAssembler
+                    newAssembler.BlockType = gyroidAssembler.BlockType;
+                    newAssembler.Depth = gyroidAssembler.Depth;
+                    // Copy other properties as needed
+                    return newAssembler;
+                }
+                // Add other assembler types here as needed
+                else
+                {
+                    Debug.LogError("Unknown assembler type");
+                    return null;
+                }
+            }
+        }
 
         public override void Grow()
         {
@@ -43,24 +92,31 @@ namespace CosmicShore
             List<Branch> newBranches = new List<Branch>();
             List<Branch> branchesToRemove = new List<Branch>();
 
+            float itemsSpawned = 0;
             foreach (Branch branch in activeBranches)
             {
-                if (branch.depth < maxDepth)
+                if (branch.depth < maxDepth && itemsSpawned < itemsPerGrow)
                 {
-                    Branch newBranch = new Branch();
-
-                    HealthBlock newHealthBlock = Instantiate(healthBlock, branch.gameObject.transform.position, branch.gameObject.transform.rotation);
-                    newHealthBlock.LifeForm = this;
-
-                    newHealthBlock = (HealthBlock)branch.assembler.ProgramBlock(newHealthBlock);
-                    if (newHealthBlock == null)
+                    GrowthInfo growthInfo = branch.assembler.ProgramBlock();
+                    if (!growthInfo.canGrow)
                     {
-                        Debug.Log("Assembler returned null health block");
+                        Debug.Log("Assembler cannot grow");
                         branchesToRemove.Add(branch);
-                        Destroy(newHealthBlock.gameObject);
                         continue;
                     }
-                    var newAssembler = newHealthBlock.GetComponent<Assembler>();
+
+                    HealthBlock newHealthBlock = Instantiate(healthBlock, growthInfo.position, growthInfo.rotation);
+                    newHealthBlock.LifeForm = this;
+                    Branch newBranch = new Branch(newHealthBlock);
+
+                    // Use the factory to create the correct assembler type
+                    var newAssembler = AssemblerFactory.CreateAssembler(newHealthBlock.gameObject, growthInfo);
+                    if (newAssembler == null)
+                    {
+                        Debug.LogError("Failed to create assembler");
+                        continue;
+                    }
+
 
                     Spindle newSpindle = Instantiate(spindle, branch.gameObject.transform);
                     newSpindle.LifeForm = this;
@@ -81,6 +137,7 @@ namespace CosmicShore
 
                     // Add the new branch to the list of new branches
                     newBranches.Add(newBranch);
+                    itemsSpawned++;
 
                     if (branch.depth >= maxDepth || branch.assembler.FullyBonded)
                     {
@@ -102,20 +159,22 @@ namespace CosmicShore
 
         public override void Plant()
         {
+            transform.position = node.GetCrystal().transform.position + (100 * Random.onUnitSphere);
             assembler = CreateNewAssembler();
 
-            if (feeds)
-            {
-                assembler.StartBonding();
-            }
+            //if (feeds)
+            //{
+            //    assembler.StartBonding();
+            //}
         }
 
         public Assembler CreateNewAssembler()
         {
             Spindle newSpindle = Instantiate(spindle, transform.position, transform.rotation, transform);
+            AddSpindle(newSpindle);
             newSpindle.LifeForm = this; 
 
-            HealthBlock newHealthBlock = Instantiate(healthBlock, transform.position + Vector3.left*5, transform.rotation);
+            HealthBlock newHealthBlock = Instantiate(healthBlock, transform.position, transform.rotation);
             newHealthBlock.transform.SetParent(newSpindle.transform, false);
             newHealthBlock.LifeForm = this;
 
@@ -124,7 +183,12 @@ namespace CosmicShore
             newAssembler.Spindle = newSpindle;
             newAssembler.Depth = depth;
 
-            activeBranches.Add(new Branch { gameObject = newSpindle.gameObject, depth = 0, assembler = newAssembler });
+            Branch newBranch = new Branch(newHealthBlock);
+            newBranch.gameObject = newSpindle.gameObject;
+            newBranch.assembler = newAssembler;
+            newBranch.depth = 0;
+
+            activeBranches.Add(newBranch);
 
             return newAssembler;
         }

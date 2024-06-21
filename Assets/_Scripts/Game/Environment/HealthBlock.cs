@@ -10,6 +10,12 @@ namespace CosmicShore
         public LifeForm LifeForm;
         Spindle spindle;
 
+        protected override void Start()
+        {
+            base.Start();
+            if (LifeForm) LifeForm.AddHealthBlock(this);
+        }
+
         public void Reparent(Transform newParent)
         {          
             spindle = transform.parent.GetComponent<Spindle>(); // Every healthBlock requires a spindle parent

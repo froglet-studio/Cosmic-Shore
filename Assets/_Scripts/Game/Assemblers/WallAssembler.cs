@@ -78,10 +78,9 @@ namespace CosmicShore
             StartCoroutine(LookForMates());
         }
 
-        public override TrailBlock ProgramBlock(TrailBlock trailBlock)
+        public override GrowthInfo ProgramBlock()
         {
-            StartBonding();
-            return trailBlock;
+            return new GrowthInfo {  };
         }
 
         public void ClearMateList()
