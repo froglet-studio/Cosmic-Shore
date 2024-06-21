@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace CosmicShore.TestScenes.ArchitectureSandbox.Scripts
+namespace CosmicShore.Integrations.Architectures.Command
 {
     public class ButtonCollections : MonoBehaviour
     {
