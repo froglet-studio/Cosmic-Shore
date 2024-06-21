@@ -53,28 +53,7 @@ namespace CosmicShore
         }
 
         private int spawnedItemCount = 0;
-
-        protected override void Start()
-        {
-            base.Start();
-            //activeBranches.Add(new Branch { gameObject = gameObject, depth = 0 }); // add trunk
-            //SeedBranches(); // add more truncks
-        }
-
-        void SeedBranches()
-        {
-                Branch branch = new Branch();
-                branch.gameObject = Instantiate(spindle, transform.position, transform.rotation).gameObject;
-                branch.gameObject.transform.parent = transform;
-                AddSpindle(branch.gameObject.GetComponent<Spindle>());
-                branch.depth = 0;
-                activeBranches.Add(branch);
-                
-            
-        }
-
-
-
+   
         public static class AssemblerFactory
         {
             public static Assembler ProgramAssembler(GameObject gameObject, GrowthInfo growthInfo)
@@ -174,13 +153,7 @@ namespace CosmicShore
         public override void Plant()
         {
             assembler = CreateNewAssembler();
-            transform.position = node.GetCrystal().transform.position + (100 * Random.onUnitSphere);
-            
-
-            //if (feeds)
-            //{
-            //    assembler.StartBonding();
-            //}
+            transform.position = node.GetCrystal().transform.position + 100 * Random.onUnitSphere;
         }
 
         public Assembler CreateNewAssembler()
