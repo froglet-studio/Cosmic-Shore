@@ -78,9 +78,9 @@ namespace CosmicShore
             StartCoroutine(LookForMates());
         }
 
-        public override GrowthInfo ProgramBlock()
+        public override GrowthInfo GetGrowthInfo()
         {
-            return new GrowthInfo {  };
+            return new GrowthInfo();
         }
 
         public void ClearMateList()

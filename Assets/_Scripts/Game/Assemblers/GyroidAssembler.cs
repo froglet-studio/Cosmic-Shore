@@ -31,8 +31,6 @@ namespace CosmicShore
 
     public class GyroidAssembler : Assembler
     {
-
-
         //public bool IsActive = false;
         private Vector3 scale; // Scale of the TrailBlock
 
@@ -94,38 +92,14 @@ namespace CosmicShore
             StartCoroutine(LookForMatesCoroutine());
         }
 
-        //public void AcceptBond()
-        //{
-        //    FullyBonded = true;
-        //    GyroidBlock.ActivateSuperShield();
-        //    GyroidBlock.Grow();
-        //}
-
-
-
-        public override GrowthInfo ProgramBlock()
-        {
-            GrowthInfo growthInfo = GetGrowthInfo();
-
-            if (growthInfo.CanGrow)
-            {
-                // Set the FullyBonded flag based on the bond site statuses
-                FullyBonded = TopLeftIsBonded && TopRightIsBonded && BottomLeftIsBonded && BottomRightIsBonded;
-            }
-
-            return growthInfo;
-        }
-
-        private GrowthInfo GetGrowthInfo()
+        public override GrowthInfo GetGrowthInfo()
         {
             // Determine the corner site to grow from based on the availability of unmated sites
             CornerSiteType growthSite = GetGrowthSite();
 
             // Check if the block is fully bonded
-            if (growthSite == CornerSiteType.None)
+            if (IsFullyBonded())
             {
-                // Set the FullyBonded flag to true
-                FullyBonded = true;
                 return new GrowthInfo { CanGrow = false };
             }
 

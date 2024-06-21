@@ -115,7 +115,7 @@ namespace CosmicShore
                     continue;
                 }
 
-                GrowthInfo growthInfo = branch.assembler.ProgramBlock();
+                var growthInfo = branch.assembler.GetGrowthInfo();
                 if (!growthInfo.CanGrow)
                 {
                     Debug.Log("Assembler cannot grow");
@@ -157,7 +157,7 @@ namespace CosmicShore
                 newBranches.Add(newBranch);
                 itemsSpawned++;
 
-                if (branch.depth >= maxDepth - 1 || branch.assembler.FullyBonded)
+                if (branch.depth >= maxDepth - 1 || branch.assembler.IsFullyBonded())
                 {
                     branchesToRemove.Add(branch);
                 }
