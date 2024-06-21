@@ -20,7 +20,8 @@ namespace CosmicShore
             Top,
             Right,
             Bottom,
-            Left
+            Left,
+            None
         }
 
         //public bool IsActive = false;
@@ -78,9 +79,114 @@ namespace CosmicShore
             StartCoroutine(LookForMates());
         }
 
+        private SiteType GetGrowthSite()
+        {
+            if (!TopIsBonded)
+                return SiteType.Top;
+            if (!RightIsBonded)
+                return SiteType.Right;
+            if (!BottomIsBonded)
+                return SiteType.Bottom;
+            if (!LeftIsBonded)
+                return SiteType.Left;
+
+
+            return SiteType.None; // Return None if all sites are bonded
+        }
+
+        //the following method calculates rotation based on site type
+        private Quaternion CalculateRotation(SiteType site)
+        {
+            switch (site)
+            {
+                case SiteType.Top:
+                    return Quaternion.LookRotation(Vector3.up, Vector3.forward);
+                case SiteType.Right:
+                    return Quaternion.LookRotation(Vector3.right, Vector3.forward);
+                case SiteType.Bottom:
+                    return Quaternion.LookRotation(Vector3.down, Vector3.forward);
+                case SiteType.Left:
+                    return Quaternion.LookRotation(Vector3.left, Vector3.forward);
+                default:
+                    return Quaternion.identity;
+            }
+        }
+
+        //the following method takes in a SiteType and returns a global position of the bond site
+        private Vector3 CalculateGlobalBondSite(SiteType site)
+        {
+            switch (site)
+            {
+                case SiteType.Top:
+                    return globalBondSiteTop;
+                case SiteType.Right:
+                    return globalBondSiteRight;
+                case SiteType.Bottom:
+                    return globalBondSiteBottom;
+                case SiteType.Left:
+                    return globalBondSiteLeft;
+                default:
+                    return Vector3.zero;
+            }
+        }
+
+        //the following method takes in a SiteType and a bool and sets the bond site status
+        private void SetBondSiteStatus(SiteType site, bool status)
+        {
+            switch (site)
+            {
+                case SiteType.Top:
+                    TopIsBonded = status;
+                    break;
+                case SiteType.Right:
+                    RightIsBonded = status;
+                    break;
+                case SiteType.Bottom:
+                    BottomIsBonded = status;
+                    break;
+                case SiteType.Left:
+                    LeftIsBonded = status;
+                    break;
+            }
+        }
+
         public override GrowthInfo GetGrowthInfo()
         {
-            return new GrowthInfo();
+            // Check if the block is fully bonded
+            if (IsFullyBonded())
+            {
+                return new GrowthInfo { CanGrow = false };
+            }
+
+            // Determine the corner site to grow from based on the availability of unmated sites
+            SiteType growthSite = GetGrowthSite();
+
+
+
+            // Calculate the new position and rotation based on the bond mate data
+            Vector3 newPosition = CalculateGlobalBondSite(growthSite);
+            Quaternion newRotation = CalculateRotation( growthSite);
+
+            // Check if there is already a block at the new position using Physics.CheckBox
+            if (Physics.CheckBox(newPosition, TrailBlock.transform.localScale / 2f))
+            {
+                Debug.Log($"wallAssembler: found something in growth site: {newPosition} with scale {TrailBlock.transform.localScale / 2f}");
+                // Fill the bond site
+                SetBondSiteStatus(growthSite, true);
+
+                // Recursively call GetGrowthInfo to check for the next available growth site
+                return GetGrowthInfo();
+            }
+
+            // Return the growth information
+            return new GrowthInfo
+            {
+                CanGrow = true,
+                Position = newPosition,
+                Rotation = newRotation,
+                Depth = depth - 1
+            };
+
         }
 
         public void ClearMateList()
@@ -315,18 +421,22 @@ namespace CosmicShore
                 
             }
         }
-        
-        private void RotateMate(BondMate mate, bool isSnapping)
+
+        Quaternion CalculateRotation(BondMate mate)
         {
             int signRight = mate.Bondee == SiteType.Right ? 1 : -1;
             int signTop = mate.Substrate == SiteType.Top ? 1 : -1;
-            Quaternion targetRotation = Quaternion.LookRotation(transform.forward, signRight * signTop * transform.right);
+            return Quaternion.LookRotation(transform.forward, signRight * signTop * transform.right);
+        }
+        
+        private void RotateMate(BondMate mate, bool isSnapping)
+        {
+            var targetRotation = CalculateRotation(mate);
             mate.Mate.transform.rotation = isSnapping? 
                 targetRotation : 
                 Quaternion.Slerp(mate.Mate.transform.rotation, targetRotation, Time.deltaTime); // Adjust rotation speed as needed
             mate.Mate.CalculateGlobalBondSites();
             CalculateGlobalBondSites();
         }
-
     }
 }

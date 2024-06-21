@@ -94,14 +94,14 @@ namespace CosmicShore
 
         public override GrowthInfo GetGrowthInfo()
         {
-            // Determine the corner site to grow from based on the availability of unmated sites
-            CornerSiteType growthSite = GetGrowthSite();
-
             // Check if the block is fully bonded
             if (IsFullyBonded())
             {
                 return new GrowthInfo { CanGrow = false };
             }
+
+            // Determine the corner site to grow from based on the availability of unmated sites
+            CornerSiteType growthSite = GetGrowthSite();
 
             // Retrieve the bond mate data based on the current block type and the growth site
             if (GyroidBondMateDataContainer.BondMateDataMap.TryGetValue((BlockType, growthSite), out var bondMateData))
@@ -113,7 +113,7 @@ namespace CosmicShore
                 // Check if there is already a block at the new position using Physics.CheckBox
                 if (Physics.CheckBox(newPosition, TrailBlock.transform.localScale / 2f))
                 {
-                    Debug.Log("gyroidassembler: found something in growth site");
+                    Debug.Log($"gyroidassembler: found something in growth site: {newPosition} with scale {TrailBlock.transform.localScale / 2f}");
                     // Fill the bond site
                     SetBondSiteStatus(growthSite, true);
 

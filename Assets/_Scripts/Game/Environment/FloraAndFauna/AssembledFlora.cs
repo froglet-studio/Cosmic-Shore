@@ -70,8 +70,11 @@ namespace CosmicShore
                 // Add other assembler types here as needed
                 else
                 {
-                    Debug.LogError("Unknown assembler type");
-                    return null;
+                    var newAssembler = gameObject.GetComponent<Assembler>();
+                    // Copy properties from growthInfo.assembler to newAssembler
+                    newAssembler.Depth = growthInfo.Depth;
+                    // Copy other properties as needed
+                    return newAssembler;
                 }
             }
         }
