@@ -1,9 +1,18 @@
 
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace CosmicShore
 {
+    public class GrowthInfo
+    {
+        public bool CanGrow;
+        public Vector3 Position;
+        public Quaternion Rotation;
+        public int Depth;
+    }
+
     /// <summary>
     /// A flora that uses an <c cref="Assembler">Assembler</c> to define its growth pattern
     /// </summary>
@@ -26,7 +35,8 @@ namespace CosmicShore
         [SerializeField] int maxDepth = 30;
         HashSet<Branch> activeBranches = new HashSet<Branch>();
 
-        [SerializeField] float itemsPerGrow = 5;
+        [SerializeField] int itemsPerGrow = 5;
+        [SerializeField] int randomItems = 2;
 
         struct Branch
         {
@@ -63,16 +73,18 @@ namespace CosmicShore
             
         }
 
+
+
         public static class AssemblerFactory
         {
-            public static Assembler CreateAssembler(GameObject gameObject, GrowthInfo growthInfo)
+            public static Assembler ProgramAssembler(GameObject gameObject, GrowthInfo growthInfo)
             {
-                if (growthInfo.assembler is GyroidAssembler gyroidAssembler)
+                if (growthInfo is GyroidGrowthInfo)
                 {
-                    var newAssembler = gameObject.AddComponent<GyroidAssembler>();
+                    var newAssembler = gameObject.GetComponent<GyroidAssembler>();
                     // Copy properties from growthInfo.assembler to newAssembler
-                    newAssembler.BlockType = gyroidAssembler.BlockType;
-                    newAssembler.Depth = gyroidAssembler.Depth;
+                    newAssembler.BlockType = ((GyroidGrowthInfo)growthInfo).BlockType;
+                    newAssembler.Depth = growthInfo.Depth;
                     // Copy other properties as needed
                     return newAssembler;
                 }
@@ -93,74 +105,77 @@ namespace CosmicShore
             List<Branch> branchesToRemove = new List<Branch>();
 
             float itemsSpawned = 0;
-            foreach (Branch branch in activeBranches)
+            int skippedItems = 0;
+            for (int i = 0; i < activeBranches.Count && itemsSpawned < itemsPerGrow; i++)
             {
-                if (branch.depth < maxDepth && itemsSpawned < itemsPerGrow)
+                Branch branch = activeBranches.ElementAt(i);
+
+                if (!branch.assembler || branch.depth >= maxDepth)
                 {
-                    GrowthInfo growthInfo = branch.assembler.ProgramBlock();
-                    if (!growthInfo.canGrow)
-                    {
-                        Debug.Log("Assembler cannot grow");
-                        branchesToRemove.Add(branch);
-                        continue;
-                    }
+                    continue;
+                }
 
-                    HealthBlock newHealthBlock = Instantiate(healthBlock, growthInfo.position, growthInfo.rotation);
-                    newHealthBlock.LifeForm = this;
-                    Branch newBranch = new Branch(newHealthBlock);
+                GrowthInfo growthInfo = branch.assembler.ProgramBlock();
+                if (!growthInfo.CanGrow)
+                {
+                    Debug.Log("Assembler cannot grow");
+                    branchesToRemove.Add(branch);
+                    continue;
+                }
 
-                    // Use the factory to create the correct assembler type
-                    var newAssembler = AssemblerFactory.CreateAssembler(newHealthBlock.gameObject, growthInfo);
-                    if (newAssembler == null)
-                    {
-                        Debug.LogError("Failed to create assembler");
-                        continue;
-                    }
+                // Randomly skip viable grow sites
+                if (skippedItems < randomItems && Random.value < 0.5f)
+                {
+                    skippedItems++;
+                    continue;
+                }
 
+                HealthBlock newHealthBlock = Instantiate(healthBlock, growthInfo.Position, growthInfo.Rotation);
+                newHealthBlock.LifeForm = this;
+                Branch newBranch = new Branch(newHealthBlock);
 
-                    Spindle newSpindle = Instantiate(spindle, branch.gameObject.transform);
-                    newSpindle.LifeForm = this;
+                var newAssembler = AssemblerFactory.ProgramAssembler(newHealthBlock.gameObject, growthInfo);
+                if (newAssembler == null)
+                {
+                    Debug.LogError("Failed to create assembler");
+                    continue;
+                }
 
-                    // Position the spindle relative to the new health block/assembler transform
-                    newSpindle.transform.position = newHealthBlock.transform.position;
-                    newSpindle.transform.rotation = newHealthBlock.transform.rotation;
+                Spindle newSpindle = Instantiate(spindle, branch.gameObject.transform);
+                newSpindle.LifeForm = this;
+                newSpindle.transform.position = newHealthBlock.transform.position;
+                newSpindle.transform.rotation = newHealthBlock.transform.rotation;
 
-                    // Parent the health block to the spindle
-                    newHealthBlock.transform.SetParent(newSpindle.transform, false);
-                    newHealthBlock.transform.localPosition = Vector3.zero;
-                    newHealthBlock.transform.localRotation = Quaternion.identity;
+                newHealthBlock.transform.SetParent(newSpindle.transform, false);
+                newHealthBlock.transform.localPosition = Vector3.zero;
+                newHealthBlock.transform.localRotation = Quaternion.identity;
 
-                    // Set the properties of the new branch
-                    newBranch.gameObject = newSpindle.gameObject;
-                    newBranch.assembler = newAssembler;
-                    newBranch.depth = branch.depth + 1;
+                newBranch.gameObject = newSpindle.gameObject;
+                newBranch.assembler = newAssembler;
+                newBranch.depth = branch.depth + 1;
 
-                    // Add the new branch to the list of new branches
-                    newBranches.Add(newBranch);
-                    itemsSpawned++;
+                newBranches.Add(newBranch);
+                itemsSpawned++;
 
-                    if (branch.depth >= maxDepth || branch.assembler.FullyBonded)
-                    {
-                        // Remove the branch from the active branches
-                        branchesToRemove.Add(branch);
-                    }
+                if (branch.depth >= maxDepth - 1 || branch.assembler.FullyBonded)
+                {
+                    branchesToRemove.Add(branch);
                 }
             }
 
-            // Remove the branches that have grown from the active branches list
             foreach (Branch branch in branchesToRemove)
             {
-                activeBranches.Remove(branch);
+                activeBranches.Remove(branch);               
             }
 
-            // Add the new branches to the active branches list
             activeBranches.UnionWith(newBranches);
         }
 
         public override void Plant()
         {
-            transform.position = node.GetCrystal().transform.position + (100 * Random.onUnitSphere);
             assembler = CreateNewAssembler();
+            transform.position = node.GetCrystal().transform.position + (100 * Random.onUnitSphere);
+            
 
             //if (feeds)
             //{

@@ -8,13 +8,9 @@ using UnityEngine;
 namespace CosmicShore
 {
 
-    public struct GrowthInfo
+    public class GyroidGrowthInfo : GrowthInfo
     {
-        public bool canGrow;
-        public Vector3 position;
-        public Quaternion rotation;
-        public Assembler assembler;
-        
+        public GyroidBlockType BlockType;
     }
 
     public enum GyroidBlockType
@@ -65,6 +61,8 @@ namespace CosmicShore
 
         public GyroidBlockType BlockType = GyroidBlockType.AB;
         int depth = -1;
+        
+        
         public override int Depth
         {
             get { return depth; }
@@ -108,7 +106,7 @@ namespace CosmicShore
         {
             GrowthInfo growthInfo = GetGrowthInfo();
 
-            if (growthInfo.canGrow)
+            if (growthInfo.CanGrow)
             {
                 // Set the FullyBonded flag based on the bond site statuses
                 FullyBonded = TopLeftIsBonded && TopRightIsBonded && BottomLeftIsBonded && BottomRightIsBonded;
@@ -127,7 +125,7 @@ namespace CosmicShore
             {
                 // Set the FullyBonded flag to true
                 FullyBonded = true;
-                return new GrowthInfo { canGrow = false };
+                return new GrowthInfo { CanGrow = false };
             }
 
             // Retrieve the bond mate data based on the current block type and the growth site
@@ -149,22 +147,19 @@ namespace CosmicShore
                 }
 
                 // Return the growth information
-                return new GrowthInfo
+                return new GyroidGrowthInfo
                 {
-                    canGrow = true,
-                    position = newPosition,
-                    rotation = newRotation,
-                    assembler = new GyroidAssembler
-                    {
-                        BlockType = bondMateData.BlockType,
-                        depth = depth - 1
-                    }
+                    CanGrow = true,
+                    Position = newPosition,
+                    Rotation = newRotation,
+                    BlockType = bondMateData.BlockType,
+                    Depth = depth - 1
                 };
             }
             else
             {
                 Debug.LogWarning($"Bond mate data not found for block type: {BlockType} and corner site: {growthSite}");
-                return new GrowthInfo { canGrow = false };
+                return new GrowthInfo { CanGrow = false };
             }
         }
 

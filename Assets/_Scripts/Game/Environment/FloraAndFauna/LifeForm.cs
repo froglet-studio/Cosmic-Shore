@@ -12,8 +12,8 @@ namespace CosmicShore
         [SerializeField] protected Spindle spindle;
         [SerializeField] protected int minHealthBlocks = 0;
 
-        protected List<HealthBlock> healthBlocks = new List<HealthBlock>();
-        protected List<Spindle> spindles = new List<Spindle>();
+        protected HashSet<HealthBlock> healthBlocks = new HashSet<HealthBlock>();
+        protected HashSet<Spindle> spindles = new HashSet<Spindle>();
 
         protected Crystal crystal;
         [SerializeField] protected Material activeCrystalMaterial; // TODO: make a crytal material set that pulls from the element

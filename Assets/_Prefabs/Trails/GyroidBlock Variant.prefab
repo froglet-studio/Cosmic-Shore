@@ -75,7 +75,12 @@ PrefabInstance:
     - target: {fileID: 6313579230210663873, guid: 1488a2ac58b2b4c43b14f84206bd9195,
         type: 3}
       propertyPath: TargetScale.x
-      value: 4
+      value: 7
+      objectReference: {fileID: 0}
+    - target: {fileID: 6313579230210663873, guid: 1488a2ac58b2b4c43b14f84206bd9195,
+        type: 3}
+      propertyPath: TargetScale.y
+      value: 3
       objectReference: {fileID: 0}
     - target: {fileID: 6313579230210663873, guid: 1488a2ac58b2b4c43b14f84206bd9195,
         type: 3}
@@ -106,8 +111,7 @@ MonoBehaviour:
   TopRightIsBonded: 0
   BottomLeftIsBonded: 0
   BottomRightIsBonded: 0
-  FullyBonded: 0
   BlockType: 1
   isSeed: 0
   colliderTheshold: 1
-  radius: 40
+  radius: 60
