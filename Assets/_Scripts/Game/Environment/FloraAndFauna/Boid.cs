@@ -214,7 +214,7 @@ public class Boid : Fauna
             foreach (var collider in colliders)
             {
                 nakedEdge = collider.GetComponent<GyroidAssembler>();
-                if (nakedEdge && !nakedEdge.FullyBonded && nakedEdge.preferedBlocks.Count == 0 && (nakedEdge.IsBonded() || nakedEdge.isSeed))
+                if (nakedEdge && !nakedEdge.IsFullyBonded() && nakedEdge.preferedBlocks.Count == 0 && (nakedEdge.IsBonded() || nakedEdge.isSeed))
                 {
                     (var newBlock1, var gyroidBlock1) = NewBlock();
                     nakedEdge.preferedBlocks.Enqueue(gyroidBlock1);

@@ -46,12 +46,13 @@ namespace CosmicShore
         [HideInInspector] public GyroidBondMate BottomLeftMate;
         [HideInInspector] public GyroidBondMate BottomRightMate;
 
-        [HideInInspector] public bool TopLeftIsBonded = false;
-        [HideInInspector] public bool TopRightIsBonded = false;
-        [HideInInspector] public bool BottomLeftIsBonded = false;
-        [HideInInspector] public bool BottomRightIsBonded = false;
+        [HideInInspector] public bool TopLeftIsBonded;
+        [HideInInspector] public bool TopRightIsBonded;
+        [HideInInspector] public bool BottomLeftIsBonded;
+        [HideInInspector] public bool BottomRightIsBonded;
 
-        public override bool FullyBonded { get; set; } = false;       
+        public override bool IsFullyBonded() =>
+            TopLeftIsBonded && TopRightIsBonded && BottomLeftIsBonded && BottomRightIsBonded;
 
         [HideInInspector] public HashSet<GyroidAssembler> MateList = new();
         [HideInInspector] public Queue<GyroidAssembler> preferedBlocks = new();
@@ -168,14 +169,14 @@ namespace CosmicShore
             // Check the availability of unmated sites and return the first available one
             if (!TopRightIsBonded)
                 return CornerSiteType.TopRight;
-            else if (!TopLeftIsBonded)
+            if (!TopLeftIsBonded)
                 return CornerSiteType.TopLeft;
-            else if (!BottomLeftIsBonded)
+            if (!BottomLeftIsBonded)
                 return CornerSiteType.BottomLeft;
-            else if (!BottomRightIsBonded)
+            if (!BottomRightIsBonded)
                 return CornerSiteType.BottomRight;
-            else
-                return CornerSiteType.None; // Return None if all sites are bonded
+            
+            return CornerSiteType.None; // Return None if all sites are bonded
         }
 
         private void SetBondSiteStatus(CornerSiteType site, bool isBonded)
@@ -233,7 +234,7 @@ namespace CosmicShore
             }
 
             // throw error if data is not found
-            throw new System.Exception($"GyroidBondMateData not found for blockType: {blockType} and siteType: {siteType}");
+            throw new Exception($"GyroidBondMateData not found for blockType: {blockType} and siteType: {siteType}");
         }
 
         void PrepareMate(GyroidBondMate gyroidBondMate)
@@ -297,10 +298,6 @@ namespace CosmicShore
         {
             Debug.Log($"GyroidAssembler LookForMates Depth: {depth}");
             bool[] activeMates = new bool[] { false, true, true, false };
-            //if (depth == 0) StopAllCoroutines();
-            //else if (depth == 1) activeMates = new bool[] { false, true, true, false };
-            //else if (depth == 2) activeMates = new bool[] { true, true, true, true };
-            //else if (depth == 3) activeMates = new bool[] { true, true, true, true };
 
             while (true)
             {
@@ -380,7 +377,6 @@ namespace CosmicShore
             {
                 StopAllCoroutines();
                 TrailBlock.Grow();
-                FullyBonded = true;
             }
         }
 
@@ -498,7 +494,6 @@ namespace CosmicShore
                     }
                     if (sqrDistance < snapDistance) // if block is  already  in position supershield it.
                     {
-                        mateComponent.FullyBonded = true;
                         mateComponent.TrailBlock.ActivateSuperShield();
                         return CreateGyroidBondMate(mateComponent, BlockType, siteType);
                     }
