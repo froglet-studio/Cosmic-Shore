@@ -19,6 +19,7 @@ namespace CosmicShore
         [SerializeField] protected Material activeCrystalMaterial; // TODO: make a crytal material set that pulls from the element
         
         protected Node node;
+        public Teams team;
 
         protected virtual void Start()
         {
@@ -29,6 +30,7 @@ namespace CosmicShore
         public void AddHealthBlock(HealthBlock healthBlock)
         {
             healthBlocks.Add(healthBlock);
+            healthBlock.Team = team;
             healthBlock.LifeForm = this;
         }
 

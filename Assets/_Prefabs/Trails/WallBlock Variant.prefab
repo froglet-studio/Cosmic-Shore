@@ -65,7 +65,22 @@ PrefabInstance:
     - target: {fileID: 5776304996075792891, guid: 1488a2ac58b2b4c43b14f84206bd9195,
         type: 3}
       propertyPath: m_Name
-      value: HealthBlock
+      value: WallBlock Variant
+      objectReference: {fileID: 0}
+    - target: {fileID: 6313579230210663873, guid: 1488a2ac58b2b4c43b14f84206bd9195,
+        type: 3}
+      propertyPath: TargetScale.x
+      value: 7
+      objectReference: {fileID: 0}
+    - target: {fileID: 6313579230210663873, guid: 1488a2ac58b2b4c43b14f84206bd9195,
+        type: 3}
+      propertyPath: TargetScale.y
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 6313579230210663873, guid: 1488a2ac58b2b4c43b14f84206bd9195,
+        type: 3}
+      propertyPath: TargetScale.z
+      value: 2
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 1488a2ac58b2b4c43b14f84206bd9195, type: 3}

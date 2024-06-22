@@ -72,6 +72,8 @@ namespace CosmicShore.Core
             if (Shielded) ActivateShield();
         }
 
+
+
         private void InitializeTrailBlockProperties()
         {
             TrailBlockProperties.position = transform.position;

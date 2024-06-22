@@ -74,9 +74,9 @@ namespace CosmicShore
                     if (Random.value < leafChance)
                     {
                         newBranch.gameObject = Instantiate(healthBlock, branch.gameObject.transform.position + (spindle.cylinder.transform.localScale.y * branch.gameObject.transform.forward), branch.gameObject.transform.rotation).gameObject; // TODO: position and orient leaf
-
                         ScaleAndPositionBranch(ref newBranch, branch);
-                        AddHealthBlock(newBranch.gameObject.GetComponent<HealthBlock>());
+                        var newHealthblock = newBranch.gameObject.GetComponent<HealthBlock>();
+                        AddHealthBlock(newHealthblock);
                     }
                     else
                     {

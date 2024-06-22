@@ -322,7 +322,7 @@ PrefabInstance:
     - target: {fileID: 5497835173863578963, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 5497835173863578975, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
@@ -813,7 +813,7 @@ MonoBehaviour:
   Crystal: {fileID: 1568959833}
   CrystalStartPosition: {x: 0, y: 0, z: -120}
   SegmentSpawner: {fileID: 1020381236}
-  numberOfSegments: 30
+  numberOfSegments: 10
   straightLineLength: 400
   ResetTrails: 1
   ScaleCrystalPositionWithIntensity: 0
@@ -1080,13 +1080,13 @@ PrefabInstance:
         type: 3}
       propertyPath: flora1
       value: 
-      objectReference: {fileID: 7514956980722975813, guid: 3c58c4dd53a6a2240acd7f7b81a3adb5,
+      objectReference: {fileID: 8186157953239024492, guid: a84d160ac0bcaf94da22c5368e4d3962,
         type: 3}
     - target: {fileID: 3197094124088707225, guid: cb702179ff5b42f41a3521ccd59e6934,
         type: 3}
       propertyPath: flora2
       value: 
-      objectReference: {fileID: 8186157953239024492, guid: 9269c22caf2f5764aad52d77b9724a22,
+      objectReference: {fileID: 7514956980722975813, guid: 3c58c4dd53a6a2240acd7f7b81a3adb5,
         type: 3}
     - target: {fileID: 3197094124088707225, guid: cb702179ff5b42f41a3521ccd59e6934,
         type: 3}

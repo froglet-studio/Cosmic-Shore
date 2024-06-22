@@ -161,7 +161,8 @@ public class Node : MonoBehaviour
             var controllingVolume = GetTeamVolume(ControllingTeam);
             if (controllingVolume < floraSpawnVolumeCeiling)
             {
-                Instantiate(flora, transform.position, Quaternion.identity);
+                var newFlora = Instantiate(flora, transform.position, Quaternion.identity);
+                newFlora.team = Teams.Red;
             }
             yield return new WaitForSeconds(flora.PlantPeriod);
         }

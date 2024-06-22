@@ -114,6 +114,7 @@ namespace CosmicShore
 
                 HealthBlock newHealthBlock = Instantiate(healthBlock, growthInfo.Position, growthInfo.Rotation);
                 newHealthBlock.LifeForm = this;
+                AddHealthBlock(newHealthBlock);
                 Branch newBranch = new Branch(newHealthBlock);
 
                 var newAssembler = AssemblerFactory.ProgramAssembler(newHealthBlock.gameObject, growthInfo);
@@ -166,6 +167,7 @@ namespace CosmicShore
             newSpindle.LifeForm = this; 
 
             HealthBlock newHealthBlock = Instantiate(healthBlock, transform.position, transform.rotation);
+            AddHealthBlock(newHealthBlock);
             newHealthBlock.transform.SetParent(newSpindle.transform, false);
             newHealthBlock.LifeForm = this;
 
