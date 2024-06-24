@@ -151,11 +151,18 @@ namespace CosmicShore.Environment.FlowField
             PlayExplosionAudio();
 
             // Move the Crystal
-            StartCoroutine(CrystalModel.GetComponent<FadeIn>().FadeInCoroutine());
-            transform.SetPositionAndRotation(Random.insideUnitSphere * sphereRadius + origin, UnityEngine.Random.rotation);
-            OnCrystalMove?.Invoke();
+            if (crystalProperties.Element == Element.None)
+            {
+                StartCoroutine(CrystalModel.GetComponent<FadeIn>().FadeInCoroutine());
+                transform.SetPositionAndRotation(Random.insideUnitSphere * sphereRadius + origin, UnityEngine.Random.rotation);
+                OnCrystalMove?.Invoke();
 
-            UpdateSelfWithNode();
+                UpdateSelfWithNode(); //TODO: check if we need to remove elmental crystals from the node
+            }
+            else
+            {
+                Destroy(gameObject);
+            }
         }
 
         protected void Explode(Ship ship)

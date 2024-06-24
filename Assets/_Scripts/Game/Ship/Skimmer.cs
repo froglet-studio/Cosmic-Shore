@@ -276,8 +276,12 @@ namespace CosmicShore.Core
         {
             if (other.TryGetComponent<TrailBlock>(out var trailBlock) && (affectSelf || trailBlock.Team != team))
             {
-                skimStartTimes.Remove(trailBlock.ID);
-                activelySkimmingBlockCount--;
+                if (skimStartTimes.ContainsKey(trailBlock.ID))
+                {
+                    skimStartTimes.Remove(trailBlock.ID);
+                    activelySkimmingBlockCount--;
+                }
+                
             
 
                 if (trailBlock.TryGetComponent<LineRenderer>(out var lineRenderer))

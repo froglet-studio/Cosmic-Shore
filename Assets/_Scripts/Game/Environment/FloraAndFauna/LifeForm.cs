@@ -32,6 +32,7 @@ namespace CosmicShore
             healthBlocks.Add(healthBlock);
             healthBlock.Team = team;
             healthBlock.LifeForm = this;
+            healthBlock.ownerId = $"{this} + {healthBlock} + {healthBlocks.Count}";
         }
 
         public void AddSpindle(Spindle spindle)

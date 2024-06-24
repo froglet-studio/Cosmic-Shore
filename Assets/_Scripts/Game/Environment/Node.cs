@@ -186,4 +186,23 @@ public class Node : MonoBehaviour
             }
         } 
     }
+    
+    IEnumerator SpawnFauna(Population population)
+    {
+        yield return new WaitForSeconds(initialFaunaSpawnWaitTime);
+        while (true)
+        {
+            var controllingVolume = GetTeamVolume(ControllingTeam);
+            if (controllingVolume > faunaSpawnVolumeThreshold)
+            {
+                yield return new WaitForSeconds(baseFaunaSpawnTime / controllingVolume);
+                var newPopulation = Instantiate(population, transform.position, Quaternion.identity);
+                newPopulation.Target = GetClosestItem(transform.position).gameObject;
+            }
+            else
+            {
+                yield return null;
+            }
+        } 
+    }
 }

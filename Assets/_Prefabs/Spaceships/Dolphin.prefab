@@ -2138,6 +2138,7 @@ MonoBehaviour:
   blockChargeChange: 0
   boostMultiplier: 0
   boostFuelAmount: 0
+  bottomEdgeButtons: 0
   inputEventShipActions:
   - InputEvent: 2
     ShipActions:
@@ -2155,13 +2156,6 @@ MonoBehaviour:
     ShipActions:
     - {fileID: 2525174765376973701}
   resourceEventClassActions: []
-  MassAbilityTarget: {fileID: 0}
-  ChargeAbilityTarget: {fileID: 0}
-  SpaceAbilityTarget: {fileID: 0}
-  TimeAbilityTarget: {fileID: 0}
-  ChargeAbility2Target: {fileID: 0}
-  LevelEffects: 
-  ControlOverrides: 
   closeCamDistance: 0
   farCamDistance: 0
   AOEExplosionMaterial: {fileID: 0}
@@ -2187,6 +2181,7 @@ MonoBehaviour:
   Turret: 0
   Portrait: 0
   SingleStickControls: 0
+  CommandStickControls: 0
   LiveProjectiles: 0
   Stationary: 0
   ElevatedAmmoGain: 0
@@ -2215,6 +2210,7 @@ MonoBehaviour:
   ThrottleScaler: 0
   DefaultMinimumSpeed: 10
   DefaultThrottleScaler:
+    Enabled: 0
     Value: 50
     Min: 0
     Max: 0
@@ -2240,9 +2236,9 @@ MonoBehaviour:
   skimmer: {fileID: 874579554510349383}
   waitTillOutsideSkimmer: 1
   shielded: 0
-  offset: 0
   initialWavelength: 12
   minWavelength: 6
+  offset: 0
   Gap: 1
   MinimumGap: 1
   TargetScale: {x: 0, y: 0, z: 0}
@@ -2270,11 +2266,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   displayBoost: 1
+  gainsBoost: 0
+  boostGainRate: 0.1
   initialBoost: 0
   maxBoost: 1
   displayAmmo: 0
   gainsAmmo: 0
   ammoGainRate:
+    Enabled: 0
     Value: 0.1
     Min: 0.1
     Max: 1.4
@@ -2329,12 +2328,15 @@ MonoBehaviour:
   YSum: 0
   XDiff: 0
   YDiff: 0
+  X: 0
+  Y: 0
   raycastHeight: 2
   raycastWidth: 2
   AutoPilotEnabled: 0
   LookingAtCrystal: 0
   ram: 0
   drift: 1
+  SingleStickControls: 0
   useAbility: 0
   abilityCooldown: 0
   ability: {fileID: 0}
@@ -2746,6 +2748,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ZoomOutRate: 5
   ZoomInRate:
+    Enabled: 0
     Value: 5
     Min: 0
     Max: 0
