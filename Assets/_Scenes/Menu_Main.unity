@@ -23624,7 +23624,7 @@ PrefabInstance:
     - target: {fileID: 8812619448024686939, guid: 14b7fddb8e30aa541a092201bc80b848,
         type: 3}
       propertyPath: numberOfBoids
-      value: 500
+      value: 300
       objectReference: {fileID: 0}
     - target: {fileID: 8812619448024686939, guid: 14b7fddb8e30aa541a092201bc80b848,
         type: 3}
@@ -27648,7 +27648,7 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 989920293}
-  m_LocalRotation: {x: 0.00019546802, y: 0.9998045, z: -0.013800179, w: 0.014161397}
+  m_LocalRotation: {x: 0.00019546723, y: 0.9998045, z: -0.013800159, w: 0.014161362}
   m_LocalPosition: {x: -7.650175, y: 7.4579606, z: 270}
   m_LocalScale: {x: 99.99999, y: 99.99999, z: 100}
   m_ConstrainProportionsScale: 0
@@ -34787,6 +34787,18 @@ Transform:
     type: 3}
   m_PrefabInstance: {fileID: 1318041751}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &1323470150 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 8812619448024686939, guid: 14b7fddb8e30aa541a092201bc80b848,
+    type: 3}
+  m_PrefabInstance: {fileID: 879474601}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1e7235857f3b55a4cb6116d4d07bb544, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &1324848678
 GameObject:
   m_ObjectHideFlags: 0
@@ -41886,17 +41898,17 @@ PrefabInstance:
     - target: {fileID: 6085108597755193398, guid: ba70c0f3eb077d44b8a538982d02dadc,
         type: 3}
       propertyPath: m_LocalRotation.w
-      value: 0.014161397
+      value: 0.014161362
       objectReference: {fileID: 0}
     - target: {fileID: 6085108597755193398, guid: ba70c0f3eb077d44b8a538982d02dadc,
         type: 3}
       propertyPath: m_LocalRotation.x
-      value: 0.00019546802
+      value: 0.00019546723
       objectReference: {fileID: 0}
     - target: {fileID: 6085108597755193398, guid: ba70c0f3eb077d44b8a538982d02dadc,
         type: 3}
       propertyPath: m_LocalRotation.z
-      value: -0.013800179
+      value: -0.013800159
       objectReference: {fileID: 0}
     - target: {fileID: 8945163999947012178, guid: ba70c0f3eb077d44b8a538982d02dadc,
         type: 3}
@@ -80474,12 +80486,12 @@ MonoBehaviour:
   Crystal: {fileID: 194708249}
   flora1: {fileID: 8186157953239024492, guid: a84d160ac0bcaf94da22c5368e4d3962, type: 3}
   flora2: {fileID: 7514956980722975813, guid: 3c58c4dd53a6a2240acd7f7b81a3adb5, type: 3}
-  initialFaunaSpawnWaitTime: 10
-  faunaSpawnVolumeThreshold: 1
-  baseFaunaSpawnTime: 10
-  floraSpawnVolumeCeiling: 1
-  fauna1: {fileID: 0}
+  fauna1: {fileID: 1323470150}
   fauna2: {fileID: 0}
+  floraSpawnVolumeCeiling: 12000
+  initialFaunaSpawnWaitTime: 0
+  faunaSpawnVolumeThreshold: 0
+  baseFaunaSpawnTime: 80
 --- !u!1 &6672088271978621762
 GameObject:
   m_ObjectHideFlags: 0

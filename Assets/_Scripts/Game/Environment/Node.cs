@@ -15,15 +15,16 @@ public class Node : MonoBehaviour
     [SerializeField] Flora flora1;
     [SerializeField] Flora flora2;
 
+    [SerializeField] Population fauna1;
+    [SerializeField] Population fauna2;
+ 
+    
+    [SerializeField] float floraSpawnVolumeCeiling = 12000f;
+
     [SerializeField] float initialFaunaSpawnWaitTime = 10f;
     [SerializeField] float faunaSpawnVolumeThreshold = 1f;
-    [SerializeField] float baseFaunaSpawnTime = 10f;
-
-    [SerializeField] float floraSpawnVolumeCeiling = 1f;
-
-    [SerializeField] Worm fauna1;
-    [SerializeField] Population fauna2;
-
+    [SerializeField] float baseFaunaSpawnTime = 60f;
+    
 
     Dictionary<Teams, float> teamVolumes = new Dictionary<Teams, float>();
 
@@ -174,25 +175,6 @@ public class Node : MonoBehaviour
             yield return new WaitForSeconds(flora.PlantPeriod);
         }
     }
-
-    IEnumerator SpawnFauna(Worm fauna)
-    {
-        yield return new WaitForSeconds(initialFaunaSpawnWaitTime);
-        while (true)
-        {
-            var controllingVolume = GetTeamVolume(ControllingTeam);
-            if (controllingVolume > faunaSpawnVolumeThreshold)
-            {
-                yield return new WaitForSeconds(baseFaunaSpawnTime / controllingVolume);
-                var newFauna = Instantiate(fauna, transform.position, Quaternion.identity);
-                newFauna.target = GetClosestItem(transform.position).gameObject;
-            }
-            else
-            {
-                yield return null;
-            }
-        } 
-    }
     
     IEnumerator SpawnFauna(Population population)
     {
@@ -206,8 +188,8 @@ public class Node : MonoBehaviour
                 
                 var newPopulation = Instantiate(population, transform.position, Quaternion.identity);
                 newPopulation.Team = ControllingTeam;
-                newPopulation.Target = GetClosestItem(transform.position).gameObject;
-                yield return new WaitForSeconds(60);
+                newPopulation.Target = GetCrystal().gameObject;
+                yield return new WaitForSeconds(baseFaunaSpawnTime);
             }
             else
             {
