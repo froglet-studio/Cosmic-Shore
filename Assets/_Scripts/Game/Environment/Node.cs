@@ -22,7 +22,7 @@ public class Node : MonoBehaviour
     [SerializeField] float floraSpawnVolumeCeiling = 1f;
 
     [SerializeField] Worm fauna1;
-    [SerializeField] GameObject fauna2;
+    [SerializeField] Population fauna2;
 
 
     Dictionary<Teams, float> teamVolumes = new Dictionary<Teams, float>();
@@ -36,10 +36,12 @@ public class Node : MonoBehaviour
     {
         teamVolumes.Add(Teams.Green, 0);
         teamVolumes.Add(Teams.Red, 0);
+        teamVolumes.Add(Teams.Gold, 0);
 
         SnowChanger.SetOrigin(transform.position);
         Crystal.SetOrigin(transform.position);
         if (fauna1) StartCoroutine(SpawnFauna(fauna1));
+        if (fauna2) StartCoroutine(SpawnFauna(fauna2));
         if (flora1) StartCoroutine(SpawnFlora(flora1));
         if (flora2) StartCoroutine(SpawnFlora(flora2));
     }
@@ -132,25 +134,30 @@ public class Node : MonoBehaviour
             if (!enabled)
                 return Teams.None;
 
-            if (!teamVolumes.ContainsKey(Teams.Green) && !teamVolumes.ContainsKey(Teams.Red))
+            if (!teamVolumes.ContainsKey(Teams.Green)  && !teamVolumes.ContainsKey(Teams.Red) &&!teamVolumes.ContainsKey(Teams.Gold))
                 return Teams.None;
 
-            if (!teamVolumes.ContainsKey(Teams.Red) && teamVolumes[Teams.Green] > volumeControlThreshold)
+            if ((!teamVolumes.ContainsKey(Teams.Red) || (!teamVolumes.ContainsKey(Teams.Gold))) && teamVolumes[Teams.Green] > volumeControlThreshold)
                 return Teams.Green;
 
-            if (!teamVolumes.ContainsKey(Teams.Green) && teamVolumes[Teams.Red] > volumeControlThreshold)
+            if ((!teamVolumes.ContainsKey(Teams.Green) || (!teamVolumes.ContainsKey(Teams.Gold))) && teamVolumes[Teams.Red] > volumeControlThreshold)
                 return Teams.Red;
 
-            if (teamVolumes[Teams.Green] < volumeControlThreshold && teamVolumes[Teams.Red] < volumeControlThreshold)
+            if ((!teamVolumes.ContainsKey(Teams.Green) || (!teamVolumes.ContainsKey(Teams.Red))) && teamVolumes[Teams.Gold] > volumeControlThreshold)
+                return Teams.Gold;
+
+            if (teamVolumes[Teams.Green] < volumeControlThreshold && teamVolumes[Teams.Red] < volumeControlThreshold && teamVolumes[Teams.Gold] < volumeControlThreshold)
                 return Teams.None;
 
-            if (teamVolumes[Teams.Green] == teamVolumes[Teams.Red])
+            if (teamVolumes[Teams.Green] == teamVolumes[Teams.Gold] && teamVolumes[Teams.Green] == teamVolumes[Teams.Red])
                 return Teams.None;
 
-            if (teamVolumes[Teams.Green] > teamVolumes[Teams.Red])
+            if (teamVolumes[Teams.Green] > teamVolumes[Teams.Red] && teamVolumes[Teams.Green] > teamVolumes[Teams.Gold])
                 return Teams.Green;
+            else if (teamVolumes[Teams.Red] > teamVolumes[Teams.Green] && teamVolumes[Teams.Red] > teamVolumes[Teams.Gold])
+                return Teams.Red;
             else
-                return Teams.Red;
+                return Teams.Gold;
         }
     }
 
@@ -162,7 +169,7 @@ public class Node : MonoBehaviour
             if (controllingVolume < floraSpawnVolumeCeiling)
             {
                 var newFlora = Instantiate(flora, transform.position, Quaternion.identity);
-                newFlora.team = Teams.Red;
+                newFlora.Team = (Teams)Random.Range(0,5);
             }
             yield return new WaitForSeconds(flora.PlantPeriod);
         }
@@ -193,15 +200,18 @@ public class Node : MonoBehaviour
         while (true)
         {
             var controllingVolume = GetTeamVolume(ControllingTeam);
+            var period = baseFaunaSpawnTime * faunaSpawnVolumeThreshold / controllingVolume;
             if (controllingVolume > faunaSpawnVolumeThreshold)
             {
-                yield return new WaitForSeconds(baseFaunaSpawnTime / controllingVolume);
+                
                 var newPopulation = Instantiate(population, transform.position, Quaternion.identity);
+                newPopulation.Team = ControllingTeam;
                 newPopulation.Target = GetClosestItem(transform.position).gameObject;
+                yield return new WaitForSeconds(60);
             }
             else
             {
-                yield return null;
+                yield return new WaitForSeconds(2);
             }
         } 
     }

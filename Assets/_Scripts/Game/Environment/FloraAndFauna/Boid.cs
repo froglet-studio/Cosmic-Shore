@@ -42,14 +42,12 @@ public class Boid : Fauna
     Quaternion desiredRotation;
 
     public bool isKilled = false;
-    public Teams Team = Teams.Blue;
 
     bool isTraveling = false;
 
     [SerializeField] List<BoidCollisionEffects> collisionEffects;
 
     public BoidManager boidManager;
-    private TrailBlock trailBlock;
     private BoxCollider BlockCollider;
     //private Crystal crystal;
     //[SerializeField] Material activeCrystalMaterial;
@@ -66,13 +64,12 @@ public class Boid : Fauna
         base.Start();
         crystal = GetComponentInChildren<Crystal>();
         if (!boidManager) boidManager = GetComponentInParent<BoidManager>();
-        trailBlock = GetComponentInChildren<TrailBlock>();
-        BlockCollider = GetComponentInChildren<BoxCollider>();
+        AddSpindle(spindle);
+        BlockCollider = healthBlock.GetComponent<BoxCollider>();
         currentVelocity = transform.forward * Random.Range(minSpeed, maxSpeed);
         float initialDelay = normalizedIndex * behaviorUpdateRate;
         StartCoroutine(CalculateBehaviorCoroutine(initialDelay));
-        trailBlock.Team = Team;
-        AddSpindle(spindle);
+        healthBlock.Team = Team;
     }
 
     IEnumerator CalculateBehaviorCoroutine(float initialDelay)
@@ -136,11 +133,10 @@ public class Boid : Fauna
             }
             else if (otherTrailBlock)
             {
-                Debug.Log($"TrailBlock.Team {otherTrailBlock.Team}");
                 float blockWeight = boidManager.Weights[Mathf.Abs((int)otherTrailBlock.Team-1)]; // TODO: this is a hack to get the team weight, need to make this more robust
                 blockAttraction += -diff.normalized * blockWeight / distance;
 
-                if (distance < trailBlockInteractionRadius && otherTrailBlock.Team != trailBlock.Team)
+                if (distance < trailBlockInteractionRadius && otherTrailBlock.Team != healthBlock.Team)
                 {
                     foreach (var effect in collisionEffects)
                     {
@@ -154,14 +150,14 @@ public class Boid : Fauna
                                         attached = true;
                                         Goal = otherTrailBlock.transform;
                                         otherTrailBlock.Grow(-1);
-                                        trailBlock.Grow(1);
-                                        if (trailBlock.IsLargest) StartCoroutine(AddToMoundCoroutine());
+                                        healthBlock.Grow(1);
+                                        if (healthBlock.IsLargest) StartCoroutine(AddToMoundCoroutine());
                                     }
                                     else Goal = DefaultGoal;
                                 }
                                 break;
                             case BoidCollisionEffects.Explode:
-                                otherTrailBlock.Explode(currentVelocity, trailBlock.Team, trailBlock.PlayerName + " boid", true);
+                                otherTrailBlock.Explode(currentVelocity, healthBlock.Team, healthBlock.PlayerName + " boid", true);
                                 break;
                         }
                     }
@@ -234,15 +230,15 @@ public class Boid : Fauna
         }
 
         isTraveling = false;
-        trailBlock.IsLargest = false;
-        trailBlock.DeactivateShields();
-        trailBlock.Grow(-3);
+        healthBlock.IsLargest = false;
+        healthBlock.DeactivateShields();
+        healthBlock.Grow(-3);
     }
 
     (TrailBlock, GyroidAssembler) NewBlock()
     {
-        var newBlock = Instantiate(trailBlock, transform.position, transform.rotation, boidManager.transform);
-        newBlock.Team = trailBlock.Team;
+        var newBlock = Instantiate(healthBlock, transform.position, transform.rotation, boidManager.transform);
+        newBlock.Team = healthBlock.Team;
         newBlock.gameObject.layer = LayerMask.NameToLayer("Mound");
         //var ID = GetInstanceID().ToString();                    
         //Debug.Log($"ID of created : {ID}");
@@ -254,9 +250,9 @@ public class Boid : Fauna
     void Poop()
     {
         attached = false;
-        var newblock = Instantiate(trailBlock, transform.position, transform.rotation, boidManager.transform);
-        newblock.Team = trailBlock.Team;
-        trailBlock.Grow(-3);
+        var newblock = Instantiate(healthBlock, transform.position, transform.rotation, boidManager.transform);
+        newblock.Team = healthBlock.Team;
+        healthBlock.Grow(-3);
     }
 
     void Update()

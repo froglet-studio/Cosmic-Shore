@@ -19,7 +19,7 @@ namespace CosmicShore
         [SerializeField] protected Material activeCrystalMaterial; // TODO: make a crytal material set that pulls from the element
         
         protected Node node;
-        public Teams team;
+        public Teams Team;
 
         protected virtual void Start()
         {
@@ -30,7 +30,7 @@ namespace CosmicShore
         public void AddHealthBlock(HealthBlock healthBlock)
         {
             healthBlocks.Add(healthBlock);
-            healthBlock.Team = team;
+            healthBlock.Team = Team;
             healthBlock.LifeForm = this;
             healthBlock.ownerId = $"{this} + {healthBlock} + {healthBlocks.Count}";
         }
@@ -39,6 +39,14 @@ namespace CosmicShore
         {
             spindles.Add(spindle);
             spindle.LifeForm = this;
+        }
+
+        public Spindle AddSpindle()
+        {
+            Spindle newSpindle = Instantiate(spindle, transform.position, transform.rotation, transform);
+            spindles.Add(newSpindle);
+            newSpindle.LifeForm = this;
+            return newSpindle;
         }
 
         public void RemoveSpindle(Spindle spindle)
@@ -54,7 +62,6 @@ namespace CosmicShore
 
         public void CheckIfDead()
         {
-            Debug.Log($"Lifeform.spindles.Count {spindles.Count}");
             if (spindles.Count == 0)
             {
                 Die();

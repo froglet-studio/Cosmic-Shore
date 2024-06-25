@@ -60,6 +60,7 @@ MonoBehaviour:
   maxDepth: 60
   itemsPerGrow: 7
   randomItems: 2
+  crystalGrowthMultiplier: 1.01
 --- !u!1001 &8186157953130318967
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -75,7 +76,7 @@ PrefabInstance:
     - target: {fileID: 6588436222817790464, guid: a4bde9d72595bfb43aa3b791d02f4db8,
         type: 3}
       propertyPath: m_Radius
-      value: 3
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6588436222817790464, guid: a4bde9d72595bfb43aa3b791d02f4db8,
         type: 3}

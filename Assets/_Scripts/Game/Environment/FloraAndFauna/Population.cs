@@ -7,16 +7,7 @@ namespace CosmicShore
     public abstract class Population : MonoBehaviour
     {
         public GameObject Target;
-        // Start is called before the first frame update
-        void Start()
-        {
-        
-        }
+        public Teams Team;
 
-        // Update is called once per frame
-        void Update()
-        {
-        
-        }
     }
 }

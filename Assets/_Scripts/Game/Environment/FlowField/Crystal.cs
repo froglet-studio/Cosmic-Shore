@@ -161,8 +161,35 @@ namespace CosmicShore.Environment.FlowField
             }
             else
             {
-                Destroy(gameObject);
+                RemoveSelfFromNode();
+                Destroy(gameObject);               
             }
+        }
+
+        //the following is a public method that can be called to grow the crystal
+        public void GrowCrystal(float duration, float targetScale)
+        {
+            StartCoroutine(Grow(duration, targetScale));
+        }
+
+        // the following grow coroutine is used to grow the crystal when it changes size
+        public IEnumerator Grow(float duration, float targetScale)
+        {
+            float elapsedTime = 0.0f;
+            Vector3 startScale = transform.localScale;
+            Vector3 targetScaleVector = new Vector3(targetScale, targetScale, targetScale);
+
+            while (elapsedTime < duration)
+            {
+                elapsedTime += Time.deltaTime;
+                float t = Mathf.Clamp01(elapsedTime / duration);
+
+                transform.localScale = Vector3.Lerp(startScale, targetScaleVector, t);
+
+                yield return null;
+            }
+
+            transform.localScale = targetScaleVector;
         }
 
         protected void Explode(Ship ship)
@@ -172,7 +199,14 @@ namespace CosmicShore.Environment.FlowField
             spentCrystal.transform.position = transform.position;
             spentCrystal.transform.localEulerAngles = transform.localEulerAngles;
             spentCrystal.GetComponent<Renderer>().material = tempMaterial;
-
+            spentCrystal.transform.localScale = transform.lossyScale;
+            if (crystalProperties.Element == Element.Space)
+            {
+                var spentAnimator = spentCrystal.GetComponent<SpaceCrystalAnimator>();
+                var thisAnimator = GetComponentInChildren<SpaceCrystalAnimator>();
+                spentAnimator.timer = thisAnimator.timer;              
+            }
+                
             spentCrystal.GetComponent<Impact>().HandleImpact(
                 ship.transform.forward * ship.GetComponent<ShipStatus>().Speed, tempMaterial, ship.Player.PlayerName);
         }

@@ -38,6 +38,8 @@ namespace CosmicShore
         [SerializeField] int itemsPerGrow = 5;
         [SerializeField] int randomItems = 2;
 
+        [SerializeField] float crystalGrowthMultiplier = 1.01f;
+
         struct Branch
         {
             public GameObject gameObject;
@@ -100,7 +102,6 @@ namespace CosmicShore
                 var growthInfo = branch.assembler.GetGrowthInfo();
                 if (!growthInfo.CanGrow)
                 {
-                    Debug.Log("Assembler cannot grow");
                     branchesToRemove.Add(branch);
                     continue;
                 }
@@ -152,19 +153,28 @@ namespace CosmicShore
             }
 
             activeBranches.UnionWith(newBranches);
+            GrowCrystal();
         }
+
+        // the following function is called by the grow function to grow the crystal
+        void GrowCrystal()
+        {
+            if (crystal)
+            {
+                crystal.GrowCrystal(1, crystal.transform.localScale.x * crystalGrowthMultiplier);
+            }
+        }
+
 
         public override void Plant()
         {
             assembler = CreateNewAssembler();
-            transform.position = node.GetCrystal().transform.position + 400 * Random.onUnitSphere; //TODO: replace magic number with nucleus radius 
+            transform.position = node.GetCrystal().transform.position + 400 * Random.onUnitSphere; // TODO: replace magic number with nucleus radius 
         }
 
         public Assembler CreateNewAssembler()
         {
-            Spindle newSpindle = Instantiate(spindle, transform.position, transform.rotation, transform);
-            AddSpindle(newSpindle);
-            newSpindle.LifeForm = this; 
+            var newSpindle = AddSpindle();
 
             HealthBlock newHealthBlock = Instantiate(healthBlock, transform.position, transform.rotation);
             AddHealthBlock(newHealthBlock);

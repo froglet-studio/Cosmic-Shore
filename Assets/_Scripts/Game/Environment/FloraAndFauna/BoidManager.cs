@@ -13,7 +13,7 @@ public class BoidManager : Population
 
     [Header("Global Boid Settings")]
     public Transform globalGoal;
-    public bool randomGoals = true;
+    public bool randomGoals = false;
     public float goalUpdateInterval = 5f;
     public Transform Mound;
 
@@ -24,12 +24,14 @@ public class BoidManager : Population
 
     private void Start()
     {
+        globalGoal = Target.transform;
         Weights = new List<float> { 1, 1, 1, 1 };
         for (int i = 0; i < numberOfBoids; i++)
         {
             Vector3 spawnPosition = transform.position + (spawnRadius * (Quaternion.AngleAxis(Random.Range(0, 360), Vector3.forward) * Vector3.right));
             Boid newBoid = Instantiate(boidPrefab, spawnPosition, Quaternion.LookRotation(Vector3.Cross(spawnPosition,Vector3.forward)));
             newBoid.transform.SetParent(transform);
+            newBoid.Team = Team;
             var block = newBoid.GetComponentInChildren<TrailBlock>();
 
             if (globalGoal)
@@ -45,7 +47,7 @@ public class BoidManager : Population
             newBoid.DefaultGoal = globalGoal;
 
             boidTrail.Add(block);
-            block.Team = Teams.Blue;
+            block.Team = Team;
             block.Trail = boidTrail;
             
             newBoid.normalizedIndex = (float)i / numberOfBoids;

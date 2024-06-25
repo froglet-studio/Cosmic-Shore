@@ -113,7 +113,6 @@ namespace CosmicShore
                 // Check if there is already a block at the new position using Physics.CheckBox
                 if (Physics.CheckBox(newPosition, TrailBlock.transform.localScale / 2f))
                 {
-                    Debug.Log($"gyroidassembler: found something in growth site: {newPosition} with scale {TrailBlock.transform.localScale / 2f}");
                     // Fill the bond site
                     SetBondSiteStatus(growthSite, true);
 
@@ -133,7 +132,6 @@ namespace CosmicShore
             }
             else
             {
-                Debug.LogWarning($"Bond mate data not found for block type: {BlockType} and corner site: {growthSite}");
                 return new GrowthInfo { CanGrow = false };
             }
         }
@@ -158,19 +156,15 @@ namespace CosmicShore
             switch (site)
             {
                 case CornerSiteType.TopRight:
-                    Debug.Log("gyroidassembler: setting top right bonded");
                     TopRightIsBonded = isBonded;
                     break;
                 case CornerSiteType.TopLeft:
-                    Debug.Log("gyroidassembler: setting top left bonded");
                     TopLeftIsBonded = isBonded;
                     break;
                 case CornerSiteType.BottomLeft:
-                    Debug.Log("gyroidassembler: setting bottom left bonded");
                     BottomLeftIsBonded = isBonded;
                     break;
                 case CornerSiteType.BottomRight:
-                    Debug.Log("gyroidassembler: setting bottom right bonded");
                     BottomRightIsBonded = isBonded;
                     break;
             }
@@ -270,7 +264,6 @@ namespace CosmicShore
 
         IEnumerator LookForMatesCoroutine()
         {
-            Debug.Log($"GyroidAssembler LookForMates Depth: {depth}");
             bool[] activeMates = new bool[] { false, true, true, false };
 
             while (true)

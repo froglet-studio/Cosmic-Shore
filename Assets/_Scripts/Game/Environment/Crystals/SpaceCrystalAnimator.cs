@@ -10,7 +10,7 @@ namespace CosmicShore
     {
         SkinnedMeshRenderer crystalRenderer;
         public float cycleSpeed = 1f; // Speed of the animation cycle
-        private float timer = 0f;
+        public float timer = 0f;
         private int currentShapeKey = 0;
 
         void Start()

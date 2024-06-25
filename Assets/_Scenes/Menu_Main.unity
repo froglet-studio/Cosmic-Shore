@@ -23602,6 +23602,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8812619448024686939, guid: 14b7fddb8e30aa541a092201bc80b848,
         type: 3}
+      propertyPath: Target
+      value: 
+      objectReference: {fileID: 194708246}
+    - target: {fileID: 8812619448024686939, guid: 14b7fddb8e30aa541a092201bc80b848,
+        type: 3}
       propertyPath: boidPrefab
       value: 
       objectReference: {fileID: 5945480239701989318, guid: 7d4171ad12a55d04d867f23e585985e6,
@@ -80467,8 +80472,8 @@ MonoBehaviour:
   volumeControlThreshold: 100
   SnowChanger: {fileID: 1019533258}
   Crystal: {fileID: 194708249}
-  flora1: {fileID: 0}
-  flora2: {fileID: 0}
+  flora1: {fileID: 8186157953239024492, guid: a84d160ac0bcaf94da22c5368e4d3962, type: 3}
+  flora2: {fileID: 7514956980722975813, guid: 3c58c4dd53a6a2240acd7f7b81a3adb5, type: 3}
   initialFaunaSpawnWaitTime: 10
   faunaSpawnVolumeThreshold: 1
   baseFaunaSpawnTime: 10
