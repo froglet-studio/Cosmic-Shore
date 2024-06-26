@@ -170,7 +170,7 @@ public class Node : MonoBehaviour
             if (controllingVolume < floraSpawnVolumeCeiling)
             {
                 var newFlora = Instantiate(flora, transform.position, Quaternion.identity);
-                newFlora.Team = (Teams)Random.Range(0,5);
+                newFlora.Team = (Teams)Random.Range(1,5);
             }
             yield return new WaitForSeconds(flora.PlantPeriod);
         }

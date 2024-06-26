@@ -114,7 +114,6 @@ namespace CosmicShore
                 }
 
                 HealthBlock newHealthBlock = Instantiate(healthBlock, growthInfo.Position, growthInfo.Rotation);
-                newHealthBlock.LifeForm = this;
                 AddHealthBlock(newHealthBlock);
                 Branch newBranch = new Branch(newHealthBlock);
 
