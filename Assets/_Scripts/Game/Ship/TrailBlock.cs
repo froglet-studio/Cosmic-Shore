@@ -72,6 +72,8 @@ namespace CosmicShore.Core
             if (Shielded) ActivateShield();
         }
 
+
+
         private void InitializeTrailBlockProperties()
         {
             TrailBlockProperties.position = transform.position;
@@ -194,8 +196,8 @@ namespace CosmicShore.Core
             // Make exploding block
             var explodingBlock = Instantiate(FossilBlock);
             explodingBlock.transform.position = transform.position;
-            explodingBlock.transform.localEulerAngles = transform.localEulerAngles;
-            explodingBlock.transform.localScale = transform.localScale;
+            explodingBlock.transform.eulerAngles = transform.eulerAngles;
+            explodingBlock.transform.localScale = transform.lossyScale;
             explodingBlock.transform.parent = fossilBlockContainer.transform;
             explodingBlock.GetComponent<Renderer>().material = new Material(Hangar.Instance.GetTeamExplodingBlockMaterial(this.team));
             explodingBlock.GetComponent<BlockImpact>().HandleImpact(impactVector);

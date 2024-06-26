@@ -52,7 +52,7 @@ PlayerSettings:
   m_MTRendering: 1
   mipStripping: 0
   numberOfMipsStripped: 0
-  m_StackTraceTypes: 010000000100000001000000010000000100000001000000
+  m_StackTraceTypes: 020000000200000002000000020000000200000001000000
   iosShowActivityIndicatorOnLoading: -1
   androidShowActivityIndicatorOnLoading: -1
   iosUseCustomAppBackgroundBehavior: 0
@@ -137,9 +137,7 @@ PlayerSettings:
     Others: 1
   bundleVersion: 0.1.4
   preloadedAssets:
-  - {fileID: 11400000, guid: cd809e1c26d8b424bb7c1f783fbdd703, type: 2}
-  - {fileID: 4284087679900875766, guid: 274754c57f99f5144be86c9d1014705b, type: 2}
-  - {fileID: 11400000, guid: 39144da157254664c8332b4d6ef6aa52, type: 2}
+  - {fileID: 0}
   metroInputSource: 0
   wsaTransparentSwapchain: 0
   m_HolographicPauseOnTrackingLoss: 1
@@ -850,7 +848,7 @@ PlayerSettings:
   allowUnsafeCode: 0
   useDeterministicCompilation: 1
   enableRoslynAnalyzers: 1
-  selectedPlatform: 0
+  selectedPlatform: 2
   additionalIl2CppArgs: 
   scriptingRuntimeVersion: 1
   gcIncremental: 1

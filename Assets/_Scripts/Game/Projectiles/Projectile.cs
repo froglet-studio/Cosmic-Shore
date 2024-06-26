@@ -12,11 +12,13 @@ namespace CosmicShore.Game.Projectiles
         public Vector3 Velocity;
         public Teams Team;
         public Ship Ship;
+        public bool ImpactOnEnd;
 
 
         [SerializeField] List<TrailBlockImpactEffects> trailBlockImpactEffects;
         [SerializeField] List<ShipImpactEffects> shipImpactEffects;
         [SerializeField] List<CrystalImpactEffects> crystalImpactEffects;
+        [SerializeField] List<TrailBlockImpactEffects> endEffects;
 
         public float ProjectileTime;
 
@@ -87,6 +89,27 @@ namespace CosmicShore.Game.Projectiles
 
                         if (!trailBlockProperties.trailBlock.GetComponent<Boid>()) Stop();
                         else GetComponentInParent<PoolManager>().ReturnToPool(gameObject, gameObject.tag);
+                        break;
+                    case TrailBlockImpactEffects.Fire:
+                        GetComponent<LoadedGun>().FireGun();
+                        break;
+                    case TrailBlockImpactEffects.Explode:
+                        ((ExplodableProjectile)this).Detonate();
+                        break;
+
+                }
+            }
+        }
+
+        protected virtual void PerformEndEffects()
+        {
+            foreach (TrailBlockImpactEffects effect in endEffects)
+            {
+                switch (effect)
+                {
+                    case TrailBlockImpactEffects.Stop:
+                        Stop();
+                        GetComponentInParent<PoolManager>().ReturnToPool(gameObject, gameObject.tag);
                         break;
                     case TrailBlockImpactEffects.Fire:
                         GetComponent<LoadedGun>().FireGun();
@@ -196,6 +219,7 @@ namespace CosmicShore.Game.Projectiles
                 elapsedTime += Time.deltaTime;
                 yield return null;
             }
+            if (ImpactOnEnd) PerformEndEffects();
             GetComponentInParent<PoolManager>().ReturnToPool(gameObject, gameObject.tag);
         }
 

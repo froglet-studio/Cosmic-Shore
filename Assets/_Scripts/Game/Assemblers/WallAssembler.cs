@@ -20,7 +20,8 @@ namespace CosmicShore
             Top,
             Right,
             Bottom,
-            Left
+            Left,
+            None
         }
 
         //public bool IsActive = false;
@@ -40,13 +41,16 @@ namespace CosmicShore
         [HideInInspector] public BondMate BottomMate;
         [HideInInspector] public WallAssembler LeftMate;
 
-        [HideInInspector] public bool TopIsBonded = false;
-        [HideInInspector] public bool RightIsBonded = false;
-        [HideInInspector] public bool BottomIsBonded = false;
-        [HideInInspector] public bool LeftIsBonded = false;
+        [HideInInspector] public bool TopIsBonded;
+        [HideInInspector] public bool RightIsBonded;
+        [HideInInspector] public bool BottomIsBonded;
+        [HideInInspector] public bool LeftIsBonded;
+
+        public override bool IsFullyBonded() => TopIsBonded && RightIsBonded && BottomIsBonded && LeftIsBonded;
 
         [HideInInspector] public HashSet<WallAssembler> MateList = new();
-        public TrailBlock WallBlock;
+        public override TrailBlock TrailBlock { get; set; }
+        public override Spindle Spindle { get; set; }
 
         private float snapDistance = .2f;
         float separationDistance = 2f;
@@ -62,10 +66,10 @@ namespace CosmicShore
 
         void Start()
         {
-            WallBlock = GetComponent<TrailBlock>();
-            if (WallBlock)
+            TrailBlock = GetComponent<TrailBlock>();
+            if (TrailBlock)
             {
-                scale = WallBlock.TargetScale;
+                scale = TrailBlock.TargetScale;
                 CalculateGlobalBondSites();
             }
         }
@@ -75,9 +79,141 @@ namespace CosmicShore
             StartCoroutine(LookForMates());
         }
 
-        public override void Grow()
+        //the following method calculates rotation using SiteType. Is is similiar to "Quaternion CalculateRotation(BondMate mate)"
+        private Quaternion CalculateRotation(SiteType site)
         {
-            
+            Vector3 up, forward;
+
+            switch (site)
+            {
+                case SiteType.Top:
+                    up = transform.up;
+                    forward = transform.forward;
+                    break;
+                case SiteType.Right:
+                    up = transform.right;
+                    forward = transform.forward;
+                    break;
+                case SiteType.Bottom:
+                    up = -transform.up;
+                    forward = transform.forward;
+                    break;
+                case SiteType.Left:
+                    up = -transform.right;
+                    forward = transform.forward;
+                    break;
+                default:
+                    return Quaternion.identity;
+            }
+
+            // Adjust the rotation to match the herringbone pattern, if needed
+            if (site == SiteType.Top || site == SiteType.Bottom)
+            {
+                // For vertical connections, rotate 90 degrees around the forward axis
+                Quaternion additionalRotation = Quaternion.AngleAxis(90, forward);
+                up = additionalRotation * up;
+            }
+
+            return Quaternion.LookRotation(forward, up);
+        }
+
+
+        //the following method takes in a SiteType and a bool and sets the bond site status
+        private void SetBondSiteStatus(SiteType site, bool status)
+        {
+            switch (site)
+            {
+                case SiteType.Top:
+                    TopIsBonded = status;
+                    break;
+                case SiteType.Right:
+                    RightIsBonded = status;
+                    break;
+                case SiteType.Bottom:
+                    BottomIsBonded = status;
+                    break;
+                case SiteType.Left:
+                    LeftIsBonded = status;
+                    break;
+            }
+        }
+
+        private Vector3 CalculatePosition(SiteType site)
+        {
+            Vector3 offset = Vector3.zero;
+
+            switch (site)
+            {
+                case SiteType.Top:
+                    offset = transform.up * (scale.y + separationDistance);
+                    break;
+                case SiteType.Right:
+                    offset = transform.right * (scale.x + separationDistance);
+                    break;
+                case SiteType.Bottom:
+                    offset = -transform.up * (scale.y + separationDistance);
+                    break;
+                case SiteType.Left:
+                    offset = -transform.right * (scale.x + separationDistance);
+                    break;
+                default:
+                    break;
+            }
+
+            return transform.position + offset;
+        }
+
+        public override GrowthInfo GetGrowthInfo()
+        {
+            if (IsFullyBonded())
+            {
+                return new GrowthInfo { CanGrow = false };
+            }
+
+            CalculateGlobalBondSites();
+
+            // Prioritize growing in alternating directions
+            SiteType[] growthPriority = { SiteType.Right, SiteType.Left};
+            foreach (var site in growthPriority)
+            {
+                if (!IsBonded(site))
+                {
+                    Vector3 newPosition = CalculatePosition(site);
+                    Quaternion newRotation = CalculateRotation(site);
+
+                    if (!Physics.CheckBox(newPosition, TrailBlock.transform.localScale / 2f))
+                    {
+                        SetBondSiteStatus(site, true);
+                        return new GrowthInfo
+                        {
+                            CanGrow = true,
+                            Position = newPosition,
+                            Rotation = newRotation,
+                            Depth = Depth - 1
+                        };
+                    }
+                    else
+                    {
+                        SetBondSiteStatus(site, true);
+                    }
+                }
+            }
+
+            return new GrowthInfo { CanGrow = false };
+        }
+
+        
+
+            private bool IsBonded(SiteType site)
+        {
+            switch (site)
+            {
+                case SiteType.Top: return TopIsBonded;
+                case SiteType.Right: return RightIsBonded;
+                case SiteType.Bottom: return BottomIsBonded;
+                case SiteType.Left: return LeftIsBonded;
+                default: return false;
+            }
         }
 
         public void ClearMateList()
@@ -105,7 +241,7 @@ namespace CosmicShore
         {
             while (true)
             {
-                if (WallBlock == null)
+                if (TrailBlock == null)
                 {
                     yield return new WaitForSeconds(1f);
                     continue;
@@ -139,7 +275,7 @@ namespace CosmicShore
                 {
                     //Debug.Log("Bonded Top and Bottom");
                     StopAllCoroutines();
-                    WallBlock.Grow();
+                    TrailBlock.Grow();
                     if (TopMate.Mate.MateList.Count < 2) TopMate.Mate.StartBonding();
                     if (BottomMate.Mate.MateList.Count < 2) BottomMate.Mate.StartBonding();
 
@@ -217,16 +353,15 @@ namespace CosmicShore
                     var trailBlock = potentialMate.GetComponent<TrailBlock>();
                     if (trailBlock != null)
                     {
-                        Boid boid = trailBlock.GetComponentInParent<Boid>();
-                        if (boid != null)
+                        HealthBlock healthBlock = trailBlock.GetComponent<HealthBlock>();
+                        if (healthBlock != null)
                         {
-                            trailBlock.transform.parent = WallBlock.transform.parent;
-                            boid.isKilled = true;
+                            healthBlock.Reparent(TrailBlock.transform.parent);
                         }
                         trailBlock.TargetScale = scale;
-                        trailBlock.MaxScale = WallBlock.MaxScale;
-                        trailBlock.GrowthVector = WallBlock.GrowthVector;
-                        trailBlock.Steal(WallBlock.Player, WallBlock.Team);
+                        trailBlock.MaxScale = TrailBlock.MaxScale;
+                        trailBlock.GrowthVector = TrailBlock.GrowthVector;
+                        trailBlock.Steal(TrailBlock.Player, TrailBlock.Team);
                         trailBlock.ChangeSize();
                         mateComponent = trailBlock.transform.gameObject.AddComponent<WallAssembler>();
                     }
@@ -236,7 +371,7 @@ namespace CosmicShore
                 if (IsMate(mateComponent) && mateComponent != this)
                 {
                     if (Vector3.Distance(transform.position, mateComponent.transform.position) < snapDistance
-                        && mateComponent.WallBlock.TrailBlockProperties.TimeCreated > WallBlock.TrailBlockProperties.TimeCreated) 
+                        && mateComponent.TrailBlock.TrailBlockProperties.TimeCreated > TrailBlock.TrailBlockProperties.TimeCreated) 
                     {
                         mateComponent.StopAllCoroutines();
                         mateComponent.ReplaceMateList(this);
@@ -245,13 +380,13 @@ namespace CosmicShore
                     if (siteType == SiteType.Top && (bondSite - mateComponent.globalBondSiteRight).sqrMagnitude < snapDistance)
                     {
                         //Debug.Log("ReFound MateRight");
-                        mateComponent.WallBlock.ActivateSuperShield();
+                        mateComponent.TrailBlock.ActivateSuperShield();
                         return new BondMate { Mate = mateComponent, Substrate = siteType, Bondee = SiteType.Right };
                     }
                     if (siteType == SiteType.Bottom && (bondSite - mateComponent.globalBondSiteLeft).sqrMagnitude < snapDistance)
                     {
                         //Debug.Log("ReFound MateLeft");
-                        mateComponent.WallBlock.ActivateSuperShield();
+                        mateComponent.TrailBlock.ActivateSuperShield();
                         return new BondMate { Mate = mateComponent, Substrate = siteType, Bondee = SiteType.Left };
                     }
                 }
@@ -313,18 +448,22 @@ namespace CosmicShore
                 
             }
         }
-        
-        private void RotateMate(BondMate mate, bool isSnapping)
+
+        Quaternion CalculateRotation(BondMate mate)
         {
             int signRight = mate.Bondee == SiteType.Right ? 1 : -1;
             int signTop = mate.Substrate == SiteType.Top ? 1 : -1;
-            Quaternion targetRotation = Quaternion.LookRotation(transform.forward, signRight * signTop * transform.right);
+            return Quaternion.LookRotation(transform.forward, signRight * signTop * transform.right);
+        }
+        
+        private void RotateMate(BondMate mate, bool isSnapping)
+        {
+            var targetRotation = CalculateRotation(mate);
             mate.Mate.transform.rotation = isSnapping? 
                 targetRotation : 
                 Quaternion.Slerp(mate.Mate.transform.rotation, targetRotation, Time.deltaTime); // Adjust rotation speed as needed
             mate.Mate.CalculateGlobalBondSites();
             CalculateGlobalBondSites();
         }
-
     }
 }

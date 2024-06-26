@@ -1,5 +1,54 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
+--- !u!1 &1020702411401376345
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 147158808990258422}
+  - component: {fileID: 2906631601259955407}
+  m_Layer: 0
+  m_Name: Spindle
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &147158808990258422
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1020702411401376345}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 5443324495066317129}
+  - {fileID: 6052222750947561585}
+  m_Father: {fileID: 5494491424606190975}
+  m_RootOrder: 0
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2906631601259955407
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1020702411401376345}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8ec45d1233573f9409107a25ab23b0c9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  cylinder: {fileID: 0}
+  RenderedObject: {fileID: 2959431485097910194}
+  LifeForm: {fileID: 5945480239701989318}
 --- !u!1 &2959431485097910194
 GameObject:
   m_ObjectHideFlags: 0
@@ -25,12 +74,12 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2959431485097910194}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 3, y: 3, z: 3}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 5494491424606190975}
+  m_Father: {fileID: 147158808990258422}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!33 &8262997716938505230
@@ -112,8 +161,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 5443324495066317129}
-  - {fileID: 6052222750947561585}
+  - {fileID: 147158808990258422}
   - {fileID: 7913613256098181640}
   m_Father: {fileID: 0}
   m_RootOrder: 0
@@ -130,8 +178,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 19b38987ca9e2974083abe50717ed186, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  healthBlock: {fileID: 0}
-  spindle: {fileID: 0}
+  healthBlock: {fileID: 6449687985229987934}
+  spindle: {fileID: 2906631601259955407}
   minHealthBlocks: 0
   activeCrystalMaterial: {fileID: 2100000, guid: 18c297a89c0d43e46bd4ea5bd6143ffb,
     type: 2}
@@ -168,7 +216,7 @@ GameObject:
   - component: {fileID: 69884747971197278}
   - component: {fileID: 8769697296107063473}
   - component: {fileID: 5103836554888337495}
-  - component: {fileID: 2653840049866075288}
+  - component: {fileID: 6449687985229987934}
   m_Layer: 11
   m_Name: BoidBlock
   m_TagString: Fauna
@@ -183,12 +231,12 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5453519119934356950}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: -4.13}
   m_LocalScale: {x: 0.6, y: 0.6, z: 3}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 5494491424606190975}
+  m_Father: {fileID: 147158808990258422}
   m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!33 &69884747971197278
@@ -254,7 +302,7 @@ BoxCollider:
   serializedVersion: 2
   m_Size: {x: 1.025, y: 1.025, z: 1.025}
   m_Center: {x: 0, y: 0, z: 0}
---- !u!114 &2653840049866075288
+--- !u!114 &6449687985229987934
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -263,7 +311,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 5453519119934356950}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f366d272ab4f79e419d678fc6ca23512, type: 3}
+  m_Script: {fileID: 11500000, guid: 2f76793d2a031124f900d060d1bbb2bb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   FossilBlock: {fileID: 5776304996075792891, guid: bd8a259abee95ec4895562e6bb8aae76,
@@ -272,18 +320,17 @@ MonoBehaviour:
     position: {x: 0, y: 0, z: 0}
     volume: 0
     speedDebuffAmount: 0
-    trailBlock: {fileID: 2653840049866075288}
+    trailBlock: {fileID: 6449687985229987934}
     Index: 0
     Shielded: 0
     IsSuperShielded: 0
     TimeCreated: 0
-  ParticleEffect: {fileID: 3706253519474275301, guid: a8ae8dc22c65f554ea8bb6e1bf2458f1,
-    type: 3}
+  ParticleEffect: {fileID: 0}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   MaxScale: {x: 10, y: 10, z: 10}
   TargetScale: {x: 0.6, y: 0.6, z: 3}
   GrowthVector: {x: 0, y: 2, z: 0}
-  waitTime: 0.1
+  waitTime: 0.6
   destroyed: 0
   devastated: 0
   ID: 
@@ -295,6 +342,7 @@ MonoBehaviour:
   IsLargest: 0
   ownerId: 
   Player: {fileID: 0}
+  LifeForm: {fileID: 5945480239701989318}
 --- !u!1001 &3944060919072626709
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -306,6 +354,21 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Enabled
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4016528703094412753, guid: a4bde9d72595bfb43aa3b791d02f4db8,
+        type: 3}
+      propertyPath: m_LocalScale.x
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4016528703094412753, guid: a4bde9d72595bfb43aa3b791d02f4db8,
+        type: 3}
+      propertyPath: m_LocalScale.y
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4016528703094412753, guid: a4bde9d72595bfb43aa3b791d02f4db8,
+        type: 3}
+      propertyPath: m_LocalScale.z
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6588436222817790464, guid: a4bde9d72595bfb43aa3b791d02f4db8,
         type: 3}
@@ -320,7 +383,7 @@ PrefabInstance:
     - target: {fileID: 6588436222817790493, guid: a4bde9d72595bfb43aa3b791d02f4db8,
         type: 3}
       propertyPath: m_RootOrder
-      value: 2
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6588436222817790493, guid: a4bde9d72595bfb43aa3b791d02f4db8,
         type: 3}

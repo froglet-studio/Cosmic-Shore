@@ -128,7 +128,7 @@ Material:
     - _opacity: 1.0100001
     - _player: 0
     - _red: 0
-    - _spread: 0.0015
+    - _spread: 0.15
     m_Colors:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
     - _BrightCrystalColor: {r: 1, g: 1, b: 1, a: 0.9411765}
