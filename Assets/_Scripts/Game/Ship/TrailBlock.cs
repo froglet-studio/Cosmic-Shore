@@ -27,8 +27,6 @@ namespace CosmicShore.Core
         public bool devastated = false;
         public string ID;
         public int Index;
-        public bool Shielded = false;
-        public bool IsSuperShielded = false;
         public bool warp = false;
         public bool IsSmallest = false;
         public bool IsLargest = false;
@@ -69,10 +67,8 @@ namespace CosmicShore.Core
             InitializeTrailBlockProperties();
 
             StartCoroutine(CreateBlockCoroutine());
-            if (Shielded) ActivateShield();
+            if (TrailBlockProperties.Shielded) ActivateShield();
         }
-
-
 
         private void InitializeTrailBlockProperties()
         {
@@ -80,7 +76,8 @@ namespace CosmicShore.Core
             TrailBlockProperties.trailBlock = this;
             TrailBlockProperties.Index = Index;
             TrailBlockProperties.Trail = Trail;
-            TrailBlockProperties.Shielded = Shielded;
+            TrailBlockProperties.Shielded = false;
+            TrailBlockProperties.IsSuperShielded = false;
             TrailBlockProperties.TimeCreated = Time.time;
         }
 
@@ -183,7 +180,7 @@ namespace CosmicShore.Core
 
         public virtual void Explode(Vector3 impactVector, Teams team, string playerName, bool devastate=false)
         {
-            if ((Shielded && !devastate) || IsSuperShielded)
+            if ((TrailBlockProperties.Shielded && !devastate) || TrailBlockProperties.IsSuperShielded)
             {
                 DeactivateShields();
                 return;
@@ -212,8 +209,6 @@ namespace CosmicShore.Core
                 NodeControlManager.Instance.RemoveBlock(team, TrailBlockProperties);
 
             // TODO: State track should go to mini games
-            // if (StateTracker.Instance != null)
-            //     StateTracker.Instance.RemoveBlock(TrailBlockProperties);
 
         }
 
@@ -228,15 +223,12 @@ namespace CosmicShore.Core
         IEnumerator DeactivateShieldsCoroutine(float duration)
         {
             yield return new WaitForSeconds(duration);
-            Shielded = false;
-            IsSuperShielded = false;
             TrailBlockProperties.Shielded = false;
             TrailBlockProperties.IsSuperShielded = false;
         }
 
         public void ActivateShield()
         {
-            Shielded = true;
             TrailBlockProperties.Shielded = true;
             if (lerpBlockMaterialPropertiesCoroutine != null) StopCoroutine(lerpBlockMaterialPropertiesCoroutine);
             StartCoroutine(LerpBlockMaterialPropertiesCoroutine(Hangar.Instance.GetTeamShieldedBlockMaterial(team)));
@@ -245,7 +237,6 @@ namespace CosmicShore.Core
 
         public void ActivateSuperShield()
         {
-            IsSuperShielded = true;
             TrailBlockProperties.IsSuperShielded = true;
             if (lerpBlockMaterialPropertiesCoroutine != null) StopCoroutine(lerpBlockMaterialPropertiesCoroutine);
             StartCoroutine(LerpBlockMaterialPropertiesCoroutine(Hangar.Instance.GetTeamSuperShieldedBlockMaterial(team)));
@@ -300,16 +291,15 @@ namespace CosmicShore.Core
         {
             if (this.team != team)
             {
-                if (Shielded || IsSuperShielded)
+                if (TrailBlockProperties.Shielded || TrailBlockProperties.IsSuperShielded)
                 {
                     DeactivateShields();
                     return;
                 }
-                string name;
-                if (player) name = player.PlayerName;
-                else name = "no name";
+                var playerName = player ? player.PlayerName : "No name";
+                
                 if (StatsManager.Instance != null)
-                    StatsManager.Instance.BlockStolen(team, name, TrailBlockProperties);
+                    StatsManager.Instance.BlockStolen(team, playerName, TrailBlockProperties);
 
                 if (NodeControlManager.Instance != null)
                     NodeControlManager.Instance.StealBlock(team, TrailBlockProperties);
