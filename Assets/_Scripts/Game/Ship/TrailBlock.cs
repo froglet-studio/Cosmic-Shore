@@ -23,13 +23,13 @@ namespace CosmicShore.Core
 
         [Header("Trail Block Status")]
         public float waitTime = .6f;
-        public bool destroyed = false;
-        public bool devastated = false;
+        public bool destroyed;
+        public bool devastated;
         public string ID;
         public int Index;
-        public bool warp = false;
-        public bool IsSmallest = false;
-        public bool IsLargest = false;
+        public bool warp;
+        public bool IsSmallest;
+        public bool IsLargest;
 
 
         // Shader related properties
@@ -46,6 +46,18 @@ namespace CosmicShore.Core
         public Player Player;
         public string PlayerName { get => Player ? Player.PlayerName : ""; }
 
+        /// <summary>
+        /// Trail Block Layer Name, it is used upon Crystal collisions to distinguish it from the other game objects.
+        /// </summary>
+        private static int _layerName;
+
+        private void Awake()
+        {
+            // Initialized trail block game object layer, assign it to "TrailBlocks"
+            _layerName = LayerMask.NameToLayer("TrailBlocks");
+            gameObject.layer = _layerName;
+        }
+
         protected virtual void Start()
         {
             if (fossilBlockContainer == null)
@@ -59,7 +71,7 @@ namespace CosmicShore.Core
                 meshRenderer.material = Hangar.Instance.GetTeamBlockMaterial(team);
             meshRenderer.enabled = false;
 
-            spread = (Vector3) meshRenderer.material.GetVector("_Spread");
+            spread = meshRenderer.material.GetVector("_Spread");
 
             UpdateVolume();
             transform.localScale = Vector3.one * Mathf.Epsilon;
