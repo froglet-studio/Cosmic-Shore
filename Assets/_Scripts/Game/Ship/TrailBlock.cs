@@ -1,4 +1,6 @@
 ﻿using System.Collections;
+using CosmicShore.Resolvers;
+using CosmicShore.Utility.ClassExtensions;
 using UnityEngine;
 
 namespace CosmicShore.Core
@@ -44,18 +46,26 @@ namespace CosmicShore.Core
         public string ownerId;  // TODO: is the ownerId the player name? I hope it is.
         public Teams Team { get => team; set => team = value; }
         public Player Player;
-        public string PlayerName { get => Player ? Player.PlayerName : ""; }
+        public string PlayerName => Player ? Player.PlayerName : "";
 
         /// <summary>
         /// Trail Block Layer Name, it is used upon Crystal collisions to distinguish it from the other game objects.
         /// </summary>
         private static int _layerName;
+        
+        /// <summary>
+        /// The prefab name of the default particle effect for trail blocks
+        /// </summary>
+        private const string DefaultParticleName = "fx_BlueCrackle";
 
         private void Awake()
         {
             // Initialized trail block game object layer, assign it to "TrailBlocks"
             _layerName = LayerMask.NameToLayer("TrailBlocks");
             gameObject.layer = _layerName;
+            
+            // Set default particle effect to trail block if none is assigned.
+            ParticleEffect = ObjectResolver.GetFromPrefab(DefaultParticleName);
         }
 
         protected virtual void Start()
@@ -176,10 +186,10 @@ namespace CosmicShore.Core
             ChangeSize();
         }
 
-        // TODO: none of the collision detection should be on the trailblock
+        // TODO: none of the collision detection should be on the Trailblock
         void OnTriggerEnter(Collider other)
         {
-            if (IsShip(other.gameObject))
+            if(other.gameObject.IsLayer("Ships"))
             {
                 var ship = other.GetComponent<ShipGeometry>().Ship;
 
@@ -340,12 +350,6 @@ namespace CosmicShore.Core
 
                 destroyed = false;
             }
-        }
-
-        // TODO: utility class needed to hold these
-        bool IsShip(GameObject go)
-        {
-            return go.layer == LayerMask.NameToLayer("Ships");
         }
     }
 }

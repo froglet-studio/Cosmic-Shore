@@ -1,6 +1,5 @@
 using CosmicShore.Core;
-using System.Collections;
-using System.Collections.Generic;
+using CosmicShore.Utility.ClassExtensions;
 using UnityEngine;
 
 namespace CosmicShore
@@ -9,7 +8,7 @@ namespace CosmicShore
     {
         public LifeForm LifeForm;
         Spindle spindle;
-
+        
         protected override void Start()
         {
             base.Start();

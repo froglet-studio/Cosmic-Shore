@@ -39,7 +39,10 @@ namespace CosmicShore.Utility.ClassExtensions
                 gameObject.transform.GetChild(i).gameObject.SetActive(false);
             }
         }
-        
-        
+
+        public static bool IsLayer(this GameObject gameObject, string layerName)
+        {
+            return gameObject.layer == LayerMask.NameToLayer(layerName);
+        }
     }
 }
