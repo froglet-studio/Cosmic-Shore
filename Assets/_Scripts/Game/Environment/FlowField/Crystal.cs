@@ -239,7 +239,7 @@ namespace CosmicShore.Environment.FlowField
             transform.parent = NodeControlManager.Instance.GetNearestNode(transform.position).transform;
             gameObject.GetComponent<SphereCollider>().enabled = true;
             enabled = true;
-            GetComponentInChildren<Renderer>().material = inactiveCrystalMaterial; // TODO: make a crytal material set that this pulls from using the element
+            GetComponentInChildren<Renderer>().material = inactiveCrystalMaterial; // TODO: make a crystal material set that this pulls from using the element
             if (lerpCrystalMaterialCoroutine != null) StopCoroutine(lerpCrystalMaterialCoroutine);
             lerpCrystalMaterialCoroutine = StartCoroutine(LerpCrystalMaterialCoroutine(defaultMaterial));
         }

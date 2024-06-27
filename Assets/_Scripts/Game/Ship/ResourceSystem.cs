@@ -76,8 +76,9 @@ namespace CosmicShore.Core
         [HideInInspector] public ResourceDisplay SpaceDisplay;
         [HideInInspector] public ResourceDisplay TimeDisplay;
         [HideInInspector] public ResourceDisplay EnergyDisplay;
-        [HideInInspector] public ResourceButton BoostDisplay;
-        [HideInInspector] public ResourceDisplay AmmoDisplay;
+        //[HideInInspector] public ResourceButton BoostDisplay;
+        [SerializeField] ResourceDisplay BoostDisplay;
+        [SerializeField] ResourceDisplay AmmoDisplay;
 
         public static readonly float OneFuelUnit = 1 / 10f;
         ShipStatus shipData;

@@ -45,6 +45,7 @@ namespace CosmicShore.Core
         [SerializeField] Skimmer nearFieldSkimmer;
         [SerializeField] GameObject OrientationHandle;
         [SerializeField] public List<GameObject> shipGeometries;
+        [SerializeField] GameObject shipHUD;
 
         [Header("Optional Ship Components")]
         [SerializeField] Silhouette Silhouette;
@@ -188,6 +189,8 @@ namespace CosmicShore.Core
                 {
                     Player.GameCanvas.MiniGameHUD.SetButtonActive(!InputController.UsingGamepad(), 3);
                 }
+
+                if (shipHUD) shipHUD.SetActive(true);
             }
         }
 

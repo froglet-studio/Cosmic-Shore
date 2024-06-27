@@ -55792,7 +55792,7 @@ PrefabInstance:
     - target: {fileID: 302356026468653294, guid: fdbd97f79a7aec14f8fadd5589780a74,
         type: 3}
       propertyPath: HostileAI1ShipType
-      value: 7
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 302356026468653294, guid: fdbd97f79a7aec14f8fadd5589780a74,
         type: 3}

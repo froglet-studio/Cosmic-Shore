@@ -8,7 +8,7 @@ namespace CosmicShore
 {
     public class SeedAssemblerAction : ShipAction
     {
-        [SerializeField] float enhancementsPerFullAmmo = 3;
+        float enhancementsPerFullAmmo = 4;
         TrailSpawner spawner;
         [SerializeField] Assembler assembler;
         [SerializeField] int depth = 50;
@@ -21,14 +21,14 @@ namespace CosmicShore
 
         public override void StartAction()
         {
-            if (resourceSystem.CurrentAmmo > resourceSystem.MaxAmmo / enhancementsPerFullAmmo)
+            float ammoRequiredPerUse = resourceSystem.MaxAmmo / enhancementsPerFullAmmo;
+
+            if (resourceSystem.CurrentAmmo >= ammoRequiredPerUse)
             {
-                resourceSystem.ChangeAmmoAmount(-resourceSystem.MaxAmmo / enhancementsPerFullAmmo);
+                resourceSystem.ChangeAmmoAmount(-ammoRequiredPerUse);
                 var trailBlock = spawner.Trail.TrailList.Last().gameObject;
                 var newAssembler = trailBlock.AddComponent(assembler.GetType()) as Assembler;
-
                 newAssembler.Depth = depth;
-                //CopyComponentValues(assembler, newAssembler);
                 newAssembler.StartBonding();
             }
         }

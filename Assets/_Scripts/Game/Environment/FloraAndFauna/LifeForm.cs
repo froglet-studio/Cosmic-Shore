@@ -55,7 +55,7 @@ namespace CosmicShore
         }
 
         public void RemoveHealthBlock(HealthBlock healthBlock)
-        {
+        { 
             healthBlocks.Remove(healthBlock);
             //CheckIfDead();
         }

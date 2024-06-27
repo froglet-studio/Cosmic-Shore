@@ -345,7 +345,7 @@ namespace CosmicShore.Core
         void Boost(float combinedWeight)
         {
             ship.ShipStatus.Boosting = true;
-            ship.boostMultiplier = 1 + (2 * combinedWeight);
+            ship.boostMultiplier = 1 + (3 * combinedWeight);
         }
 
         // Function to compute the Gaussian value at a given x

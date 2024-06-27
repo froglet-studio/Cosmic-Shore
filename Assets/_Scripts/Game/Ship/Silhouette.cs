@@ -77,7 +77,7 @@ namespace CosmicShore
             ShipStatus status = ship.ShipStatus;
             flip = Vector3.Dot(transform.up, status.Course) > 0;
             foreach (var part in silhouetteParts) { part.gameObject.SetActive(!ship.AutoPilot.AutoPilotEnabled && Player.ActivePlayer == ship.Player); } // TODO: why?
-            silhouetteContainer.transform.rotation = Quaternion.Euler(0, 0, (flip ? -1f : 1f) * Mathf.Acos(dotProduct-.0001f) * Mathf.Rad2Deg);
+            silhouetteContainer.transform.localRotation = Quaternion.Euler(0, 0, (flip ? -1f : 1f) * Mathf.Acos(dotProduct-.0001f) * Mathf.Rad2Deg);
 
             this.dotProduct = dotProduct;// Acos hates 1
         }
