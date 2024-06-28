@@ -69,11 +69,6 @@ public class Node : MonoBehaviour
         return blockOctree.FindDensestRegions(count);
     }
 
-    public bool ContainsPosition(Vector3 position)
-    {
-        return Vector3.Distance(position, transform.position) < transform.localScale.x / 2;
-    }
-
     public void AddItem(NodeItem item)
     {
         if (item.GetID() == 0)
@@ -134,10 +129,10 @@ public class Node : MonoBehaviour
         return Crystal;
     }
 
-/*    public bool ContainsPosition(Vector3 position)
+    public bool ContainsPosition(Vector3 position)
     {
         return Vector3.Distance(position, transform.position) < transform.localScale.x; // only works if nodes remain spherical
-    }*/
+    }
 
     public void ChangeVolume(Teams team, float volume)
     {
