@@ -17,14 +17,16 @@ public class Node : MonoBehaviour
 
     [SerializeField] Population fauna1;
     [SerializeField] Population fauna2;
- 
-    
+
+    [SerializeField] FloraCollection floraCollection;
+
     [SerializeField] float floraSpawnVolumeCeiling = 12000f;
 
     [SerializeField] float initialFaunaSpawnWaitTime = 10f;
     [SerializeField] float faunaSpawnVolumeThreshold = 1f;
     [SerializeField] float baseFaunaSpawnTime = 60f;
-    
+
+    [SerializeField] bool hasRandomFloraAndFauna;
 
     Dictionary<Teams, float> teamVolumes = new Dictionary<Teams, float>();
 
@@ -35,6 +37,12 @@ public class Node : MonoBehaviour
 
     void Start()
     {
+        if (hasRandomFloraAndFauna)
+        {
+            flora1 = (Flora)floraCollection.GetRandomPrefab();
+            flora2 = (Flora)floraCollection.GetRandomPrefab();
+        }
+
         teamVolumes.Add(Teams.Green, 0);
         teamVolumes.Add(Teams.Red, 0);
         teamVolumes.Add(Teams.Gold, 0);
