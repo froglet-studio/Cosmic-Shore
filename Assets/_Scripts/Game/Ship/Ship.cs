@@ -181,7 +181,7 @@ namespace CosmicShore.Core
                     shipHUD.SetActive(true);
                     foreach (var child in shipHUD.GetComponentsInChildren<Transform>(false))
                     {
-                        child.SetParent(Player.GameCanvas.transform, true);
+                        child.SetParent(Player.GameCanvas.transform, false);
                     }
                 }
             }
