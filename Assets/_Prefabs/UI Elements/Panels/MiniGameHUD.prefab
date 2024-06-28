@@ -246,10 +246,10 @@ RectTransform:
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 0}
+  m_AnchorMin: {x: 0.5, y: 1}
+  m_AnchorMax: {x: 0.5, y: 1}
+  m_AnchoredPosition: {x: 0, y: -151.66943}
+  m_SizeDelta: {x: 1920, y: 303.3389}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1720411786157758736
 MonoBehaviour:
@@ -1672,7 +1672,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &6212913198761641522
 RectTransform:
   m_ObjectHideFlags: 0
@@ -2252,7 +2252,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &6345820074854757599
 RectTransform:
   m_ObjectHideFlags: 0
@@ -2778,6 +2778,11 @@ PrefabInstance:
       propertyPath: m_Name
       value: ThreeButtonPanel
       objectReference: {fileID: 0}
+    - target: {fileID: 6087487335082490849, guid: fe865d309fab2f44cb225e312d612ddb,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 7298863058573260977, guid: fe865d309fab2f44cb225e312d612ddb,
         type: 3}
       propertyPath: m_LocalScale.x
@@ -2957,15 +2962,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ad7855e709703a34c816bcffa0520fcd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  verboseLogging: 0
-  backgroundImage: {fileID: 0}
-  backgroundSprite: {fileID: 0}
-  fuelLevelText: {fileID: 0}
-  fuelLevelImages: []
-  fuelLevelImage: {fileID: 0}
   middleImageContainer: {fileID: 2540423361220600799}
   middleSprite: {fileID: 21300000, guid: 7245a561929ee2d4cbf47ec4a418d627, type: 3}
   gaugeLevelImageContainer: {fileID: 7303208396171747174}
+  gaugeLevelImages: []
 --- !u!114 &2540423361220600799 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 3792388166272916900, guid: fe865d309fab2f44cb225e312d612ddb,

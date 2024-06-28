@@ -6,6 +6,7 @@ using UnityEngine;
 using CosmicShore.Game.AI;
 using CosmicShore.Game.Projectiles;
 using CosmicShore.Models.ScriptableObjects;
+using UnityEngine.TextCore.Text;
 
 namespace CosmicShore.Core
 {
@@ -175,22 +176,14 @@ namespace CosmicShore.Core
 
             if (!AutoPilot.AutoPilotEnabled)
             {
-                if (ShipControlActions.ContainsKey(InputEvents.Button1Action))
+                if (shipHUD)
                 {
-                    Player.GameCanvas.MiniGameHUD.SetButtonActive(!InputController.UsingGamepad(), 1);
+                    shipHUD.SetActive(true);
+                    foreach (var child in shipHUD.GetComponentsInChildren<Transform>(false))
+                    {
+                        child.SetParent(Player.GameCanvas.transform, true);
+                    }
                 }
-
-                if (ShipControlActions.ContainsKey(InputEvents.Button2Action))
-                {
-                    Player.GameCanvas.MiniGameHUD.SetButtonActive(!InputController.UsingGamepad(), 2);
-                }
-
-                if (ShipControlActions.ContainsKey(InputEvents.Button3Action))
-                {
-                    Player.GameCanvas.MiniGameHUD.SetButtonActive(!InputController.UsingGamepad(), 3);
-                }
-
-                if (shipHUD) shipHUD.SetActive(true);
             }
         }
 
@@ -329,6 +322,42 @@ namespace CosmicShore.Core
                 var shipControlActions = ShipControlActions[controlType];
                 foreach (var action in shipControlActions)
                     action.StopAction();
+            }
+        }
+
+
+        // this is used with buttons so "Find all references" will not return editor usage
+        public void PerformButtonActions(int buttonNumber)
+        {
+            Debug.Log($"Ship.PerformButtonActions - buttonNumber:{buttonNumber}");
+            if (buttonNumber == 1 && ShipControlActions.ContainsKey(InputEvents.Button1Action))
+            {
+                PerformShipControllerActions(InputEvents.Button1Action);
+            }
+            else if (buttonNumber == 2 && ShipControlActions.ContainsKey(InputEvents.Button2Action))
+            {
+                PerformShipControllerActions(InputEvents.Button2Action);
+            }
+            else if (buttonNumber == 3 && ShipControlActions.ContainsKey(InputEvents.Button3Action))
+            {
+                PerformShipControllerActions(InputEvents.Button3Action);
+            }
+        }
+
+        // this is used with buttons so "Find all references" will not return editor usage
+        public void StopButtonActions(int buttonNumber)
+        {
+            if (buttonNumber == 1 && ShipControlActions.ContainsKey(InputEvents.Button1Action))
+            {
+                StopShipControllerActions(InputEvents.Button1Action);
+            }
+            else if (buttonNumber == 2 && ShipControlActions.ContainsKey(InputEvents.Button2Action))
+            {
+                StopShipControllerActions(InputEvents.Button2Action);
+            }
+            else if (buttonNumber == 3 && ShipControlActions.ContainsKey(InputEvents.Button3Action))
+            {
+                StopShipControllerActions(InputEvents.Button3Action);
             }
         }
 

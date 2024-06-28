@@ -11804,6 +11804,11 @@ PrefabInstance:
       propertyPath: m_Name
       value: ShipHUDContainer
       objectReference: {fileID: 0}
+    - target: {fileID: 9167689459384443984, guid: 522a0b0de3eb7b64d8c6e0e35377de5f,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 522a0b0de3eb7b64d8c6e0e35377de5f, type: 3}
 --- !u!224 &2884778154090512500 stripped
