@@ -105,8 +105,8 @@ namespace CosmicShore.Environment.FlowField
         {
             Ship ship;
             Projectile projectile;
-       
-            if(other.gameObject.IsLayer("Ships"))
+
+            if (other.gameObject.IsLayer("Ships"))
             {
                 ship = other.GetComponent<ShipGeometry>().Ship;
                 if (Team == Teams.None || Team == ship.Team)
@@ -144,7 +144,7 @@ namespace CosmicShore.Environment.FlowField
                         StatsManager.Instance.CrystalCollected(ship, crystalProperties);
                 }
                 else return;
-            } 
+            }
             else return;
 
             //

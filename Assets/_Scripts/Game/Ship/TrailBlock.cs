@@ -190,7 +190,6 @@ namespace CosmicShore.Core
         {
             if(other.gameObject.IsLayer("Ships"))
             {
-                Debug.LogWarning("A ship collided with a block.");
                 var ship = other.GetComponent<ShipGeometry>().Ship;
 
                 if (!ship.GetComponent<ShipStatus>().Attached)
@@ -201,7 +200,6 @@ namespace CosmicShore.Core
             
             if (other.gameObject.IsLayer("Crystals"))
             {
-                Debug.LogWarning("trail block found Crystals.");
                 if (!TrailBlockProperties.Shielded)
                 {
                     ActivateShield();
@@ -214,7 +212,6 @@ namespace CosmicShore.Core
             if (other.gameObject.IsLayer("Crystals"))
             {
                 ActivateShield(2.0f);
-                Debug.LogWarning("trail block found Crystals.");
             }
         }
 
