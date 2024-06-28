@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using CosmicShore.Resolvers;
 using CosmicShore.Utility.ClassExtensions;
 using UnityEngine;
@@ -56,7 +57,7 @@ namespace CosmicShore.Core
         /// <summary>
         /// The prefab name of the default particle effect for trail blocks
         /// </summary>
-        private const string DefaultParticleName = "fx_BlueCrackle";
+        // private const string DefaultParticleName = "fx_BlueCrackle";
 
         private void Awake()
         {
@@ -65,7 +66,7 @@ namespace CosmicShore.Core
             gameObject.layer = _layerName;
             
             // Set default particle effect to trail block if none is assigned.
-            ParticleEffect = ObjectResolver.GetFromPrefab(DefaultParticleName);
+            // ParticleEffect = ObjectResolver.GetFromPrefab(DefaultParticleName);
         }
 
         protected virtual void Start()
@@ -187,16 +188,35 @@ namespace CosmicShore.Core
         }
 
         // TODO: none of the collision detection should be on the Trailblock
-        void OnTriggerEnter(Collider other)
+        protected void OnTriggerEnter(Collider other)
         {
             if(other.gameObject.IsLayer("Ships"))
             {
+                Debug.LogWarning("A ship collided with a block.");
                 var ship = other.GetComponent<ShipGeometry>().Ship;
 
                 if (!ship.GetComponent<ShipStatus>().Attached)
                 {
                     ship.PerformTrailBlockImpactEffects(TrailBlockProperties);
                 }
+            }
+            
+            if (other.gameObject.IsLayer("Crystals"))
+            {
+                Debug.LogWarning("trail block found Crystals.");
+                if (!TrailBlockProperties.Shielded)
+                {
+                    ActivateShield();
+                }
+            }
+        }
+
+        protected void OnTriggerExit(Collider other)
+        {
+            if (other.gameObject.IsLayer("Crystals"))
+            {
+                ActivateShield(2.0f);
+                Debug.LogWarning("trail block found Crystals.");
             }
         }
 

@@ -42,7 +42,14 @@ namespace CosmicShore.Utility.ClassExtensions
 
         public static bool IsLayer(this GameObject gameObject, string layerName)
         {
-            return gameObject.layer == LayerMask.NameToLayer(layerName);
+            var layer = LayerMask.NameToLayer(layerName);
+            
+            if (layer == -1)
+            {
+                Debug.LogError($"Layer - {layerName} not found.");
+            }
+
+            return gameObject.layer == layer;
         }
     }
 }
