@@ -6,6 +6,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using CosmicShore.Game.AI;
+using CosmicShore.Utility.ClassExtensions;
 
 namespace CosmicShore.Environment.FlowField
 {
@@ -40,21 +41,25 @@ namespace CosmicShore.Environment.FlowField
         protected Material tempMaterial;
         List<Collider> collisions;
 
+        /// <summary>
+        /// 
+        /// </summary>
+        private static int _layerName;
+
         protected virtual void Awake()
         {
             collisions = new List<Collider>();
+            
+            // Initialized Crystal game object layer, assign it to "Crystals"
+            _layerName = LayerMask.NameToLayer("Crystals");
+            gameObject.layer = _layerName;
         }
 
         protected virtual void Start()
         {
             AddSelfToNode();
         }
-
-        protected virtual void OnEnable()
-        {
-            //AddSelfToNode();
-        }
-
+        
         protected virtual void OnTriggerEnter(Collider other)
         {
             collisions.Add(other);
@@ -100,7 +105,8 @@ namespace CosmicShore.Environment.FlowField
         {
             Ship ship;
             Projectile projectile;
-            if (IsShip(other.gameObject))
+       
+            if(other.gameObject.IsLayer("Ships"))
             {
                 ship = other.GetComponent<ShipGeometry>().Ship;
                 if (Team == Teams.None || Team == ship.Team)
@@ -119,7 +125,7 @@ namespace CosmicShore.Environment.FlowField
                 }
                 else return;
             }
-            else if (IsProjectile(other.gameObject))
+            else if (other.gameObject.IsLayer("Projectiles"))
             {
                 ship = other.GetComponent<Projectile>().Ship;
                 projectile = other.GetComponent<Projectile>();
@@ -147,7 +153,7 @@ namespace CosmicShore.Environment.FlowField
             PerformCrystalImpactEffects(crystalProperties, ship);
 
             Explode(ship);
-
+            
             PlayExplosionAudio();
 
             // Move the Crystal
@@ -215,18 +221,6 @@ namespace CosmicShore.Environment.FlowField
         {
             AudioSource audioSource = GetComponent<AudioSource>();
             AudioSystem.Instance.PlaySFXClip(audioSource.clip, audioSource);
-        }
-
-        // TODO: P1 move to static ObjectResolver class
-        protected bool IsShip(GameObject go)
-        {
-            return go.layer == LayerMask.NameToLayer("Ships");
-        }
-
-        // TODO: P1 move to static ObjectResolver class
-        protected bool IsProjectile(GameObject go)
-        {
-            return go.layer == LayerMask.NameToLayer("Projectiles");
         }
 
         public void SetOrigin(Vector3 origin)
