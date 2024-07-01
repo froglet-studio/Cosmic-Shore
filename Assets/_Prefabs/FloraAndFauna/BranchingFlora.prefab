@@ -51,6 +51,7 @@ MonoBehaviour:
   minHealthBlocks: 5
   activeCrystalMaterial: {fileID: 2100000, guid: 18c297a89c0d43e46bd4ea5bd6143ffb,
     type: 2}
+  team: 0
   growPeriod: 2
   PlantPeriod: 3
   growthChance: 0.5
@@ -65,8 +66,8 @@ MonoBehaviour:
   maxDepth: 100
   maxTotalSpawnedObjects: 5000
   leafChance: -0.1
-  leafChanceIncrement: 0.001
-  plantRadius: 75
+  leafChanceIncrement: 0.01
+  plantRadius: 90
 --- !u!1001 &5588088495769702632
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -82,7 +83,7 @@ PrefabInstance:
     - target: {fileID: 6588436222817790464, guid: a4bde9d72595bfb43aa3b791d02f4db8,
         type: 3}
       propertyPath: m_Radius
-      value: 3
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6588436222817790464, guid: a4bde9d72595bfb43aa3b791d02f4db8,
         type: 3}

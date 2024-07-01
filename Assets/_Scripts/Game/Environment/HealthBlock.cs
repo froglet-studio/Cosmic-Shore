@@ -1,6 +1,4 @@
 using CosmicShore.Core;
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace CosmicShore
@@ -9,6 +7,12 @@ namespace CosmicShore
     {
         public LifeForm LifeForm;
         Spindle spindle;
+        
+        protected override void Start()
+        {
+            base.Start();
+            if (LifeForm) LifeForm.AddHealthBlock(this);
+        }
 
         public void Reparent(Transform newParent)
         {          

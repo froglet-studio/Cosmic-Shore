@@ -245,10 +245,22 @@ MonoBehaviour:
   Seed: 0
   parent: {fileID: 0}
   origin: {x: 0, y: 0, z: 0}
+  Radius: 250
   StraightLineLength: 400
+  RotationAmount: 10
   DifficultyAngle: 90
   InitializeOnStart: 0
-  numberOfSegments: 3
+  NumberOfSegments: 3
+  branchProbability: 0.2
+  minBranchAngle: 20
+  maxBranchAngle: 20
+  minBranches: 1
+  maxBranches: 3
+  minBranchLengthMultiplier: 0.6
+  maxBranchLengthMultiplier: 0.8
+  maxDepth: 3
+  maxTotalSpawnedObjects: 100
+  branchPrefabs: []
 --- !u!4 &512034094 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 8350600879602490814, guid: 7fec532a729a8b648a8de2399d1b918a,
@@ -466,8 +478,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0a66c9f1814dd7a49a173c0f8d502ce0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  Display: {fileID: 0}
   duration: 10
-  display: {fileID: 0}
 --- !u!4 &1078953705
 Transform:
   m_ObjectHideFlags: 0
@@ -503,6 +515,10 @@ MonoBehaviour:
   GameCanvas: {fileID: 1313201259}
   playerPrefab: {fileID: 1649340654}
   PlayerOrigin: {fileID: 1192541910}
+  EndOfTurnDelay: 0
+  EnableTrails: 1
+  DefaultPlayerShipType: 2
+  DefaultPlayerCaptain: {fileID: 0}
   ActivePlayer: {fileID: 0}
   DartBoard: {fileID: 1344816199}
   Crystal: {fileID: 1568959833}
@@ -525,7 +541,7 @@ MonoBehaviour:
   GolfRules: 0
   GameCanvas: {fileID: 0}
   TimePlayedScoreMultiplier: 1000
-  VolumeNormalizationQuotient: 145.65
+  ScoreNormalizationQuotient: 145.65
 --- !u!114 &1078953708
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1436,12 +1452,12 @@ PrefabInstance:
     - target: {fileID: 5247650485044281852, guid: 061f308768b5b564bbb0f130d1a8f02e,
         type: 3}
       propertyPath: m_LocalRotation.w
-      value: 0.014161397
+      value: 0.014161362
       objectReference: {fileID: 0}
     - target: {fileID: 5247650485044281852, guid: 061f308768b5b564bbb0f130d1a8f02e,
         type: 3}
       propertyPath: m_LocalRotation.x
-      value: 0.00019546802
+      value: 0.00019546723
       objectReference: {fileID: 0}
     - target: {fileID: 5247650485044281852, guid: 061f308768b5b564bbb0f130d1a8f02e,
         type: 3}
@@ -1451,7 +1467,7 @@ PrefabInstance:
     - target: {fileID: 5247650485044281852, guid: 061f308768b5b564bbb0f130d1a8f02e,
         type: 3}
       propertyPath: m_LocalRotation.z
-      value: -0.013800179
+      value: -0.013800159
       objectReference: {fileID: 0}
     - target: {fileID: 5247650485044281852, guid: 061f308768b5b564bbb0f130d1a8f02e,
         type: 3}

@@ -36,7 +36,7 @@ public class NodeItem : MonoBehaviour
         
     }
 
-    public void RemoveSelfFromNode()
+    public void RemoveSelfFromNode() // TODO: consider calling OnDestroy()
     {
         if (NodeControlManager.Instance == null)
         {

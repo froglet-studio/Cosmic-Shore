@@ -18,14 +18,14 @@ namespace CosmicShore.Utility.ClassExtensions
         }
         
         /// <summary>
-        /// A helper method to convert local position to global position.
+        /// A helper method to convert local position, relativeto a transform, into a to global position.
         /// </summary>
         /// <param name="transform">The Transform to call this method</param>
-        /// <param name="local">Vector3 local position</param>
+        /// <param name="localPosition">Vector3 local position</param>
         /// <returns>Vector3 global position</returns>
-        public static Vector3 ToGlobal(this Transform transform, Vector3 local)
+        public static Vector3 ToGlobal(this Transform transform, Vector3 localPosition)
         {
-            return local.x * transform.right + local.y * transform.up + local.z * transform.forward + transform.position;
+            return localPosition.x * transform.right + localPosition.y * transform.up + localPosition.z * transform.forward + transform.position;
         }
     }
 }

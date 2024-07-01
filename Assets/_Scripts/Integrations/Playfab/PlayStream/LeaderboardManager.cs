@@ -50,13 +50,6 @@ namespace CosmicShore.Integrations.PlayFab.PlayStream
 
         bool _online;
 
-        // private AuthenticationManager _authManager;
-
-        // public LeaderboardManager(AuthenticationManager authManager)
-        // {
-        //     _authManager = authManager;
-        // }
-
         private void Start()
         {
             NetworkMonitor.NetworkConnectionFound += ComeOnline;

@@ -12,13 +12,14 @@ namespace CosmicShore
         [SerializeField] protected Spindle spindle;
         [SerializeField] protected int minHealthBlocks = 0;
 
-        protected List<HealthBlock> healthBlocks = new List<HealthBlock>();
-        protected List<Spindle> spindles = new List<Spindle>();
+        protected HashSet<HealthBlock> healthBlocks = new HashSet<HealthBlock>();
+        protected HashSet<Spindle> spindles = new HashSet<Spindle>();
 
         protected Crystal crystal;
         [SerializeField] protected Material activeCrystalMaterial; // TODO: make a crytal material set that pulls from the element
         
         protected Node node;
+        public Teams Team;
 
         protected virtual void Start()
         {
@@ -29,7 +30,9 @@ namespace CosmicShore
         public void AddHealthBlock(HealthBlock healthBlock)
         {
             healthBlocks.Add(healthBlock);
+            healthBlock.Team = Team;
             healthBlock.LifeForm = this;
+            healthBlock.ownerId = $"{this} + {healthBlock} + {healthBlocks.Count}";
         }
 
         public void AddSpindle(Spindle spindle)
@@ -38,20 +41,27 @@ namespace CosmicShore
             spindle.LifeForm = this;
         }
 
+        public Spindle AddSpindle()
+        {
+            Spindle newSpindle = Instantiate(spindle, transform.position, transform.rotation, transform);
+            spindles.Add(newSpindle);
+            newSpindle.LifeForm = this;
+            return newSpindle;
+        }
+
         public void RemoveSpindle(Spindle spindle)
         {
             spindles.Remove(spindle);
         }
 
         public void RemoveHealthBlock(HealthBlock healthBlock)
-        {
+        { 
             healthBlocks.Remove(healthBlock);
             //CheckIfDead();
         }
 
         public void CheckIfDead()
         {
-            Debug.Log($"Lifeform.spindles.Count {spindles.Count}");
             if (spindles.Count == 0)
             {
                 Die();

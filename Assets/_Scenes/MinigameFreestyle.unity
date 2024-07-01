@@ -133,7 +133,7 @@ PrefabInstance:
     - target: {fileID: 2267044654069565993, guid: 7d3c24f07511c2b449da87870cb86cce,
         type: 3}
       propertyPath: m_RootOrder
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 2267044654069565993, guid: 7d3c24f07511c2b449da87870cb86cce,
         type: 3}
@@ -319,6 +319,11 @@ PrefabInstance:
       propertyPath: m_Name
       value: GameCanvas
       objectReference: {fileID: 0}
+    - target: {fileID: 5497835173863578963, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 5497835173863578975, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: m_Pivot.x
@@ -332,7 +337,7 @@ PrefabInstance:
     - target: {fileID: 5497835173863578975, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: m_RootOrder
-      value: 2
+      value: 3
       objectReference: {fileID: 0}
     - target: {fileID: 5497835173863578975, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
@@ -692,9 +697,9 @@ MonoBehaviour:
   - {fileID: 2089761477}
   positioningScheme: 0
   spawnSegmentWeights:
-  - 1
-  - 1
-  - 1
+  - 0
+  - 0
+  - 0
   - 0
   Seed: 0
   parent: {fileID: 0}
@@ -747,7 +752,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 5
+  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &1078953707
 MonoBehaviour:
@@ -808,7 +813,7 @@ MonoBehaviour:
   Crystal: {fileID: 1568959833}
   CrystalStartPosition: {x: 0, y: 0, z: -120}
   SegmentSpawner: {fileID: 1020381236}
-  numberOfSegments: 30
+  numberOfSegments: 10
   straightLineLength: 400
   ResetTrails: 1
   ScaleCrystalPositionWithIntensity: 0
@@ -867,7 +872,7 @@ PrefabInstance:
         type: 3}
       propertyPath: Crystal
       value: 
-      objectReference: {fileID: 0}
+      objectReference: {fileID: 1670417400}
     - target: {fileID: 639495419069806261, guid: 41222ebb42ad82c4ca52a729935c79d3,
         type: 3}
       propertyPath: newOrigin.z
@@ -1064,24 +1069,25 @@ PrefabInstance:
         type: 3}
       propertyPath: fauna1
       value: 
-      objectReference: {fileID: 0}
+      objectReference: {fileID: 8812619448024686939, guid: 14b7fddb8e30aa541a092201bc80b848,
+        type: 3}
     - target: {fileID: 3197094124088707225, guid: cb702179ff5b42f41a3521ccd59e6934,
         type: 3}
       propertyPath: fauna2
       value: 
-      objectReference: {fileID: 8812619448024686937, guid: 14b7fddb8e30aa541a092201bc80b848,
+      objectReference: {fileID: 8812619448024686939, guid: 3b344872fac297f448d202dd574c2a3e,
         type: 3}
     - target: {fileID: 3197094124088707225, guid: cb702179ff5b42f41a3521ccd59e6934,
         type: 3}
       propertyPath: flora1
       value: 
-      objectReference: {fileID: 7514956980722975813, guid: 3c58c4dd53a6a2240acd7f7b81a3adb5,
+      objectReference: {fileID: 7514956980722975813, guid: 82e04cfd7f5b93f478b5fbfe40c2a2d7,
         type: 3}
     - target: {fileID: 3197094124088707225, guid: cb702179ff5b42f41a3521ccd59e6934,
         type: 3}
       propertyPath: flora2
       value: 
-      objectReference: {fileID: 8186157953239024492, guid: a84d160ac0bcaf94da22c5368e4d3962,
+      objectReference: {fileID: 7514956980722975813, guid: 5f8219db5b2bd1d48b331f9eb3e04888,
         type: 3}
     - target: {fileID: 3197094124088707225, guid: cb702179ff5b42f41a3521ccd59e6934,
         type: 3}
@@ -1095,23 +1101,34 @@ PrefabInstance:
       objectReference: {fileID: 1267240715}
     - target: {fileID: 3197094124088707225, guid: cb702179ff5b42f41a3521ccd59e6934,
         type: 3}
+      propertyPath: floraCollection
+      value: 
+      objectReference: {fileID: 11400000, guid: 4e889215b2617a942923f1d3c22134c0,
+        type: 2}
+    - target: {fileID: 3197094124088707225, guid: cb702179ff5b42f41a3521ccd59e6934,
+        type: 3}
       propertyPath: baseFaunaSpawnRate
       value: 100
       objectReference: {fileID: 0}
     - target: {fileID: 3197094124088707225, guid: cb702179ff5b42f41a3521ccd59e6934,
         type: 3}
       propertyPath: baseFaunaSpawnTime
-      value: 10
+      value: 60
+      objectReference: {fileID: 0}
+    - target: {fileID: 3197094124088707225, guid: cb702179ff5b42f41a3521ccd59e6934,
+        type: 3}
+      propertyPath: hasRandomFloraAndFauna
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 3197094124088707225, guid: cb702179ff5b42f41a3521ccd59e6934,
         type: 3}
       propertyPath: floraSpawnVolumeCeiling
-      value: 2000
+      value: 12000
       objectReference: {fileID: 0}
     - target: {fileID: 3197094124088707225, guid: cb702179ff5b42f41a3521ccd59e6934,
         type: 3}
       propertyPath: faunaSpawnVolumeThreshold
-      value: 20
+      value: 5000
       objectReference: {fileID: 0}
     - target: {fileID: 3197094124088707225, guid: cb702179ff5b42f41a3521ccd59e6934,
         type: 3}
@@ -1298,7 +1315,7 @@ Transform:
   - {fileID: 1020381235}
   - {fileID: 1016707106}
   m_Father: {fileID: 0}
-  m_RootOrder: 3
+  m_RootOrder: 4
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &1471404064
 MonoBehaviour:
@@ -1320,7 +1337,7 @@ MonoBehaviour:
     type: 3}
   m_PrefabInstance: {fileID: 719254185}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
+  m_GameObject: {fileID: 1670417400}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5a8f286a585edf943935c4316edeb2b6, type: 3}
@@ -1356,7 +1373,7 @@ PrefabInstance:
     - target: {fileID: 2151207714166088001, guid: 8a9d12e43096881468feb22e39e9fbeb,
         type: 3}
       propertyPath: m_RootOrder
-      value: 4
+      value: 5
       objectReference: {fileID: 0}
     - target: {fileID: 2151207714166088001, guid: 8a9d12e43096881468feb22e39e9fbeb,
         type: 3}
@@ -1582,7 +1599,7 @@ PrefabInstance:
     - target: {fileID: 5247650485044281852, guid: 061f308768b5b564bbb0f130d1a8f02e,
         type: 3}
       propertyPath: m_RootOrder
-      value: 1
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 5247650485044281852, guid: 061f308768b5b564bbb0f130d1a8f02e,
         type: 3}
@@ -1602,12 +1619,12 @@ PrefabInstance:
     - target: {fileID: 5247650485044281852, guid: 061f308768b5b564bbb0f130d1a8f02e,
         type: 3}
       propertyPath: m_LocalRotation.w
-      value: 0.014161397
+      value: 0.014161362
       objectReference: {fileID: 0}
     - target: {fileID: 5247650485044281852, guid: 061f308768b5b564bbb0f130d1a8f02e,
         type: 3}
       propertyPath: m_LocalRotation.x
-      value: 0.00019546802
+      value: 0.00019546723
       objectReference: {fileID: 0}
     - target: {fileID: 5247650485044281852, guid: 061f308768b5b564bbb0f130d1a8f02e,
         type: 3}
@@ -1617,7 +1634,7 @@ PrefabInstance:
     - target: {fileID: 5247650485044281852, guid: 061f308768b5b564bbb0f130d1a8f02e,
         type: 3}
       propertyPath: m_LocalRotation.z
-      value: -0.013800179
+      value: -0.013800159
       objectReference: {fileID: 0}
     - target: {fileID: 5247650485044281852, guid: 061f308768b5b564bbb0f130d1a8f02e,
         type: 3}
@@ -1636,6 +1653,12 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 061f308768b5b564bbb0f130d1a8f02e, type: 3}
+--- !u!1 &1670417400 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 6588436222817790470, guid: fced5b15da3ad1d41b4e3b7385609e37,
+    type: 3}
+  m_PrefabInstance: {fileID: 719254185}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1692904585
 GameObject:
   m_ObjectHideFlags: 0
