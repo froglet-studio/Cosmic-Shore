@@ -1075,12 +1075,13 @@ PrefabInstance:
         type: 3}
       propertyPath: fauna2
       value: 
-      objectReference: {fileID: 0}
+      objectReference: {fileID: 8812619448024686939, guid: 3b344872fac297f448d202dd574c2a3e,
+        type: 3}
     - target: {fileID: 3197094124088707225, guid: cb702179ff5b42f41a3521ccd59e6934,
         type: 3}
       propertyPath: flora1
       value: 
-      objectReference: {fileID: 7514956980722975813, guid: 5f8219db5b2bd1d48b331f9eb3e04888,
+      objectReference: {fileID: 7514956980722975813, guid: 82e04cfd7f5b93f478b5fbfe40c2a2d7,
         type: 3}
     - target: {fileID: 3197094124088707225, guid: cb702179ff5b42f41a3521ccd59e6934,
         type: 3}
@@ -1117,7 +1118,7 @@ PrefabInstance:
     - target: {fileID: 3197094124088707225, guid: cb702179ff5b42f41a3521ccd59e6934,
         type: 3}
       propertyPath: hasRandomFloraAndFauna
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 3197094124088707225, guid: cb702179ff5b42f41a3521ccd59e6934,
         type: 3}
