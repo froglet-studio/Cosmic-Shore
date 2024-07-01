@@ -59,7 +59,7 @@ public class BlockOctree
     {
         node.BlockCount++;
 
-        if (node.Size <= minSize || node.Blocks.Count < 8)
+        if (node.Size <= minSize || node.Blocks.Count < 2)//8
         {
             node.Blocks.Add(block);
             return;
@@ -85,6 +85,7 @@ public class BlockOctree
                 ((i & 4) == 0 ? -halfSize : halfSize) / 2
             );
             node.Children[i] = new OctreeNode(newCenter, halfSize);
+            Debug.Log($"split {newCenter}");
         }
 
         foreach (var block in node.Blocks)
@@ -141,6 +142,8 @@ public class BlockOctree
         int index = list.FindIndex(n => (n.BlockCount / Math.Pow(n.Size, 3) < node.BlockCount / Math.Pow(node.Size, 3)));
         if (index == -1) index = list.Count;
         list.Insert(index, node);
+        Debug.Log($"rk");
+        Debug.Log(String.Join("; ", list));
         if (list.Count > maxCount) list.RemoveAt(maxCount);
     }
 

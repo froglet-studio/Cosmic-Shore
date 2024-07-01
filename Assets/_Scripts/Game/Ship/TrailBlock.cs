@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using UnityEngine;
+using System.Collections.Generic;
 
 namespace CosmicShore.Core
 {
@@ -70,6 +71,17 @@ namespace CosmicShore.Core
 
             StartCoroutine(CreateBlockCoroutine());
             if (Shielded) ActivateShield();
+
+            Node targetNode = NodeControlManager.Instance.GetNearestNode(TrailBlockProperties.position);
+            targetNode.blockOctree.AddBlock(this);
+            Debug.Log($"{this}");
+            int targetCount = 3;
+            List<Vector3> explosionTargets = targetNode.GetExplosionTargets(targetCount);
+            Debug.Log($"Found {explosionTargets.Count} explosion targets in node {targetNode.ID}:");
+            foreach (Vector3 target in explosionTargets)
+            {
+                Debug.Log($"Target position: {target}, Block count density: {targetNode.blockOctree.GetBlockDensityAtPosition(target)}");
+            }
         }
 
         private void InitializeTrailBlockProperties()

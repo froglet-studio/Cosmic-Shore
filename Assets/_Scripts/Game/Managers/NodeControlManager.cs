@@ -15,17 +15,9 @@ public class NodeControlManager : Singleton<NodeControlManager>
             if (node.ContainsPosition(blockProperties.position))
             {
                 node.ChangeVolume(team, blockProperties.volume);
-                node.AddBlock(blockProperties.trailBlock);
+                //node.AddBlock(blockProperties.trailBlock);
                 break;
             }
-        }
-        Node targetNode = Nodes[0];
-        int targetCount = 3;
-        List<Vector3> explosionTargets = targetNode.GetExplosionTargets(targetCount);
-        Debug.Log($"Found {explosionTargets.Count} explosion targets in node {targetNode.ID}:");
-        foreach (Vector3 target in explosionTargets)
-        {
-            Debug.Log($"Target position: {target}, Block count density: {targetNode.blockOctree.GetBlockDensityAtPosition(target)}");
         }
     }
 
