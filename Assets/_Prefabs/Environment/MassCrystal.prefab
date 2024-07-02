@@ -25,7 +25,7 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2377488442520025677}
-  m_LocalRotation: {x: -0.7071068, y: 0, z: -0, w: 0.7071067}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: -0, y: 0, z: 0}
   m_LocalScale: {x: 200, y: 200, z: 200}
   m_ConstrainProportionsScale: 0
@@ -162,12 +162,12 @@ MonoBehaviour:
     speedBuffAmount: 3.5
     Element: 2
   sphereRadius: 170
-  SpentCrystalPrefab: {fileID: 3389356313851543944, guid: 7ab2d02acfb8c3942b4a7044764bb9bd,
+  SpentCrystalPrefab: {fileID: 9076749756118374754, guid: 68565b364d2a9aa49b10623fbb7f4772,
     type: 3}
   CrystalModel: {fileID: 2377488442520025677}
-  explodingMaterial: {fileID: 2100000, guid: 383f21e8586fd7243a19e1d0f26110d0, type: 2}
-  defaultMaterial: {fileID: 2100000, guid: 383f21e8586fd7243a19e1d0f26110d0, type: 2}
-  inactiveCrystalMaterial: {fileID: 2100000, guid: 650830ed7524d074991cd928a5356f37,
+  explodingMaterial: {fileID: 2100000, guid: 20e4974a2de18e44880740ec87d82e44, type: 2}
+  defaultMaterial: {fileID: 2100000, guid: 20e4974a2de18e44880740ec87d82e44, type: 2}
+  inactiveCrystalMaterial: {fileID: 2100000, guid: ab848ecfc3b26ff4ea103f828883c957,
     type: 2}
   shipImpactEffects: 0
   crystalImpactEffects: 08000000

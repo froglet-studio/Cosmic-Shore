@@ -37,6 +37,7 @@ Material:
   m_Shader: {fileID: -6465566751694194690, guid: 71fa822036d425446afa6c9c07046aef,
     type: 3}
   m_ValidKeywords:
+  - _ALPHATEST_ON
   - _SURFACE_TYPE_TRANSPARENT
   m_InvalidKeywords: []
   m_LightmapFlags: 4
@@ -109,7 +110,7 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _AlphaClip: 0
+    - _AlphaClip: 1
     - _BUILTIN_QueueControl: 0
     - _BUILTIN_QueueOffset: 0
     - _Blend: 0
@@ -124,7 +125,7 @@ Material:
     - _DstBlend: 10
     - _EnvironmentReflections: 1
     - _Float: 0.099
-    - _Fresnel: 1.71
+    - _Fresnel: 0.48
     - _GlossMapScale: 0
     - _Glossiness: 0
     - _GlossyReflections: 0

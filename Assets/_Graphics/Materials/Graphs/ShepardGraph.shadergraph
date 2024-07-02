@@ -122,6 +122,9 @@
         },
         {
             "m_Id": "14288822382f4649862dc25837699d1b"
+        },
+        {
+            "m_Id": "ba8db8a743ea4c6fa2f2bd6b44228462"
         }
     ],
     "m_GroupDatas": [
@@ -449,6 +452,20 @@
             "m_InputSlot": {
                 "m_Node": {
                     "m_Id": "84f391d2a835479d8415f0636d360830"
+                },
+                "m_SlotId": 0
+            }
+        },
+        {
+            "m_OutputSlot": {
+                "m_Node": {
+                    "m_Id": "ba8db8a743ea4c6fa2f2bd6b44228462"
+                },
+                "m_SlotId": 0
+            },
+            "m_InputSlot": {
+                "m_Node": {
+                    "m_Id": "5954d0d42b924ca48888fc29c6fe2cad"
                 },
                 "m_SlotId": 0
             }
@@ -1051,7 +1068,7 @@
     "m_Type": "UnityEditor.ShaderGraph.Vector4MaterialSlot",
     "m_ObjectId": "1e4b817a9e204ad486c1197631dcdb4a",
     "m_Id": 0,
-    "m_DisplayName": "Color2",
+    "m_DisplayName": "DullCrystalColor",
     "m_SlotType": 1,
     "m_Hidden": false,
     "m_ShaderOutputName": "Out",
@@ -1425,6 +1442,29 @@
         "x": 10.0,
         "y": 10.0
     }
+}
+
+{
+    "m_SGVersion": 0,
+    "m_Type": "UnityEditor.ShaderGraph.Vector3MaterialSlot",
+    "m_ObjectId": "3cfb127fad0d4c518b55e10a3c1ba52b",
+    "m_Id": 0,
+    "m_DisplayName": "Out",
+    "m_SlotType": 1,
+    "m_Hidden": false,
+    "m_ShaderOutputName": "Out",
+    "m_StageCapability": 3,
+    "m_Value": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 1.0
+    },
+    "m_DefaultValue": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0
+    },
+    "m_Labels": []
 }
 
 {
@@ -1965,7 +2005,7 @@
     "m_Hidden": false,
     "m_ShaderOutputName": "AlphaClipThreshold",
     "m_StageCapability": 2,
-    "m_Value": 0.5,
+    "m_Value": 0.0010000000474974514,
     "m_DefaultValue": 0.5,
     "m_Labels": []
 }
@@ -2000,10 +2040,10 @@
     "m_Guid": {
         "m_GuidSerialized": "2ee7ccd1-b18c-487b-8a53-d7b3e0a8c322"
     },
-    "m_Name": "Color2",
+    "m_Name": "DullCrystalColor",
     "m_DefaultRefNameVersion": 1,
-    "m_RefNameGeneratedByDisplayName": "Color2",
-    "m_DefaultReferenceName": "_Color2",
+    "m_RefNameGeneratedByDisplayName": "DullCrystalColor",
+    "m_DefaultReferenceName": "_DullCrystalColor",
     "m_OverrideReferenceName": "",
     "m_GeneratePropertyBlock": true,
     "m_UseCustomSlotLabel": false,
@@ -2759,10 +2799,10 @@
     "m_Guid": {
         "m_GuidSerialized": "83b68748-091c-4437-924e-57f65e092400"
     },
-    "m_Name": "Color1",
+    "m_Name": "BrightCrystalColor",
     "m_DefaultRefNameVersion": 1,
-    "m_RefNameGeneratedByDisplayName": "Color1",
-    "m_DefaultReferenceName": "_Color1",
+    "m_RefNameGeneratedByDisplayName": "BrightCrystalColor",
+    "m_DefaultReferenceName": "_BrightCrystalColor",
     "m_OverrideReferenceName": "",
     "m_GeneratePropertyBlock": true,
     "m_UseCustomSlotLabel": false,
@@ -3003,6 +3043,41 @@
         "e32": 0.0,
         "e33": 1.0
     }
+}
+
+{
+    "m_SGVersion": 0,
+    "m_Type": "UnityEditor.ShaderGraph.NormalVectorNode",
+    "m_ObjectId": "ba8db8a743ea4c6fa2f2bd6b44228462",
+    "m_Group": {
+        "m_Id": ""
+    },
+    "m_Name": "Normal Vector",
+    "m_DrawState": {
+        "m_Expanded": true,
+        "m_Position": {
+            "serializedVersion": "2",
+            "x": -701.3333740234375,
+            "y": 602.6666259765625,
+            "width": 209.33334350585938,
+            "height": 318.66668701171877
+        }
+    },
+    "m_Slots": [
+        {
+            "m_Id": "3cfb127fad0d4c518b55e10a3c1ba52b"
+        }
+    ],
+    "synonyms": [
+        "surface direction"
+    ],
+    "m_Precision": 0,
+    "m_PreviewExpanded": true,
+    "m_PreviewMode": 2,
+    "m_CustomColors": {
+        "m_SerializableColors": []
+    },
+    "m_Space": 0
 }
 
 {
@@ -3439,7 +3514,7 @@
     "m_Type": "UnityEditor.ShaderGraph.Vector4MaterialSlot",
     "m_ObjectId": "e7130197e060455993cbb85aecae3af6",
     "m_Id": 0,
-    "m_DisplayName": "Color1",
+    "m_DisplayName": "BrightCrystalColor",
     "m_SlotType": 1,
     "m_Hidden": false,
     "m_ShaderOutputName": "Out",
