@@ -10,7 +10,9 @@ public class BlockOctree
     {
         public Vector3 Center { get; private set; }
         public float Size { get; private set; }
+        public float Volume { get; private set; }
         public int BlockCount { get; set; }
+        public int BlockCountThreshold { get; private set; }
         public OctreeNode[] Children { get; private set; }
         public List<TrailBlock> Blocks { get; private set; }
 
@@ -18,7 +20,9 @@ public class BlockOctree
         {
             Center = center;
             Size = size;
+            Volume = Math.Pow(Size, 3);
             BlockCount = 0;
+            BlockCountThreshold = 10;
             Children = new OctreeNode[8];
             Blocks = new List<TrailBlock>();
         }
@@ -52,14 +56,11 @@ public class BlockOctree
         return densestNodes.Select(n => n.Center).ToList();
     }
 
-    // ... Include all the private methods from the previous implementation ...
-    // (AddBlockRecursive, RemoveBlockRecursive, SplitNode, GetOctant,
-    // FindDensestNodesRecursive, InsertSorted)
     private void AddBlockRecursive(OctreeNode node, TrailBlock block)
     {
         node.BlockCount++;
 
-        if (node.Size <= minSize || node.Blocks.Count < 2)//8
+        if (node.Size <= minSize || node.Blocks.Count < 8)
         {
             node.Blocks.Add(block);
             return;
@@ -85,7 +86,7 @@ public class BlockOctree
                 ((i & 4) == 0 ? -halfSize : halfSize) / 2
             );
             node.Children[i] = new OctreeNode(newCenter, halfSize);
-            Debug.Log($"split {newCenter}");
+ //           Debug.Log($"split {newCenter}");
         }
 
         foreach (var block in node.Blocks)
@@ -130,7 +131,7 @@ public class BlockOctree
 
         foreach (var child in node.Children)
         {
-            if (child != null && child.BlockCount > 0)
+            if (child != null && child.BlockCount > node.BlockCountThreshold)
             {
                 FindDensestNodesRecursive(child, count, densestNodes);
             }
@@ -139,11 +140,11 @@ public class BlockOctree
 
     private void InsertSorted(List<OctreeNode> list, OctreeNode node, int maxCount)
     {
-        int index = list.FindIndex(n => (n.BlockCount / Math.Pow(n.Size, 3) < node.BlockCount / Math.Pow(node.Size, 3)));
+        int index = list.FindIndex(n => (n.BlockCount / n.Volume < node.BlockCount / n.Volume));
         if (index == -1) index = list.Count;
         list.Insert(index, node);
-        Debug.Log($"rk");
-        Debug.Log(String.Join("; ", list));
+//        Debug.Log($"rk");
+//        Debug.Log(String.Join("; ", list));
         if (list.Count > maxCount) list.RemoveAt(maxCount);
     }
 
@@ -156,7 +157,7 @@ public class BlockOctree
     {
         if (node.IsLeaf)
         {
-            return node.BlockCount / Math.Pow(node.Size, 3);
+            return node.BlockCount / node.Volume;
         }
 
         int octant = GetOctant(node, position);

@@ -29,7 +29,7 @@ public class Node : MonoBehaviour
 
     [SerializeField] bool hasRandomFloraAndFauna;
 
-    [SerializeField] private float minOctreeSize = 1f;
+    [SerializeField] private float minOctreeSize = 100f;
     public BlockOctree blockOctree;
 
     Dictionary<Teams, float> teamVolumes = new Dictionary<Teams, float>();
