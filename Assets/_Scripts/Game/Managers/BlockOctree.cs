@@ -20,7 +20,7 @@ public class BlockOctree
         {
             Center = center;
             Size = size;
-            Volume = Math.Pow(Size, 3);
+            Volume = (float) Math.Pow(Size, 3);
             BlockCount = 0;
             BlockCountThreshold = 10;
             Children = new OctreeNode[8];
@@ -148,12 +148,12 @@ public class BlockOctree
         if (list.Count > maxCount) list.RemoveAt(maxCount);
     }
 
-    public double GetBlockDensityAtPosition(Vector3 position)
+    public float GetBlockDensityAtPosition(Vector3 position)
     {
         return GetBlockDensityRecursive(root, position);
     }
 
-    private double GetBlockDensityRecursive(OctreeNode node, Vector3 position)
+    private float GetBlockDensityRecursive(OctreeNode node, Vector3 position)
     {
         if (node.IsLeaf)
         {
@@ -166,6 +166,6 @@ public class BlockOctree
             return GetBlockDensityRecursive(node.Children[octant], position);
         }
 
-        return 0.0;
+        return 0.0F;
     }
 }
