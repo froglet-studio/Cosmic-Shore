@@ -138,8 +138,10 @@ public class BlockOctree
         }
     }
 
+    // TODO: Refactor for speed: check last entry of list first before searching the entire thing.
     private void InsertSorted(List<OctreeNode> list, OctreeNode node, int maxCount)
     {
+        // TODO: Store density as a property to avoid repeated division.
         int index = list.FindIndex(n => (n.BlockCount / n.Volume < node.BlockCount / n.Volume));
         if (index == -1) index = list.Count;
         list.Insert(index, node);
