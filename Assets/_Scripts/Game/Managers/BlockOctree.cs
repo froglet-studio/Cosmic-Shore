@@ -22,7 +22,7 @@ public class BlockOctree
             Size = size;
             Volume = (float) Math.Pow(Size, 3);
             BlockCount = 0;
-            BlockCountThreshold = 10;
+            BlockCountThreshold = 2;
             Children = new OctreeNode[8];
             Blocks = new List<TrailBlock>();
         }
@@ -86,7 +86,7 @@ public class BlockOctree
                 ((i & 4) == 0 ? -halfSize : halfSize) / 2
             );
             node.Children[i] = new OctreeNode(newCenter, halfSize);
- //           Debug.Log($"split {newCenter}");
+            //Debug.Log($"split {newCenter}");
         }
 
         foreach (var block in node.Blocks)

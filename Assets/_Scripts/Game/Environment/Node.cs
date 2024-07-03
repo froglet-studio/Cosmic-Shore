@@ -29,7 +29,7 @@ public class Node : MonoBehaviour
 
     [SerializeField] bool hasRandomFloraAndFauna;
 
-    [SerializeField] private float minOctreeSize = 100f;
+    [SerializeField] private float minOctreeSize = 10f;
     public BlockOctree blockOctree;
 
     Dictionary<Teams, float> teamVolumes = new Dictionary<Teams, float>();
@@ -62,7 +62,7 @@ public class Node : MonoBehaviour
     void Awake()
     {
         Vector3 size = transform.localScale;
-        float maxSize = Mathf.Max(size.x, size.y, size.z) / 2;
+        float maxSize = Mathf.Max(size.x, size.y, size.z) * 10;  // Unclear why a large multiplier is needed.
         blockOctree = new BlockOctree(transform.position, maxSize, minOctreeSize);
     }
 
