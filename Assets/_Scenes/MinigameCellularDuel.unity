@@ -620,6 +620,7 @@ MonoBehaviour:
   CrystalModel: {fileID: 7244393970774794917}
   explodingMaterial: {fileID: 2100000, guid: 383f21e8586fd7243a19e1d0f26110d0, type: 2}
   defaultMaterial: {fileID: 2100000, guid: 383f21e8586fd7243a19e1d0f26110d0, type: 2}
+  inactiveCrystalMaterial: {fileID: 0}
   shipImpactEffects: 1
   crystalImpactEffects: 
   AOEPrefab: {fileID: 0}
@@ -7010,6 +7011,18 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3197094124088707225, guid: cb702179ff5b42f41a3521ccd59e6934,
         type: 3}
+      propertyPath: fauna1
+      value: 
+      objectReference: {fileID: 8812619448024686939, guid: 14b7fddb8e30aa541a092201bc80b848,
+        type: 3}
+    - target: {fileID: 3197094124088707225, guid: cb702179ff5b42f41a3521ccd59e6934,
+        type: 3}
+      propertyPath: flora1
+      value: 
+      objectReference: {fileID: 7514956980722975813, guid: 3c58c4dd53a6a2240acd7f7b81a3adb5,
+        type: 3}
+    - target: {fileID: 3197094124088707225, guid: cb702179ff5b42f41a3521ccd59e6934,
+        type: 3}
       propertyPath: Crystal
       value: 
       objectReference: {fileID: 430359314}
@@ -7018,6 +7031,17 @@ PrefabInstance:
       propertyPath: SnowChanger
       value: 
       objectReference: {fileID: 639495419634095582}
+    - target: {fileID: 3197094124088707225, guid: cb702179ff5b42f41a3521ccd59e6934,
+        type: 3}
+      propertyPath: floraCollection
+      value: 
+      objectReference: {fileID: 11400000, guid: 4e889215b2617a942923f1d3c22134c0,
+        type: 2}
+    - target: {fileID: 3197094124088707225, guid: cb702179ff5b42f41a3521ccd59e6934,
+        type: 3}
+      propertyPath: hasRandomFloraAndFauna
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 7817456538282590180, guid: cb702179ff5b42f41a3521ccd59e6934,
         type: 3}
       propertyPath: m_Name
@@ -7487,6 +7511,7 @@ MonoBehaviour:
   EndOfTurnDelay: 0
   EnableTrails: 1
   DefaultPlayerShipType: 2
+  DefaultPlayerCaptain: {fileID: 0}
   ActivePlayer: {fileID: 0}
   hostilePilot: {fileID: 1360556390}
 --- !u!1 &1829578212
@@ -7698,12 +7723,12 @@ PrefabInstance:
     - target: {fileID: 5247650485044281852, guid: 061f308768b5b564bbb0f130d1a8f02e,
         type: 3}
       propertyPath: m_LocalRotation.w
-      value: 0.014161397
+      value: 0.014161362
       objectReference: {fileID: 0}
     - target: {fileID: 5247650485044281852, guid: 061f308768b5b564bbb0f130d1a8f02e,
         type: 3}
       propertyPath: m_LocalRotation.x
-      value: 0.00019546802
+      value: 0.00019546723
       objectReference: {fileID: 0}
     - target: {fileID: 5247650485044281852, guid: 061f308768b5b564bbb0f130d1a8f02e,
         type: 3}
@@ -7713,7 +7738,7 @@ PrefabInstance:
     - target: {fileID: 5247650485044281852, guid: 061f308768b5b564bbb0f130d1a8f02e,
         type: 3}
       propertyPath: m_LocalRotation.z
-      value: -0.013800179
+      value: -0.013800159
       objectReference: {fileID: 0}
     - target: {fileID: 5247650485044281852, guid: 061f308768b5b564bbb0f130d1a8f02e,
         type: 3}
