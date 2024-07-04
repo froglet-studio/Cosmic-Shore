@@ -22,7 +22,7 @@ public class ShipTransformer : MonoBehaviour
     [HideInInspector] public float ThrottleScaler;
 
     public float DefaultMinimumSpeed = 10f;
-    public ElementalFloat DefaultThrottleScaler = new ElementalFloat(50f);
+    public ElementalFloat DefaultThrottleScaler = new(50f);
 
     public float PitchScaler = 130f;
     public float YawScaler = 130f;
@@ -34,7 +34,7 @@ public class ShipTransformer : MonoBehaviour
     float speedModifierMax = 6f;
     float velocityModifierMax = 100;
     protected float throttleMultiplier = 1;
-    public float SpeedMultiplier { get { return throttleMultiplier; } }
+    public float SpeedMultiplier => throttleMultiplier;
     protected Vector3 velocityShift = Vector3.zero;
 
 
