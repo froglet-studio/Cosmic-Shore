@@ -32,11 +32,14 @@ public class BlockOctree
 
     private OctreeNode root;
     private float minSize;
+    private Teams team;
 
-    public BlockOctree(Vector3 center, float size, float minSize)
+    // Should size & minSize be set internally instead of at construction?
+    public BlockOctree(Vector3 center, float size, float minSize, Teams team)
     {
         root = new OctreeNode(center, size);
         this.minSize = minSize;
+        this.team = team;
     }
 
     public void AddBlock(TrailBlock block)
@@ -86,7 +89,6 @@ public class BlockOctree
                 ((i & 4) == 0 ? -halfSize : halfSize) / 2
             );
             node.Children[i] = new OctreeNode(newCenter, halfSize);
-            //Debug.Log($"split {newCenter}");
         }
 
         foreach (var block in node.Blocks)
@@ -142,11 +144,9 @@ public class BlockOctree
     private void InsertSorted(List<OctreeNode> list, OctreeNode node, int maxCount)
     {
         // TODO: Store density as a property to avoid repeated division.
-        int index = list.FindIndex(n => (n.BlockCount / n.Volume < node.BlockCount / n.Volume));
+        int index = list.FindIndex(n => (n.BlockCount / n.Volume < node.BlockCount / node.Volume));
         if (index == -1) index = list.Count;
         list.Insert(index, node);
-//        Debug.Log($"rk");
-//        Debug.Log(String.Join("; ", list));
         if (list.Count > maxCount) list.RemoveAt(maxCount);
     }
 

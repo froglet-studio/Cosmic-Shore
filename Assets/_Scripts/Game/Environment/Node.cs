@@ -29,8 +29,8 @@ public class Node : MonoBehaviour
 
     [SerializeField] bool hasRandomFloraAndFauna;
 
-    [SerializeField] private float minOctreeSize = 10f;
-    public BlockOctree blockOctree;
+    [SerializeField] private float minOctreeSize = 20f;
+    public Dictionary<Teams, BlockOctree> blockOctrees = new Dictionary<Teams, BlockOctree>();
 
     Dictionary<Teams, float> teamVolumes = new Dictionary<Teams, float>();
 
@@ -62,23 +62,35 @@ public class Node : MonoBehaviour
     void Awake()
     {
         Vector3 size = transform.localScale;
-        float maxSize = Mathf.Max(size.x, size.y, size.z) * 10;  // Unclear why a large multiplier is needed.
-        blockOctree = new BlockOctree(transform.position, maxSize, minOctreeSize);
+        float maxSize = Mathf.Max(size.x, size.y, size.z) * 10;  // Unclear why such a large multiplier is needed.
+        Teams[] teams = { Teams.Green, Teams.Red, Teams.Gold };  // TODO: Store this as a constant somewhere (where?).
+        foreach (Teams t in teams)
+        {
+            blockOctrees.Add(t, new BlockOctree(transform.position, maxSize, minOctreeSize, t));
+        }
     }
 
     public void AddBlock(TrailBlock block)
     {
-        blockOctree.AddBlock(block);
+        Teams[] teams = { Teams.Green, Teams.Red, Teams.Gold };
+        foreach (Teams t in teams)
+        {
+            if (t != block.team) blockOctrees[t].AddBlock(block);
+        }
     }
 
     public void RemoveBlock(TrailBlock block)
     {
-        blockOctree.RemoveBlock(block);
+        Teams[] teams = { Teams.Green, Teams.Red, Teams.Gold };
+        foreach (Teams t in teams)
+        {
+            if (t != block.team) blockOctrees[t].RemoveBlock(block);
+        }
     }
 
-    public List<Vector3> GetExplosionTargets(int count)
+    public List<Vector3> GetExplosionTargets(int count, Teams team)
     {
-        return blockOctree.FindDensestRegions(count);
+        return blockOctrees[team].FindDensestRegions(count);
     }
 
     public void AddItem(NodeItem item)

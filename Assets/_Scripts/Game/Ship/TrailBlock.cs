@@ -42,7 +42,7 @@ namespace CosmicShore.Core
         BoxCollider blockCollider;
         
         [Header("Team Ownership on the Block")]
-        Teams team;
+        public Teams team;
         public string ownerId;  // TODO: is the ownerId the player name? I hope it is.
         public Teams Team { get => team; set => team = value; }
         public Player Player;
@@ -93,7 +93,11 @@ namespace CosmicShore.Core
             if (TrailBlockProperties.Shielded) ActivateShield();
 
             Node targetNode = NodeControlManager.Instance.GetNearestNode(TrailBlockProperties.position);
-            targetNode.blockOctree.AddBlock(this);
+            Teams[] teams = { Teams.Green, Teams.Red, Teams.Gold };
+            foreach (Teams t in teams)
+            {
+                if (t != team) targetNode.blockOctrees[t].AddBlock(this);  // Add this block to other teams' target tracking.
+            }
         }
 
         private void InitializeTrailBlockProperties()
