@@ -23,7 +23,7 @@ namespace CosmicShore.App.UI
                 switch (navGroupType)
                 {
                     case NavGroupType.SelectView:
-                        link.selectView.SetActive(link == linkToActivate);
+                        link.toggleView.SetActive(link == linkToActivate);
                         break;
                     case NavGroupType.UpdateView:
                         if (link == linkToActivate)
