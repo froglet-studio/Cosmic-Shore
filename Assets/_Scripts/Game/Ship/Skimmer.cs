@@ -276,8 +276,12 @@ namespace CosmicShore.Core
         {
             if (other.TryGetComponent<TrailBlock>(out var trailBlock) && (affectSelf || trailBlock.Team != team))
             {
-                skimStartTimes.Remove(trailBlock.ID);
-                activelySkimmingBlockCount--;
+                if (skimStartTimes.ContainsKey(trailBlock.ID))
+                {
+                    skimStartTimes.Remove(trailBlock.ID);
+                    activelySkimmingBlockCount--;
+                }
+                
             
 
                 if (trailBlock.TryGetComponent<LineRenderer>(out var lineRenderer))
@@ -341,7 +345,7 @@ namespace CosmicShore.Core
         void Boost(float combinedWeight)
         {
             ship.ShipStatus.Boosting = true;
-            ship.boostMultiplier = 1 + (2 * combinedWeight);
+            ship.boostMultiplier = 1 + (3 * combinedWeight);
         }
 
         // Function to compute the Gaussian value at a given x

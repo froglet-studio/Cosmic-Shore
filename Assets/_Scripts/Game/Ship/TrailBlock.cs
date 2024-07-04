@@ -1,4 +1,5 @@
 ﻿using System.Collections;
+using CosmicShore.Utility.ClassExtensions;
 using UnityEngine;
 
 namespace CosmicShore.Core
@@ -23,15 +24,13 @@ namespace CosmicShore.Core
 
         [Header("Trail Block Status")]
         public float waitTime = .6f;
-        public bool destroyed = false;
-        public bool devastated = false;
+        public bool destroyed;
+        public bool devastated;
         public string ID;
         public int Index;
-        public bool Shielded = false;
-        public bool IsSuperShielded = false;
-        public bool warp = false;
-        public bool IsSmallest = false;
-        public bool IsLargest = false;
+        public bool warp;
+        public bool IsSmallest;
+        public bool IsLargest;
 
 
         // Shader related properties
@@ -46,7 +45,27 @@ namespace CosmicShore.Core
         public string ownerId;  // TODO: is the ownerId the player name? I hope it is.
         public Teams Team { get => team; set => team = value; }
         public Player Player;
-        public string PlayerName { get => Player ? Player.PlayerName : ""; }
+        public string PlayerName => Player ? Player.PlayerName : "";
+
+        /// <summary>
+        /// Trail Block Layer Name, it is used upon Crystal collisions to distinguish it from the other game objects.
+        /// </summary>
+        private static int _layerName;
+        
+        /// <summary>
+        /// The prefab name of the default particle effect for trail blocks
+        /// </summary>
+        // private const string DefaultParticleName = "fx_BlueCrackle";
+
+        private void Awake()
+        {
+            // Initialized trail block game object layer, assign it to "TrailBlocks"
+            _layerName = LayerMask.NameToLayer("TrailBlocks");
+            gameObject.layer = _layerName;
+            
+            // Set default particle effect to trail block if none is assigned.
+            // ParticleEffect = ObjectResolver.GetFromPrefab(DefaultParticleName);
+        }
 
         protected virtual void Start()
         {
@@ -61,7 +80,7 @@ namespace CosmicShore.Core
                 meshRenderer.material = Hangar.Instance.GetTeamBlockMaterial(team);
             meshRenderer.enabled = false;
 
-            spread = (Vector3) meshRenderer.material.GetVector("_Spread");
+            spread = meshRenderer.material.GetVector("_Spread");
 
             UpdateVolume();
             transform.localScale = Vector3.one * Mathf.Epsilon;
@@ -69,7 +88,7 @@ namespace CosmicShore.Core
             InitializeTrailBlockProperties();
 
             StartCoroutine(CreateBlockCoroutine());
-            if (Shielded) ActivateShield();
+            if (TrailBlockProperties.Shielded) ActivateShield();
         }
 
         private void InitializeTrailBlockProperties()
@@ -78,7 +97,8 @@ namespace CosmicShore.Core
             TrailBlockProperties.trailBlock = this;
             TrailBlockProperties.Index = Index;
             TrailBlockProperties.Trail = Trail;
-            TrailBlockProperties.Shielded = Shielded;
+            TrailBlockProperties.Shielded = false;
+            TrailBlockProperties.IsSuperShielded = false;
             TrailBlockProperties.TimeCreated = Time.time;
         }
 
@@ -165,10 +185,10 @@ namespace CosmicShore.Core
             ChangeSize();
         }
 
-        // TODO: none of the collision detection should be on the trailblock
-        void OnTriggerEnter(Collider other)
+        // TODO: none of the collision detection should be on the Trailblock
+        protected void OnTriggerEnter(Collider other)
         {
-            if (IsShip(other.gameObject))
+            if(other.gameObject.IsLayer("Ships"))
             {
                 var ship = other.GetComponent<ShipGeometry>().Ship;
 
@@ -177,11 +197,27 @@ namespace CosmicShore.Core
                     ship.PerformTrailBlockImpactEffects(TrailBlockProperties);
                 }
             }
+            
+            if (other.gameObject.IsLayer("Crystals"))
+            {
+                if (!TrailBlockProperties.Shielded)
+                {
+                    ActivateShield();
+                }
+            }
+        }
+
+        protected void OnTriggerExit(Collider other)
+        {
+            if (other.gameObject.IsLayer("Crystals"))
+            {
+                ActivateShield(2.0f);
+            }
         }
 
         public virtual void Explode(Vector3 impactVector, Teams team, string playerName, bool devastate=false)
         {
-            if ((Shielded && !devastate) || IsSuperShielded)
+            if ((TrailBlockProperties.Shielded && !devastate) || TrailBlockProperties.IsSuperShielded)
             {
                 DeactivateShields();
                 return;
@@ -194,8 +230,8 @@ namespace CosmicShore.Core
             // Make exploding block
             var explodingBlock = Instantiate(FossilBlock);
             explodingBlock.transform.position = transform.position;
-            explodingBlock.transform.localEulerAngles = transform.localEulerAngles;
-            explodingBlock.transform.localScale = transform.localScale;
+            explodingBlock.transform.eulerAngles = transform.eulerAngles;
+            explodingBlock.transform.localScale = transform.lossyScale;
             explodingBlock.transform.parent = fossilBlockContainer.transform;
             explodingBlock.GetComponent<Renderer>().material = new Material(Hangar.Instance.GetTeamExplodingBlockMaterial(this.team));
             explodingBlock.GetComponent<BlockImpact>().HandleImpact(impactVector);
@@ -210,8 +246,6 @@ namespace CosmicShore.Core
                 NodeControlManager.Instance.RemoveBlock(team, TrailBlockProperties);
 
             // TODO: State track should go to mini games
-            // if (StateTracker.Instance != null)
-            //     StateTracker.Instance.RemoveBlock(TrailBlockProperties);
 
         }
 
@@ -226,15 +260,12 @@ namespace CosmicShore.Core
         IEnumerator DeactivateShieldsCoroutine(float duration)
         {
             yield return new WaitForSeconds(duration);
-            Shielded = false;
-            IsSuperShielded = false;
             TrailBlockProperties.Shielded = false;
             TrailBlockProperties.IsSuperShielded = false;
         }
 
         public void ActivateShield()
         {
-            Shielded = true;
             TrailBlockProperties.Shielded = true;
             if (lerpBlockMaterialPropertiesCoroutine != null) StopCoroutine(lerpBlockMaterialPropertiesCoroutine);
             StartCoroutine(LerpBlockMaterialPropertiesCoroutine(Hangar.Instance.GetTeamShieldedBlockMaterial(team)));
@@ -243,7 +274,6 @@ namespace CosmicShore.Core
 
         public void ActivateSuperShield()
         {
-            IsSuperShielded = true;
             TrailBlockProperties.IsSuperShielded = true;
             if (lerpBlockMaterialPropertiesCoroutine != null) StopCoroutine(lerpBlockMaterialPropertiesCoroutine);
             StartCoroutine(LerpBlockMaterialPropertiesCoroutine(Hangar.Instance.GetTeamSuperShieldedBlockMaterial(team)));
@@ -298,16 +328,15 @@ namespace CosmicShore.Core
         {
             if (this.team != team)
             {
-                if (Shielded || IsSuperShielded)
+                if (TrailBlockProperties.Shielded || TrailBlockProperties.IsSuperShielded)
                 {
                     DeactivateShields();
                     return;
                 }
-                string name;
-                if (player) name = player.PlayerName;
-                else name = "no name";
+                var playerName = player ? player.PlayerName : "No name";
+                
                 if (StatsManager.Instance != null)
-                    StatsManager.Instance.BlockStolen(team, name, TrailBlockProperties);
+                    StatsManager.Instance.BlockStolen(team, playerName, TrailBlockProperties);
 
                 if (NodeControlManager.Instance != null)
                     NodeControlManager.Instance.StealBlock(team, TrailBlockProperties);
@@ -336,12 +365,6 @@ namespace CosmicShore.Core
 
                 destroyed = false;
             }
-        }
-
-        // TODO: utility class needed to hold these
-        bool IsShip(GameObject go)
-        {
-            return go.layer == LayerMask.NameToLayer("Ships");
         }
     }
 }
