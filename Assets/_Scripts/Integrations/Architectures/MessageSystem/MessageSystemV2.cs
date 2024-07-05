@@ -73,7 +73,7 @@ namespace CosmicShore.Integrations.Architectures.MessageSystem
         public virtual IDisposable Subscribe(Action<T> handler)
         {
             // If the handler has been subscribed, no need to do it again
-            if (IsSubscribed(handler)) throw new Exception("Attempting to subscribe the same handler more than once.");
+            if (IsSubscribed(handler)) throw new AggregateException("Attempting to subscribe the same handler more than once.");
 
             // Mark the handler as pending to be added
             if (!_pendingHandlers.TryAdd(handler, true))
@@ -97,13 +97,19 @@ namespace CosmicShore.Integrations.Architectures.MessageSystem
             // If the handler is not subscribed, no need to bother
             if (!IsSubscribed(handler)) return;
 
-            // 
-            if (_pendingHandlers.TryAdd(handler, false)) return;
-            
-            if (_pendingHandlers[handler])
-                _pendingHandlers.Remove(handler);
+            // Try mark the handler "to be removed", and proceed to remove it
+            if (_pendingHandlers.TryAdd(handler, false))
+            {
+                if (!_pendingHandlers[handler])
+                    _pendingHandlers.Remove(handler);
+            }
         }
         
+        /// <summary>
+        /// A predicate deciding if the event handler is subscribed.
+        /// </summary>
+        /// <param name="handler">An event handler foa corresponding type</param>
+        /// <returns></returns>
         private bool IsSubscribed(Action<T> handler)
         {
             var isPendingRemoval = _pendingHandlers.ContainsKey(handler) && !_pendingHandlers[handler];
