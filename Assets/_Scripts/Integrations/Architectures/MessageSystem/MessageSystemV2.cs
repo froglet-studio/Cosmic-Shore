@@ -72,22 +72,32 @@ namespace CosmicShore.Integrations.Architectures.MessageSystem
         /// <exception cref="Exception">An exception to notify </exception>
         public virtual IDisposable Subscribe(Action<T> handler)
         {
+            // If the handler has been subscribed, no need to do it again
             if (IsSubscribed(handler)) throw new Exception("Attempting to subscribe the same handler more than once.");
 
+            // Mark the handler as pending to be added
             if (!_pendingHandlers.TryAdd(handler, true))
             {
+                // If the handler is marked as to be removed, remove it instead of adding
                 if (!_pendingHandlers[handler])
                     _pendingHandlers.Remove(handler);
             }
 
+            // Return a disposable subscription using this message system and corresponding handler
             var subscription = new DisposableSubscription<T>(this, handler);
             return subscription;
         }
 
+        /// <summary>
+        /// Unsubscribe an event handler
+        /// </summary>
+        /// <param name="handler">An event handler of a corresponding type</param>
         public void Unsubscribe(Action<T> handler)
         {
+            // If the handler is not subscribed, no need to bother
             if (!IsSubscribed(handler)) return;
 
+            // 
             if (_pendingHandlers.TryAdd(handler, false)) return;
             
             if (_pendingHandlers[handler])
@@ -101,44 +111,5 @@ namespace CosmicShore.Integrations.Architectures.MessageSystem
             return _handlers.Contains(handler) && !isPendingRemoval || isPendingAdding;
         }
 
-    }
-
-    public class DisposableSubscription<T> : ISubscriber<T>, IDisposable
-    {
-        public DisposableSubscription(MessageSystemV2<T> messageSystemV2, Action<T> handler)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void Dispose()
-        {
-            throw new NotImplementedException();
-        }
-
-        public IDisposable Subscribe(Action<T> handler)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void Unsubscribe(Action<T> handler)
-        {
-            throw new NotImplementedException();
-        }
-    }
-
-    public interface IMessageSystem<T> : IPublisher<T>, ISubscriber<T>, IDisposable
-    {
-        
-    }
-
-    public interface ISubscriber<T>
-    {
-        IDisposable Subscribe(Action<T> handler);
-        void Unsubscribe(Action<T> handler);
-    }
-
-    public interface IPublisher<T>
-    {
-        void Publish(T message);
     }
 }
