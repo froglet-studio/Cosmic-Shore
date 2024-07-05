@@ -19,10 +19,14 @@ namespace CosmicShore.Integrations.Architectures.MessageSystem
         private readonly Dictionary<Action<T>, bool> _pendingHandlers = new();
         
         /// <summary>
-        /// 
+        /// A flag signifying if the message system is disposed.
+        /// If true, don't try to access the message system, invoke or subscribe to any event handlers.
         /// </summary>
         public bool IsDisposed { get; private set; }
 
+        /// <summary>
+        /// IDisposable implementation, clear event handlers and pending handlers upon message system garbage collection.
+        /// </summary>
         public virtual void Dispose()
         {
             if (IsDisposed) return;
@@ -32,24 +36,40 @@ namespace CosmicShore.Integrations.Architectures.MessageSystem
             _pendingHandlers.Clear();
         }
 
+        /// <summary>
+        /// Publish corresponding message type
+        /// </summary>
+        /// <param name="message">Message type to publish</param>
         public virtual void Publish(T message)
         {
-            // Add and remove handlers from pending handlers
+            // Add handlers from pending handlers
             // Linq has deferred execution, the query is not executed until it actually enumerate over the results.
             // But in this case both AddRange and RemoveAll cause immediate execution.
             _handlers.AddRange(_pendingHandlers
-                .Where(pair => pair.Value).Select(pair => pair.Key));
+                .Where(pair => pair.Value)
+                .Select(pair => pair.Key));
+            
+            // Remove all handlers where pending value is false
+            // which means these handlers are marked as to be removed.
             _handlers.RemoveAll(handler => 
                 _pendingHandlers.ContainsKey(handler) && !_pendingHandlers[handler]);
             
+            // Clear out pending handlers because they are already been added to handlers.
             _pendingHandlers.Clear();
 
+            // Invoke all the event handlers with the corresponding message type
             _handlers.Where(handler => handler != null)
                 .ToList()
                 .ForEach(handler => handler.Invoke(message));
 
         }
-
+        
+        /// <summary>
+        /// Subscribe to event handlers
+        /// </summary>
+        /// <param name="handler">Event that handles corresponding type</param>
+        /// <returns>A disposable subscription</returns>
+        /// <exception cref="Exception">An exception to notify </exception>
         public virtual IDisposable Subscribe(Action<T> handler)
         {
             if (IsSubscribed(handler)) throw new Exception("Attempting to subscribe the same handler more than once.");
