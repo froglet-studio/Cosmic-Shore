@@ -2,26 +2,31 @@ using System;
 
 namespace CosmicShore.Integrations.Architectures.MessageSystem
 {
-    public class DisposableSubscription<T> : ISubscriber<T>, IDisposable
+    public class DisposableSubscription<T> : IDisposable
     {
-        public DisposableSubscription(MessageSystemV2<T> messageSystemV2, Action<T> handler)
+        /// <summary>
+        /// Event handler for dealing with 
+        /// </summary>
+        private Action<T> _handler;
+        private bool _isDisposed;
+        private IMessageSystem<T> _messageSystem;
+        
+        public DisposableSubscription(MessageSystemV2<T> messageSystem, Action<T> handler)
         {
-            throw new NotImplementedException();
+            _messageSystem = messageSystem;
+            _handler = handler;
         }
 
         public void Dispose()
         {
-            throw new NotImplementedException();
-        }
+            if (_isDisposed) return;
 
-        public IDisposable Subscribe(Action<T> handler)
-        {
-            throw new NotImplementedException();
-        }
+            _isDisposed = true;
+            
+            if(!_messageSystem.IsDisposed) _messageSystem.Unsubscribe(_handler);
 
-        public void Unsubscribe(Action<T> handler)
-        {
-            throw new NotImplementedException();
+            _handler = null;
+            _messageSystem = null;
         }
     }
 }

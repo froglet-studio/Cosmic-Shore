@@ -4,7 +4,7 @@ namespace CosmicShore.Integrations.Architectures.MessageSystem
 {
     public interface IMessageSystem<T> : IPublisher<T>, ISubscriber<T>, IDisposable
     {
-        
+        bool IsDisposed { get; }
     }
     
     public interface ISubscriber<T>
