@@ -15,7 +15,7 @@ MonoBehaviour:
   Name: Riptide
   Description: Fastest Energy gain rate in the game when skimming.
   Flavor: '[Flavor text placeholder]'
-  Image: {fileID: 21300000, guid: c07463db6e8244c45b639760efd18f9e, type: 3}
+  Image: {fileID: 21300000, guid: ebe8f8cf53fdb27449173dab53ce8109, type: 3}
   Icon: {fileID: 21300000, guid: 33db5908f1280c24f98ec60ac59b6d86, type: 3}
   SelectedIcon: {fileID: 21300000, guid: 6c4f40eef57f4d04bbd01083161212ff, type: 3}
   Ship: {fileID: 11400000, guid: c0f30e9f09616874780edc0a375ce686, type: 2}

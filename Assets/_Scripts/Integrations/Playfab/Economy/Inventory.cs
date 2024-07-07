@@ -47,13 +47,7 @@ namespace CosmicShore.Integrations.PlayFab.Economy
 
         public bool ContainsShipClass(string shipName)
         {
-            foreach (var item in shipClasses)
-            {
-                Debug.LogWarning($"Ship Class Item {item.Name}");
-            }
-
             var count = shipClasses.Where(item => item.Name == shipName).Count();
-            Debug.LogWarning($"ContainsShipClass {shipName}, Count: {count}");
             return count > 0;
         }
     }

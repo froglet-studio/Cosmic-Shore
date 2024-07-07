@@ -15,7 +15,7 @@ MonoBehaviour:
   Name: Squirrel
   Description: A classic tale of love and kaiju
   Flavor: 
-  Image: {fileID: 21300000, guid: 161e07fc5930fca4ebeccaa1257a4176, type: 3}
+  Image: {fileID: 21300000, guid: 516d19e9db897c14aa1698abb25cbe32, type: 3}
   Icon: {fileID: 21300000, guid: 4bb626eb5275b9c41a2c6e117aee2f42, type: 3}
   SelectedIcon: {fileID: 21300000, guid: a631b4ddb4bf68b4bb89f43b7ab8380d, type: 3}
   Ship: {fileID: 11400000, guid: 6fbeef29c9430b94aabea2934640dc5a, type: 2}

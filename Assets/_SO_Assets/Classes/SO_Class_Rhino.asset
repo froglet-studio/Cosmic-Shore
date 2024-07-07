@@ -44,3 +44,15 @@ MonoBehaviour:
   TrainingGames:
   - {fileID: 0}
   - {fileID: 0}
+  gameplayParameter1:
+    LeftHandLabel: Casual
+    RightHandLabel: Challenging
+    Value: 0.05
+  gameplayParameter2:
+    LeftHandLabel: Relaxing
+    RightHandLabel: Thrilling
+    Value: 0.95
+  gameplayParameter3:
+    LeftHandLabel: Solo
+    RightHandLabel: Social
+    Value: 0.95

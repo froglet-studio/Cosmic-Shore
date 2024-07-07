@@ -5,8 +5,12 @@ using CosmicShore.Integrations.PlayFab.Economy;
 using UnityEngine;
 using UnityEngine.UI;
 
+
 namespace CosmicShore
 {
+    /// <summary>
+    /// TODO: this is just a placeholder direct rip of the HangarOverviewView
+    /// </summary>
     public class HangarUpgradeSelectCard : MonoBehaviour
     {
         /// <summary>
@@ -44,7 +48,7 @@ namespace CosmicShore
 
         public void Select()
         {
-            HangarMenu.SelectShip(Ship);
+            //HangarMenu.SelectShip(Ship);
             MenuAudio.PlayAudio();
         }
 

@@ -317,6 +317,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 50e042ce14ba5264087458f8b98fc406, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  view: {fileID: 0}
+  activeImageElements: []
+  inactiveImageElements: []
+  activeTextElements: []
+  inactiveTextElements: []
+  crossfadeDuration: 0.5
+  navGroup: {fileID: 0}
   BackgroundImage: {fileID: 6510446657241822600}
   ShipImage: {fileID: 816302066015412011}
   LockImage: {fileID: 816302064907713720}

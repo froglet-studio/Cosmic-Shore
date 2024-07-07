@@ -1,7 +1,6 @@
 using CosmicShore.App.Systems.CTA;
 using CosmicShore.App.UI;
 using CosmicShore.App.UI.Menus;
-using CosmicShore.Integrations.PlayFab.Economy;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -9,8 +8,9 @@ namespace CosmicShore
 {
     /// <summary>
     /// The UI card view for individual items in the ship selection nav bar of the hangar
+    /// 
     /// </summary>
-    public class HangarShipSelectCard : NavLink
+    public class HangarShipSelectNavLink : NavLink
     {
         /// <summary>
         /// The dynamic UI components of the card UI
@@ -36,34 +36,39 @@ namespace CosmicShore
 
         [HideInInspector] public HangarMenu HangarMenu;
         public SO_Ship Ship;
+        int index;
 
         public void AssignShipClass(SO_Ship ship)
         {
             Ship = ship;
-            LockImage.enabled = !CatalogManager.Inventory.ContainsShipClass(ship.Name);
-            Debug.Log($"HangarShipSelectCard.AssignShipClass - LockImage.enabled: {LockImage.enabled}");
-            Debug.Log($"HangarShipSelectCard.AssignShipClass - !CatalogManager.Inventory.ContainsShipClass({ship.Name}): {!CatalogManager.Inventory.ContainsShipClass(ship.Name)}");
-            ShipImage.sprite = ship.Icon;
+            LockImage.enabled = ship.IsLocked;ShipImage.sprite = ship.Icon;
+        }
+
+        public void AssignIndex(int index)
+        {
+            this.index = index;
         }
 
         public void Select()
         {
-            HangarMenu.SelectShip(Ship);
+            //HangarMenu.SelectShip(Ship);
+            HangarMenu.SelectShip(index);
             MenuAudio.PlayAudio();
         }
 
-        public void SetActive()
+        public override void SetActive(bool isActive)
         {
-            BackgroundImage.sprite = ActiveBackgroundSprite;
-            LockImage.sprite = ActiveLockSprite;
-            BackgroundImage.rectTransform.sizeDelta = new Vector2(ActiveSize, ActiveSize);
-        }
-
-        public void SetInactive()
-        {
-            BackgroundImage.sprite = InactiveBackgroundSprite;
-            LockImage.sprite = InactiveLockSprite;
-            BackgroundImage.rectTransform.sizeDelta = new Vector2(InactiveSize, InactiveSize);
+            if (isActive)
+            {
+                BackgroundImage.sprite = ActiveBackgroundSprite;
+                LockImage.sprite = ActiveLockSprite;
+                BackgroundImage.rectTransform.sizeDelta = new Vector2(ActiveSize, ActiveSize);
+            } else
+            {
+                BackgroundImage.sprite = InactiveBackgroundSprite;
+                LockImage.sprite = InactiveLockSprite;
+                BackgroundImage.rectTransform.sizeDelta = new Vector2(InactiveSize, InactiveSize);
+            }
         }
     }
 }

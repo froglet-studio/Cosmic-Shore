@@ -1,4 +1,3 @@
-using CosmicShore.Core;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -12,19 +11,12 @@ namespace CosmicShore.App.UI.Menus
         [SerializeField] SO_ShipList ShipList;
         [SerializeField] Transform ShipSelectionContainer;
         [SerializeField] InfiniteScroll ShipSelectionScrollView;
-        [SerializeField] HangarShipSelectCard ShipSelectCardPrefab;
+        [SerializeField] HangarShipSelectNavLink ShipSelectCardPrefab;
         [SerializeField] NavGroup TopNav;
 
+        // TODO: the conversion over to NavLink/NavGroup paradigm isn't complete
         [Header("Overview View")]
-        [SerializeField] GameObject OverviewView;
-        [SerializeField] GameObject ShipDetailsPanel;
-        [SerializeField] TMPro.TMP_Text SelectedShipName;
-        [SerializeField] TMPro.TMP_Text SelectedShipSummary;
-        [SerializeField] TMPro.TMP_Text SelectedShipDescription;
-        [SerializeField] GameObject SelectedShipPreviewWindow;
-        [SerializeField] GameObject OverviewButton;
-        [SerializeField] Sprite OverviewButtonActiveSprite;
-        [SerializeField] Sprite OverviewButtonInactiveSprite;
+        [SerializeField] HangarOverviewView OverviewView;
 
         [Header("Abilities View")]
         [SerializeField] HangarAbilitiesView AbilitiesView;
@@ -62,6 +54,7 @@ namespace CosmicShore.App.UI.Menus
         public void LoadView()
         {
             Ships = ShipList.ShipList;
+            OverviewView.AssignModels(Ships.ConvertAll(x => (ScriptableObject)x));
             PopulateShipSelectionList();
         }
 
@@ -92,12 +85,13 @@ namespace CosmicShore.App.UI.Menus
                 var shipSelectCard = Instantiate(ShipSelectCardPrefab, ShipSelectionContainer.transform);
                 shipSelectCard.name = shipSelectCard.name.Replace("(Clone)", "");
                 shipSelectCard.AssignShipClass(ship);
+                shipSelectCard.AssignIndex(i);
                 shipSelectCard.HangarMenu = this;
             }
 
             ShipSelectionScrollView.Initialize(true);
 
-            StartCoroutine(SelectShipCoroutine(ShipSelectionContainer.GetChild(0).gameObject.GetComponent<HangarShipSelectCard>()));
+            StartCoroutine(SelectShipCoroutine(ShipSelectionContainer.GetChild(0).gameObject.GetComponent<HangarShipSelectNavLink>()));
         }
 
         void PopulateCaptainSelectionList()
@@ -123,22 +117,6 @@ namespace CosmicShore.App.UI.Menus
             }
 
             StartCoroutine(SelectCaptainCoroutine(0));
-        }
-
-        void PopulateShipDetails()
-        {
-            Debug.Log($"Populating Ship Details List: {SelectedShip.Name}");
-            Debug.Log($"Populating Ship Details List: {SelectedShip.Description}");
-            Debug.Log($"Populating Ship Details List: {SelectedShip.Icon}");
-            Debug.Log($"Populating Ship Details List: {SelectedShip.PreviewImage}");
-
-            if (SelectedShipName != null) SelectedShipName.text = SelectedShip.Name;
-            if (SelectedShipDescription != null) SelectedShipDescription.text = SelectedShip.Description;
-            if (SelectedShipSummary != null) SelectedShipSummary.text = SelectedShip.Summary;
-
-            var preview = Instantiate(SelectedShip.PreviewImage);
-            //preview.transform.SetParent(SelectedAbilityPreviewWindow.transform, false);
-            //TODO P0: Refactor Ship SO to have a preview clip
         }
 
         void PopulateCaptainDetails()
@@ -180,8 +158,9 @@ namespace CosmicShore.App.UI.Menus
             }
         }
 
-        public void SelectShip(SO_Ship selectedShip)
+        public void SelectShip(int index)
         {
+            var selectedShip = Ships[index];
             Debug.Log($"SelectShip: {selectedShip.Name}");
             Debug.Log($"ShipSelectionContainer.childCount: {ShipSelectionContainer.childCount}");
             Debug.Log($"Ships.Count: {Ships.Count}");
@@ -189,26 +168,21 @@ namespace CosmicShore.App.UI.Menus
             // set all sprites to deselected - the selected card will activate it's own sprite
             for (var i = 0; i < ShipSelectionContainer.childCount; i++)
             {
-                //ShipSelectionContainer.GetChild(i).gameObject.GetComponent<Image>().sprite = Ships[i].Icon;
-                var selectCard = ShipSelectionContainer.GetChild(i).gameObject.GetComponent<HangarShipSelectCard>();
-                if (selectCard != null && selectCard.Ship == selectedShip)
-                    selectCard.SetActive();
-                else
-                    selectCard.SetInactive();
+                var selectCard = ShipSelectionContainer.GetChild(i).gameObject.GetComponent<HangarShipSelectNavLink>();
+                selectCard.SetActive(selectCard.Ship == selectedShip);
             }
 
             SelectedShip = selectedShip;
 
             // notify the mini game engine that this is the ship to play
-            Hangar.Instance.SetPlayerShip((int)SelectedShip.Class);
+            //Hangar.Instance.SetPlayerShip((int)SelectedShip.Class);
 
-            // 
-            PopulateShipDetails();
+            // Update the Overview view
+            OverviewView.Select(index);
 
             // populate the abilities/overview views
-            //PopulateAbilitySelectionList(); // TODO: P0 - We no longer need to dynamically populate these event listeners since there is always a fixed number of abilities and captains now
+            foreach (var ability in SelectedShip.Abilities) ability.Ship = selectedShip;
             AbilitiesView.AssignModels(SelectedShip.Abilities.ConvertAll(x => (ScriptableObject)x));
-            //StartCoroutine(SelectOverviewCoroutine());  // TODO: P0 - design has changed, remove this 
 
             // populate the captain view
             PopulateCaptainSelectionList();
@@ -299,7 +273,7 @@ namespace CosmicShore.App.UI.Menus
             SelectCaptain(index);
         }
 
-        IEnumerator SelectShipCoroutine(HangarShipSelectCard shipSelectCard)
+        IEnumerator SelectShipCoroutine(HangarShipSelectNavLink shipSelectCard)
         {
             yield return new WaitForEndOfFrame();
             shipSelectCard.Select();

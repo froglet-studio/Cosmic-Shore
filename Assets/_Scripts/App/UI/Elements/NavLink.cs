@@ -1,29 +1,23 @@
 using UnityEngine;
 using UnityEngine.UI;
 using System.Collections;
-using UnityEngine.Serialization;
 using System.Collections.Generic;
 using TMPro;
 
 namespace CosmicShore.App.UI
 {
+    /// <summary>
+    /// 
+    /// </summary>
     public class NavLink : MonoBehaviour
     {
-        [FormerlySerializedAs("panel")]
-        [FormerlySerializedAs("view")]
-        [FormerlySerializedAs("selectView")]
-        [Tooltip("Set this to the view to activate for Select/Toggle Views")]
-        [SerializeField] public GameObject toggleView;
-        [Tooltip("Set this to the view to update for Update Views")]
-        [SerializeField] public View updateView;
-        [SerializeField] Image activeImage;
-        [SerializeField] Image inactiveImage;
+        [SerializeField] public View view;
         [SerializeField] List<Image> activeImageElements;
         [SerializeField] List<Image> inactiveImageElements;
         [SerializeField] List<TMP_Text> activeTextElements;
         [SerializeField] List<TMP_Text> inactiveTextElements;
 
-        [SerializeField] float crossfadeDuration = 0.5f;
+        [SerializeField] float crossfadeDuration = 0.15f;
         [HideInInspector] public NavGroup navGroup;
 
         Coroutine currentCrossfade;
@@ -33,7 +27,7 @@ namespace CosmicShore.App.UI
         List<Color> activeTextStartColors = new();
         List<Color> inactiveTextStartColors = new();
 
-        void Start()
+        void Awake()
         {
             if (activeImageElements.Count != inactiveImageElements.Count)
                 Debug.LogError($"NavLink Configuration Error: activeImageElements.Count != inactiveImageElements.Count  --- for: {gameObject.name}");
@@ -41,6 +35,7 @@ namespace CosmicShore.App.UI
             if (activeTextElements.Count != inactiveTextElements.Count)
                 Debug.LogError($"NavLink Configuration Error: activeTextElements.Count != inactiveTextElements.Count  --- for: {gameObject.name}");
 
+            // Save off initial text an image colors
             for (int i = 0; i < activeImageElements.Count; i++)
             {
                 activeImageStartColors.Add(activeImageElements[i].color);
@@ -55,7 +50,6 @@ namespace CosmicShore.App.UI
 
         public void OnClick()
         {
-            //Debug.LogError($"NavLink - OnClick");
             navGroup.ActivateLink(this);
         }
 
@@ -67,90 +61,46 @@ namespace CosmicShore.App.UI
             currentCrossfade = StartCoroutine(CrossfadeImages(isActive));
         }
 
-        IEnumerator CrossfadeImages(bool isActive, Image activeImage, Image inactiveImage)
+        IEnumerator CrossfadeImages(bool isActive)
         {
-            float time = 0;
-
-
             for (int i = 0; i < activeImageElements.Count; i++)
             {
-
-
-                //activeStartColors[i].a = isActive ? 1 : 0;
-                //inactiveStartColors[i].a = isActive ? 0 : 1;
+                activeImageElements[i].enabled = true;
+                inactiveImageElements[i].enabled = true;
             }
 
-
-                Color activeStartColor = activeImage.color;
-            Color inactiveStartColor = inactiveImage.color;
-
-            activeStartColor.a = isActive ? 1 : 0;
-            inactiveStartColor.a = isActive ? 0 : 1;
-
-            activeImage.enabled = true;
-            inactiveImage.enabled = true;
-
-            while (time < crossfadeDuration)
+            float time = 0;
+            while (time <= crossfadeDuration)
             {
-                time += Time.deltaTime;
+                time += Time.unscaledDeltaTime;
                 float normalizedTime = time / crossfadeDuration;
 
-                activeImage.color = new Color(activeStartColor.r, activeStartColor.g, activeStartColor.b, Mathf.Lerp(activeStartColor.a, isActive ? 1 : 0, normalizedTime));
-                inactiveImage.color = new Color(inactiveStartColor.r, inactiveStartColor.g, inactiveStartColor.b, Mathf.Lerp(inactiveStartColor.a, isActive ? 0 : 1, normalizedTime));
+                for (int i = 0; i < activeImageElements.Count; i++)
+                {
+                    CrossfadeImage(isActive, normalizedTime, activeImageElements[i], inactiveImageElements[i], activeImageStartColors[i], inactiveImageStartColors[i]);
+                }
 
                 yield return null;
             }
 
-            if (!isActive)
+            for (int i = 0; i < activeImageElements.Count; i++)
             {
-                inactiveImage.enabled = true;
-                activeImage.enabled = false;
+                CrossfadeImage(isActive, 1, activeImageElements[i], inactiveImageElements[i], activeImageStartColors[i], inactiveImageStartColors[i]);
             }
-            else
+
+            for (int i = 0; i < activeImageElements.Count; i++)
             {
-                inactiveImage.enabled = false;
-                activeImage.enabled = true;
+                inactiveImageElements[i].enabled = !isActive;
+                activeImageElements[i].enabled = isActive;
             }
 
             currentCrossfade = null;
         }
 
-        IEnumerator CrossfadeImages(bool isActive)
+        void CrossfadeImage(bool isActive, float normalizedTime, Image activeImage, Image inactiveImage, Color initialActiveColor, Color initialInactiveColor)
         {
-            float time = 0;
-
-            Color activeStartColor = activeImage.color;
-            Color inactiveStartColor = inactiveImage.color;
-
-            activeStartColor.a = isActive ? 1 : 0;
-            inactiveStartColor.a = isActive ? 0 : 1;
-
-            activeImage.enabled = true;
-            inactiveImage.enabled = true;
-
-            while (time < crossfadeDuration)
-            {
-                time += Time.deltaTime;
-                float normalizedTime = time / crossfadeDuration;
-
-                activeImage.color = new Color(activeStartColor.r, activeStartColor.g, activeStartColor.b, Mathf.Lerp(activeStartColor.a, isActive ? 1 : 0, normalizedTime));
-                inactiveImage.color = new Color(inactiveStartColor.r, inactiveStartColor.g, inactiveStartColor.b, Mathf.Lerp(inactiveStartColor.a, isActive ? 0 : 1, normalizedTime));
-
-                yield return null;
-            }
-
-            if (!isActive)
-            {
-                inactiveImage.enabled = true;
-                activeImage.enabled = false;
-            }
-            else
-            {
-                inactiveImage.enabled = false;
-                activeImage.enabled = true;
-            }
-
-            currentCrossfade = null;
+            activeImage.color = new Color(initialActiveColor.r, initialActiveColor.g, initialActiveColor.b, isActive ? normalizedTime : 1 - normalizedTime);
+            inactiveImage.color = new Color(initialInactiveColor.r, initialInactiveColor.g, initialInactiveColor.b, isActive ? 1-normalizedTime : normalizedTime);
         }
     }
 }

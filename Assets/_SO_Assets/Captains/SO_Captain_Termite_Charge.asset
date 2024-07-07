@@ -15,7 +15,7 @@ MonoBehaviour:
   Name: Strider
   Description: Longest debuff duration from crystal decoy.
   Flavor: '[Flavor text placeholder]'
-  Image: {fileID: 21300000, guid: a89a335fa1c02f745ba93948c9b7ee32, type: 3}
+  Image: {fileID: 21300000, guid: ebe8f8cf53fdb27449173dab53ce8109, type: 3}
   Icon: {fileID: 21300000, guid: 33db5908f1280c24f98ec60ac59b6d86, type: 3}
   SelectedIcon: {fileID: 21300000, guid: 6c4f40eef57f4d04bbd01083161212ff, type: 3}
   Ship: {fileID: 11400000, guid: 4fa06071d8c862e48a8f8f07ac78379d, type: 2}

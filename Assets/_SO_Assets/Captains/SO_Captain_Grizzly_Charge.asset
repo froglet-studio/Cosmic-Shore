@@ -15,7 +15,7 @@ MonoBehaviour:
   Name: Grizzly Charge
   Description: '[Description text placeholder]'
   Flavor: '[Flavor text placeholder]'
-  Image: {fileID: 21300000, guid: eab8ab57cb3ceef43b60ce237123c5ac, type: 3}
+  Image: {fileID: 21300000, guid: ebe8f8cf53fdb27449173dab53ce8109, type: 3}
   Icon: {fileID: 21300000, guid: 33db5908f1280c24f98ec60ac59b6d86, type: 3}
   SelectedIcon: {fileID: 21300000, guid: 6c4f40eef57f4d04bbd01083161212ff, type: 3}
   Ship: {fileID: 11400000, guid: 312ea06c4539cdc46b027615a590c94b, type: 2}

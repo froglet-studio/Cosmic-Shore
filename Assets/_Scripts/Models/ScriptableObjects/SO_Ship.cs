@@ -26,12 +26,33 @@ public class SO_Ship : ScriptableObject
     [FormerlySerializedAs("TrainingGames")]
     [SerializeField] public List<SO_ArcadeGame> Games;
     [SerializeField] public List<SO_TrainingGame> TrainingGames;
+    [SerializeField] public GameplayParameter gameplayParameter1 = new GameplayParameter("Casual", "Challenging", .5f);
+    [SerializeField] public GameplayParameter gameplayParameter2 = new GameplayParameter("Relaxing", "Thrilling", .5f);
+    [SerializeField] public GameplayParameter gameplayParameter3 = new GameplayParameter("Solo", "Social", .5f);
 
     /// <summary>
     /// A flag indicating whether the Ship Class is locked. Ship Class is locked if it is not owned by the player (in the player's inventory).
     /// </summary>
     public bool IsLocked
     {
-        get => CatalogManager.Inventory.ContainsShipClass(Name);
+        get => !CatalogManager.Inventory.ContainsShipClass(Name);
+    }
+
+
+}
+
+[System.Serializable]
+public struct GameplayParameter
+{
+    public string LeftHandLabel;
+    public string RightHandLabel;
+    [Range(0,1)]
+    public float Value;
+
+    public GameplayParameter(string leftHandLabel, string rightHandLabel, float value)
+    {
+        LeftHandLabel = leftHandLabel;
+        RightHandLabel = rightHandLabel;
+        Value = value;
     }
 }

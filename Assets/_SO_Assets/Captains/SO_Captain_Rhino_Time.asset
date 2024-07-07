@@ -15,7 +15,7 @@ MonoBehaviour:
   Name: Tomahawk
   Description: Fastest in Class.
   Flavor: '[Flavor text placeholder]'
-  Image: {fileID: 21300000, guid: d08470f594589f848951a9bf257b2889, type: 3}
+  Image: {fileID: 21300000, guid: dc68470b1f1d08c469282de9eb5e4398, type: 3}
   Icon: {fileID: 21300000, guid: 40bdba688420ae849855010cbcb5ca87, type: 3}
   SelectedIcon: {fileID: 21300000, guid: 91356a0f113024c40a1ccaa4fcdddc93, type: 3}
   Ship: {fileID: 11400000, guid: ec97e344adb08f847a8f7649ab79088e, type: 2}

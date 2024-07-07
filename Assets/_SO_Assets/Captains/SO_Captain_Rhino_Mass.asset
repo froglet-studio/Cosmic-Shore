@@ -15,7 +15,7 @@ MonoBehaviour:
   Name: Dozer
   Description: Biggest blocks in Class.
   Flavor: '[Flavor text placeholder]'
-  Image: {fileID: 21300000, guid: d08470f594589f848951a9bf257b2889, type: 3}
+  Image: {fileID: 21300000, guid: 516d19e9db897c14aa1698abb25cbe32, type: 3}
   Icon: {fileID: 21300000, guid: 4bb626eb5275b9c41a2c6e117aee2f42, type: 3}
   SelectedIcon: {fileID: 21300000, guid: a631b4ddb4bf68b4bb89f43b7ab8380d, type: 3}
   Ship: {fileID: 11400000, guid: ec97e344adb08f847a8f7649ab79088e, type: 2}

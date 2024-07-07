@@ -15,7 +15,7 @@ MonoBehaviour:
   Name: Astrofoil
   Description: Fastest soaring speed in Class.
   Flavor: '[Flavor text placeholder]'
-  Image: {fileID: 21300000, guid: a89a335fa1c02f745ba93948c9b7ee32, type: 3}
+  Image: {fileID: 21300000, guid: dc68470b1f1d08c469282de9eb5e4398, type: 3}
   Icon: {fileID: 21300000, guid: 40bdba688420ae849855010cbcb5ca87, type: 3}
   SelectedIcon: {fileID: 21300000, guid: 91356a0f113024c40a1ccaa4fcdddc93, type: 3}
   Ship: {fileID: 11400000, guid: 4fa06071d8c862e48a8f8f07ac78379d, type: 2}
