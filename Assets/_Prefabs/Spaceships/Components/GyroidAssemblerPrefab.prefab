@@ -48,8 +48,8 @@ MonoBehaviour:
   TopRightIsBonded: 0
   BottomLeftIsBonded: 0
   BottomRightIsBonded: 0
-  FullyBonded: 0
   BlockType: 1
+  depth: 50
   isSeed: 0
   colliderTheshold: 1
   radius: 40

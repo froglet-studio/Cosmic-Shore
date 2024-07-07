@@ -69,6 +69,7 @@ namespace CosmicShore.Core
 
         protected virtual void Start()
         {
+            Debug.Log($"TrailBlock Starting local Scale: {transform.localScale} and lossy scale {transform.lossyScale}");
             if (fossilBlockContainer == null)
                 fossilBlockContainer = new GameObject { name = "FossilBlockContainer" };
 
@@ -132,6 +133,10 @@ namespace CosmicShore.Core
         bool isSizeChangeActive = false;
         IEnumerator SizeChangeCoroutine()
         {
+            TargetScale.x = Mathf.Clamp(TargetScale.x, minScale.x, MaxScale.x);
+            TargetScale.y = Mathf.Clamp(TargetScale.y, minScale.y, MaxScale.y);
+            TargetScale.z = Mathf.Clamp(TargetScale.z, minScale.z, MaxScale.z);
+
             isSizeChangeActive = true;
             float sqrDistance = (TargetScale - transform.localScale).sqrMagnitude;
 
@@ -147,6 +152,7 @@ namespace CosmicShore.Core
 
         public void ChangeSize()
         {
+            Debug.Log($"TrailBlock Changing Size from lossy scale {transform.lossyScale} and local scale {transform.lossyScale} to {TargetScale}");
             if (TargetScale.x > MaxScale.x || TargetScale.y > MaxScale.y || TargetScale.z > MaxScale.z)
             {
                 ActivateShield();
@@ -156,11 +162,6 @@ namespace CosmicShore.Core
             {
                 IsSmallest = true;
             }
-
-
-            TargetScale.x = Mathf.Clamp(TargetScale.x, minScale.x, MaxScale.x);
-            TargetScale.y = Mathf.Clamp(TargetScale.y, minScale.y, MaxScale.y);
-            TargetScale.z = Mathf.Clamp(TargetScale.z, minScale.z, MaxScale.z);
 
             var oldVolume = TrailBlockProperties.volume;
             UpdateVolume();

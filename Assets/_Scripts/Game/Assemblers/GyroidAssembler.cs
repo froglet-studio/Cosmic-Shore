@@ -59,7 +59,7 @@ namespace CosmicShore
         public  override Spindle Spindle { get; set; }
 
         public GyroidBlockType BlockType = GyroidBlockType.AB;
-        int depth = -1;
+        public int depth = -1;
         
         
         public override int Depth

@@ -33,7 +33,7 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: ActiveMassCrystalMaterial
+  m_Name: ActiveMassCrystalMaterial 2
   m_Shader: {fileID: -6465566751694194690, guid: 71fa822036d425446afa6c9c07046aef,
     type: 3}
   m_ValidKeywords:
@@ -43,7 +43,7 @@ Material:
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 1
   m_DoubleSidedGI: 0
-  m_CustomRenderQueue: 2999
+  m_CustomRenderQueue: 3001
   stringTagMap:
     RenderType: Transparent
   disabledShaderPasses:
@@ -137,15 +137,15 @@ Material:
     - _Period: 3.14
     - _Phase: 0
     - _QueueControl: 0
-    - _QueueOffset: -1
+    - _QueueOffset: 1
     - _ReceiveShadows: 1
     - _Smoothness: 0.5
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1
-    - _Speed: 0
+    - _Speed: 0.1
     - _SrcBlend: 5
-    - _Start: 0
-    - _Stop: 0.33
+    - _Start: 0.66
+    - _Stop: 1
     - _Surface: 1
     - _WorkflowMode: 1
     - _ZTest: 4
