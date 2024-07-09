@@ -8,6 +8,32 @@ public class NodeControlManager : Singleton<NodeControlManager>
 {
     [SerializeField] List<Node> Nodes;
 
+    public void AddBlock(Teams team, TrailBlockProperties blockProperties)
+    {
+        foreach (var node in Nodes)
+        {
+            if (node.ContainsPosition(blockProperties.position))
+            {
+                node.ChangeVolume(team, blockProperties.volume);
+                //node.AddBlock(blockProperties.trailBlock);
+                break;
+            }
+        }
+    }
+
+    public void RemoveBlock(Teams team, TrailBlockProperties blockProperties)
+    {
+        foreach (var node in Nodes)
+        {
+            if (node.ContainsPosition(blockProperties.position))
+            {
+                node.ChangeVolume(team, -blockProperties.volume);
+                node.RemoveBlock(blockProperties.trailBlock);
+                break;
+            }
+        }
+    }
+
     public Node GetNodeByPosition(Vector3 position)
     {
         foreach (var node in Nodes)
@@ -70,30 +96,6 @@ public class NodeControlManager : Singleton<NodeControlManager>
             if (node.ContainsPosition(item.transform.position))
             {
                 node.UpdateItem(item);
-                break;
-            }
-        }
-    }
-
-    public void AddBlock(Teams team, TrailBlockProperties blockProperties)
-    {
-        foreach (var node in Nodes)
-        {
-            if (node.ContainsPosition(blockProperties.position))
-            {
-                node.ChangeVolume(team, blockProperties.volume);
-                break;
-            }
-        }
-    }
-
-    public void RemoveBlock(Teams team, TrailBlockProperties blockProperties)
-    {
-        foreach (var node in Nodes)
-        {
-            if (node.ContainsPosition(blockProperties.position))
-            {
-                node.ChangeVolume(team, -blockProperties.volume);
                 break;
             }
         }

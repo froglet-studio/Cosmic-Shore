@@ -89,7 +89,15 @@ namespace CosmicShore.Core
             InitializeTrailBlockProperties();
 
             StartCoroutine(CreateBlockCoroutine());
+
             if (TrailBlockProperties.Shielded) ActivateShield();
+
+            Node targetNode = NodeControlManager.Instance.GetNearestNode(TrailBlockProperties.position);
+            Teams[] teams = { Teams.Green, Teams.Red, Teams.Gold };
+            foreach (Teams t in teams)
+            {
+                if (t != team) targetNode.blockOctrees[t].AddBlock(this);  // Add this block to other teams' target tracking.
+            }
         }
 
         private void InitializeTrailBlockProperties()
