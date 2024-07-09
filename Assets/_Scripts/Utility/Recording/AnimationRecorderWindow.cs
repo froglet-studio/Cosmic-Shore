@@ -31,7 +31,7 @@ namespace CosmicShore.Utility
         /// <summary>
         /// The name of the serialized property for the objects to track
         /// during the recording, as stored in the data holder object
-        // for use by Unity's property finder.
+        /// for use by Unity's property finder.
         /// </summary>
         private readonly string ObjectsToTrack = "objectsToTrack";
 
@@ -77,11 +77,11 @@ namespace CosmicShore.Utility
                 {
                     return holder;
                 }
-                GameObject gameObject = GameObject.Find(ManagerName);
+                GameObject gameObject = GameObject.Find(AnimationRecorderName);
                 if (gameObject == null)
                 {
-                    Debug.LogError($"There needs to be an object in the scene called \"{ManagerName}\".");
-                    return null;
+                    Debug.LogWarning($"There needs to be an object in the scene called \"{AnimationRecorderName}\". One will be added now.");
+                    gameObject = new GameObject(AnimationRecorderName);
                 }
                 DataHolder sceneData = gameObject.GetComponent<DataHolder>();
                 if (sceneData != null)
@@ -89,7 +89,8 @@ namespace CosmicShore.Utility
                     return sceneData;
                 }
                 sceneData = gameObject.AddComponent<DataHolder>();
-                return sceneData;
+                holder = sceneData;
+                return holder;
             }
         }
 
@@ -98,7 +99,7 @@ namespace CosmicShore.Utility
         /// This is used to find the object in question. That name should only be held
         /// by the object that contains the data holder.
         /// </summary>
-        private static readonly string ManagerName = "Animation Manager";
+        private static readonly string AnimationRecorderName = "Animation Recorder";
 
         /// <summary>
         /// A refernce to the data holder that unity can use to handle serialized properites.
@@ -111,7 +112,7 @@ namespace CosmicShore.Utility
         private static bool isRecording = false;
 
         /// <summary>
-        /// When recording, time until the next snapshot. When this timer reacher 0, the utility
+        /// When recording, time until the next snapshot. When this timer reaches 0, the utility
         /// takes a new snapshot.
         /// </summary>
         private static float timer = 0;
@@ -127,8 +128,13 @@ namespace CosmicShore.Utility
         private static List<GameObjectRecorder> Recorders = new();
 
         /// <summary>
+        /// The default vertical space between elements in the GUI.
+        /// </summary>
+        private static readonly int LAYOUT_VERTICAL_GAP = 10;
+
+        /// <summary>
         /// Creates the menu item "Window/Animation Recorder" and sets it to open the Animation Recorder
-        /// window when uctivated.
+        /// window when activated.
         /// </summary>
         [MenuItem("Window/Animation Recorder")]
         public static void ShowWindow()
@@ -153,7 +159,7 @@ namespace CosmicShore.Utility
         /// <summary>
         /// Called every frame for the utility's window. Displays  the interface.
         /// </summary>
-        void OnGUI()
+        public void OnGUI()
         {
             EditorGUILayout.PropertyField(serializedObject.FindProperty(Director), new GUIContent("Animation Manager"));
             GUI.enabled = (serializedObject.FindProperty(Director).objectReferenceValue != null) && !isRecording;
@@ -166,7 +172,7 @@ namespace CosmicShore.Utility
             serializedObject.ApplyModifiedProperties();
             GUILayout.EndVertical();
 
-            GUILayout.Space(10);
+            GUILayout.Space(LAYOUT_VERTICAL_GAP);
             if (!ReadyToRecord())
             {
                 GUILayout.Label("Not ready: no setting can be 0 or null");
@@ -185,8 +191,7 @@ namespace CosmicShore.Utility
                 timer = recordingDelay;
                 animationStart = Time.time;
             }
-            GUILayout.Space(10);
-            GUILayout.Space(10);
+            GUILayout.Space(LAYOUT_VERTICAL_GAP * 2);
             GUI.enabled = isRecording;
             if (GUILayout.Button("Stop Recording", EditorStyles.miniButton))
             {
@@ -198,12 +203,12 @@ namespace CosmicShore.Utility
         }
 
         /// <summary>
-        /// This update method words as a replacement for Coroutines, which are not available
+        /// This update method works as a replacement for Coroutines, which are not available
         /// in the current context.
         /// </summary>
         public void Update()
         {
-            float recordingDelay = 1; // serializedObject.FindProperty(RecordingDelay).floatValue;
+            float recordingDelay = 1;
             if (!isRecording)
             {
                 return;
@@ -220,7 +225,7 @@ namespace CosmicShore.Utility
         /// <summary>
         /// Prepares the utility for a new recording.
         /// </summary>
-        void SetupRecording()
+        private void SetupRecording()
         {
             Recorders.Clear();
             IEnumerator objectsToTrackEnumerator = serializedObject.FindProperty(ObjectsToTrack).GetEnumerator();
@@ -238,7 +243,7 @@ namespace CosmicShore.Utility
         /// <summary>
         /// Takes a snapshot for each currently tracked game objects.
         /// </summary>
-        void TakeSnapshot()
+        private void TakeSnapshot()
         {
             float recordingDelay = serializedObject.FindProperty(RecordingDelay).floatValue;
             IEnumerator<GameObjectRecorder> recordersEnumerator = Recorders.GetEnumerator();
@@ -253,7 +258,7 @@ namespace CosmicShore.Utility
         /// Called when the user stops the animation. Saves all the data necessary to add the new entries
         /// to the timeline.
         /// </summary>
-        void EndRecording()
+        private void EndRecording()
         {
             string currentAssetsPath = serializedObject.FindProperty(assetsPath).stringValue;
             IEnumerator<GameObjectRecorder> recordersEnumerator = Recorders.GetEnumerator();
@@ -268,10 +273,10 @@ namespace CosmicShore.Utility
         }
 
         /// <summary>
-        /// Ren when the editor returns to edit mode. Adds new items to the timeline based
+        /// Run when the editor returns to edit mode. Adds new items to the timeline based
         /// on the saved data.
         /// </summary>
-        void BuildTimelineData()
+        private void BuildTimelineData()
         {
             PlayableDirector director = serializedObject.FindProperty(Director).objectReferenceValue as PlayableDirector;
             TimelineAsset currentTimelineAsset = serializedObject.FindProperty(timelineAsset).objectReferenceValue as TimelineAsset;
