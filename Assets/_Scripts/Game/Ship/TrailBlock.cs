@@ -106,8 +106,7 @@ namespace CosmicShore.Core
             TrailBlockProperties.trailBlock = this;
             TrailBlockProperties.Index = Index;
             TrailBlockProperties.Trail = Trail;
-            TrailBlockProperties.Shielded = false;
-            TrailBlockProperties.IsSuperShielded = false;
+
             TrailBlockProperties.TimeCreated = Time.time;
         }
 
