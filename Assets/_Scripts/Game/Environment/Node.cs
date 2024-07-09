@@ -234,7 +234,7 @@ public class Node : MonoBehaviour
                 
                 var newPopulation = Instantiate(population, transform.position, Quaternion.identity);
                 newPopulation.Team = ControllingTeam;
-                newPopulation.Target = GetCrystal().gameObject;
+                newPopulation.Goal = GetCrystal().gameObject.transform.position;
                 yield return new WaitForSeconds(baseFaunaSpawnTime);
             }
             else
