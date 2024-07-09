@@ -75,7 +75,7 @@ public class Node : MonoBehaviour
         Teams[] teams = { Teams.Green, Teams.Red, Teams.Gold };
         foreach (Teams t in teams)
         {
-            if (t != block.team) blockOctrees[t].AddBlock(block);
+            if (t != block.Team) blockOctrees[t].AddBlock(block);
         }
     }
 
@@ -84,7 +84,7 @@ public class Node : MonoBehaviour
         Teams[] teams = { Teams.Green, Teams.Red, Teams.Gold };
         foreach (Teams t in teams)
         {
-            if (t != block.team) blockOctrees[t].RemoveBlock(block);
+            if (t != block.Team) blockOctrees[t].RemoveBlock(block);
         }
     }
 
