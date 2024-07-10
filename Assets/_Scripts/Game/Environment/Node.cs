@@ -4,13 +4,17 @@ using CosmicShore.Environment.FlowField;
 using CosmicShore.Game.AI;
 using CosmicShore;
 using UnityEngine;
+using CosmicShore.Core;
 
 public class Node : MonoBehaviour
 {
     [SerializeField] public string ID;
     [SerializeField] float volumeControlThreshold = 100f;
+
     [SerializeField] SnowChanger SnowChanger;
     [SerializeField] Crystal Crystal;
+    [SerializeField] GameObject membrane;
+    [SerializeField] GameObject nucleus;
 
     [SerializeField] Flora flora1;
     [SerializeField] Flora flora2;
@@ -27,6 +31,9 @@ public class Node : MonoBehaviour
     [SerializeField] float baseFaunaSpawnTime = 60f;
 
     [SerializeField] bool hasRandomFloraAndFauna;
+
+    [SerializeField] private float minOctreeSize = 20f;
+    public Dictionary<Teams, BlockOctree> blockOctrees = new Dictionary<Teams, BlockOctree>();
 
     Dictionary<Teams, float> teamVolumes = new Dictionary<Teams, float>();
 
@@ -53,6 +60,40 @@ public class Node : MonoBehaviour
         if (fauna2) StartCoroutine(SpawnFauna(fauna2));
         if (flora1) StartCoroutine(SpawnFlora(flora1));
         if (flora2) StartCoroutine(SpawnFlora(flora2));
+    }
+
+    void Awake()
+    {
+        Vector3 size = nucleus.transform.localScale;
+        float maxSize = Mathf.Max(size.x, size.y, size.z) * 10;  // Unclear why such a large multiplier is needed.
+        Teams[] teams = { Teams.Green, Teams.Red, Teams.Gold };  // TODO: Store this as a constant somewhere (where?).
+        foreach (Teams t in teams)
+        {
+            blockOctrees.Add(t, new BlockOctree(transform.position, maxSize, minOctreeSize, t));
+        }
+    }
+
+    public void AddBlock(TrailBlock block)
+    {
+        Teams[] teams = { Teams.Green, Teams.Red, Teams.Gold };
+        foreach (Teams t in teams)
+        {
+            if (t != block.Team) blockOctrees[t].AddBlock(block);
+        }
+    }
+
+    public void RemoveBlock(TrailBlock block)
+    {
+        Teams[] teams = { Teams.Green, Teams.Red, Teams.Gold };
+        foreach (Teams t in teams)
+        {
+            if (t != block.Team) blockOctrees[t].RemoveBlock(block);
+        }
+    }
+
+    public List<Vector3> GetExplosionTargets(int count, Teams team)
+    {
+        return blockOctrees[team].FindDensestRegions(count);
     }
 
     public void AddItem(NodeItem item)
@@ -117,7 +158,7 @@ public class Node : MonoBehaviour
 
     public bool ContainsPosition(Vector3 position)
     {
-        return Vector3.Distance(position, transform.position) < transform.localScale.x; // only works if nodes remain spherical
+        return Vector3.Distance(position, transform.position) < membrane.transform.localScale.x; // only works if nodes remain spherical
     }
 
     public void ChangeVolume(Teams team, float volume)
@@ -196,7 +237,7 @@ public class Node : MonoBehaviour
                 
                 var newPopulation = Instantiate(population, transform.position, Quaternion.identity);
                 newPopulation.Team = ControllingTeam;
-                newPopulation.Target = GetCrystal().gameObject;
+                newPopulation.Goal = GetCrystal().gameObject.transform.position;
                 yield return new WaitForSeconds(baseFaunaSpawnTime);
             }
             else

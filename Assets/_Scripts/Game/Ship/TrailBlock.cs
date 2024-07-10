@@ -69,7 +69,7 @@ namespace CosmicShore.Core
 
         protected virtual void Start()
         {
-            Debug.Log($"TrailBlock Starting local Scale: {transform.localScale} and lossy scale {transform.lossyScale}");
+            //Debug.Log($"TrailBlock Starting local Scale: {transform.localScale} and lossy scale {transform.lossyScale}");
             if (fossilBlockContainer == null)
                 fossilBlockContainer = new GameObject { name = "FossilBlockContainer" };
 
@@ -89,7 +89,15 @@ namespace CosmicShore.Core
             InitializeTrailBlockProperties();
 
             StartCoroutine(CreateBlockCoroutine());
+
             if (TrailBlockProperties.Shielded) ActivateShield();
+
+            Node targetNode = NodeControlManager.Instance.GetNearestNode(TrailBlockProperties.position);
+            Teams[] teams = { Teams.Green, Teams.Red, Teams.Gold };
+            foreach (Teams t in teams)
+            {
+                if (t != team) targetNode.blockOctrees[t].AddBlock(this);  // Add this block to other teams' target tracking.
+            }
         }
 
         private void InitializeTrailBlockProperties()
@@ -98,8 +106,7 @@ namespace CosmicShore.Core
             TrailBlockProperties.trailBlock = this;
             TrailBlockProperties.Index = Index;
             TrailBlockProperties.Trail = Trail;
-            TrailBlockProperties.Shielded = false;
-            TrailBlockProperties.IsSuperShielded = false;
+
             TrailBlockProperties.TimeCreated = Time.time;
         }
 
@@ -152,7 +159,7 @@ namespace CosmicShore.Core
 
         public void ChangeSize()
         {
-            Debug.Log($"TrailBlock Changing Size from lossy scale {transform.lossyScale} and local scale {transform.lossyScale} to {TargetScale}");
+            //Debug.Log($"TrailBlock Changing Size from lossy scale {transform.lossyScale} and local scale {transform.lossyScale} to {TargetScale}");
             if (TargetScale.x > MaxScale.x || TargetScale.y > MaxScale.y || TargetScale.z > MaxScale.z)
             {
                 ActivateShield();

@@ -30,8 +30,9 @@ public class Boid : Fauna
     [SerializeField] float maxSpeed = 5.0f;
 
     [Header("Goal Settings")]
-    public Transform Goal;
     public Transform DefaultGoal;
+    public Vector3 target = Vector3.zero;
+
     public float normalizedIndex;
 
     [Header("Mound Settings")]
@@ -47,7 +48,6 @@ public class Boid : Fauna
 
     [SerializeField] List<BoidCollisionEffects> collisionEffects;
 
-    public BoidManager boidManager;
     private BoxCollider BlockCollider;
     //private Crystal crystal;
     //[SerializeField] Material activeCrystalMaterial;
@@ -63,7 +63,6 @@ public class Boid : Fauna
     {
         base.Start();
         crystal = GetComponentInChildren<Crystal>();
-        if (!boidManager) boidManager = GetComponentInParent<BoidManager>();
         AddSpindle(spindle);
         BlockCollider = healthBlock.GetComponent<BoxCollider>();
         currentVelocity = transform.forward * Random.Range(minSpeed, maxSpeed);
@@ -78,6 +77,8 @@ public class Boid : Fauna
 
         while (true)
         {
+            if (!attached && Population.Goal != null) target = Population.Goal;
+            // TODO add visual effect here leaving behind particles. and zoom ahead but decay in speed
             CalculateBehavior();
             yield return new WaitForSeconds(behaviorUpdateRate);
         }
@@ -87,15 +88,16 @@ public class Boid : Fauna
     {
         if (attached)
         {
-            desiredDirection = (Goal.position - transform.position).normalized;
+            desiredDirection = (target - transform.position).normalized;
             currentVelocity = desiredDirection * Mathf.Clamp(currentVelocity.magnitude, minSpeed, maxSpeed);
             desiredRotation = currentVelocity != Vector3.zero ? Quaternion.LookRotation(currentVelocity.normalized) : transform.rotation;
             return;
         }
+
         Vector3 separation = Vector3.zero;
         Vector3 alignment = Vector3.zero;
         Vector3 cohesion = Vector3.zero;
-        Vector3 goalDirection = Goal ? (Goal.position - transform.position) : Vector3.zero;
+        Vector3 goalDirection = target - transform.position;
         Vector3 blockAttraction = Vector3.zero;
 
         float averageSpeed = 0.0f;
@@ -133,7 +135,7 @@ public class Boid : Fauna
             }
             else if (otherTrailBlock)
             {
-                float blockWeight = boidManager.Weights[Mathf.Abs((int)otherTrailBlock.Team-1)]; // TODO: this is a hack to get the team weight, need to make this more robust
+                float blockWeight = Population.Weights[Mathf.Abs((int)otherTrailBlock.Team-1)]; // TODO: this is a hack to get the team weight, need to make this more robust
                 blockAttraction += -diff.normalized * blockWeight / distance;
 
                 if (distance < trailBlockInteractionRadius && otherTrailBlock.Team != healthBlock.Team)
@@ -148,12 +150,12 @@ public class Boid : Fauna
                                     if (!otherTrailBlock.IsSmallest)
                                     {
                                         attached = true;
-                                        Goal = otherTrailBlock.transform;
+                                        target = otherTrailBlock.transform.position;
                                         otherTrailBlock.Grow(-1);
                                         healthBlock.Grow(1);
                                         if (healthBlock.IsLargest) StartCoroutine(AddToMoundCoroutine());
                                     }
-                                    else Goal = DefaultGoal;
+                                    else target = DefaultGoal.position;
                                 }
                                 break;
                             case BoidCollisionEffects.Explode:
@@ -190,7 +192,7 @@ public class Boid : Fauna
         attached = false;
         isTraveling = true;
 
-        Goal = Mound;
+        target = Mound.position;
         float scanRadius = 30f;
         //while ((transform.position - Mound.position).sqrMagnitude > scanRadius)
         //{
@@ -206,7 +208,6 @@ public class Boid : Fauna
 
             //colliders = Physics.OverlapSphere(transform.position, 1f, LayerMask.NameToLayer("Mound"));
             GyroidAssembler nakedEdge = null;
-            Debug.Log($"colliders: {colliders.Length}");
             foreach (var collider in colliders)
             {
                 nakedEdge = collider.GetComponent<GyroidAssembler>();
@@ -237,7 +238,7 @@ public class Boid : Fauna
 
     (TrailBlock, GyroidAssembler) NewBlock()
     {
-        var newBlock = Instantiate(healthBlock, transform.position, transform.rotation, boidManager.transform);
+        var newBlock = Instantiate(healthBlock, transform.position, transform.rotation, Population.transform);
         newBlock.Team = healthBlock.Team;
         newBlock.gameObject.layer = LayerMask.NameToLayer("Mound");
         //var ID = GetInstanceID().ToString();                    
@@ -250,7 +251,7 @@ public class Boid : Fauna
     void Poop()
     {
         attached = false;
-        var newblock = Instantiate(healthBlock, transform.position, transform.rotation, boidManager.transform);
+        var newblock = Instantiate(healthBlock, transform.position, transform.rotation, Population.transform);
         newblock.Team = healthBlock.Team;
         healthBlock.Grow(-3);
     }

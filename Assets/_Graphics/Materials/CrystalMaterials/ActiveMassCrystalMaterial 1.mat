@@ -134,7 +134,7 @@ Material:
     - _OcclusionStrength: 1
     - _Parallax: 0.005
     - _Peak_Scalar: 0.84
-    - _Period: 3.14
+    - _Period: 3
     - _Phase: 0.33
     - _QueueControl: 0
     - _QueueOffset: 0
@@ -151,6 +151,7 @@ Material:
     - _ZTest: 4
     - _ZWrite: 0
     - _ZWriteControl: 0
+    - _opacity: 1
     - _power: 0
     m_Colors:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}

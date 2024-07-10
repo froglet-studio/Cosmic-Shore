@@ -15,10 +15,9 @@ namespace CosmicShore
         List<GameObject> queenDrones = new List<GameObject>();
         List<GameObject> moundDrones = new List<GameObject>();
 
-        void Start()
+        protected override void  Start()
         {
             inputController = ship.InputController;
-            globalGoal = FindObjectOfType<Crystal>().transform;
             container = new GameObject("BoidContainer");
             container.transform.SetParent(ship.Player.transform);
         }
@@ -29,10 +28,9 @@ namespace CosmicShore
             drone.transform.SetParent(container.transform);
             drone.transform.position = ship.transform.position;
             var boid = drone.GetComponent<Boid>();
-            boid.Goal = goal;
             boid.DefaultGoal = goal;
             boid.Team = ship.Team;
-            boid.boidManager = this;
+            boid.Population = this;
             if (isQueenDrone)
             {
                 queenDrones.Add(drone);
@@ -50,7 +48,6 @@ namespace CosmicShore
             if (toQueen && moundDrones.Count > 0)
             {
                 var drone = moundDrones[0];
-                drone.GetComponent<Boid>().Goal = ship.transform;
                 drone.GetComponent<Boid>().DefaultGoal = ship.transform;
                 moundDrones.Remove(drone);
                 queenDrones.Add(drone);
@@ -60,8 +57,7 @@ namespace CosmicShore
             else if (!toQueen && queenDrones.Count > 0)
             {
                 var drone = queenDrones[0];
-                drone.GetComponent<Boid>().Goal = globalGoal;
-                drone.GetComponent<Boid>().DefaultGoal = globalGoal;
+                //drone.GetComponent<Boid>().DefaultGoal = Goal;
                 queenDrones.Remove(drone);
                 moundDrones.Add(drone);
                 ship.Player.GameCanvas.MiniGameHUD.SetRightNumberDisplay(queenDrones.Count);
