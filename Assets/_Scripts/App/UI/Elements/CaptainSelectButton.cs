@@ -1,6 +1,5 @@
 using TMPro;
 using UnityEngine;
-using UnityEngine.Serialization;
 using UnityEngine.UI;
 
 namespace CosmicShore.App.UI.Elements
@@ -20,7 +19,6 @@ namespace CosmicShore.App.UI.Elements
         [SerializeField] Image BorderImage;
         [SerializeField] Image BackgroundImage;
         [SerializeField] Image CaptainImage;
-        //[SerializeField] int Index;
 
         SO_Captain captain;
         public SO_Captain Captain
@@ -33,13 +31,10 @@ namespace CosmicShore.App.UI.Elements
             }
         }
 
-        //public SquadMenu SquadMenu;
-
         void Start()
         {
             UpdateButtonView();
         }
-
 
         void UpdateButtonView()
         {

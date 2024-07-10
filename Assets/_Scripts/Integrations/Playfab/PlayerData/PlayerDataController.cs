@@ -9,7 +9,7 @@ using CosmicShore.Utility.Singleton;
 using UnityEngine;
 using Newtonsoft.Json;
 
-namespace CosmicShore.Integrations.PlayFab.PlayStream
+namespace CosmicShore.Integrations.PlayFab.PlayerData
 {
     public struct ShardData
     {
@@ -32,7 +32,14 @@ namespace CosmicShore.Integrations.PlayFab.PlayStream
         private const string CaptainXPKey = "CaptainXP";
         private const string ShipCloutKey = "ShipClout";
         private const string MasterCloutKey = "MasterClout";
-        
+        private const string DisplayNamePlayerPrefKey = "DisplayName";
+        private const string ProfileIconIdPlayerPrefKey = "ProfileIconId";
+        public PlayerProfile PlayerProfile { get; private set; } = new("Player", "1");
+        public static event Action OnProfileLoaded;
+        public static event Action OnPlayerDisplayNameUpdated;
+        public static event Action OnPlayerAvatarUpdated;
+
+
         static PlayFabClientInstanceAPI _playFabClientInstanceAPI;
         
         // Shard data
@@ -44,23 +51,19 @@ namespace CosmicShore.Integrations.PlayFab.PlayStream
         // Clout related event
         public static event Action<Clout> OnLoadingPlayerClout;
 
-        // private AuthenticationManager _authManager;
-        //
-        // public PlayerDataController(AuthenticationManager authManager)
-        // {
-        //     _authManager = authManager;
-        // }
-
         private void Start()
         {
+            LoadPlayerProfileOffline();
             AuthenticationManager.OnLoginSuccess += LoadCaptainXPData;
             AuthenticationManager.OnLoginSuccess += LoadClout;
+            AuthenticationManager.OnLoginSuccess += LoadPlayerProfile;
         }
 
         public void OnDestroy()
         {
             AuthenticationManager.OnLoginSuccess -= LoadCaptainXPData;
             AuthenticationManager.OnLoginSuccess -= LoadClout;
+            AuthenticationManager.OnLoginSuccess -= LoadPlayerProfile;
         }
         
         void InitializePlayerClientInstanceAPI()
@@ -74,6 +77,105 @@ namespace CosmicShore.Integrations.PlayFab.PlayStream
                 _playFabClientInstanceAPI ??= new PlayFabClientInstanceAPI(AuthenticationManager.PlayFabAccount.AuthContext);
         }
 
+
+        #region PlayerProfile
+
+        /// <summary>
+        /// Load Player Profile
+        /// Load player profile using Playfab Id and return player display name
+        /// </summary>
+        public void LoadPlayerProfile()
+        {
+            var request = new GetPlayerProfileRequest();
+            request.PlayFabId = AuthenticationManager.PlayFabAccount.ID;
+            request.ProfileConstraints = new PlayerProfileViewConstraints
+            {
+                ShowDisplayName = true,
+                ShowAvatarUrl = true
+            };
+
+            PlayFabClientAPI.GetPlayerProfile(request,
+                result =>
+                {
+                    // The result will get publisher id, title id, player id (also called playfab id in other requests) and display name
+                    PlayerProfile.DisplayName = result.PlayerProfile.DisplayName;
+                    PlayerProfile.AvatarUrl = result.PlayerProfile.AvatarUrl;
+
+                    if (string.IsNullOrEmpty(result.PlayerProfile.AvatarUrl))
+                        SetPlayerAvatar(new System.Random().Next(1,19));
+
+                    PlayerPrefs.SetString(DisplayNamePlayerPrefKey, PlayerProfile.DisplayName);
+                    PlayerPrefs.SetString(ProfileIconIdPlayerPrefKey, PlayerProfile.AvatarUrl);
+
+                    Debug.Log("AuthenticationManager - Successfully retrieved player profile");
+                    Debug.Log($"AuthenticationManager - Player id: {PlayerProfile.UniqueID}");
+
+                    OnProfileLoaded?.Invoke();
+                },
+                error =>
+                {
+                    Debug.LogError(error.GenerateErrorReport());
+                    Debug.Log($"AuthenticationManager - PlayFabId = {AuthenticationManager.PlayFabAccount.ID}");
+                }
+            );
+        }
+
+        public void LoadPlayerProfileOffline()
+        {
+            var displayName = PlayerPrefs.HasKey(DisplayNamePlayerPrefKey) ? PlayerPrefs.GetString(DisplayNamePlayerPrefKey) : "Player";
+            var avatarUrl = PlayerPrefs.HasKey(ProfileIconIdPlayerPrefKey) ? PlayerPrefs.GetString(ProfileIconIdPlayerPrefKey) : "1";
+            PlayerProfile = new(displayName, avatarUrl);
+            OnProfileLoaded?.Invoke();
+        }
+
+        /// <summary>
+        /// Set Player Display Name
+        /// Update player display name, we can assume the account is already created here
+        /// </summary>
+        public void SetPlayerDisplayName(string displayName, Action<UpdateUserTitleDisplayNameResult> callback = null)
+        {
+            var request = new UpdateUserTitleDisplayNameRequest();
+            request.DisplayName = displayName;
+            PlayFabClientAPI.UpdateUserTitleDisplayName(request,
+                result =>
+                {
+                    Debug.Log($"AuthenticationManager - Successful updated player display name: {PlayerProfile.DisplayName}");
+                    PlayerProfile.DisplayName = result.DisplayName;
+                    OnPlayerDisplayNameUpdated?.Invoke();
+                    PlayerPrefs.SetString(DisplayNamePlayerPrefKey, result.DisplayName);
+                    callback?.Invoke(result);
+                },
+                error =>
+                {
+                    Debug.LogError(error.GenerateErrorReport());
+                }
+            );
+        }
+
+        /// <summary>
+        /// Set the AvatarURL property of playfab. 
+        /// NOTE: Since we are tracking all profile icons with a scriptable object, instead of using a URL we are just setting this to an integer id
+        /// </summary>
+        /// <param name="avatarId">ID of the player avatar (profile icon)</param>
+        public void SetPlayerAvatar(int avatarId)
+        {
+            var request = new UpdateAvatarUrlRequest();
+            request.ImageUrl = avatarId.ToString();
+            PlayFabClientAPI.UpdateAvatarUrl(
+                request,
+                result =>
+                {
+                    PlayerProfile.AvatarUrl = avatarId.ToString();
+                    Debug.Log("PlayerDataController - Successfully updated player avatar.");
+                    PlayerPrefs.SetString(ProfileIconIdPlayerPrefKey, avatarId.ToString());
+                    OnPlayerAvatarUpdated?.Invoke();
+                },
+                error =>
+                {
+                    Debug.LogError(error.GenerateErrorReport());
+                });
+        }
+        #endregion
 
         void LoadCaptainXPData()
         {

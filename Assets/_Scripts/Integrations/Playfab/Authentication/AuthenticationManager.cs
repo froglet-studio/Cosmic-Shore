@@ -1,10 +1,9 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using System.Security;
-using CosmicShore.App.Systems.UserJourney;
 using CosmicShore.Integrations.Architectures.EventBus;
+using CosmicShore.Integrations.PlayFab.PlayerData;
 using CosmicShore.Integrations.PlayFab.PlayerModels;
 using CosmicShore.Integrations.PlayFabV2.Models;
 using CosmicShore.Utility.Singleton;
@@ -19,14 +18,11 @@ namespace CosmicShore.Integrations.PlayFab.Authentication
     public class AuthenticationManager : SingletonPersistent<AuthenticationManager>
     {
         public static PlayFabAccount PlayFabAccount { get; private set; } = new();
-        public static UserProfile UserProfile { get; private set; } = new();
         public static PlayerSession PlayerSession { get; private set; } = new();
         
         public static event Action OnLoginSuccess;
  
         public static event Action OnLoginError;
-        
-        public static event Action OnProfileLoaded;
 
         public static event Action OnRegisterSuccess;
 
@@ -37,13 +33,7 @@ namespace CosmicShore.Integrations.PlayFab.Authentication
         {
             base.Awake();
             
-            OnLoginSuccess += LoadPlayerProfile;
             StartCoroutine(LoginCoroutine());
-        }
-
-        void OnDestroy()
-        {
-            OnLoginSuccess -= LoadPlayerProfile;
         }
 
         IEnumerator LoginCoroutine()
@@ -54,84 +44,6 @@ namespace CosmicShore.Integrations.PlayFab.Authentication
         }
 
         #region Player Profile
-        
-        /// <summary>
-        /// Set Player Display Name
-        /// Update player display name, we can assume the account is already created here
-        /// </summary>
-        public void SetPlayerDisplayName(string displayName, Action<UpdateUserTitleDisplayNameResult> callback = null)
-        {
-            var request = new UpdateUserTitleDisplayNameRequest();
-            request.DisplayName = displayName;
-            PlayFabClientAPI.UpdateUserTitleDisplayName(request,
-                result =>
-                {
-                    Debug.Log($"AuthenticationManager - Successful updated player display name: {UserProfile.DisplayName}");
-                    UserProfile.DisplayName = result.DisplayName;
-                    callback?.Invoke(result);
-                }, 
-                error =>
-                {
-                    Debug.LogError(error.GenerateErrorReport());
-                }
-            );
-        }
-
-        public void SePlayerAvatar(string avatarUrl)
-        {
-            var request = new UpdateAvatarUrlRequest();
-            request.ImageUrl = avatarUrl;
-            PlayFabClientAPI.UpdateAvatarUrl(
-                request,
-                result =>
-                {
-                    UserProfile.AvatarUrl = avatarUrl;
-                    Debug.Log("Authentication Manager - Successfully updated player avatar.");
-                },
-                error =>
-                {
-                    Debug.LogError(error.GenerateErrorReport());
-                });
-        }
-
-
-        /// <summary>
-        /// Load Player Profile
-        /// Load player profile using Playfab Id and return player display name
-        /// </summary>
-        public void LoadPlayerProfile()
-        {
-            var request = new GetPlayerProfileRequest();
-            request.PlayFabId = PlayFabAccount.ID;
-            request.ProfileConstraints = new PlayerProfileViewConstraints
-            {
-                ShowDisplayName = true,
-                ShowAvatarUrl = true
-            };
-            
-            PlayFabClientAPI.GetPlayerProfile(request, 
-                result =>
-                {
-                    // The result will get publisher id, title id, player id (also called playfab id in other requests) and display name
-                    UserProfile.DisplayName = result.PlayerProfile.DisplayName;
-                    // TODO: It might be good to retrieve player avatar url here 
-                    UserProfile.AvatarUrl =
-                        string.IsNullOrEmpty(result.PlayerProfile.AvatarUrl)
-                            ? result.PlayerProfile.AvatarUrl
-                            : AvatarLinks.Icons.First();
-                    
-                    Debug.Log("AuthenticationManager - Successfully retrieved player profile");
-                    Debug.Log($"AuthenticationManager - Player id: {UserProfile.UniqueID}");
-
-                    OnProfileLoaded?.Invoke();
-                },
-                error =>
-                {
-                    Debug.LogError(error.GenerateErrorReport());
-                    Debug.Log($"AuthenticationManager - PlayFabId = {PlayFabAccount.ID}");
-                }
-            );
-        }
         
         /// <summary>
         /// Load Default Adjectives and Nouns
@@ -245,11 +157,10 @@ namespace CosmicShore.Integrations.PlayFab.Authentication
             if (loginResult == null) return;
             
             PlayFabAccount ??= new();
-            UserProfile ??= new();
             
             PlayFabAccount.ID = loginResult.PlayFabId;
             PlayFabAccount.AuthContext = loginResult.AuthenticationContext;
-            UserProfile.IsNewlyCreated = loginResult.NewlyCreated;
+            //PlayerProfile.IsNewlyCreated = loginResult.NewlyCreated;
 
             Debug.Log($"AuthenticationManager - Logged in - Newly Created: {loginResult.NewlyCreated.ToString()}");
             Debug.Log($"AuthenticationManager - Play Fab Id: {PlayFabAccount.ID}");
@@ -395,14 +306,14 @@ namespace CosmicShore.Integrations.PlayFab.Authentication
             
             var request = new AddUsernamePasswordRequest();
             
-            request.Username = string.IsNullOrEmpty(UserProfile.Email) ? email : UserProfile.Email;
+            request.Username = string.IsNullOrEmpty(PlayerDataController.Instance.PlayerProfile.Email) ? email : PlayerDataController.Instance.PlayerProfile.Email;
             request.Email = email;
             request.Password = password.ToString();
             
             PlayFabClientAPI.AddUsernamePassword(
                 request, result =>
                 {
-                    UserProfile.Email = result.Username;
+                    PlayerDataController.Instance.PlayerProfile.Email = result.Username;
                     if (PlayerSession.IsRemembered)
                     {
                         // If the session is asked to be remembered, replace the custom id with newly generated Guid

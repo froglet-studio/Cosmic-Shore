@@ -1,5 +1,6 @@
 using CosmicShore.Core;
 using CosmicShore.Integrations.PlayFab.Authentication;
+using CosmicShore.Integrations.PlayFab.PlayerData;
 using CosmicShore.Integrations.PlayFab.PlayStream;
 using System;
 using System.Collections;
@@ -37,7 +38,7 @@ namespace CosmicShore.App.UI.Menus
             var containerCount = GameSelectionContainer.childCount;
             _displayCount = Math.Min(gamesCount, containerCount);
 
-            AuthenticationManager.OnProfileLoaded += FetchLeaderboard;
+            PlayerDataController.OnProfileLoaded += FetchLeaderboard;
 
             ShipClassSelection.onValueChanged.AddListener(SelectShipType);
         }

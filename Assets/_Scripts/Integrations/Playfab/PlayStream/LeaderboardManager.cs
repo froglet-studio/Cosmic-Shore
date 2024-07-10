@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using CosmicShore.Integrations.PlayFab.Authentication;
+using CosmicShore.Integrations.PlayFab.PlayerData;
 using CosmicShore.Utility.ClassExtensions;
 using CosmicShore.Utility.Singleton;
 using PlayFab;
@@ -54,7 +55,7 @@ namespace CosmicShore.Integrations.PlayFab.PlayStream
         {
             NetworkMonitor.NetworkConnectionFound += ComeOnline;
             NetworkMonitor.NetworkConnectionLost += GoOffline;
-            AuthenticationManager.OnProfileLoaded += ReportAndFlushOfflineStatistics;
+            PlayerDataController.OnProfileLoaded += ReportAndFlushOfflineStatistics;
             this.LogWithClassMethod(MethodBase.GetCurrentMethod()?.Name, "Initiated.");
         }
 
@@ -65,7 +66,7 @@ namespace CosmicShore.Integrations.PlayFab.PlayStream
         {
             NetworkMonitor.NetworkConnectionFound -= ComeOnline;
             NetworkMonitor.NetworkConnectionLost -= GoOffline;
-            AuthenticationManager.OnProfileLoaded -= ReportAndFlushOfflineStatistics;
+            PlayerDataController.OnProfileLoaded -= ReportAndFlushOfflineStatistics;
             this.LogWithClassMethod(MethodBase.GetCurrentMethod()?.Name, "this instance is disposed.");
         }
 
