@@ -185,6 +185,7 @@ MonoBehaviour:
     type: 2}
   Team: 3
   aggression: 0
+  Population: {fileID: 0}
   cohesionRadius: 20
   behaviorUpdateRate: 3
   separationRadius: 15
@@ -195,13 +196,12 @@ MonoBehaviour:
   goalWeight: 0.3
   minSpeed: 10
   maxSpeed: 15
-  Goal: {fileID: 0}
   DefaultGoal: {fileID: 0}
+  target: {x: 0, y: 0, z: 0}
   normalizedIndex: 0
   Mound: {fileID: 0}
   isKilled: 0
   collisionEffects: 01000000
-  boidManager: {fileID: 0}
   hasCrystal: 1
 --- !u!1 &5453519119934356950
 GameObject:
@@ -395,17 +395,17 @@ PrefabInstance:
     - target: {fileID: 6588436222817790493, guid: cccc6ba7985893f43841fccfbb53dc71,
         type: 3}
       propertyPath: m_LocalScale.x
-      value: 1.2
+      value: 1.75
       objectReference: {fileID: 0}
     - target: {fileID: 6588436222817790493, guid: cccc6ba7985893f43841fccfbb53dc71,
         type: 3}
       propertyPath: m_LocalScale.y
-      value: 1.2
+      value: 1.75
       objectReference: {fileID: 0}
     - target: {fileID: 6588436222817790493, guid: cccc6ba7985893f43841fccfbb53dc71,
         type: 3}
       propertyPath: m_LocalScale.z
-      value: 1.2
+      value: 1.75
       objectReference: {fileID: 0}
     - target: {fileID: 6588436222817790493, guid: cccc6ba7985893f43841fccfbb53dc71,
         type: 3}
@@ -475,22 +475,3 @@ Transform:
     type: 3}
   m_PrefabInstance: {fileID: 4724174359583210385}
   m_PrefabAsset: {fileID: 0}
---- !u!1 &7021440197337776604 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 2377488442520025677, guid: cccc6ba7985893f43841fccfbb53dc71,
-    type: 3}
-  m_PrefabInstance: {fileID: 4724174359583210385}
-  m_PrefabAsset: {fileID: 0}
---- !u!114 &1968043654255809311
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7021440197337776604}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 318b4eb62a2693f4e98368eb975997cd, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  fadeInRate: 1

@@ -77,7 +77,6 @@ public class Boid : Fauna
 
         while (true)
         {
-            Debug.Log($"population {Population}");
             if (!attached && Population.Goal != null) target = Population.Goal;
             // TODO add visual effect here leaving behind particles. and zoom ahead but decay in speed
             CalculateBehavior();
@@ -209,7 +208,6 @@ public class Boid : Fauna
 
             //colliders = Physics.OverlapSphere(transform.position, 1f, LayerMask.NameToLayer("Mound"));
             GyroidAssembler nakedEdge = null;
-            Debug.Log($"colliders: {colliders.Length}");
             foreach (var collider in colliders)
             {
                 nakedEdge = collider.GetComponent<GyroidAssembler>();

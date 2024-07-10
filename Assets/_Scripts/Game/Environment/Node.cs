@@ -10,8 +10,11 @@ public class Node : MonoBehaviour
 {
     [SerializeField] public string ID;
     [SerializeField] float volumeControlThreshold = 100f;
+
     [SerializeField] SnowChanger SnowChanger;
     [SerializeField] Crystal Crystal;
+    [SerializeField] GameObject membrane;
+    [SerializeField] GameObject nucleus;
 
     [SerializeField] Flora flora1;
     [SerializeField] Flora flora2;
@@ -61,7 +64,7 @@ public class Node : MonoBehaviour
 
     void Awake()
     {
-        Vector3 size = transform.localScale;
+        Vector3 size = nucleus.transform.localScale;
         float maxSize = Mathf.Max(size.x, size.y, size.z) * 10;  // Unclear why such a large multiplier is needed.
         Teams[] teams = { Teams.Green, Teams.Red, Teams.Gold };  // TODO: Store this as a constant somewhere (where?).
         foreach (Teams t in teams)
@@ -155,7 +158,7 @@ public class Node : MonoBehaviour
 
     public bool ContainsPosition(Vector3 position)
     {
-        return Vector3.Distance(position, transform.position) < transform.localScale.x; // only works if nodes remain spherical
+        return Vector3.Distance(position, transform.position) < membrane.transform.localScale.x; // only works if nodes remain spherical
     }
 
     public void ChangeVolume(Teams team, float volume)

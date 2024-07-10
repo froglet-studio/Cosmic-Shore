@@ -41,13 +41,14 @@ Material:
   - _SURFACE_TYPE_TRANSPARENT
   m_InvalidKeywords: []
   m_LightmapFlags: 4
-  m_EnableInstancingVariants: 0
+  m_EnableInstancingVariants: 1
   m_DoubleSidedGI: 0
-  m_CustomRenderQueue: 3000
+  m_CustomRenderQueue: 2999
   stringTagMap:
     RenderType: Transparent
   disabledShaderPasses:
   - SHADOWCASTER
+  - DepthOnly
   m_SavedProperties:
     serializedVersion: 3
     m_TexEnvs:
@@ -112,47 +113,53 @@ Material:
     - _AlphaClip: 1
     - _BUILTIN_QueueControl: 0
     - _BUILTIN_QueueOffset: 0
-    - _Blend: 2
+    - _Blend: 0
     - _BumpScale: 1
     - _CastShadows: 0
     - _ClearCoatMask: 0
     - _ClearCoatSmoothness: 0
     - _Cull: 0
+    - _CustomRenderQueue: 0
     - _Cutoff: 0.5
     - _DetailAlbedoMapScale: 1
     - _DetailNormalMapScale: 1
-    - _DstBlend: 1
+    - _DstBlend: 10
     - _EnvironmentReflections: 1
     - _Float: 0.099
-    - _Fresnel: 0.15
+    - _Fresnel: 0.75
     - _GlossMapScale: 0
     - _Glossiness: 0
     - _GlossyReflections: 0
     - _Metallic: 0
     - _OcclusionStrength: 1
     - _Parallax: 0.005
-    - _Peak_Scalar: 0.099
+    - _Peak_Scalar: 0.84
+    - _Period: 3
+    - _Phase: 0
     - _QueueControl: 0
-    - _QueueOffset: 0
+    - _QueueOffset: -1
     - _ReceiveShadows: 1
     - _Smoothness: 0.5
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1
-    - _Speed: 1
+    - _Speed: 0
     - _SrcBlend: 5
+    - _Start: 0
+    - _Stop: 0.33
     - _Surface: 1
     - _WorkflowMode: 1
     - _ZTest: 4
-    - _ZWrite: 1
-    - _ZWriteControl: 1
-    - _power: 1.73
+    - _ZWrite: 0
+    - _ZWriteControl: 0
+    - _opacity: 1
+    - _power: 0
     m_Colors:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
-    - _BrightCrystalColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
+    - _BrightCrystalColor: {r: 0.12317855, g: 0.5943396, b: 0.014951893, a: 1}
     - _Color: {r: 0.10383288, g: 0.22282857, b: 0.6603774, a: 1}
-    - _Color1: {r: 0.5435801, g: 0.5435801, b: 0.6886792, a: 1}
-    - _Color2: {r: 0, g: 0, b: 0.6981132, a: 1}
-    - _DullCrystalColor: {r: 0, g: 0.00027693954, b: 0.09803922, a: 1}
+    - _Color1: {r: 0.032521613, g: 0.764151, b: 0, a: 1}
+    - _Color2: {r: 0, g: 0, b: 0, a: 1}
+    - _DullCrystalColor: {r: 0.021153718, g: 0.05660379, b: 0.017443933, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
     - _SpecColor: {r: 0.19999996, g: 0.19999996, b: 0.19999996, a: 1}
   m_BuildTextureStacks: []

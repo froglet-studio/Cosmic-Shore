@@ -69,7 +69,7 @@ namespace CosmicShore.Core
 
         protected virtual void Start()
         {
-            Debug.Log($"TrailBlock Starting local Scale: {transform.localScale} and lossy scale {transform.lossyScale}");
+            //Debug.Log($"TrailBlock Starting local Scale: {transform.localScale} and lossy scale {transform.lossyScale}");
             if (fossilBlockContainer == null)
                 fossilBlockContainer = new GameObject { name = "FossilBlockContainer" };
 
@@ -159,7 +159,7 @@ namespace CosmicShore.Core
 
         public void ChangeSize()
         {
-            Debug.Log($"TrailBlock Changing Size from lossy scale {transform.lossyScale} and local scale {transform.lossyScale} to {TargetScale}");
+            //Debug.Log($"TrailBlock Changing Size from lossy scale {transform.lossyScale} and local scale {transform.lossyScale} to {TargetScale}");
             if (TargetScale.x > MaxScale.x || TargetScale.y > MaxScale.y || TargetScale.z > MaxScale.z)
             {
                 ActivateShield();
