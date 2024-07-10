@@ -124,6 +124,7 @@ Material:
     - _DetailAlbedoMapScale: 1
     - _DetailNormalMapScale: 1
     - _DstBlend: 10
+    - _Ease: 0
     - _EnvironmentReflections: 1
     - _Float: 0.099
     - _Fresnel: 0.75
@@ -139,6 +140,7 @@ Material:
     - _QueueControl: 0
     - _QueueOffset: -1
     - _ReceiveShadows: 1
+    - _ScaleDistance: 1
     - _Smoothness: 0.5
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1
@@ -153,13 +155,16 @@ Material:
     - _ZWriteControl: 0
     - _opacity: 1
     - _power: 0
+    - _speed: 0
+    - _velocity: 0
     m_Colors:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
-    - _BrightCrystalColor: {r: 0.12317855, g: 0.5943396, b: 0.014951893, a: 1}
+    - _BrightCrystalColor: {r: 0.6186958, g: 0.67797554, b: 0.9150943, a: 0.9411765}
     - _Color: {r: 0.10383288, g: 0.22282857, b: 0.6603774, a: 1}
     - _Color1: {r: 0.032521613, g: 0.764151, b: 0, a: 1}
     - _Color2: {r: 0, g: 0, b: 0, a: 1}
-    - _DullCrystalColor: {r: 0.021153718, g: 0.05660379, b: 0.017443933, a: 1}
+    - _DullCrystalColor: {r: 0, g: 0.038817562, b: 0.6509434, a: 0.9411765}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
     - _SpecColor: {r: 0.19999996, g: 0.19999996, b: 0.19999996, a: 1}
+    - _velocity: {r: 0, g: 0, b: 0, a: 0}
   m_BuildTextureStacks: []
