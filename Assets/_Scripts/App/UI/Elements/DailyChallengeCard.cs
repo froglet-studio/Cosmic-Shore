@@ -30,7 +30,11 @@ namespace CosmicShore.App.UI.Elements
 
         void Start()
         {
-            Random random = new Random();
+            // Use the 32 least significant bits (& 0xFFFFFFFF) of the tick count from today's date in GMT as the random seed 
+            DateTime currentDate = DateTime.UtcNow.Date;
+            long dateTicks = currentDate.Ticks;
+            Random random = new Random((int)(dateTicks & 0xFFFFFFFF));
+
             while (gameMode == MiniGames.Random)
             {
                 gameMode = AllGames.GameList[random.Next(AllGames.GameList.Count)].Mode;
@@ -72,7 +76,7 @@ namespace CosmicShore.App.UI.Elements
             // Add highlight boarder
 
             // Set active and show details
-            //LoadoutView.ExpandLoadout(Index);
+            // LoadoutView.ExpandLoadout(Index);
 
             Debug.Log($"GameCard - Clicked: Gamemode: {gameMode}");
         }
