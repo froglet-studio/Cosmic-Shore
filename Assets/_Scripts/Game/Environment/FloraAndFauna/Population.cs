@@ -25,12 +25,12 @@ namespace CosmicShore
             float totalVolume = teamVolumes.x + teamVolumes.y + teamVolumes.z + teamVolumes.w;
 
             Weights = new List<float>
-        {
-        totalVolume / (teamVolumes.x + 1), // +1 to avoid division by zero
-        totalVolume / (teamVolumes.y + 1),
-        totalVolume / (teamVolumes.z + 1),
-        totalVolume / (teamVolumes.w + 1)
-        };
+            {
+            totalVolume / (teamVolumes.x + 1), // +1 to avoid division by zero
+            totalVolume / (teamVolumes.y + 1),
+            totalVolume / (teamVolumes.z + 1),
+            totalVolume / (teamVolumes.w + 1)
+            };
         }
 
         IEnumerator UpdateGoal()

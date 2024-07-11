@@ -6344,11 +6344,7 @@ MonoBehaviour:
   sphereRadius: 170
   SpentCrystalPrefab: {fileID: 8491596592871572304, guid: f39596c98ed9d644a834f2fa27ec90ca,
     type: 3}
-  CrystalModel: {fileID: 1238110562}
-  explodingMaterial: {fileID: 2100000, guid: 383f21e8586fd7243a19e1d0f26110d0, type: 2}
-  defaultMaterial: {fileID: 2100000, guid: 383f21e8586fd7243a19e1d0f26110d0, type: 2}
-  inactiveCrystalMaterial: {fileID: 2100000, guid: 650830ed7524d074991cd928a5356f37,
-    type: 2}
+  crystalModels: []
   shipImpactEffects: 1
   crystalImpactEffects: 
   AOEPrefab: {fileID: 0}
@@ -28638,6 +28634,12 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 949102244}
   m_CullTransparentMesh: 1
+--- !u!1 &949477476 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 1922600126866330691, guid: 8b8886c5e424ace48980294a663d65a3,
+    type: 3}
+  m_PrefabInstance: {fileID: 1556209492}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &954381381
 GameObject:
   m_ObjectHideFlags: 0
@@ -36336,12 +36338,6 @@ PrefabInstance:
 --- !u!4 &1238110561 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 1114034561007818392, guid: a089e5ab0159cc54aa784d6ebf15d2e4,
-    type: 3}
-  m_PrefabInstance: {fileID: 1238110560}
-  m_PrefabAsset: {fileID: 0}
---- !u!1 &1238110562 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 2448508127246415652, guid: a089e5ab0159cc54aa784d6ebf15d2e4,
     type: 3}
   m_PrefabInstance: {fileID: 1238110560}
   m_PrefabAsset: {fileID: 0}
@@ -55898,7 +55894,7 @@ MonoBehaviour:
   m_HandleRect: {fileID: 131826976}
   m_Direction: 2
   m_Value: 0.999999
-  m_Size: 0.7799999
+  m_Size: 0.78
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -86659,6 +86655,8 @@ MonoBehaviour:
   volumeControlThreshold: 100
   SnowChanger: {fileID: 1019533258}
   Crystal: {fileID: 194708249}
+  membrane: {fileID: 949477476}
+  nucleus: {fileID: 4105671971620406239}
   flora1: {fileID: 8186157953239024492, guid: a84d160ac0bcaf94da22c5368e4d3962, type: 3}
   flora2: {fileID: 7514956980722975813, guid: 3c58c4dd53a6a2240acd7f7b81a3adb5, type: 3}
   fauna1: {fileID: 8812619448024686939, guid: 14b7fddb8e30aa541a092201bc80b848, type: 3}
@@ -86669,6 +86667,7 @@ MonoBehaviour:
   faunaSpawnVolumeThreshold: 0
   baseFaunaSpawnTime: 80
   hasRandomFloraAndFauna: 0
+  minOctreeSize: 20
 --- !u!1 &6672088271978621762
 GameObject:
   m_ObjectHideFlags: 0

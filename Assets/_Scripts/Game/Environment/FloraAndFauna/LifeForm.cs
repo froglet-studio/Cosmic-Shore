@@ -27,7 +27,7 @@ namespace CosmicShore
             node = NodeControlManager.Instance.GetNodeByPosition(transform.position);
         }
 
-        public void AddHealthBlock(HealthBlock healthBlock)
+        public virtual void AddHealthBlock(HealthBlock healthBlock)
         {
             healthBlocks.Add(healthBlock);
             healthBlock.Team = Team;
@@ -54,7 +54,7 @@ namespace CosmicShore
             spindles.Remove(spindle);
         }
 
-        public void RemoveHealthBlock(HealthBlock healthBlock)
+        public virtual void RemoveHealthBlock(HealthBlock healthBlock)
         { 
             healthBlocks.Remove(healthBlock);
             //CheckIfDead();
