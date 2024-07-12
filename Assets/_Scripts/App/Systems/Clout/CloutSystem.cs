@@ -1,51 +1,45 @@
 using CosmicShore.Integrations.PlayFab.PlayerData;
 using System;
 using UnityEngine;
-using VContainer;
-using VContainer.Unity;
+
 
 namespace CosmicShore.App.Systems.Clout
 {
-    public class CloutSystem : IPostInitializable, IDisposable
+    public class CloutSystem
     {
         // Player clout model
-        public Clout PlayerClout;
+        private Clout _playerClout;
 
         // Min and Max Value
-        const int MinCloutValue = 0;
-        const int MaxCloutValue = 999;
+        private const int MinCloutValue = 0;
+        private const int MaxCloutValue = 999;
         
         // Clout related event
         public static event Action<Clout> OnUpdatingMasterClout;
         
         // Network condition
-        private bool isConnected;
+        private bool _isConnected;
 
-        [Inject] private PlayerDataController _dataController;
-
-        public CloutSystem(PlayerDataController dataController)
-        {
-            _dataController = dataController;
-        }
-
+        private static PlayerDataController DataController => PlayerDataController.Instance;
+        
         public void PostInitialize()
         {
             // Events that talking to PlayFab
             PlayerDataController.OnLoadingPlayerClout += PopulatePlayerClouts;
-            OnUpdatingMasterClout += _dataController.UpdatePlayerClout;
+            OnUpdatingMasterClout += DataController.UpdatePlayerClout;
             
             // Network detector
             NetworkMonitor.NetworkConnectionFound += SetOnline;
             NetworkMonitor.NetworkConnectionLost += SetOffline;
             
             // John's test method
-            if(isConnected) Test();
+            if(_isConnected) Test();
         }
 
         public void Dispose()
         {
             // Events that talking to PlayFab
-            OnUpdatingMasterClout -= _dataController.UpdatePlayerClout;
+            OnUpdatingMasterClout -= DataController.UpdatePlayerClout;
             PlayerDataController.OnLoadingPlayerClout -= PopulatePlayerClouts;
             
             // Network detector
@@ -55,59 +49,59 @@ namespace CosmicShore.App.Systems.Clout
 
         void SetOnline()
         {
-            isConnected = true;
+            _isConnected = true;
         }
 
         void SetOffline()
         {
-            isConnected = false;
+            _isConnected = false;
         }
 
         void PopulatePlayerClouts(Clout playerClout)
         {
-            PlayerClout = playerClout;
+            _playerClout = playerClout;
         }
 
         // Adds or Removes clout value
         public void UpdateShipClout(ShipTypes shipType, int cloutValue)
         {
-            if (!isConnected) return;
+            if (!_isConnected) return;
             
             // Check if ship clout is null, if yes give a new instance
-            if (PlayerClout.ShipClouts == null)
+            if (_playerClout.ShipClouts == null)
             {
-                PlayerClout.ShipClouts = new();
+                _playerClout.ShipClouts = new();
             }
             
             // Get new value into the ship clout
-            if (PlayerClout.ShipClouts.TryGetValue(shipType, out var previousCloutValue))
+            if (_playerClout.ShipClouts.TryGetValue(shipType, out var previousCloutValue))
             {
-                PlayerClout.ShipClouts[shipType] = Math.Clamp(previousCloutValue + cloutValue, MinCloutValue, MaxCloutValue);
+                _playerClout.ShipClouts[shipType] = Math.Clamp(previousCloutValue + cloutValue, MinCloutValue, MaxCloutValue);
             }                                                           
             else
             {
-                PlayerClout.ShipClouts.Add(shipType, Math.Clamp(cloutValue,MinCloutValue, MaxCloutValue));
+                _playerClout.ShipClouts.Add(shipType, Math.Clamp(cloutValue,MinCloutValue, MaxCloutValue));
             }
             
             // Calculate the master player clout value
             CalculateMasterClout();
             
             // Let the other systems handle the player clout data upon updates
-            OnUpdatingMasterClout?.Invoke(PlayerClout);
+            OnUpdatingMasterClout?.Invoke(_playerClout);
         }
 
         private void CalculateMasterClout()
         {
-            if (!isConnected) return;
+            if (!_isConnected) return;
             
-            if (PlayerClout.ShipClouts == null) return;
+            if (_playerClout.ShipClouts == null) return;
 
-            foreach (var value in PlayerClout.ShipClouts.Values)
+            foreach (var value in _playerClout.ShipClouts.Values)
             {
-                PlayerClout.MasterCloutValue += value;
+                _playerClout.MasterCloutValue += value;
             }
             
-            PlayerClout.MasterCloutValue = Math.Clamp(PlayerClout.MasterCloutValue, MinCloutValue, MaxCloutValue);
+            _playerClout.MasterCloutValue = Math.Clamp(_playerClout.MasterCloutValue, MinCloutValue, MaxCloutValue);
         }
 
         // Gets clout value
@@ -115,9 +109,9 @@ namespace CosmicShore.App.Systems.Clout
         {
             var value = MinCloutValue;
             
-            if (PlayerClout.ShipClouts == null) return value;
+            if (_playerClout.ShipClouts == null) return value;
 
-            if (PlayerClout.ShipClouts.TryGetValue(ship, out value))
+            if (_playerClout.ShipClouts.TryGetValue(ship, out value))
             {
                 return value;
             }
