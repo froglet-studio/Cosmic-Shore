@@ -381,29 +381,21 @@ MonoBehaviour:
     explodingMaterial: {fileID: 2100000, guid: 20e4974a2de18e44880740ec87d82e44, type: 2}
     inactiveMaterial: {fileID: 2100000, guid: 85791f4ed4427514f92de1ae15b47209, type: 2}
     spaceCrystalAnimator: {fileID: 0}
-    modelOffset: {x: 0, y: 0, z: 0}
-    modelRotation: {x: 0, y: 0, z: 0, w: 0}
   - model: {fileID: 8158905261946047909}
     defaultMaterial: {fileID: 2100000, guid: 2438fa6e25f42f04f9cff49f3f505acc, type: 2}
     explodingMaterial: {fileID: 2100000, guid: 2438fa6e25f42f04f9cff49f3f505acc, type: 2}
     inactiveMaterial: {fileID: 2100000, guid: 77544dd168c53564e81549be625b0955, type: 2}
     spaceCrystalAnimator: {fileID: 0}
-    modelOffset: {x: 0, y: 0, z: 0}
-    modelRotation: {x: 0, y: 0, z: 0, w: 0}
   - model: {fileID: 3482830006604789903}
     defaultMaterial: {fileID: 2100000, guid: 0605bc709a4621e48984803a3ebca8a3, type: 2}
     explodingMaterial: {fileID: 2100000, guid: 0605bc709a4621e48984803a3ebca8a3, type: 2}
     inactiveMaterial: {fileID: 2100000, guid: abcf956848542144a91c42a841a1f21d, type: 2}
     spaceCrystalAnimator: {fileID: 0}
-    modelOffset: {x: 0, y: 0, z: 0}
-    modelRotation: {x: 0, y: 0, z: 0, w: 0}
   - model: {fileID: 2465797485434349844}
     defaultMaterial: {fileID: 2100000, guid: ef54fe02f6405e64aa62634bbc9ddefa, type: 2}
     explodingMaterial: {fileID: 2100000, guid: ef54fe02f6405e64aa62634bbc9ddefa, type: 2}
     inactiveMaterial: {fileID: 2100000, guid: 8c2ce2c084997a54c8e38c1654a5371b, type: 2}
     spaceCrystalAnimator: {fileID: 0}
-    modelOffset: {x: 0, y: 0, z: 0}
-    modelRotation: {x: 0, y: 0, z: 0, w: 0}
   shipImpactEffects: 0
   crystalImpactEffects: 08000000
   AOEPrefab: {fileID: 0}

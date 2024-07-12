@@ -6,7 +6,7 @@ namespace CosmicShore
     public class Spindle : MonoBehaviour
     {
         public GameObject cylinder;
-        public GameObject RenderedObject;
+        public MeshRenderer RenderedObject;
         Spindle parentSpindle;
         public LifeForm LifeForm;
 
@@ -34,12 +34,12 @@ namespace CosmicShore
         IEnumerator EvaporateCoroutine()
         {
             
-            MeshRenderer meshRenderer = RenderedObject.GetComponent<MeshRenderer>();
+
             float deathAnimation = 0f;
             float animationSpeed = 1f;
             while (deathAnimation < 1f)
             {
-                meshRenderer.material.SetFloat("_DeathAnimation", deathAnimation);
+                RenderedObject.material.SetFloat("_DeathAnimation", deathAnimation);
                 deathAnimation += Time.deltaTime * animationSpeed;
                 yield return null;
             }
@@ -49,16 +49,15 @@ namespace CosmicShore
 
         IEnumerator CondenseCoroutine()
         {
-            Renderer Renderer = RenderedObject.GetComponent<Renderer>();
             float deathAnimation = 1f;
             float animationSpeed = 1f;
             while (deathAnimation > 0f)
             {
-                Renderer.material.SetFloat("_DeathAnimation", deathAnimation);
+                RenderedObject.material.SetFloat("_DeathAnimation", deathAnimation);
                 deathAnimation -= Time.deltaTime * animationSpeed;
                 yield return null;
             }
-            Renderer.material.SetFloat("_DeathAnimation", 0);
+            RenderedObject.material.SetFloat("_DeathAnimation", 0);
         }
 
         private void OnDestroy()

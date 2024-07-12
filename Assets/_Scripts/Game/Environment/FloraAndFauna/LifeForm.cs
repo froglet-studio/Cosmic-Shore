@@ -16,7 +16,6 @@ namespace CosmicShore
         protected HashSet<Spindle> spindles = new HashSet<Spindle>();
 
         protected Crystal crystal;
-        [SerializeField] protected Material activeCrystalMaterial; // TODO: make a crytal material set that pulls from the element
         
         protected Node node;
         public Teams Team;
@@ -70,7 +69,7 @@ namespace CosmicShore
 
         protected virtual void Die()
         {
-            crystal.ActivateCrystal(); // TODO: handle this with crystal.Activate()
+            crystal.ActivateCrystal(); 
             StopAllCoroutines();
             StartCoroutine(DieCoroutine());
         }
