@@ -16,7 +16,6 @@ namespace CosmicShore
         protected HashSet<Spindle> spindles = new HashSet<Spindle>();
 
         protected Crystal crystal;
-        [SerializeField] protected Material activeCrystalMaterial; // TODO: make a crytal material set that pulls from the element
         
         protected Node node;
         public Teams Team;
@@ -27,7 +26,7 @@ namespace CosmicShore
             node = NodeControlManager.Instance.GetNodeByPosition(transform.position);
         }
 
-        public void AddHealthBlock(HealthBlock healthBlock)
+        public virtual void AddHealthBlock(HealthBlock healthBlock)
         {
             healthBlocks.Add(healthBlock);
             healthBlock.Team = Team;
@@ -54,7 +53,7 @@ namespace CosmicShore
             spindles.Remove(spindle);
         }
 
-        public void RemoveHealthBlock(HealthBlock healthBlock)
+        public virtual void RemoveHealthBlock(HealthBlock healthBlock)
         { 
             healthBlocks.Remove(healthBlock);
             //CheckIfDead();
@@ -70,7 +69,7 @@ namespace CosmicShore
 
         protected virtual void Die()
         {
-            crystal.ActivateCrystal(); // TODO: handle this with crystal.Activate()
+            crystal.ActivateCrystal(); 
             StopAllCoroutines();
             StartCoroutine(DieCoroutine());
         }

@@ -12,9 +12,9 @@ GameObject:
   - component: {fileID: 1981306459138289011}
   - component: {fileID: 7076137217386601628}
   - component: {fileID: 6724784892155022458}
-  - component: {fileID: 4563009547826722997}
+  - component: {fileID: 222830520331879200}
   m_Layer: 0
-  m_Name: GoldBlock
+  m_Name: ShieldedHealthBlock
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -98,7 +98,7 @@ BoxCollider:
   serializedVersion: 2
   m_Size: {x: 1.025, y: 1.025, z: 1.025}
   m_Center: {x: 0, y: 0, z: 0}
---- !u!114 &4563009547826722997
+--- !u!114 &222830520331879200
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -107,35 +107,32 @@ MonoBehaviour:
   m_GameObject: {fileID: 5776304996075792891}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f366d272ab4f79e419d678fc6ca23512, type: 3}
+  m_Script: {fileID: 11500000, guid: 2f76793d2a031124f900d060d1bbb2bb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  FossilBlock: {fileID: 5776304996075792891, guid: bd8a259abee95ec4895562e6bb8aae76,
-    type: 3}
+  FossilBlock: {fileID: 0}
   TrailBlockProperties:
     position: {x: 0, y: 0, z: 0}
     volume: 0
     speedDebuffAmount: 0
     trailBlock: {fileID: 0}
     Index: 0
-    Shielded: 0
+    Shielded: 1
     IsSuperShielded: 0
     TimeCreated: 0
-  ParticleEffect: {fileID: 3706253519474275301, guid: a8ae8dc22c65f554ea8bb6e1bf2458f1,
-    type: 3}
+  ParticleEffect: {fileID: 0}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   MaxScale: {x: 10, y: 10, z: 10}
   TargetScale: {x: 0, y: 0, z: 0}
   GrowthVector: {x: 0, y: 2, z: 0}
-  waitTime: 0.1
+  waitTime: 0.6
   destroyed: 0
   devastated: 0
-  ID: 1
+  ID: 
   Index: 0
-  Shielded: 0
-  IsSuperShielded: 0
   warp: 0
   IsSmallest: 0
   IsLargest: 0
-  ownerId: public
+  ownerId: 
   Player: {fileID: 0}
+  LifeForm: {fileID: 0}

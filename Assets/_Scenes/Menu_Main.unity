@@ -29572,6 +29572,12 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 949102244}
   m_CullTransparentMesh: 1
+--- !u!1 &949477476 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 1922600126866330691, guid: 8b8886c5e424ace48980294a663d65a3,
+    type: 3}
+  m_PrefabInstance: {fileID: 1556209492}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &954381381
 GameObject:
   m_ObjectHideFlags: 0
@@ -58063,7 +58069,7 @@ MonoBehaviour:
   m_HandleRect: {fileID: 131826976}
   m_Direction: 2
   m_Value: 0.999999
-  m_Size: 0.7799999
+  m_Size: 0.78
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -88868,8 +88874,8 @@ MonoBehaviour:
   volumeControlThreshold: 100
   SnowChanger: {fileID: 1019533258}
   Crystal: {fileID: 194708249}
-  membrane: {fileID: 0}
-  nucleus: {fileID: 0}
+  membrane: {fileID: 949477476}
+  nucleus: {fileID: 4105671971620406239}
   flora1: {fileID: 8186157953239024492, guid: a84d160ac0bcaf94da22c5368e4d3962, type: 3}
   flora2: {fileID: 7514956980722975813, guid: 3c58c4dd53a6a2240acd7f7b81a3adb5, type: 3}
   fauna1: {fileID: 8812619448024686939, guid: 14b7fddb8e30aa541a092201bc80b848, type: 3}

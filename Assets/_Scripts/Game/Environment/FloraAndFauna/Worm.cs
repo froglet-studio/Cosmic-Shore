@@ -1,85 +1,170 @@
-using CosmicShore.Core;
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
+using System.Collections.Generic;
+using CosmicShore;
+using CosmicShore.Core;
 
-namespace CosmicShore
+public class Worm : MonoBehaviour
 {
-    public class Worm : MonoBehaviour
+    public WormManager Manager { get; set; }
+    public List<BodySegmentFauna> Segments { get; private set; } = new List<BodySegmentFauna>();
+
+    public Teams Team { get; set; }
+
+    [SerializeField] private float movementSpeed = 5f;
+    [SerializeField] private float turnSpeed = 2f;
+    [SerializeField] private float segmentSpacing = 1f;
+
+    private Vector3 targetPosition;
+
+    private void Start()
     {
-        public GameObject target;
-        public float speed = 5f;
-        public float rotationSpeed = 5f;
-        public float whipAmplitude = 30f;
-        public float whipDuration = 0.2f;
-        public float dampingFactor = 0.01f;
+        InitializeWorm();
+    }
 
-        [SerializeField] GameObject rootBone;
+    private void Update()
+    {
+        MoveWorm();
+    }
 
-        private HashSet<Transform> segments = new HashSet<Transform>();
-        private List<Vector3> initialPositions = new List<Vector3>();
-        private List<Quaternion> initialOrientations = new List<Quaternion>();
+    private void InitializeWorm()
+    {
+        // Initial setup of the worm will be done by the WormManager
+    }
 
-        [SerializeField] List<TrailBlock> shieldedBlocks;
-        [SerializeField] List<TrailBlock> dangerBlocks;
+    private void MoveWorm()
+    {
+        if (Segments.Count == 0) return;
 
-        private void Start()
+        BodySegmentFauna head = Segments[0];
+
+        // Move the head towards the target
+        Vector3 direction = (targetPosition - head.transform.position).normalized;
+        Quaternion targetRotation = Quaternion.LookRotation(direction);
+        head.transform.rotation = Quaternion.Slerp(head.transform.rotation, targetRotation, turnSpeed * Time.deltaTime);
+        head.transform.position += head.transform.forward * movementSpeed * Time.deltaTime;
+
+        // Move the rest of the body
+        for (int i = 1; i < Segments.Count; i++)
         {
-            // Recursively traverse the hierarchy and populate the segments list
-            TraverseHierarchy(rootBone.transform);
+            Vector3 previousSegmentPosition = Segments[i - 1].transform.position;
+            Vector3 currentPosition = Segments[i].transform.position;
 
-            // Save the initial positions of the segments
-            SaveInitialOrientations();
+            Vector3 newPosition = Vector3.Lerp(currentPosition, previousSegmentPosition - previousSegmentPosition.normalized * segmentSpacing, movementSpeed * Time.deltaTime);
 
-            for (int i = 0; i < shieldedBlocks.Count; i++)
-            {
-                shieldedBlocks[i].Team = Teams.Gold;
-                
-            }
+            Segments[i].transform.position = newPosition;
+            Segments[i].transform.LookAt(previousSegmentPosition);
+        }
+    }
 
-            for (int i = 0; i < dangerBlocks.Count; i++)
-            {
-                dangerBlocks[i].Team = Teams.Red;
-            }
+    public void SetTarget(Vector3 target)
+    {
+        targetPosition = target;
+    }
 
+    public void AddSegment(BodySegmentFauna newSegment, int index = -1)
+    {
+        if (index == -1 || index >= Segments.Count)
+        {
+            Segments.Add(newSegment);
+            index = Segments.Count - 1;
+        }
+        else
+        {
+            Segments.Insert(index, newSegment);
         }
 
-        private void TraverseHierarchy(Transform parent)
-        {
+        newSegment.ParentWorm = this;
 
-            foreach (Transform child in parent)
+        if (index == 0)
+        {
+            newSegment.IsHead = true;
+            if (Segments.Count > 1)
             {
-                segments.Add(child.transform.parent);
-                TraverseHierarchy(child);
+                Segments[1].IsHead = false;
+                newSegment.NextSegment = Segments[1];
+                Segments[1].PreviousSegment = newSegment;
             }
         }
-
-        private void SaveInitialOrientations()
+        else if (index == Segments.Count - 1)
         {
-            foreach (Transform segment in segments)
+            newSegment.IsTail = true;
+            if (Segments.Count > 1)
             {
-                initialOrientations.Add(segment.localRotation);
+                Segments[Segments.Count - 2].IsTail = false;
+                newSegment.PreviousSegment = Segments[Segments.Count - 2];
+                Segments[Segments.Count - 2].NextSegment = newSegment;
             }
         }
-
-        private void Update()
+        else
         {
-            // Move the head towards the target
-            Vector3 direction = (target.transform.position - transform.position).normalized;
-            transform.position = Vector3.Lerp(transform.position, target.transform.position, speed * Time.deltaTime);
-
-            // Rotate the head towards the target
-            Quaternion targetRotation = Quaternion.LookRotation(direction);
-            var newRotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationSpeed * Time.deltaTime);
-
-            //Update the tail segments
-            foreach (Transform segment in segments)
-            {
-                segment.localRotation = newRotation;
-            }
-
-            transform.rotation = newRotation;
+            newSegment.PreviousSegment = Segments[index - 1];
+            newSegment.NextSegment = Segments[index + 1];
+            Segments[index - 1].NextSegment = newSegment;
+            Segments[index + 1].PreviousSegment = newSegment;
         }
 
+        UpdateSegmentScales();
+    }
+
+    public void RemoveSegment(BodySegmentFauna segment)
+    {
+        int index = Segments.IndexOf(segment);
+        if (index != -1)
+        {
+            Segments.RemoveAt(index);
+
+            if (index > 0 && index < Segments.Count)
+            {
+                Segments[index - 1].NextSegment = index < Segments.Count ? Segments[index] : null;
+                if (index < Segments.Count)
+                    Segments[index].PreviousSegment = Segments[index - 1];
+            }
+
+            UpdateSegmentScales();
+        }
+    }
+
+    public void SplitWorm(BodySegmentFauna splitSegment)
+    {
+        int splitIndex = Segments.IndexOf(splitSegment);
+        if (splitIndex <= 0 || splitIndex >= Segments.Count - 1) return;
+
+        List<BodySegmentFauna> newWormSegments = Segments.GetRange(splitIndex + 1, Segments.Count - splitIndex - 1);
+        Segments.RemoveRange(splitIndex, Segments.Count - splitIndex);
+
+        UpdateSegmentScales();
+
+        Worm newWorm = Manager.CreateWorm(newWormSegments);
+        newWorm.UpdateSegmentScales();
+    }
+
+    public void RegenerateSegment(BodySegmentFauna lostSegment)
+    {
+        if (lostSegment.IsHead)
+        {
+            BodySegmentFauna newHead = Manager.CreateSegment(transform.position, 1f);
+            AddSegment(newHead, 0);
+        }
+        else if (lostSegment.IsTail)
+        {
+            BodySegmentFauna newTail = Manager.CreateSegment(Segments[Segments.Count - 1].transform.position, 0.6f);
+            AddSegment(newTail);
+        }
+    }
+
+    private void UpdateSegmentScales()
+    {
+        for (int i = 0; i < Segments.Count; i++)
+        {
+            if (i == 0) // Head
+                Segments[i].SetScale(1f);
+            else if (i >= Segments.Count - 2) // Last two segments (tail)
+                Segments[i].SetScale(0.6f);
+            else // Middle segments
+            {
+                float scale = Mathf.Max(0.6f, 1f - (i * 0.1f));
+                Segments[i].SetScale(scale);
+            }
+        }
     }
 }
