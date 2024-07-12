@@ -1,3 +1,4 @@
+using CosmicShore.Models.Enums;
 using UnityEngine;
 
 [CreateAssetMenu(fileName = "Spike Spiegel", menuName = "CosmicShore/Captain/Captain", order = 3)]
@@ -12,8 +13,5 @@ public class SO_Captain : ScriptableObject
     [SerializeField] public Sprite SelectedIcon;
     [SerializeField] public SO_Ship Ship;
     [SerializeField] public Element PrimaryElement;
-    [SerializeField] public float InitialMass;
-    [SerializeField] public float InitialCharge;
-    [SerializeField] public float InitialSpace;
-    [SerializeField] public float InitialTime;
+    [SerializeField] public ResourceCollection InitialResourceLevels;
 }

@@ -105,8 +105,8 @@ namespace CosmicShore.Environment.FlowField
                         AOEExplosion.MaxScale = maxExplosionScale;
                         AOEExplosion.AnonymousExplosion = true;
                         break;
-                    case CrystalImpactEffects.IncrementLevel: // TODO: add amount based on crystal scale
-                        ship.ResourceSystem.IncrementLevel(crystalProperties.Element);
+                    case CrystalImpactEffects.IncrementLevel:
+                        ship.ResourceSystem.IncrementLevel(crystalProperties.Element, transform.lossyScale.x*crystalProperties.fuelAmount);
                         break;
                 }
             }

@@ -13,29 +13,29 @@ namespace CosmicShore
         [SerializeField] Sprite SelectedBorderSprite;
         [SerializeField] Sprite DeselectedBorderSprite;
 
-        SO_TrainingGame Game;
+        SO_TrainingGame TrainingGame;
         public void AssignGame(SO_TrainingGame game)
         {
-            Game = game;
+            TrainingGame = game;
             SetInactive();
         }
 
         public void Select()
         {
-            HangarMenu.SelectTrainingGame(Game);
+            HangarMenu.SelectTrainingGame(TrainingGame.Game);
         }
 
         public void SetActive()
         {
-            ElementOneImage.sprite = Game.ElementOne.GetFullIcon(true);
-            ElementTwoImage.sprite = Game.ElementTwo.GetFullIcon(true);
+            ElementOneImage.sprite = TrainingGame.ElementOne.GetFullIcon(true);
+            ElementTwoImage.sprite = TrainingGame.ElementTwo.GetFullIcon(true);
             BorderImage.sprite = SelectedBorderSprite;
         }
 
         public void SetInactive() {
 
-            ElementOneImage.sprite = Game.ElementOne.GetFullIcon(false);
-            ElementTwoImage.sprite = Game.ElementTwo.GetFullIcon(false);
+            ElementOneImage.sprite = TrainingGame.ElementOne.GetFullIcon(false);
+            ElementTwoImage.sprite = TrainingGame.ElementTwo.GetFullIcon(false);
             BorderImage.sprite = DeselectedBorderSprite;
         }
     }

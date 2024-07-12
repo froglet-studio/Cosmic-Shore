@@ -164,6 +164,30 @@ namespace CosmicShore.Integrations.PlayFab.PlayStream
         }
 
         /// <summary>
+        /// Update Gameplay Stats
+        /// Upload game mode, ship type, intensity level and scores to memory
+        /// </summary>
+        public void ReportDailyChallengeStatistic(int score, bool golfScoring)
+        {
+            // Playfab does not support reverse sort for leaderboards... take the negative to figure out the position, then flip it again when displaying the score
+            if (golfScoring)
+                score *= -1;
+
+            Debug.Log($"ReportDailyChallengeStatistic - score:{score}");
+            List<StatisticUpdate> stats = new()
+            {
+                new StatisticUpdate()
+                {
+                    StatisticName = "DailyChallenge",
+                    Value = score
+                }
+            };
+
+            ReportPlayerStatistic(stats, new Dictionary<string, string>());
+        }
+
+
+        /// <summary>
         /// Get Gameplay Stats Key
         /// Combines game mode and ship type as search key, and return it.
         /// </summary>
