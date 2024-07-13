@@ -67,7 +67,10 @@ namespace CosmicShore
             {
                 LifeForm.RemoveSpindle(this);
                 if (parentSpindle) parentSpindle.CheckForLife();
-                else LifeForm.CheckIfDead();
+                else 
+                {
+                    LifeForm.CheckIfDead();
+                }
             }
         }
     }

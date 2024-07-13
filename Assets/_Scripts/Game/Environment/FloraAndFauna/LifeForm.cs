@@ -12,7 +12,7 @@ namespace CosmicShore
         [SerializeField] protected Spindle spindle;
         [SerializeField] protected int minHealthBlocks = 0;
 
-        protected HashSet<HealthBlock> healthBlocks = new HashSet<HealthBlock>();
+        HashSet<HealthBlock> healthBlocks = new HashSet<HealthBlock>();
         protected HashSet<Spindle> spindles = new HashSet<Spindle>();
 
         protected Crystal crystal;
@@ -48,7 +48,7 @@ namespace CosmicShore
             return newSpindle;
         }
 
-        public void RemoveSpindle(Spindle spindle)
+        public virtual void RemoveSpindle(Spindle spindle)
         {
             spindles.Remove(spindle);
         }
@@ -63,6 +63,7 @@ namespace CosmicShore
         {
             if (spindles.Count == 0)
             {
+                Debug.Log($"healthblocks of dying {this} {healthBlocks.Count}");
                 Die();
             }
         }

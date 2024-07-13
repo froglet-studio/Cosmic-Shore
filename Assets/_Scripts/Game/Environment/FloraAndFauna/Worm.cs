@@ -14,6 +14,9 @@ public class Worm : MonoBehaviour
     [SerializeField] private float turnSpeed = 2f;
     [SerializeField] private float segmentSpacing = 1f;
 
+    public bool hasHead;
+    public bool hasTail;
+
     private Vector3 targetPosition;
 
     private void Start()
@@ -77,6 +80,7 @@ public class Worm : MonoBehaviour
 
         if (index == 0)
         {
+            hasHead = true;
             newSegment.IsHead = true;
             if (Segments.Count > 1)
             {
@@ -87,6 +91,7 @@ public class Worm : MonoBehaviour
         }
         else if (index == Segments.Count - 1)
         {
+            hasTail = true;
             newSegment.IsTail = true;
             if (Segments.Count > 1)
             {

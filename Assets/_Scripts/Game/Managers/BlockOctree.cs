@@ -93,8 +93,11 @@ public class BlockOctree
 
         foreach (var block in node.Blocks)
         {
-            int octant = GetOctant(node, block.transform.position);
-            AddBlockRecursive(node.Children[octant], block);
+            if (block)
+            {
+                int octant = GetOctant(node, block.transform.position);
+                AddBlockRecursive(node.Children[octant], block);
+            }
         }
         node.Blocks.Clear();
     }

@@ -223,14 +223,8 @@ namespace CosmicShore.Core
             }
         }
 
-        public virtual void Explode(Vector3 impactVector, Teams team, string playerName, bool devastate=false)
+        protected virtual void Explode(Vector3 impactVector, Teams team, string playerName, bool devastate = false)
         {
-            if ((TrailBlockProperties.Shielded && !devastate) || TrailBlockProperties.IsSuperShielded)
-            {
-                DeactivateShields();
-                return;
-            }
-
             // We don't destroy the trail blocks, we keep the objects around so they can be restored
             gameObject.GetComponent<BoxCollider>().enabled = false;
             gameObject.GetComponent<MeshRenderer>().enabled = false;
@@ -255,6 +249,18 @@ namespace CosmicShore.Core
 
             // TODO: State track should go to mini games
 
+        }
+
+        public void Damage(Vector3 impactVector, Teams team, string playerName, bool devastate=false)
+        {
+            if ((TrailBlockProperties.Shielded && !devastate) || TrailBlockProperties.IsSuperShielded)
+            {
+                DeactivateShields();
+            }
+            else
+            {
+                Explode(impactVector, team, playerName, devastate);
+            }         
         }
 
         public void DeactivateShields()

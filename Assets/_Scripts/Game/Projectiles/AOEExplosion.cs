@@ -74,9 +74,9 @@ namespace CosmicShore.Game.Projectiles
                 }
 
                 if (AnonymousExplosion)
-                    trailBlock.Explode(impactVector, Teams.None, "🔥GuyFawkes🔥", devastating);
+                    trailBlock.Damage(impactVector, Teams.None, "🔥GuyFawkes🔥", devastating);
                 else
-                    trailBlock.Explode(impactVector, Ship.Team, Ship.Player.PlayerName, devastating);
+                    trailBlock.Damage(impactVector, Ship.Team, Ship.Player.PlayerName, devastating);
             }
             if (other.TryGetComponent<ShipGeometry>(out var shipGeometry))
             {
