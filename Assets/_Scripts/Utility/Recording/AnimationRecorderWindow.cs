@@ -6,6 +6,7 @@ using UnityEngine.Playables;
 using UnityEngine.Timeline;
 using UnityEditor;
 using UnityEditor.Animations;
+using System;
 
 namespace CosmicShore.Utility
 {
@@ -90,6 +91,10 @@ namespace CosmicShore.Utility
                 }
                 sceneData = gameObject.AddComponent<DataHolder>();
                 holder = sceneData;
+                if (gameObject.GetComponent<PlayableDirector>() == null)
+                {
+                    gameObject.AddComponent<PlayableDirector>();
+                }
                 return holder;
             }
         }
@@ -123,6 +128,13 @@ namespace CosmicShore.Utility
         private float animationStart = 0;
 
         /// <summary>
+        /// Number for each recording of the same object.
+        /// If object X is recorded 3 times in one session, add 0, 1, and 2 to each of its
+        /// recording's temp files.
+        /// </summary>
+        private int recordingNumber = 0;
+
+        /// <summary>
         /// A collection of every recorder, each one associated with a new game object to track.
         /// </summary>
         private static List<GameObjectRecorder> Recorders = new();
@@ -131,6 +143,19 @@ namespace CosmicShore.Utility
         /// The default vertical space between elements in the GUI.
         /// </summary>
         private static readonly int LAYOUT_VERTICAL_GAP = 10;
+
+        /// <summary>
+        /// Format in which to convert the number of each recording assets to a string,
+        /// with the right numbers of leading zeros.
+        /// </summary>
+        private static readonly string numberFormat = "D4";
+
+        /// <summary>
+        /// The salt used to keep each recording session distinct.
+        ///
+        /// <seealso href="https://en.wikipedia.org/wiki/Salt_(cryptography)">Definition of salt on wikipedia</seealso>
+        /// </summary>
+        private string salt;
 
         /// <summary>
         /// Creates the menu item "Window/Animation Recorder" and sets it to open the Animation Recorder
@@ -261,6 +286,10 @@ namespace CosmicShore.Utility
         private void EndRecording()
         {
             string currentAssetsPath = serializedObject.FindProperty(assetsPath).stringValue;
+            if (AssetDatabase.GetMainAssetTypeAtPath(currentAssetsPath) == null)
+            {
+                CreateAssetFolder(currentAssetsPath);
+            }
             IEnumerator<GameObjectRecorder> recordersEnumerator = Recorders.GetEnumerator();
             while (recordersEnumerator.MoveNext())
             {
@@ -268,8 +297,42 @@ namespace CosmicShore.Utility
                 GameObject currentGameObject = currentRecorder.root;
                 AnimationClip animationClip = new();
                 currentRecorder.SaveToClip(animationClip);
-                AssetDatabase.CreateAsset(animationClip, $"{currentAssetsPath}/{currentGameObject.name}.asset");
+                AssetDatabase.CreateAsset(animationClip, GameObjectAssetPath(currentGameObject, recordingNumber));
             }
+            recordingNumber++;
+        }
+
+        /// <summary>
+        /// The full path of the current animaiton asset.
+        ///
+        /// A "new recording" happens when the user stops recording and starts again within one play session.
+        /// </summary>
+        /// <param name="gameObject">The GameObject to which the animation refers.</param>
+        /// <param name="index">Which recording, if more than one in this session, in which this animation belongs.</param>
+        /// <returns></returns>
+        private string GameObjectAssetPath(GameObject gameObject, int index)
+        {
+            string currentAssetsPath = serializedObject.FindProperty(assetsPath).stringValue;
+            string crn = index.ToString(numberFormat);
+            return $"{currentAssetsPath}/{gameObject.name}.{crn}.{salt}.asset";
+        }
+
+        /// <summary>
+        /// Create the container folder for the saved animations.
+        /// </summary>
+        /// <param name="currentAssetsPath">The full path of the folder to create.</param>
+        private void CreateAssetFolder(string currentAssetsPath)
+        {
+            Stack<string> splitPath = new(currentAssetsPath.Split('/'));
+            string last = splitPath.Pop();
+            string parentPath = string.Join('/', splitPath);
+
+            if (!currentAssetsPath.StartsWith("Assets/"))
+            {
+                Debug.LogError("The set asset path must start with \"Assets/\".");
+            }
+            AssetDatabase.CreateFolder(parentPath, last);
+
         }
 
         /// <summary>
@@ -281,18 +344,24 @@ namespace CosmicShore.Utility
             PlayableDirector director = serializedObject.FindProperty(Director).objectReferenceValue as PlayableDirector;
             TimelineAsset currentTimelineAsset = serializedObject.FindProperty(timelineAsset).objectReferenceValue as TimelineAsset;
             string currentAssetsPath = serializedObject.FindProperty(assetsPath).stringValue;
-            IEnumerator<GameObjectRecorder> recordersEnumerator = Recorders.GetEnumerator();
             string trackName = serializedObject.FindProperty(TrackName).stringValue;
-            while (recordersEnumerator.MoveNext())
+            for (int currentRecordingNumber = 0; currentRecordingNumber < recordingNumber; currentRecordingNumber++)
             {
-                GameObjectRecorder gameObjectRecorder = recordersEnumerator.Current;
-                GameObject currentGameObject = gameObjectRecorder.root;
-                Animator currentAnimator = currentGameObject.GetComponent<Animator>();
-                AnimationTrack animationTrack = currentTimelineAsset.CreateTrack<AnimationTrack>($"{trackName} :: {currentGameObject.name}");
-                AnimationClip animationClip = AssetDatabase.LoadAssetAtPath<AnimationClip>($"{currentAssetsPath}/{currentGameObject.name}.asset");
-                animationTrack.CreateClip(animationClip);
-                director.SetGenericBinding(animationTrack, currentAnimator);
-                AssetDatabase.SaveAssets();
+                string crn = currentRecordingNumber.ToString(numberFormat);
+                IEnumerator<GameObjectRecorder> recordersEnumerator = Recorders.GetEnumerator();
+                while (recordersEnumerator.MoveNext())
+                {
+                    GameObjectRecorder gameObjectRecorder = recordersEnumerator.Current;
+                    GameObject currentGameObject = gameObjectRecorder.root;
+                    Animator currentAnimator = currentGameObject.GetComponent<Animator>();
+                    AnimationTrack animationTrack = currentTimelineAsset.CreateTrack<AnimationTrack>($"{trackName} :: {currentGameObject.name} #{crn}");
+                    string newAssetPath = GameObjectAssetPath(currentGameObject, currentRecordingNumber);
+                    Debug.Log($"new asset path: {newAssetPath}");
+                    AnimationClip animationClip = AssetDatabase.LoadAssetAtPath<AnimationClip>(newAssetPath);
+                    animationTrack.CreateClip(animationClip);
+                    director.SetGenericBinding(animationTrack, currentAnimator);
+                    AssetDatabase.SaveAssets();
+                }
             }
         }
 
@@ -324,6 +393,12 @@ namespace CosmicShore.Utility
             if (state == PlayModeStateChange.EnteredEditMode)
             {
                 BuildTimelineData();
+            }
+            if (state == PlayModeStateChange.EnteredPlayMode)
+            {
+                recordingNumber = 0;
+                int _salt = new System.Random().Next();
+                salt = Convert.ToBase64String(BitConverter.GetBytes(_salt)).TrimEnd('=');
             }
             if (state == PlayModeStateChange.ExitingPlayMode && isRecording)
             {
