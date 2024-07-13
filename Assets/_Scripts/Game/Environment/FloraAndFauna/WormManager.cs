@@ -53,8 +53,11 @@ public class WormManager : Population
             {
                 if (worm.Segments.Count > 2) // Only grow if there's at least one middle segment
                 {
-                    BodySegmentFauna newSegment = CreateSegment(worm.Segments[1].transform.position, 0.8f);
-                    worm.AddSegment(newSegment, 1); // Insert after the head
+                    BodySegmentFauna newSegment;
+                    if (!worm.hasHead) newSegment = CreateSegment(worm.Segments[0].transform.position, 1);
+                    else if (!worm.hasTail) newSegment = CreateSegment(worm.Segments[-1].transform.position, 1);
+                    else newSegment = CreateSegment(worm.Segments[1].transform.position, 0.8f);
+                    worm.AddSegment(newSegment, 3); // Insert after the head
                 }
             }
         }
@@ -91,7 +94,7 @@ public class WormManager : Population
                 newSegment = CreateSegment(position, Mathf.Max(0.6f, 1f - (i * 0.1f)), false, false);
 
             newWorm.AddSegment(newSegment);
-            position += newWorm.transform.forward * newSegment.transform.localScale.z;
+            position += newWorm.transform.forward * newSegment.transform.localScale.z; // TODO: use cylinder or other correction, add parenting possibly
         }
 
         return newWorm;

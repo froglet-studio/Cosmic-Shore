@@ -164,6 +164,12 @@ namespace CosmicShore
             }
         }
 
+        public override void RemoveSpindle(Spindle spindle)
+        {
+            base.RemoveSpindle(spindle);
+            Branch result = activeBranches.FirstOrDefault(item => item.gameObject == spindle.gameObject);
+            activeBranches.Remove(result);
+        }
 
         public override void Plant()
         {
@@ -173,6 +179,7 @@ namespace CosmicShore
 
         public Assembler CreateNewAssembler()
         {
+            Debug.Log("New Assembler");
             var newSpindle = AddSpindle();
 
             HealthBlock newHealthBlock = Instantiate(healthBlock, transform.position, transform.rotation);

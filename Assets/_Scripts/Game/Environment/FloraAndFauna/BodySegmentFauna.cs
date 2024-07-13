@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using CosmicShore;
 using CosmicShore.Core;
 using CosmicShore.Environment.FlowField;
+using System.Collections;
 
 public class BodySegmentFauna : Fauna
 {
@@ -13,8 +14,6 @@ public class BodySegmentFauna : Fauna
     public bool IsTail { get; set; }
 
     [SerializeField] private float scale = 1f;
-
-    private List<HealthBlock> healthBlocks = new List<HealthBlock>();
 
     protected override void Start()
     {
@@ -32,40 +31,22 @@ public class BodySegmentFauna : Fauna
         transform.localScale = Vector3.one * scale;
     }
 
-    public override void AddHealthBlock(HealthBlock block)
+    protected override void Die()
     {
-        base.AddHealthBlock(block);
-        healthBlocks.Add(block);
-    }
-
-    public override void RemoveHealthBlock(HealthBlock block)
-    {
-        base.RemoveHealthBlock(block);
-        healthBlocks.Remove(block);
-
-        if (healthBlocks.Count == 0)
-        {
-            DestroySegment();
-        }
-    }
-
-    private void DestroySegment()
-    {
-        if (crystal != null)
-        {
-            crystal.ActivateCrystal();
-        }
-
+        base.Die();
         if (!IsHead && !IsTail)
         {
             ParentWorm.SplitWorm(this);
         }
-        else if (IsHead || IsTail)
+        else if (IsHead)
         {
-            ParentWorm.RegenerateSegment(this);
+            ParentWorm.hasHead = false;
+        }
+        else if (IsTail)
+        {
+            ParentWorm.hasTail = false;
         }
 
-        Destroy(gameObject);
     }
 
     public void SetScale(float newScale)

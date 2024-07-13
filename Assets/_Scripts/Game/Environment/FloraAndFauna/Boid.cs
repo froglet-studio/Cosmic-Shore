@@ -159,7 +159,7 @@ public class Boid : Fauna
                                 }
                                 break;
                             case BoidCollisionEffects.Explode:
-                                otherTrailBlock.Explode(currentVelocity, healthBlock.Team, healthBlock.PlayerName + " boid", true);
+                                otherTrailBlock.Damage(currentVelocity, healthBlock.Team, healthBlock.PlayerName + " boid", true);
                                 break;
                         }
                     }
