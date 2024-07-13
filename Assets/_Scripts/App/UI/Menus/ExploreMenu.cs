@@ -247,7 +247,7 @@ namespace CosmicShore.App.UI.Menus
 
             // notify the mini game engine that this is the ship to play
             MiniGame.PlayerShipType = SelectedShip.Class;
-            MiniGame.PlayerCaptain = selectedCaptain;
+            MiniGame.ShipResources = selectedCaptain.InitialResourceLevels;
         }
 
         public void SetPlayerCount(int playerCount)
@@ -282,7 +282,7 @@ namespace CosmicShore.App.UI.Menus
         {
             LoadoutSystem.SaveGameLoadOut(SelectedGame.Mode, new Loadout(MiniGame.IntensityLevel, MiniGame.NumberOfPlayers, MiniGame.PlayerShipType, SelectedGame.Mode));
 
-            SceneManager.LoadScene(SelectedGame.SceneName);
+            Arcade.Instance.LaunchArcadeGame(SelectedGame.Mode, MiniGame.PlayerShipType, MiniGame.ShipResources, MiniGame.IntensityLevel, MiniGame.NumberOfPlayers, false);
         }
     }
 }

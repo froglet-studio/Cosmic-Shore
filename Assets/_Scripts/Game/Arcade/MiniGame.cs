@@ -10,7 +10,7 @@ using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using CosmicShore.App.Systems.UserActions;
 using CosmicShore.Game.UI;
-using UnityEngine.Serialization;
+using CosmicShore.Models.Enums;
 
 namespace CosmicShore.Game.Arcade
 {
@@ -40,6 +40,7 @@ namespace CosmicShore.Game.Arcade
         // Configuration set by player
         public static int NumberOfPlayers = 1;  // TODO: P1 - support excluding single player games (e.g for elimination)
         public static int IntensityLevel = 1;
+        public static bool IsDailyChallenge = false;
         static ShipTypes playerShipType = ShipTypes.Dolphin;
         static bool playerShipTypeInitialized;
         
@@ -56,6 +57,7 @@ namespace CosmicShore.Game.Arcade
             }
         }
         public static SO_Captain PlayerCaptain;
+        public static ResourceCollection ShipResources = new ResourceCollection(.5f, .5f, .5f, .5f);
 
         // Game State Tracking
         protected int TurnsTakenThisRound = 0;
@@ -83,12 +85,6 @@ namespace CosmicShore.Game.Arcade
             ReadyButton = HUD.ReadyButton;
             countdownTimer = HUD.CountdownTimer;
             ScoreTracker.GameCanvas = GameCanvas;
-
-            if (DefaultPlayerCaptain == null)
-                Debug.LogWarning("No Default Captain Set - This scene will not be able to launch without going through the main menu. Please set DefaultPlayerCaptain of the minigame script.");
-
-            if (PlayerCaptain == null)
-                PlayerCaptain = DefaultPlayerCaptain;
 
             foreach (var turnMonitor in TurnMonitors)
                 if (turnMonitor is TimeBasedTurnMonitor tbtMonitor)
@@ -276,7 +272,10 @@ namespace CosmicShore.Game.Arcade
             foreach (var player in Players)
                 Debug.Log($"MiniGame.EndGame - Player Score: {ScoreTracker.GetScore(player.PlayerName)} ");
 
-            LeaderboardManager.Instance.ReportGameplayStatistic(gameMode, PlayerShipType, IntensityLevel, ScoreTracker.GetHighScore(), ScoreTracker.GolfRules);
+            if (IsDailyChallenge)
+                LeaderboardManager.Instance.ReportDailyChallengeStatistic(ScoreTracker.GetHighScore(), ScoreTracker.GolfRules);
+            else
+                LeaderboardManager.Instance.ReportGameplayStatistic(gameMode, PlayerShipType, IntensityLevel, ScoreTracker.GetHighScore(), ScoreTracker.GolfRules);
 
             UserActionSystem.Instance.CompleteAction(new UserAction(
                     UserActionType.PlayGame,
@@ -349,7 +348,7 @@ namespace CosmicShore.Game.Arcade
             ActivePlayer.Ship.GetComponent<ShipTransformer>().Reset();
             ActivePlayer.Ship.TrailSpawner.PauseTrailSpawner();
             ActivePlayer.Ship.ResourceSystem.Reset();
-            ActivePlayer.Ship.AssignCaptain(PlayerCaptain);
+            ActivePlayer.Ship.SetResourceLevels(ShipResources);
 
             CameraManager.Instance.SetupGamePlayCameras(ActivePlayer.Ship.FollowTarget);
 

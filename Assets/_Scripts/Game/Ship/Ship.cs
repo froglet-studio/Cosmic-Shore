@@ -1,12 +1,12 @@
+using CosmicShore.Game.AI;
 using CosmicShore.Game.IO;
+using CosmicShore.Game.Projectiles;
+using CosmicShore.Models.ScriptableObjects;
+using CosmicShore.Models.Enums;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using CosmicShore.Game.AI;
-using CosmicShore.Game.Projectiles;
-using CosmicShore.Models.ScriptableObjects;
-using UnityEngine.TextCore.Text;
 
 namespace CosmicShore.Core
 {
@@ -395,15 +395,20 @@ namespace CosmicShore.Core
                 collider.enabled = enabled;
         }
 
+        public void SetResourceLevels(ResourceCollection resourceGroup)
+        {
+            ResourceSystem.InitialChargeLevel = resourceGroup.Charge;
+            ResourceSystem.InitialMassLevel = resourceGroup.Mass;
+            ResourceSystem.InitialSpaceLevel = resourceGroup.Space;
+            ResourceSystem.InitialTimeLevel = resourceGroup.Time;
+
+            ResourceSystem.InitializeElementLevels();
+        }
+
         public void AssignCaptain(SO_Captain captain)
         {
             this.captain = captain;
-            ResourceSystem.InitialChargeLevel = this.captain.InitialCharge;
-            ResourceSystem.InitialMassLevel = this.captain.InitialMass;
-            ResourceSystem.InitialSpaceLevel = this.captain.InitialSpace;
-            ResourceSystem.InitialTimeLevel = this.captain.InitialTime;
-
-            ResourceSystem.InitializeElementLevels();
+            SetResourceLevels(captain.InitialResourceLevels);
         }
 
         public void UpdateLevel(Element element, int upgradeLevel)

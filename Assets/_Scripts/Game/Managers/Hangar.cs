@@ -24,14 +24,7 @@ namespace CosmicShore.Core
         [SerializeField] List<ShipTypes> GreenTeamShipTypes = new List<ShipTypes>() { ShipTypes.Random, ShipTypes.Random, ShipTypes.Random };
         [SerializeField] List<ShipTypes> RedTeamShipTypes = new List<ShipTypes>() { ShipTypes.Random, ShipTypes.Random, ShipTypes.Random };
         [SerializeField] List<ShipTypes> GoldTeamShipTypes = new List<ShipTypes>() { ShipTypes.Random, ShipTypes.Random, ShipTypes.Random };
-
         Dictionary<Teams, List<ShipTypes>> TeamShipTypes = new();
-
-
-        [Header("Captain Settings")]
-        [SerializeField] public SO_Captain SoarCaptain;
-        [SerializeField] public SO_Captain SmashCaptain;
-        [SerializeField] public SO_Captain SportCaptain;
 
         [Header("Material Settings")]
         [SerializeField] SO_MaterialSet GreenTeamMaterialSet;
@@ -141,7 +134,7 @@ namespace CosmicShore.Core
             Ship ship = Instantiate(shipTypeMap[shipType]);
 
             if (PlayerCaptain != null)
-                ship.AssignCaptain(PlayerCaptain);
+                ship.SetResourceLevels(PlayerCaptain.InitialResourceLevels);
 
             ship.SetShipMaterial(TeamMaterialSets[team].ShipMaterial);
             ship.SetBlockMaterial(TeamMaterialSets[team].BlockMaterial);

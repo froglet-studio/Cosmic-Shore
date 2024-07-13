@@ -276,6 +276,26 @@ namespace CosmicShore.Core
             return 0;
         }
 
+        public void IncrementLevel(Element element, float amount)
+        {
+            switch (element)
+            {
+                case Element.Charge:
+                    AdjustChargeLevel(amount);
+                    break;
+                case Element.Mass:
+                    AdjustMassLevel(amount);
+                    break;
+                case Element.Space:
+                    AdjustSpaceLevel(amount);
+                    break;
+                case Element.Time:
+                    AdjustTimeLevel(amount);
+                    break;
+            }
+        }
+
+
         public void IncrementLevel(Element element)
         {
             switch (element)
