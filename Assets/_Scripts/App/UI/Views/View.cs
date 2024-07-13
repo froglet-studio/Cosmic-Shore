@@ -9,7 +9,13 @@ namespace CosmicShore
         [SerializeField] NavGroup navGroup;
         public List<ScriptableObject> Models { get; set; }
         protected ScriptableObject SelectedModel { get; set; }
-        
+
+        public void AssignModel(ScriptableObject Model)
+        {
+            this.Models = new List<ScriptableObject>() { Model };
+            Select(0);
+        }
+
         public void AssignModels(List<ScriptableObject> Models)
         {
             this.Models = Models;

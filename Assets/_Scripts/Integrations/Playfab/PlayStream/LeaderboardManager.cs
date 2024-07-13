@@ -48,6 +48,7 @@ namespace CosmicShore.Integrations.PlayFab.PlayStream
 
         // Local storage data prefix
         private const string CachedLeaderboardFileNamePrefix = "leaderboard_";
+        public const string DailyChallengeStatisticName = "DAILY_CHALLENGE";
 
         bool _online;
 
@@ -178,7 +179,7 @@ namespace CosmicShore.Integrations.PlayFab.PlayStream
             {
                 new StatisticUpdate()
                 {
-                    StatisticName = "DailyChallenge",
+                    StatisticName = DailyChallengeStatisticName,
                     Value = score
                 }
             };
