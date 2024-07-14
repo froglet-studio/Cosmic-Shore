@@ -30,6 +30,7 @@ public class BlockImpact : MonoBehaviour
             transform.position = initialPosition + distance;
         }
 
+        Destroy(material);
         Destroy(transform.gameObject);
     }
 }
