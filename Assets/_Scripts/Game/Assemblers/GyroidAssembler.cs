@@ -70,7 +70,7 @@ namespace CosmicShore
         public bool isSeed = false;
 
         private float snapDistance = .3f;
-        float separationDistance = 3f;
+        [SerializeField] float separationDistance = 3f;
         [SerializeField] int colliderTheshold = 1;
         [SerializeField] float radius = 40f;
 
