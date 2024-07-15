@@ -248,7 +248,7 @@ namespace CosmicShore.Core
                 NodeControlManager.Instance.RemoveBlock(team, TrailBlockProperties);
 
             // TODO: State track should go to mini games
-
+            // TODO: if devestated destroy game object and material to prevent memory leak
         }
 
         public void Damage(Vector3 impactVector, Teams team, string playerName, bool devastate=false)
@@ -335,6 +335,8 @@ namespace CosmicShore.Core
                 yield return null;//new WaitForSeconds(.05f);
             }
 
+            Destroy(tempMaterial);
+
             meshRenderer.material = targetMaterial;
         }
 
@@ -379,6 +381,11 @@ namespace CosmicShore.Core
 
                 destroyed = false;
             }
+        }
+
+        void OnDestroy()
+        {
+            Destroy(GetComponent<MeshRenderer>().material);
         }
     }
 }

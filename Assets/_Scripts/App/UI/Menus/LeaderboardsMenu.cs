@@ -37,6 +37,7 @@ namespace CosmicShore.App.UI.Menus
             var gamesCount = LeaderboardEligibleGames.Count;
             var containerCount = GameSelectionContainer.childCount;
             _displayCount = Math.Min(gamesCount, containerCount);
+            SelectedGame = LeaderboardEligibleGames[0];
 
             PlayerDataController.OnProfileLoaded += FetchLeaderboard;
 

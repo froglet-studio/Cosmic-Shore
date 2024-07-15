@@ -7,30 +7,17 @@ using UnityEngine;
 
 namespace CosmicShore
 {
-    public class DailyChallengeModal : MonoBehaviour
+    public class DailyChallengeGameView : View
     {
-
         [Header("Placeholder Locations")]
         [SerializeField] TMP_Text GameTitle;
         [SerializeField] TMP_Text TimeRemaining;
         [SerializeField] GameObject PreviewWindow;
 
-        SO_ArcadeGame game;
-
-        public SO_ArcadeGame Game
-        {
-            get { return game; }
-            set
-            {
-                game = value;
-                UpdateView();
-            }
-        }
-
         void Start()
         {
             var gameMode = DailyChallengeSystem.Instance.DailyChallenge.GameMode;
-            Game = Arcade.Instance.TrainingGames.GameList.Where(x => x.Game.Mode == gameMode).FirstOrDefault().Game;
+            AssignModel(Arcade.Instance.TrainingGames.GameList.Where(x => x.Game.Mode == gameMode).FirstOrDefault().Game);
         }
 
         void Update()
@@ -50,17 +37,13 @@ namespace CosmicShore
             else
             {
                 var gameMode = DailyChallengeSystem.Instance.DailyChallenge.GameMode;
-                Game = Arcade.Instance.TrainingGames.GameList.Where(x => x.Game.Mode == gameMode).FirstOrDefault().Game;
+                AssignModel(Arcade.Instance.TrainingGames.GameList.Where(x => x.Game.Mode == gameMode).FirstOrDefault().Game);
             }
         }
 
-        public void Play()
+        public override void UpdateView()
         {
-            DailyChallengeSystem.Instance.PlayDailyChallenge();
-        }
-
-        void UpdateView()
-        {
+            var game = SelectedModel as SO_ArcadeGame;
             GameTitle.text = $"{game.DisplayName}";
             // TODO: may need to destroy all children first to prevent multiple clips from playing
             var preview = Instantiate(game.PreviewClip);
