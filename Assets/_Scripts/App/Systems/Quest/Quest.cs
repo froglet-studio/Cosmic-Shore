@@ -1,6 +1,7 @@
-using CosmicShore.App.Systems.CTA;
 using CosmicShore.App.Systems.UserActions;
+using CosmicShore.Integrations.PlayFab.Economy;
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace CosmicShore.App.Systems.Quests
@@ -21,6 +22,12 @@ namespace CosmicShore.App.Systems.Quests
         public bool MultiSessionTracking;
         public string Scope;
         public DateTime Expiration;
+
+        /* Rewards */
+        public VirtualItem UnlockedItem;
+        public List<(Element, int)> CrystalRewards;
+        [Tooltip("Playfab Item ID to be granted when the Quest is completed")]
+        public string RewardItemID;
 
         /* Progress Tracking */
         [HideInInspector] public int EventsCompleted = 0;

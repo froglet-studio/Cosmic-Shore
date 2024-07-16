@@ -1,9 +1,7 @@
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
-using System;
-using CosmicShore.Core;
+using CosmicShore.Models.Enums;
 
 /*
     get class name
@@ -45,21 +43,14 @@ namespace CosmicShore
         #region Scriptable Objects
         // Class SO
         SO_Ship newClassSO;
-        // Training Vessel SO
-        SO_Guide newTrainingVesselSO_1;
-        SO_Guide newTrainingVesselSO_2;
-        SO_Guide newTrainingVesselSO_3;
-        SO_Guide newTrainingVesselSO_4;
-        // Upgrade Vessel SO
-        SO_Guide newUpgradeVesselSO_1;
-        SO_Guide newUpgradeVesselSO_2;
-        SO_Guide newUpgradeVesselSO_3;
-        SO_Guide newUpgradeVesselSO_4;
+        // Captains
+        SO_Captain SO_Captain_Mass;
+        SO_Captain SO_Captain_Charge;
+        SO_Captain SO_Captain_Space;
+        SO_Captain SO_Captain_Time;
         // Freestyle Vessel SO
-        SO_Guide newFreestyleVesselSO_1;
-        //Lists of VesselSO's
-        List<SO_Guide> TrainingVessels = new List<SO_Guide>();
-        List<SO_Guide> UpgradeVessels = new List<SO_Guide>();
+        SO_Captain SO_Captain_Arcade;
+        List<SO_Captain> Captains = new List<SO_Captain>();
         #endregion
 
         private void OnEnable()
@@ -80,24 +71,15 @@ namespace CosmicShore
         // Create Empty Vessel Scriptable Objects
         private void CreateElementClassSOInstancesFromType()
         {
-            
-            // Create an empty instance of the Element_Class Training ScriptableObject
-            newTrainingVesselSO_1 = SO_Guide.CreateInstance<SO_Guide>();
-            newTrainingVesselSO_2 = SO_Guide.CreateInstance<SO_Guide>();
-            newTrainingVesselSO_3 = SO_Guide.CreateInstance<SO_Guide>();
-            newTrainingVesselSO_4 = SO_Guide.CreateInstance<SO_Guide>();
-            TrainingVessels.Add(newTrainingVesselSO_1);TrainingVessels.Add(newTrainingVesselSO_2); TrainingVessels.Add(newTrainingVesselSO_3); TrainingVessels.Add(newTrainingVesselSO_4);
-
-            
-            // Create an empty instance of the Element_Class Upgrade ScriptableObject
-            newUpgradeVesselSO_1 = SO_Guide.CreateInstance<SO_Guide>();
-            newUpgradeVesselSO_2 = SO_Guide.CreateInstance<SO_Guide>();
-            newUpgradeVesselSO_3 = SO_Guide.CreateInstance<SO_Guide>();
-            newUpgradeVesselSO_4 = SO_Guide.CreateInstance<SO_Guide>();
-            UpgradeVessels.Add(newUpgradeVesselSO_1); UpgradeVessels.Add(newUpgradeVesselSO_2); UpgradeVessels.Add(newUpgradeVesselSO_3); UpgradeVessels.Add(newUpgradeVesselSO_4);
-
             // Create an empty instance of the Element_Class Freestyle ScriptableObject
-            newFreestyleVesselSO_1 = SO_Guide.CreateInstance<SO_Guide>();
+            SO_Captain_Arcade = CreateInstance<SO_Captain>();
+
+            // Create an empty instance of the Element_Class Upgrade ScriptableObject
+            SO_Captain_Mass = CreateInstance<SO_Captain>();
+            SO_Captain_Charge = CreateInstance<SO_Captain>();
+            SO_Captain_Space = CreateInstance<SO_Captain>();
+            SO_Captain_Time = CreateInstance<SO_Captain>();
+            Captains.Add(SO_Captain_Mass); Captains.Add(SO_Captain_Charge); Captains.Add(SO_Captain_Space); Captains.Add(SO_Captain_Time);
         }
 
         #endregion
@@ -152,32 +134,15 @@ namespace CosmicShore
                 {
                     Debug.LogError("Failed to create class asset or obtain reference");
                 }
-
-                // Create a TrainingVesselSO assets
-                for (int idx = 0; idx < elements.Count; idx++)
-                {
-                    string newTrainingVesselName = elements[idx].ToString() + newClassName + "TrainingSO";
-                    TrainingVessels[idx] = ScriptableObjectEditor.CreateVesselScriptableObject(newTrainingVesselName, elements[idx], true, newClassSOName); //Send string training also
-
-                    if (TrainingVessels[idx] != null)
-                    {
-                        Debug.Log("Asset created and reference obtained: " + TrainingVessels[idx].name);
-
-                    }
-                    else
-                    {
-                        Debug.LogError("Failed to create Vessel asset or obtain reference");
-                    }
-                }
                 // Create a UpgradeVesselSO assets
                 for (int idx = 0; idx < elements.Count; idx++)
                 {
-                    string newUpgradeVesselName = elements[idx].ToString() + newClassName + "UpgradeSO";
-                    UpgradeVessels[idx] = ScriptableObjectEditor.CreateVesselScriptableObject(newUpgradeVesselName, elements[idx], false, newClassSOName); //Send string Upgrade also
+                    string newUpgradeVesselName = $"SO_Captain_{newClassName}_{elements[idx]}";
+                    Captains[idx] = ScriptableObjectEditor.CreateCaptainScriptableObject(newUpgradeVesselName, elements[idx], false, newClassSOName); //Send string Upgrade also
 
-                    if (UpgradeVessels[idx] != null)
+                    if (Captains[idx] != null)
                     {
-                        Debug.Log("Asset created and reference obtained: " + UpgradeVessels[idx].name);
+                        Debug.Log("Asset created and reference obtained: " + Captains[idx].name);
 
                     }
                     else
@@ -186,12 +151,11 @@ namespace CosmicShore
                     }
                 }
                 // Create a FreestyleVesselSO assets
-                string newFreestyleVesselName = newClassName + "FreestyleSO";
-                newFreestyleVesselSO_1 = ScriptableObjectEditor.CreateFreestyleVesselScriptableObject(newFreestyleVesselName);
+                SO_Captain_Arcade = ScriptableObjectEditor.CreateFreestyleVesselScriptableObject($"SO_Captain_Arcade_{newClassName}");
 
-                if (newFreestyleVesselSO_1 != null)
+                if (SO_Captain_Arcade != null)
                 {
-                    Debug.Log("Asset created and reference obtained: " + newFreestyleVesselSO_1.name);
+                    Debug.Log("Asset created and reference obtained: " + SO_Captain_Arcade.name);
 
                 }
                 else
@@ -223,10 +187,10 @@ namespace CosmicShore
             return AssetDatabase.LoadAssetAtPath<SO_Ship>(assetPath);
         }
 
-        public static SO_Guide CreateVesselScriptableObject(string name,string element, bool training, string classSOName)
+        public static SO_Captain CreateCaptainScriptableObject(string name, string element, bool training, string classSOName)
         {
             // Create an instance of the ScriptableObject
-            SO_Guide VesselSO = SO_Guide.CreateInstance<SO_Guide>();
+            SO_Captain VesselSO = SO_Captain.CreateInstance<SO_Captain>();
 
             // Set the values of the ScriptableObject
             VesselSO.name = name;                                            //Sets File Name
@@ -234,30 +198,29 @@ namespace CosmicShore
 
             string classSOAssetPath = "Assets/_SO_Assets/_TEMP/" + classSOName + ".asset"; //TODO
             VesselSO.Ship = AssetDatabase.LoadAssetAtPath<SO_Ship>(classSOAssetPath); //Sets ClassSO
+            VesselSO.InitialResourceLevels = new ResourceCollection(0, 0, 0, 0);
 
             switch (element)                                                  //Sets Elements
             {
                 case "Mass":
                     VesselSO.PrimaryElement = Element.Mass;
-                    if (training) { VesselSO.InitialMass = 1; }                            
+                    VesselSO.InitialResourceLevels.Mass = .5f;
                     break;
 
                 case "Charge":
                     VesselSO.PrimaryElement = Element.Charge;
-                    if (training) { VesselSO.InitialCharge = 1; }                 
+                    VesselSO.InitialResourceLevels.Charge = .5f;              
                     break;
 
                 case "Space":
                     VesselSO.PrimaryElement = Element.Space;
-                    if (training) { VesselSO.InitialSpace = 1; }
+                    VesselSO.InitialResourceLevels.Space = .5f;
                     break;
 
                 case "Time":
                     VesselSO.PrimaryElement = Element.Time;
-                    if (training) { VesselSO.InitialTime = 1; }                    
+                    VesselSO.InitialResourceLevels.Time = .5f;              
                     break;
-                    //default: 
-                    //Debug.Log("Element not found while creating VesselSO.");
             }
 
 
@@ -268,23 +231,19 @@ namespace CosmicShore
             AssetDatabase.Refresh();
 
             // Return a reference to the created asset
-            return AssetDatabase.LoadAssetAtPath<SO_Guide>(assetPath);
+            return AssetDatabase.LoadAssetAtPath<SO_Captain>(assetPath);
         }
 
-        public static SO_Guide CreateFreestyleVesselScriptableObject(string name)
+        public static SO_Captain CreateFreestyleVesselScriptableObject(string name)
         {
             // Create an instance of the ScriptableObject
-            SO_Guide VesselSO = SO_Guide.CreateInstance<SO_Guide>();
+            SO_Captain VesselSO = SO_Captain.CreateInstance<SO_Captain>();
 
             // Set the value of the ScriptableObject
             VesselSO.name = name;                                            //Sets File Name 
             VesselSO.Name = name;                                            //Sets Display Name
             //VesselSO.PrimaryElement =                                      //TODO set all elements to max
-            
-            VesselSO.InitialMass = 1;
-            VesselSO.InitialCharge = 1;
-            VesselSO.InitialSpace = 1;
-            VesselSO.InitialTime = 1;
+            VesselSO.InitialResourceLevels = new ResourceCollection(1, 1, 1, 1);
 
             // Save the asset to the "Assets" directory
             string assetPath = "Assets/_SO_Assets/_TEMP/" + name + ".asset"; //TODO
@@ -293,7 +252,7 @@ namespace CosmicShore
             AssetDatabase.Refresh();
 
             // Return a reference to the created asset
-            return AssetDatabase.LoadAssetAtPath<SO_Guide>(assetPath);
+            return AssetDatabase.LoadAssetAtPath<SO_Captain>(assetPath);
         }       
     }
 }

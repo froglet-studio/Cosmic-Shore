@@ -6,9 +6,21 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using CosmicShore.Game.AI;
+using CosmicShore.Utility.ClassExtensions;
 
 namespace CosmicShore.Environment.FlowField
 {
+
+    [System.Serializable]
+    public struct CrystalModelData
+    {
+        public GameObject model;
+        public Material defaultMaterial;
+        public Material explodingMaterial;
+        public Material inactiveMaterial;
+        public SpaceCrystalAnimator spaceCrystalAnimator;
+    }
+
     public class Crystal : NodeItem
     {
         #region Events
@@ -19,10 +31,10 @@ namespace CosmicShore.Environment.FlowField
         #region Inspector Fields
         [SerializeField] public CrystalProperties crystalProperties;
         [SerializeField] public float sphereRadius = 100;
+
         [SerializeField] protected GameObject SpentCrystalPrefab;
-        [SerializeField] protected GameObject CrystalModel; 
-        [SerializeField] protected Material explodingMaterial;
-        [SerializeField] protected Material defaultMaterial;
+
+        [SerializeField] protected List<CrystalModelData> crystalModels;
         [SerializeField] protected bool shipImpactEffects = true;
         #endregion
 
@@ -39,19 +51,24 @@ namespace CosmicShore.Environment.FlowField
         protected Material tempMaterial;
         List<Collider> collisions;
 
+        /// <summary>
+        /// 
+        /// </summary>
+        private static int _layerName;
+
         protected virtual void Awake()
         {
             collisions = new List<Collider>();
+            
+            // Initialized Crystal game object layer, assign it to "Crystals"
+            _layerName = LayerMask.NameToLayer("Crystals");
+            gameObject.layer = _layerName;
         }
+
 
         protected virtual void Start()
         {
             AddSelfToNode();
-        }
-
-        protected virtual void OnEnable()
-        {
-            //AddSelfToNode();
         }
 
         protected virtual void OnTriggerEnter(Collider other)
@@ -88,8 +105,8 @@ namespace CosmicShore.Environment.FlowField
                         AOEExplosion.MaxScale = maxExplosionScale;
                         AOEExplosion.AnonymousExplosion = true;
                         break;
-                    case CrystalImpactEffects.IncrementLevel: // TODO: add amount based on crystal scale
-                        ship.ResourceSystem.IncrementLevel(crystalProperties.Element);
+                    case CrystalImpactEffects.IncrementLevel:
+                        ship.ResourceSystem.IncrementLevel(crystalProperties.Element, transform.lossyScale.x*crystalProperties.fuelAmount);
                         break;
                 }
             }
@@ -99,7 +116,8 @@ namespace CosmicShore.Environment.FlowField
         {
             Ship ship;
             Projectile projectile;
-            if (IsShip(other.gameObject))
+
+            if (other.gameObject.IsLayer("Ships"))
             {
                 ship = other.GetComponent<ShipGeometry>().Ship;
                 if (Team == Teams.None || Team == ship.Team)
@@ -118,7 +136,7 @@ namespace CosmicShore.Environment.FlowField
                 }
                 else return;
             }
-            else if (IsProjectile(other.gameObject))
+            else if (other.gameObject.IsLayer("Projectiles"))
             {
                 ship = other.GetComponent<Projectile>().Ship;
                 projectile = other.GetComponent<Projectile>();
@@ -137,7 +155,7 @@ namespace CosmicShore.Environment.FlowField
                         StatsManager.Instance.CrystalCollected(ship, crystalProperties);
                 }
                 else return;
-            } 
+            }
             else return;
 
             //
@@ -146,27 +164,79 @@ namespace CosmicShore.Environment.FlowField
             PerformCrystalImpactEffects(crystalProperties, ship);
 
             Explode(ship);
-
+            
             PlayExplosionAudio();
 
             // Move the Crystal
-            StartCoroutine(CrystalModel.GetComponent<FadeIn>().FadeInCoroutine());
-            transform.SetPositionAndRotation(Random.insideUnitSphere * sphereRadius + origin, UnityEngine.Random.rotation);
-            OnCrystalMove?.Invoke();
+            if (crystalProperties.Element == Element.None)
+            {
+                foreach (var model in crystalModels)
+                {
+                    StartCoroutine(model.model.GetComponent<FadeIn>().FadeInCoroutine());
+                }
 
-            UpdateSelfWithNode();
+                transform.SetPositionAndRotation(Random.insideUnitSphere * sphereRadius + origin, UnityEngine.Random.rotation);
+                OnCrystalMove?.Invoke();
+
+                UpdateSelfWithNode();  //TODO: check if we need to remove elmental crystals from the node
+            }
+            else
+            {
+                RemoveSelfFromNode();
+                Destroy(gameObject);
+            }
+        }
+
+        //the following is a public method that can be called to grow the crystal
+        public void GrowCrystal(float duration, float targetScale)
+        {
+            StartCoroutine(Grow(duration, targetScale));
+        }
+
+        // the following grow coroutine is used to grow the crystal when it changes size
+        public IEnumerator Grow(float duration, float targetScale)
+        {
+            float elapsedTime = 0.0f;
+            Vector3 startScale = transform.localScale;
+            Vector3 targetScaleVector = new Vector3(targetScale, targetScale, targetScale);
+
+            while (elapsedTime < duration)
+            {
+                elapsedTime += Time.deltaTime;
+                float t = Mathf.Clamp01(elapsedTime / duration);
+
+                transform.localScale = Vector3.Lerp(startScale, targetScaleVector, t);
+
+                yield return null;
+            }
+
+            transform.localScale = targetScaleVector;
         }
 
         protected void Explode(Ship ship)
         {
-            tempMaterial = new Material(explodingMaterial);
-            var spentCrystal = Instantiate(SpentCrystalPrefab);
-            spentCrystal.transform.position = transform.position;
-            spentCrystal.transform.localEulerAngles = transform.localEulerAngles;
-            spentCrystal.GetComponent<Renderer>().material = tempMaterial;
+            for (int i = 0; i < crystalModels.Count; i++)
+            {
+                var modelData = crystalModels[i];
+                var model = modelData.model;
 
-            spentCrystal.GetComponent<Impact>().HandleImpact(
-                ship.transform.forward * ship.GetComponent<ShipStatus>().Speed, tempMaterial, ship.Player.PlayerName);
+                tempMaterial = new Material(modelData.explodingMaterial);
+                var spentCrystal = Instantiate(SpentCrystalPrefab);
+                spentCrystal.transform.position = transform.position;
+                spentCrystal.transform.localEulerAngles = transform.localEulerAngles;
+                spentCrystal.GetComponent<Renderer>().material = tempMaterial;
+                spentCrystal.transform.localScale = transform.lossyScale;
+
+                if (crystalProperties.Element == Element.Space && modelData.spaceCrystalAnimator != null)
+                {
+                    var spentAnimator = spentCrystal.GetComponent<SpaceCrystalAnimator>();
+                    var thisAnimator = model.GetComponent<SpaceCrystalAnimator>();
+                    spentAnimator.timer = thisAnimator.timer;
+                }
+                var shipStatus = ship.GetComponent<ShipStatus>();
+                spentCrystal.GetComponent<Impact>().HandleImpact(
+                    shipStatus.Course * shipStatus.Speed, tempMaterial, ship.Player.PlayerName);
+            }
         }
 
         protected void PlayExplosionAudio()
@@ -175,27 +245,35 @@ namespace CosmicShore.Environment.FlowField
             AudioSystem.Instance.PlaySFXClip(audioSource.clip, audioSource);
         }
 
-        // TODO: P1 move to static ObjectResolver class
-        protected bool IsShip(GameObject go)
-        {
-            return go.layer == LayerMask.NameToLayer("Ships");
-        }
-
-        // TODO: P1 move to static ObjectResolver class
-        protected bool IsProjectile(GameObject go)
-        {
-            return go.layer == LayerMask.NameToLayer("Projectiles");
-        }
-
         public void SetOrigin(Vector3 origin)
         {
             this.origin = origin;
         }
 
+        public void ActivateCrystal()
+        {
+            transform.parent = NodeControlManager.Instance.GetNearestNode(transform.position).transform;
+            gameObject.GetComponent<SphereCollider>().enabled = true;
+            enabled = true;
+
+            for (int i = 0; i < crystalModels.Count; i++)
+            {
+                var modelData = crystalModels[i];
+                var model = modelData.model;
+
+                model.GetComponent<Renderer>().material = modelData.inactiveMaterial;
+                StartCoroutine(LerpCrystalMaterialCoroutine(model, modelData.defaultMaterial));
+            }
+        }
+
+
         public void Steal(Teams team, float duration)
         {
             Team = team;
-            CrystalModel.GetComponent<MeshRenderer>().material = Hangar.Instance.GetTeamCrystalMaterial(team);
+            foreach (var modelData in crystalModels)
+            {
+                StartCoroutine(LerpCrystalMaterialCoroutine(modelData.model, Hangar.Instance.GetTeamCrystalMaterial(team), 1)); // TODO: need color manager instead
+            }
             StartCoroutine(DecayingTheftCoroutine(duration));
         }
 
@@ -203,7 +281,40 @@ namespace CosmicShore.Environment.FlowField
         {
             yield return new WaitForSeconds(duration);
             Team = Teams.None;
-            CrystalModel.GetComponent<MeshRenderer>().material = defaultMaterial;
+            foreach (var modelData in crystalModels)
+            {
+                StartCoroutine(LerpCrystalMaterialCoroutine(modelData.model, modelData.defaultMaterial, 1));
+            }
+        }
+
+        Coroutine lerpCrystalMaterialCoroutine;
+        private IEnumerator LerpCrystalMaterialCoroutine(GameObject model, Material targetMaterial, float lerpDuration = 2f)
+        {
+            Renderer renderer = model.GetComponent<Renderer>();
+            Material tempMaterial = new Material(renderer.material);
+            renderer.material = tempMaterial;
+
+            Color startColor1 = tempMaterial.GetColor("_BrightCrystalColor");
+            Color startColor2 = tempMaterial.GetColor("_DullCrystalColor");
+
+            Color targetColor1 = targetMaterial.GetColor("_BrightCrystalColor");
+            Color targetColor2 = targetMaterial.GetColor("_DullCrystalColor");
+
+            float elapsedTime = 0.0f;
+
+            while (elapsedTime < lerpDuration)
+            {
+                elapsedTime += Time.deltaTime;
+                float t = Mathf.Clamp01(elapsedTime / lerpDuration);
+
+                tempMaterial.SetColor("_BrightCrystalColor", Color.Lerp(startColor1, targetColor1, t));
+                tempMaterial.SetColor("_DullCrystalColor", Color.Lerp(startColor2, targetColor2, t));
+
+                yield return null;
+            }
+
+            renderer.material = targetMaterial;
+            Destroy(tempMaterial);
         }
     }
 }

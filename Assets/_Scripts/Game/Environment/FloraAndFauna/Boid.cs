@@ -30,8 +30,9 @@ public class Boid : Fauna
     [SerializeField] float maxSpeed = 5.0f;
 
     [Header("Goal Settings")]
-    public Transform Goal;
     public Transform DefaultGoal;
+    public Vector3 target = Vector3.zero;
+
     public float normalizedIndex;
 
     [Header("Mound Settings")]
@@ -42,14 +43,11 @@ public class Boid : Fauna
     Quaternion desiredRotation;
 
     public bool isKilled = false;
-    public Teams Team = Teams.Blue;
 
     bool isTraveling = false;
 
     [SerializeField] List<BoidCollisionEffects> collisionEffects;
 
-    public BoidManager boidManager;
-    private TrailBlock trailBlock;
     private BoxCollider BlockCollider;
     //private Crystal crystal;
     //[SerializeField] Material activeCrystalMaterial;
@@ -65,13 +63,12 @@ public class Boid : Fauna
     {
         base.Start();
         crystal = GetComponentInChildren<Crystal>();
-        if (!boidManager) boidManager = GetComponentInParent<BoidManager>();
-        trailBlock = GetComponentInChildren<TrailBlock>();
-        BlockCollider = GetComponentInChildren<BoxCollider>();
+        AddSpindle(spindle);
+        BlockCollider = healthBlock.GetComponent<BoxCollider>();
         currentVelocity = transform.forward * Random.Range(minSpeed, maxSpeed);
         float initialDelay = normalizedIndex * behaviorUpdateRate;
         StartCoroutine(CalculateBehaviorCoroutine(initialDelay));
-        trailBlock.Team = Team;
+        healthBlock.Team = Team;
     }
 
     IEnumerator CalculateBehaviorCoroutine(float initialDelay)
@@ -80,6 +77,8 @@ public class Boid : Fauna
 
         while (true)
         {
+            if (!attached && Population.Goal != null) target = Population.Goal;
+            // TODO add visual effect here leaving behind particles. and zoom ahead but decay in speed
             CalculateBehavior();
             yield return new WaitForSeconds(behaviorUpdateRate);
         }
@@ -89,15 +88,16 @@ public class Boid : Fauna
     {
         if (attached)
         {
-            desiredDirection = (Goal.position - transform.position).normalized;
+            desiredDirection = (target - transform.position).normalized;
             currentVelocity = desiredDirection * Mathf.Clamp(currentVelocity.magnitude, minSpeed, maxSpeed);
             desiredRotation = currentVelocity != Vector3.zero ? Quaternion.LookRotation(currentVelocity.normalized) : transform.rotation;
             return;
         }
+
         Vector3 separation = Vector3.zero;
         Vector3 alignment = Vector3.zero;
         Vector3 cohesion = Vector3.zero;
-        Vector3 goalDirection = Goal ? (Goal.position - transform.position) : Vector3.zero;
+        Vector3 goalDirection = target - transform.position;
         Vector3 blockAttraction = Vector3.zero;
 
         float averageSpeed = 0.0f;
@@ -135,11 +135,10 @@ public class Boid : Fauna
             }
             else if (otherTrailBlock)
             {
-                Debug.Log($"TrailBlock.Team {otherTrailBlock.Team}");
-                float blockWeight = boidManager.Weights[Mathf.Abs((int)otherTrailBlock.Team-1)]; // TODO: this is a hack to get the team weight, need to make this more robust
+                float blockWeight = Population.Weights[Mathf.Abs((int)otherTrailBlock.Team-1)]; // TODO: this is a hack to get the team weight, need to make this more robust
                 blockAttraction += -diff.normalized * blockWeight / distance;
 
-                if (distance < trailBlockInteractionRadius && otherTrailBlock.Team != trailBlock.Team)
+                if (distance < trailBlockInteractionRadius && otherTrailBlock.Team != healthBlock.Team)
                 {
                     foreach (var effect in collisionEffects)
                     {
@@ -151,16 +150,16 @@ public class Boid : Fauna
                                     if (!otherTrailBlock.IsSmallest)
                                     {
                                         attached = true;
-                                        Goal = otherTrailBlock.transform;
+                                        target = otherTrailBlock.transform.position;
                                         otherTrailBlock.Grow(-1);
-                                        trailBlock.Grow(1);
-                                        if (trailBlock.IsLargest) StartCoroutine(AddToMoundCoroutine());
+                                        healthBlock.Grow(1);
+                                        if (healthBlock.IsLargest) StartCoroutine(AddToMoundCoroutine());
                                     }
-                                    else Goal = DefaultGoal;
+                                    else target = DefaultGoal.position;
                                 }
                                 break;
                             case BoidCollisionEffects.Explode:
-                                otherTrailBlock.Explode(currentVelocity, trailBlock.Team, trailBlock.PlayerName + " boid", true);
+                                otherTrailBlock.Damage(currentVelocity, healthBlock.Team, healthBlock.PlayerName + " boid", true);
                                 break;
                         }
                     }
@@ -193,7 +192,7 @@ public class Boid : Fauna
         attached = false;
         isTraveling = true;
 
-        Goal = Mound;
+        target = Mound.position;
         float scanRadius = 30f;
         //while ((transform.position - Mound.position).sqrMagnitude > scanRadius)
         //{
@@ -209,15 +208,14 @@ public class Boid : Fauna
 
             //colliders = Physics.OverlapSphere(transform.position, 1f, LayerMask.NameToLayer("Mound"));
             GyroidAssembler nakedEdge = null;
-            Debug.Log($"colliders: {colliders.Length}");
             foreach (var collider in colliders)
             {
                 nakedEdge = collider.GetComponent<GyroidAssembler>();
-                if (nakedEdge && !nakedEdge.FullyBonded && nakedEdge.preferedBlocks.Count == 0 && (nakedEdge.IsBonded() || nakedEdge.isSeed))
+                if (nakedEdge && !nakedEdge.IsFullyBonded() && nakedEdge.preferedBlocks.Count == 0 && (nakedEdge.IsBonded() || nakedEdge.isSeed))
                 {
                     (var newBlock1, var gyroidBlock1) = NewBlock();
                     nakedEdge.preferedBlocks.Enqueue(gyroidBlock1);
-                    gyroidBlock1.GyroidBlock = newBlock1;
+                    gyroidBlock1.TrailBlock = newBlock1;
 
                     //(var newBlock2, var gyroidBlock2) = NewBlock();
                     //nakedEdge.preferedBlocks.Enqueue(gyroidBlock2);
@@ -233,15 +231,15 @@ public class Boid : Fauna
         }
 
         isTraveling = false;
-        trailBlock.IsLargest = false;
-        trailBlock.DeactivateShields();
-        trailBlock.Grow(-3);
+        healthBlock.IsLargest = false;
+        healthBlock.DeactivateShields();
+        healthBlock.Grow(-3);
     }
 
     (TrailBlock, GyroidAssembler) NewBlock()
     {
-        var newBlock = Instantiate(trailBlock, transform.position, transform.rotation, boidManager.transform);
-        newBlock.Team = trailBlock.Team;
+        var newBlock = Instantiate(healthBlock, transform.position, transform.rotation, Population.transform);
+        newBlock.Team = healthBlock.Team;
         newBlock.gameObject.layer = LayerMask.NameToLayer("Mound");
         //var ID = GetInstanceID().ToString();                    
         //Debug.Log($"ID of created : {ID}");
@@ -253,26 +251,13 @@ public class Boid : Fauna
     void Poop()
     {
         attached = false;
-        var newblock = Instantiate(trailBlock, transform.position, transform.rotation, boidManager.transform);
-        newblock.Team = trailBlock.Team;
-        trailBlock.Grow(-3);
+        var newblock = Instantiate(healthBlock, transform.position, transform.rotation, Population.transform);
+        newblock.Team = healthBlock.Team;
+        healthBlock.Grow(-3);
     }
 
     void Update()
     {
-
-        if ((trailBlock.destroyed || isKilled) && hasCrystal && !crystal.enabled) // TODO: still need the crystal check?
-        {
-            crystal.transform.parent = boidManager.transform;
-            crystal.gameObject.GetComponent<SphereCollider>().enabled = true;
-            crystal.enabled = true; 
-
-            crystal.GetComponentInChildren<SkinnedMeshRenderer>().material = activeCrystalMaterial; // TODO: make a crytal material set that this pulls from using the element
-            StopAllCoroutines();
-            Destroy(gameObject);
-            return;
-        }
-
         //if (trailBlock.Team != Teams.Blue)
         //{
         //    goal = trailBlock.Player.Ship.transform; // TODO: unccomment and make event driven and commander friendly

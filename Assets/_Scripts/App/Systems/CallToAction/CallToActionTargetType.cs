@@ -15,7 +15,9 @@ namespace CosmicShore.App.Systems.CTA
 
         // Hangar Related - 300s
         HangarMenu = 300,
-        HangarMenuOverviewButton = 301,
+        HangarMenuOverviewNavButton = 301,
+        HangarMenuCaptainsNavButton = 302,
+        HangarMenuTrainingNavButton = 303,
         HangarShipManta = 310,
         HangarShipRhino = 311,
         HangarShipSquirrel = 312,

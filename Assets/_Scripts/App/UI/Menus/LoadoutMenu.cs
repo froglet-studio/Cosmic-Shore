@@ -1,12 +1,11 @@
 using CosmicShore.App.Systems.Loadout;
 using CosmicShore.App.UI.Elements;
 using CosmicShore.Core;
-using CosmicShore.Game.Arcade;
+using CosmicShore.Models.Enums;
 using System.Collections.Generic;
 using System.Linq;
 using TMPro;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 namespace CosmicShore.App.UI.Menus
@@ -104,15 +103,8 @@ namespace CosmicShore.App.UI.Menus
         //  Play Button press gets loadout and sends to game
         public void OnClickPlayButton() 
         {
-            Loadout loadoutToPlay = LoadoutSystem.GetActiveLoadout();
-
-            SO_ArcadeGame game_SO = AllGames.GameList.Where(x => x.Mode == loadoutToPlay.GameMode).FirstOrDefault();
-
-            MiniGame.PlayerShipType = loadoutToPlay.ShipType;
-            MiniGame.PlayerCaptain = Hangar.Instance.SoarGuide; //TODO change to Element?
-            MiniGame.IntensityLevel = loadoutToPlay.Intensity;
-            MiniGame.NumberOfPlayers = loadoutToPlay.PlayerCount;
-            SceneManager.LoadScene(game_SO.SceneName);
+            Loadout loadout = LoadoutSystem.GetActiveLoadout();
+            Arcade.Instance.LaunchArcadeGame(loadout.GameMode, loadout.ShipType, new ResourceCollection(.5f, .5f, .5f, .5f), loadout.Intensity, loadout.PlayerCount, false);
         }
 
         // Sets ShipTypes
@@ -164,8 +156,8 @@ namespace CosmicShore.App.UI.Menus
                 image.sprite = selectedGame.CardBackground;
 
             availableShips = new List<SO_Ship>();
-            foreach (var guide in selectedGame.Guides)
-                availableShips.Add(guide.Ship);
+            foreach (var captain in selectedGame.Captains)
+                availableShips.Add(captain.Ship);
 
             // If selected ship is not available, fall back to zero
             if (!availableShips.Contains(AllShips.ShipList.Where(x => x.Class == activeShipType).FirstOrDefault()))

@@ -33,7 +33,6 @@ namespace CosmicShore.Core
         [Header("Ammo")]
         [SerializeField] bool displayAmmo;
         [SerializeField] bool gainsAmmo;
-        [FormerlySerializedAs("AmmoGainRate2")] // TODO: Remove this line
         [SerializeField] ElementalFloat ammoGainRate = new ElementalFloat(0.01f);
         [SerializeField] [Range(0, 1)] float initialAmmo = 1f;
         [SerializeField] [Range(0, 1)] float maxAmmo = 1f;
@@ -77,8 +76,9 @@ namespace CosmicShore.Core
         [HideInInspector] public ResourceDisplay SpaceDisplay;
         [HideInInspector] public ResourceDisplay TimeDisplay;
         [HideInInspector] public ResourceDisplay EnergyDisplay;
-        [HideInInspector] public ResourceButton BoostDisplay;
-        [HideInInspector] public ResourceDisplay AmmoDisplay;
+        //[HideInInspector] public ResourceButton BoostDisplay;
+        [SerializeField] ResourceDisplay BoostDisplay;
+        [SerializeField] ResourceDisplay AmmoDisplay;
 
         public static readonly float OneFuelUnit = 1 / 10f;
         ShipStatus shipData;
@@ -276,6 +276,26 @@ namespace CosmicShore.Core
             return 0;
         }
 
+        public void IncrementLevel(Element element, float amount)
+        {
+            switch (element)
+            {
+                case Element.Charge:
+                    AdjustChargeLevel(amount);
+                    break;
+                case Element.Mass:
+                    AdjustMassLevel(amount);
+                    break;
+                case Element.Space:
+                    AdjustSpaceLevel(amount);
+                    break;
+                case Element.Time:
+                    AdjustTimeLevel(amount);
+                    break;
+            }
+        }
+
+
         public void IncrementLevel(Element element)
         {
             switch (element)
@@ -295,39 +315,61 @@ namespace CosmicShore.Core
             }
         }
 
-        public void AdjustLevel(Element element, float amount)
+        /// <summary>
+        /// Adjust the level of an Ships elemental parameter
+        /// </summary>
+        /// <param name="element">Element whose level should be adjusted</param>
+        /// <param name="amount">Amount to adjust the level by</param>
+        /// <returns>Whether or not the adjustment triggered a full level upgrade</returns>
+        public bool AdjustLevel(Element element, float amount)
         {
+            var leveledUp = false;
+
             switch (element)
             {
                 case Element.Charge:
-                    AdjustChargeLevel(amount);
+                    leveledUp = AdjustChargeLevel(amount);
                     break;
                 case Element.Mass:
-                    AdjustMassLevel(amount);
+                    leveledUp = AdjustMassLevel(amount);
                     break;
                 case Element.Space:
-                    AdjustSpaceLevel(amount);
+                    leveledUp = AdjustSpaceLevel(amount);
                     break;
                 case Element.Time:
-                    AdjustTimeLevel(amount);
+                    leveledUp = AdjustTimeLevel(amount);
                     break;
             }
+
+            return leveledUp;
         }
-        void AdjustChargeLevel(float amount)
+        bool AdjustChargeLevel(float amount)
         {
+            var previousLevel = chargeLevel;
             chargeLevel = Math.Clamp(chargeLevel + amount, 0, MaxChargeLevel);
+
+            return (Mathf.Floor(chargeLevel) - Mathf.Floor(previousLevel) >= 1);
         }
-        void AdjustMassLevel(float amount)
+        bool AdjustMassLevel(float amount)
         {
+            var previousLevel = massLevel;
             massLevel = Math.Clamp(massLevel + amount, 0, MaxMassLevel);
+
+            return (Mathf.Floor(massLevel) - Mathf.Floor(previousLevel) >= 1);
         }
-        void AdjustSpaceLevel(float amount)
+        bool AdjustSpaceLevel(float amount)
         {
+            var previousLevel = spaceLevel;
             spaceLevel = Math.Clamp(spaceLevel + amount, 0, MaxSpaceLevel);
+
+            return (Mathf.Floor(spaceLevel) - Mathf.Floor(previousLevel) >= 1);
         }
-        void AdjustTimeLevel(float amount)
+        bool AdjustTimeLevel(float amount)
         {
+            var previousLevel = timeLevel;
             timeLevel = Math.Clamp(timeLevel + amount, 0, MaxTimeLevel);
+
+            return (Mathf.Floor(timeLevel) - Mathf.Floor(previousLevel) >= 1);
         }
     }
 }

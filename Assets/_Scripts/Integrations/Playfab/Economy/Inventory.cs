@@ -11,10 +11,10 @@ namespace CosmicShore.Integrations.PlayFab.Economy
         // Crystals - including Omni Crystals and Elemental Crystals
         public List<VirtualItem> crystals = new();
 
-        // Guides
+        // Captains
         public List<VirtualItem> captains = new();
-        
-        // Guide Upgrades
+
+        // Captain Upgrades
         public List<VirtualItem> captainUpgrades = new();
         
         // Ships
@@ -30,6 +30,7 @@ namespace CosmicShore.Integrations.PlayFab.Economy
 
         public void LoadFromDisk()
         {
+            Debug.Log("Inventory.LoadFromDisk");
             var tempInventory = DataAccessor.Load<Inventory>("inventory.data");
 
             crystals = tempInventory.crystals;
@@ -46,12 +47,7 @@ namespace CosmicShore.Integrations.PlayFab.Economy
 
         public bool ContainsShipClass(string shipName)
         {
-            foreach (var item in shipClasses)
-            {
-                Debug.LogWarning($"Ship Class Item {item.Name}");
-            }
             var count = shipClasses.Where(item => item.Name == shipName).Count();
-            Debug.LogWarning($"ContainsShipClass {shipName}, Count: {count}");
             return count > 0;
         }
     }

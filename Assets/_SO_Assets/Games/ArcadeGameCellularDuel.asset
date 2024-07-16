@@ -21,9 +21,9 @@ MonoBehaviour:
   CardBackground: {fileID: 21300000, guid: 78575ccdc916fca45960791606e128c9, type: 3}
   PreviewClip: {fileID: 241334157148977051, guid: f48cd1df8d808014c8a8f4db1258d202,
     type: 3}
-  Vessels:
+  Captains:
   - {fileID: 11400000, guid: 5ac362560a34d414e835db83e82daa08, type: 2}
-  - {fileID: 11400000, guid: 47ecdb78312b0be4d8785da5ebaced42, type: 2}
+  - {fileID: 11400000, guid: 92b7a5f8125016348a97d370d2f295fc, type: 2}
   - {fileID: 11400000, guid: f2d76569deb637b4e90869cb5a908a6b, type: 2}
   - {fileID: 11400000, guid: 88f41b3cf0e27974db94afd7854a6b61, type: 2}
   - {fileID: 11400000, guid: 15f7cf9ff064a6746a1b3432455a787b, type: 2}

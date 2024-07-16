@@ -91,7 +91,7 @@ namespace CosmicShore.Core
                         if (!ship.ShipStatus.AutoPilotEnabled) HapticController.PlayHaptic(HapticType.BlockCollision);//.PlayBlockCollisionHaptics();
                         break;
                     case TrailBlockImpactEffects.DeactivateTrailBlock:
-                        trailBlockProperties.trailBlock.Explode(ship.ShipStatus.Course * ship.ShipStatus.Speed, team, Player.PlayerName);
+                        trailBlockProperties.trailBlock.Damage(ship.ShipStatus.Course * ship.ShipStatus.Speed, team, Player.PlayerName);
                         break;
                     case TrailBlockImpactEffects.Steal:
                         //Debug.Log($"steal: playername {Player.PlayerName} team: {team}");
@@ -276,8 +276,12 @@ namespace CosmicShore.Core
         {
             if (other.TryGetComponent<TrailBlock>(out var trailBlock) && (affectSelf || trailBlock.Team != team))
             {
-                skimStartTimes.Remove(trailBlock.ID);
-                activelySkimmingBlockCount--;
+                if (skimStartTimes.ContainsKey(trailBlock.ID))
+                {
+                    skimStartTimes.Remove(trailBlock.ID);
+                    activelySkimmingBlockCount--;
+                }
+                
             
 
                 if (trailBlock.TryGetComponent<LineRenderer>(out var lineRenderer))
@@ -341,7 +345,7 @@ namespace CosmicShore.Core
         void Boost(float combinedWeight)
         {
             ship.ShipStatus.Boosting = true;
-            ship.boostMultiplier = 1 + (2 * combinedWeight);
+            ship.boostMultiplier = 1 + (3 * combinedWeight);
         }
 
         // Function to compute the Gaussian value at a given x

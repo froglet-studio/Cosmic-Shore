@@ -1,12 +1,12 @@
+using CosmicShore.Game.AI;
 using CosmicShore.Game.IO;
+using CosmicShore.Game.Projectiles;
+using CosmicShore.Models.ScriptableObjects;
+using CosmicShore.Models.Enums;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using CosmicShore.Game.AI;
-using CosmicShore.Game.Projectiles;
-using CosmicShore.Integrations.Enums;
-using CosmicShore.Models.ScriptableObjects;
 
 namespace CosmicShore.Core
 {
@@ -46,6 +46,7 @@ namespace CosmicShore.Core
         [SerializeField] Skimmer nearFieldSkimmer;
         [SerializeField] GameObject OrientationHandle;
         [SerializeField] public List<GameObject> shipGeometries;
+        [SerializeField] GameObject shipHUD;
 
         [Header("Optional Ship Components")]
         [SerializeField] Silhouette Silhouette;
@@ -73,15 +74,7 @@ namespace CosmicShore.Core
         [SerializeField] List<ResourceEventShipActionMapping> resourceEventClassActions;
         Dictionary<ResourceEvents, List<ShipAction>> ClassResourceActions = new();
 
-        [Header("Leveling Targets")]
-        [SerializeField] LevelAwareShipAction MassAbilityTarget;
-        [SerializeField] LevelAwareShipAction ChargeAbilityTarget;
-        [SerializeField] LevelAwareShipAction SpaceAbilityTarget;
-        [SerializeField] LevelAwareShipAction TimeAbilityTarget;
-        [SerializeField] LevelAwareShipAction ChargeAbility2Target;
-
         [Header("Passive Effects")]
-        public List<ShipLevelEffects> LevelEffects;
         [SerializeField] float closeCamDistance;
         [SerializeField] float farCamDistance;
         
@@ -93,19 +86,19 @@ namespace CosmicShore.Core
         [HideInInspector] public Material AOEConicExplosionMaterial;
         [HideInInspector] public Material SkimmerMaterial;
         float speedModifierDuration = 2f;
-        
-        // Guide and guide upgrade properties
-        SO_Guide guide;
 
-        private Dictionary<Element, SO_GuideUpgrade> _guideUpgrades;
-        public Dictionary<Element, SO_GuideUpgrade> GuideUpgrades
+        // Captain and captain upgrade properties
+        SO_Captain captain;
+
+        private Dictionary<Element, SO_CaptainUpgrade> _captainUpgrades;
+        public Dictionary<Element, SO_CaptainUpgrade> CaptainUpgrades
         {
-            get => _guideUpgrades;
+            get => _captainUpgrades;
             set
             {
-                _guideUpgrades = value;
+                _captainUpgrades = value;
 
-                if (_guideUpgrades != null)
+                if (_captainUpgrades != null)
                 {
                     UpdateLevel(Element.Charge, ResourceSystem.GetLevel(Element.Charge));
                     UpdateLevel(Element.Time, ResourceSystem.GetLevel(Element.Time));
@@ -183,28 +176,16 @@ namespace CosmicShore.Core
 
             if (!AutoPilot.AutoPilotEnabled)
             {
-                if (ShipControlActions.ContainsKey(InputEvents.Button1Action))
+                if (shipHUD)
                 {
-                    Player.GameCanvas.MiniGameHUD.SetButtonActive(!CheckIfUsingGamepad(), 1);
-                }
-
-                if (ShipControlActions.ContainsKey(InputEvents.Button2Action))
-                {
-                    Player.GameCanvas.MiniGameHUD.SetButtonActive(!CheckIfUsingGamepad(), 2);
-                }
-
-                if (ShipControlActions.ContainsKey(InputEvents.Button3Action))
-                {
-                    Player.GameCanvas.MiniGameHUD.SetButtonActive(!CheckIfUsingGamepad(), 3);
+                    shipHUD.SetActive(true);
+                    foreach (var child in shipHUD.GetComponentsInChildren<Transform>(false))
+                    {
+                        child.SetParent(Player.GameCanvas.transform, false);
+                    }
                 }
             }
         }
-
-        bool CheckIfUsingGamepad()
-        {
-            return UnityEngine.InputSystem.Gamepad.current != null;
-        }
-        
 
         [Serializable] public struct ElementStat
         {
@@ -219,7 +200,7 @@ namespace CosmicShore.Core
         }
 
         [SerializeField] List<ElementStat> ElementStats = new List<ElementStat>();
-        public void NotifyElementalFloatBinding(string statName, Element element)
+        public void BindElementalFloat(string statName, Element element)
         {
             Debug.Log($"Ship.NotifyShipStatBinding - statName:{statName}, element:{element}");
             if (!ElementStats.Where(x => x.StatName == statName).Any())
@@ -309,7 +290,7 @@ namespace CosmicShore.Core
                         ShipTransformer.ModifyVelocity((transform.position - trailBlockProperties.trailBlock.transform.position).normalized * 5 , Time.deltaTime * 15);
                         break;
                     case TrailBlockImpactEffects.Explode:
-                        trailBlockProperties.trailBlock.Explode(ShipStatus.Course * ShipStatus.Speed, Team, Player.PlayerName);
+                        trailBlockProperties.trailBlock.Damage(ShipStatus.Course * ShipStatus.Speed, Team, Player.PlayerName);
                         break;
                 }
             }
@@ -341,6 +322,42 @@ namespace CosmicShore.Core
                 var shipControlActions = ShipControlActions[controlType];
                 foreach (var action in shipControlActions)
                     action.StopAction();
+            }
+        }
+
+
+        // this is used with buttons so "Find all references" will not return editor usage
+        public void PerformButtonActions(int buttonNumber)
+        {
+            Debug.Log($"Ship.PerformButtonActions - buttonNumber:{buttonNumber}");
+            if (buttonNumber == 1 && ShipControlActions.ContainsKey(InputEvents.Button1Action))
+            {
+                PerformShipControllerActions(InputEvents.Button1Action);
+            }
+            else if (buttonNumber == 2 && ShipControlActions.ContainsKey(InputEvents.Button2Action))
+            {
+                PerformShipControllerActions(InputEvents.Button2Action);
+            }
+            else if (buttonNumber == 3 && ShipControlActions.ContainsKey(InputEvents.Button3Action))
+            {
+                PerformShipControllerActions(InputEvents.Button3Action);
+            }
+        }
+
+        // this is used with buttons so "Find all references" will not return editor usage
+        public void StopButtonActions(int buttonNumber)
+        {
+            if (buttonNumber == 1 && ShipControlActions.ContainsKey(InputEvents.Button1Action))
+            {
+                StopShipControllerActions(InputEvents.Button1Action);
+            }
+            else if (buttonNumber == 2 && ShipControlActions.ContainsKey(InputEvents.Button2Action))
+            {
+                StopShipControllerActions(InputEvents.Button2Action);
+            }
+            else if (buttonNumber == 3 && ShipControlActions.ContainsKey(InputEvents.Button3Action))
+            {
+                StopShipControllerActions(InputEvents.Button3Action);
             }
         }
 
@@ -378,40 +395,45 @@ namespace CosmicShore.Core
                 collider.enabled = enabled;
         }
 
-        public void SetGuide(SO_Guide guide)
+        public void SetResourceLevels(ResourceCollection resourceGroup)
         {
-            this.guide = guide;
-            ResourceSystem.InitialChargeLevel = this.guide.InitialCharge;
-            ResourceSystem.InitialMassLevel = this.guide.InitialMass;
-            ResourceSystem.InitialSpaceLevel = this.guide.InitialSpace;
-            ResourceSystem.InitialTimeLevel = this.guide.InitialTime;
+            ResourceSystem.InitialChargeLevel = resourceGroup.Charge;
+            ResourceSystem.InitialMassLevel = resourceGroup.Mass;
+            ResourceSystem.InitialSpaceLevel = resourceGroup.Space;
+            ResourceSystem.InitialTimeLevel = resourceGroup.Time;
 
             ResourceSystem.InitializeElementLevels();
+        }
+
+        public void AssignCaptain(SO_Captain captain)
+        {
+            this.captain = captain;
+            SetResourceLevels(captain.InitialResourceLevels);
         }
 
         public void UpdateLevel(Element element, int upgradeLevel)
         {
             Debug.Log($"Ship: UpdateLevel: element{element}, upgradeLevel: {upgradeLevel}");
-            if (GuideUpgrades == null) GuideUpgrades = new();
+            if (CaptainUpgrades == null) CaptainUpgrades = new();
             
-            if (GuideUpgrades.ContainsKey(element))
+            if (CaptainUpgrades.ContainsKey(element))
             {
-                GuideUpgrades[element].element = element;
-                GuideUpgrades[element].upgradeLevel = upgradeLevel;
+                CaptainUpgrades[element].element = element;
+                CaptainUpgrades[element].upgradeLevel = upgradeLevel;
             }
             else
             {
                 // TODO: preset individual upgrade properties such as name, description, icon etc based on upgrade properties.
-                var newUpgrade = ScriptableObject.CreateInstance<SO_GuideUpgrade>();
+                var newUpgrade = ScriptableObject.CreateInstance<SO_CaptainUpgrade>();
                 newUpgrade.element = element;
                 newUpgrade.upgradeLevel = upgradeLevel;
-                GuideUpgrades.TryAdd(element, newUpgrade);
+                CaptainUpgrades.TryAdd(element, newUpgrade);
             }
 
             #if UNITY_EDITOR
-            foreach (var upgrade in GuideUpgrades)
+            foreach (var upgrade in CaptainUpgrades)
             {
-                Debug.LogFormat("{0} - {1}: element: {2} upgrade level: {3}", nameof(GuideUpgrades), nameof(UpdateLevel), upgrade.Key, upgrade.Value.upgradeLevel.ToString());
+                Debug.LogFormat("{0} - {1}: element: {2} upgrade level: {3}", nameof(CaptainUpgrades), nameof(UpdateLevel), upgrade.Key, upgrade.Value.upgradeLevel.ToString());
             }
             #endif
             

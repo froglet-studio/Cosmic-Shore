@@ -1,0 +1,56 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0309a5343d820c14abd73b35f6fa50f1, type: 3}
+  m_Name: SO_Class_Grizzly
+  m_EditorClassIdentifier: 
+  Class: 5
+  Name: Grizzly
+  Summary: '[Placeholder Summary Text]'
+  Description: Don't mess with me or I will shoot. I will shoot anyway, but don't
+    mess with me.
+  Icon: {fileID: 21300000, guid: 720f23b964da1e948927d1b2b7c1c5a9, type: 3}
+  SelectedIcon: {fileID: 21300000, guid: 3236299f467e7004fbfab2b0d07e6280, type: 3}
+  PreviewClip: {fileID: 2096801853598961014, guid: 6b8d168238dc02149b26d1221d313893,
+    type: 3}
+  PreviewImage: {fileID: 21300000, guid: eab8ab57cb3ceef43b60ce237123c5ac, type: 3}
+  TrailPreviewImage: {fileID: 21300000, guid: 8916b4a40c60d2c4380856e1d00f5ff4, type: 3}
+  CardSilohoutte: {fileID: 21300000, guid: 5462fd738d8582544aac2d25239412ca, type: 3}
+  CardSilohoutteActive: {fileID: 21300000, guid: eab8ab57cb3ceef43b60ce237123c5ac,
+    type: 3}
+  Abilities:
+  - {fileID: 11400000, guid: bf4c23aad32b0f4489dbc09db593aab4, type: 2}
+  Captains:
+  - {fileID: 11400000, guid: 8cde53ad485a0eb4999781d28e131067, type: 2}
+  - {fileID: 11400000, guid: d1167a749c270634bbbef0ffc8a152a7, type: 2}
+  - {fileID: 11400000, guid: e9cdae4a814e02148b819f4a9ca4cae9, type: 2}
+  - {fileID: 11400000, guid: b2a9d8671aafb81409afd053d76a5388, type: 2}
+  Games:
+  - {fileID: 11400000, guid: 812851e4603217c469662dc3cb9c6d93, type: 2}
+  - {fileID: 11400000, guid: 3537310ecbdad2e449bbca31d2aa8599, type: 2}
+  - {fileID: 11400000, guid: 70027ed9adfa2b54e9a16c3228ac7e7e, type: 2}
+  - {fileID: 11400000, guid: dae692490d41dda488bf199e4fdb30af, type: 2}
+  - {fileID: 11400000, guid: c5f6d2d7142557647b39c30f48495c67, type: 2}
+  TrainingGames:
+  - {fileID: 0}
+  - {fileID: 0}
+  gameplayParameter1:
+    LeftHandLabel: Casual
+    RightHandLabel: Challenging
+    Value: 0.5
+  gameplayParameter2:
+    LeftHandLabel: Relaxing
+    RightHandLabel: Thrilling
+    Value: 0.95
+  gameplayParameter3:
+    LeftHandLabel: Solo
+    RightHandLabel: Social
+    Value: 0.66

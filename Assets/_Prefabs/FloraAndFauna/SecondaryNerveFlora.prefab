@@ -1,0 +1,191 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &6774738432424273872
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 5739209271613175231}
+  - component: {fileID: 7514956980722975813}
+  m_Layer: 0
+  m_Name: SecondaryNerveFlora
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &5739209271613175231
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6774738432424273872}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 1648936725651798773}
+  m_Father: {fileID: 0}
+  m_RootOrder: 0
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &7514956980722975813
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6774738432424273872}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 348a716a2db52944888716c19b4d6803, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  healthBlock: {fileID: 6313579230210663873, guid: 1488a2ac58b2b4c43b14f84206bd9195,
+    type: 3}
+  spindle: {fileID: 5157459880619768690, guid: f7ec1bbfe690a184b935434a6e0dcb7a, type: 3}
+  minHealthBlocks: 5
+  activeCrystalMaterial: {fileID: 2100000, guid: 18c297a89c0d43e46bd4ea5bd6143ffb,
+    type: 2}
+  Team: 0
+  growPeriod: 2
+  PlantPeriod: 3
+  growthChance: 0.5
+  minBranchAngle: 20
+  maxBranchAngle: 40
+  minBranches: 1
+  maxBranches: 2
+  minTrunks: 1
+  maxTrunks: 1
+  minBranchLengthMultiplier: 20
+  maxBranchLengthMultiplier: 30
+  maxDepth: 300
+  maxTotalSpawnedObjects: 400
+  leafChance: -0.5
+  leafChanceIncrement: 0.01
+  isCrystaltropic: 0
+  SecondarySpawn: {fileID: 0}
+  hasPlantedSecondary: 1
+  plantAroundCrystal: 0
+  goal: {x: 0, y: 0, z: 0}
+  plantRadius: 90
+--- !u!1001 &5588088495769702632
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    m_TransformParent: {fileID: 5739209271613175231}
+    m_Modifications:
+    - target: {fileID: 2965872700150217210, guid: a4bde9d72595bfb43aa3b791d02f4db8,
+        type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6588436222817790464, guid: a4bde9d72595bfb43aa3b791d02f4db8,
+        type: 3}
+      propertyPath: m_Radius
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6588436222817790464, guid: a4bde9d72595bfb43aa3b791d02f4db8,
+        type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6588436222817790470, guid: a4bde9d72595bfb43aa3b791d02f4db8,
+        type: 3}
+      propertyPath: m_Name
+      value: SpaceCrystal
+      objectReference: {fileID: 0}
+    - target: {fileID: 6588436222817790493, guid: a4bde9d72595bfb43aa3b791d02f4db8,
+        type: 3}
+      propertyPath: m_RootOrder
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6588436222817790493, guid: a4bde9d72595bfb43aa3b791d02f4db8,
+        type: 3}
+      propertyPath: m_LocalScale.x
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 6588436222817790493, guid: a4bde9d72595bfb43aa3b791d02f4db8,
+        type: 3}
+      propertyPath: m_LocalScale.y
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 6588436222817790493, guid: a4bde9d72595bfb43aa3b791d02f4db8,
+        type: 3}
+      propertyPath: m_LocalScale.z
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 6588436222817790493, guid: a4bde9d72595bfb43aa3b791d02f4db8,
+        type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6588436222817790493, guid: a4bde9d72595bfb43aa3b791d02f4db8,
+        type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6588436222817790493, guid: a4bde9d72595bfb43aa3b791d02f4db8,
+        type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6588436222817790493, guid: a4bde9d72595bfb43aa3b791d02f4db8,
+        type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6588436222817790493, guid: a4bde9d72595bfb43aa3b791d02f4db8,
+        type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6588436222817790493, guid: a4bde9d72595bfb43aa3b791d02f4db8,
+        type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6588436222817790493, guid: a4bde9d72595bfb43aa3b791d02f4db8,
+        type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6588436222817790493, guid: a4bde9d72595bfb43aa3b791d02f4db8,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6588436222817790493, guid: a4bde9d72595bfb43aa3b791d02f4db8,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6588436222817790493, guid: a4bde9d72595bfb43aa3b791d02f4db8,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6588436222817790495, guid: a4bde9d72595bfb43aa3b791d02f4db8,
+        type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6588436222817790495, guid: a4bde9d72595bfb43aa3b791d02f4db8,
+        type: 3}
+      propertyPath: inactiveCrystalMaterial
+      value: 
+      objectReference: {fileID: 2100000, guid: 6eea31b551b13184cb148646f27388e8, type: 2}
+    m_RemovedComponents:
+    - {fileID: 6588436222817790466, guid: a4bde9d72595bfb43aa3b791d02f4db8, type: 3}
+  m_SourcePrefab: {fileID: 100100000, guid: a4bde9d72595bfb43aa3b791d02f4db8, type: 3}
+--- !u!4 &1648936725651798773 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 6588436222817790493, guid: a4bde9d72595bfb43aa3b791d02f4db8,
+    type: 3}
+  m_PrefabInstance: {fileID: 5588088495769702632}
+  m_PrefabAsset: {fileID: 0}

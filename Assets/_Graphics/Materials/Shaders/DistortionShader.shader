@@ -3,12 +3,13 @@ Shader "Custom/TransparentPerlinDistortion"
     Properties
     {
         _MainTex ("Texture", 2D) = "white" {}
+        _DistortionStrength ("Distortion Strength", Float) = 0.1
+        _NoiseScale ("Noise Scale", Float) = 10.0
     }
     SubShader
     {
         Tags { "Queue"="Transparent" "RenderType"="Transparent" }
         Blend SrcAlpha OneMinusSrcAlpha
-
         Pass
         {
             CGPROGRAM
@@ -30,63 +31,48 @@ Shader "Custom/TransparentPerlinDistortion"
 
             sampler2D _MainTex;
             float4 _MainTex_ST;
+            float _DistortionStrength;
+            float _NoiseScale;
 
-            // Perlin Noise Function
-            float2 permute(float2 x) { return fmod(((x*34.0)+1.0)*x, 289.0); }
-            float2 taylorInvSqrt(float2 r) { return 1.79284291400159 - 0.85373472095314 * r; }
+            // Simplified Perlin-like noise function
+            float2 hash(float2 p)
+            {
+                p = float2(dot(p, float2(127.1, 311.7)), dot(p, float2(269.5, 183.3)));
+                return -1.0 + 2.0 * frac(sin(p) * 43758.5453123);
+            }
 
-            float snoise(float2 v) {
-                const float4 C = float4(0.211324865405187, 0.366025403784439, -0.577350269189626, 0.024390243902439);
-                float2 i  = floor(v + dot(v, C.yy));
-                float2 x0 = v -   i + dot(i, C.xx);
+            float noise(float2 p)
+            {
+                float2 i = floor(p);
+                float2 f = frac(p);
+                
+                float2 u = f * f * (3.0 - 2.0 * f);
 
-                float2 i1;
-                i1 = (x0.x > x0.y) ? float2(1.0, 0.0) : float2(0.0, 1.0);
-                float4 x12 = x0.xyxy + C.xxzz;
-                x12.xy -= i1;
-
-                i = fmod(i, 289.0);
-                float3 p = permute( permute( i.y + float3(0.0, i1.y, 1.0 ))
-                    + i.x + float3(0.0, i1.x, 1.0 ));
-
-                float3 m = max(0.5 - float3(dot(x0,x0), dot(x12.xy,x12.xy), dot(x12.zw,x12.zw)), 0.0);
-                m = m*m ;
-                m = m*m ;
-
-                float3 x = 2.0 * fract(p * C.www) - 1.0;
-                float3 h = abs(x) - 0.5;
-                float3 ox = floor(x + 0.5);
-                float3 a0 = x - ox;
-
-                m *= 1.79284291400159 - 0.85373472095314 * (a0*a0+h*h);
-
-                float3 g;
-                g.x  = a0.x  * x0.x  + h.x  * x0.y;
-                g.yz = a0.yz * x12.xz + h.yz * x12.yw;
-                return 130.0 * dot(m, g);
+                return lerp(lerp(dot(hash(i + float2(0.0, 0.0)), f - float2(0.0, 0.0)),
+                                 dot(hash(i + float2(1.0, 0.0)), f - float2(1.0, 0.0)), u.x),
+                            lerp(dot(hash(i + float2(0.0, 1.0)), f - float2(0.0, 1.0)),
+                                 dot(hash(i + float2(1.0, 1.0)), f - float2(1.0, 1.0)), u.x), u.y);
             }
 
             v2f vert(appdata v)
             {
                 v2f o;
                 o.vertex = UnityObjectToClipPos(v.vertex);
-
-                // Distortion based on Perlin noise
-                float noise = snoise(v.uv * _MainTex_ST.xy * 10.0);
-                o.uv = v.uv + noise * 0.1;
-
+                o.uv = TRANSFORM_TEX(v.uv, _MainTex);
                 return o;
             }
 
             fixed4 frag(v2f i) : SV_Target
             {
+                // Distortion based on noise
+                float2 noise2D = float2(noise(i.uv * _NoiseScale), noise(i.uv * _NoiseScale + 100.0));
+                float2 distortedUV = i.uv + noise2D * _DistortionStrength;
+
                 // Sample the texture with the distorted UVs
-                fixed4 col = tex2D(_MainTex, i.uv);
+                fixed4 col = tex2D(_MainTex, distortedUV);
                 return col;
             }
             ENDCG
         }
     }
 }
-
-

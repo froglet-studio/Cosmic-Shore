@@ -62,7 +62,7 @@ namespace CosmicShore.Game.Projectiles
 
             if (other.TryGetComponent<TrailBlock>(out var trailBlock))
             {
-                if ((trailBlock.Team != Team || affectSelf) && trailBlock.IsSuperShielded)
+                if ((trailBlock.Team != Team || affectSelf) && trailBlock.TrailBlockProperties.IsSuperShielded)
                 {
                     trailBlock.DeactivateShields();
                     Destroy(gameObject);
@@ -74,9 +74,9 @@ namespace CosmicShore.Game.Projectiles
                 }
 
                 if (AnonymousExplosion)
-                    trailBlock.Explode(impactVector, Teams.None, "🔥GuyFawkes🔥", devastating);
+                    trailBlock.Damage(impactVector, Teams.None, "🔥GuyFawkes🔥", devastating);
                 else
-                    trailBlock.Explode(impactVector, Ship.Team, Ship.Player.PlayerName, devastating);
+                    trailBlock.Damage(impactVector, Ship.Team, Ship.Player.PlayerName, devastating);
             }
             if (other.TryGetComponent<ShipGeometry>(out var shipGeometry))
             {

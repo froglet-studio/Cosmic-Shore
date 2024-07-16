@@ -20,7 +20,7 @@ MonoBehaviour:
   CardBackground: {fileID: 0}
   PreviewClip: {fileID: 241334157148977051, guid: bce3acfd8a554e942bc4f1903e25eb07,
     type: 3}
-  Vessels: []
+  Captains: []
   MinPlayers: 1
   MaxPlayers: 4
   SceneName: MinigameDriftCourse

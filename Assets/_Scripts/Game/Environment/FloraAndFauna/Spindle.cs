@@ -1,7 +1,4 @@
-using CosmicShore.Core;
-using Mono.CSharp;
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace CosmicShore
@@ -9,33 +6,72 @@ namespace CosmicShore
     public class Spindle : MonoBehaviour
     {
         public GameObject cylinder;
-        public float Length = 1f;
+        public MeshRenderer RenderedObject;
+        Spindle parentSpindle;
+        public LifeForm LifeForm;
 
-        void Awake()
+        private void Start()
         {
-            Length = cylinder.transform.localScale.y;
+            StartCoroutine(CondenseCoroutine());
+            if (LifeForm) LifeForm.AddSpindle(this);
         }
 
         public void CheckForLife()
         {
-            //Debug.Log($"Checking spindle for life: GetComponentsInChildren<HealthBlock>().length = {GetComponentsInChildren<HealthBlock>().Length} GetComponentsInChildren<Spindle>().Length = {GetComponentsInChildren<Spindle>().Length}");
-            if (GetComponentsInChildren<HealthBlock>().Length < 1 && GetComponentsInChildren<Spindle>().Length <= 1)
+            HealthBlock healthBlock;
+            healthBlock = GetComponentInChildren<HealthBlock>();
+            if ((!healthBlock || healthBlock && healthBlock.destroyed) && GetComponentsInChildren<Spindle>().Length <= 1)
             {
-                Evaporate();
+                EvaporateSpindle();
             }
         }
 
-        IEnumerator Evaporate()
+        public void EvaporateSpindle()
         {
-            MeshRenderer meshRenderer = GetComponent<MeshRenderer>();
-            while (meshRenderer.material.color.a > 0.1f)
-            {
-                meshRenderer.material.color = Color.Lerp(meshRenderer.material.color, Color.clear, 0.1f);
-                yield return new WaitForSeconds(0.1f);
-            }
-            Destroy(gameObject);
+            StartCoroutine(EvaporateCoroutine());
         }
 
-    }
+        IEnumerator EvaporateCoroutine()
+        {
+            
 
+            float deathAnimation = 0f;
+            float animationSpeed = 1f;
+            while (deathAnimation < 1f)
+            {
+                RenderedObject.material.SetFloat("_DeathAnimation", deathAnimation);
+                deathAnimation += Time.deltaTime * animationSpeed;
+                yield return null;
+            }
+            transform.parent.TryGetComponent(out parentSpindle);
+            Destroy(gameObject);          
+        }
+
+        IEnumerator CondenseCoroutine()
+        {
+            float deathAnimation = 1f;
+            float animationSpeed = 1f;
+            while (deathAnimation > 0f)
+            {
+                RenderedObject.material.SetFloat("_DeathAnimation", deathAnimation);
+                deathAnimation -= Time.deltaTime * animationSpeed;
+                yield return null;
+            }
+            RenderedObject.material.SetFloat("_DeathAnimation", 0);
+        }
+
+        private void OnDestroy()
+        {
+            // check if scene is still loaded
+            if (gameObject.scene.isLoaded)
+            {
+                LifeForm.RemoveSpindle(this);
+                if (parentSpindle) parentSpindle.CheckForLife();
+                else 
+                {
+                    LifeForm.CheckIfDead();
+                }
+            }
+        }
+    }
 }

@@ -1,7 +1,4 @@
-﻿using CosmicShore.Core;
-using CosmicShore.Game.Arcade;
-using UnityEngine;
-using UnityEngine.SceneManagement;
+﻿using UnityEngine;
 
 namespace CosmicShore.App.UI.Menus
 {
@@ -30,34 +27,6 @@ namespace CosmicShore.App.UI.Menus
             }
         }
 
-        public void OnClickSoar()
-        {
-            MiniGame.PlayerShipType = ShipTypes.Manta;
-            MiniGame.PlayerCaptain = Hangar.Instance.SoarGuide;
-            MiniGame.IntensityLevel = 1;
-            MiniGame.NumberOfPlayers = 1;
-
-            SceneManager.LoadScene("MinigameFreestyle");
-        }
-        public void OnClickSmash()
-        {
-            MiniGame.PlayerShipType = ShipTypes.Rhino;
-            MiniGame.PlayerCaptain = Hangar.Instance.SmashGuide;
-            MiniGame.IntensityLevel = 1;
-            MiniGame.NumberOfPlayers = 1;
-
-            SceneManager.LoadScene("MinigameFreestyle");
-        }
-        public void OnClickSport()
-        {
-            MiniGame.PlayerShipType = ShipTypes.Manta;
-            MiniGame.PlayerCaptain = Hangar.Instance.SportGuide;
-            MiniGame.IntensityLevel = 1;
-            MiniGame.NumberOfPlayers = 1;
-
-            SceneManager.LoadScene("MinigameCellularBrawl2v2");
-        }
-
         /// <summary>
         /// Detect whether the app has been launched in the past by looking for a specific player pref key.
         /// This enables the app to show a special initial app flow to new users. 
@@ -67,8 +36,6 @@ namespace CosmicShore.App.UI.Menus
         /// <returns>True if the app has never been launched before (player pref key doesn't exist). False otherwise.</returns>
         bool FirstAppLaunchExperience()
         {
-            
-
             if (DebugFirstAppLaunch)
             {
                 PlayerPrefs.DeleteKey(PlayerPrefKeys.FirstAppLaunch.ToString());

@@ -1,15 +1,14 @@
 using CosmicShore.App.Systems.Audio;
 using CosmicShore.Integrations.PlayFab.Authentication;
+using CosmicShore.Integrations.PlayFab.PlayerData;
 using PlayFab;
 using PlayFab.ClientModels;
 using System;
 using System.Collections;
 using System.Security;
-using CosmicShore.Utility.ClassExtensions;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using VContainer;
 
 namespace CosmicShore.App.UI.Menus
 {
@@ -64,21 +63,9 @@ namespace CosmicShore.App.UI.Menus
                 InitializeEmailLinking();
 
             // _authManager.OnLoginSuccess += _authManager.LoadPlayerProfile;
-            AuthenticationManager.OnProfileLoaded += InitializePlayerDisplayNameView;
+            PlayerDataController.OnProfileLoaded += InitializePlayerDisplayNameView;
             // _authManager.AnonymousLogin();
         }
-
-        #region OnEnable and OnDisable Override
-        void OnEnable()
-        {
-            LoadDisplayNameUponEnable();
-        }
-
-        private void OnDisable()
-        {
-            UnloadDisplayNameUponDisable();
-        }
-        #endregion
 
         #region Email Input Field Operations
         void InitializeEmailLinking()
@@ -308,28 +295,7 @@ namespace CosmicShore.App.UI.Menus
 
         #region Player Profile
 
-        /// <summary>
-        /// Load Player Display Name Upon Enable
-        /// Load player display name to the display name input field upon profile menu enable
-        /// </summary>
-        void LoadDisplayNameUponEnable()
-        {
-            if (SummoningProfileMenu == null)
-            {
-                SummoningProfileMenu += InitializePlayerDisplayNameView;
-                SummoningProfileMenu.Invoke();
-            }
-        }
 
-        /// <summary>
-        /// Unload Player Display Name Upon Disable
-        /// Unload player display name to the display name input field upon profile menu disable
-        /// </summary>
-        void UnloadDisplayNameUponDisable()
-        {
-            if (SummoningProfileMenu == null) return;
-            SummoningProfileMenu -= InitializePlayerDisplayNameView;
-        }
         
         /// <summary>
         /// Generate Random Name
@@ -387,7 +353,7 @@ namespace CosmicShore.App.UI.Menus
             if (!CheckDisplayNameLength(displayNameInputField.text))
                 return;
 
-            AuthenticationManager.Instance.SetPlayerDisplayName(displayNameInputField.text, UpdatePlayerDisplayNameView);
+            PlayerDataController.Instance.SetPlayerDisplayName(displayNameInputField.text, UpdatePlayerDisplayNameView);
 
             BusyIndicator.SetActive(true);
 
@@ -455,14 +421,14 @@ namespace CosmicShore.App.UI.Menus
                 BusyIndicator.SetActive(false);
             }
             
-            if (AuthenticationManager.UserProfile == null)
+            if (PlayerDataController.Instance.PlayerProfile == null)
             {
                 Debug.LogWarning("Player profile has not yet loaded.");
                 return;
             }
             
-            if(!string.IsNullOrEmpty(AuthenticationManager.UserProfile.DisplayName))
-                displayNameInputField.text = AuthenticationManager.UserProfile.DisplayName;
+            if(!string.IsNullOrEmpty(PlayerDataController.Instance.PlayerProfile.DisplayName))
+                displayNameInputField.text = PlayerDataController.Instance.PlayerProfile.DisplayName;
 
             if (displayNameResultMessage == null) return;
             displayNameResultMessage.gameObject.SetActive(true);

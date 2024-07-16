@@ -1,0 +1,46 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0309a5343d820c14abd73b35f6fa50f1, type: 3}
+  m_Name: SO_Class_Urchin
+  m_EditorClassIdentifier: 
+  Class: 4
+  Name: Urchin
+  Summary: '[Placeholder Summary Text]'
+  Description: Don't mess with me or I will shoot. I will shoot anyway, but don't
+    mess with me.
+  Icon: {fileID: 21300000, guid: 58f6744284bd6794c8f14386e31d98f2, type: 3}
+  SelectedIcon: {fileID: 21300000, guid: a374e365e51fe7544ac1c022615542aa, type: 3}
+  PreviewClip: {fileID: 2096801853598961014, guid: 6b8d168238dc02149b26d1221d313893,
+    type: 3}
+  PreviewImage: {fileID: 21300000, guid: 992f171df4560e64c96343061dd90ff3, type: 3}
+  TrailPreviewImage: {fileID: 21300000, guid: 8916b4a40c60d2c4380856e1d00f5ff4, type: 3}
+  CardSilohoutte: {fileID: 21300000, guid: 6e793e2d33035c54296e7d4f0522b1dc, type: 3}
+  CardSilohoutteActive: {fileID: 21300000, guid: d88eff3a88254e041bbd91f7b126eeae,
+    type: 3}
+  Abilities:
+  - {fileID: 11400000, guid: 59a526f543aa82b43920bafb7fb8684d, type: 2}
+  - {fileID: 11400000, guid: 9608a8095e3294548aa8e9da3bd634a0, type: 2}
+  - {fileID: 11400000, guid: bf4c23aad32b0f4489dbc09db593aab4, type: 2}
+  - {fileID: 11400000, guid: d28b6b5c008786c4998fb0cec02ab5bc, type: 2}
+  Captains:
+  - {fileID: 11400000, guid: 4706b17aa5898e5459d1b4f6ea80427d, type: 2}
+  - {fileID: 11400000, guid: 880b85fe77b99a043adcd9e5a8581dce, type: 2}
+  - {fileID: 11400000, guid: c5a63d8c9653074438ea2afe68ef4c6e, type: 2}
+  - {fileID: 11400000, guid: 2b86b35afc992374797f5b08207a0041, type: 2}
+  Games:
+  - {fileID: 11400000, guid: 812851e4603217c469662dc3cb9c6d93, type: 2}
+  - {fileID: 11400000, guid: 3537310ecbdad2e449bbca31d2aa8599, type: 2}
+  - {fileID: 11400000, guid: 70027ed9adfa2b54e9a16c3228ac7e7e, type: 2}
+  - {fileID: 11400000, guid: c5f6d2d7142557647b39c30f48495c67, type: 2}
+  TrainingGames:
+  - {fileID: 0}
+  - {fileID: 0}

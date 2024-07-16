@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a1ad95ea56ecf564d83d8d43b5588bc6, type: 3}
+  m_Name: SO_Element_Charge
+  m_EditorClassIdentifier: 
+  Element: 1
+  ActiveIcons:
+  - {fileID: 21300000, guid: 98f307ae5164847418e03869ab5332d3, type: 3}
+  - {fileID: 21300000, guid: ff02c4487c01af548b1f340224e4c476, type: 3}
+  - {fileID: 21300000, guid: 0016873a730af3d428e8f25b83278570, type: 3}
+  - {fileID: 21300000, guid: 4b483b4fab1fc8c4aa44c7938d822381, type: 3}
+  - {fileID: 21300000, guid: c5ee454e4f2816c4b962ad454b8fa013, type: 3}
+  - {fileID: 21300000, guid: 6c4f40eef57f4d04bbd01083161212ff, type: 3}
+  InactiveIcons:
+  - {fileID: 21300000, guid: 076427261cc371640a69e11be6d79ed8, type: 3}
+  - {fileID: 21300000, guid: 6b56199b3b60e734aae5782acbd7badd, type: 3}
+  - {fileID: 21300000, guid: 9f802ff18934614409cba2d642bacb6d, type: 3}
+  - {fileID: 21300000, guid: edf7c819d5444c8439a5ae8f936de0d7, type: 3}
+  - {fileID: 21300000, guid: 2b269bf902f5eda45bef2648ef945715, type: 3}
+  - {fileID: 21300000, guid: 33db5908f1280c24f98ec60ac59b6d86, type: 3}

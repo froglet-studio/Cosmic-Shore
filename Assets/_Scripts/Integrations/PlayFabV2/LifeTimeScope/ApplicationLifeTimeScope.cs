@@ -1,8 +1,8 @@
 using System;
-using CosmicShore.App.UI.Menus;
 using CosmicShore.Integrations.PlayFab.Authentication;
 using CosmicShore.Integrations.PlayFab.Economy;
 using CosmicShore.Integrations.PlayFab.Groups;
+using CosmicShore.Integrations.PlayFab.PlayerData;
 using CosmicShore.Integrations.PlayFab.PlayerModels;
 using CosmicShore.Integrations.PlayFab.PlayStream;
 using CosmicShore.Integrations.PlayFabV2.Models;
@@ -22,7 +22,7 @@ namespace CosmicShore
             // PlayFab Authentication
             builder.Register<AuthenticationManager>(Lifetime.Singleton);
             builder.Register<PlayFabAccount>(Lifetime.Singleton);
-            builder.Register<UserProfile>(Lifetime.Singleton);
+            builder.Register<PlayerProfile>(Lifetime.Singleton);
             builder.Register<PlayerSession>(Lifetime.Singleton);
             
             // PlayFab Leaderboard

@@ -1442,8 +1442,8 @@ MonoBehaviour:
   ShipCameraCustomizer: {fileID: 0}
   FollowTarget: {fileID: 0}
   crystalImpactEffects: 060000000b000000
-  minExplosionScale: 300
-  maxExplosionScale: 300
+  minExplosionScale: 400
+  maxExplosionScale: 400
   trailBlockImpactEffects: 0e00000000000000
   blockChargeChange: 0
   boostMultiplier: 0
@@ -1460,12 +1460,6 @@ MonoBehaviour:
     ShipActions:
     - {fileID: 1244531863877960553}
   resourceEventClassActions: []
-  MassAbilityTarget: {fileID: 0}
-  ChargeAbilityTarget: {fileID: 0}
-  SpaceAbilityTarget: {fileID: 0}
-  TimeAbilityTarget: {fileID: 0}
-  ChargeAbility2Target: {fileID: 0}
-  LevelEffects: 
   closeCamDistance: 0
   farCamDistance: 0
   AOEExplosionMaterial: {fileID: 0}
@@ -1520,6 +1514,7 @@ MonoBehaviour:
   ThrottleScaler: 0
   DefaultMinimumSpeed: 0
   DefaultThrottleScaler:
+    Enabled: 0
     Value: 50
     Min: 0
     Max: 0
@@ -1582,6 +1577,7 @@ MonoBehaviour:
   displayAmmo: 0
   gainsAmmo: 0
   ammoGainRate:
+    Enabled: 0
     Value: 0.1
     Min: 0
     Max: 0

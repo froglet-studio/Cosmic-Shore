@@ -36,12 +36,13 @@ namespace CosmicShore.App.UI
         [SerializeField] int currentScreen; // Keeps track of how many screens you have in the menu system. From 0 to 4, home = 2
 
         [SerializeField] GameObject Ship_Select;
-        [SerializeField] GameObject Coming_Soon;
 
         [SerializeField] Transform NavBar;
         [SerializeField] List<ScreenAnimator> NavigateToScreenAnimations;
 
+
         [SerializeField] HangarMenu HangarMenu;
+        [SerializeField] LeaderboardsMenu LeaderboardMenu;
 
         Vector3 panelLocation;
         Coroutine navigateCoroutine;
@@ -121,14 +122,6 @@ namespace CosmicShore.App.UI
                 }
             }
 
-            /*
-            if (ScreenIndex == RECORDS)
-            {
-                RecordsAccordion.Animate();
-                RecordsScoresAccordion.Animate();
-            }
-            */
-
             Vector3 newLocation = new Vector3(-ScreenIndex * Screen.width, 0, 0);
             panelLocation = newLocation;
 
@@ -153,6 +146,7 @@ namespace CosmicShore.App.UI
         }
         public void OnClickPortNav()
         {
+            LeaderboardMenu.LoadView();
             NavigateTo(PORT);
         }
         public void OnClickHomeNav()
@@ -185,20 +179,19 @@ namespace CosmicShore.App.UI
         void DeactiveSubpages()
         {
             Ship_Select.SetActive(false);
-            Coming_Soon.SetActive(false);
         }
         void UpdateNavBar(int index)
         {
             // Deselect them all
-            for (var i = 1; i < NavBar.childCount - 1; i++)
+            for (var i = 0; i < NavBar.childCount; i++)
             {
                 NavBar.GetChild(i).GetChild(0).gameObject.SetActive(true);
                 NavBar.GetChild(i).GetChild(1).gameObject.SetActive(false);
             }
 
             // Select the one
-            NavBar.GetChild(index + 1).GetChild(0).gameObject.SetActive(false);
-            NavBar.GetChild(index + 1).GetChild(1).gameObject.SetActive(true);
+            NavBar.GetChild(index).GetChild(0).gameObject.SetActive(false);
+            NavBar.GetChild(index).GetChild(1).gameObject.SetActive(true);
 
             NavBarLine.sprite = NavBarLineSprites[index];
         }

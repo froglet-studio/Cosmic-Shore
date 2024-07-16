@@ -21,7 +21,7 @@ MonoBehaviour:
   CardBackground: {fileID: 21300000, guid: 88a9b4cf2dc46a74a8f85cba135a5352, type: 3}
   PreviewClip: {fileID: 241334157148977051, guid: 5c86136010666914fbccc6959d9e1157,
     type: 3}
-  Vessels:
+  Captains:
   - {fileID: 11400000, guid: ebc2b317ba4ed9249bf4370c10d68dac, type: 2}
   MinPlayers: 1
   MaxPlayers: 3

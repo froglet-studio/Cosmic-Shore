@@ -1,23 +1,26 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 using UnityEngine.UI;
 
 namespace CosmicShore
 {
+    /// <summary>
+    /// A vertically looping scroll window.
+    /// Items in the scroll window are duplicated above and below the original items. 
+    /// The windows scroll position is reset by subtracting out or adding in the original window height.
+    /// </summary>
     public class InfiniteScroll : MonoBehaviour
     {
         [SerializeField] ScrollRect scrollRect;
         [SerializeField] RectTransform viewPortTransform;
         [SerializeField] RectTransform contentPanelTransform;
-        [SerializeField] VerticalLayoutGroup vlg;
+        [SerializeField] VerticalLayoutGroup verticalLayoutGroup;
         [SerializeField] GameObject ContentContainer;
-
-        List<RectTransform> itemList = new();
-        [SerializeField] float SelectedItemHeight;
         [SerializeField] float minVelocity = 5f;
         [SerializeField] float enableSnapVelocity = 15f;
 
-
+        List<RectTransform> itemList = new();
         Vector2 OldVelocity;
         bool isUpdated;
         bool isInitialized = false;
@@ -57,11 +60,11 @@ namespace CosmicShore
                 rt.SetAsFirstSibling();
             }
 
-            Debug.Log($"InfiniteScroll - loop offset distance: {itemCount * (itemList[0].rect.height + vlg.spacing)}");
+            Debug.Log($"InfiniteScroll - loop offset distance: { itemCount * (itemList[0].rect.height + verticalLayoutGroup.spacing) }");
             
             contentPanelTransform.localPosition = new Vector3(
                 contentPanelTransform.localPosition.x,
-                0 - (itemList[0].rect.height + vlg.spacing) * itemCount,
+                0 - (itemList[0].rect.height + verticalLayoutGroup.spacing) * itemCount,
                 contentPanelTransform.localPosition.z);
 
             isInitialized = true;
@@ -89,8 +92,8 @@ namespace CosmicShore
                 if (scrollRect.velocity.y < minVelocity)
                 {
                     scrollRect.velocity = Vector2.zero;
-                    float snapPosition = Mathf.Round(contentPanelTransform.localPosition.y / (itemList[0].rect.height + vlg.spacing))
-                                            * (itemList[0].rect.height + vlg.spacing);
+                    float snapPosition = Mathf.Round(contentPanelTransform.localPosition.y / (itemList[0].rect.height + verticalLayoutGroup.spacing))
+                                            * (itemList[0].rect.height + verticalLayoutGroup.spacing);
                     contentPanelTransform.localPosition = new Vector3
                     (
                         contentPanelTransform.localPosition.x,
@@ -103,28 +106,28 @@ namespace CosmicShore
                 }
             }
             
-            if (contentPanelTransform.localPosition.y < itemList.Count * (itemList[0].rect.height + vlg.spacing))
+            if (contentPanelTransform.localPosition.y < itemList.Count * (itemList[0].rect.height + verticalLayoutGroup.spacing))
             {
                 Debug.Log($"InfiniteScroll - contentPanelTransform.localPosition.y > 0: {contentPanelTransform.localPosition.y}");
                 Canvas.ForceUpdateCanvases();
                 OldVelocity = scrollRect.velocity;
                 contentPanelTransform.localPosition += new Vector3(
                     0,
-                    itemList.Count * (itemList[0].rect.height + vlg.spacing),
+                    itemList.Count * (itemList[0].rect.height + verticalLayoutGroup.spacing),
                     0
                 );
                 isUpdated = true;
             }
             
 
-            if (contentPanelTransform.localPosition.y > 2 * (itemList.Count * (itemList[0].rect.height + vlg.spacing)))
+            if (contentPanelTransform.localPosition.y > 2 * (itemList.Count * (itemList[0].rect.height + verticalLayoutGroup.spacing)))
             {
                 Debug.Log($"InfiniteScroll - contentPanelTransform.localPosition.y < 0: {contentPanelTransform.localPosition.y}");
                 Canvas.ForceUpdateCanvases();
                 OldVelocity = scrollRect.velocity;
                 contentPanelTransform.localPosition -= new Vector3(
                     0,
-                    itemList.Count * (itemList[0].rect.height + vlg.spacing),
+                    itemList.Count * (itemList[0].rect.height + verticalLayoutGroup.spacing),
                     0
                 );
                 isUpdated = true;

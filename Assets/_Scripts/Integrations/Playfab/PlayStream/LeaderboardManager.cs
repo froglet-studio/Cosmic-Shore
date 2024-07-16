@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using CosmicShore.Integrations.PlayFab.Authentication;
+using CosmicShore.Integrations.PlayFab.PlayerData;
 using CosmicShore.Utility.ClassExtensions;
 using CosmicShore.Utility.Singleton;
 using PlayFab;
@@ -47,21 +48,15 @@ namespace CosmicShore.Integrations.PlayFab.PlayStream
 
         // Local storage data prefix
         private const string CachedLeaderboardFileNamePrefix = "leaderboard_";
+        public const string DailyChallengeStatisticName = "DAILY_CHALLENGE";
 
         bool _online;
-
-        // private AuthenticationManager _authManager;
-
-        // public LeaderboardManager(AuthenticationManager authManager)
-        // {
-        //     _authManager = authManager;
-        // }
 
         private void Start()
         {
             NetworkMonitor.NetworkConnectionFound += ComeOnline;
             NetworkMonitor.NetworkConnectionLost += GoOffline;
-            AuthenticationManager.OnProfileLoaded += ReportAndFlushOfflineStatistics;
+            PlayerDataController.OnProfileLoaded += ReportAndFlushOfflineStatistics;
             this.LogWithClassMethod(MethodBase.GetCurrentMethod()?.Name, "Initiated.");
         }
 
@@ -72,7 +67,7 @@ namespace CosmicShore.Integrations.PlayFab.PlayStream
         {
             NetworkMonitor.NetworkConnectionFound -= ComeOnline;
             NetworkMonitor.NetworkConnectionLost -= GoOffline;
-            AuthenticationManager.OnProfileLoaded -= ReportAndFlushOfflineStatistics;
+            PlayerDataController.OnProfileLoaded -= ReportAndFlushOfflineStatistics;
             this.LogWithClassMethod(MethodBase.GetCurrentMethod()?.Name, "this instance is disposed.");
         }
 
@@ -168,6 +163,30 @@ namespace CosmicShore.Integrations.PlayFab.PlayStream
 
             ReportPlayerStatistic(stats, new Dictionary<string, string>() { { "Intensity", intensity.ToString() } });
         }
+
+        /// <summary>
+        /// Update Gameplay Stats
+        /// Upload game mode, ship type, intensity level and scores to memory
+        /// </summary>
+        public void ReportDailyChallengeStatistic(int score, bool golfScoring)
+        {
+            // Playfab does not support reverse sort for leaderboards... take the negative to figure out the position, then flip it again when displaying the score
+            if (golfScoring)
+                score *= -1;
+
+            Debug.Log($"ReportDailyChallengeStatistic - score:{score}");
+            List<StatisticUpdate> stats = new()
+            {
+                new StatisticUpdate()
+                {
+                    StatisticName = DailyChallengeStatisticName,
+                    Value = score
+                }
+            };
+
+            ReportPlayerStatistic(stats, new Dictionary<string, string>());
+        }
+
 
         /// <summary>
         /// Get Gameplay Stats Key

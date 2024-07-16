@@ -2,14 +2,14 @@
 using PlayFab;
 using PlayFab.ClientModels;
 using System.Collections.Generic;
-using System.Linq;
 using CosmicShore.App.Systems.Clout;
 using CosmicShore.Integrations.PlayFab.Authentication;
+using CosmicShore.Integrations.PlayFab.Utility;
 using CosmicShore.Utility.Singleton;
 using UnityEngine;
 using Newtonsoft.Json;
 
-namespace CosmicShore.Integrations.PlayFab.PlayStream
+namespace CosmicShore.Integrations.PlayFab.PlayerData
 {
     public struct ShardData
     {
@@ -29,38 +29,41 @@ namespace CosmicShore.Integrations.PlayFab.PlayStream
 
     public class PlayerDataController : SingletonPersistent<PlayerDataController>
     {
-        private const string GuideKnowledgeKey = "GuideKnowledge";
+        private const string CaptainXpKey = "CaptainXP";
         private const string ShipCloutKey = "ShipClout";
         private const string MasterCloutKey = "MasterClout";
-        
+        private const string DisplayNamePlayerPrefKey = "DisplayName";
+        private const string ProfileIconIdPlayerPrefKey = "ProfileIconId";
+        public PlayerProfile PlayerProfile { get; private set; } = new("Player", "1");
+        public static event Action OnProfileLoaded;
+        public static event Action OnPlayerDisplayNameUpdated;
+        public static event Action OnPlayerAvatarUpdated;
+
+
         static PlayFabClientInstanceAPI _playFabClientInstanceAPI;
         
         // Shard data
-        public Dictionary<ShipTypes, ShardData> PlayerShardData = new();
+        public Dictionary<ShipTypes, ShardData> CaptainXpData = new();
         
         // Clout data
-        Clout playerClout;
+        private Clout _playerClout;
         
         // Clout related event
         public static event Action<Clout> OnLoadingPlayerClout;
 
-        // private AuthenticationManager _authManager;
-        //
-        // public PlayerDataController(AuthenticationManager authManager)
-        // {
-        //     _authManager = authManager;
-        // }
-
         private void Start()
         {
-            AuthenticationManager.OnLoginSuccess += LoadGuideKnowledgeData;
+            LoadPlayerProfileOffline();
+            AuthenticationManager.OnLoginSuccess += LoadCaptainXpData;
             AuthenticationManager.OnLoginSuccess += LoadClout;
+            AuthenticationManager.OnLoginSuccess += LoadPlayerProfile;
         }
 
         public void OnDestroy()
         {
-            AuthenticationManager.OnLoginSuccess -= LoadGuideKnowledgeData;
+            AuthenticationManager.OnLoginSuccess -= LoadCaptainXpData;
             AuthenticationManager.OnLoginSuccess -= LoadClout;
+            AuthenticationManager.OnLoginSuccess -= LoadPlayerProfile;
         }
         
         void InitializePlayerClientInstanceAPI()
@@ -75,7 +78,95 @@ namespace CosmicShore.Integrations.PlayFab.PlayStream
         }
 
 
-        void LoadGuideKnowledgeData()
+        #region PlayerProfile
+
+        /// <summary>
+        /// Load Player Profile
+        /// Load player profile using Playfab Id and return player display name
+        /// </summary>
+        public void LoadPlayerProfile()
+        {
+            var request = new GetPlayerProfileRequest();
+            request.PlayFabId = AuthenticationManager.PlayFabAccount.ID;
+            request.ProfileConstraints = new PlayerProfileViewConstraints
+            {
+                ShowDisplayName = true,
+                ShowAvatarUrl = true
+            };
+
+            PlayFabClientAPI.GetPlayerProfile(request,
+                result =>
+                {
+                    // The result will get publisher id, title id, player id (also called playfab id in other requests) and display name
+                    PlayerProfile.DisplayName = result.PlayerProfile.DisplayName;
+                    PlayerProfile.AvatarUrl = result.PlayerProfile.AvatarUrl;
+
+                    if (string.IsNullOrEmpty(result.PlayerProfile.AvatarUrl))
+                        SetPlayerAvatar(new System.Random().Next(1,19));
+
+                    PlayerPrefs.SetString(DisplayNamePlayerPrefKey, PlayerProfile.DisplayName);
+                    PlayerPrefs.SetString(ProfileIconIdPlayerPrefKey, PlayerProfile.AvatarUrl);
+
+                    Debug.Log("AuthenticationManager - Successfully retrieved player profile");
+                    Debug.Log($"AuthenticationManager - Player id: {PlayerProfile.UniqueID}");
+
+                    OnProfileLoaded?.Invoke();
+                },PlayFabUtility.HandleErrorReport
+            );
+        }
+
+        public void LoadPlayerProfileOffline()
+        {
+            var displayName = PlayerPrefs.HasKey(DisplayNamePlayerPrefKey) ? PlayerPrefs.GetString(DisplayNamePlayerPrefKey) : "Player";
+            var avatarUrl = PlayerPrefs.HasKey(ProfileIconIdPlayerPrefKey) ? PlayerPrefs.GetString(ProfileIconIdPlayerPrefKey) : "1";
+            PlayerProfile = new(displayName, avatarUrl);
+            OnProfileLoaded?.Invoke();
+        }
+
+        /// <summary>
+        /// Set Player Display Name
+        /// Update player display name, we can assume the account is already created here
+        /// </summary>
+        public void SetPlayerDisplayName(string displayName, Action<UpdateUserTitleDisplayNameResult> callback = null)
+        {
+            var request = new UpdateUserTitleDisplayNameRequest();
+            request.DisplayName = displayName;
+            PlayFabClientAPI.UpdateUserTitleDisplayName(request,
+                result =>
+                {
+                    Debug.Log($"AuthenticationManager - Successful updated player display name: {PlayerProfile.DisplayName}");
+                    PlayerProfile.DisplayName = result.DisplayName;
+                    OnPlayerDisplayNameUpdated?.Invoke();
+                    PlayerPrefs.SetString(DisplayNamePlayerPrefKey, result.DisplayName);
+                    callback?.Invoke(result);
+                },
+                PlayFabUtility.HandleErrorReport
+            );
+        }
+
+        /// <summary>
+        /// Set the AvatarURL property of playfab. 
+        /// NOTE: Since we are tracking all profile icons with a scriptable object, instead of using a URL we are just setting this to an integer id
+        /// </summary>
+        /// <param name="avatarId">ID of the player avatar (profile icon)</param>
+        public void SetPlayerAvatar(int avatarId)
+        {
+            var request = new UpdateAvatarUrlRequest();
+            request.ImageUrl = avatarId.ToString();
+            PlayFabClientAPI.UpdateAvatarUrl(
+                request,
+                _ =>
+                {
+                    PlayerProfile.AvatarUrl = avatarId.ToString();
+                    Debug.Log("PlayerDataController - Successfully updated player avatar.");
+                    PlayerPrefs.SetString(ProfileIconIdPlayerPrefKey, avatarId.ToString());
+                    OnPlayerAvatarUpdated?.Invoke();
+                },
+                PlayFabUtility.HandleErrorReport);
+        }
+        #endregion
+
+        private void LoadCaptainXpData()
         {
             InitializePlayerClientInstanceAPI();
 
@@ -83,7 +174,7 @@ namespace CosmicShore.Integrations.PlayFab.PlayStream
                 new GetUserDataRequest
                 {
                     PlayFabId = AuthenticationManager.PlayFabAccount.ID,
-                    Keys = new List<string> { GuideKnowledgeKey }
+                    Keys = new List<string> { CaptainXpKey }
                 },
                 (result) =>
                 {
@@ -95,20 +186,20 @@ namespace CosmicShore.Integrations.PlayFab.PlayStream
                         Debug.Log($"LoadShardData - Data: json:{result.Data[key].ToJson()}");
                         Debug.Log($"LoadShardData - Data: Value:{result.Data[key].Value}");
 
-                        PlayerShardData = (Dictionary<ShipTypes, ShardData>)JsonConvert.DeserializeObject(result.Data[key].Value, typeof(Dictionary<ShipTypes, ShardData>));
+                        CaptainXpData = (Dictionary<ShipTypes, ShardData>)JsonConvert.DeserializeObject(result.Data[key].Value, typeof(Dictionary<ShipTypes, ShardData>));
 
-                        Debug.Log($"LoadShardData - shardData.Keys: {PlayerShardData.Keys.Count}");
-                        Debug.Log($"LoadShardData - shardData[Dolphin].Space: {PlayerShardData[ShipTypes.Dolphin].Space}");
-                        Debug.Log($"LoadShardData - shardData[Dolphin].Time: {PlayerShardData[ShipTypes.Dolphin].Time}");
-                        Debug.Log($"LoadShardData - shardData[Dolphin].Mass: {PlayerShardData[ShipTypes.Dolphin].Mass}");
-                        Debug.Log($"LoadShardData - shardData[Dolphin].Charge: {PlayerShardData[ShipTypes.Dolphin].Charge}");
+                        Debug.Log($"LoadShardData - shardData.Keys: {CaptainXpData.Keys.Count}");
+                        Debug.Log($"LoadShardData - shardData[Dolphin].Space: {CaptainXpData[ShipTypes.Dolphin].Space}");
+                        Debug.Log($"LoadShardData - shardData[Dolphin].Time: {CaptainXpData[ShipTypes.Dolphin].Time}");
+                        Debug.Log($"LoadShardData - shardData[Dolphin].Mass: {CaptainXpData[ShipTypes.Dolphin].Mass}");
+                        Debug.Log($"LoadShardData - shardData[Dolphin].Charge: {CaptainXpData[ShipTypes.Dolphin].Charge}");
 
-                        foreach (var key2 in PlayerShardData.Keys)
+                        foreach (var key2 in CaptainXpData.Keys)
                             Debug.Log($"LoadShardData - shardData.ShipShardData.Keys: {key2}");
                     }
                     
                     Debug.Log($"LoadShardData - Custom Data: {result.CustomData}");
-                },HandleErrorReport
+                }, PlayFabUtility.HandleErrorReport
             );
         }
 
@@ -121,7 +212,7 @@ namespace CosmicShore.Integrations.PlayFab.PlayStream
                     PlayFabId = AuthenticationManager.PlayFabAccount.ID,
                     Keys = new List<string> { ShipCloutKey, MasterCloutKey }
                 },OnLoadingClout
-                ,HandleErrorReport
+                ,PlayFabUtility.HandleErrorReport
             );
         }
 
@@ -140,45 +231,21 @@ namespace CosmicShore.Integrations.PlayFab.PlayStream
             // Get player master clout value
             if (data.TryGetValue(MasterCloutKey, out var masterCloutRecord))
             {
-                playerClout.MasterCloutValue = (int)JsonConvert.DeserializeObject(masterCloutRecord.Value, typeof(int))!;
+                _playerClout.MasterCloutValue = (int)JsonConvert.DeserializeObject(masterCloutRecord.Value, typeof(int))!;
             }
             
             // Get ship clout values
             if (data.TryGetValue(ShipCloutKey, out var shipCloutRecord))
             {
-                playerClout.ShipClouts = (Dictionary<ShipTypes, int>)JsonConvert.DeserializeObject(shipCloutRecord.Value, typeof(Dictionary<ShipTypes, int>));
-                Debug.Log($"LoadClout - CloutData.Keys: {playerClout.ShipClouts.Keys.Count}");
-                Debug.Log($"LoadClout - CloutData[Dolphin]: {playerClout.ShipClouts[ShipTypes.Dolphin]}");
+                _playerClout.ShipClouts = (Dictionary<ShipTypes, int>)JsonConvert.DeserializeObject(shipCloutRecord.Value, typeof(Dictionary<ShipTypes, int>));
+                Debug.Log($"LoadClout - CloutData.Keys: {_playerClout.ShipClouts.Keys.Count}");
+                Debug.Log($"LoadClout - CloutData[Dolphin]: {_playerClout.ShipClouts[ShipTypes.Dolphin]}");
             }
             
             // 
-            OnLoadingPlayerClout?.Invoke(playerClout);
+            OnLoadingPlayerClout?.Invoke(_playerClout);
 
-            Debug.Log($"LoadClout - Player Clout loaded");
-        }
-
-        public void UpdatePlayerShardData(Dictionary<ShipTypes, ShardData> playerShardData)
-        {
-            InitializePlayerClientInstanceAPI();
-     
-            Dictionary<string, string> shardData = playerShardData.Keys.ToDictionary(key => key.ToString(), key => playerShardData[key].ToString());
-
-            _playFabClientInstanceAPI.UpdateUserData(
-                new UpdateUserDataRequest
-                {
-                    Data = shardData,
-                    Permission = UserDataPermission.Public
-                }, (result) =>
-                {
-                    if (result == null)
-                    {
-                        Debug.LogWarning($"{nameof(PlayerDataController)} - {nameof(UpdatePlayerShardData)} - Unable to retrieve data or no data available");
-                        return;
-                    };
-                
-                    Debug.Log($"{nameof(PlayerDataController)} - {nameof(UpdatePlayerShardData)} success.");
-                },HandleErrorReport
-                );
+            Debug.Log("LoadClout - Player Clout loaded");
         }
 
         public void UpdatePlayerClout(Clout playerClout)
@@ -192,11 +259,11 @@ namespace CosmicShore.Integrations.PlayFab.PlayStream
             };
 
             _playFabClientInstanceAPI.UpdateUserData(
-                new UpdateUserDataRequest()
+                new UpdateUserDataRequest
                 {
                     Data = cloutData,
                     Permission = UserDataPermission.Public
-                }, (result) =>
+                }, result =>
                 {
                     if (result == null)
                     {
@@ -207,24 +274,7 @@ namespace CosmicShore.Integrations.PlayFab.PlayStream
 
                     Debug.Log($"{nameof(PlayerDataController)} - {nameof(UpdatePlayerClout)} success.");
                 },
-                HandleErrorReport);
+                PlayFabUtility.HandleErrorReport);
         }
-
-        
-        #region Error Handling
-    
-        /// <summary>
-        /// Handle PlayFab Error Report
-        /// Generate error report and raise the event
-        /// <param name="error"> PlayFab Error</param>
-        /// </summary>
-        private void HandleErrorReport(PlayFabError error = null)
-        {
-            if (error == null) return;
-            Debug.LogError(error.GenerateErrorReport());
-            // GeneratingErrorReport?.Invoke(error);
-        }
-    
-        #endregion
     }
 }

@@ -1,0 +1,44 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0309a5343d820c14abd73b35f6fa50f1, type: 3}
+  m_Name: SO_Class_Termite
+  m_EditorClassIdentifier: 
+  Class: 8
+  Name: Termite
+  Summary: '[Placeholder Summary Text]'
+  Description: Send out drones to shrink mass and produce cool stuff
+  Icon: {fileID: 21300000, guid: 4f5279e4af3c4234b8aa5937637aeabd, type: 3}
+  SelectedIcon: {fileID: 21300000, guid: 4ca0dd4a0b132db4c9e5e7f164b7d2c7, type: 3}
+  PreviewClip: {fileID: 2096801853598961014, guid: 6b8d168238dc02149b26d1221d313893,
+    type: 3}
+  PreviewImage: {fileID: 21300000, guid: b3fe0f4b92e2cf74b830808e3f8d88fc, type: 3}
+  TrailPreviewImage: {fileID: 21300000, guid: 2e75f6670391025489d30c8361fb8de3, type: 3}
+  CardSilohoutte: {fileID: 21300000, guid: 20c2cf23262a5354a8f8a0808a3acea8, type: 3}
+  CardSilohoutteActive: {fileID: 21300000, guid: a89a335fa1c02f745ba93948c9b7ee32,
+    type: 3}
+  Abilities:
+  - {fileID: 11400000, guid: cf4c7963673545946af80618f5a52917, type: 2}
+  - {fileID: 11400000, guid: 260209c83d5be594a81043ebceea8ddf, type: 2}
+  - {fileID: 11400000, guid: 2c4bb3cbbacfb02489a36a11aa4c3d1e, type: 2}
+  - {fileID: 11400000, guid: 094b4c0cea37d4a4fb02edf8122006d1, type: 2}
+  Captains:
+  - {fileID: 11400000, guid: cd886dc4b2127444e9db97ef8fd233f4, type: 2}
+  - {fileID: 11400000, guid: 054a30bf691c6c6419b9b708ed4ff60c, type: 2}
+  - {fileID: 11400000, guid: f666e4af7db665a4388404c9db7d67e2, type: 2}
+  - {fileID: 11400000, guid: 1ee4ebd7eb909b0459f25a20cc12dde9, type: 2}
+  Games:
+  - {fileID: 11400000, guid: dae692490d41dda488bf199e4fdb30af, type: 2}
+  - {fileID: 11400000, guid: 176e63d5800dcf147b46497fd88e0fea, type: 2}
+  - {fileID: 11400000, guid: c5f6d2d7142557647b39c30f48495c67, type: 2}
+  TrainingGames:
+  - {fileID: 0}
+  - {fileID: 0}
