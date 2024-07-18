@@ -19,20 +19,20 @@ namespace CosmicShore.Utility
         /// The overall manager for the timeline to record.
         /// </summary>
         [SerializeField]
-        private PlayableDirector director;
+        public PlayableDirector director;
 
         /// <summary>
         /// An asset (on disk) for the contents of the timeline.
         /// </summary>
         [SerializeField]
-        private TimelineAsset timelineAsset;
+        public TimelineAsset timelineAsset;
 
         /// <summary>
         /// Where all items generated or expcted from this utility should be stored.
         /// The path is relative to the project and will usually start with "Assets/".
         /// </summary>
         [SerializeField]
-        private string assetsPath = "Assets/Recorder";
+        public string assetsPath = "Assets/Recorder";
 
         /// <summary>
         /// The game objects that this recorder will track.
