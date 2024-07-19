@@ -222,6 +222,11 @@ PrefabInstance:
       propertyPath: LifeForm
       value: 
       objectReference: {fileID: 5945480239701989318}
+    - target: {fileID: 4055802238885949714, guid: 32182c0d19e344b4c9a9b332052037e6,
+        type: 3}
+      propertyPath: m_Materials.Array.data[0]
+      value: 
+      objectReference: {fileID: 2100000, guid: 5140ec1c42866e849927f442d5965f7f, type: 2}
     - target: {fileID: 4897651091342273877, guid: 32182c0d19e344b4c9a9b332052037e6,
         type: 3}
       propertyPath: m_RootOrder
