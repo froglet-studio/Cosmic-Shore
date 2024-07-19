@@ -2,6 +2,7 @@
 using CosmicShore.Models.Enums;
 using CosmicShore.Utility.Singleton;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -48,6 +49,11 @@ namespace CosmicShore.Core
             MiniGame.IsDailyChallenge = isDailyChallenge;
             Hangar.Instance.SetAiDifficultyLevel(intensity);
             SceneManager.LoadScene(TrainingGameLookup[gameMode].Game.SceneName);
+        }
+
+        public SO_TrainingGame GetTrainingGameByMode(MiniGames gameMode)
+        {
+            return TrainingGames.GameList.Where(x => x.Game.Mode == gameMode).FirstOrDefault();
         }
     }
 }

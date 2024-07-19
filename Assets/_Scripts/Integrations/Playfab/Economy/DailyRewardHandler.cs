@@ -51,8 +51,6 @@ namespace CosmicShore.Integrations.PlayFab.CloudScripts
             
             PlayFabCloudScriptAPI.ExecuteFunction(request, OnSaveRewardClaimTimeSuccess, PlayFabUtility.HandleErrorReport);
         }
-        
-        
 
         /// <summary>
         /// On Saving Daily Reward Claim Time Delegate
@@ -90,6 +88,33 @@ namespace CosmicShore.Integrations.PlayFab.CloudScripts
                 return;
             }
             
+            Debug.Log($"Cloud script - The {result.FunctionName} function took {result.ExecutionTimeMilliseconds} to complete");
+            Debug.Log($"Cloud script - Result: {result.FunctionResult}");
+        }
+
+        public void ClaimDailyChallengeReward(int tier, int rewardValue)
+        {
+            var request = new ExecuteFunctionRequest
+            {
+                Entity = _entity,
+                FunctionName = "ClaimDailyChallengeReward",
+                FunctionParameter = new Dictionary<string, object> { { "tier", tier }, { "rewardValue", rewardValue } },
+                GeneratePlayStreamEvent = false
+            };
+
+            Debug.Log($"ClaimDailyChallengeReward(int tier, int rewardValue) - tier:{tier}, value:{rewardValue}");
+            PlayFabCloudScriptAPI.ExecuteFunction(request, OnClaimDailyChallengeRewardSuccess, PlayFabUtility.HandleErrorReport);
+        }
+
+        void OnClaimDailyChallengeRewardSuccess(ExecuteFunctionResult result)
+        {
+            Debug.Log($"OnClaimDailyChallengeRewardSuccess");
+            if (result.FunctionResultTooLarge ?? false)
+            {
+                Debug.LogError($"Cloud script - Exceed the Azure Function.");
+                return;
+            }
+
             Debug.Log($"Cloud script - The {result.FunctionName} function took {result.ExecutionTimeMilliseconds} to complete");
             Debug.Log($"Cloud script - Result: {result.FunctionResult}");
         }

@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
+using System.Collections;
 
 namespace CosmicShore.App.UI
 {
@@ -21,7 +22,7 @@ namespace CosmicShore.App.UI
             int selectionIndex = 0;
             foreach (var link in navLinks)
             {
-                Debug.LogWarning($"NavGroup.ActivateLink - {link.gameObject.name} == {linkToActivate.gameObject.name}, {link == linkToActivate}");
+                Debug.LogWarning($"NavGroup.ActivateLink - {link.gameObject.name}, {link == linkToActivate}");
                 link.SetActive(link == linkToActivate);
                 switch (navGroupType)
                 {

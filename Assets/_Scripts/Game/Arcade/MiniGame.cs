@@ -11,6 +11,7 @@ using UnityEngine.UI;
 using CosmicShore.App.Systems.UserActions;
 using CosmicShore.Game.UI;
 using CosmicShore.Models.Enums;
+using CosmicShore.App.Systems;
 
 namespace CosmicShore.Game.Arcade
 {
@@ -273,7 +274,10 @@ namespace CosmicShore.Game.Arcade
                 Debug.Log($"MiniGame.EndGame - Player Score: {ScoreTracker.GetScore(player.PlayerName)} ");
 
             if (IsDailyChallenge)
+            {
                 LeaderboardManager.Instance.ReportDailyChallengeStatistic(ScoreTracker.GetHighScore(), ScoreTracker.GolfRules);
+                DailyChallengeSystem.Instance.ReportScore(ScoreTracker.GetHighScore());
+            }
             else
                 LeaderboardManager.Instance.ReportGameplayStatistic(gameMode, PlayerShipType, IntensityLevel, ScoreTracker.GetHighScore(), ScoreTracker.GolfRules);
 
@@ -286,6 +290,7 @@ namespace CosmicShore.Game.Arcade
             PauseSystem.TogglePauseGame();
             gameRunning = false;
             EndGameScreen.SetActive(true);
+            
             ScoreTracker.DisplayScores();
             OnMiniGameEnd?.Invoke(gameMode, PlayerShipType, NumberOfPlayers, IntensityLevel, ScoreTracker.GetHighScore());
         }
