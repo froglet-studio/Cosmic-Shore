@@ -14,7 +14,9 @@ namespace CosmicShore
         [SerializeField] float growthChance = 0.2f;
         [SerializeField] float minBranchAngle = -40f;
         [SerializeField] float maxBranchAngle = 40f;
-        [SerializeField] int minBranches = 1; // don't set to 0
+        [Range(1, 30)]
+        [SerializeField] int minBranches = 1;
+        [Range(1, 30)]
         [SerializeField] int maxBranches = 2;
         [SerializeField] int minTrunks = 1;
         [SerializeField] int maxTrunks = 1;

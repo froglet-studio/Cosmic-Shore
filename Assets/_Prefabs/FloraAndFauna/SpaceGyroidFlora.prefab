@@ -49,16 +49,14 @@ MonoBehaviour:
     type: 3}
   spindle: {fileID: 5157459880619768690, guid: 76cd644e62b88cc43a93674d5596971e, type: 3}
   minHealthBlocks: 5
-  activeCrystalMaterial: {fileID: 2100000, guid: 18c297a89c0d43e46bd4ea5bd6143ffb,
-    type: 2}
-  team: 0
+  Team: 0
   growPeriod: 2
   PlantPeriod: 10
   depth: 0
   feeds: 0
-  maxTotalSpawnedObjects: 1000
-  maxDepth: 60
-  itemsPerGrow: 7
+  maxTotalSpawnedObjects: 800
+  maxDepth: 80
+  itemsPerGrow: 5
   randomItems: 2
   crystalGrowthMultiplier: 1.01
 --- !u!1001 &8186157953130318967

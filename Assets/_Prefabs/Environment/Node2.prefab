@@ -137,15 +137,15 @@ MonoBehaviour:
   Crystal: {fileID: 6588436221143428964}
   membrane: {fileID: 1922600128703011760}
   nucleus: {fileID: 3454661906229792381}
-  flora1: {fileID: 8186157953239024492, guid: 64c1c3612f071b946a3f70e8a65496db, type: 3}
+  flora1: {fileID: 7514956980722975813, guid: 3c58c4dd53a6a2240acd7f7b81a3adb5, type: 3}
   flora2: {fileID: 8186157953239024492, guid: a84d160ac0bcaf94da22c5368e4d3962, type: 3}
   fauna1: {fileID: 8812619448024686939, guid: 14b7fddb8e30aa541a092201bc80b848, type: 3}
-  fauna2: {fileID: 364430243050076685, guid: 394249d6872c75a419f6a93176160cfc, type: 3}
+  fauna2: {fileID: 8812619448024686939, guid: 3b344872fac297f448d202dd574c2a3e, type: 3}
   floraCollection: {fileID: 11400000, guid: 4e889215b2617a942923f1d3c22134c0, type: 2}
   floraSpawnVolumeCeiling: 12000
   initialFaunaSpawnWaitTime: 1
   faunaSpawnVolumeThreshold: 10000
-  baseFaunaSpawnTime: 60
+  baseFaunaSpawnTime: 300
   hasRandomFloraAndFauna: 0
   minOctreeSize: 20
 --- !u!1001 &94025947

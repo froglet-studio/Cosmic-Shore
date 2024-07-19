@@ -45,20 +45,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d3651588f6d7bbd4ba59c18516075c9a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  healthBlock: {fileID: 8110546509497104660, guid: c1f494543c951b54f9d9e15318de9a4a,
+  healthBlock: {fileID: 8110546509497104660, guid: a73de49e327399841bc3021df91c4deb,
     type: 3}
   spindle: {fileID: 5157459880619768690, guid: 76cd644e62b88cc43a93674d5596971e, type: 3}
   minHealthBlocks: 5
-  activeCrystalMaterial: {fileID: 2100000, guid: 18c297a89c0d43e46bd4ea5bd6143ffb,
-    type: 2}
   Team: 0
   growPeriod: 2
   PlantPeriod: 10
   depth: 0
   feeds: 0
-  maxTotalSpawnedObjects: 1000
+  maxTotalSpawnedObjects: 500
   maxDepth: 60
-  itemsPerGrow: 7
+  itemsPerGrow: 5
   randomItems: 2
   crystalGrowthMultiplier: 1.01
 --- !u!1001 &7171594881959712086

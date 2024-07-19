@@ -23,7 +23,7 @@ EditorBuildSettings:
   - enabled: 0
     path: Assets/_Scenes/MinigamePumpNDump.unity
     guid: 1b053c09e59743c46aa0fac15789efd2
-  - enabled: 0
+  - enabled: 1
     path: Assets/_Scenes/MinigameMasterExploder.unity
     guid: b2abfc44b4bae994fa8c45f9fe87fb28
   - enabled: 0

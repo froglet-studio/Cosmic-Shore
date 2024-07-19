@@ -120,7 +120,27 @@ PrefabInstance:
       propertyPath: m_Name
       value: ParentTailSpindle
       objectReference: {fileID: 0}
+    - target: {fileID: 2212352712807355752, guid: 4a235b385189e2a48aab0c89f2c1a60e,
+        type: 3}
+      propertyPath: LifeForm
+      value: 
+      objectReference: {fileID: 5032170557366743859}
     - target: {fileID: 2531723237350299608, guid: 4a235b385189e2a48aab0c89f2c1a60e,
+        type: 3}
+      propertyPath: LifeForm
+      value: 
+      objectReference: {fileID: 5032170557366743859}
+    - target: {fileID: 3238286917524245331, guid: 4a235b385189e2a48aab0c89f2c1a60e,
+        type: 3}
+      propertyPath: LifeForm
+      value: 
+      objectReference: {fileID: 5032170557366743859}
+    - target: {fileID: 4083086261133873093, guid: 4a235b385189e2a48aab0c89f2c1a60e,
+        type: 3}
+      propertyPath: LifeForm
+      value: 
+      objectReference: {fileID: 5032170557366743859}
+    - target: {fileID: 4391612687362365900, guid: 4a235b385189e2a48aab0c89f2c1a60e,
         type: 3}
       propertyPath: LifeForm
       value: 
@@ -131,6 +151,11 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 5032170557366743859}
     - target: {fileID: 4757565511027715913, guid: 4a235b385189e2a48aab0c89f2c1a60e,
+        type: 3}
+      propertyPath: LifeForm
+      value: 
+      objectReference: {fileID: 5032170557366743859}
+    - target: {fileID: 5030052179269535068, guid: 4a235b385189e2a48aab0c89f2c1a60e,
         type: 3}
       propertyPath: LifeForm
       value: 
