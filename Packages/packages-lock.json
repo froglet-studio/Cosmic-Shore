@@ -62,7 +62,7 @@
       "url": "https://packages.unity.com"
     },
     "com.unity.cinemachine": {
-      "version": "2.10.0",
+      "version": "2.10.1",
       "depth": 0,
       "source": "registry",
       "dependencies": {
@@ -164,7 +164,7 @@
       "url": "https://packages.unity.com"
     },
     "com.unity.multiplayer.playmode": {
-      "version": "1.2.0",
+      "version": "1.2.1",
       "depth": 0,
       "source": "registry",
       "dependencies": {
@@ -226,7 +226,7 @@
       "url": "https://packages.unity.com"
     },
     "com.unity.purchasing": {
-      "version": "4.12.0",
+      "version": "4.12.2",
       "depth": 0,
       "source": "registry",
       "dependencies": {
@@ -334,7 +334,7 @@
       "url": "https://packages.unity.com"
     },
     "com.unity.services.lobby": {
-      "version": "1.2.1",
+      "version": "1.2.2",
       "depth": 0,
       "source": "registry",
       "dependencies": {
@@ -346,7 +346,7 @@
         "com.unity.modules.unitywebrequestwww": "1.0.0",
         "com.unity.nuget.newtonsoft-json": "3.0.2",
         "com.unity.services.authentication": "2.7.4",
-        "com.unity.services.wire": "1.2.5"
+        "com.unity.services.wire": "1.2.6"
       },
       "url": "https://packages.unity.com"
     },
@@ -398,7 +398,7 @@
       "url": "https://packages.unity.com"
     },
     "com.unity.services.wire": {
-      "version": "1.2.5",
+      "version": "1.2.6",
       "depth": 1,
       "source": "registry",
       "dependencies": {
