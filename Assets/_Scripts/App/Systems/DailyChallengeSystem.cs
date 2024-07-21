@@ -57,7 +57,6 @@ namespace CosmicShore.App.Systems
 
         void Start()
         {
-            //base.Awake();
             InitializePlayerPrefs();
             LoadRewardState();
 
