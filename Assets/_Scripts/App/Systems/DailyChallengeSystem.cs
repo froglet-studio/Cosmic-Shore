@@ -85,7 +85,6 @@ namespace CosmicShore.App.Systems
 
         void SelectDailyGame()
         {
-            Debug.LogError($"initializedDate != DateTime.UtcNow.Date ==> {ChallengeDate} != {DateTime.UtcNow.Date}");
             ChallengeDate = DateTime.UtcNow.Date;
             PlayerPrefs.SetString(InitializedDatePrefKey, DateTime.UtcNow.Date.ToString("o"));
             PlayerPrefs.Save();

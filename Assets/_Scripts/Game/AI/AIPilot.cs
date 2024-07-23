@@ -110,7 +110,7 @@ namespace CosmicShore.Game.AI
 
         public void NodeContentUpdated()
         {
-            Debug.Log($"NodeContentUpdated - transform.position: {transform.position}");
+            //Debug.Log($"NodeContentUpdated - transform.position: {transform.position}");
             var activeNode = NodeControlManager.Instance.GetNodeByPosition(transform.position);
 
             if (activeNode == null)

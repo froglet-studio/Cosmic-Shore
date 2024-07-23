@@ -35,8 +35,6 @@ namespace CosmicShore.App.UI
         [SerializeField] float easing = 0.5f; // Makes the transition less jarring
         [SerializeField] int currentScreen; // Keeps track of how many screens you have in the menu system. From 0 to 4, home = 2
 
-        [SerializeField] GameObject Ship_Select;
-
         [SerializeField] Transform NavBar;
         [SerializeField] List<ScreenAnimator> NavigateToScreenAnimations;
 
@@ -137,7 +135,6 @@ namespace CosmicShore.App.UI
 
             currentScreen = ScreenIndex;
             UpdateNavBar(currentScreen);
-            DeactiveSubpages();
         }
 
         public void OnClickStoreNav()
@@ -175,10 +172,6 @@ namespace CosmicShore.App.UI
                 return;
 
             NavigateTo(currentScreen + 1);
-        }
-        void DeactiveSubpages()
-        {
-            Ship_Select.SetActive(false);
         }
         void UpdateNavBar(int index)
         {

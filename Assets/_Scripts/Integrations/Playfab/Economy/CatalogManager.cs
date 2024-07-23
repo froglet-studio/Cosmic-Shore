@@ -8,6 +8,7 @@ using PlayFab;
 using PlayFab.ClientModels;
 using PlayFab.EconomyModels;
 using UnityEngine;
+using UnityEngine.Assertions;
 using CatalogItem = PlayFab.EconomyModels.CatalogItem;
 
 namespace CosmicShore.Integrations.PlayFab.Economy
@@ -27,11 +28,9 @@ namespace CosmicShore.Integrations.PlayFab.Economy
         // public delegate void GettingBundleIdEvent(string bundleId);
         // public static event GettingBundleIdEvent OnGettingBundleId;
         public static event Action<string> OnGettingBundleId;
-        static event Action OnLoadCatalogSuccess;   // Use an event to prevent a race condition - Inventory Loading requires the full catalog to have been loaded
-
-        int _dailyRewardIndex;
-
-        const string DailyRewardStoreID = "63d59c05-2b86-4843-8e9b-61c07ab121ad";
+        public static event Action OnLoadCatalogSuccess;   // Use an event to prevent a race condition - Inventory Loading requires the full catalog to have been loaded
+        public static event Action OnLoadInventory;
+        public static event Action OnInventoryChange;
         
         void Start()
         {
@@ -39,7 +38,6 @@ namespace CosmicShore.Integrations.PlayFab.Economy
             AuthenticationManager.OnLoginSuccess += InitializePlayFabEconomyAPI;
             AuthenticationManager.OnLoginSuccess += LoadAllCatalogItems;
             OnLoadCatalogSuccess += LoadPlayerInventory;
-            OnLoadCatalogSuccess += GetDailyRewardStore;
 
             NetworkMonitor.NetworkConnectionLost += Inventory.LoadFromDisk;
         }
@@ -49,7 +47,6 @@ namespace CosmicShore.Integrations.PlayFab.Economy
             AuthenticationManager.OnLoginSuccess -= InitializePlayFabEconomyAPI;
             AuthenticationManager.OnLoginSuccess -= LoadAllCatalogItems;
             OnLoadCatalogSuccess -= LoadPlayerInventory;
-            OnLoadCatalogSuccess -= GetDailyRewardStore;
 
             NetworkMonitor.NetworkConnectionLost -= Inventory.LoadFromDisk;
         }
@@ -88,6 +85,7 @@ namespace CosmicShore.Integrations.PlayFab.Economy
         {
             var request = new SearchItemsRequest();
             request.Filter = filter;
+            request.Count = 50;
             
             _playFabEconomyInstanceAPI.SearchItems(request,
                 OnLoadingCatalogItems,
@@ -119,7 +117,10 @@ namespace CosmicShore.Integrations.PlayFab.Economy
             {
                 crystals = new(),
                 classes = new(),
-                games = new()
+                captains = new(),
+                captainUpgrades = new(),
+                games = new(),
+                tickets = new(),
             };
 
             foreach (var item in response.Items)
@@ -139,6 +140,8 @@ namespace CosmicShore.Integrations.PlayFab.Economy
         {
             StoreShelve.allItems.Add(item.ItemId, item);
 
+            Debug.Log($"AddToStoreShelve - contentType:{contentType},item:{item.Name}");
+
             switch (contentType)
             {
                 case "Crystal":
@@ -156,14 +159,20 @@ namespace CosmicShore.Integrations.PlayFab.Economy
                 case "CaptainUpgrade":
                     StoreShelve.captainUpgrades.Add(item.ItemId, item);
                     break;
+                case "Ticket":
+                    StoreShelve.tickets.Add(item.ItemId, item);
+                    if (item.Name == "Daily Challenge Ticket")
+                        StoreShelve.DailyChallengeTicket = item;
+                    else if (item.Name == "Faction Mission Ticket")
+                        StoreShelve.FactionMissionTicket = item;
+
+                    Debug.Log("Ticket Product Found - name: " + item.Name +", " + item.Amount);
+                    break;
                 default:
                     Debug.LogWarningFormat("CatalogManager - AddToStoreSelves: item content type is not part of the store.");
                     break;
             }
         }
-
-
-
         #endregion
 
         #region Inventory Operations
@@ -272,6 +281,42 @@ namespace CosmicShore.Integrations.PlayFab.Economy
             );
         }
 
+        public VirtualItem GetFactionTicket()
+        {
+            return StoreShelve.FactionMissionTicket;
+        }
+
+        public VirtualItem GetDailyChallengeTicket()
+        {
+            return StoreShelve.DailyChallengeTicket;
+        }
+
+        public int GetCrystalBalance()
+        {
+            int balance = 0;
+            foreach (var crystal in Inventory.crystals)
+            {
+                if ("Omni Crystal" == crystal.Name)
+                {
+                    balance = (int) crystal.Amount;
+                    break;
+                }
+                Debug.Log($"GetCrystalBalance - {crystal.Type}:{crystal.Name}:{crystal.Amount}");
+            }
+
+            return balance;
+        }
+        void UpdateCurrencyBalance(string currencyItemId, int amount)
+        {
+            foreach (var item in StoreShelve.crystals)
+            {
+                if (item.Value.ItemId == currencyItemId)
+                {
+                    item.Value.Amount += amount;
+                }
+            }
+        }
+
         /// <summary>
         /// On Loading Player Inventory
         /// </summary>
@@ -302,7 +347,13 @@ namespace CosmicShore.Integrations.PlayFab.Economy
                 AddToInventory(virtualItem);
             }
 
+            foreach (var crystal in Inventory.crystals)
+            {
+                Debug.Log($"Crystal: {crystal.Name}, Balance: {crystal.Amount}");
+            }
+
             Inventory.SaveToDisk();
+            OnLoadInventory?.Invoke();
         }
 
         void ClearLocalInventoryOnLoading()
@@ -392,7 +443,6 @@ namespace CosmicShore.Integrations.PlayFab.Economy
         /// Add Items to Inventory
         /// Add shinny new stuff! Any type of item from currency to captain and ship upgrades
         /// </summary>
-        //public void AddInventoryItem([NotNull] InventoryItemReference itemReference, int amount)
         public void AddInventoryItem(VirtualItem virtualItem)
         {
             var request = new AddInventoryItemsRequest();
@@ -486,7 +536,7 @@ namespace CosmicShore.Integrations.PlayFab.Economy
             _playFabEconomyInstanceAPI.PurchaseInventoryItems(
                 new()
                 {
-                    Amount = item.Amount,
+                    Amount = price.UnitAmount,
                     Item = new() 
                     { 
                         Id = item.ItemId
@@ -495,20 +545,23 @@ namespace CosmicShore.Integrations.PlayFab.Economy
                     {
                         new PurchasePriceAmount() 
                         { 
-                            ItemId = price.ItemId, 
+                            ItemId = price.ItemId,
                             Amount = price.Amount 
                         }
                     },
                 },
                 response =>
                 {
+                    UpdateCurrencyBalance(price.ItemId, price.Amount * -1);
+                    AddToInventory(item);
+                    Inventory.SaveToDisk();
+                    OnLoadInventory?.Invoke();
+
                     Debug.Log($"CatalogManager - Purchase success.");
                 },
                 PlayFabUtility.HandleErrorReport
             );
         }
-
-        
 
         /// <summary>
         /// Claim Daily Reward
@@ -516,48 +569,7 @@ namespace CosmicShore.Integrations.PlayFab.Economy
         public void ClaimDailyReward()
         {
             if (StoreShelve.dailyRewards is null || StoreShelve.dailyRewards.Count == 0) return;
-            
-            
         }
-
-        /// <summary>
-        /// Get Daily Reward Store defined in PlayFab Economy
-        /// TODO: Might need to put on the chopping block since daily reward contents are moved to bundles.
-        /// </summary>
-        private void GetDailyRewardStore()
-        {
-            var store = new StoreReference { Id = DailyRewardStoreID };
-            var request = new SearchItemsRequest{ Store = store };
-            _playFabEconomyInstanceAPI.SearchItems(request, OnGettingDailyRewardStore, PlayFabUtility.HandleErrorReport);
-        }
-
-        /// <summary>
-        /// On Successfully Getting Daily Reward Store
-        /// TODO: Might need to put on the chopping block since daily reward contents are moved to bundles.
-        /// </summary>
-        /// <param name="result"></param>
-        private void OnGettingDailyRewardStore(SearchItemsResponse result)
-        {
-            if (result == null)
-            {
-                Debug.Log("Catalog manager - OnGettingDailyRewardStore() - no result.");
-                return;
-            }
-
-            foreach (var storeItem in result.Items)
-            {
-                StoreShelve.dailyRewards.Add(storeItem.Id, ConvertCatalogItemToVirtualItem(storeItem));
-                StoreShelve.allItems.TryAdd(storeItem.Id, ConvertCatalogItemToVirtualItem(storeItem));  // Daily Reward may have already been added to all Items when loading the catalog
-            }
-
-            foreach (var dailyReward in StoreShelve.dailyRewards.Values)
-            {
-                Debug.Log($"Catalog manager - OnGettingDailyRewardStore() - the stored daily rewards is: " +
-                          $"id: {dailyReward.ItemId} " +
-                          $"title: {dailyReward.Name}");
-            }
-        }
-
         #endregion
 
         #region Model Conversion
@@ -570,8 +582,15 @@ namespace CosmicShore.Integrations.PlayFab.Economy
         ItemPrice PlayFabToCosmicShorePrice(CatalogPriceOptions price)
         {
             ItemPrice itemPrice = new();
-            itemPrice.ItemId = price.Prices[0].Amounts[0].ItemId;
-            itemPrice.Amount = price.Prices[0].Amounts[0].Amount;
+            Debug.Log($"PlayFabToCosmicShorePrice: {price.Prices.Count}");
+
+            if (price.Prices.Count >= 1)
+            {
+                itemPrice.ItemId = price.Prices[0].Amounts[0].ItemId;
+                itemPrice.Amount = price.Prices[0].Amounts[0].Amount;
+                Assert.IsTrue(price.Prices[0].UnitAmount != null, "Misconfigured Catalog Item - Unit Amount should not be null.");
+                itemPrice.UnitAmount = price.Prices[0].UnitAmount == null ? 1 : (int)price.Prices[0].UnitAmount;
+            }
             return itemPrice;
         }
         
@@ -590,10 +609,15 @@ namespace CosmicShore.Integrations.PlayFab.Economy
             virtualItem.Description = catalogItem.Description.TryGetValue("NEUTRAL", out var description)? description : "No Description";
             virtualItem.ContentType = catalogItem.ContentType;
             //virtualItem.BundleContents = catalogItem.Contents;
-            //virtualItem.priceModel = PlayfabToCosmicShorePrice(catalogItem.PriceOptions);
+            
+            virtualItem.Price = new()
+            {
+                // TODO: Do this in a loop
+                PlayFabToCosmicShorePrice(catalogItem.PriceOptions)
+            };
+
             virtualItem.Tags = catalogItem.Tags;
             virtualItem.Type = catalogItem.Type;
-            //virtualItem.Amount = catalogItem.PriceOptions.Prices[0].Amounts[0].
             return virtualItem;
         }
 
@@ -606,7 +630,9 @@ namespace CosmicShore.Integrations.PlayFab.Economy
         /// <returns></returns>
         VirtualItem ConvertInventoryItemToVirtualItem(InventoryItem item)
         {
-            return StoreShelve.allItems[item.Id];
+            var virtualItem = StoreShelve.allItems[item.Id];
+            virtualItem.Amount = item.Amount;
+            return virtualItem;
         }
         #endregion
 
