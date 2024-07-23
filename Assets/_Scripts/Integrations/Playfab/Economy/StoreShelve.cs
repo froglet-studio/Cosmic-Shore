@@ -12,7 +12,6 @@ namespace CosmicShore.Integrations.PlayFab.Economy
         public Dictionary<string, VirtualItem> classes = new();
         public Dictionary<string, VirtualItem> captains = new();
         public Dictionary<string, VirtualItem> captainUpgrades = new();
-        public Dictionary<string, VirtualItem> dailyRewards = new();
         public Dictionary<string, VirtualItem> tickets = new();
         public VirtualItem FactionMissionTicket;
         public VirtualItem DailyChallengeTicket;

@@ -562,14 +562,6 @@ namespace CosmicShore.Integrations.PlayFab.Economy
                 PlayFabUtility.HandleErrorReport
             );
         }
-
-        /// <summary>
-        /// Claim Daily Reward
-        /// </summary>
-        public void ClaimDailyReward()
-        {
-            if (StoreShelve.dailyRewards is null || StoreShelve.dailyRewards.Count == 0) return;
-        }
         #endregion
 
         #region Model Conversion

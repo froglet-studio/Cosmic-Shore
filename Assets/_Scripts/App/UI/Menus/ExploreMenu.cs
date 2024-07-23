@@ -7,7 +7,6 @@ using CosmicShore.Game.Arcade;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 namespace CosmicShore.App.UI.Menus

@@ -37,7 +37,6 @@ namespace CosmicShore.App.Systems.Ads
         public static event OnAdShowComplete AdShowComplete;
         public delegate void OnAdShowFailure(string adUnitId, UnityAdsShowError error, string message);
         public static event OnAdShowFailure AdShowFailure;
-
         void Awake()
         {
             Initialize();

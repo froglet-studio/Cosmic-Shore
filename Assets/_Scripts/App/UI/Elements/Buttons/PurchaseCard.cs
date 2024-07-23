@@ -7,13 +7,13 @@ namespace CosmicShore
     public abstract class PurchaseCard : MonoBehaviour
     {
         [SerializeField] ModalWindowManager purchaseModal;
-        [SerializeField] Image BackgroundImage;
-        [SerializeField] Sprite BackgroundSprite;
+        [SerializeField] protected Image BackgroundImage;
+        //[SerializeField] Sprite BackgroundSprite;
 
         public abstract void Purchase();
         public virtual void InitializeView()
         {
-            BackgroundImage.sprite = BackgroundSprite;
+            //BackgroundImage.sprite = BackgroundSprite;
         }
 
         public void OnClickBuy()
