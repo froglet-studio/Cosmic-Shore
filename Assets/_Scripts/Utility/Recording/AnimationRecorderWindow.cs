@@ -78,23 +78,7 @@ namespace CosmicShore.Utility
                 {
                     return holder;
                 }
-                GameObject gameObject = GameObject.Find(AnimationRecorderName);
-                if (gameObject == null)
-                {
-                    Debug.LogWarning($"There needs to be an object in the scene called \"{AnimationRecorderName}\". One will be added now.");
-                    gameObject = new GameObject(AnimationRecorderName);
-                }
-                DataHolder sceneData = gameObject.GetComponent<DataHolder>();
-                if (sceneData != null)
-                {
-                    return sceneData;
-                }
-                sceneData = gameObject.AddComponent<DataHolder>();
-                holder = sceneData;
-                if (gameObject.GetComponent<PlayableDirector>() == null)
-                {
-                    gameObject.AddComponent<PlayableDirector>();
-                }
+                SetupRecordingSystem();
                 return holder;
             }
         }
@@ -137,7 +121,7 @@ namespace CosmicShore.Utility
         /// <summary>
         /// A collection of every recorder, each one associated with a new game object to track.
         /// </summary>
-        private static List<GameObjectRecorder> Recorders = new();
+        private readonly static List<GameObjectRecorder> Recorders = new();
 
         /// <summary>
         /// The default vertical space between elements in the GUI.
@@ -157,6 +141,8 @@ namespace CosmicShore.Utility
         /// </summary>
         private string salt;
 
+        private readonly string defaultTimelinePath = "Assets/_Scripts/Utility/Recording/DefaultTimeline.playable";
+
         /// <summary>
         /// Creates the menu item "Window/Animation Recorder" and sets it to open the Animation Recorder
         /// window when activated.
@@ -164,7 +150,7 @@ namespace CosmicShore.Utility
         [MenuItem("Window/Animation Recorder")]
         public static void ShowWindow()
         {
-            EditorWindow recorder = EditorWindow.GetWindow(typeof(AnimationRecorder), false, "Animation Recorder");
+            EditorWindow recorder = EditorWindow.GetWindow(typeof(AnimationRecorder), false, AnimationRecorderName);
         }
 
         /// <summary>
@@ -186,7 +172,7 @@ namespace CosmicShore.Utility
         /// </summary>
         public void OnGUI()
         {
-            EditorGUILayout.PropertyField(serializedObject.FindProperty(Director), new GUIContent("Animation Manager"));
+            EditorGUILayout.PropertyField(serializedObject.FindProperty(Director), new GUIContent("Playable Director Container"));
             GUI.enabled = (serializedObject.FindProperty(Director).objectReferenceValue != null) && !isRecording;
             GUILayout.BeginVertical();
             EditorGUILayout.PropertyField(serializedObject.FindProperty(ObjectsToTrack), new GUIContent("Objects to track"));
@@ -397,12 +383,48 @@ namespace CosmicShore.Utility
             if (state == PlayModeStateChange.EnteredPlayMode)
             {
                 recordingNumber = 0;
-                int _salt = new System.Random().Next();
-                salt = Convert.ToBase64String(BitConverter.GetBytes(_salt)).TrimEnd('=');
+                salt = GenerateSalt();
             }
             if (state == PlayModeStateChange.ExitingPlayMode && isRecording)
             {
                 EndRecording();
+            }
+        }
+
+        private string GenerateSalt()
+        {
+            int salt = new System.Random().Next();
+            return Convert.ToBase64String(BitConverter.GetBytes(salt)).TrimEnd('=');
+
+        }
+
+        private void SetupRecordingSystem()
+        {
+            GameObject gameObject = GameObject.Find(AnimationRecorderName);
+            if (gameObject == null)
+            {
+                Debug.LogWarning($"There needs to be an object in the scene called \"{AnimationRecorderName}\". One will be added now.");
+                gameObject = new GameObject(AnimationRecorderName);
+            }
+            DataHolder sceneData = gameObject.GetComponent<DataHolder>();
+            if (sceneData != null)
+            {
+                holder = sceneData;
+            }
+            else
+            {
+                sceneData = gameObject.AddComponent<DataHolder>();
+                holder = sceneData;
+            }
+            if (gameObject.GetComponent<PlayableDirector>() == null)
+            {
+                PlayableDirector director = gameObject.AddComponent<PlayableDirector>();
+                string newAssetPath = $"{sceneData.assetsPath}/NewTimeline.{GenerateSalt()}.playable";
+                AssetDatabase.CopyAsset(defaultTimelinePath, newAssetPath);
+                TimelineAsset newTimelineAsset = AssetDatabase.LoadAssetAtPath<TimelineAsset>(newAssetPath);
+                holder.director = director;
+                holder.timelineAsset = newTimelineAsset;
+                director.playableAsset = newTimelineAsset;
             }
         }
     }
