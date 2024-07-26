@@ -53,7 +53,7 @@ namespace CosmicShore.Integrations.PlayFab.PlayerData
 
         private void Start()
         {
-            LoadPlayerProfileOffline();
+            //LoadPlayerProfileOffline();
             AuthenticationManager.OnLoginSuccess += LoadCaptainXpData;
             AuthenticationManager.OnLoginSuccess += LoadClout;
             AuthenticationManager.OnLoginSuccess += LoadPlayerProfile;
