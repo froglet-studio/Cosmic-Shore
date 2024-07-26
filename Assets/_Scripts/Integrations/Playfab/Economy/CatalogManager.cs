@@ -169,7 +169,7 @@ namespace CosmicShore.Integrations.PlayFab.Economy
                     Debug.Log("Ticket Product Found - name: " + item.Name +", " + item.Amount);
                     break;
                 default:
-                    Debug.LogWarningFormat("CatalogManager - AddToStoreSelves: item content type is not part of the store.");
+                    Debug.LogWarningFormat($"CatalogManager - AddToStoreSelves: item content type is not part of the store, {item.Name}, {item.ContentType}");
                     break;
             }
         }
@@ -365,6 +365,7 @@ namespace CosmicShore.Integrations.PlayFab.Economy
             Inventory.crystals.Clear();
             Inventory.shipClasses.Clear();
             Inventory.captains.Clear();
+            Inventory.tickets.Clear();
         }
         
         void AddToInventory(VirtualItem item)
@@ -391,8 +392,12 @@ namespace CosmicShore.Integrations.PlayFab.Economy
                     Debug.LogFormat("{0} - {1} - Adding Crystal",nameof(CatalogManager), nameof(AddToInventory));
                     Inventory.crystals.Add(item);
                     break;
+                case "Ticket":
+                    Debug.LogFormat("{0} - {1} - Adding Ticket",nameof(CatalogManager), nameof(AddToInventory));
+                    Inventory.tickets.Add(item);
+                    break;
                 default:
-                    Debug.LogWarningFormat("{0} - {1} - Item Content Type not related to player inventory items, such as Stores and Subscriptions.", nameof(CatalogManager), nameof(AddToInventory));
+                    Debug.LogWarningFormat("{0} - {1} - Item Content Type not related to player inventory items, such as Stores and Subscriptions: {2}", nameof(CatalogManager), nameof(AddToInventory), item.ContentType);
                     break;
             }
         }

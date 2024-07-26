@@ -1,21 +1,12 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace CosmicShore
 {
-    public class PurchaseGameButton : MonoBehaviour
+    public class PurchaseGameCard : PurchaseCard
     {
-        // Start is called before the first frame update
-        void Start()
+        public override void Purchase()
         {
-        
-        }
-
-        // Update is called once per frame
-        void Update()
-        {
-        
+            throw new System.NotImplementedException();
         }
     }
 }
