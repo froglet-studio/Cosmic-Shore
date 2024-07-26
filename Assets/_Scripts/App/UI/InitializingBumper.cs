@@ -34,7 +34,9 @@ namespace CosmicShore
 
         IEnumerator UpdateTextCoroutine()
         {
-            while (true)
+            var stopWatch = 0;
+
+            while (stopWatch < 6)
             {
                 InititizingText.text = "Inititizing";
                 yield return new WaitForSecondsRealtime(.2f);
@@ -44,7 +46,12 @@ namespace CosmicShore
                 yield return new WaitForSecondsRealtime(.2f);
                 InititizingText.text = "Inititizing...";
                 yield return new WaitForSecondsRealtime(.4f);
+                stopWatch++;
             }
+            InititizingText.text = "Offline Mode";
+
+            Debug.LogWarning("Entering Offline Mode");
+            StartCoroutine(CloseCoroutine());
         }
 
         IEnumerator CloseCoroutine()
