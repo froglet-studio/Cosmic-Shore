@@ -47688,7 +47688,6 @@ GameObject:
   m_Component:
   - component: {fileID: 1810261738}
   - component: {fileID: 1810261739}
-  - component: {fileID: 1810261740}
   m_Layer: 5
   m_Name: OverviewView
   m_TagString: Untagged
@@ -47739,18 +47738,6 @@ MonoBehaviour:
   TrainButton: {fileID: 469955488}
   GoToStoreButton: {fileID: 196910619}
   HangarGameplayParameterDisplayGroup: {fileID: 706739920}
---- !u!114 &1810261740
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1810261737}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f6205e30792fb434983a48539d0bff4a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1 &1815188641
 GameObject:
   m_ObjectHideFlags: 0
