@@ -18,10 +18,10 @@ namespace CosmicShore.Utility
     public class AnimationRecorder : EditorWindow
     {
         /// <summary>
-        /// The name of the serialized property for the track name in the data holder
-        /// object, for use by by Unity's property finder.
+        /// The name of the serialized property for the salt currently in use by
+        /// the utility. Can be changed by this code but not by the user.
         /// </summary>
-        private readonly string TrackName = "trackName";
+        private readonly string SaltField= "salt";
 
         /// <summary>
         /// The name of the serialized property for the playable director
@@ -177,9 +177,10 @@ namespace CosmicShore.Utility
             GUILayout.BeginVertical();
             EditorGUILayout.PropertyField(serializedObject.FindProperty(ObjectsToTrack), new GUIContent("Objects to track"));
             EditorGUILayout.PropertyField(serializedObject.FindProperty(RecordingDelay), new GUIContent("Delay between snapshots"));
-            EditorGUILayout.PropertyField(serializedObject.FindProperty(TrackName), new GUIContent("Name of recording"));
             EditorGUILayout.PropertyField(serializedObject.FindProperty(timelineAsset), new GUIContent("Asset for this timeline"));
             EditorGUILayout.PropertyField(serializedObject.FindProperty(assetsPath), new GUIContent("Save path for recordings"));
+            GUI.enabled = false;
+            EditorGUILayout.PropertyField(serializedObject.FindProperty(SaltField), new GUIContent("Current salt"));
             serializedObject.ApplyModifiedProperties();
             GUILayout.EndVertical();
 
@@ -299,6 +300,7 @@ namespace CosmicShore.Utility
         private string GameObjectAssetPath(GameObject gameObject, int index)
         {
             string currentAssetsPath = serializedObject.FindProperty(assetsPath).stringValue;
+            string salt = serializedObject.FindProperty(SaltField).stringValue;
             string crn = index.ToString(numberFormat);
             return $"{currentAssetsPath}/{gameObject.name}.{crn}.{salt}.asset";
         }
@@ -330,7 +332,6 @@ namespace CosmicShore.Utility
             PlayableDirector director = serializedObject.FindProperty(Director).objectReferenceValue as PlayableDirector;
             TimelineAsset currentTimelineAsset = serializedObject.FindProperty(timelineAsset).objectReferenceValue as TimelineAsset;
             string currentAssetsPath = serializedObject.FindProperty(assetsPath).stringValue;
-            string trackName = serializedObject.FindProperty(TrackName).stringValue;
             for (int currentRecordingNumber = 0; currentRecordingNumber < recordingNumber; currentRecordingNumber++)
             {
                 string crn = currentRecordingNumber.ToString(numberFormat);
@@ -340,7 +341,7 @@ namespace CosmicShore.Utility
                     GameObjectRecorder gameObjectRecorder = recordersEnumerator.Current;
                     GameObject currentGameObject = gameObjectRecorder.root;
                     Animator currentAnimator = currentGameObject.GetComponent<Animator>();
-                    AnimationTrack animationTrack = currentTimelineAsset.CreateTrack<AnimationTrack>($"{trackName} :: {currentGameObject.name} #{crn}");
+                    AnimationTrack animationTrack = currentTimelineAsset.CreateTrack<AnimationTrack>($"{currentGameObject.name} #{crn}");
                     string newAssetPath = GameObjectAssetPath(currentGameObject, currentRecordingNumber);
                     Debug.Log($"new asset path: {newAssetPath}");
                     AnimationClip animationClip = AssetDatabase.LoadAssetAtPath<AnimationClip>(newAssetPath);
@@ -358,13 +359,11 @@ namespace CosmicShore.Utility
         private bool ReadyToRecord()
         {
             IEnumerator animators = serializedObject.FindProperty(ObjectsToTrack).GetEnumerator();
-            string trackName = serializedObject.FindProperty(TrackName).stringValue;
             string currentAssetsPath = serializedObject.FindProperty(assetsPath).stringValue;
             TimelineAsset currentTimelineAsset = serializedObject.FindProperty(timelineAsset).objectReferenceValue as TimelineAsset;
             float recordingDelay = serializedObject.FindProperty(RecordingDelay).floatValue;
             return
                 animators.MoveNext() != false  &&
-                trackName != "" &&
                 recordingDelay > 0 &&
                 currentAssetsPath != "" &&
                 currentTimelineAsset != null;
@@ -383,7 +382,10 @@ namespace CosmicShore.Utility
             if (state == PlayModeStateChange.EnteredPlayMode)
             {
                 recordingNumber = 0;
-                salt = GenerateSalt();
+                PlayableDirector director = serializedObject.FindProperty(Director).objectReferenceValue as PlayableDirector;
+                GameObject currentGameObject = director.gameObject;
+                DataHolder sceneData = currentGameObject.GetComponent<DataHolder>();
+                sceneData.salt = GenerateSalt();
             }
             if (state == PlayModeStateChange.ExitingPlayMode && isRecording)
             {
@@ -419,7 +421,9 @@ namespace CosmicShore.Utility
             if (gameObject.GetComponent<PlayableDirector>() == null)
             {
                 PlayableDirector director = gameObject.AddComponent<PlayableDirector>();
-                string newAssetPath = $"{sceneData.assetsPath}/NewTimeline.{GenerateSalt()}.playable";
+                string salt = GenerateSalt();
+                sceneData.salt = salt;
+                string newAssetPath = $"{sceneData.assetsPath}/NewTimeline.{salt}.playable";
                 AssetDatabase.CopyAsset(defaultTimelinePath, newAssetPath);
                 TimelineAsset newTimelineAsset = AssetDatabase.LoadAssetAtPath<TimelineAsset>(newAssetPath);
                 holder.director = director;
