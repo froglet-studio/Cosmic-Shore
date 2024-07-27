@@ -24,9 +24,6 @@ namespace CosmicShore.Integrations.PlayFab.Economy
         public static Inventory Inventory { get; private set; } = new();
 
         public static Dictionary<string, string> Bundles { get; private set; } = new();
-        
-        // public delegate void GettingBundleIdEvent(string bundleId);
-        // public static event GettingBundleIdEvent OnGettingBundleId;
         public static event Action<string> OnGettingBundleId;
         public static event Action OnLoadCatalogSuccess;   // Use an event to prevent a race condition - Inventory Loading requires the full catalog to have been loaded
         public static event Action OnLoadInventory;
@@ -262,6 +259,8 @@ namespace CosmicShore.Integrations.PlayFab.Economy
             }
             Debug.Log("CatalogManager - On Add Inventory Item Success.");
             Debug.LogFormat("CatalogManager - transaction ids: {0}", string.Join(",", response.TransactionIds));
+
+            OnInventoryChange?.Invoke();
         }
         
 
@@ -313,6 +312,7 @@ namespace CosmicShore.Integrations.PlayFab.Economy
                 if (item.Value.ItemId == currencyItemId)
                 {
                     item.Value.Amount += amount;
+                    OnInventoryChange?.Invoke();
                 }
             }
         }
@@ -468,6 +468,7 @@ namespace CosmicShore.Integrations.PlayFab.Economy
             }
 
             Debug.LogFormat("{0} - {1}: item added to player inventory.", nameof(CatalogManager), nameof(AddInventoryItem));
+            OnInventoryChange?.Invoke();
         }
 
         /// <summary>
@@ -489,6 +490,7 @@ namespace CosmicShore.Integrations.PlayFab.Economy
                         return;
                     }
                     Debug.LogFormat("{0} - {1} All inventory collections removed.", nameof(CatalogManager), nameof(DeleteInventoryCollection));
+                    OnInventoryChange?.Invoke();
                 },
                 PlayFabUtility.HandleErrorReport
                 );
@@ -561,7 +563,7 @@ namespace CosmicShore.Integrations.PlayFab.Economy
                     AddToInventory(item);
                     Inventory.SaveToDisk();
                     OnLoadInventory?.Invoke();
-
+                    OnInventoryChange?.Invoke();
                     Debug.Log($"CatalogManager - Purchase success.");
                 },
                 PlayFabUtility.HandleErrorReport
