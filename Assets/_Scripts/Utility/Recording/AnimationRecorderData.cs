@@ -49,11 +49,10 @@ namespace CosmicShore.Utility
         private float recordingDelay = 1;
 
         /// <summary>
-        /// An arbirtrary name to add to the recording.
-        /// Will be applied to each new track. Cannot be empty.
+        /// The salt currently used in recording names.
         /// </summary>
         [SerializeField]
-        private string trackName;
+        internal string salt;
 
         /// <summary>
         /// The salt currently used in recording names.
