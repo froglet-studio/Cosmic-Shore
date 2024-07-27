@@ -68,22 +68,18 @@ namespace CosmicShore
 
         void OnAuthenticated()
         {
-            Debug.LogError("25%");
             ProgressIndicator.rectTransform.sizeDelta = new Vector2(100, 5);
         }
         void OnProfileLoaded() 
         { 
-            Debug.LogError("50%");
             ProgressIndicator.rectTransform.sizeDelta = new Vector2(200, 5);
         }
 
         void OnCatalogLoaded()
         { 
-            Debug.LogError("75%");
             ProgressIndicator.rectTransform.sizeDelta = new Vector2(300, 5);
         }
         void OnInventoryLoaded() {
-            Debug.LogError("100%");
             ProgressIndicator.rectTransform.sizeDelta = new Vector2(400, 5);
             StartCoroutine(CloseCoroutine());
 
