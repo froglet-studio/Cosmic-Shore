@@ -1,4 +1,3 @@
-using CosmicShore.App.UI;
 using CosmicShore.Integrations.PlayFab.Authentication;
 using CosmicShore.Integrations.PlayFab.Economy;
 using CosmicShore.Integrations.PlayFab.PlayerData;
