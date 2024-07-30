@@ -1,9 +1,11 @@
 using CosmicShore.App.Systems.CTA;
+using CosmicShore.App.Systems.Favorites;
 using CosmicShore.App.Systems.Loadout;
 using CosmicShore.App.Systems.UserActions;
 using CosmicShore.App.UI.Elements;
 using CosmicShore.Core;
 using CosmicShore.Game.Arcade;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -57,7 +59,7 @@ namespace CosmicShore.App.UI.Menus
             UserActionSystem.Instance.CompleteAction(SelectedGame.ViewUserAction);
         }
 
-        void PopulateGameSelectionList()
+        public void PopulateGameSelectionList()
         {
             GameCards = new List<GameCard>();
 
@@ -72,19 +74,33 @@ namespace CosmicShore.App.UI.Menus
                 }
             }
 
+            var sortedGames = GameList.GameList;
+            sortedGames.Sort((x, y) =>
+            {
+                int flagComparison = FavoriteSystem.IsFavorited(y.Mode).CompareTo(FavoriteSystem.IsFavorited(x.Mode));
+                if (flagComparison == 0)
+                    return string.Compare(x.DisplayName, y.DisplayName, StringComparison.Ordinal); // Sort alphabetically by Name if they're tied
+
+                return flagComparison;
+            });
+
             for (var i = 0; i < GameCards.Count && i < GameList.GameList.Count; i++)
             {
                 var selectionIndex = i;
-                var game = GameList.GameList[i];
+                var game = sortedGames[i];
+
+                
+
                 
                 Debug.Log($"ExploreMenu - Populating Game Select List: {game.DisplayName}");
 
                 var gameCard = GameCards[i];
                 gameCard.GameMode = game.Mode;
-                gameCard.Locked = false; //(i % 3 == 0);  // TODO: pull this from somewhere real
+                gameCard.Favorited = FavoriteSystem.IsFavorited(game.Mode);
                 gameCard.GetComponent<Button>().onClick.RemoveAllListeners();
                 gameCard.GetComponent<Button>().onClick.AddListener(() => SelectGame(game));
                 gameCard.GetComponent<Button>().onClick.AddListener(() => GameSelectionGrid.GetComponent<MenuAudio>().PlayAudio());
+                gameCard.ExploreMenu = this;
                 
                 // gameCard.GetComponent<CallToActionTarget>().TargetID = game.CallToActionTargetType;
                 if (gameCard.TryGetComponent(out CallToActionTarget target))
