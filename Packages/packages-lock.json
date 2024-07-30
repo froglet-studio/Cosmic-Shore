@@ -384,13 +384,6 @@
         "com.unity.render-pipelines.core": "12.1.11"
       }
     },
-    "com.veriorpies.parrelsync": {
-      "version": "https://github.com/VeriorPies/ParrelSync.git?path=/ParrelSync",
-      "depth": 0,
-      "source": "git",
-      "dependencies": {},
-      "hash": "d1ef610e9fe3ad0b490cce91594449fc0af809a6"
-    },
     "jp.hadashikick.vcontainer": {
       "version": "https://github.com/hadashiA/VContainer.git?path=VContainer/Assets/VContainer#1.16.1",
       "depth": 0,
