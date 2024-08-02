@@ -2,7 +2,6 @@ using CosmicShore.App.Systems.Squads;
 using CosmicShore.App.UI.Elements;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Serialization;
 using UnityEngine.UI;
 
 namespace CosmicShore.App.UI.Menus

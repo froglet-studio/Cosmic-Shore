@@ -69,6 +69,7 @@ namespace CosmicShore.App.UI.Menus
                 }
             }
 
+            // Sort favorited first, then alphabetically
             var sortedGames = GameList.GameList;
             sortedGames.Sort((x, y) =>
             {
@@ -81,10 +82,8 @@ namespace CosmicShore.App.UI.Menus
 
             for (var i = 0; i < GameCards.Count && i < GameList.GameList.Count; i++)
             {
-                var selectionIndex = i;
                 var game = sortedGames[i];
 
-                
                 Debug.Log($"ExploreMenu - Populating Game Select List: {game.DisplayName}");
 
                 var gameCard = GameCards[i];
@@ -95,7 +94,6 @@ namespace CosmicShore.App.UI.Menus
                 gameCard.GetComponent<Button>().onClick.AddListener(() => GameSelectionGrid.GetComponent<MenuAudio>().PlayAudio());
                 gameCard.ExploreMenu = this;
                 
-                // gameCard.GetComponent<CallToActionTarget>().TargetID = game.CallToActionTargetType;
                 if (gameCard.TryGetComponent(out CallToActionTarget target))
                 {
                     target.TargetID = game.CallToActionTargetType;
