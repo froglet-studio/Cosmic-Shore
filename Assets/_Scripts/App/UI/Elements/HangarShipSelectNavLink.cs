@@ -51,7 +51,6 @@ namespace CosmicShore
 
         public void Select()
         {
-            //HangarMenu.SelectShip(Ship);
             HangarMenu.SelectShip(index);
             MenuAudio.PlayAudio();
         }

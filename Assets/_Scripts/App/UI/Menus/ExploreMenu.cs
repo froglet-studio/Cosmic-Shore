@@ -10,6 +10,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.Video;
 
 namespace CosmicShore.App.UI.Menus
 {
@@ -21,12 +22,13 @@ namespace CosmicShore.App.UI.Menus
         [SerializeField] Transform GameSelectionGrid;
 
         [Header("Game Detail View")]
+        [SerializeField] ModalWindowManager GameDetailModal;
         [SerializeField] GameObject GameDetailView;
         [SerializeField] TMPro.TMP_Text SelectedGameName;
         [SerializeField] TMPro.TMP_Text SelectedGameDescription;
-        [SerializeField] TMPro.TMP_Text AllowedPlayerCountText;
         [SerializeField] GameObject SelectedGamePreviewWindow;
         [SerializeField] Transform ShipSelectionGrid;
+        [SerializeField] FavoriteIcon SelectedGameFavoriteIcon;
 
         [Header("Game Play Settings")]
         [SerializeField] GameObject PlayerCountButtonContainer;
@@ -37,24 +39,17 @@ namespace CosmicShore.App.UI.Menus
         SO_Ship SelectedShip;
         SO_ArcadeGame SelectedGame;
         List<GameCard> GameCards;
+        VideoPlayer PreviewVideo;
 
         void Start()
         {
             LoadoutSystem.Init();
             PopulateGameSelectionList();
-            ShowGameSelectionView();
         }
 
-        void ShowGameSelectionView()
+        void OpenGameDetailModal()
         {
-            GameSelectionView.SetActive(true);
-            GameDetailView.SetActive(false);
-        }
-
-        void ShowGameDetailView()
-        {
-            GameSelectionView.SetActive(false);
-            GameDetailView.SetActive(true);
+            GameDetailModal.ModalWindowIn();
 
             UserActionSystem.Instance.CompleteAction(SelectedGame.ViewUserAction);
         }
@@ -88,8 +83,6 @@ namespace CosmicShore.App.UI.Menus
             {
                 var selectionIndex = i;
                 var game = sortedGames[i];
-
-                
 
                 
                 Debug.Log($"ExploreMenu - Populating Game Select List: {game.DisplayName}");
@@ -159,7 +152,7 @@ namespace CosmicShore.App.UI.Menus
 
             PopulateGameDetails();
             PopulateShipSelectionList(loadout.ShipType);
-            ShowGameDetailView();
+            OpenGameDetailModal();
         }
 
         void PopulateGameDetails()
@@ -172,16 +165,19 @@ namespace CosmicShore.App.UI.Menus
             // Set Game Detail Meta Data
             SelectedGameName.text = SelectedGame.DisplayName;
             SelectedGameDescription.text = SelectedGame.Description;
-            //AllowedPlayerCountText.text = SelectedGame.MinPlayers + "-" + SelectedGame.MaxPlayers;
+            SelectedGameFavoriteIcon.Favorited = FavoriteSystem.IsFavorited(SelectedGame.Mode);
 
-            // TODO: reconsider how we load the video
             // Load Preview Video
-            for (var i = 0; i < SelectedGamePreviewWindow.transform.childCount; i++)
-                Destroy(SelectedGamePreviewWindow.transform.GetChild(i).gameObject);
 
-            var preview = Instantiate(SelectedGame.PreviewClip);
-            preview.GetComponent<RectTransform>().sizeDelta = new Vector2(352, 172);
-            preview.transform.SetParent(SelectedGamePreviewWindow.transform, false);
+            if (PreviewVideo == null)
+            {
+                PreviewVideo = Instantiate(SelectedGame.PreviewClip);
+                PreviewVideo.GetComponent<RectTransform>().sizeDelta = new Vector2(300, 152);
+                PreviewVideo.transform.SetParent(SelectedGamePreviewWindow.transform, false);
+            }
+            else
+                PreviewVideo.clip = SelectedGame.PreviewClip.clip;
+
         }
 
         void PopulateShipSelectionList(ShipTypes shipClass = ShipTypes.Any)
@@ -298,6 +294,13 @@ namespace CosmicShore.App.UI.Menus
             LoadoutSystem.SaveGameLoadOut(SelectedGame.Mode, new Loadout(MiniGame.IntensityLevel, MiniGame.NumberOfPlayers, MiniGame.PlayerShipType, SelectedGame.Mode));
 
             Arcade.Instance.LaunchArcadeGame(SelectedGame.Mode, MiniGame.PlayerShipType, MiniGame.ShipResources, MiniGame.IntensityLevel, MiniGame.NumberOfPlayers, false);
+        }
+
+        public void ToggleFavorite()
+        {
+            SelectedGameFavoriteIcon.Favorited = !SelectedGameFavoriteIcon.Favorited;
+            FavoriteSystem.ToggleFavorite(SelectedGame.Mode);
+            PopulateGameSelectionList();
         }
     }
 }

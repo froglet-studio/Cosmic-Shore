@@ -25,8 +25,6 @@ namespace CosmicShore.App.Systems.Favorites
             if (!Initialized)
                 Init();
 
-            Debug.LogError($"IsFavorited: {game},{FavoriteGames.Contains(game)}");
-
             return FavoriteGames.Contains(game);
         }
 
