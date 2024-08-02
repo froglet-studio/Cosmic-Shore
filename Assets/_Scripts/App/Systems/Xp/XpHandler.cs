@@ -29,7 +29,7 @@ namespace CosmicShore.App.Systems.Xp
     public class XpHandler
     {
         /// <summary>
-        /// Captain Xp key for querying data from PlayFab data storage, not used for now.
+        /// Captain Xp key for querying data from PlayFab data storage, not used for PlayFab API calls now.
         /// </summary>
         private const string CaptainXpKey = "CaptainXP";
 
@@ -55,6 +55,7 @@ namespace CosmicShore.App.Systems.Xp
         public static void OnLoadCaptainXpData(GetUserDataResult result)
         {
             ClassXpData = ConvertResultToCaptainXpData(result);
+            
             foreach (var key in ClassXpData.Keys)
                 Debug.Log($"OnLoadCaptainXpData - ClassXpData.ShipClassXpData.Keys: {key}");
             
@@ -73,7 +74,7 @@ namespace CosmicShore.App.Systems.Xp
                     (Dictionary<ShipTypes, CaptainXpData>)JsonConvert
                     .DeserializeObject(result.Data[CaptainXpKey].Value,
                     typeof(Dictionary<ShipTypes, CaptainXpData>))
-                    : null;
+                    : new();
         }
     }
 }

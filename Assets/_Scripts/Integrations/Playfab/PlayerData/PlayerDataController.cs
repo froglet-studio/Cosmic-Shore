@@ -35,7 +35,7 @@ namespace CosmicShore.Integrations.PlayFab.PlayerData
         {
             AuthenticationManager.OnLoginSuccess -= XpHandler.LoadCaptainXpData;
             AuthenticationManager.OnLoginSuccess -= LoadPlayerProfile;
-            OnGettingPlayerData += XpHandler.OnLoadCaptainXpData;
+            OnGettingPlayerData -= XpHandler.OnLoadCaptainXpData;
         }
         
         void InitializePlayerClientInstanceAPI()
