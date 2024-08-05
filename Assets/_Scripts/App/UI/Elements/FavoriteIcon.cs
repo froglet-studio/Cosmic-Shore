@@ -7,7 +7,7 @@ namespace CosmicShore
     {
         [SerializeField] Sprite IconActive;
         [SerializeField] Sprite IconInActive;
-        Image IconImage;
+        [SerializeField] Image IconImage;
 
         bool favorited;
         public bool Favorited

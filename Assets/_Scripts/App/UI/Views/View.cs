@@ -11,13 +11,13 @@ namespace CosmicShore
         protected ScriptableObject SelectedModel { get; set; }
         protected int SelectedIndex = 0;
 
-        public void AssignModel(ScriptableObject Model)
+        public virtual void AssignModel(ScriptableObject Model)
         {
             this.Models = new List<ScriptableObject>() { Model };
             Select(SelectedIndex);
         }
 
-        public void AssignModels(List<ScriptableObject> Models)
+        public virtual void AssignModels(List<ScriptableObject> Models)
         {
             this.Models = Models;
             Select(SelectedIndex);

@@ -22,7 +22,6 @@ namespace CosmicShore.App.UI.Menus
         [SerializeField] HangarAbilitiesView AbilitiesView;
 
         [Header("Captains View")]
-        [SerializeField] GameObject CaptainsView;
         [SerializeField] TMPro.TMP_Text SelectedCaptainName;
         [SerializeField] TMPro.TMP_Text SelectedCaptainElementLabel;
         [SerializeField] TMPro.TMP_Text SelectedCaptainQuote;
