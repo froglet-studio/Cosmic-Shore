@@ -26,7 +26,7 @@ namespace CosmicShore
         public virtual void Select(int index)
         {
             SelectedIndex = index;
-            if (Models != null)
+            if (Models != null && SelectedIndex < Models.Count)
             {
                 SelectedModel = Models[index];
                 UpdateView();
