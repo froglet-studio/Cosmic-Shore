@@ -27,8 +27,7 @@ namespace CosmicShore
             spindle = transform.parent.GetComponent<Spindle>(); // Every healthBlock requires a spindle parent
             base.Explode(impactVector, team, playerName, devastate); 
             LifeForm.RemoveHealthBlock(this);
-            spindle.CheckForLife();
-            
+            spindle.CheckForLife();           
         }
     }
 }

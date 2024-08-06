@@ -48,17 +48,13 @@ MonoBehaviour:
   goalUpdateInterval: 5
   Goal: {x: 0, y: 0, z: 0}
   Weights: []
-  headSegmentPrefab: {fileID: 8747353401585326389, guid: 2a9b6a2b09f8b684db1b213cc8d8ad5e,
-    type: 3}
-  middleSegmentPrefab: {fileID: 2440985942596692932, guid: 2cde2c56de960204b9ab47b528084377,
-    type: 3}
-  tailSegmentPrefab: {fileID: 5032170557366743859, guid: c9f95330660985e47bea7e877307052d,
-    type: 3}
   wormPrefab: {fileID: 5018081348470574533, guid: 8f392c65f93161a4a8a5e8526289e622,
+    type: 3}
+  emptyWormPrefab: {fileID: 5018081348470574533, guid: 2e679e2f1be549747832cab9f8c90998,
     type: 3}
   initialWormCount: 1
   initialSegmentsPerWorm: 5
   spawnRadius: 50
-  growthInterval: 3
+  growthInterval: 10
   maxWormsAllowed: 4
   targetUpdateInterval: 5

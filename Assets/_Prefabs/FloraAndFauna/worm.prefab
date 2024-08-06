@@ -60,8 +60,13 @@ MonoBehaviour:
   - {fileID: 7583899961849885210}
   - {fileID: 320908266210917626}
   movementSpeed: 5
-  turnSpeed: 2
-  segmentSpacing: 1
+  headTurnSpeed: 2
+  bodyTurnSpeed: 5
+  segmentDelay: 0.1
+  rotationDamping: 0.5
+  hasHead: 1
+  hasTail: 1
+  isInitialized: 0
 --- !u!1001 &2509077485673516712
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -72,7 +77,22 @@ PrefabInstance:
     - target: {fileID: 4390383799565567305, guid: 2cde2c56de960204b9ab47b528084377,
         type: 3}
       propertyPath: m_RootOrder
-      value: 1
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 4390383799565567305, guid: 2cde2c56de960204b9ab47b528084377,
+        type: 3}
+      propertyPath: m_LocalScale.x
+      value: 2.4
+      objectReference: {fileID: 0}
+    - target: {fileID: 4390383799565567305, guid: 2cde2c56de960204b9ab47b528084377,
+        type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.8
+      objectReference: {fileID: 0}
+    - target: {fileID: 4390383799565567305, guid: 2cde2c56de960204b9ab47b528084377,
+        type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.75
       objectReference: {fileID: 0}
     - target: {fileID: 4415326087969946336, guid: 2cde2c56de960204b9ab47b528084377,
         type: 3}
@@ -82,17 +102,17 @@ PrefabInstance:
     - target: {fileID: 4415326087969946336, guid: 2cde2c56de960204b9ab47b528084377,
         type: 3}
       propertyPath: m_LocalScale.x
-      value: 1
+      value: 0.9
       objectReference: {fileID: 0}
     - target: {fileID: 4415326087969946336, guid: 2cde2c56de960204b9ab47b528084377,
         type: 3}
       propertyPath: m_LocalScale.y
-      value: 1
+      value: 0.9
       objectReference: {fileID: 0}
     - target: {fileID: 4415326087969946336, guid: 2cde2c56de960204b9ab47b528084377,
         type: 3}
       propertyPath: m_LocalScale.z
-      value: 1
+      value: 0.9
       objectReference: {fileID: 0}
     - target: {fileID: 4415326087969946336, guid: 2cde2c56de960204b9ab47b528084377,
         type: 3}
@@ -256,6 +276,46 @@ PrefabInstance:
       propertyPath: m_Name
       value: WormHead
       objectReference: {fileID: 0}
+    - target: {fileID: 1578536957203360231, guid: 2a9b6a2b09f8b684db1b213cc8d8ad5e,
+        type: 3}
+      propertyPath: TargetScale.x
+      value: 5.500001
+      objectReference: {fileID: 0}
+    - target: {fileID: 1578536957203360231, guid: 2a9b6a2b09f8b684db1b213cc8d8ad5e,
+        type: 3}
+      propertyPath: TargetScale.y
+      value: 0.8
+      objectReference: {fileID: 0}
+    - target: {fileID: 1578536957203360231, guid: 2a9b6a2b09f8b684db1b213cc8d8ad5e,
+        type: 3}
+      propertyPath: TargetScale.z
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4080040796776702534, guid: 2a9b6a2b09f8b684db1b213cc8d8ad5e,
+        type: 3}
+      propertyPath: TrailBlockProperties.Shielded
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4080040796776702534, guid: 2a9b6a2b09f8b684db1b213cc8d8ad5e,
+        type: 3}
+      propertyPath: TrailBlockProperties.IsSuperShielded
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7429107278272177684, guid: 2a9b6a2b09f8b684db1b213cc8d8ad5e,
+        type: 3}
+      propertyPath: TrailBlockProperties.Shielded
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7429107278272177684, guid: 2a9b6a2b09f8b684db1b213cc8d8ad5e,
+        type: 3}
+      propertyPath: TrailBlockProperties.IsSuperShielded
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8747353401585326389, guid: 2a9b6a2b09f8b684db1b213cc8d8ad5e,
+        type: 3}
+      propertyPath: IsHead
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents:
     - {fileID: 158021965639070742, guid: 2a9b6a2b09f8b684db1b213cc8d8ad5e, type: 3}
   m_SourcePrefab: {fileID: 100100000, guid: 2a9b6a2b09f8b684db1b213cc8d8ad5e, type: 3}
@@ -298,6 +358,7 @@ MonoBehaviour:
     Index: 0
     Shielded: 0
     IsSuperShielded: 0
+    IsDangerous: 0
     TimeCreated: 0
   ParticleEffect: {fileID: 0}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
@@ -337,7 +398,22 @@ PrefabInstance:
     - target: {fileID: 4390383799565567305, guid: 2cde2c56de960204b9ab47b528084377,
         type: 3}
       propertyPath: m_RootOrder
-      value: 1
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 4390383799565567305, guid: 2cde2c56de960204b9ab47b528084377,
+        type: 3}
+      propertyPath: m_LocalScale.x
+      value: 2.4
+      objectReference: {fileID: 0}
+    - target: {fileID: 4390383799565567305, guid: 2cde2c56de960204b9ab47b528084377,
+        type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.8
+      objectReference: {fileID: 0}
+    - target: {fileID: 4390383799565567305, guid: 2cde2c56de960204b9ab47b528084377,
+        type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.75
       objectReference: {fileID: 0}
     - target: {fileID: 4415326087969946336, guid: 2cde2c56de960204b9ab47b528084377,
         type: 3}
@@ -347,17 +423,17 @@ PrefabInstance:
     - target: {fileID: 4415326087969946336, guid: 2cde2c56de960204b9ab47b528084377,
         type: 3}
       propertyPath: m_LocalScale.x
-      value: 0.88888896
+      value: 0.9
       objectReference: {fileID: 0}
     - target: {fileID: 4415326087969946336, guid: 2cde2c56de960204b9ab47b528084377,
         type: 3}
       propertyPath: m_LocalScale.y
-      value: 0.88888896
+      value: 0.9
       objectReference: {fileID: 0}
     - target: {fileID: 4415326087969946336, guid: 2cde2c56de960204b9ab47b528084377,
         type: 3}
       propertyPath: m_LocalScale.z
-      value: 0.88888896
+      value: 0.9
       objectReference: {fileID: 0}
     - target: {fileID: 4415326087969946336, guid: 2cde2c56de960204b9ab47b528084377,
         type: 3}
@@ -461,6 +537,61 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 848038690627444838}
     m_Modifications:
+    - target: {fileID: 480126851691364990, guid: c9f95330660985e47bea7e877307052d,
+        type: 3}
+      propertyPath: TrailBlockProperties.IsDangerous
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 480126851691364990, guid: c9f95330660985e47bea7e877307052d,
+        type: 3}
+      propertyPath: TrailBlockProperties.speedDebuffAmount
+      value: 0.1
+      objectReference: {fileID: 0}
+    - target: {fileID: 683149416487378677, guid: c9f95330660985e47bea7e877307052d,
+        type: 3}
+      propertyPath: TrailBlockProperties.IsDangerous
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 683149416487378677, guid: c9f95330660985e47bea7e877307052d,
+        type: 3}
+      propertyPath: TrailBlockProperties.speedDebuffAmount
+      value: 0.1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1365572873028798184, guid: c9f95330660985e47bea7e877307052d,
+        type: 3}
+      propertyPath: TrailBlockProperties.IsDangerous
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1365572873028798184, guid: c9f95330660985e47bea7e877307052d,
+        type: 3}
+      propertyPath: TrailBlockProperties.speedDebuffAmount
+      value: 0.1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1633487663379386593, guid: c9f95330660985e47bea7e877307052d,
+        type: 3}
+      propertyPath: TrailBlockProperties.IsDangerous
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1633487663379386593, guid: c9f95330660985e47bea7e877307052d,
+        type: 3}
+      propertyPath: TrailBlockProperties.speedDebuffAmount
+      value: 0.1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2370713631990172506, guid: c9f95330660985e47bea7e877307052d,
+        type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -8.68
+      objectReference: {fileID: 0}
+    - target: {fileID: 3813052494710447173, guid: c9f95330660985e47bea7e877307052d,
+        type: 3}
+      propertyPath: TrailBlockProperties.IsDangerous
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3813052494710447173, guid: c9f95330660985e47bea7e877307052d,
+        type: 3}
+      propertyPath: TrailBlockProperties.speedDebuffAmount
+      value: 0.1
+      objectReference: {fileID: 0}
     - target: {fileID: 4184306513005020994, guid: c9f95330660985e47bea7e877307052d,
         type: 3}
       propertyPath: m_Name
@@ -471,6 +602,11 @@ PrefabInstance:
       propertyPath: LifeForm
       value: 
       objectReference: {fileID: 7583899961849885210}
+    - target: {fileID: 5032170557366743859, guid: c9f95330660985e47bea7e877307052d,
+        type: 3}
+      propertyPath: IsTail
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 6445671494956753431, guid: c9f95330660985e47bea7e877307052d,
         type: 3}
       propertyPath: m_RootOrder
@@ -479,17 +615,17 @@ PrefabInstance:
     - target: {fileID: 6445671494956753431, guid: c9f95330660985e47bea7e877307052d,
         type: 3}
       propertyPath: m_LocalScale.x
-      value: 0.6666667
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6445671494956753431, guid: c9f95330660985e47bea7e877307052d,
         type: 3}
       propertyPath: m_LocalScale.y
-      value: 0.6666667
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6445671494956753431, guid: c9f95330660985e47bea7e877307052d,
         type: 3}
       propertyPath: m_LocalScale.z
-      value: 0.6666667
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6445671494956753431, guid: c9f95330660985e47bea7e877307052d,
         type: 3}
@@ -504,7 +640,7 @@ PrefabInstance:
     - target: {fileID: 6445671494956753431, guid: c9f95330660985e47bea7e877307052d,
         type: 3}
       propertyPath: m_LocalPosition.z
-      value: -14.666678
+      value: -15
       objectReference: {fileID: 0}
     - target: {fileID: 6445671494956753431, guid: c9f95330660985e47bea7e877307052d,
         type: 3}
@@ -541,6 +677,36 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 6733718250746855355, guid: c9f95330660985e47bea7e877307052d,
+        type: 3}
+      propertyPath: TrailBlockProperties.IsDangerous
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6733718250746855355, guid: c9f95330660985e47bea7e877307052d,
+        type: 3}
+      propertyPath: TrailBlockProperties.speedDebuffAmount
+      value: 0.1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6794006014147692790, guid: c9f95330660985e47bea7e877307052d,
+        type: 3}
+      propertyPath: TrailBlockProperties.IsDangerous
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6794006014147692790, guid: c9f95330660985e47bea7e877307052d,
+        type: 3}
+      propertyPath: TrailBlockProperties.speedDebuffAmount
+      value: 0.1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7779358509603665235, guid: c9f95330660985e47bea7e877307052d,
+        type: 3}
+      propertyPath: TrailBlockProperties.IsDangerous
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7779358509603665235, guid: c9f95330660985e47bea7e877307052d,
+        type: 3}
+      propertyPath: TrailBlockProperties.speedDebuffAmount
+      value: 0.1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: c9f95330660985e47bea7e877307052d, type: 3}
 --- !u!114 &320908266210917626 stripped
@@ -562,6 +728,21 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 4479747460807541133}
     m_Modifications:
+    - target: {fileID: 4390383799565567305, guid: 2cde2c56de960204b9ab47b528084377,
+        type: 3}
+      propertyPath: m_LocalScale.x
+      value: 2.4
+      objectReference: {fileID: 0}
+    - target: {fileID: 4390383799565567305, guid: 2cde2c56de960204b9ab47b528084377,
+        type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.8
+      objectReference: {fileID: 0}
+    - target: {fileID: 4390383799565567305, guid: 2cde2c56de960204b9ab47b528084377,
+        type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.75
+      objectReference: {fileID: 0}
     - target: {fileID: 4415326087969946336, guid: 2cde2c56de960204b9ab47b528084377,
         type: 3}
       propertyPath: m_RootOrder
@@ -570,17 +751,17 @@ PrefabInstance:
     - target: {fileID: 4415326087969946336, guid: 2cde2c56de960204b9ab47b528084377,
         type: 3}
       propertyPath: m_LocalScale.x
-      value: 0.85714275
+      value: 0.9
       objectReference: {fileID: 0}
     - target: {fileID: 4415326087969946336, guid: 2cde2c56de960204b9ab47b528084377,
         type: 3}
       propertyPath: m_LocalScale.y
-      value: 0.85714275
+      value: 0.9
       objectReference: {fileID: 0}
     - target: {fileID: 4415326087969946336, guid: 2cde2c56de960204b9ab47b528084377,
         type: 3}
       propertyPath: m_LocalScale.z
-      value: 0.85714275
+      value: 0.9
       objectReference: {fileID: 0}
     - target: {fileID: 4415326087969946336, guid: 2cde2c56de960204b9ab47b528084377,
         type: 3}
@@ -674,10 +855,25 @@ PrefabInstance:
       propertyPath: m_RootOrder
       value: 2
       objectReference: {fileID: 0}
+    - target: {fileID: 4390383799565567305, guid: 2cde2c56de960204b9ab47b528084377,
+        type: 3}
+      propertyPath: m_LocalScale.x
+      value: 2.4
+      objectReference: {fileID: 0}
+    - target: {fileID: 4390383799565567305, guid: 2cde2c56de960204b9ab47b528084377,
+        type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.8
+      objectReference: {fileID: 0}
+    - target: {fileID: 4390383799565567305, guid: 2cde2c56de960204b9ab47b528084377,
+        type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.75
+      objectReference: {fileID: 0}
     - target: {fileID: 4415326087969946336, guid: 2cde2c56de960204b9ab47b528084377,
         type: 3}
       propertyPath: m_RootOrder
-      value: 2
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 4415326087969946336, guid: 2cde2c56de960204b9ab47b528084377,
         type: 3}
@@ -796,25 +992,40 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 9005011349401847592}
     m_Modifications:
+    - target: {fileID: 4390383799565567305, guid: 2cde2c56de960204b9ab47b528084377,
+        type: 3}
+      propertyPath: m_LocalScale.x
+      value: 2.4
+      objectReference: {fileID: 0}
+    - target: {fileID: 4390383799565567305, guid: 2cde2c56de960204b9ab47b528084377,
+        type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.8
+      objectReference: {fileID: 0}
+    - target: {fileID: 4390383799565567305, guid: 2cde2c56de960204b9ab47b528084377,
+        type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.75
+      objectReference: {fileID: 0}
     - target: {fileID: 4415326087969946336, guid: 2cde2c56de960204b9ab47b528084377,
         type: 3}
       propertyPath: m_RootOrder
-      value: 2
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 4415326087969946336, guid: 2cde2c56de960204b9ab47b528084377,
         type: 3}
       propertyPath: m_LocalScale.x
-      value: 0.875
+      value: 0.9
       objectReference: {fileID: 0}
     - target: {fileID: 4415326087969946336, guid: 2cde2c56de960204b9ab47b528084377,
         type: 3}
       propertyPath: m_LocalScale.y
-      value: 0.875
+      value: 0.9
       objectReference: {fileID: 0}
     - target: {fileID: 4415326087969946336, guid: 2cde2c56de960204b9ab47b528084377,
         type: 3}
       propertyPath: m_LocalScale.z
-      value: 0.875
+      value: 0.9
       objectReference: {fileID: 0}
     - target: {fileID: 4415326087969946336, guid: 2cde2c56de960204b9ab47b528084377,
         type: 3}

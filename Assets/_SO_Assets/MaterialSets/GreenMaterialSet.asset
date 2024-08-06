@@ -21,7 +21,8 @@ MonoBehaviour:
     type: 2}
   SuperShieldedBlockMaterial: {fileID: 2100000, guid: 5ac89be3c0ba79946bc5a2a7ebace90d,
     type: 2}
-  DangerousBlockMaterial: {fileID: 0}
+  DangerousBlockMaterial: {fileID: 2100000, guid: abdd319ac0ecd4248b35a706fb0839d9,
+    type: 2}
   BlockSilhouettePrefab: {fileID: 8156872032051993332, guid: 5d38f65bc3c39384fbfaa3ffbc665c99,
     type: 3}
   AOEExplosionMaterial: {fileID: 2100000, guid: fd4788fd12c71f64185794559710e4ea,
