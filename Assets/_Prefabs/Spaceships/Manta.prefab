@@ -1437,10 +1437,10 @@ SkinnedMeshRenderer:
   - {fileID: 5798525600549448751}
   - {fileID: 5571582515015820382}
   m_BlendShapeWeights:
-  - 100
-  - 100
-  - 100
-  - 98.4
+  - 0
+  - 0
+  - 0
+  - 0
   m_RootBone: {fileID: 4769814507153169321}
   m_AABB:
     m_Center: {x: 0.000514213, y: -0.0048629097, z: -0.001187378}
@@ -1673,6 +1673,7 @@ MonoBehaviour:
   - {fileID: 7696976320636676308}
   - {fileID: 1376376450048088127}
   - {fileID: 6988205045896376628}
+  shipHUD: {fileID: 0}
   Silhouette: {fileID: 2731003324702047408}
   AOEPrefab: {fileID: 2728798890556433942, guid: f5ecfb9923155a84c860975d559b2714,
     type: 3}
@@ -1682,7 +1683,7 @@ MonoBehaviour:
   crystalImpactEffects: 06000000030000000b000000
   minExplosionScale: 50
   maxExplosionScale: 500
-  trailBlockImpactEffects: 020000000f000000
+  trailBlockImpactEffects: 020000000f00000011000000
   blockChargeChange: 0
   boostMultiplier: 2
   boostFuelAmount: 0
@@ -1695,12 +1696,6 @@ MonoBehaviour:
     ShipActions:
     - {fileID: 5096403877754360922}
   resourceEventClassActions: []
-  MassAbilityTarget: {fileID: 0}
-  ChargeAbilityTarget: {fileID: 0}
-  SpaceAbilityTarget: {fileID: 0}
-  TimeAbilityTarget: {fileID: 0}
-  ChargeAbility2Target: {fileID: 0}
-  LevelEffects: 
   closeCamDistance: 0
   farCamDistance: 0
   AOEExplosionMaterial: {fileID: 0}
@@ -1755,6 +1750,7 @@ MonoBehaviour:
   ThrottleScaler: 0
   DefaultMinimumSpeed: 10
   DefaultThrottleScaler:
+    Enabled: 0
     Value: 50
     Min: 0
     Max: 0
@@ -1817,6 +1813,7 @@ MonoBehaviour:
   displayAmmo: 1
   gainsAmmo: 0
   ammoGainRate:
+    Enabled: 0
     Value: 0.1
     Min: 0
     Max: 0

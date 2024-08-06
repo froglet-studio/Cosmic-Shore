@@ -246,6 +246,11 @@ namespace CosmicShore.Core
         {
             return TeamMaterialSets[team].ShieldedBlockMaterial;
         }
+
+        public Material GetTeamDangerousBlockMaterial(Teams team)
+        {
+            return TeamMaterialSets[team].DangerousBlockMaterial;
+        }
         
         public Material GetTeamSuperShieldedBlockMaterial(Teams team)
         {

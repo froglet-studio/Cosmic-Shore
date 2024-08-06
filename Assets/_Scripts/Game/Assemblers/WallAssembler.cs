@@ -380,13 +380,13 @@ namespace CosmicShore
                     if (siteType == SiteType.Top && (bondSite - mateComponent.globalBondSiteRight).sqrMagnitude < snapDistance)
                     {
                         //Debug.Log("ReFound MateRight");
-                        mateComponent.TrailBlock.ActivateSuperShield();
+                        mateComponent.TrailBlock.ActivateShield();
                         return new BondMate { Mate = mateComponent, Substrate = siteType, Bondee = SiteType.Right };
                     }
                     if (siteType == SiteType.Bottom && (bondSite - mateComponent.globalBondSiteLeft).sqrMagnitude < snapDistance)
                     {
                         //Debug.Log("ReFound MateLeft");
-                        mateComponent.TrailBlock.ActivateSuperShield();
+                        mateComponent.TrailBlock.MakeDangerous();
                         return new BondMate { Mate = mateComponent, Substrate = siteType, Bondee = SiteType.Left };
                     }
                 }

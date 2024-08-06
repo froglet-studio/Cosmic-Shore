@@ -292,6 +292,13 @@ namespace CosmicShore.Core
                     case TrailBlockImpactEffects.Explode:
                         trailBlockProperties.trailBlock.Damage(ShipStatus.Course * ShipStatus.Speed, Team, Player.PlayerName);
                         break;
+                    case TrailBlockImpactEffects.FeelDanger:
+                        if (trailBlockProperties.IsDangerous && trailBlockProperties.trailBlock.Team != team)
+                        {
+                            HapticController.PlayHaptic(HapticType.FakeCrystalCollision);
+                            ShipTransformer.ModifyThrottle(trailBlockProperties.speedDebuffAmount, trailBlockProperties.volume / 10);                           
+                        }
+                        break;
                 }
             }
         }

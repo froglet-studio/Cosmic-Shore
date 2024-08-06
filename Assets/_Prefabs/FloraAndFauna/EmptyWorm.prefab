@@ -1,6 +1,6 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!1 &4839621555978506300
+--- !u!1 &5119968425165880264
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -8,57 +8,51 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 4740146686515170516}
-  - component: {fileID: 364430243050076685}
+  - component: {fileID: 5496107382436667762}
+  - component: {fileID: 5018081348470574533}
   m_Layer: 0
-  m_Name: Worms 1
+  m_Name: EmptyWorm
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &4740146686515170516
+--- !u!4 &5496107382436667762
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4839621555978506300}
+  m_GameObject: {fileID: 5119968425165880264}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalPosition: {x: -46.4, y: 59.2, z: 171.8}
+  m_LocalScale: {x: 5, y: 5, z: 5}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &364430243050076685
+--- !u!114 &5018081348470574533
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4839621555978506300}
+  m_GameObject: {fileID: 5119968425165880264}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0c20c8745fcd1534da855cff7422a222, type: 3}
+  m_Script: {fileID: 11500000, guid: afeb586d777d98947b0be2e67a5a517c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Team: 0
-  goalUpdateInterval: 5
-  Goal: {x: 0, y: 0, z: 0}
-  Weights: []
-  headSegmentPrefab: {fileID: 8747353401585326389, guid: 2a9b6a2b09f8b684db1b213cc8d8ad5e,
+  headPrefab: {fileID: 8747353401585326389, guid: 2a9b6a2b09f8b684db1b213cc8d8ad5e,
     type: 3}
   middleSegmentPrefab: {fileID: 2440985942596692932, guid: 2cde2c56de960204b9ab47b528084377,
     type: 3}
-  tailSegmentPrefab: {fileID: 5032170557366743859, guid: c9f95330660985e47bea7e877307052d,
+  tailPrefab: {fileID: 5032170557366743859, guid: c9f95330660985e47bea7e877307052d,
     type: 3}
-  wormPrefab: {fileID: 5018081348470574533, guid: 2e679e2f1be549747832cab9f8c90998,
-    type: 3}
-  initialWormCount: 1
-  initialSegmentsPerWorm: 5
-  spawnRadius: 50
-  growthInterval: 3
-  maxWormsAllowed: 4
-  targetUpdateInterval: 5
+  initialSegments: []
+  movementSpeed: 5
+  turnSpeed: 2
+  segmentSpacing: 1
+  hasHead: 0
+  hasTail: 0
