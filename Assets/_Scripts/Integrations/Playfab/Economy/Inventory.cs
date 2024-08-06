@@ -23,6 +23,8 @@ namespace CosmicShore.Integrations.PlayFab.Economy
         // Games
         public List<VirtualItem> games = new();
 
+        public List<VirtualItem> tickets = new();
+
         public void SaveToDisk()
         {
             DataAccessor.Save("inventory.data", this);
@@ -38,6 +40,7 @@ namespace CosmicShore.Integrations.PlayFab.Economy
             captainUpgrades = tempInventory.captainUpgrades;
             shipClasses = tempInventory.shipClasses;
             games = tempInventory.games;
+            tickets = tempInventory.tickets;
         }
 
         public bool ContainsCaptain(string captainName)

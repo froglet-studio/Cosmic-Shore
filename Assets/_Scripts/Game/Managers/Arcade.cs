@@ -13,10 +13,12 @@ namespace CosmicShore.Core
     /// </summary>
     public class Arcade : SingletonPersistent<Arcade>
     {
+        [field: SerializeField] public SO_GameList FactionMissionGames { get; private set; }
         [field: SerializeField] public SO_GameList ArcadeGames { get; private set; }
         [field: SerializeField] public SO_TrainingGameList TrainingGames { get; private set; }
         Dictionary<MiniGames, SO_ArcadeGame> ArcadeGameLookup = new();
         Dictionary<MiniGames, SO_TrainingGame> TrainingGameLookup = new();
+        Dictionary<MiniGames, SO_ArcadeGame> FactionMissionLookup = new();
 
         public override void Awake()
         {
@@ -27,6 +29,20 @@ namespace CosmicShore.Core
 
             foreach (var trainingGame in TrainingGames.GameList)
                 TrainingGameLookup.Add(trainingGame.Game.Mode, trainingGame);
+
+            foreach (var game in FactionMissionGames.GameList)
+                FactionMissionLookup.Add(game.Mode, game);
+        }
+
+        public void LaunchFactionMission(MiniGames gameMode, ShipTypes ship, ResourceCollection shipResources, int intensity)
+        {
+            MiniGame.PlayerShipType = ship;
+            MiniGame.ShipResources = shipResources;
+            MiniGame.IntensityLevel = intensity;
+            MiniGame.NumberOfPlayers = 1;
+            MiniGame.IsDailyChallenge = false;
+            Hangar.Instance.SetAiDifficultyLevel(intensity);
+            SceneManager.LoadScene(FactionMissionLookup[gameMode].SceneName);
         }
 
         public void LaunchArcadeGame(MiniGames gameMode, ShipTypes ship, ResourceCollection shipResources, int intensity, int numberOfPlayers, bool isDailyChallenge = false)

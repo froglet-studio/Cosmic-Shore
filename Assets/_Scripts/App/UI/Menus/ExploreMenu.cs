@@ -1,13 +1,16 @@
 using CosmicShore.App.Systems.CTA;
+using CosmicShore.App.Systems.Favorites;
 using CosmicShore.App.Systems.Loadout;
 using CosmicShore.App.Systems.UserActions;
 using CosmicShore.App.UI.Elements;
 using CosmicShore.Core;
 using CosmicShore.Game.Arcade;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.Video;
 
 namespace CosmicShore.App.UI.Menus
 {
@@ -19,12 +22,14 @@ namespace CosmicShore.App.UI.Menus
         [SerializeField] Transform GameSelectionGrid;
 
         [Header("Game Detail View")]
+        [SerializeField] ModalWindowManager GameDetailModal;
         [SerializeField] GameObject GameDetailView;
         [SerializeField] TMPro.TMP_Text SelectedGameName;
         [SerializeField] TMPro.TMP_Text SelectedGameDescription;
-        [SerializeField] TMPro.TMP_Text AllowedPlayerCountText;
         [SerializeField] GameObject SelectedGamePreviewWindow;
         [SerializeField] Transform ShipSelectionGrid;
+        [SerializeField] FavoriteIcon SelectedGameFavoriteIcon;
+        [SerializeField] ShipSelectionView ShipSelectionView;
 
         [Header("Game Play Settings")]
         [SerializeField] GameObject PlayerCountButtonContainer;
@@ -35,29 +40,22 @@ namespace CosmicShore.App.UI.Menus
         SO_Ship SelectedShip;
         SO_ArcadeGame SelectedGame;
         List<GameCard> GameCards;
+        VideoPlayer PreviewVideo;
 
         void Start()
         {
             LoadoutSystem.Init();
             PopulateGameSelectionList();
-            ShowGameSelectionView();
         }
 
-        void ShowGameSelectionView()
+        void OpenGameDetailModal()
         {
-            GameSelectionView.SetActive(true);
-            GameDetailView.SetActive(false);
-        }
-
-        void ShowGameDetailView()
-        {
-            GameSelectionView.SetActive(false);
-            GameDetailView.SetActive(true);
+            GameDetailModal.ModalWindowIn();
 
             UserActionSystem.Instance.CompleteAction(SelectedGame.ViewUserAction);
         }
 
-        void PopulateGameSelectionList()
+        public void PopulateGameSelectionList()
         {
             GameCards = new List<GameCard>();
 
@@ -72,21 +70,31 @@ namespace CosmicShore.App.UI.Menus
                 }
             }
 
+            // Sort favorited first, then alphabetically
+            var sortedGames = GameList.GameList;
+            sortedGames.Sort((x, y) =>
+            {
+                int flagComparison = FavoriteSystem.IsFavorited(y.Mode).CompareTo(FavoriteSystem.IsFavorited(x.Mode));
+                if (flagComparison == 0)
+                    return string.Compare(x.DisplayName, y.DisplayName, StringComparison.Ordinal); // Sort alphabetically by Name if they're tied
+
+                return flagComparison;
+            });
+
             for (var i = 0; i < GameCards.Count && i < GameList.GameList.Count; i++)
             {
-                var selectionIndex = i;
-                var game = GameList.GameList[i];
-                
+                var game = sortedGames[i];
+
                 Debug.Log($"ExploreMenu - Populating Game Select List: {game.DisplayName}");
 
                 var gameCard = GameCards[i];
                 gameCard.GameMode = game.Mode;
-                gameCard.Locked = false; //(i % 3 == 0);  // TODO: pull this from somewhere real
+                gameCard.Favorited = FavoriteSystem.IsFavorited(game.Mode);
                 gameCard.GetComponent<Button>().onClick.RemoveAllListeners();
                 gameCard.GetComponent<Button>().onClick.AddListener(() => SelectGame(game));
                 gameCard.GetComponent<Button>().onClick.AddListener(() => GameSelectionGrid.GetComponent<MenuAudio>().PlayAudio());
+                gameCard.ExploreMenu = this;
                 
-                // gameCard.GetComponent<CallToActionTarget>().TargetID = game.CallToActionTargetType;
                 if (gameCard.TryGetComponent(out CallToActionTarget target))
                 {
                     target.TargetID = game.CallToActionTargetType;
@@ -105,32 +113,19 @@ namespace CosmicShore.App.UI.Menus
         {
             SelectedGame = selectedGame;
 
-            var loadout = LoadoutSystem.LoadGameLoadout(SelectedGame.Mode).Loadout;
-
-            // TODO: this is kludgy
+            // Show/Hide Player Count buttons
             for (var i = 0; i < PlayerCountButtonContainer.transform.childCount; i++)
-            {
-                Debug.Log($"SelectGame - SelectedGame.MaxPlayers:{SelectedGame.MaxPlayers}, i:{i}, i < SelectedGame.MaxPlayers:{i < SelectedGame.MaxPlayers}");
-                var playerCount = i + 1;
                 PlayerCountButtonContainer.transform.GetChild(i).gameObject.SetActive(i < SelectedGame.MaxPlayers && i >= SelectedGame.MinPlayers - 1);
-                PlayerCountButtonContainer.transform.GetChild(i).gameObject.GetComponent<Button>().onClick.RemoveAllListeners();
-                PlayerCountButtonContainer.transform.GetChild(i).gameObject.GetComponent<Button>().onClick.AddListener(() => SetPlayerCount(playerCount));
-                PlayerCountButtonContainer.transform.GetChild(i).gameObject.GetComponent<Button>().onClick.AddListener(() => PlayerCountButtonContainer.GetComponent<MenuAudio>().PlayAudio());
-            }
-            SetPlayerCount(loadout.PlayerCount == 0 ? SelectedGame.MinPlayers : loadout.PlayerCount);
 
+            // Enable/Disable Intensity Buttons
             var theFonzColor = new Color(.66f, .66f, .66f); // #AAAAAA
-            // TODO: this is kludgy
             for (var i = 0; i < IntensityButtonContainer.transform.childCount; i++)
             {
                 var intensity = i + 1;
-                IntensityButtonContainer.transform.GetChild(i).gameObject.GetComponent<Button>().onClick.RemoveAllListeners();
                 if (intensity >= SelectedGame.MinIntensity && intensity <= SelectedGame.MaxIntensity)
                 {
                     IntensityButtonContainer.transform.GetChild(i).gameObject.GetComponent<Button>().enabled = true;
                     IntensityButtonContainer.transform.GetChild(i).gameObject.GetComponent<Image>().color = Color.white;
-                    IntensityButtonContainer.transform.GetChild(i).gameObject.GetComponent<Button>().onClick.AddListener(() => SetIntensity(intensity));
-                    IntensityButtonContainer.transform.GetChild(i).gameObject.GetComponent<Button>().onClick.AddListener(() => IntensityButtonContainer.GetComponent<MenuAudio>().PlayAudio());
                 }
                 else
                 {
@@ -138,12 +133,22 @@ namespace CosmicShore.App.UI.Menus
                     IntensityButtonContainer.transform.GetChild(i).gameObject.GetComponent<Image>().color = theFonzColor;
                 }
             }
-            SetIntensity(loadout.Intensity == 0 ? SelectedGame.MinIntensity : loadout.Intensity);
-            SetIntensity(SelectedGame.MinIntensity);
 
+            // Populate configuration using loadout or default
+            var loadout = LoadoutSystem.LoadGameLoadout(SelectedGame.Mode).Loadout;
+            SetPlayerCount(loadout.PlayerCount == 0 ? SelectedGame.MinPlayers : loadout.PlayerCount);
+            SetIntensity(loadout.Intensity == 0 ? SelectedGame.MinIntensity : loadout.Intensity);
+
+
+            ShipSelectionView.AssignModels(SelectedGame.Captains.ConvertAll(x => (ScriptableObject)x.Ship));
+            ShipSelectionView.OnSelect += SelectShip;
+
+
+            //StartCoroutine(SelectCaptainCoroutine(SelectedGame.Captains[0]));
+
+            // Populate game data and show view
             PopulateGameDetails();
-            PopulateShipSelectionList(loadout.ShipType);
-            ShowGameDetailView();
+            OpenGameDetailModal();
         }
 
         void PopulateGameDetails()
@@ -156,97 +161,38 @@ namespace CosmicShore.App.UI.Menus
             // Set Game Detail Meta Data
             SelectedGameName.text = SelectedGame.DisplayName;
             SelectedGameDescription.text = SelectedGame.Description;
-            //AllowedPlayerCountText.text = SelectedGame.MinPlayers + "-" + SelectedGame.MaxPlayers;
+            SelectedGameFavoriteIcon.Favorited = FavoriteSystem.IsFavorited(SelectedGame.Mode);
 
-            // TODO: reconsider how we load the video
             // Load Preview Video
-            for (var i = 0; i < SelectedGamePreviewWindow.transform.childCount; i++)
-                Destroy(SelectedGamePreviewWindow.transform.GetChild(i).gameObject);
-
-            var preview = Instantiate(SelectedGame.PreviewClip);
-            preview.GetComponent<RectTransform>().sizeDelta = new Vector2(352, 172);
-            preview.transform.SetParent(SelectedGamePreviewWindow.transform, false);
-        }
-
-        void PopulateShipSelectionList(ShipTypes shipClass = ShipTypes.Any)
-        {
-            Debug.Log($"MiniGamesMenu - Populating Ship Select List - shipClass: {shipClass}");
-
-            var selectedCaptain = SelectedGame.Captains[0];
-
-            for (var i = 0; i < ShipSelectionGrid.childCount; i++)
+            if (PreviewVideo == null)
             {
-                Debug.Log($"MiniGamesMenu - Populating Ship Select List: {i}");
-                var shipSelectionRow = ShipSelectionGrid.transform.GetChild(i);
-                for (var j = 0; j < shipSelectionRow.transform.childCount; j++)
-                {
-                    Debug.Log($"MiniGamesMenu - Populating Ship Select List: {i},{j}");
-                    var selectionIndex = (i * 3) + j;
-                    // TODO: convert this to take a CaptainCard prefab and instantiate one rather than using the placeholder objects
-                    var shipSelection = shipSelectionRow.transform.GetChild(j).gameObject;
-                    if (selectionIndex < SelectedGame.Captains.Count)
-                    {
-                        var ship = SelectedGame.Captains[selectionIndex].Ship;
-                        var captain = SelectedGame.Captains[selectionIndex];
-
-                        if (ship.Class == shipClass)
-                            selectedCaptain = captain;
-
-                        Debug.Log($"MiniGamesMenu - Populating Ship Select List: {ship.Name}");
-
-                        shipSelection.SetActive(true);
-                        shipSelection.GetComponent<Image>().sprite = captain.Ship.CardSilohoutte;
-                        shipSelection.GetComponent<Button>().onClick.RemoveAllListeners();
-                        shipSelection.GetComponent<Button>().onClick.AddListener(() => SelectCaptain(captain));
-                        shipSelection.GetComponent<Button>().onClick.AddListener(() => ShipSelectionGrid.GetComponent<MenuAudio>().PlayAudio());
-
-                    }
-                    else
-                    {
-                        // Deactive remaining
-                        shipSelection.SetActive(false);
-                    }
-                }
+                PreviewVideo = Instantiate(SelectedGame.PreviewClip);
+                PreviewVideo.GetComponent<RectTransform>().sizeDelta = new Vector2(300, 152);
+                PreviewVideo.transform.SetParent(SelectedGamePreviewWindow.transform, false);
             }
-
-            StartCoroutine(SelectCaptainCoroutine(SelectedGame.Captains[0]));
+            else
+                PreviewVideo.clip = SelectedGame.PreviewClip.clip;
         }
 
         IEnumerator SelectCaptainCoroutine(SO_Captain captain)
         {
             yield return new WaitForEndOfFrame();
-            SelectCaptain(captain);
+            SelectShip(captain.Ship);
         }
 
-        public void SelectCaptain(SO_Captain selectedCaptain)
+        public void SelectShip(SO_Ship selectedShip)
         {
-            Debug.Log($"SelectCaptain: {selectedCaptain.Name}");
-            Debug.Log($"ShipSelectionContainer.childCount: {ShipSelectionGrid.childCount}");
-            Debug.Log($"Ships.Count: {SelectedGame.Captains.Count}");
-
-            SelectedShip = selectedCaptain.Ship;
-
-            for (var i = 0; i < ShipSelectionGrid.childCount; i++)
-            {
-                var shipSelectionRow = ShipSelectionGrid.GetChild(i);
-                for (var j = 0; j < shipSelectionRow.childCount; j++)
-                {
-                    var shipIndex = (i * 3) + j;
-                    var shipButton = shipSelectionRow.GetChild(j).gameObject;
-
-                    if (shipIndex >= SelectedGame.Captains.Count)
-                        continue;
-                    
-                    if (SelectedGame.Captains[shipIndex] == selectedCaptain)
-                        shipButton.GetComponent<Image>().sprite = selectedCaptain.Ship.CardSilohoutteActive;
-                    else if (shipIndex < SelectedGame.Captains.Count)
-                        shipButton.GetComponent<Image>().sprite = SelectedGame.Captains[shipIndex].Ship.CardSilohoutte;
-                }
-            }
+            Debug.Log($"SelectShip: {selectedShip.Name}");
 
             // notify the mini game engine that this is the ship to play
-            MiniGame.PlayerShipType = SelectedShip.Class;
-            MiniGame.ShipResources = selectedCaptain.InitialResourceLevels;
+            MiniGame.PlayerShipType = selectedShip.Class;
+
+            // if game.captains matches selectedShip.captains, that's the one
+            foreach (var captain in selectedShip.Captains)
+            {
+                if (SelectedGame.Captains.Contains(captain))
+                    MiniGame.ShipResources = captain.InitialResourceLevels;
+            }
         }
 
         public void SetPlayerCount(int playerCount)
@@ -282,6 +228,13 @@ namespace CosmicShore.App.UI.Menus
             LoadoutSystem.SaveGameLoadOut(SelectedGame.Mode, new Loadout(MiniGame.IntensityLevel, MiniGame.NumberOfPlayers, MiniGame.PlayerShipType, SelectedGame.Mode));
 
             Arcade.Instance.LaunchArcadeGame(SelectedGame.Mode, MiniGame.PlayerShipType, MiniGame.ShipResources, MiniGame.IntensityLevel, MiniGame.NumberOfPlayers, false);
+        }
+
+        public void ToggleFavorite()
+        {
+            SelectedGameFavoriteIcon.Favorited = !SelectedGameFavoriteIcon.Favorited;
+            FavoriteSystem.ToggleFavorite(SelectedGame.Mode);
+            PopulateGameSelectionList();
         }
     }
 }

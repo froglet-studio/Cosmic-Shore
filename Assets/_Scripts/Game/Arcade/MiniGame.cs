@@ -42,6 +42,7 @@ namespace CosmicShore.Game.Arcade
         public static int NumberOfPlayers = 1;  // TODO: P1 - support excluding single player games (e.g for elimination)
         public static int IntensityLevel = 1;
         public static bool IsDailyChallenge = false;
+        public static bool IsFactionMission = false;
         static ShipTypes playerShipType = ShipTypes.Dolphin;
         static bool playerShipTypeInitialized;
         
@@ -277,6 +278,14 @@ namespace CosmicShore.Game.Arcade
             {
                 LeaderboardManager.Instance.ReportDailyChallengeStatistic(ScoreTracker.GetHighScore(), ScoreTracker.GolfRules);
                 DailyChallengeSystem.Instance.ReportScore(ScoreTracker.GetHighScore());
+            }
+            else if (IsFactionMission)
+            {
+                // Award XP
+                Debug.Log($"Faction Mission EndGame - Award Faction Mission XP -  score:{ScoreTracker.GetHighScore()}, element:{PlayerCaptain.PrimaryElement}");
+
+                // Report any encountered captains
+                Debug.Log($"Faction Mission EndGame - Unlock Faction Mission Captains");
             }
             else
                 LeaderboardManager.Instance.ReportGameplayStatistic(gameMode, PlayerShipType, IntensityLevel, ScoreTracker.GetHighScore(), ScoreTracker.GolfRules);
