@@ -28,13 +28,15 @@ namespace CosmicShore.Integrations.PlayFab.Economy
         public static event Action OnLoadCatalogSuccess;   // Use an event to prevent a race condition - Inventory Loading requires the full catalog to have been loaded
         public static event Action OnLoadInventory;
         public static event Action OnInventoryChange;
-        
+        [SerializeField] List<VirtualItem> startingInventory = new();
+
         void Start()
         {
             Debug.Log("CatalogManager.Start");
             AuthenticationManager.OnLoginSuccess += InitializePlayFabEconomyAPI;
             AuthenticationManager.OnLoginSuccess += LoadAllCatalogItems;
             OnLoadCatalogSuccess += LoadPlayerInventory;
+            OnLoadInventory += GrantStartingInventoryIfInventoryIsEmpty;
 
             NetworkMonitor.NetworkConnectionLost += Inventory.LoadFromDisk;
         }
@@ -44,6 +46,7 @@ namespace CosmicShore.Integrations.PlayFab.Economy
             AuthenticationManager.OnLoginSuccess -= InitializePlayFabEconomyAPI;
             AuthenticationManager.OnLoginSuccess -= LoadAllCatalogItems;
             OnLoadCatalogSuccess -= LoadPlayerInventory;
+            OnLoadInventory -= GrantStartingInventoryIfInventoryIsEmpty;
 
             NetworkMonitor.NetworkConnectionLost -= Inventory.LoadFromDisk;
         }
@@ -174,57 +177,63 @@ namespace CosmicShore.Integrations.PlayFab.Economy
 
         #region Inventory Operations
 
-        // TODO: Captain XP is now part of player data, not a store item. Should re-wire the API calls from PlayerDataController.
-        // public void GrantCaptainXP(int amount, ShipTypes shipClass, Element element)
-        // {
-        //     string shardItemId = "";
-        //     Debug.Log($"Captain Knowledge Length: {Catalog.CaptainXP.Count}");
-        //     foreach (var captainXP in Catalog.CaptainXP)
-        //     {
-        //         Debug.Log($"Next Captain: {captainXP.Name}");
-        //         foreach (var tag in captainXP.Tags)
-        //             Debug.Log($"Captain Knowledge Tags: {tag}");
-        //
-        //         if (captainXP.Tags.Contains(shipClass.ToString()) && captainXP.Tags.Contains(element.ToString()))
-        //         {
-        //             Debug.Log($"Found matching Captain Shard");
-        //             shardItemId = captainXP.ItemId;
-        //             break;
-        //         }
-        //     }
-        //
-        //     if (string.IsNullOrEmpty(shardItemId))
-        //     {
-        //         Debug.LogError($"{nameof(CatalogManager)}.{nameof(GrantCaptainXP)} - Error Granting Shards. No matching captain shard found in catalog - shipClass:{shipClass}, element:{element}");
-        //         return;
-        //     }
-        //
-        //     var request = new AddInventoryItemsRequest();
-        //     request.Amount = amount;
-        //     request.Item = new InventoryItemReference() { Id = shardItemId };
-        //     
-        //     _playFabEconomyInstanceAPI.AddInventoryItems(
-        //         request,
-        //         OnGrantShards,
-        //         HandleErrorReport
-        //     );
-        // }
+        public void GrantElementalCrystals(int amount, Element element)
+        {
+            string crystalItemId = "";
+            Debug.Log($"GrantElementalCrystals: amount: {amount}, element:{element}");
+            foreach (var elementalCrystal in StoreShelve.crystals.Values)
+            {
+                Debug.Log($"Crystal: {elementalCrystal.Name}");
+                foreach (var tag in elementalCrystal.Tags)
+                    Debug.Log($"Crystal Tags: {tag}");
+
+                if (elementalCrystal.Tags.Contains(element.ToString()))
+                {
+                    Debug.Log($"Found matching Crystal");
+                    crystalItemId = elementalCrystal.ItemId;
+                    break;
+                }
+            }
+
+            if (string.IsNullOrEmpty(crystalItemId))
+            {
+                Debug.LogError($"{nameof(CatalogManager)}.{nameof(GrantElementalCrystals)} - Error Granting Crystals. No matching crystal found in catalog - element:{element}");
+                return;
+            }
+
+            var request = new AddInventoryItemsRequest();
+            request.Amount = amount;
+            request.Item = new InventoryItemReference() { Id = crystalItemId };
+
+            _playFabEconomyInstanceAPI.AddInventoryItems(
+                request,
+                OnGrantElementalCrystals,
+                PlayFabUtility.HandleErrorReport
+            );
+        }
 
         /// <summary>
         /// On Grant Shards
         /// </summary>
         /// <param name="response"></param>
-        void OnGrantShards(AddInventoryItemsResponse response)
+        void OnGrantElementalCrystals(AddInventoryItemsResponse response)
         {
             if (response == null)
             {
-                Debug.LogWarningFormat($"{nameof(CatalogManager)}.{nameof(OnGrantShards)}: received a null response.");
+                Debug.LogWarningFormat($"{nameof(CatalogManager)}.{nameof(OnGrantElementalCrystals)}: received a null response.");
                 return;
             }
             Debug.Log("CatalogManager - On grant Shards Success.");
             Debug.LogFormat("CatalogManager - transaction ids: {0}", string.Join(",", response.TransactionIds));
         }
-        
+
+
+        void GrantStartingInventoryIfInventoryIsEmpty()
+        {
+            if (Inventory.allItems.Count == 0)
+                GrantStartingInventory(startingInventory);
+        }
+
         /// <summary>
         /// Grant Starting Inventory
         /// </summary>
@@ -259,6 +268,10 @@ namespace CosmicShore.Integrations.PlayFab.Economy
             }
             Debug.Log("CatalogManager - On Add Inventory Item Success.");
             Debug.LogFormat("CatalogManager - transaction ids: {0}", string.Join(",", response.TransactionIds));
+
+
+            // TODO: verify ownership of expected items to grant, update player data to have inventory granted flag set
+
 
             OnInventoryChange?.Invoke();
         }
@@ -297,7 +310,7 @@ namespace CosmicShore.Integrations.PlayFab.Economy
             {
                 if ("Omni Crystal" == crystal.Name)
                 {
-                    balance = (int) crystal.Amount;
+                    balance = crystal.Amount;
                     break;
                 }
                 Debug.Log($"GetCrystalBalance - {crystal.Type}:{crystal.Name}:{crystal.Amount}");
@@ -324,8 +337,9 @@ namespace CosmicShore.Integrations.PlayFab.Economy
         void OnGettingInventoryItems(GetInventoryItemsResponse response)
         {
             Debug.Log("CatalogManager.OnGettingInventoryItems");
+
             // If no inventory items no need to process the response.
-            if (response == null || response.Items?.Count == 0)
+            if (response == null)
             {
                 Debug.LogWarningFormat("{0} - {1}: Unable to get catalog item or no inventory items are available.", nameof(CatalogManager), nameof(OnGettingInventoryItems));
                 return;
@@ -344,7 +358,9 @@ namespace CosmicShore.Integrations.PlayFab.Economy
                     nameof(OnGettingInventoryItems), 
                     item.Id, item.Amount.ToString(), item.Type);
                 var virtualItem = ConvertInventoryItemToVirtualItem(item);
-                AddToInventory(virtualItem);
+                
+                if (virtualItem != null)   // Can be null if inventory item no longer exists in the catalog
+                    AddToInventory(virtualItem);
             }
 
             foreach (var crystal in Inventory.crystals)
@@ -366,6 +382,7 @@ namespace CosmicShore.Integrations.PlayFab.Economy
             Inventory.shipClasses.Clear();
             Inventory.captains.Clear();
             Inventory.tickets.Clear();
+            Inventory.allItems.Clear();
         }
         
         void AddToInventory(VirtualItem item)
@@ -400,6 +417,8 @@ namespace CosmicShore.Integrations.PlayFab.Economy
                     Debug.LogWarningFormat("{0} - {1} - Item Content Type not related to player inventory items, such as Stores and Subscriptions: {2}", nameof(CatalogManager), nameof(AddToInventory), item.ContentType);
                     break;
             }
+
+            Inventory.allItems.Add(item);
         }
 
         /// <summary>
@@ -470,64 +489,6 @@ namespace CosmicShore.Integrations.PlayFab.Economy
             Debug.LogFormat("{0} - {1}: item added to player inventory.", nameof(CatalogManager), nameof(AddInventoryItem));
             OnInventoryChange?.Invoke();
         }
-
-        /// <summary>
-        /// Remove All Inventory Items
-        /// </summary>
-        /// <param name="collectionId">Collection Id</param>
-        public void DeleteInventoryCollection(string collectionId)
-        {
-            var request = new DeleteInventoryCollectionRequest();
-            request.CollectionId = collectionId;
-            
-            _playFabEconomyInstanceAPI.DeleteInventoryCollection(
-                request, 
-                (response) =>
-                {
-                    if (response == null)
-                    {
-                        Debug.LogWarningFormat("{0} - {1} No responses when removing all inventory collections.", nameof(CatalogManager), nameof(DeleteInventoryCollection));
-                        return;
-                    }
-                    Debug.LogFormat("{0} - {1} All inventory collections removed.", nameof(CatalogManager), nameof(DeleteInventoryCollection));
-                    OnInventoryChange?.Invoke();
-                },
-                PlayFabUtility.HandleErrorReport
-                );
-        }
-
-        /// <summary>
-        /// Get Inventory Collection Ids
-        /// </summary>
-        public void GetInventoryCollectionIds()
-        {
-            //Get Inventory Collection Ids. Up to 50 Ids can be returned at once.
-            //You can use continuation tokens to paginate through results that return greater than the limit.
-            //It can take a few seconds for new collection Ids to show up.
-
-            var request = new GetInventoryCollectionIdsRequest();
-            _playFabEconomyInstanceAPI.GetInventoryCollectionIds(
-                request,
-                OnGettingInventoryCollectionIds,
-                PlayFabUtility.HandleErrorReport
-                );
-        }
-
-        private void OnGettingInventoryCollectionIds(GetInventoryCollectionIdsResponse response)
-        {
-            if (response == null)
-            {
-                Debug.LogWarningFormat("{0} - {1} No responses.", nameof(CatalogManager), nameof(GetInventoryCollectionIds));
-                return;
-            }
-
-            if (response.CollectionIds == null)
-            {
-                Debug.LogWarningFormat("{0} - {1} No inventory collection ids returned.", nameof(CatalogManager), nameof(GetInventoryCollectionIds));
-                return;
-            }
-
-        }
         
         #endregion
 
@@ -537,8 +498,17 @@ namespace CosmicShore.Integrations.PlayFab.Economy
         /// Purchase Item
         /// Buy in-game item with virtual currency (Shards, Crystals)
         /// </summary>
-        public void PurchaseItem(VirtualItem item, ItemPrice price)
+        public void PurchaseItem(VirtualItem item, ItemPrice price, int maxCount=1)
         {
+            // Prevent over purchasing
+            var ownedItem = Inventory.allItems.Where(x => x.ItemId == item.ItemId).First();
+            if (ownedItem != null && ownedItem.Amount >= maxCount)
+            {
+                Debug.LogWarning($"CatalogManager - Attempt to PurchaseItem when max amount already owned. Item:{item.Name}, Owned:{ownedItem.Amount}.");
+                return;
+            }
+
+
             // The currency calculation for currency should be done before passing item and price to purchase inventory item API, otherwise it will get "Invalid Request" error.
             _playFabEconomyInstanceAPI.PurchaseInventoryItems(
                 new()
@@ -629,8 +599,15 @@ namespace CosmicShore.Integrations.PlayFab.Economy
         /// <returns></returns>
         VirtualItem ConvertInventoryItemToVirtualItem(InventoryItem item)
         {
+            if (!StoreShelve.allItems.ContainsKey(item.Id))
+            {
+                Debug.LogWarning($"Inventory Item no longer in catalog - id:{item.Id}, type:{item.Type}");
+                return null;
+            }
+
             var virtualItem = StoreShelve.allItems[item.Id];
-            virtualItem.Amount = item.Amount;
+            virtualItem.Amount = (int)item.Amount;
+
             return virtualItem;
         }
         #endregion

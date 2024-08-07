@@ -33,7 +33,7 @@ namespace CosmicShore
         public override void Purchase()
         {
             Debug.Log($"PurchaseFactionTicketCard.Purchase");
-            CatalogManager.Instance.PurchaseItem(virtualItem, virtualItem.Price[0]);
+            CatalogManager.Instance.PurchaseItem(virtualItem, virtualItem.Price[0], 5);
         }
     }
 }

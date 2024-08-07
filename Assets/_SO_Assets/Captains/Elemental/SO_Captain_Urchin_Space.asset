@@ -23,9 +23,5 @@ MonoBehaviour:
   InitialResourceLevels:
     Mass: 0
     Charge: 0
-    Space: 0.5
+    Space: 0.1
     Time: 0
-  InitialMass: 0
-  InitialCharge: 0
-  InitialSpace: 0.5
-  InitialTime: 0

@@ -22,10 +22,6 @@ MonoBehaviour:
   PrimaryElement: 1
   InitialResourceLevels:
     Mass: 0
-    Charge: 0.5
+    Charge: 0.1
     Space: 0
     Time: 0
-  InitialMass: 0
-  InitialCharge: 0.5
-  InitialSpace: 0
-  InitialTime: 0

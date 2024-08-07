@@ -25,6 +25,8 @@ namespace CosmicShore.Integrations.PlayFab.Economy
 
         public List<VirtualItem> tickets = new();
 
+        public List<VirtualItem> allItems = new();
+
         public void SaveToDisk()
         {
             DataAccessor.Save("inventory.data", this);
@@ -41,6 +43,8 @@ namespace CosmicShore.Integrations.PlayFab.Economy
             shipClasses = tempInventory.shipClasses;
             games = tempInventory.games;
             tickets = tempInventory.tickets;
+
+            allItems = tempInventory.allItems;
         }
 
         public bool ContainsCaptain(string captainName)
@@ -50,8 +54,12 @@ namespace CosmicShore.Integrations.PlayFab.Economy
 
         public bool ContainsShipClass(string shipName)
         {
-            var count = shipClasses.Where(item => item.Name == shipName).Count();
-            return count > 0;
+            return shipClasses.Where(item => item.Name == shipName).Count() > 0;
+        }
+
+        public bool ContainsGame(string gameName)
+        {
+            return games.Where(item => item.Name == gameName).Count() > 0;
         }
     }
 }

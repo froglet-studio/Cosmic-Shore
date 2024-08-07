@@ -21,7 +21,6 @@ namespace Scenes.TestScenes.PlayfabSandboxTest
         [SerializeField] Button loadCaptainDataButton;
         [SerializeField] Button removeInvCollectionButton;
         
-        
         // test strings
         const string MantaShipUpgrade1Id = "6b5264af-4645-4aaa-8228-3b35ed379585";
         const string MantaShipUpgrade2Id = "806f1840-a0de-4463-8b56-4b43b07c3d5a";
@@ -38,7 +37,6 @@ namespace Scenes.TestScenes.PlayfabSandboxTest
             loadInventoryButton.onClick.AddListener(LoadInventoryTest);
             loadCaptainDataButton.onClick.AddListener(LoadCaptainData);
             purchaseShardsButton.onClick.AddListener(PurchaseShardsWithCrystalTest);
-            removeInvCollectionButton.onClick.AddListener(RemoveInventoryCollectionTest);
             
             PlayFabUtility.GettingPlayFabErrors += ProcessCatalogErrors;
             
@@ -54,7 +52,6 @@ namespace Scenes.TestScenes.PlayfabSandboxTest
             loadInventoryButton.onClick.RemoveListener(LoadInventoryTest);
             loadCaptainDataButton.onClick.RemoveListener(LoadCaptainData);
             purchaseShardsButton.onClick.RemoveListener(PurchaseShardsWithCrystalTest);
-            removeInvCollectionButton.onClick.RemoveListener(RemoveInventoryCollectionTest);
         }
 
         /// <summary>
@@ -153,28 +150,6 @@ namespace Scenes.TestScenes.PlayfabSandboxTest
         void LoadCaptainData()
         {
         }
-        
-        /// <summary>
-        /// Remove Inventory Collection Test
-        /// Normal player account does not have permission to delete inventory collections
-        /// </summary>
-        void RemoveInventoryCollectionTest()
-        {
-            CatalogManager.GetInventoryCollectionIds();
-        }
-
-        /// <summary>
-        /// Remove Inventory Collection
-        /// </summary>
-        /// <param name="collectionIds">Collection Id List</param>
-        void RemoveInventoryCollection(List<string> collectionIds)
-        {
-            foreach (var id in collectionIds)
-            {
-                Debug.LogFormat("{0} - {1} collection id: .", nameof(CatalogView), nameof(RemoveInventoryCollection));
-                CatalogManager.DeleteInventoryCollection(id);
-            }
-        }
 
         /// <summary>
         /// Process Catalog Errors
@@ -194,12 +169,10 @@ namespace Scenes.TestScenes.PlayfabSandboxTest
                 case PlayFabErrorCode.ItemNotFound:
                     Debug.LogError("No such item in our store nor your inventory.");
                     break;
-                
                 // Search Items errors
                 case PlayFabErrorCode.NotImplemented:
                     Debug.LogError("PlayFab folks said this is not implemented. Not sure what it means.");
                     break;
-                
                 // Get Inventory Items errors
                 case PlayFabErrorCode.AccountDeleted:
                     Debug.LogError("Your account is deleted :(");

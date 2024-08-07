@@ -21,11 +21,7 @@ MonoBehaviour:
   Ship: {fileID: 11400000, guid: b0e6ec5495dbfb6419332830d585f364, type: 2}
   PrimaryElement: 2
   InitialResourceLevels:
-    Mass: 0.5
+    Mass: 0.1
     Charge: 0
     Space: 0
     Time: 0
-  InitialMass: 0.5
-  InitialCharge: 0
-  InitialSpace: 0
-  InitialTime: 0

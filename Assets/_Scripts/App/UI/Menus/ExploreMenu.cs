@@ -39,8 +39,11 @@ namespace CosmicShore.App.UI.Menus
         [SerializeField] List<Sprite> IntensityIcons = new(4);
         [SerializeField] List<Sprite> PlayerCountIcons = new(4);
 
-        [Tooltip("If true, will filter out unowned ships from being available to play (MUST BE TRUE ON FOR PRODUCTION BUILDS")]
+        
         [Header("Test Settings")]
+        [Tooltip("If true, will filter out unowned games from being available to play (MUST BE TRUE ON FOR PRODUCTION BUILDS")]
+        [SerializeField] bool RespectInventoryForGameSelection = false;
+        [Tooltip("If true, will filter out unowned ships from being available to play (MUST BE TRUE ON FOR PRODUCTION BUILDS")]
         [SerializeField] bool RespectInventoryForShipSelection = false;
 
         SO_Ship SelectedShip;
@@ -77,7 +80,8 @@ namespace CosmicShore.App.UI.Menus
             }
 
             // Sort favorited first, then alphabetically
-            var sortedGames = GameList.GameList;
+            var filteredGames = RespectInventoryForGameSelection ? GameList.GameList.Where(x => CatalogManager.Inventory.ContainsGame(x.DisplayName)).ToList() : GameList.GameList;
+            var sortedGames = filteredGames;
             sortedGames.Sort((x, y) =>
             {
                 int flagComparison = FavoriteSystem.IsFavorited(y.Mode).CompareTo(FavoriteSystem.IsFavorited(x.Mode));

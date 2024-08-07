@@ -1,7 +1,6 @@
 using CosmicShore.Game.AI;
 using CosmicShore.Game.IO;
 using CosmicShore.Game.Projectiles;
-using CosmicShore.Models.ScriptableObjects;
 using CosmicShore.Models.Enums;
 using System;
 using System.Collections.Generic;
@@ -90,24 +89,6 @@ namespace CosmicShore.Core
         // Captain and captain upgrade properties
         SO_Captain captain;
 
-        private Dictionary<Element, SO_CaptainUpgrade> _captainUpgrades;
-        public Dictionary<Element, SO_CaptainUpgrade> CaptainUpgrades
-        {
-            get => _captainUpgrades;
-            set
-            {
-                _captainUpgrades = value;
-
-                if (_captainUpgrades != null)
-                {
-                    UpdateLevel(Element.Charge, ResourceSystem.GetLevel(Element.Charge));
-                    UpdateLevel(Element.Time, ResourceSystem.GetLevel(Element.Time));
-                    UpdateLevel(Element.Mass, ResourceSystem.GetLevel(Element.Mass));
-                    UpdateLevel(Element.Space, ResourceSystem.GetLevel(Element.Space));
-                }
-            }
-        }
-
         Teams team;
         public Teams Team 
         { 
@@ -138,9 +119,6 @@ namespace CosmicShore.Core
             ShipTransformer = GetComponent<ShipTransformer>();
             TrailSpawner = GetComponent<TrailSpawner>();
             ShipStatus = GetComponent<ShipStatus>();
-
-            // TODO: P1 GOES AWAY
-            ResourceSystem.OnElementLevelChange += UpdateLevel;
         }
 
         void Start()
@@ -418,33 +396,6 @@ namespace CosmicShore.Core
             SetResourceLevels(captain.InitialResourceLevels);
         }
 
-        public void UpdateLevel(Element element, int upgradeLevel)
-        {
-            Debug.Log($"Ship: UpdateLevel: element{element}, upgradeLevel: {upgradeLevel}");
-            if (CaptainUpgrades == null) CaptainUpgrades = new();
-            
-            if (CaptainUpgrades.ContainsKey(element))
-            {
-                CaptainUpgrades[element].element = element;
-                CaptainUpgrades[element].upgradeLevel = upgradeLevel;
-            }
-            else
-            {
-                // TODO: preset individual upgrade properties such as name, description, icon etc based on upgrade properties.
-                var newUpgrade = ScriptableObject.CreateInstance<SO_CaptainUpgrade>();
-                newUpgrade.element = element;
-                newUpgrade.upgradeLevel = upgradeLevel;
-                CaptainUpgrades.TryAdd(element, newUpgrade);
-            }
-
-            #if UNITY_EDITOR
-            foreach (var upgrade in CaptainUpgrades)
-            {
-                Debug.LogFormat("{0} - {1}: element: {2} upgrade level: {3}", nameof(CaptainUpgrades), nameof(UpdateLevel), upgrade.Key, upgrade.Value.upgradeLevel.ToString());
-            }
-            #endif
-            
-        }
 
         public void SetShipMaterial(Material material)
         {

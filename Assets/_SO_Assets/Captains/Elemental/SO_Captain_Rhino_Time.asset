@@ -24,8 +24,4 @@ MonoBehaviour:
     Mass: 0
     Charge: 0
     Space: 0
-    Time: 0.5
-  InitialMass: 0
-  InitialCharge: 0
-  InitialSpace: 0
-  InitialTime: 0.5
+    Time: 0.1
