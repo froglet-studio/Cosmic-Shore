@@ -64,7 +64,7 @@ public class Worm : MonoBehaviour
     {
         if (hasHead && segments.Count > 0)
         {
-            //MoveWorm();
+            MoveWorm();
         }
     }
 
@@ -89,7 +89,7 @@ public class Worm : MonoBehaviour
         // Rotate body segments with delay
         for (int i = 1; i < segments.Count; i++)
         {
-            UpdateSegmentRotation(i);
+            //UpdateSegmentRotation(i);
         }
 
     }
