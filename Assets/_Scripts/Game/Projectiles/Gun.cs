@@ -26,6 +26,7 @@ namespace CosmicShore.Game.Projectiles
         private void Start()
         {
             Team = Ship.Team;
+            
         }
 
         public void FireGun(Transform containerTransform, float speed, Vector3 inheritedVelocity,
@@ -119,8 +120,7 @@ namespace CosmicShore.Game.Projectiles
             Quaternion.LookRotation(normalizedVelocity) // rotation
             ).GetComponent<Projectile>();
 
-
-            projectileInstance.transform.localScale = projectileScale * Vector3.one;
+            projectileInstance.transform.localScale *= projectileScale;
             projectileInstance.transform.parent = containerTransform;
             projectileInstance.Velocity = normalizedVelocity * speed + inheritedVelocity;
             projectileInstance.Team = Team;
