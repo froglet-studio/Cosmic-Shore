@@ -1,4 +1,3 @@
-using CosmicShore.App.Systems.Squads;
 using CosmicShore.App.UI;
 using CosmicShore.App.UI.Menus;
 using UnityEngine;
@@ -31,8 +30,8 @@ namespace CosmicShore
         public void InitializeView(SO_Captain captain, bool isPlayer) 
         {
             shipSelectionView.Select(PlayerShips.ShipList.IndexOf(captain.Ship));
-            captainSelectView.SetSelectedCaptain(captain);
             captainSelectView.IsPlayer = isPlayer;
+            captainSelectView.SetSelectedCaptain(captain);
         }
 
         public void SelectCaptain(SO_Captain captain)

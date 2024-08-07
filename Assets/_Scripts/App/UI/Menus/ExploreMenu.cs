@@ -5,9 +5,11 @@ using CosmicShore.App.Systems.UserActions;
 using CosmicShore.App.UI.Elements;
 using CosmicShore.Core;
 using CosmicShore.Game.Arcade;
+using CosmicShore.Integrations.PlayFab.Economy;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.Video;
@@ -36,6 +38,10 @@ namespace CosmicShore.App.UI.Menus
         [SerializeField] GameObject IntensityButtonContainer;
         [SerializeField] List<Sprite> IntensityIcons = new(4);
         [SerializeField] List<Sprite> PlayerCountIcons = new(4);
+
+        [Tooltip("If true, will filter out unowned ships from being available to play (MUST BE TRUE ON FOR PRODUCTION BUILDS")]
+        [Header("Test Settings")]
+        [SerializeField] bool RespectInventoryForShipSelection = false;
 
         SO_Ship SelectedShip;
         SO_ArcadeGame SelectedGame;
@@ -139,9 +145,17 @@ namespace CosmicShore.App.UI.Menus
             SetPlayerCount(loadout.PlayerCount == 0 ? SelectedGame.MinPlayers : loadout.PlayerCount);
             SetIntensity(loadout.Intensity == 0 ? SelectedGame.MinIntensity : loadout.Intensity);
 
-
-            ShipSelectionView.AssignModels(SelectedGame.Captains.ConvertAll(x => (ScriptableObject)x.Ship));
-            ShipSelectionView.OnSelect += SelectShip;
+            if (RespectInventoryForShipSelection)
+            {
+                List<SO_Captain> filteredCaptains = SelectedGame.Captains.Where(x => CatalogManager.Inventory.ContainsShipClass(x.Ship.Name)).ToList();
+                ShipSelectionView.AssignModels(filteredCaptains.ConvertAll(x => (ScriptableObject)x.Ship));
+                ShipSelectionView.OnSelect += SelectShip;
+            }
+            else
+            {
+                ShipSelectionView.AssignModels(SelectedGame.Captains.ConvertAll(x => (ScriptableObject)x.Ship));
+                ShipSelectionView.OnSelect += SelectShip;
+            }
 
 
             //StartCoroutine(SelectCaptainCoroutine(SelectedGame.Captains[0]));
