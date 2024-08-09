@@ -192,7 +192,7 @@ MonoBehaviour:
   ProjectileScale: 1
   FiringPattern: 0
   Energy: 0
-  speed: 700
+  speed: 2000
   projectileTime: 0.2
   firingRate: 90
 --- !u!1 &555723467741174050
@@ -1088,6 +1088,37 @@ Transform:
   m_Father: {fileID: 1758863986445633205}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &3938548809082189982
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3967031065131343057}
+  m_Layer: 0
+  m_Name: FollowTarget
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &3967031065131343057
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3938548809082189982}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 6.18, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5928382658856804067}
+  m_RootOrder: 3
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &3943032258914932184
 GameObject:
   m_ObjectHideFlags: 0
@@ -1422,7 +1453,7 @@ Transform:
   m_GameObject: {fileID: 5328843749263180189}
   m_LocalRotation: {x: 0, y: 0, z: 1, w: 0.00000004371139}
   m_LocalPosition: {x: -0, y: 0.0046851295, z: -0.00000231}
-  m_LocalScale: {x: 3.05, y: 1, z: 6}
+  m_LocalScale: {x: 4.35, y: 1, z: 6}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 2206581757034755619}
@@ -1616,7 +1647,7 @@ SkinnedMeshRenderer:
   - {fileID: 5798525600549448751}
   - {fileID: 5571582515015820382}
   m_BlendShapeWeights:
-  - 100
+  - 0
   - 0
   - 0
   - 0
@@ -1783,7 +1814,7 @@ MonoBehaviour:
   ammoCost: 0.03
   ProjectileScale: 10
   Energy: 0
-  Speed: 90
+  Speed: 120
   ProjectileTime:
     Enabled: 0
     Value: 3
@@ -1865,6 +1896,7 @@ Transform:
   - {fileID: 3397189760217659071}
   - {fileID: 8075578658670966254}
   - {fileID: 4894037493201937865}
+  - {fileID: 3967031065131343057}
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -1914,8 +1946,8 @@ MonoBehaviour:
   Silhouette: {fileID: 2731003324702047408}
   AOEPrefab: {fileID: 0}
   farFieldSkimmer: {fileID: 3138628630497430536}
-  ShipCameraCustomizer: {fileID: 0}
-  FollowTarget: {fileID: 0}
+  ShipCameraCustomizer: {fileID: 705402283976800655}
+  FollowTarget: {fileID: 3967031065131343057}
   crystalImpactEffects: 030000000b000000
   minExplosionScale: 50
   maxExplosionScale: 500
@@ -1924,6 +1956,7 @@ MonoBehaviour:
   boostMultiplier: 5
   boostFuelAmount: 0.2
   bottomEdgeButtons: 0
+  Inertia: 70
   inputEventShipActions:
   - InputEvent: 6
     ShipActions:
@@ -2042,12 +2075,12 @@ MonoBehaviour:
   shielded: 0
   initialWavelength: 7
   minWavelength: 7
-  offset: 0
+  offset: 4
   Gap: 0
   MinimumGap: 0
   TargetScale: {x: 0, y: 0, z: 0}
   defaultWaitTime: 0
-  waitTime: 0
+  waitTime: 1
   startDelay: 0
   warp: 0
   spawnerEnabled: 1
@@ -2245,10 +2278,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ControlOverrides: 03000000
-  closeCamDistance: -25
+  closeCamDistance: -15
   farCamDistance: 0
-  FollowTarget: {fileID: 0}
-  FollowTargetPosition: {x: 0, y: 0, z: 0}
+  FollowTarget: {fileID: 3967031065131343057}
+  FollowTargetPosition: {x: 0, y: 20, z: 0}
   isOrthographic: 0
 --- !u!1 &6675130274311316141
 GameObject:
@@ -2813,7 +2846,7 @@ Transform:
   m_GameObject: {fileID: 8153112052561705718}
   m_LocalRotation: {x: 0, y: 0, z: 1, w: 0.00000004371139}
   m_LocalPosition: {x: -0, y: 0.01, z: 0}
-  m_LocalScale: {x: 0.66, y: 1, z: 0.48}
+  m_LocalScale: {x: 0.65, y: 0.76, z: 0.48}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 507090512925898101}

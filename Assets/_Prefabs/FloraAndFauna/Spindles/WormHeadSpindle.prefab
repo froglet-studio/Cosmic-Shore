@@ -112,6 +112,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
+  - {fileID: 4310850013220570940}
   - {fileID: 1699515129598415761}
   - {fileID: 4325756863300842997}
   - {fileID: 5690658461310859782}
@@ -119,7 +120,6 @@ Transform:
   - {fileID: 8452276583966235469}
   - {fileID: 5900626962662122241}
   - {fileID: 1260741203357711956}
-  - {fileID: 4310850013220570940}
   - {fileID: 5364058791528276836}
   m_Father: {fileID: 0}
   m_RootOrder: 0
@@ -146,6 +146,16 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 6669557630680528040}
     m_Modifications:
+    - target: {fileID: 222830520331879200, guid: f1d6a062d0f14434eb02d81ef4633dca,
+        type: 3}
+      propertyPath: TrailBlockProperties.Shielded
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 222830520331879200, guid: f1d6a062d0f14434eb02d81ef4633dca,
+        type: 3}
+      propertyPath: TrailBlockProperties.IsSuperShielded
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 4563009547826722997, guid: f1d6a062d0f14434eb02d81ef4633dca,
         type: 3}
       propertyPath: TrailBlockProperties.Shielded
@@ -159,7 +169,7 @@ PrefabInstance:
     - target: {fileID: 5222650486365209692, guid: f1d6a062d0f14434eb02d81ef4633dca,
         type: 3}
       propertyPath: m_RootOrder
-      value: 2
+      value: 3
       objectReference: {fileID: 0}
     - target: {fileID: 5222650486365209692, guid: f1d6a062d0f14434eb02d81ef4633dca,
         type: 3}
@@ -259,7 +269,7 @@ PrefabInstance:
     - target: {fileID: 5222650486365209692, guid: f1d6a062d0f14434eb02d81ef4633dca,
         type: 3}
       propertyPath: m_RootOrder
-      value: 5
+      value: 6
       objectReference: {fileID: 0}
     - target: {fileID: 5222650486365209692, guid: f1d6a062d0f14434eb02d81ef4633dca,
         type: 3}
@@ -359,7 +369,7 @@ PrefabInstance:
     - target: {fileID: 5222650486365209692, guid: f1d6a062d0f14434eb02d81ef4633dca,
         type: 3}
       propertyPath: m_RootOrder
-      value: 4
+      value: 5
       objectReference: {fileID: 0}
     - target: {fileID: 5222650486365209692, guid: f1d6a062d0f14434eb02d81ef4633dca,
         type: 3}
@@ -459,7 +469,7 @@ PrefabInstance:
     - target: {fileID: 5222650486365209692, guid: f1d6a062d0f14434eb02d81ef4633dca,
         type: 3}
       propertyPath: m_RootOrder
-      value: 3
+      value: 4
       objectReference: {fileID: 0}
     - target: {fileID: 5222650486365209692, guid: f1d6a062d0f14434eb02d81ef4633dca,
         type: 3}
@@ -551,6 +561,16 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 6669557630680528040}
     m_Modifications:
+    - target: {fileID: 222830520331879200, guid: f1d6a062d0f14434eb02d81ef4633dca,
+        type: 3}
+      propertyPath: TrailBlockProperties.Shielded
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 222830520331879200, guid: f1d6a062d0f14434eb02d81ef4633dca,
+        type: 3}
+      propertyPath: TrailBlockProperties.IsSuperShielded
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 4563009547826722997, guid: f1d6a062d0f14434eb02d81ef4633dca,
         type: 3}
       propertyPath: TrailBlockProperties.Shielded
@@ -559,7 +579,7 @@ PrefabInstance:
     - target: {fileID: 5222650486365209692, guid: f1d6a062d0f14434eb02d81ef4633dca,
         type: 3}
       propertyPath: m_RootOrder
-      value: 6
+      value: 7
       objectReference: {fileID: 0}
     - target: {fileID: 5222650486365209692, guid: f1d6a062d0f14434eb02d81ef4633dca,
         type: 3}
@@ -664,7 +684,7 @@ PrefabInstance:
     - target: {fileID: 5222650486365209692, guid: f1d6a062d0f14434eb02d81ef4633dca,
         type: 3}
       propertyPath: m_RootOrder
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 5222650486365209692, guid: f1d6a062d0f14434eb02d81ef4633dca,
         type: 3}
@@ -779,7 +799,7 @@ PrefabInstance:
     - target: {fileID: 5222650486365209692, guid: f1d6a062d0f14434eb02d81ef4633dca,
         type: 3}
       propertyPath: m_RootOrder
-      value: 7
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5222650486365209692, guid: f1d6a062d0f14434eb02d81ef4633dca,
         type: 3}
@@ -884,7 +904,7 @@ PrefabInstance:
     - target: {fileID: 5222650486365209692, guid: f1d6a062d0f14434eb02d81ef4633dca,
         type: 3}
       propertyPath: m_RootOrder
-      value: 1
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 5222650486365209692, guid: f1d6a062d0f14434eb02d81ef4633dca,
         type: 3}

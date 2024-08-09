@@ -52,7 +52,8 @@ MonoBehaviour:
   Team: 0
   aggression: 0
   Population: {fileID: 0}
-  scale: 1
+  IsHead: 0
+  IsTail: 0
 --- !u!1001 &3051597872134031661
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -125,31 +126,61 @@ PrefabInstance:
       propertyPath: LifeForm
       value: 
       objectReference: {fileID: 5032170557366743859}
+    - target: {fileID: 2212352712807355752, guid: 4a235b385189e2a48aab0c89f2c1a60e,
+        type: 3}
+      propertyPath: TrailBlockProperties.IsDangerous
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 2531723237350299608, guid: 4a235b385189e2a48aab0c89f2c1a60e,
+        type: 3}
+      propertyPath: LifeForm
+      value: 
+      objectReference: {fileID: 5032170557366743859}
+    - target: {fileID: 2531723237350299608, guid: 4a235b385189e2a48aab0c89f2c1a60e,
+        type: 3}
+      propertyPath: TrailBlockProperties.IsDangerous
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3238286917524245331, guid: 4a235b385189e2a48aab0c89f2c1a60e,
         type: 3}
       propertyPath: LifeForm
       value: 
       objectReference: {fileID: 5032170557366743859}
     - target: {fileID: 3238286917524245331, guid: 4a235b385189e2a48aab0c89f2c1a60e,
         type: 3}
+      propertyPath: TrailBlockProperties.IsDangerous
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4083086261133873093, guid: 4a235b385189e2a48aab0c89f2c1a60e,
+        type: 3}
       propertyPath: LifeForm
       value: 
       objectReference: {fileID: 5032170557366743859}
     - target: {fileID: 4083086261133873093, guid: 4a235b385189e2a48aab0c89f2c1a60e,
+        type: 3}
+      propertyPath: TrailBlockProperties.IsDangerous
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4391612687362365900, guid: 4a235b385189e2a48aab0c89f2c1a60e,
         type: 3}
       propertyPath: LifeForm
       value: 
       objectReference: {fileID: 5032170557366743859}
     - target: {fileID: 4391612687362365900, guid: 4a235b385189e2a48aab0c89f2c1a60e,
         type: 3}
-      propertyPath: LifeForm
-      value: 
-      objectReference: {fileID: 5032170557366743859}
+      propertyPath: TrailBlockProperties.IsDangerous
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 4732334612170521726, guid: 4a235b385189e2a48aab0c89f2c1a60e,
         type: 3}
       propertyPath: LifeForm
       value: 
       objectReference: {fileID: 5032170557366743859}
+    - target: {fileID: 4732334612170521726, guid: 4a235b385189e2a48aab0c89f2c1a60e,
+        type: 3}
+      propertyPath: TrailBlockProperties.IsDangerous
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 4757565511027715913, guid: 4a235b385189e2a48aab0c89f2c1a60e,
         type: 3}
       propertyPath: LifeForm
@@ -165,11 +196,21 @@ PrefabInstance:
       propertyPath: LifeForm
       value: 
       objectReference: {fileID: 5032170557366743859}
+    - target: {fileID: 8363286083983049179, guid: 4a235b385189e2a48aab0c89f2c1a60e,
+        type: 3}
+      propertyPath: TrailBlockProperties.IsDangerous
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 8587112189619844758, guid: 4a235b385189e2a48aab0c89f2c1a60e,
         type: 3}
       propertyPath: LifeForm
       value: 
       objectReference: {fileID: 5032170557366743859}
+    - target: {fileID: 8587112189619844758, guid: 4a235b385189e2a48aab0c89f2c1a60e,
+        type: 3}
+      propertyPath: TrailBlockProperties.IsDangerous
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 4a235b385189e2a48aab0c89f2c1a60e, type: 3}
 --- !u!4 &2823306245808447823 stripped

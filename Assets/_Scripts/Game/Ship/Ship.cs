@@ -66,6 +66,7 @@ namespace CosmicShore.Core
         [SerializeField] public float boostMultiplier = 4f; // TODO: Move to ShipController
         [SerializeField] public float boostFuelAmount = -.01f;
         [SerializeField] bool bottomEdgeButtons = false;
+        [SerializeField] public float Inertia = 70f;
 
         [SerializeField] List<InputEventShipActionMapping> inputEventShipActions;
         Dictionary<InputEvents, List<ShipAction>> ShipControlActions = new();
@@ -268,7 +269,7 @@ namespace CosmicShore.Core
                         ShipTransformer.ModifyVelocity((transform.position - trailBlockProperties.trailBlock.transform.position).normalized * 5 , Time.deltaTime * 15);
                         break;
                     case TrailBlockImpactEffects.Explode:
-                        trailBlockProperties.trailBlock.Damage(ShipStatus.Course * ShipStatus.Speed, Team, Player.PlayerName);
+                        trailBlockProperties.trailBlock.Damage(ShipStatus.Course * ShipStatus.Speed * Inertia, Team, Player.PlayerName);
                         break;
                     case TrailBlockImpactEffects.FeelDanger:
                         if (trailBlockProperties.IsDangerous && trailBlockProperties.trailBlock.Team != team)

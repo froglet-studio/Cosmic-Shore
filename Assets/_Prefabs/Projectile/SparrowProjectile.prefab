@@ -4913,6 +4913,7 @@ MonoBehaviour:
   Team: 0
   Ship: {fileID: 0}
   ImpactOnEnd: 0
+  Inertia: 1
   trailBlockImpactEffects: 03000000
   shipImpactEffects: 020000000300000001000000
   crystalImpactEffects: 

@@ -239,7 +239,7 @@ namespace CosmicShore.Core
             explodingBlock.transform.localScale = transform.lossyScale;
             explodingBlock.transform.parent = fossilBlockContainer.transform;
             explodingBlock.GetComponent<Renderer>().material = new Material(Hangar.Instance.GetTeamExplodingBlockMaterial(this.team));
-            explodingBlock.GetComponent<BlockImpact>().HandleImpact(impactVector);
+            explodingBlock.GetComponent<BlockImpact>().HandleImpact(impactVector / Volume);
 
             destroyed = true;
             devastated = devastate;
