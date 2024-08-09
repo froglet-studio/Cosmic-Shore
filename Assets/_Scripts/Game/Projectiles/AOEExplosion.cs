@@ -12,6 +12,7 @@ namespace CosmicShore.Game.Projectiles
 
         protected const float PI_OVER_TWO = Mathf.PI / 2;
         protected Vector3 MaxScaleVector;
+        protected float Inertia = 70;
 
         [HideInInspector] public float MaxScale = 200f;
 
@@ -58,7 +59,7 @@ namespace CosmicShore.Game.Projectiles
 
         protected virtual void OnTriggerEnter(Collider other)
         {
-            var impactVector = (other.transform.position - transform.position).normalized * speed;
+            var impactVector = (other.transform.position - transform.position).normalized * speed * Inertia ;
 
             if (other.TryGetComponent<TrailBlock>(out var trailBlock))
             {

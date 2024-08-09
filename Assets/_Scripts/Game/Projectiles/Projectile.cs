@@ -13,6 +13,7 @@ namespace CosmicShore.Game.Projectiles
         public Teams Team;
         public Ship Ship;
         public bool ImpactOnEnd;
+        public float Inertia = 1;
 
 
         [SerializeField] List<TrailBlockImpactEffects> trailBlockImpactEffects;
@@ -77,7 +78,7 @@ namespace CosmicShore.Game.Projectiles
                 switch (effect)
                 {
                     case TrailBlockImpactEffects.DeactivateTrailBlock:
-                        trailBlockProperties.trailBlock.Damage(Velocity, Ship.Team, Ship.Player.PlayerName);
+                        trailBlockProperties.trailBlock.Damage(Velocity * Inertia, Ship.Team, Ship.Player.PlayerName);
                         break;
                     case TrailBlockImpactEffects.Steal:
                         trailBlockProperties.trailBlock.Steal(Ship.Player, Team);
@@ -94,6 +95,7 @@ namespace CosmicShore.Game.Projectiles
                         GetComponent<LoadedGun>().FireGun();
                         break;
                     case TrailBlockImpactEffects.Explode:
+                        Debug.Log("TrailExplode");
                         ((ExplodableProjectile)this).Detonate();
                         break;
 
@@ -115,6 +117,7 @@ namespace CosmicShore.Game.Projectiles
                         GetComponent<LoadedGun>().FireGun();
                         break;
                     case TrailBlockImpactEffects.Explode:
+                        Debug.Log("EndExplode");
                         ((ExplodableProjectile)this).Detonate();
                         break;
 

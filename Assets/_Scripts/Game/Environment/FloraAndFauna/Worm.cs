@@ -64,7 +64,7 @@ public class Worm : MonoBehaviour
     {
         if (hasHead && segments.Count > 0)
         {
-            MoveWorm();
+            //MoveWorm();
         }
     }
 

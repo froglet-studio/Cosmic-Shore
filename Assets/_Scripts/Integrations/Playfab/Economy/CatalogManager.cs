@@ -563,7 +563,7 @@ namespace CosmicShore.Integrations.PlayFab.Economy
             {
                 itemPrice.ItemId = price.Prices[0].Amounts[0].ItemId;
                 itemPrice.Amount = price.Prices[0].Amounts[0].Amount;
-                Assert.IsTrue(price.Prices[0].UnitAmount != null, "Misconfigured Catalog Item - Unit Amount should not be null.");
+                Assert.IsTrue(price.Prices[0].UnitAmount != null, $"Misconfigured Catalog Item - Item { itemPrice.ItemId } Unit Amount should not be null.");
                 itemPrice.UnitAmount = price.Prices[0].UnitAmount == null ? 1 : (int)price.Prices[0].UnitAmount;
             }
             return itemPrice;
