@@ -20,7 +20,7 @@ namespace CosmicShore.App.Ui.Menus
         [SerializeField] List<HorizontalLayoutGroup> GamePurchaseRows;
 
         [Header("Daily Challenge and Faction Tickets")]
-        [SerializeField] PurchaseGameplayTicketCard FactionMissionTicketCard;
+        //[SerializeField] PurchaseGameplayTicketCard FactionMissionTicketCard;
         [SerializeField] PurchaseGameplayTicketCard DailyChallengeTicketCard;
 
         void Start()
@@ -31,7 +31,7 @@ namespace CosmicShore.App.Ui.Menus
         public override void UpdateView()
         {
             UpdateCrystalBalance();
-            FactionMissionTicketCard.SetVirtualItem(CatalogManager.Instance.GetFactionTicket());
+            //FactionMissionTicketCard.SetVirtualItem(CatalogManager.Instance.GetFactionTicket());
             DailyChallengeTicketCard.SetVirtualItem(CatalogManager.Instance.GetDailyChallengeTicket());
 
 
@@ -40,12 +40,6 @@ namespace CosmicShore.App.Ui.Menus
         void PopulateGamePurchaseCards()
         {
 
-        }
-
-        public void BuyShip_OnClick()
-        {
-            Debug.LogFormat("{0} - {1} buying a ship - urchine.", nameof(StoreMenu), nameof(BuyShip_OnClick));
-            // TODO: back-end buy ship 
         }
 
         public void BuyMiniGame_OnClick()
