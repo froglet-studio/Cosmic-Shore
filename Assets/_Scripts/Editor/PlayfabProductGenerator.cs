@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEditor;
 using PlayFab;
-using PlayFab.AdminModels;
+//using PlayFab.AdminModels;
 using System;
 using System.Threading.Tasks;
 using System.Collections.Generic;
@@ -75,6 +75,7 @@ public class PlayFabProductGenerator : EditorWindow
     }
     */
 
+    /*
     private async void GenerateProductsFromShip(SO_Ship ship)
     {
         isProcessing = true;
@@ -145,6 +146,7 @@ public class PlayFabProductGenerator : EditorWindow
         }
     }
 
+    
     public static async Task<bool> CheckIfItemExists(string itemId)
     {
         var request = new GetCatalogItemsRequest
@@ -267,7 +269,7 @@ public class PlayFabProductGenerator : EditorWindow
 
         return await taskCompletionSource.Task;
     }
-
+    */
 
     /*
     public static async Task<UpdateCatalogItemsResult> CreateCatalogItem(string itemId, string displayName, string description, int price, string currencyCode, List<string> tags)
