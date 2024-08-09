@@ -1,6 +1,7 @@
 using CosmicShore.Game.AI;
 using CosmicShore.Game.IO;
 using CosmicShore.Game.Projectiles;
+using CosmicShore.Models;
 using CosmicShore.Models.Enums;
 using System;
 using System.Collections.Generic;
@@ -85,9 +86,6 @@ namespace CosmicShore.Core
         [HideInInspector] public Material AOEConicExplosionMaterial;
         [HideInInspector] public Material SkimmerMaterial;
         float speedModifierDuration = 2f;
-
-        // Captain and captain upgrade properties
-        SO_Captain captain;
 
         Teams team;
         public Teams Team 
@@ -281,7 +279,6 @@ namespace CosmicShore.Core
             }
         }
 
-
         public void PerformShipControllerActions(InputEvents controlType)
         {
             if (!inputAbilityStartTimes.ContainsKey(controlType))
@@ -390,12 +387,10 @@ namespace CosmicShore.Core
             ResourceSystem.InitializeElementLevels();
         }
 
-        public void AssignCaptain(SO_Captain captain)
+        public void AssignCaptain(Captain captain)
         {
-            this.captain = captain;
-            SetResourceLevels(captain.InitialResourceLevels);
+            SetResourceLevels(captain.ResourceLevels);
         }
-
 
         public void SetShipMaterial(Material material)
         {

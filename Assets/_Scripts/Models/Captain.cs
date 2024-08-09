@@ -30,16 +30,16 @@ namespace CosmicShore.Models
                 switch (SO_Captain.PrimaryElement)
                 {
                     case Element.Space:
-                        ResourceLevels.Space += .1f * Level;
+                        ResourceLevels.Space = .1f * Level;
                         break;
                     case Element.Time:
-                        ResourceLevels.Time += .1f * Level;
+                        ResourceLevels.Time = .1f * Level;
                         break;
                     case Element.Mass:
-                        ResourceLevels.Mass += .1f * Level;
+                        ResourceLevels.Mass = .1f * Level;
                         break;
                     case Element.Charge:
-                        ResourceLevels.Charge += .1f * Level;
+                        ResourceLevels.Charge = .1f * Level;
                         break;
                 }
             }

@@ -22,19 +22,9 @@ namespace CosmicShore.App.UI.Menus
         [SerializeField] HangarAbilitiesView AbilitiesView;
 
         [Header("Captains View")]
-        [SerializeField] TMPro.TMP_Text SelectedCaptainName;
-        [SerializeField] TMPro.TMP_Text SelectedCaptainElementLabel;
-        [SerializeField] TMPro.TMP_Text SelectedCaptainQuote;
-        [SerializeField] Image SelectedCaptainImage;
-        [SerializeField] Transform CaptainSelectionContainer;
-        [SerializeField] Sprite CaptainSelectButtonBorderSpriteSelected;        // TODO: Move to CaptainSelectCard
-        [SerializeField] Sprite CaptainSelectButtonBorderSpriteDeselected;        // TODO: Move to CaptainSelectCard
+        [SerializeField] HangarCaptainsView CaptainsView;
+        [SerializeField] Transform CaptainSelectionContainer; // TODO: move to Captains View
 
-        [Header("Captains - Upgrades UI")]
-        [SerializeField] TMPro.TMP_Text SelectedUpgradeDescription;
-        [SerializeField] TMPro.TMP_Text SelectedUpgradeXPAcquired;
-        [SerializeField] TMPro.TMP_Text SelectedUpgradeXPRequirement;
-        [SerializeField] TMPro.TMP_Text SelectedUpgradeCrystalRequirement;
 
         [Header("Training UI")]
         [SerializeField] GameObject TrainingView;
@@ -97,39 +87,11 @@ namespace CosmicShore.App.UI.Menus
         {
             if (CaptainSelectionContainer == null) return;
 
-            // Deactivate all
+            // Assign captains
             for (var i = 0; i < CaptainSelectionContainer.transform.childCount; i++)
-                CaptainSelectionContainer.GetChild(i).gameObject.SetActive(false);
-
-            // Reactivate based on the number of abilities for the selected ship
-            for (var i = 0; i < SelectedShip.Captains.Count; i++)
-            {
-                var selectionIndex = i;
-                var captain = SelectedShip.Captains[i];
-                Debug.Log($"Populating Captain Select List: {captain?.Name}");
-                var captainSelection = CaptainSelectionContainer.GetChild(i).gameObject;
-                captainSelection.SetActive(true);
-                captainSelection.GetComponent<Image>().sprite = captain?.Icon;
-                captainSelection.GetComponent<Button>().onClick.RemoveAllListeners();
-                captainSelection.GetComponent<Button>().onClick.AddListener(() => SelectCaptain(selectionIndex));
-                captainSelection.GetComponent<Button>().onClick.AddListener(() => CaptainSelectionContainer.GetComponent<MenuAudio>().PlayAudio());
-            }
+                CaptainSelectionContainer.GetChild(i).GetComponent<CaptainUpgradeSelectionCard>().AssignCaptain(SelectedShip.Captains[i]);
 
             StartCoroutine(SelectCaptainCoroutine(0));
-        }
-
-        void PopulateCaptainDetails()
-        {
-            Debug.Log($"Populating Captain Details List: {SelectedCaptain.Name}");
-            Debug.Log($"Populating Captain Details List: {SelectedCaptain.Description}");
-            Debug.Log($"Populating Captain Details List: {SelectedCaptain.Icon}");
-            Debug.Log($"Populating Captain Details List: {SelectedCaptain.Image}");
-
-            if (SelectedCaptainName != null) SelectedCaptainName.text = SelectedCaptain.Name;
-            if (SelectedCaptainElementLabel != null) SelectedCaptainElementLabel.text = "The " + SelectedCaptain.PrimaryElement.ToString() + " " + SelectedCaptain.Ship.Name;
-            if (SelectedUpgradeDescription != null) SelectedUpgradeDescription.text = SelectedCaptain.Description;
-            if (SelectedCaptainQuote != null) SelectedCaptainQuote.text = SelectedCaptain.Flavor;
-            if (SelectedCaptainImage != null) SelectedCaptainImage.sprite = SelectedCaptain.Image;
         }
 
         void PopulateTrainingGameDetails()
@@ -191,7 +153,6 @@ namespace CosmicShore.App.UI.Menus
         /* Selects the Captain in the UI for display */
         /// <summary>
         /// Select a Captain in the UI to display its meta data
-        /// TODO: Add UI Captain Assets for Urchin and Bufo when they are available
         /// TODO: WIP Convert this UI element to a card
         /// </summary>
         /// <param name="index">Index of the displayed Captain list</param>
@@ -201,21 +162,10 @@ namespace CosmicShore.App.UI.Menus
 
             try
             {
-                // Deselect them all
                 for (var i = 0; i < 4; i++)
-                {
-                    // Deselect the border image
-                    CaptainSelectionContainer.GetChild(i).gameObject.GetComponent<Image>().sprite = CaptainSelectButtonBorderSpriteDeselected;
-                    // Deselect the captains element image
-                    CaptainSelectionContainer.GetChild(i).GetChild(0).gameObject.GetComponent<Image>().sprite = SelectedShip.Captains[i].Icon;
-                    // TODO: WIP - adjust the above to use the so_element's upgrade level corresponding to the captains current upgrade status
-                }
+                    CaptainSelectionContainer.GetChild(i).GetComponent<CaptainUpgradeSelectionCard>().ToggleSelected(i == index);
 
-                // Select the border image
-                // Select the captains element image
                 SelectedCaptain = SelectedShip.Captains[index];
-                CaptainSelectionContainer.GetChild(index).gameObject.GetComponent<Image>().sprite = CaptainSelectButtonBorderSpriteSelected;                
-                CaptainSelectionContainer.GetChild(index).GetChild(0).gameObject.GetComponent<Image>().sprite = SelectedCaptain.SelectedIcon;
             }
             catch (ArgumentOutOfRangeException argumentOutOfRangeException)
             {
@@ -228,7 +178,7 @@ namespace CosmicShore.App.UI.Menus
                     nameof(SelectCaptain), nullReferenceException.Message);
             }
 
-            PopulateCaptainDetails();
+            CaptainsView.AssignModel(SelectedCaptain);
         }
 
         public void DisplayTrainingModal()
@@ -255,12 +205,12 @@ namespace CosmicShore.App.UI.Menus
             catch (ArgumentOutOfRangeException argumentOutOfRangeException)
             {
                 Debug.LogWarningFormat("{0} - {1} - The ship lacks training games. Please add them. {2}", nameof(HangarMenu),
-                    nameof(SelectCaptain), argumentOutOfRangeException.Message);
+                    nameof(SelectTrainingGame), argumentOutOfRangeException.Message);
             }
             catch (NullReferenceException nullReferenceException)
             {
                 Debug.LogWarningFormat("{0} - {1} - The ship lacks training games. Please add them. {2}", nameof(HangarMenu),
-                    nameof(SelectCaptain), nullReferenceException.Message);
+                    nameof(SelectTrainingGame), nullReferenceException.Message);
             }
 
             PopulateTrainingGameDetails();

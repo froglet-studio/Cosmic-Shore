@@ -140,7 +140,7 @@ namespace CosmicShore.Integrations.PlayFab.Economy
         {
             StoreShelve.allItems.Add(item.ItemId, item);
 
-            Debug.Log($"AddToStoreShelve - contentType:{contentType},item:{item.Name}");
+            Debug.Log($"AddToStoreShelve - contentType:{contentType},item:{item.Name},tagCount:{item.Tags.Count}");
 
             switch (contentType)
             {
@@ -285,6 +285,7 @@ namespace CosmicShore.Integrations.PlayFab.Economy
         {
             Debug.Log("CatalogManager.LoadPlayerInventory");
             var request = new GetInventoryItemsRequest();
+            //request.CustomTags
             
             _playFabEconomyInstanceAPI.GetInventoryItems(
                 request,
@@ -303,12 +304,13 @@ namespace CosmicShore.Integrations.PlayFab.Economy
             return StoreShelve.DailyChallengeTicket;
         }
 
-        public int GetCrystalBalance()
+        public int GetCrystalBalance(Element crystalElementType=Element.Omni)
         {
             int balance = 0;
             foreach (var crystal in Inventory.crystals)
             {
-                if ("Omni Crystal" == crystal.Name)
+                //if ("Omni Crystal" == crystal.Name)
+                if (crystal.Tags.Contains(crystalElementType.ToString()))
                 {
                     balance = crystal.Amount;
                     break;
@@ -357,8 +359,12 @@ namespace CosmicShore.Integrations.PlayFab.Economy
                     nameof(CatalogManager), 
                     nameof(OnGettingInventoryItems), 
                     item.Id, item.Amount.ToString(), item.Type);
+
                 var virtualItem = ConvertInventoryItemToVirtualItem(item);
                 
+
+
+
                 if (virtualItem != null)   // Can be null if inventory item no longer exists in the catalog
                     AddToInventory(virtualItem);
             }
@@ -399,6 +405,7 @@ namespace CosmicShore.Integrations.PlayFab.Economy
                     break;
                 case "CaptainUpgrade":
                     Debug.LogFormat("{0} - {1} - Adding Upgrade",nameof(CatalogManager), nameof(AddToInventory));
+
                     Inventory.captainUpgrades.Add(item);
                     break;
                 case "Game":
@@ -508,7 +515,6 @@ namespace CosmicShore.Integrations.PlayFab.Economy
                 return;
             }
 
-
             // The currency calculation for currency should be done before passing item and price to purchase inventory item API, otherwise it will get "Invalid Request" error.
             _playFabEconomyInstanceAPI.PurchaseInventoryItems(
                 new()
@@ -577,7 +583,6 @@ namespace CosmicShore.Integrations.PlayFab.Economy
             virtualItem.Name = catalogItem.Title["NEUTRAL"];
             virtualItem.Description = catalogItem.Description.TryGetValue("NEUTRAL", out var description)? description : "No Description";
             virtualItem.ContentType = catalogItem.ContentType;
-            //virtualItem.BundleContents = catalogItem.Contents;
             
             virtualItem.Price = new()
             {
@@ -592,7 +597,7 @@ namespace CosmicShore.Integrations.PlayFab.Economy
 
         /// <summary>
         /// Load Cosmic Shore Virtual Item details for the corresponding PlayFab Inventory Item by looking it up on the store shelf
-        /// We load it from the store shelf since PF's inventory API doesn't return all of the expected fields (e.g the item's name)
+        /// We load it from the store shelf since PF's inventory API doesn't return all of the expected fields (e.g the item's name, tags, ...)
         /// TODO: Should be put on model or a conversion services instead of Catalog Manager
         /// </summary>
         /// <param name="item"></param>

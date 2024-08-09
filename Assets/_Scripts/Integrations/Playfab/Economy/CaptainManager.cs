@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
+// TODO: Renamespace - not using playfab directly here
 namespace CosmicShore.Integrations.Playfab.Economy
 {
     [System.Serializable]
@@ -25,20 +26,44 @@ namespace CosmicShore.Integrations.Playfab.Economy
         public Dictionary<string, Captain> AllCaptains = new Dictionary<string, Captain>();
     }
 
+    static class UpgradeXPRequirements
+    {
+        public const int LevelTwo = 100;
+        public const int LevelThree = 200;
+        public const int LevelFour = 300;
+        public const int LevelFive = 400;
+
+        public static int GetRequirementByLevel(int nextLevel)
+        {
+            switch (nextLevel)
+            {
+                case 2: return LevelTwo;
+                case 3: return LevelThree;
+                case 4: return LevelFour;
+                case 5: return LevelFive;
+                default:
+                    Debug.LogError($"UpgradeXPRequirements.GetRequirementByLevel - level out of range: {nextLevel}");
+                    return LevelTwo;
+            }
+        }
+    }
+
     public  class CaptainManager : SingletonPersistent<CaptainManager>
     {
         [SerializeField] SO_CaptainList AllCaptains;
-
         CaptainData captainData;
 
         void OnEnable()
         {
             XpHandler.XPLoaded += LoadCaptainData;
+            CatalogManager.OnLoadInventory += LoadCaptainData;
         }
 
         void OnDisable()
         {
             XpHandler.XPLoaded -= LoadCaptainData;
+
+            CatalogManager.OnLoadInventory += LoadCaptainData;
         }
 
         public void LoadCaptainData()
@@ -72,7 +97,7 @@ namespace CosmicShore.Integrations.Playfab.Economy
                 {
                     foreach (var tag in captainUpgrade.Tags)
                         if (tag.StartsWith("Upgrade"))
-                            captain.Level = int.Parse(tag.Replace("Upgrade_", ""));
+                            captain.Level = int.Parse(tag.Replace("UpgradeLevel_", ""));
                 }
                 else if (unlocked)
                     captain.Level = 1;
@@ -118,6 +143,11 @@ namespace CosmicShore.Integrations.Playfab.Economy
         public List<Captain> GetAllCaptains()
         {
             return captainData.AllCaptains.Values.ToList();
+        }
+
+        public int GetCaptainUpgradeXPRequirement(Captain captain)
+        {
+            return UpgradeXPRequirements.GetRequirementByLevel(captain.Level+1);
         }
     }
 }

@@ -14,4 +14,5 @@ public class SO_Captain : ScriptableObject
     [SerializeField] public SO_Ship Ship;
     [SerializeField] public Element PrimaryElement;
     [SerializeField] public ResourceCollection InitialResourceLevels;
+    [SerializeField] public int BasePrice;
 }

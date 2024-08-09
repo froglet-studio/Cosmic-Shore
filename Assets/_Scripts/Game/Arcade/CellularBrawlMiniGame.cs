@@ -1,5 +1,6 @@
 using CosmicShore.App.Systems.Squads;
 using CosmicShore.Core;
+using CosmicShore.Integrations.Playfab.Economy;
 
 namespace CosmicShore.Game.Arcade
 {
@@ -8,7 +9,7 @@ namespace CosmicShore.Game.Arcade
         protected override void Start()
         {
             base.Start();
-            Hangar.Instance.SetPlayerCaptain(SquadSystem.SquadLeader);
+            Hangar.Instance.SetPlayerCaptain(CaptainManager.Instance.GetCaptainByName(SquadSystem.SquadLeader.Name));
             Players[0].defaultShip = SquadSystem.SquadLeader.Ship.Class;
         }
     }

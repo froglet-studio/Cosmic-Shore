@@ -1,5 +1,7 @@
 using CosmicShore.App.Systems.Squads;
 using CosmicShore.Game.AI;
+using CosmicShore.Integrations.Playfab.Economy;
+using CosmicShore.Models;
 using CosmicShore.Utility.Singleton;
 using System;
 using System.Collections.Generic;
@@ -13,7 +15,7 @@ namespace CosmicShore.Core
 
         [Header("Ship Type Settings")]
         [SerializeField] Teams PlayerTeam = Teams.Green;
-        [SerializeField] SO_Captain PlayerCaptain;  // Serialized for inspection in hierarchy
+        [SerializeField] Captain PlayerCaptain;  // Serialized for inspection in hierarchy
         [SerializeField] ShipTypes PlayerShipType = ShipTypes.Random;
         [SerializeField] ShipTypes FriendlyAIShipType = ShipTypes.Manta;
         [SerializeField] ShipTypes HostileAI1ShipType = ShipTypes.Random;
@@ -57,7 +59,7 @@ namespace CosmicShore.Core
             TeamShipTypes[team][slot] = shipType;
         }
 
-        public void SetPlayerCaptain(SO_Captain captain)
+        public void SetPlayerCaptain(Captain captain)
         {
             PlayerCaptain = captain;
         }
@@ -134,7 +136,7 @@ namespace CosmicShore.Core
             Ship ship = Instantiate(shipTypeMap[shipType]);
 
             if (PlayerCaptain != null)
-                ship.SetResourceLevels(PlayerCaptain.InitialResourceLevels);
+                ship.SetResourceLevels(PlayerCaptain.ResourceLevels);
 
             ship.SetShipMaterial(TeamMaterialSets[team].ShipMaterial);
             ship.SetBlockMaterial(TeamMaterialSets[team].BlockMaterial);
@@ -196,7 +198,7 @@ namespace CosmicShore.Core
 
             Ship ship = Instantiate(shipTypeMap[shipType]);
             if (captain != null)
-                ship.AssignCaptain(captain);
+                ship.AssignCaptain(CaptainManager.Instance.GetCaptainByName(captain.Name));
             ship.SetShipMaterial(TeamMaterialSets[team].ShipMaterial);
             ship.SetBlockMaterial(TeamMaterialSets[team].BlockMaterial);
             ship.SetBlockSilhouettePrefab(TeamMaterialSets[team].BlockSilhouettePrefab);

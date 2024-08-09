@@ -61,5 +61,12 @@ namespace CosmicShore.Integrations.PlayFab.Economy
         {
             return games.Where(item => item.Name == gameName).Count() > 0;
         }
+
+        public VirtualItem GetCaptainUpgrade(string ShipName, string primaryElement, int captainLevel)
+        {
+            VirtualItem item = null;
+
+            return item;
+        }
     }
 }
