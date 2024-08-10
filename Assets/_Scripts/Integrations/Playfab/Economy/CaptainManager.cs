@@ -53,6 +53,9 @@ namespace CosmicShore.Integrations.Playfab.Economy
         [SerializeField] SO_CaptainList AllCaptains;
         CaptainData captainData;
 
+        // TODO: Move to Hangar
+        public HashSet<SO_Ship> UnlockedShips = new();
+
         void OnEnable()
         {
             XpHandler.XPLoaded += LoadCaptainData;
@@ -80,6 +83,9 @@ namespace CosmicShore.Integrations.Playfab.Economy
                 var unlocked = CatalogManager.Inventory.ContainsCaptain(so_Captain.Name);
                 if (unlocked)
                 {
+                    if (!UnlockedShips.Contains(captain.Ship))
+                        UnlockedShips.Add(captain.Ship);
+
                     captain.Unlocked = true;
                     captainData.UnlockedCaptains.Add(so_Captain.Name, captain);
                 }
@@ -106,6 +112,40 @@ namespace CosmicShore.Integrations.Playfab.Economy
 
                 Debug.Log($"LoadCaptainData - {captain.Name}, Level:{captain.Level}, XP:{captain.XP}, Unlocked:{captain.Unlocked}, Encountered:{captain.Encountered}");
             }
+        }
+
+        public void ReloadCaptain(Captain captain)
+        {
+            // Set XP
+            captain.XP = XpHandler.GetCaptainXP(captain);
+
+            // check for unlocked
+            var unlocked = CatalogManager.Inventory.ContainsCaptain(captain.Name);
+            if (unlocked)
+            {
+                captain.Unlocked = true;
+                captainData.UnlockedCaptains.Add(captain.Name, captain);
+            }
+            else
+            {
+                // Check for encountered
+                captain.Encountered = true;
+                captainData.EncounteredCaptains[captain.Name] = captain;
+            }
+            captainData.AllCaptains[captain.Name] = captain;
+
+            // Set Level
+            var captainUpgrade = CatalogManager.Inventory.captainUpgrades.Where(x => x.Tags.Contains(captain.Ship.Class.ToString()) && x.Tags.Contains(captain.PrimaryElement.ToString())).FirstOrDefault();
+            if (captainUpgrade != null)
+            {
+                foreach (var tag in captainUpgrade.Tags)
+                    if (tag.StartsWith("Upgrade"))
+                        captain.Level = int.Parse(tag.Replace("UpgradeLevel_", ""));
+            }
+            else if (unlocked)
+                captain.Level = 1;
+            else
+                captain.Level = 0;
         }
 
         public void IssueXP(string captainName, int amount)

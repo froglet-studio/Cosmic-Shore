@@ -1,5 +1,6 @@
 using CosmicShore.Integrations.Playfab.Economy;
 using CosmicShore.Integrations.PlayFab.Economy;
+using CosmicShore.Models;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -27,6 +28,7 @@ namespace CosmicShore
         bool crystalRequirementSatisfied = false;
         bool xpRequirementSatisfied = false;
         VirtualItem upgrade;
+        Captain captain;
 
         const string SatisfiedMarkdownColor = "FFF"; 
         const string UnsatisfiedMarkdownColor = "888"; 
@@ -38,12 +40,12 @@ namespace CosmicShore
         {
             var model = SelectedModel as SO_Captain;
 
-            var captain = CaptainManager.Instance.GetCaptainByName(model.Name);
+            captain = CaptainManager.Instance.GetCaptainByName(model.Name);
 
             // Load upgrade from catalog
             upgrade = CatalogManager.Inventory.GetCaptainUpgrade(captain.Ship.Class.ToString(), captain.PrimaryElement.ToString(), captain.Level);
 
-            // Lock Logic - Lock Icon & Unlock Button
+            // Lock Logic - Lock Icon
 
             // XP Requirement
             var xpNeeded = CaptainManager.Instance.GetCaptainUpgradeXPRequirement(captain);
@@ -57,6 +59,19 @@ namespace CosmicShore
             SelectedUpgradeCrystalRequirement.text = string.Format(CrystalRequirementTemplate, crystalBalance, crystalsNeeded, crystalRequirementSatisfied ? SatisfiedMarkdownColor : UnsatisfiedMarkdownColor);
 
             SelectedUpgradeCrystalRequirementImage.sprite = Elements.Get(captain.PrimaryElement).GetFullIcon(crystalRequirementSatisfied);
+
+            // Upgrade Button
+            if (xpRequirementSatisfied && crystalRequirementSatisfied)
+            {
+                UpgradeButton.GetComponent<Image>().sprite = UpgradeButtonUnlockedSprite;
+                UpgradeButton.enabled = true;
+            }
+            else
+            {
+                UpgradeButton.GetComponent<Image>().sprite = UpgradeButtonLockedSprite;
+                UpgradeButton.enabled = false;
+            }
+
 
             // Populate Captain Details
             Debug.Log($"Populating Captain Details List: {captain.Name}");
@@ -72,10 +87,19 @@ namespace CosmicShore
 
         public void PurchaseUpgrade()
         {
+            Debug.Log("PurchaseUpgrade");
             if (crystalRequirementSatisfied && xpRequirementSatisfied)
             {
-                //CatalogManager.Instance.PurchaseItem(upgrade)
+                Debug.Log("PurchaseUpgrade - Requirements satisfied");
+
+                CatalogManager.Instance.PurchaseCaptainUpgrade(captain, OnCaptainUpgraded);
             }
+        }
+
+        public void OnCaptainUpgraded()
+        {
+            CaptainManager.Instance.ReloadCaptain(captain);
+            UpdateView();
         }
     }
 }

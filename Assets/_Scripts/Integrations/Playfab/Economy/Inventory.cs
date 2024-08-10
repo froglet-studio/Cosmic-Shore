@@ -17,6 +17,7 @@ namespace CosmicShore.Integrations.PlayFab.Economy
         // Captain Upgrades
         public List<VirtualItem> captainUpgrades = new();
         
+        // TODO: remove - ship classes can no longer be bought directly
         // Ships
         public List<VirtualItem> shipClasses = new();
         

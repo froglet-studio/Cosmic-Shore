@@ -5,6 +5,7 @@ using CosmicShore.App.Systems.UserActions;
 using CosmicShore.App.UI.Elements;
 using CosmicShore.Core;
 using CosmicShore.Game.Arcade;
+using CosmicShore.Integrations.Playfab.Economy;
 using CosmicShore.Integrations.PlayFab.Economy;
 using System;
 using System.Collections;
@@ -151,7 +152,7 @@ namespace CosmicShore.App.UI.Menus
 
             if (RespectInventoryForShipSelection)
             {
-                List<SO_Captain> filteredCaptains = SelectedGame.Captains.Where(x => CatalogManager.Inventory.ContainsShipClass(x.Ship.Name)).ToList();
+                List<SO_Captain> filteredCaptains = SelectedGame.Captains.Where(x => CaptainManager.Instance.UnlockedShips.Contains(x.Ship)).ToList();
                 ShipSelectionView.AssignModels(filteredCaptains.ConvertAll(x => (ScriptableObject)x.Ship));
                 ShipSelectionView.OnSelect += SelectShip;
             }

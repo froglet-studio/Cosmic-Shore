@@ -3,9 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using CosmicShore.Integrations.PlayFab.Authentication;
 using CosmicShore.Integrations.PlayFab.Utility;
+using CosmicShore.Models;
 using CosmicShore.Utility.Singleton;
+using Newtonsoft.Json;
 using PlayFab;
-using PlayFab.ClientModels;
 using PlayFab.EconomyModels;
 using UnityEngine;
 using UnityEngine.Assertions;
@@ -23,8 +24,6 @@ namespace CosmicShore.Integrations.PlayFab.Economy
 
         public static Inventory Inventory { get; private set; } = new();
 
-        public static Dictionary<string, string> Bundles { get; private set; } = new();
-        public static event Action<string> OnGettingBundleId;
         public static event Action OnLoadCatalogSuccess;   // Use an event to prevent a race condition - Inventory Loading requires the full catalog to have been loaded
         public static event Action OnLoadInventory;
         public static event Action OnInventoryChange;
@@ -501,14 +500,38 @@ namespace CosmicShore.Integrations.PlayFab.Economy
 
         #region In-game Purchases
 
+        public void PurchaseCaptainUpgrade(Captain captain, Action successCallback = null, Action failureCallback = null)
+        {
+            // Find the upgrade
+            var elementTag = captain.PrimaryElement.ToString();
+            var shipTypeTag = captain.Ship.Class.ToString();
+            var upgradeLevelTag = "UpgradeLevel_" + (captain.Level+2); //TODO - this should be +1 once captain unlocks are implemented
+
+            Debug.Log($"PurchaseCaptainUpgrade - elementTag:{elementTag},shipTypeTag:{shipTypeTag},upgradeLevelTag:{upgradeLevelTag}");
+
+            foreach (var upgrade in StoreShelve.captainUpgrades.Values)
+            {
+                Debug.Log($"PurchaseCaptainUpgrade - upgrade:{upgrade.Name}, tags:{JsonConvert.SerializeObject(upgrade.Tags)}");
+                Debug.Log($"PurchaseCaptainUpgrade {upgrade.Tags.Contains(elementTag)},{upgrade.Tags.Contains(shipTypeTag)},{upgrade.Tags.Contains(upgradeLevelTag)}");
+
+                if (upgrade.Tags.Contains(elementTag) && upgrade.Tags.Contains(shipTypeTag) && upgrade.Tags.Contains(upgradeLevelTag))
+                {
+                    Debug.Log($"PurchaseCaptainUpgrade - found a match, attempting purchase");
+
+                    PurchaseItem(upgrade, upgrade.Price[0], 1, successCallback, failureCallback);
+                    break;
+                }
+            }
+        }
+
         /// <summary>
         /// Purchase Item
         /// Buy in-game item with virtual currency (Shards, Crystals)
         /// </summary>
-        public void PurchaseItem(VirtualItem item, ItemPrice price, int maxCount=1)
+        public void PurchaseItem(VirtualItem item, ItemPrice price, int maxCount=1, Action successCallback=null, Action failureCallback=null)
         {
             // Prevent over purchasing
-            var ownedItem = Inventory.allItems.Where(x => x.ItemId == item.ItemId).First();
+            var ownedItem = Inventory.allItems.Where(x => x.ItemId == item.ItemId).FirstOrDefault();
             if (ownedItem != null && ownedItem.Amount >= maxCount)
             {
                 Debug.LogWarning($"CatalogManager - Attempt to PurchaseItem when max amount already owned. Item:{item.Name}, Owned:{ownedItem.Amount}.");
@@ -541,8 +564,13 @@ namespace CosmicShore.Integrations.PlayFab.Economy
                     OnLoadInventory?.Invoke();
                     OnInventoryChange?.Invoke();
                     Debug.Log($"CatalogManager - Purchase success.");
+                    successCallback?.Invoke();
                 },
-                PlayFabUtility.HandleErrorReport
+                error =>
+                {
+                    PlayFabUtility.HandleErrorReport(error);
+                    failureCallback?.Invoke();
+                }
             );
         }
         #endregion
@@ -615,128 +643,6 @@ namespace CosmicShore.Integrations.PlayFab.Economy
 
             return virtualItem;
         }
-        #endregion
-
-        #region Bundle Handling
-
-        /// <summary>
-        /// Get Bundles
-        /// Returns SeearchItemsResponse that contains bundle id if request is successful, title and other information.
-        /// </summary>
-        /// <param name="filter">A filter string to query PlayFab bundle information</param>
-        public void GetBundles(string filter = "type eq 'bundle'")
-        {
-            _playFabEconomyInstanceAPI ??=
-                new (AuthenticationManager.PlayFabAccount.AuthContext);
-            var request = new SearchItemsRequest
-            {
-                Filter = filter
-            };
-            _playFabEconomyInstanceAPI.SearchItems(request, OnGettingBundlesSuccess, PlayFabUtility.HandleErrorReport);
-        }
-
-        /// <summary>
-        /// On Getting Bundle Success Delegate
-        /// Add bundle titles as keys and bundle ids as values to memory
-        /// Invoke an action "testBundleId" for testing purpose
-        /// </summary>
-        /// <param name="response">Search Item Response</param>
-        private void OnGettingBundlesSuccess(SearchItemsResponse response)
-        {
-            if (response is null) {Debug.Log("CatalogManager.GetBundle() - no response");return;}
-
-            var items = string.Join(" bundle: ", response.Items.Select(i => i.Id.ToString() + " " + i.Title.Values.FirstOrDefault()));
-            Debug.Log($"CatalogManager.GetBundle() - bundle: {items}");
-
-            Bundles ??= new();
-            
-            foreach (var bundle in response.Items)
-            {
-                Bundles.TryAdd(bundle.Title.Values.FirstOrDefault() ?? "Nameless Bundle", bundle.Id);
-            }
-
-            string testBundleId;
-            Bundles.TryGetValue("Test Bundle", out testBundleId);
-            
-            // TODO: This one is for testing, can be changed to any bundle id you want later
-            // if (string.IsNullOrEmpty(testBundleId)) {Debug.Log($"CatalogManager.GetBundle() - Test Bundle Id is not here");return;}
-            Debug.Log($"CatalogManager.GetBundles() - Test Bundle Id: {testBundleId}");
-            OnGettingBundleId?.Invoke(testBundleId);
-        }
-        
-        /// <summary>
-        /// Purchase a bundle
-        /// </summary>
-        /// <param name="bundleId"></param>
-        /// <param name="quantity"></param>
-        public void PurchaseBundle(string bundleId, uint quantity)
-        {
-            const string annotation = "Bundle Purchase";
-            
-            quantity = VerifyQuantity(quantity);
-            
-            _playFabEconomyInstanceAPI ??=
-                new(AuthenticationManager.PlayFabAccount.AuthContext);
-            
-            var itemRequest = new ItemPurchaseRequest
-            {
-                ItemId = bundleId,
-                Quantity = quantity,
-                Annotation = annotation
-            };
-
-            var startPurchaseRequest = new StartPurchaseRequest { Items = new(){itemRequest} };
-            
-            PlayFabClientAPI.StartPurchase(startPurchaseRequest, OnPurchaseBundleSuccess, PlayFabUtility.HandleErrorReport);
-        }
-
-        /// <summary>
-        /// On Purchasing Bundle Success
-        /// </summary>
-        /// <param name="result"></param>
-        private void OnPurchaseBundleSuccess(StartPurchaseResult result)
-        {
-            if (result is null) return;
-            
-            Debug.Log($"CatalogManager.PurchaseBundle() - {result.OrderId} remaining balance: {result.VirtualCurrencyBalances}");
-            PayBundle(result.OrderId);
-            
-        }
-
-        /// <summary>
-        /// A helper function to verify item quantity, if it exceeds 25, clamp to 25
-        /// </summary>
-        /// <param name="quantity"></param>
-        /// <returns></returns>
-        private static uint VerifyQuantity(uint quantity)
-        {
-            return quantity > 25 ? 25 : quantity;
-        }
-
-        /// <summary>
-        /// Pay For a Bundle
-        /// TODO: The bundle Id is not legit for purchase as an item, needs further investigation on how to handle bundles in PlayFab
-        /// </summary>
-        /// <param name="orderId"></param>
-        private void PayBundle(string orderId)
-        {
-            var payPurchaseRequest = new PayForPurchaseRequest { OrderId = orderId };
-            PlayFabClientAPI.PayForPurchase(payPurchaseRequest, OnPayBundleSuccess, PlayFabUtility.HandleErrorReport);
-        }
-
-        /// <summary>
-        /// On Paying Bundle Success Delegate
-        /// </summary>
-        /// <param name="result"></param>
-        private void OnPayBundleSuccess(PayForPurchaseResult result)
-        {
-            if (result is null) return;
-            
-            Debug.Log($"CatalogManager.PayBundle() - {result.OrderId} purchase currency:{result.PurchaseCurrency} status:{result.Status}");
-            var balance = string.Join(" ", result.VirtualCurrency.Select(i => i.Key + " " + i.Value));
-            Debug.Log($"CatalogManager.BayBundle() - current virtual currency balance: {balance}");
-        }
-        
         #endregion
     }
 }

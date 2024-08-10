@@ -39176,7 +39176,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 1385854982}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 1957720461}
+        m_TargetAssemblyTypeName: CosmicShore.HangarCaptainsView, Assembly-CSharp
+        m_MethodName: PurchaseUpgrade
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &1385854982
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -41569,6 +41581,50 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1474565364}
   m_CullTransparentMesh: 1
+--- !u!1 &1475239703
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1475239705}
+  - component: {fileID: 1475239704}
+  m_Layer: 0
+  m_Name: PlayFabHttp
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1475239704
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1475239703}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 1811260865}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!4 &1475239705
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1475239703}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 32
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1477488618
 GameObject:
   m_ObjectHideFlags: 0
@@ -52658,6 +52714,20 @@ MonoBehaviour:
   TrainButton: {fileID: 469955488}
   GoToStoreButton: {fileID: 196910619}
   HangarGameplayParameterDisplayGroup: {fileID: 706739920}
+--- !u!115 &1811260865
+MonoScript:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: 
+  serializedVersion: 5
+  m_Script: 
+  m_DefaultReferences: {}
+  m_Icon: {fileID: 0}
+  m_ExecutionOrder: 0
+  m_ClassName: PlayFabHttp
+  m_Namespace: PlayFab.Internal
 --- !u!1 &1815188641
 GameObject:
   m_ObjectHideFlags: 0
@@ -56407,6 +56477,10 @@ MonoBehaviour:
   SelectedUpgradeCrystalRequirement: {fileID: 1121801463}
   SelectedUpgradeCrystalRequirementImage: {fileID: 295997188}
   UpgradeButton: {fileID: 1385854981}
+  UpgradeButtonLockedSprite: {fileID: 21300000, guid: 2f458935e9150f746904a3a243571bd2,
+    type: 3}
+  UpgradeButtonUnlockedSprite: {fileID: 21300000, guid: 7a22d210cf00ad64d8fd5a08a77c3d18,
+    type: 3}
 --- !u!1 &1957966438
 GameObject:
   m_ObjectHideFlags: 0
@@ -59531,7 +59605,6 @@ MonoBehaviour:
   CaptainPurchaseRows: []
   PurchaseGamePrefab: {fileID: 0}
   GamePurchaseRows: []
-  FactionMissionTicketCard: {fileID: 679549045}
   DailyChallengeTicketCard: {fileID: 1645937772}
 --- !u!1 &2075309667
 GameObject:
@@ -69711,7 +69784,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   AllCaptains: {fileID: 11400000, guid: d7bf63b604fe22046968faed4e1caee7, type: 2}
-  elements: []
 --- !u!1 &3035230409794511607
 GameObject:
   m_ObjectHideFlags: 0
@@ -88263,7 +88335,6 @@ MonoBehaviour:
   CaptainPurchaseRows: []
   PurchaseGamePrefab: {fileID: 0}
   GamePurchaseRows: []
-  FactionMissionTicketCard: {fileID: 679549045}
   DailyChallengeTicketCard: {fileID: 1645937772}
 --- !u!1 &8073712096274227314
 GameObject:
