@@ -1,8 +1,7 @@
 ﻿using UnityEngine;
-using System.Collections.Generic;
-using System.Linq;
 using CosmicShore.Core;
 using System;
+
 
 public class BlockDensityGrid
 {
@@ -24,7 +23,7 @@ public class BlockDensityGrid
     {
         Vector3 translatedCoords = coords - this.origin;
         Vector3 unroundedIndices = translatedCoords / this.resolution;  // TODO: Integer division
-        Vector3Int indices = Vector3Int.RoundToInt(unroundedIndices);        //
+        Vector3Int indices = Vector3Int.RoundToInt(unroundedIndices);   //
         return indices;
     }
 
