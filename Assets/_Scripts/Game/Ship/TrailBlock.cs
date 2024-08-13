@@ -96,7 +96,7 @@ namespace CosmicShore.Core
             Teams[] teams = { Teams.Green, Teams.Red, Teams.Gold };
             foreach (Teams t in teams)
             {
-                if (t != team) targetNode.blockOctrees[t].AddBlock(this);  // Add this block to other teams' target tracking.
+                if (t != team) targetNode.countGrids[t].AddBlock(this);  // Add this block to other teams' target tracking.
             }
         }
 
