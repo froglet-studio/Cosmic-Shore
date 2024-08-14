@@ -1,3 +1,4 @@
+using CosmicShore;
 using CosmicShore.Models.Enums;
 using UnityEngine;
 
@@ -13,6 +14,7 @@ public class SO_Captain : ScriptableObject
     [SerializeField] public Sprite SelectedIcon;
     [SerializeField] public SO_Ship Ship;
     [SerializeField] public Element PrimaryElement;
+    [SerializeField] public SO_Element Element;
     [SerializeField] public ResourceCollection InitialResourceLevels;
     [SerializeField] public int BasePrice;
 }

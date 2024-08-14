@@ -27,6 +27,7 @@ namespace CosmicShore.Integrations.PlayFab.Economy
         public static event Action OnLoadCatalogSuccess;   // Use an event to prevent a race condition - Inventory Loading requires the full catalog to have been loaded
         public static event Action OnLoadInventory;
         public static event Action OnInventoryChange;
+        public static event Action OnCurrencyBalanceChange;
         [SerializeField] List<VirtualItem> startingInventory = new();
 
         void Start()
@@ -73,62 +74,84 @@ namespace CosmicShore.Integrations.PlayFab.Economy
         /// </summary>
         public void LoadAllCatalogItems()
         {
-            LoadCatalogItems();
+            List<CatalogItem> allCatalogItems = new List<CatalogItem>();
+            LoadCatalogItemsRecursive(allCatalogItems, "", null, "");
         }
 
         /// <summary>
-        /// Load Catalog Items
-        /// Get all catalog items
+        /// Load Catalog Items recursively if there are more than playfab's limit of 50 results
         /// </summary>
-        public void LoadCatalogItems(string filter = "")
+        void LoadCatalogItemsRecursive(List<CatalogItem> allCatalogItems, string filter = "", Action callback = null, string continuationToken="")
         {
-            var request = new SearchItemsRequest();
-            request.Filter = filter;
-            request.Count = 50;
-            
-            _playFabEconomyInstanceAPI.SearchItems(request,
-                OnLoadingCatalogItems,
-                PlayFabUtility.HandleErrorReport
-            );
-        }
-
-        /// <summary>
-        /// On Loading Catalog Items Callback
-        /// Load catalog items to local memory
-        /// </summary>
-        /// <param name="response">Search Items Response</param>
-        void OnLoadingCatalogItems(SearchItemsResponse response)
-        {
-            if (response == null)
+            var request = new SearchItemsRequest
             {
-                Debug.LogWarningFormat("{0} - {1}: Unable to get catalog item.", nameof(CatalogManager), nameof(OnLoadingCatalogItems));
-                return;
-            }
-
-            if (response.Items.Count == 0)
-            {
-                Debug.LogWarningFormat("{0} - {1}: No store items are available. Please check out PlayFab dashboard to fillout store items", nameof(CatalogManager), nameof(OnLoadingCatalogItems));
-                return;
-            }
-            
-            Debug.LogFormat("{0} - {1}: Catalog items Loaded.", nameof(CatalogManager), nameof(OnLoadingCatalogItems));
-            StoreShelve = new()
-            {
-                crystals = new(),
-                classes = new(),
-                captains = new(),
-                captainUpgrades = new(),
-                games = new(),
-                tickets = new(),
+                Filter = filter,
+                ContinuationToken = continuationToken,
+                Count = 50
             };
 
-            foreach (var item in response.Items)
+            _playFabEconomyInstanceAPI.SearchItems(request, result =>
             {
-                Debug.LogFormat("   CatalogManager - Inventory Id: {0} title: {1} content type: {2}", item.Id, item.Title, item.ContentType);
-                Debug.LogFormat("   CatalogManager - tags: {0}", string.Join(",", item.Tags));
-                Debug.LogFormat("   CatalogManager - Type: {0}", item.Type);
-                Debug.LogFormat("   CatalogManager - ContentType: {0}", item.ContentType);
+                // Add the current set of items to the list
+                allCatalogItems.AddRange(result.Items);
+
+                // Check if there's a continuation token
+                if (!string.IsNullOrEmpty(result.ContinuationToken))
+                {
+                    // If there is, make another request to get the next page of results
+                    LoadCatalogItemsRecursive(allCatalogItems, filter, callback, result.ContinuationToken);
+                }
+                else
+                {
+                    // If no more tokens, we've retrieved all items
+                    Debug.Log($"Total catalog items retrieved: {allCatalogItems.Count}");
+                    callback?.Invoke();
+                    OnLoadingCatalogItemsRecursive(allCatalogItems);
+                }
+            },
+            error =>
+            {
+                PlayFabUtility.HandleErrorReport(error);
+            });
+        }
+
+        /// <summary>
+        /// Callback invoked when the recursive api calls have finished
+        /// </summary>
+        /// <param name="allCatalogItems">List of all discovered catalog items</param>
+        void OnLoadingCatalogItemsRecursive(List<CatalogItem> allCatalogItems)
+        {
+            if (allCatalogItems == null)
+            {
+                Debug.LogWarningFormat("{0} - {1}: Unable to get catalog item.", nameof(CatalogManager), nameof(OnLoadingCatalogItemsRecursive));
+                return;
+            }
+
+            if (allCatalogItems.Count == 0)
+            {
+                Debug.LogWarningFormat("{0} - {1}: No store items are available. Please check out PlayFab dashboard to fillout store items", nameof(CatalogManager), nameof(OnLoadingCatalogItemsRecursive));
+                return;
+            }
+
+            Debug.LogFormat("{0} - {1}: Catalog items Loaded: Count:{2}.", nameof(CatalogManager), nameof(OnLoadingCatalogItemsRecursive), allCatalogItems.Count);
+            if (StoreShelve == null)
+            {
+                StoreShelve = new()
+                {
+                    crystals = new(),
+                    classes = new(),
+                    captains = new(),
+                    captainUpgrades = new(),
+                    games = new(),
+                    tickets = new(),
+                };
+            }
+
+            foreach (var item in allCatalogItems)
+            {
+                Debug.LogFormat("   CatalogManager - title: {0}, content type: {1}, tags:{2}", item.Title["NEUTRAL"], item.ContentType, string.Join(",", item.Tags));
                 var converted = ConvertCatalogItemToVirtualItem(item);
+                Debug.LogFormat("   CatalogManager converted - title: {0}, content type: {1}, tags:{2}", converted.Name, converted.ContentType, string.Join(",", converted.Tags));
                 AddToStoreShelve(item.ContentType, converted);
             }
 
@@ -139,7 +162,7 @@ namespace CosmicShore.Integrations.PlayFab.Economy
         {
             StoreShelve.allItems.Add(item.ItemId, item);
 
-            Debug.Log($"AddToStoreShelve - contentType:{contentType},item:{item.Name},tagCount:{item.Tags.Count}");
+            Debug.Log($"AddToStoreShelve - item:{item.Name}, contentType:{contentType}, tagCount:{item.Tags.Count}, item.ItemId:{item.ItemId}");
 
             switch (contentType)
             {
@@ -159,6 +182,7 @@ namespace CosmicShore.Integrations.PlayFab.Economy
                     StoreShelve.captainUpgrades.Add(item.ItemId, item);
                     break;
                 case "Ticket":
+                    Debug.Log($"   AddToStoreShelve Ticket - Title: {item.Name}, ContentType:{item.ContentType}, Type:{item.Type}");
                     StoreShelve.tickets.Add(item.ItemId, item);
                     if (item.Name == "Daily Challenge Ticket")
                         StoreShelve.DailyChallengeTicket = item;
@@ -174,7 +198,7 @@ namespace CosmicShore.Integrations.PlayFab.Economy
         }
         #endregion
 
-        #region Inventory Operations
+            #region Inventory Operations
 
         public void GrantElementalCrystals(int amount, Element element)
         {
@@ -291,44 +315,6 @@ namespace CosmicShore.Integrations.PlayFab.Economy
                 OnGettingInventoryItems,
                 PlayFabUtility.HandleErrorReport
             );
-        }
-
-        public VirtualItem GetFactionTicket()
-        {
-            return StoreShelve.FactionMissionTicket;
-        }
-
-        public VirtualItem GetDailyChallengeTicket()
-        {
-            return StoreShelve.DailyChallengeTicket;
-        }
-
-        public int GetCrystalBalance(Element crystalElementType=Element.Omni)
-        {
-            int balance = 0;
-            foreach (var crystal in Inventory.crystals)
-            {
-                //if ("Omni Crystal" == crystal.Name)
-                if (crystal.Tags.Contains(crystalElementType.ToString()))
-                {
-                    balance = crystal.Amount;
-                    break;
-                }
-                Debug.Log($"GetCrystalBalance - {crystal.Type}:{crystal.Name}:{crystal.Amount}");
-            }
-
-            return balance;
-        }
-        void UpdateCurrencyBalance(string currencyItemId, int amount)
-        {
-            foreach (var item in StoreShelve.crystals)
-            {
-                if (item.Value.ItemId == currencyItemId)
-                {
-                    item.Value.Amount += amount;
-                    OnInventoryChange?.Invoke();
-                }
-            }
         }
 
         /// <summary>
@@ -561,7 +547,6 @@ namespace CosmicShore.Integrations.PlayFab.Economy
                     UpdateCurrencyBalance(price.ItemId, price.Amount * -1);
                     AddToInventory(item);
                     Inventory.SaveToDisk();
-                    OnLoadInventory?.Invoke();
                     OnInventoryChange?.Invoke();
                     Debug.Log($"CatalogManager - Purchase success.");
                     successCallback?.Invoke();
@@ -575,6 +560,44 @@ namespace CosmicShore.Integrations.PlayFab.Economy
         }
         #endregion
 
+        public VirtualItem GetFactionTicket()
+        {
+            return StoreShelve.FactionMissionTicket;
+        }
+
+        public VirtualItem GetDailyChallengeTicket()
+        {
+            return StoreShelve.DailyChallengeTicket;
+        }
+
+        public int GetCrystalBalance(Element crystalElementType=Element.Omni)
+        {
+            int balance = 0;
+            foreach (var crystal in Inventory.crystals)
+            {
+                //if ("Omni Crystal" == crystal.Name)
+                if (crystal.Tags.Contains(crystalElementType.ToString()))
+                {
+                    balance = crystal.Amount;
+                    break;
+                }
+                Debug.Log($"GetCrystalBalance - {crystal.Type}:{crystal.Name}:{crystal.Amount}");
+            }
+
+            return balance;
+        }
+        void UpdateCurrencyBalance(string currencyItemId, int amount)
+        {
+            foreach (var item in StoreShelve.crystals)
+            {
+                if (item.Value.ItemId == currencyItemId)
+                {
+                    item.Value.Amount += amount;
+                    OnCurrencyBalanceChange?.Invoke();
+                }
+            }
+        }
+
         #region Model Conversion
         /// <summary>
         /// Convert PlayFab Price to Cosmic Shore Custom Price model
@@ -585,8 +608,6 @@ namespace CosmicShore.Integrations.PlayFab.Economy
         ItemPrice PlayFabToCosmicShorePrice(CatalogPriceOptions price)
         {
             ItemPrice itemPrice = new();
-            Debug.Log($"PlayFabToCosmicShorePrice: {price.Prices.Count}");
-
             if (price.Prices.Count >= 1)
             {
                 itemPrice.ItemId = price.Prices[0].Amounts[0].ItemId;
@@ -607,9 +628,9 @@ namespace CosmicShore.Integrations.PlayFab.Economy
         {
             VirtualItem virtualItem = new();
             virtualItem.ItemId = catalogItem.Id;
-            Debug.Log($"catalogItem.Title[\"NEUTRAL\"]: {catalogItem.Title["NEUTRAL"]}");
+            Debug.Log($"   ConvertCatalogItemToVirtualItem - Title: {catalogItem.Title["NEUTRAL"]}, ContentType:{catalogItem.ContentType}, Type:{catalogItem.Type}");
             virtualItem.Name = catalogItem.Title["NEUTRAL"];
-            virtualItem.Description = catalogItem.Description.TryGetValue("NEUTRAL", out var description)? description : "No Description";
+            virtualItem.Description = catalogItem.Description.TryGetValue("NEUTRAL", out var description) ? description : "No Description";
             virtualItem.ContentType = catalogItem.ContentType;
             
             virtualItem.Price = new()

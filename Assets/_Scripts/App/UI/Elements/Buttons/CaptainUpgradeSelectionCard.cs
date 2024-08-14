@@ -1,5 +1,5 @@
 using CosmicShore.App.UI.Menus;
-using CosmicShore.Integrations.Playfab.Economy;
+using CosmicShore.Integrations.PlayFab.Economy;
 using CosmicShore.Models;
 using TMPro;
 using UnityEngine;
@@ -27,16 +27,8 @@ namespace CosmicShore
 
         public void ToggleSelected(bool selected)
         {
-            if (selected)
-            {
-                BorderImage.sprite = CaptainSelectButtonBorderSpriteSelected;
-                CaptainElementImage.sprite = captain.SelectedIcon;
-            }
-            else
-            {
-                BorderImage.sprite = CaptainSelectButtonBorderSpriteDeselected;
-                CaptainElementImage.sprite = captain.Icon;
-            }
+            CaptainElementImage.sprite = captain.SO_Element.GetIcon(captain.Level, selected);
+            BorderImage.sprite = selected ? CaptainSelectButtonBorderSpriteSelected : CaptainSelectButtonBorderSpriteDeselected;
         }
 
         public void OnClick()

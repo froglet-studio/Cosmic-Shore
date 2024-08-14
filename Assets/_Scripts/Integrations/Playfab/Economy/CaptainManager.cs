@@ -1,13 +1,13 @@
 ﻿using CosmicShore.App.Systems.Xp;
-using CosmicShore.Integrations.PlayFab.Economy;
 using CosmicShore.Models;
 using CosmicShore.Utility.Singleton;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
 // TODO: Renamespace - not using playfab directly here
-namespace CosmicShore.Integrations.Playfab.Economy
+namespace CosmicShore.Integrations.PlayFab.Economy
 {
     [System.Serializable]
     class CaptainData
@@ -37,6 +37,7 @@ namespace CosmicShore.Integrations.Playfab.Economy
         {
             switch (nextLevel)
             {
+                case 1: return LevelTwo;    // Not yet unlocked captain
                 case 2: return LevelTwo;
                 case 3: return LevelThree;
                 case 4: return LevelFour;
@@ -50,6 +51,8 @@ namespace CosmicShore.Integrations.Playfab.Economy
 
     public  class CaptainManager : SingletonPersistent<CaptainManager>
     {
+        public static event Action OnLoadCaptainData;
+        public static bool CaptainDataLoaded { get; private set; }
         [SerializeField] SO_CaptainList AllCaptains;
         CaptainData captainData;
 
@@ -59,7 +62,9 @@ namespace CosmicShore.Integrations.Playfab.Economy
         void OnEnable()
         {
             XpHandler.XPLoaded += LoadCaptainData;
+
             CatalogManager.OnLoadInventory += LoadCaptainData;
+            CatalogManager.OnInventoryChange += LoadCaptainData;
         }
 
         void OnDisable()
@@ -67,6 +72,7 @@ namespace CosmicShore.Integrations.Playfab.Economy
             XpHandler.XPLoaded -= LoadCaptainData;
 
             CatalogManager.OnLoadInventory += LoadCaptainData;
+            CatalogManager.OnInventoryChange -= LoadCaptainData;
         }
 
         public void LoadCaptainData()
@@ -112,6 +118,9 @@ namespace CosmicShore.Integrations.Playfab.Economy
 
                 Debug.Log($"LoadCaptainData - {captain.Name}, Level:{captain.Level}, XP:{captain.XP}, Unlocked:{captain.Unlocked}, Encountered:{captain.Encountered}");
             }
+
+            CaptainDataLoaded = true;
+            OnLoadCaptainData?.Invoke();
         }
 
         public void ReloadCaptain(Captain captain)
@@ -146,6 +155,8 @@ namespace CosmicShore.Integrations.Playfab.Economy
                 captain.Level = 1;
             else
                 captain.Level = 0;
+
+            OnLoadCaptainData?.Invoke();
         }
 
         public void IssueXP(string captainName, int amount)
@@ -170,6 +181,11 @@ namespace CosmicShore.Integrations.Playfab.Economy
         public Captain GetCaptainByName(string name)
         {
             return captainData.AllCaptains.Where(x => x.Value.Name == name).FirstOrDefault().Value;
+        }
+
+        public SO_Captain GetCaptainSOByName(string name)
+        {
+            return AllCaptains.CaptainList.Where(x => x.Name == name).FirstOrDefault();
         }
 
         public List<Captain> GetEncounteredCaptains()

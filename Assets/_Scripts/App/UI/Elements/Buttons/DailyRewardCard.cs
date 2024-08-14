@@ -1,14 +1,13 @@
-using CosmicShore.App.Systems;
 using CosmicShore.App.Systems.Ads;
 using CosmicShore.Integrations.PlayFab.CloudScripts;
 using CosmicShore.Integrations.PlayFab.Economy;
 using System;
+using System.Collections;
 using System.Globalization;
 using TMPro;
 using UnityEngine;
 using UnityEngine.Advertisements;
 using UnityEngine.UI;
-
 namespace CosmicShore
 {
     enum ButtonMode
@@ -23,11 +22,13 @@ namespace CosmicShore
         [SerializeField] Image FreeButton;
         [SerializeField] Image AdButton;
         [SerializeField] Image ClockButton;
+        [SerializeField] IconEmitter IconEmitter;
         [SerializeField] Sprite FreeButtonBackgroundSprite;
         [SerializeField] Sprite AdButtonBackgroundSprite;
         [SerializeField] Sprite ClockButtonBackgroundSprite;
         [SerializeField] TMP_Text TimeRemaining;
         [SerializeField] AdsSystem adsManager;
+        [SerializeField] float duration = 1.0f; // Duration for the full rotation
 
         ButtonMode Mode = ButtonMode.Free;
         string LastFreeClaimedDatePrefKey = "DailyRewardLastFreeClaimedDate";
@@ -73,7 +74,7 @@ namespace CosmicShore
                 else
                 {
                     // Player watched the clock roll over
-                    EnterFreeMode();
+                    StartCoroutine(RotateCoroutine(EnterFreeMode));
                 }
             }
         }
@@ -107,6 +108,8 @@ namespace CosmicShore
             FreeButton.gameObject.SetActive(false);
         }
 
+
+
         public override void Purchase()
         {
             switch (Mode)
@@ -115,14 +118,14 @@ namespace CosmicShore
                     PlayerPrefs.SetString(LastFreeClaimedDatePrefKey, DateTime.UtcNow.Date.ToString("o"));
                     PlayerPrefs.Save();
                     DailyRewardHandler.Instance.Claim();
-                    EnterAdMode();
+                    IconEmitter?.EmitIcons();
+                    StartCoroutine(RotateCoroutine(EnterAdMode));
                     break;
                 case ButtonMode.Ad:
                     PlayerPrefs.SetString(LastAdClaimedDatePrefKey, DateTime.UtcNow.Date.ToString("o"));
                     PlayerPrefs.Save();
                     AdsSystem.AdShowComplete += ClaimAdWatchReward;
                     adsManager.ShowAd();
-                    EnterClockMode();
                     break;
                 case ButtonMode.Clock:
                     break;
@@ -133,6 +136,8 @@ namespace CosmicShore
         {
             Debug.Log("Claim Daily Reward via ad watch");
             DailyRewardHandler.Instance.Claim();
+            IconEmitter?.EmitIcons();
+            StartCoroutine(RotateCoroutine(EnterClockMode));
         }
 
         void InitializePlayerPrefs()
@@ -143,6 +148,58 @@ namespace CosmicShore
                 PlayerPrefs.SetString(LastAdClaimedDatePrefKey, DateTime.MinValue.Date.ToString("o"));
 
             PlayerPrefs.Save();
+        }
+
+        // TODO: reconsider implementation now that this class is not using the abstract method
+        public override void SetVirtualItem(VirtualItem virtualItem)
+        {
+            throw new NotImplementedException();
+        }
+
+        IEnumerator RotateCoroutine(Action modeChangeRoutine)
+        {
+            float halfDuration = duration / 2f;
+            float elapsedTime = 0f;
+
+            // Rotate to 90 degrees Y
+            while (elapsedTime < halfDuration)
+            {
+                float t = elapsedTime / halfDuration;
+                float easedT = EaseInOutQuad(t);
+                float angle = Mathf.Lerp(0, 90, easedT);
+                transform.localRotation = Quaternion.Euler(0, angle, 0);
+                elapsedTime += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            // Ensure the final rotation is exactly 90 degrees
+            transform.localRotation = Quaternion.Euler(0, 90, 0);
+
+
+            modeChangeRoutine?.Invoke();
+
+
+            // Reset the timer
+            elapsedTime = 0f;
+
+            // Rotate back to 0 degrees Y
+            while (elapsedTime < halfDuration)
+            {
+                float t = elapsedTime / halfDuration;
+                float easedT = EaseInOutQuad(t);
+                float angle = Mathf.Lerp(90, 0, easedT);
+                transform.localRotation = Quaternion.Euler(0, angle, 0);
+                elapsedTime += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            // Ensure the final rotation is exactly 0 degrees
+            transform.localRotation = Quaternion.Euler(0, 0, 0);
+        }
+
+        float EaseInOutQuad(float t)
+        {
+            return t < 0.5f ? 2f * t * t : 1f - Mathf.Pow(-2f * t + 2f, 2f) / 2f;
         }
     }
 }

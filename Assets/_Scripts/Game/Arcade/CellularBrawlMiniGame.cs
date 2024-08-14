@@ -1,6 +1,6 @@
 using CosmicShore.App.Systems.Squads;
 using CosmicShore.Core;
-using CosmicShore.Integrations.Playfab.Economy;
+using CosmicShore.Integrations.PlayFab.Economy;
 
 namespace CosmicShore.Game.Arcade
 {

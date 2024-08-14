@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ce7474d4aed9d704ea0001a2338c0784, type: 3}
   m_Name: SO_Captain_Termite_Time
   m_EditorClassIdentifier: 
-  Name: Astrofoil
+  Name: Termite Time
   Description: Fastest soaring speed in Class.
   Flavor: '[Flavor text placeholder]'
   Image: {fileID: 21300000, guid: dc68470b1f1d08c469282de9eb5e4398, type: 3}
@@ -20,8 +20,10 @@ MonoBehaviour:
   SelectedIcon: {fileID: 21300000, guid: 91356a0f113024c40a1ccaa4fcdddc93, type: 3}
   Ship: {fileID: 11400000, guid: 4fa06071d8c862e48a8f8f07ac78379d, type: 2}
   PrimaryElement: 4
+  Element: {fileID: 11400000, guid: 8b3a245cf083fb344acb39f2b8e08ea3, type: 2}
   InitialResourceLevels:
     Mass: 0
     Charge: 0
     Space: 0
     Time: 0.1
+  BasePrice: 0

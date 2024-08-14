@@ -1,5 +1,6 @@
 ﻿using CosmicShore.Models.Enums;
 using UnityEngine;
+using UnityEngine.Serialization;
 namespace CosmicShore.Models
 {
     public class Captain
@@ -15,6 +16,8 @@ namespace CosmicShore.Models
         public Sprite SelectedIcon;
         public SO_Ship Ship;
         public Element PrimaryElement;
+        [FormerlySerializedAs("Element")]
+        public SO_Element SO_Element;
         public ResourceCollection InitialResourceLevels;
 
         // Dynamic Properties (change over the course of player playing)
@@ -43,7 +46,6 @@ namespace CosmicShore.Models
                         break;
                 }
             }
-
         }
         
         public bool Unlocked;
@@ -63,6 +65,7 @@ namespace CosmicShore.Models
             SelectedIcon = so_Captain.SelectedIcon;
             Ship = so_Captain.Ship;
             PrimaryElement = so_Captain.PrimaryElement;
+            SO_Element = so_Captain.Element;
             InitialResourceLevels = so_Captain.InitialResourceLevels;
         }
     }

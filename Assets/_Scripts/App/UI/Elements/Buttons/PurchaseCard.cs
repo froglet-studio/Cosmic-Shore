@@ -1,4 +1,4 @@
-using CosmicShore.App.UI;
+using CosmicShore.Integrations.PlayFab.Economy;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -6,19 +6,16 @@ namespace CosmicShore
 {
     public abstract class PurchaseCard : MonoBehaviour
     {
-        [SerializeField] ModalWindowManager purchaseModal;
+        [HideInInspector] public PurchaseConfirmationModal ConfirmationModal;
         [SerializeField] protected Image BackgroundImage;
-        //[SerializeField] Sprite BackgroundSprite;
+        protected VirtualItem virtualItem;
 
         public abstract void Purchase();
-        public virtual void InitializeView()
-        {
-            //BackgroundImage.sprite = BackgroundSprite;
-        }
+        public abstract void SetVirtualItem(VirtualItem virtualItem);
 
-        public void OnClickBuy()
+        public virtual void OnClickBuy()
         {
-            purchaseModal.ModalWindowIn();
+            ConfirmationModal.ModalWindowIn();
         }
     }
 }

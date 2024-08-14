@@ -1,6 +1,6 @@
 using CosmicShore.App.Systems.Squads;
 using CosmicShore.Game.AI;
-using CosmicShore.Integrations.Playfab.Economy;
+using CosmicShore.Integrations.PlayFab.Economy;
 using CosmicShore.Models;
 using CosmicShore.Utility.Singleton;
 using System;

@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ce7474d4aed9d704ea0001a2338c0784, type: 3}
   m_Name: SO_Captain_Serpent_Charge
   m_EditorClassIdentifier: 
-  Name: Serpent Mass
+  Name: Shedder
   Description: Longest debuff duration from crystal decoy.
   Flavor: '[Flavor text placeholder]'
   Image: {fileID: 21300000, guid: ebe8f8cf53fdb27449173dab53ce8109, type: 3}
@@ -20,8 +20,10 @@ MonoBehaviour:
   SelectedIcon: {fileID: 21300000, guid: 6c4f40eef57f4d04bbd01083161212ff, type: 3}
   Ship: {fileID: 11400000, guid: 8a288448ab55edc46ac841a5f2e53d83, type: 2}
   PrimaryElement: 1
+  Element: {fileID: 11400000, guid: 93cccacc721734240998ca415746a8dc, type: 2}
   InitialResourceLevels:
     Mass: 0
     Charge: 0.1
     Space: 0
     Time: 0
+  BasePrice: 0
