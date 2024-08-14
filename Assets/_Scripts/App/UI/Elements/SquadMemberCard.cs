@@ -1,3 +1,4 @@
+using CosmicShore.Integrations.PlayFab.Economy;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -23,10 +24,17 @@ namespace CosmicShore
             }
         }
 
-        // TODO: need to find first 'owned' captain rather than just zero
         public void SetShip(SO_Ship ship)
         {
-            Captain = ship.Captains[0];
+            Captain = ship.Captains[0]; // Default until app is fleshed out
+            foreach (var captain in ship.Captains)
+            {
+                if (CatalogManager.Inventory.ContainsCaptain(captain.Name))
+                {
+                    Captain = captain;
+                    break;
+                }
+            }
         }
 
         /// <summary>

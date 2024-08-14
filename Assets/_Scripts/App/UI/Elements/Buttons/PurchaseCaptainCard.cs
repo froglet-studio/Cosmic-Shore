@@ -38,13 +38,6 @@ namespace CosmicShore
             CatalogManager.OnCurrencyBalanceChange -= UpdateCardOnCurrencyBalanceChange;
         }
 
-        void Start()
-        {
-            Debug.Log($"Start PurchaseCaptainCard:{name}");
-
-            // TODO: Logic to update button if crystal balance changes
-        }
-
         public override void SetVirtualItem(VirtualItem virtualItem)
         {
             Debug.Log($"SetVirtualItem - {virtualItem.Name},{virtualItem.Type},{virtualItem.ContentType}");

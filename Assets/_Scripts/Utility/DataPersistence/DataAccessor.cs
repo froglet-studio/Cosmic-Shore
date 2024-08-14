@@ -64,9 +64,7 @@ static class DataAccessor
                 byte[] data = new byte[dataStream.Length];
                 dataStream.Read(data, 0, (int)dataStream.Length);
 
-                Debug.Log(data.Length);
-                Debug.Log(data[0]);
-                Debug.Log(Encoding.ASCII.GetString(data));
+                Debug.Log($"DataAccessor.Load -  Type:{typeof(T)}, Data:{Encoding.ASCII.GetString(data)}");
 
                 Data = (T)JsonConvert.DeserializeObject(Encoding.ASCII.GetString(data), typeof(T));
 

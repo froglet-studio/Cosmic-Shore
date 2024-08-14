@@ -34,7 +34,6 @@ namespace CosmicShore.App.UI
             var game = SelectedModel as SO_TrainingGame;
             GameTitle.text = $"{game.Game.DisplayName}";
 
-            // TODO: may need to destroy all children first to prevent multiple clips from playing
             var preview = Instantiate(game.Game.PreviewClip);
             preview.transform.SetParent(PreviewWindow.transform, false);
             preview.GetComponent<RectTransform>().sizeDelta = new Vector2(256, 144);

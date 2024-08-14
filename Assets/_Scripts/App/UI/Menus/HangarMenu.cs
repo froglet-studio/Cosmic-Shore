@@ -153,7 +153,6 @@ namespace CosmicShore.App.UI.Menus
         /* Selects the Captain in the UI for display */
         /// <summary>
         /// Select a Captain in the UI to display its meta data
-        /// TODO: WIP Convert this UI element to a card
         /// </summary>
         /// <param name="index">Index of the displayed Captain list</param>
         public void SelectCaptain(int index)

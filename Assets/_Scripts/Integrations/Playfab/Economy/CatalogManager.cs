@@ -151,7 +151,6 @@ namespace CosmicShore.Integrations.PlayFab.Economy
             {
                 Debug.LogFormat("   CatalogManager - title: {0}, content type: {1}, tags:{2}", item.Title["NEUTRAL"], item.ContentType, string.Join(",", item.Tags));
                 var converted = ConvertCatalogItemToVirtualItem(item);
-                Debug.LogFormat("   CatalogManager converted - title: {0}, content type: {1}, tags:{2}", converted.Name, converted.ContentType, string.Join(",", converted.Tags));
                 AddToStoreShelve(item.ContentType, converted);
             }
 
@@ -161,8 +160,6 @@ namespace CosmicShore.Integrations.PlayFab.Economy
         void AddToStoreShelve(string contentType, VirtualItem item)
         {
             StoreShelve.allItems.Add(item.ItemId, item);
-
-            Debug.Log($"AddToStoreShelve - item:{item.Name}, contentType:{contentType}, tagCount:{item.Tags.Count}, item.ItemId:{item.ItemId}");
 
             switch (contentType)
             {
@@ -628,7 +625,6 @@ namespace CosmicShore.Integrations.PlayFab.Economy
         {
             VirtualItem virtualItem = new();
             virtualItem.ItemId = catalogItem.Id;
-            Debug.Log($"   ConvertCatalogItemToVirtualItem - Title: {catalogItem.Title["NEUTRAL"]}, ContentType:{catalogItem.ContentType}, Type:{catalogItem.Type}");
             virtualItem.Name = catalogItem.Title["NEUTRAL"];
             virtualItem.Description = catalogItem.Description.TryGetValue("NEUTRAL", out var description) ? description : "No Description";
             virtualItem.ContentType = catalogItem.ContentType;

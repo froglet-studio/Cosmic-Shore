@@ -161,9 +161,6 @@ namespace CosmicShore.App.UI.Menus
                 ShipSelectionView.OnSelect += SelectShip;
             }
 
-
-            //StartCoroutine(SelectCaptainCoroutine(SelectedGame.Captains[0]));
-
             // Populate game data and show view
             PopulateGameDetails();
             OpenGameDetailModal();
