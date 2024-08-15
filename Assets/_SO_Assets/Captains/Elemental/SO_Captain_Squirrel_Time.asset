@@ -14,8 +14,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Name: Tenacious
   Description: A classic tale of love and kaiju
-  Flavor: 
-  Image: {fileID: 21300000, guid: dc68470b1f1d08c469282de9eb5e4398, type: 3}
+  AIBehaviorDescription: 
+  Flavor: '[Placeholder Flavor Text]'
+  Image: {fileID: 21300000, guid: eb6a625b1a4657e4082b7073a9863c3b, type: 3}
+  HeadshotImage: {fileID: 0}
   Icon: {fileID: 21300000, guid: 40bdba688420ae849855010cbcb5ca87, type: 3}
   SelectedIcon: {fileID: 21300000, guid: 91356a0f113024c40a1ccaa4fcdddc93, type: 3}
   Ship: {fileID: 11400000, guid: 6fbeef29c9430b94aabea2934640dc5a, type: 2}
