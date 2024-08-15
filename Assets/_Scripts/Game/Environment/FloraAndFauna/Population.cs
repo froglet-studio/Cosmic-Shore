@@ -38,7 +38,7 @@ namespace CosmicShore
             while (true)
             {
                 yield return new WaitForSeconds(goalUpdateInterval);
-                Vector3 highDensityPosition = node.GetExplosionTargets(1, Team)[0];
+                Vector3 highDensityPosition = node.GetExplosionTarget(Team);
                 Goal = highDensityPosition;
                 CalculateTeamWeights();
             }
