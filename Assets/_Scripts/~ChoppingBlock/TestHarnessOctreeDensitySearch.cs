@@ -20,17 +20,13 @@ public class TestHarnessOctreeDensitySearch : MonoBehaviour
         yield return new WaitForSeconds(3);
         
         Node targetNode = NodeControlManager.Instance.GetNearestNode(transform.position);
-        int targetCount = 5;
 
         Teams[] teams = { Teams.Green, Teams.Red, Teams.Gold };
         foreach (Teams t in teams)
         {
-            List<Vector3> explosionTargets = targetNode.GetExplosionTargets(targetCount, t);
-            Debug.Log($"Found {explosionTargets.Count} explosion targets in node {targetNode.ID} for team {t}:");
-            foreach (Vector3 target in explosionTargets)
-            {
-                Debug.Log($"Target position: {target}, Block count density: {targetNode.blockOctrees[t].GetBlockDensityAtPosition(target)}");
-            }
+            Vector3 explosionTarget = targetNode.GetExplosionTarget(t);
+            Debug.Log($"Found explosion target in node {targetNode.ID} for team {t}:");
+            Debug.Log($"Target position: {explosionTarget}, Block count density: {targetNode.countGrids[t].GetDensityAtPosition(explosionTarget)}");
         }
     }
 }
