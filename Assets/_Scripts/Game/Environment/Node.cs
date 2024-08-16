@@ -32,8 +32,8 @@ public class Node : MonoBehaviour
 
     [SerializeField] bool hasRandomFloraAndFauna;
 
-    [SerializeField] private float minOctreeSize = 20f;
-    public Dictionary<Teams, BlockOctree> blockOctrees = new Dictionary<Teams, BlockOctree>();
+    public Dictionary<Teams, BlockCountDensityGrid> countGrids = new Dictionary<Teams, BlockCountDensityGrid>();
+    public Dictionary<Teams, BlockVolumeDensityGrid> volumeGrids = new Dictionary<Teams, BlockVolumeDensityGrid>();
 
     Dictionary<Teams, float> teamVolumes = new Dictionary<Teams, float>();
 
@@ -64,12 +64,12 @@ public class Node : MonoBehaviour
 
     void Awake()
     {
-        Vector3 size = nucleus.transform.localScale;
-        float maxSize = Mathf.Max(size.x, size.y, size.z) * 10;  // Unclear why such a large multiplier is needed.
+        // TODO: handle Blue?
         Teams[] teams = { Teams.Green, Teams.Red, Teams.Gold };  // TODO: Store this as a constant somewhere (where?).
         foreach (Teams t in teams)
         {
-            blockOctrees.Add(t, new BlockOctree(transform.position, maxSize, minOctreeSize, t));
+            countGrids.Add(t, new BlockCountDensityGrid(t));
+            //volumeGrids.Add(t, new BlockVolumeDensityGrid(t));
         }
     }
 
@@ -78,7 +78,7 @@ public class Node : MonoBehaviour
         Teams[] teams = { Teams.Green, Teams.Red, Teams.Gold };
         foreach (Teams t in teams)
         {
-            if (t != block.Team) blockOctrees[t].AddBlock(block);
+            if (t != block.Team) countGrids[t].AddBlock(block);
         }
     }
 
@@ -87,13 +87,13 @@ public class Node : MonoBehaviour
         Teams[] teams = { Teams.Green, Teams.Red, Teams.Gold };
         foreach (Teams t in teams)
         {
-            if (t != block.Team) blockOctrees[t].RemoveBlock(block);
+            if (t != block.Team) countGrids[t].RemoveBlock(block);
         }
     }
 
-    public List<Vector3> GetExplosionTargets(int count, Teams team)
+    public Vector3 GetExplosionTarget(Teams team)
     {
-        return blockOctrees[team].FindDensestRegions(count);
+        return countGrids[team].FindDensestRegion();
     }
 
     public void AddItem(NodeItem item)
