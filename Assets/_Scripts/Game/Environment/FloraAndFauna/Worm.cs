@@ -14,6 +14,10 @@ public class Worm : MonoBehaviour
     [SerializeField] private BodySegmentFauna tailPrefab;
     [SerializeField] public List<BodySegmentFauna> initialSegments;
 
+    public Vector3 headSpacing;
+    public Vector3 tailSpacing;
+    public Vector3 middleSpacing;
+
     [SerializeField] private float movementSpeed = 5f;
     [SerializeField] private float headTurnSpeed = 2f;
     [SerializeField] private float bodyTurnSpeed = 5f;
@@ -156,37 +160,34 @@ public class Worm : MonoBehaviour
         targetPosition = target;
     }
 
-    public void AddSegment(BodySegmentFauna newSegment = null)
+    public void AddSegment()
     {
-        if (hasHead && hasTail && newSegment == null && segments.Count >= 4)
-        {
-            newSegment = Instantiate(middleSegmentPrefab, transform);
-            segments.Insert(1, newSegment); // Insert after the head
-            newSegment.transform.position = segments[2].transform.position;
-            newSegment.transform.LookAt(segments[0].transform.position);
-            StartCoroutine(LerpUtilities.LerpingCoroutine(segments[2].transform.position, segments[3].transform.position, .5f, (x) => { segments[2].transform.position = x; }));
-        }
-        else if (!hasTail)
-        {
-            newSegment = Instantiate(tailPrefab, transform);
-            segments.Add(newSegment);
-            newSegment.transform.position = segments[segments.Count - 2].transform.position + (segments[segments.Count - 2].transform.position - segments[segments.Count - 3].transform.position);
-            newSegment.transform.LookAt(segments[segments.Count - 2].transform.position);
-            hasTail = true;
-        } 
-        else if (!hasHead)
-        {
-            newSegment = Instantiate(headPrefab, transform);
-            segments.Insert(0, newSegment);
-            newSegment.transform.position = segments[1].transform.position + (3 * (segments[1].transform.position - segments[2].transform.position));
-            newSegment.transform.LookAt(segments[1].transform.position + (4 * (segments[1].transform.position - segments[2].transform.position)));
-            hasHead = true;
-        }
+        if (hasHead)
+            if (hasTail)
+            {
+                BodySegmentFauna newSegment = Instantiate(middleSegmentPrefab, transform);
+                newSegment.transform.position = segments[0].transform.position - headSpacing;
+                newSegment.transform.LookAt(segments[0].transform.position);
+                if (segments.Count > 1)
+                    StartCoroutine(LerpUtilities.LerpingCoroutine(segments[1].transform.position, segments[1].transform.position + middleSpacing, .5f, (x) => { segments[1].transform.position = x; }));
+                segments.Insert(1, newSegment); // Insert after the head
+            }
+            else
+            {
+                BodySegmentFauna newSegment = Instantiate(tailPrefab, transform);
+                newSegment.transform.position = segments[segments.Count - 1].transform.position + tailSpacing;
+                newSegment.transform.LookAt(segments[segments.Count - 1].transform.position);
+                segments.Add(newSegment);
+                hasTail = true;
+            }
         else
         {
-            segments.Add(newSegment);
+            BodySegmentFauna newSegment = Instantiate(headPrefab, transform); 
+            newSegment.transform.position = segments[0].transform.position + headSpacing;
+            newSegment.transform.LookAt(segments[0].transform.position + (4 * (segments[0].transform.position - segments[1].transform.position)));
+            segments.Insert(0, newSegment);
+            hasHead = true;
         }
-
         UpdateSegments();
     }
 

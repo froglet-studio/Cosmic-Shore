@@ -14,8 +14,8 @@ namespace CosmicShore.Game.Projectiles
         public Ship Ship;
         public bool ImpactOnEnd;
         public float Inertia = 1;
-
-
+        
+        [HideInInspector] public Vector3 InitialScale;
         [SerializeField] List<TrailBlockImpactEffects> trailBlockImpactEffects;
         [SerializeField] List<ShipImpactEffects> shipImpactEffects;
         [SerializeField] List<CrystalImpactEffects> crystalImpactEffects;
@@ -29,8 +29,14 @@ namespace CosmicShore.Game.Projectiles
 
         MeshRenderer meshRenderer;
 
+        private void Awake()
+        {
+            InitialScale = transform.localScale;
+        }
+
         void Start()
         {
+            
             if (spike) 
             {
                 //transform.localScale = new Vector3(.4f,.4f,2);

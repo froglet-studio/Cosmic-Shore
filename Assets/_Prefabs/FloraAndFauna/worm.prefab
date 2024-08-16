@@ -25,7 +25,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5119968425165880264}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -46.4, y: 59.2, z: 171.8}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 5, y: 5, z: 5}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -537,95 +537,15 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 848038690627444838}
     m_Modifications:
-    - target: {fileID: 480126851691364990, guid: c9f95330660985e47bea7e877307052d,
-        type: 3}
-      propertyPath: TrailBlockProperties.IsDangerous
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 480126851691364990, guid: c9f95330660985e47bea7e877307052d,
-        type: 3}
-      propertyPath: TrailBlockProperties.speedDebuffAmount
-      value: 0.1
-      objectReference: {fileID: 0}
-    - target: {fileID: 683149416487378677, guid: c9f95330660985e47bea7e877307052d,
-        type: 3}
-      propertyPath: TrailBlockProperties.IsDangerous
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 683149416487378677, guid: c9f95330660985e47bea7e877307052d,
-        type: 3}
-      propertyPath: TrailBlockProperties.speedDebuffAmount
-      value: 0.1
-      objectReference: {fileID: 0}
-    - target: {fileID: 1365572873028798184, guid: c9f95330660985e47bea7e877307052d,
-        type: 3}
-      propertyPath: TrailBlockProperties.IsDangerous
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 1365572873028798184, guid: c9f95330660985e47bea7e877307052d,
-        type: 3}
-      propertyPath: TrailBlockProperties.speedDebuffAmount
-      value: 0.1
-      objectReference: {fileID: 0}
-    - target: {fileID: 1633487663379386593, guid: c9f95330660985e47bea7e877307052d,
-        type: 3}
-      propertyPath: TrailBlockProperties.IsDangerous
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 1633487663379386593, guid: c9f95330660985e47bea7e877307052d,
-        type: 3}
-      propertyPath: TrailBlockProperties.speedDebuffAmount
-      value: 0.1
-      objectReference: {fileID: 0}
-    - target: {fileID: 2370713631990172506, guid: c9f95330660985e47bea7e877307052d,
-        type: 3}
-      propertyPath: m_LocalPosition.z
-      value: -8.68
-      objectReference: {fileID: 0}
-    - target: {fileID: 3813052494710447173, guid: c9f95330660985e47bea7e877307052d,
-        type: 3}
-      propertyPath: TrailBlockProperties.IsDangerous
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 3813052494710447173, guid: c9f95330660985e47bea7e877307052d,
-        type: 3}
-      propertyPath: TrailBlockProperties.speedDebuffAmount
-      value: 0.1
-      objectReference: {fileID: 0}
     - target: {fileID: 4184306513005020994, guid: c9f95330660985e47bea7e877307052d,
         type: 3}
       propertyPath: m_Name
       value: WormTail
       objectReference: {fileID: 0}
-    - target: {fileID: 5030052179269535068, guid: c9f95330660985e47bea7e877307052d,
-        type: 3}
-      propertyPath: LifeForm
-      value: 
-      objectReference: {fileID: 7583899961849885210}
-    - target: {fileID: 5032170557366743859, guid: c9f95330660985e47bea7e877307052d,
-        type: 3}
-      propertyPath: IsTail
-      value: 1
-      objectReference: {fileID: 0}
     - target: {fileID: 6445671494956753431, guid: c9f95330660985e47bea7e877307052d,
         type: 3}
       propertyPath: m_RootOrder
       value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 6445671494956753431, guid: c9f95330660985e47bea7e877307052d,
-        type: 3}
-      propertyPath: m_LocalScale.x
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 6445671494956753431, guid: c9f95330660985e47bea7e877307052d,
-        type: 3}
-      propertyPath: m_LocalScale.y
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 6445671494956753431, guid: c9f95330660985e47bea7e877307052d,
-        type: 3}
-      propertyPath: m_LocalScale.z
-      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6445671494956753431, guid: c9f95330660985e47bea7e877307052d,
         type: 3}
@@ -676,36 +596,6 @@ PrefabInstance:
         type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 6733718250746855355, guid: c9f95330660985e47bea7e877307052d,
-        type: 3}
-      propertyPath: TrailBlockProperties.IsDangerous
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 6733718250746855355, guid: c9f95330660985e47bea7e877307052d,
-        type: 3}
-      propertyPath: TrailBlockProperties.speedDebuffAmount
-      value: 0.1
-      objectReference: {fileID: 0}
-    - target: {fileID: 6794006014147692790, guid: c9f95330660985e47bea7e877307052d,
-        type: 3}
-      propertyPath: TrailBlockProperties.IsDangerous
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 6794006014147692790, guid: c9f95330660985e47bea7e877307052d,
-        type: 3}
-      propertyPath: TrailBlockProperties.speedDebuffAmount
-      value: 0.1
-      objectReference: {fileID: 0}
-    - target: {fileID: 7779358509603665235, guid: c9f95330660985e47bea7e877307052d,
-        type: 3}
-      propertyPath: TrailBlockProperties.IsDangerous
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 7779358509603665235, guid: c9f95330660985e47bea7e877307052d,
-        type: 3}
-      propertyPath: TrailBlockProperties.speedDebuffAmount
-      value: 0.1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: c9f95330660985e47bea7e877307052d, type: 3}

@@ -4841,6 +4841,8 @@ MonoBehaviour:
   Team: 0
   Ship: {fileID: 0}
   ImpactOnEnd: 1
+  Inertia: 1
+  InitialScale: {x: 0, y: 0, z: 0}
   trailBlockImpactEffects: 0f000000
   shipImpactEffects: 040000000300000002000000
   crystalImpactEffects: 
@@ -4849,10 +4851,10 @@ MonoBehaviour:
   spike: 0
   growthRate: 1
   friendlyFire: 1
-  AOEPrefab: {fileID: 1267448515133335184, guid: 2095ac49fc418ce40ae094cc104a8259,
+  AOEPrefab: {fileID: 447888847298330991, guid: b6aa24b5cd6a7f24c9f24c32c20eba91,
     type: 3}
-  minExplosionScale: 600
-  maxExplosionScale: 600
+  minExplosionScale: 70
+  maxExplosionScale: 70
   Charge: 0
 --- !u!199 &8504388981194176713
 ParticleSystemRenderer:

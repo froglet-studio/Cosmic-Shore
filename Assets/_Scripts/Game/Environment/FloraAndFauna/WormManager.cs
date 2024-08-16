@@ -14,6 +14,10 @@ public class WormManager : Population
     [SerializeField] int maxWormsAllowed = 10;
     [SerializeField] float targetUpdateInterval = 5f;
 
+    Vector3 headSpacing;
+    Vector3 tailSpacing;
+    Vector3 middleSpacing;
+
     List<Worm> activeWorms = new List<Worm>();
     float growthTimer;
     float targetUpdateTimer;
@@ -21,6 +25,9 @@ public class WormManager : Population
     protected override void Start()
     {
         base.Start();
+        headSpacing = wormPrefab.initialSegments[0].transform.position - wormPrefab.initialSegments[1].transform.position;
+        tailSpacing = wormPrefab.initialSegments[wormPrefab.initialSegments.Count - 1].transform.position - wormPrefab.initialSegments[wormPrefab.initialSegments.Count - 2].transform.position;
+        middleSpacing = wormPrefab.initialSegments[2].transform.position - wormPrefab.initialSegments[1].transform.position;
         SpawnInitialWorms();
     }
 
@@ -35,8 +42,7 @@ public class WormManager : Population
         for (int i = 0; i < initialWormCount; i++)
         {
             Vector3 spawnPosition = transform.position + Random.insideUnitSphere * spawnRadius;
-            Worm newWorm = CreateWorm(spawnPosition);
-
+            CreateWorm(spawnPosition);
         }
     }
 
@@ -76,6 +82,9 @@ public class WormManager : Population
         newWorm.Manager = this;
         newWorm.Team = Team;
         newWorm.transform.parent = transform;
+        newWorm.headSpacing = headSpacing;
+        newWorm.tailSpacing = tailSpacing;
+        newWorm.middleSpacing = middleSpacing;
         activeWorms.Add(newWorm);
         return newWorm;
     }
