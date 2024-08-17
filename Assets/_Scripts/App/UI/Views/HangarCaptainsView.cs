@@ -13,6 +13,7 @@ namespace CosmicShore
         [SerializeField] TMP_Text SelectedCaptainElementLabel;
         [SerializeField] TMP_Text SelectedCaptainQuote;
         [SerializeField] Image SelectedCaptainImage;
+        [SerializeField] Image SelectedCaptainShipImage;
 
         [Header("Captains - Upgrades UI")]
 
@@ -71,7 +72,6 @@ namespace CosmicShore
                 UpgradeButton.enabled = false;
             }
 
-
             // Populate Captain Details
             Debug.Log($"Populating Captain Details List: {captain.Name}");
             Debug.Log($"Populating Captain Details List: {captain.Description}");
@@ -82,6 +82,7 @@ namespace CosmicShore
             if (SelectedUpgradeDescription != null) SelectedUpgradeDescription.text = captain.Description;
             if (SelectedCaptainQuote != null) SelectedCaptainQuote.text = captain.Flavor;
             if (SelectedCaptainImage != null) SelectedCaptainImage.sprite = captain.Image;
+            if (SelectedCaptainShipImage != null) SelectedCaptainShipImage.sprite = captain.Ship.Icon;
         }
 
         public void PurchaseUpgrade()

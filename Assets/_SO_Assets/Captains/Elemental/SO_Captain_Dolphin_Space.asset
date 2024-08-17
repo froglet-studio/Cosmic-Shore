@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ce7474d4aed9d704ea0001a2338c0784, type: 3}
   m_Name: SO_Captain_Dolphin_Space
   m_EditorClassIdentifier: 
-  Name: Slingshot
+  Name: Echo
   Description: Widest blast angle when it gets the crystal.
   AIBehaviorDescription: 
   Flavor: '[Flavor text placeholder]'

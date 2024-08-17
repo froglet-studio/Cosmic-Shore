@@ -12,11 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ce7474d4aed9d704ea0001a2338c0784, type: 3}
   m_Name: SO_Captain_Squirrel_Mass
   m_EditorClassIdentifier: 
-  Name: Strider
+  Name: Bushy
   Description: A classic tale of love and kaiju
   AIBehaviorDescription: 
   Flavor: '[Placeholder Flavor Text]'
-  Image: {fileID: 21300000, guid: 55e25ee31d973e047ad460073fed0070, type: 3}
+  Image: {fileID: 21300000, guid: 79a9291c6e42ed543b1babbb0cdc14f2, type: 3}
   HeadshotImage: {fileID: 0}
   Icon: {fileID: 21300000, guid: 4bb626eb5275b9c41a2c6e117aee2f42, type: 3}
   SelectedIcon: {fileID: 21300000, guid: a631b4ddb4bf68b4bb89f43b7ab8380d, type: 3}
