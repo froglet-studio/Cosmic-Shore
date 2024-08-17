@@ -16,13 +16,15 @@ namespace CosmicShore.App.Systems
         /// Tracking for player's progress on the daily challenge reward ladder
         /// </summary>
         DailyChallengeRewardState rewardState;
-        public DailyChallengeRewardState RewardState { get { return rewardState; } private set { rewardState = value; } }
+        public DailyChallengeRewardState RewardState { get => rewardState;
+            private set => rewardState = value;
+        }
         
         /// <summary>
         /// Today's challenge
         /// </summary>
         DailyChallenge dailyChallenge;
-        public DailyChallenge DailyChallenge { get { return dailyChallenge; } }
+        public DailyChallenge DailyChallenge => dailyChallenge;
 
         /// <summary>
         /// Date that the current challenge is valid for
@@ -50,10 +52,6 @@ namespace CosmicShore.App.Systems
         readonly string RewardTierOneSatisfiedPrefKey = "RewardTierOneSatisfied";
         readonly string RewardTierTwoSatisfiedPrefKey = "RewardTierTwoSatisfied";
         readonly string RewardTierThreeSatisfiedPrefKey = "RewardTierThreeSatisfied";
-
-        public DailyChallengeReward TierOneReward { get => DailyGame.DailyChallengeTierOneReward; }
-        public DailyChallengeReward TierTwoReward { get => DailyGame.DailyChallengeTierTwoReward; }
-        public DailyChallengeReward TierThreeReward { get => DailyGame.DailyChallengeTierThreeReward; }
 
         void Start()
         {
@@ -99,15 +97,15 @@ namespace CosmicShore.App.Systems
             // Use the 32 least significant bits (& 0xFFFFFFFF) of the tick count from today's date in GMT as the random seed 
             DateTime currentDate = DateTime.UtcNow.Date;
             long dateTicks = currentDate.Ticks;
-            System.Random random = new System.Random((int)(dateTicks & 0xFFFFFFFF));
+            var random = new System.Random((int)(dateTicks & 0xFFFFFFFF));
 
             var trainingGames = Arcade.Instance.TrainingGames.GameList;
-            var dailyGame = trainingGames[random.Next(trainingGames.Count)] as SO_TrainingGame;
-            var dailyChallenge = new DailyChallenge();
-            dailyChallenge.GameMode = dailyGame.Game.Mode;
-            dailyChallenge.Intensity = random.Next(4);  // TODO: should this be 0-3 (as it is now) or 1-4?
+            var dailyGame = trainingGames[random.Next(trainingGames.Count)];
+            var challenge = new DailyChallenge();
+            challenge.GameMode = dailyGame.Game.Mode;
+            challenge.Intensity = random.Next(4);  // TODO: should this be 0-3 (as it is now) or 1-4?
 
-            return dailyChallenge;
+            return challenge;
         }
 
         public void PlayDailyChallenge()
@@ -148,7 +146,7 @@ namespace CosmicShore.App.Systems
             switch (tier)
             {
                 case 1:
-                    if (rewardState.RewardTierOneSatisfied && !rewardState.RewardTierOneClaimed)
+                    if (rewardState is { RewardTierOneSatisfied: true, RewardTierOneClaimed: false })
                     {
                         rewardState.RewardTierOneClaimed = true;
                         DailyRewardHandler.Instance.ClaimDailyChallengeReward(1, DailyGame.DailyChallengeTierOneReward.Value);
@@ -157,7 +155,7 @@ namespace CosmicShore.App.Systems
                     }
                     return false;
                 case 2:
-                    if (rewardState.RewardTierTwoSatisfied && !rewardState.RewardTierTwoClaimed)
+                    if (rewardState is { RewardTierTwoSatisfied: true, RewardTierTwoClaimed: false })
                     {
                         rewardState.RewardTierTwoClaimed = true;
                         DailyRewardHandler.Instance.ClaimDailyChallengeReward(2, DailyGame.DailyChallengeTierTwoReward.Value);
@@ -166,7 +164,7 @@ namespace CosmicShore.App.Systems
                     }
                     return false;
                 case 3:
-                    if (rewardState.RewardTierThreeSatisfied && !rewardState.RewardTierThreeClaimed)
+                    if (rewardState is { RewardTierThreeSatisfied: true, RewardTierThreeClaimed: false })
                     {
                         rewardState.RewardTierThreeClaimed = true;
                         DailyRewardHandler.Instance.ClaimDailyChallengeReward(3, DailyGame.DailyChallengeTierThreeReward.Value);

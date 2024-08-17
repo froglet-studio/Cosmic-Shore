@@ -38,8 +38,8 @@ namespace CosmicShore.App.UI
         public void ClaimReward()
         {
             Debug.Log($"DailyChallengeRewardButton - ClaimReward:{RewardTier}");
-            DailyChallengeSystem.Instance.ClaimReward(RewardTier);
-            MarkClaimed();
+            if(DailyChallengeSystem.Instance.ClaimReward(RewardTier))
+                MarkClaimed();
         }
 
         public void MarkClaimed()

@@ -47,7 +47,7 @@ MonoBehaviour:
   speed: 0
   MaxScale: 200
   ExplosionDuration: 2
-  ExplosionDelay: 0.2
+  ExplosionDelay: 0
   shipImpactEffects: 
   affectSelf: 0
   destructive: 1
@@ -55,34 +55,37 @@ MonoBehaviour:
   Team: 0
   Ship: {fileID: 0}
   AnonymousExplosion: 0
+  height: 800
   trailBlock: {fileID: 4563009547826722997, guid: d24789d6e79c0044194a6017909ecfb4,
     type: 3}
   baseBlockScale: {x: 3, y: 3, z: 10}
   shielded: 1
+  SecondaryExplosionDelay: 0.3
   numberOfRays: 12
   blocksPerRay: 6
   maxRadius: 80
+  minRadius: 10
   raySpread: 20
   scaleCurve:
     serializedVersion: 2
     m_Curve:
     - serializedVersion: 3
-      time: 0.05833435
-      value: 0.66509247
-      inSlope: 0
-      outSlope: 0
+      time: 0.062301636
+      value: 0.751091
+      inSlope: 0.39721414
+      outSlope: 0.39721414
       tangentMode: 0
       weightedMode: 0
       inWeight: 0
-      outWeight: 0
+      outWeight: 0.17647023
     - serializedVersion: 3
-      time: 1.010363
-      value: 1.6002039
-      inSlope: 0.64857346
-      outSlope: 0.64857346
+      time: 1.0063957
+      value: 1.5847658
+      inSlope: 0.37969396
+      outSlope: 0.37969396
       tangentMode: 0
       weightedMode: 0
-      inWeight: 0.106653236
+      inWeight: 0.17226854
       outWeight: 0
     m_PreInfinity: 2
     m_PostInfinity: 2
