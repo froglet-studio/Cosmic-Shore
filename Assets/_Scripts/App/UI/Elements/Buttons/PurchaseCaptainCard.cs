@@ -150,6 +150,7 @@ namespace CosmicShore
         IEnumerator PurchaseVisualEffectCoroutine()
         {
             ConfirmationModal.EmitIcons();
+            ConfirmationModal.UpdateBalance();
             yield return new WaitForSecondsRealtime(1.25f);
             // Close Modal Window
             ConfirmationModal.ModalWindowOut();

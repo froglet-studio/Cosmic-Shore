@@ -808,7 +808,7 @@ MonoBehaviour:
     type: 3}
   UnavailableBackgroundSprite: {fileID: 21300000, guid: 216b9611f3c0ebb4490a9f224ddb4953,
     type: 3}
-  CardFlipAnimDuration: 1
+  CardFlipAnimDuration: 0.5
   ConfirmationButton: {fileID: 0}
 --- !u!1 &5511208150155233086
 GameObject:

@@ -1,6 +1,7 @@
 using CosmicShore.App.UI.FX;
 using CosmicShore.Integrations.PlayFab.Economy;
 using System;
+using System.Collections;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -48,6 +49,27 @@ namespace CosmicShore.App.UI.Modals
         public void EmitIcons()
         {
             IconEmitter.EmitIcons();
+        }
+
+        public void UpdateBalance()
+        {
+            StartCoroutine(UpdateBalanceCoroutine());
+        }
+
+        IEnumerator UpdateBalanceCoroutine()
+        {
+            var crystalBalance = int.Parse(CrystalBalanceText.text);
+            var price = int.Parse(PriceLabel.text);
+            var duration = 1f;
+            var elapsedTime = 0f;
+
+            while (elapsedTime < duration)
+            {
+                CrystalBalanceText.text = ((int)(crystalBalance - (price*elapsedTime/duration))).ToString();
+                yield return null;
+                elapsedTime += Time.unscaledDeltaTime;
+            }
+            CrystalBalanceText.text = CatalogManager.Instance.GetCrystalBalance().ToString();
         }
     }
 }

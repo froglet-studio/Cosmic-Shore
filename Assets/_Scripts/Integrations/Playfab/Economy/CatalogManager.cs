@@ -30,6 +30,8 @@ namespace CosmicShore.Integrations.PlayFab.Economy
         public static event Action OnCurrencyBalanceChange;
         [SerializeField] List<VirtualItem> startingInventory = new();
 
+        public static bool CatalogLoaded { get; private set; }
+
         void Start()
         {
             Debug.Log("CatalogManager.Start");
@@ -154,6 +156,7 @@ namespace CosmicShore.Integrations.PlayFab.Economy
                 AddToStoreShelve(item.ContentType, converted);
             }
 
+            CatalogLoaded = true;
             OnLoadCatalogSuccess?.Invoke();
         }
 
@@ -305,6 +308,7 @@ namespace CosmicShore.Integrations.PlayFab.Economy
         {
             Debug.Log("CatalogManager.LoadPlayerInventory");
             var request = new GetInventoryItemsRequest();
+            request.Count = 50; // TODO: need to recursively load all like we don in the catalog
             //request.CustomTags
             
             _playFabEconomyInstanceAPI.GetInventoryItems(
@@ -583,6 +587,23 @@ namespace CosmicShore.Integrations.PlayFab.Economy
 
             return balance;
         }
+
+        public void RewardClaimed(Element crystalElementType, int value)
+        {
+            var crystalId = "";
+            foreach (var crystal in Inventory.crystals)
+            {
+                if (crystal.Tags.Contains(crystalElementType.ToString()))
+                {
+                    crystalId = crystal.ItemId;
+                    break;
+                }
+                Debug.Log($"RewardClaimed - {crystal.Type}:{crystal.Name}:{value}");
+            }
+            
+            UpdateCurrencyBalance(crystalId, value);
+        }
+
         void UpdateCurrencyBalance(string currencyItemId, int amount)
         {
             foreach (var item in StoreShelve.crystals)

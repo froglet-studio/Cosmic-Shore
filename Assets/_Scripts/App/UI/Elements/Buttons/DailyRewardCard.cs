@@ -29,7 +29,7 @@ namespace CosmicShore
         [SerializeField] Sprite ClockButtonBackgroundSprite;
         [SerializeField] TMP_Text TimeRemaining;
         [SerializeField] AdsSystem adsManager;
-        [SerializeField] float duration = 1.0f; // Duration for the full rotation
+        [SerializeField] float duration = .5f; // Duration for the full rotation
 
         ButtonMode Mode = ButtonMode.Free;
         string LastFreeClaimedDatePrefKey = "DailyRewardLastFreeClaimedDate";
@@ -44,7 +44,6 @@ namespace CosmicShore
             if (lastClaimedDate < DateTime.UtcNow.Date)
             {
                 EnterFreeMode();
-
             }
             else
             {
@@ -108,8 +107,6 @@ namespace CosmicShore
             AdButton.gameObject.SetActive(false);
             FreeButton.gameObject.SetActive(false);
         }
-
-
 
         public override void Purchase()
         {
@@ -176,9 +173,7 @@ namespace CosmicShore
             // Ensure the final rotation is exactly 90 degrees
             transform.localRotation = Quaternion.Euler(0, 90, 0);
 
-
             modeChangeRoutine?.Invoke();
-
 
             // Reset the timer
             elapsedTime = 0f;

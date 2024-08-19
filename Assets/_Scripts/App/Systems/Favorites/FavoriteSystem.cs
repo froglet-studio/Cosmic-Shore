@@ -18,6 +18,7 @@ namespace CosmicShore.App.Systems.Favorites
                 FavoriteGames = new List<MiniGames>();
                 DataAccessor.Save(GameFavoritesSaveFileName, FavoriteGames);
             }
+            Initialized = true;
         }
 
         public static bool IsFavorited(MiniGames game)

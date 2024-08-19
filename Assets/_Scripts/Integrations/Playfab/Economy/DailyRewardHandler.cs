@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using CosmicShore.Integrations.PlayFab.Authentication;
+using CosmicShore.Integrations.PlayFab.Economy;
 using CosmicShore.Integrations.PlayFab.Utility;
 using CosmicShore.Utility.Singleton;
 using PlayFab;
@@ -42,27 +43,30 @@ namespace CosmicShore.Integrations.PlayFab.CloudScripts
         public void Claim()
         {
             var request =
-                new ExecuteFunctionRequest //Set this to true if you would like this call to show up in PlayStream
+                new ExecuteFunctionRequest
                 {
                     Entity = _entity,
                     FunctionName = "Claim", //This should be the name of your Azure Function that you created.
                     GeneratePlayStreamEvent = false //Set this to true if you would like this call to show up in PlayStream
                 };
             
-            PlayFabCloudScriptAPI.ExecuteFunction(request, OnSaveRewardClaimTimeSuccess, PlayFabUtility.HandleErrorReport);
+            PlayFabCloudScriptAPI.ExecuteFunction(request, OnClaimDailyRewardSuccess, PlayFabUtility.HandleErrorReport);
         }
 
         /// <summary>
         /// On Saving Daily Reward Claim Time Delegate
         /// </summary>
         /// <param name="result">ExecuteFunctionResult</param>
-        private void OnSaveRewardClaimTimeSuccess(ExecuteFunctionResult result)
+        private void OnClaimDailyRewardSuccess(ExecuteFunctionResult result)
         {
             if (result.FunctionResultTooLarge ?? false)
             {
                 Debug.LogError("Cloud script - This can happen if you exceed the limit that can be returned from an Azure Function, See PlayFab Limits Page for details.");
                 return;
             }
+
+            CatalogManager.Instance.RewardClaimed(Element.Omni, CatalogManager.Instance.GetDailyChallengeTicket().Amount);
+
             Debug.Log($"Cloud script - The {result.FunctionName} function took {result.ExecutionTimeMilliseconds} to complete");
             Debug.Log($"Cloud script - Result: {result.FunctionResult}");
         }
@@ -102,6 +106,9 @@ namespace CosmicShore.Integrations.PlayFab.CloudScripts
                 GeneratePlayStreamEvent = false
             };
 
+            // TODO: P1 need to do this in the on success callback - extend the backend to return the reward value granted
+            CatalogManager.Instance.RewardClaimed(Element.Omni, rewardValue);
+
             Debug.Log($"ClaimDailyChallengeReward(int tier, int rewardValue) - tier:{tier}, value:{rewardValue}");
             PlayFabCloudScriptAPI.ExecuteFunction(request, OnClaimDailyChallengeRewardSuccess, PlayFabUtility.HandleErrorReport);
         }
@@ -114,7 +121,7 @@ namespace CosmicShore.Integrations.PlayFab.CloudScripts
                 Debug.LogError($"Cloud script - Exceed the Azure Function.");
                 return;
             }
-
+            
             Debug.Log($"Cloud script - The {result.FunctionName} function took {result.ExecutionTimeMilliseconds} to complete");
             Debug.Log($"Cloud script - Result: {result.FunctionResult}");
         }
