@@ -1,6 +1,6 @@
 using CosmicShore.App.Systems.CTA;
 using CosmicShore.App.UI;
-using CosmicShore.App.UI.Menus;
+using CosmicShore.App.UI.Screens;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -34,7 +34,7 @@ namespace CosmicShore
         [SerializeField] Sprite ActiveLockSprite;
         [SerializeField] Sprite InactiveLockSprite;
 
-        [HideInInspector] public HangarMenu HangarMenu;
+        [HideInInspector] public HangarScreen HangarMenu;
         public SO_Ship Ship;
         int index;
 

@@ -1,20 +1,12 @@
 using System.Collections;
-using TMPro;
 using UnityEngine;
 
-namespace CosmicShore.App.UI
+namespace CosmicShore.App.UI.Modals
 {
     public class ModalWindowManager : MonoBehaviour
     {
-        [Header("Resources")]
-        public TextMeshProUGUI windowTitle;
-        public TextMeshProUGUI windowDescription;
-
         [Header("Settings")]
         public bool sharpAnimations = false;
-        public bool useCustomTexts = false;
-        public string titleText = "Title";
-        [TextArea] public string descriptionText = "Description here";
 
         Animator mWindowAnimator;
         bool isOn = false;
@@ -22,12 +14,6 @@ namespace CosmicShore.App.UI
         void Start()
         {
             mWindowAnimator = gameObject.GetComponent<Animator>();
-
-            if (useCustomTexts == false)
-            {
-                windowTitle.text = titleText;
-                windowDescription.text = descriptionText;
-            }
 
             gameObject.SetActive(false);
         }

@@ -8,9 +8,9 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace CosmicShore.App.UI.Menus
+namespace CosmicShore.App.UI.Views
 {
-    public class LoadoutMenu : MonoBehaviour
+    public class ArcadeLoadoutView : MonoBehaviour
     {
         [SerializeField] SO_GameList AllGames;
         [SerializeField] SO_ShipList AllShips;

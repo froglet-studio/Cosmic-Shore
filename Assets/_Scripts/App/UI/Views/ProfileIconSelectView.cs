@@ -3,7 +3,7 @@ using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace CosmicShore
+namespace CosmicShore.App.UI.Views
 {
     public class ProfileIconSelectView : MonoBehaviour
     {

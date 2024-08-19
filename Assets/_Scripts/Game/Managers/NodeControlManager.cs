@@ -57,12 +57,12 @@ public class NodeControlManager : Singleton<NodeControlManager>
 
     void OnEnable()
     {
-        GameManager.onGameOver += OutputNodeControl;
+        GameManager.OnGameOver += OutputNodeControl;
     }
 
     void OnDisable()
     {
-        GameManager.onGameOver -= OutputNodeControl;
+        GameManager.OnGameOver -= OutputNodeControl;
     }
 
     public void AddItem(NodeItem item)

@@ -19,14 +19,9 @@ namespace CosmicShore.App.Systems.Ads
         private string _adUnitId; // These will fall back to android for unsupported platforms
         private string _gameId;
 
-        FirebaseAnalyticsController _firebaseAnalyticsController;
-
-        public delegate void OnAdInitializationComplete();
-        public static event OnAdInitializationComplete AdInitializationComplete;
-        public delegate void OnAdInitializationFailed();
-        public static event OnAdInitializationFailed AdInitializationFailed;
-        public delegate void OnAdLoaded();
-        public static event OnAdLoaded AdLoaded;
+        public static Action AdInitializationComplete;
+        public static Action AdInitializationFailed;
+        public static Action AdLoaded;
         public delegate void OnAdFailedToLoad(string adUnitId, UnityAdsLoadError error, string message);
         public static event OnAdFailedToLoad AdFailedToLoad;
         public delegate void OnAdShowClick(string adUnitId);
@@ -40,7 +35,6 @@ namespace CosmicShore.App.Systems.Ads
         void Awake()
         {
             Initialize();
-            _firebaseAnalyticsController = FirebaseAnalyticsController.Instance;
         }
 
         private void OnEnable()

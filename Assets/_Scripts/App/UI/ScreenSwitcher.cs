@@ -1,5 +1,5 @@
 using CosmicShore.App.Systems.UserActions;
-using CosmicShore.App.UI.Menus;
+using CosmicShore.App.UI.Screens;
 using CosmicShore.Core;
 using System;
 using System.Collections;
@@ -12,9 +12,8 @@ using UnityEngine.UI;
 
 namespace CosmicShore.App.UI
 {
-    public class PanelSwipe : MonoBehaviour, IDragHandler, IEndDragHandler
+    public class ScreenSwitcher : MonoBehaviour, IDragHandler, IEndDragHandler
     {
-
         public enum MenuScreens
         {
             STORE = 0,
@@ -24,22 +23,12 @@ namespace CosmicShore.App.UI
             HANGAR = 4,
         }
 
-        [Serializable]
-        public struct ScreenAnimator
-        {
-            public MenuScreens Screen;
-            public MenuAnimator Animator;
-        }
-
         [SerializeField] float percentThreshold = 0.2f; // Sensitivity of swipe detector. Smaller number = more sensitive
         [SerializeField] float easing = 0.5f; // Makes the transition less jarring
         [SerializeField] int currentScreen; // Keeps track of how many screens you have in the menu system. From 0 to 4, home = 2
 
         [SerializeField] Transform NavBar;
-        [SerializeField] List<ScreenAnimator> NavigateToScreenAnimations;
-
-
-        [SerializeField] HangarMenu HangarMenu;
+        [SerializeField] HangarScreen HangarMenu;
         [SerializeField] LeaderboardsMenu LeaderboardMenu;
 
         Vector3 panelLocation;
@@ -111,14 +100,6 @@ namespace CosmicShore.App.UI
                 GameManager.UnPauseGame();
             else
                 GameManager.PauseGame();
-
-            foreach (var screenAnimation in NavigateToScreenAnimations)
-            {
-                if ((int)screenAnimation.Screen == ScreenIndex)
-                {
-                    screenAnimation.Animator.Animate();
-                }
-            }
 
             Vector3 newLocation = new Vector3(-ScreenIndex * Screen.width, 0, 0);
             panelLocation = newLocation;

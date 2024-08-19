@@ -1,11 +1,11 @@
 ﻿using UnityEngine;
 
-namespace CosmicShore.App.UI.Menus
+namespace CosmicShore.App.UI.Screens
 {
     /// <summary>
     /// Provides high level functionality to panels in the main menu scene
     /// </summary>
-    public class MainMenu : MonoBehaviour
+    public class HomeScreen : MonoBehaviour
     {
         [SerializeField] bool DebugFirstAppLaunch = false;
         [SerializeField] GameObject FirstAppLaunchScreen;

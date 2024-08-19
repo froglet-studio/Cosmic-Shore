@@ -1,10 +1,11 @@
 using CosmicShore.Integrations.PlayFab.Economy;
 using CosmicShore.Models;
+using CosmicShore;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace CosmicShore
+namespace CosmicShore.App.UI.Views
 {
     public class HangarCaptainsView : View
     {
@@ -58,7 +59,7 @@ namespace CosmicShore
             crystalRequirementSatisfied = crystalBalance >= crystalsNeeded;
             SelectedUpgradeCrystalRequirement.text = string.Format(CrystalRequirementTemplate, crystalBalance, crystalsNeeded, crystalRequirementSatisfied ? SatisfiedMarkdownColor : UnsatisfiedMarkdownColor);
 
-            SelectedUpgradeCrystalRequirementImage.sprite = Elements.Get(captain.PrimaryElement).GetFullIcon(crystalRequirementSatisfied);
+            SelectedUpgradeCrystalRequirementImage.sprite = CosmicShore.Elements.Get(captain.PrimaryElement).GetFullIcon(crystalRequirementSatisfied);
 
             // Upgrade Button
             if (xpRequirementSatisfied && crystalRequirementSatisfied)

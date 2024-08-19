@@ -1,11 +1,11 @@
-using CosmicShore.App.UI;
+using CosmicShore.App.UI.FX;
 using CosmicShore.Integrations.PlayFab.Economy;
 using System;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace CosmicShore
+namespace CosmicShore.App.UI.Modals
 {
     public class PurchaseConfirmationModal : ModalWindowManager
     {

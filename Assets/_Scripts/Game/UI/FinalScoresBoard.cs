@@ -21,12 +21,12 @@ namespace CosmicShore.Game.UI
 
         private void OnEnable()
         {
-            GameManager.onGameOver += OnGameOver;
+            GameManager.OnGameOver += OnGameOver;
         }
 
         private void OnDisable()
         {
-            GameManager.onGameOver -= OnGameOver;
+            GameManager.OnGameOver -= OnGameOver;
         }
 
         private void OnGameOver()

@@ -21,14 +21,14 @@ namespace CosmicShore.Integrations.Firebase.Controller
 
         private void OnEnable()
         {
-            NetworkMonitor.NetworkConnectionFound += OnNetworkEnabled;
-            NetworkMonitor.NetworkConnectionLost += OnNetworkDisabled;
+            NetworkMonitor.OnNetworkConnectionFound += OnNetworkEnabled;
+            NetworkMonitor.OnNetworkConnectionLost += OnNetworkDisabled;
         }
 
         private void OnDisable()
         {
-            NetworkMonitor.NetworkConnectionFound -= OnNetworkEnabled;
-            NetworkMonitor.NetworkConnectionLost -= OnNetworkDisabled;
+            NetworkMonitor.OnNetworkConnectionFound -= OnNetworkEnabled;
+            NetworkMonitor.OnNetworkConnectionLost -= OnNetworkDisabled;
         }
 
         /// <summary>

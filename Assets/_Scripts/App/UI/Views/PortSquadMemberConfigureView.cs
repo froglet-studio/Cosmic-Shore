@@ -1,15 +1,13 @@
-using CosmicShore.App.UI;
-using CosmicShore.App.UI.Menus;
 using UnityEngine;
 
-namespace CosmicShore
+namespace CosmicShore.App.UI.Views
 {
-    public class SquadMemberConfigureView : MonoBehaviour
+    public class PortSquadMemberConfigureView : MonoBehaviour
     {
         [SerializeField] SquadMemberCard squadMemberCard;
-        [SerializeField] SquadCaptainSelectionView captainSelectView;
+        [SerializeField] PortSquadCaptainSelectionView captainSelectView;
         [SerializeField] ShipSelectionView shipSelectionView;
-        [SerializeField] SquadView squadView;
+        [SerializeField] PortSquadView squadView;
 
         // TODO: Need to pull this from inventory
         [SerializeField] SO_ShipList PlayerShips;

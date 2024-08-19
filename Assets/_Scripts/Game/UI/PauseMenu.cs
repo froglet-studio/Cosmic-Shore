@@ -6,7 +6,7 @@ using CosmicShore.Core;
 /// </summary>
 
 // TODO: P1 - Need to unify this menu code with Main Menu Code
-namespace CosmicShore.App.UI.Menus
+namespace CosmicShore.App.UI.Screens
 {
     public class PauseMenu : MonoBehaviour
     {

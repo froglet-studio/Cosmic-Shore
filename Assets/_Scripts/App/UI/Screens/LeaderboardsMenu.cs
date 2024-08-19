@@ -9,7 +9,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace CosmicShore.App.UI.Menus
+namespace CosmicShore.App.UI.Screens
 {
     [RequireComponent(typeof(MenuAudio))]
     public class LeaderboardsMenu : MonoBehaviour

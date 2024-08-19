@@ -54,8 +54,8 @@ namespace CosmicShore.Integrations.PlayFab.PlayStream
 
         private void Start()
         {
-            NetworkMonitor.NetworkConnectionFound += ComeOnline;
-            NetworkMonitor.NetworkConnectionLost += GoOffline;
+            NetworkMonitor.OnNetworkConnectionFound += ComeOnline;
+            NetworkMonitor.OnNetworkConnectionLost += GoOffline;
             PlayerDataController.OnProfileLoaded += ReportAndFlushOfflineStatistics;
             this.LogWithClassMethod(MethodBase.GetCurrentMethod()?.Name, "Initiated.");
         }
@@ -65,8 +65,8 @@ namespace CosmicShore.Integrations.PlayFab.PlayStream
         /// </summary>
         private void OnDestroy()
         {
-            NetworkMonitor.NetworkConnectionFound -= ComeOnline;
-            NetworkMonitor.NetworkConnectionLost -= GoOffline;
+            NetworkMonitor.OnNetworkConnectionFound -= ComeOnline;
+            NetworkMonitor.OnNetworkConnectionLost -= GoOffline;
             PlayerDataController.OnProfileLoaded -= ReportAndFlushOfflineStatistics;
             this.LogWithClassMethod(MethodBase.GetCurrentMethod()?.Name, "this instance is disposed.");
         }

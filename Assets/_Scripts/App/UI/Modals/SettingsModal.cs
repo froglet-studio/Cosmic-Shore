@@ -1,9 +1,9 @@
 using CosmicShore.Core;
 using UnityEngine;
 
-namespace CosmicShore.App.UI.Menus
+namespace CosmicShore.App.UI.Modals
 {
-    public class OptionsMenu : MonoBehaviour
+    public class SettingsModal : ModalWindowManager
     {
         public void ToggleMusicEnabledSetting()
         {

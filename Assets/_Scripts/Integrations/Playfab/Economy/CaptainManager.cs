@@ -61,7 +61,7 @@ namespace CosmicShore.Integrations.PlayFab.Economy
 
         void OnEnable()
         {
-            XpHandler.XPLoaded += LoadCaptainData;
+            XpHandler.OnXPLoaded += LoadCaptainData;
 
             CatalogManager.OnLoadInventory += LoadCaptainData;
             CatalogManager.OnInventoryChange += LoadCaptainData;
@@ -69,7 +69,7 @@ namespace CosmicShore.Integrations.PlayFab.Economy
 
         void OnDisable()
         {
-            XpHandler.XPLoaded -= LoadCaptainData;
+            XpHandler.OnXPLoaded -= LoadCaptainData;
 
             CatalogManager.OnLoadInventory += LoadCaptainData;
             CatalogManager.OnInventoryChange -= LoadCaptainData;

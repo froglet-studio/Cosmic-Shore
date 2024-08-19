@@ -38,7 +38,7 @@ namespace CosmicShore.Integrations.PlayFab.Economy
             OnLoadCatalogSuccess += LoadPlayerInventory;
             OnLoadInventory += GrantStartingInventoryIfInventoryIsEmpty;
 
-            NetworkMonitor.NetworkConnectionLost += Inventory.LoadFromDisk;
+            NetworkMonitor.OnNetworkConnectionLost += Inventory.LoadFromDisk;
         }
 
         public void OnDestroy()
@@ -48,7 +48,7 @@ namespace CosmicShore.Integrations.PlayFab.Economy
             OnLoadCatalogSuccess -= LoadPlayerInventory;
             OnLoadInventory -= GrantStartingInventoryIfInventoryIsEmpty;
 
-            NetworkMonitor.NetworkConnectionLost -= Inventory.LoadFromDisk;
+            NetworkMonitor.OnNetworkConnectionLost -= Inventory.LoadFromDisk;
         }
 
         #region Initialize PlayFab Economy API with Auth Context

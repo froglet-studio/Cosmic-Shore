@@ -1,3 +1,4 @@
+using CosmicShore.App.UI.Modals;
 using CosmicShore.Integrations.PlayFab.Economy;
 using UnityEngine;
 using UnityEngine.UI;

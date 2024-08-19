@@ -3,6 +3,7 @@ using CosmicShore.App.Systems.Favorites;
 using CosmicShore.App.Systems.Loadout;
 using CosmicShore.App.Systems.UserActions;
 using CosmicShore.App.UI.Elements;
+using CosmicShore.App.UI.Modals;
 using CosmicShore.Core;
 using CosmicShore.Game.Arcade;
 using CosmicShore.Integrations.PlayFab.Economy;
@@ -14,9 +15,9 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.Video;
 
-namespace CosmicShore.App.UI.Menus
+namespace CosmicShore.App.UI.Views
 {
-    public class ExploreMenu : MonoBehaviour
+    public class ArcadeExploreView : MonoBehaviour
     {
         [Header("Game Selection View")]
         [SerializeField] SO_GameList GameList;
@@ -103,7 +104,7 @@ namespace CosmicShore.App.UI.Menus
                 gameCard.GetComponent<Button>().onClick.RemoveAllListeners();
                 gameCard.GetComponent<Button>().onClick.AddListener(() => SelectGame(game));
                 gameCard.GetComponent<Button>().onClick.AddListener(() => GameSelectionGrid.GetComponent<MenuAudio>().PlayAudio());
-                gameCard.ExploreMenu = this;
+                gameCard.ExploreView = this;
                 
                 if (gameCard.TryGetComponent(out CallToActionTarget target))
                 {
@@ -112,7 +113,7 @@ namespace CosmicShore.App.UI.Menus
                 else
                 {
                     Debug.LogWarningFormat("{0} - The {1} game card does not have Call To Action Target Component. Please attach it.", 
-                        nameof(ExploreMenu), game.CallToActionTargetType.ToString());
+                        nameof(ArcadeExploreView), game.CallToActionTargetType.ToString());
                 }
                 
                 gameCard.gameObject.SetActive(true);

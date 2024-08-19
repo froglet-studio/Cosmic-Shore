@@ -3,9 +3,9 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace CosmicShore
+namespace CosmicShore.App.UI.Views
 {
-    public class SquadCaptainSelectionView : View
+    public class PortSquadCaptainSelectionView : View
     {
         [SerializeField] List<GameObject> Rows;
         [SerializeField] Color32 SelectedRowColor = Color.gray;

@@ -1,4 +1,4 @@
-using CosmicShore.App.UI.Menus;
+using CosmicShore.App.UI.Views;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -7,7 +7,7 @@ namespace CosmicShore.App.UI.Elements
     public class HangarMenuViewSelect : MonoBehaviour
     {
         [SerializeField] GameObject exploreMenu;    // TODO: P1 Retype from GameObject to ExploreMenu
-        [SerializeField] SquadView squadMenu;
+        [SerializeField] PortSquadView squadMenu;
         [SerializeField] Toggle SquadButton;
         [SerializeField] Toggle ExploreButton;
 

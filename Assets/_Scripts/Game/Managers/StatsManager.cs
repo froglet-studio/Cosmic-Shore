@@ -270,14 +270,14 @@ public class StatsManager : Singleton<StatsManager>
 
     void OnEnable()
     {
-        GameManager.onPlayGame += ResetStats;
-        GameManager.onGameOver += OutputRoundStats;
+        GameManager.OnPlayGame += ResetStats;
+        GameManager.OnGameOver += OutputRoundStats;
     }
 
     void OnDisable()
     {
-        GameManager.onPlayGame -= ResetStats;
-        GameManager.onGameOver -= OutputRoundStats;
+        GameManager.OnPlayGame -= ResetStats;
+        GameManager.OnGameOver -= OutputRoundStats;
     }
 
     void MaybeCreateDictionaryEntries(Teams team, string playerName)

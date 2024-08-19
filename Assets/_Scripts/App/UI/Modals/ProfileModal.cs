@@ -10,9 +10,9 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace CosmicShore.App.UI.Menus
+namespace CosmicShore.App.UI.Modals
 {
-    public class ProfileMenu : MonoBehaviour
+    public class ProfileModal : ModalWindowManager
     {
         [SerializeField] GameObject BusyIndicator;
 

@@ -1,4 +1,4 @@
-using CosmicShore.App.UI.Menus;
+using CosmicShore.App.UI.Screens;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -6,7 +6,7 @@ namespace CosmicShore
 {
     public class HangarTrainingGameButton : MonoBehaviour
     {
-        [SerializeField] HangarMenu HangarMenu;
+        [SerializeField] HangarScreen HangarMenu;
         [SerializeField] Image ElementOneImage;
         [SerializeField] Image ElementTwoImage;
         [SerializeField] Image BorderImage;

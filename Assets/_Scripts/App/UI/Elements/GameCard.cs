@@ -1,5 +1,5 @@
 using CosmicShore.App.Systems.Favorites;
-using CosmicShore.App.UI.Menus;
+using CosmicShore.App.UI.Views;
 using System.Linq;
 using TMPro;
 using UnityEngine;
@@ -13,14 +13,13 @@ namespace CosmicShore.App.UI.Elements
         [SerializeField] SO_GameList AllGames;
         [SerializeField] Sprite StarIconActive;
         [SerializeField] Sprite StarIconInActive;
-        [HideInInspector] public ExploreMenu ExploreMenu;
+        [HideInInspector] public ArcadeExploreView ExploreView;
 
         [Header("Placeholder Locations")]
         [SerializeField] TMP_Text GameTitle;
         [SerializeField] Image BackgroundImage;
         [SerializeField] Image StarImage;
         [SerializeField] int Index;
-
 
         bool favorited;
         [SerializeField] public bool Favorited
@@ -65,7 +64,7 @@ namespace CosmicShore.App.UI.Elements
             Favorited = !Favorited;
             StarImage.sprite = Favorited ? StarIconActive : StarIconInActive;
             FavoriteSystem.ToggleFavorite(gameMode);
-            ExploreMenu.PopulateGameSelectionList();
+            ExploreView.PopulateGameSelectionList();
         }
 
         public void OnCardClicked()

@@ -3,6 +3,7 @@ using UnityEngine.UI;
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
+using CosmicShore.App.UI.Views;
 
 namespace CosmicShore.App.UI
 {

@@ -1,12 +1,13 @@
 using CosmicShore.App.Systems;
+using CosmicShore.App.UI.Views;
 using CosmicShore.Core;
 using System;
 using TMPro;
 using UnityEngine;
 
-namespace CosmicShore.App.UI
+namespace CosmicShore.App.UI.Modals
 {
-    public class ArcadeGameConfigureMenu : MonoBehaviour
+    public class DailyChallengeModal : MonoBehaviour
     {
         [SerializeField] DailyChallengeGameView GameView;
         [SerializeField] TMP_Text TimeRemaining;

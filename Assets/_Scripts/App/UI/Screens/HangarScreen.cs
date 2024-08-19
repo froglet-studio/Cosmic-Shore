@@ -1,12 +1,13 @@
+using CosmicShore.App.UI.Views;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace CosmicShore.App.UI.Menus
+namespace CosmicShore.App.UI.Screens
 {
-    public class HangarMenu : MonoBehaviour
+    public class HangarScreen : MonoBehaviour
     {
         [SerializeField] SO_ShipList ShipList;
         [SerializeField] Transform ShipSelectionContainer;
@@ -14,17 +15,11 @@ namespace CosmicShore.App.UI.Menus
         [SerializeField] HangarShipSelectNavLink ShipSelectCardPrefab;
         [SerializeField] NavGroup TopNav;
 
-        // TODO: the conversion over to NavLink/NavGroup paradigm isn't complete
-        [Header("Overview View")]
-        [SerializeField] HangarOverviewView OverviewView;
-
-        [Header("Abilities View")]
+        [Header("Views")]
+        [SerializeField] HangarOverviewView OverviewView;   // TODO: the conversion over to NavLink/NavGroup paradigm isn't complete
         [SerializeField] HangarAbilitiesView AbilitiesView;
-
-        [Header("Captains View")]
         [SerializeField] HangarCaptainsView CaptainsView;
         [SerializeField] Transform CaptainSelectionContainer; // TODO: move to Captains View
-
 
         [Header("Training UI")]
         [SerializeField] GameObject TrainingView;
@@ -168,12 +163,12 @@ namespace CosmicShore.App.UI.Menus
             }
             catch (ArgumentOutOfRangeException argumentOutOfRangeException)
             {
-                Debug.LogWarningFormat("{0} - {1} - The ship lacks captain assets. Please add them. {2}", nameof(HangarMenu),
+                Debug.LogWarningFormat("{0} - {1} - The ship lacks captain assets. Please add them. {2}", nameof(HangarScreen),
                     nameof(SelectCaptain), argumentOutOfRangeException.Message);
             }
             catch (NullReferenceException nullReferenceException)
             {
-                Debug.LogWarningFormat("{0} - {1} - The ship lacks captain assets. Please add them. {2}", nameof(HangarMenu),
+                Debug.LogWarningFormat("{0} - {1} - The ship lacks captain assets. Please add them. {2}", nameof(HangarScreen),
                     nameof(SelectCaptain), nullReferenceException.Message);
             }
 
@@ -203,12 +198,12 @@ namespace CosmicShore.App.UI.Menus
             }
             catch (ArgumentOutOfRangeException argumentOutOfRangeException)
             {
-                Debug.LogWarningFormat("{0} - {1} - The ship lacks training games. Please add them. {2}", nameof(HangarMenu),
+                Debug.LogWarningFormat("{0} - {1} - The ship lacks training games. Please add them. {2}", nameof(HangarScreen),
                     nameof(SelectTrainingGame), argumentOutOfRangeException.Message);
             }
             catch (NullReferenceException nullReferenceException)
             {
-                Debug.LogWarningFormat("{0} - {1} - The ship lacks training games. Please add them. {2}", nameof(HangarMenu),
+                Debug.LogWarningFormat("{0} - {1} - The ship lacks training games. Please add them. {2}", nameof(HangarScreen),
                     nameof(SelectTrainingGame), nullReferenceException.Message);
             }
 

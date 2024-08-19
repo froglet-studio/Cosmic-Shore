@@ -1,15 +1,16 @@
 using CosmicShore.App.Systems.Squads;
+using CosmicShore.App.UI.Modals;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Serialization;
 
-namespace CosmicShore.App.UI.Menus
+namespace CosmicShore.App.UI.Views
 {
-    public class SquadView : View
+    public class PortSquadView : View
     {
         [FormerlySerializedAs("captainSelectModal")]
         [SerializeField] ModalWindowManager squadMemberSelectModal;
-        [SerializeField] SquadMemberConfigureView squadMemberConfigureView;
+        [SerializeField] PortSquadMemberConfigureView squadMemberConfigureView;
 
         [SerializeField] SquadMemberCard PlayerCaptainButton;
         [SerializeField] SquadMemberCard RogueOneCaptainButton;

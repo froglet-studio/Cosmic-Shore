@@ -1,4 +1,4 @@
-using CosmicShore.App.UI.Menus;
+using CosmicShore.App.UI.Screens;
 using CosmicShore.Integrations.PlayFab.Economy;
 using CosmicShore.Models;
 using TMPro;
@@ -9,7 +9,7 @@ namespace CosmicShore
 {
     public class CaptainUpgradeSelectionCard : MonoBehaviour
     {
-        [SerializeField] HangarMenu HangarMenu;
+        [SerializeField] HangarScreen HangarMenu;
         [SerializeField] int Index;
         [SerializeField] TMP_Text LevelText;
         [SerializeField] Image BorderImage;

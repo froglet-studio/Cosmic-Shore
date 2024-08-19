@@ -1,3 +1,5 @@
+using CosmicShore.App.UI.Modals;
+using CosmicShore.App.UI.Views;
 using CosmicShore.Integrations.PlayFab.Economy;
 using System.Collections.Generic;
 using TMPro;
@@ -6,7 +8,7 @@ using UnityEngine.UI;
 
 namespace CosmicShore.App.Ui.Menus
 {
-    public class StoreMenu : View
+    public class StoreScreen : View
     {
         [Header("Crystal Balance")]
         [SerializeField] TMP_Text CrystalBalance;

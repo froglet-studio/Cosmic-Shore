@@ -1,13 +1,17 @@
 using CosmicShore.App.Systems.UserActions;
+using CosmicShore.App.UI.Views;
 using UnityEngine;
+using UnityEngine.Serialization;
 using UnityEngine.UI;
 
-namespace CosmicShore.App.UI.Menus
+namespace CosmicShore.App.UI.Screens
 {
-    public class ArcadeMenu : MonoBehaviour
+    public class ArcadeScreen : MonoBehaviour
     {
-        [SerializeField] ExploreMenu exploreMenu;
-        [SerializeField] LoadoutMenu loadoutMenu;
+        [FormerlySerializedAs("exploreMenu")]
+        [SerializeField] ArcadeExploreView ExploreView;
+        [FormerlySerializedAs("loadoutMenu")]
+        [SerializeField] ArcadeLoadoutView LoadoutView;
         [SerializeField] Toggle LoadoutButton;
         [SerializeField] Toggle ExploreButton;
 
@@ -23,8 +27,8 @@ namespace CosmicShore.App.UI.Menus
             else
                 UserActionSystem.Instance.CompleteAction(UserActionType.ViewArcadeExploreMenu);
 
-            loadoutMenu.gameObject.SetActive(loadout);
-            exploreMenu.gameObject.SetActive(!loadout);
+            LoadoutView.gameObject.SetActive(loadout);
+            ExploreView.gameObject.SetActive(!loadout);
         }
     }
 }

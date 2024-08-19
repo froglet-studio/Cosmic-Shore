@@ -6,9 +6,9 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace CosmicShore
+namespace CosmicShore.App.UI.Modals
 {
-    public class InitializingBumper : MonoBehaviour
+    public class AppInitializationModal : MonoBehaviour
     {
         [SerializeField] TMP_Text InititizingText;
         [SerializeField] Animator Animator;
@@ -17,7 +17,6 @@ namespace CosmicShore
 
         void OnEnable()
         {
-
             AuthenticationManager.OnLoginSuccess += OnAuthenticated;
             PlayerDataController.OnProfileLoaded += OnProfileLoaded;
             CatalogManager.OnLoadCatalogSuccess += OnCatalogLoaded;

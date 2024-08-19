@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using CosmicShore.Integrations.PlayFab.PlayerData;
 using CosmicShore.Models;
@@ -34,8 +35,7 @@ namespace CosmicShore.App.Systems.Xp
         /// <summary>
         /// Delegate invoked when exploded, err when XP Loaded
         /// </summary>
-        public delegate void OnXPLoaded();
-        public static event OnXPLoaded XPLoaded;
+        public static Action OnXPLoaded;
 
         /// <summary>
         /// Captain Xp key for querying data from PlayFab data storage, not used for PlayFab API calls now.
@@ -114,7 +114,7 @@ namespace CosmicShore.App.Systems.Xp
             
             Debug.Log($"OnLoadCaptainXpData - Custom Data: {result.CustomData}");
 
-            XPLoaded?.Invoke();
+            OnXPLoaded?.Invoke();
         }
 
         /// <summary>

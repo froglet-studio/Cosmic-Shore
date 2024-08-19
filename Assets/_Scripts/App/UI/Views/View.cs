@@ -1,8 +1,7 @@
-using CosmicShore.App.UI;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace CosmicShore
+namespace CosmicShore.App.UI.Views
 {
     public abstract class View : MonoBehaviour
     {

@@ -3,7 +3,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace CosmicShore.App.UI
+namespace CosmicShore.App.UI.Views
 {
     public class DailyChallengeGameView : View
     {
