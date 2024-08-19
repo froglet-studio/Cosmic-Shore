@@ -1,6 +1,7 @@
 using CosmicShore.App.UI.Modals;
 using CosmicShore.App.UI.Views;
 using CosmicShore.Integrations.PlayFab.Economy;
+using CosmicShore.Models;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -21,11 +22,15 @@ namespace CosmicShore.App.Ui.Menus
         [SerializeField] List<HorizontalLayoutGroup> CaptainPurchaseRows;
         [SerializeField] PurchaseConfirmationModal PurchaseConfirmationModal;
         [SerializeField] Button PurchaseConfirmationButton;
+        [SerializeField] int CaptainsPerRow = 3;
+        [SerializeField] int MaxCaptainRows = 2;
 
         [Header("Game Purchasing")]
         [SerializeField] GameObject GamePurchaseSection;
         [SerializeField] PurchaseGameCard PurchaseGamePrefab;
         [SerializeField] List<HorizontalLayoutGroup> GamePurchaseRows;
+        [SerializeField] int GamesPerRow = 2;
+        [SerializeField] int MaxGameRows = 2;
 
         [Header("Daily Challenge and Faction Tickets")]
         //[SerializeField] PurchaseGameplayTicketCard FactionMissionTicketCard;
@@ -82,9 +87,6 @@ namespace CosmicShore.App.Ui.Menus
             PopulateGamePurchaseCards();
         }
 
-        [SerializeField] int CaptainsPerRow = 3;
-        [SerializeField] int MaxCaptainRows = 2;
-
         void PopulateCaptainPurchaseCards()
         {
             if (captainCardsPopulated)
@@ -120,7 +122,7 @@ namespace CosmicShore.App.Ui.Menus
                 purchaseCaptainCard.transform.SetParent(row.transform, false);
 
                 captainIndex++;
-                if (captainIndex % CaptainsPerRow == 0 && captainIndex != captains.Count) // Second check handles an edge case - prevents an empty row from being displayed
+                if (captainIndex % CaptainsPerRow == 0 && captainIndex != captains.Count) // Second check is to prevent an empty row from being displayed
                 {
                     rowIndex++;
                     if (rowIndex < MaxCaptainRows)
@@ -133,7 +135,6 @@ namespace CosmicShore.App.Ui.Menus
 
             captainCardsPopulated = true;
         }
-
 
         void PopulateGamePurchaseCards()
         {
@@ -155,7 +156,7 @@ namespace CosmicShore.App.Ui.Menus
             var gameIndex = 0;
             var rowIndex = 0;
             var row = GamePurchaseRows[rowIndex];
-            while (gameIndex < CaptainsPerRow * MaxCaptainRows && gameIndex < games.Count && rowIndex < MaxCaptainRows)
+            while (gameIndex < GamesPerRow * MaxGameRows && gameIndex < games.Count && rowIndex < MaxGameRows)
             {
                 var game = games[gameIndex];
 
@@ -166,10 +167,10 @@ namespace CosmicShore.App.Ui.Menus
                 purchaseGameCard.transform.SetParent(row.transform, false);
 
                 gameIndex++;
-                if (gameIndex % CaptainsPerRow == 0)
+                if (gameIndex % GamesPerRow == 0)
                 {
                     rowIndex++;
-                    if (rowIndex < MaxCaptainRows)
+                    if (rowIndex < MaxGameRows && gameIndex != games.Count) // Second check is to prevent an empty row from being displayed
                     {
                         row = CaptainPurchaseRows[rowIndex];
                         row.gameObject.SetActive(true);
