@@ -30,6 +30,9 @@ namespace CosmicShore.App.UI
                         if (link.Index == linkToActivate.Index)
                             link.view.Select(selectionIndex);
                         break;
+                    default:
+                        Debug.LogWarning("NavGroup - ActivateLink: Unknown NavGroup Link Type.");
+                        break;
                 }
                 selectionIndex++;
             }

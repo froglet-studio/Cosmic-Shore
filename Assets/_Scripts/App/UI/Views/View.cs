@@ -8,11 +8,11 @@ namespace CosmicShore.App.UI.Views
         [SerializeField] NavGroup navGroup;
         public List<ScriptableObject> Models { get; set; }
         protected ScriptableObject SelectedModel { get; set; }
-        protected int SelectedIndex = 0;
+        protected int SelectedIndex;
 
         public virtual void AssignModel(ScriptableObject Model)
         {
-            this.Models = new List<ScriptableObject>() { Model };
+            Models = new List<ScriptableObject> { Model };
             Select(SelectedIndex);
         }
 
@@ -35,7 +35,6 @@ namespace CosmicShore.App.UI.Views
         /// <summary>
         /// Updates the UI to reflect the values contained in Models[modelIndex]
         /// </summary>
-        /// <param name="modelIndex"></param>
         public abstract void UpdateView();
     }
 }
