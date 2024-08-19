@@ -14,6 +14,9 @@ namespace CosmicShore.App.UI.Modals
         [SerializeField] TMP_Text CrystalBalanceText;
         [SerializeField] Button ConfirmButton;
         [SerializeField] IconEmitter IconEmitter;
+        [SerializeField] Image CaptainImage;
+        [SerializeField] Image GameImage;
+
         Action OnConfirm;
         const string UnlockTextTemplate = "to unlock {0}";
 
@@ -23,6 +26,18 @@ namespace CosmicShore.App.UI.Modals
             UnlockText.text = string.Format(UnlockTextTemplate, virtualItem.Name);
             CrystalBalanceText.text = CatalogManager.Instance.GetCrystalBalance().ToString();
             OnConfirm = confirmCallback;
+
+            switch(virtualItem.ContentType) 
+            {
+                case "Captain":
+                    var captain = CaptainManager.Instance.GetCaptainByName(virtualItem.Name);
+                    CaptainImage.sprite = captain.Image;
+                    break;
+                case "ArcadeGame":
+                    break;
+                default: 
+                    break;
+            }
         }
 
         public void Confirm()
