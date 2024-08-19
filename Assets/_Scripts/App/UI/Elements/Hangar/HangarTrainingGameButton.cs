@@ -6,33 +6,42 @@ namespace CosmicShore
 {
     public class HangarTrainingGameButton : MonoBehaviour
     {
-        [SerializeField] HangarScreen HangarMenu;
+        [SerializeField] HangarTrainingModal HangarTrainingModal;
         [SerializeField] Image ElementOneImage;
         [SerializeField] Image ElementTwoImage;
         [SerializeField] Image BorderImage;
         [SerializeField] Sprite SelectedBorderSprite;
         [SerializeField] Sprite DeselectedBorderSprite;
 
-        SO_TrainingGame TrainingGame;
+        public SO_TrainingGame TrainingGame { get; private set; }
         public void AssignGame(SO_TrainingGame game)
         {
             TrainingGame = game;
-            SetInactive();
+            Deactivate();
         }
 
         public void Select()
         {
-            HangarMenu.SelectTrainingGame(TrainingGame.Game);
+            HangarTrainingModal.SelectGame(TrainingGame);
+            Activate();
         }
 
-        public void SetActive()
+        public void SetActive(bool active)
+        {
+            if (active)
+                Activate();
+            else
+                Deactivate();
+        }
+
+        void Activate()
         {
             ElementOneImage.sprite = TrainingGame.ElementOne.GetFullIcon(true);
             ElementTwoImage.sprite = TrainingGame.ElementTwo.GetFullIcon(true);
             BorderImage.sprite = SelectedBorderSprite;
         }
 
-        public void SetInactive() {
+        void Deactivate() {
 
             ElementOneImage.sprite = TrainingGame.ElementOne.GetFullIcon(false);
             ElementTwoImage.sprite = TrainingGame.ElementTwo.GetFullIcon(false);

@@ -20,9 +20,9 @@ namespace CosmicShore.App.UI.Screens
         [SerializeField] HangarAbilitiesView AbilitiesView;
         [SerializeField] HangarCaptainsView CaptainsView;
         [SerializeField] Transform CaptainSelectionContainer; // TODO: move to Captains View
+        [SerializeField] HangarTrainingModal HangarTrainingModal;
 
         [Header("Training UI")]
-        [SerializeField] GameObject TrainingView;
         [SerializeField] Transform GameSelectionContainer;
         [SerializeField] Image ShipModelImage;
         [SerializeField] TMPro.TMP_Text SelectedGameName;
@@ -32,7 +32,7 @@ namespace CosmicShore.App.UI.Screens
         List<SO_Ship> Ships;
         SO_Ship SelectedShip;
         SO_Captain SelectedCaptain;
-        SO_ArcadeGame SelectedGame;
+        SO_TrainingGame SelectedGame;
         SO_ShipAbility SelectedAbility;
 
         public void LoadView()
@@ -87,31 +87,6 @@ namespace CosmicShore.App.UI.Screens
                 CaptainSelectionContainer.GetChild(i).GetComponent<CaptainUpgradeSelectionCard>().AssignCaptain(SelectedShip.Captains[i]);
 
             StartCoroutine(SelectCaptainCoroutine(0));
-        }
-
-        void PopulateTrainingGameDetails()
-        {
-            Debug.Log($"Populating Training Details List: {SelectedGame.DisplayName}");
-            Debug.Log($"Populating Training  Details List: {SelectedGame.Description}");
-            Debug.Log($"Populating Training  Details List: {SelectedGame.Icon}");
-            Debug.Log($"Populating Training  Details List: {SelectedGame.PreviewClip}");
-
-            if (ShipModelImage != null) ShipModelImage.sprite = SelectedGame.Icon;
-            SelectedGameName.text = SelectedGame.DisplayName;
-            SelectedGameDescription.text = SelectedGame.Description;
-            
-            // Show intensity Selection
-
-            if (SelectedGamePreviewWindow != null)
-            {
-                for (var i = 2; i < SelectedGamePreviewWindow.transform.childCount; i++)
-                    Destroy(SelectedGamePreviewWindow.transform.GetChild(i).gameObject);
-
-                var preview = Instantiate(SelectedGame.PreviewClip);
-                preview.transform.SetParent(SelectedGamePreviewWindow.transform, false);
-                SelectedGamePreviewWindow.SetActive(true);
-                Canvas.ForceUpdateCanvases();
-            }
         }
 
         public void SelectShip(int index)
@@ -177,37 +152,9 @@ namespace CosmicShore.App.UI.Screens
 
         public void DisplayTrainingModal()
         {
-            SelectTrainingGame(SelectedShip.Games[0]);
-        }
-
-        /// <summary>
-        /// </summary>
-        /// <param name="index">Index of the displayed Game list</param>
-        //public void SelectTrainingGame(int index)
-        public void SelectTrainingGame(SO_ArcadeGame game)  //TODO WIP: Use SO_TrainingGame once the data is populated so we can dynamically set the elements on the selection cards
-        {
-            Debug.Log($"SelectTainingGame: {game.DisplayName}");
-
-            SelectedGame = game;
-
-            try
-            {
-                // Deselect them all
-                for (var i = 0; i < 2; i++)
-                    GameSelectionContainer.GetChild(i).gameObject.GetComponent<HangarTrainingGameButton>().SetInactive();
-            }
-            catch (ArgumentOutOfRangeException argumentOutOfRangeException)
-            {
-                Debug.LogWarningFormat("{0} - {1} - The ship lacks training games. Please add them. {2}", nameof(HangarScreen),
-                    nameof(SelectTrainingGame), argumentOutOfRangeException.Message);
-            }
-            catch (NullReferenceException nullReferenceException)
-            {
-                Debug.LogWarningFormat("{0} - {1} - The ship lacks training games. Please add them. {2}", nameof(HangarScreen),
-                    nameof(SelectTrainingGame), nullReferenceException.Message);
-            }
-
-            PopulateTrainingGameDetails();
+            //SelectTrainingGame(SelectedShip.TrainingGames[0]);
+            HangarTrainingModal.SetTrainingGames(SelectedShip.TrainingGames);
+            HangarTrainingModal.ModalWindowIn();
         }
 
         IEnumerator SelectCaptainCoroutine(int index)
