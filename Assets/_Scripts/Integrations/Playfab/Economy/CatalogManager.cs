@@ -75,7 +75,7 @@ namespace CosmicShore.Integrations.PlayFab.Economy
         public void LoadAllCatalogItems()
         {
             List<CatalogItem> allCatalogItems = new List<CatalogItem>();
-            LoadCatalogItemsRecursive(allCatalogItems, "", null, "");
+            LoadCatalogItemsRecursive(allCatalogItems);
         }
 
         /// <summary>
@@ -109,10 +109,7 @@ namespace CosmicShore.Integrations.PlayFab.Economy
                     OnLoadingCatalogItemsRecursive(allCatalogItems);
                 }
             },
-            error =>
-            {
-                PlayFabUtility.HandleErrorReport(error);
-            });
+            PlayFabUtility.HandleErrorReport);
         }
 
         /// <summary>
@@ -532,14 +529,14 @@ namespace CosmicShore.Integrations.PlayFab.Economy
                     },
                     PriceAmounts = new List<PurchasePriceAmount>
                     {
-                        new PurchasePriceAmount() 
+                        new() 
                         { 
                             ItemId = price.ItemId,
                             Amount = price.Amount 
                         }
                     },
                 },
-                response =>
+                _ =>
                 {
                     UpdateCurrencyBalance(price.ItemId, price.Amount * -1);
                     AddToInventory(item);
