@@ -388,7 +388,6 @@ namespace CosmicShore.Integrations.PlayFab.Economy
                     break;
                 case "CaptainUpgrade":
                     Debug.LogFormat("{0} - {1} - Adding Upgrade",nameof(CatalogManager), nameof(AddToInventory));
-
                     Inventory.captainUpgrades.Add(item);
                     break;
                 case "Game":

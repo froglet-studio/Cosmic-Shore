@@ -16,12 +16,14 @@ namespace CosmicShore.App.Ui.Menus
         [SerializeField] TMP_Text CrystalBalance;
 
         [Header("Captain Purchasing")]
+        [SerializeField] GameObject CaptainPurchaseSection;
         [SerializeField] PurchaseCaptainCard PurchaseCaptainPrefab;
         [SerializeField] List<HorizontalLayoutGroup> CaptainPurchaseRows;
         [SerializeField] PurchaseConfirmationModal PurchaseConfirmationModal;
         [SerializeField] Button PurchaseConfirmationButton;
 
-        [Header("Game Purchasing")] 
+        [Header("Game Purchasing")]
+        [SerializeField] GameObject GamePurchaseSection;
         [SerializeField] PurchaseGameCard PurchaseGamePrefab;
         [SerializeField] List<HorizontalLayoutGroup> GamePurchaseRows;
 
@@ -30,6 +32,7 @@ namespace CosmicShore.App.Ui.Menus
         [SerializeField] PurchaseGameplayTicketCard DailyChallengeTicketCard;
 
         bool captainCardsPopulated = false;
+        bool gameCardsPopulated = false;
 
         void OnEnable()
         {
@@ -56,6 +59,15 @@ namespace CosmicShore.App.Ui.Menus
                 }
             }
 
+            // Clear out placeholder game cards
+            foreach (var row in GamePurchaseRows)
+            {
+                foreach (Transform child in row.transform)
+                {
+                    Destroy(child.gameObject);
+                }
+            }
+
             // If the scene is reloaded after playing a game, the catalog is already loaded, so the events wont fire
             if (CatalogManager.CatalogLoaded)
                 UpdateView();
@@ -67,6 +79,7 @@ namespace CosmicShore.App.Ui.Menus
             //FactionMissionTicketCard.SetVirtualItem(CatalogManager.Instance.GetFactionTicket());
             DailyChallengeTicketCard.SetVirtualItem(CatalogManager.Instance.GetDailyChallengeTicket());
             PopulateCaptainPurchaseCards();
+            PopulateGamePurchaseCards();
         }
 
         [SerializeField] int CaptainsPerRow = 3;
@@ -74,7 +87,6 @@ namespace CosmicShore.App.Ui.Menus
 
         void PopulateCaptainPurchaseCards()
         {
-            
             if (captainCardsPopulated)
                 return;
 
@@ -91,10 +103,8 @@ namespace CosmicShore.App.Ui.Menus
             Debug.Log($"PopulateCaptainPurchaseCards, excluding not encountered: {captains.Count}");
 
             // if no captains, hide captains section
-            // TODO: this just hides the rows
             if (captains.Count == 0)
-                foreach (var r in CaptainPurchaseRows)
-                    r.gameObject.SetActive(false);
+                CaptainPurchaseSection.SetActive(false);
 
             var captainIndex = 0;
             var rowIndex = 0;
@@ -103,14 +113,14 @@ namespace CosmicShore.App.Ui.Menus
             {
                 var captain = captains[captainIndex];
 
-                var purchaseTicketCard = Instantiate(PurchaseCaptainPrefab);
-                purchaseTicketCard.ConfirmationModal = PurchaseConfirmationModal;
-                purchaseTicketCard.ConfirmationButton = PurchaseConfirmationButton;
-                purchaseTicketCard.SetVirtualItem(captain);
-                purchaseTicketCard.transform.SetParent(row.transform, false);
+                var purchaseCaptainCard = Instantiate(PurchaseCaptainPrefab);
+                purchaseCaptainCard.ConfirmationModal = PurchaseConfirmationModal;
+                purchaseCaptainCard.ConfirmationButton = PurchaseConfirmationButton;
+                purchaseCaptainCard.SetVirtualItem(captain);
+                purchaseCaptainCard.transform.SetParent(row.transform, false);
 
                 captainIndex++;
-                if (captainIndex % CaptainsPerRow == 0)
+                if (captainIndex % CaptainsPerRow == 0 && captainIndex != captains.Count) // Second check handles an edge case - prevents an empty row from being displayed
                 {
                     rowIndex++;
                     if (rowIndex < MaxCaptainRows)
@@ -127,7 +137,47 @@ namespace CosmicShore.App.Ui.Menus
 
         void PopulateGamePurchaseCards()
         {
+            if (gameCardsPopulated)
+                return;
 
+            // Get all purchaseable games
+            var games = CatalogManager.StoreShelve.games.Values.ToList();
+            Debug.Log($"PopulategamePurchaseCards, unfiltered: {games.Count}");
+
+            // Filter out owned games
+            games = games.Where(x => !CatalogManager.Inventory.games.Contains(x)).ToList();
+            Debug.Log($"PopulateGamePurchaseCards, excluding purchased: {games.Count}");
+
+            // if no games, hide games section
+            if (games.Count == 0)
+                GamePurchaseSection.SetActive(false);
+
+            var gameIndex = 0;
+            var rowIndex = 0;
+            var row = GamePurchaseRows[rowIndex];
+            while (gameIndex < CaptainsPerRow * MaxCaptainRows && gameIndex < games.Count && rowIndex < MaxCaptainRows)
+            {
+                var game = games[gameIndex];
+
+                var purchaseGameCard = Instantiate(PurchaseGamePrefab);
+                purchaseGameCard.ConfirmationModal = PurchaseConfirmationModal;
+                purchaseGameCard.ConfirmationButton = PurchaseConfirmationButton;
+                purchaseGameCard.SetVirtualItem(game);
+                purchaseGameCard.transform.SetParent(row.transform, false);
+
+                gameIndex++;
+                if (gameIndex % CaptainsPerRow == 0)
+                {
+                    rowIndex++;
+                    if (rowIndex < MaxCaptainRows)
+                    {
+                        row = CaptainPurchaseRows[rowIndex];
+                        row.gameObject.SetActive(true);
+                    }
+                }
+            }
+
+            gameCardsPopulated = true;
         }
 
         void UpdateCrystalBalance()

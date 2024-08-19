@@ -1,18 +1,29 @@
+using CosmicShore.Core;
 using CosmicShore.Integrations.PlayFab.Economy;
 using UnityEngine;
 
 namespace CosmicShore
 {
-    public class PurchaseGameCard : PurchaseCard
+    public class PurchaseGameCard : PurchaseItemCard
     {
-        public override void Purchase()
-        {
-            throw new System.NotImplementedException();
-        }
+        SO_ArcadeGame game;
 
         public override void SetVirtualItem(VirtualItem virtualItem)
         {
-            throw new System.NotImplementedException();
+            Debug.Log($"SetVirtualItem - Name:{virtualItem.Name}");
+            game = Arcade.Instance.GetArcadeGameSOByName(virtualItem.Name);
+            Debug.Log($"SetVirtualItem - game:{game}");
+            ItemImage.sprite = game.CardBackground;
+            ItemNameLabel.text = game.DisplayName;
+            ItemDescriptionLabel.text = game.Description;
+
+            base.SetVirtualItem(virtualItem);
+        }
+
+        protected override bool PlayerOwnsItem()
+        {
+            // Check if owned and update UI accordingly
+            return CatalogManager.Inventory.ContainsGame(game.DisplayName);
         }
     }
 }

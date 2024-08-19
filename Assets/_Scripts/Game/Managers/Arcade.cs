@@ -71,5 +71,10 @@ namespace CosmicShore.Core
         {
             return TrainingGames.GameList.Where(x => x.Game.Mode == gameMode).FirstOrDefault();
         }
+
+        public SO_ArcadeGame GetArcadeGameSOByName(string displayName)
+        {
+            return ArcadeGames.GameList.Where(x => x.DisplayName == displayName).FirstOrDefault();
+        }
     }
 }

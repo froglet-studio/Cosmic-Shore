@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: ArcadeGameDistraction
   m_EditorClassIdentifier: 
   Mode: 18
-  Name: Distraction
+  DisplayName: Distraction
   Description: Get crystals to make fake crystals to lure the enemy away from their
     crystals.
   Icon: {fileID: 21300000, guid: 1917088452678c8449563992f4132c7e, type: 3}
@@ -23,8 +23,11 @@ MonoBehaviour:
     type: 3}
   Captains:
   - {fileID: 11400000, guid: 04c8c98493426fd409d20b7bc2396ed2, type: 2}
+  GolfScoring: 0
   MinPlayers: 1
   MaxPlayers: 3
+  MinIntensity: 1
+  MaxIntensity: 4
   SceneName: MinigameDistraction
   CallToActionTargetType: 421
   ViewUserAction: 0

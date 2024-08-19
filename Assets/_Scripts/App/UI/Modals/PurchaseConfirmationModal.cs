@@ -1,4 +1,5 @@
 using CosmicShore.App.UI.FX;
+using CosmicShore.Core;
 using CosmicShore.Integrations.PlayFab.Economy;
 using System;
 using System.Collections;
@@ -32,9 +33,15 @@ namespace CosmicShore.App.UI.Modals
             {
                 case "Captain":
                     var captain = CaptainManager.Instance.GetCaptainByName(virtualItem.Name);
+                    GameImage.gameObject.SetActive(false);
+                    CaptainImage.gameObject.SetActive(true);
                     CaptainImage.sprite = captain.Image;
                     break;
                 case "Game":
+                    var game = Arcade.Instance.GetArcadeGameSOByName(virtualItem.Name);
+                    CaptainImage.gameObject.SetActive(false);
+                    GameImage.gameObject.SetActive(true);
+                    GameImage.sprite = game.CardBackground;
                     break;
                 default: 
                     break;

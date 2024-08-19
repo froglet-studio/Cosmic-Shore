@@ -133,13 +133,19 @@ namespace CosmicShore.Integrations.PlayFab.Economy
             if (unlocked)
             {
                 captain.Unlocked = true;
-                captainData.UnlockedCaptains.Add(captain.Name, captain);
+                if (captainData.UnlockedCaptains.ContainsKey(captain.Name))
+                    captainData.UnlockedCaptains[captain.Name] = captain;
+                else
+                    captainData.UnlockedCaptains.Add(captain.Name, captain);
             }
             else
             {
                 // Check for encountered
                 captain.Encountered = true;
-                captainData.EncounteredCaptains[captain.Name] = captain;
+                if (captainData.EncounteredCaptains.ContainsKey(captain.Name))
+                    captainData.EncounteredCaptains[captain.Name] = captain;
+                else
+                    captainData.EncounteredCaptains.Add(captain.Name, captain);
             }
             captainData.AllCaptains[captain.Name] = captain;
 
