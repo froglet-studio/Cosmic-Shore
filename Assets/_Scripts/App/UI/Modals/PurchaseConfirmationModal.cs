@@ -33,7 +33,7 @@ namespace CosmicShore.App.UI.Modals
                     var captain = CaptainManager.Instance.GetCaptainByName(virtualItem.Name);
                     CaptainImage.sprite = captain.Image;
                     break;
-                case "ArcadeGame":
+                case "Game":
                     break;
                 default: 
                     break;
