@@ -21,15 +21,20 @@ namespace CosmicShore
         [SerializeField] Image RewardElementImage2;
         [SerializeField] TMP_Text RewardValueText1;
         [SerializeField] TMP_Text RewardValueText2;
-        [SerializeField] List<Button> IntensityButtons = new(4);
+        [SerializeField] List<IntensitySelectButton> IntensityButtons = new(4);
 
         SO_TrainingGame SelectedGame;
         int Intensity;
-        List<SO_TrainingGame> TrainingGames;
+
+        void InitialializeIntensityButtons()
+        {
+            for (var i=0; i<4; i++)
+                IntensityButtons[i].SetIntensityLevel(i + 1);
+        }
 
         public void SetTrainingGames(List<SO_TrainingGame> trainingGames)
         {
-            TrainingGames = trainingGames;
+            InitialializeIntensityButtons();
             TrainingGameButton1.AssignGame(trainingGames[0]);
             TrainingGameButton2.AssignGame(trainingGames[1]);
             SelectGame(trainingGames[0]);
@@ -103,9 +108,9 @@ namespace CosmicShore
             RewardValueText2.text = rewardValue;
 
             foreach (var button in IntensityButtons)
-                button.image.color = Color.gray;
+                button.SetActive(false);
 
-            IntensityButtons[intensity - 1].image.color = Color.white;
+            IntensityButtons[intensity - 1].SetActive(true);
         }
 
         public void LaunchSelectedGame()

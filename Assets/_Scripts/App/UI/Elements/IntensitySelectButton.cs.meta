@@ -1,0 +1,34 @@
+fileFormatVersion: 2
+guid: 0a0c81dfe4d435a49844a3a0a3d3f71e
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences:
+  - BorderImage: {instanceID: 0}
+  - IntensityImage: {instanceID: 0}
+  - IntensityText: {instanceID: 0}
+  - BorderSpriteActive: {fileID: 21300000, guid: 28f47c9f52f227c48a39438a82bbeec7,
+      type: 3}
+  - BorderSpriteInactive: {fileID: 21300000, guid: db20d07635711f94c84f0f2a95ccf5d8,
+      type: 3}
+  - IntensityOneSpriteActive: {fileID: 21300000, guid: ac5cee19b87dcf94aa096e437dd7aa69,
+      type: 3}
+  - IntensityOneSpriteInactive: {fileID: 21300000, guid: ac5cee19b87dcf94aa096e437dd7aa69,
+      type: 3}
+  - IntensityTwoSpriteActive: {fileID: 21300000, guid: 4d10e1387ba20d8488109384792bbe2f,
+      type: 3}
+  - IntensityTwoSpriteInactive: {fileID: 21300000, guid: 4d10e1387ba20d8488109384792bbe2f,
+      type: 3}
+  - IntensityThreeSpriteActive: {fileID: 21300000, guid: d397a74b187200a459cfe20fbdba207a,
+      type: 3}
+  - IntensityThreeSpriteInactive: {fileID: 21300000, guid: d397a74b187200a459cfe20fbdba207a,
+      type: 3}
+  - IntensityFourSpriteActive: {fileID: 21300000, guid: dfbad3cda927b67469a7d145a5fcfe04,
+      type: 3}
+  - IntensityFourSpriteInactive: {fileID: 21300000, guid: dfbad3cda927b67469a7d145a5fcfe04,
+      type: 3}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

@@ -106,7 +106,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 9d74ef380b5adbd46b8b963be5d9a87f, type: 3}
+  m_Sprite: {fileID: 21300000, guid: e995adf3f8da6174daa37f011f0fdf12, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -558,8 +558,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: Save
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 569a377a17274274398a36c70a189872, type: 2}
-  m_sharedMaterial: {fileID: 3663824384519935482, guid: 569a377a17274274398a36c70a189872,
+  m_fontAsset: {fileID: 11400000, guid: 6ab8eca0e6e2b7c4a8a495d9afae2053, type: 2}
+  m_sharedMaterial: {fileID: 3995749905058258831, guid: 6ab8eca0e6e2b7c4a8a495d9afae2053,
     type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
@@ -772,7 +772,7 @@ GameObject:
   m_Component:
   - component: {fileID: 6960199311430630347}
   m_Layer: 5
-  m_Name: Clout
+  m_Name: CaptainXp
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -852,12 +852,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 88569536cd810e64fbe7844008a1aa50, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  windowTitle: {fileID: 0}
-  windowDescription: {fileID: 0}
   sharpAnimations: 1
-  useCustomTexts: 1
-  titleText: Settings
-  descriptionText: This is a description in a modal window
 --- !u!225 &6960199311510088765
 CanvasGroup:
   m_ObjectHideFlags: 0
@@ -903,6 +898,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 98268bc5d9fc6454295f832b6b5e3e46, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  sharpAnimations: 0
   BusyIndicator: {fileID: 6960199311831173428}
   displayNameInputField: {fileID: 6960199312648349589}
   setDisplayNameButton: {fileID: 6960199310987985884}
@@ -1169,7 +1165,7 @@ GameObject:
   - component: {fileID: 6960199311711015460}
   - component: {fileID: 6960199311711015461}
   m_Layer: 5
-  m_Name: CloutBorder
+  m_Name: CaptainXpBorder
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1320,7 +1316,6 @@ GameObject:
   m_Component:
   - component: {fileID: 6960199311889898553}
   - component: {fileID: 6960199311889898502}
-  - component: {fileID: 6960199311889898552}
   m_Layer: 5
   m_Name: Panel
   m_TagString: Untagged
@@ -1361,18 +1356,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6960199311889898554}
   m_CullTransparentMesh: 0
---- !u!114 &6960199311889898552
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6960199311889898554}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fa3c31835af307d4abef94a499febb12, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1 &6960199311927652626
 GameObject:
   m_ObjectHideFlags: 0
@@ -1577,8 +1560,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: success
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 74b1f7ccd5dee88479170fd5b12041d4, type: 2}
-  m_sharedMaterial: {fileID: 5604121039834938731, guid: 74b1f7ccd5dee88479170fd5b12041d4,
+  m_fontAsset: {fileID: 11400000, guid: 6ab8eca0e6e2b7c4a8a495d9afae2053, type: 2}
+  m_sharedMaterial: {fileID: 3995749905058258831, guid: 6ab8eca0e6e2b7c4a8a495d9afae2053,
     type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
@@ -2035,6 +2018,7 @@ GameObject:
   - component: {fileID: 6960199312717497871}
   - component: {fileID: 6960199312717497856}
   - component: {fileID: 6960199312717497857}
+  - component: {fileID: 1995289491}
   m_Layer: 5
   m_Name: Button
   m_TagString: Untagged
@@ -2090,7 +2074,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 0549558f89d4c954a9ff3548b5307a48, type: 3}
+  m_Sprite: {fileID: 21300000, guid: cd2f05a67ee6cb34bb6887c9ba512f83, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -2156,6 +2140,19 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
+--- !u!114 &1995289491
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6960199312717497859}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6b7b65aede2e9434f806ef974437abc2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ProfileIcons: {fileID: 11400000, guid: 3e6cb5b838253c7468480627fd86af5f, type: 2}
 --- !u!1 &6960199312870093094
 GameObject:
   m_ObjectHideFlags: 0
