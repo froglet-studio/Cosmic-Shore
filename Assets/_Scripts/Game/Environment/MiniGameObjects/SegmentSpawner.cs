@@ -20,13 +20,13 @@ public enum PositioningScheme
 
 public class SegmentSpawner : MonoBehaviour
 {
-    
+
     [SerializeField] List<SpawnableAbstractBase> spawnableSegments;
     [SerializeField] PositioningScheme positioningScheme = PositioningScheme.SphereUniform;
     [SerializeField] List<float> spawnSegmentWeights;
     [SerializeField] public int Seed;
     [SerializeField] Transform parent;
-    
+
     [SerializeField] public Vector3 origin = Vector3.zero;
     GameObject SpawnedSegmentContainer;
     List<Trail> trails = new();
@@ -116,7 +116,7 @@ public class SegmentSpawner : MonoBehaviour
                     (Radius * Vector3.forward)) + origin + transform.position;
                 spawned.transform.LookAt(Vector3.zero);
                 return;
-            case PositioningScheme.KinkyLine:                
+            case PositioningScheme.KinkyLine:
                 Quaternion rotation;
                 spawned.transform.position = currentDisplacement += RandomVectorRotation(StraightLineLength * Vector3.forward, out rotation) ;
                 spawned.transform.rotation = currentRotation = rotation;
@@ -131,7 +131,7 @@ public class SegmentSpawner : MonoBehaviour
                 return;
             case PositioningScheme.StraightLineRandomOrientation:
                 spawned.transform.position = new Vector3(0, 0, spawnedItemCount * StraightLineLength) + origin + transform.position;
-                spawned.transform.Rotate(Vector3.forward, (float)random.NextDouble() * 180);
+                spawned.transform.Rotate(Vector3.forward, (float)Random.value * 180);
                 return;
             case PositioningScheme.Cubic:
                 // Volumetric Grid, looking at origin
@@ -154,8 +154,8 @@ public class SegmentSpawner : MonoBehaviour
                 spawned.transform.position = new Vector3(Radius * Mathf.Sin(spawnedItemCount),
                                                          Radius * Mathf.Cos(spawnedItemCount),
                                                          spawnedItemCount * StraightLineLength) + origin + transform.position;
-                spawned.transform.Rotate(Vector3.forward + (((float)random.NextDouble() - .4f) * Vector3.right)
-                                                         + (((float)random.NextDouble() - .4f) * Vector3.up), (float)random.NextDouble() * 180);
+                spawned.transform.Rotate(Vector3.forward + (((float)Random.value - .4f) * Vector3.right)
+                                                         + (((float)Random.value - .4f) * Vector3.up), (float)Random.value * 180);
                 return;
             case PositioningScheme.KinkyLineBranching:
 
@@ -164,7 +164,7 @@ public class SegmentSpawner : MonoBehaviour
                     return;
 
                 // Check if the current kink should branch
-                if (random.NextDouble() < branchProbability && maxDepth > 0)
+                if (Random.value < branchProbability && maxDepth > 0)
                 {
                     // Determine the number of branches for the current kink
                     int numBranches = random.Next(minBranches, maxBranches + 1);
@@ -204,7 +204,7 @@ public class SegmentSpawner : MonoBehaviour
 
     GameObject SpawnRandom()
     {
-        var spawnWeight = random.NextDouble();
+        var spawnWeight = Random.value;
         var spawnIndex = 0;
         var totalWeight = 0f;
         for (int i = 0; i < spawnSegmentWeights.Count && totalWeight < spawnWeight; i++)
@@ -242,7 +242,7 @@ public class SegmentSpawner : MonoBehaviour
             return;
 
         // Check if the current branch should spawn more branches
-        if (random.NextDouble() < branchProbability)
+        if (Random.value < branchProbability)
         {
             // Determine the number of branches for the current branch
             int numBranches = random.Next(minBranches, maxBranches + 1);

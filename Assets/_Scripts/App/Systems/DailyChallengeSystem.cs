@@ -3,7 +3,10 @@ using CosmicShore.Integrations.PlayFab.CloudScripts;
 using CosmicShore.Models.Enums;
 using CosmicShore.Utility.Singleton;
 using System;
+using System.Collections.Generic;
 using System.Globalization;
+using CosmicShore.Integrations.PlayFab.PlayerData;
+using PlayFab.ClientModels;
 using UnityEngine;
 
 namespace CosmicShore.App.Systems
@@ -53,6 +56,22 @@ namespace CosmicShore.App.Systems
         readonly string RewardTierTwoSatisfiedPrefKey = "RewardTierTwoSatisfied";
         readonly string RewardTierThreeSatisfiedPrefKey = "RewardTierThreeSatisfied";
 
+        private readonly List<string> PrefKeys = new ();
+
+        private void AddKeysToList()
+        {
+            // Put all the keys into a list for query purpose
+            PrefKeys.Add(LastTicketIssuedDatePrefKey);
+            PrefKeys.Add(InitializedDatePrefKey);
+            PrefKeys.Add(TicketBalancePrefKey);
+            PrefKeys.Add(HighScorePrefKey);
+            PrefKeys.Add(RewardTierOneClaimedPrefKey);
+            PrefKeys.Add(RewardTierTwoClaimedPrefKey);
+            PrefKeys.Add(RewardTierThreeClaimedPrefKey);
+            PrefKeys.Add(RewardTierTwoSatisfiedPrefKey);
+            PrefKeys.Add(RewardTierThreeSatisfiedPrefKey);
+        }
+        
         void Start()
         {
             InitializePlayerPrefs();
@@ -79,6 +98,36 @@ namespace CosmicShore.App.Systems
             // If it's a new launch of the app on the same day, need to reinit this, but not reset other tracking
             if (DailyGame == null)
                 SelectDailyGame();
+        }
+
+        private void OnEnable()
+        {
+            // Subscribe update and pull data logic to getting data event 
+            PlayerDataController.OnGettingPlayerData += SaveToPref;
+        }
+
+        /// <summary>
+        /// Save user data result to PlayerPref
+        /// Everytime daily challenge data is updated, pull data from PlayFab immediately and save to PlayerPref
+        /// So that the client only need to access PlayerPref for data
+        /// Not anti-cheating, but anyways, the updating logic goes to the server side.
+        /// </summary>
+        /// <param name="result">User data result form PlayFab Player Data</param>
+        private void SaveToPref(GetUserDataResult result)
+        {
+            foreach (var key in PrefKeys)
+            {
+                if (!result.Data.TryGetValue(key, out var value)) continue;
+                
+                if (key == InitializedDatePrefKey || key == LastTicketIssuedDatePrefKey)
+                {
+                    PlayerPrefs.SetString(key, value.Value);
+                }
+                else
+                {
+                    PlayerPrefs.SetInt(key, int.Parse(value.Value));
+                }
+            }
         }
 
         void SelectDailyGame()
