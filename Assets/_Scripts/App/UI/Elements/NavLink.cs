@@ -3,6 +3,7 @@ using UnityEngine.UI;
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
+using CosmicShore.App.UI.Views;
 
 namespace CosmicShore.App.UI
 {
@@ -19,6 +20,7 @@ namespace CosmicShore.App.UI
 
         [SerializeField] float crossfadeDuration = 0.15f;
         [HideInInspector] public NavGroup navGroup;
+        public int Index;
 
         Coroutine currentCrossfade;
 

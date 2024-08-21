@@ -1,21 +1,25 @@
-using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+using CosmicShore.Integrations.PlayFab.Economy;
 
 namespace CosmicShore
 {
-    public class PurchaseCaptainCard : MonoBehaviour
+    public class PurchaseCaptainCard : PurchaseItemCard
     {
-        // Start is called before the first frame update
-        void Start()
+        SO_Captain captain;
+
+        public override void SetVirtualItem(VirtualItem virtualItem)
         {
-        
+            captain = CaptainManager.Instance.GetCaptainSOByName(virtualItem.Name);
+            ItemImage.sprite = captain.Image;
+            ItemNameLabel.text = captain.Name;
+            ItemDescriptionLabel.text = captain.Description;
+
+            base.SetVirtualItem(virtualItem);
         }
 
-        // Update is called once per frame
-        void Update()
+        protected override bool PlayerOwnsItem()
         {
-        
+            // Check if owned and update UI accordingly
+            return CatalogManager.Inventory.ContainsCaptain(captain.Name);
         }
     }
 }

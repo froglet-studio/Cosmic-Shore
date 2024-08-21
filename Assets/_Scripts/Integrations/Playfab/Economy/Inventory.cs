@@ -17,11 +17,16 @@ namespace CosmicShore.Integrations.PlayFab.Economy
         // Captain Upgrades
         public List<VirtualItem> captainUpgrades = new();
         
+        // TODO: remove - ship classes can no longer be bought directly
         // Ships
         public List<VirtualItem> shipClasses = new();
         
         // Games
         public List<VirtualItem> games = new();
+
+        public List<VirtualItem> tickets = new();
+
+        public List<VirtualItem> allItems = new();
 
         public void SaveToDisk()
         {
@@ -38,6 +43,9 @@ namespace CosmicShore.Integrations.PlayFab.Economy
             captainUpgrades = tempInventory.captainUpgrades;
             shipClasses = tempInventory.shipClasses;
             games = tempInventory.games;
+            tickets = tempInventory.tickets;
+
+            allItems = tempInventory.allItems;
         }
 
         public bool ContainsCaptain(string captainName)
@@ -47,8 +55,19 @@ namespace CosmicShore.Integrations.PlayFab.Economy
 
         public bool ContainsShipClass(string shipName)
         {
-            var count = shipClasses.Where(item => item.Name == shipName).Count();
-            return count > 0;
+            return shipClasses.Where(item => item.Name == shipName).Count() > 0;
+        }
+
+        public bool ContainsGame(string gameName)
+        {
+            return games.Where(item => item.Name == gameName).Count() > 0;
+        }
+
+        public VirtualItem GetCaptainUpgrade(string ShipName, string primaryElement, int captainLevel)
+        {
+            VirtualItem item = null;
+
+            return item;
         }
     }
 }

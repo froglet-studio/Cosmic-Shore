@@ -8568,7 +8568,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1887452484}
-  - component: {fileID: 1887452483}
   m_Layer: 0
   m_Name: CatalogView
   m_TagString: Untagged
@@ -8576,25 +8575,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 0
---- !u!114 &1887452483
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1887452482}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1a0d0c58638565e498b3285c1834e7c1, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  purchaseCaptainButton: {fileID: 0}
-  purchaseShardsButton: {fileID: 704131757}
-  loadCatalogItemsButton: {fileID: 1770191870}
-  grantStartingItemsButton: {fileID: 800305277}
-  loadInventoryButton: {fileID: 203552441}
-  loadCaptainDataButton: {fileID: 0}
-  removeInvCollectionButton: {fileID: 1345789660}
 --- !u!4 &1887452484
 Transform:
   m_ObjectHideFlags: 0

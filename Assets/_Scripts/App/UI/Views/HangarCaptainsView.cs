@@ -1,39 +1,106 @@
+using CosmicShore.Integrations.PlayFab.Economy;
+using CosmicShore.Models;
+using CosmicShore;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace CosmicShore
+namespace CosmicShore.App.UI.Views
 {
     public class HangarCaptainsView : View
     {
-        [SerializeField] TMP_Text AbilityName;
-        [SerializeField] TMP_Text AbilityDescription;
-        [SerializeField] GameObject AbilityPreviewWindow;
-        [SerializeField] Vector2 PreviewDimensions = new(256, 144);
+        [Header("Captain Details")]
+        [SerializeField] TMP_Text SelectedCaptainName;
+        [SerializeField] TMP_Text SelectedCaptainElementLabel;
+        [SerializeField] TMP_Text SelectedCaptainQuote;
+        [SerializeField] Image SelectedCaptainImage;
+        [SerializeField] Image SelectedCaptainShipImage;
 
-        void Start()
-        {
-            if (AbilityName != null) Debug.LogWarning("HangarAbilitiesView - AbilityName Serialized Field is not set");
-            if (AbilityDescription != null) Debug.LogWarning("HangarAbilitiesView - ShipDescription Serialized Field is not set");
-            if (AbilityPreviewWindow != null) Debug.LogWarning("HangarAbilitiesView - AbilityPreviewWindow Serialized Field is not set");
-        }
+        [Header("Captains - Upgrades UI")]
+
+        [SerializeField] TMP_Text SelectedUpgradeDescription;   // TODO:
+        [SerializeField] TMP_Text SelectedUpgradeXPRequirement;
+        [SerializeField] TMP_Text SelectedUpgradeCrystalRequirement;
+        [SerializeField] Image SelectedUpgradeCrystalRequirementImage;
+        [SerializeField] Button UpgradeButton;
+        [SerializeField] Sprite UpgradeButtonLockedSprite;
+        [SerializeField] Sprite UpgradeButtonUnlockedSprite;
+
+        bool crystalRequirementSatisfied = false;
+        bool xpRequirementSatisfied = false;
+        VirtualItem upgrade;
+        Captain captain;
+
+        const string SatisfiedMarkdownColor = "FFF"; 
+        const string UnsatisfiedMarkdownColor = "888"; 
+
+        const string CrystalRequirementTemplate = "<color=#{2}>{0}</color> / {1}";
+        const string XPRequirementTemplate = "<color=#{2}>{0}</color> / {1} XP";
 
         public override void UpdateView()
         {
-            var model = SelectedModel as SO_ShipAbility;
+            var model = SelectedModel as SO_Captain;
 
-            if (AbilityName != null) AbilityName.text = model.Name;
-            if (AbilityDescription != null) AbilityDescription.text = model.Description;
-            if (AbilityPreviewWindow != null)
+            captain = CaptainManager.Instance.GetCaptainByName(model.Name);
+
+            // Load upgrade from catalog
+            upgrade = CatalogManager.Inventory.GetCaptainUpgrade(captain.Ship.Class.ToString(), captain.PrimaryElement.ToString(), captain.Level);
+
+            // Lock Logic - Lock Icon
+
+            // XP Requirement
+            var xpNeeded = CaptainManager.Instance.GetCaptainUpgradeXPRequirement(captain);
+            xpRequirementSatisfied = captain.XP >= xpNeeded;
+            SelectedUpgradeXPRequirement.text = string.Format(XPRequirementTemplate, captain.XP, xpNeeded, xpRequirementSatisfied ? SatisfiedMarkdownColor : UnsatisfiedMarkdownColor);
+
+            // Crystal Requirement
+            var crystalsNeeded = 100;
+            var crystalBalance = CatalogManager.Instance.GetCrystalBalance(captain.PrimaryElement);
+            crystalRequirementSatisfied = crystalBalance >= crystalsNeeded;
+            SelectedUpgradeCrystalRequirement.text = string.Format(CrystalRequirementTemplate, crystalBalance, crystalsNeeded, crystalRequirementSatisfied ? SatisfiedMarkdownColor : UnsatisfiedMarkdownColor);
+
+            SelectedUpgradeCrystalRequirementImage.sprite = CosmicShore.Elements.Get(captain.PrimaryElement).GetFullIcon(crystalRequirementSatisfied);
+
+            // Upgrade Button
+            if (xpRequirementSatisfied && crystalRequirementSatisfied)
             {
-                for (var i = 0; i < AbilityPreviewWindow.transform.childCount; i++)
-                    Destroy(AbilityPreviewWindow.transform.GetChild(i).gameObject);
-
-                var preview = Instantiate(model.PreviewClip, AbilityPreviewWindow.transform);
-                preview.GetComponent<RawImage>().rectTransform.sizeDelta = PreviewDimensions;
-                AbilityPreviewWindow.SetActive(true);
-                Canvas.ForceUpdateCanvases();
+                UpgradeButton.GetComponent<Image>().sprite = UpgradeButtonUnlockedSprite;
+                UpgradeButton.enabled = true;
             }
+            else
+            {
+                UpgradeButton.GetComponent<Image>().sprite = UpgradeButtonLockedSprite;
+                UpgradeButton.enabled = false;
+            }
+
+            // Populate Captain Details
+            Debug.Log($"Populating Captain Details List: {captain.Name}");
+            Debug.Log($"Populating Captain Details List: {captain.Description}");
+            Debug.Log($"Populating Captain Details List: {captain.Icon}");
+            Debug.Log($"Populating Captain Details List: {captain.Image}");
+            if (SelectedCaptainName != null) SelectedCaptainName.text = captain.Name;
+            if (SelectedCaptainElementLabel != null) SelectedCaptainElementLabel.text = "The " + captain.PrimaryElement.ToString() + " " + captain.Ship.Name;
+            if (SelectedUpgradeDescription != null) SelectedUpgradeDescription.text = captain.Description;
+            if (SelectedCaptainQuote != null) SelectedCaptainQuote.text = captain.Flavor;
+            if (SelectedCaptainImage != null) SelectedCaptainImage.sprite = captain.Image;
+            if (SelectedCaptainShipImage != null) SelectedCaptainShipImage.sprite = captain.Ship.Icon;
+        }
+
+        public void PurchaseUpgrade()
+        {
+            Debug.Log("PurchaseUpgrade");
+            if (crystalRequirementSatisfied && xpRequirementSatisfied)
+            {
+                Debug.Log("PurchaseUpgrade - Requirements satisfied");
+
+                CatalogManager.Instance.PurchaseCaptainUpgrade(captain, OnCaptainUpgraded);
+            }
+        }
+
+        public void OnCaptainUpgraded()
+        {
+            CaptainManager.Instance.ReloadCaptain(captain);
+            UpdateView();
         }
     }
 }

@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using CosmicShore.Game.AI;
 using CosmicShore.Utility.ClassExtensions;
+using System;
 
 namespace CosmicShore.Environment.FlowField
 {
@@ -24,8 +25,7 @@ namespace CosmicShore.Environment.FlowField
     public class Crystal : NodeItem
     {
         #region Events
-        public delegate void CrystalMove();
-        public static event CrystalMove OnCrystalMove;
+        public static Action OnCrystalMove;
         #endregion
 
         #region Inspector Fields
@@ -175,7 +175,7 @@ namespace CosmicShore.Environment.FlowField
                     StartCoroutine(model.model.GetComponent<FadeIn>().FadeInCoroutine());
                 }
 
-                transform.SetPositionAndRotation(Random.insideUnitSphere * sphereRadius + origin, UnityEngine.Random.rotation);
+                transform.SetPositionAndRotation(UnityEngine.Random.insideUnitSphere * sphereRadius + origin, UnityEngine.Random.rotation);
                 OnCrystalMove?.Invoke();
 
                 UpdateSelfWithNode();  //TODO: check if we need to remove elmental crystals from the node

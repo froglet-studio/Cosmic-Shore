@@ -13,8 +13,9 @@ namespace CosmicShore.Game.Projectiles
         public Teams Team;
         public Ship Ship;
         public bool ImpactOnEnd;
-
-
+        public float Inertia = 1;
+        
+        [HideInInspector] public Vector3 InitialScale;
         [SerializeField] List<TrailBlockImpactEffects> trailBlockImpactEffects;
         [SerializeField] List<ShipImpactEffects> shipImpactEffects;
         [SerializeField] List<CrystalImpactEffects> crystalImpactEffects;
@@ -28,8 +29,14 @@ namespace CosmicShore.Game.Projectiles
 
         MeshRenderer meshRenderer;
 
+        private void Awake()
+        {
+            InitialScale = transform.localScale;
+        }
+
         void Start()
         {
+            
             if (spike) 
             {
                 //transform.localScale = new Vector3(.4f,.4f,2);
@@ -77,7 +84,7 @@ namespace CosmicShore.Game.Projectiles
                 switch (effect)
                 {
                     case TrailBlockImpactEffects.DeactivateTrailBlock:
-                        trailBlockProperties.trailBlock.Damage(Velocity, Ship.Team, Ship.Player.PlayerName);
+                        trailBlockProperties.trailBlock.Damage(Velocity * Inertia, Ship.Team, Ship.Player.PlayerName);
                         break;
                     case TrailBlockImpactEffects.Steal:
                         trailBlockProperties.trailBlock.Steal(Ship.Player, Team);
@@ -94,6 +101,7 @@ namespace CosmicShore.Game.Projectiles
                         GetComponent<LoadedGun>().FireGun();
                         break;
                     case TrailBlockImpactEffects.Explode:
+                        Debug.Log("TrailExplode");
                         ((ExplodableProjectile)this).Detonate();
                         break;
 
@@ -115,6 +123,7 @@ namespace CosmicShore.Game.Projectiles
                         GetComponent<LoadedGun>().FireGun();
                         break;
                     case TrailBlockImpactEffects.Explode:
+                        Debug.Log("EndExplode");
                         ((ExplodableProjectile)this).Detonate();
                         break;
 

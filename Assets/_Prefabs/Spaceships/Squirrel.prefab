@@ -1435,6 +1435,7 @@ MonoBehaviour:
   - {fileID: 7696976320636676308}
   - {fileID: 1376376450048088127}
   - {fileID: 6988205045896376628}
+  shipHUD: {fileID: 0}
   Silhouette: {fileID: 6013884537839217096}
   AOEPrefab: {fileID: 2728798890556433942, guid: 4a855af160021d241b8c1ac70cf2d792,
     type: 3}
@@ -1444,7 +1445,7 @@ MonoBehaviour:
   crystalImpactEffects: 060000000b000000
   minExplosionScale: 400
   maxExplosionScale: 400
-  trailBlockImpactEffects: 0e00000000000000
+  trailBlockImpactEffects: 0e0000000000000011000000
   blockChargeChange: 0
   boostMultiplier: 0
   boostFuelAmount: 0

@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ce7474d4aed9d704ea0001a2338c0784, type: 3}
+  m_Name: SO_Captain_Sparrow_Mass
+  m_EditorClassIdentifier: 
+  Name: Shrapnel
+  Description: '[Description text placeholder]'
+  AIBehaviorDescription: 
+  Flavor: '[Flavor text placeholder]'
+  Image: {fileID: 21300000, guid: b903f821367394d4abf5a37d055c8b44, type: 3}
+  HeadshotImage: {fileID: 0}
+  Icon: {fileID: 21300000, guid: 4bb626eb5275b9c41a2c6e117aee2f42, type: 3}
+  SelectedIcon: {fileID: 21300000, guid: a631b4ddb4bf68b4bb89f43b7ab8380d, type: 3}
+  Ship: {fileID: 11400000, guid: 7b7053dd065edb54baa3b831b90f4985, type: 2}
+  PrimaryElement: 2
+  Element: {fileID: 11400000, guid: 447871aa55eea934883d7160fef3c3ef, type: 2}
+  InitialResourceLevels:
+    Mass: 0.1
+    Charge: 0
+    Space: 0
+    Time: 0
+  BasePrice: 0

@@ -1,3 +1,4 @@
+using CosmicShore;
 using CosmicShore.Integrations.PlayFab.Authentication;
 using CosmicShore.Integrations.PlayFab.CloudScripts;
 using CosmicShore.Integrations.PlayFab.Economy;
@@ -13,18 +14,18 @@ namespace _Scripts.Integrations.PlayFab.PlayFabTests
         private void Start()
         {
             AuthenticationManager.OnLoginSuccess += ShowBundles;
-            CatalogManager.OnGettingBundleId += GrantElementalCrystals;
+            CatalogBundleHandler.OnGettingBundleId += GrantElementalCrystals;
         }
 
         private void OnDisable()
         {
             AuthenticationManager.OnLoginSuccess -= ShowBundles;
-            CatalogManager.OnGettingBundleId -= GrantElementalCrystals;
+            CatalogBundleHandler.OnGettingBundleId -= GrantElementalCrystals;
         }
 
         private void ShowBundles()
         {
-            CatalogManager.GetBundles();
+            CatalogBundleHandler.GetBundles();
         }
 
         private void GrantElementalCrystals(string bundleId)

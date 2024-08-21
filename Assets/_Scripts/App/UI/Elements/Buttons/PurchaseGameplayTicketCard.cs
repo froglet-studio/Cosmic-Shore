@@ -7,21 +7,13 @@ namespace CosmicShore
     public class PurchaseGameplayTicketCard : PurchaseCard
     {
         [SerializeField] TMP_Text PriceLabel;
-        VirtualItem virtualItem;
 
         void Start()
         {
             Debug.Log($"Start PurchaseGameplayTicketCard:{name}");
         }
 
-        public override void InitializeView()
-        {
-            base.InitializeView();
-        
-            
-        }
-
-        public void SetVirtualItem(VirtualItem virtualItem)
+        public override void SetVirtualItem(VirtualItem virtualItem)
         {
             Debug.Log($"SetVirtualItem - {virtualItem.Name},{virtualItem.Type},{virtualItem.ContentType}");
 
@@ -32,8 +24,8 @@ namespace CosmicShore
 
         public override void Purchase()
         {
-            Debug.Log($"PurchaseFactionTicketCard.Purchase");
-            CatalogManager.Instance.PurchaseItem(virtualItem, virtualItem.Price[0]);
+            Debug.Log($"PurchaseDailyChallengeTicketCard.Purchase");
+            CatalogManager.Instance.PurchaseItem(virtualItem, virtualItem.Price[0], 5);
         }
     }
 }

@@ -16,14 +16,14 @@ MonoBehaviour:
   Name: Serpent
   Summary: '[Placeholder Summary Text]'
   Description: Make those walls
-  Icon: {fileID: 21300000, guid: 3a6fc9befce30444884fe8912d237f2e, type: 3}
-  SelectedIcon: {fileID: 21300000, guid: 4dc09966e540a9c4c8bb466918fe43e9, type: 3}
+  Icon: {fileID: 21300000, guid: db0b65e73f14fe24883b40a9c0bbc11c, type: 3}
+  SelectedIcon: {fileID: 21300000, guid: 27cc30ef4d5f74449bd0bf6014941e02, type: 3}
   PreviewClip: {fileID: 2096801853598961014, guid: 6b8d168238dc02149b26d1221d313893,
     type: 3}
   PreviewImage: {fileID: 21300000, guid: b3fe0f4b92e2cf74b830808e3f8d88fc, type: 3}
   TrailPreviewImage: {fileID: 21300000, guid: 2e75f6670391025489d30c8361fb8de3, type: 3}
-  CardSilohoutte: {fileID: 21300000, guid: 20c2cf23262a5354a8f8a0808a3acea8, type: 3}
-  CardSilohoutteActive: {fileID: 21300000, guid: a89a335fa1c02f745ba93948c9b7ee32,
+  CardSilohoutte: {fileID: 21300000, guid: 27cc30ef4d5f74449bd0bf6014941e02, type: 3}
+  CardSilohoutteActive: {fileID: 21300000, guid: db0b65e73f14fe24883b40a9c0bbc11c,
     type: 3}
   Abilities:
   - {fileID: 11400000, guid: cf4c7963673545946af80618f5a52917, type: 2}

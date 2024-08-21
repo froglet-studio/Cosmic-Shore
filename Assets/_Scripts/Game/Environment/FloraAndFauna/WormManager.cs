@@ -5,25 +5,29 @@ using CosmicShore.Core;
 
 public class WormManager : Population
 {
-    [SerializeField] private BodySegmentFauna headSegmentPrefab;
-    [SerializeField] private BodySegmentFauna middleSegmentPrefab;
-    [SerializeField] private BodySegmentFauna tailSegmentPrefab;
-    [SerializeField] private Worm wormPrefab;
+    [SerializeField] Worm wormPrefab;
+    [SerializeField] Worm emptyWormPrefab;
+    [SerializeField] int initialWormCount = 3;
+    [SerializeField] int initialSegmentsPerWorm = 5;
+    [SerializeField] float spawnRadius = 50f;
+    [SerializeField] float growthInterval = 10f;
+    [SerializeField] int maxWormsAllowed = 10;
+    [SerializeField] float targetUpdateInterval = 5f;
 
-    [SerializeField] private int initialWormCount = 3;
-    [SerializeField] private int initialSegmentsPerWorm = 5;
-    [SerializeField] private float spawnRadius = 50f;
-    [SerializeField] private float growthInterval = 10f;
-    [SerializeField] private int maxWormsAllowed = 10;
-    [SerializeField] private float targetUpdateInterval = 5f;
+    Vector3 headSpacing;
+    Vector3 tailSpacing;
+    Vector3 middleSpacing;
 
-    private List<Worm> activeWorms = new List<Worm>();
-    private float growthTimer;
-    private float targetUpdateTimer;
+    List<Worm> activeWorms = new List<Worm>();
+    float growthTimer;
+    float targetUpdateTimer;
 
     protected override void Start()
     {
         base.Start();
+        headSpacing = wormPrefab.initialSegments[0].transform.position - wormPrefab.initialSegments[1].transform.position;
+        tailSpacing = wormPrefab.initialSegments[wormPrefab.initialSegments.Count - 1].transform.position - wormPrefab.initialSegments[wormPrefab.initialSegments.Count - 2].transform.position;
+        middleSpacing = wormPrefab.initialSegments[2].transform.position - wormPrefab.initialSegments[1].transform.position;
         SpawnInitialWorms();
     }
 
@@ -38,8 +42,7 @@ public class WormManager : Population
         for (int i = 0; i < initialWormCount; i++)
         {
             Vector3 spawnPosition = transform.position + Random.insideUnitSphere * spawnRadius;
-            Worm newWorm = CreateWorm(spawnPosition, initialSegmentsPerWorm);
-            activeWorms.Add(newWorm);
+            CreateWorm(spawnPosition);
         }
     }
 
@@ -51,14 +54,7 @@ public class WormManager : Population
             growthTimer = 0f;
             foreach (Worm worm in activeWorms)
             {
-                if (worm.Segments.Count > 2) // Only grow if there's at least one middle segment
-                {
-                    BodySegmentFauna newSegment;
-                    if (!worm.hasHead) newSegment = CreateSegment(worm.Segments[0].transform.position, 1);
-                    else if (!worm.hasTail) newSegment = CreateSegment(worm.Segments[-1].transform.position, 1);
-                    else newSegment = CreateSegment(worm.Segments[1].transform.position, 0.8f);
-                    worm.AddSegment(newSegment, 3); // Insert after the head
-                }
+                worm.AddSegment();
             }
         }
     }
@@ -69,7 +65,7 @@ public class WormManager : Population
         if (targetUpdateTimer >= targetUpdateInterval)
         {
             targetUpdateTimer = 0f;
-            Vector3 highDensityPosition = node.GetExplosionTargets(1, Team)[0];
+            Vector3 highDensityPosition = node.GetExplosionTarget(Team);
             foreach (Worm worm in activeWorms)
             {
                 worm.SetTarget(highDensityPosition);
@@ -77,26 +73,19 @@ public class WormManager : Population
         }
     }
 
-    public Worm CreateWorm(Vector3 position, int segmentCount)
+    public Worm CreateWorm(Vector3 position , Worm newWormPrefab = null)
     {
-        Worm newWorm = Instantiate(wormPrefab, position, Quaternion.identity);
+        Worm newWorm;
+        if (!newWormPrefab) newWorm = Instantiate(wormPrefab, position, Quaternion.identity);
+        else newWorm = Instantiate(newWormPrefab, position, Quaternion.identity);
+
         newWorm.Manager = this;
         newWorm.Team = Team;
-
-        for (int i = 0; i < segmentCount; i++)
-        {
-            BodySegmentFauna newSegment;
-            if (i == 0)
-                newSegment = CreateSegment(position, 1f, true, false);
-            else if (i == segmentCount - 1)
-                newSegment = CreateSegment(position, 0.6f, false, true);
-            else
-                newSegment = CreateSegment(position, Mathf.Max(0.6f, 1f - (i * 0.1f)), false, false);
-
-            newWorm.AddSegment(newSegment);
-            position += newWorm.transform.forward * newSegment.transform.localScale.z; // TODO: use cylinder or other correction, add parenting possibly
-        }
-
+        newWorm.transform.parent = transform;
+        newWorm.headSpacing = headSpacing;
+        newWorm.tailSpacing = tailSpacing;
+        newWorm.middleSpacing = middleSpacing;
+        activeWorms.Add(newWorm);
         return newWorm;
     }
 
@@ -104,28 +93,12 @@ public class WormManager : Population
     {
         if (segments.Count == 0) return null;
 
-        Worm newWorm = Instantiate(wormPrefab, segments[0].transform.position, Quaternion.identity);
-        newWorm.Manager = this;
-        newWorm.Team = Team;
+        Worm newWorm = CreateWorm(segments[0].transform.position, emptyWormPrefab);
 
-        foreach (var segment in segments)
-        {
-            newWorm.AddSegment(segment);
-        }
+        newWorm.initialSegments = segments;
+        newWorm.InitializeWorm();
 
-        activeWorms.Add(newWorm);
         return newWorm;
-    }
-
-    public BodySegmentFauna CreateSegment(Vector3 position, float scale, bool isHead = false, bool isTail = false)
-    {
-        BodySegmentFauna prefab = isHead ? headSegmentPrefab : (isTail ? tailSegmentPrefab : middleSegmentPrefab);
-        BodySegmentFauna newSegment = Instantiate(prefab, position, Quaternion.identity);
-        newSegment.SetScale(scale);
-        newSegment.IsHead = isHead;
-        newSegment.IsTail = isTail;
-        newSegment.Team = Team;
-        return newSegment;
     }
 
     public void RemoveWorm(Worm worm)
@@ -133,13 +106,13 @@ public class WormManager : Population
         activeWorms.Remove(worm);
         Destroy(worm.gameObject);
 
-        // Spawn a new worm if we're below the initial count
-        if (activeWorms.Count < initialWormCount)
-        {
-            Vector3 spawnPosition = transform.position + Random.insideUnitSphere * spawnRadius;
-            Worm newWorm = CreateWorm(spawnPosition, initialSegmentsPerWorm);
-            activeWorms.Add(newWorm);
-        }
+        //// Spawn a new worm if we're below the initial count
+        //if (activeWorms.Count < initialWormCount)
+        //{
+        //    Vector3 spawnPosition = transform.position + Random.insideUnitSphere * spawnRadius;
+        //    Worm newWorm = CreateWorm(spawnPosition);
+        //    activeWorms.Add(newWorm);
+        //}
     }
 
 }

@@ -91,7 +91,7 @@ namespace CosmicShore.Core
                         if (!ship.ShipStatus.AutoPilotEnabled) HapticController.PlayHaptic(HapticType.BlockCollision);//.PlayBlockCollisionHaptics();
                         break;
                     case TrailBlockImpactEffects.DeactivateTrailBlock:
-                        trailBlockProperties.trailBlock.Damage(ship.ShipStatus.Course * ship.ShipStatus.Speed, team, Player.PlayerName);
+                        trailBlockProperties.trailBlock.Damage(ship.ShipStatus.Course * ship.ShipStatus.Speed * ship.Inertia, team, Player.PlayerName);
                         break;
                     case TrailBlockImpactEffects.Steal:
                         //Debug.Log($"steal: playername {Player.PlayerName} team: {team}");

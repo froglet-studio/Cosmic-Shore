@@ -13,12 +13,12 @@ namespace CosmicShore.Game
 
         private void OnEnable()
         {
-            GameManager.onPlayGame += ResetTimer;
+            GameManager.OnPlayGame += ResetTimer;
         }
 
         private void OnDisable()
         {
-            GameManager.onPlayGame -= ResetTimer;
+            GameManager.OnPlayGame -= ResetTimer;
         }
 
         private void Start()

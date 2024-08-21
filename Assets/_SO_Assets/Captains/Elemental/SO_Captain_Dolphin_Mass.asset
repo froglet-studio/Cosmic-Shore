@@ -14,18 +14,18 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Name: Slingshot
   Description: "Biggest blocks in Class while it\u2019s drifting."
+  AIBehaviorDescription: 
   Flavor: '[Flavor text placeholder]'
-  Image: {fileID: 21300000, guid: 516d19e9db897c14aa1698abb25cbe32, type: 3}
+  Image: {fileID: 21300000, guid: 7ccf5cdc412ce4c48adb13f909b8da49, type: 3}
+  HeadshotImage: {fileID: 0}
   Icon: {fileID: 21300000, guid: 4bb626eb5275b9c41a2c6e117aee2f42, type: 3}
   SelectedIcon: {fileID: 21300000, guid: a631b4ddb4bf68b4bb89f43b7ab8380d, type: 3}
   Ship: {fileID: 11400000, guid: c0f30e9f09616874780edc0a375ce686, type: 2}
   PrimaryElement: 2
+  Element: {fileID: 11400000, guid: 447871aa55eea934883d7160fef3c3ef, type: 2}
   InitialResourceLevels:
-    Mass: 0.5
+    Mass: 0.1
     Charge: 0
     Space: 0
     Time: 0
-  InitialMass: 0.5
-  InitialCharge: 0
-  InitialSpace: 0
-  InitialTime: 0
+  BasePrice: 0

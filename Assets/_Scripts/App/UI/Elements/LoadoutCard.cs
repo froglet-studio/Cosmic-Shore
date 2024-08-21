@@ -1,5 +1,5 @@
 using CosmicShore.App.Systems.Loadout;
-using CosmicShore.App.UI.Menus;
+using CosmicShore.App.UI.Views;
 using System.Linq;
 using TMPro;
 using UnityEngine;
@@ -27,7 +27,7 @@ namespace CosmicShore.App.UI.Elements
         [SerializeField] Image IntensityImage;
         [SerializeField] int Index;
         Loadout loadout;
-        LoadoutMenu loadoutMenu;
+        ArcadeLoadoutView loadoutMenu;
 
         void Start()
         {
@@ -36,7 +36,7 @@ namespace CosmicShore.App.UI.Elements
             UpdateCardView();
         }
 
-        public void SetLoadoutMenu(LoadoutMenu menu)
+        public void SetLoadoutMenu(ArcadeLoadoutView menu)
         {
             loadoutMenu = menu;
         }

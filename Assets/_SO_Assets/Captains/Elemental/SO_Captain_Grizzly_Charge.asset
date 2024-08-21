@@ -20,12 +20,10 @@ MonoBehaviour:
   SelectedIcon: {fileID: 21300000, guid: 6c4f40eef57f4d04bbd01083161212ff, type: 3}
   Ship: {fileID: 11400000, guid: 312ea06c4539cdc46b027615a590c94b, type: 2}
   PrimaryElement: 1
+  Element: {fileID: 11400000, guid: 93cccacc721734240998ca415746a8dc, type: 2}
   InitialResourceLevels:
     Mass: 0
-    Charge: 0.5
+    Charge: 0.1
     Space: 0
     Time: 0
-  InitialMass: 0
-  InitialCharge: 0.5
-  InitialSpace: 0
-  InitialTime: 0
+  BasePrice: 0

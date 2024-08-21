@@ -1,6 +1,8 @@
+using CosmicShore.App.Systems;
 using CosmicShore.Environment.FlowField;
 using CosmicShore.Game.AI; // TODO: code smell that this namespace needs to be included here
 using CosmicShore.Utility.Singleton;
+using System;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -10,11 +12,8 @@ namespace CosmicShore.Core
     [DefaultExecutionOrder(0)]
     public class GameManager : SingletonPersistent<GameManager>
     {
-        public delegate void OnPlayGameEvent();
-        public static event OnPlayGameEvent onPlayGame;
-
-        public delegate void OnGameOverEvent();
-        public static event OnGameOverEvent onGameOver;
+        public static Action OnPlayGame;
+        public static Action OnGameOver;
 
         [SerializeField] public SO_GameList AllGames;
         [SerializeField] public SO_ShipList AllShips;
@@ -29,7 +28,7 @@ namespace CosmicShore.Core
         public static void EndGame()
         {
             Debug.Log("GameManager.EndGame");
-            onGameOver?.Invoke();
+            OnGameOver?.Invoke();
         }
 
         public void RestartGame()
@@ -65,7 +64,7 @@ namespace CosmicShore.Core
 
         public void WaitOnPlayerLoading()
         {
-            onPlayGame?.Invoke();
+            OnPlayGame?.Invoke();
         }
 
         public void WaitOnAILoading(AIPilot aiPilot)

@@ -1,6 +1,5 @@
 using UnityEngine;
 using System.Collections.Generic;
-using System.Collections;
 
 namespace CosmicShore.App.UI
 {
@@ -18,20 +17,21 @@ namespace CosmicShore.App.UI
 
         public void ActivateLink(NavLink linkToActivate)
         {
-            Debug.LogWarning($"NavGroup.ActivateLink - {name}, {linkToActivate.gameObject.name}");
             int selectionIndex = 0;
             foreach (var link in navLinks)
             {
-                Debug.LogWarning($"NavGroup.ActivateLink - {link.gameObject.name}, {link == linkToActivate}");
-                link.SetActive(link == linkToActivate);
+                link.SetActive(link.Index == linkToActivate.Index);
                 switch (navGroupType)
                 {
                     case NavGroupType.SelectView:
-                        link.view.gameObject.SetActive(link == linkToActivate);
+                        link.view.gameObject.SetActive(link.Index == linkToActivate.Index);
                         break;
                     case NavGroupType.UpdateView:
-                        if (link == linkToActivate)
+                        if (link.Index == linkToActivate.Index)
                             link.view.Select(selectionIndex);
+                        break;
+                    default:
+                        Debug.LogWarning("NavGroup - ActivateLink: Unknown NavGroup Link Type.");
                         break;
                 }
                 selectionIndex++;
@@ -51,9 +51,12 @@ namespace CosmicShore.App.UI
         {
             navLinks.Clear();
 
+            int index = 0;
             foreach (var navLink in navLinkContainer.GetComponentsInChildren<NavLink>(true))
             {
                 navLink.navGroup = this;
+                navLink.Index = index;
+                index++;
                 navLinks.Add(navLink);
             }
 

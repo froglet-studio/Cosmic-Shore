@@ -1,12 +1,15 @@
  using UnityEngine;
 
-public class PauseSystem
+namespace CosmicShore.App.Systems
 {
-    public static bool Paused { get; private set; }
-
-    public static void TogglePauseGame()
+    public class PauseSystem
     {
-        Paused = !Paused;
-        Time.timeScale = Paused ? 0 : 1;
+        public static bool Paused { get; private set; }
+
+        public static void TogglePauseGame()
+        {
+            Paused = !Paused;
+            Time.timeScale = Paused ? 0 : 1;
+        }
     }
 }
