@@ -51,7 +51,6 @@ namespace CosmicShore.App.UI.Screens
         {
             GameManager.UnPauseGame();
             MiniGameHUD.SetActive(true);
-            //gameMenu.OnClickUnpauseGame();
         }
 
         /// <summary>
@@ -61,7 +60,6 @@ namespace CosmicShore.App.UI.Screens
         {
             GameManager.PauseGame();
             MiniGameHUD.SetActive(false);
-            //gameMenu.OnClickPauseGame();
         }
 
         public void OnClickMainMenu()

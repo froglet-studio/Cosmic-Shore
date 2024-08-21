@@ -494,7 +494,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 375ec9a0a9985d343bfa5f4dba47b8f8, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 90ae92eb7bbd61540bc25060355519e9, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -796,9 +796,9 @@ MonoBehaviour:
   BackgroundImage: {fileID: 3501556928642216089}
   PriceLabel: {fileID: 3501556926573250498}
   UnavailablePriceLabel: {fileID: 2286248478414424687}
-  CaptainNameLabel: {fileID: 3501556928192695831}
-  CaptainDescriptionLabel: {fileID: 3501556926953510075}
-  CaptainImage: {fileID: 3501556928147841641}
+  ItemNameLabel: {fileID: 3501556928192695831}
+  ItemDescriptionLabel: {fileID: 3501556926953510075}
+  ItemImage: {fileID: 3501556928147841641}
   PriceButton: {fileID: 3501556927872912990}
   UnavailableButton: {fileID: 2042559121576058440}
   PurchasedButton: {fileID: 8944312282483934212}

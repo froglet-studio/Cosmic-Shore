@@ -17,7 +17,6 @@ namespace CosmicShore.App.UI.Views
         [SerializeField] Image SelectedCaptainShipImage;
 
         [Header("Captains - Upgrades UI")]
-
         [SerializeField] TMP_Text SelectedUpgradeDescription;   // TODO:
         [SerializeField] TMP_Text SelectedUpgradeXPRequirement;
         [SerializeField] TMP_Text SelectedUpgradeCrystalRequirement;
@@ -25,6 +24,8 @@ namespace CosmicShore.App.UI.Views
         [SerializeField] Button UpgradeButton;
         [SerializeField] Sprite UpgradeButtonLockedSprite;
         [SerializeField] Sprite UpgradeButtonUnlockedSprite;
+        [SerializeField] MenuAudio UpgradeMenuAudio;
+        [SerializeField] MenuAudio DeniedMenuAudio;
 
         bool crystalRequirementSatisfied = false;
         bool xpRequirementSatisfied = false;
@@ -63,15 +64,9 @@ namespace CosmicShore.App.UI.Views
 
             // Upgrade Button
             if (xpRequirementSatisfied && crystalRequirementSatisfied)
-            {
                 UpgradeButton.GetComponent<Image>().sprite = UpgradeButtonUnlockedSprite;
-                UpgradeButton.enabled = true;
-            }
             else
-            {
                 UpgradeButton.GetComponent<Image>().sprite = UpgradeButtonLockedSprite;
-                UpgradeButton.enabled = false;
-            }
 
             // Populate Captain Details
             Debug.Log($"Populating Captain Details List: {captain.Name}");
@@ -95,11 +90,16 @@ namespace CosmicShore.App.UI.Views
 
                 CatalogManager.Instance.PurchaseCaptainUpgrade(captain, OnCaptainUpgraded);
             }
+            else
+            {
+                DeniedMenuAudio.PlayAudio();
+            }
         }
 
         public void OnCaptainUpgraded()
         {
             CaptainManager.Instance.ReloadCaptain(captain);
+            UpgradeMenuAudio.PlayAudio();
             UpdateView();
         }
     }

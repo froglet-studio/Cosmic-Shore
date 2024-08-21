@@ -166,7 +166,7 @@ GameObject:
   - component: {fileID: 6510446657241822603}
   - component: {fileID: 6510446657241822327}
   - component: {fileID: 6510446657241822326}
-  - component: {fileID: 7562510219845640417}
+  - component: {fileID: 3283657941349267021}
   m_Layer: 5
   m_Name: HangarShipSelectionCard
   m_TagString: Untagged
@@ -291,6 +291,18 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
+      - m_Target: {fileID: 3283657941349267021}
+        m_TargetAssemblyTypeName: CosmicShore.App.UI.MenuAudio, Assembly-CSharp
+        m_MethodName: PlayAudio
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &6510446657241822327
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -329,7 +341,7 @@ MonoBehaviour:
   ShipImage: {fileID: 816302066015412011}
   LockImage: {fileID: 816302064907713720}
   Button: {fileID: 6510446657241822603}
-  MenuAudio: {fileID: 7562510219845640417}
+  MenuAudio: {fileID: 0}
   CallToActionTarget: {fileID: 6510446657241822327}
   ActiveSize: 64
   InactiveSize: 52
@@ -341,7 +353,7 @@ MonoBehaviour:
   InactiveLockSprite: {fileID: 21300000, guid: 05eaba57f04505a4a91abbcc8ee62ba4, type: 3}
   HangarMenu: {fileID: 0}
   Ship: {fileID: 0}
---- !u!114 &7562510219845640417
+--- !u!114 &3283657941349267021
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -353,7 +365,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 698f3492214843a49b922c5c64f54760, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  audioClip: {fileID: 8300000, guid: bcbe43895a970184ab80a7c2a7915290, type: 3}
+  category: 3
 --- !u!1001 &816302065593698426
 PrefabInstance:
   m_ObjectHideFlags: 0

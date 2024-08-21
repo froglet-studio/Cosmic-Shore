@@ -1,6 +1,7 @@
 ﻿using CosmicShore.Game.Arcade;
 using CosmicShore.Models.Enums;
 using CosmicShore.Utility.Singleton;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -19,6 +20,7 @@ namespace CosmicShore.Core
         Dictionary<MiniGames, SO_ArcadeGame> ArcadeGameLookup = new();
         Dictionary<MiniGames, SO_TrainingGame> TrainingGameLookup = new();
         Dictionary<MiniGames, SO_ArcadeGame> FactionMissionLookup = new();
+        Animator SceneTransitionAnimator;
 
         public override void Awake()
         {
@@ -42,7 +44,7 @@ namespace CosmicShore.Core
             MiniGame.NumberOfPlayers = 1;
             MiniGame.IsDailyChallenge = false;
             Hangar.Instance.SetAiDifficultyLevel(intensity);
-            SceneManager.LoadScene(FactionMissionLookup[gameMode].SceneName);
+            StartCoroutine(LaunchGameCoroutine(FactionMissionLookup[gameMode].SceneName));
         }
 
         public void LaunchArcadeGame(MiniGames gameMode, ShipTypes ship, ResourceCollection shipResources, int intensity, int numberOfPlayers, bool isDailyChallenge = false)
@@ -53,7 +55,7 @@ namespace CosmicShore.Core
             MiniGame.NumberOfPlayers = numberOfPlayers;
             MiniGame.IsDailyChallenge = isDailyChallenge;
             Hangar.Instance.SetAiDifficultyLevel(intensity);
-            SceneManager.LoadScene(ArcadeGameLookup[gameMode].SceneName);
+            StartCoroutine(LaunchGameCoroutine(ArcadeGameLookup[gameMode].SceneName));
         }
 
         public void LaunchTrainingGame(MiniGames gameMode, ShipTypes ship, ResourceCollection shipResources, int intensity, int numberOfPlayers, bool isDailyChallenge = false)
@@ -64,7 +66,7 @@ namespace CosmicShore.Core
             MiniGame.NumberOfPlayers = numberOfPlayers;
             MiniGame.IsDailyChallenge = isDailyChallenge;
             Hangar.Instance.SetAiDifficultyLevel(intensity);
-            SceneManager.LoadScene(TrainingGameLookup[gameMode].Game.SceneName);
+            StartCoroutine(LaunchGameCoroutine(TrainingGameLookup[gameMode].Game.SceneName));
         }
 
         public SO_TrainingGame GetTrainingGameByMode(MiniGames gameMode)
@@ -75,6 +77,21 @@ namespace CosmicShore.Core
         public SO_ArcadeGame GetArcadeGameSOByName(string displayName)
         {
             return ArcadeGames.GameList.Where(x => x.DisplayName == displayName).FirstOrDefault();
+        }
+
+        public void RegisterSceneTransitionAnimator(Animator animator)
+        {
+            SceneTransitionAnimator = animator;
+        }
+
+
+        IEnumerator LaunchGameCoroutine(string sceneName)
+        {
+            SceneTransitionAnimator?.SetTrigger("Start");
+
+            yield return new WaitForSecondsRealtime(.5f);
+
+            SceneManager.LoadScene(sceneName);
         }
     }
 }
