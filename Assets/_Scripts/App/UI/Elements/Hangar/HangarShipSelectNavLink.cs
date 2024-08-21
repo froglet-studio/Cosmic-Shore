@@ -20,7 +20,6 @@ namespace CosmicShore
         [SerializeField] Image ShipImage;
         [SerializeField] Image LockImage;
         [SerializeField] Button Button;
-        [SerializeField] MenuAudio MenuAudio;
         [SerializeField] CallToActionTarget CallToActionTarget;
         [SerializeField] float ActiveSize = 64;
         [SerializeField] float InactiveSize = 52;
@@ -52,7 +51,6 @@ namespace CosmicShore
         public void Select()
         {
             HangarMenu.SelectShip(index);
-            MenuAudio.PlayAudio();
         }
 
         public override void SetActive(bool isActive)

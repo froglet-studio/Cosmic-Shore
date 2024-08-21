@@ -653,6 +653,7 @@ GameObject:
   - component: {fileID: 3501556928642216089}
   - component: {fileID: 3501556928642216088}
   - component: {fileID: 3501556928642216087}
+  - component: {fileID: 3553311697564744738}
   m_Layer: 5
   m_Name: CaptainPurchaseCard
   m_TagString: Untagged
@@ -796,9 +797,9 @@ MonoBehaviour:
   BackgroundImage: {fileID: 3501556928642216089}
   PriceLabel: {fileID: 3501556926573250498}
   UnavailablePriceLabel: {fileID: 2286248478414424687}
-  CaptainNameLabel: {fileID: 3501556928192695831}
-  CaptainDescriptionLabel: {fileID: 3501556926953510075}
-  CaptainImage: {fileID: 3501556928147841641}
+  ItemNameLabel: {fileID: 3501556928192695831}
+  ItemDescriptionLabel: {fileID: 3501556926953510075}
+  ItemImage: {fileID: 3501556928147841641}
   PriceButton: {fileID: 3501556927872912990}
   UnavailableButton: {fileID: 2042559121576058440}
   PurchasedButton: {fileID: 8944312282483934212}
@@ -810,6 +811,19 @@ MonoBehaviour:
     type: 3}
   CardFlipAnimDuration: 0.5
   ConfirmationButton: {fileID: 0}
+--- !u!114 &3553311697564744738
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3501556928642216090}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 698f3492214843a49b922c5c64f54760, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  category: 2
 --- !u!1 &5511208150155233086
 GameObject:
   m_ObjectHideFlags: 0

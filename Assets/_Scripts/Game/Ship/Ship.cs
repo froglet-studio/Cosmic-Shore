@@ -159,6 +159,7 @@ namespace CosmicShore.Core
                     foreach (var child in shipHUD.GetComponentsInChildren<Transform>(false))
                     {
                         child.SetParent(Player.GameCanvas.transform, false);
+                        child.SetSiblingIndex(0);   // Don't draw on top of modal screens
                     }
                 }
             }

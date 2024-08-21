@@ -149,9 +149,10 @@ namespace CosmicShore.Game.Arcade
 
         public void Exit()
         {
-            if (PauseSystem.Paused) PauseSystem.TogglePauseGame();
+            GameManager.ReturnToLobby();
+            //if (PauseSystem.Paused) PauseSystem.TogglePauseGame();
             // TODO: this is kind of hokie
-            SceneManager.LoadScene(0);
+            //SceneManager.LoadScene(0);
         }
 
         public void OnReadyClicked()
@@ -370,7 +371,14 @@ namespace CosmicShore.Game.Arcade
             if (Players.Count > 1)
                 ReadyButton.gameObject.SetActive(true);
             else
-                OnReadyClicked();
+                StartCoroutine(StartCountdownTimerCoroutine());
+                
+        }
+
+        IEnumerator StartCountdownTimerCoroutine()
+        {
+            yield return new WaitForSecondsRealtime(2f);
+            OnReadyClicked();
         }
 
         /// <summary>

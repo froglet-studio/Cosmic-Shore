@@ -5,11 +5,11 @@ namespace CosmicShore.App.UI
 {
     public class MenuAudio : MonoBehaviour
     {
-        [SerializeField] AudioClip audioClip;
+        [SerializeField] MenuAudioCategory category;
 
         public void PlayAudio()
         {
-            AudioSystem.Instance.PlaySFXClip(audioClip);
+            AudioSystem.Instance.PlayMenuAudio(category);
         }
     }
 }

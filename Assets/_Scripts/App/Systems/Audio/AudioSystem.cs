@@ -1,4 +1,6 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
+using System.Collections.Generic;
 using CosmicShore.Core;
 using CosmicShore.Utility.Singleton;
 using UnityEngine;
@@ -9,6 +11,23 @@ using UnityEngine.Audio;
 /// </summary>
 namespace CosmicShore.App.Systems.Audio
 {
+    [Serializable]
+    public enum MenuAudioCategory
+    {
+        OptionClick = 1,
+        OpenView = 2,
+        SwitchView = 3,
+        CloseView = 4,
+        SmallReward = 5,
+        BigReward = 6,
+        Upgrade = 7,
+        Denied = 8,
+        Confirmed = 9,
+        LetsGo = 10,
+        SwitchScreen = 11,
+        RedeemTicket = 12,
+    }
+
     [DefaultExecutionOrder(-1)]
     public class AudioSystem : SingletonPersistent<AudioSystem>
     {
@@ -20,6 +39,20 @@ namespace CosmicShore.App.Systems.Audio
         [SerializeField] float musicVolume = .1f;
         [SerializeField] float sfxVolume = .1f;
 
+        [Header("Menu Audio")]
+        [SerializeField] AudioClip OptionClickAudioClip;
+        [SerializeField] AudioClip OpenViewAudioClip;
+        [SerializeField] AudioClip SwitchViewAudioClip;
+        [SerializeField] AudioClip CloseViewAudioClip;
+        [SerializeField] AudioClip SmallRewardAudioClip;
+        [SerializeField] AudioClip BigRewardAudioClip;
+        [SerializeField] AudioClip UpgradeAudioClip;
+        [SerializeField] AudioClip DeniedAudioClip;
+        [SerializeField] AudioClip ConfirmedAudioClip;
+        [SerializeField] AudioClip LetsGoAudioClip;
+        [SerializeField] AudioClip SwitchScreenAudioClip;
+        [SerializeField] AudioClip RedeemTicketAudioClip;
+
         public AudioSource MusicSource1 { get => musicSource1; set => musicSource1 = value; }
         public AudioSource MusicSource2 { get => musicSource2; set => musicSource2 = value; }
 
@@ -30,12 +63,15 @@ namespace CosmicShore.App.Systems.Audio
         bool musicEnabled = true;
         bool sfxEnabled = true;
 
+        Dictionary<MenuAudioCategory, AudioClip> MenuAudioClips;
+
         public bool MusicEnabled { get { return musicEnabled; } }
         public bool SFXEnabled { get { return sfxEnabled; } }
         #endregion
 
         void Start()
         {
+            InitializeMenuAudioClips();
 
             // TODO: P1 - revisit necessity of this
             if (musicSource1 == null || musicSource2 == null)
@@ -184,6 +220,11 @@ namespace CosmicShore.App.Systems.Audio
             return musicSource1.isPlaying || musicSource2.isPlaying;
         }
 
+        public void PlayMenuAudio(MenuAudioCategory category)
+        {
+            PlaySFXClip(MenuAudioClips[category]);
+        }
+
         public void PlaySFXClip(AudioClip audioClip, AudioSource sfxSource)
         {
             sfxSource.volume = SFXVolume;
@@ -207,5 +248,24 @@ namespace CosmicShore.App.Systems.Audio
             masterMixer.SetFloat("SFXVolume", value);
         }
         #endregion
+
+        void InitializeMenuAudioClips()
+        {
+            MenuAudioClips = new Dictionary<MenuAudioCategory, AudioClip>()
+            {
+                {MenuAudioCategory.OptionClick, OptionClickAudioClip},
+                {MenuAudioCategory.OpenView, OpenViewAudioClip},
+                {MenuAudioCategory.SwitchView, SwitchViewAudioClip},
+                {MenuAudioCategory.CloseView, CloseViewAudioClip},
+                {MenuAudioCategory.SmallReward, SmallRewardAudioClip},
+                {MenuAudioCategory.BigReward, BigRewardAudioClip},
+                {MenuAudioCategory.Upgrade, UpgradeAudioClip},
+                {MenuAudioCategory.Denied, DeniedAudioClip},
+                {MenuAudioCategory.Confirmed, ConfirmedAudioClip},
+                {MenuAudioCategory.LetsGo, LetsGoAudioClip},
+                {MenuAudioCategory.SwitchScreen, SwitchScreenAudioClip},
+                {MenuAudioCategory.RedeemTicket, RedeemTicketAudioClip},
+            };
+        }
     }
 }

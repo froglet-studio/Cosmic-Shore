@@ -3,6 +3,7 @@ using CosmicShore.Environment.FlowField;
 using CosmicShore.Game.AI; // TODO: code smell that this namespace needs to be included here
 using CosmicShore.Utility.Singleton;
 using System;
+using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -18,6 +19,7 @@ namespace CosmicShore.Core
         [SerializeField] public SO_GameList AllGames;
         [SerializeField] public SO_ShipList AllShips;
 
+        Animator SceneTransitionAnimator;
         int deathCount = 0;
         public int DeathCount { get { return deathCount; } }
 
@@ -42,9 +44,7 @@ namespace CosmicShore.Core
 
         public static void ReturnToLobby()
         {
-            SceneManager.LoadScene(mainMenuScene);
-            UnPauseGame();
-            CameraManager.Instance.OnMainMenu();
+            Instance.StartCoroutine(ReturnToLobbyCoroutine());
         }
 
         public static void UnPauseGame()
@@ -72,6 +72,22 @@ namespace CosmicShore.Core
             // TODO: P1 elemental crystals, FindObjectOfType may no work anymore for this
             aiPilot.CrystalTransform = FindObjectOfType<Crystal>().transform;
             aiPilot.flowFieldData = FindObjectOfType<FlowFieldData>();
+        }
+
+        public void RegisterSceneTransitionAnimator(Animator animator)
+        {
+            SceneTransitionAnimator = animator;
+        }
+
+        static IEnumerator ReturnToLobbyCoroutine()
+        {
+            Instance.SceneTransitionAnimator?.SetTrigger("Start");
+
+            yield return new WaitForSecondsRealtime(.5f);
+
+            SceneManager.LoadScene(mainMenuScene);
+            UnPauseGame();
+            CameraManager.Instance.OnMainMenu();
         }
     }
 }
