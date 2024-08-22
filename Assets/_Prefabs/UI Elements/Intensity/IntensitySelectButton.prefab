@@ -126,7 +126,8 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 0}
-        m_TargetAssemblyTypeName: CosmicShore.HangarTrainingModal, Assembly-CSharp
+        m_TargetAssemblyTypeName: CosmicShore.App.UI.Modals.ArcadeGameConfigureModal,
+          Assembly-CSharp
         m_MethodName: SetIntensity
         m_Mode: 3
         m_Arguments:
@@ -164,31 +165,38 @@ MonoBehaviour:
   BorderImage: {fileID: 8336664063409537024}
   IntensityImage: {fileID: 8336664063969188433}
   IntensityText: {fileID: 8336664064087418161}
-  BorderSpriteActive: {fileID: 21300000, guid: 28f47c9f52f227c48a39438a82bbeec7, type: 3}
-  BorderSpriteInactive: {fileID: 21300000, guid: db20d07635711f94c84f0f2a95ccf5d8,
+  BorderSpriteSelected: {fileID: 21300000, guid: 28f47c9f52f227c48a39438a82bbeec7,
     type: 3}
-  IntensityOneSpriteActive: {fileID: 21300000, guid: ac5cee19b87dcf94aa096e437dd7aa69,
+  BorderSpriteUnselected: {fileID: 21300000, guid: db20d07635711f94c84f0f2a95ccf5d8,
     type: 3}
-  IntensityOneSpriteInactive: {fileID: 21300000, guid: ac5cee19b87dcf94aa096e437dd7aa69,
+  IntensityOneSpriteSelected: {fileID: 21300000, guid: ac5cee19b87dcf94aa096e437dd7aa69,
     type: 3}
-  IntensityTwoSpriteActive: {fileID: 21300000, guid: 4d10e1387ba20d8488109384792bbe2f,
+  IntensityOneSpriteUnselected: {fileID: 21300000, guid: ac5cee19b87dcf94aa096e437dd7aa69,
     type: 3}
-  IntensityTwoSpriteInactive: {fileID: 21300000, guid: 4d10e1387ba20d8488109384792bbe2f,
+  IntensityTwoSpriteSelected: {fileID: 21300000, guid: 4d10e1387ba20d8488109384792bbe2f,
     type: 3}
-  IntensityThreeSpriteActive: {fileID: 21300000, guid: d397a74b187200a459cfe20fbdba207a,
+  IntensityTwoSpriteUnselected: {fileID: 21300000, guid: 4d10e1387ba20d8488109384792bbe2f,
     type: 3}
-  IntensityThreeSpriteInactive: {fileID: 21300000, guid: d397a74b187200a459cfe20fbdba207a,
+  IntensityThreeSpriteSelected: {fileID: 21300000, guid: d397a74b187200a459cfe20fbdba207a,
     type: 3}
-  IntensityFourSpriteActive: {fileID: 21300000, guid: dfbad3cda927b67469a7d145a5fcfe04,
+  IntensityThreeSpriteUnselected: {fileID: 21300000, guid: d397a74b187200a459cfe20fbdba207a,
     type: 3}
-  IntensityFourSpriteInactive: {fileID: 21300000, guid: dfbad3cda927b67469a7d145a5fcfe04,
+  IntensityFourSpriteSelected: {fileID: 21300000, guid: dfbad3cda927b67469a7d145a5fcfe04,
     type: 3}
-  IntensityTextColorActive:
+  IntensityFourSpriteUnselected: {fileID: 21300000, guid: dfbad3cda927b67469a7d145a5fcfe04,
+    type: 3}
+  IntensityColorSelected:
     serializedVersion: 2
     rgba: 4294967295
-  IntensityTextColorInactive:
+  IntensityColorUnselected:
     serializedVersion: 2
     rgba: 4286414205
+  IntensityColorActive:
+    serializedVersion: 2
+    rgba: 4294967295
+  IntensityColorInactive:
+    serializedVersion: 2
+    rgba: 4282203453
 --- !u!114 &5240838921569089221
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -201,7 +209,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 698f3492214843a49b922c5c64f54760, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  audioClip: {fileID: 0}
   category: 1
 --- !u!1 &8336664063969188447
 GameObject:

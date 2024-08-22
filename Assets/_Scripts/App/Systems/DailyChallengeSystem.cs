@@ -149,10 +149,11 @@ namespace CosmicShore.App.Systems
             var random = new System.Random((int)(dateTicks & 0xFFFFFFFF));
 
             var trainingGames = Arcade.Instance.TrainingGames.GameList;
-            var dailyGame = trainingGames[random.Next(trainingGames.Count)];
+            var index = random.Next(trainingGames.Count);
+            var dailyGame = trainingGames[index];
             var challenge = new DailyChallenge();
             challenge.GameMode = dailyGame.Game.Mode;
-            challenge.Intensity = random.Next(4);  // TODO: should this be 0-3 (as it is now) or 1-4?
+            challenge.Intensity = random.Next(4);
 
             return challenge;
         }

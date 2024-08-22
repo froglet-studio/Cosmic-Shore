@@ -8,8 +8,6 @@ namespace CosmicShore.App.UI.Views
 {
     public class PortSquadView : View
     {
-        [FormerlySerializedAs("captainSelectModal")]
-        [SerializeField] ModalWindowManager squadMemberSelectModal;
         [SerializeField] PortSquadMemberConfigureView squadMemberConfigureView;
 
         [SerializeField] SquadMemberCard PlayerCaptainButton;
@@ -83,7 +81,7 @@ namespace CosmicShore.App.UI.Views
                     break;
             }
 
-            squadMemberSelectModal.ModalWindowIn();
+            squadMemberConfigureView.ModalWindowIn();
         }
 
         public override void UpdateView()

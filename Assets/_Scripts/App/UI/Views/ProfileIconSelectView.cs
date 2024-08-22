@@ -1,3 +1,4 @@
+using CosmicShore.App.UI.Modals;
 using CosmicShore.Integrations.PlayFab.PlayerData;
 using System.Linq;
 using UnityEngine;
@@ -5,7 +6,7 @@ using UnityEngine.UI;
 
 namespace CosmicShore.App.UI.Views
 {
-    public class ProfileIconSelectView : MonoBehaviour
+    public class ProfileIconSelectView : ModalWindowManager
     {
         [SerializeField] SO_ProfileIconList ProfileIcons;
         [SerializeField] VerticalLayoutGroup IconGrid;

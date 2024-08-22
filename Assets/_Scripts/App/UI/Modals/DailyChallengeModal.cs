@@ -7,19 +7,17 @@ using UnityEngine;
 
 namespace CosmicShore.App.UI.Modals
 {
-    public class DailyChallengeModal : MonoBehaviour
+    public class DailyChallengeModal : ModalWindowManager
     {
         [SerializeField] DailyChallengeGameView GameView;
         [SerializeField] TMP_Text TimeRemaining;
-
-        void Start()
-        {
-            var gameMode = DailyChallengeSystem.Instance.DailyChallenge.GameMode;
-            GameView.AssignModel(Arcade.Instance.GetTrainingGameByMode(gameMode));
-        }
+        MiniGames GameMode;
 
         void Update()
         {
+            if (GameMode == MiniGames.Random)
+                AssignGameMode();
+
             DateTime current = DateTime.UtcNow;
             DateTime tomorrow = current.AddDays(1).Date;
             double secondsUntilMidnight = (tomorrow - current).TotalSeconds;
@@ -34,9 +32,14 @@ namespace CosmicShore.App.UI.Modals
             }
             else
             {
-                var gameMode = DailyChallengeSystem.Instance.DailyChallenge.GameMode;
-                GameView.AssignModel(Arcade.Instance.GetTrainingGameByMode(gameMode));
+                AssignGameMode();
             }
+        }
+
+        void AssignGameMode()
+        {
+            GameMode = DailyChallengeSystem.Instance.DailyChallenge.GameMode;
+            GameView.AssignModel(Arcade.Instance.GetTrainingGameByMode(GameMode));
         }
 
         public void Play()

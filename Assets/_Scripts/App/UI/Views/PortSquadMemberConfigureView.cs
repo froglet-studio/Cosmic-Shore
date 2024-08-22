@@ -1,8 +1,9 @@
+using CosmicShore.App.UI.Modals;
 using UnityEngine;
 
 namespace CosmicShore.App.UI.Views
 {
-    public class PortSquadMemberConfigureView : MonoBehaviour
+    public class PortSquadMemberConfigureView : ModalWindowManager
     {
         [SerializeField] SquadMemberCard squadMemberCard;
         [SerializeField] PortSquadCaptainSelectionView captainSelectView;
