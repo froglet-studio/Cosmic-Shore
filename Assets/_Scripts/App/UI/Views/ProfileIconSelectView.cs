@@ -17,8 +17,9 @@ namespace CosmicShore.App.UI.Views
         ProfileIconSelectButton SelectedProfileIconButton;
         ProfileIcon SelectedIcon;
 
-        void Start()
+        protected override void Start()
         {
+            base.Start();
             var selectedIconId = LoadProfileIconSelection();
 
             // Clear out Icon Grid

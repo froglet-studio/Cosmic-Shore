@@ -1,6 +1,5 @@
 using System.Collections;
 using UnityEngine;
-using UnityEngine.Serialization;
 
 namespace CosmicShore.App.UI.Modals
 {
@@ -9,10 +8,10 @@ namespace CosmicShore.App.UI.Modals
         [Header("Settings")]
         public bool sharpAnimations;
 
-        [SerializeField] Animator windowAnimator;
+        Animator windowAnimator;
         bool isOn;
 
-        void Start()
+        protected virtual void Start()
         {
             windowAnimator = GetComponent<Animator>();
             gameObject.SetActive(false);

@@ -19,6 +19,7 @@ namespace CosmicShore.App.UI.Modals
         [Header("Player Display Name")]
         [SerializeField] TMP_InputField displayNameInputField;
         [SerializeField] Button setDisplayNameButton;
+        [SerializeField] Button cancelDisplayNameButton;
         [SerializeField] TMP_Text displayNameResultMessage;
         [SerializeField] string displayNameDefaultText;
         [SerializeField] float SuccessMessageFadeAfterSeconds = 2f;
@@ -46,9 +47,9 @@ namespace CosmicShore.App.UI.Modals
 
         Action SummoningProfileMenu;
 
-        // Start is called before the first frame update
-        void Start()
+        protected override void Start()
         {
+            base.Start();
             // Subscribe Button OnClick Events
             setDisplayNameButton.onClick.AddListener(SetPlayerNameButton_OnClicked);
 
@@ -360,6 +361,24 @@ namespace CosmicShore.App.UI.Modals
             Debug.Log($"Current player display name: {displayNameInputField.text}");
         }
 
+        public void CancelPlayerNameChange()
+        {
+            displayNameInputField.text = PlayerDataController.Instance.PlayerProfile.DisplayName;
+            HideDisplayNameButtons();
+        }
+
+        public void HideDisplayNameButtons()
+        {
+            setDisplayNameButton.gameObject.SetActive(false);
+            cancelDisplayNameButton.gameObject.SetActive(false);
+        }
+
+        public void ShowDisplayNameChangeButtons()
+        {
+            setDisplayNameButton.gameObject.SetActive(true);
+            cancelDisplayNameButton.gameObject.SetActive(true);
+        }
+
         /// <summary>
         /// Generate Random Name Button OnClick Event 
         /// Generate random name on button click 
@@ -432,6 +451,8 @@ namespace CosmicShore.App.UI.Modals
 
             if (displayNameResultMessage == null) return;
             displayNameResultMessage.gameObject.SetActive(true);
+
+            HideDisplayNameButtons();
         }
 
         /// <summary>

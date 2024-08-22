@@ -11,8 +11,9 @@ namespace CosmicShore.App.UI.Modals
         [SerializeField] SO_ArcadeGame MissionGame;
         [SerializeField] int Intensity;
 
-        void Start()
+        protected override void Start()
         {
+            base.Start();
             GameView.AssignModel(MissionGame);
         }
 
