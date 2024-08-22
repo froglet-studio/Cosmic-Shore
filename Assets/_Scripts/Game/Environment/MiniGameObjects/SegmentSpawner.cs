@@ -15,7 +15,12 @@ public enum PositioningScheme
     SphereEmanating = 7,
     StraightLineConstantRotation = 8,
     CylinderSurfaceWithAngle = 9,
-    KinkyLineBranching = 10
+    KinkyLineBranching = 10,
+    MazeGrid = 11,
+    CurvyTubeNetwork = 12,
+    KinkyTubeNetwork = 13,
+    SpiralTower = 14,
+    HoneycombGrid = 15
 }
 
 public class SegmentSpawner : MonoBehaviour
@@ -54,6 +59,20 @@ public class SegmentSpawner : MonoBehaviour
     [SerializeField] int maxDepth = 3;
     [SerializeField] int maxTotalSpawnedObjects = 100;
     [SerializeField] List<GameObject> branchPrefabs;
+
+    [Header("Maze Grid Settings")]
+    [SerializeField] public int GridWidth = 10;
+    [SerializeField] public int GridHeight = 10;
+    [SerializeField] public float CellSize = 10f;
+
+    [Header("Tube Network Settings")]
+    [SerializeField] public float Curviness = 0.5f;
+    [SerializeField] public float BranchProbability = 0.2f;
+
+    [Header("Spiral Tower Settings")]
+    [SerializeField] public float TowerHeight = 100f;
+    [SerializeField] public float TowerRadius = 20f;
+    [SerializeField] public float RotationsPerUnit = 0.1f;
 
     void Start()
     {
@@ -198,6 +217,21 @@ public class SegmentSpawner : MonoBehaviour
                 spawned.transform.position = currentDisplacement += RandomVectorRotation(StraightLineLength * Vector3.forward, out rotation);
                 spawned.transform.rotation = currentRotation = rotation;
                 return;
+            case PositioningScheme.MazeGrid:
+                PositionInMazeGrid(spawned);
+                return;
+            case PositioningScheme.CurvyTubeNetwork:
+                PositionInCurvyTubeNetwork(spawned);
+                return;
+            case PositioningScheme.KinkyTubeNetwork:
+                PositionInKinkyTubeNetwork(spawned);
+                return;
+            case PositioningScheme.SpiralTower:
+                PositionInSpiralTower(spawned);
+                return;
+            case PositioningScheme.HoneycombGrid:
+                PositionInHoneycombGrid(spawned);
+                return;
 
         }
     }
@@ -284,5 +318,70 @@ public class SegmentSpawner : MonoBehaviour
         spawnedItemCount++;
 
         return branch;
+    }
+    void PositionInMazeGrid(GameObject spawned)
+    {
+        int x = random.Next(0, GridWidth);
+        int y = random.Next(0, GridHeight);
+        spawned.transform.position = new Vector3(x * CellSize, 0, y * CellSize) + origin + transform.position;
+        spawned.transform.rotation = Quaternion.Euler(0, random.Next(0, 4) * 90, 0);
+    }
+
+    void PositionInCurvyTubeNetwork(GameObject spawned)
+    {
+        float t = spawnedItemCount * 0.1f;
+        Vector3 position = new Vector3(
+            Mathf.Sin(t * Curviness) * TowerRadius,
+            t * 10,
+            Mathf.Cos(t * Curviness) * TowerRadius
+        );
+        spawned.transform.position = position + origin + transform.position;
+        spawned.transform.LookAt(position + Vector3.up * 10);
+
+        if (random.NextDouble() < BranchProbability)
+        {
+            // Start a new branch
+            currentDisplacement = spawned.transform.position;
+            currentRotation = spawned.transform.rotation;
+        }
+    }
+
+    void PositionInKinkyTubeNetwork(GameObject spawned)
+    {
+        if (spawnedItemCount % 5 == 0)
+        {
+            // Make a sharp turn every 5 segments
+            currentRotation *= Quaternion.Euler(
+                random.Next(-60, 61),
+                random.Next(-60, 61),
+                random.Next(-60, 61)
+            );
+        }
+        spawned.transform.position = currentDisplacement;
+        spawned.transform.rotation = currentRotation;
+        currentDisplacement += currentRotation * Vector3.forward * 10;
+    }
+
+    void PositionInSpiralTower(GameObject spawned)
+    {
+        float height = (spawnedItemCount * TowerHeight) / NumberOfSegments;
+        float angle = height * RotationsPerUnit * Mathf.PI * 2;
+        Vector3 position = new Vector3(
+            Mathf.Cos(angle) * TowerRadius,
+            height,
+            Mathf.Sin(angle) * TowerRadius
+        );
+        spawned.transform.position = position + origin + transform.position;
+        spawned.transform.LookAt(new Vector3(0, height, 0) + origin + transform.position);
+    }
+
+    void PositionInHoneycombGrid(GameObject spawned)
+    {
+        int row = random.Next(0, GridHeight);
+        int col = random.Next(0, GridWidth);
+        float x = col * CellSize * 1.5f;
+        float z = row * CellSize * Mathf.Sqrt(3) + (col % 2 == 0 ? 0 : CellSize * Mathf.Sqrt(3) / 2);
+        spawned.transform.position = new Vector3(x, 0, z) + origin + transform.position;
+        spawned.transform.rotation = Quaternion.Euler(0, random.Next(0, 6) * 60, 0);
     }
 }

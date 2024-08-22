@@ -224,6 +224,11 @@ namespace CosmicShore.Core
             return TeamMaterialSets[team].BlockMaterial;
         }
 
+        public Material GetTeamTransparentBlockMaterial(Teams team)
+        {
+            return TeamMaterialSets[team].TransparentBlockMaterial;
+        }
+
         public GameObject GetTeamBlockSilhouettePrefab(Teams team)
         {
             return TeamMaterialSets[team].BlockSilhouettePrefab;
