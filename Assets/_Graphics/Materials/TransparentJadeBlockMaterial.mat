@@ -7,7 +7,7 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: TransparentGreenBlockMaterial
+  m_Name: TransparentJadeBlockMaterial
   m_Shader: {fileID: -6465566751694194690, guid: bf8c159f627e64b439094797bff88611,
     type: 3}
   m_ValidKeywords:
@@ -85,7 +85,7 @@ Material:
     - _Add_sin: 0
     - _Alpha: 0.2
     - _AlphaClip: 0
-    - _Blend: 0
+    - _Blend: 2
     - _BumpScale: 1
     - _CastShadows: 0
     - _ClearCoatMask: 0
@@ -94,7 +94,8 @@ Material:
     - _Cutoff: 0.5
     - _DetailAlbedoMapScale: 1
     - _DetailNormalMapScale: 1
-    - _DstBlend: 10
+    - _Distance: 100000
+    - _DstBlend: 1
     - _EnvironmentReflections: 1
     - _GlossMapScale: 0
     - _Glossiness: 0

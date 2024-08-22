@@ -3,13 +3,13 @@ using System.Collections.Generic;
 using UnityEngine;
 using CosmicShore.Core;
 
+
 namespace CosmicShore
 {
     public class ClearPrisms : MonoBehaviour
     {
         Transform mainCamera;
         [SerializeField] Ship Ship;
-        public Material transparentMaterial;
         public float capsuleRadius = 5f;
         Transform visibilityCapsuleTransform;
 
@@ -56,10 +56,11 @@ namespace CosmicShore
             if (trailBlock != null)
             {
                 Renderer renderer = trailBlock.GetComponent<Renderer>();
+                Teams team = trailBlock.Team;
                 if (renderer != null && !originalMaterials.ContainsKey(renderer))
                 {
                     originalMaterials[renderer] = renderer.material;
-                    renderer.material = transparentMaterial;
+                    renderer.material = Hangar.Instance.GetTeamTransparentBlockMaterial(team);
                 }
             }
         }
