@@ -1,47 +1,39 @@
-using CosmicShore.App.Systems;
 using CosmicShore.App.UI.Views;
-using CosmicShore.Core;
-using System;
-using TMPro;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace CosmicShore.App.UI.Modals
 {
-    public class ArcadeGameConfigureModal : MonoBehaviour
+    public class ArcadeGameConfigureModal : ModalWindowManager
     {
-        [SerializeField] DailyChallengeGameView GameView;
-        [SerializeField] TMP_Text TimeRemaining;
+        [SerializeField] ArcadeExploreView ArcadeExploreView;
+        [SerializeField] List<IntensitySelectButton> IntensityButtons = new(4);
+        SO_ArcadeGame SelectedGame;
 
-        void Start()
+        public void SetSelectedGame(SO_ArcadeGame selectedGame)
         {
-            var gameMode = DailyChallengeSystem.Instance.DailyChallenge.GameMode;
-            GameView.AssignModel(Arcade.Instance.GetTrainingGameByMode(gameMode));
+            SelectedGame = selectedGame;
+            InitialializeIntensityButtons();
         }
 
-        void Update()
+        void InitialializeIntensityButtons()
         {
-            DateTime current = DateTime.UtcNow;
-            DateTime tomorrow = current.AddDays(1).Date;
-            double secondsUntilMidnight = (tomorrow - current).TotalSeconds;
-
-            if (secondsUntilMidnight > 0)
+            for (var i = 0; i < 4; i++)
             {
-                TimeSpan timespan = TimeSpan.FromSeconds(secondsUntilMidnight);
-                TimeRemaining.text = string.Format("Time left: {0:D2}:{1:D2}:{2:D2}",
-                                timespan.Hours,
-                                timespan.Minutes,
-                                timespan.Seconds);
-            }
-            else
-            {
-                var gameMode = DailyChallengeSystem.Instance.DailyChallenge.GameMode;
-                GameView.AssignModel(Arcade.Instance.GetTrainingGameByMode(gameMode));
+                IntensityButtons[i].SetActive(SelectedGame.MinIntensity <= i+1 && SelectedGame.MaxIntensity > i);
+                IntensityButtons[i].SetSelected(false);
+                IntensityButtons[i].SetIntensityLevel(i + 1);
             }
         }
 
-        public void Play()
+        public void SetIntensity(int intensity)
         {
-            DailyChallengeSystem.Instance.PlayDailyChallenge();
+            foreach (var button in IntensityButtons)
+                button.SetSelected(false);
+
+            IntensityButtons[intensity - 1].SetSelected(true);
+
+            ArcadeExploreView.SetIntensity(intensity);
         }
     }
 }

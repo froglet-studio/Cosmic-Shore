@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace CosmicShore.App.UI.Modals
 {
-    public class FactionMissionModal : MonoBehaviour
+    public class FactionMissionModal : ModalWindowManager
     {
         [SerializeField] FactionMissionGameView GameView;
         [SerializeField] SO_ArcadeGame MissionGame;

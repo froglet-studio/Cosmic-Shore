@@ -25,7 +25,7 @@ namespace CosmicShore.App.UI.Views
         [SerializeField] Transform GameSelectionGrid;
 
         [Header("Game Detail View")]
-        [SerializeField] ModalWindowManager GameDetailModal;
+        [SerializeField] ArcadeGameConfigureModal ArcadeGameConfigureModal;
         [SerializeField] GameObject GameDetailView;
         [SerializeField] TMPro.TMP_Text SelectedGameName;
         [SerializeField] TMPro.TMP_Text SelectedGameDescription;
@@ -60,7 +60,8 @@ namespace CosmicShore.App.UI.Views
 
         void OpenGameDetailModal()
         {
-            GameDetailModal.ModalWindowIn();
+            ArcadeGameConfigureModal.SetSelectedGame(SelectedGame);
+            ArcadeGameConfigureModal.ModalWindowIn();
 
             UserActionSystem.Instance.CompleteAction(SelectedGame.ViewUserAction);
         }
@@ -148,7 +149,7 @@ namespace CosmicShore.App.UI.Views
             // Populate configuration using loadout or default
             var loadout = LoadoutSystem.LoadGameLoadout(SelectedGame.Mode).Loadout;
             SetPlayerCount(loadout.PlayerCount == 0 ? SelectedGame.MinPlayers : loadout.PlayerCount);
-            SetIntensity(loadout.Intensity == 0 ? SelectedGame.MinIntensity : loadout.Intensity);
+            ArcadeGameConfigureModal.SetIntensity(loadout.Intensity == 0 ? SelectedGame.MinIntensity : loadout.Intensity);
 
             if (RespectInventoryForShipSelection)
             {
@@ -227,12 +228,12 @@ namespace CosmicShore.App.UI.Views
         public void SetIntensity(int intensity)
         {
             Debug.Log($"ArcadeMenu - SetIntensity: {intensity}");
-
+            /*
             for (var i = 0; i < IntensityButtonContainer.transform.childCount; i++)
                 IntensityButtonContainer.transform.GetChild(i).gameObject.GetComponent<Image>().sprite = IntensityIcons[i];
 
             IntensityButtonContainer.transform.GetChild(intensity - 1).gameObject.GetComponent<Image>().sprite = IntensityButtonContainer.transform.GetChild(intensity - 1).gameObject.GetComponent<Button>().spriteState.selectedSprite;
-
+            */
             Hangar.Instance.SetAiDifficultyLevel(intensity);
 
             // notify the mini game engine that this is the difficulty

@@ -1,5 +1,6 @@
 using TMPro;
 using UnityEngine;
+using UnityEngine.Serialization;
 using UnityEngine.UI;
 
 namespace CosmicShore
@@ -9,42 +10,66 @@ namespace CosmicShore
         [SerializeField] Image BorderImage;
         [SerializeField] Image IntensityImage;
         [SerializeField] TMP_Text IntensityText;
-        [SerializeField] Sprite BorderSpriteActive;
-        [SerializeField] Sprite BorderSpriteInactive;
-        [SerializeField] Sprite IntensityOneSpriteActive;
-        [SerializeField] Sprite IntensityOneSpriteInactive;
-        [SerializeField] Sprite IntensityTwoSpriteActive;
-        [SerializeField] Sprite IntensityTwoSpriteInactive;
-        [SerializeField] Sprite IntensityThreeSpriteActive;
-        [SerializeField] Sprite IntensityThreeSpriteInactive;
-        [SerializeField] Sprite IntensityFourSpriteActive;
-        [SerializeField] Sprite IntensityFourSpriteInactive;
-        [SerializeField] Color32 IntensityTextColorActive;
-        [SerializeField] Color32 IntensityTextColorInactive;
+        [SerializeField] Sprite BorderSpriteSelected;
+        [SerializeField] Sprite BorderSpriteUnselected;
+        [SerializeField] Sprite IntensityOneSpriteSelected;
+        [SerializeField] Sprite IntensityOneSpriteUnselected;
+        [SerializeField] Sprite IntensityTwoSpriteSelected;
+        [SerializeField] Sprite IntensityTwoSpriteUnselected;
+        [SerializeField] Sprite IntensityThreeSpriteSelected;
+        [SerializeField] Sprite IntensityThreeSpriteUnselected;
+        [SerializeField] Sprite IntensityFourSpriteSelected;
+        [SerializeField] Sprite IntensityFourSpriteUnselected;
+        [SerializeField] Color32 IntensityColorSelected;
+        [SerializeField] Color32 IntensityColorUnselected;
+        [SerializeField] Color32 IntensityColorActive;
+        [SerializeField] Color32 IntensityColorInactive;
 
         Sprite IntensitySpriteActive;
         Sprite IntensitySpriteInactive;
+        bool Selected;
 
         public void SetIntensityLevel(int level)
         {
             switch (level)
             {
                 case 1:
-                    IntensitySpriteActive = IntensityOneSpriteActive;
-                    IntensitySpriteInactive = IntensityOneSpriteInactive;
+                    IntensitySpriteActive = IntensityOneSpriteSelected;
+                    IntensitySpriteInactive = IntensityOneSpriteUnselected;
+                    IntensityText.text = "1";
                     break;
                 case 2:
-                    IntensitySpriteActive = IntensityTwoSpriteActive;
-                    IntensitySpriteInactive = IntensityTwoSpriteInactive;
+                    IntensitySpriteActive = IntensityTwoSpriteSelected;
+                    IntensitySpriteInactive = IntensityTwoSpriteUnselected;
+                    IntensityText.text = "2";
                     break;
                 case 3:
-                    IntensitySpriteActive = IntensityThreeSpriteActive;
-                    IntensitySpriteInactive = IntensityThreeSpriteInactive;
+                    IntensitySpriteActive = IntensityThreeSpriteSelected;
+                    IntensitySpriteInactive = IntensityThreeSpriteUnselected;
+                    IntensityText.text = "3";
                     break;
                 case 4:
-                    IntensitySpriteActive = IntensityFourSpriteActive;
-                    IntensitySpriteInactive = IntensityFourSpriteInactive;
+                    IntensitySpriteActive = IntensityFourSpriteSelected;
+                    IntensitySpriteInactive = IntensityFourSpriteUnselected;
+                    IntensityText.text = "4";
                     break;
+            }
+        }
+
+        public void SetSelected(bool selected)
+        {
+            Selected = selected;
+            if (selected)
+            {
+                BorderImage.sprite = BorderSpriteSelected;
+                IntensityImage.sprite = IntensitySpriteActive;
+                IntensityText.color = IntensityColorSelected;
+            }
+            else
+            {
+                BorderImage.sprite = BorderSpriteUnselected;
+                IntensityImage.sprite = IntensitySpriteInactive;
+                IntensityText.color = IntensityColorUnselected;
             }
         }
 
@@ -52,15 +77,15 @@ namespace CosmicShore
         {
             if (active)
             {
-                BorderImage.sprite = BorderSpriteActive;
-                IntensityImage.sprite = IntensitySpriteActive;
-                IntensityText.color = IntensityTextColorActive;
+                BorderImage.color = IntensityColorActive;
+                IntensityImage.color = IntensityColorActive;
+                IntensityText.color = Selected ? IntensityColorSelected : IntensityColorUnselected;
             }
             else
             {
-                BorderImage.sprite = BorderSpriteInactive;
-                IntensityImage.sprite = IntensitySpriteInactive;
-                IntensityText.color = IntensityTextColorInactive;
+                BorderImage.color = IntensityColorInactive;
+                IntensityImage.color = IntensityColorInactive;
+                IntensityText.color = IntensityColorInactive;
             }
         }
     }

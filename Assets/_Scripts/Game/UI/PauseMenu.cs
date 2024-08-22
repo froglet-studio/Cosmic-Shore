@@ -12,8 +12,6 @@ namespace CosmicShore.App.UI.Screens
     {
         //[SerializeField] GameMenu gameMenu;
         [SerializeField] GameObject MiniGameHUD;
-        [SerializeField] GameObject MainMenuButton;
-        [SerializeField] GameObject ResumeButton;
 
         GameSetting gameSetting;
 

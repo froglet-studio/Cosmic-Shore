@@ -108,9 +108,9 @@ namespace CosmicShore
             RewardValueText2.text = rewardValue;
 
             foreach (var button in IntensityButtons)
-                button.SetActive(false);
+                button.SetSelected(false);
 
-            IntensityButtons[intensity - 1].SetActive(true);
+            IntensityButtons[intensity - 1].SetSelected(true);
         }
 
         public void LaunchSelectedGame()
