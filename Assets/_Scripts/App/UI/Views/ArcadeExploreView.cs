@@ -60,7 +60,6 @@ namespace CosmicShore.App.UI.Views
 
         void OpenGameDetailModal()
         {
-            ArcadeGameConfigureModal.SetSelectedGame(SelectedGame);
             ArcadeGameConfigureModal.ModalWindowIn();
 
             UserActionSystem.Instance.CompleteAction(SelectedGame.ViewUserAction);
@@ -149,6 +148,7 @@ namespace CosmicShore.App.UI.Views
             // Populate configuration using loadout or default
             var loadout = LoadoutSystem.LoadGameLoadout(SelectedGame.Mode).Loadout;
             SetPlayerCount(loadout.PlayerCount == 0 ? SelectedGame.MinPlayers : loadout.PlayerCount);
+            ArcadeGameConfigureModal.SetSelectedGame(SelectedGame);
             ArcadeGameConfigureModal.SetIntensity(loadout.Intensity == 0 ? SelectedGame.MinIntensity : loadout.Intensity);
 
             if (RespectInventoryForShipSelection)

@@ -196,7 +196,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 698f3492214843a49b922c5c64f54760, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  audioClip: {fileID: 8300000, guid: 9c121fe3b6252f94a993398bf795ddb7, type: 3}
   category: 0
 --- !u!1 &6960199310973983681
 GameObject:
@@ -817,6 +816,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   sharpAnimations: 1
+  windowAnimator: {fileID: 0}
 --- !u!225 &6960199311510088765
 CanvasGroup:
   m_ObjectHideFlags: 0
@@ -863,6 +863,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   sharpAnimations: 0
+  windowAnimator: {fileID: 6960199311510088766}
   BusyIndicator: {fileID: 6960199311831173428}
   displayNameInputField: {fileID: 6960199312648349589}
   setDisplayNameButton: {fileID: 6960199310987985884}

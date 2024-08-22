@@ -209,6 +209,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   sharpAnimations: 0
+  windowAnimator: {fileID: 0}
   squadMemberCard: {fileID: 437482452}
   captainSelectView: {fileID: 1713566687}
   shipSelectionView: {fileID: 1163718278}
@@ -6701,6 +6702,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   sharpAnimations: 0
+  windowAnimator: {fileID: 0}
   GameView: {fileID: 689140778}
   MissionGame: {fileID: 11400000, guid: 6f7bd40de6b623748a4b8ec3a4ce8c9d, type: 2}
   Intensity: 3
@@ -33146,6 +33148,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   sharpAnimations: 1
+  windowAnimator: {fileID: 0}
 --- !u!95 &1190551724
 Animator:
   serializedVersion: 5
@@ -34375,6 +34378,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   sharpAnimations: 1
+  windowAnimator: {fileID: 0}
   GameView: {fileID: 1180815392}
   TimeRemaining: {fileID: 1631603210}
 --- !u!1 &1224172687
@@ -50684,6 +50688,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   sharpAnimations: 0
+  windowAnimator: {fileID: 0}
   ProfileIcons: {fileID: 11400000, guid: 3e6cb5b838253c7468480627fd86af5f, type: 2}
   IconGrid: {fileID: 1113775111}
   IconButtonPrefab: {fileID: 6326892122188870019, guid: 15695415ce7889a4f9b99291cc0d79a6,
@@ -52411,6 +52416,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   sharpAnimations: 1
+  windowAnimator: {fileID: 0}
   ArcadeExploreView: {fileID: 149703240736415088}
   IntensityButtons:
   - {fileID: 679357227}
@@ -63506,7 +63512,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 74.4, y: 0}
+  m_SizeDelta: {x: 64, y: 200}
   m_Pivot: {x: 0, y: 1}
 --- !u!1 &877547223672278068
 GameObject:
@@ -63981,6 +63987,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   sharpAnimations: 1
+  windowAnimator: {fileID: 0}
   GameSelectionContainer: {fileID: 983087002}
   ShipModelImage: {fileID: 0}
   SelectedGameName: {fileID: 45047183}
@@ -66029,6 +66036,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   sharpAnimations: 1
+  windowAnimator: {fileID: 0}
   PriceLabel: {fileID: 1386307268}
   UnlockText: {fileID: 500414230}
   CrystalBalanceText: {fileID: 1576784903}
@@ -67452,7 +67460,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 74.4, y: 60}
+  m_SizeDelta: {x: 64, y: 200}
   m_Pivot: {x: 0, y: 1}
 --- !u!1001 &2173894828567908403
 PrefabInstance:
@@ -67900,8 +67908,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 1, y: 1}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: -120, y: -60}
-  m_SizeDelta: {x: 150, y: 225}
+  m_AnchoredPosition: {x: -160, y: -48}
+  m_SizeDelta: {x: 110, y: 200}
   m_Pivot: {x: 1, y: 1}
 --- !u!114 &2394847522501226520
 MonoBehaviour:
@@ -72142,7 +72150,7 @@ MonoBehaviour:
     m_Top: 0
     m_Bottom: 0
   m_ChildAlignment: 0
-  m_Spacing: 12
+  m_Spacing: 5
   m_ChildForceExpandWidth: 1
   m_ChildForceExpandHeight: 1
   m_ChildControlWidth: 0
@@ -72872,7 +72880,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 40, y: 0}
+  m_SizeDelta: {x: 60, y: 0}
   m_Pivot: {x: 0, y: 1}
 --- !u!1 &4125016652326287252
 GameObject:
@@ -73464,7 +73472,7 @@ RectTransform:
   m_Children:
   - {fileID: 4125016651475621309}
   m_Father: {fileID: 4125016653256652702}
-  m_RootOrder: 2
+  m_RootOrder: 3
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 1, y: 1}
   m_AnchorMax: {x: 1, y: 1}
@@ -73686,8 +73694,8 @@ RectTransform:
   m_Children:
   - {fileID: 1462543342547770981}
   - {fileID: 2394847522501226519}
-  - {fileID: 4125016652926271367}
   - {fileID: 4125016653415711770}
+  - {fileID: 4125016652926271367}
   - {fileID: 4125016652611855912}
   m_Father: {fileID: 923933396}
   m_RootOrder: 2
@@ -73767,17 +73775,17 @@ RectTransform:
   m_GameObject: {fileID: 4125016653415711771}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1.0000001, y: 1.0000001, z: 1.0000001}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 4125016652326287211}
   m_Father: {fileID: 4125016653256652702}
-  m_RootOrder: 3
+  m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 1, y: 1}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: -80, y: -60}
-  m_SizeDelta: {x: 40, y: 40}
+  m_AnchoredPosition: {x: -85, y: -65}
+  m_SizeDelta: {x: 60, y: 164}
   m_Pivot: {x: 1, y: 1}
 --- !u!1 &4125016653415711771
 GameObject:
@@ -77835,6 +77843,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   sharpAnimations: 1
+  windowAnimator: {fileID: 0}
 --- !u!114 &5711891767202527584
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -84354,6 +84363,21 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 4983872992474410972}
     m_Modifications:
+    - target: {fileID: 6960199310942333857, guid: d03b222767521fb46b35a956ee450a8b,
+        type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
+      value: 
+      objectReference: {fileID: 1457878425}
+    - target: {fileID: 6960199310942333857, guid: d03b222767521fb46b35a956ee450a8b,
+        type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
+      value: ModalWindowOut
+      objectReference: {fileID: 0}
+    - target: {fileID: 6960199310942333857, guid: d03b222767521fb46b35a956ee450a8b,
+        type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
+      value: CosmicShore.App.UI.Modals.ModalWindowManager, Assembly-CSharp
+      objectReference: {fileID: 0}
     - target: {fileID: 6960199310942333858, guid: d03b222767521fb46b35a956ee450a8b,
         type: 3}
       propertyPath: category
@@ -88240,7 +88264,7 @@ RectTransform:
   m_AnchorMin: {x: 1, y: 1}
   m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 150, y: 225}
+  m_SizeDelta: {x: 110, y: 200}
   m_Pivot: {x: 1, y: 1}
 --- !u!114 &8551351583938100233
 MonoBehaviour:
@@ -88260,7 +88284,7 @@ MonoBehaviour:
     m_Top: 0
     m_Bottom: 0
   m_ChildAlignment: 0
-  m_Spacing: 0
+  m_Spacing: -10
   m_ChildForceExpandWidth: 1
   m_ChildForceExpandHeight: 1
   m_ChildControlWidth: 0

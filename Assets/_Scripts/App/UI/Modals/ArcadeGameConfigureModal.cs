@@ -20,9 +20,9 @@ namespace CosmicShore.App.UI.Modals
         {
             for (var i = 0; i < 4; i++)
             {
+                IntensityButtons[i].SetIntensityLevel(i + 1);
                 IntensityButtons[i].SetActive(SelectedGame.MinIntensity <= i+1 && SelectedGame.MaxIntensity > i);
                 IntensityButtons[i].SetSelected(false);
-                IntensityButtons[i].SetIntensityLevel(i + 1);
             }
         }
 
