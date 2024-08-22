@@ -1,34 +1,33 @@
 using System.Collections;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace CosmicShore.App.UI.Modals
 {
     public class ModalWindowManager : MonoBehaviour
     {
         [Header("Settings")]
-        public bool sharpAnimations = false;
+        public bool sharpAnimations;
 
-        Animator mWindowAnimator;
-        bool isOn = false;
+        [SerializeField] Animator windowAnimator;
+        bool isOn;
 
         void Start()
         {
-            mWindowAnimator = gameObject.GetComponent<Animator>();
-
+            windowAnimator = GetComponent<Animator>();
             gameObject.SetActive(false);
         }
 
         public void ModalWindowIn()
         {
-            StopCoroutine("DisableWindow");
             gameObject.SetActive(true);
 
             if (isOn == false)
             {
                 if (sharpAnimations == false)
-                    mWindowAnimator.CrossFade("Window In", 0.1f);
+                    windowAnimator.CrossFade("Window In", 0.1f);
                 else
-                    mWindowAnimator.Play("Window In");
+                    windowAnimator.Play("Window In");
 
                 isOn = true;
             }
@@ -36,17 +35,17 @@ namespace CosmicShore.App.UI.Modals
 
         public void ModalWindowOut()
         {
-            if (isOn == true)
+            if (isOn)
             {
                 if (sharpAnimations == false)
-                    mWindowAnimator.CrossFade("Window Out", 0.1f);
+                    windowAnimator.CrossFade("Window Out", 0.1f);
                 else
-                    mWindowAnimator.Play("Window Out");
+                    windowAnimator.Play("Window Out");
 
                 isOn = false;
             }
 
-            StartCoroutine("DisableWindow");
+            StartCoroutine(DisableWindow());
         }
 
         IEnumerator DisableWindow()

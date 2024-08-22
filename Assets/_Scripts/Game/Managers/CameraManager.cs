@@ -55,6 +55,11 @@ public class CameraManager : SingletonPersistent<CameraManager>
         OnMainMenu();
     }
 
+    public Transform GetCloseCamera()
+    {
+        return closeCamera.transform;
+    }
+
     public void OnMainMenu()
     {
         SetMainMenuCameraActive();
@@ -112,8 +117,8 @@ public class CameraManager : SingletonPersistent<CameraManager>
 
     void ClipPlaneAndOffsetLerper(float normalizedDistance)
     {
-        float CloseCamClipPlane = -CloseCamDistance / 5;
-        float FarCamClipPlane = 5f;
+        float CloseCamClipPlane = .5f;
+        float FarCamClipPlane = .7f;
         if (lerper != null) 
             StopCoroutine(lerper);
         
