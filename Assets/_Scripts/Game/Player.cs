@@ -57,13 +57,9 @@ public class Player : MonoBehaviour
                 case "PlayerTwo":
                 case "PlayerThree":
                 case "PlayerFour":
+                default: // Default will be the players Playfab username
                     Debug.Log($"Player.Start - Instantiate Ship: {PlayerName}");
                     SetupPlayerShip(Hangar.Instance.LoadPlayerShip(defaultShip, Team));
-                    break;
-                default: // Single player game 
-                    Debug.Log($"Player.Start - Instantiate Ship: Single Player");
-                    SetupPlayerShip(Hangar.Instance.LoadPlayerShip());
-                    gameManager.WaitOnPlayerLoading();
                     break;
             }
         }
