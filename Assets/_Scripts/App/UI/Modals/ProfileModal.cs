@@ -363,7 +363,7 @@ namespace CosmicShore.App.UI.Modals
 
         public void CancelPlayerNameChange()
         {
-            displayNameInputField.text = PlayerDataController.Instance.PlayerProfile.DisplayName;
+            displayNameInputField.text = PlayerDataController.PlayerProfile.DisplayName;
             HideDisplayNameButtons();
         }
 
@@ -440,14 +440,14 @@ namespace CosmicShore.App.UI.Modals
                 BusyIndicator.SetActive(false);
             }
             
-            if (PlayerDataController.Instance.PlayerProfile == null)
+            if (PlayerDataController.PlayerProfile == null)
             {
                 Debug.LogWarning("Player profile has not yet loaded.");
                 return;
             }
             
-            if(!string.IsNullOrEmpty(PlayerDataController.Instance.PlayerProfile.DisplayName))
-                displayNameInputField.text = PlayerDataController.Instance.PlayerProfile.DisplayName;
+            if(!string.IsNullOrEmpty(PlayerDataController.PlayerProfile.DisplayName))
+                displayNameInputField.text = PlayerDataController.PlayerProfile.DisplayName;
 
             if (displayNameResultMessage == null) return;
             displayNameResultMessage.gameObject.SetActive(true);
