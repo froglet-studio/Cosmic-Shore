@@ -98,6 +98,8 @@ namespace CosmicShore.App.Systems
             // If it's a new launch of the app on the same day, need to reinit this, but not reset other tracking
             if (DailyGame == null)
                 SelectDailyGame();
+
+            AddKeysToList();
         }
 
         private void OnEnable()
