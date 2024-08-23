@@ -20,7 +20,8 @@ public enum PositioningScheme
     CurvyTubeNetwork = 12,
     KinkyTubeNetwork = 13,
     SpiralTower = 14,
-    HoneycombGrid = 15
+    HoneycombGrid = 15,
+    HilbertCurveLSystem = 16
 }
 
 public class SegmentSpawner : MonoBehaviour
@@ -63,6 +64,7 @@ public class SegmentSpawner : MonoBehaviour
     [Header("Maze Grid Settings")]
     [SerializeField] public int GridWidth = 10;
     [SerializeField] public int GridHeight = 10;
+    [SerializeField] public int GridThickness = 10;
     [SerializeField] public float CellSize = 10f;
 
     [Header("Tube Network Settings")]
@@ -232,6 +234,23 @@ public class SegmentSpawner : MonoBehaviour
             case PositioningScheme.HoneycombGrid:
                 PositionInHoneycombGrid(spawned);
                 return;
+            case PositioningScheme.HilbertCurveLSystem:
+                var hilbertPositioner = GetComponent<HilbertCurveLSystemPositioning>();
+                if (hilbertPositioner == null)
+                {
+                    hilbertPositioner = gameObject.AddComponent<HilbertCurveLSystemPositioning>();
+                }
+                hilbertPositioner.GenerateHilbertCurve();
+                var positions = hilbertPositioner.GetPositions();
+                var rotations = hilbertPositioner.GetRotations();
+                if (spawnedItemCount < positions.Count)
+                {
+                    spawned.transform.SetPositionAndRotation(
+                        positions[spawnedItemCount] + origin + transform.position,
+                        rotations[spawnedItemCount]
+                    );
+                }
+                return;
 
         }
     }
@@ -323,8 +342,9 @@ public class SegmentSpawner : MonoBehaviour
     {
         int x = random.Next(0, GridWidth);
         int y = random.Next(0, GridHeight);
-        spawned.transform.position = new Vector3(x * CellSize, 0, y * CellSize) + origin + transform.position;
-        spawned.transform.rotation = Quaternion.Euler(0, random.Next(0, 4) * 90, 0);
+        int z = random.Next(0, GridThickness);
+        spawned.transform.position = new Vector3(x * CellSize, y * CellSize, z * CellSize) + origin + transform.position;
+        spawned.transform.rotation = Quaternion.Euler(random.Next(0, 4) * 90, random.Next(0, 4) * 90, random.Next(0, 4) * 90);
     }
 
     void PositionInCurvyTubeNetwork(GameObject spawned)
