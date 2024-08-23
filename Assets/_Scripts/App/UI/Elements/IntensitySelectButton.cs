@@ -6,8 +6,7 @@ namespace CosmicShore
 {
     public class IntensitySelectButton : MonoBehaviour
     {
-        // TODO: Modify to match player count implementation
-
+        // TODO: Modify to match player count implementation -> use two lists of sprites
         [SerializeField] Image BorderImage;
         [SerializeField] Image IntensityImage;
         [SerializeField] TMP_Text IntensityText;

@@ -21422,8 +21422,8 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
-      - m_Target: {fileID: 0}
-        m_TargetAssemblyTypeName: CosmicShore.App.UI.ModalWindowManager, Assembly-CSharp
+      - m_Target: {fileID: 2151613}
+        m_TargetAssemblyTypeName: CosmicShore.App.UI.Modals.ModalWindowManager, Assembly-CSharp
         m_MethodName: ModalWindowOut
         m_Mode: 1
         m_Arguments:
@@ -52432,6 +52432,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   sharpAnimations: 1
   ArcadeExploreView: {fileID: 149703240736415088}
+  ShipSelectionView: {fileID: 2394847522501226520}
+  SelectedGameName: {fileID: 4125016652399188270}
+  SelectedGameDescription: {fileID: 4125016652004098476}
+  SelectedGamePreviewWindow: {fileID: 4125016651355798847}
+  SelectedGameFavoriteIcon: {fileID: 1867600102}
   PlayerCountButtons:
   - {fileID: 1441190798}
   - {fileID: 956105933}
@@ -52441,6 +52446,7 @@ MonoBehaviour:
   - {fileID: 1967172647}
   - {fileID: 1830221718}
   - {fileID: 554643661}
+  RespectInventoryForShipSelection: 0
 --- !u!1 &1850723631
 GameObject:
   m_ObjectHideFlags: 0
@@ -53003,8 +53009,9 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 149703240736415088}
-        m_TargetAssemblyTypeName: CosmicShore.App.UI.Menus.ExploreMenu, Assembly-CSharp
+      - m_Target: {fileID: 1847035622}
+        m_TargetAssemblyTypeName: CosmicShore.App.UI.Modals.ArcadeGameConfigureModal,
+          Assembly-CSharp
         m_MethodName: ToggleFavorite
         m_Mode: 1
         m_Arguments:
@@ -62126,13 +62133,10 @@ MonoBehaviour:
   GameSelectionView: {fileID: 538005720}
   GameSelectionGrid: {fileID: 1529521931}
   ArcadeGameConfigureModal: {fileID: 1847035622}
-  GameDetailView: {fileID: 4125016653256652703}
   SelectedGameName: {fileID: 4125016652399188270}
   SelectedGameDescription: {fileID: 4125016652004098476}
-  SelectedGamePreviewWindow: {fileID: 4125016651355798847}
-  ShipSelectionGrid: {fileID: 8551351583938100232}
   SelectedGameFavoriteIcon: {fileID: 1867600102}
-  ShipSelectionView: {fileID: 2394847522501226520}
+  SelectedGamePreviewWindow: {fileID: 4125016651355798847}
   RespectInventoryForGameSelection: 0
   RespectInventoryForShipSelection: 0
 --- !u!224 &175867981159570580
