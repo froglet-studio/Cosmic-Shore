@@ -13,8 +13,8 @@ namespace CosmicShore.App.UI.Modals
 
         protected override void Start()
         {
-            base.Start();
             GameView.AssignModel(MissionGame);
+            base.Start();
         }
 
         public void Play()

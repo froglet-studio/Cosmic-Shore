@@ -19,7 +19,6 @@ namespace CosmicShore.App.UI.Views
 
         protected override void Start()
         {
-            base.Start();
             var selectedIconId = LoadProfileIconSelection();
 
             // Clear out Icon Grid
@@ -40,7 +39,10 @@ namespace CosmicShore.App.UI.Views
                 iconButton.ProfileIcon = profileIcon;
                 iconButton.IconView = this;
                 if (profileIcon.Id == selectedIconId)
+                {
                     iconButton.SetSelected(true);
+                    SelectedProfileIconButton = iconButton;
+                }
 
                 iconCount++;
 
@@ -61,6 +63,8 @@ namespace CosmicShore.App.UI.Views
 
             // Apply the new sizeDelta
             IconGrid.GetComponent<RectTransform>().sizeDelta = sizeDelta;
+
+            base.Start();
         }
 
         public void SelectIcon(ProfileIconSelectButton SelectedIconButton, ProfileIcon profileIcon)

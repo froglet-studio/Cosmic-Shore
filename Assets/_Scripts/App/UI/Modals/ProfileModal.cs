@@ -49,7 +49,6 @@ namespace CosmicShore.App.UI.Modals
 
         protected override void Start()
         {
-            base.Start();
             // Subscribe Button OnClick Events
             setDisplayNameButton.onClick.AddListener(SetPlayerNameButton_OnClicked);
 
@@ -66,6 +65,8 @@ namespace CosmicShore.App.UI.Modals
             // _authManager.OnLoginSuccess += _authManager.LoadPlayerProfile;
             PlayerDataController.OnProfileLoaded += InitializePlayerDisplayNameView;
             // _authManager.AnonymousLogin();
+
+            base.Start();
         }
 
         #region Email Input Field Operations
