@@ -15,7 +15,7 @@ namespace CosmicShore.App.UI.Views
 
         SO_Captain SelectedCaptain;
 
-        void Start()
+        protected override void Start()
         {
             shipSelectionView.OnSelect += captainSelectView.AssignModel;
             shipSelectionView.OnSelect += squadMemberCard.SetShip;
@@ -24,6 +24,8 @@ namespace CosmicShore.App.UI.Views
             captainSelectView.OnSelect += SelectCaptain;
 
             shipSelectionView.AssignModels(PlayerShips.ShipList.ConvertAll(x => (ScriptableObject)x));
+
+            base.Start();
         }
 
         public void InitializeView(SO_Captain captain, bool isPlayer) 

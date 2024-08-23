@@ -33,13 +33,6 @@ namespace CosmicShore.App.UI.Views
         [SerializeField] Transform ShipSelectionGrid;
         [SerializeField] FavoriteIcon SelectedGameFavoriteIcon;
         [SerializeField] ShipSelectionView ShipSelectionView;
-
-        [Header("Game Play Settings")]
-        [SerializeField] GameObject PlayerCountButtonContainer;
-        [SerializeField] GameObject IntensityButtonContainer;
-        [SerializeField] List<Sprite> IntensityIcons = new(4);
-        [SerializeField] List<Sprite> PlayerCountIcons = new(4);
-
         
         [Header("Test Settings")]
         [Tooltip("If true, will filter out unowned games from being available to play (MUST BE TRUE ON FOR PRODUCTION BUILDS")]
@@ -124,32 +117,11 @@ namespace CosmicShore.App.UI.Views
         {
             SelectedGame = selectedGame;
 
-            // Show/Hide Player Count buttons
-            for (var i = 0; i < PlayerCountButtonContainer.transform.childCount; i++)
-                PlayerCountButtonContainer.transform.GetChild(i).gameObject.SetActive(i < SelectedGame.MaxPlayers && i >= SelectedGame.MinPlayers - 1);
-
-            // Enable/Disable Intensity Buttons
-            var theFonzColor = new Color(.66f, .66f, .66f); // #AAAAAA
-            for (var i = 0; i < IntensityButtonContainer.transform.childCount; i++)
-            {
-                var intensity = i + 1;
-                if (intensity >= SelectedGame.MinIntensity && intensity <= SelectedGame.MaxIntensity)
-                {
-                    IntensityButtonContainer.transform.GetChild(i).gameObject.GetComponent<Button>().enabled = true;
-                    IntensityButtonContainer.transform.GetChild(i).gameObject.GetComponent<Image>().color = Color.white;
-                }
-                else
-                {
-                    IntensityButtonContainer.transform.GetChild(i).gameObject.GetComponent<Button>().enabled = false;
-                    IntensityButtonContainer.transform.GetChild(i).gameObject.GetComponent<Image>().color = theFonzColor;
-                }
-            }
-
             // Populate configuration using loadout or default
             var loadout = LoadoutSystem.LoadGameLoadout(SelectedGame.Mode).Loadout;
-            SetPlayerCount(loadout.PlayerCount == 0 ? SelectedGame.MinPlayers : loadout.PlayerCount);
             ArcadeGameConfigureModal.SetSelectedGame(SelectedGame);
             ArcadeGameConfigureModal.SetIntensity(loadout.Intensity == 0 ? SelectedGame.MinIntensity : loadout.Intensity);
+            ArcadeGameConfigureModal.SetPlayerCount(loadout.PlayerCount == 0 ? SelectedGame.MinPlayers : loadout.PlayerCount);
 
             if (RespectInventoryForShipSelection)
             {
@@ -216,11 +188,6 @@ namespace CosmicShore.App.UI.Views
         {
             Debug.Log($"SetPlayerCount: {playerCount}");
 
-            for (var i = 0; i < PlayerCountButtonContainer.transform.childCount; i++)
-                PlayerCountButtonContainer.transform.GetChild(i).gameObject.GetComponent<Image>().sprite = PlayerCountIcons[i];
-
-            PlayerCountButtonContainer.transform.GetChild(playerCount - 1).gameObject.GetComponent<Image>().sprite = PlayerCountButtonContainer.transform.GetChild(playerCount - 1).gameObject.GetComponent<Button>().spriteState.selectedSprite;
-
             // notify the mini game engine that this is the number of players
             MiniGame.NumberOfPlayers = playerCount;
         }
@@ -228,12 +195,7 @@ namespace CosmicShore.App.UI.Views
         public void SetIntensity(int intensity)
         {
             Debug.Log($"ArcadeMenu - SetIntensity: {intensity}");
-            /*
-            for (var i = 0; i < IntensityButtonContainer.transform.childCount; i++)
-                IntensityButtonContainer.transform.GetChild(i).gameObject.GetComponent<Image>().sprite = IntensityIcons[i];
 
-            IntensityButtonContainer.transform.GetChild(intensity - 1).gameObject.GetComponent<Image>().sprite = IntensityButtonContainer.transform.GetChild(intensity - 1).gameObject.GetComponent<Button>().spriteState.selectedSprite;
-            */
             Hangar.Instance.SetAiDifficultyLevel(intensity);
 
             // notify the mini game engine that this is the difficulty

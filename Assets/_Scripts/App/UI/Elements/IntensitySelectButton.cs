@@ -1,12 +1,13 @@
 using TMPro;
 using UnityEngine;
-using UnityEngine.Serialization;
 using UnityEngine.UI;
 
 namespace CosmicShore
 {
     public class IntensitySelectButton : MonoBehaviour
     {
+        // TODO: Modify to match player count implementation
+
         [SerializeField] Image BorderImage;
         [SerializeField] Image IntensityImage;
         [SerializeField] TMP_Text IntensityText;
@@ -27,11 +28,21 @@ namespace CosmicShore
 
         Sprite IntensitySpriteActive;
         Sprite IntensitySpriteInactive;
+        public int Intensity { get; private set; }
         bool Selected;
 
-        public void SetIntensityLevel(int level)
+        public delegate void SelectDelegate(int intensity);
+        public event SelectDelegate OnSelect;
+
+        public void Select()
         {
-            switch (level)
+            OnSelect?.Invoke(Intensity);
+        }
+
+        public void SetIntensityLevel(int intensity)
+        {
+            Intensity = intensity;
+            switch (intensity)
             {
                 case 1:
                     IntensitySpriteActive = IntensityOneSpriteSelected;
@@ -75,6 +86,7 @@ namespace CosmicShore
 
         public void SetActive(bool active)
         {
+            GetComponent<Button>().enabled = active;
             if (active)
             {
                 BorderImage.color = IntensityColorActive;

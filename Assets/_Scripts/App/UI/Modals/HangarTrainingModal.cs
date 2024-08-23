@@ -26,9 +26,21 @@ namespace CosmicShore
         SO_TrainingGame SelectedGame;
         int Intensity;
 
+        void OnEnable()
+        {
+            foreach (var intensityButton in IntensityButtons)
+                intensityButton.OnSelect += SetIntensity;
+        }
+
+        void OnDisable()
+        {
+            foreach (var intensityButton in IntensityButtons)
+                intensityButton.OnSelect -= SetIntensity;
+        }
+
         void InitialializeIntensityButtons()
         {
-            for (var i=0; i<4; i++)
+            for (var i = 0; i < 4; i++)
                 IntensityButtons[i].SetIntensityLevel(i + 1);
         }
 

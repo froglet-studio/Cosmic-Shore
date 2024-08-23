@@ -19,6 +19,7 @@ namespace CosmicShore.App.UI.Modals
         [Header("Player Display Name")]
         [SerializeField] TMP_InputField displayNameInputField;
         [SerializeField] Button setDisplayNameButton;
+        [SerializeField] Button cancelDisplayNameButton;
         [SerializeField] TMP_Text displayNameResultMessage;
         [SerializeField] string displayNameDefaultText;
         [SerializeField] float SuccessMessageFadeAfterSeconds = 2f;
@@ -46,8 +47,7 @@ namespace CosmicShore.App.UI.Modals
 
         Action SummoningProfileMenu;
 
-        // Start is called before the first frame update
-        void Start()
+        protected override void Start()
         {
             // Subscribe Button OnClick Events
             setDisplayNameButton.onClick.AddListener(SetPlayerNameButton_OnClicked);
@@ -65,6 +65,8 @@ namespace CosmicShore.App.UI.Modals
             // _authManager.OnLoginSuccess += _authManager.LoadPlayerProfile;
             PlayerDataController.OnProfileLoaded += InitializePlayerDisplayNameView;
             // _authManager.AnonymousLogin();
+
+            base.Start();
         }
 
         #region Email Input Field Operations
@@ -360,6 +362,24 @@ namespace CosmicShore.App.UI.Modals
             Debug.Log($"Current player display name: {displayNameInputField.text}");
         }
 
+        public void CancelPlayerNameChange()
+        {
+            displayNameInputField.text = PlayerDataController.PlayerProfile.DisplayName;
+            HideDisplayNameButtons();
+        }
+
+        public void HideDisplayNameButtons()
+        {
+            setDisplayNameButton.gameObject.SetActive(false);
+            cancelDisplayNameButton.gameObject.SetActive(false);
+        }
+
+        public void ShowDisplayNameChangeButtons()
+        {
+            setDisplayNameButton.gameObject.SetActive(true);
+            cancelDisplayNameButton.gameObject.SetActive(true);
+        }
+
         /// <summary>
         /// Generate Random Name Button OnClick Event 
         /// Generate random name on button click 
@@ -421,17 +441,19 @@ namespace CosmicShore.App.UI.Modals
                 BusyIndicator.SetActive(false);
             }
             
-            if (PlayerDataController.Instance.PlayerProfile == null)
+            if (PlayerDataController.PlayerProfile == null)
             {
                 Debug.LogWarning("Player profile has not yet loaded.");
                 return;
             }
             
-            if(!string.IsNullOrEmpty(PlayerDataController.Instance.PlayerProfile.DisplayName))
-                displayNameInputField.text = PlayerDataController.Instance.PlayerProfile.DisplayName;
+            if(!string.IsNullOrEmpty(PlayerDataController.PlayerProfile.DisplayName))
+                displayNameInputField.text = PlayerDataController.PlayerProfile.DisplayName;
 
             if (displayNameResultMessage == null) return;
             displayNameResultMessage.gameObject.SetActive(true);
+
+            HideDisplayNameButtons();
         }
 
         /// <summary>

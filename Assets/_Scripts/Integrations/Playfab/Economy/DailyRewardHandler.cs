@@ -125,35 +125,7 @@ namespace CosmicShore.Integrations.PlayFab.CloudScripts
             Debug.Log($"Cloud script - The {result.FunctionName} function took {result.ExecutionTimeMilliseconds} to complete");
             Debug.Log($"Cloud script - Result: {result.FunctionResult}");
         }
-
-        /// <summary>
-        /// A test script, nothing to see here.
-        /// </summary>
-        private void CallHelloWorldCloudScript()
-        {
-      
-            var request =
-                new ExecuteFunctionRequest //Set this to true if you would like this call to show up in PlayStream
-            {
-                Entity = _entity,
-                FunctionName = "HelloWorld", //This should be the name of your Azure Function that you created.
-                FunctionParameter = new Dictionary<string, object>
-                    { { "inputValue", "Test" } }, //This is the data that you would want to pass into your function.
-                GeneratePlayStreamEvent = false //Set this to true if you would like this call to show up in PlayStream
-            };
-
-            PlayFabCloudScriptAPI.ExecuteFunction(request, OnHelloWorldSuccess, PlayFabUtility.HandleErrorReport);
-        }
-
-        private void OnHelloWorldSuccess(ExecuteFunctionResult result)
-        {
-            if (result.FunctionResultTooLarge ?? false)
-            {
-                Debug.Log("Cloud script - This can happen if you exceed the limit that can be returned from an Azure Function, See PlayFab Limits Page for details.");
-                return;
-            }
-            Debug.Log($"Cloud script - The {result.FunctionName} function took {result.ExecutionTimeMilliseconds} to complete");
-            Debug.Log($"Cloud script - Result: {result.FunctionResult}");
-        }
+        
+        
     }
 }

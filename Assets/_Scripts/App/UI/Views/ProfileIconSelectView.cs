@@ -17,7 +17,7 @@ namespace CosmicShore.App.UI.Views
         ProfileIconSelectButton SelectedProfileIconButton;
         ProfileIcon SelectedIcon;
 
-        void Start()
+        protected override void Start()
         {
             var selectedIconId = LoadProfileIconSelection();
 
@@ -39,7 +39,10 @@ namespace CosmicShore.App.UI.Views
                 iconButton.ProfileIcon = profileIcon;
                 iconButton.IconView = this;
                 if (profileIcon.Id == selectedIconId)
+                {
                     iconButton.SetSelected(true);
+                    SelectedProfileIconButton = iconButton;
+                }
 
                 iconCount++;
 
@@ -60,6 +63,8 @@ namespace CosmicShore.App.UI.Views
 
             // Apply the new sizeDelta
             IconGrid.GetComponent<RectTransform>().sizeDelta = sizeDelta;
+
+            base.Start();
         }
 
         public void SelectIcon(ProfileIconSelectButton SelectedIconButton, ProfileIcon profileIcon)
@@ -82,9 +87,11 @@ namespace CosmicShore.App.UI.Views
 
         public int LoadProfileIconSelection()
         {
-            var profileIconId = PlayerDataController.Instance.PlayerProfile.ProfileIconId;
-            SelectedIcon = ProfileIcons.profileIcons.Where(x => x.Id == profileIconId).FirstOrDefault();
+            var profileIconId = PlayerDataController.PlayerProfile.ProfileIconId;
+            Debug.Log($"LoadProfileIconSelection - profile icon id:{profileIconId}");
+            SelectedIcon = ProfileIcons.profileIcons.FirstOrDefault(x => x.Id == profileIconId);
 
+            Debug.Log($"LoadProfileIconSelection:{SelectedIcon.Id}");
             Debug.Log($"LoadProfileIconSelection:{PlayerPrefs.GetInt("ProfileIconID")}");
 
             return profileIconId;

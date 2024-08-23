@@ -12,6 +12,7 @@ using CosmicShore.App.Systems.UserActions;
 using CosmicShore.Game.UI;
 using CosmicShore.Models.Enums;
 using CosmicShore.App.Systems;
+using CosmicShore.Integrations.PlayFab.PlayerData;
 
 namespace CosmicShore.Game.Arcade
 {
@@ -109,7 +110,7 @@ namespace CosmicShore.Game.Arcade
                 Players.Add(Instantiate(playerPrefab));
                 Players[i].defaultShip = playerShipTypeInitialized ? PlayerShipType : DefaultPlayerShipType;
                 Players[i].Team = PlayerTeams[i];
-                Players[i].PlayerName = PlayerNames[i];
+                Players[i].PlayerName = i == 0 ? PlayerDataController.PlayerProfile.DisplayName : PlayerNames[i];
                 Players[i].PlayerUUID = PlayerNames[i];
                 Players[i].name = "Player" + (i + 1);
                 Players[i].gameObject.SetActive(true);
@@ -150,9 +151,6 @@ namespace CosmicShore.Game.Arcade
         public void Exit()
         {
             GameManager.ReturnToLobby();
-            //if (PauseSystem.Paused) PauseSystem.TogglePauseGame();
-            // TODO: this is kind of hokie
-            //SceneManager.LoadScene(0);
         }
 
         public void OnReadyClicked()
@@ -279,6 +277,9 @@ namespace CosmicShore.Game.Arcade
             {
                 LeaderboardManager.Instance.ReportDailyChallengeStatistic(ScoreTracker.GetHighScore(), ScoreTracker.GolfRules);
                 DailyChallengeSystem.Instance.ReportScore(ScoreTracker.GetHighScore());
+
+                // TODO: Hide play again button, or map it to use another ticket
+
             }
             else if (IsFactionMission)
             {
