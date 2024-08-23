@@ -87,9 +87,11 @@ namespace CosmicShore.App.UI.Views
 
         public int LoadProfileIconSelection()
         {
-            var profileIconId = PlayerDataController.Instance.PlayerProfile.ProfileIconId;
-            SelectedIcon = ProfileIcons.profileIcons.Where(x => x.Id == profileIconId).FirstOrDefault();
+            var profileIconId = PlayerDataController.PlayerProfile.ProfileIconId;
+            Debug.Log($"LoadProfileIconSelection - profile icon id:{profileIconId}");
+            SelectedIcon = ProfileIcons.profileIcons.FirstOrDefault(x => x.Id == profileIconId);
 
+            Debug.Log($"LoadProfileIconSelection:{SelectedIcon.Id}");
             Debug.Log($"LoadProfileIconSelection:{PlayerPrefs.GetInt("ProfileIconID")}");
 
             return profileIconId;

@@ -339,7 +339,7 @@ namespace CosmicShore.Integrations.PlayFab.Authentication
         {
             BusyIndicator.SetActive(false);
 
-            displayNameInputField.text = PlayerDataController.Instance.PlayerProfile.DisplayName;
+            displayNameInputField.text = PlayerDataController.PlayerProfile.DisplayName;
 
             displayNameResultMessage.text = "Display Name Loaded";
             displayNameResultMessage.gameObject.SetActive(true);

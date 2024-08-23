@@ -35,8 +35,9 @@ namespace CosmicShore
 
         public Sprite GetProfileImage()
         {
-            var profileIconId = PlayerDataController.Instance.PlayerProfile.ProfileIconId;
-            return ProfileIcons.profileIcons.Where(x => x.Id == profileIconId).FirstOrDefault().IconSprite;
+            var profileIconId = PlayerDataController.PlayerProfile.ProfileIconId;
+            Debug.Log($"ProfileImage - GetProfileImage - {profileIconId}");
+            return ProfileIcons.profileIcons.FirstOrDefault(x => x.Id == profileIconId).IconSprite;
         }
     }
 }

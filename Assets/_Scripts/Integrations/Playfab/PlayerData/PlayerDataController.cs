@@ -15,7 +15,7 @@ namespace CosmicShore.Integrations.PlayFab.PlayerData
         
         private const string DisplayNamePlayerPrefKey = "DisplayName";
         private const string ProfileIconIdPlayerPrefKey = "ProfileIconId";
-        public PlayerProfile PlayerProfile { get; private set; } = new("Player", "1");
+        public static PlayerProfile PlayerProfile { get; private set; } = new();
         public static event Action OnProfileLoaded;
         public static event Action OnPlayerDisplayNameUpdated;
         public static event Action OnPlayerAvatarUpdated;
@@ -70,14 +70,18 @@ namespace CosmicShore.Integrations.PlayFab.PlayerData
                 result =>
                 {
                     // The result will get publisher id, title id, player id (also called playfab id in other requests) and display name
-                    PlayerProfile.DisplayName = result.PlayerProfile.DisplayName;
-                    PlayerProfile.AvatarUrl = result.PlayerProfile.AvatarUrl;
+                    PlayerProfile.Update(result.PlayerProfile.DisplayName, result.PlayerProfile.AvatarUrl);
+                    
+                    Debug.Log($"PlayerDataController - LoadPlayerProfile - Avatar url {result.PlayerProfile.AvatarUrl}");
+                    Debug.Log($"PlayerDataController - LoadPlayerProfile - local Avatar url {PlayerProfile.AvatarUrl}");
+                    Debug.Log($"PlayerDataController - LoadPlayerProfile - Profile Icon id {PlayerProfile.ProfileIconId}");
 
                     if (string.IsNullOrEmpty(result.PlayerProfile.AvatarUrl))
                         SetPlayerAvatar(new System.Random().Next(1,19));
 
                     PlayerPrefs.SetString(DisplayNamePlayerPrefKey, PlayerProfile.DisplayName);
                     PlayerPrefs.SetString(ProfileIconIdPlayerPrefKey, PlayerProfile.AvatarUrl);
+                    PlayerPrefs.Save();
 
                     Debug.Log("AuthenticationManager - Successfully retrieved player profile");
                     Debug.Log($"AuthenticationManager - Player id: {PlayerProfile.UniqueID}");

@@ -306,14 +306,14 @@ namespace CosmicShore.Integrations.PlayFab.Authentication
             
             var request = new AddUsernamePasswordRequest();
             
-            request.Username = string.IsNullOrEmpty(PlayerDataController.Instance.PlayerProfile.Email) ? email : PlayerDataController.Instance.PlayerProfile.Email;
+            request.Username = string.IsNullOrEmpty(PlayerDataController.PlayerProfile.Email) ? email : PlayerDataController.PlayerProfile.Email;
             request.Email = email;
             request.Password = password.ToString();
             
             PlayFabClientAPI.AddUsernamePassword(
                 request, result =>
                 {
-                    PlayerDataController.Instance.PlayerProfile.Email = result.Username;
+                    PlayerDataController.PlayerProfile.Email = result.Username;
                     if (PlayerSession.IsRemembered)
                     {
                         // If the session is asked to be remembered, replace the custom id with newly generated Guid
