@@ -48,6 +48,9 @@ EditorBuildSettings:
     path: Assets/_Scenes/MinigameDarts.unity
     guid: 6197568b1ea35f94a812815c41df57e1
   - enabled: 1
+    path: Assets/_Scenes/MinigameMazeRunner.unity
+    guid: a9cf5217e95de37449fe36346364e172
+  - enabled: 1
     path: Assets/_Scenes/MinigameElimination.unity
     guid: c7bc1993712d2734593d1d4e50b01dcb
   - enabled: 0

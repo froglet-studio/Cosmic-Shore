@@ -15,7 +15,7 @@ namespace CosmicShore.Game.Arcade
             if (!StatsManager.Instance.playerStats.ContainsKey(Game.ActivePlayer.PlayerName))
                 return false;
 
-            return StatsManager.Instance.playerStats[Game.ActivePlayer.PlayerName].crystalsCollected >= CrystalCollisions;
+            return StatsManager.Instance.playerStats[Game.ActivePlayer.PlayerName].omniCrystalsCollected >= CrystalCollisions;
         }
 
         public override void NewTurn(string playerName)

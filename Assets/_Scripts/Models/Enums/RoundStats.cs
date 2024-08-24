@@ -18,6 +18,8 @@ namespace CosmicShore.Core
         public float friendlyVolumeDestroyed;
         public float hostileVolumeDestroyed;
         public int crystalsCollected;
+        public int omniCrystalsCollected;
+        public int elementalCrystalsCollected;
         public int skimmerShipCollisions;
         public float fullSpeedStraightAbilityActiveTime;
         public float rightStickAbilityActiveTime;
@@ -45,6 +47,8 @@ namespace CosmicShore.Core
             friendlyVolumeDestroyed = 0;
             hostileVolumeDestroyed = 0;
             crystalsCollected = 0;
+            omniCrystalsCollected = 0;
+            elementalCrystalsCollected = 0;
             skimmerShipCollisions = 0;
             fullSpeedStraightAbilityActiveTime = 0;
             rightStickAbilityActiveTime = 0;

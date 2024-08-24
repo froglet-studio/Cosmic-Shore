@@ -9,4 +9,6 @@ public struct CrystalProperties
     public float tailLengthIncreaseAmount;
     public float speedBuffAmount;
     public Element Element;
+
+    public readonly bool IsElemental => Element == Element.Mass || Element == Element.Charge || Element == Element.Space || Element == Element.Time;
 }

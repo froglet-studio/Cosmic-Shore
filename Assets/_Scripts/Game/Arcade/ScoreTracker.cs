@@ -108,6 +108,18 @@ namespace CosmicShore.Game.Arcade
 
                         score = (greenVolume - redVolume) / ScoreNormalizationQuotient;
                         break;
+                    case ScoringModes.CrystalsCollected:
+                        if (StatsManager.Instance.playerStats.ContainsKey(currentPlayerName))
+                            score = playerScores[currentPlayerName] + StatsManager.Instance.playerStats[currentPlayerName].crystalsCollected;
+                        break;
+                    case ScoringModes.OmnirystalsCollected:
+                        if (StatsManager.Instance.playerStats.ContainsKey(currentPlayerName))
+                            score = playerScores[currentPlayerName] + StatsManager.Instance.playerStats[currentPlayerName].omniCrystalsCollected;
+                        break;
+                    case ScoringModes.ElementalCrystalsCollected:
+                        if (StatsManager.Instance.playerStats.ContainsKey(currentPlayerName))
+                            score = playerScores[currentPlayerName] + StatsManager.Instance.playerStats[currentPlayerName].elementalCrystalsCollected;
+                        break;
                 }
 
                 ActivePlayerScoreDisplay.text = ((int)score).ToString();

@@ -46,6 +46,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   trailBlock: {fileID: 4563009547826722997, guid: d24789d6e79c0044194a6017909ecfb4,
     type: 3}
+  crystal: {fileID: 6588436222817790495, guid: cccc6ba7985893f43841fccfbb53dc71, type: 3}
   width: 3
   height: 3
   blockSize: 9
@@ -97,6 +98,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   spawnableSegments:
+  - {fileID: 2530874233327190238}
   - {fileID: 2530874233327190238}
   positioningScheme: 16
   spawnSegmentWeights:

@@ -25,10 +25,18 @@ public class StatsManager : Singleton<StatsManager>
 
         var roundStats = teamStats[ship.Team];
         roundStats.crystalsCollected++;
+        if (crystalProperties.Element == Element.Omni)
+            roundStats.omniCrystalsCollected++;
+        else if (crystalProperties.IsElemental)
+            roundStats.elementalCrystalsCollected++;
         teamStats[ship.Team] = roundStats;
 
         roundStats = playerStats[ship.Player.PlayerName];
         roundStats.crystalsCollected++;
+        if (crystalProperties.Element == Element.Omni)
+            roundStats.omniCrystalsCollected++;
+        else if (crystalProperties.IsElemental)
+            roundStats.elementalCrystalsCollected++;
         playerStats[ship.Player.PlayerName] = roundStats;
     }
 
