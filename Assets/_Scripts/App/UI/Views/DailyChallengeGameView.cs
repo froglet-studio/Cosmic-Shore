@@ -1,4 +1,6 @@
 using CosmicShore.App.Systems;
+using CosmicShore.Core;
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -11,6 +13,8 @@ namespace CosmicShore.App.UI.Views
         [SerializeField] TMP_Text GameTitle;
         [SerializeField] TMP_Text TimeRemaining;
         [SerializeField] GameObject PreviewWindow;
+        [SerializeField] Image IntensityImage;
+        [SerializeField] Image ShipClassImage;
 
         [Header("Reward Progress")]
         [SerializeField] Image ProgressIndicatorBackground;
@@ -29,6 +33,9 @@ namespace CosmicShore.App.UI.Views
         [SerializeField] DailyChallengeRewardButton RewardButtonTwo;
         [SerializeField] DailyChallengeRewardButton RewardButtonThree;
 
+        [Header("Dynamic Images")]
+        [SerializeField] List<Sprite> IntensitySprites;
+
         public override void UpdateView()
         {
             var game = SelectedModel as SO_TrainingGame;
@@ -37,6 +44,9 @@ namespace CosmicShore.App.UI.Views
             var preview = Instantiate(game.Game.PreviewClip);
             preview.transform.SetParent(PreviewWindow.transform, false);
             preview.GetComponent<RectTransform>().sizeDelta = new Vector2(256, 144);
+
+            IntensityImage.sprite = IntensitySprites[game.DailyChallengeIntensity - 1];
+            ShipClassImage.sprite = Hangar.Instance.GetShipSOByShipType(game.ShipClass.Class).Icon;
 
             RewardButtonOne.SetReward(game.DailyChallengeTierOneReward);
             RewardButtonTwo.SetReward(game.DailyChallengeTierTwoReward);

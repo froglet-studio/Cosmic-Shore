@@ -16,7 +16,7 @@ MonoBehaviour:
   ElementOne: {fileID: 11400000, guid: 93cccacc721734240998ca415746a8dc, type: 2}
   ElementTwo: {fileID: 11400000, guid: 447871aa55eea934883d7160fef3c3ef, type: 2}
   ShipClass: {fileID: 11400000, guid: c0f30e9f09616874780edc0a375ce686, type: 2}
-  DailyChallengeIntensity: 0
+  DailyChallengeIntensity: 3
   DailyChallengeTierOneReward:
     ScoreRequirement: 5000
     Value: 50

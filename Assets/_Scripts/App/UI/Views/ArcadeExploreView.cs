@@ -1,19 +1,16 @@
 using CosmicShore.App.Systems.CTA;
 using CosmicShore.App.Systems.Favorites;
 using CosmicShore.App.Systems.Loadout;
-using CosmicShore.App.Systems.UserActions;
 using CosmicShore.App.UI.Elements;
 using CosmicShore.App.UI.Modals;
 using CosmicShore.Core;
 using CosmicShore.Game.Arcade;
 using CosmicShore.Integrations.PlayFab.Economy;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
-using UnityEngine.Video;
 
 namespace CosmicShore.App.UI.Views
 {
