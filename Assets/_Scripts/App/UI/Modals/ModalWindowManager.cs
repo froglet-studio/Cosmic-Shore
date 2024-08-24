@@ -14,7 +14,6 @@ namespace CosmicShore.App.UI.Modals
         protected virtual void Start()
         {
             windowAnimator = GetComponent<Animator>();
-            gameObject.SetActive(false);
         }
 
         public void ModalWindowIn()

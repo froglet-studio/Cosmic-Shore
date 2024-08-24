@@ -5,6 +5,7 @@ using CosmicShore.Models;
 using CosmicShore.Utility.Singleton;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace CosmicShore.Core
@@ -14,6 +15,7 @@ namespace CosmicShore.Core
         Teams AITeam;
 
         [Header("Ship Type Settings")]
+        [SerializeField] SO_ShipList AllShips;
         [SerializeField] Teams PlayerTeam = Teams.Green;
         [SerializeField] Captain PlayerCaptain;  // Serialized for inspection in hierarchy
         [SerializeField] ShipTypes PlayerShipType = ShipTypes.Random;
@@ -262,6 +264,11 @@ namespace CosmicShore.Core
         public Material GetTeamSuperShieldedBlockMaterial(Teams team)
         {
             return TeamMaterialSets[team].SuperShieldedBlockMaterial;
+        }
+
+        public SO_Ship GetShipSOByShipType(ShipTypes shipClass)
+        {
+            return AllShips.ShipList.Where(x => x.Class == shipClass).FirstOrDefault();
         }
     }
 }

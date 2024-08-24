@@ -1,19 +1,16 @@
 using CosmicShore.App.Systems.CTA;
 using CosmicShore.App.Systems.Favorites;
 using CosmicShore.App.Systems.Loadout;
-using CosmicShore.App.Systems.UserActions;
 using CosmicShore.App.UI.Elements;
 using CosmicShore.App.UI.Modals;
 using CosmicShore.Core;
 using CosmicShore.Game.Arcade;
 using CosmicShore.Integrations.PlayFab.Economy;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
-using UnityEngine.Video;
 
 namespace CosmicShore.App.UI.Views
 {
@@ -23,39 +20,19 @@ namespace CosmicShore.App.UI.Views
         [SerializeField] SO_GameList GameList;
         [SerializeField] GameObject GameSelectionView;
         [SerializeField] Transform GameSelectionGrid;
-
         [Header("Game Detail View")]
         [SerializeField] ArcadeGameConfigureModal ArcadeGameConfigureModal;
-        [SerializeField] GameObject GameDetailView;
-        [SerializeField] TMPro.TMP_Text SelectedGameName;
-        [SerializeField] TMPro.TMP_Text SelectedGameDescription;
-        [SerializeField] GameObject SelectedGamePreviewWindow;
-        [SerializeField] Transform ShipSelectionGrid;
-        [SerializeField] FavoriteIcon SelectedGameFavoriteIcon;
-        [SerializeField] ShipSelectionView ShipSelectionView;
-        
         [Header("Test Settings")]
         [Tooltip("If true, will filter out unowned games from being available to play (MUST BE TRUE ON FOR PRODUCTION BUILDS")]
         [SerializeField] bool RespectInventoryForGameSelection = false;
-        [Tooltip("If true, will filter out unowned ships from being available to play (MUST BE TRUE ON FOR PRODUCTION BUILDS")]
-        [SerializeField] bool RespectInventoryForShipSelection = false;
 
-        SO_Ship SelectedShip;
         SO_ArcadeGame SelectedGame;
         List<GameCard> GameCards;
-        VideoPlayer PreviewVideo;
 
         void Start()
         {
             LoadoutSystem.Init();
             PopulateGameSelectionList();
-        }
-
-        void OpenGameDetailModal()
-        {
-            ArcadeGameConfigureModal.ModalWindowIn();
-
-            UserActionSystem.Instance.CompleteAction(SelectedGame.ViewUserAction);
         }
 
         public void PopulateGameSelectionList()
@@ -116,57 +93,10 @@ namespace CosmicShore.App.UI.Views
         public void SelectGame(SO_ArcadeGame selectedGame)
         {
             SelectedGame = selectedGame;
-
-            // Populate configuration using loadout or default
-            var loadout = LoadoutSystem.LoadGameLoadout(SelectedGame.Mode).Loadout;
             ArcadeGameConfigureModal.SetSelectedGame(SelectedGame);
-            ArcadeGameConfigureModal.SetIntensity(loadout.Intensity == 0 ? SelectedGame.MinIntensity : loadout.Intensity);
-            ArcadeGameConfigureModal.SetPlayerCount(loadout.PlayerCount == 0 ? SelectedGame.MinPlayers : loadout.PlayerCount);
-
-            if (RespectInventoryForShipSelection)
-            {
-                List<SO_Captain> filteredCaptains = SelectedGame.Captains.Where(x => CaptainManager.Instance.UnlockedShips.Contains(x.Ship)).ToList();
-                ShipSelectionView.AssignModels(filteredCaptains.ConvertAll(x => (ScriptableObject)x.Ship));
-                ShipSelectionView.OnSelect += SelectShip;
-            }
-            else
-            {
-                ShipSelectionView.AssignModels(SelectedGame.Captains.ConvertAll(x => (ScriptableObject)x.Ship));
-                ShipSelectionView.OnSelect += SelectShip;
-            }
-
-            // Populate game data and show view
-            PopulateGameDetails();
-            OpenGameDetailModal();
-        }
-
-        void PopulateGameDetails()
-        {
-            Debug.Log($"Populating Game Details List: {SelectedGame.DisplayName}");
-            Debug.Log($"Populating Game Details List: {SelectedGame.Description}");
-            Debug.Log($"Populating Game Details List: {SelectedGame.Icon}");
-            Debug.Log($"Populating Game Details List: {SelectedGame.PreviewClip}");
-
-            // Set Game Detail Meta Data
-            SelectedGameName.text = SelectedGame.DisplayName;
-            SelectedGameDescription.text = SelectedGame.Description;
-            SelectedGameFavoriteIcon.Favorited = FavoriteSystem.IsFavorited(SelectedGame.Mode);
-
-            // Load Preview Video
-            if (PreviewVideo == null)
-            {
-                PreviewVideo = Instantiate(SelectedGame.PreviewClip);
-                PreviewVideo.GetComponent<RectTransform>().sizeDelta = new Vector2(300, 152);
-                PreviewVideo.transform.SetParent(SelectedGamePreviewWindow.transform, false);
-            }
-            else
-                PreviewVideo.clip = SelectedGame.PreviewClip.clip;
-        }
-
-        IEnumerator SelectCaptainCoroutine(SO_Captain captain)
-        {
-            yield return new WaitForEndOfFrame();
-            SelectShip(captain.Ship);
+            ArcadeGameConfigureModal.ModalWindowIn();
+            // TODO: is is throwing a key not found exception
+            //UserActionSystem.Instance.CompleteAction(SelectedGame.ViewUserAction);
         }
 
         public void SelectShip(SO_Ship selectedShip)
@@ -211,7 +141,6 @@ namespace CosmicShore.App.UI.Views
 
         public void ToggleFavorite()
         {
-            SelectedGameFavoriteIcon.Favorited = !SelectedGameFavoriteIcon.Favorited;
             FavoriteSystem.ToggleFavorite(SelectedGame.Mode);
             PopulateGameSelectionList();
         }

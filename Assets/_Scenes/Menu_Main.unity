@@ -12429,7 +12429,7 @@ GameObject:
   - component: {fileID: 449997302}
   - component: {fileID: 449997301}
   m_Layer: 5
-  m_Name: IntensityLevelImage
+  m_Name: IntensityImage
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -12452,8 +12452,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 1, y: 0}
   m_AnchorMax: {x: 1, y: 0}
-  m_AnchoredPosition: {x: -40, y: 15}
-  m_SizeDelta: {x: 44, y: 56}
+  m_AnchoredPosition: {x: -3, y: 7}
+  m_SizeDelta: {x: 64, y: 32}
   m_Pivot: {x: 1, y: 0}
 --- !u!114 &449997301
 MonoBehaviour:
@@ -12475,7 +12475,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 9e76948936689e147859e9cc865348ff, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 4d10e1387ba20d8488109384792bbe2f, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -21422,9 +21422,21 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
-      - m_Target: {fileID: 0}
-        m_TargetAssemblyTypeName: CosmicShore.App.UI.ModalWindowManager, Assembly-CSharp
+      - m_Target: {fileID: 2151613}
+        m_TargetAssemblyTypeName: CosmicShore.App.UI.Modals.ModalWindowManager, Assembly-CSharp
         m_MethodName: ModalWindowOut
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+      - m_Target: {fileID: 768041191}
+        m_TargetAssemblyTypeName: CosmicShore.App.UI.MenuAudio, Assembly-CSharp
+        m_MethodName: PlayAudio
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -33013,6 +33025,8 @@ MonoBehaviour:
   GameTitle: {fileID: 1893048355}
   TimeRemaining: {fileID: 1631603210}
   PreviewWindow: {fileID: 77486033}
+  IntensityImage: {fileID: 449997301}
+  ShipClassImage: {fileID: 1495744680}
   ProgressIndicatorBackground: {fileID: 2134384271}
   ProgressIndicatorVertical: {fileID: 1875253595}
   ProgressIndicatorVerticalMaxHeight: 148
@@ -33026,6 +33040,11 @@ MonoBehaviour:
   RewardButtonOne: {fileID: 1548803976}
   RewardButtonTwo: {fileID: 113227064}
   RewardButtonThree: {fileID: 400754362}
+  IntensitySprites:
+  - {fileID: 21300000, guid: ac5cee19b87dcf94aa096e437dd7aa69, type: 3}
+  - {fileID: 21300000, guid: 4d10e1387ba20d8488109384792bbe2f, type: 3}
+  - {fileID: 21300000, guid: d397a74b187200a459cfe20fbdba207a, type: 3}
+  - {fileID: 21300000, guid: dfbad3cda927b67469a7d145a5fcfe04, type: 3}
 --- !u!1 &1190551721
 GameObject:
   m_ObjectHideFlags: 0
@@ -34291,7 +34310,7 @@ CanvasGroup:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1223768669}
   m_Enabled: 1
-  m_Alpha: 0
+  m_Alpha: 1
   m_Interactable: 1
   m_BlocksRaycasts: 1
   m_IgnoreParentGroups: 0
@@ -41403,7 +41422,7 @@ GameObject:
   - component: {fileID: 1495744681}
   - component: {fileID: 1495744680}
   m_Layer: 5
-  m_Name: CaptainImage
+  m_Name: ShipClassImage
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -41426,8 +41445,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 15, y: 15}
-  m_SizeDelta: {x: 44, y: 56}
+  m_AnchoredPosition: {x: 15, y: 3}
+  m_SizeDelta: {x: 56, y: 56}
   m_Pivot: {x: 0, y: 0}
 --- !u!114 &1495744680
 MonoBehaviour:
@@ -41449,7 +41468,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 516d19e9db897c14aa1698abb25cbe32, type: 3}
+  m_Sprite: {fileID: 21300000, guid: c07463db6e8244c45b639760efd18f9e, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -52432,6 +52451,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   sharpAnimations: 1
   ArcadeExploreView: {fileID: 149703240736415088}
+  ShipSelectionView: {fileID: 2394847522501226520}
+  SelectedGameName: {fileID: 4125016652399188270}
+  SelectedGameDescription: {fileID: 4125016652004098476}
+  SelectedGamePreviewWindow: {fileID: 4125016651355798847}
+  SelectedGameFavoriteIcon: {fileID: 1867600102}
   PlayerCountButtons:
   - {fileID: 1441190798}
   - {fileID: 956105933}
@@ -52441,6 +52465,7 @@ MonoBehaviour:
   - {fileID: 1967172647}
   - {fileID: 1830221718}
   - {fileID: 554643661}
+  RespectInventoryForShipSelection: 0
 --- !u!1 &1850723631
 GameObject:
   m_ObjectHideFlags: 0
@@ -53003,8 +53028,9 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 149703240736415088}
-        m_TargetAssemblyTypeName: CosmicShore.App.UI.Menus.ExploreMenu, Assembly-CSharp
+      - m_Target: {fileID: 1847035622}
+        m_TargetAssemblyTypeName: CosmicShore.App.UI.Modals.ArcadeGameConfigureModal,
+          Assembly-CSharp
         m_MethodName: ToggleFavorite
         m_Mode: 1
         m_Arguments:
@@ -54701,6 +54727,7 @@ GameObject:
   - component: {fileID: 1937998086}
   - component: {fileID: 1937998085}
   - component: {fileID: 1937998084}
+  - component: {fileID: 1937998087}
   m_Layer: 5
   m_Name: Play Button
   m_TagString: Untagged
@@ -54784,6 +54811,18 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
+      - m_Target: {fileID: 1937998087}
+        m_TargetAssemblyTypeName: CosmicShore.App.UI.MenuAudio, Assembly-CSharp
+        m_MethodName: PlayAudio
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &1937998085
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -54822,6 +54861,19 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1937998082}
   m_CullTransparentMesh: 1
+--- !u!114 &1937998087
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1937998082}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 698f3492214843a49b922c5c64f54760, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  category: 10
 --- !u!1 &1940086309
 GameObject:
   m_ObjectHideFlags: 0
@@ -62126,15 +62178,7 @@ MonoBehaviour:
   GameSelectionView: {fileID: 538005720}
   GameSelectionGrid: {fileID: 1529521931}
   ArcadeGameConfigureModal: {fileID: 1847035622}
-  GameDetailView: {fileID: 4125016653256652703}
-  SelectedGameName: {fileID: 4125016652399188270}
-  SelectedGameDescription: {fileID: 4125016652004098476}
-  SelectedGamePreviewWindow: {fileID: 4125016651355798847}
-  ShipSelectionGrid: {fileID: 8551351583938100232}
-  SelectedGameFavoriteIcon: {fileID: 1867600102}
-  ShipSelectionView: {fileID: 2394847522501226520}
   RespectInventoryForGameSelection: 0
-  RespectInventoryForShipSelection: 0
 --- !u!224 &175867981159570580
 RectTransform:
   m_ObjectHideFlags: 0
@@ -62403,6 +62447,12 @@ PrefabInstance:
       propertyPath: m_Name
       value: Hangar
       objectReference: {fileID: 0}
+    - target: {fileID: 302356026468653294, guid: fdbd97f79a7aec14f8fadd5589780a74,
+        type: 3}
+      propertyPath: AllShips
+      value: 
+      objectReference: {fileID: 11400000, guid: 17dcd58a38dad2a498afe518e6a0bb58,
+        type: 2}
     - target: {fileID: 302356026468653294, guid: fdbd97f79a7aec14f8fadd5589780a74,
         type: 3}
       propertyPath: AIDifficultyLevel
