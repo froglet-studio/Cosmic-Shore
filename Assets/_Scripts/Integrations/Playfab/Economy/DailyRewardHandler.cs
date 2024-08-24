@@ -9,6 +9,9 @@ using UnityEngine;
 
 namespace CosmicShore.Integrations.PlayFab.CloudScripts
 {
+    /// <summary>
+    /// TODO: Generalize function execution
+    /// </summary>
     public class DailyRewardHandler : SingletonPersistent<DailyRewardHandler>
     {
         private static EntityKey _entity;
@@ -88,7 +91,7 @@ namespace CosmicShore.Integrations.PlayFab.CloudScripts
         {
             if (result.FunctionResultTooLarge ?? false)
             {
-                Debug.LogError($"Cloud script - Exceed the Azure Function.");
+                Debug.LogError("Cloud script - Exceed the Azure Function.");
                 return;
             }
             
@@ -113,19 +116,58 @@ namespace CosmicShore.Integrations.PlayFab.CloudScripts
             PlayFabCloudScriptAPI.ExecuteFunction(request, OnClaimDailyChallengeRewardSuccess, PlayFabUtility.HandleErrorReport);
         }
 
+        /// <summary>
+        /// Claim Daily Challenge Reward result returns if the claim is successful and a time available for the next claim
+        /// IsClaimed, nextClaimTime
+        /// </summary>
+        /// <param name="result">Function execution result</param>
         void OnClaimDailyChallengeRewardSuccess(ExecuteFunctionResult result)
         {
-            Debug.Log($"OnClaimDailyChallengeRewardSuccess");
+            Debug.Log("DailyRewardHandler - OnClaimDailyChallengeRewardSuccess");
             if (result.FunctionResultTooLarge ?? false)
             {
-                Debug.LogError($"Cloud script - Exceed the Azure Function.");
+                Debug.LogError("Cloud script - Exceed the Azure Function.");
                 return;
             }
             
             Debug.Log($"Cloud script - The {result.FunctionName} function took {result.ExecutionTimeMilliseconds} to complete");
             Debug.Log($"Cloud script - Result: {result.FunctionResult}");
         }
-        
-        
+
+        /// <summary>
+        /// Play Daily Challenge checks if the player has enough balance to play
+        /// And subtract balance by 1 if the balance is sufficient
+        /// </summary>
+        public void PlayDailyChallenge()
+        {
+            var request = new ExecuteFunctionRequest
+            {
+                Entity = _entity,
+                FunctionName = "PlayDailyChallenge",
+                GeneratePlayStreamEvent = false
+            };
+            
+            PlayFabCloudScriptAPI.ExecuteFunction(request, OnPlayDailyChallengeSuccess, PlayFabUtility.HandleErrorReport);
+        }
+
+        /// <summary>
+        /// Play Daily Challenge function execution successful result
+        /// Returns bool CanPlay, int remainingBalance
+        /// </summary>
+        /// <param name="result">Function execution result</param>
+        private void OnPlayDailyChallengeSuccess(ExecuteFunctionResult result)
+        {
+            Debug.Log("DailyRewardHandler - OnPlayDailyChallengeSuccess");
+            if (result.FunctionResultTooLarge ?? false)
+            {
+                Debug.LogError("Cloud script - Exceed the Azure Function.");
+                return;
+            }
+            
+            // TODO: Invoke the result if needed from the UI and Daily Reward System
+            
+            Debug.Log($"Cloud script - The {result.FunctionName} function took {result.ExecutionTimeMilliseconds} to complete");
+            Debug.Log($"Cloud script - Result: {result.FunctionResult}");
+        }
     }
 }
