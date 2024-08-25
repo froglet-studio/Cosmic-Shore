@@ -91,7 +91,7 @@ namespace CosmicShore.Integrations.PlayFab.CloudScripts
         {
             if (result.FunctionResultTooLarge ?? false)
             {
-                Debug.LogError("Cloud script - Exceed the Azure Function.");
+                Debug.LogError("Cloud script - This can happen if you exceed the limit that can be returned from an Azure Function, See PlayFab Limits Page for details.");
                 return;
             }
             
@@ -126,7 +126,7 @@ namespace CosmicShore.Integrations.PlayFab.CloudScripts
             Debug.Log("DailyRewardHandler - OnClaimDailyChallengeRewardSuccess");
             if (result.FunctionResultTooLarge ?? false)
             {
-                Debug.LogError("Cloud script - Exceed the Azure Function.");
+                Debug.LogError("Cloud script - This can happen if you exceed the limit that can be returned from an Azure Function, See PlayFab Limits Page for details.");
                 return;
             }
             
@@ -152,7 +152,7 @@ namespace CosmicShore.Integrations.PlayFab.CloudScripts
 
         /// <summary>
         /// Play Daily Challenge function execution successful result
-        /// Returns bool CanPlay, int remainingBalance
+        /// Returns playDailyChallengeResult { bool CanPlay, int remainingBalance}
         /// </summary>
         /// <param name="result">Function execution result</param>
         private void OnPlayDailyChallengeSuccess(ExecuteFunctionResult result)
@@ -160,11 +160,11 @@ namespace CosmicShore.Integrations.PlayFab.CloudScripts
             Debug.Log("DailyRewardHandler - OnPlayDailyChallengeSuccess");
             if (result.FunctionResultTooLarge ?? false)
             {
-                Debug.LogError("Cloud script - Exceed the Azure Function.");
+                Debug.LogError("Cloud script - This can happen if you exceed the limit that can be returned from an Azure Function, See PlayFab Limits Page for details.");
                 return;
             }
             
-            // TODO: Invoke the result if needed from the UI and Daily Reward System
+            // TODO: Invoke the result if needed for the UI and Daily Reward System
             
             Debug.Log($"Cloud script - The {result.FunctionName} function took {result.ExecutionTimeMilliseconds} to complete");
             Debug.Log($"Cloud script - Result: {result.FunctionResult}");
