@@ -45,11 +45,11 @@ namespace CosmicShore
 
             switch (winningTeam)
             {
-                case Teams.Green:
+                case Teams.Jade:
                     BannerImage.color = JadeTeamBannerColor;
                     BannerText.text = "JADE VICTORY";
                     break;
-                case Teams.Red:
+                case Teams.Ruby:
                     BannerImage.color = RubyTeamBannerColor;
                     BannerText.text = "RUBY VICTORY";
                     break;

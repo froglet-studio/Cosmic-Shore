@@ -50,8 +50,8 @@ public class Node : MonoBehaviour
             flora2 = (Flora)floraCollection.GetRandomPrefab();
         }
 
-        teamVolumes.Add(Teams.Green, 0);
-        teamVolumes.Add(Teams.Red, 0);
+        teamVolumes.Add(Teams.Jade, 0);
+        teamVolumes.Add(Teams.Ruby, 0);
         teamVolumes.Add(Teams.Gold, 0);
 
         SnowChanger.SetOrigin(transform.position);
@@ -65,7 +65,7 @@ public class Node : MonoBehaviour
     void Awake()
     {
         // TODO: handle Blue?
-        Teams[] teams = { Teams.Green, Teams.Red, Teams.Gold };  // TODO: Store this as a constant somewhere (where?).
+        Teams[] teams = { Teams.Jade, Teams.Ruby, Teams.Gold };  // TODO: Store this as a constant somewhere (where?).
         foreach (Teams t in teams)
         {
             countGrids.Add(t, new BlockCountDensityGrid(t));
@@ -75,7 +75,7 @@ public class Node : MonoBehaviour
 
     public void AddBlock(TrailBlock block)
     {
-        Teams[] teams = { Teams.Green, Teams.Red, Teams.Gold };
+        Teams[] teams = { Teams.Jade, Teams.Ruby, Teams.Gold };
         foreach (Teams t in teams)
         {
             if (t != block.Team) countGrids[t].AddBlock(block);
@@ -84,7 +84,7 @@ public class Node : MonoBehaviour
 
     public void RemoveBlock(TrailBlock block)
     {
-        Teams[] teams = { Teams.Green, Teams.Red, Teams.Gold };
+        Teams[] teams = { Teams.Jade, Teams.Ruby, Teams.Gold };
         foreach (Teams t in teams)
         {
             if (t != block.Team) countGrids[t].RemoveBlock(block);
@@ -184,28 +184,28 @@ public class Node : MonoBehaviour
             if (!enabled)
                 return Teams.None;
 
-            if (!teamVolumes.ContainsKey(Teams.Green)  && !teamVolumes.ContainsKey(Teams.Red) &&!teamVolumes.ContainsKey(Teams.Gold))
+            if (!teamVolumes.ContainsKey(Teams.Jade)  && !teamVolumes.ContainsKey(Teams.Ruby) &&!teamVolumes.ContainsKey(Teams.Gold))
                 return Teams.None;
 
-            if ((!teamVolumes.ContainsKey(Teams.Red) || (!teamVolumes.ContainsKey(Teams.Gold))) && teamVolumes[Teams.Green] > volumeControlThreshold)
-                return Teams.Green;
+            if ((!teamVolumes.ContainsKey(Teams.Ruby) || (!teamVolumes.ContainsKey(Teams.Gold))) && teamVolumes[Teams.Jade] > volumeControlThreshold)
+                return Teams.Jade;
 
-            if ((!teamVolumes.ContainsKey(Teams.Green) || (!teamVolumes.ContainsKey(Teams.Gold))) && teamVolumes[Teams.Red] > volumeControlThreshold)
-                return Teams.Red;
+            if ((!teamVolumes.ContainsKey(Teams.Jade) || (!teamVolumes.ContainsKey(Teams.Gold))) && teamVolumes[Teams.Ruby] > volumeControlThreshold)
+                return Teams.Ruby;
 
-            if ((!teamVolumes.ContainsKey(Teams.Green) || (!teamVolumes.ContainsKey(Teams.Red))) && teamVolumes[Teams.Gold] > volumeControlThreshold)
+            if ((!teamVolumes.ContainsKey(Teams.Jade) || (!teamVolumes.ContainsKey(Teams.Ruby))) && teamVolumes[Teams.Gold] > volumeControlThreshold)
                 return Teams.Gold;
 
-            if (teamVolumes[Teams.Green] < volumeControlThreshold && teamVolumes[Teams.Red] < volumeControlThreshold && teamVolumes[Teams.Gold] < volumeControlThreshold)
+            if (teamVolumes[Teams.Jade] < volumeControlThreshold && teamVolumes[Teams.Ruby] < volumeControlThreshold && teamVolumes[Teams.Gold] < volumeControlThreshold)
                 return Teams.None;
 
-            if (teamVolumes[Teams.Green] == teamVolumes[Teams.Gold] && teamVolumes[Teams.Green] == teamVolumes[Teams.Red])
+            if (teamVolumes[Teams.Jade] == teamVolumes[Teams.Gold] && teamVolumes[Teams.Jade] == teamVolumes[Teams.Ruby])
                 return Teams.None;
 
-            if (teamVolumes[Teams.Green] > teamVolumes[Teams.Red] && teamVolumes[Teams.Green] > teamVolumes[Teams.Gold])
-                return Teams.Green;
-            else if (teamVolumes[Teams.Red] > teamVolumes[Teams.Green] && teamVolumes[Teams.Red] > teamVolumes[Teams.Gold])
-                return Teams.Red;
+            if (teamVolumes[Teams.Jade] > teamVolumes[Teams.Ruby] && teamVolumes[Teams.Jade] > teamVolumes[Teams.Gold])
+                return Teams.Jade;
+            else if (teamVolumes[Teams.Ruby] > teamVolumes[Teams.Jade] && teamVolumes[Teams.Ruby] > teamVolumes[Teams.Gold])
+                return Teams.Ruby;
             else
                 return Teams.Gold;
         }

@@ -76,8 +76,8 @@ namespace CosmicShore.Game.Arcade
                         break;
                     case ScoringModes.TeamVolumeDifference:
                         var teamStats = StatsManager.Instance.teamStats;  // TODO: Hardcoded player team to Green... reconsider
-                        var greenVolume = teamStats.ContainsKey(Teams.Green) ? teamStats[Teams.Green].volumeRemaining : 0f;
-                        var redVolume = teamStats.ContainsKey(Teams.Red) ? teamStats[Teams.Red].volumeRemaining : 0f;
+                        var greenVolume = teamStats.ContainsKey(Teams.Jade) ? teamStats[Teams.Jade].volumeRemaining : 0f;
+                        var redVolume = teamStats.ContainsKey(Teams.Ruby) ? teamStats[Teams.Ruby].volumeRemaining : 0f;
 
                         score = (greenVolume - redVolume) / ScoreNormalizationQuotient;
                         break;
@@ -133,8 +133,8 @@ namespace CosmicShore.Game.Arcade
                     break;
                 case ScoringModes.TeamVolumeDifference:
                     var teamStats = StatsManager.Instance.teamStats;
-                    var greenVolume = teamStats.ContainsKey(Teams.Green) ? teamStats[Teams.Green].volumeRemaining : 0f;
-                    var redVolume = teamStats.ContainsKey(Teams.Red) ? teamStats[Teams.Red].volumeRemaining : 0f;
+                    var greenVolume = teamStats.ContainsKey(Teams.Jade) ? teamStats[Teams.Jade].volumeRemaining : 0f;
+                    var redVolume = teamStats.ContainsKey(Teams.Ruby) ? teamStats[Teams.Ruby].volumeRemaining : 0f;
                     playerScores[currentPlayerName] = (greenVolume - redVolume) / ScoreNormalizationQuotient;
                     StatsManager.Instance.ResetStats();
                     break;

@@ -19,7 +19,7 @@ namespace CosmicShore.Game.Arcade
 
         private IEnumerator WaitForTeam()
         {
-            team = hostileVolume ? Teams.Red : Teams.Green;
+            team = hostileVolume ? Teams.Ruby : Teams.Jade;
 
             while (!StatsManager.Instance.teamStats.ContainsKey(team))
             {

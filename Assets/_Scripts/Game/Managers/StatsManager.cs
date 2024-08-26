@@ -314,8 +314,8 @@ public class StatsManager : Singleton<StatsManager>
 
     public Vector4 GetTeamVolumes()
     {
-        var greenVolume = teamStats.TryGetValue(Teams.Green, out var teamStat) ? teamStat.volumeRemaining : 0;
-        var redVolume = teamStats.TryGetValue(Teams.Red, out teamStat) ? teamStat.volumeRemaining : 0;
+        var greenVolume = teamStats.TryGetValue(Teams.Jade, out var teamStat) ? teamStat.volumeRemaining : 0;
+        var redVolume = teamStats.TryGetValue(Teams.Ruby, out teamStat) ? teamStat.volumeRemaining : 0;
         var blueVolume = teamStats.TryGetValue(Teams.Blue, out teamStat) ? teamStat.volumeRemaining : 0;
         var yellowVolume = teamStats.TryGetValue(Teams.Gold, out teamStat) ? teamStat.volumeRemaining : 0;
 
@@ -382,7 +382,7 @@ public class StatsManager : Singleton<StatsManager>
         }
 
         //Calculate  and display winner
-        var finalScore = teamStats[Teams.Green].volumeRemaining - teamStats[Teams.Red].volumeRemaining;
+        var finalScore = teamStats[Teams.Jade].volumeRemaining - teamStats[Teams.Ruby].volumeRemaining;
         var winner = finalScore > 0 ? "Green" : "Red";
         Debug.Log($"Winner: {winner}");
     }

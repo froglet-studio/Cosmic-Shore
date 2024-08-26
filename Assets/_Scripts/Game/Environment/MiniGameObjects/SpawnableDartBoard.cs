@@ -30,12 +30,12 @@ public class SpawnableDartBoard : SpawnableAbstractBase
                 if ( (block / ring + ring/3) % 2 == 0)
                 { 
                     trailBlock = greenTrailBlock;
-                    team = Teams.Green; 
+                    team = Teams.Jade; 
                 }
                 else 
                 { 
                     trailBlock = redTrailBlock; 
-                    team = Teams.Red;
+                    team = Teams.Ruby;
                 }
                 CreateRingBlock(block, 0, 0, 0, trails[ring-1], ring, trailBlock, team); // old value for phase = ring % 2 * .5f
             }

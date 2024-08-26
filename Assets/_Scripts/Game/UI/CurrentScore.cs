@@ -13,8 +13,8 @@ namespace CosmicShore.Game.UI
             var teamStats = StatsManager.Instance.teamStats;
 
             // Check to see if the stats manager has created entries yet. If not treat volume remaining as 0.
-            var greenVolume = teamStats.ContainsKey(Teams.Green) ? teamStats[Teams.Green].volumeRemaining : 0f;
-            var redVolume = teamStats.ContainsKey(Teams.Red) ? teamStats[Teams.Red].volumeRemaining : 0f;
+            var greenVolume = teamStats.ContainsKey(Teams.Jade) ? teamStats[Teams.Jade].volumeRemaining : 0f;
+            var redVolume = teamStats.ContainsKey(Teams.Ruby) ? teamStats[Teams.Ruby].volumeRemaining : 0f;
 
             currentScoreText.text = (greenVolume - redVolume).ToString("F0");
         }

@@ -21,7 +21,7 @@ public class TestHarnessOctreeDensitySearch : MonoBehaviour
         
         Node targetNode = NodeControlManager.Instance.GetNearestNode(transform.position);
 
-        Teams[] teams = { Teams.Green, Teams.Red, Teams.Gold };
+        Teams[] teams = { Teams.Jade, Teams.Ruby, Teams.Gold };
         foreach (Teams t in teams)
         {
             Vector3 explosionTarget = targetNode.GetExplosionTarget(t);
