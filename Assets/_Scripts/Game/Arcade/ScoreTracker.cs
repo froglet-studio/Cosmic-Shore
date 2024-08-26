@@ -10,50 +10,24 @@ namespace CosmicShore.Game.Arcade
     {
         [HideInInspector] public TMP_Text ActivePlayerScoreDisplay;
 
-        // Magic number to give more precision to time tracking as an integer value
-
         [SerializeField] public ScoringModes ScoringMode;
         [SerializeField] public bool GolfRules;
         [HideInInspector] public GameCanvas GameCanvas;
 
         [Header("Optional Configuration")]
+        // Magic number to give more precision to time tracking as an integer value
         [SerializeField] float TimePlayedScoreMultiplier = 1000f;
         [SerializeField] float ScoreNormalizationQuotient = 145.65f;
 
-        VerticalLayoutGroup Scoreboard;
-        TMP_Text WinnerNameContainer;
-        Image WinnerBannerImage;
-        Color GreenTeamWinColor;
-        Color RedTeamWinColor;
-        Color YellowTeamWinColor;
-
-        List<TMP_Text> PlayerNameContainers = new();
-        List<TMP_Text> PlayerScoreContainers = new();
-        Dictionary<string, float> playerScores = new();
-        Dictionary<string, Teams> playerTeams = new();
+        public Dictionary<string, float> playerScores { get; private set; } = new();
+        public Dictionary<string, Teams> playerTeams { get; private set; } = new();
         string currentPlayerName;
-        Teams currentPlayerTeam;
         int turnsPlayed = 0;
         float turnStartTime;
 
         void Start()
         {
-            Scoreboard = GameCanvas.Scoreboard;
             ActivePlayerScoreDisplay = GameCanvas.MiniGameHUD.ScoreDisplay;
-            WinnerNameContainer = GameCanvas.WinnerNameContainer;
-            WinnerBannerImage = GameCanvas.WinnerBannerImage;
-            GreenTeamWinColor = GameCanvas.GreenTeamWinColor;
-            RedTeamWinColor = GameCanvas.RedTeamWinColor;
-            YellowTeamWinColor = GameCanvas.YellowTeamWinColor;
-
-            for (var i = 0; i < Scoreboard.transform.childCount; i++)
-            {
-                var child = Scoreboard.transform.GetChild(i);
-                Debug.Log($"init scoreboard name: {child.name}");
-                Debug.Log($"init scoreboard child count: {child.transform.childCount}");
-                PlayerNameContainers.Add(child.transform.GetChild(0).GetComponent<TMP_Text>());
-                PlayerScoreContainers.Add(child.transform.GetChild(1).GetComponent<TMP_Text>());
-            }
         }
 
         public virtual void StartTurn(string playerName, Teams playerTeam)
@@ -65,7 +39,6 @@ namespace CosmicShore.Game.Arcade
             }
 
             currentPlayerName = playerName;
-            currentPlayerTeam = playerTeam;
             turnStartTime = Time.time;
         }
 
@@ -210,27 +183,29 @@ namespace CosmicShore.Game.Arcade
                 return maxKey;
         }
 
+        public virtual Teams GetWinningTeam()
+        {
+            var winner = GetWinner();
+            return playerTeams[winner];
+        }
+
         public virtual int GetHighScore()
         {
             bool minTie;
             bool maxTie;
             float minScore = float.MaxValue;
             float maxScore = float.MinValue;
-            string minKey = "";
-            string maxKey = "";
             foreach (var key in playerScores.Keys)
             {
                 if (playerScores[key] <= minScore)
                 {
                     minTie = playerScores[key] == minScore;
                     minScore = playerScores[key];
-                    minKey = key;
                 }
                 if (playerScores[key] >= maxScore)
                 {
                     maxTie = playerScores[key] == maxScore;
                     maxScore = playerScores[key];
-                    maxKey = key;
                 }
             }
 
@@ -243,46 +218,6 @@ namespace CosmicShore.Game.Arcade
         public virtual int GetScore(string playerName)
         {
             return (int)playerScores[playerName];
-        }
-
-        public virtual void DisplayScores()
-        {
-            List<LeaderboardEntry> scores = new List<LeaderboardEntry>();
-            foreach (var score in playerScores)
-            {
-                scores.Add(new LeaderboardEntry(score.Key, (int)score.Value, ShipTypes.Manta));
-            }
-            scores.Sort((score1, score2) => score2.Score.CompareTo(score1.Score));
-
-            for (var i = 0; i < scores.Count; i++)
-            {
-                PlayerNameContainers[i].text = scores[i].PlayerName;
-                PlayerScoreContainers[i].text = scores[i].Score.ToString();
-            }
-
-            for (var i = playerScores.Keys.Count; i < PlayerNameContainers.Count; i++)
-            {
-                PlayerNameContainers[i].text = "";
-                PlayerScoreContainers[i].text = "";
-                PlayerScoreContainers[i].gameObject.SetActive(false);
-            }
-
-            var winner = GetWinner();
-            switch (playerTeams[winner])
-            {
-                case Teams.Green:
-                    WinnerBannerImage.color = GreenTeamWinColor;
-                    WinnerNameContainer.text = "Green Victory";
-                    break;
-                case Teams.Red:
-                    WinnerBannerImage.color = RedTeamWinColor;
-                    WinnerNameContainer.text = "Red Victory";
-                    break;
-                case Teams.Gold:
-                    WinnerBannerImage.color = YellowTeamWinColor;
-                    WinnerNameContainer.text = "Gold Victory";
-                    break;
-            }
         }
     }
 }

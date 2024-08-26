@@ -261,6 +261,15 @@ MonoBehaviour:
   maxDepth: 3
   maxTotalSpawnedObjects: 100
   branchPrefabs: []
+  GridWidth: 10
+  GridHeight: 10
+  GridThickness: 10
+  CellSize: 10
+  Curviness: 0.5
+  BranchProbability: 0.2
+  TowerHeight: 100
+  TowerRadius: 20
+  RotationsPerUnit: 0.1
 --- !u!4 &512034094 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 8350600879602490814, guid: 7fec532a729a8b648a8de2399d1b918a,
@@ -941,7 +950,6 @@ MonoBehaviour:
   ringCount: 18
   ringThickness: 8
   gap: 15
-  dartBoardRadius: 100
 --- !u!1 &1471404062
 GameObject:
   m_ObjectHideFlags: 0

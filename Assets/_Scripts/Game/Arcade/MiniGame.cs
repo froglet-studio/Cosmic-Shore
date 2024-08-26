@@ -301,8 +301,12 @@ namespace CosmicShore.Game.Arcade
             PauseSystem.TogglePauseGame();
             gameRunning = false;
             EndGameScreen.SetActive(true);
-            
-            ScoreTracker.DisplayScores();
+
+            if (NumberOfPlayers > 1)
+                GameCanvas.scoreboard.ShowMultiplayerView();
+            else
+                GameCanvas.scoreboard.ShowSingleplayerView();
+
             OnMiniGameEnd?.Invoke(gameMode, PlayerShipType, NumberOfPlayers, IntensityLevel, ScoreTracker.GetHighScore());
         }
 
