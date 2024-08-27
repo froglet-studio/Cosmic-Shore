@@ -1,7 +1,7 @@
 using CosmicShore.App.Systems.UserActions;
+using CosmicShore.App.UI.Modals;
 using CosmicShore.App.UI.Screens;
 using CosmicShore.Core;
-using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -19,8 +19,31 @@ namespace CosmicShore.App.UI
             STORE = 0,
             ARCADE = 1,
             HOME = 2,
-            Port = 3,
+            PORT = 3,
             HANGAR = 4,
+        }
+
+        public enum ModalWindows
+        {
+            // STORE MODALS
+            PURCHASE_ITEM_CONFIRMATION,
+
+            // ARCADE MODALS
+            ARCADE_GAME_CONFIGURE,
+            DAILY_CHALLENGE,
+
+            // HOME MODALS
+            PROFILE,
+            PROFILE_ICON_SELECT,
+            SETTINGS,
+            XP_TRACK,
+
+            // PORT MODALS
+            FACTION_MISSION,
+            SQUAD_MEMBER_CONFIGURE,
+
+            // HANGAR MODALS
+            HANGAR_TRAINING,
         }
 
         [SerializeField] float percentThreshold = 0.2f; // Sensitivity of swipe detector. Smaller number = more sensitive
@@ -35,7 +58,7 @@ namespace CosmicShore.App.UI
         Coroutine navigateCoroutine;
 
         const int STORE = (int)MenuScreens.STORE;
-        const int PORT = (int)MenuScreens.Port;
+        const int PORT = (int)MenuScreens.PORT;
         const int HOME = (int)MenuScreens.HOME;
         const int HANGAR = (int)MenuScreens.HANGAR;
         const int ARCADE = (int)MenuScreens.ARCADE;
@@ -43,9 +66,67 @@ namespace CosmicShore.App.UI
         [SerializeField] Image NavBarLine;
         [SerializeField] List<Sprite> NavBarLineSprites;
 
+        [Header("Modal Windows")]
+        [SerializeField] ModalWindowManager ArcadeGameConfigureModal;
+        [SerializeField] ModalWindowManager DailyChallengeModal;
+        [SerializeField] ModalWindowManager HangarTrainingGameModal;
+        [SerializeField] ModalWindowManager FactionMissionModal;
+
+        string ReturnToScreenPrefKey = "ReturnToScreen";
+        string ReturnToModalPrefKey = "ReturnToModal";
+
+        public void SetReturnToScreen(MenuScreens screen)
+        {
+            PlayerPrefs.SetInt(ReturnToScreenPrefKey, (int)screen);
+            PlayerPrefs.Save();
+        }
+        public void SetReturnToModal(ModalWindows modal)
+        {
+            PlayerPrefs.SetInt(ReturnToModalPrefKey, (int)modal);
+            PlayerPrefs.Save();
+        }
+
         void Start()
         {
-            NavigateTo(HOME, false);
+            if (PlayerPrefs.HasKey(ReturnToScreenPrefKey))
+            {
+                var screen = PlayerPrefs.GetInt(ReturnToScreenPrefKey);
+                NavigateTo(screen, false);
+                PlayerPrefs.DeleteKey(ReturnToScreenPrefKey);
+                PlayerPrefs.Save();
+            }
+            else
+            {
+                NavigateTo(HOME, false);
+            }
+
+            if (PlayerPrefs.HasKey(ReturnToModalPrefKey))
+            {
+                StartCoroutine(LaunchModalCoroutine());
+            }
+        }
+
+        IEnumerator LaunchModalCoroutine()
+        {
+            yield return new WaitForEndOfFrame();
+            var modal = PlayerPrefs.GetInt(ReturnToModalPrefKey);
+            switch ((ModalWindows)modal)
+            {
+                case ModalWindows.ARCADE_GAME_CONFIGURE:
+                    ArcadeGameConfigureModal.ModalWindowIn();
+                    break;
+                case ModalWindows.DAILY_CHALLENGE:
+                    DailyChallengeModal.ModalWindowIn();
+                    break;
+                case ModalWindows.HANGAR_TRAINING:
+                    HangarTrainingGameModal.ModalWindowIn();
+                    break;
+                case ModalWindows.FACTION_MISSION:
+                    FactionMissionModal.ModalWindowIn();
+                    break;
+            }
+            PlayerPrefs.DeleteKey(ReturnToModalPrefKey);
+            PlayerPrefs.Save();
         }
 
         void Update()
@@ -94,7 +175,10 @@ namespace CosmicShore.App.UI
                 UserActionSystem.Instance.CompleteAction(UserActionType.ViewArcadeMenu);
 
             if (ScreenIndex == HANGAR)
+            {
                 UserActionSystem.Instance.CompleteAction(UserActionType.ViewHangarMenu);
+                HangarMenu.LoadView();
+            }
 
             if (ScreenIndex == HOME)
                 GameManager.UnPauseGame();
@@ -133,7 +217,7 @@ namespace CosmicShore.App.UI
         }
         public void OnClickHangarNav()
         {
-            HangarMenu.LoadView();
+            //HangarMenu.LoadView();
             NavigateTo(HANGAR);
         }
         public void OnClickArcadeNav()

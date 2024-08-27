@@ -11,7 +11,7 @@ namespace CosmicShore.App.UI.FX
     /// </summary>
     public class IconEmitter : MonoBehaviour
     {
-        public enum EmissionMode { RandomAngle, Sweep }
+        public enum EmissionMode { RandomAngle, Sweep, Scatter }
 
         [SerializeField] RectTransform Container;
         [SerializeField] Image Source;
@@ -28,6 +28,7 @@ namespace CosmicShore.App.UI.FX
         [SerializeField] EmissionMode Mode = EmissionMode.RandomAngle;
         [SerializeField] float MinAngle = 0f;
         [SerializeField] float MaxAngle = 0f;
+        [SerializeField] float MaxScatterDistance = 50f;
         [SerializeField] bool SpiralBackIfPointingAway = true;
         [SerializeField] bool DoShrinkRoutine = true;
         [SerializeField] float JitterAmount = 0.1f;
@@ -67,40 +68,39 @@ namespace CosmicShore.App.UI.FX
             if (DoShrinkRoutine)
                 StartCoroutine(ShrinkSourceImage());
 
+            // Get world positions and convert them between coordinate spaces
+            Vector3 sourceWorldPosition = Source.rectTransform.position;
+            RectTransformUtility.ScreenPointToLocalPointInRectangle(
+                transform as RectTransform, // Parent of the icon images
+                sourceWorldPosition,
+                null, // Assumes canvas is set to Screen Space Overlay
+                out Vector2 sourceLocalPosition
+            );
+            sourceLocalPosition += SourceOffset;
+
+            // Convert the Target position to the coordinate space of the Source's parent
+            Vector3 targetWorldPosition = Target.rectTransform.position;
+            RectTransformUtility.ScreenPointToLocalPointInRectangle(
+                transform as RectTransform,
+                targetWorldPosition,
+                null,
+                out Vector2 targetLocalPosition
+            );
+            targetLocalPosition += TargetOffset;
+
             for (var i = 0; i < Quantity; i++)
             {
                 var image = Instantiate(ImageTemplate);
-                image.gameObject.SetActive(true);
+                image.gameObject.SetActive(false);
                 image.transform.SetParent(transform, false);
                 image.rectTransform.sizeDelta = StartSize;
 
-                // Get world positions and convert them between coordinate spaces
-                Vector3 sourceWorldPosition = Source.rectTransform.position;
-                Vector3 targetWorldPosition = Target.rectTransform.position;
-
-                // Convert the Source position to the coordinate space of the Target's parent
-                Vector2 sourceLocalPosition;
-                Vector2 targetLocalPosition;
-
-                RectTransformUtility.ScreenPointToLocalPointInRectangle(
-                    transform as RectTransform, // Parent of the icon images
-                    sourceWorldPosition,
-                    null, // Assuming your Canvas is set to Screen Space Overlay
-                    out sourceLocalPosition
-                );
-
-                RectTransformUtility.ScreenPointToLocalPointInRectangle(
-                    transform as RectTransform,
-                    targetWorldPosition,
-                    null,
-                    out targetLocalPosition
-                );
-
                 image.rectTransform.anchoredPosition = sourceLocalPosition;
+
 
                 // Determine the angle based on the selected mode
                 float angle = 0f;
-                if (Mode == EmissionMode.RandomAngle)
+                if (Mode == EmissionMode.RandomAngle || Mode == EmissionMode.Scatter)
                 {
                     angle = Random.Range(MinAngle, MaxAngle);
                 }
@@ -109,8 +109,15 @@ namespace CosmicShore.App.UI.FX
                     angle = Mathf.Lerp(MinAngle, MaxAngle, (float)i / (Quantity - 1));
                 }
 
+                if (Mode == EmissionMode.Scatter)
+                {
+                    Vector2 direction = new Vector2(Mathf.Cos(Mathf.Deg2Rad * angle), Mathf.Sin(Mathf.Deg2Rad * angle)).normalized;
+                    sourceLocalPosition += direction * Random.Range(0, MaxScatterDistance);
+                }
+
                 // Calculate a reasonable initial delay with jitter
                 float initialDelay = (i * SpawnDuration / Quantity) + Random.Range(-JitterAmount, JitterAmount);
+
 
                 StartCoroutine(MoveAlongArcCoroutine(image, sourceLocalPosition, targetLocalPosition, angle, initialDelay));
             }
@@ -119,6 +126,9 @@ namespace CosmicShore.App.UI.FX
         IEnumerator MoveAlongArcCoroutine(Image image, Vector2 source, Vector2 target, float angle, float initialDelay)
         {
             yield return new WaitForSecondsRealtime(initialDelay);
+
+
+            image.gameObject.SetActive(true);
 
             int steps = 0;
             int maxSteps = 50;

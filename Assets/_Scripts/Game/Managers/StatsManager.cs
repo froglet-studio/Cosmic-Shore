@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using TMPro;
 using UnityEngine;
+using System;
 
 public class StatsManager : Singleton<StatsManager>
 {
@@ -21,7 +22,8 @@ public class StatsManager : Singleton<StatsManager>
         if (!RecordStats)
             return;
 
-        MaybeCreateDictionaryEntries(ship.Team, ship.Player.PlayerName);
+        if (!MaybeCreateDictionaryEntries(ship.Team, ship.Player.PlayerName))
+            return;
 
         var roundStats = teamStats[ship.Team];
         roundStats.crystalsCollected++;
@@ -45,7 +47,8 @@ public class StatsManager : Singleton<StatsManager>
         if (!RecordStats)
             return;
 
-        MaybeCreateDictionaryEntries(skimmingShip.Team, skimmingShip.Player.PlayerName);
+        if (!MaybeCreateDictionaryEntries(skimmingShip.Team, skimmingShip.Player.PlayerName))
+            return;
 
         var roundStats = teamStats[skimmingShip.Team];
         roundStats.skimmerShipCollisions++;
@@ -61,7 +64,8 @@ public class StatsManager : Singleton<StatsManager>
         if (!RecordStats)
             return;
 
-        MaybeCreateDictionaryEntries(creatingTeam, creatingPlayerName);
+        if (!MaybeCreateDictionaryEntries(creatingTeam, creatingPlayerName))
+            return;
 
         var roundStats = teamStats[creatingTeam];
         roundStats.blocksCreated++;
@@ -83,8 +87,10 @@ public class StatsManager : Singleton<StatsManager>
         if (!RecordStats)
             return;
 
-        MaybeCreateDictionaryEntries(destroyingTeam, destroyingPlayerName);
-        MaybeCreateDictionaryEntries(destroyedTrailBlockProperties.trailBlock.Team, destroyedTrailBlockProperties.trailBlock.PlayerName);
+        if (!MaybeCreateDictionaryEntries(destroyingTeam, destroyingPlayerName))
+            return;
+        if (!MaybeCreateDictionaryEntries(destroyedTrailBlockProperties.trailBlock.Team, destroyedTrailBlockProperties.trailBlock.PlayerName))
+            return;
 
         // Team Destruction Stats
         var roundStats = teamStats[destroyingTeam];
@@ -124,8 +130,10 @@ public class StatsManager : Singleton<StatsManager>
         if (!RecordStats)
             return;
 
-        MaybeCreateDictionaryEntries(restoringTeam, restoringPlayerName);
-        MaybeCreateDictionaryEntries(restoredTrailBlockProperties.trailBlock.Team, restoredTrailBlockProperties.trailBlock.PlayerName);
+        if (!MaybeCreateDictionaryEntries(restoringTeam, restoringPlayerName))
+            return;
+        if (!MaybeCreateDictionaryEntries(restoredTrailBlockProperties.trailBlock.Team, restoredTrailBlockProperties.trailBlock.PlayerName))
+            return;
 
         var roundStats = teamStats[restoringTeam];
         roundStats.blocksRestored++;
@@ -147,7 +155,8 @@ public class StatsManager : Singleton<StatsManager>
         if (!RecordStats)
             return;
 
-        MaybeCreateDictionaryEntries(modifiedTrailBlockProperties.trailBlock.Team, modifiedTrailBlockProperties.trailBlock.PlayerName);
+        if (!MaybeCreateDictionaryEntries(modifiedTrailBlockProperties.trailBlock.Team, modifiedTrailBlockProperties.trailBlock.PlayerName))
+            return;
 
         // TODO: add Team modifying Stats separately for growth/shrink & friendly/hostyile
 
@@ -169,8 +178,10 @@ public class StatsManager : Singleton<StatsManager>
         if (!RecordStats)
             return;
 
-        MaybeCreateDictionaryEntries(stealingTeam, stealingPlayerName);
-        MaybeCreateDictionaryEntries(stolenTrailBlockProperties.trailBlock.Team, stolenTrailBlockProperties.trailBlock.PlayerName);
+        if (!MaybeCreateDictionaryEntries(stealingTeam, stealingPlayerName))
+            return;
+        if (!MaybeCreateDictionaryEntries(stolenTrailBlockProperties.trailBlock.Team, stolenTrailBlockProperties.trailBlock.PlayerName))
+            return;
 
         // Team Stealing Stats
         var roundStats = teamStats[stealingTeam];
@@ -206,7 +217,9 @@ public class StatsManager : Singleton<StatsManager>
         if (!RecordStats)
             return;
 
-        MaybeCreateDictionaryEntries(team, playerName);
+        if (!MaybeCreateDictionaryEntries(team, playerName))
+            return;
+
         RoundStats roundStats;
         switch (abilityType)
         {
@@ -288,11 +301,25 @@ public class StatsManager : Singleton<StatsManager>
         GameManager.OnGameOver -= OutputRoundStats;
     }
 
-    void MaybeCreateDictionaryEntries(Teams team, string playerName)
+    /// <summary>
+    /// Adds missing keys to the team and player stat dictionaries
+    /// </summary>
+    /// <param name="team">Team stat dictionary key</param>
+    /// <param name="playerName">Player stat dictionary key</param>
+    /// <returns>True if the dictionary contains the new keys after execution</returns>
+    bool MaybeCreateDictionaryEntries(Teams team, string playerName)
     {
-        teamStats.TryAdd(team, new RoundStats());
+        try
+        {
+            teamStats.TryAdd(team, new RoundStats());
 
-        playerStats.TryAdd(playerName, new RoundStats());
+            playerStats.TryAdd(playerName, new RoundStats());
+        } catch (Exception e)
+        {
+            Debug.LogException(e);
+        }
+
+        return teamStats.ContainsKey(team) && playerStats.ContainsKey(playerName);
     }
 
     public void ResetStats()
@@ -321,7 +348,6 @@ public class StatsManager : Singleton<StatsManager>
 
         return new Vector4(greenVolume, redVolume, blueVolume, yellowVolume);
     }
-
 
     // TODO: p1 - we probably want a UI class that talks to the stats managar and updates the UI rather than doing it in here directly
     void OutputRoundStats()

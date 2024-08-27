@@ -2882,6 +2882,7 @@ GameObject:
   m_Component:
   - component: {fileID: 113227063}
   - component: {fileID: 113227064}
+  - component: {fileID: 113227065}
   m_Layer: 5
   m_Name: TierTwoReward
   m_TagString: Untagged
@@ -2911,7 +2912,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 0.5}
   m_AnchorMax: {x: 0, y: 0.5}
   m_AnchoredPosition: {x: 22, y: 0}
-  m_SizeDelta: {x: 243.90005, y: 40}
+  m_SizeDelta: {x: 250, y: 40}
   m_Pivot: {x: 0, y: 0.5}
 --- !u!114 &113227064
 MonoBehaviour:
@@ -2932,6 +2933,46 @@ MonoBehaviour:
   ClaimButton: {fileID: 423848338}
   NotEarnedButton: {fileID: 2132244581}
   CollectedButton: {fileID: 1259939934}
+  CardFlipAnimDuration: 0.5
+  IconEmitter: {fileID: 113227065}
+--- !u!114 &113227065
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 113227062}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 77aaf5a4928302040b08895f84152df1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  Container: {fileID: 113227063}
+  Source: {fileID: 1565783687}
+  Target: {fileID: 1565783687}
+  ImageTemplate: {fileID: 1565783687}
+  SourceOffset: {x: -125, y: 0}
+  TargetOffset: {x: -125, y: 0}
+  StartSize: {x: 3, y: 3}
+  MidSize: {x: 45, y: 45}
+  EndSize: {x: 20, y: 20}
+  Quantity: 50
+  MovementDuration: 0.5
+  SpawnDuration: 0.75
+  Mode: 2
+  MinAngle: 0
+  MaxAngle: 360
+  MaxScatterDistance: 25
+  SpiralBackIfPointingAway: 0
+  DoShrinkRoutine: 0
+  JitterAmount: 0.1
+  TargetAlpha: 0
+  targetReachedClip: {fileID: 8300000, guid: 01bedd7179cff4a568f868656b4d977a, type: 3}
+  onTriggerClip: {fileID: 8300000, guid: fca71929805c14177a0aa6a7aa19e417, type: 3}
+  audioSource: {fileID: 1769395663758693474}
+  AudioVolume: 0.1
+  TargetPulseMultiplier: {x: 1.25, y: 1.25}
+  PulseDuration: 0.25
 --- !u!222 &118441795
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -11071,6 +11112,7 @@ GameObject:
   m_Component:
   - component: {fileID: 400754361}
   - component: {fileID: 400754362}
+  - component: {fileID: 400754363}
   m_Layer: 5
   m_Name: TierThreeReward
   m_TagString: Untagged
@@ -11100,7 +11142,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
   m_AnchoredPosition: {x: 22, y: -6}
-  m_SizeDelta: {x: 243.90005, y: 40}
+  m_SizeDelta: {x: 250, y: 40}
   m_Pivot: {x: 0, y: 1}
 --- !u!114 &400754362
 MonoBehaviour:
@@ -11121,6 +11163,46 @@ MonoBehaviour:
   ClaimButton: {fileID: 1366605013}
   NotEarnedButton: {fileID: 1289973011}
   CollectedButton: {fileID: 1871908970}
+  CardFlipAnimDuration: 0.5
+  IconEmitter: {fileID: 400754363}
+--- !u!114 &400754363
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 400754360}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 77aaf5a4928302040b08895f84152df1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  Container: {fileID: 400754361}
+  Source: {fileID: 103338007}
+  Target: {fileID: 103338007}
+  ImageTemplate: {fileID: 103338007}
+  SourceOffset: {x: -125, y: 20}
+  TargetOffset: {x: -125, y: 20}
+  StartSize: {x: 3, y: 3}
+  MidSize: {x: 45, y: 45}
+  EndSize: {x: 20, y: 20}
+  Quantity: 50
+  MovementDuration: 0.5
+  SpawnDuration: 0.75
+  Mode: 2
+  MinAngle: 0
+  MaxAngle: 360
+  MaxScatterDistance: 25
+  SpiralBackIfPointingAway: 0
+  DoShrinkRoutine: 0
+  JitterAmount: 0.1
+  TargetAlpha: 0
+  targetReachedClip: {fileID: 8300000, guid: 01bedd7179cff4a568f868656b4d977a, type: 3}
+  onTriggerClip: {fileID: 8300000, guid: fca71929805c14177a0aa6a7aa19e417, type: 3}
+  audioSource: {fileID: 1769395663758693474}
+  AudioVolume: 0.1
+  TargetPulseMultiplier: {x: 1.25, y: 1.25}
+  PulseDuration: 0.25
 --- !u!1 &407813994
 GameObject:
   m_ObjectHideFlags: 0
@@ -25810,6 +25892,10 @@ MonoBehaviour:
   - {fileID: 21300000, guid: 9641f5b2c69caaa4488fa18d5cb35068, type: 3}
   - {fileID: 21300000, guid: a3ec11c1f70eb654b99c47e2e81e37f2, type: 3}
   - {fileID: 21300000, guid: 9b91606c855a30041a3cd267dc05eade, type: 3}
+  ArcadeGameConfigureModal: {fileID: 1847035622}
+  DailyChallengeModal: {fileID: 1223768674}
+  HangarTrainingGameModal: {fileID: 967965495472166764}
+  FactionMissionModal: {fileID: 257596345}
 --- !u!114 &921072168
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -44114,6 +44200,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1548803975}
   - component: {fileID: 1548803976}
+  - component: {fileID: 1548803977}
   m_Layer: 5
   m_Name: TierOneReward
   m_TagString: Untagged
@@ -44143,7 +44230,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
   m_AnchoredPosition: {x: 22.00003, y: 6}
-  m_SizeDelta: {x: 243.90005, y: 40}
+  m_SizeDelta: {x: 250, y: 40}
   m_Pivot: {x: 0, y: 0}
 --- !u!114 &1548803976
 MonoBehaviour:
@@ -44164,6 +44251,46 @@ MonoBehaviour:
   ClaimButton: {fileID: 794813121}
   NotEarnedButton: {fileID: 1962914616}
   CollectedButton: {fileID: 2045095947}
+  CardFlipAnimDuration: 0.5
+  IconEmitter: {fileID: 1548803977}
+--- !u!114 &1548803977
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1548803974}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 77aaf5a4928302040b08895f84152df1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  Container: {fileID: 1548803975}
+  Source: {fileID: 2012398836}
+  Target: {fileID: 2012398836}
+  ImageTemplate: {fileID: 2012398836}
+  SourceOffset: {x: -125, y: -20}
+  TargetOffset: {x: -125, y: -20}
+  StartSize: {x: 3, y: 3}
+  MidSize: {x: 45, y: 45}
+  EndSize: {x: 20, y: 20}
+  Quantity: 50
+  MovementDuration: 0.5
+  SpawnDuration: 0.75
+  Mode: 2
+  MinAngle: 0
+  MaxAngle: 360
+  MaxScatterDistance: 25
+  SpiralBackIfPointingAway: 0
+  DoShrinkRoutine: 0
+  JitterAmount: 0.1
+  TargetAlpha: 0
+  targetReachedClip: {fileID: 8300000, guid: 01bedd7179cff4a568f868656b4d977a, type: 3}
+  onTriggerClip: {fileID: 8300000, guid: fca71929805c14177a0aa6a7aa19e417, type: 3}
+  audioSource: {fileID: 1769395663758693474}
+  AudioVolume: 0.1
+  TargetPulseMultiplier: {x: 1.25, y: 1.25}
+  PulseDuration: 0.25
 --- !u!1 &1558462898
 GameObject:
   m_ObjectHideFlags: 0
@@ -66331,6 +66458,7 @@ MonoBehaviour:
   Mode: 0
   MinAngle: 0
   MaxAngle: 360
+  MaxScatterDistance: 50
   SpiralBackIfPointingAway: 0
   DoShrinkRoutine: 0
   JitterAmount: 0.1
@@ -87520,6 +87648,7 @@ MonoBehaviour:
   Mode: 0
   MinAngle: 0
   MaxAngle: 360
+  MaxScatterDistance: 50
   SpiralBackIfPointingAway: 0
   DoShrinkRoutine: 0
   JitterAmount: 0.1

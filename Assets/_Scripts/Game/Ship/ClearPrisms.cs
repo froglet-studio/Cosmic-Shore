@@ -73,7 +73,6 @@ namespace CosmicShore
                 Renderer renderer = trailBlock.GetComponent<Renderer>();
                 if (renderer != null && originalMaterials.ContainsKey(renderer))
                 {
-                    Debug.Log("Clear Prisms: exiting trail block");
                     renderer.material = originalMaterials[renderer];
                     originalMaterials.Remove(renderer);
                 }
