@@ -1,4 +1,5 @@
-﻿using CosmicShore.Game.Arcade;
+﻿using CosmicShore.App.UI;
+using CosmicShore.Game.Arcade;
 using CosmicShore.Models.Enums;
 using CosmicShore.Utility.Singleton;
 using System.Collections;
@@ -44,6 +45,11 @@ namespace CosmicShore.Core
             MiniGame.NumberOfPlayers = 1;
             MiniGame.IsDailyChallenge = false;
             Hangar.Instance.SetAiDifficultyLevel(intensity);
+
+            var screenSwitcher = GameObject.FindAnyObjectByType< ScreenSwitcher>();
+            screenSwitcher.SetReturnToScreen(ScreenSwitcher.MenuScreens.PORT);
+            screenSwitcher.SetReturnToModal(ScreenSwitcher.ModalWindows.FACTION_MISSION);
+
             StartCoroutine(LaunchGameCoroutine(FactionMissionLookup[gameMode].SceneName));
         }
 
@@ -55,6 +61,12 @@ namespace CosmicShore.Core
             MiniGame.NumberOfPlayers = numberOfPlayers;
             MiniGame.IsDailyChallenge = isDailyChallenge;
             Hangar.Instance.SetAiDifficultyLevel(intensity);
+
+            var screenSwitcher = GameObject.FindAnyObjectByType<ScreenSwitcher>();
+            screenSwitcher.SetReturnToScreen(ScreenSwitcher.MenuScreens.ARCADE);
+            if (isDailyChallenge)
+                screenSwitcher.SetReturnToModal(ScreenSwitcher.ModalWindows.DAILY_CHALLENGE);
+
             StartCoroutine(LaunchGameCoroutine(ArcadeGameLookup[gameMode].SceneName));
         }
 
@@ -66,6 +78,16 @@ namespace CosmicShore.Core
             MiniGame.NumberOfPlayers = numberOfPlayers;
             MiniGame.IsDailyChallenge = isDailyChallenge;
             Hangar.Instance.SetAiDifficultyLevel(intensity);
+
+            var screenSwitcher = GameObject.FindAnyObjectByType<ScreenSwitcher>();
+            if (isDailyChallenge)
+            {
+                screenSwitcher.SetReturnToScreen(ScreenSwitcher.MenuScreens.ARCADE);
+                screenSwitcher.SetReturnToModal(ScreenSwitcher.ModalWindows.DAILY_CHALLENGE);
+            }
+            else
+                screenSwitcher.SetReturnToScreen(ScreenSwitcher.MenuScreens.HANGAR);
+
             StartCoroutine(LaunchGameCoroutine(TrainingGameLookup[gameMode].Game.SceneName));
         }
 

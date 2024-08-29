@@ -36,7 +36,7 @@ namespace CosmicShore.Game.Arcade
         protected List<Player> Players;
         protected CountdownTimer countdownTimer;
 
-        List<Teams> PlayerTeams = new() { Teams.Green, Teams.Red, Teams.Gold };
+        List<Teams> PlayerTeams = new() { Teams.Jade, Teams.Ruby, Teams.Gold };
         List<string> PlayerNames = new() { "PlayerOne", "PlayerTwo", "PlayerThree" };
 
         // Configuration set by player

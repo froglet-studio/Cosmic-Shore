@@ -64,23 +64,31 @@ public class BlockDensityGrid
 
 public class BlockCountDensityGrid : BlockDensityGrid
 {
+    int nGridPointsPerDimension;
     public BlockCountDensityGrid(Teams team)
     {
         base.Init(team);
-        int nGridPointsPerDimension = (int) Math.Floor(this.totalLength / this.resolution) + 1;
+        nGridPointsPerDimension = (int) Math.Floor(this.totalLength / this.resolution) + 1;
         values = new byte[nGridPointsPerDimension, nGridPointsPerDimension, nGridPointsPerDimension];
     }
 
     public override void AddBlock(TrailBlock block)
     {
         Vector3Int indicesOfDestinationCell = MapCoordinatesToGridIndices(block.transform.position);
-        this.values[indicesOfDestinationCell.x, indicesOfDestinationCell.y, indicesOfDestinationCell.z] += 1;
+        if (indicesOfDestinationCell.x >=0 && indicesOfDestinationCell.x < nGridPointsPerDimension &&
+            indicesOfDestinationCell.y >=0 && indicesOfDestinationCell.y < nGridPointsPerDimension &&
+            indicesOfDestinationCell.z >=0 && indicesOfDestinationCell.z < nGridPointsPerDimension)
+            this.values[indicesOfDestinationCell.x, indicesOfDestinationCell.y, indicesOfDestinationCell.z] += 1;
     }
 
     public override void RemoveBlock(TrailBlock block)
     {
         Vector3Int indicesOfDestinationCell = MapCoordinatesToGridIndices(block.transform.position);
-        this.values[indicesOfDestinationCell.x, indicesOfDestinationCell.y, indicesOfDestinationCell.z] -= 1;
+
+        if (indicesOfDestinationCell.x >= 0 && indicesOfDestinationCell.x < nGridPointsPerDimension &&
+            indicesOfDestinationCell.y >= 0 && indicesOfDestinationCell.y < nGridPointsPerDimension &&
+            indicesOfDestinationCell.z >= 0 && indicesOfDestinationCell.z < nGridPointsPerDimension)
+            this.values[indicesOfDestinationCell.x, indicesOfDestinationCell.y, indicesOfDestinationCell.z] -= 1;
     }
 }
 

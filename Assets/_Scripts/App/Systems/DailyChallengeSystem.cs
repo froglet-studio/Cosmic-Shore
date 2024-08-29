@@ -8,6 +8,7 @@ using System.Globalization;
 using CosmicShore.Integrations.PlayFab.PlayerData;
 using PlayFab.ClientModels;
 using UnityEngine;
+using CosmicShore.Integrations.PlayFab.Economy;
 
 namespace CosmicShore.App.Systems
 {
@@ -162,12 +163,11 @@ namespace CosmicShore.App.Systems
 
         public void PlayDailyChallenge()
         {
-            var remainingAttempts = PlayerPrefs.GetInt(TicketBalancePrefKey);
+            var remainingAttempts = CatalogManager.Instance.GetDailyChallengeTicketBalance();//PlayerPrefs.GetInt(TicketBalancePrefKey);
             if (remainingAttempts > 0)
             {
                 Debug.Log($"DailyChallenge - Remaining Attempts:{remainingAttempts - 1}");
-                PlayerPrefs.SetInt(TicketBalancePrefKey, remainingAttempts - 1);
-                PlayerPrefs.Save();
+                CatalogManager.Instance.UseDailyChallengeTicket();
                 Arcade.Instance.LaunchTrainingGame(dailyChallenge.GameMode, DailyGame.ShipClass.Class, ShipResources, dailyChallenge.Intensity, 1, true);
             }
             else

@@ -15,6 +15,7 @@ namespace CosmicShore.App.Ui.Menus
     {
         [Header("Crystal Balance")]
         [SerializeField] TMP_Text CrystalBalance;
+        [SerializeField] TMP_Text TicketBalance;
 
         [Header("Captain Purchasing")]
         [SerializeField] GameObject CaptainPurchaseSection;
@@ -43,6 +44,7 @@ namespace CosmicShore.App.Ui.Menus
         {
             //CaptainManager.OnLoadCaptainData += UpdateView;
             CatalogManager.OnLoadInventory += UpdateView;
+            CatalogManager.OnInventoryChange += UpdateTicketBalance;
             CatalogManager.OnCurrencyBalanceChange += UpdateCrystalBalance;
         }
 
@@ -50,6 +52,7 @@ namespace CosmicShore.App.Ui.Menus
         {
             //CaptainManager.OnLoadCaptainData -= UpdateView;
             CatalogManager.OnLoadInventory -= UpdateView;
+            CatalogManager.OnInventoryChange -= UpdateTicketBalance;
             CatalogManager.OnCurrencyBalanceChange -= UpdateCrystalBalance;
         }
 
@@ -81,10 +84,17 @@ namespace CosmicShore.App.Ui.Menus
         public override void UpdateView()
         {
             UpdateCrystalBalance();
-            //FactionMissionTicketCard.SetVirtualItem(CatalogManager.Instance.GetFactionTicket());
-            DailyChallengeTicketCard.SetVirtualItem(CatalogManager.Instance.GetDailyChallengeTicket());
+            UpdateTicketBalance();
+            PopulateDailyChallengeTicketCard();
             PopulateCaptainPurchaseCards();
             PopulateGamePurchaseCards();
+        }
+
+        void PopulateDailyChallengeTicketCard()
+        {
+            DailyChallengeTicketCard.ConfirmationModal = PurchaseConfirmationModal;
+            DailyChallengeTicketCard.ConfirmationButton = PurchaseConfirmationButton;
+            DailyChallengeTicketCard.SetVirtualItem(CatalogManager.Instance.GetDailyChallengeTicket());
         }
 
         void PopulateCaptainPurchaseCards()
@@ -179,6 +189,11 @@ namespace CosmicShore.App.Ui.Menus
             }
 
             gameCardsPopulated = true;
+        }
+
+        void UpdateTicketBalance()
+        {
+            TicketBalance.text = CatalogManager.Instance.GetDailyChallengeTicketBalance().ToString();
         }
 
         void UpdateCrystalBalance()

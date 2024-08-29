@@ -1,6 +1,7 @@
 using CosmicShore.App.Systems;
 using CosmicShore.App.UI.Views;
 using CosmicShore.Core;
+using CosmicShore.Integrations.PlayFab.Economy;
 using System;
 using TMPro;
 using UnityEngine;
@@ -11,7 +12,33 @@ namespace CosmicShore.App.UI.Modals
     {
         [SerializeField] DailyChallengeGameView GameView;
         [SerializeField] TMP_Text TimeRemaining;
+        [SerializeField] TMP_Text TicketBalance;
         MiniGames GameMode;
+
+        void OnEnable()
+        {
+            CatalogManager.OnLoadInventory += SetTicketBalance;
+            CatalogManager.OnInventoryChange += SetTicketBalance;
+        }
+
+        void OnDisable()
+        {
+            CatalogManager.OnLoadInventory -= SetTicketBalance;
+            CatalogManager.OnInventoryChange -= SetTicketBalance;
+        }
+
+        protected override void Start()
+        {
+            base.Start();
+
+            if (CatalogManager.CatalogLoaded)
+                SetTicketBalance();
+        }
+
+        void SetTicketBalance()
+        {
+            TicketBalance.text = CatalogManager.Instance.GetDailyChallengeTicketBalance().ToString();
+        }
 
         void Update()
         {

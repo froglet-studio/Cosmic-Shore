@@ -16,7 +16,7 @@ namespace CosmicShore.Core
 
         [Header("Ship Type Settings")]
         [SerializeField] SO_ShipList AllShips;
-        [SerializeField] Teams PlayerTeam = Teams.Green;
+        [SerializeField] Teams PlayerTeam = Teams.Jade;
         [SerializeField] Captain PlayerCaptain;  // Serialized for inspection in hierarchy
         [SerializeField] ShipTypes PlayerShipType = ShipTypes.Random;
         [SerializeField] ShipTypes FriendlyAIShipType = ShipTypes.Manta;
@@ -85,16 +85,16 @@ namespace CosmicShore.Core
         {
             base.Awake();
 
-            TeamShipTypes.Add(Teams.Green, GreenTeamShipTypes);
-            TeamShipTypes.Add(Teams.Red, RedTeamShipTypes);
+            TeamShipTypes.Add(Teams.Jade, GreenTeamShipTypes);
+            TeamShipTypes.Add(Teams.Ruby, RedTeamShipTypes);
             TeamShipTypes.Add(Teams.Gold, GoldTeamShipTypes);
 
             if (PlayerPrefs.HasKey(SelectedShipPlayerPrefKey))
                 PlayerShipType = (ShipTypes) PlayerPrefs.GetInt(SelectedShipPlayerPrefKey);
 
             TeamMaterialSets = new() {
-                { Teams.Green, GreenTeamMaterialSet },
-                { Teams.Red,   RedTeamMaterialSet },
+                { Teams.Jade, GreenTeamMaterialSet },
+                { Teams.Ruby,   RedTeamMaterialSet },
                 { Teams.Blue,  BlueTeamMaterialSet },
                 { Teams.Gold,  GoldTeamMaterialSet },
                 { Teams.Unassigned,  BlueTeamMaterialSet },
@@ -103,7 +103,7 @@ namespace CosmicShore.Core
             if (PlayerTeam == Teams.None)
             {
                 Debug.LogError("Player Team is set to None. Defaulting to Green Team");
-                PlayerTeam = Teams.Green;
+                PlayerTeam = Teams.Jade;
             }
 
             foreach (var ship in ShipPrefabs)
@@ -112,7 +112,7 @@ namespace CosmicShore.Core
                 shipTypeMap.Add(ship.ShipType, ship);
             }
 
-            AITeam = PlayerTeam == Teams.Green ? Teams.Red : Teams.Green;
+            AITeam = PlayerTeam == Teams.Jade ? Teams.Ruby : Teams.Jade;
         }
         public Ship LoadPlayerShip(bool useSquad=false)
         {

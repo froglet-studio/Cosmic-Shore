@@ -73,7 +73,6 @@ namespace CosmicShore.App.UI.Views
                 gameCard.Favorited = FavoriteSystem.IsFavorited(game.Mode);
                 gameCard.GetComponent<Button>().onClick.RemoveAllListeners();
                 gameCard.GetComponent<Button>().onClick.AddListener(() => SelectGame(game));
-                gameCard.GetComponent<Button>().onClick.AddListener(() => GameSelectionGrid.GetComponent<MenuAudio>().PlayAudio());
                 gameCard.ExploreView = this;
                 
                 if (gameCard.TryGetComponent(out CallToActionTarget target))

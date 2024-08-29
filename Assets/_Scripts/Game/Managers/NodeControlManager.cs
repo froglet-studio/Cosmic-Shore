@@ -131,7 +131,7 @@ public class NodeControlManager : Singleton<NodeControlManager>
         foreach (var node in Nodes)
         {
             if (node.enabled)
-                Debug.LogWarning($"Node Control - Node ID: {node.ID}, Controlling Team: {node.ControllingTeam}, Green Volume: {node.GetTeamVolume(Teams.Green)}, Red Volume: {node.GetTeamVolume(Teams.Red)}");
+                Debug.LogWarning($"Node Control - Node ID: {node.ID}, Controlling Team: {node.ControllingTeam}, Green Volume: {node.GetTeamVolume(Teams.Jade)}, Red Volume: {node.GetTeamVolume(Teams.Ruby)}");
         }
     }
 }

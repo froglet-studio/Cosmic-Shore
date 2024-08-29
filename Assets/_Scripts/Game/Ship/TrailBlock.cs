@@ -96,7 +96,7 @@ namespace CosmicShore.Core
             if (TrailBlockProperties.IsDangerous) MakeDangerous();
 
             Node targetNode = NodeControlManager.Instance.GetNearestNode(TrailBlockProperties.position);
-            Teams[] teams = { Teams.Green, Teams.Red, Teams.Gold };
+            Teams[] teams = { Teams.Jade, Teams.Ruby, Teams.Gold };
             foreach (Teams t in teams)
             {
                 if (t != team) targetNode.countGrids[t].AddBlock(this);  // Add this block to other teams' target tracking.

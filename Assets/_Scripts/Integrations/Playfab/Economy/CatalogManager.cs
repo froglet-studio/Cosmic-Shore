@@ -7,6 +7,7 @@ using CosmicShore.Models;
 using CosmicShore.Utility.Singleton;
 using Newtonsoft.Json;
 using PlayFab;
+using PlayFab.CloudScriptModels;
 using PlayFab.EconomyModels;
 using UnityEngine;
 using UnityEngine.Assertions;
@@ -31,6 +32,8 @@ namespace CosmicShore.Integrations.PlayFab.Economy
         [SerializeField] List<VirtualItem> startingInventory = new();
 
         public static bool CatalogLoaded { get; private set; }
+
+        public const int MaxDailyChallengeTicketBalance = 5;
 
         void Start()
         {
@@ -539,9 +542,10 @@ namespace CosmicShore.Integrations.PlayFab.Economy
                         }
                     },
                 },
-                _ =>
+                result =>
                 {
                     UpdateCurrencyBalance(price.ItemId, price.Amount * -1);
+                    if (item.ContentType == "Ticket") item.Amount += 1;
                     AddToInventory(item);
                     Inventory.SaveToDisk();
                     OnInventoryChange?.Invoke();
@@ -567,6 +571,42 @@ namespace CosmicShore.Integrations.PlayFab.Economy
             return StoreShelve.DailyChallengeTicket;
         }
 
+        public void UseDailyChallengeTicket()
+        {
+            var dcTicket = GetDailyChallengeTicket();
+            dcTicket.Amount -= 1;
+
+            var request = new ExecuteFunctionRequest
+            {
+                Entity = new()
+                {
+                    Id = AuthenticationManager.PlayFabAccount.AuthContext.EntityId,
+                    Type = AuthenticationManager.PlayFabAccount.AuthContext.EntityType
+                },
+                FunctionName = "SpendDailyChallengeTicket", //"SpendDailyChallengeTicket", //This should be the name of your Azure Function that you created.
+                GeneratePlayStreamEvent = false //Set this to true if you would like this call to show up in PlayStream
+            };
+
+            PlayFabCloudScriptAPI.ExecuteFunction
+            (
+                request,
+                result =>
+                {
+                    AddToInventory(dcTicket);
+                    Inventory.SaveToDisk();
+                    OnInventoryChange?.Invoke();
+                    Debug.Log($"CatalogManager - UseDailyChallengeTicket() success.");
+                    Debug.Log($"result:{result.FunctionResult}");
+                },
+                error =>
+                {
+
+                    Debug.Log($"CatalogManager - UseDailyChallengeTicket() failure.");
+                    PlayFabUtility.HandleErrorReport(error);
+                }
+            );
+        }
+
         public int GetCrystalBalance(Element crystalElementType=Element.Omni)
         {
             int balance = 0;
@@ -583,6 +623,17 @@ namespace CosmicShore.Integrations.PlayFab.Economy
 
             return balance;
         }
+        
+        public int GetDailyChallengeTicketBalance()
+        {
+            var tickets = Inventory.tickets.Where(x => x.Name == CatalogManager.Instance.GetDailyChallengeTicket().Name).FirstOrDefault();
+
+            if (tickets != null)
+                return tickets.Amount;
+
+            return 0;
+        }
+
 
         public void RewardClaimed(Element crystalElementType, int value)
         {

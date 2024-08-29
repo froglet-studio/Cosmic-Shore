@@ -4,8 +4,8 @@ public enum Teams
 {
     None = -1,
     Unassigned = 0,
-    Green = 1,
-    Red = 2,
+    Jade = 1,
+    Ruby = 2,
     Blue = 3,
     Gold = 4,
 }

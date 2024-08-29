@@ -1,15 +1,14 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using CosmicShore.Integrations.PlayFab.Authentication;
 using CosmicShore.Integrations.PlayFab.Utility;
+using PlayFab;
 using PlayFab.ClientModels;
 using PlayFab.EconomyModels;
-using PlayFab;
-using System.Collections.Generic;
-using UnityEditor;
 using UnityEngine;
-using CosmicShore.Integrations.PlayFab.Authentication;
-using System;
-using System.Linq;
 
-namespace CosmicShore
+namespace CosmicShore.Integrations.Playfab.Economy
 {
     public class CatalogBundleHandler : MonoBehaviour
     {

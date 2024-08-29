@@ -1,5 +1,4 @@
 using CosmicShore.Game.Arcade;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using TMPro;
@@ -45,11 +44,11 @@ namespace CosmicShore
 
             switch (winningTeam)
             {
-                case Teams.Green:
+                case Teams.Jade:
                     BannerImage.color = JadeTeamBannerColor;
                     BannerText.text = "JADE VICTORY";
                     break;
-                case Teams.Red:
+                case Teams.Ruby:
                     BannerImage.color = RubyTeamBannerColor;
                     BannerText.text = "RUBY VICTORY";
                     break;
@@ -88,7 +87,7 @@ namespace CosmicShore
         public void ShowSingleplayerView()
         {
             // Setup Banner
-            BannerImage.color = Color.white;
+            BannerImage.color = SinglePlayerBannerColor;
             BannerText.text = "RUN RESULTS";
 
             // Populate this run's score

@@ -1,6 +1,5 @@
 using System;
 using UnityEngine;
-using UnityEngine.PlayerLoop;
 
 namespace CosmicShore
 {
@@ -13,7 +12,9 @@ namespace CosmicShore
         public bool IsNewlyCreated { get; set; }
         public int ProfileIconId => int.Parse(AvatarUrl);
 
-        public PlayerProfile(string displayName = "Player", string avatarUrl = "1")
+        public const string DefaultPlayerName = "Player";
+
+        public PlayerProfile(string displayName = DefaultPlayerName, string avatarUrl = "1")
         {
             DisplayName = displayName;
             AvatarUrl = avatarUrl;
@@ -21,7 +22,7 @@ namespace CosmicShore
 
         public void Update(string displayName, string avatarUrl)
         {
-            DisplayName = displayName;
+            DisplayName = string.IsNullOrEmpty(displayName) ? DefaultPlayerName : displayName;
             AvatarUrl = avatarUrl;
         }
     }
