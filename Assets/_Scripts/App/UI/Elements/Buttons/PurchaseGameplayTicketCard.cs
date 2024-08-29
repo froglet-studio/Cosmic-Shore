@@ -1,31 +1,36 @@
 using CosmicShore.Integrations.PlayFab.Economy;
-using TMPro;
-using UnityEngine;
-
 namespace CosmicShore
 {
-    public class PurchaseGameplayTicketCard : PurchaseCard
+    public class PurchaseGameplayTicketCard : PurchaseItemCard
     {
-        [SerializeField] TMP_Text PriceLabel;
-
-        void Start()
-        {
-            Debug.Log($"Start PurchaseGameplayTicketCard:{name}");
-        }
-
-        public override void SetVirtualItem(VirtualItem virtualItem)
-        {
-            Debug.Log($"SetVirtualItem - {virtualItem.Name},{virtualItem.Type},{virtualItem.ContentType}");
-
-            this.virtualItem = virtualItem;
-            PriceLabel.text = virtualItem.Price[0].Amount.ToString();
-        }
-
-
+        // TODO: maybe pull out max owned so this doesn't have to override Purchase
         public override void Purchase()
         {
-            Debug.Log($"PurchaseDailyChallengeTicketCard.Purchase");
-            CatalogManager.Instance.PurchaseItem(virtualItem, virtualItem.Price[0], 5);
+            ConfirmationButton.enabled = false;
+
+            // PriceButton.gameObject.SetActive(false);
+            // PurchasedButton.gameObject.SetActive(false);
+            CatalogManager.Instance.PurchaseItem(virtualItem, virtualItem.Price[0], CatalogManager.MaxDailyChallengeTicketBalance, OnPurchaseComplete, OnPurchaseFailed);
+        }
+
+        protected override void OnPurchaseComplete()
+        {
+            base.OnPurchaseComplete();
+
+            if (!PurchaseLimitReached())
+                PriceButton.gameObject.SetActive(true);
+        }
+
+        protected override void PreModalCloseEffects()
+        {
+            ConfirmationModal.EmitIcons();
+            ConfirmationModal.UpdateBalance();
+            ConfirmationModal.UpdateTicketBalance();
+        }
+
+        protected override bool PurchaseLimitReached()
+        {
+            return CatalogManager.Instance.GetDailyChallengeTicketBalance() >= CatalogManager.MaxDailyChallengeTicketBalance;
         }
     }
 }
