@@ -10,13 +10,18 @@ namespace CosmicShore
     {
         Transform mainCamera;
         [SerializeField] Ship Ship;
-        public float capsuleRadius = 5f;
+        [SerializeField] AnimationCurve scaleCurve = AnimationCurve.Linear(0, 0, 1, 1);
+        [SerializeField] float capsuleRadius = 5f;
+
         Transform visibilityCapsuleTransform;
 
         private CapsuleCollider visibilityCapsule;
         private Dictionary<Renderer, Material> originalMaterials = new Dictionary<Renderer, Material>();
 
+        Vector3 capsuleDirection;
+
         CameraManager cameraManager;
+        GeometryUtils.LineData lineData;
 
         void Start()
         {
@@ -45,9 +50,10 @@ namespace CosmicShore
             visibilityCapsule.height = distance;
 
             // Update the capsule's end positions
-            Vector3 capsuleDirection = (shipPosition - cameraPosition).normalized;
+            capsuleDirection = (shipPosition - cameraPosition).normalized;
             visibilityCapsule.center = Vector3.zero;
             transform.up = capsuleDirection;
+            lineData = GeometryUtils.PrecomputeLineData(cameraPosition, shipPosition);
         }
 
         void OnTriggerEnter(Collider other)
@@ -62,6 +68,15 @@ namespace CosmicShore
                     originalMaterials[renderer] = renderer.material;
                     renderer.material = Hangar.Instance.GetTeamTransparentBlockMaterial(team);
                 }
+            }
+        }
+
+        private void OnTriggerStay(Collider other)
+        {
+            Renderer renderer = other.GetComponent<Renderer>();
+            if (renderer != null && originalMaterials.ContainsKey(renderer))
+            {
+                renderer.material.SetFloat("_Alpha", scaleCurve.Evaluate(GeometryUtils.DistanceFromPointToLine(other.transform.position, lineData)/ capsuleRadius));
             }
         }
 

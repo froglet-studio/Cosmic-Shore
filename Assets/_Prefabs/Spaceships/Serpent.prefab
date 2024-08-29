@@ -624,8 +624,67 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Ship: {fileID: 874579555101021527}
-  transparentMaterial: {fileID: 2100000, guid: cc4ffbaa55bcb9b4494cfdc9d19d1214, type: 2}
-  capsuleRadius: 10
+  scaleCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0.0086572645
+      value: 0.0006980989
+      inSlope: -0.013658491
+      outSlope: -0.013658491
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0.49171534
+    - serializedVersion: 3
+      time: 0.35839063
+      value: 0.12869269
+      inSlope: 0.95739657
+      outSlope: 0.95739657
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.26193845
+      outWeight: 0.5383207
+    - serializedVersion: 3
+      time: 0.5105394
+      value: 0.41414607
+      inSlope: 2.778077
+      outSlope: 2.778077
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.22928448
+      outWeight: 1
+    - serializedVersion: 3
+      time: 0.52231115
+      value: 0.6377309
+      inSlope: 4.7249618
+      outSlope: 4.7249618
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 1
+      outWeight: 0.89219546
+    - serializedVersion: 3
+      time: 0.6611597
+      value: 0.9438335
+      inSlope: 0.6298916
+      outSlope: 0.6298916
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.67597884
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 1.0052795
+      value: 1.0032768
+      inSlope: 0.015224979
+      outSlope: 0.015224979
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.453742
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  capsuleRadius: 20
 --- !u!54 &7987956636456172580
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -1577,7 +1636,7 @@ SkinnedMeshRenderer:
   - {fileID: 5798525600549448751}
   - {fileID: 5571582515015820382}
   m_BlendShapeWeights:
-  - 100
+  - 0
   - 0
   - 0
   - 0
