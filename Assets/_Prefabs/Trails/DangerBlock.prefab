@@ -115,11 +115,12 @@ MonoBehaviour:
   TrailBlockProperties:
     position: {x: 0, y: 0, z: 0}
     volume: 0
-    speedDebuffAmount: 0
+    speedDebuffAmount: 0.1
     trailBlock: {fileID: 0}
     Index: 0
     Shielded: 0
     IsSuperShielded: 0
+    IsDangerous: 1
     TimeCreated: 0
   ParticleEffect: {fileID: 0}
   minScale: {x: 0.5, y: 0.5, z: 0.5}

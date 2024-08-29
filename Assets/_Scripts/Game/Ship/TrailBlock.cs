@@ -269,6 +269,7 @@ namespace CosmicShore.Core
         public void MakeDangerous()
         {
             TrailBlockProperties.IsDangerous = true;
+            TrailBlockProperties.speedDebuffAmount = .1f;
             TrailBlockProperties.Shielded = false;
             if (lerpBlockMaterialPropertiesCoroutine != null) StopCoroutine(lerpBlockMaterialPropertiesCoroutine);
             StartCoroutine(LerpBlockMaterialPropertiesCoroutine(Hangar.Instance.GetTeamDangerousBlockMaterial(team)));

@@ -1,11 +1,12 @@
 using CosmicShore.Core;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace CosmicShore.Game.Projectiles
 {
     public class ExplodableProjectile : Projectile
     {
-        [SerializeField] AOEExplosion AOEPrefab;
+        [SerializeField] List<AOEExplosion> AOEPrefabs;
         [SerializeField] float minExplosionScale;
         [SerializeField] float maxExplosionScale;
         public float Charge = 0;
@@ -13,10 +14,13 @@ namespace CosmicShore.Game.Projectiles
         public void Detonate()
         {
             GetComponentInParent<PoolManager>().ReturnToPool(gameObject, gameObject.tag);
-            var AOEExplosion = Instantiate(AOEPrefab).GetComponent<AOEExplosion>();
-            AOEExplosion.Ship = Ship;
-            AOEExplosion.SetPositionAndRotation(transform.position, transform.rotation);
-            AOEExplosion.MaxScale = Mathf.Lerp(minExplosionScale, maxExplosionScale, Charge);
+            foreach (var AOE in AOEPrefabs)
+            {
+                var AOEExplosion = Instantiate(AOE).GetComponent<AOEExplosion>();
+                AOEExplosion.Ship = Ship;
+                AOEExplosion.SetPositionAndRotation(transform.position, transform.rotation);
+                AOEExplosion.MaxScale = Mathf.Lerp(minExplosionScale, maxExplosionScale, Charge);
+            }
         }
     }
 }
