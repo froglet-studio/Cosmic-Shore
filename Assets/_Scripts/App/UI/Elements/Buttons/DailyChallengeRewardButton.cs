@@ -51,8 +51,6 @@ namespace CosmicShore.App.UI
             NotEarnedButton.gameObject.SetActive(false);
             ClaimButton.gameObject.SetActive(false);
             CollectedButton.gameObject.SetActive(true);
-
-            MakeRewardAvailable();
         }
 
         protected IEnumerator PurchaseVisualEffectCoroutine()
