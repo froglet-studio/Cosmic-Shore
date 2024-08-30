@@ -5,7 +5,6 @@ using System;
 using System.Collections;
 using TMPro;
 using UnityEngine;
-using UnityEngine.Purchasing;
 using UnityEngine.UI;
 
 namespace CosmicShore.App.UI.Modals
@@ -23,10 +22,12 @@ namespace CosmicShore.App.UI.Modals
         [SerializeField] Image TicketImage;
 
         Action OnConfirm;
-        const string UnlockTextTemplate = "to unlock {0}";
+        const string UnlockTextTemplate = "to unlock {0}?";
+        const string UpgradeTextTemplate = "to upgrade {0}?";
 
         public void SetVirtualItem(VirtualItem virtualItem, Action confirmCallback)
         {
+
             PriceLabel.text = virtualItem.Price[0].Amount.ToString();
             UnlockText.text = string.Format(UnlockTextTemplate, virtualItem.Name);
             CrystalBalanceText.text = CatalogManager.Instance.GetCrystalBalance().ToString();
@@ -48,6 +49,18 @@ namespace CosmicShore.App.UI.Modals
                     TicketImage.gameObject.SetActive(false);
                     GameImage.gameObject.SetActive(true);
                     GameImage.sprite = game.CardBackground;
+                    break;
+                case "CaptainUpgrade":
+                    var upgradeCaptain = CaptainManager.Instance.GetCaptainFromUpgrade(virtualItem);
+                    GameImage.gameObject.SetActive(false);
+                    TicketImage.gameObject.SetActive(false);
+                    CaptainImage.gameObject.SetActive(true);
+                    CaptainImage.sprite = upgradeCaptain.Image;
+
+                    // TODO: Adjust price to display correct element to spend
+
+                    UnlockText.text = string.Format(UpgradeTextTemplate, upgradeCaptain.Name);
+
                     break;
                 case "Ticket":
                     GameImage.gameObject.SetActive(false);

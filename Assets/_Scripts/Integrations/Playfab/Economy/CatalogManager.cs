@@ -491,7 +491,7 @@ namespace CosmicShore.Integrations.PlayFab.Economy
             // Find the upgrade
             var elementTag = captain.PrimaryElement.ToString();
             var shipTypeTag = captain.Ship.Class.ToString();
-            var upgradeLevelTag = "UpgradeLevel_" + (captain.Level+2); //TODO - this should be +1 once captain unlocks are implemented
+            var upgradeLevelTag = "UpgradeLevel_" + (captain.Level+1);
 
             Debug.Log($"PurchaseCaptainUpgrade - elementTag:{elementTag},shipTypeTag:{shipTypeTag},upgradeLevelTag:{upgradeLevelTag}");
 
@@ -560,6 +560,18 @@ namespace CosmicShore.Integrations.PlayFab.Economy
             );
         }
         #endregion
+
+        public VirtualItem GetCaptainUpgrade(Captain captain)
+        {
+            Debug.Log($"GetCaptainUpgrade - Element:{captain.PrimaryElement}");
+            Debug.Log($"GetCaptainUpgrade - Class:{captain.Ship.Class}");
+            Debug.Log($"GetCaptainUpgrade - Level:{ "UpgradeLevel_" + (captain.Level + 1)}");
+
+            return StoreShelve.captainUpgrades.Values.Where(
+                x => x.Tags.Contains(captain.PrimaryElement.ToString()) &&
+                     x.Tags.Contains(captain.Ship.Class.ToString()) &&
+                     x.Tags.Contains("UpgradeLevel_" + (captain.Level + 1))).FirstOrDefault();
+        }
 
         public VirtualItem GetFactionTicket()
         {

@@ -61,21 +61,21 @@ namespace CosmicShore.Integrations.PlayFab.Economy
 
         void OnEnable()
         {
-            XpHandler.OnXPLoaded += LoadCaptainData;
+            XpHandler.OnXPLoaded += LoadCaptainsData;
 
-            CatalogManager.OnLoadInventory += LoadCaptainData;
-            CatalogManager.OnInventoryChange += LoadCaptainData;
+            CatalogManager.OnLoadInventory += LoadCaptainsData;
+            CatalogManager.OnInventoryChange += LoadCaptainsData;
         }
 
         void OnDisable()
         {
-            XpHandler.OnXPLoaded -= LoadCaptainData;
+            XpHandler.OnXPLoaded -= LoadCaptainsData;
 
-            CatalogManager.OnLoadInventory += LoadCaptainData;
-            CatalogManager.OnInventoryChange -= LoadCaptainData;
+            CatalogManager.OnLoadInventory += LoadCaptainsData;
+            CatalogManager.OnInventoryChange -= LoadCaptainsData;
         }
 
-        public void LoadCaptainData()
+        public void LoadCaptainsData()
         {
             captainData = new CaptainData();
             foreach (var so_Captain in AllCaptains.CaptainList)
@@ -104,13 +104,9 @@ namespace CosmicShore.Integrations.PlayFab.Economy
                 captainData.AllCaptains.Add(so_Captain.Name, captain);
 
                 // Set Level
-                var captainUpgrade = CatalogManager.Inventory.captainUpgrades.Where(x => x.Tags.Contains(so_Captain.Ship.Class.ToString()) && x.Tags.Contains(so_Captain.PrimaryElement.ToString())).FirstOrDefault();
-                if (captainUpgrade != null)
-                {
-                    foreach (var tag in captainUpgrade.Tags)
-                        if (tag.StartsWith("Upgrade"))
-                            captain.Level = int.Parse(tag.Replace("UpgradeLevel_", ""));
-                }
+                var captainUpgrades = CatalogManager.Inventory.captainUpgrades.Where(x => x.Tags.Contains(captain.Ship.Class.ToString()) && x.Tags.Contains(captain.PrimaryElement.ToString()));
+                if (captainUpgrades.Any())
+                    captain.Level = 1 + captainUpgrades.Count();
                 else if (unlocked)
                     captain.Level = 1;
                 else
@@ -132,6 +128,9 @@ namespace CosmicShore.Integrations.PlayFab.Economy
             var unlocked = CatalogManager.Inventory.ContainsCaptain(captain.Name);
             if (unlocked)
             {
+                if (!UnlockedShips.Contains(captain.Ship))
+                    UnlockedShips.Add(captain.Ship);
+
                 captain.Unlocked = true;
                 if (captainData.UnlockedCaptains.ContainsKey(captain.Name))
                     captainData.UnlockedCaptains[captain.Name] = captain;
@@ -150,13 +149,9 @@ namespace CosmicShore.Integrations.PlayFab.Economy
             captainData.AllCaptains[captain.Name] = captain;
 
             // Set Level
-            var captainUpgrade = CatalogManager.Inventory.captainUpgrades.Where(x => x.Tags.Contains(captain.Ship.Class.ToString()) && x.Tags.Contains(captain.PrimaryElement.ToString())).FirstOrDefault();
-            if (captainUpgrade != null)
-            {
-                foreach (var tag in captainUpgrade.Tags)
-                    if (tag.StartsWith("Upgrade"))
-                        captain.Level = int.Parse(tag.Replace("UpgradeLevel_", ""));
-            }
+            var captainUpgrades = CatalogManager.Inventory.captainUpgrades.Where(x => x.Tags.Contains(captain.Ship.Class.ToString()) && x.Tags.Contains(captain.PrimaryElement.ToString()));
+            if (captainUpgrades.Any())
+                captain.Level = 1 + captainUpgrades.Count();
             else if (unlocked)
                 captain.Level = 1;
             else
@@ -192,6 +187,16 @@ namespace CosmicShore.Integrations.PlayFab.Economy
         public SO_Captain GetCaptainSOByName(string name)
         {
             return AllCaptains.CaptainList.Where(x => x.Name == name).FirstOrDefault();
+        }
+
+        public Captain GetCaptainFromUpgrade(VirtualItem upgrade)
+        {
+            foreach (var captain in captainData.AllCaptains.Values)
+            {
+                if (upgrade.Tags.Contains(captain.Ship.Class.ToString()) && upgrade.Tags.Contains(captain.PrimaryElement.ToString()))
+                    return captain;
+            }
+            return null;
         }
 
         public List<Captain> GetEncounteredCaptains()

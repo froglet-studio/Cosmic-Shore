@@ -721,7 +721,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0.5}
   m_AnchorMax: {x: 0, y: 0.5}
-  m_AnchoredPosition: {x: 138.1, y: 0}
+  m_AnchoredPosition: {x: 130, y: 0}
   m_SizeDelta: {x: 24, y: 24}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &14372920
@@ -30487,8 +30487,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0.5}
   m_AnchorMax: {x: 0, y: 0.5}
-  m_AnchoredPosition: {x: 154, y: 0}
-  m_SizeDelta: {x: 75, y: 12}
+  m_AnchoredPosition: {x: 146, y: 0}
+  m_SizeDelta: {x: 80, y: 12}
   m_Pivot: {x: 0, y: 0.5}
 --- !u!114 &1034289338
 MonoBehaviour:
@@ -30510,7 +30510,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: <color=#888>100</color> / 100 XP
+  m_text: <color=#888>500</color> / 500 XP
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 6ab8eca0e6e2b7c4a8a495d9afae2053, type: 2}
   m_sharedMaterial: {fileID: 3995749905058258831, guid: 6ab8eca0e6e2b7c4a8a495d9afae2053,
@@ -32714,8 +32714,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0.5}
   m_AnchorMax: {x: 0, y: 0.5}
-  m_AnchoredPosition: {x: 42.3, y: 0}
-  m_SizeDelta: {x: 60, y: 12}
+  m_AnchoredPosition: {x: 42, y: 0}
+  m_SizeDelta: {x: 70, y: 12}
   m_Pivot: {x: 0, y: 0.5}
 --- !u!114 &1121801463
 MonoBehaviour:
@@ -32737,7 +32737,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: <color=#888>100</color> / 100
+  m_text: <color=#888>2000</color> / 100
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 6ab8eca0e6e2b7c4a8a495d9afae2053, type: 2}
   m_sharedMaterial: {fileID: 3995749905058258831, guid: 6ab8eca0e6e2b7c4a8a495d9afae2053,
@@ -39506,8 +39506,8 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 1957720461}
-        m_TargetAssemblyTypeName: CosmicShore.HangarCaptainsView, Assembly-CSharp
-        m_MethodName: PurchaseUpgrade
+        m_TargetAssemblyTypeName: CosmicShore.App.UI.Views.HangarCaptainsView, Assembly-CSharp
+        m_MethodName: OnClickBuy
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -57596,6 +57596,7 @@ MonoBehaviour:
   SelectedCaptainQuote: {fileID: 3074309204041498559}
   SelectedCaptainImage: {fileID: 4266660549146991250}
   SelectedCaptainShipImage: {fileID: 410527927}
+  CaptainSelectionContainer: {fileID: 6610786341563500751}
   SelectedUpgradeDescription: {fileID: 5367761460334551479}
   SelectedUpgradeXPRequirement: {fileID: 1034289338}
   SelectedUpgradeCrystalRequirement: {fileID: 1121801463}
@@ -57607,6 +57608,7 @@ MonoBehaviour:
     type: 3}
   UpgradeMenuAudio: {fileID: 1957720462}
   DeniedMenuAudio: {fileID: 1670796896}
+  ConfirmationModal: {fileID: 1769395663758693472}
 --- !u!114 &1957720462
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -82985,7 +82987,6 @@ MonoBehaviour:
   OverviewView: {fileID: 1810261739}
   AbilitiesView: {fileID: 304840938}
   CaptainsView: {fileID: 1957720461}
-  CaptainSelectionContainer: {fileID: 6610786341563500751}
   HangarTrainingModal: {fileID: 967965495472166764}
   GameSelectionContainer: {fileID: 983087002}
   ShipModelImage: {fileID: 0}
@@ -84960,7 +84961,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 19ba9f1309690f24cb58bf6cf332134c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  HangarMenu: {fileID: 5840560526924786829}
+  HangarCaptainsView: {fileID: 1957720461}
   Index: 0
   LevelText: {fileID: 291700469}
   BorderImage: {fileID: 1616833113084055295}
@@ -89634,7 +89635,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 19ba9f1309690f24cb58bf6cf332134c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  HangarMenu: {fileID: 5840560526924786829}
+  HangarCaptainsView: {fileID: 1957720461}
   Index: 3
   LevelText: {fileID: 479841028}
   BorderImage: {fileID: 2060384715544532918}
@@ -89949,7 +89950,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 19ba9f1309690f24cb58bf6cf332134c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  HangarMenu: {fileID: 5840560526924786829}
+  HangarCaptainsView: {fileID: 1957720461}
   Index: 2
   LevelText: {fileID: 364659644}
   BorderImage: {fileID: 884773002125585604}
@@ -90015,7 +90016,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 19ba9f1309690f24cb58bf6cf332134c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  HangarMenu: {fileID: 5840560526924786829}
+  HangarCaptainsView: {fileID: 1957720461}
   Index: 1
   LevelText: {fileID: 27591296}
   BorderImage: {fileID: 337726968809541862}

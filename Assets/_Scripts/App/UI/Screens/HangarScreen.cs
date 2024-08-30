@@ -1,5 +1,4 @@
 using CosmicShore.App.UI.Views;
-using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -19,7 +18,6 @@ namespace CosmicShore.App.UI.Screens
         [SerializeField] HangarOverviewView OverviewView;   // TODO: the conversion over to NavLink/NavGroup paradigm isn't complete
         [SerializeField] HangarAbilitiesView AbilitiesView;
         [SerializeField] HangarCaptainsView CaptainsView;
-        [SerializeField] Transform CaptainSelectionContainer; // TODO: move to Captains View
         [SerializeField] HangarTrainingModal HangarTrainingModal;
 
         [Header("Training UI")]
@@ -31,9 +29,6 @@ namespace CosmicShore.App.UI.Screens
 
         List<SO_Ship> Ships;
         SO_Ship SelectedShip;
-        SO_Captain SelectedCaptain;
-        SO_TrainingGame SelectedGame;
-        SO_ShipAbility SelectedAbility;
 
         public void LoadView()
         {
@@ -78,19 +73,10 @@ namespace CosmicShore.App.UI.Screens
             StartCoroutine(SelectShipCoroutine(ShipSelectionContainer.GetChild(0).gameObject.GetComponent<HangarShipSelectNavLink>()));
         }
 
-        void PopulateCaptainSelectionList()
-        {
-            if (CaptainSelectionContainer == null) return;
-
-            // Assign captains
-            for (var i = 0; i < CaptainSelectionContainer.transform.childCount; i++)
-                CaptainSelectionContainer.GetChild(i).GetComponent<CaptainUpgradeSelectionCard>().AssignCaptain(SelectedShip.Captains[i]);
-
-            StartCoroutine(SelectCaptainCoroutine(0));
-        }
-
         public void SelectShip(int index)
         {
+            //PlayerPrefs.SetInt("HangarLastSelectedShipIndex", index);
+            //PlayerPrefs.Save();
             var selectedShip = Ships[index];
             Debug.Log($"SelectShip: {selectedShip.Name}");
             Debug.Log($"ShipSelectionContainer.childCount: {ShipSelectionContainer.childCount}");
@@ -105,62 +91,19 @@ namespace CosmicShore.App.UI.Screens
 
             SelectedShip = selectedShip;
 
-            // notify the mini game engine that this is the ship to play
-            //Hangar.Instance.SetPlayerShip((int)SelectedShip.Class);
-
             // Update the Overview view
             OverviewView.Select(index);
 
             // populate the abilities/overview views
             foreach (var ability in SelectedShip.Abilities) ability.Ship = selectedShip;
             AbilitiesView.AssignModels(SelectedShip.Abilities.ConvertAll(x => (ScriptableObject)x));
-
-            // populate the captain view
-            PopulateCaptainSelectionList();
-            StartCoroutine(SelectCaptainCoroutine(0));  // Select the default view in a coroutine so that it happens next frame - otherwise there is a draw order error
-        }
-
-        /* Selects the Captain in the UI for display */
-        /// <summary>
-        /// Select a Captain in the UI to display its meta data
-        /// </summary>
-        /// <param name="index">Index of the displayed Captain list</param>
-        public void SelectCaptain(int index)
-        {
-            Debug.Log($"SelectCaptain: {index}");
-
-            try
-            {
-                for (var i = 0; i < 4; i++)
-                    CaptainSelectionContainer.GetChild(i).GetComponent<CaptainUpgradeSelectionCard>().ToggleSelected(i == index);
-
-                SelectedCaptain = SelectedShip.Captains[index];
-            }
-            catch (ArgumentOutOfRangeException argumentOutOfRangeException)
-            {
-                Debug.LogWarningFormat("{0} - {1} - The ship lacks captain assets. Please add them. {2}", nameof(HangarScreen),
-                    nameof(SelectCaptain), argumentOutOfRangeException.Message);
-            }
-            catch (NullReferenceException nullReferenceException)
-            {
-                Debug.LogWarningFormat("{0} - {1} - The ship lacks captain assets. Please add them. {2}", nameof(HangarScreen),
-                    nameof(SelectCaptain), nullReferenceException.Message);
-            }
-
-            CaptainsView.AssignModel(SelectedCaptain);
+            CaptainsView.AssignModels(SelectedShip.Captains.ConvertAll(x => (ScriptableObject) x));
         }
 
         public void DisplayTrainingModal()
         {
-            //SelectTrainingGame(SelectedShip.TrainingGames[0]);
             HangarTrainingModal.SetTrainingGames(SelectedShip.TrainingGames);
             HangarTrainingModal.ModalWindowIn();
-        }
-
-        IEnumerator SelectCaptainCoroutine(int index)
-        {
-            yield return new WaitForEndOfFrame();
-            SelectCaptain(index);
         }
 
         IEnumerator SelectShipCoroutine(HangarShipSelectNavLink shipSelectCard)

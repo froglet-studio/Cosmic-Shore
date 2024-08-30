@@ -1,9 +1,12 @@
 using CosmicShore.Integrations.PlayFab.Economy;
 using CosmicShore.Models;
-using CosmicShore;
+using CosmicShore.App.UI.Modals;
+using CosmicShore.App.UI.Screens;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using System;
+using System.Collections.Generic;
 
 namespace CosmicShore.App.UI.Views
 {
@@ -17,7 +20,8 @@ namespace CosmicShore.App.UI.Views
         [SerializeField] Image SelectedCaptainShipImage;
 
         [Header("Captains - Upgrades UI")]
-        [SerializeField] TMP_Text SelectedUpgradeDescription;   // TODO:
+        [SerializeField] Transform CaptainSelectionContainer; // TODO: convert to a list of cards
+        [SerializeField] TMP_Text SelectedUpgradeDescription; 
         [SerializeField] TMP_Text SelectedUpgradeXPRequirement;
         [SerializeField] TMP_Text SelectedUpgradeCrystalRequirement;
         [SerializeField] Image SelectedUpgradeCrystalRequirementImage;
@@ -26,6 +30,8 @@ namespace CosmicShore.App.UI.Views
         [SerializeField] Sprite UpgradeButtonUnlockedSprite;
         [SerializeField] MenuAudio UpgradeMenuAudio;
         [SerializeField] MenuAudio DeniedMenuAudio;
+
+        [SerializeField] public PurchaseConfirmationModal ConfirmationModal;
 
         bool crystalRequirementSatisfied = false;
         bool xpRequirementSatisfied = false;
@@ -38,6 +44,11 @@ namespace CosmicShore.App.UI.Views
         const string CrystalRequirementTemplate = "<color=#{2}>{0}</color> / {1}";
         const string XPRequirementTemplate = "<color=#{2}>{0}</color> / {1} XP";
 
+        public override void AssignModels(List<ScriptableObject> Models)
+        {
+            base.AssignModels(Models);
+            PopulateCaptainSelectionList();
+        }
         public override void UpdateView()
         {
             var model = SelectedModel as SO_Captain;
@@ -45,8 +56,8 @@ namespace CosmicShore.App.UI.Views
             captain = CaptainManager.Instance.GetCaptainByName(model.Name);
 
             // Load upgrade from catalog
-            upgrade = CatalogManager.Inventory.GetCaptainUpgrade(captain.Ship.Class.ToString(), captain.PrimaryElement.ToString(), captain.Level);
-
+            upgrade = CatalogManager.Instance.GetCaptainUpgrade(captain);
+            
             // Lock Logic - Lock Icon
 
             // XP Requirement
@@ -55,11 +66,10 @@ namespace CosmicShore.App.UI.Views
             SelectedUpgradeXPRequirement.text = string.Format(XPRequirementTemplate, captain.XP, xpNeeded, xpRequirementSatisfied ? SatisfiedMarkdownColor : UnsatisfiedMarkdownColor);
 
             // Crystal Requirement
-            var crystalsNeeded = 100;
+            var crystalsNeeded = upgrade.Price[0].Amount;
             var crystalBalance = CatalogManager.Instance.GetCrystalBalance(captain.PrimaryElement);
             crystalRequirementSatisfied = crystalBalance >= crystalsNeeded;
             SelectedUpgradeCrystalRequirement.text = string.Format(CrystalRequirementTemplate, crystalBalance, crystalsNeeded, crystalRequirementSatisfied ? SatisfiedMarkdownColor : UnsatisfiedMarkdownColor);
-
             SelectedUpgradeCrystalRequirementImage.sprite = CosmicShore.Elements.Get(captain.PrimaryElement).GetFullIcon(crystalRequirementSatisfied);
 
             // Upgrade Button
@@ -81,6 +91,30 @@ namespace CosmicShore.App.UI.Views
             if (SelectedCaptainShipImage != null) SelectedCaptainShipImage.sprite = captain.Ship.Icon;
         }
 
+        void PopulateCaptainSelectionList()
+        {
+            if (CaptainSelectionContainer == null) return;
+
+            // Assign captains
+            for (var i = 0; i < CaptainSelectionContainer.transform.childCount; i++)
+                CaptainSelectionContainer.GetChild(i).GetComponent<CaptainUpgradeSelectionCard>().AssignCaptain(Models[i] as SO_Captain);
+
+            SelectCaptain(SelectedIndex);
+        }
+
+        public virtual void OnClickBuy()
+        {
+            if (crystalRequirementSatisfied && xpRequirementSatisfied)
+            {
+                ConfirmationModal.SetVirtualItem(upgrade, PurchaseUpgrade);
+                ConfirmationModal.ModalWindowIn();
+            }
+            else
+            {
+                DeniedMenuAudio.PlayAudio();
+            }
+        }
+
         public void PurchaseUpgrade()
         {
             Debug.Log("PurchaseUpgrade");
@@ -89,6 +123,7 @@ namespace CosmicShore.App.UI.Views
                 Debug.Log("PurchaseUpgrade - Requirements satisfied");
 
                 CatalogManager.Instance.PurchaseCaptainUpgrade(captain, OnCaptainUpgraded);
+                ConfirmationModal.ModalWindowOut();
             }
             else
             {
@@ -101,6 +136,38 @@ namespace CosmicShore.App.UI.Views
             CaptainManager.Instance.ReloadCaptain(captain);
             UpgradeMenuAudio.PlayAudio();
             UpdateView();
+
+            // refresh captains
+            for (var i = 0; i < CaptainSelectionContainer.transform.childCount; i++)
+                CaptainSelectionContainer.GetChild(i).GetComponent<CaptainUpgradeSelectionCard>().RefreshCaptainData();
+        }
+
+        /* Selects the Captain in the UI for display */
+        /// <summary>
+        /// Select a Captain in the UI to display its meta data
+        /// </summary>
+        /// <param name="index">Index of the displayed Captain list</param>
+        public void SelectCaptain(int index)
+        {
+            Debug.Log($"SelectCaptain: {index}");
+
+            try
+            {
+                for (var i = 0; i < 4; i++)
+                    CaptainSelectionContainer.GetChild(i).GetComponent<CaptainUpgradeSelectionCard>().ToggleSelected(i == index);
+
+                Select(index);
+            }
+            catch (ArgumentOutOfRangeException argumentOutOfRangeException)
+            {
+                Debug.LogWarningFormat("{0} - {1} - The ship lacks captain assets. Please add them. {2}", nameof(HangarScreen),
+                    nameof(SelectCaptain), argumentOutOfRangeException.Message);
+            }
+            catch (NullReferenceException nullReferenceException)
+            {
+                Debug.LogWarningFormat("{0} - {1} - The ship lacks captain assets. Please add them. {2}", nameof(HangarScreen),
+                    nameof(SelectCaptain), nullReferenceException.Message);
+            }
         }
     }
 }
