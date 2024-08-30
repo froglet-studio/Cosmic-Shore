@@ -595,7 +595,7 @@ namespace CosmicShore.Integrations.PlayFab.Economy
                     Id = AuthenticationManager.PlayFabAccount.AuthContext.EntityId,
                     Type = AuthenticationManager.PlayFabAccount.AuthContext.EntityType
                 },
-                FunctionName = "SpendDailyChallengeTicket", //"SpendDailyChallengeTicket", //This should be the name of your Azure Function that you created.
+                FunctionName = "PlayDailyChallenge", //"SpendDailyChallengeTicket", //This should be the name of your Azure Function that you created.
                 GeneratePlayStreamEvent = false //Set this to true if you would like this call to show up in PlayStream
             };
 

@@ -241,6 +241,7 @@ public class Boid : Fauna
         var newBlock = Instantiate(healthBlock, transform.position, transform.rotation, Population.transform);
         newBlock.Team = healthBlock.Team;
         newBlock.gameObject.layer = LayerMask.NameToLayer("Mound");
+        newBlock.TrailBlockProperties = new();
         //var ID = GetInstanceID().ToString();                    
         //Debug.Log($"ID of created : {ID}");
         //newBlock.ID = ID;
