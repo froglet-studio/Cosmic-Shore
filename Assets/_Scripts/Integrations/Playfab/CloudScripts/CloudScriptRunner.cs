@@ -21,7 +21,7 @@ namespace CosmicShore.Integrations.PlayFab.CloudScripts
         /// </summary>
         /// <param name="properties">Function essential properties</param>
         /// <param name="success">Action to be taken when the function runs successfully</param>
-        public static void Execute(FunctionProperties properties, Action<ExecuteFunctionResult> success)
+        public static void Execute(FunctionProperties properties, Action<ExecuteFunctionResult> success = null)
         {
             ExecuteFunctionRequest request;
             if (properties.FunctionParameter == null)

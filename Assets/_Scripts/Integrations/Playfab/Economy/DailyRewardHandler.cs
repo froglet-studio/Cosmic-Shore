@@ -1,9 +1,8 @@
+using System;
 using System.Collections.Generic;
 using CosmicShore.Integrations.PlayFab.Authentication;
 using CosmicShore.Integrations.PlayFab.Economy;
-using CosmicShore.Integrations.PlayFab.Utility;
 using CosmicShore.Utility.Singleton;
-using PlayFab;
 using PlayFab.CloudScriptModels;
 using UnityEngine;
 
@@ -18,12 +17,10 @@ namespace CosmicShore.Integrations.PlayFab.CloudScripts
         public void Start()
         {
             AuthenticationManager.OnLoginSuccess += InitEntity;
-            // AuthenticationManager.OnLoginSuccess += CallSaveRewardClaimTime;
         }
 
         public void OnDisable()
         {
-            // AuthenticationManager.OnLoginSuccess -= CallSaveRewardClaimTime;
             AuthenticationManager.OnLoginSuccess -= InitEntity;
         }
 
@@ -45,15 +42,13 @@ namespace CosmicShore.Integrations.PlayFab.CloudScripts
         /// </summary>
         public void Claim()
         {
-            var request =
-                new ExecuteFunctionRequest
-                {
-                    Entity = _entity,
-                    FunctionName = "Claim", //This should be the name of your Azure Function that you created.
-                    GeneratePlayStreamEvent = false //Set this to true if you would like this call to show up in PlayStream
-                };
+            var functionProperties = new FunctionProperties
+            {
+                FunctionName = "Claim",
+                EntityKey = _entity
+            };
             
-            PlayFabCloudScriptAPI.ExecuteFunction(request, OnClaimDailyRewardSuccess, PlayFabUtility.HandleErrorReport);
+            CloudScriptRunner.Execute(functionProperties, OnClaimDailyRewardSuccess);
         }
 
         /// <summary>
@@ -74,46 +69,38 @@ namespace CosmicShore.Integrations.PlayFab.CloudScripts
             Debug.Log($"Cloud script - Result: {result.FunctionResult}");
         }
 
+        /// <summary>
+        /// Runs granting bundle items to player inventory
+        /// </summary>
+        /// <param name="itemIds"> A list of item ids from PlayFab</param>
         public void GrantBundle(string[] itemIds)
         {
-            var request = new ExecuteFunctionRequest
+            var functionProperties = new FunctionProperties
             {
-                Entity = _entity,
                 FunctionName = "AddItemsToInventory",
-                FunctionParameter = new Dictionary<string, object> { { "itemIds", itemIds } },
-                GeneratePlayStreamEvent = false
+                EntityKey = _entity,
+                FunctionParameter = new Dictionary<string, object> { { "itemIds", itemIds } }
             };
             
-            PlayFabCloudScriptAPI.ExecuteFunction(request, OnGrantBundleSuccess, PlayFabUtility.HandleErrorReport);
-        }
-
-        private void OnGrantBundleSuccess(ExecuteFunctionResult result)
-        {
-            if (result.FunctionResultTooLarge ?? false)
-            {
-                Debug.LogError("Cloud script - This can happen if you exceed the limit that can be returned from an Azure Function, See PlayFab Limits Page for details.");
-                return;
-            }
-            
-            Debug.Log($"Cloud script - The {result.FunctionName} function took {result.ExecutionTimeMilliseconds} to complete");
-            Debug.Log($"Cloud script - Result: {result.FunctionResult}");
+            // No action needed for on success callback, leave it null to use the default on success callback
+            CloudScriptRunner.Execute(functionProperties);
         }
 
         public void ClaimDailyChallengeReward(int tier, int rewardValue)
         {
-            var request = new ExecuteFunctionRequest
+            var functionProperties = new FunctionProperties
             {
-                Entity = _entity,
                 FunctionName = "ClaimDailyChallengeReward",
+                EntityKey = _entity,
                 FunctionParameter = new Dictionary<string, object> { { "tier", tier }, { "rewardValue", rewardValue } },
-                GeneratePlayStreamEvent = false
+
             };
 
             // TODO: P1 need to do this in the on success callback - extend the backend to return the reward value granted
             CatalogManager.Instance.RewardClaimed(Element.Omni, rewardValue);
 
             Debug.Log($"ClaimDailyChallengeReward(int tier, int rewardValue) - tier:{tier}, value:{rewardValue}");
-            PlayFabCloudScriptAPI.ExecuteFunction(request, OnClaimDailyChallengeRewardSuccess, PlayFabUtility.HandleErrorReport);
+            CloudScriptRunner.Execute(functionProperties);
         }
 
         /// <summary>
@@ -138,36 +125,17 @@ namespace CosmicShore.Integrations.PlayFab.CloudScripts
         /// Play Daily Challenge checks if the player has enough balance to play
         /// And subtract balance by 1 if the balance is sufficient
         /// </summary>
-        public void PlayDailyChallenge()
+        public void PlayDailyChallenge(Action<ExecuteFunctionResult> playDailyChallengeSuccess)
         {
-            var request = new ExecuteFunctionRequest
+            var functionProperties = new FunctionProperties
             {
-                Entity = _entity,
                 FunctionName = "PlayDailyChallenge",
-                GeneratePlayStreamEvent = false
+                EntityKey = _entity
             };
             
-            PlayFabCloudScriptAPI.ExecuteFunction(request, OnPlayDailyChallengeSuccess, PlayFabUtility.HandleErrorReport);
+            CloudScriptRunner.Execute(functionProperties, playDailyChallengeSuccess);
         }
 
-        /// <summary>
-        /// Play Daily Challenge function execution successful result
-        /// Returns playDailyChallengeResult { bool CanPlay, int remainingBalance}
-        /// </summary>
-        /// <param name="result">Function execution result</param>
-        private void OnPlayDailyChallengeSuccess(ExecuteFunctionResult result)
-        {
-            Debug.Log("DailyRewardHandler - OnPlayDailyChallengeSuccess");
-            if (result.FunctionResultTooLarge ?? false)
-            {
-                Debug.LogError("Cloud script - This can happen if you exceed the limit that can be returned from an Azure Function, See PlayFab Limits Page for details.");
-                return;
-            }
-            
-            // TODO: Invoke the result if needed for the UI and Daily Reward System
-            
-            Debug.Log($"Cloud script - The {result.FunctionName} function took {result.ExecutionTimeMilliseconds} to complete");
-            Debug.Log($"Cloud script - Result: {result.FunctionResult}");
-        }
+        
     }
 }

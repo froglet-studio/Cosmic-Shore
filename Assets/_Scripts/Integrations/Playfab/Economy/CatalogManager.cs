@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using CosmicShore.Integrations.PlayFab.Authentication;
+using CosmicShore.Integrations.PlayFab.CloudScripts;
 using CosmicShore.Integrations.PlayFab.Utility;
 using CosmicShore.Models;
 using CosmicShore.Utility.Singleton;
@@ -567,10 +568,9 @@ namespace CosmicShore.Integrations.PlayFab.Economy
             Debug.Log($"GetCaptainUpgrade - Class:{captain.Ship.Class}");
             Debug.Log($"GetCaptainUpgrade - Level:{ "UpgradeLevel_" + (captain.Level + 1)}");
 
-            return StoreShelve.captainUpgrades.Values.Where(
-                x => x.Tags.Contains(captain.PrimaryElement.ToString()) &&
-                     x.Tags.Contains(captain.Ship.Class.ToString()) &&
-                     x.Tags.Contains("UpgradeLevel_" + (captain.Level + 1))).FirstOrDefault();
+            return StoreShelve.captainUpgrades.Values.FirstOrDefault(x => x.Tags.Contains(captain.PrimaryElement.ToString()) &&
+                                                                          x.Tags.Contains(captain.Ship.Class.ToString()) &&
+                                                                          x.Tags.Contains("UpgradeLevel_" + (captain.Level + 1)));
         }
 
         public VirtualItem GetFactionTicket()
@@ -588,35 +588,31 @@ namespace CosmicShore.Integrations.PlayFab.Economy
             var dcTicket = GetDailyChallengeTicket();
             dcTicket.Amount -= 1;
 
-            var request = new ExecuteFunctionRequest
+            DailyRewardHandler.Instance.PlayDailyChallenge(OnPlayDailyChallengeSuccess);
+        }
+        
+        /// <summary>
+        /// Play Daily Challenge function execution successful result
+        /// Returns playDailyChallengeResult { bool CanPlay, int remainingBalance}
+        /// </summary>
+        /// <param name="result">Function execution result</param>
+        private void OnPlayDailyChallengeSuccess(ExecuteFunctionResult result)
+        {
+            Debug.Log("DailyRewardHandler - OnPlayDailyChallengeSuccess");
+            if (result.FunctionResultTooLarge ?? false)
             {
-                Entity = new()
-                {
-                    Id = AuthenticationManager.PlayFabAccount.AuthContext.EntityId,
-                    Type = AuthenticationManager.PlayFabAccount.AuthContext.EntityType
-                },
-                FunctionName = "PlayDailyChallenge", //"SpendDailyChallengeTicket", //This should be the name of your Azure Function that you created.
-                GeneratePlayStreamEvent = false //Set this to true if you would like this call to show up in PlayStream
-            };
-
-            PlayFabCloudScriptAPI.ExecuteFunction
-            (
-                request,
-                result =>
-                {
-                    AddToInventory(dcTicket);
-                    Inventory.SaveToDisk();
-                    OnInventoryChange?.Invoke();
-                    Debug.Log($"CatalogManager - UseDailyChallengeTicket() success.");
-                    Debug.Log($"result:{result.FunctionResult}");
-                },
-                error =>
-                {
-
-                    Debug.Log($"CatalogManager - UseDailyChallengeTicket() failure.");
-                    PlayFabUtility.HandleErrorReport(error);
-                }
-            );
+                Debug.LogError("Cloud script - This can happen if you exceed the limit that can be returned from an Azure Function, See PlayFab Limits Page for details.");
+                return;
+            }
+            
+            AddToInventory(GetDailyChallengeTicket());
+            Inventory.SaveToDisk();
+            OnInventoryChange?.Invoke();
+            
+            // TODO: Invoke the result if needed for the UI and Daily Reward System
+            
+            Debug.Log($"Cloud script - The {result.FunctionName} function took {result.ExecutionTimeMilliseconds} to complete");
+            Debug.Log($"Cloud script - Result: {result.FunctionResult}");
         }
 
         public int GetCrystalBalance(Element crystalElementType=Element.Omni)

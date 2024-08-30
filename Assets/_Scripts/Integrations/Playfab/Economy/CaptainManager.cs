@@ -89,8 +89,7 @@ namespace CosmicShore.Integrations.PlayFab.Economy
                 var unlocked = CatalogManager.Inventory.ContainsCaptain(so_Captain.Name);
                 if (unlocked)
                 {
-                    if (!UnlockedShips.Contains(captain.Ship))
-                        UnlockedShips.Add(captain.Ship);
+                    UnlockedShips.Add(captain.Ship);
 
                     captain.Unlocked = true;
                     captainData.UnlockedCaptains.Add(so_Captain.Name, captain);
@@ -128,23 +127,16 @@ namespace CosmicShore.Integrations.PlayFab.Economy
             var unlocked = CatalogManager.Inventory.ContainsCaptain(captain.Name);
             if (unlocked)
             {
-                if (!UnlockedShips.Contains(captain.Ship))
-                    UnlockedShips.Add(captain.Ship);
+                UnlockedShips.Add(captain.Ship);
 
                 captain.Unlocked = true;
-                if (captainData.UnlockedCaptains.ContainsKey(captain.Name))
-                    captainData.UnlockedCaptains[captain.Name] = captain;
-                else
-                    captainData.UnlockedCaptains.Add(captain.Name, captain);
+                captainData.UnlockedCaptains[captain.Name] = captain;
             }
             else
             {
                 // Check for encountered
                 captain.Encountered = true;
-                if (captainData.EncounteredCaptains.ContainsKey(captain.Name))
-                    captainData.EncounteredCaptains[captain.Name] = captain;
-                else
-                    captainData.EncounteredCaptains.Add(captain.Name, captain);
+                captainData.EncounteredCaptains[captain.Name] = captain;
             }
             captainData.AllCaptains[captain.Name] = captain;
 
@@ -181,12 +173,12 @@ namespace CosmicShore.Integrations.PlayFab.Economy
 
         public Captain GetCaptainByName(string name)
         {
-            return captainData.AllCaptains.Where(x => x.Value.Name == name).FirstOrDefault().Value;
+            return captainData.AllCaptains.FirstOrDefault(x => x.Value.Name == name).Value;
         }
 
         public SO_Captain GetCaptainSOByName(string name)
         {
-            return AllCaptains.CaptainList.Where(x => x.Name == name).FirstOrDefault();
+            return AllCaptains.CaptainList.FirstOrDefault(x => x.Name == name);
         }
 
         public Captain GetCaptainFromUpgrade(VirtualItem upgrade)
