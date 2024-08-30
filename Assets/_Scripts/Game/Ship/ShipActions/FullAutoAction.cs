@@ -21,7 +21,7 @@ namespace CosmicShore
 
         public FiringPatterns FiringPattern = FiringPatterns.Default;
         public int Energy = 0;
-        public float speed = 7;
+        public ElementalFloat speed = new(2000);
         public float projectileTime = 3;
 
         bool firing = false;
@@ -80,7 +80,7 @@ namespace CosmicShore
                             else inheritedVelocity = shipStatus.Course;
                         }
                         else inheritedVelocity = Vector3.zero;
-                        gun.FireGun(projectileContainer.transform, speed, inheritedVelocity * shipStatus.Speed, ProjectileScale, true, projectileTime, 0, FiringPattern, Energy);
+                        gun.FireGun(projectileContainer.transform, speed.Value, inheritedVelocity * shipStatus.Speed, ProjectileScale, true, projectileTime, 0, FiringPattern, Energy);
                     }
                     resourceSystem.ChangeAmmoAmount(-ammoCost);
                 }

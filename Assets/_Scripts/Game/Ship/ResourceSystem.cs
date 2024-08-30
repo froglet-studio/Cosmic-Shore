@@ -1,7 +1,6 @@
 using System;
 using UnityEngine;
 using System.Collections;
-using UnityEngine.Serialization;
 using CosmicShore.Game.UI;
 
 namespace CosmicShore.Core
@@ -88,19 +87,25 @@ namespace CosmicShore.Core
             shipData = GetComponent<ShipStatus>();
 
             StartCoroutine(LateStart());
-
-            OnElementLevelChange?.Invoke(Element.Charge, Mathf.FloorToInt(chargeLevel * MaxLevel));
         }
 
+        // Give time for components to initialize before notifying of initial resource levels
         IEnumerator LateStart()
         {
-            yield return new WaitForSeconds(.2f);
+            yield return new WaitForSeconds(.5f);
 
-            //Reset();
-            
+            // TODO: need to assign ship to ammo gain rate or the elemental system wont update its value
+            //ammoGainRate.Ship = 
+
             BoostDisplay?.gameObject.SetActive(displayBoost);
             AmmoDisplay?.gameObject.SetActive(displayAmmo);
             EnergyDisplay?.gameObject.SetActive(displayEnergy);
+
+            // Notify elemental floats of initial elemental levels
+            OnElementLevelChange?.Invoke(Element.Charge, Mathf.FloorToInt(chargeLevel * MaxLevel));
+            OnElementLevelChange?.Invoke(Element.Mass, Mathf.FloorToInt(massLevel * MaxLevel));
+            OnElementLevelChange?.Invoke(Element.Space, Mathf.FloorToInt(spaceLevel * MaxLevel));
+            OnElementLevelChange?.Invoke(Element.Time, Mathf.FloorToInt(timeLevel * MaxLevel));
         }
 
         void Update()

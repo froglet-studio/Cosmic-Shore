@@ -1,4 +1,5 @@
 using CosmicShore.Core;
+using System.Collections;
 using UnityEngine;
 
 public abstract class ShipAction : ElementalShipComponent
@@ -12,10 +13,17 @@ public abstract class ShipAction : ElementalShipComponent
 
     protected virtual void Start()
     {
+        StartCoroutine(InitializeShipAttributesCoroutine());
+    }
+
+    // Give time for components to initialize to make sure the ship object has been assigned
+    IEnumerator InitializeShipAttributesCoroutine()
+    {
+        yield return new WaitForSecondsRealtime(.1f);
         InitializeShipAttributes();
     }
 
-    private void InitializeShipAttributes()
+    void InitializeShipAttributes()
     {
         if (ship != null)
         {

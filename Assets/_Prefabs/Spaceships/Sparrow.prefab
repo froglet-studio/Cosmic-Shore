@@ -192,7 +192,12 @@ MonoBehaviour:
   ProjectileScale: 1
   FiringPattern: 0
   Energy: 0
-  speed: 2000
+  speed:
+    Enabled: 1
+    Value: 2000
+    Min: 2000
+    Max: 4000
+    element: 3
   projectileTime: 0.2
   firingRate: 90
 --- !u!1 &555723467741174050
@@ -1818,9 +1823,9 @@ MonoBehaviour:
   ProjectileTime:
     Enabled: 0
     Value: 3
-    Min: 0
-    Max: 0
-    element: 0
+    Min: 3
+    Max: 300
+    element: 3
 --- !u!1 &6291435637780101211
 GameObject:
   m_ObjectHideFlags: 0

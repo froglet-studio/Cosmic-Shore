@@ -22,11 +22,6 @@ public class GunShipTransformer : ShipTransformer
         trailFollower = GetComponent<BlockscapeFollower>();
     }
 
-    protected override void Update()
-    {
-        base.Update();
-    }
-
     protected override void MoveShip()
     {
         if (shipStatus.Attached && !attached)
