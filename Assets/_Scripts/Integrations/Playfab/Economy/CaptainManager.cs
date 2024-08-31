@@ -61,7 +61,7 @@ namespace CosmicShore.Integrations.PlayFab.Economy
 
         void OnEnable()
         {
-            XpHandler.OnXPLoaded += LoadCaptainsData;
+            XpHandler.OnCaptainDataLoaded += LoadCaptainsData;
 
             CatalogManager.OnLoadInventory += LoadCaptainsData;
             CatalogManager.OnInventoryChange += LoadCaptainsData;
@@ -69,7 +69,7 @@ namespace CosmicShore.Integrations.PlayFab.Economy
 
         void OnDisable()
         {
-            XpHandler.OnXPLoaded -= LoadCaptainsData;
+            XpHandler.OnCaptainDataLoaded -= LoadCaptainsData;
 
             CatalogManager.OnLoadInventory += LoadCaptainsData;
             CatalogManager.OnInventoryChange -= LoadCaptainsData;
@@ -81,78 +81,46 @@ namespace CosmicShore.Integrations.PlayFab.Economy
             foreach (var so_Captain in AllCaptains.CaptainList)
             {
                 var captain = new Captain(so_Captain);
-
-                // Set XP
-                captain.XP = XpHandler.GetCaptainXP(captain);
-
-                // check for unlocked
-                var unlocked = CatalogManager.Inventory.ContainsCaptain(so_Captain.Name);
-                if (unlocked)
-                {
-                    UnlockedShips.Add(captain.Ship);
-
-                    captain.Unlocked = true;
-                    captainData.UnlockedCaptains.Add(so_Captain.Name, captain);
-                }
-                else
-                {
-                    captain.Encountered = 
-                        XpHandler.EncounteredCaptainsData.ContainsKey(captain.Ship.Class) && 
-                        XpHandler.EncounteredCaptainsData[captain.Ship.Class].Contains(captain.PrimaryElement);
-
-                    if (captain.Encountered)
-                        captainData.EncounteredCaptains.Add(so_Captain.Name, captain);
-                }
-                captainData.AllCaptains.Add(so_Captain.Name, captain);
-
-                // Set Level
-                var captainUpgrades = CatalogManager.Inventory.captainUpgrades.Where(x => x.Tags.Contains(captain.Ship.Class.ToString()) && x.Tags.Contains(captain.PrimaryElement.ToString()));
-                if (captainUpgrades.Any())
-                    captain.Level = 1 + captainUpgrades.Count();
-                else if (unlocked)
-                    captain.Level = 1;
-                else
-                    captain.Level = 0;
-
-                Debug.Log($"LoadCaptainData - {captain.Name}, Level:{captain.Level}, XP:{captain.XP}, Unlocked:{captain.Unlocked}, Encountered:{captain.Encountered}");
+                LoadCaptainData(captain, false);
             }
 
             CaptainDataLoaded = true;
             OnLoadCaptainData?.Invoke();
         }
 
-        public void ReloadCaptain(Captain captain)
+        public void LoadCaptainData(Captain captain, bool invokeCallback=true)
         {
             // Set XP
             captain.XP = XpHandler.GetCaptainXP(captain);
 
+            // Check for Encountered
+            captain.Encountered =
+                XpHandler.EncounteredCaptainsData.ContainsKey(captain.Ship.Class) &&
+                XpHandler.EncounteredCaptainsData[captain.Ship.Class].Contains(captain.PrimaryElement);
+
+            if (captain.Encountered)
+                captainData.EncounteredCaptains[captain.Name] = captain;
+
             // check for unlocked
-            var unlocked = CatalogManager.Inventory.ContainsCaptain(captain.Name);
-            if (unlocked)
+            captain.Unlocked = CatalogManager.Inventory.ContainsCaptain(captain.Name);
+            if (captain.Unlocked)
             {
                 UnlockedShips.Add(captain.Ship);
-
-                captain.Unlocked = true;
                 captainData.UnlockedCaptains[captain.Name] = captain;
             }
-            else
-            {
-                // Check for encountered
-                captain.Encountered = true;
-                captainData.EncounteredCaptains[captain.Name] = captain;
-            }
+
             captainData.AllCaptains[captain.Name] = captain;
 
             // Set Level
-            var captainUpgrades = CatalogManager.Inventory.captainUpgrades.Where(x => x.Tags.Contains(captain.Ship.Class.ToString()) && x.Tags.Contains(captain.PrimaryElement.ToString()));
-            if (captainUpgrades.Any())
-                captain.Level = 1 + captainUpgrades.Count();
-            else if (unlocked)
-                captain.Level = 1;
-            else
+            if (!captain.Encountered || !captain.Unlocked)
                 captain.Level = 0;
+            else
+                captain.Level = 1 + GetCaptainUpgradeCount(captain);
 
-            OnLoadCaptainData?.Invoke();
+            if (invokeCallback)
+                OnLoadCaptainData?.Invoke();
+
+            Debug.Log($"LoadCaptainData - {captain.Name}, Level:{captain.Level}, XP:{captain.XP}, Unlocked:{captain.Unlocked}, Encountered:{captain.Encountered}");
         }
 
         public void IssueXP(string captainName, int amount)
@@ -215,6 +183,11 @@ namespace CosmicShore.Integrations.PlayFab.Economy
         public void EncounterCaptain(string captainName)
         {
             XpHandler.EncounterCaptain(GetCaptainByName(captainName));
+        }
+
+        int GetCaptainUpgradeCount(Captain captain)
+        {
+            return CatalogManager.Inventory.captainUpgrades.Where(x => x.Tags.Contains(captain.Ship.Class.ToString()) && x.Tags.Contains(captain.PrimaryElement.ToString())).Count();
         }
     }
 }

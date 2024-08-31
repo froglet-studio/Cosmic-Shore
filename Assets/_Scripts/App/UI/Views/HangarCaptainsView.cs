@@ -40,6 +40,7 @@ namespace CosmicShore.App.UI.Views
 
         bool crystalRequirementSatisfied = false;
         bool xpRequirementSatisfied = false;
+        bool initialized;
         VirtualItem upgrade;
         Captain captain;
 
@@ -49,15 +50,30 @@ namespace CosmicShore.App.UI.Views
         const string CrystalRequirementTemplate = "<color=#{2}>{0}</color> / {1}";
         const string XPRequirementTemplate = "<color=#{2}>{0}</color> / {1} XP";
 
+        void OnEnable()
+        {
+            CaptainManager.OnLoadCaptainData += NewCaptainData;
+        }
+        void OnDisable()
+        {
+            CaptainManager.OnLoadCaptainData -= NewCaptainData;
+        }
+
+        void NewCaptainData()
+        {
+            if (initialized)
+                UpdateView();
+        }
+
         public override void AssignModels(List<ScriptableObject> Models)
         {
             base.AssignModels(Models);
             PopulateCaptainSelectionList();
+            initialized = true;
         }
         public override void UpdateView()
         {
             var model = SelectedModel as SO_Captain;
-
             captain = CaptainManager.Instance.GetCaptainByName(model.Name);
 
             Debug.Log($"Populating Captain Details List: {captain.Name}");
@@ -88,7 +104,6 @@ namespace CosmicShore.App.UI.Views
 
             if (!captain.Encountered)
             {
-                Debug.LogError($"Captain Unencounted - class:{captain.Ship.Class}, element:{captain.PrimaryElement}");
                 UnencounteredCaptainRequirementsContainer.gameObject.SetActive(true);
 
                 SelectedCaptainImage.color = Color.black;
@@ -180,7 +195,7 @@ namespace CosmicShore.App.UI.Views
 
         public void OnCaptainUpgraded()
         {
-            CaptainManager.Instance.ReloadCaptain(captain);
+            CaptainManager.Instance.LoadCaptainData(captain);
             UpgradeMenuAudio.PlayAudio();
             UpdateView();
 

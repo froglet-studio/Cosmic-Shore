@@ -33,9 +33,9 @@ namespace CosmicShore.App.Systems.Xp
     {
 
         /// <summary>
-        /// Delegate invoked when exploded, err when XP Loaded
+        /// Delegate invoked when captain data (xp, encountered) Loaded
         /// </summary>
-        public static Action OnXPLoaded;
+        public static Action OnCaptainDataLoaded;
 
         /// <summary>
         /// Captain Xp key for querying data from PlayFab data storage, not used for PlayFab API calls now.
@@ -91,7 +91,7 @@ namespace CosmicShore.App.Systems.Xp
                 { ClassXpKey, JsonConvert.SerializeObject(ClassXpData) }
             };
 
-            PlayerDataController.Instance.UpdatePlayerData(dataContent);
+            PlayerDataController.Instance.UpdatePlayerData(dataContent, OnCaptainDataLoaded);
 
             Debug.LogError($"IssueXP Success - {JsonConvert.SerializeObject(ClassXpData)}");
         }
@@ -115,7 +115,7 @@ namespace CosmicShore.App.Systems.Xp
                 { EncounteredCaptainsKey, JsonConvert.SerializeObject(EncounteredCaptainsData) }
             };
 
-            PlayerDataController.Instance.UpdatePlayerData(dataContent);
+            PlayerDataController.Instance.UpdatePlayerData(dataContent, OnCaptainDataLoaded);
 
             Debug.LogError($"Encounter Captain Success - {JsonConvert.SerializeObject(EncounteredCaptainsData)}");
         }
@@ -150,7 +150,7 @@ namespace CosmicShore.App.Systems.Xp
             
             Debug.Log($"OnLoadCaptainXpData - Custom Data: {result.CustomData}");
 
-            OnXPLoaded?.Invoke();
+            OnCaptainDataLoaded?.Invoke();
         }
 
         /// <summary>

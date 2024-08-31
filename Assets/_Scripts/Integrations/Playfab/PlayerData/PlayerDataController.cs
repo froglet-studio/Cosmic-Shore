@@ -149,12 +149,12 @@ namespace CosmicShore.Integrations.PlayFab.PlayerData
         /// Read-only and internal data are handled on the server side to prevent hacking and cheating.
         /// </summary>
         /// <param name="playerData">A list of string we want to save on player data</param>
-        public void UpdatePlayerData(Dictionary<string, string> playerData)
+        public void UpdatePlayerData(Dictionary<string, string> playerData, Action successCallback=null)
         {
             InitializePlayerClientInstanceAPI();
             var request = new UpdateUserDataRequest { Data = playerData };
-            _playFabClientInstanceAPI.UpdateUserData(request, 
-                OnUpdatePlayerData, 
+            _playFabClientInstanceAPI.UpdateUserData(request,
+                successCallback == null ? OnUpdatePlayerData : (result) => successCallback?.Invoke(),
                 PlayFabUtility.HandleErrorReport);
         }
 
