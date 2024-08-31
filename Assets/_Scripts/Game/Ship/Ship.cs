@@ -381,12 +381,7 @@ namespace CosmicShore.Core
 
         public void SetResourceLevels(ResourceCollection resourceGroup)
         {
-            ResourceSystem.InitialChargeLevel = resourceGroup.Charge;
-            ResourceSystem.InitialMassLevel = resourceGroup.Mass;
-            ResourceSystem.InitialSpaceLevel = resourceGroup.Space;
-            ResourceSystem.InitialTimeLevel = resourceGroup.Time;
-
-            ResourceSystem.InitializeElementLevels();
+            ResourceSystem.InitializeElementLevels(resourceGroup);
         }
 
         public void AssignCaptain(Captain captain)

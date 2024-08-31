@@ -36,6 +36,7 @@ namespace CosmicShore.Environment.FlowField
 
         [SerializeField] protected List<CrystalModelData> crystalModels;
         [SerializeField] protected bool shipImpactEffects = true;
+        [SerializeField] bool RespawnOnImpact;
         #endregion
 
         [Header("Optional Crystal Effects")]
@@ -106,7 +107,7 @@ namespace CosmicShore.Environment.FlowField
                         AOEExplosion.AnonymousExplosion = true;
                         break;
                     case CrystalImpactEffects.IncrementLevel:
-                        ship.ResourceSystem.IncrementLevel(crystalProperties.Element, transform.lossyScale.x*crystalProperties.fuelAmount);
+                        ship.ResourceSystem.AdjustLevel(crystalProperties.Element, transform.lossyScale.x*crystalProperties.fuelAmount);
                         break;
                 }
             }
@@ -180,6 +181,11 @@ namespace CosmicShore.Environment.FlowField
 
                 UpdateSelfWithNode();  //TODO: check if we need to remove elmental crystals from the node
             }
+            else if (RespawnOnImpact)
+            {
+                Debug.Log("Respawnable Crystal Collision");
+                transform.SetPositionAndRotation(UnityEngine.Random.insideUnitSphere * sphereRadius + origin, UnityEngine.Random.rotation);
+            }
             else
             {
                 RemoveSelfFromNode();
@@ -194,7 +200,7 @@ namespace CosmicShore.Environment.FlowField
         }
 
         // the following grow coroutine is used to grow the crystal when it changes size
-        public IEnumerator Grow(float duration, float targetScale)
+        IEnumerator Grow(float duration, float targetScale)
         {
             float elapsedTime = 0.0f;
             Vector3 startScale = transform.localScale;
@@ -287,8 +293,7 @@ namespace CosmicShore.Environment.FlowField
             }
         }
 
-        Coroutine lerpCrystalMaterialCoroutine;
-        private IEnumerator LerpCrystalMaterialCoroutine(GameObject model, Material targetMaterial, float lerpDuration = 2f)
+        IEnumerator LerpCrystalMaterialCoroutine(GameObject model, Material targetMaterial, float lerpDuration = 2f)
         {
             Renderer renderer = model.GetComponent<Renderer>();
             Material tempMaterial = new Material(renderer.material);

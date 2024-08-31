@@ -24,9 +24,9 @@ namespace CosmicShore.Game.UI
             currentLevel = 0;
         }
 
-        public void UpdateDisplay(float newChargeLevel)
+        public void UpdateDisplay(float newResourceLevel)
         {
-            currentLevel = Mathf.Clamp(newChargeLevel, 0, maxLevel);
+            currentLevel = Mathf.Clamp(newResourceLevel, 0, maxLevel);
 
             // bucket the percent of full and use it as an index into the sprite list
             int maxIndex = fuelLevelImages.Count - 1;
