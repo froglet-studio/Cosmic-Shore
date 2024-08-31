@@ -43,10 +43,21 @@ namespace CosmicShore.App.Systems.Xp
         private const string ClassXpKey = "ClassXP";
 
         /// <summary>
+        /// Encountered Captains key for querying data from PlayFab data storage, not used for PlayFab API calls now.
+        /// </summary>
+        private const string EncounteredCaptainsKey = "EncounteredCaptains";
+
+        /// <summary>
         /// Class Xp Data
         /// Used for storing Captain Xp Data for each Ship type.
         /// </summary>
         public static Dictionary<ShipTypes, XpData> ClassXpData;
+
+        /// <summary>
+        /// Encountered Captain Data
+        /// Used for storing Encountered Captains for each Ship type.
+        /// </summary>
+        public static Dictionary<ShipTypes, List<Element>> EncounteredCaptainsData;
 
         /// <summary>
         /// A wrapper to get player data for now.
@@ -74,7 +85,6 @@ namespace CosmicShore.App.Systems.Xp
             xpData.Charge += captain.PrimaryElement == Element.Charge ? amount : 0;
             ClassXpData[captain.Ship.Class] = xpData;
 
-
             // TODO: Security - Move to cloud script and store in internal data
             var dataContent = new Dictionary<string, string>
             {
@@ -85,6 +95,31 @@ namespace CosmicShore.App.Systems.Xp
 
             Debug.LogError($"IssueXP Success - {JsonConvert.SerializeObject(ClassXpData)}");
         }
+
+        public static void EncounterCaptain(Captain captain)
+        {
+            if (EncounteredCaptainsData.ContainsKey(captain.Ship.Class))
+            {
+                if (EncounteredCaptainsData[captain.Ship.Class].Contains(captain.PrimaryElement)){ return; }
+
+                EncounteredCaptainsData[captain.Ship.Class].Add(captain.PrimaryElement);
+            }
+            else
+            {
+                EncounteredCaptainsData[captain.Ship.Class] = new() { captain.PrimaryElement };
+            }
+
+            // TODO: Security - Move to cloud script and store in internal data
+            var dataContent = new Dictionary<string, string>
+            {
+                { EncounteredCaptainsKey, JsonConvert.SerializeObject(EncounteredCaptainsData) }
+            };
+
+            PlayerDataController.Instance.UpdatePlayerData(dataContent);
+
+            Debug.LogError($"Encounter Captain Success - {JsonConvert.SerializeObject(EncounteredCaptainsData)}");
+        }
+
 
         public static int GetCaptainXP(Captain captain)
         {
@@ -108,7 +143,8 @@ namespace CosmicShore.App.Systems.Xp
         public static void OnLoadCaptainXpData(GetUserDataResult result)
         {
             ClassXpData = ConvertResultToCaptainXpData(result);
-            
+            EncounteredCaptainsData = ConvertResultToEncounteredCaptainData(result);
+
             foreach (var key in ClassXpData.Keys)
                 Debug.Log($"OnLoadCaptainXpData - ClassXpData.ShipClassXpData.Keys: {key}");
             
@@ -128,6 +164,19 @@ namespace CosmicShore.App.Systems.Xp
                 return result.Data.ContainsKey(ClassXpKey) ?
                     (Dictionary<ShipTypes, XpData>)JsonConvert.DeserializeObject(result.Data[ClassXpKey].Value, typeof(Dictionary<ShipTypes, XpData>)) :
                     new();
+        }
+
+        /// <summary>
+        /// A helper class convert player data result to Encountered Captain Data
+        /// if the data does not exist, return null.
+        /// </summary>
+        /// <param name="result">Player data query result</param>
+        /// <returns></returns>
+        static Dictionary<ShipTypes, List<Element>> ConvertResultToEncounteredCaptainData(GetUserDataResult result)
+        {
+            return result.Data.ContainsKey(EncounteredCaptainsKey) ?
+                (Dictionary<ShipTypes, List<Element>>)JsonConvert.DeserializeObject(result.Data[EncounteredCaptainsKey].Value, typeof(Dictionary<ShipTypes, List<Element>>)) :
+                new();
         }
     }
 }

@@ -20,6 +20,9 @@ namespace CosmicShore.App.UI.Views
         [SerializeField] Image SelectedCaptainShipImage;
 
         [Header("Captains - Upgrades UI")]
+        [SerializeField] Transform UnencounteredCaptainRequirementsContainer;
+        [SerializeField] Transform LockedCaptainRequirementsContainer;
+        [SerializeField] Transform UpgradeCaptainRequirementsContainer;
         [SerializeField] Transform CaptainSelectionContainer; // TODO: convert to a list of cards
         [SerializeField] TMP_Text SelectedUpgradeDescription; 
         [SerializeField] TMP_Text SelectedUpgradeXPRequirement;
@@ -32,6 +35,8 @@ namespace CosmicShore.App.UI.Views
         [SerializeField] MenuAudio DeniedMenuAudio;
 
         [SerializeField] public PurchaseConfirmationModal ConfirmationModal;
+
+        [SerializeField] Button EncounterButton;
 
         bool crystalRequirementSatisfied = false;
         bool xpRequirementSatisfied = false;
@@ -55,40 +60,82 @@ namespace CosmicShore.App.UI.Views
 
             captain = CaptainManager.Instance.GetCaptainByName(model.Name);
 
-            // Load upgrade from catalog
-            upgrade = CatalogManager.Instance.GetCaptainUpgrade(captain);
-            
-            // Lock Logic - Lock Icon
+            Debug.Log($"Populating Captain Details List: {captain.Name}");
+            Debug.Log($"Populating Captain Details List: {captain.Description}");
+            Debug.Log($"Populating Captain Details List: {captain.Icon}");
+            Debug.Log($"Populating Captain Details List: {captain.Image}");
 
-            // XP Requirement
-            var xpNeeded = CaptainManager.Instance.GetCaptainUpgradeXPRequirement(captain);
-            xpRequirementSatisfied = captain.XP >= xpNeeded;
-            SelectedUpgradeXPRequirement.text = string.Format(XPRequirementTemplate, captain.XP, xpNeeded, xpRequirementSatisfied ? SatisfiedMarkdownColor : UnsatisfiedMarkdownColor);
+            EncounterButton.gameObject.SetActive(false);
+            xpRequirementSatisfied = false;
+            crystalRequirementSatisfied = false;
 
-            // Crystal Requirement
-            var crystalsNeeded = upgrade.Price[0].Amount;
-            var crystalBalance = CatalogManager.Instance.GetCrystalBalance(captain.PrimaryElement);
-            crystalRequirementSatisfied = crystalBalance >= crystalsNeeded;
-            SelectedUpgradeCrystalRequirement.text = string.Format(CrystalRequirementTemplate, crystalBalance, crystalsNeeded, crystalRequirementSatisfied ? SatisfiedMarkdownColor : UnsatisfiedMarkdownColor);
-            SelectedUpgradeCrystalRequirementImage.sprite = CosmicShore.Elements.Get(captain.PrimaryElement).GetFullIcon(crystalRequirementSatisfied);
+
+            // Populate Captain Details
+            SelectedCaptainName.text = captain.Name;
+            SelectedCaptainElementLabel.text = "The " + captain.PrimaryElement.ToString() + " " + captain.Ship.Name;
+            SelectedUpgradeDescription.text = captain.Description;
+            SelectedCaptainQuote.text = captain.Flavor;
+            SelectedCaptainImage.sprite = captain.Image;
+            SelectedCaptainImage.color = Color.white;
+            SelectedCaptainShipImage.sprite = captain.Ship.Icon;
+
+            //
+            // Populate Requirements Box
+            //
+            UnencounteredCaptainRequirementsContainer.gameObject.SetActive(false);
+            LockedCaptainRequirementsContainer.gameObject.SetActive(false);
+            UpgradeCaptainRequirementsContainer.gameObject.SetActive(false);
+
+            if (!captain.Encountered)
+            {
+                Debug.LogError($"Captain Unencounted - class:{captain.Ship.Class}, element:{captain.PrimaryElement}");
+                UnencounteredCaptainRequirementsContainer.gameObject.SetActive(true);
+
+                SelectedCaptainImage.color = Color.black;
+
+                // TODO: remove once testing is complete
+                EncounterButton.gameObject.SetActive(true);
+                EncounterButton.onClick.RemoveAllListeners();
+                EncounterButton.onClick.AddListener(() => CaptainManager.Instance.EncounterCaptain(captain.Name));
+            }
+            else if (!captain.Unlocked)
+            {
+                Debug.LogError($"Captain locked - class:{captain.Ship.Class}, element:{captain.PrimaryElement}");
+
+                LockedCaptainRequirementsContainer.gameObject.SetActive(true);
+
+                // TODO: Go To Store button goes here 
+            }
+            else
+            {
+                Debug.LogError($"Captain Owned - class:{captain.Ship.Class}, element:{captain.PrimaryElement}");
+
+                UpgradeCaptainRequirementsContainer.gameObject.SetActive(true);
+
+                // Load upgrade from catalog
+                upgrade = CatalogManager.Instance.GetCaptainUpgrade(captain);
+
+                if (upgrade != null)
+                {
+                    // XP Requirement
+                    var xpNeeded = CaptainManager.Instance.GetCaptainUpgradeXPRequirement(captain);
+                    xpRequirementSatisfied = captain.XP >= xpNeeded;
+                    SelectedUpgradeXPRequirement.text = string.Format(XPRequirementTemplate, captain.XP, xpNeeded, xpRequirementSatisfied ? SatisfiedMarkdownColor : UnsatisfiedMarkdownColor);
+
+                    // Crystal Requirement
+                    var crystalsNeeded = upgrade.Price[0].Amount;
+                    var crystalBalance = CatalogManager.Instance.GetCrystalBalance(captain.PrimaryElement);
+                    crystalRequirementSatisfied = crystalBalance >= crystalsNeeded;
+                    SelectedUpgradeCrystalRequirement.text = string.Format(CrystalRequirementTemplate, crystalBalance, crystalsNeeded, crystalRequirementSatisfied ? SatisfiedMarkdownColor : UnsatisfiedMarkdownColor);
+                    SelectedUpgradeCrystalRequirementImage.sprite = CosmicShore.Elements.Get(captain.PrimaryElement).GetFullIcon(crystalRequirementSatisfied);
+                }
+            }
 
             // Upgrade Button
             if (xpRequirementSatisfied && crystalRequirementSatisfied)
                 UpgradeButton.GetComponent<Image>().sprite = UpgradeButtonUnlockedSprite;
             else
                 UpgradeButton.GetComponent<Image>().sprite = UpgradeButtonLockedSprite;
-
-            // Populate Captain Details
-            Debug.Log($"Populating Captain Details List: {captain.Name}");
-            Debug.Log($"Populating Captain Details List: {captain.Description}");
-            Debug.Log($"Populating Captain Details List: {captain.Icon}");
-            Debug.Log($"Populating Captain Details List: {captain.Image}");
-            if (SelectedCaptainName != null) SelectedCaptainName.text = captain.Name;
-            if (SelectedCaptainElementLabel != null) SelectedCaptainElementLabel.text = "The " + captain.PrimaryElement.ToString() + " " + captain.Ship.Name;
-            if (SelectedUpgradeDescription != null) SelectedUpgradeDescription.text = captain.Description;
-            if (SelectedCaptainQuote != null) SelectedCaptainQuote.text = captain.Flavor;
-            if (SelectedCaptainImage != null) SelectedCaptainImage.sprite = captain.Image;
-            if (SelectedCaptainShipImage != null) SelectedCaptainShipImage.sprite = captain.Ship.Icon;
         }
 
         void PopulateCaptainSelectionList()

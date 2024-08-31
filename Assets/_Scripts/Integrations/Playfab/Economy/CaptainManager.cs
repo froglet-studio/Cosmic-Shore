@@ -97,9 +97,12 @@ namespace CosmicShore.Integrations.PlayFab.Economy
                 }
                 else
                 {
-                    // Check for encountered
-                    captain.Encountered = true; 
-                    captainData.EncounteredCaptains.Add(so_Captain.Name, captain);
+                    captain.Encountered = 
+                        XpHandler.EncounteredCaptainsData.ContainsKey(captain.Ship.Class) && 
+                        XpHandler.EncounteredCaptainsData[captain.Ship.Class].Contains(captain.PrimaryElement);
+
+                    if (captain.Encountered)
+                        captainData.EncounteredCaptains.Add(so_Captain.Name, captain);
                 }
                 captainData.AllCaptains.Add(so_Captain.Name, captain);
 
@@ -215,6 +218,11 @@ namespace CosmicShore.Integrations.PlayFab.Economy
         public int GetCaptainUpgradeXPRequirement(Captain captain)
         {
             return UpgradeXPRequirements.GetRequirementByLevel(captain.Level+1);
+        }
+
+        public void EncounterCaptain(string captainName)
+        {
+            XpHandler.EncounterCaptain(GetCaptainByName(captainName));
         }
     }
 }
