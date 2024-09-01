@@ -6,11 +6,17 @@ namespace CosmicShore.App.UI.FX
 	{
 		public bool canRotate = true;
 		public float speed = 10;
+        public Vector3 direction;
 
-		void Update()
+        void Update()
 		{
 			if (canRotate)
-				transform.Rotate(speed * Vector3.forward * Time.deltaTime);
+			{
+				if (direction == null)
+					direction = Vector3.forward;
+				
+				transform.Rotate(speed * direction * Time.deltaTime);
+			}
 		}
 	}
 }

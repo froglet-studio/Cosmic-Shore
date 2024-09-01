@@ -240,8 +240,7 @@ namespace CosmicShore.Environment.FlowField
                     spentAnimator.timer = thisAnimator.timer;
                 }
                 var shipStatus = ship.GetComponent<ShipStatus>();
-                spentCrystal.GetComponent<Impact>().HandleImpact(
-                    shipStatus.Course * shipStatus.Speed, tempMaterial, ship.Player.PlayerName);
+                spentCrystal.GetComponent<Impact>()?.HandleImpact(shipStatus.Course * shipStatus.Speed, tempMaterial, ship.Player.PlayerName);
             }
         }
 
