@@ -224,7 +224,7 @@ PrefabInstance:
     - target: {fileID: 6588436222817790493, guid: a4bde9d72595bfb43aa3b791d02f4db8,
         type: 3}
       propertyPath: m_RootOrder
-      value: 3
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 6588436222817790493, guid: a4bde9d72595bfb43aa3b791d02f4db8,
         type: 3}
@@ -239,7 +239,7 @@ PrefabInstance:
     - target: {fileID: 6588436222817790493, guid: a4bde9d72595bfb43aa3b791d02f4db8,
         type: 3}
       propertyPath: m_LocalPosition.z
-      value: 33.2
+      value: -25
       objectReference: {fileID: 0}
     - target: {fileID: 6588436222817790493, guid: a4bde9d72595bfb43aa3b791d02f4db8,
         type: 3}
@@ -886,7 +886,7 @@ PrefabInstance:
     - target: {fileID: 6588436222817790493, guid: e707773a458187444a9dfbf3ec06568f,
         type: 3}
       propertyPath: m_RootOrder
-      value: 0
+      value: 3
       objectReference: {fileID: 0}
     - target: {fileID: 6588436222817790493, guid: e707773a458187444a9dfbf3ec06568f,
         type: 3}
@@ -901,7 +901,7 @@ PrefabInstance:
     - target: {fileID: 6588436222817790493, guid: e707773a458187444a9dfbf3ec06568f,
         type: 3}
       propertyPath: m_LocalPosition.z
-      value: -58.9
+      value: -100
       objectReference: {fileID: 0}
     - target: {fileID: 6588436222817790493, guid: e707773a458187444a9dfbf3ec06568f,
         type: 3}
@@ -998,12 +998,12 @@ PrefabInstance:
     - target: {fileID: 6588436222817790493, guid: ba23c28d2d22a1b458f7b6e91c355d53,
         type: 3}
       propertyPath: m_RootOrder
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6588436222817790493, guid: ba23c28d2d22a1b458f7b6e91c355d53,
         type: 3}
       propertyPath: m_LocalPosition.x
-      value: -287.2
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6588436222817790493, guid: ba23c28d2d22a1b458f7b6e91c355d53,
         type: 3}
@@ -1013,7 +1013,7 @@ PrefabInstance:
     - target: {fileID: 6588436222817790493, guid: ba23c28d2d22a1b458f7b6e91c355d53,
         type: 3}
       propertyPath: m_LocalPosition.z
-      value: 132.4
+      value: 125
       objectReference: {fileID: 0}
     - target: {fileID: 6588436222817790493, guid: ba23c28d2d22a1b458f7b6e91c355d53,
         type: 3}
@@ -1050,6 +1050,38 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 6588436222817790495, guid: ba23c28d2d22a1b458f7b6e91c355d53,
+        type: 3}
+      propertyPath: SpentCrystalPrefab
+      value: 
+      objectReference: {fileID: 8491596592871572304, guid: 53d5a21532c412648a63884e11bef0b6,
+        type: 3}
+    - target: {fileID: 6588436222817790495, guid: ba23c28d2d22a1b458f7b6e91c355d53,
+        type: 3}
+      propertyPath: crystalModels.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6588436222817790495, guid: ba23c28d2d22a1b458f7b6e91c355d53,
+        type: 3}
+      propertyPath: crystalModels.Array.data[0].model
+      value: 
+      objectReference: {fileID: 8491596592871572304, guid: 53d5a21532c412648a63884e11bef0b6,
+        type: 3}
+    - target: {fileID: 6588436222817790495, guid: ba23c28d2d22a1b458f7b6e91c355d53,
+        type: 3}
+      propertyPath: crystalModels.Array.data[0].defaultMaterial
+      value: 
+      objectReference: {fileID: 2100000, guid: b4387bb80465e9748a9fb1a58d328ad8, type: 2}
+    - target: {fileID: 6588436222817790495, guid: ba23c28d2d22a1b458f7b6e91c355d53,
+        type: 3}
+      propertyPath: crystalModels.Array.data[0].inactiveMaterial
+      value: 
+      objectReference: {fileID: 2100000, guid: b4387bb80465e9748a9fb1a58d328ad8, type: 2}
+    - target: {fileID: 6588436222817790495, guid: ba23c28d2d22a1b458f7b6e91c355d53,
+        type: 3}
+      propertyPath: crystalModels.Array.data[0].explodingMaterial
+      value: 
+      objectReference: {fileID: 2100000, guid: b4387bb80465e9748a9fb1a58d328ad8, type: 2}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: ba23c28d2d22a1b458f7b6e91c355d53, type: 3}
 --- !u!1 &1450883832
@@ -1157,12 +1189,12 @@ PrefabInstance:
     - target: {fileID: 6588436222817790470, guid: cccc6ba7985893f43841fccfbb53dc71,
         type: 3}
       propertyPath: m_Name
-      value: BigMassCrystal
+      value: CrystalMass
       objectReference: {fileID: 0}
     - target: {fileID: 6588436222817790493, guid: cccc6ba7985893f43841fccfbb53dc71,
         type: 3}
       propertyPath: m_RootOrder
-      value: 2
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6588436222817790493, guid: cccc6ba7985893f43841fccfbb53dc71,
         type: 3}
@@ -1192,7 +1224,7 @@ PrefabInstance:
     - target: {fileID: 6588436222817790493, guid: cccc6ba7985893f43841fccfbb53dc71,
         type: 3}
       propertyPath: m_LocalPosition.z
-      value: 81.3
+      value: 50
       objectReference: {fileID: 0}
     - target: {fileID: 6588436222817790493, guid: cccc6ba7985893f43841fccfbb53dc71,
         type: 3}
@@ -1941,7 +1973,7 @@ Transform:
   m_Children:
   - {fileID: 639495419607387831}
   m_Father: {fileID: 8200116292639711852}
-  m_RootOrder: 4
+  m_RootOrder: 5
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &639495420035054012
 MonoBehaviour:
@@ -2254,13 +2286,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6588436222115322031}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: -0.225}
+  m_LocalPosition: {x: 0, y: 0, z: -175}
   m_LocalScale: {x: 10, y: 10, z: 10}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1254414768180648125}
   m_Father: {fileID: 8200116292639711852}
-  m_RootOrder: 5
+  m_RootOrder: 4
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &6588436222115322038
 MonoBehaviour:
@@ -2424,12 +2456,12 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 986952658}
   - {fileID: 971372743}
   - {fileID: 1820458694}
   - {fileID: 1870690986}
-  - {fileID: 639495420035054003}
+  - {fileID: 986952658}
   - {fileID: 6588436222115322036}
+  - {fileID: 639495420035054003}
   - {fileID: 8597243263517655812}
   - {fileID: 3621151028623905781}
   m_Father: {fileID: 1471404063}
