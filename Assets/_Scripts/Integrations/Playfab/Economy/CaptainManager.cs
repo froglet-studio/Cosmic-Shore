@@ -131,15 +131,17 @@ namespace CosmicShore.Integrations.PlayFab.Economy
 
         public void IssueXP(Captain captain, int amount)
         {
-            //if (!captainData.UnlockedCaptains.ContainsKey(captain.SO_Captain.Name)) { return; }
-
             captain.XP += amount;
-            //captainData.UnlockedCaptains[captain.SO_Captain.Name].XP += amount;
             captainData.AllCaptains[captain.SO_Captain.Name].XP += amount;
 
             // Save to Playfab
             Debug.Log($"CaptainManager.IssueXP {captain.Name}, {amount}");
             XpHandler.IssueXP(captain, amount);
+        }
+
+        public bool IsCaptainEncountered(string  captainName)
+        {
+            return GetEncounteredCaptains().Where(x => x.Name == captainName).Any();
         }
 
         public Captain GetCaptainByName(string name)

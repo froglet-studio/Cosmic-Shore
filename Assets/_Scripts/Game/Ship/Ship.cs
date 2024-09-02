@@ -88,6 +88,8 @@ namespace CosmicShore.Core
         [HideInInspector] public Material SkimmerMaterial;
         float speedModifierDuration = 2f;
 
+        [HideInInspector] public SO_Captain Captain;
+
         Teams team;
         public Teams Team 
         { 
@@ -386,11 +388,13 @@ namespace CosmicShore.Core
 
         public void AssignCaptain(Captain captain)
         {
+            Captain = captain.SO_Captain;
             SetResourceLevels(captain.ResourceLevels);
         }
 
         public void AssignCaptain(SO_Captain captain)
         {
+            Captain = captain;
             SetResourceLevels(captain.InitialResourceLevels);
         }
 

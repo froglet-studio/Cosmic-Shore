@@ -14,6 +14,7 @@ using CosmicShore.Models.Enums;
 using CosmicShore.App.Systems;
 using CosmicShore.Integrations.PlayFab.PlayerData;
 using CosmicShore.Integrations.PlayFab.Economy;
+using CosmicShore.App.Systems.Xp;
 
 namespace CosmicShore.Game.Arcade
 {
@@ -293,13 +294,36 @@ namespace CosmicShore.Game.Arcade
                         Debug.Log($"Mission EndGame - Award Mission Crystals - Player has earned {StatsManager.Instance.LastRoundPlayerStats[PlayerDataController.PlayerProfile.DisplayName].ChargeCrystalValue*100} {PlayerCaptain.PrimaryElement} crystals");
                         CatalogManager.Instance.GrantElementalCrystals((int)(StatsManager.Instance.LastRoundPlayerStats[PlayerDataController.PlayerProfile.DisplayName].ChargeCrystalValue*100), Element.Charge);
                         break;
+                    case Element.Mass:
+                        Debug.Log($"Mission EndGame - Award Mission Crystals - Player has earned {StatsManager.Instance.LastRoundPlayerStats[PlayerDataController.PlayerProfile.DisplayName].MassCrystalValue * 100} {PlayerCaptain.PrimaryElement} crystals");
+                        CatalogManager.Instance.GrantElementalCrystals((int)(StatsManager.Instance.LastRoundPlayerStats[PlayerDataController.PlayerProfile.DisplayName].MassCrystalValue * 100), Element.Mass);
+                        break;
+                    case Element.Space:
+                        Debug.Log($"Mission EndGame - Award Mission Crystals - Player has earned {StatsManager.Instance.LastRoundPlayerStats[PlayerDataController.PlayerProfile.DisplayName].SpaceCrystalValue * 100} {PlayerCaptain.PrimaryElement} crystals");
+                        CatalogManager.Instance.GrantElementalCrystals((int)(StatsManager.Instance.LastRoundPlayerStats[PlayerDataController.PlayerProfile.DisplayName].SpaceCrystalValue * 100), Element.Space);
+                        break;
+                    case Element.Time:
+                        Debug.Log($"Mission EndGame - Award Mission Crystals - Player has earned {StatsManager.Instance.LastRoundPlayerStats[PlayerDataController.PlayerProfile.DisplayName].TimeCrystalValue * 100} {PlayerCaptain.PrimaryElement} crystals");
+                        CatalogManager.Instance.GrantElementalCrystals((int)(StatsManager.Instance.LastRoundPlayerStats[PlayerDataController.PlayerProfile.DisplayName].TimeCrystalValue * 100), Element.Time);
+                        break;
                 }
 
                 // Award XP
                 Debug.Log($"Mission EndGame - Award Mission XP -  score:{ScoreTracker.GetHighScore()}, element:{PlayerCaptain.PrimaryElement}");
+                XpHandler.IssueXP(CaptainManager.Instance.GetCaptainByName(PlayerCaptain.Name), 10);
 
                 // Report any encountered captains
                 Debug.Log($"Mission EndGame - Unlock Mission Captains");
+                if (Hangar.Instance.HostileAI1Captain != null && !CaptainManager.Instance.IsCaptainEncountered(Hangar.Instance.HostileAI1Captain.Name))
+                {
+                    Debug.Log($"Encountering Captain!!! - {Hangar.Instance.HostileAI1Captain}");
+                    CaptainManager.Instance.EncounterCaptain(Hangar.Instance.HostileAI1Captain.Name);
+                }
+                if (Hangar.Instance.HostileAI2Captain != null && !CaptainManager.Instance.IsCaptainEncountered(Hangar.Instance.HostileAI2Captain.Name))
+                {
+                    Debug.Log($"Encountering Captain!!! - {Hangar.Instance.HostileAI2Captain}");
+                    CaptainManager.Instance.EncounterCaptain(Hangar.Instance.HostileAI2Captain.Name);
+                }
             }
             else
                 LeaderboardManager.Instance.ReportGameplayStatistic(gameMode, PlayerShipType, IntensityLevel, ScoreTracker.GetHighScore(), ScoreTracker.GolfRules);

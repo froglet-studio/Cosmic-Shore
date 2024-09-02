@@ -36,6 +36,9 @@ namespace CosmicShore.Integrations.PlayFab.Economy
 
         public const int MaxDailyChallengeTicketBalance = 5;
 
+        int GrantedCrystalAmount;
+        Element GrantedCrystalElement;
+
         void Start()
         {
             Debug.Log("CatalogManager.Start");
@@ -199,7 +202,7 @@ namespace CosmicShore.Integrations.PlayFab.Economy
         }
         #endregion
 
-            #region Inventory Operations
+        #region Inventory Operations
 
         public void GrantElementalCrystals(int amount, Element element)
         {
@@ -225,6 +228,9 @@ namespace CosmicShore.Integrations.PlayFab.Economy
                 return;
             }
 
+            GrantedCrystalAmount = amount;
+            GrantedCrystalElement = element;
+
             var request = new AddInventoryItemsRequest
             {
                 Amount = amount,
@@ -249,7 +255,17 @@ namespace CosmicShore.Integrations.PlayFab.Economy
                 Debug.LogWarningFormat($"{nameof(CatalogManager)}.{nameof(OnGrantElementalCrystals)}: received a null response.");
                 return;
             }
-            Debug.Log("CatalogManager - On grant Shards Success.");
+
+            foreach (var elementalCrystal in Inventory.crystals)
+            {
+                if (elementalCrystal.Tags.Contains(GrantedCrystalElement.ToString()))
+                {
+                    elementalCrystal.Amount += GrantedCrystalAmount;
+                    break;
+                }
+            }
+
+            Debug.Log("CatalogManager - OnGrantElementalCrystals Success.");
             Debug.LogFormat("CatalogManager - transaction ids: {0}", string.Join(",", response.TransactionIds));
         }
 
@@ -622,7 +638,6 @@ namespace CosmicShore.Integrations.PlayFab.Economy
             int balance = 0;
             foreach (var crystal in Inventory.crystals)
             {
-                //if ("Omni Crystal" == crystal.Name)
                 if (crystal.Tags.Contains(crystalElementType.ToString()))
                 {
                     balance = crystal.Amount;

@@ -173,23 +173,32 @@ namespace CosmicShore.Core
             return LoadAIShip(SquadSystem.RogueTwo.Ship.Class, PlayerTeam, SquadSystem.RogueTwo);
         }
 
+        public SO_Captain HostileAI1Captain { get; private set; }
+        public SO_Captain HostileAI2Captain { get; private set; }
+        public SO_Captain HostileAI3Captain { get; private set; }
         public Ship LoadHostileAI1Ship(Teams Team)
         {
-            return LoadAIShip(HostileAI1ShipType, Team);
+            var ship = LoadAIShip(HostileAI1ShipType, Team);
+            HostileAI1Captain = ship.Captain;
+            return ship;
         }
         public Ship LoadHostileAI2Ship()
         {
-            return LoadAIShip(HostileAI2ShipType, AITeam);
+            var ship = LoadAIShip(HostileAI2ShipType, AITeam);
+            HostileAI2Captain = ship.Captain;
+            return ship;
         }
         public Ship LoadHostileAI3Ship()
         {
-            return LoadAIShip(HostileAI3ShipType, AITeam);
+            var ship = LoadAIShip(HostileAI3ShipType, AITeam);
+            HostileAI3Captain = ship.Captain;
+            return ship;
         }
         public Ship LoadHostileManta()
         {
             return LoadAIShip(HostileMantaShipType, AITeam);
         }
-        public Ship LoadAIShip(ShipTypes shipType, Teams team, SO_Captain captain=null)
+        Ship LoadAIShip(ShipTypes shipType, Teams team, SO_Captain captain=null)
         {
             if (shipType == ShipTypes.Random)
             {
@@ -206,7 +215,7 @@ namespace CosmicShore.Core
 
             Ship ship = Instantiate(shipTypeMap[shipType]);
             if (captain != null)
-                ship.AssignCaptain(CaptainManager.Instance.GetCaptainSOByName(captain.Name));
+                ship.AssignCaptain(captain);
             ship.SetShipMaterial(TeamMaterialSets[team].ShipMaterial);
             ship.SetBlockMaterial(TeamMaterialSets[team].BlockMaterial);
             ship.SetBlockSilhouettePrefab(TeamMaterialSets[team].BlockSilhouettePrefab);

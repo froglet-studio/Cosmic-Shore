@@ -112,10 +112,22 @@ namespace CosmicShore.Core
 
             // These four fields are serialized for visibility during class creation and tuning
             // Use the test harness assigned value if it's been set, otherwise use the real value
-            ChargeLevel = (ChargeTestHarness != 0 && ChargeLevel != ChargeTestHarness) ? ChargeTestHarness : ElementalLevels[Element.Charge];
-            MassLevel = (MassTestHarness != 0 && MassLevel != MassTestHarness) ? MassTestHarness : ElementalLevels[Element.Mass];
-            SpaceLevel = (SpaceTestHarness != 0 && SpaceLevel != SpaceTestHarness) ? SpaceTestHarness : ElementalLevels[Element.Space];
-            TimeLevel = (TimeTestHarness != 0 && TimeLevel != TimeTestHarness) ? TimeTestHarness : ElementalLevels[Element.Time];
+            if (ElementalLevels.Count > 0)
+            {
+                if (ChargeTestHarness != 0)
+                    ElementalLevels[Element.Charge] = ChargeTestHarness;
+                if (MassTestHarness != 0)
+                    ElementalLevels[Element.Mass] = MassTestHarness;
+                if (SpaceTestHarness != 0)
+                    ElementalLevels[Element.Space] = SpaceTestHarness;
+                if (TimeTestHarness != 0)
+                    ElementalLevels[Element.Time] = TimeTestHarness;
+
+                ChargeLevel = ElementalLevels[Element.Charge];
+                MassLevel = ElementalLevels[Element.Mass];
+                SpaceLevel = ElementalLevels[Element.Space];
+                TimeLevel = ElementalLevels[Element.Time];
+            }
         }
 
         public void Reset()
