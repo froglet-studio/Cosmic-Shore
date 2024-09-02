@@ -198,9 +198,15 @@ namespace CosmicShore.Core
                 shipType = (ShipTypes) values.GetValue(random.Next(1, values.Length));
             }
 
+            if (captain == null)
+            {
+                var captains = CaptainManager.Instance.GetAllSOCaptains().Where(x => x.Ship.Class == shipType).ToList();
+                captain = captains[UnityEngine.Random.Range(0, 3)];
+            }
+
             Ship ship = Instantiate(shipTypeMap[shipType]);
             if (captain != null)
-                ship.AssignCaptain(CaptainManager.Instance.GetCaptainByName(captain.Name));
+                ship.AssignCaptain(CaptainManager.Instance.GetCaptainSOByName(captain.Name));
             ship.SetShipMaterial(TeamMaterialSets[team].ShipMaterial);
             ship.SetBlockMaterial(TeamMaterialSets[team].BlockMaterial);
             ship.SetBlockSilhouettePrefab(TeamMaterialSets[team].BlockSilhouettePrefab);

@@ -93,7 +93,7 @@ namespace CosmicShore.App.Systems.Xp
 
             PlayerDataController.Instance.UpdatePlayerData(dataContent, OnCaptainDataLoaded);
 
-            Debug.LogError($"IssueXP Success - {JsonConvert.SerializeObject(ClassXpData)}");
+            Debug.Log($"IssueXP Success - {JsonConvert.SerializeObject(ClassXpData)}");
         }
 
         public static void EncounterCaptain(Captain captain)
@@ -117,7 +117,7 @@ namespace CosmicShore.App.Systems.Xp
 
             PlayerDataController.Instance.UpdatePlayerData(dataContent, OnCaptainDataLoaded);
 
-            Debug.LogError($"Encounter Captain Success - {JsonConvert.SerializeObject(EncounteredCaptainsData)}");
+            Debug.Log($"Encounter Captain Success - {JsonConvert.SerializeObject(EncounteredCaptainsData)}");
         }
 
 

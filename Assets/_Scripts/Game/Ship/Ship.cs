@@ -389,6 +389,11 @@ namespace CosmicShore.Core
             SetResourceLevels(captain.ResourceLevels);
         }
 
+        public void AssignCaptain(SO_Captain captain)
+        {
+            SetResourceLevels(captain.InitialResourceLevels);
+        }
+
         public void SetShipMaterial(Material material)
         {
             ShipMaterial = material;

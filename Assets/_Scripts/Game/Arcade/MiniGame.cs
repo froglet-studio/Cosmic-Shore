@@ -13,6 +13,7 @@ using CosmicShore.Game.UI;
 using CosmicShore.Models.Enums;
 using CosmicShore.App.Systems;
 using CosmicShore.Integrations.PlayFab.PlayerData;
+using CosmicShore.Integrations.PlayFab.Economy;
 
 namespace CosmicShore.Game.Arcade
 {
@@ -43,7 +44,7 @@ namespace CosmicShore.Game.Arcade
         public static int NumberOfPlayers = 1;  // TODO: P1 - support excluding single player games (e.g for elimination)
         public static int IntensityLevel = 1;
         public static bool IsDailyChallenge = false;
-        public static bool IsFactionMission = false;
+        public static bool IsMission = false;
         static ShipTypes playerShipType = ShipTypes.Dolphin;
         static bool playerShipTypeInitialized;
         
@@ -225,9 +226,9 @@ namespace CosmicShore.Game.Arcade
 
         protected virtual void EndTurn()
         {
-            Silhouette silhouette;
-            Player.ActivePlayer.Ship.TryGetComponent<Silhouette>(out silhouette);
-            silhouette.Clear();
+            //Silhouette silhouette;
+            //Player.ActivePlayer.Ship.TryGetComponent<Silhouette>(out silhouette);
+            //silhouette.Clear();
             StartCoroutine(EndTurnCoroutine());
         }
 
@@ -281,13 +282,24 @@ namespace CosmicShore.Game.Arcade
                 // TODO: Hide play again button, or map it to use another ticket
 
             }
-            else if (IsFactionMission)
+            else if (IsMission)
             {
+                // Award Crystals
+                Debug.Log($"Mission EndGame - Award Mission Crystals -  score:{ScoreTracker.GetHighScore()}");
+                Debug.Log($"Mission EndGame - Award Mission Crystals -  element:{PlayerCaptain.PrimaryElement}");
+                switch (PlayerCaptain.PrimaryElement)
+                {
+                    case Element.Charge:
+                        Debug.Log($"Mission EndGame - Award Mission Crystals - Player has earned {StatsManager.Instance.LastRoundPlayerStats[PlayerDataController.PlayerProfile.DisplayName].ChargeCrystalValue*100} {PlayerCaptain.PrimaryElement} crystals");
+                        CatalogManager.Instance.GrantElementalCrystals((int)(StatsManager.Instance.LastRoundPlayerStats[PlayerDataController.PlayerProfile.DisplayName].ChargeCrystalValue*100), Element.Charge);
+                        break;
+                }
+
                 // Award XP
-                Debug.Log($"Faction Mission EndGame - Award Faction Mission XP -  score:{ScoreTracker.GetHighScore()}, element:{PlayerCaptain.PrimaryElement}");
+                Debug.Log($"Mission EndGame - Award Mission XP -  score:{ScoreTracker.GetHighScore()}, element:{PlayerCaptain.PrimaryElement}");
 
                 // Report any encountered captains
-                Debug.Log($"Faction Mission EndGame - Unlock Faction Mission Captains");
+                Debug.Log($"Mission EndGame - Unlock Mission Captains");
             }
             else
                 LeaderboardManager.Instance.ReportGameplayStatistic(gameMode, PlayerShipType, IntensityLevel, ScoreTracker.GetHighScore(), ScoreTracker.GolfRules);

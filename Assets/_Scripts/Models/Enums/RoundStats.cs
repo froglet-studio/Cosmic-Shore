@@ -3,60 +3,69 @@ namespace CosmicShore.Core
     [System.Serializable]
     public struct RoundStats
     {
-        public int blocksCreated;
-        public int blocksDestroyed;
-        public int blocksRestored;
-        public int blocksStolen;
-        public int blocksRemaining;
-        public int friendlyBlocksDestroyed;
-        public int hostileBlocksDestroyed;
-        public float volumeCreated;
-        public float volumeDestroyed;
-        public float volumeRestored;
-        public float volumeStolen;
-        public float volumeRemaining;
-        public float friendlyVolumeDestroyed;
-        public float hostileVolumeDestroyed;
-        public int crystalsCollected;
-        public int omniCrystalsCollected;
-        public int elementalCrystalsCollected;
-        public int skimmerShipCollisions;
-        public float fullSpeedStraightAbilityActiveTime;
-        public float rightStickAbilityActiveTime;
-        public float leftStickAbilityActiveTime;
-        public float flipAbilityActiveTime;
-        public float button1AbilityActiveTime;
-        public float button2AbilityActiveTime;
-        public float button3AbilityActiveTime;
+        public int BlocksCreated;
+        public int BlocksDestroyed;
+        public int BlocksRestored;
+        public int BlocksStolen;
+        public int BlocksRemaining;
+        public int FriendlyBlocksDestroyed;
+        public int HostileBlocksDestroyed;
+        public float VolumeCreated;
+        public float VolumeDestroyed;
+        public float VolumeRestored;
+        public float VolumeStolen;
+        public float VolumeRemaining;
+        public float FriendlyVolumeDestroyed;
+        public float HostileVolumeDestroyed;
+        public int CrystalsCollected;
+        public int OmniCrystalsCollected;
+        public int ElementalCrystalsCollected;
+        public float ChargeCrystalValue;
+        public float MassCrystalValue;
+        public float SpaceCrystalValue;
+        public float TimeCrystalValue;
+        public int SkimmerShipCollisions;
+        public float FullSpeedStraightAbilityActiveTime;
+        public float RightStickAbilityActiveTime;
+        public float LeftStickAbilityActiveTime;
+        public float FlipAbilityActiveTime;
+        public float Button1AbilityActiveTime;
+        public float Button2AbilityActiveTime;
+        public float Button3AbilityActiveTime;
         
 
         public RoundStats(bool dummy = false)
         {
-            blocksCreated = 0;
-            blocksDestroyed = 0;
-            blocksRestored = 0;
-            blocksStolen = 0;
-            blocksRemaining = 0;
-            friendlyBlocksDestroyed = 0;
-            hostileBlocksDestroyed = 0;
-            volumeCreated = 0;
-            volumeDestroyed = 0;
-            volumeRestored = 0;
-            volumeStolen = 0;
-            volumeRemaining = 0;
-            friendlyVolumeDestroyed = 0;
-            hostileVolumeDestroyed = 0;
-            crystalsCollected = 0;
-            omniCrystalsCollected = 0;
-            elementalCrystalsCollected = 0;
-            skimmerShipCollisions = 0;
-            fullSpeedStraightAbilityActiveTime = 0;
-            rightStickAbilityActiveTime = 0;
-            leftStickAbilityActiveTime = 0;
-            flipAbilityActiveTime = 0;
-            button1AbilityActiveTime = 0;
-            button2AbilityActiveTime = 0;
-            button3AbilityActiveTime = 0;
+            BlocksCreated = 0;
+            BlocksDestroyed = 0;
+            BlocksRestored = 0;
+            BlocksStolen = 0;
+            BlocksRemaining = 0;
+            FriendlyBlocksDestroyed = 0;
+            HostileBlocksDestroyed = 0;
+            VolumeCreated = 0;
+            VolumeDestroyed = 0;
+            VolumeRestored = 0;
+            VolumeStolen = 0;
+            VolumeRemaining = 0;
+            FriendlyVolumeDestroyed = 0;
+            HostileVolumeDestroyed = 0;
+            CrystalsCollected = 0;
+            OmniCrystalsCollected = 0;
+            ElementalCrystalsCollected = 0;
+            ChargeCrystalValue = 0;
+            MassCrystalValue = 0;
+            SpaceCrystalValue = 0;
+            TimeCrystalValue = 0;
+            SkimmerShipCollisions = 0;
+            FullSpeedStraightAbilityActiveTime = 0;
+            RightStickAbilityActiveTime = 0;
+            LeftStickAbilityActiveTime = 0;
+            FlipAbilityActiveTime = 0;
+            Button1AbilityActiveTime = 0;
+            Button2AbilityActiveTime = 0;
+            Button3AbilityActiveTime = 0;
+
         }
     }
 }

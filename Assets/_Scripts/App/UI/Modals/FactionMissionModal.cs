@@ -19,7 +19,7 @@ namespace CosmicShore.App.UI.Modals
 
         public void Play()
         {
-            Arcade.Instance.LaunchFactionMission(MissionGame.Mode, SquadSystem.SquadLeader.Ship.Class, SquadSystem.SquadLeader.InitialResourceLevels, Intensity);
+            Arcade.Instance.LaunchMission(MissionGame.Mode, SquadSystem.SquadLeader, Intensity);
         }
     }
 }

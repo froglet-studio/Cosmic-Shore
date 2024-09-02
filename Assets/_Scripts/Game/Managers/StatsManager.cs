@@ -12,8 +12,11 @@ public class StatsManager : Singleton<StatsManager>
     [SerializeField] List<GameObject> EndOfRoundStatContainers;
     [SerializeField] public bool nodeGame = false;
 
-    public Dictionary<Teams, RoundStats> teamStats = new();
-    public Dictionary<string, RoundStats> playerStats = new();
+    public Dictionary<Teams, RoundStats> TeamStats = new();
+    public Dictionary<string, RoundStats> PlayerStats = new();
+    
+    public Dictionary<Teams, RoundStats> LastRoundTeamStats = new();
+    public Dictionary<string, RoundStats> LastRoundPlayerStats = new();
 
     bool RecordStats = true;
 
@@ -25,21 +28,78 @@ public class StatsManager : Singleton<StatsManager>
         if (!MaybeCreateDictionaryEntries(ship.Team, ship.Player.PlayerName))
             return;
 
-        var roundStats = teamStats[ship.Team];
-        roundStats.crystalsCollected++;
-        if (crystalProperties.Element == Element.Omni)
-            roundStats.omniCrystalsCollected++;
-        else if (crystalProperties.IsElemental)
-            roundStats.elementalCrystalsCollected++;
-        teamStats[ship.Team] = roundStats;
+        Debug.Log($"CrystalCollected - recording stat - ship.Player.PlayerName:{ship.Player.PlayerName}, crystalProperties.Element:{crystalProperties.Element}, crystalProperties.crystalValue:{crystalProperties.crystalValue}");
 
-        roundStats = playerStats[ship.Player.PlayerName];
-        roundStats.crystalsCollected++;
-        if (crystalProperties.Element == Element.Omni)
-            roundStats.omniCrystalsCollected++;
-        else if (crystalProperties.IsElemental)
-            roundStats.elementalCrystalsCollected++;
-        playerStats[ship.Player.PlayerName] = roundStats;
+        RoundStats roundStats;
+        roundStats = TeamStats[ship.Team];
+        roundStats.CrystalsCollected++;
+        TeamStats[ship.Team] = roundStats;
+
+        roundStats = PlayerStats[ship.Player.PlayerName];
+        roundStats.CrystalsCollected++;
+        PlayerStats[ship.Player.PlayerName] = roundStats;
+
+        switch (crystalProperties.Element)
+        {
+            case Element.Omni:
+                roundStats = TeamStats[ship.Team];
+                roundStats.OmniCrystalsCollected++;
+                TeamStats[ship.Team] = roundStats;
+
+                roundStats = PlayerStats[ship.Player.PlayerName];
+                roundStats.OmniCrystalsCollected++;
+                PlayerStats[ship.Player.PlayerName] = roundStats;
+                break;
+            case Element.Charge:
+                roundStats = TeamStats[ship.Team];
+                roundStats.ElementalCrystalsCollected++;
+                roundStats.ChargeCrystalValue += crystalProperties.crystalValue;
+                TeamStats[ship.Team] = roundStats;
+
+                roundStats = PlayerStats[ship.Player.PlayerName];
+                roundStats.ElementalCrystalsCollected++;
+                roundStats.ChargeCrystalValue += crystalProperties.crystalValue;
+                PlayerStats[ship.Player.PlayerName] = roundStats;
+
+                Debug.Log($"CrystalCollected - recording stat - ship.Player.PlayerName:{ship.Player.PlayerName}, roundStats.ChargeCrystalValue:{roundStats.ChargeCrystalValue}"); 
+                Debug.Log($"CrystalCollected - recording stat - ship.Player.PlayerName:{ship.Player.PlayerName}, playerStats[ship.Player.PlayerName]:{PlayerStats[ship.Player.PlayerName]}"); 
+
+
+                break;
+            case Element.Mass:
+                roundStats = TeamStats[ship.Team];
+                roundStats.ElementalCrystalsCollected++;
+                roundStats.MassCrystalValue += crystalProperties.crystalValue;
+                TeamStats[ship.Team] = roundStats;
+
+                roundStats = PlayerStats[ship.Player.PlayerName];
+                roundStats.ElementalCrystalsCollected++;
+                roundStats.MassCrystalValue += crystalProperties.crystalValue;
+                PlayerStats[ship.Player.PlayerName] = roundStats;
+                break;
+            case Element.Space:
+                roundStats = TeamStats[ship.Team];
+                roundStats.ElementalCrystalsCollected++;
+                roundStats.SpaceCrystalValue += crystalProperties.crystalValue;
+                TeamStats[ship.Team] = roundStats;
+
+                roundStats = PlayerStats[ship.Player.PlayerName];
+                roundStats.ElementalCrystalsCollected++;
+                roundStats.SpaceCrystalValue += crystalProperties.crystalValue;
+                PlayerStats[ship.Player.PlayerName] = roundStats;
+                break;
+            case Element.Time:
+                roundStats = TeamStats[ship.Team];
+                roundStats.ElementalCrystalsCollected++;
+                roundStats.TimeCrystalValue += crystalProperties.crystalValue;
+                TeamStats[ship.Team] = roundStats;
+
+                roundStats = PlayerStats[ship.Player.PlayerName];
+                roundStats.ElementalCrystalsCollected++;
+                roundStats.TimeCrystalValue += crystalProperties.crystalValue;
+                PlayerStats[ship.Player.PlayerName] = roundStats;
+                break;
+        }
     }
 
     public void SkimmerShipCollision(Ship skimmingShip, Ship ship)
@@ -50,13 +110,13 @@ public class StatsManager : Singleton<StatsManager>
         if (!MaybeCreateDictionaryEntries(skimmingShip.Team, skimmingShip.Player.PlayerName))
             return;
 
-        var roundStats = teamStats[skimmingShip.Team];
-        roundStats.skimmerShipCollisions++;
-        teamStats[skimmingShip.Team] = roundStats;
+        var roundStats = TeamStats[skimmingShip.Team];
+        roundStats.SkimmerShipCollisions++;
+        TeamStats[skimmingShip.Team] = roundStats;
 
-        roundStats = playerStats[skimmingShip.Player.PlayerName];
-        roundStats.skimmerShipCollisions++;
-        playerStats[skimmingShip.Player.PlayerName] = roundStats;
+        roundStats = PlayerStats[skimmingShip.Player.PlayerName];
+        roundStats.SkimmerShipCollisions++;
+        PlayerStats[skimmingShip.Player.PlayerName] = roundStats;
     }
 
     public void BlockCreated(Teams creatingTeam, string creatingPlayerName, TrailBlockProperties createdTrailBlockProperties)
@@ -67,19 +127,19 @@ public class StatsManager : Singleton<StatsManager>
         if (!MaybeCreateDictionaryEntries(creatingTeam, creatingPlayerName))
             return;
 
-        var roundStats = teamStats[creatingTeam];
-        roundStats.blocksCreated++;
-        roundStats.blocksRemaining++;
-        roundStats.volumeCreated += createdTrailBlockProperties.volume;
-        roundStats.volumeRemaining += createdTrailBlockProperties.volume;
-        teamStats[creatingTeam] = roundStats;
+        var roundStats = TeamStats[creatingTeam];
+        roundStats.BlocksCreated++;
+        roundStats.BlocksRemaining++;
+        roundStats.VolumeCreated += createdTrailBlockProperties.volume;
+        roundStats.VolumeRemaining += createdTrailBlockProperties.volume;
+        TeamStats[creatingTeam] = roundStats;
 
-        roundStats = playerStats[creatingPlayerName];
-        roundStats.blocksCreated++;
-        roundStats.blocksRemaining++;
-        roundStats.volumeCreated += createdTrailBlockProperties.volume;
-        roundStats.volumeRemaining += createdTrailBlockProperties.volume;
-        playerStats[creatingPlayerName] = roundStats;
+        roundStats = PlayerStats[creatingPlayerName];
+        roundStats.BlocksCreated++;
+        roundStats.BlocksRemaining++;
+        roundStats.VolumeCreated += createdTrailBlockProperties.volume;
+        roundStats.VolumeRemaining += createdTrailBlockProperties.volume;
+        PlayerStats[creatingPlayerName] = roundStats;
     }
 
     public void BlockDestroyed(Teams destroyingTeam, string destroyingPlayerName, TrailBlockProperties destroyedTrailBlockProperties)
@@ -93,36 +153,36 @@ public class StatsManager : Singleton<StatsManager>
             return;
 
         // Team Destruction Stats
-        var roundStats = teamStats[destroyingTeam];
-        roundStats.blocksDestroyed++;
-        roundStats.friendlyBlocksDestroyed += destroyingTeam == destroyedTrailBlockProperties.trailBlock.Team ? 1 : 0;
-        roundStats.hostileBlocksDestroyed += destroyingTeam == destroyedTrailBlockProperties.trailBlock.Team ? 0 : 1;
-        roundStats.volumeDestroyed += destroyedTrailBlockProperties.volume;
-        roundStats.friendlyVolumeDestroyed += destroyingTeam == destroyedTrailBlockProperties.trailBlock.Team ? destroyedTrailBlockProperties.volume : 0;
-        roundStats.hostileVolumeDestroyed += destroyingTeam == destroyedTrailBlockProperties.trailBlock.Team ? 0 : destroyedTrailBlockProperties.volume;
-        teamStats[destroyingTeam] = roundStats;
+        var roundStats = TeamStats[destroyingTeam];
+        roundStats.BlocksDestroyed++;
+        roundStats.FriendlyBlocksDestroyed += destroyingTeam == destroyedTrailBlockProperties.trailBlock.Team ? 1 : 0;
+        roundStats.HostileBlocksDestroyed += destroyingTeam == destroyedTrailBlockProperties.trailBlock.Team ? 0 : 1;
+        roundStats.VolumeDestroyed += destroyedTrailBlockProperties.volume;
+        roundStats.FriendlyVolumeDestroyed += destroyingTeam == destroyedTrailBlockProperties.trailBlock.Team ? destroyedTrailBlockProperties.volume : 0;
+        roundStats.HostileVolumeDestroyed += destroyingTeam == destroyedTrailBlockProperties.trailBlock.Team ? 0 : destroyedTrailBlockProperties.volume;
+        TeamStats[destroyingTeam] = roundStats;
 
         // Team Remaining
-        roundStats = teamStats[destroyedTrailBlockProperties.trailBlock.Team];
-        roundStats.blocksRemaining--;
-        roundStats.volumeRemaining -= destroyedTrailBlockProperties.volume;
-        teamStats[destroyedTrailBlockProperties.trailBlock.Team] = roundStats;
+        roundStats = TeamStats[destroyedTrailBlockProperties.trailBlock.Team];
+        roundStats.BlocksRemaining--;
+        roundStats.VolumeRemaining -= destroyedTrailBlockProperties.volume;
+        TeamStats[destroyedTrailBlockProperties.trailBlock.Team] = roundStats;
 
         // Player Destruction Stats
-        roundStats = playerStats[destroyingPlayerName];
-        roundStats.blocksDestroyed++;
-        roundStats.friendlyBlocksDestroyed += destroyingTeam == destroyedTrailBlockProperties.trailBlock.Team ? 1 : 0;
-        roundStats.hostileBlocksDestroyed += destroyingTeam == destroyedTrailBlockProperties.trailBlock.Team ? 0 : 1;
-        roundStats.volumeDestroyed += destroyedTrailBlockProperties.volume;
-        roundStats.friendlyVolumeDestroyed += destroyingTeam == destroyedTrailBlockProperties.trailBlock.Team ? destroyedTrailBlockProperties.volume : 0;
-        roundStats.hostileVolumeDestroyed += destroyingTeam == destroyedTrailBlockProperties.trailBlock.Team ? 0 : destroyedTrailBlockProperties.volume;
-        playerStats[destroyingPlayerName] = roundStats;
+        roundStats = PlayerStats[destroyingPlayerName];
+        roundStats.BlocksDestroyed++;
+        roundStats.FriendlyBlocksDestroyed += destroyingTeam == destroyedTrailBlockProperties.trailBlock.Team ? 1 : 0;
+        roundStats.HostileBlocksDestroyed += destroyingTeam == destroyedTrailBlockProperties.trailBlock.Team ? 0 : 1;
+        roundStats.VolumeDestroyed += destroyedTrailBlockProperties.volume;
+        roundStats.FriendlyVolumeDestroyed += destroyingTeam == destroyedTrailBlockProperties.trailBlock.Team ? destroyedTrailBlockProperties.volume : 0;
+        roundStats.HostileVolumeDestroyed += destroyingTeam == destroyedTrailBlockProperties.trailBlock.Team ? 0 : destroyedTrailBlockProperties.volume;
+        PlayerStats[destroyingPlayerName] = roundStats;
 
         // Player Remaining
-        roundStats = playerStats[destroyedTrailBlockProperties.trailBlock.PlayerName];
-        roundStats.blocksRemaining--;
-        roundStats.volumeRemaining -= destroyedTrailBlockProperties.volume;
-        playerStats[destroyedTrailBlockProperties.trailBlock.PlayerName] = roundStats;
+        roundStats = PlayerStats[destroyedTrailBlockProperties.trailBlock.PlayerName];
+        roundStats.BlocksRemaining--;
+        roundStats.VolumeRemaining -= destroyedTrailBlockProperties.volume;
+        PlayerStats[destroyedTrailBlockProperties.trailBlock.PlayerName] = roundStats;
     }
 
     public void BlockRestored(Teams restoringTeam, string restoringPlayerName, TrailBlockProperties restoredTrailBlockProperties)
@@ -135,19 +195,19 @@ public class StatsManager : Singleton<StatsManager>
         if (!MaybeCreateDictionaryEntries(restoredTrailBlockProperties.trailBlock.Team, restoredTrailBlockProperties.trailBlock.PlayerName))
             return;
 
-        var roundStats = teamStats[restoringTeam];
-        roundStats.blocksRestored++;
-        roundStats.blocksRemaining++;
-        roundStats.volumeRestored += restoredTrailBlockProperties.volume;
-        roundStats.volumeRemaining += restoredTrailBlockProperties.volume;
-        teamStats[restoringTeam] = roundStats;
+        var roundStats = TeamStats[restoringTeam];
+        roundStats.BlocksRestored++;
+        roundStats.BlocksRemaining++;
+        roundStats.VolumeRestored += restoredTrailBlockProperties.volume;
+        roundStats.VolumeRemaining += restoredTrailBlockProperties.volume;
+        TeamStats[restoringTeam] = roundStats;
 
-        roundStats = playerStats[restoringPlayerName];
-        roundStats.blocksRestored++;
-        roundStats.blocksRemaining++;
-        roundStats.volumeRestored += restoredTrailBlockProperties.volume;
-        roundStats.volumeRemaining += restoredTrailBlockProperties.volume;
-        playerStats[restoringPlayerName] = roundStats;
+        roundStats = PlayerStats[restoringPlayerName];
+        roundStats.BlocksRestored++;
+        roundStats.BlocksRemaining++;
+        roundStats.VolumeRestored += restoredTrailBlockProperties.volume;
+        roundStats.VolumeRemaining += restoredTrailBlockProperties.volume;
+        PlayerStats[restoringPlayerName] = roundStats;
     }
 
     public void BlockVolumeModified(float volume, TrailBlockProperties modifiedTrailBlockProperties)
@@ -163,14 +223,14 @@ public class StatsManager : Singleton<StatsManager>
         // TODO: add Player modifying Stats separately for growth/shrink & friendly/hostyile
 
         // Team Remaining
-        var roundStats = teamStats[modifiedTrailBlockProperties.trailBlock.Team];
-        roundStats.volumeRemaining += volume;
-        teamStats[modifiedTrailBlockProperties.trailBlock.Team] = roundStats;
+        var roundStats = TeamStats[modifiedTrailBlockProperties.trailBlock.Team];
+        roundStats.VolumeRemaining += volume;
+        TeamStats[modifiedTrailBlockProperties.trailBlock.Team] = roundStats;
 
         // Player Remaining
-        roundStats = playerStats[modifiedTrailBlockProperties.trailBlock.PlayerName];
-        roundStats.volumeRemaining += volume;
-        playerStats[modifiedTrailBlockProperties.trailBlock.PlayerName] = roundStats;
+        roundStats = PlayerStats[modifiedTrailBlockProperties.trailBlock.PlayerName];
+        roundStats.VolumeRemaining += volume;
+        PlayerStats[modifiedTrailBlockProperties.trailBlock.PlayerName] = roundStats;
     }
 
     public void BlockStolen(Teams stealingTeam, string stealingPlayerName, TrailBlockProperties stolenTrailBlockProperties)
@@ -184,32 +244,32 @@ public class StatsManager : Singleton<StatsManager>
             return;
 
         // Team Stealing Stats
-        var roundStats = teamStats[stealingTeam];
-        roundStats.blocksStolen++;
-        roundStats.blocksRemaining++;
-        roundStats.volumeStolen += stolenTrailBlockProperties.volume;
-        roundStats.volumeRemaining += stolenTrailBlockProperties.volume;
-        teamStats[stealingTeam] = roundStats;
+        var roundStats = TeamStats[stealingTeam];
+        roundStats.BlocksStolen++;
+        roundStats.BlocksRemaining++;
+        roundStats.VolumeStolen += stolenTrailBlockProperties.volume;
+        roundStats.VolumeRemaining += stolenTrailBlockProperties.volume;
+        TeamStats[stealingTeam] = roundStats;
 
         // Player Stealing Stats
-        roundStats = playerStats[stealingPlayerName];
-        roundStats.blocksStolen++;
-        roundStats.blocksRemaining++;
-        roundStats.volumeStolen += stolenTrailBlockProperties.volume;
-        roundStats.volumeRemaining += stolenTrailBlockProperties.volume;
-        playerStats[stealingPlayerName] = roundStats;
+        roundStats = PlayerStats[stealingPlayerName];
+        roundStats.BlocksStolen++;
+        roundStats.BlocksRemaining++;
+        roundStats.VolumeStolen += stolenTrailBlockProperties.volume;
+        roundStats.VolumeRemaining += stolenTrailBlockProperties.volume;
+        PlayerStats[stealingPlayerName] = roundStats;
 
         // Team Remaining
-        roundStats = teamStats[stolenTrailBlockProperties.trailBlock.Team];
-        roundStats.blocksRemaining--;
-        roundStats.volumeRemaining -= stolenTrailBlockProperties.volume;
-        teamStats[stolenTrailBlockProperties.trailBlock.Team] = roundStats;
+        roundStats = TeamStats[stolenTrailBlockProperties.trailBlock.Team];
+        roundStats.BlocksRemaining--;
+        roundStats.VolumeRemaining -= stolenTrailBlockProperties.volume;
+        TeamStats[stolenTrailBlockProperties.trailBlock.Team] = roundStats;
 
         // Player Remaining
-        roundStats = playerStats[stolenTrailBlockProperties.trailBlock.PlayerName];
-        roundStats.blocksRemaining--;
-        roundStats.volumeRemaining -= stolenTrailBlockProperties.volume;
-        playerStats[stolenTrailBlockProperties.trailBlock.PlayerName] = roundStats;
+        roundStats = PlayerStats[stolenTrailBlockProperties.trailBlock.PlayerName];
+        roundStats.BlocksRemaining--;
+        roundStats.VolumeRemaining -= stolenTrailBlockProperties.volume;
+        PlayerStats[stolenTrailBlockProperties.trailBlock.PlayerName] = roundStats;
     }
 
     public void AbilityActivated(Teams team, string playerName, InputEvents abilityType, float duration)
@@ -224,67 +284,67 @@ public class StatsManager : Singleton<StatsManager>
         switch (abilityType)
         {
             case InputEvents.FullSpeedStraightAction:
-                roundStats = teamStats[team];
-                roundStats.fullSpeedStraightAbilityActiveTime += duration;
-                teamStats[team] = roundStats;
+                roundStats = TeamStats[team];
+                roundStats.FullSpeedStraightAbilityActiveTime += duration;
+                TeamStats[team] = roundStats;
 
-                roundStats = playerStats[playerName];
-                roundStats.fullSpeedStraightAbilityActiveTime += duration;
-                playerStats[playerName] = roundStats;
+                roundStats = PlayerStats[playerName];
+                roundStats.FullSpeedStraightAbilityActiveTime += duration;
+                PlayerStats[playerName] = roundStats;
                 break;
             case InputEvents.RightStickAction:
-                roundStats = teamStats[team];
-                roundStats.rightStickAbilityActiveTime += duration;
-                teamStats[team] = roundStats;
+                roundStats = TeamStats[team];
+                roundStats.RightStickAbilityActiveTime += duration;
+                TeamStats[team] = roundStats;
 
-                roundStats = playerStats[playerName];
-                roundStats.rightStickAbilityActiveTime += duration;
-                playerStats[playerName] = roundStats;
+                roundStats = PlayerStats[playerName];
+                roundStats.RightStickAbilityActiveTime += duration;
+                PlayerStats[playerName] = roundStats;
                 break;
             case InputEvents.LeftStickAction:
-                roundStats = teamStats[team];
-                roundStats.leftStickAbilityActiveTime += duration;
-                teamStats[team] = roundStats;
+                roundStats = TeamStats[team];
+                roundStats.LeftStickAbilityActiveTime += duration;
+                TeamStats[team] = roundStats;
 
-                roundStats = playerStats[playerName];
-                roundStats.leftStickAbilityActiveTime += duration;
-                playerStats[playerName] = roundStats;
+                roundStats = PlayerStats[playerName];
+                roundStats.LeftStickAbilityActiveTime += duration;
+                PlayerStats[playerName] = roundStats;
                 break;
             case InputEvents.FlipAction:
-                roundStats = teamStats[team];
-                roundStats.flipAbilityActiveTime += duration;
-                teamStats[team] = roundStats;
+                roundStats = TeamStats[team];
+                roundStats.FlipAbilityActiveTime += duration;
+                TeamStats[team] = roundStats;
 
-                roundStats = playerStats[playerName];
-                roundStats.flipAbilityActiveTime += duration;
-                playerStats[playerName] = roundStats;
+                roundStats = PlayerStats[playerName];
+                roundStats.FlipAbilityActiveTime += duration;
+                PlayerStats[playerName] = roundStats;
                 break;
             case InputEvents.Button1Action:
-                roundStats = teamStats[team];
-                roundStats.button1AbilityActiveTime += duration;
-                teamStats[team] = roundStats;
+                roundStats = TeamStats[team];
+                roundStats.Button1AbilityActiveTime += duration;
+                TeamStats[team] = roundStats;
 
-                roundStats = playerStats[playerName];
-                roundStats.button1AbilityActiveTime += duration;
-                playerStats[playerName] = roundStats;
+                roundStats = PlayerStats[playerName];
+                roundStats.Button1AbilityActiveTime += duration;
+                PlayerStats[playerName] = roundStats;
                 break;
             case InputEvents.Button2Action:
-                roundStats = teamStats[team];
-                roundStats.button2AbilityActiveTime += duration;
-                teamStats[team] = roundStats;
+                roundStats = TeamStats[team];
+                roundStats.Button2AbilityActiveTime += duration;
+                TeamStats[team] = roundStats;
 
-                roundStats = playerStats[playerName];
-                roundStats.button2AbilityActiveTime += duration;
-                playerStats[playerName] = roundStats;
+                roundStats = PlayerStats[playerName];
+                roundStats.Button2AbilityActiveTime += duration;
+                PlayerStats[playerName] = roundStats;
                 break;
             case InputEvents.Button3Action:
-                roundStats = teamStats[team];
-                roundStats.button3AbilityActiveTime += duration;
-                teamStats[team] = roundStats;
+                roundStats = TeamStats[team];
+                roundStats.Button3AbilityActiveTime += duration;
+                TeamStats[team] = roundStats;
 
-                roundStats = playerStats[playerName];
-                roundStats.button3AbilityActiveTime += duration;
-                playerStats[playerName] = roundStats;
+                roundStats = PlayerStats[playerName];
+                roundStats.Button3AbilityActiveTime += duration;
+                PlayerStats[playerName] = roundStats;
                 break;
         }
     }
@@ -311,22 +371,24 @@ public class StatsManager : Singleton<StatsManager>
     {
         try
         {
-            teamStats.TryAdd(team, new RoundStats());
+            TeamStats.TryAdd(team, new RoundStats());
 
-            playerStats.TryAdd(playerName, new RoundStats());
+            PlayerStats.TryAdd(playerName, new RoundStats());
         } catch (Exception e)
         {
             Debug.LogException(e);
         }
 
-        return teamStats.ContainsKey(team) && playerStats.ContainsKey(playerName);
+        return TeamStats.ContainsKey(team) && PlayerStats.ContainsKey(playerName);
     }
 
     public void ResetStats()
     {
+        LastRoundTeamStats = TeamStats;
+        LastRoundPlayerStats = PlayerStats;
         RecordStats = true;
-        teamStats = new Dictionary<Teams, RoundStats>();
-        playerStats = new Dictionary<string, RoundStats>();
+        TeamStats = new Dictionary<Teams, RoundStats>();
+        PlayerStats = new Dictionary<string, RoundStats>();
     }
 
     public void AddPlayer(Teams team, string playerName)
@@ -336,15 +398,15 @@ public class StatsManager : Singleton<StatsManager>
 
     public float GetTotalVolume()
     {
-        return teamStats.Values.Sum(stats => stats.volumeRemaining);
+        return TeamStats.Values.Sum(stats => stats.VolumeRemaining);
     }
 
     public Vector4 GetTeamVolumes()
     {
-        var greenVolume = teamStats.TryGetValue(Teams.Jade, out var teamStat) ? teamStat.volumeRemaining : 0;
-        var redVolume = teamStats.TryGetValue(Teams.Ruby, out teamStat) ? teamStat.volumeRemaining : 0;
-        var blueVolume = teamStats.TryGetValue(Teams.Blue, out teamStat) ? teamStat.volumeRemaining : 0;
-        var yellowVolume = teamStats.TryGetValue(Teams.Gold, out teamStat) ? teamStat.volumeRemaining : 0;
+        var greenVolume = TeamStats.TryGetValue(Teams.Jade, out var teamStat) ? teamStat.VolumeRemaining : 0;
+        var redVolume = TeamStats.TryGetValue(Teams.Ruby, out teamStat) ? teamStat.VolumeRemaining : 0;
+        var blueVolume = TeamStats.TryGetValue(Teams.Blue, out teamStat) ? teamStat.VolumeRemaining : 0;
+        var yellowVolume = TeamStats.TryGetValue(Teams.Gold, out teamStat) ? teamStat.VolumeRemaining : 0;
 
         return new Vector4(greenVolume, redVolume, blueVolume, yellowVolume);
     }
@@ -357,7 +419,7 @@ public class StatsManager : Singleton<StatsManager>
         string statsString = "<mspace=4.5px>\n";
         statsString += "<b>Field".PadRight(38) + " | ";
 
-        foreach (var playerName in playerStats.Keys)
+        foreach (var playerName in PlayerStats.Keys)
         {
             statsString += playerName.PadRight(10) + " | ";
         }
@@ -368,9 +430,9 @@ public class StatsManager : Singleton<StatsManager>
         {
             string statValues = fieldInfo.Name.PadRight(35) + " | ";
 
-            foreach (var playerName in playerStats.Keys)
+            foreach (var playerName in PlayerStats.Keys)
             {
-                object fieldValue = fieldInfo.GetValue(playerStats[playerName]);
+                object fieldValue = fieldInfo.GetValue(PlayerStats[playerName]);
                 statValues += fieldValue.ToString().PadRight(10) + " | ";
             }
 
@@ -380,11 +442,11 @@ public class StatsManager : Singleton<StatsManager>
         statsString += "</mspace=4.5px>";
 
         Debug.Log(statsString.ToString());
-        Debug.Log(JsonConvert.SerializeObject(playerStats, Formatting.Indented));
-        Debug.Log(JsonConvert.SerializeObject(teamStats, Formatting.Indented));
+        Debug.Log(JsonConvert.SerializeObject(PlayerStats, Formatting.Indented));
+        Debug.Log(JsonConvert.SerializeObject(TeamStats, Formatting.Indented));
 
         int i = 0;
-        foreach (var team in teamStats.Keys)
+        foreach (var team in TeamStats.Keys)
         {
             var container = EndOfRoundStatContainers[i];
             Debug.Log($"Team Stats - Team:{team}");
@@ -392,23 +454,23 @@ public class StatsManager : Singleton<StatsManager>
         }
 
         i = 0;
-        foreach (var player in playerStats.Keys)
+        foreach (var player in PlayerStats.Keys)
         {
             Debug.Log($"PlayerStats - Player:{player}");
 
             var container = EndOfRoundStatContainers[i];
             container.transform.GetChild(0).GetComponent<TMP_Text>().text = player;
-            container.transform.GetChild(1).GetComponent<TMP_Text>().text = playerStats[player].volumeCreated.ToString("F0");
-            container.transform.GetChild(2).GetComponent<TMP_Text>().text = playerStats[player].hostileVolumeDestroyed.ToString("F0");
+            container.transform.GetChild(1).GetComponent<TMP_Text>().text = PlayerStats[player].VolumeCreated.ToString("F0");
+            container.transform.GetChild(2).GetComponent<TMP_Text>().text = PlayerStats[player].HostileVolumeDestroyed.ToString("F0");
             //Individual Impact or Score
-            container.transform.GetChild(3).GetComponent<TMP_Text>().text = (playerStats[player].volumeCreated + playerStats[player].hostileVolumeDestroyed
-                                                                            - playerStats[player].friendlyVolumeDestroyed + (2 * playerStats[player].volumeStolen)).ToString("F0");
+            container.transform.GetChild(3).GetComponent<TMP_Text>().text = (PlayerStats[player].VolumeCreated + PlayerStats[player].HostileVolumeDestroyed
+                                                                            - PlayerStats[player].FriendlyVolumeDestroyed + (2 * PlayerStats[player].VolumeStolen)).ToString("F0");
 
             i++;
         }
 
         //Calculate  and display winner
-        var finalScore = teamStats[Teams.Jade].volumeRemaining - teamStats[Teams.Ruby].volumeRemaining;
+        var finalScore = TeamStats[Teams.Jade].VolumeRemaining - TeamStats[Teams.Ruby].VolumeRemaining;
         var winner = finalScore > 0 ? "Green" : "Red";
         Debug.Log($"Winner: {winner}");
     }

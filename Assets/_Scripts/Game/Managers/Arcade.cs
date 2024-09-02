@@ -1,5 +1,6 @@
 ﻿using CosmicShore.App.UI;
 using CosmicShore.Game.Arcade;
+using CosmicShore.Integrations.PlayFab.Economy;
 using CosmicShore.Models.Enums;
 using CosmicShore.Utility.Singleton;
 using System.Collections;
@@ -20,7 +21,7 @@ namespace CosmicShore.Core
         [field: SerializeField] public SO_TrainingGameList TrainingGames { get; private set; }
         Dictionary<MiniGames, SO_ArcadeGame> ArcadeGameLookup = new();
         Dictionary<MiniGames, SO_TrainingGame> TrainingGameLookup = new();
-        Dictionary<MiniGames, SO_ArcadeGame> FactionMissionLookup = new();
+        Dictionary<MiniGames, SO_ArcadeGame> MissionLookup = new();
         Animator SceneTransitionAnimator;
 
         public override void Awake()
@@ -34,23 +35,25 @@ namespace CosmicShore.Core
                 TrainingGameLookup.Add(trainingGame.Game.Mode, trainingGame);
 
             foreach (var game in FactionMissionGames.GameList)
-                FactionMissionLookup.Add(game.Mode, game);
+                MissionLookup.Add(game.Mode, game);
         }
 
-        public void LaunchFactionMission(MiniGames gameMode, ShipTypes ship, ResourceCollection shipResources, int intensity)
+        public void LaunchMission(MiniGames gameMode, SO_Captain captain, int intensity)
         {
-            MiniGame.PlayerShipType = ship;
-            MiniGame.ShipResources = shipResources;
+            MiniGame.PlayerCaptain = captain;
+            MiniGame.PlayerShipType = captain.Ship.Class;
+            MiniGame.ShipResources = CaptainManager.Instance.GetCaptainByName(captain.Name).ResourceLevels;
             MiniGame.IntensityLevel = intensity;
             MiniGame.NumberOfPlayers = 1;
             MiniGame.IsDailyChallenge = false;
+            MiniGame.IsMission = true;
             Hangar.Instance.SetAiDifficultyLevel(intensity);
 
-            var screenSwitcher = GameObject.FindAnyObjectByType< ScreenSwitcher>();
+            var screenSwitcher = GameObject.FindAnyObjectByType<ScreenSwitcher>();
             screenSwitcher.SetReturnToScreen(ScreenSwitcher.MenuScreens.PORT);
             screenSwitcher.SetReturnToModal(ScreenSwitcher.ModalWindows.FACTION_MISSION);
 
-            StartCoroutine(LaunchGameCoroutine(FactionMissionLookup[gameMode].SceneName));
+            StartCoroutine(LaunchGameCoroutine(MissionLookup[gameMode].SceneName));
         }
 
         public void LaunchArcadeGame(MiniGames gameMode, ShipTypes ship, ResourceCollection shipResources, int intensity, int numberOfPlayers, bool isDailyChallenge = false)

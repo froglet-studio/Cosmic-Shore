@@ -23,8 +23,8 @@ namespace CosmicShore.Core
             {
                 currentBoost = value;
 
-                if (ResourceDisplays.BoostDisplay != null)
-                    ResourceDisplays.BoostDisplay.UpdateDisplay(currentBoost);
+                if (ResourceDisplays?.BoostDisplay != null)
+                    ResourceDisplays?.BoostDisplay.UpdateDisplay(currentBoost);
             }
         }
 
@@ -45,8 +45,8 @@ namespace CosmicShore.Core
             {
                 currentAmmo = value;
 
-                if (ResourceDisplays.AmmoDisplay != null)
-                    ResourceDisplays.AmmoDisplay.UpdateDisplay(currentAmmo);
+                if (ResourceDisplays?.AmmoDisplay != null)
+                    ResourceDisplays?.AmmoDisplay.UpdateDisplay(currentAmmo);
 
                 OnAmmoChange?.Invoke(currentAmmo);
             }
@@ -65,8 +65,8 @@ namespace CosmicShore.Core
             {
                 currentEnergy = value;
 
-                if (ResourceDisplays.EnergyDisplay != null)
-                    ResourceDisplays.EnergyDisplay.UpdateDisplay(currentEnergy);
+                if (ResourceDisplays?.EnergyDisplay != null)
+                    ResourceDisplays?.EnergyDisplay.UpdateDisplay(currentEnergy);
             }
         }
         public float MaxEnergy { get { return maxEnergy; } }
@@ -90,9 +90,9 @@ namespace CosmicShore.Core
 
             BindElementalFloats(GetComponent<Ship>());
 
-            ResourceDisplays.BoostDisplay?.gameObject.SetActive(displayBoost);
-            ResourceDisplays.AmmoDisplay?.gameObject.SetActive(displayAmmo);
-            ResourceDisplays.EnergyDisplay?.gameObject.SetActive(displayEnergy);
+            ResourceDisplays?.BoostDisplay?.gameObject.SetActive(displayBoost);
+            ResourceDisplays?.AmmoDisplay?.gameObject.SetActive(displayAmmo);
+            ResourceDisplays?.EnergyDisplay?.gameObject.SetActive(displayEnergy);
 
             // Notify elemental floats of initial elemental levels
             OnElementLevelChange?.Invoke(Element.Charge, Mathf.FloorToInt(ChargeLevel * MaxLevel));
@@ -173,21 +173,7 @@ namespace CosmicShore.Core
         /********************************/
         /*  ELEMENTAL LEVELS STUFF HERE */
         /********************************/
-
-        public delegate void ElementLevelChange(Element element, int level);
-        public event ElementLevelChange OnElementLevelChange;
-
-        const float MaxElementalLevel = 1;
-        const int MaxLevel = 10;
-
-        [Tooltip("Serialized for debug visibility")]
-        [SerializeField] float chargeLevel;
-        [Tooltip("Serialized for debug visibility")]
-        [SerializeField] float massLevel;
-        [Tooltip("Serialized for debug visibility")]
-        [SerializeField] float spaceLevel;
-        [Tooltip("Serialized for debug visibility")]
-        [SerializeField] float timeLevel;
+        [Header("Elemental Levels")]
         [Tooltip("Convience Property for creating and tuning pilot elemental parameters - if set to zero, will not be used")]
         [SerializeField][Range(0, 1)] float ChargeTestHarness;
         [Tooltip("Convience Property for creating and tuning pilot elemental parameters - if set to zero, will not be used")]
@@ -197,27 +183,20 @@ namespace CosmicShore.Core
         [Tooltip("Convience Property for creating and tuning pilot elemental parameters - if set to zero, will not be used")]
         [SerializeField][Range(0, 1)] float TimeTestHarness;
 
-        public float ChargeLevel
-        {
-            get => chargeLevel;
-            private set => chargeLevel = value;
-        }
-        public float MassLevel
-        {
-            get => massLevel;
-            private set => massLevel = value;
-        }
-        public float SpaceLevel
-        {
-            get => spaceLevel;
-            private set => spaceLevel = value;
-        }
-        public float TimeLevel
-        {
-            get => timeLevel;
-            private set => timeLevel = value;
-        }
+        [Tooltip("Serialized for debug visibility")]
+        [field: SerializeField] public float ChargeLevel { get; private set; }
+        [Tooltip("Serialized for debug visibility")]
+        [field: SerializeField] public float MassLevel { get; private set; }
+        [Tooltip("Serialized for debug visibility")]
+        [field: SerializeField] public float SpaceLevel { get; private set; }
+        [Tooltip("Serialized for debug visibility")]
+        [field: SerializeField] public float TimeLevel { get; private set; }
 
+        public delegate void ElementLevelChange(Element element, int level);
+        public event ElementLevelChange OnElementLevelChange;
+
+        const float MaxElementalLevel = 1;
+        const int MaxLevel = 10;
         Dictionary<Element, float> ElementalLevels = new();
         Dictionary<Element, ResourceDisplay> ElementalDisplays = new();
 
@@ -227,10 +206,10 @@ namespace CosmicShore.Core
             ElementalLevels[Element.Mass] = resourceGroup.Mass;
             ElementalLevels[Element.Space] = resourceGroup.Space;
             ElementalLevels[Element.Time] = resourceGroup.Time;
-            ElementalDisplays[Element.Charge] = ResourceDisplays.ChargeLevelDisplay;
-            ElementalDisplays[Element.Mass] = ResourceDisplays.MassLevelDisplay;
-            ElementalDisplays[Element.Space] = ResourceDisplays.SpaceLevelDisplay;
-            ElementalDisplays[Element.Time] = ResourceDisplays.TimeLevelDisplay;
+            ElementalDisplays[Element.Charge] = ResourceDisplays?.ChargeLevelDisplay;
+            ElementalDisplays[Element.Mass] = ResourceDisplays?.MassLevelDisplay;
+            ElementalDisplays[Element.Space] = ResourceDisplays?.SpaceLevelDisplay;
+            ElementalDisplays[Element.Time] = ResourceDisplays?.TimeLevelDisplay;
         }
 
         public int GetLevel(Element element)

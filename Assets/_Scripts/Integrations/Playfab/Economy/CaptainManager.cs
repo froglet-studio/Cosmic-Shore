@@ -174,6 +174,10 @@ namespace CosmicShore.Integrations.PlayFab.Economy
         {
             return captainData.AllCaptains.Values.ToList();
         }
+        public List<SO_Captain> GetAllSOCaptains()
+        {
+            return AllCaptains.CaptainList;
+        }
 
         public int GetCaptainUpgradeXPRequirement(Captain captain)
         {

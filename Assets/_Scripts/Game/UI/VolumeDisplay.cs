@@ -24,10 +24,10 @@ namespace CosmicShore.Game.UI
         {
             if (StatsManager.Instance != null)
             {
-                var teamStats = StatsManager.Instance.teamStats;
-                var greenVolume = teamStats.ContainsKey(Teams.Jade) ? teamStats[Teams.Jade].volumeRemaining : 0f;
-                var redVolume = teamStats.ContainsKey(Teams.Ruby) ? teamStats[Teams.Ruby].volumeRemaining : 0f;
-                var goldVolume = teamStats.ContainsKey(Teams.Gold) ? teamStats[Teams.Gold].volumeRemaining : 0f;
+                var teamStats = StatsManager.Instance.TeamStats;
+                var greenVolume = teamStats.ContainsKey(Teams.Jade) ? teamStats[Teams.Jade].VolumeRemaining : 0f;
+                var redVolume = teamStats.ContainsKey(Teams.Ruby) ? teamStats[Teams.Ruby].VolumeRemaining : 0f;
+                var goldVolume = teamStats.ContainsKey(Teams.Gold) ? teamStats[Teams.Gold].VolumeRemaining : 0f;
                 AdjustRadii(greenVolume / upperBound, redVolume / upperBound, goldVolume / upperBound);
             }
         }

@@ -225,9 +225,11 @@ namespace CosmicShore.Integrations.PlayFab.Economy
                 return;
             }
 
-            var request = new AddInventoryItemsRequest();
-            request.Amount = amount;
-            request.Item = new InventoryItemReference() { Id = crystalItemId };
+            var request = new AddInventoryItemsRequest
+            {
+                Amount = amount,
+                Item = new InventoryItemReference() { Id = crystalItemId }
+            };
 
             _playFabEconomyInstanceAPI.AddInventoryItems(
                 request,

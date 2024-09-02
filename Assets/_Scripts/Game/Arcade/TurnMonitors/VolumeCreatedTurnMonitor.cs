@@ -21,12 +21,12 @@ namespace CosmicShore.Game.Arcade
         {
             team = hostileVolume ? Teams.Ruby : Teams.Jade;
 
-            while (!StatsManager.Instance.teamStats.ContainsKey(team))
+            while (!StatsManager.Instance.TeamStats.ContainsKey(team))
             {
                 yield return null; // Wait for the next frame
             }
 
-            volumeStat = StatsManager.Instance.teamStats[team];
+            volumeStat = StatsManager.Instance.TeamStats[team];
             // Any additional logic once the red team is available
         }
 
@@ -34,7 +34,7 @@ namespace CosmicShore.Game.Arcade
         {
             if (paused) return false;
 
-            return StatsManager.Instance.teamStats[team].volumeCreated > Amount;
+            return StatsManager.Instance.TeamStats[team].VolumeCreated > Amount;
         }
 
         public override void NewTurn(string playerName)
@@ -44,8 +44,8 @@ namespace CosmicShore.Game.Arcade
 
         private void Update()
         {
-            if (Display != null && StatsManager.Instance.teamStats.ContainsKey(team))
-                Display.text = ((int)((Amount - StatsManager.Instance.teamStats[team].volumeCreated) / 145.65)).ToString();
+            if (Display != null && StatsManager.Instance.TeamStats.ContainsKey(team))
+                Display.text = ((int)((Amount - StatsManager.Instance.TeamStats[team].VolumeCreated) / 145.65)).ToString();
         }
     }
 }

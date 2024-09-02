@@ -34,7 +34,7 @@ namespace CosmicShore.Game.Arcade
 
             // TODO: pull this out into an "EliminationMonitor" class
             // if any volume was destroyed, there must have been a collision
-            if (StatsManager.Instance.playerStats.ContainsKey(ActivePlayer.PlayerName) && StatsManager.Instance.playerStats[ActivePlayer.PlayerName].volumeDestroyed > 0)
+            if (StatsManager.Instance.PlayerStats.ContainsKey(ActivePlayer.PlayerName) && StatsManager.Instance.PlayerStats[ActivePlayer.PlayerName].VolumeDestroyed > 0)
             {
                 EliminateActivePlayer();
                 EndTurn();

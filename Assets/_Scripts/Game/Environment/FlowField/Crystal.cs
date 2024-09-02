@@ -69,6 +69,7 @@ namespace CosmicShore.Environment.FlowField
 
         protected virtual void Start()
         {
+            crystalProperties.crystalValue = crystalProperties.fuelAmount * transform.lossyScale.x;
             AddSelfToNode();
         }
 
@@ -107,7 +108,7 @@ namespace CosmicShore.Environment.FlowField
                         AOEExplosion.AnonymousExplosion = true;
                         break;
                     case CrystalImpactEffects.IncrementLevel:
-                        ship.ResourceSystem.AdjustLevel(crystalProperties.Element, transform.lossyScale.x*crystalProperties.fuelAmount);
+                        ship.ResourceSystem.AdjustLevel(crystalProperties.Element, crystalProperties.crystalValue);
                         break;
                 }
             }
@@ -120,6 +121,7 @@ namespace CosmicShore.Environment.FlowField
 
             if (other.gameObject.IsLayer("Ships"))
             {
+                Debug.Log("CrystalCollected via ship");
                 ship = other.GetComponent<ShipGeometry>().Ship;
                 if (Team == Teams.None || Team == ship.Team)
                 {
@@ -132,13 +134,15 @@ namespace CosmicShore.Environment.FlowField
                             aiPilot.throttle = aiPilot.defaultThrottle;
                         }
                     }
-                    else if (StatsManager.Instance != null)
+                    
+                    if (StatsManager.Instance != null)
                         StatsManager.Instance.CrystalCollected(ship, crystalProperties);
                 }
                 else return;
             }
             else if (other.gameObject.IsLayer("Projectiles"))
             {
+                Debug.Log("CrystalCollected via projectile");
                 ship = other.GetComponent<Projectile>().Ship;
                 projectile = other.GetComponent<Projectile>();
                 if (Team == Teams.None || Team == ship.Team)
@@ -152,7 +156,8 @@ namespace CosmicShore.Environment.FlowField
                             aiPilot.throttle = aiPilot.defaultThrottle;
                         }
                     }
-                    else if (StatsManager.Instance != null)
+                    
+                    if (StatsManager.Instance != null)
                         StatsManager.Instance.CrystalCollected(ship, crystalProperties);
                 }
                 else return;

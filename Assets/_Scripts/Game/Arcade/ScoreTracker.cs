@@ -53,16 +53,16 @@ namespace CosmicShore.Game.Arcade
                 switch (ScoringMode)
                 {
                     case ScoringModes.HostileVolumeDestroyed:
-                        if (StatsManager.Instance.playerStats.ContainsKey(currentPlayerName))
-                            score = playerScores[currentPlayerName] + StatsManager.Instance.playerStats[currentPlayerName].hostileVolumeDestroyed / ScoreNormalizationQuotient;
+                        if (StatsManager.Instance.PlayerStats.ContainsKey(currentPlayerName))
+                            score = playerScores[currentPlayerName] + StatsManager.Instance.PlayerStats[currentPlayerName].HostileVolumeDestroyed / ScoreNormalizationQuotient;
                         break;
                     case ScoringModes.VolumeCreated:
-                        if (StatsManager.Instance.playerStats.ContainsKey(currentPlayerName))
-                            score = playerScores[currentPlayerName] + StatsManager.Instance.playerStats[currentPlayerName].volumeCreated;
+                        if (StatsManager.Instance.PlayerStats.ContainsKey(currentPlayerName))
+                            score = playerScores[currentPlayerName] + StatsManager.Instance.PlayerStats[currentPlayerName].VolumeCreated;
                         break;
                     case ScoringModes.VolumeStolen:
-                        if (StatsManager.Instance.playerStats.ContainsKey(currentPlayerName))
-                            score = playerScores[currentPlayerName] + StatsManager.Instance.playerStats[currentPlayerName].volumeStolen;
+                        if (StatsManager.Instance.PlayerStats.ContainsKey(currentPlayerName))
+                            score = playerScores[currentPlayerName] + StatsManager.Instance.PlayerStats[currentPlayerName].VolumeStolen;
                         break;
                     case ScoringModes.TimePlayed:
                         score = playerScores[currentPlayerName] + (Time.time - turnStartTime) * TimePlayedScoreMultiplier;
@@ -71,27 +71,27 @@ namespace CosmicShore.Game.Arcade
                         score = turnsPlayed;
                         break;
                     case ScoringModes.BlocksStolen:
-                        if (StatsManager.Instance.playerStats.ContainsKey(currentPlayerName))
-                            score = playerScores[currentPlayerName] + StatsManager.Instance.playerStats[currentPlayerName].blocksStolen;
+                        if (StatsManager.Instance.PlayerStats.ContainsKey(currentPlayerName))
+                            score = playerScores[currentPlayerName] + StatsManager.Instance.PlayerStats[currentPlayerName].BlocksStolen;
                         break;
                     case ScoringModes.TeamVolumeDifference:
-                        var teamStats = StatsManager.Instance.teamStats;  // TODO: Hardcoded player team to Green... reconsider
-                        var greenVolume = teamStats.ContainsKey(Teams.Jade) ? teamStats[Teams.Jade].volumeRemaining : 0f;
-                        var redVolume = teamStats.ContainsKey(Teams.Ruby) ? teamStats[Teams.Ruby].volumeRemaining : 0f;
+                        var teamStats = StatsManager.Instance.TeamStats;  // TODO: Hardcoded player team to Green... reconsider
+                        var greenVolume = teamStats.ContainsKey(Teams.Jade) ? teamStats[Teams.Jade].VolumeRemaining : 0f;
+                        var redVolume = teamStats.ContainsKey(Teams.Ruby) ? teamStats[Teams.Ruby].VolumeRemaining : 0f;
 
                         score = (greenVolume - redVolume) / ScoreNormalizationQuotient;
                         break;
                     case ScoringModes.CrystalsCollected:
-                        if (StatsManager.Instance.playerStats.ContainsKey(currentPlayerName))
-                            score = playerScores[currentPlayerName] + StatsManager.Instance.playerStats[currentPlayerName].crystalsCollected;
+                        if (StatsManager.Instance.PlayerStats.ContainsKey(currentPlayerName))
+                            score = playerScores[currentPlayerName] + StatsManager.Instance.PlayerStats[currentPlayerName].CrystalsCollected;
                         break;
                     case ScoringModes.OmnirystalsCollected:
-                        if (StatsManager.Instance.playerStats.ContainsKey(currentPlayerName))
-                            score = playerScores[currentPlayerName] + StatsManager.Instance.playerStats[currentPlayerName].omniCrystalsCollected;
+                        if (StatsManager.Instance.PlayerStats.ContainsKey(currentPlayerName))
+                            score = playerScores[currentPlayerName] + StatsManager.Instance.PlayerStats[currentPlayerName].OmniCrystalsCollected;
                         break;
                     case ScoringModes.ElementalCrystalsCollected:
-                        if (StatsManager.Instance.playerStats.ContainsKey(currentPlayerName))
-                            score = playerScores[currentPlayerName] + StatsManager.Instance.playerStats[currentPlayerName].elementalCrystalsCollected;
+                        if (StatsManager.Instance.PlayerStats.ContainsKey(currentPlayerName))
+                            score = playerScores[currentPlayerName] + StatsManager.Instance.PlayerStats[currentPlayerName].ElementalCrystalsCollected;
                         break;
                 }
 
@@ -106,18 +106,18 @@ namespace CosmicShore.Game.Arcade
             switch (ScoringMode)
             {
                 case ScoringModes.HostileVolumeDestroyed:
-                    if (StatsManager.Instance.playerStats.ContainsKey(currentPlayerName))
-                        playerScores[currentPlayerName] += StatsManager.Instance.playerStats[currentPlayerName].hostileVolumeDestroyed / ScoreNormalizationQuotient;
+                    if (StatsManager.Instance.PlayerStats.ContainsKey(currentPlayerName))
+                        playerScores[currentPlayerName] += StatsManager.Instance.PlayerStats[currentPlayerName].HostileVolumeDestroyed / ScoreNormalizationQuotient;
                     StatsManager.Instance.ResetStats();
                     break;
                 case ScoringModes.VolumeCreated:
-                    if (StatsManager.Instance.playerStats.ContainsKey(currentPlayerName))
-                        playerScores[currentPlayerName] += StatsManager.Instance.playerStats[currentPlayerName].volumeCreated;
+                    if (StatsManager.Instance.PlayerStats.ContainsKey(currentPlayerName))
+                        playerScores[currentPlayerName] += StatsManager.Instance.PlayerStats[currentPlayerName].VolumeCreated;
                     StatsManager.Instance.ResetStats();
                     break;
                 case ScoringModes.VolumeStolen:
-                    if (StatsManager.Instance.playerStats.ContainsKey(currentPlayerName))
-                        playerScores[currentPlayerName] += StatsManager.Instance.playerStats[currentPlayerName].volumeStolen;
+                    if (StatsManager.Instance.PlayerStats.ContainsKey(currentPlayerName))
+                        playerScores[currentPlayerName] += StatsManager.Instance.PlayerStats[currentPlayerName].VolumeStolen;
                     StatsManager.Instance.ResetStats();
                     break;
                 case ScoringModes.TimePlayed:
@@ -127,14 +127,14 @@ namespace CosmicShore.Game.Arcade
                     playerScores[currentPlayerName] = turnsPlayed;
                     break;
                 case ScoringModes.BlocksStolen:
-                    if (StatsManager.Instance.playerStats.ContainsKey(currentPlayerName))
-                        playerScores[currentPlayerName] += StatsManager.Instance.playerStats[currentPlayerName].blocksStolen;
+                    if (StatsManager.Instance.PlayerStats.ContainsKey(currentPlayerName))
+                        playerScores[currentPlayerName] += StatsManager.Instance.PlayerStats[currentPlayerName].BlocksStolen;
                     StatsManager.Instance.ResetStats();
                     break;
                 case ScoringModes.TeamVolumeDifference:
-                    var teamStats = StatsManager.Instance.teamStats;
-                    var greenVolume = teamStats.ContainsKey(Teams.Jade) ? teamStats[Teams.Jade].volumeRemaining : 0f;
-                    var redVolume = teamStats.ContainsKey(Teams.Ruby) ? teamStats[Teams.Ruby].volumeRemaining : 0f;
+                    var teamStats = StatsManager.Instance.TeamStats;
+                    var greenVolume = teamStats.ContainsKey(Teams.Jade) ? teamStats[Teams.Jade].VolumeRemaining : 0f;
+                    var redVolume = teamStats.ContainsKey(Teams.Ruby) ? teamStats[Teams.Ruby].VolumeRemaining : 0f;
                     playerScores[currentPlayerName] = (greenVolume - redVolume) / ScoreNormalizationQuotient;
                     StatsManager.Instance.ResetStats();
                     break;
