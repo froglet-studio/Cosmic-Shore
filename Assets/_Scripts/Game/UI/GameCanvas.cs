@@ -16,7 +16,7 @@ namespace CosmicShore.Game.UI
         [SerializeField] public Scoreboard scoreboard;
 
         [Header("Goodies and Awards")]
-        [SerializeField] GameObject AwardsContainer;
+        [SerializeField] public GameObject AwardsContainer;
         [SerializeField] public TMP_Text XPEarnedText;
         [SerializeField] public Image CrystalsEarnedImage;
         [SerializeField] public TMP_Text CrystalsEarnedText;

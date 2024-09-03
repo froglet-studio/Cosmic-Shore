@@ -285,32 +285,38 @@ namespace CosmicShore.Game.Arcade
             }
             else if (IsMission)
             {
+                GameCanvas.AwardsContainer.SetActive(true);
                 // Award Crystals
                 Debug.Log($"Mission EndGame - Award Mission Crystals -  score:{ScoreTracker.GetHighScore()}");
                 Debug.Log($"Mission EndGame - Award Mission Crystals -  element:{PlayerCaptain.PrimaryElement}");
+                int crystalsEarned = 0;
                 switch (PlayerCaptain.PrimaryElement)
                 {
                     case Element.Charge:
-                        Debug.Log($"Mission EndGame - Award Mission Crystals - Player has earned {StatsManager.Instance.LastRoundPlayerStats[PlayerDataController.PlayerProfile.DisplayName].ChargeCrystalValue*100} {PlayerCaptain.PrimaryElement} crystals");
-                        CatalogManager.Instance.GrantElementalCrystals((int)(StatsManager.Instance.LastRoundPlayerStats[PlayerDataController.PlayerProfile.DisplayName].ChargeCrystalValue*100), Element.Charge);
+                        crystalsEarned = (int)(StatsManager.Instance.LastRoundPlayerStats[PlayerDataController.PlayerProfile.DisplayName].ChargeCrystalValue * 100);
+                        CatalogManager.Instance.GrantElementalCrystals(crystalsEarned, Element.Charge);
                         break;
                     case Element.Mass:
-                        Debug.Log($"Mission EndGame - Award Mission Crystals - Player has earned {StatsManager.Instance.LastRoundPlayerStats[PlayerDataController.PlayerProfile.DisplayName].MassCrystalValue * 100} {PlayerCaptain.PrimaryElement} crystals");
-                        CatalogManager.Instance.GrantElementalCrystals((int)(StatsManager.Instance.LastRoundPlayerStats[PlayerDataController.PlayerProfile.DisplayName].MassCrystalValue * 100), Element.Mass);
+                        crystalsEarned = (int)(StatsManager.Instance.LastRoundPlayerStats[PlayerDataController.PlayerProfile.DisplayName].MassCrystalValue * 100);
+                        CatalogManager.Instance.GrantElementalCrystals(crystalsEarned, Element.Mass);
                         break;
                     case Element.Space:
-                        Debug.Log($"Mission EndGame - Award Mission Crystals - Player has earned {StatsManager.Instance.LastRoundPlayerStats[PlayerDataController.PlayerProfile.DisplayName].SpaceCrystalValue * 100} {PlayerCaptain.PrimaryElement} crystals");
-                        CatalogManager.Instance.GrantElementalCrystals((int)(StatsManager.Instance.LastRoundPlayerStats[PlayerDataController.PlayerProfile.DisplayName].SpaceCrystalValue * 100), Element.Space);
+                        crystalsEarned = (int)(StatsManager.Instance.LastRoundPlayerStats[PlayerDataController.PlayerProfile.DisplayName].SpaceCrystalValue * 100);
+                        CatalogManager.Instance.GrantElementalCrystals(crystalsEarned, Element.Space);
                         break;
                     case Element.Time:
-                        Debug.Log($"Mission EndGame - Award Mission Crystals - Player has earned {StatsManager.Instance.LastRoundPlayerStats[PlayerDataController.PlayerProfile.DisplayName].TimeCrystalValue * 100} {PlayerCaptain.PrimaryElement} crystals");
-                        CatalogManager.Instance.GrantElementalCrystals((int)(StatsManager.Instance.LastRoundPlayerStats[PlayerDataController.PlayerProfile.DisplayName].TimeCrystalValue * 100), Element.Time);
+                        crystalsEarned = (int)(StatsManager.Instance.LastRoundPlayerStats[PlayerDataController.PlayerProfile.DisplayName].TimeCrystalValue * 100);
+                        CatalogManager.Instance.GrantElementalCrystals(crystalsEarned, Element.Time);
                         break;
                 }
+                Debug.Log($"Mission EndGame - Award Mission Crystals - Player has earned {crystalsEarned} crystals");
+                GameCanvas.CrystalsEarnedImage.sprite = CaptainManager.Instance.GetCaptainByName(PlayerCaptain.Name).SO_Element.GetFullIcon(true);
+                GameCanvas.CrystalsEarnedText.text = crystalsEarned.ToString();
 
                 // Award XP
                 Debug.Log($"Mission EndGame - Award Mission XP -  score:{ScoreTracker.GetHighScore()}, element:{PlayerCaptain.PrimaryElement}");
                 XpHandler.IssueXP(CaptainManager.Instance.GetCaptainByName(PlayerCaptain.Name), 10);
+                GameCanvas.XPEarnedText.text = "10";
 
                 // Report any encountered captains
                 Debug.Log($"Mission EndGame - Unlock Mission Captains");
@@ -318,6 +324,7 @@ namespace CosmicShore.Game.Arcade
                 {
                     Debug.Log($"Encountering Captain!!! - {Hangar.Instance.HostileAI1Captain}");
                     CaptainManager.Instance.EncounterCaptain(Hangar.Instance.HostileAI1Captain.Name);
+                    GameCanvas.EncounteredCaptainImage.sprite = Hangar.Instance.HostileAI1Captain.Image;
                 }
                 if (Hangar.Instance.HostileAI2Captain != null && !CaptainManager.Instance.IsCaptainEncountered(Hangar.Instance.HostileAI2Captain.Name))
                 {
