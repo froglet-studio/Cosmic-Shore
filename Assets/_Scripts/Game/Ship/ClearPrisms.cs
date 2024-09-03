@@ -25,6 +25,7 @@ namespace CosmicShore
 
         void Start()
         {
+            if (Ship.ShipStatus.AutoPilotEnabled) return;
             cameraManager = Ship.cameraManager;
             mainCamera = cameraManager.GetCloseCamera();
             visibilityCapsuleTransform = new GameObject("Visibility Capsule").transform;
@@ -32,11 +33,12 @@ namespace CosmicShore
             visibilityCapsule = gameObject.AddComponent<CapsuleCollider>();
             visibilityCapsule.isTrigger = true;
             visibilityCapsule.radius = capsuleRadius;
+
         }
 
         void Update()
         {
-            if (mainCamera == null) return;
+            if (mainCamera == null || Ship.ShipStatus.AutoPilotEnabled) return;
 
             Vector3 cameraPosition = mainCamera.position;
             Vector3 shipPosition = Ship.transform.position;
