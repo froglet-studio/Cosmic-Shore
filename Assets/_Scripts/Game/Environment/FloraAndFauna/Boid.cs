@@ -38,8 +38,8 @@ public class Boid : Fauna
     [Header("Mound Settings")]
     public Transform Mound;
 
-    private Vector3 currentVelocity;
-    private Vector3 desiredDirection;
+    Vector3 currentVelocity;
+    Vector3 desiredDirection;
     Quaternion desiredRotation;
 
     public bool isKilled = false;
@@ -48,17 +48,12 @@ public class Boid : Fauna
 
     [SerializeField] List<BoidCollisionEffects> collisionEffects;
 
-    private BoxCollider BlockCollider;
-    //private Crystal crystal;
-    //[SerializeField] Material activeCrystalMaterial;
+    BoxCollider BlockCollider;
 
-    private List<Collider> separatedBoids = new List<Collider>();
+    List<Collider> separatedBoids = new List<Collider>();
 
-    //Collider[] boidsInVicinity = new Collider[100];
 
     bool attached = false;
-    [SerializeField] bool hasCrystal = true;
-
     protected override void Start()
     {
         base.Start();
@@ -106,7 +101,6 @@ public class Boid : Fauna
         //LayerMask
         var boidsInVicinity = Physics.OverlapSphere(transform.position, cohesionRadius);
         var ColliderCount = boidsInVicinity.Length;
-        //var ColliderCount = Physics.OverlapSphereNonAlloc(transform.position, cohesionRadius, boidsInVicinity, LayerMask.NameToLayer("TrailBlocks"));
         for (int i = 0; i < ColliderCount; i++)
         {
             Collider collider = boidsInVicinity[i];
@@ -194,10 +188,6 @@ public class Boid : Fauna
 
         target = Mound.position;
         float scanRadius = 30f;
-        //while ((transform.position - Mound.position).sqrMagnitude > scanRadius)
-        //{
-        //    yield return null;
-        //}
 
         Collider[] colliders = new Collider[0];
         while (colliders.Length == 0)

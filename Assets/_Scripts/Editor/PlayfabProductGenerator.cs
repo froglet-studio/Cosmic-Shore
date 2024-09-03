@@ -1,12 +1,7 @@
 using UnityEngine;
 using UnityEditor;
 using PlayFab;
-//using PlayFab.AdminModels;
 using System;
-using System.Threading.Tasks;
-using System.Collections.Generic;
-using Newtonsoft.Json;
-using PlayFab.EconomyModels;
 using CosmicShore.Integrations.PlayFab.Economy;
 using CosmicShore.Integrations.PlayFab.Authentication;
 
@@ -16,7 +11,7 @@ public class PlayFabProductGenerator : EditorWindow
     SO_Captain selectedCaptain;
     static PlayFabEconomyInstanceAPI _playFabEconomyInstanceAPI;
 
-    static readonly string TitleId = "5B7B3";
+    //static readonly string TitleId = "5B7B3";
     static readonly string SecretKey = Environment.GetEnvironmentVariable("PLAYFAB_DEV_SECRET_KEY");
 
     static void InitializePlayFabEconomyAPI()

@@ -374,8 +374,10 @@ namespace CosmicShore.Core
                 this.team = team;
                 Player = player;
 
-                if (lerpBlockMaterialPropertiesCoroutine != null) StopCoroutine(lerpBlockMaterialPropertiesCoroutine);
-                StartCoroutine(LerpBlockMaterialPropertiesCoroutine(Hangar.Instance.GetTeamBlockMaterial(team)));
+                if (lerpBlockMaterialPropertiesCoroutine != null)
+                    StopCoroutine(lerpBlockMaterialPropertiesCoroutine);
+
+                lerpBlockMaterialPropertiesCoroutine = StartCoroutine(LerpBlockMaterialPropertiesCoroutine(Hangar.Instance.GetTeamBlockMaterial(team)));
             } 
         }
 

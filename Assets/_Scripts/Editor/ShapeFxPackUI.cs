@@ -3,11 +3,8 @@ using UnityEditor;
 
 public class ShapeFxPackUI : ShaderGUI
 {
-
 	MaterialEditor editor;
 	MaterialProperty[] properties;
-    bool TargetMode;
-    bool MatCap;
 
     //get preperties function
     MaterialProperty FindProperty (string name) 
@@ -113,8 +110,8 @@ public class ShapeFxPackUI : ShaderGUI
 
 
         //--------------------
-        if (TargetMode == false)
-        {
+        //if (TargetMode == false)
+        //{
 
             //LABELS
             GUILayout.Label("DISPLACEMENT", EditorStyles.helpBox);
@@ -145,7 +142,7 @@ public class ShapeFxPackUI : ShaderGUI
             MaterialProperty _DirectionChange = FindProperty("_DirectionChange");
             editor.ShaderProperty(_DirectionChange, MakeLabel(_DirectionChange));
 
-        }
+        //}
 
 
         //--------------------

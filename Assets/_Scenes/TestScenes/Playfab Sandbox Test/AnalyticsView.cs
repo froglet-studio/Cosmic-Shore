@@ -8,7 +8,6 @@ using VContainer;
 
 public class AnalyticsView : MonoBehaviour
 {
-    // Start is called before the first frame update
     [Header("User Data Operation")]
     [SerializeField] private Button getUserData;
     [SerializeField] private Button setUserData;

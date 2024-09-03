@@ -8,7 +8,6 @@ public class WormManager : Population
     [SerializeField] Worm wormPrefab;
     [SerializeField] Worm emptyWormPrefab;
     [SerializeField] int initialWormCount = 3;
-    [SerializeField] int initialSegmentsPerWorm = 5;
     [SerializeField] float spawnRadius = 50f;
     [SerializeField] float growthInterval = 10f;
     [SerializeField] int maxWormsAllowed = 10;

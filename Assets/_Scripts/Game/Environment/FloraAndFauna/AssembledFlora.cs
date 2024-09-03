@@ -18,28 +18,6 @@ namespace CosmicShore
     /// </summary>
     public class AssembledFlora : Flora
     {
-        /// <summary>
-        /// The max recursion depth of the assembler
-        /// </summary>
-        [SerializeField] int depth = 50;
-        /// <summary>
-        /// does this flora either feed on other blocks or grow on its own?
-        /// </summary>
-        [SerializeField] bool feeds = false;
-        /// <summary>
-        /// the assembler that is actually used to grow this flora
-        /// </summary>
-        Assembler assembler;
-
-        [SerializeField] int maxTotalSpawnedObjects = 1000;
-        [SerializeField] int maxDepth = 30;
-        HashSet<Branch> activeBranches = new HashSet<Branch>();
-
-        [SerializeField] int itemsPerGrow = 5;
-        [SerializeField] int randomItems = 2;
-
-        [SerializeField] float crystalGrowthMultiplier = 1.01f;
-
         struct Branch
         {
             public GameObject gameObject;
@@ -54,8 +32,21 @@ namespace CosmicShore
             }
         }
 
-        private int spawnedItemCount = 0;
-   
+        /// <summary>
+        /// The max recursion depth of the assembler
+        /// </summary>
+        [SerializeField] int depth = 50;
+        [SerializeField] int maxTotalSpawnedObjects = 1000;
+        [SerializeField] int maxDepth = 30;
+        [SerializeField] int itemsPerGrow = 5;
+        [SerializeField] int randomItems = 2;
+        [SerializeField] float crystalGrowthMultiplier = 1.01f;
+
+        HashSet<Branch> activeBranches = new HashSet<Branch>();
+
+        int spawnedItemCount = 0;
+        Assembler assembler;
+
         public static class AssemblerFactory
         {
             public static Assembler ProgramAssembler(GameObject gameObject, GrowthInfo growthInfo)

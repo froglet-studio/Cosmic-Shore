@@ -3,14 +3,6 @@ using System.Collections.Generic;
 using System.Text;
 using CosmicShore.Core;
 
-using UnityEngine;
-using System.Collections.Generic;
-using System.Text;
-
-using UnityEngine;
-using System.Collections.Generic;
-using System.Text;
-
 public class SpawnableLSystem : SpawnableAbstractBase
 {
     public enum LSystemPreset
