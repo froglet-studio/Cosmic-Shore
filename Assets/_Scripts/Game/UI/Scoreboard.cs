@@ -81,6 +81,7 @@ namespace CosmicShore
             }
 
             // Show the jam
+            SingleplayerView.gameObject.SetActive(false);
             MultiplayerView.gameObject.SetActive(true);
         }
 
@@ -99,6 +100,7 @@ namespace CosmicShore
             SinglePlayerHighscoreTextField.text = ((int) playerScore.Value).ToString();
 
             // Show the jam
+            MultiplayerView.gameObject.SetActive(false);
             SingleplayerView.gameObject.SetActive(true);
         }
     }

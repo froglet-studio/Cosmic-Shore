@@ -599,38 +599,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fc9985f1de22b3c4f963a6a97bf6fd05, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!1 &971372742 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 6588436222817790470, guid: ba23c28d2d22a1b458f7b6e91c355d53,
-    type: 3}
-  m_PrefabInstance: {fileID: 1415508614}
-  m_PrefabAsset: {fileID: 0}
 --- !u!4 &971372743 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 6588436222817790493, guid: ba23c28d2d22a1b458f7b6e91c355d53,
     type: 3}
   m_PrefabInstance: {fileID: 1415508614}
-  m_PrefabAsset: {fileID: 0}
---- !u!114 &971372748
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 971372742}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7e2dd056aa475344790c04e23e5ac92b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  canRotate: 1
-  speed: 20
-  direction: {x: 1, y: 0.2, z: 0.1}
---- !u!1 &986952657 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 6588436222817790470, guid: e707773a458187444a9dfbf3ec06568f,
-    type: 3}
-  m_PrefabInstance: {fileID: 1376055201}
   m_PrefabAsset: {fileID: 0}
 --- !u!4 &986952658 stripped
 Transform:
@@ -638,21 +611,6 @@ Transform:
     type: 3}
   m_PrefabInstance: {fileID: 1376055201}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &986952663
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 986952657}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7e2dd056aa475344790c04e23e5ac92b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  canRotate: 1
-  speed: 20
-  direction: {x: 1, y: 0.2, z: 0.1}
 --- !u!1 &1020381234
 GameObject:
   m_ObjectHideFlags: 0
@@ -938,23 +896,6 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 6588436222817790495, guid: e707773a458187444a9dfbf3ec06568f,
-        type: 3}
-      propertyPath: SpentCrystalPrefab
-      value: 
-      objectReference: {fileID: 8491596592871572304, guid: b3a73f8fede08a54092306d0a75152a1,
-        type: 3}
-    - target: {fileID: 6588436222817790495, guid: e707773a458187444a9dfbf3ec06568f,
-        type: 3}
-      propertyPath: crystalModels.Array.data[0].model
-      value: 
-      objectReference: {fileID: 8491596592871572304, guid: b3a73f8fede08a54092306d0a75152a1,
-        type: 3}
-    - target: {fileID: 6588436222817790495, guid: e707773a458187444a9dfbf3ec06568f,
-        type: 3}
-      propertyPath: crystalModels.Array.data[0].explodingMaterial
-      value: 
-      objectReference: {fileID: 2100000, guid: dd71abb5d85f02a4a8c2f41b424ce6d1, type: 2}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: e707773a458187444a9dfbf3ec06568f, type: 3}
 --- !u!1001 &1415508614
@@ -964,32 +905,6 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 8200116292639711852}
     m_Modifications:
-    - target: {fileID: 205044722219253190, guid: ba23c28d2d22a1b458f7b6e91c355d53,
-        type: 3}
-      propertyPath: m_Materials.Array.data[0]
-      value: 
-      objectReference: {fileID: 2100000, guid: eef8363bb7a88b5458b7435276b48516, type: 2}
-    - target: {fileID: 1254414767749573140, guid: ba23c28d2d22a1b458f7b6e91c355d53,
-        type: 3}
-      propertyPath: m_LocalScale.x
-      value: 125
-      objectReference: {fileID: 0}
-    - target: {fileID: 1254414767749573140, guid: ba23c28d2d22a1b458f7b6e91c355d53,
-        type: 3}
-      propertyPath: m_LocalScale.y
-      value: 125
-      objectReference: {fileID: 0}
-    - target: {fileID: 1254414767749573140, guid: ba23c28d2d22a1b458f7b6e91c355d53,
-        type: 3}
-      propertyPath: m_LocalScale.z
-      value: 125
-      objectReference: {fileID: 0}
-    - target: {fileID: 4507537437489056190, guid: ba23c28d2d22a1b458f7b6e91c355d53,
-        type: 3}
-      propertyPath: m_Mesh
-      value: 
-      objectReference: {fileID: 2263899899176933641, guid: 5feadefc3e999974c83418754e029f78,
-        type: 3}
     - target: {fileID: 6588436222817790470, guid: ba23c28d2d22a1b458f7b6e91c355d53,
         type: 3}
       propertyPath: m_Name
@@ -1050,38 +965,6 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 6588436222817790495, guid: ba23c28d2d22a1b458f7b6e91c355d53,
-        type: 3}
-      propertyPath: SpentCrystalPrefab
-      value: 
-      objectReference: {fileID: 8491596592871572304, guid: 53d5a21532c412648a63884e11bef0b6,
-        type: 3}
-    - target: {fileID: 6588436222817790495, guid: ba23c28d2d22a1b458f7b6e91c355d53,
-        type: 3}
-      propertyPath: crystalModels.Array.size
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 6588436222817790495, guid: ba23c28d2d22a1b458f7b6e91c355d53,
-        type: 3}
-      propertyPath: crystalModels.Array.data[0].model
-      value: 
-      objectReference: {fileID: 8491596592871572304, guid: 53d5a21532c412648a63884e11bef0b6,
-        type: 3}
-    - target: {fileID: 6588436222817790495, guid: ba23c28d2d22a1b458f7b6e91c355d53,
-        type: 3}
-      propertyPath: crystalModels.Array.data[0].defaultMaterial
-      value: 
-      objectReference: {fileID: 2100000, guid: b4387bb80465e9748a9fb1a58d328ad8, type: 2}
-    - target: {fileID: 6588436222817790495, guid: ba23c28d2d22a1b458f7b6e91c355d53,
-        type: 3}
-      propertyPath: crystalModels.Array.data[0].inactiveMaterial
-      value: 
-      objectReference: {fileID: 2100000, guid: b4387bb80465e9748a9fb1a58d328ad8, type: 2}
-    - target: {fileID: 6588436222817790495, guid: ba23c28d2d22a1b458f7b6e91c355d53,
-        type: 3}
-      propertyPath: crystalModels.Array.data[0].explodingMaterial
-      value: 
-      objectReference: {fileID: 2100000, guid: b4387bb80465e9748a9fb1a58d328ad8, type: 2}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: ba23c28d2d22a1b458f7b6e91c355d53, type: 3}
 --- !u!1 &1450883832
@@ -2315,6 +2198,7 @@ MonoBehaviour:
     tailLengthIncreaseAmount: 0
     speedBuffAmount: 3.5
     Element: 0
+    crystalValue: 0
   sphereRadius: 170
   SpentCrystalPrefab: {fileID: 8491596592871572304, guid: f39596c98ed9d644a834f2fa27ec90ca,
     type: 3}

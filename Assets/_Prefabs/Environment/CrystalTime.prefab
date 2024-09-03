@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 6588436222817790464}
   - component: {fileID: 6588436222817790495}
   - component: {fileID: 6588436222817790494}
+  - component: {fileID: 986952663}
   m_Layer: 9
   m_Name: CrystalTime
   m_TagString: Untagged
@@ -78,12 +79,14 @@ MonoBehaviour:
     tailLengthIncreaseAmount: 0
     speedBuffAmount: 3.5
     Element: 4
+    crystalValue: 0
   sphereRadius: 170
-  SpentCrystalPrefab: {fileID: 6588436222817790470}
+  SpentCrystalPrefab: {fileID: 8491596592871572304, guid: b3a73f8fede08a54092306d0a75152a1,
+    type: 3}
   crystalModels:
-  - model: {fileID: 4604809919382375336}
+  - model: {fileID: 8491596592871572304, guid: b3a73f8fede08a54092306d0a75152a1, type: 3}
     defaultMaterial: {fileID: 2100000, guid: 30251d8c8baa4584f8dca0e92711154b, type: 2}
-    explodingMaterial: {fileID: 2100000, guid: 8ef031f5d2466e344ba9adc827566ab8, type: 2}
+    explodingMaterial: {fileID: 2100000, guid: dd71abb5d85f02a4a8c2f41b424ce6d1, type: 2}
     inactiveMaterial: {fileID: 2100000, guid: 6eea31b551b13184cb148646f27388e8, type: 2}
     spaceCrystalAnimator: {fileID: 0}
   shipImpactEffects: 0
@@ -189,6 +192,21 @@ AudioSource:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+--- !u!114 &986952663
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6588436222817790470}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7e2dd056aa475344790c04e23e5ac92b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  canRotate: 1
+  speed: 20
+  direction: {x: 1, y: 0.2, z: 0.1}
 --- !u!1001 &2169973136896212108
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -297,12 +315,6 @@ PrefabInstance:
 --- !u!4 &1254414767749573140 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 1114034561007818392, guid: a089e5ab0159cc54aa784d6ebf15d2e4,
-    type: 3}
-  m_PrefabInstance: {fileID: 2169973136896212108}
-  m_PrefabAsset: {fileID: 0}
---- !u!1 &4604809919382375336 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 2448508127246415652, guid: a089e5ab0159cc54aa784d6ebf15d2e4,
     type: 3}
   m_PrefabInstance: {fileID: 2169973136896212108}
   m_PrefabAsset: {fileID: 0}
