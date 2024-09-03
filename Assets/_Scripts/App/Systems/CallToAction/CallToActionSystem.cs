@@ -60,7 +60,6 @@ namespace CosmicShore.App.Systems.CTA
 
         public void RegisterCallToActionTarget(CallToActionTargetType targetId, Action OnCallToActionActive, Action OnCallToActionDismissed)
         {
-            Debug.Log($"{nameof(CallToActionSystem)} - {nameof(RegisterCallToActionTarget)}: {targetId}");
             // Reset Call to action callbacks if reissued
             if (CallToActionActivatedCallbacks.ContainsKey(targetId))
                 CallToActionActivatedCallbacks.Remove(targetId);

@@ -2,7 +2,6 @@ using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 using CosmicShore.Core;
-using CosmicShore.Environment.FlowField;
 using CosmicShore;
 
 public enum BoidCollisionEffects
@@ -43,8 +42,8 @@ public class Boid : Fauna
     Quaternion desiredRotation;
 
     public bool isKilled = false;
-
     bool isTraveling = false;
+    bool isAttached = false;
 
     [SerializeField] List<BoidCollisionEffects> collisionEffects;
 
@@ -53,11 +52,9 @@ public class Boid : Fauna
     List<Collider> separatedBoids = new List<Collider>();
 
 
-    bool attached = false;
     protected override void Start()
     {
         base.Start();
-        crystal = GetComponentInChildren<Crystal>();
         AddSpindle(spindle);
         BlockCollider = healthBlock.GetComponent<BoxCollider>();
         currentVelocity = transform.forward * Random.Range(minSpeed, maxSpeed);
@@ -72,7 +69,7 @@ public class Boid : Fauna
 
         while (true)
         {
-            if (!attached && Population.Goal != null) target = Population.Goal;
+            if (!isAttached && Population.Goal != null) target = Population.Goal;
             // TODO add visual effect here leaving behind particles. and zoom ahead but decay in speed
             CalculateBehavior();
             yield return new WaitForSeconds(behaviorUpdateRate);
@@ -81,7 +78,7 @@ public class Boid : Fauna
 
     void CalculateBehavior()
     {
-        if (attached)
+        if (isAttached)
         {
             desiredDirection = (target - transform.position).normalized;
             currentVelocity = desiredDirection * Mathf.Clamp(currentVelocity.magnitude, minSpeed, maxSpeed);
@@ -143,7 +140,7 @@ public class Boid : Fauna
                                 {
                                     if (!otherTrailBlock.IsSmallest)
                                     {
-                                        attached = true;
+                                        isAttached = true;
                                         target = otherTrailBlock.transform.position;
                                         otherTrailBlock.Grow(-1);
                                         healthBlock.Grow(1);
@@ -153,6 +150,11 @@ public class Boid : Fauna
                                 }
                                 break;
                             case BoidCollisionEffects.Explode:
+                                if ((currentVelocity * healthBlock.Volume).x == Mathf.Infinity || (currentVelocity * healthBlock.Volume).x == Mathf.NegativeInfinity)
+                                {
+                                    Debug.LogError($"Infinite velocity on block collision detected! velocity:({currentVelocity.x},{currentVelocity.y},{currentVelocity.z})");
+                                    break;
+                                }
                                 otherTrailBlock.Damage(currentVelocity * healthBlock.Volume, healthBlock.Team, healthBlock.PlayerName + " boid", true);
                                 break;
                         }
@@ -183,7 +185,7 @@ public class Boid : Fauna
 
     IEnumerator AddToMoundCoroutine()
     {
-        attached = false;
+        isAttached = false;
         isTraveling = true;
 
         target = Mound.position;
@@ -231,29 +233,16 @@ public class Boid : Fauna
         var newBlock = Instantiate(healthBlock, transform.position, transform.rotation, Population.transform);
         newBlock.Team = healthBlock.Team;
         newBlock.gameObject.layer = LayerMask.NameToLayer("Mound");
-        newBlock.TrailBlockProperties = new();
-        //var ID = GetInstanceID().ToString();                    
-        //Debug.Log($"ID of created : {ID}");
-        //newBlock.ID = ID;
+        newBlock.TrailBlockProperties = new()
+        {
+            trailBlock = newBlock
+        };
         var gyroidBlock = newBlock.gameObject.AddComponent<GyroidAssembler>();
         return (newBlock,gyroidBlock);
     }
 
-    void Poop()
-    {
-        attached = false;
-        var newblock = Instantiate(healthBlock, transform.position, transform.rotation, Population.transform);
-        newblock.Team = healthBlock.Team;
-        healthBlock.Grow(-3);
-    }
-
     void Update()
     {
-        //if (trailBlock.Team != Teams.Blue)
-        //{
-        //    goal = trailBlock.Player.Ship.transform; // TODO: unccomment and make event driven and commander friendly
-        //}
-
         transform.position += currentVelocity * Time.deltaTime;
         transform.rotation = Quaternion.Lerp(transform.rotation, desiredRotation, Time.deltaTime);
     }

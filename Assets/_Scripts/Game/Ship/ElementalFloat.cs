@@ -40,7 +40,6 @@ public class ElementalFloat
     // TODO: need to convert this to an exponential curve instead of linear
     void ScaleValueWithLevel(Element element, int level)
     {
-        Debug.Log($"Elemental Float: Element: {element}, level: {level}");
         if (element == this.element)
             Value = Mathf.Lerp(Min, Max, level / 10f);
     }

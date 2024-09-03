@@ -121,7 +121,6 @@ namespace CosmicShore.Environment.FlowField
 
             if (other.gameObject.IsLayer("Ships"))
             {
-                Debug.Log("CrystalCollected via ship");
                 ship = other.GetComponent<ShipGeometry>().Ship;
                 if (Team == Teams.None || Team == ship.Team)
                 {
@@ -142,7 +141,6 @@ namespace CosmicShore.Environment.FlowField
             }
             else if (other.gameObject.IsLayer("Projectiles"))
             {
-                Debug.Log("CrystalCollected via projectile");
                 ship = other.GetComponent<Projectile>().Ship;
                 projectile = other.GetComponent<Projectile>();
                 if (Team == Teams.None || Team == ship.Team)
@@ -188,7 +186,6 @@ namespace CosmicShore.Environment.FlowField
             }
             else if (RespawnOnImpact)
             {
-                Debug.Log("Respawnable Crystal Collision");
                 transform.SetPositionAndRotation(UnityEngine.Random.insideUnitSphere * sphereRadius + origin, UnityEngine.Random.rotation);
             }
             else

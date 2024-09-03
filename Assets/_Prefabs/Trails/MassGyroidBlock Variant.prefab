@@ -5,6 +5,7 @@ PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Modification:
+    serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
     - target: {fileID: 5222650486365209692, guid: 1488a2ac58b2b4c43b14f84206bd9195,
@@ -97,7 +98,20 @@ PrefabInstance:
       propertyPath: TargetScale.z
       value: 1.5
       objectReference: {fileID: 0}
+    - target: {fileID: 6313579230210663873, guid: 1488a2ac58b2b4c43b14f84206bd9195,
+        type: 3}
+      propertyPath: ParticleEffect
+      value: 
+      objectReference: {fileID: 3706253519474275301, guid: 2d5ef26f11cfb824fa85b6f5cd632c79,
+        type: 3}
     m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 5776304996075792891, guid: 1488a2ac58b2b4c43b14f84206bd9195,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 307700638446573194}
   m_SourcePrefab: {fileID: 100100000, guid: 1488a2ac58b2b4c43b14f84206bd9195, type: 3}
 --- !u!1 &8591085806180840750 stripped
 GameObject:
@@ -124,5 +138,6 @@ MonoBehaviour:
   BlockType: 1
   depth: 50
   isSeed: 0
+  separationDistance: 3
   colliderTheshold: 1
   radius: 60

@@ -19,7 +19,6 @@ public class FireGunAction : ShipAction
     protected override void Start()
     {
         base.Start();
-        //projectileContainer = new GameObject($"{ship.Player.PlayerName}_Projectiles");
         projectileContainer.transform.parent = ship.Player.transform;
         shipData = ship.GetComponent<ShipStatus>();
     }
@@ -33,7 +32,6 @@ public class FireGunAction : ShipAction
             if (shipData.Attached) inheritedVelocity = gun.transform.forward;
             else inheritedVelocity = shipData.Course;
 
-            // TODO: WIP magic numbers
             gun.FireGun(projectileContainer.transform, Speed, inheritedVelocity * shipData.Speed, ProjectileScale, true, ProjectileTime.Value, 0, FiringPatterns.Default, Energy);
         }
     }

@@ -36,10 +36,8 @@ namespace CosmicShore.Game.Projectiles
 
         void Start()
         {
-            
             if (spike) 
             {
-                //transform.localScale = new Vector3(.4f,.4f,2);
                 meshRenderer = gameObject.GetComponent<MeshRenderer>();
                 meshRenderer.material = Hangar.Instance.GetTeamSpikeMaterial(Team);
                 meshRenderer.material.SetFloat("_Opacity", .5f);
@@ -126,7 +124,6 @@ namespace CosmicShore.Game.Projectiles
                         Debug.Log("EndExplode");
                         ((ExplodableProjectile)this).Detonate();
                         break;
-
                 }
             }
         }

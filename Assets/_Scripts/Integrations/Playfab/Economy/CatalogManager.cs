@@ -466,12 +466,6 @@ namespace CosmicShore.Integrations.PlayFab.Economy
             }
                     
             Debug.Log("   CatalogManager - Id: " + response.Item.Id);
-            foreach (var key in response.Item.Title.Keys)
-            {
-                Debug.Log("   CatalogManager - Title Key: " + key);
-                Debug.Log("   CatalogManager - Title: " + response.Item.Title[key]);
-            }
-            Debug.LogFormat("   CatalogManager - Type: {0} Image Count: {1} Content Type: {2} ", response.Item.Type, response.Item.Images.Count.ToString(), response.Item.ContentType);
         }
 
         /// <summary>

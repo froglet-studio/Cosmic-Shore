@@ -1,5 +1,3 @@
-using UnityEngine;
-
 namespace CosmicShore
 {
     public abstract class Fauna : LifeForm
@@ -8,11 +6,5 @@ namespace CosmicShore
         public Population Population;
 
         protected abstract void Spawn();
-
-        protected override void Start()
-        {
-            base.Start();
-        }
-
     }
 }

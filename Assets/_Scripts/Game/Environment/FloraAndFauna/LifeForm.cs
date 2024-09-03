@@ -7,7 +7,6 @@ namespace CosmicShore
 {
     public abstract class LifeForm : MonoBehaviour
     {
-
         [SerializeField] protected HealthBlock healthBlock;
         [SerializeField] protected Spindle spindle;
         [SerializeField] protected int minHealthBlocks = 0;
@@ -16,7 +15,6 @@ namespace CosmicShore
         protected HashSet<Spindle> spindles = new HashSet<Spindle>();
 
         protected Crystal crystal;
-        
         protected Node node;
         public Teams Team;
 
@@ -43,8 +41,7 @@ namespace CosmicShore
         public Spindle AddSpindle()
         {
             Spindle newSpindle = Instantiate(spindle, transform.position, transform.rotation, transform);
-            spindles.Add(newSpindle);
-            newSpindle.LifeForm = this;
+            AddSpindle(newSpindle);
             return newSpindle;
         }
 
@@ -56,21 +53,17 @@ namespace CosmicShore
         public virtual void RemoveHealthBlock(HealthBlock healthBlock)
         { 
             healthBlocks.Remove(healthBlock);
-            //CheckIfDead();
         }
 
         public void CheckIfDead()
         {
             if (spindles.Count == 0)
-            {
-                Debug.Log($"healthblocks of dying {this} {healthBlocks.Count}");
                 Die();
-            }
         }
 
         protected virtual void Die()
         {
-            crystal.ActivateCrystal(); 
+            crystal.ActivateCrystal();
             StopAllCoroutines();
             StartCoroutine(DieCoroutine());
         }

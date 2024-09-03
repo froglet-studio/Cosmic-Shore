@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using UnityEngine;
 
@@ -15,7 +16,6 @@ public class BlockImpact : MonoBehaviour
         Vector3 distance = Vector3.zero;
 
         material = gameObject.GetComponent<MeshRenderer>().material;
-
         var initialPosition = transform.position;
         var maxDuration = 7;
         var duration = 0f;
