@@ -1,0 +1,96 @@
+fetch("https://developer.playfab.com/api/en-us/5B7B3/economy/catalog/itemsv2/new?shouldPublish=true", {
+  "headers": {
+    "accept": "application/json, text/plain, */*",
+    "accept-language": "en-US,en;q=0.9",
+    "cache-control": "no-cache",
+    "content-type": "application/json",
+    "pragma": "no-cache",
+    "priority": "u=1, i",
+    "request-id": "|039a2391458845c8acfb7362f3f22ff4.66ee56e6a9cb4da6",
+    "sec-ch-ua": "\"Not/A)Brand\";v=\"8\", \"Chromium\";v=\"126\", \"Google Chrome\";v=\"126\"",
+    "sec-ch-ua-mobile": "?0",
+    "sec-ch-ua-platform": "\"Windows\"",
+    "sec-fetch-dest": "empty",
+    "sec-fetch-mode": "cors",
+    "sec-fetch-site": "same-origin",
+    "traceparent": "00-039a2391458845c8acfb7362f3f22ff4-66ee56e6a9cb4da6-01"
+  },
+  "referrer": "https://developer.playfab.com/en-us/r/t/5B7B3/economy/catalog/items/f2e1990c-2a00-4875-a2fd-a293cfd95201/view",
+  "referrerPolicy": "strict-origin-when-cross-origin",
+  "body": "{\"IsNew\":true,\"CreationDate\":null,\"StartDate\":\"2024-08-01T00:00:00.000Z\",\"EndDate\":null,\"ContentType\":\"CaptainUpgrade\",\"Tags\":\"Time,SHIPCLASS,UpgradeLevel_2\",\"EntityId\":\"5B7B3\",\"EntityType\":\"title\",\"ItemId\":null,\"FriendlyId\":\"TimeSHIPCLASSLevel2Upgrade\",\"ItemTitle\":\"{\\\"NEUTRAL\\\":\\\"TimeSHIPCLASSLevel2Upgrade\\\"}\",\"Description\":\"{\\\"NEUTRAL\\\":\\\"TimeSHIPCLASSLevel2Upgrade\\\"}\",\"Keywords\":null,\"Type\":2,\"SelectedOptions\":[],\"EntityTypes\":[{\"key\":\"title\",\"text\":\"title\",\"title\":null,\"itemType\":0,\"disabled\":false},{\"key\":\"title_player_account\",\"text\":\"title_player_account\",\"title\":null,\"itemType\":0,\"disabled\":false}],\"CatalogPrices\":{\"Prices\":[{\"Amounts\":[{\"Amount\":\"100\",\"Item\":{\"ItemId\":\"f3b11c4c-8a14-43ef-b29e-01aa2b97730e\",\"Title\":null,\"FriendlyId\":\"TC\",\"LastModified\":\"/Date(1723155841192+0000)/\",\"StartDate\":null,\"EndDate\":null,\"DraftStatus\":null,\"ScanningStatus\":null,\"Description\":{\"NEUTRAL\":\"Time Crystal\"},\"Keywords\":null,\"BoostFactor\":null,\"DisplayName\":{\"NEUTRAL\":\"Time Crystal\"},\"EntityId\":\"5B7B3\",\"EntityType\":\"title\",\"Contents\":null,\"ContentType\":\"Crystal\",\"Price\":[],\"ComplexStorePrices\":[],\"Type\":6,\"Amount\":null,\"DurationInSeconds\":null,\"IsStackable\":null,\"AllowMultipleStacks\":null,\"AverageRating\":null,\"GameManagerClassMetadata\":null},\"GameManagerClassMetadata\":null}],\"GameManagerClassMetadata\":null,\"UnitAmount\":1}],\"GameManagerClassMetadata\":null},\"DisplayProperties\":null,\"IsStackable\":null,\"Platforms\":[],\"DeepLinks\":[],\"Images\":[],\"Files\":[],\"ImageTypes\":[{\"key\":\"Thumbnail\",\"text\":\"Thumbnail\",\"title\":null,\"itemType\":0,\"disabled\":false},{\"key\":\"Screenshot\",\"text\":\"Screenshot\",\"title\":null,\"itemType\":0,\"disabled\":false}],\"ModerationState\":null,\"ModerationReason\":null,\"Ingredients\":[],\"Items\":[],\"DurationInSeconds\":0,\"Rating\":{\"RatingSummary\":null,\"CategoryRatings\":null,\"GameManagerClassMetadata\":null},\"DisplayVersion\":null,\"MarketplaceMappings\":[{\"Marketplace\":\"\",\"Id\":\"\",\"GameManagerClassMetadata\":null}],\"MarketplaceOptions\":[{\"key\":\"AppleAppStore\",\"text\":\"AppleAppStore\",\"title\":null,\"itemType\":0,\"disabled\":false},{\"key\":\"GooglePlay\",\"text\":\"GooglePlay\",\"title\":null,\"itemType\":0,\"disabled\":false},{\"key\":\"MicrosoftStore\",\"text\":\"MicrosoftStore\",\"title\":null,\"itemType\":0,\"disabled\":false},{\"key\":\"NintendoEShop\",\"text\":\"NintendoEShop\",\"title\":null,\"itemType\":0,\"disabled\":false},{\"key\":\"PlayStationStore\",\"text\":\"PlayStationStore\",\"title\":null,\"itemType\":0,\"disabled\":false},{\"key\":\"Steam\",\"text\":\"Steam\",\"title\":null,\"itemType\":0,\"disabled\":false}],\"SegmentNames\":null,\"DefaultStackId\":null,\"IsXboxMobileStoreSupported\":null}",
+  "method": "POST",
+  "mode": "cors",
+  "credentials": "include"
+});
+fetch("https://developer.playfab.com/api/en-us/5B7B3/economy/catalog/itemsv2/new?shouldPublish=true", {
+  "headers": {
+    "accept": "application/json, text/plain, */*",
+    "accept-language": "en-US,en;q=0.9",
+    "cache-control": "no-cache",
+    "content-type": "application/json",
+    "pragma": "no-cache",
+    "priority": "u=1, i",
+    "request-id": "|039a2391458845c8acfb7362f3f22ff4.66ee56e6a9cb4da6",
+    "sec-ch-ua": "\"Not/A)Brand\";v=\"8\", \"Chromium\";v=\"126\", \"Google Chrome\";v=\"126\"",
+    "sec-ch-ua-mobile": "?0",
+    "sec-ch-ua-platform": "\"Windows\"",
+    "sec-fetch-dest": "empty",
+    "sec-fetch-mode": "cors",
+    "sec-fetch-site": "same-origin",
+    "traceparent": "00-039a2391458845c8acfb7362f3f22ff4-66ee56e6a9cb4da6-01"
+  },
+  "referrer": "https://developer.playfab.com/en-us/r/t/5B7B3/economy/catalog/items/f2e1990c-2a00-4875-a2fd-a293cfd95201/view",
+  "referrerPolicy": "strict-origin-when-cross-origin",
+  "body": "{\"IsNew\":true,\"CreationDate\":null,\"StartDate\":\"2024-08-01T00:00:00.000Z\",\"EndDate\":null,\"ContentType\":\"CaptainUpgrade\",\"Tags\":\"Time,SHIPCLASS,UpgradeLevel_3\",\"EntityId\":\"5B7B3\",\"EntityType\":\"title\",\"ItemId\":null,\"FriendlyId\":\"TimeSHIPCLASSLevel3Upgrade\",\"ItemTitle\":\"{\\\"NEUTRAL\\\":\\\"TimeSHIPCLASSLevel3Upgrade\\\"}\",\"Description\":\"{\\\"NEUTRAL\\\":\\\"TimeSHIPCLASSLevel3Upgrade\\\"}\",\"Keywords\":null,\"Type\":2,\"SelectedOptions\":[],\"EntityTypes\":[{\"key\":\"title\",\"text\":\"title\",\"title\":null,\"itemType\":0,\"disabled\":false},{\"key\":\"title_player_account\",\"text\":\"title_player_account\",\"title\":null,\"itemType\":0,\"disabled\":false}],\"CatalogPrices\":{\"Prices\":[{\"Amounts\":[{\"Amount\":\"200\",\"Item\":{\"ItemId\":\"f3b11c4c-8a14-43ef-b29e-01aa2b97730e\",\"Title\":null,\"FriendlyId\":\"TC\",\"LastModified\":\"/Date(1723155841192+0000)/\",\"StartDate\":null,\"EndDate\":null,\"DraftStatus\":null,\"ScanningStatus\":null,\"Description\":{\"NEUTRAL\":\"Time Crystal\"},\"Keywords\":null,\"BoostFactor\":null,\"DisplayName\":{\"NEUTRAL\":\"Time Crystal\"},\"EntityId\":\"5B7B3\",\"EntityType\":\"title\",\"Contents\":null,\"ContentType\":\"Crystal\",\"Price\":[],\"ComplexStorePrices\":[],\"Type\":6,\"Amount\":null,\"DurationInSeconds\":null,\"IsStackable\":null,\"AllowMultipleStacks\":null,\"AverageRating\":null,\"GameManagerClassMetadata\":null},\"GameManagerClassMetadata\":null}],\"GameManagerClassMetadata\":null,\"UnitAmount\":1}],\"GameManagerClassMetadata\":null},\"DisplayProperties\":null,\"IsStackable\":null,\"Platforms\":[],\"DeepLinks\":[],\"Images\":[],\"Files\":[],\"ImageTypes\":[{\"key\":\"Thumbnail\",\"text\":\"Thumbnail\",\"title\":null,\"itemType\":0,\"disabled\":false},{\"key\":\"Screenshot\",\"text\":\"Screenshot\",\"title\":null,\"itemType\":0,\"disabled\":false}],\"ModerationState\":null,\"ModerationReason\":null,\"Ingredients\":[],\"Items\":[],\"DurationInSeconds\":0,\"Rating\":{\"RatingSummary\":null,\"CategoryRatings\":null,\"GameManagerClassMetadata\":null},\"DisplayVersion\":null,\"MarketplaceMappings\":[{\"Marketplace\":\"\",\"Id\":\"\",\"GameManagerClassMetadata\":null}],\"MarketplaceOptions\":[{\"key\":\"AppleAppStore\",\"text\":\"AppleAppStore\",\"title\":null,\"itemType\":0,\"disabled\":false},{\"key\":\"GooglePlay\",\"text\":\"GooglePlay\",\"title\":null,\"itemType\":0,\"disabled\":false},{\"key\":\"MicrosoftStore\",\"text\":\"MicrosoftStore\",\"title\":null,\"itemType\":0,\"disabled\":false},{\"key\":\"NintendoEShop\",\"text\":\"NintendoEShop\",\"title\":null,\"itemType\":0,\"disabled\":false},{\"key\":\"PlayStationStore\",\"text\":\"PlayStationStore\",\"title\":null,\"itemType\":0,\"disabled\":false},{\"key\":\"Steam\",\"text\":\"Steam\",\"title\":null,\"itemType\":0,\"disabled\":false}],\"SegmentNames\":null,\"DefaultStackId\":null,\"IsXboxMobileStoreSupported\":null}",
+  "method": "POST",
+  "mode": "cors",
+  "credentials": "include"
+});
+fetch("https://developer.playfab.com/api/en-us/5B7B3/economy/catalog/itemsv2/new?shouldPublish=true", {
+  "headers": {
+    "accept": "application/json, text/plain, */*",
+    "accept-language": "en-US,en;q=0.9",
+    "cache-control": "no-cache",
+    "content-type": "application/json",
+    "pragma": "no-cache",
+    "priority": "u=1, i",
+    "request-id": "|039a2391458845c8acfb7362f3f22ff4.66ee56e6a9cb4da6",
+    "sec-ch-ua": "\"Not/A)Brand\";v=\"8\", \"Chromium\";v=\"126\", \"Google Chrome\";v=\"126\"",
+    "sec-ch-ua-mobile": "?0",
+    "sec-ch-ua-platform": "\"Windows\"",
+    "sec-fetch-dest": "empty",
+    "sec-fetch-mode": "cors",
+    "sec-fetch-site": "same-origin",
+    "traceparent": "00-039a2391458845c8acfb7362f3f22ff4-66ee56e6a9cb4da6-01"
+  },
+  "referrer": "https://developer.playfab.com/en-us/r/t/5B7B3/economy/catalog/items/f2e1990c-2a00-4875-a2fd-a293cfd95201/view",
+  "referrerPolicy": "strict-origin-when-cross-origin",
+  "body": "{\"IsNew\":true,\"CreationDate\":null,\"StartDate\":\"2024-08-01T00:00:00.000Z\",\"EndDate\":null,\"ContentType\":\"CaptainUpgrade\",\"Tags\":\"Time,SHIPCLASS,UpgradeLevel_4\",\"EntityId\":\"5B7B3\",\"EntityType\":\"title\",\"ItemId\":null,\"FriendlyId\":\"TimeSHIPCLASSLevel4Upgrade\",\"ItemTitle\":\"{\\\"NEUTRAL\\\":\\\"TimeSHIPCLASSLevel4Upgrade\\\"}\",\"Description\":\"{\\\"NEUTRAL\\\":\\\"TimeSHIPCLASSLevel4Upgrade\\\"}\",\"Keywords\":null,\"Type\":2,\"SelectedOptions\":[],\"EntityTypes\":[{\"key\":\"title\",\"text\":\"title\",\"title\":null,\"itemType\":0,\"disabled\":false},{\"key\":\"title_player_account\",\"text\":\"title_player_account\",\"title\":null,\"itemType\":0,\"disabled\":false}],\"CatalogPrices\":{\"Prices\":[{\"Amounts\":[{\"Amount\":\"300\",\"Item\":{\"ItemId\":\"f3b11c4c-8a14-43ef-b29e-01aa2b97730e\",\"Title\":null,\"FriendlyId\":\"TC\",\"LastModified\":\"/Date(1723155841192+0000)/\",\"StartDate\":null,\"EndDate\":null,\"DraftStatus\":null,\"ScanningStatus\":null,\"Description\":{\"NEUTRAL\":\"Time Crystal\"},\"Keywords\":null,\"BoostFactor\":null,\"DisplayName\":{\"NEUTRAL\":\"Time Crystal\"},\"EntityId\":\"5B7B3\",\"EntityType\":\"title\",\"Contents\":null,\"ContentType\":\"Crystal\",\"Price\":[],\"ComplexStorePrices\":[],\"Type\":6,\"Amount\":null,\"DurationInSeconds\":null,\"IsStackable\":null,\"AllowMultipleStacks\":null,\"AverageRating\":null,\"GameManagerClassMetadata\":null},\"GameManagerClassMetadata\":null}],\"GameManagerClassMetadata\":null,\"UnitAmount\":1}],\"GameManagerClassMetadata\":null},\"DisplayProperties\":null,\"IsStackable\":null,\"Platforms\":[],\"DeepLinks\":[],\"Images\":[],\"Files\":[],\"ImageTypes\":[{\"key\":\"Thumbnail\",\"text\":\"Thumbnail\",\"title\":null,\"itemType\":0,\"disabled\":false},{\"key\":\"Screenshot\",\"text\":\"Screenshot\",\"title\":null,\"itemType\":0,\"disabled\":false}],\"ModerationState\":null,\"ModerationReason\":null,\"Ingredients\":[],\"Items\":[],\"DurationInSeconds\":0,\"Rating\":{\"RatingSummary\":null,\"CategoryRatings\":null,\"GameManagerClassMetadata\":null},\"DisplayVersion\":null,\"MarketplaceMappings\":[{\"Marketplace\":\"\",\"Id\":\"\",\"GameManagerClassMetadata\":null}],\"MarketplaceOptions\":[{\"key\":\"AppleAppStore\",\"text\":\"AppleAppStore\",\"title\":null,\"itemType\":0,\"disabled\":false},{\"key\":\"GooglePlay\",\"text\":\"GooglePlay\",\"title\":null,\"itemType\":0,\"disabled\":false},{\"key\":\"MicrosoftStore\",\"text\":\"MicrosoftStore\",\"title\":null,\"itemType\":0,\"disabled\":false},{\"key\":\"NintendoEShop\",\"text\":\"NintendoEShop\",\"title\":null,\"itemType\":0,\"disabled\":false},{\"key\":\"PlayStationStore\",\"text\":\"PlayStationStore\",\"title\":null,\"itemType\":0,\"disabled\":false},{\"key\":\"Steam\",\"text\":\"Steam\",\"title\":null,\"itemType\":0,\"disabled\":false}],\"SegmentNames\":null,\"DefaultStackId\":null,\"IsXboxMobileStoreSupported\":null}",
+  "method": "POST",
+  "mode": "cors",
+  "credentials": "include"
+});
+fetch("https://developer.playfab.com/api/en-us/5B7B3/economy/catalog/itemsv2/new?shouldPublish=true", {
+  "headers": {
+    "accept": "application/json, text/plain, */*",
+    "accept-language": "en-US,en;q=0.9",
+    "cache-control": "no-cache",
+    "content-type": "application/json",
+    "pragma": "no-cache",
+    "priority": "u=1, i",
+    "request-id": "|039a2391458845c8acfb7362f3f22ff4.66ee56e6a9cb4da6",
+    "sec-ch-ua": "\"Not/A)Brand\";v=\"8\", \"Chromium\";v=\"126\", \"Google Chrome\";v=\"126\"",
+    "sec-ch-ua-mobile": "?0",
+    "sec-ch-ua-platform": "\"Windows\"",
+    "sec-fetch-dest": "empty",
+    "sec-fetch-mode": "cors",
+    "sec-fetch-site": "same-origin",
+    "traceparent": "00-039a2391458845c8acfb7362f3f22ff4-66ee56e6a9cb4da6-01"
+  },
+  "referrer": "https://developer.playfab.com/en-us/r/t/5B7B3/economy/catalog/items/f2e1990c-2a00-4875-a2fd-a293cfd95201/view",
+  "referrerPolicy": "strict-origin-when-cross-origin",
+  "body": "{\"IsNew\":true,\"CreationDate\":null,\"StartDate\":\"2024-08-01T00:00:00.000Z\",\"EndDate\":null,\"ContentType\":\"CaptainUpgrade\",\"Tags\":\"Time,SHIPCLASS,UpgradeLevel_5\",\"EntityId\":\"5B7B3\",\"EntityType\":\"title\",\"ItemId\":null,\"FriendlyId\":\"TimeSHIPCLASSLevel5Upgrade\",\"ItemTitle\":\"{\\\"NEUTRAL\\\":\\\"TimeSHIPCLASSLevel5Upgrade\\\"}\",\"Description\":\"{\\\"NEUTRAL\\\":\\\"TimeSHIPCLASSLevel5Upgrade\\\"}\",\"Keywords\":null,\"Type\":2,\"SelectedOptions\":[],\"EntityTypes\":[{\"key\":\"title\",\"text\":\"title\",\"title\":null,\"itemType\":0,\"disabled\":false},{\"key\":\"title_player_account\",\"text\":\"title_player_account\",\"title\":null,\"itemType\":0,\"disabled\":false}],\"CatalogPrices\":{\"Prices\":[{\"Amounts\":[{\"Amount\":\"400\",\"Item\":{\"ItemId\":\"f3b11c4c-8a14-43ef-b29e-01aa2b97730e\",\"Title\":null,\"FriendlyId\":\"TC\",\"LastModified\":\"/Date(1723155841192+0000)/\",\"StartDate\":null,\"EndDate\":null,\"DraftStatus\":null,\"ScanningStatus\":null,\"Description\":{\"NEUTRAL\":\"Time Crystal\"},\"Keywords\":null,\"BoostFactor\":null,\"DisplayName\":{\"NEUTRAL\":\"Time Crystal\"},\"EntityId\":\"5B7B3\",\"EntityType\":\"title\",\"Contents\":null,\"ContentType\":\"Crystal\",\"Price\":[],\"ComplexStorePrices\":[],\"Type\":6,\"Amount\":null,\"DurationInSeconds\":null,\"IsStackable\":null,\"AllowMultipleStacks\":null,\"AverageRating\":null,\"GameManagerClassMetadata\":null},\"GameManagerClassMetadata\":null}],\"GameManagerClassMetadata\":null,\"UnitAmount\":1}],\"GameManagerClassMetadata\":null},\"DisplayProperties\":null,\"IsStackable\":null,\"Platforms\":[],\"DeepLinks\":[],\"Images\":[],\"Files\":[],\"ImageTypes\":[{\"key\":\"Thumbnail\",\"text\":\"Thumbnail\",\"title\":null,\"itemType\":0,\"disabled\":false},{\"key\":\"Screenshot\",\"text\":\"Screenshot\",\"title\":null,\"itemType\":0,\"disabled\":false}],\"ModerationState\":null,\"ModerationReason\":null,\"Ingredients\":[],\"Items\":[],\"DurationInSeconds\":0,\"Rating\":{\"RatingSummary\":null,\"CategoryRatings\":null,\"GameManagerClassMetadata\":null},\"DisplayVersion\":null,\"MarketplaceMappings\":[{\"Marketplace\":\"\",\"Id\":\"\",\"GameManagerClassMetadata\":null}],\"MarketplaceOptions\":[{\"key\":\"AppleAppStore\",\"text\":\"AppleAppStore\",\"title\":null,\"itemType\":0,\"disabled\":false},{\"key\":\"GooglePlay\",\"text\":\"GooglePlay\",\"title\":null,\"itemType\":0,\"disabled\":false},{\"key\":\"MicrosoftStore\",\"text\":\"MicrosoftStore\",\"title\":null,\"itemType\":0,\"disabled\":false},{\"key\":\"NintendoEShop\",\"text\":\"NintendoEShop\",\"title\":null,\"itemType\":0,\"disabled\":false},{\"key\":\"PlayStationStore\",\"text\":\"PlayStationStore\",\"title\":null,\"itemType\":0,\"disabled\":false},{\"key\":\"Steam\",\"text\":\"Steam\",\"title\":null,\"itemType\":0,\"disabled\":false}],\"SegmentNames\":null,\"DefaultStackId\":null,\"IsXboxMobileStoreSupported\":null}",
+  "method": "POST",
+  "mode": "cors",
+  "credentials": "include"
+});

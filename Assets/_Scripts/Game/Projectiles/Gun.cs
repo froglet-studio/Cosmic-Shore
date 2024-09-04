@@ -18,13 +18,12 @@ namespace CosmicShore.Game.Projectiles
         bool onCooldown = false;
         float sideLength = 2;
         float barrelLength = 4;
-
         public Coroutine MoveCoroutine;
 
         Projectile projectile;
 
         private void Start()
-        {
+        {           
             Team = Ship.Team;
         }
 
@@ -113,14 +112,12 @@ namespace CosmicShore.Game.Projectiles
         void FireProjectile(Transform containerTransform, float speed, Vector3 inheritedVelocity,
             float projectileScale, Vector3 offset, Vector3 normalizedVelocity, float projectileTime = 3, float charge = 0, int energy = 0)
         {
- 
             Projectile projectileInstance = containerTransform.GetComponent<PoolManager>().SpawnFromPool(GetPoolTag(energy),
             transform.position + Quaternion.LookRotation(transform.forward) * offset + (transform.forward * barrelLength), // position
             Quaternion.LookRotation(normalizedVelocity) // rotation
             ).GetComponent<Projectile>();
 
-
-            projectileInstance.transform.localScale = projectileScale * Vector3.one;
+            projectileInstance.transform.localScale = projectileScale * projectileInstance.InitialScale;
             projectileInstance.transform.parent = containerTransform;
             projectileInstance.Velocity = normalizedVelocity * speed + inheritedVelocity;
             projectileInstance.Team = Team;
@@ -155,6 +152,7 @@ namespace CosmicShore.Game.Projectiles
 
         public void DetonateProjectile()
         {
+            Debug.Log("GunExplode");
             if (projectile is ExplodableProjectile) ((ExplodableProjectile)projectile).Detonate();
         }
        

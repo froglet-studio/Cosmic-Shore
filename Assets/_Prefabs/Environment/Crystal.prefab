@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 6588436222817790464}
   - component: {fileID: 6588436222817790495}
   - component: {fileID: 6588436222817790494}
+  - component: {fileID: 6494750148975969259}
   m_Layer: 9
   m_Name: Crystal
   m_TagString: Untagged
@@ -81,9 +82,14 @@ MonoBehaviour:
   sphereRadius: 170
   SpentCrystalPrefab: {fileID: 8491596592871572304, guid: f39596c98ed9d644a834f2fa27ec90ca,
     type: 3}
-  CrystalModel: {fileID: 4604809919382375336}
-  explodingMaterial: {fileID: 2100000, guid: 383f21e8586fd7243a19e1d0f26110d0, type: 2}
-  defaultMaterial: {fileID: 2100000, guid: 383f21e8586fd7243a19e1d0f26110d0, type: 2}
+  crystalModels:
+  - model: {fileID: 4604809919382375336}
+    defaultMaterial: {fileID: 2100000, guid: 383f21e8586fd7243a19e1d0f26110d0, type: 2}
+    explodingMaterial: {fileID: 2100000, guid: 383f21e8586fd7243a19e1d0f26110d0, type: 2}
+    inactiveMaterial: {fileID: 2100000, guid: 650830ed7524d074991cd928a5356f37, type: 2}
+    spaceCrystalAnimator: {fileID: 0}
+    modelOffset: {x: 0, y: 0, z: 0}
+    modelRotation: {x: 0, y: 0, z: 0, w: 0}
   shipImpactEffects: 1
   crystalImpactEffects: 
   AOEPrefab: {fileID: 0}
@@ -186,6 +192,22 @@ AudioSource:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+--- !u!54 &6494750148975969259
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6588436222817790470}
+  serializedVersion: 2
+  m_Mass: 1
+  m_Drag: 0
+  m_AngularDrag: 0.05
+  m_UseGravity: 0
+  m_IsKinematic: 1
+  m_Interpolate: 0
+  m_Constraints: 126
+  m_CollisionDetection: 0
 --- !u!1001 &2169973136896212108
 PrefabInstance:
   m_ObjectHideFlags: 0

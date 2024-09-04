@@ -1,12 +1,12 @@
+using CosmicShore.Game.AI;
 using CosmicShore.Game.IO;
+using CosmicShore.Game.Projectiles;
+using CosmicShore.Models;
+using CosmicShore.Models.Enums;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using CosmicShore.Game.AI;
-using CosmicShore.Game.Projectiles;
-using CosmicShore.Models.ScriptableObjects;
-using Unity.Netcode;
 
 namespace CosmicShore.Core
 {
@@ -24,26 +24,29 @@ namespace CosmicShore.Core
         public List<ShipAction> ClassActions;
     }
 
-
+    [RequireComponent(typeof(ResourceSystem))]
+    [RequireComponent(typeof(TrailSpawner))]
+    [RequireComponent(typeof(ShipStatus))]
     public class Ship : MonoBehaviour
     {
         [SerializeField] List<ImpactProperties> impactProperties;
-        public CameraManager CameraManager { get; private set; }
-        public InputController InputController { get; set; }
-        public ResourceSystem ResourceSystem { get; private set; }
+        [HideInInspector] public CameraManager cameraManager;
+        [HideInInspector] public InputController InputController;
+        [HideInInspector] public ResourceSystem ResourceSystem;
 
         [Header("Ship Meta")]
         [SerializeField] string Name;
         [SerializeField] public ShipTypes ShipType;
 
         [Header("Ship Components")]
-        public TrailSpawner TrailSpawner { get; private set; }
-        public ShipTransformer ShipTransformer { get; private set; }
-        public AIPilot AutoPilot { get; private set; }
-        public ShipStatus ShipStatus { get; private set; }
+        [HideInInspector] public TrailSpawner TrailSpawner;
+        [HideInInspector] public ShipTransformer ShipTransformer;
+        [HideInInspector] public AIPilot AutoPilot;
+        [HideInInspector] public ShipStatus ShipStatus;
         [SerializeField] Skimmer nearFieldSkimmer;
         [SerializeField] GameObject OrientationHandle;
         [SerializeField] public List<GameObject> shipGeometries;
+        [SerializeField] GameObject shipHUD;
 
         [Header("Optional Ship Components")]
         [SerializeField] Silhouette Silhouette;
@@ -64,6 +67,7 @@ namespace CosmicShore.Core
         [SerializeField] public float boostMultiplier = 4f; // TODO: Move to ShipController
         [SerializeField] public float boostFuelAmount = -.01f;
         [SerializeField] bool bottomEdgeButtons = false;
+        [SerializeField] public float Inertia = 70f;
 
         [SerializeField] List<InputEventShipActionMapping> inputEventShipActions;
         Dictionary<InputEvents, List<ShipAction>> ShipControlActions = new();
@@ -79,31 +83,12 @@ namespace CosmicShore.Core
         Dictionary<ResourceEvents, float> resourceAbilityStartTimes = new();
 
         Material ShipMaterial;
-        public Material AOEExplosionMaterial {get; set;}
-        public Material AOEConicExplosionMaterial {get; set;}
-        public Material SkimmerMaterial {get; set;}
+        [HideInInspector] public Material AOEExplosionMaterial;
+        [HideInInspector] public Material AOEConicExplosionMaterial;
+        [HideInInspector] public Material SkimmerMaterial;
         float speedModifierDuration = 2f;
 
-        // Captain and captain upgrade properties
-        SO_Captain captain;
-
-        private Dictionary<Element, SO_CaptainUpgrade> _captainUpgrades;
-        public Dictionary<Element, SO_CaptainUpgrade> CaptainUpgrades
-        {
-            get => _captainUpgrades;
-            set
-            {
-                _captainUpgrades = value;
-
-                if (_captainUpgrades != null)
-                {
-                    UpdateLevel(Element.Charge, ResourceSystem.GetLevel(Element.Charge));
-                    UpdateLevel(Element.Time, ResourceSystem.GetLevel(Element.Time));
-                    UpdateLevel(Element.Mass, ResourceSystem.GetLevel(Element.Mass));
-                    UpdateLevel(Element.Space, ResourceSystem.GetLevel(Element.Space));
-                }
-            }
-        }
+        [HideInInspector] public SO_Captain Captain;
 
         Teams team;
         public Teams Team 
@@ -135,14 +120,11 @@ namespace CosmicShore.Core
             ShipTransformer = GetComponent<ShipTransformer>();
             TrailSpawner = GetComponent<TrailSpawner>();
             ShipStatus = GetComponent<ShipStatus>();
-
-            // TODO: P1 GOES AWAY
-            ResourceSystem.OnElementLevelChange += UpdateLevel;
         }
 
         void Start()
         {
-            CameraManager = CameraManager.Instance;
+            cameraManager = CameraManager.Instance;
             InputController = player.GetComponent<InputController>();
             AutoPilot = GetComponent<AIPilot>();
             if (!FollowTarget) FollowTarget = transform;
@@ -173,19 +155,14 @@ namespace CosmicShore.Core
 
             if (!AutoPilot.AutoPilotEnabled)
             {
-                if (ShipControlActions.ContainsKey(InputEvents.Button1Action))
+                if (shipHUD)
                 {
-                    Player.GameCanvas.MiniGameHUD.SetButtonActive(!InputController.UsingGamepad(), 1);
-                }
-
-                if (ShipControlActions.ContainsKey(InputEvents.Button2Action))
-                {
-                    Player.GameCanvas.MiniGameHUD.SetButtonActive(!InputController.UsingGamepad(), 2);
-                }
-
-                if (ShipControlActions.ContainsKey(InputEvents.Button3Action))
-                {
-                    Player.GameCanvas.MiniGameHUD.SetButtonActive(!InputController.UsingGamepad(), 3);
+                    shipHUD.SetActive(true);
+                    foreach (var child in shipHUD.GetComponentsInChildren<Transform>(false))
+                    {
+                        child.SetParent(Player.GameCanvas.transform, false);
+                        child.SetSiblingIndex(0);   // Don't draw on top of modal screens
+                    }
                 }
             }
         }
@@ -293,12 +270,18 @@ namespace CosmicShore.Core
                         ShipTransformer.ModifyVelocity((transform.position - trailBlockProperties.trailBlock.transform.position).normalized * 5 , Time.deltaTime * 15);
                         break;
                     case TrailBlockImpactEffects.Explode:
-                        trailBlockProperties.trailBlock.Explode(ShipStatus.Course * ShipStatus.Speed, Team, Player.PlayerName);
+                        trailBlockProperties.trailBlock.Damage(ShipStatus.Course * ShipStatus.Speed * Inertia, Team, Player.PlayerName);
+                        break;
+                    case TrailBlockImpactEffects.FeelDanger:
+                        if (trailBlockProperties.IsDangerous && trailBlockProperties.trailBlock.Team != team)
+                        {
+                            HapticController.PlayHaptic(HapticType.FakeCrystalCollision);
+                            ShipTransformer.ModifyThrottle(trailBlockProperties.speedDebuffAmount, trailBlockProperties.volume / 10);                           
+                        }
                         break;
                 }
             }
         }
-
 
         public void PerformShipControllerActions(InputEvents controlType)
         {
@@ -325,6 +308,42 @@ namespace CosmicShore.Core
                 var shipControlActions = ShipControlActions[controlType];
                 foreach (var action in shipControlActions)
                     action.StopAction();
+            }
+        }
+
+
+        // this is used with buttons so "Find all references" will not return editor usage
+        public void PerformButtonActions(int buttonNumber)
+        {
+            Debug.Log($"Ship.PerformButtonActions - buttonNumber:{buttonNumber}");
+            if (buttonNumber == 1 && ShipControlActions.ContainsKey(InputEvents.Button1Action))
+            {
+                PerformShipControllerActions(InputEvents.Button1Action);
+            }
+            else if (buttonNumber == 2 && ShipControlActions.ContainsKey(InputEvents.Button2Action))
+            {
+                PerformShipControllerActions(InputEvents.Button2Action);
+            }
+            else if (buttonNumber == 3 && ShipControlActions.ContainsKey(InputEvents.Button3Action))
+            {
+                PerformShipControllerActions(InputEvents.Button3Action);
+            }
+        }
+
+        // this is used with buttons so "Find all references" will not return editor usage
+        public void StopButtonActions(int buttonNumber)
+        {
+            if (buttonNumber == 1 && ShipControlActions.ContainsKey(InputEvents.Button1Action))
+            {
+                StopShipControllerActions(InputEvents.Button1Action);
+            }
+            else if (buttonNumber == 2 && ShipControlActions.ContainsKey(InputEvents.Button2Action))
+            {
+                StopShipControllerActions(InputEvents.Button2Action);
+            }
+            else if (buttonNumber == 3 && ShipControlActions.ContainsKey(InputEvents.Button3Action))
+            {
+                StopShipControllerActions(InputEvents.Button3Action);
             }
         }
 
@@ -362,43 +381,21 @@ namespace CosmicShore.Core
                 collider.enabled = enabled;
         }
 
-        public void AssignCaptain(SO_Captain captain)
+        public void SetResourceLevels(ResourceCollection resourceGroup)
         {
-            this.captain = captain;
-            ResourceSystem.InitialChargeLevel = this.captain.InitialCharge;
-            ResourceSystem.InitialMassLevel = this.captain.InitialMass;
-            ResourceSystem.InitialSpaceLevel = this.captain.InitialSpace;
-            ResourceSystem.InitialTimeLevel = this.captain.InitialTime;
-
-            ResourceSystem.InitializeElementLevels();
+            ResourceSystem.InitializeElementLevels(resourceGroup);
         }
 
-        public void UpdateLevel(Element element, int upgradeLevel)
+        public void AssignCaptain(Captain captain)
         {
-            Debug.Log($"Ship: UpdateLevel: element{element}, upgradeLevel: {upgradeLevel}");
-            if (CaptainUpgrades == null) CaptainUpgrades = new();
-            
-            if (CaptainUpgrades.ContainsKey(element))
-            {
-                CaptainUpgrades[element].element = element;
-                CaptainUpgrades[element].upgradeLevel = upgradeLevel;
-            }
-            else
-            {
-                // TODO: preset individual upgrade properties such as name, description, icon etc based on upgrade properties.
-                var newUpgrade = ScriptableObject.CreateInstance<SO_CaptainUpgrade>();
-                newUpgrade.element = element;
-                newUpgrade.upgradeLevel = upgradeLevel;
-                CaptainUpgrades.TryAdd(element, newUpgrade);
-            }
+            Captain = captain.SO_Captain;
+            SetResourceLevels(captain.ResourceLevels);
+        }
 
-            #if UNITY_EDITOR
-            foreach (var upgrade in CaptainUpgrades)
-            {
-                Debug.LogFormat("{0} - {1}: element: {2} upgrade level: {3}", nameof(CaptainUpgrades), nameof(UpdateLevel), upgrade.Key, upgrade.Value.upgradeLevel.ToString());
-            }
-            #endif
-            
+        public void AssignCaptain(SO_Captain captain)
+        {
+            Captain = captain;
+            SetResourceLevels(captain.InitialResourceLevels);
         }
 
         public void SetShipMaterial(Material material)
@@ -497,8 +494,6 @@ namespace CosmicShore.Core
                 ShipStatus.AttachedTrailBlock = trailBlock;
             }
         }
-
-        public List<GameObject> GetShipGeometries() => shipGeometries;
 
     }
 }

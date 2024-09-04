@@ -13,6 +13,7 @@ namespace CosmicShore.Core
         public Trail Trail;
         public bool Shielded;
         public bool IsSuperShielded;
+        public bool IsDangerous; // TODO: change to enum with mutually exclusive values with shielding
         public float TimeCreated;
     }
 }

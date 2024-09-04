@@ -35,8 +35,7 @@ namespace CosmicShore.App.Systems.Quests
         [HideInInspector] public bool RewardGranted;
         [HideInInspector] public DateTime TimeCompleted;
 
-        public delegate void OnCompleted();
-        public event OnCompleted OnQuestCompleted;
+        public Action OnQuestCompleted;
 
         public int GetInvocationCount()
         {

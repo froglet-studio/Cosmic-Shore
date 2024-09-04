@@ -8,6 +8,32 @@ public class NodeControlManager : Singleton<NodeControlManager>
 {
     [SerializeField] List<Node> Nodes;
 
+    public void AddBlock(Teams team, TrailBlockProperties blockProperties)
+    {
+        foreach (var node in Nodes)
+        {
+            if (node.ContainsPosition(blockProperties.position))
+            {
+                node.ChangeVolume(team, blockProperties.volume);
+                //node.AddBlock(blockProperties.trailBlock);
+                break;
+            }
+        }
+    }
+
+    public void RemoveBlock(Teams team, TrailBlockProperties blockProperties)
+    {
+        foreach (var node in Nodes)
+        {
+            if (node.ContainsPosition(blockProperties.position))
+            {
+                node.ChangeVolume(team, -blockProperties.volume);
+                node.RemoveBlock(blockProperties.trailBlock);
+                break;
+            }
+        }
+    }
+
     public Node GetNodeByPosition(Vector3 position)
     {
         foreach (var node in Nodes)
@@ -31,12 +57,12 @@ public class NodeControlManager : Singleton<NodeControlManager>
 
     void OnEnable()
     {
-        GameManager.onGameOver += OutputNodeControl;
+        GameManager.OnGameOver += OutputNodeControl;
     }
 
     void OnDisable()
     {
-        GameManager.onGameOver -= OutputNodeControl;
+        GameManager.OnGameOver -= OutputNodeControl;
     }
 
     public void AddItem(NodeItem item)
@@ -75,30 +101,6 @@ public class NodeControlManager : Singleton<NodeControlManager>
         }
     }
 
-    public void AddBlock(Teams team, TrailBlockProperties blockProperties)
-    {
-        foreach (var node in Nodes)
-        {
-            if (node.ContainsPosition(blockProperties.position))
-            {
-                node.ChangeVolume(team, blockProperties.volume);
-                break;
-            }
-        }
-    }
-
-    public void RemoveBlock(Teams team, TrailBlockProperties blockProperties)
-    {
-        foreach (var node in Nodes)
-        {
-            if (node.ContainsPosition(blockProperties.position))
-            {
-                node.ChangeVolume(team, -blockProperties.volume);
-                break;
-            }
-        }
-    }
-
     public void StealBlock(Teams team, TrailBlockProperties blockProperties)
     {
         foreach (var node in Nodes)
@@ -129,7 +131,7 @@ public class NodeControlManager : Singleton<NodeControlManager>
         foreach (var node in Nodes)
         {
             if (node.enabled)
-                Debug.LogWarning($"Node Control - Node ID: {node.ID}, Controlling Team: {node.ControllingTeam}, Green Volume: {node.GetTeamVolume(Teams.Green)}, Red Volume: {node.GetTeamVolume(Teams.Red)}");
+                Debug.LogWarning($"Node Control - Node ID: {node.ID}, Controlling Team: {node.ControllingTeam}, Green Volume: {node.GetTeamVolume(Teams.Jade)}, Red Volume: {node.GetTeamVolume(Teams.Ruby)}");
         }
     }
 }

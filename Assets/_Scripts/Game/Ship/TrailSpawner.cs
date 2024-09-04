@@ -79,12 +79,12 @@ public class TrailSpawner : MonoBehaviour
 
     private void OnEnable()
     {
-        GameManager.onGameOver += RestartAITrailSpawnerAfterDelay;
+        GameManager.OnGameOver += RestartAITrailSpawnerAfterDelay;
     }
 
     private void OnDisable()
     {
-        GameManager.onGameOver -= RestartAITrailSpawnerAfterDelay;
+        GameManager.OnGameOver -= RestartAITrailSpawnerAfterDelay;
     }
 
     void Start()
@@ -192,7 +192,7 @@ public class TrailSpawner : MonoBehaviour
         if (shielded)
         {
             Block.GetComponent<MeshRenderer>().material = shieldedBlockMaterial;
-            Block.Shielded = true;
+            Block.TrailBlockProperties.Shielded = true;
         }
         else Block.GetComponent<MeshRenderer>().material = blockMaterial;
         Block.GetComponent<BoxCollider>().size = Vector3.one + VectorDivision((Vector3)blockMaterial.GetVector("_Spread"), Block.TargetScale);

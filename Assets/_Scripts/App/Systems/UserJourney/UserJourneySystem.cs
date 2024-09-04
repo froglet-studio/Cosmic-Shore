@@ -3,7 +3,7 @@ using CosmicShore.Utility.Singleton;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace CosmicShore
+namespace CosmicShore.App.Systems.UserJourney
 {
     public class UserJourneySystem : SingletonPersistent<UserJourneySystem>
     {

@@ -15,13 +15,10 @@ public class ChargeBoostAction : ShipAction
         GetShipStatus();
     }
 
-    private void GetShipStatus()
+    void GetShipStatus()
     {
-        if(!TryGetComponent(out shipStatus))
-        {
-            Debug.LogWarningFormat("{0} - {1} - {2}", nameof(ChargeBoostAction), nameof(GetShipStatus), "ship status is null, but still trying to get it.");
+        if (!TryGetComponent(out shipStatus))
             shipStatus = ship.GetComponent<ShipStatus>();
-        }
     }
 
     void Update()
@@ -29,12 +26,10 @@ public class ChargeBoostAction : ShipAction
         BoostCharge();
     }
 
-    private void BoostCharge()
+    void BoostCharge()
     {
         if (BoostCharging)
         {
-            //Debug.LogFormat("{0} - {1} - charging boost", nameof(ChargeBoostAction), nameof(BoostCharge));
-            
             if(shipStatus != null)  shipStatus.ChargedBoostCharge += BoostChargeRate * Time.deltaTime;
 
             ship.ResourceSystem.ChangeBoostAmount(BoostChargeRate * Time.deltaTime);
@@ -52,9 +47,8 @@ public class ChargeBoostAction : ShipAction
         StartChargedBoost();
     }
 
-    private void StartChargedBoost()
+    void StartChargedBoost()
     {
-        // if (DischargeBoostCoroutine() == null) return;
         if (shipStatus) StartCoroutine(DischargeBoostCoroutine());
     }
 

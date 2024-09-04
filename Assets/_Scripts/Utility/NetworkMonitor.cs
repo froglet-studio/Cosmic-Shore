@@ -1,13 +1,11 @@
 using CosmicShore.Utility.Singleton;
+using System;
 using UnityEngine;
 
 public class NetworkMonitor : SingletonPersistent<NetworkMonitor>
 {
-    public delegate void NetworkConnectionLostEvent();
-    public static event NetworkConnectionLostEvent NetworkConnectionLost;
-
-    public delegate void NetworkConnectionFoundEvent();
-    public static event NetworkConnectionFoundEvent NetworkConnectionFound;
+    public static Action OnNetworkConnectionLost;
+    public static Action OnNetworkConnectionFound;
 
     [SerializeField] bool forceOffline;
     bool _connected;
@@ -19,7 +17,7 @@ public class NetworkMonitor : SingletonPersistent<NetworkMonitor>
             if (_connected)
             {
                 _connected = false;
-                NetworkConnectionLost?.Invoke();
+                OnNetworkConnectionLost?.Invoke();
                 Debug.Log("NetworkMonitor - Error. Check internet connection");
             }
         }
@@ -28,7 +26,7 @@ public class NetworkMonitor : SingletonPersistent<NetworkMonitor>
             if (!_connected)
             {
                 _connected = true;
-                NetworkConnectionFound?.Invoke();
+                OnNetworkConnectionFound?.Invoke();
                 Debug.Log("NetworkMonitor Success. Internet connection established");
             }
         }

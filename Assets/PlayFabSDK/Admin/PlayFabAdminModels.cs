@@ -2633,6 +2633,20 @@ namespace PlayFab.AdminModels
         StatisticDefinitionModificationNotAllowedWhileLinked,
         LeaderboardUpdateNotAllowedWhileLinked,
         CloudScriptAzureFunctionsEventHubRequestError,
+        ExternalEntityNotAllowedForTier,
+        InvalidBaseTimeForInterval,
+        EntityTypeMismatchWithStatDefinition,
+        SpecifiedVersionLeaderboardNotFound,
+        LeaderboardColumnLengthMismatchWithStatDefinition,
+        DuplicateColumnNameFound,
+        LinkedStatisticColumnNotFound,
+        LinkedStatisticColumnRequired,
+        MultipleLinkedStatisticsNotAllowed,
+        DuplicateLinkedStatisticColumnNameFound,
+        AggregationTypeNotAllowedForMultiColumnStatistic,
+        MaxQueryableVerionsValueNotAllowedForTier,
+        StatisticDefinitionHasNullOrEmptyVersionConfiguration,
+        StatisticColumnLengthMismatch,
         MatchmakingEntityInvalid,
         MatchmakingPlayerAttributesInvalid,
         MatchmakingQueueNotFound,
@@ -2810,6 +2824,7 @@ namespace PlayFab.AdminModels
         EventSinkTitleUnauthorized,
         EventSinkInsufficientRoleAssignment,
         EventSinkContainerNotFound,
+        EventSinkTenantIdInvalid,
         OperationCanceled,
         InvalidDisplayNameRandomSuffixLength,
         AllowNonUniquePlayerDisplayNamesDisableNotAllowed,
@@ -2879,9 +2894,36 @@ namespace PlayFab.AdminModels
         TrueSkillJobAlreadyExists,
         TrueSkillJobNotFound,
         TrueSkillOperationCanceled,
-        StateShareUnauthorized,
+        TrueSkillActiveModelLimitExceeded,
+        TrueSkillTotalModelLimitExceeded,
+        TrueSkillUnknownInitialModelId,
+        TrueSkillUnauthorizedForJob,
+        TrueSkillInvalidScenarioName,
+        TrueSkillConditionStateIsRequired,
+        TrueSkillEventStateIsRequired,
+        TrueSkillDuplicateEvent,
+        TrueSkillDuplicateCondition,
+        TrueSkillInvalidAnomalyThreshold,
+        TrueSkillConditionKeyLimitExceeded,
+        TrueSkillConditionValuePerKeyLimitExceeded,
+        TrueSkillInvalidTimestamp,
+        TrueSkillEventLimitExceeded,
+        TrueSkillInvalidPlayers,
+        TrueSkillTrueSkillPlayerNull,
+        TrueSkillInvalidPlayerId,
+        TrueSkillInvalidSquadSize,
+        TrueSkillConditionSetNotInModel,
+        GameSaveManifestNotFound,
+        GameSaveManifestVersionAlreadyExists,
+        GameSaveConflictUpdatingManifest,
+        StateShareForbidden,
+        StateShareTitleNotInFlight,
         StateShareStateNotFound,
-        StateShareLinkNotFound
+        StateShareLinkNotFound,
+        StateShareStateRedemptionLimitExceeded,
+        StateShareStateRedemptionLimitNotUpdated,
+        StateShareCreatedStatesLimitExceeded,
+        StateShareIdMissingOrMalformed
     }
 
     [Serializable]
@@ -4284,7 +4326,8 @@ namespace PlayFab.AdminModels
         OpenIdConnect,
         Apple,
         NintendoSwitchAccount,
-        GooglePlayGames
+        GooglePlayGames,
+        XboxMobileStore
     }
 
     [Serializable]
@@ -7510,7 +7553,8 @@ namespace PlayFab.AdminModels
         OpenIdConnect,
         Apple,
         NintendoSwitchAccount,
-        GooglePlayGames
+        GooglePlayGames,
+        XboxMobileStore
     }
 
     [Serializable]

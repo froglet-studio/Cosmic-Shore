@@ -13,11 +13,14 @@ namespace CosmicShore.Game.UI
         [SerializeField] public GameObject EndGameScreen;
 
         [Header("Scoring UI")]
-        [SerializeField] public VerticalLayoutGroup Scoreboard;
-        [SerializeField] public TMP_Text WinnerNameContainer;
-        [SerializeField] public Image WinnerBannerImage;
-        [SerializeField] public Color GreenTeamWinColor = new(0.106f, 0.733f, 0.733f);
-        [SerializeField] public Color RedTeamWinColor = new(0.831f, 0.18f, 0.573f);
-        [SerializeField] public Color YellowTeamWinColor = new(0.988f, 0.647f, 0.247f);
+        [SerializeField] public Scoreboard scoreboard;
+
+        [Header("Goodies and Awards")]
+        [SerializeField] public GameObject AwardsContainer;
+        [SerializeField] public TMP_Text XPEarnedText;
+        [SerializeField] public Image CrystalsEarnedImage;
+        [SerializeField] public TMP_Text CrystalsEarnedText;
+        [SerializeField] public Image EncounteredCaptainImage;
+        [SerializeField] public TMP_Text EncounteredCaptainText;
     }
 }

@@ -11,9 +11,7 @@ namespace CosmicShore.Integrations.Firebase.Controller
     {
         private static bool _analyticsEnabled = true;
         private static DependencyStatus _dependencyStatus = DependencyStatus.Available;
-        public delegate void DependencyResolved();
-
-        public static event DependencyResolved OnDependencyResolved;
+        public static Action OnDependencyResolved;
         // private FirebaseApp _app;
         
         #region Firebase Analytics Controller Initialization and Enabling

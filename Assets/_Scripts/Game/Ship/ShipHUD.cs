@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace CosmicShore
 {
-    public class ShipHUD : MonoBehaviour
+    public class ShipHUD : MonoBehaviour // TODO: remove this class (unneeded) 
     {
         [SerializeField] Ship ship;
         void Start()

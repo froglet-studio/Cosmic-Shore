@@ -1,31 +1,33 @@
+using System;
 using System.Collections.Generic;
 using CosmicShore.Integrations.PlayFab.Authentication;
-using CosmicShore.Integrations.PlayFab.Utility;
-using PlayFab;
+using CosmicShore.Integrations.PlayFab.Economy;
+using CosmicShore.Utility.Singleton;
 using PlayFab.CloudScriptModels;
 using UnityEngine;
 
 namespace CosmicShore.Integrations.PlayFab.CloudScripts
 {
-    public class DailyRewardHandler : MonoBehaviour
+    /// <summary>
+    /// TODO: Generalize function execution
+    /// </summary>
+    public class DailyRewardHandler : SingletonPersistent<DailyRewardHandler>
     {
         private static EntityKey _entity;
         public void Start()
         {
             AuthenticationManager.OnLoginSuccess += InitEntity;
-            AuthenticationManager.OnLoginSuccess += CallSaveRewardClaimTime;
         }
 
         public void OnDisable()
         {
-            AuthenticationManager.OnLoginSuccess -= CallSaveRewardClaimTime;
             AuthenticationManager.OnLoginSuccess -= InitEntity;
         }
 
         /// <summary>
         /// Initialize entity key for cloud script authentication upon login
         /// </summary>
-        private void InitEntity()
+        private static void InitEntity()
         {
             _entity = new()
             {
@@ -38,62 +40,102 @@ namespace CosmicShore.Integrations.PlayFab.CloudScripts
         /// Execute SaveRewardClaimTime Azure Function
         /// Returns UpdateUserInternalDataResult and nextClaimTime if request is successful.
         /// </summary>
-        private void CallSaveRewardClaimTime()
+        public void Claim()
         {
-            var request =
-                new ExecuteFunctionRequest //Set this to true if you would like this call to show up in PlayStream
-                {
-                    Entity = _entity,
-                    FunctionName = "SaveRewardClaimTime", //This should be the name of your Azure Function that you created.
-                    GeneratePlayStreamEvent = false //Set this to true if you would like this call to show up in PlayStream
-                };
+            var functionProperties = new FunctionProperties
+            {
+                FunctionName = "Claim",
+                EntityKey = _entity
+            };
             
-            PlayFabCloudScriptAPI.ExecuteFunction(request, OnSaveRewardClaimTimeSuccess, PlayFabUtility.HandleErrorReport);
+            CloudScriptRunner.Execute(functionProperties, OnClaimDailyRewardSuccess);
         }
 
         /// <summary>
         /// On Saving Daily Reward Claim Time Delegate
         /// </summary>
         /// <param name="result">ExecuteFunctionResult</param>
-        private void OnSaveRewardClaimTimeSuccess(ExecuteFunctionResult result)
+        private void OnClaimDailyRewardSuccess(ExecuteFunctionResult result)
         {
             if (result.FunctionResultTooLarge ?? false)
             {
-                Debug.Log("Cloud script - This can happen if you exceed the limit that can be returned from an Azure Function, See PlayFab Limits Page for details.");
+                Debug.LogError("Cloud script - This can happen if you exceed the limit that can be returned from an Azure Function, See PlayFab Limits Page for details.");
                 return;
             }
+
+            CatalogManager.Instance.RewardClaimed(Element.Omni, CatalogManager.Instance.GetDailyChallengeTicket().Amount);
+
             Debug.Log($"Cloud script - The {result.FunctionName} function took {result.ExecutionTimeMilliseconds} to complete");
             Debug.Log($"Cloud script - Result: {result.FunctionResult}");
         }
 
         /// <summary>
-        /// A test script, nothing to see here.
+        /// Runs granting bundle items to player inventory
         /// </summary>
-        private void CallHelloWorldCloudScript()
+        /// <param name="itemIds"> A list of item ids from PlayFab</param>
+        public void GrantBundle(string[] itemIds)
         {
-      
-            var request =
-                new ExecuteFunctionRequest //Set this to true if you would like this call to show up in PlayStream
+            var functionProperties = new FunctionProperties
             {
-                Entity = _entity,
-                FunctionName = "HelloWorld", //This should be the name of your Azure Function that you created.
-                FunctionParameter = new Dictionary<string, object>
-                    { { "inputValue", "Test" } }, //This is the data that you would want to pass into your function.
-                GeneratePlayStreamEvent = false //Set this to true if you would like this call to show up in PlayStream
+                FunctionName = "AddItemsToInventory",
+                EntityKey = _entity,
+                FunctionParameter = new Dictionary<string, object> { { "itemIds", itemIds } }
             };
-
-            PlayFabCloudScriptAPI.ExecuteFunction(request, OnHelloWorldSuccess, PlayFabUtility.HandleErrorReport);
+            
+            // No action needed for on success callback, leave it null to use the default on success callback
+            CloudScriptRunner.Execute(functionProperties);
         }
 
-        private void OnHelloWorldSuccess(ExecuteFunctionResult result)
+        public void ClaimDailyChallengeReward(int tier, int rewardValue)
         {
+            var functionProperties = new FunctionProperties
+            {
+                FunctionName = "ClaimDailyChallengeReward",
+                EntityKey = _entity,
+                FunctionParameter = new Dictionary<string, object> { { "tier", tier }, { "rewardValue", rewardValue } },
+
+            };
+
+            // TODO: P1 need to do this in the on success callback - extend the backend to return the reward value granted
+            CatalogManager.Instance.RewardClaimed(Element.Omni, rewardValue);
+
+            Debug.Log($"ClaimDailyChallengeReward(int tier, int rewardValue) - tier:{tier}, value:{rewardValue}");
+            CloudScriptRunner.Execute(functionProperties);
+        }
+
+        /// <summary>
+        /// Claim Daily Challenge Reward result returns if the claim is successful and a time available for the next claim
+        /// IsClaimed, nextClaimTime
+        /// </summary>
+        /// <param name="result">Function execution result</param>
+        void OnClaimDailyChallengeRewardSuccess(ExecuteFunctionResult result)
+        {
+            Debug.Log("DailyRewardHandler - OnClaimDailyChallengeRewardSuccess");
             if (result.FunctionResultTooLarge ?? false)
             {
-                Debug.Log("Cloud script - This can happen if you exceed the limit that can be returned from an Azure Function, See PlayFab Limits Page for details.");
+                Debug.LogError("Cloud script - This can happen if you exceed the limit that can be returned from an Azure Function, See PlayFab Limits Page for details.");
                 return;
             }
+            
             Debug.Log($"Cloud script - The {result.FunctionName} function took {result.ExecutionTimeMilliseconds} to complete");
             Debug.Log($"Cloud script - Result: {result.FunctionResult}");
         }
+
+        /// <summary>
+        /// Play Daily Challenge checks if the player has enough balance to play
+        /// And subtract balance by 1 if the balance is sufficient
+        /// </summary>
+        public void PlayDailyChallenge(Action<ExecuteFunctionResult> playDailyChallengeSuccess)
+        {
+            var functionProperties = new FunctionProperties
+            {
+                FunctionName = "PlayDailyChallenge",
+                EntityKey = _entity
+            };
+            
+            CloudScriptRunner.Execute(functionProperties, playDailyChallengeSuccess);
+        }
+
+        
     }
 }

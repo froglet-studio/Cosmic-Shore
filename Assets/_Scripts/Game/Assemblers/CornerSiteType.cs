@@ -6,6 +6,7 @@
         TopRight = 2,
         BottomLeft = 3,
         BottomRight = 4,
+        None = 5,
     }
 }
 

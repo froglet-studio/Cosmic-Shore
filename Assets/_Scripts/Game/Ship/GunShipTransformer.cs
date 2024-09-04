@@ -22,11 +22,6 @@ public class GunShipTransformer : ShipTransformer
         trailFollower = GetComponent<BlockscapeFollower>();
     }
 
-    protected override void Update()
-    {
-        base.Update();
-    }
-
     protected override void MoveShip()
     {
         if (shipStatus.Attached && !attached)
@@ -80,7 +75,7 @@ public class GunShipTransformer : ShipTransformer
     void SlideActions()
     {
         // TODO: should this be pulled out as an action type?
-        if (trailFollower.AttachedTrailBlock.Shielded) resourceSystem.ChangeAmmoAmount(rechargeRate * 2 * Time.deltaTime);
+        if (trailFollower.AttachedTrailBlock.TrailBlockProperties.Shielded) resourceSystem.ChangeAmmoAmount(rechargeRate * 2 * Time.deltaTime);
         else resourceSystem.ChangeAmmoAmount(rechargeRate * Time.deltaTime);
     }
 

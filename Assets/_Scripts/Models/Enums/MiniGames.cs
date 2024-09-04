@@ -27,4 +27,5 @@ public enum MiniGames
     Multipass = 22,
     BotDuel = 23,
     Curvatious = 24,
+    MazeRunner = 25,
 }

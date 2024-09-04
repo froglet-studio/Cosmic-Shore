@@ -17,7 +17,7 @@ MonoBehaviour:
   Description: Take things
   Icon: {fileID: 21300000, guid: dc00c750147354844a98cbed2de847f7, type: 3}
   SelectedIcon: {fileID: 21300000, guid: 04d8b62f9ed3fe04c8bc2c967cce7a9e, type: 3}
-  CardBackground: {fileID: 21300000, guid: dc00c750147354844a98cbed2de847f7, type: 3}
+  CardBackground: {fileID: 21300000, guid: ff1f2b9e38360c5468917a81e6424c91, type: 3}
   PreviewClip: {fileID: 241334157148977051, guid: 9d2d88f52b2131f419722eec012eb6fe,
     type: 3}
   Captains:

@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ce7474d4aed9d704ea0001a2338c0784, type: 3}
+  m_Name: SO_Captain_Serpent_Charge
+  m_EditorClassIdentifier: 
+  Name: Scales
+  Description: Longest debuff duration from crystal decoy.
+  AIBehaviorDescription: 
+  Flavor: '[Flavor text placeholder]'
+  Image: {fileID: 21300000, guid: 815ff2c0c5c643d43824961fcfb8eb40, type: 3}
+  HeadshotImage: {fileID: 0}
+  Icon: {fileID: 21300000, guid: 33db5908f1280c24f98ec60ac59b6d86, type: 3}
+  SelectedIcon: {fileID: 21300000, guid: 6c4f40eef57f4d04bbd01083161212ff, type: 3}
+  Ship: {fileID: 11400000, guid: 8a288448ab55edc46ac841a5f2e53d83, type: 2}
+  PrimaryElement: 1
+  Element: {fileID: 11400000, guid: 93cccacc721734240998ca415746a8dc, type: 2}
+  InitialResourceLevels:
+    Mass: 0
+    Charge: 0.1
+    Space: 0
+    Time: 0
+  BasePrice: 0

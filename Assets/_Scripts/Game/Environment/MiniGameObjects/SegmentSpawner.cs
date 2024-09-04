@@ -15,18 +15,24 @@ public enum PositioningScheme
     SphereEmanating = 7,
     StraightLineConstantRotation = 8,
     CylinderSurfaceWithAngle = 9,
-    KinkyLineBranching = 10
+    KinkyLineBranching = 10,
+    MazeGrid = 11,
+    CurvyTubeNetwork = 12,
+    KinkyTubeNetwork = 13,
+    SpiralTower = 14,
+    HoneycombGrid = 15,
+    HilbertCurveLSystem = 16
 }
 
 public class SegmentSpawner : MonoBehaviour
 {
-    
+
     [SerializeField] List<SpawnableAbstractBase> spawnableSegments;
     [SerializeField] PositioningScheme positioningScheme = PositioningScheme.SphereUniform;
     [SerializeField] List<float> spawnSegmentWeights;
     [SerializeField] public int Seed;
     [SerializeField] Transform parent;
-    
+
     [SerializeField] public Vector3 origin = Vector3.zero;
     GameObject SpawnedSegmentContainer;
     List<Trail> trails = new();
@@ -54,6 +60,21 @@ public class SegmentSpawner : MonoBehaviour
     [SerializeField] int maxDepth = 3;
     [SerializeField] int maxTotalSpawnedObjects = 100;
     [SerializeField] List<GameObject> branchPrefabs;
+
+    [Header("Maze Grid Settings")]
+    [SerializeField] public int GridWidth = 10;
+    [SerializeField] public int GridHeight = 10;
+    [SerializeField] public int GridThickness = 10;
+    [SerializeField] public float CellSize = 10f;
+
+    [Header("Tube Network Settings")]
+    [SerializeField] public float Curviness = 0.5f;
+    [SerializeField] public float BranchProbability = 0.2f;
+
+    [Header("Spiral Tower Settings")]
+    [SerializeField] public float TowerHeight = 100f;
+    [SerializeField] public float TowerRadius = 20f;
+    [SerializeField] public float RotationsPerUnit = 0.1f;
 
     void Start()
     {
@@ -116,7 +137,7 @@ public class SegmentSpawner : MonoBehaviour
                     (Radius * Vector3.forward)) + origin + transform.position;
                 spawned.transform.LookAt(Vector3.zero);
                 return;
-            case PositioningScheme.KinkyLine:                
+            case PositioningScheme.KinkyLine:
                 Quaternion rotation;
                 spawned.transform.position = currentDisplacement += RandomVectorRotation(StraightLineLength * Vector3.forward, out rotation) ;
                 spawned.transform.rotation = currentRotation = rotation;
@@ -131,7 +152,7 @@ public class SegmentSpawner : MonoBehaviour
                 return;
             case PositioningScheme.StraightLineRandomOrientation:
                 spawned.transform.position = new Vector3(0, 0, spawnedItemCount * StraightLineLength) + origin + transform.position;
-                spawned.transform.Rotate(Vector3.forward, (float)random.NextDouble() * 180);
+                spawned.transform.Rotate(Vector3.forward, (float)Random.value * 180);
                 return;
             case PositioningScheme.Cubic:
                 // Volumetric Grid, looking at origin
@@ -154,8 +175,8 @@ public class SegmentSpawner : MonoBehaviour
                 spawned.transform.position = new Vector3(Radius * Mathf.Sin(spawnedItemCount),
                                                          Radius * Mathf.Cos(spawnedItemCount),
                                                          spawnedItemCount * StraightLineLength) + origin + transform.position;
-                spawned.transform.Rotate(Vector3.forward + (((float)random.NextDouble() - .4f) * Vector3.right)
-                                                         + (((float)random.NextDouble() - .4f) * Vector3.up), (float)random.NextDouble() * 180);
+                spawned.transform.Rotate(Vector3.forward + (((float)Random.value - .4f) * Vector3.right)
+                                                         + (((float)Random.value - .4f) * Vector3.up), (float)Random.value * 180);
                 return;
             case PositioningScheme.KinkyLineBranching:
 
@@ -164,7 +185,7 @@ public class SegmentSpawner : MonoBehaviour
                     return;
 
                 // Check if the current kink should branch
-                if (random.NextDouble() < branchProbability && maxDepth > 0)
+                if (Random.value < branchProbability && maxDepth > 0)
                 {
                     // Determine the number of branches for the current kink
                     int numBranches = random.Next(minBranches, maxBranches + 1);
@@ -198,13 +219,45 @@ public class SegmentSpawner : MonoBehaviour
                 spawned.transform.position = currentDisplacement += RandomVectorRotation(StraightLineLength * Vector3.forward, out rotation);
                 spawned.transform.rotation = currentRotation = rotation;
                 return;
+            case PositioningScheme.MazeGrid:
+                PositionInMazeGrid(spawned);
+                return;
+            case PositioningScheme.CurvyTubeNetwork:
+                PositionInCurvyTubeNetwork(spawned);
+                return;
+            case PositioningScheme.KinkyTubeNetwork:
+                PositionInKinkyTubeNetwork(spawned);
+                return;
+            case PositioningScheme.SpiralTower:
+                PositionInSpiralTower(spawned);
+                return;
+            case PositioningScheme.HoneycombGrid:
+                PositionInHoneycombGrid(spawned);
+                return;
+            case PositioningScheme.HilbertCurveLSystem:
+                var hilbertPositioner = GetComponent<HilbertCurveLSystemPositioning>();
+                if (hilbertPositioner == null)
+                {
+                    hilbertPositioner = gameObject.AddComponent<HilbertCurveLSystemPositioning>();
+                }
+                hilbertPositioner.GenerateHilbertCurve();
+                var positions = hilbertPositioner.GetPositions();
+                var rotations = hilbertPositioner.GetRotations();
+                if (spawnedItemCount < positions.Count)
+                {
+                    spawned.transform.SetPositionAndRotation(
+                        positions[spawnedItemCount] + origin + transform.position,
+                        rotations[spawnedItemCount]
+                    );
+                }
+                return;
 
         }
     }
 
     GameObject SpawnRandom()
     {
-        var spawnWeight = random.NextDouble();
+        var spawnWeight = Random.value;
         var spawnIndex = 0;
         var totalWeight = 0f;
         for (int i = 0; i < spawnSegmentWeights.Count && totalWeight < spawnWeight; i++)
@@ -242,7 +295,7 @@ public class SegmentSpawner : MonoBehaviour
             return;
 
         // Check if the current branch should spawn more branches
-        if (random.NextDouble() < branchProbability)
+        if (Random.value < branchProbability)
         {
             // Determine the number of branches for the current branch
             int numBranches = random.Next(minBranches, maxBranches + 1);
@@ -284,5 +337,71 @@ public class SegmentSpawner : MonoBehaviour
         spawnedItemCount++;
 
         return branch;
+    }
+    void PositionInMazeGrid(GameObject spawned)
+    {
+        int x = random.Next(0, GridWidth);
+        int y = random.Next(0, GridHeight);
+        int z = random.Next(0, GridThickness);
+        spawned.transform.position = new Vector3(x * CellSize, y * CellSize, z * CellSize) + origin + transform.position;
+        spawned.transform.rotation = Quaternion.Euler(random.Next(0, 4) * 90, random.Next(0, 4) * 90, random.Next(0, 4) * 90);
+    }
+
+    void PositionInCurvyTubeNetwork(GameObject spawned)
+    {
+        float t = spawnedItemCount * 0.1f;
+        Vector3 position = new Vector3(
+            Mathf.Sin(t * Curviness) * TowerRadius,
+            t * 10,
+            Mathf.Cos(t * Curviness) * TowerRadius
+        );
+        spawned.transform.position = position + origin + transform.position;
+        spawned.transform.LookAt(position + Vector3.up * 10);
+
+        if (random.NextDouble() < BranchProbability)
+        {
+            // Start a new branch
+            currentDisplacement = spawned.transform.position;
+            currentRotation = spawned.transform.rotation;
+        }
+    }
+
+    void PositionInKinkyTubeNetwork(GameObject spawned)
+    {
+        if (spawnedItemCount % 5 == 0)
+        {
+            // Make a sharp turn every 5 segments
+            currentRotation *= Quaternion.Euler(
+                random.Next(-60, 61),
+                random.Next(-60, 61),
+                random.Next(-60, 61)
+            );
+        }
+        spawned.transform.position = currentDisplacement;
+        spawned.transform.rotation = currentRotation;
+        currentDisplacement += currentRotation * Vector3.forward * 10;
+    }
+
+    void PositionInSpiralTower(GameObject spawned)
+    {
+        float height = (spawnedItemCount * TowerHeight) / NumberOfSegments;
+        float angle = height * RotationsPerUnit * Mathf.PI * 2;
+        Vector3 position = new Vector3(
+            Mathf.Cos(angle) * TowerRadius,
+            height,
+            Mathf.Sin(angle) * TowerRadius
+        );
+        spawned.transform.position = position + origin + transform.position;
+        spawned.transform.LookAt(new Vector3(0, height, 0) + origin + transform.position);
+    }
+
+    void PositionInHoneycombGrid(GameObject spawned)
+    {
+        int row = random.Next(0, GridHeight);
+        int col = random.Next(0, GridWidth);
+        float x = col * CellSize * 1.5f;
+        float z = row * CellSize * Mathf.Sqrt(3) + (col % 2 == 0 ? 0 : CellSize * Mathf.Sqrt(3) / 2);
+        spawned.transform.position = new Vector3(x, 0, z) + origin + transform.position;
+        spawned.transform.rotation = Quaternion.Euler(0, random.Next(0, 6) * 60, 0);
     }
 }

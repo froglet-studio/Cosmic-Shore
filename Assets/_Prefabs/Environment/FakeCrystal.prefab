@@ -193,9 +193,11 @@ MonoBehaviour:
   sphereRadius: 170
   SpentCrystalPrefab: {fileID: 8491596592871572304, guid: f39596c98ed9d644a834f2fa27ec90ca,
     type: 3}
-  CrystalModel: {fileID: 4604809919382375336}
+  CrystalModels:
+  - {fileID: 4604809919382375336}
   explodingMaterial: {fileID: 2100000, guid: 383f21e8586fd7243a19e1d0f26110d0, type: 2}
   defaultMaterial: {fileID: 2100000, guid: f14d7b6ff3151b94ebe8faf36edfb48d, type: 2}
+  inactiveCrystalMaterial: {fileID: 0}
   shipImpactEffects: 0
   crystalImpactEffects: 090000000a000000
   AOEPrefab: {fileID: 0}

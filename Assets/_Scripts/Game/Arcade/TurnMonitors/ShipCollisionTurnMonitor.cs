@@ -12,10 +12,10 @@ namespace CosmicShore.Game.Arcade
         {
             if (paused) return false;
 
-            if (!StatsManager.Instance.playerStats.ContainsKey(Game.ActivePlayer.PlayerName))
+            if (!StatsManager.Instance.PlayerStats.ContainsKey(Game.ActivePlayer.PlayerName))
                 return false;
 
-            return StatsManager.Instance.playerStats[Game.ActivePlayer.PlayerName].skimmerShipCollisions >= Collisions;
+            return StatsManager.Instance.PlayerStats[Game.ActivePlayer.PlayerName].SkimmerShipCollisions >= Collisions;
         }
 
         public override void NewTurn(string playerName)

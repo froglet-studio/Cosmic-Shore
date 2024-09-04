@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d0353a89b1f911e48b9e16bdc9f2e058, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  version: 9
+  version: 7
 --- !u!21 &2100000
 Material:
   serializedVersion: 8
@@ -36,7 +36,6 @@ Material:
     RenderType: Transparent
   disabledShaderPasses:
   - SHADOWCASTER
-  - MOTIONVECTORS
   m_LockedProperties: 
   m_SavedProperties:
     serializedVersion: 3
@@ -100,7 +99,6 @@ Material:
     m_Ints: []
     m_Floats:
     - _AlphaClip: 0
-    - _AlphaToMask: 0
     - _Blend: 0
     - _BumpScale: 1
     - _CastShadows: 0
@@ -133,16 +131,15 @@ Material:
     - _opacity: 1.0100001
     - _player: 0
     - _red: 0
-    - _spread: 0.0015
+    - _spread: 0.15
     m_Colors:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
     - _BrightCrystalColor: {r: 0.6221651, g: 1, b: 0.5911949, a: 0.9411765}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
-    - _DullCrystalColor: {r: 0.09196626, g: 0.5849056, b: 0.10761518, a: 0.9411765}
+    - _DullCrystalColor: {r: 0.030081855, g: 0.3679245, b: 0.04080698, a: 0.9411765}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
     - _SpecColor: {r: 0.19999996, g: 0.19999996, b: 0.19999996, a: 1}
     - _playerColor1: {r: 0.49019608, g: 0, b: 0.6386895, a: 0}
     - _playerColor2: {r: 0.22745098, g: 0.63529414, b: 0.8, a: 0}
     - _velocity: {r: 0, g: 0, b: 0, a: 0}
   m_BuildTextureStacks: []
-  m_AllowLocking: 1

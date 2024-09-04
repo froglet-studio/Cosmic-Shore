@@ -38,14 +38,14 @@ public class CameraManager : SingletonPersistent<CameraManager>
 
     private void OnEnable()
     {
-        GameManager.onPlayGame += SetupGamePlayCameras;
-        GameManager.onGameOver += SetEndCameraActive;
+        GameManager.OnPlayGame += SetupGamePlayCameras;
+        GameManager.OnGameOver += SetEndCameraActive;
     }
 
     void OnDisable()
     {
-        GameManager.onPlayGame -= SetupGamePlayCameras;
-        GameManager.onGameOver -= SetEndCameraActive;
+        GameManager.OnPlayGame -= SetupGamePlayCameras;
+        GameManager.OnGameOver -= SetEndCameraActive;
     }
 
     void Start()
@@ -53,6 +53,11 @@ public class CameraManager : SingletonPersistent<CameraManager>
         vCam = closeCamera.VirtualCameraGameObject.GetComponent<CinemachineVirtualCamera>();
 
         OnMainMenu();
+    }
+
+    public Transform GetCloseCamera()
+    {
+        return closeCamera.transform;
     }
 
     public void OnMainMenu()
@@ -112,8 +117,8 @@ public class CameraManager : SingletonPersistent<CameraManager>
 
     void ClipPlaneAndOffsetLerper(float normalizedDistance)
     {
-        float CloseCamClipPlane = -CloseCamDistance / 5;
-        float FarCamClipPlane = 5f;
+        float CloseCamClipPlane = .5f;
+        float FarCamClipPlane = .7f;
         if (lerper != null) 
             StopCoroutine(lerper);
         

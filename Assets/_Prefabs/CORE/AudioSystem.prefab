@@ -439,8 +439,24 @@ MonoBehaviour:
   sfxSource: {fileID: 6992457589778822547}
   musicSource1: {fileID: 5079991984299441695}
   musicSource2: {fileID: 2269195998066776873}
-  musicVolume: 0.1
-  sfxVolume: 0.1
+  musicVolume: 0.085
+  sfxVolume: 0.2
+  OptionClickAudioClip: {fileID: 8300000, guid: be63fc75d5e6d494d827fb256aa89756,
+    type: 3}
+  OpenViewAudioClip: {fileID: 8300000, guid: 629a744a7657f384b9a9eb18eb4fe198, type: 3}
+  SwitchViewAudioClip: {fileID: 8300000, guid: 97c4845e20e66fb41b3cb73b621acf2e, type: 3}
+  CloseViewAudioClip: {fileID: 8300000, guid: 0ed8ea2827db2c147958145687d78c28, type: 3}
+  SmallRewardAudioClip: {fileID: 8300000, guid: 781de897d4cc0cd40b5aaff49e5e8b7b,
+    type: 3}
+  BigRewardAudioClip: {fileID: 8300000, guid: 2d08e255d5a2f6c4f961e040c13d2f20, type: 3}
+  UpgradeAudioClip: {fileID: 8300000, guid: 1d6b12c877a5a1c469edf3685692f949, type: 3}
+  DeniedAudioClip: {fileID: 8300000, guid: a335cdf005e817740a81441185f4ffe1, type: 3}
+  ConfirmedAudioClip: {fileID: 8300000, guid: 0f1b51a3bb8fcf441a489114d4778a5b, type: 3}
+  LetsGoAudioClip: {fileID: 8300000, guid: a6a79847bfe614c4c9de19ea7effab47, type: 3}
+  SwitchScreenAudioClip: {fileID: 8300000, guid: 463581e3d7e720c489b5d029755db720,
+    type: 3}
+  RedeemTicketAudioClip: {fileID: 8300000, guid: 7e98ac29753d3394fb5cca39b8289e48,
+    type: 3}
 --- !u!114 &1452114705
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
+using CosmicShore.Core;
 
 namespace CosmicShore
 {
@@ -21,8 +22,9 @@ namespace CosmicShore
             if (resourceSystem.CurrentAmmo > resourceSystem.MaxAmmo / enhancementsPerFullAmmo)
             {
                 resourceSystem.ChangeAmmoAmount(-resourceSystem.MaxAmmo / enhancementsPerFullAmmo);
-                var trailBlock = spawner.Trail.TrailList.Last().gameObject;
-                var assembler = trailBlock.AddComponent<GyroidAssembler>();
+                var BlockObject = spawner.Trail.TrailList.Last().gameObject;
+                BlockObject.GetComponent<TrailBlock>().ActivateSuperShield();
+                var assembler = BlockObject.AddComponent<GyroidAssembler>();
                 assembler.Depth = 50;
                 assembler.StartBonding();
             }

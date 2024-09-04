@@ -1,9 +1,8 @@
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Serialization;
 using UnityEngine.UI;
 
-namespace CosmicShore
+namespace CosmicShore.App.UI
 {
     /// <summary>
     /// A vertically looping scroll window.

@@ -18,7 +18,8 @@ public enum TrailBlockImpactEffects
     Fire = 13,
     Bounce = 14,
     Explode = 15,
-    FX =16
+    FX =16,
+    FeelDanger = 17,
 }
 
 /*

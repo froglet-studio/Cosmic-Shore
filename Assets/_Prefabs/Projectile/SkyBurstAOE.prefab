@@ -1,0 +1,92 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &2728798890556433942
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 6454128237993233764}
+  - component: {fileID: 1267448515133335184}
+  m_Layer: 10
+  m_Name: SkyBurstAOE
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &6454128237993233764
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2728798890556433942}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 0
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1267448515133335184
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2728798890556433942}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 29c7270b521a36b41a544f515c98162f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  speed: 0
+  MaxScale: 200
+  ExplosionDuration: 2
+  ExplosionDelay: 0
+  shipImpactEffects: 
+  affectSelf: 0
+  destructive: 1
+  devastating: 0
+  Team: 0
+  Ship: {fileID: 0}
+  AnonymousExplosion: 0
+  height: 800
+  trailBlock: {fileID: 4563009547826722997, guid: d24789d6e79c0044194a6017909ecfb4,
+    type: 3}
+  baseBlockScale: {x: 3, y: 3, z: 10}
+  shielded: 1
+  SecondaryExplosionDelay: 0.3
+  numberOfRays: 12
+  blocksPerRay: 6
+  maxRadius: 80
+  minRadius: 10
+  raySpread: 20
+  scaleCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0.062301636
+      value: 0.751091
+      inSlope: 0.39721414
+      outSlope: 0.39721414
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0.17647023
+    - serializedVersion: 3
+      time: 1.0063957
+      value: 1.5847658
+      inSlope: 0.37969396
+      outSlope: 0.37969396
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.17226854
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4

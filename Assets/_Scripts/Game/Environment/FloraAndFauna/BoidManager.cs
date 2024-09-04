@@ -12,17 +12,14 @@ public class BoidManager : Population
     public float spawnRadius = 50.0f;
 
     [Header("Global Boid Settings")]
-    public Transform globalGoal;
-    public bool randomGoals = true;
-    public float goalUpdateInterval = 5f;
     public Transform Mound;
 
-    private Vector3 goalPos;
-    public List<float> Weights;
+    public List<Boid> Boids;
+
 
     public Trail boidTrail = new();
 
-    private void Start()
+    protected override void Start()
     {
         Weights = new List<float> { 1, 1, 1, 1 };
         for (int i = 0; i < numberOfBoids; i++)
@@ -30,65 +27,26 @@ public class BoidManager : Population
             Vector3 spawnPosition = transform.position + (spawnRadius * (Quaternion.AngleAxis(Random.Range(0, 360), Vector3.forward) * Vector3.right));
             Boid newBoid = Instantiate(boidPrefab, spawnPosition, Quaternion.LookRotation(Vector3.Cross(spawnPosition,Vector3.forward)));
             newBoid.transform.SetParent(transform);
+            newBoid.Population = this;
+            newBoid.Team = Team;
             var block = newBoid.GetComponentInChildren<TrailBlock>();
 
-            if (globalGoal)
-            {
-                newBoid.Goal = globalGoal;
-                
-            }
             if (Mound)
             {
                 newBoid.Mound = Mound;
             }
 
-            newBoid.DefaultGoal = globalGoal;
+            //newBoid.DefaultGoal = node.GetClosestItem(spawnPosition).transform;
 
             boidTrail.Add(block);
-            block.Team = Teams.Blue;
+            block.Team = Team;
             block.Trail = boidTrail;
             
             newBoid.normalizedIndex = (float)i / numberOfBoids;
+            Boids.Add(newBoid);
         }
 
-        StartCoroutine(UpdateGoal());
+        base.Start();
     }
 
-    private void Update()
-    {
-        if (!randomGoals && globalGoal)
-        {
-            goalPos = globalGoal.position;
-        }
-    }
-
-    private void CalculateTeamWeights()
-    {
-        Vector4 teamVolumes = StatsManager.Instance.GetTeamVolumes();
-        float totalVolume = teamVolumes.x + teamVolumes.y + teamVolumes.z + teamVolumes.w;
-
-        Weights = new List<float>
-        {
-        totalVolume / (teamVolumes.x + 1), // +1 to avoid division by zero
-        totalVolume / (teamVolumes.y + 1),
-        totalVolume / (teamVolumes.z + 1),
-        totalVolume / (teamVolumes.w + 1)
-        };
-    }
-
-    private IEnumerator UpdateGoal()
-    {
-        while (true)
-        {
-            yield return new WaitForSeconds(goalUpdateInterval);
-
-            if (globalGoal && randomGoals)
-            {
-                goalPos = transform.position + new Vector3(Random.Range(-spawnRadius, spawnRadius), Random.Range(-spawnRadius, spawnRadius), Random.Range(-spawnRadius, spawnRadius));
-                globalGoal.position = goalPos;
-            }
-
-            CalculateTeamWeights();
-        }
-    }
 }

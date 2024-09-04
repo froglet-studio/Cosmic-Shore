@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Security;
+using CosmicShore.Integrations.PlayFab.PlayerData;
 using PlayFab;
 using PlayFab.ClientModels;
 using TMPro;
@@ -77,8 +78,10 @@ namespace CosmicShore.Integrations.PlayFab.Authentication
             
             if(registerButton!=null)
                 registerButton.onClick.AddListener(RegisterButton_OnClick);
-
-            AuthenticationManager.OnProfileLoaded += InitializePlayerDisplayNameView;
+            
+            AuthenticationManager.Instance.AnonymousLogin();
+            AuthenticationManager.OnLoginSuccess += PlayerDataController.Instance.LoadPlayerProfile;
+            PlayerDataController.OnProfileLoaded += InitializePlayerDisplayNameView;
         }
 
         void OnEndEdit(string text)
@@ -293,7 +296,7 @@ namespace CosmicShore.Integrations.PlayFab.Authentication
             if (!CheckDisplayNameLength(displayNameInputField.text))
                 return;
 
-            AuthenticationManager.Instance.SetPlayerDisplayName(displayNameInputField.text, UpdatePlayerDisplayNameView);
+            PlayerDataController.Instance.SetPlayerDisplayName(displayNameInputField.text, UpdatePlayerDisplayNameView);
 
             BusyIndicator.SetActive(true);
 
@@ -336,7 +339,7 @@ namespace CosmicShore.Integrations.PlayFab.Authentication
         {
             BusyIndicator.SetActive(false);
 
-            displayNameInputField.text = AuthenticationManager.UserProfile.DisplayName;
+            displayNameInputField.text = PlayerDataController.PlayerProfile.DisplayName;
 
             displayNameResultMessage.text = "Display Name Loaded";
             displayNameResultMessage.gameObject.SetActive(true);

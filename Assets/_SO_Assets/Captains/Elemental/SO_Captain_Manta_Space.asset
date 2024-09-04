@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ce7474d4aed9d704ea0001a2338c0784, type: 3}
+  m_Name: SO_Captain_Manta_Space
+  m_EditorClassIdentifier: 
+  Name: Reaper
+  Description: Can skim from further away than anyone else.
+  AIBehaviorDescription: 
+  Flavor: '[Flavor text placeholder]'
+  Image: {fileID: 21300000, guid: 90ae92eb7bbd61540bc25060355519e9, type: 3}
+  HeadshotImage: {fileID: 0}
+  Icon: {fileID: 21300000, guid: a3a53bc2a4d4d9442a4a0a8aef57930b, type: 3}
+  SelectedIcon: {fileID: 21300000, guid: 87a02d4518d0ec0468fa82912056d632, type: 3}
+  Ship: {fileID: 11400000, guid: b0e6ec5495dbfb6419332830d585f364, type: 2}
+  PrimaryElement: 3
+  Element: {fileID: 11400000, guid: 5fb31ca899377b14896945c643e92320, type: 2}
+  InitialResourceLevels:
+    Mass: 0
+    Charge: 0
+    Space: 0.1
+    Time: 0
+  BasePrice: 0

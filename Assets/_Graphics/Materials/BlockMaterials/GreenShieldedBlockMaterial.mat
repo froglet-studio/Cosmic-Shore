@@ -22,7 +22,6 @@ Material:
     RenderType: Opaque
   disabledShaderPasses:
   - SHADOWCASTER
-  - MOTIONVECTORS
   m_LockedProperties: 
   m_SavedProperties:
     serializedVersion: 3
@@ -88,7 +87,6 @@ Material:
     - _Add_sin: 0
     - _Alpha: 0
     - _AlphaClip: 0
-    - _AlphaToMask: 0
     - _Blend: 0
     - _BumpScale: 1
     - _CastShadows: 0
@@ -98,6 +96,7 @@ Material:
     - _Cutoff: 0.5
     - _DetailAlbedoMapScale: 1
     - _DetailNormalMapScale: 1
+    - _Distance: 100000
     - _DstBlend: 0
     - _EnvironmentReflections: 1
     - _GlossMapScale: 0
@@ -141,13 +140,12 @@ Material:
     - _DarkColor: {r: 0.0060816035, g: 0.13338894, b: 0.38679248, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
     - _SpecColor: {r: 0.19999996, g: 0.19999996, b: 0.19999996, a: 1}
-    - _Spread: {r: 0.7, g: 0.7, b: 0.7, a: 0}
+    - _Spread: {r: 1, g: 1, b: 1, a: 0}
     - _add_vector: {r: 0, g: 0, b: 9, a: 0}
     - _spread: {r: 1, g: 1, b: 1, a: 0}
     - _tangent: {r: 1.51, g: -2.92, b: 1.83, a: 0}
     - _velocity: {r: 0, g: 0, b: 0, a: 0}
   m_BuildTextureStacks: []
-  m_AllowLocking: 1
 --- !u!114 &2422392668265197798
 MonoBehaviour:
   m_ObjectHideFlags: 11
@@ -160,4 +158,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d0353a89b1f911e48b9e16bdc9f2e058, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  version: 9
+  version: 7

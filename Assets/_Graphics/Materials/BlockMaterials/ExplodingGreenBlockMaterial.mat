@@ -24,7 +24,6 @@ Material:
   disabledShaderPasses:
   - SHADOWCASTER
   - DepthOnly
-  - MOTIONVECTORS
   m_LockedProperties: 
   m_SavedProperties:
     serializedVersion: 3
@@ -89,7 +88,6 @@ Material:
     m_Floats:
     - _Add_sin: 0
     - _AlphaClip: 0
-    - _AlphaToMask: 0
     - _Blend: 0
     - _BumpScale: 1
     - _CastShadows: 0
@@ -154,7 +152,6 @@ Material:
     - _tangent: {r: 1.51, g: -2.92, b: 1.83, a: 0}
     - _velocity: {r: 0.86, g: -0.09, b: 0.19, a: 0}
   m_BuildTextureStacks: []
-  m_AllowLocking: 1
 --- !u!114 &2422392668265197798
 MonoBehaviour:
   m_ObjectHideFlags: 11
@@ -167,4 +164,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d0353a89b1f911e48b9e16bdc9f2e058, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  version: 9
+  version: 7

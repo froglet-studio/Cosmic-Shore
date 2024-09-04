@@ -1,23 +1,22 @@
+using CosmicShore.App.Systems;
+using CosmicShore.Core;
 using System;
 using System.Linq;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using Random = System.Random;
 
 namespace CosmicShore.App.UI.Elements
 {
     public class DailyChallengeCard : MonoBehaviour
     {
-        [Header("Resources")]
-        [SerializeField] SO_GameList AllGames;
-
         [Header("Placeholder Locations")]
         [SerializeField] TMP_Text GameTitle;
         [SerializeField] TMP_Text TimeRemaining;
         [SerializeField] Image BackgroundImage;
 
-        MiniGames gameMode = MiniGames.Random;
+        MiniGames gameMode;
+
         public MiniGames GameMode
         {
             get { return gameMode; }
@@ -30,19 +29,12 @@ namespace CosmicShore.App.UI.Elements
 
         void Start()
         {
-            Random random = new Random();
-            while (gameMode == MiniGames.Random)
-            {
-                gameMode = AllGames.GameList[random.Next(AllGames.GameList.Count)].Mode;
-                Debug.Log($"Daily Challenge GameMode: {gameMode}");
-            }
-
-            UpdateCardView();
+            gameMode = DailyChallengeSystem.Instance.DailyChallenge.GameMode;
         }
 
         void Update()
         {
-            DateTime current = DateTime.Now;
+            DateTime current = DateTime.UtcNow;
             DateTime tomorrow = current.AddDays(1).Date;
             double secondsUntilMidnight = (tomorrow - current).TotalSeconds;
 
@@ -56,25 +48,15 @@ namespace CosmicShore.App.UI.Elements
             }
             else
             {
-                // Do something here - player watched the clock roll over
+                gameMode = DailyChallengeSystem.Instance.DailyChallenge.GameMode;
             }
         }
 
         void UpdateCardView()
         {
-            SO_ArcadeGame game = AllGames.GameList.Where(x => x.Mode == gameMode).FirstOrDefault();
+            var game = Arcade.Instance.TrainingGames.GameList.Where(x => x.Game.Mode == gameMode).FirstOrDefault().Game;
             GameTitle.text = $"Daily Challenge: {game.DisplayName}";
             BackgroundImage.sprite = game.CardBackground;
-        }
-
-        public void OnCardClicked()
-        {
-            // Add highlight boarder
-
-            // Set active and show details
-            //LoadoutView.ExpandLoadout(Index);
-
-            Debug.Log($"GameCard - Clicked: Gamemode: {gameMode}");
         }
     }
 }

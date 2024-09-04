@@ -10,7 +10,11 @@ using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using CosmicShore.App.Systems.UserActions;
 using CosmicShore.Game.UI;
-using UnityEngine.Serialization;
+using CosmicShore.Models.Enums;
+using CosmicShore.App.Systems;
+using CosmicShore.Integrations.PlayFab.PlayerData;
+using CosmicShore.Integrations.PlayFab.Economy;
+using CosmicShore.App.Systems.Xp;
 
 namespace CosmicShore.Game.Arcade
 {
@@ -34,12 +38,14 @@ namespace CosmicShore.Game.Arcade
         protected List<Player> Players;
         protected CountdownTimer countdownTimer;
 
-        List<Teams> PlayerTeams = new() { Teams.Green, Teams.Red, Teams.Gold };
+        List<Teams> PlayerTeams = new() { Teams.Jade, Teams.Ruby, Teams.Gold };
         List<string> PlayerNames = new() { "PlayerOne", "PlayerTwo", "PlayerThree" };
 
         // Configuration set by player
         public static int NumberOfPlayers = 1;  // TODO: P1 - support excluding single player games (e.g for elimination)
         public static int IntensityLevel = 1;
+        public static bool IsDailyChallenge = false;
+        public static bool IsMission = false;
         static ShipTypes playerShipType = ShipTypes.Dolphin;
         static bool playerShipTypeInitialized;
         
@@ -56,6 +62,7 @@ namespace CosmicShore.Game.Arcade
             }
         }
         public static SO_Captain PlayerCaptain;
+        public static ResourceCollection ShipResources = new ResourceCollection(.5f, .5f, .5f, .5f);
 
         // Game State Tracking
         protected int TurnsTakenThisRound = 0;
@@ -84,12 +91,6 @@ namespace CosmicShore.Game.Arcade
             countdownTimer = HUD.CountdownTimer;
             ScoreTracker.GameCanvas = GameCanvas;
 
-            if (DefaultPlayerCaptain == null)
-                Debug.LogWarning("No Default Captain Set - This scene will not be able to launch without going through the main menu. Please set DefaultPlayerCaptain of the minigame script.");
-
-            if (PlayerCaptain == null)
-                PlayerCaptain = DefaultPlayerCaptain;
-
             foreach (var turnMonitor in TurnMonitors)
                 if (turnMonitor is TimeBasedTurnMonitor tbtMonitor)
                     tbtMonitor.Display = HUD.RoundTimeDisplay;
@@ -111,7 +112,7 @@ namespace CosmicShore.Game.Arcade
                 Players.Add(Instantiate(playerPrefab));
                 Players[i].defaultShip = playerShipTypeInitialized ? PlayerShipType : DefaultPlayerShipType;
                 Players[i].Team = PlayerTeams[i];
-                Players[i].PlayerName = PlayerNames[i];
+                Players[i].PlayerName = i == 0 ? PlayerDataController.PlayerProfile.DisplayName : PlayerNames[i];
                 Players[i].PlayerUUID = PlayerNames[i];
                 Players[i].name = "Player" + (i + 1);
                 Players[i].gameObject.SetActive(true);
@@ -151,9 +152,7 @@ namespace CosmicShore.Game.Arcade
 
         public void Exit()
         {
-            if (PauseSystem.Paused) PauseSystem.TogglePauseGame();
-            // TODO: this is kind of hokie
-            SceneManager.LoadScene(0);
+            GameManager.ReturnToLobby();
         }
 
         public void OnReadyClicked()
@@ -228,9 +227,9 @@ namespace CosmicShore.Game.Arcade
 
         protected virtual void EndTurn()
         {
-            Silhouette silhouette;
-            Player.ActivePlayer.Ship.TryGetComponent<Silhouette>(out silhouette);
-            silhouette.Clear();
+            //Silhouette silhouette;
+            //Player.ActivePlayer.Ship.TryGetComponent<Silhouette>(out silhouette);
+            //silhouette.Clear();
             StartCoroutine(EndTurnCoroutine());
         }
 
@@ -276,7 +275,65 @@ namespace CosmicShore.Game.Arcade
             foreach (var player in Players)
                 Debug.Log($"MiniGame.EndGame - Player Score: {ScoreTracker.GetScore(player.PlayerName)} ");
 
-            LeaderboardManager.Instance.ReportGameplayStatistic(gameMode, PlayerShipType, IntensityLevel, ScoreTracker.GetHighScore(), ScoreTracker.GolfRules);
+            if (IsDailyChallenge)
+            {
+                LeaderboardManager.Instance.ReportDailyChallengeStatistic(ScoreTracker.GetHighScore(), ScoreTracker.GolfRules);
+                DailyChallengeSystem.Instance.ReportScore(ScoreTracker.GetHighScore());
+
+                // TODO: Hide play again button, or map it to use another ticket
+
+            }
+            else if (IsMission)
+            {
+                GameCanvas.AwardsContainer.SetActive(true);
+                // Award Crystals
+                Debug.Log($"Mission EndGame - Award Mission Crystals -  score:{ScoreTracker.GetHighScore()}");
+                Debug.Log($"Mission EndGame - Award Mission Crystals -  element:{PlayerCaptain.PrimaryElement}");
+                int crystalsEarned = 0;
+                switch (PlayerCaptain.PrimaryElement)
+                {
+                    case Element.Charge:
+                        crystalsEarned = (int)(StatsManager.Instance.LastRoundPlayerStats[PlayerDataController.PlayerProfile.DisplayName].ChargeCrystalValue * 100);
+                        CatalogManager.Instance.GrantElementalCrystals(crystalsEarned, Element.Charge);
+                        break;
+                    case Element.Mass:
+                        crystalsEarned = (int)(StatsManager.Instance.LastRoundPlayerStats[PlayerDataController.PlayerProfile.DisplayName].MassCrystalValue * 100);
+                        CatalogManager.Instance.GrantElementalCrystals(crystalsEarned, Element.Mass);
+                        break;
+                    case Element.Space:
+                        crystalsEarned = (int)(StatsManager.Instance.LastRoundPlayerStats[PlayerDataController.PlayerProfile.DisplayName].SpaceCrystalValue * 100);
+                        CatalogManager.Instance.GrantElementalCrystals(crystalsEarned, Element.Space);
+                        break;
+                    case Element.Time:
+                        crystalsEarned = (int)(StatsManager.Instance.LastRoundPlayerStats[PlayerDataController.PlayerProfile.DisplayName].TimeCrystalValue * 100);
+                        CatalogManager.Instance.GrantElementalCrystals(crystalsEarned, Element.Time);
+                        break;
+                }
+                Debug.Log($"Mission EndGame - Award Mission Crystals - Player has earned {crystalsEarned} crystals");
+                GameCanvas.CrystalsEarnedImage.sprite = CaptainManager.Instance.GetCaptainByName(PlayerCaptain.Name).SO_Element.GetFullIcon(true);
+                GameCanvas.CrystalsEarnedText.text = crystalsEarned.ToString();
+
+                // Award XP
+                Debug.Log($"Mission EndGame - Award Mission XP -  score:{ScoreTracker.GetHighScore()}, element:{PlayerCaptain.PrimaryElement}");
+                XpHandler.IssueXP(CaptainManager.Instance.GetCaptainByName(PlayerCaptain.Name), 10);
+                GameCanvas.XPEarnedText.text = "10";
+
+                // Report any encountered captains
+                Debug.Log($"Mission EndGame - Unlock Mission Captains");
+                if (Hangar.Instance.HostileAI1Captain != null && !CaptainManager.Instance.IsCaptainEncountered(Hangar.Instance.HostileAI1Captain.Name))
+                {
+                    Debug.Log($"Encountering Captain!!! - {Hangar.Instance.HostileAI1Captain}");
+                    CaptainManager.Instance.EncounterCaptain(Hangar.Instance.HostileAI1Captain.Name);
+                    GameCanvas.EncounteredCaptainImage.sprite = Hangar.Instance.HostileAI1Captain.Image;
+                }
+                if (Hangar.Instance.HostileAI2Captain != null && !CaptainManager.Instance.IsCaptainEncountered(Hangar.Instance.HostileAI2Captain.Name))
+                {
+                    Debug.Log($"Encountering Captain!!! - {Hangar.Instance.HostileAI2Captain}");
+                    CaptainManager.Instance.EncounterCaptain(Hangar.Instance.HostileAI2Captain.Name);
+                }
+            }
+            else
+                LeaderboardManager.Instance.ReportGameplayStatistic(gameMode, PlayerShipType, IntensityLevel, ScoreTracker.GetHighScore(), ScoreTracker.GolfRules);
 
             UserActionSystem.Instance.CompleteAction(new UserAction(
                     UserActionType.PlayGame,
@@ -287,7 +344,12 @@ namespace CosmicShore.Game.Arcade
             PauseSystem.TogglePauseGame();
             gameRunning = false;
             EndGameScreen.SetActive(true);
-            ScoreTracker.DisplayScores();
+
+            if (NumberOfPlayers > 1)
+                GameCanvas.scoreboard.ShowMultiplayerView();
+            else
+                GameCanvas.scoreboard.ShowSingleplayerView();
+
             OnMiniGameEnd?.Invoke(gameMode, PlayerShipType, NumberOfPlayers, IntensityLevel, ScoreTracker.GetHighScore());
         }
 
@@ -349,7 +411,7 @@ namespace CosmicShore.Game.Arcade
             ActivePlayer.Ship.GetComponent<ShipTransformer>().Reset();
             ActivePlayer.Ship.TrailSpawner.PauseTrailSpawner();
             ActivePlayer.Ship.ResourceSystem.Reset();
-            ActivePlayer.Ship.AssignCaptain(PlayerCaptain);
+            ActivePlayer.Ship.SetResourceLevels(ShipResources);
 
             CameraManager.Instance.SetupGamePlayCameras(ActivePlayer.Ship.FollowTarget);
 
@@ -357,7 +419,14 @@ namespace CosmicShore.Game.Arcade
             if (Players.Count > 1)
                 ReadyButton.gameObject.SetActive(true);
             else
-                OnReadyClicked();
+                StartCoroutine(StartCountdownTimerCoroutine());
+                
+        }
+
+        IEnumerator StartCountdownTimerCoroutine()
+        {
+            yield return new WaitForSecondsRealtime(2f);
+            OnReadyClicked();
         }
 
         /// <summary>

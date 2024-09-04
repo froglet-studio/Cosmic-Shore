@@ -1,3 +1,5 @@
+using CosmicShore.App.Systems.Favorites;
+using CosmicShore.App.UI.Views;
 using System.Linq;
 using TMPro;
 using UnityEngine;
@@ -9,14 +11,26 @@ namespace CosmicShore.App.UI.Elements
     {
         [Header("Resources")]
         [SerializeField] SO_GameList AllGames;
-        [SerializeField] Sprite LockIcon;
-        [SerializeField] public bool Locked;
+        [SerializeField] Sprite StarIconActive;
+        [SerializeField] Sprite StarIconInActive;
+        [HideInInspector] public ArcadeExploreView ExploreView;
 
         [Header("Placeholder Locations")]
         [SerializeField] TMP_Text GameTitle;
         [SerializeField] Image BackgroundImage;
-        [SerializeField] Image LockImage;
+        [SerializeField] Image StarImage;
         [SerializeField] int Index;
+
+        bool favorited;
+        [SerializeField] public bool Favorited
+        {
+            get { return favorited; }
+            set
+            {
+                favorited = value;
+                UpdateCardView();
+            }
+        }
 
         MiniGames gameMode;
         public MiniGames GameMode
@@ -42,8 +56,15 @@ namespace CosmicShore.App.UI.Elements
             SO_ArcadeGame game = AllGames.GameList.Where(x => x.Mode == gameMode).FirstOrDefault();
             GameTitle.text = game.DisplayName;
             BackgroundImage.sprite = game.CardBackground;
-            LockImage.sprite = LockIcon;
-            LockImage.gameObject.SetActive(Locked);
+            StarImage.sprite = Favorited ? StarIconActive : StarIconInActive;
+        }
+
+        public void ToggleFavorite()
+        {
+            Favorited = !Favorited;
+            StarImage.sprite = Favorited ? StarIconActive : StarIconInActive;
+            FavoriteSystem.ToggleFavorite(gameMode);
+            ExploreView.PopulateGameSelectionList();
         }
 
         public void OnCardClicked()

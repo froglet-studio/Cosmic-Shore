@@ -11,8 +11,8 @@ namespace CosmicShore.Game.UI
         [SerializeField] Image backgroundImage;
         [SerializeField] Sprite backgroundSprite;
         [SerializeField] TMP_Text fuelLevelText;
-        [SerializeField] List<Sprite> fuelLevelImages;
-        [SerializeField] Image fuelLevelImage;
+        [SerializeField] protected List<Sprite> fuelLevelImages;
+        [SerializeField] protected Image fuelLevelImage;
 
         readonly float maxLevel = 1f;
         float currentLevel;
@@ -24,9 +24,9 @@ namespace CosmicShore.Game.UI
             currentLevel = 0;
         }
 
-        public void UpdateDisplay(float newChargeLevel)
+        public void UpdateDisplay(float newResourceLevel)
         {
-            currentLevel = Mathf.Clamp(newChargeLevel, 0, maxLevel);
+            currentLevel = Mathf.Clamp(newResourceLevel, 0, maxLevel);
 
             // bucket the percent of full and use it as an index into the sprite list
             int maxIndex = fuelLevelImages.Count - 1;
@@ -37,7 +37,7 @@ namespace CosmicShore.Game.UI
                 Debug.Log($"FuelBar.UpdateFuelBarDisplay - percentOfFull:{percentOfFull}, maxIndex:{maxIndex}, index:{index}");
 
             fuelLevelImage.sprite = fuelLevelImages[index];
-            fuelLevelText.text = (currentLevel * 100f).ToString("F0");
+            if (fuelLevelText) fuelLevelText.text = (currentLevel * 100f).ToString("F0");
         }
     }
 }

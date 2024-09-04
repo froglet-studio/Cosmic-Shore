@@ -112,7 +112,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   FossilBlock: {fileID: 5776304996075792891, guid: bd8a259abee95ec4895562e6bb8aae76,
     type: 3}
-  explodingMaterial: {fileID: 2100000, guid: 186855228d11e2c4cac0ea081d911c3d, type: 2}
   TrailBlockProperties:
     position: {x: 0, y: 0, z: 0}
     volume: 0
@@ -120,14 +119,21 @@ MonoBehaviour:
     trailBlock: {fileID: 0}
     Index: 0
     Shielded: 0
-  growthRate: 0.5
+    IsSuperShielded: 0
+    TimeCreated: 0
   ParticleEffect: {fileID: 3706253519474275301, guid: e0864f60c97232b4aa8943a83e70de0a,
     type: 3}
-  ownerId: 
+  minScale: {x: 0.5, y: 0.5, z: 0.5}
+  MaxScale: {x: 4, y: 4, z: 48}
+  TargetScale: {x: 0, y: 0, z: 0}
+  GrowthVector: {x: 0, y: 2, z: 0}
   waitTime: 0.1
   destroyed: 0
+  devastated: 0
   ID: 
-  InnerDimensions: {x: 0, y: 0, z: 0}
   Index: 0
-  Shielded: 0
   warp: 0
+  IsSmallest: 0
+  IsLargest: 0
+  ownerId: 
+  Player: {fileID: 0}

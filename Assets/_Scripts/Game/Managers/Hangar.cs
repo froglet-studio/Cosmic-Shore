@@ -1,8 +1,11 @@
 using CosmicShore.App.Systems.Squads;
 using CosmicShore.Game.AI;
+using CosmicShore.Integrations.PlayFab.Economy;
+using CosmicShore.Models;
 using CosmicShore.Utility.Singleton;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace CosmicShore.Core
@@ -12,8 +15,9 @@ namespace CosmicShore.Core
         Teams AITeam;
 
         [Header("Ship Type Settings")]
-        [SerializeField] Teams PlayerTeam = Teams.Green;
-        [SerializeField] SO_Captain PlayerCaptain;  // Serialized for inspection in hierarchy
+        [SerializeField] SO_ShipList AllShips;
+        [SerializeField] Teams PlayerTeam = Teams.Jade;
+        [SerializeField] Captain PlayerCaptain;  // Serialized for inspection in hierarchy
         [SerializeField] ShipTypes PlayerShipType = ShipTypes.Random;
         [SerializeField] ShipTypes FriendlyAIShipType = ShipTypes.Manta;
         [SerializeField] ShipTypes HostileAI1ShipType = ShipTypes.Random;
@@ -24,14 +28,7 @@ namespace CosmicShore.Core
         [SerializeField] List<ShipTypes> GreenTeamShipTypes = new List<ShipTypes>() { ShipTypes.Random, ShipTypes.Random, ShipTypes.Random };
         [SerializeField] List<ShipTypes> RedTeamShipTypes = new List<ShipTypes>() { ShipTypes.Random, ShipTypes.Random, ShipTypes.Random };
         [SerializeField] List<ShipTypes> GoldTeamShipTypes = new List<ShipTypes>() { ShipTypes.Random, ShipTypes.Random, ShipTypes.Random };
-
         Dictionary<Teams, List<ShipTypes>> TeamShipTypes = new();
-
-
-        [Header("Captain Settings")]
-        [SerializeField] public SO_Captain SoarCaptain;
-        [SerializeField] public SO_Captain SmashCaptain;
-        [SerializeField] public SO_Captain SportCaptain;
 
         [Header("Material Settings")]
         [SerializeField] SO_MaterialSet GreenTeamMaterialSet;
@@ -64,7 +61,7 @@ namespace CosmicShore.Core
             TeamShipTypes[team][slot] = shipType;
         }
 
-        public void SetPlayerCaptain(SO_Captain captain)
+        public void SetPlayerCaptain(Captain captain)
         {
             PlayerCaptain = captain;
         }
@@ -88,16 +85,16 @@ namespace CosmicShore.Core
         {
             base.Awake();
 
-            TeamShipTypes.Add(Teams.Green, GreenTeamShipTypes);
-            TeamShipTypes.Add(Teams.Red, RedTeamShipTypes);
+            TeamShipTypes.Add(Teams.Jade, GreenTeamShipTypes);
+            TeamShipTypes.Add(Teams.Ruby, RedTeamShipTypes);
             TeamShipTypes.Add(Teams.Gold, GoldTeamShipTypes);
 
             if (PlayerPrefs.HasKey(SelectedShipPlayerPrefKey))
                 PlayerShipType = (ShipTypes) PlayerPrefs.GetInt(SelectedShipPlayerPrefKey);
 
             TeamMaterialSets = new() {
-                { Teams.Green, GreenTeamMaterialSet },
-                { Teams.Red,   RedTeamMaterialSet },
+                { Teams.Jade, GreenTeamMaterialSet },
+                { Teams.Ruby,   RedTeamMaterialSet },
                 { Teams.Blue,  BlueTeamMaterialSet },
                 { Teams.Gold,  GoldTeamMaterialSet },
                 { Teams.Unassigned,  BlueTeamMaterialSet },
@@ -106,7 +103,7 @@ namespace CosmicShore.Core
             if (PlayerTeam == Teams.None)
             {
                 Debug.LogError("Player Team is set to None. Defaulting to Green Team");
-                PlayerTeam = Teams.Green;
+                PlayerTeam = Teams.Jade;
             }
 
             foreach (var ship in ShipPrefabs)
@@ -115,7 +112,7 @@ namespace CosmicShore.Core
                 shipTypeMap.Add(ship.ShipType, ship);
             }
 
-            AITeam = PlayerTeam == Teams.Green ? Teams.Red : Teams.Green;
+            AITeam = PlayerTeam == Teams.Jade ? Teams.Ruby : Teams.Jade;
         }
         public Ship LoadPlayerShip(bool useSquad=false)
         {
@@ -141,7 +138,7 @@ namespace CosmicShore.Core
             Ship ship = Instantiate(shipTypeMap[shipType]);
 
             if (PlayerCaptain != null)
-                ship.AssignCaptain(PlayerCaptain);
+                ship.SetResourceLevels(PlayerCaptain.ResourceLevels);
 
             ship.SetShipMaterial(TeamMaterialSets[team].ShipMaterial);
             ship.SetBlockMaterial(TeamMaterialSets[team].BlockMaterial);
@@ -176,29 +173,44 @@ namespace CosmicShore.Core
             return LoadAIShip(SquadSystem.RogueTwo.Ship.Class, PlayerTeam, SquadSystem.RogueTwo);
         }
 
+        public SO_Captain HostileAI1Captain { get; private set; }
+        public SO_Captain HostileAI2Captain { get; private set; }
+        public SO_Captain HostileAI3Captain { get; private set; }
         public Ship LoadHostileAI1Ship(Teams Team)
         {
-            return LoadAIShip(HostileAI1ShipType, Team);
+            var ship = LoadAIShip(HostileAI1ShipType, Team);
+            HostileAI1Captain = ship.Captain;
+            return ship;
         }
         public Ship LoadHostileAI2Ship()
         {
-            return LoadAIShip(HostileAI2ShipType, AITeam);
+            var ship = LoadAIShip(HostileAI2ShipType, AITeam);
+            HostileAI2Captain = ship.Captain;
+            return ship;
         }
         public Ship LoadHostileAI3Ship()
         {
-            return LoadAIShip(HostileAI3ShipType, AITeam);
+            var ship = LoadAIShip(HostileAI3ShipType, AITeam);
+            HostileAI3Captain = ship.Captain;
+            return ship;
         }
         public Ship LoadHostileManta()
         {
             return LoadAIShip(HostileMantaShipType, AITeam);
         }
-        public Ship LoadAIShip(ShipTypes shipType, Teams team, SO_Captain captain=null)
+        Ship LoadAIShip(ShipTypes shipType, Teams team, SO_Captain captain=null)
         {
             if (shipType == ShipTypes.Random)
             {
                 Array values = Enum.GetValues(typeof(ShipTypes));
                 System.Random random = new System.Random();
                 shipType = (ShipTypes) values.GetValue(random.Next(1, values.Length));
+            }
+
+            if (captain == null)
+            {
+                var captains = CaptainManager.Instance.GetAllSOCaptains().Where(x => x.Ship.Class == shipType).ToList();
+                captain = captains[UnityEngine.Random.Range(0, 3)];
             }
 
             Ship ship = Instantiate(shipTypeMap[shipType]);
@@ -229,6 +241,11 @@ namespace CosmicShore.Core
             return TeamMaterialSets[team].BlockMaterial;
         }
 
+        public Material GetTeamTransparentBlockMaterial(Teams team)
+        {
+            return TeamMaterialSets[team].TransparentBlockMaterial;
+        }
+
         public GameObject GetTeamBlockSilhouettePrefab(Teams team)
         {
             return TeamMaterialSets[team].BlockSilhouettePrefab;
@@ -253,10 +270,20 @@ namespace CosmicShore.Core
         {
             return TeamMaterialSets[team].ShieldedBlockMaterial;
         }
+
+        public Material GetTeamDangerousBlockMaterial(Teams team)
+        {
+            return TeamMaterialSets[team].DangerousBlockMaterial;
+        }
         
         public Material GetTeamSuperShieldedBlockMaterial(Teams team)
         {
             return TeamMaterialSets[team].SuperShieldedBlockMaterial;
+        }
+
+        public SO_Ship GetShipSOByShipType(ShipTypes shipClass)
+        {
+            return AllShips.ShipList.Where(x => x.Class == shipClass).FirstOrDefault();
         }
     }
 }

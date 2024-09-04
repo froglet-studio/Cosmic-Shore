@@ -1,6 +1,9 @@
+using CosmicShore.App.Systems;
 using CosmicShore.Environment.FlowField;
 using CosmicShore.Game.AI; // TODO: code smell that this namespace needs to be included here
 using CosmicShore.Utility.Singleton;
+using System;
+using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -10,15 +13,13 @@ namespace CosmicShore.Core
     [DefaultExecutionOrder(0)]
     public class GameManager : SingletonPersistent<GameManager>
     {
-        public delegate void OnPlayGameEvent();
-        public static event OnPlayGameEvent onPlayGame;
-
-        public delegate void OnGameOverEvent();
-        public static event OnGameOverEvent onGameOver;
+        public static Action OnPlayGame;
+        public static Action OnGameOver;
 
         [SerializeField] public SO_GameList AllGames;
         [SerializeField] public SO_ShipList AllShips;
 
+        Animator SceneTransitionAnimator;
         int deathCount = 0;
         public int DeathCount { get { return deathCount; } }
 
@@ -29,7 +30,7 @@ namespace CosmicShore.Core
         public static void EndGame()
         {
             Debug.Log("GameManager.EndGame");
-            onGameOver?.Invoke();
+            OnGameOver?.Invoke();
         }
 
         public void RestartGame()
@@ -43,9 +44,7 @@ namespace CosmicShore.Core
 
         public static void ReturnToLobby()
         {
-            SceneManager.LoadScene(mainMenuScene);
-            UnPauseGame();
-            CameraManager.Instance.OnMainMenu();
+            Instance.StartCoroutine(ReturnToLobbyCoroutine());
         }
 
         public static void UnPauseGame()
@@ -65,7 +64,7 @@ namespace CosmicShore.Core
 
         public void WaitOnPlayerLoading()
         {
-            onPlayGame?.Invoke();
+            OnPlayGame?.Invoke();
         }
 
         public void WaitOnAILoading(AIPilot aiPilot)
@@ -73,6 +72,22 @@ namespace CosmicShore.Core
             // TODO: P1 elemental crystals, FindObjectOfType may no work anymore for this
             aiPilot.CrystalTransform = FindAnyObjectByType<Crystal>().transform;
             aiPilot.flowFieldData = FindAnyObjectByType<FlowFieldData>();
+        }
+
+        public void RegisterSceneTransitionAnimator(Animator animator)
+        {
+            SceneTransitionAnimator = animator;
+        }
+
+        static IEnumerator ReturnToLobbyCoroutine()
+        {
+            Instance.SceneTransitionAnimator?.SetTrigger("Start");
+
+            yield return new WaitForSecondsRealtime(.5f);
+
+            SceneManager.LoadScene(mainMenuScene);
+            UnPauseGame();
+            CameraManager.Instance.OnMainMenu();
         }
     }
 }

@@ -22,7 +22,6 @@ Material:
     RenderType: Opaque
   disabledShaderPasses:
   - SHADOWCASTER
-  - MOTIONVECTORS
   m_LockedProperties: 
   m_SavedProperties:
     serializedVersion: 3
@@ -86,7 +85,6 @@ Material:
     m_Ints: []
     m_Floats:
     - _AlphaClip: 0
-    - _AlphaToMask: 0
     - _Blend: 0
     - _Blue_Team: 1
     - _BumpScale: 1
@@ -132,7 +130,6 @@ Material:
     - _Red_Team_Inner_Color: {r: 0.8313726, g: 0.18039218, b: 0.572549, a: 0}
     - _SpecColor: {r: 0.19999996, g: 0.19999996, b: 0.19999996, a: 1}
   m_BuildTextureStacks: []
-  m_AllowLocking: 1
 --- !u!114 &4604609934931433582
 MonoBehaviour:
   m_ObjectHideFlags: 11
@@ -145,4 +142,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d0353a89b1f911e48b9e16bdc9f2e058, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  version: 9
+  version: 7

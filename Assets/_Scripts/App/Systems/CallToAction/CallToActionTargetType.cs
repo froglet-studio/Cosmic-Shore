@@ -47,7 +47,8 @@ namespace CosmicShore.App.Systems.CTA
         PlayGameRhinoRun = 422,
         PlayGameKickinMass = 423,
         PlayGameSidewinder = 424,
-        PlayGameMultipass = 425
+        PlayGameMultipass = 425,
+        PlayGameMazeRunner = 426,
 
 
         /*********** ADDED BY WILL *************/

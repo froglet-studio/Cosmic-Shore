@@ -12,6 +12,7 @@ namespace CosmicShore.Game.Projectiles
 
         protected const float PI_OVER_TWO = Mathf.PI / 2;
         protected Vector3 MaxScaleVector;
+        protected float Inertia = 70;
 
         [HideInInspector] public float MaxScale = 200f;
 
@@ -58,11 +59,11 @@ namespace CosmicShore.Game.Projectiles
 
         protected virtual void OnTriggerEnter(Collider other)
         {
-            var impactVector = (other.transform.position - transform.position).normalized * speed;
+            var impactVector = (other.transform.position - transform.position).normalized * speed * Inertia ;
 
             if (other.TryGetComponent<TrailBlock>(out var trailBlock))
             {
-                if ((trailBlock.Team != Team || affectSelf) && trailBlock.IsSuperShielded)
+                if ((trailBlock.Team != Team || affectSelf) && trailBlock.TrailBlockProperties.IsSuperShielded)
                 {
                     trailBlock.DeactivateShields();
                     Destroy(gameObject);
@@ -74,9 +75,9 @@ namespace CosmicShore.Game.Projectiles
                 }
 
                 if (AnonymousExplosion)
-                    trailBlock.Explode(impactVector, Teams.None, "🔥GuyFawkes🔥", devastating);
+                    trailBlock.Damage(impactVector, Teams.None, "🔥GuyFawkes🔥", devastating);
                 else
-                    trailBlock.Explode(impactVector, Ship.Team, Ship.Player.PlayerName, devastating);
+                    trailBlock.Damage(impactVector, Ship.Team, Ship.Player.PlayerName, devastating);
             }
             if (other.TryGetComponent<ShipGeometry>(out var shipGeometry))
             {
