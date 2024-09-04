@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using JetBrains.Annotations;
 using CosmicShore.Utility.Singleton;
@@ -49,7 +50,7 @@ namespace CosmicShore.Integrations.Firebase.Controller
                     AnalyticsService.Instance.StartDataCollection();
                 }
             }
-            catch (ConsentCheckException e)
+            catch (Exception e)
             {
                 Debug.LogWarningFormat("{0} - {1} - Handling consent error {2}", nameof(UnityAnalytics), nameof(AskForConsents), e.InnerException?.Message);
             }

@@ -11,15 +11,15 @@ namespace CosmicShore.App.UI
         public TextMeshProUGUI windowDescription;
 
         [Header("Settings")]
-        public bool sharpAnimations = false;
-        public bool useCustomTexts = false;
+        public bool sharpAnimations;
+        public bool useCustomTexts;
         public string titleText = "Title";
         [TextArea] public string descriptionText = "Description here";
 
         Animator mWindowAnimator;
-        bool isOn = false;
+        bool isOn;
 
-        void Start()
+        protected virtual void Start()
         {
             mWindowAnimator = gameObject.GetComponent<Animator>();
 
