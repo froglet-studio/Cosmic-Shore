@@ -362,24 +362,6 @@ namespace CosmicShore.Game.IO
 
         public Quaternion GetGyroRotation()
         {
-            // if (Input.gyro == null)
-            // {
-            //     Debug.LogWarningFormat("{0} - {1} - {2}", 
-            //         nameof(InputController), nameof(GetGyroRotation), "input gyro is null");
-            // }
-            // if(gyro.attitude == null)
-            //     Debug.LogWarningFormat("{0} - {1} - {2}: {3}", 
-            //         nameof(InputController), nameof(GetGyroRotation), nameof(inverseInitialRotation), inverseInitialRotation.ToString());
-            // if(inverseInitialRotation == null)
-            //     Debug.LogWarningFormat("{0} - {1} - {2}: {3}", 
-            //         nameof(InputController), nameof(GetGyroRotation), nameof(inverseInitialRotation), inverseInitialRotation.ToString());
-            // if(GyroQuaternionToUnityQuaternion(gyro.attitude) == null)
-            //     Debug.LogWarningFormat("{0} - {1} - {2}: {3}", 
-            //         nameof(InputController), nameof(GetGyroRotation), "GyroQuaternionToUnityQuaternion(gyro.attitude)", GyroQuaternionToUnityQuaternion(gyro.attitude).ToString());
-            // if(derivedCorrection == null)
-            //     Debug.LogWarningFormat("{0} - {1} - {2}: {3}", 
-            //         nameof(InputController), nameof(GetGyroRotation), nameof(derivedCorrection), derivedCorrection.ToString());
-            
             return inverseInitialRotation * GyroQuaternionToUnityQuaternion(gyro.attitude) * derivedCorrection;
         }
 
