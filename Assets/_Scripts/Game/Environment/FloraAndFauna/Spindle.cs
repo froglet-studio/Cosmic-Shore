@@ -33,8 +33,6 @@ namespace CosmicShore
 
         IEnumerator EvaporateCoroutine()
         {
-            
-
             float deathAnimation = 0f;
             float animationSpeed = 1f;
             while (deathAnimation < 1f)

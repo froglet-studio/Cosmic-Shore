@@ -72,8 +72,8 @@ namespace CosmicShore.App.UI
         [SerializeField] ModalWindowManager HangarTrainingGameModal;
         [SerializeField] ModalWindowManager FactionMissionModal;
 
-        string ReturnToScreenPrefKey = "ReturnToScreen";
-        string ReturnToModalPrefKey = "ReturnToModal";
+        static string ReturnToScreenPrefKey = "ReturnToScreen";
+        static string ReturnToModalPrefKey = "ReturnToModal";
 
         public void SetReturnToScreen(MenuScreens screen)
         {
@@ -84,6 +84,18 @@ namespace CosmicShore.App.UI
         {
             PlayerPrefs.SetInt(ReturnToModalPrefKey, (int)modal);
             PlayerPrefs.Save();
+        }
+        public static void ClearReturnState()
+        {
+            PlayerPrefs.DeleteKey(ReturnToScreenPrefKey);
+            PlayerPrefs.DeleteKey(ReturnToModalPrefKey);
+            PlayerPrefs.Save();
+        }
+
+        [RuntimeInitializeOnLoadMethod]
+        static void RunOnStart()
+        {
+            ClearReturnState();
         }
 
         void Start()
