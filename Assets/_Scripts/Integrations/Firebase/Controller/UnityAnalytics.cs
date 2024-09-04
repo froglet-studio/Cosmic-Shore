@@ -37,28 +37,8 @@ namespace CosmicShore.Integrations.Firebase.Controller
         /// </summary>
         private async void AskForConsents()
         {
-            try
-            {
-                var consents = await AnalyticsService.Instance.CheckForRequiredConsents();
-
-                if (consents.Count != 0)
-                {
-                    var legislation = consents[0];
-
-                    // TODO: raise event asking user for consent here
-
-
-                    // Get consent from user and provide based on user decision here
-                    AnalyticsService.Instance.ProvideOptInConsent(legislation, _isConsented);
-                }
-                // If consent is denied just opt the user out
-                AnalyticsService.Instance.OptOut();
-            }
-            catch (ConsentCheckException e)
-            {
-                Debug.LogWarningFormat("{0} - {1} - Handling consent error {2}", nameof(UnityAnalytics), nameof(AskForConsents), e.InnerException?.Message);
-            }
-            
+            if(_isConsented && _isConnected) AnalyticsService.Instance.StartDataCollection();
+            else AnalyticsService.Instance.StopDataCollection();
         }
 
         /// <summary>
@@ -91,16 +71,6 @@ namespace CosmicShore.Integrations.Firebase.Controller
         {
             if (!_isConnected || !_isConsented) return;
             UnityServices.ExternalUserId = SystemInfo.deviceUniqueIdentifier;
-        }
-
-        /// <summary>
-        /// Log Firebase Events
-        /// </summary>
-        /// <param name="eventName">Event Name</param>
-        /// <param name="dict">Event Parameters and Values</param>
-        public void LogFirebaseEvents(in string eventName, [ItemCanBeNull] in Dictionary<string, object> dict)
-        {
-            AnalyticsService.Instance.CustomData(eventName, dict);
         }
 
         /// <summary>
