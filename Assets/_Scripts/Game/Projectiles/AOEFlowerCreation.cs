@@ -29,7 +29,9 @@ namespace CosmicShore.Game.Projectiles
                     count++;
                     currentPosition++;
                     SetBlockDimensions(Ship.TrailSpawner.TargetScale);
-                    SeedBlocks(Ship.TrailSpawner.GetLastTwoBlocks());
+                    var lastTwoBlocks = Ship.TrailSpawner.GetLastTwoBlocks();
+                    if(lastTwoBlocks != null)
+                        SeedBlocks(lastTwoBlocks);
                 }
                 yield return null;
             }
