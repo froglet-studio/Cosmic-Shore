@@ -92,7 +92,7 @@ namespace CosmicShore.Game.Projectiles
             block.TargetScale = scale;
             block.transform.parent = TrailSpawner.TrailContainer.transform;
             block.Trail = trail;
-            if (shielded) block.TrailBlockProperties.Shielded = true;
+            if (shielded) block.TrailBlockProperties.IsShielded = true;
             trail.Add(block);
             return block;
         }

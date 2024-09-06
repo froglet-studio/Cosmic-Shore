@@ -92,7 +92,7 @@ namespace CosmicShore.Core
 
             StartCoroutine(CreateBlockCoroutine());
 
-            if (TrailBlockProperties.Shielded) ActivateShield();
+            if (TrailBlockProperties.IsShielded) ActivateShield();
             if (TrailBlockProperties.IsDangerous) MakeDangerous();
 
             Node targetNode = NodeControlManager.Instance.GetNearestNode(TrailBlockProperties.position);
@@ -211,7 +211,7 @@ namespace CosmicShore.Core
             
             if (other.gameObject.IsLayer("Crystals"))
             {
-                if (!TrailBlockProperties.Shielded)
+                if (!TrailBlockProperties.IsShielded)
                 {
                     ActivateShield();
                 }
@@ -255,7 +255,7 @@ namespace CosmicShore.Core
 
         public void Damage(Vector3 impactVector, Teams team, string playerName, bool devastate=false)
         {
-            if ((TrailBlockProperties.Shielded && !devastate) || TrailBlockProperties.IsSuperShielded)
+            if ((TrailBlockProperties.IsShielded && !devastate) || TrailBlockProperties.IsSuperShielded)
             {
                 DeactivateShields();
             }
@@ -269,7 +269,7 @@ namespace CosmicShore.Core
         {
             TrailBlockProperties.IsDangerous = true;
             TrailBlockProperties.speedDebuffAmount = .1f;
-            TrailBlockProperties.Shielded = false;
+            TrailBlockProperties.IsShielded = false;
             if (lerpBlockMaterialPropertiesCoroutine != null) StopCoroutine(lerpBlockMaterialPropertiesCoroutine);
             StartCoroutine(LerpBlockMaterialPropertiesCoroutine(Hangar.Instance.GetTeamDangerousBlockMaterial(team)));
         }
@@ -285,13 +285,13 @@ namespace CosmicShore.Core
         IEnumerator DeactivateShieldsCoroutine(float duration)
         {
             yield return new WaitForSeconds(duration);
-            TrailBlockProperties.Shielded = false;
+            TrailBlockProperties.IsShielded = false;
             TrailBlockProperties.IsSuperShielded = false;
         }
 
         public void ActivateShield()
         {
-            TrailBlockProperties.Shielded = true;
+            TrailBlockProperties.IsShielded = true;
             TrailBlockProperties.IsDangerous = false;
             if (lerpBlockMaterialPropertiesCoroutine != null) StopCoroutine(lerpBlockMaterialPropertiesCoroutine);
             StartCoroutine(LerpBlockMaterialPropertiesCoroutine(Hangar.Instance.GetTeamShieldedBlockMaterial(team)));
@@ -357,7 +357,7 @@ namespace CosmicShore.Core
         {
             if (this.team != team)
             {
-                if (TrailBlockProperties.Shielded || TrailBlockProperties.IsSuperShielded)
+                if (TrailBlockProperties.IsShielded || TrailBlockProperties.IsSuperShielded)
                 {
                     DeactivateShields();
                     return;
