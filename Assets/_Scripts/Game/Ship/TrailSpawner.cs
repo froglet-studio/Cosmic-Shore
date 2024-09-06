@@ -62,12 +62,18 @@ public class TrailSpawner : MonoBehaviour
 
     public List<TrailBlock> GetLastTwoBlocks() 
     {
-        return new List<TrailBlock>
+        if (Trail2.TrailList.Count > 0)
         {
-            // ^1 is the hat operator for index of last element
-            Trail.TrailList[^1],
-            Trail2.TrailList[^1]
-        };
+            return new List<TrailBlock>
+            {
+                // ^1 is the hat operator for index of last element
+                Trail.TrailList[^1],
+                Trail2.TrailList[^1]
+            };
+        }
+        
+        return null;
+     
     }
 
     public float TrailZScale => trailBlock.transform.localScale.z;
