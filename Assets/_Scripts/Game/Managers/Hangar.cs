@@ -17,7 +17,7 @@ namespace CosmicShore.Core
         [Header("Ship Type Settings")]
         [SerializeField] SO_ShipList AllShips;
         [SerializeField] Teams PlayerTeam = Teams.Jade;
-        [SerializeField] Captain PlayerCaptain;  // Serialized for inspection in hierarchy
+        Captain PlayerCaptain;  // Serialized for inspection in hierarchy
         [SerializeField] ShipTypes PlayerShipType = ShipTypes.Random;
         [SerializeField] ShipTypes FriendlyAIShipType = ShipTypes.Manta;
         [SerializeField] ShipTypes HostileAI1ShipType = ShipTypes.Random;
@@ -25,9 +25,9 @@ namespace CosmicShore.Core
         [SerializeField] ShipTypes HostileAI3ShipType = ShipTypes.Random;
         ShipTypes HostileMantaShipType = ShipTypes.Manta;
 
-        [SerializeField] List<ShipTypes> GreenTeamShipTypes = new List<ShipTypes>() { ShipTypes.Random, ShipTypes.Random, ShipTypes.Random };
-        [SerializeField] List<ShipTypes> RedTeamShipTypes = new List<ShipTypes>() { ShipTypes.Random, ShipTypes.Random, ShipTypes.Random };
-        [SerializeField] List<ShipTypes> GoldTeamShipTypes = new List<ShipTypes>() { ShipTypes.Random, ShipTypes.Random, ShipTypes.Random };
+        [SerializeField] List<ShipTypes> GreenTeamShipTypes = new() { ShipTypes.Random, ShipTypes.Random, ShipTypes.Random };
+        [SerializeField] List<ShipTypes> RedTeamShipTypes = new() { ShipTypes.Random, ShipTypes.Random, ShipTypes.Random };
+        [SerializeField] List<ShipTypes> GoldTeamShipTypes = new() { ShipTypes.Random, ShipTypes.Random, ShipTypes.Random };
         Dictionary<Teams, List<ShipTypes>> TeamShipTypes = new();
 
         [Header("Material Settings")]
@@ -44,7 +44,7 @@ namespace CosmicShore.Core
         Dictionary<ShipTypes, Ship> shipTypeMap = new();
 
         // HashSet has only one same value in one set
-        [HideInInspector] public HashSet<Transform> SlowedShipTransforms = new(); // TODO: move to node
+        public HashSet<Transform> SlowedShipTransforms = new(); // TODO: move to node
 
         [SerializeField] public List<Ship> ShipPrefabs;
 
@@ -190,17 +190,15 @@ namespace CosmicShore.Core
             {
                 return LoadPlayerShip(SquadSystem.SquadLeader.Ship.Class, PlayerTeam);
             }
-            else
-            {
-                if (PlayerShipType == ShipTypes.Random)
-                {
-                    Array values = Enum.GetValues(typeof(ShipTypes));
-                    System.Random random = new System.Random();
-                    PlayerShipType = (ShipTypes)values.GetValue(random.Next(values.Length));
-                }
 
-                return LoadPlayerShip(PlayerShipType, PlayerTeam);
+            if (PlayerShipType == ShipTypes.Random)
+            {
+                Array values = Enum.GetValues(typeof(ShipTypes));
+                System.Random random = new System.Random();
+                PlayerShipType = (ShipTypes)values.GetValue(random.Next(values.Length));
             }
+
+            return LoadPlayerShip(PlayerShipType, PlayerTeam);
         }
 
         public Ship LoadPlayerShip(ShipTypes shipType, Teams team)
@@ -366,9 +364,9 @@ namespace CosmicShore.Core
             return TeamMaterialSets[team].TransparentSuperShieldedBlockMaterial;
         }
 
-        public SO_Ship GetShipSOByShipType(ShipTypes shipClass)
+        public SO_Ship GetShipSoByShipType(ShipTypes shipClass)
         {
-            return AllShips.ShipList.Where(x => x.Class == shipClass).FirstOrDefault();
+            return AllShips.ShipList.FirstOrDefault(x => x.Class == shipClass);
         }
     }
 }
