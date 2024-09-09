@@ -273,8 +273,8 @@ public class TrailSpawner : MonoBehaviour
     {
         tempShip = ship;
         Debug.Log($"charming ship: {ship}");
-        SetBlockMaterial(Hangar.Instance.GetTeamBlockMaterial(ship.Team));
-        SetShieldedBlockMaterial(Hangar.Instance.GetTeamShieldedBlockMaterial(ship.Team));
+        SetBlockMaterial(ThemeManager.Instance.GetTeamBlockMaterial(ship.Team));
+        SetShieldedBlockMaterial(ThemeManager.Instance.GetTeamShieldedBlockMaterial(ship.Team));
         StartCoroutine(CharmCoroutine(duration));
     }
 
@@ -282,8 +282,8 @@ public class TrailSpawner : MonoBehaviour
     {
         isCharmed = true;
         yield return new WaitForSeconds(duration);
-        SetBlockMaterial(Hangar.Instance.GetTeamBlockMaterial(ship.Team));
-        SetShieldedBlockMaterial(Hangar.Instance.GetTeamShieldedBlockMaterial(ship.Team));
+        SetBlockMaterial(ThemeManager.Instance.GetTeamBlockMaterial(ship.Team));
+        SetShieldedBlockMaterial(ThemeManager.Instance.GetTeamShieldedBlockMaterial(ship.Team));
         isCharmed = false;
     }
 

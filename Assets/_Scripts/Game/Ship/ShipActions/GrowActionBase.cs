@@ -3,7 +3,7 @@ using UnityEngine;
 
 public class GrowActionBase : ShipAction
 {
-    [SerializeField] protected float minSize;
+    protected float minSize;
     [SerializeField] protected ElementalFloat maxSize;
     [SerializeField] protected float growRate;
     [SerializeField] protected ElementalFloat shrinkRate = new ElementalFloat(1);
@@ -12,6 +12,12 @@ public class GrowActionBase : ShipAction
     protected Coroutine returnToNeutralCoroutine;
     protected Coroutine growCoroutine;
     protected bool growing;
+
+    protected override void Start()
+    {
+        base.Start();
+        minSize = target.transform.localScale.z;
+    }
 
     public override void StartAction()
     {

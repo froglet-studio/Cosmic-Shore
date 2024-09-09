@@ -27,11 +27,11 @@ MonoBehaviour:
     ShieldedInsideBlockColor: {r: 1.0894831, g: 0.19455056, b: 1.4980394, a: 0}
     SuperShieldedInsideBlockColor: {r: 1.5407616, g: 0.27513602, b: 2.1185474, a: 0}
   GoldColors:
-    OutsideBlockColor: {r: 0.28930807, g: 0.26887658, b: 0.17558633, a: 0}
+    OutsideBlockColor: {r: 0.16981131, g: 0.13606684, b: 0.07422569, a: 0}
     ShieldedOutsideBlockColor: {r: 0, g: 0.01124239, b: 1, a: 0}
     SuperShieldedOutsideBlockColor: {r: 0.7490196, g: 0.42668137, b: 0.054174308,
       a: 0}
-    InsideBlockColor: {r: 1.1281017, g: 1.1197115, b: 0.59952563, a: 0}
+    InsideBlockColor: {r: 1.0135418, g: 1.005914, b: 0.33465993, a: 0}
     ShieldedInsideBlockColor: {r: 0.45105013, g: 0.51947135, b: 0.7924528, a: 0}
     SuperShieldedInsideBlockColor: {r: 2.1185474, g: 1.2068372, b: 0.15322807, a: 0}
   BlueColors:

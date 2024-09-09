@@ -9,7 +9,7 @@ namespace CosmicShore
         public Teams Team;
         [SerializeField] float goalUpdateInterval = 5f;
         public Vector3 Goal;
-        public List<float> Weights;
+        //public List<float> Weights;
         protected Node node;
 
 
@@ -24,13 +24,13 @@ namespace CosmicShore
             Vector4 teamVolumes = StatsManager.Instance.GetTeamVolumes();
             float totalVolume = teamVolumes.x + teamVolumes.y + teamVolumes.z + teamVolumes.w;
 
-            Weights = new List<float>
-            {
-            totalVolume / (teamVolumes.x + 1), // +1 to avoid division by zero
-            totalVolume / (teamVolumes.y + 1),
-            totalVolume / (teamVolumes.z + 1),
-            totalVolume / (teamVolumes.w + 1)
-            };
+            //Weights = new List<float>
+            //{
+            //totalVolume / (teamVolumes.x + 1), // +1 to avoid division by zero
+            //totalVolume / (teamVolumes.y + 1),
+            //totalVolume / (teamVolumes.z + 1),
+            //totalVolume / (teamVolumes.w + 1)
+            //};
         }
 
         IEnumerator UpdateGoal()
@@ -38,9 +38,9 @@ namespace CosmicShore
             while (true)
             {
                 yield return new WaitForSeconds(goalUpdateInterval);
-                Vector3 highDensityPosition = node.GetExplosionTarget(Team);
-                Goal = highDensityPosition;
-                CalculateTeamWeights();
+                //Vector3 highDensityPosition = node.GetExplosionTarget(Team);
+                //Goal = highDensityPosition;
+                //CalculateTeamWeights();
             }
         }
 

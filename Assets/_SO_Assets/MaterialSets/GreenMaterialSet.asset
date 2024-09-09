@@ -21,9 +21,15 @@ MonoBehaviour:
     type: 2}
   ShieldedBlockMaterial: {fileID: 2100000, guid: d8eecfb8be075a44991cdede59d8e0f1,
     type: 2}
+  TransparentShieldedBlockMaterial: {fileID: 2100000, guid: 004ebae5058bcae4bb3ff63564e8622f,
+    type: 2}
   SuperShieldedBlockMaterial: {fileID: 2100000, guid: 5ac89be3c0ba79946bc5a2a7ebace90d,
     type: 2}
+  TransparentSuperShieldedBlockMaterial: {fileID: 2100000, guid: dd04726b463fb394c9ef8041ce328084,
+    type: 2}
   DangerousBlockMaterial: {fileID: 2100000, guid: abdd319ac0ecd4248b35a706fb0839d9,
+    type: 2}
+  TransparentDangerousBlockMaterial: {fileID: 2100000, guid: e865a7a2f36fe74488497b684f7fc901,
     type: 2}
   BlockSilhouettePrefab: {fileID: 8156872032051993332, guid: 5d38f65bc3c39384fbfaa3ffbc665c99,
     type: 3}
@@ -32,4 +38,4 @@ MonoBehaviour:
   AOEConicExplosionMaterial: {fileID: 2100000, guid: 34e02368fd396cb4180b8eb6130a84b6,
     type: 2}
   SpikeMaterial: {fileID: 2100000, guid: 77e1afb46629cc7469cfccbdae90a628, type: 2}
-  SkimmerMaterial: {fileID: 2100000, guid: fe66db79de93ab94e961bac837ce3cbc, type: 2}
+  SkimmerMaterial: {fileID: 2100000, guid: bf677f297ed1bf444a620c193162a8cd, type: 2}

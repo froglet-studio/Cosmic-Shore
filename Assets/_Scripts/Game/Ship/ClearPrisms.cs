@@ -68,10 +68,10 @@ namespace CosmicShore
                 if (renderer != null && !originalMaterials.ContainsKey(renderer))
                 {
                     originalMaterials[renderer] = renderer.material;
-                    if (trailBlock.TrailBlockProperties.IsDangerous) renderer.material = Hangar.Instance.GetTeamTransparentDangerousBlockMaterial(team);
-                    else if (trailBlock.TrailBlockProperties.IsShielded) renderer.material = Hangar.Instance.GetTeamTransparentShieldedBlockMaterial(team);
-                    else if (trailBlock.TrailBlockProperties.IsSuperShielded) renderer.material = Hangar.Instance.GetTeamTransparentSuperShieldedBlockMaterial(team);
-                    else renderer.material = Hangar.Instance.GetTeamTransparentBlockMaterial(team);
+                    if (trailBlock.TrailBlockProperties.IsDangerous) renderer.material = ThemeManager.Instance.GetTeamTransparentDangerousBlockMaterial(team);
+                    else if (trailBlock.TrailBlockProperties.IsShielded) renderer.material = ThemeManager.Instance.GetTeamTransparentShieldedBlockMaterial(team);
+                    else if (trailBlock.TrailBlockProperties.IsSuperShielded) renderer.material = ThemeManager.Instance.GetTeamTransparentSuperShieldedBlockMaterial(team);
+                    else renderer.material = ThemeManager.Instance.GetTeamTransparentBlockMaterial(team);
                 }
             }
         }

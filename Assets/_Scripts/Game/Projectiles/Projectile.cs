@@ -39,7 +39,7 @@ namespace CosmicShore.Game.Projectiles
             if (spike) 
             {
                 meshRenderer = gameObject.GetComponent<MeshRenderer>();
-                meshRenderer.material = Hangar.Instance.GetTeamSpikeMaterial(Team);
+                meshRenderer.material = ThemeManager.Instance.GetTeamSpikeMaterial(Team);
                 meshRenderer.material.SetFloat("_Opacity", .5f);
             }
         }

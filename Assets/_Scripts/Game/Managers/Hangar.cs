@@ -30,16 +30,6 @@ namespace CosmicShore.Core
         [SerializeField] List<ShipTypes> GoldTeamShipTypes = new List<ShipTypes>() { ShipTypes.Random, ShipTypes.Random, ShipTypes.Random };
         Dictionary<Teams, List<ShipTypes>> TeamShipTypes = new();
 
-        [Header("Material Settings")]
-        [SerializeField] SO_MaterialSet BaseMaterialSet;
-        [SerializeField] SO_ColorSet ColorSet;
-
-        [SerializeField] SO_MaterialSet GreenTeamMaterialSet;
-        [SerializeField] SO_MaterialSet RedTeamMaterialSet;
-        [SerializeField] SO_MaterialSet BlueTeamMaterialSet;
-        [SerializeField] SO_MaterialSet GoldTeamMaterialSet;
-
-        Dictionary<Teams, SO_MaterialSet> TeamMaterialSets;
         Dictionary<string, Ship> ships = new();
         Dictionary<ShipTypes, Ship> shipTypeMap = new();
 
@@ -88,11 +78,6 @@ namespace CosmicShore.Core
         {
             base.Awake();
 
-            GreenTeamMaterialSet = GenerateDomainMaterialSet(ColorSet.JadeColors, "Green");
-            RedTeamMaterialSet = GenerateDomainMaterialSet(ColorSet.RubyColors, "Red");
-            GoldTeamMaterialSet = GenerateDomainMaterialSet(ColorSet.GoldColors, "Gold");
-            BlueTeamMaterialSet = GenerateDomainMaterialSet(ColorSet.BlueColors, "Blue");
-
             TeamShipTypes.Add(Teams.Jade, GreenTeamShipTypes);
             TeamShipTypes.Add(Teams.Ruby, RedTeamShipTypes);
             TeamShipTypes.Add(Teams.Gold, GoldTeamShipTypes);
@@ -100,14 +85,7 @@ namespace CosmicShore.Core
             if (PlayerPrefs.HasKey(SelectedShipPlayerPrefKey))
                 PlayerShipType = (ShipTypes) PlayerPrefs.GetInt(SelectedShipPlayerPrefKey);
 
-            TeamMaterialSets = new() {
-                { Teams.Jade, GreenTeamMaterialSet },
-                { Teams.Ruby,   RedTeamMaterialSet },
-                { Teams.Blue,  BlueTeamMaterialSet },
-                { Teams.Gold,  GoldTeamMaterialSet },
-                { Teams.Unassigned,  BlueTeamMaterialSet },
-            };
-
+            
             if (PlayerTeam == Teams.None)
             {
                 Debug.LogError("Player Team is set to None. Defaulting to Green Team");
@@ -123,66 +101,7 @@ namespace CosmicShore.Core
             AITeam = PlayerTeam == Teams.Jade ? Teams.Ruby : Teams.Jade;
         }
 
-        private SO_MaterialSet GenerateDomainMaterialSet(DomainColorSet colorSet, string domainName)
-        {
-            SO_MaterialSet materialSet = ScriptableObject.CreateInstance<SO_MaterialSet>();
-            materialSet.name = $"{domainName}TeamMaterialSet";
-
-            // Copy all materials from the base set
-            materialSet.ShipMaterial = new Material(BaseMaterialSet.ShipMaterial);
-            materialSet.BlockMaterial = new Material(BaseMaterialSet.BlockMaterial);
-            materialSet.TransparentBlockMaterial = new Material(BaseMaterialSet.TransparentBlockMaterial);
-            materialSet.CrystalMaterial = new Material(BaseMaterialSet.CrystalMaterial);
-            materialSet.ExplodingBlockMaterial = new Material(BaseMaterialSet.ExplodingBlockMaterial);
-            materialSet.ShieldedBlockMaterial = new Material(BaseMaterialSet.ShieldedBlockMaterial);
-            materialSet.TransparentShieldedBlockMaterial = new Material(BaseMaterialSet.TransparentShieldedBlockMaterial);
-            materialSet.SuperShieldedBlockMaterial = new Material(BaseMaterialSet.SuperShieldedBlockMaterial);
-            materialSet.TransparentSuperShieldedBlockMaterial = new Material(BaseMaterialSet.TransparentSuperShieldedBlockMaterial);
-            materialSet.DangerousBlockMaterial = new Material(BaseMaterialSet.DangerousBlockMaterial);
-            materialSet.TransparentDangerousBlockMaterial = new Material(BaseMaterialSet.TransparentDangerousBlockMaterial);
-            materialSet.AOEExplosionMaterial = new Material(BaseMaterialSet.AOEExplosionMaterial);
-            materialSet.AOEConicExplosionMaterial = new Material(BaseMaterialSet.AOEConicExplosionMaterial);
-            materialSet.SpikeMaterial = new Material(BaseMaterialSet.SpikeMaterial);
-            materialSet.SkimmerMaterial = new Material(BaseMaterialSet.SkimmerMaterial);
-
-            // Copy prefab reference
-            materialSet.BlockSilhouettePrefab = BaseMaterialSet.BlockSilhouettePrefab;
-
-            // Set colors for materials that use domain-specific colors
-            materialSet.BlockMaterial.SetColor("_BrightColor", colorSet.InsideBlockColor);
-            materialSet.BlockMaterial.SetColor("_DarkColor", colorSet.OutsideBlockColor);
-
-            materialSet.TransparentBlockMaterial.SetColor("_BrightColor", colorSet.InsideBlockColor);
-            materialSet.TransparentBlockMaterial.SetColor("_DarkColor", colorSet.OutsideBlockColor);
-
-            materialSet.ExplodingBlockMaterial.SetColor("_BrightColor", colorSet.InsideBlockColor);
-            materialSet.ExplodingBlockMaterial.SetColor("_DarkColor", colorSet.OutsideBlockColor);
-
-            materialSet.DangerousBlockMaterial.SetColor("_DarkColor", colorSet.OutsideBlockColor);
-
-            materialSet.TransparentDangerousBlockMaterial.SetColor("_DarkColor", colorSet.OutsideBlockColor);
-
-            materialSet.ShieldedBlockMaterial.SetColor("_BrightColor", colorSet.ShieldedInsideBlockColor);
-            materialSet.ShieldedBlockMaterial.SetColor("_DarkColor", colorSet.ShieldedOutsideBlockColor);
-
-            materialSet.TransparentShieldedBlockMaterial.SetColor("_BrightColor", colorSet.ShieldedInsideBlockColor);
-            materialSet.TransparentShieldedBlockMaterial.SetColor("_DarkColor", colorSet.ShieldedOutsideBlockColor);
-
-            materialSet.SuperShieldedBlockMaterial.SetColor("_BrightColor", colorSet.SuperShieldedInsideBlockColor);
-            materialSet.SuperShieldedBlockMaterial.SetColor("_DarkColor", colorSet.SuperShieldedOutsideBlockColor);
-
-            materialSet.TransparentSuperShieldedBlockMaterial.SetColor("_BrightColor", colorSet.SuperShieldedInsideBlockColor);
-            materialSet.TransparentSuperShieldedBlockMaterial.SetColor("_DarkColor", colorSet.SuperShieldedOutsideBlockColor);
-
-            materialSet.ShipMaterial.SetColor("_Color1", colorSet.OutsideBlockColor);
-            materialSet.ShipMaterial.SetColor("_Color2", colorSet.InsideBlockColor);
-
-            // Set colors for other materials
-
-            materialSet.CrystalMaterial.SetColor("_DullCrystalColor", colorSet.ShieldedOutsideBlockColor);
-
-            return materialSet;
-        }
+        
 
         public Ship LoadPlayerShip(bool useSquad=false)
         {
@@ -210,13 +129,15 @@ namespace CosmicShore.Core
             if (PlayerCaptain != null)
                 ship.SetResourceLevels(PlayerCaptain.ResourceLevels);
 
-            ship.SetShipMaterial(TeamMaterialSets[team].ShipMaterial);
-            ship.SetBlockMaterial(TeamMaterialSets[team].BlockMaterial);
-            ship.SetBlockSilhouettePrefab(TeamMaterialSets[team].BlockSilhouettePrefab);
-            ship.SetShieldedBlockMaterial(TeamMaterialSets[team].ShieldedBlockMaterial);
-            ship.SetAOEExplosionMaterial(TeamMaterialSets[team].AOEExplosionMaterial);
-            ship.SetAOEConicExplosionMaterial(TeamMaterialSets[team].AOEConicExplosionMaterial);
-            ship.SetSkimmerMaterial(TeamMaterialSets[team].SkimmerMaterial);
+            var materialSet = ThemeManager.Instance.TeamMaterialSets[team];
+
+            ship.SetShipMaterial(materialSet.ShipMaterial);
+            ship.SetBlockMaterial(materialSet.BlockMaterial);
+            ship.SetBlockSilhouettePrefab(materialSet.BlockSilhouettePrefab);
+            ship.SetShieldedBlockMaterial(materialSet.ShieldedBlockMaterial);
+            ship.SetAOEExplosionMaterial(materialSet.AOEExplosionMaterial);
+            ship.SetAOEConicExplosionMaterial(materialSet.AOEConicExplosionMaterial);
+            ship.SetSkimmerMaterial(materialSet.SkimmerMaterial);
 
             SelectedShip = ship;
 
@@ -283,87 +204,24 @@ namespace CosmicShore.Core
                 captain = captains[UnityEngine.Random.Range(0, 3)];
             }
 
+            var materialSet = ThemeManager.Instance.TeamMaterialSets[team];
+
             Ship ship = Instantiate(shipTypeMap[shipType]);
             if (captain != null)
                 ship.AssignCaptain(captain);
-            ship.SetShipMaterial(TeamMaterialSets[team].ShipMaterial);
-            ship.SetBlockMaterial(TeamMaterialSets[team].BlockMaterial);
-            ship.SetBlockSilhouettePrefab(TeamMaterialSets[team].BlockSilhouettePrefab);
-            ship.SetShieldedBlockMaterial(TeamMaterialSets[team].ShieldedBlockMaterial);
-            ship.SetAOEExplosionMaterial(TeamMaterialSets[team].AOEExplosionMaterial);
-            ship.SetAOEConicExplosionMaterial(TeamMaterialSets[team].AOEConicExplosionMaterial);
-            ship.SetSkimmerMaterial(TeamMaterialSets[team].SkimmerMaterial);
+            ship.SetShipMaterial(materialSet.ShipMaterial);
+            ship.SetBlockMaterial(materialSet.BlockMaterial);
+            ship.SetBlockSilhouettePrefab(materialSet.BlockSilhouettePrefab);
+            ship.SetShieldedBlockMaterial(materialSet.ShieldedBlockMaterial);
+            ship.SetAOEExplosionMaterial(materialSet.AOEExplosionMaterial);
+            ship.SetAOEConicExplosionMaterial(materialSet.AOEConicExplosionMaterial);
+            ship.SetSkimmerMaterial(materialSet.SkimmerMaterial);
 
             AIPilot pilot = ship.GetComponent<AIPilot>();
             pilot.SkillLevel = ((float)AIDifficultyLevel-1) / 3; // this assumes that levels remain from 1-4
             pilot.AutoPilotEnabled = true;
 
             return ship;
-        }
-
-        public Ship LoadSecondPlayerShip(ShipTypes PlayerShipType)
-        {
-            return Instantiate(shipTypeMap[PlayerShipType]);
-        }
-
-        public Material GetTeamBlockMaterial(Teams team)
-        {
-            return TeamMaterialSets[team].BlockMaterial;
-        }
-
-        public Material GetTeamTransparentBlockMaterial(Teams team)
-        {
-            return TeamMaterialSets[team].TransparentBlockMaterial;
-        }
-
-        public GameObject GetTeamBlockSilhouettePrefab(Teams team)
-        {
-            return TeamMaterialSets[team].BlockSilhouettePrefab;
-        }
-
-        public Material GetTeamCrystalMaterial(Teams team)
-        {
-            return TeamMaterialSets[team].CrystalMaterial;
-        }
-
-        public Material GetTeamExplodingBlockMaterial(Teams team)
-        {
-            return TeamMaterialSets[team].ExplodingBlockMaterial;
-        }
-
-        public Material GetTeamSpikeMaterial(Teams team)
-        {
-            return TeamMaterialSets[team].SpikeMaterial;
-        }
-        
-        public Material GetTeamShieldedBlockMaterial(Teams team)
-        {
-            return TeamMaterialSets[team].ShieldedBlockMaterial;
-        }
-
-        public Material GetTeamTransparentShieldedBlockMaterial(Teams team)
-        {
-            return TeamMaterialSets[team].TransparentShieldedBlockMaterial;
-        }
-
-        public Material GetTeamDangerousBlockMaterial(Teams team)
-        {
-            return TeamMaterialSets[team].DangerousBlockMaterial;
-        }
-
-        public Material GetTeamTransparentDangerousBlockMaterial(Teams team)
-        {
-            return TeamMaterialSets[team].TransparentDangerousBlockMaterial;
-        }
-        
-        public Material GetTeamSuperShieldedBlockMaterial(Teams team)
-        {
-            return TeamMaterialSets[team].SuperShieldedBlockMaterial;
-        }
-
-        public Material GetTeamTransparentSuperShieldedBlockMaterial(Teams team)
-        {
-            return TeamMaterialSets[team].TransparentSuperShieldedBlockMaterial;
         }
 
         public SO_Ship GetShipSOByShipType(ShipTypes shipClass)
