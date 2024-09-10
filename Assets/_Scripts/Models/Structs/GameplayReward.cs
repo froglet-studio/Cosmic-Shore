@@ -1,7 +1,7 @@
 ﻿using System;
 
 [Serializable]
-public struct DailyChallengeReward
+public struct GameplayReward
 {
     public int ScoreRequirement;
     public int Value;

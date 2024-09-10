@@ -42,7 +42,7 @@ namespace CosmicShore.App.Systems
             
             if (!gameProgress.Progress[intensityTier-1].Satisfied)
             {
-                DailyChallengeReward rewardTier;
+                GameplayReward rewardTier;
                 switch (intensityTier)
                 {
                     case 1:

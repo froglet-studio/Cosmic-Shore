@@ -13,13 +13,13 @@ namespace CosmicShore
         [SerializeField] public SO_Ship ShipClass;
         [Range(1,4)]
         [SerializeField] public int DailyChallengeIntensity;
-        [SerializeField] public DailyChallengeReward DailyChallengeTierOneReward;
-        [SerializeField] public DailyChallengeReward DailyChallengeTierTwoReward;
-        [SerializeField] public DailyChallengeReward DailyChallengeTierThreeReward;
-        [SerializeField] public DailyChallengeReward IntensityOneReward;
-        [SerializeField] public DailyChallengeReward IntensityTwoReward;
-        [SerializeField] public DailyChallengeReward IntensityThreeReward;
-        [SerializeField] public DailyChallengeReward IntensityFourReward;
+        [SerializeField] public GameplayReward DailyChallengeTierOneReward;
+        [SerializeField] public GameplayReward DailyChallengeTierTwoReward;
+        [SerializeField] public GameplayReward DailyChallengeTierThreeReward;
+        [SerializeField] public GameplayReward IntensityOneReward;
+        [SerializeField] public GameplayReward IntensityTwoReward;
+        [SerializeField] public GameplayReward IntensityThreeReward;
+        [SerializeField] public GameplayReward IntensityFourReward;
         
         public SO_QuestChain SO_QuestChain;
     }

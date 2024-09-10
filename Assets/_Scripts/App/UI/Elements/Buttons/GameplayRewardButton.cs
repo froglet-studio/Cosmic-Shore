@@ -16,7 +16,7 @@ namespace CosmicShore.App.UI
         Intensity = 1,
     }
 
-    public class DailyChallengeRewardButton : MonoBehaviour
+    public class GameplayRewardButton : MonoBehaviour
     {
         [Range(1,3)]
         [SerializeField] int RewardTier;
@@ -32,10 +32,10 @@ namespace CosmicShore.App.UI
         [SerializeField] IconEmitter IconEmitter;
         [SerializeField] RewardButtonType RewardButtonType;
 
-        DailyChallengeReward Reward;
+        GameplayReward Reward;
 
         public void SetTier(int tier) { RewardTier = tier; }
-        public void SetReward(DailyChallengeReward reward)
+        public void SetReward(GameplayReward reward)
         {
             Reward = reward;
             ClaimButtonValueLabel.text = reward.Value.ToString();

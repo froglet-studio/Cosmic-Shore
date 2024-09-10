@@ -29,9 +29,9 @@ namespace CosmicShore.App.UI.Views
         [SerializeField] TMP_Text RewardScoreLabelThree;
 
         [Header("RewardButtons")]
-        [SerializeField] DailyChallengeRewardButton RewardButtonOne;
-        [SerializeField] DailyChallengeRewardButton RewardButtonTwo;
-        [SerializeField] DailyChallengeRewardButton RewardButtonThree;
+        [SerializeField] GameplayRewardButton RewardButtonOne;
+        [SerializeField] GameplayRewardButton RewardButtonTwo;
+        [SerializeField] GameplayRewardButton RewardButtonThree;
 
         [Header("Dynamic Images")]
         [SerializeField] List<Sprite> IntensitySprites;

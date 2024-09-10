@@ -19,7 +19,7 @@ namespace CosmicShore
         [SerializeField] GameObject SelectedGamePreviewWindow;
         [SerializeField] HangarTrainingGameButton TrainingGameButton1;
         [SerializeField] HangarTrainingGameButton TrainingGameButton2;
-        [SerializeField] DailyChallengeRewardButton RewardButton;
+        [SerializeField] GameplayRewardButton RewardButton;
         [SerializeField] Image RewardElementImage1;
         [SerializeField] Image RewardElementImage2;
         [SerializeField] TMP_Text RewardValueText1;
