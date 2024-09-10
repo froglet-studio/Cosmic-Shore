@@ -40,7 +40,7 @@ namespace CosmicShore.App.Systems
 
             var gameProgress = Progress[trainingGame.Game.Mode];
             
-            if (!gameProgress.Progress[intensityTier].Satisfied)
+            if (!gameProgress.Progress[intensityTier-1].Satisfied)
             {
                 DailyChallengeReward rewardTier;
                 switch (intensityTier)
@@ -60,7 +60,7 @@ namespace CosmicShore.App.Systems
                         break;
                 }
 
-                if (score > rewardTier.ScoreRequirement)
+                if (score >= rewardTier.ScoreRequirement)
                 {
                     SatisfyIntensityTier(trainingGame.Game.Mode, intensityTier);
                     return true;
@@ -74,7 +74,7 @@ namespace CosmicShore.App.Systems
         {
             var gameProgress = Progress[mode];
 
-            gameProgress.Progress[intensityTier].Satisfied = true;
+            gameProgress.Progress[intensityTier - 1].Satisfied = true;
 
             SaveProgress(mode, Progress[mode]);
         }
@@ -83,7 +83,7 @@ namespace CosmicShore.App.Systems
         {
             var gameProgress = Progress[mode];
 
-            gameProgress.Progress[intensityTier].Claimed = true;
+            gameProgress.Progress[intensityTier - 1].Claimed = true;
 
             SaveProgress(mode, Progress[mode]);
         }
