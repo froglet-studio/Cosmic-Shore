@@ -35,7 +35,7 @@ public class SO_Ship : ScriptableObject
     /// </summary>
     public bool IsLocked
     {
-        get => !CatalogManager.Inventory.ContainsShipClass(Name);
+        get => !CaptainManager.Instance.UnlockedShips.Contains(this);
     }
 
 

@@ -17,7 +17,8 @@ namespace CosmicShore.App.UI
         [SerializeField] Button ClaimButton;
         [SerializeField] Button NotEarnedButton;
         [SerializeField] Button CollectedButton;
-
+        [SerializeField] Image ClaimButtonCrystalImage;
+        [SerializeField] Image NotEarnedButtonCrystalImage;
         [SerializeField] protected float CardFlipAnimDuration = .5f;
         [SerializeField] IconEmitter IconEmitter;
 
@@ -26,6 +27,7 @@ namespace CosmicShore.App.UI
         { 
             ClaimButtonValueLabel.text = reward.Value.ToString();
             NotEarnedButtonValueLabel.text = reward.Value.ToString();
+            //reward.Element.GetFullIcon(true);
             ScoreRequirementLabel.text = $"Score {reward.ScoreRequirement}";
         }
 

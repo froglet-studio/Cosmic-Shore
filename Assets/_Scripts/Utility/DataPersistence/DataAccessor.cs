@@ -58,7 +58,7 @@ static class DataAccessor
 
             try
             {
-                BinaryFormatter converter = new BinaryFormatter();
+                //BinaryFormatter converter = new BinaryFormatter();
                 //Data = (T)converter.Deserialize(dataStream);
 
                 byte[] data = new byte[dataStream.Length];

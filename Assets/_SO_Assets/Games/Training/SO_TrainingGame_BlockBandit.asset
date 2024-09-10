@@ -27,15 +27,15 @@ MonoBehaviour:
     ScoreRequirement: 70
     Value: 100
   IntensityOneReward:
+    ScoreRequirement: 50
+    Value: 50
+  IntensityTwoReward:
+    ScoreRequirement: 75
+    Value: 75
+  IntensityThreeReward:
     ScoreRequirement: 100
     Value: 100
-  IntensityTwoReward:
-    ScoreRequirement: 200
-    Value: 200
-  IntensityThreeReward:
-    ScoreRequirement: 300
-    Value: 300
   IntensityFourReward:
-    ScoreRequirement: 400
-    Value: 400
+    ScoreRequirement: 150
+    Value: 150
   SO_QuestChain: {fileID: 0}

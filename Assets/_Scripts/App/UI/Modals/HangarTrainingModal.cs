@@ -1,3 +1,5 @@
+using CosmicShore.App.Systems;
+using CosmicShore.App.UI;
 using CosmicShore.App.UI.Modals;
 using CosmicShore.Core;
 using CosmicShore.Models.Enums;
@@ -17,6 +19,7 @@ namespace CosmicShore
         [SerializeField] GameObject SelectedGamePreviewWindow;
         [SerializeField] HangarTrainingGameButton TrainingGameButton1;
         [SerializeField] HangarTrainingGameButton TrainingGameButton2;
+        [SerializeField] DailyChallengeRewardButton RewardButton;
         [SerializeField] Image RewardElementImage1;
         [SerializeField] Image RewardElementImage2;
         [SerializeField] TMP_Text RewardValueText1;
@@ -60,6 +63,24 @@ namespace CosmicShore
             TrainingGameButton1.SetActive(TrainingGameButton1.TrainingGame == selectedGame);
             TrainingGameButton2.SetActive(TrainingGameButton2.TrainingGame == selectedGame);
 
+            // Disable Intensity Buttons based on progress
+            var trainingProgress = TrainingGameProgressSystem.GetGameProgress(selectedGame.Game.Mode);
+
+            Debug.LogWarning($"trainingProgress.CurrentIntensity: {trainingProgress.CurrentIntensity}, Game.Mode:{selectedGame.Game.Mode}");
+
+
+            for (var i = 0; i < 4; i++)
+            {
+                if (trainingProgress.CurrentIntensity <= i)
+                    IntensityButtons[i].SetActive(false);
+
+                if (trainingProgress.IsTierSatisfied(i + 1) && !trainingProgress.IsTierClaimed(i + 1))
+                {
+                    Debug.Log($"Claimable tier alert {i + 1}!!");
+                    IntensityButtons[i].GetComponent<Image>().color = Color.green;
+                }
+            }
+
             PopulateTrainingGameDetails();
         }
 
@@ -100,24 +121,28 @@ namespace CosmicShore
         {
             Intensity = intensity;
 
-            var rewardValue = "0";
+            //var rewardValue = "0";
             switch(intensity)
             {
                 case 1:
-                    rewardValue = SelectedGame.IntensityOneReward.Value.ToString();
+                    //rewardValue = SelectedGame.IntensityOneReward.Value.ToString();
+                    RewardButton.SetReward(SelectedGame.IntensityOneReward);
                     break;
                 case 2:
-                    rewardValue = SelectedGame.IntensityTwoReward.Value.ToString();
+                    //rewardValue = SelectedGame.IntensityTwoReward.Value.ToString();
+                    RewardButton.SetReward(SelectedGame.IntensityTwoReward);
                     break;
                 case 3:
-                    rewardValue = SelectedGame.IntensityThreeReward.Value.ToString();
+                    //rewardValue = SelectedGame.IntensityThreeReward.Value.ToString();
+                    RewardButton.SetReward(SelectedGame.IntensityThreeReward);
                     break;
                 case 4:
-                    rewardValue = SelectedGame.IntensityFourReward.Value.ToString();
+                    //rewardValue = SelectedGame.IntensityFourReward.Value.ToString();
+                    RewardButton.SetReward(SelectedGame.IntensityFourReward);
                     break;
             }
-            RewardValueText1.text = rewardValue;
-            RewardValueText2.text = rewardValue;
+            //RewardValueText1.text = rewardValue;
+            //RewardValueText2.text = rewardValue;
 
             foreach (var button in IntensityButtons)
                 button.SetSelected(false);

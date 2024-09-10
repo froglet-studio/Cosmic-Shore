@@ -40,7 +40,8 @@ namespace CosmicShore
         public void AssignShipClass(SO_Ship ship)
         {
             Ship = ship;
-            LockImage.enabled = ship.IsLocked;ShipImage.sprite = ship.Icon;
+            LockImage.enabled = ship.IsLocked;
+            ShipImage.sprite = ship.Icon;
         }
 
         public void AssignIndex(int index)

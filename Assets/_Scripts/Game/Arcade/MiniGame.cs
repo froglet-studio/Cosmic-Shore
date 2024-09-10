@@ -15,6 +15,7 @@ using CosmicShore.App.Systems;
 using CosmicShore.Integrations.PlayFab.PlayerData;
 using CosmicShore.Integrations.PlayFab.Economy;
 using CosmicShore.App.Systems.Xp;
+using System.Linq;
 
 namespace CosmicShore.Game.Arcade
 {
@@ -46,6 +47,7 @@ namespace CosmicShore.Game.Arcade
         public static int IntensityLevel = 1;
         public static bool IsDailyChallenge = false;
         public static bool IsMission = false;
+        public static bool IsTraining = false;
         static ShipTypes playerShipType = ShipTypes.Dolphin;
         static bool playerShipTypeInitialized;
         
@@ -331,6 +333,11 @@ namespace CosmicShore.Game.Arcade
                     Debug.Log($"Encountering Captain!!! - {Hangar.Instance.HostileAI2Captain}");
                     CaptainManager.Instance.EncounterCaptain(Hangar.Instance.HostileAI2Captain.Name);
                 }
+            }
+            else if (IsTraining)
+            {
+                var gameProgress = TrainingGameProgressSystem.GetGameProgress(gameMode);
+                TrainingGameProgressSystem.ReportProgress(Core.Arcade.Instance.TrainingGames.GameList.First(x=> x.Game.Mode == gameMode), IntensityLevel, ScoreTracker.GetHighScore());
             }
             else
                 LeaderboardManager.Instance.ReportGameplayStatistic(gameMode, PlayerShipType, IntensityLevel, ScoreTracker.GetHighScore(), ScoreTracker.GolfRules);

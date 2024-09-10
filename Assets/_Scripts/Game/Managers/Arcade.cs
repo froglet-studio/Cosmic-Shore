@@ -46,6 +46,7 @@ namespace CosmicShore.Core
             MiniGame.IntensityLevel = intensity;
             MiniGame.NumberOfPlayers = 1;
             MiniGame.IsDailyChallenge = false;
+            MiniGame.IsTraining = false;
             MiniGame.IsMission = true;
             Hangar.Instance.SetAiDifficultyLevel(intensity);
 
@@ -63,6 +64,8 @@ namespace CosmicShore.Core
             MiniGame.IntensityLevel = intensity;
             MiniGame.NumberOfPlayers = numberOfPlayers;
             MiniGame.IsDailyChallenge = isDailyChallenge;
+            MiniGame.IsTraining = false;
+            MiniGame.IsMission = false;
             Hangar.Instance.SetAiDifficultyLevel(intensity);
 
             var screenSwitcher = GameObject.FindAnyObjectByType<ScreenSwitcher>();
@@ -80,6 +83,8 @@ namespace CosmicShore.Core
             MiniGame.IntensityLevel = intensity;
             MiniGame.NumberOfPlayers = numberOfPlayers;
             MiniGame.IsDailyChallenge = isDailyChallenge;
+            MiniGame.IsTraining = !isDailyChallenge;
+            MiniGame.IsMission = false;
             Hangar.Instance.SetAiDifficultyLevel(intensity);
 
             var screenSwitcher = GameObject.FindAnyObjectByType<ScreenSwitcher>();

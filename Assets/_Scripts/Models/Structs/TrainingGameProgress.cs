@@ -5,8 +5,8 @@ namespace CosmicShore.Models
     [Serializable]
     public struct TrainingGameProgress
     {
-        public int CurrentIntensity { get; private set; }
-        public TrainingGameTier[] Progress { get; private set; }
+        public int CurrentIntensity { get; set; }
+        public TrainingGameTier[] Progress { get; set; }
 
         public TrainingGameProgress(int dummy1=1, TrainingGameTier[] dummy2=null)
         {
@@ -29,6 +29,16 @@ namespace CosmicShore.Models
         public void ClaimTier(int tier)
         {
             Progress[tier - 1].Claimed = true;
+        }
+
+        public bool IsTierClaimed(int tier)
+        {
+            return Progress[tier - 1].Claimed;
+        }
+
+        public bool IsTierSatisfied(int tier)
+        {
+            return Progress[tier - 1].Satisfied;
         }
     }
 

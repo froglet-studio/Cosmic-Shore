@@ -29,6 +29,7 @@ namespace CosmicShore.App.UI.Views
         [SerializeField] TMP_Text SelectedUpgradeCrystalRequirement;
         [SerializeField] Image SelectedUpgradeCrystalRequirementImage;
         [SerializeField] Button UpgradeButton;
+        [SerializeField] Button GoToStoreButton;
         [SerializeField] Sprite UpgradeButtonLockedSprite;
         [SerializeField] Sprite UpgradeButtonUnlockedSprite;
         [SerializeField] MenuAudio UpgradeMenuAudio;
@@ -85,7 +86,6 @@ namespace CosmicShore.App.UI.Views
             xpRequirementSatisfied = false;
             crystalRequirementSatisfied = false;
 
-
             // Populate Captain Details
             SelectedCaptainName.text = captain.Name;
             SelectedCaptainElementLabel.text = "The " + captain.PrimaryElement.ToString() + " " + captain.Ship.Name;
@@ -112,19 +112,20 @@ namespace CosmicShore.App.UI.Views
                 EncounterButton.gameObject.SetActive(true);
                 EncounterButton.onClick.RemoveAllListeners();
                 EncounterButton.onClick.AddListener(() => CaptainManager.Instance.EncounterCaptain(captain.Name));
+
+                GoToStoreButton.gameObject.SetActive(false);
+                UpgradeButton.gameObject.SetActive(true);
+                UpgradeButton.GetComponent<Image>().sprite = UpgradeButtonLockedSprite;
             }
             else if (!captain.Unlocked)
             {
-                Debug.LogError($"Captain locked - class:{captain.Ship.Class}, element:{captain.PrimaryElement}");
-
                 LockedCaptainRequirementsContainer.gameObject.SetActive(true);
 
-                // TODO: Go To Store button goes here 
+                GoToStoreButton.gameObject.SetActive(true);
+                UpgradeButton.gameObject.SetActive(false);
             }
             else
             {
-                Debug.LogError($"Captain Owned - class:{captain.Ship.Class}, element:{captain.PrimaryElement}");
-
                 UpgradeCaptainRequirementsContainer.gameObject.SetActive(true);
 
                 // Load upgrade from catalog
@@ -144,13 +145,17 @@ namespace CosmicShore.App.UI.Views
                     SelectedUpgradeCrystalRequirement.text = string.Format(CrystalRequirementTemplate, crystalBalance, crystalsNeeded, crystalRequirementSatisfied ? SatisfiedMarkdownColor : UnsatisfiedMarkdownColor);
                     SelectedUpgradeCrystalRequirementImage.sprite = CosmicShore.Elements.Get(captain.PrimaryElement).GetFullIcon(crystalRequirementSatisfied);
                 }
+
+                GoToStoreButton.gameObject.SetActive(false);
+                // Upgrade Button
+                UpgradeButton.gameObject.SetActive(true);
+                if (xpRequirementSatisfied && crystalRequirementSatisfied)
+                    UpgradeButton.GetComponent<Image>().sprite = UpgradeButtonUnlockedSprite;
+                else
+                    UpgradeButton.GetComponent<Image>().sprite = UpgradeButtonLockedSprite;
             }
 
-            // Upgrade Button
-            if (xpRequirementSatisfied && crystalRequirementSatisfied)
-                UpgradeButton.GetComponent<Image>().sprite = UpgradeButtonUnlockedSprite;
-            else
-                UpgradeButton.GetComponent<Image>().sprite = UpgradeButtonLockedSprite;
+
         }
 
         void PopulateCaptainSelectionList()
