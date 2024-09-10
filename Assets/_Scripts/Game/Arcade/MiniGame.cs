@@ -80,9 +80,7 @@ namespace CosmicShore.Game.Arcade
         // Firebase analytics events
         public delegate void MiniGameStart(MiniGames mode, ShipTypes ship, int playerCount, int intensity);
         public static event MiniGameStart OnMiniGameStart;
-
         public delegate void MiniGameEnd(MiniGames mode, ShipTypes ship, int playerCount, int intensity, int highScore);
-
         public static event MiniGameEnd OnMiniGameEnd;
 
         protected virtual void Awake()

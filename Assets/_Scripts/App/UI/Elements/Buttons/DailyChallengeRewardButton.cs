@@ -1,5 +1,6 @@
 using CosmicShore.App.Systems;
 using CosmicShore.App.UI.FX;
+using System;
 using System.Collections;
 using TMPro;
 using UnityEngine;
@@ -7,6 +8,14 @@ using UnityEngine.UI;
 
 namespace CosmicShore.App.UI
 {
+
+    [Serializable]
+    public enum RewardButtonType
+    {
+        DailyChallenge = 0,
+        Intensity = 1,
+    }
+
     public class DailyChallengeRewardButton : MonoBehaviour
     {
         [Range(1,3)]
@@ -21,14 +30,26 @@ namespace CosmicShore.App.UI
         [SerializeField] Image NotEarnedButtonCrystalImage;
         [SerializeField] protected float CardFlipAnimDuration = .5f;
         [SerializeField] IconEmitter IconEmitter;
+        [SerializeField] RewardButtonType RewardButtonType;
+
+        DailyChallengeReward Reward;
 
         public void SetTier(int tier) { RewardTier = tier; }
         public void SetReward(DailyChallengeReward reward)
-        { 
+        {
+            Reward = reward;
             ClaimButtonValueLabel.text = reward.Value.ToString();
             NotEarnedButtonValueLabel.text = reward.Value.ToString();
             //reward.Element.GetFullIcon(true);
             ScoreRequirementLabel.text = $"Score {reward.ScoreRequirement}";
+        }
+
+        public void MakeRewardUnavailable()
+        {
+            Debug.Log("DailyChallengeRewardButton - SetRewardAvailable");
+            CollectedButton.gameObject.SetActive(false);
+            NotEarnedButton.gameObject.SetActive(true);
+            ClaimButton.gameObject.SetActive(false);
         }
 
         public void MakeRewardAvailable()
@@ -41,10 +62,20 @@ namespace CosmicShore.App.UI
 
         public void ClaimReward()
         {
-            Debug.Log($"DailyChallengeRewardButton - ClaimReward:{RewardTier}");
-            if (DailyChallengeSystem.Instance.ClaimReward(RewardTier))
-                StartCoroutine(PurchaseVisualEffectCoroutine());
-            
+            switch (RewardButtonType)
+            {
+                case RewardButtonType.DailyChallenge:
+                    Debug.Log($"DailyChallengeRewardButton - ClaimReward:{RewardTier}");
+                    if (DailyChallengeSystem.Instance.ClaimReward(RewardTier))
+                        StartCoroutine(PurchaseVisualEffectCoroutine());
+                    break;
+                case RewardButtonType.Intensity:
+                    Debug.Log($"IntensityRewardButton - ClaimReward:{RewardTier}");
+                    TrainingGameProgressSystem.ClaimIntensityTierReward(Reward.GameMode, RewardTier);
+                    StartCoroutine(PurchaseVisualEffectCoroutine());
+                    break;
+            }
+
         }
 
         public void MarkClaimed()

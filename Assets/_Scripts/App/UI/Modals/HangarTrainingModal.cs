@@ -71,20 +71,20 @@ namespace CosmicShore
 
             for (var i = 0; i < 4; i++)
             {
-                if (trainingProgress.CurrentIntensity <= i)
-                    IntensityButtons[i].SetActive(false);
+                IntensityButtons[i].SetActive(i < trainingProgress.CurrentIntensity);
 
                 if (trainingProgress.IsTierSatisfied(i + 1) && !trainingProgress.IsTierClaimed(i + 1))
                 {
                     Debug.Log($"Claimable tier alert {i + 1}!!");
                     IntensityButtons[i].GetComponent<Image>().color = Color.green;
+
                 }
             }
 
-            PopulateTrainingGameDetails();
+            PopulateTrainingGameDetails(trainingProgress.CurrentIntensity);
         }
 
-        void PopulateTrainingGameDetails()
+        void PopulateTrainingGameDetails(int currentIntensity)
         {
             var game = SelectedGame.Game;
             Debug.Log($"Populating Training Details List: {game.DisplayName}");
@@ -98,7 +98,7 @@ namespace CosmicShore
             SelectedGameDescription.text = game.Description;
 
             // Intensity Selection
-            SetIntensity(1);
+            SetIntensity(currentIntensity);
 
             // Rewards
             RewardElementImage1.sprite = SelectedGame.ElementOne.GetFullIcon(true);
@@ -121,8 +121,16 @@ namespace CosmicShore
         {
             Intensity = intensity;
 
-            //var rewardValue = "0";
-            switch(intensity)
+            var trainingProgress = TrainingGameProgressSystem.GetGameProgress(SelectedGame.Game.Mode);
+            if (trainingProgress.IsTierClaimed(intensity))
+                RewardButton.MarkClaimed();
+            else if(trainingProgress.IsTierSatisfied(intensity))
+                RewardButton.MakeRewardAvailable();
+            else
+                RewardButton.MakeRewardUnavailable();
+
+            RewardButton.SetTier(intensity);
+            switch (intensity)
             {
                 case 1:
                     //rewardValue = SelectedGame.IntensityOneReward.Value.ToString();

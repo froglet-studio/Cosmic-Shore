@@ -75,6 +75,9 @@ namespace CosmicShore.App.Systems
             var gameProgress = Progress[mode];
 
             gameProgress.Progress[intensityTier - 1].Satisfied = true;
+            gameProgress.CurrentIntensity = Mathf.Min(intensityTier + 1, 4);
+
+            Progress[mode] = gameProgress;
 
             SaveProgress(mode, Progress[mode]);
         }

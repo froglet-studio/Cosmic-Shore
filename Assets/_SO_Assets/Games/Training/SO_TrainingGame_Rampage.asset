@@ -20,22 +20,36 @@ MonoBehaviour:
   DailyChallengeTierOneReward:
     ScoreRequirement: 50
     Value: 50
+    Element: 0
+    GameMode: 2
   DailyChallengeTierTwoReward:
     ScoreRequirement: 100
     Value: 75
+    Element: 0
+    GameMode: 2
   DailyChallengeTierThreeReward:
     ScoreRequirement: 300
     Value: 100
+    Element: 0
+    GameMode: 2
   IntensityOneReward:
-    ScoreRequirement: 0
-    Value: 0
+    ScoreRequirement: 75
+    Value: 75
+    Element: 1
+    GameMode: 2
   IntensityTwoReward:
-    ScoreRequirement: 0
-    Value: 0
+    ScoreRequirement: 125
+    Value: 125
+    Element: 2
+    GameMode: 2
   IntensityThreeReward:
-    ScoreRequirement: 0
-    Value: 0
+    ScoreRequirement: 175
+    Value: 175
+    Element: 2
+    GameMode: 2
   IntensityFourReward:
-    ScoreRequirement: 0
-    Value: 0
+    ScoreRequirement: 225
+    Value: 225
+    Element: 1
+    GameMode: 2
   SO_QuestChain: {fileID: 0}

@@ -3701,6 +3701,7 @@ MonoBehaviour:
   NotEarnedButtonCrystalImage: {fileID: 0}
   CardFlipAnimDuration: 0.5
   IconEmitter: {fileID: 113227065}
+  RewardButtonType: 0
 --- !u!114 &113227065
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -11886,6 +11887,7 @@ MonoBehaviour:
   NotEarnedButtonCrystalImage: {fileID: 0}
   CardFlipAnimDuration: 0.5
   IconEmitter: {fileID: 400754363}
+  RewardButtonType: 0
 --- !u!114 &400754363
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -47039,6 +47041,7 @@ MonoBehaviour:
   NotEarnedButtonCrystalImage: {fileID: 0}
   CardFlipAnimDuration: 0.5
   IconEmitter: {fileID: 1548803977}
+  RewardButtonType: 0
 --- !u!114 &1548803977
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -52140,6 +52143,7 @@ MonoBehaviour:
   NotEarnedButtonCrystalImage: {fileID: 0}
   CardFlipAnimDuration: 0.5
   IconEmitter: {fileID: 1694128511}
+  RewardButtonType: 1
 --- !u!114 &1694128511
 MonoBehaviour:
   m_ObjectHideFlags: 0
