@@ -126,8 +126,8 @@ public class Boid : Fauna
             }
             else if (otherTrailBlock)
             {
-                float blockWeight = Population.Weights[Mathf.Abs((int)otherTrailBlock.Team-1)]; // TODO: this is a hack to get the team weight, need to make this more robust
-                blockAttraction += -diff.normalized * blockWeight / distance;
+                //float blockWeight = Population.Weights[Mathf.Abs((int)otherTrailBlock.Team-1)]; // TODO: this is a hack to get the team weight, need to make this more robust
+                blockAttraction += -diff.normalized / distance;
 
                 if (distance < trailBlockInteractionRadius && otherTrailBlock.Team != healthBlock.Team)
                 {

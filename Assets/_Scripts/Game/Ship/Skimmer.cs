@@ -69,6 +69,11 @@ namespace CosmicShore.Core
             sigma = FWHM / 2.355f;
             radius = transform.localScale.x / 2;
             initialGap = ship.TrailSpawner.Gap;
+            if (appliedScale != Scale.Value)
+            {
+                appliedScale = Scale.Value;
+                transform.localScale = Vector3.one * appliedScale;
+            }
         }
 
         void Update()

@@ -62,12 +62,18 @@ public class TrailSpawner : MonoBehaviour
 
     public List<TrailBlock> GetLastTwoBlocks() 
     {
-        return new List<TrailBlock>
+        if (Trail2.TrailList.Count > 0)
         {
-            // ^1 is the hat operator for index of last element
-            Trail.TrailList[^1],
-            Trail2.TrailList[^1]
-        };
+            return new List<TrailBlock>
+            {
+                // ^1 is the hat operator for index of last element
+                Trail.TrailList[^1],
+                Trail2.TrailList[^1]
+            };
+        }
+        
+        return null;
+     
     }
 
     public float TrailZScale => trailBlock.transform.localScale.z;
@@ -193,7 +199,7 @@ public class TrailSpawner : MonoBehaviour
         if (shielded)
         {
             Block.GetComponent<MeshRenderer>().material = shieldedBlockMaterial;
-            Block.TrailBlockProperties.Shielded = true;
+            Block.TrailBlockProperties.IsShielded = true;
         }
         else Block.GetComponent<MeshRenderer>().material = blockMaterial;
         Block.GetComponent<BoxCollider>().size = Vector3.one + VectorDivision((Vector3)blockMaterial.GetVector("_Spread"), Block.TargetScale);
@@ -267,8 +273,8 @@ public class TrailSpawner : MonoBehaviour
     {
         tempShip = ship;
         Debug.Log($"charming ship: {ship}");
-        SetBlockMaterial(Hangar.Instance.GetTeamBlockMaterial(ship.Team));
-        SetShieldedBlockMaterial(Hangar.Instance.GetTeamShieldedBlockMaterial(ship.Team));
+        SetBlockMaterial(ThemeManager.Instance.GetTeamBlockMaterial(ship.Team));
+        SetShieldedBlockMaterial(ThemeManager.Instance.GetTeamShieldedBlockMaterial(ship.Team));
         StartCoroutine(CharmCoroutine(duration));
     }
 
@@ -276,8 +282,8 @@ public class TrailSpawner : MonoBehaviour
     {
         isCharmed = true;
         yield return new WaitForSeconds(duration);
-        SetBlockMaterial(Hangar.Instance.GetTeamBlockMaterial(ship.Team));
-        SetShieldedBlockMaterial(Hangar.Instance.GetTeamShieldedBlockMaterial(ship.Team));
+        SetBlockMaterial(ThemeManager.Instance.GetTeamBlockMaterial(ship.Team));
+        SetShieldedBlockMaterial(ThemeManager.Instance.GetTeamShieldedBlockMaterial(ship.Team));
         isCharmed = false;
     }
 

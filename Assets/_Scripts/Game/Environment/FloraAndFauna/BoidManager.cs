@@ -21,7 +21,7 @@ public class BoidManager : Population
 
     protected override void Start()
     {
-        Weights = new List<float> { 1, 1, 1, 1 };
+        //Weights = new List<float> { 1, 1, 1, 1 };
         for (int i = 0; i < numberOfBoids; i++)
         {
             Vector3 spawnPosition = transform.position + (spawnRadius * (Quaternion.AngleAxis(Random.Range(0, 360), Vector3.forward) * Vector3.right));

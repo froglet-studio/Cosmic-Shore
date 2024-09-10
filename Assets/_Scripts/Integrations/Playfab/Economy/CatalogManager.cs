@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using CosmicShore.Integrations.PlayFab.Authentication;
 using CosmicShore.Integrations.PlayFab.CloudScripts;
+using CosmicShore.Integrations.Playfab.Utility;
 using CosmicShore.Integrations.PlayFab.Utility;
 using CosmicShore.Models;
 using CosmicShore.Utility.Singleton;
@@ -11,7 +12,6 @@ using PlayFab;
 using PlayFab.CloudScriptModels;
 using PlayFab.EconomyModels;
 using UnityEngine;
-using UnityEngine.Assertions;
 using CatalogItem = PlayFab.EconomyModels.CatalogItem;
 
 namespace CosmicShore.Integrations.PlayFab.Economy
@@ -156,7 +156,7 @@ namespace CosmicShore.Integrations.PlayFab.Economy
             foreach (var item in allCatalogItems)
             {
                 Debug.LogFormat("   CatalogManager - title: {0}, content type: {1}, tags:{2}", item.Title["NEUTRAL"], item.ContentType, string.Join(",", item.Tags));
-                var converted = ConvertCatalogItemToVirtualItem(item);
+                var converted = ModelConversionService.ConvertCatalogItemToVirtualItem(item);
                 AddToStoreShelve(item.ContentType, converted);
             }
 
@@ -365,7 +365,7 @@ namespace CosmicShore.Integrations.PlayFab.Economy
                     nameof(OnGettingInventoryItems), 
                     item.Id, item.Amount.ToString(), item.Type);
 
-                var virtualItem = ConvertInventoryItemToVirtualItem(item);
+                var virtualItem = ModelConversionService.ConvertInventoryItemToVirtualItem(item);
                 
 
 
@@ -645,7 +645,7 @@ namespace CosmicShore.Integrations.PlayFab.Economy
         
         public int GetDailyChallengeTicketBalance()
         {
-            var tickets = Inventory.tickets.Where(x => x.Name == CatalogManager.Instance.GetDailyChallengeTicket().Name).FirstOrDefault();
+            var tickets = Inventory.tickets.FirstOrDefault(x => x.Name == Instance.GetDailyChallengeTicket().Name);
 
             if (tickets != null)
                 return tickets.Amount;
@@ -681,72 +681,5 @@ namespace CosmicShore.Integrations.PlayFab.Economy
                 }
             }
         }
-
-        #region Model Conversion
-        /// <summary>
-        /// Convert PlayFab Price to Cosmic Shore Custom Price model
-        /// TODO: Should be put on model or a conversion services instead of Catalog Manager
-        /// </summary>
-        /// <param name="price"></param>
-        /// <returns></returns>
-        ItemPrice PlayFabToCosmicShorePrice(CatalogPriceOptions price)
-        {
-            ItemPrice itemPrice = new();
-            if (price.Prices.Count >= 1)
-            {
-                itemPrice.ItemId = price.Prices[0].Amounts[0].ItemId;
-                itemPrice.Amount = price.Prices[0].Amounts[0].Amount;
-                Assert.IsTrue(price.Prices[0].UnitAmount != null, $"Misconfigured Catalog Item - Item { itemPrice.ItemId } Unit Amount should not be null.");
-                itemPrice.UnitAmount = price.Prices[0].UnitAmount == null ? 1 : (int)price.Prices[0].UnitAmount;
-            }
-            return itemPrice;
-        }
-        
-        /// <summary>
-        /// Convert PlayFab Catalog Item To Cosmic Shore Virtual Item model
-        /// TODO: Should be put on model or a conversion services instead of Catalog Manager
-        /// </summary>
-        /// <param name="catalogItem"></param>
-        /// <returns></returns>
-        VirtualItem ConvertCatalogItemToVirtualItem(CatalogItem catalogItem)
-        {
-            VirtualItem virtualItem = new();
-            virtualItem.ItemId = catalogItem.Id;
-            virtualItem.Name = catalogItem.Title["NEUTRAL"];
-            virtualItem.Description = catalogItem.Description.TryGetValue("NEUTRAL", out var description) ? description : "No Description";
-            virtualItem.ContentType = catalogItem.ContentType;
-            
-            virtualItem.Price = new()
-            {
-                // TODO: Do this in a loop
-                PlayFabToCosmicShorePrice(catalogItem.PriceOptions)
-            };
-
-            virtualItem.Tags = catalogItem.Tags;
-            virtualItem.Type = catalogItem.Type;
-            return virtualItem;
-        }
-
-        /// <summary>
-        /// Load Cosmic Shore Virtual Item details for the corresponding PlayFab Inventory Item by looking it up on the store shelf
-        /// We load it from the store shelf since PF's inventory API doesn't return all of the expected fields (e.g the item's name, tags, ...)
-        /// TODO: Should be put on model or a conversion services instead of Catalog Manager
-        /// </summary>
-        /// <param name="item"></param>
-        /// <returns></returns>
-        VirtualItem ConvertInventoryItemToVirtualItem(InventoryItem item)
-        {
-            if (!StoreShelve.allItems.ContainsKey(item.Id))
-            {
-                Debug.LogWarning($"Inventory Item no longer in catalog - id:{item.Id}, type:{item.Type}");
-                return null;
-            }
-
-            var virtualItem = StoreShelve.allItems[item.Id];
-            virtualItem.Amount = (int)item.Amount;
-
-            return virtualItem;
-        }
-        #endregion
     }
 }

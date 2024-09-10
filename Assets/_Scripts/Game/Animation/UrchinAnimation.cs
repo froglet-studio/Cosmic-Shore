@@ -6,7 +6,6 @@ namespace CosmicShore.Game.Animation
 {
     class UrchinAnimation : ShipAnimation
     {
-
         [SerializeField] Transform Body;
         [SerializeField] Transform JetBottomLeft;
         [SerializeField] Transform JetBottomRight;

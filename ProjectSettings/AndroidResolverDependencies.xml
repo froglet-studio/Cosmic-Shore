@@ -13,6 +13,7 @@
     <package>com.google.firebase:firebase-crashlytics-unity:11.5.0</package>
     <package>com.google.firebase:firebase-database:20.2.2</package>
     <package>com.google.firebase:firebase-database-unity:11.5.0</package>
+    <package>com.unity3d.ads:unity-ads:[4.12.0,4.13[</package>
   </packages>
   <files>
     <file>Assets/GeneratedLocalRepo/Firebase/m2repository/com/google/firebase/firebase-analytics-unity/11.5.0/firebase-analytics-unity-11.5.0.aar</file>

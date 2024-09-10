@@ -279,7 +279,7 @@ namespace CosmicShore.Environment.FlowField
             Team = team;
             foreach (var modelData in crystalModels)
             {
-                StartCoroutine(LerpCrystalMaterialCoroutine(modelData.model, Hangar.Instance.GetTeamCrystalMaterial(team), 1)); // TODO: need color manager instead
+                StartCoroutine(LerpCrystalMaterialCoroutine(modelData.model, ThemeManager.Instance.GetTeamCrystalMaterial(team), 1));
             }
             StartCoroutine(DecayingTheftCoroutine(duration));
         }

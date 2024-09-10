@@ -74,10 +74,6 @@ namespace CosmicShore.Core
 
         [SerializeField] List<ResourceEventShipActionMapping> resourceEventClassActions;
         Dictionary<ResourceEvents, List<ShipAction>> ClassResourceActions = new();
-
-        [Header("Passive Effects")]
-        [SerializeField] float closeCamDistance;
-        [SerializeField] float farCamDistance;
         
         Dictionary<InputEvents, float> inputAbilityStartTimes = new();
         Dictionary<ResourceEvents, float> resourceAbilityStartTimes = new();

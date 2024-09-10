@@ -5,7 +5,7 @@ using System;
 
 public class BlockDensityGrid
 {
-    public float resolution = 10f;
+    public float resolution = 5f;
     // Assume total grid volume is a cube, specified by one length (skybox diam).  TODO: Import this constant.
     public float totalLength = 1000f;
     public Vector3 origin;

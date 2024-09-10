@@ -27,7 +27,7 @@ namespace CosmicShore.Game.Projectiles
 
         protected override void Start()
         {
-            blockMaterial = shielded ? Hangar.Instance.GetTeamShieldedBlockMaterial(Ship.Team) 
+            blockMaterial = shielded ? ThemeManager.Instance.GetTeamShieldedBlockMaterial(Ship.Team) 
                 : Ship.TrailSpawner.GetBlockMaterial();
             base.Start();
         }
@@ -65,7 +65,7 @@ namespace CosmicShore.Game.Projectiles
             block.TargetScale = blockScale;
             block.transform.parent = TrailSpawner.TrailContainer.transform;
             block.Trail = trail;
-            if (shielded) block.TrailBlockProperties.Shielded = true;
+            if (shielded) block.TrailBlockProperties.IsShielded = true;
             trail.Add(block);
             return block;
         }
