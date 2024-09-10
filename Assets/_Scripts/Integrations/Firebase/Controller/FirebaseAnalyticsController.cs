@@ -197,13 +197,13 @@ namespace CosmicShore.Integrations.Firebase.Controller
         /// <param name="ship"></param>
         /// <param name="playerCount"></param>
         /// <param name="intensity"></param>
-        public static void LogEventMiniGameStart(MiniGames mode, ShipTypes ship, int playerCount, int intensity)
+        public static void LogEventMiniGameStart(GameModes mode, ShipTypes ship, int playerCount, int intensity)
         {
             if (!_analyticsEnabled) return;
             
             // Event parameters for Firebase
             var parameters = new[] {
-                new Parameter(FirebaseAnalytics.ParameterLevel, nameof(MiniGames)),
+                new Parameter(FirebaseAnalytics.ParameterLevel, nameof(GameModes)),
                 new Parameter(FirebaseAnalytics.ParameterLevelName, mode.ToString()),
                 new Parameter(FirebaseAnalytics.ParameterCharacter, ship.ToString()),
                 new Parameter(FirebaseAnalytics.ParameterQuantity, playerCount),
@@ -238,13 +238,13 @@ namespace CosmicShore.Integrations.Firebase.Controller
         /// <param name="playerCount">Player Count</param>
         /// <param name="intensity">Intensity</param>
         /// <param name="highScore">HighScore</param>
-        public static void LogEventMiniGameEnd(MiniGames mode, ShipTypes ship, int playerCount, int intensity, int highScore)
+        public static void LogEventMiniGameEnd(GameModes mode, ShipTypes ship, int playerCount, int intensity, int highScore)
         {
             if (!_analyticsEnabled) return;
             
             // Event parameters for Firebase
             var parameters = new [] {
-                new Parameter(FirebaseAnalytics.ParameterLevel, nameof(MiniGames)),
+                new Parameter(FirebaseAnalytics.ParameterLevel, nameof(GameModes)),
                 new Parameter(FirebaseAnalytics.ParameterLevelName, mode.ToString()),
                 new Parameter(FirebaseAnalytics.ParameterCharacter, ship.ToString()),
                 new Parameter(FirebaseAnalytics.ParameterQuantity, playerCount),

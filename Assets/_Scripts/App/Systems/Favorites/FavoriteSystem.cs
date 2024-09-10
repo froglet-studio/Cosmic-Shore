@@ -5,23 +5,23 @@ namespace CosmicShore.App.Systems.Favorites
 {
     public static class FavoriteSystem
     { 
-        static List<MiniGames> FavoriteGames;
+        static List<GameModes> FavoriteGames;
         static bool Initialized = false;
 
         const string GameFavoritesSaveFileName = "game_favorites.data";
 
         public static void Init()
         {
-            FavoriteGames = DataAccessor.Load<List<MiniGames>>(GameFavoritesSaveFileName);
+            FavoriteGames = DataAccessor.Load<List<GameModes>>(GameFavoritesSaveFileName);
             if (FavoriteGames == null )
             {
-                FavoriteGames = new List<MiniGames>();
+                FavoriteGames = new List<GameModes>();
                 DataAccessor.Save(GameFavoritesSaveFileName, FavoriteGames);
             }
             Initialized = true;
         }
 
-        public static bool IsFavorited(MiniGames game)
+        public static bool IsFavorited(GameModes game)
         {
             if (!Initialized)
                 Init();
@@ -29,7 +29,7 @@ namespace CosmicShore.App.Systems.Favorites
             return FavoriteGames.Contains(game);
         }
 
-        public static void ToggleFavorite(MiniGames game)
+        public static void ToggleFavorite(GameModes game)
         {
             if (!Initialized)
                 Init();

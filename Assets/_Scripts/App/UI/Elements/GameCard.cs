@@ -32,8 +32,8 @@ namespace CosmicShore.App.UI.Elements
             }
         }
 
-        MiniGames gameMode;
-        public MiniGames GameMode
+        GameModes gameMode;
+        public GameModes GameMode
         {
             get { return gameMode; }
             set
@@ -45,8 +45,8 @@ namespace CosmicShore.App.UI.Elements
 
         void Start()
         {
-            if (gameMode == MiniGames.Random)
-                gameMode = MiniGames.BlockBandit;
+            if (gameMode == GameModes.Random)
+                gameMode = GameModes.BlockBandit;
 
             UpdateCardView();
         }

@@ -13,7 +13,7 @@ namespace CosmicShore.App.UI.Modals
         [SerializeField] DailyChallengeGameView GameView;
         [SerializeField] TMP_Text TimeRemaining;
         [SerializeField] TMP_Text TicketBalance;
-        MiniGames GameMode;
+        GameModes GameMode;
 
         void OnEnable()
         {
@@ -42,7 +42,7 @@ namespace CosmicShore.App.UI.Modals
 
         void Update()
         {
-            if (GameMode == MiniGames.Random)
+            if (GameMode == GameModes.Random)
                 AssignGameMode();
 
             DateTime current = DateTime.UtcNow;

@@ -8,7 +8,7 @@ using UnityEngine.Video;
 [System.Serializable]
 public class SO_ArcadeGame : ScriptableObject
 {
-    public MiniGames Mode;
+    public GameModes Mode;
     public string DisplayName;
     public string Description;
     public Sprite Icon;

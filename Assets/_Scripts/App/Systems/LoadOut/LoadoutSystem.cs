@@ -33,10 +33,10 @@ namespace CosmicShore.App.Systems.Loadout
             {
                 loadouts = new List<Loadout>()
                 {
-                    new() { Intensity=1, PlayerCount=1, GameMode= MiniGames.BlockBandit, ShipType= ShipTypes.Manta},
-                    new() { Intensity=0, PlayerCount=0, GameMode= MiniGames.Random, ShipType= ShipTypes.Random},
-                    new() { Intensity=0, PlayerCount=0, GameMode= MiniGames.Random, ShipType= ShipTypes.Random},
-                    new() { Intensity=0, PlayerCount=0, GameMode= MiniGames.Random, ShipType= ShipTypes.Random},
+                    new() { Intensity=1, PlayerCount=1, GameMode= GameModes.BlockBandit, ShipType= ShipTypes.Manta},
+                    new() { Intensity=0, PlayerCount=0, GameMode= GameModes.Random, ShipType= ShipTypes.Random},
+                    new() { Intensity=0, PlayerCount=0, GameMode= GameModes.Random, ShipType= ShipTypes.Random},
+                    new() { Intensity=0, PlayerCount=0, GameMode= GameModes.Random, ShipType= ShipTypes.Random},
                 };
                 DataAccessor.Save(PlayerLoadoutsSaveFileName, loadouts);
             }
@@ -73,7 +73,7 @@ namespace CosmicShore.App.Systems.Loadout
             SetLoadout(loadout, ActiveLoadoutIndex);
         }
 
-        public static ArcadeGameLoadout LoadGameLoadout(MiniGames mode)
+        public static ArcadeGameLoadout LoadGameLoadout(GameModes mode)
         {
             for (var i = 0; i < gameLoadouts.Count; i++)
             {
@@ -86,7 +86,7 @@ namespace CosmicShore.App.Systems.Loadout
             return new ArcadeGameLoadout(mode, new Loadout(0, 0, 0, 0));
         }
 
-        public static void SaveGameLoadOut(MiniGames mode, Loadout loadout)
+        public static void SaveGameLoadOut(GameModes mode, Loadout loadout)
         {
             var gameLoadout = new ArcadeGameLoadout(mode, loadout);
             var found = false;

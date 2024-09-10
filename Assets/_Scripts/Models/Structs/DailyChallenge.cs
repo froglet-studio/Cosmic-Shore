@@ -4,5 +4,5 @@
 public struct DailyChallenge
 {
     public int Intensity;
-    public MiniGames GameMode;
+    public GameModes GameMode;
 }

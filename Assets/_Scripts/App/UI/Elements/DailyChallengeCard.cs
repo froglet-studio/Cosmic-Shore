@@ -15,9 +15,9 @@ namespace CosmicShore.App.UI.Elements
         [SerializeField] TMP_Text TimeRemaining;
         [SerializeField] Image BackgroundImage;
 
-        MiniGames gameMode;
+        GameModes gameMode;
 
-        public MiniGames GameMode
+        public GameModes GameMode
         {
             get { return gameMode; }
             set

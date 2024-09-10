@@ -21,7 +21,7 @@ namespace CosmicShore.Game.Arcade
 {
     public class MiniGame : MonoBehaviour
     {
-        [SerializeField] protected MiniGames gameMode;
+        [SerializeField] protected GameModes gameMode;
         [SerializeField] protected int NumberOfRounds = int.MaxValue;
         [SerializeField] protected List<TurnMonitor> TurnMonitors;
         [SerializeField] protected ScoreTracker ScoreTracker;
@@ -78,9 +78,9 @@ namespace CosmicShore.Game.Arcade
         protected bool gameRunning;
         
         // Firebase analytics events
-        public delegate void MiniGameStart(MiniGames mode, ShipTypes ship, int playerCount, int intensity);
+        public delegate void MiniGameStart(GameModes mode, ShipTypes ship, int playerCount, int intensity);
         public static event MiniGameStart OnMiniGameStart;
-        public delegate void MiniGameEnd(MiniGames mode, ShipTypes ship, int playerCount, int intensity, int highScore);
+        public delegate void MiniGameEnd(GameModes mode, ShipTypes ship, int playerCount, int intensity, int highScore);
         public static event MiniGameEnd OnMiniGameEnd;
 
         protected virtual void Awake()

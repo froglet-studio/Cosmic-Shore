@@ -22,7 +22,7 @@ namespace CosmicShore.App.UI.Screens
 
         List<SO_ArcadeGame> LeaderboardEligibleGames = new();
         SO_ArcadeGame SelectedGame;
-        MiniGames SelectedGameMode = MiniGames.BlockBandit;
+        GameModes SelectedGameMode = GameModes.BlockBandit;
         ShipTypes SelectedShipType = ShipTypes.Any;
 
         int _displayCount;
@@ -31,7 +31,7 @@ namespace CosmicShore.App.UI.Screens
             // TODO: Reconsider this implementation for avoiding displaying Freestyle on the scoreboard
             // Copy the game list, but skip Freestyle -- IMPORTANT to copy the list so we don't modify the SO
             foreach (var game in GameManager.Instance.AllGames.GameList)
-                if (game.Mode != MiniGames.Freestyle && game.Mode != MiniGames.Elimination)
+                if (game.Mode != GameModes.Freestyle && game.Mode != GameModes.Elimination)
                     LeaderboardEligibleGames.Add(game);
 
             var gamesCount = LeaderboardEligibleGames.Count;

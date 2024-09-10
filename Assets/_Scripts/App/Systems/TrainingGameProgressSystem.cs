@@ -8,16 +8,16 @@ namespace CosmicShore.App.Systems
     {
         static bool Initialized;
         const string ProgressSaveFileName = "training_progress.data";
-        static Dictionary<MiniGames, TrainingGameProgress> Progress;
+        static Dictionary<GameModes, TrainingGameProgress> Progress;
 
         static void LoadProgress()
         {
-            Progress = DataAccessor.Load<Dictionary<MiniGames, TrainingGameProgress>>(ProgressSaveFileName);
+            Progress = DataAccessor.Load<Dictionary<GameModes, TrainingGameProgress>>(ProgressSaveFileName);
 
             Initialized = true;
         }
 
-        static void SaveProgress(MiniGames mode, TrainingGameProgress progress)
+        static void SaveProgress(GameModes mode, TrainingGameProgress progress)
         {
             Progress[mode] = progress;
 
@@ -70,7 +70,7 @@ namespace CosmicShore.App.Systems
             return false;
         }
 
-        public static void SatisfyIntensityTier(MiniGames mode, int intensityTier)
+        public static void SatisfyIntensityTier(GameModes mode, int intensityTier)
         {
             var gameProgress = Progress[mode];
 
@@ -82,7 +82,7 @@ namespace CosmicShore.App.Systems
             SaveProgress(mode, Progress[mode]);
         }
 
-        public static void ClaimIntensityTierReward(MiniGames mode, int intensityTier)
+        public static void ClaimIntensityTierReward(GameModes mode, int intensityTier)
         {
             var gameProgress = Progress[mode];
 
@@ -92,7 +92,7 @@ namespace CosmicShore.App.Systems
         }
 
 
-        public static TrainingGameProgress GetGameProgress(MiniGames mode)
+        public static TrainingGameProgress GetGameProgress(GameModes mode)
         {
             if (!Initialized)
                 LoadProgress();

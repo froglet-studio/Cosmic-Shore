@@ -6,9 +6,9 @@ namespace CosmicShore.App.Systems.Loadout
     public struct ArcadeGameLoadout
     {
         public Loadout Loadout;
-        public MiniGames GameMode;
+        public GameModes GameMode;
 
-        public ArcadeGameLoadout(MiniGames gameMode, Loadout loadout)
+        public ArcadeGameLoadout(GameModes gameMode, Loadout loadout)
         {
             GameMode = gameMode;
             Loadout = loadout;

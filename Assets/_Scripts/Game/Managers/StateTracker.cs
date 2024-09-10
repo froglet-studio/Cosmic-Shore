@@ -32,13 +32,13 @@ namespace CosmicShore
             private Teams _team;
         }
 
-        Dictionary<MiniGames,HashSet<BlockState>> _gameState;
+        Dictionary<GameModes,HashSet<BlockState>> _gameState;
         // Dictionary<MiniGames, StateDiff> _stateDiffs;
         private StateDiff _stateDiff;
 
 
         // this is used to capture the current state so it is ready to be saved
-        public Dictionary<MiniGames,HashSet<BlockState>> CaptureState(MiniGames miniGame)
+        public Dictionary<GameModes,HashSet<BlockState>> CaptureState(GameModes miniGame)
         {
             var colliders = Physics.OverlapSphere(Vector3.zero, 10000f);
             foreach (var collider in colliders)
@@ -54,20 +54,20 @@ namespace CosmicShore
         }
 
         // this loads from a previously saved state
-        Dictionary<MiniGames, HashSet<BlockState>> LoadState()
+        Dictionary<GameModes, HashSet<BlockState>> LoadState()
         {
-            return DataAccessor.Load<Dictionary<MiniGames, HashSet<BlockState>>>(StateSaveFileName);
+            return DataAccessor.Load<Dictionary<GameModes, HashSet<BlockState>>>(StateSaveFileName);
         }
 
         // this is used to save a new captured state
-        private void SaveState(MiniGames miniGame)
+        private void SaveState(GameModes miniGame)
         {
             _gameState ??= LoadState();
             _gameState = CaptureState(miniGame);
             CalculateNewState(miniGame);
         }
 
-        void CalculateNewState(MiniGames miniGame)
+        void CalculateNewState(GameModes miniGame)
         {
             
             foreach (var trailBlock in _stateDiff.AddSet)
@@ -81,14 +81,14 @@ namespace CosmicShore
         }
 
         // this removes a block from the state
-        public void RemoveBlock(TrailBlockProperties trailBlockProperties, MiniGames miniGame)
+        public void RemoveBlock(TrailBlockProperties trailBlockProperties, GameModes miniGame)
         {
             var transform = trailBlockProperties.trailBlock.transform;
             _stateDiff.RemoveSet.Add(new BlockState(transform.position, transform.rotation, transform.localScale, trailBlockProperties.trailBlock.Team));
         }
 
         // this adds a block to the state
-        public void AddBlock(TrailBlockProperties trailBlockProperties, MiniGames miniGame)
+        public void AddBlock(TrailBlockProperties trailBlockProperties, GameModes miniGame)
         {
             var transform = trailBlockProperties.trailBlock.transform;
             _stateDiff.AddSet.Add(new BlockState(transform.position, transform.rotation, transform.localScale, trailBlockProperties.trailBlock.Team));

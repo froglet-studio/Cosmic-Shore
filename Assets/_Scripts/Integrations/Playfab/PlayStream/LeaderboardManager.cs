@@ -130,7 +130,7 @@ namespace CosmicShore.Integrations.PlayFab.PlayStream
         /// Update Gameplay Stats
         /// Upload game mode, ship type, intensity level and scores to memory
         /// </summary>
-        public void ReportGameplayStatistic(MiniGames gameMode, ShipTypes shipType, int intensity, int score, bool golfScoring)
+        public void ReportGameplayStatistic(GameModes gameMode, ShipTypes shipType, int intensity, int score, bool golfScoring)
         {
             // Build list of statistics to update
             // One entry for each score for specific game mode/ship combination
@@ -192,7 +192,7 @@ namespace CosmicShore.Integrations.PlayFab.PlayStream
         /// Get Gameplay Stats Key
         /// Combines game mode and ship type as search key, and return it.
         /// </summary>
-        public string GetGameplayStatKey(MiniGames gameMode, ShipTypes shipType)
+        public string GetGameplayStatKey(GameModes gameMode, ShipTypes shipType)
         {
             var statKey = gameMode.ToString().ToUpper() + "_" + shipType.ToString().ToUpper();
 
