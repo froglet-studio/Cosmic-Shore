@@ -51,7 +51,7 @@ namespace CosmicShore.App.UI.Views
             }
 
             // Sort favorited first, then alphabetically
-            var filteredGames = RespectInventoryForGameSelection ? GameList.GameList.Where(x => CatalogManager.Inventory.ContainsGame(x.DisplayName)).ToList() : GameList.GameList;
+            var filteredGames = RespectInventoryForGameSelection ? GameList.Games.Where(x => CatalogManager.Inventory.ContainsGame(x.DisplayName)).ToList() : GameList.Games;
             var sortedGames = filteredGames;
             sortedGames.Sort((x, y) =>
             {
@@ -62,7 +62,7 @@ namespace CosmicShore.App.UI.Views
                 return flagComparison;
             });
 
-            for (var i = 0; i < GameCards.Count && i < GameList.GameList.Count; i++)
+            for (var i = 0; i < GameCards.Count && i < GameList.Games.Count; i++)
             {
                 var game = sortedGames[i];
 
@@ -125,7 +125,7 @@ namespace CosmicShore.App.UI.Views
         {
             Debug.Log($"ArcadeMenu - SetIntensity: {intensity}");
 
-            Hangar.Instance.SetAiDifficultyLevel(intensity);
+            Hangar.Instance.SetAiIntensityLevel(intensity);
 
             // notify the mini game engine that this is the difficulty
             MiniGame.IntensityLevel = intensity;

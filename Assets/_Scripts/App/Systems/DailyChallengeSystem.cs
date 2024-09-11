@@ -151,7 +151,7 @@ namespace CosmicShore.App.Systems
             long dateTicks = currentDate.Ticks;
             var random = new System.Random((int)(dateTicks & 0xFFFFFFFF));
 
-            var trainingGames = Arcade.Instance.TrainingGames.GameList;
+            var trainingGames = Arcade.Instance.TrainingGames.Games;
             var index = random.Next(trainingGames.Count);
             var dailyGame = trainingGames[index];
             var challenge = new DailyChallenge();

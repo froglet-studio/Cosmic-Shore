@@ -67,7 +67,7 @@ namespace CosmicShore.App.UI.Elements
             }
             else
             {  
-                SO_ArcadeGame game = AllGames.GameList.Where(x => x.Mode == loadout.GameMode).FirstOrDefault();
+                SO_ArcadeGame game = AllGames.Games.Where(x => x.Mode == loadout.GameMode).FirstOrDefault();
                 GameTitle.text = game.DisplayName;
                 BackgroundImage.sprite = game.CardBackground;
 

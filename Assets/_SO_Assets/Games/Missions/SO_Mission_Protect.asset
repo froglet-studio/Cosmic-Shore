@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3b517c46d553d164a80eed7742cbf1f8, type: 3}
+  m_Name: SO_Mission_Protect
+  m_EditorClassIdentifier: 
+  Mode: 10
+  DisplayName: Protect Mission
+  Description: Can you protect the cell?
+  Icon: {fileID: 21300000, guid: a12edf378921c3d47bcc584148a52ac3, type: 3}
+  SelectedIcon: {fileID: 21300000, guid: a12edf378921c3d47bcc584148a52ac3, type: 3}
+  CardBackground: {fileID: 21300000, guid: 78575ccdc916fca45960791606e128c9, type: 3}
+  PreviewClip: {fileID: 241334157148977051, guid: f48cd1df8d808014c8a8f4db1258d202,
+    type: 3}
+  GolfScoring: 0
+  SceneName: MissionProtect
+  MinIntensity: 1
+  MaxIntensity: 9

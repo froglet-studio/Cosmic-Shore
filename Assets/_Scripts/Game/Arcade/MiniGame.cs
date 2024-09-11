@@ -335,7 +335,7 @@ namespace CosmicShore.Game.Arcade
             else if (IsTraining)
             {
                 var gameProgress = TrainingGameProgressSystem.GetGameProgress(gameMode);
-                TrainingGameProgressSystem.ReportProgress(Core.Arcade.Instance.TrainingGames.GameList.First(x=> x.Game.Mode == gameMode), IntensityLevel, ScoreTracker.GetHighScore());
+                TrainingGameProgressSystem.ReportProgress(Core.Arcade.Instance.TrainingGames.Games.First(x=> x.Game.Mode == gameMode), IntensityLevel, ScoreTracker.GetHighScore());
             }
             else
                 LeaderboardManager.Instance.ReportGameplayStatistic(gameMode, PlayerShipType, IntensityLevel, ScoreTracker.GetHighScore(), ScoreTracker.GolfRules);

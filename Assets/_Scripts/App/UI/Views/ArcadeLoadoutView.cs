@@ -90,7 +90,7 @@ namespace CosmicShore.App.UI.Views
             IntensityBorders[activeIntensity-1].color = SelectedColor;
 
             // 
-            selectedGameIndex = AllGames.GameList.IndexOf(AllGames.GameList.Where(x => x.Mode == activeGameMode).FirstOrDefault());
+            selectedGameIndex = AllGames.Games.IndexOf(AllGames.Games.Where(x => x.Mode == activeGameMode).FirstOrDefault());
             UpdateGameMode();
             selectedShipIndex = availableShips.IndexOf(AllShips.ShipList.Where(x => x.Class == activeShipType).FirstOrDefault());
             UpdateShipClass();
@@ -140,8 +140,8 @@ namespace CosmicShore.App.UI.Views
             int iter = goingUp ? -1 : 1;
 
             selectedGameIndex = selectedGameIndex + iter;
-            if (selectedGameIndex < 0) selectedGameIndex = AllGames.GameList.Count() - 1;
-            if (selectedGameIndex >= AllGames.GameList.Count()) selectedGameIndex = 0;
+            if (selectedGameIndex < 0) selectedGameIndex = AllGames.Games.Count() - 1;
+            if (selectedGameIndex >= AllGames.Games.Count()) selectedGameIndex = 0;
 
             UpdateGameMode();
             UpdateActiveLoadOut();
@@ -149,7 +149,7 @@ namespace CosmicShore.App.UI.Views
 
         void UpdateGameMode()
         {
-            var selectedGame = AllGames.GameList[selectedGameIndex];
+            var selectedGame = AllGames.Games[selectedGameIndex];
             activeGameMode = selectedGame.Mode;
             GameTitle.text = selectedGame.DisplayName;
             foreach (var image in GameModeImages)
@@ -208,7 +208,7 @@ namespace CosmicShore.App.UI.Views
 
         void UpdatePlayerCountColors()
         {
-            var selectedGame = AllGames.GameList[selectedGameIndex];
+            var selectedGame = AllGames.Games[selectedGameIndex];
 
             if (activePlayerCount < selectedGame.MinPlayers)
                 activePlayerCount = selectedGame.MinPlayers;

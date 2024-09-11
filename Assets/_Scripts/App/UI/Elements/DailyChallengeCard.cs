@@ -54,7 +54,7 @@ namespace CosmicShore.App.UI.Elements
 
         void UpdateCardView()
         {
-            var game = Arcade.Instance.TrainingGames.GameList.Where(x => x.Game.Mode == gameMode).FirstOrDefault().Game;
+            var game = Arcade.Instance.TrainingGames.Games.Where(x => x.Game.Mode == gameMode).FirstOrDefault().Game;
             GameTitle.text = $"Daily Challenge: {game.DisplayName}";
             BackgroundImage.sprite = game.CardBackground;
         }

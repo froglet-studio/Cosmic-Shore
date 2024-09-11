@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.Serialization;
 
 namespace CosmicShore.Core
 {
@@ -16,25 +17,26 @@ namespace CosmicShore.Core
     /// </summary>
     public class Arcade : SingletonPersistent<Arcade>
     {
-        [field: SerializeField] public SO_GameList FactionMissionGames { get; private set; }
+        [field: FormerlySerializedAs("FactionMissionGames")]
+        [field: SerializeField] public SO_MissionList MissionGames { get; private set; }
         [field: SerializeField] public SO_GameList ArcadeGames { get; private set; }
         [field: SerializeField] public SO_TrainingGameList TrainingGames { get; private set; }
         Dictionary<GameModes, SO_ArcadeGame> ArcadeGameLookup = new();
         Dictionary<GameModes, SO_TrainingGame> TrainingGameLookup = new();
-        Dictionary<GameModes, SO_ArcadeGame> MissionLookup = new();
+        Dictionary<GameModes, SO_Mission> MissionLookup = new();
         Animator SceneTransitionAnimator;
 
         public override void Awake()
         {
             base.Awake();
 
-            foreach (var game in ArcadeGames.GameList)
+            foreach (var game in ArcadeGames.Games)
                 ArcadeGameLookup.Add(game.Mode, game);
 
-            foreach (var trainingGame in TrainingGames.GameList)
+            foreach (var trainingGame in TrainingGames.Games)
                 TrainingGameLookup.Add(trainingGame.Game.Mode, trainingGame);
 
-            foreach (var game in FactionMissionGames.GameList)
+            foreach (var game in MissionGames.Games)
                 MissionLookup.Add(game.Mode, game);
         }
 
@@ -48,9 +50,9 @@ namespace CosmicShore.Core
             MiniGame.IsDailyChallenge = false;
             MiniGame.IsTraining = false;
             MiniGame.IsMission = true;
-            Hangar.Instance.SetAiDifficultyLevel(intensity);
+            Hangar.Instance.SetAiIntensityLevel(intensity);
 
-            var screenSwitcher = GameObject.FindAnyObjectByType<ScreenSwitcher>();
+            var screenSwitcher = FindAnyObjectByType<ScreenSwitcher>();
             screenSwitcher.SetReturnToScreen(ScreenSwitcher.MenuScreens.PORT);
             screenSwitcher.SetReturnToModal(ScreenSwitcher.ModalWindows.FACTION_MISSION);
 
@@ -66,9 +68,9 @@ namespace CosmicShore.Core
             MiniGame.IsDailyChallenge = isDailyChallenge;
             MiniGame.IsTraining = false;
             MiniGame.IsMission = false;
-            Hangar.Instance.SetAiDifficultyLevel(intensity);
+            Hangar.Instance.SetAiIntensityLevel(intensity);
 
-            var screenSwitcher = GameObject.FindAnyObjectByType<ScreenSwitcher>();
+            var screenSwitcher = FindAnyObjectByType<ScreenSwitcher>();
             screenSwitcher.SetReturnToScreen(ScreenSwitcher.MenuScreens.ARCADE);
             if (isDailyChallenge)
                 screenSwitcher.SetReturnToModal(ScreenSwitcher.ModalWindows.DAILY_CHALLENGE);
@@ -85,9 +87,9 @@ namespace CosmicShore.Core
             MiniGame.IsDailyChallenge = isDailyChallenge;
             MiniGame.IsTraining = !isDailyChallenge;
             MiniGame.IsMission = false;
-            Hangar.Instance.SetAiDifficultyLevel(intensity);
+            Hangar.Instance.SetAiIntensityLevel(intensity);
 
-            var screenSwitcher = GameObject.FindAnyObjectByType<ScreenSwitcher>();
+            var screenSwitcher = FindAnyObjectByType<ScreenSwitcher>();
             if (isDailyChallenge)
             {
                 screenSwitcher.SetReturnToScreen(ScreenSwitcher.MenuScreens.ARCADE);
@@ -101,12 +103,12 @@ namespace CosmicShore.Core
 
         public SO_TrainingGame GetTrainingGameByMode(GameModes gameMode)
         {
-            return TrainingGames.GameList.Where(x => x.Game.Mode == gameMode).FirstOrDefault();
+            return TrainingGames.Games.Where(x => x.Game.Mode == gameMode).FirstOrDefault();
         }
 
         public SO_ArcadeGame GetArcadeGameSOByName(string displayName)
         {
-            return ArcadeGames.GameList.Where(x => x.DisplayName == displayName).FirstOrDefault();
+            return ArcadeGames.Games.Where(x => x.DisplayName == displayName).FirstOrDefault();
         }
 
         public void RegisterSceneTransitionAnimator(Animator animator)

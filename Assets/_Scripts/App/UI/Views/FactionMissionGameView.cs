@@ -9,13 +9,12 @@ namespace CosmicShore.App.UI.Views
         [SerializeField] TMP_Text GameDescription;
         [SerializeField] GameObject PreviewWindow;
 
-
         public override void UpdateView()
         {
-            var game = SelectedModel as SO_ArcadeGame;
-            GameDescription.text = $"{game.Description}";
+            var mission = SelectedModel as SO_Mission;
+            GameDescription.text = $"{mission.Description}";
 
-            var preview = Instantiate(game.PreviewClip);
+            var preview = Instantiate(mission.PreviewClip);
             preview.transform.SetParent(PreviewWindow.transform, false);
             preview.GetComponent<RectTransform>().sizeDelta = new Vector2(256, 144);
 

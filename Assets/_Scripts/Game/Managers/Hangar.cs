@@ -66,11 +66,25 @@ namespace CosmicShore.Core
 
         [Range(1,4)]
         [SerializeField]
-        int AIDifficultyLevel = 1;
+        int AISkillLevel = 1;
 
+        /// <summary>
+        /// Intensity Level is defined by Arcade Games, Difficulty Level is defined by Missions
+        /// </summary>
+        /// <param name="level">Range from 1-4</param>
+        public void SetAiIntensityLevel(int level)
+        {
+            AISkillLevel = level;
+        }
+
+        /// <summary>
+        /// Intensity Level is defined by Arcade Games, Difficulty Level is defined by Missions
+        /// This method maps the 9 scale difficulty to the 4 scale skill level
+        /// </summary>
+        /// <param name="level">Range from 1-9</param>
         public void SetAiDifficultyLevel(int level)
         {
-            AIDifficultyLevel = level;
+            AISkillLevel = Mathf.FloorToInt((level/9f)*4);
         }
 
         public Ship SelectedShip { get; private set; }
@@ -218,7 +232,7 @@ namespace CosmicShore.Core
             ship.SetSkimmerMaterial(materialSet.SkimmerMaterial);
 
             AIPilot pilot = ship.GetComponent<AIPilot>();
-            pilot.SkillLevel = ((float)AIDifficultyLevel-1) / 3; // this assumes that levels remain from 1-4
+            pilot.SkillLevel = ((float)AISkillLevel-1) / 3; // this assumes that levels remain from 1-4
             pilot.AutoPilotEnabled = true;
 
             return ship;

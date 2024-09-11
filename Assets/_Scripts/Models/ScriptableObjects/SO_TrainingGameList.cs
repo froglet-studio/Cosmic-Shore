@@ -1,10 +1,14 @@
-﻿using CosmicShore;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 
-[CreateAssetMenu(fileName = "New Training Game List", menuName = "CosmicShore/Game/TrainingGameList", order = 21)]
-[System.Serializable]
-public class SO_TrainingGameList : ScriptableObject
+namespace CosmicShore
 {
-    public List<SO_TrainingGame> GameList;
+    [CreateAssetMenu(fileName = "New Training Game List", menuName = "CosmicShore/Game/TrainingGameList", order = 21)]
+    [System.Serializable]
+    public class SO_TrainingGameList : ScriptableObject
+    {
+        [FormerlySerializedAs("GameList")]
+        public List<SO_TrainingGame> Games;
+    }
 }

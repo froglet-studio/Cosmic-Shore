@@ -83,6 +83,18 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/_Scenes/MinigameDashAndGrab.unity
     guid: 9b2bfb506e15d33478bb4f9f1593af50
+  - enabled: 1
+    path: Assets/_Scenes/TestScenes/Ig/IgSandbox.unity
+    guid: 940d2623f0ab4824abf2f934a3b49008
+  - enabled: 1
+    path: Assets/_Scenes/Tools/PhotoBooth.unity
+    guid: 88bd9d59331396d44be56d5b782632ee
+  - enabled: 1
+    path: Assets/_Scenes/TestScenes/Ig/FreestyleSandbox.unity
+    guid: a6b7d688d28a4394e9c2b91066afe6c1
+  - enabled: 1
+    path: Assets/_Scenes/MissionProtect.unity
+    guid: e27e800962fc90d4485febc4dd78f72d
   m_configObjects:
     com.unity.adaptiveperformance.loader_settings: {fileID: 11400000, guid: 274754c57f99f5144be86c9d1014705b,
       type: 2}

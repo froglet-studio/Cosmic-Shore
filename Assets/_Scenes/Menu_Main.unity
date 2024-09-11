@@ -7144,7 +7144,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   sharpAnimations: 0
   GameView: {fileID: 689140778}
-  MissionGame: {fileID: 11400000, guid: 6f7bd40de6b623748a4b8ec3a4ce8c9d, type: 2}
+  Mission: {fileID: 11400000, guid: 886fcf63309eb3e428d7863f248c3f2d, type: 2}
   Intensity: 3
 --- !u!95 &257596346
 Animator:
@@ -7175,7 +7175,7 @@ CanvasGroup:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 257596342}
   m_Enabled: 1
-  m_Alpha: 0
+  m_Alpha: 1
   m_Interactable: 1
   m_BlocksRaycasts: 1
   m_IgnoreParentGroups: 0
@@ -87627,7 +87627,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1f38955b8ad13e54883f56e5dbda89cd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  <FactionMissionGames>k__BackingField: {fileID: 11400000, guid: 8c331e6316862ea4382157dfad2d2395,
+  <MissionGames>k__BackingField: {fileID: 11400000, guid: 7f11dbcad659c684e96f9673bc3f367e,
     type: 2}
   <ArcadeGames>k__BackingField: {fileID: 11400000, guid: 402ca7eefc2aeb64baaa140c43312bcd,
     type: 2}
