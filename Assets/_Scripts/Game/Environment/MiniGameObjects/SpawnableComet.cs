@@ -13,6 +13,7 @@ namespace CosmicShore
     public class SpawnableComet : SpawnableAbstractBase
     {
         [SerializeField] Core.TrailBlock trailBlock;
+        [SerializeField] Teams team = Teams.Blue;
         static int CometsSpawned = 0;
 
         #region Attributes for Explosion Parameters
@@ -73,7 +74,7 @@ namespace CosmicShore
                          distanceTowardTail * -transform.forward;
             var tempBlockscale = new Vector3(blockScale.x * scale, blockScale.y, blockScale.z * scale);
 
-            CreateBlock(transform.position + offset, tilt * transform.forward - (offset + transform.position), transform.forward, container.name + "::BLOCK::" + block, trail, tempBlockscale, trailBlock, container);
+            CreateBlock(transform.position + offset, tilt * transform.forward - (offset + transform.position), transform.forward, container.name + "::BLOCK::" + block, trail, tempBlockscale, trailBlock, container, team);
         }
         void CreateBlock(Vector3 position, Vector3 lookPosition, Vector3 up, string blockId, Trail trail, Vector3 scale, Core.TrailBlock trailBlock, GameObject container, Teams team = Teams.Blue)
         {

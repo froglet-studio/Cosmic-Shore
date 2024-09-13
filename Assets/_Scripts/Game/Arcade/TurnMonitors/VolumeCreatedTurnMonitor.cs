@@ -3,14 +3,14 @@ using System.Collections;
 
 namespace CosmicShore.Game.Arcade
 {
-    public class VolumeCreatedTurnMonitor
-        : TurnMonitor
+    public class VolumeCreatedTurnMonitor : TurnMonitor
     {
         [SerializeField] float Amount;
         [SerializeField] MiniGame Game;
         [SerializeField] bool hostileVolume;
         Core.RoundStats volumeStat;
         Teams team;
+        float volumeUnitConverstion = 145.65f;
 
         private void Start()
         {
@@ -45,7 +45,7 @@ namespace CosmicShore.Game.Arcade
         private void Update()
         {
             if (Display != null && StatsManager.Instance.TeamStats.ContainsKey(team))
-                Display.text = ((int)((Amount - StatsManager.Instance.TeamStats[team].VolumeCreated) / 145.65)).ToString();
+                Display.text = ((int)((Amount - StatsManager.Instance.TeamStats[team].VolumeCreated) / volumeUnitConverstion)).ToString();
         }
     }
 }

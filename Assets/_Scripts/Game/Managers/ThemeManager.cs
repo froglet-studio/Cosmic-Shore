@@ -113,6 +113,22 @@ namespace CosmicShore.Core
             return materialSet;
         }
 
+        public void SetBackgroundColor(Camera mainCamera)
+        {
+            if (mainCamera == null)
+            {
+                mainCamera = Camera.main;
+                if (mainCamera == null)
+                {
+                    Debug.LogError("No camera found in the scene!");
+                    return;
+                }
+            }
+
+            mainCamera.clearFlags = CameraClearFlags.SolidColor;
+            mainCamera.backgroundColor = ColorSet.EnvironmentColors.SkyColor;
+        }
+
         public Material GetTeamBlockMaterial(Teams team)
         {
             return TeamMaterialSets[team].BlockMaterial;
