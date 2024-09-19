@@ -11,18 +11,20 @@ public class Node : MonoBehaviour
     [SerializeField] public string ID;
     [SerializeField] float volumeControlThreshold = 100f;
 
-    [SerializeField] SnowChanger SnowChanger;
     [SerializeField] Crystal Crystal;
-    [SerializeField] GameObject membrane;
-    [SerializeField] GameObject nucleus;
 
-    [SerializeField] Flora flora1;
-    [SerializeField] Flora flora2;
+    [SerializeField] List<SO_CellType> CellTypes;
+    SO_CellType CellType;
 
-    [SerializeField] Population fauna1;
-    [SerializeField] Population fauna2;
+    SnowChanger SnowChanger;
+    GameObject membrane;
+    GameObject nucleus; // TODO: Use radius to spawn/move crystal
 
-    [SerializeField] FloraCollection floraCollection;
+    Flora flora1;
+    Flora flora2;
+
+    Population fauna1;
+    Population fauna2;
 
     [SerializeField] float floraSpawnVolumeCeiling = 12000f;
 
@@ -41,14 +43,35 @@ public class Node : MonoBehaviour
     List<AIPilot> AIPilots = new List<AIPilot>();
     int itemsAdded;
 
+    void Awake()
+    {
+        CellType = CellTypes[Random.Range(0, CellTypes.Count)];
+        membrane = Instantiate(CellType.MembranePrefab, transform.position, Quaternion.identity);
+        nucleus = Instantiate(CellType.NucleusPrefab, transform.position, Quaternion.identity);
+        SnowChanger = Instantiate(CellType.CytoplasmPrefab, transform.position, Quaternion.identity);
+        SnowChanger.Crystal = Crystal.gameObject;
+
+        // TODO: handle Blue?
+        Teams[] teams = { Teams.Jade, Teams.Ruby, Teams.Gold };  // TODO: Store this as a constant somewhere (where?).
+        foreach (Teams t in teams)
+        {
+            countGrids.Add(t, new BlockCountDensityGrid(t));
+            //volumeGrids.Add(t, new BlockVolumeDensityGrid(t));
+        }
+    }
 
     void Start()
     {
-        if (hasRandomFloraAndFauna)
+
+        foreach (var modifier in CellType.CellModifiers)
         {
-            flora1 = (Flora)floraCollection.GetRandomPrefab();
-            flora2 = (Flora)floraCollection.GetRandomPrefab();
+            modifier.Apply(this);
         }
+
+        flora1 = CellType.SupportedFlora[Random.Range(0,CellType.SupportedFlora.Count)];
+        flora2 = CellType.SupportedFlora[Random.Range(0, CellType.SupportedFlora.Count)];
+        fauna1 = CellType.SupportedFauna[Random.Range(0, CellType.SupportedFauna.Count)];
+        fauna2 = CellType.SupportedFauna[Random.Range(0, CellType.SupportedFauna.Count)];
 
         teamVolumes.Add(Teams.Jade, 0);
         teamVolumes.Add(Teams.Ruby, 0);
@@ -60,17 +83,6 @@ public class Node : MonoBehaviour
         if (fauna2) StartCoroutine(SpawnFauna(fauna2));
         if (flora1) StartCoroutine(SpawnFlora(flora1));
         if (flora2) StartCoroutine(SpawnFlora(flora2));
-    }
-
-    void Awake()
-    {
-        // TODO: handle Blue?
-        Teams[] teams = { Teams.Jade, Teams.Ruby, Teams.Gold };  // TODO: Store this as a constant somewhere (where?).
-        foreach (Teams t in teams)
-        {
-            countGrids.Add(t, new BlockCountDensityGrid(t));
-            //volumeGrids.Add(t, new BlockVolumeDensityGrid(t));
-        }
     }
 
     public void AddBlock(TrailBlock block)

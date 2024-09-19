@@ -5,7 +5,6 @@ using UnityEngine;
 
 public abstract class Flora : LifeForm
 {
-
     [SerializeField] protected float growPeriod = 3f;
     [SerializeField] public float PlantPeriod = 15f;
 
@@ -28,5 +27,4 @@ public abstract class Flora : LifeForm
             yield return new WaitForSeconds(growPeriod);
         }
     }
-
 }

@@ -3,7 +3,7 @@ using UnityEngine;
 
 public class SnowChanger : MonoBehaviour
 {
-    [SerializeField] GameObject Crystal;
+    public GameObject Crystal;
     [SerializeField] GameObject snow;
     [SerializeField] Vector3 crystalSize = new Vector3(500, 500, 500);
     [SerializeField] int shardDistance = 100;

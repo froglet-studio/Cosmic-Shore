@@ -247,4 +247,9 @@ public class ShipTransformer : MonoBehaviour
 
         velocityShift = Mathf.Min(accumulatedVelocityModification.magnitude, velocityModifierMax) * accumulatedVelocityModification.normalized;
     }
+
+    private void OnDisable()
+    {
+        Hangar.Instance.SlowedShipTransforms.Remove(transform);
+    }
 }

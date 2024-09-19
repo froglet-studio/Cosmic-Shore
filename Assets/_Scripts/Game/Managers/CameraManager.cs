@@ -51,7 +51,6 @@ public class CameraManager : SingletonPersistent<CameraManager>
     void Start()
     {
         vCam = closeCamera.VirtualCameraGameObject.GetComponent<CinemachineVirtualCamera>();
-
         OnMainMenu();
     }
 
@@ -63,15 +62,13 @@ public class CameraManager : SingletonPersistent<CameraManager>
     public void OnMainMenu()
     {
         SetMainMenuCameraActive();
+        ThemeManager.Instance.SetBackgroundColor(Camera.main);
     }
 
     public void SetupGamePlayCameras()
     {
         playerFollowTarget = FollowOverride ? Hangar.Instance.SelectedShip.ShipCameraCustomizer.FollowTarget : Hangar.Instance.SelectedShip.transform;
-        closeCamera.LookAt = deathCamera.LookAt = playerFollowTarget;
-        closeCamera.Follow = deathCamera.Follow = playerFollowTarget;
-        
-        SetCloseCameraActive();
+        SetupGamePlayCameras(playerFollowTarget);
     }
 
     public void SetupGamePlayCameras(Transform _transform)
@@ -79,6 +76,7 @@ public class CameraManager : SingletonPersistent<CameraManager>
         playerFollowTarget = _transform;
         closeCamera.LookAt = deathCamera.LookAt = playerFollowTarget;
         closeCamera.Follow = deathCamera.Follow = playerFollowTarget;
+        ThemeManager.Instance.SetBackgroundColor(Camera.main);
 
         SetCloseCameraActive();
     }
