@@ -75,7 +75,6 @@ namespace CosmicShore.App.UI
                     StartCoroutine(PurchaseVisualEffectCoroutine());
                     break;
             }
-
         }
 
         public void MarkClaimed()

@@ -10,14 +10,17 @@ namespace CosmicShore.Integrations.PlayFab.Economy
         /// The unique ID of the item.
         /// </summary>
         public string ItemId;
+        
         /// <summary>
         /// The name of the item
         /// </summary>
         public string Name;
+        
         /// <summary>
         /// NEUTRAL local description. Descriptions have a 10000 character limit per country code.
         /// </summary>
         public string Description;
+        
         /// <summary>
         /// The client-defined type of the item.
         /// </summary>
@@ -35,25 +38,21 @@ namespace CosmicShore.Integrations.PlayFab.Economy
         public string Categories;
         
         /// <summary>
-        /// The item references associated with this item. For example, the items in a Bundle/Store/Subscription. Every item can
-        /// have up to 50 item references.
-        /// </summary>
-        /// // TODO: reconsider including this in VirtualItem
-        /// // TODO: could use an item id list instead of the items? Answer: bundles have their own categories.
-        // public List<VirtualItem> BundleContents;    
-        /// <summary>
         /// The prices the item can be purchased for. One item can have multiple price tags (purchasing conditions)
         /// </summary>
         public List<ItemPrice> Price;
+        
         /// <summary>
         /// The list of tags that are associated with this item. Up to 32 tags can be added to an item.
         /// </summary>
         public List<string> Tags;
+        
         /// <summary>
         /// The high-level type of the item. The following item types are supported: bundle, catalogItem, currency, store, ugc,
         /// subscription.
         /// </summary>
         public string Type;
+        
         // This member goes to Inventory Item, 
         public int Amount;
     }

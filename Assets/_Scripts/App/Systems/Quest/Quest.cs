@@ -24,10 +24,10 @@ namespace CosmicShore.App.Systems.Quests
         public DateTime Expiration;
 
         /* Rewards */
-        public VirtualItem UnlockedItem;
-        public List<(Element, int)> CrystalRewards;
         [Tooltip("Playfab Item ID to be granted when the Quest is completed")]
         public string RewardItemID;
+        public VirtualItem UnlockedItem;
+        public List<(Element, int)> CrystalRewards;
 
         /* Progress Tracking */
         [HideInInspector] public int EventsCompleted = 0;
