@@ -152,37 +152,37 @@ BlendTree:
   m_Name: BlendTree
   m_Childs:
   - serializedVersion: 2
-    m_Motion: {fileID: -7942830232961210933, guid: 7c324ef5b6621f84b894d9474c05ec3b,
+    m_Motion: {fileID: 4102268083176662213, guid: 5db69771d02b4c24ca00998adf318137,
       type: 3}
     m_Threshold: 0
-    m_Position: {x: 0, y: 10}
-    m_TimeScale: 50
+    m_Position: {x: 0, y: 1}
+    m_TimeScale: 1
     m_CycleOffset: 0
     m_DirectBlendParameter: Blend
     m_Mirror: 0
   - serializedVersion: 2
-    m_Motion: {fileID: 1932594824745245842, guid: 7c324ef5b6621f84b894d9474c05ec3b,
+    m_Motion: {fileID: -5886390736306840818, guid: 5db69771d02b4c24ca00998adf318137,
       type: 3}
     m_Threshold: 0.33333334
-    m_Position: {x: 0, y: 0}
-    m_TimeScale: 50
+    m_Position: {x: 0, y: -1}
+    m_TimeScale: 1
     m_CycleOffset: 0
     m_DirectBlendParameter: Blend
     m_Mirror: 0
   - serializedVersion: 2
-    m_Motion: {fileID: -8679543024212152096, guid: 7c324ef5b6621f84b894d9474c05ec3b,
+    m_Motion: {fileID: -8583781936895361006, guid: 5db69771d02b4c24ca00998adf318137,
       type: 3}
     m_Threshold: 0.6666667
-    m_Position: {x: 10, y: 0}
-    m_TimeScale: 50
+    m_Position: {x: 1, y: 0}
+    m_TimeScale: 1
     m_CycleOffset: 0
     m_DirectBlendParameter: Blend
     m_Mirror: 0
   - serializedVersion: 2
-    m_Motion: {fileID: -721875957892904936, guid: 7c324ef5b6621f84b894d9474c05ec3b,
+    m_Motion: {fileID: -3465231570906512904, guid: 5db69771d02b4c24ca00998adf318137,
       type: 3}
     m_Threshold: 1
-    m_Position: {x: -10, y: 0}
+    m_Position: {x: -1, y: 0}
     m_TimeScale: 50
     m_CycleOffset: 0
     m_DirectBlendParameter: Blend
@@ -386,7 +386,7 @@ AnimatorController:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: MantaAnimatorController
+  m_Name: SquirrelAnimatorController 1
   serializedVersion: 5
   m_AnimatorParameters:
   - m_Name: Blend
@@ -445,7 +445,7 @@ AnimatorController:
     m_Controller: {fileID: 9100000}
   m_AnimatorLayers:
   - serializedVersion: 5
-    m_Name: Base Layer
+    m_Name: MovementAnimLayer
     m_StateMachine: {fileID: 8018396079052741684}
     m_Mask: {fileID: 0}
     m_Motions: []
@@ -465,37 +465,37 @@ BlendTree:
   m_Name: BlendTree
   m_Childs:
   - serializedVersion: 2
-    m_Motion: {fileID: 6212661447819486376, guid: 7c324ef5b6621f84b894d9474c05ec3b,
+    m_Motion: {fileID: 6027476600366338588, guid: 5db69771d02b4c24ca00998adf318137,
       type: 3}
     m_Threshold: 0
-    m_Position: {x: 0, y: 10}
+    m_Position: {x: 0, y: 1}
     m_TimeScale: 1
     m_CycleOffset: 0
     m_DirectBlendParameter: Blend
     m_Mirror: 0
   - serializedVersion: 2
-    m_Motion: {fileID: 3804817242277331963, guid: 7c324ef5b6621f84b894d9474c05ec3b,
+    m_Motion: {fileID: 3850382461062512866, guid: 5db69771d02b4c24ca00998adf318137,
       type: 3}
     m_Threshold: 0.25
-    m_Position: {x: 0, y: -10}
+    m_Position: {x: 0, y: -1}
     m_TimeScale: 1
     m_CycleOffset: 0
     m_DirectBlendParameter: Blend
     m_Mirror: 0
   - serializedVersion: 2
-    m_Motion: {fileID: -6822812431335815528, guid: 7c324ef5b6621f84b894d9474c05ec3b,
+    m_Motion: {fileID: -2194766280897318139, guid: 5db69771d02b4c24ca00998adf318137,
       type: 3}
     m_Threshold: 0.5
-    m_Position: {x: 10, y: 0}
+    m_Position: {x: 1, y: 0}
     m_TimeScale: 1
     m_CycleOffset: 0
     m_DirectBlendParameter: Blend
     m_Mirror: 0
   - serializedVersion: 2
-    m_Motion: {fileID: -6953860090002917003, guid: 7c324ef5b6621f84b894d9474c05ec3b,
+    m_Motion: {fileID: 7868478854632894093, guid: 5db69771d02b4c24ca00998adf318137,
       type: 3}
     m_Threshold: 0.75
-    m_Position: {x: -10, y: 0}
+    m_Position: {x: -1, y: 0}
     m_TimeScale: 1
     m_CycleOffset: 0
     m_DirectBlendParameter: Blend
@@ -609,7 +609,7 @@ AnimatorStateMachine:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Base Layer
+  m_Name: MovementAnimLayer
   m_ChildStates:
   - serializedVersion: 1
     m_State: {fileID: -7407348079967575313}
