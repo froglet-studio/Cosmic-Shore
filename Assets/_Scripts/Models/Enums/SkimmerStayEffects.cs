@@ -2,8 +2,7 @@
 // Always assign a static numeric value to your enum types
 public enum SkimmerStayEffects
 {
-    ChangeBoost = 1,
-    ChangeAmmo = 2,
+    ChangeResource = 1,
     FX = 3,
     Boost = 4,
     ScaleTrailAndCamera = 5,

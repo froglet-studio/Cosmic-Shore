@@ -7,71 +7,44 @@ using CosmicShore.Models.Enums;
 
 namespace CosmicShore.Core
 {
+
+    [Serializable]
+    public class Resource
+    {
+        public delegate void ResourceUpdateDelegate(float currentResource);
+        public event ResourceUpdateDelegate OnResourceChange;
+
+        [SerializeField] public string Name;
+        [SerializeField] public ResourceDisplay Display;
+
+        [SerializeField] public float initialResourceGainRate = .1f;
+        [SerializeField] public float resourceGainRate = .1f;
+
+        [SerializeField][Range(0, 1)] float maxAmount = 1f;
+        public float MaxAmount { get { return maxAmount; } }
+
+        [SerializeField][Range(0, 1)] public float initialAmount = 1f;
+        float currentAmount;
+        public float CurrentAmount
+        {
+            get => currentAmount;
+            set
+            {
+                currentAmount = value;
+
+                if (Display != null)
+                    Display.UpdateDisplay(currentAmount);
+
+                OnResourceChange?.Invoke(currentAmount);
+            }
+        }
+
+    }
+
     public class ResourceSystem : ElementalShipComponent
     {
-        [Header("Boost")]
-        [SerializeField] bool displayBoost;
-        [SerializeField] bool gainsBoost;
-        [SerializeField] float boostGainRate = .1f;
-        [SerializeField] [Range(0, 1)] float initialBoost = 1f;
-        [SerializeField] [Range(0, 1)] float maxBoost = 1f;
-        float currentBoost;
-        public float CurrentBoost
-        {
-            get => currentBoost;
-            private set
-            {
-                currentBoost = value;
-
-                if (ResourceDisplays?.BoostDisplay != null)
-                    ResourceDisplays?.BoostDisplay.UpdateDisplay(currentBoost);
-            }
-        }
-
-        public delegate void AmmoUpdateDelegate(float currentAmmo);
-        public event AmmoUpdateDelegate OnAmmoChange;
-
-        [Header("Ammo")]
-        [SerializeField] bool displayAmmo;
-        [SerializeField] bool gainsAmmo;
-        [SerializeField] ElementalFloat ammoGainRate = new ElementalFloat(0.01f);
-        [SerializeField] [Range(0, 1)] float initialAmmo = 1f;
-        [SerializeField] [Range(0, 1)] float maxAmmo = 1f;
-        float currentAmmo;
-        public float CurrentAmmo
-        {
-            get => currentAmmo;
-            private set
-            {
-                currentAmmo = value;
-
-                if (ResourceDisplays?.AmmoDisplay != null)
-                    ResourceDisplays?.AmmoDisplay.UpdateDisplay(currentAmmo);
-
-                OnAmmoChange?.Invoke(currentAmmo);
-            }
-        }
-        public float MaxAmmo { get { return maxAmmo; } }
-
-        [Header("Energy")]
-        [SerializeField] bool displayEnergy;
-        [SerializeField] [Range(0, 1)] float maxEnergy = 1f;
-        [SerializeField] [Range(0, 1)] float initialEnergy = 1f;
-        float currentEnergy;
-        public float CurrentEnergy
-        {
-            get => currentEnergy;
-            private set
-            {
-                currentEnergy = value;
-
-                if (ResourceDisplays?.EnergyDisplay != null)
-                    ResourceDisplays?.EnergyDisplay.UpdateDisplay(currentEnergy);
-            }
-        }
-        public float MaxEnergy { get { return maxEnergy; } }
-
-        public ResourceDisplayGroup ResourceDisplays;
+        
+        [SerializeField] public List<Resource> Resources;
 
         public static readonly float OneFuelUnit = 1 / 10f;
         ShipStatus shipData;
@@ -90,25 +63,34 @@ namespace CosmicShore.Core
 
             BindElementalFloats(GetComponent<Ship>());
 
-            ResourceDisplays?.BoostDisplay?.gameObject.SetActive(displayBoost);
-            ResourceDisplays?.AmmoDisplay?.gameObject.SetActive(displayAmmo);
-            ResourceDisplays?.EnergyDisplay?.gameObject.SetActive(displayEnergy);
+            foreach (var resource in Resources)
+            {
+                resource.Display?.gameObject.SetActive(true);
+            }
 
             // Notify elemental floats of initial elemental levels
             OnElementLevelChange?.Invoke(Element.Charge, Mathf.FloorToInt(ChargeLevel * MaxLevel));
             OnElementLevelChange?.Invoke(Element.Mass, Mathf.FloorToInt(MassLevel * MaxLevel));
             OnElementLevelChange?.Invoke(Element.Space, Mathf.FloorToInt(SpaceLevel * MaxLevel));
             OnElementLevelChange?.Invoke(Element.Time, Mathf.FloorToInt(TimeLevel * MaxLevel));
+
+            StartCoroutine(GainResourcesCoroutine());
+        }
+
+        IEnumerator GainResourcesCoroutine()
+        {
+            while (true)
+            {
+                foreach (var resource in Resources)
+                {
+                    resource.CurrentAmount = Mathf.Clamp(resource.CurrentAmount + resource.resourceGainRate, 0, resource.MaxAmount);
+                }
+                yield return new WaitForSeconds(1);
+            }
         }
 
         void Update()
         {
-            if (shipData.ElevatedAmmoGain)
-                ChangeAmmoAmount(Time.deltaTime * ammoGainRate.Value * 2);
-            else if (gainsAmmo)
-                ChangeAmmoAmount(Time.deltaTime * ammoGainRate.Value);
-            else if (gainsBoost)
-                ChangeBoostAmount(Time.deltaTime * boostGainRate);
 
             // These four fields are serialized for visibility during class creation and tuning
             // Use the test harness assigned value if it's been set, otherwise use the real value
@@ -132,55 +114,42 @@ namespace CosmicShore.Core
 
         public void Reset()
         {
-            ResetBoost();
-            ResetAmmo();
-            ResetEnergy();
+            foreach (var resource in Resources)
+            {
+                resource.CurrentAmount = resource.initialAmount;
+            }
         }
 
-        public void ResetBoost()
+        public void ResetResource(int index)
         {
-            CurrentBoost = initialBoost;
-        }
-        public void ResetAmmo()
-        {
-            CurrentAmmo = initialAmmo;
+            Resources[index].CurrentAmount = Resources[index].initialAmount;
         }
 
-        public void ResetEnergy()
+        public void ChangeResourceAmount(int index, float amount)
         {
-            CurrentEnergy = initialEnergy;
-        }
-
-        public void ChangeBoostAmount(float amount)
-        {
-            CurrentBoost = Mathf.Clamp(currentBoost + amount, 0, maxBoost);
+            Resources[index].CurrentAmount = Mathf.Clamp(Resources[index].CurrentAmount + amount, 0, Resources[index].MaxAmount);
         }
 
         // TODO: Revisit
-        public void ChangeAmmoAmount(float amount)
-        {
-            CurrentAmmo = Mathf.Clamp(currentAmmo + amount, 0, maxAmmo);
-            if (CurrentAmmo >= maxAmmo * .75f)
-            {
-                GetComponent<Ship>().StopClassResourceActions(ResourceEvents.AboveHalfAmmo);
-                GetComponent<Ship>().PerformClassResourceActions(ResourceEvents.AboveThreeQuartersAmmo);
-            }
-            else if (CurrentAmmo >= maxAmmo * .5f)
-            {
-                GetComponent<Ship>().StopClassResourceActions(ResourceEvents.AboveThreeQuartersAmmo);
-                GetComponent<Ship>().PerformClassResourceActions(ResourceEvents.AboveHalfAmmo);
-            }
-            else
-            {
-                GetComponent<Ship>().StopClassResourceActions(ResourceEvents.AboveThreeQuartersAmmo);
-                GetComponent<Ship>().StopClassResourceActions(ResourceEvents.AboveHalfAmmo);
-            }
-        }
-        
-        public void ChangeEnergyAmount(float amount)
-        {
-            CurrentEnergy = Mathf.Clamp(currentEnergy + amount, 0, maxEnergy);
-        }
+        //public void ChangeAmmoAmount(float amount)
+        //{
+        //    CurrentAmmo = Mathf.Clamp(currentAmmo + amount, 0, maxAmmo);
+        //    if (CurrentAmmo >= maxAmmo * .75f)
+        //    {
+        //        GetComponent<Ship>().StopClassResourceActions(ResourceEvents.AboveHalfAmmo);
+        //        GetComponent<Ship>().PerformClassResourceActions(ResourceEvents.AboveThreeQuartersAmmo);
+        //    }
+        //    else if (CurrentAmmo >= maxAmmo * .5f)
+        //    {
+        //        GetComponent<Ship>().StopClassResourceActions(ResourceEvents.AboveThreeQuartersAmmo);
+        //        GetComponent<Ship>().PerformClassResourceActions(ResourceEvents.AboveHalfAmmo);
+        //    }
+        //    else
+        //    {
+        //        GetComponent<Ship>().StopClassResourceActions(ResourceEvents.AboveThreeQuartersAmmo);
+        //        GetComponent<Ship>().StopClassResourceActions(ResourceEvents.AboveHalfAmmo);
+        //    }
+        //}
 
         /********************************/
         /*  ELEMENTAL LEVELS STUFF HERE */
@@ -210,7 +179,6 @@ namespace CosmicShore.Core
         const float MaxElementalLevel = 1;
         const int MaxLevel = 10;
         Dictionary<Element, float> ElementalLevels = new();
-        Dictionary<Element, ResourceDisplay> ElementalDisplays = new();
 
         public void InitializeElementLevels(ResourceCollection resourceGroup)
         {
@@ -218,10 +186,6 @@ namespace CosmicShore.Core
             ElementalLevels[Element.Mass] = resourceGroup.Mass;
             ElementalLevels[Element.Space] = resourceGroup.Space;
             ElementalLevels[Element.Time] = resourceGroup.Time;
-            ElementalDisplays[Element.Charge] = ResourceDisplays?.ChargeLevelDisplay;
-            ElementalDisplays[Element.Mass] = ResourceDisplays?.MassLevelDisplay;
-            ElementalDisplays[Element.Space] = ResourceDisplays?.SpaceLevelDisplay;
-            ElementalDisplays[Element.Time] = ResourceDisplays?.TimeLevelDisplay;
         }
 
         public int GetLevel(Element element)
@@ -250,9 +214,6 @@ namespace CosmicShore.Core
 
             // Don't waste cycles updating if there was no change
             if (previousLevel == ElementalLevels[element]) return false;
-
-            if (ElementalDisplays[element] != null)
-                ElementalDisplays[element].UpdateDisplay(ElementalLevels[element]);
 
             OnElementLevelChange?.Invoke(element, Mathf.FloorToInt(ElementalLevels[element] * MaxLevel));
 

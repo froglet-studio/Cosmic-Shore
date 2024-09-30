@@ -1,0 +1,136 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &6961228043250377768
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 6349275177958244260}
+  - component: {fileID: 2148634898793878778}
+  - component: {fileID: 2007011057286385746}
+  m_Layer: 0
+  m_Name: ClearPrisms
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &6349275177958244260
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6961228043250377768}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2148634898793878778
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6961228043250377768}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ba5446a35daa6134e9ac74f6afbaa82b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  Ship: {fileID: 0}
+  scaleCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0.0086572645
+      value: 0.0006980989
+      inSlope: -0.013658491
+      outSlope: -0.013658491
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0.49171534
+    - serializedVersion: 3
+      time: 0.35839063
+      value: 0.12869269
+      inSlope: 0.95739657
+      outSlope: 0.95739657
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.26193845
+      outWeight: 0.5383207
+    - serializedVersion: 3
+      time: 0.5105394
+      value: 0.41414607
+      inSlope: 2.778077
+      outSlope: 2.778077
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.22928448
+      outWeight: 1
+    - serializedVersion: 3
+      time: 0.52231115
+      value: 0.6377309
+      inSlope: 4.7249618
+      outSlope: 4.7249618
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 1
+      outWeight: 0.89219546
+    - serializedVersion: 3
+      time: 0.6611597
+      value: 0.9438335
+      inSlope: 0.6298916
+      outSlope: 0.6298916
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.67597884
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 1.0052795
+      value: 1.0032768
+      inSlope: 0.015224979
+      outSlope: 0.015224979
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.453742
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  capsuleRadius: 20
+--- !u!54 &2007011057286385746
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6961228043250377768}
+  serializedVersion: 4
+  m_Mass: 1
+  m_Drag: 0
+  m_AngularDrag: 0.05
+  m_CenterOfMass: {x: 0, y: 0, z: 0}
+  m_InertiaTensor: {x: 1, y: 1, z: 1}
+  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ImplicitCom: 1
+  m_ImplicitTensor: 1
+  m_UseGravity: 0
+  m_IsKinematic: 1
+  m_Interpolate: 0
+  m_Constraints: 126
+  m_CollisionDetection: 0

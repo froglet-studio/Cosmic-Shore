@@ -16,8 +16,8 @@ namespace CosmicShore.Core
         public bool CommandStickControls = false;
         public bool LiveProjectiles = false;
         public bool Stationary = false;
-        public bool ElevatedAmmoGain = false;
-        public float ChargedBoostCharge = 1f;
+        public bool ElevatedResourceGain = false;
+        public float ChargedBoostCharge = 1f; // TODO: move to resource system
         public bool AutoPilotEnabled = false;
         public bool AlignmentEnabled = false;
         public bool Slowed = false;

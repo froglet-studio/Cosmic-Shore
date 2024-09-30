@@ -9,11 +9,20 @@ public class DropDecoyAction : ShipAction
     [SerializeField] float dropRadiusMaxRange = 60;
     [SerializeField] FakeCrystal decoy;
 
+    [SerializeField] int resourceIndex = 0;
+    float resourceCost;
+
+    protected override void InitializeShipAttributes()
+    {
+        base.InitializeShipAttributes();
+        resourceCost = resourceSystem.Resources[resourceIndex].MaxAmount / decoysPerFullAmmo;
+    }
+
     public override void StartAction()
     {
-        if (resourceSystem.CurrentAmmo > resourceSystem.MaxAmmo / decoysPerFullAmmo)
+        if (resourceSystem.Resources[resourceIndex].CurrentAmount > resourceCost)
         {
-            resourceSystem.ChangeAmmoAmount(-resourceSystem.MaxAmmo / decoysPerFullAmmo);
+            resourceSystem.ChangeResourceAmount(resourceIndex, -resourceCost);
 
             var fake = Instantiate(decoy).GetComponent<FakeCrystal>();
             if (Player.ActivePlayer && Player.ActivePlayer.Ship == ship) fake.isplayer = true;

@@ -10,6 +10,8 @@ namespace CosmicShore.Game.Arcade
         [SerializeField] Vector3 CrystalStartPosition;
         [SerializeField] SegmentSpawner SegmentSpawner;
 
+        [SerializeField] int resourceIndex = 0;
+
         protected override void Start()
         {
             base.Start();
@@ -29,7 +31,7 @@ namespace CosmicShore.Game.Arcade
 
             TrailSpawner.NukeTheTrails();
             Crystal.transform.position = CrystalStartPosition;
-            ActivePlayer.Ship.ResourceSystem.ChangeAmmoAmount(ActivePlayer.Ship.ResourceSystem.MaxAmmo);
+            ActivePlayer.Ship.ResourceSystem.ChangeResourceAmount(resourceIndex, ActivePlayer.Ship.ResourceSystem.Resources[resourceIndex].MaxAmount);
         }
     }
 }

@@ -54,6 +54,9 @@ namespace CosmicShore.Core
         [SerializeField] Skimmer farFieldSkimmer;
         [SerializeField] public ShipCameraCustomizer ShipCameraCustomizer;
         [SerializeField] public Transform FollowTarget;
+        [SerializeField] int resourceIndex = 0;
+        [SerializeField] int ammoResourceIndex = 0; // TODO: move to an ability system with separate classes
+        [SerializeField] int boostResourceIndex = 0; // TODO: move to an ability system with separate classes
 
         [Header("Environment Interactions")]
         [SerializeField] public List<CrystalImpactEffects> crystalImpactEffects;
@@ -185,7 +188,7 @@ namespace CosmicShore.Core
             Debug.Log($"Ship.NotifyShipStatBinding - ElementStats.Count:{ElementStats.Count}");
         }
 
-        public void PerformCrystalImpactEffects(CrystalProperties crystalProperties)
+        public void PerformCrystalImpactEffects(CrystalProperties crystalProperties) // TODO: move to an ability system with separate classes
         {
             if (StatsManager.Instance != null)
                 StatsManager.Instance.CrystalCollected(this, crystalProperties);
@@ -201,25 +204,25 @@ namespace CosmicShore.Core
                         var AOEExplosion = Instantiate(AOEPrefab).GetComponent<AOEExplosion>();
                         AOEExplosion.Ship = this;
                         AOEExplosion.SetPositionAndRotation(transform.position, transform.rotation);
-                        AOEExplosion.MaxScale =  Mathf.Lerp(minExplosionScale, maxExplosionScale, ResourceSystem.CurrentAmmo);
+                        AOEExplosion.MaxScale =  Mathf.Lerp(minExplosionScale, maxExplosionScale, ResourceSystem.Resources[ammoResourceIndex].CurrentAmount);
                         break;
                     case CrystalImpactEffects.IncrementLevel:
                         ResourceSystem.IncrementLevel(crystalProperties.Element); // TODO: consider removing here and leaving this up to the crystals
                         break;
                     case CrystalImpactEffects.FillCharge:
-                        ResourceSystem.ChangeBoostAmount(crystalProperties.fuelAmount);
+                        ResourceSystem.ChangeResourceAmount(boostResourceIndex, crystalProperties.fuelAmount);
                         break;
                     case CrystalImpactEffects.Boost:
                         ShipTransformer.ModifyThrottle(crystalProperties.speedBuffAmount, 4 * speedModifierDuration);
                         break;
                     case CrystalImpactEffects.DrainAmmo:
-                        ResourceSystem.ChangeAmmoAmount(-ResourceSystem.CurrentAmmo);
+                        ResourceSystem.ChangeResourceAmount(ammoResourceIndex, - ResourceSystem.Resources[ammoResourceIndex].CurrentAmount);
                         break;
                     case CrystalImpactEffects.GainOneThirdMaxAmmo:
-                        ResourceSystem.ChangeAmmoAmount(ResourceSystem.MaxAmmo/3f);
+                        ResourceSystem.ChangeResourceAmount(ammoResourceIndex, ResourceSystem.Resources[ammoResourceIndex].CurrentAmount /3f);
                         break;
                     case CrystalImpactEffects.GainFullAmmo:
-                        ResourceSystem.ChangeAmmoAmount(ResourceSystem.MaxAmmo);
+                        ResourceSystem.ChangeResourceAmount(ammoResourceIndex, ResourceSystem.Resources[ammoResourceIndex].CurrentAmount);
                         break;
                 }
             }
@@ -235,7 +238,7 @@ namespace CosmicShore.Core
                         if (!ShipStatus.AutoPilotEnabled) HapticController.PlayHaptic(HapticType.BlockCollision);//.PlayBlockCollisionHaptics();
                         break;
                     case TrailBlockImpactEffects.DrainHalfAmmo:
-                        ResourceSystem.ChangeAmmoAmount(-ResourceSystem.CurrentAmmo / 2f);
+                        ResourceSystem.ChangeResourceAmount(ammoResourceIndex, -ResourceSystem.Resources[ammoResourceIndex].CurrentAmount / 2f);
                         break;
                     case TrailBlockImpactEffects.DebuffSpeed:
                         ShipTransformer.ModifyThrottle(trailBlockProperties.speedDebuffAmount, speedModifierDuration);
@@ -247,15 +250,15 @@ namespace CosmicShore.Core
                     case TrailBlockImpactEffects.OnlyBuffSpeed:
                         if (trailBlockProperties.speedDebuffAmount > 1) ShipTransformer.ModifyThrottle(trailBlockProperties.speedDebuffAmount, speedModifierDuration);
                         break;
-                    case TrailBlockImpactEffects.ChangeBoost:
-                        ResourceSystem.ChangeBoostAmount(blockChargeChange);
+                    case TrailBlockImpactEffects.GainResourceByVolume:
+                        ResourceSystem.ChangeResourceAmount(boostResourceIndex, blockChargeChange);
                         break;
                     case TrailBlockImpactEffects.Attach:
                         Attach(trailBlockProperties.trailBlock);
                         ShipStatus.GunsActive = true;
                         break;
-                    case TrailBlockImpactEffects.ChangeAmmo:
-                        ResourceSystem.ChangeAmmoAmount(blockChargeChange);
+                    case TrailBlockImpactEffects.GainResource:
+                        ResourceSystem.ChangeResourceAmount(resourceIndex, blockChargeChange);
                         break;
                     case TrailBlockImpactEffects.Bounce:
                         var cross = Vector3.Cross(transform.forward, trailBlockProperties.trailBlock.transform.forward);

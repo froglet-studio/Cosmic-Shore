@@ -16,6 +16,8 @@ public class FireGunAction : ShipAction
     public float Speed = 90;
     public ElementalFloat ProjectileTime = new ElementalFloat(3f);
 
+    [SerializeField] int ammoIndex = 0;
+
     protected override void Start()
     {
         base.Start();
@@ -24,9 +26,9 @@ public class FireGunAction : ShipAction
     }
     public override void StartAction()
     {
-        if (resourceSystem.CurrentAmmo > ammoCost) 
+        if (resourceSystem.Resources[ammoIndex].CurrentAmount > ammoCost) 
         {
-            resourceSystem.ChangeAmmoAmount(-ammoCost);
+            resourceSystem.ChangeResourceAmount(ammoIndex, - ammoCost);
 
             Vector3 inheritedVelocity;
             if (shipData.Attached) inheritedVelocity = gun.transform.forward;

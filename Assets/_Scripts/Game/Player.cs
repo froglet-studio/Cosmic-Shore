@@ -88,7 +88,6 @@ public class Player : MonoBehaviour
         GameCanvas.MiniGameHUD.ship = ship;
         ship.Team = Team;
         ship.Player = this;
-        ship.ResourceSystem.ResourceDisplays = GameCanvas.ResourceDisplayGroup;
     }
 
     void SetupAIShip(Ship shipInstance)
