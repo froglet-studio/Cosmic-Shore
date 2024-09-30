@@ -1,9 +1,9 @@
 fileFormatVersion: 2
-guid: 5552c54c11d94016bcfe740f27df44a6
+guid: a366c71c93ae411ea1ece423e8b1538f
 labels:
 - gvh
-- gvh_version-11.5.0
-- gvhp_exportpath-ExternalDependencyManager/Editor/1.2.177/Google.IOSResolver.dll
+- gvh_version-1.2.183
+- gvhp_exportpath-ExternalDependencyManager/Editor/1.2.183/Google.IOSResolver.dll
 - gvhp_targets-editor
 PluginImporter:
   externalObjects: {}
@@ -13,7 +13,7 @@ PluginImporter:
   defineConstraints: []
   isPreloaded: 0
   isOverridable: 0
-  isExplicitlyReferenced: 0
+  isExplicitlyReferenced: 1
   validateReferences: 0
   platformData:
   - first:
@@ -46,7 +46,7 @@ PluginImporter:
       settings:
         CPU: AnyCPU
         DefaultValueInitialized: true
-        OS: OSX
+        OS: AnyOS
   - first:
       Standalone: Linux64
     second:
