@@ -41,8 +41,4 @@ public class ConsumeBoostAction : ShipAction
             shipData.Boosting = false;
         }
     }
-
-
-
-
 }

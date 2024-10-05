@@ -17,45 +17,45 @@ namespace CosmicShore.Game.Animation
         [SerializeField] float mediumAnimationScaler = 30f;
         [SerializeField] float bigAnimationScaler = 45f;
 
-        protected override void PerformShipAnimations(float pitch, float yaw, float roll, float throttle)
+        protected override void PerformShipPuppetry(float pitch, float yaw, float roll, float throttle)
         {
-            AnimatePart(Fusilage,
+            RotatePart(Fusilage,
                         pitch * mediumAnimationScaler,
                         yaw * mediumAnimationScaler,
                         -roll * mediumAnimationScaler,
                         InitialRotations[0]);
 
-            AnimatePart(LeftWing,
+            RotatePart(LeftWing,
                         pitch * mediumAnimationScaler,
                         (-throttle + yaw) * bigAnimationScaler,
                         (-roll - pitch) * smallAnimationScaler,
                         InitialRotations[1]);
 
-            AnimatePart(RightWing,
+            RotatePart(RightWing,
                         pitch * mediumAnimationScaler,
                         (throttle + yaw) * bigAnimationScaler,
                         (-roll + pitch) * smallAnimationScaler,
                         InitialRotations[2]);
 
-            AnimatePart(ThrusterBottomLeft,
+            RotatePart(ThrusterBottomLeft,
                         pitch * mediumAnimationScaler,
                         -yaw * mediumAnimationScaler,
                         (-roll + throttle) * smallAnimationScaler,
                         InitialRotations[5]);
 
-            AnimatePart(ThrusterTopRight,
+            RotatePart(ThrusterTopRight,
                         pitch * mediumAnimationScaler,
                         -yaw * mediumAnimationScaler,
                         (-roll + throttle) * smallAnimationScaler,
                         InitialRotations[4]);
 
-            AnimatePart(ThrusterTopLeft,
+            RotatePart(ThrusterTopLeft,
                         pitch * mediumAnimationScaler,
                         -(yaw) * mediumAnimationScaler,
                         (-roll - throttle) * smallAnimationScaler,
                         InitialRotations[3]);
 
-            AnimatePart(ThrusterBottomRight,
+            RotatePart(ThrusterBottomRight,
                         pitch * mediumAnimationScaler,
                         -(yaw) * mediumAnimationScaler,
                         (-roll - throttle) * smallAnimationScaler,

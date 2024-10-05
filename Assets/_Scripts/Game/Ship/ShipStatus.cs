@@ -21,6 +21,7 @@ namespace CosmicShore.Core
         public bool AutoPilotEnabled = false;
         public bool AlignmentEnabled = false;
         public bool Slowed = false;
+        public bool Overheating = false;
 
         public bool Attached = false;
         public TrailBlock AttachedTrailBlock;
@@ -41,6 +42,7 @@ namespace CosmicShore.Core
             Course = transform.forward;
             ChargedBoostCharge = 1f;
             Slowed = false;
+            Overheating = false;
         }
     }
 }

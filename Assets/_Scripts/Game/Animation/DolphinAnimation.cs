@@ -17,14 +17,14 @@ namespace CosmicShore.Game.Animation
         [SerializeField] float yawAnimationScaler = 15f;
         [SerializeField] float rollAnimationScaler = 15f;
 
-        protected override void PerformShipAnimations(float pitch, float yaw, float roll, float throttle)
+        protected override void PerformShipPuppetry(float pitch, float yaw, float roll, float throttle)
         {
-            AnimatePart(LeftWing,
+            RotatePart(LeftWing,
                 Brake(throttle) * yawAnimationScaler,
                 -(throttle - yaw) * yawAnimationScaler,
                 (roll - pitch) * rollAnimationScaler);
 
-            AnimatePart(RightWing,
+            RotatePart(RightWing,
                         Brake(throttle) * yawAnimationScaler,
                         (throttle + yaw) * yawAnimationScaler,
                         (roll + pitch) * rollAnimationScaler);
@@ -34,7 +34,7 @@ namespace CosmicShore.Game.Animation
             var rollScalar = roll * animationScaler;
 
             foreach (var part in new List<Transform>() { Fusilage, TailStart, TailEnd, LeftTail, RightTail })
-                AnimatePart(part, pitchScalar, yawScalar, rollScalar);
+                RotatePart(part, pitchScalar, yawScalar, rollScalar);
         }
 
         protected override void AssignTransforms()

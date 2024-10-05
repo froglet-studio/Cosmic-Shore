@@ -20,7 +20,7 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: SkyboxModelGraphMaterial
+  m_Name: BranchingMembraneMaterial
   m_Shader: {fileID: -6465566751694194690, guid: 2c9a2006e0ea5154fa732333a4962870,
     type: 3}
   m_Parent: {fileID: 0}
@@ -108,26 +108,26 @@ Material:
     - _CastShadows: 1
     - _ClearCoatMask: 0
     - _ClearCoatSmoothness: 0
-    - _Cull: 2
+    - _Cull: 0
     - _Cutoff: 0.5
     - _DetailAlbedoMapScale: 1
     - _DetailNormalMapScale: 1
     - _DstBlend: 0
-    - _Edge_Blend: 0.9
-    - _Effect_Radius: 8.66
+    - _Edge_Blend: 0.446
+    - _Effect_Radius: 11.1
     - _EnvironmentReflections: 1
     - _Frequency: 0.58
     - _GlossMapScale: 0
     - _Glossiness: 0
     - _GlossyReflections: 0
-    - _Gradient_Edge: 0.16
+    - _Gradient_Edge: 0.71
     - _Metallic: 0
     - _OcclusionStrength: 1
     - _Parallax: 0.005
     - _QueueControl: 0
     - _QueueOffset: 0
     - _ReceiveShadows: 1
-    - _Ripple_Density: 5.69
+    - _Ripple_Density: 4.27
     - _Smoothness: 0.5
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1

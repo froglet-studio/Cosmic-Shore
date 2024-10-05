@@ -1,8 +1,8 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 namespace CosmicShore.Game.Animation
 {
-    class MantaAnimationContoller : ShipAnimation
+    class SingleStickAnimationController : ShipAnimation
     {
         [SerializeField] Animator animator;
 

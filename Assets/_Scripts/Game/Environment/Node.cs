@@ -68,10 +68,16 @@ public class Node : MonoBehaviour
             modifier.Apply(this);
         }
 
-        flora1 = CellType.SupportedFlora[Random.Range(0,CellType.SupportedFlora.Count)];
-        flora2 = CellType.SupportedFlora[Random.Range(0, CellType.SupportedFlora.Count)];
-        fauna1 = CellType.SupportedFauna[Random.Range(0, CellType.SupportedFauna.Count)];
-        fauna2 = CellType.SupportedFauna[Random.Range(0, CellType.SupportedFauna.Count)];
+        if (CellType.SupportedFlora.Count > 0)
+        {
+            flora1 = CellType.SupportedFlora[Random.Range(0, CellType.SupportedFlora.Count)];
+            flora2 = CellType.SupportedFlora[Random.Range(0, CellType.SupportedFlora.Count)];
+        }
+        if (CellType.SupportedFauna.Count > 0)
+        {
+            fauna1 = CellType.SupportedFauna[Random.Range(0, CellType.SupportedFauna.Count)];
+            fauna2 = CellType.SupportedFauna[Random.Range(0, CellType.SupportedFauna.Count)];
+        }
 
         teamVolumes.Add(Teams.Jade, 0);
         teamVolumes.Add(Teams.Ruby, 0);

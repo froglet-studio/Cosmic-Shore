@@ -26,7 +26,7 @@ public class FireGunAction : ShipAction
     }
     public override void StartAction()
     {
-        if (resourceSystem.Resources[ammoIndex].CurrentAmount > ammoCost) 
+        if (resourceSystem.Resources[ammoIndex].CurrentAmount >= ammoCost) 
         {
             resourceSystem.ChangeResourceAmount(ammoIndex, - ammoCost);
 

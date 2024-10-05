@@ -4898,7 +4898,7 @@ PrefabInstance:
     - target: {fileID: 3197094124088707225, guid: cb702179ff5b42f41a3521ccd59e6934,
         type: 3}
       propertyPath: CellTypes.Array.size
-      value: 1
+      value: 4
       objectReference: {fileID: 0}
     - target: {fileID: 3197094124088707225, guid: cb702179ff5b42f41a3521ccd59e6934,
         type: 3}
@@ -4909,7 +4909,25 @@ PrefabInstance:
         type: 3}
       propertyPath: CellTypes.Array.data[0]
       value: 
+      objectReference: {fileID: 11400000, guid: 36999bb97c4204943bec39ef90cf958c,
+        type: 2}
+    - target: {fileID: 3197094124088707225, guid: cb702179ff5b42f41a3521ccd59e6934,
+        type: 3}
+      propertyPath: CellTypes.Array.data[1]
+      value: 
       objectReference: {fileID: 11400000, guid: 5ce96f4772e6a7941ab472e13d16a96f,
+        type: 2}
+    - target: {fileID: 3197094124088707225, guid: cb702179ff5b42f41a3521ccd59e6934,
+        type: 3}
+      propertyPath: CellTypes.Array.data[2]
+      value: 
+      objectReference: {fileID: 11400000, guid: eb597a600e9c4e142b45420370ce0993,
+        type: 2}
+    - target: {fileID: 3197094124088707225, guid: cb702179ff5b42f41a3521ccd59e6934,
+        type: 3}
+      propertyPath: CellTypes.Array.data[3]
+      value: 
+      objectReference: {fileID: 11400000, guid: f6868bd3ece61954193f871dcd19f8f1,
         type: 2}
     - target: {fileID: 7817456538282590180, guid: cb702179ff5b42f41a3521ccd59e6934,
         type: 3}
@@ -12194,6 +12212,7 @@ MonoBehaviour:
     ActionQuantity: 0
     MultiSessionTracking: 0
     Scope: 
+    RewardItemID: 
     UnlockedItem:
       ItemId: 
       Name: 
@@ -12204,7 +12223,6 @@ MonoBehaviour:
       Tags: []
       Type: 
       Amount: 0
-    RewardItemID: 
     EventsCompleted: 0
     Completed: 0
     RewardGranted: 0
@@ -12224,6 +12242,7 @@ MonoBehaviour:
     ActionQuantity: 0
     MultiSessionTracking: 0
     Scope: 
+    RewardItemID: 
     UnlockedItem:
       ItemId: 
       Name: 
@@ -12234,7 +12253,6 @@ MonoBehaviour:
       Tags: []
       Type: 
       Amount: 0
-    RewardItemID: 
     EventsCompleted: 0
     Completed: 0
     RewardGranted: 0
@@ -68174,10 +68192,6 @@ MonoBehaviour:
   TrainingGameButton1: {fileID: 1946396456}
   TrainingGameButton2: {fileID: 436655476}
   RewardButton: {fileID: 1694128510}
-  RewardElementImage1: {fileID: 903223096}
-  RewardElementImage2: {fileID: 1496051664}
-  RewardValueText1: {fileID: 1607537386}
-  RewardValueText2: {fileID: 1561211489}
   IntensityButtons:
   - {fileID: 1659816728}
   - {fileID: 1266218045}

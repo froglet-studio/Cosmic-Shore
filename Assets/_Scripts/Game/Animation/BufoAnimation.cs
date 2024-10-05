@@ -38,20 +38,20 @@ namespace CosmicShore.Game.Animation
             Transforms.Add(ThrusterTopLeft);
         }
 
-        protected override void PerformShipAnimations(float pitch, float yaw, float roll, float throttle)
+        protected override void PerformShipPuppetry(float pitch, float yaw, float roll, float throttle)
         {
             var pitchScalar = pitch * exaggeratedAnimationScalar;
             var yawScalar = yaw * exaggeratedAnimationScalar;
             var rollScalar = roll * exaggeratedAnimationScalar;
 
-            AnimatePart(Fusilage, pitch * animationScalar, yaw * animationScalar, 0);
+            RotatePart(Fusilage, pitch * animationScalar, yaw * animationScalar, 0);
             //AnimatePart(Turret, pitchScalar * .7f, yawScalar, rollScalar);
 
             foreach (var part in new List<Transform>() { ThrusterTopRight, TopWing, ThrusterBottomRight, ThrusterBottomLeft, BottomWing, ThrusterTopLeft })
-                AnimatePart(part, pitchScalar, yawScalar, -yawScalar);
+                RotatePart(part, pitchScalar, yawScalar, -yawScalar);
         }
 
-        protected override void AnimatePart(Transform part, float pitch, float yaw, float roll)
+        protected override void RotatePart(Transform part, float pitch, float yaw, float roll)
         {
             Quaternion rotation = shipData.Portrait ? Quaternion.Euler(yaw, -pitch, -roll) : Quaternion.Euler(pitch, yaw, roll);
 

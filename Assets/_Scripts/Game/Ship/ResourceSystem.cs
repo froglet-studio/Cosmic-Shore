@@ -23,7 +23,8 @@ namespace CosmicShore.Core
         [SerializeField][Range(0, 1)] float maxAmount = 1f;
         public float MaxAmount { get { return maxAmount; } }
 
-        [SerializeField][Range(0, 1)] public float initialAmount = 1f;
+        [SerializeField][Range(0, 1)] float initialAmount = 1f;
+        public float InitialAmount { get { return initialAmount; } }
         float currentAmount;
         public float CurrentAmount
         {
@@ -116,13 +117,13 @@ namespace CosmicShore.Core
         {
             foreach (var resource in Resources)
             {
-                resource.CurrentAmount = resource.initialAmount;
+                resource.CurrentAmount = resource.InitialAmount;
             }
         }
 
         public void ResetResource(int index)
         {
-            Resources[index].CurrentAmount = Resources[index].initialAmount;
+            Resources[index].CurrentAmount = Resources[index].InitialAmount;
         }
 
         public void ChangeResourceAmount(int index, float amount)

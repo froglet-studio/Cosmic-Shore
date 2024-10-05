@@ -68,7 +68,6 @@ namespace CosmicShore.Core
 
         [Header("Configuration")]
         [SerializeField] public float boostMultiplier = 4f; // TODO: Move to ShipController
-        [SerializeField] public float boostFuelAmount = -.01f;
         [SerializeField] bool bottomEdgeButtons = false;
         [SerializeField] public float Inertia = 70f;
 
@@ -204,6 +203,7 @@ namespace CosmicShore.Core
                         var AOEExplosion = Instantiate(AOEPrefab).GetComponent<AOEExplosion>();
                         AOEExplosion.Ship = this;
                         AOEExplosion.SetPositionAndRotation(transform.position, transform.rotation);
+                        Debug.Log($"Ship.PerformCrystalImpactEffects - AOEExplosion.current ammo:{ResourceSystem.Resources[ammoResourceIndex].CurrentAmount}");
                         AOEExplosion.MaxScale =  Mathf.Lerp(minExplosionScale, maxExplosionScale, ResourceSystem.Resources[ammoResourceIndex].CurrentAmount);
                         break;
                     case CrystalImpactEffects.IncrementLevel:
@@ -219,10 +219,10 @@ namespace CosmicShore.Core
                         ResourceSystem.ChangeResourceAmount(ammoResourceIndex, - ResourceSystem.Resources[ammoResourceIndex].CurrentAmount);
                         break;
                     case CrystalImpactEffects.GainOneThirdMaxAmmo:
-                        ResourceSystem.ChangeResourceAmount(ammoResourceIndex, ResourceSystem.Resources[ammoResourceIndex].CurrentAmount /3f);
+                        ResourceSystem.ChangeResourceAmount(ammoResourceIndex, ResourceSystem.Resources[ammoResourceIndex].CurrentAmount / 3f);
                         break;
                     case CrystalImpactEffects.GainFullAmmo:
-                        ResourceSystem.ChangeResourceAmount(ammoResourceIndex, ResourceSystem.Resources[ammoResourceIndex].CurrentAmount);
+                        ResourceSystem.ChangeResourceAmount(ammoResourceIndex, ResourceSystem.Resources[ammoResourceIndex].MaxAmount);
                         break;
                 }
             }
