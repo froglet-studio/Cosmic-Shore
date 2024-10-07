@@ -315,50 +315,60 @@ namespace CosmicShore.Core
         public void PerformButtonActions(int buttonNumber)
         {
             Debug.Log($"Ship.PerformButtonActions - buttonNumber:{buttonNumber}");
-            if (buttonNumber == 1 && ShipControlActions.ContainsKey(InputEvents.Button1Action))
+            
+            switch (buttonNumber)
             {
-                PerformShipControllerActions(InputEvents.Button1Action);
-            }
-            else if (buttonNumber == 2 && ShipControlActions.ContainsKey(InputEvents.Button2Action))
-            {
-                PerformShipControllerActions(InputEvents.Button2Action);
-            }
-            else if (buttonNumber == 3 && ShipControlActions.ContainsKey(InputEvents.Button3Action))
-            {
-                PerformShipControllerActions(InputEvents.Button3Action);
+                case 1:
+                    if(ShipControlActions.ContainsKey(InputEvents.Button1Action))
+                        PerformShipControllerActions(InputEvents.Button1Action);
+                    break;
+                case 2:
+                    if(ShipControlActions.ContainsKey(InputEvents.Button2Action))
+                        PerformShipControllerActions(InputEvents.Button2Action);
+                    break;
+                case 3:
+                    if(ShipControlActions.ContainsKey(InputEvents.Button3Action))
+                        PerformShipControllerActions(InputEvents.Button3Action);
+                    break;
+                default:
+                    Debug.LogWarning($"Ship.PerformButtonActions - buttonNumber:{buttonNumber} is not associated to any of the ship actions.");
+                    break;
             }
         }
 
         // this is used with buttons so "Find all references" will not return editor usage
         public void StopButtonActions(int buttonNumber)
         {
-            if (buttonNumber == 1 && ShipControlActions.ContainsKey(InputEvents.Button1Action))
+            Debug.Log($"Ship.StopButtonActions - buttonNumber:{buttonNumber}");
+
+            switch (buttonNumber)
             {
-                StopShipControllerActions(InputEvents.Button1Action);
-            }
-            else if (buttonNumber == 2 && ShipControlActions.ContainsKey(InputEvents.Button2Action))
-            {
-                StopShipControllerActions(InputEvents.Button2Action);
-            }
-            else if (buttonNumber == 3 && ShipControlActions.ContainsKey(InputEvents.Button3Action))
-            {
-                StopShipControllerActions(InputEvents.Button3Action);
+                case 1:
+                    if(ShipControlActions.ContainsKey(InputEvents.Button1Action))
+                        StopShipControllerActions(InputEvents.Button1Action);
+                    break;
+                case 2:
+                    if(ShipControlActions.ContainsKey(InputEvents.Button2Action))
+                        StopShipControllerActions(InputEvents.Button2Action);
+                    break;
+                case 3:
+                    if(ShipControlActions.ContainsKey(InputEvents.Button3Action))
+                        StopShipControllerActions(InputEvents.Button3Action);
+                    break;
+                default:
+                    Debug.LogWarning($"Ship.StopButtonActions - buttonNumber:{buttonNumber} is not associated to any of the ship actions.");
+                    break;
             }
         }
 
         public void PerformClassResourceActions(ResourceEvents resourceEvent)
         {
-            if (!resourceAbilityStartTimes.ContainsKey(resourceEvent))
-                resourceAbilityStartTimes.Add(resourceEvent, Time.time);
-            else
-                resourceAbilityStartTimes[resourceEvent] = Time.time;
+            resourceAbilityStartTimes[resourceEvent] = Time.time;
 
-            if (ClassResourceActions.ContainsKey(resourceEvent))
-            {
-                var classResourceActions = ClassResourceActions[resourceEvent];
-                foreach (var action in classResourceActions)
-                    action.StartAction();
-            }
+            if (!ClassResourceActions.TryGetValue(resourceEvent, out var classResourceActions)) return;
+
+            foreach (var action in classResourceActions)
+                action.StartAction();
         }
      
         public void StopClassResourceActions(ResourceEvents resourceEvent)
