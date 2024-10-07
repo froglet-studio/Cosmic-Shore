@@ -19,11 +19,13 @@ namespace CosmicShore.Game.Animation
 
         protected List<Transform> Transforms = new(); // TODO: use this to populate the ship geometries on ship.cs
         protected List<Quaternion> InitialRotations = new(); // TODO: use this to populate the ship geometries on ship.cs
+        Ship ship;
 
         protected virtual void Start()
         {
-            inputController = GetComponent<Ship>().InputController;
-            GetComponent<Ship>().ResourceSystem.OnElementLevelChange += UpdateShapeKey;
+            ship = GetComponent<Ship>();
+            inputController = ship.InputController;
+            ship.ResourceSystem.OnElementLevelChange += UpdateShapeKey;
 
             AssignTransforms();
         }
@@ -36,13 +38,14 @@ namespace CosmicShore.Game.Animation
                 if (inputController.Idle)
                     Idle();
                 else
-                    PerformShipAnimations(inputController.YSum, inputController.XSum, inputController.YDiff, inputController.XDiff);
+                    if (ship.ShipStatus.SingleStickControls) PerformShipPuppetry(inputController.EasedLeftJoystickPosition.y, inputController.EasedLeftJoystickPosition.x, 0, 0);
+                    else PerformShipPuppetry(inputController.YSum, inputController.XSum, inputController.YDiff, inputController.XDiff);
             }
         }
         protected abstract void AssignTransforms();
 
         // Ship animations TODO: figure out how to leverage a single definition for pitch, etc. that captures the gyro in the animations.
-        protected abstract void PerformShipAnimations(float YSum, float XSum, float YDiff, float XDiff);
+        protected abstract void PerformShipPuppetry(float Pitch, float Yaw, float Roll, float Throttle);
         protected virtual void Idle()
         {
             if (SaveNewPositions)
@@ -86,7 +89,7 @@ namespace CosmicShore.Game.Animation
             part.localRotation = Quaternion.Lerp(part.localRotation, resetQuaternion, smallLerpAmount * Time.deltaTime);
         }
 
-        protected virtual void AnimatePart(Transform part, float pitch, float yaw, float roll)
+        protected virtual void RotatePart(Transform part, float pitch, float yaw, float roll)
         {
             var targetRotation = Quaternion.Euler(pitch, yaw, roll);
 
@@ -96,7 +99,7 @@ namespace CosmicShore.Game.Animation
                                         lerpAmount * Time.deltaTime);
         }
 
-        protected virtual void AnimatePart(Transform part, float pitch, float yaw, float roll, Quaternion initialRotation)
+        protected virtual void RotatePart(Transform part, float pitch, float yaw, float roll, Quaternion initialRotation)
         {
             var targetRotation = Quaternion.Euler(pitch, roll, yaw) * initialRotation;
 

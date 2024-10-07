@@ -37,7 +37,7 @@ namespace CosmicShore.Core
         [SerializeField] private Material lineMaterial;
         [SerializeField] private GameObject markerPrefab;
 
-
+        [SerializeField] int resourceIndex = 0;
 
         float minMatureBlockDistance = Mathf.Infinity;
         TrailBlock minMatureBlock;
@@ -102,11 +102,11 @@ namespace CosmicShore.Core
                         //Debug.Log($"steal: playername {Player.PlayerName} team: {team}");
                         trailBlockProperties.trailBlock.Steal(Player, team);
                         break;
-                    case TrailBlockImpactEffects.ChangeBoost:
-                        resourceSystem.ChangeBoostAmount((chargeAmount * trailBlockProperties.volume) + (activelySkimmingBlockCount * MultiSkimMultiplier));
+                    case TrailBlockImpactEffects.GainResourceByVolume:
+                        resourceSystem.ChangeResourceAmount(resourceIndex, (chargeAmount * trailBlockProperties.volume) + (activelySkimmingBlockCount * MultiSkimMultiplier));
                         break;
-                    case TrailBlockImpactEffects.ChangeAmmo:
-                        resourceSystem.ChangeAmmoAmount(chargeAmount + (activelySkimmingBlockCount * MultiSkimMultiplier));
+                    case TrailBlockImpactEffects.GainResource:
+                        resourceSystem.ChangeResourceAmount(resourceIndex, chargeAmount + (activelySkimmingBlockCount * MultiSkimMultiplier));
                         break;
                     case TrailBlockImpactEffects.FX:
                         StartCoroutine(DisplaySkimParticleEffectCoroutine(trailBlockProperties.trailBlock));
@@ -162,11 +162,8 @@ namespace CosmicShore.Core
             {
                 switch (effect)
                 {
-                    case SkimmerStayEffects.ChangeBoost:
-                        resourceSystem.ChangeBoostAmount(fuel);
-                        break;
-                    case SkimmerStayEffects.ChangeAmmo:
-                        resourceSystem.ChangeAmmoAmount(fuel);
+                    case SkimmerStayEffects.ChangeResource:
+                        resourceSystem.ChangeResourceAmount(resourceIndex, fuel);
                         break;
                     case SkimmerStayEffects.Boost:
                         Boost(combinedWeight);
@@ -333,8 +330,8 @@ namespace CosmicShore.Core
 
         void VizualizeDistance(float combinedWeight)
         {
-            ship.ResourceSystem.ChangeAmmoAmount(-ship.ResourceSystem.CurrentBoost);
-            ship.ResourceSystem.ChangeAmmoAmount(combinedWeight);
+            ship.ResourceSystem.ChangeResourceAmount(resourceIndex, - ship.ResourceSystem.Resources[resourceIndex].CurrentAmount);
+            ship.ResourceSystem.ChangeResourceAmount(resourceIndex, combinedWeight);
         }
 
         void ScalePitchAndYaw(float combinedWeight)

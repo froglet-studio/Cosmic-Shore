@@ -66,10 +66,9 @@ public class SingleStickShipTransformer : ShipTransformer
     protected override void MoveShip()
     {
         float boostAmount = 1f;
-        if (shipStatus.Boosting && resourceSystem.CurrentBoost > 0) // TODO: if we run out of fuel while full speed and straight the ship data still thinks we are boosting
+        if (shipStatus.Boosting) // TODO: if we run out of fuel while full speed and straight the ship data still thinks we are boosting
         {
             boostAmount = ship.boostMultiplier;
-            resourceSystem.ChangeBoostAmount(ship.boostFuelAmount);
         }
         if (shipStatus.ChargedBoostDischarging) boostAmount *= shipStatus.ChargedBoostCharge;
         if (inputController != null)

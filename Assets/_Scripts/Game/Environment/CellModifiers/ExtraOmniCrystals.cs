@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using System;
+using CosmicShore.Environment.FlowField;
 
 [Serializable]
 public class ExtraOmniCrystals : CellModifier
@@ -17,17 +18,17 @@ public class ExtraOmniCrystals : CellModifier
 
     private void SpawnExtraCrystal(Node cell)
     {
-        //Vector3 randomPosition = cell.transform.position + System.Random.insideUnitSphere * spawnRadius;
-        //Crystal newCrystal = cell.SpawnCrystal(randomPosition);
+        //Vector3 randomposition = cell.transform.position + UnityEngine.Random.insideUnitSphere * spawnRadius;
+        //Crystal newcrystal = cell.spawncrystal(randomposition);
 
-        //if (newCrystal != null)
+        //if (newcrystal != null)
         //{
-        //    newCrystal.SetOrigin(cell.transform.position);
-        //    cell.AddItem(newCrystal);
+        //    newcrystal.setorigin(cell.transform.position);
+        //    cell.additem(newcrystal);
         //}
         //else
         //{
-        //    Debug.LogWarning("Failed to spawn extra OmniCrystal in cell: " + cell.name);
+        //    debug.logwarning("failed to spawn extra omnicrystal in cell: " + cell.name);
         //}
     }
 }

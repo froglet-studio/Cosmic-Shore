@@ -10,7 +10,10 @@ public class FireBarrageAction : ShipAction
     List<Gun> guns = new();
     ShipStatus shipData;
     [SerializeField] PoolManager projectileContainer;
+
+    [SerializeField] int ammoIndex = 0;
     [SerializeField] float ammoCost = .03f;
+    
     bool inherit = false;
 
     float ProjectileScale = 1f;
@@ -44,13 +47,13 @@ public class FireBarrageAction : ShipAction
 
     public override void StartAction()
     {
-        if (resourceSystem.CurrentAmmo > ammoCost)
+        if (resourceSystem.Resources[ammoIndex].CurrentAmount > ammoCost)
         {
-            resourceSystem.ChangeAmmoAmount(-ammoCost);
+            resourceSystem.ChangeResourceAmount(ammoIndex, -ammoCost);
 
             Vector3 inheritedVelocity;
 
-            if (resourceSystem.CurrentAmmo > ammoCost)
+            if (resourceSystem.Resources[ammoIndex].CurrentAmount > ammoCost)
             {
                 // TODO: WIP magic numbers
                 foreach (var gun in guns)

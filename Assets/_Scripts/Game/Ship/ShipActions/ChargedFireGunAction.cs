@@ -12,6 +12,8 @@ public class ChargedFireGunAction : ShipAction
     ShipStatus shipStatus;
     [SerializeField] GameObject projectileContainer;
 
+    [SerializeField] int EnergyResourceIndex = 0;
+    [SerializeField] int AmmoResourceIndex = 1;
 
     public float ProjectileScale = 1f;
 
@@ -32,10 +34,10 @@ public class ChargedFireGunAction : ShipAction
     IEnumerator GainEnergyCoroutine()
     {
         var chargePeriod = .1f;
-        while (resourceSystem.CurrentEnergy < resourceSystem.MaxEnergy)
+        while (resourceSystem.Resources[EnergyResourceIndex].CurrentAmount < resourceSystem.Resources[EnergyResourceIndex].MaxAmount)
         {
             yield return new WaitForSeconds(chargePeriod);
-            resourceSystem.ChangeEnergyAmount(chargePerSecond * chargePeriod);
+            resourceSystem.ChangeResourceAmount(EnergyResourceIndex, chargePerSecond * chargePeriod);
         }
     }
 
@@ -66,20 +68,20 @@ public class ChargedFireGunAction : ShipAction
         {
             StopCoroutine(gainEnergy);
 
-            if (resourceSystem.CurrentAmmo > resourceSystem.CurrentEnergy)
+            if (resourceSystem.Resources[AmmoResourceIndex].CurrentAmount > resourceSystem.Resources[EnergyResourceIndex].CurrentAmount)
             {
-                resourceSystem.ChangeAmmoAmount(-resourceSystem.CurrentEnergy);
+                resourceSystem.ChangeResourceAmount(AmmoResourceIndex, -resourceSystem.Resources[EnergyResourceIndex].CurrentAmount);
 
                 Vector3 inheritedDirection;
                 if (shipStatus.Attached || shipStatus.Stationary) inheritedDirection = transform.forward;
                 else inheritedDirection = shipStatus.Course;
 
                 // TODO: WIP magic numbers
-                gun.FireGun(projectileContainer.transform, 90, inheritedDirection * shipStatus.Speed, ProjectileScale * resourceSystem.CurrentEnergy, true, float.MaxValue, resourceSystem.CurrentEnergy);
+                gun.FireGun(projectileContainer.transform, 90, inheritedDirection * shipStatus.Speed, ProjectileScale * resourceSystem.Resources[EnergyResourceIndex].CurrentAmount, true, float.MaxValue, resourceSystem.Resources[EnergyResourceIndex].CurrentAmount);
                 StartCheckProjectiles();
             }
 
-            resourceSystem.ResetEnergy();
+            resourceSystem.ResetResource(EnergyResourceIndex);
         }
         
     }

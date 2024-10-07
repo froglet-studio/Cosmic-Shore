@@ -15,36 +15,36 @@ namespace CosmicShore.Game.Animation
         [SerializeField] float animationScaler = 25f;
         [SerializeField] float yawAnimationScaler = 80f;
 
-        protected override void PerformShipAnimations(float pitch, float yaw, float roll, float throttle)
+        protected override void PerformShipPuppetry(float pitch, float yaw, float roll, float throttle)
         {
-            AnimatePart(LeftWing,
+            RotatePart(LeftWing,
                         Brake(throttle) * yawAnimationScaler,
                         (pitch) * animationScaler,
                         82 + (throttle - yaw) * yawAnimationScaler);
 
-            AnimatePart(RightWing,
+            RotatePart(RightWing,
                         Brake(throttle) * yawAnimationScaler,
                         (-pitch) * animationScaler,
                         -82 + (throttle + yaw) * yawAnimationScaler);
 
-            AnimatePart(Fusilage,
+            RotatePart(Fusilage,
                         -90 + pitch * animationScaler,
                         yaw * animationScaler,
                         roll * animationScaler);
 
-            AnimatePart(ThrusterBottomLeft,
+            RotatePart(ThrusterBottomLeft,
                         Brake(throttle) * yawAnimationScaler,
                         (roll + pitch + (3 * (1 - throttle))) * animationScaler, (throttle - yaw) * yawAnimationScaler);
 
-            AnimatePart(ThrusterTopRight,
+            RotatePart(ThrusterTopRight,
                         Brake(throttle) * yawAnimationScaler,
                         (roll + pitch + (3 * (1 - throttle))) * animationScaler, -(throttle + yaw) * yawAnimationScaler);
 
-            AnimatePart(ThrusterTopLeft,
+            RotatePart(ThrusterTopLeft,
                         Brake(throttle) * yawAnimationScaler,
                         (roll - pitch - (3 * (1 - throttle))) * animationScaler, (throttle - yaw) * yawAnimationScaler);
 
-            AnimatePart(ThrusterBottomRight,
+            RotatePart(ThrusterBottomRight,
                         Brake(throttle) * yawAnimationScaler,
                         (roll - pitch - (3 * (1 - throttle))) * animationScaler, -(throttle + yaw) * yawAnimationScaler);
 

@@ -38,7 +38,7 @@ namespace CosmicShore.Game.Animation
             animationTransforms = new List<Transform>() { ThrusterTopRight, ThrusterRight, ThrusterBottomRight, ThrusterBottomLeft, ThrusterLeft, ThrusterTopLeft };
         }
 
-        protected override void PerformShipAnimations(float pitch, float yaw, float roll, float throttle)
+        protected override void PerformShipPuppetry(float pitch, float yaw, float roll, float throttle)
         {
             Vector3 wingPosition;
             Vector3 thrusterPosition;
@@ -105,14 +105,14 @@ namespace CosmicShore.Game.Animation
 
         void AnimatePart(Transform part, float pitch, float yaw, float roll, Vector3 position)
         {
-            base.AnimatePart(part, pitch, yaw, roll);
+            base.RotatePart(part, pitch, yaw, roll);
 
             part.localPosition = Vector3.Lerp(part.localPosition, position, lerpAmount * Time.deltaTime);
         }
 
         void AnimatePart(Transform part, float pitch, float yaw, float roll, Vector3 position, Quaternion InitialRotation)
         {
-            base.AnimatePart(part, pitch, roll, yaw, InitialRotation);
+            base.RotatePart(part, pitch, roll, yaw, InitialRotation);
 
             part.localPosition = Vector3.Lerp(part.localPosition, position, lerpAmount * Time.deltaTime);
         }

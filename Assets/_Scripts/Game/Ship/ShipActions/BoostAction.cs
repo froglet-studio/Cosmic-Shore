@@ -2,19 +2,20 @@ using CosmicShore.Core;
 
 public class BoostAction : ShipAction
 {
-    ShipStatus shipData;
+    ShipStatus shipStatus;
 
-    protected override void Start()
+    protected override void InitializeShipAttributes()
     {
-        shipData = ship.GetComponent<ShipStatus>();
+        base.InitializeShipAttributes();
+        shipStatus = ship.GetComponent<ShipStatus>();
     }
     public override void StartAction()
     {
-        shipData.Boosting = true;
+        if (shipStatus) shipStatus.Boosting = true;
     }
 
     public override void StopAction()
     {
-        shipData.Boosting = false;
+        shipStatus.Boosting = false;
     }
 }

@@ -14,6 +14,8 @@ public class GunShipTransformer : ShipTransformer
     bool attached = false;
     CameraManager cameraManager;
 
+    [SerializeField] int ammoIndex = 0;
+
 
     protected override void Start()
     {
@@ -75,8 +77,8 @@ public class GunShipTransformer : ShipTransformer
     void SlideActions()
     {
         // TODO: should this be pulled out as an action type?
-        if (trailFollower.AttachedTrailBlock.TrailBlockProperties.IsShielded) resourceSystem.ChangeAmmoAmount(rechargeRate * 2 * Time.deltaTime);
-        else resourceSystem.ChangeAmmoAmount(rechargeRate * Time.deltaTime);
+        if (trailFollower.AttachedTrailBlock.TrailBlockProperties.IsShielded) resourceSystem.ChangeResourceAmount(ammoIndex, rechargeRate * 2 * Time.deltaTime);
+        else resourceSystem.ChangeResourceAmount(ammoIndex, rechargeRate * Time.deltaTime);
     }
 
     public void FinalBlockSlideEffects()

@@ -14,7 +14,10 @@ namespace CosmicShore
         List<Gun> guns = new();
         ShipStatus shipStatus;
         [SerializeField] PoolManager projectileContainer;
+
+        [SerializeField] int ammoIndex = 0;
         [SerializeField] float ammoCost = .03f;
+ 
         [SerializeField] bool inherit = false;
 
         [SerializeField] float ProjectileScale = 1f;
@@ -68,7 +71,7 @@ namespace CosmicShore
         {
             while (firing) 
             {
-                if (resourceSystem.CurrentAmmo >= ammoCost)
+                if (resourceSystem.Resources[ammoIndex].CurrentAmount >= ammoCost)
                 {
                     Vector3 inheritedVelocity;
                     // TODO: WIP magic numbers
@@ -82,7 +85,7 @@ namespace CosmicShore
                         else inheritedVelocity = Vector3.zero;
                         gun.FireGun(projectileContainer.transform, speed.Value, inheritedVelocity * shipStatus.Speed, ProjectileScale, true, projectileTime, 0, FiringPattern, Energy);
                     }
-                    resourceSystem.ChangeAmmoAmount(-ammoCost);
+                    resourceSystem.ChangeResourceAmount(ammoIndex, -ammoCost);
                 }
                 yield return new WaitForSeconds(1/firingRate); 
             }

@@ -23,7 +23,7 @@ public abstract class ShipAction : ElementalShipComponent
         InitializeShipAttributes();
     }
 
-    void InitializeShipAttributes()
+    protected virtual void InitializeShipAttributes()
     {
         if (ship != null)
         {

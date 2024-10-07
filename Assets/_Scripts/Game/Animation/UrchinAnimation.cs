@@ -63,50 +63,50 @@ namespace CosmicShore.Game.Animation
             }
         }
 
-        protected override void PerformShipAnimations(float pitch, float yaw, float roll, float throttle)
+        protected override void PerformShipPuppetry(float pitch, float yaw, float roll, float throttle)
         {
 
             if (GetComponent<Ship>().ShipStatus.Attached)
             {
-                AnimatePart(Body,
+                RotatePart(Body,
                    Time.deltaTime * 100f,
                     0,
                     0);
             }
             else
             {
-                AnimatePart(Body,
+                RotatePart(Body,
                     pitch * animationScaler,
                     yaw * animationScaler,
                     roll * animationScaler);
             }
 
-            AnimatePart(LeftGun,
+            RotatePart(LeftGun,
                         pitch * animationScaler,
                         yaw * animationScaler,
                         roll * animationScaler);
 
-            AnimatePart(RightGun,
+            RotatePart(RightGun,
                         pitch * animationScaler,
                         yaw * animationScaler,
                         roll * animationScaler);
 
-            AnimatePart(JetBottomLeft,
+            RotatePart(JetBottomLeft,
                     pitch * animationScaler,
                     yaw * animationScaler,
                     roll * animationScaler);
 
-            AnimatePart(JetBottomRight,
+            RotatePart(JetBottomRight,
                     pitch * animationScaler,
                     yaw * animationScaler,
                     roll * animationScaler);
 
-            AnimatePart(JetTopLeft,
+            RotatePart(JetTopLeft,
                     pitch * animationScaler,
                     yaw * animationScaler,
                     roll * animationScaler);
 
-            AnimatePart(JetTopRight,
+            RotatePart(JetTopRight,
                     pitch * animationScaler,
                     yaw * animationScaler,
                     roll * animationScaler);

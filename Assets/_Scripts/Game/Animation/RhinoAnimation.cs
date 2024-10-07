@@ -13,29 +13,29 @@ namespace CosmicShore.Game.Animation
         [SerializeField] float animationScaler = 25f;
         [SerializeField] float yawAnimationScaler = 80f;
 
-        protected override void PerformShipAnimations(float pitch, float yaw, float roll, float throttle)
+        protected override void PerformShipPuppetry(float pitch, float yaw, float roll, float throttle)
         {
-            AnimatePart(LeftWing,
+            RotatePart(LeftWing,
                         0,
                         -Brake(throttle) * yawAnimationScaler,
                         (-1 + throttle) * yawAnimationScaler);
 
-            AnimatePart(RightWing,
+            RotatePart(RightWing,
                         0,
                         Brake(throttle) * yawAnimationScaler,
                         (1 - throttle) * yawAnimationScaler);
 
-            AnimatePart(Fusilage,
+            RotatePart(Fusilage,
                         pitch * animationScaler,
                         yaw * animationScaler,
                         roll * animationScaler);
 
-            AnimatePart(LeftEngine,
+            RotatePart(LeftEngine,
                         0,
                         Brake(throttle) * yawAnimationScaler,
                         -(-1 + throttle) * yawAnimationScaler);
 
-            AnimatePart(RightEngine,
+            RotatePart(RightEngine,
                         0,
                         -Brake(throttle) * yawAnimationScaler,
                         -(1 - throttle) * yawAnimationScaler);

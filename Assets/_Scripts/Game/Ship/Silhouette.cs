@@ -10,13 +10,13 @@ namespace CosmicShore
         private void OnEnable()
         {
             if (driftTrailAction) driftTrailAction.OnChangeDriftAltitude += calculateDriftAngle;
-            if (topJaw) ship.ResourceSystem.OnAmmoChange += calculateBlastAngle;
+            if (topJaw) ship.ResourceSystem.Resources[JawResourceIndex].OnResourceChange += calculateBlastAngle;
             if (trailSpawner) trailSpawner.OnBlockCreated += HandleBlockCreation;
         }
         private void OnDisable()
         {
             if (driftTrailAction) driftTrailAction.OnChangeDriftAltitude -= calculateDriftAngle;
-            if (topJaw) ship.ResourceSystem.OnAmmoChange -= calculateBlastAngle;
+            if (topJaw) ship.ResourceSystem.Resources[JawResourceIndex].OnResourceChange -= calculateBlastAngle;
             if (trailSpawner) trailSpawner.OnBlockCreated -= HandleBlockCreation;
         }
 
@@ -35,6 +35,8 @@ namespace CosmicShore
         // jaws //
         [SerializeField] GameObject topJaw;
         [SerializeField] GameObject bottomJaw;
+        [SerializeField] int JawResourceIndex = 0;
+
         [SerializeField] bool swingBlocks = false;
         #endregion
 

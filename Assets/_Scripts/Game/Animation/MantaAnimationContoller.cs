@@ -12,7 +12,7 @@ namespace CosmicShore.Game.Animation
         float currentThrottle = 0;
         float animationSpeed = 3.25f;
 
-        protected override void PerformShipAnimations(float pitch, float yaw, float roll, float throttle)
+        protected override void PerformShipPuppetry(float pitch, float yaw, float roll, float throttle)
         {
             currentPitch = Mathf.Lerp(currentPitch, pitch, animationSpeed * Time.deltaTime);
             currentYaw = Mathf.Lerp(currentYaw, yaw, animationSpeed * Time.deltaTime);

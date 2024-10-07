@@ -13,6 +13,8 @@ namespace CosmicShore
         [SerializeField] Assembler assembler;
         [SerializeField] int depth = 50;
 
+        [SerializeField] int resourceIndex = 0;
+
         protected override void Start()
         {
             base.Start();
@@ -21,11 +23,11 @@ namespace CosmicShore
 
         public override void StartAction()
         {
-            float ammoRequiredPerUse = resourceSystem.MaxAmmo / enhancementsPerFullAmmo;
+            float ammoRequiredPerUse = resourceSystem.Resources[resourceIndex].MaxAmount / enhancementsPerFullAmmo;
 
-            if (resourceSystem.CurrentAmmo >= ammoRequiredPerUse)
+            if (resourceSystem.Resources[resourceIndex].CurrentAmount >= ammoRequiredPerUse)
             {
-                resourceSystem.ChangeAmmoAmount(-ammoRequiredPerUse);
+                resourceSystem.ChangeResourceAmount(resourceIndex, -ammoRequiredPerUse);
                 var trailBlock = spawner.Trail.TrailList.Last().gameObject;
                 var newAssembler = trailBlock.AddComponent(assembler.GetType()) as Assembler;
                 newAssembler.Depth = depth;

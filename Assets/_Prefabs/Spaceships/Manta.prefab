@@ -188,6 +188,7 @@ MonoBehaviour:
   dropRadiusMinRange: 40
   dropRadiusMaxRange: 60
   decoy: {fileID: 8379901470580388096, guid: f7e728a0fa445ed41bc8c1c565fa3f21, type: 3}
+  resourceIndex: 0
 --- !u!1 &555723467741174050
 GameObject:
   m_ObjectHideFlags: 0
@@ -1798,6 +1799,9 @@ MonoBehaviour:
   farFieldSkimmer: {fileID: 3138628630497430536}
   ShipCameraCustomizer: {fileID: 0}
   FollowTarget: {fileID: 0}
+  resourceIndex: 0
+  ammoResourceIndex: 0
+  boostResourceIndex: 0
   crystalImpactEffects: 06000000030000000b000000
   minExplosionScale: 50
   maxExplosionScale: 500
@@ -1842,7 +1846,7 @@ MonoBehaviour:
   CommandStickControls: 0
   LiveProjectiles: 0
   Stationary: 0
-  ElevatedAmmoGain: 0
+  ElevatedResourceGain: 0
   ChargedBoostCharge: 1
   AutoPilotEnabled: 0
   AlignmentEnabled: 0
@@ -1923,25 +1927,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 737294a573670f74389a7af68df314d5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  displayBoost: 0
-  gainsBoost: 0
-  boostGainRate: 0.1
-  initialBoost: 1
-  maxBoost: 1
-  displayAmmo: 1
-  gainsAmmo: 0
-  ammoGainRate:
-    Enabled: 0
-    Value: 0.1
-    Min: 0
-    Max: 0
-    element: 0
-  initialAmmo: 0.392
-  maxAmmo: 1
-  displayEnergy: 0
-  maxEnergy: 1
-  initialEnergy: 1
-  ResourceDisplays: {fileID: 0}
+  Resources:
+  - Name: Decoys
+    Display: {fileID: 0}
+    initialResourceGainRate: 0
+    resourceGainRate: 0
+    maxAmount: 1
+    initialAmount: 0
   ChargeTestHarness: 0
   MassTestHarness: 0
   SpaceTestHarness: 0
@@ -2076,6 +2068,7 @@ MonoBehaviour:
   driftTrailAction: {fileID: 0}
   topJaw: {fileID: 0}
   bottomJaw: {fileID: 0}
+  JawResourceIndex: 0
   swingBlocks: 0
   ship: {fileID: 874579555101021527}
   sihouetteScale: {x: 1, y: 1, z: 1}
