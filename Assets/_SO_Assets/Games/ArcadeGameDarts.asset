@@ -20,14 +20,14 @@ MonoBehaviour:
   CardBackground: {fileID: 21300000, guid: 44b72f2e4acf3e54184c55795ee52d6e, type: 3}
   PreviewClip: {fileID: 2096801853598961014, guid: e838c42bdbc409946944368a0ac2d38d,
     type: 3}
+  GolfScoring: 0
+  SceneName: MinigameDarts
   Captains:
   - {fileID: 11400000, guid: 0a4c60bd3907e4d48885fb5ef9188dcd, type: 2}
-  GolfScoring: 0
   MinPlayers: 1
-  MaxPlayers: 1
-  MinIntensity: 3
-  MaxIntensity: 3
-  SceneName: MinigameDarts
+  MaxPlayers: 3
+  MinIntensity: 2
+  MaxIntensity: 4
   CallToActionTargetType: 403
   ViewUserAction: 110
   PlayUserAction: 0

@@ -17,7 +17,7 @@ dependencies {
     implementation 'com.google.firebase:firebase-crashlytics-unity:11.5.0' // Assets/Firebase/Editor/CrashlyticsDependencies.xml:20
     implementation 'com.google.firebase:firebase-database:20.2.2' // Assets/Firebase/Editor/DatabaseDependencies.xml:13
     implementation 'com.google.firebase:firebase-database-unity:11.5.0' // Assets/Firebase/Editor/DatabaseDependencies.xml:22
-    implementation 'com.unity3d.ads:unity-ads:[4.12.0,4.13[' // Packages/com.unity.ads/Editor/Source/Dependencies.xml:7
+    implementation 'com.unity3d.ads:unity-ads:[4.12.0,4.13]' // Packages/com.unity.ads/Editor/Source/Dependencies.xml:7
 // Android Resolver Dependencies End
 **DEPS**}
 
