@@ -2134,7 +2134,6 @@ MonoBehaviour:
   trailBlockImpactEffects: 0e000000
   blockChargeChange: 0
   boostMultiplier: 5
-  boostFuelAmount: 0.2
   bottomEdgeButtons: 0
   Inertia: 70
   inputEventShipActions:
@@ -2284,7 +2283,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Resources:
   - Name: Missiles
-    Display: {fileID: 4960230017380107722}
+    Display: {fileID: 0}
     initialResourceGainRate: 0
     resourceGainRate: 0
     maxAmount: 1
@@ -2358,7 +2357,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2116872444dccfd43a29513c3af008b7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  SkinnedMeshRenderer: {fileID: 5304756584335563008}
+  SkinnedMeshRenderer: {fileID: 0}
   SaveNewPositions: 1
   UseShapeKeys: 1
   brakeThreshold: 0.65
@@ -3593,11 +3592,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
-    m_AddedGameObjects:
-    - targetCorrespondingSourceObject: {fileID: 7883774110713613109, guid: 522a0b0de3eb7b64d8c6e0e35377de5f,
-        type: 3}
-      insertIndex: 0
-      addedObject: {fileID: 3987980237529938577}
+    m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 522a0b0de3eb7b64d8c6e0e35377de5f, type: 3}
 --- !u!114 &3039329707884177785 stripped
@@ -3687,6 +3682,26 @@ PrefabInstance:
       propertyPath: m_Name
       value: SparrowModel1
       objectReference: {fileID: 0}
+    - target: {fileID: 2692722512241470911, guid: 151e3f0352963624abf4da579618e66d,
+        type: 3}
+      propertyPath: m_BlendShapeWeights.Array.data[0]
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2692722512241470911, guid: 151e3f0352963624abf4da579618e66d,
+        type: 3}
+      propertyPath: m_BlendShapeWeights.Array.data[1]
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2692722512241470911, guid: 151e3f0352963624abf4da579618e66d,
+        type: 3}
+      propertyPath: m_BlendShapeWeights.Array.data[2]
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2692722512241470911, guid: 151e3f0352963624abf4da579618e66d,
+        type: 3}
+      propertyPath: m_BlendShapeWeights.Array.data[3]
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 5866666021909216657, guid: 151e3f0352963624abf4da579618e66d,
         type: 3}
       propertyPath: m_Controller
@@ -3730,12 +3745,6 @@ PrefabInstance:
 --- !u!4 &2056944189029331406 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 151e3f0352963624abf4da579618e66d,
-    type: 3}
-  m_PrefabInstance: {fileID: 1945839443224614437}
-  m_PrefabAsset: {fileID: 0}
---- !u!137 &5304756584335563008 stripped
-SkinnedMeshRenderer:
-  m_CorrespondingSourceObject: {fileID: 5953559334840733477, guid: 151e3f0352963624abf4da579618e66d,
     type: 3}
   m_PrefabInstance: {fileID: 1945839443224614437}
   m_PrefabAsset: {fileID: 0}
