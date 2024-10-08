@@ -137,9 +137,8 @@ namespace CosmicShore.Core
                 else
                     ShipControlActions[inputEventShipAction.InputEvent].AddRange(inputEventShipAction.ShipActions);
 
-            foreach (var key in ShipControlActions.Keys)
-                foreach (var shipAction in ShipControlActions[key])
-                    shipAction.Ship = this;
+            foreach (var shipAction in ShipControlActions.Keys.SelectMany(key => ShipControlActions[key]))
+                shipAction.Ship = this;
             
             foreach (var resourceEventClassAction in resourceEventClassActions)
                 if (!ClassResourceActions.ContainsKey(resourceEventClassAction.ResourceEvent))
@@ -147,21 +146,16 @@ namespace CosmicShore.Core
                 else
                     ClassResourceActions[resourceEventClassAction.ResourceEvent].AddRange(resourceEventClassAction.ClassActions);
 
-            foreach (var key in ClassResourceActions.Keys)
-                foreach (var classAction in ClassResourceActions[key])
-                    classAction.Ship = this;
+            foreach (var classAction in ClassResourceActions.Keys.SelectMany(key => ClassResourceActions[key]))
+                classAction.Ship = this;
 
-            if (!AutoPilot.AutoPilotEnabled)
+            if (AutoPilot.AutoPilotEnabled) return;
+            if (!shipHUD) return;
+            shipHUD.SetActive(true);
+            foreach (var child in shipHUD.GetComponentsInChildren<Transform>(false))
             {
-                if (shipHUD)
-                {
-                    shipHUD.SetActive(true);
-                    foreach (var child in shipHUD.GetComponentsInChildren<Transform>(false))
-                    {
-                        child.SetParent(Player.GameCanvas.transform, false);
-                        child.SetSiblingIndex(0);   // Don't draw on top of modal screens
-                    }
-                }
+                child.SetParent(Player.GameCanvas.transform, false);
+                child.SetSiblingIndex(0);   // Don't draw on top of modal screens
             }
         }
 
@@ -170,18 +164,18 @@ namespace CosmicShore.Core
             public string StatName;
             public Element Element;
 
-            public ElementStat(string statname, Element element)
+            public ElementStat(string statName, Element element)
             {
-                StatName = statname;
+                StatName = statName;
                 Element = element;
             }
         }
 
-        [SerializeField] List<ElementStat> ElementStats = new List<ElementStat>();
+        [SerializeField] List<ElementStat> ElementStats = new();
         public void BindElementalFloat(string statName, Element element)
         {
             Debug.Log($"Ship.NotifyShipStatBinding - statName:{statName}, element:{element}");
-            if (!ElementStats.Where(x => x.StatName == statName).Any())
+            if (ElementStats.All(x => x.StatName != statName))
                 ElementStats.Add(new ElementStat(statName, element));
             
             Debug.Log($"Ship.NotifyShipStatBinding - ElementStats.Count:{ElementStats.Count}");
@@ -200,11 +194,11 @@ namespace CosmicShore.Core
                         if (!ShipStatus.AutoPilotEnabled) HapticController.PlayHaptic(HapticType.CrystalCollision);//.PlayCrystalImpactHaptics();
                         break;
                     case CrystalImpactEffects.AreaOfEffectExplosion:
-                        var AOEExplosion = Instantiate(AOEPrefab).GetComponent<AOEExplosion>();
-                        AOEExplosion.Ship = this;
-                        AOEExplosion.SetPositionAndRotation(transform.position, transform.rotation);
+                        var aoeExplosion = Instantiate(AOEPrefab).GetComponent<AOEExplosion>();
+                        aoeExplosion.Ship = this;
+                        aoeExplosion.SetPositionAndRotation(transform.position, transform.rotation);
                         Debug.Log($"Ship.PerformCrystalImpactEffects - AOEExplosion.current ammo:{ResourceSystem.Resources[ammoResourceIndex].CurrentAmount}");
-                        AOEExplosion.MaxScale =  Mathf.Lerp(minExplosionScale, maxExplosionScale, ResourceSystem.Resources[ammoResourceIndex].CurrentAmount);
+                        aoeExplosion.MaxScale =  Mathf.Lerp(minExplosionScale, maxExplosionScale, ResourceSystem.Resources[ammoResourceIndex].CurrentAmount);
                         break;
                     case CrystalImpactEffects.IncrementLevel:
                         ResourceSystem.IncrementLevel(crystalProperties.Element); // TODO: consider removing here and leaving this up to the crystals
@@ -278,23 +272,31 @@ namespace CosmicShore.Core
                             ShipTransformer.ModifyThrottle(trailBlockProperties.speedDebuffAmount, trailBlockProperties.volume / 10);                           
                         }
                         break;
+                    case TrailBlockImpactEffects.Steal:
+                        break;
+                    case TrailBlockImpactEffects.DecrementLevel:
+                        break;
+                    case TrailBlockImpactEffects.Shield:
+                        break;
+                    case TrailBlockImpactEffects.Stop:
+                        break;
+                    case TrailBlockImpactEffects.Fire:
+                        break;
+                    case TrailBlockImpactEffects.FX:
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException();
                 }
             }
         }
 
         public void PerformShipControllerActions(InputEvents controlType)
         {
-            if (!inputAbilityStartTimes.ContainsKey(controlType))
-                inputAbilityStartTimes.Add(controlType, Time.time);
-            else
-                inputAbilityStartTimes[controlType] = Time.time;
+            inputAbilityStartTimes[controlType] = Time.time;
 
-            if (ShipControlActions.ContainsKey(controlType))
-            {
-                var shipControlActions = ShipControlActions[controlType];
-                foreach (var action in shipControlActions)
-                    action.StartAction();
-            }
+            if (!ShipControlActions.TryGetValue(controlType, out var shipControlActions)) return;
+            foreach (var action in shipControlActions)
+                action.StartAction();
         }
 
         public void StopShipControllerActions(InputEvents controlType)
@@ -302,9 +304,8 @@ namespace CosmicShore.Core
             if (StatsManager.Instance != null)
                 StatsManager.Instance.AbilityActivated(Team, player.PlayerName, controlType, Time.time-inputAbilityStartTimes[controlType]);
 
-            if (ShipControlActions.ContainsKey(controlType))
+            if (ShipControlActions.TryGetValue(controlType, out var shipControlActions))
             {
-                var shipControlActions = ShipControlActions[controlType];
                 foreach (var action in shipControlActions)
                     action.StopAction();
             }
@@ -376,12 +377,9 @@ namespace CosmicShore.Core
             //if (StatsManager.Instance != null)
             //    StatsManager.Instance.AbilityActivated(Team, player.PlayerName, resourceEvent, Time.time-inputAbilityStartTimes[controlType]);
 
-            if (ClassResourceActions.ContainsKey(resourceEvent))
-            {
-                var classResourceActions = ClassResourceActions[resourceEvent];
-                foreach (var action in classResourceActions)
-                    action.StopAction();
-            }
+            if (!ClassResourceActions.TryGetValue(resourceEvent, out var classResourceActions)) return;
+            foreach (var action in classResourceActions)
+                action.StopAction();
         }
 
         public void ToggleCollision(bool enabled)
