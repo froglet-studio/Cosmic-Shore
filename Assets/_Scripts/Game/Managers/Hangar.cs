@@ -106,7 +106,7 @@ namespace CosmicShore.Core
                 PlayerTeam = Teams.Jade;
             }
 
-            foreach (var ship in ShipPrefabs)
+            foreach (var ship in ShipPrefabs.Where(ship => ship != null))
             {
                 ships.Add(ship.name, ship);
                 shipTypeMap.Add(ship.ShipType, ship);
@@ -123,22 +123,19 @@ namespace CosmicShore.Core
             {
                 return LoadPlayerShip(SquadSystem.SquadLeader.Ship.Class, PlayerTeam);
             }
-            else
-            {
-                if (PlayerShipType == ShipTypes.Random)
-                {
-                    Array values = Enum.GetValues(typeof(ShipTypes));
-                    System.Random random = new System.Random();
-                    PlayerShipType = (ShipTypes)values.GetValue(random.Next(values.Length));
-                }
 
-                return LoadPlayerShip(PlayerShipType, PlayerTeam);
-            }
+            if (PlayerShipType != ShipTypes.Random) return LoadPlayerShip(PlayerShipType, PlayerTeam);
+            
+            var values = Enum.GetValues(typeof(ShipTypes));
+            var random = new System.Random();
+            PlayerShipType = (ShipTypes)values.GetValue(random.Next(values.Length));
+
+            return LoadPlayerShip(PlayerShipType, PlayerTeam);
         }
 
         public Ship LoadPlayerShip(ShipTypes shipType, Teams team)
         {
-            Ship ship = Instantiate(shipTypeMap[shipType]);
+            var ship = Instantiate(shipTypeMap[shipType]);
 
             if (PlayerCaptain != null)
                 ship.SetResourceLevels(PlayerCaptain.ResourceLevels);
@@ -207,8 +204,8 @@ namespace CosmicShore.Core
         {
             if (shipType == ShipTypes.Random)
             {
-                Array values = Enum.GetValues(typeof(ShipTypes));
-                System.Random random = new System.Random();
+                var values = Enum.GetValues(typeof(ShipTypes));
+                var random = new System.Random();
                 shipType = (ShipTypes) values.GetValue(random.Next(1, values.Length));
             }
 
@@ -220,7 +217,7 @@ namespace CosmicShore.Core
 
             var materialSet = ThemeManager.Instance.TeamMaterialSets[team];
 
-            Ship ship = Instantiate(shipTypeMap[shipType]);
+            var ship = Instantiate(shipTypeMap[shipType]);
             if (captain != null)
                 ship.AssignCaptain(captain);
             ship.SetShipMaterial(materialSet.ShipMaterial);
@@ -231,7 +228,7 @@ namespace CosmicShore.Core
             ship.SetAOEConicExplosionMaterial(materialSet.AOEConicExplosionMaterial);
             ship.SetSkimmerMaterial(materialSet.SkimmerMaterial);
 
-            AIPilot pilot = ship.GetComponent<AIPilot>();
+            var pilot = ship.GetComponent<AIPilot>();
             pilot.SkillLevel = ((float)AISkillLevel-1) / 3; // this assumes that levels remain from 1-4
             pilot.AutoPilotEnabled = true;
 
@@ -240,7 +237,7 @@ namespace CosmicShore.Core
 
         public SO_Ship GetShipSOByShipType(ShipTypes shipClass)
         {
-            return AllShips.ShipList.Where(x => x.Class == shipClass).FirstOrDefault();
+            return AllShips.ShipList.FirstOrDefault(x => x.Class == shipClass);
         }
     }
 }
