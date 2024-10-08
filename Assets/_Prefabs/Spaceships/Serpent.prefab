@@ -1687,7 +1687,6 @@ GameObject:
   - component: {fileID: 8069592559235788543}
   - component: {fileID: 3236967816715381650}
   - component: {fileID: 8934469096100427445}
-  - component: {fileID: 500365468351162942}
   m_Layer: 5
   m_Name: Boost Button
   m_TagString: Untagged
@@ -1824,52 +1823,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 8069592559235788543}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
---- !u!114 &500365468351162942
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5842040875144882749}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d0b148fe25e99eb48b9724523833bab1, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_Delegates:
-  - eventID: 2
-    callback:
-      m_PersistentCalls:
-        m_Calls:
-        - m_Target: {fileID: 874579555101021527}
-          m_TargetAssemblyTypeName: CosmicShore.Core.Ship, Assembly-CSharp
-          m_MethodName: PerformButtonActions
-          m_Mode: 3
-          m_Arguments:
-            m_ObjectArgument: {fileID: 0}
-            m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-            m_IntArgument: 1
-            m_FloatArgument: 0
-            m_StringArgument: 
-            m_BoolArgument: 0
-          m_CallState: 2
-  - eventID: 3
-    callback:
-      m_PersistentCalls:
-        m_Calls:
-        - m_Target: {fileID: 874579555101021527}
-          m_TargetAssemblyTypeName: CosmicShore.Core.Ship, Assembly-CSharp
-          m_MethodName: StopButtonActions
-          m_Mode: 3
-          m_Arguments:
-            m_ObjectArgument: {fileID: 0}
-            m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-            m_IntArgument: 1
-            m_FloatArgument: 0
-            m_StringArgument: 
-            m_BoolArgument: 0
-          m_CallState: 2
+      m_Calls:
+      - m_Target: {fileID: 874579555101021527}
+        m_TargetAssemblyTypeName: CosmicShore.Core.Ship, Assembly-CSharp
+        m_MethodName: PerformButtonActions
+        m_Mode: 3
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 1
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!1 &5936356422082891022
 GameObject:
   m_ObjectHideFlags: 0
@@ -2119,7 +2085,6 @@ MonoBehaviour:
   trailBlockImpactEffects: 0f0000000000000011000000
   blockChargeChange: 0
   boostMultiplier: 4
-  boostFuelAmount: 1
   bottomEdgeButtons: 0
   Inertia: 70
   inputEventShipActions:
@@ -2264,7 +2229,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 737294a573670f74389a7af68df314d5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Resources: []
+  Resources:
+  - Name: Wall Seeds
+    Display: {fileID: 7315216243889215013}
+    initialResourceGainRate: 0.1
+    resourceGainRate: 0.1
+    maxAmount: 1
+    initialAmount: 1
   ChargeTestHarness: 0
   MassTestHarness: 0
   SpaceTestHarness: 0
@@ -3674,6 +3645,18 @@ RectTransform:
     type: 3}
   m_PrefabInstance: {fileID: 4530633539441809179}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &7315216243889215013 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 6585623136266961214, guid: eae510c1f9f999a4985c85fff770ec97,
+    type: 3}
+  m_PrefabInstance: {fileID: 4530633539441809179}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 033c5152e03074a49a6bbf901f0e00d0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1001 &4619950853104356685
 PrefabInstance:
   m_ObjectHideFlags: 0

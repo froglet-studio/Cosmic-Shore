@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cc8b399787ff60c42815dba688c93f17, type: 3}
   m_Name: CrowdedCell
   m_EditorClassIdentifier: 
-  CellName: Branching
+  CellName: Crowded
   Description: lots of branches
   Icon: {fileID: 21300000, guid: 6aa1c06e11b265744a5f9fa8858ac72a, type: 3}
   Difficulty: 2

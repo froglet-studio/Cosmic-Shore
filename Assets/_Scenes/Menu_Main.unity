@@ -87448,7 +87448,7 @@ PrefabInstance:
         type: 3}
       propertyPath: ColorSet
       value: 
-      objectReference: {fileID: 11400000, guid: 2c9b2c006dca06247b5c5a7508e8a7e8,
+      objectReference: {fileID: 11400000, guid: 8d1c1bdcb636a424d9c54fbd1afc952f,
         type: 2}
     - target: {fileID: 1505272105049641856, guid: aa34cc8006c47114a826ff61f52889d6,
         type: 3}

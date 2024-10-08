@@ -53,11 +53,11 @@ MonoBehaviour:
   GoldColors:
     ShipColor1: {r: 1.2203892, g: 0.6122575, b: 0.03070152, a: 1}
     ShipColor2: {r: 0.47058824, g: 0.23529412, b: 0.043137256, a: 1}
-    OutsideBlockColor: {r: 0.4509804, g: 0.32941177, b: 0, a: 0}
+    OutsideBlockColor: {r: 0.16862746, g: 0.08235294, b: 0.011764706, a: 1}
     ShieldedOutsideBlockColor: {r: 0.29411766, g: 0.14117648, b: 0, a: 1}
     SuperShieldedOutsideBlockColor: {r: 0.59607846, g: 0.28627452, b: 0.003921569,
       a: 1}
-    InsideBlockColor: {r: 0.81960785, g: 0.56078434, b: 0, a: 0}
+    InsideBlockColor: {r: 1.2075472, g: 1.0949559, b: 0.075946234, a: 1}
     ShieldedInsideBlockColor: {r: 23.968628, g: 14.556051, b: 0, a: 1}
     SuperShieldedInsideBlockColor: {r: 26.867924, g: 17.578411, b: 3.21063, a: 1}
     AOETextureColor: {r: 2.0590868, g: 1.6091012, b: 0.44200292, a: 0}
