@@ -84,7 +84,7 @@ namespace CosmicShore.Core
         /// <param name="level">Range from 1-9</param>
         public void SetAiDifficultyLevel(int level)
         {
-            AISkillLevel = Mathf.FloorToInt((level/9f)*4);
+            AISkillLevel = Mathf.FloorToInt(level/9f*4);
         }
 
         public Ship SelectedShip { get; private set; }
