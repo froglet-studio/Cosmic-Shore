@@ -53,10 +53,7 @@ namespace CosmicShore.Game.Arcade
         
         public static ShipTypes PlayerShipType
         {
-            get 
-            { 
-                return playerShipType; 
-            }
+            get => playerShipType;
             set 
             { 
                 playerShipType = value;
@@ -64,11 +61,11 @@ namespace CosmicShore.Game.Arcade
             }
         }
         public static SO_Captain PlayerCaptain;
-        public static ResourceCollection ShipResources = new ResourceCollection(.5f, .5f, .5f, .5f);
+        public static ResourceCollection ShipResources = new(.5f, .5f, .5f, .5f);
 
         // Game State Tracking
-        protected int TurnsTakenThisRound = 0;
-        int RoundsPlayedThisGame = 0;
+        protected int TurnsTakenThisRound;
+        int RoundsPlayedThisGame;
 
         // PlayerId Tracking
         int activePlayerId;
@@ -227,9 +224,6 @@ namespace CosmicShore.Game.Arcade
 
         protected virtual void EndTurn()
         {
-            //Silhouette silhouette;
-            //Player.ActivePlayer.Ship.TryGetComponent<Silhouette>(out silhouette);
-            //silhouette.Clear();
             StartCoroutine(EndTurnCoroutine());
         }
 
@@ -334,7 +328,7 @@ namespace CosmicShore.Game.Arcade
             }
             else if (IsTraining)
             {
-                var gameProgress = TrainingGameProgressSystem.GetGameProgress(gameMode);
+                TrainingGameProgressSystem.GetGameProgress(gameMode);
                 TrainingGameProgressSystem.ReportProgress(Core.Arcade.Instance.TrainingGames.Games.First(x=> x.Game.Mode == gameMode), IntensityLevel, ScoreTracker.GetHighScore());
             }
             else
@@ -364,7 +358,7 @@ namespace CosmicShore.Game.Arcade
             RemainingPlayersActivePlayerIndex %= RemainingPlayers.Count;
         }
 
-        List<int> EliminatedPlayers = new List<int>();
+        List<int> EliminatedPlayers = new();
 
         protected void EliminateActivePlayer()
         {
@@ -378,13 +372,13 @@ namespace CosmicShore.Game.Arcade
             foreach (var playerId in EliminatedPlayers)
                 RemainingPlayers.Remove(playerId);
 
-            EliminatedPlayers = new List<int>();
+            EliminatedPlayers = new();
 
             if (RemainingPlayers.Count <= 0)
                 EndGame();
         }
 
-        protected virtual void ReadyNextPlayer()
+        protected void ReadyNextPlayer()
         {
             LoopActivePlayerIndex();
             activePlayerId = RemainingPlayers[RemainingPlayersActivePlayerIndex];

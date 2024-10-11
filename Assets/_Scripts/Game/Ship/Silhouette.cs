@@ -23,7 +23,7 @@ namespace CosmicShore
         float worldToUIScale = 2;
         float imageScale = .02f;
 
-        [SerializeField] List<GameObject> silhouetteParts = new List<GameObject>();
+        [SerializeField] List<GameObject> silhouetteParts = new();
 
         #region Optional configuration 
         // trails //
@@ -35,9 +35,9 @@ namespace CosmicShore
         // jaws //
         [SerializeField] GameObject topJaw;
         [SerializeField] GameObject bottomJaw;
-        [SerializeField] int JawResourceIndex = 0;
+        [SerializeField] int JawResourceIndex;
 
-        [SerializeField] bool swingBlocks = false;
+        [SerializeField] bool swingBlocks;
         #endregion
 
         GameObject blockPrefab; // Prefab for the blockImages

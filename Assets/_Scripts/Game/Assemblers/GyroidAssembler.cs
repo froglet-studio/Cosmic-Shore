@@ -52,8 +52,8 @@ namespace CosmicShore
         public override bool IsFullyBonded() =>
             TopLeftIsBonded && TopRightIsBonded && BottomLeftIsBonded && BottomRightIsBonded;
 
-        [HideInInspector] public HashSet<GyroidAssembler> MateList = new();
-        [HideInInspector] public Queue<GyroidAssembler> preferedBlocks = new();
+        public HashSet<GyroidAssembler> MateList = new();
+        public Queue<GyroidAssembler> preferedBlocks = new();
 
         public override TrailBlock TrailBlock { get; set; }
         public  override Spindle Spindle { get; set; }
@@ -64,10 +64,10 @@ namespace CosmicShore
         
         public override int Depth
         {
-            get { return depth; }
-            set { depth = value; }
+            get => depth;
+            set => depth = value;
         }
-        public bool isSeed = false;
+        public bool isSeed;
 
         private float snapDistance = .3f;
         [SerializeField] float separationDistance = 3f;
@@ -264,7 +264,7 @@ namespace CosmicShore
 
         IEnumerator LookForMatesCoroutine()
         {
-            bool[] activeMates = new bool[] { false, true, true, false };
+            bool[] activeMates = { false, true, true, false };
 
             while (true)
             {
@@ -421,15 +421,13 @@ namespace CosmicShore
                 var mate = CreateGyroidBondMate(preferedBlocks.Dequeue(), BlockType, siteType); 
                 return mate;
             }
-            else
-            {
-                Debug.Log($"GyroidAssembler: No Preferred Block, Depth: {depth}");
-            }
 
-            float closestDistance = float.MaxValue;
+            Debug.Log($"GyroidAssembler: No Preferred Block, Depth: {depth}");
+
+            var closestDistance = float.MaxValue;
             GyroidAssembler closest = null;
-            bool isTail = GyroidBondMateDataContainer.GetBondMateData(BlockType, siteType).isTail;
-            CornerSiteType bondee = CornerSiteType.TopRight;
+            var isTail = GyroidBondMateDataContainer.GetBondMateData(BlockType, siteType).isTail;
+            var bondee = CornerSiteType.TopRight;
             var colliders = Physics.OverlapSphere(bondSite, radius); // Adjust radius as needed
             if (colliders.Length < colliderTheshold)
             {
@@ -448,7 +446,7 @@ namespace CosmicShore
                     else continue;
                 }
 
-                float sqrDistance = (bondSite - mateComponent.transform.position).sqrMagnitude;
+                var sqrDistance = (bondSite - mateComponent.transform.position).sqrMagnitude;
 
                 if (IsMate(mateComponent) && mateComponent != this)
                 {

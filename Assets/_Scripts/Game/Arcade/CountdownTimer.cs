@@ -27,7 +27,7 @@ namespace CosmicShore.Game.Arcade
             while (elapsedTime < 1)
             {
                 elapsedTime += Time.deltaTime;
-                CountdownDisplay.transform.localScale = Vector3.one + (Vector3.one * ((CountdownGrowScale - 1) * elapsedTime));
+                CountdownDisplay.transform.localScale = Vector3.one + Vector3.one * ((CountdownGrowScale - 1) * elapsedTime);
                 yield return null;
             }
         }

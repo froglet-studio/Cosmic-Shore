@@ -17,7 +17,7 @@ namespace CosmicShore.Game.Arcade
             base.Start();
 
             SegmentSpawner.Seed = new System.Random().Next();
-            SegmentSpawner.DifficultyAngle = IntensityLevel * (140 / 4); // (180 - random buffer - dartbard arclength) / (max difficulty level)
+            SegmentSpawner.DifficultyAngle = IntensityLevel * (140 / 4);
             SegmentSpawner.Initialize();
         }
 
@@ -25,8 +25,7 @@ namespace CosmicShore.Game.Arcade
         {
             base.SetupTurn();
 
-            Silhouette silhouette;
-            ActivePlayer.Ship.TryGetComponent<Silhouette>(out silhouette);
+            ActivePlayer.Ship.TryGetComponent(out Silhouette silhouette);
             silhouette.Clear();
 
             TrailSpawner.NukeTheTrails();

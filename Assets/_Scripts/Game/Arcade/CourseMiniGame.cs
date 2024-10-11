@@ -11,7 +11,7 @@ namespace CosmicShore.Game.Arcade
         [SerializeField] int numberOfSegments = 10;
         [SerializeField] int straightLineLength = 400;
         [SerializeField] bool ResetTrails = true;
-        [SerializeField] bool ScaleCrystalPositionWithIntensity = false; 
+        [SerializeField] bool ScaleCrystalPositionWithIntensity; 
         [SerializeField] bool ScaleLengthWithIntensity = true;
         [SerializeField] bool ScaleNumberOfSegmentsWithIntensity = true;
         [SerializeField] SpawnableHelix helix;
@@ -23,7 +23,7 @@ namespace CosmicShore.Game.Arcade
         {
             base.Start();
             SegmentSpawner.Seed = new System.Random().Next();
-            if (ScaleNumberOfSegmentsWithIntensity) numberOfSegments = numberOfSegments * IntensityLevel;
+            if (ScaleNumberOfSegmentsWithIntensity) numberOfSegments *= IntensityLevel;
 
             if (PlayerShipType == ShipTypes.Rhino)
                 ScoreTracker.ScoringMode = ScoringModes.HostileVolumeDestroyed;
