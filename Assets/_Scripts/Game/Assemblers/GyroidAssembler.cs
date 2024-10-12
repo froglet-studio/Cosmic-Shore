@@ -74,6 +74,9 @@ namespace CosmicShore
         [SerializeField] int colliderTheshold = 1;
         [SerializeField] float radius = 40f;
 
+        private const int MaxColliders = 10; // This one only detects 10 collider at the same frame
+        private readonly Collider[] _colliders = new Collider[MaxColliders];
+
         void Start()
         {
             TrailBlock = GetComponent<TrailBlock>();
@@ -416,16 +419,14 @@ namespace CosmicShore
 
             var closestDistance = float.MaxValue;
             GyroidAssembler closest = null;
-            var isTail = GyroidBondMateDataContainer.GetBondMateData(BlockType, siteType).isTail;
-            var bondee = CornerSiteType.TopRight;
-            var maxColliders = 10; // This one only detects 10 collider at the same frame
-            var colliders = new Collider[maxColliders];
-            Physics.OverlapSphereNonAlloc(bondSite, radius, colliders);
-            if (colliders.Length < colliderTheshold)
+            _ = GyroidBondMateDataContainer.GetBondMateData(BlockType, siteType).isTail;
+
+            Physics.OverlapSphereNonAlloc(bondSite, radius, _colliders);
+            if (_colliders.Length < colliderTheshold)
             {
                 return new GyroidBondMate { Mate = null };
             }
-            foreach (var potentialMate in colliders) // Adjust radius as needed
+            foreach (var potentialMate in _colliders) // Adjust radius as needed
             {
                 var mateComponent = potentialMate.GetComponent<GyroidAssembler>();
                 if (mateComponent == null)
@@ -509,6 +510,10 @@ namespace CosmicShore
                             break;
                         case CornerSiteType.BottomRight:
                             BottomRightIsBonded = true;
+                            break;
+                        case CornerSiteType.None:
+                        default:
+                            Debug.LogWarning("No Gyroid bond mate.");
                             break;
                     }   
                 }
