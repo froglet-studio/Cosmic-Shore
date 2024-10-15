@@ -63,6 +63,8 @@ namespace CosmicShore.App.UI.Modals
             SetPlayerCount(loadout.PlayerCount == 0 ? SelectedGame.MinPlayers : loadout.PlayerCount);
 
             var index = loadout.ShipType == ShipTypes.Random ? 0 : ShipSelectionView.Models.IndexOf(ShipSelectionView.Models.Where(x => (x as SO_Ship).Class == loadout.ShipType).FirstOrDefault());
+            if (index == -1) index = 0;
+
             ShipSelectionView.Select(index);
         }
 
@@ -145,6 +147,8 @@ namespace CosmicShore.App.UI.Modals
         public void ToggleFavorite()
         {
             ArcadeExploreView.ToggleFavorite();
+
+            SelectedGameFavoriteIcon.Favorited = FavoriteSystem.IsFavorited(SelectedGame.Mode);
         }
     }
 }
