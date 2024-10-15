@@ -12,7 +12,5 @@ namespace CosmicShore
         public abstract GrowthInfo GetGrowthInfo();
         public abstract void StartBonding();
         public abstract int Depth { get; set; }
-        
-        
     }
 }
