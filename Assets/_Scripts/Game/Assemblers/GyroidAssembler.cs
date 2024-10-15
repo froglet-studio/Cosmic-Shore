@@ -74,6 +74,9 @@ namespace CosmicShore
         [SerializeField] int colliderTheshold = 1;
         [SerializeField] float radius = 40f;
 
+        private const int MaxColliders = 10; // This one only detects 10 collider at the same frame
+        private readonly Collider[] _colliders = new Collider[MaxColliders];
+
         void Start()
         {
             TrailBlock = GetComponent<TrailBlock>();
@@ -94,45 +97,37 @@ namespace CosmicShore
 
         public override GrowthInfo GetGrowthInfo()
         {
-            // Check if the block is fully bonded
-            if (IsFullyBonded())
+            while (true)
             {
-                return new GrowthInfo { CanGrow = false };
-            }
-
-            // Determine the corner site to grow from based on the availability of unmated sites
-            CornerSiteType growthSite = GetGrowthSite();
-
-            // Retrieve the bond mate data based on the current block type and the growth site
-            if (GyroidBondMateDataContainer.BondMateDataMap.TryGetValue((BlockType, growthSite), out var bondMateData))
-            {
-                // Calculate the new position and rotation based on the bond mate data
-                Vector3 newPosition = CalculateGlobalBondSite(bondMateData.Substrate);
-                Quaternion newRotation = CalculateRotation(CreateGyroidBondMate(this, BlockType, growthSite));
-
-                // Check if there is already a block at the new position using Physics.CheckBox
-                if (Physics.CheckBox(newPosition, TrailBlock.transform.localScale / 2f))
+                // Check if the block is fully bonded
+                if (IsFullyBonded())
                 {
-                    // Fill the bond site
-                    SetBondSiteStatus(growthSite, true);
-
-                    // Recursively call GetGrowthInfo to check for the next available growth site
-                    return GetGrowthInfo();
+                    return new GrowthInfo { CanGrow = false };
                 }
 
-                // Return the growth information
-                return new GyroidGrowthInfo
-                {
-                    CanGrow = true,
-                    Position = newPosition,
-                    Rotation = newRotation,
-                    BlockType = bondMateData.BlockType,
-                    Depth = depth - 1
-                };
-            }
-            else
-            {
-                return new GrowthInfo { CanGrow = false };
+                // Determine the corner site to grow from based on the availability of unmated sites
+                var growthSite = GetGrowthSite();
+
+                // Retrieve the bond mate data based on the current block type and the growth site
+                if (!GyroidBondMateDataContainer.BondMateDataMap.TryGetValue((BlockType, growthSite), out var bondMateData)) return new GrowthInfo { CanGrow = false };
+
+                // Calculate the new position and rotation based on the bond mate data
+                var newPosition = CalculateGlobalBondSite(bondMateData.Substrate);
+                var newRotation = CalculateRotation(CreateGyroidBondMate(this, BlockType, growthSite));
+
+                // Check if there is already a block at the new position using Physics.CheckBox
+                if (!Physics.CheckBox(newPosition, TrailBlock.transform.localScale / 2f))
+                    return new GyroidGrowthInfo
+                    {
+                        CanGrow = true,
+                        Position = newPosition,
+                        Rotation = newRotation,
+                        BlockType = bondMateData.BlockType,
+                        Depth = depth - 1
+                    };
+                
+                // Fill the bond site
+                SetBondSiteStatus(growthSite, true);
             }
         }
 
@@ -145,10 +140,7 @@ namespace CosmicShore
                 return CornerSiteType.TopLeft;
             if (!BottomLeftIsBonded)
                 return CornerSiteType.BottomLeft;
-            if (!BottomRightIsBonded)
-                return CornerSiteType.BottomRight;
-            
-            return CornerSiteType.None; // Return None if all sites are bonded
+            return !BottomRightIsBonded ? CornerSiteType.BottomRight : CornerSiteType.None; // Return None if all sites are bonded
         }
 
         private void SetBondSiteStatus(CornerSiteType site, bool isBonded)
@@ -207,30 +199,33 @@ namespace CosmicShore
 
         void PrepareMate(GyroidBondMate gyroidBondMate)
         {
-            if (gyroidBondMate.Mate)
-            {
-                gyroidBondMate.Mate.BlockType = gyroidBondMate.BlockType;
+            if (!gyroidBondMate.Mate) return;
+            
+            gyroidBondMate.Mate.BlockType = gyroidBondMate.BlockType;
 
-                switch (gyroidBondMate.Bondee)
-                {
-                    case CornerSiteType.TopLeft:
-                        gyroidBondMate.Mate.TopLeftMate = CreateGyroidBondMate(this, gyroidBondMate.BlockType, CornerSiteType.TopLeft);
-                        break;
-                    case CornerSiteType.TopRight:
-                        gyroidBondMate.Mate.TopRightMate = CreateGyroidBondMate(this, gyroidBondMate.BlockType, CornerSiteType.TopRight);
-                        break;
-                    case CornerSiteType.BottomLeft:
-                        gyroidBondMate.Mate.BottomLeftMate = CreateGyroidBondMate(this, gyroidBondMate.BlockType, CornerSiteType.BottomLeft);
-                        break;
-                    case CornerSiteType.BottomRight:
-                        gyroidBondMate.Mate.BottomRightMate = CreateGyroidBondMate(this, gyroidBondMate.BlockType, CornerSiteType.BottomRight);
-                        break;
-                }
-                MateList.Add(gyroidBondMate.Mate);
-                gyroidBondMate.Mate.MateList.Add(this);
-                Coroutine coroutine = StartCoroutine(UpdateMate(gyroidBondMate));
-                updateCoroutineDict[gyroidBondMate] = coroutine;
+            switch (gyroidBondMate.Bondee)
+            {
+                case CornerSiteType.TopLeft:
+                    gyroidBondMate.Mate.TopLeftMate = CreateGyroidBondMate(this, gyroidBondMate.BlockType, gyroidBondMate.Bondee);
+                    break;
+                case CornerSiteType.TopRight:
+                    gyroidBondMate.Mate.TopRightMate = CreateGyroidBondMate(this, gyroidBondMate.BlockType, gyroidBondMate.Bondee);
+                    break;
+                case CornerSiteType.BottomLeft:
+                    gyroidBondMate.Mate.BottomLeftMate = CreateGyroidBondMate(this, gyroidBondMate.BlockType, gyroidBondMate.Bondee);
+                    break;
+                case CornerSiteType.BottomRight:
+                    gyroidBondMate.Mate.BottomRightMate = CreateGyroidBondMate(this, gyroidBondMate.BlockType, gyroidBondMate.Bondee);
+                    break;
+                case CornerSiteType.None:
+                default:
+                    Debug.LogWarning("No Gyroid bond mate.");
+                    break;
             }
+            MateList.Add(gyroidBondMate.Mate);
+            gyroidBondMate.Mate.MateList.Add(this);
+            var coroutine = StartCoroutine(UpdateMate(gyroidBondMate));
+            updateCoroutineDict[gyroidBondMate] = coroutine;
         }
 
         private bool AreAllActiveMatesBonded(bool[] activeMates)
@@ -239,9 +234,8 @@ namespace CosmicShore
             if (activeMates[0] && !TopLeftIsBonded) return false;     
             if (activeMates[1] && !TopRightIsBonded) return false;    
             if (activeMates[2] && !BottomLeftIsBonded) return false;  
-            if (activeMates[3] && !BottomRightIsBonded) return false; 
-
-            return true; // All active mates are bonded
+            return !activeMates[3] || BottomRightIsBonded;
+            // All active mates are bonded
         }
 
 
@@ -340,11 +334,10 @@ namespace CosmicShore
             UpdateBondingStatus(BottomLeftMate, BottomLeftIsBonded);
             UpdateBondingStatus(BottomRightMate, BottomRightIsBonded);
 
-            if (AreAllActiveMatesBonded(activeMates))
-            {
-                StopAllCoroutines();
-                TrailBlock.Grow();
-            }
+            if (!AreAllActiveMatesBonded(activeMates)) return;
+            
+            StopAllCoroutines();
+            TrailBlock.Grow();
         }
 
         Dictionary<GyroidBondMate, Coroutine> updateCoroutineDict = new Dictionary<GyroidBondMate, Coroutine>();
@@ -426,16 +419,16 @@ namespace CosmicShore
 
             var closestDistance = float.MaxValue;
             GyroidAssembler closest = null;
-            var isTail = GyroidBondMateDataContainer.GetBondMateData(BlockType, siteType).isTail;
-            var bondee = CornerSiteType.TopRight;
-            var colliders = Physics.OverlapSphere(bondSite, radius); // Adjust radius as needed
-            if (colliders.Length < colliderTheshold)
+            _ = GyroidBondMateDataContainer.GetBondMateData(BlockType, siteType).isTail;
+
+            Physics.OverlapSphereNonAlloc(bondSite, radius, _colliders);
+            if (_colliders.Length < colliderTheshold)
             {
                 return new GyroidBondMate { Mate = null };
             }
-            foreach (var potentialMate in colliders) // Adjust radius as needed
+            foreach (var potentialMate in _colliders) // Adjust radius as needed
             {
-                GyroidAssembler mateComponent = potentialMate.GetComponent<GyroidAssembler>();
+                var mateComponent = potentialMate.GetComponent<GyroidAssembler>();
                 if (mateComponent == null)
                 {
                     var trailBlock = potentialMate.GetComponent<TrailBlock>();
@@ -469,9 +462,6 @@ namespace CosmicShore
                     {
                         closestDistance = sqrDistance;
                         closest = mateComponent;
-                        
-                        // TODO: bondee is not used anywhere.
-                        bondee = isTail ? CornerSiteType.BottomRight : CornerSiteType.TopLeft;
                     }
                 }
             }
@@ -520,6 +510,10 @@ namespace CosmicShore
                             break;
                         case CornerSiteType.BottomRight:
                             BottomRightIsBonded = true;
+                            break;
+                        case CornerSiteType.None:
+                        default:
+                            Debug.LogWarning("No Gyroid bond mate.");
                             break;
                     }   
                 }
