@@ -3,7 +3,7 @@ using CosmicShore.Core;
 using CosmicShore.Game.IO;
 using System.Collections.Generic;
 
-public class ShipTransformer : MonoBehaviour
+public class ShipTransformer : ElementalShipComponent
 {
     Quaternion inverseInitialRotation = new(0, 0, 0, 0);
 
@@ -43,6 +43,8 @@ public class ShipTransformer : MonoBehaviour
         ship = GetComponent<Ship>();
         shipStatus = ship.GetComponent<ShipStatus>();
         resourceSystem = ship.GetComponent<ResourceSystem>();
+
+        BindElementalFloats(ship);
 
         MinimumSpeed = DefaultMinimumSpeed;
         ThrottleScaler = DefaultThrottleScaler.Value;

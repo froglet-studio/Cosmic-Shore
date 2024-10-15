@@ -27,7 +27,7 @@ namespace CosmicShore.Core
     [RequireComponent(typeof(ResourceSystem))]
     [RequireComponent(typeof(TrailSpawner))]
     [RequireComponent(typeof(ShipStatus))]
-    public class Ship : MonoBehaviour
+    public class Ship : ElementalShipComponent
     {
         [SerializeField] List<ImpactProperties> impactProperties;
         [HideInInspector] public CameraManager cameraManager;
@@ -61,7 +61,7 @@ namespace CosmicShore.Core
         [Header("Environment Interactions")]
         [SerializeField] public List<CrystalImpactEffects> crystalImpactEffects;
         [ShowIf(CrystalImpactEffects.AreaOfEffectExplosion)] [SerializeField] float minExplosionScale = 50; // TODO: depricate "ShowIf" once we adopt modularity
-        [ShowIf(CrystalImpactEffects.AreaOfEffectExplosion)] [SerializeField] float maxExplosionScale = 400;
+        [ShowIf(CrystalImpactEffects.AreaOfEffectExplosion)] [SerializeField] ElementalFloat maxExplosionScale = new ElementalFloat(400f);
 
         [SerializeField] List<TrailBlockImpactEffects> trailBlockImpactEffects;
         [SerializeField] float blockChargeChange;
@@ -127,6 +127,8 @@ namespace CosmicShore.Core
             AutoPilot = GetComponent<AIPilot>();
             if (!FollowTarget) FollowTarget = transform;
             if (bottomEdgeButtons) Player.GameCanvas.MiniGameHUD.PositionButtonPanel(true);
+
+            BindElementalFloats(this);
 
             foreach (var shipGeometry in shipGeometries)
                 shipGeometry.AddComponent<ShipGeometry>().Ship = this;
@@ -198,7 +200,7 @@ namespace CosmicShore.Core
                         aoeExplosion.Ship = this;
                         aoeExplosion.SetPositionAndRotation(transform.position, transform.rotation);
                         Debug.Log($"Ship.PerformCrystalImpactEffects - AOEExplosion.current ammo:{ResourceSystem.Resources[ammoResourceIndex].CurrentAmount}");
-                        aoeExplosion.MaxScale =  Mathf.Lerp(minExplosionScale, maxExplosionScale, ResourceSystem.Resources[ammoResourceIndex].CurrentAmount);
+                        aoeExplosion.MaxScale = Mathf.Lerp(minExplosionScale, maxExplosionScale.Value, ResourceSystem.Resources[ammoResourceIndex].CurrentAmount);
                         break;
                     case CrystalImpactEffects.IncrementLevel:
                         ResourceSystem.IncrementLevel(crystalProperties.Element); // TODO: consider removing here and leaving this up to the crystals
