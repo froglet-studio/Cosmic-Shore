@@ -188,18 +188,18 @@ MonoBehaviour:
   projectileContainer: {fileID: 4311740880586632102}
   ammoIndex: 0
   ammoCost: 0
-  inherit: 0
+  inherit: 1
   ProjectileScale: 1
   FiringPattern: 0
   Energy: 0
   speed:
     Enabled: 1
-    Value: 2000
-    Min: 2000
+    Value: 1500
+    Min: 1500
     Max: 4000
     element: 3
-  projectileTime: 0.2
-  firingRate: 90
+  projectileTime: 0.3
+  firingRate: 30
 --- !u!1 &555723467741174050
 GameObject:
   m_ObjectHideFlags: 0

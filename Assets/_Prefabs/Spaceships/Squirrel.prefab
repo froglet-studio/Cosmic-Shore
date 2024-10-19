@@ -1550,13 +1550,7 @@ MonoBehaviour:
   nearFieldSkimmer: {fileID: 708149374973573223}
   OrientationHandle: {fileID: 1878660672777590133}
   shipGeometries:
-  - {fileID: 7006514261138449697}
-  - {fileID: 1815102489639903026}
-  - {fileID: 8912034820902656382}
-  - {fileID: 6675130274311316141}
-  - {fileID: 7696976320636676308}
-  - {fileID: 1376376450048088127}
-  - {fileID: 6988205045896376628}
+  - {fileID: 4884617224712114563}
   shipHUD: {fileID: 0}
   Silhouette: {fileID: 6013884537839217096}
   AOEPrefab: {fileID: 2728798890556433942, guid: 4a855af160021d241b8c1ac70cf2d792,
@@ -1564,13 +1558,15 @@ MonoBehaviour:
   farFieldSkimmer: {fileID: 0}
   ShipCameraCustomizer: {fileID: 0}
   FollowTarget: {fileID: 0}
+  resourceIndex: 0
+  ammoResourceIndex: 0
+  boostResourceIndex: 0
   crystalImpactEffects: 060000000b000000
   minExplosionScale: 400
   maxExplosionScale: 400
   trailBlockImpactEffects: 0e0000000000000011000000
   blockChargeChange: 0
   boostMultiplier: 0
-  boostFuelAmount: 0
   bottomEdgeButtons: 0
   Inertia: 70
   inputEventShipActions:
@@ -1611,11 +1607,12 @@ MonoBehaviour:
   CommandStickControls: 0
   LiveProjectiles: 0
   Stationary: 0
-  ElevatedAmmoGain: 0
+  ElevatedResourceGain: 0
   ChargedBoostCharge: 1
   AutoPilotEnabled: 0
   AlignmentEnabled: 1
   Slowed: 0
+  Overheating: 0
   Attached: 0
   AttachedTrailBlock: {fileID: 0}
   GunsActive: 0
@@ -1692,25 +1689,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 737294a573670f74389a7af68df314d5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  displayBoost: 0
-  gainsBoost: 0
-  boostGainRate: 0.1
-  initialBoost: 1
-  maxBoost: 1
-  displayAmmo: 0
-  gainsAmmo: 0
-  ammoGainRate:
-    Enabled: 0
-    Value: 0.1
-    Min: 0
-    Max: 0
-    element: 0
-  initialAmmo: 1
-  maxAmmo: 1
-  displayEnergy: 0
-  maxEnergy: 1
-  initialEnergy: 1
-  ResourceDisplays: {fileID: 0}
+  Resources: []
   ChargeTestHarness: 0
   MassTestHarness: 0
   SpaceTestHarness: 0
@@ -1813,6 +1792,7 @@ MonoBehaviour:
   driftTrailAction: {fileID: 0}
   topJaw: {fileID: 0}
   bottomJaw: {fileID: 0}
+  JawResourceIndex: 0
   swingBlocks: 0
   ship: {fileID: 874579555101021527}
   sihouetteScale: {x: 1, y: 1, z: 1}
@@ -2936,6 +2916,11 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: -5228419308709608677, guid: 5db69771d02b4c24ca00998adf318137,
+        type: 3}
+      propertyPath: m_Layer
+      value: 8
+      objectReference: {fileID: 0}
     - target: {fileID: -2358995200592801505, guid: 5db69771d02b4c24ca00998adf318137,
         type: 3}
       propertyPath: m_Name
@@ -2959,7 +2944,15 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: -5228419308709608677, guid: 5db69771d02b4c24ca00998adf318137,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6329045856940820163}
+    - targetCorrespondingSourceObject: {fileID: -5228419308709608677, guid: 5db69771d02b4c24ca00998adf318137,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7634103061000867557}
   m_SourcePrefab: {fileID: 100100000, guid: 5db69771d02b4c24ca00998adf318137, type: 3}
 --- !u!95 &2725764652992229129 stripped
 Animator:
@@ -2967,6 +2960,60 @@ Animator:
     type: 3}
   m_PrefabInstance: {fileID: 8410834229753696920}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &4884617224712114563 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: -5228419308709608677, guid: 5db69771d02b4c24ca00998adf318137,
+    type: 3}
+  m_PrefabInstance: {fileID: 8410834229753696920}
+  m_PrefabAsset: {fileID: 0}
+--- !u!65 &6329045856940820163
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4884617224712114563}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 2.23, y: -4.98, z: 1}
+  m_Center: {x: 0, y: 0, z: 0}
+--- !u!54 &7634103061000867557
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4884617224712114563}
+  serializedVersion: 4
+  m_Mass: 1
+  m_Drag: 0
+  m_AngularDrag: 0.05
+  m_CenterOfMass: {x: 0, y: 0, z: 0}
+  m_InertiaTensor: {x: 1, y: 1, z: 1}
+  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ImplicitCom: 1
+  m_ImplicitTensor: 1
+  m_UseGravity: 0
+  m_IsKinematic: 1
+  m_Interpolate: 0
+  m_Constraints: 126
+  m_CollisionDetection: 0
 --- !u!137 &7600425915573274353 stripped
 SkinnedMeshRenderer:
   m_CorrespondingSourceObject: {fileID: 2144674613060260969, guid: 5db69771d02b4c24ca00998adf318137,
