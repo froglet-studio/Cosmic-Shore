@@ -10,8 +10,6 @@ namespace CosmicShore.Game.Arcade
         [SerializeField] Vector3 CrystalStartScale = Vector3.one;
         [SerializeField] SegmentSpawner SegmentSpawner;
 
-        public static new ShipTypes PlayerShipType = ShipTypes.Manta;
-
         protected override void Start()
         {
             base.Start();

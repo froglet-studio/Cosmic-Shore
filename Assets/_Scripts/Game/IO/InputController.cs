@@ -1,23 +1,33 @@
 using System.Collections;
 using UnityEngine;
 using CosmicShore.Core;
-using Gamepad = UnityEngine.InputSystem.Gamepad;
-using Gyroscope = UnityEngine.Gyroscope;
-using TouchPhase = UnityEngine.TouchPhase;
+using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.EnhancedTouch;
+using Touch = UnityEngine.InputSystem.EnhancedTouch.Touch;
+using TouchPhase = UnityEngine.InputSystem.TouchPhase;
 using CosmicShore.Game.UI;
 using CosmicShore.App.Systems;
+using UnityEngine.InputSystem.Controls;
+using Gyroscope = UnityEngine.InputSystem.Gyroscope;
+
 
 namespace CosmicShore.Game.IO
 {
     public class InputController : MonoBehaviour
     {
-        [SerializeField] GameCanvas gameCanvas;
-        [HideInInspector] public bool AutoPilotEnabled;
+        [SerializeField] private GameCanvas gameCanvas;
         [SerializeField] public bool Portrait;
+
         [HideInInspector] public Ship ship;
+        [HideInInspector] public bool AutoPilotEnabled;
         [HideInInspector] public static ScreenOrientation currentOrientation;
 
-        float phoneFlipThreshold = .1f;
+        const float PHONE_FLIP_THRESHOLD = 0.1f;
+        const float PI_OVER_FOUR = 0.785f;
+        const float MAP_SCALE_X = 2f;
+        const float MAP_SCALE_Y = 2f;
+        const float GYRO_INITIALIZATION_RANGE = 0.05f;
+
         bool phoneFlipState;
         bool leftStickEffectsStarted;
         bool rightStickEffectsStarted;
@@ -25,481 +35,519 @@ namespace CosmicShore.Game.IO
         bool minimumSpeedStraightEffectsStarted;
         int leftTouchIndex, rightTouchIndex;
 
-        const float piOverFour = 0.785f;
-        float mapscaleX = 2f;
-        float mapscaleY = 2f;
-
-        [HideInInspector] public float XSum;
-        [HideInInspector] public float YSum;
-        [HideInInspector] public float XDiff;
-        [HideInInspector] public float YDiff;
-
-        [HideInInspector] public bool Idle;
-        [HideInInspector] public bool Paused;
-        [HideInInspector] public Vector2 RightJoystickHome;
-        [HideInInspector] public Vector2 LeftJoystickHome;
-        [HideInInspector] public Vector2 RightClampedPosition;
-        [HideInInspector] public Vector2 LeftClampedPosition;
-        [HideInInspector] public bool isGyroEnabled;
-        [HideInInspector] public bool invertYEnabled;
-        [HideInInspector] public bool invertThrottleEnabled;
+        [HideInInspector] public float XSum, YSum, XDiff, YDiff;
+        [HideInInspector] public bool Idle, Paused;
+        [HideInInspector] public bool isGyroEnabled, invertYEnabled, invertThrottleEnabled;
         [HideInInspector] public bool OneTouchLeft;
+
+        [HideInInspector] public Vector2 RightJoystickHome, LeftJoystickHome;
+        [HideInInspector] public Vector2 RightClampedPosition, LeftClampedPosition;
         [HideInInspector] public Vector2 RightJoystickStart, LeftJoystickStart;
         [HideInInspector] public Vector2 RightNormalizedJoystickPosition, LeftNormalizedJoystickPosition;
-        Vector2 RightJoystickValue, LeftJoystickValue;
-        public Vector2 SingleTouchValue;
+        [HideInInspector] public Vector2 EasedRightJoystickPosition, EasedLeftJoystickPosition;
 
+        private Vector2 RightJoystickValue, LeftJoystickValue;
+        public Vector2 SingleTouchValue;
         public Vector3 ThreeDPosition { get; private set; }
 
-        [HideInInspector] public Vector2 EasedRightJoystickPosition, EasedLeftJoystickPosition;
         float JoystickRadius;
-
-
         Gyroscope gyro;
         Quaternion derivedCorrection;
-        Quaternion inverseInitialRotation=new(0,0,0,0);
-        float gyroInitializationAcceptableRange = .05f;
+        Quaternion inverseInitialRotation = new(0, 0, 0, 0);
 
-        void OnEnable()
+        #region Unity Lifecycle Methods
+
+        private void OnEnable()
         {
             GameSetting.OnChangeInvertYEnabledStatus += OnToggleInvertY;
             GameSetting.OnChangeInvertThrottleEnabledStatus += OnToggleInvertThrottle;
+            EnhancedTouchSupport.Enable();
         }
 
-        void OnDisable()
+        private void OnDisable()
         {
             GameSetting.OnChangeInvertYEnabledStatus -= OnToggleInvertY;
             GameSetting.OnChangeInvertThrottleEnabledStatus -= OnToggleInvertThrottle;
+            EnhancedTouchSupport.Disable();
         }
 
-        void Start()
+        private void Start()
+        {
+            InitializeJoysticks();
+            InitializeGyroscope();
+            LoadSettings();
+        }
+
+        private void Update()
+        {
+            if (PauseSystem.Paused || Paused) return;
+            ReceiveInput();
+        }
+
+        #endregion
+
+        #region Initialization Methods
+
+        private void InitializeJoysticks()
         {
             JoystickRadius = Screen.dpi;
             LeftJoystickValue = LeftClampedPosition = LeftJoystickHome = new Vector2(JoystickRadius, JoystickRadius);
             RightJoystickValue = RightClampedPosition = RightJoystickHome = new Vector2(Screen.currentResolution.width - JoystickRadius, JoystickRadius);
+        }
 
-            // Enable Input gyro and then give the value to the local properties, otherwise it will only give null value
-            Input.gyro.enabled = true;
-            gyro = Input.gyro;
-            
+        private void InitializeGyroscope()
+        {
+            InputSystem.EnableDevice(Gyroscope.current);
+            gyro = Gyroscope.current;
             StartCoroutine(GyroInitializationCoroutine());
-            invertYEnabled = GameSetting.Instance.InvertYEnabled;       
-            invertYEnabled = GameSetting.Instance.InvertThrottleEnabled;       
         }
 
-        IEnumerator GyroInitializationCoroutine()
+        private void LoadSettings()
         {
-            derivedCorrection = GyroQuaternionToUnityQuaternion(Quaternion.Inverse(new Quaternion(0, .65f, .75f, 0)));
-            inverseInitialRotation = Quaternion.identity;
-
-            // Turns out the gryo attitude is not avaiable immediately, so wait until we start getting values to initialize
-            while (Equals(new Quaternion(0,0,0,0), gyro.attitude))
-                yield return new WaitForSeconds(gyro.updateInterval);
-
-            var lastAttitude = gyro.attitude;
-            yield return new WaitForSeconds(gyro.updateInterval);
-
-            // Also turns out that the first value returned is garbage, so wait for it to stabilize
-            // We check for rough equality using the absolute value of the two quaternions dot product
-            while (!(1 - Mathf.Abs(Quaternion.Dot(lastAttitude, gyro.attitude)) < gyroInitializationAcceptableRange))
-            {
-                lastAttitude = gyro.attitude;
-                yield return new WaitForSeconds(gyro.updateInterval);
-            }
-
-            inverseInitialRotation = Quaternion.Inverse(GyroQuaternionToUnityQuaternion(gyro.attitude) * derivedCorrection);
+            invertYEnabled = GameSetting.Instance.InvertYEnabled;
+            invertThrottleEnabled = GameSetting.Instance.InvertThrottleEnabled;
         }
 
-        void Update()
-        {
-            if (PauseSystem.Paused || Paused) return;
+        #endregion
 
-            // Convert two finger touch into values for displacement, Speed, and ship animations
-            ReceiveInput();
-        }
+        #region Input Processing Methods
 
-        void ReceiveInput()
+        private void ReceiveInput()
         {
             if (AutoPilotEnabled)
             {
-                if (ship.ShipStatus.SingleStickControls)
-                {
-                    EasedLeftJoystickPosition.x = ship.AutoPilot.X;
-                    EasedLeftJoystickPosition.y = ship.AutoPilot.Y;
-                }
-                else
-                {
-                    XSum = ship.AutoPilot.XSum;
-                    YSum = ship.AutoPilot.YSum;
-                    XDiff = ship.AutoPilot.XDiff;
-                    YDiff = ship.AutoPilot.YDiff;
-                }
-     
-                PerformSpeedAndDirectionalEffects();
+                ProcessAutoPilotInput();
             }
             else if (Gamepad.current != null)
             {
-                LeftNormalizedJoystickPosition.x = Gamepad.current.leftStick.x.ReadValue();
-                LeftNormalizedJoystickPosition.y = Gamepad.current.leftStick.y.ReadValue();
-                RightNormalizedJoystickPosition.x = Gamepad.current.rightStick.x.ReadValue();
-                RightNormalizedJoystickPosition.y = Gamepad.current.rightStick.y.ReadValue();
-
-                Reparameterize();
-
-                ProcessGamePadButtons();
-
-                PerformSpeedAndDirectionalEffects();
+                ProcessGamepadInput();
             }
             else
             {
-                if (Portrait)
+                ProcessTouchInput();
+            }
+        }
+
+        private void ProcessAutoPilotInput()
+        {
+            if (ship.ShipStatus.SingleStickControls)
+            {
+                EasedLeftJoystickPosition = new Vector2(ship.AutoPilot.X, ship.AutoPilot.Y);
+            }
+            else
+            {
+                XSum = ship.AutoPilot.XSum;
+                YSum = ship.AutoPilot.YSum;
+                XDiff = ship.AutoPilot.XDiff;
+                YDiff = ship.AutoPilot.YDiff;
+            }
+            PerformSpeedAndDirectionalEffects();
+        }
+
+        private void ProcessGamepadInput()
+        {
+            LeftNormalizedJoystickPosition = Gamepad.current.leftStick.ReadValue();
+            RightNormalizedJoystickPosition = Gamepad.current.rightStick.ReadValue();
+
+            Reparameterize();
+            ProcessGamePadButtons();
+            PerformSpeedAndDirectionalEffects();
+        }
+
+        private void ProcessTouchInput()
+        {
+            HandlePhoneOrientation();
+            HandleMultiTouch();
+            HandleSingleTouch();
+
+            if (Touch.activeTouches.Count > 0)
+            {
+                Reparameterize();
+                PerformSpeedAndDirectionalEffects();
+                HandleIdleState(false);
+            }
+            else
+            {
+                ResetInputValues();
+                HandleIdleState(true);
+            }
+        }
+
+        private void HandlePhoneOrientation()
+        {
+            if (Portrait)
+            {
+                ship.SetShipUp(90);
+            }
+            else if (Mathf.Abs(Input.acceleration.y) >= PHONE_FLIP_THRESHOLD)
+            {
+                UpdatePhoneFlipState();
+            }
+        }
+
+        private void UpdatePhoneFlipState()
+        {
+            bool newFlipState = Input.acceleration.y > 0;
+            if (newFlipState != phoneFlipState)
+            {
+                phoneFlipState = newFlipState;
+                if (phoneFlipState)
                 {
-                    ship.SetShipUp(90);
-                }
-                else if (Mathf.Abs(Input.acceleration.y) >= phoneFlipThreshold)
-                {
-                    if (Input.acceleration.y < 0 && phoneFlipState)
-                    {
-                        phoneFlipState = false;
-                        ship.StopShipControllerActions(InputEvents.FlipAction);
-                        //ship.FlipShipRightsideUp();
-
-                        currentOrientation = ScreenOrientation.LandscapeLeft;
-
-                        Debug.Log($"InputController Phone flip state change detected - new flip state: {phoneFlipState}, acceleration.y: {Input.acceleration.y}");
-                    }
-                    else if (Input.acceleration.y > 0 && !phoneFlipState)
-                    {
-                        phoneFlipState = true;
-                        ship.PerformShipControllerActions(InputEvents.FlipAction);
-                        //ship.FlipShipUpsideDown(); // TODO make shipAction
-
-                        currentOrientation = ScreenOrientation.LandscapeRight;
-
-                        Debug.Log($"InputController Phone flip state change detected - new flip state: {phoneFlipState}, acceleration.y: {Input.acceleration.y}");
-                    }
-                }
-                  
-                var threeFingerFumble = false;
-                if (Input.touchCount >= 3)
-                {
-                    // Sub select the two best touch inputs here
-                    // If we have more than two touches, find the closest to each of the last touch positions we used
-                    threeFingerFumble = true;
-
-                    leftTouchIndex = GetClosestTouch(LeftJoystickValue);
-                    rightTouchIndex = GetClosestTouch(RightJoystickValue);
-                }
-
-                if (Input.touchCount == 2 || threeFingerFumble)
-                {
-                    // If we didn't fat finger the phone, fix a finger index
-                    if (!threeFingerFumble)
-                    {
-                        if (Input.touches[0].position.x <= Input.touches[1].position.x)
-                        {
-                            leftTouchIndex = 0;
-                            rightTouchIndex = 1;
-                        }
-                        else
-                        {
-                            leftTouchIndex = 1;
-                            rightTouchIndex = 0;
-                        }
-                    }
-
-                    LeftJoystickValue = Input.touches[leftTouchIndex].position;
-                    RightJoystickValue = Input.touches[rightTouchIndex].position;
-
-                    HandleJoystick(ref LeftJoystickStart, leftTouchIndex, ref LeftNormalizedJoystickPosition, ref LeftClampedPosition);
-                    HandleJoystick(ref RightJoystickStart, rightTouchIndex, ref RightNormalizedJoystickPosition, ref RightClampedPosition);
-
-                    if (leftStickEffectsStarted)
-                    {
-                        leftStickEffectsStarted = false;
-                        ship.StopShipControllerActions(InputEvents.LeftStickAction);
-                    }
-                    if (rightStickEffectsStarted)
-                    {
-                        rightStickEffectsStarted = false;
-                        ship.StopShipControllerActions(InputEvents.RightStickAction);
-                    }
-                }
-
-                if (Input.touchCount == 1)
-                {
-                    var position = Input.touches[0].position;
-                    if (ship && ship.ShipStatus.CommandStickControls)
-                    {
-                        SingleTouchValue = position;
-                        var tempThreeDPosition = new Vector3((SingleTouchValue.x - Screen.width / 2) * mapscaleX, (SingleTouchValue.y - Screen.height / 2) * mapscaleY, 0);
-
-                        if (tempThreeDPosition.sqrMagnitude < 10000 & Input.touches[0].phase == TouchPhase.Began) // TODO: replace with nodeRadiusSquared
-                        {
-                            ship.PerformShipControllerActions(InputEvents.NodeTapAction);
-                        }
-                        else if ((tempThreeDPosition - ship.transform.position).sqrMagnitude < 10000 & Input.touches[0].phase == TouchPhase.Began) // TODO: replace with shipSizeSquared
-                        {
-                            ship.PerformShipControllerActions(InputEvents.SelfTapAction);
-                        }
-                        else ThreeDPosition = tempThreeDPosition;
-                    }
-
-                    if (Vector2.Distance(LeftJoystickValue, position) < Vector2.Distance(RightJoystickValue, position))
-                    {
-                        if (!leftStickEffectsStarted)
-                        {
-                            leftStickEffectsStarted = true;
-                            ship.PerformShipControllerActions(InputEvents.LeftStickAction);
-                        }
-                        LeftJoystickValue = position;
-                        leftTouchIndex = 0;
-                        OneTouchLeft = true;
-                        HandleJoystick(ref LeftJoystickStart, leftTouchIndex, ref LeftNormalizedJoystickPosition, ref LeftClampedPosition);
-                        RightNormalizedJoystickPosition = Vector3.Lerp(RightNormalizedJoystickPosition, Vector3.zero, 7 * Time.deltaTime);
-                    }
-                    else
-                    {
-                        if (!rightStickEffectsStarted)
-                        {
-                            rightStickEffectsStarted = true;
-                            // if (ship == null)
-                            // {
-                            //     Debug.LogWarningFormat("{0} - {1} - {2}", nameof(InputController), nameof(ReceiveInput), "ship object is null.");
-                            // }
-                            if(ship != null)
-                                ship.PerformShipControllerActions(InputEvents.RightStickAction);
-                        }
-                        RightJoystickValue = position;
-                        rightTouchIndex = 0;
-                        OneTouchLeft = false;
-                        HandleJoystick(ref RightJoystickStart, rightTouchIndex, ref RightNormalizedJoystickPosition, ref RightClampedPosition);
-                        LeftNormalizedJoystickPosition = Vector3.Lerp(LeftNormalizedJoystickPosition, Vector3.zero, 7*Time.deltaTime);
-                    }
-                }
-
-                if (Input.touchCount > 0)
-                {
-                    Reparameterize();
-                    PerformSpeedAndDirectionalEffects();
-
-
-                    if (Idle)
-                    {
-                        Idle = false;
-                        ship.StopShipControllerActions(InputEvents.IdleAction);
-                    }
+                    ship.PerformShipControllerActions(InputEvents.FlipAction);
+                    currentOrientation = ScreenOrientation.LandscapeRight;
                 }
                 else
                 {
-                    XSum = 0;
-                    YSum = 0;
-                    XDiff = 0;
-                    YDiff = 0;
+                    ship.StopShipControllerActions(InputEvents.FlipAction);
+                    currentOrientation = ScreenOrientation.LandscapeLeft;
+                }
+                Debug.Log($"Phone flip state change detected - new flip state: {phoneFlipState}, acceleration.y: {Input.acceleration.y}");
+            }
+        }
 
-                    Idle = true;
-                    if (ship) ship.PerformShipControllerActions(InputEvents.IdleAction); // consider placing some stop methods for other Input events here  
+        private void HandleMultiTouch()
+        {
+            if (Touch.activeTouches.Count >= 2)
+            {
+                AssignTouchIndices();
+                UpdateJoystickValues();
+                HandleJoystick(ref LeftJoystickStart, leftTouchIndex, ref LeftNormalizedJoystickPosition, ref LeftClampedPosition);
+                HandleJoystick(ref RightJoystickStart, rightTouchIndex, ref RightNormalizedJoystickPosition, ref RightClampedPosition);
+                StopStickEffects();
+            }
+        }
+
+        private void AssignTouchIndices()
+        {
+            if (Touch.activeTouches.Count == 2)
+            {
+                if (Touch.activeTouches[0].screenPosition.x <= Touch.activeTouches[1].screenPosition.x)
+                {
+                    leftTouchIndex = 0;
+                    rightTouchIndex = 1;
+                }
+                else
+                {
+                    leftTouchIndex = 1;
+                    rightTouchIndex = 0;
+                }
+            }
+            else
+            {
+                leftTouchIndex = GetClosestTouch(LeftJoystickValue);
+                rightTouchIndex = GetClosestTouch(RightJoystickValue);
+            }
+        }
+
+        private void UpdateJoystickValues()
+        {
+            LeftJoystickValue = Touch.activeTouches[leftTouchIndex].screenPosition;
+            RightJoystickValue = Touch.activeTouches[rightTouchIndex].screenPosition;
+        }
+
+        private void StopStickEffects()
+        {
+            if (leftStickEffectsStarted)
+            {
+                leftStickEffectsStarted = false;
+                ship.StopShipControllerActions(InputEvents.LeftStickAction);
+            }
+            if (rightStickEffectsStarted)
+            {
+                rightStickEffectsStarted = false;
+                ship.StopShipControllerActions(InputEvents.RightStickAction);
+            }
+        }
+
+        private void HandleSingleTouch()
+        {
+            if (Touch.activeTouches.Count == 1)
+            {
+                var position = Touch.activeTouches[0].screenPosition;
+                if (ship && ship.ShipStatus.CommandStickControls)
+                {
+                    ProcessCommandStickControls(position);
+                }
+                ProcessSingleTouchJoystick(position);
+            }
+        }
+
+        private void ProcessCommandStickControls(Vector2 position)
+        {
+            SingleTouchValue = position;
+            var tempThreeDPosition = new Vector3((SingleTouchValue.x - Screen.width / 2) * MAP_SCALE_X, (SingleTouchValue.y - Screen.height / 2) * MAP_SCALE_Y, 0);
+
+            if (tempThreeDPosition.sqrMagnitude < 10000 && Touch.activeTouches[0].phase == TouchPhase.Began)
+            {
+                ship.PerformShipControllerActions(InputEvents.NodeTapAction);
+            }
+            else if ((tempThreeDPosition - ship.transform.position).sqrMagnitude < 10000 && Touch.activeTouches[0].phase == TouchPhase.Began)
+            {
+                ship.PerformShipControllerActions(InputEvents.SelfTapAction);
+            }
+            else
+            {
+                ThreeDPosition = tempThreeDPosition;
+            }
+        }
+
+        private void ProcessSingleTouchJoystick(Vector2 position)
+        {
+            if (Vector2.Distance(LeftJoystickValue, position) < Vector2.Distance(RightJoystickValue, position))
+            {
+                HandleLeftJoystick(position);
+            }
+            else
+            {
+                HandleRightJoystick(position);
+            }
+        }
+
+        private void HandleLeftJoystick(Vector2 position)
+        {
+            if (!leftStickEffectsStarted)
+            {
+                leftStickEffectsStarted = true;
+                ship.PerformShipControllerActions(InputEvents.LeftStickAction);
+            }
+            LeftJoystickValue = position;
+            leftTouchIndex = 0;
+            OneTouchLeft = true;
+            HandleJoystick(ref LeftJoystickStart, leftTouchIndex, ref LeftNormalizedJoystickPosition, ref LeftClampedPosition);
+            RightNormalizedJoystickPosition = Vector3.Lerp(RightNormalizedJoystickPosition, Vector3.zero, 7 * Time.deltaTime);
+        }
+
+        private void HandleRightJoystick(Vector2 position)
+        {
+            if (!rightStickEffectsStarted)
+            {
+                rightStickEffectsStarted = true;
+                if (ship != null)
+                    ship.PerformShipControllerActions(InputEvents.RightStickAction);
+            }
+            RightJoystickValue = position;
+            rightTouchIndex = 0;
+            OneTouchLeft = false;
+            HandleJoystick(ref RightJoystickStart, rightTouchIndex, ref RightNormalizedJoystickPosition, ref RightClampedPosition);
+            LeftNormalizedJoystickPosition = Vector3.Lerp(LeftNormalizedJoystickPosition, Vector3.zero, 7 * Time.deltaTime);
+        }
+
+        private void ResetInputValues()
+        {
+            XSum = 0;
+            YSum = 0;
+            XDiff = 0;
+            YDiff = 0;
+        }
+
+        private void HandleIdleState(bool isIdle)
+        {
+            if (isIdle != Idle)
+            {
+                Idle = isIdle;
+                if (Idle)
+                {
+                    if (ship) ship.PerformShipControllerActions(InputEvents.IdleAction);
+                }
+                else
+                {
+                    ship.StopShipControllerActions(InputEvents.IdleAction);
                 }
             }
         }
 
-        void HandleJoystick(ref Vector2 joystickStart, int touchIndex, ref Vector2 joystick, ref Vector2 clampedPosition)
+        #endregion
+
+        #region Helper Methods
+
+        private void HandleJoystick(ref Vector2 joystickStart, int touchIndex, ref Vector2 joystick, ref Vector2 clampedPosition)
         {
-            Touch touch = Input.touches[touchIndex];
+            Touch touch = Touch.activeTouches[touchIndex];
 
-            // We check for Vector2.zero since this is the default (i.e uninitialized) value for Vec2
-            // Otherwise, if we missed the TouchPhase.Began event (like before a minigame starts),
-            // we always end up with the joystick as a JoystickRadius long vector
-            // starting at the bottom left corner and pointing toward the touchposition
             if (touch.phase == TouchPhase.Began || joystickStart == Vector2.zero)
-                joystickStart = touch.position;
+                joystickStart = touch.screenPosition;
 
-            Vector2 offset = touch.position - joystickStart;
-            Vector2 clampedOffset = Vector2.ClampMagnitude(offset, JoystickRadius); 
+            Vector2 offset = touch.screenPosition - joystickStart;
+            Vector2 clampedOffset = Vector2.ClampMagnitude(offset, JoystickRadius);
             clampedPosition = joystickStart + clampedOffset;
             Vector2 normalizedOffset = clampedOffset / JoystickRadius;
             joystick = normalizedOffset;
         }
 
-        void Reparameterize()
+        private void Reparameterize()
         {
             EasedRightJoystickPosition = new Vector2(Ease(2 * RightNormalizedJoystickPosition.x), Ease(2 * RightNormalizedJoystickPosition.y));
             EasedLeftJoystickPosition = new Vector2(Ease(2 * LeftNormalizedJoystickPosition.x), Ease(2 * LeftNormalizedJoystickPosition.y));
 
             XSum = Ease(RightNormalizedJoystickPosition.x + LeftNormalizedJoystickPosition.x);
-            YSum = -Ease(RightNormalizedJoystickPosition.y + LeftNormalizedJoystickPosition.y); //negative is because joysitcks and unity axes don't agree
+            YSum = -Ease(RightNormalizedJoystickPosition.y + LeftNormalizedJoystickPosition.y);
             XDiff = (RightNormalizedJoystickPosition.x - LeftNormalizedJoystickPosition.x + 2) / 4;
             YDiff = Ease(RightNormalizedJoystickPosition.y - LeftNormalizedJoystickPosition.y);
 
             if (invertYEnabled)
                 YSum *= -1;
-                //EasedLeftJoystickPosition = new Vector2(EasedLeftJoystickPosition.x, -EasedLeftJoystickPosition.y);
             if (invertThrottleEnabled)
                 YDiff = 1 - YDiff;
         }
 
-        // TODO: move to centralized helper class
-        // Converts Android Quaternions into Unity Quaternions
-        Quaternion GyroQuaternionToUnityQuaternion(Quaternion q)
+        private float Ease(float input)
         {
-            return new Quaternion(q.x, -q.z, q.y, q.w);
+            return input < 0 ? (Mathf.Cos(input * PI_OVER_FOUR) - 1) : -(Mathf.Cos(input * PI_OVER_FOUR) - 1);
         }
 
-        /// <summary>
-        /// Gets gyros updated current status from GameManager.onToggleGyro Event
-        /// </summary>
-        /// <param name="status"></param>bool
-        public void OnToggleGyro(bool status)
-        {
-            Debug.Log($"InputController.OnToggleGyro - status: {status}");
-            if (SystemInfo.supportsGyroscope && status)
-            {
-                inverseInitialRotation = Quaternion.Inverse(GyroQuaternionToUnityQuaternion(gyro.attitude) * derivedCorrection);
-            }
-
-            isGyroEnabled = status;
-        }
-
-        public Quaternion GetGyroRotation()
-        {
-            return inverseInitialRotation * GyroQuaternionToUnityQuaternion(gyro.attitude) * derivedCorrection;
-        }
-
-        /// <summary>
-        /// Sets InvertY Status based off of game settings event
-        /// </summary>
-        /// <param name="status"></param>bool
-        void OnToggleInvertY(bool status)
-        {
-            Debug.Log($"InputController.OnToggleInvertY - status: {status}");
-
-            invertYEnabled = status;
-        }
-
-        void OnToggleInvertThrottle(bool status)
-        {
-            Debug.Log($"InputController.OnToggleInvertThrottle - status: {status}");
-
-            invertThrottleEnabled = status;
-        }
-
-        float Ease(float input)
-        {
-            return input < 0 ? (Mathf.Cos(input* piOverFour) - 1) : -(Mathf.Cos(input* piOverFour) - 1); // the inflection point when fed a value of two which is the maximum input.
-        }
-
-        void PerformSpeedAndDirectionalEffects()
+        private void PerformSpeedAndDirectionalEffects()
         {
             float threshold = .3f;
             float sumOfRotations = Mathf.Abs(YDiff) + Mathf.Abs(YSum) + Mathf.Abs(XSum);
             float DeviationFromFullSpeedStraight = (1 - XDiff) + sumOfRotations;
             float DeviationFromMinimumSpeedStraight = XDiff + sumOfRotations;
 
-            if (DeviationFromFullSpeedStraight < threshold && !fullSpeedStraightEffectsStarted)
+            HandleFullSpeedStraight(DeviationFromFullSpeedStraight, threshold);
+            HandleMinimumSpeedStraight(DeviationFromMinimumSpeedStraight, threshold);
+        }
+
+        private void HandleFullSpeedStraight(float deviation, float threshold)
+        {
+            if (deviation < threshold && !fullSpeedStraightEffectsStarted)
             {
                 fullSpeedStraightEffectsStarted = true;
                 ship.PerformShipControllerActions(InputEvents.FullSpeedStraightAction);
             }
-            else if (DeviationFromMinimumSpeedStraight < threshold && !minimumSpeedStraightEffectsStarted)
+            else if (fullSpeedStraightEffectsStarted && deviation > threshold)
+            {
+                fullSpeedStraightEffectsStarted = false;
+                ship.StopShipControllerActions(InputEvents.FullSpeedStraightAction);
+            }
+        }
+
+        private void HandleMinimumSpeedStraight(float deviation, float threshold)
+        {
+            if (deviation < threshold && !minimumSpeedStraightEffectsStarted)
             {
                 minimumSpeedStraightEffectsStarted = true;
                 ship.PerformShipControllerActions(InputEvents.MinimumSpeedStraightAction);
             }
-            else
+            else if (minimumSpeedStraightEffectsStarted && deviation > threshold)
             {
-                if (fullSpeedStraightEffectsStarted && DeviationFromFullSpeedStraight > threshold)
-                {
-                    fullSpeedStraightEffectsStarted = false;
-                    ship.StopShipControllerActions(InputEvents.FullSpeedStraightAction);
-                }
-                if (minimumSpeedStraightEffectsStarted && DeviationFromMinimumSpeedStraight < threshold)
-                {
-                    minimumSpeedStraightEffectsStarted = false;
-                    ship.StopShipControllerActions(InputEvents.MinimumSpeedStraightAction);
-                }
+                minimumSpeedStraightEffectsStarted = false;
+                ship.StopShipControllerActions(InputEvents.MinimumSpeedStraightAction);
             }
         }
 
-        void ProcessGamePadButtons()
+        private int GetClosestTouch(Vector2 target)
         {
-            if (Gamepad.current.leftShoulder.wasPressedThisFrame)
+            int touchIndex = 0;
+            float minDistance = Mathf.Infinity;
+
+            for (int i = 0; i < Touch.activeTouches.Count; i++)
             {
-                Idle = true;
-                ship.PerformShipControllerActions(InputEvents.IdleAction);
+                float distance = Vector2.Distance(target, Touch.activeTouches[i].screenPosition);
+                if (distance < minDistance)
+                {
+                    minDistance = distance;
+                    touchIndex = i;
+                }
             }
-            if (Gamepad.current.leftShoulder.wasReleasedThisFrame)
+            return touchIndex;
+        }
+
+        #endregion
+
+        #region Gyroscope Methods
+
+        private IEnumerator GyroInitializationCoroutine()
+        {
+            derivedCorrection = GyroQuaternionToUnityQuaternion(Quaternion.Inverse(new Quaternion(0, .65f, .75f, 0)));
+            inverseInitialRotation = Quaternion.identity;
+
+            while (!SystemInfo.supportsGyroscope || UnityEngine.InputSystem.Gyroscope.current == null)
             {
-                Idle = false;
-                ship.StopShipControllerActions(InputEvents.IdleAction);
+                yield return new WaitForSeconds(0.1f);
             }
 
-            if (Gamepad.current.rightShoulder.wasPressedThisFrame && !phoneFlipState)
+            var gyro = Input.gyro;
+            var lastAttitude = gyro.attitude;
+            yield return new WaitForSeconds(0.1f);
+
+            while (!(1 - Mathf.Abs(Quaternion.Dot(lastAttitude, gyro.attitude)) < GYRO_INITIALIZATION_RANGE))
             {
-                phoneFlipState = true;
-                ship.PerformShipControllerActions(InputEvents.FlipAction);
-            }
-            else if (Gamepad.current.rightShoulder.wasPressedThisFrame && phoneFlipState)
-            {
-                phoneFlipState = false;
-                ship.StopShipControllerActions(InputEvents.FlipAction);
+                lastAttitude = gyro.attitude;
+                yield return new WaitForSeconds(0.1f);
             }
 
-            if (Gamepad.current.leftTrigger.wasPressedThisFrame)
+            inverseInitialRotation = Quaternion.Inverse(GyroQuaternionToUnityQuaternion(gyro.attitude) * derivedCorrection);
+        }
+
+        public Quaternion GetGyroRotation()
+        {
+            return inverseInitialRotation * GyroQuaternionToUnityQuaternion(Input.gyro.attitude) * derivedCorrection;
+        }
+
+        private Quaternion GyroQuaternionToUnityQuaternion(Quaternion q)
+        {
+            return new Quaternion(q.x, -q.z, q.y, q.w);
+        }
+
+        public void OnToggleGyro(bool status)
+        {
+            Debug.Log($"InputController.OnToggleGyro - status: {status}");
+            if (SystemInfo.supportsGyroscope && status)
             {
-                ship.PerformShipControllerActions(InputEvents.LeftStickAction);
-            }
-            if (Gamepad.current.leftTrigger.wasReleasedThisFrame)
-            {
-                ship.StopShipControllerActions(InputEvents.LeftStickAction);
+                inverseInitialRotation = Quaternion.Inverse(GyroQuaternionToUnityQuaternion(Input.gyro.attitude) * derivedCorrection);
             }
 
-            if (Gamepad.current.rightTrigger.wasPressedThisFrame)
-            {
-                ship.PerformShipControllerActions(InputEvents.RightStickAction);
-            }
-            if (Gamepad.current.rightTrigger.wasReleasedThisFrame)
-            {
-                ship.StopShipControllerActions(InputEvents.RightStickAction);
-            }
+            isGyroEnabled = status;
+        }
 
-            if (Gamepad.current.bButton.wasPressedThisFrame)
-            {
-                ship.PerformShipControllerActions(InputEvents.Button1Action);
-            }
-            if (Gamepad.current.bButton.wasReleasedThisFrame)
-            {
-                ship.StopShipControllerActions(InputEvents.Button1Action);
-            }
+        #endregion
 
-            if (Gamepad.current.aButton.wasPressedThisFrame)
-            {
-                ship.PerformShipControllerActions(InputEvents.Button2Action);
-            }
-            if (Gamepad.current.aButton.wasReleasedThisFrame)
-            {
-                ship.StopShipControllerActions(InputEvents.Button2Action);
-            }
+        #region Gamepad Methods
 
-            if (Gamepad.current.rightStickButton.wasPressedThisFrame)
-            {
-                ship.PerformShipControllerActions(InputEvents.Button2Action);
-            }
-            if (Gamepad.current.rightStickButton.wasReleasedThisFrame)
-            {
-                ship.StopShipControllerActions(InputEvents.Button2Action);
-            }
+        private void ProcessGamePadButtons()
+        {
+            HandleGamepadButton(Gamepad.current.leftShoulder, InputEvents.IdleAction, ref Idle);
+            HandleGamepadButton(Gamepad.current.rightShoulder, InputEvents.FlipAction, ref phoneFlipState);
+            HandleGamepadTrigger(Gamepad.current.leftTrigger, InputEvents.LeftStickAction);
+            HandleGamepadTrigger(Gamepad.current.rightTrigger, InputEvents.RightStickAction);
+            HandleGamepadButton(Gamepad.current.bButton, InputEvents.Button1Action);
+            HandleGamepadButton(Gamepad.current.aButton, InputEvents.Button2Action);
+            HandleGamepadButton(Gamepad.current.rightStickButton, InputEvents.Button2Action);
+            HandleGamepadButton(Gamepad.current.xButton, InputEvents.Button3Action);
+        }
 
-            if (Gamepad.current.xButton.wasPressedThisFrame)
+        private void HandleGamepadButton(ButtonControl button, InputEvents action, ref bool stateFlag)
+        {
+            if (button.wasPressedThisFrame)
             {
-                ship.PerformShipControllerActions(InputEvents.Button3Action);
-            }
-            if (Gamepad.current.xButton.wasReleasedThisFrame)
-            {
-                ship.StopShipControllerActions(InputEvents.Button3Action);
+                stateFlag = !stateFlag;
+                if (stateFlag)
+                    ship.PerformShipControllerActions(action);
+                else
+                    ship.StopShipControllerActions(action);
             }
         }
 
-        public void Button1Press() 
+        private void HandleGamepadButton(ButtonControl button, InputEvents action)
+        {
+            if (button.wasPressedThisFrame)
+                ship.PerformShipControllerActions(action);
+            if (button.wasReleasedThisFrame)
+                ship.StopShipControllerActions(action);
+        }
+
+        private void HandleGamepadTrigger(ButtonControl trigger, InputEvents action)
+        {
+            if (trigger.wasPressedThisFrame)
+                ship.PerformShipControllerActions(action);
+            if (trigger.wasReleasedThisFrame)
+                ship.StopShipControllerActions(action);
+        }
+
+        #endregion
+
+        #region Public Methods
+
+        public void Button1Press()
         {
             ship.PerformShipControllerActions(InputEvents.Button1Action);
         }
@@ -509,7 +557,7 @@ namespace CosmicShore.Game.IO
             ship.StopShipControllerActions(InputEvents.Button1Action);
         }
 
-        public void Button2Press() 
+        public void Button2Press()
         {
             ship.PerformShipControllerActions(InputEvents.Button2Action);
         }
@@ -519,7 +567,7 @@ namespace CosmicShore.Game.IO
             ship.StopShipControllerActions(InputEvents.Button2Action);
         }
 
-        public void Button3Press() 
+        public void Button3Press()
         {
             ship.PerformShipControllerActions(InputEvents.Button3Action);
         }
@@ -531,28 +579,26 @@ namespace CosmicShore.Game.IO
 
         public void SetPortrait(bool portrait)
         {
-            Portrait = portrait; 
-        }
-
-        int GetClosestTouch(Vector2 target)
-        {
-            int touchIndex = 0;
-            float minDistance = Mathf.Infinity;
-
-            for (int i = 0; i < Input.touches.Length; i++)
-            {
-                if (Vector2.Distance(target, Input.touches[i].position) < minDistance)
-                {
-                    minDistance = Vector2.Distance(target, Input.touches[i].position);
-                    touchIndex = i;
-                }
-            }
-            return touchIndex;
+            Portrait = portrait;
         }
 
         public static bool UsingGamepad()
         {
             return Gamepad.current != null;
         }
+
+        private void OnToggleInvertY(bool status)
+        {
+            Debug.Log($"InputController.OnToggleInvertY - status: {status}");
+            invertYEnabled = status;
+        }
+
+        private void OnToggleInvertThrottle(bool status)
+        {
+            Debug.Log($"InputController.OnToggleInvertThrottle - status: {status}");
+            invertThrottleEnabled = status;
+        }
+
+        #endregion
     }
 }

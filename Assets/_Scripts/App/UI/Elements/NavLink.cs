@@ -23,6 +23,7 @@ namespace CosmicShore.App.UI
         public int Index;
 
         Coroutine currentCrossfade;
+        bool isActive;
 
         List<Color> activeImageStartColors = new();
         List<Color> inactiveImageStartColors = new();
@@ -57,6 +58,11 @@ namespace CosmicShore.App.UI
 
         public virtual void SetActive(bool isActive)
         {
+            if (this.isActive == isActive)
+                return;
+
+            this.isActive = isActive;
+
             if (currentCrossfade != null)
                 StopCoroutine(currentCrossfade);
 
@@ -101,8 +107,8 @@ namespace CosmicShore.App.UI
 
         void CrossfadeImage(bool isActive, float normalizedTime, Image activeImage, Image inactiveImage, Color initialActiveColor, Color initialInactiveColor)
         {
-            activeImage.color = new Color(initialActiveColor.r, initialActiveColor.g, initialActiveColor.b, isActive ? normalizedTime : 1 - normalizedTime);
-            inactiveImage.color = new Color(initialInactiveColor.r, initialInactiveColor.g, initialInactiveColor.b, isActive ? 1-normalizedTime : normalizedTime);
+            activeImage.color = new Color(initialActiveColor.r, initialActiveColor.g, initialActiveColor.b, isActive ? initialActiveColor.a * normalizedTime : initialActiveColor.a * (1 - normalizedTime));
+            inactiveImage.color = new Color(initialInactiveColor.r, initialInactiveColor.g, initialInactiveColor.b, isActive ? initialInactiveColor.a * (1 - normalizedTime) : initialInactiveColor.a * normalizedTime);
         }
     }
 }

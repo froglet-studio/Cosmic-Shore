@@ -1,8 +1,10 @@
+using System;
 using CosmicShore.Game.UI;
 using System.Collections.Generic;
+using System.Linq;
+using CosmicShore.Core;
 using TMPro;
 using UnityEngine;
-using UnityEngine.UI;
 
 namespace CosmicShore.Game.Arcade
 {
@@ -19,10 +21,13 @@ namespace CosmicShore.Game.Arcade
         [SerializeField] float TimePlayedScoreMultiplier = 1000f;
         [SerializeField] float ScoreNormalizationQuotient = 145.65f;
 
-        public Dictionary<string, float> playerScores { get; private set; } = new();
-        public Dictionary<string, Teams> playerTeams { get; private set; } = new();
+        public Dictionary<string, float> playerScores { get; } = new();
+        public Dictionary<string, Teams> playerTeams { get; } = new();
+        
+        public static event Action OnScoreTrackerEnabled;
+        
         string currentPlayerName;
-        int turnsPlayed = 0;
+        int turnsPlayed;
         float turnStartTime;
 
         void Start()
@@ -32,9 +37,8 @@ namespace CosmicShore.Game.Arcade
 
         public virtual void StartTurn(string playerName, Teams playerTeam)
         {
-            if (!playerScores.ContainsKey(playerName))
+            if (playerScores.TryAdd(playerName, 0))
             {
-                playerScores.Add(playerName, 0);
                 playerTeams.Add(playerName, playerTeam);
             }
 
@@ -42,82 +46,96 @@ namespace CosmicShore.Game.Arcade
             turnStartTime = Time.time;
         }
 
+        public void OnEnable()
+        {
+            Debug.Log("ScoreTracker is now enabled!");
+
+            // Trigger the event when the GameObject is enabled
+            OnScoreTrackerEnabled?.Invoke();
+        }
+
         void Update()
         {
             if (turnStartTime == 0)
                 return;
 
-            if (ActivePlayerScoreDisplay != null)
+            if (ActivePlayerScoreDisplay == null) return;
+            
+            var score = 0f;
+            
+            RoundStats roundStats;
+            switch (ScoringMode)
             {
-                var score = 0f;
-                switch (ScoringMode)
-                {
-                    case ScoringModes.HostileVolumeDestroyed:
-                        if (StatsManager.Instance.PlayerStats.ContainsKey(currentPlayerName))
-                            score = playerScores[currentPlayerName] + StatsManager.Instance.PlayerStats[currentPlayerName].HostileVolumeDestroyed / ScoreNormalizationQuotient;
-                        break;
-                    case ScoringModes.VolumeCreated:
-                        if (StatsManager.Instance.PlayerStats.ContainsKey(currentPlayerName))
-                            score = playerScores[currentPlayerName] + StatsManager.Instance.PlayerStats[currentPlayerName].VolumeCreated;
-                        break;
-                    case ScoringModes.VolumeStolen:
-                        if (StatsManager.Instance.PlayerStats.ContainsKey(currentPlayerName))
-                            score = playerScores[currentPlayerName] + StatsManager.Instance.PlayerStats[currentPlayerName].VolumeStolen;
-                        break;
-                    case ScoringModes.TimePlayed:
-                        score = playerScores[currentPlayerName] + (Time.time - turnStartTime) * TimePlayedScoreMultiplier;
-                        break;
-                    case ScoringModes.TurnsPlayed:
-                        score = turnsPlayed;
-                        break;
-                    case ScoringModes.BlocksStolen:
-                        if (StatsManager.Instance.PlayerStats.ContainsKey(currentPlayerName))
-                            score = playerScores[currentPlayerName] + StatsManager.Instance.PlayerStats[currentPlayerName].BlocksStolen;
-                        break;
-                    case ScoringModes.TeamVolumeDifference:
-                        var teamStats = StatsManager.Instance.TeamStats;  // TODO: Hardcoded player team to Green... reconsider
-                        var greenVolume = teamStats.ContainsKey(Teams.Jade) ? teamStats[Teams.Jade].VolumeRemaining : 0f;
-                        var redVolume = teamStats.ContainsKey(Teams.Ruby) ? teamStats[Teams.Ruby].VolumeRemaining : 0f;
+                case ScoringModes.HostileVolumeDestroyed:
+                    if (StatsManager.Instance.PlayerStats.TryGetValue(currentPlayerName, out roundStats))
+                        score = playerScores[currentPlayerName] + roundStats.HostileVolumeDestroyed / ScoreNormalizationQuotient;
+                    break;
+                case ScoringModes.VolumeCreated:
+                    if (StatsManager.Instance.PlayerStats.TryGetValue(currentPlayerName, out roundStats))
+                        score = playerScores[currentPlayerName] + roundStats.VolumeCreated;
+                    break;
+                case ScoringModes.VolumeStolen:
+                    if (StatsManager.Instance.PlayerStats.TryGetValue(currentPlayerName, out roundStats))
+                        score = playerScores[currentPlayerName] + roundStats.VolumeStolen;
+                    break;
+                case ScoringModes.TimePlayed:
+                    score = playerScores[currentPlayerName] + (Time.time - turnStartTime) * TimePlayedScoreMultiplier;
+                    break;
+                case ScoringModes.TurnsPlayed:
+                    score = turnsPlayed;
+                    break;
+                case ScoringModes.BlocksStolen:
+                    if (StatsManager.Instance.PlayerStats.TryGetValue(currentPlayerName, out roundStats))
+                        score = playerScores[currentPlayerName] + roundStats.BlocksStolen;
+                    break;
+                case ScoringModes.TeamVolumeDifference:
+                    var teamStats = StatsManager.Instance.TeamStats;  // TODO: Hardcoded player team to Green... reconsider
+                    var greenVolume = teamStats.TryGetValue(Teams.Jade, out roundStats) ? roundStats.VolumeRemaining : 0f;
+                    var redVolume = teamStats.TryGetValue(Teams.Ruby, out roundStats) ? roundStats.VolumeRemaining : 0f;
 
-                        score = (greenVolume - redVolume) / ScoreNormalizationQuotient;
-                        break;
-                    case ScoringModes.CrystalsCollected:
-                        if (StatsManager.Instance.PlayerStats.ContainsKey(currentPlayerName))
-                            score = playerScores[currentPlayerName] + StatsManager.Instance.PlayerStats[currentPlayerName].CrystalsCollected;
-                        break;
-                    case ScoringModes.OmnirystalsCollected:
-                        if (StatsManager.Instance.PlayerStats.ContainsKey(currentPlayerName))
-                            score = playerScores[currentPlayerName] + StatsManager.Instance.PlayerStats[currentPlayerName].OmniCrystalsCollected;
-                        break;
-                    case ScoringModes.ElementalCrystalsCollected:
-                        if (StatsManager.Instance.PlayerStats.ContainsKey(currentPlayerName))
-                            score = playerScores[currentPlayerName] + StatsManager.Instance.PlayerStats[currentPlayerName].ElementalCrystalsCollected;
-                        break;
-                }
-
-                ActivePlayerScoreDisplay.text = ((int)score).ToString();
+                    score = (greenVolume - redVolume) / ScoreNormalizationQuotient;
+                    break;
+                case ScoringModes.CrystalsCollected:
+                    if (StatsManager.Instance.PlayerStats.TryGetValue(currentPlayerName, out roundStats))
+                        score = playerScores[currentPlayerName] + roundStats.CrystalsCollected;
+                    break;
+                case ScoringModes.OmnirystalsCollected:
+                    if (StatsManager.Instance.PlayerStats.TryGetValue(currentPlayerName, out roundStats))
+                        score = playerScores[currentPlayerName] + roundStats.OmniCrystalsCollected;
+                    break;
+                case ScoringModes.ElementalCrystalsCollected:
+                    if (StatsManager.Instance.PlayerStats.TryGetValue(currentPlayerName, out roundStats))
+                        score = playerScores[currentPlayerName] + roundStats.ElementalCrystalsCollected;
+                    break;
+                default:
+                    Debug.LogWarning("ScoreTracker - Unknown Scoring Mode!");
+                    break;
             }
+
+            ActivePlayerScoreDisplay.text = ((int)score).ToString();
         }
 
         public virtual void EndTurn()
         {
             turnsPlayed++;
-
+            
+            RoundStats roundStats;
+            
             switch (ScoringMode)
             {
                 case ScoringModes.HostileVolumeDestroyed:
-                    if (StatsManager.Instance.PlayerStats.ContainsKey(currentPlayerName))
-                        playerScores[currentPlayerName] += StatsManager.Instance.PlayerStats[currentPlayerName].HostileVolumeDestroyed / ScoreNormalizationQuotient;
+                    if (StatsManager.Instance.PlayerStats.TryGetValue(currentPlayerName, out roundStats))
+                        playerScores[currentPlayerName] += roundStats.HostileVolumeDestroyed / ScoreNormalizationQuotient;
                     StatsManager.Instance.ResetStats();
                     break;
                 case ScoringModes.VolumeCreated:
-                    if (StatsManager.Instance.PlayerStats.ContainsKey(currentPlayerName))
-                        playerScores[currentPlayerName] += StatsManager.Instance.PlayerStats[currentPlayerName].VolumeCreated;
+                    if (StatsManager.Instance.PlayerStats.TryGetValue(currentPlayerName, out roundStats))
+                        playerScores[currentPlayerName] += roundStats.VolumeCreated;
                     StatsManager.Instance.ResetStats();
                     break;
                 case ScoringModes.VolumeStolen:
-                    if (StatsManager.Instance.PlayerStats.ContainsKey(currentPlayerName))
-                        playerScores[currentPlayerName] += StatsManager.Instance.PlayerStats[currentPlayerName].VolumeStolen;
+                    if (StatsManager.Instance.PlayerStats.TryGetValue(currentPlayerName, out roundStats))
+                        playerScores[currentPlayerName] += roundStats.VolumeStolen;
                     StatsManager.Instance.ResetStats();
                     break;
                 case ScoringModes.TimePlayed:
@@ -127,16 +145,22 @@ namespace CosmicShore.Game.Arcade
                     playerScores[currentPlayerName] = turnsPlayed;
                     break;
                 case ScoringModes.BlocksStolen:
-                    if (StatsManager.Instance.PlayerStats.ContainsKey(currentPlayerName))
-                        playerScores[currentPlayerName] += StatsManager.Instance.PlayerStats[currentPlayerName].BlocksStolen;
+                    if (StatsManager.Instance.PlayerStats.TryGetValue(currentPlayerName, out roundStats))
+                        playerScores[currentPlayerName] += roundStats.BlocksStolen;
                     StatsManager.Instance.ResetStats();
                     break;
                 case ScoringModes.TeamVolumeDifference:
                     var teamStats = StatsManager.Instance.TeamStats;
-                    var greenVolume = teamStats.ContainsKey(Teams.Jade) ? teamStats[Teams.Jade].VolumeRemaining : 0f;
-                    var redVolume = teamStats.ContainsKey(Teams.Ruby) ? teamStats[Teams.Ruby].VolumeRemaining : 0f;
+                    var greenVolume = teamStats.TryGetValue(Teams.Jade, out roundStats) ? roundStats.VolumeRemaining : 0f;
+                    var redVolume = teamStats.TryGetValue(Teams.Ruby, out roundStats) ? roundStats.VolumeRemaining : 0f;
                     playerScores[currentPlayerName] = (greenVolume - redVolume) / ScoreNormalizationQuotient;
                     StatsManager.Instance.ResetStats();
+                    break;
+                case ScoringModes.CrystalsCollected:
+                case ScoringModes.OmnirystalsCollected:
+                case ScoringModes.ElementalCrystalsCollected:
+                default:
+                    Debug.LogWarning("ScoreTracker - Unknown Scoring Mode!");
                     break;
             }
 
@@ -146,41 +170,34 @@ namespace CosmicShore.Game.Arcade
 
         public List<int> GetScores()
         {
-            var scores = new List<int>();
-            foreach (var score in playerScores.Values)
-                scores.Add((int)score);
-
-            return scores;
+            return playerScores.Values.Select(score => (int)score).ToList();
         }
 
         public virtual string GetWinner()
         {
             bool minTie;
             bool maxTie;
-            float minScore = float.MaxValue;
-            float maxScore = float.MinValue;
-            string minKey = "";
-            string maxKey = "";
+            var minScore = float.MaxValue;
+            var maxScore = float.MinValue;
+            var minKey = "";
+            var maxKey = "";
             foreach (var key in playerScores.Keys)
             {
                 if (playerScores[key] <= minScore)
                 {
-                    minTie = playerScores[key] == minScore;
+                    minTie = Mathf.Approximately(playerScores[key], minScore);
                     minScore = playerScores[key];
                     minKey = key;
                 }
                 if (playerScores[key] >= maxScore)
                 {
-                    maxTie = playerScores[key] == maxScore;
+                    maxTie = Mathf.Approximately(playerScores[key], maxScore);
                     maxScore = playerScores[key];
                     maxKey = key;
                 }
             }
 
-            if (GolfRules)
-                return minKey;
-            else
-                return maxKey;
+            return GolfRules ? minKey : maxKey;
         }
 
         public virtual Teams GetWinningTeam()
@@ -193,26 +210,23 @@ namespace CosmicShore.Game.Arcade
         {
             bool minTie;
             bool maxTie;
-            float minScore = float.MaxValue;
-            float maxScore = float.MinValue;
+            var minScore = float.MaxValue;
+            var maxScore = float.MinValue;
             foreach (var key in playerScores.Keys)
             {
                 if (playerScores[key] <= minScore)
                 {
-                    minTie = playerScores[key] == minScore;
+                    minTie = Mathf.Approximately(playerScores[key], minScore);
                     minScore = playerScores[key];
                 }
                 if (playerScores[key] >= maxScore)
                 {
-                    maxTie = playerScores[key] == maxScore;
+                    maxTie = Mathf.Approximately(playerScores[key], maxScore);
                     maxScore = playerScores[key];
                 }
             }
 
-            if (GolfRules)
-                return (int)minScore;
-            else
-                return (int)maxScore;
+            return GolfRules ? (int)minScore : (int)maxScore;
         }
 
         public virtual int GetScore(string playerName)

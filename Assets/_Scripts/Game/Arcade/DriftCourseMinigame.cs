@@ -1,6 +1,4 @@
 using CosmicShore.Environment.FlowField;
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace CosmicShore.Game.Arcade
@@ -14,8 +12,6 @@ namespace CosmicShore.Game.Arcade
         int maxDifficulty = 4;
         float maxSize = 100;
         float maxSphereRadius = 250;
-
-        public static new ShipTypes PlayerShipType = ShipTypes.Rhino;
 
         protected override void Start()
         {

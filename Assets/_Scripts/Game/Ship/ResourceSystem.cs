@@ -21,10 +21,10 @@ namespace CosmicShore.Core
         [SerializeField] public float resourceGainRate = .1f;
 
         [SerializeField][Range(0, 1)] float maxAmount = 1f;
-        public float MaxAmount { get { return maxAmount; } }
+        public float MaxAmount => maxAmount;
 
         [SerializeField][Range(0, 1)] float initialAmount = 1f;
-        public float InitialAmount { get { return initialAmount; } }
+        public float InitialAmount => initialAmount;
         float currentAmount;
         public float CurrentAmount
         {
@@ -131,27 +131,6 @@ namespace CosmicShore.Core
             Resources[index].CurrentAmount = Mathf.Clamp(Resources[index].CurrentAmount + amount, 0, Resources[index].MaxAmount);
         }
 
-        // TODO: Revisit
-        //public void ChangeAmmoAmount(float amount)
-        //{
-        //    CurrentAmmo = Mathf.Clamp(currentAmmo + amount, 0, maxAmmo);
-        //    if (CurrentAmmo >= maxAmmo * .75f)
-        //    {
-        //        GetComponent<Ship>().StopClassResourceActions(ResourceEvents.AboveHalfAmmo);
-        //        GetComponent<Ship>().PerformClassResourceActions(ResourceEvents.AboveThreeQuartersAmmo);
-        //    }
-        //    else if (CurrentAmmo >= maxAmmo * .5f)
-        //    {
-        //        GetComponent<Ship>().StopClassResourceActions(ResourceEvents.AboveThreeQuartersAmmo);
-        //        GetComponent<Ship>().PerformClassResourceActions(ResourceEvents.AboveHalfAmmo);
-        //    }
-        //    else
-        //    {
-        //        GetComponent<Ship>().StopClassResourceActions(ResourceEvents.AboveThreeQuartersAmmo);
-        //        GetComponent<Ship>().StopClassResourceActions(ResourceEvents.AboveHalfAmmo);
-        //    }
-        //}
-
         /********************************/
         /*  ELEMENTAL LEVELS STUFF HERE */
         /********************************/
@@ -191,15 +170,12 @@ namespace CosmicShore.Core
 
         public int GetLevel(Element element)
         {
-            if (ElementalLevels.ContainsKey(element))
-                return Mathf.FloorToInt(ElementalLevels[element]);
-
-            return 0;
+            return !ElementalLevels.TryGetValue(element, out var level) ? 0 : Mathf.FloorToInt(level);
         }
 
-        public bool IncrementLevel(Element element)
+        public void IncrementLevel(Element element)
         {
-            return AdjustLevel(element, .1f);
+            AdjustLevel(element, .1f);
         }
 
         /// <summary>
@@ -214,11 +190,11 @@ namespace CosmicShore.Core
             ElementalLevels[element] = Math.Clamp(ElementalLevels[element] + amount, 0, MaxElementalLevel);
 
             // Don't waste cycles updating if there was no change
-            if (previousLevel == ElementalLevels[element]) return false;
+            if (Mathf.Approximately(previousLevel, ElementalLevels[element])) return false;
 
             OnElementLevelChange?.Invoke(element, Mathf.FloorToInt(ElementalLevels[element] * MaxLevel));
 
-            return (Mathf.FloorToInt(ElementalLevels[element] * MaxLevel) - Mathf.FloorToInt(previousLevel * MaxLevel) >= 1);
+            return Mathf.FloorToInt(ElementalLevels[element] * MaxLevel) - Mathf.FloorToInt(previousLevel * MaxLevel) >= 1;
         }
     }
 }

@@ -1,4 +1,3 @@
-using UnityEditor;
 using UnityEngine;
 
 [CreateAssetMenu(fileName = "Color Set", menuName = "CosmicShore/ColorSet")]

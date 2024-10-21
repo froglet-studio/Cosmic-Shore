@@ -2363,7 +2363,6 @@ MonoBehaviour:
   trailBlockImpactEffects: 0000000001000000020000000f00000011000000
   blockChargeChange: 0
   boostMultiplier: 0
-  boostFuelAmount: 0
   bottomEdgeButtons: 0
   Inertia: 70
   inputEventShipActions:
@@ -3096,7 +3095,7 @@ PrefabInstance:
     - target: {fileID: 3297933952685862236, guid: 522a0b0de3eb7b64d8c6e0e35377de5f,
         type: 3}
       propertyPath: verboseLogging
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7883774110713613109, guid: 522a0b0de3eb7b64d8c6e0e35377de5f,
         type: 3}

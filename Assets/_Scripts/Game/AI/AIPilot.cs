@@ -40,22 +40,22 @@ namespace CosmicShore.Game.AI
         public float X;
         public float Y;
 
-        [HideInInspector] public float defaultThrottle { get { return Mathf.Lerp(defaultThrottleLow, defaultThrottleHigh, SkillLevel); } }
-        [HideInInspector] public float defaultAggressiveness { get { return Mathf.Lerp(defaultAggressivenessLow, defaultAggressivenessHigh, SkillLevel); } }
-        float throttleIncrease { get { return Mathf.Lerp(throttleIncreaseLow, throttleIncreaseHigh, SkillLevel); } }
-        float avoidance { get { return Mathf.Lerp(avoidanceLow, avoidanceHigh, SkillLevel); } }
-        float aggressivenessIncrease { get { return Mathf.Lerp(aggressivenessIncreaseLow, aggressivenessIncreaseHigh, SkillLevel); } }
+        public float defaultThrottle => Mathf.Lerp(defaultThrottleLow, defaultThrottleHigh, SkillLevel);
+        public float defaultAggressiveness => Mathf.Lerp(defaultAggressivenessLow, defaultAggressivenessHigh, SkillLevel);
+        float throttleIncrease => Mathf.Lerp(throttleIncreaseLow, throttleIncreaseHigh, SkillLevel);
+        float avoidance => Mathf.Lerp(avoidanceLow, avoidanceHigh, SkillLevel);
+        float aggressivenessIncrease => Mathf.Lerp(aggressivenessIncreaseLow, aggressivenessIncreaseHigh, SkillLevel);
 
         [SerializeField] float raycastHeight;
         [SerializeField] float raycastWidth;
 
         public bool AutoPilotEnabled;
-        [SerializeField] bool LookingAtCrystal = false;
-        [SerializeField] bool ram = false;
-        [SerializeField] bool drift = false;
-        [HideInInspector] public bool SingleStickControls = false;
+        [SerializeField] bool LookingAtCrystal;
+        [SerializeField] bool ram;
+        [SerializeField] bool drift;
+        [HideInInspector] public bool SingleStickControls;
 
-        [SerializeField] bool useAbility = false;
+        [SerializeField] bool useAbility;
         [SerializeField] float abilityCooldown;
         [SerializeField] ShipAction ability;
 
@@ -121,17 +121,16 @@ namespace CosmicShore.Game.AI
             NodeItem closestItem = null;
 
             foreach (var item in nodeItems.Values)
-            { 
+            {
                 // Debuffs are disguised as desireable to the other team
                 // So, if it's good, or if it's bad but made by another team, go for it
-                if (item.ItemType == ItemType.Buff || (item.ItemType == ItemType.Debuff && item.Team != ship.Team))
+                if (item.ItemType != ItemType.Buff &&
+                    (item.ItemType != ItemType.Debuff || item.Team == ship.Team)) continue;
+                var distance = Vector3.Distance(item.transform.position, transform.position);
+                if (distance < MinDistance)
                 {
-                    var distance = Vector3.Distance(item.transform.position, transform.position);
-                    if (distance < MinDistance)
-                    {
-                        closestItem = item;
-                        MinDistance = distance;
-                    }
+                    closestItem = item;
+                    MinDistance = distance;
                 }
             }
 
@@ -192,25 +191,7 @@ namespace CosmicShore.Game.AI
                 Vector3 crossProduct = Vector3.Cross(transform.forward, desiredDirection);
                 Vector3 localCrossProduct = transform.InverseTransformDirection(crossProduct);
                 combinedLocalCrossProduct += localCrossProduct;
-
-                //foreach (Corner corner in Enum.GetValues(typeof(Corner)))
-                //{
-                //    var behavior = CornerBehaviors[corner];
-                //    Vector3 laserHitDirection = ShootLaser(behavior.width * transform.right + behavior.height * transform.up);                   
-                //    if (laserHitDirection.magnitude >= maxDistance * .9f) // No obstacle detected
-                //        return;
-
-                //    float dotProduct = Vector3.Dot(desiredDirection, laserHitDirection.normalized);
-                //    if (dotProduct > .2f) // Obstacle is in the direction we want to move
-                //    {
-                //        sqrMagnitude = Mathf.Min(sqrMagnitude, laserHitDirection.magnitude);
-                //        float clampedAvoidance = Mathf.Clamp(-avoidance / laserHitDirection.sqrMagnitude, -3, 3f);
-                //        crossProduct = Vector3.Cross(shipStatus.Course, laserHitDirection);
-                //        localCrossProduct = transform.InverseTransformDirection(crossProduct);
-                //        combinedLocalCrossProduct += localCrossProduct * clampedAvoidance;
-                //    }
-                    
-                //}
+                
                 float angle = Mathf.Asin(Mathf.Clamp(combinedLocalCrossProduct.sqrMagnitude * aggressiveness * 12 / Mathf.Min(sqrMagnitude, maxDistance), -1f, 1f)) * Mathf.Rad2Deg;
 
                 if (SingleStickControls)
@@ -226,9 +207,7 @@ namespace CosmicShore.Game.AI
 
                     XDiff = (LookingAtCrystal && ram) ? 1 : Mathf.Clamp(throttle, 0, 1);
                 }
-             
-
-                ///get better
+   
                 aggressiveness += aggressivenessIncrease * Time.deltaTime;
                 throttle += throttleIncrease * Time.deltaTime;
             }
@@ -241,11 +220,9 @@ namespace CosmicShore.Game.AI
                 Debug.DrawLine(transform.position + position, hit.point, Color.red);
                 return hit.point - (transform.position + position);
             }
-            else
-            {
-                Debug.DrawLine(transform.position + position, transform.position + position + transform.forward * maxDistance, Color.green);
-                return transform.forward * maxDistance - (transform.position + position);
-            }
+
+            Debug.DrawLine(transform.position + position, transform.position + position + transform.forward * maxDistance, Color.green);
+            return transform.forward * maxDistance - (transform.position + position);
         }
 
         float CalculateRollAdjustment(Dictionary<Corner, Vector3> obstacleDirections)

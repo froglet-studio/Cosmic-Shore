@@ -74,6 +74,7 @@ namespace CosmicShore.App.UI.Views
 
         public override void Select(int index)
         {
+            Debug.Log($"Selected {index}");
             SelectedIndex = index;
             OnSelect?.Invoke(sortedCaptains[index]);
 
