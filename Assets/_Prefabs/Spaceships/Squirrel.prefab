@@ -1563,7 +1563,12 @@ MonoBehaviour:
   boostResourceIndex: 0
   crystalImpactEffects: 060000000b000000
   minExplosionScale: 400
-  maxExplosionScale: 400
+  maxExplosionScale:
+    Enabled: 1
+    Value: 0.1
+    Min: 0
+    Max: 1
+    element: 1
   trailBlockImpactEffects: 0e0000000000000011000000
   blockChargeChange: 0
   boostMultiplier: 0
@@ -1634,11 +1639,11 @@ MonoBehaviour:
   ThrottleScaler: 0
   DefaultMinimumSpeed: 0
   DefaultThrottleScaler:
-    Enabled: 0
-    Value: 50
+    Enabled: 1
+    Value: 100
     Min: 0
-    Max: 0
-    element: 0
+    Max: 200
+    element: 4
   PitchScaler: 50
   YawScaler: 50
   RollScaler: 50
@@ -1689,7 +1694,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 737294a573670f74389a7af68df314d5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Resources: []
+  Resources:
+  - Name: placeholder_to_bypass_explosion_bug
+    Display: {fileID: 0}
+    initialResourceGainRate: 0
+    resourceGainRate: 0
+    maxAmount: 0
+    initialAmount: 0
   ChargeTestHarness: 0
   MassTestHarness: 0
   SpaceTestHarness: 0
@@ -2736,6 +2747,11 @@ PrefabInstance:
         type: 3}
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
+      propertyPath: Scale.Max
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
       propertyPath: fuelAmount
       value: 0
       objectReference: {fileID: 0}
@@ -2747,7 +2763,7 @@ PrefabInstance:
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
       propertyPath: Scale.Value
-      value: 50
+      value: 5
       objectReference: {fileID: 0}
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
@@ -2764,6 +2780,16 @@ PrefabInstance:
         type: 3}
       propertyPath: skimVisualFX
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
+      propertyPath: Scale.Enabled
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
+      propertyPath: Scale.element
+      value: 3
       objectReference: {fileID: 0}
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
