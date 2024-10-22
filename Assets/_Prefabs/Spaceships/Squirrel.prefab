@@ -1564,13 +1564,15 @@ MonoBehaviour:
   farFieldSkimmer: {fileID: 0}
   ShipCameraCustomizer: {fileID: 0}
   FollowTarget: {fileID: 0}
+  resourceIndex: 0
+  ammoResourceIndex: 0
+  boostResourceIndex: 0
   crystalImpactEffects: 060000000b000000
   minExplosionScale: 400
   maxExplosionScale: 400
   trailBlockImpactEffects: 0e0000000000000011000000
   blockChargeChange: 0
   boostMultiplier: 0
-  boostFuelAmount: 0
   bottomEdgeButtons: 0
   Inertia: 70
   inputEventShipActions:
@@ -1611,11 +1613,12 @@ MonoBehaviour:
   CommandStickControls: 0
   LiveProjectiles: 0
   Stationary: 0
-  ElevatedAmmoGain: 0
+  ElevatedResourceGain: 0
   ChargedBoostCharge: 1
   AutoPilotEnabled: 0
   AlignmentEnabled: 1
   Slowed: 0
+  Overheating: 0
   Attached: 0
   AttachedTrailBlock: {fileID: 0}
   GunsActive: 0
@@ -1692,25 +1695,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 737294a573670f74389a7af68df314d5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  displayBoost: 0
-  gainsBoost: 0
-  boostGainRate: 0.1
-  initialBoost: 1
-  maxBoost: 1
-  displayAmmo: 0
-  gainsAmmo: 0
-  ammoGainRate:
-    Enabled: 0
-    Value: 0.1
-    Min: 0
-    Max: 0
-    element: 0
-  initialAmmo: 1
-  maxAmmo: 1
-  displayEnergy: 0
-  maxEnergy: 1
-  initialEnergy: 1
-  ResourceDisplays: {fileID: 0}
+  Resources: []
   ChargeTestHarness: 0
   MassTestHarness: 0
   SpaceTestHarness: 0
@@ -1813,6 +1798,7 @@ MonoBehaviour:
   driftTrailAction: {fileID: 0}
   topJaw: {fileID: 0}
   bottomJaw: {fileID: 0}
+  JawResourceIndex: 0
   swingBlocks: 0
   ship: {fileID: 874579555101021527}
   sihouetteScale: {x: 1, y: 1, z: 1}
@@ -2936,15 +2922,30 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 5db69771d02b4c24ca00998adf318137,
+        type: 3}
+      propertyPath: m_ConstrainProportionsScale
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: -2358995200592801505, guid: 5db69771d02b4c24ca00998adf318137,
         type: 3}
       propertyPath: m_Name
       value: a_SquirrelShipMesh
       objectReference: {fileID: 0}
+    - target: {fileID: -1139028379932300349, guid: 5db69771d02b4c24ca00998adf318137,
+        type: 3}
+      propertyPath: m_ConstrainProportionsScale
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: 5db69771d02b4c24ca00998adf318137,
         type: 3}
       propertyPath: m_Name
       value: SquirrelShip_CosmicShoresTest1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1120998102324046260, guid: 5db69771d02b4c24ca00998adf318137,
+        type: 3}
+      propertyPath: m_ConstrainProportionsScale
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 5866666021909216657, guid: 5db69771d02b4c24ca00998adf318137,
         type: 3}
