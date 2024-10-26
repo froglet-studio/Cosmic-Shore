@@ -25,12 +25,12 @@ namespace CosmicShore.Game.Arcade
         [SerializeField] protected int NumberOfRounds = int.MaxValue;
         [SerializeField] protected List<TurnMonitor> TurnMonitors;
         [SerializeField] protected ScoreTracker ScoreTracker;
-        [SerializeField] GameCanvas GameCanvas;
-        [SerializeField] Player playerPrefab;
-        [SerializeField] GameObject PlayerOrigin;
+        [SerializeField] protected GameCanvas GameCanvas;
+        [SerializeField] protected Player playerPrefab;
+        [SerializeField] protected GameObject PlayerOrigin;
         [SerializeField] float EndOfTurnDelay = 0f;
         [SerializeField] bool EnableTrails = true;
-        [SerializeField] ShipTypes DefaultPlayerShipType = ShipTypes.Dolphin;
+        [SerializeField] protected ShipTypes DefaultPlayerShipType = ShipTypes.Dolphin;
         [SerializeField] SO_Captain DefaultPlayerCaptain;
 
         protected Button ReadyButton;
@@ -197,8 +197,8 @@ namespace CosmicShore.Game.Arcade
 
         void StartGame()
         {
-            gameRunning = true;
             Debug.Log($"MiniGame.StartGame, ... {Time.time}");
+            gameRunning = true;
             EndGameScreen.SetActive(false);
             RoundsPlayedThisGame = 0;
             OnMiniGameStart?.Invoke(gameMode, PlayerShipType, NumberOfPlayers, IntensityLevel);

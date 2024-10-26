@@ -25,12 +25,16 @@ MonoBehaviour:
   CardSilohoutte: {fileID: 21300000, guid: 7e86443584f65cf41a3f34324269b763, type: 3}
   CardSilohoutteActive: {fileID: 21300000, guid: 0c9dbd6a9e84e194289815c277b5528a,
     type: 3}
-  Abilities: []
+  Abilities:
+  - {fileID: 11400000, guid: 82909d6c79ea9c242bd1c5b8cc668428, type: 2}
+  - {fileID: 11400000, guid: 417e8082f9f3c0747919031a76b7e360, type: 2}
+  - {fileID: 11400000, guid: 1bb66dc886864fb4c84b653159a78cd6, type: 2}
+  - {fileID: 11400000, guid: 1420851e46925ba4bbc3a5b5e4d940d2, type: 2}
   Captains:
-  - {fileID: 11400000, guid: 2cd54de582d5f6c4ab6968d845324516, type: 2}
-  - {fileID: 11400000, guid: 81c8a34028484c749afd0761119af199, type: 2}
-  - {fileID: 11400000, guid: fe133531e5ac3fa4bbe25a674654ee9a, type: 2}
   - {fileID: 11400000, guid: 7f165b71dbb0ecf498a0c72fd080457d, type: 2}
+  - {fileID: 11400000, guid: fe133531e5ac3fa4bbe25a674654ee9a, type: 2}
+  - {fileID: 11400000, guid: 81c8a34028484c749afd0761119af199, type: 2}
+  - {fileID: 11400000, guid: 2cd54de582d5f6c4ab6968d845324516, type: 2}
   Games:
   - {fileID: 11400000, guid: dae692490d41dda488bf199e4fdb30af, type: 2}
   TrainingGames:
