@@ -1,3 +1,4 @@
+using System;
 using CosmicShore.Game.Arcade;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,21 +10,22 @@ namespace CosmicShore
 {
     public class Scoreboard : MonoBehaviour
     {
-        [Header("Banner")]
-        [SerializeField] Image BannerImage;
+        [Header("Banner")] [SerializeField] Image BannerImage;
         [SerializeField] TMP_Text BannerText;
         [SerializeField] Color SinglePlayerBannerColor;
         [SerializeField] Color JadeTeamBannerColor;
         [SerializeField] Color RubyTeamBannerColor;
         [SerializeField] Color GoldTeamBannerColor;
 
-        [Header("Single Player")]
-        [SerializeField] Transform SingleplayerView;
+        [Header("Single Player")] [SerializeField]
+        Transform SingleplayerView;
+
         [SerializeField] TMP_Text SinglePlayerScoreTextField;
         [SerializeField] TMP_Text SinglePlayerHighscoreTextField;
 
-        [Header("Multi Player")]
-        [SerializeField] Transform MultiplayerView;
+        [Header("Multi Player")] [SerializeField]
+        Transform MultiplayerView;
+
         [SerializeField] List<TMP_Text> PlayerNameTextFields;
         [SerializeField] List<TMP_Text> PlayerScoreTextFields;
 
@@ -31,10 +33,23 @@ namespace CosmicShore
 
         void Start()
         {
-            scoreTracker = FindAnyObjectByType<ScoreTracker>();
-
             MultiplayerView.gameObject.SetActive(false);
             SingleplayerView.gameObject.SetActive(false);
+        }
+
+        private void OnEnable()
+        {
+            ScoreTracker.OnScoreTrackerEnabled += FindScoreTrackerReference;
+        }
+
+        private void OnDisable()
+        {
+            ScoreTracker.OnScoreTrackerEnabled -= FindScoreTrackerReference;
+        }
+
+        private void FindScoreTrackerReference()
+        {
+            scoreTracker = FindAnyObjectByType<ScoreTracker>();
         }
 
         public void ShowMultiplayerView()
@@ -55,6 +70,12 @@ namespace CosmicShore
                 case Teams.Gold:
                     BannerImage.color = GoldTeamBannerColor;
                     BannerText.text = "GOLD VICTORY";
+                    break;
+                case Teams.Blue:
+                case Teams.Unassigned:
+                case Teams.None:
+                default:
+                    Debug.LogWarning($"{winningTeam} does not have assigned banner image color and banner text preset.");
                     break;
             }
 
@@ -85,14 +106,14 @@ namespace CosmicShore
             MultiplayerView.gameObject.SetActive(true);
         }
 
-        public void ShowSingleplayerView()
+        public void ShowSinglePlayerView()
         {
             // Setup Banner
             BannerImage.color = SinglePlayerBannerColor;
             BannerText.text = "RUN RESULTS";
 
-            // Populate this run's score
-            var playerScore = scoreTracker.playerScores.First();
+            // Populate this run's score // TODO: fix playerScore null reference here
+            var playerScore = scoreTracker.playerScores.FirstOrDefault();
             SinglePlayerScoreTextField.text = ((int)playerScore.Value).ToString();
 
             // TODO: pull actual high score

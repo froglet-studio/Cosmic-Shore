@@ -347,7 +347,7 @@ namespace CosmicShore.Game.Arcade
             if (NumberOfPlayers > 1)
                 GameCanvas.scoreboard.ShowMultiplayerView();
             else
-                GameCanvas.scoreboard.ShowSingleplayerView();
+                GameCanvas.scoreboard.ShowSinglePlayerView();
 
             OnMiniGameEnd?.Invoke(gameMode, PlayerShipType, NumberOfPlayers, IntensityLevel, ScoreTracker.GetHighScore());
         }

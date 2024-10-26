@@ -198,7 +198,8 @@ namespace CosmicShore.Core
                         aoeExplosion.Ship = this;
                         aoeExplosion.SetPositionAndRotation(transform.position, transform.rotation);
                         Debug.Log($"Ship.PerformCrystalImpactEffects - AOEExplosion.current ammo:{ResourceSystem.Resources[ammoResourceIndex].CurrentAmount}");
-                        aoeExplosion.MaxScale =  Mathf.Lerp(minExplosionScale, maxExplosionScale, ResourceSystem.Resources[ammoResourceIndex].CurrentAmount);
+                        aoeExplosion.MaxScale = ResourceSystem.Resources.Count > ammoResourceIndex 
+                            ? Mathf.Lerp(minExplosionScale, maxExplosionScale, ResourceSystem.Resources[ammoResourceIndex].CurrentAmount) : maxExplosionScale;
                         break;
                     case CrystalImpactEffects.IncrementLevel:
                         ResourceSystem.IncrementLevel(crystalProperties.Element); // TODO: consider removing here and leaving this up to the crystals
