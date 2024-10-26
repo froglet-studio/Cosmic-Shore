@@ -97,9 +97,12 @@ namespace CosmicShore.Game.IO
 
         private void InitializeGyroscope()
         {
-            InputSystem.EnableDevice(Gyroscope.current);
-            gyro = Gyroscope.current;
-            StartCoroutine(GyroInitializationCoroutine());
+            if (Gyroscope.current != null)
+            {
+                InputSystem.EnableDevice(Gyroscope.current);
+                gyro = Gyroscope.current;
+                StartCoroutine(GyroInitializationCoroutine());
+            }
         }
 
         private void LoadSettings()
