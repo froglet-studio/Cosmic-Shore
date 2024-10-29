@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 2096801853598961008}
   - component: {fileID: 2096801853598961014}
   m_Layer: 5
-  m_Name: BigBlocksPreview_Prefab
+  m_Name: PrismSizePreview_Prefab
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

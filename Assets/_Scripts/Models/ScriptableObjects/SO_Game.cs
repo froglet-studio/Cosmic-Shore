@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Serialization;
 using UnityEngine.Video;
 
 namespace CosmicShore
@@ -9,8 +10,10 @@ namespace CosmicShore
         public GameModes Mode;
         public string DisplayName;
         public string Description;
-        public Sprite Icon;
-        public Sprite SelectedIcon;
+        [FormerlySerializedAs("SelectedIcon")]
+        public Sprite IconActive;
+        [FormerlySerializedAs("Icon")]
+        public Sprite IconInactive;
         public Sprite CardBackground;
         public VideoPlayer PreviewClip;
         public bool GolfScoring;

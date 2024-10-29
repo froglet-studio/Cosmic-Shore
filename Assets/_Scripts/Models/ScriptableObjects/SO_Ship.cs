@@ -10,17 +10,17 @@ using UnityEngine.Video;
 public class SO_Ship : ScriptableObject
 {
     [SerializeField] public ShipTypes Class;
-
     [SerializeField] public string Name;
-    [SerializeField] public string Summary;
     [SerializeField] public string Description;
-    [SerializeField] public Sprite Icon;
-    [SerializeField] public Sprite SelectedIcon;
-    [SerializeField] public VideoPlayer PreviewClip;
+    [FormerlySerializedAs("SelectedIcon")]
+    [SerializeField] public Sprite IconActive;
+    [FormerlySerializedAs("Icon")]
+    [SerializeField] public Sprite IconInactive;
     [SerializeField] public Sprite PreviewImage;
     [SerializeField] public Sprite TrailPreviewImage;
-    [SerializeField] public Sprite CardSilohoutte;
     [SerializeField] public Sprite CardSilohoutteActive;
+    [FormerlySerializedAs("CardSilohoutte")]
+    [SerializeField] public Sprite CardSilohoutteInactive;
     [SerializeField] public List<SO_ShipAbility> Abilities;
     [SerializeField] public List<SO_Captain> Captains;
     [FormerlySerializedAs("TrainingGames")]
@@ -37,8 +37,6 @@ public class SO_Ship : ScriptableObject
     {
         get => !CaptainManager.Instance.UnlockedShips.Contains(this);
     }
-
-
 }
 
 [System.Serializable]

@@ -15,19 +15,19 @@ MonoBehaviour:
   Mode: 20
   DisplayName: Kickin Mass
   Description: Reach the volume goal as fast as you can by full speed and strait.
-  Icon: {fileID: 21300000, guid: 3393ef5bcc756364d98dc478fc0fe52b, type: 3}
-  SelectedIcon: {fileID: 21300000, guid: b734e1a473e014c4198c58f6c02b894d, type: 3}
+  IconActive: {fileID: 21300000, guid: b734e1a473e014c4198c58f6c02b894d, type: 3}
+  IconInactive: {fileID: 21300000, guid: 3393ef5bcc756364d98dc478fc0fe52b, type: 3}
   CardBackground: {fileID: 21300000, guid: b5b9538f2e3a8c24d9a9f5219064fcdc, type: 3}
   PreviewClip: {fileID: 3312024567346999270, guid: 51aa26330ad783b4d9f1d54a91583c41,
     type: 3}
+  GolfScoring: 0
+  SceneName: MinigameKickinMass
   Captains:
   - {fileID: 11400000, guid: e8bd9ec0d12f32049ae00464f4b80415, type: 2}
-  GolfScoring: 0
   MinPlayers: 1
   MaxPlayers: 3
   MinIntensity: 1
   MaxIntensity: 4
-  SceneName: MinigameKickinMass
   CallToActionTargetType: 423
   ViewUserAction: 0
   PlayUserAction: 0

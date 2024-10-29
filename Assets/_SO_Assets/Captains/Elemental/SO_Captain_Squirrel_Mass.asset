@@ -18,8 +18,8 @@ MonoBehaviour:
   Flavor: '[Placeholder Flavor Text]'
   Image: {fileID: 21300000, guid: 79a9291c6e42ed543b1babbb0cdc14f2, type: 3}
   HeadshotImage: {fileID: 0}
-  Icon: {fileID: 21300000, guid: 4bb626eb5275b9c41a2c6e117aee2f42, type: 3}
-  SelectedIcon: {fileID: 21300000, guid: a631b4ddb4bf68b4bb89f43b7ab8380d, type: 3}
+  IconActive: {fileID: 21300000, guid: a631b4ddb4bf68b4bb89f43b7ab8380d, type: 3}
+  IconInactive: {fileID: 21300000, guid: 4bb626eb5275b9c41a2c6e117aee2f42, type: 3}
   Ship: {fileID: 11400000, guid: 6fbeef29c9430b94aabea2934640dc5a, type: 2}
   PrimaryElement: 2
   Element: {fileID: 11400000, guid: 447871aa55eea934883d7160fef3c3ef, type: 2}

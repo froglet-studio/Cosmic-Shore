@@ -72,7 +72,7 @@ namespace CosmicShore.App.UI.Elements
                 BackgroundImage.sprite = game.CardBackground;
 
                 SO_Ship ship = AllShips.ShipList.Where(x => x.Class == loadout.ShipType).FirstOrDefault();
-                ShipImage.sprite = ship.CardSilohoutte;
+                ShipImage.sprite = ship.CardSilohoutteInactive;
 
                 PlayerCountImage.sprite = PlayerCountImages[loadout.PlayerCount - 1];
                 IntensityImage.sprite = IntensityImages[loadout.Intensity - 1];

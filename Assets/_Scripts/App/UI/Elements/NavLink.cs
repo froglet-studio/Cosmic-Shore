@@ -18,8 +18,11 @@ namespace CosmicShore.App.UI
         [SerializeField] List<TMP_Text> activeTextElements;
         [SerializeField] List<TMP_Text> inactiveTextElements;
 
+        [SerializeField] bool dynamicSize = false;
+        [SerializeField] Vector2 activeDimensions;
+        [SerializeField] Vector2 inactiveDimensions;
         [SerializeField] float crossfadeDuration = 0.15f;
-        [HideInInspector] public NavGroup navGroup;
+        [HideInInspector]public NavGroup navGroup;
         public int Index;
 
         Coroutine currentCrossfade;
@@ -100,6 +103,15 @@ namespace CosmicShore.App.UI
             {
                 inactiveImageElements[i].enabled = !isActive;
                 activeImageElements[i].enabled = isActive;
+            }
+
+            if (dynamicSize)
+            {
+                var rectTransform = GetComponent<RectTransform>();
+
+                rectTransform.sizeDelta = isActive ? activeDimensions : inactiveDimensions;
+
+                navGroup.UpdateLayout();
             }
 
             currentCrossfade = null;

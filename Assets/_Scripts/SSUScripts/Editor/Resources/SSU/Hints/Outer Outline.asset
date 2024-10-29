@@ -21,6 +21,7 @@ MonoBehaviour:
   requiresFullRectMesh: 1
   requiresSpriteSheetFix: 0
   requiresInstancing: 0
+  requiresTiling: 0
   benchmarkValue: 1900
   textureSamples: 8
   textureToggle: _OuterOutlineTextureToggle

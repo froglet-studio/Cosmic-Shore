@@ -16,19 +16,19 @@ MonoBehaviour:
   DisplayName: Denial
   Description: Deny the enemy volume by slowing them and crashing into them to disable
     their trail.
-  Icon: {fileID: 21300000, guid: 1917088452678c8449563992f4132c7e, type: 3}
-  SelectedIcon: {fileID: 21300000, guid: ff915aad644c07144a1d02cc4723b015, type: 3}
+  IconActive: {fileID: 21300000, guid: ff915aad644c07144a1d02cc4723b015, type: 3}
+  IconInactive: {fileID: 21300000, guid: 1917088452678c8449563992f4132c7e, type: 3}
   CardBackground: {fileID: 21300000, guid: f8454a4b86f7d304aaff7593dbe90cc6, type: 3}
   PreviewClip: {fileID: 241334157148977051, guid: f48cd1df8d808014c8a8f4db1258d202,
     type: 3}
+  GolfScoring: 0
+  SceneName: MinigameDenial
   Captains:
   - {fileID: 11400000, guid: fc050e89d9973cf4ab7fa683bb1722b1, type: 2}
-  GolfScoring: 0
   MinPlayers: 1
   MaxPlayers: 3
   MinIntensity: 1
   MaxIntensity: 4
-  SceneName: MinigameDenial
   CallToActionTargetType: 414
   ViewUserAction: 0
   PlayUserAction: 0

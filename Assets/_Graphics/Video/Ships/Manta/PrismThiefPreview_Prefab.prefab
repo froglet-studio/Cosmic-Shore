@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 2096801853598961008}
   - component: {fileID: 2096801853598961014}
   m_Layer: 5
-  m_Name: StealPreview_Prefab
+  m_Name: PrismThiefPreview_Prefab
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

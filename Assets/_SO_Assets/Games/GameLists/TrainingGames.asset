@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b22e3ddb049ba484386ccda289645f22, type: 3}
   m_Name: TrainingGames
   m_EditorClassIdentifier: 
-  GameList:
+  Games:
   - {fileID: 11400000, guid: 90452e7bccc992c458a9b701346fc9ad, type: 2}
   - {fileID: 11400000, guid: 8a556ca669e7f474483174c3513af298, type: 2}
   - {fileID: 11400000, guid: beac516047e18924faf213b322540d1f, type: 2}

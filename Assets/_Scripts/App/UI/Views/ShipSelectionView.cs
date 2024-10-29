@@ -40,7 +40,7 @@ namespace CosmicShore.App.UI.Views
                         if (SelectedModel as SO_Ship == ship)
                             shipSelection.GetComponent<Image>().sprite = ship.CardSilohoutteActive;
                         else
-                            shipSelection.GetComponent<Image>().sprite = ship.CardSilohoutte;
+                            shipSelection.GetComponent<Image>().sprite = ship.CardSilohoutteInactive;
                         shipSelection.GetComponent<Button>().onClick.RemoveAllListeners();
                         shipSelection.GetComponent<Button>().onClick.AddListener(() => Select(selectionIndex));
                         shipSelection.GetComponent<Button>().onClick.AddListener(() => ShipSelectionGrid.GetComponent<MenuAudio>().PlayAudio());

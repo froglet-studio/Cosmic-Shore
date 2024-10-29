@@ -21,10 +21,13 @@ MonoBehaviour:
     type: 2}
   ShieldedBlockMaterial: {fileID: 2100000, guid: 295e1410f47fecd499c48b814aeb09a0,
     type: 2}
+  TransparentShieldedBlockMaterial: {fileID: 0}
   SuperShieldedBlockMaterial: {fileID: 2100000, guid: ffe90a54865e27947a3295f845468373,
     type: 2}
+  TransparentSuperShieldedBlockMaterial: {fileID: 0}
   DangerousBlockMaterial: {fileID: 2100000, guid: c5845372233b63241a5054da788290e6,
     type: 2}
+  TransparentDangerousBlockMaterial: {fileID: 0}
   BlockSilhouettePrefab: {fileID: 8156872032051993332, guid: abf95976e3a0c324e85eeb3fab30a6e4,
     type: 3}
   AOEExplosionMaterial: {fileID: 2100000, guid: 36ee0116158df2c438f8a0b13ef1ad49,

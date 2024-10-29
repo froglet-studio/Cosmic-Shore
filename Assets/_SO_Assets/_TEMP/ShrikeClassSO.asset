@@ -15,12 +15,25 @@ MonoBehaviour:
   Class: 10
   Name: Shrike
   Description: 
-  Icon: {fileID: 0}
-  SelectedIcon: {fileID: 0}
+  IconActive: {fileID: 0}
+  IconInactive: {fileID: 0}
   PreviewImage: {fileID: 0}
   TrailPreviewImage: {fileID: 0}
-  CardSilohoutte: {fileID: 0}
   CardSilohoutteActive: {fileID: 0}
+  CardSilohoutteInactive: {fileID: 0}
   Abilities: []
-  Guides: []
+  Captains: []
+  Games: []
   TrainingGames: []
+  gameplayParameter1:
+    LeftHandLabel: Casual
+    RightHandLabel: Challenging
+    Value: 0.5
+  gameplayParameter2:
+    LeftHandLabel: Relaxing
+    RightHandLabel: Thrilling
+    Value: 0.5
+  gameplayParameter3:
+    LeftHandLabel: Solo
+    RightHandLabel: Social
+    Value: 0.5

@@ -104,7 +104,6 @@ namespace CosmicShore.App.UI.Modals
         {
             Debug.Log($"Populating Game Details: {SelectedGame.DisplayName}");
             Debug.Log($"Populating Game Details: {SelectedGame.Description}");
-            Debug.Log($"Populating Game Details: {SelectedGame.Icon}");
             Debug.Log($"Populating Game Details: {SelectedGame.PreviewClip}");
 
             // Set Game Detail Meta Data

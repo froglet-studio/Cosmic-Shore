@@ -15,8 +15,8 @@ MonoBehaviour:
   Mode: 10
   DisplayName: Protect Mission
   Description: Can you protect the cell?
-  Icon: {fileID: 21300000, guid: a12edf378921c3d47bcc584148a52ac3, type: 3}
-  SelectedIcon: {fileID: 21300000, guid: a12edf378921c3d47bcc584148a52ac3, type: 3}
+  IconActive: {fileID: 21300000, guid: a12edf378921c3d47bcc584148a52ac3, type: 3}
+  IconInactive: {fileID: 21300000, guid: a12edf378921c3d47bcc584148a52ac3, type: 3}
   CardBackground: {fileID: 21300000, guid: 78575ccdc916fca45960791606e128c9, type: 3}
   PreviewClip: {fileID: 241334157148977051, guid: f48cd1df8d808014c8a8f4db1258d202,
     type: 3}

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 using UnityEngine.UI;
 
 namespace CosmicShore.App.UI
@@ -7,7 +8,7 @@ namespace CosmicShore.App.UI
     /// <summary>
     /// A vertically looping scroll window.
     /// Items in the scroll window are duplicated above and below the original items. 
-    /// The windows scroll position is reset by subtracting out or adding in the original window height.
+    /// The window's scroll position is reset by subtracting or adding the original window height.
     /// </summary>
     public class InfiniteScroll : MonoBehaviour
     {
@@ -15,55 +16,47 @@ namespace CosmicShore.App.UI
         [SerializeField] RectTransform viewPortTransform;
         [SerializeField] RectTransform contentPanelTransform;
         [SerializeField] VerticalLayoutGroup verticalLayoutGroup;
-        [SerializeField] GameObject ContentContainer;
+        [FormerlySerializedAs("ContentContainer")]
+        [SerializeField] GameObject contentContainer;
         [SerializeField] float minVelocity = 5f;
         [SerializeField] float enableSnapVelocity = 15f;
 
-        List<RectTransform> itemList = new();
-        Vector2 OldVelocity;
-        bool isUpdated;
+        List<GameObject> itemList = new();
+        Vector2 previousVelocity;
+        bool hasUpdatedPosition;
         bool isInitialized = false;
         bool checkForSnap = false;
+        float itemHeightWithSpacing;
 
-        public void Initialize(bool forceReInit=false)
+        public void Initialize(bool forceReInit = false)
         {
             if (isInitialized && !forceReInit) return;
 
             itemList.Clear();
-            isUpdated = false;
-            OldVelocity = Vector2.zero;
+            hasUpdatedPosition = false;
+            previousVelocity = Vector2.zero;
 
-            foreach (Transform transform in ContentContainer.transform)
+            // Collect active child items from the content container
+            foreach (Transform child in contentContainer.transform)
             {
-                if (transform.gameObject.activeInHierarchy)
-                    itemList.Add(transform.GetComponent<RectTransform>());
+                if (child.gameObject.activeInHierarchy)
+                    itemList.Add(child.gameObject);
             }
-            
+
             int itemCount = itemList.Count;
+            if (itemCount == 0) return;
 
-            for (int i=0; i < itemCount; i++)
-            {
-                RectTransform rt = Instantiate(itemList[i % itemCount ], contentPanelTransform);
-                rt.name = rt.name.Replace("(Clone)", "-pre");
-                rt.SetAsLastSibling();
-            }
+            // Cache the item height and spacing for performance
+            itemHeightWithSpacing = itemList[0].GetComponent<RectTransform>().rect.height + verticalLayoutGroup.spacing;
 
-            for (int i = 0; i < itemCount; i++)
-            {
-                int index = itemCount - i - 1;
-                while (index < 0)
-                    index += itemCount ;
+            // Duplicate items for scrolling effect (above and below)
+            DuplicateItems(itemCount);
 
-                RectTransform rt = Instantiate(itemList[index], contentPanelTransform);
-                rt.name = rt.name.Replace("(Clone)", "-post");
-                rt.SetAsFirstSibling();
-            }
 
-            Debug.Log($"InfiniteScroll - loop offset distance: { itemCount * (itemList[0].rect.height + verticalLayoutGroup.spacing) }");
-            
+            // Set the initial content position for scrolling
             contentPanelTransform.localPosition = new Vector3(
                 contentPanelTransform.localPosition.x,
-                0 - (itemList[0].rect.height + verticalLayoutGroup.spacing) * itemCount,
+                (itemHeightWithSpacing * itemCount),
                 contentPanelTransform.localPosition.z);
 
             isInitialized = true;
@@ -71,65 +64,82 @@ namespace CosmicShore.App.UI
 
         void Update()
         {
-            if (!isInitialized)
-                return;
+            if (!isInitialized) return;
 
-            if (isUpdated )
+            HandleScrollVelocity();
+            CheckForSnap();
+            LoopContent();
+        }
+
+        private void HandleScrollVelocity()
+        {
+            if (hasUpdatedPosition)
             {
-                isUpdated = false;
-                scrollRect.velocity = OldVelocity;
+                hasUpdatedPosition = false;
+                scrollRect.velocity = previousVelocity;
             }
 
-            // only snap after we have some momentum
             if (scrollRect.velocity.y > enableSnapVelocity)
             {
                 checkForSnap = true;
             }
+        }
 
-            if (checkForSnap)
+        private void CheckForSnap()
+        {
+            if (checkForSnap && scrollRect.velocity.y < minVelocity)
             {
-                if (scrollRect.velocity.y < minVelocity)
-                {
-                    scrollRect.velocity = Vector2.zero;
-                    float snapPosition = Mathf.Round(contentPanelTransform.localPosition.y / (itemList[0].rect.height + verticalLayoutGroup.spacing))
-                                            * (itemList[0].rect.height + verticalLayoutGroup.spacing);
-                    contentPanelTransform.localPosition = new Vector3
-                    (
-                        contentPanelTransform.localPosition.x,
-                        snapPosition,
-                        contentPanelTransform.localPosition.z
-                    );
-                    Canvas.ForceUpdateCanvases();
-                
-                    checkForSnap = false;
-                }
-            }
-            
-            if (contentPanelTransform.localPosition.y < itemList.Count * (itemList[0].rect.height + verticalLayoutGroup.spacing))
-            {
-                Debug.Log($"InfiniteScroll - contentPanelTransform.localPosition.y > 0: {contentPanelTransform.localPosition.y}");
-                Canvas.ForceUpdateCanvases();
-                OldVelocity = scrollRect.velocity;
-                contentPanelTransform.localPosition += new Vector3(
-                    0,
-                    itemList.Count * (itemList[0].rect.height + verticalLayoutGroup.spacing),
-                    0
-                );
-                isUpdated = true;
-            }
-            
+                scrollRect.velocity = Vector2.zero;
 
-            if (contentPanelTransform.localPosition.y > 2 * (itemList.Count * (itemList[0].rect.height + verticalLayoutGroup.spacing)))
-            {
-                Debug.Log($"InfiniteScroll - contentPanelTransform.localPosition.y < 0: {contentPanelTransform.localPosition.y}");
+                // Snap to the nearest position
+                float snapPosition = Mathf.Round(contentPanelTransform.localPosition.y / itemHeightWithSpacing) * itemHeightWithSpacing;
+                contentPanelTransform.localPosition = new Vector3(
+                    contentPanelTransform.localPosition.x,
+                    snapPosition,
+                    contentPanelTransform.localPosition.z);
+
                 Canvas.ForceUpdateCanvases();
-                OldVelocity = scrollRect.velocity;
-                contentPanelTransform.localPosition -= new Vector3(
-                    0,
-                    itemList.Count * (itemList[0].rect.height + verticalLayoutGroup.spacing),
-                    0
-                );
-                isUpdated = true;
+                checkForSnap = false;
+            }
+        }
+
+        private void LoopContent()
+        {
+            if (contentPanelTransform.localPosition.y < (itemList.Count * itemHeightWithSpacing))
+            {
+                previousVelocity = scrollRect.velocity;
+                contentPanelTransform.localPosition += new Vector3(0, itemList.Count * itemHeightWithSpacing, 0);
+                hasUpdatedPosition = true;
+            }
+
+            if (contentPanelTransform.localPosition.y > 2 * (itemList.Count * itemHeightWithSpacing))
+            {
+                previousVelocity = scrollRect.velocity;
+                contentPanelTransform.localPosition -= new Vector3(0, itemList.Count * itemHeightWithSpacing, 0);
+                hasUpdatedPosition = true;
+            }
+        }
+
+        private void DuplicateItems(int itemCount)
+        {
+            // Create copies of the original items below the list
+            for (int i = 0; i < itemCount; i++)
+            {
+                GameObject instance = Instantiate(itemList[i % itemCount], contentPanelTransform);
+                instance.name = instance.name.Replace("(Clone)", "-pre");
+                instance.GetComponent<RectTransform>().SetAsLastSibling();
+            }
+
+            // Create copies of the original items above the list
+            for (int i = 0; i < itemCount; i++)
+            {
+                int index = itemCount - i - 1;
+                while (index < 0)
+                    index += itemCount;
+
+                GameObject instance = Instantiate(itemList[index], contentPanelTransform);
+                instance.name = instance.name.Replace("(Clone)", "-post");
+                instance.GetComponent<RectTransform>().SetAsFirstSibling();
             }
         }
     }

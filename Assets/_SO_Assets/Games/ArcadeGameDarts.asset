@@ -15,8 +15,8 @@ MonoBehaviour:
   Mode: 3
   DisplayName: Dolphin Darts
   Description: Drift into the crystal to take three shots on three boards
-  Icon: {fileID: 21300000, guid: 827310f6fd2e7444ba1937bd64bd2f98, type: 3}
-  SelectedIcon: {fileID: 21300000, guid: 05e517fd0a54810488bbca3247c585c9, type: 3}
+  IconActive: {fileID: 21300000, guid: 05e517fd0a54810488bbca3247c585c9, type: 3}
+  IconInactive: {fileID: 21300000, guid: 827310f6fd2e7444ba1937bd64bd2f98, type: 3}
   CardBackground: {fileID: 21300000, guid: 44b72f2e4acf3e54184c55795ee52d6e, type: 3}
   PreviewClip: {fileID: 2096801853598961014, guid: e838c42bdbc409946944368a0ac2d38d,
     type: 3}

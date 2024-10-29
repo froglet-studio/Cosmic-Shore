@@ -16,19 +16,19 @@ MonoBehaviour:
   DisplayName: Risky Driftness
   Description: 'See how fast you can fill your Energy by drifting as close as you
     can to the zigzag trail '
-  Icon: {fileID: 21300000, guid: 735c0e18d396f9e44ae83b165805dc30, type: 3}
-  SelectedIcon: {fileID: 21300000, guid: a0a884671f982ec41aa43688ff4c5c61, type: 3}
+  IconActive: {fileID: 21300000, guid: a0a884671f982ec41aa43688ff4c5c61, type: 3}
+  IconInactive: {fileID: 21300000, guid: 735c0e18d396f9e44ae83b165805dc30, type: 3}
   CardBackground: {fileID: 21300000, guid: 39b5646db506fd840a74610b68168a16, type: 3}
   PreviewClip: {fileID: 241334157148977051, guid: 5c86136010666914fbccc6959d9e1157,
     type: 3}
+  GolfScoring: 0
+  SceneName: MinigameRiskyDriftness
   Captains:
   - {fileID: 11400000, guid: ebc2b317ba4ed9249bf4370c10d68dac, type: 2}
-  GolfScoring: 0
   MinPlayers: 1
   MaxPlayers: 3
   MinIntensity: 1
   MaxIntensity: 4
-  SceneName: MinigameRiskyDriftness
   CallToActionTargetType: 413
   ViewUserAction: 0
   PlayUserAction: 400

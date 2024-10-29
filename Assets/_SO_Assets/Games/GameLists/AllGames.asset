@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8e0bffacb84dc644d908e074b263f51b, type: 3}
   m_Name: AllGames
   m_EditorClassIdentifier: 
-  GameList:
+  Games:
   - {fileID: 11400000, guid: 812851e4603217c469662dc3cb9c6d93, type: 2}
   - {fileID: 11400000, guid: 27f7ec1e006fb3a4cbb91572e943cf67, type: 2}
   - {fileID: 11400000, guid: 3537310ecbdad2e449bbca31d2aa8599, type: 2}

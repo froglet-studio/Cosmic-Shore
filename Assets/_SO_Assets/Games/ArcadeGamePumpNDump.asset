@@ -13,18 +13,21 @@ MonoBehaviour:
   m_Name: ArcadeGamePumpNDump
   m_EditorClassIdentifier: 
   Mode: 14
-  Name: Pump'n'Dump
+  DisplayName: 
   Description: Reach the volume goal as fast as you can by riding the sweet spot.
-  Icon: {fileID: 21300000, guid: 3393ef5bcc756364d98dc478fc0fe52b, type: 3}
-  SelectedIcon: {fileID: 21300000, guid: b734e1a473e014c4198c58f6c02b894d, type: 3}
+  IconActive: {fileID: 21300000, guid: b734e1a473e014c4198c58f6c02b894d, type: 3}
+  IconInactive: {fileID: 21300000, guid: 3393ef5bcc756364d98dc478fc0fe52b, type: 3}
   CardBackground: {fileID: 21300000, guid: a7edfda760c2ca444be4bffd55124381, type: 3}
   PreviewClip: {fileID: 3312024567346999270, guid: 51aa26330ad783b4d9f1d54a91583c41,
     type: 3}
+  GolfScoring: 0
+  SceneName: MinigamePumpNDump
   Captains:
   - {fileID: 11400000, guid: fce40017721d3834cb5ecb3ed0a0e1db, type: 2}
   MinPlayers: 1
   MaxPlayers: 3
-  SceneName: MinigamePumpNDump
+  MinIntensity: 1
+  MaxIntensity: 4
   CallToActionTargetType: 417
   ViewUserAction: 0
   PlayUserAction: 0

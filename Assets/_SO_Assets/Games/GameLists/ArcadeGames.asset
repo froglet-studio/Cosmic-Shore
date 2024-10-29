@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8e0bffacb84dc644d908e074b263f51b, type: 3}
   m_Name: ArcadeGames
   m_EditorClassIdentifier: 
-  GameList:
+  Games:
   - {fileID: 11400000, guid: dae692490d41dda488bf199e4fdb30af, type: 2}
   - {fileID: 11400000, guid: a7ddf647cf1171f439eb04184de307ff, type: 2}
   - {fileID: 11400000, guid: 176e63d5800dcf147b46497fd88e0fea, type: 2}
