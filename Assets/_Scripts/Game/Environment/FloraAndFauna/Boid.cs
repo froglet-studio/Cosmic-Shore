@@ -24,7 +24,7 @@ public class Boid : Fauna
     [SerializeField] float cohesionWeight = 1.0f;
     [SerializeField] float goalWeight = 1.0f;
 
-    [Header("Speed Settings")]
+    [Header("Speed Settings")] 
     [SerializeField] float minSpeed = 2.0f;
     [SerializeField] float maxSpeed = 5.0f;
 
