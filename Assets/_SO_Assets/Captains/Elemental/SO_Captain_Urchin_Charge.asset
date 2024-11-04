@@ -14,10 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Name: Urchin Charge
   Description: '[Description text placeholder]'
+  AIBehaviorDescription: 
   Flavor: '[Flavor text placeholder]'
   Image: {fileID: 21300000, guid: ebe8f8cf53fdb27449173dab53ce8109, type: 3}
-  Icon: {fileID: 21300000, guid: 33db5908f1280c24f98ec60ac59b6d86, type: 3}
-  SelectedIcon: {fileID: 21300000, guid: 6c4f40eef57f4d04bbd01083161212ff, type: 3}
+  HeadshotImage: {fileID: 0}
+  IconActive: {fileID: 21300000, guid: 6c4f40eef57f4d04bbd01083161212ff, type: 3}
+  IconInactive: {fileID: 21300000, guid: 33db5908f1280c24f98ec60ac59b6d86, type: 3}
   Ship: {fileID: 11400000, guid: bde48fa4833b6364b93111a55ba90958, type: 2}
   PrimaryElement: 1
   Element: {fileID: 11400000, guid: 93cccacc721734240998ca415746a8dc, type: 2}

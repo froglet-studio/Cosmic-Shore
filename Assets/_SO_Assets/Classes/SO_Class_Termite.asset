@@ -14,16 +14,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Class: 8
   Name: Termite
-  Summary: '[Placeholder Summary Text]'
   Description: Send out drones to shrink mass and produce cool stuff
-  Icon: {fileID: 21300000, guid: 4f5279e4af3c4234b8aa5937637aeabd, type: 3}
-  SelectedIcon: {fileID: 21300000, guid: 4ca0dd4a0b132db4c9e5e7f164b7d2c7, type: 3}
-  PreviewClip: {fileID: 2096801853598961014, guid: 6b8d168238dc02149b26d1221d313893,
-    type: 3}
+  IconActive: {fileID: 21300000, guid: 4ca0dd4a0b132db4c9e5e7f164b7d2c7, type: 3}
+  IconInactive: {fileID: 21300000, guid: 4f5279e4af3c4234b8aa5937637aeabd, type: 3}
   PreviewImage: {fileID: 21300000, guid: b3fe0f4b92e2cf74b830808e3f8d88fc, type: 3}
   TrailPreviewImage: {fileID: 21300000, guid: 2e75f6670391025489d30c8361fb8de3, type: 3}
-  CardSilohoutte: {fileID: 21300000, guid: 20c2cf23262a5354a8f8a0808a3acea8, type: 3}
   CardSilohoutteActive: {fileID: 21300000, guid: a89a335fa1c02f745ba93948c9b7ee32,
+    type: 3}
+  CardSilohoutteInactive: {fileID: 21300000, guid: 20c2cf23262a5354a8f8a0808a3acea8,
     type: 3}
   Abilities:
   - {fileID: 11400000, guid: cf4c7963673545946af80618f5a52917, type: 2}
@@ -42,3 +40,15 @@ MonoBehaviour:
   TrainingGames:
   - {fileID: 0}
   - {fileID: 0}
+  gameplayParameter1:
+    LeftHandLabel: Casual
+    RightHandLabel: Challenging
+    Value: 0.5
+  gameplayParameter2:
+    LeftHandLabel: Relaxing
+    RightHandLabel: Thrilling
+    Value: 0.5
+  gameplayParameter3:
+    LeftHandLabel: Solo
+    RightHandLabel: Social
+    Value: 0.5

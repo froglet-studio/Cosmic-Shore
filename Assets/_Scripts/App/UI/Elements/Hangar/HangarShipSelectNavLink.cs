@@ -35,23 +35,23 @@ namespace CosmicShore
 
         [HideInInspector] public HangarScreen HangarMenu;
         public SO_Ship Ship;
-        int index;
+        [SerializeField] int shipIndex;
 
         public void AssignShipClass(SO_Ship ship)
         {
             Ship = ship;
             LockImage.enabled = ship.IsLocked;
-            ShipImage.sprite = ship.Icon;
+            ShipImage.sprite = ship.IconInactive;
         }
 
         public void AssignIndex(int index)
         {
-            this.index = index;
+            this.shipIndex = index;
         }
 
         public void Select()
         {
-            HangarMenu.SelectShip(index);
+            HangarMenu.SelectShip(shipIndex);
         }
 
         public override void SetActive(bool isActive)

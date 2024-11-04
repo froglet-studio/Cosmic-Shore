@@ -16,3 +16,4 @@ MonoBehaviour:
   fieldWidth: 200
   fieldHeight: 200
   fieldMax: 500
+  minRadius: 10

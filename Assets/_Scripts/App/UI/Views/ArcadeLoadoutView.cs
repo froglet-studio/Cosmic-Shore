@@ -129,7 +129,7 @@ namespace CosmicShore.App.UI.Views
 
             activeShipType = availableShips[selectedShipIndex].Class;
             ShipTitle.text = availableShips[selectedShipIndex].Name;
-            ShipClassImage.sprite = availableShips[selectedShipIndex].CardSilohoutte;
+            ShipClassImage.sprite = availableShips[selectedShipIndex].CardSilohoutteInactive;
 
             Debug.Log("Active Ship Type is " + activeShipType);
         }

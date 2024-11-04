@@ -87,7 +87,7 @@ namespace CosmicShore
                     }
                     resourceSystem.ChangeResourceAmount(ammoIndex, -ammoCost);
                 }
-                yield return new WaitForSeconds(1/firingRate); 
+                yield return new WaitForSeconds(1/firingRate);
             }
         }
     }

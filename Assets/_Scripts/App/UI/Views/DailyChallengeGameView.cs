@@ -46,7 +46,7 @@ namespace CosmicShore.App.UI.Views
             preview.GetComponent<RectTransform>().sizeDelta = new Vector2(256, 144);
 
             IntensityImage.sprite = IntensitySprites[game.DailyChallengeIntensity - 1];
-            ShipClassImage.sprite = Hangar.Instance.GetShipSOByShipType(game.ShipClass.Class).Icon;
+            ShipClassImage.sprite = Hangar.Instance.GetShipSOByShipType(game.ShipClass.Class).IconInactive;
 
             RewardButtonOne.SetReward(game.DailyChallengeTierOneReward);
             RewardButtonTwo.SetReward(game.DailyChallengeTierTwoReward);

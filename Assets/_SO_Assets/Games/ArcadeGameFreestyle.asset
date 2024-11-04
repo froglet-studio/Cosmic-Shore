@@ -16,11 +16,13 @@ MonoBehaviour:
   DisplayName: Freestyle
   Description: No rules, time, or score. Do what you want for as long as you like.
     This is not a game; enjoy the toy.
-  Icon: {fileID: 21300000, guid: 735c0e18d396f9e44ae83b165805dc30, type: 3}
-  SelectedIcon: {fileID: 21300000, guid: a0a884671f982ec41aa43688ff4c5c61, type: 3}
+  IconActive: {fileID: 21300000, guid: a0a884671f982ec41aa43688ff4c5c61, type: 3}
+  IconInactive: {fileID: 21300000, guid: 735c0e18d396f9e44ae83b165805dc30, type: 3}
   CardBackground: {fileID: 21300000, guid: 88a9b4cf2dc46a74a8f85cba135a5352, type: 3}
   PreviewClip: {fileID: 241334157148977051, guid: 5c86136010666914fbccc6959d9e1157,
     type: 3}
+  GolfScoring: 0
+  SceneName: MinigameFreestyle
   Captains:
   - {fileID: 11400000, guid: 15f7cf9ff064a6746a1b3432455a787b, type: 2}
   - {fileID: 11400000, guid: f39381eaab68c5444b4d8846877fe5c7, type: 2}
@@ -28,12 +30,10 @@ MonoBehaviour:
   - {fileID: 11400000, guid: f2d76569deb637b4e90869cb5a908a6b, type: 2}
   - {fileID: 11400000, guid: 0d57b8e9eb4fb7a4b8db5456bb5f3530, type: 2}
   - {fileID: 11400000, guid: 92b7a5f8125016348a97d370d2f295fc, type: 2}
-  GolfScoring: 0
   MinPlayers: 1
   MaxPlayers: 1
   MinIntensity: 1
   MaxIntensity: 4
-  SceneName: MinigameFreestyle
   CallToActionTargetType: 409
   ViewUserAction: 0
   PlayUserAction: 0

@@ -1,14 +1,16 @@
 using UnityEngine;
+using UnityEngine.Serialization;
 using UnityEngine.Video;
 
 [CreateAssetMenu(fileName = "New Ability", menuName = "CosmicShore/Ship/ShipAbility", order = 4)]
 public class SO_ShipAbility : ScriptableObject
 {
-    [SerializeField] public ShipActions Action;
     [SerializeField] public string Name;
     [SerializeField] public string Description;
-    [SerializeField] public Sprite Icon;
-    [SerializeField] public Sprite SelectedIcon;
+    [FormerlySerializedAs("SelectedIcon")]
+    [SerializeField] public Sprite IconActive;
+    [FormerlySerializedAs("Icon")]
+    [SerializeField] public Sprite IconInactive;
     [SerializeField] public VideoPlayer PreviewClip;
     /// <summary>
     /// A backlink to the ship this Ability is attached to. This is not necessarily a 1 to 1 mapping.

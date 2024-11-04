@@ -84,11 +84,11 @@ namespace CosmicShore
             var game = SelectedGame.Game;
             Debug.Log($"Populating Training Details List: {game.DisplayName}");
             Debug.Log($"Populating Training  Details List: {game.Description}");
-            Debug.Log($"Populating Training  Details List: {game.Icon}");
+            Debug.Log($"Populating Training  Details List: {game.IconInactive}");
             Debug.Log($"Populating Training  Details List: {game.PreviewClip}");
 
             // Game details
-            if (ShipModelImage != null) ShipModelImage.sprite = game.Icon;
+            if (ShipModelImage != null) ShipModelImage.sprite = game.IconInactive;
             SelectedGameName.text = game.DisplayName;
             SelectedGameDescription.text = game.Description;
 

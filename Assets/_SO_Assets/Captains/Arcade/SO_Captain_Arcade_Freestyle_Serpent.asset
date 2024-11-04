@@ -14,14 +14,18 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Name: Astrofoil
   Description: When Astrofoil takes flight, the cosmos takes notice
+  AIBehaviorDescription: 
   Flavor: 
-  Behavior: 
   Image: {fileID: 21300000, guid: 161e07fc5930fca4ebeccaa1257a4176, type: 3}
-  Icon: {fileID: 21300000, guid: 819effa465b72bb45b905aedef472366, type: 3}
-  SelectedIcon: {fileID: 21300000, guid: eaa3d5968cee12342ad242f0bf659b03, type: 3}
+  HeadshotImage: {fileID: 0}
+  IconActive: {fileID: 21300000, guid: eaa3d5968cee12342ad242f0bf659b03, type: 3}
+  IconInactive: {fileID: 21300000, guid: 819effa465b72bb45b905aedef472366, type: 3}
   Ship: {fileID: 11400000, guid: 8a288448ab55edc46ac841a5f2e53d83, type: 2}
   PrimaryElement: 4
-  InitialMass: 0.5
-  InitialCharge: 0.5
-  InitialSpace: 0.5
-  InitialTime: 0.5
+  Element: {fileID: 0}
+  InitialResourceLevels:
+    Mass: 0
+    Charge: 0
+    Space: 0
+    Time: 0
+  BasePrice: 0

@@ -14,17 +14,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Class: 1
   Name: Manta
-  Summary: '[Placeholder Summary Text]'
   Description: Soar with grace through open space on relaxing scouting missions,
     or run a heist with a flyby. Either way you get to relax while helping your team.
-  Icon: {fileID: 21300000, guid: a89a335fa1c02f745ba93948c9b7ee32, type: 3}
-  SelectedIcon: {fileID: 21300000, guid: c954b73f8623fb04a94f12ee1b89f2b3, type: 3}
-  PreviewClip: {fileID: 2096801853598961014, guid: 6b8d168238dc02149b26d1221d313893,
-    type: 3}
+  IconActive: {fileID: 21300000, guid: c954b73f8623fb04a94f12ee1b89f2b3, type: 3}
+  IconInactive: {fileID: 21300000, guid: a89a335fa1c02f745ba93948c9b7ee32, type: 3}
   PreviewImage: {fileID: 21300000, guid: b3fe0f4b92e2cf74b830808e3f8d88fc, type: 3}
   TrailPreviewImage: {fileID: 21300000, guid: 2e75f6670391025489d30c8361fb8de3, type: 3}
-  CardSilohoutte: {fileID: 21300000, guid: 20c2cf23262a5354a8f8a0808a3acea8, type: 3}
   CardSilohoutteActive: {fileID: 21300000, guid: a89a335fa1c02f745ba93948c9b7ee32,
+    type: 3}
+  CardSilohoutteInactive: {fileID: 21300000, guid: 20c2cf23262a5354a8f8a0808a3acea8,
     type: 3}
   Abilities:
   - {fileID: 11400000, guid: cf4c7963673545946af80618f5a52917, type: 2}

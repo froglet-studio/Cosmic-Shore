@@ -61,8 +61,8 @@ namespace CosmicShore.Models
             Description = so_Captain.Description;
             Flavor = so_Captain.Flavor;
             Image = so_Captain.Image;
-            Icon = so_Captain.Icon;
-            SelectedIcon = so_Captain.SelectedIcon;
+            Icon = so_Captain.IconInactive;
+            SelectedIcon = so_Captain.IconActive;
             Ship = so_Captain.Ship;
             PrimaryElement = so_Captain.PrimaryElement;
             SO_Element = so_Captain.Element;

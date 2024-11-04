@@ -13,15 +13,20 @@ MonoBehaviour:
   m_Name: _ArcadeGameCosmicDrift
   m_EditorClassIdentifier: 
   Mode: 6
-  Name: Cosmic Drift
+  DisplayName: 
   Description: Practicing for the sideshow
-  Icon: {fileID: 21300000, guid: 4b304c3bdfbb261438eefa38b7b1db68, type: 3}
-  SelectedIcon: {fileID: 21300000, guid: bc4ea189542eb5c48b0383d1caa0013b, type: 3}
+  IconActive: {fileID: 21300000, guid: bc4ea189542eb5c48b0383d1caa0013b, type: 3}
+  IconInactive: {fileID: 21300000, guid: 4b304c3bdfbb261438eefa38b7b1db68, type: 3}
   CardBackground: {fileID: 0}
   PreviewClip: {fileID: 241334157148977051, guid: bce3acfd8a554e942bc4f1903e25eb07,
     type: 3}
+  GolfScoring: 0
+  SceneName: MinigameDriftCourse
   Captains: []
   MinPlayers: 1
   MaxPlayers: 4
-  SceneName: MinigameDriftCourse
+  MinIntensity: 1
+  MaxIntensity: 4
   CallToActionTargetType: 406
+  ViewUserAction: 0
+  PlayUserAction: 0

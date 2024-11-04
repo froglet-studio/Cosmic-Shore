@@ -31,25 +31,11 @@ namespace CosmicShore
 
         ScoreTracker scoreTracker;
 
-        void Start()
-        {
-            MultiplayerView.gameObject.SetActive(false);
-            SingleplayerView.gameObject.SetActive(false);
-        }
-
-        private void OnEnable()
-        {
-            ScoreTracker.OnScoreTrackerEnabled += FindScoreTrackerReference;
-        }
-
-        private void OnDisable()
-        {
-            ScoreTracker.OnScoreTrackerEnabled -= FindScoreTrackerReference;
-        }
-
-        private void FindScoreTrackerReference()
+        void Awake()
         {
             scoreTracker = FindAnyObjectByType<ScoreTracker>();
+            MultiplayerView.gameObject.SetActive(false);
+            SingleplayerView.gameObject.SetActive(false);
         }
 
         public void ShowMultiplayerView()
@@ -112,8 +98,8 @@ namespace CosmicShore
             BannerImage.color = SinglePlayerBannerColor;
             BannerText.text = "RUN RESULTS";
 
-            // Populate this run's score // TODO: fix playerScore null reference here
-            var playerScore = scoreTracker.playerScores.FirstOrDefault();
+            // Populate this run's score
+            var playerScore = scoreTracker.playerScores.First();
             SinglePlayerScoreTextField.text = ((int)playerScore.Value).ToString();
 
             // TODO: pull actual high score

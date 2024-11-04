@@ -15,19 +15,19 @@ MonoBehaviour:
   Mode: 10
   DisplayName: Cellular Brawl
   Description: Like duel for the cell but ensemble
-  Icon: {fileID: 21300000, guid: a12edf378921c3d47bcc584148a52ac3, type: 3}
-  SelectedIcon: {fileID: 21300000, guid: a12edf378921c3d47bcc584148a52ac3, type: 3}
+  IconActive: {fileID: 21300000, guid: a12edf378921c3d47bcc584148a52ac3, type: 3}
+  IconInactive: {fileID: 21300000, guid: a12edf378921c3d47bcc584148a52ac3, type: 3}
   CardBackground: {fileID: 21300000, guid: 78575ccdc916fca45960791606e128c9, type: 3}
   PreviewClip: {fileID: 241334157148977051, guid: f48cd1df8d808014c8a8f4db1258d202,
     type: 3}
+  GolfScoring: 0
+  SceneName: MinigameCellularBrawl2v2
   Captains:
   - {fileID: 11400000, guid: 42800aad95708bc488da7eed56ecc146, type: 2}
-  GolfScoring: 0
   MinPlayers: 1
   MaxPlayers: 1
   MinIntensity: 1
   MaxIntensity: 4
-  SceneName: MinigameCellularBrawl2v2
   CallToActionTargetType: 411
   ViewUserAction: 0
   PlayUserAction: 0

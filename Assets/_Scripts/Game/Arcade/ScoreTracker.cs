@@ -46,14 +46,6 @@ namespace CosmicShore.Game.Arcade
             turnStartTime = Time.time;
         }
 
-        public void OnEnable()
-        {
-            Debug.Log("ScoreTracker is now enabled!");
-
-            // Trigger the event when the GameObject is enabled
-            OnScoreTrackerEnabled?.Invoke();
-        }
-
         void Update()
         {
             if (turnStartTime == 0)

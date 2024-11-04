@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
+using UnityEngine.UI;
 
 namespace CosmicShore.App.UI
 {
@@ -62,6 +63,15 @@ namespace CosmicShore.App.UI
 
             if (navLinks.Count > 0)
                 ActivateLink(navLinks[0]);
+        }
+
+        public void UpdateLayout()
+        {
+            HorizontalLayoutGroup layoutGroup = GetComponentInParent<HorizontalLayoutGroup>();
+            if (layoutGroup != null)
+            {
+                LayoutRebuilder.ForceRebuildLayoutImmediate(layoutGroup.GetComponent<RectTransform>());
+            }
         }
     }
 }

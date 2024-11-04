@@ -19,6 +19,7 @@ MonoBehaviour:
   requiresFullRectMesh: 0
   requiresSpriteSheetFix: 0
   requiresInstancing: 0
+  requiresTiling: 0
   benchmarkValue: 1500
   textureSamples: 0
   textureToggle: 

@@ -14,14 +14,18 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Name: ShrikeFreestyleSO
   Description: 
+  AIBehaviorDescription: 
   Flavor: 
-  Behavior: 
   Image: {fileID: 0}
-  Icon: {fileID: 0}
-  SelectedIcon: {fileID: 0}
+  HeadshotImage: {fileID: 0}
+  IconActive: {fileID: 0}
+  IconInactive: {fileID: 0}
   Ship: {fileID: 11400000, guid: 4692d8d3025d9c446bb1387c05c82ac2, type: 2}
   PrimaryElement: 1
-  InitialMass: 1
-  InitialCharge: 1
-  InitialSpace: 1
-  InitialTime: 1
+  Element: {fileID: 0}
+  InitialResourceLevels:
+    Mass: 0
+    Charge: 0
+    Space: 0
+    Time: 0
+  BasePrice: 0

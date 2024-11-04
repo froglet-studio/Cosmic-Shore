@@ -14,22 +14,20 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Class: 7
   Name: Serpent
-  Summary: '[Placeholder Summary Text]'
   Description: Make those walls
-  Icon: {fileID: 21300000, guid: db0b65e73f14fe24883b40a9c0bbc11c, type: 3}
-  SelectedIcon: {fileID: 21300000, guid: 27cc30ef4d5f74449bd0bf6014941e02, type: 3}
-  PreviewClip: {fileID: 2096801853598961014, guid: 6b8d168238dc02149b26d1221d313893,
-    type: 3}
+  IconActive: {fileID: 21300000, guid: 27cc30ef4d5f74449bd0bf6014941e02, type: 3}
+  IconInactive: {fileID: 21300000, guid: db0b65e73f14fe24883b40a9c0bbc11c, type: 3}
   PreviewImage: {fileID: 21300000, guid: b3fe0f4b92e2cf74b830808e3f8d88fc, type: 3}
   TrailPreviewImage: {fileID: 21300000, guid: 2e75f6670391025489d30c8361fb8de3, type: 3}
-  CardSilohoutte: {fileID: 21300000, guid: 27cc30ef4d5f74449bd0bf6014941e02, type: 3}
   CardSilohoutteActive: {fileID: 21300000, guid: db0b65e73f14fe24883b40a9c0bbc11c,
     type: 3}
+  CardSilohoutteInactive: {fileID: 21300000, guid: 27cc30ef4d5f74449bd0bf6014941e02,
+    type: 3}
   Abilities:
-  - {fileID: 11400000, guid: cf4c7963673545946af80618f5a52917, type: 2}
-  - {fileID: 11400000, guid: 260209c83d5be594a81043ebceea8ddf, type: 2}
-  - {fileID: 11400000, guid: 2c4bb3cbbacfb02489a36a11aa4c3d1e, type: 2}
-  - {fileID: 11400000, guid: 094b4c0cea37d4a4fb02edf8122006d1, type: 2}
+  - {fileID: 11400000, guid: d28b6b5c008786c4998fb0cec02ab5bc, type: 2}
+  - {fileID: 11400000, guid: bf4c23aad32b0f4489dbc09db593aab4, type: 2}
+  - {fileID: 11400000, guid: 59a526f543aa82b43920bafb7fb8684d, type: 2}
+  - {fileID: 11400000, guid: 9608a8095e3294548aa8e9da3bd634a0, type: 2}
   Captains:
   - {fileID: 11400000, guid: 7d2c8f9dc64f5e54ab64e0a134800169, type: 2}
   - {fileID: 11400000, guid: 0faece9fdfd892447bb8c90529873511, type: 2}

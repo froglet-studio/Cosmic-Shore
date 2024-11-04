@@ -95,12 +95,12 @@ namespace CosmicShore.App.UI.Screens
 
             // Deselect them all
             for (var i = 0; i < _displayCount; i++)
-                GameSelectionContainer.GetChild(i).gameObject.GetComponent<Image>().sprite = LeaderboardEligibleGames[i].Icon;
+                GameSelectionContainer.GetChild(i).gameObject.GetComponent<Image>().sprite = LeaderboardEligibleGames[i].IconInactive;
 
             // Select the one
             SelectedGame = LeaderboardEligibleGames[index];
             SelectedGameMode = SelectedGame.Mode;
-            GameSelectionContainer.GetChild(index).gameObject.GetComponent<Image>().sprite = SelectedGame.SelectedIcon;
+            GameSelectionContainer.GetChild(index).gameObject.GetComponent<Image>().sprite = SelectedGame.IconActive;
             PopulateShipClassSelectionDropdown();
         }
 
@@ -121,7 +121,7 @@ namespace CosmicShore.App.UI.Screens
                 {
                     var gameSelection = GameSelectionContainer.GetChild(i).gameObject;
                     gameSelection.SetActive(true);
-                    gameSelection.GetComponent<Image>().sprite = game.Icon;
+                    gameSelection.GetComponent<Image>().sprite = game.IconInactive;
                     gameSelection.GetComponent<Button>().onClick.RemoveAllListeners();
                     gameSelection.GetComponent<Button>().onClick.AddListener(() => SelectGame(selectionIndex));
                     gameSelection.GetComponent<Button>().onClick

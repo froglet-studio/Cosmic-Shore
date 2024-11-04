@@ -41,7 +41,7 @@ namespace CosmicShore.App.UI.Views
                 Rows[row].transform.GetChild(0).GetComponent<Image>().sprite = captain.Image;
 
                 // Elemental image
-                Rows[row].transform.GetChild(1).GetComponent<Image>().sprite = captain.SelectedIcon;
+                Rows[row].transform.GetChild(1).GetComponent<Image>().sprite = captain.IconActive;
 
                 // flavor text
                 if (IsPlayer)

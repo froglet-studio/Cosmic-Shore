@@ -28,6 +28,17 @@ MonoBehaviour:
     ActionQuantity: 0
     MultiSessionTracking: 0
     Scope: 
+    RewardItemID: 
+    UnlockedItem:
+      ItemId: 
+      Name: 
+      Description: 
+      ContentType: 
+      Categories: 
+      Price: []
+      Tags: []
+      Type: 
+      Amount: 0
     EventsCompleted: 0
     Completed: 0
     RewardGranted: 0

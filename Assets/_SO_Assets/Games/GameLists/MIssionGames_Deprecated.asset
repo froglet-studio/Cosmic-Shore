@@ -12,5 +12,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8e0bffacb84dc644d908e074b263f51b, type: 3}
   m_Name: MIssionGames_Deprecated
   m_EditorClassIdentifier: 
-  GameList:
+  Games:
   - {fileID: 11400000, guid: 6f7bd40de6b623748a4b8ec3a4ce8c9d, type: 2}

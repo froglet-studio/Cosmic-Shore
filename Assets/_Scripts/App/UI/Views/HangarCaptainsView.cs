@@ -93,7 +93,7 @@ namespace CosmicShore.App.UI.Views
             SelectedCaptainQuote.text = captain.Flavor;
             SelectedCaptainImage.sprite = captain.Image;
             SelectedCaptainImage.color = Color.white;
-            SelectedCaptainShipImage.sprite = captain.Ship.Icon;
+            SelectedCaptainShipImage.sprite = captain.Ship.IconInactive;
 
             //
             // Populate Requirements Box
