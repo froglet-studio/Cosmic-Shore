@@ -1808,7 +1808,6 @@ MonoBehaviour:
   trailBlockImpactEffects: 020000000f00000011000000
   blockChargeChange: 0
   boostMultiplier: 2
-  boostFuelAmount: 0
   bottomEdgeButtons: 0
   Inertia: 70
   inputEventShipActions:
@@ -1816,8 +1815,7 @@ MonoBehaviour:
     ShipActions:
     - {fileID: 867704553499413969}
   - InputEvent: 4
-    ShipActions:
-    - {fileID: 5096403877754360922}
+    ShipActions: []
   resourceEventClassActions: []
   AOEExplosionMaterial: {fileID: 0}
   AOEConicExplosionMaterial: {fileID: 0}
@@ -1851,6 +1849,7 @@ MonoBehaviour:
   AutoPilotEnabled: 0
   AlignmentEnabled: 0
   Slowed: 0
+  Overheating: 0
   Attached: 0
   AttachedTrailBlock: {fileID: 0}
   GunsActive: 0

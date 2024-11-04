@@ -160,7 +160,7 @@ namespace CosmicShore.Game.Arcade
             {
                 StartTurn();
 
-                ActivePlayer.GetComponent<InputController>().Paused = false;
+                ActivePlayer.GetComponent<InputController>().SetPaused(false);
 
                 if (EnableTrails)
                 {
@@ -231,7 +231,7 @@ namespace CosmicShore.Game.Arcade
         {
             foreach (var turnMonitor in TurnMonitors)
                 turnMonitor.PauseTurn();
-            ActivePlayer.GetComponent<InputController>().Paused = true;
+            ActivePlayer.GetComponent<InputController>().SetPaused(true);
             ActivePlayer.Ship.TrailSpawner.PauseTrailSpawner();
 
             yield return new WaitForSeconds(EndOfTurnDelay);
@@ -405,7 +405,7 @@ namespace CosmicShore.Game.Arcade
             }
 
             ActivePlayer.transform.SetPositionAndRotation(PlayerOrigin.transform.position, PlayerOrigin.transform.rotation);
-            ActivePlayer.GetComponent<InputController>().Paused = true;
+            ActivePlayer.GetComponent<InputController>().SetPaused(true);
             ActivePlayer.Ship.Teleport(PlayerOrigin.transform);
             ActivePlayer.Ship.GetComponent<ShipTransformer>().Reset();
             ActivePlayer.Ship.TrailSpawner.PauseTrailSpawner();
