@@ -32,7 +32,10 @@ namespace CosmicShore.Game.Arcade
 
         void Start()
         {
-            ActivePlayerScoreDisplay = GameCanvas.MiniGameHUD.ScoreDisplay;
+            if (GameCanvas != null && GameCanvas.MiniGameHUD != null)
+                ActivePlayerScoreDisplay = GameCanvas.MiniGameHUD.ScoreDisplay;
+            else
+                Debug.LogWarning("GameCanvas or MiniGameHUD is not assigned!");
         }
 
         public virtual void StartTurn(string playerName, Teams playerTeam)
@@ -167,29 +170,9 @@ namespace CosmicShore.Game.Arcade
 
         public virtual string GetWinner()
         {
-            bool minTie;
-            bool maxTie;
-            var minScore = float.MaxValue;
-            var maxScore = float.MinValue;
-            var minKey = "";
-            var maxKey = "";
-            foreach (var key in playerScores.Keys)
-            {
-                if (playerScores[key] <= minScore)
-                {
-                    minTie = Mathf.Approximately(playerScores[key], minScore);
-                    minScore = playerScores[key];
-                    minKey = key;
-                }
-                if (playerScores[key] >= maxScore)
-                {
-                    maxTie = Mathf.Approximately(playerScores[key], maxScore);
-                    maxScore = playerScores[key];
-                    maxKey = key;
-                }
-            }
-
-            return GolfRules ? minKey : maxKey;
+            return GolfRules
+                ? playerScores.Aggregate((minPlayer, nextPlayer) => nextPlayer.Value < minPlayer.Value ? nextPlayer : minPlayer).Key
+                : playerScores.Aggregate((maxPlayer, nextPlayer) => nextPlayer.Value > maxPlayer.Value ? nextPlayer : maxPlayer).Key;
         }
 
         public virtual Teams GetWinningTeam()

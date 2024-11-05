@@ -1,3 +1,4 @@
+#if !UNITY_WEBGL
 using System;
 using CosmicShore.App.Systems.UserActions;
 using Firebase;
@@ -260,3 +261,4 @@ namespace CosmicShore.Integrations.Firebase.Controller
     
     }
 }
+#endif

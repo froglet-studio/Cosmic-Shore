@@ -1,5 +1,7 @@
 using System;
+#if !UNITY_WEBGL
 using CosmicShore.Integrations.Firebase.Controller;
+#endif
 using UnityEngine;
 using UnityEngine.Advertisements;
 
@@ -39,12 +41,16 @@ namespace CosmicShore.App.Systems.Ads
 
         private void OnEnable()
         {
+#if !UNITY_WEBGL
             AdLoaded += FirebaseAnalyticsController.LogEventAdImpression;
+#endif
         }
 
         private void OnDisable()
         {
+#if !UNITY_WEBGL
             AdLoaded -= FirebaseAnalyticsController.LogEventAdImpression;
+#endif
         }
 
         public void Initialize()

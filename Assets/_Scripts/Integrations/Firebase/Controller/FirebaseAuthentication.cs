@@ -1,4 +1,4 @@
-using System;
+#if !UNITY_WEBGL
 using Firebase.Auth;
 using CosmicShore.Utility.Singleton;
 using CosmicShore.Integrations.PlayFab.Event_Models;
@@ -175,3 +175,4 @@ namespace CosmicShore.Integrations.Firebase.Controller
     
     
 }
+#endif
