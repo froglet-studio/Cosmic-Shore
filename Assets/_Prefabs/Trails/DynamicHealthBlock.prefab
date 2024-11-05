@@ -14,11 +14,11 @@ GameObject:
   - component: {fileID: 6724784892155022458}
   - component: {fileID: 6313579230210663873}
   m_Layer: 0
-  m_Name: HealthBlock
+  m_Name: DynamicHealthBlock
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
-  m_StaticEditorFlags: 2147483647
+  m_StaticEditorFlags: 0
   m_IsActive: 1
 --- !u!4 &5222650486365209692
 Transform:
