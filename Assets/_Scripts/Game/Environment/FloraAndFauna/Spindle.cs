@@ -6,7 +6,7 @@ namespace CosmicShore
     public class Spindle : MonoBehaviour
     {
         public GameObject cylinder;
-        public MeshRenderer RenderedObject;
+        public Renderer RenderedObject;
         Spindle parentSpindle;
         public LifeForm LifeForm;
 

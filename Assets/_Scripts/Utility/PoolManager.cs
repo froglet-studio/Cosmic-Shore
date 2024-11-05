@@ -5,11 +5,9 @@ using System.Collections;
 
 public class PoolManager : MonoBehaviour
 {
-
     [System.Serializable]
     public class Pool
     {
-        //public string tag;
         public GameObject prefab;
         public int size;
     }
@@ -33,15 +31,18 @@ public class PoolManager : MonoBehaviour
                 obj.SetActive(false);
                 poolDictionary[pool.prefab.tag].Enqueue(obj);
             }
-
-            
         }
-        StartCoroutine(WaitForPlayerCoroutine());
+        StartCoroutine(WaitForShipInitialization());
     }
 
-    IEnumerator WaitForPlayerCoroutine() // TODO: fix arbitrary wait time
+    IEnumerator WaitForShipInitialization()
     {
-        yield return new WaitForSeconds(2);
+        // Wait until we have a valid ship reference and its player is initialized
+        while (ship == null || ship.Player == null)
+        {
+            yield return new WaitForEndOfFrame();
+        }
+        
         transform.parent = ship.Player.transform;
     }
 
@@ -72,5 +73,4 @@ public class PoolManager : MonoBehaviour
         obj.SetActive(false);
         poolDictionary[tag].Enqueue(obj);
     }
-
 }

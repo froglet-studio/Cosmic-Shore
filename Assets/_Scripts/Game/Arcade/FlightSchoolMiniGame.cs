@@ -30,31 +30,18 @@ namespace CosmicShore.Game.Arcade
 
             if (!gameRunning) return;
 
-            // TODO: pull this out into an "EliminationMonitor" class
-            // if any volume was destroyed, there must have been a collision
-            if (StatsManager.Instance.PlayerStats.ContainsKey(ActivePlayer.PlayerName) && StatsManager.Instance.PlayerStats[ActivePlayer.PlayerName].VolumeDestroyed > 0)
-            {
-                EliminateActivePlayer();
-                EndTurn();
-            }
-        }
-
-        protected override void EndTurn()
-        {
             foreach (var turnMonitor in TurnMonitors)
             {
-                if (turnMonitor is TimeBasedTurnMonitor timeMonitor)
+                if (turnMonitor.CheckForEndOfTurn())
                 {
-                    if (timeMonitor.CheckForEndOfTurn())
+                    if (turnMonitor.ShouldEliminatePlayer())
                     {
                         EliminateActivePlayer();
-                        base.EndTurn();
-                        return;
                     }
+                    EndTurn();
+                    return;
                 }
             }
-
-            base.EndTurn();
         }
 
         protected override void SetupTurn()
@@ -62,8 +49,6 @@ namespace CosmicShore.Game.Arcade
             base.SetupTurn();
             Crystal.transform.position = CrystalStartPosition;
             ActivePlayer.Ship.DisableSkimmer();
-
-            StatsManager.Instance.ResetStats(); // TODO: this belongs in the EliminationMonitor
         }
     }
 }

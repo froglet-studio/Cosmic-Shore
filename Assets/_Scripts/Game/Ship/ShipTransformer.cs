@@ -77,9 +77,6 @@ public class ShipTransformer : MonoBehaviour
                 return;
         }
 
-        RotateShip();
-        shipStatus.blockRotation = transform.rotation;
-
         ApplyThrottleModifiers();
         ApplyVelocityModifiers();
 
@@ -96,7 +93,7 @@ public class ShipTransformer : MonoBehaviour
             Yaw();
             Pitch();
 
-            if (inputController.isGyroEnabled) //&& !Equals(inverseInitialRotation, new Quaternion(0, 0, 0, 0)))
+            if (inputController.IsGyroEnabled) //&& !Equals(inverseInitialRotation, new Quaternion(0, 0, 0, 0)))
             {
                 // Updates GameObjects blockRotation from input device's gyroscope
                 transform.rotation = Quaternion.Lerp(

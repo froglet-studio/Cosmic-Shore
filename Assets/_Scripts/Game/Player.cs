@@ -84,7 +84,7 @@ public class Player : MonoBehaviour
         shipInstance.GetComponent<AIPilot>().enabled = false;
 
         ship = shipInstance;
-        GetComponent<InputController>().ship = ship;
+        GetComponent<InputController>().Ship = ship;
             
         GameCanvas.MiniGameHUD.ship = ship;
         ship.Team = Team;
@@ -99,7 +99,7 @@ public class Player : MonoBehaviour
         shipInstance.GetComponent<AIPilot>().enabled = true;
 
         var inputController = GetComponent<InputController>();
-        inputController.ship = shipInstance;
+        inputController.Ship = shipInstance;
 
         ship = shipInstance.GetComponent<Ship>();
         ship.Team = Team;

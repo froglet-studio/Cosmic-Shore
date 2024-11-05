@@ -88,7 +88,7 @@ MonoBehaviour:
     DullCrystalColor: {r: 0, g: 0.02745098, b: 0.5058824, a: 0.9411765}
     BrightCrystalColor: {r: 0.07058824, g: 0.05490196, b: 0.7490196, a: 0.9411765}
   EnvironmentColors:
-    SkyColor: {r: 0.007963917, g: 0, b: 0.64779866, a: 0}
+    SkyColor: {r: 0, g: 0, b: 0.102, a: 0}
     LightColor: {r: 0, g: 0, b: 0, a: 0}
     DarkColor: {r: 0, g: 0, b: 0, a: 0}
     BrightCTA: {r: 0, g: 0, b: 0, a: 0}

@@ -2378,9 +2378,6 @@ MonoBehaviour:
     - {fileID: 512306600173285592}
     - {fileID: 4734135289798570143}
     - {fileID: 3521154205896523080}
-  - InputEvent: 3
-    ShipActions:
-    - {fileID: 2525174765376973701}
   resourceEventClassActions: []
   AOEExplosionMaterial: {fileID: 0}
   AOEConicExplosionMaterial: {fileID: 0}

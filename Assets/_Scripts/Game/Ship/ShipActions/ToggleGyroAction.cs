@@ -1,4 +1,6 @@
 using CosmicShore.Game.IO;
+using UnityEngine;
+
 
 public class ToggleGyroAction : ShipAction
 {
