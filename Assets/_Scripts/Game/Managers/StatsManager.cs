@@ -25,10 +25,8 @@ public class StatsManager : Singleton<StatsManager>
         if (!RecordStats)
             return;
 
-        if (!MaybeCreateDictionaryEntries(ship.Team, ship.Player.PlayerName))
+        if (!EnsureDictionaryEntriesExist(ship.Team, ship.Player.PlayerName))
             return;
-
-        Debug.Log($"CrystalCollected - recording stat - ship.Player.PlayerName:{ship.Player.PlayerName}, crystalProperties.Element:{crystalProperties.Element}, crystalProperties.crystalValue:{crystalProperties.crystalValue}");
 
         RoundStats roundStats;
         roundStats = TeamStats[ship.Team];
@@ -42,72 +40,63 @@ public class StatsManager : Singleton<StatsManager>
         switch (crystalProperties.Element)
         {
             case Element.Omni:
-                roundStats = TeamStats[ship.Team];
-                roundStats.OmniCrystalsCollected++;
-                TeamStats[ship.Team] = roundStats;
-
-                roundStats = PlayerStats[ship.Player.PlayerName];
-                roundStats.OmniCrystalsCollected++;
-                PlayerStats[ship.Player.PlayerName] = roundStats;
+                UpdateStatForTeamAndPlayer(ship.Team, ship.Player.PlayerName, stats => stats.OmniCrystalsCollected++);
                 break;
+
             case Element.Charge:
-                roundStats = TeamStats[ship.Team];
-                roundStats.ElementalCrystalsCollected++;
-                roundStats.ChargeCrystalValue += crystalProperties.crystalValue;
-                TeamStats[ship.Team] = roundStats;
-
-                roundStats = PlayerStats[ship.Player.PlayerName];
-                roundStats.ElementalCrystalsCollected++;
-                roundStats.ChargeCrystalValue += crystalProperties.crystalValue;
-                PlayerStats[ship.Player.PlayerName] = roundStats;
-
-                Debug.Log($"CrystalCollected - recording stat - ship.Player.PlayerName:{ship.Player.PlayerName}, roundStats.ChargeCrystalValue:{roundStats.ChargeCrystalValue}"); 
-                Debug.Log($"CrystalCollected - recording stat - ship.Player.PlayerName:{ship.Player.PlayerName}, playerStats[ship.Player.PlayerName]:{PlayerStats[ship.Player.PlayerName]}"); 
-
-
+                UpdateStatForTeamAndPlayer(ship.Team, ship.Player.PlayerName, stats =>
+                {
+                    stats.ElementalCrystalsCollected++;
+                    stats.ChargeCrystalValue += crystalProperties.crystalValue;
+                });
                 break;
+
             case Element.Mass:
-                roundStats = TeamStats[ship.Team];
-                roundStats.ElementalCrystalsCollected++;
-                roundStats.MassCrystalValue += crystalProperties.crystalValue;
-                TeamStats[ship.Team] = roundStats;
-
-                roundStats = PlayerStats[ship.Player.PlayerName];
-                roundStats.ElementalCrystalsCollected++;
-                roundStats.MassCrystalValue += crystalProperties.crystalValue;
-                PlayerStats[ship.Player.PlayerName] = roundStats;
+                UpdateStatForTeamAndPlayer(ship.Team, ship.Player.PlayerName, stats =>
+                {
+                    stats.ElementalCrystalsCollected++;
+                    stats.MassCrystalValue += crystalProperties.crystalValue;
+                });
                 break;
+
             case Element.Space:
-                roundStats = TeamStats[ship.Team];
-                roundStats.ElementalCrystalsCollected++;
-                roundStats.SpaceCrystalValue += crystalProperties.crystalValue;
-                TeamStats[ship.Team] = roundStats;
-
-                roundStats = PlayerStats[ship.Player.PlayerName];
-                roundStats.ElementalCrystalsCollected++;
-                roundStats.SpaceCrystalValue += crystalProperties.crystalValue;
-                PlayerStats[ship.Player.PlayerName] = roundStats;
+                UpdateStatForTeamAndPlayer(ship.Team, ship.Player.PlayerName, stats =>
+                {
+                    stats.ElementalCrystalsCollected++;
+                    stats.SpaceCrystalValue += crystalProperties.crystalValue;
+                });
                 break;
-            case Element.Time:
-                roundStats = TeamStats[ship.Team];
-                roundStats.ElementalCrystalsCollected++;
-                roundStats.TimeCrystalValue += crystalProperties.crystalValue;
-                TeamStats[ship.Team] = roundStats;
 
-                roundStats = PlayerStats[ship.Player.PlayerName];
-                roundStats.ElementalCrystalsCollected++;
-                roundStats.TimeCrystalValue += crystalProperties.crystalValue;
-                PlayerStats[ship.Player.PlayerName] = roundStats;
+            case Element.Time:
+                UpdateStatForTeamAndPlayer(ship.Team, ship.Player.PlayerName, stats =>
+                {
+                    stats.ElementalCrystalsCollected++;
+                    stats.TimeCrystalValue += crystalProperties.crystalValue;
+                });
                 break;
         }
     }
+
+    private void UpdateStatForTeamAndPlayer(Teams team, string playerName, Action<RoundStats> updateAction)
+    {
+        // Update team stats
+        var teamStats = TeamStats[team];
+        updateAction(teamStats);
+        TeamStats[team] = teamStats;
+
+        // Update player stats
+        var playerStats = PlayerStats[playerName];
+        updateAction(playerStats);
+        PlayerStats[playerName] = playerStats;
+    }
+
 
     public void SkimmerShipCollision(Ship skimmingShip, Ship ship)
     {
         if (!RecordStats)
             return;
 
-        if (!MaybeCreateDictionaryEntries(skimmingShip.Team, skimmingShip.Player.PlayerName))
+        if (!EnsureDictionaryEntriesExist(skimmingShip.Team, skimmingShip.Player.PlayerName))
             return;
 
         var roundStats = TeamStats[skimmingShip.Team];
@@ -124,7 +113,7 @@ public class StatsManager : Singleton<StatsManager>
         if (!RecordStats)
             return;
 
-        if (!MaybeCreateDictionaryEntries(creatingTeam, creatingPlayerName))
+        if (!EnsureDictionaryEntriesExist(creatingTeam, creatingPlayerName))
             return;
 
         var roundStats = TeamStats[creatingTeam];
@@ -147,9 +136,9 @@ public class StatsManager : Singleton<StatsManager>
         if (!RecordStats)
             return;
 
-        if (!MaybeCreateDictionaryEntries(destroyingTeam, destroyingPlayerName))
+        if (!EnsureDictionaryEntriesExist(destroyingTeam, destroyingPlayerName))
             return;
-        if (!MaybeCreateDictionaryEntries(destroyedTrailBlockProperties.trailBlock.Team, destroyedTrailBlockProperties.trailBlock.PlayerName))
+        if (!EnsureDictionaryEntriesExist(destroyedTrailBlockProperties.trailBlock.Team, destroyedTrailBlockProperties.trailBlock.PlayerName))
             return;
 
         // Team Destruction Stats
@@ -190,9 +179,9 @@ public class StatsManager : Singleton<StatsManager>
         if (!RecordStats)
             return;
 
-        if (!MaybeCreateDictionaryEntries(restoringTeam, restoringPlayerName))
+        if (!EnsureDictionaryEntriesExist(restoringTeam, restoringPlayerName))
             return;
-        if (!MaybeCreateDictionaryEntries(restoredTrailBlockProperties.trailBlock.Team, restoredTrailBlockProperties.trailBlock.PlayerName))
+        if (!EnsureDictionaryEntriesExist(restoredTrailBlockProperties.trailBlock.Team, restoredTrailBlockProperties.trailBlock.PlayerName))
             return;
 
         var roundStats = TeamStats[restoringTeam];
@@ -215,7 +204,7 @@ public class StatsManager : Singleton<StatsManager>
         if (!RecordStats)
             return;
 
-        if (!MaybeCreateDictionaryEntries(modifiedTrailBlockProperties.trailBlock.Team, modifiedTrailBlockProperties.trailBlock.PlayerName))
+        if (!EnsureDictionaryEntriesExist(modifiedTrailBlockProperties.trailBlock.Team, modifiedTrailBlockProperties.trailBlock.PlayerName))
             return;
 
         // TODO: add Team modifying Stats separately for growth/shrink & friendly/hostyile
@@ -238,9 +227,9 @@ public class StatsManager : Singleton<StatsManager>
         if (!RecordStats)
             return;
 
-        if (!MaybeCreateDictionaryEntries(stealingTeam, stealingPlayerName))
+        if (!EnsureDictionaryEntriesExist(stealingTeam, stealingPlayerName))
             return;
-        if (!MaybeCreateDictionaryEntries(stolenTrailBlockProperties.trailBlock.Team, stolenTrailBlockProperties.trailBlock.PlayerName))
+        if (!EnsureDictionaryEntriesExist(stolenTrailBlockProperties.trailBlock.Team, stolenTrailBlockProperties.trailBlock.PlayerName))
             return;
 
         // Team Stealing Stats
@@ -277,7 +266,7 @@ public class StatsManager : Singleton<StatsManager>
         if (!RecordStats)
             return;
 
-        if (!MaybeCreateDictionaryEntries(team, playerName))
+        if (!EnsureDictionaryEntriesExist(team, playerName))
             return;
 
         RoundStats roundStats;
@@ -367,7 +356,7 @@ public class StatsManager : Singleton<StatsManager>
     /// <param name="team">Team stat dictionary key</param>
     /// <param name="playerName">Player stat dictionary key</param>
     /// <returns>True if the dictionary contains the new keys after execution</returns>
-    bool MaybeCreateDictionaryEntries(Teams team, string playerName)
+    bool EnsureDictionaryEntriesExist(Teams team, string playerName)
     {
         try
         {
@@ -387,13 +376,13 @@ public class StatsManager : Singleton<StatsManager>
         LastRoundTeamStats = TeamStats;
         LastRoundPlayerStats = PlayerStats;
         RecordStats = true;
-        TeamStats = new Dictionary<Teams, RoundStats>();
-        PlayerStats = new Dictionary<string, RoundStats>();
+        TeamStats.Clear();
+        PlayerStats.Clear();
     }
 
     public void AddPlayer(Teams team, string playerName)
     {
-        MaybeCreateDictionaryEntries(team, playerName);
+        EnsureDictionaryEntriesExist(team, playerName);
     }
 
     public float GetTotalVolume()

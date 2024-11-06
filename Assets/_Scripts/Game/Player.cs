@@ -60,6 +60,7 @@ public class Player : MonoBehaviour
                 default: // Default will be the players Playfab username
                     Debug.Log($"Player.Start - Instantiate Ship: {PlayerName}");
                     SetupPlayerShip(Hangar.Instance.LoadPlayerShip(defaultShip, Team));
+                    gameManager.WaitOnPlayerLoading();
                     break;
             }
         }
