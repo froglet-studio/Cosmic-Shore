@@ -479,8 +479,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9117ee7c8d6921843b1da29d1d1a8d33, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  healthBlock: {fileID: 0}
-  spindle: {fileID: 0}
+  healthBlock: {fileID: 6313579230210663873, guid: 4a31e01f8b69a584ca245a1687beb4c2,
+    type: 3}
+  spindle: {fileID: 8331289796329346999}
   minHealthBlocks: 0
   Team: 0
   aggression: 0
@@ -1423,6 +1424,11 @@ PrefabInstance:
       propertyPath: m_Name
       value: DynamicHealthBlock BellyR
       objectReference: {fileID: 0}
+    - target: {fileID: 6313579230210663873, guid: 4a31e01f8b69a584ca245a1687beb4c2,
+        type: 3}
+      propertyPath: LifeForm
+      value: 
+      objectReference: {fileID: 5351160486092638538}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -2300,6 +2306,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6313579230210663873, guid: 4a31e01f8b69a584ca245a1687beb4c2,
         type: 3}
+      propertyPath: LifeForm
+      value: 
+      objectReference: {fileID: 5351160486092638538}
+    - target: {fileID: 6313579230210663873, guid: 4a31e01f8b69a584ca245a1687beb4c2,
+        type: 3}
       propertyPath: m_Enabled
       value: 1
       objectReference: {fileID: 0}
@@ -2397,6 +2408,11 @@ PrefabInstance:
       propertyPath: m_Name
       value: DynamicHealthBlock BellyL
       objectReference: {fileID: 0}
+    - target: {fileID: 6313579230210663873, guid: 4a31e01f8b69a584ca245a1687beb4c2,
+        type: 3}
+      propertyPath: LifeForm
+      value: 
+      objectReference: {fileID: 5351160486092638538}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
