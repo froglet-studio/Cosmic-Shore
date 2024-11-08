@@ -3,10 +3,11 @@ using CosmicShore.Game.IO;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+#if !UNITY_WEBGL
 using CosmicShore.Integrations.Firebase.Controller;
+#endif
 using CosmicShore.Integrations.PlayFab.PlayStream;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using CosmicShore.App.Systems.UserActions;
 using CosmicShore.Game.UI;
@@ -117,14 +118,18 @@ namespace CosmicShore.Game.Arcade
 
         protected virtual void OnEnable()
         {
+#if !UNITY_WEBGL
             OnMiniGameStart += FirebaseAnalyticsController.LogEventMiniGameStart;
             OnMiniGameEnd += FirebaseAnalyticsController.LogEventMiniGameEnd;
+#endif
         }
 
         protected virtual void OnDisable()
         {
+#if !UNITY_WEBGL
             OnMiniGameStart -= FirebaseAnalyticsController.LogEventMiniGameStart;
             OnMiniGameEnd -= FirebaseAnalyticsController.LogEventMiniGameEnd;
+#endif
         }
 
         /// <summary>

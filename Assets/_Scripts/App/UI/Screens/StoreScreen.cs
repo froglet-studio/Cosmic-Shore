@@ -1,12 +1,13 @@
 using CosmicShore.App.UI.Modals;
 using CosmicShore.App.UI.Views;
 using CosmicShore.Integrations.PlayFab.Economy;
-using CosmicShore.Models;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using TMPro;
 using UnityEngine;
+using UnityEngine.Assertions;
 using UnityEngine.UI;
 
 namespace CosmicShore.App.Ui.Menus
@@ -111,8 +112,18 @@ namespace CosmicShore.App.Ui.Menus
             Debug.Log($"PopulateCaptainPurchaseCards, excluding purchased: {captains.Count}");
 
             // Filter out unencountered captains
-            captains = captains.Where(x => CaptainManager.Instance.GetCaptainByName(x.Name).Encountered == true).ToList();
-            Debug.Log($"PopulateCaptainPurchaseCards, excluding not encountered: {captains.Count}");
+            captains = captains
+                .Where(x =>
+                {
+                    var captain = CaptainManager.Instance.GetCaptainByName(x.Name);
+
+
+                    // If this assert is triggered, it suggests a configuration mismatch between playfab and scriptable objects
+                    Assert.AreNotEqual(captain, null, $"Could not find captain while loading store catalog - Captain Name: {x.Name}");
+                    
+                    return captain != null && captain.Encountered == true;
+                })
+                .ToList();
 
             // if no captains, hide captains section
             if (captains.Count == 0)

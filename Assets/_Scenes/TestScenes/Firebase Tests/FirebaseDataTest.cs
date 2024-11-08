@@ -1,3 +1,4 @@
+#if !UNITY_WEBGL
 using System;
 using System.Collections;
 using Firebase;
@@ -30,7 +31,9 @@ namespace Scenes.TestScenes.Firebase_Tests
 
         private void InitFirebaseAuth()
         {
+#if !UNITY_WEBGL
             FirebaseAuthTest.Instance.FirebaseInitialized.AddListener(OnFirebaseInitialized);
+#endif
         }
 
         private void OnFirebaseInitialized()
@@ -77,3 +80,4 @@ namespace Scenes.TestScenes.Firebase_Tests
         }
     }
 }
+#endif

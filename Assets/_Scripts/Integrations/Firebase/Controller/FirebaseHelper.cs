@@ -1,9 +1,7 @@
+#if !UNITY_WEBGL
 using System;
-using System.Threading.Tasks;
 using Firebase;
-using CosmicShore.Utility.Singleton;
 using UnityEngine;
-using UnityEngine.Events;
 
 namespace CosmicShore.Integrations.Firebase.Controller
 {
@@ -93,3 +91,4 @@ namespace CosmicShore.Integrations.Firebase.Controller
         }
     }
 }
+#endif
