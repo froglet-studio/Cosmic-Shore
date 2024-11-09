@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 6937793148596013352}
   - component: {fileID: 1594903950002975183}
   m_Layer: 0
-  m_Name: SharkPopulation
+  m_Name: MassBrittlestarPopulation
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -47,7 +47,7 @@ MonoBehaviour:
   Team: 2
   goalUpdateInterval: 5
   Goal: {x: 0, y: 0, z: 0}
-  lightFaunaPrefab: {fileID: 5351160486092638538, guid: a67ba7ddaecf6624ab37cd9f5f2210a6,
+  lightFaunaPrefab: {fileID: 5351160486092638538, guid: c719f00ea7596c24185379994f7dc824,
     type: 3}
   spawnCount: 2
   spawnRadius: 10
