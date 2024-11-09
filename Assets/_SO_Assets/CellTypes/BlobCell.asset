@@ -26,6 +26,5 @@ MonoBehaviour:
   - {fileID: 8058406376250941529, guid: daa37ae0e7af4b04383c1c4e6e76817d, type: 3}
   SupportedFlora:
   - {fileID: 8186157953239024492, guid: a84d160ac0bcaf94da22c5368e4d3962, type: 3}
-  - {fileID: 8186157953239024492, guid: 64c1c3612f071b946a3f70e8a65496db, type: 3}
   SupportedFauna:
   - {fileID: 1594903950002975183, guid: 764892b0728c1f64ba0d13077691c15b, type: 3}

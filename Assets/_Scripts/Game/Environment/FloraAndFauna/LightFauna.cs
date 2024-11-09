@@ -28,7 +28,7 @@ public class LightFauna : Fauna
     {
         base.Start();
         currentVelocity = transform.forward * Random.Range(minSpeed, maxSpeed);
-        //StartCoroutine(UpdateBehaviorCoroutine());
+        StartCoroutine(UpdateBehaviorCoroutine());
         //if (healthBlock) healthBlock.Team = Team;
     }
 
@@ -36,7 +36,7 @@ public class LightFauna : Fauna
     {
         while (true)
         {
-            //UpdateBehavior();
+            UpdateBehavior();
             yield return new WaitForSeconds(behaviorUpdateRate);
         }
     }
@@ -109,8 +109,8 @@ public class LightFauna : Fauna
 
     void Update()
     {
-        //transform.position += currentVelocity * Time.deltaTime;
-        //transform.rotation = Quaternion.Lerp(transform.rotation, desiredRotation, Time.deltaTime * 5f);
+        transform.position += currentVelocity * Time.deltaTime;
+        transform.rotation = Quaternion.Lerp(transform.rotation, desiredRotation, Time.deltaTime * 5f);
     }
 
     protected override void Spawn()

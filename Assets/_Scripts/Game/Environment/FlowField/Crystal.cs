@@ -172,7 +172,7 @@ namespace CosmicShore.Environment.FlowField
             PlayExplosionAudio();
 
             // Move the Crystal
-            if (crystalProperties.Element == Element.None)
+            if (RespawnOnImpact)
             {
                 foreach (var model in crystalModels)
                 {
@@ -183,10 +183,6 @@ namespace CosmicShore.Environment.FlowField
                 OnCrystalMove?.Invoke();
 
                 UpdateSelfWithNode();  //TODO: check if we need to remove elmental crystals from the node
-            }
-            else if (RespawnOnImpact)
-            {
-                transform.SetPositionAndRotation(UnityEngine.Random.insideUnitSphere * sphereRadius + origin, UnityEngine.Random.rotation);
             }
             else
             {
