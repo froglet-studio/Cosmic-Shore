@@ -140,7 +140,7 @@ namespace CosmicShore.Core
             //     StateTracker.Instance.AddBlock(TrailBlockProperties);
         }
 
-        bool isSizeChangeActive = false;
+        public bool isSizeChangeActive = false;
         IEnumerator SizeChangeCoroutine()
         {
             TargetScale.x = Mathf.Clamp(TargetScale.x, minScale.x, MaxScale.x);

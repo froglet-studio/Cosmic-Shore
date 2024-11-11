@@ -86,7 +86,7 @@ namespace CosmicShore.Game.IO
             LeftJoystickStart = Vector2.zero;
             RightNormalizedJoystickPosition = Vector2.zero;
             LeftNormalizedJoystickPosition = Vector2.zero;
-            idle = true;
+            idle = false;
         }
     }
 }

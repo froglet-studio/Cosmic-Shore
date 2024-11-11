@@ -16,7 +16,6 @@ namespace CosmicShore
         Transform visibilityCapsuleTransform;
 
         private CapsuleCollider visibilityCapsule;
-        private Dictionary<Renderer, Material> originalMaterials = new Dictionary<Renderer, Material>();
 
         Vector3 capsuleDirection;
 
@@ -65,9 +64,9 @@ namespace CosmicShore
             {
                 Renderer renderer = trailBlock.GetComponent<Renderer>();
                 Teams team = trailBlock.Team;
-                if (renderer != null && !originalMaterials.ContainsKey(renderer))
+                if (renderer != null)
                 {
-                    originalMaterials[renderer] = renderer.material;
+                    //originalMaterials[renderer] = renderer.material;
                     if (trailBlock.TrailBlockProperties.IsDangerous) renderer.material = ThemeManager.Instance.GetTeamTransparentDangerousBlockMaterial(team);
                     else if (trailBlock.TrailBlockProperties.IsShielded) renderer.material = ThemeManager.Instance.GetTeamTransparentShieldedBlockMaterial(team);
                     else if (trailBlock.TrailBlockProperties.IsSuperShielded) renderer.material = ThemeManager.Instance.GetTeamTransparentSuperShieldedBlockMaterial(team);
@@ -79,7 +78,7 @@ namespace CosmicShore
         private void OnTriggerStay(Collider other)
         {
             Renderer renderer = other.GetComponent<Renderer>();
-            if (renderer != null && originalMaterials.ContainsKey(renderer))
+            if (renderer != null)
             {
                 renderer.material.SetFloat("_Alpha", scaleCurve.Evaluate(GeometryUtils.DistanceFromPointToLine(other.transform.position, lineData)/ capsuleRadius));
             }
@@ -91,25 +90,15 @@ namespace CosmicShore
             if (trailBlock != null)
             {
                 Renderer renderer = trailBlock.GetComponent<Renderer>();
-                if (renderer != null && originalMaterials.ContainsKey(renderer))
+                Teams team = trailBlock.Team;
+                if (renderer != null)
                 {
-                    renderer.material = originalMaterials[renderer];
-                    originalMaterials.Remove(renderer);
+                    if (trailBlock.TrailBlockProperties.IsDangerous) renderer.material = ThemeManager.Instance.GetTeamTransparentDangerousBlockMaterial(team);
+                    else if (trailBlock.TrailBlockProperties.IsShielded) renderer.material = ThemeManager.Instance.GetTeamTransparentShieldedBlockMaterial(team);
+                    else if (trailBlock.TrailBlockProperties.IsSuperShielded) renderer.material = ThemeManager.Instance.GetTeamTransparentSuperShieldedBlockMaterial(team);
+                    else renderer.material = ThemeManager.Instance.GetTeamTransparentBlockMaterial(team);
                 }
             }
-        }
-
-        void OnDisable()
-        {
-            // Restore all materials when the script is disabled
-            foreach (var kvp in originalMaterials)
-            {
-                if (kvp.Key != null)
-                {
-                    kvp.Key.material = kvp.Value;
-                }
-            }
-            originalMaterials.Clear();
         }
     }
 }

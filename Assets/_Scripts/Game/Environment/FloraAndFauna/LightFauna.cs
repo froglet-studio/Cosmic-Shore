@@ -29,7 +29,7 @@ public class LightFauna : Fauna
         base.Start();
         currentVelocity = transform.forward * Random.Range(minSpeed, maxSpeed);
         StartCoroutine(UpdateBehaviorCoroutine());
-        if (healthBlock) healthBlock.Team = Team;
+        //if (healthBlock) healthBlock.Team = Team;
     }
 
     IEnumerator UpdateBehaviorCoroutine()
@@ -80,7 +80,7 @@ public class LightFauna : Fauna
             if (block && block.Team != Team && distance < cohesionRadius)
             {
                 goalDirection = (block.transform.position - transform.position).normalized;
-                if (distance < 2f && healthBlock)
+                if (distance < 2f && !healthBlock)
                 {
                     block.Damage(currentVelocity * healthBlock.Volume, Team, "light fauna", true);
                 }
