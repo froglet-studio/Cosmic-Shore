@@ -27,7 +27,7 @@ namespace CosmicShore
         public virtual void AddHealthBlock(HealthBlock healthBlock)
         {
             healthBlocks.Add(healthBlock);
-            healthBlock.Team = Team;
+            healthBlock.ChangeTeam(Team);
             healthBlock.LifeForm = this;
             healthBlock.ownerId = $"{this} + {healthBlock} + {healthBlocks.Count}";
         }
