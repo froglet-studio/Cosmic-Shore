@@ -28,3 +28,4 @@ MonoBehaviour:
   - {fileID: 8186157953239024492, guid: a84d160ac0bcaf94da22c5368e4d3962, type: 3}
   SupportedFauna:
   - {fileID: 1594903950002975183, guid: 764892b0728c1f64ba0d13077691c15b, type: 3}
+  - {fileID: 8812619448024686939, guid: 14b7fddb8e30aa541a092201bc80b848, type: 3}

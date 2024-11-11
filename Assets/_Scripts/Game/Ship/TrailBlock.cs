@@ -370,14 +370,24 @@ namespace CosmicShore.Core
                 if (NodeControlManager.Instance != null)
                     NodeControlManager.Instance.StealBlock(team, TrailBlockProperties);
 
-                this.team = team;
+                ChangeTeam(team);
                 Player = player;
 
+                
+            } 
+        }
+
+        //this changes a block team, and material
+        public void ChangeTeam(Teams team)
+        {
+            if (this.team != team)
+            {
+                this.team = team;
                 if (lerpBlockMaterialPropertiesCoroutine != null)
                     StopCoroutine(lerpBlockMaterialPropertiesCoroutine);
 
                 lerpBlockMaterialPropertiesCoroutine = StartCoroutine(LerpBlockMaterialPropertiesCoroutine(ThemeManager.Instance.GetTeamBlockMaterial(team)));
-            } 
+            }
         }
 
         public void Restore()

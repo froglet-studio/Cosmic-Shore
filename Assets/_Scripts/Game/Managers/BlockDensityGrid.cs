@@ -1,35 +1,93 @@
 ﻿using UnityEngine;
+using Unity.Jobs;
+using Unity.Collections;
+using Unity.Mathematics;
+using Unity.Burst;
 using CosmicShore.Core;
 using System;
 
+[BurstCompile]
+public struct FindDensestRegionJob : IJob
+{
+    [ReadOnly] public NativeArray<byte> values;
+    public NativeArray<int3> result; // Will store [maxDensity, x, y, z]
+    public int width;
+    public int height;
+    public int depth;
+
+    public void Execute()
+    {
+        int maxDensity = 0;
+        int3 maxIndices = new int3(0, 0, 0);
+
+        for (int x = 0; x < width; x++)
+        {
+            for (int y = 0; y < height; y++)
+            {
+                for (int z = 0; z < depth; z++)
+                {
+                    int index = x + y * width + z * width * height;
+                    int density = values[index];
+                    if (density > maxDensity)
+                    {
+                        maxDensity = density;
+                        maxIndices = new int3(x, y, z);
+                    }
+                }
+            }
+        }
+
+        result[0] = new int3(maxDensity, maxIndices.x, maxIndices.y);
+        result[1] = new int3(maxIndices.z, 0, 0); // Using first element for z since we only need one value
+    }
+}
 
 public class BlockDensityGrid
 {
-    public float resolution = 5f;
-    // Assume total grid volume is a cube, specified by one length (skybox diam).  TODO: Import this constant.
+    public float Stride = 60f;
     public float totalLength = 1000f;
     public Vector3 origin;
     public Teams team;
     public byte[,,] values;
 
+    protected int nGridPointsPerDimension;
+    protected NativeArray<byte> jobValues;
+    protected NativeArray<int3> jobResult;
+    protected bool jobSystemInitialized = false;
+
     public void Init(Teams Team)
     {
         team = Team;
-        // Corner of skybox corresponding to array index [0][0][0]
         this.origin = new Vector3(-this.totalLength / 2, -this.totalLength / 2, -this.totalLength / 2);
+        nGridPointsPerDimension = (int)Math.Floor(this.totalLength / this.Stride) + 1;
+        
+        // Initialize job system arrays
+        int totalSize = nGridPointsPerDimension * nGridPointsPerDimension * nGridPointsPerDimension;
+        jobValues = new NativeArray<byte>(totalSize, Allocator.Persistent);
+        jobResult = new NativeArray<int3>(2, Allocator.Persistent); // Store result and extra data
+        jobSystemInitialized = true;
+    }
+
+    protected void OnDestroy()
+    {
+        if (jobSystemInitialized)
+        {
+            jobValues.Dispose();
+            jobResult.Dispose();
+        }
     }
 
     public Vector3Int MapCoordinatesToGridIndices(Vector3 coords)
     {
         Vector3 translatedCoords = coords - this.origin;
-        Vector3 unroundedIndices = translatedCoords / this.resolution;  // TODO: Integer division
-        Vector3Int indices = Vector3Int.RoundToInt(unroundedIndices);   //
+        Vector3 unroundedIndices = translatedCoords / this.Stride;
+        Vector3Int indices = Vector3Int.RoundToInt(unroundedIndices);
         return indices;
     }
 
     public Vector3 MapGridIndicesToCoordinates(Vector3Int indices)
     {
-        Vector3 untranslatedCoords = (Vector3)indices * this.resolution;  // TODO: Use center of grid cell?
+        Vector3 untranslatedCoords = (Vector3)indices * this.Stride;
         Vector3 coords = untranslatedCoords + this.origin;
         return coords;
     }
@@ -40,20 +98,46 @@ public class BlockDensityGrid
         return this.values[indices[0], indices[1], indices[2]];
     }
 
-    public Vector3 FindDensestRegion()  // TODO: Generalize to top n > 1 regions, if needed.
+    protected void UpdateJobValues()
     {
-        int bestValueSoFar = 0;
-        Vector3Int bestIndicesSoFar = new Vector3Int(0, 0, 0);
-        for (int i = this.values.GetLowerBound(0); i <= this.values.GetUpperBound(0); i++)
-            for (int j = this.values.GetLowerBound(1); j <= this.values.GetUpperBound(1); j++)
-                for (int k = this.values.GetLowerBound(2); k <= this.values.GetUpperBound(2); k++)
-                    if (this.values[i,j,k] > bestValueSoFar)
-                    {
-                        bestValueSoFar = this.values[i, j, k];
-                        bestIndicesSoFar = new Vector3Int(i, j, k);
-                    }
-        Vector3 bestCoords = MapGridIndicesToCoordinates(bestIndicesSoFar);
-        return bestCoords;
+        // Convert 3D array to flat array for job system
+        for (int x = 0; x < nGridPointsPerDimension; x++)
+        {
+            for (int y = 0; y < nGridPointsPerDimension; y++)
+            {
+                for (int z = 0; z < nGridPointsPerDimension; z++)
+                {
+                    int index = x + y * nGridPointsPerDimension + z * nGridPointsPerDimension * nGridPointsPerDimension;
+                    jobValues[index] = values[x, y, z];
+                }
+            }
+        }
+    }
+
+    public Vector3 FindDensestRegion()
+    {
+        if (!jobSystemInitialized) return Vector3.zero;
+
+        UpdateJobValues();
+
+        var job = new FindDensestRegionJob
+        {
+            values = jobValues,
+            result = jobResult,
+            width = nGridPointsPerDimension,
+            height = nGridPointsPerDimension,
+            depth = nGridPointsPerDimension
+        };
+
+        JobHandle handle = job.Schedule();
+        handle.Complete();
+
+        // Extract results
+        int3 result1 = jobResult[0];
+        int3 result2 = jobResult[1];
+        Vector3Int bestIndices = new Vector3Int(result1.y, result1.z, result2.x);
+
+        return MapGridIndicesToCoordinates(bestIndices);
     }
 
     public virtual void AddBlock(TrailBlock block) {}
@@ -61,30 +145,26 @@ public class BlockDensityGrid
     public virtual void RemoveBlock(TrailBlock block) {}
 }
 
-
 public class BlockCountDensityGrid : BlockDensityGrid
 {
-    int nGridPointsPerDimension;
     public BlockCountDensityGrid(Teams team)
     {
         base.Init(team);
-        nGridPointsPerDimension = (int) Math.Floor(this.totalLength / this.resolution) + 1;
         values = new byte[nGridPointsPerDimension, nGridPointsPerDimension, nGridPointsPerDimension];
     }
 
     public override void AddBlock(TrailBlock block)
     {
         Vector3Int indicesOfDestinationCell = MapCoordinatesToGridIndices(block.transform.position);
-        if (indicesOfDestinationCell.x >=0 && indicesOfDestinationCell.x < nGridPointsPerDimension &&
-            indicesOfDestinationCell.y >=0 && indicesOfDestinationCell.y < nGridPointsPerDimension &&
-            indicesOfDestinationCell.z >=0 && indicesOfDestinationCell.z < nGridPointsPerDimension)
+        if (indicesOfDestinationCell.x >= 0 && indicesOfDestinationCell.x < nGridPointsPerDimension &&
+            indicesOfDestinationCell.y >= 0 && indicesOfDestinationCell.y < nGridPointsPerDimension &&
+            indicesOfDestinationCell.z >= 0 && indicesOfDestinationCell.z < nGridPointsPerDimension)
             this.values[indicesOfDestinationCell.x, indicesOfDestinationCell.y, indicesOfDestinationCell.z] += 1;
     }
 
     public override void RemoveBlock(TrailBlock block)
     {
         Vector3Int indicesOfDestinationCell = MapCoordinatesToGridIndices(block.transform.position);
-
         if (indicesOfDestinationCell.x >= 0 && indicesOfDestinationCell.x < nGridPointsPerDimension &&
             indicesOfDestinationCell.y >= 0 && indicesOfDestinationCell.y < nGridPointsPerDimension &&
             indicesOfDestinationCell.z >= 0 && indicesOfDestinationCell.z < nGridPointsPerDimension)
@@ -92,13 +172,4 @@ public class BlockCountDensityGrid : BlockDensityGrid
     }
 }
 
-
-//
-// Use 2 bytes instead of 1 because a block can have volume up to 10*10*10 > 255.  Assuming blocks can't
-// overlap, storage upper bound is 8*10*10*10 = 8 kB (8 side-length-10 blocks whose centers are all barely
-// within a 10*10*10 grid block), within ushort's max of 65 kB.
-//
-//ushort[,,] gridVolumeDensityRuby;
-// ...
-// Ditto for all combos of {count density, volume density} x {ruby, gold, teal}
 public class BlockVolumeDensityGrid : BlockDensityGrid {}

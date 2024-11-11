@@ -766,8 +766,8 @@ MonoBehaviour:
   separationWeight: 2
   cohesionWeight: 1
   goalWeight: 1.5
-  minSpeed: 3
-  maxSpeed: 6
+  minSpeed: 25
+  maxSpeed: 30
 --- !u!1 &3561311450035280578
 GameObject:
   m_ObjectHideFlags: 0
