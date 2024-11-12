@@ -2169,7 +2169,6 @@ GameObject:
   - component: {fileID: 5086360743770514783}
   - component: {fileID: 2731003324702047408}
   - component: {fileID: 705402283976800655}
-  - component: {fileID: 6039746205114007710}
   m_Layer: 8
   m_Name: Sparrow
   m_TagString: Player_Ship
@@ -2537,27 +2536,6 @@ MonoBehaviour:
   FollowTarget: {fileID: 3967031065131343057}
   FollowTargetPosition: {x: 0, y: 20, z: 0}
   isOrthographic: 0
---- !u!95 &6039746205114007710
-Animator:
-  serializedVersion: 5
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6417075533431866457}
-  m_Enabled: 1
-  m_Avatar: {fileID: 9000000, guid: 151e3f0352963624abf4da579618e66d, type: 3}
-  m_Controller: {fileID: 9100000, guid: 3caa5407b15392f4a9593ce16c77314b, type: 2}
-  m_CullingMode: 0
-  m_UpdateMode: 0
-  m_ApplyRootMotion: 0
-  m_LinearVelocityBlending: 0
-  m_StabilizeFeet: 0
-  m_WarningMessage: 
-  m_HasTransformHierarchy: 1
-  m_AllowConstantClipSamplingOptimization: 1
-  m_KeepAnimatorStateOnDisable: 0
-  m_WriteDefaultValuesOnDisable: 0
 --- !u!1 &6675130274311316141
 GameObject:
   m_ObjectHideFlags: 0

@@ -48,8 +48,8 @@ MonoBehaviour:
   m_Data:
     m_ConstrainedObject: {fileID: 6663070525935420530}
     m_Source: {fileID: 1547726606227589206}
-    m_DampPosition: 0.5
-    m_DampRotation: 0.5
+    m_DampPosition: 0.4
+    m_DampRotation: 0.6
     m_MaintainAim: 1
 --- !u!1 &322268676704545573
 GameObject:
@@ -322,8 +322,8 @@ MonoBehaviour:
   m_Data:
     m_ConstrainedObject: {fileID: 3603840335276920898}
     m_Source: {fileID: 2099799404058145160}
-    m_DampPosition: 0.5
-    m_DampRotation: 0.5
+    m_DampPosition: 0.4
+    m_DampRotation: 0.6
     m_MaintainAim: 1
 --- !u!1 &718813643571874445
 GameObject:
@@ -454,8 +454,8 @@ MonoBehaviour:
   m_Data:
     m_ConstrainedObject: {fileID: 2669413742067869260}
     m_Source: {fileID: 4325684030037012268}
-    m_DampPosition: 0.5
-    m_DampRotation: 0.5
+    m_DampPosition: 0.4
+    m_DampRotation: 0.6
     m_MaintainAim: 1
 --- !u!1 &800395805527132492
 GameObject:
@@ -537,8 +537,8 @@ MonoBehaviour:
   m_Data:
     m_ConstrainedObject: {fileID: 1250774945935784271}
     m_Source: {fileID: 2544048065104769835}
-    m_DampPosition: 0.5
-    m_DampRotation: 0.5
+    m_DampPosition: 0.4
+    m_DampRotation: 0.6
     m_MaintainAim: 1
 --- !u!1 &1175774180449032355
 GameObject:
@@ -621,8 +621,8 @@ MonoBehaviour:
   m_Data:
     m_ConstrainedObject: {fileID: 8728397765940988450}
     m_Source: {fileID: 5464831297355688491}
-    m_DampPosition: 0.5
-    m_DampRotation: 0.5
+    m_DampPosition: 0.4
+    m_DampRotation: 0.6
     m_MaintainAim: 1
 --- !u!1 &1268059162178506852
 GameObject:
@@ -1280,8 +1280,8 @@ MonoBehaviour:
   m_Data:
     m_ConstrainedObject: {fileID: 6844109668120184998}
     m_Source: {fileID: 2465166422325552180}
-    m_DampPosition: 0.5
-    m_DampRotation: 0.5
+    m_DampPosition: 0.4
+    m_DampRotation: 0.6
     m_MaintainAim: 1
 --- !u!1 &2168398084920657476
 GameObject:
@@ -1331,8 +1331,8 @@ MonoBehaviour:
   m_Data:
     m_ConstrainedObject: {fileID: 5464831297355688491}
     m_Source: {fileID: 4376399786491767783}
-    m_DampPosition: 0.5
-    m_DampRotation: 0.5
+    m_DampPosition: 0.4
+    m_DampRotation: 0.6
     m_MaintainAim: 1
 --- !u!1 &2487386406414150440
 GameObject:
@@ -1382,8 +1382,8 @@ MonoBehaviour:
   m_Data:
     m_ConstrainedObject: {fileID: 6844109668120184998}
     m_Source: {fileID: 2465166422325552180}
-    m_DampPosition: 0.5
-    m_DampRotation: 0.5
+    m_DampPosition: 0.4
+    m_DampRotation: 0.6
     m_MaintainAim: 1
 --- !u!1 &3062687464665182224
 GameObject:
@@ -1511,8 +1511,8 @@ MonoBehaviour:
   m_Data:
     m_ConstrainedObject: {fileID: 4376399786491767783}
     m_Source: {fileID: 1547726606227589206}
-    m_DampPosition: 0.5
-    m_DampRotation: 0.5
+    m_DampPosition: 0.4
+    m_DampRotation: 0.6
     m_MaintainAim: 1
 --- !u!1 &3427005755627130874
 GameObject:
@@ -1594,8 +1594,8 @@ MonoBehaviour:
   m_Data:
     m_ConstrainedObject: {fileID: 7028248899988346343}
     m_Source: {fileID: 8810983775067739934}
-    m_DampPosition: 0.5
-    m_DampRotation: 0.5
+    m_DampPosition: 0.4
+    m_DampRotation: 0.6
     m_MaintainAim: 1
 --- !u!1 &3943032258914932184
 GameObject:
@@ -1939,8 +1939,8 @@ MonoBehaviour:
   m_Data:
     m_ConstrainedObject: {fileID: 404141260610032105}
     m_Source: {fileID: 1547726606227589206}
-    m_DampPosition: 0.5
-    m_DampRotation: 0.5
+    m_DampPosition: 0.4
+    m_DampRotation: 0.6
     m_MaintainAim: 1
 --- !u!1 &4940214041913376739
 GameObject:
@@ -1990,8 +1990,8 @@ MonoBehaviour:
   m_Data:
     m_ConstrainedObject: {fileID: 5691391964006014378}
     m_Source: {fileID: 8262065554035974604}
-    m_DampPosition: 0.5
-    m_DampRotation: 0.5
+    m_DampPosition: 0.4
+    m_DampRotation: 0.6
     m_MaintainAim: 1
 --- !u!1 &5022817358293899131
 GameObject:
@@ -2073,8 +2073,8 @@ MonoBehaviour:
   m_Data:
     m_ConstrainedObject: {fileID: 1922377479407412320}
     m_Source: {fileID: 1547726606227589206}
-    m_DampPosition: 0.5
-    m_DampRotation: 0.5
+    m_DampPosition: 0.4
+    m_DampRotation: 0.6
     m_MaintainAim: 1
 --- !u!1 &5248157382915167470
 GameObject:
@@ -2384,8 +2384,8 @@ MonoBehaviour:
   m_Data:
     m_ConstrainedObject: {fileID: 1459916229348879670}
     m_Source: {fileID: 6087255431018261798}
-    m_DampPosition: 0.5
-    m_DampRotation: 0.5
+    m_DampPosition: 0.4
+    m_DampRotation: 0.6
     m_MaintainAim: 1
 --- !u!1 &5817196357488256974
 GameObject:
@@ -2629,8 +2629,8 @@ MonoBehaviour:
   m_Data:
     m_ConstrainedObject: {fileID: 6087255431018261798}
     m_Source: {fileID: 6162625208391253724}
-    m_DampPosition: 0.5
-    m_DampRotation: 0.5
+    m_DampPosition: 0.4
+    m_DampRotation: 0.6
     m_MaintainAim: 1
 --- !u!1 &5936356422082891022
 GameObject:
@@ -2790,8 +2790,8 @@ MonoBehaviour:
   m_Data:
     m_ConstrainedObject: {fileID: 8810983775067739934}
     m_Source: {fileID: 6476900961287527361}
-    m_DampPosition: 0.5
-    m_DampRotation: 0.5
+    m_DampPosition: 0.4
+    m_DampRotation: 0.6
     m_MaintainAim: 1
 --- !u!1 &6291435637780101211
 GameObject:
@@ -2873,8 +2873,8 @@ MonoBehaviour:
   m_Data:
     m_ConstrainedObject: {fileID: 4131017084782885619}
     m_Source: {fileID: 8262065554035974604}
-    m_DampPosition: 0.5
-    m_DampRotation: 0.5
+    m_DampPosition: 0.4
+    m_DampRotation: 0.6
     m_MaintainAim: 1
 --- !u!1 &6417075533431866457
 GameObject:
@@ -2893,7 +2893,6 @@ GameObject:
   - component: {fileID: 1435252848482629424}
   - component: {fileID: 3440187540988767646}
   - component: {fileID: 6776027772320837218}
-  - component: {fileID: 6293426128044408357}
   - component: {fileID: 5086360743770514783}
   - component: {fileID: 2731003324702047408}
   - component: {fileID: 705402283976800655}
@@ -3193,46 +3192,18 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6417075533431866457}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 2116872444dccfd43a29513c3af008b7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   SkinnedMeshRenderer: {fileID: 0}
   SaveNewPositions: 1
-  UseShapeKeys: 0
-  brakeThreshold: 0.65
-  lerpAmount: 2
-  smallLerpAmount: 0.7
-  animator: {fileID: 1619232438159974630}
---- !u!114 &6293426128044408357
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6417075533431866457}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 46ca128b16ccbfd42be69beb8b52be77, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  SkinnedMeshRenderer: {fileID: 7720489361082621337}
-  SaveNewPositions: 1
   UseShapeKeys: 1
   brakeThreshold: 0.65
   lerpAmount: 2
   smallLerpAmount: 0.7
-  Fusilage: {fileID: 4769814507153169321}
-  LeftWing: {fileID: 8786154189335303190}
-  RightWing: {fileID: 5571582515015820382}
-  ThrusterTopRight: {fileID: 8105609640698425209}
-  ThrusterTopLeft: {fileID: 7992807412611599177}
-  ThrusterBottomLeft: {fileID: 6568354364218703309}
-  ThrusterBottomRight: {fileID: 8043265874885454852}
-  smallAnimationScaler: 27
-  mediumAnimationScaler: 30
-  bigAnimationScaler: 60
+  animator: {fileID: 841299382724584094}
 --- !u!114 &5086360743770514783
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3339,8 +3310,8 @@ MonoBehaviour:
   m_Data:
     m_ConstrainedObject: {fileID: 8262065554035974604}
     m_Source: {fileID: 404141260610032105}
-    m_DampPosition: 0.5
-    m_DampRotation: 0.5
+    m_DampPosition: 0.4
+    m_DampRotation: 0.6
     m_MaintainAim: 1
 --- !u!1 &6487719315442839558
 GameObject:
@@ -3463,8 +3434,8 @@ MonoBehaviour:
   m_Data:
     m_ConstrainedObject: {fileID: 2099799404058145160}
     m_Source: {fileID: 6663070525935420530}
-    m_DampPosition: 0.5
-    m_DampRotation: 0.5
+    m_DampPosition: 0.4
+    m_DampRotation: 0.6
     m_MaintainAim: 1
 --- !u!1 &6632570642610713347
 GameObject:
@@ -3647,8 +3618,8 @@ MonoBehaviour:
   m_Data:
     m_ConstrainedObject: {fileID: 4325684030037012268}
     m_Source: {fileID: 5464831297355688491}
-    m_DampPosition: 0.5
-    m_DampRotation: 0.5
+    m_DampPosition: 0.4
+    m_DampRotation: 0.6
     m_MaintainAim: 1
 --- !u!1 &6768089792635968635
 GameObject:
@@ -3912,8 +3883,8 @@ MonoBehaviour:
   m_Data:
     m_ConstrainedObject: {fileID: 0}
     m_Source: {fileID: 0}
-    m_DampPosition: 0.5
-    m_DampRotation: 0.5
+    m_DampPosition: 0.4
+    m_DampRotation: 0.6
     m_MaintainAim: 1
 --- !u!1 &7310162705881109854
 GameObject:
@@ -4182,8 +4153,8 @@ MonoBehaviour:
   m_Data:
     m_ConstrainedObject: {fileID: 6162625208391253724}
     m_Source: {fileID: 2544048065104769835}
-    m_DampPosition: 0.5
-    m_DampRotation: 0.5
+    m_DampPosition: 0.4
+    m_DampRotation: 0.6
     m_MaintainAim: 1
 --- !u!1 &7696976320636676308
 GameObject:
@@ -4314,8 +4285,8 @@ MonoBehaviour:
   m_Data:
     m_ConstrainedObject: {fileID: 2465166422325552180}
     m_Source: {fileID: 4131017084782885619}
-    m_DampPosition: 0.5
-    m_DampRotation: 0.5
+    m_DampPosition: 0.4
+    m_DampRotation: 0.6
     m_MaintainAim: 1
 --- !u!1 &7848666020481338935
 GameObject:
@@ -4546,8 +4517,8 @@ MonoBehaviour:
   m_Data:
     m_ConstrainedObject: {fileID: 6476900961287527361}
     m_Source: {fileID: 2099799404058145160}
-    m_DampPosition: 0.5
-    m_DampRotation: 0.5
+    m_DampPosition: 0.4
+    m_DampRotation: 0.6
     m_MaintainAim: 1
 --- !u!1 &8314064271702207074
 GameObject:
@@ -4673,8 +4644,8 @@ MonoBehaviour:
   m_Data:
     m_ConstrainedObject: {fileID: 2544048065104769835}
     m_Source: {fileID: 1922377479407412320}
-    m_DampPosition: 0.5
-    m_DampRotation: 0.5
+    m_DampPosition: 0.4
+    m_DampRotation: 0.6
     m_MaintainAim: 1
 --- !u!1 &8777980414596646480
 GameObject:
@@ -5317,6 +5288,11 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 7fad38a2fd9fce64088bb244e1473ffe,
+        type: 3}
+      propertyPath: m_ConstrainProportionsScale
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: 7fad38a2fd9fce64088bb244e1473ffe,
         type: 3}
       propertyPath: m_Name
@@ -5326,6 +5302,36 @@ PrefabInstance:
         type: 3}
       propertyPath: m_IsActive
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5866666021909216657, guid: 7fad38a2fd9fce64088bb244e1473ffe,
+        type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5866666021909216657, guid: 7fad38a2fd9fce64088bb244e1473ffe,
+        type: 3}
+      propertyPath: m_Controller
+      value: 
+      objectReference: {fileID: 9100000, guid: c758fbec7faf0804f99bee5cb830a388, type: 2}
+    - target: {fileID: 5866666021909216657, guid: 7fad38a2fd9fce64088bb244e1473ffe,
+        type: 3}
+      propertyPath: m_CullingMode
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5866666021909216657, guid: 7fad38a2fd9fce64088bb244e1473ffe,
+        type: 3}
+      propertyPath: m_ApplyRootMotion
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7146665307521698322, guid: 7fad38a2fd9fce64088bb244e1473ffe,
+        type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7146665307521698322, guid: 7fad38a2fd9fce64088bb244e1473ffe,
+        type: 3}
+      propertyPath: m_BlendShapeWeights.Array.data[0]
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -5343,6 +5349,12 @@ PrefabInstance:
 --- !u!4 &404141260610032105 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 6871856040060653286, guid: 7fad38a2fd9fce64088bb244e1473ffe,
+    type: 3}
+  m_PrefabInstance: {fileID: 6541039741583580943}
+  m_PrefabAsset: {fileID: 0}
+--- !u!95 &841299382724584094 stripped
+Animator:
+  m_CorrespondingSourceObject: {fileID: 5866666021909216657, guid: 7fad38a2fd9fce64088bb244e1473ffe,
     type: 3}
   m_PrefabInstance: {fileID: 6541039741583580943}
   m_PrefabAsset: {fileID: 0}
