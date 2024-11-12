@@ -13,7 +13,8 @@ ModelImporter:
       type: UnityEngine:Material
       assembly: UnityEngine.CoreModule
       name: Material.004
-    second: {fileID: 2100000, guid: 723708a0e06370e4291c55282ea6b96c, type: 2}
+    second: {fileID: -5177105678200501754, guid: e276abc87e8d1f54abf5025376fb319c,
+      type: 3}
   materials:
     materialImportMode: 2
     materialName: 0
@@ -130,7 +131,7 @@ ModelImporter:
     legStretch: 0.05
     feetSpacing: 0
     globalScale: 1
-    rootMotionBoneName: TimeCrystalArmature
+    rootMotionBoneName: 
     hasTranslationDoF: 0
     hasExtraRoot: 0
     skeletonHasParents: 1
