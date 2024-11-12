@@ -62,9 +62,13 @@ namespace CosmicShore.Core
             // Initialized trail block game object layer, assign it to "TrailBlocks"
             _layerName = LayerMask.NameToLayer("TrailBlocks");
             gameObject.layer = _layerName;
-            
+
             // Set default particle effect to trail block if none is assigned.
             // ParticleEffect = ObjectResolver.GetFromPrefab(DefaultParticleName);
+
+            meshRenderer = GetComponent<MeshRenderer>();
+            if (team != Teams.Unassigned)
+                meshRenderer.material = ThemeManager.Instance.GetTeamBlockMaterial(team);
         }
 
         protected virtual void Start()
@@ -76,9 +80,6 @@ namespace CosmicShore.Core
             blockCollider = GetComponent<BoxCollider>();
             blockCollider.enabled = false;
 
-            meshRenderer = GetComponent<MeshRenderer>();
-            if (team != Teams.Unassigned)
-                meshRenderer.material = ThemeManager.Instance.GetTeamBlockMaterial(team);
             meshRenderer.enabled = false;
 
             spread = meshRenderer.material.GetVector("_Spread");
