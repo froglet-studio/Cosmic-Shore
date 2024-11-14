@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 5494491424606190975}
   - component: {fileID: 5945480239701989318}
   m_Layer: 0
-  m_Name: SpaceTadPole
+  m_Name: SpaceTadPoleFauna
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

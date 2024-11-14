@@ -62,16 +62,7 @@ namespace CosmicShore
             TrailBlock trailBlock = other.GetComponent<TrailBlock>();
             if (trailBlock != null)
             {
-                Renderer renderer = trailBlock.GetComponent<Renderer>();
-                Teams team = trailBlock.Team;
-                if (renderer != null)
-                {
-                    //originalMaterials[renderer] = renderer.material;
-                    if (trailBlock.TrailBlockProperties.IsDangerous) renderer.material = ThemeManager.Instance.GetTeamTransparentDangerousBlockMaterial(team);
-                    else if (trailBlock.TrailBlockProperties.IsShielded) renderer.material = ThemeManager.Instance.GetTeamTransparentShieldedBlockMaterial(team);
-                    else if (trailBlock.TrailBlockProperties.IsSuperShielded) renderer.material = ThemeManager.Instance.GetTeamTransparentSuperShieldedBlockMaterial(team);
-                    else renderer.material = ThemeManager.Instance.GetTeamTransparentBlockMaterial(team);
-                }
+                trailBlock.SetTransparency(true);
             }
         }
 
@@ -89,15 +80,7 @@ namespace CosmicShore
             TrailBlock trailBlock = other.GetComponent<TrailBlock>();
             if (trailBlock != null)
             {
-                Renderer renderer = trailBlock.GetComponent<Renderer>();
-                Teams team = trailBlock.Team;
-                if (renderer != null)
-                {
-                    if (trailBlock.TrailBlockProperties.IsDangerous) renderer.material = ThemeManager.Instance.GetTeamTransparentDangerousBlockMaterial(team);
-                    else if (trailBlock.TrailBlockProperties.IsShielded) renderer.material = ThemeManager.Instance.GetTeamTransparentShieldedBlockMaterial(team);
-                    else if (trailBlock.TrailBlockProperties.IsSuperShielded) renderer.material = ThemeManager.Instance.GetTeamTransparentSuperShieldedBlockMaterial(team);
-                    else renderer.material = ThemeManager.Instance.GetTeamTransparentBlockMaterial(team);
-                }
+                trailBlock.SetTransparency(false);
             }
         }
     }

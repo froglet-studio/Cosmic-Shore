@@ -79,7 +79,7 @@ namespace CosmicShore
         void CreateBlock(Vector3 position, Vector3 lookPosition, Vector3 up, string blockId, Trail trail, Vector3 scale, Core.TrailBlock trailBlock, GameObject container, Teams team = Teams.Blue)
         {
             var Block = Instantiate(trailBlock);
-            Block.Team = team;
+            Block.ChangeTeam(team, false);
             Block.ownerId = "public";
             Block.transform.SetPositionAndRotation(position, Quaternion.LookRotation(lookPosition, up));
             Block.transform.SetParent(container.transform, false);

@@ -69,6 +69,8 @@ namespace CosmicShore.Core
             meshRenderer = GetComponent<MeshRenderer>();
             if (team != Teams.Unassigned)
                 meshRenderer.material = ThemeManager.Instance.GetTeamBlockMaterial(team);
+
+            InitializeTrailBlockProperties();
         }
 
         protected virtual void Start()
@@ -89,7 +91,7 @@ namespace CosmicShore.Core
             TargetScale = TargetScale == Vector3.zero ? transform.localScale : TargetScale;
             transform.localScale = Vector3.one * Mathf.Epsilon;
 
-            InitializeTrailBlockProperties();
+            
 
             StartCoroutine(CreateBlockCoroutine());
 
@@ -239,7 +241,8 @@ namespace CosmicShore.Core
             explodingBlock.transform.eulerAngles = transform.eulerAngles;
             explodingBlock.transform.localScale = transform.lossyScale;
             explodingBlock.GetComponent<Renderer>().material = new Material(ThemeManager.Instance.GetTeamExplodingBlockMaterial(this.team));
-            explodingBlock.GetComponent<BlockImpact>().HandleImpact(impactVector / Volume);
+            Debug.Log($"TrailBlock volume {Volume}");
+            explodingBlock.GetComponent<BlockImpact>().HandleImpact(impactVector / Mathf.Max(Volume,.001f));
 
             destroyed = true;
             devastated = devastate;
@@ -321,6 +324,27 @@ namespace CosmicShore.Core
             DeactivateShields();
         }
 
+        public void SetTransparency(bool transparent)
+        {
+            TrailBlockProperties.IsTransparent = transparent;
+            if (lerpBlockMaterialPropertiesCoroutine != null) return;
+
+            if (transparent)
+            {
+                if (TrailBlockProperties.IsDangerous) meshRenderer.material = ThemeManager.Instance.GetTeamTransparentDangerousBlockMaterial(team);
+                else if (TrailBlockProperties.IsShielded) meshRenderer.material = ThemeManager.Instance.GetTeamTransparentShieldedBlockMaterial(team);
+                else if (TrailBlockProperties.IsSuperShielded) meshRenderer.material = ThemeManager.Instance.GetTeamTransparentSuperShieldedBlockMaterial(team);
+                else meshRenderer.material = ThemeManager.Instance.GetTeamTransparentBlockMaterial(team);
+            }
+            else
+            {
+                if (TrailBlockProperties.IsDangerous) meshRenderer.material = ThemeManager.Instance.GetTeamDangerousBlockMaterial(team);
+                else if (TrailBlockProperties.IsShielded) meshRenderer.material = ThemeManager.Instance.GetTeamShieldedBlockMaterial(team);
+                else if (TrailBlockProperties.IsSuperShielded) meshRenderer.material = ThemeManager.Instance.GetTeamSuperShieldedBlockMaterial(team);
+                else meshRenderer.material = ThemeManager.Instance.GetTeamBlockMaterial(team);
+            }
+        }
+
         Coroutine lerpBlockMaterialPropertiesCoroutine;
         IEnumerator LerpBlockMaterialPropertiesCoroutine(Material targetMaterial, float lerpDuration = .8f)
         {
@@ -379,15 +403,42 @@ namespace CosmicShore.Core
         }
 
         //this changes a block team, and material
-        public void ChangeTeam(Teams team)
+        public void ChangeTeam(Teams team, bool lerp = true)
         {
             if (this.team != team)
             {
                 this.team = team;
-                if (lerpBlockMaterialPropertiesCoroutine != null)
-                    StopCoroutine(lerpBlockMaterialPropertiesCoroutine);
 
-                lerpBlockMaterialPropertiesCoroutine = StartCoroutine(LerpBlockMaterialPropertiesCoroutine(ThemeManager.Instance.GetTeamBlockMaterial(team)));
+                Material newMaterial;
+
+                if (TrailBlockProperties.IsTransparent)
+                {
+                    if (TrailBlockProperties.IsDangerous) newMaterial = ThemeManager.Instance.GetTeamTransparentDangerousBlockMaterial(team);
+                    else if (TrailBlockProperties.IsShielded) newMaterial = ThemeManager.Instance.GetTeamTransparentShieldedBlockMaterial(team);
+                    else if (TrailBlockProperties.IsSuperShielded) newMaterial = ThemeManager.Instance.GetTeamTransparentSuperShieldedBlockMaterial(team);
+                    else newMaterial = ThemeManager.Instance.GetTeamTransparentBlockMaterial(team);
+                }
+                else
+                {
+                    if (TrailBlockProperties.IsDangerous) newMaterial = ThemeManager.Instance.GetTeamDangerousBlockMaterial(team);
+                    else if (TrailBlockProperties.IsShielded) newMaterial = ThemeManager.Instance.GetTeamShieldedBlockMaterial(team);
+                    else if (TrailBlockProperties.IsSuperShielded) newMaterial = ThemeManager.Instance.GetTeamSuperShieldedBlockMaterial(team);
+                    else newMaterial = ThemeManager.Instance.GetTeamBlockMaterial(team);
+                }
+
+
+                if (lerp)
+                {
+                    if (lerpBlockMaterialPropertiesCoroutine != null)
+                        StopCoroutine(lerpBlockMaterialPropertiesCoroutine);
+
+
+                    lerpBlockMaterialPropertiesCoroutine = StartCoroutine(LerpBlockMaterialPropertiesCoroutine(newMaterial));
+                }
+                else
+                {
+                    meshRenderer.material = newMaterial;
+                }
             }
         }
 

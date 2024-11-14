@@ -27,4 +27,4 @@ MonoBehaviour:
   SupportedFlora:
   - {fileID: 7514956980722975813, guid: 5f8219db5b2bd1d48b331f9eb3e04888, type: 3}
   SupportedFauna:
-  - {fileID: 0}
+  - {fileID: 1594903950002975183, guid: cf5d9d162b969ed4e92bf8388c703723, type: 3}

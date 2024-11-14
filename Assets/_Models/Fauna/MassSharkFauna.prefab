@@ -754,18 +754,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9117ee7c8d6921843b1da29d1d1a8d33, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  healthBlock: {fileID: 130098072086415127}
-  spindle: {fileID: 8331289796329346999}
+  healthBlock: {fileID: 0}
+  spindle: {fileID: 0}
   minHealthBlocks: 0
   Team: 0
   aggression: 0
   Population: {fileID: 0}
-  cohesionRadius: 8
-  separationRadius: 4
-  behaviorUpdateRate: 1
-  separationWeight: 2
+  detectionRadius: 40
+  separationRadius: 30
+  consumeRadius: 40
+  behaviorUpdateRate: 2
+  separationWeight: 4
   cohesionWeight: 1
-  goalWeight: 1.5
+  goalWeight: 2
   minSpeed: 25
   maxSpeed: 30
 --- !u!1 &3561311450035280578
@@ -1182,6 +1183,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   cylinder: {fileID: 0}
   RenderedObject: {fileID: 4931713767661456478}
+  parentSpindle: {fileID: 0}
   LifeForm: {fileID: 5351160486092638538}
 --- !u!1 &4404527662190514381
 GameObject:
@@ -1476,6 +1478,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   cylinder: {fileID: 0}
   RenderedObject: {fileID: 2443664578066746117}
+  parentSpindle: {fileID: 0}
   LifeForm: {fileID: 5351160486092638538}
 --- !u!1 &5980138776295548165
 GameObject:
@@ -1523,6 +1526,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   cylinder: {fileID: 0}
   RenderedObject: {fileID: 5793232977924061616}
+  parentSpindle: {fileID: 0}
   LifeForm: {fileID: 5351160486092638538}
 --- !u!1 &6485504098594869449
 GameObject:

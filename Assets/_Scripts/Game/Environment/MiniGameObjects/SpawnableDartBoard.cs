@@ -57,7 +57,7 @@ public class SpawnableDartBoard : SpawnableAbstractBase
     void CreateBlock(Vector3 position, Vector3 lookPosition, string blockId, Trail trail, Vector3 scale, TrailBlock trailBlock, Teams team)
     {
         var Block = Instantiate(trailBlock);
-        Block.Team = team;
+        Block.ChangeTeam(team, false);
         Block.transform.SetPositionAndRotation(position, Quaternion.LookRotation(lookPosition - transform.position, transform.forward));
         Block.transform.SetParent(container.transform, false);
         Block.ID = blockId;

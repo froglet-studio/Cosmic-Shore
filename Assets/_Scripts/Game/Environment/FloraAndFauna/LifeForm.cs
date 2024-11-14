@@ -70,11 +70,6 @@ namespace CosmicShore
 
         private IEnumerator DieCoroutine()
         {
-            foreach (Spindle spindle in spindles)
-            {
-                spindle.EvaporateSpindle();
-            }
-
             yield return new WaitForSeconds(1f);
 
             Destroy(gameObject);

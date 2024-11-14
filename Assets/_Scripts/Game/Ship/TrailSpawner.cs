@@ -192,7 +192,7 @@ public class TrailSpawner : MonoBehaviour
         Block.transform.parent = TrailContainer.transform;
         Block.ownerId = isCharmed ? tempShip.Player.PlayerUUID : ship.Player.PlayerUUID;
         Block.Player = isCharmed ? tempShip.Player : ship.Player;
-        Block.Team = isCharmed ? tempShip.Team : ship.Team;
+        Block.ChangeTeam(isCharmed ? tempShip.Team : ship.Team, false);
         Block.warp = warp;
         if (waitTillOutsideSkimmer) 
             Block.waitTime = (skimmer.transform.localScale.z + TrailZScale) / ship.GetComponent<ShipStatus>().Speed;
@@ -244,7 +244,7 @@ public class TrailSpawner : MonoBehaviour
                     Block.waitTime = (skimmer.transform.localScale.z + TrailZScale) / ship.GetComponent<ShipStatus>().Speed;
                     Block.ownerId = isCharmed ? tempShip.Player.PlayerUUID : ship.Player.PlayerUUID;
                     Block.Player = isCharmed ? tempShip.Player : ship.Player;
-                    Block.Team = isCharmed ? tempShip.Team : ship.Team;
+                    Block.ChangeTeam(isCharmed ? tempShip.Team : ship.Team);
                     Block.warp = warp;
                     Block.GetComponent<MeshRenderer>().material = blockMaterial;
                     Block.Index = spawnedTrailCount;
