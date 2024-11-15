@@ -1,15 +1,17 @@
-#if !UNITY_WEBGL
-using System;
 using CosmicShore.App.Systems.UserActions;
+using CosmicShore.Utility.Singleton;
+#if !UNITY_WEBGL
 using Firebase;
 using Firebase.Analytics;
-using CosmicShore.Utility.Singleton;
+#endif
+using System;
 using UnityEngine;
 
 namespace CosmicShore.Integrations.Firebase.Controller
 {
     public class FirebaseAnalyticsController : SingletonPersistent<FirebaseAnalyticsController>
     {
+#if !UNITY_WEBGL
         private static bool _analyticsEnabled = true;
         private static DependencyStatus _dependencyStatus = DependencyStatus.Available;
 
@@ -243,7 +245,7 @@ namespace CosmicShore.Integrations.Firebase.Controller
         }
 
         #endregion
-    
+
+#endif
     }
 }
-#endif
