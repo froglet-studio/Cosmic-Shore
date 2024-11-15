@@ -1,18 +1,11 @@
 using CosmicShore.Core;
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Net.NetworkInformation;
 using UnityEngine;
-using UnityEngine.UIElements;
-using static Cinemachine.CinemachineFreeLook;
 
 namespace CosmicShore
 {
     public class SpawnableComet : SpawnableAbstractBase
     {
-        [SerializeField] Core.TrailBlock trailBlock;
+        [SerializeField] TrailBlock trailBlock;
         [SerializeField] Teams team = Teams.Blue;
         static int CometsSpawned = 0;
 
@@ -32,8 +25,6 @@ namespace CosmicShore
         {
             GameObject container = new GameObject();
             container.name = "COMET" + CometsSpawned++;
-
-            
 
             var trail = new Trail();
 
@@ -79,7 +70,7 @@ namespace CosmicShore
         void CreateBlock(Vector3 position, Vector3 lookPosition, Vector3 up, string blockId, Trail trail, Vector3 scale, Core.TrailBlock trailBlock, GameObject container, Teams team = Teams.Blue)
         {
             var Block = Instantiate(trailBlock);
-            Block.ChangeTeam(team, false);
+            Block.ChangeTeam(team);
             Block.ownerId = "public";
             Block.transform.SetPositionAndRotation(position, Quaternion.LookRotation(lookPosition, up));
             Block.transform.SetParent(container.transform, false);
@@ -88,8 +79,5 @@ namespace CosmicShore
             Block.Trail = trail;
             trail.Add(Block);
         }
-
-        
-
     }
 }
