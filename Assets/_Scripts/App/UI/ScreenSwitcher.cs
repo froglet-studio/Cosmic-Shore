@@ -143,13 +143,12 @@ namespace CosmicShore.App.UI
 
         void Update()
         {
-            if (Gamepad.current != null && Gamepad.current[GamepadButton.DpadLeft].wasPressedThisFrame)
+            if (Gamepad.current != null)
             {
-                NavigateLeft();
-            }
-            if (Gamepad.current != null && Gamepad.current[GamepadButton.DpadRight].wasPressedThisFrame)
-            {
-                NavigateRight();
+                if (Gamepad.current.leftTrigger.wasPressedThisFrame)
+                    NavigateLeft();
+                if (Gamepad.current.rightTrigger.wasPressedThisFrame)
+                    NavigateRight();
             }
         }
 

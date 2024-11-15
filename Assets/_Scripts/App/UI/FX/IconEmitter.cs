@@ -33,7 +33,6 @@ namespace CosmicShore.App.UI.FX
         [SerializeField] bool DoShrinkRoutine = true;
         [SerializeField] float JitterAmount = 0.1f;
         [SerializeField] float TargetAlpha = 0f; // Target alpha for fade
-
         [SerializeField] AudioClip targetReachedClip; // Audio clip
         [SerializeField] AudioClip onTriggerClip; // Audio clip
         [SerializeField] AudioSource audioSource; // Reference to the AudioSource component
@@ -94,9 +93,7 @@ namespace CosmicShore.App.UI.FX
                 image.gameObject.SetActive(false);
                 image.transform.SetParent(transform, false);
                 image.rectTransform.sizeDelta = StartSize;
-
                 image.rectTransform.anchoredPosition = sourceLocalPosition;
-
 
                 // Determine the angle based on the selected mode
                 float angle = 0f;
@@ -117,7 +114,6 @@ namespace CosmicShore.App.UI.FX
 
                 // Calculate a reasonable initial delay with jitter
                 float initialDelay = (i * SpawnDuration / Quantity) + Random.Range(-JitterAmount, JitterAmount);
-
 
                 StartCoroutine(MoveAlongArcCoroutine(image, sourceLocalPosition, targetLocalPosition, angle, initialDelay));
             }
