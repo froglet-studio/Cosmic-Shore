@@ -23,8 +23,6 @@ namespace CosmicShore.Game.Animation
             animator.SetFloat("Yaw", currentYaw);
             animator.SetFloat("Roll", currentRoll);
             animator.SetFloat("Throttle", currentThrottle);
-            animator.SetFloat("x", 1);
-            animator.SetFloat("y", 1);
         }
 
         protected override void Idle()

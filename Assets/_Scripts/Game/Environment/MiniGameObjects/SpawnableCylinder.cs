@@ -1,18 +1,11 @@
 using CosmicShore.Core;
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Net.NetworkInformation;
 using UnityEngine;
-using UnityEngine.UIElements;
-using static Cinemachine.CinemachineFreeLook;
 
 namespace CosmicShore
 {
     public class SpawnableCylinder : SpawnableAbstractBase
     {
-        [SerializeField] Core.TrailBlock trailBlock;
+        [SerializeField] TrailBlock trailBlock;
         static int CylindersSpawned = 0;
 
         #region Attributes for Explosion Parameters
@@ -31,12 +24,6 @@ namespace CosmicShore
             GameObject container = new GameObject();
             container.name = "COMET" + CylindersSpawned++;
 
-            
-
-            var trail = new Trail();
-     
-
-            
             // Cylinder //
             for (int ring = 0; ring < ringCount; ring++) //ring = X value
             {
@@ -49,16 +36,13 @@ namespace CosmicShore
 
                     CreateRingBlock(block, ring % 2 * 0.5f, scale, (ring) / (float)ringCount,
                         ((ring) * height / ringCount) + radius, trails[ring], container);
-
-                    /*CreateRingBlock(block, ring % 2 * 0.5f, scale,-radius - ((ring) / (float)ringCount * height),
-                        ((ring) * height / ringCount) + radius, trails[ring], container);*/
                 }
             }
             return container;
         }
 
-        //Phase (0-.5) offsets everyother ring
-        private void CreateRingBlock(int block, float phase, float scale, float tilt, float distanceTowardTail, Trail trail, GameObject container)
+        // Phase (0-.5) offsets every other ring
+        void CreateRingBlock(int block, float phase, float scale, float tilt, float distanceTowardTail, Trail trail, GameObject container)
         {
             var offset = scale * radius *(((block + phase) / blockCount) * 2 * Mathf.PI) * transform.right +
                          scale * radius * (((block + phase) / blockCount) * 2 * Mathf.PI) * transform.up +
@@ -70,7 +54,7 @@ namespace CosmicShore
         void CreateBlock(Vector3 position, Vector3 lookPosition, Vector3 up, string blockId, Trail trail, Vector3 scale, Core.TrailBlock trailBlock, GameObject container, Teams team = Teams.Blue)
         {
             var Block = Instantiate(trailBlock);
-            Block.ChangeTeam(team, false);
+            Block.ChangeTeam(team);
             Block.ownerId = "public";
             Block.transform.SetPositionAndRotation(position, Quaternion.LookRotation(lookPosition, up));
             Block.transform.SetParent(container.transform, false);
@@ -79,8 +63,5 @@ namespace CosmicShore
             Block.Trail = trail;
             trail.Add(Block);
         }
-
-        
-
     }
 }

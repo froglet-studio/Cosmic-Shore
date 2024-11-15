@@ -1,16 +1,9 @@
 
 using CosmicShore.Core;
-using UnityEditor;
 using UnityEngine;
 
 public class SpawnableCardioidSmear : SpawnableEllipsoid
 {
-    //[SerializeField] TrailBlock trailBlock;
-
-    //float length;
-    //float width;
-    //float height;
-
     static int SegmentsSpawned = 0;
 
     public override GameObject Spawn()
