@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-using JetBrains.Annotations;
 using CosmicShore.Utility.Singleton;
 using Unity.Services.Analytics;
 using Unity.Services.Core;
@@ -9,10 +7,11 @@ namespace CosmicShore.Integrations.Firebase.Controller
 {
     public class UnityAnalytics : SingletonPersistent<UnityAnalytics>
     {
-        private bool _isConsented = true;
+        private const bool IsConsented = true;
+
         private bool _isConnected = true;
         // Start is called before the first frame update
-        async void Start()
+        private async void Start()
         {
             await UnityServices.InitializeAsync();
             AskForConsents();
@@ -37,7 +36,7 @@ namespace CosmicShore.Integrations.Firebase.Controller
         /// </summary>
         private async void AskForConsents()
         {
-            if(_isConsented && _isConnected) AnalyticsService.Instance.StartDataCollection();
+            if(IsConsented && _isConnected) AnalyticsService.Instance.StartDataCollection();
             else AnalyticsService.Instance.StopDataCollection();
         }
 
@@ -69,7 +68,7 @@ namespace CosmicShore.Integrations.Firebase.Controller
         /// </summary>
         private void SetUserId()
         {
-            if (!_isConnected || !_isConsented) return;
+            if (!_isConnected || !IsConsented) return;
             UnityServices.ExternalUserId = SystemInfo.deviceUniqueIdentifier;
         }
 
@@ -79,7 +78,7 @@ namespace CosmicShore.Integrations.Firebase.Controller
         /// </summary>
         public void ForceUploadData()
         {
-            if (!_isConnected || !_isConsented) return;
+            if (!_isConnected || !IsConsented) return;
             AnalyticsService.Instance.Flush();
         }
     }
