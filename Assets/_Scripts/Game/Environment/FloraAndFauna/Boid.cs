@@ -231,7 +231,7 @@ public class Boid : Fauna
     (TrailBlock, GyroidAssembler) NewBlock()
     {
         var newBlock = Instantiate(healthBlock, transform.position, transform.rotation, Population.transform);
-        newBlock.Team = healthBlock.Team;
+        newBlock.ChangeTeam(healthBlock.Team);
         newBlock.gameObject.layer = LayerMask.NameToLayer("Mound");
         newBlock.TrailBlockProperties = new()
         {

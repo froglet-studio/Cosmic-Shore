@@ -15,12 +15,16 @@ namespace CosmicShore
             base.Start();
             if (LifeForm) LifeForm.AddHealthBlock(this);
             spindle ??= transform.parent.GetComponent<Spindle>(); // Every healthBlock requires a spindle parent
+            spindle.AddHealthBlock(this);
         }
 
         public void Reparent(Transform newParent)
         {
             spindle ??= transform.parent.GetComponent<Spindle>();
+            spindle.RemoveHealthBlock(this);
+
             transform.parent = newParent;
+            
             LifeForm.RemoveHealthBlock(this);
             spindle.CheckForLife();
         }
@@ -28,7 +32,10 @@ namespace CosmicShore
         protected override void Explode(Vector3 impactVector, Teams team, string playerName, bool devastate = false)
         {
             spindle ??= transform.parent.GetComponent<Spindle>();
-            base.Explode(impactVector, team, playerName, devastate); 
+            spindle.RemoveHealthBlock(this);
+            
+            base.Explode(impactVector, team, playerName, devastate);
+            
             LifeForm.RemoveHealthBlock(this);
             spindle.CheckForLife();           
         }

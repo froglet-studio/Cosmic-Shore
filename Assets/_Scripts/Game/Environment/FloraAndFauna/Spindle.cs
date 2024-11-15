@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace CosmicShore
@@ -7,20 +8,45 @@ namespace CosmicShore
     {
         public GameObject cylinder;
         public Renderer RenderedObject;
-        Spindle parentSpindle;
+        [SerializeField] Spindle parentSpindle;
         public LifeForm LifeForm;
+
+        HashSet<HealthBlock> healthBlocks = new HashSet<HealthBlock>();
+        HashSet<Spindle> spindles = new HashSet<Spindle>();
 
         private void Start()
         {
             StartCoroutine(CondenseCoroutine());
             if (LifeForm) LifeForm.AddSpindle(this);
+            parentSpindle ??= transform.parent.GetComponentInParent<Spindle>();
+            if (parentSpindle) parentSpindle.AddSpindle(this);
+        }
+
+        public void AddHealthBlock(HealthBlock healthBlock)
+        {
+            healthBlocks.Add(healthBlock);
+            healthBlock.LifeForm = LifeForm;
+        }
+
+        public void RemoveHealthBlock(HealthBlock healthBlock)
+        {
+            healthBlocks.Remove(healthBlock);
+        }
+
+        public void AddSpindle(Spindle spindle)
+        {
+            spindles.Add(spindle);
+            spindle.parentSpindle = this;
+        }
+
+        public void RemoveSpindle(Spindle spindle)
+        {
+            spindles.Remove(spindle);
         }
 
         public void CheckForLife()
         {
-            HealthBlock healthBlock;
-            healthBlock = GetComponentInChildren<HealthBlock>();
-            if ((!healthBlock || healthBlock && healthBlock.destroyed) && GetComponentsInChildren<Spindle>().Length <= 1)
+            if (healthBlocks.Count < 1 && spindles.Count < 1)
             {
                 EvaporateSpindle();
             }
@@ -28,7 +54,7 @@ namespace CosmicShore
 
         public void EvaporateSpindle()
         {
-            StartCoroutine(EvaporateCoroutine());
+            if (gameObject.activeInHierarchy) StartCoroutine(EvaporateCoroutine());
         }
 
         IEnumerator EvaporateCoroutine()
@@ -41,7 +67,6 @@ namespace CosmicShore
                 deathAnimation += Time.deltaTime * animationSpeed;
                 yield return null;
             }
-            transform.parent.TryGetComponent(out parentSpindle);
             Destroy(gameObject);          
         }
 
@@ -63,10 +88,15 @@ namespace CosmicShore
             // check if scene is still loaded
             if (gameObject.scene.isLoaded)
             {
-                LifeForm.RemoveSpindle(this);
-                if (parentSpindle) parentSpindle.CheckForLife();
-                else 
+                if (parentSpindle)
                 {
+                    parentSpindle.RemoveSpindle(this);
+                    parentSpindle.CheckForLife();
+                    LifeForm.RemoveSpindle(this);
+                }
+                else
+                {
+                    LifeForm.RemoveSpindle(this);
                     LifeForm.CheckIfDead();
                 }
             }

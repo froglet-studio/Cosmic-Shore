@@ -95,7 +95,7 @@ namespace CosmicShore.Game.Projectiles
         protected TrailBlock CreateBlock(Vector3 position, Vector3 lookPosition, Vector3 up, string ownerId, Trail trail, GameObject container)
         {
             var Block = Instantiate(trailBlock);
-            Block.Team = Team;
+            Block.ChangeTeam(Team);
             //Block.ownerId = Ship.Player.PlayerUUID;
             //Block.PlayerName = Ship.Player.PlayerName;
             Block.ownerId = "public";

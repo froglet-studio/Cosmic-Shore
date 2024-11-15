@@ -20,11 +20,8 @@ public class Node : MonoBehaviour
     GameObject membrane;
     GameObject nucleus; // TODO: Use radius to spawn/move crystal
 
-    Flora flora1;
-    Flora flora2;
-
-    Population fauna1;
-    Population fauna2;
+    [SerializeField] int FloraTypeCount = 2;
+    [SerializeField] int FaunaTypeCount = 2;
 
     [SerializeField] float floraSpawnVolumeCeiling = 12000f;
 
@@ -68,27 +65,31 @@ public class Node : MonoBehaviour
             modifier.Apply(this);
         }
 
-        if (CellType.SupportedFlora.Count > 0)
-        {
-            flora1 = CellType.SupportedFlora[Random.Range(0, CellType.SupportedFlora.Count)];
-            flora2 = CellType.SupportedFlora[Random.Range(0, CellType.SupportedFlora.Count)];
-        }
-        if (CellType.SupportedFauna.Count > 0)
-        {
-            fauna1 = CellType.SupportedFauna[Random.Range(0, CellType.SupportedFauna.Count)];
-            fauna2 = CellType.SupportedFauna[Random.Range(0, CellType.SupportedFauna.Count)];
-        }
 
         teamVolumes.Add(Teams.Jade, 0);
         teamVolumes.Add(Teams.Ruby, 0);
         teamVolumes.Add(Teams.Gold, 0);
 
+        if (CellType.SupportedFlora.Count > 0)
+        { 
+            for (int i = 0; i < FloraTypeCount; i++)
+            {
+                var flora = CellType.SupportedFlora[Random.Range(0, CellType.SupportedFlora.Count)];
+                StartCoroutine(SpawnFlora(flora));
+            }
+        }
+
+        if (CellType.SupportedFauna.Count > 0)
+        {
+            for (int i = 0; i < FaunaTypeCount; i++)
+            {
+                var fauna = CellType.SupportedFauna[Random.Range(0, CellType.SupportedFauna.Count)];
+                StartCoroutine(SpawnFauna(fauna));
+            }
+        }
+
         SnowChanger.SetOrigin(transform.position);
         Crystal.SetOrigin(transform.position);
-        if (fauna1) StartCoroutine(SpawnFauna(fauna1));
-        if (fauna2) StartCoroutine(SpawnFauna(fauna2));
-        if (flora1) StartCoroutine(SpawnFlora(flora1));
-        if (flora2) StartCoroutine(SpawnFlora(flora2));
     }
 
     public void AddBlock(TrailBlock block)

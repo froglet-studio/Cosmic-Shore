@@ -7,12 +7,14 @@ using System.Collections.Generic;
 public class LightFauna : Fauna
 {
     [Header("Detection Settings")]
-    [SerializeField] float cohesionRadius = 8.0f;
-    [SerializeField] float separationRadius = 4.0f;
-    [SerializeField] float behaviorUpdateRate = 1.0f;
+    [SerializeField] float detectionRadius = 100.0f;
+    //[SerializeField] float cohesionRadius = 8.0f;
+    [SerializeField] float separationRadius = 100.0f;
+    [SerializeField] float consumeRadius = 40.0f;
+    [SerializeField] float behaviorUpdateRate = 2.0f;
 
     [Header("Behavior Weights")]
-    [SerializeField] float separationWeight = 2.0f;
+    [SerializeField] float separationWeight = 100f;
     [SerializeField] float cohesionWeight = 1.0f;
     [SerializeField] float goalWeight = 1.5f;
 
@@ -29,15 +31,14 @@ public class LightFauna : Fauna
         base.Start();
         currentVelocity = transform.forward * Random.Range(minSpeed, maxSpeed);
         StartCoroutine(UpdateBehaviorCoroutine());
-        //if (healthBlock) healthBlock.Team = Team;
     }
 
     IEnumerator UpdateBehaviorCoroutine()
     {
         while (true)
         {
-            UpdateBehavior();
             yield return new WaitForSeconds(behaviorUpdateRate);
+            UpdateBehavior();          
         }
     }
 
@@ -45,12 +46,12 @@ public class LightFauna : Fauna
     {
         Vector3 separation = Vector3.zero;
         Vector3 cohesion = Vector3.zero;
-        Vector3 goalDirection = Population.Goal - transform.position;
+        Vector3 goalDirection = (Population.Goal - transform.position).normalized;
         
         int neighborCount = 0;
         float averageSpeed = 0f;
 
-        var nearbyColliders = Physics.OverlapSphere(transform.position, cohesionRadius);
+        var nearbyColliders = Physics.OverlapSphere(transform.position, detectionRadius);
         
         foreach (var collider in nearbyColliders)
         {
@@ -61,35 +62,36 @@ public class LightFauna : Fauna
             if (distance == 0) continue;
 
             // Handle other fauna
-            LightFauna otherFauna = collider.GetComponentInParent<LightFauna>();
-            if (otherFauna)
+            var otherHealthBlock = collider.GetComponent<HealthBlock>();
+            if (otherHealthBlock)
             {
+                if (otherHealthBlock.LifeForm == this) continue;
                 neighborCount++;
-                cohesion += collider.transform.position;
+                //cohesion += collider.transform.position;
                 
                 if (distance < separationRadius)
                 {
                     separation += diff.normalized / distance;
-                    averageSpeed += otherFauna.currentVelocity.magnitude;
                 }
+                if (distance < consumeRadius && otherHealthBlock.LifeForm.Team != Team) otherHealthBlock.Damage(currentVelocity, Team, "light fauna", true);
                 continue;
             }
 
             // Handle blocks
             TrailBlock block = collider.GetComponent<TrailBlock>();
-            if (block && block.Team != Team && distance < cohesionRadius)
+            if (block && block.Team != Team && distance < consumeRadius)
             {
-                goalDirection = (block.transform.position - transform.position).normalized;
-                if (distance < 2f && !healthBlock)
-                {
-                    block.Damage(currentVelocity * healthBlock.Volume, Team, "light fauna", true);
-                }
+                //goalDirection = (block.transform.position - transform.position).normalized;
+                //if (distance < consumeRadius)
+                //{
+                    block.Damage(currentVelocity, Team, "light fauna", true);
+                //}
             }
         }
 
         if (neighborCount > 0)
         {
-            cohesion = ((cohesion / neighborCount) - transform.position).normalized;
+            //cohesion = ((cohesion / neighborCount) - transform.position).normalized;
             averageSpeed = averageSpeed > 0 ? averageSpeed / neighborCount : currentVelocity.magnitude;
         }
         else
@@ -99,7 +101,7 @@ public class LightFauna : Fauna
 
         // Combine behaviors
         desiredDirection = ((separation * separationWeight) + 
-                          (cohesion * cohesionWeight) + 
+                          //(cohesion * cohesionWeight) + 
                           (goalDirection * goalWeight)).normalized;
 
         currentVelocity = desiredDirection * Mathf.Clamp(averageSpeed, minSpeed, maxSpeed);

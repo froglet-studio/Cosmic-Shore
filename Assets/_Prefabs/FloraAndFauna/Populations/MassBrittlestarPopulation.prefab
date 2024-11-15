@@ -49,6 +49,6 @@ MonoBehaviour:
   Goal: {x: 0, y: 0, z: 0}
   lightFaunaPrefab: {fileID: 5351160486092638538, guid: c719f00ea7596c24185379994f7dc824,
     type: 3}
-  spawnCount: 2
-  spawnRadius: 10
+  spawnCount: 5
+  spawnRadius: 50
   formationSpread: 50

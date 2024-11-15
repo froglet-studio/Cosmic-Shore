@@ -83,7 +83,7 @@ namespace CosmicShore.Game.Projectiles
         protected TrailBlock CreateBlock(Vector3 position, Vector3 forward, Vector3 up, string blockId, Trail trail, Vector3 scale)
         {
             var block = Instantiate(trailBlock);
-            block.Team = Team;
+            block.ChangeTeam(Team);
             block.ownerId = Ship.Player.PlayerUUID;
             block.Player = Ship.Player;
             block.transform.SetPositionAndRotation(position, Quaternion.LookRotation(forward, up));

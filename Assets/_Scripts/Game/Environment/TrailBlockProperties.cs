@@ -3,7 +3,7 @@ using UnityEngine;
 namespace CosmicShore.Core
 {
     [System.Serializable]
-    public struct TrailBlockProperties
+    public class TrailBlockProperties
     {
         public Vector3 position;
         public float volume;
@@ -15,5 +15,6 @@ namespace CosmicShore.Core
         public bool IsSuperShielded;
         public bool IsDangerous; // TODO: change to enum with mutually exclusive values with shielding
         public float TimeCreated;
+        public bool IsTransparent;
     }
 }

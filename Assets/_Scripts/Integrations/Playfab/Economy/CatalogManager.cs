@@ -35,6 +35,7 @@ namespace CosmicShore.Integrations.PlayFab.Economy
         public static bool CatalogLoaded { get; private set; }
 
         public const int MaxDailyChallengeTicketBalance = 5;
+        public const int DailyRewardAmount = 100;         // TODO: need to pull this from the server during start
 
         int GrantedCrystalAmount;
         Element GrantedCrystalElement;

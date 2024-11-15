@@ -3077,8 +3077,8 @@ MonoBehaviour:
     Min: 0
     Max: 0
     element: 0
-  PitchScaler: 60
-  YawScaler: 60
+  PitchScaler: 80
+  YawScaler: 80
   RollScaler: 60
   RotationThrottleScaler: 0
 --- !u!114 &874579555101021522
@@ -3257,7 +3257,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ControlOverrides: 03000000
-  closeCamDistance: -75
+  closeCamDistance: -90
   farCamDistance: 0
   FollowTarget: {fileID: 0}
   FollowTargetPosition: {x: 0, y: 0, z: 0}

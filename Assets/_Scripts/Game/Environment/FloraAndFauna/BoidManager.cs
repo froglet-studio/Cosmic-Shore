@@ -39,7 +39,7 @@ public class BoidManager : Population
             //newBoid.DefaultGoal = node.GetClosestItem(spawnPosition).transform;
 
             boidTrail.Add(block);
-            block.Team = Team;
+            block.ChangeTeam(Team);
             block.Trail = boidTrail;
             
             newBoid.normalizedIndex = (float)i / numberOfBoids;
