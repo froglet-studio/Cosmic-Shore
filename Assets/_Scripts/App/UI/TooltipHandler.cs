@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
 
 namespace CosmicShore.App.UI
 {
@@ -7,23 +8,46 @@ namespace CosmicShore.App.UI
     {
         [SerializeField] GameObject tooltip;
         bool isTooltipVisible = false;
+        Camera mainCamera;
+        InputAction pointerClickAction;
 
-        void Start()
+        void OnEnable()
         {
-            if (tooltip != null)
-            {
-                tooltip.SetActive(false);
-            }
+            pointerClickAction.Enable();
         }
 
-        void Update()
+        void OnDisable()
         {
-            // Detect clicks outside the button and tooltip
-            if (isTooltipVisible && Input.GetMouseButtonDown(0) && !RectTransformUtility.RectangleContainsScreenPoint(
-                (RectTransform)tooltip.transform, Input.mousePosition, Camera.main))
-            {
-                isTooltipVisible = false;
+            pointerClickAction.Disable();
+        }
+
+        void Awake()
+        {
+            mainCamera = Camera.main;
+
+            // Set up an InputAction for detecting pointer clicks (both mouse and touch)
+            pointerClickAction = new InputAction(type: InputActionType.PassThrough, binding: "<Pointer>/press");
+            pointerClickAction.performed += OnGlobalPointerClick; // Subscribe to pointer click event
+            if (tooltip != null)
                 tooltip.SetActive(false);
+        }
+
+
+        /// <summary>
+        /// Detects global pointer clicks (outside the button and tooltip area)
+        /// </summary>
+        void OnGlobalPointerClick(InputAction.CallbackContext context)
+        {
+            if (isTooltipVisible)
+            {
+                Vector2 pointerPosition = Pointer.current.position.ReadValue();  // Read pointer position (works for mouse or touch)
+
+                // Check if the click/touch was outside the tooltip
+                if (!RectTransformUtility.RectangleContainsScreenPoint((RectTransform)tooltip.transform, pointerPosition, mainCamera))
+                {
+                    isTooltipVisible = false;
+                    tooltip.SetActive(false);
+                }
             }
         }
 
