@@ -1,34 +1,35 @@
-#if !UNITY_WEBGL
-using System;
 using CosmicShore.App.Systems.UserActions;
+using CosmicShore.Utility.Singleton;
+#if !UNITY_WEBGL
 using Firebase;
 using Firebase.Analytics;
-using CosmicShore.Utility.Singleton;
+#endif
+using System;
 using UnityEngine;
 
 namespace CosmicShore.Integrations.Firebase.Controller
 {
     public class FirebaseAnalyticsController : SingletonPersistent<FirebaseAnalyticsController>
     {
+#if !UNITY_WEBGL
         private static bool _analyticsEnabled = true;
         private static DependencyStatus _dependencyStatus = DependencyStatus.Available;
-        public static Action OnDependencyResolved;
-        // private FirebaseApp _app;
+
+        private static Action _dependencyResolved;
         
         #region Firebase Analytics Controller Initialization and Enabling
         
         private void Start()
         {
             CheckDependencies();
-            OnDependencyResolved += InitializeFirebaseAnalytics;
+            _dependencyResolved += InitializeFirebaseAnalytics;
             UserActionSystem.Instance.OnUserActionCompleted += LogEventUserCompleteAction;
         }
 
         private void OnDisable()
         {
-            OnDependencyResolved -= InitializeFirebaseAnalytics;
+            _dependencyResolved -= InitializeFirebaseAnalytics;
             if(UserActionSystem.Instance) UserActionSystem.Instance.OnUserActionCompleted -= LogEventUserCompleteAction;
-            _analyticsEnabled = false;
         }
 
 
@@ -36,7 +37,7 @@ namespace CosmicShore.Integrations.Firebase.Controller
         /// Check Dependencies
         /// Check for necessary dependencies and try to resolve them for Android and IOS
         /// </summary>
-        private void CheckDependencies()
+        private static void CheckDependencies()
         {
 #if UNITY_ANDROID
             CheckAndroidDependencies();
@@ -51,7 +52,7 @@ namespace CosmicShore.Integrations.Firebase.Controller
         /// Check Android Dependencies 
         /// Check for necessary dependencies and try to resolve them for Android
         /// </summary>
-        private void CheckAndroidDependencies()
+        private static void CheckAndroidDependencies()
         {
             FirebaseApp.CheckAndFixDependenciesAsync().ContinueWith(
                 fixTask =>
@@ -59,12 +60,12 @@ namespace CosmicShore.Integrations.Firebase.Controller
                     _dependencyStatus = fixTask.Result;
                     if (_dependencyStatus == DependencyStatus.Available)
                     {
-                        Debug.Log("Dependency resolved, now proceed with Firebase");
-                        OnDependencyResolved?.Invoke();
+                        Debug.Log("Dependency resolved for Android, now proceed with Firebase");
+                        _dependencyResolved?.Invoke();
                     }
                     else
                     {
-                        Debug.LogErrorFormat("Firebase dependency not resolved. {0}", _dependencyStatus);
+                        Debug.LogErrorFormat("Firebase dependency not resolved for Android. {0}", _dependencyStatus);
                     }
                 });
         }
@@ -73,21 +74,20 @@ namespace CosmicShore.Integrations.Firebase.Controller
         /// Check iOS Dependencies 
         /// Check for necessary dependencies and try to resolve them for iOS
         /// </summary>
-        private void CheckIOSDependencies()
+        private static void CheckIOSDependencies()
         {
-            // TODO: check out how to resolve dependencies for iOS
             FirebaseApp.CheckAndFixDependenciesAsync().ContinueWith(
                 fixTask =>
                 {
                     _dependencyStatus = fixTask.Result;
                     if (_dependencyStatus == DependencyStatus.Available)
                     {
-                        Debug.Log("Dependency resolved, now proceed with Firebase");
-                        OnDependencyResolved?.Invoke();
+                        Debug.Log("Dependency resolved for IOS, now proceed with Firebase");
+                        _dependencyResolved?.Invoke();
                     }
                     else
                     {
-                        Debug.LogErrorFormat("Firebase dependency not resolved. {0}", _dependencyStatus);
+                        Debug.LogErrorFormat("Firebase dependency not resolved for IOS. {0}", _dependencyStatus);
                     }
                 });
         }
@@ -95,20 +95,16 @@ namespace CosmicShore.Integrations.Firebase.Controller
         /// <summary>
         /// Initialize Firebase Analytics
         /// </summary>
-        private void InitializeFirebaseAnalytics()
+        private static void InitializeFirebaseAnalytics()
         {
-            // Firebase analytics initialization
-            // _app = FirebaseApp.DefaultInstance;
-            // _app.Options.
+            // Set analytics enabled true
+            _analyticsEnabled = true;
             
-            // Enable Firebase Analytics Data Collection TODO: ask player consent for data collection
-            FirebaseAnalytics.SetAnalyticsCollectionEnabled(true);
+            // Enable Firebase Analytics Data Collection
+            FirebaseAnalytics.SetAnalyticsCollectionEnabled(_analyticsEnabled);
             
             // Set User Id on device unique identifier
             FirebaseAnalytics.SetUserId(SystemInfo.deviceUniqueIdentifier);
-            
-            // Set analytics enabled true
-            _analyticsEnabled = true;
             
             // Set default session duration values.
             FirebaseAnalytics.SetSessionTimeoutDuration(new TimeSpan(0, 30, 0));
@@ -120,15 +116,6 @@ namespace CosmicShore.Integrations.Firebase.Controller
         
         #endregion
 
-        #region Analytics Tooling For Unity Services
-
-        private void MappingDictionary()
-        {
-            // TODO: generalise mapping dictionary for Unity Services
-        }
-        
-
-        #endregion
         #region Ad Measurement
 
         /// <summary>
@@ -148,7 +135,7 @@ namespace CosmicShore.Integrations.Firebase.Controller
         /// <summary>
         /// Log Event App Open
         /// </summary>
-        private void LogEventAppOpen()
+        private static void LogEventAppOpen()
         {
             if (!_analyticsEnabled) return;
             
@@ -160,7 +147,7 @@ namespace CosmicShore.Integrations.Firebase.Controller
         /// Log Event Screen View
         /// Actually it's automatically logging event screen view
         /// </summary>
-        public void LogEventScreenView()
+        public static void LogEventScreenView()
         {
             if (!_analyticsEnabled) return;
             
@@ -172,7 +159,7 @@ namespace CosmicShore.Integrations.Firebase.Controller
 
         #region UI Action Events
 
-        public void LogEventUserCompleteAction(UserAction action)
+        public static void LogEventUserCompleteAction(UserAction action)
         {
             if (!_analyticsEnabled) return;
 
@@ -258,7 +245,7 @@ namespace CosmicShore.Integrations.Firebase.Controller
         }
 
         #endregion
-    
+
+#endif
     }
 }
-#endif

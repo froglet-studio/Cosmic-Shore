@@ -1,7 +1,6 @@
 using CosmicShore.App.UI.Modals;
 using CosmicShore.App.UI.Views;
 using CosmicShore.Integrations.PlayFab.Economy;
-using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -116,7 +115,6 @@ namespace CosmicShore.App.Ui.Menus
                 .Where(x =>
                 {
                     var captain = CaptainManager.Instance.GetCaptainByName(x.Name);
-
 
                     // If this assert is triggered, it suggests a configuration mismatch between playfab and scriptable objects
                     Assert.AreNotEqual(captain, null, $"Could not find captain while loading store catalog - Captain Name: {x.Name}");

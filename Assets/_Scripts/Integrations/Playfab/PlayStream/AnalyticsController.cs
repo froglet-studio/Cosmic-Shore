@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using CosmicShore.Integrations.PlayFab.Authentication;
 using CosmicShore.Integrations.PlayFab.PlayerModels;
+using CosmicShore.Integrations.PlayFab.Utility;
 using PlayFab;
 using PlayFab.ClientModels;
 using PlayFab.EventsModels;
@@ -12,17 +13,10 @@ namespace CosmicShore.Integrations.PlayFab.PlayStream
 {
     public class AnalyticsController : SingletonPersistent<AnalyticsController>
     {
-        static PlayFabDataInstanceAPI _playFabDataInstanceAPI;
+        private static PlayFabDataInstanceAPI _playFabDataInstanceAPI;
         private static PlayFabClientInstanceAPI _playFabClientInstanceAPI;
         private static PlayFabEventsInstanceAPI _playFabEventsInstanceAPI;
-        public static Action<PlayFabError> GeneratingErrorReport;
-
-        // private AuthenticationManager _authManager;
-        //
-        // public AnalyticsController(AuthenticationManager authManager)
-        // {
-        //     _authManager = authManager;
-        // }
+        
 
         private void Start()
         {
@@ -35,7 +29,6 @@ namespace CosmicShore.Integrations.PlayFab.PlayStream
         {
             AuthenticationManager.OnLoginSuccess -= InitializeEventsInstanceAPI;
             AuthenticationManager.OnLoginSuccess -= InitializePlayerClientInstanceAPI;
-        
         }
 
         #region API Instance Initialization
@@ -85,7 +78,7 @@ namespace CosmicShore.Integrations.PlayFab.PlayStream
                     {
                         Debug.Log($"{nameof(AnalyticsController)} - {nameof(GetUserData)} - key: {pair.Key} value: {pair.Value.Value}");
                     }
-                }, HandleErrorReport);
+                }, PlayFabUtility.HandleErrorReport);
         }
 
         /// <summary>
@@ -108,7 +101,7 @@ namespace CosmicShore.Integrations.PlayFab.PlayStream
                     }
 
                     Debug.Log($"{nameof(AnalyticsController)} - {nameof(SetUserData)} success.");
-                }, HandleErrorReport);
+                }, PlayFabUtility.HandleErrorReport);
         }
 
         /// <summary>
@@ -125,7 +118,7 @@ namespace CosmicShore.Integrations.PlayFab.PlayStream
                 {
                     if (result == null) return;
                     Debug.Log($"{nameof(AnalyticsController)} - {nameof(DeleteUserDataByKeys)} data successfully deleted by keys.");
-                }, HandleErrorReport);
+                }, PlayFabUtility.HandleErrorReport);
         }
         #endregion
 
@@ -155,7 +148,7 @@ namespace CosmicShore.Integrations.PlayFab.PlayStream
                     {
                         Debug.Log($"{nameof(AnalyticsController)} - {nameof(GetUserReadOnlyData)} - key: {data.Key} value: {data.Value.Value}");
                     }
-                }, HandleErrorReport
+                }, PlayFabUtility.HandleErrorReport
             );
         }
 
@@ -178,7 +171,7 @@ namespace CosmicShore.Integrations.PlayFab.PlayStream
                     {
                         Debug.Log($"{nameof(AnalyticsController)} - {nameof(GetPublisherReadOnlyData)} - key: {data.Key} value: {data.Value.Value}");
                     }
-                },HandleErrorReport);
+                },PlayFabUtility.HandleErrorReport);
         }
         #endregion
 
@@ -204,7 +197,7 @@ namespace CosmicShore.Integrations.PlayFab.PlayStream
                     if (result == null) return;
                     Debug.Log($"{nameof(AnalyticsController)} - {nameof(SendPlayerEvent)} success.");
                     Debug.Log($"{nameof(AnalyticsController)} - {nameof(SendPlayerEvent)} - event id: {result.EventId}");
-                },HandleErrorReport);
+                }, PlayFabUtility.HandleErrorReport);
         }
 
         /// <summary>
@@ -231,26 +224,8 @@ namespace CosmicShore.Integrations.PlayFab.PlayStream
                     {
                         Debug.LogWarning($"{nameof(AnalyticsController)} - {nameof(WritePlayStreamEvents)} - assigned event id: {eventId}.");
                     }
-                },HandleErrorReport
+                },PlayFabUtility.HandleErrorReport
             );
-        }
-    
-        #endregion
-
-
-
-        #region Error Handling
-    
-        /// <summary>
-        /// Handle PlayFab Error Report
-        /// Generate error report and raise the event
-        /// <param name="error"> PlayFab Error</param>
-        /// </summary>
-        private void HandleErrorReport(PlayFabError error = null)
-        {
-            if (error == null) return;
-            Debug.LogError(error.GenerateErrorReport());
-            GeneratingErrorReport?.Invoke(error);
         }
     
         #endregion
