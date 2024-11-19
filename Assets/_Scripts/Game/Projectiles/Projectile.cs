@@ -179,6 +179,9 @@ namespace CosmicShore.Game.Projectiles
                     case CrystalImpactEffects.StealCrystal:
                         crystalProperties.crystal.Steal(Team, 7f);
                         break;
+                    case CrystalImpactEffects.GainFullAmmo:
+                        Ship.ResourceSystem.ChangeResourceAmount(0, Ship.ResourceSystem.Resources[0].MaxAmount); // Move to single system
+                        break;
                 }
             }
         }

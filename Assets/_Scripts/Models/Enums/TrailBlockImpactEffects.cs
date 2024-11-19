@@ -20,6 +20,7 @@ public enum TrailBlockImpactEffects
     Explode = 15,
     FX =16,
     FeelDanger = 17,
+    Redirect = 18,
 }
 
 /*

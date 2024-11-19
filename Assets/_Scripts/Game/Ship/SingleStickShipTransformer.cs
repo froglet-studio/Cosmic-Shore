@@ -72,7 +72,7 @@ public class SingleStickShipTransformer : ShipTransformer
         }
         if (shipStatus.ChargedBoostDischarging) boostAmount *= shipStatus.ChargedBoostCharge;
         if (inputController != null)
-            speed = Mathf.Lerp(speed, inputController.XDiff * ThrottleScaler * boostAmount + MinimumSpeed, lerpAmount * Time.deltaTime);
+            speed = Mathf.Lerp(speed, ThrottleScaler * boostAmount + MinimumSpeed, lerpAmount * Time.deltaTime);
 
         speed *= throttleMultiplier;
         shipStatus.Speed = speed;
