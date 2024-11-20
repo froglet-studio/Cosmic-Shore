@@ -5,6 +5,7 @@ using CosmicShore.Core;
 using TMPro;
 using UnityEngine;
 using CosmicShore.Game.Arcade.Scoring;
+using System;
 
 namespace CosmicShore.Game.Arcade
 {
@@ -31,11 +32,9 @@ namespace CosmicShore.Game.Arcade
         public Dictionary<string, float> playerScores { get; } = new();
         public Dictionary<string, Teams> playerTeams { get; } = new();
         
-        public static event Action OnScoreTrackerEnabled;
-        
-        private string currentPlayerName;
-        private float turnStartTime;
-        private BaseScoringMode scoringMode;
+        string currentPlayerName;
+        float turnStartTime;
+        BaseScoringMode scoringMode;
 
         void Start()
         {
