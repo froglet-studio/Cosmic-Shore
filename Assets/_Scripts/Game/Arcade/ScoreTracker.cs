@@ -1,4 +1,3 @@
-using System;
 using CosmicShore.Game.UI;
 using System.Collections.Generic;
 using System.Linq;
@@ -23,8 +22,6 @@ namespace CosmicShore.Game.Arcade
 
         public Dictionary<string, float> playerScores { get; } = new();
         public Dictionary<string, Teams> playerTeams { get; } = new();
-        
-        public static event Action OnScoreTrackerEnabled;
         
         string currentPlayerName;
         int turnsPlayed;
