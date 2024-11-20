@@ -1117,13 +1117,13 @@ MonoBehaviour:
   DefaultMinimumSpeed: 10
   DefaultThrottleScaler:
     Enabled: 1
-    Value: 30
-    Min: 30
-    Max: 80
+    Value: 20
+    Min: 20
+    Max: 50
     element: 4
   PitchScaler: 80
   YawScaler: 80
-  RollScaler: 15
+  RollScaler: 30
   RotationThrottleScaler: 0
 --- !u!114 &874579555101021522
 MonoBehaviour:

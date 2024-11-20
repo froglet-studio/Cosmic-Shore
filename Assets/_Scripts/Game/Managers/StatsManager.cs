@@ -9,6 +9,11 @@ using System;
 
 public class StatsManager : Singleton<StatsManager>
 {
+    public struct NodeStats
+    {
+            public int LifeFormsInNode;
+    }
+
     [SerializeField] List<GameObject> EndOfRoundStatContainers;
     [SerializeField] public bool nodeGame = false;
 
@@ -18,7 +23,39 @@ public class StatsManager : Singleton<StatsManager>
     public Dictionary<Teams, RoundStats> LastRoundTeamStats = new();
     public Dictionary<string, RoundStats> LastRoundPlayerStats = new();
 
+    public Dictionary<string, NodeStats> CellStats = new();
+
     bool RecordStats = true;
+
+    public void LifeformCreated(String nodeID)
+    {
+        if (!RecordStats)
+            return;
+
+        if (!CellStats.ContainsKey(nodeID))
+        {
+            CellStats.Add(nodeID, new NodeStats());
+        }
+
+        var nodeStats = CellStats[nodeID];
+        nodeStats.LifeFormsInNode++;
+        CellStats[nodeID] = nodeStats;
+    }
+
+    public void LifeformDestroyed(String nodeID)
+    {
+        if (!RecordStats)
+            return;
+
+        if (!CellStats.ContainsKey(nodeID))
+        {
+            CellStats.Add(nodeID, new NodeStats());
+        }
+
+        var nodeStats = CellStats[nodeID];
+        nodeStats.LifeFormsInNode--;
+        CellStats[nodeID] = nodeStats;
+    }
 
     public void CrystalCollected(Ship ship, CrystalProperties crystalProperties)
     {
@@ -28,19 +65,16 @@ public class StatsManager : Singleton<StatsManager>
         if (!EnsureDictionaryEntriesExist(ship.Team, ship.Player.PlayerName))
             return;
 
-        RoundStats roundStats;
-        roundStats = TeamStats[ship.Team];
-        roundStats.CrystalsCollected++;
-        TeamStats[ship.Team] = roundStats;
-
-        roundStats = PlayerStats[ship.Player.PlayerName];
-        roundStats.CrystalsCollected++;
-        PlayerStats[ship.Player.PlayerName] = roundStats;
+        
+        TeamStats[ship.Team].CrystalsCollected++;
+        PlayerStats[ship.Player.PlayerName].CrystalsCollected++;
 
         switch (crystalProperties.Element)
         {
             case Element.Omni:
-                UpdateStatForTeamAndPlayer(ship.Team, ship.Player.PlayerName, stats => stats.OmniCrystalsCollected++);
+                UpdateStatForTeamAndPlayer(ship.Team, ship.Player.PlayerName, stats => {
+                    stats.OmniCrystalsCollected++; 
+                    });
                 break;
 
             case Element.Charge:
@@ -77,17 +111,13 @@ public class StatsManager : Singleton<StatsManager>
         }
     }
 
-    private void UpdateStatForTeamAndPlayer(Teams team, string playerName, Action<RoundStats> updateAction)
+    void UpdateStatForTeamAndPlayer(Teams team, string playerName, Action<RoundStats> updateAction)
     {
-        // Update team stats
-        var teamStats = TeamStats[team];
-        updateAction(teamStats);
-        TeamStats[team] = teamStats;
+        if (TeamStats.ContainsKey(team))
+            updateAction(TeamStats[team]);
 
-        // Update player stats
-        var playerStats = PlayerStats[playerName];
-        updateAction(playerStats);
-        PlayerStats[playerName] = playerStats;
+        if (PlayerStats.ContainsKey(playerName))
+            updateAction(PlayerStats[playerName]);
     }
 
 

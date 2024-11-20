@@ -183,9 +183,6 @@ namespace CosmicShore.Core
 
         public void PerformCrystalImpactEffects(CrystalProperties crystalProperties) // TODO: move to an ability system with separate classes
         {
-            if (StatsManager.Instance != null)
-                StatsManager.Instance.CrystalCollected(this, crystalProperties);
-
             foreach (CrystalImpactEffects effect in crystalImpactEffects)
             {
                 switch (effect)

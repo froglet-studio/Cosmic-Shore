@@ -22,6 +22,7 @@ namespace CosmicShore
         {
             crystal = GetComponentInChildren<Crystal>();
             node = NodeControlManager.Instance.GetNodeByPosition(transform.position);
+            StatsManager.Instance.LifeformCreated(node.ID);
         }
 
         public virtual void AddHealthBlock(HealthBlock healthBlock)
@@ -71,7 +72,7 @@ namespace CosmicShore
         private IEnumerator DieCoroutine()
         {
             yield return new WaitForSeconds(1f);
-
+            StatsManager.Instance.LifeformDestroyed(node.ID);
             Destroy(gameObject);
         }
     }
