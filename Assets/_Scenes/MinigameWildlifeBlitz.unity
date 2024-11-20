@@ -366,7 +366,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ActivePlayerScoreDisplay: {fileID: 0}
-  ScoringMode: 7
+  ScoringMode: 9
   GolfRules: 0
   AdditionalScoringModes: []
   GameCanvas: {fileID: 0}
