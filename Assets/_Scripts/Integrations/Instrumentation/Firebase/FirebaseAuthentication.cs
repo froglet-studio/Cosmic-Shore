@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace CosmicShore.Integrations.Firebase.Controller
 {
-    public class FirebaseAuthentication : SingletonPersistent<FirebaseAuthentication>
+    public class FirebaseAuthentication
     {
         // Player/User authentication
         private static FirebaseAuth _userAuthentication;

@@ -22,8 +22,8 @@ namespace CosmicShore.Integrations.Firebase.Controller
 
     
         /// <summary>
-        /// Initialize Dependency Status
-        /// Dependency status is marked as Unavailable from the start
+        /// Initialize dependency status
+        /// The status is marked as Unavailable from the start
         /// </summary>
         private void InitializeDependencyStatus()
         {
