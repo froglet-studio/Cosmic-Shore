@@ -392,6 +392,12 @@ namespace CosmicShore.Core
         
         void UpdateMaterial(Material transparentMaterial, Material opaqueMaterial, float lerpDuration = .8f)
         {
+            if (ActiveTransparentMaterial == null || ActiveOpaqueMaterial == null)
+            {
+                ActiveOpaqueMaterial = meshRenderer.material = ThemeManager.Instance.GetTeamBlockMaterial(team);
+                ActiveTransparentMaterial = ThemeManager.Instance.GetTeamTransparentBlockMaterial(team);
+            }
+
             if (lerpBlockMaterialPropertiesCoroutine == null)
             {
                 lerpBlockMaterialPropertiesCoroutine = StartCoroutine(LerpBlockMaterialPropertiesCoroutine(transparentMaterial, opaqueMaterial, lerpDuration));
