@@ -3,7 +3,7 @@ using Unity.Services.Analytics;
 using Unity.Services.Core;
 using UnityEngine;
 
-namespace CosmicShore.Integrations.Firebase.Controller
+namespace CosmicShore.Integrations.Instrumentation.UnityAnalytics
 {
     public class UnityAnalytics : SingletonPersistent<UnityAnalytics>
     {
