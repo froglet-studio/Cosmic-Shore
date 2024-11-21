@@ -23,9 +23,6 @@ public class SingleStickShipTransformer : ShipTransformer
         accumulatedRotation = Quaternion.AngleAxis(
                             -inputController.EasedLeftJoystickPosition.y * (speed * RotationThrottleScaler + PitchScaler) * Time.deltaTime,
                             courseTransform.right) * accumulatedRotation;
-        //additionalRotation = Quaternion.AngleAxis(
-        //                    -inputController.EasedRightJoystickPosition.y * lookScalar,
-        //                    courseTransform.right) * additionalRotation;
     }
 
     protected override void Yaw()
@@ -33,9 +30,6 @@ public class SingleStickShipTransformer : ShipTransformer
         accumulatedRotation = Quaternion.AngleAxis(
                             inputController.EasedLeftJoystickPosition.x * (speed * RotationThrottleScaler + YawScaler) * Time.deltaTime,
                             courseTransform.up) * accumulatedRotation;
-        //additionalRotation = Quaternion.AngleAxis(
-        //                    inputController.EasedRightJoystickPosition.x * lookScalar,
-        //                    courseTransform.up) * additionalRotation;
     }
 
     protected override void Roll()
@@ -55,11 +49,9 @@ public class SingleStickShipTransformer : ShipTransformer
             Pitch();
         }
 
-        courseTransform.rotation = Quaternion.Lerp(courseTransform.rotation, accumulatedRotation, lerpAmount * Time.deltaTime);
-        transform.rotation = Quaternion.Lerp(transform.rotation, additionalRotation * accumulatedRotation, Time.deltaTime);
-
-        additionalRotation = Quaternion.identity;
-
+        
+        transform.rotation = Quaternion.Slerp(transform.rotation, accumulatedRotation, lerpAmount * Time.deltaTime);
+        courseTransform = transform;
         shipStatus.Course = courseTransform.forward;
     }
 
@@ -79,7 +71,4 @@ public class SingleStickShipTransformer : ShipTransformer
 
         transform.position += (speed * shipStatus.Course + velocityShift) * Time.deltaTime;
     }
-
-
-
 }

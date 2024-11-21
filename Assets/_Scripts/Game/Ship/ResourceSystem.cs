@@ -17,7 +17,7 @@ namespace CosmicShore.Core
         [SerializeField] public string Name;
         [SerializeField] public ResourceDisplay Display;
 
-        [SerializeField] public float initialResourceGainRate = .1f;
+        [HideInInspector] public float initialResourceGainRate = .1f;
         [SerializeField] public float resourceGainRate = .1f;
 
         [SerializeField][Range(0, 1)] float maxAmount = 1f;
@@ -50,8 +50,18 @@ namespace CosmicShore.Core
         public static readonly float OneFuelUnit = 1 / 10f;
         ShipStatus shipData;
 
+
+        private void Awake()
+        {
+            foreach (var resource in Resources)
+            {
+                resource.initialResourceGainRate = resource.resourceGainRate;
+            }
+        }
+
         void Start()
         {
+            
             shipData = GetComponent<ShipStatus>();
 
             StartCoroutine(LateStart());
@@ -84,7 +94,9 @@ namespace CosmicShore.Core
             {
                 foreach (var resource in Resources)
                 {
+                    Debug.Log("Resource: " + resource.Name + " before gaining Current Amount: " + resource.CurrentAmount); 
                     resource.CurrentAmount = Mathf.Clamp(resource.CurrentAmount + resource.resourceGainRate, 0, resource.MaxAmount);
+                    Debug.Log("Resource: " + resource.Name + " after gaining Current Amount: " + resource.CurrentAmount);
                 }
                 yield return new WaitForSeconds(1);
             }
