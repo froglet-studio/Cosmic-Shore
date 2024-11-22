@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace CosmicShore.Game.Animation
 {
-    class MantaAnimationContoller : ShipAnimation
+    class SparrowAnimationController : ShipAnimation
     {
         [SerializeField] Animator animator;
 
@@ -14,8 +14,7 @@ namespace CosmicShore.Game.Animation
 
         protected override void PerformShipPuppetry(float pitch, float yaw, float roll, float throttle)
         {
-            if (ship.ShipStatus.Boosting) animator.SetBool("Boost", true);
-            else animator.SetBool("Boost", false);
+
 
             currentPitch = Mathf.Lerp(currentPitch, pitch, animationSpeed * Time.deltaTime);
             currentYaw = Mathf.Lerp(currentYaw, yaw, animationSpeed * Time.deltaTime);
@@ -26,19 +25,20 @@ namespace CosmicShore.Game.Animation
             animator.SetFloat("Yaw", currentYaw);
             animator.SetFloat("Roll", currentRoll);
             animator.SetFloat("Throttle", currentThrottle);
+            
         }
 
         protected override void Idle()
         {
             if (ship.ShipStatus.Boosting) animator.SetBool("Boost", true);
-            else animator.SetBool("Boost", false);
+            else animator.SetBool("Boosting", false);
 
             currentPitch = Mathf.Lerp(currentPitch, 0, animationSpeed * Time.deltaTime);
             currentYaw = Mathf.Lerp(currentYaw, 0, animationSpeed * Time.deltaTime);
             currentRoll = Mathf.Lerp(currentRoll, 0, animationSpeed * Time.deltaTime);
             currentThrottle = Mathf.Lerp(currentThrottle, 0, animationSpeed * Time.deltaTime);
 
-            animator.SetFloat("Pitch", currentPitch);
+            animator.SetFloat("Pitch", -currentPitch);
             animator.SetFloat("Yaw", currentYaw);
             animator.SetFloat("Roll", currentRoll);
             animator.SetFloat("Throttle", currentThrottle);

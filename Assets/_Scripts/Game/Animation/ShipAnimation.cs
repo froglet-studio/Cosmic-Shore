@@ -19,7 +19,7 @@ namespace CosmicShore.Game.Animation
 
         protected List<Transform> Transforms = new(); // TODO: use this to populate the ship geometries on ship.cs
         protected List<Quaternion> InitialRotations = new(); // TODO: use this to populate the ship geometries on ship.cs
-        Ship ship;
+        protected Ship ship;
 
         protected virtual void Start()
         {

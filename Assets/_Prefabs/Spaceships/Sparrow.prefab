@@ -20618,7 +20618,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2116872444dccfd43a29513c3af008b7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  SkinnedMeshRenderer: {fileID: 0}
+  SkinnedMeshRenderer: {fileID: 4494445581967653786}
   SaveNewPositions: 1
   UseShapeKeys: 1
   brakeThreshold: 0.65
@@ -31503,6 +31503,12 @@ Transform:
 --- !u!4 &3639927891889859887 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -6232245709983614198, guid: 151e3f0352963624abf4da579618e66d,
+    type: 3}
+  m_PrefabInstance: {fileID: 1945839443224614437}
+  m_PrefabAsset: {fileID: 0}
+--- !u!137 &4494445581967653786 stripped
+SkinnedMeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 2692722512241470911, guid: 151e3f0352963624abf4da579618e66d,
     type: 3}
   m_PrefabInstance: {fileID: 1945839443224614437}
   m_PrefabAsset: {fileID: 0}
