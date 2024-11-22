@@ -368,9 +368,11 @@ MonoBehaviour:
   ActivePlayerScoreDisplay: {fileID: 0}
   ScoringMode: 9
   GolfRules: 0
-  AdditionalScoringModes: []
+  AdditionalScoringModes:
+  - Mode: 2
+    UseGolfRules: 0
   GameCanvas: {fileID: 0}
-  TimePlayedScoreMultiplier: 1000
+  TimePlayedScoreMultiplier: 0.1
   ScoreNormalizationQuotient: 1
 --- !u!114 &1078953708
 MonoBehaviour:
