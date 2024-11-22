@@ -1,6 +1,6 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!1 &8491596592871572304
+--- !u!1 &8186157953239024494
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -8,109 +8,88 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 6581790613644763884}
-  - component: {fileID: 8408881654079357254}
-  - component: {fileID: 5253399708865279294}
-  - component: {fileID: 1159569796746287339}
+  - component: {fileID: 8186157953239024493}
+  - component: {fileID: 8186157953239024492}
   m_Layer: 0
-  m_Name: CrystalTimeDandruff
+  m_Name: TimeGyroidFlora
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &6581790613644763884
+--- !u!4 &8186157953239024493
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8491596592871572304}
+  m_GameObject: {fileID: 8186157953239024494}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 10, y: 10, z: 10}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 6204620953839340625}
+  - {fileID: 678972201625215711}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!33 &8408881654079357254
-MeshFilter:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8491596592871572304}
-  m_Mesh: {fileID: -2346428509227581198, guid: 45afc94baa642164fa72c753ada48e91, type: 3}
---- !u!23 &5253399708865279294
-MeshRenderer:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8491596592871572304}
-  m_Enabled: 1
-  m_CastShadows: 1
-  m_ReceiveShadows: 1
-  m_DynamicOccludee: 1
-  m_StaticShadowCaster: 0
-  m_MotionVectors: 1
-  m_LightProbeUsage: 1
-  m_ReflectionProbeUsage: 1
-  m_RayTracingMode: 2
-  m_RayTraceProcedural: 0
-  m_RenderingLayerMask: 1
-  m_RendererPriority: 0
-  m_Materials:
-  - {fileID: 2100000, guid: 6eea31b551b13184cb148646f27388e8, type: 2}
-  m_StaticBatchInfo:
-    firstSubMesh: 0
-    subMeshCount: 0
-  m_StaticBatchRoot: {fileID: 0}
-  m_ProbeAnchor: {fileID: 0}
-  m_LightProbeVolumeOverride: {fileID: 0}
-  m_ScaleInLightmap: 1
-  m_ReceiveGI: 1
-  m_PreserveUVs: 0
-  m_IgnoreNormalsForChartDetection: 0
-  m_ImportantGI: 0
-  m_StitchLightmapSeams: 1
-  m_SelectedEditorRenderState: 3
-  m_MinimumChartSize: 4
-  m_AutoUVMaxDistance: 0.5
-  m_AutoUVMaxAngle: 89
-  m_LightmapParameters: {fileID: 0}
-  m_SortingLayerID: 0
-  m_SortingLayer: 0
-  m_SortingOrder: 0
-  m_AdditionalVertexStreams: {fileID: 0}
---- !u!114 &1159569796746287339
+--- !u!114 &8186157953239024492
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8491596592871572304}
+  m_GameObject: {fileID: 8186157953239024494}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fd126f9f2002d9e4c901852da93c2211, type: 3}
+  m_Script: {fileID: 11500000, guid: d3651588f6d7bbd4ba59c18516075c9a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  positionScale: 1
-  maxDistance: 3
---- !u!1001 &969943202441520716
+  healthBlock: {fileID: 8110546509497104660, guid: c1f494543c951b54f9d9e15318de9a4a,
+    type: 3}
+  spindle: {fileID: 5157459880619768690, guid: 76cd644e62b88cc43a93674d5596971e, type: 3}
+  minHealthBlocks: 5
+  Team: 0
+  growPeriod: 2
+  PlantPeriod: 10
+  depth: 0
+  maxTotalSpawnedObjects: 800
+  maxDepth: 80
+  itemsPerGrow: 5
+  randomItems: 2
+  crystalGrowthMultiplier: 1.01
+--- !u!1001 &5909534463492262082
 PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Modification:
     serializedVersion: 3
-    m_TransformParent: {fileID: 6581790613644763884}
+    m_TransformParent: {fileID: 8186157953239024493}
     m_Modifications:
+    - target: {fileID: 6588436222817790464, guid: e707773a458187444a9dfbf3ec06568f,
+        type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 6588436222817790470, guid: e707773a458187444a9dfbf3ec06568f,
         type: 3}
       propertyPath: m_Name
       value: CrystalTime
+      objectReference: {fileID: 0}
+    - target: {fileID: 6588436222817790493, guid: e707773a458187444a9dfbf3ec06568f,
+        type: 3}
+      propertyPath: m_LocalScale.x
+      value: 4
+      objectReference: {fileID: 0}
+    - target: {fileID: 6588436222817790493, guid: e707773a458187444a9dfbf3ec06568f,
+        type: 3}
+      propertyPath: m_LocalScale.y
+      value: 4
+      objectReference: {fileID: 0}
+    - target: {fileID: 6588436222817790493, guid: e707773a458187444a9dfbf3ec06568f,
+        type: 3}
+      propertyPath: m_LocalScale.z
+      value: 4
       objectReference: {fileID: 0}
     - target: {fileID: 6588436222817790493, guid: e707773a458187444a9dfbf3ec06568f,
         type: 3}
@@ -164,22 +143,27 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6588436222817790495, guid: e707773a458187444a9dfbf3ec06568f,
         type: 3}
-      propertyPath: SpentCrystalPrefab
-      value: 
-      objectReference: {fileID: 8491596592871572304}
-    - target: {fileID: 6588436222817790495, guid: e707773a458187444a9dfbf3ec06568f,
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 9119650569732877633, guid: e707773a458187444a9dfbf3ec06568f,
         type: 3}
-      propertyPath: crystalModels.Array.data[0].model
+      propertyPath: m_Materials.Array.data[0]
       value: 
-      objectReference: {fileID: 8491596592871572304}
+      objectReference: {fileID: 2100000, guid: 8a2c03a45edd1494d981136a1e5ee6d0, type: 2}
+    - target: {fileID: 9119650569732877633, guid: e707773a458187444a9dfbf3ec06568f,
+        type: 3}
+      propertyPath: m_Materials.Array.data[1]
+      value: 
+      objectReference: {fileID: 2100000, guid: 923d366546007394ea6c8aaff6a06863, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: e707773a458187444a9dfbf3ec06568f, type: 3}
---- !u!4 &6204620953839340625 stripped
+--- !u!4 &678972201625215711 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 6588436222817790493, guid: e707773a458187444a9dfbf3ec06568f,
     type: 3}
-  m_PrefabInstance: {fileID: 969943202441520716}
+  m_PrefabInstance: {fileID: 5909534463492262082}
   m_PrefabAsset: {fileID: 0}
