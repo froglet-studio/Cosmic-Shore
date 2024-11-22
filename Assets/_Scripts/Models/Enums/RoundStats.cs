@@ -1,7 +1,7 @@
 namespace CosmicShore.Core
 {
     [System.Serializable]
-    public struct RoundStats
+    public class RoundStats
     {
         public int BlocksCreated;
         public int BlocksDestroyed;
@@ -34,7 +34,7 @@ namespace CosmicShore.Core
         public float Button3AbilityActiveTime;
         
 
-        public RoundStats(bool dummy = false)
+        public RoundStats()
         {
             BlocksCreated = 0;
             BlocksDestroyed = 0;

@@ -15,7 +15,7 @@ public class ShipTransformer : MonoBehaviour
 
     protected InputController inputController;
     protected float speed;
-    protected readonly float lerpAmount = 2f;
+    protected readonly float lerpAmount = 1.5f;
     protected Quaternion accumulatedRotation;
 
     [HideInInspector] public float MinimumSpeed;

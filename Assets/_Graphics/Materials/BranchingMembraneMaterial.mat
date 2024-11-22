@@ -21,7 +21,7 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: BranchingMembraneMaterial
-  m_Shader: {fileID: -6465566751694194690, guid: 2c9a2006e0ea5154fa732333a4962870,
+  m_Shader: {fileID: -6465566751694194690, guid: 545a7b2ee58b90744bdb1c9e265a09f4,
     type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
@@ -86,6 +86,10 @@ Material:
         m_Texture: {fileID: 10300, guid: 0000000000000000f000000000000000, type: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
+    - _Texture2DAsset_352516bd0e7f4cae986e8408bf8a04ca_Out_0_Texture2D:
+        m_Texture: {fileID: 10300, guid: 0000000000000000f000000000000000, type: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     - unity_Lightmaps:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
@@ -100,6 +104,7 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
+    - _Add_sin: 0
     - _AlphaClip: 0
     - _AlphaToMask: 0
     - _Amplitude: 0.02
@@ -110,24 +115,26 @@ Material:
     - _ClearCoatSmoothness: 0
     - _Cull: 0
     - _Cutoff: 0.5
+    - _DeathAnimation: 1.21
     - _DetailAlbedoMapScale: 1
     - _DetailNormalMapScale: 1
     - _DstBlend: 0
-    - _Edge_Blend: 0.446
-    - _Effect_Radius: 11.1
+    - _Edge_Blend: 0.792
+    - _Effect_Radius: 45.4
     - _EnvironmentReflections: 1
-    - _Frequency: 0.58
+    - _Frequency: 0.35
     - _GlossMapScale: 0
     - _Glossiness: 0
     - _GlossyReflections: 0
     - _Gradient_Edge: 0.71
+    - _Hue: 1.15
     - _Metallic: 0
     - _OcclusionStrength: 1
     - _Parallax: 0.005
     - _QueueControl: 0
     - _QueueOffset: 0
     - _ReceiveShadows: 1
-    - _Ripple_Density: 4.27
+    - _Ripple_Density: 9.47
     - _Smoothness: 0.5
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1
@@ -137,13 +144,19 @@ Material:
     - _ZTest: 4
     - _ZWrite: 1
     - _ZWriteControl: 0
+    - _add_cos: 0
     - _hue: 0
+    - _multiply: 0
+    - _scale: 0
     m_Colors:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
+    - _Color1: {r: 0.0008017156, g: 0, b: 0.088050246, a: 1}
+    - _Color2: {r: 0, g: 0, b: 0, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
     - _Gradient_Color: {r: 0.14391243, g: 0.20994417, b: 0.6226415, a: 1}
     - _HDR_Emission: {r: 0, g: 0, b: 0, a: 0}
     - _Ripple_Origin: {r: 0, g: 0, b: 0, a: 0}
     - _SpecColor: {r: 0.19999996, g: 0.19999996, b: 0.19999996, a: 1}
+    - _direction: {r: 10, g: 0, b: 0, a: 0}
   m_BuildTextureStacks: []

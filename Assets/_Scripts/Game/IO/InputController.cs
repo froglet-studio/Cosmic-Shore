@@ -23,7 +23,7 @@ namespace CosmicShore.Game.IO
                 if (ship != null)
                 {
                     touchStrategy.Initialize(ship);
-                    keyboardMouseStrategy.Initialize(ship);
+                    //keyboardMouseStrategy.Initialize(ship);
                     gamepadStrategy.Initialize(ship);
                     orientationHandler.Initialize(ship, this);
                 }
@@ -35,7 +35,7 @@ namespace CosmicShore.Game.IO
 
         private IInputStrategy currentStrategy;
         private TouchInputStrategy touchStrategy;
-        private KeyboardMouseInputStrategy keyboardMouseStrategy;
+        //private KeyboardMouseInputStrategy keyboardMouseStrategy;
         private GamepadInputStrategy gamepadStrategy;
         private DeviceOrientationHandler orientationHandler;
 
@@ -88,8 +88,8 @@ namespace CosmicShore.Game.IO
                 currentStrategy = gamepadStrategy;
             else if (SystemInfo.deviceType == DeviceType.Handheld)
                 currentStrategy = touchStrategy;
-            else
-                currentStrategy = keyboardMouseStrategy;
+            //else
+            //    currentStrategy = keyboardMouseStrategy;
 
             currentStrategy?.OnStrategyActivated();
         }
@@ -97,7 +97,7 @@ namespace CosmicShore.Game.IO
         private void InitializeStrategies()
         {
             touchStrategy = new TouchInputStrategy();
-            keyboardMouseStrategy = new KeyboardMouseInputStrategy();
+            //keyboardMouseStrategy = new KeyboardMouseInputStrategy();
             gamepadStrategy = new GamepadInputStrategy();
             orientationHandler = new DeviceOrientationHandler();
         }
@@ -113,6 +113,15 @@ namespace CosmicShore.Game.IO
 
         private void Update()
         {
+            // Toggle the fullscreen state if the Escape key was pressed this frame on windows
+            #if UNITY_STANDALONE_WIN || UNITY_EDITOR_WIN
+            if (Keyboard.current.escapeKey.wasPressedThisFrame)
+            {
+                
+                Screen.fullScreen = !Screen.fullScreen;
+            }
+            #endif
+
             if (PauseSystem.Paused || Paused) return;
 
             if (AutoPilotEnabled && ship != null)
@@ -149,8 +158,8 @@ namespace CosmicShore.Game.IO
 
             if (Gamepad.current != null)
                 newStrategy = gamepadStrategy;
-            else if (Mouse.current.rightButton.isPressed)
-                newStrategy = keyboardMouseStrategy;
+            //else if (Mouse.current.rightButton.isPressed)
+            //    newStrategy = keyboardMouseStrategy;
             else 
                 newStrategy = touchStrategy;
 

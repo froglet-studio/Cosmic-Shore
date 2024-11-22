@@ -10,7 +10,6 @@ namespace CosmicShore.Game.Arcade
         public override bool CheckForEndOfTurn()
         {
             if (paused) return false;
-
             return elapsedTime > duration;
         }
 

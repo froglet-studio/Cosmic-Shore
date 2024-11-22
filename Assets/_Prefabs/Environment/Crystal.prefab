@@ -86,7 +86,7 @@ MonoBehaviour:
     scoreAmount: 1
     tailLengthIncreaseAmount: 0
     speedBuffAmount: 3.5
-    Element: 0
+    Element: 5
     crystalValue: 0
   sphereRadius: 170
   SpentCrystalPrefab: {fileID: 8491596592871572304, guid: f39596c98ed9d644a834f2fa27ec90ca,

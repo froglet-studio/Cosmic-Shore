@@ -10,7 +10,7 @@ namespace CosmicShore.Game.Arcade
         BlocksStolen = 5,
         TeamVolumeDifference = 6,
         CrystalsCollected = 7,
-        OmnirystalsCollected = 8,
+        OmniCrystalsCollected = 8,
         ElementalCrystalsCollected = 9,
     }
 }

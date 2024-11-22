@@ -2,7 +2,7 @@ fileFormatVersion: 2
 guid: 5e37ea1972a64af9897f5fab651a5323
 labels:
 - gvh
-- gvh_version-11.5.0
+- gvh_version-12.4.1
 - gvhp_exportpath-Firebase/Plugins/x86_64/FirebaseCppAuth.bundle
 timeCreated: 1480838400
 PluginImporter:

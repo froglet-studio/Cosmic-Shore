@@ -160,9 +160,6 @@ namespace CosmicShore.Game.Projectiles
 
         public void PerformCrystalImpactEffects(CrystalProperties crystalProperties)
         {
-            if (StatsManager.Instance != null)
-                StatsManager.Instance.CrystalCollected(this.Ship, crystalProperties);
-
             foreach (CrystalImpactEffects effect in crystalImpactEffects)
             {
                 switch (effect)
@@ -178,6 +175,9 @@ namespace CosmicShore.Game.Projectiles
                     //    break;
                     case CrystalImpactEffects.StealCrystal:
                         crystalProperties.crystal.Steal(Team, 7f);
+                        break;
+                    case CrystalImpactEffects.GainFullAmmo:
+                        Ship.ResourceSystem.ChangeResourceAmount(0, Ship.ResourceSystem.Resources[0].MaxAmount); // Move to single system
                         break;
                 }
             }

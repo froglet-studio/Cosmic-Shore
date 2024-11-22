@@ -7,9 +7,8 @@ labels:
 - gvhp_exportpath-ExternalDependencyManager/Editor/external-dependency-manager_version-1.2.183_manifest.txt
 - gvhp_manifestname-0External Dependency Manager
 - gvhp_manifestname-play-services-resolver
-timeCreated: 1474401009
-licenseType: Pro
 TextScriptImporter:
-  userData:
-  assetBundleName:
-  assetBundleVariant:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

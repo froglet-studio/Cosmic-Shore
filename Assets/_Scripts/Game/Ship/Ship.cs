@@ -183,9 +183,6 @@ namespace CosmicShore.Core
 
         public void PerformCrystalImpactEffects(CrystalProperties crystalProperties) // TODO: move to an ability system with separate classes
         {
-            if (StatsManager.Instance != null)
-                StatsManager.Instance.CrystalCollected(this, crystalProperties);
-
             foreach (CrystalImpactEffects effect in crystalImpactEffects)
             {
                 switch (effect)
@@ -263,6 +260,9 @@ namespace CosmicShore.Core
                         ShipTransformer.GentleSpinShip(reflectForward, reflectUp, 1);
                         ShipTransformer.ModifyVelocity((transform.position - trailBlockProperties.trailBlock.transform.position).normalized * 5 , Time.deltaTime * 15);
                         break;
+                    case TrailBlockImpactEffects.Redirect:
+                        ShipTransformer.GentleSpinShip(.5f*transform.forward + .5f * (UnityEngine.Random.value < 0.5f ? -1f : 1f) * transform.right, transform.up, 1);
+                        break;
                     case TrailBlockImpactEffects.Explode:
                         trailBlockProperties.trailBlock.Damage(ShipStatus.Course * ShipStatus.Speed * Inertia, Team, Player.PlayerName);
                         break;
@@ -270,7 +270,7 @@ namespace CosmicShore.Core
                         if (trailBlockProperties.IsDangerous && trailBlockProperties.trailBlock.Team != team)
                         {
                             HapticController.PlayHaptic(HapticType.FakeCrystalCollision);
-                            ShipTransformer.ModifyThrottle(trailBlockProperties.speedDebuffAmount, trailBlockProperties.volume / 10);                           
+                            ShipTransformer.ModifyThrottle(trailBlockProperties.speedDebuffAmount, trailBlockProperties.volume / 10);
                         }
                         break;
                     case TrailBlockImpactEffects.Steal:

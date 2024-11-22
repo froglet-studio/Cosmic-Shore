@@ -9,6 +9,8 @@ public class ConsumeBoostAction : ShipAction
     ShipStatus shipData;
     [SerializeField] float boostMultiplier = 4f;
     [SerializeField] float boostDuration = 4f;
+    [SerializeField] int resourceIndex = 1;
+    [SerializeField] float resourceCost = .25f;
 
     protected override void Start()
     {
@@ -17,12 +19,7 @@ public class ConsumeBoostAction : ShipAction
     }
     public override void StartAction()
     {
-        //if (resourceSystem.CurrentBoost > 0)
-        //{         
-            StartCoroutine(ConsumeBoostCoroutine());
-        //resourceSystem.ChangeBoostAmount(-1);
-        //}
-        
+        if (ship.ResourceSystem.Resources[resourceIndex].CurrentAmount >= resourceCost) StartCoroutine(ConsumeBoostCoroutine());
     }
 
     public override void StopAction()
@@ -32,6 +29,7 @@ public class ConsumeBoostAction : ShipAction
 
     IEnumerator ConsumeBoostCoroutine()
     {
+        ship.ResourceSystem.ChangeResourceAmount(resourceIndex,-resourceCost);
         shipData.Boosting = true;
         ship.boostMultiplier += boostMultiplier;
         yield return new WaitForSeconds(boostDuration);

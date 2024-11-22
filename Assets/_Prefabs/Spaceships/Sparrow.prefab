@@ -20336,12 +20336,10 @@ GameObject:
   - component: {fileID: 874579555101021527}
   - component: {fileID: 6441696348568773771}
   - component: {fileID: 8900747579718772804}
-  - component: {fileID: 7686683633640807837}
   - component: {fileID: 874579555101021522}
   - component: {fileID: 1435252848482629424}
   - component: {fileID: 3440187540988767646}
   - component: {fileID: 6776027772320837218}
-  - component: {fileID: 5086360743770514783}
   - component: {fileID: 2731003324702047408}
   - component: {fileID: 705402283976800655}
   m_Layer: 8
@@ -20421,7 +20419,7 @@ MonoBehaviour:
   crystalImpactEffects: 0d0000000b000000
   minExplosionScale: 50
   maxExplosionScale: 500
-  trailBlockImpactEffects: 0e000000
+  trailBlockImpactEffects: 12000000
   blockChargeChange: 0
   boostMultiplier: 5
   bottomEdgeButtons: 0
@@ -20492,39 +20490,14 @@ MonoBehaviour:
   DefaultMinimumSpeed: 10
   DefaultThrottleScaler:
     Enabled: 1
-    Value: 40
-    Min: 40
-    Max: 80
+    Value: 20
+    Min: 20
+    Max: 50
     element: 4
-  PitchScaler: 60
-  YawScaler: 40
-  RollScaler: 15
-  RotationThrottleScaler: 0
---- !u!114 &7686683633640807837
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6417075533431866457}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 95baa921cf22958449a3143749d5e0e3, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  MinimumSpeed: 0
-  ThrottleScaler: 0
-  DefaultMinimumSpeed: 10
-  DefaultThrottleScaler:
-    Enabled: 0
-    Value: 40
-    Min: 0
-    Max: 0
-    element: 0
-  PitchScaler: 60
-  YawScaler: 60
-  RollScaler: 60
-  RotationThrottleScaler: 0
+  PitchScaler: 80
+  YawScaler: 80
+  RollScaler: 30
+  RotationThrottleScaler: 1
 --- !u!114 &874579555101021522
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -20654,20 +20627,6 @@ MonoBehaviour:
   lerpAmount: 2
   smallLerpAmount: 0.7
   animator: {fileID: 5362545824626142132}
---- !u!114 &5086360743770514783
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6417075533431866457}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2317700572bfe8f47a5240c73200eaac, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  pipCamera: {fileID: 1507913478050007905}
-  mirrored: 0
 --- !u!114 &2731003324702047408
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -32172,12 +32131,6 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 637acd3ede086ed45b23959a02b1c534, type: 3}
---- !u!20 &1507913478050007905 stripped
-Camera:
-  m_CorrespondingSourceObject: {fileID: 7095398317472191918, guid: 637acd3ede086ed45b23959a02b1c534,
-    type: 3}
-  m_PrefabInstance: {fileID: 8546359282292252367}
-  m_PrefabAsset: {fileID: 0}
 --- !u!4 &8650884460702527226 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 1050704211038875701, guid: 637acd3ede086ed45b23959a02b1c534,

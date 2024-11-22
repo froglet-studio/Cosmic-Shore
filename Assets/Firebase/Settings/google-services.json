@@ -3,7 +3,7 @@
     "project_number": "919482784353",
     "firebase_url": "https://cosmic-shore-default-rtdb.firebaseio.com",
     "project_id": "cosmic-shore",
-    "storage_bucket": "cosmic-shore.appspot.com"
+    "storage_bucket": "cosmic-shore.firebasestorage.app"
   },
   "client": [
     {

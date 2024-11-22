@@ -2,7 +2,7 @@ fileFormatVersion: 2
 guid: 275bd6b96a28470986154b9a995e191c
 labels:
 - gvh
-- gvh_version-11.5.0
+- gvh_version-12.4.1
 - gvhp_exportpath-Firebase/Plugins/Firebase.Auth.dll
 timeCreated: 1480838400
 PluginImporter:
