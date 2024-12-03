@@ -349,14 +349,14 @@ MonoBehaviour:
   DefaultMinimumSpeed: 0
   DefaultThrottleScaler:
     Enabled: 0
-    Value: 50
+    Value: 60
     Min: 0
     Max: 0
     element: 0
   PitchScaler: 50
   YawScaler: 50
   RollScaler: 50
-  RotationThrottleScaler: 0
+  RotationThrottleScaler: 0.3
 --- !u!114 &874579555101021522
 MonoBehaviour:
   m_ObjectHideFlags: 0

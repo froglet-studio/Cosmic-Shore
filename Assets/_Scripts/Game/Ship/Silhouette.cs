@@ -72,14 +72,11 @@ namespace CosmicShore
         }
 
         float dotProduct = .9999f;
-        bool flip;
 
         private void calculateDriftAngle(float dotProduct)
         {
-            ShipStatus status = ship.ShipStatus;
-            flip = Vector3.Dot(transform.up, status.Course) > 0;
             foreach (var part in silhouetteParts) { part.gameObject.SetActive(!ship.AutoPilot.AutoPilotEnabled && Player.ActivePlayer == ship.Player); } // TODO: why?
-            silhouetteContainer.transform.localRotation = Quaternion.Euler(0, 0, (flip ? -1f : 1f) * Mathf.Acos(dotProduct-.0001f) * Mathf.Rad2Deg);
+            silhouetteContainer.transform.localRotation = Quaternion.Euler(0, 0, Mathf.Asin(dotProduct-.0001f) * Mathf.Rad2Deg);
 
             this.dotProduct = dotProduct;// Acos hates 1
         }
@@ -121,7 +118,7 @@ namespace CosmicShore
                 tempContainer.transform.SetParent(trailDisplayContainer, false);
                 for (int j = 0; j < 2; j++)
                 {
-                    GameObject newBlock = Instantiate(blockPrefab, silhouetteContainer.transform);
+                    GameObject newBlock = Instantiate(blockPrefab, trailDisplayContainer.transform);
                     newBlock.transform.SetParent(tempContainer.transform, false);
                     Debug.Log($"silhouette: {trailSpawner.MinWaveLength}");
                     newBlock.transform.parent.localPosition = new Vector3(-i * trailSpawner.MinWaveLength * worldToUIScale +
@@ -148,7 +145,7 @@ namespace CosmicShore
                 }
                 if (driftTrailAction)
                 {
-                    blockPool[0, 0].transform.parent.localRotation = Quaternion.Euler(0, 0, (flip ? -1f : 1f) * Mathf.Acos(dotProduct - .0001f) * Mathf.Rad2Deg);
+                    blockPool[0, 0].transform.parent.localRotation = Quaternion.Euler(0, 0, -Mathf.Acos(dotProduct - .0001f) * Mathf.Rad2Deg);
                 }
                 for (int i = poolSize - 1; i > 0; i--)
                 {
