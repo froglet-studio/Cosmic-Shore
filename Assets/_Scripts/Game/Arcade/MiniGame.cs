@@ -1,6 +1,5 @@
 using CosmicShore.Core;
 using CosmicShore.Game.IO;
-using System;
 using System.Collections;
 using System.Collections.Generic;
 #if !UNITY_WEBGL
@@ -180,7 +179,6 @@ namespace CosmicShore.Game.Arcade
                 }
             });
         }
-
 
         public virtual void StartNewGame()
         {

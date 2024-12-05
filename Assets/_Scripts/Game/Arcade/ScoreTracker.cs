@@ -1,11 +1,10 @@
+using CosmicShore.Game.Arcade.Scoring;
 using CosmicShore.Game.UI;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using CosmicShore.Core;
 using TMPro;
 using UnityEngine;
-using CosmicShore.Game.Arcade.Scoring;
-using System;
 
 namespace CosmicShore.Game.Arcade
 {
