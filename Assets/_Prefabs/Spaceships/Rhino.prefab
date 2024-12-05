@@ -1381,7 +1381,6 @@ MonoBehaviour:
   trailBlockImpactEffects: 0f000000
   blockChargeChange: 0
   boostMultiplier: 6
-  boostFuelAmount: -0.015
   bottomEdgeButtons: 0
   Inertia: 70
   inputEventShipActions:
@@ -11964,13 +11963,28 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1245068807111621529, guid: 522a0b0de3eb7b64d8c6e0e35377de5f,
         type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1245068807111621529, guid: 522a0b0de3eb7b64d8c6e0e35377de5f,
+        type: 3}
       propertyPath: m_AnchorMin.x
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1245068807111621529, guid: 522a0b0de3eb7b64d8c6e0e35377de5f,
         type: 3}
+      propertyPath: m_AnchorMin.y
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1245068807111621529, guid: 522a0b0de3eb7b64d8c6e0e35377de5f,
+        type: 3}
       propertyPath: m_AnchoredPosition.x
       value: 80
+      objectReference: {fileID: 0}
+    - target: {fileID: 1245068807111621529, guid: 522a0b0de3eb7b64d8c6e0e35377de5f,
+        type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 692.4
       objectReference: {fileID: 0}
     - target: {fileID: 5565095622771290071, guid: 522a0b0de3eb7b64d8c6e0e35377de5f,
         type: 3}

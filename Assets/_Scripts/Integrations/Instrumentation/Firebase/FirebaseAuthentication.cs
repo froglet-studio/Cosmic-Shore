@@ -1,10 +1,9 @@
 #if !UNITY_WEBGL
 using Firebase.Auth;
-using CosmicShore.Utility.Singleton;
 using CosmicShore.Integrations.PlayFab.Event_Models;
 using UnityEngine;
 
-namespace CosmicShore.Integrations.Firebase.Controller
+namespace CosmicShore.Integrations.Instrumentation.Firebase
 {
     public class FirebaseAuthentication
     {
@@ -17,7 +16,6 @@ namespace CosmicShore.Integrations.Firebase.Controller
         private AuthMethods _firebaseAuthMethods;
         private string email;
         private string password;
-        private FirebaseHelper _firebaseHelper = new();
 
         /// <summary>
         /// On Enable
@@ -28,8 +26,6 @@ namespace CosmicShore.Integrations.Firebase.Controller
             // Set Firebase auth methods to default
             _firebaseAuthMethods = AuthMethods.Default;
             
-            // Initialize authentication instance upon dependency resolved
-            _firebaseHelper.DependencyResolved += OnDependencyResolved;
         }
 
         /// <summary>
@@ -39,7 +35,6 @@ namespace CosmicShore.Integrations.Firebase.Controller
         private void OnDisable()
         {
             _firebaseAuthMethods = AuthMethods.Default;
-            _firebaseHelper.DependencyResolved -= OnDependencyResolved;
         }
 
         /// <summary>

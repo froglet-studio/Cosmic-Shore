@@ -1,4 +1,5 @@
 using CosmicShore.Integrations.Instrumentation.DataCollectors;
+using CosmicShore.Integrations.Instrumentation.Firebase;
 using CosmicShore.Integrations.Instrumentation.Interfaces;
 using CosmicShore.Utility.Singleton;
 
@@ -20,6 +21,11 @@ namespace CosmicShore.Integrations.Instrumentation
 
         public void InitSDK()
         {
+            CSFirebaseHelper.InitializeDependencyStatus();
+            CSFirebaseHelper.CheckDependencies();
+            CSFirebaseHelper.Set(true);
+            
+            // The InitSDK functions are pretty much empty, they are for initializing additional APIS in individual Collectors
             _storeDataCollector.InitSDK();
             _playerDataCollector.InitSDK();
             _dailyChallengeDataCollector.InitSDK();
