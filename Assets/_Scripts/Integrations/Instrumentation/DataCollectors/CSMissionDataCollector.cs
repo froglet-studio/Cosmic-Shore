@@ -10,12 +10,12 @@ namespace CosmicShore.Integrations.Instrumentation.DataCollectors
             Debug.Log("CSMissionDataCollector - Initializing Mission Data Collector.");
         }
 
-        public void StartMission()
+        public void LogEventStartMission()
         {
             Debug.Log("CSMissionDataCollector - Triggering Start Mission event.");
         }
 
-        public void CompleteMission()
+        public void LogEventCompleteMission()
         {
             Debug.Log("CSMissionDataCollector - Triggering Complete Mission event.");
         }
