@@ -7,7 +7,6 @@ namespace CosmicShore.Game.Animation
     public class RiptideAnimation : ShipAnimation
     {
         ShipStatus shipData;
-        [SerializeField] Ship ship;
         [SerializeField] Transform DriftHandle;
         [SerializeField] Transform Chassis;
 
