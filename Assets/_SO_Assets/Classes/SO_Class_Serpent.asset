@@ -17,7 +17,7 @@ MonoBehaviour:
   Description: Make those walls
   IconActive: {fileID: 21300000, guid: 9678312aea3618748bc3095e7218802d, type: 3}
   IconInactive: {fileID: 21300000, guid: a6ac8dbe9d4712546a77ca5ed843cfa6, type: 3}
-  PreviewImage: {fileID: 21300000, guid: b3fe0f4b92e2cf74b830808e3f8d88fc, type: 3}
+  PreviewImage: {fileID: 21300000, guid: e8dfbb15579ed9d47bd692534852142e, type: 3}
   TrailPreviewImage: {fileID: 21300000, guid: 2e75f6670391025489d30c8361fb8de3, type: 3}
   CardSilohoutteActive: {fileID: 21300000, guid: a6ac8dbe9d4712546a77ca5ed843cfa6,
     type: 3}
@@ -29,10 +29,10 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 59a526f543aa82b43920bafb7fb8684d, type: 2}
   - {fileID: 11400000, guid: 9608a8095e3294548aa8e9da3bd634a0, type: 2}
   Captains:
-  - {fileID: 11400000, guid: 7d2c8f9dc64f5e54ab64e0a134800169, type: 2}
-  - {fileID: 11400000, guid: 0faece9fdfd892447bb8c90529873511, type: 2}
-  - {fileID: 11400000, guid: afe308c5fbc1dc14a9ee07e455cdb2c6, type: 2}
   - {fileID: 11400000, guid: f306b7034eb199b48986c56a2b76825d, type: 2}
+  - {fileID: 11400000, guid: afe308c5fbc1dc14a9ee07e455cdb2c6, type: 2}
+  - {fileID: 11400000, guid: 0faece9fdfd892447bb8c90529873511, type: 2}
+  - {fileID: 11400000, guid: 7d2c8f9dc64f5e54ab64e0a134800169, type: 2}
   Games:
   - {fileID: 11400000, guid: dae692490d41dda488bf199e4fdb30af, type: 2}
   - {fileID: 11400000, guid: 176e63d5800dcf147b46497fd88e0fea, type: 2}
