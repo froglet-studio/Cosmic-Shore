@@ -1242,7 +1242,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4111049083201334103}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: -0, z: -0, w: 1}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: -0, y: 0, z: 0.2832746}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -2570,6 +2570,7 @@ MonoBehaviour:
   brakeThreshold: 0.65
   lerpAmount: 2
   smallLerpAmount: 0.7
+  ship: {fileID: 874579555101021527}
   DriftHandle: {fileID: 5191960869318858820}
   Chassis: {fileID: 3597615256247134153}
   NoseTop: {fileID: 3627870670002130986}
@@ -2582,6 +2583,9 @@ MonoBehaviour:
   ThrusterBottomLeft: {fileID: 9149645231041287468}
   ThrusterLeft: {fileID: 2822716781848117340}
   ThrusterTopLeft: {fileID: 1720307654034401823}
+  topJaw: {fileID: 3627870670002130986}
+  bottomJaw: {fileID: 6498706766015119080}
+  JawResourceIndex: 0
 --- !u!114 &6959572785868932314
 MonoBehaviour:
   m_ObjectHideFlags: 0

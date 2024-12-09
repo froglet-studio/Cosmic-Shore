@@ -28,5 +28,6 @@ public enum GameModes
     BotDuel = 23,
     Curvatious = 24,
     MazeRunner = 25,
-    WildlifeBlitz = 26
+    WildlifeBlitz = 26,
+    ProtectMission = 27,
 }

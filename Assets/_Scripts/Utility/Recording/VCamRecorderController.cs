@@ -1,9 +1,8 @@
-using CosmicShore.Game.Arcade;
+using System.Collections;
 using Cinemachine;
 using UnityEngine;
-using System.Collections;
 
-namespace CosmicShore
+namespace CosmicShore.Utility.Recording
 {
 
     public class VCamRecorderController : MonoBehaviour

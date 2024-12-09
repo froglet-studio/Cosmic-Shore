@@ -15,13 +15,13 @@ MonoBehaviour:
   Class: 11
   Name: Sparrow
   Description: '[Placeholder Description]'
-  IconActive: {fileID: 21300000, guid: 7e86443584f65cf41a3f34324269b763, type: 3}
-  IconInactive: {fileID: 21300000, guid: 0c9dbd6a9e84e194289815c277b5528a, type: 3}
-  PreviewImage: {fileID: 21300000, guid: b3fe0f4b92e2cf74b830808e3f8d88fc, type: 3}
+  IconActive: {fileID: 21300000, guid: 001c04c3f60d6784884a8bb9eab6da15, type: 3}
+  IconInactive: {fileID: 21300000, guid: ba44f040361ef7a48bc5af4f07dc0123, type: 3}
+  PreviewImage: {fileID: 21300000, guid: 1f4cbb23d1a737f4e8952f4015810811, type: 3}
   TrailPreviewImage: {fileID: 21300000, guid: 2e75f6670391025489d30c8361fb8de3, type: 3}
-  CardSilohoutteActive: {fileID: 21300000, guid: 0c9dbd6a9e84e194289815c277b5528a,
+  CardSilohoutteActive: {fileID: 21300000, guid: ba44f040361ef7a48bc5af4f07dc0123,
     type: 3}
-  CardSilohoutteInactive: {fileID: 21300000, guid: 7e86443584f65cf41a3f34324269b763,
+  CardSilohoutteInactive: {fileID: 21300000, guid: 2becdcf3a1d2a0b4aa9f0ec7e4fd8f18,
     type: 3}
   Abilities:
   - {fileID: 11400000, guid: 82909d6c79ea9c242bd1c5b8cc668428, type: 2}

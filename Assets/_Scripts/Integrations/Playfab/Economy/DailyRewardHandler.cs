@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using CosmicShore.Integrations.PlayFab.Authentication;
 using CosmicShore.Integrations.PlayFab.Economy;
 using CosmicShore.Utility.Singleton;
+using Firebase.Analytics;
 using PlayFab.CloudScriptModels;
 using UnityEngine;
 
@@ -63,7 +64,11 @@ namespace CosmicShore.Integrations.PlayFab.CloudScripts
                 return;
             }
 
-            CatalogManager.Instance.RewardClaimed(Element.Omni, CatalogManager.Instance.GetDailyChallengeTicket().Amount);
+            CatalogManager.Instance.RewardClaimed(Element.Omni, CatalogManager.DailyRewardAmount);
+
+#if !UNITY_WEBGL
+            //FirebaseAnalytics.
+#endif
 
             Debug.Log($"Cloud script - The {result.FunctionName} function took {result.ExecutionTimeMilliseconds} to complete");
             Debug.Log($"Cloud script - Result: {result.FunctionResult}");

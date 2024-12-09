@@ -21,6 +21,8 @@ namespace CosmicShore.Game.Animation
         [SerializeField] Transform ThrusterBottomLeft;
         [SerializeField] Transform ThrusterLeft;
         [SerializeField] Transform ThrusterTopLeft;
+        [SerializeField] Transform topJaw;
+        [SerializeField] Transform bottomJaw;
 
         List<Transform> animationTransforms;
         const float animationScaler = 25f;
@@ -31,6 +33,16 @@ namespace CosmicShore.Game.Animation
         Vector3 defaultWingPosition = Vector3.zero;
         Vector3 forwardWingPosition = new(0, 0, 2.3f);
 
+        [SerializeField] int JawResourceIndex;
+
+        private void OnEnable()
+        {
+            if (topJaw) ship.ResourceSystem.Resources[JawResourceIndex].OnResourceChange += calculateBlastAngle;
+        }
+        private void OnDisable()
+        {
+            if (topJaw) ship.ResourceSystem.Resources[JawResourceIndex].OnResourceChange -= calculateBlastAngle;
+        }
         protected override void Start()
         {
             base.Start();
@@ -117,6 +129,12 @@ namespace CosmicShore.Game.Animation
             part.localPosition = Vector3.Lerp(part.localPosition, position, lerpAmount * Time.deltaTime);
         }
 
+        private void calculateBlastAngle(float currentAmmo)
+        {
+            topJaw.transform.localRotation = Quaternion.Euler(-21 * currentAmmo, 0, 0);
+            bottomJaw.transform.localRotation = Quaternion.Euler(21 * currentAmmo, 0, 0);
+        }
+
         protected override void AssignTransforms()
         {
             Transforms.Add(DriftHandle);
@@ -130,6 +148,8 @@ namespace CosmicShore.Game.Animation
             Transforms.Add(ThrusterBottomLeft);
             Transforms.Add(ThrusterLeft);
             Transforms.Add(ThrusterTopLeft);
+            Transforms.Add(topJaw);
+            Transforms.Add(bottomJaw);
 
             InitialRotations.Add(NoseTop.localRotation);
             InitialRotations.Add(NoseBottom.localRotation);
@@ -139,6 +159,8 @@ namespace CosmicShore.Game.Animation
             InitialRotations.Add(ThrusterBottomLeft.localRotation);
             InitialRotations.Add(ThrusterLeft.localRotation);
             InitialRotations.Add(ThrusterTopLeft.localRotation);
+            InitialRotations.Add(topJaw.localRotation);
+            InitialRotations.Add(bottomJaw.localRotation);  
         }
     }
 }

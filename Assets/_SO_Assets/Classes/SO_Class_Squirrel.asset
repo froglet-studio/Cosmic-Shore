@@ -17,13 +17,13 @@ MonoBehaviour:
   Description: "Get in your flow and stay there. Hard decisions are for other classes.
     You\u2019re here to bounce around and ride your tubes, leaving a wake of creation
     and destruction."
-  IconActive: {fileID: 21300000, guid: ee1a8ead9a4ac4843886683a5a06b441, type: 3}
-  IconInactive: {fileID: 21300000, guid: 7042133ccbb46614fb22d8cb9dd522ed, type: 3}
-  PreviewImage: {fileID: 21300000, guid: b3fe0f4b92e2cf74b830808e3f8d88fc, type: 3}
+  IconActive: {fileID: 21300000, guid: df59a6b64a7456f4780fe0fe46ace412, type: 3}
+  IconInactive: {fileID: 21300000, guid: 5d8f022f56d65ef4fae2cea4428a990f, type: 3}
+  PreviewImage: {fileID: 21300000, guid: 99bcc774a1bc5ad42bff1539ddc45a7f, type: 3}
   TrailPreviewImage: {fileID: 21300000, guid: 2e75f6670391025489d30c8361fb8de3, type: 3}
-  CardSilohoutteActive: {fileID: 21300000, guid: 7042133ccbb46614fb22d8cb9dd522ed,
+  CardSilohoutteActive: {fileID: 21300000, guid: 5d8f022f56d65ef4fae2cea4428a990f,
     type: 3}
-  CardSilohoutteInactive: {fileID: 21300000, guid: ee1a8ead9a4ac4843886683a5a06b441,
+  CardSilohoutteInactive: {fileID: 21300000, guid: cc08a778da01fa24ab5748ca8efe5178,
     type: 3}
   Abilities:
   - {fileID: 11400000, guid: 200e28ab23d1c5d49ae077a93c79c387, type: 2}
@@ -31,10 +31,10 @@ MonoBehaviour:
   - {fileID: 11400000, guid: c3a4ef83059cf574b8680f2d145dbd09, type: 2}
   - {fileID: 11400000, guid: 112dccf5b2caf5e4fa81e73077e96997, type: 2}
   Captains:
-  - {fileID: 11400000, guid: 95d53b4da5bd8dd4a805458d4f59bb24, type: 2}
-  - {fileID: 11400000, guid: a7f735bb64ac87341a6e476d77d0c93e, type: 2}
-  - {fileID: 11400000, guid: d8fdc5ad35460e94b816497b65d2909e, type: 2}
   - {fileID: 11400000, guid: 10c8a11b812b71744b4f5a845490b95a, type: 2}
+  - {fileID: 11400000, guid: d8fdc5ad35460e94b816497b65d2909e, type: 2}
+  - {fileID: 11400000, guid: a7f735bb64ac87341a6e476d77d0c93e, type: 2}
+  - {fileID: 11400000, guid: 95d53b4da5bd8dd4a805458d4f59bb24, type: 2}
   Games:
   - {fileID: 11400000, guid: dae692490d41dda488bf199e4fdb30af, type: 2}
   - {fileID: 11400000, guid: 176e63d5800dcf147b46497fd88e0fea, type: 2}

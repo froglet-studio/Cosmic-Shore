@@ -10,27 +10,27 @@ namespace CosmicShore.Integrations.Instrumentation.Firebase
             throw new System.NotImplementedException();
         }
 
-        public void PurchaseCaptain()
+        public void LogEventPurchaseCaptain()
         {
             throw new System.NotImplementedException();
         }
 
-        public void PurchaseArcadeGame()
+        public void LogEventPurchaseArcadeGame()
         {
             throw new System.NotImplementedException();
         }
 
-        public void PurchaseMission()
+        public void LogEventPurchaseMission()
         {
             throw new System.NotImplementedException();
         }
 
-        public void WatchAd()
+        public void LogEventWatchAd()
         {
             throw new System.NotImplementedException();
         }
 
-        public void RedeemDailyReward()
+        public void LogEventRedeemDailyReward()
         {
             throw new System.NotImplementedException();
         }

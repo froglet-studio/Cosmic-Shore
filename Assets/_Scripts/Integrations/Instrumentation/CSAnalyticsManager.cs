@@ -1,4 +1,5 @@
 using CosmicShore.Integrations.Instrumentation.DataCollectors;
+using CosmicShore.Integrations.Instrumentation.Firebase;
 using CosmicShore.Integrations.Instrumentation.Interfaces;
 using CosmicShore.Utility.Singleton;
 
@@ -6,6 +7,7 @@ namespace CosmicShore.Integrations.Instrumentation
 {
     public class CSAnalyticsManager : SingletonPersistent<CSAnalyticsManager>, IStoreAnalyzable, IDailyChallengeAnalyzable, IPlayerAnalyzable, IArcadeAnalyzable, IMissionAnalyzable, ITrainingAnalyzable
     {
+        private readonly CSFirebaseUtilities _firebaseUtilities = new ();
         private readonly CSStoreDataCollector _storeDataCollector = new();
         private readonly CSPlayerDataCollector _playerDataCollector = new();
         private readonly CSDailyChallengeDataCollector _dailyChallengeDataCollector = new();
@@ -20,6 +22,9 @@ namespace CosmicShore.Integrations.Instrumentation
 
         public void InitSDK()
         {
+            _firebaseUtilities.InitSDK();
+            
+            // The InitSDK functions are pretty much empty, they are for initializing additional APIS in individual Collectors
             _storeDataCollector.InitSDK();
             _playerDataCollector.InitSDK();
             _dailyChallengeDataCollector.InitSDK();
@@ -28,74 +33,74 @@ namespace CosmicShore.Integrations.Instrumentation
             _trainingDataCollector.InitSDK();
         }
 
-        public void UpgradeCaptain()
+        public void LogEventUpgradeCaptain()
         {
-            _playerDataCollector.UpgradeCaptain();
+            _playerDataCollector.LogEventUpgradeCaptain();
         }
 
-        public void PurchaseCaptain()
+        public void LogEventPurchaseCaptain()
         {
-            _storeDataCollector.PurchaseCaptain();
+            _storeDataCollector.LogEventPurchaseCaptain();
         }
 
-        public void PurchaseArcadeGame()
+        public void LogEventPurchaseArcadeGame()
         {
-            _storeDataCollector.PurchaseArcadeGame();
+            _storeDataCollector.LogEventPurchaseArcadeGame();
         }
 
-        public void PurchaseMission()
+        public void LogEventPurchaseMission()
         {
-            _storeDataCollector.PurchaseMission();
+            _storeDataCollector.LogEventPurchaseMission();
         }
 
-        public void WatchAd()
+        public void LogEventWatchAd()
         {
-            _storeDataCollector.WatchAd();
+            _storeDataCollector.LogEventWatchAd();
         }
 
-        public void RedeemDailyReward()
+        public void LogEventRedeemDailyReward()
         {
-            _storeDataCollector.RedeemDailyReward();
+            _storeDataCollector.LogEventRedeemDailyReward();
         }
 
-        public void StartDailyChallenge()
+        public void LogEventStartDailyChallenge()
         {
-            _dailyChallengeDataCollector.StartDailyChallenge();
+            _dailyChallengeDataCollector.LogEventStartDailyChallenge();
         }
 
-        public void CompleteDailyChallenge()
+        public void LogEventCompleteDailyChallenge()
         {
-            _dailyChallengeDataCollector.CompleteDailyChallenge();
+            _dailyChallengeDataCollector.LogEventCompleteDailyChallenge();
         }
 
-        public void StartArcadeGame()
+        public void LogEventStartArcadeGame()
         {
-            _arcadeDataCollector.StartArcadeGame();
+            _arcadeDataCollector.LogEventStartArcadeGame();
         }
 
-        public void CompleteArcadeGame()
+        public void LogEventCompleteArcadeGame()
         {
-            _arcadeDataCollector.CompleteArcadeGame();
+            _arcadeDataCollector.LogEventCompleteArcadeGame();
         }
 
-        public void StartMission()
+        public void LogEventStartMission()
         {
-            _missionDataCollector.StartMission();
+            _missionDataCollector.LogEventStartMission();
         }
 
-        public void CompleteMission()
+        public void LogEventCompleteMission()
         {
-            _missionDataCollector.CompleteMission();
+            _missionDataCollector.LogEventCompleteMission();
         }
 
-        public void StartTraining()
+        public void LogEventStartTraining()
         {
-            _trainingDataCollector.StartTraining();
+            _trainingDataCollector.LogEventStartTraining();
         }
 
-        public void CompleteTraining()
+        public void LogEventCompleteTraining()
         {
-            _trainingDataCollector.CompleteTraining();
+            _trainingDataCollector.LogEventCompleteTraining();
         }
     }
 }

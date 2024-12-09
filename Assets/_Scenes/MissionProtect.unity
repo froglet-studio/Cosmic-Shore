@@ -6961,30 +6961,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   gameCanvas: {fileID: 0}
-  AutoPilotEnabled: 0
   Portrait: 0
-  ship: {fileID: 0}
-  XSum: 0
-  YSum: 0
-  XDiff: 0
-  YDiff: 0
-  Idle: 0
-  Paused: 0
-  RightJoystickHome: {x: 0, y: 0}
-  LeftJoystickHome: {x: 0, y: 0}
-  RightClampedPosition: {x: 0, y: 0}
-  LeftClampedPosition: {x: 0, y: 0}
-  isGyroEnabled: 0
-  invertYEnabled: 0
-  invertThrottleEnabled: 0
-  OneTouchLeft: 0
-  RightJoystickStart: {x: 0, y: 0}
-  LeftJoystickStart: {x: 0, y: 0}
-  RightNormalizedJoystickPosition: {x: 0, y: 0}
-  LeftNormalizedJoystickPosition: {x: 0, y: 0}
-  SingleTouchValue: {x: 0, y: 0}
-  EasedRightJoystickPosition: {x: 0, y: 0}
-  EasedLeftJoystickPosition: {x: 0, y: 0}
+  AutoPilotEnabled: 0
 --- !u!1 &1068734476
 GameObject:
   m_ObjectHideFlags: 0
@@ -7128,6 +7106,12 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 1449494197}
     m_Modifications:
+    - target: {fileID: 3197094124088707225, guid: cb702179ff5b42f41a3521ccd59e6934,
+        type: 3}
+      propertyPath: CellTypes.Array.data[0]
+      value: 
+      objectReference: {fileID: 11400000, guid: 45bf9f98adc6482419aa740a3e8c9880,
+        type: 2}
     - target: {fileID: 7817456538282590180, guid: cb702179ff5b42f41a3521ccd59e6934,
         type: 3}
       propertyPath: m_Name
@@ -7216,30 +7200,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   gameCanvas: {fileID: 0}
-  AutoPilotEnabled: 0
   Portrait: 0
-  ship: {fileID: 0}
-  XSum: 0
-  YSum: 0
-  XDiff: 0
-  YDiff: 0
-  Idle: 0
-  Paused: 0
-  RightJoystickHome: {x: 0, y: 0}
-  LeftJoystickHome: {x: 0, y: 0}
-  RightClampedPosition: {x: 0, y: 0}
-  LeftClampedPosition: {x: 0, y: 0}
-  isGyroEnabled: 0
-  invertYEnabled: 0
-  invertThrottleEnabled: 0
-  OneTouchLeft: 0
-  RightJoystickStart: {x: 0, y: 0}
-  LeftJoystickStart: {x: 0, y: 0}
-  RightNormalizedJoystickPosition: {x: 0, y: 0}
-  LeftNormalizedJoystickPosition: {x: 0, y: 0}
-  SingleTouchValue: {x: 0, y: 0}
-  EasedRightJoystickPosition: {x: 0, y: 0}
-  EasedLeftJoystickPosition: {x: 0, y: 0}
+  AutoPilotEnabled: 0
 --- !u!1 &1401582516
 GameObject:
   m_ObjectHideFlags: 0
@@ -7583,30 +7545,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   gameCanvas: {fileID: 0}
-  AutoPilotEnabled: 0
   Portrait: 0
-  ship: {fileID: 0}
-  XSum: 0
-  YSum: 0
-  XDiff: 0
-  YDiff: 0
-  Idle: 0
-  Paused: 0
-  RightJoystickHome: {x: 0, y: 0}
-  LeftJoystickHome: {x: 0, y: 0}
-  RightClampedPosition: {x: 0, y: 0}
-  LeftClampedPosition: {x: 0, y: 0}
-  isGyroEnabled: 0
-  invertYEnabled: 0
-  invertThrottleEnabled: 0
-  OneTouchLeft: 0
-  RightJoystickStart: {x: 0, y: 0}
-  LeftJoystickStart: {x: 0, y: 0}
-  RightNormalizedJoystickPosition: {x: 0, y: 0}
-  LeftNormalizedJoystickPosition: {x: 0, y: 0}
-  SingleTouchValue: {x: 0, y: 0}
-  EasedRightJoystickPosition: {x: 0, y: 0}
-  EasedLeftJoystickPosition: {x: 0, y: 0}
+  AutoPilotEnabled: 0
 --- !u!1 &1475658551
 GameObject:
   m_ObjectHideFlags: 0
@@ -7697,7 +7637,8 @@ GameObject:
   - component: {fileID: 1527998409}
   - component: {fileID: 1527998408}
   - component: {fileID: 1527998407}
-  - component: {fileID: 1527998411}
+  - component: {fileID: 1527998413}
+  - component: {fileID: 1527998414}
   m_Layer: 0
   m_Name: Game
   m_TagString: Untagged
@@ -7734,6 +7675,7 @@ MonoBehaviour:
   ActivePlayerScoreDisplay: {fileID: 0}
   ScoringMode: 6
   GolfRules: 0
+  AdditionalScoringModes: []
   GameCanvas: {fileID: 0}
   TimePlayedScoreMultiplier: 1000
   ScoreNormalizationQuotient: 145.65
@@ -7750,6 +7692,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Display: {fileID: 0}
+  eliminatesPlayer: 0
   duration: 250
 --- !u!4 &1527998410
 Transform:
@@ -7766,7 +7709,22 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1527998411
+--- !u!114 &1527998412
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1527998405}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 28e84744c9c973b4e9f08e98ae7465db, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  Display: {fileID: 0}
+  eliminatesPlayer: 0
+  monitoredNode: {fileID: 1978495219}
+--- !u!114 &1527998413
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -7775,14 +7733,13 @@ MonoBehaviour:
   m_GameObject: {fileID: 1527998405}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 22c9b7ffc8ca13e4ba40004f685a8b88, type: 3}
+  m_Script: {fileID: 11500000, guid: ca8328839d576e54096b4d18776f03a2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  gameMode: 10
+  gameMode: 27
   NumberOfRounds: 1
   TurnMonitors:
   - {fileID: 1527998409}
-  - {fileID: 1527998412}
   ScoreTracker: {fileID: 1527998408}
   GameCanvas: {fileID: 69216807}
   playerPrefab: {fileID: 433663843}
@@ -7791,8 +7748,15 @@ MonoBehaviour:
   EnableTrails: 1
   DefaultPlayerShipType: 2
   DefaultPlayerCaptain: {fileID: 0}
+  readyCountdownDelay: 2
+  newGameStartDelay: 0.2
   ActivePlayer: {fileID: 0}
---- !u!114 &1527998412
+  MissionData: {fileID: 11400000, guid: 886fcf63309eb3e428d7863f248c3f2d, type: 2}
+  CurrentDifficulty: 7
+  IntensityThreshold: 1
+  ThreatWaveMinimumPeriodInSeconds: 2
+  ThreatSpawner: {fileID: 1527998414}
+--- !u!114 &1527998414
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -7801,11 +7765,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 1527998405}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 28e84744c9c973b4e9f08e98ae7465db, type: 3}
+  m_Script: {fileID: 11500000, guid: be8f411d33c78dd4d84145cdd1ac94fc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Display: {fileID: 0}
-  monitoredNode: {fileID: 1978495219}
+  nodeCenter: {fileID: 1978495218}
 --- !u!1001 &1561794245
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -8043,30 +8006,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   gameCanvas: {fileID: 0}
-  AutoPilotEnabled: 0
   Portrait: 0
-  ship: {fileID: 0}
-  XSum: 0
-  YSum: 0
-  XDiff: 0
-  YDiff: 0
-  Idle: 0
-  Paused: 0
-  RightJoystickHome: {x: 0, y: 0}
-  LeftJoystickHome: {x: 0, y: 0}
-  RightClampedPosition: {x: 0, y: 0}
-  LeftClampedPosition: {x: 0, y: 0}
-  isGyroEnabled: 0
-  invertYEnabled: 0
-  invertThrottleEnabled: 0
-  OneTouchLeft: 0
-  RightJoystickStart: {x: 0, y: 0}
-  LeftJoystickStart: {x: 0, y: 0}
-  RightNormalizedJoystickPosition: {x: 0, y: 0}
-  LeftNormalizedJoystickPosition: {x: 0, y: 0}
-  SingleTouchValue: {x: 0, y: 0}
-  EasedRightJoystickPosition: {x: 0, y: 0}
-  EasedLeftJoystickPosition: {x: 0, y: 0}
+  AutoPilotEnabled: 0
 --- !u!1 &1813140551
 GameObject:
   m_ObjectHideFlags: 0
@@ -8638,30 +8579,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   gameCanvas: {fileID: 0}
-  AutoPilotEnabled: 0
   Portrait: 0
-  ship: {fileID: 0}
-  XSum: 0
-  YSum: 0
-  XDiff: 0
-  YDiff: 0
-  Idle: 0
-  Paused: 0
-  RightJoystickHome: {x: 0, y: 0}
-  LeftJoystickHome: {x: 0, y: 0}
-  RightClampedPosition: {x: 0, y: 0}
-  LeftClampedPosition: {x: 0, y: 0}
-  isGyroEnabled: 0
-  invertYEnabled: 0
-  invertThrottleEnabled: 0
-  OneTouchLeft: 0
-  RightJoystickStart: {x: 0, y: 0}
-  LeftJoystickStart: {x: 0, y: 0}
-  RightNormalizedJoystickPosition: {x: 0, y: 0}
-  LeftNormalizedJoystickPosition: {x: 0, y: 0}
-  SingleTouchValue: {x: 0, y: 0}
-  EasedRightJoystickPosition: {x: 0, y: 0}
-  EasedLeftJoystickPosition: {x: 0, y: 0}
+  AutoPilotEnabled: 0
 --- !u!1001 &2267044653980613924
 PrefabInstance:
   m_ObjectHideFlags: 0

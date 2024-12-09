@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3b517c46d553d164a80eed7742cbf1f8, type: 3}
   m_Name: SO_Mission_Protect
   m_EditorClassIdentifier: 
-  Mode: 10
+  Mode: 27
   DisplayName: Protect Mission
   Description: Can you protect the cell?
   IconActive: {fileID: 21300000, guid: a12edf378921c3d47bcc584148a52ac3, type: 3}
@@ -22,5 +22,24 @@ MonoBehaviour:
     type: 3}
   GolfScoring: 0
   SceneName: MissionProtect
-  MinIntensity: 1
-  MaxIntensity: 9
+  MinDifficulty: 1
+  MaxDifficulty: 9
+  PotentialThreats:
+  - threatName: Plant
+    threatLevel: 1
+    weight: 1
+    threatPrefab: {fileID: 6774738432424273872, guid: 3c58c4dd53a6a2240acd7f7b81a3adb5,
+      type: 3}
+    spawnMode: 0
+  - threatName: Gyroid
+    threatLevel: 1
+    weight: 1
+    threatPrefab: {fileID: 8186157953239024494, guid: a84d160ac0bcaf94da22c5368e4d3962,
+      type: 3}
+    spawnMode: 0
+  - threatName: Boid
+    threatLevel: 2
+    weight: 1
+    threatPrefab: {fileID: 7563149970416610868, guid: cf5d9d162b969ed4e92bf8388c703723,
+      type: 3}
+    spawnMode: 0

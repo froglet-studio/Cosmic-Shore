@@ -1,5 +1,4 @@
 using UnityEngine;
-using CosmicShore.Core;
 using CosmicShore.Game.Arcade;
 
 namespace CosmicShore

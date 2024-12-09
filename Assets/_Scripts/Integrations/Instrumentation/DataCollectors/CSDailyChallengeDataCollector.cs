@@ -10,12 +10,12 @@ namespace CosmicShore.Integrations.Instrumentation.DataCollectors
             Debug.Log("CSDailyChallengeDataCollector - Initializing Daily Challenge Data Collector.");
         }
 
-        public void StartDailyChallenge()
+        public void LogEventStartDailyChallenge()
         {
             Debug.Log("CSDailyChallengeDataCollector - Triggering Start Daily Challenge event.");
         }
 
-        public void CompleteDailyChallenge()
+        public void LogEventCompleteDailyChallenge()
         {
             Debug.Log("CSDailyChallengeDataCollector - Triggering Complete Daily Challenge event.");
         }
