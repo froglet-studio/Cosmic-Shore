@@ -21,9 +21,13 @@ namespace CosmicShore.Game.Animation
         protected List<Quaternion> InitialRotations = new(); // TODO: use this to populate the ship geometries on ship.cs
         protected Ship ship;
 
-        protected virtual void Start()
+        protected virtual void Awake()
         {
             ship = GetComponent<Ship>();
+        }
+
+        protected virtual void Start()
+        {
             inputController = ship.InputController;
             ship.ResourceSystem.OnElementLevelChange += UpdateShapeKey;
 
