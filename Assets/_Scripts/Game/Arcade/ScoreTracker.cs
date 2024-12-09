@@ -6,6 +6,7 @@ using TMPro;
 using UnityEngine;
 using CosmicShore.Game.Arcade.Scoring;
 using System;
+using System.Collections;
 
 namespace CosmicShore.Game.Arcade
 {
@@ -13,21 +14,20 @@ namespace CosmicShore.Game.Arcade
     public struct AdditionalScoringConfig
     {
         public ScoringModes Mode;
-        public bool UseGolfRules;
+        public float Multiplier;
     }
 
     public class ScoreTracker : MonoBehaviour
     {
         [HideInInspector] public TMP_Text ActivePlayerScoreDisplay;
-
+        [SerializeField] int initialScore = 0;
         [SerializeField] public ScoringModes ScoringMode;
         [SerializeField] public bool GolfRules;  // For primary scoring mode
         [SerializeField] private AdditionalScoringConfig[] AdditionalScoringModes;
         [HideInInspector] public GameCanvas GameCanvas;
 
         [Header("Optional Configuration")]
-        [SerializeField] float TimePlayedScoreMultiplier = 1000f;
-        [SerializeField] float ScoreNormalizationQuotient = 145.65f;
+        [SerializeField] float ScoreMultiplier = 1f; //0.00686f for volume
 
         public Dictionary<string, float> playerScores { get; } = new();
         public Dictionary<string, Teams> playerTeams { get; } = new();
@@ -44,25 +44,25 @@ namespace CosmicShore.Game.Arcade
                 Debug.LogWarning("GameCanvas or MiniGameHUD is not assigned!");
 
             InitializeScoringMode();
+            StartCoroutine(UpdateScoreDisplayCoroutine());
         }
 
-        private BaseScoringMode CreateScoringMode(ScoringModes mode, bool useGolfRules)
+        private BaseScoringMode CreateScoringMode(ScoringModes mode, float multiplier)
         {
             BaseScoringMode newMode = mode switch
             {
-                ScoringModes.HostileVolumeDestroyed => new HostileVolumeDestroyedScoring(ScoreNormalizationQuotient),
-                ScoringModes.VolumeCreated => new VolumeCreatedScoring(ScoreNormalizationQuotient),
-                ScoringModes.TimePlayed => new TimePlayedScoring(TimePlayedScoreMultiplier, ScoreNormalizationQuotient),
-                ScoringModes.TurnsPlayed => new TurnsPlayedScoring(ScoreNormalizationQuotient),
-                ScoringModes.VolumeStolen => new VolumeAndBlocksStolenScoring(false, ScoreNormalizationQuotient),
-                ScoringModes.BlocksStolen => new VolumeAndBlocksStolenScoring(true, ScoreNormalizationQuotient),
-                ScoringModes.TeamVolumeDifference => new TeamVolumeDifferenceScoring(ScoreNormalizationQuotient),
-                ScoringModes.CrystalsCollected => new CrystalsCollectedScoring(CrystalsCollectedScoring.CrystalType.All, ScoreNormalizationQuotient),
-                ScoringModes.OmniCrystalsCollected => new CrystalsCollectedScoring(CrystalsCollectedScoring.CrystalType.Omni, ScoreNormalizationQuotient),
-                ScoringModes.ElementalCrystalsCollected => new CrystalsCollectedScoring(CrystalsCollectedScoring.CrystalType.Elemental, ScoreNormalizationQuotient),
+                ScoringModes.HostileVolumeDestroyed => new HostileVolumeDestroyedScoring(multiplier),
+                ScoringModes.VolumeCreated => new VolumeCreatedScoring(multiplier),
+                ScoringModes.TimePlayed => new TimePlayedScoring(multiplier),
+                ScoringModes.TurnsPlayed => new TurnsPlayedScoring(multiplier),
+                ScoringModes.VolumeStolen => new VolumeAndBlocksStolenScoring(multiplier, false),
+                ScoringModes.BlocksStolen => new VolumeAndBlocksStolenScoring(multiplier, true),
+                ScoringModes.TeamVolumeDifference => new TeamVolumeDifferenceScoring(multiplier),
+                ScoringModes.CrystalsCollected => new CrystalsCollectedScoring(CrystalsCollectedScoring.CrystalType.All, multiplier),
+                ScoringModes.OmniCrystalsCollected => new CrystalsCollectedScoring(CrystalsCollectedScoring.CrystalType.Omni, multiplier),
+                ScoringModes.ElementalCrystalsCollected => new CrystalsCollectedScoring(CrystalsCollectedScoring.CrystalType.Elemental, multiplier),
                 _ => throw new ArgumentException($"Unknown scoring mode: {mode}")
             };
-            newMode.UseGolfRules = useGolfRules;
             return newMode;
         }
 
@@ -70,15 +70,15 @@ namespace CosmicShore.Game.Arcade
         {
             if (AdditionalScoringModes == null || AdditionalScoringModes.Length == 0)
             {
-                scoringMode = CreateScoringMode(ScoringMode, GolfRules);
+                scoringMode = CreateScoringMode(ScoringMode, ScoreMultiplier);
                 return;
             }
 
-            var compositeScoringMode = new CompositeScoringMode(new[] { CreateScoringMode(ScoringMode, GolfRules) }, ScoreNormalizationQuotient);
+            var compositeScoringMode = new CompositeScoringMode(new[] { CreateScoringMode(ScoringMode, ScoreMultiplier) });
             
             foreach (var config in AdditionalScoringModes)
             {
-                compositeScoringMode.AddScoringMode(CreateScoringMode(config.Mode, config.UseGolfRules));
+                compositeScoringMode.AddScoringMode(CreateScoringMode(config.Mode, config.Multiplier));
             }
 
             scoringMode = compositeScoringMode;
@@ -95,21 +95,26 @@ namespace CosmicShore.Game.Arcade
             turnStartTime = Time.time;
         }
 
-        void Update()
+        IEnumerator UpdateScoreDisplayCoroutine()
         {
-            if (turnStartTime == 0 || ActivePlayerScoreDisplay == null || scoringMode == null)
-                return;
-
-            var score = scoringMode.CalculateScore(currentPlayerName, playerScores[currentPlayerName], turnStartTime);
-            ActivePlayerScoreDisplay.text = ((int)score).ToString();
+            while (true)
+            {
+                if (turnStartTime == 0 || ActivePlayerScoreDisplay == null || scoringMode == null) { }
+                else
+                {
+                    var score = scoringMode.CalculateScore(currentPlayerName, playerScores[currentPlayerName], turnStartTime) + initialScore;
+                    ActivePlayerScoreDisplay.text = ((int)score).ToString();
+                }
+                yield return new WaitForSeconds(0.5f);
+            }
         }
-
+       
         public virtual void EndTurn()
         {
             if (scoringMode == null)
                 return;
 
-            playerScores[currentPlayerName] = scoringMode.EndTurnScore(currentPlayerName, playerScores[currentPlayerName], turnStartTime);
+            playerScores[currentPlayerName] = scoringMode.EndTurnScore(currentPlayerName, playerScores[currentPlayerName], turnStartTime) + initialScore;
 
             foreach (var playerTeam in playerTeams) // Add all the players back into the reset stats dictionary so the score will update at the start of the player's turn
                 StatsManager.Instance.AddPlayer(playerTeam.Value, playerTeam.Key);

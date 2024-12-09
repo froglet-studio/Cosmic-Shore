@@ -17,7 +17,7 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/_Scenes/MinigameCatNMouse.unity
     guid: 7c96c2e0191410b4195d294d6205569c
-  - enabled: 0
+  - enabled: 1
     path: Assets/_Scenes/MinigameSlipNStride.unity
     guid: 309d1ff4cb0ddbd499fa0eab2474c236
   - enabled: 0

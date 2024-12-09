@@ -403,7 +403,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 737294a573670f74389a7af68df314d5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Resources: []
+  Resources:
+  - Name: NoResource
+    Display: {fileID: 0}
+    initialResourceGainRate: 0
+    resourceGainRate: 0
+    maxAmount: 0
+    initialAmount: 0
   ChargeTestHarness: 0
   MassTestHarness: 0
   SpaceTestHarness: 0
@@ -469,7 +475,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   SkinnedMeshRenderer: {fileID: 7600425915573274353}
   SaveNewPositions: 1
-  UseShapeKeys: 1
+  UseShapeKeys: 0
   brakeThreshold: 0.65
   lerpAmount: 2
   smallLerpAmount: 0.7

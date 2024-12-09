@@ -4,17 +4,14 @@ namespace CosmicShore.Game.Arcade.Scoring
 {
     public class TimePlayedScoring : BaseScoringMode
     {
-        private readonly float TimePlayedScoreMultiplier;
 
-        public TimePlayedScoring(float timePlayedScoreMultiplier = 1000f, float scoreNormalizationQuotient = 145.65f) 
-            : base(scoreNormalizationQuotient)
-        {
-            TimePlayedScoreMultiplier = timePlayedScoreMultiplier;
-        }
+        public TimePlayedScoring(float scoreNormalizationQuotient)
+            : base(scoreNormalizationQuotient) { }
+
 
         public override float CalculateScore(string playerName, float currentScore, float turnStartTime)
         {
-            return currentScore + (Time.time - turnStartTime) * TimePlayedScoreMultiplier;
+            return currentScore + (Time.time - turnStartTime) * ScoreMultiplier;
         }
 
         public override float EndTurnScore(string playerName, float currentScore, float turnStartTime)

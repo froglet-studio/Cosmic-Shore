@@ -522,6 +522,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Display: {fileID: 0}
+  eliminatesPlayer: 0
   duration: 45
 --- !u!4 &1078953705
 Transform:
@@ -551,11 +552,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ActivePlayerScoreDisplay: {fileID: 0}
+  initialScore: 0
   ScoringMode: 0
   GolfRules: 0
+  AdditionalScoringModes: []
   GameCanvas: {fileID: 0}
-  TimePlayedScoreMultiplier: 1000
-  ScoreNormalizationQuotient: 145.65
+  ScoreMultiplier: 0.006865
 --- !u!114 &1078953708
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -595,6 +597,8 @@ MonoBehaviour:
   DefaultPlayerShipType: 2
   DefaultPlayerCaptain: {fileID: 11400000, guid: 6d520cd7eb8878b4aa2551e0591bc08d,
     type: 2}
+  readyCountdownDelay: 2
+  newGameStartDelay: 0.2
   ActivePlayer: {fileID: 0}
   Crystal: {fileID: 1568959833}
   CrystalStartPosition: {x: 0, y: 0, z: -120}
@@ -1497,6 +1501,26 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Name
       value: FancyCam
+      objectReference: {fileID: 0}
+    - target: {fileID: 4861673831439747586, guid: de8dcb2bc0dbfe8428698a1e94080bfe,
+        type: 3}
+      propertyPath: m_BackGroundColor.a
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4861673831439747586, guid: de8dcb2bc0dbfe8428698a1e94080bfe,
+        type: 3}
+      propertyPath: m_BackGroundColor.b
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4861673831439747586, guid: de8dcb2bc0dbfe8428698a1e94080bfe,
+        type: 3}
+      propertyPath: m_BackGroundColor.g
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4861673831439747586, guid: de8dcb2bc0dbfe8428698a1e94080bfe,
+        type: 3}
+      propertyPath: m_BackGroundColor.r
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4861673831439747613, guid: de8dcb2bc0dbfe8428698a1e94080bfe,
         type: 3}

@@ -31,7 +31,7 @@ namespace CosmicShore.Game.Arcade.Scoring
                     CrystalType.Elemental => roundStats.ElementalCrystalsCollected,
                     _ => 0
                 };
-                return currentScore + ApplyGolfRules(scoreIncrement);
+                return currentScore + scoreIncrement * ScoreMultiplier;
             }
             return currentScore;
         }

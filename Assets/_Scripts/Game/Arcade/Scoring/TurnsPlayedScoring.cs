@@ -4,7 +4,7 @@ namespace CosmicShore.Game.Arcade.Scoring
     {
         private int turnsPlayed;
 
-        public TurnsPlayedScoring(float scoreNormalizationQuotient = 145.65f) : base(scoreNormalizationQuotient) { }
+        public TurnsPlayedScoring(float scoreNormalizationQuotient) : base(scoreNormalizationQuotient) { }
 
         public override float CalculateScore(string playerName, float currentScore, float turnStartTime)
         {

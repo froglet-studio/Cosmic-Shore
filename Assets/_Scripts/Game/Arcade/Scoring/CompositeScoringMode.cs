@@ -25,8 +25,7 @@ namespace CosmicShore.Game.Arcade.Scoring
             {
                 if (mode != null)
                 {
-                    if (mode.UseGolfRules) totalScore -= mode.CalculateScore(playerName, 0, turnStartTime);
-                    else totalScore += mode.CalculateScore(playerName, 0, turnStartTime);
+                    totalScore += mode.CalculateScore(playerName, 0, turnStartTime);
                 }
             }
             return totalScore;
@@ -55,7 +54,6 @@ namespace CosmicShore.Game.Arcade.Scoring
 
             if (mode != null && !scoringModes.Contains(mode))
             {
-                mode.UseGolfRules = useGolfRules;
                 scoringModes.Add(mode);
             }
         }
@@ -65,14 +63,6 @@ namespace CosmicShore.Game.Arcade.Scoring
             if (scoringModes != null && mode != null)
             {
                 scoringModes.Remove(mode);
-            }
-        }
-
-        public void SetGolfRules(BaseScoringMode mode, bool useGolfRules)
-        {
-            if (scoringModes != null && mode != null && scoringModes.Contains(mode))
-            {
-                mode.UseGolfRules = useGolfRules;
             }
         }
 

@@ -24,10 +24,5 @@ MonoBehaviour:
     type: 3}
   CellModifiers:
   - {fileID: 8058406376250941529, guid: daa37ae0e7af4b04383c1c4e6e76817d, type: 3}
-  SupportedFlora:
-  - {fileID: 7514956980722975813, guid: 5f8219db5b2bd1d48b331f9eb3e04888, type: 3}
-  - {fileID: 7514956980722975813, guid: 3c58c4dd53a6a2240acd7f7b81a3adb5, type: 3}
-  - {fileID: 7514956980722975813, guid: 82e04cfd7f5b93f478b5fbfe40c2a2d7, type: 3}
-  SupportedFauna:
-  - {fileID: 8812619448024686939, guid: 14b7fddb8e30aa541a092201bc80b848, type: 3}
-  - {fileID: 8812619448024686939, guid: 3b344872fac297f448d202dd574c2a3e, type: 3}
+  SupportedFlora: []
+  SupportedFauna: []

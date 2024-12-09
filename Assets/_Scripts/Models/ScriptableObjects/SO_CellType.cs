@@ -2,6 +2,7 @@ using UnityEngine;
 using System.Collections.Generic;
 using CosmicShore;
 using System;
+using UnityEngine.Serialization;
 
 [CreateAssetMenu(fileName = "New Cell Type", menuName = "Cosmic Shore/Cell Type")]
 public class SO_CellType : ScriptableObject
@@ -23,6 +24,8 @@ public class SO_CellType : ScriptableObject
     public List<CellModifier> CellModifiers = new List<CellModifier>();
 
     [Header("Flora and Fauna")]
-    public List<Flora> SupportedFlora = new List<Flora>();
-    public List<Population> SupportedFauna = new List<Population>();
+    public List<FloraConfiguration> SupportedFlora = new List<FloraConfiguration>();
+    public List<PopulationConfiguration> SupportedFauna = new List<PopulationConfiguration>();
 }
+
+

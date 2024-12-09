@@ -1,0 +1,50 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: ActiveTimeCrystalMaterial Variant
+  m_Shader: {fileID: -6465566751694194690, guid: 1d480568e6c01d243b816d1f288866dd,
+    type: 3}
+  m_Parent: {fileID: 2100000, guid: dd71abb5d85f02a4a8c2f41b424ce6d1, type: 2}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords:
+  - _SURFACE_TYPE_TRANSPARENT
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap:
+    RenderType: Transparent
+  disabledShaderPasses:
+  - SHADOWCASTER
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs: []
+    m_Ints: []
+    m_Floats: []
+    m_Colors:
+    - _BrightCrystalColor: {r: 1.9743518, g: 4.8700967, b: 0.6119494, a: 0.9411765}
+    - _Color1: {r: 0.68790275, g: 2.1822639, b: 0.34761727, a: 1}
+    - _Color2: {r: 0.091280505, g: 0.34117648, b: 0.0039215777, a: 1}
+    - _DullCrystalColor: {r: 0.106299736, g: 0.39607844, b: 0, a: 0.9411765}
+  m_BuildTextureStacks: []
+--- !u!114 &4655690307531630582
+MonoBehaviour:
+  m_ObjectHideFlags: 11
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0353a89b1f911e48b9e16bdc9f2e058, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  version: 7

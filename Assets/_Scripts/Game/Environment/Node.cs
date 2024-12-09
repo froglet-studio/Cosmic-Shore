@@ -14,13 +14,23 @@ public class Node : MonoBehaviour
     [SerializeField] Crystal Crystal;
 
     [SerializeField] List<SO_CellType> CellTypes;
-    SO_CellType CellType;
+    SO_CellType cellType;
+    public SO_CellType CellType 
+    { 
+        get => cellType;
+        set 
+        {
+            cellType = value;
+            AssignCellType();
+        } 
+    }
 
     SnowChanger SnowChanger;
     GameObject membrane;
     GameObject nucleus; // TODO: Use radius to spawn/move crystal
 
     [SerializeField] int FloraTypeCount = 2;
+    [SerializeField] bool spawnJade = true;
     [SerializeField] int FaunaTypeCount = 2;
 
     [SerializeField] float floraSpawnVolumeCeiling = 12000f;
@@ -42,11 +52,7 @@ public class Node : MonoBehaviour
 
     void Awake()
     {
-        CellType = CellTypes[Random.Range(0, CellTypes.Count)];
-        membrane = Instantiate(CellType.MembranePrefab, transform.position, Quaternion.identity);
-        nucleus = Instantiate(CellType.NucleusPrefab, transform.position, Quaternion.identity);
-        SnowChanger = Instantiate(CellType.CytoplasmPrefab, transform.position, Quaternion.identity);
-        SnowChanger.Crystal = Crystal.gameObject;
+        AssignCellType();
 
         // TODO: handle Blue?
         Teams[] teams = { Teams.Jade, Teams.Ruby, Teams.Gold };  // TODO: Store this as a constant somewhere (where?).
@@ -57,39 +63,117 @@ public class Node : MonoBehaviour
         }
     }
 
+    void AssignCellType() 
+    {
+        if (CellTypes != null && CellTypes.Count > 0)
+        {
+            cellType = CellTypes[Random.Range(0, CellTypes.Count)];
+        }
+        if (cellType != null) 
+        {
+            normalizeWeights();
+
+            membrane = Instantiate(cellType.MembranePrefab, transform.position, Quaternion.identity);
+            nucleus = Instantiate(cellType.NucleusPrefab, transform.position, Quaternion.identity);
+            SnowChanger = Instantiate(cellType.CytoplasmPrefab, transform.position, Quaternion.identity);
+            SnowChanger.Crystal = Crystal.gameObject;
+            SnowChanger.SetOrigin(transform.position);
+
+            foreach (var modifier in cellType.CellModifiers)
+            {
+                modifier.Apply(this);
+            }
+            SpawnLife();
+            Crystal.gameObject.SetActive(true);
+        }   
+    }
+
     void Start()
     {
-
-        foreach (var modifier in CellType.CellModifiers)
-        {
-            modifier.Apply(this);
-        }
-
-
         teamVolumes.Add(Teams.Jade, 0);
         teamVolumes.Add(Teams.Ruby, 0);
         teamVolumes.Add(Teams.Gold, 0);
 
-        if (CellType.SupportedFlora.Count > 0)
-        { 
+        Crystal.SetOrigin(transform.position);
+
+        if (cellType != null)
+        {
+            foreach (var modifier in cellType.CellModifiers)
+            {
+                modifier.Apply(this);
+            }
+            SpawnLife();
+        }
+    }
+
+    void SpawnLife()
+    {
+        if (cellType.SupportedFlora.Count > 0)
+        {
             for (int i = 0; i < FloraTypeCount; i++)
             {
-                var flora = CellType.SupportedFlora[Random.Range(0, CellType.SupportedFlora.Count)];
-                StartCoroutine(SpawnFlora(flora));
+                var floraConfiguration = SpawnRandomFlora();
+                StartCoroutine(SpawnFlora(floraConfiguration, spawnJade));
             }
         }
 
-        if (CellType.SupportedFauna.Count > 0)
+        if (cellType.SupportedFauna.Count > 0)
         {
             for (int i = 0; i < FaunaTypeCount; i++)
             {
-                var fauna = CellType.SupportedFauna[Random.Range(0, CellType.SupportedFauna.Count)];
+                var fauna = SpawnRandomPopulation();
                 StartCoroutine(SpawnFauna(fauna));
             }
         }
+    }
 
-        SnowChanger.SetOrigin(transform.position);
-        Crystal.SetOrigin(transform.position);
+    Population SpawnRandomPopulation()
+    {
+        var spawnWeight = Random.value;
+        var spawnIndex = 0;
+        var totalWeight = 0f;
+        for (int i = 0; i < cellType.SupportedFauna.Count && totalWeight < spawnWeight; i++)
+        {
+            spawnIndex = i;
+            totalWeight += cellType.SupportedFauna[i].SpawnProbability;
+        }
+
+        return cellType.SupportedFauna[spawnIndex].Population;
+    }
+
+    FloraConfiguration SpawnRandomFlora()
+    {
+        var spawnWeight = Random.value;
+        var spawnIndex = 0;
+        var totalWeight = 0f;
+        for (int i = 0; i < cellType.SupportedFlora.Count && totalWeight < spawnWeight; i++)
+        {
+            spawnIndex = i;
+            totalWeight += cellType.SupportedFlora[i].SpawnProbability;
+        }
+
+        return cellType.SupportedFlora[spawnIndex];
+    }
+
+    void normalizeWeights()
+    {
+        float totalWeight = 0;
+        foreach (var fauna in cellType.SupportedFauna)
+        {
+            totalWeight += fauna.SpawnProbability;
+        }
+
+        for (int i = 0; i < cellType.SupportedFauna.Count; i++)
+            cellType.SupportedFauna[i].SpawnProbability = cellType.SupportedFauna[i].SpawnProbability * (1 / totalWeight);
+
+        totalWeight = 0;
+        foreach (var flora in cellType.SupportedFlora)
+        {
+            totalWeight += flora.SpawnProbability;
+        }
+
+        for (int i = 0; i < cellType.SupportedFlora.Count; i++)
+            cellType.SupportedFlora[i].SpawnProbability = cellType.SupportedFlora[i].SpawnProbability * (1 / totalWeight);
     }
 
     public void AddBlock(TrailBlock block)
@@ -230,17 +314,23 @@ public class Node : MonoBehaviour
         }
     }
 
-    IEnumerator SpawnFlora(Flora flora)
+    IEnumerator SpawnFlora(FloraConfiguration floraConfiguration, bool spawnJade = true)
     {
+        for (int i = 0; i < floraConfiguration.initialSpawnCount - 1; i++)
+        {
+            var newFlora = Instantiate(floraConfiguration.Flora, transform.position, Quaternion.identity);
+            newFlora.Team = spawnJade ? (Teams)Random.Range(1, 5): (Teams)Random.Range(2, 5);
+        }
         while (true)
         {
             var controllingVolume = GetTeamVolume(ControllingTeam);
             if (controllingVolume < floraSpawnVolumeCeiling)
             {
-                var newFlora = Instantiate(flora, transform.position, Quaternion.identity);
-                newFlora.Team = (Teams)Random.Range(1,5);
+                var newFlora = Instantiate(floraConfiguration.Flora, transform.position, Quaternion.identity);
+                newFlora.Team = spawnJade ? (Teams)Random.Range(1, 5) : (Teams)Random.Range(2, 5);
             }
-            yield return new WaitForSeconds(flora.PlantPeriod);
+            if (floraConfiguration.OverrideDefaultPlantPeriod) yield return new WaitForSeconds(floraConfiguration.NewPlantPeriod);
+            else yield return new WaitForSeconds(floraConfiguration.Flora.PlantPeriod);
         }
     }
     
@@ -250,7 +340,7 @@ public class Node : MonoBehaviour
         while (true)
         {
             var controllingVolume = GetTeamVolume(ControllingTeam);
-            var period = baseFaunaSpawnTime * faunaSpawnVolumeThreshold / controllingVolume;
+            var period = baseFaunaSpawnTime * faunaSpawnVolumeThreshold / controllingVolume; //TODO: use this to adjust spawn rate
             if (controllingVolume > faunaSpawnVolumeThreshold)
             {
                 

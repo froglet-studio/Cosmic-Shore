@@ -7,23 +7,14 @@ namespace CosmicShore.Game.Arcade.Scoring
     public abstract class BaseScoringMode
     {
         [SerializeField]
-        protected float ScoreNormalizationQuotient;
-
-        [SerializeField]
-        public bool UseGolfRules;
+        protected float ScoreMultiplier;
         
-        protected BaseScoringMode(float scoreNormalizationQuotient = 145.65f, bool useGolfRules = false)
+        protected BaseScoringMode(float scoreNormalizationQuotient = 145.65f)
         {
-            ScoreNormalizationQuotient = scoreNormalizationQuotient;
-            UseGolfRules = useGolfRules;
+            ScoreMultiplier = scoreNormalizationQuotient;
         }
 
         public abstract float CalculateScore(string playerName, float currentScore, float turnStartTime);
         public abstract float EndTurnScore(string playerName, float currentScore, float turnStartTime);
-
-        protected float ApplyGolfRules(float score)
-        {
-            return UseGolfRules ? -score : score;
-        }
     }
 }

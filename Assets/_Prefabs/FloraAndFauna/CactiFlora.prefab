@@ -71,7 +71,7 @@ MonoBehaviour:
   hasPlantedSecondary: 0
   plantAroundCrystal: 1
   goal: {x: 0, y: 0, z: 0}
-  plantRadius: 90
+  plantRadius: 180
 --- !u!1001 &5588088495769702632
 PrefabInstance:
   m_ObjectHideFlags: 0

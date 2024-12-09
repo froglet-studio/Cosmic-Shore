@@ -21,7 +21,7 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: TimeCrystalMaterial
-  m_Shader: {fileID: -6465566751694194690, guid: 11986b08af564954bb111977a5cf4dac,
+  m_Shader: {fileID: -6465566751694194690, guid: 1d480568e6c01d243b816d1f288866dd,
     type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
@@ -31,7 +31,7 @@ Material:
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
-  m_CustomRenderQueue: 3000
+  m_CustomRenderQueue: -1
   stringTagMap:
     RenderType: Transparent
   disabledShaderPasses:
@@ -99,6 +99,7 @@ Material:
     m_Ints: []
     m_Floats:
     - _AlphaClip: 0
+    - _AlphaToMask: 0
     - _Blend: 0
     - _BumpScale: 1
     - _CastShadows: 0
@@ -106,6 +107,7 @@ Material:
     - _ClearCoatSmoothness: 0
     - _Cull: 0
     - _Cutoff: 0.5
+    - _DeathAnimation: 0
     - _DetailAlbedoMapScale: 1
     - _DetailNormalMapScale: 1
     - _DstBlend: 10
@@ -134,9 +136,11 @@ Material:
     - _spread: 0.5
     m_Colors:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
-    - _BrightCrystalColor: {r: 1.2873152, g: 0, b: 3.9999995, a: 0.9411765}
+    - _BrightCrystalColor: {r: 0.59727544, g: 0.63794273, b: 4.8700967, a: 0.9411765}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
-    - _DullCrystalColor: {r: 0, g: 0.38342392, b: 0.5058824, a: 0.9411765}
+    - _Color1: {r: 0.19287539, g: 0.18153933, b: 0.8616352, a: 1}
+    - _Color2: {r: 0.0006579273, g: 0, b: 0.6226415, a: 1}
+    - _DullCrystalColor: {r: 0, g: 0.00791224, b: 0.3962264, a: 0.9411765}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
     - _SpecColor: {r: 0.19999996, g: 0.19999996, b: 0.19999996, a: 1}
     - _playerColor1: {r: 0.4537647, g: 0.73851705, b: 0.9339623, a: 0}
