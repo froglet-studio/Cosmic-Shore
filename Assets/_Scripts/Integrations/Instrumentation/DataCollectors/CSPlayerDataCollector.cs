@@ -10,7 +10,7 @@ namespace CosmicShore.Integrations.Instrumentation.DataCollectors
             Debug.Log("CSPlayerDataCollector - Initializing Player Data Collector.");
         }
 
-        public void UpgradeCaptain()
+        public void LogEventUpgradeCaptain()
         {
             Debug.Log("CSPlayerDataCollector - Triggering Upgrade Captain event.");
         }

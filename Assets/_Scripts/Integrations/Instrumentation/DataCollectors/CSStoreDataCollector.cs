@@ -10,27 +10,27 @@ namespace CosmicShore.Integrations.Instrumentation.DataCollectors
             Debug.Log("CSStoreDataCollector - Initializing CS Store Data Collector");
         }
 
-        public void PurchaseCaptain()
+        public void LogEventPurchaseCaptain()
         {
             Debug.Log("CSStoreDataCollector - Triggering Purchase Captain event.");
         }
 
-        public void PurchaseArcadeGame()
+        public void LogEventPurchaseArcadeGame()
         {
             Debug.Log("CSStoreDataCollector - Triggering Purchase Arcade Game event.");;
         }
 
-        public void PurchaseMission()
+        public void LogEventPurchaseMission()
         {
             Debug.Log("CSStoreDataCollector - Triggering Purchase Mission event.");
         }
 
-        public void WatchAd()
+        public void LogEventWatchAd()
         {
             Debug.Log("CSStoreDataCollector - Triggering Watch Ad event.");
         }
 
-        public void RedeemDailyReward()
+        public void LogEventRedeemDailyReward()
         {
             Debug.Log("CSStoreDataCollector - Triggering Redeem Daily Reward event.");
         }

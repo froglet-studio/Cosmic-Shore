@@ -7,39 +7,39 @@
     
     interface IStoreAnalyzable : IAnalyzable
     {
-        void PurchaseCaptain();
-        void PurchaseArcadeGame();
-        void PurchaseMission();
-        void WatchAd();
-        void RedeemDailyReward();
+        void LogEventPurchaseCaptain();
+        void LogEventPurchaseArcadeGame();
+        void LogEventPurchaseMission();
+        void LogEventWatchAd();
+        void LogEventRedeemDailyReward();
     }
 
     interface IDailyChallengeAnalyzable : IAnalyzable
     {
-        void StartDailyChallenge();
-        void CompleteDailyChallenge();
+        void LogEventStartDailyChallenge();
+        void LogEventCompleteDailyChallenge();
     }
 
     interface IPlayerAnalyzable : IAnalyzable
     {
-        void UpgradeCaptain();
+        void LogEventUpgradeCaptain();
     }
 
     interface IArcadeAnalyzable : IAnalyzable
     {
-        void StartArcadeGame();
-        void CompleteArcadeGame();
+        void LogEventStartArcadeGame();
+        void LogEventCompleteArcadeGame();
     }
 
     interface IMissionAnalyzable : IAnalyzable
     {
-        void StartMission();
-        void CompleteMission();
+        void LogEventStartMission();
+        void LogEventCompleteMission();
     }
 
     interface ITrainingAnalyzable : IAnalyzable
     {
-        void StartTraining();
-        void CompleteTraining();
+        void LogEventStartTraining();
+        void LogEventCompleteTraining();
     }
 }

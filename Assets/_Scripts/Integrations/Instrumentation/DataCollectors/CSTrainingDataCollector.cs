@@ -10,12 +10,12 @@ namespace CosmicShore.Integrations.Instrumentation.DataCollectors
             Debug.Log("CSTrainingDataCollector - Initializing Training Data Collector.");
         }
 
-        public void StartTraining()
+        public void LogEventStartTraining()
         {
             Debug.Log("CSTrainingDataCollector - Triggering Start Training event.");
         }
 
-        public void CompleteTraining()
+        public void LogEventCompleteTraining()
         {
             Debug.Log("CSTrainingDataCollector - Triggering Complete Training event.");
         }

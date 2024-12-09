@@ -10,12 +10,12 @@ namespace CosmicShore.Integrations.Instrumentation.DataCollectors
             Debug.Log("CSArcadeDataCollector - Initializing Arcade Data Collector.");
         }
 
-        public void StartArcadeGame()
+        public void LogEventStartArcadeGame()
         {
             Debug.Log("CSArcadeDataCollector - Triggering Start Arcade Game event.");
         }
 
-        public void CompleteArcadeGame()
+        public void LogEventCompleteArcadeGame()
         {
             Debug.Log("CSArcadeDataCollector - Triggering Complete Arcade Game event.");
         }
