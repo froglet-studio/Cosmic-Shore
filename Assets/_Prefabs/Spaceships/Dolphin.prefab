@@ -2570,7 +2570,6 @@ MonoBehaviour:
   brakeThreshold: 0.65
   lerpAmount: 2
   smallLerpAmount: 0.7
-  ship: {fileID: 874579555101021527}
   DriftHandle: {fileID: 5191960869318858820}
   Chassis: {fileID: 3597615256247134153}
   NoseTop: {fileID: 3627870670002130986}
@@ -2624,7 +2623,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ControlOverrides: 0400000003000000
   closeCamDistance: -8
-  farCamDistance: -16
+  farCamDistance:
+    Enabled: 0
+    Value: -16
+    Min: 0
+    Max: 0
+    element: 0
   FollowTarget: {fileID: 0}
   FollowTargetPosition: {x: 0, y: 0, z: 0}
   isOrthographic: 0
