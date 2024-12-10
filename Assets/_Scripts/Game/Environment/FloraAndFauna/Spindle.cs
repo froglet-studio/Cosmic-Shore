@@ -101,7 +101,13 @@ namespace CosmicShore
                 deathAnimation += Time.deltaTime * animationSpeed;
                 yield return null;
             }
-            Destroy(gameObject);          
+
+            if (retainSpindle)
+            {
+                gameObject.SetActive(false);
+                DisableSpindle();
+            }
+            else Destroy(gameObject);
         }
 
         IEnumerator CondenseCoroutine()
