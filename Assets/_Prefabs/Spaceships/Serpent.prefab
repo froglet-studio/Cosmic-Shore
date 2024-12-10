@@ -2295,7 +2295,7 @@ MonoBehaviour:
   - Name: Wall Seeds
     Display: {fileID: 7315216243889215013}
     initialResourceGainRate: 0.1
-    resourceGainRate: 0.1
+    resourceGainRate: 0.03
     maxAmount: 1
     initialAmount: 1
   - Name: Fuel Pellets
