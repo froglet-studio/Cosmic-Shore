@@ -3,8 +3,6 @@ using UnityEngine;
 
 namespace CosmicShore
 {
-
-
     public class BranchingFlora : Flora
     {
         [SerializeField] Vector3 leafSize = new Vector3(4f, 4f, 1f);
@@ -29,6 +27,7 @@ namespace CosmicShore
         [SerializeField] BranchingFlora SecondarySpawn;
         [SerializeField] bool hasPlantedSecondary;
         [SerializeField] bool plantAroundCrystal = true;
+        [SerializeField] float branchingScaleFactor = 14f;
         public Vector3 goal;
 
         HashSet<Branch> activeBranches = new HashSet<Branch>();
@@ -82,7 +81,7 @@ namespace CosmicShore
                     Branch newBranch = new Branch();
                     if (Random.value < leafChance)
                     {
-                        newBranch.gameObject = Instantiate(healthBlock, branch.gameObject.transform.position + (spindle.cylinder.transform.localScale.y * branch.gameObject.transform.forward), branch.gameObject.transform.rotation).gameObject; // TODO: position and orient leaf
+                        newBranch.gameObject = Instantiate(healthBlock, branch.gameObject.transform.position + (branchingScaleFactor * branch.gameObject.transform.forward), branch.gameObject.transform.rotation).gameObject; // TODO: position and orient leaf
                         ScaleAndPositionBranch(ref newBranch, branch);
                         var newHealthblock = newBranch.gameObject.GetComponent<HealthBlock>();
                         newHealthblock.TargetScale = leafSize;
@@ -103,7 +102,7 @@ namespace CosmicShore
                         int numBranches = Random.Range(minBranches, maxBranches + 1);
                         for (int i = 0; i < numBranches; i++)
                         {
-                            newBranch.gameObject = Instantiate(spindle, branch.gameObject.transform.position + (spindle.cylinder.transform.localScale.y * branch.gameObject.transform.forward), branch.gameObject.transform.rotation).gameObject;
+                            newBranch.gameObject = Instantiate(spindle, branch.gameObject.transform.position + (branchingScaleFactor * branch.gameObject.transform.forward), branch.gameObject.transform.rotation).gameObject;
                             ScaleAndPositionBranch(ref newBranch, branch);
 
                             if (goal != Vector3.zero) newBranch.gameObject.transform.rotation = Quaternion.LookRotation(goal - transform.position) * RandomVectorRotation(minBranchAngle, maxBranchAngle);   
@@ -135,8 +134,8 @@ namespace CosmicShore
 
         void ScaleAndPositionBranch(ref Branch newBranch, Branch branch)
         {
-            newBranch.gameObject.transform.position = branch.depth <= 1 ? branch.gameObject.transform.position + (spindle.cylinder.transform.localScale.y * branch.gameObject.transform.forward) :
-                                                                                               branch.gameObject.transform.position + (spindle.cylinder.transform.localScale.y / (branch.depth - 1) * branch.gameObject.transform.forward);
+            newBranch.gameObject.transform.position = branch.depth <= 1 ? branch.gameObject.transform.position + (branchingScaleFactor * branch.gameObject.transform.forward) :
+                                                                                               branch.gameObject.transform.position + (branchingScaleFactor / (branch.depth - 1) * branch.gameObject.transform.forward);
             newBranch.gameObject.transform.localScale = branch.depth == 0 ? spindle.transform.localScale :
                                                                              spindle.transform.localScale / branch.depth;
             newBranch.gameObject.transform.parent = branch.gameObject.transform;

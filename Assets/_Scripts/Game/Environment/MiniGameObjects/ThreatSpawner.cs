@@ -4,7 +4,11 @@ namespace CosmicShore
 {
     public class ThreatSpawner : MonoBehaviour
     {
-        [SerializeField] public Transform nodeCenter; // Center of the node - default position to base spawn patterns around
+        [SerializeField] public Transform NodeCenter; // Center of the node - default position to base spawn patterns around
+        [SerializeField] public float ConcentratedInvasionRadius = 10f;
+        [SerializeField] public float RandomSurfaceScatterRadius = 20f;
+        [SerializeField] public float LocalizedAmbushRadius = 5f; 
+        [SerializeField] public float SphereInterdictionRadius = 15f; 
 
         public void SpawnThreat(Threat threat)
         {
@@ -20,7 +24,7 @@ namespace CosmicShore
 
         Vector3 GetSpawnPoint(SpawnMode spawnMode)
         {
-            return GetSpawnPoint(spawnMode, nodeCenter.position);
+            return GetSpawnPoint(spawnMode, NodeCenter.position);
         }
 
             Vector3 GetSpawnPoint(SpawnMode spawnMode, Vector3 spawnOrigin)
@@ -28,15 +32,15 @@ namespace CosmicShore
             switch (spawnMode)
             {
                 case SpawnMode.ConcentratedInvasion:
-                    return spawnOrigin + Random.onUnitSphere * 10f; // Close proximity spawn
+                    return spawnOrigin + Random.onUnitSphere * ConcentratedInvasionRadius; // Close proximity spawn
                 case SpawnMode.RandomSurfaceScatter:
-                    return spawnOrigin + Random.onUnitSphere * 20f; // Surface of a larger sphere
+                    return spawnOrigin + Random.onUnitSphere * RandomSurfaceScatterRadius; // Surface of a larger sphere
                 case SpawnMode.LocalizedAmbush:
-                    return spawnOrigin + Random.insideUnitSphere * 5f; // Small radius ambush spawn
+                    return spawnOrigin + Random.insideUnitSphere * LocalizedAmbushRadius; // Small radius ambush spawn
                 case SpawnMode.PathBasedDeployment:
                     return new Vector3(Random.Range(-10f, 10f), Random.Range(-10f, 10f), spawnOrigin.z); // X-Y paths into the node
                 case SpawnMode.SphereInterdiction:
-                    return spawnOrigin + Random.insideUnitSphere * 15f; // Random points within a sphere
+                    return spawnOrigin + Random.insideUnitSphere * SphereInterdictionRadius; // Random points within a sphere
                 default:
                     return spawnOrigin; // Default to center if no mode is specified
             }

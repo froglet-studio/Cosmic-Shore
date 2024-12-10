@@ -22,7 +22,7 @@ namespace CosmicShore.Game.Arcade
     public class MiniGame : MonoBehaviour
     {
         [SerializeField] protected GameModes gameMode;
-        [SerializeField] protected int NumberOfRounds = int.MaxValue;
+        [SerializeField] protected int NumberOfRounds = 1;
         [SerializeField] protected List<TurnMonitor> TurnMonitors;
         [SerializeField] protected ScoreTracker ScoreTracker;
         [SerializeField] protected GameCanvas GameCanvas;
@@ -190,6 +190,7 @@ namespace CosmicShore.Game.Arcade
 
             StartGame();
         }
+
         protected virtual void Update()
         {
             if (!gameRunning)

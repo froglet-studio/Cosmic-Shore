@@ -6,7 +6,6 @@ namespace CosmicShore
 {
     public class Spindle : MonoBehaviour
     {
-        public GameObject cylinder;
         public Renderer RenderedObject;
         [SerializeField] Spindle parentSpindle;
         public LifeForm LifeForm;
@@ -15,8 +14,20 @@ namespace CosmicShore
         HashSet<HealthBlock> healthBlocks = new HashSet<HealthBlock>();
         HashSet<Spindle> spindles = new HashSet<Spindle>();
 
-        private void Start()
+        private Material originalMaterial; // Store the original shared material
+        private Material temporaryMaterial; // Temporary material for animations
+
+        private IEnumerator Start()
         {
+            if (RenderedObject.sharedMaterial == null)
+            {
+                Debug.LogError($"{gameObject.name}: RenderedObject does not have a valid material at Start.");
+                yield break;
+            }
+
+            // Cache the original shared material
+            originalMaterial = RenderedObject.sharedMaterial;
+
             StartCoroutine(CondenseCoroutine());
             if (LifeForm) LifeForm.AddSpindle(this);
             parentSpindle ??= transform.parent.GetComponentInParent<Spindle>();
@@ -58,40 +69,62 @@ namespace CosmicShore
             if (gameObject.activeInHierarchy) StartCoroutine(EvaporateCoroutine());
         }
 
+        private void UseTemporaryMaterial()
+        {
+            // Create a new temporary material based on the original material
+            temporaryMaterial = new Material(originalMaterial);
+            RenderedObject.material = temporaryMaterial;
+        }
+
+        private void RestoreOriginalMaterial()
+        {
+            // Restore the original shared material
+            RenderedObject.material = originalMaterial;
+
+            // Clean up the temporary material
+            if (temporaryMaterial != null)
+            {
+                Destroy(temporaryMaterial);
+                temporaryMaterial = null;
+            }
+        }
+
         IEnumerator EvaporateCoroutine()
         {
+            UseTemporaryMaterial(); // Switch to the temporary material
+
             float deathAnimation = 0f;
             float animationSpeed = 1f;
             while (deathAnimation < 1f)
             {
-                RenderedObject.material.SetFloat("_DeathAnimation", deathAnimation);
+                temporaryMaterial.SetFloat("_DeathAnimation", deathAnimation);
                 deathAnimation += Time.deltaTime * animationSpeed;
                 yield return null;
             }
-
-            if (retainSpindle) 
-            {
-                gameObject.SetActive(false); 
-                DisableSpindle(); 
-            }
-            else Destroy(gameObject);          
+            Destroy(gameObject);          
         }
 
         IEnumerator CondenseCoroutine()
         {
+            UseTemporaryMaterial(); // Switch to the temporary material
+
             float deathAnimation = 1f;
             float animationSpeed = 1f;
             while (deathAnimation > 0f)
             {
-                RenderedObject.material.SetFloat("_DeathAnimation", deathAnimation);
+                temporaryMaterial.SetFloat("_DeathAnimation", deathAnimation);
                 deathAnimation -= Time.deltaTime * animationSpeed;
                 yield return null;
             }
-            RenderedObject.material.SetFloat("_DeathAnimation", 0);
+
+            temporaryMaterial.SetFloat("_DeathAnimation", 0);
+            RestoreOriginalMaterial(); // Switch back to the original material
         }
 
         void DisableSpindle()
         {
+            RestoreOriginalMaterial();
+
             // check if scene is still loaded
             if (gameObject.scene.isLoaded)
             {

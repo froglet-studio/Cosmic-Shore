@@ -2,23 +2,45 @@ using CosmicShore.Game.Arcade;
 using System.Collections.Generic;
 using UnityEngine;
 using System.Collections;
+using CosmicShore.App.Systems.Squads;
+using CosmicShore.Core;
+using CosmicShore.Integrations.PlayFab.Economy;
 
 namespace CosmicShore
 {
-    public class ProtectMissionGame : CellularBrawlMiniGame
+    public class ProtectMissionGame : MiniGame
     {
 
         [Header("Mission Configuration")]
         [SerializeField] SO_Mission MissionData;
+        [SerializeField] List<Transform> SpawnLocations;
+        [SerializeField] Player SquadMateOne;
+        [SerializeField] Player SquadMateTwo;
+        [SerializeField] Player HostileAIOne;
+        [SerializeField] Player HostileAITwo;
+        [SerializeField] Player HostileAIThree;
         [Range(1, 9)] public int CurrentDifficulty = 5;
 
         public float IntensityThreshold = 1;  // How much variance is allowed from mission difficulty in a wave
         public float ThreatWaveMinimumPeriodInSeconds = 20;
+        int currentSpawnLocationIndex = 0;
+
+        protected override void Start()
+        {
+            base.Start();
+            Hangar.Instance.SetPlayerCaptain(CaptainManager.Instance.GetCaptainByName(SquadSystem.SquadLeader.Name));
+            Players[0].defaultShip = SquadSystem.SquadLeader.Ship.Class;
+            SquadMateOne.defaultShip = SquadSystem.RogueOne.Ship.Class;
+            SquadMateTwo.defaultShip = SquadSystem.RogueTwo.Ship.Class;
+        }
 
         public override void StartNewGame()
         {
             StartCoroutine(ThreatWaveCoroutine());
             base.StartNewGame();
+            SquadMateOne.gameObject.SetActive(true);
+            SquadMateTwo.gameObject.SetActive(true);
+            HostileAIOne.gameObject.SetActive(true);
         }
 
         // Method to roll a single threat based on weights
@@ -98,12 +120,19 @@ namespace CosmicShore
 
                 foreach (Threat threat in threats)
                 {
-
                     elapsedThreat += threat.threatLevel;
 
                     Debug.LogWarning($"ThreatWaveCoroutine -  Spawning Threat:{threat.threatName}");
-                    ThreatSpawner.SpawnThreat(threat);
+
+                    if (SpawnLocations != null)
+                        ThreatSpawner.SpawnThreat(threat, SpawnLocations[currentSpawnLocationIndex].position);
+                    else
+                        ThreatSpawner.SpawnThreat(threat);
                 }
+
+                if (SpawnLocations != null)
+                    // Cycle through spawn locals for each wave
+                    currentSpawnLocationIndex = (currentSpawnLocationIndex + 1) % SpawnLocations.Count;
 
                 elapsedTime = Time.time - startTime;
 
