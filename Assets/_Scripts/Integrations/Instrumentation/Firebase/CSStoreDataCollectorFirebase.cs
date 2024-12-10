@@ -1,4 +1,5 @@
 using CosmicShore.Integrations.Instrumentation.Interfaces;
+using Firebase.Analytics;
 
 namespace CosmicShore.Integrations.Instrumentation.Firebase
 {
@@ -7,22 +8,24 @@ namespace CosmicShore.Integrations.Instrumentation.Firebase
         
         public void InitSDK()
         {
-            throw new System.NotImplementedException();
         }
 
-        public void LogEventPurchaseCaptain()
+        public void LogEventPurchaseCaptain(string captainName)
         {
-            throw new System.NotImplementedException();
+            var parameter = new Parameter(CSCustomKeysFirebase.KeyCaptainName, captainName);
+            FirebaseAnalytics.LogEvent(CSCustomEventsFirebase.EventPurchaseCaptain, parameter);
         }
 
-        public void LogEventPurchaseArcadeGame()
+        public void LogEventPurchaseArcadeGame(string arcadeGameName)
         {
-            throw new System.NotImplementedException();
+            var parameter = new Parameter(CSCustomKeysFirebase.KeyArcadeGameName, arcadeGameName);
+            FirebaseAnalytics.LogEvent(CSCustomEventsFirebase.EventPurchaseArcadeGame, parameter);
         }
 
-        public void LogEventPurchaseMission()
+        public void LogEventPurchaseMission(string missionName)
         {
-            throw new System.NotImplementedException();
+            var parameter = new Parameter(CSCustomKeysFirebase.KeyMissionName, missionName);
+            FirebaseAnalytics.LogEvent(CSCustomEventsFirebase.EventPurchaseMission, parameter);
         }
 
         public void LogEventWatchAd()

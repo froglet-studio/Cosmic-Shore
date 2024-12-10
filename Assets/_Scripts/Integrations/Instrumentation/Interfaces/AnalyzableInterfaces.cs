@@ -7,9 +7,9 @@
     
     interface IStoreAnalyzable : IAnalyzable
     {
-        void LogEventPurchaseCaptain();
-        void LogEventPurchaseArcadeGame();
-        void LogEventPurchaseMission();
+        void LogEventPurchaseCaptain(string captainName);
+        void LogEventPurchaseArcadeGame(string arcadeGameName);
+        void LogEventPurchaseMission(string missionName);
         void LogEventWatchAd();
         void LogEventRedeemDailyReward();
     }
@@ -41,5 +41,11 @@
     {
         void LogEventStartTraining();
         void LogEventCompleteTraining();
+    }
+
+    interface IDeviceAnalyzale : IAnalyzable
+    {
+        void LogEventAppOpen();
+        void LogEventAppClose();
     }
 }

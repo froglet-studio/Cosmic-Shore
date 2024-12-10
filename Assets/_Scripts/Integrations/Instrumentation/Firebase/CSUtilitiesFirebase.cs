@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace CosmicShore.Integrations.Instrumentation.Firebase
 {
-    public class CSFirebaseUtilities : IAnalyzable
+    public class CSUtilitiesFirebase : IAnalyzable
     {
         // Firebase dependency status flag, mark as available when dependencies are resolved
         private static DependencyStatus _dependencyStatus;
@@ -20,6 +20,7 @@ namespace CosmicShore.Integrations.Instrumentation.Firebase
             InitializeDependencyStatus();
             CheckDependencies();
             Set(true);
+            SetUserId();
         }
 
         /// <summary>
@@ -40,6 +41,11 @@ namespace CosmicShore.Integrations.Instrumentation.Firebase
         private static void Set(bool isCollectable)
         {
             FirebaseAnalytics.SetAnalyticsCollectionEnabled(isCollectable);
+        }
+
+        private static void SetUserId()
+        {
+            FirebaseAnalytics.SetUserId(SystemInfo.deviceUniqueIdentifier);
         }
 
         /// <summary>

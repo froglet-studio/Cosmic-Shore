@@ -5,8 +5,6 @@ using System.Collections.Generic;
 using System.Linq;
 using TMPro;
 using UnityEngine;
-using CosmicShore.Game.Arcade.Scoring;
-using System;
 using System.Collections;
 
 namespace CosmicShore.Game.Arcade

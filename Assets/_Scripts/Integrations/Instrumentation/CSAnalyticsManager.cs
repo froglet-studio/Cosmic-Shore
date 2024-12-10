@@ -5,16 +5,25 @@ using CosmicShore.Utility.Singleton;
 
 namespace CosmicShore.Integrations.Instrumentation
 {
-    public class CSAnalyticsManager : SingletonPersistent<CSAnalyticsManager>, IStoreAnalyzable, IDailyChallengeAnalyzable, IPlayerAnalyzable, IArcadeAnalyzable, IMissionAnalyzable, ITrainingAnalyzable
+    
+    public class CSAnalyticsManager : SingletonPersistent<CSAnalyticsManager>, 
+        IStoreAnalyzable, 
+        IDailyChallengeAnalyzable, 
+        IPlayerAnalyzable, 
+        IArcadeAnalyzable, 
+        IMissionAnalyzable, 
+        ITrainingAnalyzable,
+        IDeviceAnalyzale
     {
-        private readonly CSFirebaseUtilities _firebaseUtilities = new ();
+        private readonly CSUtilitiesFirebase _utilitiesFirebase = new ();
         private readonly CSStoreDataCollector _storeDataCollector = new();
         private readonly CSPlayerDataCollector _playerDataCollector = new();
         private readonly CSDailyChallengeDataCollector _dailyChallengeDataCollector = new();
         private readonly CSArcadeDataCollector _arcadeDataCollector = new();
         private readonly CSMissionDataCollector _missionDataCollector = new();
         private readonly CSTrainingDataCollector _trainingDataCollector = new();
-
+        private readonly CSDeviceDataCollector _deviceDataCollector = new();
+        
         private void Start()
         {
             InitSDK();
@@ -22,7 +31,7 @@ namespace CosmicShore.Integrations.Instrumentation
 
         public void InitSDK()
         {
-            _firebaseUtilities.InitSDK();
+            _utilitiesFirebase.InitSDK();
             
             // The InitSDK functions are pretty much empty, they are for initializing additional APIS in individual Collectors
             _storeDataCollector.InitSDK();
@@ -31,6 +40,7 @@ namespace CosmicShore.Integrations.Instrumentation
             _arcadeDataCollector.InitSDK();
             _missionDataCollector.InitSDK();
             _trainingDataCollector.InitSDK();
+            _deviceDataCollector.InitSDK();
         }
 
         public void LogEventUpgradeCaptain()
@@ -38,19 +48,19 @@ namespace CosmicShore.Integrations.Instrumentation
             _playerDataCollector.LogEventUpgradeCaptain();
         }
 
-        public void LogEventPurchaseCaptain()
+        public void LogEventPurchaseCaptain(string captainName)
         {
-            _storeDataCollector.LogEventPurchaseCaptain();
+            _storeDataCollector.LogEventPurchaseCaptain(captainName);
         }
 
-        public void LogEventPurchaseArcadeGame()
+        public void LogEventPurchaseArcadeGame(string arcadeGameName)
         {
-            _storeDataCollector.LogEventPurchaseArcadeGame();
+            _storeDataCollector.LogEventPurchaseArcadeGame(arcadeGameName);
         }
 
-        public void LogEventPurchaseMission()
+        public void LogEventPurchaseMission(string missionName)
         {
-            _storeDataCollector.LogEventPurchaseMission();
+            _storeDataCollector.LogEventPurchaseMission(missionName);
         }
 
         public void LogEventWatchAd()
@@ -101,6 +111,16 @@ namespace CosmicShore.Integrations.Instrumentation
         public void LogEventCompleteTraining()
         {
             _trainingDataCollector.LogEventCompleteTraining();
+        }
+
+        public void LogEventAppOpen()
+        {
+            _deviceDataCollector.LogEventAppOpen();
+        }
+
+        public void LogEventAppClose()
+        {
+            _deviceDataCollector.LogEventAppClose();
         }
     }
 }
