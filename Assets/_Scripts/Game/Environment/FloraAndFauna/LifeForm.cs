@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace CosmicShore
 {
-    public abstract class LifeForm : MonoBehaviour
+    public abstract class LifeForm : MonoBehaviour, ITeamAssignable
     {
         [SerializeField] protected HealthBlock healthBlock;
         [SerializeField] protected Spindle spindle;
@@ -74,6 +74,16 @@ namespace CosmicShore
             yield return new WaitForSeconds(1f);
             StatsManager.Instance.LifeformDestroyed(node.ID);
             Destroy(gameObject);
+        }
+
+        public GameObject GetGameObject()
+        {
+            return gameObject;
+        }
+
+        public void SetTeam(Teams team)
+        {
+            Team = team;
         }
     }
 }

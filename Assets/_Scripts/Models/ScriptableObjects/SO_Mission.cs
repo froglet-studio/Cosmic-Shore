@@ -41,7 +41,10 @@ namespace CosmicShore
 
         public virtual void Spawn(Vector3 spawnPoint)
         {
-            GameObject.Instantiate(threatPrefab, spawnPoint, Quaternion.identity);
+            var threat = GameObject.Instantiate(threatPrefab, spawnPoint, Quaternion.identity);
+            ITeamAssignable iteam = threat.GetComponent<ITeamAssignable>();
+            if (iteam != null)
+                iteam.SetTeam(Teams.Ruby);
         }
     }
 
