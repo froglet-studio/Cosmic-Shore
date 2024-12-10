@@ -5,13 +5,13 @@ using CosmicShore.Core;
 
 namespace CosmicShore
 {
-    public class ShipCameraCustomizer : MonoBehaviour
+    public class ShipCameraCustomizer : ElementalShipComponent
     {
         Ship ship;
 
         [SerializeField] public List<ShipCameraOverrides> ControlOverrides;
         [SerializeField] float closeCamDistance;
-        [SerializeField] float farCamDistance;
+        [SerializeField] ElementalFloat farCamDistance;
         CameraManager cameraManager;
         public Transform FollowTarget;
         public Vector3 FollowTargetPosition;
@@ -23,6 +23,8 @@ namespace CosmicShore
             ship = GetComponent<Ship>();
             cameraManager = ship.cameraManager;
             cameraManager.isOrthographic = isOrthographic;
+
+            BindElementalFloats(ship);
 
             ApplyShipControlOverrides(ControlOverrides);
         }
@@ -42,7 +44,7 @@ namespace CosmicShore
                         cameraManager.CloseCamDistance = closeCamDistance;
                         break;
                     case ShipCameraOverrides.FarCam:
-                        cameraManager.FarCamDistance = farCamDistance;
+                        cameraManager.FarCamDistance = farCamDistance.Value;
                         break;
                     case ShipCameraOverrides.SetFollowTarget:
                         FollowTarget.parent = null;

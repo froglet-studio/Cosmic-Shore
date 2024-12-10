@@ -1634,7 +1634,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ControlOverrides: 0300000004000000
   closeCamDistance: -35
-  farCamDistance: -125
+  farCamDistance:
+    Enabled: 1
+    Value: -125
+    Min: -125
+    Max: -185
+    element: 1
   FollowTarget: {fileID: 0}
   FollowTargetPosition: {x: 0, y: 0, z: 0}
   isOrthographic: 0
