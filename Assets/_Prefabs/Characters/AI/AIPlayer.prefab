@@ -43,7 +43,7 @@ GameObject:
   - component: {fileID: 9106189021102876760}
   - component: {fileID: 9106189021102876755}
   m_Layer: 0
-  m_Name: RedAI
+  m_Name: AIPlayer
   m_TagString: red
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

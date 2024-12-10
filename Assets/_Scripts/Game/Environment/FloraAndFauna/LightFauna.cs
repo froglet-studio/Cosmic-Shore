@@ -2,7 +2,6 @@ using UnityEngine;
 using System.Collections;
 using CosmicShore.Core;
 using CosmicShore;
-using System.Collections.Generic;
 
 public class LightFauna : Fauna
 {

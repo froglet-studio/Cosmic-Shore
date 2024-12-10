@@ -41,6 +41,9 @@ public class Player : MonoBehaviour
                 case "HostileTwo":
                     SetupAIShip(Hangar.Instance.LoadHostileAI2Ship());
                     break;
+                case "HostileThree":
+                    SetupAIShip(Hangar.Instance.LoadHostileAI3Ship());
+                    break;
                 case "FriendlyOne":
                     SetupAIShip(Hangar.Instance.LoadFriendlyAIShip());
                     break;

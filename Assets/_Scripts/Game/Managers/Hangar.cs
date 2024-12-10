@@ -20,9 +20,9 @@ namespace CosmicShore.Core
         [SerializeField] Captain PlayerCaptain;  // Serialized for inspection in hierarchy
         [SerializeField] ShipTypes PlayerShipType = ShipTypes.Random;
         [SerializeField] ShipTypes FriendlyAIShipType = ShipTypes.Manta;
-        [SerializeField] ShipTypes HostileAI1ShipType = ShipTypes.Random;
-        [SerializeField] ShipTypes HostileAI2ShipType = ShipTypes.Random;
-        [SerializeField] ShipTypes HostileAI3ShipType = ShipTypes.Random;
+        [SerializeField] public ShipTypes HostileAI1ShipType = ShipTypes.Random;
+        [SerializeField] public ShipTypes HostileAI2ShipType = ShipTypes.Random;
+        [SerializeField] public ShipTypes HostileAI3ShipType = ShipTypes.Random;
         ShipTypes HostileMantaShipType = ShipTypes.Manta;
 
         [SerializeField] List<ShipTypes> GreenTeamShipTypes = new List<ShipTypes>() { ShipTypes.Random, ShipTypes.Random, ShipTypes.Random };
@@ -180,7 +180,7 @@ namespace CosmicShore.Core
         public SO_Captain HostileAI3Captain { get; private set; }
         public Ship LoadHostileAI1Ship(Teams Team)
         {
-            var ship = LoadAIShip(HostileAI1ShipType, Team);
+            var ship = LoadAIShip(HostileAI1ShipType, AITeam);
             HostileAI1Captain = ship.Captain;
             return ship;
         }
