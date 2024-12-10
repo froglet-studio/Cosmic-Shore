@@ -40,7 +40,7 @@ namespace CosmicShore
         [SerializeField] int maxDepth = 30;
         [SerializeField] int itemsPerGrow = 5;
         [SerializeField] int randomItems = 2;
-        [SerializeField] float crystalGrowthMultiplier = 1.01f;
+        [SerializeField] float crystalGrowth = 1.01f;
 
         HashSet<Branch> activeBranches = new HashSet<Branch>();
 
@@ -146,12 +146,11 @@ namespace CosmicShore
             GrowCrystal();
         }
 
-        // the following function is called by the grow function to grow the crystal
         void GrowCrystal()
         {
             if (crystal)
             {
-                crystal.GrowCrystal(1, crystal.transform.localScale.x * crystalGrowthMultiplier);
+                crystal.GrowCrystal(1, crystal.transform.localScale.x + crystalGrowth);
             }
         }
 

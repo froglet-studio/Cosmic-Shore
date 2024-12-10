@@ -74,7 +74,6 @@ public class Node : MonoBehaviour
         }
         if (cellType != null) 
         {
-            Debug.Log("Assigning Cell Type: " + cellType.name);
             normalizeWeights();
 
             membrane = Instantiate(cellType.MembranePrefab, transform.position, Quaternion.identity);
