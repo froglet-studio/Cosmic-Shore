@@ -52,7 +52,10 @@ public class Node : MonoBehaviour
 
     void Awake()
     {
-        AssignCellType();
+        if (cellType == null)
+        {
+            AssignCellType();
+        }
 
         // TODO: handle Blue?
         Teams[] teams = { Teams.Jade, Teams.Ruby, Teams.Gold };  // TODO: Store this as a constant somewhere (where?).
@@ -71,6 +74,7 @@ public class Node : MonoBehaviour
         }
         if (cellType != null) 
         {
+            Debug.Log("Assigning Cell Type: " + cellType.name);
             normalizeWeights();
 
             membrane = Instantiate(cellType.MembranePrefab, transform.position, Quaternion.identity);

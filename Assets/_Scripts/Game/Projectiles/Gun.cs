@@ -17,7 +17,7 @@ namespace CosmicShore.Game.Projectiles
         public Ship Ship;
         bool onCooldown = false;
         float sideLength = 2;
-        float barrelLength = 4;
+        float barrelLength = 0;
         public Coroutine MoveCoroutine;
 
         Projectile projectile;

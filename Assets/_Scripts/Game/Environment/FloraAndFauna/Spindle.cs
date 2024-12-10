@@ -10,6 +10,7 @@ namespace CosmicShore
         public Renderer RenderedObject;
         [SerializeField] Spindle parentSpindle;
         public LifeForm LifeForm;
+        [SerializeField] bool retainSpindle = false;
 
         HashSet<HealthBlock> healthBlocks = new HashSet<HealthBlock>();
         HashSet<Spindle> spindles = new HashSet<Spindle>();
@@ -67,7 +68,13 @@ namespace CosmicShore
                 deathAnimation += Time.deltaTime * animationSpeed;
                 yield return null;
             }
-            Destroy(gameObject);          
+
+            if (retainSpindle) 
+            {
+                gameObject.SetActive(false); 
+                DisableSpindle(); 
+            }
+            else Destroy(gameObject);          
         }
 
         IEnumerator CondenseCoroutine()
@@ -83,7 +90,7 @@ namespace CosmicShore
             RenderedObject.material.SetFloat("_DeathAnimation", 0);
         }
 
-        private void OnDestroy()
+        void DisableSpindle()
         {
             // check if scene is still loaded
             if (gameObject.scene.isLoaded)
@@ -100,6 +107,11 @@ namespace CosmicShore
                     LifeForm.CheckIfDead();
                 }
             }
+        }
+
+        private void OnDestroy()
+        {
+            DisableSpindle();
         }
     }
 }

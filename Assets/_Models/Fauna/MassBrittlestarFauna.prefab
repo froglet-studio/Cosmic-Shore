@@ -3531,6 +3531,7 @@ MonoBehaviour:
   RenderedObject: {fileID: 7699484790300655702}
   parentSpindle: {fileID: 0}
   LifeForm: {fileID: 5351160486092638538}
+  retainSpindle: 1
 --- !u!1 &585916357807653721 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 8960021665485050403, guid: f3f5a137a8feb6b478871256eec77f17,
@@ -3553,6 +3554,7 @@ MonoBehaviour:
   RenderedObject: {fileID: 5432386326847444093}
   parentSpindle: {fileID: 0}
   LifeForm: {fileID: 5351160486092638538}
+  retainSpindle: 1
 --- !u!4 &679641959953746121 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -209592016894207565, guid: f3f5a137a8feb6b478871256eec77f17,
@@ -3611,6 +3613,7 @@ MonoBehaviour:
   RenderedObject: {fileID: 2292046433133831624}
   parentSpindle: {fileID: 0}
   LifeForm: {fileID: 5351160486092638538}
+  retainSpindle: 1
 --- !u!4 &2269529865910479451 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -1511223162874430687, guid: f3f5a137a8feb6b478871256eec77f17,
@@ -3651,6 +3654,7 @@ MonoBehaviour:
   RenderedObject: {fileID: 6316916111718758181}
   parentSpindle: {fileID: 0}
   LifeForm: {fileID: 5351160486092638538}
+  retainSpindle: 1
 --- !u!4 &3554068086279396861 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -4239182537705829241, guid: f3f5a137a8feb6b478871256eec77f17,
@@ -3697,6 +3701,7 @@ MonoBehaviour:
   RenderedObject: {fileID: 7306882521846822617}
   parentSpindle: {fileID: 0}
   LifeForm: {fileID: 5351160486092638538}
+  retainSpindle: 1
 --- !u!137 &4327607367266289235 stripped
 SkinnedMeshRenderer:
   m_CorrespondingSourceObject: {fileID: -4001646103744719063, guid: f3f5a137a8feb6b478871256eec77f17,
@@ -3749,6 +3754,7 @@ MonoBehaviour:
   RenderedObject: {fileID: 7430114606653773022}
   parentSpindle: {fileID: 0}
   LifeForm: {fileID: 5351160486092638538}
+  retainSpindle: 1
 --- !u!4 &5221145117695997993 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -4896318537297696429, guid: f3f5a137a8feb6b478871256eec77f17,
@@ -3777,6 +3783,7 @@ MonoBehaviour:
   RenderedObject: {fileID: 7430970055095401836}
   parentSpindle: {fileID: 0}
   LifeForm: {fileID: 5351160486092638538}
+  retainSpindle: 1
 --- !u!4 &5344061542172889966 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 4490115498745758228, guid: f3f5a137a8feb6b478871256eec77f17,
@@ -3829,6 +3836,7 @@ MonoBehaviour:
   RenderedObject: {fileID: 7216297290027478408}
   parentSpindle: {fileID: 0}
   LifeForm: {fileID: 5351160486092638538}
+  retainSpindle: 1
 --- !u!4 &5788596559538480950 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -6616691582455515572, guid: f3f5a137a8feb6b478871256eec77f17,
@@ -3923,6 +3931,7 @@ MonoBehaviour:
   RenderedObject: {fileID: 5881214667817304712}
   parentSpindle: {fileID: 0}
   LifeForm: {fileID: 5351160486092638538}
+  retainSpindle: 1
 --- !u!4 &8355103734535059089 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: f3f5a137a8feb6b478871256eec77f17,
@@ -3967,6 +3976,7 @@ MonoBehaviour:
   RenderedObject: {fileID: 4327607367266289235}
   parentSpindle: {fileID: 0}
   LifeForm: {fileID: 5351160486092638538}
+  retainSpindle: 0
 --- !u!1 &9032908022955757271 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 658271101405683629, guid: f3f5a137a8feb6b478871256eec77f17,
@@ -3989,3 +3999,4 @@ MonoBehaviour:
   RenderedObject: {fileID: 5367215629879417128}
   parentSpindle: {fileID: 0}
   LifeForm: {fileID: 5351160486092638538}
+  retainSpindle: 1
