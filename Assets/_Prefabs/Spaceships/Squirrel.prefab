@@ -403,13 +403,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 737294a573670f74389a7af68df314d5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Resources:
-  - Name: NoResource
-    Display: {fileID: 0}
-    initialResourceGainRate: 0
-    resourceGainRate: 0
-    maxAmount: 0
-    initialAmount: 0
+  Resources: []
   ChargeTestHarness: 0
   MassTestHarness: 0
   SpaceTestHarness: 0
@@ -530,7 +524,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ControlOverrides: 03000000
   closeCamDistance: -6
-  farCamDistance: 0
+  farCamDistance:
+    Enabled: 0
+    Value: 0
+    Min: 0
+    Max: 0
+    element: 0
   FollowTarget: {fileID: 0}
   FollowTargetPosition: {x: 0, y: 0, z: 0}
   isOrthographic: 0

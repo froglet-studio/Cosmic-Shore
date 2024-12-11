@@ -2158,7 +2158,7 @@ MonoBehaviour:
   - {fileID: 6988205045896376628}
   shipHUD: {fileID: 9084521984956080798}
   Silhouette: {fileID: 2731003324702047408}
-  AOEPrefab: {fileID: 2728798890556433942, guid: f5ecfb9923155a84c860975d559b2714,
+  AOEPrefab: {fileID: 2728798890556433942, guid: c4e6163ef5e206846bb8d245b11d1a61,
     type: 3}
   farFieldSkimmer: {fileID: 3138628630497430536}
   ShipCameraCustomizer: {fileID: 0}
@@ -2166,8 +2166,8 @@ MonoBehaviour:
   resourceIndex: 0
   ammoResourceIndex: 0
   boostResourceIndex: 0
-  crystalImpactEffects: 0d0000000b000000
-  minExplosionScale: 50
+  crystalImpactEffects: 0b00000006000000
+  minExplosionScale: 500
   maxExplosionScale: 500
   trailBlockImpactEffects: 0f0000000000000011000000
   blockChargeChange: 0
@@ -2350,8 +2350,8 @@ MonoBehaviour:
   ram: 0
   drift: 0
   SingleStickControls: 0
-  useAbility: 1
-  abilityCooldown: 20
+  useAbility: 0
+  abilityCooldown: 0
   ability: {fileID: 0}
   CrystalTransform: {fileID: 0}
   flowFieldData: {fileID: 0}
@@ -2428,7 +2428,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ControlOverrides: 03000000
   closeCamDistance: -90
-  farCamDistance: 0
+  farCamDistance:
+    Enabled: 0
+    Value: 0
+    Min: 0
+    Max: 0
+    element: 0
   FollowTarget: {fileID: 0}
   FollowTargetPosition: {x: 0, y: 0, z: 0}
   isOrthographic: 0
@@ -3343,7 +3348,6 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 808689176682098569}
-  - {fileID: 5213705592260359948}
   - {fileID: 5248301459994666056}
   m_Father: {fileID: 5928382658856804067}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -3432,50 +3436,6 @@ MonoBehaviour:
     m_DampPosition: 0.4
     m_DampRotation: 0.6
     m_MaintainAim: 1
---- !u!1 &8314064271702207074
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 5213705592260359948}
-  - component: {fileID: 5096403877754360922}
-  m_Layer: 0
-  m_Name: Gyro
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &5213705592260359948
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8314064271702207074}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 8075578658670966254}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &5096403877754360922
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8314064271702207074}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8a95abc3c55d5424d8713733f65a5c19, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1 &8666213360038760493
 GameObject:
   m_ObjectHideFlags: 0

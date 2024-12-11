@@ -1802,7 +1802,7 @@ MonoBehaviour:
   resourceIndex: 0
   ammoResourceIndex: 0
   boostResourceIndex: 0
-  crystalImpactEffects: 06000000030000000b000000
+  crystalImpactEffects: 060000000d0000000b000000
   minExplosionScale: 50
   maxExplosionScale: 500
   trailBlockImpactEffects: 020000000f00000011000000
@@ -1932,7 +1932,7 @@ MonoBehaviour:
     initialResourceGainRate: 0
     resourceGainRate: 0
     maxAmount: 1
-    initialAmount: 0
+    initialAmount: 1
   ChargeTestHarness: 0
   MassTestHarness: 0
   SpaceTestHarness: 0
@@ -1979,9 +1979,10 @@ MonoBehaviour:
   ram: 0
   drift: 0
   SingleStickControls: 0
-  useAbility: 1
-  abilityCooldown: 5
-  ability: {fileID: 867704553499413969}
+  abilities:
+  - action: {fileID: 867704553499413969}
+    UseTime: 0.1
+    Cooldown: 10.2
   CrystalTransform: {fileID: 0}
   flowFieldData: {fileID: 0}
 --- !u!114 &6776027772320837218

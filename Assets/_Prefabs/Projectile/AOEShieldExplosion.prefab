@@ -9,13 +9,13 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 6454128237993233764}
-  - component: {fileID: 5915562654621825366}
+  - component: {fileID: 3479271500403630839}
   - component: {fileID: 8683897607158942398}
   - component: {fileID: 1158389878633052016}
   - component: {fileID: 7530736874585816541}
   - component: {fileID: 4173946516839143748}
   m_Layer: 10
-  m_Name: AOESlowExplosion
+  m_Name: AOEShieldExplosion
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -36,7 +36,7 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &5915562654621825366
+--- !u!114 &3479271500403630839
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -48,14 +48,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3aee2172b77b5524797b5b5f0a9d1efe, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  speed: 50
-  MaxScale: 200
+  speed: 0.5
+  MaxScale: 0
   ExplosionDuration: 3
   ExplosionDelay: 0.2
-  shipImpactEffects: 0400000001000000
+  shipImpactEffects: 
   affectSelf: 0
   destructive: 0
   devastating: 0
+  shielding: 1
   Team: 0
   Ship: {fileID: 0}
   AnonymousExplosion: 0
@@ -124,7 +125,7 @@ SphereCollider:
     serializedVersion: 2
     m_Bits: 0
   m_LayerOverridePriority: 0
-  m_IsTrigger: 1
+  m_IsTrigger: 0
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3

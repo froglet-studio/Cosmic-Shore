@@ -20669,9 +20669,16 @@ MonoBehaviour:
   ram: 0
   drift: 0
   SingleStickControls: 0
-  useAbility: 1
-  abilityCooldown: 20
-  ability: {fileID: 0}
+  abilities:
+  - action: {fileID: 6237859807132148374}
+    UseTime: 2
+    Cooldown: 5
+  - action: {fileID: 1865457525660812358}
+    UseTime: 3
+    Cooldown: 1
+  - action: {fileID: 8671196826403818986}
+    UseTime: 0.1
+    Cooldown: 10
   CrystalTransform: {fileID: 0}
   flowFieldData: {fileID: 0}
 --- !u!114 &6776027772320837218
@@ -20733,7 +20740,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ControlOverrides: 03000000
   closeCamDistance: -20
-  farCamDistance: 0
+  farCamDistance:
+    Enabled: 0
+    Value: 0
+    Min: 0
+    Max: 0
+    element: 0
   FollowTarget: {fileID: 3967031065131343057}
   FollowTargetPosition: {x: 0, y: 20, z: 0}
   isOrthographic: 0

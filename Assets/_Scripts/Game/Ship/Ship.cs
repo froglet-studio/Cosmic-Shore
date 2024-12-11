@@ -194,7 +194,6 @@ namespace CosmicShore.Core
                         var aoeExplosion = Instantiate(AOEPrefab).GetComponent<AOEExplosion>();
                         aoeExplosion.Ship = this;
                         aoeExplosion.SetPositionAndRotation(transform.position, transform.rotation);
-                        Debug.Log($"Ship.PerformCrystalImpactEffects - AOEExplosion.current ammo:{ResourceSystem.Resources[ammoResourceIndex].CurrentAmount}");
                         aoeExplosion.MaxScale = ResourceSystem.Resources.Count > ammoResourceIndex 
                             ? Mathf.Lerp(minExplosionScale, maxExplosionScale, ResourceSystem.Resources[ammoResourceIndex].CurrentAmount) : maxExplosionScale;
                         break;
