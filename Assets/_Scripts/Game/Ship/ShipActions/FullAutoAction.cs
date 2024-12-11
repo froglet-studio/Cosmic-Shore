@@ -51,6 +51,9 @@ namespace CosmicShore
                 //child.LookAt(gunContainer.transform);
                 //child.Rotate(0, 180, 0);
             }
+
+            BindElementalFloats(ship);
+
             //projectileContainer = new GameObject($"{ship.Player.PlayerName}_BarrageProjectiles");
             shipStatus = ship.GetComponent<ShipStatus>();
         }
