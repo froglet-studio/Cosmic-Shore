@@ -20,7 +20,7 @@ namespace CosmicShore.Core
         [HideInInspector] public float initialResourceGainRate = .1f;
         //public ElementalFloat initialResourceGainRate = new(0.1f);
         // [SerializeField] public float resourceGainRate = .1f;
-        [SerializeField] public ElementalFloat resourceGainRate { get; set; } = new(0.1f);
+        public ElementalFloat resourceGainRate = new(0.1f);
 
         [SerializeField][Range(0, 1)] float maxAmount = 1f;
         public float MaxAmount => maxAmount;

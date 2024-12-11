@@ -269,7 +269,7 @@ namespace CosmicShore.Core
                         if (trailBlockProperties.IsDangerous && trailBlockProperties.trailBlock.Team != team)
                         {
                             HapticController.PlayHaptic(HapticType.FakeCrystalCollision);
-                            ShipTransformer.ModifyThrottle(trailBlockProperties.speedDebuffAmount, trailBlockProperties.volume / 10);
+                            ShipTransformer.ModifyThrottle(trailBlockProperties.speedDebuffAmount, 1.5f);
                         }
                         break;
                     case TrailBlockImpactEffects.Steal:
