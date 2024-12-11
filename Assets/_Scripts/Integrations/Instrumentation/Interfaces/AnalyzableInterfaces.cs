@@ -1,4 +1,6 @@
-﻿namespace CosmicShore.Integrations.Instrumentation.Interfaces
+﻿using System.Threading.Tasks;
+
+namespace CosmicShore.Integrations.Instrumentation.Interfaces
 {
     interface IAnalyzable
     {
@@ -10,8 +12,8 @@
         void LogEventPurchaseCaptain(string captainName);
         void LogEventPurchaseArcadeGame(string arcadeGameName);
         void LogEventPurchaseMission(string missionName);
-        void LogEventWatchAd();
-        void LogEventRedeemDailyReward();
+        Task LogEventWatchAd();
+        Task LogEventRedeemDailyReward();
     }
 
     interface IDailyChallengeAnalyzable : IAnalyzable

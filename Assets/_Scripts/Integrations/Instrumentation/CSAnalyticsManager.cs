@@ -1,3 +1,4 @@
+using System.Threading.Tasks;
 using CosmicShore.Integrations.Instrumentation.DataCollectors;
 using CosmicShore.Integrations.Instrumentation.Firebase;
 using CosmicShore.Integrations.Instrumentation.Interfaces;
@@ -15,14 +16,14 @@ namespace CosmicShore.Integrations.Instrumentation
         ITrainingAnalyzable,
         IDeviceAnalyzale
     {
-        private readonly CSUtilitiesFirebase _utilitiesFirebase = new ();
-        private readonly CSStoreDataCollector _storeDataCollector = new();
-        private readonly CSPlayerDataCollector _playerDataCollector = new();
-        private readonly CSDailyChallengeDataCollector _dailyChallengeDataCollector = new();
-        private readonly CSArcadeDataCollector _arcadeDataCollector = new();
-        private readonly CSMissionDataCollector _missionDataCollector = new();
-        private readonly CSTrainingDataCollector _trainingDataCollector = new();
-        private readonly CSDeviceDataCollector _deviceDataCollector = new();
+        private readonly CSUtilitiesFirebase _utilitiesFirebase = new CSUtilitiesFirebase(); // This one doesn't have a specific interface yet
+        private readonly IStoreAnalyzable _storeDataCollector = new CSStoreDataCollector();
+        private readonly IPlayerAnalyzable _playerDataCollector = new CSPlayerDataCollector();
+        private readonly IDailyChallengeAnalyzable _dailyChallengeDataCollector = new CSDailyChallengeDataCollector();
+        private readonly IArcadeAnalyzable _arcadeDataCollector = new CSArcadeDataCollector();
+        private readonly IMissionAnalyzable _missionDataCollector = new CSMissionDataCollector();
+        private readonly ITrainingAnalyzable _trainingDataCollector = new CSTrainingDataCollector();
+        private readonly IDeviceAnalyzale _deviceDataCollector = new CSDeviceDataCollector();
         
         private void Start()
         {
@@ -43,36 +44,42 @@ namespace CosmicShore.Integrations.Instrumentation
             _deviceDataCollector.InitSDK();
         }
 
+        // Ready to go
         public void LogEventUpgradeCaptain()
         {
             _playerDataCollector.LogEventUpgradeCaptain();
         }
 
+        // Ready to go 
         public void LogEventPurchaseCaptain(string captainName)
         {
             _storeDataCollector.LogEventPurchaseCaptain(captainName);
         }
 
+        // Ready to go
         public void LogEventPurchaseArcadeGame(string arcadeGameName)
         {
             _storeDataCollector.LogEventPurchaseArcadeGame(arcadeGameName);
         }
 
+        // Ready to go
         public void LogEventPurchaseMission(string missionName)
         {
             _storeDataCollector.LogEventPurchaseMission(missionName);
         }
 
-        public void LogEventWatchAd()
+        // Ready to go
+        public async Task LogEventWatchAd()
         {
-            _storeDataCollector.LogEventWatchAd();
+            await _storeDataCollector.LogEventWatchAd();
         }
 
-        public void LogEventRedeemDailyReward()
+        // Ready to go
+        public async Task LogEventRedeemDailyReward()
         {
-            _storeDataCollector.LogEventRedeemDailyReward();
+            await _storeDataCollector.LogEventRedeemDailyReward();
         }
-
+        
         public void LogEventStartDailyChallenge()
         {
             _dailyChallengeDataCollector.LogEventStartDailyChallenge();
@@ -113,11 +120,13 @@ namespace CosmicShore.Integrations.Instrumentation
             _trainingDataCollector.LogEventCompleteTraining();
         }
 
+        // Ready to go
         public void LogEventAppOpen()
         {
             _deviceDataCollector.LogEventAppOpen();
         }
 
+        // Ready to go
         public void LogEventAppClose()
         {
             _deviceDataCollector.LogEventAppClose();

@@ -1,4 +1,5 @@
 #if !UNITY_WEBGL
+using System.Threading.Tasks;
 using CosmicShore.Integrations.Instrumentation.Interfaces;
 using Firebase;
 using Firebase.Analytics;
@@ -46,6 +47,12 @@ namespace CosmicShore.Integrations.Instrumentation.Firebase
         private static void SetUserId()
         {
             FirebaseAnalytics.SetUserId(SystemInfo.deviceUniqueIdentifier);
+        }
+
+        public static async Task<string> GetSessionIdAsync()
+        {
+            var sessionId = await FirebaseAnalytics.GetSessionIdAsync();
+            return sessionId.ToString();
         }
 
         /// <summary>

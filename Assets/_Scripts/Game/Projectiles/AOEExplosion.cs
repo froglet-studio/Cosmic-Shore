@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace CosmicShore.Game.Projectiles
 {
-    public class AOEExplosion : MonoBehaviour
+    public class AOEExplosion : ElementalShipComponent
     {
         [HideInInspector] public float speed;
 

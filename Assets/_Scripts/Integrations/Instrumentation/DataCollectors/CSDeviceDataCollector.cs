@@ -6,7 +6,7 @@ namespace CosmicShore.Integrations.Instrumentation.DataCollectors
 {
     public class CSDeviceDataCollector : IDeviceAnalyzale
     {
-        private readonly CSDeviceDataCollectorFirebase  _deviceDataCollectorFirebase = new ();
+        private readonly IDeviceAnalyzale _deviceDataCollectorFirebase = new CSDeviceDataCollectorFirebase();
         public void InitSDK()
         {
             Debug.Log("CSDeviceDataCollector - Initializing Arcade Data Collector.");
