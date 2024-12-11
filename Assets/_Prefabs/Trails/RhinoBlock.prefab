@@ -27,13 +27,13 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5776304996075792891}
+  serializedVersion: 2
   m_LocalRotation: {x: 0, y: -0, z: -1, w: 0.00000083051646}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 4, y: 4, z: 1}
+  m_LocalScale: {x: 3, y: 3, z: 0.5}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!33 &1981306459138289011
 MeshFilter:
@@ -93,9 +93,17 @@ BoxCollider:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5776304996075792891}
   m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
   m_IsTrigger: 1
+  m_ProvidesContacts: 0
   m_Enabled: 1
-  serializedVersion: 2
+  serializedVersion: 3
   m_Size: {x: 1.025, y: 1.025, z: 1.025}
   m_Center: {x: 0, y: 0, z: 0}
 --- !u!114 &4563009547826722997
@@ -112,22 +120,30 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   FossilBlock: {fileID: 5776304996075792891, guid: bd8a259abee95ec4895562e6bb8aae76,
     type: 3}
-  explodingMaterial: {fileID: 2100000, guid: 186855228d11e2c4cac0ea081d911c3d, type: 2}
   TrailBlockProperties:
     position: {x: 0, y: 0, z: 0}
     volume: 0
     speedDebuffAmount: 0
     trailBlock: {fileID: 0}
     Index: 0
-    Shielded: 0
-  growthRate: 0.5
+    IsShielded: 0
+    IsSuperShielded: 0
+    IsDangerous: 0
+    TimeCreated: 0
+    IsTransparent: 0
   ParticleEffect: {fileID: 3706253519474275301, guid: a8ae8dc22c65f554ea8bb6e1bf2458f1,
     type: 3}
-  ownerId: 
+  minScale: {x: 0.5, y: 0.5, z: 0.5}
+  MaxScale: {x: 10, y: 10, z: 10}
+  TargetScale: {x: 0, y: 0, z: 0}
+  GrowthVector: {x: 0, y: 2, z: 0}
   waitTime: 0.1
   destroyed: 0
+  devastated: 0
   ID: 
-  InnerDimensions: {x: 0, y: 0, z: 0}
   Index: 0
-  Shielded: 0
   warp: 0
+  IsSmallest: 0
+  IsLargest: 0
+  ownerId: 
+  Player: {fileID: 0}

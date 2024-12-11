@@ -646,12 +646,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7e7868c3b92497748825cce03f8ce9d2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  ZoomOutRate: 8
+  ZoomOutRate: 12
   ZoomInRate:
     Enabled: 1
-    Value: 8
-    Min: 20
-    Max: 4
+    Value: 6
+    Min: 6
+    Max: 2
     element: 1
 --- !u!1 &2343904303954125754
 GameObject:
@@ -774,9 +774,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   maxSize:
     Enabled: 1
-    Value: 3
-    Min: 2
-    Max: 4
+    Value: 4
+    Min: 4
+    Max: 8
     element: 2
   growRate: 3
   shrinkRate:
@@ -969,17 +969,17 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   maxSize:
-    Enabled: 0
-    Value: 80
-    Min: 0
-    Max: 0
-    element: 0
-  growRate: 8
+    Enabled: 1
+    Value: 120
+    Min: 120
+    Max: 120
+    element: 3
+  growRate: 12
   shrinkRate:
     Enabled: 1
-    Value: 8
-    Min: 20
-    Max: 4
+    Value: 6
+    Min: 6
+    Max: 2
     element: 1
   target: {fileID: 2695624631939139826}
 --- !u!1 &4954660229079137265
@@ -12176,17 +12176,17 @@ PrefabInstance:
     - target: {fileID: 7231566422788689087, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
       propertyPath: m_LocalScale.x
-      value: 20
+      value: 30
       objectReference: {fileID: 0}
     - target: {fileID: 7231566422788689087, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
       propertyPath: m_LocalScale.y
-      value: 20
+      value: 30
       objectReference: {fileID: 0}
     - target: {fileID: 7231566422788689087, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
       propertyPath: m_LocalScale.z
-      value: 20
+      value: 30
       objectReference: {fileID: 0}
     - target: {fileID: 7231566422788689087, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
@@ -12281,7 +12281,7 @@ PrefabInstance:
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
       propertyPath: Scale.Enabled
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}

@@ -1,10 +1,9 @@
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace CosmicShore
 {
-    public abstract class Population : MonoBehaviour
+    public abstract class Population : MonoBehaviour, ITeamAssignable
     {
         public Teams Team;
         [SerializeField] float goalUpdateInterval = 5f;
@@ -44,5 +43,14 @@ namespace CosmicShore
             }
         }
 
+        public GameObject GetGameObject()
+        {
+            return gameObject;
+        }
+
+        public void SetTeam(Teams team)
+        {
+            Team = team;
+        }
     }
 }

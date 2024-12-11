@@ -7853,12 +7853,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ActivePlayerScoreDisplay: {fileID: 0}
+  initialScore: 0
   ScoringMode: 6
   GolfRules: 0
   AdditionalScoringModes: []
   GameCanvas: {fileID: 0}
-  TimePlayedScoreMultiplier: 1000
-  ScoreNormalizationQuotient: 145.65
+  ScoreMultiplier: 1
 --- !u!114 &1527998409
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7946,7 +7946,7 @@ MonoBehaviour:
   HostileAIOne: {fileID: 451321389}
   HostileAITwo: {fileID: 1466531423}
   HostileAIThree: {fileID: 1604771576}
-  CurrentDifficulty: 7
+  CurrentDifficulty: 3
   IntensityThreshold: 1
   ThreatWaveMinimumPeriodInSeconds: 2
   ThreatSpawner: {fileID: 1527998414}
