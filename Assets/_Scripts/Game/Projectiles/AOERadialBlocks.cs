@@ -8,6 +8,9 @@ namespace CosmicShore.Game.Projectiles
 {
     public class AOERadialBlocks : AOEConicExplosion
     {
+        ElementalFloat depthScale = new(1f);  // Scale both ray radius and block size, in the z direction.
+        //float depthScale = 1f;
+
         #region Attributes for Block Creation
         [Header("Block Creation")]
         [SerializeField] protected TrailBlock trailBlock;
@@ -36,6 +39,11 @@ namespace CosmicShore.Game.Projectiles
             base.Start();
             blockMaterial = shielded ? ThemeManager.Instance.GetTeamShieldedBlockMaterial(Ship.Team)
                 : Ship.TrailSpawner.GetBlockMaterial();
+
+            baseBlockScale.z *= depthScale.Value;
+            maxRadius *= depthScale.Value;
+            BindElementalFloats(Ship);
+//          "The name 'BindElementalFloats' does not exist in the current context" --> class type needs to be ElementalShipComponent?
         }
 
         protected override IEnumerator ExplodeCoroutine()
