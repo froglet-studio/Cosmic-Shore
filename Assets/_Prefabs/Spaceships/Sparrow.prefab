@@ -20006,7 +20006,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   wrappedAction: {fileID: 1854718600018079252}
   heatResourceIndex: 1
-  heatBuildRate: 0.02
+  heatBuildRate:
+    Enabled: 0
+    Value: 0.02
+    Min: 0
+    Max: 0
+    element: 0
   heatDecayRate: 0.04
   overheatDuration: 3
 --- !u!1 &3938548809082189982
@@ -20614,13 +20619,11 @@ MonoBehaviour:
   - Name: Missiles
     Display: {fileID: 1422128299407303989}
     initialResourceGainRate: 0
-    resourceGainRate: 0
     maxAmount: 1
     initialAmount: 1
   - Name: Heat
     Display: {fileID: 3039329707884177785}
     initialResourceGainRate: 0
-    resourceGainRate: 0
     maxAmount: 1
     initialAmount: 0
   ChargeTestHarness: 0
@@ -20670,14 +20673,14 @@ MonoBehaviour:
   drift: 0
   SingleStickControls: 0
   abilities:
-  - action: {fileID: 6237859807132148374}
-    UseTime: 2
-    Cooldown: 5
-  - action: {fileID: 1865457525660812358}
-    UseTime: 3
-    Cooldown: 1
-  - action: {fileID: 8671196826403818986}
-    UseTime: 0.1
+  - Ability: {fileID: 6237859807132148374}
+    Duration: 2
+    Cooldown: 2
+  - Ability: {fileID: 1865457525660812358}
+    Duration: 3
+    Cooldown: 0.8
+  - Ability: {fileID: 8671196826403818986}
+    Duration: 0
     Cooldown: 10
   CrystalTransform: {fileID: 0}
   flowFieldData: {fileID: 0}

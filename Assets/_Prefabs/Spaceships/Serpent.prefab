@@ -2295,13 +2295,11 @@ MonoBehaviour:
   - Name: Wall Seeds
     Display: {fileID: 7315216243889215013}
     initialResourceGainRate: 0.1
-    resourceGainRate: 0.03
     maxAmount: 1
     initialAmount: 1
   - Name: Fuel Pellets
     Display: {fileID: 3236967816715381650}
     initialResourceGainRate: 0.4
-    resourceGainRate: 0.1
     maxAmount: 1
     initialAmount: 1
   ChargeTestHarness: 0
@@ -2350,9 +2348,13 @@ MonoBehaviour:
   ram: 0
   drift: 0
   SingleStickControls: 0
-  useAbility: 0
-  abilityCooldown: 0
-  ability: {fileID: 0}
+  abilities:
+  - Ability: {fileID: 3362399389898013871}
+    Duration: 0
+    Cooldown: 8.1
+  - Ability: {fileID: 1711179162404155137}
+    Duration: 0
+    Cooldown: 4.3
   CrystalTransform: {fileID: 0}
   flowFieldData: {fileID: 0}
 --- !u!114 &6776027772320837218
