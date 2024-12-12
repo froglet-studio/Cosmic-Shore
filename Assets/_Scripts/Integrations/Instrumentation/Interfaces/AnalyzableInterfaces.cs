@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 
 namespace CosmicShore.Integrations.Instrumentation.Interfaces
 {
@@ -18,31 +19,35 @@ namespace CosmicShore.Integrations.Instrumentation.Interfaces
 
     interface IDailyChallengeAnalyzable : IAnalyzable
     {
-        void LogEventStartDailyChallenge();
-        void LogEventCompleteDailyChallenge();
+        void LogEventStartDailyChallenge(string gameType, int intensity, string shipType, string captainName);
+        void LogEventCompleteDailyChallenge(string gameType, int intensity, string shipType, string captainName, int score, int reward, DateTime playTime);
     }
 
     interface IPlayerAnalyzable : IAnalyzable
     {
-        void LogEventUpgradeCaptain();
+        void LogEventUpgradeCaptain(string captainName, int captainLevel, string shipType);
     }
 
     interface IArcadeAnalyzable : IAnalyzable
     {
-        void LogEventStartArcadeGame();
-        void LogEventCompleteArcadeGame();
+        void LogEventStartArcadeGame(string gameType, int intensity, string shipType);
+        void LogEventCompleteArcadeGame(
+            string gameType, int intensity, string shipType, int score, int reward, DateTime playTime);
     }
 
     interface IMissionAnalyzable : IAnalyzable
     {
-        void LogEventStartMission();
-        void LogEventCompleteMission();
+        void LogEventStartMission(
+            string gameType, int intensity, string shipType, string captainName, int numberOfPlayers);
+        void LogEventCompleteMission(
+            string gameType, int intensity, string shipType, string captainName, 
+            int numberOfPlayers, int score, int reward, DateTime playTime);
     }
 
     interface ITrainingAnalyzable : IAnalyzable
     {
-        void LogEventStartTraining();
-        void LogEventCompleteTraining();
+        void LogEventStartTraining(string gameType, int intensity, string shipType);
+        void LogEventCompleteTraining(string gameType, int intensity, string shipType, int score, int reward, DateTime playTime);
     }
 
     interface IDeviceAnalyzale : IAnalyzable
