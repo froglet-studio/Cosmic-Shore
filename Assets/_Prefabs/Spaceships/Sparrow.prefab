@@ -20242,6 +20242,8 @@ MonoBehaviour:
   blockImpactEffects: 
   blockStayEffects: 
   shipImpactEffects: 
+  vaccumAmount: 50
+  vacuumCrystal: 1
   particleDurationAtSpeedOne: 300
   affectSelf: 1
   chargeAmount: 0
@@ -20619,11 +20621,23 @@ MonoBehaviour:
   - Name: Missiles
     Display: {fileID: 1422128299407303989}
     initialResourceGainRate: 0
+    resourceGainRate:
+      Enabled: 0
+      Value: 0
+      Min: 0
+      Max: 0
+      element: 0
     maxAmount: 1
     initialAmount: 1
   - Name: Heat
     Display: {fileID: 3039329707884177785}
     initialResourceGainRate: 0
+    resourceGainRate:
+      Enabled: 0
+      Value: 0
+      Min: 0
+      Max: 0
+      element: 0
     maxAmount: 1
     initialAmount: 0
   ChargeTestHarness: 0

@@ -1930,6 +1930,12 @@ MonoBehaviour:
   - Name: Decoys
     Display: {fileID: 0}
     initialResourceGainRate: 0
+    resourceGainRate:
+      Enabled: 0
+      Value: 0
+      Min: 0
+      Max: 0
+      element: 0
     maxAmount: 1
     initialAmount: 1
   ChargeTestHarness: 0
@@ -3038,6 +3044,16 @@ PrefabInstance:
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
       propertyPath: skimVisualFX
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
+      propertyPath: vaccumAmount
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
+      propertyPath: vacuumCrystal
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,

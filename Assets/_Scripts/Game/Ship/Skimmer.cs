@@ -1,3 +1,4 @@
+using CosmicShore.Environment.FlowField;
 using CosmicShore.Game.IO;
 using CosmicShore.Game.Projectiles;
 using System.Collections;
@@ -11,6 +12,10 @@ namespace CosmicShore.Core
         [SerializeField] List<TrailBlockImpactEffects> blockImpactEffects;
         [SerializeField] List<SkimmerStayEffects> blockStayEffects;
         [SerializeField] List<ShipImpactEffects> shipImpactEffects;
+
+        [SerializeField] float vaccumAmount = 50f;
+        [SerializeField] bool vacuumCrystal = true;
+
         [SerializeField] float particleDurationAtSpeedOne = 300f;
         [SerializeField] bool affectSelf = true;
         [SerializeField] float chargeAmount;
@@ -213,9 +218,16 @@ namespace CosmicShore.Core
             }
         }
 
+        void VacuumCrystal(Crystal crystal)
+        {
+            crystal.transform.position = Vector3.MoveTowards(crystal.transform.position, transform.position, vaccumAmount * Time.deltaTime / crystal.transform.lossyScale.x);
+        }
+
         void OnTriggerStay(Collider other)
         {
             float skimDecayDuration = 1;
+
+            if (other.TryGetComponent<Crystal>(out var crystal) && vacuumCrystal) VacuumCrystal(crystal);
 
             if (!other.TryGetComponent<TrailBlock>(out var trailBlock)) return;
             
