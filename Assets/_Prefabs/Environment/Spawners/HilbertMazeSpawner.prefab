@@ -46,7 +46,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   trailBlock: {fileID: 4563009547826722997, guid: c2b586d4533428342ae6dc7849b41d8f,
     type: 3}
-  crystal: {fileID: 6588436222817790495, guid: cccc6ba7985893f43841fccfbb53dc71, type: 3}
+  crystal: {fileID: 6588436222817790495, guid: 6c8ac0b5807e5364b91988f2e68f05ef, type: 3}
   width: 3
   height: 3
   blockSize: 9
@@ -102,7 +102,9 @@ MonoBehaviour:
   - {fileID: 2530874233327190238}
   - {fileID: 5789731399990880432}
   positioningScheme: 16
-  spawnSegmentWeights: []
+  spawnSegmentWeights:
+  - 40
+  - 1
   Seed: 0
   parent: {fileID: 0}
   origin: {x: 500, y: 0, z: 0}
@@ -156,7 +158,7 @@ GameObject:
   - component: {fileID: 5043599769643737427}
   - component: {fileID: 5789731399990880432}
   m_Layer: 0
-  m_Name: OmniCrystal
+  m_Name: MazeCrystal
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -189,4 +191,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c98ea258f6e426744bbd1a5e2232a6ce, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Crystal: {fileID: 6588436222817790495, guid: fced5b15da3ad1d41b4e3b7385609e37, type: 3}
+  Crystal: {fileID: 6588436222817790495, guid: 241ebd0d9e00971489a10317a77140e5, type: 3}
