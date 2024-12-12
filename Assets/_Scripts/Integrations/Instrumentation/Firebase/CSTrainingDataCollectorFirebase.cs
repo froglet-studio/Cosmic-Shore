@@ -6,27 +6,26 @@ using Firebase.Analytics;
 
 namespace CosmicShore._Scripts.Integrations.Instrumentation.Firebase
 {
-    public class CSArcadeDataCollectorFirebase : IArcadeAnalyzable
+    public class CSTrainingDataCollectorFirebase : ITrainingAnalyzable
     {
-        
         public void InitSDK()
         {
             
         }
 
-        public void LogEventStartArcadeGame(string gameType, int intensity, string shipType)
+        public void LogEventStartTraining(string gameType, int intensity, string shipType)
         {
             var parameters = new Parameter[]
             {
-                new (CSCustomKeysFirebase.GameType, gameType),
-                new (CSCustomKeysFirebase.Intensity, intensity),
-                new (CSCustomKeysFirebase.ShipType, shipType)
+                new(CSCustomKeysFirebase.GameType, gameType),
+                new(CSCustomKeysFirebase.Intensity, intensity),
+                new(CSCustomKeysFirebase.ShipType, shipType)
             };
             
-            FirebaseAnalytics.LogEvent(CSCustomEventsFirebase.StartArcadeGame, parameters);
+            FirebaseAnalytics.LogEvent(CSCustomEventsFirebase.StartTraining, parameters);
         }
 
-        public void LogEventCompleteArcadeGame(string gameType, int intensity, string shipType, int score, int reward, DateTime playTime)
+        public void LogEventCompleteTraining(string gameType, int intensity, string shipType, int score, int reward, DateTime playTime)
         {
             var parameters = new Parameter[]
             {
@@ -38,7 +37,7 @@ namespace CosmicShore._Scripts.Integrations.Instrumentation.Firebase
                 new(CSCustomKeysFirebase.PlayTime, playTime.ToString(CultureInfo.InvariantCulture))
             };
             
-            FirebaseAnalytics.LogEvent(CSCustomEventsFirebase.CompleteArcadeGame, parameters);
+            FirebaseAnalytics.LogEvent(CSCustomEventsFirebase.CompleteTraining, parameters);
         }
     }
 }

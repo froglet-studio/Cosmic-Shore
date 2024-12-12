@@ -1,3 +1,4 @@
+using System;
 using System.Threading.Tasks;
 using CosmicShore.Integrations.Instrumentation.DataCollectors;
 using CosmicShore.Integrations.Instrumentation.Firebase;
@@ -45,9 +46,16 @@ namespace CosmicShore.Integrations.Instrumentation
         }
 
         // Ready to go
-        public void LogEventUpgradeCaptain()
+        /// <summary>
+        /// Log Event Upgrade Captain
+        /// Upgrade event with corresponding parameters are sent to Analytics APIs
+        /// </summary>
+        /// <param name="captainName"></param>
+        /// <param name="captainLevel"></param>
+        /// <param name="shipType">Ship type enums should be converted to string before call the event log</param>
+        public void LogEventUpgradeCaptain(string captainName, int captainLevel, string shipType)
         {
-            _playerDataCollector.LogEventUpgradeCaptain();
+            _playerDataCollector.LogEventUpgradeCaptain(captainName, captainLevel, shipType);
         }
 
         // Ready to go 
@@ -80,44 +88,123 @@ namespace CosmicShore.Integrations.Instrumentation
             await _storeDataCollector.LogEventRedeemDailyReward();
         }
         
-        public void LogEventStartDailyChallenge()
+        // Ready to go
+        /// <summary>
+        /// Log Event Start Daily Challenge
+        /// </summary>
+        /// <param name="gameType">Game type enum should be converted to string before call the log event</param>
+        /// <param name="intensity"></param>
+        /// <param name="shipType">Game type enum should be converted to string before call the log event</param>
+        /// <param name="captainName">Game type enum should be converted to string before call the log event</param>
+        public void LogEventStartDailyChallenge(string gameType, int intensity, string shipType, string captainName)
         {
-            _dailyChallengeDataCollector.LogEventStartDailyChallenge();
+            _dailyChallengeDataCollector.LogEventStartDailyChallenge(gameType, intensity, shipType, captainName);
         }
 
-        public void LogEventCompleteDailyChallenge()
+        // Ready to go
+        /// <summary>
+        /// Log Event Complete Daily Challenge
+        /// </summary>
+        /// <param name="gameType">Game type enum should be converted to string before call the log event</param>
+        /// <param name="intensity"></param>
+        /// <param name="shipType">Game type enum should be converted to string before call the log event</param>
+        /// <param name="captainName">Game type enum should be converted to string before call the log event</param>
+        /// <param name="score"></param>
+        /// <param name="reward"></param>
+        /// <param name="playTime"></param>
+        public void LogEventCompleteDailyChallenge(
+            string gameType, int intensity, string shipType, string captainName, int score, int reward, DateTime playTime)
         {
-            _dailyChallengeDataCollector.LogEventCompleteDailyChallenge();
+            _dailyChallengeDataCollector.LogEventCompleteDailyChallenge(
+                gameType, intensity, shipType, captainName, score, reward, playTime);
         }
 
-        public void LogEventStartArcadeGame()
+        // Ready to go
+        /// <summary>
+        /// Log Event Start Arcade Game
+        /// </summary>
+        /// <param name="gameType">Game type enum should be converted to string before call the log event</param>
+        /// <param name="intensity">Game intensity</param>
+        /// <param name="shipType">Ship type enum should be converted to string before call the log event</param>
+        public void LogEventStartArcadeGame(string gameType, int intensity, string shipType)
         {
-            _arcadeDataCollector.LogEventStartArcadeGame();
+            _arcadeDataCollector.LogEventStartArcadeGame(gameType, intensity, shipType);
         }
 
-        public void LogEventCompleteArcadeGame()
+        // Ready to go
+        /// <summary>
+        /// Log Event Complete Arcade Game
+        /// </summary>
+        /// <param name="gameType">Convert enum to string</param>
+        /// <param name="intensity"></param>
+        /// <param name="shipType">Convert enum to string</param>
+        /// <param name="score"></param>
+        /// <param name="reward"></param>
+        /// <param name="playTime"></param>
+        public void LogEventCompleteArcadeGame(string gameType, int intensity, string shipType, int score, int reward, DateTime playTime)
         {
-            _arcadeDataCollector.LogEventCompleteArcadeGame();
+            _arcadeDataCollector.LogEventCompleteArcadeGame(gameType, intensity, shipType, score, reward, playTime);
         }
 
-        public void LogEventStartMission()
+        // Ready to go
+        /// <summary>
+        /// Log Event Start Mission
+        /// </summary>
+        /// <param name="gameType">Convert enum to string</param>
+        /// <param name="intensity"></param>
+        /// <param name="shipType">Convert enum to string</param>
+        /// <param name="captainName">Convert enum to string</param>
+        /// <param name="numberOfPlayers"></param>
+        public void LogEventStartMission(string gameType, int intensity, string shipType, string captainName, int numberOfPlayers)
         {
-            _missionDataCollector.LogEventStartMission();
+            _missionDataCollector.LogEventStartMission(gameType, intensity, shipType, captainName, numberOfPlayers);
         }
 
-        public void LogEventCompleteMission()
+        // Ready to go
+        /// <summary>
+        /// Log Event Complete Mission
+        /// </summary>
+        /// <param name="gameType">Convert enum to string</param>
+        /// <param name="intensity"></param>
+        /// <param name="shipType">Convert enum to string</param>
+        /// <param name="captainName">Convert enum to string</param>
+        /// <param name="numberOfPlayers"></param>
+        /// <param name="score"></param>
+        /// <param name="reward"></param>
+        /// <param name="playTime"></param>
+        public void LogEventCompleteMission(string gameType, int intensity, string shipType, string captainName, 
+            int numberOfPlayers, int score, int reward, DateTime playTime)
         {
-            _missionDataCollector.LogEventCompleteMission();
+            _missionDataCollector.LogEventCompleteMission(gameType, intensity, shipType, captainName, numberOfPlayers, score, reward, playTime);
         }
 
-        public void LogEventStartTraining()
+        // Ready to go
+        /// <summary>
+        /// Log Event Start Training
+        /// </summary>
+        /// <param name="gameType">Game type enum should be converted to string before call the log event</param>
+        /// <param name="intensity"></param>
+        /// <param name="shipType">Game type enum should be converted to string before call the log event</param>
+        public void LogEventStartTraining(string gameType, int intensity, string shipType)
         {
-            _trainingDataCollector.LogEventStartTraining();
+            _trainingDataCollector.LogEventStartTraining(gameType, intensity, shipType);
         }
 
-        public void LogEventCompleteTraining()
+        // Ready to go
+        /// <summary>
+        /// Log Event Complete Training
+        /// </summary>
+        /// <param name="gameType">Game type enum should be converted to string before call the log event</param>
+        /// <param name="intensity"></param>
+        /// <param name="shipType">Game type enum should be converted to string before call the log event</param>
+        /// <param name="score"></param>
+        /// <param name="reward"></param>
+        /// <param name="playTime"></param>
+        public void LogEventCompleteTraining(
+            string gameType, int intensity, string shipType, int score, int reward, DateTime playTime)
         {
-            _trainingDataCollector.LogEventCompleteTraining();
+            _trainingDataCollector.LogEventCompleteTraining(
+                gameType, intensity, shipType, score, reward, playTime);
         }
 
         // Ready to go
