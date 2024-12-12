@@ -15,7 +15,7 @@ public class ToggleTurretModeAction : ShipAction
     {
         shipData.Stationary = !shipData.Stationary;
         var resource = ship.ResourceSystem.Resources[resourceIndex];
-        resource.resourceGainRate.Value = shipData.Stationary ? resource.initialResourceGainRate * 2 : resource.initialResourceGainRate;
+        resource.resourceGainRate = shipData.Stationary ? resource.initialResourceGainRate * 2 : resource.initialResourceGainRate;
         if (shipData.Stationary) ship.TrailSpawner.PauseTrailSpawner();
         else ship.TrailSpawner.RestartTrailSpawnerAfterDelay(0);
     }
