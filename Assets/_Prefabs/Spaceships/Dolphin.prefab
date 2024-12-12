@@ -2492,23 +2492,13 @@ MonoBehaviour:
   - Name: Energy
     Display: {fileID: 0}
     initialResourceGainRate: 0
-    resourceGainRate:
-      Enabled: 0
-      Value: 0
-      Min: 0
-      Max: 0
-      element: 0
+    resourceGainRate: 0
     maxAmount: 1
     initialAmount: 0.3
   - Name: Boost
     Display: {fileID: 2553271111498879201}
     initialResourceGainRate: 0
-    resourceGainRate:
-      Enabled: 0
-      Value: 0
-      Min: 0
-      Max: 0
-      element: 0
+    resourceGainRate: 0.1
     maxAmount: 1
     initialAmount: 0
   ChargeTestHarness: 0

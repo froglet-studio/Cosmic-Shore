@@ -1930,12 +1930,7 @@ MonoBehaviour:
   - Name: Decoys
     Display: {fileID: 0}
     initialResourceGainRate: 0
-    resourceGainRate:
-      Enabled: 0
-      Value: 0
-      Min: 0
-      Max: 0
-      element: 0
+    resourceGainRate: 0
     maxAmount: 1
     initialAmount: 1
   ChargeTestHarness: 0
