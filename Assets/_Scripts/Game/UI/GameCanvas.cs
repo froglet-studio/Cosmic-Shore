@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -19,7 +20,7 @@ namespace CosmicShore.Game.UI
         [SerializeField] public TMP_Text XPEarnedText;
         [SerializeField] public Image CrystalsEarnedImage;
         [SerializeField] public TMP_Text CrystalsEarnedText;
-        [SerializeField] public Image EncounteredCaptainImage;
+        [SerializeField] public List<Image> EncounteredCaptainImages;
         [SerializeField] public TMP_Text EncounteredCaptainText;
     }
 }

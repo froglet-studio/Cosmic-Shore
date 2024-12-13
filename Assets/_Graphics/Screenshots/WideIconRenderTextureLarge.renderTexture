@@ -6,7 +6,7 @@ RenderTexture:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: WideIconRenderTexture
+  m_Name: WideIconRenderTextureLarge
   m_ImageContentsHash:
     serializedVersion: 2
     Hash: 00000000000000000000000000000000
@@ -14,8 +14,8 @@ RenderTexture:
   m_DownscaleFallback: 0
   m_IsAlphaChannelOptional: 0
   serializedVersion: 5
-  m_Width: 420
-  m_Height: 256
+  m_Width: 840
+  m_Height: 512
   m_AntiAliasing: 8
   m_MipCount: -1
   m_DepthStencilFormat: 92

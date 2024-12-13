@@ -280,6 +280,8 @@ namespace CosmicShore.Game.Arcade
             foreach (var player in Players)
                 Debug.Log($"MiniGame.EndGame - Player Score: {ScoreTracker.GetScore(player.PlayerName)} ");
 
+            GameCanvas.MiniGameHUD.gameObject.SetActive(false);
+
             if (IsDailyChallenge)
             {
                 LeaderboardManager.Instance.ReportDailyChallengeStatistic(ScoreTracker.GetHighScore(), ScoreTracker.GolfRules);
@@ -323,18 +325,24 @@ namespace CosmicShore.Game.Arcade
                 XpHandler.IssueXP(CaptainManager.Instance.GetCaptainByName(PlayerCaptain.Name), 10);
                 GameCanvas.XPEarnedText.text = "10";
 
-                // Report any encountered captains
-                Debug.Log($"Mission EndGame - Unlock Mission Captains");
+                // Collect the newly encountered captains into a set
+                HashSet<SO_Captain> encounteredCaptains = new();
                 if (Hangar.Instance.HostileAI1Captain != null && !CaptainManager.Instance.IsCaptainEncountered(Hangar.Instance.HostileAI1Captain.Name))
-                {
-                    Debug.Log($"Encountering Captain!!! - {Hangar.Instance.HostileAI1Captain}");
-                    CaptainManager.Instance.EncounterCaptain(Hangar.Instance.HostileAI1Captain.Name);
-                    GameCanvas.EncounteredCaptainImage.sprite = Hangar.Instance.HostileAI1Captain.Image;
-                }
+                    encounteredCaptains.Add(Hangar.Instance.HostileAI1Captain);
                 if (Hangar.Instance.HostileAI2Captain != null && !CaptainManager.Instance.IsCaptainEncountered(Hangar.Instance.HostileAI2Captain.Name))
+                    encounteredCaptains.Add(Hangar.Instance.HostileAI2Captain);
+
+                // Turn off all the sprites
+                foreach (var encounteredCaptainImage in GameCanvas.EncounteredCaptainImages)
+                    encounteredCaptainImage.gameObject.SetActive(false);
+
+                // Turn on the sprites that are needed and assign thier images
+                for (int i=0; i<encounteredCaptains.Count; i++)
                 {
-                    Debug.Log($"Encountering Captain!!! - {Hangar.Instance.HostileAI2Captain}");
-                    CaptainManager.Instance.EncounterCaptain(Hangar.Instance.HostileAI2Captain.Name);
+                    GameCanvas.EncounteredCaptainImages[i].gameObject.SetActive(true);
+                    GameCanvas.EncounteredCaptainImages[i].sprite = encounteredCaptains.ElementAt(i).Image;
+                    Debug.Log($"Encountering Captain!!! - {encounteredCaptains.ElementAt(i)}");
+                    CaptainManager.Instance.EncounterCaptain(encounteredCaptains.ElementAt(i).Name);
                 }
             }
             else if (IsTraining)

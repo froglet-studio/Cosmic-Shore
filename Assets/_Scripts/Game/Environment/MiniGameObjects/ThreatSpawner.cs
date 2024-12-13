@@ -10,16 +10,16 @@ namespace CosmicShore
         [SerializeField] public float LocalizedAmbushRadius = 5f; 
         [SerializeField] public float SphereInterdictionRadius = 15f; 
 
-        public void SpawnThreat(Threat threat)
+        public void SpawnThreat(Threat threat, Teams team)
         {
             Vector3 spawnPoint = GetSpawnPoint(threat.spawnMode);
-            threat.Spawn(spawnPoint);
+            threat.Spawn(spawnPoint, team);
         }
 
-        public void SpawnThreat(Threat threat, Vector3 spawnOrigin)
+        public void SpawnThreat(Threat threat, Teams team, Vector3 spawnOrigin)
         {
             Vector3 spawnPoint = GetSpawnPoint(threat.spawnMode, spawnOrigin);
-            threat.Spawn(spawnPoint);
+            threat.Spawn(spawnPoint, team);
         }
 
         Vector3 GetSpawnPoint(SpawnMode spawnMode)
