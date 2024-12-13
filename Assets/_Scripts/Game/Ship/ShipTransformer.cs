@@ -22,7 +22,8 @@ public class ShipTransformer : MonoBehaviour
     [HideInInspector] public float ThrottleScaler;
 
     public float DefaultMinimumSpeed = 10f;
-    public ElementalFloat DefaultThrottleScaler = new(50f);
+    public float DefaultThrottleScaler = 50f;
+    public ElementalFloat ThrottleScalerMultiplier = new(1f);
 
     public float PitchScaler = 130f;
     public float YawScaler = 130f;
@@ -45,7 +46,7 @@ public class ShipTransformer : MonoBehaviour
         resourceSystem = ship.GetComponent<ResourceSystem>();
 
         MinimumSpeed = DefaultMinimumSpeed;
-        ThrottleScaler = DefaultThrottleScaler.Value;
+        ThrottleScaler = DefaultThrottleScaler;
         accumulatedRotation = transform.rotation;
         inputController = ship.InputController;
     }
@@ -53,7 +54,7 @@ public class ShipTransformer : MonoBehaviour
     public void Reset()
     {
         MinimumSpeed = DefaultMinimumSpeed;
-        ThrottleScaler = DefaultThrottleScaler.Value;
+        ThrottleScaler = DefaultThrottleScaler;
         accumulatedRotation = transform.rotation;
         resourceSystem.Reset();
         shipStatus.Reset();
@@ -165,7 +166,7 @@ public class ShipTransformer : MonoBehaviour
         }
         if (shipStatus.ChargedBoostDischarging) boostAmount *= shipStatus.ChargedBoostCharge;
         if (inputController != null)
-        speed = Mathf.Lerp(speed, inputController.XDiff * ThrottleScaler * boostAmount + MinimumSpeed, lerpAmount * Time.deltaTime);
+        speed = Mathf.Lerp(speed, inputController.XDiff * ThrottleScaler * ThrottleScalerMultiplier.Value * boostAmount + MinimumSpeed, lerpAmount * Time.deltaTime);
 
         speed *= throttleMultiplier;
         shipStatus.Speed = speed;

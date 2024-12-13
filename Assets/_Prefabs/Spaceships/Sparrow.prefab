@@ -479,13 +479,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   wrappedAction: {fileID: 1854718600018079252}
   heatResourceIndex: 1
-  heatBuildRate:
-    Enabled: 0
-    Value: 0.01
-    Min: 0
-    Max: 0
-    element: 0
-  heatDecayRate: 0.01
+  heatBuildRate: 0.02
+  heatDecayRate:
+    Enabled: 1
+    Value: 0.05
+    Min: 0.05
+    Max: 0.8
+    element: 1
   overheatDuration: 6
 --- !u!1 &3938548809082189982
 GameObject:
@@ -1034,12 +1034,13 @@ MonoBehaviour:
   MinimumSpeed: 10
   ThrottleScaler: 50
   DefaultMinimumSpeed: 10
-  DefaultThrottleScaler:
-    Enabled: 1
-    Value: 20
-    Min: 20
-    Max: 50
-    element: 4
+  DefaultThrottleScaler: 50
+  ThrottleScalerMultiplier:
+    Enabled: 0
+    Value: 1
+    Min: 0
+    Max: 0
+    element: 0
   PitchScaler: 80
   YawScaler: 80
   RollScaler: 30
