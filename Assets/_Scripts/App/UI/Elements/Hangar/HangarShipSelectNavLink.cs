@@ -41,7 +41,7 @@ namespace CosmicShore
         {
             Ship = ship;
             LockImage.enabled = ship.IsLocked;
-            ShipImage.sprite = ship.IconInactive;
+            ShipImage.sprite = ship.IconActive;
         }
 
         public void AssignIndex(int index)

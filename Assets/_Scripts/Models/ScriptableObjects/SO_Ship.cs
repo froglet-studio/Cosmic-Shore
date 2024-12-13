@@ -17,6 +17,7 @@ public class SO_Ship : ScriptableObject
     [FormerlySerializedAs("Icon")]
     [SerializeField] public Sprite IconInactive;
     [SerializeField] public Sprite PreviewImage;
+    [SerializeField] public Sprite SquadImage;
     [SerializeField] public Sprite TrailPreviewImage;
     [SerializeField] public Sprite CardSilohoutteActive;
     [FormerlySerializedAs("CardSilohoutte")]

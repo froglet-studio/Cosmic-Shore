@@ -15,9 +15,10 @@ MonoBehaviour:
   Class: 7
   Name: Serpent
   Description: Make those walls
-  IconActive: {fileID: 21300000, guid: 9678312aea3618748bc3095e7218802d, type: 3}
-  IconInactive: {fileID: 21300000, guid: a6ac8dbe9d4712546a77ca5ed843cfa6, type: 3}
+  IconActive: {fileID: 21300000, guid: a6ac8dbe9d4712546a77ca5ed843cfa6, type: 3}
+  IconInactive: {fileID: 21300000, guid: 4e7292da6b535db4e9fafa6b089998bc, type: 3}
   PreviewImage: {fileID: 21300000, guid: e8dfbb15579ed9d47bd692534852142e, type: 3}
+  SquadImage: {fileID: 21300000, guid: d071add11cf05ec46b30d819e86fc72d, type: 3}
   TrailPreviewImage: {fileID: 21300000, guid: 2e75f6670391025489d30c8361fb8de3, type: 3}
   CardSilohoutteActive: {fileID: 21300000, guid: a6ac8dbe9d4712546a77ca5ed843cfa6,
     type: 3}
