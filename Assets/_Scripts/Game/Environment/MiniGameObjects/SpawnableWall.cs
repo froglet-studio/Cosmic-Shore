@@ -8,8 +8,8 @@ public class SpawnableWall : SpawnableAbstractBase
 {
     [SerializeField] TrailBlock trailBlock;
     [SerializeField] Crystal crystal;
-    [SerializeField] int width = 10;
-    [SerializeField] int height = 5;
+    public int Width = 10;
+    public int Height = 5;
     [SerializeField] float blockSize = 1f;
     [SerializeField] float padding = .1f;
 
@@ -19,9 +19,9 @@ public class SpawnableWall : SpawnableAbstractBase
         var trail = new Trail();
         var size = new Vector3(1, 1, .1f);
         var blockSpacing = blockSize + padding;
-        for (int x = 0; x < width; x++)
+        for (int x = 0; x < Width; x++)
         {
-            for (int y = 0; y < height; y++)
+            for (int y = 0; y < Height; y++)
             {
                 Vector3 position = new Vector3(x * blockSpacing, y * blockSpacing, 0);
                 var correction = new Vector3(blockSpacing * .5f , blockSpacing * .5f, 0);
@@ -29,7 +29,7 @@ public class SpawnableWall : SpawnableAbstractBase
                 if (crystal != null)
                 {
                     var newCrystal = Instantiate(crystal,container.transform);
-                    newCrystal.transform.position = position + (Vector3.forward * Random.Range(-1f,1f) * width * blockSize);
+                    newCrystal.transform.position = position + (Vector3.forward * Random.Range(-1f,1f) * Width * blockSize);
                 }
             }
         }

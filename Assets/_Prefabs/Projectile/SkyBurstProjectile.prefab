@@ -4889,8 +4889,8 @@ MonoBehaviour:
   AOEPrefabs:
   - {fileID: 447888847298330991, guid: b6aa24b5cd6a7f24c9f24c32c20eba91, type: 3}
   - {fileID: 3479271500403630839, guid: 4a855af160021d241b8c1ac70cf2d792, type: 3}
-  minExplosionScale: 70
-  maxExplosionScale: 70
+  minExplosionScale: 100
+  maxExplosionScale: 100
   Charge: 0
 --- !u!199 &8504388981194176713
 ParticleSystemRenderer:

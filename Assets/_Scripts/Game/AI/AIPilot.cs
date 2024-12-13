@@ -2,9 +2,18 @@ using UnityEngine;
 using System.Collections.Generic;
 using System.Collections;
 using CosmicShore.Core;
+using System;
 
 namespace CosmicShore.Game.AI
 {
+    [Serializable]
+    public class AIAbility
+    {
+        public ShipAction Ability;
+        public float Duration;
+        public float Cooldown;
+    }
+
     public class AIPilot : MonoBehaviour
     {
         public float SkillLevel;
@@ -55,9 +64,7 @@ namespace CosmicShore.Game.AI
         [SerializeField] bool drift;
         [HideInInspector] public bool SingleStickControls;
 
-        [SerializeField] bool useAbility;
-        [SerializeField] float abilityCooldown;
-        [SerializeField] ShipAction ability;
+        [SerializeField] List<AIAbility> abilities;
 
         enum Corner 
         {
@@ -156,7 +163,11 @@ namespace CosmicShore.Game.AI
             var activeNode = NodeControlManager.Instance.GetNodeByPosition(transform.position);
             activeNode.RegisterForUpdates(this);
 
-            if (useAbility) StartCoroutine(UseAbilityCoroutine(ability));
+            foreach
+                (var ability in abilities)
+            {
+                StartCoroutine(UseAbilityCoroutine(ability));
+            }
         }
 
         void Update()
@@ -239,14 +250,16 @@ namespace CosmicShore.Game.AI
         }
 
 
-        IEnumerator UseAbilityCoroutine(ShipAction action) 
+        IEnumerator UseAbilityCoroutine(AIAbility action) 
         {
-            while (useAbility)
+            yield return new WaitForSeconds(3);
+            while (true)
             {
-                yield return new WaitForSeconds(abilityCooldown); // wait first to give the resource system time to load
-                action.StartAction();
-            }
-            action.StopAction();
+                action.Ability.StartAction();
+                yield return new WaitForSeconds(action.Duration);
+                action.Ability.StopAction();
+                yield return new WaitForSeconds(action.Cooldown);
+            }        
         }
 
 

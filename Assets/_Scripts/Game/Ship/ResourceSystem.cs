@@ -16,8 +16,9 @@ namespace CosmicShore.Core
         [SerializeField] public string Name;
         [SerializeField] public ResourceDisplay Display;
 
-        [HideInInspector] public float initialResourceGainRate = .1f;
-        [SerializeField] public float resourceGainRate = .1f;
+        [HideInInspector] public float initialResourceGainRate;
+
+        [SerializeField] public float resourceGainRate;
 
         [SerializeField][Range(0, 1)] float maxAmount = 1f;
         public float MaxAmount => maxAmount;

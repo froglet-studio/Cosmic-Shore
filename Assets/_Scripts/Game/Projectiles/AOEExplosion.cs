@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace CosmicShore.Game.Projectiles
 {
-    public class AOEExplosion : MonoBehaviour
+    public class AOEExplosion : ElementalShipComponent
     {
         [HideInInspector] public float speed;
 
@@ -25,6 +25,7 @@ namespace CosmicShore.Game.Projectiles
         [SerializeField] private bool affectSelf = false;
         [SerializeField] private bool destructive = true;
         [SerializeField] private bool devastating = false;
+        [SerializeField] bool shielding = false;
 
         protected static GameObject container;
 
@@ -70,7 +71,8 @@ namespace CosmicShore.Game.Projectiles
                 } 
                 if ((trailBlock.Team == Team && !affectSelf) || !destructive)
                 {
-                    trailBlock.ActivateShield(2f);
+                    if (shielding && trailBlock.Team == Team) trailBlock.ActivateShield();
+                    else trailBlock.ActivateShield(2f);
                     return;
                 }
 

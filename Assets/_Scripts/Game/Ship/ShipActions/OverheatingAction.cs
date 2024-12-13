@@ -6,7 +6,7 @@ public class OverheatingAction : ShipAction
 {
     [SerializeField] ShipAction wrappedAction;
     [SerializeField] int heatResourceIndex = 0;
-    [SerializeField] float heatBuildRate = 0.02f;
+    [SerializeField] ElementalFloat heatBuildRate = new(0.02f);
     [SerializeField] float heatDecayRate = 0.04f;
     [SerializeField] float overheatDuration = 3f;
 
@@ -18,6 +18,8 @@ public class OverheatingAction : ShipAction
     {
         base.Start();
         shipStatus = ship.GetComponent<ShipStatus>();
+
+        BindElementalFloats(ship);
     }
 
     protected override void InitializeShipAttributes()
@@ -51,7 +53,7 @@ public class OverheatingAction : ShipAction
     {
         while (heatResource.CurrentAmount < heatResource.MaxAmount)
         {
-            resourceSystem.ChangeResourceAmount(heatResourceIndex, heatBuildRate);
+            resourceSystem.ChangeResourceAmount(heatResourceIndex, heatBuildRate.Value);
             yield return new WaitForSeconds(0.1f);
         }
 
@@ -62,6 +64,8 @@ public class OverheatingAction : ShipAction
 
         yield return new WaitForSeconds(overheatDuration);
 
+        isOverheating = false;
+        shipStatus.Overheating = false;
         StartCoroutine(DecayHeatCoroutine());
     }
 
@@ -72,9 +76,7 @@ public class OverheatingAction : ShipAction
             resourceSystem.ChangeResourceAmount(heatResourceIndex, -heatDecayRate);
             yield return new WaitForSeconds(0.1f);
         }
-
-        isOverheating = false;
-        shipStatus.Overheating = false;
+        
         heatResource.CurrentAmount = 0;
     }
 }

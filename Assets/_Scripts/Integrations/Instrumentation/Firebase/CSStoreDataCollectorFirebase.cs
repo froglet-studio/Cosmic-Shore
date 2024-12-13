@@ -1,5 +1,7 @@
+using System.Threading.Tasks;
 using CosmicShore.Integrations.Instrumentation.Interfaces;
 using Firebase.Analytics;
+using UnityEngine.Device;
 
 namespace CosmicShore.Integrations.Instrumentation.Firebase
 {
@@ -12,30 +14,62 @@ namespace CosmicShore.Integrations.Instrumentation.Firebase
 
         public void LogEventPurchaseCaptain(string captainName)
         {
-            var parameter = new Parameter(CSCustomKeysFirebase.KeyCaptainName, captainName);
-            FirebaseAnalytics.LogEvent(CSCustomEventsFirebase.EventPurchaseCaptain, parameter);
+            var parameters = new Parameter[]
+            {
+                new (CSCustomKeysFirebase.CaptainName, captainName)
+            };
+            
+            FirebaseAnalytics.LogEvent(CSCustomEventsFirebase.PurchaseCaptain, parameters);
         }
 
         public void LogEventPurchaseArcadeGame(string arcadeGameName)
         {
-            var parameter = new Parameter(CSCustomKeysFirebase.KeyArcadeGameName, arcadeGameName);
-            FirebaseAnalytics.LogEvent(CSCustomEventsFirebase.EventPurchaseArcadeGame, parameter);
+            var parameters = new Parameter[]
+            {
+                new (CSCustomKeysFirebase.ArcadeGameName, arcadeGameName)
+            };
+            
+            FirebaseAnalytics.LogEvent(CSCustomEventsFirebase.PurchaseArcadeGame, parameters);
         }
 
         public void LogEventPurchaseMission(string missionName)
         {
-            var parameter = new Parameter(CSCustomKeysFirebase.KeyMissionName, missionName);
-            FirebaseAnalytics.LogEvent(CSCustomEventsFirebase.EventPurchaseMission, parameter);
+            var parameters = new Parameter[]
+            { 
+                new (CSCustomKeysFirebase.MissionName, missionName)
+            };
+            
+            FirebaseAnalytics.LogEvent(CSCustomEventsFirebase.PurchaseMission, parameters);
         }
 
-        public void LogEventWatchAd()
+        public async Task LogEventWatchAd()
         {
-            throw new System.NotImplementedException();
+            var sessionId = await CSUtilitiesFirebase.GetSessionIdAsync();
+            
+            var parameters = new Parameter[]
+            {
+                new (CSCustomKeysFirebase.UserId, SystemInfo.deviceUniqueIdentifier),
+                new (CSCustomKeysFirebase.SessionId, sessionId)
+            };
+            
+            FirebaseAnalytics.LogEvent(
+                CSCustomEventsFirebase.WatchAdd,
+                parameters);
         }
 
-        public void LogEventRedeemDailyReward()
+        public async Task LogEventRedeemDailyReward()
         {
-            throw new System.NotImplementedException();
+            var sessionId = await CSUtilitiesFirebase.GetSessionIdAsync();
+            
+            var parameters = new Parameter[]
+            {
+                new (CSCustomKeysFirebase.UserId, SystemInfo.deviceUniqueIdentifier),
+                new (CSCustomKeysFirebase.SessionId, sessionId)
+            };
+            
+            FirebaseAnalytics.LogEvent(
+                CSCustomEventsFirebase.ClaimDailyReward,
+                parameters);
         }
     }
 }

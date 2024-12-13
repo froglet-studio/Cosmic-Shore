@@ -1,3 +1,4 @@
+using System.Threading.Tasks;
 using CosmicShore.Integrations.Instrumentation.Firebase;
 using CosmicShore.Integrations.Instrumentation.Interfaces;
 using UnityEngine;
@@ -6,7 +7,7 @@ namespace CosmicShore.Integrations.Instrumentation.DataCollectors
 {
     public class CSStoreDataCollector : IStoreAnalyzable
     {
-        private readonly CSStoreDataCollectorFirebase _storeDataCollectorFirebase = new();
+        private readonly IStoreAnalyzable _storeDataCollectorFirebase = new CSStoreDataCollectorFirebase();
         public void InitSDK()
         {
             Debug.Log("CSStoreDataCollector - Initializing CS Store Data Collector");
@@ -30,14 +31,16 @@ namespace CosmicShore.Integrations.Instrumentation.DataCollectors
             _storeDataCollectorFirebase.LogEventPurchaseMission(missionName);
         }
 
-        public void LogEventWatchAd()
+        public async Task LogEventWatchAd()
         {
             Debug.Log("CSStoreDataCollector - Triggering Watch Ad event.");
+            await _storeDataCollectorFirebase.LogEventWatchAd();
         }
 
-        public void LogEventRedeemDailyReward()
+        public async Task LogEventRedeemDailyReward()
         {
             Debug.Log("CSStoreDataCollector - Triggering Redeem Daily Reward event.");
+            await _storeDataCollectorFirebase.LogEventRedeemDailyReward();
         }
     }
 }

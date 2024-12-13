@@ -13,12 +13,12 @@ namespace CosmicShore._Scripts.Integrations.Instrumentation.Firebase
 
         public void LogEventAppOpen()
         {
-            FirebaseAnalytics.LogEvent(FirebaseAnalytics.EventAppOpen);
+            FirebaseAnalytics.LogEvent(CSCustomEventsFirebase.AppOpen);
         }
 
         public void LogEventAppClose()
         {
-            FirebaseAnalytics.LogEvent(CSCustomEventsFirebase.EventAppClose);
+            FirebaseAnalytics.LogEvent(CSCustomEventsFirebase.AppClose);
         }
     }
 }

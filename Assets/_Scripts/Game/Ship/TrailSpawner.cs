@@ -27,7 +27,7 @@ public class TrailSpawner : MonoBehaviour
     public int TrailLength { get { return Trail.TrailList.Count; } }
     [SerializeField] float defaultWaitTime = .5f;
     
-    public float waitTime = .5f;  // Time until the trail block appears - camera dependent
+    [HideInInspector]public float waitTime = .5f;  // Time until the trail block appears - camera dependent
     public float startDelay = 2.1f;
 
     int spawnedTrailCount;
@@ -241,7 +241,7 @@ public class TrailSpawner : MonoBehaviour
                     TargetScale = Block.TargetScale;
                     Block.transform.SetPositionAndRotation(transform.position - shipData.Course * offset, shipData.blockRotation);
                     Block.transform.parent = TrailContainer.transform;
-                    Block.waitTime = (skimmer.transform.localScale.z + TrailZScale) / ship.GetComponent<ShipStatus>().Speed;
+                    Block.waitTime = waitTillOutsideSkimmer ? (skimmer.transform.localScale.z + TrailZScale) / ship.GetComponent<ShipStatus>().Speed : waitTime;
                     Block.ownerId = isCharmed ? tempShip.Player.PlayerUUID : ship.Player.PlayerUUID;
                     Block.Player = isCharmed ? tempShip.Player : ship.Player;
                     Block.ChangeTeam(isCharmed ? tempShip.Team : ship.Team);
