@@ -7,13 +7,14 @@ using CosmicShore.Core;
 public class ConsumeBoostAction : ShipAction
 {
     ShipStatus shipData;
-    [SerializeField] float boostMultiplier = 4f;
+    [SerializeField] ElementalFloat boostMultiplier = new(4f);
     [SerializeField] float boostDuration = 4f;
     [SerializeField] int resourceIndex = 1;
     [SerializeField] float resourceCost = .25f;
 
     protected override void Start()
     {
+        BindElementalFloats(ship);
         shipData = ship.GetComponent<ShipStatus>();
         ship.boostMultiplier = 0;
     }
@@ -31,9 +32,9 @@ public class ConsumeBoostAction : ShipAction
     {
         ship.ResourceSystem.ChangeResourceAmount(resourceIndex,-resourceCost);
         shipData.Boosting = true;
-        ship.boostMultiplier += boostMultiplier;
+        ship.boostMultiplier += boostMultiplier.Value;
         yield return new WaitForSeconds(boostDuration);
-        ship.boostMultiplier -= boostMultiplier;
+        ship.boostMultiplier -= boostMultiplier.Value;
         if (ship.boostMultiplier <= 0)
         {
             shipData.Boosting = false;
