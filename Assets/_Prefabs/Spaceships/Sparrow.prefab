@@ -486,7 +486,7 @@ MonoBehaviour:
     Max: 0
     element: 0
   heatDecayRate: 0.01
-  overheatDuration: 3
+  overheatDuration: 6
 --- !u!1 &3938548809082189982
 GameObject:
   m_ObjectHideFlags: 0
@@ -1629,6 +1629,71 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.x
       value: 60
       objectReference: {fileID: 0}
+    - target: {fileID: 3297933952685862236, guid: 522a0b0de3eb7b64d8c6e0e35377de5f,
+        type: 3}
+      propertyPath: fuelLevelImages.Array.size
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 3297933952685862236, guid: 522a0b0de3eb7b64d8c6e0e35377de5f,
+        type: 3}
+      propertyPath: fuelLevelImages.Array.data[0]
+      value: 
+      objectReference: {fileID: 21300000, guid: e133b1889d61ae44c9fdd35c1dabbf7f,
+        type: 3}
+    - target: {fileID: 3297933952685862236, guid: 522a0b0de3eb7b64d8c6e0e35377de5f,
+        type: 3}
+      propertyPath: fuelLevelImages.Array.data[1]
+      value: 
+      objectReference: {fileID: 21300000, guid: 7b77abc35f87f5a48ad997306a16ceb8,
+        type: 3}
+    - target: {fileID: 3297933952685862236, guid: 522a0b0de3eb7b64d8c6e0e35377de5f,
+        type: 3}
+      propertyPath: fuelLevelImages.Array.data[2]
+      value: 
+      objectReference: {fileID: 21300000, guid: 0077c840150f714489726c7cb048306d,
+        type: 3}
+    - target: {fileID: 3297933952685862236, guid: 522a0b0de3eb7b64d8c6e0e35377de5f,
+        type: 3}
+      propertyPath: fuelLevelImages.Array.data[3]
+      value: 
+      objectReference: {fileID: 21300000, guid: 5d79a7d9a9022984e9fd0342be1aa314,
+        type: 3}
+    - target: {fileID: 3297933952685862236, guid: 522a0b0de3eb7b64d8c6e0e35377de5f,
+        type: 3}
+      propertyPath: fuelLevelImages.Array.data[4]
+      value: 
+      objectReference: {fileID: 21300000, guid: c899c5f9b824619488c8117cc0a541fe,
+        type: 3}
+    - target: {fileID: 3297933952685862236, guid: 522a0b0de3eb7b64d8c6e0e35377de5f,
+        type: 3}
+      propertyPath: fuelLevelImages.Array.data[5]
+      value: 
+      objectReference: {fileID: 21300000, guid: 113056ec433d60f4bb79caf2298864cd,
+        type: 3}
+    - target: {fileID: 3297933952685862236, guid: 522a0b0de3eb7b64d8c6e0e35377de5f,
+        type: 3}
+      propertyPath: fuelLevelImages.Array.data[6]
+      value: 
+      objectReference: {fileID: 21300000, guid: e2ddb0f81f8ddd64da3df955163dbfe9,
+        type: 3}
+    - target: {fileID: 3297933952685862236, guid: 522a0b0de3eb7b64d8c6e0e35377de5f,
+        type: 3}
+      propertyPath: fuelLevelImages.Array.data[7]
+      value: 
+      objectReference: {fileID: 21300000, guid: 0564333bcec6903449c3c51a0389cb29,
+        type: 3}
+    - target: {fileID: 3297933952685862236, guid: 522a0b0de3eb7b64d8c6e0e35377de5f,
+        type: 3}
+      propertyPath: fuelLevelImages.Array.data[8]
+      value: 
+      objectReference: {fileID: 21300000, guid: b55aa183c7caef942a1f62206e5f61c9,
+        type: 3}
+    - target: {fileID: 3297933952685862236, guid: 522a0b0de3eb7b64d8c6e0e35377de5f,
+        type: 3}
+      propertyPath: fuelLevelImages.Array.data[9]
+      value: 
+      objectReference: {fileID: 21300000, guid: 66c6deb46b2e9ae4ca0ab54821ed12dc,
+        type: 3}
     - target: {fileID: 4557619163437485348, guid: 522a0b0de3eb7b64d8c6e0e35377de5f,
         type: 3}
       propertyPath: m_AnchorMax.y
@@ -1809,6 +1874,12 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 7986126568409344049, guid: 522a0b0de3eb7b64d8c6e0e35377de5f,
+        type: 3}
+      propertyPath: m_Sprite
+      value: 
+      objectReference: {fileID: 21300000, guid: e133b1889d61ae44c9fdd35c1dabbf7f,
+        type: 3}
     - target: {fileID: 9167689459384443984, guid: 522a0b0de3eb7b64d8c6e0e35377de5f,
         type: 3}
       propertyPath: m_Name

@@ -64,6 +64,8 @@ public class OverheatingAction : ShipAction
 
         yield return new WaitForSeconds(overheatDuration);
 
+        isOverheating = false;
+        shipStatus.Overheating = false;
         StartCoroutine(DecayHeatCoroutine());
     }
 
@@ -74,9 +76,7 @@ public class OverheatingAction : ShipAction
             resourceSystem.ChangeResourceAmount(heatResourceIndex, -heatDecayRate);
             yield return new WaitForSeconds(0.1f);
         }
-
-        isOverheating = false;
-        shipStatus.Overheating = false;
+        
         heatResource.CurrentAmount = 0;
     }
 }
