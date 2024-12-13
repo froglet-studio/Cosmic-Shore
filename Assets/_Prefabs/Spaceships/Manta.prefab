@@ -1878,8 +1878,8 @@ MonoBehaviour:
     element: 0
   PitchScaler: 40
   YawScaler: 20
-  RollScaler: 50
-  RotationThrottleScaler: 0
+  RollScaler: 80
+  RotationThrottleScaler: 0.2
 --- !u!114 &874579555101021522
 MonoBehaviour:
   m_ObjectHideFlags: 0

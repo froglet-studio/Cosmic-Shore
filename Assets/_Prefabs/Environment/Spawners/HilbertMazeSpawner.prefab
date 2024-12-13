@@ -47,8 +47,8 @@ MonoBehaviour:
   trailBlock: {fileID: 4563009547826722997, guid: c2b586d4533428342ae6dc7849b41d8f,
     type: 3}
   crystal: {fileID: 6588436222817790495, guid: 6c8ac0b5807e5364b91988f2e68f05ef, type: 3}
-  width: 3
-  height: 3
+  Width: 2
+  Height: 2
   blockSize: 9
   padding: 1
 --- !u!1 &2530874233943709690
@@ -145,8 +145,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2993df820ffd6dd4ea539f0154b1c3cd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  iterations: 2
-  segmentLength: 30
+  iterations: 3
+  segmentLength: 20
 --- !u!1 &3611897804154000078
 GameObject:
   m_ObjectHideFlags: 0

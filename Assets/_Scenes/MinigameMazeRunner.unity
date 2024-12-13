@@ -195,6 +195,18 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 7d3c24f07511c2b449da87870cb86cce, type: 3}
+--- !u!114 &144550700 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 2530874233327190238, guid: c99a9e68c1fa5eb45be5281d31b07dd1,
+    type: 3}
+  m_PrefabInstance: {fileID: 2090136003}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dd7acff66a39b3747904e3a58ac654ab, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!4 &306935557 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 2530874233943709693, guid: c99a9e68c1fa5eb45be5281d31b07dd1,
@@ -445,10 +457,10 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1078953705}
+  - component: {fileID: 1078953711}
   - component: {fileID: 1078953707}
-  - component: {fileID: 1078953708}
-  - component: {fileID: 1078953709}
   - component: {fileID: 1078953710}
+  - component: {fileID: 1078953708}
   m_Layer: 0
   m_Name: Game
   m_TagString: Untagged
@@ -504,7 +516,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   EndOfRoundStatContainers: []
   nodeGame: 0
---- !u!114 &1078953709
+--- !u!114 &1078953710
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -513,7 +525,22 @@ MonoBehaviour:
   m_GameObject: {fileID: 1078953702}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2caefb27e1b37a9419bcf832339b9f10, type: 3}
+  m_Script: {fileID: 11500000, guid: 0a66c9f1814dd7a49a173c0f8d502ce0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  Display: {fileID: 0}
+  eliminatesPlayer: 0
+  duration: 80
+--- !u!114 &1078953711
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1078953702}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d9b3735d36f8eab44b0cefcedce80c83, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   gameMode: 25
@@ -533,30 +560,10 @@ MonoBehaviour:
   newGameStartDelay: 0.2
   ActivePlayer: {fileID: 0}
   Crystal: {fileID: 1788700246}
-  CrystalStartPosition: {x: 0, y: 0, z: 300}
-  SegmentSpawner: {fileID: 781179373}
-  numberOfSegments: 0
-  straightLineLength: 30
-  ResetTrails: 1
-  ScaleCrystalPositionWithIntensity: 1
-  ScaleLengthWithIntensity: 1
-  ScaleNumberOfSegmentsWithIntensity: 1
-  helix: {fileID: 0}
---- !u!114 &1078953710
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1078953702}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0a66c9f1814dd7a49a173c0f8d502ce0, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  Display: {fileID: 0}
-  eliminatesPlayer: 0
-  duration: 80
+  CrystalStartPosition: {x: 0, y: 0, z: 0}
+  SegmentSpawners:
+  - {fileID: 2040747043}
+  wall: {fileID: 144550700}
 --- !u!1001 &1142622546
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -826,10 +833,20 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 1471404063}
     m_Modifications:
+    - target: {fileID: 2530874233327190238, guid: c99a9e68c1fa5eb45be5281d31b07dd1,
+        type: 3}
+      propertyPath: width
+      value: 7
+      objectReference: {fileID: 0}
     - target: {fileID: 2530874233943709690, guid: c99a9e68c1fa5eb45be5281d31b07dd1,
         type: 3}
       propertyPath: m_Name
       value: HilbertMazeSpawner (1)
+      objectReference: {fileID: 0}
+    - target: {fileID: 2530874233943709690, guid: c99a9e68c1fa5eb45be5281d31b07dd1,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 2530874233943709693, guid: c99a9e68c1fa5eb45be5281d31b07dd1,
         type: 3}
@@ -1443,6 +1460,11 @@ PrefabInstance:
       propertyPath: m_Name
       value: HilbertMazeSpawner (3)
       objectReference: {fileID: 0}
+    - target: {fileID: 2530874233943709690, guid: c99a9e68c1fa5eb45be5281d31b07dd1,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 2530874233943709693, guid: c99a9e68c1fa5eb45be5281d31b07dd1,
         type: 3}
       propertyPath: m_RootOrder
@@ -1521,6 +1543,11 @@ PrefabInstance:
       propertyPath: m_Name
       value: HilbertMazeSpawner (2)
       objectReference: {fileID: 0}
+    - target: {fileID: 2530874233943709690, guid: c99a9e68c1fa5eb45be5281d31b07dd1,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 2530874233943709693, guid: c99a9e68c1fa5eb45be5281d31b07dd1,
         type: 3}
       propertyPath: m_RootOrder
@@ -1586,6 +1613,18 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: c99a9e68c1fa5eb45be5281d31b07dd1, type: 3}
+--- !u!114 &2040747043 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 2530874233943709692, guid: c99a9e68c1fa5eb45be5281d31b07dd1,
+    type: 3}
+  m_PrefabInstance: {fileID: 2090136003}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b5d3599573f5d3348865c8d5efe8c29f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1001 &2090136003
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1594,6 +1633,16 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 1471404063}
     m_Modifications:
+    - target: {fileID: 2530874233327190238, guid: c99a9e68c1fa5eb45be5281d31b07dd1,
+        type: 3}
+      propertyPath: Width
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 2530874233327190238, guid: c99a9e68c1fa5eb45be5281d31b07dd1,
+        type: 3}
+      propertyPath: Height
+      value: 3
+      objectReference: {fileID: 0}
     - target: {fileID: 2530874233943709690, guid: c99a9e68c1fa5eb45be5281d31b07dd1,
         type: 3}
       propertyPath: m_Name
@@ -1658,6 +1707,11 @@ PrefabInstance:
         type: 3}
       propertyPath: iterations
       value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 2530874233943709695, guid: c99a9e68c1fa5eb45be5281d31b07dd1,
+        type: 3}
+      propertyPath: segmentLength
+      value: 30
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

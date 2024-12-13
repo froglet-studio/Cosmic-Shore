@@ -25,7 +25,6 @@ namespace CosmicShore
             cameraManager.isOrthographic = isOrthographic;
 
             BindElementalFloats(ship);
-
             ApplyShipControlOverrides(ControlOverrides);
         }
 

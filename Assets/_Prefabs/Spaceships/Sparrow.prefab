@@ -481,11 +481,11 @@ MonoBehaviour:
   heatResourceIndex: 1
   heatBuildRate:
     Enabled: 0
-    Value: 0.02
+    Value: 0.01
     Min: 0
     Max: 0
     element: 0
-  heatDecayRate: 0.04
+  heatDecayRate: 0.01
   overheatDuration: 3
 --- !u!1 &3938548809082189982
 GameObject:
@@ -1059,7 +1059,7 @@ MonoBehaviour:
   trailBlock: {fileID: 4563009547826722997, guid: d24789d6e79c0044194a6017909ecfb4,
     type: 3}
   skimmer: {fileID: 2413128156359967549}
-  waitTillOutsideSkimmer: 0
+  waitTillOutsideSkimmer: 1
   shielded: 0
   initialWavelength: 7
   minWavelength: 7
@@ -1641,13 +1641,23 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4557619163437485348, guid: 522a0b0de3eb7b64d8c6e0e35377de5f,
         type: 3}
+      propertyPath: m_SizeDelta.x
+      value: 64
+      objectReference: {fileID: 0}
+    - target: {fileID: 4557619163437485348, guid: 522a0b0de3eb7b64d8c6e0e35377de5f,
+        type: 3}
+      propertyPath: m_SizeDelta.y
+      value: 64
+      objectReference: {fileID: 0}
+    - target: {fileID: 4557619163437485348, guid: 522a0b0de3eb7b64d8c6e0e35377de5f,
+        type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: -185.1
+      value: -100
       objectReference: {fileID: 0}
     - target: {fileID: 4557619163437485348, guid: 522a0b0de3eb7b64d8c6e0e35377de5f,
         type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: 178.72
+      value: 100
       objectReference: {fileID: 0}
     - target: {fileID: 5565095622771290071, guid: 522a0b0de3eb7b64d8c6e0e35377de5f,
         type: 3}
@@ -2497,6 +2507,12 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 7674566939765739280}
     m_Modifications:
+    - target: {fileID: 2002706443780225996, guid: eae510c1f9f999a4985c85fff770ec97,
+        type: 3}
+      propertyPath: m_Sprite
+      value: 
+      objectReference: {fileID: 21300000, guid: 4326cd8fb95b3e34ab41f098e75730a2,
+        type: 3}
     - target: {fileID: 2948368294133726821, guid: eae510c1f9f999a4985c85fff770ec97,
         type: 3}
       propertyPath: m_Pivot.x
@@ -2530,12 +2546,12 @@ PrefabInstance:
     - target: {fileID: 2948368294133726821, guid: eae510c1f9f999a4985c85fff770ec97,
         type: 3}
       propertyPath: m_SizeDelta.x
-      value: 54.4565
+      value: 64
       objectReference: {fileID: 0}
     - target: {fileID: 2948368294133726821, guid: eae510c1f9f999a4985c85fff770ec97,
         type: 3}
       propertyPath: m_SizeDelta.y
-      value: 52.1739
+      value: 64
       objectReference: {fileID: 0}
     - target: {fileID: 2948368294133726821, guid: eae510c1f9f999a4985c85fff770ec97,
         type: 3}
@@ -2575,12 +2591,12 @@ PrefabInstance:
     - target: {fileID: 2948368294133726821, guid: eae510c1f9f999a4985c85fff770ec97,
         type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: -103.2
+      value: -100
       objectReference: {fileID: 0}
     - target: {fileID: 2948368294133726821, guid: eae510c1f9f999a4985c85fff770ec97,
         type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: 205.1
+      value: 200
       objectReference: {fileID: 0}
     - target: {fileID: 2948368294133726821, guid: eae510c1f9f999a4985c85fff770ec97,
         type: 3}
@@ -2630,13 +2646,42 @@ PrefabInstance:
     - target: {fileID: 6188183580559045946, guid: eae510c1f9f999a4985c85fff770ec97,
         type: 3}
       propertyPath: m_Name
-      value: Wall Button
+      value: Missiles Display
       objectReference: {fileID: 0}
     - target: {fileID: 6188183580559045946, guid: eae510c1f9f999a4985c85fff770ec97,
         type: 3}
       propertyPath: m_Layer
       value: 8
       objectReference: {fileID: 0}
+    - target: {fileID: 6585623136266961214, guid: eae510c1f9f999a4985c85fff770ec97,
+        type: 3}
+      propertyPath: backgroundSprite
+      value: 
+      objectReference: {fileID: 21300000, guid: 4326cd8fb95b3e34ab41f098e75730a2,
+        type: 3}
+    - target: {fileID: 6585623136266961214, guid: eae510c1f9f999a4985c85fff770ec97,
+        type: 3}
+      propertyPath: fuelLevelImages.Array.size
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 6585623136266961214, guid: eae510c1f9f999a4985c85fff770ec97,
+        type: 3}
+      propertyPath: fuelLevelImages.Array.data[0]
+      value: 
+      objectReference: {fileID: 21300000, guid: 4326cd8fb95b3e34ab41f098e75730a2,
+        type: 3}
+    - target: {fileID: 6585623136266961214, guid: eae510c1f9f999a4985c85fff770ec97,
+        type: 3}
+      propertyPath: fuelLevelImages.Array.data[1]
+      value: 
+      objectReference: {fileID: 21300000, guid: 8306bc28766790c4e95529f8ed9ca0cb,
+        type: 3}
+    - target: {fileID: 6585623136266961214, guid: eae510c1f9f999a4985c85fff770ec97,
+        type: 3}
+      propertyPath: fuelLevelImages.Array.data[2]
+      value: 
+      objectReference: {fileID: 21300000, guid: dcdff3c20c9ecde42aaf995f157e2007,
+        type: 3}
     - target: {fileID: 7307032469615787033, guid: eae510c1f9f999a4985c85fff770ec97,
         type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
