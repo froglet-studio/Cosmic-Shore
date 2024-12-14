@@ -349,12 +349,13 @@ MonoBehaviour:
   MinimumSpeed: 0
   ThrottleScaler: 0
   DefaultMinimumSpeed: 0
-  DefaultThrottleScaler:
-    Enabled: 0
-    Value: 60
-    Min: 0
-    Max: 0
-    element: 0
+  DefaultThrottleScaler: 50
+  ThrottleScalerMultiplier:
+    Enabled: 1
+    Value: 1
+    Min: 1
+    Max: 2.5
+    element: 4
   PitchScaler: 50
   YawScaler: 50
   RollScaler: 50
@@ -846,6 +847,16 @@ PrefabInstance:
         type: 3}
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
+      propertyPath: Scale.Max
+      value: 160
+      objectReference: {fileID: 0}
+    - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
+      propertyPath: Scale.Min
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
       propertyPath: fuelAmount
       value: 0
       objectReference: {fileID: 0}
@@ -857,7 +868,7 @@ PrefabInstance:
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
       propertyPath: Scale.Value
-      value: 50
+      value: 10
       objectReference: {fileID: 0}
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
@@ -874,6 +885,16 @@ PrefabInstance:
         type: 3}
       propertyPath: skimVisualFX
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
+      propertyPath: Scale.Enabled
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
+      propertyPath: Scale.element
+      value: 3
       objectReference: {fileID: 0}
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
