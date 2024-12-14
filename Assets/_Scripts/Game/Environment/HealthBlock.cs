@@ -37,7 +37,7 @@ namespace CosmicShore
             base.Explode(impactVector, team, playerName, devastate);
             
             LifeForm.RemoveHealthBlock(this);
-            spindle.CheckForLife();           
+            spindle.CheckForLife();
         }
     }
 }

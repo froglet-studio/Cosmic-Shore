@@ -14,10 +14,11 @@ namespace CosmicShore
         HashSet<HealthBlock> healthBlocks = new HashSet<HealthBlock>();
         HashSet<Spindle> spindles = new HashSet<Spindle>();
 
-        private Material originalMaterial; // Store the original shared material
-        private Material temporaryMaterial; // Temporary material for animations
+        Material originalMaterial; // Store the original shared material
+        Material temporaryMaterial; // Temporary material for animations
+        Coroutine condenseCoroutine;
 
-        private IEnumerator Start()
+        IEnumerator Start()
         {
             if (RenderedObject.sharedMaterial == null)
             {
@@ -28,7 +29,7 @@ namespace CosmicShore
             // Cache the original shared material
             originalMaterial = RenderedObject.sharedMaterial;
 
-            StartCoroutine(CondenseCoroutine());
+            condenseCoroutine = StartCoroutine(CondenseCoroutine());
             if (LifeForm) LifeForm.AddSpindle(this);
             parentSpindle ??= transform.parent.GetComponentInParent<Spindle>();
             if (parentSpindle) parentSpindle.AddSpindle(this);
@@ -66,18 +67,13 @@ namespace CosmicShore
 
         public void EvaporateSpindle()
         {
-            if (gameObject.activeInHierarchy) StartCoroutine(EvaporateCoroutine());
+            if (gameObject.activeInHierarchy)
+                StartCoroutine(EvaporateCoroutine());
         }
 
-        private void UseTemporaryMaterial()
+        void RestoreOriginalMaterial()
         {
-            // Create a new temporary material based on the original material
-            temporaryMaterial = new Material(originalMaterial);
-            RenderedObject.material = temporaryMaterial;
-        }
-
-        private void RestoreOriginalMaterial()
-        {
+            //Debug.Log($"TemporaryMaterial - RestoreOriginalMaterial:{gameObject.GetInstanceID()}");
             // Restore the original shared material
             RenderedObject.material = originalMaterial;
 
@@ -89,17 +85,41 @@ namespace CosmicShore
             }
         }
 
+
+        void UseTemporaryMaterial()
+        {
+            //Debug.Log($"TemporaryMaterial - UseTemporaryMaterial:{gameObject.GetInstanceID()}");
+
+            // Create a new temporary material based on the original material
+            temporaryMaterial = new Material(originalMaterial);
+            RenderedObject.material = temporaryMaterial;
+        }
+
         IEnumerator EvaporateCoroutine()
         {
+            if (condenseCoroutine != null)
+            {
+                StopCoroutine(condenseCoroutine);
+                condenseCoroutine = null;
+            }
+
+            //Debug.Log($"TemporaryMaterial - EvaporateCoroutine:{gameObject.GetInstanceID()}");
             UseTemporaryMaterial(); // Switch to the temporary material
 
             float deathAnimation = 0f;
             float animationSpeed = 1f;
             while (deathAnimation < 1f)
             {
+                yield return null;
+
+                if (temporaryMaterial == null)
+                {
+                    //Debug.LogError($"TemporaryMaterial creation failed: {gameObject.GetInstanceID()}");
+                    yield break;
+                }
+
                 temporaryMaterial.SetFloat("_DeathAnimation", deathAnimation);
                 deathAnimation += Time.deltaTime * animationSpeed;
-                yield return null;
             }
 
             if (retainSpindle)
@@ -112,6 +132,7 @@ namespace CosmicShore
 
         IEnumerator CondenseCoroutine()
         {
+            //Debug.Log($"TemporaryMaterial - CondenseCoroutine:{gameObject.GetInstanceID()}");
             UseTemporaryMaterial(); // Switch to the temporary material
 
             float deathAnimation = 1f;
@@ -129,6 +150,7 @@ namespace CosmicShore
 
         void DisableSpindle()
         {
+            //Debug.Log($"TemporaryMaterial - DisableSpindle:{gameObject.GetInstanceID()}");
             RestoreOriginalMaterial();
 
             // check if scene is still loaded
@@ -148,8 +170,9 @@ namespace CosmicShore
             }
         }
 
-        private void OnDestroy()
+        void OnDestroy()
         {
+            //Debug.Log($"TemporaryMaterial - OnDestroy:{gameObject.GetInstanceID()}");
             DisableSpindle();
         }
     }
