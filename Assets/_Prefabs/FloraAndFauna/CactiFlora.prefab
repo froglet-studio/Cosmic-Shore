@@ -48,6 +48,7 @@ MonoBehaviour:
   healthBlock: {fileID: 6313579230210663873, guid: 1488a2ac58b2b4c43b14f84206bd9195,
     type: 3}
   spindle: {fileID: 5157459880619768690, guid: f7ec1bbfe690a184b935434a6e0dcb7a, type: 3}
+  healthBlocksForMaturity: 10
   minHealthBlocks: 5
   Team: 0
   growPeriod: 2

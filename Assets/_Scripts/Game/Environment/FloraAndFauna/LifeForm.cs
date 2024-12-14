@@ -9,7 +9,10 @@ namespace CosmicShore
     {
         [SerializeField] protected HealthBlock healthBlock;
         [SerializeField] protected Spindle spindle;
-        [SerializeField] protected int minHealthBlocks = 0;
+
+        [SerializeField] int healthBlocksForMaturity = 1; 
+        [SerializeField] int minHealthBlocks = 0;
+        bool mature = false;
 
         HashSet<HealthBlock> healthBlocks = new HashSet<HealthBlock>();
         protected HashSet<Spindle> spindles = new HashSet<Spindle>();
@@ -31,6 +34,7 @@ namespace CosmicShore
             healthBlock.ChangeTeam(Team);
             healthBlock.LifeForm = this;
             healthBlock.ownerId = $"{this} + {healthBlock} + {healthBlocks.Count}";
+            CheckIfMature();
         }
 
         public void AddSpindle(Spindle spindle)
@@ -54,12 +58,19 @@ namespace CosmicShore
         public virtual void RemoveHealthBlock(HealthBlock healthBlock)
         { 
             healthBlocks.Remove(healthBlock);
+            CheckIfDead();
         }
 
         public void CheckIfDead()
         {
-            if (spindles.Count == 0)
+            if (spindles.Count == 0 || (mature && healthBlocks.Count <= minHealthBlocks))
                 Die();
+        }
+
+        void  CheckIfMature()
+        {
+            if (healthBlocks.Count >= healthBlocksForMaturity)
+                mature = true;
         }
 
         protected virtual void Die()

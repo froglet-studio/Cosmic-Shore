@@ -25,7 +25,7 @@ MonoBehaviour:
   CellModifiers:
   - {fileID: 8058406376250941529, guid: daa37ae0e7af4b04383c1c4e6e76817d, type: 3}
   SupportedFlora:
-  - Flora: {fileID: 7514956980722975813, guid: 82e04cfd7f5b93f478b5fbfe40c2a2d7, type: 3}
+  - Flora: {fileID: 7514956980722975813, guid: 5f8219db5b2bd1d48b331f9eb3e04888, type: 3}
     SpawnProbability: 1
     initialSpawnCount: 6
     OverrideDefaultPlantPeriod: 1
