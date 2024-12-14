@@ -60,7 +60,7 @@ namespace CosmicShore.Game.Projectiles
             }
             if (other.TryGetComponent<ShipGeometry>(out var shipGeometry))
             {
-                Debug.Log($"projectile hit ship {shipGeometry}");
+                //Debug.Log($"projectile hit ship {shipGeometry}");
                 if (shipGeometry.Ship.Team == Team)
                     return;
 
@@ -68,7 +68,7 @@ namespace CosmicShore.Game.Projectiles
             }
             if (other.TryGetComponent<Crystal>(out var crystal))
             {
-                Debug.Log($"projectile hit crystal {crystal.Team}");
+                //Debug.Log($"projectile hit crystal {crystal.Team}");
                 if (crystal.Team == Team)
                     return;
                 PerformCrystalImpactEffects(crystal.crystalProperties);

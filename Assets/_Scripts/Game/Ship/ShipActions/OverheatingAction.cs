@@ -6,8 +6,8 @@ public class OverheatingAction : ShipAction
 {
     [SerializeField] ShipAction wrappedAction;
     [SerializeField] int heatResourceIndex = 0;
-    [SerializeField] ElementalFloat heatBuildRate = new(0.02f);
-    [SerializeField] float heatDecayRate = 0.04f;
+    [SerializeField] float heatBuildRate = 0.02f;
+    [SerializeField] ElementalFloat heatDecayRate = new(0.04f);
     [SerializeField] float overheatDuration = 3f;
 
     ShipStatus shipStatus;
@@ -53,7 +53,7 @@ public class OverheatingAction : ShipAction
     {
         while (heatResource.CurrentAmount < heatResource.MaxAmount)
         {
-            resourceSystem.ChangeResourceAmount(heatResourceIndex, heatBuildRate.Value);
+            resourceSystem.ChangeResourceAmount(heatResourceIndex, heatBuildRate);
             yield return new WaitForSeconds(0.1f);
         }
 
@@ -73,7 +73,7 @@ public class OverheatingAction : ShipAction
     {
         while (heatResource.CurrentAmount > 0)
         {
-            resourceSystem.ChangeResourceAmount(heatResourceIndex, -heatDecayRate);
+            resourceSystem.ChangeResourceAmount(heatResourceIndex, -heatDecayRate.Value);
             yield return new WaitForSeconds(0.1f);
         }
         

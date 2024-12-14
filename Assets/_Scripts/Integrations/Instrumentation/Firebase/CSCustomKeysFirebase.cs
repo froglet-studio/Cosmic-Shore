@@ -37,7 +37,7 @@
         
         public const string CaptainName = "cs_captain_name";
         
-        public const string ArcadeGameName = "cs_arcade_game_name";
+        public const string ArcadeGameName = "cs_arcade_name";
         
         public const string MissionName = "cs_mission_name";
         

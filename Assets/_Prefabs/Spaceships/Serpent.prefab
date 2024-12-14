@@ -772,7 +772,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c8f865735b87b6a43a367be3280d8332, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  boostMultiplier: 3
+  boostMultiplier:
+    Enabled: 1
+    Value: 1.2
+    Min: 1.2
+    Max: 2.7
+    element: 4
   boostDuration: 3
   resourceIndex: 1
   resourceCost: 0.25
@@ -1877,9 +1882,10 @@ MonoBehaviour:
   MinimumSpeed: 10
   ThrottleScaler: 50
   DefaultMinimumSpeed: 10
-  DefaultThrottleScaler:
+  DefaultThrottleScaler: 50
+  ThrottleScalerMultiplier:
     Enabled: 0
-    Value: 18
+    Value: 1
     Min: 0
     Max: 0
     element: 0

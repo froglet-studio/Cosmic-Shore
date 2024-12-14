@@ -1,3 +1,4 @@
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -38,9 +39,17 @@ namespace CosmicShore.App.UI.Views
 
                         shipSelection.SetActive(true);
                         if (SelectedModel as SO_Ship == ship)
-                            shipSelection.GetComponent<Image>().sprite = ship.CardSilohoutteActive;
+                        {
+                            shipSelection.GetComponent<Image>().sprite = ship.IconActive;
+                            shipSelection.transform.GetChild(0).gameObject.SetActive(true);
+                        }
                         else
-                            shipSelection.GetComponent<Image>().sprite = ship.CardSilohoutteInactive;
+                        {
+                            shipSelection.GetComponent<Image>().sprite = ship.IconInactive;
+                            shipSelection.transform.GetChild(0).gameObject.SetActive(false);
+                        }
+
+                        shipSelection.transform.GetChild(0).GetComponent<TMP_Text>().text = ship.Name.ToUpper();
                         shipSelection.GetComponent<Button>().onClick.RemoveAllListeners();
                         shipSelection.GetComponent<Button>().onClick.AddListener(() => Select(selectionIndex));
                         shipSelection.GetComponent<Button>().onClick.AddListener(() => ShipSelectionGrid.GetComponent<MenuAudio>().PlayAudio());

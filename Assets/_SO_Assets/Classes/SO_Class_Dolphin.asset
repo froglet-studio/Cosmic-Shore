@@ -16,9 +16,10 @@ MonoBehaviour:
   Name: Dolphin
   Description: 'Precision, drifting, sligshot, high-energy cannon, technical Get
     all this energy to charge up to a big '
-  IconActive: {fileID: 21300000, guid: 02f5fce2ffceabe4980869c3d0ac2709, type: 3}
-  IconInactive: {fileID: 21300000, guid: c07463db6e8244c45b639760efd18f9e, type: 3}
+  IconActive: {fileID: 21300000, guid: c07463db6e8244c45b639760efd18f9e, type: 3}
+  IconInactive: {fileID: 21300000, guid: b246047e69267514cbe744de4853c3a3, type: 3}
   PreviewImage: {fileID: 21300000, guid: 0cdee36486fec6e45a0d54e8998d722a, type: 3}
+  SquadImage: {fileID: 21300000, guid: 25940445b8b862b47bed3feb4ac02a4a, type: 3}
   TrailPreviewImage: {fileID: 21300000, guid: 08960a7a149292543b89ed3e6c09025c, type: 3}
   CardSilohoutteActive: {fileID: 21300000, guid: c07463db6e8244c45b639760efd18f9e,
     type: 3}
@@ -30,10 +31,10 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 81e1cc30914b65e48b7551479143a005, type: 2}
   - {fileID: 11400000, guid: 8fbab90eb61d9b8429305c20fe9eb239, type: 2}
   Captains:
-  - {fileID: 11400000, guid: 6ea494af7f39c7a43b023140ffdf2e68, type: 2}
-  - {fileID: 11400000, guid: 87b2a6ade75e4aa499cbc046a33f4f21, type: 2}
-  - {fileID: 11400000, guid: 97e84fe1d18e3bf41ae2e9e76aae7968, type: 2}
   - {fileID: 11400000, guid: cd84065f43a0cfa4c8a3e562dcb03176, type: 2}
+  - {fileID: 11400000, guid: 97e84fe1d18e3bf41ae2e9e76aae7968, type: 2}
+  - {fileID: 11400000, guid: 87b2a6ade75e4aa499cbc046a33f4f21, type: 2}
+  - {fileID: 11400000, guid: 6ea494af7f39c7a43b023140ffdf2e68, type: 2}
   Games:
   - {fileID: 11400000, guid: dae692490d41dda488bf199e4fdb30af, type: 2}
   - {fileID: 11400000, guid: 27f7ec1e006fb3a4cbb91572e943cf67, type: 2}

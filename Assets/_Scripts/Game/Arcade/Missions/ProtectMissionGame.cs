@@ -19,6 +19,16 @@ namespace CosmicShore
         [SerializeField] Player HostileAIOne;
         [SerializeField] Player HostileAITwo;
         [SerializeField] Player HostileAIThree;
+        [SerializeField] List<ShipTypes> EnemyShipClasses = new()
+        {
+            ShipTypes.Rhino,
+            ShipTypes.Manta,
+            ShipTypes.Dolphin,
+            ShipTypes.Serpent,
+            ShipTypes.Sparrow,
+            ShipTypes.Squirrel,
+        };
+
         [Range(1, 9)] public int CurrentDifficulty = 5;
 
         public float IntensityThreshold = 1;  // How much variance is allowed from mission difficulty in a wave
@@ -32,6 +42,9 @@ namespace CosmicShore
             Players[0].defaultShip = SquadSystem.SquadLeader.Ship.Class;
             SquadMateOne.defaultShip = SquadSystem.RogueOne.Ship.Class;
             SquadMateTwo.defaultShip = SquadSystem.RogueTwo.Ship.Class;
+            HostileAIOne.defaultShip = EnemyShipClasses[Random.Range(0, EnemyShipClasses.Count)];
+            HostileAITwo.defaultShip = EnemyShipClasses[Random.Range(0, EnemyShipClasses.Count)];
+            HostileAIThree.defaultShip = EnemyShipClasses[Random.Range(0, EnemyShipClasses.Count)];
         }
 
         public override void StartNewGame()
@@ -101,6 +114,8 @@ namespace CosmicShore
         {
             //yield return new WaitForSeconds(3);
 
+            var threatTeam = Teams.Gold;
+
             if (ThreatSpawner == null)
                 ThreatSpawner = FindAnyObjectByType<ThreatSpawner>();
 
@@ -118,6 +133,8 @@ namespace CosmicShore
             {
                 var threats = GenerateThreatWave(targetThreatLevel);
 
+                threatTeam = threatTeam == Teams.Gold ? Teams.Ruby : Teams.Gold;
+
                 foreach (Threat threat in threats)
                 {
                     elapsedThreat += threat.threatLevel;
@@ -125,9 +142,9 @@ namespace CosmicShore
                     Debug.LogWarning($"ThreatWaveCoroutine -  Spawning Threat:{threat.threatName}");
 
                     if (SpawnLocations != null)
-                        ThreatSpawner.SpawnThreat(threat, SpawnLocations[currentSpawnLocationIndex].position);
+                        ThreatSpawner.SpawnThreat(threat, threatTeam, SpawnLocations[currentSpawnLocationIndex].position);
                     else
-                        ThreatSpawner.SpawnThreat(threat);
+                        ThreatSpawner.SpawnThreat(threat, threatTeam);
                 }
 
                 if (SpawnLocations != null)

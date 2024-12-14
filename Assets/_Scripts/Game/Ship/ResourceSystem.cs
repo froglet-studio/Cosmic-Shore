@@ -7,7 +7,6 @@ using CosmicShore.Models.Enums;
 
 namespace CosmicShore.Core
 {
-
     [Serializable]
     public class Resource
     {

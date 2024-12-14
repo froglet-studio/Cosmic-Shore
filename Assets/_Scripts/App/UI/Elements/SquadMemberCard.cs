@@ -51,7 +51,7 @@ namespace CosmicShore
             Debug.Log($"UpdateView:{captain.Name}");
             CaptainName.text = captain.Name;
             CaptainImage.sprite = captain.Image;
-            ShipImage.sprite = captain.Ship.CardSilohoutteActive;
+            ShipImage.sprite = captain.Ship.SquadImage;
 
             if (ShowShipName) ShipName.text = captain.Ship.Name;
         }

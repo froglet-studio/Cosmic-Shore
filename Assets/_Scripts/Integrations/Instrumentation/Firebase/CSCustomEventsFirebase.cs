@@ -49,7 +49,7 @@
 
         public const string PurchaseCaptain = "cs_purchase_captain";
         
-        public const string PurchaseArcadeGame = "cs_purchase_arcade_game";
+        public const string PurchaseArcadeGame = "cs_purchase_arcade";
         
         public const string PurchaseMission = "cs_purchase_mission";
         

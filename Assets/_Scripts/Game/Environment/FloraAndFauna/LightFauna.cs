@@ -113,7 +113,8 @@ public class LightFauna : Fauna
     void Update()
     {
         transform.position += currentVelocity * Time.deltaTime;
-        transform.rotation = Quaternion.Lerp(transform.rotation, desiredRotation, Time.deltaTime * 5f);
+        var t = Mathf.Clamp(Time.deltaTime * 5f, 0, .99f);
+        transform.rotation = Quaternion.Lerp(transform.rotation, desiredRotation, t);
     }
 
     protected override void Spawn()
