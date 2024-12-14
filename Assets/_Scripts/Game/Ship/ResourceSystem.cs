@@ -95,9 +95,9 @@ namespace CosmicShore.Core
             {
                 foreach (var resource in Resources)
                 {
-                    Debug.Log("Resource: " + resource.Name + " before gaining Current Amount: " + resource.CurrentAmount); 
+                    //Debug.Log("Resource: " + resource.Name + " before gaining Current Amount: " + resource.CurrentAmount); 
                     resource.CurrentAmount = Mathf.Clamp(resource.CurrentAmount + resource.resourceGainRate, 0, resource.MaxAmount);
-                    Debug.Log("Resource: " + resource.Name + " after gaining Current Amount: " + resource.CurrentAmount);
+                    //Debug.Log("Resource: " + resource.Name + " after gaining Current Amount: " + resource.CurrentAmount);
                 }
                 yield return new WaitForSeconds(1);
             }

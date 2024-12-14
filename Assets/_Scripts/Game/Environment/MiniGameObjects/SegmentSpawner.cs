@@ -42,6 +42,7 @@ public class SegmentSpawner : MonoBehaviour
     public float StraightLineLength = 400f;
     public float RotationAmount = 10f;
     [HideInInspector] public int DifficultyAngle = 90;
+    [HideInInspector] public int IntensityLevel = 1;
 
     [SerializeField] bool InitializeOnStart;
     [SerializeField] public int NumberOfSegments = 1;
@@ -240,14 +241,15 @@ public class SegmentSpawner : MonoBehaviour
                 {
                     hilbertPositioner = gameObject.AddComponent<HilbertCurveLSystemPositioning>();
                 }
+                hilbertPositioner.segmentLength = 60 - (IntensityLevel * 10);
                 hilbertPositioner.GenerateHilbertCurve();
                 var positions = hilbertPositioner.GetPositions();
                 var rotations = hilbertPositioner.GetRotations();
                 if (spawnedItemCount < positions.Count)
                 {
                     spawned.transform.SetPositionAndRotation(
-                        positions[spawnedItemCount] + origin + transform.position,
-                        rotations[spawnedItemCount]
+                        Quaternion.Euler(0, 0, RotationAmount) * (positions[spawnedItemCount] + origin + transform.position),
+                        Quaternion.Euler(0, 0, RotationAmount) * rotations[spawnedItemCount] 
                     );
                 }
                 return;
@@ -266,7 +268,7 @@ public class SegmentSpawner : MonoBehaviour
             totalWeight += spawnSegmentWeights[i];
         }
 
-        return spawnableSegments[spawnIndex].Spawn();
+        return spawnableSegments[spawnIndex].Spawn(IntensityLevel);
     }
 
     void normalizeWeights()

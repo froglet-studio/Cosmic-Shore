@@ -52,24 +52,26 @@ MonoBehaviour:
   Team: 0
   growPeriod: 2
   PlantPeriod: 6
-  leafSize: {x: 4, y: 4, z: 1}
+  stunDuration: 1
+  leafSize: {x: 5, y: 5, z: 3}
   growthChance: 0.5
   minBranchAngle: 90
   maxBranchAngle: 90
-  minBranches: 10
-  maxBranches: 13
+  minBranches: 5
+  maxBranches: 9
   minTrunks: 1
   maxTrunks: 1
   minBranchLengthMultiplier: 4
   maxBranchLengthMultiplier: 5
   maxDepth: 100
   maxTotalSpawnedObjects: 5000
-  leafChance: -3
-  leafChanceIncrement: 0.01
+  leafChance: -2
+  leafChanceIncrement: 0.02
   isCrystaltropic: 0
   SecondarySpawn: {fileID: 0}
   hasPlantedSecondary: 0
   plantAroundCrystal: 1
+  branchingScaleFactor: 14
   goal: {x: 0, y: 0, z: 0}
   plantRadius: 180
 --- !u!1001 &5588088495769702632

@@ -13,7 +13,7 @@ namespace CosmicShore.Core
         [SerializeField] List<SkimmerStayEffects> blockStayEffects;
         [SerializeField] List<ShipImpactEffects> shipImpactEffects;
 
-        [SerializeField] float vaccumAmount = 50f;
+        [SerializeField] float vaccumAmount = 80f;
         [SerializeField] bool vacuumCrystal = true;
 
         [SerializeField] float particleDurationAtSpeedOne = 300f;

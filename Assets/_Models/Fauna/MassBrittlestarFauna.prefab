@@ -613,11 +613,11 @@ MonoBehaviour:
   Team: 0
   aggression: 0
   Population: {fileID: 0}
-  detectionRadius: 40
-  separationRadius: 30
+  detectionRadius: 70
+  separationRadius: 70
   consumeRadius: 40
   behaviorUpdateRate: 2
-  separationWeight: 4
+  separationWeight: 10
   cohesionWeight: 1
   goalWeight: 2
   minSpeed: 10
@@ -3527,7 +3527,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8ec45d1233573f9409107a25ab23b0c9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  cylinder: {fileID: 0}
   RenderedObject: {fileID: 7699484790300655702}
   parentSpindle: {fileID: 0}
   LifeForm: {fileID: 5351160486092638538}
@@ -3550,7 +3549,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8ec45d1233573f9409107a25ab23b0c9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  cylinder: {fileID: 0}
   RenderedObject: {fileID: 5432386326847444093}
   parentSpindle: {fileID: 0}
   LifeForm: {fileID: 5351160486092638538}
@@ -3609,7 +3607,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8ec45d1233573f9409107a25ab23b0c9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  cylinder: {fileID: 0}
   RenderedObject: {fileID: 2292046433133831624}
   parentSpindle: {fileID: 0}
   LifeForm: {fileID: 5351160486092638538}
@@ -3650,7 +3647,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8ec45d1233573f9409107a25ab23b0c9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  cylinder: {fileID: 0}
   RenderedObject: {fileID: 6316916111718758181}
   parentSpindle: {fileID: 0}
   LifeForm: {fileID: 5351160486092638538}
@@ -3697,7 +3693,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8ec45d1233573f9409107a25ab23b0c9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  cylinder: {fileID: 0}
   RenderedObject: {fileID: 7306882521846822617}
   parentSpindle: {fileID: 0}
   LifeForm: {fileID: 5351160486092638538}
@@ -3750,7 +3745,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8ec45d1233573f9409107a25ab23b0c9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  cylinder: {fileID: 0}
   RenderedObject: {fileID: 7430114606653773022}
   parentSpindle: {fileID: 0}
   LifeForm: {fileID: 5351160486092638538}
@@ -3779,7 +3773,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8ec45d1233573f9409107a25ab23b0c9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  cylinder: {fileID: 0}
   RenderedObject: {fileID: 7430970055095401836}
   parentSpindle: {fileID: 0}
   LifeForm: {fileID: 5351160486092638538}
@@ -3832,7 +3825,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8ec45d1233573f9409107a25ab23b0c9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  cylinder: {fileID: 0}
   RenderedObject: {fileID: 7216297290027478408}
   parentSpindle: {fileID: 0}
   LifeForm: {fileID: 5351160486092638538}
@@ -3927,7 +3919,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8ec45d1233573f9409107a25ab23b0c9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  cylinder: {fileID: 0}
   RenderedObject: {fileID: 5881214667817304712}
   parentSpindle: {fileID: 0}
   LifeForm: {fileID: 5351160486092638538}
@@ -3972,7 +3963,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8ec45d1233573f9409107a25ab23b0c9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  cylinder: {fileID: 0}
   RenderedObject: {fileID: 4327607367266289235}
   parentSpindle: {fileID: 0}
   LifeForm: {fileID: 5351160486092638538}
@@ -3995,7 +3985,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8ec45d1233573f9409107a25ab23b0c9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  cylinder: {fileID: 0}
   RenderedObject: {fileID: 5367215629879417128}
   parentSpindle: {fileID: 0}
   LifeForm: {fileID: 5351160486092638538}

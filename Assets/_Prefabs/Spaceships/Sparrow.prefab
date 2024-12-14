@@ -1180,6 +1180,7 @@ MonoBehaviour:
   lerpAmount: 2
   smallLerpAmount: 0.7
   animator: {fileID: 5362545824626142132}
+  hasBoost: 1
 --- !u!114 &2731003324702047408
 MonoBehaviour:
   m_ObjectHideFlags: 0

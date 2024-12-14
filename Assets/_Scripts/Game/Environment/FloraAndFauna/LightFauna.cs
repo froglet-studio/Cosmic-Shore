@@ -25,6 +25,8 @@ public class LightFauna : Fauna
     private Vector3 desiredDirection;
     private Quaternion desiredRotation;
 
+    [HideInInspector] public float Phase;
+
     protected override void Start()
     {
         base.Start();
@@ -36,7 +38,7 @@ public class LightFauna : Fauna
     {
         while (true)
         {
-            yield return new WaitForSeconds(behaviorUpdateRate);
+            yield return new WaitForSeconds(behaviorUpdateRate + Phase);
             UpdateBehavior();          
         }
     }

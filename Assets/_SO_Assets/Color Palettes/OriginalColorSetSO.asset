@@ -15,7 +15,7 @@ MonoBehaviour:
   JadeColors:
     ShipColor1: {r: 0, g: 0.04901961, b: 0.09411765, a: 1}
     ShipColor2: {r: 0, g: 0.3882353, b: 0.7490196, a: 1}
-    OutsideBlockColor: {r: 0, g: 0.03137255, b: 0.06666667, a: 1}
+    OutsideBlockColor: {r: 0, g: 0.08, b: 0.17, a: 1}
     ShieldedOutsideBlockColor: {r: 0.007843138, g: 0.13333334, b: 0.3882353, a: 1}
     SuperShieldedOutsideBlockColor: {r: 0.03529412, g: 0.20392157, b: 0.36862746,
       a: 1}
@@ -34,7 +34,7 @@ MonoBehaviour:
   RubyColors:
     ShipColor1: {r: 0.03529412, g: 0, b: 0.09411765, a: 1}
     ShipColor2: {r: 0.27450982, g: 0, b: 0.7490196, a: 1}
-    OutsideBlockColor: {r: 0.03529412, g: 0, b: 0.09411765, a: 1}
+    OutsideBlockColor: {r: 0.075, g: 0, b: 0.2, a: 1}
     ShieldedOutsideBlockColor: {r: 0.043137256, g: 0, b: 0.27450982, a: 1}
     SuperShieldedOutsideBlockColor: {r: 0.21176471, g: 0.12156863, b: 0.70980394,
       a: 1}

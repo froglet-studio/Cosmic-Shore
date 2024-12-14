@@ -8,6 +8,11 @@ public abstract class SpawnableAbstractBase : MonoBehaviour
     protected int Seed;
     protected List<Trail> trails = new List<Trail>();
 
+    public virtual GameObject Spawn(int intensityLevel = 1)
+    {
+        return Spawn();
+    }
+
     public abstract GameObject Spawn();
 
     public virtual void SetSeed(int seed)
@@ -25,12 +30,13 @@ public abstract class SpawnableAbstractBase : MonoBehaviour
         CreateBlock(position, lookPosition, blockId, trail, scale, trailBlock, container, Vector3.up, team);
     }
 
-    protected virtual void CreateBlock(Vector3 position, Vector3 lookPosition, string blockId, Trail trail, Vector3 scale, TrailBlock trailBlock, GameObject container, Vector3 up, Teams team = Teams.Blue)
+    protected virtual void CreateBlock(Vector3 position, Vector3 lookPosition, string blockId, Trail trail, Vector3 scale, TrailBlock trailBlock, GameObject container, Vector3 up, Teams team = Teams.Blue, bool relativeLook = true)
     {
         var Block = Instantiate(trailBlock);
         Block.ChangeTeam(team);
         Block.ownerId = "public";
-        Block.transform.SetPositionAndRotation(position, Quaternion.LookRotation(lookPosition - position, up));
+        if (relativeLook) Block.transform.SetPositionAndRotation(position, Quaternion.LookRotation(lookPosition - position, up));
+        else Block.transform.SetPositionAndRotation(position, Quaternion.identity);
         Block.transform.SetParent(container.transform, false);
         Block.ID = blockId;
         Block.TargetScale = scale;

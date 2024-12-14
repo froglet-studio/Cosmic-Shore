@@ -4,7 +4,7 @@ using System.Collections.Generic;
 public class HilbertCurveLSystemPositioning : MonoBehaviour
 {
     [SerializeField] private int iterations = 2;
-    [SerializeField] private float segmentLength = 1f;
+    public float segmentLength = 1f;
     //[SerializeField] private float wallHeight = 1f;
     //[SerializeField] private float wallThickness = 0.1f;
 

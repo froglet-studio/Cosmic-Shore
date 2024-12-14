@@ -52,3 +52,4 @@ MonoBehaviour:
   spawnCount: 5
   spawnRadius: 50
   formationSpread: 50
+  PhaseIncrease: 0.3
