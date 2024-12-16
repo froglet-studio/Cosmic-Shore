@@ -760,11 +760,11 @@ MonoBehaviour:
   Team: 0
   aggression: 0
   Population: {fileID: 0}
-  detectionRadius: 40
-  separationRadius: 30
+  detectionRadius: 100
+  separationRadius: 100
   consumeRadius: 40
   behaviorUpdateRate: 2
-  separationWeight: 4
+  separationWeight: 20
   cohesionWeight: 1
   goalWeight: 2
   minSpeed: 25
@@ -1181,10 +1181,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8ec45d1233573f9409107a25ab23b0c9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  cylinder: {fileID: 0}
   RenderedObject: {fileID: 4931713767661456478}
   parentSpindle: {fileID: 0}
   LifeForm: {fileID: 5351160486092638538}
+  retainSpindle: 0
 --- !u!1 &4404527662190514381
 GameObject:
   m_ObjectHideFlags: 0
@@ -1476,10 +1476,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8ec45d1233573f9409107a25ab23b0c9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  cylinder: {fileID: 0}
   RenderedObject: {fileID: 2443664578066746117}
   parentSpindle: {fileID: 0}
   LifeForm: {fileID: 5351160486092638538}
+  retainSpindle: 0
 --- !u!1 &5980138776295548165
 GameObject:
   m_ObjectHideFlags: 0
@@ -1524,10 +1524,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8ec45d1233573f9409107a25ab23b0c9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  cylinder: {fileID: 0}
   RenderedObject: {fileID: 5793232977924061616}
   parentSpindle: {fileID: 0}
   LifeForm: {fileID: 5351160486092638538}
+  retainSpindle: 0
 --- !u!1 &6485504098594869449
 GameObject:
   m_ObjectHideFlags: 0

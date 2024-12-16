@@ -5,6 +5,7 @@ namespace CosmicShore.Game.Animation
     class MantaAnimationContoller : ShipAnimation
     {
         [SerializeField] Animator animator;
+        [SerializeField] bool hasBoost = false;
 
         float currentPitch = 0;
         float currentYaw = 0;
@@ -14,8 +15,8 @@ namespace CosmicShore.Game.Animation
 
         protected override void PerformShipPuppetry(float pitch, float yaw, float roll, float throttle)
         {
-            if (ship.ShipStatus.Boosting) animator.SetBool("Boost", true);
-            else animator.SetBool("Boost", false);
+            if (ship.ShipStatus.Boosting && hasBoost) animator.SetBool("Boost", true);
+            else if (hasBoost) animator.SetBool("Boost", false);
 
             currentPitch = Mathf.Lerp(currentPitch, pitch, animationSpeed * Time.deltaTime);
             currentYaw = Mathf.Lerp(currentYaw, yaw, animationSpeed * Time.deltaTime);

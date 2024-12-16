@@ -30,7 +30,7 @@ Transform:
   m_GameObject: {fileID: 6588436222817790470}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 175.9}
+  m_LocalPosition: {x: 15, y: 15, z: 15}
   m_LocalScale: {x: 10, y: 10, z: 10}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -98,7 +98,7 @@ MonoBehaviour:
     inactiveMaterial: {fileID: 2100000, guid: 650830ed7524d074991cd928a5356f37, type: 2}
     spaceCrystalAnimator: {fileID: 0}
   shipImpactEffects: 1
-  RespawnOnImpact: 1
+  RespawnOnImpact: 0
   crystalImpactEffects: 
   AOEPrefab: {fileID: 0}
   maxExplosionScale: 0

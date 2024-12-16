@@ -240,7 +240,7 @@ namespace CosmicShore.Core
             explodingBlock.transform.eulerAngles = transform.eulerAngles;
             explodingBlock.transform.localScale = transform.lossyScale;
             explodingBlock.GetComponent<Renderer>().material = new Material(ThemeManager.Instance.GetTeamExplodingBlockMaterial(this.team));
-            explodingBlock.GetComponent<BlockImpact>().HandleImpact(impactVector / Mathf.Max(Volume,.001f));
+            explodingBlock.GetComponent<BlockImpact>().HandleImpact(impactVector / Volume);
 
             destroyed = true;
             devastated = devastate;

@@ -11,7 +11,9 @@ public class LightFaunaManager : Population
     
     [Header("Formation Settings")]
     [SerializeField] float formationSpread = 5f;
-    
+    [SerializeField] float PhaseIncrease;
+
+
     private List<LightFauna> activeFauna = new List<LightFauna>();
 
     protected override void Start()
@@ -32,6 +34,7 @@ public class LightFaunaManager : Population
             LightFauna fauna = Instantiate(lightFaunaPrefab, spawnPosition, Random.rotation, transform);
             fauna.Team = Team;
             fauna.Population = this;
+            fauna.Phase = PhaseIncrease*i;
             
             activeFauna.Add(fauna);
         }

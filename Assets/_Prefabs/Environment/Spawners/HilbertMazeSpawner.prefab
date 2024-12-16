@@ -100,18 +100,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   spawnableSegments:
   - {fileID: 2530874233327190238}
-  - {fileID: 5789731399990880432}
   positioningScheme: 16
   spawnSegmentWeights:
-  - 40
   - 1
   Seed: 0
   parent: {fileID: 0}
-  origin: {x: 500, y: 0, z: 0}
+  origin: {x: 0, y: 0, z: 0}
   Radius: 60
   StraightLineLength: 4
   RotationAmount: 20
   DifficultyAngle: 90
+  IntensityLevel: 1
   InitializeOnStart: 1
   NumberOfSegments: 63
   branchProbability: 0.2
@@ -145,7 +144,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2993df820ffd6dd4ea539f0154b1c3cd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  iterations: 3
+  iterations: 2
   segmentLength: 20
 --- !u!1 &3611897804154000078
 GameObject:

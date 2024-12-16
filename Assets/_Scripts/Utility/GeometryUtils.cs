@@ -51,4 +51,20 @@ public static class GeometryUtils
         }
         return distances;
     }
+
+    public static Vector3 ClampMagnitude(Vector3 vector, float minMagnitude, float maxMagnitude)
+    {
+        float sqrMagnitude = vector.sqrMagnitude;
+        float minSqrMagnitude = minMagnitude * minMagnitude;
+        float maxSqrMagnitude = maxMagnitude * maxMagnitude;
+
+        if (sqrMagnitude < minSqrMagnitude)
+            return vector.normalized * minMagnitude;  // Still need normalized here
+
+        if (sqrMagnitude > maxSqrMagnitude)
+            return vector.normalized * maxMagnitude;  // And here
+
+        return vector;
+    }
+
 }

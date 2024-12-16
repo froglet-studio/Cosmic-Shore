@@ -2435,7 +2435,7 @@ MonoBehaviour:
   DefaultMinimumSpeed: 10
   DefaultThrottleScaler:
     Enabled: 0
-    Value: 50
+    Value: 70
     Min: 0
     Max: 0
     element: 0
@@ -3418,7 +3418,7 @@ PrefabInstance:
     - target: {fileID: 8790614297745682555, guid: ef25530d9073ecc48a31d7bc0700e2c2,
         type: 3}
       propertyPath: m_LocalPosition.z
-      value: -4.72
+      value: -7.99
       objectReference: {fileID: 0}
     - target: {fileID: 8790614297745682555, guid: ef25530d9073ecc48a31d7bc0700e2c2,
         type: 3}

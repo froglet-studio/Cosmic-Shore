@@ -12,5 +12,6 @@ namespace CosmicShore.Game.Arcade
         CrystalsCollected = 7,
         OmniCrystalsCollected = 8,
         ElementalCrystalsCollected = 9,
+        CrystalsCollectedScaleWithSize
     }
 }

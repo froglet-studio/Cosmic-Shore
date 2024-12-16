@@ -1878,7 +1878,7 @@ MonoBehaviour:
     element: 0
   PitchScaler: 40
   YawScaler: 20
-  RollScaler: 80
+  RollScaler: 100
   RotationThrottleScaler: 0.2
 --- !u!114 &874579555101021522
 MonoBehaviour:
@@ -2004,6 +2004,7 @@ MonoBehaviour:
   lerpAmount: 2
   smallLerpAmount: 0.7
   animator: {fileID: 1619232438159974630}
+  hasBoost: 0
 --- !u!114 &6293426128044408357
 MonoBehaviour:
   m_ObjectHideFlags: 0

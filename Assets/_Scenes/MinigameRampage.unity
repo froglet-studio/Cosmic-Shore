@@ -881,9 +881,11 @@ MonoBehaviour:
   - {fileID: 3362770344326874105, guid: bf02b0d90ed2d2d4fad356470b085936, type: 3}
   - {fileID: 7021355307236778, guid: 29118f7a9b6b2d94ea67e476c45c19c4, type: 3}
   - {fileID: 4496723737295881431, guid: 2012da5b2a1b824459cafdd2959f61b6, type: 3}
+  - {fileID: 4496723737295881431, guid: a4f1daa7bf09d8e4a9752b265ead3a05, type: 3}
   positioningScheme: 0
   spawnSegmentWeights:
   - 6
+  - 1
   - 1
   - 1
   Seed: 0
@@ -893,6 +895,7 @@ MonoBehaviour:
   StraightLineLength: 400
   RotationAmount: 10
   DifficultyAngle: 90
+  IntensityLevel: 1
   InitializeOnStart: 0
   NumberOfSegments: 1
   branchProbability: 0.2

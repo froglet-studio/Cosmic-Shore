@@ -13,7 +13,7 @@ namespace CosmicShore.Core
         [SerializeField] List<SkimmerStayEffects> blockStayEffects;
         [SerializeField] List<ShipImpactEffects> shipImpactEffects;
 
-        [SerializeField] float vaccumAmount = 50f;
+        [SerializeField] float vaccumAmount = 80f;
         [SerializeField] bool vacuumCrystal = true;
 
         [SerializeField] float particleDurationAtSpeedOne = 300f;
@@ -348,7 +348,7 @@ namespace CosmicShore.Core
 
         void ScalePitchAndYaw(float combinedWeight)
         {
-            ship.ShipTransformer.PitchScaler = ship.ShipTransformer.YawScaler = 40 * (1 + (.5f*combinedWeight));
+            ship.ShipTransformer.PitchScaler = ship.ShipTransformer.YawScaler = 150 * (1 + (.5f*combinedWeight));
         }
 
         void ScaleHapticWithDistance(float combinedWeight)
@@ -359,7 +359,7 @@ namespace CosmicShore.Core
         void Boost(float combinedWeight)
         {
             ship.ShipStatus.Boosting = true;
-            ship.boostMultiplier = 1 + (3 * combinedWeight);
+            ship.boostMultiplier = 1 + (2.5f * combinedWeight);
         }
 
         // Function to compute the Gaussian value at a given x

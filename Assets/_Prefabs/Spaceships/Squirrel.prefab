@@ -349,17 +349,17 @@ MonoBehaviour:
   MinimumSpeed: 0
   ThrottleScaler: 0
   DefaultMinimumSpeed: 0
-  DefaultThrottleScaler: 50
+  DefaultThrottleScaler: 45
   ThrottleScalerMultiplier:
     Enabled: 1
     Value: 1
     Min: 1
     Max: 2.5
     element: 4
-  PitchScaler: 50
-  YawScaler: 50
-  RollScaler: 50
-  RotationThrottleScaler: 0.3
+  PitchScaler: 150
+  YawScaler: 150
+  RollScaler: 110
+  RotationThrottleScaler: 0
 --- !u!114 &874579555101021522
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -475,6 +475,7 @@ MonoBehaviour:
   lerpAmount: 2
   smallLerpAmount: 0.7
   animator: {fileID: 2725764652992229129}
+  hasBoost: 0
 --- !u!114 &5086360743770514783
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -614,7 +615,7 @@ PrefabInstance:
     - target: {fileID: 8790614297745682555, guid: ef25530d9073ecc48a31d7bc0700e2c2,
         type: 3}
       propertyPath: m_LocalPosition.x
-      value: 1.2
+      value: 4
       objectReference: {fileID: 0}
     - target: {fileID: 8790614297745682555, guid: ef25530d9073ecc48a31d7bc0700e2c2,
         type: 3}
@@ -624,7 +625,7 @@ PrefabInstance:
     - target: {fileID: 8790614297745682555, guid: ef25530d9073ecc48a31d7bc0700e2c2,
         type: 3}
       propertyPath: m_LocalPosition.z
-      value: -4.72
+      value: -8
       objectReference: {fileID: 0}
     - target: {fileID: 8790614297745682555, guid: ef25530d9073ecc48a31d7bc0700e2c2,
         type: 3}
@@ -688,7 +689,7 @@ PrefabInstance:
     - target: {fileID: 8790614297745682555, guid: ef25530d9073ecc48a31d7bc0700e2c2,
         type: 3}
       propertyPath: m_LocalPosition.x
-      value: -1.2
+      value: -4
       objectReference: {fileID: 0}
     - target: {fileID: 8790614297745682555, guid: ef25530d9073ecc48a31d7bc0700e2c2,
         type: 3}
@@ -698,7 +699,7 @@ PrefabInstance:
     - target: {fileID: 8790614297745682555, guid: ef25530d9073ecc48a31d7bc0700e2c2,
         type: 3}
       propertyPath: m_LocalPosition.z
-      value: -4.72
+      value: -8
       objectReference: {fileID: 0}
     - target: {fileID: 8790614297745682555, guid: ef25530d9073ecc48a31d7bc0700e2c2,
         type: 3}

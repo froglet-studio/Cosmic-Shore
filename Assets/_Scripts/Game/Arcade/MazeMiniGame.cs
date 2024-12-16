@@ -8,9 +8,7 @@ namespace CosmicShore.Game.Arcade
     {
         [SerializeField] Crystal Crystal;
         [SerializeField] Vector3 CrystalStartPosition;
-        [SerializeField] List<SegmentSpawner> SegmentSpawners;
-        [SerializeField] SpawnableWall wall;
-
+        [SerializeField] SegmentSpawner SegmentSpawner;
 
 
         //public static virtual ShipTypes PlayerShipType = ShipTypes.Rhino;
@@ -32,14 +30,14 @@ namespace CosmicShore.Game.Arcade
 
             TrailSpawner.NukeTheTrails();
 
-            foreach (var segmentSpawner in SegmentSpawners)
+            for (int i = 0; i < IntensityLevel; i++)
             {
-                segmentSpawner.Initialize();
-                segmentSpawner.Seed = new System.Random().Next();
-                wall.Height = 6 - IntensityLevel;
-                wall.Width = 6 - IntensityLevel;
+                var maze = Instantiate(SegmentSpawner);
+                maze.Seed = new System.Random().Next();
+                maze.origin = Random.insideUnitSphere * 400;
+                maze.RotationAmount = Random.Range(0, 360);
+                maze.IntensityLevel = IntensityLevel;
             }
-
         }
     }
 }

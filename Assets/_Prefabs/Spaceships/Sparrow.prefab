@@ -479,14 +479,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   wrappedAction: {fileID: 1854718600018079252}
   heatResourceIndex: 1
-  heatBuildRate: 0.02
+  heatBuildRate: 0.01
   heatDecayRate:
     Enabled: 1
-    Value: 0.05
-    Min: 0.05
-    Max: 0.8
+    Value: 0.01
+    Min: 0.01
+    Max: 0.08
     element: 1
-  overheatDuration: 6
+  overheatDuration: 7
 --- !u!1 &3938548809082189982
 GameObject:
   m_ObjectHideFlags: 0
@@ -967,7 +967,7 @@ MonoBehaviour:
   maxExplosionScale: 500
   trailBlockImpactEffects: 12000000
   blockChargeChange: 0
-  boostMultiplier: 5
+  boostMultiplier: 4
   bottomEdgeButtons: 0
   Inertia: 70
   inputEventShipActions:
@@ -1034,7 +1034,7 @@ MonoBehaviour:
   MinimumSpeed: 10
   ThrottleScaler: 50
   DefaultMinimumSpeed: 10
-  DefaultThrottleScaler: 50
+  DefaultThrottleScaler: 25
   ThrottleScalerMultiplier:
     Enabled: 0
     Value: 1
@@ -1044,7 +1044,7 @@ MonoBehaviour:
   PitchScaler: 80
   YawScaler: 80
   RollScaler: 30
-  RotationThrottleScaler: 1
+  RotationThrottleScaler: 0.1
 --- !u!114 &874579555101021522
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1181,6 +1181,7 @@ MonoBehaviour:
   lerpAmount: 2
   smallLerpAmount: 0.7
   animator: {fileID: 5362545824626142132}
+  hasBoost: 1
 --- !u!114 &2731003324702047408
 MonoBehaviour:
   m_ObjectHideFlags: 0
