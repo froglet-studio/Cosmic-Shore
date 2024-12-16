@@ -1,5 +1,4 @@
-﻿using CosmicShore.App.UI;
-using CosmicShore.Game.Arcade;
+﻿using CosmicShore.Game.Arcade;
 using CosmicShore.Integrations.PlayFab.Economy;
 using CosmicShore.Models.Enums;
 using CosmicShore.Utility.Singleton;
@@ -52,9 +51,11 @@ namespace CosmicShore.Core
             MiniGame.IsMission = true;
             Hangar.Instance.SetAiIntensityLevel(intensity);
 
+            /*
             var screenSwitcher = FindAnyObjectByType<ScreenSwitcher>();
             screenSwitcher.SetReturnToScreen(ScreenSwitcher.MenuScreens.PORT);
             screenSwitcher.SetReturnToModal(ScreenSwitcher.ModalWindows.FACTION_MISSION);
+            */
 
             StartCoroutine(LaunchGameCoroutine(MissionLookup[gameMode].SceneName));
         }
@@ -70,10 +71,12 @@ namespace CosmicShore.Core
             MiniGame.IsMission = false;
             Hangar.Instance.SetAiIntensityLevel(intensity);
 
+            /*
             var screenSwitcher = FindAnyObjectByType<ScreenSwitcher>();
             screenSwitcher.SetReturnToScreen(ScreenSwitcher.MenuScreens.ARCADE);
             if (isDailyChallenge)
                 screenSwitcher.SetReturnToModal(ScreenSwitcher.ModalWindows.DAILY_CHALLENGE);
+            */
 
             StartCoroutine(LaunchGameCoroutine(ArcadeGameLookup[gameMode].SceneName));
         }
@@ -89,6 +92,7 @@ namespace CosmicShore.Core
             MiniGame.IsMission = false;
             Hangar.Instance.SetAiIntensityLevel(intensity);
 
+            /*
             var screenSwitcher = FindAnyObjectByType<ScreenSwitcher>();
             if (isDailyChallenge)
             {
@@ -97,6 +101,7 @@ namespace CosmicShore.Core
             }
             else
                 screenSwitcher.SetReturnToScreen(ScreenSwitcher.MenuScreens.HANGAR);
+            */
 
             StartCoroutine(LaunchGameCoroutine(TrainingGameLookup[gameMode].Game.SceneName));
         }

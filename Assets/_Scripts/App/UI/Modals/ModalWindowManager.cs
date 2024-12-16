@@ -1,5 +1,6 @@
 using System.Collections;
 using UnityEngine;
+using static CosmicShore.App.UI.ScreenSwitcher;
 
 namespace CosmicShore.App.UI.Modals
 {
@@ -8,12 +9,15 @@ namespace CosmicShore.App.UI.Modals
         [Header("Settings")]
         public bool sharpAnimations;
 
+        [SerializeField] public ModalWindows ModalType;
+
         Animator windowAnimator;
         bool isOn;
 
         protected virtual void Start()
         {
             windowAnimator = GetComponent<Animator>();
+            gameObject.SetActive(false);
         }
 
         public void ModalWindowIn()
@@ -22,6 +26,10 @@ namespace CosmicShore.App.UI.Modals
 
             if (isOn == false)
             {
+                var screenSwitcher = FindAnyObjectByType<ScreenSwitcher>();
+                if (screenSwitcher != null)
+                    screenSwitcher.PushModal(ModalType);
+
                 if (sharpAnimations == false)
                     windowAnimator.CrossFade("Window In", 0.1f);
                 else
@@ -35,6 +43,10 @@ namespace CosmicShore.App.UI.Modals
         {
             if (isOn)
             {
+                var screenSwitcher = FindAnyObjectByType<ScreenSwitcher>();
+                if (screenSwitcher != null)
+                    screenSwitcher.PopModal();
+
                 if (sharpAnimations == false)
                     windowAnimator.CrossFade("Window Out", 0.1f);
                 else

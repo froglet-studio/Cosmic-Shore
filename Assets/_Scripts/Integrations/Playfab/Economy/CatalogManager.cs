@@ -315,8 +315,8 @@ namespace CosmicShore.Integrations.PlayFab.Economy
 
             // TODO: verify ownership of expected items to grant, update player data to have inventory granted flag set
 
-
-            OnInventoryChange?.Invoke();
+            //OnInventoryChange?.Invoke();
+            LoadPlayerInventory();
         }
         
 
@@ -367,9 +367,6 @@ namespace CosmicShore.Integrations.PlayFab.Economy
                     item.Id, item.Amount.ToString(), item.Type);
 
                 var virtualItem = ModelConversionService.ConvertInventoryItemToVirtualItem(item);
-                
-
-
 
                 if (virtualItem != null)   // Can be null if inventory item no longer exists in the catalog
                     AddToInventory(virtualItem);
@@ -404,6 +401,8 @@ namespace CosmicShore.Integrations.PlayFab.Economy
                 case "Captain":
                     Debug.LogFormat("{0} - {1} - Adding Captain", nameof(CatalogManager), nameof(AddToInventory));
                     Inventory.captains.Add(item);
+                    // If we ever own a captain, consider it encountered
+                    CaptainManager.Instance.EncounterCaptain(item.Name);
                     break;
                 case "Class":
                     Debug.LogFormat("{0} - {1} - Adding Ship",nameof(CatalogManager), nameof(AddToInventory));

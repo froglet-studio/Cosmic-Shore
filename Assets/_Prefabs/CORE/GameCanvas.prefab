@@ -439,6 +439,7 @@ RectTransform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 236125781}
+  - {fileID: 8735311327974175150}
   m_Father: {fileID: 2049118375}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
@@ -564,7 +565,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 489b5e752b1216347958ebafbbaf83ba, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  ActiveMenuScreens: 
+  ActiveModalWindows: 
   activationButton: 6
+  activationButtonImage: {fileID: 7807410459988682646}
+  TriangleButtonSprite: {fileID: 21300000, guid: de55abd321db51b4e87d361ff77052f0,
+    type: 3}
+  CircleButtonSprite: {fileID: 21300000, guid: a26d4cec87817d249bdd1ecad3fb2d1e, type: 3}
+  CrossButtonSprite: {fileID: 21300000, guid: 17777ae79a22f584bb62ff8557b54a81, type: 3}
+  SquareButtonSprite: {fileID: 21300000, guid: e0ae97d16a0181e4d8ec1bdfbf699727, type: 3}
+  YButtonSprite: {fileID: 21300000, guid: 79d77e3caa624a447a3c1663b1fd54f2, type: 3}
+  BButtonSprite: {fileID: 21300000, guid: 4a9fd36f965cd7545b741fe9704af233, type: 3}
+  AButtonSprite: {fileID: 21300000, guid: 7b8ac7050cc286f44a860c98ae920c9a, type: 3}
+  XButtonSprite: {fileID: 21300000, guid: c4dc29f0c8132254fbc46f13a79c8d8c, type: 3}
 --- !u!114 &1092805372
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -747,6 +760,7 @@ RectTransform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1203736745}
+  - {fileID: 5294911869759055652}
   m_Father: {fileID: 2049118375}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
@@ -872,7 +886,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 489b5e752b1216347958ebafbbaf83ba, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  ActiveMenuScreens: 
+  ActiveModalWindows: 
   activationButton: 7
+  activationButtonImage: {fileID: 2982108693135987649}
+  TriangleButtonSprite: {fileID: 21300000, guid: de55abd321db51b4e87d361ff77052f0,
+    type: 3}
+  CircleButtonSprite: {fileID: 21300000, guid: a26d4cec87817d249bdd1ecad3fb2d1e, type: 3}
+  CrossButtonSprite: {fileID: 21300000, guid: 17777ae79a22f584bb62ff8557b54a81, type: 3}
+  SquareButtonSprite: {fileID: 21300000, guid: e0ae97d16a0181e4d8ec1bdfbf699727, type: 3}
+  YButtonSprite: {fileID: 21300000, guid: 79d77e3caa624a447a3c1663b1fd54f2, type: 3}
+  BButtonSprite: {fileID: 21300000, guid: 4a9fd36f965cd7545b741fe9704af233, type: 3}
+  AButtonSprite: {fileID: 21300000, guid: 7b8ac7050cc286f44a860c98ae920c9a, type: 3}
+  XButtonSprite: {fileID: 21300000, guid: c4dc29f0c8132254fbc46f13a79c8d8c, type: 3}
 --- !u!114 &1806468744
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -962,9 +988,9 @@ RectTransform:
   - {fileID: 516851312900480073}
   m_Father: {fileID: 2901154640445768807}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 0, y: 0}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: 0, y: -92}
   m_SizeDelta: {x: 500, y: 48}
   m_Pivot: {x: 0, y: 1}
 --- !u!222 &2025887674831335707
@@ -1140,6 +1166,156 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!1 &2187055399178032881
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 8735311327974175150}
+  - component: {fileID: 5983781088289407356}
+  - component: {fileID: 7807410459988682646}
+  m_Layer: 5
+  m_Name: ControllerHintImage
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &8735311327974175150
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2187055399178032881}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1092805371}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 1, y: 1}
+  m_AnchorMax: {x: 1, y: 1}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 20, y: 20}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!222 &5983781088289407356
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2187055399178032881}
+  m_CullTransparentMesh: 1
+--- !u!114 &7807410459988682646
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2187055399178032881}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Material: {fileID: 0}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_RaycastTarget: 1
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
+  m_Maskable: 1
+  m_OnCullStateChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  m_Sprite: {fileID: 0}
+  m_Type: 0
+  m_PreserveAspect: 0
+  m_FillCenter: 1
+  m_FillMethod: 4
+  m_FillAmount: 1
+  m_FillClockwise: 1
+  m_FillOrigin: 0
+  m_UseSpriteMesh: 0
+  m_PixelsPerUnitMultiplier: 1
+--- !u!1 &3282571026465429272
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 5294911869759055652}
+  - component: {fileID: 7235192538636260357}
+  - component: {fileID: 2982108693135987649}
+  m_Layer: 5
+  m_Name: ControllerHintImage
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &5294911869759055652
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3282571026465429272}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1806468743}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 1, y: 1}
+  m_AnchorMax: {x: 1, y: 1}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 20, y: 20}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!222 &7235192538636260357
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3282571026465429272}
+  m_CullTransparentMesh: 1
+--- !u!114 &2982108693135987649
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3282571026465429272}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Material: {fileID: 0}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_RaycastTarget: 1
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
+  m_Maskable: 1
+  m_OnCullStateChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  m_Sprite: {fileID: 0}
+  m_Type: 0
+  m_PreserveAspect: 0
+  m_FillCenter: 1
+  m_FillMethod: 4
+  m_FillAmount: 1
+  m_FillClockwise: 1
+  m_FillOrigin: 0
+  m_UseSpriteMesh: 0
+  m_PixelsPerUnitMultiplier: 1
 --- !u!1 &3464991219335827530
 GameObject:
   m_ObjectHideFlags: 0
@@ -1365,6 +1541,156 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!1 &4223553953928884156
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 297736195668042985}
+  - component: {fileID: 4738208959750530362}
+  - component: {fileID: 6269223719381160292}
+  m_Layer: 5
+  m_Name: ControllerButtonImage
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &297736195668042985
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4223553953928884156}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5054612728449862293}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 1, y: 1}
+  m_AnchorMax: {x: 1, y: 1}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 20, y: 20}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!222 &4738208959750530362
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4223553953928884156}
+  m_CullTransparentMesh: 1
+--- !u!114 &6269223719381160292
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4223553953928884156}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Material: {fileID: 0}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_RaycastTarget: 1
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
+  m_Maskable: 1
+  m_OnCullStateChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  m_Sprite: {fileID: 0}
+  m_Type: 0
+  m_PreserveAspect: 0
+  m_FillCenter: 1
+  m_FillMethod: 4
+  m_FillAmount: 1
+  m_FillClockwise: 1
+  m_FillOrigin: 0
+  m_UseSpriteMesh: 0
+  m_PixelsPerUnitMultiplier: 1
+--- !u!1 &4576152947199171437
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 220714542069358527}
+  - component: {fileID: 6154229195304332715}
+  - component: {fileID: 4500359448993676805}
+  m_Layer: 5
+  m_Name: ControllerButtonImage
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &220714542069358527
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4576152947199171437}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5054612726792906828}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 1, y: 1}
+  m_AnchorMax: {x: 1, y: 1}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 20, y: 20}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!222 &6154229195304332715
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4576152947199171437}
+  m_CullTransparentMesh: 1
+--- !u!114 &4500359448993676805
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4576152947199171437}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Material: {fileID: 0}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_RaycastTarget: 1
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
+  m_Maskable: 1
+  m_OnCullStateChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  m_Sprite: {fileID: 0}
+  m_Type: 0
+  m_PreserveAspect: 0
+  m_FillCenter: 1
+  m_FillMethod: 4
+  m_FillAmount: 1
+  m_FillClockwise: 1
+  m_FillOrigin: 0
+  m_UseSpriteMesh: 0
+  m_PixelsPerUnitMultiplier: 1
 --- !u!1 &5497835173863578963
 GameObject:
   m_ObjectHideFlags: 0
@@ -1425,7 +1751,7 @@ Canvas:
   m_OverrideSorting: 0
   m_OverridePixelPerfect: 0
   m_SortingBucketNormalizedSize: 0
-  m_VertexColorAlwaysGammaSpace: 0
+  m_VertexColorAlwaysGammaSpace: 1
   m_AdditionalShaderChannelsFlag: 25
   m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: 0
@@ -2393,15 +2719,68 @@ PrefabInstance:
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
       value: StarWriter.UI.PauseMenu, Assembly-CSharp
       objectReference: {fileID: 0}
+    - target: {fileID: 750320515659381802, guid: 494deef066b46a24a9b5226c4203833c,
+        type: 3}
+      propertyPath: AButtonSprite
+      value: 
+      objectReference: {fileID: 21300000, guid: 7b8ac7050cc286f44a860c98ae920c9a,
+        type: 3}
+    - target: {fileID: 750320515659381802, guid: 494deef066b46a24a9b5226c4203833c,
+        type: 3}
+      propertyPath: BButtonSprite
+      value: 
+      objectReference: {fileID: 21300000, guid: 4a9fd36f965cd7545b741fe9704af233,
+        type: 3}
+    - target: {fileID: 750320515659381802, guid: 494deef066b46a24a9b5226c4203833c,
+        type: 3}
+      propertyPath: XButtonSprite
+      value: 
+      objectReference: {fileID: 21300000, guid: c4dc29f0c8132254fbc46f13a79c8d8c,
+        type: 3}
+    - target: {fileID: 750320515659381802, guid: 494deef066b46a24a9b5226c4203833c,
+        type: 3}
+      propertyPath: YButtonSprite
+      value: 
+      objectReference: {fileID: 21300000, guid: 79d77e3caa624a447a3c1663b1fd54f2,
+        type: 3}
+    - target: {fileID: 750320515659381802, guid: 494deef066b46a24a9b5226c4203833c,
+        type: 3}
+      propertyPath: CrossButtonSprite
+      value: 
+      objectReference: {fileID: 21300000, guid: 17777ae79a22f584bb62ff8557b54a81,
+        type: 3}
+    - target: {fileID: 750320515659381802, guid: 494deef066b46a24a9b5226c4203833c,
+        type: 3}
+      propertyPath: CircleButtonSprite
+      value: 
+      objectReference: {fileID: 21300000, guid: a26d4cec87817d249bdd1ecad3fb2d1e,
+        type: 3}
+    - target: {fileID: 750320515659381802, guid: 494deef066b46a24a9b5226c4203833c,
+        type: 3}
+      propertyPath: SquareButtonSprite
+      value: 
+      objectReference: {fileID: 21300000, guid: e0ae97d16a0181e4d8ec1bdfbf699727,
+        type: 3}
+    - target: {fileID: 750320515659381802, guid: 494deef066b46a24a9b5226c4203833c,
+        type: 3}
+      propertyPath: TriangleButtonSprite
+      value: 
+      objectReference: {fileID: 21300000, guid: de55abd321db51b4e87d361ff77052f0,
+        type: 3}
+    - target: {fileID: 750320515659381802, guid: 494deef066b46a24a9b5226c4203833c,
+        type: 3}
+      propertyPath: activationButtonImage
+      value: 
+      objectReference: {fileID: 4500359448993676805}
     - target: {fileID: 750320515659381803, guid: 494deef066b46a24a9b5226c4203833c,
         type: 3}
       propertyPath: m_AnchorMax.y
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 750320515659381803, guid: 494deef066b46a24a9b5226c4203833c,
         type: 3}
       propertyPath: m_AnchorMin.y
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 750320515659381803, guid: 494deef066b46a24a9b5226c4203833c,
         type: 3}
@@ -2416,7 +2795,7 @@ PrefabInstance:
     - target: {fileID: 750320515659381803, guid: 494deef066b46a24a9b5226c4203833c,
         type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 0
+      value: 80
       objectReference: {fileID: 0}
     - target: {fileID: 750320515910971141, guid: 494deef066b46a24a9b5226c4203833c,
         type: 3}
@@ -2823,6 +3202,64 @@ PrefabInstance:
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[1].m_Arguments.m_ObjectArgumentAssemblyTypeName
       value: UnityEngine.Object, UnityEngine
       objectReference: {fileID: 0}
+    - target: {fileID: 750320517316370157, guid: 494deef066b46a24a9b5226c4203833c,
+        type: 3}
+      propertyPath: AButtonSprite
+      value: 
+      objectReference: {fileID: 21300000, guid: 7b8ac7050cc286f44a860c98ae920c9a,
+        type: 3}
+    - target: {fileID: 750320517316370157, guid: 494deef066b46a24a9b5226c4203833c,
+        type: 3}
+      propertyPath: BButtonSprite
+      value: 
+      objectReference: {fileID: 21300000, guid: 4a9fd36f965cd7545b741fe9704af233,
+        type: 3}
+    - target: {fileID: 750320517316370157, guid: 494deef066b46a24a9b5226c4203833c,
+        type: 3}
+      propertyPath: XButtonSprite
+      value: 
+      objectReference: {fileID: 21300000, guid: c4dc29f0c8132254fbc46f13a79c8d8c,
+        type: 3}
+    - target: {fileID: 750320517316370157, guid: 494deef066b46a24a9b5226c4203833c,
+        type: 3}
+      propertyPath: YButtonSprite
+      value: 
+      objectReference: {fileID: 21300000, guid: 79d77e3caa624a447a3c1663b1fd54f2,
+        type: 3}
+    - target: {fileID: 750320517316370157, guid: 494deef066b46a24a9b5226c4203833c,
+        type: 3}
+      propertyPath: activationButton
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 750320517316370157, guid: 494deef066b46a24a9b5226c4203833c,
+        type: 3}
+      propertyPath: CrossButtonSprite
+      value: 
+      objectReference: {fileID: 21300000, guid: 17777ae79a22f584bb62ff8557b54a81,
+        type: 3}
+    - target: {fileID: 750320517316370157, guid: 494deef066b46a24a9b5226c4203833c,
+        type: 3}
+      propertyPath: CircleButtonSprite
+      value: 
+      objectReference: {fileID: 21300000, guid: a26d4cec87817d249bdd1ecad3fb2d1e,
+        type: 3}
+    - target: {fileID: 750320517316370157, guid: 494deef066b46a24a9b5226c4203833c,
+        type: 3}
+      propertyPath: SquareButtonSprite
+      value: 
+      objectReference: {fileID: 21300000, guid: e0ae97d16a0181e4d8ec1bdfbf699727,
+        type: 3}
+    - target: {fileID: 750320517316370157, guid: 494deef066b46a24a9b5226c4203833c,
+        type: 3}
+      propertyPath: TriangleButtonSprite
+      value: 
+      objectReference: {fileID: 21300000, guid: de55abd321db51b4e87d361ff77052f0,
+        type: 3}
+    - target: {fileID: 750320517316370157, guid: 494deef066b46a24a9b5226c4203833c,
+        type: 3}
+      propertyPath: activationButtonImage
+      value: 
+      objectReference: {fileID: 6269223719381160292}
     - target: {fileID: 750320517316370159, guid: 494deef066b46a24a9b5226c4203833c,
         type: 3}
       propertyPath: m_Type
@@ -2837,12 +3274,12 @@ PrefabInstance:
     - target: {fileID: 750320517316370162, guid: 494deef066b46a24a9b5226c4203833c,
         type: 3}
       propertyPath: m_AnchorMax.y
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 750320517316370162, guid: 494deef066b46a24a9b5226c4203833c,
         type: 3}
       propertyPath: m_AnchorMin.y
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 750320517316370162, guid: 494deef066b46a24a9b5226c4203833c,
         type: 3}
@@ -2857,7 +3294,7 @@ PrefabInstance:
     - target: {fileID: 750320517316370162, guid: 494deef066b46a24a9b5226c4203833c,
         type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 0
+      value: 310
       objectReference: {fileID: 0}
     - target: {fileID: 1173726735296828731, guid: 494deef066b46a24a9b5226c4203833c,
         type: 3}
@@ -2872,12 +3309,12 @@ PrefabInstance:
     - target: {fileID: 1173726735296828731, guid: 494deef066b46a24a9b5226c4203833c,
         type: 3}
       propertyPath: m_AnchorMax.y
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 1173726735296828731, guid: 494deef066b46a24a9b5226c4203833c,
         type: 3}
       propertyPath: m_AnchorMin.y
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 1173726735296828731, guid: 494deef066b46a24a9b5226c4203833c,
         type: 3}
@@ -2897,7 +3334,7 @@ PrefabInstance:
     - target: {fileID: 1173726735296828731, guid: 494deef066b46a24a9b5226c4203833c,
         type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: 0
+      value: -4
       objectReference: {fileID: 0}
     - target: {fileID: 1431407616102963192, guid: 494deef066b46a24a9b5226c4203833c,
         type: 3}
@@ -3022,12 +3459,12 @@ PrefabInstance:
     - target: {fileID: 5760770014428991712, guid: 494deef066b46a24a9b5226c4203833c,
         type: 3}
       propertyPath: m_AnchorMax.y
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 5760770014428991712, guid: 494deef066b46a24a9b5226c4203833c,
         type: 3}
       propertyPath: m_AnchorMin.y
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 5760770014428991712, guid: 494deef066b46a24a9b5226c4203833c,
         type: 3}
@@ -3047,7 +3484,7 @@ PrefabInstance:
     - target: {fileID: 5760770014428991712, guid: 494deef066b46a24a9b5226c4203833c,
         type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: 0
+      value: -48
       objectReference: {fileID: 0}
     - target: {fileID: 5788888404907889393, guid: 494deef066b46a24a9b5226c4203833c,
         type: 3}
@@ -3152,7 +3589,7 @@ PrefabInstance:
     - target: {fileID: 7209914665533919232, guid: 494deef066b46a24a9b5226c4203833c,
         type: 3}
       propertyPath: m_SizeDelta.y
-      value: 0
+      value: 144
       objectReference: {fileID: 0}
     - target: {fileID: 7209914665533919232, guid: 494deef066b46a24a9b5226c4203833c,
         type: 3}
@@ -3196,10 +3633,18 @@ PrefabInstance:
         type: 3}
       insertIndex: -1
       addedObject: {fileID: 247827463}
+    - targetCorrespondingSourceObject: {fileID: 750320515659381803, guid: 494deef066b46a24a9b5226c4203833c,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 220714542069358527}
     - targetCorrespondingSourceObject: {fileID: 750320517316370162, guid: 494deef066b46a24a9b5226c4203833c,
         type: 3}
       insertIndex: -1
       addedObject: {fileID: 779359546}
+    - targetCorrespondingSourceObject: {fileID: 750320517316370162, guid: 494deef066b46a24a9b5226c4203833c,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 297736195668042985}
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 750320515980049376, guid: 494deef066b46a24a9b5226c4203833c,
         type: 3}
@@ -3981,6 +4426,11 @@ PrefabInstance:
       propertyPath: m_Name
       value: MiniGameHUD
       objectReference: {fileID: 0}
+    - target: {fileID: 1720411786157758742, guid: 491eb8350c5c6ab45a8b291192f9891a,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 1720411786918787520, guid: 491eb8350c5c6ab45a8b291192f9891a,
         type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
@@ -3991,6 +4441,54 @@ PrefabInstance:
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[1].m_Target
       value: 
       objectReference: {fileID: 4446903459644244966}
+    - target: {fileID: 1720411786918787526, guid: 491eb8350c5c6ab45a8b291192f9891a,
+        type: 3}
+      propertyPath: AButtonSprite
+      value: 
+      objectReference: {fileID: 21300000, guid: 7b8ac7050cc286f44a860c98ae920c9a,
+        type: 3}
+    - target: {fileID: 1720411786918787526, guid: 491eb8350c5c6ab45a8b291192f9891a,
+        type: 3}
+      propertyPath: BButtonSprite
+      value: 
+      objectReference: {fileID: 21300000, guid: 4a9fd36f965cd7545b741fe9704af233,
+        type: 3}
+    - target: {fileID: 1720411786918787526, guid: 491eb8350c5c6ab45a8b291192f9891a,
+        type: 3}
+      propertyPath: XButtonSprite
+      value: 
+      objectReference: {fileID: 21300000, guid: c4dc29f0c8132254fbc46f13a79c8d8c,
+        type: 3}
+    - target: {fileID: 1720411786918787526, guid: 491eb8350c5c6ab45a8b291192f9891a,
+        type: 3}
+      propertyPath: YButtonSprite
+      value: 
+      objectReference: {fileID: 21300000, guid: 79d77e3caa624a447a3c1663b1fd54f2,
+        type: 3}
+    - target: {fileID: 1720411786918787526, guid: 491eb8350c5c6ab45a8b291192f9891a,
+        type: 3}
+      propertyPath: CrossButtonSprite
+      value: 
+      objectReference: {fileID: 21300000, guid: 17777ae79a22f584bb62ff8557b54a81,
+        type: 3}
+    - target: {fileID: 1720411786918787526, guid: 491eb8350c5c6ab45a8b291192f9891a,
+        type: 3}
+      propertyPath: CircleButtonSprite
+      value: 
+      objectReference: {fileID: 21300000, guid: a26d4cec87817d249bdd1ecad3fb2d1e,
+        type: 3}
+    - target: {fileID: 1720411786918787526, guid: 491eb8350c5c6ab45a8b291192f9891a,
+        type: 3}
+      propertyPath: SquareButtonSprite
+      value: 
+      objectReference: {fileID: 21300000, guid: e0ae97d16a0181e4d8ec1bdfbf699727,
+        type: 3}
+    - target: {fileID: 1720411786918787526, guid: 491eb8350c5c6ab45a8b291192f9891a,
+        type: 3}
+      propertyPath: TriangleButtonSprite
+      value: 
+      objectReference: {fileID: 21300000, guid: de55abd321db51b4e87d361ff77052f0,
+        type: 3}
     - target: {fileID: 1720411786918787527, guid: 491eb8350c5c6ab45a8b291192f9891a,
         type: 3}
       propertyPath: m_LocalScale.x
@@ -4051,6 +4549,131 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: -3
       objectReference: {fileID: 0}
+    - target: {fileID: 6211008650576318290, guid: 491eb8350c5c6ab45a8b291192f9891a,
+        type: 3}
+      propertyPath: AButtonSprite
+      value: 
+      objectReference: {fileID: 21300000, guid: 7b8ac7050cc286f44a860c98ae920c9a,
+        type: 3}
+    - target: {fileID: 6211008650576318290, guid: 491eb8350c5c6ab45a8b291192f9891a,
+        type: 3}
+      propertyPath: BButtonSprite
+      value: 
+      objectReference: {fileID: 21300000, guid: 4a9fd36f965cd7545b741fe9704af233,
+        type: 3}
+    - target: {fileID: 6211008650576318290, guid: 491eb8350c5c6ab45a8b291192f9891a,
+        type: 3}
+      propertyPath: XButtonSprite
+      value: 
+      objectReference: {fileID: 21300000, guid: c4dc29f0c8132254fbc46f13a79c8d8c,
+        type: 3}
+    - target: {fileID: 6211008650576318290, guid: 491eb8350c5c6ab45a8b291192f9891a,
+        type: 3}
+      propertyPath: YButtonSprite
+      value: 
+      objectReference: {fileID: 21300000, guid: 79d77e3caa624a447a3c1663b1fd54f2,
+        type: 3}
+    - target: {fileID: 6211008650576318290, guid: 491eb8350c5c6ab45a8b291192f9891a,
+        type: 3}
+      propertyPath: CrossButtonSprite
+      value: 
+      objectReference: {fileID: 21300000, guid: 17777ae79a22f584bb62ff8557b54a81,
+        type: 3}
+    - target: {fileID: 6211008650576318290, guid: 491eb8350c5c6ab45a8b291192f9891a,
+        type: 3}
+      propertyPath: CircleButtonSprite
+      value: 
+      objectReference: {fileID: 21300000, guid: a26d4cec87817d249bdd1ecad3fb2d1e,
+        type: 3}
+    - target: {fileID: 6211008650576318290, guid: 491eb8350c5c6ab45a8b291192f9891a,
+        type: 3}
+      propertyPath: SquareButtonSprite
+      value: 
+      objectReference: {fileID: 21300000, guid: e0ae97d16a0181e4d8ec1bdfbf699727,
+        type: 3}
+    - target: {fileID: 6211008650576318290, guid: 491eb8350c5c6ab45a8b291192f9891a,
+        type: 3}
+      propertyPath: TriangleButtonSprite
+      value: 
+      objectReference: {fileID: 21300000, guid: de55abd321db51b4e87d361ff77052f0,
+        type: 3}
+    - target: {fileID: 6633016147986832118, guid: 491eb8350c5c6ab45a8b291192f9891a,
+        type: 3}
+      propertyPath: AButtonSprite
+      value: 
+      objectReference: {fileID: 21300000, guid: 7b8ac7050cc286f44a860c98ae920c9a,
+        type: 3}
+    - target: {fileID: 6633016147986832118, guid: 491eb8350c5c6ab45a8b291192f9891a,
+        type: 3}
+      propertyPath: BButtonSprite
+      value: 
+      objectReference: {fileID: 21300000, guid: 4a9fd36f965cd7545b741fe9704af233,
+        type: 3}
+    - target: {fileID: 6633016147986832118, guid: 491eb8350c5c6ab45a8b291192f9891a,
+        type: 3}
+      propertyPath: XButtonSprite
+      value: 
+      objectReference: {fileID: 21300000, guid: c4dc29f0c8132254fbc46f13a79c8d8c,
+        type: 3}
+    - target: {fileID: 6633016147986832118, guid: 491eb8350c5c6ab45a8b291192f9891a,
+        type: 3}
+      propertyPath: YButtonSprite
+      value: 
+      objectReference: {fileID: 21300000, guid: 79d77e3caa624a447a3c1663b1fd54f2,
+        type: 3}
+    - target: {fileID: 6633016147986832118, guid: 491eb8350c5c6ab45a8b291192f9891a,
+        type: 3}
+      propertyPath: CrossButtonSprite
+      value: 
+      objectReference: {fileID: 21300000, guid: 17777ae79a22f584bb62ff8557b54a81,
+        type: 3}
+    - target: {fileID: 6633016147986832118, guid: 491eb8350c5c6ab45a8b291192f9891a,
+        type: 3}
+      propertyPath: CircleButtonSprite
+      value: 
+      objectReference: {fileID: 21300000, guid: a26d4cec87817d249bdd1ecad3fb2d1e,
+        type: 3}
+    - target: {fileID: 6633016147986832118, guid: 491eb8350c5c6ab45a8b291192f9891a,
+        type: 3}
+      propertyPath: SquareButtonSprite
+      value: 
+      objectReference: {fileID: 21300000, guid: e0ae97d16a0181e4d8ec1bdfbf699727,
+        type: 3}
+    - target: {fileID: 6633016147986832118, guid: 491eb8350c5c6ab45a8b291192f9891a,
+        type: 3}
+      propertyPath: TriangleButtonSprite
+      value: 
+      objectReference: {fileID: 21300000, guid: de55abd321db51b4e87d361ff77052f0,
+        type: 3}
+    - target: {fileID: 6648196996540533865, guid: 491eb8350c5c6ab45a8b291192f9891a,
+        type: 3}
+      propertyPath: AButtonSprite
+      value: 
+      objectReference: {fileID: 21300000, guid: 7b8ac7050cc286f44a860c98ae920c9a,
+        type: 3}
+    - target: {fileID: 6648196996540533865, guid: 491eb8350c5c6ab45a8b291192f9891a,
+        type: 3}
+      propertyPath: BButtonSprite
+      value: 
+      objectReference: {fileID: 21300000, guid: 4a9fd36f965cd7545b741fe9704af233,
+        type: 3}
+    - target: {fileID: 6648196996540533865, guid: 491eb8350c5c6ab45a8b291192f9891a,
+        type: 3}
+      propertyPath: XButtonSprite
+      value: 
+      objectReference: {fileID: 21300000, guid: c4dc29f0c8132254fbc46f13a79c8d8c,
+        type: 3}
+    - target: {fileID: 6648196996540533865, guid: 491eb8350c5c6ab45a8b291192f9891a,
+        type: 3}
+      propertyPath: YButtonSprite
+      value: 
+      objectReference: {fileID: 21300000, guid: 79d77e3caa624a447a3c1663b1fd54f2,
+        type: 3}
+    - target: {fileID: 6648196996540533865, guid: 491eb8350c5c6ab45a8b291192f9891a,
+        type: 3}
+      propertyPath: activationButtonImage
+      value: 
+      objectReference: {fileID: 3384422656328949702}
     - target: {fileID: 6688497597184733303, guid: 491eb8350c5c6ab45a8b291192f9891a,
         type: 3}
       propertyPath: m_LocalScale.x
@@ -4111,11 +4734,119 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 8021472586568851252, guid: 491eb8350c5c6ab45a8b291192f9891a,
+        type: 3}
+      propertyPath: AButtonSprite
+      value: 
+      objectReference: {fileID: 21300000, guid: 7b8ac7050cc286f44a860c98ae920c9a,
+        type: 3}
+    - target: {fileID: 8021472586568851252, guid: 491eb8350c5c6ab45a8b291192f9891a,
+        type: 3}
+      propertyPath: BButtonSprite
+      value: 
+      objectReference: {fileID: 21300000, guid: 4a9fd36f965cd7545b741fe9704af233,
+        type: 3}
+    - target: {fileID: 8021472586568851252, guid: 491eb8350c5c6ab45a8b291192f9891a,
+        type: 3}
+      propertyPath: XButtonSprite
+      value: 
+      objectReference: {fileID: 21300000, guid: c4dc29f0c8132254fbc46f13a79c8d8c,
+        type: 3}
+    - target: {fileID: 8021472586568851252, guid: 491eb8350c5c6ab45a8b291192f9891a,
+        type: 3}
+      propertyPath: YButtonSprite
+      value: 
+      objectReference: {fileID: 21300000, guid: 79d77e3caa624a447a3c1663b1fd54f2,
+        type: 3}
+    - target: {fileID: 8021472586568851252, guid: 491eb8350c5c6ab45a8b291192f9891a,
+        type: 3}
+      propertyPath: CrossButtonSprite
+      value: 
+      objectReference: {fileID: 21300000, guid: 17777ae79a22f584bb62ff8557b54a81,
+        type: 3}
+    - target: {fileID: 8021472586568851252, guid: 491eb8350c5c6ab45a8b291192f9891a,
+        type: 3}
+      propertyPath: CircleButtonSprite
+      value: 
+      objectReference: {fileID: 21300000, guid: a26d4cec87817d249bdd1ecad3fb2d1e,
+        type: 3}
+    - target: {fileID: 8021472586568851252, guid: 491eb8350c5c6ab45a8b291192f9891a,
+        type: 3}
+      propertyPath: SquareButtonSprite
+      value: 
+      objectReference: {fileID: 21300000, guid: e0ae97d16a0181e4d8ec1bdfbf699727,
+        type: 3}
+    - target: {fileID: 8021472586568851252, guid: 491eb8350c5c6ab45a8b291192f9891a,
+        type: 3}
+      propertyPath: TriangleButtonSprite
+      value: 
+      objectReference: {fileID: 21300000, guid: de55abd321db51b4e87d361ff77052f0,
+        type: 3}
+    - target: {fileID: 9161466250633387866, guid: 491eb8350c5c6ab45a8b291192f9891a,
+        type: 3}
+      propertyPath: AButtonSprite
+      value: 
+      objectReference: {fileID: 21300000, guid: 7b8ac7050cc286f44a860c98ae920c9a,
+        type: 3}
+    - target: {fileID: 9161466250633387866, guid: 491eb8350c5c6ab45a8b291192f9891a,
+        type: 3}
+      propertyPath: BButtonSprite
+      value: 
+      objectReference: {fileID: 21300000, guid: 4a9fd36f965cd7545b741fe9704af233,
+        type: 3}
+    - target: {fileID: 9161466250633387866, guid: 491eb8350c5c6ab45a8b291192f9891a,
+        type: 3}
+      propertyPath: XButtonSprite
+      value: 
+      objectReference: {fileID: 21300000, guid: c4dc29f0c8132254fbc46f13a79c8d8c,
+        type: 3}
+    - target: {fileID: 9161466250633387866, guid: 491eb8350c5c6ab45a8b291192f9891a,
+        type: 3}
+      propertyPath: YButtonSprite
+      value: 
+      objectReference: {fileID: 21300000, guid: 79d77e3caa624a447a3c1663b1fd54f2,
+        type: 3}
+    - target: {fileID: 9161466250633387866, guid: 491eb8350c5c6ab45a8b291192f9891a,
+        type: 3}
+      propertyPath: CrossButtonSprite
+      value: 
+      objectReference: {fileID: 21300000, guid: 17777ae79a22f584bb62ff8557b54a81,
+        type: 3}
+    - target: {fileID: 9161466250633387866, guid: 491eb8350c5c6ab45a8b291192f9891a,
+        type: 3}
+      propertyPath: CircleButtonSprite
+      value: 
+      objectReference: {fileID: 21300000, guid: a26d4cec87817d249bdd1ecad3fb2d1e,
+        type: 3}
+    - target: {fileID: 9161466250633387866, guid: 491eb8350c5c6ab45a8b291192f9891a,
+        type: 3}
+      propertyPath: SquareButtonSprite
+      value: 
+      objectReference: {fileID: 21300000, guid: e0ae97d16a0181e4d8ec1bdfbf699727,
+        type: 3}
+    - target: {fileID: 9161466250633387866, guid: 491eb8350c5c6ab45a8b291192f9891a,
+        type: 3}
+      propertyPath: TriangleButtonSprite
+      value: 
+      objectReference: {fileID: 21300000, guid: de55abd321db51b4e87d361ff77052f0,
+        type: 3}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 491eb8350c5c6ab45a8b291192f9891a, type: 3}
+--- !u!114 &3384422656328949702 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 8456626403128715021, guid: 491eb8350c5c6ab45a8b291192f9891a,
+    type: 3}
+  m_PrefabInstance: {fileID: 6605683967492913355}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!224 &5497835174634480090 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 1720411786157758737, guid: 491eb8350c5c6ab45a8b291192f9891a,

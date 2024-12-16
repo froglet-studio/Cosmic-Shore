@@ -109,7 +109,7 @@ namespace CosmicShore.App.Systems.Xp
                 EncounteredCaptainsData[captain.Ship.Class] = new() { captain.PrimaryElement };
             }
 
-            // TODO: Security - Move to cloud script and store in internal data
+            // TODO: Security && Portability - Move to cloud script and store in internal data
             var dataContent = new Dictionary<string, string>
             {
                 { EncounteredCaptainsKey, JsonConvert.SerializeObject(EncounteredCaptainsData) }
