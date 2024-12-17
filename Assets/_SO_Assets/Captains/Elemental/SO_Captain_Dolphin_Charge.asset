@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Name: Riptide
   Description: Fastest Energy gain rate in the game when skimming.
-  AIBehaviorDescription: 
-  Flavor: '[Flavor text placeholder]'
+  AIBehaviorDescription: Skims close to blocks then seeks crystal.
+  Flavor: “Great deeds are wrought at great risks.”
   Image: {fileID: 21300000, guid: 9612a97458b08874da548e9dd7899008, type: 3}
   HeadshotImage: {fileID: 0}
   IconActive: {fileID: 21300000, guid: 6c4f40eef57f4d04bbd01083161212ff, type: 3}
