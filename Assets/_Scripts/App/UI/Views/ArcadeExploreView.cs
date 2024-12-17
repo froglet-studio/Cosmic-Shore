@@ -20,6 +20,8 @@ namespace CosmicShore.App.UI.Views
         [SerializeField] SO_GameList GameList;
         [SerializeField] GameObject GameSelectionView;
         [SerializeField] Transform GameSelectionGrid;
+        [SerializeField] ArcadeDPadNav ArcadeDPadNav;
+        [SerializeField] DailyChallengeCard DailyChallengeCard;
         [Header("Game Detail View")]
         [SerializeField] ArcadeGameConfigureModal ArcadeGameConfigureModal;
         [Header("Test Settings")]
@@ -28,6 +30,16 @@ namespace CosmicShore.App.UI.Views
 
         SO_ArcadeGame SelectedGame;
         List<GameCard> GameCards;
+
+        void OnEnable()
+        {
+            CatalogManager.OnLoadInventory += PopulateGameSelectionList;
+        }
+
+        void OnDisable()
+        {
+            CatalogManager.OnLoadInventory -= PopulateGameSelectionList;
+        }
 
         void Start()
         {
@@ -38,15 +50,21 @@ namespace CosmicShore.App.UI.Views
         public void PopulateGameSelectionList()
         {
             GameCards = new List<GameCard>();
+            ArcadeDPadNav.AddRow(new List<Button>());
+            ArcadeDPadNav.AddButtonToRow(DailyChallengeCard.GetComponent<Button>(), 0);
 
             // Deactivate all game cards and add them to the list of game cards
             for (var i = 0; i < GameSelectionGrid.transform.childCount; i++)
             {
+                ArcadeDPadNav.AddRow(new List<Button>());
+
                 var gameSelectionRow = GameSelectionGrid.GetChild(i);
                 for (var j = 0; j < gameSelectionRow.childCount; j++)
                 {
                     gameSelectionRow.GetChild(j).gameObject.SetActive(false);
                     GameCards.Add(gameSelectionRow.GetChild(j).GetComponent<GameCard>());
+
+                    ArcadeDPadNav.AddButtonToRow(gameSelectionRow.GetChild(j).GetComponent<Button>(), i+1);
                 }
             }
 
@@ -62,7 +80,7 @@ namespace CosmicShore.App.UI.Views
                 return flagComparison;
             });
 
-            for (var i = 0; i < GameCards.Count && i < GameList.Games.Count; i++)
+            for (var i = 0; i < GameCards.Count && i < GameList.Games.Count && i < sortedGames.Count; i++)
             {
                 var game = sortedGames[i];
 

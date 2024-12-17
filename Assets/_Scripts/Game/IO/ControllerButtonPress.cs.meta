@@ -3,7 +3,20 @@ guid: 489b5e752b1216347958ebafbbaf83ba
 MonoImporter:
   externalObjects: {}
   serializedVersion: 2
-  defaultReferences: []
+  defaultReferences:
+  - activationButtonImage: {instanceID: 0}
+  - TriangleButtonSprite: {fileID: 21300000, guid: de55abd321db51b4e87d361ff77052f0,
+      type: 3}
+  - CircleButtonSprite: {fileID: 21300000, guid: a26d4cec87817d249bdd1ecad3fb2d1e,
+      type: 3}
+  - CrossButtonSprite: {fileID: 21300000, guid: 17777ae79a22f584bb62ff8557b54a81,
+      type: 3}
+  - SquareButtonSprite: {fileID: 21300000, guid: e0ae97d16a0181e4d8ec1bdfbf699727,
+      type: 3}
+  - YButtonSprite: {fileID: 21300000, guid: 79d77e3caa624a447a3c1663b1fd54f2, type: 3}
+  - BButtonSprite: {fileID: 21300000, guid: 4a9fd36f965cd7545b741fe9704af233, type: 3}
+  - AButtonSprite: {fileID: 21300000, guid: 7b8ac7050cc286f44a860c98ae920c9a, type: 3}
+  - XButtonSprite: {fileID: 21300000, guid: c4dc29f0c8132254fbc46f13a79c8d8c, type: 3}
   executionOrder: 0
   icon: {instanceID: 0}
   userData: 

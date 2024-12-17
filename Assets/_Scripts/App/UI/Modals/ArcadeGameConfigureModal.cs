@@ -77,6 +77,7 @@ namespace CosmicShore.App.UI.Modals
                 IntensityButtons[i].SetSelected(false);
             }
         }
+
         void InitialializePlayerCountButtons()
         {
             for (var i = 0; i < 3; i++)

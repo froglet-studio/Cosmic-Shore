@@ -47,6 +47,7 @@ namespace CosmicShore.Core
             MusicLevel = 11,
             SFXLevel = 12,
             HapticsLevel = 13,
+            LastMissionDifficulty = 14,
     }
 
         #region Settings
