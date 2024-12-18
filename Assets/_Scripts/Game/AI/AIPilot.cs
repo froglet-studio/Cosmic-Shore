@@ -151,7 +151,6 @@ namespace CosmicShore.Game.AI
                 // Target a block centroid belonging to the winning team.
                 TargetPosition = activeNode.GetExplosionTarget(activeNode.ControllingTeam);
             }
-
         }
 
         void Start()
