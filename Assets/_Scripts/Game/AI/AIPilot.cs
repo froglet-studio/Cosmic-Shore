@@ -140,12 +140,18 @@ namespace CosmicShore.Game.AI
                 }
             }
 
-            //
-            // If enemy blocks exceed some threshold (maybe just enemy vol exceeds your vol?), target the nearest block centroid,
-            // else target the nearest crystal.  Note that this is re-checked only when a crystal is added or removed.
-            //
-            //TargetPosition = activeNode.GetExplosionTarget(Team);
-            TargetPosition = closestItem == null ? activeNode.transform.position : closestItem.transform.position;
+            // Note that this is re-checked only when a crystal is added or removed, which might not be often enough.
+            if (ship.Team == activeNode.ControllingTeam)  // Your team is winning.
+            {
+                // Target the nearest crystal.
+                TargetPosition = closestItem == null ? activeNode.transform.position : closestItem.transform.position;
+            }
+            else
+            {
+                // Target a block centroid belonging to the winning team.
+                TargetPosition = activeNode.GetExplosionTarget(activeNode.ControllingTeam);
+            }
+
         }
 
         void Start()
