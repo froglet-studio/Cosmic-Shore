@@ -5,6 +5,7 @@ using System.Collections;
 using CosmicShore.App.Systems.Squads;
 using CosmicShore.Core;
 using CosmicShore.Integrations.PlayFab.Economy;
+using System.Linq;
 
 namespace CosmicShore
 {
@@ -30,10 +31,13 @@ namespace CosmicShore
         };
 
         [Range(1, 9)] public int CurrentDifficulty = 5;
+        [SerializeField] float faunaOnlyLimit = 1000; // If the team volume is above this limit, only fauna threats will spawn
 
         public float IntensityThreshold = 1;  // How much variance is allowed from mission difficulty in a wave
         public float ThreatWaveMinimumPeriodInSeconds = 20;
         int currentSpawnLocationIndex = 0;
+        Threat[] faunaThreats = new Threat[0];
+        Node node;
 
         protected override void Start()
         {
@@ -45,6 +49,8 @@ namespace CosmicShore
             HostileAIOne.defaultShip = EnemyShipClasses[Random.Range(0, EnemyShipClasses.Count)];
             HostileAITwo.defaultShip = EnemyShipClasses[Random.Range(0, EnemyShipClasses.Count)];
             HostileAIThree.defaultShip = EnemyShipClasses[Random.Range(0, EnemyShipClasses.Count)];
+            faunaThreats = MissionData.PotentialThreats.Where(threat => threat.threatPrefab.TryGetComponent<Population>(out _)).ToArray();
+            node = NodeControlManager.Instance.GetNearestNode(Vector3.zero);
         }
 
         public override void StartNewGame()
@@ -59,21 +65,22 @@ namespace CosmicShore
         // Method to roll a single threat based on weights
         Threat RollThreat()
         {
+            var threats = node.GetTeamVolume(Teams.Jade) > faunaOnlyLimit ? faunaThreats : MissionData.PotentialThreats;
             float totalWeight = 0f;
-            foreach (Threat threat in MissionData.PotentialThreats)
+            foreach (Threat threat in threats)
                 totalWeight += threat.weight;
 
             float roll = Random.Range(0, totalWeight);
             float cumulativeWeight = 0;
 
-            foreach (Threat threat in MissionData.PotentialThreats)
+            foreach (Threat threat in threats)
             {
                 cumulativeWeight += threat.weight;
                 if (roll < cumulativeWeight)
                     return threat;
             }
 
-            return MissionData.PotentialThreats[0]; // Fallback in case something goes wrong
+            return threats[0]; // Fallback in case something goes wrong
         }
 
         // Method to generate a wave of threats
@@ -104,6 +111,8 @@ namespace CosmicShore
 
             return wave;
         }
+
+        
 
         public ThreatSpawner ThreatSpawner;
 

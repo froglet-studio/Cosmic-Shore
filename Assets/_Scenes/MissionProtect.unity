@@ -7143,6 +7143,7 @@ MonoBehaviour:
   StraightLineLength: 400
   RotationAmount: 10
   DifficultyAngle: 90
+  IntensityLevel: 1
   InitializeOnStart: 1
   NumberOfSegments: 4
   branchProbability: 0.2
@@ -7233,7 +7234,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Display: {fileID: 0}
   eliminatesPlayer: 0
-  duration: 10
+  duration: 180
 --- !u!4 &1527998410
 Transform:
   m_ObjectHideFlags: 0
@@ -7308,6 +7309,7 @@ MonoBehaviour:
   HostileAIThree: {fileID: 1604771576}
   EnemyShipClasses: 030000000100000002000000070000000b00000006000000
   CurrentDifficulty: 3
+  faunaOnlyLimit: 10
   IntensityThreshold: 1
   ThreatWaveMinimumPeriodInSeconds: 2
   ThreatSpawner: {fileID: 1527998414}
