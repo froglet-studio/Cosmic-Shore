@@ -7258,7 +7258,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1527998405}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 28e84744c9c973b4e9f08e98ae7465db, type: 3}
   m_Name: 
@@ -7282,6 +7282,7 @@ MonoBehaviour:
   NumberOfRounds: 1
   TurnMonitors:
   - {fileID: 1527998409}
+  - {fileID: 1527998412}
   ScoreTracker: {fileID: 1527998408}
   GameCanvas: {fileID: 69216807}
   playerPrefab: {fileID: 433663843}
@@ -7309,7 +7310,7 @@ MonoBehaviour:
   HostileAIThree: {fileID: 1604771576}
   EnemyShipClasses: 030000000100000002000000070000000b00000006000000
   CurrentDifficulty: 3
-  faunaOnlyLimit: 10
+  faunaOnlyLimit: 250000
   IntensityThreshold: 1
   ThreatWaveMinimumPeriodInSeconds: 2
   ThreatSpawner: {fileID: 1527998414}

@@ -65,6 +65,7 @@ namespace CosmicShore
         // Method to roll a single threat based on weights
         Threat RollThreat()
         {
+            Debug.LogWarning("jade volume: node.GetTeamVolume(Teams.Jade)");
             var threats = node.GetTeamVolume(Teams.Jade) > faunaOnlyLimit ? faunaThreats : MissionData.PotentialThreats;
             float totalWeight = 0f;
             foreach (Threat threat in threats)

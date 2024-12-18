@@ -33,11 +33,11 @@ MonoBehaviour:
     spawnMode: 0
   - threatName: Gyroid
     threatLevel: 2
-    weight: 1
+    weight: 4
     threatPrefab: {fileID: 8186157953239024494, guid: a84d160ac0bcaf94da22c5368e4d3962,
       type: 3}
     spawnMode: 0
-  - threatName: Boid
+  - threatName: brittlestars
     threatLevel: 2
     weight: 1
     threatPrefab: {fileID: 7563149970416610868, guid: cf5d9d162b969ed4e92bf8388c703723,
@@ -45,7 +45,19 @@ MonoBehaviour:
     spawnMode: 0
   - threatName: Cacti
     threatLevel: 1
-    weight: 1
+    weight: 2
     threatPrefab: {fileID: 6774738432424273872, guid: 82e04cfd7f5b93f478b5fbfe40c2a2d7,
+      type: 3}
+    spawnMode: 0
+  - threatName: sharks
+    threatLevel: 2
+    weight: 3
+    threatPrefab: {fileID: 7563149970416610868, guid: 764892b0728c1f64ba0d13077691c15b,
+      type: 3}
+    spawnMode: 0
+  - threatName: tadpoles
+    threatLevel: 2
+    weight: 1
+    threatPrefab: {fileID: 8812619448024686937, guid: 3b344872fac297f448d202dd574c2a3e,
       type: 3}
     spawnMode: 0

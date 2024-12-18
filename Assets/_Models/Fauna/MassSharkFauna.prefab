@@ -756,6 +756,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   healthBlock: {fileID: 0}
   spindle: {fileID: 0}
+  healthBlocksForMaturity: 1
   minHealthBlocks: 0
   Team: 0
   aggression: 0
@@ -768,7 +769,8 @@ MonoBehaviour:
   cohesionWeight: 1
   goalWeight: 2
   minSpeed: 25
-  maxSpeed: 30
+  maxSpeed: 35
+  Phase: 0
 --- !u!1 &3561311450035280578
 GameObject:
   m_ObjectHideFlags: 0
