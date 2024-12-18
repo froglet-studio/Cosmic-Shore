@@ -85,8 +85,7 @@ namespace CosmicShore.Game.AI
         float maxDistance = 50f;
         float maxDistanceSquared;
 
-        // TODO: rename to 'TargetTransform'
-        [HideInInspector] public Transform CrystalTransform;
+        [HideInInspector] public Vector3 TargetPosition;
         Vector3 distance;
 
         [HideInInspector] public FlowFieldData flowFieldData;
@@ -141,7 +140,17 @@ namespace CosmicShore.Game.AI
                 }
             }
 
-            CrystalTransform = closestItem == null ? activeNode.transform : closestItem.transform;
+            // Note that this is re-checked only when a crystal is added or removed, which might not be often enough.
+            if (ship.Team == activeNode.ControllingTeam)  // Your team is winning.
+            {
+                // Target the nearest crystal.
+                TargetPosition = closestItem == null ? activeNode.transform.position : closestItem.transform.position;
+            }
+            else
+            {
+                // Target a block centroid belonging to the winning team.
+                TargetPosition = activeNode.GetExplosionTarget(activeNode.ControllingTeam);
+            }
         }
 
         void Start()
@@ -177,9 +186,8 @@ namespace CosmicShore.Game.AI
                 ship.InputController.AutoPilotEnabled = true;
                 ship.ShipStatus.AutoPilotEnabled = true;
 
-                var targetPosition = CrystalTransform.position;
                 //Vector3 currentDirection = shipStatus.Course;
-                distance = targetPosition - transform.position;
+                distance = TargetPosition - transform.position;
                 Vector3 desiredDirection = distance.normalized;
 
                 LookingAtCrystal = Vector3.Dot(desiredDirection, shipStatus.Course) >= .9f;

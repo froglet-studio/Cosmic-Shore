@@ -70,7 +70,7 @@ namespace CosmicShore.Core
         public void WaitOnAILoading(AIPilot aiPilot)
         {
             // TODO: P1 elemental crystals, FindObjectOfType may no work anymore for this
-            aiPilot.CrystalTransform = FindObjectOfType<Crystal>().transform;
+            aiPilot.TargetPosition = FindObjectOfType<Crystal>().transform.position;
             aiPilot.flowFieldData = FindObjectOfType<FlowFieldData>();
         }
 
