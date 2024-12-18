@@ -2433,9 +2433,10 @@ MonoBehaviour:
   MinimumSpeed: 0
   ThrottleScaler: 0
   DefaultMinimumSpeed: 10
-  DefaultThrottleScaler:
+  DefaultThrottleScaler: 50
+  ThrottleScalerMultiplier:
     Enabled: 0
-    Value: 70
+    Value: 1
     Min: 0
     Max: 0
     element: 0
@@ -2549,7 +2550,7 @@ MonoBehaviour:
   drift: 1
   SingleStickControls: 0
   abilities: []
-  CrystalTransform: {fileID: 0}
+  TargetPosition: {x: 0, y: 0, z: 0}
   flowFieldData: {fileID: 0}
 --- !u!114 &5510672214890313987
 MonoBehaviour:
@@ -3592,7 +3593,7 @@ PrefabInstance:
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
       propertyPath: blockImpactEffects.Array.size
-      value: 2
+      value: 3
       objectReference: {fileID: 0}
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
@@ -3603,6 +3604,11 @@ PrefabInstance:
         type: 3}
       propertyPath: blockImpactEffects.Array.data[0]
       value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
+      propertyPath: blockImpactEffects.Array.data[2]
+      value: 16
       objectReference: {fileID: 0}
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
