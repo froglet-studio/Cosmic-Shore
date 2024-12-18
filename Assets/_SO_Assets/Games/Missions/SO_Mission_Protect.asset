@@ -32,7 +32,7 @@ MonoBehaviour:
       type: 3}
     spawnMode: 0
   - threatName: Gyroid
-    threatLevel: 1
+    threatLevel: 2
     weight: 1
     threatPrefab: {fileID: 8186157953239024494, guid: a84d160ac0bcaf94da22c5368e4d3962,
       type: 3}
@@ -41,5 +41,11 @@ MonoBehaviour:
     threatLevel: 2
     weight: 1
     threatPrefab: {fileID: 7563149970416610868, guid: cf5d9d162b969ed4e92bf8388c703723,
+      type: 3}
+    spawnMode: 0
+  - threatName: Cacti
+    threatLevel: 1
+    weight: 1
+    threatPrefab: {fileID: 6774738432424273872, guid: 82e04cfd7f5b93f478b5fbfe40c2a2d7,
       type: 3}
     spawnMode: 0

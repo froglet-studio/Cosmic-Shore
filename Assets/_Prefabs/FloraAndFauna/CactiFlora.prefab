@@ -56,8 +56,8 @@ MonoBehaviour:
   stunDuration: 1
   leafSize: {x: 5, y: 5, z: 3}
   growthChance: 0.5
-  minBranchAngle: 90
-  maxBranchAngle: 90
+  minBranchAngle: 85
+  maxBranchAngle: 95
   minBranches: 5
   maxBranches: 9
   minTrunks: 1
