@@ -1,6 +1,7 @@
 using CosmicShore.Environment.FlowField;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace CosmicShore
@@ -88,9 +89,9 @@ namespace CosmicShore
         private IEnumerator DieCoroutine()
         {
             StatsManager.Instance.LifeformDestroyed(node.ID);
-            foreach (HealthBlock healthBlock in healthBlocks)
+            foreach (HealthBlock healthBlock in healthBlocks.ToArray())
             {
-                healthBlock.Damage(Random.onUnitSphere,Teams.None,"Guy Fawkes",true);
+                healthBlock.Damage(Random.onUnitSphere, Teams.None, "Guy Fawkes", true);
             }
             while (spindles.Count > 0)
             {
