@@ -66,13 +66,13 @@ namespace CosmicShore.Game.Projectiles
 
                 PerformShipImpactEffects(shipGeometry);
             }
-            if (other.TryGetComponent<Crystal>(out var crystal))
-            {
-                //Debug.Log($"projectile hit crystal {crystal.Team}");
-                if (crystal.Team == Team)
-                    return;
-                PerformCrystalImpactEffects(crystal.crystalProperties);
-            }
+            //if (other.TryGetComponent<Crystal>(out var crystal))
+            //{
+            //    //Debug.Log($"projectile hit crystal {crystal.Team}");
+            //    if (crystal.Team == Team)
+            //        return;
+            //    PerformCrystalImpactEffects(crystal.crystalProperties);
+            //}
         }
 
         protected virtual void PerformTrailImpactEffects(TrailBlockProperties trailBlockProperties)

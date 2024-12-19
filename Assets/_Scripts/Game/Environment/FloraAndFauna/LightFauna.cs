@@ -62,6 +62,15 @@ public class LightFauna : Fauna
             float distance = diff.magnitude;
             if (distance == 0) continue;
 
+            // Hande Ships
+            var shipPart = collider.GetComponent<ShipGeometry>();
+            if (shipPart)
+            {
+                neighborCount++;
+                separation -= diff.normalized / distance;
+                continue;
+            }
+
             // Handle other fauna
             var otherHealthBlock = collider.GetComponent<HealthBlock>();
             if (otherHealthBlock)
@@ -82,11 +91,7 @@ public class LightFauna : Fauna
             TrailBlock block = collider.GetComponent<TrailBlock>();
             if (block && block.Team != Team && distance < consumeRadius)
             {
-                //goalDirection = (block.transform.position - transform.position).normalized;
-                //if (distance < consumeRadius)
-                //{
-                    block.Damage(currentVelocity, Team, "light fauna", true);
-                //}
+                block.Damage(currentVelocity, Team, "light fauna", true);
             }
         }
 

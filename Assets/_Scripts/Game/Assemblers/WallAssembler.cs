@@ -2,6 +2,7 @@ using CosmicShore.Core;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace CosmicShore
 {
@@ -56,6 +57,8 @@ namespace CosmicShore
         float separationDistance = 2f;
         [SerializeField] int colliderTheshold = 25;
         [SerializeField] float radius = 40f;
+        bool seed = false;
+        bool isStopped = true;
 
         int depth = -1;
         public override int Depth
@@ -74,8 +77,15 @@ namespace CosmicShore
             }
         }
 
+        public override void SeedBonding()
+        {
+            seed = true;
+            StartBonding();
+        }
+
         public override void StartBonding()
         {
+            isStopped = false;
             StartCoroutine(LookForMates());
         }
 
@@ -276,9 +286,14 @@ namespace CosmicShore
                     //Debug.Log("Bonded Top and Bottom");
                     StopAllCoroutines();
                     TrailBlock.Grow();
-                    if (TopMate.Mate.MateList.Count < 2) TopMate.Mate.StartBonding();
-                    if (BottomMate.Mate.MateList.Count < 2) BottomMate.Mate.StartBonding();
-
+                    if (TopMate.Mate.MateList.Count < 2)
+                    {
+                        TopMate.Mate.StartBonding();
+                    }
+                    if (BottomMate.Mate.MateList.Count < 2)
+                    {
+                        BottomMate.Mate.StartBonding();
+                    }
                 }
             }
         }
@@ -464,6 +479,33 @@ namespace CosmicShore
                 Quaternion.Slerp(mate.Mate.transform.rotation, targetRotation, Time.deltaTime); // Adjust rotation speed as needed
             mate.Mate.CalculateGlobalBondSites();
             CalculateGlobalBondSites();
+        }
+
+        public void StopAssembly()
+        {
+            if (isStopped) return;
+            if (updateTopMate != null)
+            {
+                TopMate.Mate.StopAssembly();
+                StopCoroutine(updateTopMate);
+            }
+            if (updateBottomMate != null)
+            {
+                BottomMate.Mate.StopAssembly();
+                StopCoroutine(updateBottomMate);
+            }
+            LeftMate.StopAssembly();
+            RightMate.StopAssembly();
+            isStopped = true;
+            Debug.Log("Assembly Stopped");
+        }
+
+        private void OnDisable()
+        {
+            if (seed == this)
+            {
+                StopAssembly();
+            }
         }
     }
 }

@@ -1,8 +1,7 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
-using System.Reflection;
+using CosmicShore.Core;
+
 
 namespace CosmicShore
 {
@@ -14,6 +13,7 @@ namespace CosmicShore
         [SerializeField] int depth = 50;
 
         [SerializeField] int resourceIndex = 0;
+        Assembler currentAssembler;
 
         protected override void Start()
         {
@@ -29,13 +29,22 @@ namespace CosmicShore
             {
                 resourceSystem.ChangeResourceAmount(resourceIndex, -ammoRequiredPerUse);
                 var trailBlock = spawner.Trail.TrailList.Last().gameObject;
+                
                 var newAssembler = trailBlock.AddComponent(assembler.GetType()) as Assembler;
                 newAssembler.Depth = depth;
-                newAssembler.StartBonding();
+                currentAssembler = newAssembler;
             }
         }
 
-        public override void StopAction() { }
+        public override void StopAction() 
+        {
+            if (currentAssembler == null) return;
+            var seed = currentAssembler.GetComponent<TrailBlock>();
+            seed.ActivateSuperShield();
+            seed.transform.localScale *= 2f;
+            currentAssembler.SeedBonding();
+            currentAssembler = null;
+        }
 
         //void CopyComponentValues(Assembler sourceComp, Assembler targetComp)
         //{

@@ -965,7 +965,7 @@ MonoBehaviour:
   crystalImpactEffects: 0d0000000b000000
   minExplosionScale: 50
   maxExplosionScale: 500
-  trailBlockImpactEffects: 12000000
+  trailBlockImpactEffects: 1200000011000000
   blockChargeChange: 0
   boostMultiplier: 4
   bottomEdgeButtons: 0
@@ -1160,7 +1160,7 @@ MonoBehaviour:
   - Ability: {fileID: 8671196826403818986}
     Duration: 0
     Cooldown: 10
-  CrystalTransform: {fileID: 0}
+  TargetPosition: {x: 0, y: 0, z: 0}
   flowFieldData: {fileID: 0}
 --- !u!114 &6776027772320837218
 MonoBehaviour:

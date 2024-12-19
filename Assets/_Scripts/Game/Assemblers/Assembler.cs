@@ -10,6 +10,7 @@ namespace CosmicShore
 
         public abstract bool IsFullyBonded();
         public abstract GrowthInfo GetGrowthInfo();
+        public virtual void SeedBonding() { StartBonding(); }
         public abstract void StartBonding();
         public abstract int Depth { get; set; }
     }

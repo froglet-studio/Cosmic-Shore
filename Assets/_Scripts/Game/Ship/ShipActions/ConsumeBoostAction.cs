@@ -30,13 +30,15 @@ public class ConsumeBoostAction : ShipAction
 
     IEnumerator ConsumeBoostCoroutine()
     {
+        var multiplier = boostMultiplier.Value;
         ship.ResourceSystem.ChangeResourceAmount(resourceIndex,-resourceCost);
         shipData.Boosting = true;
-        ship.boostMultiplier += boostMultiplier.Value;
+        ship.boostMultiplier += multiplier;
         yield return new WaitForSeconds(boostDuration);
-        ship.boostMultiplier -= boostMultiplier.Value;
-        if (ship.boostMultiplier <= 0)
+        ship.boostMultiplier -= multiplier;
+        if (ship.boostMultiplier <= 1)
         {
+            ship.boostMultiplier = 1;
             shipData.Boosting = false;
         }
     }

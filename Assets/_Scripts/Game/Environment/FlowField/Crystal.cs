@@ -139,27 +139,27 @@ namespace CosmicShore.Environment.FlowField
                 }
                 else return;
             }
-            else if (other.gameObject.IsLayer("Projectiles"))
-            {
-                ship = other.GetComponent<Projectile>().Ship;
-                projectile = other.GetComponent<Projectile>();
-                if (Team == Teams.None || Team == ship.Team)
-                {
-                    if (shipImpactEffects)
-                    {
-                        projectile.PerformCrystalImpactEffects(crystalProperties);
-                        if (ship.TryGetComponent<AIPilot>(out var aiPilot))
-                        {
-                            aiPilot.aggressiveness = aiPilot.defaultAggressiveness;
-                            aiPilot.throttle = aiPilot.defaultThrottle;
-                        }
-                    }
+            //else if (other.gameObject.IsLayer("Projectiles"))
+            //{
+            //    ship = other.GetComponent<Projectile>().Ship;
+            //    projectile = other.GetComponent<Projectile>();
+            //    if (Team == Teams.None || Team == ship.Team)
+            //    {
+            //        if (shipImpactEffects)
+            //        {
+            //            projectile.PerformCrystalImpactEffects(crystalProperties);
+            //            if (ship.TryGetComponent<AIPilot>(out var aiPilot))
+            //            {
+            //                aiPilot.aggressiveness = aiPilot.defaultAggressiveness;
+            //                aiPilot.throttle = aiPilot.defaultThrottle;
+            //            }
+            //        }
                     
-                    if (StatsManager.Instance != null)
-                        StatsManager.Instance.CrystalCollected(ship, crystalProperties);
-                }
-                else return;
-            }
+            //        if (StatsManager.Instance != null)
+            //            StatsManager.Instance.CrystalCollected(ship, crystalProperties);
+            //    }
+            //    else return;
+            //}
             else return;
 
             //

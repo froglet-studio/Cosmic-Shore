@@ -4954,7 +4954,7 @@ MonoBehaviour:
   InitialScale: {x: 0, y: 0, z: 0}
   trailBlockImpactEffects: 03000000
   shipImpactEffects: 020000000300000001000000
-  crystalImpactEffects: 0d000000
+  crystalImpactEffects: 
   endEffects: 
   ProjectileTime: 0
   spike: 0

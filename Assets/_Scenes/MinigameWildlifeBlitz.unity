@@ -330,7 +330,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1078953702}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0a66c9f1814dd7a49a173c0f8d502ce0, type: 3}
   m_Name: 
@@ -417,7 +417,7 @@ MonoBehaviour:
   gameMode: 26
   NumberOfRounds: 1
   TurnMonitors:
-  - {fileID: 1078953703}
+  - {fileID: 0}
   - {fileID: 1078953710}
   ScoreTracker: {fileID: 1078953707}
   GameCanvas: {fileID: 1556114763}
@@ -661,6 +661,7 @@ MonoBehaviour:
   StraightLineLength: 400
   RotationAmount: 10
   DifficultyAngle: 90
+  IntensityLevel: 1
   InitializeOnStart: 0
   NumberOfSegments: 0
   branchProbability: 0.2

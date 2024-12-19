@@ -15,6 +15,7 @@ namespace CosmicShore.Game.Arcade
         [SerializeField] bool ScaleLengthWithIntensity = true;
         [SerializeField] bool ScaleNumberOfSegmentsWithIntensity = true;
         [SerializeField] SpawnableHelix helix;
+        [SerializeField] float helixIntensitycaling = 1.3f;
 
 
         //public static virtual ShipTypes PlayerShipType = ShipTypes.Rhino;
@@ -28,7 +29,7 @@ namespace CosmicShore.Game.Arcade
             if (PlayerShipType == ShipTypes.Rhino)
                 ScoreTracker.ScoringMode = ScoringModes.HostileVolumeDestroyed;
 
-            if (helix) helix.firstOrderRadius = helix.secondOrderRadius = IntensityLevel / 1.3f;
+            if (helix) helix.firstOrderRadius = helix.secondOrderRadius = IntensityLevel / helixIntensitycaling;
 
             if (!ResetTrails)
             {

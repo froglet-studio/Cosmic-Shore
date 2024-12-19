@@ -34,5 +34,13 @@ namespace CosmicShore.Game.Arcade
         {
             StatsManager.Instance.ResetStats();
         }
+
+        void Update()
+        {
+            if (paused) return;
+
+            if (Display != null)
+            Display.text = (StatsManager.Instance.CellStats[nodeID].LifeFormsInNode).ToString();
+        }
     }
 }

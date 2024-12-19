@@ -21,7 +21,7 @@ namespace CosmicShore.Core
         Vector3 outerDimensions; // defines volume
         [SerializeField] public Vector3 GrowthVector = new Vector3(0, 2, 0);
         public float Volume { get => outerDimensions.x * outerDimensions.y * outerDimensions.z; }
-        float growthRate = .01f;
+        public float growthRate = .01f;
 
         [Header("Trail Block Status")]
         public float waitTime = .6f;

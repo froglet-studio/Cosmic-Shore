@@ -2005,7 +2005,7 @@ MonoBehaviour:
   - Ability: {fileID: 1711179162404155137}
     Duration: 0
     Cooldown: 4.3
-  CrystalTransform: {fileID: 0}
+  TargetPosition: {x: 0, y: 0, z: 0}
   flowFieldData: {fileID: 0}
 --- !u!114 &6776027772320837218
 MonoBehaviour:
@@ -2026,6 +2026,7 @@ MonoBehaviour:
   lerpAmount: 2
   smallLerpAmount: 0.7
   animator: {fileID: 841299382724584094}
+  hasBoost: 0
 --- !u!114 &5086360743770514783
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2896,7 +2897,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &7800325436931231227
 RectTransform:
   m_ObjectHideFlags: 0

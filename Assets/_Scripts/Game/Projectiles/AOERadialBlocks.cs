@@ -9,6 +9,7 @@ namespace CosmicShore.Game.Projectiles
     public class AOERadialBlocks : AOEConicExplosion
     {
         ElementalFloat depthScale = new(1f);  // Scale both ray radius and block size, in the z direction.
+        [SerializeField] float growthRate = .05f;
         //float depthScale = 1f;
 
         #region Attributes for Block Creation
@@ -21,7 +22,7 @@ namespace CosmicShore.Game.Projectiles
 
         #region Attributes for Explosion Parameters
         [Header("Explosion Parameters")]
-        [SerializeField] float SecondaryExplosionDelay = 0.2f;
+        [SerializeField] float SecondaryExplosionDelay = 0.3f;
         [SerializeField] int numberOfRays = 16;
         [SerializeField] int blocksPerRay = 5;
         [SerializeField] float maxRadius = 50f;
@@ -63,25 +64,24 @@ namespace CosmicShore.Game.Projectiles
             float angleStep = 360f / numberOfRays;
             float rayAngle = rayIndex * angleStep;
 
-            //Quaternion.Euler(0, rayAngle, 0) * 
-            //rayDirection = transform.forward;
-
             for (int block = 0; block < blocksPerRay; block++)
             {
                 float t = (float)block / (blocksPerRay - 1);
                 float radius = Random.Range(minRadius, maxRadius);
 
-                // Add some randomness to the ray direction
-                Vector3 spreadDirection = Quaternion.Euler(
-                    Random.Range(-raySpread, raySpread),
-                    Random.Range(-raySpread, raySpread),
-                    Random.Range(-raySpread, raySpread)
-                ) * rayDirection;
+                // Create a rotation that evenly spreads around rayDirection
+                float spread = raySpread;
+                float rotationAroundRay = Random.Range(0f, 360f);
+
+                // Create a rotation from rayDirection to the spread vector
+                Quaternion spreadRotation = Quaternion.AngleAxis(spread, Vector3.Cross(rayDirection, Vector3.up).normalized);
+                Quaternion rotationAround = Quaternion.AngleAxis(rotationAroundRay, rayDirection);
+
+                // Combine the rotations
+                Vector3 spreadDirection = rotationAround * spreadRotation * rayDirection;
 
                 Vector3 position = transform.position + spreadDirection * radius;
-
-                // Scale blocks based on their position in the ray
-                float scaleMultiplier = scaleCurve.Evaluate(radius/maxRadius);
+                float scaleMultiplier = scaleCurve.Evaluate(radius / maxRadius);
                 Vector3 blockScale = baseBlockScale * scaleMultiplier;
 
                 CreateBlock(position, spreadDirection, transform.up, $"::Radial::{rayIndex}::{block}", trail, blockScale);
@@ -100,6 +100,7 @@ namespace CosmicShore.Game.Projectiles
             block.TargetScale = scale;
             block.transform.parent = TrailSpawner.TrailContainer.transform;
             block.Trail = trail;
+            block.growthRate = growthRate;
             if (shielded) block.TrailBlockProperties.IsShielded = true;
             trail.Add(block);
             return block;

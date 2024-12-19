@@ -13,6 +13,7 @@ namespace CosmicShore
         [SerializeField] int healthBlocksForMaturity = 1; 
         [SerializeField] int minHealthBlocks = 0;
         bool mature = false;
+        bool dying = false;
 
         HashSet<HealthBlock> healthBlocks = new HashSet<HealthBlock>();
         protected HashSet<Spindle> spindles = new HashSet<Spindle>();
@@ -63,8 +64,12 @@ namespace CosmicShore
 
         public void CheckIfDead()
         {
-            if (spindles.Count == 0 || (mature && healthBlocks.Count <= minHealthBlocks))
+            if (!dying && (spindles.Count == 0 || (mature && healthBlocks.Count <= minHealthBlocks)))
+            {
+                dying = true;
                 Die();
+            }
+                
         }
 
         void  CheckIfMature()
@@ -82,8 +87,15 @@ namespace CosmicShore
 
         private IEnumerator DieCoroutine()
         {
-            yield return new WaitForSeconds(1f);
             StatsManager.Instance.LifeformDestroyed(node.ID);
+            foreach (HealthBlock healthBlock in healthBlocks)
+            {
+                healthBlock.Damage(Random.onUnitSphere,Teams.None,"Guy Fawkes",true);
+            }
+            while (spindles.Count > 0)
+            {
+                yield return null;
+            }
             Destroy(gameObject);
         }
 
