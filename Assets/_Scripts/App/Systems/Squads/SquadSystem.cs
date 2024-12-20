@@ -1,3 +1,4 @@
+using CosmicShore.Integrations.PlayFab.Economy;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -22,6 +23,9 @@ namespace CosmicShore.App.Systems.Squads
                 Squad = new Squad(DefaultLeader, DefaultRogueOne, DefaultRogueTwo);
                 DataAccessor.Save(SquadSaveFileName, Squad);
             }
+
+            if (CaptainList == null)
+                CaptainList = CaptainManager.Instance.GetAllSOCaptains();
         }
 
         public static Squad LoadSquad()

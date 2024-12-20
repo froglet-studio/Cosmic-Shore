@@ -27,7 +27,7 @@ namespace CosmicShore.App.UI.Views
                     AllCaptains.Add(captain);
 
             // Populate Squad Buttons
-            SquadSystem.CaptainList = AllCaptains;
+            //SquadSystem.CaptainList = AllCaptains;
             SquadSystem.DefaultLeader = AllCaptains[0];
             SquadSystem.DefaultRogueOne = AllCaptains[0];
             SquadSystem.DefaultRogueTwo = AllCaptains[0];
