@@ -248,9 +248,9 @@ namespace CosmicShore.Core
             if (!trailBlock.GetComponent<LineRenderer>() && ship.ShipStatus.AlignmentEnabled
                 && Player.ActivePlayer && Player.ActivePlayer.Ship == ship) // TODO: ditch line renderer
             {
-                CreateLineRendererAroundBlock(trailBlock);
+                VisualizeTubeAroundBlock(trailBlock);
 
-                var lineRenderer = trailBlock.GetComponent<LineRenderer>();
+                //var lineRenderer = trailBlock.GetComponent<LineRenderer>();
                 //AdjustOpacity(lineRenderer, distance);
             }
 
@@ -298,10 +298,10 @@ namespace CosmicShore.Core
                 
             
 
-                if (trailBlock.TryGetComponent<LineRenderer>(out var lineRenderer))
-                {
-                    Destroy(lineRenderer);
-                }
+                //if (trailBlock.TryGetComponent<LineRenderer>(out var lineRenderer))
+                //{
+                //    Destroy(lineRenderer);
+                //}
 
                 foreach (Transform child in trailBlock.transform)
                 {
@@ -391,18 +391,18 @@ namespace CosmicShore.Core
             Destroy(particle);
         }
 
-        private void CreateLineRendererAroundBlock(TrailBlock trailBlock)
+        private void VisualizeTubeAroundBlock(TrailBlock trailBlock)
         {
-            var lineRenderer = trailBlock.gameObject.AddComponent<LineRenderer>();
-            lineRenderer.material = new Material(lineMaterial);
-            lineRenderer.startWidth = 0.05f;
-            lineRenderer.endWidth = 0.05f;
-            lineRenderer.useWorldSpace = true;
+            //var lineRenderer = trailBlock.gameObject.AddComponent<LineRenderer>();
+            //lineRenderer.material = new Material(lineMaterial);
+            //lineRenderer.startWidth = 0.05f;
+            //lineRenderer.endWidth = 0.05f;
+            //lineRenderer.useWorldSpace = true;
 
-            DrawCircle(lineRenderer, trailBlock.transform, sweetSpot); // radius can be adjusted
+            DrawCircle(trailBlock.transform, sweetSpot); // radius can be adjusted
         }
 
-        private void DrawCircle(LineRenderer lineRenderer, Transform blockTransform, float radius)
+        private void DrawCircle(Transform blockTransform, float radius)
         {
             int segments = 20;
             //lineRenderer.positionCount = segments + 1;
