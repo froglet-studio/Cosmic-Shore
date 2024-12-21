@@ -60,7 +60,9 @@ namespace CosmicShore.App.UI.Views
         public void ShowCaptainSelectModal(int squadMember)
         {
             ActiveSquadMember = squadMember;
-            
+            //squadMemberConfigureView.gameObject.SetActive(true);
+
+
             switch (ActiveSquadMember)
             {
                 case 0:

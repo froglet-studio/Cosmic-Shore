@@ -212,7 +212,8 @@ MonoBehaviour:
   squadMemberCard: {fileID: 437482452}
   captainSelectView: {fileID: 1713566687}
   shipSelectionView: {fileID: 1163718278}
-  squadView: {fileID: 0}
+  squadView: {fileID: 1775375253383862504}
+  homeSquadView: {fileID: 379450216}
   PlayerShips: {fileID: 11400000, guid: 17dcd58a38dad2a498afe518e6a0bb58, type: 2}
 --- !u!1 &2358741
 GameObject:
