@@ -48,7 +48,7 @@ MonoBehaviour:
   SupportedFauna:
   - Population: {fileID: 8812619448024686939, guid: 3b344872fac297f448d202dd574c2a3e,
       type: 3}
-    SpawnProbability: NaN
+    SpawnProbability: 1
   - Population: {fileID: 8812619448024686939, guid: 14b7fddb8e30aa541a092201bc80b848,
       type: 3}
-    SpawnProbability: NaN
+    SpawnProbability: 1

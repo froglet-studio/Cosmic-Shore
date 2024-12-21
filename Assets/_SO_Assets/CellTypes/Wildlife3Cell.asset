@@ -25,12 +25,12 @@ MonoBehaviour:
   CellModifiers:
   - {fileID: 8058406376250941529, guid: daa37ae0e7af4b04383c1c4e6e76817d, type: 3}
   SupportedFlora:
-  - Flora: {fileID: 7514956980722975813, guid: 5f8219db5b2bd1d48b331f9eb3e04888, type: 3}
+  - Flora: {fileID: 7514956980722975813, guid: 3c58c4dd53a6a2240acd7f7b81a3adb5, type: 3}
     SpawnProbability: 1
     initialSpawnCount: 6
     OverrideDefaultPlantPeriod: 1
     NewPlantPeriod: 9999999
   SupportedFauna:
-  - Population: {fileID: 8812619448024686939, guid: 2b97d1ef35ac5e044a7dab1199bc4762,
+  - Population: {fileID: 1594903950002975183, guid: cf5d9d162b969ed4e92bf8388c703723,
       type: 3}
     SpawnProbability: 1
