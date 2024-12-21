@@ -48,13 +48,14 @@ MonoBehaviour:
   healthBlock: {fileID: 646114064177515315, guid: 056e16b46f88f7c40986bc14eead48a5,
     type: 3}
   spindle: {fileID: 5157459880619768690, guid: 76cd644e62b88cc43a93674d5596971e, type: 3}
+  healthBlocksForMaturity: 50
   minHealthBlocks: 5
   Team: 0
-  growPeriod: 2
+  growPeriod: 1.6
   PlantPeriod: 10
-  stunDuration: 1
+  stunDuration: 2
   depth: 0
-  maxTotalSpawnedObjects: 500
+  maxTotalSpawnedObjects: 400
   maxDepth: 80
   itemsPerGrow: 5
   randomItems: 2
