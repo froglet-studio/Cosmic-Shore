@@ -73022,7 +73022,7 @@ MonoBehaviour:
   ArcadeDPadNav: {fileID: 4125016653255471350}
   DailyChallengeCard: {fileID: 353572116}
   ArcadeGameConfigureModal: {fileID: 1847035622}
-  RespectInventoryForGameSelection: 1
+  RespectInventoryForGameSelection: 0
 --- !u!224 &175867981159570580
 RectTransform:
   m_ObjectHideFlags: 0

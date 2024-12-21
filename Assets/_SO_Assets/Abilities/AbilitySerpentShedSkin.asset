@@ -13,10 +13,9 @@ MonoBehaviour:
   m_Name: AbilitySerpentShedSkin
   m_EditorClassIdentifier: 
   Name: Shed Skin
-  Description: The serpent sheds its skin to deploy a self-assembling wall that steals
-    nearby blocks to build itself.
+  Description: Collect a crystal to make an explosion that shields friendly prisms.
   IconActive: {fileID: 21300000, guid: 7995cfadff2c9d9459e39cf6a4391fd8, type: 3}
   IconInactive: {fileID: 21300000, guid: 9578447745550f84f86ae103a335c7a2, type: 3}
-  PreviewClip: {fileID: 2096801853598961014, guid: e838c42bdbc409946944368a0ac2d38d,
+  PreviewClip: {fileID: 2096801853598961014, guid: c999bc68fb279334f9547b83fee26911,
     type: 3}
-  Ship: {fileID: 0}
+  Ship: {fileID: 11400000, guid: 8a288448ab55edc46ac841a5f2e53d83, type: 2}

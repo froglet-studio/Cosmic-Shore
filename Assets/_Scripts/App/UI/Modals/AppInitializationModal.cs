@@ -17,6 +17,8 @@ namespace CosmicShore.App.UI.Modals
         [SerializeField] Image ProgressIndicator;
         [SerializeField] Image ProgressIndicatorBackground;
 
+        static bool NetworkInitialized = false;
+
         void OnEnable()
         {
             AuthenticationManager.OnLoginSuccess += OnAuthenticated;
@@ -25,14 +27,31 @@ namespace CosmicShore.App.UI.Modals
             CatalogManager.OnLoadInventory += OnInventoryLoaded;
         }
 
+        void OnDisable()
+        {
+            AuthenticationManager.OnLoginSuccess -= OnAuthenticated;
+            PlayerDataController.OnProfileLoaded -= OnProfileLoaded;
+            CatalogManager.OnLoadCatalogSuccess -= OnCatalogLoaded;
+            CatalogManager.OnLoadInventory -= OnInventoryLoaded;
+        }
+
         void Awake()
         {
-            //PauseSystem.TogglePauseGame();
-            //Time.timeScale = 0;
-
-            NavBar.SetActive(false);
-            Menu.SetActive(false);
-            StartCoroutine(UpdateTextCoroutine());
+            if (NetworkInitialized)
+            {
+                ProgressIndicator.gameObject.SetActive(false);
+                ProgressIndicatorBackground.gameObject.SetActive(false);
+                NavBar.SetActive(true);
+                Menu.SetActive(true);
+                Animator.SetTrigger("ClosePanelTrigger");
+                gameObject.SetActive(false);
+            }
+            else
+            {
+                NavBar.SetActive(false);
+                Menu.SetActive(false);
+                StartCoroutine(UpdateTextCoroutine());
+            }
         }
 
         IEnumerator UpdateTextCoroutine()
@@ -59,6 +78,8 @@ namespace CosmicShore.App.UI.Modals
 
         IEnumerator CloseCoroutine()
         {
+            NetworkInitialized = true;
+
             yield return new WaitForSecondsRealtime(.25f);
             ProgressIndicator.gameObject.SetActive(false);
             ProgressIndicatorBackground.gameObject.SetActive(false);
@@ -87,8 +108,6 @@ namespace CosmicShore.App.UI.Modals
         void OnInventoryLoaded() {
             ProgressIndicator.rectTransform.sizeDelta = new Vector2(400, 5);
             StartCoroutine(CloseCoroutine());
-
-            //Time.timeScale = 1;
         }
     }
 }
