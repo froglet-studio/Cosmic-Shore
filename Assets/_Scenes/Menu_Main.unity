@@ -38007,6 +38007,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   navGroup: {fileID: 0}
   ShipSelectionGrid: {fileID: 77846526}
+  VerboseLogging: 0
 --- !u!1 &1166627647
 GameObject:
   m_ObjectHideFlags: 0
@@ -61907,7 +61908,6 @@ RectTransform:
   - {fileID: 921072166}
   - {fileID: 1124201210}
   - {fileID: 4983872992474410972}
-  - {fileID: 2087570514}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -67802,6 +67802,11 @@ PrefabInstance:
       propertyPath: m_Name
       value: LoadingSpinner
       objectReference: {fileID: 0}
+    - target: {fileID: 1535113209041733496, guid: 46f84de20d7e2f044b0857a0101c4033,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 1535113209041733499, guid: 46f84de20d7e2f044b0857a0101c4033,
         type: 3}
       propertyPath: m_Pivot.x
@@ -69798,7 +69803,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &2087570514
 RectTransform:
   m_ObjectHideFlags: 0
@@ -69806,7 +69811,7 @@ RectTransform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2087570513}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -69815,7 +69820,7 @@ RectTransform:
   - {fileID: 1977655609}
   - {fileID: 782230483}
   - {fileID: 502896158}
-  m_Father: {fileID: 1867118901}
+  m_Father: {fileID: 4983872992474410972}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
@@ -69835,7 +69840,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 0, g: 0, b: 0, a: 1}
+  m_Color: {r: 0, g: 0, b: 0, a: 0}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -69874,6 +69879,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   InititizingText: {fileID: 1977655610}
   Animator: {fileID: 2087570518}
+  NavBar: {fileID: 1124201209}
+  Menu: {fileID: 921072165}
   ProgressIndicator: {fileID: 502896159}
   ProgressIndicatorBackground: {fileID: 782230484}
 --- !u!95 &2087570518
@@ -78823,6 +78830,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   navGroup: {fileID: 0}
   ShipSelectionGrid: {fileID: 8551351583938100232}
+  VerboseLogging: 0
 --- !u!224 &2399981116694018909
 RectTransform:
   m_ObjectHideFlags: 0
@@ -85664,6 +85672,7 @@ RectTransform:
   - {fileID: 1190551722}
   - {fileID: 2151608}
   - {fileID: 1769395663758693456}
+  - {fileID: 2087570514}
   - {fileID: 2061170151}
   m_Father: {fileID: 1867118901}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}

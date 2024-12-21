@@ -36,7 +36,7 @@ namespace CosmicShore.Game.Projectiles
                 elapsedTime += Time.deltaTime;
                 var lerpAmount = Mathf.Sin((elapsedTime / ExplosionDuration) * PI_OVER_TWO);
                 coneContainer.transform.localScale = Vector3.Lerp(Vector3.zero, MaxScaleVector, lerpAmount);
-                GetComponent<SphereCollider>().radius = coneContainer.transform.localScale.x / (coneContainer.transform.localScale.z * 2);
+                GetComponent<SphereCollider>().radius = coneContainer.transform.localScale.x / (Mathf.Clamp(coneContainer.transform.localScale.z, .01f, Mathf.Infinity) * 2);
                 Material.SetFloat("_Opacity", Mathf.Clamp((MaxScaleVector - coneContainer.transform.localScale).magnitude / MaxScaleVector.magnitude, 0, 1));
                 yield return null;
             }
