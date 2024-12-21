@@ -16,10 +16,10 @@ namespace CosmicShore.Integrations.Instrumentation.Firebase
         /// IAnalyzable interface
         /// All SDK initialization happens here
         /// </summary>
-        public void InitSDK()
+        public async Task InitSDK()
         {
             InitializeDependencyStatus();
-            CheckDependencies();
+            await CheckDependencies();
             Set(true);
             SetUserId();
         }
@@ -59,17 +59,17 @@ namespace CosmicShore.Integrations.Instrumentation.Firebase
         /// Check Dependencies
         /// Check for necessary dependencies and try to resolve them for Android and IOS
         /// </summary>
-        private static void CheckDependencies()
+        private static async Task CheckDependencies()
         {
 #if UNITY_64
-            CheckPcDependencies();
+            await CheckPcDependencies();
 #endif
 #if UNITY_ANDROID
-            CheckAndroidDependencies();
+            await CheckAndroidDependencies();
 #endif
 
 #if UNITY_IOS
-            CheckIOSDependencies();
+            await CheckIOSDependencies();
 #endif
         }
 
@@ -77,9 +77,9 @@ namespace CosmicShore.Integrations.Instrumentation.Firebase
         /// Check PC Standalone Dependencies 
         /// Check for necessary dependencies for PC Standalone and try to resolve them for Android 
         /// </summary>
-        private static void CheckPcDependencies()
+        private static async Task CheckPcDependencies()
         {
-            FirebaseApp.CheckAndFixDependenciesAsync().ContinueWith(
+            await FirebaseApp.CheckAndFixDependenciesAsync().ContinueWith(
                 fixTask =>
                 {
                     if (fixTask.IsCompleted)
@@ -107,9 +107,9 @@ namespace CosmicShore.Integrations.Instrumentation.Firebase
         /// Check Android Dependencies 
         /// Check for necessary dependencies and try to resolve them for Android
         /// </summary>
-        private static void CheckAndroidDependencies()
+        private static async Task CheckAndroidDependencies()
         {
-            FirebaseApp.CheckAndFixDependenciesAsync().ContinueWith(
+            await FirebaseApp.CheckAndFixDependenciesAsync().ContinueWith(
                 fixTask =>
                 {
                     if (fixTask.IsCompleted)
@@ -137,9 +137,9 @@ namespace CosmicShore.Integrations.Instrumentation.Firebase
         /// Check iOS Dependencies 
         /// Check for necessary dependencies and try to resolve them for iOS
         /// </summary>
-        private static void CheckIOSDependencies()
+        private static async Task CheckIOSDependencies()
         {
-            FirebaseApp.CheckAndFixDependenciesAsync().ContinueWith(
+            await FirebaseApp.CheckAndFixDependenciesAsync().ContinueWith(
                 fixTask =>
                 {
                     if (fixTask.IsCompleted)

@@ -1,13 +1,14 @@
 ﻿using CosmicShore.Integrations.Instrumentation.Firebase;
 using CosmicShore.Integrations.Instrumentation.Interfaces;
 using Firebase.Analytics;
+using System.Threading.Tasks;
 
 namespace CosmicShore._Scripts.Integrations.Instrumentation.Firebase
 {
     public class CSPlayerDataCollectorFirebase : IPlayerAnalyzable
     {
         
-        public void InitSDK()
+        public async Task InitSDK()
         {
             
         }

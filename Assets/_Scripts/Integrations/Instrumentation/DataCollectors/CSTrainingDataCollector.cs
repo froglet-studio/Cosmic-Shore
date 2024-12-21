@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 using CosmicShore._Scripts.Integrations.Instrumentation.Firebase;
 using CosmicShore.Integrations.Instrumentation.Interfaces;
 using UnityEngine;
@@ -8,7 +9,7 @@ namespace CosmicShore.Integrations.Instrumentation.DataCollectors
     public class CSTrainingDataCollector : ITrainingAnalyzable
     {
         private readonly ITrainingAnalyzable _trainingDataCollectorFirebase = new CSTrainingDataCollectorFirebase();
-        public void InitSDK()
+        public async Task InitSDK()
         {
             Debug.Log("CSTrainingDataCollector - Initializing Training Data Collector.");
         }

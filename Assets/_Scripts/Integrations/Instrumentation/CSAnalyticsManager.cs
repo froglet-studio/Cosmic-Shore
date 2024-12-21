@@ -26,23 +26,30 @@ namespace CosmicShore.Integrations.Instrumentation
         private readonly ITrainingAnalyzable _trainingDataCollector = new CSTrainingDataCollector();
         private readonly IDeviceAnalyzale _deviceDataCollector = new CSDeviceDataCollector();
         
-        private void Start()
+        private async void Start()
         {
-            InitSDK();
+            await InitSDK();
         }
 
-        public void InitSDK()
+        public async Task InitSDK()
         {
-            _utilitiesFirebase.InitSDK();
+            try
+            {
+                await _utilitiesFirebase.InitSDK();
+
+                // The InitSDK functions are pretty much empty, they are for initializing additional APIS in individual Collectors
+                await _storeDataCollector.InitSDK();
+                await _playerDataCollector.InitSDK();
+                await _dailyChallengeDataCollector.InitSDK();
+                await _arcadeDataCollector.InitSDK();
+                await _missionDataCollector.InitSDK();
+                await _trainingDataCollector.InitSDK();
+                await _deviceDataCollector.InitSDK();
+            }
+            catch 
+            { 
             
-            // The InitSDK functions are pretty much empty, they are for initializing additional APIS in individual Collectors
-            _storeDataCollector.InitSDK();
-            _playerDataCollector.InitSDK();
-            _dailyChallengeDataCollector.InitSDK();
-            _arcadeDataCollector.InitSDK();
-            _missionDataCollector.InitSDK();
-            _trainingDataCollector.InitSDK();
-            _deviceDataCollector.InitSDK();
+            }
         }
 
         // Ready to go

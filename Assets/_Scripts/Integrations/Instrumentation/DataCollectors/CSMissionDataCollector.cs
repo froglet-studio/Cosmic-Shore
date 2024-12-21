@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 using CosmicShore._Scripts.Integrations.Instrumentation.Firebase;
 using CosmicShore.Integrations.Instrumentation.Interfaces;
 using UnityEngine;
@@ -8,7 +9,7 @@ namespace CosmicShore.Integrations.Instrumentation.DataCollectors
     public class CSMissionDataCollector : IMissionAnalyzable
     {
         private readonly IMissionAnalyzable _missionDataCollectorFirebase = new CSMissionDataCollectorFirebase();
-        public void InitSDK()
+        public async Task InitSDK()
         {
             Debug.Log("CSMissionDataCollector - Initializing Mission Data Collector.");
         }

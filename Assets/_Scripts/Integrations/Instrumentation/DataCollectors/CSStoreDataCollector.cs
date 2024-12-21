@@ -8,7 +8,7 @@ namespace CosmicShore.Integrations.Instrumentation.DataCollectors
     public class CSStoreDataCollector : IStoreAnalyzable
     {
         private readonly IStoreAnalyzable _storeDataCollectorFirebase = new CSStoreDataCollectorFirebase();
-        public void InitSDK()
+        public async Task InitSDK()
         {
             Debug.Log("CSStoreDataCollector - Initializing CS Store Data Collector");
         }

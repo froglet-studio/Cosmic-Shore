@@ -5,7 +5,7 @@ namespace CosmicShore.Integrations.Instrumentation.Interfaces
 {
     interface IAnalyzable
     {
-        void InitSDK();
+        Task InitSDK();
     }
     
     interface IStoreAnalyzable : IAnalyzable

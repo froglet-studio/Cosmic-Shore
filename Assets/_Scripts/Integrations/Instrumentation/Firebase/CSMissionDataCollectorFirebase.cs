@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Globalization;
+using System.Threading.Tasks;
 using CosmicShore.Integrations.Instrumentation.Firebase;
 using CosmicShore.Integrations.Instrumentation.Interfaces;
 using Firebase.Analytics;
@@ -8,7 +9,7 @@ namespace CosmicShore._Scripts.Integrations.Instrumentation.Firebase
 {
     public class CSMissionDataCollectorFirebase : IMissionAnalyzable
     {
-        public void InitSDK()
+        public async Task InitSDK()
         {
             
         }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 using CosmicShore._Scripts.Integrations.Instrumentation.Firebase;
 using CosmicShore.Integrations.Instrumentation.Interfaces;
 using UnityEngine;
@@ -8,7 +9,7 @@ namespace CosmicShore.Integrations.Instrumentation.DataCollectors
     public class CSArcadeDataCollector : IArcadeAnalyzable
     {
         private readonly IArcadeAnalyzable _arcadeDataCollectorFirebase = new CSArcadeDataCollectorFirebase();
-        public void InitSDK()
+        public async Task InitSDK()
         {
             Debug.Log("CSArcadeDataCollector - Initializing Arcade Data Collector.");
         }
