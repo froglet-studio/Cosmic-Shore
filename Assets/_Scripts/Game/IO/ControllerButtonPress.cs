@@ -53,6 +53,9 @@ namespace CosmicShore.Game.IO
                     case GamepadButton.West:
                         activationButtonImage.sprite = SquareButtonSprite;
                         break;
+                    default:
+                        activationButtonImage.gameObject.SetActive(false);
+                        break;
                 }
                 Debug.Log("A DualShock controller is connected.");
             }
@@ -71,6 +74,9 @@ namespace CosmicShore.Game.IO
                         break;
                     case GamepadButton.West:
                         activationButtonImage.sprite = XButtonSprite;
+                        break;
+                    default:
+                        activationButtonImage.gameObject.SetActive(false);
                         break;
                 }
                 Debug.Log("An Xbox controller is connected.");

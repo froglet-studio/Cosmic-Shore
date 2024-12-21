@@ -119,22 +119,22 @@ namespace CosmicShore
             {
                 case 1:
                     //rewardValue = SelectedGame.IntensityOneReward.Value.ToString();
-                    RewardButton.gameObject.SetActive(false);
+                    //RewardButton.gameObject.SetActive(false);
                     RewardButton.SetReward(SelectedGame.IntensityOneReward);
                     break;
                 case 2:
                     //rewardValue = SelectedGame.IntensityTwoReward.Value.ToString();
-                    RewardButton.gameObject.SetActive(false);
+                    //RewardButton.gameObject.SetActive(false);
                     RewardButton.SetReward(SelectedGame.IntensityTwoReward);
                     break;
                 case 3:
                     //rewardValue = SelectedGame.IntensityThreeReward.Value.ToString();
-                    RewardButton.gameObject.SetActive(false);
+                    //RewardButton.gameObject.SetActive(false);
                     RewardButton.SetReward(SelectedGame.IntensityThreeReward);
                     break;
                 case 4:
                     //rewardValue = SelectedGame.IntensityFourReward.Value.ToString();
-                    RewardButton.gameObject.SetActive(true);
+                    //RewardButton.gameObject.SetActive(true);
                     RewardButton.SetReward(SelectedGame.IntensityFourReward);
 
                     break;

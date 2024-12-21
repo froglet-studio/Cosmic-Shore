@@ -71,7 +71,7 @@ namespace CosmicShore.App.UI
                     break;
                 case RewardButtonType.Intensity:
                     Debug.Log($"IntensityRewardButton - ClaimReward:{RewardTier}");
-                    TrainingGameProgressSystem.ClaimIntensityTierReward(Reward.GameMode, RewardTier);
+                    TrainingGameProgressSystem.ClaimIntensityTierReward(Reward.GameMode, RewardTier);   // TODO: this should look at the TrainingGame.mode - the reward button mode is to grant the game
                     StartCoroutine(PurchaseVisualEffectCoroutine());
                     break;
             }

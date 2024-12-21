@@ -49,7 +49,7 @@ namespace CosmicShore
         void UpdateView()
         {
             Debug.Log($"UpdateView:{captain.Name}");
-            CaptainName.text = captain.Name;
+            if (CaptainName != null) CaptainName.text = captain.Name;
             CaptainImage.sprite = captain.Image;
             ShipImage.sprite = captain.Ship.SquadImage;
 
