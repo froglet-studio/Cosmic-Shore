@@ -55,6 +55,8 @@ namespace CosmicShore.Game.AI
         float avoidance => Mathf.Lerp(avoidanceLow, avoidanceHigh, SkillLevel);
         float aggressivenessIncrease => Mathf.Lerp(aggressivenessIncreaseLow, aggressivenessIncreaseHigh, SkillLevel);
 
+        float targetUpdateFrequencySeconds = 2f;
+
         [SerializeField] float raycastHeight;
         [SerializeField] float raycastWidth;
 
@@ -85,6 +87,7 @@ namespace CosmicShore.Game.AI
         float maxDistance = 50f;
         float maxDistanceSquared;
 
+        [HideInInspector] public Vector3 CrystalPosition;
         [HideInInspector] public Vector3 TargetPosition;
         Vector3 distance;
 
@@ -140,17 +143,7 @@ namespace CosmicShore.Game.AI
                 }
             }
 
-            // Note that this is re-checked only when a crystal is added or removed, which might not be often enough.
-            if (ship.Team == activeNode.ControllingTeam)  // Your team is winning.
-            {
-                // Target the nearest crystal.
-                TargetPosition = closestItem == null ? activeNode.transform.position : closestItem.transform.position;
-            }
-            else
-            {
-                // Target a block centroid belonging to the winning team.
-                TargetPosition = activeNode.GetExplosionTarget(activeNode.ControllingTeam);
-            }
+            CrystalPosition = closestItem == null ? activeNode.transform.position : closestItem.transform.position;
         }
 
         void Start()
@@ -177,6 +170,7 @@ namespace CosmicShore.Game.AI
             {
                 StartCoroutine(UseAbilityCoroutine(ability));
             }
+            StartCoroutine(SetTargetCoroutine());
         }
 
         void Update()
@@ -186,7 +180,6 @@ namespace CosmicShore.Game.AI
                 ship.InputController.AutoPilotEnabled = true;
                 ship.ShipStatus.AutoPilotEnabled = true;
 
-                //Vector3 currentDirection = shipStatus.Course;
                 distance = TargetPosition - transform.position;
                 Vector3 desiredDirection = distance.normalized;
 
@@ -199,19 +192,19 @@ namespace CosmicShore.Game.AI
                 }
                 else if (LookingAtCrystal && shipStatus.Drifting) desiredDirection *= -1;
                 else if (shipStatus.Drifting) ship.StopShipControllerActions(InputEvents.LeftStickAction);
-                
+
 
                 if (distance.magnitude < float.Epsilon) // Avoid division by zero
                     return;
 
                 Vector3 combinedLocalCrossProduct = Vector3.zero;
                 float sqrMagnitude = distance.sqrMagnitude;
-                //float combinedRoll;
                 Vector3 crossProduct = Vector3.Cross(transform.forward, desiredDirection);
                 Vector3 localCrossProduct = transform.InverseTransformDirection(crossProduct);
                 combinedLocalCrossProduct += localCrossProduct;
-                
-                float angle = Mathf.Asin(Mathf.Clamp(combinedLocalCrossProduct.sqrMagnitude * aggressiveness * 12 / Mathf.Min(sqrMagnitude, maxDistance), -1f, 1f)) * Mathf.Rad2Deg;
+
+                aggressiveness = 100f;  // Multiplier to mitigate vanishing cross products that cause aimless drift
+                float angle = Mathf.Asin(Mathf.Clamp(combinedLocalCrossProduct.sqrMagnitude * aggressiveness / Mathf.Min(sqrMagnitude, maxDistance), -1f, 1f)) * Mathf.Rad2Deg;
 
                 if (SingleStickControls)
                 {
@@ -227,7 +220,7 @@ namespace CosmicShore.Game.AI
                     XDiff = (LookingAtCrystal && ram) ? 1 : Mathf.Clamp(throttle, 0, 1);
                 }
    
-                aggressiveness += aggressivenessIncrease * Time.deltaTime;
+                //aggressiveness += aggressivenessIncrease * Time.deltaTime;
                 throttle += throttleIncrease * Time.deltaTime;
             }
         }
@@ -267,7 +260,37 @@ namespace CosmicShore.Game.AI
                 yield return new WaitForSeconds(action.Duration);
                 action.Ability.StopAction();
                 yield return new WaitForSeconds(action.Cooldown);
-            }        
+            }
+        }
+
+
+        IEnumerator SetTargetCoroutine()
+        {
+            List<ShipTypes> aggressiveShips = new List<ShipTypes> { ShipTypes.Rhino, ShipTypes.Sparrow };
+
+            var activeNode = NodeControlManager.Instance.GetNodeByPosition(transform.position);  // Assume activeNode can't change.
+            if (activeNode == null)
+                activeNode = NodeControlManager.Instance.GetNearestNode(transform.position);
+
+            while (true)
+            {
+
+                if (aggressiveShips.Contains(ship.ShipType) && (activeNode.ControllingTeam != Teams.None)) {
+                    if (ship.Team == activeNode.ControllingTeam)  // Your team is winning.
+                    {
+                        TargetPosition = CrystalPosition;
+                    }
+                    else
+                    {
+                        TargetPosition = activeNode.GetExplosionTarget(activeNode.ControllingTeam);  // Block centroid belonging to the winning team
+                    }
+                }
+                else
+                {
+                    TargetPosition = CrystalPosition;
+                }
+                yield return new WaitForSeconds(targetUpdateFrequencySeconds);
+            }
         }
 
 
