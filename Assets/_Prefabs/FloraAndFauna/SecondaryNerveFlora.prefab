@@ -24,6 +24,7 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6774738432424273872}
+  serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
@@ -31,7 +32,6 @@ Transform:
   m_Children:
   - {fileID: 1648936725651798773}
   m_Father: {fileID: 0}
-  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &7514956980722975813
 MonoBehaviour:
@@ -48,12 +48,13 @@ MonoBehaviour:
   healthBlock: {fileID: 6313579230210663873, guid: 1488a2ac58b2b4c43b14f84206bd9195,
     type: 3}
   spindle: {fileID: 5157459880619768690, guid: f7ec1bbfe690a184b935434a6e0dcb7a, type: 3}
+  healthBlocksForMaturity: 1
   minHealthBlocks: 5
-  activeCrystalMaterial: {fileID: 2100000, guid: 18c297a89c0d43e46bd4ea5bd6143ffb,
-    type: 2}
   Team: 0
   growPeriod: 2
   PlantPeriod: 3
+  stunDuration: 1
+  leafSize: {x: 7, y: 7, z: 7}
   growthChance: 0.5
   minBranchAngle: 20
   maxBranchAngle: 40
@@ -71,6 +72,7 @@ MonoBehaviour:
   SecondarySpawn: {fileID: 0}
   hasPlantedSecondary: 1
   plantAroundCrystal: 0
+  branchingScaleFactor: 14
   goal: {x: 0, y: 0, z: 0}
   plantRadius: 90
 --- !u!1001 &5588088495769702632
@@ -78,6 +80,7 @@ PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Modification:
+    serializedVersion: 3
     m_TransformParent: {fileID: 5739209271613175231}
     m_Modifications:
     - target: {fileID: 2965872700150217210, guid: a4bde9d72595bfb43aa3b791d02f4db8,
@@ -182,6 +185,9 @@ PrefabInstance:
       objectReference: {fileID: 2100000, guid: 6eea31b551b13184cb148646f27388e8, type: 2}
     m_RemovedComponents:
     - {fileID: 6588436222817790466, guid: a4bde9d72595bfb43aa3b791d02f4db8, type: 3}
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: a4bde9d72595bfb43aa3b791d02f4db8, type: 3}
 --- !u!4 &1648936725651798773 stripped
 Transform:
