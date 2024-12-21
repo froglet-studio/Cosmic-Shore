@@ -27,7 +27,7 @@ MonoBehaviour:
   SupportedFlora:
   - Flora: {fileID: 7514956980722975813, guid: 82e04cfd7f5b93f478b5fbfe40c2a2d7, type: 3}
     SpawnProbability: 1
-    initialSpawnCount: 6
+    initialSpawnCount: 4
     OverrideDefaultPlantPeriod: 1
     NewPlantPeriod: 9999999
   SupportedFauna:

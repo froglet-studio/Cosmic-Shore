@@ -316,13 +316,19 @@ namespace CosmicShore.Game.Arcade
                         CatalogManager.Instance.GrantElementalCrystals(crystalsEarned, Element.Time);
                         break;
                 }
+
+                // Grant Crystals
                 Debug.Log($"Mission EndGame - Award Mission Crystals - Player has earned {crystalsEarned} crystals");
+                GameCanvas.CrystalsEarnedImage.gameObject.SetActive(true);
                 GameCanvas.CrystalsEarnedImage.sprite = CaptainManager.Instance.GetCaptainByName(PlayerCaptain.Name).SO_Element.GetFullIcon(true);
+                GameCanvas.CrystalsEarnedText.gameObject.SetActive(true);
                 GameCanvas.CrystalsEarnedText.text = crystalsEarned.ToString();
 
                 // Award XP
                 Debug.Log($"Mission EndGame - Award Mission XP -  score:{ScoreTracker.GetHighScore()}, element:{PlayerCaptain.PrimaryElement}");
                 XpHandler.IssueXP(CaptainManager.Instance.GetCaptainByName(PlayerCaptain.Name), 10);
+                GameCanvas.XPEarnedText.gameObject.SetActive(true);
+                GameCanvas.XPEarnedImage.gameObject.SetActive(true);
                 GameCanvas.XPEarnedText.text = "10";
 
                 // Collect the newly encountered captains into a set
@@ -332,9 +338,9 @@ namespace CosmicShore.Game.Arcade
                 if (Hangar.Instance.HostileAI2Captain != null && !CaptainManager.Instance.IsCaptainEncountered(Hangar.Instance.HostileAI2Captain.Name))
                     encounteredCaptains.Add(Hangar.Instance.HostileAI2Captain);
 
-                // Turn off all the sprites
-                foreach (var encounteredCaptainImage in GameCanvas.EncounteredCaptainImages)
-                    encounteredCaptainImage.gameObject.SetActive(false);
+                // Turn off all the sprites -- commented out since they are turned off in hierarchy
+                //foreach (var encounteredCaptainImage in GameCanvas.EncounteredCaptainImages)
+                //    encounteredCaptainImage.gameObject.SetActive(false);
 
                 // Turn on the sprites that are needed and assign thier images
                 for (int i=0; i<encounteredCaptains.Count; i++)

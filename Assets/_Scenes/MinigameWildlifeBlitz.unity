@@ -366,14 +366,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ActivePlayerScoreDisplay: {fileID: 0}
-  initialScore: 50
+  initialScore: 5000
   ScoringMode: 9
   GolfRules: 0
   AdditionalScoringModes:
   - Mode: 2
-    Multiplier: -0.1
+    Multiplier: -10
   GameCanvas: {fileID: 0}
-  ScoreMultiplier: 3
+  ScoreMultiplier: 300
 --- !u!114 &1078953708
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -417,7 +417,6 @@ MonoBehaviour:
   gameMode: 26
   NumberOfRounds: 1
   TurnMonitors:
-  - {fileID: 0}
   - {fileID: 1078953710}
   ScoreTracker: {fileID: 1078953707}
   GameCanvas: {fileID: 1556114763}

@@ -121,7 +121,7 @@ MonoBehaviour:
   minBranchLengthMultiplier: 0.6
   maxBranchLengthMultiplier: 0.8
   maxDepth: 3
-  maxTotalSpawnedObjects: 63
+  maxTotalSpawnedObjects: 31
   branchPrefabs: []
   GridWidth: 10
   GridHeight: 10

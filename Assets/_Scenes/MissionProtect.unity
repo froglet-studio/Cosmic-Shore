@@ -7230,7 +7230,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Display: {fileID: 0}
   eliminatesPlayer: 0
-  duration: 180
+  duration: 300
 --- !u!4 &1527998410
 Transform:
   m_ObjectHideFlags: 0

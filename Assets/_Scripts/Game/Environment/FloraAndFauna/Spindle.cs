@@ -67,7 +67,7 @@ namespace CosmicShore
 
         public void EvaporateSpindle()
         {
-            if (gameObject.activeInHierarchy)
+            if (gameObject != null && gameObject.activeInHierarchy)
                 StartCoroutine(EvaporateCoroutine());
         }
 

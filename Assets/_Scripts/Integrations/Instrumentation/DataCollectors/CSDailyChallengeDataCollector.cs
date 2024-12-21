@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 using CosmicShore._Scripts.Integrations.Instrumentation.Firebase;
 using CosmicShore.Integrations.Instrumentation.Interfaces;
 using UnityEngine;
@@ -9,7 +10,7 @@ namespace CosmicShore.Integrations.Instrumentation.DataCollectors
     {
         private readonly IDailyChallengeAnalyzable _dailyChallengeDataCollectorFirebase =
             new CSDailyChallengeDataCollectorFirebase();
-        public void InitSDK()
+        public async Task InitSDK()
         {
             Debug.Log("CSDailyChallengeDataCollector - Initializing Daily Challenge Data Collector.");
         }

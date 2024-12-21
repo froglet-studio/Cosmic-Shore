@@ -117,7 +117,13 @@ namespace CosmicShore
                     PlayerPrefs.Save();
                     DailyRewardHandler.Instance.Claim();
                     IconEmitter?.EmitIcons();
+
+#if UNITY_EDITOR || UNITY_IOS || UNITY_ANDROID
                     StartCoroutine(RotateCoroutine(EnterAdMode));
+#else
+                    // On unsupported platforms, just jump straight to clock mode
+                    StartCoroutine(RotateCoroutine(EnterClockMode));
+#endif
                     break;
                 case ButtonMode.Ad:
                     PlayerPrefs.SetString(LastAdClaimedDatePrefKey, DateTime.UtcNow.Date.ToString("o"));
@@ -136,6 +142,7 @@ namespace CosmicShore
             DailyRewardHandler.Instance.Claim();
             IconEmitter?.EmitIcons();
             StartCoroutine(RotateCoroutine(EnterClockMode));
+            AdsSystem.AdShowComplete -= ClaimAdWatchReward;
         }
 
         void InitializePlayerPrefs()
@@ -148,9 +155,9 @@ namespace CosmicShore
             PlayerPrefs.Save();
         }
 
-        // TODO: reconsider implementation now that this class is not using the abstract method
         public override void SetVirtualItem(VirtualItem virtualItem)
         {
+            // TODO: reconsider implementation now that this class is not using the abstract method
             throw new NotImplementedException();
         }
 

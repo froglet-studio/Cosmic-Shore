@@ -48,10 +48,13 @@ MonoBehaviour:
   healthBlock: {fileID: 6313579230210663873, guid: 1488a2ac58b2b4c43b14f84206bd9195,
     type: 3}
   spindle: {fileID: 5157459880619768690, guid: f7ec1bbfe690a184b935434a6e0dcb7a, type: 3}
+  healthBlocksForMaturity: 1
   minHealthBlocks: 5
   Team: 0
   growPeriod: 0.5
   PlantPeriod: 10
+  stunDuration: 1
+  leafSize: {x: 7, y: 7, z: 7}
   growthChance: 0.5
   minBranchAngle: 20
   maxBranchAngle: 40
@@ -70,6 +73,7 @@ MonoBehaviour:
     type: 3}
   hasPlantedSecondary: 0
   plantAroundCrystal: 1
+  branchingScaleFactor: 14
   goal: {x: 0, y: 0, z: 0}
   plantRadius: 90
 --- !u!1001 &5588088495769702632

@@ -7,8 +7,7 @@ namespace CosmicShore.Integrations.Instrumentation.Firebase
 {
     public class CSStoreDataCollectorFirebase : IStoreAnalyzable
     {
-        
-        public void InitSDK()
+        public async Task InitSDK()
         {
         }
 

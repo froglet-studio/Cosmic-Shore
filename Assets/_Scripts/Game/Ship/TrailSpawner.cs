@@ -232,7 +232,7 @@ public class TrailSpawner : MonoBehaviour
 
         while (true)
         {
-            if (Time.deltaTime < .1f && spawnerEnabled && !shipData.Attached && shipData.Speed > .01f)
+            if (spawnerEnabled && !shipData.Attached && shipData.Speed > 3f)
             {
                 if (Gap == 0)
                 {

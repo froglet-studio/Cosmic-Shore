@@ -380,7 +380,7 @@ MonoBehaviour:
   initialWavelength: 8
   minWavelength: 8
   offset: 0
-  Gap: 14
+  Gap: 18
   MinimumGap: 1
   TargetScale: {x: 0, y: 0, z: 0}
   defaultWaitTime: 0.5
@@ -454,7 +454,7 @@ MonoBehaviour:
   drift: 0
   SingleStickControls: 0
   abilities: []
-  CrystalTransform: {fileID: 0}
+  TargetPosition: {x: 0, y: 0, z: 0}
   flowFieldData: {fileID: 0}
 --- !u!114 &5500781737155866732
 MonoBehaviour:
@@ -849,12 +849,12 @@ PrefabInstance:
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
       propertyPath: Scale.Max
-      value: 160
+      value: 80
       objectReference: {fileID: 0}
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
       propertyPath: Scale.Min
-      value: 10
+      value: 30
       objectReference: {fileID: 0}
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
@@ -869,7 +869,7 @@ PrefabInstance:
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
       propertyPath: Scale.Value
-      value: 10
+      value: 30
       objectReference: {fileID: 0}
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}

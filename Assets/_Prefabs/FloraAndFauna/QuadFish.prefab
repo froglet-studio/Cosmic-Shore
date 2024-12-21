@@ -65,18 +65,21 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   healthBlock: {fileID: 3700963117055418962}
   spindle: {fileID: 7947330458120288988}
+  healthBlocksForMaturity: 1
   minHealthBlocks: 0
   Team: 0
   aggression: 0
   Population: {fileID: 0}
-  cohesionRadius: 8
+  detectionRadius: 100
   separationRadius: 4
+  consumeRadius: 40
   behaviorUpdateRate: 1
   separationWeight: 2
   cohesionWeight: 1
   goalWeight: 1.5
   minSpeed: 3
   maxSpeed: 6
+  Phase: 0
 --- !u!1 &6730920616416142416
 GameObject:
   m_ObjectHideFlags: 0
@@ -177,9 +180,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8ec45d1233573f9409107a25ab23b0c9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  cylinder: {fileID: 0}
   RenderedObject: {fileID: 1280044972878121991}
+  parentSpindle: {fileID: 0}
   LifeForm: {fileID: 0}
+  retainSpindle: 0
 --- !u!1001 &8182856232501990
 PrefabInstance:
   m_ObjectHideFlags: 0

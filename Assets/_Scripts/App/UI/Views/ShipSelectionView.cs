@@ -7,6 +7,7 @@ namespace CosmicShore.App.UI.Views
     public class ShipSelectionView : View
     {
         [SerializeField] Transform ShipSelectionGrid;
+        [SerializeField] bool VerboseLogging;
 
         public delegate void SelectionCallback(SO_Ship ship);
         public SelectionCallback OnSelect;
@@ -22,11 +23,11 @@ namespace CosmicShore.App.UI.Views
         {
             for (var i = 0; i < ShipSelectionGrid.childCount; i++)
             {
-                Debug.Log($"MiniGamesMenu - Populating Ship Select List: {i}");
+                if (VerboseLogging) Debug.Log($"MiniGamesMenu - Populating Ship Select List: {i}");
                 var shipSelectionRow = ShipSelectionGrid.transform.GetChild(i);
                 for (var j = 0; j < shipSelectionRow.transform.childCount; j++)
                 {
-                    Debug.Log($"MiniGamesMenu - Populating Ship Select List: {i},{j}");
+                    if (VerboseLogging) Debug.Log($"MiniGamesMenu - Populating Ship Select List: {i},{j}");
                     var selectionIndex = (i * 3) + j;
 
                     // TODO: convert this to take a CaptainCard prefab and instantiate one rather than using the placeholder objects
@@ -35,7 +36,7 @@ namespace CosmicShore.App.UI.Views
                     {
                         var ship = Models[selectionIndex] as SO_Ship;
 
-                        Debug.Log($"MiniGamesMenu - Populating Ship Select List: {ship.Name}");
+                        if (VerboseLogging) Debug.Log($"MiniGamesMenu - Populating Ship Select List: {ship.Name}");
 
                         shipSelection.SetActive(true);
                         if (SelectedModel as SO_Ship == ship)

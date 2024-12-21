@@ -1,8 +1,6 @@
 using CosmicShore.App.Systems.Squads;
-using CosmicShore.App.UI.Modals;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Serialization;
 
 namespace CosmicShore.App.UI.Views
 {
@@ -27,16 +25,13 @@ namespace CosmicShore.App.UI.Views
                     AllCaptains.Add(captain);
 
             // Populate Squad Buttons
-            SquadSystem.CaptainList = AllCaptains;
+            //SquadSystem.CaptainList = AllCaptains;
             SquadSystem.DefaultLeader = AllCaptains[0];
             SquadSystem.DefaultRogueOne = AllCaptains[0];
             SquadSystem.DefaultRogueTwo = AllCaptains[0];
 
             // Get player captain and set captain image for button. set player button active
-            var squad = SquadSystem.LoadSquad();
-            PlayerCaptainButton.Captain = SquadSystem.SquadLeader;
-            RogueOneCaptainButton.Captain = SquadSystem.RogueOne;
-            RogueTwoCaptainButton.Captain = SquadSystem.RogueTwo;
+            UpdateView();
         }
 
         public void AssignCaptain(SO_Captain captain)
@@ -45,19 +40,17 @@ namespace CosmicShore.App.UI.Views
             {
                 case 0:
                     SquadSystem.SetSquadLeader(captain);
-                    PlayerCaptainButton.Captain = captain;
                     break;
                 case 1:
                     SquadSystem.SetRogueOne(captain);
-                    RogueOneCaptainButton.Captain = captain;
                     break;
                 default:
                     SquadSystem.SetRogueTwo(captain);
-                    RogueTwoCaptainButton.Captain = captain;
                     break;
             }
 
             SquadSystem.SaveSquad();
+            UpdateView();
         }
 
         /// <summary>
@@ -67,7 +60,9 @@ namespace CosmicShore.App.UI.Views
         public void ShowCaptainSelectModal(int squadMember)
         {
             ActiveSquadMember = squadMember;
-            
+            //squadMemberConfigureView.gameObject.SetActive(true);
+
+
             switch (ActiveSquadMember)
             {
                 case 0:
@@ -86,7 +81,10 @@ namespace CosmicShore.App.UI.Views
 
         public override void UpdateView()
         {
-            throw new System.NotImplementedException();
+            SquadSystem.LoadSquad();
+            PlayerCaptainButton.Captain = SquadSystem.SquadLeader;
+            RogueOneCaptainButton.Captain = SquadSystem.RogueOne;
+            RogueTwoCaptainButton.Captain = SquadSystem.RogueTwo;
         }
     }
 }

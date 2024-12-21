@@ -12,6 +12,8 @@ namespace CosmicShore.App.UI.Modals
     {
         [SerializeField] TMP_Text InititizingText;
         [SerializeField] Animator Animator;
+        [SerializeField] GameObject NavBar;
+        [SerializeField] GameObject Menu;
         [SerializeField] Image ProgressIndicator;
         [SerializeField] Image ProgressIndicatorBackground;
 
@@ -27,6 +29,9 @@ namespace CosmicShore.App.UI.Modals
         {
             //PauseSystem.TogglePauseGame();
             //Time.timeScale = 0;
+
+            NavBar.SetActive(false);
+            Menu.SetActive(false);
             StartCoroutine(UpdateTextCoroutine());
         }
 
@@ -57,6 +62,8 @@ namespace CosmicShore.App.UI.Modals
             yield return new WaitForSecondsRealtime(.25f);
             ProgressIndicator.gameObject.SetActive(false);
             ProgressIndicatorBackground.gameObject.SetActive(false);
+            NavBar.SetActive(true);
+            Menu.SetActive(true);
             Animator.SetTrigger("ClosePanelTrigger");
             yield return new WaitUntil(() => Animator.GetCurrentAnimatorStateInfo(0).IsName("ZoomClose") && Animator.GetCurrentAnimatorStateInfo(0).normalizedTime >= .8f);
 

@@ -500,12 +500,12 @@ namespace CosmicShore
             Debug.Log("Assembly Stopped");
         }
 
-        private void OnDisable()
-        {
-            if (seed == this)
-            {
-                StopAssembly();
-            }
-        }
+        //private void OnDisable()
+        //{
+        //    if (seed == this)
+        //    {
+        //        StopAssembly();
+        //    }
+        //}
     }
 }

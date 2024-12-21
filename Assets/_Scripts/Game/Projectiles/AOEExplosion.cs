@@ -71,8 +71,10 @@ namespace CosmicShore.Game.Projectiles
                 } 
                 if ((trailBlock.Team == Team && !affectSelf) || !destructive)
                 {
-                    if (shielding && trailBlock.Team == Team) trailBlock.ActivateShield();
-                    else trailBlock.ActivateShield(2f);
+                    if (shielding && trailBlock.Team == Team)
+                        trailBlock.ActivateShield();
+                    else 
+                        trailBlock.ActivateShield(2f);
                     return;
                 }
 
