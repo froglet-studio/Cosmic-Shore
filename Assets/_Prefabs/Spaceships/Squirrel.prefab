@@ -380,7 +380,7 @@ MonoBehaviour:
   initialWavelength: 8
   minWavelength: 8
   offset: 0
-  Gap: 14
+  Gap: 18
   MinimumGap: 1
   TargetScale: {x: 0, y: 0, z: 0}
   defaultWaitTime: 0.5
