@@ -51,13 +51,13 @@ MonoBehaviour:
   healthBlocksForMaturity: 50
   minHealthBlocks: 5
   Team: 0
-  growPeriod: 0.4
+  growPeriod: 0.25
   PlantPeriod: 10
-  stunDuration: 0.25
+  stunDuration: 2
   depth: 0
   maxTotalSpawnedObjects: 500
   maxDepth: 80
-  itemsPerGrow: 5
+  itemsPerGrow: 4
   randomItems: 2
   crystalGrowth: 0.1
 --- !u!1001 &5909534463492262082
