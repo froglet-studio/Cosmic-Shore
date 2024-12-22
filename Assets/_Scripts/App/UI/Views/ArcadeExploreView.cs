@@ -110,8 +110,8 @@ namespace CosmicShore.App.UI.Views
         public void SelectGame(SO_ArcadeGame selectedGame)
         {
             SelectedGame = selectedGame;
-            ArcadeGameConfigureModal.SetSelectedGame(SelectedGame);
             ArcadeGameConfigureModal.ModalWindowIn();
+            ArcadeGameConfigureModal.SetSelectedGame(SelectedGame);
             // TODO: is is throwing a key not found exception
             //UserActionSystem.Instance.CompleteAction(SelectedGame.ViewUserAction);
         }
