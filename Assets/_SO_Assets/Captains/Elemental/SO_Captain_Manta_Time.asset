@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Name: Astrofoil
   Description: Fastest soaring speed in Class.
-  AIBehaviorDescription: 
-  Flavor: '[Flavor text placeholder]'
+  AIBehaviorDescription: Changes cells
+  Flavor: “Exploring the HyperSea is sometimes relaxing, often breathtaking, and always rewarding… but best done at very high speeds”
   Image: {fileID: 21300000, guid: 563d6115630996c48a0cf3d95aa34743, type: 3}
   HeadshotImage: {fileID: 0}
   IconActive: {fileID: 21300000, guid: 91356a0f113024c40a1ccaa4fcdddc93, type: 3}
