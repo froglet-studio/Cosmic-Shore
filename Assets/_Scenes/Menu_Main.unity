@@ -66271,7 +66271,7 @@ GameObject:
   - component: {fileID: 1977655611}
   - component: {fileID: 1977655610}
   m_Layer: 5
-  m_Name: Inititizing
+  m_Name: Initializing
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -69877,7 +69877,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 50f1af4339bd05b4d82e968be4d19674, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  InititizingText: {fileID: 0}
+  InitializingText: {fileID: 1977655610}
   Animator: {fileID: 2087570518}
   NavBar: {fileID: 1124201209}
   Menu: {fileID: 921072165}
@@ -91404,7 +91404,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -32, y: 176.96657}
+  m_AnchoredPosition: {x: -32, y: 178.34863}
   m_SizeDelta: {x: 64, y: 0}
   m_Pivot: {x: 0, y: 1}
 --- !u!1 &5840560526580898137

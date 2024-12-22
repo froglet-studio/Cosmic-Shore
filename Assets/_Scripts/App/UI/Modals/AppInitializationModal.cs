@@ -10,7 +10,7 @@ namespace CosmicShore.App.UI.Modals
 {
     public class AppInitializationModal : MonoBehaviour
     {
-        [SerializeField] TMP_Text InititizingText;
+        [SerializeField] TMP_Text InitializingText;
         [SerializeField] Animator Animator;
         [SerializeField] GameObject NavBar;
         [SerializeField] GameObject Menu;
@@ -60,17 +60,17 @@ namespace CosmicShore.App.UI.Modals
 
             while (stopWatch < 6)
             {
-                InititizingText.text = "Initializing";
+                InitializingText.text = "Initializing";
                 yield return new WaitForSecondsRealtime(.2f);
-                InititizingText.text = "Initializing.";
+                InitializingText.text = "Initializing.";
                 yield return new WaitForSecondsRealtime(.2f);
-                InititizingText.text = "Initializing..";
+                InitializingText.text = "Initializing..";
                 yield return new WaitForSecondsRealtime(.2f);
-                InititizingText.text = "Initializing...";
+                InitializingText.text = "Initializing...";
                 yield return new WaitForSecondsRealtime(.4f);
                 stopWatch++;
             }
-            InititizingText.text = "Offline Mode";
+            InitializingText.text = "Offline Mode";
 
             Debug.LogWarning("Entering Offline Mode");
             StartCoroutine(CloseCoroutine());

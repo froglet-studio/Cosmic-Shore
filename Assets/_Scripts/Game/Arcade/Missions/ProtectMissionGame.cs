@@ -42,6 +42,7 @@ namespace CosmicShore
         protected override void Start()
         {
             base.Start();
+            CurrentDifficulty = IntensityLevel;
             Hangar.Instance.SetPlayerCaptain(CaptainManager.Instance.GetCaptainByName(SquadSystem.SquadLeader.Name));
             Players[0].defaultShip = SquadSystem.SquadLeader.Ship.Class;
             SquadMateOne.defaultShip = SquadSystem.RogueOne.Ship.Class;
