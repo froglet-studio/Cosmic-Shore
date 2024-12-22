@@ -46,7 +46,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   trailBlock: {fileID: 4563009547826722997, guid: c2b586d4533428342ae6dc7849b41d8f,
     type: 3}
-  crystal: {fileID: 6588436222817790495, guid: 6c8ac0b5807e5364b91988f2e68f05ef, type: 3}
+  crystal: {fileID: 6588436222817790495, guid: daeac51bfb157c946bfa2b8d41cda82b, type: 3}
   Width: 2
   Height: 2
   blockSize: 9
@@ -83,6 +83,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 2530874233327190209}
+  - {fileID: 5769822064478363331}
   - {fileID: 5043599769643737427}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -100,8 +101,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   spawnableSegments:
   - {fileID: 2530874233327190238}
+  - {fileID: 7627241801619013983}
   positioningScheme: 17
   spawnSegmentWeights:
+  - 1
   - 1
   Seed: 0
   parent: {fileID: 0}
@@ -196,3 +199,54 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Crystal: {fileID: 6588436222817790495, guid: 241ebd0d9e00971489a10317a77140e5, type: 3}
+--- !u!1 &3650796628408329819
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 5769822064478363331}
+  - component: {fileID: 7627241801619013983}
+  m_Layer: 0
+  m_Name: Wall (1)
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &5769822064478363331
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3650796628408329819}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2530874233943709693}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &7627241801619013983
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3650796628408329819}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dd7acff66a39b3747904e3a58ac654ab, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  trailBlock: {fileID: 4563009547826722997, guid: c2b586d4533428342ae6dc7849b41d8f,
+    type: 3}
+  crystal: {fileID: 6588436222817790495, guid: 6c8ac0b5807e5364b91988f2e68f05ef, type: 3}
+  Width: 2
+  Height: 2
+  blockSize: 9
+  padding: 1

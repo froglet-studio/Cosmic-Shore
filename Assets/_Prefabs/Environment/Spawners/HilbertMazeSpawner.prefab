@@ -46,7 +46,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   trailBlock: {fileID: 4563009547826722997, guid: c2b586d4533428342ae6dc7849b41d8f,
     type: 3}
-  crystal: {fileID: 6588436222817790495, guid: 6c8ac0b5807e5364b91988f2e68f05ef, type: 3}
+  crystal: {fileID: 6588436222817790495, guid: daeac51bfb157c946bfa2b8d41cda82b, type: 3}
   Width: 2
   Height: 2
   blockSize: 9
