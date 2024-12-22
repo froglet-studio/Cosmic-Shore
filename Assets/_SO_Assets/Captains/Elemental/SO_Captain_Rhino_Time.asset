@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Name: Tomahawk
   Description: Fastest in Class.
-  AIBehaviorDescription: 
-  Flavor: '[Flavor text placeholder]'
+  AIBehaviorDescription: Gets crystals and hunts players in sequence
+  Flavor: “Gonna gitch’ya!”
   Image: {fileID: 21300000, guid: 5f792de95e7e9b147ae4dca478c00292, type: 3}
   HeadshotImage: {fileID: 0}
   IconActive: {fileID: 21300000, guid: 91356a0f113024c40a1ccaa4fcdddc93, type: 3}
