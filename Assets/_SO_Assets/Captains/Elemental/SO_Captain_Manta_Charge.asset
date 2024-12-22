@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Name: Tender
   Description: Longest debuff duration from crystal decoy.
-  AIBehaviorDescription: 
-  Flavor: '[Flavor text placeholder]'
+  AIBehaviorDescription: Gets crystals and drops decoys
+  Flavor: “What’s yours is mine, and what’s mine is a mine.”
   Image: {fileID: 21300000, guid: 3e970c0653c217442860791c006b1e46, type: 3}
   HeadshotImage: {fileID: 0}
   IconActive: {fileID: 21300000, guid: 6c4f40eef57f4d04bbd01083161212ff, type: 3}
