@@ -69877,7 +69877,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 50f1af4339bd05b4d82e968be4d19674, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  InititizingText: {fileID: 1977655610}
+  InititizingText: {fileID: 0}
   Animator: {fileID: 2087570518}
   NavBar: {fileID: 1124201209}
   Menu: {fileID: 921072165}
@@ -73310,7 +73310,7 @@ PrefabInstance:
     - target: {fileID: 302356026468653294, guid: fdbd97f79a7aec14f8fadd5589780a74,
         type: 3}
       propertyPath: HostileAI2ShipType
-      value: 11
+      value: 6
       objectReference: {fileID: 0}
     - target: {fileID: 302356026468653295, guid: fdbd97f79a7aec14f8fadd5589780a74,
         type: 3}
