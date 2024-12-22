@@ -268,15 +268,17 @@ namespace CosmicShore.Game.AI
         {
             List<ShipTypes> aggressiveShips = new List<ShipTypes> { ShipTypes.Rhino, ShipTypes.Sparrow };
 
+            var rand = new System.Random();
+
             var activeNode = NodeControlManager.Instance.GetNodeByPosition(transform.position);  // Assume activeNode can't change.
             if (activeNode == null)
                 activeNode = NodeControlManager.Instance.GetNearestNode(transform.position);
 
+
             while (true)
             {
-
                 if (aggressiveShips.Contains(ship.ShipType) && (activeNode.ControllingTeam != Teams.None)) {
-                    if (ship.Team == activeNode.ControllingTeam)  // Your team is winning.
+                    if ((ship.Team == activeNode.ControllingTeam) || (rand.NextDouble() < 0.5))  // Your team is winning.
                     {
                         TargetPosition = CrystalPosition;
                     }
