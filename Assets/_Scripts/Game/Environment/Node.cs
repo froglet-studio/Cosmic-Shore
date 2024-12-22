@@ -285,36 +285,56 @@ public class Node : MonoBehaviour
 
     public Teams ControllingTeam
     {
-        get
+        /// TODO: replace this with below. This is a temporary fix to the issue of a single node not being able to accurately determine team volume
+
+        get 
         {
-            if (!enabled)
-                return Teams.None;
+            var greenVolume = StatsManager.Instance.TeamStats.ContainsKey(Teams.Jade) ? StatsManager.Instance.TeamStats[Teams.Jade].VolumeRemaining : 0f;
+            var redVolume = StatsManager.Instance.TeamStats.ContainsKey(Teams.Ruby) ? StatsManager.Instance.TeamStats[Teams.Ruby].VolumeRemaining : 0f;
+            var goldVolume = StatsManager.Instance.TeamStats.ContainsKey(Teams.Gold) ? StatsManager.Instance.TeamStats[Teams.Gold].VolumeRemaining : 0f;
 
-            if (!teamVolumes.ContainsKey(Teams.Jade)  && !teamVolumes.ContainsKey(Teams.Ruby) &&!teamVolumes.ContainsKey(Teams.Gold))
-                return Teams.None;
-
-            if ((!teamVolumes.ContainsKey(Teams.Ruby) || (!teamVolumes.ContainsKey(Teams.Gold))) && teamVolumes[Teams.Jade] > volumeControlThreshold)
+            if (greenVolume > redVolume && greenVolume > goldVolume)
                 return Teams.Jade;
-
-            if ((!teamVolumes.ContainsKey(Teams.Jade) || (!teamVolumes.ContainsKey(Teams.Gold))) && teamVolumes[Teams.Ruby] > volumeControlThreshold)
+            else if (redVolume > greenVolume && redVolume > goldVolume)
                 return Teams.Ruby;
-
-            if ((!teamVolumes.ContainsKey(Teams.Jade) || (!teamVolumes.ContainsKey(Teams.Ruby))) && teamVolumes[Teams.Gold] > volumeControlThreshold)
+            else if (goldVolume > greenVolume && goldVolume > redVolume)
                 return Teams.Gold;
-
-            if (teamVolumes[Teams.Jade] < volumeControlThreshold && teamVolumes[Teams.Ruby] < volumeControlThreshold && teamVolumes[Teams.Gold] < volumeControlThreshold)
-                return Teams.None;
-
-            if (teamVolumes[Teams.Jade] == teamVolumes[Teams.Gold] && teamVolumes[Teams.Jade] == teamVolumes[Teams.Ruby])
-                return Teams.None;
-
-            if (teamVolumes[Teams.Jade] > teamVolumes[Teams.Ruby] && teamVolumes[Teams.Jade] > teamVolumes[Teams.Gold])
-                return Teams.Jade;
-            else if (teamVolumes[Teams.Ruby] > teamVolumes[Teams.Jade] && teamVolumes[Teams.Ruby] > teamVolumes[Teams.Gold])
-                return Teams.Ruby;
             else
-                return Teams.Gold;
+                return Teams.None;
         }
+
+        /// / This is the original code
+
+        //get 
+        //{
+        //    if (!enabled)
+        //        return Teams.None;
+
+        //    if (!teamVolumes.ContainsKey(Teams.Jade)  && !teamVolumes.ContainsKey(Teams.Ruby) &&!teamVolumes.ContainsKey(Teams.Gold))
+        //        return Teams.None;
+
+        //    if ((!teamVolumes.ContainsKey(Teams.Ruby) || (!teamVolumes.ContainsKey(Teams.Gold))) && teamVolumes[Teams.Jade] > volumeControlThreshold)
+        //        return Teams.Jade;
+
+        //    if ((!teamVolumes.ContainsKey(Teams.Jade) || (!teamVolumes.ContainsKey(Teams.Gold))) && teamVolumes[Teams.Ruby] > volumeControlThreshold)
+        //        return Teams.Ruby;
+
+        //    if ((!teamVolumes.ContainsKey(Teams.Jade) || (!teamVolumes.ContainsKey(Teams.Ruby))) && teamVolumes[Teams.Gold] > volumeControlThreshold)
+        //        return Teams.Gold;
+
+        //    if (teamVolumes[Teams.Jade] < volumeControlThreshold && teamVolumes[Teams.Ruby] < volumeControlThreshold && teamVolumes[Teams.Gold] < volumeControlThreshold)
+        //        return Teams.None;
+
+        //    if (teamVolumes[Teams.Jade] == teamVolumes[Teams.Gold] && teamVolumes[Teams.Jade] == teamVolumes[Teams.Ruby])
+        //        return Teams.None;
+
+        //    if (teamVolumes[Teams.Jade] > teamVolumes[Teams.Ruby] && teamVolumes[Teams.Jade] > teamVolumes[Teams.Gold])
+        //        return Teams.Jade;
+        //    else if (teamVolumes[Teams.Ruby] > teamVolumes[Teams.Jade] && teamVolumes[Teams.Ruby] > teamVolumes[Teams.Gold])
+        //        return Teams.Ruby;
+        //    else
+        //        return Teams.Gold;
+        //}
     }
 
     IEnumerator SpawnFlora(FloraConfiguration floraConfiguration, bool spawnJade = true)
