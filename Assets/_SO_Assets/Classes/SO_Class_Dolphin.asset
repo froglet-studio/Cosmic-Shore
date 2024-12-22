@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Class: 2
   Name: Dolphin
-  Description: 'Thread the narrowest needles at the highest speeds to build max charge, then drift sideways into a crystal to release one of the biggest blasts in the Hypersea.'
+  Description: Thread the narrowest needles at the highest speeds to build max charge, then drift sideways into a crystal to release one of the biggest blasts in the Hypersea.
   IconActive: {fileID: 21300000, guid: c07463db6e8244c45b639760efd18f9e, type: 3}
   IconInactive: {fileID: 21300000, guid: b246047e69267514cbe744de4853c3a3, type: 3}
   PreviewImage: {fileID: 21300000, guid: 0cdee36486fec6e45a0d54e8998d722a, type: 3}
