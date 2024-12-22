@@ -557,7 +557,7 @@ MonoBehaviour:
   GolfRules: 0
   AdditionalScoringModes: []
   GameCanvas: {fileID: 0}
-  ScoreMultiplier: 0.006865
+  ScoreMultiplier: 0.1
 --- !u!114 &1078953708
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -898,6 +898,7 @@ MonoBehaviour:
   IntensityLevel: 1
   InitializeOnStart: 0
   NumberOfSegments: 1
+  mazeData: []
   branchProbability: 0.2
   minBranchAngle: 20
   maxBranchAngle: 20

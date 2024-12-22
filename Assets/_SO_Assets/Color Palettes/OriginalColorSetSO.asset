@@ -16,11 +16,11 @@ MonoBehaviour:
     ShipColor1: {r: 0, g: 0.04901961, b: 0.09411765, a: 1}
     ShipColor2: {r: 0, g: 0.3882353, b: 0.7490196, a: 1}
     OutsideBlockColor: {r: 0, g: 0.08, b: 0.17, a: 1}
-    ShieldedOutsideBlockColor: {r: 0.007843138, g: 0.13333334, b: 0.3882353, a: 1}
+    ShieldedOutsideBlockColor: {r: 0.086804256, g: 0.23667915, b: 0.48427665, a: 1}
     SuperShieldedOutsideBlockColor: {r: 0.03529412, g: 0.20392157, b: 0.36862746,
       a: 1}
     InsideBlockColor: {r: 0, g: 0.7764706, b: 1.4980392, a: 1}
-    ShieldedInsideBlockColor: {r: 0, g: 0.42352942, b: 1.4980391, a: 1}
+    ShieldedInsideBlockColor: {r: 0.5290533, g: 0.82947236, b: 1.5723268, a: 1}
     SuperShieldedInsideBlockColor: {r: 1.3951378, g: 1.5441371, b: 2.0635064, a: 1}
     AOETextureColor: {r: 0.36039874, g: 1.860437, b: 1.0082682, a: 0}
     AOEFresnelColor: {r: 0, g: 0.121500015, b: 0.135, a: 0}

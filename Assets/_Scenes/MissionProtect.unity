@@ -7142,6 +7142,7 @@ MonoBehaviour:
   IntensityLevel: 1
   InitializeOnStart: 1
   NumberOfSegments: 4
+  mazeData: []
   branchProbability: 0.2
   minBranchAngle: 20
   maxBranchAngle: 20
@@ -7305,7 +7306,7 @@ MonoBehaviour:
   HostileAITwo: {fileID: 1466531423}
   HostileAIThree: {fileID: 1604771576}
   EnemyShipClasses: 030000000100000002000000070000000b00000006000000
-  CurrentDifficulty: 3
+  CurrentDifficulty: 5
   faunaOnlyLimit: 250000
   IntensityThreshold: 1
   ThreatWaveMinimumPeriodInSeconds: 2

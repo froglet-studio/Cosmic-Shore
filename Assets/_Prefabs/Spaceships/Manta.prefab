@@ -1870,9 +1870,10 @@ MonoBehaviour:
   MinimumSpeed: 0
   ThrottleScaler: 0
   DefaultMinimumSpeed: 10
-  DefaultThrottleScaler:
+  DefaultThrottleScaler: 50
+  ThrottleScalerMultiplier:
     Enabled: 0
-    Value: 50
+    Value: 1
     Min: 0
     Max: 0
     element: 0
@@ -1983,7 +1984,8 @@ MonoBehaviour:
   - Ability: {fileID: 867704553499413969}
     Duration: 0
     Cooldown: 10.2
-  CrystalTransform: {fileID: 0}
+  CrystalPosition: {x: 0, y: 0, z: 0}
+  TargetPosition: {x: 0, y: 0, z: 0}
   flowFieldData: {fileID: 0}
 --- !u!114 &6776027772320837218
 MonoBehaviour:
@@ -3130,6 +3132,21 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7231566422788689087, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
+      propertyPath: m_LocalScale.x
+      value: 20
+      objectReference: {fileID: 0}
+    - target: {fileID: 7231566422788689087, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
+      propertyPath: m_LocalScale.y
+      value: 20
+      objectReference: {fileID: 0}
+    - target: {fileID: 7231566422788689087, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
+      propertyPath: m_LocalScale.z
+      value: 20
+      objectReference: {fileID: 0}
+    - target: {fileID: 7231566422788689087, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
       objectReference: {fileID: 0}
@@ -3191,12 +3208,12 @@ PrefabInstance:
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
       propertyPath: Scale.Max
-      value: 30
+      value: 40
       objectReference: {fileID: 0}
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
       propertyPath: Scale.Min
-      value: 10
+      value: 20
       objectReference: {fileID: 0}
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
@@ -3211,7 +3228,7 @@ PrefabInstance:
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
       propertyPath: Scale.Value
-      value: 10
+      value: 20
       objectReference: {fileID: 0}
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
@@ -3220,8 +3237,13 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
-      propertyPath: Scale.element
+      propertyPath: Scale.Enabled
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
+      propertyPath: Scale.element
+      value: 3
       objectReference: {fileID: 0}
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
