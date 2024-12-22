@@ -18,6 +18,8 @@ namespace CosmicShore
         Material temporaryMaterial; // Temporary material for animations
         Coroutine condenseCoroutine;
 
+        bool dying = false;
+
         IEnumerator Start()
         {
             if (RenderedObject.sharedMaterial == null)
@@ -59,8 +61,9 @@ namespace CosmicShore
 
         public void CheckForLife()
         {
-            if (healthBlocks.Count < 1 && spindles.Count < 1)
+            if (!dying && healthBlocks.Count < 1 && spindles.Count < 1)
             {
+                dying = true;
                 EvaporateSpindle();
             }
         }
