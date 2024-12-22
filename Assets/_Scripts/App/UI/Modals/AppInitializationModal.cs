@@ -60,13 +60,13 @@ namespace CosmicShore.App.UI.Modals
 
             while (stopWatch < 6)
             {
-                InititizingText.text = "Inititizing";
+                InititizingText.text = "Initializing";
                 yield return new WaitForSecondsRealtime(.2f);
-                InititizingText.text = "Inititizing.";
+                InititizingText.text = "Initializing.";
                 yield return new WaitForSecondsRealtime(.2f);
-                InititizingText.text = "Inititizing..";
+                InititizingText.text = "Initializing..";
                 yield return new WaitForSecondsRealtime(.2f);
-                InititizingText.text = "Inititizing...";
+                InititizingText.text = "Initializing...";
                 yield return new WaitForSecondsRealtime(.4f);
                 stopWatch++;
             }
