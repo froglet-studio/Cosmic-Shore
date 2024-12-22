@@ -13,9 +13,9 @@ MonoBehaviour:
   m_Name: SO_Captain_Dolphin_Mass
   m_EditorClassIdentifier: 
   Name: Slingshot
-  Description: "Biggest blocks in Class while it\u2019s drifting."
-  AIBehaviorDescription: 
-  Flavor: '[Flavor text placeholder]'
+  Description: Biggest blocks in Class while it's drifting.
+  AIBehaviorDescription: Drifts at 90 degrees
+  Flavor: "Is it just me, or does er’rything look bigger when it’s movin sideways…?"
   Image: {fileID: 21300000, guid: 7ccf5cdc412ce4c48adb13f909b8da49, type: 3}
   HeadshotImage: {fileID: 0}
   IconActive: {fileID: 21300000, guid: a631b4ddb4bf68b4bb89f43b7ab8380d, type: 3}
