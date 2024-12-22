@@ -44,7 +44,7 @@ namespace CosmicShore.Core
 
         [SerializeField] int resourceIndex = 0;
 
-        float minMatureBlockDistance = Mathf.Infinity;
+        float minMatureBlockSqrDistance = Mathf.Infinity;
         TrailBlock minMatureBlock;
         float fuel = 0;
 
@@ -52,9 +52,10 @@ namespace CosmicShore.Core
         float directionWeight;
 
         float sweetSpot;
+        float sqrSweetSpot;
         float FWHM;
         float sigma;
-        float radius;
+        float sqrRadius;
 
         float initialGap;
 
@@ -68,11 +69,11 @@ namespace CosmicShore.Core
                 if (visible)
                     GetComponent<MeshRenderer>().material = new Material(ship.SkimmerMaterial);
             }
-
             sweetSpot = transform.localScale.x / 4;
-            FWHM = transform.localScale.x / 4; //Full Width at Half Max
+            sqrSweetSpot = transform.localScale.x * transform.localScale.x / 16;
+            FWHM = sqrSweetSpot; //Full Width at Half Max
             sigma = FWHM / 2.355f;
-            radius = transform.localScale.x / 2;
+            sqrRadius = transform.localScale.x * transform.localScale.x / 4;
             initialGap = ship.TrailSpawner.Gap;
             if (appliedScale != Scale.Value)
             {
@@ -237,33 +238,31 @@ namespace CosmicShore.Core
             if(!skimStartTimes.ContainsKey(trailBlock.ID))   
                 StartSkim(trailBlock);
 
-            float distance = Vector3.Distance(transform.position, other.transform.position);
 
+            float sqrDistance = (transform.position - other.transform.position).sqrMagnitude;
             if (trailBlock.ownerId != ship.Player.PlayerUUID || Time.time - trailBlock.TrailBlockProperties.TimeCreated > 7)
             {
-                minMatureBlockDistance = Mathf.Min(minMatureBlockDistance, distance);
-                if (distance == minMatureBlockDistance) minMatureBlock = trailBlock;
+                
+                minMatureBlockSqrDistance = Mathf.Min(minMatureBlockSqrDistance, sqrDistance);
+                if (sqrDistance == minMatureBlockSqrDistance) minMatureBlock = trailBlock;
+                
             }
 
-            if (!trailBlock.GetComponent<LineRenderer>() && ship.ShipStatus.AlignmentEnabled
-                && Player.ActivePlayer && Player.ActivePlayer.Ship == ship) // TODO: ditch line renderer
+            if (ship.ShipStatus.AlignmentEnabled && Player.ActivePlayer && Player.ActivePlayer.Ship == ship) // TODO: ditch line renderer
             {
-                VisualizeTubeAroundBlock(trailBlock);
-
-                //var lineRenderer = trailBlock.GetComponent<LineRenderer>();
-                //AdjustOpacity(lineRenderer, distance);
+                if (activelySkimmingBlockCount < 20) VisualizeTubeAroundBlock(trailBlock);
             }
 
             foreach (Transform child in trailBlock.transform)
             {
                 if (child.gameObject.CompareTag("Shard")) // Make sure to tag your marker prefabs
                 {
-                    AdjustOpacity(child.gameObject, distance);
+                    AdjustOpacity(child.gameObject, sqrDistance);
                 }
             }
 
             // start with a baseline fuel amount the ranges from 0-1 depending on proximity of the skimmer to the trail block
-            fuel = chargeAmount * (1 - (distance / transform.localScale.x)); // x is arbitrary, just need radius of skimmer
+            fuel = chargeAmount * (1 - (sqrDistance / transform.localScale.x)); // x is arbitrary, just need radius of skimmer
 
             // apply decay
             fuel *= Mathf.Min(0, (skimDecayDuration - (Time.time - skimStartTimes[trailBlock.ID])) / skimDecayDuration);
@@ -276,24 +275,27 @@ namespace CosmicShore.Core
         {
             if (minMatureBlock)
             {
-                distanceWeight = ComputeGaussian(minMatureBlockDistance, sweetSpot, sigma);
+                distanceWeight = ComputeGaussian(minMatureBlockSqrDistance, sqrSweetSpot, sigma);
                 directionWeight = Vector3.Dot(ship.transform.forward, minMatureBlock.transform.forward);
                 var combinedWeight = distanceWeight * Mathf.Abs(directionWeight);
                 PerformBlockStayEffects(combinedWeight);
             }
             minMatureBlock = null;
-            minMatureBlockDistance = Mathf.Infinity;
+            minMatureBlockSqrDistance = Mathf.Infinity;
             fuel = 0;
         }
 
         void OnTriggerExit(Collider other)
         {
+            
+
             if (other.TryGetComponent<TrailBlock>(out var trailBlock) && (affectSelf || trailBlock.Team != team))
             {
                 if (skimStartTimes.ContainsKey(trailBlock.ID))
                 {
                     skimStartTimes.Remove(trailBlock.ID);
                     activelySkimmingBlockCount--;
+                    if (activelySkimmingBlockCount < 1) PerformBlockStayEffects(0);
                 }
                 
             
@@ -316,7 +318,7 @@ namespace CosmicShore.Core
 
         void ScaleTrailAndCamera()
         {
-            var normalizedDistance = Mathf.Clamp(Mathf.InverseLerp(15f, radius, minMatureBlockDistance), 0,1);
+            var normalizedDistance = Mathf.Clamp(Mathf.InverseLerp(15f, sqrRadius, minMatureBlockSqrDistance), 0,1);
 
             ship.TrailSpawner.SetNormalizedXScale(normalizedDistance);
 
@@ -331,11 +333,12 @@ namespace CosmicShore.Core
 
         void AlignAndNudge(float combinedWeight)  // unused but ready to put in the flip phone effect for squirrel
         {
+            if (!minMatureBlock) return;
             //align
             ship.ShipTransformer.GentleSpinShip(minMatureBlock.transform.forward * directionWeight, ship.transform.up, combinedWeight * Time.deltaTime);
 
             //nudge
-            if (minMatureBlockDistance < sweetSpot)
+            if (minMatureBlockSqrDistance < sqrSweetSpot)
                 ship.ShipTransformer.ModifyVelocity(-(minMatureBlock.transform.position - transform.position).normalized * distanceWeight * Mathf.Abs(directionWeight), Time.deltaTime * 10);
             else ship.ShipTransformer.ModifyVelocity((minMatureBlock.transform.position - transform.position).normalized * distanceWeight * Mathf.Abs(directionWeight), Time.deltaTime * 10);
         }
@@ -423,17 +426,10 @@ namespace CosmicShore.Core
             }
         }
 
-        private void AdjustOpacity(LineRenderer lineRenderer, float distance)
+        private void AdjustOpacity(GameObject marker, float sqrDistance)
         {
-            float opacity = .01f - .01f*(distance / radius); // Closer blocks are less transparent
-            lineRenderer.material.SetFloat("_Opacity", opacity);
-        }
-        private void AdjustOpacity(GameObject marker, float distance)
-        {
-            float opacity = .1f - .1f*(distance / radius); // Closer blocks are less transparent
+            float opacity = .1f - .1f*(sqrDistance / sqrRadius); // Closer blocks are less transparent
             marker.GetComponent<MeshRenderer>().material.SetFloat("_Opacity", opacity);
         }
-
-
     }
 }
