@@ -14,8 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Mode: 15
   DisplayName: Master Exploder
-  Description: Get the crstals to blow up as much as you can before the time runs
-    out
+  Description: Continually overtake your opponent to activate your Mach Cone while beating them to the crystals. Do both rapidly enough to beat them.
   IconActive: {fileID: 21300000, guid: b734e1a473e014c4198c58f6c02b894d, type: 3}
   IconInactive: {fileID: 21300000, guid: 3393ef5bcc756364d98dc478fc0fe52b, type: 3}
   CardBackground: {fileID: 21300000, guid: 38913dbc8ac8b854183084fa635bd1d4, type: 3}
