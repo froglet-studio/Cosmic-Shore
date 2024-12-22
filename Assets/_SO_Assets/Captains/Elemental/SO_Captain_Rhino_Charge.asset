@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Name: Krush
   Description: Slowest shield shrink rate in Class.
-  AIBehaviorDescription: 
-  Flavor: '[Flavor text placeholder]'
+  AIBehaviorDescription: Changes course toward denser clusters of enemy blocks
+  Flavor: “When I’m not smashing I’m changing coarse, and I hate change.”
   Image: {fileID: 21300000, guid: a096164eb89aa9f4ea559e6ba3e428a9, type: 3}
   HeadshotImage: {fileID: 0}
   IconActive: {fileID: 21300000, guid: 6c4f40eef57f4d04bbd01083161212ff, type: 3}
