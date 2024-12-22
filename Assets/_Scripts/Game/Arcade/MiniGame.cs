@@ -280,6 +280,8 @@ namespace CosmicShore.Game.Arcade
             foreach (var player in Players)
                 Debug.Log($"MiniGame.EndGame - Player Score: {ScoreTracker.GetScore(player.PlayerName)} ");
 
+            bool defeat = false;
+
             GameCanvas.MiniGameHUD.gameObject.SetActive(false);
 
             if (IsDailyChallenge)
@@ -316,6 +318,11 @@ namespace CosmicShore.Game.Arcade
                         CatalogManager.Instance.GrantElementalCrystals(crystalsEarned, Element.Time);
                         break;
                 }
+
+                defeat = ScoreTracker.GetScore(Players[0].PlayerName) <= 0;
+
+                Debug.LogError($"Mission EndGame - score {ScoreTracker.GetScore(Players[0].PlayerName)}, defeat:{defeat}");
+                
 
                 // Grant Crystals
                 Debug.Log($"Mission EndGame - Award Mission Crystals - Player has earned {crystalsEarned} crystals");
@@ -372,7 +379,7 @@ namespace CosmicShore.Game.Arcade
             if (NumberOfPlayers > 1)
                 GameCanvas.scoreboard.ShowMultiplayerView();
             else
-                GameCanvas.scoreboard.ShowSinglePlayerView();
+                GameCanvas.scoreboard.ShowSinglePlayerView(defeat);
 
             OnMiniGameEnd?.Invoke(gameMode, PlayerShipType, NumberOfPlayers, IntensityLevel, ScoreTracker.GetHighScore());
         }

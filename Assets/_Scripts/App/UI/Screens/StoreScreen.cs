@@ -32,6 +32,7 @@ namespace CosmicShore.App.Ui.Menus
         [SerializeField] List<HorizontalLayoutGroup> GamePurchaseRows;
         [SerializeField] int GamesPerRow = 2;
         [SerializeField] int MaxGameRows = 2;
+        [SerializeField] bool ShowGamePurchasing;
 
         [Header("Daily Challenge and Faction Tickets")]
         //[SerializeField] PurchaseGameplayTicketCard FactionMissionTicketCard;
@@ -157,6 +158,9 @@ namespace CosmicShore.App.Ui.Menus
 
         void PopulateGamePurchaseCards()
         {
+            if (!ShowGamePurchasing)
+                return;
+
             if (gameCardsPopulated)
                 return;
 

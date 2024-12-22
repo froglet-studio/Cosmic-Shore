@@ -11,7 +11,7 @@ namespace CosmicShore
     public class Scoreboard : MonoBehaviour
     {
         [Header("Banner")] [SerializeField] Image BannerImage;
-        [SerializeField] TMP_Text BannerText;
+        [SerializeField] public TMP_Text BannerText;
         [SerializeField] Color SinglePlayerBannerColor;
         [SerializeField] Color JadeTeamBannerColor;
         [SerializeField] Color RubyTeamBannerColor;
@@ -92,19 +92,22 @@ namespace CosmicShore
             MultiplayerView.gameObject.SetActive(true);
         }
 
-        public void ShowSinglePlayerView()
+        public void ShowSinglePlayerView(bool defeat=false)
         {
             // Setup Banner
             BannerImage.color = SinglePlayerBannerColor;
-            BannerText.text = "RUN RESULTS";
+            if (defeat)
+                BannerText.text = "DEFEAT";
+            else
+                BannerText.text = "RUN RESULTS";
 
             // Populate this run's score
-            var playerScore = scoreTracker.playerScores.First();
-            SinglePlayerScoreTextField.text = ((int)playerScore.Value).ToString();
+            var playerScore = Mathf.Max(scoreTracker.playerScores.First().Value, 0);
+            SinglePlayerScoreTextField.text = ((int)playerScore).ToString();
 
             // TODO: pull actual high score
             // Populate high score
-            SinglePlayerHighscoreTextField.text = ((int) playerScore.Value).ToString();
+            SinglePlayerHighscoreTextField.text = ((int) playerScore).ToString();
 
             // Show the jam
             MultiplayerView.gameObject.SetActive(false);
