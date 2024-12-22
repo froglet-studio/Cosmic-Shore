@@ -49,15 +49,15 @@ MonoBehaviour:
     type: 3}
   spindle: {fileID: 5157459880619768690, guid: 76cd644e62b88cc43a93674d5596971e, type: 3}
   healthBlocksForMaturity: 50
-  minHealthBlocks: 1
+  minHealthBlocks: 5
   Team: 0
-  growPeriod: 0.8
+  growPeriod: 1
   PlantPeriod: 10
-  stunDuration: 0.75
+  stunDuration: 1
   depth: 0
-  maxTotalSpawnedObjects: 750
+  maxTotalSpawnedObjects: 500
   maxDepth: 80
-  itemsPerGrow: 7
+  itemsPerGrow: 5
   randomItems: 2
   crystalGrowth: 0.1
 --- !u!1001 &7781905005551658711
