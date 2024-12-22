@@ -14,8 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Class: 3
   Name: Rhino
-  Description: Smash things with your face to gain boost and volume. Hunt down other
-    players to stop them from making volume. Watch out for collateral damage.
+  Description: Smash things with your face to gain boost and volume. Hunt down other players to stop them from making volume. Watch out for collateral damage.
   IconActive: {fileID: 21300000, guid: 8da001fa155b50849bdb405534e9284e, type: 3}
   IconInactive: {fileID: 21300000, guid: 9e2685470a877514c8cebdc154473e8a, type: 3}
   PreviewImage: {fileID: 21300000, guid: 1d50cd3184d75fe43acf5ace04e20554, type: 3}
