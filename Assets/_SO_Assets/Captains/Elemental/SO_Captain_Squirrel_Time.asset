@@ -12,10 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ce7474d4aed9d704ea0001a2338c0784, type: 3}
   m_Name: SO_Captain_Squirrel_Time
   m_EditorClassIdentifier: 
-  Name: Scurious
-  Description: A classic tale of love and kaiju
-  AIBehaviorDescription: 
-  Flavor: '[Placeholder Flavor Text]'
+  Name: Trace
+  Description: Highest top speed in Class
+  AIBehaviorDescription: Hunts players
+  Flavor: “You go on ahead. I’ll be right behind you... And then I won’t!”
   Image: {fileID: 21300000, guid: f67a59b9420cbd343a85be97b887cbb3, type: 3}
   HeadshotImage: {fileID: 0}
   IconActive: {fileID: 21300000, guid: 91356a0f113024c40a1ccaa4fcdddc93, type: 3}
