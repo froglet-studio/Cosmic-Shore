@@ -252,8 +252,10 @@ MonoBehaviour:
   StraightLineLength: 400
   RotationAmount: 10
   DifficultyAngle: 90
+  IntensityLevel: 1
   InitializeOnStart: 0
   NumberOfSegments: 3
+  mazeData: []
   branchProbability: 0.2
   minBranchAngle: 20
   maxBranchAngle: 20
@@ -463,12 +465,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ActivePlayerScoreDisplay: {fileID: 0}
+  initialScore: 0
   ScoringMode: 0
   GolfRules: 0
   AdditionalScoringModes: []
   GameCanvas: {fileID: 0}
-  TimePlayedScoreMultiplier: 1000
-  ScoreNormalizationQuotient: 145.65
+  ScoreMultiplier: 0.01
 --- !u!114 &1078953708
 MonoBehaviour:
   m_ObjectHideFlags: 0

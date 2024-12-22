@@ -18,17 +18,17 @@ MonoBehaviour:
   ShipClass: {fileID: 11400000, guid: 7b7053dd065edb54baa3b831b90f4985, type: 2}
   DailyChallengeIntensity: 2
   DailyChallengeTierOneReward:
-    ScoreRequirement: 4250
+    ScoreRequirement: 4500
     Value: 50
     Element: 5
     GameMode: 26
   DailyChallengeTierTwoReward:
-    ScoreRequirement: 4750
+    ScoreRequirement: 5000
     Value: 75
     Element: 5
     GameMode: 26
   DailyChallengeTierThreeReward:
-    ScoreRequirement: 5250
+    ScoreRequirement: 5500
     Value: 100
     Element: 5
     GameMode: 26
@@ -43,12 +43,12 @@ MonoBehaviour:
     Element: 2
     GameMode: 26
   IntensityThreeReward:
-    ScoreRequirement: 5000
+    ScoreRequirement: 4500
     Value: 175
     Element: 2
     GameMode: 26
   IntensityFourReward:
-    ScoreRequirement: 5500
+    ScoreRequirement: 4000
     Value: 225
     Element: 1
     GameMode: 26
