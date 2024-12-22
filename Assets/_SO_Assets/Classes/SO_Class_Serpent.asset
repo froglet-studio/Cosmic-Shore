@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Class: 7
   Name: Serpent
-  Description: Make those walls
+  Description: Navigate with just one thumb and place seeds that will steal ALL local blocks into a wall that can be sheilded. Use walls to disrupt enemy volume and navigation.
   IconActive: {fileID: 21300000, guid: a6ac8dbe9d4712546a77ca5ed843cfa6, type: 3}
   IconInactive: {fileID: 21300000, guid: 4e7292da6b535db4e9fafa6b089998bc, type: 3}
   PreviewImage: {fileID: 21300000, guid: e8dfbb15579ed9d47bd692534852142e, type: 3}
