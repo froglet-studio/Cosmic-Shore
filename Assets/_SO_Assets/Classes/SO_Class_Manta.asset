@@ -14,8 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Class: 1
   Name: Manta
-  Description: Soar with grace through open space on relaxing scouting missions,
-    or run a heist with a flyby. Either way you get to relax while helping your team.
+  Description: Soar at high speed through open spaces to create the biggest blocks in the Hypersea, or skim your opponents trail to steal theirs.
   IconActive: {fileID: 21300000, guid: 3cf78c88592fff3419945dc7d6a4889a, type: 3}
   IconInactive: {fileID: 21300000, guid: d62dde48bde5ed94282c4279c33da034, type: 3}
   PreviewImage: {fileID: 21300000, guid: b3fe0f4b92e2cf74b830808e3f8d88fc, type: 3}
