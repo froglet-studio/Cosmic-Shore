@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Name: Damsel
   Description: "Produces the biggest blocks in the game when it's in open space."
-  AIBehaviorDescription: 
-  Flavor: '[Flavor text placeholder]'
+  AIBehaviorDescription: Soars in open spaces at high speed
+  Flavor: “Hectic as the HyperSea can get…  I always seem to find some space to stretch.”
   Image: {fileID: 21300000, guid: 42132c1ff5cdb0a45a2bdd1ef8db7f32, type: 3}
   HeadshotImage: {fileID: 0}
   IconActive: {fileID: 21300000, guid: a631b4ddb4bf68b4bb89f43b7ab8380d, type: 3}
