@@ -87,9 +87,8 @@ namespace CosmicShore.Core
 
             spread = meshRenderer.material.GetVector("_Spread");
 
-            UpdateVolume();
-
             TargetScale = TargetScale == Vector3.zero ? transform.localScale : TargetScale;
+            UpdateVolume();
             transform.localScale = Vector3.one * Mathf.Epsilon;
 
             StartCoroutine(CreateBlockCoroutine());

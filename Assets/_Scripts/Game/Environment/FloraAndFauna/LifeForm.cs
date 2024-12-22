@@ -15,6 +15,7 @@ namespace CosmicShore
         [SerializeField] int minHealthBlocks = 0;
         bool mature = false;
         bool dying = false;
+        [SerializeField] float shieldPeriod = 0;
 
         HashSet<HealthBlock> healthBlocks = new HashSet<HealthBlock>();
         protected HashSet<Spindle> spindles = new HashSet<Spindle>();
@@ -25,6 +26,7 @@ namespace CosmicShore
 
         protected virtual void Start()
         {
+            if (shieldPeriod > 0) StartCoroutine(ShieldRegen());
             crystal = GetComponentInChildren<Crystal>();
             node = NodeControlManager.Instance.GetNodeByPosition(transform.position);
             StatsManager.Instance.LifeformCreated(node.ID);
@@ -108,6 +110,32 @@ namespace CosmicShore
         public void SetTeam(Teams team)
         {
             Team = team;
+        }
+
+        IEnumerator ShieldRegen()
+        {
+            while (shieldPeriod > 0)
+            {
+                // Create a snapshot of the current health blocks
+                List<HealthBlock> currentBlocks = new List<HealthBlock>(healthBlocks);
+
+                if (currentBlocks.Count > 0)
+                {
+                    foreach (HealthBlock healthBlock in currentBlocks)
+                    {
+                        // Check if the block still exists in the main list
+                        if (healthBlocks.Contains(healthBlock))
+                        {
+                            healthBlock.ActivateShield();
+                        }
+                        yield return new WaitForSeconds(shieldPeriod);
+                    }
+                }
+                else
+                {
+                    yield return new WaitForSeconds(shieldPeriod);
+                }
+            }
         }
     }
 }

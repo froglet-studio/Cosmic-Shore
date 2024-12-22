@@ -35,6 +35,11 @@ MonoBehaviour:
     initialSpawnCount: 0
     OverrideDefaultPlantPeriod: 0
     NewPlantPeriod: 0
+  - Flora: {fileID: 8186157953239024492, guid: 64c1c3612f071b946a3f70e8a65496db, type: 3}
+    SpawnProbability: 1
+    initialSpawnCount: 0
+    OverrideDefaultPlantPeriod: 0
+    NewPlantPeriod: 0
   SupportedFauna:
   - Population: {fileID: 1594903950002975183, guid: cf5d9d162b969ed4e92bf8388c703723,
       type: 3}
