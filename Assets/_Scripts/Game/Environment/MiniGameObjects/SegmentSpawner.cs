@@ -21,7 +21,8 @@ public enum PositioningScheme
     KinkyTubeNetwork = 13,
     SpiralTower = 14,
     HoneycombGrid = 15,
-    HilbertCurveLSystem = 16
+    HilbertCurveLSystem = 16,
+    SavedMaze = 17
 }
 
 public class SegmentSpawner : MonoBehaviour
@@ -49,6 +50,8 @@ public class SegmentSpawner : MonoBehaviour
 
     Vector3 currentDisplacement;
     Quaternion currentRotation;
+
+    public MazeData[] mazeData;
 
     [Header("Branching Settings")]
     [SerializeField] float branchProbability = 0.2f;
@@ -245,6 +248,23 @@ public class SegmentSpawner : MonoBehaviour
                 hilbertPositioner.GenerateHilbertCurve();
                 var positions = hilbertPositioner.GetPositions();
                 var rotations = hilbertPositioner.GetRotations();
+
+                mazeData[IntensityLevel - 1].walls.Clear();
+
+                for (int i = 0; i < positions.Count; i++)
+                {
+                    mazeData[IntensityLevel - 1].walls.Add(new MazeData.WallData
+                    {
+                        position = positions[i],
+                        rotation = rotations[i]
+                    });
+                }
+
+#if UNITY_EDITOR
+                UnityEditor.EditorUtility.SetDirty(mazeData[IntensityLevel-1]);
+                UnityEditor.AssetDatabase.SaveAssets();
+             #endif
+
                 if (spawnedItemCount < positions.Count)
                 {
                     spawned.transform.SetPositionAndRotation(
@@ -253,7 +273,15 @@ public class SegmentSpawner : MonoBehaviour
                     );
                 }
                 return;
+            case PositioningScheme.SavedMaze:
 
+                if (spawnedItemCount < mazeData[IntensityLevel - 1].walls.Count)
+                {
+                    spawned.transform.SetPositionAndRotation(
+                        Quaternion.Euler(0, 0, RotationAmount) * (mazeData[IntensityLevel - 1].walls[spawnedItemCount].position + origin + transform.position),
+                        Quaternion.Euler(0, 0, RotationAmount) * mazeData[IntensityLevel - 1].walls[spawnedItemCount].rotation);
+                }
+                return;    
         }
     }
 

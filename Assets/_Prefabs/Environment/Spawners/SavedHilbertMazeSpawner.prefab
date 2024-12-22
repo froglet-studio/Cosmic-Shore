@@ -63,7 +63,7 @@ GameObject:
   - component: {fileID: 2530874233943709692}
   - component: {fileID: 2530874233943709695}
   m_Layer: 0
-  m_Name: HilbertMazeSpawner
+  m_Name: SavedHilbertMazeSpawner
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -100,7 +100,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   spawnableSegments:
   - {fileID: 2530874233327190238}
-  positioningScheme: 16
+  positioningScheme: 17
   spawnSegmentWeights:
   - 1
   Seed: 0

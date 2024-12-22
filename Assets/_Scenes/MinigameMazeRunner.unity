@@ -409,7 +409,7 @@ MonoBehaviour:
   ActivePlayer: {fileID: 0}
   Crystal: {fileID: 1788700246}
   CrystalStartPosition: {x: 0, y: 0, z: 0}
-  SegmentSpawner: {fileID: 2530874233943709692, guid: c99a9e68c1fa5eb45be5281d31b07dd1,
+  SegmentSpawner: {fileID: 2530874233943709692, guid: f33ae3ae8106b5244867c1f4da929a50,
     type: 3}
 --- !u!1001 &1142622546
 PrefabInstance:

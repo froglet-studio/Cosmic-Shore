@@ -30,7 +30,7 @@ namespace CosmicShore.Game.Arcade
 
             TrailSpawner.NukeTheTrails();
 
-            for (int i = 0; i < IntensityLevel; i++)
+            for (int i = 0; i < 1; i++)
             {
                 var maze = Instantiate(SegmentSpawner);
                 maze.Seed = new System.Random().Next();
