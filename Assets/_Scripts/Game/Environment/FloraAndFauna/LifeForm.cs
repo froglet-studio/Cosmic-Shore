@@ -10,19 +10,17 @@ namespace CosmicShore
     {
         [SerializeField] protected HealthBlock healthBlock;
         [SerializeField] protected Spindle spindle;
-
-        [SerializeField] int healthBlocksForMaturity = 1; 
+        [SerializeField] int healthBlocksForMaturity = 1;
         [SerializeField] int minHealthBlocks = 0;
-        bool mature = false;
-        bool dying = false;
         [SerializeField] float shieldPeriod = 0;
 
-        HashSet<HealthBlock> healthBlocks = new HashSet<HealthBlock>();
+        public Teams Team;
         protected HashSet<Spindle> spindles = new HashSet<Spindle>();
-
         protected Crystal crystal;
         protected Node node;
-        public Teams Team;
+        bool mature = false;
+        bool dying = false;
+        HashSet<HealthBlock> healthBlocks = new HashSet<HealthBlock>();
 
         protected virtual void Start()
         {
@@ -72,7 +70,6 @@ namespace CosmicShore
                 dying = true;
                 Die();
             }
-                
         }
 
         void  CheckIfMature()

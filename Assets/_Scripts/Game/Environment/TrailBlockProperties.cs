@@ -9,12 +9,12 @@ namespace CosmicShore.Core
         public float volume;
         public float speedDebuffAmount; // don't use more than two sig figs, see ship.DebuffSpeed
         public TrailBlock trailBlock;
-        public int Index;
+        public ushort Index;
         public Trail Trail;
         public bool IsShielded;
         public bool IsSuperShielded;
         public bool IsDangerous; // TODO: change to enum with mutually exclusive values with shielding
-        public float TimeCreated;
         public bool IsTransparent;
+        public float TimeCreated;
     }
 }

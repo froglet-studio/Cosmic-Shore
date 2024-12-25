@@ -235,17 +235,15 @@ namespace CosmicShore.Core
             if (trailBlock.Team == team && !affectSelf) return;
             
             // Occasionally, seeing a KeyNotFoundException, so maybe we miss the OnTriggerEnter event (note: always seems to be for AOE blocks)
-            if(!skimStartTimes.ContainsKey(trailBlock.ID))   
+            if (!skimStartTimes.ContainsKey(trailBlock.ID))   
                 StartSkim(trailBlock);
-
 
             float sqrDistance = (transform.position - other.transform.position).sqrMagnitude;
             if (trailBlock.ownerId != ship.Player.PlayerUUID || Time.time - trailBlock.TrailBlockProperties.TimeCreated > 7)
             {
-                
                 minMatureBlockSqrDistance = Mathf.Min(minMatureBlockSqrDistance, sqrDistance);
-                if (sqrDistance == minMatureBlockSqrDistance) minMatureBlock = trailBlock;
-                
+                if (sqrDistance == minMatureBlockSqrDistance) 
+                    minMatureBlock = trailBlock;
             }
 
             if (ship.ShipStatus.AlignmentEnabled && Player.ActivePlayer && Player.ActivePlayer.Ship == ship) // TODO: ditch line renderer
@@ -287,32 +285,19 @@ namespace CosmicShore.Core
 
         void OnTriggerExit(Collider other)
         {
-            
-
             if (other.TryGetComponent<TrailBlock>(out var trailBlock) && (affectSelf || trailBlock.Team != team))
             {
                 if (skimStartTimes.ContainsKey(trailBlock.ID))
                 {
                     skimStartTimes.Remove(trailBlock.ID);
                     activelySkimmingBlockCount--;
-                    if (activelySkimmingBlockCount < 1) PerformBlockStayEffects(0);
+                    if (activelySkimmingBlockCount < 1) 
+                        PerformBlockStayEffects(0);
                 }
-                
-            
-
-                //if (trailBlock.TryGetComponent<LineRenderer>(out var lineRenderer))
-                //{
-                //    Destroy(lineRenderer);
-                //}
 
                 foreach (Transform child in trailBlock.transform)
-                {
                     if (child.gameObject.CompareTag("Shard")) // Make sure to tag your marker prefabs
-                    {
                         Destroy(child.gameObject);
-                    }
-                }
-
             }
         }
 
@@ -333,14 +318,17 @@ namespace CosmicShore.Core
 
         void AlignAndNudge(float combinedWeight)  // unused but ready to put in the flip phone effect for squirrel
         {
-            if (!minMatureBlock) return;
+            if (!minMatureBlock)
+                return;
+            
             //align
             ship.ShipTransformer.GentleSpinShip(minMatureBlock.transform.forward * directionWeight, ship.transform.up, combinedWeight * Time.deltaTime);
 
             //nudge
             if (minMatureBlockSqrDistance < sqrSweetSpot)
                 ship.ShipTransformer.ModifyVelocity(-(minMatureBlock.transform.position - transform.position).normalized * distanceWeight * Mathf.Abs(directionWeight), Time.deltaTime * 10);
-            else ship.ShipTransformer.ModifyVelocity((minMatureBlock.transform.position - transform.position).normalized * distanceWeight * Mathf.Abs(directionWeight), Time.deltaTime * 10);
+            else 
+                ship.ShipTransformer.ModifyVelocity((minMatureBlock.transform.position - transform.position).normalized * distanceWeight * Mathf.Abs(directionWeight), Time.deltaTime * 10);
         }
 
         void VizualizeDistance(float combinedWeight)
@@ -351,12 +339,15 @@ namespace CosmicShore.Core
 
         void ScalePitchAndYaw(float combinedWeight)
         {
-            ship.ShipTransformer.PitchScaler = ship.ShipTransformer.YawScaler = 150 * (1 + (.5f*combinedWeight));
+            //ship.ShipTransformer.PitchScaler = ship.ShipTransformer.YawScaler = 150 * (1 + (.5f*combinedWeight));
+            ship.ShipTransformer.PitchScaler = ship.ShipTransformer.YawScaler = 150 + (75 * combinedWeight);
         }
 
         void ScaleHapticWithDistance(float combinedWeight)
         {
-            if (!ship.ShipStatus.AutoPilotEnabled) HapticController.PlayConstant(combinedWeight/3, combinedWeight/3, Time.deltaTime);
+            var hapticScale = combinedWeight / 3;
+            if (!ship.ShipStatus.AutoPilotEnabled)
+                HapticController.PlayConstant(hapticScale, hapticScale, Time.deltaTime);
         }
 
         void Boost(float combinedWeight)
@@ -396,39 +387,28 @@ namespace CosmicShore.Core
 
         private void VisualizeTubeAroundBlock(TrailBlock trailBlock)
         {
-            //var lineRenderer = trailBlock.gameObject.AddComponent<LineRenderer>();
-            //lineRenderer.material = new Material(lineMaterial);
-            //lineRenderer.startWidth = 0.05f;
-            //lineRenderer.endWidth = 0.05f;
-            //lineRenderer.useWorldSpace = true;
-
             DrawCircle(trailBlock.transform, sweetSpot); // radius can be adjusted
         }
 
         private void DrawCircle(Transform blockTransform, float radius)
         {
             int segments = 20;
-            //lineRenderer.positionCount = segments + 1;
-
-            Vector3 forward = blockTransform.forward;
-            Vector3 up = blockTransform.up;
-            Vector3 right = blockTransform.right;
-
+            var anglePerSegment = Mathf.PI * .1f;   // Restore to this if segments becomes dynamic: var anglePerSegment = Mathf.PI * 2f / segments;
             for (int i = 0; i <= segments; i++)
             {
-                float angle = i * Mathf.PI * 2f / segments;
-                Vector3 localPosition = (Mathf.Cos(angle) * right + Mathf.Sin(angle) * up) * radius;
+                float angle = i * anglePerSegment;
+                Vector3 localPosition = (Mathf.Cos(angle) * blockTransform.right + Mathf.Sin(angle) * blockTransform.up) * radius;
                 Vector3 worldPosition = blockTransform.position + localPosition;
-                //lineRenderer.SetPosition(i, worldPosition);
 
-                GameObject marker = Instantiate(markerPrefab, worldPosition, Quaternion.LookRotation(forward, localPosition));
-                marker.transform.parent = blockTransform; // Optional: Make the marker a child of the block
+                GameObject marker = Instantiate(markerPrefab, worldPosition, Quaternion.LookRotation(blockTransform.forward, localPosition));
+                marker.transform.parent = blockTransform;
             }
         }
 
         private void AdjustOpacity(GameObject marker, float sqrDistance)
         {
-            float opacity = .1f - .1f*(sqrDistance / sqrRadius); // Closer blocks are less transparent
+            float opacity = .1f - .1f * (sqrDistance / sqrRadius); // Closer blocks are less transparent
+            
             marker.GetComponent<MeshRenderer>().material.SetFloat("_Opacity", opacity);
         }
     }

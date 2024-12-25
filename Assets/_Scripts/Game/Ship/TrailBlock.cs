@@ -25,11 +25,10 @@ namespace CosmicShore.Core
 
         [Header("Trail Block Status")]
         public float waitTime = .6f;
+        public string ID;
+        public ushort Index;
         public bool destroyed;
         public bool devastated;
-        public string ID;
-        public int Index;
-        public bool warp;
         public bool IsSmallest;
         public bool IsLargest;
 
@@ -48,7 +47,6 @@ namespace CosmicShore.Core
             get => team; 
             set 
             {
-                //Debug.LogWarning($"Setting Block Team from {team} to {value}");
                 team = value;
                 ActiveOpaqueMaterial = meshRenderer.material = ThemeManager.Instance.GetTeamBlockMaterial(team);
                 ActiveTransparentMaterial = ThemeManager.Instance.GetTeamTransparentBlockMaterial(team);
