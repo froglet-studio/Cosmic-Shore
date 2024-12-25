@@ -376,7 +376,7 @@ namespace CosmicShore
                         trailBlock.TargetScale = scale;
                         trailBlock.MaxScale = TrailBlock.MaxScale;
                         trailBlock.GrowthVector = TrailBlock.GrowthVector;
-                        trailBlock.Steal(TrailBlock.Player, TrailBlock.Team);
+                        trailBlock.Steal(TrailBlock.Player, TrailBlock.Team, true);
                         trailBlock.ChangeSize();
                         mateComponent = trailBlock.transform.gameObject.AddComponent<WallAssembler>();
                     }

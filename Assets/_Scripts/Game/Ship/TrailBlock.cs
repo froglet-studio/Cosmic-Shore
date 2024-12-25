@@ -407,11 +407,11 @@ namespace CosmicShore.Core
             }
         }
 
-        public void Steal(Player player, Teams team)
+        public void Steal(Player player, Teams team, bool superSteal = false)
         {
             if (Team != team)
             {
-                if (TrailBlockProperties.IsShielded || TrailBlockProperties.IsSuperShielded)
+                if (!superSteal && (TrailBlockProperties.IsShielded || TrailBlockProperties.IsSuperShielded))
                 {
                     DeactivateShields();
                     return;

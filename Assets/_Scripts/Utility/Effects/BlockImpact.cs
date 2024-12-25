@@ -16,19 +16,24 @@ public class BlockImpact : MonoBehaviour
     {
         
         Vector3 distance = Vector3.zero;
-        velocity = GeometryUtils.ClampMagnitude(velocity, minSpeed, maxSpeed);
+        float speed;
+        velocity = GeometryUtils.ClampMagnitude(velocity, minSpeed, maxSpeed, out speed);
+
         material = gameObject.GetComponent<MeshRenderer>().material;
+        material.SetVector("_velocity", velocity);
+
         var initialPosition = transform.position;
         var maxDuration = 7;
         var duration = 0f;
+
         while (duration <= maxDuration)
         {
             yield return null;
             duration += Time.deltaTime;
-            distance += Time.deltaTime * velocity;
-            material.SetVector("_velocity", distance);
+            distance = duration * velocity;
+            var explosionAmount = speed * duration;
+            material.SetFloat("_ExplosionAmount", explosionAmount);
             material.SetFloat("_opacity", 1 - (duration / maxDuration));
-          
             transform.position = initialPosition + distance;
         }
 
