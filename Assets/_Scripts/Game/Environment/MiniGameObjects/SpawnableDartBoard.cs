@@ -60,7 +60,7 @@ public class SpawnableDartBoard : SpawnableAbstractBase
         Block.ChangeTeam(team);
         Block.transform.SetPositionAndRotation(position, Quaternion.LookRotation(lookPosition - transform.position, transform.forward));
         Block.transform.SetParent(container.transform, false);
-        Block.ID = blockId;
+        Block.ownerID = blockId;
         Block.TargetScale = scale;
         Block.Trail = trail;
         trail.Add(Block);

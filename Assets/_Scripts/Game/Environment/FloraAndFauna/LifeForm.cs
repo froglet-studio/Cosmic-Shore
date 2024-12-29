@@ -35,7 +35,7 @@ namespace CosmicShore
             healthBlocks.Add(healthBlock);
             healthBlock.ChangeTeam(Team);
             healthBlock.LifeForm = this;
-            healthBlock.ownerId = $"{this} + {healthBlock} + {healthBlocks.Count}";
+            healthBlock.ownerID = $"{this} + {healthBlock} + {healthBlocks.Count}";
             CheckIfMature();
         }
 

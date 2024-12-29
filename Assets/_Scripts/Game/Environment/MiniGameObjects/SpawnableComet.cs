@@ -71,10 +71,10 @@ namespace CosmicShore
         {
             var Block = Instantiate(trailBlock);
             Block.ChangeTeam(team);
-            Block.ownerId = "public";
+            Block.ownerID = "public";
             Block.transform.SetPositionAndRotation(position, Quaternion.LookRotation(lookPosition, up));
             Block.transform.SetParent(container.transform, false);
-            Block.ID = blockId;
+            Block.ownerID = blockId;
             Block.TargetScale = scale;
             Block.Trail = trail;
             trail.Add(Block);

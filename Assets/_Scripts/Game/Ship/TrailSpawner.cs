@@ -185,7 +185,7 @@ public class TrailSpawner : MonoBehaviour
         float xShift = (Block.TargetScale.x / 2f + Mathf.Abs(halfGap)) * (halfGap / Mathf.Abs(halfGap));
         Block.transform.SetPositionAndRotation(transform.position - shipData.Course * offset + ship.transform.right * xShift, shipData.blockRotation);
         Block.transform.parent = TrailContainer.transform;
-        Block.ownerId = isCharmed ? tempShip.Player.PlayerUUID : ship.Player.PlayerUUID;
+        Block.ownerID = isCharmed ? tempShip.Player.PlayerUUID : ship.Player.PlayerUUID;
         Block.Player = isCharmed ? tempShip.Player : ship.Player;
         Block.ChangeTeam(isCharmed ? tempShip.Team : ship.Team);
         if (waitTillOutsideSkimmer) 
@@ -201,8 +201,8 @@ public class TrailSpawner : MonoBehaviour
 
         OnBlockCreated?.Invoke(xShift, wavelength, Block.TargetScale.x, Block.TargetScale.y, Block.TargetScale.z);
         trail.Add(Block);
-        Block.Index = (ushort) trail.TrailList.IndexOf(Block);
-        Block.ID = ownerId + ":" + spawnedTrailCount++;
+        Block.TrailBlockProperties.Index = (ushort) trail.TrailList.IndexOf(Block);
+        Block.ownerID = ownerId + ":" + spawnedTrailCount++;
     }
 
     Vector3 VectorDivision(Vector3 Vector1, Vector3 Vector2) // TODO: move to tools
@@ -232,12 +232,12 @@ public class TrailSpawner : MonoBehaviour
                     Block.transform.SetPositionAndRotation(transform.position - shipData.Course * offset, shipData.blockRotation);
                     Block.transform.parent = TrailContainer.transform;
                     Block.waitTime = waitTillOutsideSkimmer ? (skimmer.transform.localScale.z + TrailZScale) / ship.GetComponent<ShipStatus>().Speed : waitTime;
-                    Block.ownerId = isCharmed ? tempShip.Player.PlayerUUID : ship.Player.PlayerUUID;
+                    Block.ownerID = isCharmed ? tempShip.Player.PlayerUUID : ship.Player.PlayerUUID;
                     Block.Player = isCharmed ? tempShip.Player : ship.Player;
                     Block.ChangeTeam(isCharmed ? tempShip.Team : ship.Team);
                     Block.GetComponent<MeshRenderer>().material = blockMaterial;
-                    Block.Index = spawnedTrailCount;
-                    Block.ID = ownerId + ":" + spawnedTrailCount++;
+                    Block.TrailBlockProperties.Index = spawnedTrailCount;
+                    Block.ownerID = ownerId + ":" + spawnedTrailCount++;
                     Block.Trail = Trail;
 
                     Trail.Add(Block);

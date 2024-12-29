@@ -28,7 +28,7 @@ namespace CosmicShore.Core
         public bool IsLargest;
 
         [Header("Team Ownership")]
-        public string ownerId;
+        public string ownerID;
         public Teams Team
         {
             get => teamManager?.Team ?? Teams.Unassigned;
@@ -125,7 +125,6 @@ namespace CosmicShore.Core
 
             TrailBlockProperties.position = transform.position;
             TrailBlockProperties.trailBlock = this;
-            TrailBlockProperties.Index = Index;
             TrailBlockProperties.Trail = Trail;
             TrailBlockProperties.TimeCreated = Time.time;
             

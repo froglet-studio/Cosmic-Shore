@@ -125,13 +125,12 @@ namespace CosmicShore.Core.Editor
                 particleEffect = block.ParticleEffect,
                 fossilBlock = block.GetType().GetField("FossilBlock")?.GetValue(block) as GameObject,
                 trail = block.Trail,
-                ownerId = block.ownerId,
+                ownerId = block.ownerID,
                 player = block.Player,
                 destroyed = block.destroyed,
                 devastated = block.devastated,
-                id = block.ID,
-                index = block.Index,
-                warp = block.warp,
+                id = block.ownerID,
+                index = block.TrailBlockProperties.Index,
                 isSmallest = block.IsSmallest,
                 isLargest = block.IsLargest
             };

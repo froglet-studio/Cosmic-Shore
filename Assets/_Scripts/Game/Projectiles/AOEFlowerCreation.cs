@@ -51,8 +51,8 @@ namespace CosmicShore.Game.Projectiles
             var angle = 30;
             for (int i = angle; i < 180; i += angle) 
             {
-                TrailBlock block1 = CreateBlock(lastTwoBlocks[0].transform.position, lastTwoBlocks[0].transform.forward, lastTwoBlocks[0].transform.up, trailBlock.ID + 1 + i, trails[trails.Count - 1]);
-                TrailBlock block2 = CreateBlock(lastTwoBlocks[1].transform.position, lastTwoBlocks[1].transform.forward, -lastTwoBlocks[1].transform.up, trailBlock.ID + 2 + i, trails[trails.Count - 1]);
+                TrailBlock block1 = CreateBlock(lastTwoBlocks[0].transform.position, lastTwoBlocks[0].transform.forward, lastTwoBlocks[0].transform.up, trailBlock.ownerID + 1 + i, trails[trails.Count - 1]);
+                TrailBlock block2 = CreateBlock(lastTwoBlocks[1].transform.position, lastTwoBlocks[1].transform.forward, -lastTwoBlocks[1].transform.up, trailBlock.ownerID + 2 + i, trails[trails.Count - 1]);
                 block1.transform.RotateAround(origin, block1.transform.forward, i);
                 block2.transform.RotateAround(origin, block2.transform.forward, i);
                 CreateBranches(block1, maxGap, angle/2f);
@@ -71,7 +71,7 @@ namespace CosmicShore.Game.Projectiles
             {
                 for (int i = -1; i <= 1; i += 2)
                 {
-                    TrailBlock block = CreateBlock(trailBlock.transform.position, trailBlock.transform.forward, trailBlock.transform.up, trailBlock.ID + i, trails[trails.Count - 1]);
+                    TrailBlock block = CreateBlock(trailBlock.transform.position, trailBlock.transform.forward, trailBlock.transform.up, trailBlock.ownerID + i, trails[trails.Count - 1]);
                     Vector3 origin = block.transform.position + (block.transform.right * (blockScale.x / 2 + gap)) * handedness;
                     block.transform.RotateAround(origin, block.transform.forward, 180);
                     origin = block.transform.position - (block.transform.right * (blockScale.x / 2 + gap)) * handedness;
@@ -89,7 +89,7 @@ namespace CosmicShore.Game.Projectiles
                 if (branch == Branch.first)
                     angle = -angle;
 
-                TrailBlock block = CreateBlock(trailBlock.transform.position, trailBlock.transform.forward, trailBlock.transform.up, trailBlock.ID + angle, trails[trails.Count - 1]);
+                TrailBlock block = CreateBlock(trailBlock.transform.position, trailBlock.transform.forward, trailBlock.transform.up, trailBlock.ownerID + angle, trails[trails.Count - 1]);
                 Vector3 origin = block.transform.position + (block.transform.right * (blockScale.x / 2 + gap)) * handedness;
                 block.transform.RotateAround(origin, block.transform.forward, 180 + angle * 4);
             }

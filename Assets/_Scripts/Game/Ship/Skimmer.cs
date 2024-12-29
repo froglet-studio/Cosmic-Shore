@@ -200,9 +200,9 @@ namespace CosmicShore.Core
         {
             if (trailBlock == null) return;
 
-            if (skimStartTimes.ContainsKey(trailBlock.ID)) return;
+            if (skimStartTimes.ContainsKey(trailBlock.ownerID)) return;
             activelySkimmingBlockCount++;
-            skimStartTimes.Add(trailBlock.ID, Time.time);
+            skimStartTimes.Add(trailBlock.ownerID, Time.time);
         }
 
         void OnTriggerEnter(Collider other)
@@ -235,11 +235,11 @@ namespace CosmicShore.Core
             if (trailBlock.Team == team && !affectSelf) return;
             
             // Occasionally, seeing a KeyNotFoundException, so maybe we miss the OnTriggerEnter event (note: always seems to be for AOE blocks)
-            if (!skimStartTimes.ContainsKey(trailBlock.ID))   
+            if (!skimStartTimes.ContainsKey(trailBlock.ownerID))   
                 StartSkim(trailBlock);
 
             float sqrDistance = (transform.position - other.transform.position).sqrMagnitude;
-            if (trailBlock.ownerId != ship.Player.PlayerUUID || Time.time - trailBlock.TrailBlockProperties.TimeCreated > 7)
+            if (trailBlock.ownerID != ship.Player.PlayerUUID || Time.time - trailBlock.TrailBlockProperties.TimeCreated > 7)
             {
                 minMatureBlockSqrDistance = Mathf.Min(minMatureBlockSqrDistance, sqrDistance);
                 if (sqrDistance == minMatureBlockSqrDistance) 
@@ -263,7 +263,7 @@ namespace CosmicShore.Core
             fuel = chargeAmount * (1 - (sqrDistance / transform.localScale.x)); // x is arbitrary, just need radius of skimmer
 
             // apply decay
-            fuel *= Mathf.Min(0, (skimDecayDuration - (Time.time - skimStartTimes[trailBlock.ID])) / skimDecayDuration);
+            fuel *= Mathf.Min(0, (skimDecayDuration - (Time.time - skimStartTimes[trailBlock.ownerID])) / skimDecayDuration);
 
             // apply multiskim multiplier
             fuel += (activelySkimmingBlockCount * MultiSkimMultiplier);
@@ -287,9 +287,9 @@ namespace CosmicShore.Core
         {
             if (other.TryGetComponent<TrailBlock>(out var trailBlock) && (affectSelf || trailBlock.Team != team))
             {
-                if (skimStartTimes.ContainsKey(trailBlock.ID))
+                if (skimStartTimes.ContainsKey(trailBlock.ownerID))
                 {
-                    skimStartTimes.Remove(trailBlock.ID);
+                    skimStartTimes.Remove(trailBlock.ownerID);
                     activelySkimmingBlockCount--;
                     if (activelySkimmingBlockCount < 1) 
                         PerformBlockStayEffects(0);

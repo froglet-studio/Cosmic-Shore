@@ -57,11 +57,11 @@ namespace CosmicShore.Game.Projectiles
         {
             var block = Instantiate(trailBlock);
             block.ChangeTeam(Team);
-            block.ownerId = Ship.Player.PlayerUUID;
+            block.ownerID = Ship.Player.PlayerUUID;
             block.Player = Ship.Player;
             block.transform.SetPositionAndRotation(position, Quaternion.LookRotation(forward, up));
             block.GetComponent<MeshRenderer>().material = blockMaterial;
-            block.ID = block.ownerId + ownerId + position;  
+            block.ownerID = block.ownerID + ownerId + position;  
             block.TargetScale = blockScale;
             block.transform.parent = TrailSpawner.TrailContainer.transform;
             block.Trail = trail;

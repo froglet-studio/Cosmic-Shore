@@ -50,7 +50,7 @@ public class TrailViewer : MonoBehaviour
 
 
         attachedTrail = trailFollower.AttachedTrailBlock.Trail;
-        int attachedBlockIndex = trailFollower.AttachedTrailBlock.Index;
+        int attachedBlockIndex = trailFollower.AttachedTrailBlock.TrailBlockProperties.Index;
 
 
         // Set materials of blocks in view distance

@@ -41,8 +41,8 @@ namespace CosmicShore.Game.Projectiles
             var angle = 30;
             for (int i = angle; i <= 180; i += angle)
             {
-                TrailBlock block1 = CreateBlock(lastTwoBlocks[0].transform.position, lastTwoBlocks[0].transform.forward, lastTwoBlocks[0].transform.up, trailBlock.ID + 1 + i, trails[trails.Count - 1], container);
-                TrailBlock block2 = CreateBlock(lastTwoBlocks[1].transform.position, lastTwoBlocks[1].transform.forward, -lastTwoBlocks[1].transform.up, trailBlock.ID + 2 + i, trails[trails.Count - 1], container);
+                TrailBlock block1 = CreateBlock(lastTwoBlocks[0].transform.position, lastTwoBlocks[0].transform.forward, lastTwoBlocks[0].transform.up, trailBlock.ownerID + 1 + i, trails[trails.Count - 1], container);
+                TrailBlock block2 = CreateBlock(lastTwoBlocks[1].transform.position, lastTwoBlocks[1].transform.forward, -lastTwoBlocks[1].transform.up, trailBlock.ownerID + 2 + i, trails[trails.Count - 1], container);
                 block1.transform.RotateAround(origin, block1.transform.forward, i);
                 block2.transform.RotateAround(origin, block2.transform.forward, i);
                 CreateBranches(block1, maxGap, angle / 2f, container, 1, depth);
@@ -98,10 +98,10 @@ namespace CosmicShore.Game.Projectiles
             Block.ChangeTeam(Team);
             //Block.ownerId = Ship.Player.PlayerUUID;
             //Block.PlayerName = Ship.Player.PlayerName;
-            Block.ownerId = "public";
+            Block.ownerID = "public";
             Block.transform.SetPositionAndRotation(position, Quaternion.LookRotation(lookPosition, up));
             //Block.GetComponent<MeshRenderer>().material = material;
-            Block.ID = /*Block.ownerId +*/ ownerId + position;
+            Block.ownerID = /*Block.ownerId +*/ ownerId + position;
             Block.TargetScale = blockScale;
             Block.Trail = trail;
             trail.Add(Block);

@@ -20,7 +20,7 @@ namespace CosmicShore.Core
         {
             trailBlockIndices.Add(block, (ushort)TrailList.Count);
             TrailList.Add(block);
-            block.Index = block.TrailBlockProperties.Index = (ushort) trailBlockIndices.Count;
+            block.TrailBlockProperties.Index = (ushort) trailBlockIndices.Count;
         }
 
         public int GetBlockIndex(TrailBlock block)

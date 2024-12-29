@@ -34,11 +34,11 @@ public abstract class SpawnableAbstractBase : MonoBehaviour
     {
         var Block = Instantiate(trailBlock);
         Block.ChangeTeam(team);
-        Block.ownerId = "public";
+        Block.ownerID = "public";
         if (relativeLook) Block.transform.SetPositionAndRotation(position, Quaternion.LookRotation(flip ? position - lookPosition : lookPosition - position, up));
         else Block.transform.SetPositionAndRotation(position, Quaternion.identity);
         Block.transform.SetParent(container.transform, false);
-        Block.ID = blockId;
+        Block.ownerID = blockId;
         Block.TargetScale = scale;
         Block.Trail = trail;
         trail.Add(Block);
