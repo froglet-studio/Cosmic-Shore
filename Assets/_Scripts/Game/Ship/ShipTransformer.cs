@@ -133,7 +133,7 @@ public class ShipTransformer : MonoBehaviour
 
     public void GentleSpinShip(Vector3 newDirection, Vector3 newUp, float amount)
     {
-        accumulatedRotation = Quaternion.Lerp(accumulatedRotation, Quaternion.LookRotation(newDirection,ship.transform.up), amount);
+        accumulatedRotation = Quaternion.Lerp(accumulatedRotation, Quaternion.LookRotation(newDirection, ship.transform.up), amount);
     }
 
     protected virtual void Pitch() // These need to not use *= because quaternions are not commutative

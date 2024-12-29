@@ -1,5 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using CosmicShore.Core;
 using CosmicShore.Environment.FlowField;
@@ -8,10 +6,16 @@ public class SpawnableWall : SpawnableAbstractBase
 {
     [SerializeField] TrailBlock trailBlock;
     [SerializeField] Crystal crystal;
-    public int Width = 6;
-    public int Height = 6;
     [SerializeField] float blockSize = 1f;
     [SerializeField] float padding = .1f;
+    public int Width = 6;
+    public int Height = 6;
+    static ushort WallCount = 0;
+
+    private void Awake()
+    {
+        WallCount++;
+    }
 
     public override GameObject Spawn()
     {
@@ -32,7 +36,7 @@ public class SpawnableWall : SpawnableAbstractBase
             {
                 Vector3 position = new Vector3(x * blockSpacing, y * blockSpacing, 0);
                 var correction = new Vector3(blockSpacing * .5f , blockSpacing * .5f, 0);
-                CreateBlock(position + correction, Vector3.up, container.name + $"::BLOCK::{x}:{y}", trail, size * blockSize, trailBlock, container, Vector3.forward, Teams.Blue, false);
+                CreateBlock(position + correction, Vector3.up, $"WB:{WallCount}:{x}:{y}", trail, size * blockSize, trailBlock, container, Vector3.forward, Teams.Blue, false);
                 if (crystal != null)
                 {
                     var newCrystal = Instantiate(crystal,container.transform);
@@ -46,4 +50,3 @@ public class SpawnableWall : SpawnableAbstractBase
         return container;
     }
 }
-

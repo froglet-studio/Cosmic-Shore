@@ -7,20 +7,20 @@ namespace CosmicShore.Core
     {
         bool isLoop;
         public List<TrailBlock> TrailList { get; }
-        Dictionary<TrailBlock, int> trailBlockIndices;
+        Dictionary<TrailBlock, ushort> trailBlockIndices;
 
         public Trail(bool isLoop = false)
         {
             this.isLoop = isLoop;
             TrailList = new List<TrailBlock>();
-            trailBlockIndices = new Dictionary<TrailBlock, int>();
+            trailBlockIndices = new Dictionary<TrailBlock, ushort>();
         }
 
         public void Add(TrailBlock block)
         {
-            trailBlockIndices.Add(block, TrailList.Count);
+            trailBlockIndices.Add(block, (ushort)TrailList.Count);
             TrailList.Add(block);
-            block.Index = block.TrailBlockProperties.Index = trailBlockIndices.Count;
+            block.Index = block.TrailBlockProperties.Index = (ushort) trailBlockIndices.Count;
         }
 
         public int GetBlockIndex(TrailBlock block)

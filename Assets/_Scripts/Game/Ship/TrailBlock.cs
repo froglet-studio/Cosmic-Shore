@@ -24,9 +24,6 @@ namespace CosmicShore.Core
         [Header("Trail Block Status")]
         public bool destroyed;
         public bool devastated;
-        public string ID;
-        public int Index;
-        public bool warp;
         public bool IsSmallest;
         public bool IsLargest;
 
