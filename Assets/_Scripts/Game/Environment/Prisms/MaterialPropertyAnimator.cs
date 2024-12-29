@@ -23,26 +23,122 @@ namespace CosmicShore.Core
         public Vector3 TargetSpread { get; private set; }
 
         public float Duration { get; private set; }
-        public bool IsAnimating { get; set; }
+        
+        private bool isAnimating;
+        public bool IsAnimating
+        {
+            get => isAnimating;
+            set
+            {
+                if (isAnimating != value)
+                {
+                    isAnimating = value;
+                    if (isAnimating)
+                    {
+                        MaterialStateManager.Instance?.OnAnimatorStartAnimating(this);
+                    }
+                    else
+                    {
+                        MaterialStateManager.Instance?.OnAnimatorStopAnimating(this);
+                    }
+                }
+            }
+        }
 
         private Material activeTransparentMaterial;
         private Material activeOpaqueMaterial;
+        private bool isRegistered;
+        private TrailBlock cachedTrailBlock;
+        private bool materialsDirty;
 
         private void Awake()
         {
-            PropertyBlock = new MaterialPropertyBlock();
+            // Cache components
             MeshRenderer = GetComponent<MeshRenderer>();
-            MaterialStateManager.Instance.RegisterAnimator(this);
+            cachedTrailBlock = GetComponent<TrailBlock>();
+            
+            if (MeshRenderer == null)
+            {
+                Debug.LogError($"MeshRenderer missing on {gameObject.name}");
+                enabled = false;
+                return;
+            }
+
+            PropertyBlock = new MaterialPropertyBlock();
+            TryRegisterWithManager();
+        }
+
+        private void Start()
+        {
+            if (!isRegistered)
+            {
+                TryRegisterWithManager();
+            }
+        }
+
+        private void TryRegisterWithManager()
+        {
+            if (MaterialStateManager.Instance != null && !isRegistered)
+            {
+                MaterialStateManager.Instance.RegisterAnimator(this);
+                isRegistered = true;
+            }
+        }
+
+        private void OnEnable()
+        {
+            TryRegisterWithManager();
+        }
+
+        private void OnDisable()
+        {
+            if (MaterialStateManager.Instance != null && isRegistered)
+            {
+                MaterialStateManager.Instance.UnregisterAnimator(this);
+                isRegistered = false;
+            }
+        }
+
+        private bool ValidateMaterials()
+        {
+            if (!materialsDirty && activeTransparentMaterial != null && activeOpaqueMaterial != null)
+                return true;
+
+            if (cachedTrailBlock == null || ThemeManager.Instance == null)
+                return false;
+
+            try
+            {
+                var team = cachedTrailBlock.Team;
+                activeOpaqueMaterial = ThemeManager.Instance.GetTeamBlockMaterial(team);
+                activeTransparentMaterial = ThemeManager.Instance.GetTeamTransparentBlockMaterial(team);
+                
+                if (activeOpaqueMaterial != null && MeshRenderer != null)
+                {
+                    MeshRenderer.material = activeOpaqueMaterial;
+                }
+                
+                materialsDirty = false;
+                return true;
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"Error validating materials: {e.Message}");
+                return false;
+            }
         }
 
         public void UpdateMaterial(Material transparentMaterial, Material opaqueMaterial, float duration = 0.8f, Action onComplete = null)
         {
-            if (activeTransparentMaterial == null || activeOpaqueMaterial == null)
+            if (!enabled || MeshRenderer == null) return;
+
+            if (transparentMaterial == null || opaqueMaterial == null)
             {
-                var trailBlock = GetComponent<TrailBlock>();
-                activeOpaqueMaterial = MeshRenderer.material = ThemeManager.Instance.GetTeamBlockMaterial(trailBlock.Team);
-                activeTransparentMaterial = ThemeManager.Instance.GetTeamTransparentBlockMaterial(trailBlock.Team);
+                Debug.LogError($"Invalid materials provided to {gameObject.name}");
+                return;
             }
+
+            if (!ValidateMaterials()) return;
 
             // If already animating, capture current state as start state
             if (IsAnimating)
@@ -54,9 +150,10 @@ namespace CosmicShore.Core
             }
             else
             {
-                StartBrightColor = MeshRenderer.material.GetColor(BrightColorId);
-                StartDarkColor = MeshRenderer.material.GetColor(DarkColorId);
-                StartSpread = MeshRenderer.material.GetVector(SpreadId);
+                var currentMaterial = MeshRenderer.material;
+                StartBrightColor = currentMaterial.GetColor(BrightColorId);
+                StartDarkColor = currentMaterial.GetColor(DarkColorId);
+                StartSpread = currentMaterial.GetVector(SpreadId);
             }
 
             // Set target values
@@ -71,24 +168,39 @@ namespace CosmicShore.Core
             {
                 activeTransparentMaterial = transparentMaterial;
                 activeOpaqueMaterial = opaqueMaterial;
-                var trailBlock = GetComponent<TrailBlock>();
-                MeshRenderer.material = trailBlock.TrailBlockProperties.IsTransparent ?
-                    transparentMaterial : opaqueMaterial;
+                
+                if (MeshRenderer != null && cachedTrailBlock != null && 
+                    cachedTrailBlock.TrailBlockProperties != null)
+                {
+                    MeshRenderer.material = cachedTrailBlock.TrailBlockProperties.IsTransparent ?
+                        transparentMaterial : opaqueMaterial;
+                }
+                
                 onComplete?.Invoke();
             };
         }
 
         public void SetTransparency(bool transparent)
         {
-            if (!IsAnimating)
+            if (!IsAnimating && MeshRenderer != null && ValidateMaterials())
             {
                 MeshRenderer.material = transparent ? activeTransparentMaterial : activeOpaqueMaterial;
             }
         }
 
+        public void MarkMaterialsDirty()
+        {
+            materialsDirty = true;
+        }
+
         private void OnDestroy()
         {
-            MaterialStateManager.Instance.UnregisterAnimator(this);
+            if (MaterialStateManager.Instance != null && isRegistered)
+            {
+                MaterialStateManager.Instance.UnregisterAnimator(this);
+                isRegistered = false;
+            }
+            OnAnimationComplete = null;
         }
     }
 }

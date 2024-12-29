@@ -9,35 +9,56 @@ public class BlockImpact : MonoBehaviour
 
     public void HandleImpact(Vector3 velocity)
     {
+        // Validate velocity before starting coroutine
+        if (float.IsNaN(velocity.x) || float.IsNaN(velocity.y) || float.IsNaN(velocity.z))
+        {
+            velocity = Vector3.up * minSpeed; // Fallback velocity
+        }
         StartCoroutine(ImpactCoroutine(velocity));
     }
 
     IEnumerator ImpactCoroutine(Vector3 velocity)
     {
-        
-        Vector3 distance = Vector3.zero;
         float speed;
         velocity = GeometryUtils.ClampMagnitude(velocity, minSpeed, maxSpeed, out speed);
 
-        material = gameObject.GetComponent<MeshRenderer>().material;
-        material.SetVector("_velocity", velocity);
-
-        var initialPosition = transform.position;
-        var maxDuration = 7;
-        var duration = 0f;
-
-        while (duration <= maxDuration)
+        material = GetComponent<MeshRenderer>()?.material;
+        if (material != null)
         {
-            yield return null;
-            duration += Time.deltaTime;
-            distance = duration * velocity;
-            var explosionAmount = speed * duration;
-            material.SetFloat("_ExplosionAmount", explosionAmount);
-            material.SetFloat("_opacity", 1 - (duration / maxDuration));
-            transform.position = initialPosition + distance;
+            material.SetVector("_velocity", velocity);
         }
 
-        Destroy(material);
-        Destroy(transform.gameObject);
+        var initialPosition = transform.position;
+        var maxDuration = 7f;
+        var duration = 0f;
+
+        while (duration <= maxDuration && this != null && material != null)
+        {
+            duration += Time.deltaTime;
+            
+            // Calculate new position
+            Vector3 newPosition = initialPosition + duration * velocity;
+            
+            // Validate position before applying
+            if (!float.IsNaN(newPosition.x) && !float.IsNaN(newPosition.y) && !float.IsNaN(newPosition.z))
+            {
+                transform.position = newPosition;
+            }
+
+            // Update material properties
+            material.SetFloat("_ExplosionAmount", speed * duration);
+            material.SetFloat("_opacity", 1 - (duration / maxDuration));
+            
+            yield return null;
+        }
+
+        if (material != null)
+        {
+            Destroy(material);
+        }
+        if (this != null && gameObject != null)
+        {
+            Destroy(gameObject);
+        }
     }
 }

@@ -26,7 +26,7 @@ Transform:
   m_GameObject: {fileID: 8186157953239024494}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 47.3, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -50,6 +50,7 @@ MonoBehaviour:
   spindle: {fileID: 5157459880619768690, guid: 76cd644e62b88cc43a93674d5596971e, type: 3}
   healthBlocksForMaturity: 50
   minHealthBlocks: 5
+  shieldPeriod: 0
   Team: 0
   growPeriod: 1.6
   PlantPeriod: 10

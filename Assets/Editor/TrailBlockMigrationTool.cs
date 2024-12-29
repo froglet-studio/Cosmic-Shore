@@ -3,34 +3,48 @@ using UnityEditor;
 using System.Collections.Generic;
 using System.Linq;
 using System;
-using System.IO;
 
 namespace CosmicShore.Core.Editor
 {
     public class TrailBlockMigrationTool : EditorWindow
     {
         [Serializable]
-        private class TrailBlockSnapshot
+        private class BlockConfiguration
         {
-            public string prefabPath;
+            // Core TrailBlock data
+            public TrailBlockProperties properties;
             public Vector3 minScale;
             public Vector3 maxScale;
             public Vector3 growthVector;
             public float growthRate;
             public float waitTime;
             public Teams team;
-            public string materialState; // "Normal", "Shielded", "SuperShielded", "Dangerous"
             public bool isTransparent;
-            public Dictionary<string, object> serializedFieldValues = new Dictionary<string, object>();
+            public GameObject particleEffect;
+            public GameObject fossilBlock;
+            public Trail trail;
+            public string ownerId;
+            public Player player;
+
+            // State flags
+            public bool destroyed;
+            public bool devastated;
+            public string id;
+            public int index;
+            public bool warp;
+            public bool isSmallest;
+            public bool isLargest;
+
+            // Current material states
+            public Material activeOpaqueMaterial;
+            public Material activeTransparentMaterial;
         }
 
-        private List<TrailBlockSnapshot> snapshots = new List<TrailBlockSnapshot>();
-        private string backupFolder = "Assets/TrailBlockBackups";
-        private bool analysisComplete = false;
-        private Vector2 scrollPosition;
-        private string lastError = "";
+        private Dictionary<string, BlockConfiguration> configurations = new Dictionary<string, BlockConfiguration>();
+        private List<TrailBlock> foundBlocks = new List<TrailBlock>();
+        private bool readyToMigrate = false;
 
-        [MenuItem("CosmicShore/Trail Block Migration")]
+        [MenuItem("CosmicShore/Optimized Trail Block Migration")]
         public static void ShowWindow()
         {
             GetWindow<TrailBlockMigrationTool>("Trail Block Migration").Show();
@@ -38,241 +52,328 @@ namespace CosmicShore.Core.Editor
 
         private void OnGUI()
         {
-            EditorGUILayout.LabelField("Trail Block Migration - Step 1", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("TrailBlock Migration", EditorStyles.boldLabel);
             EditorGUILayout.Space();
 
-            if (!string.IsNullOrEmpty(lastError))
+            if (GUILayout.Button("1. Capture Current Configuration"))
             {
-                EditorGUILayout.HelpBox(lastError, MessageType.Error);
-                EditorGUILayout.Space();
+                CaptureConfigurations();
             }
 
-            if (GUILayout.Button("1. Analyze Current TrailBlocks"))
+            if (configurations.Count > 0)
             {
-                AnalyzeTrailBlocks();
-            }
+                EditorGUILayout.LabelField($"Captured {configurations.Count} TrailBlock configurations");
 
-            if (analysisComplete)
-            {
-                EditorGUILayout.Space();
-                EditorGUILayout.LabelField($"Found {snapshots.Count} TrailBlock instances", EditorStyles.boldLabel);
-
-                scrollPosition = EditorGUILayout.BeginScrollView(scrollPosition);
-                foreach (var snapshot in snapshots)
+                if (GUILayout.Button("2. Add New Components"))
                 {
-                    EditorGUILayout.BeginVertical(EditorStyles.helpBox);
-                    EditorGUILayout.LabelField($"Prefab: {snapshot.prefabPath}", EditorStyles.boldLabel);
-                    EditorGUILayout.LabelField($"Team: {snapshot.team}");
-                    EditorGUILayout.LabelField($"Material State: {snapshot.materialState}");
-                    EditorGUILayout.LabelField($"Growth Rate: {snapshot.growthRate}");
-                    EditorGUILayout.EndVertical();
-                    EditorGUILayout.Space();
-                }
-                EditorGUILayout.EndScrollView();
-
-                EditorGUILayout.Space();
-                if (GUILayout.Button("2. Create Backups"))
-                {
-                    CreateBackups();
+                    AddNewComponents();
                 }
 
-                EditorGUILayout.Space();
-                if (GUILayout.Button("3. Add New Components"))
+                if (readyToMigrate && GUILayout.Button("3. Migrate and Switch to New System"))
                 {
-                    PrepareForMigration();
+                    MigrateToNewSystem();
                 }
             }
         }
 
-        private void AnalyzeTrailBlocks()
+        private void CaptureConfigurations()
         {
-            try
+            configurations.Clear();
+            foundBlocks.Clear();
+
+            // Find all TrailBlock prefabs
+            var guids = AssetDatabase.FindAssets("t:Prefab");
+            foreach (var guid in guids)
             {
-                snapshots.Clear();
-                lastError = "";
-
-                // Find all TrailBlock prefabs
-                var guids = AssetDatabase.FindAssets("t:Prefab");
-                foreach (var guid in guids)
+                var path = AssetDatabase.GUIDToAssetPath(guid);
+                var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+                var block = prefab.GetComponent<TrailBlock>();
+                if (block != null)
                 {
-                    var path = AssetDatabase.GUIDToAssetPath(guid);
-                    var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path);
-                    var trailBlock = prefab.GetComponent<TrailBlock>();
-
-                    if (trailBlock != null)
-                    {
-                        var snapshot = CreateSnapshot(trailBlock, path);
-                        snapshots.Add(snapshot);
-                    }
+                    CaptureBlockConfiguration(block, path);
+                    foundBlocks.Add(block);
                 }
-
-                // Find all scene instances
-                var sceneBlocks = FindObjectsOfType<TrailBlock>();
-                foreach (var block in sceneBlocks)
-                {
-                    if (PrefabUtility.IsPartOfPrefabInstance(block))
-                    {
-                        var prefabPath = PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(block);
-                        if (!snapshots.Any(s => s.prefabPath == prefabPath))
-                        {
-                            var snapshot = CreateSnapshot(block, prefabPath);
-                            snapshots.Add(snapshot);
-                        }
-                    }
-                }
-
-                analysisComplete = true;
             }
-            catch (Exception e)
+
+            // Find scene instances
+            var sceneBlocks = FindObjectsOfType<TrailBlock>();
+            foreach (var block in sceneBlocks)
             {
-                lastError = $"Error during analysis: {e.Message}";
-                Debug.LogException(e);
+                if (!foundBlocks.Contains(block))
+                {
+                    CaptureBlockConfiguration(block, block.gameObject.name);
+                    foundBlocks.Add(block);
+                }
             }
+
+            EditorUtility.DisplayDialog("Configuration Captured",
+                $"Captured {configurations.Count} TrailBlock configurations", "OK");
         }
 
-        private TrailBlockSnapshot CreateSnapshot(TrailBlock block, string path)
+        private void CaptureBlockConfiguration(TrailBlock block, string identifier)
         {
-            var snapshot = new TrailBlockSnapshot
+            var config = new BlockConfiguration
             {
-                prefabPath = path,
-                minScale = block.GetType().GetField("minScale")?.GetValue(block) as Vector3? ?? Vector3.one * 0.5f,
+                properties = block.TrailBlockProperties,
+                minScale = block.GetType().GetField("minScale", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)?.GetValue(block) as Vector3? ?? Vector3.one * 0.5f,
                 maxScale = block.MaxScale,
                 growthVector = block.GrowthVector,
                 growthRate = block.growthRate,
                 waitTime = block.waitTime,
                 team = block.Team,
                 isTransparent = block.TrailBlockProperties?.IsTransparent ?? false,
+                particleEffect = block.ParticleEffect,
+                fossilBlock = block.GetType().GetField("FossilBlock")?.GetValue(block) as GameObject,
+                trail = block.Trail,
+                ownerId = block.ownerId,
+                player = block.Player,
+                destroyed = block.destroyed,
+                devastated = block.devastated,
+                id = block.ID,
+                index = block.Index,
+                warp = block.warp,
+                isSmallest = block.IsSmallest,
+                isLargest = block.IsLargest
             };
 
-            // Determine material state
-            if (block.TrailBlockProperties?.IsSuperShielded ?? false) snapshot.materialState = "SuperShielded";
-            else if (block.TrailBlockProperties?.IsShielded ?? false) snapshot.materialState = "Shielded";
-            else if (block.TrailBlockProperties?.IsDangerous ?? false) snapshot.materialState = "Dangerous";
-            else snapshot.materialState = "Normal";
+            // Capture current material states using reflection if needed
+            var matFields = block.GetType().GetFields(System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            config.activeOpaqueMaterial = matFields.FirstOrDefault(f => f.Name == "ActiveOpaqueMaterial")?.GetValue(block) as Material;
+            config.activeTransparentMaterial = matFields.FirstOrDefault(f => f.Name == "ActiveTransparentMaterial")?.GetValue(block) as Material;
 
-            // Capture all serialized field values
-            var serializedObject = new SerializedObject(block);
-            var iterator = serializedObject.GetIterator();
-            while (iterator.NextVisible(true))
-            {
-                if (iterator.name != "m_Script")
-                {
-                    snapshot.serializedFieldValues[iterator.name] = GetSerializedValue(iterator);
-                }
-            }
-
-            return snapshot;
+            configurations[identifier] = config;
         }
 
-        private void CreateBackups()
+        private void AddNewComponents()
+        {
+            // Create managers if they don't exist
+            var managers = FindObjectOfType<MaterialStateManager>();
+            if (managers == null)
+            {
+                var managersGO = new GameObject("TrailBlockManagers");
+                managersGO.AddComponent<MaterialStateManager>();
+                managersGO.AddComponent<BlockScaleManager>();
+            }
+
+            foreach (var block in foundBlocks)
+            {
+                var go = block.gameObject;
+                EnsureComponent<MaterialPropertyAnimator>(go);
+                EnsureComponent<BlockScaleAnimator>(go);
+                EnsureComponent<BlockTeamManager>(go);
+                EnsureComponent<BlockStateManager>(go);
+            }
+
+            readyToMigrate = true;
+            EditorUtility.DisplayDialog("Components Added",
+                "Added new components to all TrailBlocks", "OK");
+        }
+
+        private void MigrateToNewSystem()
         {
             try
             {
-                lastError = "";
-
-                // Create backup folder if it doesn't exist
-                if (!AssetDatabase.IsValidFolder(backupFolder))
+                // Replace TrailBlock script with new version
+                foreach (var block in foundBlocks)
                 {
-                    var parentFolder = Path.GetDirectoryName(backupFolder);
-                    var folderName = Path.GetFileName(backupFolder);
-                    AssetDatabase.CreateFolder(parentFolder, folderName);
+                    string identifier = AssetDatabase.GetAssetPath(block);
+                    if (string.IsNullOrEmpty(identifier)) identifier = block.gameObject.name;
+
+                    if (configurations.TryGetValue(identifier, out var config))
+                    {
+                        TransferConfiguration(block.gameObject, config);
+                    }
                 }
 
-                // Create timestamped subfolder
-                var timestamp = DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss");
-                var backupPath = $"{backupFolder}/{timestamp}";
-                AssetDatabase.CreateFolder(backupFolder, timestamp);
-
-                // Copy prefabs to backup location
-                foreach (var snapshot in snapshots)
-                {
-                    var fileName = Path.GetFileName(snapshot.prefabPath);
-                    var destPath = $"{backupPath}/{fileName}";
-                    AssetDatabase.CopyAsset(snapshot.prefabPath, destPath);
-
-                    // Save snapshot data as JSON
-                    var jsonPath = $"{backupPath}/{Path.GetFileNameWithoutExtension(fileName)}_snapshot.json";
-                    File.WriteAllText(jsonPath, JsonUtility.ToJson(snapshot, true));
-                }
-
-                AssetDatabase.Refresh();
-                EditorUtility.DisplayDialog("Backup Complete",
-                    $"Created backups in {backupPath}\nTotal prefabs backed up: {snapshots.Count}", "OK");
+                EditorUtility.DisplayDialog("Migration Complete",
+                    "Successfully migrated all TrailBlocks to new system", "OK");
             }
             catch (Exception e)
             {
-                lastError = $"Error during backup: {e.Message}";
-                Debug.LogException(e);
+                Debug.LogError($"Migration failed: {e.Message}\n{e.StackTrace}");
+                EditorUtility.DisplayDialog("Migration Failed",
+                    $"Error during migration: {e.Message}", "OK");
             }
         }
 
-        private void PrepareForMigration()
+        private void TransferConfiguration(GameObject go, BlockConfiguration config)
         {
-            try
+            // First, transfer the base TrailBlock properties
+            var trailBlock = go.GetComponent<TrailBlock>();
+            if (trailBlock != null)
             {
-                lastError = "";
-
-                // Create managers GameObject if it doesn't exist
-                var managers = FindObjectOfType<MaterialStateManager>();
-                if (managers == null)
-                {
-                    var managersGO = new GameObject("TrailBlockManagers");
-                    managersGO.AddComponent<MaterialStateManager>();
-                    managersGO.AddComponent<BlockScaleManager>();
-                }
-
-                // Add new components to all TrailBlock prefabs
-                foreach (var snapshot in snapshots)
-                {
-                    var prefab = PrefabUtility.LoadPrefabContents(snapshot.prefabPath);
-                    var trailBlock = prefab.GetComponent<TrailBlock>();
-
-                    // Add new components if they don't exist
-                    EnsureComponent<MaterialPropertyAnimator>(prefab);
-                    EnsureComponent<BlockScaleAnimator>(prefab);
-                    EnsureComponent<BlockTeamManager>(prefab);
-                    EnsureComponent<BlockStateManager>(prefab);
-
-                    PrefabUtility.SaveAsPrefabAsset(prefab, snapshot.prefabPath);
-                    PrefabUtility.UnloadPrefabContents(prefab);
-                }
-
-                EditorUtility.DisplayDialog("Preparation Complete",
-                    "Added new components to all TrailBlock prefabs.\nReady for next migration step.", "OK");
+                var serializedBlock = new SerializedObject(trailBlock);
+                TransferSerializedProperties(serializedBlock, config);
+                serializedBlock.ApplyModifiedProperties();
             }
-            catch (Exception e)
+
+            // Give Unity a frame to process the changes
+            EditorApplication.delayCall += () =>
             {
-                lastError = $"Error during preparation: {e.Message}";
-                Debug.LogException(e);
+                try
+                {
+                    var scaleAnimator = go.GetComponent<BlockScaleAnimator>();
+                    if (scaleAnimator != null)
+                    {
+                        var serializedScale = new SerializedObject(scaleAnimator);
+                        serializedScale.FindProperty("minScale").vector3Value = config.minScale;
+                        serializedScale.FindProperty("maxScale").vector3Value = config.maxScale;
+                        serializedScale.ApplyModifiedProperties();
+                    }
+
+                    // Set up initial team state first
+                    var teamManager = go.GetComponent<BlockTeamManager>();
+                    if (teamManager != null && config.team != Teams.Unassigned)
+                    {
+                        teamManager.SetInitialTeam(config.team);
+                    }
+
+                    // Then handle material state
+                    var materialAnimator = go.GetComponent<MaterialPropertyAnimator>();
+                    if (materialAnimator != null)
+                    {
+                        // Initial material setup will be handled by TeamManager
+                    }
+
+                    // Finally, set up the block state
+                    var stateManager = go.GetComponent<BlockStateManager>();
+                    if (stateManager != null && config.properties != null)
+                    {
+                        if (config.properties.IsSuperShielded)
+                        {
+                            EditorApplication.delayCall += () => stateManager.ActivateSuperShield();
+                        }
+                        else if (config.properties.IsShielded)
+                        {
+                            EditorApplication.delayCall += () => stateManager.ActivateShield();
+                        }
+                        else if (config.properties.IsDangerous)
+                        {
+                            EditorApplication.delayCall += () => stateManager.MakeDangerous();
+                        }
+                    }
+
+                    // Mark the object as dirty to ensure Unity saves the changes
+                    EditorUtility.SetDirty(go);
+                }
+                catch (Exception e)
+                {
+                    Debug.LogError($"Error during delayed configuration transfer: {e.Message}\n{e.StackTrace}");
+                }
+            };
+
+            EditorUtility.SetDirty(go);
+        }
+
+        private void TransferSerializedProperties(SerializedObject obj, BlockConfiguration config)
+        {
+            var trailBlock = obj.targetObject as TrailBlock;
+            if (trailBlock == null) return;
+
+            // Handle custom class references directly rather than through serialization
+            if (config.properties != null)
+            {
+                // Use reflection to set TrailBlockProperties since it's a custom class
+                var propField = trailBlock.GetType().GetField("TrailBlockProperties", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
+                if (propField != null)
+                {
+                    propField.SetValue(trailBlock, config.properties);
+                }
+            }
+
+            if (config.trail != null)
+            {
+                // Use reflection to set Trail since it's a custom class
+                var trailField = trailBlock.GetType().GetField("Trail", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
+                if (trailField != null)
+                {
+                    trailField.SetValue(trailBlock, config.trail);
+                }
+            }
+
+            // Transfer all other serialized properties
+            var iterator = obj.GetIterator();
+            bool enterChildren = true;
+            while (iterator.NextVisible(enterChildren))
+            {
+                enterChildren = true;
+                switch (iterator.name)
+                {
+                    case "m_Script":
+                        enterChildren = false;
+                        break;
+
+                    // Skip these as we handled them above
+                    case "TrailBlockProperties":
+                    case "Trail":
+                        break;
+
+                    // TrailBlock Properties Header
+                    case "FossilBlock":
+                        iterator.objectReferenceValue = config.fossilBlock;
+                        break;
+                    case "ParticleEffect":
+                        iterator.objectReferenceValue = config.particleEffect;
+                        break;
+
+                    // Trail Block Growth Header
+                    case "GrowthVector":
+                        iterator.vector3Value = config.growthVector;
+                        break;
+                    case "growthRate":
+                        iterator.floatValue = config.growthRate;
+                        break;
+                    case "waitTime":
+                        iterator.floatValue = config.waitTime;
+                        break;
+
+                    // Trail Block Status Header
+                    case "destroyed":
+                        iterator.boolValue = config.destroyed;
+                        break;
+                    case "devastated":
+                        iterator.boolValue = config.devastated;
+                        break;
+                    case "ID":
+                        iterator.stringValue = config.id;
+                        break;
+                    case "Index":
+                        iterator.intValue = config.index;
+                        break;
+                    case "warp":
+                        iterator.boolValue = config.warp;
+                        break;
+                    case "IsSmallest":
+                        iterator.boolValue = config.isSmallest;
+                        break;
+                    case "IsLargest":
+                        iterator.boolValue = config.isLargest;
+                        break;
+
+                    // Team Ownership Header
+                    case "ownerId":
+                        iterator.stringValue = config.ownerId;
+                        break;
+                    case "Player":
+                        iterator.objectReferenceValue = config.player;
+                        break;
+                }
+            }
+
+            // Apply the changes
+            obj.ApplyModifiedProperties();
+
+            // Handle Team last to ensure proper initialization
+            if (config.team != Teams.Unassigned)
+            {
+                trailBlock.Team = config.team;
             }
         }
 
         private T EnsureComponent<T>(GameObject obj) where T : Component
         {
             var component = obj.GetComponent<T>();
-            if (component == null)
-            {
-                component = obj.AddComponent<T>();
-            }
-            return component;
-        }
-
-        private object GetSerializedValue(SerializedProperty prop)
-        {
-            switch (prop.propertyType)
-            {
-                case SerializedPropertyType.Integer: return prop.intValue;
-                case SerializedPropertyType.Boolean: return prop.boolValue;
-                case SerializedPropertyType.Float: return prop.floatValue;
-                case SerializedPropertyType.String: return prop.stringValue;
-                case SerializedPropertyType.Vector2: return prop.vector2Value;
-                case SerializedPropertyType.Vector3: return prop.vector3Value;
-                case SerializedPropertyType.Vector4: return prop.vector4Value;
-                case SerializedPropertyType.Quaternion: return prop.quaternionValue;
-                case SerializedPropertyType.Color: return prop.colorValue;
-                case SerializedPropertyType.ObjectReference: return prop.objectReferenceValue;
-                default: return null;
-            }
+            return component == null ? obj.AddComponent<T>() : component;
         }
     }
 }
