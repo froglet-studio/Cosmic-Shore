@@ -251,20 +251,6 @@
         {
             "m_OutputSlot": {
                 "m_Node": {
-                    "m_Id": "1b98f7c796a2420a8d665305b0df40d1"
-                },
-                "m_SlotId": 0
-            },
-            "m_InputSlot": {
-                "m_Node": {
-                    "m_Id": "37e41dd430434aa6ab66082e39a2048f"
-                },
-                "m_SlotId": 1225633220
-            }
-        },
-        {
-            "m_OutputSlot": {
-                "m_Node": {
                     "m_Id": "27717380bff748ca9a4c17bdb93b1246"
                 },
                 "m_SlotId": 0
@@ -1922,9 +1908,6 @@
             "m_Id": "e3dcb28e15b44d39b6ff8bc4d126f844"
         },
         {
-            "m_Id": "4a1f22998b294302883a519d27a00975"
-        },
-        {
             "m_Id": "85c1e1469f164cf7abc81d0702275c71"
         }
     ],
@@ -2303,21 +2286,6 @@
         "e32": 0.0,
         "e33": 1.0
     }
-}
-
-{
-    "m_SGVersion": 0,
-    "m_Type": "UnityEditor.ShaderGraph.Vector1MaterialSlot",
-    "m_ObjectId": "4a1f22998b294302883a519d27a00975",
-    "m_Id": 1225633220,
-    "m_DisplayName": "gradientThickness",
-    "m_SlotType": 0,
-    "m_Hidden": false,
-    "m_ShaderOutputName": "_gradientThickness",
-    "m_StageCapability": 3,
-    "m_Value": 0.0,
-    "m_DefaultValue": 0.0,
-    "m_Labels": []
 }
 
 {
