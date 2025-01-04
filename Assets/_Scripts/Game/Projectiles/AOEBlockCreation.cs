@@ -28,7 +28,7 @@ namespace CosmicShore.Game.Projectiles
         protected override void Start()
         {
             blockMaterial = shielded ? ThemeManager.Instance.GetTeamShieldedBlockMaterial(Ship.Team) 
-                : Ship.TrailSpawner.GetBlockMaterial();
+                : ThemeManager.Instance.GetTeamBlockMaterial(Ship.Team);
             base.Start();
         }
 

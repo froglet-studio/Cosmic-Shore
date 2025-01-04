@@ -142,7 +142,7 @@ Material:
     - _DarkColor: {r: 0.03529412, g: 0.20196079, b: 0.36862746, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
     - _SpecColor: {r: 0.19999996, g: 0.19999996, b: 0.19999996, a: 1}
-    - _Spread: {r: 1.5, g: 1.5, b: 1.5, a: 0}
+    - _Spread: {r: 1.2, g: 1.2, b: 1.2, a: 0}
     - _add_vector: {r: 0, g: 0, b: 9, a: 0}
     - _spread: {r: 1, g: 1, b: 1, a: 0}
     - _tangent: {r: 1.51, g: -2.92, b: 1.83, a: 0}

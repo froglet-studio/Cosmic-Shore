@@ -39,7 +39,7 @@ namespace CosmicShore.Game.Projectiles
         {
             base.Start();
             blockMaterial = shielded ? ThemeManager.Instance.GetTeamShieldedBlockMaterial(Ship.Team)
-                : Ship.TrailSpawner.GetBlockMaterial();
+                : ThemeManager.Instance.GetTeamBlockMaterial(Ship.Team);
 
             baseBlockScale.z *= depthScale.Value;
             maxRadius *= depthScale.Value;
