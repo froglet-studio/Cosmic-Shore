@@ -57,7 +57,7 @@ namespace Lofelt.NiceVibrations
 
         protected virtual void HitWall()
         {
-            float amplitude = _rigidBody.velocity.magnitude / 100f;
+            float amplitude = _rigidBody.linearVelocity.magnitude / 100f;
             HapticPatterns.PlayEmphasis(amplitude, 0.7f);
             EmphasisAudioSource.volume = amplitude;
             StartCoroutine(LogoShaker.Shake(0.2f));
