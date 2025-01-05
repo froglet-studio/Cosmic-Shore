@@ -3,22 +3,12 @@ using Unity.Collections;
 using Unity.Jobs;
 using Unity.Mathematics;
 using System.Collections.Generic;
-using CosmicShore.Utility.Singleton;
 
 namespace CosmicShore.Core
 {
-    public class MaterialStateManager : SingletonPersistent<MaterialStateManager>
+    public class MaterialStateManager : AdaptiveAnimationManager<MaterialStateManager, MaterialPropertyAnimator, MaterialAnimationData>
     {
-        private const int BATCH_SIZE = 128;
-        
-        // Track all registered animators
-        private readonly HashSet<MaterialPropertyAnimator> registeredAnimators = new HashSet<MaterialPropertyAnimator>();
-        // Track only actively animating ones
-        private readonly HashSet<MaterialPropertyAnimator> activeAnimators = new HashSet<MaterialPropertyAnimator>();
-        // List to maintain stable indices for the job system
-        private readonly List<MaterialPropertyAnimator> activeAnimatorsList = new List<MaterialPropertyAnimator>();
-        private NativeArray<MaterialAnimationData> animationData;
-        private readonly List<(MaterialPropertyAnimator animator, float4 brightColor, float4 darkColor, float3 spread)> propertyUpdateQueue = 
+        private readonly List<(MaterialPropertyAnimator animator, float4 brightColor, float4 darkColor, float3 spread)> propertyUpdateQueue =
             new List<(MaterialPropertyAnimator, float4, float4, float3)>(32);
 
         private MaterialPropertyBlock sharedPropertyBlock;
@@ -31,66 +21,22 @@ namespace CosmicShore.Core
         {
             base.Awake();
             sharedPropertyBlock = new MaterialPropertyBlock();
-            animationData = new NativeArray<MaterialAnimationData>(32, Allocator.Persistent);
         }
 
-        // Original registration methods for compatibility
-        public void RegisterAnimator(MaterialPropertyAnimator animator)
-        {
-            if (animator == null) return;
-            registeredAnimators.Add(animator);
-            
-            // If animator is already animating, add to active set
-            if (animator.IsAnimating)
-            {
-                activeAnimators.Add(animator);
-                EnsureCapacity();
-            }
-        }
+        protected override bool IsAnimatorActive(MaterialPropertyAnimator animator) =>
+            animator.IsAnimating;
 
-        public void UnregisterAnimator(MaterialPropertyAnimator animator)
-        {
-            if (animator == null) return;
-            registeredAnimators.Remove(animator);
-            activeAnimators.Remove(animator);
-        }
+        protected override bool IsAnimatorValid(MaterialPropertyAnimator animator) =>
+            animator.enabled && animator.MeshRenderer != null;
 
-        // Internal methods to manage active animation state
-        internal void OnAnimatorStartAnimating(MaterialPropertyAnimator animator)
-        {
-            if (animator == null || !animator.enabled || !registeredAnimators.Contains(animator)) return;
-            activeAnimators.Add(animator);
-            EnsureCapacity();
-        }
+        internal void OnAnimatorStartAnimating(MaterialPropertyAnimator animator) =>
+            OnAnimatorStart(animator);
 
-        internal void OnAnimatorStopAnimating(MaterialPropertyAnimator animator)
-        {
-            if (animator == null) return;
-            activeAnimators.Remove(animator);
-        }
+        internal void OnAnimatorStopAnimating(MaterialPropertyAnimator animator) =>
+            OnAnimatorStop(animator);
 
-        private void EnsureCapacity()
+        protected override void ProcessAnimationFrame(float deltaTime)
         {
-            if (activeAnimators.Count > animationData.Length)
-            {
-                var newSize = Mathf.Max(32, Mathf.NextPowerOfTwo(activeAnimators.Count));
-                var newArray = new NativeArray<MaterialAnimationData>(newSize, Allocator.Persistent);
-                if (animationData.IsCreated)
-                {
-                    if (animationData.Length > 0)
-                    {
-                        NativeArray<MaterialAnimationData>.Copy(animationData, newArray, animationData.Length);
-                    }
-                    animationData.Dispose();
-                }
-                animationData = newArray;
-            }
-        }
-
-        private void Update()
-        {
-            if (Time.deltaTime == 0 || activeAnimators.Count == 0) return;
-
             // Update our stable index list
             activeAnimatorsList.Clear();
             activeAnimatorsList.AddRange(activeAnimators);
@@ -110,7 +56,7 @@ namespace CosmicShore.Core
                     targetDarkColor = ToFloat4(animator.TargetDarkColor),
                     startSpread = animator.StartSpread,
                     targetSpread = animator.TargetSpread,
-                    animatorIndex = animatingCount // Store index instead of reference
+                    animatorIndex = animatingCount
                 };
                 animatingCount++;
             }
@@ -122,7 +68,7 @@ namespace CosmicShore.Core
             var job = new UpdateAnimationsJob
             {
                 data = animationData,
-                deltaTime = Time.deltaTime
+                deltaTime = deltaTime
             };
 
             var handle = job.Schedule(animatingCount, BATCH_SIZE);
@@ -148,7 +94,7 @@ namespace CosmicShore.Core
                     {
                         animator.IsAnimating = false;
                         activeAnimators.Remove(animator);
-                        
+
                         if (animator.OnAnimationComplete != null)
                         {
                             try
@@ -183,30 +129,14 @@ namespace CosmicShore.Core
             }
         }
 
-        private static float4 ToFloat4(Color color) => new float4(color.r, color.g, color.b, color.a);
-        private static Color ToColor(float4 f4) => new Color(f4.x, f4.y, f4.z, f4.w);
-
-        private void OnDisable()
+        protected override void CleanupResources()
         {
-            CleanupResources();
-        }
-
-        private void OnDestroy()
-        {
-            CleanupResources();
-        }
-
-        private void CleanupResources()
-        {
-            if (animationData.IsCreated)
-            {
-                animationData.Dispose();
-            }
-            registeredAnimators.Clear();
-            activeAnimators.Clear();
-            activeAnimatorsList.Clear();
+            base.CleanupResources();
             propertyUpdateQueue.Clear();
         }
+
+        private static float4 ToFloat4(Color color) => new float4(color.r, color.g, color.b, color.a);
+        private static Color ToColor(float4 f4) => new Color(f4.x, f4.y, f4.z, f4.w);
     }
 
     public struct MaterialAnimationData
@@ -219,7 +149,7 @@ namespace CosmicShore.Core
         public float3 targetSpread;
         public float progress;
         public float duration;
-        public int animatorIndex; // Store index instead of reference
+        public int animatorIndex;
     }
 
     [Unity.Burst.BurstCompile]

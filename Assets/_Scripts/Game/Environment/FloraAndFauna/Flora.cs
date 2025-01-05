@@ -4,6 +4,7 @@ using UnityEngine;
 
 public abstract class Flora : LifeForm
 {
+    [SerializeField] Vector3 leafSize = new Vector3(4f, 4f, 1f);
     [SerializeField] protected float growPeriod = 3f;
     [SerializeField] public float PlantPeriod = 15f;
     [SerializeField] float stunDuration = 1f;
@@ -12,6 +13,12 @@ public abstract class Flora : LifeForm
     public abstract void Grow();
 
     public abstract void Plant();
+
+    public override void AddHealthBlock(HealthBlock healthBlock)
+    {
+        base.AddHealthBlock(healthBlock);
+        healthBlock.TargetScale = leafSize;
+    }
 
     protected override void Start()
     {

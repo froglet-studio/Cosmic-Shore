@@ -143,9 +143,7 @@ namespace CosmicShore.Core
             var materialSet = ThemeManager.Instance.TeamMaterialSets[team];
 
             ship.SetShipMaterial(materialSet.ShipMaterial);
-            ship.SetBlockMaterial(materialSet.BlockMaterial);
             ship.SetBlockSilhouettePrefab(materialSet.BlockSilhouettePrefab);
-            ship.SetShieldedBlockMaterial(materialSet.ShieldedBlockMaterial);
             ship.SetAOEExplosionMaterial(materialSet.AOEExplosionMaterial);
             ship.SetAOEConicExplosionMaterial(materialSet.AOEConicExplosionMaterial);
             ship.SetSkimmerMaterial(materialSet.SkimmerMaterial);
@@ -221,9 +219,7 @@ namespace CosmicShore.Core
             if (captain != null)
                 ship.AssignCaptain(captain);
             ship.SetShipMaterial(materialSet.ShipMaterial);
-            ship.SetBlockMaterial(materialSet.BlockMaterial);
             ship.SetBlockSilhouettePrefab(materialSet.BlockSilhouettePrefab);
-            ship.SetShieldedBlockMaterial(materialSet.ShieldedBlockMaterial);
             ship.SetAOEExplosionMaterial(materialSet.AOEExplosionMaterial);
             ship.SetAOEConicExplosionMaterial(materialSet.AOEConicExplosionMaterial);
             ship.SetSkimmerMaterial(materialSet.SkimmerMaterial);

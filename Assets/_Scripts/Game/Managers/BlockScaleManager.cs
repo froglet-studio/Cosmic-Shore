@@ -3,105 +3,47 @@ using Unity.Collections;
 using Unity.Jobs;
 using Unity.Mathematics;
 using System.Collections.Generic;
-using CosmicShore.Utility.Singleton;
 
 namespace CosmicShore.Core
 {
-    public class BlockScaleManager : SingletonPersistent<BlockScaleManager>
+    public class BlockScaleManager : AdaptiveAnimationManager<BlockScaleManager, BlockScaleAnimator, ScaleAnimationData>
     {
-        private const int BATCH_SIZE = 128;
         private const float COMPLETION_THRESHOLD = 0.0001f;
-        
-        // Track all registered blocks
-        private readonly HashSet<BlockScaleAnimator> registeredBlocks = new HashSet<BlockScaleAnimator>();
-        // Track only actively scaling blocks
-        private readonly HashSet<BlockScaleAnimator> activeScalingBlocks = new HashSet<BlockScaleAnimator>();
-        // List to maintain stable indices for the job system
-        private readonly List<BlockScaleAnimator> activeBlocksList = new List<BlockScaleAnimator>();
-        private NativeArray<ScaleAnimationData> scaleData;
-        private readonly List<(BlockScaleAnimator block, Vector3 scale)> completionQueue = new List<(BlockScaleAnimator, Vector3)>(32);
+        private readonly List<(BlockScaleAnimator block, Vector3 scale)> completionQueue =
+            new List<(BlockScaleAnimator, Vector3)>(32);
 
-        public override void Awake()
+        protected override bool IsAnimatorActive(BlockScaleAnimator animator) =>
+            animator.IsScaling;
+
+        protected override bool IsAnimatorValid(BlockScaleAnimator animator) =>
+            animator.enabled;
+
+        internal void OnBlockStartScaling(BlockScaleAnimator block) =>
+            OnAnimatorStart(block);
+
+        internal void OnBlockStopScaling(BlockScaleAnimator block) =>
+            OnAnimatorStop(block);
+
+        protected override void ProcessAnimationFrame(float deltaTime)
         {
-            base.Awake();
-            scaleData = new NativeArray<ScaleAnimationData>(32, Allocator.Persistent);
-        }
-
-        // Original registration methods for compatibility
-        public void RegisterBlock(BlockScaleAnimator block)
-        {
-            if (block == null) return;
-            registeredBlocks.Add(block);
-            
-            // If block is already scaling, add to active set
-            if (block.IsScaling)
-            {
-                activeScalingBlocks.Add(block);
-                EnsureCapacity();
-            }
-        }
-
-        public void UnregisterBlock(BlockScaleAnimator block)
-        {
-            if (block == null) return;
-            registeredBlocks.Remove(block);
-            activeScalingBlocks.Remove(block);
-        }
-
-        // Internal methods to manage active scaling state
-        internal void OnBlockStartScaling(BlockScaleAnimator block)
-        {
-            if (block == null || !block.enabled || !registeredBlocks.Contains(block)) return;
-            activeScalingBlocks.Add(block);
-            EnsureCapacity();
-        }
-
-        internal void OnBlockStopScaling(BlockScaleAnimator block)
-        {
-            if (block == null) return;
-            activeScalingBlocks.Remove(block);
-        }
-
-        private void EnsureCapacity()
-        {
-            if (activeScalingBlocks.Count > scaleData.Length)
-            {
-                var newSize = Mathf.Max(32, Mathf.NextPowerOfTwo(activeScalingBlocks.Count));
-                var newArray = new NativeArray<ScaleAnimationData>(newSize, Allocator.Persistent);
-                if (scaleData.IsCreated)
-                {
-                    if (scaleData.Length > 0)
-                    {
-                        NativeArray<ScaleAnimationData>.Copy(scaleData, newArray, scaleData.Length);
-                    }
-                    scaleData.Dispose();
-                }
-                scaleData = newArray;
-            }
-        }
-
-        private void Update()
-        {
-            if (Time.deltaTime == 0 || activeScalingBlocks.Count == 0) return;
-
             // Update our stable index list
-            activeBlocksList.Clear();
-            activeBlocksList.AddRange(activeScalingBlocks);
+            activeAnimatorsList.Clear();
+            activeAnimatorsList.AddRange(activeAnimators);
 
             int scalingCount = 0;
-            foreach (var block in activeBlocksList)
+            foreach (var block in activeAnimatorsList)
             {
                 if (block == null || !block.enabled || !block.IsScaling) continue;
 
                 var targetScale = Vector3.Min(Vector3.Max(block.TargetScale, block.MinScale), block.MaxScale);
-                scaleData[scalingCount] = new ScaleAnimationData
+                animationData[scalingCount] = new ScaleAnimationData
                 {
                     currentScale = block.transform.localScale,
                     targetScale = targetScale,
                     growthRate = block.GrowthRate,
                     minScale = block.MinScale,
                     maxScale = block.MaxScale,
-                    blockIndex = scalingCount // Store index instead of reference
+                    blockIndex = scalingCount
                 };
                 scalingCount++;
             }
@@ -112,8 +54,8 @@ namespace CosmicShore.Core
 
             var job = new UpdateScalesJob
             {
-                data = scaleData,
-                deltaTime = Time.deltaTime,
+                data = animationData,
+                deltaTime = deltaTime,
                 completionThreshold = COMPLETION_THRESHOLD
             };
 
@@ -123,8 +65,8 @@ namespace CosmicShore.Core
             // Process results and queue completions
             for (int i = 0; i < scalingCount; i++)
             {
-                var data = scaleData[i];
-                var block = activeBlocksList[data.blockIndex];
+                var data = animationData[i];
+                var block = activeAnimatorsList[data.blockIndex];
                 if (block != null && block.enabled)
                 {
                     var sqrDistance = math.lengthsq(data.targetScale - data.currentScale);
@@ -140,14 +82,13 @@ namespace CosmicShore.Core
                 }
             }
 
-            // Process completions and remove completed blocks
-            for (int i = 0; i < completionQueue.Count; i++)
+            // Process completions
+            foreach (var (block, targetScale) in completionQueue)
             {
-                var (block, targetScale) = completionQueue[i];
                 block.transform.localScale = targetScale;
                 block.IsScaling = false;
-                activeScalingBlocks.Remove(block);
-                
+                activeAnimators.Remove(block);
+
                 if (block.OnScaleComplete != null)
                 {
                     try
@@ -163,37 +104,22 @@ namespace CosmicShore.Core
             }
         }
 
-        private void OnDisable()
+        protected override void CleanupResources()
         {
-            CleanupResources();
-        }
-
-        private void OnDestroy()
-        {
-            CleanupResources();
-        }
-
-        private void CleanupResources()
-        {
-            if (scaleData.IsCreated)
-            {
-                scaleData.Dispose();
-            }
-            registeredBlocks.Clear();
-            activeScalingBlocks.Clear();
-            activeBlocksList.Clear();
+            base.CleanupResources();
             completionQueue.Clear();
         }
     }
 
+    // Keep the original structs and job definitions
     public struct ScaleAnimationData
     {
-        public Vector3 currentScale;   
-        public Vector3 targetScale;    
+        public Vector3 currentScale;
+        public Vector3 targetScale;
         public Vector3 minScale;
         public Vector3 maxScale;
         public float growthRate;
-        public int blockIndex; // Store index instead of reference
+        public int blockIndex;
     }
 
     [Unity.Burst.BurstCompile]
@@ -206,15 +132,15 @@ namespace CosmicShore.Core
         public void Execute(int i)
         {
             var item = data[i];
-            
+
             var diff = item.targetScale - item.currentScale;
             var sqrDistance = math.lengthsq(diff);
-            
+
             if (sqrDistance > completionThreshold)
             {
                 var lerpSpeed = math.clamp(
-                    item.growthRate * deltaTime * math.sqrt(sqrDistance), 
-                    0.01f, 
+                    item.growthRate * deltaTime * math.sqrt(sqrDistance),
+                    0.01f,
                     0.1f
                 );
 

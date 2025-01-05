@@ -81,7 +81,7 @@ namespace CosmicShore.Core
         {
             if (BlockScaleManager.Instance != null && !isRegistered)
             {
-                BlockScaleManager.Instance.RegisterBlock(this);
+                BlockScaleManager.Instance.RegisterAnimator(this);
                 isRegistered = true;
             }
         }
@@ -95,7 +95,7 @@ namespace CosmicShore.Core
         {
             if (BlockScaleManager.Instance != null && isRegistered)
             {
-                BlockScaleManager.Instance.UnregisterBlock(this);
+                BlockScaleManager.Instance.UnregisterAnimator(this);
                 isRegistered = false;
             }
         }
@@ -196,20 +196,11 @@ namespace CosmicShore.Core
         {
             if (BlockScaleManager.Instance != null && isRegistered)
             {
-                BlockScaleManager.Instance.UnregisterBlock(this);
+                BlockScaleManager.Instance.UnregisterAnimator(this);
                 isRegistered = false;
             }
             OnScaleComplete = null;
         }
 
-#if UNITY_EDITOR
-        private void OnValidate()
-        {
-            // Ensure min scale is never larger than max scale
-            minScale.x = Mathf.Min(minScale.x, maxScale.x);
-            minScale.y = Mathf.Min(minScale.y, maxScale.y);
-            minScale.z = Mathf.Min(minScale.z, maxScale.z);
-        }
-#endif
     }
 }

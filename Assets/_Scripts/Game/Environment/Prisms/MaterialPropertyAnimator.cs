@@ -175,7 +175,8 @@ namespace CosmicShore.Core
                     MeshRenderer.material = cachedTrailBlock.TrailBlockProperties.IsTransparent ?
                         transparentMaterial : opaqueMaterial;
                 }
-                
+
+                //cachedTrailBlock.BlockCollider.size = Vector3.one + VectorDivision(TargetSpread, cachedTrailBlock.TargetScale);
                 onComplete?.Invoke();
             };
         }
@@ -201,6 +202,11 @@ namespace CosmicShore.Core
                 isRegistered = false;
             }
             OnAnimationComplete = null;
+        }
+
+        Vector3 VectorDivision(Vector3 Vector1, Vector3 Vector2) // TODO: move to tools
+        {
+            return new Vector3(Vector1.x / Vector2.x, Vector1.y / Vector2.y, Vector1.z / Vector2.z);
         }
     }
 }

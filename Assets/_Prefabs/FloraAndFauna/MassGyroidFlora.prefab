@@ -50,7 +50,9 @@ MonoBehaviour:
   spindle: {fileID: 5157459880619768690, guid: 76cd644e62b88cc43a93674d5596971e, type: 3}
   healthBlocksForMaturity: 50
   minHealthBlocks: 5
+  shieldPeriod: 0
   Team: 0
+  leafSize: {x: 9, y: 3.4, z: 1.5}
   growPeriod: 0.6
   PlantPeriod: 10
   stunDuration: 1

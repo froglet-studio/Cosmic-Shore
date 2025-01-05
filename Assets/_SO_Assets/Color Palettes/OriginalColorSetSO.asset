@@ -15,7 +15,7 @@ MonoBehaviour:
   JadeColors:
     ShipColor1: {r: 0, g: 0.04901961, b: 0.09411765, a: 1}
     ShipColor2: {r: 0, g: 0.3882353, b: 0.7490196, a: 1}
-    OutsideBlockColor: {r: 0, g: 0.08, b: 0.17, a: 1}
+    OutsideBlockColor: {r: 0, g: 0.16, b: 0.34, a: 1}
     ShieldedOutsideBlockColor: {r: 0.086804256, g: 0.23667915, b: 0.48427665, a: 1}
     SuperShieldedOutsideBlockColor: {r: 0.03529412, g: 0.20392157, b: 0.36862746,
       a: 1}
@@ -34,11 +34,11 @@ MonoBehaviour:
   RubyColors:
     ShipColor1: {r: 0.03529412, g: 0, b: 0.09411765, a: 1}
     ShipColor2: {r: 0.27450982, g: 0, b: 0.7490196, a: 1}
-    OutsideBlockColor: {r: 0.075, g: 0, b: 0.2, a: 1}
+    OutsideBlockColor: {r: 0.15, g: 0, b: 0.4, a: 1}
     ShieldedOutsideBlockColor: {r: 0.34509805, g: 0, b: 2.1960785, a: 1}
     SuperShieldedOutsideBlockColor: {r: 0.21176471, g: 0.12156863, b: 0.70980394,
       a: 1}
-    InsideBlockColor: {r: 0.54901963, g: 0, b: 1.4980392, a: 1}
+    InsideBlockColor: {r: 0.3882155, g: 0, b: 1.0592737, a: 1}
     ShieldedInsideBlockColor: {r: 2.688534, g: 0.41887572, b: 16.650362, a: 1}
     SuperShieldedInsideBlockColor: {r: 1.6753272, g: 1.4591984, b: 2.9937105, a: 1}
     AOETextureColor: {r: 4, g: 0, b: 3.958115, a: 0}
@@ -53,11 +53,11 @@ MonoBehaviour:
   GoldColors:
     ShipColor1: {r: 1.2203892, g: 0.6122575, b: 0.03070152, a: 1}
     ShipColor2: {r: 0.47058824, g: 0.23529412, b: 0.043137256, a: 1}
-    OutsideBlockColor: {r: 0.16862746, g: 0.08235294, b: 0.011764706, a: 1}
+    OutsideBlockColor: {r: 0.23847523, g: 0.11646464, b: 0.016637806, a: 1}
     ShieldedOutsideBlockColor: {r: 1.0440251, g: 0.5677132, b: 0.12804069, a: 1}
     SuperShieldedOutsideBlockColor: {r: 0.59607846, g: 0.28627452, b: 0.003921569,
       a: 1}
-    InsideBlockColor: {r: 0.9221513, g: 0.83617026, b: 0.05799684, a: 1}
+    InsideBlockColor: {r: 1.0592737, g: 0.4722571, b: 0.06283829, a: 1}
     ShieldedInsideBlockColor: {r: 25.35849, g: 17.373684, b: 5.0238485, a: 1}
     SuperShieldedInsideBlockColor: {r: 22.785847, g: 17.015171, b: 8.096856, a: 1}
     AOETextureColor: {r: 2.0590868, g: 1.6091012, b: 0.44200292, a: 0}

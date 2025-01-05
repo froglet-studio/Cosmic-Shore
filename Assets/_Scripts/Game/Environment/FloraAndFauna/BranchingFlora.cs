@@ -5,7 +5,6 @@ namespace CosmicShore
 {
     public class BranchingFlora : Flora
     {
-        [SerializeField] Vector3 leafSize = new Vector3(4f, 4f, 1f);
         [SerializeField] float growthChance = 0.2f;
         [SerializeField] float minBranchAngle = -40f;
         [SerializeField] float maxBranchAngle = 40f;
@@ -84,7 +83,6 @@ namespace CosmicShore
                         newBranch.gameObject = Instantiate(healthBlock, branch.gameObject.transform.position + (branchingScaleFactor * branch.gameObject.transform.forward), branch.gameObject.transform.rotation).gameObject; // TODO: position and orient leaf
                         ScaleAndPositionBranch(ref newBranch, branch);
                         var newHealthblock = newBranch.gameObject.GetComponent<HealthBlock>();
-                        newHealthblock.TargetScale = leafSize;
                         AddHealthBlock(newHealthblock);
                         if (SecondarySpawn && !hasPlantedSecondary)
                         {

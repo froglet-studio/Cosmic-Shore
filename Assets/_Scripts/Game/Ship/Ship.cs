@@ -411,19 +411,9 @@ namespace CosmicShore.Core
             ApplyShipMaterial();
         }
 
-        public void SetBlockMaterial(Material material)
-        {
-            TrailSpawner.SetBlockMaterial(material);
-        }
-
         public void SetBlockSilhouettePrefab(GameObject prefab)
         {
             if (Silhouette) Silhouette.SetBlockPrefab(prefab);
-        }
-
-        public void SetShieldedBlockMaterial(Material material)
-        {
-            TrailSpawner.SetShieldedBlockMaterial(material);
         }
 
         public void SetAOEExplosionMaterial(Material material)
