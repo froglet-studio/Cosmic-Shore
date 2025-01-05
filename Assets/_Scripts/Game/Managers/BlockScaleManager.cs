@@ -3,12 +3,13 @@ using Unity.Collections;
 using Unity.Jobs;
 using Unity.Mathematics;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace CosmicShore.Core
 {
     public class BlockScaleManager : AdaptiveAnimationManager<BlockScaleManager, BlockScaleAnimator, ScaleAnimationData>
     {
-        private const float COMPLETION_THRESHOLD = 0.0001f;
+        private const float COMPLETION_THRESHOLD = 0.01f;
         private readonly List<(BlockScaleAnimator block, Vector3 scale)> completionQueue =
             new List<(BlockScaleAnimator, Vector3)>(32);
 
@@ -87,7 +88,18 @@ namespace CosmicShore.Core
             {
                 block.transform.localScale = targetScale;
                 block.IsScaling = false;
-                activeAnimators.Remove(block);
+
+                // Set scale one final time to ensure we hit target exactly
+                block.transform.localScale = targetScale;
+
+                bool wasRemoved = activeAnimators.Remove(block);
+
+                // Validate removal
+                if (!wasRemoved)
+                {
+                    // Check if it's actually in the set
+                    bool contains = activeAnimators.Contains(block);
+                }
 
                 if (block.OnScaleComplete != null)
                 {
@@ -102,6 +114,15 @@ namespace CosmicShore.Core
                     block.OnScaleComplete = null;
                 }
             }
+
+            // Validate all remaining active animators are actually scaling
+            foreach (var animator in activeAnimators.ToArray())
+            {
+                if (!animator.IsScaling)
+                {
+                    activeAnimators.Remove(animator);
+                }
+            }
         }
 
         protected override void CleanupResources()
@@ -111,7 +132,6 @@ namespace CosmicShore.Core
         }
     }
 
-    // Keep the original structs and job definitions
     public struct ScaleAnimationData
     {
         public Vector3 currentScale;
@@ -139,8 +159,8 @@ namespace CosmicShore.Core
             if (sqrDistance > completionThreshold)
             {
                 var lerpSpeed = math.clamp(
-                    item.growthRate * deltaTime * math.sqrt(sqrDistance),
-                    0.01f,
+                    item.growthRate * deltaTime,
+                    0.05f,
                     0.1f
                 );
 

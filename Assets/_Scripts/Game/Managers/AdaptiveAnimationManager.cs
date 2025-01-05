@@ -29,13 +29,13 @@ namespace CosmicShore.Core
         // Performance monitoring
         private readonly Queue<float> frameTimeHistory = new Queue<float>();
         private float lastIntervalUpdateTime;
-        private int currentFrameCount = 0;
+        private float accumulatedTime = 0f;
         private int currentFrameInterval = BASE_FRAME_INTERVAL;
 
         public override void Awake()
         {
             base.Awake();
-            InitializeAnimationData(32); // Start with default capacity
+            InitializeAnimationData(32);
         }
 
         protected virtual void InitializeAnimationData(int capacity)
@@ -73,6 +73,15 @@ namespace CosmicShore.Core
         {
             if (animator == null) return;
             activeAnimators.Remove(animator);
+
+            // If this was the last active animator, reset our monitoring state
+            if (activeAnimators.Count == 0)
+            {
+                frameTimeHistory.Clear();
+                currentFrameInterval = BASE_FRAME_INTERVAL;
+                accumulatedTime = 0f;
+                lastIntervalUpdateTime = 0f;
+            }
         }
 
         protected virtual void EnsureCapacity()
@@ -98,6 +107,15 @@ namespace CosmicShore.Core
 
         protected virtual void UpdateFrameInterval(int capacity)
         {
+            // Don't waste cycles monitoring if nothing is animating
+            if (activeAnimators.Count == 0)
+            {
+                frameTimeHistory.Clear();
+                currentFrameInterval = BASE_FRAME_INTERVAL;
+                accumulatedTime = 0f;
+                return;
+            }
+
             if (Time.realtimeSinceStartup - lastIntervalUpdateTime < 0.5f)
                 return;
 
@@ -116,40 +134,58 @@ namespace CosmicShore.Core
             }
             avgFrameTime /= frameTimeHistory.Count;
 
-            float capacityFactor = Mathf.Log(1 + capacity / 100f, 2);
-            float performanceFactor = avgFrameTime / TARGET_FRAME_TIME;
-            float weightedFactor = (capacityFactor * 0.7f) + (performanceFactor * 0.3f);
+            // More aggressive capacity scaling
+            float capacityFactor = capacity / 50f; // Start scaling earlier and more aggressively
 
+            // Scale based on both capacity and frame time pressure
+            float performancePressure = avgFrameTime / TARGET_FRAME_TIME;
+            performancePressure = Mathf.Pow(performancePressure, 1.5f); // Exponential scaling for performance pressure
+
+            // Higher baseline interval for large numbers of objects
+            float baseInterval = Mathf.Max(BASE_FRAME_INTERVAL, capacityFactor);
+
+            // Combine factors multiplicatively instead of weighted average
+            float scaleFactor = baseInterval * (1f + performancePressure);
+
+            // Calculate new interval with smoother clamping
             int newInterval = Mathf.Clamp(
-                Mathf.RoundToInt(weightedFactor * BASE_FRAME_INTERVAL),
-                BASE_FRAME_INTERVAL,
+                Mathf.RoundToInt(scaleFactor),
+                Mathf.Max(BASE_FRAME_INTERVAL, Mathf.FloorToInt(capacityFactor)),
                 MAX_FRAME_INTERVAL
             );
 
+            // Smooth transition to new interval
             if (newInterval != currentFrameInterval)
             {
                 currentFrameInterval += (newInterval > currentFrameInterval) ? 1 : -1;
-
-                if (Mathf.Abs(newInterval - currentFrameInterval) > 1)
-                {
-                    Debug.Log($"Animation update interval adjusted: {currentFrameInterval} " +
-                            $"(Capacity: {capacity}, Avg Frame: {avgFrameTime * 1000:F1}ms, " +
-                            $"Max Frame: {maxFrameTime * 1000:F1}ms)");
-                }
             }
         }
 
         protected virtual void Update()
         {
-            if (Time.deltaTime == 0 || activeAnimators.Count == 0) return;
+            // Early exit if nothing is animating
+            if (activeAnimators.Count == 0)
+            {
+                // Ensure we're not accumulating time when idle
+                accumulatedTime = 0f;
+                return;
+            }
 
-            currentFrameCount++;
-            if (currentFrameCount % currentFrameInterval != 0) return;
-            currentFrameCount = 0;
+            // Accumulate time with protection against spikes
+            float deltaTime = Mathf.Min(Time.deltaTime, MAX_FRAME_TIME);
+            accumulatedTime += deltaTime;
 
-            float effectiveDeltaTime = Time.deltaTime * currentFrameInterval;
+            // Check if enough time has accumulated for an update
+            float updateInterval = Time.fixedDeltaTime * currentFrameInterval;
+            if (accumulatedTime < updateInterval) return;
 
+            // Calculate how many updates we should perform
+            int updateSteps = Mathf.FloorToInt(accumulatedTime / updateInterval);
+            float effectiveDeltaTime = updateInterval; // Use fixed time step
+
+            // Perform update and consume accumulated time
             ProcessAnimationFrame(effectiveDeltaTime);
+            accumulatedTime -= updateInterval * updateSteps;
         }
 
         protected abstract void ProcessAnimationFrame(float deltaTime);

@@ -3,6 +3,7 @@ using Unity.Collections;
 using Unity.Jobs;
 using Unity.Mathematics;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace CosmicShore.Core
 {
@@ -90,10 +91,16 @@ namespace CosmicShore.Core
 
                     propertyUpdateQueue.Add((animator, brightColor, darkColor, spread));
 
-                    if (data.progress >= 0.999f)
+                    if (data.progress >= 0.99f)
                     {
                         animator.IsAnimating = false;
-                        activeAnimators.Remove(animator);
+                        bool wasRemoved = activeAnimators.Remove(animator);
+
+                        // Validate removal
+                        if (!wasRemoved)
+                        {
+                            bool contains = activeAnimators.Contains(animator);
+                        }
 
                         if (animator.OnAnimationComplete != null)
                         {
@@ -108,6 +115,17 @@ namespace CosmicShore.Core
                             animator.OnAnimationComplete = null;
                         }
                     }
+                }
+            }
+
+
+
+            // Validate all remaining active animators are actually animating
+            foreach (var animator in activeAnimators.ToArray())
+            {
+                if (!animator.IsAnimating)
+                {
+                    activeAnimators.Remove(animator);
                 }
             }
 
