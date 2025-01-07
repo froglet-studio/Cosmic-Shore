@@ -23,6 +23,7 @@ Material:
     RenderType: Transparent
   disabledShaderPasses:
   - SHADOWCASTER
+  - MOTIONVECTORS
   m_LockedProperties: 
   m_SavedProperties:
     serializedVersion: 3
@@ -35,6 +36,7 @@ Material:
     - _Color2: {r: 0.091280505, g: 0.34117648, b: 0.0039215777, a: 1}
     - _DullCrystalColor: {r: 0.106299736, g: 0.39607844, b: 0, a: 0.9411765}
   m_BuildTextureStacks: []
+  m_AllowLocking: 1
 --- !u!114 &4655690307531630582
 MonoBehaviour:
   m_ObjectHideFlags: 11
@@ -47,4 +49,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d0353a89b1f911e48b9e16bdc9f2e058, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  version: 7
+  version: 9
