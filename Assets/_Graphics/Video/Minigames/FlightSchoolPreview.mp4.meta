@@ -22,15 +22,6 @@ VideoClipImporter:
       customHeight: 720
       bitrateMode: 2
       spatialQuality: 2
-    Android:
-      enableTranscoding: 1
-      codec: 1
-      resizeFormat: 2
-      aspectRatio: 0
-      customWidth: 1280
-      customHeight: 720
-      bitrateMode: 2
-      spatialQuality: 2
   userData: 
   assetBundleName: 
   assetBundleVariant: 

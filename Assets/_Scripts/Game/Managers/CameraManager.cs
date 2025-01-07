@@ -1,4 +1,4 @@
-using Cinemachine;
+using Unity.Cinemachine;
 using CosmicShore.Core;
 using CosmicShore.Utility.Singleton;
 using CosmicShore.Utility;
@@ -8,7 +8,7 @@ using CosmicShore;
 
 public class CameraManager : SingletonPersistent<CameraManager>
 {
-    [SerializeField] CinemachineVirtualCameraBase mainMenuCamera;
+    [SerializeField] CinemachineCamera mainMenuCamera;
     [SerializeField] CinemachineVirtualCameraBase closeCamera;
     [SerializeField] CinemachineVirtualCameraBase deathCamera;
     [SerializeField] CinemachineVirtualCameraBase endCamera;
@@ -29,8 +29,8 @@ public class CameraManager : SingletonPersistent<CameraManager>
     public float CloseCamDistance;
     public float FarCamDistance;
 
-    CinemachineVirtualCamera vCam;
-    CinemachineTransposer transposer;
+    CinemachineCamera vCam;
+    CinemachineFollow transposer;
 
     Coroutine zoomOutCoroutine;
     Coroutine returnToNeutralCoroutine;
@@ -50,7 +50,7 @@ public class CameraManager : SingletonPersistent<CameraManager>
 
     void Start()
     {
-        vCam = closeCamera.VirtualCameraGameObject.GetComponent<CinemachineVirtualCamera>();
+        vCam = closeCamera.gameObject.GetComponent<CinemachineCamera>();
         OnMainMenu();
     }
 
@@ -84,7 +84,14 @@ public class CameraManager : SingletonPersistent<CameraManager>
     public void SetMainMenuCameraActive()
     {
         SetActiveCamera(mainMenuCamera);
+        Invoke("LookAtCrystal", 1); // Delay to allow the old crystal to be destroyed
     }
+
+    void LookAtCrystal()
+    {
+        mainMenuCamera.LookAt = NodeControlManager.Instance.GetNearestNode(Vector3.zero).GetCrystal().transform;
+    }
+
     public void SetCloseCameraActive()
     {
         SetActiveCamera(closeCamera);
@@ -120,19 +127,19 @@ public class CameraManager : SingletonPersistent<CameraManager>
         if (lerper != null) 
             StopCoroutine(lerper);
         
-        lerper = StartCoroutine(LerpUtilities.LerpingCoroutine((transposer.m_FollowOffset.z - CloseCamDistance) / (FarCamDistance - CloseCamDistance),
+        lerper = StartCoroutine(LerpUtilities.LerpingCoroutine((transposer.FollowOffset.z - CloseCamDistance) / (FarCamDistance - CloseCamDistance),
             normalizedDistance, 1.5f, (i) =>
             {
-                vCam.m_Lens.NearClipPlane = (FarCamClipPlane - CloseCamClipPlane) * i + CloseCamClipPlane;
-                transposer.m_FollowOffset = new Vector3(0, 0, (FarCamDistance - CloseCamDistance) * i + CloseCamDistance);
+                vCam.Lens.NearClipPlane = (FarCamClipPlane - CloseCamClipPlane) * i + CloseCamClipPlane;
+                transposer.FollowOffset = new Vector3(0, 0, (FarCamDistance - CloseCamDistance) * i + CloseCamDistance);
             }));
     }
 
     public void SetNormalizedCloseCameraDistance(float normalizedDistance)
     {
-        transposer = vCam.GetCinemachineComponent<CinemachineTransposer>();
+        transposer = vCam.GetComponent<CinemachineFollow>();
 
-        if (transposer.m_FollowOffset != new Vector3(0, 0, normalizedDistance))
+        if (transposer.FollowOffset != new Vector3(0, 0, normalizedDistance))
         {
             ClipPlaneAndOffsetLerper(normalizedDistance);
         }  
@@ -141,8 +148,8 @@ public class CameraManager : SingletonPersistent<CameraManager>
     void Orthographic(bool isOrthographic)
     {
         PostProcessingManager.Instance.Orthographic(isOrthographic);
-        vCam.m_Lens.Orthographic = isOrthographic;
-        vCam.m_Lens.OrthographicSize = 1300;
+        vCam.Lens.ModeOverride = LensSettings.OverrideModes.Orthographic;
+        vCam.Lens.OrthographicSize = 1300;
 
         Transform LookAtTarget = isOrthographic ? new GameObject().transform : playerFollowTarget;
         vCam.LookAt = LookAtTarget;
@@ -161,11 +168,11 @@ public class CameraManager : SingletonPersistent<CameraManager>
 
     IEnumerator ZoomOutCloseCameraCoroutine(float growthRate)
     {
-        var transposer = vCam.GetCinemachineComponent<CinemachineTransposer>();
+        var transposer = vCam.GetComponent<CinemachineFollow>();
 
-        while (zoomingOut && transposer.m_FollowOffset.z > FarCamDistance)
+        while (zoomingOut && transposer.FollowOffset.z > FarCamDistance)
         {
-            transposer.m_FollowOffset += Time.deltaTime * Mathf.Abs(growthRate) * -Vector3.forward;         
+            transposer.FollowOffset += Time.deltaTime * Mathf.Abs(growthRate) * -Vector3.forward;         
             yield return null;
         }
     }
@@ -183,14 +190,14 @@ public class CameraManager : SingletonPersistent<CameraManager>
 
     IEnumerator ReturnCloseCameraToNeutralCoroutine(float shrinkRate)
     {
-        var transposer = vCam.GetCinemachineComponent<CinemachineTransposer>();
+        var transposer = vCam.GetComponent<CinemachineFollow>();
 
-        while (transposer.m_FollowOffset.z <= CloseCamDistance)
+        while (transposer.FollowOffset.z <= CloseCamDistance)
         {
-            transposer.m_FollowOffset += Time.deltaTime * Mathf.Abs(shrinkRate) * Vector3.forward;
+            transposer.FollowOffset += Time.deltaTime * Mathf.Abs(shrinkRate) * Vector3.forward;
             yield return null;
         }
 
-        transposer.m_FollowOffset = new Vector3(0, 0, CloseCamDistance);
+        transposer.FollowOffset = new Vector3(0, 0, CloseCamDistance);
     }
 }
