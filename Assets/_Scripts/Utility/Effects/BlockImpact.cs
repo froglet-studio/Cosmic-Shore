@@ -58,7 +58,7 @@ public class BlockImpact : MonoBehaviour
         }
         if (this != null && gameObject != null)
         {
-            Destroy(gameObject);
+            transform.parent.GetComponent<PoolManager>()?.ReturnToPool(gameObject, "FossilPrism");
         }
     }
 }

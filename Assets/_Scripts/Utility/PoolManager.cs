@@ -10,26 +10,54 @@ public class PoolManager : MonoBehaviour
     {
         public GameObject prefab;
         public int size;
+        public Pool(GameObject prefab, int size)
+        {
+            this.prefab = prefab;
+            this.size = size;
+        }
     }
 
     [SerializeField] Ship ship;
     [SerializeField] List<Pool> pools;
     public Dictionary<string, Queue<GameObject>> poolDictionary;
 
+    public void InitializePool(GameObject prefab, int size)
+    {
+        if (poolDictionary == null)
+        {
+            poolDictionary = new Dictionary<string, Queue<GameObject>>();
+        }
+
+        // Create new pool and add to pools list
+        if (pools == null)
+        {
+            pools = new List<Pool>();
+        }
+        pools.Add(new Pool(prefab, size));
+
+        // Initialize the queue and add to dictionary
+        Queue<GameObject> objectPool = new Queue<GameObject>();
+        poolDictionary.Add(prefab.tag, objectPool);
+
+        // Create the pool objects
+        for (int i = 0; i < size; i++)
+        {
+            GameObject obj = Instantiate(prefab);
+            obj.transform.parent = this.transform;
+            obj.SetActive(false);
+            poolDictionary[prefab.tag].Enqueue(obj);
+        }
+    }
+
     private void Awake()
     {
         poolDictionary = new Dictionary<string, Queue<GameObject>>();
 
-        foreach (Pool pool in pools)
+        if (pools != null)
         {
-            Queue<GameObject> objectPool = new Queue<GameObject>();
-            poolDictionary.Add(pool.prefab.tag, objectPool);
-            for (int i = 0; i < pool.size; i++)
+            foreach (Pool pool in pools)
             {
-                GameObject obj = Instantiate(pool.prefab);
-                obj.transform.parent = this.transform;
-                obj.SetActive(false);
-                poolDictionary[pool.prefab.tag].Enqueue(obj);
+                InitializePool(pool.prefab, pool.size);
             }
         }
         StartCoroutine(WaitForShipInitialization());

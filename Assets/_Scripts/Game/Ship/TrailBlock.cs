@@ -84,7 +84,7 @@ namespace CosmicShore.Core
         }
 
         // Static references
-        private static GameObject fossilBlockContainer;
+        private static PoolManager fossilBlockPool;
         private const string layerName = "TrailBlocks";
 
         private void Awake()
@@ -106,9 +106,13 @@ namespace CosmicShore.Core
 
         protected virtual void Start()
         {
-            if (fossilBlockContainer == null)
-                fossilBlockContainer = new GameObject { name = "FossilBlockContainer" };
-
+            if (fossilBlockPool == null)
+            {
+                var fossilBlockContainer = new GameObject { name = "FossilBlockContainer" };
+                fossilBlockPool = fossilBlockContainer.AddComponent<PoolManager>();
+                fossilBlockPool.InitializePool(FossilBlock, 3000);
+            }
+                
             blockCollider.enabled = false;
             meshRenderer.enabled = false;
 
@@ -208,9 +212,7 @@ namespace CosmicShore.Core
             // Ensure volume is up to date before explosion
             TrailBlockProperties.volume = Mathf.Max(scaleAnimator.GetCurrentVolume(), 1f);
 
-            var explodingBlock = Instantiate(FossilBlock, fossilBlockContainer.transform);
-            explodingBlock.transform.position = transform.position;
-            explodingBlock.transform.eulerAngles = transform.eulerAngles;
+            var explodingBlock = fossilBlockPool.SpawnFromPool("FossilPrism", transform.position, transform.rotation);
             explodingBlock.transform.localScale = transform.lossyScale;
 
             var explodingMaterial = new Material(ThemeManager.Instance.GetTeamExplodingBlockMaterial(Team));

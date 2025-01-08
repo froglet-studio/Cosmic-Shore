@@ -1,5 +1,54 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
+--- !u!1 &926825909494775887
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2395705168570083951}
+  - component: {fileID: 5379190369891893479}
+  m_Layer: 0
+  m_Name: MarkerPool
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2395705168570083951
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 926825909494775887}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5928382658856804067}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &5379190369891893479
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 926825909494775887}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 86da7e09f78ffc846ae810b412ab9951, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ship: {fileID: 874579555101021527}
+  pools:
+  - prefab: {fileID: 6475208383231727548, guid: 6e66b0bdeebab72409ac0032a3a1d2c0,
+      type: 3}
+    size: 3000
 --- !u!1 &1878660672777590133
 GameObject:
   m_ObjectHideFlags: 0
@@ -229,6 +278,7 @@ Transform:
   - {fileID: 8301242790861813107}
   - {fileID: 3477731596032601599}
   - {fileID: 1743483356379782573}
+  - {fileID: 2395705168570083951}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &874579555101021527
@@ -386,7 +436,6 @@ MonoBehaviour:
   defaultWaitTime: 0.5
   waitTime: 0.5
   startDelay: 2
-  warp: 0
   spawnerEnabled: 1
   MaxNearbyBlockCount: 70
   minBlockScale: 1
@@ -905,6 +954,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
+      propertyPath: markerContainer
+      value: 
+      objectReference: {fileID: 5379190369891893479}
+    - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
       propertyPath: NotifyNearbyBlockCount
       value: 1
       objectReference: {fileID: 0}
@@ -925,42 +979,42 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
-      propertyPath: blockStayEffects.Array.data[0]
+      propertyPath: 'blockStayEffects.Array.data[0]'
       value: 4
       objectReference: {fileID: 0}
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
-      propertyPath: blockStayEffects.Array.data[1]
+      propertyPath: 'blockStayEffects.Array.data[1]'
       value: 6
       objectReference: {fileID: 0}
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
-      propertyPath: blockStayEffects.Array.data[2]
+      propertyPath: 'blockStayEffects.Array.data[2]'
       value: 8
       objectReference: {fileID: 0}
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
-      propertyPath: blockStayEffects.Array.data[3]
+      propertyPath: 'blockStayEffects.Array.data[3]'
       value: 9
       objectReference: {fileID: 0}
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
-      propertyPath: blockStayEffects.Array.data[4]
+      propertyPath: 'blockStayEffects.Array.data[4]'
       value: 10
       objectReference: {fileID: 0}
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
-      propertyPath: blockStayEffects.Array.data[5]
+      propertyPath: 'blockStayEffects.Array.data[5]'
       value: 10
       objectReference: {fileID: 0}
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
-      propertyPath: shipImpactEffects.Array.data[0]
+      propertyPath: 'shipImpactEffects.Array.data[0]'
       value: 6
       objectReference: {fileID: 0}
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
-      propertyPath: shipImpactEffects.Array.data[1]
+      propertyPath: 'shipImpactEffects.Array.data[1]'
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
@@ -970,7 +1024,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7751815150560592197, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
-      propertyPath: trailBlockImpactEffects.Array.data[0]
+      propertyPath: 'trailBlockImpactEffects.Array.data[0]'
       value: 7
       objectReference: {fileID: 0}
     m_RemovedComponents: []
@@ -1091,22 +1145,22 @@ PrefabInstance:
       objectReference: {fileID: 8878808177416813356}
     - target: {fileID: 2144674613060260969, guid: 5db69771d02b4c24ca00998adf318137,
         type: 3}
-      propertyPath: m_BlendShapeWeights.Array.data[0]
+      propertyPath: 'm_BlendShapeWeights.Array.data[0]'
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 2144674613060260969, guid: 5db69771d02b4c24ca00998adf318137,
         type: 3}
-      propertyPath: m_BlendShapeWeights.Array.data[1]
+      propertyPath: 'm_BlendShapeWeights.Array.data[1]'
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 2144674613060260969, guid: 5db69771d02b4c24ca00998adf318137,
         type: 3}
-      propertyPath: m_BlendShapeWeights.Array.data[2]
+      propertyPath: 'm_BlendShapeWeights.Array.data[2]'
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 2144674613060260969, guid: 5db69771d02b4c24ca00998adf318137,
         type: 3}
-      propertyPath: m_BlendShapeWeights.Array.data[3]
+      propertyPath: 'm_BlendShapeWeights.Array.data[3]'
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5866666021909216657, guid: 5db69771d02b4c24ca00998adf318137,

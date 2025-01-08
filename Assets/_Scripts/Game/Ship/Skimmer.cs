@@ -40,7 +40,7 @@ namespace CosmicShore.Core
         [SerializeField] GameObject AOEPrefab;
         [SerializeField] float AOEPeriod;
         [SerializeField] private Material lineMaterial;
-        [SerializeField] private GameObject markerPrefab;
+        [SerializeField] PoolManager markerContainer;
 
         [SerializeField] int resourceIndex = 0;
 
@@ -80,6 +80,7 @@ namespace CosmicShore.Core
                 appliedScale = Scale.Value;
                 transform.localScale = Vector3.one * appliedScale;
             }
+            if (markerContainer) markerContainer.transform.parent = ship.Player.transform;
         }
 
         void Update()
@@ -217,6 +218,11 @@ namespace CosmicShore.Core
                 StartSkim(trailBlock);
                 PerformBlockImpactEffects(trailBlock.TrailBlockProperties);
             }
+
+            if (ship.ShipStatus.AlignmentEnabled && Player.ActivePlayer && Player.ActivePlayer.Ship == ship) // TODO: ditch line renderer
+            {
+                VisualizeTubeAroundBlock(trailBlock);
+            }
         }
 
         void VacuumCrystal(Crystal crystal)
@@ -246,18 +252,15 @@ namespace CosmicShore.Core
                     minMatureBlock = trailBlock;
             }
 
-            if (ship.ShipStatus.AlignmentEnabled && Player.ActivePlayer && Player.ActivePlayer.Ship == ship) // TODO: ditch line renderer
-            {
-                if (activelySkimmingBlockCount < 20) VisualizeTubeAroundBlock(trailBlock);
-            }
 
-            foreach (Transform child in trailBlock.transform)
-            {
-                if (child.gameObject.CompareTag("Shard")) // Make sure to tag your marker prefabs
-                {
-                    AdjustOpacity(child.gameObject, sqrDistance);
-                }
-            }
+
+            //foreach (Transform child in trailBlock.transform)
+            //{
+            //    if (child.gameObject.CompareTag("Shard")) // Make sure to tag your marker prefabs
+            //    {
+            //        AdjustOpacity(child.gameObject, sqrDistance);
+            //    }
+            //}
 
             // start with a baseline fuel amount the ranges from 0-1 depending on proximity of the skimmer to the trail block
             fuel = chargeAmount * (1 - (sqrDistance / transform.localScale.x)); // x is arbitrary, just need radius of skimmer
@@ -294,16 +297,12 @@ namespace CosmicShore.Core
                     if (activelySkimmingBlockCount < 1) 
                         PerformBlockStayEffects(0);
                 }
-
-                foreach (Transform child in trailBlock.transform)
-                    if (child.gameObject.CompareTag("Shard")) // Make sure to tag your marker prefabs
-                        Destroy(child.gameObject);
             }
         }
 
         void ScaleTrailAndCamera()
         {
-            var normalizedDistance = Mathf.Clamp(Mathf.InverseLerp(15f, sqrRadius, minMatureBlockSqrDistance), 0,1);
+            var normalizedDistance = Mathf.InverseLerp(15f, sqrRadius, minMatureBlockSqrDistance);
 
             ship.TrailSpawner.SetNormalizedXScale(normalizedDistance);
 
@@ -387,21 +386,27 @@ namespace CosmicShore.Core
 
         private void VisualizeTubeAroundBlock(TrailBlock trailBlock)
         {
-            DrawCircle(trailBlock.transform, sweetSpot); // radius can be adjusted
+            if (trailBlock) StartCoroutine(DrawCircle(trailBlock.transform, sweetSpot)); // radius can be adjusted
         }
 
-        private void DrawCircle(Transform blockTransform, float radius)
+        IEnumerator DrawCircle(Transform blockTransform, float radius)
         {
-            int segments = 20;
-            var anglePerSegment = Mathf.PI * .1f;   // Restore to this if segments becomes dynamic: var anglePerSegment = Mathf.PI * 2f / segments;
-            for (int i = 0; i <= segments; i++)
+            int segments = 21;
+            var anglePerSegment = .314f;   // Restore to this if segments becomes dynamic: var anglePerSegment = Mathf.PI * 2f / segments;
+            GameObject[] markers = new GameObject[segments];
+            for (int i = 0; i < segments; i++)
             {
                 float angle = i * anglePerSegment;
                 Vector3 localPosition = (Mathf.Cos(angle) * blockTransform.right + Mathf.Sin(angle) * blockTransform.up) * radius;
                 Vector3 worldPosition = blockTransform.position + localPosition;
-
-                GameObject marker = Instantiate(markerPrefab, worldPosition, Quaternion.LookRotation(blockTransform.forward, localPosition));
-                marker.transform.parent = blockTransform;
+                GameObject marker = markerContainer.SpawnFromPool("Shard", worldPosition,
+                    Quaternion.LookRotation(blockTransform.forward, localPosition));
+                markers[i] = marker;
+            }
+            yield return new WaitForSeconds(2f);
+            foreach (GameObject marker in markers)
+            {
+                markerContainer.ReturnToPool(marker, "Shard");
             }
         }
 
