@@ -15078,7 +15078,7 @@ MonoBehaviour:
     AngularDampingMode: 1
     RotationDamping: {x: 0, y: 0, z: 0}
     QuaternionDamping: 0
-  FollowOffset: {x: 0, y: 0, z: -16.09643}
+  FollowOffset: {x: 0, y: 0, z: -35}
 --- !u!1 &469955486
 GameObject:
   m_ObjectHideFlags: 0
@@ -52244,7 +52244,7 @@ PrefabInstance:
     - target: {fileID: 4853709195325629896, guid: ba70c0f3eb077d44b8a538982d02dadc,
         type: 3}
       propertyPath: m_LocalPosition.z
-      value: 666.09644
+      value: 685
       objectReference: {fileID: 0}
     - target: {fileID: 4853709195325629896, guid: ba70c0f3eb077d44b8a538982d02dadc,
         type: 3}
@@ -57269,6 +57269,7 @@ GameObject:
   - component: {fileID: 1674343132}
   - component: {fileID: 1674343131}
   - component: {fileID: 1674343130}
+  - component: {fileID: 1674343133}
   m_Layer: 0
   m_Name: TrailBlockMangers
   m_TagString: Untagged
@@ -57315,6 +57316,26 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1674343133
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1674343129}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 86da7e09f78ffc846ae810b412ab9951, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  pools:
+  - prefab: {fileID: 0}
+    size: 1000
+  - prefab: {fileID: 0}
+    size: 1000
+  - prefab: {fileID: 0}
+    size: 1000
+  ship: {fileID: 0}
 --- !u!1 &1676699939
 GameObject:
   m_ObjectHideFlags: 0

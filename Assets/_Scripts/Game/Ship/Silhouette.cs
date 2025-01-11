@@ -120,7 +120,6 @@ namespace CosmicShore
                 {
                     GameObject newBlock = Instantiate(blockPrefab, trailDisplayContainer.transform);
                     newBlock.transform.SetParent(tempContainer.transform, false);
-                    Debug.Log($"silhouette: {trailSpawner.MinWaveLength}");
                     newBlock.transform.parent.localPosition = new Vector3(-i * trailSpawner.MinWaveLength * worldToUIScale +
                         (((RectTransform)trailDisplayContainer).rect.width/2), 0, 0);
                     newBlock.transform.localPosition = new Vector3(0, j * 2 * trailSpawner.Gap - trailSpawner.Gap, 0);
