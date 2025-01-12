@@ -23,7 +23,7 @@ namespace CosmicShore.Game
         public TrailSpawner TrailSpawner { get; }
         public ResourceSystem ResourceSystem { get; }
         public ShipStatus ShipStatus { get; }
-        // public IPlayer Player { get; }
+        public IPlayer Player { get; }
         public InputController InputController { get; }
         public Silhouette Silhouette { get; }
         public Material AOEExplosionMaterial { get; }
@@ -37,7 +37,7 @@ namespace CosmicShore.Game
         public List<GameObject> ShipGeometries { get; }
 
 
-        // public void Initialize(IPlayer player, Teams team);
+        public void Initialize(IPlayer player, Teams team);
         public void PerformShipControllerActions(InputEvents @event);
         public void StopShipControllerActions(InputEvents @event);
         public void Teleport(Transform transform);
