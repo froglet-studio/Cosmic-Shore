@@ -3,9 +3,9 @@ using UnityEngine;
 
 public class BlockImpact : MonoBehaviour
 {
-    Material material;
-    float minSpeed = 30f;
-    float maxSpeed = 250f;
+    [SerializeField] private float minSpeed = 30f;
+    [SerializeField] private float maxSpeed = 250f;
+    private Material material;
 
     public void HandleImpact(Vector3 velocity)
     {
@@ -52,13 +52,10 @@ public class BlockImpact : MonoBehaviour
             yield return null;
         }
 
-        if (material != null)
-        {
-            Destroy(material);
-        }
         if (this != null && gameObject != null)
         {
-            transform.parent.GetComponent<PoolManager>()?.ReturnToPool(gameObject, "FossilPrism");
+            // Get the tag from the object itself since it might be from any of the team pools
+            transform.parent.GetComponent<TeamColorPersistentPool>()?.ReturnToPool(gameObject, gameObject.tag);
         }
     }
 }

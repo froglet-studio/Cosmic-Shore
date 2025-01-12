@@ -16,6 +16,7 @@ TagManager:
   - FancyCam
   - Fauna
   - Shard
+  - FossilPrism
   layers:
   - Default
   - TransparentFX
