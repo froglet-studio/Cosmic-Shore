@@ -3,34 +3,55 @@ using CosmicShore.Core;
 using CosmicShore.Game.IO;
 using CosmicShore.Game.AI;
 using CosmicShore.Game.UI;
+using CosmicShore.Game;
 
 [System.Serializable]
-public class Player : MonoBehaviour
+public class Player : MonoBehaviour, IPlayer
 {
     [SerializeField] string playerName;
-    [SerializeField] string playerUUID;
-    [SerializeField] Ship ship;
+
     [SerializeField] GameObject shipContainer;
-    [SerializeField] public GameCanvas GameCanvas;
-    [SerializeField] public ShipTypes defaultShip = ShipTypes.Dolphin;
+    // [SerializeField] ShipTypes defaultShip = ShipTypes.Dolphin;
     [SerializeField] bool UseHangarConfiguration = true;
     [SerializeField] bool IsAI = false;
 
     public static Player ActivePlayer;
 
-    public Teams Team;
-    public string PlayerName { get => playerName; set => playerName = value; }
-    public string PlayerUUID { get => playerUUID; set => playerUUID = value; }
-    public Ship Ship { get => ship; }
+    public ShipTypes DefaultShipType { get; private set; }
+    public Teams Team { get; private set; }
+    public string Name { get; private set; }
+    public string PlayerName => playerName;
+    public string PlayerUUID { get; private set; }
+    public IShip Ship { get; private set; }
+    public bool IsActive { get; private set; }
 
-    GameManager gameManager;
+    public GameCanvas GameCanvas =>
+        _gameCanvas != null ? _gameCanvas : FindFirstObjectByType<GameCanvas>();
 
-    void Start()
+    InputController _inputController;
+    public InputController InputController =>
+        _inputController != null ? _inputController : GetComponent<InputController>();
+
+    public Transform Transform => transform;
+
+    protected GameManager gameManager;
+    GameCanvas _gameCanvas;
+    string _playerName;
+
+    public void Initialize(IPlayer.InitializeData data)
     {
         gameManager = GameManager.Instance;
+        DefaultShipType = data.DefaultShipType;
+        Team = data.Team;
+        _playerName = data.PlayerName;
+        PlayerUUID = data.PlayerUUID;
+        Name = data.PlayerName;
 
-        foreach (Transform child in shipContainer.transform) Destroy(child.gameObject);
+        Setup();
+    }
 
+    public void Setup()
+    {
         if (UseHangarConfiguration)
         {
             switch (playerName)
@@ -62,7 +83,7 @@ public class Player : MonoBehaviour
                 case "PlayerFour":
                 default: // Default will be the players Playfab username
                     Debug.Log($"Player.Start - Instantiate Ship: {PlayerName}");
-                    SetupPlayerShip(Hangar.Instance.LoadPlayerShip(defaultShip, Team));
+                    SetupPlayerShip(Hangar.Instance.LoadPlayerShip(DefaultShipType, Team));
                     gameManager.WaitOnPlayerLoading();
                     break;
             }
@@ -70,45 +91,44 @@ public class Player : MonoBehaviour
         else
         {
             if (IsAI)
-                SetupAIShip(Hangar.Instance.LoadShip(defaultShip, Team));
+                SetupAIShip(Hangar.Instance.LoadShip(DefaultShipType, Team));
             else
             {
                 SetupPlayerShip(Hangar.Instance.LoadPlayerShip());
-                gameManager.WaitOnPlayerLoading();
             }
         }
     }
 
-    void SetupPlayerShip(Ship shipInstance)
+    public void SetDefaultShipType(ShipTypes shipType) => DefaultShipType = shipType;
+
+    public void ToggleGameObject(bool toggle) => gameObject.SetActive(toggle);
+
+    protected virtual void SetupPlayerShip(IShip ship)
     {
-        ActivePlayer = this;
+        Ship = ship;
+        Ship.Transform.SetParent(shipContainer.transform, false);
+        Ship.AIPilot.enabled = false;
 
-        shipInstance.transform.SetParent(shipContainer.transform, false);
-        shipInstance.GetComponent<AIPilot>().enabled = false;
+        InputController.Ship = ship;
+        GameCanvas.MiniGameHUD.Ship = ship;
 
-        ship = shipInstance;
-        GetComponent<InputController>().Ship = ship;
-            
-        GameCanvas.MiniGameHUD.ship = ship;
-        ship.Team = Team;
-        ship.Player = this;
+        Ship.Initialize(this, Team);
+
+        gameManager.WaitOnPlayerLoading();
     }
 
-    void SetupAIShip(Ship shipInstance)
+    void SetupAIShip(IShip ship)
     {
-        Debug.Log($"Player - SetupAIShip - playerName: {playerName}");
+        Debug.Log($"Player - SetupAIShip - playerName: {PlayerName}");
 
-        shipInstance.transform.SetParent(shipContainer.transform, false);
-        shipInstance.GetComponent<AIPilot>().enabled = true;
+        Ship = ship;
+        Ship.AIPilot.enabled = true;
 
-        var inputController = GetComponent<InputController>();
-        inputController.Ship = shipInstance;
+        InputController.Ship = ship;
+        Ship.Initialize(this, Team);
 
-        ship = shipInstance.GetComponent<Ship>();
-        ship.Team = Team;
-        ship.Player = this;
-        ship.InputController = inputController;
-
-        gameManager.WaitOnAILoading(ship.GetComponent<AIPilot>());
+        gameManager.WaitOnAILoading(Ship.AIPilot);
     }
+
+    public void ToggleActive(bool active) => IsActive = active;
 }
