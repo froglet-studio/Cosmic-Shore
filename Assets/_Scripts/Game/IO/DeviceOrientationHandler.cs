@@ -10,7 +10,7 @@ namespace CosmicShore.Game.IO
         private const float PHONE_FLIP_THRESHOLD = 0.1f;
         private const float GYRO_INITIALIZATION_RANGE = 0.05f;
         private bool phoneFlipState;
-        private Ship ship;
+        private IShip ship;
         private bool attitudeInitialized = false;
 
         private Quaternion derivedCorrection;
@@ -18,7 +18,7 @@ namespace CosmicShore.Game.IO
 
         private MonoBehaviour coroutineRunner;
 
-        public void Initialize(Ship ship, MonoBehaviour coroutineRunner)
+        public void Initialize(IShip ship, MonoBehaviour coroutineRunner)
         {
             this.ship = ship;
             this.coroutineRunner = coroutineRunner;

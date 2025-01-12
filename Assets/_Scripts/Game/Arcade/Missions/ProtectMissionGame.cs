@@ -44,12 +44,12 @@ namespace CosmicShore
             base.Start();
             CurrentDifficulty = IntensityLevel;
             Hangar.Instance.SetPlayerCaptain(CaptainManager.Instance.GetCaptainByName(SquadSystem.SquadLeader.Name));
-            Players[0].defaultShip = SquadSystem.SquadLeader.Ship.Class;
-            SquadMateOne.defaultShip = SquadSystem.RogueOne.Ship.Class;
-            SquadMateTwo.defaultShip = SquadSystem.RogueTwo.Ship.Class;
-            HostileAIOne.defaultShip = EnemyShipClasses[Random.Range(0, EnemyShipClasses.Count)];
-            HostileAITwo.defaultShip = EnemyShipClasses[Random.Range(0, EnemyShipClasses.Count)];
-            HostileAIThree.defaultShip = EnemyShipClasses[Random.Range(0, EnemyShipClasses.Count)];
+            Players[0].DefaultShipType = SquadSystem.SquadLeader.Ship.Class;
+            SquadMateOne.DefaultShipType = SquadSystem.RogueOne.Ship.Class;
+            SquadMateTwo.DefaultShipType = SquadSystem.RogueTwo.Ship.Class;
+            HostileAIOne.DefaultShipType = EnemyShipClasses[Random.Range(0, EnemyShipClasses.Count)];
+            HostileAITwo.DefaultShipType = EnemyShipClasses[Random.Range(0, EnemyShipClasses.Count)];
+            HostileAIThree.DefaultShipType = EnemyShipClasses[Random.Range(0, EnemyShipClasses.Count)];
             faunaThreats = MissionData.PotentialThreats.Where(threat => threat.threatPrefab.TryGetComponent<Population>(out _)).ToArray();
             node = NodeControlManager.Instance.GetNearestNode(Vector3.zero);
         }

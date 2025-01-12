@@ -17,15 +17,15 @@ public class OverheatingAction : ShipAction
     protected override void Start()
     {
         base.Start();
-        shipStatus = ship.GetComponent<ShipStatus>();
+        shipStatus = Ship.ShipStatus;
 
-        BindElementalFloats(ship);
+        BindElementalFloats(Ship);
     }
 
     protected override void InitializeShipAttributes()
     {
         base.InitializeShipAttributes();
-        wrappedAction.Ship = ship;
+        wrappedAction.Ship = Ship;
         heatResource = resourceSystem.Resources[heatResourceIndex];
     }
 

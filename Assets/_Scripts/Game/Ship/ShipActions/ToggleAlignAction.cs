@@ -7,7 +7,7 @@ public class ToggleAlignAction : ShipAction
     protected override void Start()
     {
         base.Start();
-        shipData = ship.ShipStatus;
+        shipData = Ship.ShipStatus;
     }
     public override void StartAction()
     {

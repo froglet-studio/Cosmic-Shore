@@ -77,7 +77,7 @@ namespace CosmicShore.Game.AI
         };
 
         ShipStatus shipStatus;
-        Ship ship;
+        public IShip Ship { get; private set; }
 
         float lastPitchTarget;
         float lastYawTarget;
@@ -134,7 +134,7 @@ namespace CosmicShore.Game.AI
                 // Debuffs are disguised as desireable to the other team
                 // So, if it's good, or if it's bad but made by another team, go for it
                 if (item.ItemType != ItemType.Buff &&
-                    (item.ItemType != ItemType.Debuff || item.Team == ship.Team)) continue;
+                    (item.ItemType != ItemType.Debuff || item.Team == Ship.Team)) continue;
                 var distance = Vector3.Distance(item.transform.position, transform.position);
                 if (distance < MinDistance)
                 {
@@ -148,8 +148,6 @@ namespace CosmicShore.Game.AI
 
         void Start()
         {
-            ship = GetComponent<Ship>();
-
             maxDistanceSquared = maxDistance * maxDistance;
             aggressiveness = defaultAggressiveness;
             throttle = defaultThrottle;
@@ -173,12 +171,13 @@ namespace CosmicShore.Game.AI
             StartCoroutine(SetTargetCoroutine());
         }
 
+
         void Update()
         {
             if (AutoPilotEnabled)
             {
-                ship.InputController.AutoPilotEnabled = true;
-                ship.ShipStatus.AutoPilotEnabled = true;
+                Ship.InputController.AutoPilotEnabled = true;
+                Ship.ShipStatus.AutoPilotEnabled = true;
 
                 distance = TargetPosition - transform.position;
                 Vector3 desiredDirection = distance.normalized;
@@ -187,11 +186,11 @@ namespace CosmicShore.Game.AI
                 if (LookingAtCrystal && drift && !shipStatus.Drifting)
                 {
                     shipStatus.Course = desiredDirection;
-                    ship.PerformShipControllerActions(InputEvents.LeftStickAction);
+                    Ship.PerformShipControllerActions(InputEvents.LeftStickAction);
                     desiredDirection *= -1;
                 }
                 else if (LookingAtCrystal && shipStatus.Drifting) desiredDirection *= -1;
-                else if (shipStatus.Drifting) ship.StopShipControllerActions(InputEvents.LeftStickAction);
+                else if (shipStatus.Drifting) Ship.StopShipControllerActions(InputEvents.LeftStickAction);
 
 
                 if (distance.magnitude < float.Epsilon) // Avoid division by zero
@@ -224,6 +223,12 @@ namespace CosmicShore.Game.AI
                 throttle += throttleIncrease * Time.deltaTime;
             }
         }
+        public void Initialize(IShip ship)
+        {
+            Ship = ship;
+            shipStatus = Ship.ShipStatus;
+        }
+
 
         Vector3 ShootLaser(Vector3 position)
         {
@@ -277,8 +282,8 @@ namespace CosmicShore.Game.AI
 
             while (true)
             {
-                if (aggressiveShips.Contains(ship.ShipType) && (activeNode.ControllingTeam != Teams.None)) {
-                    if ((ship.Team == activeNode.ControllingTeam) || (rand.NextDouble() < 0.5))  // Your team is winning.
+                if (aggressiveShips.Contains(Ship.GetShipType) && (activeNode.ControllingTeam != Teams.None)) {
+                    if ((Ship.Team == activeNode.ControllingTeam) || (rand.NextDouble() < 0.5))  // Your team is winning.
                     {
                         TargetPosition = CrystalPosition;
                     }

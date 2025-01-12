@@ -9,7 +9,7 @@ public class ShipTransformer : MonoBehaviour
     Quaternion inverseInitialRotation = new(0, 0, 0, 0);
 
     #region Ship
-    protected IShip ship;
+    protected IShip Ship;
     protected ShipStatus shipStatus;
     protected ResourceSystem resourceSystem;
     #endregion
@@ -43,7 +43,7 @@ public class ShipTransformer : MonoBehaviour
 
     public void Initialize(IShip ship)
     {
-        this.ship = ship;
+        this.Ship = ship;
         shipStatus = ship.ShipStatus;
         resourceSystem = ship.ResourceSystem;
         inputController = ship.InputController;
@@ -67,12 +67,12 @@ public class ShipTransformer : MonoBehaviour
 
     protected virtual void Update()
     {
-        if (ship == null)
+        if (Ship == null)
             return;
 
         if (inputController == null)
         {
-            inputController = ship.InputController;
+            inputController = Ship.InputController;
         }
 
         if (inputController == null)
@@ -142,7 +142,7 @@ public class ShipTransformer : MonoBehaviour
 
     public void GentleSpinShip(Vector3 newDirection, Vector3 newUp, float amount)
     {
-        accumulatedRotation = Quaternion.Lerp(accumulatedRotation, Quaternion.LookRotation(newDirection, ship.Transform.up), amount);
+        accumulatedRotation = Quaternion.Lerp(accumulatedRotation, Quaternion.LookRotation(newDirection, Ship.Transform.up), amount);
     }
 
     protected virtual void Pitch() // These need to not use *= because quaternions are not commutative
@@ -171,7 +171,7 @@ public class ShipTransformer : MonoBehaviour
         float boostAmount = 1f;
         if (shipStatus.Boosting) // TODO: if we run out of fuel while full speed and straight the ship data still thinks we are boosting
         {
-            boostAmount = ship.BoostMultiplier;
+            boostAmount = Ship.BoostMultiplier;
         }
         if (shipStatus.ChargedBoostDischarging) boostAmount *= shipStatus.ChargedBoostCharge;
         if (inputController != null)

@@ -1,4 +1,5 @@
 using CosmicShore.Core;
+using CosmicShore.Game;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -7,19 +8,6 @@ namespace CosmicShore
 {
     public class Silhouette : MonoBehaviour
     {
-        private void OnEnable()
-        {
-            if (driftTrailAction) driftTrailAction.OnChangeDriftAltitude += calculateDriftAngle;
-            if (topJaw) ship.ResourceSystem.Resources[JawResourceIndex].OnResourceChange += calculateBlastAngle;
-            if (trailSpawner) trailSpawner.OnBlockCreated += HandleBlockCreation;
-        }
-        private void OnDisable()
-        {
-            if (driftTrailAction) driftTrailAction.OnChangeDriftAltitude -= calculateDriftAngle;
-            if (topJaw) ship.ResourceSystem.Resources[JawResourceIndex].OnResourceChange -= calculateBlastAngle;
-            if (trailSpawner) trailSpawner.OnBlockCreated -= HandleBlockCreation;
-        }
-
         float worldToUIScale = 2;
         float imageScale = .02f;
 
@@ -44,26 +32,43 @@ namespace CosmicShore
         private GameObject[,] blockPool;
         private int poolSize;
 
-        [SerializeField] Ship ship;
+        IShip _ship;
         Game.UI.MiniGameHUD hud;
         GameObject silhouetteContainer;
         Transform trailDisplayContainer;
         [SerializeField] Vector3 sihouetteScale = Vector3.one;
 
-        // Start is called before the first frame update
-        void Start()
+        private void OnEnable()
         {
-            if (!ship.AutoPilot.AutoPilotEnabled && ship.Player.GameCanvas != null)
+            if (driftTrailAction) driftTrailAction.OnChangeDriftAltitude += calculateDriftAngle;
+            if (topJaw) _ship.ResourceSystem.Resources[JawResourceIndex].OnResourceChange += calculateBlastAngle;
+            if (trailSpawner) trailSpawner.OnBlockCreated += HandleBlockCreation;
+        }
+
+        private void OnDisable()
+        {
+            if (driftTrailAction) driftTrailAction.OnChangeDriftAltitude -= calculateDriftAngle;
+            if (topJaw) _ship.ResourceSystem.Resources[JawResourceIndex].OnResourceChange -= calculateBlastAngle;
+            if (trailSpawner) trailSpawner.OnBlockCreated -= HandleBlockCreation;
+        }
+
+        // TODO - Call this method from Ship
+        public void Initialize(IShip ship)
+        {
+            this._ship = ship;
+            if (!_ship.AIPilot.AutoPilotEnabled && _ship.Player.GameCanvas != null)
             {
-                hud = ship.Player.GameCanvas.MiniGameHUD;
-                silhouetteContainer = hud.SetSilhouetteActive(!ship.AutoPilot.AutoPilotEnabled && Player.ActivePlayer == ship.Player);
-                trailDisplayContainer = hud.SetTrailDisplayActive(!ship.AutoPilot.AutoPilotEnabled).transform;
+                hud = _ship.Player.GameCanvas.MiniGameHUD;
+                silhouetteContainer = hud.SetSilhouetteActive(!ship.AIPilot.AutoPilotEnabled && ship.Player.IsActive);
+                trailDisplayContainer = hud.SetTrailDisplayActive(!ship.AIPilot.AutoPilotEnabled).transform;
                 foreach (var part in silhouetteParts)
                 {
                     part.transform.SetParent(silhouetteContainer.transform, false);
                     part.SetActive(true);
                 }
             }
+
+            if (topJaw) _ship.ResourceSystem.Resources[JawResourceIndex].OnResourceChange += calculateBlastAngle;
         }
 
         public void SetBlockPrefab(GameObject block)
@@ -75,7 +80,7 @@ namespace CosmicShore
 
         private void calculateDriftAngle(float dotProduct)
         {
-            foreach (var part in silhouetteParts) { part.gameObject.SetActive(!ship.AutoPilot.AutoPilotEnabled && Player.ActivePlayer == ship.Player); } // TODO: why?
+            foreach (var part in silhouetteParts) { part.gameObject.SetActive(!_ship.AIPilot.AutoPilotEnabled && _ship.Player.IsActive); } // TODO: why?
             silhouetteContainer.transform.localRotation = Quaternion.Euler(0, 0, Mathf.Asin(dotProduct-.0001f) * Mathf.Rad2Deg);
 
             this.dotProduct = dotProduct;// Acos hates 1
@@ -95,7 +100,7 @@ namespace CosmicShore
 
         private void HandleBlockCreation(float xShift, float wavelength, float scaleX, float scaleY, float scaleZ)
         {
-            if (!ship.AutoPilot.AutoPilotEnabled)
+            if (!_ship.AIPilot.AutoPilotEnabled)
             {
                 if (poolSize < 1)
                 {
@@ -134,7 +139,7 @@ namespace CosmicShore
 
         private void UpdateBlockPool(float xShift, float wavelength, float scaleX, float scaleZ)
         {
-            if (!ship.AutoPilot.AutoPilotEnabled)
+            if (!_ship.AIPilot.AutoPilotEnabled)
             {
                 for (int j = 0; j < 2; j++)
                 {

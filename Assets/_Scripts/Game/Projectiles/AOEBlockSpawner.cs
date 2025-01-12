@@ -11,7 +11,7 @@ namespace CosmicShore.Game.Projectiles
         {
             yield return new WaitForSeconds(ExplosionDelay);
 
-            spawnable.Spawn().transform.SetPositionAndRotation(Ship.transform.position,Ship.transform.rotation);
+            spawnable.Spawn().transform.SetPositionAndRotation(Ship.Transform.position,Ship.Transform.rotation);
 
             yield return new WaitForEndOfFrame();
         }

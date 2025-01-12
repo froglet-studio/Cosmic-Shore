@@ -48,9 +48,7 @@ namespace CosmicShore.Game
         public void SetBoostMultiplier (float boostMultiplier);
         public void ToggleGameObject(bool toggle);
         public void SetShipMaterial(Material material);
-        public void SetBlockMaterial(Material material);
         public void SetBlockSilhouettePrefab(GameObject prefab);
-        public void SetShieldedBlockMaterial(Material material);
         public void SetAOEExplosionMaterial(Material material);
         public void SetAOEConicExplosionMaterial(Material material);
         public void SetSkimmerMaterial(Material material);

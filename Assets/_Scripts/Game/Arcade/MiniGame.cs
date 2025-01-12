@@ -140,7 +140,7 @@ namespace CosmicShore.Game.Arcade
             for (var i = 0; i < NumberOfPlayers; i++)
             {
                 var player = Instantiate(playerPrefab);
-                player.defaultShip = playerShipTypeInitialized ? PlayerShipType : DefaultPlayerShipType;
+                player.DefaultShipType = playerShipTypeInitialized ? PlayerShipType : DefaultPlayerShipType;
                 player.Team = PlayerTeams[i];
                 player.PlayerName = i == 0 ? PlayerDataController.PlayerProfile.DisplayName : PlayerNames[i];
                 player.PlayerUUID = PlayerNames[i];
@@ -441,7 +441,7 @@ namespace CosmicShore.Game.Arcade
             ActivePlayer.transform.SetPositionAndRotation(PlayerOrigin.transform.position, PlayerOrigin.transform.rotation);
             ActivePlayer.GetComponent<InputController>().SetPaused(true);
             ActivePlayer.Ship.Teleport(PlayerOrigin.transform);
-            ActivePlayer.Ship.GetComponent<ShipTransformer>().Reset();
+            ActivePlayer.Ship.ShipTransformer.Reset();
             ActivePlayer.Ship.TrailSpawner.PauseTrailSpawner();
             ActivePlayer.Ship.ResourceSystem.Reset();
             ActivePlayer.Ship.SetResourceLevels(ShipResources);

@@ -7,7 +7,7 @@ public class BoostAction : ShipAction
     protected override void InitializeShipAttributes()
     {
         base.InitializeShipAttributes();
-        shipStatus = ship.GetComponent<ShipStatus>();
+        shipStatus = Ship.ShipStatus;
     }
     public override void StartAction()
     {

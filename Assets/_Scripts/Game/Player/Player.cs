@@ -17,11 +17,21 @@ public class Player : MonoBehaviour, IPlayer
 
     public static Player ActivePlayer;
 
-    public ShipTypes DefaultShipType { get; private set; }
-    public Teams Team { get; private set; }
+    public ShipTypes DefaultShipType { get; set; }
+    public Teams Team { get; set; }
     public string Name { get; private set; }
-    public string PlayerName => playerName;
-    public string PlayerUUID { get; private set; }
+    public string PlayerName
+    {
+        get
+        {
+            return _playerName;
+        }
+        set
+        {
+            _playerName = value;
+        }
+    }
+    public string PlayerUUID { get; set; }
     public IShip Ship { get; private set; }
     public bool IsActive { get; private set; }
 
@@ -109,8 +119,8 @@ public class Player : MonoBehaviour, IPlayer
         Ship.Transform.SetParent(shipContainer.transform, false);
         Ship.AIPilot.enabled = false;
 
-        InputController.Ship = ship;
-        GameCanvas.MiniGameHUD.Ship = ship;
+        InputController.Ship = Ship;
+        GameCanvas.MiniGameHUD.Ship = Ship;
 
         Ship.Initialize(this, Team);
 

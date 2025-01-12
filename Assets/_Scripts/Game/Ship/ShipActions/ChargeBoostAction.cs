@@ -20,7 +20,7 @@ public class ChargeBoostAction : ShipAction
     void GetShipStatus()
     {
         if (!TryGetComponent(out shipStatus))
-            shipStatus = ship.GetComponent<ShipStatus>();
+            shipStatus = Ship.ShipStatus;
     }
 
     public override void StartAction()
@@ -42,7 +42,7 @@ public class ChargeBoostAction : ShipAction
     {
         while (BoostCharging)
         {
-            ship.ResourceSystem.ChangeResourceAmount(boostResourceIndex, BoostChargeRate);
+            Ship.ResourceSystem.ChangeResourceAmount(boostResourceIndex, BoostChargeRate);
             shipStatus.ChargedBoostCharge = 1 + resourceSystem.Resources[boostResourceIndex].CurrentAmount;
             yield return new WaitForSeconds(.1f);
         }
@@ -55,14 +55,14 @@ public class ChargeBoostAction : ShipAction
         shipStatus.ChargedBoostDischarging = true;
         while (shipStatus.ChargedBoostCharge > 1)
         {
-            ship.ResourceSystem.ChangeResourceAmount(boostResourceIndex , - BoostDischargeRate);
+            Ship.ResourceSystem.ChangeResourceAmount(boostResourceIndex , - BoostDischargeRate);
             shipStatus.ChargedBoostCharge = 1 + (MaxBoostMultiplier * resourceSystem.Resources[boostResourceIndex].CurrentAmount);
             yield return new WaitForSeconds(.1f);
         }
         shipStatus.ChargedBoostCharge = 1;
         shipStatus.ChargedBoostDischarging = false;
 
-        ship.ResourceSystem.ChangeResourceAmount(boostResourceIndex, -resourceSystem.Resources[boostResourceIndex].CurrentAmount);
+        Ship.ResourceSystem.ChangeResourceAmount(boostResourceIndex, -resourceSystem.Resources[boostResourceIndex].CurrentAmount);
 
     }
 }

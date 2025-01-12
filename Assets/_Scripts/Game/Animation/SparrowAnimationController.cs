@@ -30,7 +30,7 @@ namespace CosmicShore.Game.Animation
 
         protected override void Idle()
         {
-            if (ship.ShipStatus.Boosting) animator.SetBool("Boost", true);
+            if (Ship.ShipStatus.Boosting) animator.SetBool("Boost", true);
             else animator.SetBool("Boosting", false);
 
             currentPitch = Mathf.Lerp(currentPitch, 0, animationSpeed * Time.deltaTime);

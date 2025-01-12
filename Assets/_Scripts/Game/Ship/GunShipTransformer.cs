@@ -30,7 +30,7 @@ public class GunShipTransformer : ShipTransformer
         if (shipStatus.Attached && !attached)
         {
             trailFollower.Attach(shipStatus.AttachedTrailBlock);
-            if (!Ship.InputController.AutoPilotEnabled && cameraManager != null)
+            if (Ship.InputController.AutoPilotEnabled && cameraManager != null)
             {
                 cameraManager.SetNormalizedCloseCameraDistance(1);
                 Debug.Log("camera distance now set to 1");

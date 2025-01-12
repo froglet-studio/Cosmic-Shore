@@ -19,7 +19,7 @@ namespace CosmicShore
         {
             inputController = ship.InputController;
             container = new GameObject("BoidContainer");
-            container.transform.SetParent(ship.Player.transform);
+            container.transform.SetParent(ship.Player.Transform);
         }
 
         public void SpawnDrone(Transform goal, bool isQueenDrone)

@@ -8,16 +8,16 @@ public class ToggleTurretModeAction : ShipAction
 
     protected override void Start()
     {
-        shipData = ship.ShipStatus;
+        shipData = Ship.ShipStatus;
     }
 
     public override void StartAction()
     {
         shipData.Stationary = !shipData.Stationary;
-        var resource = ship.ResourceSystem.Resources[resourceIndex];
+        var resource = Ship.ResourceSystem.Resources[resourceIndex];
         resource.resourceGainRate = shipData.Stationary ? resource.initialResourceGainRate * 2 : resource.initialResourceGainRate;
-        if (shipData.Stationary) ship.TrailSpawner.PauseTrailSpawner();
-        else ship.TrailSpawner.RestartTrailSpawnerAfterDelay(0);
+        if (shipData.Stationary) Ship.TrailSpawner.PauseTrailSpawner();
+        else Ship.TrailSpawner.RestartTrailSpawnerAfterDelay(0);
     }
 
     public override void StopAction()
