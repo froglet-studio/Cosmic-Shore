@@ -1,3 +1,4 @@
+using CosmicShore.Game;
 using CosmicShore.Game.Projectiles;
 using UnityEngine;
 

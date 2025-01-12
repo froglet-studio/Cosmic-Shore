@@ -6,6 +6,7 @@ using CosmicShore.App.Systems.Squads;
 using CosmicShore.Core;
 using CosmicShore.Integrations.PlayFab.Economy;
 using System.Linq;
+using CosmicShore.Game;
 
 namespace CosmicShore
 {

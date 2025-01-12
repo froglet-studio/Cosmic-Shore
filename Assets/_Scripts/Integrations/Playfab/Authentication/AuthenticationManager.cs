@@ -13,6 +13,7 @@ using PlayFab;
 using PlayFab.ClientModels;
 using UnityEngine;
 
+
 namespace CosmicShore.Integrations.PlayFab.Authentication
 {
     public class AuthenticationManager : SingletonPersistent<AuthenticationManager>
