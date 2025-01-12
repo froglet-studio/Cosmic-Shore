@@ -1,5 +1,6 @@
 using UnityEngine;
 using System;
+using CosmicShore.Game;
 
 namespace CosmicShore.Core
 {
@@ -52,7 +53,7 @@ namespace CosmicShore.Core
             }
         }
 
-        public void Steal(Player player, Teams newTeam, bool superSteal)
+        public void Steal(IPlayer player, Teams newTeam, bool superSteal)
         {
             if (Team != newTeam)
             {
@@ -62,7 +63,7 @@ namespace CosmicShore.Core
                     return;
                 }
 
-                var playerName = player ? player.PlayerName : "No name";
+                var playerName = player != null ? player.PlayerName : "No name";
 
                 if (StatsManager.Instance != null)
                 {
