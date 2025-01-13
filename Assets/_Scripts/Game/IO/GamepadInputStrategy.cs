@@ -14,13 +14,13 @@ namespace CosmicShore.Game.IO
         private Vector2 leftStickRaw;
         private Vector2 rightStickRaw;
 
-        public override void Initialize(Ship ship)
+        public override void Initialize(IShip ship)
         {
             base.Initialize(ship);
             ResetInput();
         }
 
-        public override void ProcessInput(Ship ship)
+        public override void ProcessInput(IShip ship)
         {
             if (Gamepad.current == null) return;
 

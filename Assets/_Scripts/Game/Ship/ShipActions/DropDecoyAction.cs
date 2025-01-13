@@ -1,3 +1,4 @@
+using CosmicShore.Game;
 using CosmicShore.Game.Projectiles;
 using UnityEngine;
 
@@ -25,12 +26,12 @@ public class DropDecoyAction : ShipAction
             resourceSystem.ChangeResourceAmount(resourceIndex, -resourceCost);
 
             var fake = Instantiate(decoy).GetComponent<FakeCrystal>();
-            if (Player.ActivePlayer && Player.ActivePlayer.Ship == ship) fake.isplayer = true;
-            fake.Team = ship.Team;
+            if (Player.ActivePlayer && Player.ActivePlayer.Ship == Ship) fake.isplayer = true;
+            fake.Team = Ship.Team;
             fake.ItemType = ItemType.Debuff;
-            fake.transform.position = ship.transform.position;
-            fake.transform.position += Quaternion.Euler(0, 0, Random.Range(0, 360)) * ship.transform.up * Random.Range(dropRadiusMinRange, dropRadiusMaxRange);
-            fake.transform.position += ship.transform.forward * dropForwardDistance;
+            fake.transform.position = Ship.Transform.position;
+            fake.transform.position += Quaternion.Euler(0, 0, Random.Range(0, 360)) * Ship.Transform.up * Random.Range(dropRadiusMinRange, dropRadiusMaxRange);
+            fake.transform.position += Ship.Transform.forward * dropForwardDistance;
         }
     }
 

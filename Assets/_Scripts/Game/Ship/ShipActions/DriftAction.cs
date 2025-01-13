@@ -7,21 +7,21 @@ public class DriftAction : ShipAction
     protected override void Start()
     {
         base.Start();
-        shipData = ship.GetComponent<ShipStatus>();
+        shipData = Ship.ShipStatus;
     }
     public override void StartAction()
     {
-        ship.ShipTransformer.PitchScaler *= 1.5f;
-        ship.ShipTransformer.YawScaler *= 1.5f;
-        ship.ShipTransformer.RollScaler *= 1.5f;
+        Ship.ShipTransformer.PitchScaler *= 1.5f;
+        Ship.ShipTransformer.YawScaler *= 1.5f;
+        Ship.ShipTransformer.RollScaler *= 1.5f;
         shipData.Drifting = true;
     }
 
     public override void StopAction()
     {
-        ship.ShipTransformer.PitchScaler /= 1.5f;
-        ship.ShipTransformer.YawScaler /= 1.5f;
-        ship.ShipTransformer.RollScaler /= 1.5f;
+        Ship.ShipTransformer.PitchScaler /= 1.5f;
+        Ship.ShipTransformer.YawScaler /= 1.5f;
+        Ship.ShipTransformer.RollScaler /= 1.5f;
         shipData.Drifting = false;
     }
 }

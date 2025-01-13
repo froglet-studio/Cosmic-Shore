@@ -14,13 +14,13 @@ public class ConsumeBoostAction : ShipAction
 
     protected override void Start()
     {
-        BindElementalFloats(ship);
-        shipData = ship.GetComponent<ShipStatus>();
-        ship.boostMultiplier = 0;
+        BindElementalFloats(Ship);
+        shipData = Ship.ShipStatus;
+        Ship.BoostMultiplier = 0;
     }
     public override void StartAction()
     {
-        if (ship.ResourceSystem.Resources[resourceIndex].CurrentAmount >= resourceCost) StartCoroutine(ConsumeBoostCoroutine());
+        if (Ship.ResourceSystem.Resources[resourceIndex].CurrentAmount >= resourceCost) StartCoroutine(ConsumeBoostCoroutine());
     }
 
     public override void StopAction()
@@ -31,14 +31,14 @@ public class ConsumeBoostAction : ShipAction
     IEnumerator ConsumeBoostCoroutine()
     {
         var multiplier = boostMultiplier.Value;
-        ship.ResourceSystem.ChangeResourceAmount(resourceIndex,-resourceCost);
+        Ship.ResourceSystem.ChangeResourceAmount(resourceIndex,-resourceCost);
         shipData.Boosting = true;
-        ship.boostMultiplier += multiplier;
+        Ship.BoostMultiplier += multiplier;
         yield return new WaitForSeconds(boostDuration);
-        ship.boostMultiplier -= multiplier;
-        if (ship.boostMultiplier <= 1)
+        Ship.BoostMultiplier -= multiplier;
+        if (Ship.BoostMultiplier <= 1)
         {
-            ship.boostMultiplier = 1;
+            Ship.BoostMultiplier = 1;
             shipData.Boosting = false;
         }
     }

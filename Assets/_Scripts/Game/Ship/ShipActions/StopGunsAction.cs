@@ -6,7 +6,7 @@ public class StopGunsAction : ShipAction
 
     protected override void Start()
     {
-        shipData = ship.GetComponent<ShipStatus>();
+        shipData = Ship.ShipStatus;
     }
     public override void StartAction()
     {

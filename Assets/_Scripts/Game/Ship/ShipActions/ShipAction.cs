@@ -1,13 +1,12 @@
 using CosmicShore.Core;
+using CosmicShore.Game;
 using System.Collections;
 using UnityEngine;
 
 public abstract class ShipAction : ElementalShipComponent
 {
     protected ResourceSystem resourceSystem;
-
-    protected Ship ship;
-    public Ship Ship { get => ship; set => ship = value; }
+    public IShip Ship { get; set; }
     public abstract void StartAction();
     public abstract void StopAction();
 
@@ -25,10 +24,10 @@ public abstract class ShipAction : ElementalShipComponent
 
     protected virtual void InitializeShipAttributes()
     {
-        if (ship != null)
+        if (Ship != null)
         {
-            BindElementalFloats(ship);
-            resourceSystem = ship.ResourceSystem;
+            BindElementalFloats(Ship);
+            resourceSystem = Ship.ResourceSystem;
         }
         else
         {

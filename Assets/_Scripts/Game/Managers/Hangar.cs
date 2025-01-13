@@ -1,4 +1,5 @@
 using CosmicShore.App.Systems.Squads;
+using CosmicShore.Game;
 using CosmicShore.Game.AI;
 using CosmicShore.Integrations.PlayFab.Economy;
 using CosmicShore.Models;
@@ -20,9 +21,9 @@ namespace CosmicShore.Core
         [SerializeField] Captain PlayerCaptain;  // Serialized for inspection in hierarchy
         [SerializeField] ShipTypes PlayerShipType = ShipTypes.Random;
         [SerializeField] ShipTypes FriendlyAIShipType = ShipTypes.Manta;
-        [SerializeField] public ShipTypes HostileAI1ShipType = ShipTypes.Random;
-        [SerializeField] public ShipTypes HostileAI2ShipType = ShipTypes.Random;
-        [SerializeField] public ShipTypes HostileAI3ShipType = ShipTypes.Random;
+        [SerializeField] ShipTypes HostileAI1ShipType = ShipTypes.Random;
+        [SerializeField] ShipTypes HostileAI2ShipType = ShipTypes.Random;
+        [SerializeField] ShipTypes HostileAI3ShipType = ShipTypes.Random;
         ShipTypes HostileMantaShipType = ShipTypes.Manta;
 
         [SerializeField] List<ShipTypes> GreenTeamShipTypes = new List<ShipTypes>() { ShipTypes.Random, ShipTypes.Random, ShipTypes.Random };
@@ -30,15 +31,48 @@ namespace CosmicShore.Core
         [SerializeField] List<ShipTypes> GoldTeamShipTypes = new List<ShipTypes>() { ShipTypes.Random, ShipTypes.Random, ShipTypes.Random };
         Dictionary<Teams, List<ShipTypes>> TeamShipTypes = new();
 
-        Dictionary<string, Ship> ships = new();
-        Dictionary<ShipTypes, Ship> shipTypeMap = new();
+        Dictionary<string, IShip> ships = new();
+        Dictionary<ShipTypes, IShip> shipTypeMap = new();
 
         // HashSet has only one same value in one set
         [HideInInspector] public HashSet<Transform> SlowedShipTransforms = new(); // TODO: move to node
 
-        [SerializeField] public List<Ship> ShipPrefabs;
+        [SerializeField] public List<GameObject> ShipPrefabs;
 
         readonly string SelectedShipPlayerPrefKey = "SelectedShip";
+
+        public IShip SelectedShip { get; private set; }
+
+
+        public override void Awake()
+        {
+            base.Awake();
+
+            TeamShipTypes.Add(Teams.Jade, GreenTeamShipTypes);
+            TeamShipTypes.Add(Teams.Ruby, RedTeamShipTypes);
+            TeamShipTypes.Add(Teams.Gold, GoldTeamShipTypes);
+
+            if (PlayerPrefs.HasKey(SelectedShipPlayerPrefKey))
+                PlayerShipType = (ShipTypes)PlayerPrefs.GetInt(SelectedShipPlayerPrefKey);
+
+
+            if (PlayerTeam == Teams.None)
+            {
+                Debug.LogError("Player Team is set to None. Defaulting to Green Team");
+                PlayerTeam = Teams.Jade;
+            }
+
+            foreach (var go in ShipPrefabs.Where(ship => ship != null))
+            {
+                if (!go.TryGetComponent(out IShip ship))
+                    continue;
+
+                ships.Add(ship.ShipName, ship);
+                shipTypeMap.Add(ship.GetShipType, ship);
+            }
+
+            AITeam = PlayerTeam == Teams.Jade ? Teams.Ruby : Teams.Jade;
+        }
 
         public void SetPlayerShip(int shipType)
         {
@@ -47,7 +81,7 @@ namespace CosmicShore.Core
             PlayerPrefs.SetInt(SelectedShipPlayerPrefKey, shipType);
         }
 
-        public void SetTeamShipType(Teams team, ShipTypes shipType, int slot=0)
+        public void SetTeamShipType(Teams team, ShipTypes shipType, int slot = 0)
         {
             Debug.Log($"Hangar.SetTeamShipType: shipType:{shipType}, team:{team}, slot:{slot}");
 
@@ -59,12 +93,12 @@ namespace CosmicShore.Core
             PlayerCaptain = captain;
         }
 
-        public ShipTypes GetPlayerShip()
+        public ShipTypes GetPlayerShipType()
         {
             return PlayerShipType;
         }
 
-        [Range(1,4)]
+        [Range(1, 4)]
         [SerializeField]
         int AISkillLevel = 1;
 
@@ -84,40 +118,11 @@ namespace CosmicShore.Core
         /// <param name="level">Range from 1-9</param>
         public void SetAiDifficultyLevel(int level)
         {
-            AISkillLevel = Mathf.FloorToInt(level/9f*4);
+            AISkillLevel = Mathf.FloorToInt(level / 9f * 4);
         }
 
-        public Ship SelectedShip { get; private set; }
-        public override void Awake()
-        {
-            base.Awake();
 
-            TeamShipTypes.Add(Teams.Jade, GreenTeamShipTypes);
-            TeamShipTypes.Add(Teams.Ruby, RedTeamShipTypes);
-            TeamShipTypes.Add(Teams.Gold, GoldTeamShipTypes);
-
-            if (PlayerPrefs.HasKey(SelectedShipPlayerPrefKey))
-                PlayerShipType = (ShipTypes) PlayerPrefs.GetInt(SelectedShipPlayerPrefKey);
-
-            
-            if (PlayerTeam == Teams.None)
-            {
-                Debug.LogError("Player Team is set to None. Defaulting to Green Team");
-                PlayerTeam = Teams.Jade;
-            }
-
-            foreach (var ship in ShipPrefabs.Where(ship => ship != null))
-            {
-                ships.Add(ship.name, ship);
-                shipTypeMap.Add(ship.ShipType, ship);
-            }
-
-            AITeam = PlayerTeam == Teams.Jade ? Teams.Ruby : Teams.Jade;
-        }
-
-        
-
-        public Ship LoadPlayerShip(bool useSquad=false)
+        public IShip LoadPlayerShip(bool useSquad = false)
         {
             if (useSquad)
             {
@@ -125,7 +130,7 @@ namespace CosmicShore.Core
             }
 
             if (PlayerShipType != ShipTypes.Random) return LoadPlayerShip(PlayerShipType, PlayerTeam);
-            
+
             var values = Enum.GetValues(typeof(ShipTypes));
             var random = new System.Random();
             PlayerShipType = (ShipTypes)values.GetValue(random.Next(values.Length));
@@ -133,10 +138,17 @@ namespace CosmicShore.Core
             return LoadPlayerShip(PlayerShipType, PlayerTeam);
         }
 
-        public Ship LoadPlayerShip(ShipTypes shipType, Teams team)
+        public IShip LoadPlayerShip(ShipTypes shipType, Teams team)
         {
-            var ship = Instantiate(shipTypeMap[shipType]);
+            Instantiate(shipTypeMap[shipType].Transform).TryGetComponent(out IShip ship);
+            return LoadPlayerShip(ship, team, true);  // for single player, isOwner is default to true
+        }
 
+        /// <summary>
+        /// This method is used when ship is loaded for multiplayer gameplay
+        /// </summary>
+        public IShip LoadPlayerShip(IShip ship, Teams team, bool isOwner)
+        {
             if (PlayerCaptain != null)
                 ship.SetResourceLevels(PlayerCaptain.ResourceLevels);
 
@@ -148,63 +160,64 @@ namespace CosmicShore.Core
             ship.SetAOEConicExplosionMaterial(materialSet.AOEConicExplosionMaterial);
             ship.SetSkimmerMaterial(materialSet.SkimmerMaterial);
 
-            SelectedShip = ship;
-
+            if (isOwner)
+                SelectedShip = ship;
             return ship;
         }
 
-        public Ship LoadShip(ShipTypes shipType, Teams team)
+        public IShip LoadShip(ShipTypes shipType, Teams team)
         {
             return LoadAIShip(shipType, team);
         }
 
-        public Ship LoadFriendlyAIShip()
+        public IShip LoadFriendlyAIShip()
         {
             return LoadAIShip(FriendlyAIShipType, PlayerTeam);
         }
-        public Ship LoadSquadMateOne()
+        public IShip LoadSquadMateOne()
         {
             SquadSystem.LoadSquad();
             return LoadAIShip(SquadSystem.RogueOne.Ship.Class, PlayerTeam, SquadSystem.RogueOne);
         }
-        public Ship LoadSquadMateTwo()
+        public IShip LoadSquadMateTwo()
         {
-            SquadSystem.LoadSquad(); 
+            SquadSystem.LoadSquad();
             return LoadAIShip(SquadSystem.RogueTwo.Ship.Class, PlayerTeam, SquadSystem.RogueTwo);
         }
 
         public SO_Captain HostileAI1Captain { get; private set; }
         public SO_Captain HostileAI2Captain { get; private set; }
         public SO_Captain HostileAI3Captain { get; private set; }
-        public Ship LoadHostileAI1Ship(Teams Team)
+
+        public IShip LoadHostileAI1Ship(Teams Team)
         {
-            var ship = LoadAIShip(HostileAI1ShipType, AITeam);
+            var ship = LoadAIShip(HostileAI1ShipType, Team);
             HostileAI1Captain = ship.Captain;
             return ship;
         }
-        public Ship LoadHostileAI2Ship()
+        public IShip LoadHostileAI2Ship()
         {
             var ship = LoadAIShip(HostileAI2ShipType, AITeam);
             HostileAI2Captain = ship.Captain;
             return ship;
         }
-        public Ship LoadHostileAI3Ship()
+        public IShip LoadHostileAI3Ship()
         {
             var ship = LoadAIShip(HostileAI3ShipType, AITeam);
             HostileAI3Captain = ship.Captain;
             return ship;
         }
-        public Ship LoadHostileManta()
+        public IShip LoadHostileManta()
         {
             return LoadAIShip(HostileMantaShipType, AITeam);
         }
-        Ship LoadAIShip(ShipTypes shipType, Teams team, SO_Captain captain=null)
+        IShip LoadAIShip(ShipTypes shipType, Teams team, SO_Captain captain = null)
         {
             if (shipType == ShipTypes.Random)
             {
                 var values = Enum.GetValues(typeof(ShipTypes));
                 var random = new System.Random();
-                shipType = (ShipTypes) values.GetValue(random.Next(1, values.Length));
+                shipType = (ShipTypes)values.GetValue(random.Next(1, values.Length));
             }
 
             if (captain == null)
@@ -215,17 +228,18 @@ namespace CosmicShore.Core
 
             var materialSet = ThemeManager.Instance.TeamMaterialSets[team];
 
-            var ship = Instantiate(shipTypeMap[shipType]);
+            Instantiate(shipTypeMap[shipType].Transform).TryGetComponent(out IShip ship);
             if (captain != null)
                 ship.AssignCaptain(captain);
+            ship.SetResourceLevels(captain.InitialResourceLevels);
             ship.SetShipMaterial(materialSet.ShipMaterial);
             ship.SetBlockSilhouettePrefab(materialSet.BlockSilhouettePrefab);
             ship.SetAOEExplosionMaterial(materialSet.AOEExplosionMaterial);
             ship.SetAOEConicExplosionMaterial(materialSet.AOEConicExplosionMaterial);
             ship.SetSkimmerMaterial(materialSet.SkimmerMaterial);
 
-            var pilot = ship.GetComponent<AIPilot>();
-            pilot.SkillLevel = ((float)AISkillLevel-1) / 3; // this assumes that levels remain from 1-4
+            AIPilot pilot = ship.AIPilot;
+            pilot.SkillLevel = ((float)AISkillLevel - 1) / 3; // this assumes that levels remain from 1-4
             pilot.AutoPilotEnabled = true;
 
             return ship;

@@ -1,3 +1,4 @@
+using CosmicShore.Game;
 using System.Collections;
 using Unity.Cinemachine;
 using UnityEngine;
@@ -19,7 +20,7 @@ namespace CosmicShore.Utility.Recording
         {
             yield return new WaitForSeconds(3);
             //specialCamera.Follow = specialCamera.LookAt = game.ActivePlayer.Ship.transform;
-            specialCamera.Follow = specialCamera.LookAt = player.Ship.transform;
+            specialCamera.Follow = specialCamera.LookAt = player.Ship.Transform;        
         }
     }
 }

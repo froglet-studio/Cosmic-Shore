@@ -2,14 +2,13 @@ using CosmicShore.Core;
 using CosmicShore.Game.IO;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.InputSystem.LowLevel;
 
 namespace CosmicShore.Game.Animation
 {
     [RequireComponent(typeof(Ship))]
     public abstract class ShipAnimation : MonoBehaviour
     {
-        protected InputController inputController;
-
         [SerializeField] public SkinnedMeshRenderer SkinnedMeshRenderer;
         [SerializeField] bool SaveNewPositions; // TODO: remove after all models have shape keys support
         [SerializeField] bool UseShapeKeys; // TODO: remove after all models have shape keys support
@@ -19,20 +18,9 @@ namespace CosmicShore.Game.Animation
 
         protected List<Transform> Transforms = new(); // TODO: use this to populate the ship geometries on ship.cs
         protected List<Quaternion> InitialRotations = new(); // TODO: use this to populate the ship geometries on ship.cs
-        protected Ship ship;
-
-        protected virtual void Awake()
-        {
-            ship = GetComponent<Ship>();
-        }
-
-        protected virtual void Start()
-        {
-            inputController = ship.InputController;
-            ship.ResourceSystem.OnElementLevelChange += UpdateShapeKey;
-
-            AssignTransforms();
-        }
+        protected IShip Ship;
+        protected InputController inputController;
+        protected IInputStatus inputStatus;
 
         protected virtual void Update()
         {
@@ -42,9 +30,19 @@ namespace CosmicShore.Game.Animation
                 if (inputController.Idle)
                     Idle();
                 else
-                    if (ship.ShipStatus.SingleStickControls) PerformShipPuppetry(inputController.EasedLeftJoystickPosition.y, inputController.EasedLeftJoystickPosition.x, 0, 0);
+                    if (Ship.ShipStatus.SingleStickControls) PerformShipPuppetry(inputController.EasedLeftJoystickPosition.y, inputController.EasedLeftJoystickPosition.x, 0, 0);
                     else PerformShipPuppetry(inputController.YSum, inputController.XSum, inputController.YDiff, inputController.XDiff);
             }
+        }
+
+        public virtual void Initialize(IShip ship)
+        {
+            Ship = ship;
+            inputController = Ship.InputController;
+            inputStatus = inputController.InputStatus;
+            Ship.ResourceSystem.OnElementLevelChange += UpdateShapeKey;
+
+            AssignTransforms();
         }
         protected abstract void AssignTransforms();
 

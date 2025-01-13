@@ -1,6 +1,7 @@
 ﻿﻿﻿﻿using UnityEngine;
 using System.Collections;
 using CosmicShore.Utility.ClassExtensions;
+using CosmicShore.Game;
 
 namespace CosmicShore.Core
 {
@@ -38,8 +39,8 @@ namespace CosmicShore.Core
                     teamManager.SetInitialTeam(value);
             }
         }
-        public Player Player;
-        public string PlayerName => Player ? Player.PlayerName : "";
+        public IPlayer Player;
+        public string PlayerName => Player != null ? Player.PlayerName : "";
 
         // Component references
         private MaterialPropertyAnimator materialAnimator;
@@ -174,7 +175,7 @@ namespace CosmicShore.Core
             if (other.gameObject.IsLayer("Ships"))
             {
                 var ship = other.GetComponent<ShipGeometry>()?.Ship;
-                if (ship != null && !ship.GetComponent<ShipStatus>().Attached)
+                if (ship != null && !ship.ShipStatus.Attached)
                 {
                     ship.PerformTrailBlockImpactEffects(TrailBlockProperties);
                 }
@@ -243,7 +244,7 @@ namespace CosmicShore.Core
         public void SetTransparency(bool transparent) => materialAnimator?.SetTransparency(transparent);
 
         // Team Management Methods
-        public void Steal(Player player, Teams team, bool superSteal = false) => teamManager?.Steal(player, team, superSteal);
+        public void Steal(IPlayer player, Teams team, bool superSteal = false) => teamManager?.Steal(player, team, superSteal);
         public void ChangeTeam(Teams team) => teamManager?.ChangeTeam(team);
 
         // Restoration

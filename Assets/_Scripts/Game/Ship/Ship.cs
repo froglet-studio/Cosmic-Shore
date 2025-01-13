@@ -1,4 +1,6 @@
+using CosmicShore.Game;
 using CosmicShore.Game.AI;
+using CosmicShore.Game.Animation;
 using CosmicShore.Game.IO;
 using CosmicShore.Game.Projectiles;
 using CosmicShore.Models;
@@ -27,33 +29,125 @@ namespace CosmicShore.Core
     [RequireComponent(typeof(ResourceSystem))]
     [RequireComponent(typeof(TrailSpawner))]
     [RequireComponent(typeof(ShipStatus))]
-    public class Ship : MonoBehaviour
+    public class Ship : MonoBehaviour, IShip
     {
+        public event Action OnShipInitialized;
+
         [SerializeField] List<ImpactProperties> impactProperties;
-        [HideInInspector] public CameraManager cameraManager;
-        [HideInInspector] public InputController InputController;
-        [HideInInspector] public ResourceSystem ResourceSystem;
+
+        public CameraManager CameraManager => CameraManager.Instance;
+
+        InputController _inputController;
+        public InputController InputController
+        {
+            get
+            {
+                if (_inputController == null)
+                {
+                    if (Player == null)
+                    {
+                        Debug.LogError($"No player found to get input controller!");
+                        return null;
+                    }
+                    _inputController = Player.InputController;
+                }
+                return _inputController;
+            }
+        }
+
+        ResourceSystem _resourceSystem;
+        public ResourceSystem ResourceSystem
+        {
+            get
+            {
+                _resourceSystem = _resourceSystem != null ? _resourceSystem : GetComponent<ResourceSystem>();
+                return _resourceSystem;
+            }
+        }
 
         [Header("Ship Meta")]
+
         [SerializeField] string Name;
-        [SerializeField] public ShipTypes ShipType;
+        public string ShipName => Name;
+
+        [SerializeField] ShipTypes ShipType;
+        public ShipTypes GetShipType => ShipType;
 
         [Header("Ship Components")]
-        [HideInInspector] public TrailSpawner TrailSpawner;
-        [HideInInspector] public ShipTransformer ShipTransformer;
-        [HideInInspector] public AIPilot AutoPilot;
-        [HideInInspector] public ShipStatus ShipStatus;
+
+        TrailSpawner _trailSpawner;
+        public TrailSpawner TrailSpawner 
+        { 
+            get
+            {
+                _trailSpawner = _trailSpawner != null ? _trailSpawner : GetComponent<TrailSpawner>();
+                return _trailSpawner;
+            }
+        }
+
+        ShipTransformer _shipTransformer;
+        public ShipTransformer ShipTransformer
+        {
+            get
+            {
+                _shipTransformer = _shipTransformer != null ? _shipTransformer : GetComponent<ShipTransformer>();
+                return _shipTransformer;
+            }
+        }
+
+        private AIPilot aiPilot;
+        public AIPilot AIPilot
+        {
+            get
+            {
+                aiPilot = aiPilot != null ? aiPilot : gameObject.GetComponent<AIPilot>();
+                return aiPilot;
+            }
+        }
+
+        ShipStatus _shipStatus;
+        public ShipStatus ShipStatus
+        {
+            get
+            {
+                _shipStatus = _shipStatus != null ? _shipStatus : GetComponent<ShipStatus>();
+                return _shipStatus;
+            }
+        }
+
         [SerializeField] Skimmer nearFieldSkimmer;
         [SerializeField] GameObject OrientationHandle;
-        [SerializeField] public List<GameObject> shipGeometries;
+
+        [SerializeField] List<GameObject> shipGeometries;
+        public List<GameObject> ShipGeometries => shipGeometries;
+
         [SerializeField] GameObject shipHUD;
 
         [Header("Optional Ship Components")]
-        [SerializeField] Silhouette Silhouette;
+
+        Silhouette _silhouette;
+        public Silhouette Silhouette
+        {
+            get
+            {
+                _silhouette = _silhouette != null ? _silhouette : GetComponent<Silhouette>();
+                return _silhouette;
+            }
+        }
+
         [SerializeField] GameObject AOEPrefab;
         [SerializeField] Skimmer farFieldSkimmer;
-        [SerializeField] public ShipCameraCustomizer ShipCameraCustomizer;
-        [SerializeField] public Transform FollowTarget;
+
+        ShipCameraCustomizer _shipCameraCustomizer;
+        public ShipCameraCustomizer ShipCameraCustomizer
+        {
+            get
+            {
+                _shipCameraCustomizer = _shipCameraCustomizer != null ? _shipCameraCustomizer : GetComponent<ShipCameraCustomizer>();
+                return _shipCameraCustomizer;
+            }
+        }
+
         [SerializeField] int resourceIndex = 0;
         [SerializeField] int ammoResourceIndex = 0; // TODO: move to an ability system with separate classes
         [SerializeField] int boostResourceIndex = 0; // TODO: move to an ability system with separate classes
@@ -67,9 +161,12 @@ namespace CosmicShore.Core
         [SerializeField] float blockChargeChange;
 
         [Header("Configuration")]
-        [SerializeField] public float boostMultiplier = 4f; // TODO: Move to ShipController
+        [SerializeField] float boostMultiplier = 4f; // TODO: Move to ShipController
+        public float BoostMultiplier { get => boostMultiplier; set => boostMultiplier = value; }
+
         [SerializeField] bool bottomEdgeButtons = false;
-        [SerializeField] public float Inertia = 70f;
+        [SerializeField] float Inertia = 70f;
+        public float GetInertia => Inertia;
 
         [SerializeField] List<InputEventShipActionMapping> inputEventShipActions;
         Dictionary<InputEvents, List<ShipAction>> ShipControlActions = new();
@@ -81,27 +178,28 @@ namespace CosmicShore.Core
         Dictionary<ResourceEvents, float> resourceAbilityStartTimes = new();
 
         Material ShipMaterial;
-        [HideInInspector] public Material AOEExplosionMaterial;
-        [HideInInspector] public Material AOEConicExplosionMaterial;
-        [HideInInspector] public Material SkimmerMaterial;
-        float speedModifierDuration = 2f;
 
-        [HideInInspector] public SO_Captain Captain;
+        public Material AOEExplosionMaterial { get; private set; }
+        public Material AOEConicExplosionMaterial { get; private set; }
+        public Material SkimmerMaterial { get; private set; }
+        public SO_Captain Captain { get; private set; }
+
+        float speedModifierDuration = 2f;
 
         Teams team;
         public Teams Team 
         { 
             get => team; 
-            set 
+            private set 
             { 
                 team = value;
-                if (nearFieldSkimmer != null) nearFieldSkimmer.team = value;
-                if (farFieldSkimmer != null) farFieldSkimmer.team = value; 
+                if (nearFieldSkimmer != null) nearFieldSkimmer.Team = value;
+                if (farFieldSkimmer != null) farFieldSkimmer.Team = value; 
             }
         }
 
-        Player player;
-        public Player Player 
+        IPlayer player;
+        public IPlayer Player 
         { 
             get => player;
             set
@@ -112,54 +210,18 @@ namespace CosmicShore.Core
             }
         }
 
-        void Awake()
+        ShipAnimation _shipAnimation;
+        public ShipAnimation ShipAnimation
         {
-            ResourceSystem = GetComponent<ResourceSystem>();
-            ShipTransformer = GetComponent<ShipTransformer>();
-            TrailSpawner = GetComponent<TrailSpawner>();
-            ShipStatus = GetComponent<ShipStatus>();
-        }
-
-        void Start()
-        {
-            cameraManager = CameraManager.Instance;
-            InputController = player.GetComponent<InputController>();
-            AutoPilot = GetComponent<AIPilot>();
-            if (!FollowTarget) FollowTarget = transform;
-            if (bottomEdgeButtons) Player.GameCanvas.MiniGameHUD.PositionButtonPanel(true);
-
-            foreach (var shipGeometry in shipGeometries)
-                shipGeometry.AddComponent<ShipGeometry>().Ship = this;
-
-            foreach (var inputEventShipAction in inputEventShipActions)
-                if (!ShipControlActions.ContainsKey(inputEventShipAction.InputEvent))
-                    ShipControlActions.Add(inputEventShipAction.InputEvent, inputEventShipAction.ShipActions);
-                else
-                    ShipControlActions[inputEventShipAction.InputEvent].AddRange(inputEventShipAction.ShipActions);
-
-            foreach (var shipAction in ShipControlActions.Keys.SelectMany(key => ShipControlActions[key]))
-                shipAction.Ship = this;
-            
-            foreach (var resourceEventClassAction in resourceEventClassActions)
-                if (!ClassResourceActions.ContainsKey(resourceEventClassAction.ResourceEvent))
-                    ClassResourceActions.Add(resourceEventClassAction.ResourceEvent, resourceEventClassAction.ClassActions);
-                else
-                    ClassResourceActions[resourceEventClassAction.ResourceEvent].AddRange(resourceEventClassAction.ClassActions);
-
-            foreach (var classAction in ClassResourceActions.Keys.SelectMany(key => ClassResourceActions[key]))
-                classAction.Ship = this;
-
-            if (AutoPilot.AutoPilotEnabled) return;
-            if (!shipHUD) return;
-            shipHUD.SetActive(true);
-            foreach (var child in shipHUD.GetComponentsInChildren<Transform>(false))
+            get
             {
-                child.SetParent(Player.GameCanvas.transform, false);
-                child.SetSiblingIndex(0);   // Don't draw on top of modal screens
+                _shipAnimation = _shipAnimation != null ? _shipAnimation : GetComponent<ShipAnimation>();
+                return _shipAnimation;
             }
         }
 
-        [Serializable] public struct ElementStat
+        [Serializable]
+        public struct ElementStat
         {
             public string StatName;
             public Element Element;
@@ -172,6 +234,48 @@ namespace CosmicShore.Core
         }
 
         [SerializeField] List<ElementStat> ElementStats = new();
+
+        public Transform FollowTarget { get; private set; }
+
+        public Transform Transform => transform;
+
+        public void Initialize(IPlayer player, Teams team = Teams.None)
+        {
+            this.player = player;
+            this.team = team;
+
+            if (!FollowTarget) FollowTarget = transform;
+            if (bottomEdgeButtons) Player.GameCanvas.MiniGameHUD.PositionButtonPanel(true);
+
+            InitializeShipGeometries();
+            InitializeShipControlActions();
+            InitializeClassResourceActions();
+
+            Silhouette.Initialize(this);
+            ShipAnimation.Initialize(this);
+            ShipTransformer.Initialize(this);
+            AIPilot.Initialize(this);
+            nearFieldSkimmer.Initialize(this);
+            farFieldSkimmer.Initialize(this);
+            ShipCameraCustomizer.Initialize(this);
+            TrailSpawner.Initialize(this);
+
+            if (AIPilot.AutoPilotEnabled) return;
+            if (!shipHUD) return;
+            shipHUD.SetActive(true);
+            foreach (var child in shipHUD.GetComponentsInChildren<Transform>(false))
+            {
+                child.SetParent(Player.GameCanvas.transform, false);
+                child.SetSiblingIndex(0);   // Don't draw on top of modal screens
+            }
+
+            OnShipInitialized?.Invoke();
+        }
+
+        void InitializeShipGeometries() => ShipHelper.InitializeShipGeometries(this, shipGeometries);
+        void InitializeShipControlActions() => ShipHelper.InitializeShipControlActions(this, inputEventShipActions, ShipControlActions);
+        void InitializeClassResourceActions() => ShipHelper.InitializeClassResourceActions(this, resourceEventClassActions, ClassResourceActions);
+
         public void BindElementalFloat(string statName, Element element)
         {
             Debug.Log($"Ship.NotifyShipStatBinding - statName:{statName}, element:{element}");
@@ -411,6 +515,10 @@ namespace CosmicShore.Core
             ApplyShipMaterial();
         }
 
+        public void SetBoostMultiplier(float multiplier) => boostMultiplier = multiplier;
+
+        public void ToggleGameObject(bool toggle) => gameObject.SetActive(toggle);
+
         public void SetBlockSilhouettePrefab(GameObject prefab)
         {
             if (Silhouette) Silhouette.SetBlockPrefab(prefab);
@@ -491,6 +599,5 @@ namespace CosmicShore.Core
                 ShipStatus.AttachedTrailBlock = trailBlock;
             }
         }
-
     }
 }

@@ -1,9 +1,10 @@
+using CosmicShore.Game;
 using UnityEngine;
 
 namespace CosmicShore.Core
 {
     public class ShipGeometry : MonoBehaviour
     {
-        public Ship Ship;
+        public IShip Ship;
     }
 }

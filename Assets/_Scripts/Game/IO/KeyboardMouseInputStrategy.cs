@@ -22,7 +22,7 @@ namespace CosmicShore.Game.IO
         private Vector2 rawLeftStick;  // For consistent parameterization
         private Vector2 rawRightStick; // For consistent parameterization
 
-        public override void Initialize(Ship ship)
+        public override void Initialize(IShip ship)
         {
             base.Initialize(ship);
             ResetInput();
@@ -38,7 +38,7 @@ namespace CosmicShore.Game.IO
             RightJoystickHome = new Vector2(Screen.currentResolution.width - Screen.dpi, Screen.dpi);
         }
 
-        public override void ProcessInput(Ship ship)
+        public override void ProcessInput(IShip ship)
         {
             if (Keyboard.current == null || Mouse.current == null) return;
 

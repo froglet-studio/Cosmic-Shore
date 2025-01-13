@@ -18,7 +18,7 @@ namespace CosmicShore.Game.IO
         private bool fullSpeedStraightEffectsStarted;
         private bool minimumSpeedStraightEffectsStarted;
 
-        public override void Initialize(Ship ship)
+        public override void Initialize(IShip ship)
         {
             base.Initialize(ship);
             joystickRadius = Screen.dpi;
@@ -27,7 +27,7 @@ namespace CosmicShore.Game.IO
             EnhancedTouchSupport.Enable();
         }
 
-        public override void ProcessInput(Ship ship)
+        public override void ProcessInput(IShip ship)
         {
             var touchCount = Touch.activeTouches.Count;
 
@@ -128,7 +128,7 @@ namespace CosmicShore.Game.IO
             {
                 ship.PerformShipControllerActions(InputEvents.NodeTapAction);
             }
-            else if ((tempThreeDPosition - ship.transform.position).sqrMagnitude < 10000 &&
+            else if ((tempThreeDPosition - ship.Transform.position).sqrMagnitude < 10000 &&
                      Touch.activeTouches[0].phase == UnityEngine.InputSystem.TouchPhase.Began)
             {
                 ship.PerformShipControllerActions(InputEvents.SelfTapAction);

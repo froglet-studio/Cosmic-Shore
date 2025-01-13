@@ -17,14 +17,7 @@ namespace CosmicShore.Game.Animation
         const float animationScalar = 82f;
         const float exaggeratedAnimationScalar = 1.05f * animationScalar;
 
-        ShipStatus shipData;
-
-        protected override void Start()
-        {
-            base.Start();
-
-            shipData = GetComponent<ShipStatus>();
-        }
+        ShipStatus shipData => Ship.ShipStatus;
 
         protected override void AssignTransforms()
         {

@@ -42,7 +42,7 @@ public class FireBarrageAction : ShipAction
             child.Rotate(0, 180, 0);
         }
         //projectileContainer = new GameObject($"{ship.Player.PlayerName}_BarrageProjectiles");
-        shipData = ship.GetComponent<ShipStatus>();
+        shipData = Ship.ShipStatus;
     }
 
     public override void StartAction()

@@ -8,6 +8,7 @@ using UnityEngine;
 using CosmicShore.Game.AI;
 using CosmicShore.Utility.ClassExtensions;
 using System;
+using CosmicShore.Game;
 
 namespace CosmicShore.Environment.FlowField
 {
@@ -86,7 +87,7 @@ namespace CosmicShore.Environment.FlowField
             collisions.Clear();
         }
 
-        public void PerformCrystalImpactEffects(CrystalProperties crystalProperties, Ship ship)
+        public void PerformCrystalImpactEffects(CrystalProperties crystalProperties, IShip ship)
         {
             foreach (CrystalImpactEffects effect in crystalImpactEffects)
             {
@@ -116,8 +117,7 @@ namespace CosmicShore.Environment.FlowField
 
         protected virtual void Collide(Collider other)
         {
-            Ship ship;
-            Projectile projectile;
+            IShip ship;
 
             if (other.gameObject.IsLayer("Ships"))
             {
@@ -127,8 +127,10 @@ namespace CosmicShore.Environment.FlowField
                     if (shipImpactEffects)
                     {
                         ship.PerformCrystalImpactEffects(crystalProperties);
-                        if (ship.TryGetComponent<AIPilot>(out var aiPilot))
+                        if (ship.AIPilot != null)
                         {
+                            AIPilot aiPilot = ship.AIPilot;
+
                             aiPilot.aggressiveness = aiPilot.defaultAggressiveness;
                             aiPilot.throttle = aiPilot.defaultThrottle;
                         }
@@ -217,7 +219,7 @@ namespace CosmicShore.Environment.FlowField
             transform.localScale = targetScaleVector;
         }
 
-        protected void Explode(Ship ship)
+        protected void Explode(IShip ship)
         {
             for (int i = 0; i < crystalModels.Count; i++)
             {
@@ -237,7 +239,7 @@ namespace CosmicShore.Environment.FlowField
                     var thisAnimator = model.GetComponent<SpaceCrystalAnimator>();
                     spentAnimator.timer = thisAnimator.timer;
                 }
-                var shipStatus = ship.GetComponent<ShipStatus>();
+                var shipStatus = ship.ShipStatus;
                 spentCrystal.GetComponent<Impact>()?.HandleImpact(shipStatus.Course * shipStatus.Speed, tempMaterial, ship.Player.PlayerName);
             }
         }

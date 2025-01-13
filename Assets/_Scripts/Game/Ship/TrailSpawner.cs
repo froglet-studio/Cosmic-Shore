@@ -1,10 +1,13 @@
 ﻿﻿using CosmicShore.Core;
+using CosmicShore.Game;
 using CosmicShore.Utility;
 using System.Collections;
 using System.Collections.Generic;
+using System.Net.NetworkInformation;
 using UnityEngine;
 
 [RequireComponent(typeof(Ship))]
+[RequireComponent(typeof(ShipStatus))]
 public class TrailSpawner : MonoBehaviour
 {
     public delegate void BlockCreationHandler(float xShift, float wavelength, float scaleX, float scaleY, float scaleZ);
@@ -35,9 +38,8 @@ public class TrailSpawner : MonoBehaviour
     public Trail Trail = new();
     Trail Trail2 = new();
 
-    Ship ship;
+    IShip ship;
     ShipStatus shipData;
-
     Coroutine spawnTrailCoroutine;
 
     public List<TrailBlock> GetLastTwoBlocks() 
@@ -73,8 +75,10 @@ public class TrailSpawner : MonoBehaviour
         GameManager.OnGameOver -= RestartAITrailSpawnerAfterDelay;
     }
 
-    void Start()
+    public void Initialize(IShip ship)
     {
+        this.ship = ship;
+
         waitTime = defaultWaitTime;
         wavelength = initialWavelength;
         if (TrailContainer == null)
@@ -83,7 +87,6 @@ public class TrailSpawner : MonoBehaviour
             TrailContainer.name = "TrailContainer";
         }
 
-        ship = GetComponent<Ship>();
         shipData = GetComponent<ShipStatus>();
 
         spawnTrailCoroutine = StartCoroutine(SpawnTrailCoroutine());
@@ -166,13 +169,13 @@ public class TrailSpawner : MonoBehaviour
         var targetScale = new Vector3(trailBlock.transform.localScale.x * XScaler / 2f - Mathf.Abs(halfGap), trailBlock.transform.localScale.y * YScaler, trailBlock.transform.localScale.z * ZScaler);
         Block.TargetScale = TargetScale = targetScale;
         float xShift = (targetScale.x / 2f + Mathf.Abs(halfGap)) * (halfGap / Mathf.Abs(halfGap));
-        Block.transform.SetPositionAndRotation(transform.position - shipData.Course * offset + ship.transform.right * xShift, shipData.blockRotation);
+        Block.transform.SetPositionAndRotation(transform.position - shipData.Course * offset + ship.Transform.right * xShift, shipData.blockRotation);
         Block.transform.parent = TrailContainer.transform;
         Block.ownerID = isCharmed ? tempShip.Player.PlayerUUID : ship.Player.PlayerUUID;
         Block.Player = isCharmed ? tempShip.Player : ship.Player;
         Block.ChangeTeam(isCharmed ? tempShip.Team : ship.Team);
         if (waitTillOutsideSkimmer) 
-            Block.waitTime = (skimmer.transform.localScale.z + TrailZScale) / ship.GetComponent<ShipStatus>().Speed;            
+            Block.waitTime = (skimmer.transform.localScale.z + TrailZScale) / shipData.Speed;            
         if (shielded)
         {
             Block.TrailBlockProperties.IsShielded = true;
@@ -206,7 +209,7 @@ public class TrailSpawner : MonoBehaviour
                     Block.TargetScale = TargetScale = targetScale;
                     Block.transform.SetPositionAndRotation(transform.position - shipData.Course * offset, shipData.blockRotation);
                     Block.transform.parent = TrailContainer.transform;
-                    Block.waitTime = waitTillOutsideSkimmer ? (skimmer.transform.localScale.z + TrailZScale) / ship.GetComponent<ShipStatus>().Speed : waitTime;
+                    Block.waitTime = waitTillOutsideSkimmer ? (skimmer.transform.localScale.z + TrailZScale) / shipData.Speed : waitTime;
                     Block.ownerID = isCharmed ? tempShip.Player.PlayerUUID : ship.Player.PlayerUUID;
                     Block.Player = isCharmed ? tempShip.Player : ship.Player;
                     Block.ChangeTeam(isCharmed ? tempShip.Team : ship.Team);

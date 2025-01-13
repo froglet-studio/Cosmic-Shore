@@ -1,13 +1,12 @@
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using CosmicShore.Core;
+using CosmicShore.Game;
 
 namespace CosmicShore
 {
     public class ShipCameraCustomizer : ElementalShipComponent
     {
-        Ship ship;
+        public IShip Ship { get; private set; }
 
         [SerializeField] public List<ShipCameraOverrides> ControlOverrides;
         [SerializeField] float closeCamDistance;
@@ -18,13 +17,13 @@ namespace CosmicShore
 
         [SerializeField] bool isOrthographic = false;
 
-        void Start()
+        public void Initialize(IShip ship)
         {
-            ship = GetComponent<Ship>();
-            cameraManager = ship.cameraManager;
+            Ship = ship;
+            cameraManager = Ship.CameraManager;
             cameraManager.isOrthographic = isOrthographic;
 
-            BindElementalFloats(ship);
+            BindElementalFloats(Ship);
             ApplyShipControlOverrides(ControlOverrides);
         }
 
@@ -32,7 +31,7 @@ namespace CosmicShore
         {
 
             // Camera controls are only relevant for human pilots
-            if (ship.AutoPilot.AutoPilotEnabled)
+            if (Ship.AIPilot.AutoPilotEnabled)
                 return;
 
             foreach (ShipCameraOverrides effect in controlOverrides)

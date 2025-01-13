@@ -23,7 +23,7 @@ namespace CosmicShore.Game.UI
         [SerializeField] GameObject button1;
         [SerializeField] GameObject button2;
         [SerializeField] GameObject button3;
-        [HideInInspector] public Ship ship;
+        public IShip Ship { get; set; }
 
         public void SetPipActive(bool active, bool mirrored)
         {
@@ -92,32 +92,32 @@ namespace CosmicShore.Game.UI
 
         public void PressButton1() // TODO: this should move to ButtonPanel
         {
-            ship.PerformShipControllerActions(InputEvents.Button1Action);
+            Ship.PerformShipControllerActions(InputEvents.Button1Action);
         }
 
         public void releaseButton1()
         {
-            ship.StopShipControllerActions(InputEvents.Button1Action);
+            Ship.StopShipControllerActions(InputEvents.Button1Action);
         }
 
         public void PressButton2()
         {
-            ship.PerformShipControllerActions(InputEvents.Button2Action);
+            Ship.PerformShipControllerActions(InputEvents.Button2Action);
         }
 
         public void releaseButton2()
         {
-            ship.StopShipControllerActions(InputEvents.Button2Action);
+            Ship.StopShipControllerActions(InputEvents.Button2Action);
         }
 
         public void PressButton3()
         {
-            ship.PerformShipControllerActions(InputEvents.Button3Action);
+            Ship.PerformShipControllerActions(InputEvents.Button3Action);
         }
 
         public void releaseButton3()
         {
-            ship.StopShipControllerActions(InputEvents.Button3Action);
+            Ship.StopShipControllerActions(InputEvents.Button3Action);
         }
     }
 }

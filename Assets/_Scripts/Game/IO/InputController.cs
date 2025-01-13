@@ -4,17 +4,29 @@ using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.EnhancedTouch;
 using CosmicShore.Game.UI;
 using CosmicShore.App.Systems;
+using CosmicShore.Utility.ClassExtensions;
+using Unity.Netcode;
 
 
 namespace CosmicShore.Game.IO
 {
     public class InputController : MonoBehaviour
     {
-        [SerializeField] private GameCanvas gameCanvas;
+        struct JoystickData
+        {
+            public Vector2 joystickStart;
+            public int touchIndex;
+            public Vector2 joystickNormalizedOffset;
+            public Vector2 clampedPosition;
+        }
+
+        private IInputStatus _inputStatus;
+        public IInputStatus InputStatus => _inputStatus ??= TryAddInputStatus();
+
         [SerializeField] public bool Portrait;
 
-        Ship ship;
-        public Ship Ship
+        IShip ship;
+        public IShip Ship
         {
             get => ship;
             set
@@ -61,6 +73,13 @@ namespace CosmicShore.Game.IO
         public bool Paused { get; private set; }
         public bool IsGyroEnabled { get; private set; }
 
+        private void Awake()
+        {
+            InitializeStrategies();
+            SetInitialStrategy();
+            InitializeOrientation();
+        }
+
         private void OnEnable()
         {
             GameSetting.OnChangeInvertYEnabledStatus += OnToggleInvertY;
@@ -73,13 +92,6 @@ namespace CosmicShore.Game.IO
             GameSetting.OnChangeInvertYEnabledStatus -= OnToggleInvertY;
             GameSetting.OnChangeInvertThrottleEnabledStatus -= OnToggleInvertThrottle;
             EnhancedTouchSupport.Disable();
-        }
-
-        private void Awake()
-        {
-            InitializeStrategies();
-            SetInitialStrategy();
-            InitializeOrientation();
         }
 
         private void SetInitialStrategy()
@@ -139,15 +151,15 @@ namespace CosmicShore.Game.IO
         {
             if (ship.ShipStatus.SingleStickControls)
             {
-                currentStrategy?.SetAutoPilotValues(new Vector2(ship.AutoPilot.X, ship.AutoPilot.Y));
+                currentStrategy?.SetAutoPilotValues(new Vector2(ship.AIPilot.X, ship.AIPilot.Y));
             }
             else
             {
                 currentStrategy?.SetAutoPilotValues(
-                    ship.AutoPilot.XSum,
-                    ship.AutoPilot.YSum,
-                    ship.AutoPilot.XDiff,
-                    ship.AutoPilot.YDiff
+                    ship.AIPilot.XSum,
+                    ship.AIPilot.YSum,
+                    ship.AIPilot.XDiff,
+                    ship.AIPilot.YDiff
                 );
             }
         }
@@ -211,5 +223,15 @@ namespace CosmicShore.Game.IO
         {
             return Gamepad.current != null;
         }
+
+        IInputStatus TryAddInputStatus()
+        {
+            bool found = TryGetComponent(out NetworkObject _);
+            if (found)
+                return gameObject.GetOrAdd<NetworkInputStatus>();
+            else
+                return gameObject.GetOrAdd<InputStatus>();
+        }
+
     }
 }

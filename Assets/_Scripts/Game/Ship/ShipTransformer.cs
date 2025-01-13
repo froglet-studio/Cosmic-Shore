@@ -2,18 +2,21 @@ using UnityEngine;
 using CosmicShore.Core;
 using CosmicShore.Game.IO;
 using System.Collections.Generic;
+using CosmicShore.Game;
 
 public class ShipTransformer : MonoBehaviour
 {
     Quaternion inverseInitialRotation = new(0, 0, 0, 0);
 
     #region Ship
-    protected Ship ship;
+    protected IShip Ship;
     protected ShipStatus shipStatus;
     protected ResourceSystem resourceSystem;
     #endregion
 
     protected InputController inputController;
+    protected IInputStatus inputStatus => inputController.InputStatus;
+
     protected float speed;
     protected readonly float lerpAmount = 1.5f;
     protected Quaternion accumulatedRotation;
@@ -38,17 +41,19 @@ public class ShipTransformer : MonoBehaviour
     public float SpeedMultiplier => throttleMultiplier;
     protected Vector3 velocityShift = Vector3.zero;
 
+    public void Initialize(IShip ship)
+    {
+        this.Ship = ship;
+        shipStatus = ship.ShipStatus;
+        resourceSystem = ship.ResourceSystem;
+        inputController = ship.InputController;
+    }
 
     protected virtual void Start()
     {
-        ship = GetComponent<Ship>();
-        shipStatus = ship.GetComponent<ShipStatus>();
-        resourceSystem = ship.GetComponent<ResourceSystem>();
-
         MinimumSpeed = DefaultMinimumSpeed;
         ThrottleScaler = DefaultThrottleScaler;
         accumulatedRotation = transform.rotation;
-        inputController = ship.InputController;
     }
 
     public void Reset()
@@ -62,21 +67,25 @@ public class ShipTransformer : MonoBehaviour
 
     protected virtual void Update()
     {
+        if (Ship == null)
+            return;
+
         if (inputController == null)
         {
-            inputController = ship.InputController;
+            inputController = Ship.InputController;
         }
-        if (inputController != null)
-        { 
-            if (inputController.Paused)
-                return;
 
-            RotateShip();
-            shipStatus.blockRotation = transform.rotation;
+        if (inputController == null)
+            return;
 
-            if (shipStatus.Stationary)
-                return;
-        }
+        if (inputStatus.Paused)
+            return;
+
+        if (shipStatus.Stationary)
+            return;
+
+        RotateShip();
+        shipStatus.blockRotation = transform.rotation;
 
         ApplyThrottleModifiers();
         ApplyVelocityModifiers();
@@ -94,7 +103,7 @@ public class ShipTransformer : MonoBehaviour
             Yaw();
             Pitch();
 
-            if (inputController.IsGyroEnabled) //&& !Equals(inverseInitialRotation, new Quaternion(0, 0, 0, 0)))
+            if (inputStatus.IsGyroEnabled) //&& !Equals(inverseInitialRotation, new Quaternion(0, 0, 0, 0)))
             {
                 // Updates GameObjects blockRotation from input device's gyroscope
                 transform.rotation = Quaternion.Lerp(
@@ -133,27 +142,27 @@ public class ShipTransformer : MonoBehaviour
 
     public void GentleSpinShip(Vector3 newDirection, Vector3 newUp, float amount)
     {
-        accumulatedRotation = Quaternion.Lerp(accumulatedRotation, Quaternion.LookRotation(newDirection, ship.transform.up), amount);
+        accumulatedRotation = Quaternion.Lerp(accumulatedRotation, Quaternion.LookRotation(newDirection, Ship.Transform.up), amount);
     }
 
     protected virtual void Pitch() // These need to not use *= because quaternions are not commutative
     {
         accumulatedRotation = Quaternion.AngleAxis(
-                            inputController.YSum * (speed * RotationThrottleScaler + PitchScaler) * Time.deltaTime,
+                            inputStatus.YSum * (speed * RotationThrottleScaler + PitchScaler) * Time.deltaTime,
                             transform.right) * accumulatedRotation;
     }
 
     protected virtual void Yaw()  // TODO: test replacing these AngleAxis calls with eulerangles
     {
         accumulatedRotation = Quaternion.AngleAxis(
-                            inputController.XSum * (speed * RotationThrottleScaler + YawScaler)  * Time.deltaTime,
+                            inputStatus.XSum * (speed * RotationThrottleScaler + YawScaler)  * Time.deltaTime,
                             transform.up) * accumulatedRotation;
     }
 
     protected virtual void Roll()
     {
         accumulatedRotation = Quaternion.AngleAxis(
-                            inputController.YDiff * (speed * RotationThrottleScaler + RollScaler) * Time.deltaTime,
+                            inputStatus.YDiff * (speed * RotationThrottleScaler + RollScaler) * Time.deltaTime,
                             transform.forward) * accumulatedRotation;
     }
 
@@ -162,11 +171,11 @@ public class ShipTransformer : MonoBehaviour
         float boostAmount = 1f;
         if (shipStatus.Boosting) // TODO: if we run out of fuel while full speed and straight the ship data still thinks we are boosting
         {
-            boostAmount = ship.boostMultiplier;
+            boostAmount = Ship.BoostMultiplier;
         }
         if (shipStatus.ChargedBoostDischarging) boostAmount *= shipStatus.ChargedBoostCharge;
         if (inputController != null)
-        speed = Mathf.Lerp(speed, inputController.XDiff * ThrottleScaler * ThrottleScalerMultiplier.Value * boostAmount + MinimumSpeed, lerpAmount * Time.deltaTime);
+        speed = Mathf.Lerp(speed, inputStatus.XDiff * ThrottleScaler * ThrottleScalerMultiplier.Value * boostAmount + MinimumSpeed, lerpAmount * Time.deltaTime);
 
         speed *= throttleMultiplier;
         shipStatus.Speed = speed;

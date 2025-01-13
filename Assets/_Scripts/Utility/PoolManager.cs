@@ -20,6 +20,6 @@ public class PoolManager : PoolManagerBase
             yield return new WaitForEndOfFrame();
         }
         
-        transform.parent = ship.Player.transform;
+        transform.parent = ship.Player.Transform;
     }
 }

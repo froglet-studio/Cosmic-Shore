@@ -67,7 +67,7 @@ public class CameraManager : SingletonPersistent<CameraManager>
 
     public void SetupGamePlayCameras()
     {
-        playerFollowTarget = FollowOverride ? Hangar.Instance.SelectedShip.ShipCameraCustomizer.FollowTarget : Hangar.Instance.SelectedShip.transform;
+        playerFollowTarget = FollowOverride ? Hangar.Instance.SelectedShip.ShipCameraCustomizer.FollowTarget : Hangar.Instance.SelectedShip.Transform;
         SetupGamePlayCameras(playerFollowTarget);
     }
 

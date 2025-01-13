@@ -11,7 +11,7 @@ public class ShipSelection : MonoBehaviour
     void Start()
     {
         dropdown = GetComponent<TMP_Dropdown>();
-        dropdown.value = (int) Hangar.Instance.GetPlayerShip();
+        dropdown.value = (int) Hangar.Instance.GetPlayerShipType();
     }
 
     public void HangarSetPlayerShip(int shipType)
