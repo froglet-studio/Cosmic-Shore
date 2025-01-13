@@ -67,7 +67,7 @@ namespace CosmicShore.Game.Projectiles
                 if ((trailBlock.Team != Team || affectSelf) && trailBlock.TrailBlockProperties.IsSuperShielded)
                 {
                     trailBlock.DeactivateShields();
-                    Destroy(gameObject);
+                    Destroy(gameObject);    // TODO: This seems wrong...
                 } 
                 if ((trailBlock.Team == Team && !affectSelf) || !destructive)
                 {
@@ -83,12 +83,16 @@ namespace CosmicShore.Game.Projectiles
                 else
                     trailBlock.Damage(impactVector, Ship.Team, Ship.Player.PlayerName, devastating);
             }
-            if (other.TryGetComponent<ShipGeometry>(out var shipGeometry))
+            else if (other.TryGetComponent<ShipGeometry>(out var shipGeometry))
             {
                 if (shipGeometry.Ship.Team == Team && !affectSelf)
                     return;
 
                 PerformShipImpactEffects(shipGeometry, impactVector);
+            }
+            else
+            {
+                Debug.Log("AOEExplosion.OnTriggerEnter - not a ship or a trail block: " + other.name);
             }
         }
 
