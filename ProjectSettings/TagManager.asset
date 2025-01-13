@@ -17,6 +17,9 @@ TagManager:
   - Fauna
   - Shard
   - FossilPrism
+  - FossilPrism_Ruby
+  - FossilPrism_Gold
+  - FossilPrism_Blue
   layers:
   - Default
   - TransparentFX
