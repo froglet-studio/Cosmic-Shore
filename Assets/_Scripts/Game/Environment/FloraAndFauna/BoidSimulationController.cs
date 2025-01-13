@@ -51,7 +51,7 @@ public class BoidSImulationController : MonoBehaviour
     private void InitializeTrailBlocks()
     {
         // Assuming you have a method or a way to get all non-boid trail blocks in the scene
-        TrailBlock[] trailBlocks = FindObjectsOfType<TrailBlock>();
+        TrailBlock[] trailBlocks = FindObjectsByType<TrailBlock>(FindObjectsSortMode.None);
         foreach (var block in trailBlocks)
         {
             if (!block.CompareTag("Fauna")) // Assuming "Fauna" is the tag for boid trail blocks

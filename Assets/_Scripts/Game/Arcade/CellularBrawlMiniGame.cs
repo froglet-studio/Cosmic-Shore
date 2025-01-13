@@ -10,7 +10,7 @@ namespace CosmicShore.Game.Arcade
         {
             base.Start();
             Hangar.Instance.SetPlayerCaptain(CaptainManager.Instance.GetCaptainByName(SquadSystem.SquadLeader.Name));
-            Players[0].defaultShip = SquadSystem.SquadLeader.Ship.Class;
+            Players[0].DefaultShipType = SquadSystem.SquadLeader.Ship.Class;
         }
     }
 }

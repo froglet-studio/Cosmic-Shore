@@ -17,7 +17,7 @@ namespace CosmicShore
         protected override void Start()
         {
             base.Start();
-            spawner = ship.GetComponent<TrailSpawner>();
+            spawner = Ship.TrailSpawner;
             resourceCost = resourceSystem.Resources[resourceIndex].MaxAmount / enhancementsPerFullAmmo;
         }
 

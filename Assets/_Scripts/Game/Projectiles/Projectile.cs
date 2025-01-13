@@ -142,7 +142,7 @@ namespace CosmicShore.Game.Projectiles
                         if (!shipGeometry.Ship.ShipStatus.AutoPilotEnabled) HapticController.PlayHaptic(HapticType.ShipCollision);//.PlayShipCollisionHaptics();
                         break;
                     case ShipImpactEffects.SpinAround:
-                        shipGeometry.Ship.transform.localRotation = Quaternion.LookRotation(Velocity);
+                        shipGeometry.Ship.Transform.localRotation = Quaternion.LookRotation(Velocity);
                         break;
                     case ShipImpactEffects.Knockback:
                         //shipGeometry.Ship.transform.localPosition += Velocity/2f;

@@ -1,5 +1,6 @@
 using UnityEngine;
 using CosmicShore.Core;
+using UnityEngine.InputSystem.LowLevel;
 
 public class GunShipTransformer : ShipTransformer
 {
@@ -29,7 +30,7 @@ public class GunShipTransformer : ShipTransformer
         if (shipStatus.Attached && !attached)
         {
             trailFollower.Attach(shipStatus.AttachedTrailBlock);
-            if (!ship.InputController.AutoPilotEnabled && cameraManager != null)
+            if (Ship.InputController.AutoPilotEnabled && cameraManager != null)
             {
                 cameraManager.SetNormalizedCloseCameraDistance(1);
                 Debug.Log("camera distance now set to 1");
@@ -38,7 +39,7 @@ public class GunShipTransformer : ShipTransformer
         else if (!shipStatus.Attached && attached)
         {
             trailFollower.Detach();
-            if (!ship.InputController.AutoPilotEnabled && cameraManager != null)
+            if (!Ship.InputController.AutoPilotEnabled && cameraManager != null)
             {
                 cameraManager.SetNormalizedCloseCameraDistance(0);
                 Debug.Log("camera distance now set to 0");
@@ -59,10 +60,10 @@ public class GunShipTransformer : ShipTransformer
         float lookThreshold = -.6f;
         float zeroPosition = .2f;
 
-        var throttle = (inputController.XDiff - zeroPosition)/(1 - zeroPosition);
+        var throttle = (inputStatus.XDiff - zeroPosition) / (1 - zeroPosition);
 
         if (Vector3.Dot(transform.forward, shipStatus.Course) < lookThreshold && throttle > 0)
-             moveForward = !moveForward;
+            moveForward = !moveForward;
 
         //if ((moveForward && throttle > 0) || (!moveForward && throttle < 0))
         //    trailFollower.SetDirection(TrailFollowerDirection.Forward);
@@ -88,10 +89,10 @@ public class GunShipTransformer : ShipTransformer
         if (shipStatus.AttachedTrailBlock.destroyed)
             shipStatus.AttachedTrailBlock.Restore();
 
-        if (shipStatus.AttachedTrailBlock.Team == ship.Team)
+        if (shipStatus.AttachedTrailBlock.Team == Ship.Team)
         {
             shipStatus.AttachedTrailBlock.Grow(growthAmount.Value);
         }
-        else shipStatus.AttachedTrailBlock.Steal(ship.Player, ship.Team);
+        else shipStatus.AttachedTrailBlock.Steal(Ship.Player, Ship.Team);
     }
 }

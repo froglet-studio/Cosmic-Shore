@@ -10,7 +10,7 @@ public class SingleStickShipTransformer : ShipTransformer
     protected override void Start()
     {
         base.Start();
-        ship.ShipStatus.SingleStickControls = true;
+        Ship.ShipStatus.SingleStickControls = true;
         GetComponent<AIPilot>().SingleStickControls = true;
 
 
@@ -60,7 +60,7 @@ public class SingleStickShipTransformer : ShipTransformer
         float boostAmount = 1f;
         if (shipStatus.Boosting) // TODO: if we run out of fuel while full speed and straight the ship data still thinks we are boosting
         {
-            boostAmount = ship.boostMultiplier;
+            boostAmount = Ship.BoostMultiplier;
         }
         if (shipStatus.ChargedBoostDischarging) boostAmount *= shipStatus.ChargedBoostCharge;
         if (inputController != null)

@@ -6,6 +6,7 @@ using System.Linq;
 using TMPro;
 using UnityEngine;
 using System;
+using CosmicShore.Game;
 
 public class StatsManager : Singleton<StatsManager>
 {
@@ -57,7 +58,7 @@ public class StatsManager : Singleton<StatsManager>
         CellStats[nodeID] = nodeStats;
     }
 
-    public void CrystalCollected(Ship ship, CrystalProperties crystalProperties)
+    public void CrystalCollected(IShip ship, CrystalProperties crystalProperties)
     {
         if (!RecordStats)
             return;
@@ -121,7 +122,7 @@ public class StatsManager : Singleton<StatsManager>
     }
 
 
-    public void SkimmerShipCollision(Ship skimmingShip, Ship ship)
+    public void SkimmerShipCollision(IShip skimmingShip, IShip ship)
     {
         if (!RecordStats)
             return;

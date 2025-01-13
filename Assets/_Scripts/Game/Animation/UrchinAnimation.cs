@@ -24,9 +24,10 @@ namespace CosmicShore.Game.Animation
 
         protected List<Transform> scaledParts = new();
 
-        protected override void Start()
+        public override void Initialize(IShip ship)
         {
-            base.Start();
+            base.Initialize(ship);
+
             scaledParts.Add(JetBottomLeft);
             scaledParts.Add(JetBottomRight);
             scaledParts.Add(JetTopLeft);
@@ -37,7 +38,7 @@ namespace CosmicShore.Game.Animation
         {
             base.Update();
 
-            if (GetComponent<Ship>().ShipStatus.Attached)
+            if (Ship.ShipStatus.Attached)
             {
                 ResetParts(scaledParts, 6);
             }

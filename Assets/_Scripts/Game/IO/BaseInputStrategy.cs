@@ -8,7 +8,7 @@ namespace CosmicShore.Game.IO
     public abstract class BaseInputStrategy : IInputStrategy
     {
         protected const float PI_OVER_FOUR = 0.785f;
-        protected Ship ship;
+        protected IShip ship;
         protected bool idle;
         protected bool invertYEnabled;
         protected bool invertThrottleEnabled;
@@ -32,12 +32,12 @@ namespace CosmicShore.Game.IO
         public Vector3 ThreeDPosition { get; protected set; }
         public bool IsIdle => idle;
 
-        public virtual void Initialize(Ship ship)
+        public virtual void Initialize(IShip ship)
         {
             this.ship = ship;
         }
 
-        public abstract void ProcessInput(Ship ship);
+        public abstract void ProcessInput(IShip ship);
         public virtual void SetPortrait(bool portrait) { }
         public virtual void OnStrategyActivated() { }
         public virtual void OnStrategyDeactivated() { }

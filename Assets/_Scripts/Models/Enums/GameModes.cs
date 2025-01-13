@@ -30,4 +30,5 @@ public enum GameModes
     MazeRunner = 25,
     WildlifeBlitz = 26,
     ProtectMission = 27,
+    MultiplayerFreestyle = 28
 }

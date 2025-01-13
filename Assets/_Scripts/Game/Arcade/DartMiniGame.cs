@@ -25,7 +25,7 @@ namespace CosmicShore.Game.Arcade
         {
             base.SetupTurn();
 
-            ActivePlayer.Ship.TryGetComponent(out Silhouette silhouette);
+            var silhouette = ActivePlayer.Ship.Silhouette;
             silhouette.Clear();
 
             TrailSpawner.NukeTheTrails();

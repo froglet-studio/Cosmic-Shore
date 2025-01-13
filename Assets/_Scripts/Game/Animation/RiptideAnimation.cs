@@ -4,6 +4,7 @@ using UnityEngine;
 
 namespace CosmicShore.Game.Animation
 {
+    [RequireComponent(typeof(ShipStatus))]
     public class RiptideAnimation : ShipAnimation
     {
         ShipStatus shipData;
@@ -37,15 +38,15 @@ namespace CosmicShore.Game.Animation
 
         private void OnEnable()
         {
-            if (topJaw) ship.ResourceSystem.Resources[JawResourceIndex].OnResourceChange += calculateBlastAngle;
+            if (topJaw) Ship.ResourceSystem.Resources[JawResourceIndex].OnResourceChange += calculateBlastAngle;
         }
         private void OnDisable()
         {
-            if (topJaw) ship.ResourceSystem.Resources[JawResourceIndex].OnResourceChange -= calculateBlastAngle;
+            if (topJaw) Ship.ResourceSystem.Resources[JawResourceIndex].OnResourceChange -= calculateBlastAngle;
         }
-        protected override void Start()
+        public override void Initialize(IShip ship)
         {
-            base.Start();
+            base.Initialize(ship);
             shipData = GetComponent<ShipStatus>();
             animationTransforms = new List<Transform>() { ThrusterTopRight, ThrusterRight, ThrusterBottomRight, ThrusterBottomLeft, ThrusterLeft, ThrusterTopLeft };
         }

@@ -11,7 +11,7 @@ public class GhostAction : ShipAction
 
     protected override void Start()
     {
-        shipGeometries = ship.shipGeometries;
+        shipGeometries = Ship.ShipGeometries;
     }
 
     public override void StartAction()
