@@ -58759,11 +58759,13 @@ MonoBehaviour:
   m_GameObject: {fileID: 1674343129}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 86da7e09f78ffc846ae810b412ab9951, type: 3}
+  m_Script: {fileID: 11500000, guid: d2a9ffc4bf8a5d94f9d037ac90025cdf, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   pools: []
-  ship: {fileID: 0}
+  fossilBlockPrefab: {fileID: 5776304996075792891, guid: bd8a259abee95ec4895562e6bb8aae76,
+    type: 3}
+  poolSizePerTeam: 3000
 --- !u!1 &1676699939
 GameObject:
   m_ObjectHideFlags: 0
