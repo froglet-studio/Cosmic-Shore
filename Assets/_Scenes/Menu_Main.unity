@@ -21031,7 +21031,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6b7b65aede2e9434f806ef974437abc2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  ProfileIcons: {fileID: 11400000, guid: 3e6cb5b838253c7468480627fd86af5f, type: 2}
 --- !u!114 &653179564
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -58763,13 +58762,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 86da7e09f78ffc846ae810b412ab9951, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  pools:
-  - prefab: {fileID: 0}
-    size: 1000
-  - prefab: {fileID: 0}
-    size: 1000
-  - prefab: {fileID: 0}
-    size: 1000
+  pools: []
   ship: {fileID: 0}
 --- !u!1 &1676699939
 GameObject:
