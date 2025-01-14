@@ -19,7 +19,7 @@ namespace CosmicShore.Game
         [SerializeField]
         ShipTypes _defaultShipType;
 
-        public ShipTypes DefaultShipType { get => _defaultShipType; }
+        public ShipTypes DefaultShipType { get => _defaultShipType; set => _defaultShipType = value; }
         public Teams Team { get; private set; }
         public string PlayerName { get; private set; }
         public string PlayerUUID { get; private set; }

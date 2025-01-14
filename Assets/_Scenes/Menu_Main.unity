@@ -8360,6 +8360,31 @@ PrefabInstance:
       propertyPath: defaultShip
       value: 3
       objectReference: {fileID: 0}
+    - target: {fileID: 9106189021102876755, guid: 32cc35a6605af014c926743312133238,
+        type: 3}
+      propertyPath: InitializeData.Name
+      value: Hostile Two
+      objectReference: {fileID: 0}
+    - target: {fileID: 9106189021102876755, guid: 32cc35a6605af014c926743312133238,
+        type: 3}
+      propertyPath: InitializeData.Team
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 9106189021102876755, guid: 32cc35a6605af014c926743312133238,
+        type: 3}
+      propertyPath: InitializeData.PlayerName
+      value: Hostile Two
+      objectReference: {fileID: 0}
+    - target: {fileID: 9106189021102876755, guid: 32cc35a6605af014c926743312133238,
+        type: 3}
+      propertyPath: InitializeData.PlayerUUID
+      value: HostileTwo
+      objectReference: {fileID: 0}
+    - target: {fileID: 9106189021102876755, guid: 32cc35a6605af014c926743312133238,
+        type: 3}
+      propertyPath: InitializeData.DefaultShipType
+      value: 2
+      objectReference: {fileID: 0}
     - target: {fileID: 9106189021102876761, guid: 32cc35a6605af014c926743312133238,
         type: 3}
       propertyPath: m_RootOrder
@@ -37192,6 +37217,31 @@ PrefabInstance:
       propertyPath: playerUUID
       value: green
       objectReference: {fileID: 0}
+    - target: {fileID: 9106189021102876755, guid: 32cc35a6605af014c926743312133238,
+        type: 3}
+      propertyPath: InitializeData.Name
+      value: Friendly One
+      objectReference: {fileID: 0}
+    - target: {fileID: 9106189021102876755, guid: 32cc35a6605af014c926743312133238,
+        type: 3}
+      propertyPath: InitializeData.Team
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 9106189021102876755, guid: 32cc35a6605af014c926743312133238,
+        type: 3}
+      propertyPath: InitializeData.PlayerName
+      value: Friendly One
+      objectReference: {fileID: 0}
+    - target: {fileID: 9106189021102876755, guid: 32cc35a6605af014c926743312133238,
+        type: 3}
+      propertyPath: InitializeData.PlayerUUID
+      value: FriendlyOne
+      objectReference: {fileID: 0}
+    - target: {fileID: 9106189021102876755, guid: 32cc35a6605af014c926743312133238,
+        type: 3}
+      propertyPath: InitializeData.DefaultShipType
+      value: 2
+      objectReference: {fileID: 0}
     - target: {fileID: 9106189021102876761, guid: 32cc35a6605af014c926743312133238,
         type: 3}
       propertyPath: m_RootOrder
@@ -51797,6 +51847,31 @@ PrefabInstance:
         type: 3}
       propertyPath: playerName
       value: HostileTwo
+      objectReference: {fileID: 0}
+    - target: {fileID: 9106189021102876755, guid: 32cc35a6605af014c926743312133238,
+        type: 3}
+      propertyPath: InitializeData.Name
+      value: Hostile One
+      objectReference: {fileID: 0}
+    - target: {fileID: 9106189021102876755, guid: 32cc35a6605af014c926743312133238,
+        type: 3}
+      propertyPath: InitializeData.Team
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 9106189021102876755, guid: 32cc35a6605af014c926743312133238,
+        type: 3}
+      propertyPath: InitializeData.PlayerName
+      value: Hostile One
+      objectReference: {fileID: 0}
+    - target: {fileID: 9106189021102876755, guid: 32cc35a6605af014c926743312133238,
+        type: 3}
+      propertyPath: InitializeData.PlayerUUID
+      value: HostileOne
+      objectReference: {fileID: 0}
+    - target: {fileID: 9106189021102876755, guid: 32cc35a6605af014c926743312133238,
+        type: 3}
+      propertyPath: InitializeData.DefaultShipType
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 9106189021102876761, guid: 32cc35a6605af014c926743312133238,
         type: 3}
@@ -75696,6 +75771,47 @@ PrefabInstance:
       propertyPath: HostileAI2ShipType
       value: 6
       objectReference: {fileID: 0}
+    - target: {fileID: 302356026468653294, guid: fdbd97f79a7aec14f8fadd5589780a74,
+        type: 3}
+      propertyPath: ShipPrefabs.Array.size
+      value: 6
+      objectReference: {fileID: 0}
+    - target: {fileID: 302356026468653294, guid: fdbd97f79a7aec14f8fadd5589780a74,
+        type: 3}
+      propertyPath: 'ShipPrefabs.Array.data[0]'
+      value: 
+      objectReference: {fileID: 6417075533431866457, guid: 7d34187cec80b624f82a3ed560c56324,
+        type: 3}
+    - target: {fileID: 302356026468653294, guid: fdbd97f79a7aec14f8fadd5589780a74,
+        type: 3}
+      propertyPath: 'ShipPrefabs.Array.data[1]'
+      value: 
+      objectReference: {fileID: 6417075533431866457, guid: 779e5b08e6fd7bc48b335c3b67e26f3b,
+        type: 3}
+    - target: {fileID: 302356026468653294, guid: fdbd97f79a7aec14f8fadd5589780a74,
+        type: 3}
+      propertyPath: 'ShipPrefabs.Array.data[2]'
+      value: 
+      objectReference: {fileID: 6417075533431866457, guid: 31cd97d0f057e9e4b8355c7f7e86bd42,
+        type: 3}
+    - target: {fileID: 302356026468653294, guid: fdbd97f79a7aec14f8fadd5589780a74,
+        type: 3}
+      propertyPath: 'ShipPrefabs.Array.data[3]'
+      value: 
+      objectReference: {fileID: 6417075533431866457, guid: 920c06d41c62d1f4482a2f80e793bbf8,
+        type: 3}
+    - target: {fileID: 302356026468653294, guid: fdbd97f79a7aec14f8fadd5589780a74,
+        type: 3}
+      propertyPath: 'ShipPrefabs.Array.data[4]'
+      value: 
+      objectReference: {fileID: 6417075533431866457, guid: 6b2bdbe32b1ed4944a62366baf0d8a80,
+        type: 3}
+    - target: {fileID: 302356026468653294, guid: fdbd97f79a7aec14f8fadd5589780a74,
+        type: 3}
+      propertyPath: 'ShipPrefabs.Array.data[5]'
+      value: 
+      objectReference: {fileID: 6417075533431866457, guid: 3cc1c31e8138b6448ae4264dd90d24ac,
+        type: 3}
     - target: {fileID: 302356026468653295, guid: fdbd97f79a7aec14f8fadd5589780a74,
         type: 3}
       propertyPath: m_RootOrder

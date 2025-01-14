@@ -29,11 +29,11 @@ public class TeamColorPersistentPool : PoolManagerBase
         {
             instance = this;
             DontDestroyOnLoad(gameObject);
-            
+
+            base.Awake();
+
             // Initialize all team pools
             StartCoroutine(WaitForThemeManagerInitialization());
-            
-            base.Awake();
         }
         else
         {

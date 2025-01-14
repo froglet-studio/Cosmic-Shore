@@ -127,7 +127,8 @@ namespace CosmicShore.App.UI.Views
             foreach (var captain in selectedShip.Captains)
             {
                 if (SelectedGame.Captains.Contains(captain))
-                    MiniGame.ShipResources = captain.InitialResourceLevels;
+                    //MiniGame.ShipResources = captain.InitialResourceLevels;
+                    MiniGame.ResourceCollection = captain.InitialResourceLevels;
             }
         }
 
@@ -153,7 +154,7 @@ namespace CosmicShore.App.UI.Views
         {
             LoadoutSystem.SaveGameLoadOut(SelectedGame.Mode, new Loadout(MiniGame.IntensityLevel, MiniGame.NumberOfPlayers, MiniGame.PlayerShipType, SelectedGame.Mode));
 
-            Arcade.Instance.LaunchArcadeGame(SelectedGame.Mode, MiniGame.PlayerShipType, MiniGame.ShipResources, MiniGame.IntensityLevel, MiniGame.NumberOfPlayers, false);
+            Arcade.Instance.LaunchArcadeGame(SelectedGame.Mode, MiniGame.PlayerShipType, MiniGame.ResourceCollection, MiniGame.IntensityLevel, MiniGame.NumberOfPlayers, false);
         }
 
         public void ToggleFavorite()

@@ -4,6 +4,7 @@ using CosmicShore.Game.IO;
 using CosmicShore.Game.AI;
 using CosmicShore.Game.UI;
 using CosmicShore.Game;
+using Unity.Android.Gradle.Manifest;
 
 namespace CosmicShore.Game
 {
@@ -16,6 +17,7 @@ namespace CosmicShore.Game
         // [SerializeField] ShipTypes defaultShip = ShipTypes.Dolphin;
         [SerializeField] bool UseHangarConfiguration = true;
         [SerializeField] bool IsAI = false;
+        [SerializeField] IPlayer.InitializeData InitializeData;
 
         public static Player ActivePlayer;
 
@@ -49,6 +51,11 @@ namespace CosmicShore.Game
         protected GameManager gameManager;
         GameCanvas _gameCanvas;
         string _playerName;
+
+        void Start()
+        {
+            Initialize(InitializeData);
+        }
 
         public void Initialize(IPlayer.InitializeData data)
         {

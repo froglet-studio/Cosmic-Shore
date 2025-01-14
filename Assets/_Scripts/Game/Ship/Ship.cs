@@ -255,8 +255,8 @@ namespace CosmicShore.Core
             ShipAnimation.Initialize(this);
             ShipTransformer.Initialize(this);
             AIPilot.Initialize(this);
-            nearFieldSkimmer.Initialize(this);
-            farFieldSkimmer.Initialize(this);
+            nearFieldSkimmer?.Initialize(this);
+            farFieldSkimmer?.Initialize(this);
             ShipCameraCustomizer.Initialize(this);
             TrailSpawner.Initialize(this);
 

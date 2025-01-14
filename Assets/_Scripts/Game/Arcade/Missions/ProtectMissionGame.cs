@@ -55,7 +55,7 @@ namespace CosmicShore
             node = NodeControlManager.Instance.GetNearestNode(Vector3.zero);
         }
 
-        public override void StartNewGame()
+        protected override void StartNewGame()
         {
             StartCoroutine(ThreatWaveCoroutine());
             base.StartNewGame();

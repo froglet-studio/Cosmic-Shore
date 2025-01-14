@@ -1,12 +1,11 @@
 using CosmicShore.Core;
-using CosmicShore.Game.IO;
+using System;
 using System.Collections;
 using System.Collections.Generic;
-#if !UNITY_WEBGL
 using CosmicShore.Integrations.Firebase.Controller;
-#endif
 using CosmicShore.Integrations.PlayFab.PlayStream;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using CosmicShore.App.Systems.UserActions;
 using CosmicShore.Game.UI;
@@ -17,29 +16,27 @@ using CosmicShore.Integrations.PlayFab.Economy;
 using CosmicShore.App.Systems.Xp;
 using System.Linq;
 
+
 namespace CosmicShore.Game.Arcade
 {
     public class MiniGame : MonoBehaviour
     {
         [SerializeField] protected GameModes gameMode;
-        [SerializeField] protected int NumberOfRounds = 1;
+        [SerializeField] protected int NumberOfRounds = int.MaxValue;
         [SerializeField] protected List<TurnMonitor> TurnMonitors;
         [SerializeField] protected ScoreTracker ScoreTracker;
-        [SerializeField] protected GameCanvas GameCanvas;
-        [SerializeField] protected Player playerPrefab;
-        [SerializeField] protected GameObject PlayerOrigin;
+        [SerializeField] GameCanvas GameCanvas;
+        [SerializeField] GameObject playerPrefab;
+        [SerializeField] GameObject PlayerOrigin;
         [SerializeField] float EndOfTurnDelay = 0f;
         [SerializeField] bool EnableTrails = true;
-        [SerializeField] protected ShipTypes DefaultPlayerShipType = ShipTypes.Dolphin;
+        [SerializeField] ShipTypes DefaultPlayerShipType = ShipTypes.Dolphin;
         [SerializeField] SO_Captain DefaultPlayerCaptain;
-
-        [SerializeField] private float readyCountdownDelay = 2f;  // Replaces hardcoded 2f
-        [SerializeField] private float newGameStartDelay = 0.2f;  // Replaces hardcoded 0.2f in StartNewGameCoroutine
 
         protected Button ReadyButton;
         protected GameObject EndGameScreen;
         protected MiniGameHUD HUD;
-        protected List<Player> Players;
+        protected List<IPlayer> Players = new();
         protected CountdownTimer countdownTimer;
 
         List<Teams> PlayerTeams = new() { Teams.Jade, Teams.Ruby, Teams.Gold };
@@ -64,7 +61,7 @@ namespace CosmicShore.Game.Arcade
             }
         }
         public static SO_Captain PlayerCaptain;
-        public static ResourceCollection ShipResources = new(.5f, .5f, .5f, .5f);
+        public static ResourceCollection ResourceCollection = new(.5f, .5f, .5f, .5f);
 
         // Game State Tracking
         protected int TurnsTakenThisRound;
@@ -74,8 +71,9 @@ namespace CosmicShore.Game.Arcade
         int activePlayerId;
         int RemainingPlayersActivePlayerIndex = -1;
         protected List<int> RemainingPlayers = new();
-        [HideInInspector] public Player ActivePlayer;
         protected bool gameRunning;
+
+        public IPlayer ActivePlayer { get; protected set; }
 
         // Firebase analytics events
         public delegate void MiniGameStart(GameModes mode, ShipTypes ship, int playerCount, int intensity);
@@ -83,10 +81,6 @@ namespace CosmicShore.Game.Arcade
         public delegate void MiniGameEnd(GameModes mode, ShipTypes ship, int playerCount, int intensity, int highScore);
         public static event MiniGameEnd OnMiniGameEnd;
 
-        /// <summary>
-        /// Initialize essential game components and setup TurnMonitors.
-        /// TurnMonitors are assigned a display, which will be shown in the UI to represent various game states.
-        /// </summary>
         protected virtual void Awake()
         {
             EndGameScreen = GameCanvas.EndGameScreen;
@@ -96,72 +90,64 @@ namespace CosmicShore.Game.Arcade
             ScoreTracker.GameCanvas = GameCanvas;
 
             foreach (var turnMonitor in TurnMonitors)
-                turnMonitor.Display = HUD.RoundTimeDisplay; // Assign display to all, even if not used
+                if (turnMonitor is TimeBasedTurnMonitor tbtMonitor)
+                    tbtMonitor.Display = HUD.RoundTimeDisplay;
+                else if (turnMonitor is VolumeCreatedTurnMonitor hvtMonitor) // TODO: consolidate with above
+                    hvtMonitor.Display = HUD.RoundTimeDisplay;
+                else if (turnMonitor is ShipCollisionTurnMonitor scMonitor) // TODO: consolidate with above
+                    scMonitor.Display = HUD.RoundTimeDisplay;
+                else if (turnMonitor is DistanceTurnMonitor dtMonitor) // TODO: consolidate with above
+                    dtMonitor.Display = HUD.RoundTimeDisplay;
 
             GameManager.UnPauseGame();
         }
 
-        /// <summary>
-        /// Start the game, initialize players, and prepare the game for player interaction.
-        /// </summary>
         protected virtual void Start()
         {
-            InitializePlayers();
-
-            ReadyButton.onClick.AddListener(OnReadyClicked);
-            ReadyButton.gameObject.SetActive(false);
-
-            // Start the game after a small delay to ensure all components are ready
-            StartCoroutine(StartNewGameCoroutine());
+            InstantiateAndInitializePlayer();
         }
 
         protected virtual void OnEnable()
         {
-#if !UNITY_WEBGL
+            GameManager.OnPlayGame += InitializeGame;
             OnMiniGameStart += FirebaseAnalyticsController.LogEventMiniGameStart;
             OnMiniGameEnd += FirebaseAnalyticsController.LogEventMiniGameEnd;
-#endif
         }
 
         protected virtual void OnDisable()
         {
-#if !UNITY_WEBGL
+            GameManager.OnPlayGame -= InitializeGame;
             OnMiniGameStart -= FirebaseAnalyticsController.LogEventMiniGameStart;
             OnMiniGameEnd -= FirebaseAnalyticsController.LogEventMiniGameEnd;
-#endif
         }
 
-        /// <summary>
-        /// Initialize all players, setting their teams, names, and ships.
-        /// </summary>
-        protected virtual void InitializePlayers()
+        void InitializeGame()
         {
-            Players = new List<Player>();
-            for (var i = 0; i < NumberOfPlayers; i++)
-            {
-                var player = Instantiate(playerPrefab);
-                player.DefaultShipType = playerShipTypeInitialized ? PlayerShipType : DefaultPlayerShipType;
-                player.Team = PlayerTeams[i];
-                player.PlayerName = i == 0 ? PlayerDataController.PlayerProfile.DisplayName : PlayerNames[i];
-                player.PlayerUUID = PlayerNames[i];
-                player.name = "Player" + (i + 1);
-                player.gameObject.SetActive(true);
-                Players.Add(player);
-            }
+            ReadyButton.onClick.AddListener(OnReadyClicked);
+            ReadyButton.gameObject.SetActive(false);
+
+            // Give other objects a few moments to start
+            StartCoroutine(StartNewGameCoroutine());
         }
 
-        /// <summary>
-        /// Coroutine to start a new game after a delay to allow other components to initialize.
-        /// </summary>
         IEnumerator StartNewGameCoroutine()
         {
-            yield return new WaitForSeconds(newGameStartDelay);
+            yield return new WaitForSeconds(.2f);
+
             StartNewGame();
         }
 
-        /// <summary>
-        /// Starts a countdown for the player to be ready. Once the countdown ends, the player's turn begins.
-        /// </summary>
+        // TODO: use the scene navigator instead?
+        public void ResetAndReplay()
+        {
+            SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+        }
+
+        public void Exit()
+        {
+            GameManager.ReturnToLobby();
+        }
+
         public void OnReadyClicked()
         {
             ReadyButton.gameObject.SetActive(false);
@@ -170,17 +156,17 @@ namespace CosmicShore.Game.Arcade
             {
                 StartTurn();
 
-                ActivePlayer.GetComponent<InputController>().SetPaused(false);
+                ActivePlayer.InputController.InputStatus.Paused = false;
 
                 if (EnableTrails)
                 {
                     ActivePlayer.Ship.TrailSpawner.ForceStartSpawningTrail();
-                    ActivePlayer.Ship.TrailSpawner.RestartTrailSpawnerAfterDelay(readyCountdownDelay);
+                    ActivePlayer.Ship.TrailSpawner.RestartTrailSpawnerAfterDelay(2f);
                 }
             });
         }
 
-        public virtual void StartNewGame()
+        protected virtual void StartNewGame()
         {
             //Debug.Log($"Playing as {PlayerCaptain.Name} - \"{PlayerCaptain.Description}\"");
             if (PauseSystem.Paused) PauseSystem.TogglePauseGame();
@@ -206,10 +192,42 @@ namespace CosmicShore.Game.Arcade
             }
         }
 
+        public IPlayer InstantiateAndInitializePlayer()
+        {
+            if (ActivePlayer != null)
+                return ActivePlayer;
+
+            for (var i = 0; i < NumberOfPlayers; i++)
+            {
+                Instantiate(playerPrefab).TryGetComponent(out IPlayer player);
+                if (player == null)
+                {
+                    Debug.LogError($"Wrong prefab instantiated!");
+                    return null;
+                }
+
+                Players.Add(player);
+                IPlayer.InitializeData data = new()
+                {
+                    DefaultShipType = playerShipTypeInitialized ? PlayerShipType : DefaultPlayerShipType,
+                    Team = PlayerTeams[i],
+                    PlayerName = i == 0 ? PlayerDataController.PlayerProfile.DisplayName : PlayerNames[i],
+                    PlayerUUID = PlayerNames[i],
+                    Name = "Player" + (i + 1)
+                };
+                Players[i].Initialize(data);
+                Players[i].ToggleGameObject(true);
+            }
+
+            Players[0].ToggleActive(true);
+            ActivePlayer = Players[0];
+            return ActivePlayer;
+        }
+
         void StartGame()
         {
-            Debug.Log($"MiniGame.StartGame, ... {Time.time}");
             gameRunning = true;
+            Debug.Log($"MiniGame.StartGame, ... {Time.time}");
             EndGameScreen.SetActive(false);
             RoundsPlayedThisGame = 0;
             OnMiniGameStart?.Invoke(gameMode, PlayerShipType, NumberOfPlayers, IntensityLevel);
@@ -242,7 +260,7 @@ namespace CosmicShore.Game.Arcade
         {
             foreach (var turnMonitor in TurnMonitors)
                 turnMonitor.PauseTurn();
-            ActivePlayer.GetComponent<InputController>().SetPaused(true);
+            ActivePlayer.InputController.InputStatus.Paused = true;
             ActivePlayer.Ship.TrailSpawner.PauseTrailSpawner();
 
             yield return new WaitForSeconds(EndOfTurnDelay);
@@ -280,10 +298,6 @@ namespace CosmicShore.Game.Arcade
             foreach (var player in Players)
                 Debug.Log($"MiniGame.EndGame - Player Score: {ScoreTracker.GetScore(player.PlayerName)} ");
 
-            bool defeat = false;
-
-            GameCanvas.MiniGameHUD.gameObject.SetActive(false);
-
             if (IsDailyChallenge)
             {
                 LeaderboardManager.Instance.ReportDailyChallengeStatistic(ScoreTracker.GetHighScore(), ScoreTracker.GolfRules);
@@ -318,44 +332,29 @@ namespace CosmicShore.Game.Arcade
                         CatalogManager.Instance.GrantElementalCrystals(crystalsEarned, Element.Time);
                         break;
                 }
-
-                defeat = ScoreTracker.GetScore(Players[0].PlayerName) <= 0;
-
-                Debug.LogError($"Mission EndGame - score {ScoreTracker.GetScore(Players[0].PlayerName)}, defeat:{defeat}");
-                
-
-                // Grant Crystals
                 Debug.Log($"Mission EndGame - Award Mission Crystals - Player has earned {crystalsEarned} crystals");
-                GameCanvas.CrystalsEarnedImage.gameObject.SetActive(true);
                 GameCanvas.CrystalsEarnedImage.sprite = CaptainManager.Instance.GetCaptainByName(PlayerCaptain.Name).SO_Element.GetFullIcon(true);
-                GameCanvas.CrystalsEarnedText.gameObject.SetActive(true);
                 GameCanvas.CrystalsEarnedText.text = crystalsEarned.ToString();
 
                 // Award XP
                 Debug.Log($"Mission EndGame - Award Mission XP -  score:{ScoreTracker.GetHighScore()}, element:{PlayerCaptain.PrimaryElement}");
                 XpHandler.IssueXP(CaptainManager.Instance.GetCaptainByName(PlayerCaptain.Name), 10);
-                GameCanvas.XPEarnedText.gameObject.SetActive(true);
-                GameCanvas.XPEarnedImage.gameObject.SetActive(true);
                 GameCanvas.XPEarnedText.text = "10";
 
-                // Collect the newly encountered captains into a set
-                HashSet<SO_Captain> encounteredCaptains = new();
+                // Report any encountered captains
+                Debug.Log($"Mission EndGame - Unlock Mission Captains");
                 if (Hangar.Instance.HostileAI1Captain != null && !CaptainManager.Instance.IsCaptainEncountered(Hangar.Instance.HostileAI1Captain.Name))
-                    encounteredCaptains.Add(Hangar.Instance.HostileAI1Captain);
-                if (Hangar.Instance.HostileAI2Captain != null && !CaptainManager.Instance.IsCaptainEncountered(Hangar.Instance.HostileAI2Captain.Name))
-                    encounteredCaptains.Add(Hangar.Instance.HostileAI2Captain);
-
-                // Turn off all the sprites -- commented out since they are turned off in hierarchy
-                //foreach (var encounteredCaptainImage in GameCanvas.EncounteredCaptainImages)
-                //    encounteredCaptainImage.gameObject.SetActive(false);
-
-                // Turn on the sprites that are needed and assign thier images
-                for (int i=0; i<encounteredCaptains.Count; i++)
                 {
-                    GameCanvas.EncounteredCaptainImages[i].gameObject.SetActive(true);
-                    GameCanvas.EncounteredCaptainImages[i].sprite = encounteredCaptains.ElementAt(i).Image;
-                    Debug.Log($"Encountering Captain!!! - {encounteredCaptains.ElementAt(i)}");
-                    CaptainManager.Instance.EncounterCaptain(encounteredCaptains.ElementAt(i).Name);
+                    Debug.Log($"Encountering Captain!!! - {Hangar.Instance.HostileAI1Captain}");
+                    CaptainManager.Instance.EncounterCaptain(Hangar.Instance.HostileAI1Captain.Name);
+                    
+                    
+                    //GameCanvas.EncounteredCaptainImage.sprite = Hangar.Instance.HostileAI1Captain.Image;
+                }
+                if (Hangar.Instance.HostileAI2Captain != null && !CaptainManager.Instance.IsCaptainEncountered(Hangar.Instance.HostileAI2Captain.Name))
+                {
+                    Debug.Log($"Encountering Captain!!! - {Hangar.Instance.HostileAI2Captain}");
+                    CaptainManager.Instance.EncounterCaptain(Hangar.Instance.HostileAI2Captain.Name);
                 }
             }
             else if (IsTraining)
@@ -379,7 +378,7 @@ namespace CosmicShore.Game.Arcade
             if (NumberOfPlayers > 1)
                 GameCanvas.scoreboard.ShowMultiplayerView();
             else
-                GameCanvas.scoreboard.ShowSinglePlayerView(defeat);
+                GameCanvas.scoreboard.ShowSinglePlayerView();
 
             OnMiniGameEnd?.Invoke(gameMode, PlayerShipType, NumberOfPlayers, IntensityLevel, ScoreTracker.GetHighScore());
         }
@@ -394,19 +393,48 @@ namespace CosmicShore.Game.Arcade
 
         protected void EliminateActivePlayer()
         {
-            if (!EliminatedPlayers.Contains(activePlayerId))
-                EliminatedPlayers.Add(activePlayerId);
+            // TODO Add to queue and resolve when round ends
+            EliminatedPlayers.Add(activePlayerId);
         }
 
         protected void ResolveEliminations()
         {
+            EliminatedPlayers.Reverse();
             foreach (var playerId in EliminatedPlayers)
                 RemainingPlayers.Remove(playerId);
 
-            EliminatedPlayers.Clear();
+            EliminatedPlayers = new();
 
             if (RemainingPlayers.Count <= 0)
                 EndGame();
+        }
+
+        protected virtual void SetupTurn()
+        {
+            ReadyNextPlayer();
+
+            // Wait for player ready before activating turn monitor (only really relevant for time based monitor)
+            foreach (var turnMonitor in TurnMonitors)
+            {
+                turnMonitor.NewTurn(Players[activePlayerId].PlayerName);
+                turnMonitor.PauseTurn();
+            }
+
+            ActivePlayer.Transform.SetPositionAndRotation(PlayerOrigin.transform.position, PlayerOrigin.transform.rotation);
+            ActivePlayer.InputController.InputStatus.Paused = true;
+            ActivePlayer.Ship.Teleport(PlayerOrigin.transform);
+            ActivePlayer.Ship.ShipTransformer.Reset();
+            ActivePlayer.Ship.TrailSpawner.PauseTrailSpawner();
+            ActivePlayer.Ship.ResourceSystem.Reset();
+            ActivePlayer.Ship.SetResourceLevels(ResourceCollection);
+
+            CameraManager.Instance.SetupGamePlayCameras(ActivePlayer.Ship.FollowTarget);
+
+            // For single player games, don't require the extra button press
+            if (Players.Count > 1)
+                ReadyButton.gameObject.SetActive(true);
+            else
+                StartCoroutine(StartCountdownTimerCoroutine());
         }
 
         protected void ReadyNextPlayer()
@@ -418,47 +446,48 @@ namespace CosmicShore.Game.Arcade
             foreach (var player in Players)
             {
                 Debug.Log($"PlayerUUID: {player.PlayerUUID}");
-                player.gameObject.SetActive(player.PlayerUUID == ActivePlayer.PlayerUUID);
+                player.ToggleGameObject(player.PlayerUUID == ActivePlayer.PlayerUUID);
             }
-
-            Player.ActivePlayer = ActivePlayer;
-        }
-
-        /// <summary>
-        /// Setup turn for the active player, ensuring their position, rotation, and ship settings are correct.
-        /// </summary>
-        protected virtual void SetupTurn()
-        {
-            ReadyNextPlayer();
-
-            // Initialize turn monitors and setup player state
-            foreach (var turnMonitor in TurnMonitors)
-            {
-                turnMonitor.NewTurn(Players[activePlayerId].PlayerName);
-                turnMonitor.PauseTurn(); // Paused until player is ready
-            }
-
-            ActivePlayer.transform.SetPositionAndRotation(PlayerOrigin.transform.position, PlayerOrigin.transform.rotation);
-            ActivePlayer.GetComponent<InputController>().SetPaused(true);
-            ActivePlayer.Ship.Teleport(PlayerOrigin.transform);
-            ActivePlayer.Ship.ShipTransformer.Reset();
-            ActivePlayer.Ship.TrailSpawner.PauseTrailSpawner();
-            ActivePlayer.Ship.ResourceSystem.Reset();
-            ActivePlayer.Ship.SetResourceLevels(ShipResources);
-
-            CameraManager.Instance.SetupGamePlayCameras(ActivePlayer.Ship.FollowTarget);
-
-            // Automatically start the countdown for single-player games
-            if (Players.Count > 1)
-                ReadyButton.gameObject.SetActive(true);
-            else
-                StartCoroutine(StartCountdownTimerCoroutine());
         }
 
         IEnumerator StartCountdownTimerCoroutine()
         {
-            yield return new WaitForSecondsRealtime(readyCountdownDelay);
+            yield return new WaitForSecondsRealtime(2f);
             OnReadyClicked();
+        }
+
+        /// <summary>
+        /// TODO: WIP - Allow for timed events to happen during game play
+        /// </summary>
+        static List<TimedCallback> TimedCallbacks = new();
+
+        public static void ClearTimedCallbacks()
+        {
+            TimedCallbacks.Clear();
+        }
+
+        public static void AddTimedCallback(float invokeAfterSeconds, Action callback)
+        {
+            TimedCallbacks.Add(new(invokeAfterSeconds, callback));
+        }
+
+        IEnumerator TimedCallbackCoroutine(float invokeAfterSeconds, Action callback)
+        {
+            yield return new WaitForSeconds(invokeAfterSeconds);
+
+            callback?.Invoke();
+        }
+
+        struct TimedCallback
+        {
+            public float invokeAfterSeconds;
+            public Action callback;
+
+            public TimedCallback(float invokeAfterSeconds, Action callback)
+            {
+                this.invokeAfterSeconds = invokeAfterSeconds;
+                this.callback = callback;
+            }
         }
     }
 }
