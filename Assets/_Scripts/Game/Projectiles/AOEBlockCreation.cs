@@ -1,7 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using CosmicShore.Core;
-
 using UnityEngine;
 
 namespace CosmicShore.Game.Projectiles
@@ -29,12 +28,22 @@ namespace CosmicShore.Game.Projectiles
         {
             blockMaterial = shielded ? ThemeManager.Instance.GetTeamShieldedBlockMaterial(Ship.Team) 
                 : ThemeManager.Instance.GetTeamBlockMaterial(Ship.Team);
+            
             base.Start();
         }
 
         protected override IEnumerator ExplodeCoroutine()
         {
             yield return new WaitForSeconds(ExplosionDelay);
+
+            // Calculate total blocks needed
+            int totalBlocksNeeded = (int)blockCount * ringCount;
+
+            // Wait for buffer to have enough blocks
+            while (!TrailBlockBufferManager.Instance.HasAvailableBlocks(Team, totalBlocksNeeded))
+            {
+                yield return new WaitForSeconds(0.1f);
+            }
         
             for (int ring = 0; ring < ringCount; ring++)
             {
@@ -55,8 +64,7 @@ namespace CosmicShore.Game.Projectiles
 
         protected TrailBlock CreateBlock(Vector3 position, Vector3 forward, Vector3 up, string ownerId, Trail trail)
         {
-            var block = Instantiate(trailBlock);
-            block.ChangeTeam(Team);
+            var block = TrailBlockBufferManager.Instance.GetBlock(Team);
             block.ownerID = Ship.Player.PlayerUUID;
             block.Player = Ship.Player;
             block.transform.SetPositionAndRotation(position, Quaternion.LookRotation(forward, up));

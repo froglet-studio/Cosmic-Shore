@@ -1,4 +1,3 @@
-
 using System.Collections;
 using System.Collections.Generic;
 using CosmicShore.Core;
@@ -10,7 +9,6 @@ namespace CosmicShore.Game.Projectiles
     {
         ElementalFloat depthScale = new(1f);  // Scale both ray radius and block size, in the z direction.
         [SerializeField] float growthRate = .05f;
-        //float depthScale = 1f;
 
         #region Attributes for Block Creation
         [Header("Block Creation")]
@@ -32,7 +30,6 @@ namespace CosmicShore.Game.Projectiles
         #endregion
 
         Vector3 rayDirection;
-
         protected List<Trail> trails = new List<Trail>();
 
         protected override void Start()
@@ -44,13 +41,22 @@ namespace CosmicShore.Game.Projectiles
             baseBlockScale.z *= depthScale.Value;
             maxRadius *= depthScale.Value;
             BindElementalFloats(Ship);
-//          "The name 'BindElementalFloats' does not exist in the current context" --> class type needs to be ElementalShipComponent?
         }
 
         protected override IEnumerator ExplodeCoroutine()
         {
             StartCoroutine(base.ExplodeCoroutine());
             yield return new WaitForSeconds(ExplosionDelay + SecondaryExplosionDelay);
+
+            // Calculate total blocks needed
+            int totalBlocksNeeded = numberOfRays * blocksPerRay;
+
+            // Wait for buffer to have enough blocks
+            while (!TrailBlockBufferManager.Instance.HasAvailableBlocks(Team, totalBlocksNeeded))
+            {
+                Debug.Log($"AOERadialBlocks: Waiting for blocks: {totalBlocksNeeded}");
+                yield return new WaitForSeconds(0.1f);
+            }
 
             for (int ray = 0; ray < numberOfRays; ray++)
             {
@@ -90,22 +96,20 @@ namespace CosmicShore.Game.Projectiles
 
         protected TrailBlock CreateBlock(Vector3 position, Vector3 forward, Vector3 up, string blockId, Trail trail, Vector3 scale)
         {
-            var block = Instantiate(trailBlock);
-            block.ChangeTeam(Team);
-            block.ownerID = Ship.Player.PlayerUUID;
+            var block = TrailBlockBufferManager.Instance.GetBlock(Team);
+            //block.ownerID = Ship.Player.PlayerUUID;
             block.Player = Ship.Player;
             block.transform.SetPositionAndRotation(position, Quaternion.LookRotation(forward, up));
             block.GetComponent<MeshRenderer>().material = blockMaterial;
             block.ownerID = block.ownerID + blockId + position;
             block.TargetScale = scale;
-            block.transform.parent = TrailSpawner.TrailContainer.transform;
+            //block.transform.parent = TrailSpawner.TrailContainer.transform;
             block.Trail = trail;
             block.growthRate = growthRate;
             if (shielded) block.TrailBlockProperties.IsShielded = true;
             trail.Add(block);
             return block;
         }
-
 
         public override void SetPositionAndRotation(Vector3 position, Quaternion rotation)
         {
@@ -114,5 +118,3 @@ namespace CosmicShore.Game.Projectiles
         }
     }
 }
-
-
