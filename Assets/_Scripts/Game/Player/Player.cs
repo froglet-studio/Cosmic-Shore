@@ -52,10 +52,10 @@ namespace CosmicShore.Game
         GameCanvas _gameCanvas;
         string _playerName;
 
-        void Start()
+        /*void Start()
         {
             Initialize(InitializeData);
-        }
+        }*/
 
         public void Initialize(IPlayer.InitializeData data)
         {

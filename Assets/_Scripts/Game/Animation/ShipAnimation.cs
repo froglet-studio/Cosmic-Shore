@@ -24,7 +24,7 @@ namespace CosmicShore.Game.Animation
 
         protected virtual void Update()
         {
-            if (inputController == null) inputController = GetComponent<Ship>().InputController;
+            if (inputController == null) inputController = Ship.InputController; // inputController = GetComponent<Ship>().InputController;
             if (inputController != null) // the line above makes this run the moment it has the handle
             {
                 if (inputController.Idle)
