@@ -5,6 +5,7 @@ using CosmicShore.Game.AI;
 using CosmicShore.Game.UI;
 using CosmicShore.Game;
 using Unity.Android.Gradle.Manifest;
+using System.Collections;
 
 namespace CosmicShore.Game
 {
@@ -69,7 +70,7 @@ namespace CosmicShore.Game
             Setup();
         }
 
-        public void Setup()
+        void Setup()
         {
             if (UseHangarConfiguration)
             {
@@ -121,8 +122,9 @@ namespace CosmicShore.Game
         public void SetDefaultShipType(ShipTypes shipType) => DefaultShipType = shipType;
 
         public void ToggleGameObject(bool toggle) => gameObject.SetActive(toggle);
+        public void ToggleActive(bool active) => IsActive = active;
 
-        protected virtual void SetupPlayerShip(IShip ship)
+        void SetupPlayerShip(IShip ship)
         {
             Ship = ship;
             Ship.Transform.SetParent(shipContainer.transform, false);
@@ -131,7 +133,7 @@ namespace CosmicShore.Game
             InputController.Ship = Ship;
             GameCanvas.MiniGameHUD.Ship = Ship;
 
-            Ship.Initialize(this, Team);
+            InitializeShip();
 
             gameManager.WaitOnPlayerLoading();
         }
@@ -144,11 +146,12 @@ namespace CosmicShore.Game
             Ship.AIPilot.enabled = true;
 
             InputController.Ship = ship;
-            Ship.Initialize(this, Team);
+
+            InitializeShip();
 
             gameManager.WaitOnAILoading(Ship.AIPilot);
         }
 
-        public void ToggleActive(bool active) => IsActive = active;
+        void InitializeShip() => Ship.Initialize(this, Team);
     }
 }

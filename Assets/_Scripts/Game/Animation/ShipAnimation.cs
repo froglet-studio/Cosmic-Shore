@@ -18,12 +18,14 @@ namespace CosmicShore.Game.Animation
 
         protected List<Transform> Transforms = new(); // TODO: use this to populate the ship geometries on ship.cs
         protected List<Quaternion> InitialRotations = new(); // TODO: use this to populate the ship geometries on ship.cs
-        protected IShip Ship;
+        protected IShip Ship { get; private set; }
         protected InputController inputController;
         protected IInputStatus inputStatus;
 
         protected virtual void Update()
         {
+            if (Ship == null) Ship = GetComponent<IShip>();
+
             if (inputController == null) inputController = Ship.InputController; // inputController = GetComponent<Ship>().InputController;
             if (inputController != null) // the line above makes this run the moment it has the handle
             {
