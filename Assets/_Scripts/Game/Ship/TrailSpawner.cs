@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Net.NetworkInformation;
 using UnityEngine;
 
-[RequireComponent(typeof(Ship))]
 [RequireComponent(typeof(ShipStatus))]
 public class TrailSpawner : MonoBehaviour
 {
@@ -230,9 +229,9 @@ public class TrailSpawner : MonoBehaviour
     }
 
     bool isCharmed = false;
-    Ship tempShip;
+    IShip tempShip;
     
-    public void Charm(Ship ship, float duration)
+    public void Charm(IShip ship, float duration)
     {
         tempShip = ship;
         Debug.Log($"charming ship: {ship}");

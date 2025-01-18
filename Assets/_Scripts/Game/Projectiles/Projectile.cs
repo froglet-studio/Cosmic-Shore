@@ -11,7 +11,7 @@ namespace CosmicShore.Game.Projectiles
     {
         public Vector3 Velocity;
         public Teams Team;
-        public Ship Ship;
+        public IShip Ship;
         public bool ImpactOnEnd;
         public float Inertia = 1;
         

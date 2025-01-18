@@ -119,84 +119,6 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
---- !u!1001 &129195827
-PrefabInstance:
-  m_ObjectHideFlags: 0
-  serializedVersion: 2
-  m_Modification:
-    serializedVersion: 3
-    m_TransformParent: {fileID: 0}
-    m_Modifications:
-    - target: {fileID: 2267044654069565993, guid: 7d3c24f07511c2b449da87870cb86cce,
-        type: 3}
-      propertyPath: m_RootOrder
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 2267044654069565993, guid: 7d3c24f07511c2b449da87870cb86cce,
-        type: 3}
-      propertyPath: m_LocalPosition.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 2267044654069565993, guid: 7d3c24f07511c2b449da87870cb86cce,
-        type: 3}
-      propertyPath: m_LocalPosition.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 2267044654069565993, guid: 7d3c24f07511c2b449da87870cb86cce,
-        type: 3}
-      propertyPath: m_LocalPosition.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 2267044654069565993, guid: 7d3c24f07511c2b449da87870cb86cce,
-        type: 3}
-      propertyPath: m_LocalRotation.w
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 2267044654069565993, guid: 7d3c24f07511c2b449da87870cb86cce,
-        type: 3}
-      propertyPath: m_LocalRotation.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 2267044654069565993, guid: 7d3c24f07511c2b449da87870cb86cce,
-        type: 3}
-      propertyPath: m_LocalRotation.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 2267044654069565993, guid: 7d3c24f07511c2b449da87870cb86cce,
-        type: 3}
-      propertyPath: m_LocalRotation.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 2267044654069565993, guid: 7d3c24f07511c2b449da87870cb86cce,
-        type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 2267044654069565993, guid: 7d3c24f07511c2b449da87870cb86cce,
-        type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 2267044654069565993, guid: 7d3c24f07511c2b449da87870cb86cce,
-        type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 2267044654069565999, guid: 7d3c24f07511c2b449da87870cb86cce,
-        type: 3}
-      propertyPath: m_Name
-      value: MainMenuDependencyLoader
-      objectReference: {fileID: 0}
-    - target: {fileID: 2267044654069565999, guid: 7d3c24f07511c2b449da87870cb86cce,
-        type: 3}
-      propertyPath: m_IsActive
-      value: 0
-      objectReference: {fileID: 0}
-    m_RemovedComponents: []
-    m_RemovedGameObjects: []
-    m_AddedGameObjects: []
-    m_AddedComponents: []
-  m_SourcePrefab: {fileID: 100100000, guid: 7d3c24f07511c2b449da87870cb86cce, type: 3}
 --- !u!1 &420213765
 GameObject:
   m_ObjectHideFlags: 0
@@ -865,7 +787,8 @@ MonoBehaviour:
   EndOfTurnDelay: 0
   EnableTrails: 0
   DefaultPlayerShipType: 1
-  DefaultPlayerCaptain: {fileID: 0}
+  DefaultPlayerCaptain: {fileID: 11400000, guid: 5ac362560a34d414e835db83e82daa08,
+    type: 2}
   Crystal: {fileID: 1568959833}
   CrystalStartPosition: {x: 0, y: 0, z: -120}
   SegmentSpawner: {fileID: 1020381236}
@@ -1765,7 +1688,6 @@ SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
   - {fileID: 1655328213}
-  - {fileID: 129195827}
   - {fileID: 812293388}
   - {fileID: 1471404063}
   - {fileID: 1078953705}
