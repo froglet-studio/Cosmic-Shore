@@ -38,7 +38,7 @@ namespace CosmicShore.Game.Animation
 
         private void OnEnable()
         {
-            if (topJaw) Ship.ResourceSystem.Resources[JawResourceIndex].OnResourceChange += calculateBlastAngle;
+            
         }
         private void OnDisable()
         {
@@ -47,7 +47,10 @@ namespace CosmicShore.Game.Animation
         public override void Initialize(IShip ship)
         {
             base.Initialize(ship);
-            shipData = GetComponent<ShipStatus>();
+
+            if (topJaw) Ship.ResourceSystem.Resources[JawResourceIndex].OnResourceChange += calculateBlastAngle;
+
+            shipData = Ship.ShipStatus;
             animationTransforms = new List<Transform>() { ThrusterTopRight, ThrusterRight, ThrusterBottomRight, ThrusterBottomLeft, ThrusterLeft, ThrusterTopLeft };
         }
 

@@ -38,13 +38,6 @@ namespace CosmicShore
         Transform trailDisplayContainer;
         [SerializeField] Vector3 sihouetteScale = Vector3.one;
 
-        private void OnEnable()
-        {
-            if (driftTrailAction) driftTrailAction.OnChangeDriftAltitude += calculateDriftAngle;
-            if (topJaw) _ship.ResourceSystem.Resources[JawResourceIndex].OnResourceChange += calculateBlastAngle;
-            if (trailSpawner) trailSpawner.OnBlockCreated += HandleBlockCreation;
-        }
-
         private void OnDisable()
         {
             if (driftTrailAction) driftTrailAction.OnChangeDriftAltitude -= calculateDriftAngle;
@@ -69,6 +62,8 @@ namespace CosmicShore
             }
 
             if (topJaw) _ship.ResourceSystem.Resources[JawResourceIndex].OnResourceChange += calculateBlastAngle;
+            if (driftTrailAction) driftTrailAction.OnChangeDriftAltitude += calculateDriftAngle;
+            if (trailSpawner) trailSpawner.OnBlockCreated += HandleBlockCreation;
         }
 
         public void SetBlockPrefab(GameObject block)
