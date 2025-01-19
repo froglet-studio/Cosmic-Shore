@@ -17,8 +17,8 @@ namespace CosmicShore
 
         protected override void MoveShip()
         {
-            transform.position = Vector3.Lerp(transform.position, inputController.ThreeDPosition, speed * Time.deltaTime);
-            shipStatus.Course = inputController.ThreeDPosition - transform.position;
+            transform.position = Vector3.Lerp(transform.position, InputStatus.ThreeDPosition, speed * Time.deltaTime);
+            shipStatus.Course = InputStatus.ThreeDPosition - transform.position;
         }
 
         protected override void RotateShip()

@@ -26,9 +26,9 @@ namespace CosmicShore.Game.Animation
             if (inputController == null) // the line above makes this run the moment it has the handle
                 return;
             
-            if (inputController.Idle) Idle();
-            else if (Ship.ShipStatus.SingleStickControls) PerformShipPuppetry(inputController.EasedLeftJoystickPosition.y, inputController.EasedLeftJoystickPosition.x, 0, 0);
-            else PerformShipPuppetry(inputController.YSum, inputController.XSum, inputController.YDiff, inputController.XDiff);
+            if (inputStatus.Idle) Idle();
+            else if (Ship.ShipStatus.SingleStickControls) PerformShipPuppetry(inputStatus.EasedLeftJoystickPosition.y, inputStatus.EasedLeftJoystickPosition.x, 0, 0);
+            else PerformShipPuppetry(inputStatus.YSum, inputStatus.XSum, inputStatus.YDiff, inputStatus.XDiff);
         }
 
         public virtual void Initialize(IShip ship)

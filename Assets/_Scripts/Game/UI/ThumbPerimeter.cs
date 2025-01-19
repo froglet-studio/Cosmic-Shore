@@ -1,6 +1,5 @@
 using CosmicShore.Core;
 using CosmicShore.Game.IO;
-using System;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -26,7 +25,8 @@ namespace CosmicShore.Game.UI
         bool imageEnabled = true;
 
         Vector2 leftStartPosition, rightStartPosition;
-        InputController controller;
+        InputController _inputController;
+        IInputStatus _inputStatus => _inputController.InputStatus;
 
         private void OnEnable()
         {
@@ -63,7 +63,7 @@ namespace CosmicShore.Game.UI
             if (!Player.ActivePlayer.Ship.ShipStatus.AutoPilotEnabled)
             {
                 gameObject.SetActive(isActive);
-                controller = Player.ActivePlayer.Ship.InputController;
+                _inputController = Player.ActivePlayer.Ship.InputController;
                 initialized = isActive;
             }               
         }
@@ -87,17 +87,17 @@ namespace CosmicShore.Game.UI
                     Vector2 normalizedJoystickPosition;
                     if (Input.touches.Length == 1)
                     {
-                        PerimeterActive = controller.OneTouchLeft == LeftThumb;
+                        PerimeterActive = _inputStatus.OneTouchLeft == LeftThumb;
                     }                  
                     if (LeftThumb)
                     {
-                        transform.position = controller.LeftJoystickStart;
-                        normalizedJoystickPosition = controller.LeftNormalizedJoystickPosition;
+                        transform.position = _inputStatus.LeftJoystickStart;
+                        normalizedJoystickPosition = _inputStatus.LeftNormalizedJoystickPosition;
                     }
                     else
                     {
-                        transform.position = controller.RightJoystickStart;
-                        normalizedJoystickPosition = controller.RightNormalizedJoystickPosition;
+                        transform.position = _inputStatus.RightJoystickStart;
+                        normalizedJoystickPosition = _inputStatus.RightNormalizedJoystickPosition;
                     }
                     normalizedJoystickDistance = normalizedJoystickPosition.magnitude;
 

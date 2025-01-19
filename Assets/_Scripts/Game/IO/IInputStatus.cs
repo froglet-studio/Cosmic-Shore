@@ -29,6 +29,8 @@
         Vector2 LeftNormalizedJoystickPosition { get; set; }
         Vector2 EasedRightJoystickPosition { get; set; }
         Vector2 EasedLeftJoystickPosition { get; set; }
+        Vector2 SingleTouchValue { get; set; }
+        Vector3 ThreeDPosition { get; set; }
     }
 
 }

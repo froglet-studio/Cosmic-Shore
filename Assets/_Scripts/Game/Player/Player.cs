@@ -1,11 +1,8 @@
 ﻿using UnityEngine;
 using CosmicShore.Core;
 using CosmicShore.Game.IO;
-using CosmicShore.Game.AI;
 using CosmicShore.Game.UI;
-using CosmicShore.Game;
-using Unity.Android.Gradle.Manifest;
-using System.Collections;
+
 
 namespace CosmicShore.Game
 {
@@ -130,10 +127,10 @@ namespace CosmicShore.Game
             Ship.Transform.SetParent(shipContainer.transform, false);
             Ship.AIPilot.enabled = false;
 
-            InputController.Ship = Ship;
             GameCanvas.MiniGameHUD.Ship = Ship;
 
             InitializeShip();
+            InputController.Initialize(Ship);
 
             gameManager.WaitOnPlayerLoading();
         }
@@ -145,9 +142,8 @@ namespace CosmicShore.Game
             Ship = ship;
             Ship.AIPilot.enabled = true;
 
-            InputController.Ship = ship;
-
             InitializeShip();
+            InputController.Initialize(Ship);
 
             gameManager.WaitOnAILoading(Ship.AIPilot);
         }

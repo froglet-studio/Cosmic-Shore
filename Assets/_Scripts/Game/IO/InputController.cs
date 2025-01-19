@@ -2,7 +2,6 @@ using UnityEngine;
 using CosmicShore.Core;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.EnhancedTouch;
-using CosmicShore.Game.UI;
 using CosmicShore.App.Systems;
 using CosmicShore.Utility.ClassExtensions;
 using Unity.Netcode;
@@ -24,23 +23,7 @@ namespace CosmicShore.Game.IO
         public IInputStatus InputStatus => _inputStatus ??= TryAddInputStatus();
 
         [SerializeField] public bool Portrait;
-
-        IShip ship;
-        public IShip Ship
-        {
-            get => ship;
-            set
-            {
-                ship = value;
-                if (ship != null)
-                {
-                    //touchStrategy.Initialize(ship);
-                    //keyboardMouseStrategy.Initialize(ship);
-                    gamepadStrategy.Initialize(ship);
-                    orientationHandler.Initialize(ship, this);
-                }
-            }   
-        }
+        public IShip Ship { get; private set; }
 
         [HideInInspector] public bool AutoPilotEnabled;
         [HideInInspector] public static ScreenOrientation currentOrientation;
@@ -51,34 +34,11 @@ namespace CosmicShore.Game.IO
         private GamepadInputStrategy gamepadStrategy;
         private DeviceOrientationHandler orientationHandler;
 
-        // Properties matching original InputController
-        public float XSum => currentStrategy?.XSum ?? 0f;
-        public float YSum => currentStrategy?.YSum ?? 0f;
-        public float XDiff => currentStrategy?.XDiff ?? 0f;
-        public float YDiff => currentStrategy?.YDiff ?? 0f;
-        public Vector2 EasedLeftJoystickPosition => currentStrategy?.EasedLeftJoystickPosition ?? Vector2.zero;
-        public Vector2 EasedRightJoystickPosition => currentStrategy?.EasedRightJoystickPosition ?? Vector2.zero;
-        public Vector2 RightJoystickHome => currentStrategy?.RightJoystickHome ?? Vector2.zero;
-        public Vector2 LeftJoystickHome => currentStrategy?.LeftJoystickHome ?? Vector2.zero;
-        public Vector2 RightClampedPosition => currentStrategy?.RightClampedPosition ?? Vector2.zero;
-        public Vector2 LeftClampedPosition => currentStrategy?.LeftClampedPosition ?? Vector2.zero;
-        public Vector2 RightJoystickStart => currentStrategy?.RightJoystickStart ?? Vector2.zero;
-        public Vector2 LeftJoystickStart => currentStrategy?.LeftJoystickStart ?? Vector2.zero;
-        public Vector2 RightNormalizedJoystickPosition => currentStrategy?.RightNormalizedJoystickPosition ?? Vector2.zero;
-        public Vector2 LeftNormalizedJoystickPosition => currentStrategy?.LeftNormalizedJoystickPosition ?? Vector2.zero;
-        public bool OneTouchLeft => currentStrategy?.OneTouchLeft ?? false;
-        public Vector2 SingleTouchValue => currentStrategy?.SingleTouchValue ?? Vector2.zero;
-        public Vector3 ThreeDPosition => currentStrategy?.ThreeDPosition ?? Vector3.zero;
-        public bool Idle => currentStrategy?.IsIdle ?? true;
-        public bool Paused { get; private set; }
-        public bool IsGyroEnabled { get; private set; }
-
         private void Awake()
         {
-            InitializeStrategies();
-            SetInitialStrategy();
-            InitializeOrientation();
+            enabled = false;
         }
+
 
         private void OnEnable()
         {
@@ -92,6 +52,17 @@ namespace CosmicShore.Game.IO
             GameSetting.OnChangeInvertYEnabledStatus -= OnToggleInvertY;
             GameSetting.OnChangeInvertThrottleEnabledStatus -= OnToggleInvertThrottle;
             EnhancedTouchSupport.Disable();
+        }
+
+        public void Initialize(IShip ship)
+        {
+            Ship = ship;
+
+            InitializeStrategies();
+            SetInitialStrategy();
+            InitializeOrientation();
+
+            enabled = true;
         }
 
         private void SetInitialStrategy()
@@ -112,13 +83,18 @@ namespace CosmicShore.Game.IO
             //keyboardMouseStrategy = new KeyboardMouseInputStrategy();
             gamepadStrategy = new GamepadInputStrategy();
             orientationHandler = new DeviceOrientationHandler();
+
+            //touchStrategy.Initialize(ship);
+            //keyboardMouseStrategy.Initialize(ship);
+            gamepadStrategy.Initialize(Ship);
+            orientationHandler.Initialize(Ship, this);
         }
 
         private void InitializeOrientation()
         {
             if (Portrait)
             {
-                ship.SetShipUp(90);
+                Ship.SetShipUp(90);
             }
             currentOrientation = Screen.orientation;
         }
@@ -134,32 +110,32 @@ namespace CosmicShore.Game.IO
             }
             #endif
 
-            if (PauseSystem.Paused || Paused) return;
+            if (PauseSystem.Paused || InputStatus.Paused) return;
 
-            if (AutoPilotEnabled && ship != null)
+            if (AutoPilotEnabled && Ship != null)
             {
                 ProcessAutoPilot();
                 return;
             }
 
             UpdateInputStrategy();
-            currentStrategy?.ProcessInput(ship);
+            currentStrategy?.ProcessInput(Ship);
             orientationHandler.Update();
         }
 
         private void ProcessAutoPilot()
         {
-            if (ship.ShipStatus.SingleStickControls)
+            if (Ship.ShipStatus.SingleStickControls)
             {
-                currentStrategy?.SetAutoPilotValues(new Vector2(ship.AIPilot.X, ship.AIPilot.Y));
+                currentStrategy?.SetAutoPilotValues(new Vector2(Ship.AIPilot.X, Ship.AIPilot.Y));
             }
             else
             {
                 currentStrategy?.SetAutoPilotValues(
-                    ship.AIPilot.XSum,
-                    ship.AIPilot.YSum,
-                    ship.AIPilot.XDiff,
-                    ship.AIPilot.YDiff
+                    Ship.AIPilot.XSum,
+                    Ship.AIPilot.YSum,
+                    Ship.AIPilot.XDiff,
+                    Ship.AIPilot.YDiff
                 );
             }
         }
@@ -185,7 +161,7 @@ namespace CosmicShore.Game.IO
 
         public void OnToggleGyro(bool status)
         {
-            IsGyroEnabled = status;
+            InputStatus.IsGyroEnabled = status;
             orientationHandler.OnToggleGyro(status);
         }
 
@@ -207,7 +183,7 @@ namespace CosmicShore.Game.IO
 
         public void SetPaused(bool paused)
         {
-            Paused = paused;
+            InputStatus.Paused = paused;
             if (paused)
                 currentStrategy?.OnPaused();
             else

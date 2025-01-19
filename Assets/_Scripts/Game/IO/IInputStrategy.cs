@@ -1,4 +1,3 @@
-using CosmicShore.Core;
 using UnityEngine;
 
 namespace CosmicShore.Game.IO
@@ -7,7 +6,6 @@ namespace CosmicShore.Game.IO
     {
         void Initialize(IShip ship);
         void ProcessInput(IShip ship);
-        bool IsIdle { get; }
         void SetPortrait(bool portrait);
         void OnStrategyActivated();
         void OnStrategyDeactivated();
@@ -18,7 +16,8 @@ namespace CosmicShore.Game.IO
         void SetAutoPilotValues(Vector2 position);
         void SetAutoPilotValues(float xSum, float ySum, float xDiff, float yDiff);
 
-        // Properties that match original InputController
+        /*// Properties that match original InputController
+        bool IsIdle { get; }
         float XSum { get; }
         float YSum { get; }
         float XDiff { get; }
@@ -35,6 +34,6 @@ namespace CosmicShore.Game.IO
         Vector2 LeftNormalizedJoystickPosition { get; }
         bool OneTouchLeft { get; }
         Vector2 SingleTouchValue { get; }
-        Vector3 ThreeDPosition { get; }
+        Vector3 ThreeDPosition { get; }*/
     }
 }

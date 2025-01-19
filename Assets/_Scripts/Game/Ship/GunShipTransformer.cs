@@ -60,7 +60,7 @@ public class GunShipTransformer : ShipTransformer
         float lookThreshold = -.6f;
         float zeroPosition = .2f;
 
-        var throttle = (inputStatus.XDiff - zeroPosition) / (1 - zeroPosition);
+        var throttle = (InputStatus.XDiff - zeroPosition) / (1 - zeroPosition);
 
         if (Vector3.Dot(transform.forward, shipStatus.Course) < lookThreshold && throttle > 0)
             moveForward = !moveForward;

@@ -6,8 +6,6 @@ using CosmicShore.Game;
 
 public class ShipTransformer : MonoBehaviour
 {
-    Quaternion inverseInitialRotation = new(0, 0, 0, 0);
-
     #region Ship
     protected IShip Ship;
     protected ShipStatus shipStatus;
@@ -15,7 +13,7 @@ public class ShipTransformer : MonoBehaviour
     #endregion
 
     protected InputController inputController;
-    protected IInputStatus inputStatus => inputController.InputStatus;
+    protected IInputStatus InputStatus => inputController.InputStatus;
 
     protected float speed;
     protected readonly float lerpAmount = 1.5f;
@@ -78,14 +76,15 @@ public class ShipTransformer : MonoBehaviour
         if (inputController == null)
             return;
 
-        if (inputStatus.Paused)
+        if (InputStatus.Paused)
             return;
 
         if (shipStatus.Stationary)
             return;
 
-        RotateShip();
         shipStatus.blockRotation = transform.rotation;
+
+        RotateShip();
 
         ApplyThrottleModifiers();
         ApplyVelocityModifiers();
@@ -95,10 +94,34 @@ public class ShipTransformer : MonoBehaviour
 
     protected virtual void RotateShip()
     {
-        
+
+        Roll();
+        Yaw();
+        Pitch();
+
+        if (InputStatus.IsGyroEnabled) //&& !Equals(inverseInitialRotation, new Quaternion(0, 0, 0, 0)))
+        {
+            // Updates GameObjects blockRotation from input device's gyroscope
+            transform.rotation = Quaternion.Lerp(
+                                        transform.rotation,
+                                        accumulatedRotation * inputController.GetGyroRotation(),
+                                        lerpAmount * Time.deltaTime);
+        }
+        else
+        {
+            transform.rotation = Quaternion.Lerp(
+                                        transform.rotation,
+                                        accumulatedRotation,
+                                        lerpAmount * Time.deltaTime);
+        }
+    }
+
+    /*protected virtual void RotateShip()
+    {
+
         if (inputController != null)
         {
-            
+
             Roll();
             Yaw();
             Pitch();
@@ -126,7 +149,7 @@ public class ShipTransformer : MonoBehaviour
                                         accumulatedRotation,
                                         lerpAmount * Time.deltaTime);
         }
-    }
+    }*/
 
     public void FlatSpinShip(float YAngle)
     {
@@ -148,21 +171,21 @@ public class ShipTransformer : MonoBehaviour
     protected virtual void Pitch() // These need to not use *= because quaternions are not commutative
     {
         accumulatedRotation = Quaternion.AngleAxis(
-                            inputStatus.YSum * (speed * RotationThrottleScaler + PitchScaler) * Time.deltaTime,
+                            InputStatus.YSum * (speed * RotationThrottleScaler + PitchScaler) * Time.deltaTime,
                             transform.right) * accumulatedRotation;
     }
 
     protected virtual void Yaw()  // TODO: test replacing these AngleAxis calls with eulerangles
     {
         accumulatedRotation = Quaternion.AngleAxis(
-                            inputStatus.XSum * (speed * RotationThrottleScaler + YawScaler)  * Time.deltaTime,
+                            InputStatus.XSum * (speed * RotationThrottleScaler + YawScaler)  * Time.deltaTime,
                             transform.up) * accumulatedRotation;
     }
 
     protected virtual void Roll()
     {
         accumulatedRotation = Quaternion.AngleAxis(
-                            inputStatus.YDiff * (speed * RotationThrottleScaler + RollScaler) * Time.deltaTime,
+                            InputStatus.YDiff * (speed * RotationThrottleScaler + RollScaler) * Time.deltaTime,
                             transform.forward) * accumulatedRotation;
     }
 
@@ -175,7 +198,7 @@ public class ShipTransformer : MonoBehaviour
         }
         if (shipStatus.ChargedBoostDischarging) boostAmount *= shipStatus.ChargedBoostCharge;
         if (inputController != null)
-        speed = Mathf.Lerp(speed, inputStatus.XDiff * ThrottleScaler * ThrottleScalerMultiplier.Value * boostAmount + MinimumSpeed, lerpAmount * Time.deltaTime);
+        speed = Mathf.Lerp(speed, InputStatus.XDiff * ThrottleScaler * ThrottleScalerMultiplier.Value * boostAmount + MinimumSpeed, lerpAmount * Time.deltaTime);
 
         speed *= throttleMultiplier;
         shipStatus.Speed = speed;

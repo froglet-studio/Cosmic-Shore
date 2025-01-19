@@ -20,6 +20,8 @@ namespace CosmicShore.Game.UI
         bool imageEnabled = true;
         Vector2 leftTouch, rightTouch;
 
+        IInputStatus inputStatus => player.InputController.InputStatus;
+
         private void OnEnable()
         {
             GameSetting.OnChangeJoystickVisualsStatus += OnToggleJoystickVisuals;
@@ -62,12 +64,12 @@ namespace CosmicShore.Game.UI
             {
                 if (Input.touches.Length == 0)
                 {
-                    transform.position = LeftThumb ? Vector2.Lerp(transform.position, Player.ActivePlayer.Ship.InputController.LeftJoystickHome, .2f) : Vector2.Lerp(transform.position, Player.ActivePlayer.Ship.InputController.RightJoystickHome, .2f);
+                    transform.position = LeftThumb ? Vector2.Lerp(transform.position, inputStatus.LeftJoystickHome, .2f) : Vector2.Lerp(transform.position, inputStatus.RightJoystickHome, .2f);
                     image.sprite = InactiveImage;
                 }
                 else if (LeftThumb)
                 {
-                    leftTouch = Player.ActivePlayer.Ship.InputController.LeftClampedPosition;
+                    leftTouch = inputStatus.LeftClampedPosition;
                     transform.position = Vector2.Lerp(transform.position, leftTouch, .2f);
                     imageEnabled = true ? image.sprite = ActiveImage : image.sprite = InactiveImage;
                     
@@ -76,7 +78,7 @@ namespace CosmicShore.Game.UI
                 }
                 else
                 {
-                    rightTouch = Player.ActivePlayer.Ship.InputController.RightClampedPosition;
+                    rightTouch = inputStatus.RightClampedPosition;
                     transform.position = Vector2.Lerp(transform.position, rightTouch, .2f);
                     imageEnabled = true ? image.sprite = ActiveImage : image.sprite = InactiveImage;
                     //image.transform.localScale = (Player.ActivePlayer.Ship.InputController.RightJoystickStart

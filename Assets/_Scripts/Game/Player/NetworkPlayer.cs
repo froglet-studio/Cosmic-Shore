@@ -76,7 +76,7 @@ namespace CosmicShore.Game
             {
                 GameCanvas = FindAnyObjectByType<GameCanvas>();
                 GameCanvas.MiniGameHUD.Ship = _ship;
-                InputController.Ship = _ship;
+                InputController.Initialize(_ship);
             }
 
             _ship.Initialize(this, _ship.Team);
