@@ -4,7 +4,6 @@ using CosmicShore.Game.IO;
 using CosmicShore.Game.Projectiles;
 using System.Collections;
 using System.Collections.Generic;
-using Unity.Services.Matchmaker.Models;
 using UnityEngine;
 
 namespace CosmicShore.Core
@@ -262,7 +261,7 @@ namespace CosmicShore.Core
                 StartSkim(trailBlock);
 
             float sqrDistance = (transform.position - other.transform.position).sqrMagnitude;
-            if (trailBlock.ownerID != Ship.Player.PlayerUUID || Time.time - trailBlock.TrailBlockProperties.TimeCreated > 7)
+            if (Time.time - trailBlock.TrailBlockProperties.TimeCreated > 4)
             {
                 minMatureBlockSqrDistance = Mathf.Min(minMatureBlockSqrDistance, sqrDistance);
                 if (sqrDistance == minMatureBlockSqrDistance) 
@@ -320,7 +319,6 @@ namespace CosmicShore.Core
         void ScaleTrailAndCamera()
         {
             var normalizedDistance = Mathf.InverseLerp(15f, sqrRadius, minMatureBlockSqrDistance);
-
             Ship.TrailSpawner.SetNormalizedXScale(normalizedDistance);
 
             if (cameraManager != null && !Ship.ShipStatus.AutoPilotEnabled) 
