@@ -3,13 +3,14 @@ using UnityEngine;
 using CosmicShore.Core;
 using CosmicShore.Game.IO;
 using CosmicShore.Environment.FlowField;
+using CosmicShore.Game;
 
 namespace CosmicShore
 {
     public class BoidController : BoidManager
     {
         protected InputController inputController;
-        [SerializeField] Ship ship;
+        [SerializeField] IShip ship;
         GameObject container;
 
         List<GameObject> queenDrones = new List<GameObject>();
@@ -24,9 +25,9 @@ namespace CosmicShore
 
         public void SpawnDrone(Transform goal, bool isQueenDrone)
         {
-            GameObject drone = Instantiate(boidPrefab.gameObject, ship.transform.position, Quaternion.identity);
+            GameObject drone = Instantiate(boidPrefab.gameObject, ship.Transform.position, Quaternion.identity);
             drone.transform.SetParent(container.transform);
-            drone.transform.position = ship.transform.position;
+            drone.transform.position = ship.Transform.position;
             var boid = drone.GetComponent<Boid>();
             boid.DefaultGoal = goal;
             boid.Team = ship.Team;
@@ -48,7 +49,7 @@ namespace CosmicShore
             if (toQueen && moundDrones.Count > 0)
             {
                 var drone = moundDrones[0];
-                drone.GetComponent<Boid>().DefaultGoal = ship.transform;
+                drone.GetComponent<Boid>().DefaultGoal = ship.Transform;
                 moundDrones.Remove(drone);
                 queenDrones.Add(drone);
                 ship.Player.GameCanvas.MiniGameHUD.SetLeftNumberDisplay(moundDrones.Count);

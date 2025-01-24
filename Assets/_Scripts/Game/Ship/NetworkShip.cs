@@ -178,6 +178,8 @@ namespace CosmicShore.Game
 
         public List<InputEventShipActionMapping> InputEventShipActions => _inputEventShipActions;
 
+        public IInputStatus InputStatus => InputController.InputStatus;
+
         #endregion
 
         Dictionary<InputEvents, float> _inputAbilityStartTimes = new();

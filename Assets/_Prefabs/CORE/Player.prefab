@@ -23,13 +23,13 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1360789018413082665}
+  serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 2151207714166088001}
-  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2151207714166088056
 GameObject:
@@ -44,6 +44,7 @@ GameObject:
   - component: {fileID: 2151207714166088003}
   - component: {fileID: 2151207714166088012}
   - component: {fileID: 8615459834618862647}
+  - component: {fileID: 4666491142111262992}
   m_Layer: 0
   m_Name: Player
   m_TagString: Player
@@ -58,6 +59,7 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2151207714166088056}
+  serializedVersion: 2
   m_LocalRotation: {x: 0.7071068, y: 0, z: 0, w: 0.7071068}
   m_LocalPosition: {x: 0, y: 0, z: 300}
   m_LocalScale: {x: 1, y: 1, z: 1}
@@ -65,7 +67,6 @@ Transform:
   m_Children:
   - {fileID: 3741968990380199693}
   m_Father: {fileID: 0}
-  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 90, y: 0, z: 0}
 --- !u!33 &2151207714166088006
 MeshFilter:
@@ -87,27 +88,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4b03e7163961e2c4b9d04056b4fcb40e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  threeButtonPanel: {fileID: 0}
-  rearView: {fileID: 0}
-  ship: {fileID: 0}
-  AutoPilotEnabled: 0
-  PhoneFlipState: 0
   Portrait: 0
-  SingleStickControls: 0
-  XSum: 0
-  YSum: 0
-  XDiff: 0
-  YDiff: 0
-  RightJoystick: {x: 0, y: 0}
-  LeftJoystick: {x: 0, y: 0}
-  RightJoystickStart: {x: 0, y: 0}
-  LeftJoystickStart: {x: 0, y: 0}
-  RightJoystickHome: {x: 0, y: 0}
-  LeftJoystickHome: {x: 0, y: 0}
-  RightClampedPosition: {x: 0, y: 0}
-  LeftClampedPosition: {x: 0, y: 0}
-  Idle: 0
-  isGyroEnabled: 0
+  AutoPilotEnabled: 0
 --- !u!114 &2151207714166088012
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -121,12 +103,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   playerName: Player
-  playerUUID: admin
-  ship: {fileID: 0}
   shipContainer: {fileID: 1360789018413082665}
-  resourceDisplayGroup: {fileID: 0}
-  Team: 1
-  defaultShip: 2
+  UseHangarConfiguration: 1
+  IsAI: 0
+  InitializeData:
+    DefaultShipType: 0
+    Team: 0
+    PlayerName: 
+    PlayerUUID: 
+    Name: 
 --- !u!54 &8615459834618862647
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -134,12 +119,35 @@ Rigidbody:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2151207714166088056}
-  serializedVersion: 2
+  serializedVersion: 4
   m_Mass: 1
   m_Drag: 0
   m_AngularDrag: 0.05
+  m_CenterOfMass: {x: 0, y: 0, z: 0}
+  m_InertiaTensor: {x: 1, y: 1, z: 1}
+  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ImplicitCom: 1
+  m_ImplicitTensor: 1
   m_UseGravity: 0
   m_IsKinematic: 1
   m_Interpolate: 0
   m_Constraints: 0
   m_CollisionDetection: 0
+--- !u!114 &4666491142111262992
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2151207714166088056}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0e6b08bab0d4beb44afbcd1cb5973c22, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 

@@ -238,6 +238,7 @@ namespace CosmicShore.Core
         public Transform FollowTarget { get; private set; }
 
         public Transform Transform => transform;
+        public IInputStatus InputStatus => InputController.InputStatus;
 
         public void Initialize(IPlayer player, Teams team = Teams.None)
         {
@@ -252,8 +253,8 @@ namespace CosmicShore.Core
             InitializeClassResourceActions();
 
             Silhouette.Initialize(this);
-            ShipAnimation.Initialize(this);
             ShipTransformer.Initialize(this);
+            ShipAnimation.Initialize(this);
             AIPilot.Initialize(this);
             nearFieldSkimmer?.Initialize(this);
             farFieldSkimmer?.Initialize(this);

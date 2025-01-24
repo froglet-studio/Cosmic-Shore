@@ -8,7 +8,9 @@ namespace CosmicShore.Game.IO
     public abstract class BaseInputStrategy : IInputStrategy
     {
         protected const float PI_OVER_FOUR = 0.785f;
-        protected IShip ship;
+        protected IShip _ship;
+
+        /*
         protected bool idle;
         protected bool invertYEnabled;
         protected bool invertThrottleEnabled;
@@ -30,11 +32,16 @@ namespace CosmicShore.Game.IO
         public bool OneTouchLeft { get; protected set; }
         public Vector2 SingleTouchValue { get; protected set; }
         public Vector3 ThreeDPosition { get; protected set; }
-        public bool IsIdle => idle;
+        public bool IsIdle => idle;*/
+
+        protected IInputStatus InputStatus;
+
+        
 
         public virtual void Initialize(IShip ship)
         {
-            this.ship = ship;
+            _ship = ship;
+            InputStatus = _ship.InputStatus;
         }
 
         public abstract void ProcessInput(IShip ship);
@@ -46,25 +53,25 @@ namespace CosmicShore.Game.IO
 
         public virtual void SetInvertY(bool status)
         {
-            invertYEnabled = status;
+            InputStatus.InvertYEnabled = status;
         }
 
         public virtual void SetInvertThrottle(bool status)
         {
-            invertThrottleEnabled = status;
+            InputStatus.InvertThrottleEnabled = status;
         }
 
         public virtual void SetAutoPilotValues(Vector2 position)
         {
-            EasedLeftJoystickPosition = position;
+            InputStatus.EasedLeftJoystickPosition = position;
         }
 
         public virtual void SetAutoPilotValues(float xSum, float ySum, float xDiff, float yDiff)
         {
-            XSum = xSum;
-            YSum = ySum;
-            XDiff = xDiff;
-            YDiff = yDiff;
+            InputStatus.XSum = xSum;
+            InputStatus.YSum = ySum;
+            InputStatus.XDiff = xDiff;
+            InputStatus.YDiff = yDiff;
         }
 
         protected float Ease(float input)
@@ -76,17 +83,17 @@ namespace CosmicShore.Game.IO
 
         protected virtual void ResetInput()
         {
-            XSum = 0;
-            YSum = 0;
-            XDiff = 0;
-            YDiff = 0;
-            EasedLeftJoystickPosition = Vector2.zero;
-            EasedRightJoystickPosition = Vector2.zero;
-            RightJoystickStart = Vector2.zero;
-            LeftJoystickStart = Vector2.zero;
-            RightNormalizedJoystickPosition = Vector2.zero;
-            LeftNormalizedJoystickPosition = Vector2.zero;
-            idle = false;
+            InputStatus.XSum = 0;
+            InputStatus.YSum = 0;
+            InputStatus.XDiff = 0;
+            InputStatus.YDiff = 0;
+            InputStatus.EasedLeftJoystickPosition = Vector2.zero;
+            InputStatus.EasedRightJoystickPosition = Vector2.zero;
+            InputStatus.RightJoystickStart = Vector2.zero;
+            InputStatus.LeftJoystickStart = Vector2.zero;
+            InputStatus.RightNormalizedJoystickPosition = Vector2.zero;
+            InputStatus.LeftNormalizedJoystickPosition = Vector2.zero;
+            InputStatus.Idle = false;
         }
     }
 }

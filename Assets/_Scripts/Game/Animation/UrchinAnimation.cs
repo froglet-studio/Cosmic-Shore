@@ -67,7 +67,7 @@ namespace CosmicShore.Game.Animation
         protected override void PerformShipPuppetry(float pitch, float yaw, float roll, float throttle)
         {
 
-            if (GetComponent<Ship>().ShipStatus.Attached)
+            if (GetComponent<IShip>().ShipStatus.Attached)
             {
                 RotatePart(Body,
                    Time.deltaTime * 100f,

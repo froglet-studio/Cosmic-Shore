@@ -2,11 +2,10 @@ using CosmicShore.Core;
 using CosmicShore.Game.IO;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.InputSystem.LowLevel;
+
 
 namespace CosmicShore.Game.Animation
 {
-    [RequireComponent(typeof(Ship))]
     public abstract class ShipAnimation : MonoBehaviour
     {
         [SerializeField] public SkinnedMeshRenderer SkinnedMeshRenderer;
@@ -18,21 +17,18 @@ namespace CosmicShore.Game.Animation
 
         protected List<Transform> Transforms = new(); // TODO: use this to populate the ship geometries on ship.cs
         protected List<Quaternion> InitialRotations = new(); // TODO: use this to populate the ship geometries on ship.cs
-        protected IShip Ship;
+        protected IShip Ship { get; private set; }
         protected InputController inputController;
         protected IInputStatus inputStatus;
 
         protected virtual void Update()
         {
-            if (inputController == null) inputController = GetComponent<Ship>().InputController;
-            if (inputController != null) // the line above makes this run the moment it has the handle
-            {
-                if (inputController.Idle)
-                    Idle();
-                else
-                    if (Ship.ShipStatus.SingleStickControls) PerformShipPuppetry(inputController.EasedLeftJoystickPosition.y, inputController.EasedLeftJoystickPosition.x, 0, 0);
-                    else PerformShipPuppetry(inputController.YSum, inputController.XSum, inputController.YDiff, inputController.XDiff);
-            }
+            if (inputController == null) // the line above makes this run the moment it has the handle
+                return;
+            
+            if (inputStatus.Idle) Idle();
+            else if (Ship.ShipStatus.SingleStickControls) PerformShipPuppetry(inputStatus.EasedLeftJoystickPosition.y, inputStatus.EasedLeftJoystickPosition.x, 0, 0);
+            else PerformShipPuppetry(inputStatus.YSum, inputStatus.XSum, inputStatus.YDiff, inputStatus.XDiff);
         }
 
         public virtual void Initialize(IShip ship)

@@ -25,6 +25,7 @@ namespace CosmicShore.Game
         public ShipStatus ShipStatus { get; }
         public IPlayer Player { get; }
         public InputController InputController { get; }
+        public IInputStatus InputStatus { get; }
         public Silhouette Silhouette { get; }
         public Material AOEExplosionMaterial { get; }
         public Material AOEConicExplosionMaterial { get; }

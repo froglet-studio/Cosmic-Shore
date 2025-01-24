@@ -11,6 +11,28 @@
         private readonly NetworkVariable<float> n_xDiff = new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Owner);
         private readonly NetworkVariable<float> n_yDiff = new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Owner);
 
+        // Booleans
+        private readonly NetworkVariable<bool> n_idle = new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Owner);
+        private readonly NetworkVariable<bool> n_paused = new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Owner);
+        private readonly NetworkVariable<bool> n_isGyroEnabled = new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Owner);
+        private readonly NetworkVariable<bool> n_invertYEnabled = new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Owner);
+        private readonly NetworkVariable<bool> n_invertThrottleEnabled = new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Owner);
+        private readonly NetworkVariable<bool> n_oneTouchLeft = new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Owner);
+
+        // Vectors
+        private readonly NetworkVariable<Vector2> n_rightJoystickHome = new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Owner);
+        private readonly NetworkVariable<Vector2> n_leftJoystickHome = new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Owner);
+        private readonly NetworkVariable<Vector2> n_rightClampedPosition = new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Owner);
+        private readonly NetworkVariable<Vector2> n_leftClampedPosition = new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Owner);
+        private readonly NetworkVariable<Vector2> n_rightJoystickStart = new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Owner);
+        private readonly NetworkVariable<Vector2> n_leftJoystickStart = new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Owner);
+        private readonly NetworkVariable<Vector2> n_rightNormalizedJoystickPosition = new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Owner);
+        private readonly NetworkVariable<Vector2> n_leftNormalizedJoystickPosition = new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Owner);
+        private readonly NetworkVariable<Vector2> n_easedRightJoystickPosition = new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Owner);
+        private readonly NetworkVariable<Vector2> n_easedLeftJoystickPosition = new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Owner);
+        private readonly NetworkVariable<Vector2> n_singleTouchValue = new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Owner);
+        private readonly NetworkVariable<Vector2> n_ThreeDPosition = new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Owner);
+
         public float XSum
         {
             get => n_xSum.Value;
@@ -34,14 +56,6 @@
             get => n_yDiff.Value;
             set => n_yDiff.Value = value;
         }
-
-        // Booleans
-        private readonly NetworkVariable<bool> n_idle = new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Owner);
-        private readonly NetworkVariable<bool> n_paused = new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Owner);
-        private readonly NetworkVariable<bool> n_isGyroEnabled = new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Owner);
-        private readonly NetworkVariable<bool> n_invertYEnabled = new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Owner);
-        private readonly NetworkVariable<bool> n_invertThrottleEnabled = new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Owner);
-        private readonly NetworkVariable<bool> n_oneTouchLeft = new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Owner);
 
         public bool Idle
         {
@@ -78,18 +92,6 @@
             get => n_oneTouchLeft.Value;
             set => n_oneTouchLeft.Value = value;
         }
-
-        // Vectors
-        private readonly NetworkVariable<Vector2> n_rightJoystickHome = new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Owner);
-        private readonly NetworkVariable<Vector2> n_leftJoystickHome = new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Owner);
-        private readonly NetworkVariable<Vector2> n_rightClampedPosition = new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Owner);
-        private readonly NetworkVariable<Vector2> n_leftClampedPosition = new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Owner);
-        private readonly NetworkVariable<Vector2> n_rightJoystickStart = new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Owner);
-        private readonly NetworkVariable<Vector2> n_leftJoystickStart = new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Owner);
-        private readonly NetworkVariable<Vector2> n_rightNormalizedJoystickPosition = new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Owner);
-        private readonly NetworkVariable<Vector2> n_leftNormalizedJoystickPosition = new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Owner);
-        private readonly NetworkVariable<Vector2> n_easedRightJoystickPosition = new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Owner);
-        private readonly NetworkVariable<Vector2> n_easedLeftJoystickPosition = new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Owner);
 
         public Vector2 RightJoystickHome
         {
@@ -149,6 +151,18 @@
         {
             get => n_easedLeftJoystickPosition.Value;
             set => n_easedLeftJoystickPosition.Value = value;
+        }
+
+        public Vector2 SingleTouchValue
+        {
+            get => n_singleTouchValue.Value;
+            set => n_singleTouchValue.Value = value;
+        }
+
+        public Vector3 ThreeDPosition
+        {
+            get => n_ThreeDPosition.Value;
+            set => n_ThreeDPosition.Value = value;
         }
     }
 }

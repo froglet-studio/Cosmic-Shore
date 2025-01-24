@@ -14,7 +14,7 @@ namespace CosmicShore.Game.Projectiles
     {
         public float firePeriod = .2f;
         public Teams Team;
-        public Ship Ship;
+        public IShip Ship;
         bool onCooldown = false;
         float sideLength = 2;
         float barrelLength = 0;

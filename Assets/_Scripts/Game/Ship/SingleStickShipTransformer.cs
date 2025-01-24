@@ -21,21 +21,21 @@ public class SingleStickShipTransformer : ShipTransformer
     protected override void Pitch() // These need to not use *= because quaternions are not commutative
     {
         accumulatedRotation = Quaternion.AngleAxis(
-                            -inputController.EasedLeftJoystickPosition.y * (speed * RotationThrottleScaler + PitchScaler) * Time.deltaTime,
+                            -InputStatus.EasedLeftJoystickPosition.y * (speed * RotationThrottleScaler + PitchScaler) * Time.deltaTime,
                             courseTransform.right) * accumulatedRotation;
     }
 
     protected override void Yaw()
     {
         accumulatedRotation = Quaternion.AngleAxis(
-                            inputController.EasedLeftJoystickPosition.x * (speed * RotationThrottleScaler + YawScaler) * Time.deltaTime,
+                            InputStatus.EasedLeftJoystickPosition.x * (speed * RotationThrottleScaler + YawScaler) * Time.deltaTime,
                             courseTransform.up) * accumulatedRotation;
     }
 
     protected override void Roll()
     {
         accumulatedRotation = Quaternion.AngleAxis(
-                            -inputController.EasedLeftJoystickPosition.x * (speed * RotationThrottleScaler + RollScaler) * Time.deltaTime, //use roll scaler to adjust the banking into turns
+                            -InputStatus.EasedLeftJoystickPosition.x * (speed * RotationThrottleScaler + RollScaler) * Time.deltaTime, //use roll scaler to adjust the banking into turns
                             transform.forward) * accumulatedRotation;
     }
 

@@ -4,11 +4,30 @@
 
     public class InputStatus : MonoBehaviour, IInputStatus
     {
-        // Floats
         private float xSum;
         private float ySum;
         private float xDiff;
         private float yDiff;
+
+        private bool idle;
+        private bool paused;
+        private bool isGyroEnabled;
+        private bool invertYEnabled;
+        private bool invertThrottleEnabled;
+        private bool oneTouchLeft;
+
+        private Vector2 rightJoystickHome;
+        private Vector2 leftJoystickHome;
+        private Vector2 rightClampedPosition;
+        private Vector2 leftClampedPosition;
+        private Vector2 rightJoystickStart;
+        private Vector2 leftJoystickStart;
+        private Vector2 rightNormalizedJoystickPosition;
+        private Vector2 leftNormalizedJoystickPosition;
+        private Vector2 easedRightJoystickPosition;
+        private Vector2 easedLeftJoystickPosition;
+        private Vector2 singleTouchValue;
+        private Vector3 threeDPosition;
 
         public float XSum
         {
@@ -33,14 +52,6 @@
             get => yDiff;
             set => yDiff = value;
         }
-
-        // Booleans
-        private bool idle;
-        private bool paused;
-        private bool isGyroEnabled;
-        private bool invertYEnabled;
-        private bool invertThrottleEnabled;
-        private bool oneTouchLeft;
 
         public bool Idle
         {
@@ -78,17 +89,17 @@
             set => oneTouchLeft = value;
         }
 
-        // Vectors
-        private Vector2 rightJoystickHome;
-        private Vector2 leftJoystickHome;
-        private Vector2 rightClampedPosition;
-        private Vector2 leftClampedPosition;
-        private Vector2 rightJoystickStart;
-        private Vector2 leftJoystickStart;
-        private Vector2 rightNormalizedJoystickPosition;
-        private Vector2 leftNormalizedJoystickPosition;
-        private Vector2 easedRightJoystickPosition;
-        private Vector2 easedLeftJoystickPosition;
+        public Vector2 SingleTouchValue
+        {
+            get => singleTouchValue;
+            set => singleTouchValue = value;
+        }
+
+        public Vector3 ThreeDPosition
+        {
+            get => threeDPosition;
+            set => threeDPosition = value;
+        }
 
         public Vector2 RightJoystickHome
         {
@@ -150,5 +161,4 @@
             set => easedLeftJoystickPosition = value;
         }
     }
-
 }
