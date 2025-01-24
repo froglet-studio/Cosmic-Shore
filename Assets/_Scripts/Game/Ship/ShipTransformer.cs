@@ -168,6 +168,11 @@ public class ShipTransformer : MonoBehaviour
         accumulatedRotation = Quaternion.Lerp(accumulatedRotation, Quaternion.LookRotation(newDirection, Ship.Transform.up), amount);
     }
 
+    public void ApplyRotation(float angle, Vector3 axis)
+    {
+        accumulatedRotation = Quaternion.AngleAxis(angle, axis) * accumulatedRotation;
+    }
+
     protected virtual void Pitch() // These need to not use *= because quaternions are not commutative
     {
         accumulatedRotation = Quaternion.AngleAxis(
