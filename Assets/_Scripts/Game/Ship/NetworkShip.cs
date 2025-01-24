@@ -39,7 +39,7 @@ namespace CosmicShore.Game
         #region Public Properties
 
         public string ShipName => _name;
-        public ShipTypes GetShipType => _shipType;
+        public ShipTypes ShipType => _shipType;
         public Material AOEExplosionMaterial { get; private set; }
         public Material AOEConicExplosionMaterial { get; private set; }
         public Material SkimmerMaterial { get; private set; }

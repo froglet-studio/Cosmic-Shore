@@ -15,7 +15,7 @@ namespace CosmicShore.Game
         public event Action OnShipInitialized;
 
         public string ShipName { get; }
-        public ShipTypes GetShipType { get; }
+        public ShipTypes ShipType { get; }
         public Transform FollowTarget {  get; }
         public Teams Team { get; }
         public AIPilot AIPilot { get; }

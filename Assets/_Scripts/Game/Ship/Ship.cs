@@ -9,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace CosmicShore.Core
 {
@@ -70,8 +71,9 @@ namespace CosmicShore.Core
         [SerializeField] string Name;
         public string ShipName => Name;
 
-        [SerializeField] ShipTypes ShipType;
-        public ShipTypes GetShipType => ShipType;
+        [FormerlySerializedAs("ShipType")]
+        [SerializeField] ShipTypes _shipType;
+        public ShipTypes ShipType => _shipType;
 
         [Header("Ship Components")]
 

@@ -68,7 +68,7 @@ namespace CosmicShore.Core
                     continue;
 
                 ships.Add(ship.ShipName, ship);
-                shipTypeMap.Add(ship.GetShipType, ship);
+                shipTypeMap.Add(ship.ShipType, ship);
             }
 
             AITeam = PlayerTeam == Teams.Jade ? Teams.Ruby : Teams.Jade;

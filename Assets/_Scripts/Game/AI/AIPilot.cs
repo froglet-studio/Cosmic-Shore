@@ -282,7 +282,7 @@ namespace CosmicShore.Game.AI
 
             while (true)
             {
-                if (aggressiveShips.Contains(Ship.GetShipType) && (activeNode.ControllingTeam != Teams.None)) {
+                if (aggressiveShips.Contains(Ship.ShipType) && (activeNode.ControllingTeam != Teams.None)) {
                     if ((Ship.Team == activeNode.ControllingTeam) || (rand.NextDouble() < 0.5))  // Your team is winning.
                     {
                         TargetPosition = CrystalPosition;
