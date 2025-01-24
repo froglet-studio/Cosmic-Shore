@@ -19,7 +19,7 @@ MonoBehaviour:
     ShieldedOutsideBlockColor: {r: 0.086804256, g: 0.23667915, b: 0.48427665, a: 1}
     SuperShieldedOutsideBlockColor: {r: 0.03529412, g: 0.20392157, b: 0.36862746,
       a: 1}
-    InsideBlockColor: {r: 0, g: 0.5490476, b: 1.0592737, a: 1}
+    InsideBlockColor: {r: 0, g: 0.46169215, b: 0.8907395, a: 1}
     ShieldedInsideBlockColor: {r: 0.5290533, g: 0.82947236, b: 1.5723268, a: 1}
     SuperShieldedInsideBlockColor: {r: 1.3951378, g: 1.5441371, b: 2.0635064, a: 1}
     AOETextureColor: {r: 0.36039874, g: 1.860437, b: 1.0082682, a: 0}
@@ -38,7 +38,7 @@ MonoBehaviour:
     ShieldedOutsideBlockColor: {r: 0.34509805, g: 0, b: 2.1960785, a: 1}
     SuperShieldedOutsideBlockColor: {r: 0.21176471, g: 0.12156863, b: 0.70980394,
       a: 1}
-    InsideBlockColor: {r: 0.3882155, g: 0, b: 1.0592737, a: 1}
+    InsideBlockColor: {r: 0.32644904, g: 0, b: 0.8907395, a: 1}
     ShieldedInsideBlockColor: {r: 2.688534, g: 0.41887572, b: 16.650362, a: 1}
     SuperShieldedInsideBlockColor: {r: 1.6753272, g: 1.4591984, b: 2.9937105, a: 1}
     AOETextureColor: {r: 4, g: 0, b: 3.958115, a: 0}
@@ -57,7 +57,7 @@ MonoBehaviour:
     ShieldedOutsideBlockColor: {r: 1.0440251, g: 0.5677132, b: 0.12804069, a: 1}
     SuperShieldedOutsideBlockColor: {r: 0.59607846, g: 0.28627452, b: 0.003921569,
       a: 1}
-    InsideBlockColor: {r: 1.0592737, g: 0.4722571, b: 0.06283829, a: 1}
+    InsideBlockColor: {r: 0.8907395, g: 0.3971193, b: 0.052840497, a: 1}
     ShieldedInsideBlockColor: {r: 25.35849, g: 17.373684, b: 5.0238485, a: 1}
     SuperShieldedInsideBlockColor: {r: 22.785847, g: 17.015171, b: 8.096856, a: 1}
     AOETextureColor: {r: 2.0590868, g: 1.6091012, b: 0.44200292, a: 0}
@@ -75,7 +75,7 @@ MonoBehaviour:
     OutsideBlockColor: {r: 0.023529412, g: 0.023529412, b: 0.34901962, a: 1}
     ShieldedOutsideBlockColor: {r: 0, g: 0, b: 0.54901963, a: 1}
     SuperShieldedOutsideBlockColor: {r: 0, g: 0, b: 0.54901963, a: 1}
-    InsideBlockColor: {r: 0.5828848, g: 0.67113554, b: 1.5193229, a: 0.9411765}
+    InsideBlockColor: {r: 0.34173015, g: 0.39346924, b: 0.8907394, a: 0.9411765}
     ShieldedInsideBlockColor: {r: 13.542612, g: 13.709785, b: 15.325803, a: 0.9411765}
     SuperShieldedInsideBlockColor: {r: 13.542612, g: 13.709785, b: 15.325803, a: 0.9411765}
     AOETextureColor: {r: 0.4790567, g: 0.44200292, b: 2.0590868, a: 0}
@@ -93,4 +93,4 @@ MonoBehaviour:
     DarkColor: {r: 0, g: 0, b: 0, a: 0}
     BrightCTA: {r: 0, g: 0, b: 0, a: 0}
     DarkCTA: {r: 0, g: 0, b: 0, a: 0}
-    Danger: {r: 1.1118029, g: 0.07112615, b: 0.031465933, a: 0}
+    Danger: {r: 0.89073944, g: 0.0569839, b: 0.025209457, a: 0}
