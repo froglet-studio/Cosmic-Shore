@@ -72,14 +72,14 @@ namespace CosmicShore.Game
             _ship = ship;
             _ship = Hangar.Instance.LoadPlayerShip(_ship, _ship.Team, IsOwner);
 
+            _ship.Initialize(this, _ship.Team);
+
             if (IsOwner)
             {
-                GameCanvas = FindAnyObjectByType<GameCanvas>();
-                GameCanvas.MiniGameHUD.Ship = _ship;
+                /*GameCanvas = FindAnyObjectByType<GameCanvas>(); - DECIDE GAME CANVAS LATER
+                GameCanvas.MiniGameHUD.Ship = _ship;*/
                 InputController.Initialize(_ship);
             }
-
-            _ship.Initialize(this, _ship.Team);
         }
             
 

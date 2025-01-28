@@ -150,7 +150,7 @@ RectTransform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1590648811}
-  m_Father: {fileID: 1792314686}
+  m_Father: {fileID: 547474318}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
@@ -548,6 +548,66 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 7187200369466620888, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7187200369466620888, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: scoreboard
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 7187200369466620888, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: MiniGameHUD
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 7187200369466620888, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: XPEarnedText
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 7187200369466620888, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: EndGameScreen
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 7187200369466620888, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: XPEarnedImage
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 7187200369466620888, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: AwardsContainer
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 7187200369466620888, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: CrystalsEarnedText
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 7187200369466620888, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: CrystalsEarnedImage
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 7187200369466620888, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: 'EncounteredCaptainImages.Array.data[0]'
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 7187200369466620888, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: 'EncounteredCaptainImages.Array.data[1]'
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 7187200369466620888, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: 'EncounteredCaptainImages.Array.data[2]'
+      value: 
+      objectReference: {fileID: 0}
     - target: {fileID: 8260231034699785352, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: m_AnchorMax.y
@@ -563,7 +623,8 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: 0
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 7187200369466620888, guid: 65bf1ed35b752374ca46ae214710e41c, type: 3}
     m_RemovedGameObjects:
     - {fileID: 5054612726784394718, guid: 65bf1ed35b752374ca46ae214710e41c, type: 3}
     - {fileID: 5497835174634480093, guid: 65bf1ed35b752374ca46ae214710e41c, type: 3}
@@ -572,7 +633,7 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 5497835173863578975, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       insertIndex: 0
-      addedObject: {fileID: 1792314686}
+      addedObject: {fileID: 8309123}
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 65bf1ed35b752374ca46ae214710e41c, type: 3}
 --- !u!224 &547474318 stripped
@@ -1538,74 +1599,6 @@ MonoBehaviour:
   maxlength: 100
   maxwidth: 100
   maxheight: 100
---- !u!1 &1792314685
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1792314686}
-  - component: {fileID: 1792314687}
-  - component: {fileID: 1792314688}
-  m_Layer: 5
-  m_Name: LobbyPanel
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!224 &1792314686
-RectTransform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1792314685}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 8309123}
-  m_Father: {fileID: 547474318}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 0}
-  m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &1792314687
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1792314685}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c7b70858ff36dff4ca62e5e3b23e6ffc, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _canvasGroup: {fileID: 1792314688}
-  _loadingSpinner: {fileID: 0}
-  _createLobbyToggle: {fileID: 0}
-  _lobbyName: {fileID: 0}
-  _joinLobbyToggle: {fileID: 0}
-  _lobbyCode: {fileID: 0}
---- !u!225 &1792314688
-CanvasGroup:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1792314685}
-  m_Enabled: 1
-  m_Alpha: 1
-  m_Interactable: 1
-  m_BlocksRaycasts: 1
-  m_IgnoreParentGroups: 0
 --- !u!1001 &1901873740
 PrefabInstance:
   m_ObjectHideFlags: 0

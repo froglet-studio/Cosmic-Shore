@@ -340,7 +340,7 @@ namespace CosmicShore.Game
 
         public void BindElementalFloat(string name, Element element)
         {
-            throw new NotImplementedException();        // not needed yet maybe
+            // throw new NotImplementedException();        // not needed yet maybe
         }
 
         public void PerformTrailBlockImpactEffects(TrailBlockProperties trailBlockProperties)

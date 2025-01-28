@@ -189,7 +189,7 @@ public class TrailSpawner : MonoBehaviour
 
     public void ForceStartSpawningTrail()
     {
-        StopCoroutine(spawnTrailCoroutine);
+        if (spawnTrailCoroutine != null) StopCoroutine(spawnTrailCoroutine);
         spawnTrailCoroutine = StartCoroutine(SpawnTrailCoroutine());
     }
 
