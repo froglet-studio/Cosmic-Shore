@@ -62,6 +62,7 @@ public class TrailSpawner : MonoBehaviour
 
     [Tooltip("This is serialized for debug visibility")]
     [SerializeField] bool spawnerEnabled = true;
+    public bool SpawnerEnabled => spawnerEnabled;
     string ownerId;
 
     private void OnEnable()

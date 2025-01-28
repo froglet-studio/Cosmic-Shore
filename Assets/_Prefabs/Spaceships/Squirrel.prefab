@@ -44,11 +44,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 86da7e09f78ffc846ae810b412ab9951, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  ship: {fileID: 874579555101021527}
   pools:
-  - prefab: {fileID: 6475208383231727548, guid: 6e66b0bdeebab72409ac0032a3a1d2c0,
+  - prefab: {fileID: 5258412105609794183, guid: d2af5f5040e134141a94c2b496074a65,
       type: 3}
     size: 3000
+  ship: {fileID: 874579555101021527}
 --- !u!1 &1878660672777590133
 GameObject:
   m_ObjectHideFlags: 0
@@ -304,26 +304,16 @@ MonoBehaviour:
     speedPenalty: 0
     hapticType: 0
     trailBlock: {fileID: 0}
-  cameraManager: {fileID: 0}
-  InputController: {fileID: 0}
-  ResourceSystem: {fileID: 0}
   Name: Squirrel
   ShipType: 6
-  TrailSpawner: {fileID: 874579555101021522}
-  ShipTransformer: {fileID: 0}
-  AutoPilot: {fileID: 0}
-  ShipStatus: {fileID: 0}
   nearFieldSkimmer: {fileID: 708149374973573223}
   OrientationHandle: {fileID: 1878660672777590133}
   shipGeometries:
   - {fileID: 4884617224712114563}
   shipHUD: {fileID: 0}
-  Silhouette: {fileID: 6013884537839217096}
   AOEPrefab: {fileID: 2728798890556433942, guid: 4a855af160021d241b8c1ac70cf2d792,
     type: 3}
   farFieldSkimmer: {fileID: 0}
-  ShipCameraCustomizer: {fileID: 0}
-  FollowTarget: {fileID: 0}
   resourceIndex: 0
   ammoResourceIndex: 0
   boostResourceIndex: 0
@@ -346,10 +336,6 @@ MonoBehaviour:
     ShipActions:
     - {fileID: 1244531863877960553}
   resourceEventClassActions: []
-  AOEExplosionMaterial: {fileID: 0}
-  AOEConicExplosionMaterial: {fileID: 0}
-  SkimmerMaterial: {fileID: 0}
-  Captain: {fileID: 0}
   ElementStats: []
 --- !u!114 &6441696348568773771
 MonoBehaviour:
@@ -560,7 +546,6 @@ MonoBehaviour:
   bottomJaw: {fileID: 0}
   JawResourceIndex: 0
   swingBlocks: 0
-  ship: {fileID: 874579555101021527}
   sihouetteScale: {x: 1, y: 1, z: 1}
 --- !u!114 &6989089190155014109
 MonoBehaviour:
