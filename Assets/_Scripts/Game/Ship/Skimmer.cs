@@ -195,7 +195,7 @@ namespace CosmicShore.Core
                         ScaleTrailAndCamera();
                         break;
                     case SkimmerStayEffects.VizualizeDistance:
-                        VizualizeDistance(combinedWeight);
+                        if (Ship.ShipStatus.AlignmentEnabled) VizualizeDistance(combinedWeight);
                         break;
                     case SkimmerStayEffects.ScaleHapticWithDistance:
                         ScaleHapticWithDistance(combinedWeight);
@@ -336,13 +336,13 @@ namespace CosmicShore.Core
                 return;
             
             //align
-            Ship.ShipTransformer.GentleSpinShip(minMatureBlock.transform.forward * directionWeight, Ship.Transform.up, combinedWeight * Time.deltaTime);
+            Ship.ShipTransformer.GentleSpinShip(minMatureBlock.transform.forward * directionWeight * 50 * combinedWeight, Ship.Transform.up, combinedWeight * Time.deltaTime * 5);
 
             //nudge
-            if (minMatureBlockSqrDistance < sqrSweetSpot)
-                Ship.ShipTransformer.ModifyVelocity(-(minMatureBlock.transform.position - transform.position).normalized * distanceWeight * Mathf.Abs(directionWeight), Time.deltaTime * 10);
-            else 
-                Ship.ShipTransformer.ModifyVelocity((minMatureBlock.transform.position - transform.position).normalized * distanceWeight * Mathf.Abs(directionWeight), Time.deltaTime * 10);
+            //if (minMatureBlockSqrDistance < sqrSweetSpot)
+            //    Ship.ShipTransformer.ModifyVelocity(-(minMatureBlock.transform.position - transform.position).normalized * distanceWeight * Mathf.Abs(directionWeight) * 20, Time.deltaTime);
+            //else
+            //    Ship.ShipTransformer.ModifyVelocity((minMatureBlock.transform.position - transform.position).normalized * distanceWeight * Mathf.Abs(directionWeight) * 20, Time.deltaTime);
         }
 
         void VizualizeDistance(float combinedWeight)
@@ -354,7 +354,7 @@ namespace CosmicShore.Core
         void ScalePitchAndYaw(float combinedWeight)
         {
             //ship.ShipTransformer.PitchScaler = ship.ShipTransformer.YawScaler = 150 * (1 + (.5f*combinedWeight));
-            Ship.ShipTransformer.PitchScaler = Ship.ShipTransformer.YawScaler = 150 + (75 * combinedWeight);
+            Ship.ShipTransformer.PitchScaler = Ship.ShipTransformer.YawScaler = 150 + (120 * combinedWeight);
         }
 
         void ScaleHapticWithDistance(float combinedWeight)

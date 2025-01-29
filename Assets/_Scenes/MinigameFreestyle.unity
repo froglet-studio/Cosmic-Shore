@@ -868,6 +868,11 @@ PrefabInstance:
         type: 3}
     - target: {fileID: 3197094124088707225, guid: cb702179ff5b42f41a3521ccd59e6934,
         type: 3}
+      propertyPath: FloraTypeCount
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 3197094124088707225, guid: cb702179ff5b42f41a3521ccd59e6934,
+        type: 3}
       propertyPath: hasRandomFloraAndFauna
       value: 0
       objectReference: {fileID: 0}
@@ -877,6 +882,11 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 11400000, guid: 36999bb97c4204943bec39ef90cf958c,
         type: 2}
+    - target: {fileID: 3197094124088707225, guid: cb702179ff5b42f41a3521ccd59e6934,
+        type: 3}
+      propertyPath: floraSpawnVolumeCeiling
+      value: 8000
+      objectReference: {fileID: 0}
     - target: {fileID: 7817456538282590180, guid: cb702179ff5b42f41a3521ccd59e6934,
         type: 3}
       propertyPath: m_Name

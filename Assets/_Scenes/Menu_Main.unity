@@ -15344,7 +15344,7 @@ MonoBehaviour:
     AngularDampingMode: 1
     RotationDamping: {x: 0, y: 0, z: 0}
     QuaternionDamping: 0
-  FollowOffset: {x: 0, y: 0, z: -35}
+  FollowOffset: {x: 0, y: 0, z: -6}
 --- !u!1 &469955486
 GameObject:
   m_ObjectHideFlags: 0
@@ -53753,7 +53753,7 @@ PrefabInstance:
     - target: {fileID: 4853709195325629896, guid: ba70c0f3eb077d44b8a538982d02dadc,
         type: 3}
       propertyPath: m_LocalPosition.z
-      value: 685
+      value: 656
       objectReference: {fileID: 0}
     - target: {fileID: 4853709195325629896, guid: ba70c0f3eb077d44b8a538982d02dadc,
         type: 3}
@@ -58841,7 +58841,7 @@ MonoBehaviour:
   pools: []
   fossilBlockPrefab: {fileID: 5776304996075792891, guid: bd8a259abee95ec4895562e6bb8aae76,
     type: 3}
-  poolSizePerTeam: 3000
+  poolSizePerTeam: 20000
 --- !u!114 &1674343134
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -58855,9 +58855,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   settings:
-    bufferSizePerTeam: 2000
+    bufferSizePerTeam: 5000
     baseInstantiateRate: 10
-    maxInstantiateRate: 30
+    maxInstantiateRate: 40
   trailBlockPrefab: {fileID: 4563009547826722997, guid: 5790c8c1f457a754baecca51ef90c82e,
     type: 3}
 --- !u!1 &1676699939

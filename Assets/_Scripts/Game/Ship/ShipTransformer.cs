@@ -221,7 +221,7 @@ public class ShipTransformer : MonoBehaviour
         speed *= throttleMultiplier;
         shipStatus.Speed = speed;
 
-        shipStatus.Course = shipStatus.Drifting ? (shipStatus.Course + velocityShift).normalized : transform.forward;
+        shipStatus.Course = shipStatus.Drifting ? (speed * shipStatus.Course + velocityShift).normalized : transform.forward;
 
         transform.position += (speed * shipStatus.Course + velocityShift) * Time.deltaTime;
     }

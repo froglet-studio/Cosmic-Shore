@@ -52,6 +52,7 @@ MonoBehaviour:
   minHealthBlocks: 5
   shieldPeriod: 0
   Team: 0
+  leafSize: {x: 20, y: 1, z: 1}
   growPeriod: 1.6
   PlantPeriod: 10
   stunDuration: 2
