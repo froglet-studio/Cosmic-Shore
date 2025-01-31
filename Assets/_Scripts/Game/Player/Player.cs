@@ -3,7 +3,6 @@ using CosmicShore.Core;
 using CosmicShore.Game.IO;
 using CosmicShore.Game.UI;
 
-
 namespace CosmicShore.Game
 {
     [System.Serializable]
@@ -57,6 +56,7 @@ namespace CosmicShore.Game
 
         public void Initialize(IPlayer.InitializeData data)
         {
+            InitializeData = data;
             gameManager = GameManager.Instance;
             DefaultShipType = data.DefaultShipType;
             Team = data.Team;
@@ -71,7 +71,7 @@ namespace CosmicShore.Game
         {
             if (UseHangarConfiguration)
             {
-                switch (playerName)
+                switch (PlayerName)
                 {
                     case "HostileOne":
                         SetupAIShip(Hangar.Instance.LoadHostileAI1Ship(Team));
@@ -101,7 +101,6 @@ namespace CosmicShore.Game
                     default: // Default will be the players Playfab username
                         Debug.Log($"Player.Start - Instantiate Ship: {PlayerName}");
                         SetupPlayerShip(Hangar.Instance.LoadPlayerShip(DefaultShipType, Team));
-                        gameManager.WaitOnPlayerLoading();
                         break;
                 }
             }
@@ -140,6 +139,10 @@ namespace CosmicShore.Game
             Debug.Log($"Player - SetupAIShip - playerName: {PlayerName}");
 
             Ship = ship;
+
+            // TODO: Verify this works in arcade games
+            Ship.Transform.SetParent(shipContainer.transform, false);
+
             Ship.AIPilot.enabled = true;
 
             InitializeShip();

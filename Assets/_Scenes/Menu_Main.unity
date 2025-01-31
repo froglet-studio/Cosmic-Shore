@@ -42255,6 +42255,7 @@ GameObject:
   - component: {fileID: 1243749158}
   - component: {fileID: 1243749159}
   - component: {fileID: 1243749160}
+  - component: {fileID: 1243749161}
   m_Layer: 0
   m_Name: Environment
   m_TagString: Untagged
@@ -42313,6 +42314,25 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Nodes:
   - {fileID: 1422060011}
+--- !u!114 &1243749161
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1243749157}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ba50b409e3442f34eaa0e58742345dbe, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  playerPrefab: {fileID: 1942904367}
+  PlayerNames:
+  - FriendlyOne
+  - HostileOne
+  - HostileTwo
+  PlayerTeams: 010000000100000001000000
+  PlayerShipTypes: 030000000300000003000000
 --- !u!1 &1245639255
 GameObject:
   m_ObjectHideFlags: 0
