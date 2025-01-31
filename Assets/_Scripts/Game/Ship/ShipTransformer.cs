@@ -150,7 +150,7 @@ public class ShipTransformer : MonoBehaviour
                                         lerpAmount * Time.deltaTime);
         }
     }*/
-
+    #region Public Rotation Methods
     public void FlatSpinShip(float YAngle)
     {
         accumulatedRotation = Quaternion.AngleAxis(
@@ -165,13 +165,26 @@ public class ShipTransformer : MonoBehaviour
 
     public void GentleSpinShip(Vector3 newDirection, Vector3 newUp, float amount)
     {
-        accumulatedRotation = Quaternion.Lerp(accumulatedRotation, Quaternion.LookRotation(newDirection, Ship.Transform.up), amount);
+        accumulatedRotation = Quaternion.Lerp(accumulatedRotation, Quaternion.LookRotation(newDirection, newUp), amount);
     }
 
     public void ApplyRotation(float angle, Vector3 axis)
     {
         accumulatedRotation = Quaternion.AngleAxis(angle, axis) * accumulatedRotation;
     }
+    #endregion
+
+    #region Public translation Methods
+    public void TranslateShip(Vector3 nudgeVector)
+    {
+        transform.position += nudgeVector;
+    }
+
+    public void ModifyVelocity(Vector3 amount, float duration)
+    {
+        VelocityModifiers.Add(new ShipVelocityModifier(amount, duration, 0));
+    }
+    #endregion
 
     protected virtual void Pitch() // These need to not use *= because quaternions are not commutative
     {
@@ -208,11 +221,7 @@ public class ShipTransformer : MonoBehaviour
         speed *= throttleMultiplier;
         shipStatus.Speed = speed;
 
-
-        if (!shipStatus.Drifting)
-        {
-            shipStatus.Course = transform.forward;
-        }
+        shipStatus.Course = shipStatus.Drifting ? (speed * shipStatus.Course + velocityShift).normalized : transform.forward;
 
         transform.position += (speed * shipStatus.Course + velocityShift) * Time.deltaTime;
     }
@@ -259,11 +268,6 @@ public class ShipTransformer : MonoBehaviour
         throttleMultiplier = Mathf.Max(accumulatedThrottleModification, 0) ;
     }
 
-    public void ModifyVelocity(Vector3 amount, float duration)
-    {
-        VelocityModifiers.Add(new ShipVelocityModifier(amount, duration, 0));
-    }
-
     void ApplyVelocityModifiers()
     {
         Vector3 accumulatedVelocityModification = Vector3.zero;
@@ -276,7 +280,7 @@ public class ShipTransformer : MonoBehaviour
             if (modifier.elapsedTime >= modifier.duration)
                 VelocityModifiers.RemoveAt(i);
             else
-                accumulatedVelocityModification += Vector3.Lerp(modifier.initialValue, Vector3.zero, modifier.elapsedTime / modifier.duration);
+                accumulatedVelocityModification += ((Mathf.Cos(modifier.elapsedTime * Mathf.PI / modifier.duration)/2) + 1) * modifier.initialValue; // cosine interpolation
         }
 
         velocityShift = Mathf.Min(accumulatedVelocityModification.magnitude, velocityModifierMax) * accumulatedVelocityModification.normalized;
