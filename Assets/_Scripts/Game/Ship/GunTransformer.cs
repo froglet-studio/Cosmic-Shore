@@ -5,7 +5,6 @@ namespace CosmicShore
 {
     public class GunTransformer : MonoBehaviour
     {
-        // Start is called before the first frame update
         [SerializeField] float radius = 20f;
         float constant;
         [SerializeField] Ship ship;
@@ -20,7 +19,6 @@ namespace CosmicShore
             InputStatus.RightClampedPosition.SqrMagnitude();
         }
 
-        // Update is called once per frame
         void Update()
         {
             var i = 0;
