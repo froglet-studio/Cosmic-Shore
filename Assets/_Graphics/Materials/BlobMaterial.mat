@@ -166,7 +166,7 @@ Material:
     - _Metallic3: 0
     - _NumLayersCount: 1
     - _OcclusionStrength: 1
-    - _Opacity: 0.6
+    - _Opacity: 0.3
     - _Parallax: 0.005
     - _QueueControl: 0
     - _QueueOffset: 0

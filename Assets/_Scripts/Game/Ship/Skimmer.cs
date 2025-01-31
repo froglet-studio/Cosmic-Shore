@@ -47,6 +47,7 @@ namespace CosmicShore.Core
 
         float minMatureBlockSqrDistance = Mathf.Infinity;
         TrailBlock minMatureBlock;
+        List<TrailBlock> nextBlocks;
         float fuel = 0;
 
         float distanceWeight;
@@ -234,16 +235,25 @@ namespace CosmicShore.Core
                 StartSkim(trailBlock);
                 PerformBlockImpactEffects(trailBlock.TrailBlockProperties);
             }
-
-            if (Ship.ShipStatus.AlignmentEnabled && Player != null && Player.Ship == Ship) // TODO: ditch line renderer
-            {
-                VisualizeTubeAroundBlock(trailBlock);
-            }
         }
 
         void VacuumCrystal(Crystal crystal)
         {
             crystal.transform.position = Vector3.MoveTowards(crystal.transform.position, transform.position, vaccumAmount * Time.deltaTime / crystal.transform.lossyScale.x);
+        }
+
+        List<TrailBlock> FindNextBlocks(TrailBlock minMatureBlock)
+        {
+            if (minMatureBlock.Trail == null) return new List<TrailBlock> { minMatureBlock };
+            var minIndex = minMatureBlock.TrailBlockProperties.Index;
+            List<TrailBlock> nextBlocks;
+            if (directionWeight < 0 && minIndex > 0)
+                nextBlocks = minMatureBlock.Trail.LookAhead(minIndex, 0, TrailFollowerDirection.Backward, 100f);
+            else if (directionWeight > 0 && minIndex < minMatureBlock.Trail.TrailList.Count - 1)
+                nextBlocks = minMatureBlock.Trail.LookAhead(minIndex, 0, TrailFollowerDirection.Forward, 100f);
+            else
+                nextBlocks = minMatureBlock.Trail.LookAhead(minIndex, 0, TrailFollowerDirection.Forward, 100f);
+            return nextBlocks;
         }
 
         void OnTriggerStay(Collider other)
@@ -264,8 +274,14 @@ namespace CosmicShore.Core
             if (Time.time - trailBlock.TrailBlockProperties.TimeCreated > 4)
             {
                 minMatureBlockSqrDistance = Mathf.Min(minMatureBlockSqrDistance, sqrDistance);
-                if (sqrDistance == minMatureBlockSqrDistance) 
+      
+                if (sqrDistance == minMatureBlockSqrDistance)
+                {
                     minMatureBlock = trailBlock;
+                    nextBlocks = FindNextBlocks(minMatureBlock);
+
+                    if (markerContainer) VisualizeTubeAroundBlock(nextBlocks[^1]);
+                }     
             }
 
 
@@ -334,15 +350,25 @@ namespace CosmicShore.Core
         {
             if (!minMatureBlock)
                 return;
-            
-            //align
-            Ship.ShipTransformer.GentleSpinShip(minMatureBlock.transform.forward * directionWeight * 50 * combinedWeight, Ship.Transform.up, combinedWeight * Time.deltaTime * 5);
 
-            //nudge
-            //if (minMatureBlockSqrDistance < sqrSweetSpot)
-            //    Ship.ShipTransformer.ModifyVelocity(-(minMatureBlock.transform.position - transform.position).normalized * distanceWeight * Mathf.Abs(directionWeight) * 20, Time.deltaTime);
-            //else
-            //    Ship.ShipTransformer.ModifyVelocity((minMatureBlock.transform.position - transform.position).normalized * distanceWeight * Mathf.Abs(directionWeight) * 20, Time.deltaTime);
+            var nextBlockDistance = (nextBlocks[0].transform.position - transform.position);
+            var normNextBlockDistance = nextBlockDistance.normalized;
+
+            if (minMatureBlockSqrDistance < sqrSweetSpot - 3)
+            {
+                Ship.ShipTransformer.ModifyVelocity(-normNextBlockDistance * 4f, Time.deltaTime * 2f);
+            }
+            else if (minMatureBlockSqrDistance > sqrSweetSpot + 3)
+            {
+                Ship.ShipTransformer.ModifyVelocity(normNextBlockDistance * 4f, Time.deltaTime * 2f);
+            }
+            if (nextBlocks.Count < 5) return;
+            if (Vector3.Dot(normNextBlockDistance, transform.up) > 0)
+                Ship.ShipTransformer.GentleSpinShip(Ship.ShipStatus.Speed * 200 * combinedWeight * directionWeight * nextBlocks[4].transform.forward, normNextBlockDistance, Time.deltaTime);
+            else
+                Ship.ShipTransformer.GentleSpinShip(Ship.ShipStatus.Speed * 200 * combinedWeight * directionWeight * nextBlocks[4].transform.forward, -normNextBlockDistance, Time.deltaTime);
+
+
         }
 
         void VizualizeDistance(float combinedWeight)
@@ -404,23 +430,29 @@ namespace CosmicShore.Core
             if (trailBlock) StartCoroutine(DrawCircle(trailBlock.transform, sweetSpot)); // radius can be adjusted
         }
 
+        HashSet<Vector3> shardPositions = new HashSet<Vector3>();
+
         IEnumerator DrawCircle(Transform blockTransform, float radius)
         {
-            int segments = 21;
-            var anglePerSegment = .314f;   // Restore to this if segments becomes dynamic: var anglePerSegment = Mathf.PI * 2f / segments;
+            int segments = 5;
+            var anglePerSegment = Mathf.PI * 2f / segments;   // Restore to this if segments becomes dynamic: var anglePerSegment = Mathf.PI * 2f / segments;
             GameObject[] markers = new GameObject[segments];
             for (int i = 0; i < segments; i++)
             {
                 float angle = i * anglePerSegment;
                 Vector3 localPosition = (Mathf.Cos(angle) * blockTransform.right + Mathf.Sin(angle) * blockTransform.up) * radius;
                 Vector3 worldPosition = blockTransform.position + localPosition;
+                if (shardPositions.Contains(worldPosition)) continue;
                 GameObject marker = markerContainer.SpawnFromPool("Shard", worldPosition,
                     Quaternion.LookRotation(blockTransform.forward, localPosition));
+                shardPositions.Add(worldPosition);
+                marker.transform.localScale = blockTransform.localScale/2;
                 markers[i] = marker;
             }
             yield return new WaitForSeconds(2f);
             foreach (GameObject marker in markers)
             {
+                shardPositions.Remove(marker.transform.position);
                 markerContainer.ReturnToPool(marker, "Shard");
             }
         }
