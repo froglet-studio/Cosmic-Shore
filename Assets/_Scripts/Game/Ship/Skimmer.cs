@@ -436,18 +436,22 @@ namespace CosmicShore.Core
         {
             int segments = 5;
             var anglePerSegment = Mathf.PI * 2f / segments;   // Restore to this if segments becomes dynamic: var anglePerSegment = Mathf.PI * 2f / segments;
-            GameObject[] markers = new GameObject[segments];
+            List<GameObject> markers = new();
             for (int i = 0; i < segments; i++)
             {
                 float angle = i * anglePerSegment;
                 Vector3 localPosition = (Mathf.Cos(angle) * blockTransform.right + Mathf.Sin(angle) * blockTransform.up) * radius;
                 Vector3 worldPosition = blockTransform.position + localPosition;
-                if (shardPositions.Contains(worldPosition)) continue;
                 GameObject marker = markerContainer.SpawnFromPool("Shard", worldPosition,
                     Quaternion.LookRotation(blockTransform.forward, localPosition));
-                shardPositions.Add(worldPosition);
+                if (shardPositions.Contains(marker.transform.position))
+                {
+                    markerContainer.ReturnToPool(marker, "Shard");
+                    continue;
+                }
+                shardPositions.Add(marker.transform.position);
                 marker.transform.localScale = blockTransform.localScale/2;
-                markers[i] = marker;
+                markers.Add(marker);
             }
             yield return new WaitForSeconds(2f);
             foreach (GameObject marker in markers)
