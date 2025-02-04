@@ -32,6 +32,7 @@ namespace CosmicShore.Game.IO
 
         private void ProcessStickInput()
         {
+            InputStatus.Throttle = Gamepad.current.rightShoulder.ReadValue();
             leftStickRaw = Gamepad.current.leftStick.ReadValue();
             rightStickRaw = Gamepad.current.rightStick.ReadValue();
         }

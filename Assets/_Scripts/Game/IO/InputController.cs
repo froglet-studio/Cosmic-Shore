@@ -39,7 +39,6 @@ namespace CosmicShore.Game.IO
             enabled = false;
         }
 
-
         private void OnEnable()
         {
             GameSetting.OnChangeInvertYEnabledStatus += OnToggleInvertY;
@@ -52,6 +51,29 @@ namespace CosmicShore.Game.IO
             GameSetting.OnChangeInvertYEnabledStatus -= OnToggleInvertY;
             GameSetting.OnChangeInvertThrottleEnabledStatus -= OnToggleInvertThrottle;
             EnhancedTouchSupport.Disable();
+        }
+
+        private void Update()
+        {
+            // Toggle the fullscreen state if the Escape key was pressed this frame on windows
+            #if UNITY_STANDALONE_WIN || UNITY_EDITOR_WIN
+            if (Keyboard.current.escapeKey.wasPressedThisFrame)
+            {
+                Screen.fullScreen = !Screen.fullScreen;
+            }
+            #endif
+
+            if (PauseSystem.Paused || InputStatus.Paused) return;
+
+            if (AutoPilotEnabled && Ship != null)
+            {
+                ProcessAutoPilot();
+                return;
+            }
+
+            UpdateInputStrategy();
+            currentStrategy?.ProcessInput(Ship);
+            orientationHandler.Update();
         }
 
         public void Initialize(IShip ship)
@@ -99,29 +121,6 @@ namespace CosmicShore.Game.IO
             currentOrientation = Screen.orientation;
         }
 
-        private void Update()
-        {
-            // Toggle the fullscreen state if the Escape key was pressed this frame on windows
-            #if UNITY_STANDALONE_WIN || UNITY_EDITOR_WIN
-            if (Keyboard.current.escapeKey.wasPressedThisFrame)
-            {
-                
-                Screen.fullScreen = !Screen.fullScreen;
-            }
-            #endif
-
-            if (PauseSystem.Paused || InputStatus.Paused) return;
-
-            if (AutoPilotEnabled && Ship != null)
-            {
-                ProcessAutoPilot();
-                return;
-            }
-
-            UpdateInputStrategy();
-            currentStrategy?.ProcessInput(Ship);
-            orientationHandler.Update();
-        }
 
         private void ProcessAutoPilot()
         {
@@ -144,7 +143,7 @@ namespace CosmicShore.Game.IO
         {
             IInputStrategy newStrategy = null;
 
-            if (Gamepad.current != null)
+            if (Gamepad.current != null && newStrategy != gamepadStrategy)
                 newStrategy = gamepadStrategy;
             //else if (Mouse.current.rightButton.isPressed)
             //    newStrategy = keyboardMouseStrategy;

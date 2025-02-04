@@ -6,6 +6,9 @@ using CosmicShore.Game;
 
 public class ShipTransformer : MonoBehaviour
 {
+    [SerializeField]
+    bool toggleManualThrottle;
+
     #region Ship
     protected IShip Ship;
     protected ShipStatus shipStatus;
@@ -219,6 +222,10 @@ public class ShipTransformer : MonoBehaviour
         speed = Mathf.Lerp(speed, InputStatus.XDiff * ThrottleScaler * ThrottleScalerMultiplier.Value * boostAmount + MinimumSpeed, lerpAmount * Time.deltaTime);
 
         speed *= throttleMultiplier;
+
+        if (toggleManualThrottle)
+            speed = Mathf.Lerp(0, speed, InputStatus.Throttle);
+
         shipStatus.Speed = speed;
 
         shipStatus.Course = shipStatus.Drifting ? (speed * shipStatus.Course + velocityShift).normalized : transform.forward;

@@ -29,7 +29,7 @@ namespace CosmicShore
                 var ship = other.GetComponent<ShipGeometry>()?.Ship;
                 if (ship != null)
                 {
-                    if (ship.GetShipType == ShipTypes.Squirrel)
+                    if (ship.ShipType == ShipTypes.Squirrel)
                     {
 
                         //var sign = Mathf.Sign(Vector3.Dot(transform.parent.forward, ship.Transform.forward));

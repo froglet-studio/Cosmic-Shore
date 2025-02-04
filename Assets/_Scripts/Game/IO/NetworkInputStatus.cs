@@ -10,6 +10,7 @@
         private readonly NetworkVariable<float> n_ySum = new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Owner);
         private readonly NetworkVariable<float> n_xDiff = new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Owner);
         private readonly NetworkVariable<float> n_yDiff = new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Owner);
+        private readonly NetworkVariable<float> n_Throttle = new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Owner);
 
         // Booleans
         private readonly NetworkVariable<bool> n_idle = new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Owner);
@@ -55,6 +56,12 @@
         {
             get => n_yDiff.Value;
             set => n_yDiff.Value = value;
+        }
+
+        public float Throttle
+        {
+            get => n_Throttle.Value;
+            set => n_Throttle.Value = value;
         }
 
         public bool Idle
