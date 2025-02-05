@@ -1,6 +1,6 @@
 using CosmicShore.Game.Projectiles;
-using CosmicShore.Core;
 using UnityEngine;
+
 
 namespace CosmicShore.Game.AI
 {
@@ -10,6 +10,7 @@ namespace CosmicShore.Game.AI
         [SerializeField] GameObject gunMount;
 
         public Teams Team;
+
         public IShip Ship;
         
         void Start()
