@@ -364,9 +364,9 @@ namespace CosmicShore.Core
             }
             if (nextBlocks.Count < 5) return;
             if (Vector3.Dot(normNextBlockDistance, transform.up) > 0)
-                Ship.ShipTransformer.GentleSpinShip(Ship.ShipStatus.Speed * 200 * combinedWeight * directionWeight * nextBlocks[4].transform.forward, normNextBlockDistance, Time.deltaTime);
+                Ship.ShipTransformer.GentleSpinShip(directionWeight * nextBlocks[4].transform.forward, normNextBlockDistance, Ship.ShipStatus.Speed * Time.deltaTime/15);
             else
-                Ship.ShipTransformer.GentleSpinShip(Ship.ShipStatus.Speed * 200 * combinedWeight * directionWeight * nextBlocks[4].transform.forward, -normNextBlockDistance, Time.deltaTime);
+                Ship.ShipTransformer.GentleSpinShip(directionWeight * nextBlocks[4].transform.forward, -normNextBlockDistance, Ship.ShipStatus.Speed * Time.deltaTime/15);
 
 
         }
@@ -434,13 +434,13 @@ namespace CosmicShore.Core
 
         IEnumerator DrawCircle(Transform blockTransform, float radius)
         {
-            int segments = 5;
-            var anglePerSegment = Mathf.PI * 2f / segments;   // Restore to this if segments becomes dynamic: var anglePerSegment = Mathf.PI * 2f / segments;
+            int segments = 8;
+            var anglePerSegment = blockTransform.localScale.x / (2 * radius);//Mathf.PI * 2f / segments;   // Restore to this if segments becomes dynamic: var anglePerSegment = Mathf.PI * 2f / segments;
             List<GameObject> markers = new();
-            for (int i = 0; i < segments; i++)
+            for (int i = -segments/2; i < segments/2; i++)
             {
                 float angle = i * anglePerSegment;
-                Vector3 localPosition = (Mathf.Cos(angle) * blockTransform.right + Mathf.Sin(angle) * blockTransform.up) * radius;
+                Vector3 localPosition = (Mathf.Cos(angle + (Mathf.PI / 2)) * blockTransform.right + Mathf.Sin(angle + (Mathf.PI / 2)) * blockTransform.up) * radius;
                 Vector3 worldPosition = blockTransform.position + localPosition;
                 GameObject marker = markerContainer.SpawnFromPool("Shard", worldPosition,
                     Quaternion.LookRotation(blockTransform.forward, localPosition));
@@ -451,6 +451,7 @@ namespace CosmicShore.Core
                 }
                 shardPositions.Add(marker.transform.position);
                 marker.transform.localScale = blockTransform.localScale/2;
+                marker.GetComponentInChildren<NudgeShard>().Prism = blockTransform.GetComponent<TrailBlock>();
                 markers.Add(marker);
             }
             yield return new WaitForSeconds(2f);

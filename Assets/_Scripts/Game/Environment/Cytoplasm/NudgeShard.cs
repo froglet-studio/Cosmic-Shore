@@ -14,6 +14,7 @@ namespace CosmicShore
         [SerializeField] float MaxBoostMultiplier = 2;
         [SerializeField] float BoostDischargeRate = .25f;
 
+        public TrailBlock Prism;
 
         private void Start()
         {
@@ -35,6 +36,7 @@ namespace CosmicShore
                         //var sign = Mathf.Sign(Vector3.Dot(transform.parent.forward, ship.Transform.forward));
                         //ship.ShipTransformer.ModifyVelocity(sign * transform.parent.forward * Displacement, Duration);
                         StartCoroutine(DischargeBoostCoroutine(ship, Displacement));
+                        Prism?.Steal(ship.Player,ship.Team);
                     }
                     else
                     {
