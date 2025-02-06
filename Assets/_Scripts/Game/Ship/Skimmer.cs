@@ -242,17 +242,17 @@ namespace CosmicShore.Core
             crystal.transform.position = Vector3.MoveTowards(crystal.transform.position, transform.position, vaccumAmount * Time.deltaTime / crystal.transform.lossyScale.x);
         }
 
-        List<TrailBlock> FindNextBlocks(TrailBlock minMatureBlock)
+        List<TrailBlock> FindNextBlocks(TrailBlock minMatureBlock, float distance = 100f)
         {
             if (minMatureBlock.Trail == null) return new List<TrailBlock> { minMatureBlock };
             var minIndex = minMatureBlock.TrailBlockProperties.Index;
             List<TrailBlock> nextBlocks;
             if (directionWeight < 0 && minIndex > 0)
-                nextBlocks = minMatureBlock.Trail.LookAhead(minIndex, 0, TrailFollowerDirection.Backward, 100f);
+                nextBlocks = minMatureBlock.Trail.LookAhead(minIndex, 0, TrailFollowerDirection.Backward, distance);
             else if (directionWeight > 0 && minIndex < minMatureBlock.Trail.TrailList.Count - 1)
-                nextBlocks = minMatureBlock.Trail.LookAhead(minIndex, 0, TrailFollowerDirection.Forward, 100f);
+                nextBlocks = minMatureBlock.Trail.LookAhead(minIndex, 0, TrailFollowerDirection.Forward, distance);
             else
-                nextBlocks = minMatureBlock.Trail.LookAhead(minIndex, 0, TrailFollowerDirection.Forward, 100f);
+                nextBlocks = minMatureBlock.Trail.LookAhead(minIndex, 0, TrailFollowerDirection.Forward, distance);
             return nextBlocks;
         }
 
@@ -346,14 +346,30 @@ namespace CosmicShore.Core
             Ship.TrailSpawner.Gap = Mathf.Lerp(initialGap, Ship.TrailSpawner.MinimumGap, combinedWeight);
         }
 
-        void AlignAndNudge(float combinedWeight)  // unused but ready to put in the flip phone effect for squirrel
+        /*
+Change: Instead of computing the misalignment between the ship’s up and the radial from the tube center (which produced a repulsive feel), 
+we now compute the desired radial by projecting the ship’s up vector onto the plane perpendicular to the tube’s forward. 
+This lets the player's roll input (the ship's up vector) determine the lateral target. 
+Then we compute the tangent direction along the tube’s cross–section and slerp the rotation toward that, 
+while keeping the existing subtle velocity nudging.
+*/
+        /*
+Change: Instead of using a misalignment-based repulsive approach, this version computes a desired tube position based on the ship’s current up vector. 
+That is, the desired tube position is defined as the tube center plus (ship.Transform.up * sweetSpot). 
+Then, the target forward is the direction from the ship’s current position to that desired position.
+This approach, combined with the existing subtle velocity nudging, attracts the ship toward the tube’s surface without imposing lateral displacement.
+*/
+        // Change: Instead of using the ship’s up versus radial misalignment (which repelled the ship), this version computes an error vector (U - radial) and nudges the forward direction accordingly—so the ship’s forward is adjusted toward a path that will bring it to the tube’s surface while preserving the player's roll.
+        void AlignAndNudge(float combinedWeight)
         {
-            if (!minMatureBlock)
+            if (!minMatureBlock || nextBlocks.Count < 5)
                 return;
 
+            // Calculate distances and directions
             var nextBlockDistance = (nextBlocks[0].transform.position - transform.position);
             var normNextBlockDistance = nextBlockDistance.normalized;
 
+            // Apply velocity nudging to maintain sweet spot distance
             if (minMatureBlockSqrDistance < sqrSweetSpot - 3)
             {
                 Ship.ShipTransformer.ModifyVelocity(-normNextBlockDistance * 4f, Time.deltaTime * 2f);
@@ -362,13 +378,28 @@ namespace CosmicShore.Core
             {
                 Ship.ShipTransformer.ModifyVelocity(normNextBlockDistance * 4f, Time.deltaTime * 2f);
             }
-            if (nextBlocks.Count < 5) return;
-            if (Vector3.Dot(normNextBlockDistance, transform.up) > 0)
-                Ship.ShipTransformer.GentleSpinShip(directionWeight * nextBlocks[4].transform.forward, normNextBlockDistance, Ship.ShipStatus.Speed * Time.deltaTime/15);
-            else
-                Ship.ShipTransformer.GentleSpinShip(directionWeight * nextBlocks[4].transform.forward, -normNextBlockDistance, Ship.ShipStatus.Speed * Time.deltaTime/15);
 
+            // Get the tube's forward direction from a block further ahead
+            Vector3 tubeForward = nextBlocks[4].transform.forward;
 
+            // Calculate the radial direction, properly considering the tube's axis
+            Vector3 fromTube = transform.position - nextBlocks[0].transform.position;
+            Vector3 radial = Vector3.ProjectOnPlane(fromTube, tubeForward).normalized;
+
+            // Determine if we're inside or outside the tube based on current up vector
+            bool isInside = Vector3.Dot(normNextBlockDistance, transform.up) > 0;
+            Vector3 targetUp = isInside ? normNextBlockDistance : -normNextBlockDistance;
+
+            // Calculate target forward direction
+            Vector3 targetForward = Vector3.Lerp(
+                transform.forward,
+                directionWeight * tubeForward,
+                combinedWeight
+            );
+
+            // Apply the gentle spin with speed-based interpolation
+            float alignSpeed = Ship.ShipStatus.Speed * Time.deltaTime / 15f;
+            Ship.ShipTransformer.GentleSpinShip(targetForward, targetUp, alignSpeed);
         }
 
         void VizualizeDistance(float combinedWeight)

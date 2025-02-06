@@ -54,11 +54,11 @@ MonoBehaviour:
   Team: 0
   leafSize: {x: 7, y: 4.5, z: 3.5}
   growPeriod: 0.6
-  PlantPeriod: 10
+  PlantPeriod: 30
   stunDuration: 1
   depth: 0
   maxTotalSpawnedObjects: 750
-  maxDepth: 60
+  maxDepth: 30
   itemsPerGrow: 5
   randomItems: 2
   crystalGrowth: 0.1

@@ -8,8 +8,8 @@ namespace CosmicShore
 {
     public class NudgeShard : MonoBehaviour
     {
-        float Displacement = 10f;
-        float Duration = 2f;
+        float Displacement = 1f;
+        float Duration = .2f;
         [SerializeField] int boostResourceIndex = 0;
         [SerializeField] float MaxBoostMultiplier = 2;
         [SerializeField] float BoostDischargeRate = .25f;
