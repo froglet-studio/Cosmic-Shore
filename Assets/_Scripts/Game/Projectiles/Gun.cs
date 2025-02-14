@@ -13,17 +13,20 @@ namespace CosmicShore.Game.Projectiles
     public class Gun : MonoBehaviour
     {
         public float firePeriod = .2f;
-        public Teams Team;
-        public IShip Ship;
+
+        public Teams Team { get; private set; }
+        public IShip Ship { get; private set; }
+
         bool onCooldown = false;
         float sideLength = 2;
         float barrelLength = 0;
-        public Coroutine MoveCoroutine;
+        Coroutine MoveCoroutine;
 
         Projectile projectile;
 
-        private void Start()
-        {           
+        public void Initialize(IShip ship)
+        {          
+            Ship = ship;
             Team = Ship.Team;
         }
 
@@ -116,12 +119,12 @@ namespace CosmicShore.Game.Projectiles
             transform.position + Quaternion.LookRotation(transform.forward) * offset + (transform.forward * barrelLength), // position
             Quaternion.LookRotation(normalizedVelocity) // rotation
             ).GetComponent<Projectile>();
+            projectileInstance.Initialize(Ship);
 
             projectileInstance.transform.localScale = projectileScale * projectileInstance.InitialScale;
             projectileInstance.transform.parent = containerTransform;
             projectileInstance.Velocity = normalizedVelocity * speed + inheritedVelocity;
             projectileInstance.Team = Team;
-            projectileInstance.Ship = Ship;
             if (projectileInstance.TryGetComponent(out Gun projectileGun))
             {
                 projectileGun.Team = Team;

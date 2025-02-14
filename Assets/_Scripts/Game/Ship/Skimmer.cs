@@ -145,6 +145,9 @@ namespace CosmicShore.Core
 
         void PerformShipImpactEffects(ShipGeometry shipGeometry)
         {
+            if (Ship == null)
+                return;
+
             if (StatsManager.Instance != null)
                 StatsManager.Instance.SkimmerShipCollision(Ship, shipGeometry.Ship);
             foreach (ShipImpactEffects effect in shipImpactEffects)
@@ -162,7 +165,7 @@ namespace CosmicShore.Core
                         if (onCoolDown || shipGeometry.Ship.Team == Team) break;
 
                         var AOEExplosion = Instantiate(AOEPrefab).GetComponent<AOEExplosion>();
-                        AOEExplosion.Ship = Ship;
+                        AOEExplosion.Initialize(Ship);
                         AOEExplosion.SetPositionAndRotation(transform.position, transform.rotation);
                         AOEExplosion.MaxScale = Ship.ShipStatus.Speed - shipGeometry.Ship.ShipStatus.Speed;
                         StartCoroutine(CooldownCoroutine(AOEPeriod));
@@ -486,8 +489,11 @@ This approach, combined with the existing subtle velocity nudging, attracts the 
                 markers.Add(marker);
             }
             yield return new WaitForSeconds(2f);
+
             foreach (GameObject marker in markers)
             {
+                if (marker == null) continue;
+
                 shardPositions.Remove(marker.transform.position);
                 markerContainer.ReturnToPool(marker, "Shard");
             }

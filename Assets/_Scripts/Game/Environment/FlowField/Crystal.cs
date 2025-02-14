@@ -103,10 +103,10 @@ namespace CosmicShore.Environment.FlowField
                         var AOEExplosion = Instantiate(AOEPrefab).GetComponent<AOEExplosion>();
                         AOEExplosion.Material = AOEExplosionMaterial;
                         AOEExplosion.Team = Team;
-                        AOEExplosion.Ship = ship;
                         AOEExplosion.SetPositionAndRotation(transform.position, transform.rotation);
                         AOEExplosion.MaxScale = maxExplosionScale;
                         AOEExplosion.AnonymousExplosion = true;
+                        AOEExplosion.Initialize(ship);
                         break;
                     case CrystalImpactEffects.IncrementLevel:
                         ship.ResourceSystem.AdjustLevel(crystalProperties.Element, crystalProperties.crystalValue);

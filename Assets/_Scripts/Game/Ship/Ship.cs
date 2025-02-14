@@ -299,7 +299,7 @@ namespace CosmicShore.Core
                         break;
                     case CrystalImpactEffects.AreaOfEffectExplosion:
                         var aoeExplosion = Instantiate(AOEPrefab).GetComponent<AOEExplosion>();
-                        aoeExplosion.Ship = this;
+                        aoeExplosion.Initialize(this);
                         aoeExplosion.SetPositionAndRotation(transform.position, transform.rotation);
                         aoeExplosion.MaxScale = ResourceSystem.Resources.Count > ammoResourceIndex 
                             ? Mathf.Lerp(minExplosionScale, maxExplosionScale, ResourceSystem.Resources[ammoResourceIndex].CurrentAmount) : maxExplosionScale;

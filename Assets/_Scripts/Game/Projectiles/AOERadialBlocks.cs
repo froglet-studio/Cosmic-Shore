@@ -32,9 +32,9 @@ namespace CosmicShore.Game.Projectiles
         Vector3 rayDirection;
         protected List<Trail> trails = new List<Trail>();
 
-        protected override void Start()
+        public override void Initialize(IShip ship)
         {
-            base.Start();
+            base.Initialize(ship);
             blockMaterial = shielded ? ThemeManager.Instance.GetTeamShieldedBlockMaterial(Ship.Team)
                 : ThemeManager.Instance.GetTeamBlockMaterial(Ship.Team);
 

@@ -2,12 +2,15 @@
 using CosmicShore.Core;
 using CosmicShore.Game.IO;
 using CosmicShore.Game.UI;
+using CosmicShore.Game.Projectiles;
 
 namespace CosmicShore.Game
 {
     [System.Serializable]
     public class Player : MonoBehaviour, IPlayer
     {
+        [SerializeField] bool _selfSpawn;
+
         [SerializeField] string playerName;
 
         [SerializeField] GameObject shipContainer;
@@ -16,22 +19,14 @@ namespace CosmicShore.Game
         [SerializeField] bool IsAI = false;
         [SerializeField] IPlayer.InitializeData InitializeData;
 
+        [SerializeField] Gun gun;
+
         public static Player ActivePlayer;
 
         public ShipTypes DefaultShipType { get; set; }
         public Teams Team { get; set; }
         public string Name { get; private set; }
-        public string PlayerName
-        {
-            get
-            {
-                return _playerName;
-            }
-            set
-            {
-                _playerName = value;
-            }
-        }
+        public string PlayerName { get; private set; }
         public string PlayerUUID { get; set; }
         public IShip Ship { get; private set; }
         public bool IsActive { get; private set; }
@@ -47,12 +42,12 @@ namespace CosmicShore.Game
 
         protected GameManager gameManager;
         GameCanvas _gameCanvas;
-        string _playerName;
 
-        /*void Start()
+        void Start()
         {
-            Initialize(InitializeData);
-        }*/
+            if (_selfSpawn)
+                Initialize(InitializeData);
+        }
 
         public void Initialize(IPlayer.InitializeData data)
         {
@@ -60,7 +55,7 @@ namespace CosmicShore.Game
             gameManager = GameManager.Instance;
             DefaultShipType = data.DefaultShipType;
             Team = data.Team;
-            _playerName = data.PlayerName;
+            PlayerName = data.PlayerName;
             PlayerUUID = data.PlayerUUID;
             Name = data.PlayerName;
 
@@ -130,6 +125,7 @@ namespace CosmicShore.Game
 
             InitializeShip();
             InputController.Initialize(Ship);
+            gun.Initialize(Ship);
 
             gameManager.WaitOnPlayerLoading();
         }

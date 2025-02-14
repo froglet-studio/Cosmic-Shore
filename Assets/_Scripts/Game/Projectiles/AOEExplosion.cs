@@ -32,11 +32,12 @@ namespace CosmicShore.Game.Projectiles
         // Material and Team
         [HideInInspector] public Material Material { get; set; }
         [HideInInspector] public Teams Team;
-        [HideInInspector] public IShip Ship;
+        public IShip Ship { get; private set; }
         [HideInInspector] public bool AnonymousExplosion;
 
-        protected virtual void Start()
+        public virtual void Initialize(IShip ship)
         {
+            Ship = ship;
             InitializeProperties();
             StartCoroutine(ExplodeCoroutine());
         }

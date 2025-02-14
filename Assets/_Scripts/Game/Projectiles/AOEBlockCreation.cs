@@ -24,12 +24,11 @@ namespace CosmicShore.Game.Projectiles
 
         protected List<Trail> trails = new List<Trail>();
 
-        protected override void Start()
+        public override void Initialize(IShip ship)
         {
+            base.Initialize(ship);
             blockMaterial = shielded ? ThemeManager.Instance.GetTeamShieldedBlockMaterial(Ship.Team) 
                 : ThemeManager.Instance.GetTeamBlockMaterial(Ship.Team);
-            
-            base.Start();
         }
 
         protected override IEnumerator ExplodeCoroutine()

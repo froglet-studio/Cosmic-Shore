@@ -11,12 +11,13 @@ namespace CosmicShore.Game.AI
 
         public Teams Team;
 
-        public IShip Ship;
+        [RequireInterface(typeof(IShip))]
+        public MonoBehaviour Ship;
         
-        void Start()
+        /*void Start()
         {
             gun.Team = Team;
-            gun.Ship = Ship;
-        }
+            gun.Ship = Ship as IShip;
+        }*/
     }
 }

@@ -1,9 +1,9 @@
 using System.Collections;
 using System.Collections.Generic;
 using CosmicShore.Game.IO;
-using CosmicShore.Environment.FlowField;
 using CosmicShore.Core;
 using UnityEngine;
+
 
 namespace CosmicShore.Game.Projectiles
 {
@@ -11,7 +11,7 @@ namespace CosmicShore.Game.Projectiles
     {
         public Vector3 Velocity;
         public Teams Team;
-        public IShip Ship;
+        public IShip Ship { get; private set; }
         public bool ImpactOnEnd;
         public float Inertia = 1;
         
@@ -44,9 +44,14 @@ namespace CosmicShore.Game.Projectiles
             }
         }
 
+        public void Initialize(IShip ship) => Ship = ship;
+
         protected virtual void OnTriggerEnter(Collider other)
         {
-           HandleCollision(other);
+            if (Ship == null)
+                return;
+
+            HandleCollision(other);
         }
 
         void HandleCollision(Collider other)

@@ -16,8 +16,11 @@ namespace CosmicShore.Game.Projectiles
             GetComponentInParent<PoolManager>().ReturnToPool(gameObject, gameObject.tag);
             foreach (var AOE in AOEPrefabs)
             {
+                if (Ship == null)
+                    return;
+
                 var AOEExplosion = Instantiate(AOE).GetComponent<AOEExplosion>();
-                AOEExplosion.Ship = Ship;
+                AOEExplosion.Initialize(Ship);
                 AOEExplosion.SetPositionAndRotation(transform.position, transform.rotation);
                 AOEExplosion.MaxScale = Mathf.Lerp(minExplosionScale, maxExplosionScale, Charge);
             }
