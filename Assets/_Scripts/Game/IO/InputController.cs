@@ -25,7 +25,8 @@ namespace CosmicShore.Game.IO
         [SerializeField] public bool Portrait;
         public IShip Ship { get; private set; }
 
-        [HideInInspector] public bool AutoPilotEnabled;
+        public bool AutoPilotEnabled => Ship.ShipStatus.AutoPilotEnabled;
+
         [HideInInspector] public static ScreenOrientation currentOrientation;
 
         private IInputStrategy currentStrategy;
@@ -65,7 +66,7 @@ namespace CosmicShore.Game.IO
 
             if (PauseSystem.Paused || InputStatus.Paused) return;
 
-            if (AutoPilotEnabled && Ship != null)
+            if (Ship != null && AutoPilotEnabled)
             {
                 ProcessAutoPilot();
                 return;
@@ -79,7 +80,6 @@ namespace CosmicShore.Game.IO
         public void Initialize(IShip ship)
         {
             Ship = ship;
-
             InitializeStrategies();
             SetInitialStrategy();
             InitializeOrientation();

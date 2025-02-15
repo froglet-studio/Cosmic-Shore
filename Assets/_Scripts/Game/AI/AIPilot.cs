@@ -176,7 +176,6 @@ namespace CosmicShore.Game.AI
         {
             if (AutoPilotEnabled)
             {
-                Ship.InputController.AutoPilotEnabled = true;
                 Ship.ShipStatus.AutoPilotEnabled = true;
 
                 distance = TargetPosition - transform.position;
