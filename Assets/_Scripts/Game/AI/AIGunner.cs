@@ -11,8 +11,8 @@ namespace CosmicShore.Game.AI
 
         public Teams Team;
 
-        [RequireInterface(typeof(IShip))]
-        public MonoBehaviour Ship;
+        /*[RequireInterface(typeof(IShip))]
+        public MonoBehaviour Ship;*/
         
         /*void Start()
         {
