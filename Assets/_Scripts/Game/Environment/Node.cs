@@ -86,7 +86,7 @@ public class Node : MonoBehaviour
             {
                 modifier.Apply(this);
             }
-            SpawnLife();
+            //SpawnLife();
             Crystal.gameObject.SetActive(true);
         }   
     }
@@ -363,7 +363,7 @@ public class Node : MonoBehaviour
         while (true)
         {
             var controllingVolume = GetTeamVolume(ControllingTeam);
-            var period = baseFaunaSpawnTime * faunaSpawnVolumeThreshold / controllingVolume; //TODO: use this to adjust spawn rate
+            //var period = baseFaunaSpawnTime * faunaSpawnVolumeThreshold / controllingVolume; //TODO: use this to adjust spawn rate
             if (controllingVolume > faunaSpawnVolumeThreshold)
             {
                 

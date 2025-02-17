@@ -1,7 +1,5 @@
 using UnityEngine;
 using System.Collections.Generic;
-using CosmicShore;
-using CosmicShore.Core;
 using CosmicShore.Utility;
 
 public class Worm : MonoBehaviour

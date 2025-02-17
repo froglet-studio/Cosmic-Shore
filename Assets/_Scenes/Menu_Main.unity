@@ -15344,7 +15344,7 @@ MonoBehaviour:
     AngularDampingMode: 1
     RotationDamping: {x: 0, y: 0, z: 0}
     QuaternionDamping: 0
-  FollowOffset: {x: 0, y: 0, z: -6}
+  FollowOffset: {x: 0, y: 0, z: -35}
 --- !u!1 &469955486
 GameObject:
   m_ObjectHideFlags: 0
@@ -53773,7 +53773,7 @@ PrefabInstance:
     - target: {fileID: 4853709195325629896, guid: ba70c0f3eb077d44b8a538982d02dadc,
         type: 3}
       propertyPath: m_LocalPosition.z
-      value: 656
+      value: 685
       objectReference: {fileID: 0}
     - target: {fileID: 4853709195325629896, guid: ba70c0f3eb077d44b8a538982d02dadc,
         type: 3}
