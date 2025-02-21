@@ -1,5 +1,4 @@
 using CosmicShore.Game.Projectiles;
-using CosmicShore.Core;
 using UnityEngine;
 
 namespace CosmicShore.Game.AI

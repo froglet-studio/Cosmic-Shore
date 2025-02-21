@@ -22,8 +22,9 @@ namespace CosmicShore.Game.Projectiles
 
         Projectile projectile;
 
-        private void Start()
-        {           
+        void Start()
+        {
+            Ship = gameObject.GetComponentInParent<Ship>();
             Team = Ship.Team;
         }
 
