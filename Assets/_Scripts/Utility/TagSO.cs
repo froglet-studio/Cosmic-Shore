@@ -6,13 +6,13 @@ namespace CosmicShore.Utilities
     public class TagSO : GuidSO
     {
         [SerializeField]
-        private string m_Name;
+        private string m_TagName;
 
         protected override void OnValidate()
         {
-            if (string.IsNullOrEmpty(m_Name))
+            if (string.IsNullOrEmpty(m_TagName))
             {
-                m_Name = name;
+                m_TagName = name;
             }
 
             // The Guid creation is done after the name is set, so that the name can be used to generate the Guid.

@@ -68,11 +68,7 @@ namespace CosmicShore.Core
             set
             {
                 if (scaleAnimator != null)
-                {
-                    var serializedScale = new UnityEditor.SerializedObject(scaleAnimator);
-                    serializedScale.FindProperty("maxScale").vector3Value = value;
-                    serializedScale.ApplyModifiedProperties();
-                }
+                    scaleAnimator.MaxScale = value;
             }
         }
 

@@ -1,6 +1,5 @@
 using UnityEngine;
 using System;
-using Unity.Mathematics;
 
 namespace CosmicShore.Core
 {
@@ -11,7 +10,11 @@ namespace CosmicShore.Core
         [SerializeField] private Vector3 maxScale = new Vector3(10f, 10f, 10f);
 
         public Vector3 MinScale => minScale; 
-        public Vector3 MaxScale => maxScale; 
+        public Vector3 MaxScale
+        { 
+            get => maxScale;
+            set => maxScale = value; 
+        }
         public Vector3 TargetScale { get; private set; }  
         public float GrowthRate { get; set; } = 0.01f;
         
