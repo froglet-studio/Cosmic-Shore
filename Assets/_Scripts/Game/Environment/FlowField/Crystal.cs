@@ -177,9 +177,7 @@ namespace CosmicShore.Environment.FlowField
             if (RespawnOnImpact)
             {
                 foreach (var model in crystalModels)
-                {
-                    StartCoroutine(model.model.GetComponent<FadeIn>().FadeInCoroutine());
-                }
+                    model.model.GetComponent<FadeIn>().StartFadeIn();
 
                 transform.SetPositionAndRotation(UnityEngine.Random.insideUnitSphere * sphereRadius + origin, UnityEngine.Random.rotation);
                 OnCrystalMove?.Invoke();

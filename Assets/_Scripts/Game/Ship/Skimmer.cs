@@ -498,12 +498,5 @@ This approach, combined with the existing subtle velocity nudging, attracts the 
                 markerContainer.ReturnToPool(marker, "Shard");
             }
         }
-
-        private void AdjustOpacity(GameObject marker, float sqrDistance)
-        {
-            float opacity = .1f - .1f * (sqrDistance / sqrRadius); // Closer blocks are less transparent
-            
-            marker.GetComponent<MeshRenderer>().material.SetFloat("_Opacity", opacity);
-        }
     }
 }
