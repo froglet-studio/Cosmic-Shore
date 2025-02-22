@@ -7,7 +7,7 @@ public class SpinAroundAction : ShipAction
     
     public override void StartAction()
     {
-        Ship.ShipTransformer.FlatSpinShip(180);
+        Ship.ShipStatus.ShipTransformer.FlatSpinShip(180);
     }
 
     public override void StopAction()

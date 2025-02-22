@@ -14,7 +14,7 @@ namespace CosmicShore.Game.Projectiles
         public override void Initialize(IShip ship)
         {
             base.Initialize(ship);
-            Material = new Material(Ship.AOEConicExplosionMaterial);
+            Material = new Material(Ship.ShipStatus.AOEConicExplosionMaterial);
             coneContainer = new GameObject("ExplosionCone");
             coneContainer.transform.SetParent(container.transform, false);
             coneContainer.transform.SetPositionAndRotation(containerPosition, containerRotation);

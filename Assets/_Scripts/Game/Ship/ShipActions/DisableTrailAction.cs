@@ -7,12 +7,12 @@ namespace CosmicShore
         [SerializeField] float delay = 2f;
         public override void StartAction()
         {
-            Ship.TrailSpawner.PauseTrailSpawner();
+            Ship.ShipStatus.TrailSpawner.PauseTrailSpawner();
         }
         
         public override void StopAction()
         {
-            Ship.TrailSpawner.RestartTrailSpawnerAfterDelay(delay);
+            Ship.ShipStatus.TrailSpawner.RestartTrailSpawnerAfterDelay(delay);
         }
     }
 }

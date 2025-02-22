@@ -70,9 +70,9 @@ namespace CosmicShore.Game
         public void Setup(IShip ship)
         {
             _ship = ship;
-            _ship = Hangar.Instance.LoadPlayerShip(_ship, _ship.Team, IsOwner);
+            _ship = Hangar.Instance.LoadPlayerShip(_ship, _ship.ShipStatus.Team, IsOwner);
 
-            _ship.Initialize(this, _ship.Team);
+            _ship.Initialize(this);
 
             if (IsOwner)
             {

@@ -25,7 +25,7 @@ namespace CosmicShore
         void Start()
         {
             if (Ship.ShipStatus.AutoPilotEnabled) return;
-            cameraManager = Ship.CameraManager;
+            cameraManager = CameraManager.Instance;
             mainCamera = cameraManager.GetCloseCamera();
             visibilityCapsuleTransform = new GameObject("Visibility Capsule").transform;
             transform.SetParent(visibilityCapsuleTransform);

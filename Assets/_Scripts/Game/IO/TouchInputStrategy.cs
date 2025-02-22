@@ -27,7 +27,7 @@ namespace CosmicShore.Game.IO
             EnhancedTouchSupport.Enable();
         }
 
-        public override void ProcessInput(IShip ship)
+        public override void ProcessInput()
         {
             var touchCount = Touch.activeTouches.Count;
 
@@ -49,7 +49,7 @@ namespace CosmicShore.Game.IO
                 if (!InputStatus.Idle)
                 {
                     InputStatus.Idle = true;
-                    ship.PerformShipControllerActions(InputEvents.IdleAction);
+                    _ship.PerformShipControllerActions(InputEvents.IdleAction);
                 }
             }
 
@@ -60,7 +60,7 @@ namespace CosmicShore.Game.IO
                 if (InputStatus.Idle)
                 {
                     InputStatus.Idle = false;
-                    ship.StopShipControllerActions(InputEvents.IdleAction);
+                    _ship.StopShipControllerActions(InputEvents.IdleAction);
                 }
             }
         }

@@ -27,41 +27,41 @@ namespace CosmicShore
         {
             if (other.gameObject.IsLayer("Ships"))
             {
-                var ship = other.GetComponent<ShipGeometry>()?.Ship;
-                if (ship != null)
+                if (!other.TryGetComponent(out IShipStatus shipStatus))
                 {
-                    if (ship.ShipType == ShipTypes.Squirrel)
-                    {
+                    return;
+                }
 
-                        //var sign = Mathf.Sign(Vector3.Dot(transform.parent.forward, ship.Transform.forward));
-                        //ship.ShipTransformer.ModifyVelocity(sign * transform.parent.forward * Displacement, Duration);
-                        StartCoroutine(DischargeBoostCoroutine(ship, Displacement));
-                        Prism?.Steal(ship.Player,ship.Team);
-                    }
-                    else
-                    {
-                        ship.ShipTransformer.ModifyVelocity(transform.parent.forward * Displacement, Duration);
-                    }
+                if (shipStatus.ShipType == ShipTypes.Squirrel)
+                {
+                    //var sign = Mathf.Sign(Vector3.Dot(transform.parent.forward, ship.Transform.forward));
+                    //ship.ShipTransformer.ModifyVelocity(sign * transform.parent.forward * Displacement, Duration);
+                    StartCoroutine(DischargeBoostCoroutine(shipStatus, Displacement));
+                    Prism?.Steal(shipStatus.Player);
+                }
+                else
+                {
+                    shipStatus.ShipTransformer.ModifyVelocity(transform.parent.forward * Displacement, Duration);
                 }
             }
         }
 
-        IEnumerator DischargeBoostCoroutine(IShip ship, float ChargedBoostIncrease)
+        IEnumerator DischargeBoostCoroutine(IShipStatus shipStatus, float ChargedBoostIncrease)
         {
             // TODO: figure out how to get ship data component here so that it is not null
-            ship.ResourceSystem.ChangeResourceAmount(boostResourceIndex, ChargedBoostIncrease);
-            ship.ShipStatus.ChargedBoostCharge += ChargedBoostIncrease;
-            ship.ShipStatus.ChargedBoostDischarging = true;
-            while (ship.ShipStatus.ChargedBoostCharge > 1)
+            shipStatus.ResourceSystem.ChangeResourceAmount(boostResourceIndex, ChargedBoostIncrease);
+            shipStatus.ChargedBoostCharge += ChargedBoostIncrease;
+            shipStatus.ChargedBoostDischarging = true;
+            while (shipStatus.ChargedBoostCharge > 1)
             {
-                ship.ResourceSystem.ChangeResourceAmount(boostResourceIndex, -BoostDischargeRate);
-                ship.ShipStatus.ChargedBoostCharge = 1 + (MaxBoostMultiplier * ship.ResourceSystem.Resources[boostResourceIndex].CurrentAmount);
+                shipStatus.ResourceSystem.ChangeResourceAmount(boostResourceIndex, -BoostDischargeRate);
+                shipStatus.ChargedBoostCharge = 1 + (MaxBoostMultiplier * shipStatus.ResourceSystem.Resources[boostResourceIndex].CurrentAmount);
                 yield return new WaitForSeconds(.1f);
             }
-            ship.ShipStatus.ChargedBoostCharge = 1;
-            ship.ShipStatus.ChargedBoostDischarging = false;
+            shipStatus.ChargedBoostCharge = 1;
+            shipStatus.ChargedBoostDischarging = false;
 
-            ship.ResourceSystem.ChangeResourceAmount(boostResourceIndex, -ship.ResourceSystem.Resources[boostResourceIndex].CurrentAmount);
+            shipStatus.ResourceSystem.ChangeResourceAmount(boostResourceIndex, -shipStatus.ResourceSystem.Resources[boostResourceIndex].CurrentAmount);
         }
 
     }

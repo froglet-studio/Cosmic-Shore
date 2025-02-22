@@ -8,12 +8,11 @@ public class DriftTrailAction : ShipAction
     public event ChangeDriftAltitude OnChangeDriftAltitude;
     #endregion
 
-    TrailSpawner trailSpawner;
+    TrailSpawner trailSpawner => ShipStatus.TrailSpawner;
 
-    protected override void Start()
+    protected override void InitializeShipAttributes()
     {
-        base.Start();
-        trailSpawner = Ship.TrailSpawner;
+        base.InitializeShipAttributes();
     }
 
     public override void StartAction()
@@ -39,7 +38,4 @@ public class DriftTrailAction : ShipAction
             yield return new WaitForSeconds(.05f);
         }
     }
-
-
-
 }

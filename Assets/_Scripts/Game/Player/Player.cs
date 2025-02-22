@@ -119,7 +119,7 @@ namespace CosmicShore.Game
         {
             Ship = ship;
             Ship.Transform.SetParent(shipContainer.transform, false);
-            Ship.AIPilot.enabled = false;
+            Ship.ShipStatus.AIPilot.enabled = false;
 
             GameCanvas.MiniGameHUD.Ship = Ship;
 
@@ -139,14 +139,14 @@ namespace CosmicShore.Game
             // TODO: Verify this works in arcade games
             Ship.Transform.SetParent(shipContainer.transform, false);
 
-            Ship.AIPilot.enabled = true;
+            Ship.ShipStatus.AIPilot.enabled = true;
 
             InitializeShip();
             InputController.Initialize(Ship);
 
-            gameManager.WaitOnAILoading(Ship.AIPilot);
+            gameManager.WaitOnAILoading(Ship.ShipStatus.AIPilot);
         }
 
-        void InitializeShip() => Ship.Initialize(this, Team);
+        void InitializeShip() => Ship.Initialize(this);
     }
 }

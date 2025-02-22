@@ -8,25 +8,12 @@ public class ChargeBoostAction : ShipAction
     [SerializeField] float MaxBoostMultiplier = 2;
     [SerializeField] float BoostChargeRate = .33f;
     [SerializeField] float BoostDischargeRate = .25f;
-    ShipStatus shipStatus;
     [SerializeField] int boostResourceIndex = 0;
-
-    protected override void InitializeShipAttributes()
-    {
-        base.InitializeShipAttributes();
-        GetShipStatus();
-    }
-
-    void GetShipStatus()
-    {
-        if (!TryGetComponent(out shipStatus))
-            shipStatus = Ship.ShipStatus;
-    }
 
     public override void StartAction()
     {
         StopAllCoroutines();
-        if (resourceSystem) resourceSystem.Resources[boostResourceIndex].CurrentAmount = 0;
+        if (ResourceSystem) ResourceSystem.Resources[boostResourceIndex].CurrentAmount = 0;
         BoostCharging = true;
         StartCoroutine(BoostChargeCoroutine());
     }
@@ -42,8 +29,8 @@ public class ChargeBoostAction : ShipAction
     {
         while (BoostCharging)
         {
-            Ship.ResourceSystem.ChangeResourceAmount(boostResourceIndex, BoostChargeRate);
-            shipStatus.ChargedBoostCharge = 1 + resourceSystem.Resources[boostResourceIndex].CurrentAmount;
+            Ship.ShipStatus.ResourceSystem.ChangeResourceAmount(boostResourceIndex, BoostChargeRate);
+            ShipStatus.ChargedBoostCharge = 1 + ResourceSystem.Resources[boostResourceIndex].CurrentAmount;
             yield return new WaitForSeconds(.1f);
         }
     }
@@ -52,17 +39,17 @@ public class ChargeBoostAction : ShipAction
     {
         // TODO: figure out how to get ship data component here so that it is not null
         
-        shipStatus.ChargedBoostDischarging = true;
-        while (shipStatus.ChargedBoostCharge > 1)
+        ShipStatus.ChargedBoostDischarging = true;
+        while (ShipStatus.ChargedBoostCharge > 1)
         {
-            Ship.ResourceSystem.ChangeResourceAmount(boostResourceIndex , - BoostDischargeRate);
-            shipStatus.ChargedBoostCharge = 1 + (MaxBoostMultiplier * resourceSystem.Resources[boostResourceIndex].CurrentAmount);
+            Ship.ShipStatus.ResourceSystem.ChangeResourceAmount(boostResourceIndex , - BoostDischargeRate);
+            ShipStatus.ChargedBoostCharge = 1 + (MaxBoostMultiplier * ResourceSystem.Resources[boostResourceIndex].CurrentAmount);
             yield return new WaitForSeconds(.1f);
         }
-        shipStatus.ChargedBoostCharge = 1;
-        shipStatus.ChargedBoostDischarging = false;
+        ShipStatus.ChargedBoostCharge = 1;
+        ShipStatus.ChargedBoostDischarging = false;
 
-        Ship.ResourceSystem.ChangeResourceAmount(boostResourceIndex, -resourceSystem.Resources[boostResourceIndex].CurrentAmount);
+        Ship.ShipStatus.ResourceSystem.ChangeResourceAmount(boostResourceIndex, -ResourceSystem.Resources[boostResourceIndex].CurrentAmount);
 
     }
 }

@@ -27,7 +27,7 @@ namespace CosmicShore.Game.Projectiles
         public void Initialize(IShip ship)
         {          
             Ship = ship;
-            Team = Ship.Team;
+            Team = Ship.ShipStatus.Team;
         }
 
         public void FireGun(Transform containerTransform, float speed, Vector3 inheritedVelocity,

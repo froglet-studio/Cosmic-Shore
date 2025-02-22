@@ -14,18 +14,18 @@ namespace CosmicShore
         [SerializeField] int resourceIndex = 0;
         float resourceCost;
 
-        protected override void Start()
+        protected override void InitializeShipAttributes()
         {
-            base.Start();
-            spawner = Ship.TrailSpawner;
-            resourceCost = resourceSystem.Resources[resourceIndex].MaxAmount / enhancementsPerFullAmmo;
+            base.InitializeShipAttributes();
+            spawner = Ship.ShipStatus.TrailSpawner;
+            resourceCost = ResourceSystem.Resources[resourceIndex].MaxAmount / enhancementsPerFullAmmo;
         }
 
         public override void StartAction()
         {
-            if (resourceSystem.Resources[resourceIndex].CurrentAmount > resourceCost)
+            if (ResourceSystem.Resources[resourceIndex].CurrentAmount > resourceCost)
             {
-                resourceSystem.ChangeResourceAmount(resourceIndex, -resourceCost);
+                ResourceSystem.ChangeResourceAmount(resourceIndex, -resourceCost);
                 var BlockObject = spawner.Trail.TrailList.Last().gameObject;
                 BlockObject.GetComponent<TrailBlock>().ActivateSuperShield();
                 var assembler = BlockObject.AddComponent<GyroidAssembler>();

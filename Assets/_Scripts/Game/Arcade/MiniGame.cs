@@ -160,8 +160,8 @@ namespace CosmicShore.Game.Arcade
 
                 if (EnableTrails)
                 {
-                    ActivePlayer.Ship.TrailSpawner.ForceStartSpawningTrail();
-                    ActivePlayer.Ship.TrailSpawner.RestartTrailSpawnerAfterDelay(2f);
+                    ActivePlayer.Ship.ShipStatus.TrailSpawner.ForceStartSpawningTrail();
+                    ActivePlayer.Ship.ShipStatus.TrailSpawner.RestartTrailSpawnerAfterDelay(2f);
                 }
             });
         }
@@ -261,7 +261,7 @@ namespace CosmicShore.Game.Arcade
             foreach (var turnMonitor in TurnMonitors)
                 turnMonitor.PauseTurn();
             ActivePlayer.InputController.InputStatus.Paused = true;
-            ActivePlayer.Ship.TrailSpawner.PauseTrailSpawner();
+            ActivePlayer.Ship.ShipStatus.TrailSpawner.PauseTrailSpawner();
 
             yield return new WaitForSeconds(EndOfTurnDelay);
 
@@ -423,12 +423,12 @@ namespace CosmicShore.Game.Arcade
             ActivePlayer.Transform.SetPositionAndRotation(PlayerOrigin.transform.position, PlayerOrigin.transform.rotation);
             ActivePlayer.InputController.InputStatus.Paused = true;
             ActivePlayer.Ship.Teleport(PlayerOrigin.transform);
-            ActivePlayer.Ship.ShipTransformer.Reset();
-            ActivePlayer.Ship.TrailSpawner.PauseTrailSpawner();
-            ActivePlayer.Ship.ResourceSystem.Reset();
+            ActivePlayer.Ship.ShipStatus.ShipTransformer.Reset();
+            ActivePlayer.Ship.ShipStatus.TrailSpawner.PauseTrailSpawner();
+            ActivePlayer.Ship.ShipStatus.ResourceSystem.Reset();
             ActivePlayer.Ship.SetResourceLevels(ResourceCollection);
 
-            CameraManager.Instance.SetupGamePlayCameras(ActivePlayer.Ship.FollowTarget);
+            CameraManager.Instance.SetupGamePlayCameras(ActivePlayer.Ship.ShipStatus.FollowTarget);
 
             // For single player games, don't require the extra button press
             if (Players.Count > 1)

@@ -13,7 +13,7 @@ namespace CosmicShore.Game.Arcade
         {
             if (paused) return false;
 
-            return Game.ActivePlayer.Ship.ResourceSystem.Resources[resourceIndex].CurrentAmount / Game.ActivePlayer.Ship.ResourceSystem.Resources[resourceIndex].MaxAmount >= percent / 100;
+            return Game.ActivePlayer.Ship.ShipStatus.ResourceSystem.Resources[resourceIndex].CurrentAmount / Game.ActivePlayer.Ship.ShipStatus.ResourceSystem.Resources[resourceIndex].MaxAmount >= percent / 100;
         }
 
         public override void NewTurn(string playerName)

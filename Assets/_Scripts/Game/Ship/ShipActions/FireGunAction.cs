@@ -7,7 +7,6 @@ public class FireGunAction : ShipAction
     // TODO: WIP gun firing needs to be reworked
     [SerializeField] Gun gun;
 
-    ShipStatus shipData;
     [SerializeField] GameObject projectileContainer;
     [SerializeField] float ammoCost = .03f;
 
@@ -18,23 +17,22 @@ public class FireGunAction : ShipAction
 
     [SerializeField] int ammoIndex = 0;
 
-    protected override void Start()
+    protected override void InitializeShipAttributes()
     {
-        base.Start();
-        projectileContainer.transform.parent = Ship.Player.Transform;
-        shipData = Ship.ShipStatus;
+        base.InitializeShipAttributes();
+        projectileContainer.transform.parent = Ship.ShipStatus.Player.Transform;
     }
     public override void StartAction()
     {
-        if (resourceSystem.Resources[ammoIndex].CurrentAmount >= ammoCost) 
+        if (ResourceSystem.Resources[ammoIndex].CurrentAmount >= ammoCost) 
         {
-            resourceSystem.ChangeResourceAmount(ammoIndex, - ammoCost);
+            ResourceSystem.ChangeResourceAmount(ammoIndex, - ammoCost);
 
             Vector3 inheritedVelocity;
-            if (shipData.Attached) inheritedVelocity = gun.transform.forward;
-            else inheritedVelocity = shipData.Course;
+            if (ShipStatus.Attached) inheritedVelocity = gun.transform.forward;
+            else inheritedVelocity = ShipStatus.Course;
 
-            gun.FireGun(projectileContainer.transform, Speed, inheritedVelocity * shipData.Speed, ProjectileScale, true, ProjectileTime.Value, 0, FiringPatterns.Default, Energy);
+            gun.FireGun(projectileContainer.transform, Speed, inheritedVelocity * ShipStatus.Speed, ProjectileScale, true, ProjectileTime.Value, 0, FiringPatterns.Default, Energy);
         }
     }
 

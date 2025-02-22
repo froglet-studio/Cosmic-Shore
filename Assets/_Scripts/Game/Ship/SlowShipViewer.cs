@@ -4,17 +4,18 @@ using UnityEngine;
 
 namespace CosmicShore
 {
+    [RequireComponent(typeof(ShipStatus))]
     public class SlowShipViewer : MonoBehaviour
     {
         [SerializeField] Material trailViewerMaterial;
 
         LineRenderer lineRenderer;
-        Ship ship;
+        ShipStatus shipStatus;
         Transform target;
         
         void Start()
         {
-            ship = GetComponent<Ship>();  
+            shipStatus = GetComponent<ShipStatus>();  
             lineRenderer = gameObject.AddComponent<LineRenderer>();
             lineRenderer.material = trailViewerMaterial;
             lineRenderer.startWidth = lineRenderer.endWidth = 0.1f;
@@ -25,7 +26,7 @@ namespace CosmicShore
             target = null;
             lineRenderer.SetPosition(0, transform.position);
             lineRenderer.enabled = false;
-            if (Hangar.Instance.SlowedShipTransforms.Count > 0 && Player.ActivePlayer && Player.ActivePlayer.Ship == ship)
+            if (Hangar.Instance.SlowedShipTransforms.Count > 0 && Player.ActivePlayer && Player.ActivePlayer.Ship == shipStatus)
             {
                 var distance = float.PositiveInfinity;
                 foreach (var shipTransform in Hangar.Instance.SlowedShipTransforms)

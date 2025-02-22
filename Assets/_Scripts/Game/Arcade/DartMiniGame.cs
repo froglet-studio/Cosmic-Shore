@@ -25,12 +25,12 @@ namespace CosmicShore.Game.Arcade
         {
             base.SetupTurn();
 
-            var silhouette = ActivePlayer.Ship.Silhouette;
+            var silhouette = ActivePlayer.Ship.ShipStatus.Silhouette;
             silhouette.Clear();
 
             TrailSpawner.NukeTheTrails();
             Crystal.transform.position = CrystalStartPosition;
-            ActivePlayer.Ship.ResourceSystem.ChangeResourceAmount(resourceIndex, ActivePlayer.Ship.ResourceSystem.Resources[resourceIndex].MaxAmount);
+            ActivePlayer.Ship.ShipStatus.ResourceSystem.ChangeResourceAmount(resourceIndex, ActivePlayer.Ship.ShipStatus.ResourceSystem.Resources[resourceIndex].MaxAmount);
         }
     }
 }

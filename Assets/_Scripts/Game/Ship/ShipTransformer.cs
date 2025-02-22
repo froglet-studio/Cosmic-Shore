@@ -11,7 +11,7 @@ public class ShipTransformer : MonoBehaviour
 
     #region Ship
     protected IShip Ship;
-    protected ShipStatus shipStatus;
+    protected IShipStatus shipStatus => Ship.ShipStatus;
     protected ResourceSystem resourceSystem;
     #endregion
 
@@ -45,9 +45,8 @@ public class ShipTransformer : MonoBehaviour
     public void Initialize(IShip ship)
     {
         this.Ship = ship;
-        shipStatus = ship.ShipStatus;
-        resourceSystem = ship.ResourceSystem;
-        inputController = ship.InputController;
+        resourceSystem = ship.ShipStatus.ResourceSystem;
+        inputController = ship.ShipStatus.InputController;
     }
 
     protected virtual void Start()
@@ -73,7 +72,7 @@ public class ShipTransformer : MonoBehaviour
 
         if (inputController == null)
         {
-            inputController = Ship.InputController;
+            inputController = Ship.ShipStatus.InputController;
         }
 
         if (inputController == null)
@@ -215,7 +214,7 @@ public class ShipTransformer : MonoBehaviour
         float boostAmount = 1f;
         if (shipStatus.Boosting) // TODO: if we run out of fuel while full speed and straight the ship data still thinks we are boosting
         {
-            boostAmount = Ship.BoostMultiplier;
+            boostAmount = Ship.ShipStatus.BoostMultiplier;
         }
         if (shipStatus.ChargedBoostDischarging) boostAmount *= shipStatus.ChargedBoostCharge;
         if (inputController != null)

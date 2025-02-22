@@ -11,9 +11,9 @@ public class GrowTrailAction : GrowActionBase
     TrailSpawner spawner;
     private string scalingDimension;
 
-    protected override void Start()
+    protected override void InitializeShipAttributes()
     {
-        base.Start();
+        base.InitializeShipAttributes();
         spawner = target.GetComponent<TrailSpawner>();
 
         // Determine the scaling dimension

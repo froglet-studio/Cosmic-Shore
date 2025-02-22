@@ -25,7 +25,7 @@ namespace CosmicShore.Game.Projectiles
             var ship = other.gameObject.IsLayer("Ships") ? other.GetComponent<ShipGeometry>().Ship : other.GetComponent<Projectile>().Ship;
         
             // TODO: use a different material if the fake crystal is on your team
-            if (ship.Team == Team)
+            if (ship.ShipStatus.Team == Team)
                 return;
 
             PerformCrystalImpactEffects(crystalProperties, ship);

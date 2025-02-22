@@ -24,9 +24,9 @@ namespace CosmicShore.Game.Animation
 
         protected List<Transform> scaledParts = new();
 
-        public override void Initialize(IShip ship)
+        public override void Initialize(IShipStatus shipStatus)
         {
-            base.Initialize(ship);
+            base.Initialize(shipStatus);
 
             scaledParts.Add(JetBottomLeft);
             scaledParts.Add(JetBottomRight);
@@ -38,7 +38,7 @@ namespace CosmicShore.Game.Animation
         {
             base.Update();
 
-            if (Ship.ShipStatus.Attached)
+            if (ShipStatus.Attached)
             {
                 ResetParts(scaledParts, 6);
             }
@@ -67,7 +67,7 @@ namespace CosmicShore.Game.Animation
         protected override void PerformShipPuppetry(float pitch, float yaw, float roll, float throttle)
         {
 
-            if (GetComponent<IShip>().ShipStatus.Attached)
+            if (ShipStatus.Attached)
             {
                 RotatePart(Body,
                    Time.deltaTime * 100f,

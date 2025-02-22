@@ -31,14 +31,12 @@ namespace CosmicShore.Core
         public TrailBlock AttachedTrailBlock { get { return attachedTrail.GetBlock(attachedBlockIndex); } }
 
         ShipStatus shipData;
-        Ship ship;
 
         void Start()
         {
             // TODO: find a better way of setting team that doesn't assume a ship
-            ship = GetComponent<Ship>();
-            team = ship.Team;
             shipData = GetComponent<ShipStatus>();
+            team = shipData.Team;
         }
 
         public void Attach(TrailBlock trailBlock)
@@ -77,7 +75,7 @@ namespace CosmicShore.Core
             var distanceToNextBlock = Vector3.Magnitude(nextBlock.transform.position - currentBlock.transform.position) * (1-percentTowardNextBlock);
             var speedToNextBlock = Throttle * GetTerrainAwareBlockSpeed(currentBlock);
             
-            speedToNextBlock *= ship.ShipTransformer.SpeedMultiplier;
+            speedToNextBlock *= shipData.ShipTransformer.SpeedMultiplier;
             shipData.Speed = speedToNextBlock;
 
             var timeToNextBlock = distanceToNextBlock / speedToNextBlock;
@@ -92,7 +90,7 @@ namespace CosmicShore.Core
                 
                 distanceToNextBlock = Vector3.Magnitude(nextBlock.transform.position - currentBlock.transform.position);
                 speedToNextBlock = Throttle * GetTerrainAwareBlockSpeed(currentBlock);
-                speedToNextBlock *= ship.ShipTransformer.SpeedMultiplier;
+                speedToNextBlock *= shipData.ShipTransformer.SpeedMultiplier;
                 shipData.Speed = speedToNextBlock;
 
                 timeToNextBlock = distanceToNextBlock / speedToNextBlock;
@@ -107,7 +105,7 @@ namespace CosmicShore.Core
             if (newAttachedBlockIndex != attachedBlockIndex) 
             {
                 attachedBlockIndex = newAttachedBlockIndex;
-                ((GunShipTransformer)ship.ShipTransformer).FinalBlockSlideEffects(); 
+                ((GunShipTransformer) shipData.ShipTransformer).FinalBlockSlideEffects(); 
             }
             shipData.Course = course;
             

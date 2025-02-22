@@ -67,8 +67,8 @@ namespace CosmicShore.Core
                 if (!go.TryGetComponent(out IShip ship))
                     continue;
 
-                ships.Add(ship.ShipName, ship);
-                shipTypeMap.Add(ship.ShipType, ship);
+                ships.Add(ship.ShipStatus.Name, ship);
+                shipTypeMap.Add(ship.ShipStatus.ShipType, ship);
             }
 
             AITeam = PlayerTeam == Teams.Jade ? Teams.Ruby : Teams.Jade;
@@ -192,19 +192,19 @@ namespace CosmicShore.Core
         public IShip LoadHostileAI1Ship(Teams Team)
         {
             var ship = LoadAIShip(HostileAI1ShipType, Team);
-            HostileAI1Captain = ship.Captain;
+            HostileAI1Captain = ship.ShipStatus.Captain;
             return ship;
         }
         public IShip LoadHostileAI2Ship()
         {
             var ship = LoadAIShip(HostileAI2ShipType, AITeam);
-            HostileAI2Captain = ship.Captain;
+            HostileAI2Captain = ship.ShipStatus.Captain;
             return ship;
         }
         public IShip LoadHostileAI3Ship()
         {
             var ship = LoadAIShip(HostileAI3ShipType, AITeam);
-            HostileAI3Captain = ship.Captain;
+            HostileAI3Captain = ship.ShipStatus.Captain;
             return ship;
         }
         public IShip LoadHostileManta()
@@ -238,7 +238,7 @@ namespace CosmicShore.Core
             ship.SetAOEConicExplosionMaterial(materialSet.AOEConicExplosionMaterial);
             ship.SetSkimmerMaterial(materialSet.SkimmerMaterial);
 
-            AIPilot pilot = ship.AIPilot;
+            AIPilot pilot = ship.ShipStatus.AIPilot;
             pilot.SkillLevel = ((float)AISkillLevel - 1) / 3; // this assumes that levels remain from 1-4
             pilot.AutoPilotEnabled = true;
 

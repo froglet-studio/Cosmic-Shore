@@ -25,7 +25,7 @@ namespace CosmicShore.Game.IO
         [SerializeField] public bool Portrait;
         public IShip Ship { get; private set; }
 
-        public bool AutoPilotEnabled => Ship.ShipStatus.AutoPilotEnabled;
+        // public bool AutoPilotEnabled => Ship.ShipStatus.AutoPilotEnabled;
 
         [HideInInspector] public static ScreenOrientation currentOrientation;
 
@@ -66,14 +66,15 @@ namespace CosmicShore.Game.IO
 
             if (PauseSystem.Paused || InputStatus.Paused) return;
 
-            if (Ship != null && AutoPilotEnabled)
+            // if (Ship != null && AutoPilotEnabled)
+            if (Ship != null && Ship.ShipStatus.AutoPilotEnabled)
             {
                 ProcessAutoPilot();
                 return;
             }
 
             UpdateInputStrategy();
-            currentStrategy?.ProcessInput(Ship);
+            currentStrategy?.ProcessInput();
             orientationHandler.Update();
         }
 
@@ -126,15 +127,15 @@ namespace CosmicShore.Game.IO
         {
             if (Ship.ShipStatus.SingleStickControls)
             {
-                currentStrategy?.SetAutoPilotValues(new Vector2(Ship.AIPilot.X, Ship.AIPilot.Y));
+                currentStrategy?.SetAutoPilotValues(new Vector2(Ship.ShipStatus.AIPilot.X, Ship.ShipStatus.AIPilot.Y));
             }
             else
             {
                 currentStrategy?.SetAutoPilotValues(
-                    Ship.AIPilot.XSum,
-                    Ship.AIPilot.YSum,
-                    Ship.AIPilot.XDiff,
-                    Ship.AIPilot.YDiff
+                    Ship.ShipStatus.AIPilot.XSum,
+                    Ship.ShipStatus.AIPilot.YSum,
+                    Ship.ShipStatus.AIPilot.XDiff,
+                    Ship.ShipStatus.AIPilot.YDiff
                 );
             }
         }

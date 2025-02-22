@@ -17,26 +17,27 @@ namespace CosmicShore.Game.Animation
 
         protected List<Transform> Transforms = new(); // TODO: use this to populate the ship geometries on ship.cs
         protected List<Quaternion> InitialRotations = new(); // TODO: use this to populate the ship geometries on ship.cs
-        protected IShip Ship { get; private set; }
+
         protected InputController inputController;
-        protected IInputStatus inputStatus;
+        protected IInputStatus InputStatus;
+        protected IShipStatus ShipStatus;
 
         protected virtual void Update()
         {
             if (inputController == null) // the line above makes this run the moment it has the handle
                 return;
             
-            if (inputStatus.Idle) Idle();
-            else if (Ship.ShipStatus.SingleStickControls) PerformShipPuppetry(inputStatus.EasedLeftJoystickPosition.y, inputStatus.EasedLeftJoystickPosition.x, 0, 0);
-            else PerformShipPuppetry(inputStatus.YSum, inputStatus.XSum, inputStatus.YDiff, inputStatus.XDiff);
+            if (InputStatus.Idle) Idle();
+            else if (ShipStatus.SingleStickControls) PerformShipPuppetry(InputStatus.EasedLeftJoystickPosition.y, InputStatus.EasedLeftJoystickPosition.x, 0, 0);
+            else PerformShipPuppetry(InputStatus.YSum, InputStatus.XSum, InputStatus.YDiff, InputStatus.XDiff);
         }
 
-        public virtual void Initialize(IShip ship)
+        public virtual void Initialize(IShipStatus shipStatus)
         {
-            Ship = ship;
-            inputController = Ship.InputController;
-            inputStatus = inputController.InputStatus;
-            Ship.ResourceSystem.OnElementLevelChange += UpdateShapeKey;
+            ShipStatus = shipStatus;
+            inputController = ShipStatus.InputController;
+            InputStatus = inputController.InputStatus;
+            ShipStatus.ResourceSystem.OnElementLevelChange += UpdateShapeKey;
 
             AssignTransforms();
         }

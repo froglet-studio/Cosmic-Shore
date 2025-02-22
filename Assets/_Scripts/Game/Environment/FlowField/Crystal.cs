@@ -97,7 +97,7 @@ namespace CosmicShore.Environment.FlowField
                         if (!ship.ShipStatus.AutoPilotEnabled) HapticController.PlayHaptic(HapticType.FakeCrystalCollision);//.PlayFakeCrystalImpactHaptics();
                         break;
                     case CrystalImpactEffects.ReduceSpeed:
-                        ship.ShipTransformer.ModifyThrottle(.1f, 3);  // TODO: Magic numbers
+                        ship.ShipStatus.ShipTransformer.ModifyThrottle(.1f, 3);  // TODO: Magic numbers
                         break;
                     case CrystalImpactEffects.AreaOfEffectExplosion:
                         var AOEExplosion = Instantiate(AOEPrefab).GetComponent<AOEExplosion>();
@@ -109,7 +109,7 @@ namespace CosmicShore.Environment.FlowField
                         AOEExplosion.Initialize(ship);
                         break;
                     case CrystalImpactEffects.IncrementLevel:
-                        ship.ResourceSystem.AdjustLevel(crystalProperties.Element, crystalProperties.crystalValue);
+                        ship.ShipStatus.ResourceSystem.AdjustLevel(crystalProperties.Element, crystalProperties.crystalValue);
                         break;
                 }
             }
@@ -122,14 +122,14 @@ namespace CosmicShore.Environment.FlowField
             if (other.gameObject.IsLayer("Ships"))
             {
                 ship = other.GetComponent<ShipGeometry>().Ship;
-                if (Team == Teams.None || Team == ship.Team)
+                if (Team == Teams.None || Team == ship.ShipStatus.Team)
                 {
                     if (shipImpactEffects)
                     {
                         ship.PerformCrystalImpactEffects(crystalProperties);
-                        if (ship.AIPilot != null)
+                        if (ship.ShipStatus.AIPilot != null)
                         {
-                            AIPilot aiPilot = ship.AIPilot;
+                            AIPilot aiPilot = ship.ShipStatus.AIPilot;
 
                             aiPilot.aggressiveness = aiPilot.defaultAggressiveness;
                             aiPilot.throttle = aiPilot.defaultThrottle;
@@ -240,7 +240,7 @@ namespace CosmicShore.Environment.FlowField
                     spentAnimator.timer = thisAnimator.timer;
                 }
                 var shipStatus = ship.ShipStatus;
-                spentCrystal.GetComponent<Impact>()?.HandleImpact(shipStatus.Course * shipStatus.Speed, tempMaterial, ship.Player.PlayerName);
+                spentCrystal.GetComponent<Impact>()?.HandleImpact(shipStatus.Course * shipStatus.Speed, tempMaterial, ship.ShipStatus.Player.PlayerName);
             }
         }
 

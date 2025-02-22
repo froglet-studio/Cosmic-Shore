@@ -6,9 +6,10 @@ public class ToggleGyroAction : ShipAction
 {
     InputController inputController;
 
-    protected override void Start()
+    protected override void InitializeShipAttributes()
     {
-        if (Ship != null) inputController = Ship.InputController;
+        base.InitializeShipAttributes();
+        if (Ship != null) inputController = Ship.ShipStatus.InputController;
     }
 
     public override void StartAction()

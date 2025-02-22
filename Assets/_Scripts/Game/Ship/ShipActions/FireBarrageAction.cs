@@ -8,7 +8,6 @@ public class FireBarrageAction : ShipAction
     // TODO: WIP gun firing needs to be reworked
     [SerializeField] Gun gunContainer;
     List<Gun> guns = new();
-    ShipStatus shipData;
     [SerializeField] PoolManager projectileContainer;
 
     [SerializeField] int ammoIndex = 0;
@@ -29,9 +28,9 @@ public class FireBarrageAction : ShipAction
         JsonUtility.FromJsonOverwrite(json, to);
     }
 
-    protected override void Start()
+    protected override void InitializeShipAttributes()
     {
-        base.Start();
+        base.InitializeShipAttributes();
         var gunTemplate = gunContainer.GetComponent<Gun>();
         foreach (var child in gunContainer.GetComponentsInChildren<Transform>()) 
         {
@@ -42,29 +41,28 @@ public class FireBarrageAction : ShipAction
             child.Rotate(0, 180, 0);
         }
         //projectileContainer = new GameObject($"{ship.Player.PlayerName}_BarrageProjectiles");
-        shipData = Ship.ShipStatus;
     }
 
     public override void StartAction()
     {
-        if (resourceSystem.Resources[ammoIndex].CurrentAmount > ammoCost)
+        if (ResourceSystem.Resources[ammoIndex].CurrentAmount > ammoCost)
         {
-            resourceSystem.ChangeResourceAmount(ammoIndex, -ammoCost);
+            ResourceSystem.ChangeResourceAmount(ammoIndex, -ammoCost);
 
             Vector3 inheritedVelocity;
 
-            if (resourceSystem.Resources[ammoIndex].CurrentAmount > ammoCost)
+            if (ResourceSystem.Resources[ammoIndex].CurrentAmount > ammoCost)
             {
                 // TODO: WIP magic numbers
                 foreach (var gun in guns)
                 {
                     if (inherit)
                     {
-                        if (shipData.Attached) inheritedVelocity = gun.transform.forward;
-                        else inheritedVelocity = shipData.Course;
+                        if (ShipStatus.Attached) inheritedVelocity = gun.transform.forward;
+                        else inheritedVelocity = ShipStatus.Course;
                     }
                     else inheritedVelocity = Vector3.zero;
-                    gun.FireGun(projectileContainer.transform, speed, inheritedVelocity * shipData.Speed, ProjectileScale, true, projectileTime, 0, FiringPattern, Energy);
+                    gun.FireGun(projectileContainer.transform, speed, inheritedVelocity * ShipStatus.Speed, ProjectileScale, true, projectileTime, 0, FiringPattern, Energy);
                 }
             }
              

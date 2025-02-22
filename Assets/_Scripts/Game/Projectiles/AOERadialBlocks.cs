@@ -35,8 +35,8 @@ namespace CosmicShore.Game.Projectiles
         public override void Initialize(IShip ship)
         {
             base.Initialize(ship);
-            blockMaterial = shielded ? ThemeManager.Instance.GetTeamShieldedBlockMaterial(Ship.Team)
-                : ThemeManager.Instance.GetTeamBlockMaterial(Ship.Team);
+            blockMaterial = shielded ? ThemeManager.Instance.GetTeamShieldedBlockMaterial(Ship.ShipStatus.Team)
+                : ThemeManager.Instance.GetTeamBlockMaterial(Ship.ShipStatus.Team);
 
             baseBlockScale.z *= depthScale.Value;
             maxRadius *= depthScale.Value;
@@ -98,7 +98,7 @@ namespace CosmicShore.Game.Projectiles
         {
             var block = TrailBlockBufferManager.Instance.GetBlock(Team);
             //block.ownerID = Ship.Player.PlayerUUID;
-            block.Player = Ship.Player;
+            block.Player = Ship.ShipStatus.Player;
             block.transform.SetPositionAndRotation(position, Quaternion.LookRotation(forward, up));
             block.GetComponent<MeshRenderer>().material = blockMaterial;
             block.ownerID = block.ownerID + blockId + position;

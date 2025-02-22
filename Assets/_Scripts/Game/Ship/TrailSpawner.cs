@@ -91,7 +91,7 @@ public class TrailSpawner : MonoBehaviour
 
         spawnTrailCoroutine = StartCoroutine(SpawnTrailCoroutine());
 
-        ownerId = ship.Player.PlayerUUID;
+        ownerId = ship.ShipStatus.Player.PlayerUUID;
         XScaler = minBlockScale;
     }
 
@@ -171,9 +171,9 @@ public class TrailSpawner : MonoBehaviour
         float xShift = (targetScale.x / 2f + Mathf.Abs(halfGap)) * (halfGap / Mathf.Abs(halfGap));
         Block.transform.SetPositionAndRotation(transform.position - shipData.Course * offset + ship.Transform.right * xShift, shipData.blockRotation);
         Block.transform.parent = TrailContainer.transform;
-        Block.ownerID = isCharmed ? tempShip.Player.PlayerUUID : ship.Player.PlayerUUID;
-        Block.Player = isCharmed ? tempShip.Player : ship.Player;
-        Block.ChangeTeam(isCharmed ? tempShip.Team : ship.Team);
+        Block.ownerID = isCharmed ? tempShip.ShipStatus.Player.PlayerUUID : ship.ShipStatus.Player.PlayerUUID;
+        Block.Player = isCharmed ? tempShip.ShipStatus.Player : ship.ShipStatus.Player;
+        Block.ChangeTeam(isCharmed ? tempShip.ShipStatus.Team : ship.ShipStatus.Team);
         if (waitTillOutsideSkimmer) 
             Block.waitTime = (skimmer.transform.localScale.z + TrailZScale) / shipData.Speed;            
         if (shielded)
@@ -210,9 +210,9 @@ public class TrailSpawner : MonoBehaviour
                     Block.transform.SetPositionAndRotation(transform.position - shipData.Course * offset, shipData.blockRotation);
                     Block.transform.parent = TrailContainer.transform;
                     Block.waitTime = waitTillOutsideSkimmer ? (skimmer.transform.localScale.z + TrailZScale) / shipData.Speed : waitTime;
-                    Block.ownerID = isCharmed ? tempShip.Player.PlayerUUID : ship.Player.PlayerUUID;
-                    Block.Player = isCharmed ? tempShip.Player : ship.Player;
-                    Block.ChangeTeam(isCharmed ? tempShip.Team : ship.Team);
+                    Block.ownerID = isCharmed ? tempShip.ShipStatus.Player.PlayerUUID : ship.ShipStatus.Player.PlayerUUID;
+                    Block.Player = isCharmed ? tempShip.ShipStatus.Player : ship.ShipStatus.Player;
+                    Block.ChangeTeam(isCharmed ? tempShip.ShipStatus.Team : ship.ShipStatus.Team);
                     Block.TrailBlockProperties.Index = spawnedTrailCount;
                     Block.ownerID = ownerId + ":" + spawnedTrailCount++;
                     Block.Trail = Trail;

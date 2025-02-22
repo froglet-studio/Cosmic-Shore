@@ -36,15 +36,13 @@ namespace CosmicShore.Game.IO
 
         protected IInputStatus InputStatus;
 
-        
-
         public virtual void Initialize(IShip ship)
         {
             _ship = ship;
-            InputStatus = _ship.InputStatus;
+            InputStatus = _ship.ShipStatus.InputStatus;
         }
 
-        public abstract void ProcessInput(IShip ship);
+        public abstract void ProcessInput();
         public virtual void SetPortrait(bool portrait) { }
         public virtual void OnStrategyActivated() { }
         public virtual void OnStrategyDeactivated() { }

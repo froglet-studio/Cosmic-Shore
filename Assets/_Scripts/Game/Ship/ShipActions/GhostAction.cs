@@ -9,9 +9,9 @@ public class GhostAction : ShipAction
 
     Coroutine intangibilityCoroutine;
 
-    protected override void Start()
+    protected override void InitializeShipAttributes()
     {
-        shipGeometries = Ship.ShipGeometries;
+        shipGeometries = Ship.ShipStatus.ShipGeometries;
     }
 
     public override void StartAction()

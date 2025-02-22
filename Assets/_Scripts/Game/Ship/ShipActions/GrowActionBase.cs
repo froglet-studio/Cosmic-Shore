@@ -13,9 +13,9 @@ public class GrowActionBase : ShipAction
     protected Coroutine growCoroutine;
     protected bool growing;
 
-    protected override void Start()
+    protected override void InitializeShipAttributes()
     {
-        base.Start();
+        base.InitializeShipAttributes();
         minSize = target.transform.localScale.z;
     }
 

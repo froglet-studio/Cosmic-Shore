@@ -6,21 +6,20 @@ using CosmicShore.Core;
 
 public class ConsumeBoostAction : ShipAction
 {
-    ShipStatus shipData;
     [SerializeField] ElementalFloat boostMultiplier = new(4f);
     [SerializeField] float boostDuration = 4f;
     [SerializeField] int resourceIndex = 1;
     [SerializeField] float resourceCost = .25f;
 
-    protected override void Start()
+    protected override void InitializeShipAttributes()
     {
-        BindElementalFloats(Ship);
-        shipData = Ship.ShipStatus;
-        Ship.BoostMultiplier = 0;
+        base.InitializeShipAttributes();
+        Ship.ShipStatus.BoostMultiplier = 0;
     }
+
     public override void StartAction()
     {
-        if (Ship.ResourceSystem.Resources[resourceIndex].CurrentAmount >= resourceCost) StartCoroutine(ConsumeBoostCoroutine());
+        if (Ship.ShipStatus.ResourceSystem.Resources[resourceIndex].CurrentAmount >= resourceCost) StartCoroutine(ConsumeBoostCoroutine());
     }
 
     public override void StopAction()
@@ -31,15 +30,15 @@ public class ConsumeBoostAction : ShipAction
     IEnumerator ConsumeBoostCoroutine()
     {
         var multiplier = boostMultiplier.Value;
-        Ship.ResourceSystem.ChangeResourceAmount(resourceIndex,-resourceCost);
-        shipData.Boosting = true;
-        Ship.BoostMultiplier += multiplier;
+        Ship.ShipStatus.ResourceSystem.ChangeResourceAmount(resourceIndex,-resourceCost);
+        ShipStatus.Boosting = true;
+        Ship.ShipStatus.BoostMultiplier += multiplier;
         yield return new WaitForSeconds(boostDuration);
-        Ship.BoostMultiplier -= multiplier;
-        if (Ship.BoostMultiplier <= 1)
+        Ship.ShipStatus.BoostMultiplier -= multiplier;
+        if (Ship.ShipStatus.BoostMultiplier <= 1)
         {
-            Ship.BoostMultiplier = 1;
-            shipData.Boosting = false;
+            Ship.ShipStatus.BoostMultiplier = 1;
+            ShipStatus.Boosting = false;
         }
     }
 }

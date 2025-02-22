@@ -14,14 +14,15 @@ public class EnergizeAction : ShipAction
     [SerializeField] int Energy = 1;
     int defaultEnergy;
 
-    protected override void Start()
+    protected override void InitializeShipAttributes()
     {
+        base.InitializeShipAttributes();
+
         var firstGun = fireActions[0];
 
         defaultSpeed = firstGun.Speed;
         defaultProjectileTime = firstGun.ProjectileTime.Value;
         defaultEnergy = firstGun.Energy;
-
     }
 
     public override void StartAction()

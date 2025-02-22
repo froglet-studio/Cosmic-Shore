@@ -1,7 +1,4 @@
 ﻿using CosmicShore.Core;
-using CosmicShore.Game.AI;
-using CosmicShore.Game.Animation;
-using CosmicShore.Game.IO;
 using CosmicShore.Models.Enums;
 using System;
 using System.Collections.Generic;
@@ -12,9 +9,6 @@ using UnityEngine;
 namespace CosmicShore.Game
 {
     [RequireComponent(typeof(ShipStatus))]
-    [RequireComponent(typeof(AIPilot))]
-    [RequireComponent(typeof(ResourceSystem))]
-    [RequireComponent(typeof(ShipCameraCustomizer))]
     public class NetworkShip : NetworkBehaviour, IShip
     {
         public event Action OnShipInitialized;
@@ -45,40 +39,8 @@ namespace CosmicShore.Game
         public Material SkimmerMaterial { get; private set; }
         public Transform FollowTarget { get; private set; }
 
-        Teams _team;
-        public Teams Team
-        {
-            get => _team;
-            private set
-            {
-                _team = value;
-                if (_nearFieldSkimmer != null) _nearFieldSkimmer.Team = value;
-                if (_farFieldSkimmer != null) _farFieldSkimmer.Team = value;
-            }
-        }
-
-        AIPilot _aiPilot;
-        public AIPilot AIPilot
-        {
-            get
-            {
-                _aiPilot = _aiPilot != null ? _aiPilot : gameObject.GetComponent<AIPilot>();
-                return _aiPilot;
-            }
-        }
-
-        ResourceSystem _resourceSystem;
-        public ResourceSystem ResourceSystem
-        {
-            get
-            {
-                _resourceSystem = _resourceSystem != null ? _resourceSystem : GetComponent<ResourceSystem>();
-                return _resourceSystem;
-            }
-        }
-
-        ShipStatus _shipStatus;
-        public ShipStatus ShipStatus
+        IShipStatus _shipStatus;
+        public IShipStatus ShipStatus
         {
             get
             {
@@ -86,85 +48,6 @@ namespace CosmicShore.Game
                 return _shipStatus;
             }
         }
-
-        IPlayer _player;
-        public IPlayer Player
-        {
-            get => _player;
-            private set
-            {
-                _player = value;
-                if (_nearFieldSkimmer != null) _nearFieldSkimmer.Player = value;
-                if (_farFieldSkimmer != null) _farFieldSkimmer.Player = value;
-            }
-        }
-
-        InputController _inputController;
-        public InputController InputController
-        {
-            get
-            {
-                if (_inputController == null)
-                {
-                    if (Player == null)
-                    {
-                        Debug.LogError($"No player found to get input controller!");
-                        return null;
-                    }
-                    if (Player.InputController == null)
-                    {
-                        Debug.LogError($"No input controller inside player found!");
-                        return null;
-                    }
-                    _inputController = Player.InputController;
-                }
-                return _inputController;
-            }
-        }
-
-        ShipTransformer _shipTransformer;
-        public ShipTransformer ShipTransformer
-        {
-            get
-            {
-                _shipTransformer = _shipTransformer != null ? _shipTransformer : GetComponent<ShipTransformer>();
-                return _shipTransformer;
-            }
-        }
-
-        ShipAnimation _shipAnimation;
-        public ShipAnimation ShipAnimation
-        {
-            get
-            {
-                _shipAnimation = _shipAnimation != null ? _shipAnimation : GetComponent<ShipAnimation>();
-                return _shipAnimation;
-            }
-        }
-
-        TrailSpawner _trailSpawner;
-        public TrailSpawner TrailSpawner
-        {
-            get
-            {
-                _trailSpawner = _trailSpawner != null ? _trailSpawner : GetComponent<TrailSpawner>();
-                return _trailSpawner;
-            }
-        }
-
-        ShipCameraCustomizer _shipCameraCustomizer;
-        public ShipCameraCustomizer ShipCameraCustomizer
-        {
-            get
-            {
-                _shipCameraCustomizer = _shipCameraCustomizer != null ? _shipCameraCustomizer : GetComponent<ShipCameraCustomizer>();
-                return _shipCameraCustomizer;
-            }
-        }
-
-        public Silhouette Silhouette => throw new NotImplementedException();
-
-        public float GetInertia => throw new NotImplementedException();
 
         public float BoostMultiplier { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
 
@@ -177,8 +60,6 @@ namespace CosmicShore.Game
         public Transform Transform => transform;
 
         public List<InputEventShipActionMapping> InputEventShipActions => _inputEventShipActions;
-
-        public IInputStatus InputStatus => InputController.InputStatus;
 
         #endregion
 
@@ -201,9 +82,9 @@ namespace CosmicShore.Game
             }
                 
 
-            ShipTransformer.enabled = IsOwner;
-            TrailSpawner.ForceStartSpawningTrail();
-            TrailSpawner.RestartTrailSpawnerAfterDelay(2f);
+            ShipStatus.ShipTransformer.enabled = IsOwner;
+            ShipStatus.TrailSpawner.ForceStartSpawningTrail();
+            ShipStatus.TrailSpawner.RestartTrailSpawnerAfterDelay(2f);
         }
 
         private void Update()
@@ -226,15 +107,15 @@ namespace CosmicShore.Game
             }
         }
 
-        public void Initialize(IPlayer player, Teams team)
+        public void Initialize(IPlayer player)
         {
-            _player = player;
-            _team = team;
+            SetPlayerToShipStatusAndSkimmers(player);
+            SetTeamToShipStatusAndSkimmers(player.Team);
 
-            AIPilot.AutoPilotEnabled = false;
+            ShipStatus.AIPilot.AutoPilotEnabled = false;
             InitializeShipGeometries();
-            ShipAnimation.Initialize(this);
-            TrailSpawner.Initialize(this);
+            ShipStatus.ShipAnimation.Initialize(ShipStatus);
+            ShipStatus.TrailSpawner.Initialize(this);
             _nearFieldSkimmer.Initialize(this);
             _farFieldSkimmer.Initialize(this);
             
@@ -242,17 +123,31 @@ namespace CosmicShore.Game
             if (IsOwner)
             {
                 if (!FollowTarget) FollowTarget = transform;
-                if (_bottomEdgeButtons) Player.GameCanvas.MiniGameHUD.PositionButtonPanel(true);
+                if (_bottomEdgeButtons) ShipStatus.Player.GameCanvas.MiniGameHUD.PositionButtonPanel(true);
 
                 InitializeShipControlActions();
                 InitializeClassResourceActions();
 
-                AIPilot.Initialize(this);
-                ShipCameraCustomizer.Initialize(this);
-                ShipTransformer.Initialize(this);
+                ShipStatus.AIPilot.Initialize(this);
+                ShipStatus.ShipCameraCustomizer.Initialize(this);
+                ShipStatus.ShipTransformer.Initialize(this);
             }
 
             OnShipInitialized?.Invoke();
+        }
+
+        void SetTeamToShipStatusAndSkimmers(Teams team)
+        {
+            ShipStatus.Team = team;
+            if (_nearFieldSkimmer != null) _nearFieldSkimmer.Team = team;
+            if (_farFieldSkimmer != null) _farFieldSkimmer.Team = team;
+        }
+
+        void SetPlayerToShipStatusAndSkimmers(IPlayer player)
+        {
+            ShipStatus.Player = player;
+            if (_nearFieldSkimmer != null) _nearFieldSkimmer.Player = player;
+            if (_farFieldSkimmer != null) _farFieldSkimmer.Player = player;
         }
 
         void InitializeShipGeometries() => ShipHelper.InitializeShipGeometries(this, _shipGeometries);
@@ -270,7 +165,7 @@ namespace CosmicShore.Game
         public void StopShipControllerActions(InputEvents @event)
         {
             if (StatsManager.Instance != null)
-                StatsManager.Instance.AbilityActivated(Team, _player.PlayerName, @event, Time.time - _inputAbilityStartTimes[@event]);
+                StatsManager.Instance.AbilityActivated(ShipStatus.Team, ShipStatus.Player.PlayerName, @event, Time.time - _inputAbilityStartTimes[@event]);
 
             ShipHelper.StopShipControllerActions(@event, _shipControlActions);
         }
@@ -279,7 +174,7 @@ namespace CosmicShore.Game
 
         public void SetResourceLevels(ResourceCollection resourceGroup)
         {
-            ResourceSystem.InitializeElementLevels(resourceGroup);
+            ShipStatus.ResourceSystem.InitializeElementLevels(resourceGroup);
         }
 
         public void SetShipUp(float angle)

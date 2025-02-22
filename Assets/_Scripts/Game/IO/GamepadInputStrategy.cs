@@ -20,7 +20,7 @@ namespace CosmicShore.Game.IO
             ResetInput();
         }
 
-        public override void ProcessInput(IShip ship)
+        public override void ProcessInput()
         {
             if (Gamepad.current == null) return;
 
