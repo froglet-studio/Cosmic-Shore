@@ -8811,7 +8811,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Portrait: 0
-  AutoPilotEnabled: 0
 --- !u!1 &283141850
 GameObject:
   m_ObjectHideFlags: 0
@@ -52003,7 +52002,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Portrait: 0
-  AutoPilotEnabled: 0
 --- !u!1 &1526476323
 GameObject:
   m_ObjectHideFlags: 0
@@ -67092,7 +67090,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Portrait: 0
-  AutoPilotEnabled: 0
 --- !u!1 &1944843498
 GameObject:
   m_ObjectHideFlags: 0

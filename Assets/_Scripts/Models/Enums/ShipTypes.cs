@@ -17,4 +17,5 @@ public enum ShipTypes
     Sparrow = 11,
 
     NetworkManta = 12,
+    NetworkRhino = 13
 }

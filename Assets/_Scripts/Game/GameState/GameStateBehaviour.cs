@@ -6,7 +6,7 @@ namespace CosmicShore.Game.GameState
     public enum GameState
     {
         MainMenu,
-        // CharSelect,
+        CharSelect,
         Gameplay
     }
 

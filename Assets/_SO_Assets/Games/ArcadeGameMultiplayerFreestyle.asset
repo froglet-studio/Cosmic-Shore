@@ -25,6 +25,7 @@ MonoBehaviour:
   SceneName: MinigameMultiplayerFreestyle
   Captains:
   - {fileID: 11400000, guid: a34cbb5719213b641b58002eb3866752, type: 2}
+  - {fileID: 11400000, guid: 6d520cd7eb8878b4aa2551e0591bc08d, type: 2}
   MinPlayers: 1
   MaxPlayers: 2
   MinIntensity: 1
