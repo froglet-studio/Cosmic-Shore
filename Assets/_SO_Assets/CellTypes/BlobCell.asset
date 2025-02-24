@@ -41,6 +41,12 @@ MonoBehaviour:
     OverrideDefaultPlantPeriod: 0
     NewPlantPeriod: 0
   SupportedFauna:
-  - Population: {fileID: 1594903950002975183, guid: 4c94f3ec8c0b5c64da28b446b7b493b6,
+  - Population: {fileID: 1594903950002975183, guid: cf5d9d162b969ed4e92bf8388c703723,
       type: 3}
-    SpawnProbability: 1
+    SpawnProbability: 0.00001
+  - Population: {fileID: 1594903950002975183, guid: 764892b0728c1f64ba0d13077691c15b,
+      type: 3}
+    SpawnProbability: 100
+  - Population: {fileID: 8812619448024686939, guid: 2b97d1ef35ac5e044a7dab1199bc4762,
+      type: 3}
+    SpawnProbability: 0.001

@@ -47,7 +47,7 @@ MonoBehaviour:
   Team: 2
   goalUpdateInterval: 5
   Goal: {x: 0, y: 0, z: 0}
-  lightFaunaPrefab: {fileID: 5351160486092638538, guid: a67ba7ddaecf6624ab37cd9f5f2210a6,
+  lightFaunaPrefab: {fileID: 6134427264693441738, guid: a67ba7ddaecf6624ab37cd9f5f2210a6,
     type: 3}
   spawnCount: 4
   spawnRadius: 10

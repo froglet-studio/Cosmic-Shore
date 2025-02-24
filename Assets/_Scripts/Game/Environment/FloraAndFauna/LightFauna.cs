@@ -1,129 +1,103 @@
 using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
 using CosmicShore.Core;
-using CosmicShore;
 
-public class LightFauna : Fauna
+namespace CosmicShore
 {
-    [Header("Detection Settings")]
-    [SerializeField] float detectionRadius = 100.0f;
-    //[SerializeField] float cohesionRadius = 8.0f;
-    [SerializeField] float separationRadius = 100.0f;
-    [SerializeField] float consumeRadius = 40.0f;
-    [SerializeField] float behaviorUpdateRate = 2.0f;
-
-    [Header("Behavior Weights")]
-    [SerializeField] float separationWeight = 100f;
-    [SerializeField] float cohesionWeight = 1.0f;
-    [SerializeField] float goalWeight = 1.5f;
-
-    [Header("Movement")]
-    [SerializeField] float minSpeed = 3.0f;
-    [SerializeField] float maxSpeed = 6.0f;
-
-    private Vector3 currentVelocity;
-    private Vector3 desiredDirection;
-    private Quaternion desiredRotation;
-
-    [HideInInspector] public float Phase;
-
-    protected override void Start()
+    public class LightFauna : Fauna
     {
-        base.Start();
-        currentVelocity = transform.forward * Random.Range(minSpeed, maxSpeed);
-        StartCoroutine(UpdateBehaviorCoroutine());
-    }
+        [Header("Behavior Options")]
+        [SerializeField] private List<FaunaBehaviorOption> behaviorOptions;
+        [SerializeField] private LightFaunaBoidBehavior defaultBoidBehavior;
 
-    IEnumerator UpdateBehaviorCoroutine()
-    {
-        while (true)
+        [HideInInspector] public float Phase;
+
+        // Expose protected healthBlock from LifeForm
+        public HealthBlock HealthBlock => healthBlock;
+
+        protected override void Start()
         {
-            yield return new WaitForSeconds(behaviorUpdateRate + Phase);
-            UpdateBehavior();          
-        }
-    }
+            base.Start();
 
-    void UpdateBehavior()
-    {
-        Vector3 separation = Vector3.zero;
-        Vector3 cohesion = Vector3.zero;
-        Vector3 goalDirection = (Population.Goal - transform.position).normalized;
-        
-        int neighborCount = 0;
-        float averageSpeed = 0f;
-
-        var nearbyColliders = Physics.OverlapSphere(transform.position, detectionRadius);
-        
-        foreach (var collider in nearbyColliders)
-        {
-            if (collider.gameObject == gameObject) continue;
-
-            Vector3 diff = transform.position - collider.transform.position;
-            float distance = diff.magnitude;
-            if (distance == 0) continue;
-
-            // Hande Ships
-            var shipPart = collider.GetComponent<ShipGeometry>();
-            if (shipPart)
+            // Initialize health block
+            if (healthBlock != null)
             {
-                neighborCount++;
-                separation -= diff.normalized / distance;
-                continue;
+                healthBlock.Team = Team;
             }
 
-            // Handle other fauna
-            var otherHealthBlock = collider.GetComponent<HealthBlock>();
-            if (otherHealthBlock)
+            // Add spindle if needed
+            if (spindle != null)
             {
-                if (otherHealthBlock.LifeForm == this) continue;
-                neighborCount++;
-                //cohesion += collider.transform.position;
-                
-                if (distance < separationRadius)
+                AddSpindle(spindle);
+            }
+
+            // Ensure we have a default boid behavior
+            if (defaultBoidBehavior == null)
+            {
+                defaultBoidBehavior = GetComponent<LightFaunaBoidBehavior>();
+                if (defaultBoidBehavior == null)
                 {
-                    separation += diff.normalized / distance;
+                    defaultBoidBehavior = gameObject.AddComponent<LightFaunaBoidBehavior>();
                 }
-                if (distance < consumeRadius && otherHealthBlock.LifeForm.Team != Team) otherHealthBlock.Damage(currentVelocity, Team, "light fauna", true);
-                continue;
             }
 
-            // Handle blocks
-            TrailBlock block = collider.GetComponent<TrailBlock>();
-            if (block && block.Team != Team && distance < consumeRadius)
+            // Add default behavior if not in options
+            if (behaviorOptions == null)
             {
-                block.Damage(currentVelocity, Team, "light fauna", true);
+                behaviorOptions = new List<FaunaBehaviorOption>();
+            }
+            if (!behaviorOptions.Any(opt => opt.behavior == defaultBoidBehavior))
+            {
+                behaviorOptions.Add(new FaunaBehaviorOption 
+                { 
+                    behavior = defaultBoidBehavior,
+                    weight = 1.0f
+                });
+            }
+
+            StartCoroutine(BehaviorSelectionLoop());
+        }
+
+        private IEnumerator BehaviorSelectionLoop()
+        {
+            while (true)
+            {
+                yield return new WaitForSeconds(3f);
+
+                var validOptions = behaviorOptions
+                    .Where(opt => opt.behavior != null && opt.behavior.CanPerform(this) && opt.weight > 0)
+                    .ToList();
+
+                if (validOptions.Count == 0)
+                    continue;
+
+                float totalWeight = validOptions.Sum(opt => opt.weight);
+                float pick = Random.Range(0, totalWeight);
+                FaunaBehavior chosenBehavior = null;
+
+                foreach (var opt in validOptions)
+                {
+                    if (pick < opt.weight)
+                    {
+                        chosenBehavior = opt.behavior;
+                        break;
+                    }
+                    pick -= opt.weight;
+                }
+
+                if (chosenBehavior != null)
+                {
+                    yield return StartCoroutine(chosenBehavior.Perform(this));
+                    chosenBehavior.OnBehaviorEnd(this);
+                }
             }
         }
 
-        if (neighborCount > 0)
+        protected override void Spawn()
         {
-            //cohesion = ((cohesion / neighborCount) - transform.position).normalized;
-            averageSpeed = averageSpeed > 0 ? averageSpeed / neighborCount : currentVelocity.magnitude;
+            // Optional: Implement spawn logic if needed
         }
-        else
-        {
-            averageSpeed = currentVelocity.magnitude;
-        }
-
-        // Combine behaviors
-        desiredDirection = ((separation * separationWeight) + 
-                          //(cohesion * cohesionWeight) + 
-                          (goalDirection * goalWeight)).normalized;
-
-        currentVelocity = desiredDirection * Mathf.Clamp(averageSpeed, minSpeed, maxSpeed);
-        desiredRotation = currentVelocity != Vector3.zero ? 
-            Quaternion.LookRotation(currentVelocity) : transform.rotation;
-    }
-
-    void Update()
-    {
-        transform.position += currentVelocity * Time.deltaTime;
-        var t = Mathf.Clamp(Time.deltaTime * 5f, 0, .99f);
-        transform.rotation = Quaternion.Lerp(transform.rotation, desiredRotation, t);
-    }
-
-    protected override void Spawn()
-    {
-        // Implement spawn behavior if needed
     }
 }

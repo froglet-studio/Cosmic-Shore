@@ -1,5 +1,4 @@
 apply plugin: 'com.android.library'
-apply from: '../shared/keepUnitySymbols.gradle'
 **APPLY_PLUGINS**
 
 dependencies {
@@ -20,10 +19,8 @@ dependencies {
 
 // Android Resolver Exclusions Start
 android {
-    ndkPath "**NDKPATH**"
-    ndkVersion "**NDKVERSION**"
-    namespace "com.unity3d.player"
-  packaging {
+	namespace "com.unity3d.player"
+  packagingOptions {
       exclude ('/lib/armeabi/*' + '*')
       exclude ('/lib/mips/*' + '*')
       exclude ('/lib/mips64/*' + '*')
@@ -33,7 +30,7 @@ android {
 }
 // Android Resolver Exclusions End
 android {
-    compileSdk **APIVERSION**
+    compileSdkVersion **APIVERSION**
     buildToolsVersion '**BUILDTOOLS**'
 
     compileOptions {
@@ -42,11 +39,9 @@ android {
     }
 
     defaultConfig {
-**DEFAULT_CONFIG_SETUP**
-        minSdk **MINSDK**
-        targetSdk **TARGETSDK**
+        minSdkVersion **MINSDKVERSION**
+        targetSdkVersion **TARGETSDKVERSION**
         ndk {
-            debugSymbolLevel **DEBUGSYMBOLLEVEL**
             abiFilters **ABIFILTERS**
         }
         versionCode **VERSIONCODE**
@@ -54,14 +49,14 @@ android {
         consumerProguardFiles 'proguard-unity.txt'**USER_PROGUARD**
     }
 
-    lint {
+    lintOptions {
         abortOnError false
     }
 
-    androidResources {
+    aaptOptions {
         noCompress = **BUILTIN_NOCOMPRESS** + unityStreamingAssets.tokenize(', ')
         ignoreAssetsPattern = "!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~"
-    }**PACKAGING**
+    }**PACKAGING_OPTIONS**
 }**REPOSITORIES**
 **IL_CPP_BUILD_SETUP**
 **SOURCE_BUILD_SETUP**

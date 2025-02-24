@@ -40,7 +40,7 @@ namespace CosmicShore
         public void AddHealthBlock(HealthBlock healthBlock)
         {
             healthBlocks.Add(healthBlock);
-            healthBlock.LifeForm = LifeForm;
+            if (LifeForm) healthBlock.LifeForm ??= LifeForm;
         }
 
         public void RemoveHealthBlock(HealthBlock healthBlock)
