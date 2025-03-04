@@ -52,12 +52,12 @@ namespace CosmicShore
         [SerializeField] BoxCollider blockCollider;
         private readonly List<Collider> separatedBoids = new List<Collider>();
 
-        public override bool CanPerform(Fauna fauna)
+        public override bool CanPerform()
         {
             return !isRunning;
         }
 
-        public override IEnumerator Perform(Fauna fauna)
+        public override IEnumerator Perform()
         {
             isRunning = true;
             LightFauna lightFauna = fauna as LightFauna;
@@ -283,7 +283,7 @@ namespace CosmicShore
             );
         }
 
-        public override void OnBehaviorEnd(Fauna fauna)
+        public override void OnBehaviorEnd()
         {
             isRunning = false;
         }

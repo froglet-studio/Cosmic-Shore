@@ -9,7 +9,7 @@ namespace CosmicShore
     public class LightFauna : Fauna
     {
         [Header("Behavior Options")]
-        [SerializeField] private List<FaunaBehaviorOption> behaviorOptions;
+        
         [SerializeField] private LightFaunaBoidBehavior defaultBoidBehavior;
 
         [HideInInspector] public float Phase;
@@ -67,7 +67,7 @@ namespace CosmicShore
                 yield return new WaitForSeconds(3f);
 
                 var validOptions = behaviorOptions
-                    .Where(opt => opt.behavior != null && opt.behavior.CanPerform(this) && opt.weight > 0)
+                    .Where(opt => opt.behavior != null && opt.behavior.CanPerform() && opt.weight > 0)
                     .ToList();
 
                 if (validOptions.Count == 0)
@@ -89,8 +89,8 @@ namespace CosmicShore
 
                 if (chosenBehavior != null)
                 {
-                    yield return StartCoroutine(chosenBehavior.Perform(this));
-                    chosenBehavior.OnBehaviorEnd(this);
+                    yield return StartCoroutine(chosenBehavior.Perform());
+                    chosenBehavior.OnBehaviorEnd();
                 }
             }
         }

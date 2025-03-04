@@ -13,7 +13,15 @@ namespace CosmicShore
         /// Override to define whether this behavior
         /// is currently valid for the given Fauna (e.g., has relevant components).
         /// </summary>
-        public virtual bool CanPerform(Fauna fauna)
+        /// 
+        protected Fauna fauna;
+
+        private void Start()
+        {
+            fauna = GetComponentInParent<Fauna>();
+        }
+
+        public virtual bool CanPerform()
         {
             return true;
         }
@@ -22,12 +30,12 @@ namespace CosmicShore
         /// Override to define the actual behavior logic.
         /// Ideally a coroutine that can run or do a single step.
         /// </summary>
-        public abstract IEnumerator Perform(Fauna fauna);
+        public abstract IEnumerator Perform();
 
         /// <summary>
         /// Called after Perform completes or is canceled, allowing for cleanup.
         /// Optional override if you need special teardown logic.
         /// </summary>
-        public virtual void OnBehaviorEnd(Fauna fauna) { }
+        public virtual void OnBehaviorEnd() { }
     }
 }

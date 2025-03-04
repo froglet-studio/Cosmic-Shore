@@ -16,12 +16,12 @@ namespace CosmicShore
 
         private bool isAmbushing = false;
 
-        public override bool CanPerform(Fauna fauna)
+        public override bool CanPerform()
         {
             return !isAmbushing;
         }
 
-        public override IEnumerator Perform(Fauna fauna)
+        public override IEnumerator Perform()
         {
             isAmbushing = true;
 
@@ -40,7 +40,7 @@ namespace CosmicShore
             yield return null;
         }
 
-        public override void OnBehaviorEnd(Fauna fauna)
+        public override void OnBehaviorEnd()
         {
             isAmbushing = false;
         }
@@ -57,12 +57,12 @@ namespace CosmicShore
 
         private bool onCooldown = false;
 
-        public override bool CanPerform(Fauna fauna)
+        public override bool CanPerform()
         {
             return !onCooldown;
         }
 
-        public override IEnumerator Perform(Fauna fauna)
+        public override IEnumerator Perform()
         {
             onCooldown = true;
 
@@ -92,12 +92,12 @@ namespace CosmicShore
 
         private bool isGathering = false;
 
-        public override bool CanPerform(Fauna fauna)
+        public override bool CanPerform()
         {
             return !isGathering;
         }
 
-        public override IEnumerator Perform(Fauna fauna)
+        public override IEnumerator Perform()
         {
             isGathering = true;
 
@@ -140,7 +140,7 @@ namespace CosmicShore
             isGathering = false;
         }
 
-        public override void OnBehaviorEnd(Fauna fauna)
+        public override void OnBehaviorEnd()
         {
             isGathering = false;
         }
@@ -158,13 +158,13 @@ namespace CosmicShore
         
         private bool isMorphing = false;
 
-        public override bool CanPerform(Fauna fauna)
+        public override bool CanPerform()
         {
             // Only do it if aggression is at least X
             return !isMorphing && fauna.aggression >= requiredAggression;
         }
 
-        public override IEnumerator Perform(Fauna fauna)
+        public override IEnumerator Perform()
         {
             isMorphing = true;
 
@@ -195,7 +195,7 @@ namespace CosmicShore
             isMorphing = false;
         }
 
-        public override void OnBehaviorEnd(Fauna fauna)
+        public override void OnBehaviorEnd()
         {
             // If forcibly ended, revert if needed
             isMorphing = false;

@@ -283,9 +283,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bf9f7074829c9244fb6c777fe968bfd6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  rushSpeed: 15
-  rushDuration: 2
-  cooldownTime: 5
+  whipRadius: 5
+  whipDamage: 10
+  whipCooldown: 3
 --- !u!1 &1517659322465118963
 GameObject:
   m_ObjectHideFlags: 0
@@ -810,14 +810,8 @@ MonoBehaviour:
   Team: 0
   aggression: 0
   Population: {fileID: 0}
-  behaviorOptions:
-  - behavior: {fileID: 4014156495063994494}
-    weight: 10
-  - behavior: {fileID: 1974814017707769537}
-    weight: 0.01
-  - behavior: {fileID: 1400053930880255219}
-    weight: 0.01
-  defaultBoidBehavior: {fileID: 0}
+  behaviorOptions: []
+  defaultBoidBehavior: {fileID: 4014156495063994494}
   Phase: 0
 --- !u!1 &3561311450035280578
 GameObject:
@@ -950,12 +944,12 @@ MonoBehaviour:
   separationRadius: 100
   trailBlockInteractionRadius: 10
   behaviorUpdateRate: 2
-  separationWeight: 100
+  separationWeight: 10
   alignmentWeight: 1
   cohesionWeight: 1
-  goalWeight: 1.5
-  minSpeed: 3
-  maxSpeed: 6
+  goalWeight: 100
+  minSpeed: 300
+  maxSpeed: 400
   collisionEffects: 
   DefaultGoal: {fileID: 0}
   Mound: {fileID: 0}
