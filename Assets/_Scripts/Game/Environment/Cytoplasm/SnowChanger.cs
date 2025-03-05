@@ -1,9 +1,14 @@
+using CosmicShore;
 using CosmicShore.Environment.FlowField;
+using System.Collections.Generic;
 using UnityEngine;
+
 
 public class SnowChanger : MonoBehaviour
 {
     public GameObject Crystal;
+    public List<LifeForm> Threats;
+
     [SerializeField] GameObject snow;
     [SerializeField] Vector3 crystalSize = new Vector3(500, 500, 500);
     [SerializeField] int shardDistance = 100;
@@ -12,6 +17,9 @@ public class SnowChanger : MonoBehaviour
     [SerializeField] bool lookAt;
     [SerializeField] Vector3 targetAxis;
     [SerializeField] Vector3 newOrigin;
+
+    [SerializeField] Material GoodMaterial;
+    [SerializeField] Material BadMaterial;
     
 
     GameObject[,,] crystalLattice;
@@ -21,7 +29,7 @@ public class SnowChanger : MonoBehaviour
     int shardsX;
     int shardsY;
     int shardsZ;
-    float sphereDiameter;
+    float sqrSphereDiameter;
     Vector3 origin = Vector3.zero;
 
     void OnEnable()
@@ -43,7 +51,9 @@ public class SnowChanger : MonoBehaviour
         shardsY = (int)(crystalSize.y / shardDistance);
         shardsZ = (int)(crystalSize.z / shardDistance);
 
-        if (Crystal != null) sphereDiameter = sphereScaler * Crystal.GetComponent<Crystal>().sphereRadius;
+        if (Crystal != null) sqrSphereDiameter = sphereScaler * Crystal.GetComponent<Crystal>().sphereRadius;
+        sqrSphereDiameter *= sqrSphereDiameter;
+
 
         crystalLattice = new GameObject[shardsX * 2 + 1, shardsY * 2 + 1, shardsZ * 2 + 1]; // both sides of each axis plus the midplane
 
@@ -79,12 +89,25 @@ public class SnowChanger : MonoBehaviour
                     var shard = crystalLattice[x, y, z];
                     float normalizedDistance;
                     if (Crystal != null)
-                    { 
-                        float clampedDistance = Mathf.Clamp(
-                        (shard.transform.position - Crystal.transform.position).magnitude, 0, sphereDiameter);
-                        normalizedDistance = clampedDistance / sphereDiameter;
-
-                        shard.transform.LookAt(Crystal.transform);
+                    {
+                        float threatSqrDistance = float.MaxValue;
+                        float crystalSqrDistance = (shard.transform.position - Crystal.transform.position).sqrMagnitude;
+                        if (Threats.Count > 0)
+                        {
+                            threatSqrDistance = (shard.transform.position - Threats[0].transform.position).sqrMagnitude;
+                        }
+                        if (threatSqrDistance < crystalSqrDistance)
+                        {
+                            normalizedDistance = threatSqrDistance / sqrSphereDiameter;
+                            shard.transform.LookAt(Threats[0].transform);
+                            shard.GetComponentInChildren<MeshRenderer>().material = BadMaterial;
+                        }
+                        else
+                        {
+                            normalizedDistance = crystalSqrDistance / sqrSphereDiameter;
+                            shard.transform.LookAt(Crystal.transform);
+                            shard.GetComponentInChildren<MeshRenderer>().material = GoodMaterial;
+                        }
                     }
                     else
                     {
@@ -99,6 +122,7 @@ public class SnowChanger : MonoBehaviour
                     shard.transform.localScale =
                         Vector3.forward * (normalizedDistance * nodeScaler + nodeSize) +
                         Vector3.one * (normalizedDistance * nodeScalerOverThree + nodeSize);
+
 
                 }       
             }

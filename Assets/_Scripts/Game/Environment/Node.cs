@@ -25,7 +25,7 @@ public class Node : MonoBehaviour
         } 
     }
 
-    SnowChanger SnowChanger;
+    public SnowChanger SnowChanger;
     GameObject membrane;
     GameObject nucleus; // TODO: Use radius to spawn/move crystal
 
@@ -116,6 +116,10 @@ public class Node : MonoBehaviour
             for (int i = 0; i < FloraTypeCount; i++)
             {
                 var floraConfiguration = SpawnRandomFlora();
+                if ( floraConfiguration.Flora.Threatening)
+                {
+                    SnowChanger.Threats.Add(floraConfiguration.Flora);
+                }
                 StartCoroutine(SpawnFlora(floraConfiguration, spawnJade));
             }
         }

@@ -13,6 +13,7 @@ namespace CosmicShore
         [SerializeField] int healthBlocksForMaturity = 1;
         [SerializeField] int minHealthBlocks = 0;
         [SerializeField] float shieldPeriod = 0;
+        [SerializeField] public bool Threatening = false;
 
         public Teams Team;
         protected HashSet<Spindle> spindles = new HashSet<Spindle>();
@@ -80,6 +81,10 @@ namespace CosmicShore
 
         protected virtual void Die()
         {
+            if (Threatening)
+            {
+                node.SnowChanger.Threats.Remove(this);
+            }
             crystal.ActivateCrystal();
             StatsManager.Instance.LifeformDestroyed(node.ID);
             foreach (HealthBlock healthBlock in healthBlocks.ToArray())

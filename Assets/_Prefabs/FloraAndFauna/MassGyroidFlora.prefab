@@ -51,6 +51,7 @@ MonoBehaviour:
   healthBlocksForMaturity: 50
   minHealthBlocks: 5
   shieldPeriod: 0
+  Threatening: 1
   Team: 0
   leafSize: {x: 7, y: 4.5, z: 3.5}
   growPeriod: 0.6
