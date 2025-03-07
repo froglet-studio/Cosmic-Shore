@@ -20,7 +20,9 @@ namespace CosmicShore
         {
             for (var i = 0; i < PlayerTeams.Count; i++)
             {
-                Instantiate(playerPrefab).TryGetComponent(out IPlayer player);
+                var playerClone = Instantiate(playerPrefab);
+                playerClone.TryGetComponent(out IPlayer player);
+                playerClone.name = PlayerNames[i];
                 if (player == null)
                 {
                     Debug.LogError($"Non player prefab provided to PlayerLoader");
