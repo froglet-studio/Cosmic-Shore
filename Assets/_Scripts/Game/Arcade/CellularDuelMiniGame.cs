@@ -1,15 +1,47 @@
-using CosmicShore.Game.AI;
 using UnityEngine;
 
 namespace CosmicShore.Game.Arcade
 {
     public class CellularDuelMiniGame : MiniGame 
     {
-        [SerializeField] Player hostilePilot;
+        [SerializeField] Player aiPlayerPrefab;
+        [SerializeField] string aiPlayerName = "HostileOne";
+
         protected override void Start()
         {
             base.Start();
-            hostilePilot.Ship.AIPilot.SkillLevel = .4f + IntensityLevel*.15f;
+
+
+            initializeAIPlayer();
+
+
+            
+        }
+
+        void initializeAIPlayer()
+        {
+            var aiPlayerClone = Instantiate(aiPlayerPrefab);
+            aiPlayerClone.TryGetComponent(out IPlayer aiPlayer);
+            aiPlayerClone.name = aiPlayerName;
+            if (aiPlayer == null)
+            {
+                Debug.LogError($"Non player prefab provided to aiPlayerPrefab");
+                return;
+            }
+
+            IPlayer.InitializeData data = new()
+            {
+                DefaultShipType = ShipTypes.Manta,
+                Team = Teams.Ruby,
+                PlayerName = aiPlayerName,
+                PlayerUUID = aiPlayerName,
+                Name = aiPlayerName
+            };
+            aiPlayer.Initialize(data);
+            aiPlayer.ToggleGameObject(true);
+            aiPlayer.ToggleActive(true);
+
+            aiPlayerClone.Ship.AIPilot.SkillLevel = .4f + IntensityLevel * .15f;
         }
     }
 }
