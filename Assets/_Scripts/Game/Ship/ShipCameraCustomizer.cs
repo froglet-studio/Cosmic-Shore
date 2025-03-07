@@ -19,9 +19,13 @@ namespace CosmicShore
 
         public void Initialize(IShip ship)
         {
+            
+
             Ship = ship;
             cameraManager = Ship.CameraManager;
+            cameraManager.FollowOverride = false;
             cameraManager.isOrthographic = isOrthographic;
+            
 
             BindElementalFloats(Ship);
             ApplyShipControlOverrides(ControlOverrides);
@@ -50,6 +54,7 @@ namespace CosmicShore
                         goto case ShipCameraOverrides.ChangeFollowTarget;
                     case ShipCameraOverrides.ChangeFollowTarget:
                         cameraManager.FollowOverride = true;
+                        cameraManager.OverrideOffset = FollowTargetPosition;
                         cameraManager.SetupGamePlayCameras();
                         break;
                     
