@@ -11,11 +11,7 @@ namespace CosmicShore.Game.Arcade
         {
             base.Start();
 
-
             initializeAIPlayer();
-
-
-            
         }
 
         void initializeAIPlayer()
@@ -31,7 +27,7 @@ namespace CosmicShore.Game.Arcade
 
             IPlayer.InitializeData data = new()
             {
-                DefaultShipType = ShipTypes.Manta,
+                DefaultShipType = ShipTypes.Random,
                 Team = Teams.Ruby,
                 PlayerName = aiPlayerName,
                 PlayerUUID = aiPlayerName,
@@ -40,7 +36,6 @@ namespace CosmicShore.Game.Arcade
             aiPlayer.Initialize(data);
             aiPlayer.ToggleGameObject(true);
             aiPlayer.ToggleActive(true);
-
             aiPlayerClone.Ship.AIPilot.SkillLevel = .4f + IntensityLevel * .15f;
         }
     }
