@@ -14,6 +14,8 @@ namespace CosmicShore
         {
             PlayerDataController.OnProfileLoaded += SetSprite;
             PlayerDataController.OnPlayerAvatarUpdated += SetSprite;
+
+            SetSprite();
         }
 
         void OnDisable()
