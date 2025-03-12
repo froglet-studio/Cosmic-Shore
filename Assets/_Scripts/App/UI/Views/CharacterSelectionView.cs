@@ -1,12 +1,19 @@
-﻿using TMPro;
+﻿using CosmicShore.Game;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+
 
 namespace CosmicShore.App.UI.Views
 {
     public class CharacterSelectionView : View
     {
         [SerializeField] Transform ShipSelectionGrid;
+
+        [SerializeField] CharacterSelectController _characterSelectController;
+
+        [SerializeField]
+        TMP_Text _readyButtonText;
 
         public override void UpdateView()
         {
@@ -35,6 +42,7 @@ namespace CosmicShore.App.UI.Views
                     button.onClick.RemoveAllListeners();
                     int index = i; // Capture the current index for the lambda
                     button.onClick.AddListener(() => Select(index));
+                    button.onClick.AddListener(() => OnSelectButtonClicked(index));
                     button.onClick.AddListener(() => ShipSelectionGrid.GetComponent<MenuAudio>().PlayAudio());
                 }
                 else
@@ -44,5 +52,14 @@ namespace CosmicShore.App.UI.Views
             }
         }
 
+        public void ToggleReadyButtonText(bool isReady)
+        {
+            _readyButtonText.text = isReady ? "Cancel" : "Ready";
+        }
+
+        private void OnSelectButtonClicked(int index)
+        {
+            _characterSelectController.OnShipChoose(index);
+        }
     }
 }
