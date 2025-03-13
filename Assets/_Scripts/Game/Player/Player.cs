@@ -23,7 +23,7 @@ namespace CosmicShore.Game
 
         public static Player ActivePlayer;
 
-        public ShipTypes DefaultShipType { get; set; }
+        public ShipTypes ShipType { get; set; }
         public Teams Team { get; set; }
         public string Name { get; private set; }
         public string PlayerName { get; private set; }
@@ -53,7 +53,7 @@ namespace CosmicShore.Game
         {
             InitializeData = data;
             gameManager = GameManager.Instance;
-            DefaultShipType = data.DefaultShipType;
+            ShipType = data.DefaultShipType;
             Team = data.Team;
             PlayerName = data.PlayerName;
             PlayerUUID = data.PlayerUUID;
@@ -95,14 +95,14 @@ namespace CosmicShore.Game
                     case "PlayerFour":
                     default: // Default will be the players Playfab username
                         Debug.Log($"Player.Start - Instantiate Ship: {PlayerName}");
-                        SetupPlayerShip(Hangar.Instance.LoadPlayerShip(DefaultShipType, Team));
+                        SetupPlayerShip(Hangar.Instance.LoadPlayerShip(ShipType, Team));
                         break;
                 }
             }
             else
             {
                 if (IsAI)
-                    SetupAIShip(Hangar.Instance.LoadShip(DefaultShipType, Team));
+                    SetupAIShip(Hangar.Instance.LoadShip(ShipType, Team));
                 else
                 {
                     SetupPlayerShip(Hangar.Instance.LoadPlayerShip());
@@ -110,7 +110,7 @@ namespace CosmicShore.Game
             }
         }
 
-        public void SetDefaultShipType(ShipTypes shipType) => DefaultShipType = shipType;
+        public void SetDefaultShipType(ShipTypes shipType) => ShipType = shipType;
 
         public void ToggleGameObject(bool toggle) => gameObject.SetActive(toggle);
         public void ToggleActive(bool active) => IsActive = active;

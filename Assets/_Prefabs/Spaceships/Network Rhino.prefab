@@ -1399,7 +1399,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
   _name: Network Rhino
-  _shipType: 13
+  _shipType: 3
   _nearFieldSkimmer: {fileID: 874579554510349383}
   _orientationHandle: {fileID: 7569251362483239328}
   _shipGeometries:

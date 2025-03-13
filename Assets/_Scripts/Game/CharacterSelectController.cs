@@ -1,11 +1,10 @@
 ﻿using CosmicShore.App.UI.Views;
 using CosmicShore.Integrations.PlayFab.Economy;
-using CosmicShore.NetworkManagement;
 using CosmicShore.Utilities;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Unity.Netcode;
 using UnityEngine;
 using VContainer;
@@ -31,6 +30,8 @@ namespace CosmicShore.Game
         SceneNameListSO _sceneNameList;
 
         int _readyCount = 0;
+        // Remove Coroutine field since we're using async/await
+        // Coroutine _loadGameRoutine;
 
         public override void OnNetworkSpawn()
         {
@@ -70,6 +71,20 @@ namespace CosmicShore.Game
             {
                 // New entry with IsReady set to false by default.
                 CharacterSelections.Add(new CharacterSelectData(clientId, index, false));
+            }
+
+            // Convert the selected index to a ShipTypes value.
+            ShipTypes newShipType = GetShipTypeFromIndex(index);
+
+            // Retrieve the player's NetworkObject and update their default ship type.
+            NetworkObject playerNetObj = NetworkManager.Singleton.SpawnManager.GetPlayerNetworkObject(clientId);
+            if (playerNetObj != null)
+            {
+                NetworkPlayer player = playerNetObj.GetComponent<NetworkPlayer>();
+                if (player != null)
+                {
+                    player.SetDefaultShipType(newShipType);
+                }
             }
         }
 
@@ -119,10 +134,11 @@ namespace CosmicShore.Game
             };
             ToggleReadyButtonTextClientRpc(updatedReadyState, rpcParams);
 
-            // If all connected players are ready, load the multiplayer scene after 3 seconds.
+            // If all connected players are ready, load the multiplayer scene after 3 seconds using async/await.
             if (_readyCount == NetworkManager.Singleton.ConnectedClients.Count)
             {
-                StartCoroutine(DelayedSceneLoad());
+                // Fire-and-forget async method (on server)
+                DelayedSceneLoadAsync();
             }
         }
 
@@ -132,11 +148,21 @@ namespace CosmicShore.Game
             _characterSelectionView.ToggleReadyButtonText(isReady);
         }
 
-        IEnumerator DelayedSceneLoad()
+        // Async method to wait 3 seconds before loading the scene.
+        private async void DelayedSceneLoadAsync()
         {
-            yield return null;
-            // Use Coutdown Timer for displaying the countdown,
-            SceneLoaderWrapper.Instance.LoadScene(_sceneNameList.MultiplayerScene, true);
+            Debug.Log("DelayedSceneLoadAsync started.");
+            await Task.Delay(3000);
+            Debug.Log("3 seconds elapsed. Attempting to load scene: " + _sceneNameList.MultiplayerScene);
+            if (SceneLoaderWrapper.Instance == null)
+            {
+                Debug.LogError("SceneLoaderWrapper.Instance is null! Cannot load scene.");
+            }
+            else
+            {
+                SceneLoaderWrapper.Instance.LoadScene(_sceneNameList.MultiplayerScene, true);
+                Debug.Log("LoadScene called on SceneLoaderWrapper.Instance.");
+            }
         }
 
         void InitializeShipSelectionView()
@@ -152,6 +178,33 @@ namespace CosmicShore.Game
             {
                 _characterSelectionView.AssignModels(_selectedGame.Captains.ConvertAll(x => (ScriptableObject)x.Ship));
             }
+        }
+
+        private ShipTypes GetShipTypeFromIndex(int index)
+        {
+            // Get the list of available captains (filtered if necessary)
+            List<SO_Captain> availableCaptains;
+            if (_respectInventoryForShipSelection)
+            {
+                availableCaptains = _selectedGame.Captains
+                    .Where(x => CaptainManager.Instance.UnlockedShips.Contains(x.Ship))
+                    .ToList();
+            }
+            else
+            {
+                availableCaptains = _selectedGame.Captains.ToList();
+            }
+
+            // Check if the index is valid.
+            if (index < 0 || index >= availableCaptains.Count)
+            {
+                Debug.LogWarning($"Invalid ship selection index: {index}");
+                // Return a default ShipType or handle the error as needed.
+                return ShipTypes.Manta;
+            }
+
+            // Return the ShipType of the captain at the given index.
+            return availableCaptains[index].Ship.Class;
         }
     }
 
@@ -170,9 +223,7 @@ namespace CosmicShore.Game
         }
 
         // Convenience constructor with default IsReady = false.
-        public CharacterSelectData(ulong clientId, int index) : this(clientId, index, false)
-        {
-        }
+        public CharacterSelectData(ulong clientId, int index) : this(clientId, index, false) { }
 
         // Public accessors.
         public ulong ClientId => _clientId;

@@ -1799,7 +1799,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
   _name: Network Manta
-  _shipType: 12
+  _shipType: 1
   _nearFieldSkimmer: {fileID: 874579554510349383}
   _orientationHandle: {fileID: 1878660672777590133}
   _shipGeometries:
@@ -1854,27 +1854,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 61d08a99952fdc44d96f926228873c0c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Speed: 0
-  Boosting: 0
-  ChargedBoostDischarging: 0
-  Drifting: 0
-  Turret: 0
-  Portrait: 0
-  SingleStickControls: 0
-  CommandStickControls: 0
-  LiveProjectiles: 0
-  Stationary: 0
-  ElevatedResourceGain: 0
-  ChargedBoostCharge: 1
-  AutoPilotEnabled: 0
-  AlignmentEnabled: 0
-  Slowed: 0
-  Overheating: 0
-  Attached: 0
-  AttachedTrailBlock: {fileID: 0}
-  GunsActive: 0
-  Course: {x: 0, y: 0, z: 1}
-  blockRotation: {x: 0, y: 0, z: 0, w: 0}
 --- !u!114 &7686683633640807837
 MonoBehaviour:
   m_ObjectHideFlags: 0

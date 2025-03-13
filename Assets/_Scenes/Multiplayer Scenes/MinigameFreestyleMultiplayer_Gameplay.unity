@@ -734,13 +734,14 @@ MonoBehaviour:
   autoInjectGameObjects:
   - {fileID: 8309122}
   _clientGameplayState: {fileID: 612957692}
-  _shipPrefab: {fileID: 5388096731648432467, guid: aa576f63bbaa41f409e592621238b192,
-    type: 3}
   _playerSpawnPoints:
   - {fileID: 1468661147}
   - {fileID: 1074736317}
   - {fileID: 1268646870}
   - {fileID: 376227340}
+  _shipPrefabs:
+  - {fileID: 2720031801644556342, guid: aa576f63bbaa41f409e592621238b192, type: 3}
+  - {fileID: 1061712894363138735, guid: c4b1f65136767794fb82c3dc244aaa27, type: 3}
 --- !u!114 &612957692
 MonoBehaviour:
   m_ObjectHideFlags: 0

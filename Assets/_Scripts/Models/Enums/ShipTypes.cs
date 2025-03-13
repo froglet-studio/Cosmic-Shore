@@ -15,7 +15,4 @@ public enum ShipTypes
     Falcon = 9,
     Shrike = 10,
     Sparrow = 11,
-
-    NetworkManta = 12,
-    NetworkRhino = 13
 }

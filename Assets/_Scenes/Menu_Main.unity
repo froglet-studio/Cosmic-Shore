@@ -9127,7 +9127,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _reconnectAttempts: 2
-  MaxConnectedPlayers: 8
+  _maxConnectedPlayers: 4
 --- !u!1 &287286999
 GameObject:
   m_ObjectHideFlags: 0

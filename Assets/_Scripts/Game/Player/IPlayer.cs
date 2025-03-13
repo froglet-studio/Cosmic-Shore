@@ -7,7 +7,7 @@ namespace CosmicShore.Game
 {
     public interface IPlayer : ITransform
     {
-        public ShipTypes DefaultShipType { get; set; }
+        public ShipTypes ShipType { get; set; }
         public Teams Team { get; }
         public string PlayerName { get; }
         public string PlayerUUID { get; }
