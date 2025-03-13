@@ -289,6 +289,7 @@ MonoBehaviour:
   ScoreDisplay: {fileID: 1720411786844436948}
   LeftNumberDisplay: {fileID: 1356472169748578620}
   RightNumberDisplay: {fileID: 7162321741096836160}
+  WarningTimeDisplay: {fileID: 0}
   RoundTimeDisplay: {fileID: 1720411787164405322}
   CountdownDisplay: {fileID: 1720411787223648735}
   ReadyButton: {fileID: 330862409471186351}
@@ -1814,7 +1815,7 @@ GameObject:
   - component: {fileID: 5364304376320079036}
   - component: {fileID: 8714722868962709336}
   - component: {fileID: 6719686426352669461}
-  - component: {fileID: 8563401802025813106}
+  - component: {fileID: 430992810879232800}
   m_Layer: 5
   m_Name: ThreatIndicator
   m_TagString: Untagged
@@ -1879,7 +1880,7 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
---- !u!114 &8563401802025813106
+--- !u!114 &430992810879232800
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1888,9 +1889,15 @@ MonoBehaviour:
   m_GameObject: {fileID: 4183448968940912191}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2dbe25a987d0ca7498e1dccd270500fc, type: 3}
+  m_Script: {fileID: 11500000, guid: 918c503881b7cfe42aac3b19bf10dc4c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  targetObject: {fileID: 0}
+  screenEdgePadding: 30
+  showWhenVisible: 1
+  closeColor: {r: 0, g: 1, b: 0, a: 1}
+  farColor: {r: 1, g: 0, b: 0, a: 1}
+  colorTransitionDistance: 100
 --- !u!1 &4675538134498312791
 GameObject:
   m_ObjectHideFlags: 0
