@@ -47,7 +47,7 @@ MonoBehaviour:
   pools:
   - prefab: {fileID: 5258412105609794183, guid: d2af5f5040e134141a94c2b496074a65,
       type: 3}
-    size: 3000
+    size: 1000
   ship: {fileID: 874579555101021527}
 --- !u!1 &1878660672777590133
 GameObject:

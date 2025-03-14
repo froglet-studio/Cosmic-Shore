@@ -57866,7 +57866,7 @@ MonoBehaviour:
   pools: []
   fossilBlockPrefab: {fileID: 5776304996075792891, guid: bd8a259abee95ec4895562e6bb8aae76,
     type: 3}
-  poolSizePerTeam: 20000
+  poolSizePerTeam: 1000
 --- !u!114 &1674343134
 MonoBehaviour:
   m_ObjectHideFlags: 0
