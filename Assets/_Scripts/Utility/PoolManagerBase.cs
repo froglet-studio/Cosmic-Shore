@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using static UnityEngine.EventSystems.EventTrigger;
 
 namespace CosmicShore.Core
 {
@@ -34,6 +35,17 @@ namespace CosmicShore.Core
             }
         }
 
+        Dictionary<string, int> MaxConcurrentPoolObjects = new();
+        Dictionary<string, int> ConcurrentPoolObjects = new();
+
+        protected virtual void OnDisable()
+        {
+            foreach (var entry in MaxConcurrentPoolObjects)
+            {
+                Debug.Log($"Max Concurrent Pool Objects: tag:{entry.Key}, count:{entry.Value}");
+            }
+        }
+
         public virtual void InitializePool(GameObject prefab, int size)
         {
             if (poolDictionary == null)
@@ -55,6 +67,8 @@ namespace CosmicShore.Core
             // Initialize the queue and add to dictionary
             Queue<GameObject> objectPool = new Queue<GameObject>();
             poolDictionary.Add(prefab.tag, objectPool);
+            MaxConcurrentPoolObjects.Add(prefab.tag, 0);
+            ConcurrentPoolObjects.Add(prefab.tag, 0);
 
             // Create the pool objects
             for (int i = 0; i < size; i++)
@@ -85,6 +99,14 @@ namespace CosmicShore.Core
                 Debug.LogWarning("Pool with tag " + tag + " is empty.");
                 return null;
             }
+
+            ConcurrentPoolObjects[tag]++;
+            if (ConcurrentPoolObjects[tag] > MaxConcurrentPoolObjects[tag])
+            {
+                MaxConcurrentPoolObjects[tag] = ConcurrentPoolObjects[tag];
+                //Debug.Log($"Max Concurrent Pool Objects: tag:{tag}, count:{MaxConcurrentPoolObjects[tag]}");
+            }
+
             GameObject objectToSpawn = poolDictionary[tag].Dequeue();
             objectToSpawn.transform.position = position;
             objectToSpawn.transform.rotation = rotation;
@@ -94,6 +116,8 @@ namespace CosmicShore.Core
 
         public virtual void ReturnToPool(GameObject obj, string tag)
         {
+            ConcurrentPoolObjects[tag]--;
+
             obj.SetActive(false);
             poolDictionary[tag].Enqueue(obj);
         }
