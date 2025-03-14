@@ -17,10 +17,10 @@ public class HUDPositionIndicator : MonoBehaviour
     [SerializeField] private bool showWhenVisible = true;
 
     [Tooltip("The color of the indicator when the target is close")]
-    [SerializeField] private Color closeColor = Color.green;
+    [SerializeField] private Color closeColor = new Color(.3f, 1, .1f);
 
     [Tooltip("The color of the indicator when the target is far")]
-    [SerializeField] private Color farColor = Color.red;
+    [SerializeField] private Color farColor = new Color(.15f, .5f, .05f);
 
     [Tooltip("The distance at which the color begins to transition")]
     [SerializeField] private float colorTransitionDistance = 100f;
@@ -47,7 +47,7 @@ public class HUDPositionIndicator : MonoBehaviour
         if (targetObject == null)
         {
             Debug.LogError("Target object is not assigned to the ObjectTracker script!");
-            enabled = false;
+            gameObject.SetActive(false);
             return;
         }
 
@@ -56,7 +56,7 @@ public class HUDPositionIndicator : MonoBehaviour
         if (targetRenderer == null)
         {
             Debug.LogError("Target object must have a Renderer component!");
-            enabled = false;
+            gameObject.SetActive(false);
             return;
         }
 
