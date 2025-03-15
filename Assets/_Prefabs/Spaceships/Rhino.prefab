@@ -12254,6 +12254,16 @@ PrefabInstance:
       propertyPath: Ship
       value: 
       objectReference: {fileID: 874579555101021527}
+    - target: {fileID: 2148634898793878778, guid: 8b6f43f781b1f9149be91e3e9e59326f,
+        type: 3}
+      propertyPath: _shipMono
+      value: 
+      objectReference: {fileID: 874579555101021527}
+    - target: {fileID: 2148634898793878778, guid: 8b6f43f781b1f9149be91e3e9e59326f,
+        type: 3}
+      propertyPath: _shipObject
+      value: 
+      objectReference: {fileID: 874579555101021527}
     - target: {fileID: 6349275177958244260, guid: 8b6f43f781b1f9149be91e3e9e59326f,
         type: 3}
       propertyPath: m_LocalPosition.x

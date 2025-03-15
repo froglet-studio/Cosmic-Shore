@@ -10,30 +10,6 @@ namespace CosmicShore.Game.IO
         protected const float PI_OVER_FOUR = 0.785f;
         protected IShip _ship;
 
-        /*
-        protected bool idle;
-        protected bool invertYEnabled;
-        protected bool invertThrottleEnabled;
-
-        public float XSum { get; protected set; }
-        public float YSum { get; protected set; }
-        public float XDiff { get; protected set; }
-        public float YDiff { get; protected set; }
-        public Vector2 EasedLeftJoystickPosition { get; protected set; }
-        public Vector2 EasedRightJoystickPosition { get; protected set; }
-        public Vector2 RightJoystickHome { get; protected set; }
-        public Vector2 LeftJoystickHome { get; protected set; }
-        public Vector2 RightClampedPosition { get; protected set; }
-        public Vector2 LeftClampedPosition { get; protected set; }
-        public Vector2 RightJoystickStart { get; protected set; }
-        public Vector2 LeftJoystickStart { get; protected set; }
-        public Vector2 RightNormalizedJoystickPosition { get; protected set; }
-        public Vector2 LeftNormalizedJoystickPosition { get; protected set; }
-        public bool OneTouchLeft { get; protected set; }
-        public Vector2 SingleTouchValue { get; protected set; }
-        public Vector3 ThreeDPosition { get; protected set; }
-        public bool IsIdle => idle;*/
-
         protected IInputStatus InputStatus;
 
         public virtual void Initialize(IShip ship)

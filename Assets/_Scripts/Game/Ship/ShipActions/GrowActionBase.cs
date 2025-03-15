@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using CosmicShore.Game;
+using System.Collections;
 using UnityEngine;
 
 public class GrowActionBase : ShipAction
@@ -13,9 +14,9 @@ public class GrowActionBase : ShipAction
     protected Coroutine growCoroutine;
     protected bool growing;
 
-    protected override void InitializeShipAttributes()
+    public override void Initialize(IShip ship)
     {
-        base.InitializeShipAttributes();
+        base.Initialize(ship);
         minSize = target.transform.localScale.z;
     }
 

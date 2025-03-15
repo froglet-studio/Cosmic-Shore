@@ -13,9 +13,9 @@ public class DropDecoyAction : ShipAction
     [SerializeField] int resourceIndex = 0;
     float resourceCost;
 
-    protected override void InitializeShipAttributes()
+    public override void Initialize(IShip ship)
     {
-        base.InitializeShipAttributes();
+        base.Initialize(ship);
         resourceCost = ResourceSystem.Resources[resourceIndex].MaxAmount / decoysPerFullAmmo;
     }
 

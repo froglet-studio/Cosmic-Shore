@@ -1,4 +1,5 @@
 using CosmicShore.Core;
+using CosmicShore.Game;
 using System.Collections;
 using UnityEngine;
 public class DriftTrailAction : ShipAction
@@ -10,9 +11,9 @@ public class DriftTrailAction : ShipAction
 
     TrailSpawner trailSpawner => ShipStatus.TrailSpawner;
 
-    protected override void InitializeShipAttributes()
+    public override void Initialize(IShip ship)
     {
-        base.InitializeShipAttributes();
+        base.Initialize(ship);
     }
 
     public override void StartAction()

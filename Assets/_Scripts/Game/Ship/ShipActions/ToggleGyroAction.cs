@@ -1,3 +1,4 @@
+using CosmicShore.Game;
 using CosmicShore.Game.IO;
 using UnityEngine;
 
@@ -6,9 +7,9 @@ public class ToggleGyroAction : ShipAction
 {
     InputController inputController;
 
-    protected override void InitializeShipAttributes()
+    public override void Initialize(IShip ship)
     {
-        base.InitializeShipAttributes();
+        base.Initialize(ship);
         if (Ship != null) inputController = Ship.ShipStatus.InputController;
     }
 

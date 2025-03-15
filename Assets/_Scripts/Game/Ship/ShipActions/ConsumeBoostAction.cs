@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using CosmicShore.Core;
+using CosmicShore.Game;
 
 
 public class ConsumeBoostAction : ShipAction
@@ -11,9 +12,9 @@ public class ConsumeBoostAction : ShipAction
     [SerializeField] int resourceIndex = 1;
     [SerializeField] float resourceCost = .25f;
 
-    protected override void InitializeShipAttributes()
+    public override void Initialize(IShip ship)
     {
-        base.InitializeShipAttributes();
+        base.Initialize(ship);
         Ship.ShipStatus.BoostMultiplier = 0;
     }
 

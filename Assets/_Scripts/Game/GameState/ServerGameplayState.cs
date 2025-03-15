@@ -224,7 +224,7 @@ namespace CosmicShore.Game.GameState
                 return null;
             }
 
-            return _shipPrefabs.FirstOrDefault(prefab => prefab.ShipType == shipTypeToSpawn).GetComponent<NetworkObject>();
+            return _shipPrefabs.FirstOrDefault(prefab => prefab.ShipStatus.ShipType == shipTypeToSpawn).GetComponent<NetworkObject>();
         }
     }
 }

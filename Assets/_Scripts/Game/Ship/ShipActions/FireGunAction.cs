@@ -1,4 +1,5 @@
 using CosmicShore.Core;
+using CosmicShore.Game;
 using CosmicShore.Game.Projectiles;
 using UnityEngine;
 
@@ -17,9 +18,9 @@ public class FireGunAction : ShipAction
 
     [SerializeField] int ammoIndex = 0;
 
-    protected override void InitializeShipAttributes()
+    public override void Initialize(IShip ship)
     {
-        base.InitializeShipAttributes();
+        base.Initialize(ship);
         projectileContainer.transform.parent = Ship.ShipStatus.Player.Transform;
     }
     public override void StartAction()

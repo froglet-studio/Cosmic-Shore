@@ -1,7 +1,7 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using CosmicShore.Core;
+using CosmicShore.Game;
+using Unity.Netcode;
 
 
 namespace CosmicShore
@@ -9,7 +9,10 @@ namespace CosmicShore
     public class ClearPrisms : MonoBehaviour
     {
         Transform mainCamera;
-        [SerializeField] Ship Ship;
+        [SerializeField, RequireInterface(typeof(IShip))]
+        Object _shipObject;
+        IShip _ship => (IShip)_shipObject;
+
         [SerializeField] AnimationCurve scaleCurve = AnimationCurve.Linear(0, 0, 1, 1);
         [SerializeField] float capsuleRadius = 5f;
 
@@ -22,9 +25,19 @@ namespace CosmicShore
         CameraManager cameraManager;
         GeometryUtils.LineData lineData;
 
-        void Start()
+        private void OnEnable()
         {
-            if (Ship.ShipStatus.AutoPilotEnabled) return;
+            _ship.OnShipInitialized += OnShipInitialized;
+        }
+
+        private void OnDisable()
+        {
+            _ship.OnShipInitialized -= OnShipInitialized;
+        }
+
+        private void OnShipInitialized()
+        {
+            if (_ship.ShipStatus.AutoPilotEnabled) return;
             cameraManager = CameraManager.Instance;
             mainCamera = cameraManager.GetCloseCamera();
             visibilityCapsuleTransform = new GameObject("Visibility Capsule").transform;
@@ -32,15 +45,14 @@ namespace CosmicShore
             visibilityCapsule = gameObject.AddComponent<CapsuleCollider>();
             visibilityCapsule.isTrigger = true;
             visibilityCapsule.radius = capsuleRadius;
-
         }
 
         void Update()
         {
-            if (mainCamera == null || Ship.ShipStatus.AutoPilotEnabled) return;
+            if (mainCamera == null || _ship.ShipStatus.AutoPilotEnabled) return;
 
             Vector3 cameraPosition = mainCamera.position;
-            Vector3 shipPosition = Ship.transform.position;
+            Vector3 shipPosition = _ship.Transform.position;
 
             // Position the capsule between the camera and the ship
             transform.position = (cameraPosition + shipPosition) / 2f;

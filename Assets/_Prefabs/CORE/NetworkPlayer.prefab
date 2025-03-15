@@ -87,7 +87,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
-  _defaultShipType: 12
+  _defaultShipType: 1
+  NetDefaultShipType:
+    m_InternalValue: 1
 --- !u!114 &5947369674864067525
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -101,8 +103,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Portrait: 0
-  requireRightShoulderForThrottle: 1
-  AutoPilotEnabled: 0
 --- !u!114 &3335835471151823723
 MonoBehaviour:
   m_ObjectHideFlags: 0

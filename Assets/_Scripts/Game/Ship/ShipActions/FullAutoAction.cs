@@ -1,4 +1,5 @@
 using CosmicShore.Core;
+using CosmicShore.Game;
 using CosmicShore.Game.Projectiles;
 using System.Collections;
 using System.Collections.Generic;
@@ -39,9 +40,9 @@ namespace CosmicShore
         }
 
 
-        protected override void InitializeShipAttributes()
+        public override void Initialize(IShip ship)
         {
-            base.InitializeShipAttributes();
+            base.Initialize(ship);
             var gunTemplate = gunContainer.GetComponent<Gun>();
             foreach (var child in gunContainer.GetComponentsInChildren<Transform>())
             {

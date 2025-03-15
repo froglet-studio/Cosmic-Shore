@@ -32,34 +32,20 @@ namespace CosmicShore.Game
 
         #region Public Properties
 
-        public string ShipName => _name;
-        public ShipTypes ShipType => _shipType;
-        public Material AOEExplosionMaterial { get; private set; }
-        public Material AOEConicExplosionMaterial { get; private set; }
-        public Material SkimmerMaterial { get; private set; }
-        public Transform FollowTarget { get; private set; }
 
         IShipStatus _shipStatus;
         public IShipStatus ShipStatus
         {
             get
             {
-                _shipStatus = _shipStatus != null ? _shipStatus : GetComponent<ShipStatus>();
+                _shipStatus = _shipStatus ?? GetComponent<ShipStatus>();
+                _shipStatus.Name = _name;
+                _shipStatus.ShipType = _shipType;
                 return _shipStatus;
             }
         }
 
-        public float BoostMultiplier { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
-
-        public SO_Captain Captain => throw new NotImplementedException();
-
-        public CameraManager CameraManager => CameraManager.Instance;
-
-        public List<GameObject> ShipGeometries => throw new NotImplementedException();
-
         public Transform Transform => transform;
-
-        public List<InputEventShipActionMapping> InputEventShipActions => _inputEventShipActions;
 
         #endregion
 
@@ -109,26 +95,28 @@ namespace CosmicShore.Game
 
         public void Initialize(IPlayer player)
         {
+            ShipStatus.Player = player;
+
             SetPlayerToShipStatusAndSkimmers(player);
             SetTeamToShipStatusAndSkimmers(player.Team);
 
-            ShipStatus.AIPilot.AutoPilotEnabled = false;
             InitializeShipGeometries();
+
             ShipStatus.ShipAnimation.Initialize(ShipStatus);
             ShipStatus.TrailSpawner.Initialize(this);
-            _nearFieldSkimmer.Initialize(this);
-            _farFieldSkimmer.Initialize(this);
+            _nearFieldSkimmer?.Initialize(this);
+            _farFieldSkimmer?.Initialize(this);
             
 
             if (IsOwner)
             {
-                if (!FollowTarget) FollowTarget = transform;
+                if (!_shipStatus.FollowTarget) ShipStatus.FollowTarget = transform;
                 if (_bottomEdgeButtons) ShipStatus.Player.GameCanvas.MiniGameHUD.PositionButtonPanel(true);
 
                 InitializeShipControlActions();
                 InitializeClassResourceActions();
 
-                ShipStatus.AIPilot.Initialize(this);
+                ShipStatus.AIPilot.Initialize(false);
                 ShipStatus.ShipCameraCustomizer.Initialize(this);
                 ShipStatus.ShipTransformer.Initialize(this);
             }
@@ -215,17 +203,17 @@ namespace CosmicShore.Game
 
         public void SetAOEExplosionMaterial(Material material)
         {
-            AOEExplosionMaterial = material;
+            ShipStatus.AOEExplosionMaterial = material;
         }
 
         public void SetAOEConicExplosionMaterial(Material material)
         {
-            AOEConicExplosionMaterial = material;
+            ShipStatus.AOEConicExplosionMaterial = material;
         }
 
         public void SetSkimmerMaterial(Material material)
         {
-            SkimmerMaterial = material;
+            ShipStatus.SkimmerMaterial = material;
         }
 
         public void AssignCaptain(SO_Captain captain)

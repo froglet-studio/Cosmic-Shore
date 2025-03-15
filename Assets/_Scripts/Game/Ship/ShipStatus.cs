@@ -27,7 +27,8 @@ namespace CosmicShore.Core
         public Transform ShipTransform { get; set; }
         public Teams Team { get; set; }
         public IPlayer Player { get; set; }
-        public IInputStatus InputStatus { get; set; }
+        public InputController IputController => Player.InputController;
+        public IInputStatus InputStatus => Player.InputController.InputStatus;
         public Material AOEExplosionMaterial { get; set; }
         public Material AOEConicExplosionMaterial { get; set; }
         public Material SkimmerMaterial { get; set; }

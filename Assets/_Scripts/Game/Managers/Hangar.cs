@@ -227,8 +227,9 @@ namespace CosmicShore.Core
             }
 
             var materialSet = ThemeManager.Instance.TeamMaterialSets[team];
-
+            
             Instantiate(shipTypeMap[shipType].Transform).TryGetComponent(out IShip ship);
+
             if (captain != null)
                 ship.AssignCaptain(captain);
             ship.SetResourceLevels(captain.InitialResourceLevels);
@@ -240,7 +241,7 @@ namespace CosmicShore.Core
 
             AIPilot pilot = ship.ShipStatus.AIPilot;
             pilot.SkillLevel = ((float)AISkillLevel - 1) / 3; // this assumes that levels remain from 1-4
-            pilot.AutoPilotEnabled = true;
+            pilot.Initialize(true);
 
             return ship;
         }

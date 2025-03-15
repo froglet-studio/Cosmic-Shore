@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
 using CosmicShore.Core;
+using CosmicShore.Game;
 
 namespace CosmicShore
 {
@@ -14,9 +15,9 @@ namespace CosmicShore
         [SerializeField] int resourceIndex = 0;
         float resourceCost;
 
-        protected override void InitializeShipAttributes()
+        public override void Initialize(IShip ship)
         {
-            base.InitializeShipAttributes();
+            base.Initialize(ship);
             spawner = Ship.ShipStatus.TrailSpawner;
             resourceCost = ResourceSystem.Resources[resourceIndex].MaxAmount / enhancementsPerFullAmmo;
         }

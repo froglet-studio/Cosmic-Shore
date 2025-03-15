@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Linq;
 using CosmicShore.Core;
+using CosmicShore.Game;
 
 
 namespace CosmicShore
@@ -15,9 +16,9 @@ namespace CosmicShore
         [SerializeField] int resourceIndex = 0;
         Assembler currentAssembler;
 
-        protected override void InitializeShipAttributes()
+        public override void Initialize(IShip ship)
         {
-            base.InitializeShipAttributes();
+            base.Initialize(ship);
             spawner = Ship.ShipStatus.TrailSpawner;
         }
 

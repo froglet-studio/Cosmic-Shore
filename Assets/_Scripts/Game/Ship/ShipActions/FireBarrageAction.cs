@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using CosmicShore.Game.Projectiles;
 using UnityEngine;
 using CosmicShore.Core;
+using CosmicShore.Game;
 
 public class FireBarrageAction : ShipAction
 {
@@ -28,9 +29,9 @@ public class FireBarrageAction : ShipAction
         JsonUtility.FromJsonOverwrite(json, to);
     }
 
-    protected override void InitializeShipAttributes()
+    public override void Initialize(IShip ship)
     {
-        base.InitializeShipAttributes();
+        base.Initialize(ship);
         var gunTemplate = gunContainer.GetComponent<Gun>();
         foreach (var child in gunContainer.GetComponentsInChildren<Transform>()) 
         {

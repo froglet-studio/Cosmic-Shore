@@ -60,7 +60,6 @@ namespace CosmicShore.Game.AI
         [SerializeField] float raycastHeight;
         [SerializeField] float raycastWidth;
 
-        public bool AutoPilotEnabled;
         [SerializeField] bool LookingAtCrystal;
         [SerializeField] bool ram;
         [SerializeField] bool drift;
@@ -75,6 +74,7 @@ namespace CosmicShore.Game.AI
             BottomLeft,
             TopLeft,
         };
+        public bool AutoPilotEnabled { get; private set; }
 
         IShip _ship;
         IShipStatus _shipStatus => _ship.ShipStatus;
@@ -146,8 +146,12 @@ namespace CosmicShore.Game.AI
             CrystalPosition = closestItem == null ? activeNode.transform.position : closestItem.transform.position;
         }
 
-        void Start()
+        public void Initialize(bool enableAutoPilot)
         {
+            AutoPilotEnabled = enableAutoPilot;
+            if (!AutoPilotEnabled)
+                return;
+
             maxDistanceSquared = maxDistance * maxDistance;
             aggressiveness = defaultAggressiveness;
             throttle = defaultThrottle;
@@ -159,8 +163,8 @@ namespace CosmicShore.Game.AI
                 { Corner.TopLeft, new AvoidanceBehavior (-raycastWidth, raycastHeight, CounterClockwise, Vector3.zero ) }
             };
 
-            var activeNode = NodeControlManager.Instance.GetNodeByPosition(transform.position);
-            activeNode.RegisterForUpdates(this);
+            var activeNode = NodeControlManager.Instance?.GetNodeByPosition(transform.position);
+            activeNode?.RegisterForUpdates(this);
 
             foreach
                 (var ability in abilities)

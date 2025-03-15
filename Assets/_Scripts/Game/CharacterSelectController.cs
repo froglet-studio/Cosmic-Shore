@@ -135,7 +135,7 @@ namespace CosmicShore.Game
             ToggleReadyButtonTextClientRpc(updatedReadyState, rpcParams);
 
             // If all connected players are ready, load the multiplayer scene after 3 seconds using async/await.
-            if (_readyCount == NetworkManager.Singleton.ConnectedClients.Count)
+            if (_readyCount == NetworkManager.Singleton.ConnectedClients.Count && IsServer)
             {
                 // Fire-and-forget async method (on server)
                 DelayedSceneLoadAsync();
@@ -151,7 +151,6 @@ namespace CosmicShore.Game
         // Async method to wait 3 seconds before loading the scene.
         private async void DelayedSceneLoadAsync()
         {
-            Debug.Log("DelayedSceneLoadAsync started.");
             await Task.Delay(3000);
             Debug.Log("3 seconds elapsed. Attempting to load scene: " + _sceneNameList.MultiplayerScene);
             if (SceneLoaderWrapper.Instance == null)

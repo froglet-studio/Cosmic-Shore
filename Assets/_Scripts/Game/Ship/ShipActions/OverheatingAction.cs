@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections;
 using CosmicShore.Core;
+using CosmicShore.Game;
 
 public class OverheatingAction : ShipAction
 {
@@ -13,9 +14,9 @@ public class OverheatingAction : ShipAction
     Resource heatResource;
     bool isOverheating = false;
 
-    protected override void InitializeShipAttributes()
+    public override void Initialize(IShip ship)
     {
-        base.InitializeShipAttributes();
+        base.Initialize(ship);
         heatResource = ResourceSystem.Resources[heatResourceIndex];
     }
 

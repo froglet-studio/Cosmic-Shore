@@ -1,3 +1,4 @@
+using CosmicShore.Game;
 using System.Collections;
 using UnityEngine;
 
@@ -11,9 +12,9 @@ public class GrowTrailAction : GrowActionBase
     TrailSpawner spawner;
     private string scalingDimension;
 
-    protected override void InitializeShipAttributes()
+    public override void Initialize(IShip ship)
     {
-        base.InitializeShipAttributes();
+        base.Initialize(ship);
         spawner = target.GetComponent<TrailSpawner>();
 
         // Determine the scaling dimension

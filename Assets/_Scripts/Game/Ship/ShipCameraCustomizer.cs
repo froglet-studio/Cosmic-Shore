@@ -20,7 +20,7 @@ namespace CosmicShore
         public void Initialize(IShip ship)
         {
             Ship = ship;
-            cameraManager = Ship.ShipStatus.CameraManager;
+            cameraManager = CameraManager.Instance;
             cameraManager.isOrthographic = isOrthographic;
 
             BindElementalFloats(Ship);

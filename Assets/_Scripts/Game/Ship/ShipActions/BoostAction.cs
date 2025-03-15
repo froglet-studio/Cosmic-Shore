@@ -1,10 +1,11 @@
 using CosmicShore.Core;
+using CosmicShore.Game;
 
 public class BoostAction : ShipAction
 {
-    protected override void InitializeShipAttributes()
+    public override void Initialize(IShip ship)
     {
-        base.InitializeShipAttributes();
+        base.Initialize(ship);
     }
     public override void StartAction()
     {

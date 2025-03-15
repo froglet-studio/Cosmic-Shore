@@ -1467,7 +1467,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 95baa921cf22958449a3143749d5e0e3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  toggleManualThrottle: 0
+  toggleManualThrottle: 1
   MinimumSpeed: 0
   ThrottleScaler: 0
   DefaultMinimumSpeed: 10
@@ -12314,6 +12314,11 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 5649154595993340043}
     m_Modifications:
+    - target: {fileID: 2148634898793878778, guid: 8b6f43f781b1f9149be91e3e9e59326f,
+        type: 3}
+      propertyPath: _shipObject
+      value: 
+      objectReference: {fileID: 1061712894363138735}
     - target: {fileID: 6349275177958244260, guid: 8b6f43f781b1f9149be91e3e9e59326f,
         type: 3}
       propertyPath: m_LocalPosition.x

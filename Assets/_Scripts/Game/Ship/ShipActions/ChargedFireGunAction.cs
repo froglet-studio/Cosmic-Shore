@@ -2,6 +2,7 @@ using CosmicShore.Core;
 using System.Collections;
 using CosmicShore.Game.Projectiles;
 using UnityEngine;
+using CosmicShore.Game;
 
 public class ChargedFireGunAction : ShipAction
 {
@@ -18,9 +19,9 @@ public class ChargedFireGunAction : ShipAction
 
     Coroutine gainEnergy;
 
-    protected override void InitializeShipAttributes()
+    public override void Initialize(IShip ship)
     {
-        base.InitializeShipAttributes();
+        base.Initialize(ship);
         //projectileContainer = new GameObject($"{ship.Player.PlayerName}_Projectiles");
     }
     public override void StartAction()

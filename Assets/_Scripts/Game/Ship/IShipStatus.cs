@@ -31,7 +31,7 @@ namespace CosmicShore.Core
         float GetInertia { get; set; }
         bool GunsActive { get; set; }
         InputController InputController { get; }
-        IInputStatus InputStatus { get; set; }
+        IInputStatus InputStatus { get; }
         bool LiveProjectiles { get; set; }
         string Name { get; set; }
         bool Overheating { get; set; }

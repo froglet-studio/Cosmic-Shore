@@ -1,3 +1,4 @@
+using CosmicShore.Game;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -9,7 +10,7 @@ public class GhostAction : ShipAction
 
     Coroutine intangibilityCoroutine;
 
-    protected override void InitializeShipAttributes()
+    public override void Initialize(IShip ship)
     {
         shipGeometries = Ship.ShipStatus.ShipGeometries;
     }
