@@ -26,18 +26,34 @@ namespace CosmicShore.Game.IO
         [SerializeField] Sprite BButtonSprite;
         [SerializeField] Sprite AButtonSprite;
         [SerializeField] Sprite XButtonSprite;
-        //[SerializeField] 
 
-        EventSystem eventSystem;
-        ScreenSwitcher screenSwitcher;
+        static EventSystem eventSystem;
+        static ScreenSwitcher screenSwitcher;
+        /// <summary>
+        /// Calls to "Gamepad.current is DualShockGamepad" and "Gamepad.current is XInputController"
+        /// are very expensive. Save off the results for performance.
+        /// </summary>
+        static bool GamepadTypeInitialized;
+        static bool CurrentGamepadIsDualShock;
+        static bool CurrentGamepadIsXInputController;
+        
         Button button;
+
         void Start()
         {
-            eventSystem = FindAnyObjectByType<EventSystem>();
-            screenSwitcher = FindAnyObjectByType<ScreenSwitcher>();
+            if (eventSystem == null)
+                eventSystem = FindAnyObjectByType<EventSystem>();
+            if (screenSwitcher == null)
+                screenSwitcher = FindAnyObjectByType<ScreenSwitcher>();
+            if (!GamepadTypeInitialized)
+            {
+                CurrentGamepadIsDualShock = Gamepad.current is DualShockGamepad;
+                CurrentGamepadIsXInputController = Gamepad.current is XInputController;
+            }
+
             button = GetComponent<Button>();
 
-            if (Gamepad.current is DualShockGamepad)
+            if (CurrentGamepadIsDualShock)
             {
                 switch(activationButton)
                 {
@@ -59,7 +75,7 @@ namespace CosmicShore.Game.IO
                 }
                 Debug.Log("A DualShock controller is connected.");
             }
-            else if (Gamepad.current is XInputController)
+            else if (CurrentGamepadIsXInputController)
             {
                 switch (activationButton)
                 {
