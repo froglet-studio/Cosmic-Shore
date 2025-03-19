@@ -32,7 +32,7 @@ namespace CosmicShore.Core
 
         IEnumerator InitializeCoroutine()
         {
-            yield return new WaitForSeconds(InitializationDelaySeconds);
+            yield return null;// new WaitForSeconds(InitializationDelaySeconds);
 
             Instance.Initialized = true;
 
