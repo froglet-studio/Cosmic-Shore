@@ -17,10 +17,10 @@ public class HUDPositionIndicator : MonoBehaviour
     [SerializeField] private bool showWhenVisible = true;
 
     [Tooltip("The color of the indicator when the target is close")]
-    [SerializeField] private Color closeColor = new Color(.3f, 1, .1f);
+    [SerializeField] private Color closeColor = new Color(.3f, 1, .1f,.01f);
 
     [Tooltip("The color of the indicator when the target is far")]
-    [SerializeField] private Color farColor = new Color(.15f, .5f, .05f);
+    [SerializeField] private Color farColor = new Color(.15f, .5f, .05f,.5f);
 
     [Tooltip("The distance at which the color begins to transition")]
     [SerializeField] private float colorTransitionDistance = 100f;
