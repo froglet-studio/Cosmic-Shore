@@ -1,3 +1,4 @@
+using CosmicShore.App.Systems.Audio;
 using CosmicShore.Game;
 using CosmicShore.Game.AI;
 using CosmicShore.Game.Animation;
@@ -34,6 +35,8 @@ namespace CosmicShore.Core
         public event Action OnShipInitialized;
 
         [SerializeField] List<ImpactProperties> impactProperties;
+
+        [SerializeField] AudioClip RefillAmmoSound;
 
         public CameraManager CameraManager => CameraManager.Instance;
 
@@ -318,6 +321,9 @@ namespace CosmicShore.Core
                         ResourceSystem.ChangeResourceAmount(ammoResourceIndex, ResourceSystem.Resources[ammoResourceIndex].CurrentAmount / 3f);
                         break;
                     case CrystalImpactEffects.GainFullAmmo:
+                        // TODO: Move this to a central location (CrystalProperties?)
+                        if (RefillAmmoSound != null)
+                            AudioSystem.Instance.PlaySFXClip(RefillAmmoSound);
                         ResourceSystem.ChangeResourceAmount(ammoResourceIndex, ResourceSystem.Resources[ammoResourceIndex].MaxAmount);
                         break;
                 }

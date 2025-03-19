@@ -1,3 +1,4 @@
+using CosmicShore.App.Systems.Audio;
 using CosmicShore.Core;
 using System.Collections;
 using UnityEngine;
@@ -12,6 +13,7 @@ namespace CosmicShore.Game.Projectiles
 
     public class Gun : MonoBehaviour
     {
+        [SerializeField] AudioClip FireSound;
         public float firePeriod = .2f;
         public Teams Team;
         public IShip Ship;
@@ -131,6 +133,9 @@ namespace CosmicShore.Game.Projectiles
             if (projectileInstance is ExplodableProjectile) ((ExplodableProjectile)projectileInstance).Charge = charge;
             projectile = projectileInstance;
             projectile.LaunchProjectile(projectileTime);
+            
+            if (FireSound != null)
+                AudioSystem.Instance.PlaySFXClip(FireSound);
         }
 
         private string GetPoolTag(int energy)

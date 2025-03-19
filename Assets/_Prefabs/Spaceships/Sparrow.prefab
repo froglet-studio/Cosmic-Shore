@@ -719,6 +719,7 @@ MonoBehaviour:
   vacuumCrystal: 1
   particleDurationAtSpeedOne: 300
   affectSelf: 1
+  selfSkimDelay: 2
   chargeAmount: 0
   MultiSkimMultiplier: 0
   visible: 0
@@ -937,6 +938,7 @@ MonoBehaviour:
     speedPenalty: 0
     hapticType: 0
     trailBlock: {fileID: 0}
+  RefillAmmoSound: {fileID: 8300000, guid: 1a2e9b2d2850d449ba65afe26b256508, type: 3}
   Name: Sparrow
   ShipType: 11
   nearFieldSkimmer: {fileID: 0}
@@ -1257,6 +1259,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 35a4e5dfc7064254cb27fc78eefb05a0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  FireSound: {fileID: 8300000, guid: b5bcc744c76b7ea40ab0598ceb5ad6cc, type: 3}
   firePeriod: 0.2
   Team: 0
 --- !u!1 &7113592867435310030
@@ -1388,6 +1391,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 35a4e5dfc7064254cb27fc78eefb05a0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  FireSound: {fileID: 8300000, guid: bf69a59835756c94d8f8c7570eb3bd4d, type: 3}
   firePeriod: 0.2
   Team: 0
 --- !u!1 &8219347799270583732

@@ -26,7 +26,21 @@ namespace CosmicShore.Core
 
             if (!Instance.Initialized)
             {
-                StartCoroutine(InitializeCoroutine());
+                //StartCoroutine(InitializeCoroutine());
+                Instance.Initialized = true;
+
+                GreenTeamMaterialSet = GenerateDomainMaterialSet(ColorSet.JadeColors, "Green");
+                RedTeamMaterialSet = GenerateDomainMaterialSet(ColorSet.RubyColors, "Red");
+                GoldTeamMaterialSet = GenerateDomainMaterialSet(ColorSet.GoldColors, "Gold");
+                BlueTeamMaterialSet = GenerateDomainMaterialSet(ColorSet.BlueColors, "Blue");
+
+                TeamMaterialSets = new() {
+                { Teams.Jade, GreenTeamMaterialSet },
+                { Teams.Ruby, RedTeamMaterialSet },
+                { Teams.Blue, BlueTeamMaterialSet },
+                { Teams.Gold, GoldTeamMaterialSet },
+                { Teams.Unassigned, BlueTeamMaterialSet },
+            };
             }
         }
 
@@ -34,20 +48,7 @@ namespace CosmicShore.Core
         {
             yield return null;// new WaitForSeconds(InitializationDelaySeconds);
 
-            Instance.Initialized = true;
 
-            GreenTeamMaterialSet = GenerateDomainMaterialSet(ColorSet.JadeColors, "Green");
-            RedTeamMaterialSet = GenerateDomainMaterialSet(ColorSet.RubyColors, "Red");
-            GoldTeamMaterialSet = GenerateDomainMaterialSet(ColorSet.GoldColors, "Gold");
-            BlueTeamMaterialSet = GenerateDomainMaterialSet(ColorSet.BlueColors, "Blue");
-
-            TeamMaterialSets = new() {
-                { Teams.Jade, GreenTeamMaterialSet },
-                { Teams.Ruby, RedTeamMaterialSet },
-                { Teams.Blue, BlueTeamMaterialSet },
-                { Teams.Gold, GoldTeamMaterialSet },
-                { Teams.Unassigned, BlueTeamMaterialSet },
-            };
         }
 
         SO_MaterialSet GenerateDomainMaterialSet(DomainColorSet colorSet, string domainName)

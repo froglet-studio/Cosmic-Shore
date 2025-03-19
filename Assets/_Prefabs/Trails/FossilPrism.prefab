@@ -101,3 +101,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   minSpeed: 30
   maxSpeed: 250
+  ImpactSound: {fileID: 8300000, guid: e0270de467050aa48842ef6ebf81e6dc, type: 3}
