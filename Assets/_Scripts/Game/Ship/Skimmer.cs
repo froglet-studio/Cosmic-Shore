@@ -225,7 +225,7 @@ namespace CosmicShore.Core
 
         void OnTriggerEnter(Collider other)
         {
-            if (other.TryGetComponent<ShipGeometry>(out var shipGeometry))
+            if (other.TryGetComponent<ShipGeometry>(out var shipGeometry) && shipGeometry.Ship != Ship)
             {
                 PerformShipImpactEffects(shipGeometry);
             }

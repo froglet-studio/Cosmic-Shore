@@ -13,10 +13,11 @@ namespace CosmicShore.App.UI.Modals
         [SerializeField] int Intensity;
         [SerializeField] TMP_Text IntensityText;
 
-        protected override void Start()
+
+        public override void ModalWindowIn()
         {
+            base.ModalWindowIn();
             GameView.AssignModel(Mission);
-            base.Start();
         }
 
         public void Play()

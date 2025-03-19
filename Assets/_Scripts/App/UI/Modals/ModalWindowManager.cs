@@ -23,7 +23,7 @@ namespace CosmicShore.App.UI.Modals
             gameObject.SetActive(false);
         }
 
-        public void ModalWindowIn()
+        public virtual void ModalWindowIn()
         {
             gameObject.SetActive(true);
 
@@ -42,7 +42,7 @@ namespace CosmicShore.App.UI.Modals
             }
         }
 
-        public void ModalWindowOut()
+        public virtual void ModalWindowOut()
         {
             if (isOn)
             {

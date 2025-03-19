@@ -11,6 +11,7 @@ namespace CosmicShore.Game.Projectiles
         [System.Serializable]
         private class BufferSettings
         {
+            public int initializationBufferSizePerTeam = 20;
             public int bufferSizePerTeam = 100;
             public float baseInstantiateRate = 5f;
             public float maxInstantiateRate = 20f;
@@ -37,11 +38,10 @@ namespace CosmicShore.Game.Projectiles
 
         private IEnumerator WaitForThemeManagerInitialization()
         {
-            while (ThemeManager.Instance == null)
-            {
-                yield return new WaitForEndOfFrame();
-            }
+            yield return new WaitUntil(() => ThemeManager.Instance != null);
             
+            // Initialize with a small buffer
+            // Then hydrate to full size
             InitializeTeamBuffers();
             StartCoroutine(BufferMaintenanceRoutine());
         }
@@ -60,7 +60,7 @@ namespace CosmicShore.Game.Projectiles
                         instantiateTimers[team] = 0f;
 
                         // Pre-instantiate initial blocks
-                        for (int i = 0; i < settings.bufferSizePerTeam; i++)
+                        for (int i = 0; i < settings.initializationBufferSizePerTeam; i++)
                         {
                             var block = CreateBlockForTeam(team);
                             block.gameObject.SetActive(false);
