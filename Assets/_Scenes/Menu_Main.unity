@@ -41463,6 +41463,10 @@ MonoBehaviour:
   - FriendlyOne
   - HostileOne
   - HostileTwo
+  PlayerPositions:
+  - {x: 0, y: 55, z: 0}
+  - {x: 55, y: 0, z: 0}
+  - {x: 0, y: 0, z: 55}
   PlayerTeams: 010000000200000004000000
   PlayerShipTypes: 030000000300000003000000
 --- !u!1 &1245639255
@@ -57766,6 +57770,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   settings:
+    initializationBufferSizePerTeam: 20
     bufferSizePerTeam: 1200
     baseInstantiateRate: 10
     maxInstantiateRate: 40
@@ -95966,17 +95971,6 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 1505272105049641856, guid: aa34cc8006c47114a826ff61f52889d6,
-        type: 3}
-      propertyPath: ColorSet
-      value: 
-      objectReference: {fileID: 11400000, guid: 8d1c1bdcb636a424d9c54fbd1afc952f,
-        type: 2}
-    - target: {fileID: 1505272105049641856, guid: aa34cc8006c47114a826ff61f52889d6,
-        type: 3}
-      propertyPath: mainCamera
-      value: 
-      objectReference: {fileID: 989920295}
     - target: {fileID: 5172949237805376952, guid: aa34cc8006c47114a826ff61f52889d6,
         type: 3}
       propertyPath: m_Name
