@@ -19,6 +19,8 @@ namespace CosmicShore.Core
 
         [SerializeField] float particleDurationAtSpeedOne = 300f;
         [SerializeField] bool affectSelf = true;
+        [Tooltip("Number of seconds before the skimmer impacts its own blocks")]
+        [SerializeField] float selfSkimDelay = 2f;
         [SerializeField] float chargeAmount;
         [SerializeField] float MultiSkimMultiplier = 0f;
         [SerializeField] bool visible;
@@ -232,6 +234,10 @@ namespace CosmicShore.Core
 
             if (other.TryGetComponent<TrailBlock>(out var trailBlock) && (affectSelf || trailBlock.Team != Team))
             {
+                // Don't skim off of your own trail as you're laying it down
+                if (affectSelf && Time.time - trailBlock.TrailBlockProperties.TimeCreated < selfSkimDelay)
+                    return;
+
                 StartSkim(trailBlock);
                 PerformBlockImpactEffects(trailBlock.TrailBlockProperties);
             }
