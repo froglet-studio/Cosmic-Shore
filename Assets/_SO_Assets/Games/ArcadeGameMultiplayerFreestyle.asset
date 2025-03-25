@@ -24,10 +24,11 @@ MonoBehaviour:
   GolfScoring: 0
   SceneName: MinigameMultiplayerFreestyle
   Captains:
-  - {fileID: 11400000, guid: a34cbb5719213b641b58002eb3866752, type: 2}
-  - {fileID: 11400000, guid: 6d520cd7eb8878b4aa2551e0591bc08d, type: 2}
+  - {fileID: 11400000, guid: 0d57b8e9eb4fb7a4b8db5456bb5f3530, type: 2}
+  - {fileID: 11400000, guid: f39381eaab68c5444b4d8846877fe5c7, type: 2}
+  - {fileID: 11400000, guid: 15f7cf9ff064a6746a1b3432455a787b, type: 2}
   MinPlayers: 1
-  MaxPlayers: 2
+  MaxPlayers: 3
   MinIntensity: 1
   MaxIntensity: 4
   CallToActionTargetType: 428

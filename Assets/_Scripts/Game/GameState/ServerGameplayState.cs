@@ -88,7 +88,7 @@ namespace CosmicShore.Game.GameState
             if (InitialSpawnDone && !NetworkShipClientCache.GetShip(clientId))
             {
                 Debug.Log($"Late join detected for client {clientId}. Spawning player and ship.");
-                SpawnPlayerAndShipForClient(clientId, true);
+                SpawnShipForClient(clientId, true);
 
                 // For late joins, wait a bit and then initialize the client gameplay state.
                 StartCoroutine(InitializeRoutine());
@@ -111,7 +111,7 @@ namespace CosmicShore.Game.GameState
                 foreach (var clientPair in NetworkManager.Singleton.ConnectedClients)
                 {
                     Debug.Log($"Spawning player and ship for client {clientPair.Key}.");
-                    SpawnPlayerAndShipForClient(clientPair.Key, false);
+                    SpawnShipForClient(clientPair.Key, false);
                 }
 
                 Debug.Log("Calling InitializeAndSetupPlayer_ClientRpc for all clients.");
@@ -130,7 +130,7 @@ namespace CosmicShore.Game.GameState
             }
         }
 
-        void SpawnPlayerAndShipForClient(ulong clientId, bool lateJoin)
+        void SpawnShipForClient(ulong clientId, bool lateJoin)
         {
             NetworkObject playerNetworkObject = NetworkManager.Singleton.SpawnManager.GetPlayerNetworkObject(clientId);
             if (playerNetworkObject == null)
@@ -146,6 +146,8 @@ namespace CosmicShore.Game.GameState
                 Debug.LogError($"SpawnPlayerAndShipForClient: NetworkPlayer component not found for client {clientId}.");
                 return;
             }
+
+            Teams team = networkPlayer.NetTeam.Value;
             ShipTypes shipTypeToSpawn = networkPlayer.NetDefaultShipType.Value;
 
             NetworkObject prefab = GetPrefab(shipTypeToSpawn);

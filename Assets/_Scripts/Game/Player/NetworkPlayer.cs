@@ -19,10 +19,14 @@ namespace CosmicShore.Game
         [SerializeField]
         ShipTypes _defaultShipType;
 
+        [SerializeField]
+        Teams _defaultTeam;
+
         public ShipTypes ShipType { get => _defaultShipType; set => _defaultShipType = value; }
 
         // Declare the NetworkVariable without initializing its value.
         public NetworkVariable<ShipTypes> NetDefaultShipType = new();
+        public NetworkVariable<Teams> NetTeam = new();
 
         public Teams Team { get; private set; }
         public string PlayerName { get; private set; }
@@ -50,11 +54,13 @@ namespace CosmicShore.Game
             {
                 // Initialize the network variable with the default value from the inspector.
                 NetDefaultShipType.Value = _defaultShipType;
+                NetTeam.Value = _defaultTeam;
             }
 
             InputController.enabled = IsOwner;
 
             NetDefaultShipType.OnValueChanged += OnNetDefaultShipTypeValueChanged;
+            NetTeam.OnValueChanged += OnNetTeamValueChanged;
         }
 
         public override void OnNetworkDespawn()
@@ -62,6 +68,7 @@ namespace CosmicShore.Game
             NppList.Remove(this);
 
             NetDefaultShipType.OnValueChanged -= OnNetDefaultShipTypeValueChanged;
+            NetTeam.OnValueChanged -= OnNetTeamValueChanged;
         }
 
         private void OnNetDefaultShipTypeValueChanged(ShipTypes previousValue, ShipTypes newValue)
@@ -69,9 +76,14 @@ namespace CosmicShore.Game
             ShipType = newValue;
         }
 
+        private void OnNetTeamValueChanged(Teams previousValue, Teams newValue)
+        {
+            Team = newValue;
+        }
+
         public void Initialize(IPlayer.InitializeData data)
         {
-            _defaultShipType = data.DefaultShipType;
+            /*_defaultShipType = data.DefaultShipType;
             if (IsServer)
             {
                 NetDefaultShipType.Value = data.DefaultShipType;
@@ -79,7 +91,7 @@ namespace CosmicShore.Game
             Team = data.Team;
             PlayerName = data.PlayerName;
             PlayerUUID = data.PlayerUUID;
-            Name = data.PlayerName;
+            Name = data.PlayerName;*/
         }
 
         public void ToggleActive(bool active) => IsActive = active;
@@ -108,11 +120,12 @@ namespace CosmicShore.Game
         /// Sets the default ship type via the network variable.
         /// This method should only be called on the server.
         /// </summary>
-        public void SetDefaultShipType(ShipTypes shipType)
+        public void InitializeShip(ShipTypes shipType, Teams team)
         {
             if (IsServer)
             {
                 NetDefaultShipType.Value = shipType;
+                NetTeam.Value = team;
             }
             else
             {

@@ -1,9 +1,14 @@
 ﻿using CosmicShore.Core;
+using CosmicShore.Game.IO;
+using CosmicShore.Game.Projectiles;
+using CosmicShore.Models;
 using CosmicShore.Models.Enums;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Unity.Netcode;
 using UnityEngine;
+using static CosmicShore.Core.Ship;
 
 
 namespace CosmicShore.Game
@@ -23,10 +28,30 @@ namespace CosmicShore.Game
         [SerializeField] List<GameObject> _shipGeometries;
 
         [Header("Optional Ship Components")]
+        [SerializeField] GameObject AOEPrefab;
         [SerializeField] Skimmer _farFieldSkimmer;
 
+        [SerializeField] int resourceIndex = 0;
+        [SerializeField] int ammoResourceIndex = 0; // TODO: move to an ability system with separate classes
+        [SerializeField] int boostResourceIndex = 0; // TODO: move to an ability system with separate classes
+
+        [Header("Environment Interactions")]
+        [SerializeField] public List<CrystalImpactEffects> crystalImpactEffects;
+        [ShowIf(CrystalImpactEffects.AreaOfEffectExplosion)]
+        [SerializeField] float minExplosionScale = 50; // TODO: depricate "ShowIf" once we adopt modularity
+        [ShowIf(CrystalImpactEffects.AreaOfEffectExplosion)]
+        [SerializeField] float maxExplosionScale = 400;
+
+        [SerializeField] List<TrailBlockImpactEffects> trailBlockImpactEffects;
+        [SerializeField] float blockChargeChange;
+
         [Header("Configuration")]
+        [SerializeField] float boostMultiplier = 4f; // TODO: Move to ShipController
+        public float BoostMultiplier { get => boostMultiplier; set => boostMultiplier = value; }
+
         [SerializeField] bool _bottomEdgeButtons = false;
+        [SerializeField] float Inertia = 70f;
+
         [SerializeField] List<InputEventShipActionMapping> _inputEventShipActions;
         [SerializeField] List<ResourceEventShipActionMapping> _resourceEventClassActions;
 
@@ -57,6 +82,23 @@ namespace CosmicShore.Game
         NetworkVariable<Quaternion> n_BlockRotation = new(writePerm: NetworkVariableWritePermission.Owner);
 
         Material _shipMaterial;
+
+        float speedModifierDuration = 2f;
+
+        [Serializable]
+        public struct ElementStat
+        {
+            public string StatName;
+            public Element Element;
+
+            public ElementStat(string statName, Element element)
+            {
+                StatName = statName;
+                Element = element;
+            }
+        }
+
+        [SerializeField] List<ElementStat> ElementStats = new();
 
         public override void OnNetworkSpawn()
         {
@@ -167,27 +209,61 @@ namespace CosmicShore.Game
 
         public void SetShipUp(float angle)
         {
-            throw new NotImplementedException();
+            _orientationHandle.transform.localRotation = Quaternion.Euler(0, 0, angle);
         }
 
         public void DisableSkimmer()
         {
-            throw new NotImplementedException();
+            _nearFieldSkimmer?.gameObject.SetActive(false);
+            _farFieldSkimmer?.gameObject.SetActive(false);
         }
 
         public void PerformCrystalImpactEffects(CrystalProperties crystalProperties)
         {
-            //  throw new NotImplementedException();
+            foreach (CrystalImpactEffects effect in crystalImpactEffects)
+            {
+                switch (effect)
+                {
+                    case CrystalImpactEffects.PlayHaptics:
+                        if (!ShipStatus.AutoPilotEnabled) HapticController.PlayHaptic(HapticType.CrystalCollision);//.PlayCrystalImpactHaptics();
+                        break;
+                    case CrystalImpactEffects.AreaOfEffectExplosion:
+                        var aoeExplosion = Instantiate(AOEPrefab).GetComponent<AOEExplosion>();
+                        aoeExplosion.Initialize(this);
+                        aoeExplosion.SetPositionAndRotation(transform.position, transform.rotation);
+                        aoeExplosion.MaxScale = ShipStatus.ResourceSystem.Resources.Count > ammoResourceIndex
+                            ? Mathf.Lerp(minExplosionScale, maxExplosionScale, ShipStatus.ResourceSystem.Resources[ammoResourceIndex].CurrentAmount) : maxExplosionScale;
+                        break;
+                    case CrystalImpactEffects.IncrementLevel:
+                        ShipStatus.ResourceSystem.IncrementLevel(crystalProperties.Element); // TODO: consider removing here and leaving this up to the crystals
+                        break;
+                    case CrystalImpactEffects.FillCharge:
+                        ShipStatus.ResourceSystem.ChangeResourceAmount(boostResourceIndex, crystalProperties.fuelAmount);
+                        break;
+                    case CrystalImpactEffects.Boost:
+                        ShipStatus.ShipTransformer.ModifyThrottle(crystalProperties.speedBuffAmount, 4 * speedModifierDuration);
+                        break;
+                    case CrystalImpactEffects.DrainAmmo:
+                        ShipStatus.ResourceSystem.ChangeResourceAmount(ammoResourceIndex, -ShipStatus.ResourceSystem.Resources[ammoResourceIndex].CurrentAmount);
+                        break;
+                    case CrystalImpactEffects.GainOneThirdMaxAmmo:
+                        ShipStatus.ResourceSystem.ChangeResourceAmount(ammoResourceIndex, ShipStatus.ResourceSystem.Resources[ammoResourceIndex].CurrentAmount / 3f);
+                        break;
+                    case CrystalImpactEffects.GainFullAmmo:
+                        ShipStatus.ResourceSystem.ChangeResourceAmount(ammoResourceIndex, ShipStatus.ResourceSystem.Resources[ammoResourceIndex].MaxAmount);
+                        break;
+                }
+            }
         }
 
-        public void SetBoostMultiplier(float boostMultiplier)
+        public void SetBoostMultiplier(float multiplier)
         {
-            throw new NotImplementedException();
+            boostMultiplier = multiplier;
         }
 
         public void ToggleGameObject(bool toggle)
         {
-            throw new NotImplementedException();
+            gameObject.SetActive(toggle);
         }
 
         public void SetShipMaterial(Material material)
@@ -198,7 +274,7 @@ namespace CosmicShore.Game
 
         public void SetBlockSilhouettePrefab(GameObject prefab)
         {
-            // if (Silhouette) Silhouette.SetBlockPrefab(prefab);
+            if (ShipStatus.Silhouette) ShipStatus.Silhouette.SetBlockPrefab(prefab);
         }
 
         public void SetAOEExplosionMaterial(Material material)
@@ -216,19 +292,96 @@ namespace CosmicShore.Game
             ShipStatus.SkimmerMaterial = material;
         }
 
-        public void AssignCaptain(SO_Captain captain)
+        public void AssignCaptain(Captain captain)
         {
-            throw new NotImplementedException();    // not needed yet
+            ShipStatus.Captain = captain.SO_Captain;
+            SetResourceLevels(captain.ResourceLevels);
         }
 
-        public void BindElementalFloat(string name, Element element)
+        public void AssignCaptain(SO_Captain captain)
         {
-            // throw new NotImplementedException();        // not needed yet maybe
+            ShipStatus.Captain = captain;
+            SetResourceLevels(captain.InitialResourceLevels);
+        }
+
+        public void BindElementalFloat(string statName, Element element)
+        {
+            Debug.Log($"Ship.NotifyShipStatBinding - statName:{statName}, element:{element}");
+            if (ElementStats.All(x => x.StatName != statName))
+                ElementStats.Add(new ElementStat(statName, element));
+
+            Debug.Log($"Ship.NotifyShipStatBinding - ElementStats.Count:{ElementStats.Count}");
         }
 
         public void PerformTrailBlockImpactEffects(TrailBlockProperties trailBlockProperties)
         {
-            // throw new NotImplementedException();
+            foreach (TrailBlockImpactEffects effect in trailBlockImpactEffects)
+            {
+                switch (effect)
+                {
+                    case TrailBlockImpactEffects.PlayHaptics:
+                        if (!ShipStatus.AutoPilotEnabled) HapticController.PlayHaptic(HapticType.BlockCollision);//.PlayBlockCollisionHaptics();
+                        break;
+                    case TrailBlockImpactEffects.DrainHalfAmmo:
+                        ShipStatus.ResourceSystem.ChangeResourceAmount(ammoResourceIndex, -ShipStatus.ResourceSystem.Resources[ammoResourceIndex].CurrentAmount / 2f);
+                        break;
+                    case TrailBlockImpactEffects.DebuffSpeed:
+                        ShipStatus.ShipTransformer.ModifyThrottle(trailBlockProperties.speedDebuffAmount, speedModifierDuration);
+                        break;
+                    case TrailBlockImpactEffects.DeactivateTrailBlock:
+                        break;
+                    case TrailBlockImpactEffects.ActivateTrailBlock:
+                        break;
+                    case TrailBlockImpactEffects.OnlyBuffSpeed:
+                        if (trailBlockProperties.speedDebuffAmount > 1) ShipStatus.ShipTransformer.ModifyThrottle(trailBlockProperties.speedDebuffAmount, speedModifierDuration);
+                        break;
+                    case TrailBlockImpactEffects.GainResourceByVolume:
+                        ShipStatus.ResourceSystem.ChangeResourceAmount(boostResourceIndex, blockChargeChange);
+                        break;
+                    case TrailBlockImpactEffects.Attach:
+                        Attach(trailBlockProperties.trailBlock);
+                        ShipStatus.GunsActive = true;
+                        break;
+                    case TrailBlockImpactEffects.GainResource:
+                        ShipStatus.ResourceSystem.ChangeResourceAmount(resourceIndex, blockChargeChange);
+                        break;
+                    case TrailBlockImpactEffects.Bounce:
+                        var cross = Vector3.Cross(transform.forward, trailBlockProperties.trailBlock.transform.forward);
+                        var normal = Quaternion.AngleAxis(90, cross) * trailBlockProperties.trailBlock.transform.forward;
+                        var reflectForward = Vector3.Reflect(transform.forward, normal);
+                        var reflectUp = Vector3.Reflect(transform.up, normal);
+                        ShipStatus.ShipTransformer.GentleSpinShip(reflectForward, reflectUp, 1);
+                        ShipStatus.ShipTransformer.ModifyVelocity((transform.position - trailBlockProperties.trailBlock.transform.position).normalized * 5, Time.deltaTime * 15);
+                        break;
+                    case TrailBlockImpactEffects.Redirect:
+                        ShipStatus.ShipTransformer.GentleSpinShip(.5f * transform.forward + .5f * (UnityEngine.Random.value < 0.5f ? -1f : 1f) * transform.right, transform.up, 1);
+                        break;
+                    case TrailBlockImpactEffects.Explode:
+                        trailBlockProperties.trailBlock.Damage(ShipStatus.Course * ShipStatus.Speed * Inertia, ShipStatus.Team, ShipStatus.Player.PlayerName);
+                        break;
+                    case TrailBlockImpactEffects.FeelDanger:
+                        if (trailBlockProperties.IsDangerous && trailBlockProperties.trailBlock.Team != ShipStatus.Team)
+                        {
+                            HapticController.PlayHaptic(HapticType.FakeCrystalCollision);
+                            ShipStatus.ShipTransformer.ModifyThrottle(trailBlockProperties.speedDebuffAmount, 1.5f);
+                        }
+                        break;
+                    case TrailBlockImpactEffects.Steal:
+                        break;
+                    case TrailBlockImpactEffects.DecrementLevel:
+                        break;
+                    case TrailBlockImpactEffects.Shield:
+                        break;
+                    case TrailBlockImpactEffects.Stop:
+                        break;
+                    case TrailBlockImpactEffects.Fire:
+                        break;
+                    case TrailBlockImpactEffects.FX:
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException();
+                }
+            }
         }
 
         void OnSpeedChanged(float previousValue, float newValue)
@@ -244,6 +397,18 @@ namespace CosmicShore.Game
         void OnBlockRotationChanged(Quaternion previousValue, Quaternion newValue)
         {
             ShipStatus.blockRotation = newValue;
+        }
+
+        //
+        // Attach and Detach
+        //
+        void Attach(TrailBlock trailBlock)
+        {
+            if (trailBlock.Trail != null)
+            {
+                ShipStatus.Attached = true;
+                ShipStatus.AttachedTrailBlock = trailBlock;
+            }
         }
     }
 

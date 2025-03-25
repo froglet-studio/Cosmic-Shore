@@ -29,7 +29,9 @@ namespace CosmicShore.Game
         [Inject]
         SceneNameListSO _sceneNameList;
 
+        // server -side datas
         int _readyCount = 0;
+
         // Remove Coroutine field since we're using async/await
         // Coroutine _loadGameRoutine;
 
@@ -45,11 +47,40 @@ namespace CosmicShore.Game
             OnShipChoose_ServerRpc(index, clientId);
         }
 
+        public void OnTeamChoose(int index)
+        {
+            ulong clientId = NetworkManager.Singleton.LocalClientId;
+            OnTeamChoose_ServerRpc(index, clientId);
+        }
+
         // Called by the local client when clicking the ready button.
         public void OnReadyButtonClicked()
         {
             ulong clientId = NetworkManager.Singleton.LocalClientId;
             OnReadyButtonClicked_ServerRpc(clientId);
+        }
+
+        [ServerRpc(RequireOwnership = false)]
+        void OnTeamChoose_ServerRpc(int index, ulong clientId)
+        {
+            // Update the client's ship selection while preserving its current ready state.
+            bool updated = false;
+            for (int i = 0; i < CharacterSelections.Count; i++)
+            {
+                if (CharacterSelections[i].ClientId == clientId)
+                {
+                    int shipTypeIndex = CharacterSelections[i].ShipTypeIndex;
+                    bool currentReady = CharacterSelections[i].IsReady;
+                    CharacterSelections[i] = new CharacterSelectData(clientId, shipTypeIndex, index, currentReady);
+                    updated = true;
+                    break;
+                }
+            }
+            if (!updated)
+            {
+                // New entry with IsReady set to false by default.
+                CharacterSelections.Add(new CharacterSelectData(clientId, 0, index, false));
+            }
         }
 
         [ServerRpc(RequireOwnership = false)]
@@ -61,8 +92,9 @@ namespace CosmicShore.Game
             {
                 if (CharacterSelections[i].ClientId == clientId)
                 {
+                    int currentTeamIndex = CharacterSelections[i].TeamIndex;
                     bool currentReady = CharacterSelections[i].IsReady;
-                    CharacterSelections[i] = new CharacterSelectData(clientId, index, currentReady);
+                    CharacterSelections[i] = new CharacterSelectData(clientId, index, currentTeamIndex, currentReady);
                     updated = true;
                     break;
                 }
@@ -70,23 +102,31 @@ namespace CosmicShore.Game
             if (!updated)
             {
                 // New entry with IsReady set to false by default.
-                CharacterSelections.Add(new CharacterSelectData(clientId, index, false));
+                CharacterSelections.Add(new CharacterSelectData(clientId, index, 0, false));
             }
+        }
 
-            // Convert the selected index to a ShipTypes value.
-            ShipTypes newShipType = GetShipTypeFromIndex(index);
-
-            // Retrieve the player's NetworkObject and update their default ship type.
-            NetworkObject playerNetObj = NetworkManager.Singleton.SpawnManager.GetPlayerNetworkObject(clientId);
-            if (playerNetObj != null)
+        void SpawnAllShips()
+        {
+            for (int i = 0; i < CharacterSelections.Count; i++)
             {
-                NetworkPlayer player = playerNetObj.GetComponent<NetworkPlayer>();
-                if (player != null)
+                // Convert the selected index to a ShipTypes value.
+                Teams newTeam = GetTeamFromIndex(CharacterSelections[i].TeamIndex);
+                ShipTypes newShipType = GetShipTypeFromIndex(CharacterSelections[i].ShipTypeIndex);
+
+                // Retrieve the player's NetworkObject and update their default ship type.
+                NetworkObject playerNetObj = NetworkManager.Singleton.SpawnManager.GetPlayerNetworkObject(CharacterSelections[i].ClientId);
+                if (playerNetObj != null)
                 {
-                    player.SetDefaultShipType(newShipType);
+                    NetworkPlayer player = playerNetObj.GetComponent<NetworkPlayer>();
+                    if (player != null)
+                    {
+                        player.InitializeShip(newShipType, newTeam);
+                    }
                 }
             }
         }
+
 
         [ServerRpc(RequireOwnership = false)]
         void OnReadyButtonClicked_ServerRpc(ulong clientId)
@@ -100,7 +140,12 @@ namespace CosmicShore.Game
                     bool currentReady = CharacterSelections[i].IsReady;
                     // Toggle the ready state.
                     updatedReadyState = !currentReady;
-                    CharacterSelectData updatedData = new CharacterSelectData(clientId, CharacterSelections[i].Index, updatedReadyState);
+                    CharacterSelectData updatedData = new (
+                        clientId, 
+                        CharacterSelections[i].ShipTypeIndex, 
+                        CharacterSelections[i].TeamIndex, 
+                        updatedReadyState);
+
                     CharacterSelections[i] = updatedData;
 
                     // Update _readyCount accordingly.
@@ -112,6 +157,7 @@ namespace CosmicShore.Game
                     {
                         _readyCount--;
                     }
+
                     found = true;
                     break;
                 }
@@ -120,7 +166,7 @@ namespace CosmicShore.Game
             {
                 // If the client doesn't have an entry yet, add one with a default ship index (-1) and ready true.
                 updatedReadyState = true;
-                CharacterSelections.Add(new CharacterSelectData(clientId, -1, true));
+                CharacterSelections.Add(new CharacterSelectData(clientId, 0, 0, true));
                 _readyCount++;
             }
 
@@ -138,6 +184,7 @@ namespace CosmicShore.Game
             if (_readyCount == NetworkManager.Singleton.ConnectedClients.Count && IsServer)
             {
                 // Fire-and-forget async method (on server)
+                SpawnAllShips();
                 DelayedSceneLoadAsync();
             }
         }
@@ -205,58 +252,78 @@ namespace CosmicShore.Game
             // Return the ShipType of the captain at the given index.
             return availableCaptains[index].Ship.Class;
         }
-    }
 
-    public struct CharacterSelectData : INetworkSerializable, IEquatable<CharacterSelectData>
-    {
-        private ulong _clientId;
-        private int _index;
-        private bool _isReady;
-
-        // Constructor to initialize the fields.
-        public CharacterSelectData(ulong clientId, int index, bool isReady)
+        private Teams GetTeamFromIndex(int index)
         {
-            _clientId = clientId;
-            _index = index;
-            _isReady = isReady;
-        }
-
-        // Convenience constructor with default IsReady = false.
-        public CharacterSelectData(ulong clientId, int index) : this(clientId, index, false) { }
-
-        // Public accessors.
-        public ulong ClientId => _clientId;
-        public int Index => _index;
-        public bool IsReady => _isReady;
-
-        // INetworkSerializable implementation.
-        public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
-        {
-            serializer.SerializeValue(ref _clientId);
-            serializer.SerializeValue(ref _index);
-            serializer.SerializeValue(ref _isReady);
-        }
-
-        // IEquatable implementation.
-        public bool Equals(CharacterSelectData other)
-        {
-            return _clientId == other._clientId && _index == other._index && _isReady == other._isReady;
-        }
-
-        public override bool Equals(object obj)
-        {
-            return obj is CharacterSelectData other && Equals(other);
-        }
-
-        public override int GetHashCode()
-        {
-            unchecked
+            return index switch
             {
-                int hash = 17;
-                hash = hash * 23 + _clientId.GetHashCode();
-                hash = hash * 23 + _index.GetHashCode();
-                hash = hash * 23 + _isReady.GetHashCode();
-                return hash;
+                0 => Teams.Jade,
+                1 => Teams.Ruby,
+                2 => Teams.Blue,
+                _ => Teams.Gold,
+            };
+        }
+
+        public struct CharacterSelectData : INetworkSerializable, IEquatable<CharacterSelectData>
+        {
+            private ulong _clientId;
+            private int _shipTypeIndex;
+            private int _teamIndex;
+            private bool _isReady;
+
+            // Constructor to initialize the fields.
+            public CharacterSelectData(ulong clientId, int shipTypeIndex, int teamIndex, bool isReady)
+            {
+                _clientId = clientId;
+                _shipTypeIndex = shipTypeIndex;
+                _teamIndex = teamIndex;
+                _isReady = isReady;
+            }
+
+            // Convenience constructor with default IsReady = false.
+            public CharacterSelectData(ulong clientId, int shipIndex, int teamIndex) : 
+                this(clientId, shipIndex, teamIndex, false) { }
+
+            // Public accessors.
+            public ulong ClientId => _clientId;
+            public int ShipTypeIndex => _shipTypeIndex;
+            public int TeamIndex => _teamIndex;
+            public bool IsReady => _isReady;
+
+            // INetworkSerializable implementation.
+            public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
+            {
+                serializer.SerializeValue(ref _clientId);
+                serializer.SerializeValue(ref _shipTypeIndex);
+                serializer.SerializeValue(ref _teamIndex);
+                serializer.SerializeValue(ref _isReady);
+            }
+
+            // IEquatable implementation.
+            public bool Equals(CharacterSelectData other)
+            {
+                return _clientId == other._clientId && 
+                    _shipTypeIndex == other._shipTypeIndex && 
+                    _teamIndex == other.TeamIndex && 
+                    _isReady == other._isReady;
+            }
+
+            public override bool Equals(object obj)
+            {
+                return obj is CharacterSelectData other && Equals(other);
+            }
+
+            public override int GetHashCode()
+            {
+                unchecked
+                {
+                    int hash = 17;
+                    hash = hash * 23 + _clientId.GetHashCode();
+                    hash = hash * 23 + _shipTypeIndex.GetHashCode();
+                    hash = hash * 23 + _teamIndex.GetHashCode();
+                    hash = hash * 23 + _isReady.GetHashCode();
+                    return hash;
+                }
             }
         }
     }

@@ -62,6 +62,15 @@ namespace CosmicShore.Game
             Setup();
         }
 
+        public void InitializeShip(ShipTypes shipType, Teams team)
+        {
+            ShipType = shipType;
+            Team = team;
+        }
+
+        public void ToggleGameObject(bool toggle) => gameObject.SetActive(toggle);
+        public void ToggleActive(bool active) => IsActive = active;
+
         void Setup()
         {
             if (UseHangarConfiguration)
@@ -109,11 +118,6 @@ namespace CosmicShore.Game
                 }
             }
         }
-
-        public void SetDefaultShipType(ShipTypes shipType) => ShipType = shipType;
-
-        public void ToggleGameObject(bool toggle) => gameObject.SetActive(toggle);
-        public void ToggleActive(bool active) => IsActive = active;
 
         void SetupPlayerShip(IShip ship)
         {

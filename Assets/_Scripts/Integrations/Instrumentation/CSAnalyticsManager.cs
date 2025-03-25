@@ -28,7 +28,7 @@ namespace CosmicShore.Integrations.Instrumentation
         
         private async void Start()
         {
-            await InitSDK();
+            // await InitSDK();
         }
 
         public async Task InitSDK()
