@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using CosmicShore.Game.IO;
 using CosmicShore.Core;
 using UnityEngine;
+using CosmicShore.App.Systems.Audio;
 
 
 namespace CosmicShore.Game.Projectiles

@@ -1,3 +1,4 @@
+using CosmicShore.App.Systems.Audio;
 using CosmicShore.Game;
 using CosmicShore.Game.IO;
 using CosmicShore.Game.Projectiles;
@@ -32,7 +33,38 @@ namespace CosmicShore.Core
         public event Action OnShipInitialized;
 
         [SerializeField] List<ImpactProperties> impactProperties;
-        
+
+        [SerializeField] AudioClip RefillAmmoSound;
+
+        public CameraManager CameraManager => CameraManager.Instance;
+
+        InputController _inputController;
+        public InputController InputController
+        {
+            get
+            {
+                if (_inputController == null)
+                {
+                    if (ShipStatus.Player == null)
+                    {
+                        Debug.LogError($"No player found to get input controller!");
+                        return null;
+                    }
+                    _inputController = ShipStatus.Player.InputController;
+                }
+                return _inputController;
+            }
+        }
+
+        ResourceSystem _resourceSystem;
+        public ResourceSystem ResourceSystem
+        {
+            get
+            {
+                _resourceSystem = _resourceSystem != null ? _resourceSystem : GetComponent<ResourceSystem>();
+                return _resourceSystem;
+            }
+        }
 
         [Header("Ship Meta")]
 
@@ -223,6 +255,10 @@ namespace CosmicShore.Core
                         ShipStatus.ResourceSystem.ChangeResourceAmount(ammoResourceIndex, ShipStatus.ResourceSystem.Resources[ammoResourceIndex].CurrentAmount / 3f);
                         break;
                     case CrystalImpactEffects.GainFullAmmo:
+                        // TODO: Move this to a central location (CrystalProperties?)
+                        if (RefillAmmoSound != null)
+                            AudioSystem.Instance.PlaySFXClip(RefillAmmoSound);
+                        
                         ShipStatus.ResourceSystem.ChangeResourceAmount(ammoResourceIndex, ShipStatus.ResourceSystem.Resources[ammoResourceIndex].MaxAmount);
                         break;
                 }

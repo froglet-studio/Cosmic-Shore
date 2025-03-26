@@ -1,3 +1,4 @@
+using CosmicShore.App.Systems.Audio;
 using System.Collections;
 using UnityEngine;
 
@@ -5,6 +6,7 @@ public class BlockImpact : MonoBehaviour
 {
     [SerializeField] private float minSpeed = 30f;
     [SerializeField] private float maxSpeed = 250f;
+    [SerializeField] AudioClip ImpactSound;
     private Material material;
 
     public void HandleImpact(Vector3 velocity)
@@ -27,6 +29,9 @@ public class BlockImpact : MonoBehaviour
         {
             material.SetVector("_velocity", velocity);
         }
+
+        if (ImpactSound != null)
+            AudioSystem.Instance.PlaySFXClip(ImpactSound);
 
         var initialPosition = transform.position;
         var maxDuration = 7f;

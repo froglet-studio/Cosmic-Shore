@@ -98,7 +98,7 @@ public class WormManager : Population
         newWorm.InitializeWorm();
 
         return newWorm;
-    }
+    } 
 
     public void RemoveWorm(Worm worm)
     {

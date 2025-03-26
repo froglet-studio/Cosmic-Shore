@@ -90,7 +90,10 @@ namespace CosmicShore.Game.Arcade
             ScoreTracker.GameCanvas = GameCanvas;
 
             foreach (var turnMonitor in TurnMonitors)
-                if (turnMonitor is TimeBasedTurnMonitor tbtMonitor)
+                // Order Matters here since some monitors inherit from others
+                if (turnMonitor is NodeControlTurnMonitor nctMonitor)
+                    nctMonitor.Display = HUD.WarningTimeDisplay;
+                else if (turnMonitor is TimeBasedTurnMonitor tbtMonitor)
                     tbtMonitor.Display = HUD.RoundTimeDisplay;
                 else if (turnMonitor is VolumeCreatedTurnMonitor hvtMonitor) // TODO: consolidate with above
                     hvtMonitor.Display = HUD.RoundTimeDisplay;

@@ -144,7 +144,7 @@ namespace CosmicShore.Game.IO
             if (!leftStickEffectsStarted)
             {
                 leftStickEffectsStarted = true;
-                _ship.PerformShipControllerActions(InputEvents.LeftStickAction);
+                _ship.PerformShipControllerActions(InputEvents.RightStickAction); //left slick is the remaining stick. right is the one tapping
             }
             leftJoystickValue = position;
             leftTouchIndex = 0;
@@ -158,7 +158,7 @@ namespace CosmicShore.Game.IO
             if (!rightStickEffectsStarted)
             {
                 rightStickEffectsStarted = true;
-                _ship.PerformShipControllerActions(InputEvents.RightStickAction);
+                _ship.PerformShipControllerActions(InputEvents.LeftStickAction); //right slick is the remaining stick. left is the one tapping
             }
             rightJoystickValue = position;
             rightTouchIndex = 0;

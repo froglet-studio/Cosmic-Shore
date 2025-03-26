@@ -26,10 +26,6 @@ namespace CosmicShore.Core
         [SerializeField] ShipTypes HostileAI3ShipType = ShipTypes.Random;
         ShipTypes HostileMantaShipType = ShipTypes.Manta;
 
-        [SerializeField] List<ShipTypes> GreenTeamShipTypes = new List<ShipTypes>() { ShipTypes.Random, ShipTypes.Random, ShipTypes.Random };
-        [SerializeField] List<ShipTypes> RedTeamShipTypes = new List<ShipTypes>() { ShipTypes.Random, ShipTypes.Random, ShipTypes.Random };
-        [SerializeField] List<ShipTypes> GoldTeamShipTypes = new List<ShipTypes>() { ShipTypes.Random, ShipTypes.Random, ShipTypes.Random };
-        Dictionary<Teams, List<ShipTypes>> TeamShipTypes = new();
 
         Dictionary<string, IShip> ships = new();
         Dictionary<ShipTypes, IShip> shipTypeMap = new();
@@ -48,9 +44,6 @@ namespace CosmicShore.Core
         {
             base.Awake();
 
-            TeamShipTypes.Add(Teams.Jade, GreenTeamShipTypes);
-            TeamShipTypes.Add(Teams.Ruby, RedTeamShipTypes);
-            TeamShipTypes.Add(Teams.Gold, GoldTeamShipTypes);
 
             if (PlayerPrefs.HasKey(SelectedShipPlayerPrefKey))
                 PlayerShipType = (ShipTypes)PlayerPrefs.GetInt(SelectedShipPlayerPrefKey);
@@ -81,12 +74,6 @@ namespace CosmicShore.Core
             PlayerPrefs.SetInt(SelectedShipPlayerPrefKey, shipType);
         }
 
-        public void SetTeamShipType(Teams team, ShipTypes shipType, int slot = 0)
-        {
-            Debug.Log($"Hangar.SetTeamShipType: shipType:{shipType}, team:{team}, slot:{slot}");
-
-            TeamShipTypes[team][slot] = shipType;
-        }
 
         public void SetPlayerCaptain(Captain captain)
         {

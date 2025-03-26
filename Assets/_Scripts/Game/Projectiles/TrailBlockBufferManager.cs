@@ -11,6 +11,7 @@ namespace CosmicShore.Game.Projectiles
         [System.Serializable]
         private class BufferSettings
         {
+            public int initializationBufferSizePerTeam = 20;
             public int bufferSizePerTeam = 100;
             public float baseInstantiateRate = 5f;
             public float maxInstantiateRate = 20f;
@@ -19,22 +20,28 @@ namespace CosmicShore.Game.Projectiles
         [SerializeField] private BufferSettings settings;
         [SerializeField] private TrailBlock trailBlockPrefab;
 
+        protected bool Initialized = false;
+
         private Dictionary<Teams, Queue<TrailBlock>> teamBuffers = new Dictionary<Teams, Queue<TrailBlock>>();
         private Dictionary<Teams, float> instantiateTimers = new Dictionary<Teams, float>();
 
         public override void Awake()
         {
             base.Awake();
-            StartCoroutine(WaitForThemeManagerInitialization());
+            
+            if (!Instance.Initialized)
+            {
+                Instance.Initialized = true;
+                StartCoroutine(WaitForThemeManagerInitialization());
+            }
         }
 
         private IEnumerator WaitForThemeManagerInitialization()
         {
-            while (ThemeManager.Instance == null)
-            {
-                yield return new WaitForEndOfFrame();
-            }
+            yield return new WaitUntil(() => ThemeManager.Instance != null);
             
+            // Initialize with a small buffer
+            // Then hydrate to full size
             InitializeTeamBuffers();
             StartCoroutine(BufferMaintenanceRoutine());
         }
@@ -46,15 +53,19 @@ namespace CosmicShore.Game.Projectiles
             {
                 if (team != Teams.Unassigned && team != Teams.None)
                 {
-                    teamBuffers[team] = new Queue<TrailBlock>();
-                    instantiateTimers[team] = 0f;
-                    
-                    // Pre-instantiate initial blocks
-                    for (int i = 0; i < settings.bufferSizePerTeam; i++)
+                    // Don't recreate the buffers across scene loads if they already exist
+                    if (!teamBuffers.ContainsKey(team))
                     {
-                        var block = CreateBlockForTeam(team);
-                        block.gameObject.SetActive(false);
-                        teamBuffers[team].Enqueue(block);
+                        teamBuffers[team] = new Queue<TrailBlock>();
+                        instantiateTimers[team] = 0f;
+
+                        // Pre-instantiate initial blocks
+                        for (int i = 0; i < settings.initializationBufferSizePerTeam; i++)
+                        {
+                            var block = CreateBlockForTeam(team);
+                            block.gameObject.SetActive(false);
+                            teamBuffers[team].Enqueue(block);
+                        }
                     }
                 }
             }
@@ -80,13 +91,13 @@ namespace CosmicShore.Game.Projectiles
                 foreach (var team in teamBuffers.Keys)
                 {
                     var buffer = teamBuffers[team];
-                    float bufferFullness = (float)buffer.Count / settings.bufferSizePerTeam;
-                    float currentInstantiateRate = Mathf.Lerp(settings.maxInstantiateRate, settings.baseInstantiateRate, bufferFullness);
-                    
                     if (buffer.Count < settings.bufferSizePerTeam)
                     {
-                        instantiateTimers[team] += Time.deltaTime;
+                        float bufferFullness = (float)buffer.Count / settings.bufferSizePerTeam;
+                        float currentInstantiateRate = Mathf.Lerp(settings.maxInstantiateRate, settings.baseInstantiateRate, bufferFullness);
                         float instantiateInterval = 1f / currentInstantiateRate;
+
+                        instantiateTimers[team] += Time.deltaTime;
 
                         while (instantiateTimers[team] >= instantiateInterval && buffer.Count < settings.bufferSizePerTeam)
                         {
@@ -97,6 +108,7 @@ namespace CosmicShore.Game.Projectiles
                         }
                     }
                 }
+
                 yield return null;
             }
         }

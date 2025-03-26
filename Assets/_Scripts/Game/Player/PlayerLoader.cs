@@ -8,6 +8,7 @@ namespace CosmicShore
     {
         [SerializeField] GameObject playerPrefab;
         [SerializeField] List<string> PlayerNames = new() { "FriendlyOne", "HostileOne", "HostileTwo" };
+        [SerializeField] List<Vector3> PlayerPositions = new() { new Vector3(0, 55, 0), new Vector3(55, 0, 0), new Vector3(0, 0, 55) };
         [SerializeField] List<Teams> PlayerTeams = new() { Teams.Jade, Teams.Ruby, Teams.Ruby };
         [SerializeField] List<ShipTypes> PlayerShipTypes = new() { ShipTypes.Rhino, ShipTypes.Rhino, ShipTypes.Rhino };
 
@@ -20,7 +21,10 @@ namespace CosmicShore
         {
             for (var i = 0; i < PlayerTeams.Count; i++)
             {
-                Instantiate(playerPrefab).TryGetComponent(out IPlayer player);
+                var playerClone = Instantiate(playerPrefab);
+                playerClone.transform.position = PlayerPositions[i];
+                playerClone.TryGetComponent(out IPlayer player);
+                playerClone.name = PlayerNames[i];
                 if (player == null)
                 {
                     Debug.LogError($"Non player prefab provided to PlayerLoader");

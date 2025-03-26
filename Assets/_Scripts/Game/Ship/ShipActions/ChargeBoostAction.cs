@@ -4,7 +4,8 @@ using UnityEngine;
 
 public class ChargeBoostAction : ShipAction
 {
-    bool BoostCharging;
+    bool boostCharging;
+    ShipStatus shipStatus;
     [SerializeField] float MaxBoostMultiplier = 2;
     [SerializeField] float BoostChargeRate = .33f;
     [SerializeField] float BoostDischargeRate = .25f;
@@ -13,24 +14,24 @@ public class ChargeBoostAction : ShipAction
     public override void StartAction()
     {
         StopAllCoroutines();
-        if (ResourceSystem) ResourceSystem.Resources[boostResourceIndex].CurrentAmount = 0;
-        BoostCharging = true;
+        if (ShipStatus.ResourceSystem) ShipStatus.ResourceSystem.Resources[boostResourceIndex].CurrentAmount = 0;
+        boostCharging = true;
         StartCoroutine(BoostChargeCoroutine());
     }
 
     public override void StopAction()
     {
         StopAllCoroutines();
-        BoostCharging = false;
+        boostCharging = false;
         StartCoroutine(DischargeBoostCoroutine());
     }
 
     IEnumerator BoostChargeCoroutine()
     {
-        while (BoostCharging)
+        while (boostCharging)
         {
-            Ship.ShipStatus.ResourceSystem.ChangeResourceAmount(boostResourceIndex, BoostChargeRate);
-            ShipStatus.ChargedBoostCharge = 1 + ResourceSystem.Resources[boostResourceIndex].CurrentAmount;
+            ShipStatus.ResourceSystem.ChangeResourceAmount(boostResourceIndex, BoostChargeRate);
+            shipStatus.ChargedBoostCharge = 1 + ShipStatus.ResourceSystem.Resources[boostResourceIndex].CurrentAmount;
             yield return new WaitForSeconds(.1f);
         }
     }
@@ -42,14 +43,14 @@ public class ChargeBoostAction : ShipAction
         ShipStatus.ChargedBoostDischarging = true;
         while (ShipStatus.ChargedBoostCharge > 1)
         {
-            Ship.ShipStatus.ResourceSystem.ChangeResourceAmount(boostResourceIndex , - BoostDischargeRate);
-            ShipStatus.ChargedBoostCharge = 1 + (MaxBoostMultiplier * ResourceSystem.Resources[boostResourceIndex].CurrentAmount);
+            ShipStatus.ResourceSystem.ChangeResourceAmount(boostResourceIndex , - BoostDischargeRate);
+            shipStatus.ChargedBoostCharge = 1 + (MaxBoostMultiplier * ShipStatus.ResourceSystem.Resources[boostResourceIndex].CurrentAmount);
             yield return new WaitForSeconds(.1f);
         }
         ShipStatus.ChargedBoostCharge = 1;
         ShipStatus.ChargedBoostDischarging = false;
 
-        Ship.ShipStatus.ResourceSystem.ChangeResourceAmount(boostResourceIndex, -ResourceSystem.Resources[boostResourceIndex].CurrentAmount);
+        ShipStatus.ResourceSystem.ChangeResourceAmount(boostResourceIndex, -ShipStatus.ResourceSystem.Resources[boostResourceIndex].CurrentAmount);
 
     }
 }

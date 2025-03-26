@@ -116,6 +116,7 @@ namespace CosmicShore.Core
 
         private void InitializeTrailBlockProperties()
         {
+            if (TargetScale == Vector3.zero) TargetScale = transform.localScale;
             if (TrailBlockProperties == null) return;
 
             TrailBlockProperties.position = transform.position;
@@ -137,9 +138,9 @@ namespace CosmicShore.Core
             // Set initial target scale before beginning growth animation
             if (scaleAnimator.TargetScale == Vector3.zero)
             {
-                scaleAnimator.SetTargetScale(Vector3.one);
+                scaleAnimator.SetTargetScale(transform.localScale);
             }
-            
+
             // Update volume before growth animation starts
             TrailBlockProperties.volume = scaleAnimator.GetCurrentVolume();
             
